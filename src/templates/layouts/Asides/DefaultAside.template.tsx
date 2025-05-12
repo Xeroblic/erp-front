@@ -15,6 +15,7 @@ import AsideFooterPart from './_parts/AsideFooter.part';
 import { Pages } from '@/config/pages.config';
 import useAuthority from '@/hooks/useAuthority';
 import { useAppSelector } from '@/store';
+import { AUTH } from '@/constants/authority';
 
 type AuthorityGuardProps = PropsWithChildren<{
 	userAuthority?: string[]
@@ -35,7 +36,7 @@ const AuthorityCheckNav = (props: AuthorityGuardProps) => {
 }
 
 const DefaultAsideTemplate = () => {
-	const { listaGrupos } = useAppSelector((state) => state.auth)
+	// const { listaGrupos } = useAppSelector((state) => state.auth)
 
 	return (
 		<Aside>
@@ -43,9 +44,16 @@ const DefaultAsideTemplate = () => {
 			<AsideBody>
 				<Nav>
 					{/* <NavItem text={'Prueba Aside'}></NavItem> */}
-					<AuthorityCheckNav authority={Pages.Foro.authority} userAuthority={listaGrupos?.grupos}>
-						<NavItem text={Pages.Foro.text} to={Pages.Foro.to} icon={Pages.Foro.icon} id={Pages.Foro.id}></NavItem>
+					<AuthorityCheckNav authority={Pages.dashboard.authority} userAuthority={[AUTH.DASH_EMPRESA]}>
+						<NavItem
+							text={Pages.dashboard.text}
+							to={Pages.dashboard.to}
+							icon={Pages.dashboard.icon}
+							id={Pages.dashboard.id}
+						/>
 					</AuthorityCheckNav>
+
+					
 				
 					{/* <AuthorityCheckNav authority={Pages.listaItem.authority} userAuthority={listaGrupos?.grupos}>
 						<NavItem text={Pages.listaItem.text} to={Pages.listaItem.to} icon={Pages.listaItem.icon} id={Pages.listaItem.id}></NavItem>

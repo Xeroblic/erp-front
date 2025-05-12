@@ -16,8 +16,8 @@ const axiosBaseQuery =
     > =>
     async (request) => {
         try {
-            const response = BaseService(request)
-            return response
+            const {data} = await BaseService(request)
+            return {data}
         } catch (axiosError) {
             const err = axiosError as AxiosError
             return {

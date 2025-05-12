@@ -8,7 +8,6 @@ import calendario, { CalendarioState } from './slices/calendario/calendarioSlice
 import item, { ItemState } from './slices/item/itemSlice'
 // import bodega, { BodegaState } from './slices/bodega/bodegaSlice'
 import cliente, { ClienteState } from './slices/clientes/clienteSlice'
-import foro, { ForoState } from './slices/foros/foroSlice'
 
 export type RootState = CombinedState<{
     auth: AuthState
@@ -16,10 +15,9 @@ export type RootState = CombinedState<{
     invitacion: InvitacionState
     // empresa: EmpresaState
     // calendario: CalendarioState
-    item: ItemState
+    // item: ItemState
     // bodega: BodegaState
     cliente: ClienteState
-    foro: ForoState
     /* eslint-disable @typescript-eslint/no-explicit-any */
     [RtkQueryService.reducerPath]: any
 }>
@@ -33,7 +31,6 @@ const staticReducers = {
     core,
 
     cliente,
-    foro,
     [RtkQueryService.reducerPath]: RtkQueryService.reducer,
 }
 

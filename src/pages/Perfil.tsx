@@ -96,7 +96,7 @@ const TAB: TTabs = {
 };
 
 
-const ProfilePage = () => {
+const Perfil = () => {
     const dispatch = useAppDispatch()
 	const { setDarkModeStatus } = useDarkMode();
     const { userMe: userData, access, personalizacionUsuario } = useAppSelector((state) => state.auth)
@@ -1208,4 +1208,4 @@ const ProfilePage = () => {
 	);
 };
 
-export default ProfilePage;
+export default Perfil;
