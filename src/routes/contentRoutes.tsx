@@ -11,6 +11,7 @@ import AceptarInvitacion   from "@/pages/InvitacionEmpresa/AceptarInvitacionEmpr
 
 const ProfilePage  = lazy(() => import("@/pages/Perfil"));
 const Dashboard    = lazy(() => import("@/pages/Dashboard"));
+const Empresa      = lazy(() => import("@/pages/empresa/Empresa"));
 // const Productos    = lazy(() => import("@/pages/Productos"));
 // const Usuarios     = lazy(() => import("@/pages/Usuarios"));
 // const Invitaciones = lazy(() => import("@/pages/Invitaciones"));
@@ -27,13 +28,14 @@ const contentRoutes: IRoutePersonalizada[] = [
 
   // privadas
   { path: privatePages.dashboard.to,    element: <Dashboard />,    authority: privatePages.dashboard.authority },
+  { path: privatePages.empresa.to,      element: <Empresa />,      authority: privatePages.empresa.authority },
 //   { path: privatePages.productos.to,    element: <Productos />,    authority: privatePages.productos.authority },
 //   { path: privatePages.usuarios.to,     element: <Usuarios />,     authority: privatePages.usuarios.authority },
 //   { path: privatePages.invitaciones.to, element: <Invitaciones />, authority: privatePages.invitaciones.authority },
 
   // genéricos
   { path: "/sin-permisos", element: <SinPermisos />, authority: [] },
-  { path: "/",             element: <Dashboard />,   authority: [] },
+  { path: "/",             element: <Dashboard />,   authority: privatePages.dashboard.authority },
   { path: "*",             element: <NotFoundPage />,authority: [] },
 ];
 

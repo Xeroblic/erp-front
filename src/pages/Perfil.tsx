@@ -99,7 +99,7 @@ const TAB: TTabs = {
 const Perfil = () => {
     const dispatch = useAppDispatch()
 	const { setDarkModeStatus } = useDarkMode();
-    const { userMe: userData, access, personalizacionUsuario } = useAppSelector((state) => state.auth)
+    const { user: userData, access, personalizacionUsuario } = useAppSelector((state) => state.auth)
 	const [activeTab, setActiveTab] = useState<TTab>(TAB.EDIT);
 	const { listaComunas, listaProvincias, listaRegiones } = useAppSelector((state) => state.core)
 	const [optionsRegion, setOptionsRegion] = useState<{value: string, label: string}[]>([])
@@ -107,7 +107,7 @@ const Perfil = () => {
 	const [optionsComuna, setOptionsComuna] = useState<{value: string, label: string}[]>([])
 
     useEffect(() => {
-        dispatch(userMeThunk({access}))
+        dispatch(userMeThunk({token:access}))
     }, [])
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -200,7 +200,7 @@ const Perfil = () => {
                 const response = await ApiService.fetchData({url: `/auth/users/${userData?.pk}/`, method: 'patch', headers: {'Content-Type': 'application/json'}, data: JSON.stringify(new_values)})
 				if (response.data) {
 					toast.success("Se actualizo el perfil", {autoClose: 1000})
-					dispatch(userMeThunk({access}))
+					dispatch(userMeThunk({token:access}))
 				}
             } catch (error: any) {
 				toast.error(error)
@@ -360,7 +360,7 @@ const Perfil = () => {
 																		const response = await ApiService.fetchData({url: `/api/users/${userData?.pk}/`, method: 'patch', data: form})
 																		if (response.data) {
 																			toast.success("Imagen Actualizada", {autoClose: 1000})
-																			dispatch(userMeThunk({access}))
+																			dispatch(userMeThunk({token: access}))
 																		}
 																	} catch (error: any) {
 																		toast.error(error.response.detail)

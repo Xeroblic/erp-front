@@ -106,10 +106,15 @@ const authSlice = createSlice({
       .addCase(userMeThunk.pending, (state) => {
         state.loading = true;
       })
-      .addCase(userMeThunk.fulfilled, (state, action) => {
-        state.loading = false;
-        state.user = action.payload;
-      })
+.addCase(userMeThunk.fulfilled, (state, action) => {
+  state.loading = false;
+  state.user = {
+    ...action.payload,
+    authority: action.payload.permisos 
+  };
+})
+
+
       .addCase(userMeThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;

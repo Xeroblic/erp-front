@@ -34,7 +34,7 @@ const AuthorityCheckNav = (props: AuthorityGuardProps) => {
 
 	return <>{roleMatched ? children : null}</>
 }
-
+  const userAuthority = useAppSelector(state => state.auth.user?.authority ?? []);
 const DefaultAsideTemplate = () => {
 	// const { listaGrupos } = useAppSelector((state) => state.auth)
 
@@ -44,14 +44,21 @@ const DefaultAsideTemplate = () => {
 			<AsideBody>
 				<Nav>
 					{/* <NavItem text={'Prueba Aside'}></NavItem> */}
-					<AuthorityCheckNav authority={Pages.dashboard.authority} userAuthority={[AUTH.DASH_EMPRESA]}>
-						<NavItem
-							text={Pages.dashboard.text}
-							to={Pages.dashboard.to}
-							icon={Pages.dashboard.icon}
-							id={Pages.dashboard.id}
-						/>
-					</AuthorityCheckNav>
+
+					
+					<AuthorityCheckNav
+            authority={Pages.dashboard.authority}
+            userAuthority={userAuthority}
+          >
+            <NavItem {...Pages.dashboard} />
+          </AuthorityCheckNav>
+					
+					<AuthorityCheckNav authority={Pages.empresa.authority} userAuthority={[AUTH.ORG_EMPRESA]}>
+						<NavItem text={Pages.empresa.text} to={Pages.empresa.to} icon={Pages.empresa.icon} id={Pages.empresa.id}></NavItem>
+					</AuthorityCheckNav> 
+
+
+
 
 					
 				

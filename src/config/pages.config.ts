@@ -2,6 +2,8 @@
 // Centraliza las rutas que el Sidebar, el sistema de permisos y React‑Router utilizarán.
 // Mantén los IDs estables: si cambias un `id`, recuerda actualizar los tests y los registros de permisos.
 
+import { AUTH } from "@/constants/authority";
+
 // -----------------------------
 // Auth & Public Pages
 // -----------------------------
@@ -49,31 +51,38 @@ export const authPages = {
 export const privatePages = {
   dashboard: {
     id: "dashboard",
-    to: "/dashboard",
+    to: "/",
     text: "Dashboard",
-    icon: "HeroChartBar",
-    authority: ["view_dashboard"],
+    icon: "HeroChartBarSquare",
+    authority: [AUTH.ORG_EMPRESA],
   },
   productos: {
     id: "productos",
     to: "/productos",
     text: "Productos",
     icon: "HeroArchiveBox",
-    authority: ["view_productos"],
+    authority: [AUTH.PRODUCTOS_CRUD],
   },
   usuarios: {
     id: "usuarios",
     to: "/usuarios",
     text: "Usuarios",
     icon: "HeroUsers",
-    authority: ["view_usuarios"],
+    authority: [AUTH.USUARIOS_READ],
   },
   invitaciones: {
     id: "invitaciones",
     to: "/usuarios/invitaciones",
     text: "Invitaciones",
     icon: "HeroEnvelopeOpen",
-    authority: ["manage_invitaciones"],
+    authority: [AUTH.USUARIOS_INVITE],
+  },
+  empresa: {
+    id: "empresa",
+    to: "/empresa",
+    text: "Empresa",
+    icon: "empresa-icon",
+    authority: [AUTH.ORG_EMPRESA], 
   },
 };
 

@@ -1,24 +1,22 @@
 import { useMemo } from 'react'
 import isEmpty from 'lodash/isEmpty'
 
-function useAuthority(
-    userAuthority: string[] = [],
-    authority: string[] = [],
-    emptyCheck = false
-) {
-    const roleMatched = useMemo(() => {
-        return authority.some((role) => userAuthority.includes(role))
-    }, [authority, userAuthority])
+export default function useAuthority(
+  userAuthority: string[],
+  needed: string[],
+  allNeeded = false
+): boolean {
+  const check = (req: string) => {
+    if (userAuthority.includes(req)) return true;
+    const [rsc, act] = req.split(':');
+    // si el usuario tiene 'rsc:*' ese cubre cualquier 'rsc:xxx'
+    if (userAuthority.includes(`${rsc}:*`)) return true;
+    return false;
+  };
 
-    if (
-        isEmpty(authority) ||
-        isEmpty(userAuthority) ||
-        typeof authority === 'undefined'
-    ) {
-        return !emptyCheck
-    }
-
-    return roleMatched
+  if (allNeeded) {
+    return needed.every(check);
+  } else {
+    return needed.some(check);
+  }
 }
-
-export default useAuthority

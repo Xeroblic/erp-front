@@ -14,7 +14,7 @@ import { useAppSelector } from '@/store';
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
-
+const { nombre, authority = [] } = useAppSelector(s => s.auth.user || {});
   return (
     <PageWrapper isProtectedRoute title="Inicio">
       {/* Encabezado */}
