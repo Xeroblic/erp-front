@@ -36,3 +36,8 @@ export interface IUserMe {
   authority: string[];                       // mapeado desde permisos
   personalizacion?: IPersonalizacionUsuario; // cargada tras obtenerPersonalizacionThunk
 }
+
+
+export interface IGruposUsuarios {
+    grupos: string[]
+}
