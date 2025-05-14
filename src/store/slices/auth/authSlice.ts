@@ -1,4 +1,6 @@
+import { IPersonalizacionUsuario, IUserMe } from "@/interface/user.interface";
 import ApiService from "@/services/ApiService";
+import { RootState } from "@/store/rootReducer";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { toast } from "react-toastify";
 
@@ -7,7 +9,8 @@ export interface AuthState {
   loading: boolean;
   error: string | undefined;
   isAuthenticated: boolean;
-  user: any | undefined;
+    personalizacionUsuario?: IPersonalizacionUsuario;
+  user?: IUserMe;
 
 }
 
@@ -19,11 +22,9 @@ const initialState: AuthState = {
   user: undefined,
 };
 
-export const loginThunk = createAsyncThunk<
-  { token: string },
-  { email: string; password: string },
-  { rejectValue: string }
->("auth/loginThunk", async ({ email, password }, { rejectWithValue, dispatch }) => {
+export const loginThunk = createAsyncThunk<{ token: string },{ email: string; password: string },{ rejectValue: string }>(
+  "auth/loginThunk", 
+  async ({ email, password }, { rejectWithValue, dispatch }) => {
   try {
     const response = await ApiService.fetchData({
       url: "/login",
@@ -39,11 +40,9 @@ export const loginThunk = createAsyncThunk<
   }
 });
 
-export const userMeThunk = createAsyncThunk<
-  any,
-  { token: string | undefined },
-  { rejectValue: string }
->("auth/userMeThunk", async ({ token }, { rejectWithValue }) => {
+export const userMeThunk = createAsyncThunk<any,{ token: string | undefined },{ rejectValue: string }>(
+	"auth/userMeThunk", 
+	async ({ token }, { rejectWithValue }) => {
   try {
     const response = await ApiService.fetchData({
       url: "/perfil",
@@ -54,6 +53,7 @@ export const userMeThunk = createAsyncThunk<
     return rejectWithValue("No se pudo obtener el perfil");
   }
 });
+
 export const obtenerPersonalizacionThunk = createAsyncThunk<
   any,
   { token: string },
@@ -73,6 +73,27 @@ export const obtenerPersonalizacionThunk = createAsyncThunk<
   }
 });
 
+export const actualizarPersonalizacionThunk = createAsyncThunk<
+  { personalizacion: IPersonalizacionUsuario },
+  { tema: string; font_size: number },
+  { state: RootState; rejectValue: string }
+>(
+  'auth/actualizarPersonalizacionThunk',
+  async ({ tema, font_size }, { getState, rejectWithValue }) => {
+    const token = getState().auth.access;
+    try {
+      const response = await ApiService.fetchData({
+        url: '/usuario/personalizacion',
+        method: 'put',
+        data: { tema, font_size },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return { personalizacion: response.data as IPersonalizacionUsuario };
+    } catch (err: any) {
+      return rejectWithValue('No se pudo actualizar la personalización');
+    }
+  }
+);
 
 const authSlice = createSlice({
   name: "auth",
@@ -106,13 +127,16 @@ const authSlice = createSlice({
       .addCase(userMeThunk.pending, (state) => {
         state.loading = true;
       })
-.addCase(userMeThunk.fulfilled, (state, action) => {
-  state.loading = false;
-  state.user = {
-    ...action.payload,
-    authority: action.payload.permisos 
-  };
-})
+      .addCase(userMeThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = {
+          ...action.payload,
+          authority: action.payload.permisos  // directamente del backend
+        };
+        state.isAuthenticated = true;
+      })
+
+
 
 
       .addCase(userMeThunk.rejected, (state, action) => {
@@ -124,17 +148,29 @@ const authSlice = createSlice({
         })
         .addCase(obtenerPersonalizacionThunk.fulfilled, (state, action) => {
             state.loading = false;
-            state.user = {
-                ...state.user,
-                personalizacion: action.payload,
-            };
+            if (state.user) {
+                state.user = {
+                    ...state.user,
+                    personalizacion: action.payload,
+                };
+            }
         })
         .addCase(obtenerPersonalizacionThunk.rejected, (state, action) => {
             state.loading = false;
             state.error = action.payload;
             toast.error(action.payload);
         }
-      );
+      )
+	   .addCase(actualizarPersonalizacionThunk.fulfilled, (state, action) => {
+      if (state.user) {
+        state.user.personalizacion = action.payload.personalizacion;
+      }
+      state.loading = false;
+    })
+    .addCase(actualizarPersonalizacionThunk.rejected, (state, action) => {
+      state.loading = false;
+      toast.error(action.payload);
+    })
   },
 });
 

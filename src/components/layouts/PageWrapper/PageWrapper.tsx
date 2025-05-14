@@ -1,68 +1,79 @@
-import React, { FC, ReactNode, useEffect } from 'react';
+import React, { FC, ReactNode, useEffect, useRef } from 'react';
 import classNames from 'classnames';
 import { Navigate } from 'react-router-dom';
 import { authPages } from '../../../config/pages.config';
 import useDocumentTitle from '../../../hooks/useDocumentTitle';
-import { obtenerPersonalizacionThunk, useAppDispatch, useAppSelector } from '@/store';
+import { useAppDispatch, useAppSelector } from '@/store';
 import { listaComunasThunk, listaProvinciasThunk, listaRegionesThunk } from '@/store/slices/core/coreSlice';
-import useAuthority from '@/hooks/useAuthority';
+import { userMeThunk } from '@/store/slices/auth/authSlice';
 import useFontSize from '@/hooks/useFontSize';
 import useDarkMode from '@/hooks/useDarkMode';
 
 interface IPageWrapperProps {
-	children: ReactNode;
-	className?: string;
-	isProtectedRoute?: boolean;
-	title?: string;
-	name?: string;
+  children: ReactNode;
+  className?: string;
+  isProtectedRoute?: boolean;
+  title?: string;
+  name?: string;
 }
 
-const PageWrapper: FC<IPageWrapperProps> = (props) => {
-	const dispatch = useAppDispatch()
-	const { fontSize, setFontSize } = useFontSize();
-	const { darkModeStatus, setDarkModeStatus } = useDarkMode();
-	const { children, className, isProtectedRoute, title, name, ...rest } = props;
-	const { isAuthenticated, access, personalizacionUsuario, userMe } = useAppSelector((state) => state.auth)
-	const { listaComunas, listaProvincias, listaRegiones } = useAppSelector((state) => state.core)
+const PageWrapper: FC<IPageWrapperProps> = ({
+  children,
+  className,
+  isProtectedRoute = false,
+  title,
+  name,
+  ...rest
+}) => {
+  const dispatch = useAppDispatch();
+  const { fontSize, setFontSize } = useFontSize();
+  const { darkModeStatus, setDarkModeStatus } = useDarkMode();
+  const { isAuthenticated, access, user } = useAppSelector(s => s.auth);
+  const { listaComunas, listaProvincias, listaRegiones } = useAppSelector(s => s.core);
 
-	useDocumentTitle({ title, name });
+  const coreLoaded = useRef(false);
+  const profileLoaded = useRef(false);
 
-	useEffect(() => {
-		if (isProtectedRoute && isAuthenticated) {
-			if (listaComunas.length === 0 || listaProvincias.length === 0 || listaRegiones.length === 0) {
-				dispatch(listaRegionesThunk())
-				dispatch(listaProvinciasThunk())
-				dispatch(listaComunasThunk())
-			}
-			if (personalizacionUsuario === undefined && userMe) {
-				dispatch(obtenerPersonalizacionThunk({access}))
-			}
-		}
-	}, [isAuthenticated, access, isProtectedRoute, userMe])
+  useDocumentTitle({ title, name });
 
-	useEffect(() => {
-		if (personalizacionUsuario) {
-			if (personalizacionUsuario.font_size !== fontSize) {
-				setFontSize(personalizacionUsuario.font_size);
-			}
-			if (personalizacionUsuario.tema) {
-				const tema =
-					personalizacionUsuario.tema === "1"
-						? "light"
-						: personalizacionUsuario.tema === "2"
-						? "dark"
-						: personalizacionUsuario.tema === "3"
-						? "system"
-						: "system";
-				setDarkModeStatus(tema);
-			}
-		}
-	}, [personalizacionUsuario]);
-	
-	if (isProtectedRoute && !isAuthenticated) {
-		return <Navigate to={authPages.loginPage.to} />;
-	}
-	
+  // 1) Solo una vez: carga regiones/provincias/comunas
+  useEffect(() => {
+    if (!coreLoaded.current && isProtectedRoute && isAuthenticated) {
+      dispatch(listaRegionesThunk());
+      dispatch(listaProvinciasThunk());
+      dispatch(listaComunasThunk());
+      coreLoaded.current = true;
+    }
+  }, [dispatch, isProtectedRoute, isAuthenticated]);
+
+  // 2) Solo una vez: carga perfil (incluye personalización)
+  useEffect(() => {
+    if (!profileLoaded.current && isProtectedRoute && isAuthenticated && access) {
+      dispatch(userMeThunk({ token: access }));
+      profileLoaded.current = true;
+    }
+  }, [dispatch, isProtectedRoute, isAuthenticated, access]);
+
+  // 3) Aplica personalización cuando llegue
+  useEffect(() => {
+    const pref = user?.personalizacion;
+    if (pref) {
+      if (pref.font_size !== fontSize) {
+        setFontSize(pref.font_size);
+      }
+      const tema =
+        pref.tema === '1'
+          ? 'light'
+          : pref.tema === '2'
+          ? 'dark'
+          : 'system';
+      setDarkModeStatus(tema);
+    }
+  }, [user?.personalizacion, fontSize, setFontSize, setDarkModeStatus]);
+
+  if (isProtectedRoute && !isAuthenticated) {
+    return <Navigate to={authPages.loginPage.to} />;
+  }
 
 	return (
 		<main

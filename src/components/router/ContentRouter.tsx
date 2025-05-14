@@ -8,9 +8,10 @@ import Header, { HeaderLeft, HeaderRight } from '../layouts/Header/Header';
 import Card from '../ui/Card';
 import AuthorityCheck from '../layouts/AuthorityCheck/AuthorityCheck';
 import { useAppSelector } from '@/store';
+import { selectUserAuthority } from '@/store/selectors';
 
 const ContentRouter = () => {
-	const { listaGrupos } = useAppSelector((state) => state.auth)
+  const userAuthority = useAppSelector(selectUserAuthority)
 
 	return (
 		<Suspense
@@ -82,10 +83,21 @@ const ContentRouter = () => {
 				</>
 			}>
 			<Routes>
-				{contentRoutes.map((routeProps) => (
-					<Route key={routeProps.path} path={routeProps.path} element={<AuthorityCheck userAuthority={listaGrupos?.grupos} authority={routeProps.authority} children={routeProps.element} />} />
-				))}
-			</Routes>
+        {contentRoutes.map((route) => (
+          <Route
+            key={route.path}
+            path={route.path}
+            element={
+              <AuthorityCheck
+                userAuthority={userAuthority}
+                authority={route.authority}
+              >
+                {route.element}
+              </AuthorityCheck>
+            }
+          />
+        ))}
+      </Routes>
 		</Suspense>
 	);
 };

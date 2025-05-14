@@ -19,11 +19,11 @@ const initialState: CoreState = {
     listaComunas: []
 }
 
-export const listaRegionesThunk = createAsyncThunk<IRegion[], undefined, {rejectValue: string}>(
+export const listaRegionesThunk = createAsyncThunk<IRegion[], undefined, { rejectValue: string }>(
     'core/listaRegionesThunk',
-    async (_, {rejectWithValue}) => {
+    async (_, { rejectWithValue }) => {
         try {
-            const response = await ApiService.fetchData<IRegion[], string>({url: '/api/regiones/', method: 'get'})
+            const response = await ApiService.fetchData<IRegion[], string>({ url: '/regiones/', method: 'get' })
             return response.data
         } catch (error: any) {
             return rejectWithValue(error)
@@ -31,11 +31,11 @@ export const listaRegionesThunk = createAsyncThunk<IRegion[], undefined, {reject
     }
 )
 
-export const listaProvinciasThunk = createAsyncThunk<IProvincia[], undefined, {rejectValue: string}>(
+export const listaProvinciasThunk = createAsyncThunk<IProvincia[], undefined, { rejectValue: string }>(
     'core/listaProvinciasThunk',
-    async (_, {rejectWithValue}) => {
+    async (_, { rejectWithValue }) => {
         try {
-            const response = await ApiService.fetchData<IProvincia[], string>({url: '/api/provincias/', method: 'get'})
+            const response = await ApiService.fetchData<IProvincia[], string>({ url: '/provincias/', method: 'get' })
             return response.data
         } catch (error: any) {
             return rejectWithValue(error)
@@ -43,11 +43,11 @@ export const listaProvinciasThunk = createAsyncThunk<IProvincia[], undefined, {r
     }
 )
 
-export const listaComunasThunk = createAsyncThunk<IComuna[], undefined, {rejectValue: string}>(
+export const listaComunasThunk = createAsyncThunk<IComuna[], undefined, { rejectValue: string }>(
     'core/listaComunasThunk',
-    async (_, {rejectWithValue}) => {
+    async (_, { rejectWithValue }) => {
         try {
-            const response = await ApiService.fetchData<IComuna[], string>({url: '/api/comunas/', method: 'get'})
+            const response = await ApiService.fetchData<IComuna[], string>({ url: '/comunas/', method: 'get' })
             return response.data
         } catch (error: any) {
             return rejectWithValue(error)
@@ -97,6 +97,6 @@ const coreSlice = createSlice({
     },
 })
 
-export const {} = coreSlice.actions
+export const { } = coreSlice.actions
 
 export default coreSlice.reducer
