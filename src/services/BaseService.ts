@@ -1,4 +1,4 @@
-import store, { GUARDAR_TOKEN, LOGOUT } from "@/store";
+import store, { setToken, logout } from "@/store";
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { toast } from "react-toastify";
 
@@ -47,7 +47,7 @@ BaseService.interceptors.response.use(
                 });
 
                 const newToken = refreshResponse.data.token; // Laravel responde con { token: "..." }
-                store.dispatch(GUARDAR_TOKEN(newToken));
+                store.dispatch(setToken(newToken));
 
                 originalRequest.headers = originalRequest.headers || {};
                 originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
@@ -55,7 +55,7 @@ BaseService.interceptors.response.use(
                 return BaseService(originalRequest);
             } catch (refreshError) {
                 toast.error("Sesión expirada. Inicia sesión nuevamente.");
-                store.dispatch(LOGOUT());
+                store.dispatch(logout());
                 return Promise.reject(refreshError);
             }
         }

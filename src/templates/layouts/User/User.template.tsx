@@ -5,12 +5,12 @@ import { NavButton, NavItem, NavSeparator } from '../../../components/layouts/Na
 import { authPages } from '../../../config/pages.config';
 import User from '../../../components/layouts/User/User';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { LOGOUT } from '@/store/slices/auth/authSlice';
+import { logout } from '@/store/slices/auth/authSlice';
 
 const UserTemplate = () => {
 	// const { isLoading, userData, onLogout } = useAuth();
     const dispatch = useAppDispatch()
-    const { userMe: userData, isAuthenticated, loading: isLoading } = useAppSelector((state) => state.auth)
+    const { user: userData, isAuthenticated, loading: isLoading } = useAppSelector((state) => state.auth)
 
 	return (
 		<User
@@ -32,7 +32,7 @@ const UserTemplate = () => {
 				</Badge>
 				<NavButton icon='HeroPlusCircle' title='New Mail' onClick={() => {}} />
 			</NavItem> */}
-			<NavItem text='Logout' icon='HeroArrowRightOnRectangle' onClick={() => {dispatch(LOGOUT())}} />
+			<NavItem text='Logout' icon='HeroArrowRightOnRectangle' onClick={() => {dispatch(logout())}} />
 		</User>
 	);
 };

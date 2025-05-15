@@ -1,49 +1,41 @@
-export interface IEmpresa {
-    id: number
-    sucursales: {
-        id: number
-        nombre: string
-        direccion: string
-        telefono: string
-        email: string
-        empresa: number
-    }[]
-    fecha_creacion: string
-    fecha_modificacion: string
-    nombre: string
-    sitio_web: null | string
-    direccion_principal: string
-}
-
 export interface IUsuarioEmpresa {
-    id: number
-    nombre_usuario: string
-    papeleta: {
-        nombre_empleado: string
-        años_servicio: number
-        dias_acumulados: number
-        dias_tomados: number
-        dias_disponibles: number
-        rut: string
-        dias_corridos: {
-            dias_totales: number
-            formato: string
-        }
-    },
-    fecha_creacion: string
-    fecha_modificacion: string
-    fecha_ingreso: string
-    fecha_contrato: string
-    cargo: null | string
-    estado: string
-    usuario: number
-    sucursal: number
-    email_usuario: string
-    estado_label: string
+  id: number;
+  nombre: string;
+  email: string;
+  activado: boolean;
+  token_activacion?: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface IUltimasActividadesUsuarioEmpresa {
-    tipo: string
-    fecha: string
-    descripcion: string
+export interface ISucursal {
+  id: number;
+  subempresa_id: number;
+  nombre: string;
+  direccion?: string;
+  descripcion?: string;
+  created_at: string;
+  updated_at: string;
+  usuarios?: IUsuarioEmpresa[];
+}
+
+export interface ISubempresa {
+  id: number;
+  nombre: string;
+  slug: string;
+  descripcion?: string;
+  empresa_id: number;
+  created_at: string;
+  updated_at: string;
+  sucursales?: ISucursal[];
+}
+
+export interface IEmpresa {
+  id: number;
+  nombre: string;
+  rut: string;
+  descripcion?: string;
+  created_at: string;
+  updated_at: string;
+  subempresas?: ISubempresa[];
 }

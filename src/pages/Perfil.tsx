@@ -107,7 +107,7 @@ const Perfil = () => {
 	const [optionsComuna, setOptionsComuna] = useState<{value: string, label: string}[]>([])
 
     useEffect(() => {
-        dispatch(userMeThunk({token:access}))
+        dispatch(userMeThunk())
     }, [])
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -200,7 +200,7 @@ const Perfil = () => {
                 const response = await ApiService.fetchData({url: `/auth/users/${userData?.pk}/`, method: 'patch', headers: {'Content-Type': 'application/json'}, data: JSON.stringify(new_values)})
 				if (response.data) {
 					toast.success("Se actualizo el perfil", {autoClose: 1000})
-					dispatch(userMeThunk({token:access}))
+					dispatch(userMeThunk())
 				}
             } catch (error: any) {
 				toast.error(error)
@@ -360,7 +360,7 @@ const Perfil = () => {
 																		const response = await ApiService.fetchData({url: `/api/users/${userData?.pk}/`, method: 'patch', data: form})
 																		if (response.data) {
 																			toast.success("Imagen Actualizada", {autoClose: 1000})
-																			dispatch(userMeThunk({token: access}))
+																			dispatch(userMeThunk())
 																		}
 																	} catch (error: any) {
 																		toast.error(error.response.detail)

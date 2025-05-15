@@ -11,7 +11,12 @@ import AceptarInvitacion   from "@/pages/InvitacionEmpresa/AceptarInvitacionEmpr
 
 const ProfilePage  = lazy(() => import("@/pages/Perfil"));
 const Dashboard    = lazy(() => import("@/pages/Dashboard"));
-const Empresa      = lazy(() => import("@/pages/empresa/Empresa"));
+const Empresa      = lazy(() => import("@/pages/empresa/empresa/Empresa"));
+const RolesPermisos= lazy(() => import("@/pages/empresa/roles y permisos/RolesPermisos"));
+const SubEmpresa   = lazy(() => import("@/pages/empresa/subempresa/SubEmpresa"));
+const Sucursales   = lazy(() => import("@/pages/empresa/sucursales/Sucursales"));
+const Usuarios     = lazy(() => import("@/pages/empresa/usuarios/Usuarios"));
+
 // const Productos    = lazy(() => import("@/pages/Productos"));
 // const Usuarios     = lazy(() => import("@/pages/Usuarios"));
 // const Invitaciones = lazy(() => import("@/pages/Invitaciones"));
@@ -28,7 +33,12 @@ const contentRoutes: IRoutePersonalizada[] = [
 
   // privadas
   { path: privatePages.dashboard.to,    element: <Dashboard />,    authority: privatePages.dashboard.authority },
-  { path: privatePages.empresa.to,      element: <Empresa />,      authority: privatePages.empresa.authority },
+  { path: privatePages.gestion.subPages.empresa.to,    element: <Empresa />,   authority: privatePages.gestion.subPages.empresa.authority },
+  { path: privatePages.gestion.subPages.subempresa.to, element: <SubEmpresa />,authority: privatePages.gestion.subPages.subempresa.authority },
+  { path: privatePages.gestion.subPages.sucursal.to, element: <Sucursales />,authority: privatePages.gestion.subPages.sucursal.authority },
+  { path: privatePages.gestion.subPages.rolesPermisos.to, element: <RolesPermisos />,authority: privatePages.gestion.subPages.rolesPermisos.authority },
+  { path: privatePages.gestion.subPages.usuarios.to, element: <Usuarios />,authority: privatePages.gestion.subPages.usuarios.authority },
+
 //   { path: privatePages.productos.to,    element: <Productos />,    authority: privatePages.productos.authority },
 //   { path: privatePages.usuarios.to,     element: <Usuarios />,     authority: privatePages.usuarios.authority },
 //   { path: privatePages.invitaciones.to, element: <Invitaciones />, authority: privatePages.invitaciones.authority },

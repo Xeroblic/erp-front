@@ -49,7 +49,7 @@ const PageWrapper: FC<IPageWrapperProps> = ({
   // 2) Solo una vez: carga perfil (incluye personalización)
   useEffect(() => {
     if (!profileLoaded.current && isProtectedRoute && isAuthenticated && access) {
-      dispatch(userMeThunk({ token: access }));
+      dispatch(userMeThunk());
       profileLoaded.current = true;
     }
   }, [dispatch, isProtectedRoute, isAuthenticated, access]);

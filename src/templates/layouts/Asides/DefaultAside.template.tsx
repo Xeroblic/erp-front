@@ -1,62 +1,61 @@
-import React, { PropsWithChildren, useMemo } from 'react';
+import React, { PropsWithChildren } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Aside, { AsideBody } from '../../../components/layouts/Aside/Aside';
-import Nav, {
-	NavButton,
-	NavCollapse,
-	NavItem,
-	NavSeparator,
-	NavTitle,
-	NavUser,
-} from '../../../components/layouts/Navigation/Nav';
+import Nav, { NavButton, NavCollapse, NavItem, NavSeparator, NavTitle, NavUser } from '../../../components/layouts/Navigation/Nav';
 import Badge from '../../../components/ui/Badge';
 import AsideHeadPart from './_parts/AsideHead.part';
 import AsideFooterPart from './_parts/AsideFooter.part';
 import { Pages } from '@/config/pages.config';
 import useAuthority from '@/hooks/useAuthority';
 import { useAppSelector } from '@/store';
-import { AUTH } from '@/constants/authority';
-import { selectUserAuthority } from '@/store/selectors';
+import { selectUserAuthority } from '@/store/slices/auth/authSlice';
 
 type AuthorityGuardProps = PropsWithChildren<{
-	userAuthority?: string[]
-	authority?: string[]
-}>
+  userAuthority?: string[];
+  authority?: string[];
+}>;
 
-const AuthorityCheckNav = (props: AuthorityGuardProps) => {
-	const { userAuthority = [], authority = [], children } = props
+const AuthorityCheckNav = ({ userAuthority = [], authority = [], children }: AuthorityGuardProps) => {
+  if (!authority || authority.length === 0) return <>{children}</>;
+  const roleMatched = useAuthority(userAuthority, authority, true);
+  return <>{roleMatched ? children : null}</>;
+};
 
-	// Si `authority` es vacío o `undefined`, la vista es sin protección
-	if (!authority || authority.length === 0) {
-		return <>{children}</>
-	}
-
-	const roleMatched = useAuthority(userAuthority, authority, true)
-
-	return <>{roleMatched ? children : null}</>
-}
 const DefaultAsideTemplate = () => {
-	// const { listaGrupos } = useAppSelector((state) => state.auth)
+  const navigate = useNavigate();
   const userAuthority = useAppSelector(selectUserAuthority);
+  const canView = (auth: string[]) => useAuthority(userAuthority, auth, true);
 
-	return (
-		<Aside>
-			<AsideHeadPart />
-			<AsideBody>
-				<Nav>
-					{/* <NavItem text={'Prueba Aside'}></NavItem> */}
+  return (
+    <Aside>
+      <AsideHeadPart />
+      <AsideBody>
+        <Nav>
+          {/* Dashboard */}
+          <AuthorityCheckNav authority={Pages.dashboard.authority} userAuthority={userAuthority}>
+            <NavItem {...Pages.dashboard} />
+          </AuthorityCheckNav>
 
+          {/* Gestión Admin */}
+          <NavCollapse text="Gestion Admin" icon="HeroDocumentText" to="">
+            <AuthorityCheckNav authority={Pages.gestion.subPages.empresa.authority} userAuthority={userAuthority}>
+              <NavItem {...Pages.gestion.subPages.empresa} />
+            </AuthorityCheckNav>
+            <AuthorityCheckNav authority={Pages.gestion.subPages.subempresa.authority} userAuthority={userAuthority}>
+              <NavItem {...Pages.gestion.subPages.subempresa} />
+            </AuthorityCheckNav>
+            <AuthorityCheckNav authority={Pages.gestion.subPages.sucursal.authority} userAuthority={userAuthority}>
+              <NavItem {...Pages.gestion.subPages.sucursal} />
+            </AuthorityCheckNav>
+            <NavSeparator />
+            <AuthorityCheckNav authority={Pages.gestion.subPages.rolesPermisos.authority} userAuthority={userAuthority}>
+              <NavItem {...Pages.gestion.subPages.rolesPermisos} />
+            </AuthorityCheckNav>
+            <AuthorityCheckNav authority={Pages.gestion.subPages.usuarios.authority} userAuthority={userAuthority}>
+              <NavItem {...Pages.gestion.subPages.usuarios} />
+            </AuthorityCheckNav>
+          </NavCollapse>
 					
-				<AuthorityCheckNav
-						authority={Pages.dashboard.authority}
-						userAuthority={userAuthority}
-					>
-						<NavItem {...Pages.dashboard} />
-          			</AuthorityCheckNav>
-					
-					<AuthorityCheckNav authority={Pages.empresa.authority} userAuthority={userAuthority}>
-						<NavItem text={Pages.empresa.text} to={Pages.empresa.to} icon={Pages.empresa.icon} id={Pages.empresa.id}></NavItem>
-					</AuthorityCheckNav> 
 
 
 

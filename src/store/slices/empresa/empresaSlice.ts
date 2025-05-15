@@ -1,179 +1,175 @@
-// import { IEmpresa, IUltimasActividadesUsuarioEmpresa, IUsuarioEmpresa } from "@/interface/empresas.interface"
-// import ApiService from "@/services/ApiService"
-// import { createAsyncThunk, createSlice } from "@reduxjs/toolkit"
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import ApiService from '@/services/ApiService';
+import { IEmpresa, IUsuarioEmpresa } from '@/interface/empresas.interface';
 
+export interface EmpresaState {
+  loading: boolean;
+  error?: string;
+  listaEmpresas: IEmpresa[];
+  detalleEmpresa?: IEmpresa;
+  listaSubempresas: IEmpresa['subempresas'];
+  empresaUsuarios?: IEmpresa;
+  inviteLoading: boolean;
+  inviteError?: string;
+  inviteResponse?: { usuario: IUsuarioEmpresa; password_temporal: string };
+}
 
-// export interface EmpresaState {
-//     loading: boolean
-//     error: string | undefined
-//     listaEmpresas: IEmpresa[]
-//     listaUsuariosEmpresa: IUsuarioEmpresa[]
-//     detalleUsuarioEmpresa: IUsuarioEmpresa | undefined
-//     listaUltimasActividades: IUltimasActividadesUsuarioEmpresa[]
-//     selectEmpresas: IEmpresa[]
-//     detalleEmpresa: IEmpresa | undefined
-// }
+const initialState: EmpresaState = {
+  loading: false,
+  error: undefined,
+  listaEmpresas: [],
+  detalleEmpresa: undefined,
+  listaSubempresas: [],
+  empresaUsuarios: undefined,
+  inviteLoading: false,
+  inviteError: undefined,
+  inviteResponse: undefined,
+};
 
-// const initialState: EmpresaState = {
-//     loading: false,
-//     error: undefined,
-//     listaEmpresas: [],
-//     listaUsuariosEmpresa: [],
-//     detalleUsuarioEmpresa: undefined,
-//     listaUltimasActividades: [],
-//     selectEmpresas: [],
-//     detalleEmpresa: undefined
-    
-// }
+// Obtener todas las empresas
+export const fetchEmpresas = createAsyncThunk<IEmpresa[], void, { rejectValue: string }>(
+  'empresa/fetchEmpresas',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await ApiService.fetchData<IEmpresa[]>({ url: '/empresas', method: 'get' });
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Error fetching empresas');
+    }
+  }
+);
 
-// export const detalleEmpresaThunk = createAsyncThunk<IEmpresa, {id_empresa: string | number | undefined}, {rejectValue: string}>(
-//     'bodega/detalleOrdenCompraThunk',
-//     async ({id_empresa}, {rejectWithValue}) => {
-//         try {
-//             const response = await ApiService.fetchData<IEmpresa>({url: `/api/empresas/${id_empresa}`, method: 'get'})
-//             return response.data
-//         } catch (error: any) {
-//             return rejectWithValue(error.response.data)
-//         }
-//     }
-// )
+// Obtener detalle de una empresa
+export const fetchEmpresaDetail = createAsyncThunk<IEmpresa, number, { rejectValue: string }>(
+  'empresa/fetchEmpresaDetail',
+  async (empresaId, { rejectWithValue }) => {
+    try {
+      const response = await ApiService.fetchData<IEmpresa>({ url: `/empresas/${empresaId}`, method: 'get' });
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Error fetching empresa detail');
+    }
+  }
+);
 
-// export const selectEmpresasThunk = createAsyncThunk<IEmpresa[], undefined, {rejectValue: string}>(
-//     'empresa/selectEmpresasThunk',
-//     async (_, {rejectWithValue}) => {
-//         try {
-//             const response = await ApiService.fetchData<IEmpresa[]>({url: '/api/empresas/select-empresas', method: 'get'})
-//             return response.data
-//         } catch (error: any) {
-//             return rejectWithValue(error.response.data)
-//         }
-//     }
-// )
+// Obtener subempresas de una empresa
+export const fetchSubempresas = createAsyncThunk<IEmpresa['subempresas'], number, { rejectValue: string }>(
+  'empresa/fetchSubempresas',
+  async (empresaId, { rejectWithValue }) => {
+    try {
+      const response = await ApiService.fetchData<IEmpresa>({ url: `/empresas/${empresaId}/subempresas`, method: 'get' });
+      return response.data.subempresas;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Error fetching subempresas');
+    }
+  }
+);
 
-// export const listaEmpresasThunk = createAsyncThunk<IEmpresa[], undefined, {rejectValue: string}>(
-//     'empresa/listaEmpresasThunk',
-//     async (_, {rejectWithValue}) => {
-//         try {
-//             const response = await ApiService.fetchData<IEmpresa[]>({url: '/api/empresas/', method: 'get'})
-//             return response.data
-//         } catch (error: any) {
-//             return rejectWithValue(error)
-//         }
-//     }
-// )
+// Obtener usuarios de una empresa (incluye subempresas y sucursales)
+export const fetchEmpresaUsuarios = createAsyncThunk<IEmpresa, number, { rejectValue: string }>(
+  'empresa/fetchEmpresaUsuarios',
+  async (empresaId, { rejectWithValue }) => {
+    try {
+      const response = await ApiService.fetchData<IEmpresa>({ url: `/empresas/${empresaId}/usuarios`, method: 'get' });
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Error fetching usuarios');
+    }
+  }
+);
 
-// export const listaUsuariosEmpresaThunk = createAsyncThunk<IUsuarioEmpresa[], undefined, {rejectValue: string}>(
-//     'empresa/listaUsuariosEmpresaThunk',
-//     async (_, {rejectWithValue}) => {
-//         try {
-//             const response = await ApiService.fetchData<IUsuarioEmpresa[]>({url: `/api/usuarios-empresa/`, method: 'get'})
-//             return response.data
-//         } catch (error: any) {
-//             return rejectWithValue(error.response.data)
-//         }
-//     }
-// )
+// Invitar a un nuevo usuario a la empresa
+export const inviteUsuario = createAsyncThunk<
+  { usuario: IUsuarioEmpresa; password_temporal: string },
+  { empresaId: number; nombre: string; email: string },
+  { rejectValue: string }
+>(
+  'empresa/inviteUsuario',
+  async ({ empresaId, nombre, email }, { rejectWithValue }) => {
+    try {
+      const response = await ApiService.fetchData<{ usuario: IUsuarioEmpresa; password_temporal: string }>({
+        url: `/empresas/${empresaId}/invitar`,
+        method: 'post',
+        data: { nombre, email },
+      });
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Error inviting usuario');
+    }
+  }
+);
 
-// export const detalleUsuarioEmpresaPorUserThunk = createAsyncThunk<IUsuarioEmpresa, {id_usuario: string | number | undefined}, {rejectValue: string}>(
-//     'empresa/detalleUsuarioEmpresaPorUserThunk',
-//     async ({id_usuario}, {rejectWithValue}) => {
-//         try {
-//             const response = await ApiService.fetchData<IUsuarioEmpresa>({url: `/api/usuarios-empresa/detalle-usuario/?usuario_id=${id_usuario}`, method: 'get'})
-//             return response.data
-//         } catch (error: any) {
-//             return rejectWithValue(error.response.data)
-//         }
-//     }
-// )
+const empresaSlice = createSlice({
+  name: 'empresa',
+  initialState,
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchEmpresas.pending, (state) => {
+        state.loading = true;
+        state.error = undefined;
+      })
+      .addCase(fetchEmpresas.fulfilled, (state, { payload }) => {
+        state.loading = false;
+        state.listaEmpresas = payload;
+      })
+      .addCase(fetchEmpresas.rejected, (state, { payload }) => {
+        state.loading = false;
+        state.error = payload;
+      })
 
-// export const listaUltimasActividadesThunk = createAsyncThunk<IUltimasActividadesUsuarioEmpresa[], {id_usuario_empresa: number | string | undefined}, {rejectValue: string}>(
-//     'empresa/listaUltimasActividadesThunk',
-//     async ({id_usuario_empresa}, {rejectWithValue}) => {
-//         try {
-//             const response = await ApiService.fetchData<IUltimasActividadesUsuarioEmpresa[]>({url: `/api/usuarios-empresa/${id_usuario_empresa}/ultimas-actividades/`, method: 'get'})
-//             return response.data
-//         } catch (error: any) {
-//             return rejectWithValue(error.response.data)
-//         }
-//     }
-// )
+      .addCase(fetchEmpresaDetail.pending, (state) => {
+        state.loading = true;
+        state.error = undefined;
+      })
+      .addCase(fetchEmpresaDetail.fulfilled, (state, { payload }) => {
+        state.loading = false;
+        state.detalleEmpresa = payload;
+      })
+      .addCase(fetchEmpresaDetail.rejected, (state, { payload }) => {
+        state.loading = false;
+        state.error = payload;
+      })
 
-// const empresaSlice = createSlice({
-//     name: 'empresa/empresaSlice',
-//     initialState,
-//     reducers: {},
-//     extraReducers(builder) {
-//         builder
-//             .addCase(listaEmpresasThunk.pending, (state) => {
-//                 state.loading = true
-//             })
-//             .addCase(listaEmpresasThunk.fulfilled, (state, action) => {
-//                 state.loading = false
-//                 state.listaEmpresas = action.payload
-//             })
-//             .addCase(listaEmpresasThunk.rejected, (state, action) => {
-//                 state.loading = false
-//                 state.error = action.payload
-//             })
-//             .addCase(listaUsuariosEmpresaThunk.pending, (state) => {
-//                 state.loading = true
-//             })
-//             .addCase(listaUsuariosEmpresaThunk.fulfilled, (state, action) => {
-//                 state.loading = false
-//                 state.listaUsuariosEmpresa = action.payload
-//             })
-//             .addCase(listaUsuariosEmpresaThunk.rejected, (state, action) => {
-//                 state.loading = false
-//                 state.error = action.payload
-//             })
-//             .addCase(detalleUsuarioEmpresaPorUserThunk.pending, (state) => {
-//                 state.loading = true
-//             })
-//             .addCase(detalleUsuarioEmpresaPorUserThunk.fulfilled, (state, action) => {
-//                 state.loading = false
-//                 state.detalleUsuarioEmpresa = action.payload
-//             })
-//             .addCase(detalleUsuarioEmpresaPorUserThunk.rejected, (state, action) => {
-//                 state.loading = false
-//                 state.error = action.payload
-//             })
-//             .addCase(listaUltimasActividadesThunk.pending, (state) => {
-//                 state.loading = true
-//             })
-//             .addCase(listaUltimasActividadesThunk.fulfilled, (state, action) => {
-//                 state.loading = false
-//                 state.listaUltimasActividades = action.payload
-//             })
-//             .addCase(listaUltimasActividadesThunk.rejected, (state, action) => {
-//                 state.loading = false
-//                 state.error = action.payload
-//             })
-//             .addCase(selectEmpresasThunk.pending, (state) => {
-//                 state.loading = true
-//             })
-//             .addCase(selectEmpresasThunk.fulfilled, (state, action) => {
-//                 state.loading = false
-//                 state.selectEmpresas = action.payload
-//             })
-//             .addCase(selectEmpresasThunk.rejected, (state, action) => {
-//                 state.loading = false
-//                 state.error = action.payload
-//             })
-//             .addCase(detalleEmpresaThunk.pending, (state) => {
-//                 state.loading = true
-//             })
-//             .addCase(detalleEmpresaThunk.fulfilled, (state, action) => {
-//                 state.loading = false
-//                 state.detalleEmpresa = action.payload
-//             })
-//             .addCase(detalleEmpresaThunk.rejected, (state, action) => {
-//                 state.loading = false
-//                 state.error = action.payload
-//             })
-//     },
-// })
+      .addCase(fetchSubempresas.pending, (state) => {
+        state.loading = true;
+        state.error = undefined;
+      })
+      .addCase(fetchSubempresas.fulfilled, (state, { payload }) => {
+        state.loading = false;
+        state.listaSubempresas = payload;
+      })
+      .addCase(fetchSubempresas.rejected, (state, { payload }) => {
+        state.loading = false;
+        state.error = payload;
+      })
 
-// export const {} = empresaSlice.actions
+      .addCase(fetchEmpresaUsuarios.pending, (state) => {
+        state.loading = true;
+        state.error = undefined;
+      })
+      .addCase(fetchEmpresaUsuarios.fulfilled, (state, { payload }) => {
+        state.loading = false;
+        state.empresaUsuarios = payload;
+      })
+      .addCase(fetchEmpresaUsuarios.rejected, (state, { payload }) => {
+        state.loading = false;
+        state.error = payload;
+      })
 
-// export default empresaSlice.reducer
+      .addCase(inviteUsuario.pending, (state) => {
+        state.inviteLoading = true;
+        state.inviteError = undefined;
+      })
+      .addCase(inviteUsuario.fulfilled, (state, { payload }) => {
+        state.inviteLoading = false;
+        state.inviteResponse = payload;
+      })
+      .addCase(inviteUsuario.rejected, (state, { payload }) => {
+        state.inviteLoading = false;
+        state.inviteError = payload;
+      });
+  },
+});
 
+export default empresaSlice.reducer;

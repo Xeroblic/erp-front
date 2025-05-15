@@ -3,6 +3,7 @@
 // Mantén los IDs estables: si cambias un `id`, recuerda actualizar los tests y los registros de permisos.
 
 import { AUTH } from "@/constants/authority";
+import { sub } from "date-fns";
 
 // -----------------------------
 // Auth & Public Pages
@@ -63,7 +64,7 @@ export const privatePages = {
     to: '/dashboard',
     text: 'Dashboard',
     icon: 'HeroChartBarSquare',
-    authority: ['empresa:*', 'producto:*', 'usuario:*', 'cotizacion:*', 'venta:*', 'compra:*', 'proveedor:*', 'cliente:*', 'invitacion:*']
+    authority: ['empresa:*']
   },
   productos: {
     id: 'productos',
@@ -92,6 +93,51 @@ export const privatePages = {
     text: 'Empresa',
     icon: 'HeroBuildingStorefront',
     authority: ['empresa:*']
+  },
+  // aqui  se creara gestion dentro de esta ira empresa, sub empresa, sucursal dentro de la ruta de gestion anidada gestio/empresa y asi
+  gestion: {
+    id: 'gestion',
+    to: '/gestion',
+    text: 'Gestión',
+    icon: 'HeroBuildingStorefront',
+    authority: ['empresa:*', 'gestion_admin', 'super_admin'],
+    subPages: {
+      empresa: {
+        id: 'empresa',
+        to: '/gestion/empresa',
+        text: 'Empresa',
+        icon: 'HeroBuildingStorefront',
+        authority: ['empresa:*', 'gestion_admin', 'super_admin'],
+      },
+      subempresa: {
+        id: 'subempresa',
+        to: '/gestion/subempresa',
+        text: 'Subempresa',
+        icon: 'HeroBuildingStorefront',
+        authority: ['subempresa:*'],
+      },
+      sucursal: {
+        id: 'sucursal',
+        to: '/gestion/sucursal',
+        text: 'Sucursal',
+        icon: 'HeroBuildingStorefront',
+        authority: ['sucursal:*'],
+      },
+      rolesPermisos: {
+        id: 'rolesPermisos',
+        to: '/gestion/roles-permisos',
+        text: 'Roles y Permisos',
+        icon: 'HeroShieldCheck',
+        authority: ['rol:*'],
+      },
+      usuarios: {
+        id: 'usuarios',
+        to: '/gestion/usuarios',
+        text: 'Usuarios',
+        icon: 'HeroUsers',
+        authority: ['usuario:*'],
+      },
+    },
   },
 };
 

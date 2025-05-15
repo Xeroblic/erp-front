@@ -16,9 +16,9 @@ const SettingsPartial = () => {
   const { user } = useAppSelector((state) => state.auth);
   const personalizacion = user?.personalizacion;
 
-  const updatePersonalizacion = async (tema: string, size: number) => {
+  const updatePersonalizacion = async (tema: string, font_size: number) => {
     try {
-      await dispatch(actualizarPersonalizacionThunk({ tema, font_size: size })).unwrap();
+      await dispatch(actualizarPersonalizacionThunk({ tema, font_size })).unwrap();
     } catch (error: any) {
       toast.error(error || 'No se pudo actualizar la personalización');
     }
