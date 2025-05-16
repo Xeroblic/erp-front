@@ -3,7 +3,7 @@ export interface IUsuarioEmpresa {
   nombre: string;
   email: string;
   activado: boolean;
-  token_activacion?: string | null;
+  token_activacion: string | null;  // si puede ser null, pero siempre existe la propiedad
   created_at: string;
   updated_at: string;
 }
@@ -16,7 +16,7 @@ export interface ISucursal {
   descripcion?: string;
   created_at: string;
   updated_at: string;
-  usuarios?: IUsuarioEmpresa[];
+  usuarios: IUsuarioEmpresa[];      // ya no opcional, siempre un array (quizá vacío)
 }
 
 export interface ISubempresa {
@@ -27,7 +27,7 @@ export interface ISubempresa {
   empresa_id: number;
   created_at: string;
   updated_at: string;
-  sucursales?: ISucursal[];
+  sucursales: ISucursal[];         // idem
 }
 
 export interface IEmpresa {
@@ -37,5 +37,10 @@ export interface IEmpresa {
   descripcion?: string;
   created_at: string;
   updated_at: string;
-  subempresas?: ISubempresa[];
+  subempresas: ISubempresa[];      // idem
+  pivot ?: {
+    rol_id: number;
+    empresa_id: number;
+    usuario_id: number;
+  }
 }

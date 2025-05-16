@@ -31,7 +31,7 @@ export const fetchEmpresas = createAsyncThunk<IEmpresa[], void, { rejectValue: s
   'empresa/fetchEmpresas',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await ApiService.fetchData<IEmpresa[]>({ url: '/empresas', method: 'get' });
+      const response = await ApiService.fetchData<IEmpresa[]>({ url: '/empresas/${id}', method: 'get' });
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Error fetching empresas');
@@ -40,17 +40,37 @@ export const fetchEmpresas = createAsyncThunk<IEmpresa[], void, { rejectValue: s
 );
 
 // Obtener detalle de una empresa
-export const fetchEmpresaDetail = createAsyncThunk<IEmpresa, number, { rejectValue: string }>(
-  'empresa/fetchEmpresaDetail',
-  async (empresaId, { rejectWithValue }) => {
+export const fetchEmpresaPrincipal = createAsyncThunk<IEmpresa, void, { rejectValue: string }>(
+  'empresa/fetchEmpresaPrincipal',
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await ApiService.fetchData<IEmpresa>({ url: `/empresas/${empresaId}`, method: 'get' });
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Error fetching empresa detail');
+      const { data } = await ApiService.fetchData<IEmpresa>({
+        url: '/empresa',
+        method: 'get'
+      });
+      return data;
+    } catch (e: any) {
+      return rejectWithValue(e.response?.data?.message ?? 'Error al cargar empresa');
     }
   }
 );
+
+
+export const fetchEmpresaDetail = createAsyncThunk<IEmpresa, number>(
+  'empresa/fetchEmpresaDetail',
+  async (empresaId, { rejectWithValue }) => {
+    try {
+      const response = await ApiService.fetchData<IEmpresa>({
+        url: `/empresas/${empresaId}`,
+        method: 'get'
+      });
+      return response.data;
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || 'Error al cargar la empresa');
+    }
+  }
+);
+
 
 // Obtener subempresas de una empresa
 export const fetchSubempresas = createAsyncThunk<IEmpresa['subempresas'], number, { rejectValue: string }>(
@@ -115,7 +135,7 @@ const empresaSlice = createSlice({
       })
       .addCase(fetchEmpresas.rejected, (state, { payload }) => {
         state.loading = false;
-        state.error = payload;
+        state.error = payload as string;
       })
 
       .addCase(fetchEmpresaDetail.pending, (state) => {
@@ -128,7 +148,19 @@ const empresaSlice = createSlice({
       })
       .addCase(fetchEmpresaDetail.rejected, (state, { payload }) => {
         state.loading = false;
-        state.error = payload;
+        state.error = payload as string;
+      })
+      .addCase(fetchEmpresaPrincipal.pending, (state) => {
+        state.loading = true;
+        state.error = undefined;
+      })
+      .addCase(fetchEmpresaPrincipal.fulfilled, (state, { payload }) => {
+        state.loading = false;
+        state.detalleEmpresa = payload;
+      })
+      .addCase(fetchEmpresaPrincipal.rejected, (state, { payload }) => {
+        state.loading = false;
+        state.error = payload as string;
       })
 
       .addCase(fetchSubempresas.pending, (state) => {
