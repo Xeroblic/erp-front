@@ -11,11 +11,11 @@ import AceptarInvitacion   from "@/pages/InvitacionEmpresa/AceptarInvitacionEmpr
 
 const ProfilePage  = lazy(() => import("@/pages/Perfil"));
 const Dashboard    = lazy(() => import("@/pages/Dashboard"));
-const Empresa      = lazy(() => import("@/pages/empresa/empresa/Empresa"));
-const RolesPermisos= lazy(() => import("@/pages/empresa/roles y permisos/RolesPermisos"));
-const SubEmpresa   = lazy(() => import("@/pages/empresa/subempresa/SubEmpresa"));
-const Sucursales   = lazy(() => import("@/pages/empresa/sucursales/Sucursales"));
-const Usuarios     = lazy(() => import("@/pages/empresa/usuarios/Usuarios"));
+const Empresa      = lazy(() => import("@/pages/gestionAdmin/empresa/Empresa"));
+const RolesPermisos= lazy(() => import("@/pages/gestionAdmin/roles y permisos/RolesPermisos"));
+const SubEmpresa   = lazy(() => import("@/pages/gestionAdmin/subempresa/SubEmpresa"));
+const Sucursales   = lazy(() => import("@/pages/gestionAdmin/sucursales/Sucursales"));
+const Usuarios     = lazy(() => import("@/pages/gestionAdmin/usuarios/Usuarios"));
 
 // const Productos    = lazy(() => import("@/pages/Productos"));
 // const Usuarios     = lazy(() => import("@/pages/Usuarios"));
@@ -26,12 +26,12 @@ export type IRoutePersonalizada = PathRouteProps & { authority: string[] };
 const contentRoutes: IRoutePersonalizada[] = [
   // públicas / auth
   { path: authPages.loginPage.to,               element: <LoginPage />,          authority: [] },
-  { path: authPages.profilePage.to,             element: <ProfilePage />,        authority: [] },
   { path: authPages.aceptarInvitacionEmpresa.to,element: <AceptarInvitacion />,  authority: [] },
   { path: authPages.recuperarPassword.to,       element: <RecuperarPassword />,  authority: [] },
   { path: authPages.confirmarNuevaPass.to,      element: <ConfirmarNuevaPass />, authority: [] },
-
+  
   // privadas
+  { path: privatePages.profilePage.to,             element: <ProfilePage />,        authority: [] },
   { path: privatePages.dashboard.to,    element: <Dashboard />,    authority: privatePages.dashboard.authority },
   { path: privatePages.gestion.subPages.empresa.to,    element: <Empresa />,   authority: privatePages.gestion.subPages.empresa.authority },
   { path: privatePages.gestion.subPages.subempresa.to, element: <SubEmpresa />,authority: privatePages.gestion.subPages.subempresa.authority },

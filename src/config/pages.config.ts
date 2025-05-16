@@ -66,6 +66,13 @@ export const privatePages = {
     icon: 'HeroChartBarSquare',
     authority: ['empresa:*']
   },
+  profilePage: {
+		id: 'profilePage',
+		to: '/profile',
+		text: 'Perfil',
+		icon: 'HeroUser',
+		autority: [],
+	},
   productos: {
     id: 'productos',
     to: '/productos',
@@ -114,28 +121,29 @@ export const privatePages = {
         to: '/gestion/subempresa',
         text: 'Subempresa',
         icon: 'HeroBuildingStorefront',
-        authority: ['subempresa:*'],
+        authority: ['subempresa:*' ,'gestion_admin', 'super_admin'],
       },
       sucursal: {
         id: 'sucursal',
         to: '/gestion/sucursal',
         text: 'Sucursal',
         icon: 'HeroBuildingStorefront',
-        authority: ['sucursal:*'],
+        authority: ['sucursal:*', 'gestion_admin', 'super_admin'],
       },
       rolesPermisos: {
         id: 'rolesPermisos',
         to: '/gestion/roles-permisos',
-        text: 'Roles y Permisos',
+        text: 'Listas de usuarios',
         icon: 'HeroShieldCheck',
-        authority: ['rol:*'],
+        authority: ['rol:*', 'gestion_admin', 'super_admin'],
       },
+
       usuarios: {
         id: 'usuarios',
         to: '/gestion/usuarios',
         text: 'Usuarios',
         icon: 'HeroUsers',
-        authority: ['usuario:*'],
+        authority: ['usuario:*','gestion_admin', 'super_admin'],
       },
     },
   },

@@ -8,12 +8,14 @@ import calendario, { CalendarioState } from './slices/calendario/calendarioSlice
 import item, { ItemState } from './slices/item/itemSlice'
 // import bodega, { BodegaState } from './slices/bodega/bodegaSlice'
 import cliente, { ClienteState } from './slices/clientes/clienteSlice'
+import rolesPermisos, { RolesPermisosState } from './slices/rolesPermisos/rolesPermisosSlice';
 
 export type RootState = CombinedState<{
     auth: AuthState
     core: CoreState
     invitacion: InvitacionState
     empresa: EmpresaState
+    rolesPermisos: RolesPermisosState;
     // calendario: CalendarioState
     // item: ItemState
     // bodega: BodegaState
@@ -31,6 +33,8 @@ const staticReducers = {
     core,
     empresa,
     cliente,
+    invitacion,
+    rolesPermisos,
     [RtkQueryService.reducerPath]: RtkQueryService.reducer,
 }
 

@@ -26,6 +26,7 @@ const DefaultAsideTemplate = () => {
   const userAuthority = useAppSelector(selectUserAuthority);
   const canView = (auth: string[]) => useAuthority(userAuthority, auth, true);
 
+  // const gestiona = gestion.subPages; // Removed because "gestion" is not defined
   return (
     <Aside>
       <AsideHeadPart />
@@ -38,22 +39,27 @@ const DefaultAsideTemplate = () => {
 
           {/* Gestión Admin */}
           <NavCollapse text="Gestion Admin" icon="HeroDocumentText" to="">
-            <AuthorityCheckNav authority={Pages.gestion.subPages.empresa.authority} userAuthority={userAuthority}>
-              <NavItem {...Pages.gestion.subPages.empresa} />
-            </AuthorityCheckNav>
-            <AuthorityCheckNav authority={Pages.gestion.subPages.subempresa.authority} userAuthority={userAuthority}>
-              <NavItem {...Pages.gestion.subPages.subempresa} />
-            </AuthorityCheckNav>
-            <AuthorityCheckNav authority={Pages.gestion.subPages.sucursal.authority} userAuthority={userAuthority}>
-              <NavItem {...Pages.gestion.subPages.sucursal} />
-            </AuthorityCheckNav>
-            <NavSeparator />
-            <AuthorityCheckNav authority={Pages.gestion.subPages.rolesPermisos.authority} userAuthority={userAuthority}>
-              <NavItem {...Pages.gestion.subPages.rolesPermisos} />
-            </AuthorityCheckNav>
-            <AuthorityCheckNav authority={Pages.gestion.subPages.usuarios.authority} userAuthority={userAuthority}>
-              <NavItem {...Pages.gestion.subPages.usuarios} />
-            </AuthorityCheckNav>
+				<AuthorityCheckNav authority={Pages.gestion.subPages.empresa.authority} userAuthority={userAuthority}>
+					<NavItem {...Pages.gestion.subPages.empresa} />
+				</AuthorityCheckNav>
+				<AuthorityCheckNav authority={Pages.gestion.subPages.subempresa.authority} userAuthority={userAuthority}>
+					<NavItem {...Pages.gestion.subPages.subempresa} />
+				</AuthorityCheckNav>
+				<AuthorityCheckNav authority={Pages.gestion.subPages.sucursal.authority} userAuthority={userAuthority}>
+					<NavItem {...Pages.gestion.subPages.sucursal} />
+				</AuthorityCheckNav>
+			<NavSeparator />
+		
+				<NavCollapse text="Roles y permisos" icon="HeroDocumentText" to="">
+
+					<AuthorityCheckNav authority={Pages.gestion.subPages.rolesPermisos.authority} userAuthority={userAuthority}>
+						<NavItem {...Pages.gestion.subPages.rolesPermisos} />
+					</AuthorityCheckNav>
+				</NavCollapse>
+
+				<AuthorityCheckNav authority={Pages.gestion.subPages.usuarios.authority} userAuthority={userAuthority}>
+					<NavItem {...Pages.gestion.subPages.usuarios} />
+				</AuthorityCheckNav>
           </NavCollapse>
 					
 

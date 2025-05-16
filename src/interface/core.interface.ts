@@ -1,16 +1,29 @@
 export interface IRegion {
-    region_id: number
-    region_nombre: string
+  codigo: string;
+  tipo: 'region';
+  nombre: string;
+  lat: number;
+  lng: number;
+  url: string;
+  codigo_padre: string;
 }
 
 export interface IProvincia {
-    provincia_id: number
-    provincia_nombre: string
-    provincia_region: number
+  codigo: string;
+  tipo: 'provincia';
+  nombre: string;
+  lat: number;
+  lng: number;
+  url: string;
+  codigo_padre: string; 
 }
 
 export interface IComuna {
-    comuna_id: number
-    comuna_nombre: string
-    comuna_provincia: number
+  codigo: string;
+  tipo: 'comuna';
+  nombre: string;
+  lat: number;
+  lng: number;
+  url: string;
+  codigo_padre: string; 
 }
