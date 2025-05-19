@@ -23,7 +23,7 @@ export const listaRegionesThunk = createAsyncThunk<IRegion[], undefined, { rejec
     'core/listaRegionesThunk',
     async (_, { rejectWithValue }) => {
         try {
-            const response = await ApiService.fetchData<IRegion[], string>({ url: '1/regiones/', method: 'get' })
+            const response = await ApiService.fetchData<IRegion[]>({ url: '1/regiones/', method: 'get' })
             return response.data
         } catch (error: any) {
             return rejectWithValue(error)
@@ -35,7 +35,7 @@ export const listaProvinciasThunk = createAsyncThunk<IProvincia[], undefined, { 
     'core/listaProvinciasThunk',
     async (_, { rejectWithValue }) => {
         try {
-            const response = await ApiService.fetchData<IProvincia[], string>({ url: '1/provincias/', method: 'get' })
+                const response = await ApiService.fetchData<IProvincia[]>({ url: '1/provincias/', method: 'get' })
             return response.data
         } catch (error: any) {
             return rejectWithValue(error)
@@ -47,7 +47,7 @@ export const listaComunasThunk = createAsyncThunk<IComuna[], undefined, { reject
     'core/listaComunasThunk',
     async (_, { rejectWithValue }) => {
         try {
-            const response = await ApiService.fetchData<IComuna[], string>({ url: '1/comunas/', method: 'get' })
+            const response = await ApiService.fetchData<IComuna[]>({ url: '1/comunas/', method: 'get' })
             return response.data
         } catch (error: any) {
             return rejectWithValue(error)
