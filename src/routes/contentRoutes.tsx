@@ -1,52 +1,108 @@
-import { lazy } from "react";
-import { PathRouteProps } from "react-router-dom";   // 👈 cambia RouteProps → PathRouteProps
-import { authPages, privatePages } from "../config/pages.config";
+// src/routes/contentRoutes.tsx
+import React, { lazy } from "react";
+import { PathRouteProps } from "react-router-dom";
+import pagesConfig from "@/config/pages.config";
 
-import NotFoundPage        from "@/pages/NotFound.page";
-import SinPermisos         from "@/pages/SinPermisos";
 import LoginPage           from "@/pages/Login.page";
 import RecuperarPassword   from "@/pages/ResetPassword/RecuperarPassword";
 import ConfirmarNuevaPass  from "@/pages/ResetPassword/ConfirmarNuevaPass";
 import AceptarInvitacion   from "@/pages/InvitacionEmpresa/AceptarInvitacionEmpresa";
+import SinPermisos         from "@/pages/SinPermisos";
+import NotFoundPage        from "@/pages/NotFound.page";
 
-const ProfilePage  = lazy(() => import("@/pages/Perfil"));
-const Dashboard    = lazy(() => import("@/pages/Dashboard"));
-const Empresa      = lazy(() => import("@/pages/gestionAdmin/empresa/Empresa"));
-const RolesPermisos= lazy(() => import("@/pages/gestionAdmin/roles y permisos/RolesPermisos"));
-const SubEmpresa   = lazy(() => import("@/pages/gestionAdmin/subempresa/SubEmpresa"));
-const Sucursales   = lazy(() => import("@/pages/gestionAdmin/sucursales/Sucursales"));
-const Usuarios     = lazy(() => import("@/pages/gestionAdmin/usuarios/Usuarios"));
+const ProfilePage   = lazy(() => import("@/pages/Perfil"));
+const Dashboard     = lazy(() => import("@/pages/Dashboard"));
+// const ProductosPage = lazy(() => import("@/pages/Productos"));
+// const UsuariosPage  = lazy(() => import("@/pages/Usuarios"));
+// const Cotizaciones  = lazy(() => import("@/pages/Cotizaciones"));
+// const EmpresaPage   = lazy(() => import("@/pages/Gestion/Empresa.page"));
+// const SubEmpresa    = lazy(() => import("@/pages/Gestion/SubEmpresa.page"));
+// const Sucursales    = lazy(() => import("@/pages/Gestion/Sucursales.page"));
+// const RolesPermisos = lazy(() => import("@/pages/Gestion/RolesPermisos.page"));
+// const GestionUsuarios  = lazy(() => import("@/pages/Gestion/Usuarios.page"));
 
-// const Productos    = lazy(() => import("@/pages/Productos"));
-// const Usuarios     = lazy(() => import("@/pages/Usuarios"));
-// const Invitaciones = lazy(() => import("@/pages/Invitaciones"));
+export interface IRoutePersonalizada extends PathRouteProps {
+  authority?: string[];
+  feature?  : string;
+  public?   : boolean;
+}
 
-export type IRoutePersonalizada = PathRouteProps & { authority: string[] };
+const cfg = pagesConfig as Record<string, any>;
 
 const contentRoutes: IRoutePersonalizada[] = [
-  // públicas / auth
-  { path: authPages.loginPage.to,               element: <LoginPage />,          authority: [] },
-  { path: authPages.aceptarInvitacionEmpresa.to,element: <AceptarInvitacion />,  authority: [] },
-  { path: authPages.recuperarPassword.to,       element: <RecuperarPassword />,  authority: [] },
-  { path: authPages.confirmarNuevaPass.to,      element: <ConfirmarNuevaPass />, authority: [] },
-  
-  // privadas
-  { path: privatePages.profilePage.to,             element: <ProfilePage />,        authority: [] },
-  { path: privatePages.dashboard.to,    element: <Dashboard />,    authority: privatePages.dashboard.authority },
-  { path: privatePages.gestion.subPages.empresa.to,    element: <Empresa />,   authority: privatePages.gestion.subPages.empresa.authority },
-  { path: privatePages.gestion.subPages.subempresa.to, element: <SubEmpresa />,authority: privatePages.gestion.subPages.subempresa.authority },
-  { path: privatePages.gestion.subPages.sucursal.to, element: <Sucursales />,authority: privatePages.gestion.subPages.sucursal.authority },
-  { path: privatePages.gestion.subPages.rolesPermisos.to, element: <RolesPermisos />,authority: privatePages.gestion.subPages.rolesPermisos.authority },
-  { path: privatePages.gestion.subPages.usuarios.to, element: <Usuarios />,authority: privatePages.gestion.subPages.usuarios.authority },
+  // públicas
+  { path: cfg.loginPage.to,               element: <LoginPage />,          public: true },
+  { path: cfg.recuperarPassword.to,       element: <RecuperarPassword />,  public: true },
+  { path: cfg.confirmarNuevaPass.to,      element: <ConfirmarNuevaPass />, public: true },
+  { path: cfg.aceptarInvitacionEmpresa.to,element: <AceptarInvitacion />,   public: true },
 
-//   { path: privatePages.productos.to,    element: <Productos />,    authority: privatePages.productos.authority },
-//   { path: privatePages.usuarios.to,     element: <Usuarios />,     authority: privatePages.usuarios.authority },
-//   { path: privatePages.invitaciones.to, element: <Invitaciones />, authority: privatePages.invitaciones.authority },
+  // privadas
+  {
+    path: cfg.profilePage.to,
+    element: <ProfilePage />,
+    authority: cfg.profilePage.authority,
+  },
+  {
+    path: cfg.dashboard.to,
+    element: <Dashboard />,
+    authority: cfg.dashboard.authority,
+    feature:   cfg.dashboard.feature,
+  },
+  // {
+  //   path: cfg.productos.to,
+  //   element: <ProductosPage />,
+  //   authority: cfg.productos.authority,
+  //   feature:   cfg.productos.feature,
+  // },
+  // {
+  //   path: cfg.usuarios.to,
+  //   element: <UsuariosPage />,
+  //   authority: cfg.usuarios.authority,
+  //   feature:   cfg.usuarios.feature,
+  // },
+  // {
+  //   path: cfg.cotizaciones.to,
+  //   element: <Cotizaciones />,
+  //   authority: cfg.cotizaciones.authority,
+  //   feature:   cfg.cotizaciones.feature,
+  // },
+
+  // gestión anidada
+  // {
+  //   path: cfg.gestion.subPages.empresa.to,
+  //   element: <EmpresaPage />,
+  //   authority: cfg.gestion.subPages.empresa.authority,
+  //   feature:   cfg.gestion.subPages.empresa.feature,
+  // },
+  // {
+  //   path: cfg.gestion.subPages.subempresa.to,
+  //   element: <SubEmpresa />,
+  //   authority: cfg.gestion.subPages.subempresa.authority,
+  //   feature:   cfg.gestion.subPages.subempresa.feature,
+  // },
+  // {
+  //   path: cfg.gestion.subPages.sucursal.to,
+  //   element: <Sucursales />,
+  //   authority: cfg.gestion.subPages.sucursal.authority,
+  //   feature:   cfg.gestion.subPages.sucursal.feature,
+  // },
+  // {
+  //   path: cfg.gestion.subPages.rolesPermisos.to,
+  //   element: <RolesPermisos />,
+  //   authority: cfg.gestion.subPages.rolesPermisos.authority,
+  //   feature:   cfg.gestion.subPages.rolesPermisos.feature,
+  // },
+  // {
+  //   path: cfg.gestion.subPages.usuarios.to,
+  //   element: <GestionUsuarios />,
+  //   authority: cfg.gestion.subPages.usuarios.authority,
+  //   feature:   cfg.gestion.subPages.usuarios.feature,
+  // },
 
   // genéricos
-  { path: "/sin-permisos", element: <SinPermisos />, authority: [] },
-  { path: "/",             element: <Dashboard />,   authority: privatePages.dashboard.authority },
-  { path: "*",             element: <NotFoundPage />,authority: [] },
+  { path: "/sin-permisos", element: <SinPermisos />, public: true },
+  { path: "/",             element: <Dashboard />,    authority: cfg.dashboard.authority, feature: cfg.dashboard.feature },
+  { path: "*",             element: <NotFoundPage />, public: true },
 ];
 
 export default contentRoutes;

@@ -1,67 +1,58 @@
-import React, { PropsWithChildren } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Aside, { AsideBody } from '../../../components/layouts/Aside/Aside';
-import Nav, { NavButton, NavCollapse, NavItem, NavSeparator, NavTitle, NavUser } from '../../../components/layouts/Navigation/Nav';
-import Badge from '../../../components/ui/Badge';
-import AsideHeadPart from './_parts/AsideHead.part';
-import AsideFooterPart from './_parts/AsideFooter.part';
-import { Pages } from '@/config/pages.config';
-import useAuthority from '@/hooks/useAuthority';
-import { useAppSelector } from '@/store';
-import { selectUserAuthority } from '@/store/slices/auth/authSlice';
+// src/components/layouts/Aside/DefaultAsideTemplate.tsx
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import Aside, { AsideBody } from "@/components/layouts/Aside/Aside";
+import Nav, { NavItem, NavCollapse, NavSeparator } from '../../../components/layouts/Navigation/Nav';
+import pagesConfig from "@/config/pages.config";
+import { useAppSelector } from "@/store";
+import { selectUserAuthority } from "@/store/slices/auth/authSlice";
+import { selectFeaturesList }  from "@/store/slices/featuresSlice/featuresSlice";
+import AsideHeadPart from "./_parts/AsideHead.part";
+import AsideFooterPart from "./_parts/AsideFooter.part";
 
-type AuthorityGuardProps = PropsWithChildren<{
-  userAuthority?: string[];
-  authority?: string[];
-}>;
+// Componente guard que chequea permiso + feature
+interface GuardProps { authority?: string[]; feature?: string; }
+const AuthorityFeatureGuard: React.FC<GuardProps & { children: React.ReactNode }> = ({
+  authority = [], feature, children
+}) => {
+  const userPerms = useAppSelector(selectUserAuthority);
+  const userFeats = useAppSelector(selectFeaturesList);
 
-const AuthorityCheckNav = ({ userAuthority = [], authority = [], children }: AuthorityGuardProps) => {
-  if (!authority || authority.length === 0) return <>{children}</>;
-  const roleMatched = useAuthority(userAuthority, authority, true);
-  return <>{roleMatched ? children : null}</>;
+  const okPerm = authority.length === 0 || authority.some(p => userPerms.includes(p));
+  const okFeat = !feature || userFeats.includes(feature);
+
+  return okPerm && okFeat ? <>{children}</> : null;
 };
 
-const DefaultAsideTemplate = () => {
+function DefaultAsideTemplate() {
   const navigate = useNavigate();
-  const userAuthority = useAppSelector(selectUserAuthority);
-  const canView = (auth: string[]) => useAuthority(userAuthority, auth, true);
+  const cfg = pagesConfig as any;
 
-  // const gestiona = gestion.subPages; // Removed because "gestion" is not defined
   return (
     <Aside>
       <AsideHeadPart />
       <AsideBody>
         <Nav>
-          {/* Dashboard */}
-          <AuthorityCheckNav authority={Pages.dashboard.authority} userAuthority={userAuthority}>
-            <NavItem {...Pages.dashboard} />
-          </AuthorityCheckNav>
+		{/* Dashboard */}
+		<AuthorityFeatureGuard
+		  authority={cfg.dashboard.authority}
+		  feature={cfg.dashboard.feature}
+		>
+		  <NavItem {...cfg.dashboard} onClick={() => navigate(cfg.dashboard.to)} />
+		</AuthorityFeatureGuard>
 
-          {/* Gestión Admin */}
-          <NavCollapse text="Gestion Admin" icon="HeroDocumentText" to="">
-				<AuthorityCheckNav authority={Pages.gestion.subPages.empresa.authority} userAuthority={userAuthority}>
-					<NavItem {...Pages.gestion.subPages.empresa} />
-				</AuthorityCheckNav>
-				<AuthorityCheckNav authority={Pages.gestion.subPages.subempresa.authority} userAuthority={userAuthority}>
-					<NavItem {...Pages.gestion.subPages.subempresa} />
-				</AuthorityCheckNav>
-				<AuthorityCheckNav authority={Pages.gestion.subPages.sucursal.authority} userAuthority={userAuthority}>
-					<NavItem {...Pages.gestion.subPages.sucursal} />
-				</AuthorityCheckNav>
-			<NavSeparator />
-		
-				<NavCollapse text="Roles y permisos" icon="HeroDocumentText" to="">
-
-					<AuthorityCheckNav authority={Pages.gestion.subPages.rolesPermisos.authority} userAuthority={userAuthority}>
-						<NavItem {...Pages.gestion.subPages.rolesPermisos} />
-					</AuthorityCheckNav>
-				</NavCollapse>
-
-				<AuthorityCheckNav authority={Pages.gestion.subPages.usuarios.authority} userAuthority={userAuthority}>
-					<NavItem {...Pages.gestion.subPages.usuarios} />
-				</AuthorityCheckNav>
-          </NavCollapse>
-					
+        {/* Gestión */}
+		<NavCollapse text="Gestión" icon={cfg.gestion.icon} to="">
+		  {Object.values(cfg.gestion.subPages).map((pg: any) => (
+			<AuthorityFeatureGuard
+			  key={pg.id}
+			  authority={pg.authority}
+			  feature={pg.feature}
+			>
+			  <NavItem {...pg} onClick={() => navigate(pg.to)} />
+			</AuthorityFeatureGuard>
+		  ))}
+		</NavCollapse>
 
 
 

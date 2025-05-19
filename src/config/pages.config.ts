@@ -1,23 +1,17 @@
-// routes.ts
-// Centraliza las rutas que el Sidebar, el sistema de permisos y React‑Router utilizarán.
-// Mantén los IDs estables: si cambias un `id`, recuerda actualizar los tests y los registros de permisos.
-
-import { AUTH } from "@/constants/authority";
-import { sub } from "date-fns";
-
-// -----------------------------
-// Auth & Public Pages
-// -----------------------------
-
+// src/config/pages.config.ts
 export interface PageConfig {
   id: string;
   to: string;
   text: string;
   icon: string;
-  authority: string[];  // claves idénticas a las de tu DB
+  authority: string[];   // permisos que exige
+  feature?: string;      // clave de feature que exige (si aplica)
 }
 
-export const authPages = {
+// -----------------------------
+// Auth & Public Pages
+// -----------------------------
+export const authPages: Record<string, PageConfig> = {
   loginPage: {
     id: "loginPage",
     to: "/login",
@@ -34,7 +28,7 @@ export const authPages = {
   },
   aceptarInvitacionEmpresa: {
     id: "aceptarInvitacionEmpresa",
-    to: "/invitar/aceptar/:token", 
+    to: "/invitar/aceptar/:token",
     text: "Aceptar invitación",
     icon: "HeroMailOpen",
     authority: [],
@@ -56,109 +50,96 @@ export const authPages = {
 };
 
 // -----------------------------
-// Private (post‑login) Pages
+// Private (post-login) Pages
 // -----------------------------
-export const privatePages = {
- dashboard: {
+export const privatePages: Record<string, PageConfig | { subPages: Record<string, PageConfig> }> = {
+  dashboard: {
     id: 'dashboard',
     to: '/dashboard',
     text: 'Dashboard',
     icon: 'HeroChartBarSquare',
-    authority: ['empresa:*']
+    authority: ['empresa:*'],
+    feature:   'dashboard',
   },
-  profilePage: {
-		id: 'profilePage',
-		to: '/profile',
-		text: 'Perfil',
-		icon: 'HeroUser',
-		autority: [],
-	},
   productos: {
     id: 'productos',
     to: '/productos',
     text: 'Productos',
     icon: 'HeroArchiveBox',
-    authority: ['producto:*']
+    authority: ['producto:*'],
+    feature:   'productos',
   },
   usuarios: {
     id: 'usuarios',
     to: '/usuarios',
     text: 'Usuarios',
     icon: 'HeroUsers',
-    authority: ['usuario:*']
+    authority: ['usuario:*'],
+    feature:   'usuarios',
   },
   cotizaciones: {
     id: 'cotizaciones',
     to: '/cotizaciones',
     text: 'Cotizaciones',
     icon: 'HeroDocumentText',
-    authority: ['cotizacion:*']
+    authority: ['cotizacion:*'],
+    feature:   'cotizaciones',
   },
-  empresa: {
-    id: 'empresa',
-    to: '/empresa',
-    text: 'Empresa',
-    icon: 'HeroBuildingStorefront',
-    authority: ['empresa:*']
-  },
-  // aqui  se creara gestion dentro de esta ira empresa, sub empresa, sucursal dentro de la ruta de gestion anidada gestio/empresa y asi
   gestion: {
     id: 'gestion',
     to: '/gestion',
     text: 'Gestión',
     icon: 'HeroBuildingStorefront',
-    authority: ['empresa:*', 'gestion_admin', 'super_admin'],
+    authority: ['gestion_admin', 'super_admin'],
+    // no feature base, lo definen subPages
     subPages: {
       empresa: {
         id: 'empresa',
         to: '/gestion/empresa',
         text: 'Empresa',
         icon: 'HeroBuildingStorefront',
-        authority: ['empresa:*', 'gestion_admin', 'super_admin'],
+        authority: ['empresa:*','gestion_admin','super_admin'],
+        feature:   'gestion-empresa',
       },
       subempresa: {
         id: 'subempresa',
         to: '/gestion/subempresa',
         text: 'Subempresa',
         icon: 'HeroBuildingStorefront',
-        authority: ['subempresa:*' ,'gestion_admin', 'super_admin'],
+        authority: ['subempresa:*','gestion_admin','super_admin'],
+        feature:   'gestion-subempresa',
       },
       sucursal: {
         id: 'sucursal',
         to: '/gestion/sucursal',
         text: 'Sucursal',
         icon: 'HeroBuildingStorefront',
-        authority: ['sucursal:*', 'gestion_admin', 'super_admin'],
+        authority: ['sucursal:*','gestion_admin','super_admin'],
+        feature:   'gestion-sucursal',
       },
       rolesPermisos: {
         id: 'rolesPermisos',
         to: '/gestion/roles-permisos',
-        text: 'Listas de usuarios',
+        text: 'Roles y permisos',
         icon: 'HeroShieldCheck',
-        authority: ['rol:*', 'gestion_admin', 'super_admin'],
+        authority: ['rol:*','gestion_admin','super_admin'],
+        feature:   'gestion-roles',
       },
-
       usuarios: {
-        id: 'usuarios',
+        id: 'usuariosGestion',
         to: '/gestion/usuarios',
         text: 'Usuarios',
         icon: 'HeroUsers',
-        authority: ['usuario:*','gestion_admin', 'super_admin'],
+        authority: ['usuario:*','gestion_admin','super_admin'],
+        feature:   'gestion-usuarios',
       },
     },
   },
 };
 
-// -----------------------------
-// Export combinado
-// -----------------------------
 export const pagesConfig = {
   ...authPages,
   ...privatePages,
 };
 
-// opcional, si lo necesitas también como named export:
-export const Pages = pagesConfig;
-
-// default export para importarlo sin llaves
 export default pagesConfig;

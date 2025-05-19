@@ -1,5 +1,5 @@
 import { combineReducers, CombinedState, AnyAction, Reducer } from 'redux'
-import RtkQueryService from '@/services/RtkQueryService'
+import  { featuresApi } from '@/services/RtkQueryService'
 import auth, { AuthState, logout } from './slices/auth/authSlice'   
 import core, { CoreState } from './slices/core/coreSlice'
 import invitacion, { InvitacionState } from './slices/invitacion/invitacionSlice'
@@ -9,6 +9,7 @@ import item, { ItemState } from './slices/item/itemSlice'
 // import bodega, { BodegaState } from './slices/bodega/bodegaSlice'
 import cliente, { ClienteState } from './slices/clientes/clienteSlice'
 import rolesPermisos, { RolesPermisosState } from './slices/rolesPermisos/rolesPermisosSlice';
+import features, {FeaturesState} from './slices/featuresSlice/featuresSlice'
 
 export type RootState = CombinedState<{
     auth: AuthState
@@ -16,12 +17,13 @@ export type RootState = CombinedState<{
     invitacion: InvitacionState
     empresa: EmpresaState
     rolesPermisos: RolesPermisosState;
+    features: FeaturesState;
     // calendario: CalendarioState
     // item: ItemState
     // bodega: BodegaState
     cliente: ClienteState
     /* eslint-disable @typescript-eslint/no-explicit-any */
-    [RtkQueryService.reducerPath]: any
+    [featuresApi.reducerPath]: any
 }>
 
 export interface AsyncReducers {
@@ -35,7 +37,8 @@ const staticReducers = {
     cliente,
     invitacion,
     rolesPermisos,
-    [RtkQueryService.reducerPath]: RtkQueryService.reducer,
+    features,
+    [featuresApi.reducerPath]: featuresApi.reducer,
 }
 
 const rootReducer =

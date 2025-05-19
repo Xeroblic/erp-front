@@ -1,40 +1,26 @@
-import { createApi } from '@reduxjs/toolkit/query/react'
-import BaseService from './BaseService'
-import type { BaseQueryFn } from '@reduxjs/toolkit/query'
-import type { AxiosRequestConfig, AxiosError } from 'axios'
+// src/services/RtkQueryService.ts
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-const axiosBaseQuery =
-    (): BaseQueryFn<
-        {
-            url: string
-            method: AxiosRequestConfig['method']
-            data?: AxiosRequestConfig['data']
-            params?: AxiosRequestConfig['params']
-        },
-        unknown,
-        unknown
-    > =>
-    async (request) => {
-        try {
-            const {data} = await BaseService(request)
-            return {data}
-        } catch (axiosError) {
-            const err = axiosError as AxiosError
-            return {
-                error: {
-                    status: err.response?.status,
-                    data: err.response?.data || err.message,
-                },
-            }
-        }
-    }
+export const featuresApi = createApi({
+  reducerPath: "featuresApi",
+  baseQuery: fetchBaseQuery({
+    baseUrl: import.meta.env.VITE_API_URL,
+    prepareHeaders: (headers, { getState }) => {
+      const token = (getState() as any).auth.access;
+      if (token) headers.set("Authorization", `Bearer ${token}`);
+      return headers;
+    },
+  }),
+  endpoints: (build) => ({
+    getFeatures: build.query<string[], void>({
+      // en vez de "/features" usamos "/perfil"
+      query: () => "/perfil",
+      // extraemos solo el campo `features`
+      transformResponse: (response: { features: string[] }) => {
+        return response.features ?? [];
+      },
+    }),
+  }),
+});
 
-
-
-const RtkQueryService = createApi({
-    reducerPath: 'rtkApi',
-    baseQuery: axiosBaseQuery(),
-    endpoints: () => ({}),
-})
-
-export default RtkQueryService
+export const { useGetFeaturesQuery } = featuresApi;
