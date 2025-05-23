@@ -29,7 +29,8 @@ const App: React.FC = () => {
 
 //   if (!isAuth) {
 //     return <Navigate to="/login" replace />;
-//   }
+//   }	
+
 	return (
 		<>
 			<ToastContainer theme={isDarkTheme ? 'dark' : 'light'} draggable></ToastContainer>

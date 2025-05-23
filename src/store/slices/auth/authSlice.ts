@@ -50,7 +50,7 @@ export const loginThunk = createAsyncThunk<
   }
 );
 
-// 2) userMeThunk trae perfil + permisos
+
 export const userMeThunk = createAsyncThunk<
   { user: IUserMe; permisos: string[] },
   void,
