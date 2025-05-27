@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { featuresApi } from "@/services/RtkQueryService";
+import { RootState } from "@/store/rootReducer";
 
 export enum FeatureStatus {
   Idle = "idle",
@@ -17,7 +18,7 @@ export interface Feature {
 
 export interface FeaturesState {
   status: FeatureStatus;
-  list: string[];  // claves o nombres de features
+  list: string[];      // array de claves
   error?: string;
 }
 
@@ -60,9 +61,7 @@ const featuresSlice = createSlice({
   },
 });
 
-export const selectFeaturesStatus = (state: any) =>
-  state.features.status as FeatureStatus;
-export const selectFeaturesList = (state: any) =>
-  state.features.list as string[];
+export const selectFeaturesStatus = (state: any) => state.features.status as FeatureStatus;
+export const selectFeaturesList = (state: RootState) => state.features.list;
 
 export default featuresSlice.reducer;

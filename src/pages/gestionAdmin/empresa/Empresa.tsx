@@ -3,7 +3,7 @@ import React, { useEffect } from 'react'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
 import { useAppDispatch, useAppSelector } from '@/store'
-import { fetchEmpresaPrincipal } from '@/store/slices/empresa/empresaSlice'
+import { fetchEmpresaPrincipal, patchEmpresaPrincipal } from '@/store/slices/empresa/empresaSlice'
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper'
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader'
 import Container from '@/components/layouts/Container/Container'
@@ -12,155 +12,214 @@ import Label from '@/components/form/Label'
 import Input from '@/components/form/Input'
 import Button from '@/components/ui/Button'
 import { IEmpresa } from '@/interface/empresas.interface'
+import { toast } from 'react-toastify'
+import { unwrapResult } from '@reduxjs/toolkit'
 
 export default function EmpresaDetalle() {
-  const dispatch = useAppDispatch()
-  const { detalleEmpresa: empresa, loading, error } = useAppSelector(s => s.empresa)
+	const dispatch = useAppDispatch()
+	const { detalleEmpresa: empresa, loading, error } = useAppSelector(s => s.empresa)
 
-  // 1) Carga al montar
-  useEffect(() => {
-    dispatch(fetchEmpresaPrincipal())
-  }, [dispatch])
+	// 1) Carga al montar
+	useEffect(() => {
+		dispatch(fetchEmpresaPrincipal(1));
+	}, [dispatch]);
 
-  // 2) Formik
-  const formik = useFormik({
-    enableReinitialize: true,
-    initialValues: {
-      nombre:      empresa?.nombre      || '',
-      rut:         empresa?.rut         || '',
-      descripcion: empresa?.descripcion || '',
-    },
-    validationSchema: Yup.object({
-      nombre: Yup.string().required('El nombre es requerido'),
-      rut:    Yup.string().required('El RUT es requerido'),
-      descripcion: Yup.string().nullable(),
-    }),
-    onSubmit: async values => {
-      if (!empresa) return
-      try {
-        await fetch(`/api/empresas/${empresa.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(values),
-        })
-        dispatch(fetchEmpresaPrincipal())
-        alert('Empresa actualizada')
-      } catch (e: any) {
-        alert('Error al guardar: ' + e.message)
-      }
-    },
-  })
+	// 2) Formik
+	const formik = useFormik({
+		enableReinitialize: true,
+		initialValues: {
+		nombre:      empresa?.nombre      || '',
+		rut:         empresa?.rut         || '',
+		descripcion: empresa?.descripcion || '',
+		},
+		validationSchema: Yup.object({
+			nombre: Yup.string()
+				.required('El nombre es requerido')
+				.min(3, 'El nombre debe tener al menos 3 caracteres')
+				.max(100, 'El nombre no puede superar los 100 caracteres')
+				.matches(/^[a-zA-Z0-9\sáéíóúÁÉÍÓÚñÑ.,-]+$/, 'El nombre contiene caracteres inválidos'),
+			rut: Yup.string()
+				.required('El RUT es requerido')
+				.matches(/^[0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}\-?[0-9kK]{1}$/, 'El RUT no tiene un formato válido'),
+			descripcion: Yup.string()
+				.nullable()
+				.max(255, 'La descripción no puede superar los 255 caracteres'),
+		}),
+		validate: values => {
+			const errors: Record<string, string> = {};
+				if (values.nombre && values.nombre.trim().length === 0) {
+					errors.nombre = 'El nombre no puede estar vacío';
+				}
+				if (values.rut && !/^[0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}\-?[0-9kK]{1}$/.test(values.rut)) {
+					errors.rut = 'El RUT no tiene un formato válido';
+				}
+				if (Object.keys(errors).length > 0) {
+					Object.values(errors).forEach(msg => toast.error(msg));
+				}
+			return errors;
+		},
+		onSubmit: async values => {
+			if (!empresa?.id) {
+				toast.error('No se puede actualizar: empresa no cargada');
+				return;
+			}
+			try {
+				const action = await dispatch(
+					patchEmpresaPrincipal({ id: empresa.id, ...values })
+				);
+				unwrapResult(action);
+				toast.success('Empresa actualizada correctamente');
+				dispatch(fetchEmpresaPrincipal(empresa.id));
+			} catch (e: any) {
+				if (e?.response?.data?.errors) {
+					Object.values(e.response.data.errors).forEach((msg: any) => toast.error(msg));
+				} else {
+					toast.error('Error al actualizar la empresa: ' + (e.message || e));
+				}
+				console.error('Error al actualizar la empresa:', e);
+			}
+		}
+	})
+	// 3) Estados
+	if (loading)
+		return (
+			<div className="flex flex-col items-center justify-center h-64 bg-white rounded-lg shadow-inner">
+				<span className="animate-spin rounded-full h-10 w-10 border-4 border-blue-400 border-t-transparent mb-4"></span>
+				<span className="text-lg text-blue-700 font-medium">Cargando empresa…</span>
+			</div>
+		)
+	if (error)
+		return (
+			<div className="flex flex-col items-center justify-center h-64 bg-red-50 rounded-lg shadow-inner">
+				<span className="inline-flex items-center text-lg text-red-700 font-semibold bg-red-100 border border-red-300 rounded px-8 py-4 shadow-sm">
+					<svg className="w-6 h-6 mr-2 text-red-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+						<path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" />
+					</svg>
+					Error: {error}
+				</span>
+			</div>
+		)
+	if (!empresa)
+		return (
+			<div className="flex flex-col items-center justify-center h-64 bg-gray-50 rounded-lg shadow-inner">
+				<span className="inline-flex items-center text-lg text-gray-600 bg-gray-100 border border-gray-300 rounded px-8 py-4 shadow-sm">
+					<svg className="w-6 h-6 mr-2 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+						<path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M12 21c4.97 0 9-4.03 9-9s-4.03-9-9-9-9 4.03-9 9 4.03 9 9 9z" />
+					</svg>
+					No existe empresa configurada
+				</span>
+			</div>
+		)
 
-  // 3) Estados
-  if (loading)  return <div className="p-8 text-center">Cargando empresa…</div>
-  if (error)    return <div className="p-8 text-red-600">Error: {error}</div>
-  if (!empresa) return <div className="p-8 text-gray-600">No existe empresa configurada</div>
+	// 4) Render
+	return (
+		<PageWrapper isProtectedRoute title="Detalle de Empresa" name={empresa.nombre}>
+			<Container className="pt-4 space-y-6">
+				{/* ● Formulario de edición */}
+				<form onSubmit={formik.handleSubmit} className="space-y-6">
+					<Card>
+						<div className=" px-6 py-4 flex justify-end">
+							<Button variant="solid" onClick={() => formik.handleSubmit()}>
+								Guardar cambios
+							</Button>	
+						</div>
+						<CardBody className="space-y-6">
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+								{/* Nombre */}
+								<div>
+									<Label htmlFor="nombre">Nombre de la empresa</Label>
+									<Input
+										id="nombre"
+										name="nombre"
+										value={formik.values.nombre}
+										onChange={formik.handleChange}
+										onBlur={formik.handleBlur}
+									/>
+									{formik.touched.nombre && formik.errors.nombre && (
+										<p className="mt-1 text-red-600 text-sm">{formik.errors.nombre}</p>
+									)}
+								</div>
 
-  // 4) Render
-  return (
-    <PageWrapper isProtectedRoute title="Detalle Empresa" name={empresa.nombre}>
-      <Subheader>
-        <SubheaderLeft>
-          <h1 className="text-2xl font-semibold">Detalle de Empresa</h1>
-        </SubheaderLeft>
-        <SubheaderRight>
-          <Button variant="solid" onClick={() => formik.handleSubmit()}>
-            Guardar cambios
-          </Button>
-        </SubheaderRight>
-      </Subheader>
+								{/* RUT */}
+								<div>
+									<Label htmlFor="rut">RUT</Label>
+									<Input
+										id="rut"
+										name="rut"
+										value={formik.values.rut}
+										onChange={formik.handleChange}
+										onBlur={formik.handleBlur}
+									/>
+									{formik.touched.rut && formik.errors.rut && (
+										<p className="mt-1 text-red-600 text-sm">{formik.errors.rut}</p>
+									)}
+								</div>
 
-      <Container className="pt-4 space-y-6">
-        {/* ✨ Datos principales */}
-        <Card>
-          <CardBody>
-            <form onSubmit={formik.handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div>
-                <Label htmlFor="nombre">Nombre</Label>
-                <Input
-                  id="nombre"
-                  name="nombre"
-                  value={formik.values.nombre}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                />
-                {formik.touched.nombre && formik.errors.nombre && (
-                  <p className="text-red-600 text-sm">{formik.errors.nombre}</p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="rut">RUT</Label>
-                <Input
-                  id="rut"
-                  name="rut"
-                  value={formik.values.rut}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                />
-                {formik.touched.rut && formik.errors.rut && (
-                  <p className="text-red-600 text-sm">{formik.errors.rut}</p>
-                )}
-              </div>
-              <div className="sm:col-span-2">
-                <Label htmlFor="descripcion">Descripción</Label>
-                <Input
-                  id="descripcion"
-                  name="descripcion"
-                  value={formik.values.descripcion}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                />
-                {formik.touched.descripcion && formik.errors.descripcion && (
-                  <p className="text-red-600 text-sm">{formik.errors.descripcion}</p>
-                )}
-              </div>
-              <div className="sm:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t pt-6">
-                <div>
-                  <Label htmlFor=''>Creada el</Label>
-                  <p className="mt-1 text-gray-700">{new Date(empresa.created_at).toLocaleString()}</p>
-                </div>
-                <div>
-                  <Label htmlFor=''>Última actualización</Label>
-                  <p className="mt-1 text-gray-700">{new Date(empresa.updated_at).toLocaleString()}</p>
-                </div>
-                <div>
-                  <Label htmlFor=''>Rol asignado</Label>
-                  <p className="mt-1 text-gray-700">#{empresa.pivot?.rol_id}</p>
-                </div>
-              </div>
-            </form>
-          </CardBody>
-        </Card>
+								{/* Descripción */}
+								<div className="md:col-span-2">
+									<Label htmlFor="descripcion">Descripción</Label>
+									<Input
+										id="descripcion"
+										name="descripcion"
+										value={formik.values.descripcion}
+										onChange={formik.handleChange}
+										onBlur={formik.handleBlur}
+									/>
+									{formik.touched.descripcion && formik.errors.descripcion && (
+										<p className="mt-1 text-red-600 text-sm">{formik.errors.descripcion}</p>
+									)}
+								</div>
+							</div>
 
-        {/* ✨ Subempresas y sucursales */}
-        <Card>
-          <CardBody>
-            <h2 className="text-xl font-semibold mb-4">Subempresas</h2>
-            {empresa.subempresas?.length > 0 ? (
-              <div className="space-y-6">
-                {empresa.subempresas?.map(sub => (
-                  <Card key={sub.id} className="border-gray-200">
-                    <CardBody className="space-y-2">
-                      <h3 className="font-medium">{sub.nombre}</h3>
-                      {sub.sucursales?.length > 0 ? (
-                        <ul className="list-disc list-inside">
-                          {sub.sucursales?.map(suc => (
-                            <li key={suc.id}>{suc.nombre}</li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="text-gray-600">Sin sucursales</p>
-                      )}
-                    </CardBody>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-600">No hay subempresas configuradas</p>
-            )}
-          </CardBody>
-        </Card>
-      </Container>
-    </PageWrapper>
-  )
+							{/* Metadatos */}
+							<div className="border-t pt-6">
+								<dl className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-sm text-gray-700">
+								<div>
+									<dt className="font-medium text-gray-900">Creada el</dt>
+									<dd className="mt-1">{new Date(empresa.created_at).toLocaleString()}</dd>
+								</div>
+								<div>
+									<dt className="font-medium text-gray-900">Última actualización</dt>
+									<dd className="mt-1">{new Date(empresa.updated_at).toLocaleString()}</dd>
+								</div>
+								<div>
+									<dt className="font-medium text-gray-900">Rol asignado</dt>
+									<dd className="mt-1">#{empresa.pivot?.rol_id}</dd>
+								</div>
+								</dl>
+							</div>
+						</CardBody>
+					</Card>
+				</form>
+
+				{/* ● Subempresas y sucursales */}
+				<Card>
+					<CardBody className="space-y-4">
+						<h2 className="text-xl font-semibold">Subempresas</h2>
+						{empresa.subempresas?.length ? (
+						<ul className="space-y-4">
+							{empresa.subempresas!.map(sub => (
+							<li key={sub.id} className="border rounded-lg p-4 bg-gray-50">
+								<h3 className="font-medium">{sub.nombre}</h3>
+								{sub.sucursales?.length ? (
+								<ul className="mt-2 ml-4 list-disc text-gray-700">
+									{sub.sucursales.map(s => (
+									<li key={s.id}>{s.nombre}</li>
+									))}
+								</ul>
+								) : (
+								<p className="mt-2 text-gray-500">Sin sucursales</p>
+								)}
+							</li>
+							))}
+						</ul>
+						) : (
+						<p className="text-gray-500">No hay subempresas configuradas.</p>
+						)}
+					</CardBody>
+				</Card>
+			</Container>
+		</PageWrapper>
+
+	)
 }

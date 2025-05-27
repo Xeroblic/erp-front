@@ -10,6 +10,7 @@ import item, { ItemState } from './slices/item/itemSlice'
 import cliente, { ClienteState } from './slices/clientes/clienteSlice'
 import rolesPermisos, { RolesPermisosState } from './slices/rolesPermisos/rolesPermisosSlice';
 import features, {FeaturesState} from './slices/featuresSlice/featuresSlice'
+import subEmpresa, { SubempresaState } from './slices/subempresa/subEmpresaSlice'
 
 export type RootState = CombinedState<{
     auth: AuthState
@@ -18,6 +19,7 @@ export type RootState = CombinedState<{
     empresa: EmpresaState
     rolesPermisos: RolesPermisosState;
     features: FeaturesState;
+    subEmpresa: SubempresaState;
     // calendario: CalendarioState
     // item: ItemState
     // bodega: BodegaState
@@ -38,6 +40,7 @@ const staticReducers = {
     invitacion,
     rolesPermisos,
     features,
+    subEmpresa,
     [featuresApi.reducerPath]: featuresApi.reducer,
 }
 

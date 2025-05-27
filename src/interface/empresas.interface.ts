@@ -16,7 +16,7 @@ export interface ISucursal {
   descripcion?: string;
   created_at: string;
   updated_at: string;
-  usuarios: IUsuarioEmpresa[];      // ya no opcional, siempre un array (quizá vacío)
+  usuarios: IUsuarioEmpresa[];      
 }
 
 export interface ISubempresa {

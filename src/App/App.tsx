@@ -6,8 +6,9 @@ import dayjs from "dayjs";
 import localizedFormat from "dayjs/plugin/localizedFormat";
 import colors from "tailwindcss/colors";
 import { ToastContainer } from "react-toastify";
-
+import 'react-toastify/dist/ReactToastify.css'
 import AppRouter from "@/routes/AppRouter";
+
 import DefaultAsideTemplate from "@/templates/layouts/Asides/DefaultAside.template";
 import { selectIsAuthenticated } from "@/store/slices/auth/authSlice";
 import useFontSize from "@/hooks/useFontSize";

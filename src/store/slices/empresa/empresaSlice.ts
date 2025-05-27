@@ -40,17 +40,38 @@ export const fetchEmpresas = createAsyncThunk<IEmpresa[], void, { rejectValue: s
 );
 
 // Obtener detalle de una empresa
-export const fetchEmpresaPrincipal = createAsyncThunk<IEmpresa, void, { rejectValue: string }>(
+export const fetchEmpresaPrincipal = createAsyncThunk<IEmpresa, number>(
   'empresa/fetchEmpresaPrincipal',
-  async (_, { rejectWithValue }) => {
+  async (empresaId, { rejectWithValue }) => {
     try {
       const { data } = await ApiService.fetchData<IEmpresa>({
-        url: '/empresa',
-        method: 'get'
+        url: `/empresa/${empresaId}`,
+        method: 'get',
       });
       return data;
     } catch (e: any) {
       return rejectWithValue(e.response?.data?.message ?? 'Error al cargar empresa');
+    }
+  }
+);
+
+// Actualizar la empresa principal (id = 1)
+export const patchEmpresaPrincipal = createAsyncThunk<
+  IEmpresa,
+  Partial<IEmpresa>,
+  { rejectValue: string }
+>(
+  'empresa/patchEmpresaPrincipal',
+  async (empresaData, { rejectWithValue }) => {
+    try {
+      const response = await ApiService.fetchData<IEmpresa>({
+        url: '/empresa/1',
+        method: 'patch',
+        data: empresaData,
+      });
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Error actualizando la empresa principal');
     }
   }
 );
@@ -77,7 +98,7 @@ export const fetchSubempresas = createAsyncThunk<IEmpresa['subempresas'], number
   'empresa/fetchSubempresas',
   async (empresaId, { rejectWithValue }) => {
     try {
-      const response = await ApiService.fetchData<IEmpresa>({ url: `/empresas/${empresaId}/subempresas`, method: 'get' });
+      const response = await ApiService.fetchData<IEmpresa>({ url: `/empresa/${empresaId}/subempresas/`, method: 'get' });
       return response.data.subempresas;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Error fetching subempresas');

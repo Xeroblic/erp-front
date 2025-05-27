@@ -6,58 +6,67 @@ import Nav, { NavItem, NavCollapse, NavSeparator } from '../../../components/lay
 import pagesConfig from "@/config/pages.config";
 import { useAppSelector } from "@/store";
 import { selectUserAuthority } from "@/store/slices/auth/authSlice";
-import { selectFeaturesList }  from "@/store/slices/featuresSlice/featuresSlice";
+import { selectFeaturesList } from "@/store/slices/featuresSlice/featuresSlice";
 import AsideHeadPart from "./_parts/AsideHead.part";
 import AsideFooterPart from "./_parts/AsideFooter.part";
+import { featuresApi } from "@/services/RtkQueryService";
 
 // Componente guard que chequea permiso + feature
 interface GuardProps { authority?: string[]; feature?: string; }
+
 const AuthorityFeatureGuard: React.FC<GuardProps & { children: React.ReactNode }> = ({
-  authority = [], feature, children
+	authority = [], feature, children
 }) => {
-  const userPerms = useAppSelector(selectUserAuthority);
-  const userFeats = useAppSelector(selectFeaturesList);
+	const userPerms = useAppSelector(selectUserAuthority);
+	const userFeats = useAppSelector(selectFeaturesList);
+	// console.log('>> MIS FEATURES', userFeats);
 
-  const okPerm = authority.length === 0 || authority.some(p => userPerms.includes(p));
-  const okFeat = !feature || userFeats.includes(feature);
+	const okPerm = authority.length === 0 || authority.some(p => userPerms.includes(p));
+	const okFeat = !feature || userFeats.includes(feature);
+	// console.log('>> okPerm', okPerm, 'okFeat', okFeat, 'feature', feature, 'authority', authority);
 
-  return okPerm && okFeat ? <>{children}</> : null;
+	return okPerm && okFeat ? <>{children}</> : null;
 };
 
+
+
 function DefaultAsideTemplate() {
+
+  const { data: feats = [], isLoading } = featuresApi.useGetFeaturesQuery();
+
   const navigate = useNavigate();
-  const cfg = pagesConfig as any;
+  const cfg = pagesConfig as any;	
+  if (isLoading) return <Aside>…Loading…</Aside>;
+	return (
+		<Aside>
+			<AsideHeadPart />
+			<AsideBody>
+				<Nav>
+					{/* Dashboard */}
+					<AuthorityFeatureGuard
+						authority={cfg.dashboard.authority}
+						feature={cfg.dashboard.feature}
+					>
+						<NavItem {...cfg.dashboard} onClick={() => navigate(cfg.dashboard.to)} />
+					</AuthorityFeatureGuard>
 
-  return (
-    <Aside>
-      <AsideHeadPart />
-      <AsideBody>
-        <Nav>
-		{/* Dashboard */}
-		<AuthorityFeatureGuard
-		  authority={cfg.dashboard.authority}
-		  feature={cfg.dashboard.feature}
-		>
-		  <NavItem {...cfg.dashboard} onClick={() => navigate(cfg.dashboard.to)} />
-		</AuthorityFeatureGuard>
-
-        {/* Gestión */}
-		<NavCollapse text="Gestión" icon={cfg.gestion.icon} to="">
-		  {Object.values(cfg.gestion.subPages).map((pg: any) => (
-			<AuthorityFeatureGuard
-			  key={pg.id}
-			  authority={pg.authority}
-			  feature={pg.feature}
-			>
-			  <NavItem {...pg} onClick={() => navigate(pg.to)} />
-			</AuthorityFeatureGuard>
-		  ))}
-		</NavCollapse>
+					{/* Gestión */}
+					<NavCollapse text="Gestión" icon={cfg.gestion.icon} to="">
+						{Object.values(cfg.gestion.subPages).map((pg: any) => (
+							<AuthorityFeatureGuard
+								key={pg.id}
+								authority={pg.authority}
+								feature={pg.feature}
+							>
+								<NavItem {...pg} onClick={() => navigate(pg.to)} />
+							</AuthorityFeatureGuard>
+						))}
+					</NavCollapse>
 
 
 
-					
-				
+
+
 					{/* <AuthorityCheckNav authority={Pages.listaItem.authority} userAuthority={listaGrupos?.grupos}>
 						<NavItem text={Pages.listaItem.text} to={Pages.listaItem.to} icon={Pages.listaItem.icon} id={Pages.listaItem.id}></NavItem>
 					</AuthorityCheckNav> */}
