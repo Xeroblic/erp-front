@@ -36,15 +36,15 @@ const PageWrapper: FC<IPageWrapperProps> = ({
 
   useDocumentTitle({ title, name });
 
-  // 1) Solo una vez: carga regiones/provincias/comunas
-  useEffect(() => {
-    if (!coreLoaded.current && isProtectedRoute && isAuthenticated) {
-      dispatch(listaRegionesThunk());
-      dispatch(listaProvinciasThunk());
-      dispatch(listaComunasThunk());
-      coreLoaded.current = true;
-    }
-  }, [dispatch, isProtectedRoute, isAuthenticated]);
+  // // 1) Solo una vez: carga regiones/provincias/comunas
+  // useEffect(() => {
+  //   if (!coreLoaded.current && isProtectedRoute && isAuthenticated) {
+  //     dispatch(listaRegionesThunk());
+  //     dispatch(listaProvinciasThunk());
+  //     dispatch(listaComunasThunk());
+  //     coreLoaded.current = true;
+  //   }
+  // }, [dispatch, isProtectedRoute, isAuthenticated]);
 
   // 2) Solo una vez: carga perfil (incluye personalización)
   useEffect(() => {
@@ -65,8 +65,8 @@ const PageWrapper: FC<IPageWrapperProps> = ({
         pref.tema === '1'
           ? 'light'
           : pref.tema === '2'
-          ? 'dark'
-          : 'system';
+            ? 'dark'
+            : 'system';
       setDarkModeStatus(tema);
     }
   }, [user?.personalizacion, fontSize, setFontSize, setDarkModeStatus]);
@@ -75,14 +75,14 @@ const PageWrapper: FC<IPageWrapperProps> = ({
     return <Navigate to={authPages.loginPage.to} />;
   }
 
-	return (
-		<main
-			data-component-name='PageWrapper'
-			className={classNames('flex shrink-0 grow flex-col', className)}
-			{...rest}>
-			{children}
-		</main>
-	);
+  return (
+    <main
+      data-component-name='PageWrapper'
+      className={classNames('flex shrink-0 grow flex-col', className)}
+      {...rest}>
+      {children}
+    </main>
+  );
 };
 
 export default PageWrapper;

@@ -28,9 +28,9 @@ export default function EmpresaDetalle() {
 	const formik = useFormik({
 		enableReinitialize: true,
 		initialValues: {
-		nombre:      empresa?.nombre      || '',
-		rut:         empresa?.rut         || '',
-		descripcion: empresa?.descripcion || '',
+			nombre: empresa?.nombre || '',
+			rut: empresa?.rut || '',
+			descripcion: empresa?.descripcion || '',
 		},
 		validationSchema: Yup.object({
 			nombre: Yup.string()
@@ -47,15 +47,15 @@ export default function EmpresaDetalle() {
 		}),
 		validate: values => {
 			const errors: Record<string, string> = {};
-				if (values.nombre && values.nombre.trim().length === 0) {
-					errors.nombre = 'El nombre no puede estar vacío';
-				}
-				if (values.rut && !/^[0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}\-?[0-9kK]{1}$/.test(values.rut)) {
-					errors.rut = 'El RUT no tiene un formato válido';
-				}
-				if (Object.keys(errors).length > 0) {
-					Object.values(errors).forEach(msg => toast.error(msg));
-				}
+			if (values.nombre && values.nombre.trim().length === 0) {
+				errors.nombre = 'El nombre no puede estar vacío';
+			}
+			if (values.rut && !/^[0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}\-?[0-9kK]{1}$/.test(values.rut)) {
+				errors.rut = 'El RUT no tiene un formato válido';
+			}
+			if (Object.keys(errors).length > 0) {
+				Object.values(errors).forEach(msg => toast.error(msg));
+			}
 			return errors;
 		},
 		onSubmit: async values => {
@@ -83,7 +83,7 @@ export default function EmpresaDetalle() {
 	// 3) Estados
 	if (loading)
 		return (
-			<div className="flex flex-col items-center justify-center h-64 bg-white rounded-lg shadow-inner">
+			<div className="flex flex-col items-center justify-center h-64 rounded-lg shadow-inner">
 				<span className="animate-spin rounded-full h-10 w-10 border-4 border-blue-400 border-t-transparent mb-4"></span>
 				<span className="text-lg text-blue-700 font-medium">Cargando empresa…</span>
 			</div>
@@ -121,7 +121,7 @@ export default function EmpresaDetalle() {
 						<div className=" px-6 py-4 flex justify-end">
 							<Button variant="solid" onClick={() => formik.handleSubmit()}>
 								Guardar cambios
-							</Button>	
+							</Button>
 						</div>
 						<CardBody className="space-y-6">
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -174,18 +174,18 @@ export default function EmpresaDetalle() {
 							{/* Metadatos */}
 							<div className="border-t pt-6">
 								<dl className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-sm text-gray-700">
-								<div>
-									<dt className="font-medium text-gray-900">Creada el</dt>
-									<dd className="mt-1">{new Date(empresa.created_at).toLocaleString()}</dd>
-								</div>
-								<div>
-									<dt className="font-medium text-gray-900">Última actualización</dt>
-									<dd className="mt-1">{new Date(empresa.updated_at).toLocaleString()}</dd>
-								</div>
-								<div>
-									<dt className="font-medium text-gray-900">Rol asignado</dt>
-									<dd className="mt-1">#{empresa.pivot?.rol_id}</dd>
-								</div>
+									<div>
+										<dt className="font-medium">Creada el</dt>
+										<dd className="mt-1">{new Date(empresa.created_at).toLocaleString()}</dd>
+									</div>
+									<div>
+										<dt className="font-medium">Última actualización</dt>
+										<dd className="mt-1">{new Date(empresa.updated_at).toLocaleString()}</dd>
+									</div>
+									<div>
+										<dt className="font-medium">Rol asignado</dt>
+										<dd className="mt-1">#{empresa.pivot?.rol_id}</dd>
+									</div>
 								</dl>
 							</div>
 						</CardBody>
@@ -197,24 +197,24 @@ export default function EmpresaDetalle() {
 					<CardBody className="space-y-4">
 						<h2 className="text-xl font-semibold">Subempresas</h2>
 						{empresa.subempresas?.length ? (
-						<ul className="space-y-4">
-							{empresa.subempresas!.map(sub => (
-							<li key={sub.id} className="border rounded-lg p-4 bg-gray-50">
-								<h3 className="font-medium">{sub.nombre}</h3>
-								{sub.sucursales?.length ? (
-								<ul className="mt-2 ml-4 list-disc text-gray-700">
-									{sub.sucursales.map(s => (
-									<li key={s.id}>{s.nombre}</li>
-									))}
-								</ul>
-								) : (
-								<p className="mt-2 text-gray-500">Sin sucursales</p>
-								)}
-							</li>
-							))}
-						</ul>
+							<ul className="space-y-4">
+								{empresa.subempresas!.map(sub => (
+									<li key={sub.id} className=" rounded-lg p-4 ">
+										<h3 className="font-medium">{sub.nombre}</h3>
+										{sub.sucursales?.length ? (
+											<ul className="mt-2 ml-4 list-disc text-gray-700">
+												{sub.sucursales.map(s => (
+													<li key={s.id}>{s.nombre}</li>
+												))}
+											</ul>
+										) : (
+											<p className="mt-2 text-gray-500">Sin sucursales</p>
+										)}
+									</li>
+								))}
+							</ul>
 						) : (
-						<p className="text-gray-500">No hay subempresas configuradas.</p>
+							<p className="text-gray-500">No hay subempresas configuradas.</p>
 						)}
 					</CardBody>
 				</Card>
