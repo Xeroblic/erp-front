@@ -60,11 +60,9 @@ export const userMeThunk = createAsyncThunk<
   async (_, { getState, rejectWithValue }) => {
     const token = getState().auth.access;
     if (!token) return rejectWithValue("No autenticado");
+
     try {
-      const resp = await ApiService.fetchData<{
-        user: IUserMe;
-        permisos: string[];
-      }>({
+      const resp = await ApiService.fetchData<{ user: IUserMe; permisos: string[] }>({
         url: "/perfil",
         method: "get",
       });
@@ -74,6 +72,8 @@ export const userMeThunk = createAsyncThunk<
     }
   }
 );
+
+
 
 // 3) personalización
 export const obtenerPersonalizacionThunk = createAsyncThunk<
