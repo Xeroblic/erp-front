@@ -16,10 +16,12 @@ const BaseService = axios.create({
 BaseService.interceptors.request.use(
     (config: CustomAxiosRequestConfig) => {
         const token = store.getState().auth.access;
+
         if (token && !config.isLoginRequest) {
-            config.headers = config.headers || {};
             config.headers['Authorization'] = `Bearer ${token}`;
         }
+
+
         return config;
     },
     error => Promise.reject(error)

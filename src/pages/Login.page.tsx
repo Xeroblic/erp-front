@@ -37,7 +37,7 @@ const LoginPage = () => {
         onSubmit: async (values) => {
             try {
                 await dispatch(loginThunk({ ...values })).unwrap();
-                navigate('/');
+                navigate('/dashboard'); // o la ruta de inicio protegida real
             } catch (e: any) {
                 toast.error(e);
             }

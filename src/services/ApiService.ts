@@ -1,20 +1,26 @@
-import BaseService from './BaseService';
-import type { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
+import axios, { AxiosRequestConfig } from "axios";
+import store from "@/store"; // si tienes acceso al store
+
+const BASE_URL = "http://127.0.0.1:8000/api";
 
 const ApiService = {
-    fetchData<Response = unknown, Request = Record<string, unknown>>(
-        param: AxiosRequestConfig<Request> & { isLoginRequest?: boolean } // Incluir isLoginRequest en el tipo
-    ) {
-        return new Promise<AxiosResponse<Response>>((resolve, reject) => {
-            BaseService(param)
-                .then((response: AxiosResponse<Response>) => {
-                    resolve(response);
-                })
-                .catch((errors: AxiosError) => {
-                    reject(errors);
-                });
-        });
-    },
+  async fetchData<T = any>(options: AxiosRequestConfig): Promise<{ data: T }> {
+    const state = store.getState(); // importante
+    const token = state.auth.access;
+
+    const headers = {
+      ...options.headers,
+      ...(token && { Authorization: `Bearer ${token}` }),
+    };
+
+    const response = await axios({
+      baseURL: BASE_URL,
+      ...options,
+      headers,
+    });
+
+    return { data: response.data };
+  },
 };
 
 export default ApiService;
