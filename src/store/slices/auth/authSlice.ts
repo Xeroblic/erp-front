@@ -38,7 +38,7 @@ export const loginThunk = createAsyncThunk<
         url: "/login",
         method: "post",
         data: { email, password },
-       
+
       });
       const token = resp.data.token;
       dispatch(setToken(token));
@@ -88,7 +88,7 @@ export const obtenerPersonalizacionThunk = createAsyncThunk<
     try {
       const token = getState().auth.access;
       const resp = await ApiService.fetchData<IPersonalizacionUsuario>({
-        url: "/usuario/personalizacion",
+        url: "/user/personalization",
         method: "get",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -111,7 +111,7 @@ export const actualizarPersonalizacionThunk = createAsyncThunk<
     try {
       const token = getState().auth.access;
       const resp = await ApiService.fetchData<IPersonalizacionUsuario>({
-        url: "/usuario/personalizacion",
+        url: "/user/personalization",
         method: "put",
         data: { tema, font_size },
         headers: {
