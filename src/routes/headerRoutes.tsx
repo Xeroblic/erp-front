@@ -4,7 +4,7 @@ import { authPages } from "../config/pages.config";
 
 const headerRoutes: RouteProps[] = [
   { path: authPages.loginPage.to,               element: null },
-  { path: authPages.aceptarInvitacionEmpresa.to,element: null },
+  { path: authPages.aceptarInvitacion.to,element: null },
   { path: authPages.recuperarPassword.to,       element: null },
   { path: authPages.confirmarNuevaPass.to,      element: null },
   { path: "*",                                  element: <DefaultHeaderTemplate /> },

@@ -14,19 +14,40 @@ import { featuresApi } from "@/services/RtkQueryService";
 // Componente guard que chequea permiso + feature
 interface GuardProps { authority?: string[]; feature?: string; }
 
+
+
+// DefaultAsideTemplate.tsx  (o crea un helper aparte)
+const matchPermission = (required: string, granted: string[]) => {
+  // 1. Super admin siempre pasa
+  if (granted.includes('super-admin') || granted.includes('super_admin')) return true;
+
+  // 2. Wildcard "prefijo:*"
+  if (required.endsWith(':*')) {
+    const prefix = required.slice(0, -2);          // 'empresa:*' -> 'empresa'
+    return granted.some(p => p.startsWith(prefix));
+  }
+
+  // 3. Coincidencia exacta
+  return granted.includes(required);
+};
+
+
 const AuthorityFeatureGuard: React.FC<GuardProps & { children: React.ReactNode }> = ({
 	authority = [], feature, children
 }) => {
 	const userPerms = useAppSelector(selectUserAuthority);
 	const userFeats = useAppSelector(selectFeaturesList);
-	// console.log('>> MIS FEATURES', userFeats);
+	console.log('>> MIS FEATURES', userFeats);
+
 
 	const okPerm = authority.length === 0 || authority.some(p => userPerms.includes(p));
 	const okFeat = !feature || userFeats.includes(feature);
-	// console.log('>> okPerm', okPerm, 'okFeat', okFeat, 'feature', feature, 'authority', authority);
+	console.log('>> okPerm', okPerm, 'okFeat', okFeat, 'feature', feature, 'authority', authority);
 
 	return okPerm && okFeat ? <>{children}</> : null;
 };
+
+
 
 
 
@@ -51,8 +72,8 @@ function DefaultAsideTemplate() {
 					</AuthorityFeatureGuard>
 
 					{/* Gestión */}
-					<NavCollapse text="Gestión" icon={cfg.gestion.icon} to="">
-						{Object.values(cfg.gestion.subPages).map((pg: any) => (
+					<NavCollapse text="Gestión" icon={cfg.manage.icon} to="">
+						{Object.values(cfg.manage.subPages).map((pg: any) => (
 							<AuthorityFeatureGuard
 								key={pg.id}
 								authority={pg.authority}

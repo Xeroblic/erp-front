@@ -280,7 +280,7 @@ useEffect(() => {
 	const activeProps: IButtonProps = {
 		...defaultProps,
 		isActive: true,
-		color: 'blue',
+		color: 'emerald',
 		colorIntensity: '500',
 	};
 
@@ -290,7 +290,7 @@ useEffect(() => {
 				<SubheaderLeft>
 					{`${userData?.first_name} ${userData?.last_name}`}{' '}
 					<Badge
-						color='blue'
+						color='emerald'
 						variant='outline'
 						rounded='rounded-full'
 						className='border-transparent'>

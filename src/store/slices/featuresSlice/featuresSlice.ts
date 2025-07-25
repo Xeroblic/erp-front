@@ -46,8 +46,7 @@ const featuresSlice = createSlice({
         featuresApi.endpoints.getFeatures.matchFulfilled,
         (state, action: PayloadAction<string[]>) => {
           state.status = FeatureStatus.Succeeded;
-          // payload ya es string[] gracias a transformResponse
-          state.list = action.payload;
+          state.list = action.payload;          // ← siempre array
         }
       )
       // rejected

@@ -27,82 +27,56 @@ export interface IRoutePersonalizada extends PathRouteProps {
   public?: boolean;
 }
 
-const cfg = pagesConfig as Record<string, any>;
+const cfg = pagesConfig as any;
 
 const contentRoutes: IRoutePersonalizada[] = [
-  // públicas
-  { path: cfg.loginPage.to, element: <LoginPage />, public: true },
-  { path: cfg.recuperarPassword.to, element: <RecuperarPassword />, public: true },
+  /* públicas ------------------------- */
+  { path: cfg.loginPage.to,          element: <LoginPage />,        public: true },
+  { path: cfg.recuperarPassword.to,  element: <RecuperarPassword />, public: true },
   { path: cfg.confirmarNuevaPass.to, element: <ConfirmarNuevaPass />, public: true },
-  { path: cfg.aceptarInvitacionEmpresa.to, element: <AceptarInvitacion />, public: true },
+  { path: cfg.aceptarInvitacion.to,  element: <AceptarInvitacion />, public: true },
 
-  // privadas
-  {
-    path: cfg.profilePage.to,
-    element: <ProfilePage />,
-    authority: cfg.profilePage.authority,
-  },
-  {
-    path: cfg.dashboard.to,
-    element: <Dashboard />,
-    authority: cfg.dashboard.authority,
-    feature: cfg.dashboard.feature,
-  },
-  // {
-  //   path: cfg.productos.to,
-  //   element: <ProductosPage />,
-  //   authority: cfg.productos.authority,
-  //   feature:   cfg.productos.feature,
-  // },
-  // {
-  //   path: cfg.usuarios.to,
-  //   element: <UsuariosPage />,
-  //   authority: cfg.usuarios.authority,
-  //   feature:   cfg.usuarios.feature,
-  // },
-  // {
-  //   path: cfg.cotizaciones.to,
-  //   element: <Cotizaciones />,
-  //   authority: cfg.cotizaciones.authority,
-  //   feature:   cfg.cotizaciones.feature,
-  // },
+  /* privadas ------------------------- */
+  { path: cfg.profilePage.to, element: <ProfilePage />, authority: cfg.profilePage.authority },
 
-  // gestión anidada
+  { path: cfg.dashboard.to,  element: <Dashboard />,  authority: cfg.dashboard.authority, feature: cfg.dashboard.feature },
+
+  /* gestión anidada ------------------ */
   {
-    path: cfg.gestion.subPages.empresa.to,
+    path: cfg.manage.subPages.company.to,
     element: <EmpresaPage />,
-    authority: cfg.gestion.subPages.empresa.authority,
-    feature: cfg.gestion.subPages.empresa.feature,
+    authority: cfg.manage.subPages.company.authority,
+    feature:   cfg.manage.subPages.company.feature,
   },
   {
-    path: cfg.gestion.subPages.subempresa.to,
+    path: cfg.manage.subPages.subsidiary.to,
     element: <SubEmpresa />,
-    authority: cfg.gestion.subPages.subempresa.authority,
-    feature: cfg.gestion.subPages.subempresa.feature,
+    authority: cfg.manage.subPages.subsidiary.authority,
+    feature:   cfg.manage.subPages.subsidiary.feature,
   },
   {
-    path: cfg.gestion.subPages.sucursal.to,
+    path: cfg.manage.subPages.branch.to,
     element: <Sucursales />,
-    authority: cfg.gestion.subPages.sucursal.authority,
-    feature: cfg.gestion.subPages.sucursal.feature,
+    authority: cfg.manage.subPages.branch.authority,
+    feature:   cfg.manage.subPages.branch.feature,
   },
   {
-    path: cfg.gestion.subPages.rolesPermisos.to,
+    path: cfg.manage.subPages.roles.to,
     element: <RolesPermisos />,
-    authority: cfg.gestion.subPages.rolesPermisos.authority,
-    feature: cfg.gestion.subPages.rolesPermisos.feature,
+    authority: cfg.manage.subPages.roles.authority,
+    feature:   cfg.manage.subPages.roles.feature,
   },
   {
-    path: cfg.gestion.subPages.usuarios.to,
+    path: cfg.manage.subPages.manageUsers.to,
     element: <GestionUsuarios />,
-    authority: cfg.gestion.subPages.usuarios.authority,
-    feature: cfg.gestion.subPages.usuarios.feature,
+    authority: cfg.manage.subPages.manageUsers.authority,
+    feature:   cfg.manage.subPages.manageUsers.feature,
   },
 
-  // genéricos
-  { path: "/sin-permisos", element: <SinPermisos />, public: true },
-  { path: "/", element: <Dashboard />, authority: cfg.dashboard.authority, feature: cfg.dashboard.feature },
-  { path: "*", element: <NotFoundPage />, public: true },
+  /* genéricos ------------------------ */
+  { path: '/sin-permisos', element: <SinPermisos />, public: true },
+  { path: '/',             element: <Dashboard />,   authority: cfg.dashboard.authority, feature: cfg.dashboard.feature },
+  { path: '*',             element: <NotFoundPage />, public: true },
 ];
 
 export default contentRoutes;
