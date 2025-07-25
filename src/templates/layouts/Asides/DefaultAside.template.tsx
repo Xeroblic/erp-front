@@ -10,6 +10,7 @@ import { selectFeaturesList } from "@/store/slices/featuresSlice/featuresSlice";
 import AsideHeadPart from "./_parts/AsideHead.part";
 import AsideFooterPart from "./_parts/AsideFooter.part";
 import { featuresApi } from "@/services/RtkQueryService";
+import { hasPermission } from "@/utils/permissions";
 
 // Componente guard que chequea permiso + feature
 interface GuardProps { authority?: string[]; feature?: string; }
@@ -32,20 +33,23 @@ const matchPermission = (required: string, granted: string[]) => {
 };
 
 
+
 const AuthorityFeatureGuard: React.FC<GuardProps & { children: React.ReactNode }> = ({
-	authority = [], feature, children
+  authority = [],
+  feature,
+  children,
 }) => {
-	const userPerms = useAppSelector(selectUserAuthority);
-	const userFeats = useAppSelector(selectFeaturesList);
-	console.log('>> MIS FEATURES', userFeats);
+  const userPerms = useAppSelector(selectUserAuthority);
+  const userFeats = useAppSelector(selectFeaturesList);
 
+  const okPerm =
+    authority.length === 0 || authority.some(req => hasPermission(req, userPerms));
 
-	const okPerm = authority.length === 0 || authority.some(p => userPerms.includes(p));
-	const okFeat = !feature || userFeats.includes(feature);
-	console.log('>> okPerm', okPerm, 'okFeat', okFeat, 'feature', feature, 'authority', authority);
+  const okFeat = !feature || userFeats.includes(feature);
 
-	return okPerm && okFeat ? <>{children}</> : null;
+  return okPerm && okFeat ? <>{children}</> : null;
 };
+
 
 
 
