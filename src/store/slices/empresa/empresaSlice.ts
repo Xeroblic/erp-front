@@ -31,7 +31,7 @@ export const fetchEmpresas = createAsyncThunk<IEmpresa[], void, { rejectValue: s
   'empresa/fetchEmpresas',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await ApiService.fetchData<IEmpresa[]>({ url: '/empresas/${id}', method: 'get' });
+      const response = await ApiService.fetchData<IEmpresa[]>({ url: '/companies/${id}', method: 'get' });
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Error fetching empresas');
@@ -45,7 +45,7 @@ export const fetchEmpresaPrincipal = createAsyncThunk<IEmpresa, number>(
   async (empresaId, { rejectWithValue }) => {
     try {
       const { data } = await ApiService.fetchData<IEmpresa>({
-        url: `/empresa/${empresaId}`,
+        url: `/companies/${empresaId}`,
         method: 'get',
       });
       return data;
@@ -65,7 +65,7 @@ export const patchEmpresaPrincipal = createAsyncThunk<
   async (empresaData, { rejectWithValue }) => {
     try {
       const response = await ApiService.fetchData<IEmpresa>({
-        url: '/empresa/1',
+        url: '/companies/1',
         method: 'patch',
         data: empresaData,
       });
@@ -82,7 +82,7 @@ export const fetchEmpresaDetail = createAsyncThunk<IEmpresa, number>(
   async (empresaId, { rejectWithValue }) => {
     try {
       const response = await ApiService.fetchData<IEmpresa>({
-        url: `/empresas/${empresaId}`,
+        url: `/companies/${empresaId}`,
         method: 'get'
       });
       return response.data;
@@ -98,7 +98,7 @@ export const fetchSubempresas = createAsyncThunk<IEmpresa['subempresas'], number
   'empresa/fetchSubempresas',
   async (empresaId, { rejectWithValue }) => {
     try {
-      const response = await ApiService.fetchData<IEmpresa>({ url: `/empresa/${empresaId}/subempresas/`, method: 'get' });
+      const response = await ApiService.fetchData<IEmpresa>({ url: `/companies/${empresaId}/subempresas/`, method: 'get' });
       return response.data.subempresas;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Error fetching subempresas');

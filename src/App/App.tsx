@@ -19,6 +19,7 @@ import Wrapper from "@/components/layouts/Wrapper/Wrapper";
 import HeaderRouter from "@/components/router/HeaderRouter";
 import ContentRouter from "@/components/router/ContentRouter";
 import FooterRouter from "@/components/router/FooterRouter";
+import { useGetFeaturesQuery } from "@/services/RtkQueryService";
 
 dayjs.extend(localizedFormat);
 
@@ -26,6 +27,7 @@ const App: React.FC = () => {
   getOS();
   const { fontSize } = useFontSize();
   const { isDarkTheme } = useDarkMode();
+  useGetFeaturesQuery();
 //   const isAuth = useSelector(selectIsAuthenticated);
 
 //   if (!isAuth) {

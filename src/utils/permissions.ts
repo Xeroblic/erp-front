@@ -1,13 +1,13 @@
-export const hasPermission = (pattern: string, granted: string[]) => {
-  // super-admin bypass
+export const hasPermission = (pattern: string, granted: string[]): boolean => {
+  // 1) super-admin bypass
   if (granted.includes('super-admin')) return true;
 
-  // comodín "prefijo:*"
+  // 2) comodín  "prefijo:*"  (p.e. company:*)
   if (pattern.endsWith(':*')) {
-    const prefix = pattern.slice(0, -2);           // "company:*" -> "company"
+    const prefix = pattern.slice(0, -2);          // 'company:*' → 'company'
     return granted.some(p => p.endsWith(`-${prefix}`));
   }
 
-  // coincidencia exacta
+  // 3) coincidencia exacta
   return granted.includes(pattern);
 };

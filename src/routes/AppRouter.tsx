@@ -1,21 +1,20 @@
-// src/routes/AppRouter.tsx
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-
 import contentRoutes, { IRoutePersonalizada } from './contentRoutes';
 import { selectUserAuthority } from '@/store/slices/auth/authSlice';
-import { selectFeaturesList } from '@/store/slices/featuresSlice/featuresSlice';
+import { useGetFeaturesQuery } from '@/services/RtkQueryService';
 import { hasPermission } from '@/utils/acl';
 
 const AppRouter: React.FC = () => {
   const permisos = useSelector(selectUserAuthority); // array<string>
-  const features = useSelector(selectFeaturesList);  // array<string>
+  const { data: features = [], isLoading } = useGetFeaturesQuery(); // ✅ nuevo uso
+
+  if (isLoading) return <div>Loading rutas...</div>; // o Skeleton/Spinner
 
   const allowed = contentRoutes.filter((r: IRoutePersonalizada) => {
     if (r.public) return true;
 
-    // ► permisos
     if (
       r.authority &&
       r.authority.length > 0 &&
@@ -24,7 +23,6 @@ const AppRouter: React.FC = () => {
       return false;
     }
 
-    // ► features
     if (r.feature && !features.includes(r.feature)) {
       return false;
     }

@@ -36,7 +36,7 @@ const staticReducers = {
     auth,
     core,
     empresa,
-    cliente,
+    // cliente,
     invitacion,
     rolesPermisos,
     features,

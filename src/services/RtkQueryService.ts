@@ -16,19 +16,24 @@ export const featuresApi = createApi({
     // 🔑  devolvemos SIEMPRE string[]
     getFeatures: builder.query<string[], void>({
       query: () => '/features',
-
-      // ① Si el backend devuelve array → lo usamos tal cual
-      // ② Si devuelve {features:[…]} → extraemos la llave
       transformResponse: (raw: unknown): string[] => {
         if (Array.isArray(raw)) return raw;
         // @ts-ignore — intentamos leer .features
         if (Array.isArray(raw?.features)) return raw.features;
         return []; // fallback seguro
       },
+      keepUnusedDataFor: 900,
+    }),
 
-      keepUnusedDataFor: 900, // cache 15 min
+    // Mutation para asignar features a un usuario
+    assignFeatures: builder.mutation<void, { userId: number; features: string[] }>({
+      query: ({ userId, features }) => ({
+        url: `/users/${userId}/features`,
+        method: 'POST',
+        body: { features },
+      }),
     }),
   }),
 });
 
-export const { useGetFeaturesQuery } = featuresApi;
+export const { useGetFeaturesQuery, useAssignFeaturesMutation } = featuresApi;

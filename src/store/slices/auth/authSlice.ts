@@ -158,10 +158,19 @@ const authSlice = createSlice({
       })
       .addCase(userMeThunk.fulfilled, (s, { payload }) => {
         s.loading = false;
-        s.user = { ...payload.user, authority: payload.permisos };
-        s.permisos = payload.permisos;
+
+        // 🔑 Mezclamos permisos + cargo como feature
+        const authority = [
+          ...payload.permisos,
+          ...(payload.user.cargo ? [payload.user.cargo] : []),
+        ];
+
+        s.user = { ...payload.user, authority };
+        s.permisos = authority;
+
         s.isAuthenticated = true;
       })
+   
       .addCase(userMeThunk.rejected, (s, a) => {
         s.loading = false;
         s.error = a.payload;

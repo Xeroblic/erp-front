@@ -9,46 +9,28 @@ import { selectUserAuthority } from "@/store/slices/auth/authSlice";
 import { selectFeaturesList } from "@/store/slices/featuresSlice/featuresSlice";
 import AsideHeadPart from "./_parts/AsideHead.part";
 import AsideFooterPart from "./_parts/AsideFooter.part";
-import { featuresApi } from "@/services/RtkQueryService";
-import { hasPermission } from "@/utils/permissions";
-
+import { featuresApi, useGetFeaturesQuery } from "@/services/RtkQueryService";
+import { hasPermission } from '@/utils/acl';
 // Componente guard que chequea permiso + feature
 interface GuardProps { authority?: string[]; feature?: string; }
 
 
 
-// DefaultAsideTemplate.tsx  (o crea un helper aparte)
-const matchPermission = (required: string, granted: string[]) => {
-  // 1. Super admin siempre pasa
-  if (granted.includes('super-admin') || granted.includes('super_admin')) return true;
-
-  // 2. Wildcard "prefijo:*"
-  if (required.endsWith(':*')) {
-    const prefix = required.slice(0, -2);          // 'empresa:*' -> 'empresa'
-    return granted.some(p => p.startsWith(prefix));
-  }
-
-  // 3. Coincidencia exacta
-  return granted.includes(required);
-};
 
 
 
-const AuthorityFeatureGuard: React.FC<GuardProps & { children: React.ReactNode }> = ({
-  authority = [],
-  feature,
-  children,
-}) => {
-  const userPerms = useAppSelector(selectUserAuthority);
-  const userFeats = useAppSelector(selectFeaturesList);
+const AuthorityFeatureGuard: React.FC<GuardProps & { children: React.ReactNode }> =
+	({ authority = [], feature, children }) => {
+		const userPerms = useAppSelector(selectUserAuthority);
+		const { data: userFeats = [] } = useGetFeaturesQuery();
+		const okPerm = authority.length === 0 ||
+			authority.length === 0 || authority.some(req => hasPermission(req, userPerms))
 
-  const okPerm =
-    authority.length === 0 || authority.some(req => hasPermission(req, userPerms));
 
-  const okFeat = !feature || userFeats.includes(feature);
+		const okFeat = !feature || userFeats.includes(feature);
 
-  return okPerm && okFeat ? <>{children}</> : null;
-};
+		return okPerm && okFeat ? <>{children}</> : null;
+	};
 
 
 
@@ -57,11 +39,11 @@ const AuthorityFeatureGuard: React.FC<GuardProps & { children: React.ReactNode }
 
 function DefaultAsideTemplate() {
 
-  const { data: feats = [], isLoading } = featuresApi.useGetFeaturesQuery();
+	const { data: feats = [], isLoading } = featuresApi.useGetFeaturesQuery();
 
-  const navigate = useNavigate();
-  const cfg = pagesConfig as any;	
-  if (isLoading) return <Aside>…Loading…</Aside>;
+	const navigate = useNavigate();
+	const cfg = pagesConfig as any;
+	if (isLoading) return <Aside>…Loading…</Aside>;
 	return (
 		<Aside>
 			<AsideHeadPart />
