@@ -9,13 +9,11 @@ axios.interceptors.response.use(
     if (error.response?.status === 401) {
       console.warn("🔐 Token inválido o expirado, redirigiendo al login...");
 
-      // Limpia token y store persistido (si aplica)
       localStorage.removeItem("token");
       if (persistor?.purge) {
-        persistor.purge(); // redux-persist
+        persistor.purge();
       }
 
-      // Evita redirect infinito si ya estás en /login
       if (window.location.pathname !== "/login") {
         window.location.href = "/login";
       }
