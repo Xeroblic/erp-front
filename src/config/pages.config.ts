@@ -21,74 +21,67 @@ export const privatePages = {
     to: '/dashboard',
     text: 'Dashboard',
     icon: 'HeroChartBarSquare',
-    authority: ['dashboard.view'],
-  },
-  products: {
-    id: 'products',
-    to: '/productos',
-    text: 'Productos',
-    icon: 'HeroArchiveBox',
-    authority: ['product.view'],
+    authority: ['view-dashboard'],
   },
   users: {
     id: 'users',
     to: '/usuarios',
     text: 'Usuarios',
     icon: 'HeroUsers',
-    authority: ['user.view'],
-  },
-  quotes: {
-    id: 'quotes',
-    to: '/cotizaciones',
-    text: 'Cotizaciones',
-    icon: 'HeroDocumentText',
-    authority: ['quote.view'],
+    authority: ['view-user'],
   },
   manage: {
     id: 'manage',
     to: '/gestion',
     text: 'Gestión',
     icon: 'HeroBuildingStorefront',
-    authority: ['company.view', 'subsidiary.view', 'branch.view', 'user.view', 'role.view'],
+    authority: [
+      'view-company',
+      'view-subsidiary',
+      'view-branch',
+      'view-user',
+      'edit-roles'
+    ],
     subPages: {
       company: {
         id: 'company',
         to: '/gestion/empresa',
         text: 'Empresa',
         icon: 'HeroBuildingStorefront',
-        authority: ['companies.view'],
+        authority: ['view-company'],
       },
       subsidiary: {
         id: 'subsidiary',
         to: '/gestion/subempresa',
         text: 'Subempresa',
         icon: 'HeroBuildingStorefront',
-        authority: ['subsidiaries.view'],
+        authority: ['view-subsidiary'],
       },
       branch: {
         id: 'branch',
         to: '/gestion/sucursal',
         text: 'Sucursal',
         icon: 'HeroBuildingStorefront',
-        authority: ['branches.view'],
+        authority: ['view-branch'],
       },
       roles: {
         id: 'roles',
         to: '/gestion/roles-permisos',
         text: 'Roles y permisos',
         icon: 'HeroShieldCheck',
-        authority: ['user.edit-roles'],
+        authority: ['edit-roles'],
       },
       manageUsers: {
         id: 'manageUsers',
         to: '/gestion/usuarios',
         text: 'Usuarios',
         icon: 'HeroUsers',
-        authority: ['user.view'],
+        authority: ['view-user'],
       },
     },
   },
 };
+
 
 export const pagesConfig = { ...authPages, ...privatePages };
 export default pagesConfig;
