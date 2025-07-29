@@ -7,7 +7,7 @@ axios.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      console.warn("🔐 Token inválido o expirado, redirigiendo al login...");
+      // console.warn("Token inválido o expirado, redirigiendo al login...");
 
       localStorage.removeItem("token");
       if (persistor?.purge) {
