@@ -1,12 +1,34 @@
 import axios, { AxiosRequestConfig } from "axios";
-import store from "@/store"; // si tienes acceso al store
+import store, { persistor } from "@/store"; // ← si usás redux-persist
 
 const BASE_URL = "http://127.0.0.1:8000/api";
 
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      console.warn("🔐 Token inválido o expirado, redirigiendo al login...");
+
+      // Limpia token y store persistido (si aplica)
+      localStorage.removeItem("token");
+      if (persistor?.purge) {
+        persistor.purge(); // redux-persist
+      }
+
+      // Evita redirect infinito si ya estás en /login
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
 const ApiService = {
   async fetchData<T = any>(options: AxiosRequestConfig): Promise<{ data: T }> {
-    const state = store.getState(); // importante
-    const token = state.auth.access;
+    const state = store.getState();
+    const token = state.auth?.access ?? localStorage.getItem("token");
 
     const headers = {
       ...options.headers,
