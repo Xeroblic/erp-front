@@ -1,7 +1,9 @@
 import store, { setToken, logout } from "@/store";
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
+import { set } from "lodash";
 import { toast } from "react-toastify";
 
+// Extender la interfaz de configuración para incluir isLoginRequest y _retry
 interface CustomAxiosRequestConfig<D = any> extends InternalAxiosRequestConfig<D> {
     isLoginRequest?: boolean;
     _retry?: boolean;
@@ -9,19 +11,19 @@ interface CustomAxiosRequestConfig<D = any> extends InternalAxiosRequestConfig<D
 
 const BaseService = axios.create({
     timeout: 60000,
-    baseURL: import.meta.env.VITE_API_URL, // Laravel: http://127.0.0.1:8000/api
+    baseURL: `${process.env.VITE_API_URL}`
 });
 
 // Interceptor de Solicitud
 BaseService.interceptors.request.use(
     (config: CustomAxiosRequestConfig) => {
-        const token = store.getState().auth.access;
-
-        if (token && !config.isLoginRequest) {
-            config.headers['Authorization'] = `Bearer ${token}`;
+        if (!config.isLoginRequest) {
+            const token = store.getState().auth.access
+            if (token) {
+                config.headers = config.headers || {};
+                config.headers['Authorization'] = 'Bearer ' + token;
+            }
         }
-
-
         return config;
     },
     error => Promise.reject(error)
@@ -33,32 +35,38 @@ BaseService.interceptors.response.use(
     async (error: AxiosError) => {
         const originalRequest = error.config as CustomAxiosRequestConfig;
 
-        // Si es 401 y no se ha reintentado aún
         if (
-            error.response?.status === 401 &&
+            error.response &&
+            error.response.status === 401 &&
             !originalRequest._retry &&
             !originalRequest.isLoginRequest
         ) {
             originalRequest._retry = true;
 
-            try {
-                const refreshResponse = await axios.post(`${import.meta.env.VITE_API_URL}/refresh`, {}, {
-                    headers: {
-                        'Authorization': `Bearer ${store.getState().auth.access}`,
-                    }
-                });
+            const refreshToken = store.getState().auth.refresh;
+            if (refreshToken) {
+                try {
+                    const refreshResponse = await axios.post(`${process.env.VITE_API_URL}/auth/jwt/refresh`, {
+                        refresh: refreshToken
+                    });
 
-                const newToken = refreshResponse.data.token; // Laravel responde con { token: "..." }
-                store.dispatch(setToken(newToken));
+                    const newToken = refreshResponse.data.access;
+                    store.dispatch(setToken(newToken))
 
-                originalRequest.headers = originalRequest.headers || {};
-                originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+                    originalRequest.headers['Authorization'] = 'Bearer ' + newToken;
 
-                return BaseService(originalRequest);
-            } catch (refreshError) {
-                toast.error("Sesión expirada. Inicia sesión nuevamente.");
-                store.dispatch(logout());
-                return Promise.reject(refreshError);
+                    // Reintentar la solicitud original con el nuevo token
+                    return BaseService(originalRequest);
+                } catch (refreshError) {
+                    // Manejar el fallo del refresco del token
+                    // console.log("FALLO TOKEN")
+                    toast.error("Sesion Expirada")
+                    store.dispatch(logout())
+                    return Promise.reject(refreshError);
+                }
+            } else {
+                // No hay token de refresco disponible
+                return Promise.reject(error);
             }
         }
 

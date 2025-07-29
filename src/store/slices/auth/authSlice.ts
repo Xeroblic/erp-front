@@ -1,129 +1,122 @@
-// src/store/slices/auth/authSlice.ts
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { toast } from "react-toastify";
 import ApiService from "@/services/ApiService";
-import { RootState } from "@/store";
-import { IPersonalizacionUsuario, IUserMe } from "@/interface/user.interface";
+import { RootState, AppDispatch } from "@/store";
+import { IGruposUsuarios, IPersonalizacionUsuario, IUserMe } from "@/interface/user.interface";
+
+interface LoginResponse {
+    access: string
+    refresh: string
+}
 
 export interface AuthState {
   access?: string;
-  permisos: string[];
+  refresh: string | undefined
   loading: boolean;
   error?: string;
   isAuthenticated: boolean;
-  personalizacionUsuario?: IPersonalizacionUsuario;
+  permisos: string[];
   user?: IUserMe & { authority?: string[] };
+  personalizacionUsuario?: IPersonalizacionUsuario;
+  listaGrupos: IGruposUsuarios | undefined
+
 }
 
 const initialState: AuthState = {
   access: undefined,
-  permisos: [],
+  refresh: undefined,
   loading: false,
   error: undefined,
   isAuthenticated: false,
+  permisos: [],
   user: undefined,
+  personalizacionUsuario: undefined,
+  listaGrupos: undefined,
+
 };
 
-import { AppDispatch } from "@/store"; // Add this import at the top if not present
+export const loginThunk = createAsyncThunk<LoginResponse,{ email: string; password: string },{ rejectValue: string; dispatch: AppDispatch }>(
+  "auth/login", 
+  async ({ email, password }, { dispatch, rejectWithValue }) => {
+  try {
+    const resp = await ApiService.fetchData<{ token: string }>({
+      url: "/login",
+      method: "post",
+      data: { email, password },
+    });
 
-export const loginThunk = createAsyncThunk<
-  void,
-  { email: string; password: string },
-  { rejectValue: string; dispatch: AppDispatch }
->(
-  "auth/login",
-  async ({ email, password }, { rejectWithValue, dispatch }) => {
-    try {
-      const resp = await ApiService.fetchData<{ token: string }>({
-        url: "/login",
-        method: "post",
-        data: { email, password },
-
-      });
-      const token = resp.data.token;
-      dispatch(setToken(token));
-      await (dispatch as unknown as (thunk: any) => Promise<any>)(userMeThunk());
-    } catch (err: any) {
-      const msg = err.response?.data?.error || "Error de autenticación";
-      return rejectWithValue(msg);
-    }
+    const token = resp.data.token;
+    dispatch(setToken(token));
+    await dispatch(userMeThunk() as any);
+    return { access: token, refresh: "" }; 
+  } catch (error: any) {
+    return rejectWithValue(error.response?.data?.error || "Error de autenticación");
   }
-);
+});
 
 export const userMeThunk = createAsyncThunk<
   { user: IUserMe; permisos: string[] },
   void,
   { state: RootState; rejectValue: string }
->(
-  "auth/userMe",
-  async (_, { getState, rejectWithValue }) => {
-    try {
-      const token = getState().auth.access;
-      if (!token) return rejectWithValue("No autenticado");
+>("auth/userMe", async (_, { getState, rejectWithValue }) => {
+  const token = getState().auth.access;
+  if (!token) return rejectWithValue("Token inválido");
 
-      const resp = await ApiService.fetchData<{
-        user: IUserMe;
-        permisos: string[];
-      }>({
-        url: "/perfil",
-        method: "get",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      return { user: resp.data.user, permisos: resp.data.permisos };
-    } catch {
-      return rejectWithValue("No se pudo obtener el perfil");
-    }
+  try {
+    const resp = await ApiService.fetchData<{
+      user: IUserMe;
+      permisos: string[];
+    }>({
+      url: "/perfil",
+      method: "get",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    return resp.data;
+  } catch {
+    return rejectWithValue("No se pudo obtener el perfil");
   }
-);
+});
 
 export const obtenerPersonalizacionThunk = createAsyncThunk<
   IPersonalizacionUsuario,
   void,
   { state: RootState; rejectValue: string }
->(
-  "auth/obtenerPersonalizacion",
-  async (_, { rejectWithValue, getState }) => {
-    try {
-      const token = getState().auth.access;
-      const resp = await ApiService.fetchData<IPersonalizacionUsuario>({
-        url: "/user/personalization",
-        method: "get",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      return resp.data;
-    } catch {
-      return rejectWithValue("No se pudo obtener la personalización");
-    }
+>("auth/obtenerPersonalizacion", async (_, { getState, rejectWithValue }) => {
+  const token = getState().auth.access;
+  try {
+    const resp = await ApiService.fetchData<IPersonalizacionUsuario>({
+      url: "/user/personalization",
+      method: "get",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    return resp.data;
+  } catch {
+    return rejectWithValue("No se pudo obtener la personalización");
   }
-);
+});
 
 export const actualizarPersonalizacionThunk = createAsyncThunk<
   IPersonalizacionUsuario,
   { tema: string; font_size: number },
   { state: RootState; rejectValue: string }
->(
-  "auth/actualizarPersonalizacion",
-  async ({ tema, font_size }, { rejectWithValue, getState }) => {
-    try {
-      const token = getState().auth.access;
-      const resp = await ApiService.fetchData<IPersonalizacionUsuario>({
-        url: "/user/personalization",
-        method: "put",
-        data: { tema, font_size },
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      return resp.data;
-    } catch {
-      return rejectWithValue("No se pudo actualizar la personalización");
-    }
+>("auth/actualizarPersonalizacion", async ({ tema, font_size }, { getState, rejectWithValue }) => {
+  const token = getState().auth.access;
+
+  try {
+    const resp = await ApiService.fetchData<IPersonalizacionUsuario>({
+      url: "/user/personalization",
+      method: "put",
+      data: { tema, font_size },
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    return resp.data;
+  } catch {
+    return rejectWithValue("No se pudo actualizar la personalización");
   }
-);
+});
 
 const authSlice = createSlice({
   name: "auth",
@@ -131,8 +124,9 @@ const authSlice = createSlice({
   reducers: {
     logout: (state) => {
       state.access = undefined;
-      state.permisos = [];
       state.user = undefined;
+      state.refresh = undefined;
+      state.permisos = [];
       state.isAuthenticated = false;
     },
     setToken: (state, action: PayloadAction<string>) => {
@@ -141,17 +135,18 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(loginThunk.pending, (s) => {
-        s.loading = true;
-        s.error = undefined;
+      .addCase(loginThunk.pending, (state) => {
+          state.loading = true
       })
-      .addCase(loginThunk.fulfilled, (s) => {
-        s.loading = false;
+      .addCase(loginThunk.fulfilled, (state, action) => {
+          state.loading = false
+          state.access = action.payload.access
+          state.refresh = action.payload.refresh
+          state.isAuthenticated = true
       })
-      .addCase(loginThunk.rejected, (s, a) => {
-        s.loading = false;
-        s.error = a.payload;
-        toast.error(a.payload);
+      .addCase(loginThunk.rejected, (state, action) => {
+          state.loading = false
+          state.error = action.payload
       })
       .addCase(userMeThunk.pending, (s) => {
         s.loading = true;
@@ -159,7 +154,6 @@ const authSlice = createSlice({
       .addCase(userMeThunk.fulfilled, (s, { payload }) => {
         s.loading = false;
 
-        // 🔑 Mezclamos permisos + cargo como feature
         const authority = [
           ...payload.permisos,
           ...(payload.user.cargo ? [payload.user.cargo] : []),
@@ -167,14 +161,12 @@ const authSlice = createSlice({
 
         s.user = { ...payload.user, authority };
         s.permisos = authority;
-
         s.isAuthenticated = true;
       })
-   
-      .addCase(userMeThunk.rejected, (s, a) => {
+      .addCase(userMeThunk.rejected, (s, action) => {
         s.loading = false;
-        s.error = a.payload;
-        toast.error(a.payload);
+        s.error = action.payload;
+        toast.error(action.payload);
       })
       .addCase(obtenerPersonalizacionThunk.pending, (s) => {
         s.loading = true;
@@ -183,24 +175,25 @@ const authSlice = createSlice({
         s.loading = false;
         s.personalizacionUsuario = payload;
       })
-      .addCase(obtenerPersonalizacionThunk.rejected, (s, a) => {
+      .addCase(obtenerPersonalizacionThunk.rejected, (s, action) => {
         s.loading = false;
-        s.error = a.payload;
-        toast.error(a.payload);
+        s.error = action.payload;
+        toast.error(action.payload);
       })
       .addCase(actualizarPersonalizacionThunk.fulfilled, (s, { payload }) => {
         s.loading = false;
         s.personalizacionUsuario = payload;
       })
-      .addCase(actualizarPersonalizacionThunk.rejected, (s, a) => {
+      .addCase(actualizarPersonalizacionThunk.rejected, (s, action) => {
         s.loading = false;
-        toast.error(a.payload);
+        toast.error(action.payload);
       });
   },
 });
 
 export const { logout, setToken } = authSlice.actions;
-export const selectIsAuthenticated = (state: RootState) =>
-  state.auth.isAuthenticated;
+
+// Selectores
+export const selectIsAuthenticated = (state: RootState) => state.auth.isAuthenticated;
 export const selectUserAuthority = (state: RootState) => state.auth.permisos;
 export default authSlice.reducer;

@@ -30,53 +30,29 @@ export interface IRoutePersonalizada extends PathRouteProps {
 const cfg = pagesConfig as any;
 
 const contentRoutes: IRoutePersonalizada[] = [
-  /* públicas ------------------------- */
-  { path: cfg.loginPage.to,          element: <LoginPage />,        public: true },
-  { path: cfg.recuperarPassword.to,  element: <RecuperarPassword />, public: true },
-  { path: cfg.confirmarNuevaPass.to, element: <ConfirmarNuevaPass />, public: true },
-  { path: cfg.aceptarInvitacion.to,  element: <AceptarInvitacion />, public: true },
-
-  /* privadas ------------------------- */
+  // Rutas públicas...
+  { path: cfg.loginPage.to, element: <LoginPage />, public: true },
+  { path: cfg.recuperarPassword.to, element: <RecuperarPassword />, public: true },
+  // ...otras rutas públicas...
+  
+  // Rutas privadas (protegidas por permisos)...
   { path: cfg.profilePage.to, element: <ProfilePage />, authority: cfg.profilePage.authority },
-
-  { path: cfg.dashboard.to,  element: <Dashboard />,  authority: cfg.dashboard.authority, feature: cfg.dashboard.feature },
-
-  /* gestión anidada ------------------ */
-  {
-    path: cfg.manage.subPages.company.to,
-    element: <EmpresaPage />,
-    authority: cfg.manage.subPages.company.authority,
-    feature:   cfg.manage.subPages.company.feature,
-  },
-  {
-    path: cfg.manage.subPages.subsidiary.to,
-    element: <SubEmpresa />,
-    authority: cfg.manage.subPages.subsidiary.authority,
-    feature:   cfg.manage.subPages.subsidiary.feature,
-  },
-  {
-    path: cfg.manage.subPages.branch.to,
-    element: <Sucursales />,
-    authority: cfg.manage.subPages.branch.authority,
-    feature:   cfg.manage.subPages.branch.feature,
-  },
-  {
-    path: cfg.manage.subPages.roles.to,
-    element: <RolesPermisos />,
-    authority: cfg.manage.subPages.roles.authority,
-    feature:   cfg.manage.subPages.roles.feature,
-  },
-  {
-    path: cfg.manage.subPages.manageUsers.to,
-    element: <GestionUsuarios />,
-    authority: cfg.manage.subPages.manageUsers.authority,
-    feature:   cfg.manage.subPages.manageUsers.feature,
-  },
-
-  /* genéricos ------------------------ */
+  { path: cfg.dashboard.to, element: <Dashboard />, authority: cfg.dashboard.authority },
+  
+  // Gestión (rutas anidadas bajo "Gestión")
+  { path: cfg.manage.subPages.company.to, element: <EmpresaPage />, authority: cfg.manage.subPages.company.authority },
+  { path: cfg.manage.subPages.subsidiary.to, element: <SubEmpresa />, authority: cfg.manage.subPages.subsidiary.authority },
+  { path: cfg.manage.subPages.branch.to, element: <Sucursales />, authority: cfg.manage.subPages.branch.authority },
+  { path: cfg.manage.subPages.roles.to, element: <RolesPermisos />, authority: cfg.manage.subPages.roles.authority },
+  { path: cfg.manage.subPages.manageUsers.to, element: <GestionUsuarios />, authority: cfg.manage.subPages.manageUsers.authority },
+  
+  // ... (eventualmente aquí se agregarían rutas para Categorías, Fabricantes, Clientes, etc., con sus respectivos authority)
+  
+  // Rutas genéricas
   { path: '/sin-permisos', element: <SinPermisos />, public: true },
-  { path: '/',             element: <Dashboard />,   authority: cfg.dashboard.authority, feature: cfg.dashboard.feature },
-  { path: '*',             element: <NotFoundPage />, public: true },
+  { path: '/', element: <Dashboard />, authority: cfg.dashboard.authority },  // Redirección raíz al dashboard
+  { path: '*', element: <NotFoundPage />, public: true }
 ];
+
 
 export default contentRoutes;

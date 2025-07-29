@@ -36,7 +36,13 @@ export default function SubEmpresaLista() {
 	const dispatch = useAppDispatch()
 	const navigate = useNavigate()
 
-	const { lista: subempresas, loading, createLoading } = useAppSelector(s => s.subEmpresa)
+	interface SubEmpresaState {
+		lista: ISubempresa[];
+		loading: boolean;
+		createLoading: boolean;
+	}
+
+	const { lista: subempresas, loading, createLoading }: SubEmpresaState = useAppSelector((s: { subEmpresa: SubEmpresaState }) => s.subEmpresa)
 
 	// filtros / sorting
 	const [sorting, setSorting] = useState<SortingState>([])

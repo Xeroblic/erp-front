@@ -1,38 +1,24 @@
-// src/App.tsx
-import React from "react";
-import { BrowserRouter, Navigate } from "react-router-dom";
-import { useSelector } from "react-redux";
-import dayjs from "dayjs";
-import localizedFormat from "dayjs/plugin/localizedFormat";
-import colors from "tailwindcss/colors";
-import { ToastContainer } from "react-toastify";
-import 'react-toastify/dist/ReactToastify.css'
-import AppRouter from "@/routes/AppRouter";
+import localizedFormat from 'dayjs/plugin/localizedFormat';
+import dayjs from 'dayjs';
+import colors from 'tailwindcss/colors';
+import AsideRouter from '../components/router/AsideRouter';
+import Wrapper from '../components/layouts/Wrapper/Wrapper';
+import HeaderRouter from '../components/router/HeaderRouter';
+import ContentRouter from '../components/router/ContentRouter';
+import FooterRouter from '../components/router/FooterRouter';
+import useFontSize from '../hooks/useFontSize';
+import getOS from '../utils/getOS.util';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import useDarkMode from '@/hooks/useDarkMode';
 
-import DefaultAsideTemplate from "@/templates/layouts/Asides/DefaultAside.template";
-import { selectIsAuthenticated } from "@/store/slices/auth/authSlice";
-import useFontSize from "@/hooks/useFontSize";
-import useDarkMode from "@/hooks/useDarkMode";
-import getOS from "@/utils/getOS.util";
-import AsideRouter from "@/components/router/AsideRouter";
-import Wrapper from "@/components/layouts/Wrapper/Wrapper";
-import HeaderRouter from "@/components/router/HeaderRouter";
-import ContentRouter from "@/components/router/ContentRouter";
-import FooterRouter from "@/components/router/FooterRouter";
-import { useGetFeaturesQuery } from "@/services/RtkQueryService";
 
-dayjs.extend(localizedFormat);
+const App = () => {
+	getOS();
 
-const App: React.FC = () => {
-  getOS();
-  const { fontSize } = useFontSize();
-  const { isDarkTheme } = useDarkMode();
-  useGetFeaturesQuery();
-//   const isAuth = useSelector(selectIsAuthenticated);
-
-//   if (!isAuth) {
-//     return <Navigate to="/login" replace />;
-//   }	
+	const { fontSize } = useFontSize();
+	dayjs.extend(localizedFormat);
+	const { isDarkTheme } = useDarkMode()
 
 	return (
 		<>

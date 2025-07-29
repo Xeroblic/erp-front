@@ -1,41 +1,101 @@
-// src/components/layouts/Aside/DefaultAsideTemplate.tsx
-import React from "react";
+import React, { PropsWithChildren, useMemo } from 'react';
 import { useNavigate } from "react-router-dom";
 import Aside, { AsideBody } from "@/components/layouts/Aside/Aside";
-import Nav, { NavItem, NavCollapse, NavSeparator } from '../../../components/layouts/Navigation/Nav';
-import pagesConfig from "@/config/pages.config";
+import Nav, {
+  NavItem,
+  NavCollapse,
+  NavSeparator,
+  NavTitle
+} from "@/components/layouts/Navigation/Nav";
 import { useAppSelector } from "@/store";
-import { selectUserAuthority } from "@/store/slices/auth/authSlice";
-import { selectFeaturesList } from "@/store/slices/featuresSlice/featuresSlice";
 import AsideHeadPart from "./_parts/AsideHead.part";
 import AsideFooterPart from "./_parts/AsideFooter.part";
-import { featuresApi, useGetFeaturesQuery } from "@/services/RtkQueryService";
-import AuthorityGuard from "@/components/guards/AuthorityGuard";
+import Pages from "@/config/pages.config";
+import useAuthority from '@/hooks/useAuthority';
 
+type AuthorityGuardProps = PropsWithChildren<{
+	userAuthority?: string[]
+	authority?: string[]
+}>
 
-function DefaultAsideTemplate() {
+const AuthorityCheckNav = (props: AuthorityGuardProps) => {
+	const { userAuthority = [], authority = [], children } = props
 
-	const { data: feats = [], isLoading } = featuresApi.useGetFeaturesQuery();
+	// Si `authority` es vacío o `undefined`, la vista es sin protección
+	if (!authority || authority.length === 0) {
+		return <>{children}</>
+	}
 
+	const roleMatched = useAuthority(userAuthority, authority, true)
+
+	return <>{roleMatched ? children : null}</>
+}
+
+const DefaultAsideTemplate = () => {
+	const { listaGrupos } = useAppSelector((state) => state.auth)
 	const navigate = useNavigate();
-	const cfg = pagesConfig as any;
-	if (isLoading) return <Aside>…Loading…</Aside>;
-	return (
-		<Aside>
-			<AsideHeadPart />
-			<AsideBody>
-				<Nav>
-					<AuthorityGuard authority={cfg.dashboard.authority}>
-						<NavItem {...cfg.dashboard} onClick={() => navigate(cfg.dashboard.to)} />
-					</AuthorityGuard>
+  return (
+    <Aside>
+      <AsideHeadPart />
+      <AsideBody>
+        <Nav>
+          {/* Dashboard */}
+			<AuthorityCheckNav authority={Pages.dashboard.authority} userAuthority={listaGrupos?.grupos}>
+            <NavItem
+              text={Pages.dashboard.text}
+              icon={Pages.dashboard.icon}
+              to={Pages.dashboard.to}
+              onClick={() => navigate(Pages.dashboard.to)}
+              id={Pages.dashboard.id}
+            />
+          </AuthorityCheckNav>
 
-					<NavCollapse text="Gestión" icon={cfg.manage.icon} to="">
-						{Object.values(cfg.manage.subPages).map((pg: any) => (
-							<AuthorityGuard key={pg.id} authority={pg.authority}>
-								<NavItem {...pg} onClick={() => navigate(pg.to)} />
-							</AuthorityGuard>
-						))}
-					</NavCollapse>
+          <NavTitle>Gestión</NavTitle>
+
+		{/* Gestión - Empresa */}
+		<AuthorityCheckNav authority={Pages.manage.subPages.company.authority} userAuthority={listaGrupos?.grupos}>
+		<NavItem
+			text={Pages.manage.subPages.company.text}
+			to={Pages.manage.subPages.company.to}
+			icon={Pages.manage.subPages.company.icon}
+			id={Pages.manage.subPages.company.id}
+			onClick={() => navigate(Pages.manage.subPages.company.to)}
+		/>
+		</AuthorityCheckNav>
+
+		{/* Gestión - Subempresas */}
+		<AuthorityCheckNav authority={Pages.manage.subPages.subsidiary.authority} userAuthority={listaGrupos?.grupos}>
+		<NavItem
+			text={Pages.manage.subPages.subsidiary.text}
+			to={Pages.manage.subPages.subsidiary.to}
+			icon={Pages.manage.subPages.subsidiary.icon}
+			id={Pages.manage.subPages.subsidiary.id}
+			onClick={() => navigate(Pages.manage.subPages.subsidiary.to)}
+		/>
+		</AuthorityCheckNav>
+
+		{/* Gestión - Sucursales */}
+		<AuthorityCheckNav authority={Pages.manage.subPages.branch.authority} userAuthority={listaGrupos?.grupos}>
+		<NavItem
+			text={Pages.manage.subPages.branch.text}
+			to={Pages.manage.subPages.branch.to}
+			icon={Pages.manage.subPages.branch.icon}
+			id={Pages.manage.subPages.branch.id}
+			onClick={() => navigate(Pages.manage.subPages.branch.to)}
+		/>
+		</AuthorityCheckNav>
+
+		{/* Gestión - Usuarios */}
+		<AuthorityCheckNav authority={Pages.manage.subPages.manageUsers.authority} userAuthority={listaGrupos?.grupos}>
+		<NavItem
+			text={Pages.manage.subPages.manageUsers.text}
+			to={Pages.manage.subPages.manageUsers.to}
+			icon={Pages.manage.subPages.manageUsers.icon}
+			id={Pages.manage.subPages.manageUsers.id}
+			onClick={() => navigate(Pages.manage.subPages.manageUsers.to)}
+		/>
+		</AuthorityCheckNav>
+
 
 					{/* <AuthorityCheckNav authority={Pages.listaItem.authority} userAuthority={listaGrupos?.grupos}>
 						<NavItem text={Pages.listaItem.text} to={Pages.listaItem.to} icon={Pages.listaItem.icon} id={Pages.listaItem.id}></NavItem>
