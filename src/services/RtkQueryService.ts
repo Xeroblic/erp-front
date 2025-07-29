@@ -13,7 +13,7 @@ export const featuresApi = createApi({
     },
   }),
   endpoints: (builder) => ({
-    // 🔑  devolvemos SIEMPRE string[]
+    // devolvemos SIEMPRE string[]
     getFeatures: builder.query<string[], void>({
       query: () => '/features',
       transformResponse: (raw: unknown): string[] => {

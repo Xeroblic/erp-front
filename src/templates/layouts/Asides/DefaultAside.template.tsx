@@ -10,31 +10,7 @@ import { selectFeaturesList } from "@/store/slices/featuresSlice/featuresSlice";
 import AsideHeadPart from "./_parts/AsideHead.part";
 import AsideFooterPart from "./_parts/AsideFooter.part";
 import { featuresApi, useGetFeaturesQuery } from "@/services/RtkQueryService";
-import { hasPermission } from '@/utils/acl';
-// Componente guard que chequea permiso + feature
-interface GuardProps { authority?: string[]; feature?: string; }
-
-
-
-
-
-
-const AuthorityFeatureGuard: React.FC<GuardProps & { children: React.ReactNode }> =
-	({ authority = [], feature, children }) => {
-		const userPerms = useAppSelector(selectUserAuthority);
-		const { data: userFeats = [] } = useGetFeaturesQuery();
-		const okPerm = authority.length === 0 ||
-			authority.length === 0 || authority.some(req => hasPermission(req, userPerms))
-
-
-		const okFeat = !feature || userFeats.includes(feature);
-
-		return okPerm && okFeat ? <>{children}</> : null;
-	};
-
-
-
-
+import AuthorityGuard from "@/components/guards/AuthorityGuard";
 
 
 function DefaultAsideTemplate() {
@@ -49,30 +25,17 @@ function DefaultAsideTemplate() {
 			<AsideHeadPart />
 			<AsideBody>
 				<Nav>
-					{/* Dashboard */}
-					<AuthorityFeatureGuard
-						authority={cfg.dashboard.authority}
-						feature={cfg.dashboard.feature}
-					>
+					<AuthorityGuard authority={cfg.dashboard.authority}>
 						<NavItem {...cfg.dashboard} onClick={() => navigate(cfg.dashboard.to)} />
-					</AuthorityFeatureGuard>
+					</AuthorityGuard>
 
-					{/* Gestión */}
 					<NavCollapse text="Gestión" icon={cfg.manage.icon} to="">
 						{Object.values(cfg.manage.subPages).map((pg: any) => (
-							<AuthorityFeatureGuard
-								key={pg.id}
-								authority={pg.authority}
-								feature={pg.feature}
-							>
+							<AuthorityGuard key={pg.id} authority={pg.authority}>
 								<NavItem {...pg} onClick={() => navigate(pg.to)} />
-							</AuthorityFeatureGuard>
+							</AuthorityGuard>
 						))}
 					</NavCollapse>
-
-
-
-
 
 					{/* <AuthorityCheckNav authority={Pages.listaItem.authority} userAuthority={listaGrupos?.grupos}>
 						<NavItem text={Pages.listaItem.text} to={Pages.listaItem.to} icon={Pages.listaItem.icon} id={Pages.listaItem.id}></NavItem>

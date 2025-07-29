@@ -39,7 +39,7 @@ export const fetchSubempresasByEmpresa = createAsyncThunk<
   async (empresaId, { rejectWithValue }) => {
     try {
       const response = await ApiService.fetchData<{ subempresas: ISubempresa[] }>({
-        url: `/empresa/${empresaId}/subempresas`,
+        url: `/companies/${empresaId}/subsidiaries`,
         method: 'get',
       })
       return response.data.subempresas
