@@ -81,10 +81,10 @@ export default function SubEmpresaLista() {
 
 	// columnas de la tabla
 	const columns = [
-		columnHelper.accessor('nombre', { header: 'Subempresa', cell: info => info.getValue() }),
-		columnHelper.accessor('slug', { header: 'Slug', cell: info => info.getValue() }),
-		columnHelper.accessor('descripcion', {
-			header: 'Descripción',
+		columnHelper.accessor('subsidiary_name', { header: 'Subempresa', cell: info => info.getValue() }),
+		columnHelper.accessor('subsidiary_rut', { header: 'Rut Empresa', cell: info => info.getValue() }),
+		columnHelper.accessor('subsidiary_phone', {
+			header: 'N° telefono',
 			cell: info => info.getValue() || '—'
 		}),
 		columnHelper.display({

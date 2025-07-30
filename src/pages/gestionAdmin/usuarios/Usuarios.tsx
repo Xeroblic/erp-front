@@ -1,120 +1,154 @@
 import React, { useEffect, useState } from 'react';
-import { useAppDispatch, useAppSelector } from '@/store';
-import {
-  assignFeatures,
-  fetchFeatures,
-  selectFeaturesList,
-  selectAssignLoading,
-} from '@/store/slices/featuresSlice/featuresSlice';
-import ApiService from '@/services/ApiService';
 import { toast } from 'react-toastify';
+import ApiService from '@/services/ApiService';
+import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
+import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import Container from '@/components/layouts/Container/Container';
+import Card, { CardBody } from '@/components/ui/Card';
+import Table, { THead, Tr, Th, TBody, Td } from '@/components/ui/Table';
+import Badge from '@/components/ui/Badge';
+import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
+import {
+	createColumnHelper,
+	getCoreRowModel,
+	useReactTable,
+	getFilteredRowModel,
+	getPaginationRowModel,
+	getSortedRowModel,
+	flexRender,
+	SortingState
+} from '@tanstack/react-table';
+import Input from '@/components/form/Input';
+import { IUserMe } from '@/interface/user.interface';
+import { useAppSelector } from '@/store';
 
-interface UsuarioLite {
-  id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-  company_name?: string;
+const columnHelper = createColumnHelper<IUserMe>();
+
+export default function UsuarioLista() {
+	const user = useAppSelector((s) => s.auth.user);
+	const empresaId = user?.company?.id;
+
+	const [usuarios, setUsuarios] = useState<IUserMe[]>([]);
+	const [loading, setLoading] = useState(true);
+	const [globalFilter, setGlobalFilter] = useState('');
+	const [sorting, setSorting] = useState<SortingState>([]);
+
+	useEffect(() => {
+		console.log("🧠 auth.user:", user);
+		console.log("🏢 empresaId:", empresaId);
+
+		if (!user) return; // aún no cargado
+
+		if (!empresaId) {
+			toast.warn('Este usuario no tiene empresa asignada');
+			setLoading(false);
+			return;
+		}
+
+		const fetchUsuarios = async () => {
+			try {
+				const { data } = await ApiService.fetchData<{ usuarios: IUserMe[] }>({
+					url: `/companies/${empresaId}/users`,
+					method: 'get',
+				});
+				setUsuarios(data.usuarios);
+			} catch (error: any) {
+				toast.error(error?.response?.data?.message || 'Error al cargar usuarios');
+			} finally {
+				setLoading(false);
+			}
+		};
+
+		fetchUsuarios();
+	}, [user, empresaId]);
+
+	const columns = [
+		columnHelper.accessor('first_name', { header: 'Nombre', cell: info => info.getValue() }),
+		columnHelper.accessor('last_name', { header: 'Apellido', cell: info => info.getValue() }),
+		columnHelper.accessor('email', { header: 'Email', cell: info => info.getValue() }),
+		columnHelper.accessor('rut', { header: 'RUT', cell: info => info.getValue() ?? '—' }),
+		columnHelper.accessor('position', { header: 'Rol / Cargo', cell: info => info.getValue() ?? '—' }),
+		columnHelper.accessor('subsidiary.name', {
+			header: 'Subempresa',
+			cell: info => info.row.original.subsidiary?.name ?? '—',
+		}),
+		columnHelper.accessor('branch.name', {
+			header: 'Sucursal',
+			cell: info => info.row.original.branch?.name ?? '—',
+		}),
+	];
+
+	const table = useReactTable({
+		data: usuarios,
+		columns,
+		state: { globalFilter, sorting },
+		onGlobalFilterChange: setGlobalFilter,
+		onSortingChange: setSorting,
+		getCoreRowModel: getCoreRowModel(),
+		getFilteredRowModel: getFilteredRowModel(),
+		getSortedRowModel: getSortedRowModel(),
+		getPaginationRowModel: getPaginationRowModel(),
+		initialState: { pagination: { pageSize: 10 } }
+	});
+
+	return (
+		<PageWrapper isProtectedRoute title="Usuarios" name="Usuarios">
+			<Subheader>
+				<SubheaderLeft>
+					<Badge className="text-xl">Usuarios de la Empresa</Badge>
+				</SubheaderLeft>
+				<SubheaderRight>
+					<Input
+						name='search'
+						placeholder="Buscar..."
+						value={globalFilter}
+						onChange={e => setGlobalFilter(e.target.value)}
+						className="border rounded w-48"
+					/>
+				</SubheaderRight>
+			</Subheader>
+
+			<Container className="pt-4">
+				<Card>
+					<CardBody className="overflow-auto">
+						{loading ? (
+							<div className="p-8 text-center">Cargando usuarios…</div>
+						) : usuarios.length === 0 ? (
+							<div className="p-8 text-center text-gray-600">No hay usuarios registrados</div>
+						) : (
+							<>
+								<Table className="table-fixed w-full">
+									<THead>
+										{table.getHeaderGroups().map(hg => (
+											<Tr key={hg.id}>
+												{hg.headers.map(header => (
+													<Th key={header.id} className="text-left">
+														{flexRender(header.column.columnDef.header, header.getContext())}
+													</Th>
+												))}
+											</Tr>
+										))}
+									</THead>
+									<TBody>
+										{table.getRowModel().rows.map(row => (
+											<Tr key={row.id}>
+												{row.getVisibleCells().map(cell => (
+													<Td key={cell.id}>
+														{flexRender(cell.column.columnDef.cell, cell.getContext())}
+													</Td>
+												))}
+											</Tr>
+										))}
+									</TBody>
+								</Table>
+								<div className="mt-4">
+									<TableCardFooterTemplateV2 table={table} />
+								</div>
+							</>
+						)}
+					</CardBody>
+				</Card>
+			</Container>
+		</PageWrapper>
+	);
 }
-
-const Usuarios = () => {
-  const dispatch = useAppDispatch();
-  const isSaving = useAppSelector(selectAssignLoading);
-  const currentFeatures = useAppSelector(selectFeaturesList);
-
-  const [usuarios, setUsuarios] = useState<UsuarioLite[]>([]);
-  const [usuarioId, setUsuarioId] = useState<number | null>(null);
-  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
-
-  // 1. Cargar lista de usuarios por empresa
-  useEffect(() => {
-    const fetchUsuarios = async () => {
-      try {
-        const { data } = await ApiService.fetchData<UsuarioLite[]>({
-          url: '/users?include=company',
-          method: 'get',
-        });
-        setUsuarios(data);
-      } catch (e: any) {
-        toast.error(e.response?.data?.message || 'Error al cargar usuarios');
-      }
-    };
-    fetchUsuarios();
-  }, []);
-
-  // 2. Cuando cambia el usuario seleccionado, cargar sus features
-  useEffect(() => {
-    if (usuarioId !== null) {
-      dispatch(fetchFeatures(usuarioId))
-        .unwrap()
-        .then((data) => setSelectedFeatures(data))
-        .catch((e) => toast.error('Error al obtener features del usuario'));
-    }
-  }, [usuarioId]);
-
-  const toggleFeature = (f: string) => {
-    if (selectedFeatures.includes(f)) {
-      setSelectedFeatures(selectedFeatures.filter((k) => k !== f));
-    } else {
-      setSelectedFeatures([...selectedFeatures, f]);
-    }
-  };
-
-  const guardarCambios = async () => {
-    if (!usuarioId) return;
-    try {
-      await dispatch(assignFeatures({ userId: usuarioId, features: selectedFeatures })).unwrap();
-      toast.success('✅ Features actualizadas correctamente');
-    } catch (err: any) {
-      toast.error(`❌ Error: ${err}`);
-    }
-  };
-
-  return (
-    <div>
-      <h2 className="text-xl font-bold mb-4">Gestión de Features por Usuario</h2>
-
-      {/* Selector de usuario */}
-      <select
-        className="mb-4 p-2 border rounded"
-        value={usuarioId ?? ''}
-        onChange={(e) => setUsuarioId(Number(e.target.value))}
-      >
-        <option value="">Selecciona un usuario</option>
-        {usuarios.map((u) => (
-          <option key={u.id} value={u.id}>
-            {u.first_name} {u.last_name} ({u.email}) {u.company_name ? ` - ${u.company_name}` : ''}
-          </option>
-        ))}
-      </select>
-
-      {/* Lista de checkboxes */}
-      {usuarioId && (
-        <>
-          <div className="flex flex-col gap-2">
-            {currentFeatures.map((feat) => (
-              <label key={feat} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={selectedFeatures.includes(feat)}
-                  onChange={() => toggleFeature(feat)}
-                />
-                {feat}
-              </label>
-            ))}
-          </div>
-
-          <button
-            onClick={guardarCambios}
-            className="mt-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-            disabled={isSaving}
-          >
-            {isSaving ? 'Guardando...' : 'Guardar Cambios'}
-          </button>
-        </>
-      )}
-    </div>
-  );
-};
-
-export default Usuarios;

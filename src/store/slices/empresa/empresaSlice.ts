@@ -7,7 +7,7 @@ export interface EmpresaState {
   error?: string;
   listaEmpresas: IEmpresa[];
   detalleEmpresa?: IEmpresa;
-  listaSubempresas: IEmpresa['subempresas'];
+  listaSubempresas: IEmpresa['subsidiaries'];
   empresaUsuarios?: IEmpresa;
   inviteLoading: boolean;
   inviteError?: string;
@@ -31,31 +31,50 @@ export const fetchEmpresas = createAsyncThunk<IEmpresa[], void, { rejectValue: s
   'empresa/fetchEmpresas',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await ApiService.fetchData<IEmpresa[]>({ url: '/companies/${id}', method: 'get' });
-      return response.data;
+      const empresas = await ApiService.fetchNormalized<IEmpresa[]>({
+        url: '/companies',
+        method: 'get'
+      });
+      return empresas;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Error fetching empresas');
     }
   }
 );
 
-// Obtener detalle de una empresa
+// Obtener detalle de una empresa principal (id fijo)
 export const fetchEmpresaPrincipal = createAsyncThunk<IEmpresa, number>(
   'empresa/fetchEmpresaPrincipal',
   async (empresaId, { rejectWithValue }) => {
     try {
-      const { data } = await ApiService.fetchData<IEmpresa>({
+      const empresa = await ApiService.fetchNormalized<IEmpresa>({
         url: `/companies/${empresaId}`,
         method: 'get',
       });
-      return data;
+      return empresa;
     } catch (e: any) {
       return rejectWithValue(e.response?.data?.message ?? 'Error al cargar empresa');
     }
   }
 );
 
-// Actualizar la empresa principal (id = 1)
+// Obtener detalle de una empresa (otro caso)
+export const fetchEmpresaDetail = createAsyncThunk<IEmpresa, number>(
+  'empresa/fetchEmpresaDetail',
+  async (empresaId, { rejectWithValue }) => {
+    try {
+      const empresa = await ApiService.fetchNormalized<IEmpresa>({
+        url: `/companies/${empresaId}`,
+        method: 'get',
+      });
+      return empresa;
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || 'Error al cargar la empresa');
+    }
+  }
+);
+
+// Actualizar la empresa principal
 export const patchEmpresaPrincipal = createAsyncThunk<
   IEmpresa,
   Partial<IEmpresa>,
@@ -64,62 +83,51 @@ export const patchEmpresaPrincipal = createAsyncThunk<
   'empresa/patchEmpresaPrincipal',
   async (empresaData, { rejectWithValue }) => {
     try {
-      const response = await ApiService.fetchData<IEmpresa>({
+      const empresa = await ApiService.fetchNormalized<IEmpresa>({
         url: '/companies/1',
         method: 'patch',
         data: empresaData,
       });
-      return response.data;
+      return empresa;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Error actualizando la empresa principal');
     }
   }
 );
 
-
-export const fetchEmpresaDetail = createAsyncThunk<IEmpresa, number>(
-  'empresa/fetchEmpresaDetail',
-  async (empresaId, { rejectWithValue }) => {
-    try {
-      const response = await ApiService.fetchData<IEmpresa>({
-        url: `/companies/${empresaId}`,
-        method: 'get'
-      });
-      return response.data;
-    } catch (err: any) {
-      return rejectWithValue(err.response?.data?.message || 'Error al cargar la empresa');
-    }
-  }
-);
-
-
-// Obtener subempresas de una empresa
-export const fetchSubempresas = createAsyncThunk<IEmpresa['subempresas'], number, { rejectValue: string }>(
+// Obtener subempresas (responde como empresa con { subsidiaries: [...] }, no normalizado)
+export const fetchSubempresas = createAsyncThunk<IEmpresa['subsidiaries'], number, { rejectValue: string }>(
   'empresa/fetchSubempresas',
   async (empresaId, { rejectWithValue }) => {
     try {
-      const response = await ApiService.fetchData<IEmpresa>({ url: `/companies/${empresaId}/subempresas/`, method: 'get' });
-      return response.data.subempresas;
+      const response = await ApiService.fetchData<IEmpresa>({
+        url: `/companies/${empresaId}/subsidiaries/`,
+        method: 'get',
+      });
+      return response.data.subsidiaries;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Error fetching subempresas');
     }
   }
 );
 
-// Obtener usuarios de una empresa (incluye subempresas y sucursales)
+// Obtener usuarios de una empresa
 export const fetchEmpresaUsuarios = createAsyncThunk<IEmpresa, number, { rejectValue: string }>(
   'empresa/fetchEmpresaUsuarios',
   async (empresaId, { rejectWithValue }) => {
     try {
-      const response = await ApiService.fetchData<IEmpresa>({ url: `/empresas/${empresaId}/usuarios`, method: 'get' });
-      return response.data;
+      const empresa = await ApiService.fetchNormalized<IEmpresa>({
+        url: `/empresas/${empresaId}/usuarios`,
+        method: 'get',
+      });
+      return empresa;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Error fetching usuarios');
     }
   }
 );
 
-// Invitar a un nuevo usuario a la empresa
+// Invitar usuario (estructura custom: no tiene `data:`)
 export const inviteUsuario = createAsyncThunk<
   { usuario: IUsuarioEmpresa; password_temporal: string },
   { empresaId: number; nombre: string; email: string },
@@ -135,11 +143,12 @@ export const inviteUsuario = createAsyncThunk<
       });
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Error inviting usuario');
+      return rejectWithValue(error.response?.data?.message || 'Error invitando usuario');
     }
   }
 );
 
+// Slice
 const empresaSlice = createSlice({
   name: 'empresa',
   initialState,
@@ -171,6 +180,7 @@ const empresaSlice = createSlice({
         state.loading = false;
         state.error = payload as string;
       })
+
       .addCase(fetchEmpresaPrincipal.pending, (state) => {
         state.loading = true;
         state.error = undefined;
@@ -182,6 +192,19 @@ const empresaSlice = createSlice({
       .addCase(fetchEmpresaPrincipal.rejected, (state, { payload }) => {
         state.loading = false;
         state.error = payload as string;
+      })
+
+      .addCase(patchEmpresaPrincipal.pending, (state) => {
+        state.loading = true;
+        state.error = undefined;
+      })
+      .addCase(patchEmpresaPrincipal.fulfilled, (state, { payload }) => {
+        state.loading = false;
+        state.detalleEmpresa = payload;
+      })
+      .addCase(patchEmpresaPrincipal.rejected, (state, { payload }) => {
+        state.loading = false;
+        state.error = payload;
       })
 
       .addCase(fetchSubempresas.pending, (state) => {

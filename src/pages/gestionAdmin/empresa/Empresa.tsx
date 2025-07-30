@@ -17,7 +17,7 @@ import { unwrapResult } from '@reduxjs/toolkit'
 
 export default function EmpresaDetalle() {
 	const dispatch = useAppDispatch()
-	const { detalleEmpresa: empresa, loading, error } = useAppSelector(s => s.empresa)
+	const { detalleEmpresa, loading, error } = useAppSelector(s => s.empresa)
 
 	// 1) Carga al montar
 	useEffect(() => {
@@ -28,30 +28,30 @@ export default function EmpresaDetalle() {
 	const formik = useFormik({
 		enableReinitialize: true,
 		initialValues: {
-			nombre: empresa?.nombre || '',
-			rut: empresa?.rut || '',
-			descripcion: empresa?.descripcion || '',
+			company_name: detalleEmpresa?.company_name || '',
+			company_rut: detalleEmpresa?.company_rut || '',
+			business_activity: detalleEmpresa?.business_activity || '',
 		},
 		validationSchema: Yup.object({
-			nombre: Yup.string()
+			company_name: Yup.string()
 				.required('El nombre es requerido')
 				.min(3, 'El nombre debe tener al menos 3 caracteres')
 				.max(100, 'El nombre no puede superar los 100 caracteres')
 				.matches(/^[a-zA-Z0-9\sáéíóúÁÉÍÓÚñÑ.,-]+$/, 'El nombre contiene caracteres inválidos'),
-			rut: Yup.string()
+			company_rut: Yup.string()
 				.required('El RUT es requerido')
 				.matches(/^[0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}\-?[0-9kK]{1}$/, 'El RUT no tiene un formato válido'),
-			descripcion: Yup.string()
+			business_activity: Yup.string()
 				.nullable()
 				.max(255, 'La descripción no puede superar los 255 caracteres'),
 		}),
 		validate: values => {
 			const errors: Record<string, string> = {};
-			if (values.nombre && values.nombre.trim().length === 0) {
-				errors.nombre = 'El nombre no puede estar vacío';
+			if (values.company_name && values.company_name.trim().length === 0) {
+				errors.company_name = 'El nombre no puede estar vacío';
 			}
-			if (values.rut && !/^[0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}\-?[0-9kK]{1}$/.test(values.rut)) {
-				errors.rut = 'El RUT no tiene un formato válido';
+			if (values.company_rut && !/^[0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}\-?[0-9kK]{1}$/.test(values.company_rut)) {
+				errors.company_rut = 'El RUT no tiene un formato válido';
 			}
 			if (Object.keys(errors).length > 0) {
 				Object.values(errors).forEach(msg => toast.error(msg));
@@ -59,17 +59,17 @@ export default function EmpresaDetalle() {
 			return errors;
 		},
 		onSubmit: async values => {
-			if (!empresa?.id) {
+			if (!detalleEmpresa?.id) {
 				toast.error('No se puede actualizar: empresa no cargada');
 				return;
 			}
 			try {
 				const action = await dispatch(
-					patchEmpresaPrincipal({ id: empresa.id, ...values })
+					patchEmpresaPrincipal({ id: detalleEmpresa.id, ...values })
 				);
 				unwrapResult(action);
 				toast.success('Empresa actualizada correctamente');
-				dispatch(fetchEmpresaPrincipal(empresa.id));
+				dispatch(fetchEmpresaPrincipal(detalleEmpresa.id));
 			} catch (e: any) {
 				if (e?.response?.data?.errors) {
 					Object.values(e.response.data.errors).forEach((msg: any) => toast.error(msg));
@@ -99,7 +99,7 @@ export default function EmpresaDetalle() {
 				</span>
 			</div>
 		)
-	if (!empresa)
+	if (!detalleEmpresa)
 		return (
 			<div className="flex flex-col items-center justify-center h-64 bg-gray-50 rounded-lg shadow-inner">
 				<span className="inline-flex items-center text-lg text-gray-600 bg-gray-100 border border-gray-300 rounded px-8 py-4 shadow-sm">
@@ -113,7 +113,7 @@ export default function EmpresaDetalle() {
 
 	// 4) Render
 	return (
-		<PageWrapper isProtectedRoute title="Detalle de Empresa" name={empresa.nombre}>
+		<PageWrapper isProtectedRoute title="Detalle de Empresa" name={detalleEmpresa.company_name}>
 			<Container className="pt-4 space-y-6">
 				{/* ● Formulario de edición */}
 				<form onSubmit={formik.handleSubmit} className="space-y-6">
@@ -131,12 +131,12 @@ export default function EmpresaDetalle() {
 									<Input
 										id="nombre"
 										name="nombre"
-										value={formik.values.nombre}
+										value={formik.values.company_name}
 										onChange={formik.handleChange}
 										onBlur={formik.handleBlur}
 									/>
-									{formik.touched.nombre && formik.errors.nombre && (
-										<p className="mt-1 text-red-600 text-sm">{formik.errors.nombre}</p>
+									{formik.touched.company_name && formik.errors.company_name && (
+										<p className="mt-1 text-red-600 text-sm">{formik.errors.company_name}</p>
 									)}
 								</div>
 
@@ -144,14 +144,14 @@ export default function EmpresaDetalle() {
 								<div>
 									<Label htmlFor="rut">RUT</Label>
 									<Input
-										id="rut"
-										name="rut"
-										value={formik.values.rut}
+										id="company_rut"
+										name="company_rut"
+										value={formik.values.company_rut}
 										onChange={formik.handleChange}
 										onBlur={formik.handleBlur}
 									/>
-									{formik.touched.rut && formik.errors.rut && (
-										<p className="mt-1 text-red-600 text-sm">{formik.errors.rut}</p>
+									{formik.touched.company_rut && formik.errors.company_rut && (
+										<p className="mt-1 text-red-600 text-sm">{formik.errors.company_rut}</p>
 									)}
 								</div>
 
@@ -159,14 +159,14 @@ export default function EmpresaDetalle() {
 								<div className="md:col-span-2">
 									<Label htmlFor="descripcion">Descripción</Label>
 									<Input
-										id="descripcion"
-										name="descripcion"
-										value={formik.values.descripcion}
+										id="business_activity"
+										name="business_activity"
+										value={formik.values.business_activity}
 										onChange={formik.handleChange}
 										onBlur={formik.handleBlur}
 									/>
-									{formik.touched.descripcion && formik.errors.descripcion && (
-										<p className="mt-1 text-red-600 text-sm">{formik.errors.descripcion}</p>
+									{formik.touched.business_activity && formik.errors.business_activity && (
+										<p className="mt-1 text-red-600 text-sm">{formik.errors.business_activity}</p>
 									)}
 								</div>
 							</div>
@@ -176,15 +176,15 @@ export default function EmpresaDetalle() {
 								<dl className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-sm text-gray-700">
 									<div>
 										<dt className="font-medium">Creada el</dt>
-										<dd className="mt-1">{new Date(empresa.created_at).toLocaleString()}</dd>
+										<dd className="mt-1">{new Date(detalleEmpresa.created_at).toLocaleString()}</dd>
 									</div>
 									<div>
 										<dt className="font-medium">Última actualización</dt>
-										<dd className="mt-1">{new Date(empresa.updated_at).toLocaleString()}</dd>
+										<dd className="mt-1">{new Date(detalleEmpresa.updated_at).toLocaleString()}</dd>
 									</div>
 									<div>
 										<dt className="font-medium">Rol asignado</dt>
-										<dd className="mt-1">#{empresa.pivot?.rol_id}</dd>
+										<dd className="mt-1">#{detalleEmpresa.pivot?.rol_id}</dd>
 									</div>
 								</dl>
 							</div>
@@ -196,11 +196,11 @@ export default function EmpresaDetalle() {
 				<Card>
 					<CardBody className="space-y-4">
 						<h2 className="text-xl font-semibold">Subempresas</h2>
-						{empresa.subempresas?.length ? (
+						{detalleEmpresa.subsidiaries?.length ? (
 							<ul className="space-y-4">
-								{empresa.subempresas!.map(sub => (
+								{detalleEmpresa.subsidiaries!.map(sub => (
 									<li key={sub.id} className=" rounded-lg p-4 ">
-										<h3 className="font-medium">{sub.nombre}</h3>
+										<h3 className="font-medium">{sub.subsidiary_name}</h3>
 										{sub.sucursales?.length ? (
 											<ul className="mt-2 ml-4 list-disc text-gray-700">
 												{sub.sucursales.map(s => (

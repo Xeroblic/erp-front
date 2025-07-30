@@ -79,7 +79,7 @@ export const createSubempresa = createAsyncThunk<
   async ({ empresaId, nombre, slug, descripcion }, { rejectWithValue }) => {
     try {
       const response = await ApiService.fetchData<ISubempresa>({
-        url: `/empresa/${empresaId}/subempresas`,
+        url: `/companies/${empresaId}/subsidiaries`,
         method: 'post',
         data: { nombre, slug, descripcion },
       })
@@ -100,12 +100,12 @@ export const updateSubempresa = createAsyncThunk<
   async (subempresa, { rejectWithValue }) => {
     try {
       const response = await ApiService.fetchData<ISubempresa>({
-        url: `/subempresas/${subempresa.id}`,
+        url: `/subsidaries/${subempresa.id}`,
         method: 'patch',
         data: {
-          nombre: subempresa.nombre,
-          slug: subempresa.slug,
-          descripcion: subempresa.descripcion,
+          nombre: subempresa.subsidiary_name,
+          slug: subempresa.subsidiary_rut,
+          descripcion: subempresa.subsidiary_phone,
         },
       })
       return response.data
@@ -125,7 +125,7 @@ export const deleteSubempresa = createAsyncThunk<
   async (subempresaId, { rejectWithValue }) => {
     try {
       await ApiService.fetchData<void>({
-        url: `/subempresas/${subempresaId}`,
+        url: `/subsidaries/${subempresaId}`,
         method: 'delete',
       })
       return subempresaId

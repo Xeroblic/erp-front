@@ -16,6 +16,7 @@ import useAuthority from '@/hooks/useAuthority';
 type AuthorityGuardProps = PropsWithChildren<{
 	userAuthority?: string[]
 	authority?: string[]
+	
 }>
 
 const AuthorityCheckNav = (props: AuthorityGuardProps) => {
