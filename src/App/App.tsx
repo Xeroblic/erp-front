@@ -11,7 +11,9 @@ import getOS from '../utils/getOS.util';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import useDarkMode from '@/hooks/useDarkMode';
-
+import AuthDebug from '../components/debug/AuthDebug';
+import UserDataSimulator from '../components/debug/UserDataSimulator';
+// import BackendSimulator from '../components/debug/BackendSimulator';
 
 const App = () => {
 	getOS();
@@ -20,7 +22,7 @@ const App = () => {
 	dayjs.extend(localizedFormat);
 	const { isDarkTheme } = useDarkMode()
 
-	
+
 
 
 	return (
@@ -40,6 +42,9 @@ const App = () => {
     			${colors.amber['500']},
 				${colors.red['500']});`}</style>
 			<div data-component-name='App' className='flex grow flex-col'>
+				{/* <AuthDebug /> */}
+				{/* <UserDataSimulator /> */}
+				{/* <BackendSimulator /> */}
 				<AsideRouter />
 				<Wrapper>
 					<HeaderRouter />

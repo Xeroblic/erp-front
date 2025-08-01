@@ -2,10 +2,10 @@ import React, { PropsWithChildren, useMemo } from 'react';
 import { useNavigate } from "react-router-dom";
 import Aside, { AsideBody } from "@/components/layouts/Aside/Aside";
 import Nav, {
-  NavItem,
-  NavCollapse,
-  NavSeparator,
-  NavTitle
+	NavItem,
+	NavCollapse,
+	NavSeparator,
+	NavTitle
 } from "@/components/layouts/Navigation/Nav";
 import { useAppSelector } from "@/store";
 import AsideHeadPart from "./_parts/AsideHead.part";
@@ -16,89 +16,173 @@ import useAuthority from '@/hooks/useAuthority';
 type AuthorityGuardProps = PropsWithChildren<{
 	userAuthority?: string[]
 	authority?: string[]
-	
+	/** Modo AND - todos los permisos deben coincidir */
+	requireAll?: boolean
+	/** ID de empresa específica */
+	companyId?: number
+	/** ID de subsidiaria específica */
+	subsidiaryId?: number
+	/** ID de sucursal específica */
+	branchId?: number
 }>
 
 const AuthorityCheckNav = (props: AuthorityGuardProps) => {
-	const { userAuthority = [], authority = [], children } = props
+	const {
+		userAuthority = [],
+		authority = [],
+		requireAll = false,
+		companyId,
+		subsidiaryId,
+		branchId,
+		children
+	} = props
+
+	const user = useAppSelector((s) => s.auth.user);
 
 	// Si `authority` es vacío o `undefined`, la vista es sin protección
 	if (!authority || authority.length === 0) {
 		return <>{children}</>
 	}
 
-	const roleMatched = useAuthority(userAuthority, authority, true)
+	const roleMatched = useAuthority(userAuthority, authority, requireAll, true)
+
+	// Verificación contextual adicional
+	if (roleMatched && (companyId || subsidiaryId || branchId)) {
+		const hasContextAccess = checkNavContextualAccess(user, companyId, subsidiaryId, branchId);
+		if (!hasContextAccess) {
+			return null;
+		}
+	}
 
 	return <>{roleMatched ? children : null}</>
 }
 
+// Función auxiliar para verificar acceso contextual en navegación
+function checkNavContextualAccess(
+	user: any,
+	companyId?: number,
+	subsidiaryId?: number,
+	branchId?: number
+): boolean {
+	if (!user) return false;
+
+	// Si es super admin, acceso completo
+	if (user.authority?.includes('super-admin')) {
+		return true;
+	}
+
+	// Verificar acceso por empresa
+	if (companyId && user.company?.id !== companyId) {
+		return false;
+	}
+
+	// Verificar acceso por subsidiaria
+	if (subsidiaryId && user.subsidiary?.id !== subsidiaryId) {
+		return false;
+	}
+
+	// Verificar acceso por sucursal
+	if (branchId && user.branch?.id !== branchId) {
+		return false;
+	}
+
+	return true;
+}
+
 const DefaultAsideTemplate = () => {
 	const userAuthority = useAppSelector((s) => s.auth.permisos);
+	const user = useAppSelector((s) => s.auth.user);
 	const navigate = useNavigate();
-  return (
-    <Aside>
-      <AsideHeadPart />
-      <AsideBody>
-        <Nav>
-          {/* Dashboard */}
-			<AuthorityCheckNav authority={Pages.dashboard.authority} userAuthority={userAuthority}>
-            <NavItem
-              text={Pages.dashboard.text}
-              icon={Pages.dashboard.icon}
-              to={Pages.dashboard.to}
-              onClick={() => navigate(Pages.dashboard.to)}
-              id={Pages.dashboard.id}
-            />
-          </AuthorityCheckNav>
 
-          <NavTitle>Gestión</NavTitle>
+	// Crear un array combinado de permisos y roles para verificación
+	const userPermissionsAndRoles = [
+		...(userAuthority || []),
+		...(user?.roles || []),
+		...(user?.authority || [])
+	];
 
-		{/* Gestión - Empresa */}
-		<NavCollapse text="Registro" icon="HeroDocumentText" to={''}>
-			<AuthorityCheckNav authority={Pages.manage.subPages.company.authority} userAuthority={userAuthority}>
-				<NavItem
-					text={Pages.manage.subPages.company.text}
-					to={Pages.manage.subPages.company.to}
-					icon={Pages.manage.subPages.company.icon}
-					id={Pages.manage.subPages.company.id}
-					onClick={() => navigate(Pages.manage.subPages.company.to)}
-				/>
-			</AuthorityCheckNav>
+	return (
+		<Aside>
+			<AsideHeadPart />
+			<AsideBody>
+				<Nav>
+					{/* Dashboard */}
+					<AuthorityCheckNav authority={Pages.dashboard.authority} userAuthority={userPermissionsAndRoles}>
+						<NavItem
+							text={Pages.dashboard.text}
+							icon={Pages.dashboard.icon}
+							to={Pages.dashboard.to}
+							onClick={() => navigate(Pages.dashboard.to)}
+							id={Pages.dashboard.id}
+						/>
+					</AuthorityCheckNav>
 
-			{/* Gestión - Subempresas */}
-			<AuthorityCheckNav authority={Pages.manage.subPages.subsidiary.authority} userAuthority={userAuthority}>
-				<NavItem
-					text={Pages.manage.subPages.subsidiary.text}
-					to={Pages.manage.subPages.subsidiary.to}
-					icon={Pages.manage.subPages.subsidiary.icon}
-					id={Pages.manage.subPages.subsidiary.id}
-					onClick={() => navigate(Pages.manage.subPages.subsidiary.to)}
-				/>
-			</AuthorityCheckNav>
+					<NavTitle>Gestión</NavTitle>
 
-			{/* Gestión - Sucursales */}
-			<AuthorityCheckNav authority={Pages.manage.subPages.branch.authority} userAuthority={userAuthority}>
-				<NavItem
-					text={Pages.manage.subPages.branch.text}
-					to={Pages.manage.subPages.branch.to}
-					icon={Pages.manage.subPages.branch.icon}
-					id={Pages.manage.subPages.branch.id}
-					onClick={() => navigate(Pages.manage.subPages.branch.to)}
-				/>
-			</AuthorityCheckNav>
+					{/* Gestión - Empresa */}
+					<NavCollapse text="Registro" icon="HeroDocumentText" to={''}>
+						<AuthorityCheckNav authority={Pages.manage.subPages.company.authority} userAuthority={userPermissionsAndRoles}>
+							<NavItem
+								text={Pages.manage.subPages.company.text}
+								to={Pages.manage.subPages.company.to}
+								icon={Pages.manage.subPages.company.icon}
+								id={Pages.manage.subPages.company.id}
+								onClick={() => navigate(Pages.manage.subPages.company.to)}
+							/>
+						</AuthorityCheckNav>
 
-			{/* Gestión - Usuarios */}
-			<AuthorityCheckNav authority={Pages.manage.subPages.manageUsers.authority} userAuthority={userAuthority}>
-				<NavItem
-					text={Pages.manage.subPages.manageUsers.text}
-					to={Pages.manage.subPages.manageUsers.to}
-					icon={Pages.manage.subPages.manageUsers.icon}
-					id={Pages.manage.subPages.manageUsers.id}
-					onClick={() => navigate(Pages.manage.subPages.manageUsers.to)}
-				/>
-			</AuthorityCheckNav>
+						{/* Gestión - Subempresas */}
+						<AuthorityCheckNav authority={Pages.manage.subPages.subsidiary.authority} userAuthority={userPermissionsAndRoles}>
+							<NavItem
+								text={Pages.manage.subPages.subsidiary.text}
+								to={Pages.manage.subPages.subsidiary.to}
+								icon={Pages.manage.subPages.subsidiary.icon}
+								id={Pages.manage.subPages.subsidiary.id}
+								onClick={() => navigate(Pages.manage.subPages.subsidiary.to)}
+							/>
+						</AuthorityCheckNav>
 
-		</NavCollapse>	
+						{/* Gestión - Sucursales */}
+						<AuthorityCheckNav authority={Pages.manage.subPages.branch.authority} userAuthority={userPermissionsAndRoles}>
+							<NavItem
+								text={Pages.manage.subPages.branch.text}
+								to={Pages.manage.subPages.branch.to}
+								icon={Pages.manage.subPages.branch.icon}
+								id={Pages.manage.subPages.branch.id}
+								onClick={() => navigate(Pages.manage.subPages.branch.to)}
+							/>
+						</AuthorityCheckNav>
+
+						{/* Gestión - Usuarios */}
+						<AuthorityCheckNav authority={Pages.manage.subPages.manageUsers.authority} userAuthority={userPermissionsAndRoles}>
+							<NavItem
+								text={Pages.manage.subPages.manageUsers.text}
+								to={Pages.manage.subPages.manageUsers.to}
+								icon={Pages.manage.subPages.manageUsers.icon}
+								id={Pages.manage.subPages.manageUsers.id}
+								onClick={() => navigate(Pages.manage.subPages.manageUsers.to)}
+							/>
+						</AuthorityCheckNav>
+
+						{/* Administrar Permisos */}
+						<AuthorityCheckNav
+							authority={[
+								...(Pages.manage.subPages.permissionsAdmin.authority || []),
+								...(Pages.manage.subPages.permissionsAdmin.roles || [])
+							]}
+							userAuthority={userPermissionsAndRoles}
+							requireAll={Pages.manage.subPages.permissionsAdmin.requireAll}
+						>
+							<NavItem
+								text={Pages.manage.subPages.permissionsAdmin.text}
+								to={Pages.manage.subPages.permissionsAdmin.to}
+								icon={Pages.manage.subPages.permissionsAdmin.icon}
+								id={Pages.manage.subPages.permissionsAdmin.id}
+								onClick={() => navigate(Pages.manage.subPages.permissionsAdmin.to)}
+							/>
+						</AuthorityCheckNav>
+
+					</NavCollapse>
 
 
 					{/* <AuthorityCheckNav authority={Pages.listaItem.authority} userAuthority={listaGrupos?.grupos}>

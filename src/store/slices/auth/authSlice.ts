@@ -5,8 +5,8 @@ import { RootState, AppDispatch } from "@/store";
 import { IGruposUsuarios, IPersonalizacionUsuario, IUserMe } from "@/interface/user.interface";
 
 interface LoginResponse {
-    access: string
-    refresh: string
+  access: string
+  refresh: string
 }
 
 export interface AuthState {
@@ -35,27 +35,27 @@ const initialState: AuthState = {
 
 };
 
-export const loginThunk = createAsyncThunk<LoginResponse,{ email: string; password: string },{ rejectValue: string; dispatch: AppDispatch }>(
-  "auth/login", 
+export const loginThunk = createAsyncThunk<LoginResponse, { email: string; password: string }, { rejectValue: string; dispatch: AppDispatch }>(
+  "auth/login",
   async ({ email, password }, { dispatch, rejectWithValue }) => {
-  try {
-    const resp = await ApiService.fetchData<{ token: string }>({
-      url: "/login",
-      method: "post",
-      data: { email, password },
-    });
+    try {
+      const resp = await ApiService.fetchData<{ token: string }>({
+        url: "/login",
+        method: "post",
+        data: { email, password },
+      });
 
-    const token = resp.data.token;
-    dispatch(setToken(token));
-    await dispatch(userMeThunk() as any);
-    return { access: token, refresh: "" }; 
-  } catch (error: any) {
-    return rejectWithValue(error.response?.data?.error || "Error de autenticación");
-  }
-});
+      const token = resp.data.token;
+      dispatch(setToken(token));
+      await dispatch(userMeThunk() as any);
+      return { access: token, refresh: "" };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.error || "Error de autenticación");
+    }
+  });
 
 export const userMeThunk = createAsyncThunk<
-  { user: IUserMe; permisos: string[] },
+  { user: IUserMe; permisos: string[]; roles?: string[] },
   void,
   { state: RootState; rejectValue: string }
 >("auth/userMe", async (_, { getState, rejectWithValue }) => {
@@ -66,6 +66,7 @@ export const userMeThunk = createAsyncThunk<
     const resp = await ApiService.fetchData<{
       user: IUserMe;
       permisos: string[];
+      roles?: string[];
     }>({
       url: "/perfil",
       method: "get",
@@ -136,17 +137,17 @@ const authSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(loginThunk.pending, (state) => {
-          state.loading = true
+        state.loading = true
       })
       .addCase(loginThunk.fulfilled, (state, action) => {
-          state.loading = false
-          state.access = action.payload.access
-          state.refresh = action.payload.refresh
-          state.isAuthenticated = true
+        state.loading = false
+        state.access = action.payload.access
+        state.refresh = action.payload.refresh
+        state.isAuthenticated = true
       })
       .addCase(loginThunk.rejected, (state, action) => {
-          state.loading = false
-          state.error = action.payload
+        state.loading = false
+        state.error = action.payload
       })
       .addCase(userMeThunk.pending, (s) => {
         s.loading = true;
@@ -159,7 +160,11 @@ const authSlice = createSlice({
           ...(payload.user.position ? [payload.user.position] : []),
         ];
 
-        s.user = { ...payload.user, authority };
+        s.user = {
+          ...payload.user,
+          authority,
+          roles: payload.roles || []
+        };
         s.permisos = authority;
         s.isAuthenticated = true;
       })

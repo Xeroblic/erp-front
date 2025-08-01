@@ -126,14 +126,14 @@ const Perfil = () => {
 			second_last_name: userData?.second_last_name,
 			rut: userData?.rut,
 			celular: userData?.celular,
-			fono_fijo: userData?.fono_fijo,
+			fono_fijo: userData?.phone_number,
 			direccion: userData?.direccion,
 			region: userData?.region?.toString() || '0',
 			provincia: userData?.provincia?.toString() || '0',
 			comuna: userData?.comuna?.toString() || '0',
 			genero: userData?.genero,
 			theme: personalizacionUsuario?.tema === "1" ? "light" : personalizacionUsuario?.tema === "2" ? "dark" : personalizacionUsuario?.tema === "3" ? "system" : "system",
-			fecha_nacimiento: userData?.fecha_nacimiento,
+			fecha_nacimiento: userData?.comuna,
 		},
 		validationSchema: Yup.object().shape({
 			// email: Yup.string()
@@ -164,24 +164,24 @@ const Perfil = () => {
 				.max(250, 'La direccion debe tener menos de 250 caracteres')
 				.nullable(),
 			region: Yup.string()
-				.required('La región es requerida').oneOf(listaRegiones.map(r => r.codigo),'La región seleccionada no es válida'),
+				.required('La región es requerida').oneOf(listaRegiones.map(r => r.codigo), 'La región seleccionada no es válida'),
 			provincia: Yup.string()
-    			.nullable().test('provincia-valida','La provincia no pertenece a la región seleccionada',function (value) {
-						const regionCodigo = this.parent.region;
-							if (!regionCodigo || !value) return true;
-								const provincia = listaProvincias.find(p => p.codigo === value);
-							return provincia
+				.nullable().test('provincia-valida', 'La provincia no pertenece a la región seleccionada', function (value) {
+					const regionCodigo = this.parent.region;
+					if (!regionCodigo || !value) return true;
+					const provincia = listaProvincias.find(p => p.codigo === value);
+					return provincia
 						? provincia.codigo_padre === regionCodigo
 						: false;
-					}),
+				}),
 			comuna: Yup.string()
-				.nullable().test('comuna-valida','La comuna no pertenece a la provincia seleccionada',function (value) {
-						const provinciaCodigo = this.parent.provincia;
-							if (!provinciaCodigo || !value) return true;
-								const comuna = listaComunas.find(c => c.codigo === value);
-							return comuna
+				.nullable().test('comuna-valida', 'La comuna no pertenece a la provincia seleccionada', function (value) {
+					const provinciaCodigo = this.parent.provincia;
+					if (!provinciaCodigo || !value) return true;
+					const comuna = listaComunas.find(c => c.codigo === value);
+					return comuna
 						? comuna.codigo_padre === provinciaCodigo
-					: false;
+						: false;
 				}),
 		}),
 		onSubmit: async vals => {
@@ -192,7 +192,7 @@ const Perfil = () => {
 					provincia: parseInt(vals.provincia),
 					comuna: parseInt(vals.comuna),
 				};
-				await ApiService.fetchData({ url: `/auth/users/${userData?.pk}/`, method: 'patch', data: payload });
+				await ApiService.fetchData({ url: `/auth/users/${userData?.id}/`, method: 'patch', data: payload });
 				toast.success('Perfil actualizado');
 				dispatch(userMeThunk());
 			} catch (e: any) { toast.error(e.message); }
@@ -204,12 +204,12 @@ const Perfil = () => {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [formik.values.theme]);
 	useEffect(() => {
-	setOptionsRegion(
-		listaRegiones.map(r => ({
-		value: r.codigo,     
-		label: r.nombre       
-		}))
-	);
+		setOptionsRegion(
+			listaRegiones.map(r => ({
+				value: r.codigo,
+				label: r.nombre
+			}))
+		);
 	}, [listaRegiones]);
 
 	useEffect(() => {
@@ -228,39 +228,47 @@ const Perfil = () => {
 		);
 	}, [listaComunas]);
 
-useEffect(() => {
-  if (!formik.values.region) {
-    setOptionsProvincia([]);
-    formik.setFieldValue('provincia', '');
-    formik.setFieldValue('comuna', '');
-    return;
-  }
-  const filtered = listaProvincias.filter(p => p.codigo_padre === formik.values.region);
-  setOptionsProvincia(
-    filtered.map(p => ({
-      value: p.codigo,    
-      label: p.nombre      
-    }))
-  );
-  formik.setFieldValue('provincia', '');
-  formik.setFieldValue('comuna', '');
-}, [formik.values.region, listaProvincias]);
+	useEffect(() => {
+		if (!formik.values.region) {
+			setOptionsProvincia([]);
+			formik.setFieldValue('provincia', '');
+			formik.setFieldValue('comuna', '');
+			return;
+		}
+		const filtered = listaProvincias.filter(p =>
+			p.codigo_padre !== undefined &&
+			p.codigo !== undefined &&
+			p.codigo_padre === formik.values.region
+		);
+		setOptionsProvincia(
+			filtered.map(p => ({
+				value: p.codigo,
+				label: p.nombre
+			}))
+		);
+		formik.setFieldValue('provincia', '');
+		formik.setFieldValue('comuna', '');
+	}, [formik.values.region, listaProvincias]);
 
-useEffect(() => {
-  if (!formik.values.provincia) {
-    setOptionsComuna([]);
-    formik.setFieldValue('comuna', '');
-    return;
-  }
-  const filtered = listaComunas.filter(c => c.codigo_padre === formik.values.provincia);
-  setOptionsComuna(
-    filtered.map(c => ({
-      value: c.codigo,    
-      label: c.nombre     
-    }))
-  );
-  formik.setFieldValue('comuna', '');
-}, [formik.values.provincia, listaComunas]);
+	useEffect(() => {
+		if (!formik.values.provincia) {
+			setOptionsComuna([]);
+			formik.setFieldValue('comuna', '');
+			return;
+		}
+		const filtered = listaComunas.filter(c =>
+			c.codigo_padre !== undefined &&
+			c.codigo !== undefined &&
+			c.codigo_padre === formik.values.provincia
+		);
+		setOptionsComuna(
+			filtered.map(c => ({
+				value: c.codigo,
+				label: c.nombre
+			}))
+		);
+		formik.setFieldValue('comuna', '');
+	}, [formik.values.provincia, listaComunas]);
 
 
 	// const selectedRegion = optionsRegion.find(o => o.value === formik.values.region) || null;
@@ -344,12 +352,12 @@ useEffect(() => {
 										<div className='text-4xl font-semibold'>Editar Perfil</div>
 										<div className='flex w-full gap-4'>
 											<div className='flex-shrink-0'>
-												<Avatar
+												{/* <Avatar
 													src={userData?.image ? userData.image : ""}
 													className='!w-24'
 													// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
 													name={`${userData?.first_name} ${userData?.last_name}`}
-												/>
+												/> */}
 											</div>
 											<div className='flex grow items-center'>
 												<div>
@@ -369,7 +377,7 @@ useEffect(() => {
 																	const form = new FormData();
 																	form.append('image', e.target.files[0]);
 																	try {
-																		const response = await ApiService.fetchData({ url: `/api/users/${userData?.pk}/`, method: 'patch', data: form })
+																		const response = await ApiService.fetchData({ url: `/api/users/${userData?.id}/`, method: 'patch', data: form })
 																		if (response.data) {
 																			toast.success("Imagen Actualizada", { autoClose: 1000 })
 																			dispatch(userMeThunk())
@@ -544,7 +552,7 @@ useEffect(() => {
 															label={i.label}
 															name='genero'
 															value={i.value}
-															selectedValue={formik.values.genero}
+															selectedValue={formik.values.genero ?? ''}
 															onChange={formik.handleChange}
 														/>
 													))}
@@ -617,8 +625,8 @@ useEffect(() => {
 														placeholder="Region"
 														options={optionsRegion}
 														onBlur={formik.handleBlur}
-														  value={optionsRegion.find(o => o.value === formik.values.region) || null}
-  onChange={opt => formik.setFieldValue('region', (opt as TSelectOption)?.value || '')}
+														value={optionsRegion.find(o => o.value === formik.values.region) || null}
+														onChange={opt => formik.setFieldValue('region', (opt as TSelectOption)?.value || '')}
 													/>
 												</Validation>
 											</div>
@@ -639,7 +647,7 @@ useEffect(() => {
 														options={optionsProvincia}
 														onBlur={formik.handleBlur}
 														value={optionsProvincia.find(o => o.value === formik.values.provincia) || null}
-  														onChange={opt => formik.setFieldValue('provincia', (opt as TSelectOption)?.value || '')}
+														onChange={opt => formik.setFieldValue('provincia', (opt as TSelectOption)?.value || '')}
 													/>
 												</Validation>
 											</div>
@@ -660,7 +668,7 @@ useEffect(() => {
 														options={optionsComuna}
 														onBlur={formik.handleBlur}
 														value={optionsComuna.find(o => o.value === formik.values.comuna) || null}
-  														onChange={opt => formik.setFieldValue('comuna', (opt as TSelectOption)?.value || '')}
+														onChange={opt => formik.setFieldValue('comuna', (opt as TSelectOption)?.value || '')}
 													/>
 												</Validation>
 											</div>

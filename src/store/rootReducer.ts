@@ -11,23 +11,27 @@ import item, { ItemState } from './slices/item/itemSlice';
 import cliente, { ClienteState } from './slices/clientes/clienteSlice';
 import rolesPermisos, { RolesPermisosState } from './slices/rolesPermisos/rolesPermisosSlice';
 import subEmpresa, { SubempresaState } from './slices/subempresa/subEmpresaSlice';
+import permissions from './slices/permissions/permissionsSlice';
+import usersAdmin from './slices/usersAdmin/usersAdminSlice';
 
 export interface RootState {
-  auth: AuthState;
-  core: CoreState;
-  invitacion: InvitacionState;
-  empresa: EmpresaState;
-  rolesPermisos: RolesPermisosState;
-  subEmpresa: SubempresaState;
-  // calendario?: CalendarioState;
-  // item?: ItemState;
-  // bodega?: BodegaState;
-  cliente: ClienteState;
+    auth: AuthState;
+    core: CoreState;
+    invitacion: InvitacionState;
+    empresa: EmpresaState;
+    rolesPermisos: RolesPermisosState;
+    subEmpresa: SubempresaState;
+    permissions: ReturnType<typeof permissions>;
+    usersAdmin: ReturnType<typeof usersAdmin>;
+    // calendario?: CalendarioState;
+    // item?: ItemState;
+    // bodega?: BodegaState;
+    cliente: ClienteState;
     [RtkQueryService.reducerPath]: any
 }
 
 export interface AsyncReducers {
-  [key: string]: Reducer<any, AnyAction>;
+    [key: string]: Reducer<any, AnyAction>;
 }
 
 // Reducers estáticos
@@ -39,21 +43,23 @@ const staticReducers = {
     rolesPermisos,
     subEmpresa,
     cliente,
+    permissions,
+    usersAdmin,
     [RtkQueryService.reducerPath]: RtkQueryService.reducer,
 };
 
 const rootReducer =
     (asyncReducers?: AsyncReducers) =>
-    (state: RootState | undefined, action: AnyAction) => {
-        // Quitar Estado si es LOGOUT
-        if (action.type === logout.type) {
-            state = undefined;
+        (state: RootState | undefined, action: AnyAction) => {
+            // Quitar Estado si es LOGOUT
+            if (action.type === logout.type) {
+                state = undefined;
+            }
+            const combinedReducer = combineReducers({
+                ...staticReducers,
+                ...asyncReducers,
+            })
+            return combinedReducer(state, action)
         }
-        const combinedReducer = combineReducers({
-            ...staticReducers,
-            ...asyncReducers,
-        })
-        return combinedReducer(state, action)
-    }
 
 export default rootReducer
