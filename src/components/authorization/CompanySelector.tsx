@@ -21,6 +21,7 @@ interface CompanyInfo {
     rut: string;
     role: string;
     is_primary: boolean;
+    subsidiary_id: number;
 }
 
 const CompanySelector: React.FC<CompanySelectorProps> = ({ isOpen, onClose }) => {
@@ -32,23 +33,70 @@ const CompanySelector: React.FC<CompanySelectorProps> = ({ isOpen, onClose }) =>
     const [isSwitching, setIsSwitching] = useState(false);
 
     // Empresa actual del usuario
-    const currentCompany = user?.company ? {
-        id: user.company.id,
-        name: user.company.name,
-        rut: user.company.rut || '',
+    const currentCompany = user?.subsidiary ? {
+        id: user.subsidiary.id,
+        name: user.subsidiary.name,
+        rut: user.company?.rut || '',
         role: user.position || 'employee',
-        is_primary: true
+        is_primary: true,
+        subsidiary_id: user.subsidiary.id
     } : null;
 
-    // Obtener empresas disponibles
+    // Obtener empresas disponibles desde personalización
     const refreshCompanies = async () => {
         setIsLoading(true);
         try {
-            const response = await ApiService.fetchData<{ companies: CompanyInfo[] }>({
-                url: '/auth/available-companies',
+            const response = await ApiService.fetchData<{
+                personalization: {
+                    id: number;
+                    user_id: number;
+                    tema: number;
+                    font_size: number;
+                    sucursal_principal: number | null;
+                    company_id: number;
+                    created_at: string;
+                    updated_at: string;
+                };
+                companies: Array<{
+                    id: number;
+                    company_name: string;
+                    is_primary: number;
+                    position_in_company: string;
+                    subsidiaries_count: number;
+                    branches_count: number;
+                }>;
+                current_company: {
+                    id: number;
+                    company_name: string;
+                    subsidiaries: Array<{
+                        id: number;
+                        subsidiary_name: string;
+                        branches_count: number;
+                        branches: Array<{
+                            id: number;
+                            branch_name: string;
+                        }>;
+                    }>;
+                } | null;
+            }>({
+                url: '/user/personalization',
                 method: 'get'
             });
-            setAvailableCompanies(response.data.companies || []);
+
+            // Si hay una empresa actual con subsidiarias, usamos esas
+            if (response.data.current_company?.subsidiaries) {
+                const subsidiaries = response.data.current_company.subsidiaries.map(subsidiary => ({
+                    id: subsidiary.id,
+                    name: subsidiary.subsidiary_name,
+                    rut: '', // No viene en la respuesta
+                    role: user?.position || 'employee',
+                    is_primary: subsidiary.id === 1, // Asumir que la primera es primary
+                    subsidiary_id: subsidiary.id
+                }));
+                setAvailableCompanies(subsidiaries);
+            } else {
+                setAvailableCompanies([]);
+            }
         } catch (error: any) {
             toast.error('Error al cargar empresas disponibles');
             setAvailableCompanies([]);
@@ -57,15 +105,39 @@ const CompanySelector: React.FC<CompanySelectorProps> = ({ isOpen, onClose }) =>
         }
     };
 
-    // Cambiar empresa activa
-    const switchCompany = async (companyId: string): Promise<boolean> => {
+    // Cambiar empresa activa (cambiar subsidiaria)
+    const switchCompany = async (subsidiaryId: string): Promise<boolean> => {
         setIsSwitching(true);
         try {
+            const subsidiaryIdNum = parseInt(subsidiaryId, 10);
+            // Para subsidiarias de la misma empresa, enviamos el company_id (1) y subsidiary_id
             await ApiService.fetchData({
-                url: '/auth/switch-company',
+                url: '/user/switch-company',
                 method: 'post',
-                data: { company_id: parseInt(companyId, 10) }
+                data: {
+                    company_id: 1, // ID de EcoTech SPA
+                    subsidiary_id: subsidiaryIdNum // ID de la subsidiaria seleccionada
+                }
             });
+
+            // Actualizar personalización con la nueva subsidiaria principal
+            const currentPersonalization = user?.personalizacion;
+            if (currentPersonalization) {
+                try {
+                    await ApiService.fetchData({
+                        url: '/user/personalization',
+                        method: 'put',
+                        data: {
+                            tema: currentPersonalization.tema,
+                            font_size: currentPersonalization.font_size,
+                            sucursal_principal: subsidiaryIdNum
+                        }
+                    });
+                } catch (personalizationError) {
+                    console.warn('Error updating personalization:', personalizationError);
+                    // No fallar el cambio de empresa si falla la actualización de personalización
+                }
+            }
 
             // Refrescar datos del usuario
             await dispatch(userMeThunk()).unwrap();

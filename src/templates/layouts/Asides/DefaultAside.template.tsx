@@ -184,6 +184,8 @@ const DefaultAsideTemplate = () => {
 
 					</NavCollapse>
 
+					
+
 
 					{/* <AuthorityCheckNav authority={Pages.listaItem.authority} userAuthority={listaGrupos?.grupos}>
 						<NavItem text={Pages.listaItem.text} to={Pages.listaItem.to} icon={Pages.listaItem.icon} id={Pages.listaItem.id}></NavItem>

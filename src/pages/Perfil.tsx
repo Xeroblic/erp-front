@@ -27,6 +27,7 @@ import useDarkMode from '../hooks/useDarkMode';
 import { TDarkMode } from '../types/darkMode.type';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { userMeThunk } from '@/store/slices/auth/authSlice';
+import useCompanyManager from '@/hooks/useCompanyManager';
 import * as Yup from 'yup';
 import Validation from '@/components/form/Validation';
 import ApiService from '@/services/ApiService';
@@ -103,6 +104,7 @@ const Perfil = () => {
 	const dispatch = useAppDispatch()
 	const { setDarkModeStatus } = useDarkMode();
 	const { user: userData, access, personalizacionUsuario } = useAppSelector((state) => state.auth)
+	const { currentCompany } = useCompanyManager();
 	const [activeTab, setActiveTab] = useState<TTab>(TAB.EDIT);
 	const { listaComunas, listaProvincias, listaRegiones } = useAppSelector((state) => state.core)
 	const [optionsRegion, setOptionsRegion] = useState<{ value: string, label: string }[]>([])
@@ -680,6 +682,25 @@ const Perfil = () => {
 									<>
 										<div className='text-4xl font-semibold'>Apariencia</div>
 										<div className='grid grid-cols-12 gap-4'>
+											<div className='col-span-12'>
+												<Label htmlFor='current-company'>Empresa Actual</Label>
+												<div className='flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border'>
+													<Icon icon='HeroBuildingOffice2' className='w-8 h-8 text-blue-600' />
+													<div className='flex flex-col'>
+														<span className='font-medium text-lg'>
+															{currentCompany?.name || 'No seleccionada'}
+														</span>
+														<span className='text-sm text-gray-500'>
+															Rol: {currentCompany?.role || 'N/A'}
+														</span>
+													</div>
+													{currentCompany?.is_primary && (
+														<Badge variant='outline' color='emerald' className='ml-auto'>
+															Principal
+														</Badge>
+													)}
+												</div>
+											</div>
 											<div className='col-span-12'>
 												<Label htmlFor='theme'>Tema</Label>
 												<RadioGroup isInline>

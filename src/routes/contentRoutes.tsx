@@ -22,6 +22,7 @@ const RolesPermisos = lazy(() => import("@/pages/gestionAdmin/roles y permisos/R
 const GestionUsuarios = lazy(() => import("@/pages/gestionAdmin/usuarios/Usuarios.tsx"));
 const PermissionsAdmin = lazy(() => import("@/pages/admin/PermissionsAdmin.tsx"));
 
+
 export interface IRoutePersonalizada extends PathRouteProps {
   authority?: string[];
   feature?: string;

@@ -8,7 +8,7 @@ import useDarkMode from '../../../../hooks/useDarkMode';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { actualizarPersonalizacionThunk } from '@/store/slices/auth/authSlice';
 import { toast } from 'react-toastify';
-import CompanySelector from '@/components/authorization/CompanySelector';
+// import CompanySelector from '@/components/authorization/CompanySelector';
 import Icon from '@/components/icon/Icon';
 
 const SettingsPartial = () => {
@@ -17,7 +17,7 @@ const SettingsPartial = () => {
   const { darkModeStatus, setDarkModeStatus } = useDarkMode();
   const { user } = useAppSelector((state) => state.auth);
   const personalizacion = user?.personalizacion;
-  const [isCompanySelectorOpen, setIsCompanySelectorOpen] = useState(false);
+  // const [isCompanySelectorOpen, setIsCompanySelectorOpen] = useState(false);
 
   const updatePersonalizacion = async (tema: string, font_size: number) => {
     try {
@@ -28,9 +28,9 @@ const SettingsPartial = () => {
   };
 
   // Solo mostrar selector de empresa si el usuario tiene múltiples empresas o es super-admin
-  const shouldShowCompanySelector = user?.authority?.includes('super-admin') ||
-    user?.roles?.includes('super-admin') ||
-    (user?.companies && user.companies.length > 1);
+  // const shouldShowCompanySelector = user?.authority?.includes('super-admin') ||
+  //   user?.roles?.includes('super-admin') ||
+  //   (user?.companies && user.companies.length > 1);
 
   return (
     <Dropdown>
@@ -38,8 +38,8 @@ const SettingsPartial = () => {
         <Button icon='HeroCog8Tooth' aria-label='Settings' />
       </DropdownToggle>
       <DropdownMenu placement='bottom-end'>
-        {/* Selector de Empresa */}
-        {shouldShowCompanySelector && (
+        {/* Selector de Empresa - Movido a dropdown directo en header */}
+        {/* {shouldShowCompanySelector && (
           <DropdownItem>
             <Button
               variant="outline"
@@ -53,7 +53,7 @@ const SettingsPartial = () => {
               <Icon icon="HeroChevronRight" className="w-3 h-3" />
             </Button>
           </DropdownItem>
-        )}
+        )} */}
 
         <DropdownItem className='flex flex-col !items-start'>
           <div>Tamaño de Fuente:</div>
@@ -110,11 +110,11 @@ const SettingsPartial = () => {
         </DropdownItem>
       </DropdownMenu>
 
-      {/* Modal de selector de empresa */}
-      <CompanySelector
+      {/* Modal de selector de empresa - Ya no necesario, movido a dropdown directo */}
+      {/* <CompanySelector
         isOpen={isCompanySelectorOpen}
         onClose={() => setIsCompanySelectorOpen(false)}
-      />
+      /> */}
     </Dropdown>
   );
 };

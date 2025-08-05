@@ -16,7 +16,12 @@ export interface ISucursal {
   descripcion?: string;
   created_at: string;
   updated_at: string;
-  usuarios: IUsuarioEmpresa[];      
+  usuarios: IUsuarioEmpresa[];
+}
+
+export interface IBranch {
+  id: number;
+  branch_name: string;
 }
 
 export interface ISubempresa {
@@ -35,6 +40,8 @@ export interface ISubempresa {
   subsidiary_manager_email?: string;
   subsidiary_status?: string | number | boolean;
   sucursales: ISucursal[];
+  branches?: IBranch[]; // Nueva propiedad para la estructura del backend
+  branches_count?: number;
 }
 
 export interface IEmpresa {

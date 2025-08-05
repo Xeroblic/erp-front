@@ -201,11 +201,11 @@ export default function EmpresaDetalle() {
 								{detalleEmpresa.subsidiaries!.map(sub => (
 									<li key={sub.id} className=" rounded-lg p-4 ">
 										<h3 className="font-medium">{sub.subsidiary_name}</h3>
-										{sub.sucursales?.length ? (
+										{sub.branches?.length ? (
 											<ul className="mt-2 ml-4 list-disc text-gray-700">
-												{sub.sucursales.map(s => (
-													<li key={s.id}>{s.nombre}</li>
-												))}
+												{/* {sub.branches.map(branch => ( */}
+													<li key={sub.id}>{sub.subsidiary_name}</li>
+												{/* // ))} */}
 											</ul>
 										) : (
 											<p className="mt-2 text-gray-500">Sin sucursales</p>

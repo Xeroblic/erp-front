@@ -1,6 +1,5 @@
 import Header, { HeaderLeft, HeaderRight } from '../../../components/layouts/Header/Header';
 import DefaultHeaderRightCommon from './_common/DefaultHeaderRight.common';
-import SelectSucursalEmpresa from './_partial/SelectSucursalEmpresa';
 import UserRoutesDropdown from '@/components/navigation/UserRoutesDropdown';
 import CompanySelectorButton from './_partial/CompanySelectorButton';
 
@@ -12,8 +11,7 @@ const DefaultHeaderTemplate = () => {
 				{/* <SearchPartial /> */}
 			</HeaderLeft>
 			<HeaderRight>
-				<CompanySelectorButton />
-				<SelectSucursalEmpresa />
+				{/* <CompanySelectorButton /> */}
 				<DefaultHeaderRightCommon />
 			</HeaderRight>
 		</Header>
