@@ -129,31 +129,101 @@ export const fetchUsers = createAsyncThunk(
                 }
             });
 
-            const response = await ApiService.fetchData<{
-                success: boolean;
-                data: UserWithDetails[];
-                meta: {
-                    current_page: number;
-                    last_page: number;
-                    per_page: number;
-                    total: number;
-                    from: number;
-                    to: number;
-                };
-            }>({
-                url: `/users?${queryParams.toString()}`,
-                method: 'get'
-            });
+            // Probar diferentes formatos de include que son comunes en APIs
+            const includeParams = 'roles,permissions,company,subsidiary,branch';
 
-            return {
-                users: response.data.data,
-                pagination: {
-                    page: response.data.meta.current_page,
-                    per_page: response.data.meta.per_page,
-                    total: response.data.meta.total,
-                    total_pages: response.data.meta.last_page
+            // Intentar múltiples formatos comunes
+            const urlOptions = [
+                `/admin/users?include=${includeParams}&${queryParams.toString()}`,
+                `/admin/users?with=${includeParams}&${queryParams.toString()}`,
+                `/admin/users?relations=${includeParams}&${queryParams.toString()}`,
+                `/admin/users?expand=${includeParams}&${queryParams.toString()}`,
+                `/admin/users?${queryParams.toString()}&include=${includeParams}`,
+                `/admin/users?${queryParams.toString()}`
+            ];
+
+            let response;
+            let successUrl = '';
+
+            // Probar cada URL hasta encontrar una que funcione
+            for (const url of urlOptions) {
+                try {
+                    console.log(`🔍 Probando URL: ${url}`);
+                    response = await ApiService.fetchData<any>({ url, method: 'get' });
+
+                    // Verificar si esta URL devuelve relaciones
+                    if (response.data?.data && response.data.data.length > 0) {
+                        const firstUser = response.data.data[0];
+                        if (firstUser.company || firstUser.subsidiary || firstUser.roles) {
+                            successUrl = url;
+                            console.log(`✅ URL exitosa encontrada: ${url}`);
+                            break;
+                        }
+                    }
+                } catch (error) {
+                    console.log(`❌ URL falló: ${url}`, error);
+                    continue;
                 }
+            }
+
+            if (!response) {
+                throw new Error('Ninguna URL de admin/users funcionó');
+            }
+
+            console.log(`🔍 DEBUG - URL final usada: ${successUrl || 'fallback'}`);
+            console.log('🔍 DEBUG - Response completo:', response);
+            console.log('🔍 DEBUG - Response.data:', response.data);
+
+            // Log del primer usuario para ver estructura
+            if (response.data?.data && response.data.data.length > 0) {
+                console.log('🔍 DEBUG - Primer usuario completo:', response.data.data[0]);
+                console.log('🔍 DEBUG - Company del primer usuario:', response.data.data[0].company);
+                console.log('🔍 DEBUG - Subsidiary del primer usuario:', response.data.data[0].subsidiary);
+                console.log('🔍 DEBUG - Branch del primer usuario:', response.data.data[0].branch);
+                console.log('🔍 DEBUG - Roles del primer usuario:', response.data.data[0].roles);
+            }
+
+            // Manejar diferentes formatos de respuesta
+            let users: UserWithDetails[] = [];
+            let pagination = {
+                page: 1,
+                per_page: 10,
+                total: 0,
+                total_pages: 0
             };
+
+            // Formato 1: {success: boolean, data: UserWithDetails[], meta: {...}}
+            if (response.data.data && Array.isArray(response.data.data)) {
+                users = response.data.data;
+                if (response.data.meta) {
+                    pagination = {
+                        page: response.data.meta.current_page || 1,
+                        per_page: response.data.meta.per_page || 10,
+                        total: response.data.meta.total || 0,
+                        total_pages: response.data.meta.last_page || 0
+                    };
+                }
+            }
+            // Formato 2: {usuarios: UserWithDetails[]} - Formato usado en Usuarios.tsx
+            else if (response.data.usuarios && Array.isArray(response.data.usuarios)) {
+                users = response.data.usuarios;
+                pagination.total = response.data.usuarios.length;
+                pagination.total_pages = 1;
+            }
+            // Formato 3: UserWithDetails[] directo
+            else if (Array.isArray(response.data)) {
+                users = response.data;
+                pagination.total = response.data.length;
+                pagination.total_pages = 1;
+            }
+            // Formato 4: {users: UserWithDetails[], ...}
+            else if (response.data.users && Array.isArray(response.data.users)) {
+                users = response.data.users;
+                pagination.total = response.data.users.length;
+                pagination.total_pages = 1;
+            }
+
+            return { users, pagination };
         } catch (error: any) {
             return rejectWithValue(error?.response?.data?.message || 'Error al obtener usuarios');
         }

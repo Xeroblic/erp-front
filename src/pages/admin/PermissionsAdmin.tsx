@@ -79,6 +79,18 @@ export default function PermissionsAdmin() {
         dispatch(fetchRoles());
     }, [dispatch]);
 
+    // Debug: Log de usuarios cuando cambian
+    useEffect(() => {
+        if (users && users.length > 0) {
+            console.log('🎯 DEBUG - Usuarios en componente:', users);
+            console.log('🎯 DEBUG - Primer usuario:', users[0]);
+            console.log('🎯 DEBUG - Company del primer usuario:', users[0]?.company);
+            console.log('🎯 DEBUG - Subsidiary del primer usuario:', users[0]?.subsidiary);
+            console.log('🎯 DEBUG - Branch del primer usuario:', users[0]?.branch);
+            console.log('🎯 DEBUG - Roles del primer usuario:', users[0]?.roles);
+        }
+    }, [users]);
+
     // Configurar tabla
     const columns = [
         columnHelper.accessor('first_name', {
@@ -89,7 +101,32 @@ export default function PermissionsAdmin() {
         columnHelper.accessor('position', { header: 'Cargo', cell: info => info.getValue() ?? '—' }),
         columnHelper.accessor('company.name', {
             header: 'Empresa',
-            cell: info => info.row.original.company?.name ?? '—',
+            cell: info => {
+                const user = info.row.original;
+                const parts = [];
+
+                if (user.company?.name) {
+                    parts.push(user.company.name);
+                }
+
+                if (user.subsidiary?.name) {
+                    parts.push(`• ${user.subsidiary.name}`);
+                }
+
+                if (user.branch?.name) {
+                    parts.push(`• ${user.branch.name}`);
+                }
+
+                return parts.length > 0 ? (
+                    <div className="text-sm">
+                        {parts.map((part, index) => (
+                            <div key={index} className={index === 0 ? 'font-medium' : 'text-gray-600 ml-2'}>
+                                {part}
+                            </div>
+                        ))}
+                    </div>
+                ) : '—';
+            },
         }),
         columnHelper.accessor('is_active', {
             header: 'Estado',
@@ -102,15 +139,20 @@ export default function PermissionsAdmin() {
         columnHelper.display({
             id: 'roles',
             header: 'Roles',
-            cell: info => (
-                <div className="flex flex-wrap gap-1">
-                    {info.row.original.roles?.map(role => (
-                        <Badge key={role.id} color="blue" className="text-xs">
-                            {role.name}
-                        </Badge>
-                    )) || '—'}
-                </div>
-            ),
+            cell: info => {
+                const roles = info.row.original.roles;
+                return roles && roles.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                        {roles.map(role => (
+                            <Badge key={role.id} color="blue" className="text-xs">
+                                {role.name}
+                            </Badge>
+                        ))}
+                    </div>
+                ) : (
+                    <span className="text-gray-400 text-sm">Sin roles</span>
+                );
+            },
         }),
         columnHelper.display({
             id: 'actions',
@@ -277,7 +319,12 @@ export default function PermissionsAdmin() {
                         {usersLoading.users ? (
                             <div className="p-8 text-center">Cargando usuarios…</div>
                         ) : !users || users.length === 0 ? (
-                            <div className="p-8 text-center text-gray-600">No hay usuarios registrados</div>
+                            <div className="p-8 text-center text-gray-600">
+                                <p>No hay usuarios registrados</p>
+                                <p className="text-xs mt-2 text-gray-400">
+                                    Debug: users.length={users?.length}, loading={usersLoading.users}
+                                </p>
+                            </div>
                         ) : (
                             <>
                                 <Table className="table-fixed w-full">
