@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
     fetchUsers,
@@ -19,6 +19,7 @@ import {
     assignRoleToUser,
     revokeRoleFromUser
 } from '@/store/slices/permissions/permissionsSlice';
+
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
@@ -79,17 +80,69 @@ export default function PermissionsAdmin() {
         dispatch(fetchRoles());
     }, [dispatch]);
 
-    // Debug: Log de usuarios cuando cambian
+    // Debug: Log de usuarios cuando cambian (simplificado)
     useEffect(() => {
         if (users && users.length > 0) {
-            console.log('🎯 DEBUG - Usuarios en componente:', users);
-            console.log('🎯 DEBUG - Primer usuario:', users[0]);
-            console.log('🎯 DEBUG - Company del primer usuario:', users[0]?.company);
-            console.log('🎯 DEBUG - Subsidiary del primer usuario:', users[0]?.subsidiary);
-            console.log('🎯 DEBUG - Branch del primer usuario:', users[0]?.branch);
-            console.log('🎯 DEBUG - Roles del primer usuario:', users[0]?.roles);
+            console.log('✅ Usuarios cargados:', users.length);
         }
     }, [users]);
+
+    // Pre-selección optimizada con useMemo
+    const { preselectedRoleIds, preselectedPermissionIds } = useMemo(() => {
+        if (!selectedUserForPermissions || !roles.length || !permissions.length) {
+            return { preselectedRoleIds: [], preselectedPermissionIds: [] };
+        }
+
+        // Roles actuales optimizado
+        const currentRoleIds: number[] = [];
+
+        // Roles legacy
+        if (selectedUserForPermissions.roles?.length) {
+            currentRoleIds.push(...selectedUserForPermissions.roles.map(r => r.id));
+        }
+
+        // Mapeo rápido de nombres a IDs de roles
+        const roleNameToId = new Map(roles.map(r => [r.name, r.id]));
+
+        // Roles globales y contextuales
+        const allUserRoleNames = [
+            ...(selectedUserForPermissions.global_roles || []),
+            ...(selectedUserForPermissions.contextual_roles?.map(cr => cr.role) || [])
+        ];
+
+        allUserRoleNames.forEach(roleName => {
+            const roleId = roleNameToId.get(roleName);
+            if (roleId && !currentRoleIds.includes(roleId)) {
+                currentRoleIds.push(roleId);
+            }
+        });
+
+        // Permisos actuales optimizado
+        const currentPermissionIds: number[] = [];
+
+        // Mapeo rápido de códigos a IDs de permisos
+        const permissionCodeToId = new Map(permissions.map(p => [p.code, p.id]));
+
+        if (selectedUserForPermissions.direct_permissions?.length) {
+            selectedUserForPermissions.direct_permissions.forEach(permissionCode => {
+                const permissionId = permissionCodeToId.get(permissionCode);
+                if (permissionId) {
+                    currentPermissionIds.push(permissionId);
+                }
+            });
+        }
+
+        return {
+            preselectedRoleIds: currentRoleIds,
+            preselectedPermissionIds: currentPermissionIds
+        };
+    }, [selectedUserForPermissions, roles, permissions]);
+
+    // Sincronizar pre-selección cuando cambien los valores calculados
+    useEffect(() => {
+        setSelectedRoleIds(preselectedRoleIds);
+        setSelectedPermissionIds(preselectedPermissionIds);
+    }, [preselectedRoleIds, preselectedPermissionIds]);
 
     // Configurar tabla
     const columns = [
@@ -98,23 +151,52 @@ export default function PermissionsAdmin() {
             cell: info => `${info.getValue()} ${info.row.original.last_name}`
         }),
         columnHelper.accessor('email', { header: 'Email', cell: info => info.getValue() }),
-        columnHelper.accessor('position', { header: 'Cargo', cell: info => info.getValue() ?? '—' }),
-        columnHelper.accessor('company.name', {
+        columnHelper.display({
+            id: 'cargo',
+            header: 'Cargo',
+            cell: info => {
+                const user = info.row.original;
+                // Primero intentar cargo directo, luego de company.pivot, finalmente position
+                return user.cargo ||
+                    user.companies?.[0]?.pivot?.cargo ||
+                    user.position ||
+                    '—';
+            }
+        }),
+        columnHelper.display({
+            id: 'empresa',
             header: 'Empresa',
             cell: info => {
                 const user = info.row.original;
                 const parts = [];
 
-                if (user.company?.name) {
+                // Información jerárquica desde branch
+                if (user.branch?.subsidiary?.company?.company_name) {
+                    parts.push(user.branch.subsidiary.company.company_name);
+
+                    if (user.branch.subsidiary.name) {
+                        parts.push(`• ${user.branch.subsidiary.name}`);
+                    }
+
+                    if (user.branch.name) {
+                        parts.push(`• ${user.branch.name}`);
+                    }
+                }
+                // Fallback a companies array
+                else if (user.companies?.[0]?.name) {
+                    parts.push(user.companies[0].name);
+                }
+                // Fallback a propiedades legacy
+                else if (user.company?.name) {
                     parts.push(user.company.name);
-                }
 
-                if (user.subsidiary?.name) {
-                    parts.push(`• ${user.subsidiary.name}`);
-                }
+                    if (user.subsidiary?.name) {
+                        parts.push(`• ${user.subsidiary.name}`);
+                    }
 
-                if (user.branch?.name) {
-                    parts.push(`• ${user.branch.name}`);
+                    if (user.branch?.name) {
+                        parts.push(`• ${user.branch.name}`);
+                    }
                 }
 
                 return parts.length > 0 ? (
@@ -140,11 +222,37 @@ export default function PermissionsAdmin() {
             id: 'roles',
             header: 'Roles',
             cell: info => {
-                const roles = info.row.original.roles;
-                return roles && roles.length > 0 ? (
+                const user = info.row.original;
+                const allRoles = [];
+
+                // Agregar roles globales
+                if (user.global_roles?.length) {
+                    allRoles.push(...user.global_roles.map(role => ({ name: role, type: 'global' })));
+                }
+
+                // Agregar roles contextuales
+                if (user.contextual_roles?.length) {
+                    allRoles.push(...user.contextual_roles.map(contextRole => ({
+                        name: contextRole.role,
+                        type: 'contextual',
+                        context: contextRole.context
+                    })));
+                }
+
+                // Fallback a roles legacy
+                if (allRoles.length === 0 && user.roles?.length) {
+                    allRoles.push(...user.roles.map(role => ({ name: role.name, type: 'legacy' })));
+                }
+
+                return allRoles.length > 0 ? (
                     <div className="flex flex-wrap gap-1">
-                        {roles.map(role => (
-                            <Badge key={role.id} color="blue" className="text-xs">
+                        {allRoles.map((role, index) => (
+                            <Badge
+                                key={index}
+                                color={role.type === 'global' ? 'blue' : role.type === 'contextual' ? 'green' : 'gray'}
+                                className="text-xs"
+                                title={role.context ? `Contexto: ${role.context}` : undefined}
+                            >
                                 {role.name}
                             </Badge>
                         ))}
@@ -192,29 +300,39 @@ export default function PermissionsAdmin() {
         initialState: { pagination: { pageSize: 10 } }
     });
 
-    // Handlers
-    const handleOpenPermissionsModal = async (user: UserWithDetails) => {
+    // Handlers optimizados con useCallback
+    const handleOpenPermissionsModal = useCallback(async (user: UserWithDetails) => {
         setSelectedUserForPermissions(user);
         setIsPermissionsModalOpen(true);
 
-        // Cargar permisos y roles del usuario
-        await dispatch(fetchUserDetails(user.id));
-        await dispatch(fetchUserPermissions(user.id));
-        await dispatch(fetchUserRoles(user.id));
+        // Solo cargar detalles adicionales si es necesario
+        // Para optimizar, usamos los datos que ya tenemos primero
+        console.log('⚡ Abriendo modal rápido para:', user.first_name);
 
-        // Preseleccionar permisos y roles actuales
-        const currentPermissions = (userPermissions || [])
-            .filter(up => up.user_id === user.id)
-            .map(up => up.permission_id);
-        const currentRoles = (userRoles || [])
-            .filter(ur => ur.user_id === user.id)
-            .map(ur => ur.role_id);
+        // Cargar datos completos del usuario en segundo plano
+        try {
+            const userDetailsResult = await dispatch(fetchUserDetails(user.id));
 
-        setSelectedPermissionIds(currentPermissions);
-        setSelectedRoleIds(currentRoles);
-    };
+            if (fetchUserDetails.fulfilled.match(userDetailsResult)) {
+                const userWithDetails = userDetailsResult.payload;
 
-    const handleToggleUserStatus = async (user: UserWithDetails) => {
+                if (userWithDetails) {
+                    console.log('✅ Datos completos cargados');
+                    setSelectedUserForPermissions(userWithDetails);
+                }
+            }
+        } catch (error) {
+            console.log('⚠️ Error cargando detalles:', error);
+        }
+
+        // Cargar listas de permisos y roles del usuario si no están cargadas
+        await Promise.all([
+            dispatch(fetchUserPermissions(user.id)),
+            dispatch(fetchUserRoles(user.id))
+        ]);
+    }, [dispatch]);
+
+    const handleToggleUserStatus = useCallback(async (user: UserWithDetails) => {
         try {
             await dispatch(toggleUserStatus({
                 userId: user.id,
@@ -224,9 +342,9 @@ export default function PermissionsAdmin() {
         } catch (error: any) {
             toast.error(error);
         }
-    };
+    }, [dispatch]);
 
-    const handleSavePermissions = async () => {
+    const handleSavePermissions = useCallback(async () => {
         if (!selectedUserForPermissions) return;
 
         try {
@@ -238,63 +356,102 @@ export default function PermissionsAdmin() {
                 .filter(ur => ur.user_id === selectedUserForPermissions.id)
                 .map(ur => ur.role_id);
 
-            // Permisos a agregar y quitar
+            // Calcular cambios
             const permissionsToAdd = selectedPermissionIds.filter(id => !currentPermissions.includes(id));
             const permissionsToRemove = currentPermissions.filter(id => !selectedPermissionIds.includes(id));
-
-            // Roles a agregar y quitar
             const rolesToAdd = selectedRoleIds.filter(id => !currentRoles.includes(id));
             const rolesToRemove = currentRoles.filter(id => !selectedRoleIds.includes(id));
 
-            // Ejecutar cambios de permisos
-            for (const permissionId of permissionsToAdd) {
-                await dispatch(assignPermissionToUser({
-                    userId: selectedUserForPermissions.id,
-                    permissionId
-                })).unwrap();
-            }
+            // Ejecutar cambios en paralelo para mayor velocidad
+            const permissionPromises = [
+                ...permissionsToAdd.map(id =>
+                    dispatch(assignPermissionToUser({
+                        userId: selectedUserForPermissions.id,
+                        permissionId: id
+                    }))
+                ),
+                ...permissionsToRemove.map(id =>
+                    dispatch(revokePermissionFromUser({
+                        userId: selectedUserForPermissions.id,
+                        permissionId: id
+                    }))
+                )
+            ];
 
-            for (const permissionId of permissionsToRemove) {
-                await dispatch(revokePermissionFromUser({
-                    userId: selectedUserForPermissions.id,
-                    permissionId
-                })).unwrap();
-            }
+            const rolePromises = [
+                ...rolesToAdd.map(id =>
+                    dispatch(assignRoleToUser({
+                        userId: selectedUserForPermissions.id,
+                        roleId: id,
+                        companyId: selectedUserForPermissions.company?.id
+                    }))
+                ),
+                ...rolesToRemove.map(id =>
+                    dispatch(revokeRoleFromUser({
+                        userId: selectedUserForPermissions.id,
+                        roleId: id
+                    }))
+                )
+            ];
 
-            // Ejecutar cambios de roles
-            for (const roleId of rolesToAdd) {
-                await dispatch(assignRoleToUser({
-                    userId: selectedUserForPermissions.id,
-                    roleId,
-                    companyId: selectedUserForPermissions.company?.id
-                })).unwrap();
-            }
-
-            for (const roleId of rolesToRemove) {
-                await dispatch(revokeRoleFromUser({
-                    userId: selectedUserForPermissions.id,
-                    roleId
-                })).unwrap();
-            }
+            // Ejecutar todos los cambios en paralelo
+            await Promise.all([...permissionPromises, ...rolePromises]);
 
             toast.success('Permisos actualizados correctamente');
             setIsPermissionsModalOpen(false);
-            dispatch(fetchUsers({})); // Recargar usuarios
+
+            // Recargar solo los usuarios (más rápido que recargar todo)
+            dispatch(fetchUsers({}));
         } catch (error: any) {
             toast.error(error);
         }
-    };
+    }, [selectedUserForPermissions, userPermissions, userRoles, selectedPermissionIds, selectedRoleIds, dispatch]);
 
-    // Opciones para selects
-    const permissionOptions: TSelectOption[] = (permissions || []).map(p => ({
-        value: p.id.toString(),
-        label: `${p.name} (${p.code})`
-    }));
+    // Opciones para selects optimizadas con useMemo
+    const permissionOptions = useMemo<TSelectOption[]>(() =>
+        (permissions || []).map(p => ({
+            value: p.id.toString(),
+            label: `${p.name} (${p.code})`
+        })), [permissions]
+    );
 
-    const roleOptions: TSelectOption[] = (roles || []).map(r => ({
-        value: r.id.toString(),
-        label: `${r.name} - Nivel ${r.level}`
-    }));
+    const roleOptions = useMemo<TSelectOption[]>(() =>
+        (roles || []).map(r => ({
+            value: r.id.toString(),
+            label: `${r.name} - Nivel ${r.level}`
+        })), [roles]
+    );
+
+    // Optimizar el filtro de búsqueda
+    const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        dispatch(setFilters({ search: e.target.value }));
+    }, [dispatch]);
+
+    // Handlers optimizados para los selects
+    const handleRoleChange = useCallback((selectedOptions: any) => {
+        const ids = Array.isArray(selectedOptions)
+            ? selectedOptions.map(option => parseInt(option.value))
+            : selectedOptions ? [parseInt((selectedOptions as TSelectOption).value)] : [];
+        setSelectedRoleIds(ids);
+    }, []);
+
+    const handlePermissionChange = useCallback((selectedOptions: any) => {
+        const ids = Array.isArray(selectedOptions)
+            ? selectedOptions.map(option => parseInt(option.value))
+            : selectedOptions ? [parseInt((selectedOptions as TSelectOption).value)] : [];
+        setSelectedPermissionIds(ids);
+    }, []);
+
+    // Valores calculados optimizados para los selects
+    const selectedRoleOptions = useMemo(() =>
+        roleOptions.filter(option => selectedRoleIds.includes(parseInt(option.value))),
+        [roleOptions, selectedRoleIds]
+    );
+
+    const selectedPermissionOptions = useMemo(() =>
+        permissionOptions.filter(option => selectedPermissionIds.includes(parseInt(option.value))),
+        [permissionOptions, selectedPermissionIds]
+    );
 
     return (
         <PageWrapper isProtectedRoute title="Administración de Permisos" name="Permisos">
@@ -307,7 +464,7 @@ export default function PermissionsAdmin() {
                         name='search'
                         placeholder="Buscar usuarios..."
                         value={filters.search}
-                        onChange={e => dispatch(setFilters({ search: e.target.value }))}
+                        onChange={handleSearchChange}
                         className="border rounded w-64"
                     />
                 </SubheaderRight>
@@ -386,10 +543,20 @@ export default function PermissionsAdmin() {
                                         <span className="font-medium">Email:</span> {selectedUserForPermissions?.email}
                                     </div>
                                     <div>
-                                        <span className="font-medium">Cargo:</span> {selectedUserForPermissions?.position || '—'}
+                                        <span className="font-medium">Cargo:</span> {
+                                            selectedUserForPermissions?.cargo ||
+                                            selectedUserForPermissions?.companies?.[0]?.pivot?.cargo ||
+                                            selectedUserForPermissions?.position ||
+                                            '—'
+                                        }
                                     </div>
                                     <div>
-                                        <span className="font-medium">Empresa:</span> {selectedUserForPermissions?.company?.name || '—'}
+                                        <span className="font-medium">Empresa:</span> {
+                                            selectedUserForPermissions?.branch?.subsidiary?.company?.company_name ||
+                                            selectedUserForPermissions?.companies?.[0]?.name ||
+                                            selectedUserForPermissions?.company?.name ||
+                                            '—'
+                                        }
                                     </div>
                                     <div>
                                         <span className="font-medium">Estado:</span>{' '}
@@ -401,51 +568,119 @@ export default function PermissionsAdmin() {
                             </CardBody>
                         </Card>
 
-                        {/* Asignación de roles */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Roles del Usuario
-                            </label>
-                            <SelectReact
-                                name="user-roles"
-                                options={roleOptions}
-                                value={roleOptions.filter(option =>
-                                    selectedRoleIds.includes(parseInt(option.value))
-                                )}
-                                onChange={(selectedOptions) => {
-                                    const ids = Array.isArray(selectedOptions)
-                                        ? selectedOptions.map(option => parseInt(option.value))
-                                        : selectedOptions ? [parseInt((selectedOptions as TSelectOption).value)] : [];
-                                    setSelectedRoleIds(ids);
-                                }}
-                                placeholder="Seleccionar roles..."
-                                isMulti
-                                isSearchable
-                            />
-                        </div>
+                        {/* Roles y Permisos Actuales */}
+                        <Card>
+                            <CardHeader>
+                                <h3 className="text-lg font-medium">Roles y Permisos Actuales</h3>
+                            </CardHeader>
+                            <CardBody>
+                                <div className="space-y-4">
+                                    {/* Roles Actuales */}
+                                    <div>
+                                        <h4 className="text-sm font-medium text-gray-700 mb-2">Roles Asignados:</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {selectedUserForPermissions?.global_roles?.length ? (
+                                                selectedUserForPermissions.global_roles.map((role, index) => (
+                                                    <Badge key={index} color="blue" className="text-xs">
+                                                        {role} (Global)
+                                                    </Badge>
+                                                ))
+                                            ) : null}
+                                            {selectedUserForPermissions?.contextual_roles?.length ? (
+                                                selectedUserForPermissions.contextual_roles.map((contextRole, index) => (
+                                                    <Badge key={index} color="emerald" className="text-xs" title={`Contexto: ${contextRole.context}`}>
+                                                        {contextRole.role} (Contextual)
+                                                    </Badge>
+                                                ))
+                                            ) : null}
+                                            {(!selectedUserForPermissions?.global_roles?.length && !selectedUserForPermissions?.contextual_roles?.length) && (
+                                                <span className="text-gray-400 text-sm">Sin roles asignados</span>
+                                            )}
+                                        </div>
+                                    </div>
 
-                        {/* Asignación de permisos individuales */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Permisos Adicionales
-                            </label>
-                            <SelectReact
-                                name="user-permissions"
-                                options={permissionOptions}
-                                value={permissionOptions.filter(option =>
-                                    selectedPermissionIds.includes(parseInt(option.value))
-                                )}
-                                onChange={(selectedOptions) => {
-                                    const ids = Array.isArray(selectedOptions)
-                                        ? selectedOptions.map(option => parseInt(option.value))
-                                        : selectedOptions ? [parseInt((selectedOptions as TSelectOption).value)] : [];
-                                    setSelectedPermissionIds(ids);
-                                }}
-                                placeholder="Seleccionar permisos..."
-                                isMulti
-                                isSearchable
-                            />
-                        </div>
+                                    {/* Permisos Actuales */}
+                                    <div>
+                                        <h4 className="text-sm font-medium text-gray-700 mb-2">Permisos Directos:</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {selectedUserForPermissions?.direct_permissions?.length ? (
+                                                selectedUserForPermissions.direct_permissions.map((permissionCode, index) => (
+                                                    <Badge key={index} color="emerald" className="text-xs">
+                                                        {permissionCode}
+                                                    </Badge>
+                                                ))
+                                            ) : (
+                                                <span className="text-gray-400 text-sm">Sin permisos directos asignados</span>
+                                            )}
+                                        </div>
+
+                                        {/* Permisos desde Roles */}
+                                        <h4 className="text-sm font-medium text-gray-700 mb-2 mt-4">Permisos desde Roles:</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {selectedUserForPermissions?.role_permissions?.length ? (
+                                                selectedUserForPermissions.role_permissions.map((permissionCode, index) => (
+                                                    <Badge key={index} color="emerald" className="text-xs">
+                                                        {permissionCode}
+                                                    </Badge>
+                                                ))
+                                            ) : (
+                                                <span className="text-gray-400 text-sm">Sin permisos desde roles</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardBody>
+                        </Card>
+
+                        {/* Gestión de Roles */}
+                        <Card>
+                            <CardHeader>
+                                <h3 className="text-lg font-medium">Gestión de Roles</h3>
+                                <p className="text-sm text-gray-600">Agrega o quita roles para este usuario</p>
+                            </CardHeader>
+                            <CardBody>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Seleccionar Roles
+                                    </label>
+                                    <SelectReact
+                                        key={`roles-${selectedUserForPermissions?.id || 'none'}`}
+                                        name="user-roles"
+                                        options={roleOptions}
+                                        value={selectedRoleOptions}
+                                        onChange={handleRoleChange}
+                                        placeholder="Seleccionar roles..."
+                                        isMulti
+                                        isSearchable
+                                    />
+                                </div>
+                            </CardBody>
+                        </Card>
+
+                        {/* Gestión de Permisos Adicionales */}
+                        <Card>
+                            <CardHeader>
+                                <h3 className="text-lg font-medium">Permisos Adicionales</h3>
+                                <p className="text-sm text-gray-600">Asigna permisos específicos adicionales a los roles</p>
+                            </CardHeader>
+                            <CardBody>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Seleccionar Permisos
+                                    </label>
+                                    <SelectReact
+                                        key={`permissions-${selectedUserForPermissions?.id || 'none'}`}
+                                        name="user-permissions"
+                                        options={permissionOptions}
+                                        value={selectedPermissionOptions}
+                                        onChange={handlePermissionChange}
+                                        placeholder="Seleccionar permisos..."
+                                        isMulti
+                                        isSearchable
+                                    />
+                                </div>
+                            </CardBody>
+                        </Card>
                     </div>
                 </ModalBody>
 

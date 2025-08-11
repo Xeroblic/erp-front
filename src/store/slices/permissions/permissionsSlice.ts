@@ -220,13 +220,27 @@ export const assignPermissionToUser = createAsyncThunk(
     'permissions/assignPermissionToUser',
     async ({ userId, permissionId, expiresAt }: { userId: number; permissionId: number; expiresAt?: string }, { rejectWithValue }) => {
         try {
+            const payload = {
+                permissions: [String(permissionId)], // Backend ahora acepta IDs como strings
+                expires_at: expiresAt
+            };
+
+            console.log('🎯 DEBUG - Enviando a API:', {
+                url: `/admin/users/${userId}/permissions`,
+                method: 'POST',
+                payload
+            });
+
             const response = await ApiService.fetchData<{ user_permission: UserPermission }>({
                 url: `/admin/users/${userId}/permissions`,
                 method: 'post',
-                data: { permission_id: permissionId, expires_at: expiresAt }
+                data: payload
             });
+
+            console.log('🎯 DEBUG - Respuesta de API:', response);
             return response.data.user_permission;
         } catch (error: any) {
+            console.error('🎯 DEBUG - Error en API:', error);
             return rejectWithValue(error?.response?.data?.message || 'Error al asignar permiso');
         }
     }
@@ -267,18 +281,29 @@ export const assignRoleToUser = createAsyncThunk(
     'permissions/assignRoleToUser',
     async (roleData: { userId: number; roleId: number; companyId?: number; subsidiaryId?: number; branchId?: number }, { rejectWithValue }) => {
         try {
+            const payload = {
+                roles: [String(roleData.roleId)], // Backend ahora acepta IDs como strings en array
+                company_id: roleData.companyId,
+                subsidiary_id: roleData.subsidiaryId,
+                branch_id: roleData.branchId
+            };
+
+            console.log('🎯 DEBUG - Enviando rol a API:', {
+                url: `/admin/users/${roleData.userId}/roles`,
+                method: 'POST',
+                payload
+            });
+
             const response = await ApiService.fetchData<{ user_role: UserRole }>({
                 url: `/admin/users/${roleData.userId}/roles`,
                 method: 'post',
-                data: {
-                    role_id: roleData.roleId,
-                    company_id: roleData.companyId,
-                    subsidiary_id: roleData.subsidiaryId,
-                    branch_id: roleData.branchId
-                }
+                data: payload
             });
+
+            console.log('🎯 DEBUG - Respuesta de API para roles:', response);
             return response.data.user_role;
         } catch (error: any) {
+            console.error('🎯 DEBUG - Error en API para roles:', error);
             return rejectWithValue(error?.response?.data?.message || 'Error al asignar rol');
         }
     }

@@ -10,21 +10,7 @@ const ApiService = {
                 .then((response: AxiosResponse<Response>) => {
                     resolve(response);
                 })
-                .catch((error: AxiosError) => {
-                    if (
-                        error.response &&
-                        (error.response.status === 401 || error.response.status === 403 || error.response.status === 500)
-                    ) {
-                        window.location.href = '/login';
-                        return;
-                    }
-                    if (!error.response) {
-                        // Sin respuesta del servidor (caído)
-                        window.location.href = '/login';
-                        return;
-                    }
-                    reject(error);
-                });
+                
         });
     },
 
