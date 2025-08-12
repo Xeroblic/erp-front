@@ -73,15 +73,18 @@ export const fetchPermissions = createAsyncThunk(
     'permissions/fetchPermissions',
     async (_, { rejectWithValue }) => {
         try {
+            console.log('🔄 Iniciando fetch de permisos desde /admin/permissions');
             const response = await ApiService.fetchData<{
                 success: boolean;
                 data: Permission[]
             }>({
-                url: '/permissions',
+                url: '/admin/permissions',
                 method: 'get'
             });
+            console.log('✅ Permisos obtenidos:', response.data.data?.length || 0, 'permisos');
             return response.data.data;
         } catch (error: any) {
+            console.error('❌ Error al obtener permisos:', error?.response?.data?.message || error);
             return rejectWithValue(error?.response?.data?.message || 'Error al obtener permisos');
         }
     }
@@ -139,15 +142,18 @@ export const fetchRoles = createAsyncThunk(
     'permissions/fetchRoles',
     async (_, { rejectWithValue }) => {
         try {
+            console.log('🔄 Iniciando fetch de roles desde /admin/roles');
             const response = await ApiService.fetchData<{
                 success: boolean;
                 data: Role[]
             }>({
-                url: '/roles',
+                url: '/admin/roles',
                 method: 'get'
             });
+            console.log('✅ Roles obtenidos:', response.data.data?.length || 0, 'roles');
             return response.data.data;
         } catch (error: any) {
+            console.error('❌ Error al obtener roles:', error?.response?.data?.message || error);
             return rejectWithValue(error?.response?.data?.message || 'Error al obtener roles');
         }
     }

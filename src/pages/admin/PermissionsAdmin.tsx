@@ -80,12 +80,15 @@ export default function PermissionsAdmin() {
         dispatch(fetchRoles());
     }, [dispatch]);
 
-    // Debug: Log de usuarios cuando cambian (simplificado)
+    // Debug: Estado de permisos y roles cargados
     useEffect(() => {
-        if (users && users.length > 0) {
-            console.log('✅ Usuarios cargados:', users.length);
-        }
-    }, [users]);
+        console.log('🔍 Estado actual del store:', {
+            permissions: permissions?.length || 0,
+            roles: roles?.length || 0,
+            permissionsData: permissions?.slice(0, 5)?.map(p => ({ id: p.id, code: p.code, name: p.name })),
+            rolesData: roles?.slice(0, 3)?.map(r => ({ id: r.id, name: r.name }))
+        });
+    }, [permissions, roles]);
 
     // Pre-selección optimizada con useMemo
     const { preselectedRoleIds, preselectedPermissionIds } = useMemo(() => {
@@ -98,6 +101,7 @@ export default function PermissionsAdmin() {
 
         // Roles legacy
         if (selectedUserForPermissions.roles?.length) {
+            console.log('✅ Encontrados roles legacy:', selectedUserForPermissions.roles);
             currentRoleIds.push(...selectedUserForPermissions.roles.map(r => r.id));
         }
 
@@ -121,16 +125,111 @@ export default function PermissionsAdmin() {
         const currentPermissionIds: number[] = [];
 
         // Mapeo rápido de códigos a IDs de permisos
-        const permissionCodeToId = new Map(permissions.map(p => [p.code, p.id]));
+        console.log('🔍 ANTES del mapeo - Permisos disponibles:', permissions?.length || 0);
+        console.log('🔍 ANTES del mapeo - Primeros 3 permisos:', permissions?.slice(0, 3)?.map(p => ({ id: p.id, code: p.code, name: p.name })));
 
+        // Verificar códigos duplicados
+        const codes = permissions.map(p => p.code);
+        const uniqueCodes = new Set(codes);
+        if (codes.length !== uniqueCodes.size) {
+            console.warn('⚠️ ¡Códigos de permisos duplicados detectados!', {
+                totalPermisos: codes.length,
+                codigosUnicos: uniqueCodes.size,
+                duplicados: codes.filter((code, index) => codes.indexOf(code) !== index)
+            });
+        }
+
+        // Crear mapeo usando ID como fallback si hay códigos duplicados
+        const permissionCodeToId = new Map();
+        const permissionIdToName = new Map();
+
+        permissions.forEach(p => {
+            // Si hay códigos duplicados, usar ID como clave, sino usar code
+            const key = uniqueCodes.size < permissions.length ? p.id.toString() : p.code;
+            permissionCodeToId.set(key, p.id);
+            permissionIdToName.set(p.id, p.name);
+        });
+
+        console.log('📋 Mapeo de permisos disponible:', Array.from(permissionCodeToId.entries()).slice(0, 5), '... total:', permissionCodeToId.size);
+        console.log('🔍 Usando mapeo por:', uniqueCodes.size < permissions.length ? 'ID' : 'CODE');
+
+        // Incluir permisos directos
         if (selectedUserForPermissions.direct_permissions?.length) {
+            console.log('🟣 Procesando permisos directos:', selectedUserForPermissions.direct_permissions);
             selectedUserForPermissions.direct_permissions.forEach(permissionCode => {
-                const permissionId = permissionCodeToId.get(permissionCode);
-                if (permissionId) {
+                // Intentar mapear por código primero, luego por ID si hay duplicados
+                let permissionId = permissionCodeToId.get(permissionCode);
+                if (!permissionId && uniqueCodes.size < permissions.length) {
+                    // Si hay duplicados, buscar por ID directo en los permisos
+                    const foundPermission = permissions.find(p => p.code === permissionCode || p.id.toString() === permissionCode);
+                    permissionId = foundPermission?.id;
+                }
+
+                if (permissionId && !currentPermissionIds.includes(permissionId)) {
+                    console.log(`✅ Permiso directo "${permissionCode}" -> ID ${permissionId}`);
                     currentPermissionIds.push(permissionId);
+                } else {
+                    console.log(`❌ No se pudo mapear permiso directo "${permissionCode}"`);
+                }
+            });
+        } else {
+            console.log('⚪ Sin permisos directos');
+        }
+
+        // IMPORTANTE: También incluir permisos de roles para pre-selección
+        if (selectedUserForPermissions.role_permissions?.length) {
+            console.log('🟠 Procesando permisos de roles:', selectedUserForPermissions.role_permissions);
+            selectedUserForPermissions.role_permissions.forEach(permissionCode => {
+                // Intentar mapear por código primero, luego por ID si hay duplicados
+                let permissionId = permissionCodeToId.get(permissionCode);
+                if (!permissionId && uniqueCodes.size < permissions.length) {
+                    // Si hay duplicados, buscar por ID directo en los permisos
+                    const foundPermission = permissions.find(p => p.code === permissionCode || p.id.toString() === permissionCode);
+                    permissionId = foundPermission?.id;
+                }
+
+                if (permissionId && !currentPermissionIds.includes(permissionId)) {
+                    console.log(`✅ Permiso de rol "${permissionCode}" -> ID ${permissionId}`);
+                    currentPermissionIds.push(permissionId);
+                } else {
+                    console.log(`❌ No se pudo mapear permiso de rol "${permissionCode}"`);
+                }
+            });
+        } else {
+            console.log('⚪ Sin permisos de roles');
+        }
+
+        // Si no hay permisos directos ni de roles, usar all_permissions como fallback
+        if (currentPermissionIds.length === 0 && selectedUserForPermissions.all_permissions?.length) {
+            console.log('🔵 Usando all_permissions como fallback:', selectedUserForPermissions.all_permissions);
+            selectedUserForPermissions.all_permissions.forEach(permissionCode => {
+                // Intentar mapear por código primero, luego por ID si hay duplicados
+                let permissionId = permissionCodeToId.get(permissionCode);
+                if (!permissionId && uniqueCodes.size < permissions.length) {
+                    // Si hay duplicados, buscar por ID directo en los permisos
+                    const foundPermission = permissions.find(p => p.code === permissionCode || p.id.toString() === permissionCode);
+                    permissionId = foundPermission?.id;
+                }
+
+                if (permissionId && !currentPermissionIds.includes(permissionId)) {
+                    console.log(`✅ Permiso (all) "${permissionCode}" -> ID ${permissionId}`);
+                    currentPermissionIds.push(permissionId);
+                } else {
+                    console.log(`❌ No se pudo mapear permiso (all) "${permissionCode}"`);
                 }
             });
         }
+
+        console.log('🎯 RESULTADO de pre-selección:', {
+            usuario: selectedUserForPermissions.first_name,
+            rolesCalculados: currentRoleIds,
+            permisosCalculados: currentPermissionIds,
+            directPermissions: selectedUserForPermissions.direct_permissions || [],
+            rolePermissions: selectedUserForPermissions.role_permissions || [],
+            allPermissions: selectedUserForPermissions.all_permissions || [],
+            totalPermissionsAvailable: permissions.length,
+            totalRolesAvailable: roles.length
+        });
 
         return {
             preselectedRoleIds: currentRoleIds,
@@ -140,9 +239,54 @@ export default function PermissionsAdmin() {
 
     // Sincronizar pre-selección cuando cambien los valores calculados
     useEffect(() => {
+        console.log('🔄 Sincronizando pre-selección:', {
+            roleIds: preselectedRoleIds,
+            permissionIds: preselectedPermissionIds
+        });
         setSelectedRoleIds(preselectedRoleIds);
         setSelectedPermissionIds(preselectedPermissionIds);
     }, [preselectedRoleIds, preselectedPermissionIds]);
+
+    // NUEVO: useEffect adicional para cuando se actualize selectedUserForPermissions
+    useEffect(() => {
+        if (selectedUserForPermissions && permissions.length > 0) {
+            console.log('🆕 Usuario actualizado, recalculando permisos:', {
+                usuario: selectedUserForPermissions.first_name,
+                tieneDirectPermissions: !!selectedUserForPermissions.direct_permissions?.length,
+                tieneRolePermissions: !!selectedUserForPermissions.role_permissions?.length,
+                permissionsDisponibles: permissions.length
+            });
+
+            // Forzar recálculo manual si es necesario
+            const permissionCodeToId = new Map(permissions.map(p => [p.code, p.id]));
+            const newPermissionIds: number[] = [];
+
+            // Agregar permisos directos
+            if (selectedUserForPermissions.direct_permissions?.length) {
+                selectedUserForPermissions.direct_permissions.forEach(code => {
+                    const id = permissionCodeToId.get(code);
+                    if (id && !newPermissionIds.includes(id)) {
+                        newPermissionIds.push(id);
+                    }
+                });
+            }
+
+            // Agregar permisos de roles (sin duplicados)
+            if (selectedUserForPermissions.role_permissions?.length) {
+                selectedUserForPermissions.role_permissions.forEach(code => {
+                    const id = permissionCodeToId.get(code);
+                    if (id && !newPermissionIds.includes(id)) {
+                        newPermissionIds.push(id);
+                    }
+                });
+            }
+
+            console.log('🎯 Permisos calculados manualmente:', newPermissionIds);
+            if (newPermissionIds.length > 0) {
+                setSelectedPermissionIds(newPermissionIds);
+            }
+        }
+    }, [selectedUserForPermissions, permissions]);
 
     // Configurar tabla
     const columns = [
@@ -347,6 +491,12 @@ export default function PermissionsAdmin() {
     const handleSavePermissions = useCallback(async () => {
         if (!selectedUserForPermissions) return;
 
+        console.log('💾 GUARDANDO CAMBIOS:', {
+            usuario: selectedUserForPermissions.name,
+            permisosSeleccionados: selectedPermissionIds,
+            rolesSeleccionados: selectedRoleIds
+        });
+
         try {
             const currentPermissions = (userPermissions || [])
                 .filter(up => up.user_id === selectedUserForPermissions.id)
@@ -408,19 +558,23 @@ export default function PermissionsAdmin() {
     }, [selectedUserForPermissions, userPermissions, userRoles, selectedPermissionIds, selectedRoleIds, dispatch]);
 
     // Opciones para selects optimizadas con useMemo
-    const permissionOptions = useMemo<TSelectOption[]>(() =>
-        (permissions || []).map(p => ({
+    const permissionOptions = useMemo<TSelectOption[]>(() => {
+        const options = (permissions || []).map(p => ({
             value: p.id.toString(),
             label: `${p.name} (${p.code})`
-        })), [permissions]
-    );
+        }));
+        console.log('🎯 Opciones de permisos generadas:', options.length, 'opciones');
+        return options;
+    }, [permissions]);
 
-    const roleOptions = useMemo<TSelectOption[]>(() =>
-        (roles || []).map(r => ({
+    const roleOptions = useMemo<TSelectOption[]>(() => {
+        const options = (roles || []).map(r => ({
             value: r.id.toString(),
-            label: `${r.name} - Nivel ${r.level}`
-        })), [roles]
-    );
+            label: `${r.name}`
+        }));
+        console.log('🎯 Opciones de roles generadas:', options.length, 'opciones');
+        return options;
+    }, [roles]);
 
     // Optimizar el filtro de búsqueda
     const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -588,7 +742,7 @@ export default function PermissionsAdmin() {
                                             ) : null}
                                             {selectedUserForPermissions?.contextual_roles?.length ? (
                                                 selectedUserForPermissions.contextual_roles.map((contextRole, index) => (
-                                                    <Badge key={index} color="emerald" className="text-xs" title={`Contexto: ${contextRole.context}`}>
+                                                    <Badge key={index} color="amber" className="text-xs">
                                                         {contextRole.role} (Contextual)
                                                     </Badge>
                                                 ))
@@ -605,7 +759,7 @@ export default function PermissionsAdmin() {
                                         <div className="flex flex-wrap gap-2">
                                             {selectedUserForPermissions?.direct_permissions?.length ? (
                                                 selectedUserForPermissions.direct_permissions.map((permissionCode, index) => (
-                                                    <Badge key={index} color="emerald" className="text-xs">
+                                                    <Badge key={index} color="violet" className="text-xs">
                                                         {permissionCode}
                                                     </Badge>
                                                 ))

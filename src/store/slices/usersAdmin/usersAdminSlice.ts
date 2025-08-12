@@ -33,6 +33,13 @@ export interface UserWithDetails extends Omit<IUserMe, 'roles' | 'companies'> {
         expires_at?: string;
     }>;
 
+    // Roles legacy (para compatibilidad)
+    roles?: Array<{
+        id: number;
+        name: string;
+        level?: number;
+    }>;
+
     // Información de empresa/subsidiaria/sucursal del backend
     companies?: Array<{
         id: number;
@@ -51,11 +58,11 @@ export interface UserWithDetails extends Omit<IUserMe, 'roles' | 'companies'> {
         branch_name: string;
         is_primary?: number;
         position?: string;
-        name?: string; // legacy
+        name: string; // legacy, now always string
         subsidiary?: {
             id: number;
             subsidiary_name: string;
-            name?: string; // legacy
+            name: string; // legacy, now always string
             company?: {
                 id: number;
                 company_name: string;
