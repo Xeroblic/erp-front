@@ -27,18 +27,18 @@ export interface IBranch {
 export interface ISubempresa {
   id: number;
   company_id: number;
-  subsidiary_name: string;
-  subsidiary_rut?: string;
-  subsidiary_website?: string;
-  subsidiary_phone?: string;
-  subsidiary_address?: string;
-  subsidiary_email?: string;
-  subsidiary_created_at: string;
-  subsidiary_updated_at: string;
-  subsidiary_manager_name?: string;
-  subsidiary_manager_phone?: string;
-  subsidiary_manager_email?: string;
-  subsidiary_status?: string | number | boolean;
+  name: string;
+  rut?: string;
+  website?: string;
+  phone?: string;
+  address?: string;
+  email?: string;
+  created_at: string;
+  updated_at: string;
+  manager_name?: string;
+  manager_phone?: string;
+  manager_email?: string;
+  status?: string | number | boolean;
   sucursales: ISucursal[];
   branches?: IBranch[]; // Nueva propiedad para la estructura del backend
   branches_count?: number;

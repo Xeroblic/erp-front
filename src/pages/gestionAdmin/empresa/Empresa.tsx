@@ -125,69 +125,53 @@ export default function EmpresaDetalle() {
 						</div>
 						<CardBody className="space-y-6">
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-								{/* Nombre */}
+							{/* Nombre */}
 								<div>
-									<Label htmlFor="nombre">Nombre de la empresa</Label>
-									<Input
-										id="nombre"
-										name="nombre"
-										value={formik.values.company_name}
-										onChange={formik.handleChange}
-										onBlur={formik.handleBlur}
-									/>
-									{formik.touched.company_name && formik.errors.company_name && (
-										<p className="mt-1 text-red-600 text-sm">{formik.errors.company_name}</p>
-									)}
+								<Label htmlFor="company_name">Nombre de la empresa</Label>
+								<Input
+									id="company_name"
+									name="company_name"
+									value={formik.values.company_name}
+									onChange={formik.handleChange}
+									onBlur={formik.handleBlur}
+								/>
+								{formik.touched.company_name && formik.errors.company_name && (
+									<p className="mt-1 text-red-600 text-sm">{formik.errors.company_name}</p>
+								)}
 								</div>
 
 								{/* RUT */}
 								<div>
-									<Label htmlFor="rut">RUT</Label>
-									<Input
-										id="company_rut"
-										name="company_rut"
-										value={formik.values.company_rut}
-										onChange={formik.handleChange}
-										onBlur={formik.handleBlur}
-									/>
-									{formik.touched.company_rut && formik.errors.company_rut && (
-										<p className="mt-1 text-red-600 text-sm">{formik.errors.company_rut}</p>
-									)}
+								<Label htmlFor="company_rut">RUT</Label>
+								<Input
+									id="company_rut"
+									name="company_rut"
+									value={formik.values.company_rut}
+									onChange={formik.handleChange}
+									onBlur={formik.handleBlur}
+								/>
+								{formik.touched.company_rut && formik.errors.company_rut && (
+									<p className="mt-1 text-red-600 text-sm">{formik.errors.company_rut}</p>
+								)}
 								</div>
 
 								{/* Descripción */}
 								<div className="md:col-span-2">
-									<Label htmlFor="descripcion">Descripción</Label>
-									<Input
-										id="business_activity"
-										name="business_activity"
-										value={formik.values.business_activity}
-										onChange={formik.handleChange}
-										onBlur={formik.handleBlur}
-									/>
-									{formik.touched.business_activity && formik.errors.business_activity && (
-										<p className="mt-1 text-red-600 text-sm">{formik.errors.business_activity}</p>
-									)}
+								<Label htmlFor="business_activity">Descripción</Label>
+								<Input
+									id="business_activity"
+									name="business_activity"
+									value={formik.values.business_activity}
+									onChange={formik.handleChange}
+									onBlur={formik.handleBlur}
+								/>
+								{formik.touched.business_activity && formik.errors.business_activity && (
+									<p className="mt-1 text-red-600 text-sm">{formik.errors.business_activity}</p>
+								)}
 								</div>
 							</div>
 
-							{/* Metadatos */}
-							<div className="border-t pt-6">
-								<dl className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-sm text-gray-700">
-									<div>
-										<dt className="font-medium">Creada el</dt>
-										<dd className="mt-1">{new Date(detalleEmpresa.created_at).toLocaleString()}</dd>
-									</div>
-									<div>
-										<dt className="font-medium">Última actualización</dt>
-										<dd className="mt-1">{new Date(detalleEmpresa.updated_at).toLocaleString()}</dd>
-									</div>
-									<div>
-										<dt className="font-medium">Rol asignado</dt>
-										<dd className="mt-1">#{detalleEmpresa.pivot?.rol_id}</dd>
-									</div>
-								</dl>
-							</div>
+
 						</CardBody>
 					</Card>
 				</form>
@@ -196,28 +180,45 @@ export default function EmpresaDetalle() {
 				<Card>
 					<CardBody className="space-y-4">
 						<h2 className="text-xl font-semibold">Subempresas</h2>
+
 						{detalleEmpresa.subsidiaries?.length ? (
-							<ul className="space-y-4">
-								{detalleEmpresa.subsidiaries!.map(sub => (
-									<li key={sub.id} className=" rounded-lg p-4 ">
-										<h3 className="font-medium">{sub.subsidiary_name}</h3>
-										{sub.branches?.length ? (
-											<ul className="mt-2 ml-4 list-disc text-gray-700">
-												{/* {sub.branches.map(branch => ( */}
-													<li key={sub.id}>{sub.subsidiary_name}</li>
-												{/* // ))} */}
-											</ul>
-										) : (
-											<p className="mt-2 text-gray-500">Sin sucursales</p>
-										)}
-									</li>
-								))}
-							</ul>
+						<ul className="space-y-4">
+							{detalleEmpresa.subsidiaries.map(sub => (
+							<li key={sub.id} className="rounded-lg p-4 border border-gray-200/10">
+								<h3 className="font-medium">{sub.name}</h3>
+
+								<dl className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-gray-400">
+								<div>
+									<dt className="font-medium text-gray-300">Dirección</dt>
+									<dd className="mt-1">{sub.address ?? '—'}</dd>
+								</div>
+								<div>
+									<dt className="font-medium text-gray-300">Teléfono</dt>
+									<dd className="mt-1">{sub.phone ?? '—'}</dd>
+								</div>
+								<div>
+									<dt className="font-medium text-gray-300">Correo</dt>
+									<dd className="mt-1">{sub.email ?? '—'}</dd>
+								</div>
+								</dl>
+
+								{/* Si más adelante la API trae sucursales, descomentar esta linea */}
+								{/* {sub.branches?.length ? (
+								<ul className="mt-3 ml-4 list-disc text-gray-300">
+									{sub.branches.map(b => <li key={b.id}>{b.name}</li>)}
+								</ul>
+								) : (
+								<p className="mt-3 text-gray-500">Sin sucursales</p>
+								)} */}
+							</li>
+							))}
+						</ul>
 						) : (
-							<p className="text-gray-500">No hay subempresas configuradas.</p>
+						<p className="text-gray-500">No hay subempresas configuradas.</p>
 						)}
 					</CardBody>
-				</Card>
+					</Card>
+
 			</Container>
 		</PageWrapper>
 
