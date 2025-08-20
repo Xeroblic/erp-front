@@ -42,6 +42,7 @@ export default function PermissionsAdmin() {
     selectedUserForPermissions,
     selectedPermissionIds,
     selectedRoleIds,
+    toggleUserLoading,
     permissionNameToId,
     roleNameToId,
     loadInitialData,
@@ -124,7 +125,7 @@ export default function PermissionsAdmin() {
   }, [savePermissions, closePermissionsModal]);
 
   // Table columns
-  const columns = createUserTableColumns(handleOpenPermissionsModal, toggleUser);
+  const columns = createUserTableColumns(handleOpenPermissionsModal, toggleUser, toggleUserLoading);
 
   // Table configuration
   const table = useReactTable({

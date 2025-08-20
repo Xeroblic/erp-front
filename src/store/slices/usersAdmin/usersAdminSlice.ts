@@ -290,13 +290,44 @@ export const toggleUserStatus = createAsyncThunk(
     'usersAdmin/toggleUserStatus',
     async ({ userId, status }: { userId: number; status: boolean }, { rejectWithValue }) => {
         try {
-            const response = await ApiService.fetchData<{ user: UserWithDetails }>({
-                url: `/admin/users/${userId}/status`,
+            const response = await ApiService.fetchData<any>({
+                url: `/admin/users/${userId}/toggle-status`,
                 method: 'patch',
                 data: { is_active: status }
             });
-            return response.data.user;
+
+            console.log('🔍 Respuesta completa del servidor:', response);
+            console.log('🔍 response.data:', response?.data);
+            
+            // Validar que la respuesta tenga la estructura esperada del backend
+            if (!response?.data) {
+                console.error('❌ No hay response.data');
+                return rejectWithValue('Respuesta del servidor inválida: sin data');
+            }
+
+            // Si el backend devuelve success, message, data
+            if (response.data.success && response.data.data && typeof response.data.data.is_active === 'boolean') {
+                console.log('✅ Estructura con success detectada, is_active:', response.data.data.is_active);
+                return {
+                    userId,
+                    is_active: response.data.data.is_active
+                };
+            }
+
+            // Si el backend devuelve directamente { is_active: boolean }
+            if (typeof response.data.is_active === 'boolean') {
+                console.log('✅ Estructura directa detectada, is_active:', response.data.is_active);
+                return {
+                    userId,
+                    is_active: response.data.is_active
+                };
+            }
+
+            console.error('❌ Estructura no reconocida:', response.data);
+            return rejectWithValue('Respuesta del servidor inválida: estructura no reconocida');
+
         } catch (error: any) {
+            console.error('❌ Error en toggleUserStatus:', error);
             return rejectWithValue(error?.response?.data?.message || 'Error al cambiar estado del usuario');
         }
     }
@@ -486,13 +517,23 @@ const usersAdminSlice = createSlice({
 
             // Toggle user status
             .addCase(toggleUserStatus.fulfilled, (state, action) => {
-                const index = state.users.findIndex(u => u.id === action.payload.id);
+                // Validar que el payload tenga la estructura esperada
+                if (!action.payload || !action.payload.userId || typeof action.payload.is_active !== 'boolean') {
+                    console.error('toggleUserStatus.fulfilled: payload inválido', action.payload);
+                    return;
+                }
+
+                const { userId, is_active } = action.payload;
+                const index = state.users.findIndex(u => u.id === userId);
                 if (index !== -1) {
-                    state.users[index] = action.payload;
+                    state.users[index].is_active = is_active;
                 }
-                if (state.selectedUser?.id === action.payload.id) {
-                    state.selectedUser = action.payload;
+                if (state.selectedUser?.id === userId) {
+                    state.selectedUser.is_active = is_active;
                 }
+            })
+            .addCase(toggleUserStatus.rejected, (_state, action) => {
+                console.error('toggleUserStatus.rejected:', action.payload);
             })
 
             // Invitations

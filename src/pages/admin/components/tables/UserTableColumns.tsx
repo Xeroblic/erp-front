@@ -9,7 +9,8 @@ const columnHelper = createColumnHelper<UserWithDetails>();
 
 export const createUserTableColumns = (
     onOpenPermissionsModal: (user: UserWithDetails) => void,
-    onToggleUserStatus: (user: UserWithDetails) => void
+    onToggleUserStatus: (user: UserWithDetails) => void,
+    toggleUserLoading: Set<number>
 ) => [
         columnHelper.accessor('first_name', {
             header: 'Usuario',
@@ -139,12 +140,23 @@ export const createUserTableColumns = (
                         variant="outline"
                         onClick={() => onToggleUserStatus(info.row.original)}
                         className="flex items-center gap-1"
+                        isDisable={toggleUserLoading.has(info.row.original.id)}
                     >
                         <Icon
-                            icon={info.row.original.is_active ? 'HeroXMark' : 'HeroCheck'}
-                            className="w-4 h-4"
+                            icon={toggleUserLoading.has(info.row.original.id)
+                                ? 'HeroArrowPath'
+                                : info.row.original.is_active
+                                    ? 'HeroXMark'
+                                    : 'HeroCheck'
+                            }
+                            className={`w-4 h-4 ${toggleUserLoading.has(info.row.original.id) ? 'animate-spin' : ''}`}
                         />
-                        {info.row.original.is_active ? 'Desactivar' : 'Activar'}
+                        {toggleUserLoading.has(info.row.original.id)
+                            ? 'Procesando...'
+                            : info.row.original.is_active
+                                ? 'Desactivar'
+                                : 'Activar'
+                        }
                     </Button>
                 </div>
             ),

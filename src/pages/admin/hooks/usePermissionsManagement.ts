@@ -27,6 +27,7 @@ export const usePermissionsManagement = () => {
     const [selectedUserForPermissions, setSelectedUserForPermissions] = useState<UserWithDetails | null>(null);
     const [selectedPermissionIds, setSelectedPermissionIds] = useState<number[]>([]);
     const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
+    const [toggleUserLoading, setToggleUserLoading] = useState<Set<number>>(new Set());
 
     // Mappings
     const permissionNameToId = useMemo(
@@ -66,16 +67,62 @@ export const usePermissionsManagement = () => {
     // Toggle user status
     const toggleUser = useCallback(
         async (user: UserWithDetails) => {
+            // Validar que el usuario tenga un ID válido
+            if (!user || !user.id || typeof user.id !== 'number') {
+                toast.error('Usuario inválido: ID no encontrado');
+                return;
+            }
+
+            // Añadir el usuario al set de loading
+            setToggleUserLoading(prev => new Set(prev).add(user.id));
+
             try {
-                await dispatch(
+                const newStatus = !user.is_active;
+                const statusText = newStatus ? 'activado' : 'desactivado';
+
+                // Mostrar toast de carga inmediatamente
+                const loadingToast = toast.loading(`${newStatus ? 'Activando' : 'Desactivando'} usuario...`);
+
+                const result = await dispatch(
                     toggleUserStatus({
                         userId: user.id,
-                        status: !user.is_active,
+                        status: newStatus,
                     })
                 ).unwrap();
-                toast.success(`Usuario ${user.is_active ? 'desactivado' : 'activado'} correctamente`);
+
+                // Validar que el resultado tenga la estructura esperada
+                if (!result || !result.userId || typeof result.is_active !== 'boolean') {
+                    throw new Error('Respuesta del servidor inválida');
+                }
+
+                // Actualizar toast de éxito
+                toast.update(loadingToast, {
+                    render: `Usuario ${statusText} correctamente`,
+                    type: 'success',
+                    isLoading: false,
+                    autoClose: 3000,
+                });
+
             } catch (error: any) {
-                toast.error(error);
+                console.error('Error en toggleUser:', error);
+
+                let errorMessage = 'Error desconocido';
+                if (typeof error === 'string') {
+                    errorMessage = error;
+                } else if (error?.message) {
+                    errorMessage = error.message;
+                } else if (error?.response?.data?.message) {
+                    errorMessage = error.response.data.message;
+                }
+
+                toast.error(`Error al cambiar estado del usuario: ${errorMessage}`);
+            } finally {
+                // Remover el usuario del set de loading
+                setToggleUserLoading(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(user.id);
+                    return newSet;
+                });
             }
         },
         [dispatch]
@@ -199,6 +246,7 @@ export const usePermissionsManagement = () => {
         selectedUserForPermissions,
         selectedPermissionIds,
         selectedRoleIds,
+        toggleUserLoading,
 
         // Mappings
         permissionNameToId,
