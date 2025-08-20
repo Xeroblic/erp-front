@@ -59,10 +59,6 @@ const RolesPermisos: React.FC = () => {
       header: 'Email',
       cell: info => info.getValue(),
     }),
-    columnHelper.accessor('roles', {
-      header: 'Roles',
-      cell: info => info.getValue().map(r => r.slug).join(', '),
-    }),
     columnHelper.accessor('permisos', {
       header: 'Permisos',
       cell: info => info.getValue().map(p => p.clave).join(', '),

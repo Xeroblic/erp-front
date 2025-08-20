@@ -217,7 +217,7 @@ export default function EmpresaDetalle() {
 						<p className="text-gray-500">No hay subempresas configuradas.</p>
 						)}
 					</CardBody>
-					</Card>
+				</Card>
 
 			</Container>
 		</PageWrapper>

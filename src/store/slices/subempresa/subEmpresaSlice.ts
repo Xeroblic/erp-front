@@ -103,9 +103,9 @@ export const updateSubempresa = createAsyncThunk<
         url: `/subsidaries/${subempresa.id}`,
         method: 'patch',
         data: {
-          nombre: subempresa.subsidiary_name,
-          slug: subempresa.subsidiary_rut,
-          descripcion: subempresa.subsidiary_phone,
+          nombre: subempresa.name,
+          slug: subempresa.rut,
+          descripcion: subempresa.phone,
         },
       })
       return response.data
@@ -115,7 +115,7 @@ export const updateSubempresa = createAsyncThunk<
   }
 )
 
-// 5) Eliminar subempresa
+// 5) Eliminar subempresa 
 export const deleteSubempresa = createAsyncThunk<
   number,
   number,
