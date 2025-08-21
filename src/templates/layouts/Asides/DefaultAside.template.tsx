@@ -34,13 +34,18 @@ const AuthorityCheckNav = (props: AuthorityGuardProps) => {
 		companyId,
 		subsidiaryId,
 		branchId,
-		children
+		children,
 	} = props
 
 	const user = useAppSelector((s) => s.auth.user);
 
 	// Si `authority` es vacío o `undefined`, la vista es sin protección
 	if (!authority || authority.length === 0) {
+		return <>{children}</>
+	}
+
+	// Si es super admin, acceso completo (excepto restricciones específicas)
+	if (user?.authority?.includes('super-admin') || userAuthority?.includes('super-admin')) {
 		return <>{children}</>
 	}
 
@@ -184,7 +189,24 @@ const DefaultAsideTemplate = () => {
 
 					</NavCollapse>
 
-					
+					{/* Recursos Humanos */}
+					<NavTitle>Recursos Humanos</NavTitle>
+
+					<AuthorityCheckNav
+						authority={Pages.humanResources.subPages.invitationsAdmin.authority}
+						userAuthority={userPermissionsAndRoles}
+						requireAll={Pages.humanResources.subPages.invitationsAdmin.requireAll}
+					>
+						<NavItem
+							text={Pages.humanResources.subPages.invitationsAdmin.text}
+							to={Pages.humanResources.subPages.invitationsAdmin.to}
+							icon={Pages.humanResources.subPages.invitationsAdmin.icon}
+							id={Pages.humanResources.subPages.invitationsAdmin.id}
+							onClick={() => navigate(Pages.humanResources.subPages.invitationsAdmin.to)}
+						/>
+					</AuthorityCheckNav>
+
+
 
 
 					{/* <AuthorityCheckNav authority={Pages.listaItem.authority} userAuthority={listaGrupos?.grupos}>

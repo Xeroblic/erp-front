@@ -4,6 +4,7 @@ import RtkQueryService from '@/services/RtkQueryService'
 import auth, { AuthState, logout } from './slices/auth/authSlice';
 import core, { CoreState } from './slices/core/coreSlice';
 import invitacion, { InvitacionState } from './slices/invitacion/invitacionSlice';
+import invitations from './slices/invitations/invitationsSlice';
 import empresa, { EmpresaState } from './slices/empresa/empresaSlice';
 import calendario, { CalendarioState } from './slices/calendario/calendarioSlice';
 import item, { ItemState } from './slices/item/itemSlice';
@@ -19,6 +20,7 @@ export interface RootState {
     auth: AuthState;
     core: CoreState;
     invitacion: InvitacionState;
+    invitations: ReturnType<typeof invitations>;
     empresa: EmpresaState;
     rolesPermisos: RolesPermisosState;
     subEmpresa: SubempresaState;
@@ -42,6 +44,7 @@ const staticReducers = {
     core,
     empresa,
     invitacion,
+    invitations,
     rolesPermisos,
     subEmpresa,
     cliente,

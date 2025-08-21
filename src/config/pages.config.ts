@@ -104,6 +104,26 @@ export const privatePages = {
       },
     },
   },
+  humanResources: {
+    id: 'humanResources',
+    to: '/rrhh',
+    text: 'Recursos Humanos',
+    icon: 'HeroUserGroup',
+    authority: [], // Sin restricciones de permisos específicos
+    roles: ['super-admin', 'hr'],
+    requireAll: false,
+    subPages: {
+      invitationsAdmin: {
+        id: 'invitationsAdmin',
+        to: '/admin/invitaciones',
+        text: 'Gestionar Invitaciones',
+        icon: 'HeroPaperAirplane',
+        authority: ['manage-invitations'],
+        roles: ['', 'hr'],
+        requireAll: false,
+      },
+    },
+  },
 };
 
 

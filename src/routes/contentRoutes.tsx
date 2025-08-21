@@ -21,6 +21,7 @@ const Sucursales = lazy(() => import("@/pages/gestionAdmin/sucursales/Sucursales
 const RolesPermisos = lazy(() => import("@/pages/gestionAdmin/roles y permisos/RolesPermisos.tsx"));
 const GestionUsuarios = lazy(() => import("@/pages/gestionAdmin/usuarios/Usuarios.tsx"));
 const PermissionsAdmin = lazy(() => import("@/pages/admin/PermissionsAdmin.tsx"));
+const InvitationsAdmin = lazy(() => import("@/pages/admin/invitations/InvitationsAdmin.tsx"));
 
 
 export interface IRoutePersonalizada extends PathRouteProps {
@@ -48,6 +49,7 @@ const contentRoutes: IRoutePersonalizada[] = [
   { path: cfg.manage.subPages.roles.to, element: <RolesPermisos />, authority: cfg.manage.subPages.roles.authority },
   { path: cfg.manage.subPages.manageUsers.to, element: <GestionUsuarios />, authority: cfg.manage.subPages.manageUsers.authority },
   { path: cfg.manage.subPages.permissionsAdmin.to, element: <PermissionsAdmin />, authority: cfg.manage.subPages.permissionsAdmin.authority },
+  { path: cfg.humanResources.subPages.invitationsAdmin.to, element: <InvitationsAdmin />, authority: cfg.humanResources.subPages.invitationsAdmin.authority },
 
   // ... (eventualmente aquí se agregarían rutas para Categorías, Fabricantes, Clientes, etc., con sus respectivos authority)
 

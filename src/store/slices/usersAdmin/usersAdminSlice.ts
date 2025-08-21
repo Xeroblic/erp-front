@@ -298,7 +298,7 @@ export const toggleUserStatus = createAsyncThunk(
 
             console.log('🔍 Respuesta completa del servidor:', response);
             console.log('🔍 response.data:', response?.data);
-            
+
             // Validar que la respuesta tenga la estructura esperada del backend
             if (!response?.data) {
                 console.error('❌ No hay response.data');

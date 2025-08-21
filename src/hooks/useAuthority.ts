@@ -8,6 +8,11 @@ function useAuthority(
     emptyCheck = true
 ) {
     const roleMatched = useMemo(() => {
+        // Si es super admin, acceso completo
+        if (userAuthority.includes('super-admin')) {
+            return true;
+        }
+
         if (requireAll) {
             // Modo AND - todos los permisos deben estar presentes
             return authority.every((role) => userAuthority.includes(role));
