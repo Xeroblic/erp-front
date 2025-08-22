@@ -7,11 +7,9 @@ import {
     cancelInvitation,
     setFilters,
     setPagination,
-    InvitationFilters,
-    CreateInvitationData
 } from '@/store/slices/invitations/invitationsSlice';
 import { toast } from 'react-toastify';
-
+import {InvitationFilters, CreateInvitationData} from '@/interface/invitacion.interface';
 export const useInvitationsManagement = () => {
     const dispatch = useAppDispatch();
     const {
