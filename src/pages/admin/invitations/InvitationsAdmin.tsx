@@ -141,8 +141,8 @@ const InvitationsAdmin: React.FC = () => {
                     <Card>
                         <CardHeader>
                             <div className="flex items-center space-x-2">
-                                <Icon icon="HeroFunnel" className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
-                                <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Filtros</h3>
+                                <Icon icon="HeroFunnel" className="h-5 w-5 " />
+                                <h3 className="text-lg font-semibold ">Filtros</h3>
                             </div>
                         </CardHeader>
                         <CardBody className="space-y-4">

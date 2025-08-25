@@ -5,9 +5,9 @@ import SelectReact, { TSelectOption } from '../form/SelectReact';
 import Icon from '../icon/Icon';
 import { privatePages, PageConfig } from '../../config/pages.config';
 
-interface UserRoutesDropdownProps {
-    className?: string;
-}
+    interface UserRoutesDropdownProps {
+        className?: string;
+    }
 
 interface RouteOption {
     value: string;
