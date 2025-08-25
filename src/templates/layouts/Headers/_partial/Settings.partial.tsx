@@ -12,111 +12,111 @@ import { toast } from 'react-toastify';
 import Icon from '@/components/icon/Icon';
 
 const SettingsPartial = () => {
-  const dispatch = useAppDispatch();
-  const { fontSize, setFontSize } = useFontSize();
-  const { darkModeStatus, setDarkModeStatus } = useDarkMode();
-  const { user } = useAppSelector((state) => state.auth);
-  const personalizacion = user?.personalizacion;
-  // const [isCompanySelectorOpen, setIsCompanySelectorOpen] = useState(false);
+const dispatch = useAppDispatch();
+const { fontSize, setFontSize } = useFontSize();
+const { darkModeStatus, setDarkModeStatus } = useDarkMode();
+const { user } = useAppSelector((state) => state.auth);
+const personalizacion = user?.personalizacion;
+// const [isCompanySelectorOpen, setIsCompanySelectorOpen] = useState(false);
 
-  const updatePersonalizacion = async (tema: string, font_size: number) => {
+const updatePersonalizacion = async (tema: string, font_size: number) => {
     try {
-      await dispatch(actualizarPersonalizacionThunk({ tema, font_size })).unwrap();
+        dispatch(actualizarPersonalizacionThunk({ tema, font_size }));
     } catch (error: any) {
-      toast.error(error || 'No se pudo actualizar la personalización');
+        toast.error(error || 'No se pudo actualizar la personalización');
     }
-  };
+};
 
-  // Solo mostrar selector de empresa si el usuario tiene múltiples empresas o es super-admin
-  // const shouldShowCompanySelector = user?.authority?.includes('super-admin') ||
-  //   user?.roles?.includes('super-admin') ||
-  //   (user?.companies && user.companies.length > 1);
+// Solo mostrar selector de empresa si el usuario tiene múltiples empresas o es super-admin
+// const shouldShowCompanySelector = user?.authority?.includes('super-admin') ||
+//   user?.roles?.includes('super-admin') ||
+//   (user?.companies && user.companies.length > 1);
 
-  return (
+return (
     <Dropdown>
-      <DropdownToggle hasIcon={false}>
+    <DropdownToggle hasIcon={false}>
         <Button icon='HeroCog8Tooth' aria-label='Settings' />
-      </DropdownToggle>
-      <DropdownMenu placement='bottom-end'>
+    </DropdownToggle>
+    <DropdownMenu placement='bottom-end'>
         {/* Selector de Empresa - Movido a dropdown directo en header */}
         {/* {shouldShowCompanySelector && (
-          <DropdownItem>
+        <DropdownItem>
             <Button
-              variant="outline"
-              className="w-full flex items-center justify-between"
-              onClick={() => setIsCompanySelectorOpen(true)}
+            variant="outline"
+            className="w-full flex items-center justify-between"
+            onClick={() => setIsCompanySelectorOpen(true)}
             >
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
                 <Icon icon="HeroBuildingOffice2" className="w-4 h-4" />
                 <span>Cambiar Empresa</span>
-              </div>
-              <Icon icon="HeroChevronRight" className="w-3 h-3" />
+            </div>
+            <Icon icon="HeroChevronRight" className="w-3 h-3" />
             </Button>
-          </DropdownItem>
+        </DropdownItem>
         )} */}
 
         <DropdownItem className='flex flex-col !items-start'>
-          <div>Tamaño de Fuente:</div>
-          <ButtonGroup>
+        <div>Tamaño de Fuente:</div>
+        <ButtonGroup>
             <Button
-              icon='HeroMinus'
-              onClick={() => {
+            icon='HeroMinus'
+            onClick={() => {
                 const newSize = fontSize - 1;
                 setFontSize(newSize);
                 updatePersonalizacion(personalizacion?.tema || '3', newSize);
-              }}
-              isDisable={fontSize <= 12}
+            }}
+            isDisable={fontSize <= 12}
             />
             <Button isDisable>{fontSize}</Button>
             <Button
-              icon='HeroPlus'
-              onClick={() => {
+            icon='HeroPlus'
+            onClick={() => {
                 const newSize = fontSize + 1;
                 setFontSize(newSize);
                 updatePersonalizacion(personalizacion?.tema || '3', newSize);
-              }}
-              isDisable={fontSize >= 18}
+            }}
+            isDisable={fontSize >= 18}
             />
-          </ButtonGroup>
+        </ButtonGroup>
         </DropdownItem>
         <DropdownItem className='flex flex-col !items-start'>
-          <div>Dark Mode:</div>
-          <ButtonGroup>
+        <div>Dark Mode:</div>
+        <ButtonGroup>
             <Button
-              icon='HeroMoon'
-              onClick={() => {
+            icon='HeroMoon'
+            onClick={() => {
                 setDarkModeStatus(DARK_MODE.DARK);
                 updatePersonalizacion('2', fontSize);
-              }}
-              isActive={darkModeStatus === DARK_MODE.DARK}
+            }}
+            isActive={darkModeStatus === DARK_MODE.DARK}
             />
             <Button
-              icon='HeroSun'
-              onClick={() => {
+            icon='HeroSun'
+            onClick={() => {
                 setDarkModeStatus(DARK_MODE.LIGHT);
                 updatePersonalizacion('1', fontSize);
-              }}
-              isActive={darkModeStatus === DARK_MODE.LIGHT}
+            }}
+            isActive={darkModeStatus === DARK_MODE.LIGHT}
             />
             <Button
-              icon='HeroComputerDesktop'
-              onClick={() => {
+            icon='HeroComputerDesktop'
+            onClick={() => {
                 setDarkModeStatus(DARK_MODE.SYSTEM);
                 updatePersonalizacion('3', fontSize);
-              }}
-              isActive={darkModeStatus === DARK_MODE.SYSTEM}
+            }}
+            isActive={darkModeStatus === DARK_MODE.SYSTEM}
             />
-          </ButtonGroup>
+        </ButtonGroup>
         </DropdownItem>
-      </DropdownMenu>
+    </DropdownMenu>
 
-      {/* Modal de selector de empresa - Ya no necesario, movido a dropdown directo */}
-      {/* <CompanySelector
+    {/* Modal de selector de empresa - Ya no necesario, movido a dropdown directo */}
+    {/* <CompanySelector
         isOpen={isCompanySelectorOpen}
         onClose={() => setIsCompanySelectorOpen(false)}
-      /> */}
+    /> */}
     </Dropdown>
-  );
+);
 };
 
 export default SettingsPartial;

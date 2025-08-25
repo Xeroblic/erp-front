@@ -42,7 +42,7 @@ const themeConfig: TThemeConfigs = {
 	projectName: '',
 	language: 'en',
 	theme: DARK_MODE.SYSTEM,
-	themeColor: 'emerald',
+	themeColor: 'amber',
 	themeColorShade: '500',
 	rounded: 'rounded-lg',
 	borderWidth: 'border-2',
