@@ -35,19 +35,36 @@ type TThemeConfigs = {
 	 */
 	transition: string;
 	fontSize: 12 | 13 | 14 | 15 | 16 | 17 | 18;
+	/**
+	 * Función para obtener configuración dinámica desde personalizacionUsuario
+	 */
+	getDynamicConfig: (personalizacionUsuario?: any) => TThemeConfigs;
 };
 
-const themeConfig: TThemeConfigs = {
+// Configuración base por defecto
+const baseThemeConfig: TThemeConfigs = {
 	projectTitle: '',
 	projectName: '',
 	language: 'en',
 	theme: DARK_MODE.SYSTEM,
-	themeColor: 'amber',
+	themeColor: 'amber' as TColors,
 	themeColorShade: '500',
 	rounded: 'rounded-lg',
 	borderWidth: 'border-2',
 	transition: 'transition-all duration-300 ease-in-out',
 	fontSize: 13,
+	getDynamicConfig(personalizacionUsuario?: any) {
+		return {
+			...this,
+			...(personalizacionUsuario || {}),
+			themeColor: (personalizacionUsuario?.tcolor as TColors) || this.themeColor,
+			themeColorShade: (personalizacionUsuario?.tcolor_int as TColorIntensity) || this.themeColorShade,
+			fontSize: personalizacionUsuario?.font_size || this.fontSize,
+			theme: personalizacionUsuario?.tema === '1' ? DARK_MODE.LIGHT
+				: personalizacionUsuario?.tema === '2' ? DARK_MODE.DARK
+					: DARK_MODE.SYSTEM
+		};
+	}
 };
 
-export default themeConfig;
+export default baseThemeConfig;

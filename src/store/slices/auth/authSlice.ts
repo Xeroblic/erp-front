@@ -48,6 +48,10 @@ export const loginThunk = createAsyncThunk<LoginResponse, { email: string; passw
       const token = resp.data.token;
       dispatch(setToken(token));
       await dispatch(userMeThunk() as any);
+
+      // Obtener personalización después del login exitoso
+      await dispatch(obtenerPersonalizacionThunk());
+
       return { access: token, refresh: "" };
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.error || "Error de autenticación");
@@ -67,6 +71,7 @@ export const userMeThunk = createAsyncThunk<
       user: IUserMe;
       permisos: string[];
       roles?: string[];
+      personalization?: any; // La personalización puede venir con el perfil
     }>({
       url: "/perfil",
       method: "get",
@@ -100,16 +105,16 @@ export const obtenerPersonalizacionThunk = createAsyncThunk<
 
 export const actualizarPersonalizacionThunk = createAsyncThunk<
   IPersonalizacionUsuario,
-  { tema: string; font_size: number },
+  Partial<Pick<IPersonalizacionUsuario, 'tema' | 'font_size' | 'tcolor' | 'tcolor_int'>>,
   { state: RootState; rejectValue: string }
->("auth/actualizarPersonalizacion", async ({ tema, font_size }, { getState, rejectWithValue }) => {
+>("auth/actualizarPersonalizacion", async (data, { getState, rejectWithValue }) => {
   const token = getState().auth.access;
 
   try {
     const resp = await ApiService.fetchData<IPersonalizacionUsuario>({
       url: "/user/personalization",
       method: "put",
-      data: { tema, font_size },
+      data,
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -133,6 +138,9 @@ const authSlice = createSlice({
     setToken: (state, action: PayloadAction<string>) => {
       state.access = action.payload;
     },
+    personalizacionUsuario: (state, action: PayloadAction<IPersonalizacionUsuario>) => {
+      state.personalizacionUsuario = action.payload;
+    }
   },
   extraReducers: (builder) => {
     builder
@@ -167,6 +175,22 @@ const authSlice = createSlice({
         };
         s.permisos = authority;
         s.isAuthenticated = true;
+
+        // Mapear personalización si viene en la respuesta
+        if (payload.user.personalizacion) {
+          s.personalizacionUsuario = {
+            id: payload.user.personalizacion.id,
+            tema: payload.user.personalizacion.tema?.toString() || '3',
+            font_size: payload.user.personalizacion.font_size || 13,
+            tcolor: payload.user.personalizacion.tcolor || 'amber',
+            tcolor_int: payload.user.personalizacion.tcolor_int || '500',
+            usuario: payload.user.personalizacion.usuario || payload.user.id,
+            sucursal_principal: payload.user.personalizacion.sucursal_principal,
+            empresa: payload.user.personalizacion.empresa,
+            fecha_creacion: payload.user.personalizacion.fecha_creacion || '',
+            fecha_modificacion: payload.user.personalizacion.fecha_modificacion || ''
+          };
+        }
       })
       .addCase(userMeThunk.rejected, (s, action) => {
         s.loading = false;

@@ -17,6 +17,21 @@ module.exports = {
 			transitionProperty: {
 				margin: 'margin',
 			},
+			colors: {
+				primary: {
+					50: 'var(--color-primary-50)',
+					100: 'var(--color-primary-100)',
+					200: 'var(--color-primary-200)',
+					300: 'var(--color-primary-300)',
+					400: 'var(--color-primary-400)',
+					500: 'var(--color-primary-500)',
+					600: 'var(--color-primary-600)',
+					700: 'var(--color-primary-700)',
+					800: 'var(--color-primary-800)',
+					900: 'var(--color-primary-900)',
+					950: 'var(--color-primary-950)',
+				},
+			},
 		},
 	},
 	safelist: [
@@ -27,13 +42,13 @@ module.exports = {
 		{
 			pattern:
 				// /bg-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-(50|100|200|300|400|500|600|700|800|900)$/,
-				/bg-(zinc|red|amber|lime|emerald|sky|blue|violet)-(50|100|200|300|400|500|600|700|800|900|950)$/,
+				/bg-(zinc|red|amber|lime|emerald|sky|blue|violet|primary)-(50|100|200|300|400|500|600|700|800|900|950)$/,
 			variants: ['hover', 'active', 'checked', 'indeterminate'],
 		},
 		{
 			pattern:
 				// /bg-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-(50|100|200|300|400|500|600|700|800|900)$/,
-				/bg-(zinc|red|amber|lime|emerald|sky|blue|violet)-(50|100|200|300|400|500|600|700|800|900|950)\/(10)$/,
+				/bg-(zinc|red|amber|lime|emerald|sky|blue|violet|primary)-(50|100|200|300|400|500|600|700|800|900|950)\/(10)$/,
 		},
 		// {
 		// 	pattern: /border-(inherit|current|transparent|black|white)$/,
@@ -42,20 +57,30 @@ module.exports = {
 		{
 			pattern:
 				// /border-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-(50|100|200|300|400|500|600|700|800|900)$/,
-				/border-(zinc|red|amber|lime|emerald|sky|blue|violet)-(50|100|200|300|400|500|600|700|800|900|950)$/,
+				/border-(zinc|red|amber|lime|emerald|sky|blue|violet|primary)-(50|100|200|300|400|500|600|700|800|900|950)$/,
 			variants: ['hover', 'active', 'dark:hover', 'peer-checked'],
 		},
 		{
 			pattern:
 				// /border-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-(50|100|200|300|400|500|600|700|800|900)\/(0|5|10|20|25|30|40|50|60|70|75|80|90|95|100)$/,
-				/border-(zinc|red|amber|lime|emerald|sky|blue|violet)-(50|100|200|300|400|500|600|700|800|900|950)\/(50)$/,
+				/border-(zinc|red|amber|lime|emerald|sky|blue|violet|primary)-(50|100|200|300|400|500|600|700|800|900|950)\/(50)$/,
 			variants: ['hover', 'active'],
 		},
 		{
 			pattern:
 				// /text-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-(50|100|200|300|400|500|600|700|800|900)\/(0|5|10|20|25|30|40|50|60|70|75|80|90|95|100)$/,
-				/text-(zinc|red|amber|lime|emerald|sky|blue|violet)-(50|100|200|300|400|500|600|700|800|900|950)$/,
+				/text-(zinc|red|amber|lime|emerald|sky|blue|violet|primary)-(50|100|200|300|400|500|600|700|800|900|950)$/,
 			variants: ['hover', 'active', 'dark:hover'],
+		},
+		{
+			pattern:
+				/fill-(zinc|red|amber|lime|emerald|sky|blue|violet|primary)-(50|100|200|300|400|500|600|700|800|900|950)$/,
+			variants: ['hover', 'active'],
+		},
+		{
+			pattern:
+				/fill-(zinc|red|amber|lime|emerald|sky|blue|violet|primary)-(50|100|200|300|400|500|600|700|800|900|950)\/(75|80|90)$/,
+			variants: ['hover', 'active'],
 		},
 	],
 	plugins: [require('@tailwindcss/typography')],

@@ -83,7 +83,7 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
     // Debug: mostrar estructura de datos para verificar qué campos vienen del backend
     React.useEffect(() => {
         if (invitations && invitations.length > 0) {
-            console.log('📋 Invitations data structure:', {
+            console.log('Invitations data structure:', {
                 total: invitations.length,
                 firstItem: invitations[0],
                 availableFields: Object.keys(invitations[0]),
@@ -462,8 +462,8 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
                     </Table>
 
                     <div className="mt-4">
-										<TableCardFooterTemplateV2 table={table} />
-									</div>
+                        <TableCardFooterTemplateV2 table={table} />
+                    </div>
                 </CardBody>
             </Card>
 

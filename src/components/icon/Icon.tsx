@@ -15,7 +15,7 @@ interface IRefWrapperProps extends Record<string, any> {
 	children: ReactNode;
 }
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
+
 const RefWrapper = forwardRef<HTMLSpanElement, IRefWrapperProps>(({ children }, ref) => {
 	if (ref) {
 		return (

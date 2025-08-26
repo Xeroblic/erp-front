@@ -7,20 +7,37 @@ import HeaderRouter from '../components/router/HeaderRouter';
 import ContentRouter from '../components/router/ContentRouter';
 import FooterRouter from '../components/router/FooterRouter';
 import useFontSize from '../hooks/useFontSize';
+import useThemeColor from '../hooks/useThemeColor';
 import getOS from '../utils/getOS.util';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import useDarkMode from '@/hooks/useDarkMode';
 import AuthDebug from '../components/debug/AuthDebug';
 import UserDataSimulator from '../components/debug/UserDataSimulator';
+import { useEffect } from 'react';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { obtenerPersonalizacionThunk } from '@/store/slices/auth/authSlice';
 // import BackendSimulator from '../components/debug/BackendSimulator';
 
 const App = () => {
 	getOS();
 
 	const { fontSize } = useFontSize();
+	const { themeColor } = useThemeColor();
 	dayjs.extend(localizedFormat);
-	const { isDarkTheme } = useDarkMode()
+	const { isDarkTheme } = useDarkMode();
+
+	// Redux hooks para verificar autenticación
+	const dispatch = useAppDispatch();
+	const { isAuthenticated, access } = useAppSelector((state) => state.auth);
+
+	// Cargar personalización al inicio si el usuario está autenticado
+	useEffect(() => {
+		if (isAuthenticated && access) {
+			console.log('🚀 Usuario autenticado detectado al inicio, cargando personalización...');
+			dispatch(obtenerPersonalizacionThunk());
+		}
+	}, [isAuthenticated, access, dispatch]);
 
 
 
@@ -33,13 +50,13 @@ const App = () => {
 			--toastify-color-dark:  ${colors.zinc['800']};
 			--toastify-color-info: ${colors.blue['500']};
 			--toastify-color-success: ${colors.emerald['500']};
-			--toastify-color-warning: ${colors.amber['500']};
+			--toastify-color-warning: ${colors[themeColor]['500']};
 			--toastify-color-error: ${colors.red['500']};
 			--toastify-color-progress-light: linear-gradient(
 				to right,
     			${colors.blue['500']},
     			${colors.emerald['500']},
-    			${colors.amber['500']},
+    			${colors[themeColor]['500']},
 				${colors.red['500']});`}</style>
 			<div data-component-name='App' className='flex grow flex-col'>
 				{/* <AuthDebug /> */}

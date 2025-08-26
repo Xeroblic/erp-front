@@ -4,6 +4,8 @@ export interface IPersonalizacionUsuario {
   fecha_modificacion: string;
   tema: string;          // "1" | "2" | "3"
   font_size: number;
+  tcolor: string;
+  tcolor_int: string;
   usuario: number;
   sucursal_principal: number | null;
   empresa: number | null;
