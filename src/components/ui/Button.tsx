@@ -8,6 +8,7 @@ import useColorIntensity from '../../hooks/useColorIntensity';
 import { TIcons } from '../../types/icons.type';
 import Icon from '../icon/Icon';
 import { TBorderWidth } from '../../types/borderWidth.type';
+import useReactiveThemeConfig from '../../hooks/useReactiveThemeConfig';
 
 export type TButtonVariants = 'solid' | 'outline' | 'default';
 export type TButtonSize = 'xs' | 'sm' | 'default' | 'lg' | 'xl';
@@ -28,12 +29,14 @@ export interface IButtonProps extends HTMLAttributes<HTMLButtonElement> {
 	variant?: TButtonVariants;
 }
 const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
+	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } = useReactiveThemeConfig();
+
 	const {
 		borderWidth = themeConfig.borderWidth,
 		children,
 		className,
-		color = themeConfig.themeColor,
-		colorIntensity = themeConfig.themeColorShade,
+		color = reactiveThemeColor,
+		colorIntensity = reactiveThemeColorShade,
 		icon,
 		isActive = false,
 		isDisable = false,

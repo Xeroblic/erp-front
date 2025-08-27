@@ -7,6 +7,7 @@ import { TBorderWidth } from '../../types/borderWidth.type';
 import { TColors } from '../../types/colors.type';
 import { TColorIntensity } from '../../types/colorIntensities.type';
 import { IValidationBaseProps } from './Validation';
+import useReactiveThemeConfig from '@/hooks/useReactiveThemeConfig';
 
 export type TInputVariants = 'solid';
 export type TInputDimension = 'xs' | 'sm' | 'default' | 'lg' | 'xl';
@@ -24,11 +25,13 @@ interface IInputProps extends InputHTMLAttributes<HTMLInputElement>, Partial<IVa
 	variant?: TInputVariants;
 }
 const Input = forwardRef<HTMLInputElement, IInputProps>((props, ref) => {
+	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } = useReactiveThemeConfig();
+
 	const {
 		borderWidth = themeConfig.borderWidth,
 		className,
-		color = themeConfig.themeColor,
-		colorIntensity = themeConfig.themeColorShade,
+		color = reactiveThemeColor,
+		colorIntensity = reactiveThemeColorShade,
 		name,
 		rounded = themeConfig.rounded,
 		dimension = 'default',

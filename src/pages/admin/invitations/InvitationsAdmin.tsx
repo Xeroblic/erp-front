@@ -55,7 +55,6 @@ const InvitationsAdmin: React.FC = () => {
                 <SubheaderRight>
                     <Button
                         variant="solid"
-                        color="blue"
                         icon="HeroPlus"
                         onClick={openCreateModal}
                     >

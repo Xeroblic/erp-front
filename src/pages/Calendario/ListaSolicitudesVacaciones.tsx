@@ -26,13 +26,13 @@ function ListaSolicitudesVacaciones() {
     const dispatch = useAppDispatch()
     const navigate = useNavigate()
     const { listaSolicitudesVacaciones } = useAppSelector((state) => state.calendario)
-    const { personalizacionUsuario } = useAppSelector((state) => state.auth)
+    const { } = useAppSelector((state) => state.auth)
     const [sorting, setSorting] = useState<SortingState>([]);
     const [globalFilter, setGlobalFilter] = useState<string>('');
 
     useEffect(() => {
         dispatch(listaSolicitudesVacacionesThunk())
-    }, [personalizacionUsuario])
+    }, [])
 
     const columns = [
         columnHelper.accessor("papeleta.nombre_empleado", {

@@ -55,6 +55,11 @@ const store: CustomStore = configureStore({
 
 store.asyncReducers = {}
 
+// Exponer el store globalmente para acceso desde themeConfig
+if (typeof window !== 'undefined') {
+    (window as any).__REDUX_STORE__ = store;
+}
+
 export const persistor = persistStore(store)
 
 export function injectReducer<S>(key: string, reducer: Reducer<S, Action>) {

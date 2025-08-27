@@ -77,8 +77,10 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
     return (
         <Modal isOpen={isOpen} setIsOpen={onClose} size="md">
             <ModalHeader>
-                <Icon icon="HeroPlusCircle" className="h-6 w-6 me-2 text-blue-600" />
-                Nueva Invitación
+                <Button icon='HeroPlusCircle' variant='solid'>
+                    Nueva Invitación
+                </Button>
+              
             </ModalHeader>
 
             <Formik

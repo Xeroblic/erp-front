@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useAppSelector } from '../store/hook';
+import { selectPersonalizacionUsuario } from '../store/slices/personalizacion/personalizacionSlice';
 import { TColors } from '../types/colors.type';
 import { TColorIntensity } from '../types/colorIntensities.type';
 
@@ -8,7 +9,7 @@ import { TColorIntensity } from '../types/colorIntensities.type';
  * Se ejecuta automáticamente cuando cambia personalizacionUsuario
  */
 const useThemeColorGlobal = () => {
-    const { personalizacionUsuario } = useAppSelector((state) => state.auth);
+    const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
 
     useEffect(() => {
         // Obtener colores desde personalizacionUsuario o usar defaults

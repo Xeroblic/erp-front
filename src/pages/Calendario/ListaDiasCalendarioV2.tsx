@@ -28,7 +28,7 @@ import * as Yup from 'yup'
 function ListaDiasCalendarioV2() {
 	const dispatch = useAppDispatch()
 	const { listaSolicitudesVacaciones, listaDiasCalendario } = useAppSelector((state) => state.calendario)
-	const { personalizacionUsuario, listaGrupos } = useAppSelector((state) => state.auth)
+	const { listaGrupos } = useAppSelector((state) => state.auth)
 	const [eventosVacaciones, setEventosVacaciones] = useState<EventSourceInput | undefined>()
 	const ref = createRef<FullCalendar>();
 	const {
@@ -55,7 +55,7 @@ function ListaDiasCalendarioV2() {
 	useEffect(() => {
 		dispatch(listaDiasCalendarioThunk())
 		dispatch(listaSolicitudesVacacionesThunk())
-	}, [personalizacionUsuario])
+	}, [])
 
 	useEffect(() => {
 		const eventosDiasCalendario = listaDiasCalendario.map((dia) => {
@@ -169,7 +169,7 @@ function ListaDiasCalendarioV2() {
 		}),
 		onSubmit: async (values) => {
 			try {
-				const response = await ApiService.fetchData({ url: `/api/dias-calendario/`, method: 'post', headers: { 'Content-Type': 'application/json' }, data: JSON.stringify({ ...values, empresa: personalizacionUsuario?.empresa, fecha: dayjs(fechaSeleccionada).format('YYYY-MM-DD') }) })
+				const response = await ApiService.fetchData({ url: `/api/dias-calendario/`, method: 'post', headers: { 'Content-Type': 'application/json' }, data: JSON.stringify({ ...values, fecha: dayjs(fechaSeleccionada).format('YYYY-MM-DD') }) })
 				if (response.data) {
 					toast.success("Feriado Creado", { autoClose: 1000 })
 					dispatch(listaDiasCalendarioThunk())

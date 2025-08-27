@@ -13,6 +13,7 @@ import { TRounded } from '../../types/rounded.type';
 import { TColors } from '../../types/colors.type';
 import { TColorIntensity } from '../../types/colorIntensities.type';
 import { IValidationBaseProps } from './Validation';
+import useReactiveThemeConfig from '@/hooks/useReactiveThemeConfig';
 
 export type TRadioDimension = 'sm' | 'default' | 'lg' | 'xl';
 
@@ -33,11 +34,13 @@ interface IRadioProps extends InputHTMLAttributes<HTMLInputElement>, Partial<IVa
 	disabled?: boolean;
 }
 const Radio: FC<IRadioProps> = (props) => {
+	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } = useReactiveThemeConfig();
+
 	const {
 		className,
 		children,
-		color = themeConfig.themeColor,
-		colorIntensity = themeConfig.themeColorShade,
+		color = reactiveThemeColor,
+		colorIntensity = reactiveThemeColorShade,
 		id,
 		inputClassName,
 		isInline = false,

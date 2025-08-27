@@ -26,6 +26,7 @@ import Radio, { RadioGroup } from '../components/form/Radio';
 import useDarkMode from '../hooks/useDarkMode';
 import { TDarkMode } from '../types/darkMode.type';
 import { useAppDispatch, useAppSelector } from '@/store';
+import { selectDarkMode } from '@/store/slices/personalizacion/personalizacionSlice';
 import { userMeThunk } from '@/store/slices/auth/authSlice';
 import useCompanyManager from '@/hooks/useCompanyManager';
 import * as Yup from 'yup';
@@ -103,7 +104,8 @@ const TAB: TTabs = {
 const Perfil = () => {
 	const dispatch = useAppDispatch()
 	const { setDarkModeStatus } = useDarkMode();
-	const { user: userData, access, personalizacionUsuario } = useAppSelector((state) => state.auth)
+	const { user: userData, access } = useAppSelector((state) => state.auth)
+	const darkMode = useAppSelector(selectDarkMode);
 	const { currentCompany } = useCompanyManager();
 	const [activeTab, setActiveTab] = useState<TTab>(TAB.EDIT);
 	const { listaComunas, listaProvincias, listaRegiones } = useAppSelector((state) => state.core)
@@ -134,7 +136,7 @@ const Perfil = () => {
 			provincia: userData?.provincia?.toString() || '0',
 			comuna: userData?.comuna?.toString() || '0',
 			genero: userData?.genero,
-			theme: personalizacionUsuario?.tema === "1" ? "light" : personalizacionUsuario?.tema === "2" ? "dark" : personalizacionUsuario?.tema === "3" ? "system" : "system",
+			theme: darkMode === "light" ? "light" : darkMode === "dark" ? "dark" : "system",
 			fecha_nacimiento: userData?.comuna,
 		},
 		validationSchema: Yup.object().shape({

@@ -15,6 +15,8 @@ import subEmpresa, { SubempresaState } from './slices/subempresa/subEmpresaSlice
 import permissions from './slices/permissions/permissionsSlice';
 import usersAdmin from './slices/usersAdmin/usersAdminSlice';
 import feature from './slices/featuresSlice/featuresSlice';
+// Importamos el tipo sin crear dependencia circular
+import type { PersonalizacionState } from './slices/personalizacion/personalizacionSlice';
 
 export interface RootState {
     auth: AuthState;
@@ -27,6 +29,7 @@ export interface RootState {
     permissions: ReturnType<typeof permissions>;
     usersAdmin: ReturnType<typeof usersAdmin>;
     feature: ReturnType<typeof feature>;
+    personalizacion?: PersonalizacionState; // Opcional al inicio, se agrega dinámicamente
     // calendario?: CalendarioState;
     // item?: ItemState;
     // bodega?: BodegaState;
@@ -51,6 +54,7 @@ const staticReducers = {
     permissions,
     usersAdmin,
     feature,
+    // personalizacion, // Comentado temporalmente
     [RtkQueryService.reducerPath]: RtkQueryService.reducer,
 };
 

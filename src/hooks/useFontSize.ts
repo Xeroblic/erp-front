@@ -1,8 +1,16 @@
-import { useContext } from 'react';
-import ThemeContext from '../context/themeContext';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { selectFontSize, setFontSize } from '@/store/slices/personalizacion/personalizacionSlice';
 
 export default function useFontSize() {
-	const { fontSize, setFontSize } = useContext(ThemeContext);
+	const dispatch = useAppDispatch();
+	const fontSize = useAppSelector(selectFontSize);
 
-	return { fontSize, setFontSize };
+	const handleSetFontSize = (newFontSize: number) => {
+		dispatch(setFontSize(newFontSize));
+	};
+
+	return {
+		fontSize,
+		setFontSize: handleSetFontSize
+	};
 }

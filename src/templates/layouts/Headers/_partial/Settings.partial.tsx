@@ -7,21 +7,25 @@ import useFontSize from '../../../../hooks/useFontSize';
 import useDarkMode from '../../../../hooks/useDarkMode';
 import useThemeColor from '../../../../hooks/useThemeColor';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { actualizarPersonalizacionThunk } from '@/store/slices/auth/authSlice';
+import {
+    actualizarPersonalizacionThunk,
+    selectPersonalizacionUsuario
+} from '@/store/slices/personalizacion/personalizacionSlice';
 import { toast } from 'react-toastify';
 import { TColors } from '@/types/colors.type';
 import { TColorIntensity } from '@/types/colorIntensities.type';
 import ColorSelector from '@/components/ColorSelector';
 // import CompanySelector from '@/components/authorization/CompanySelector';
 import Icon from '@/components/icon/Icon';
+import { use } from 'i18next';
 
 const SettingsPartial = () => {
     const dispatch = useAppDispatch();
     const { fontSize, setFontSize } = useFontSize();
     const { darkModeStatus, setDarkModeStatus } = useDarkMode();
     const { themeColor, setThemeColor, themeColorShade, setThemeColorShade } = useThemeColor();
-    const { user, personalizacionUsuario } = useAppSelector((state) => state.auth);
-    const personalizacion = user?.personalizacion;
+    const { user } = useAppSelector((state) => state.auth);
+    const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
     // const [isCompanySelectorOpen, setIsCompanySelectorOpen] = useState(false);
 
     const updatePersonalizacion = async (tema: string, font_size: number) => {
@@ -48,8 +52,8 @@ const SettingsPartial = () => {
         } catch (error: any) {
             toast.error(error || 'No se pudo actualizar los colores');
             // Revertir cambios locales si falla
-            setThemeColor(personalizacionUsuario?.tcolor as TColors || 'amber');
-            setThemeColorShade(personalizacionUsuario?.tcolor_int as TColorIntensity || '500');
+            setThemeColor(themeColor);
+            setThemeColorShade(themeColorShade);
         }
     };    // Solo mostrar selector de empresa si el usuario tiene múltiples empresas o es super-admin
     // const shouldShowCompanySelector = user?.authority?.includes('super-admin') ||
@@ -87,7 +91,7 @@ const SettingsPartial = () => {
                             onClick={() => {
                                 const newSize = fontSize - 1;
                                 setFontSize(newSize);
-                                updatePersonalizacion(personalizacion?.tema || '3', newSize);
+                                updatePersonalizacion(personalizacionUsuario?.tema || '3', newSize);
                             }}
                             isDisable={fontSize <= 12}
                         />
@@ -97,7 +101,7 @@ const SettingsPartial = () => {
                             onClick={() => {
                                 const newSize = fontSize + 1;
                                 setFontSize(newSize);
-                                updatePersonalizacion(personalizacion?.tema || '3', newSize);
+                                updatePersonalizacion(personalizacionUsuario?.tema || '3', newSize);
                             }}
                             isDisable={fontSize >= 18}
                         />

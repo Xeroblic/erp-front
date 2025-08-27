@@ -6,8 +6,10 @@ import themeConfig from '../../config/theme.config';
 import useColorIntensity from '../../hooks/useColorIntensity';
 import { TBorderWidth } from '../../types/borderWidth.type';
 import { TRounded } from '../../types/rounded.type';
+import useReactiveThemeConfig from '../../hooks/useReactiveThemeConfig';
 
 export type TBadgeVariants = 'solid' | 'outline' | 'default';
+// const { themeColor, themeColorShade } = useThemeColor();
 
 interface IBadgeProps {
 	borderWidth?: TBorderWidth;
@@ -19,12 +21,14 @@ interface IBadgeProps {
 	variant?: TBadgeVariants;
 }
 const Badge: FC<IBadgeProps> = (props) => {
+	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } = useReactiveThemeConfig();
+
 	const {
 		borderWidth = themeConfig.borderWidth,
 		children,
 		className,
-		color = themeConfig.themeColor,
-		colorIntensity = themeConfig.themeColorShade,
+		color = reactiveThemeColor,
+		colorIntensity = reactiveThemeColorShade,
 		rounded = themeConfig.rounded,
 		variant = 'default',
 		...rest

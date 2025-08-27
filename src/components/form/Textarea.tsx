@@ -7,6 +7,7 @@ import { TColorIntensity } from '../../types/colorIntensities.type';
 import { TRounded } from '../../types/rounded.type';
 import themeConfig from '../../config/theme.config';
 import { TInputVariants } from './Input';
+import useReactiveThemeConfig from '@/hooks/useReactiveThemeConfig';
 
 export type TTextareaVariants = 'solid';
 export type TTextareaDimension = 'xs' | 'sm' | 'default' | 'lg' | 'xl';
@@ -24,11 +25,12 @@ interface ITextareaProps
 	variant?: TTextareaVariants;
 }
 const Textarea: FC<ITextareaProps> = (props) => {
+	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } = useReactiveThemeConfig();
 	const {
 		borderWidth = themeConfig.borderWidth,
 		className,
-		color = themeConfig.themeColor,
-		colorIntensity = themeConfig.themeColorShade,
+		color = reactiveThemeColor,
+		colorIntensity = reactiveThemeColorShade,
 		rounded = themeConfig.rounded,
 		dimension = 'default',
 		isValid,

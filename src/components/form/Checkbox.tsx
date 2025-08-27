@@ -15,6 +15,7 @@ import { TRounded } from '../../types/rounded.type';
 import { TColors } from '../../types/colors.type';
 import { TColorIntensity } from '../../types/colorIntensities.type';
 import { IValidationBaseProps } from './Validation';
+import useReactiveThemeConfig from '@/hooks/useReactiveThemeConfig';
 
 export type TCheckboxVariants = 'default' | 'switch';
 export type TCheckboxDimension = 'sm' | 'default' | 'lg' | 'xl';
@@ -37,11 +38,13 @@ interface ICheckboxProps
 }
 
 const Checkbox = forwardRef<HTMLInputElement, ICheckboxProps>((props, ref) => {
+	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } = useReactiveThemeConfig();
+
 	const {
 	checked = false,
 	className,
-	color = themeConfig.themeColor,
-	colorIntensity = themeConfig.themeColorShade,
+	color = reactiveThemeColor,
+	colorIntensity = reactiveThemeColorShade,
 	id,
 	inputClassName,
 	isInline = false,

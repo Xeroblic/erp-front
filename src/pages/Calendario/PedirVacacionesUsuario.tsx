@@ -21,7 +21,7 @@ import calcularDiasHabiles from "./utils/calcularDiasHabiles"
 
 function PedirVacacionesUsuario() {
     const dispatch = useAppDispatch()
-    const { personalizacionUsuario } = useAppSelector((state) => state.auth)
+    const { user } = useAppSelector((state) => state.auth)
     const { detalleUsuarioEmpresa } = useAppSelector((state) => state.empresa)
     const [extraordinaria, setExtraordinaria] = useState<"true" | "false">("false")
     const [state, setState] = useState<Range[]>([
@@ -45,7 +45,7 @@ function PedirVacacionesUsuario() {
 
     useEffect(() => {
         dispatch(listaUsuariosEmpresaThunk())
-        dispatch(detalleUsuarioEmpresaPorUserThunk({id_usuario: personalizacionUsuario?.usuario}))
+        dispatch(detalleUsuarioEmpresaPorUserThunk({ id_usuario: user?.id }))
     }, [personalizacionUsuario])
 
     const validationSchema = Yup.object().shape({
@@ -54,9 +54,9 @@ function PedirVacacionesUsuario() {
         comentario: Yup.string().nullable(),
     }).test('dias-disponibles', 'No tienes suficientes días disponibles', function (values) {
         if (extraordinaria === "false") {
-            const {fecha_inicio, fecha_fin } = values;
+            const { fecha_inicio, fecha_fin } = values;
 
-            if ( fecha_inicio && fecha_fin) {
+            if (fecha_inicio && fecha_fin) {
                 const startDate = new Date(fecha_inicio);
                 const endDate = new Date(fecha_fin);
                 const diasHabiles = calcularDiasHabiles(startDate, endDate);
@@ -84,9 +84,9 @@ function PedirVacacionesUsuario() {
         validationSchema,
         onSubmit: async (values) => {
             try {
-                const response = await ApiService.fetchData({url: `/api/solicitudes-vacaciones/`, method: 'post', headers: {'Content-Type': 'application/json'}, data: JSON.stringify({...values, es_extraordinaria: extraordinaria === "true" ? true : false, fecha_inicio: dayjs(values.fecha_inicio).format('YYYY-MM-DD'), fecha_fin: dayjs(values.fecha_fin).format('YYYY-MM-DD'), creado_por: personalizacionUsuario?.usuario})})
+                const response = await ApiService.fetchData({ url: `/api/solicitudes-vacaciones/`, method: 'post', headers: { 'Content-Type': 'application/json' }, data: JSON.stringify({ ...values, es_extraordinaria: extraordinaria === "true" ? true : false, fecha_inicio: dayjs(values.fecha_inicio).format('YYYY-MM-DD'), fecha_fin: dayjs(values.fecha_fin).format('YYYY-MM-DD'), creado_por: personalizacionUsuario?.usuario }) })
                 if (response.data) {
-                    toast.success("Solicitud Creada", {autoClose: 1000})
+                    toast.success("Solicitud Creada", { autoClose: 1000 })
                     formik.resetForm()
                     setState([
                         {
@@ -109,7 +109,7 @@ function PedirVacacionesUsuario() {
                     <Badge className="text-xl">Pedir Vacaciones</Badge>
                 </SubheaderLeft>
                 <SubheaderRight>
-                    <Button onClick={() => {formik.handleSubmit()}} variant="solid">Crear Solicitud</Button>
+                    <Button onClick={() => { formik.handleSubmit() }} variant="solid">Crear Solicitud</Button>
                 </SubheaderRight>
             </Subheader>
             <Container className="w-full h-full">
@@ -151,14 +151,14 @@ function PedirVacacionesUsuario() {
                                                 name='si'
                                                 value="true"
                                                 selectedValue={extraordinaria}
-                                                onChange={() => {setExtraordinaria("true")}}
+                                                onChange={() => { setExtraordinaria("true") }}
                                             />
                                             <Radio
                                                 label="No"
                                                 name='no'
                                                 value="false"
                                                 selectedValue={extraordinaria}
-                                                onChange={() => {setExtraordinaria("false")}}
+                                                onChange={() => { setExtraordinaria("false") }}
                                             />
                                         </RadioGroup>
                                     </div>
@@ -185,7 +185,7 @@ function PedirVacacionesUsuario() {
                                     <Badge className="text-lg">Comentario</Badge>
                                 </CardHeader>
                                 <CardBody>
-                                    <Textarea 
+                                    <Textarea
                                         rows={4}
                                         name="comentario"
                                         value={formik.values.comentario}

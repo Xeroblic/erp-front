@@ -10,7 +10,6 @@ interface ColorSelectorProps {
 }
 
 const ColorSelector: React.FC<ColorSelectorProps> = ({ onColorChange }) => {
-    const { personalizacionUsuario } = useAppSelector((state) => state.auth);
     const { themeColor, themeColorShade } = useThemeColor();
 
     const colorList: TColors[] = arrColors;

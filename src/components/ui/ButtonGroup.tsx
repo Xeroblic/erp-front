@@ -5,6 +5,7 @@ import { TBorderWidth } from '../../types/borderWidth.type';
 import { TColors } from '../../types/colors.type';
 import { TColorIntensity } from '../../types/colorIntensities.type';
 import { TRounded } from '../../types/rounded.type';
+import useReactiveThemeConfig from '@/hooks/useReactiveThemeConfig';
 
 interface IButtonGroupProps extends HTMLAttributes<HTMLDivElement> {
 	borderWidth?: TBorderWidth;
@@ -18,12 +19,14 @@ interface IButtonGroupProps extends HTMLAttributes<HTMLDivElement> {
 	variant?: TButtonVariants;
 }
 const ButtonGroup: FC<IButtonGroupProps> = (props) => {
+	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } = useReactiveThemeConfig();
+
 	const {
 		borderWidth,
 		children,
 		className,
-		color,
-		colorIntensity,
+		color = reactiveThemeColor,
+		colorIntensity = reactiveThemeColorShade,
 		isVertical = false,
 		rounded,
 		size,

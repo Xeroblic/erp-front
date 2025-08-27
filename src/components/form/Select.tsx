@@ -6,6 +6,7 @@ import { TBorderWidth } from '../../types/borderWidth.type';
 import { TColors } from '../../types/colors.type';
 import { TColorIntensity } from '../../types/colorIntensities.type';
 import { IValidationBaseProps } from './Validation';
+import useReactiveThemeConfig from '@/hooks/useReactiveThemeConfig';
 
 export type TSelectVariants = 'solid';
 export type TSelectDimension = 'xs' | 'sm' | 'default' | 'lg' | 'xl';
@@ -26,12 +27,14 @@ interface ISelectProps
 	placeholder?: string;
 }
 const Select: FC<ISelectProps> = (props) => {
+	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } = useReactiveThemeConfig();
+
 	const {
 		borderWidth = themeConfig.borderWidth,
 		className,
 		children,
-		color = themeConfig.themeColor,
-		colorIntensity = themeConfig.themeColorShade,
+		color = reactiveThemeColor,
+		colorIntensity = reactiveThemeColorShade,
 		name,
 		rounded = themeConfig.rounded,
 		dimension = 'default',

@@ -2,7 +2,8 @@ import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { toast } from "react-toastify";
 import ApiService from "@/services/ApiService";
 import { RootState, AppDispatch } from "@/store";
-import { IGruposUsuarios, IPersonalizacionUsuario, IUserMe } from "@/interface/user.interface";
+import { IGruposUsuarios, IUserMe } from "@/interface/user.interface";
+import { obtenerPersonalizacionThunk as obtenerPersonalizacionFromSlice } from "@/store/slices/personalizacion/personalizacionSlice";
 
 interface LoginResponse {
   access: string
@@ -17,7 +18,6 @@ export interface AuthState {
   isAuthenticated: boolean;
   permisos: string[];
   user?: IUserMe & { authority?: string[] };
-  personalizacionUsuario?: IPersonalizacionUsuario;
   listaGrupos: IGruposUsuarios | undefined
 
 }
@@ -30,7 +30,6 @@ const initialState: AuthState = {
   isAuthenticated: false,
   permisos: [],
   user: undefined,
-  personalizacionUsuario: undefined,
   listaGrupos: undefined,
 
 };
@@ -49,8 +48,8 @@ export const loginThunk = createAsyncThunk<LoginResponse, { email: string; passw
       dispatch(setToken(token));
       await dispatch(userMeThunk() as any);
 
-      // Obtener personalización después del login exitoso
-      await dispatch(obtenerPersonalizacionThunk());
+      // Obtener personalización usando el nuevo slice
+      await dispatch(obtenerPersonalizacionFromSlice() as any);
 
       return { access: token, refresh: "" };
     } catch (error: any) {
@@ -84,46 +83,6 @@ export const userMeThunk = createAsyncThunk<
   }
 });
 
-export const obtenerPersonalizacionThunk = createAsyncThunk<
-  IPersonalizacionUsuario,
-  void,
-  { state: RootState; rejectValue: string }
->("auth/obtenerPersonalizacion", async (_, { getState, rejectWithValue }) => {
-  const token = getState().auth.access;
-  try {
-    const resp = await ApiService.fetchData<IPersonalizacionUsuario>({
-      url: "/user/personalization",
-      method: "get",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    return resp.data;
-  } catch {
-    return rejectWithValue("No se pudo obtener la personalización");
-  }
-});
-
-export const actualizarPersonalizacionThunk = createAsyncThunk<
-  IPersonalizacionUsuario,
-  Partial<Pick<IPersonalizacionUsuario, 'tema' | 'font_size' | 'tcolor' | 'tcolor_int'>>,
-  { state: RootState; rejectValue: string }
->("auth/actualizarPersonalizacion", async (data, { getState, rejectWithValue }) => {
-  const token = getState().auth.access;
-
-  try {
-    const resp = await ApiService.fetchData<IPersonalizacionUsuario>({
-      url: "/user/personalization",
-      method: "put",
-      data,
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    return resp.data;
-  } catch {
-    return rejectWithValue("No se pudo actualizar la personalización");
-  }
-});
-
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -137,9 +96,6 @@ const authSlice = createSlice({
     },
     setToken: (state, action: PayloadAction<string>) => {
       state.access = action.payload;
-    },
-    personalizacionUsuario: (state, action: PayloadAction<IPersonalizacionUsuario>) => {
-      state.personalizacionUsuario = action.payload;
     }
   },
   extraReducers: (builder) => {
@@ -175,46 +131,10 @@ const authSlice = createSlice({
         };
         s.permisos = authority;
         s.isAuthenticated = true;
-
-        // Mapear personalización si viene en la respuesta
-        if (payload.user.personalizacion) {
-          s.personalizacionUsuario = {
-            id: payload.user.personalizacion.id,
-            tema: payload.user.personalizacion.tema?.toString() || '3',
-            font_size: payload.user.personalizacion.font_size || 13,
-            tcolor: payload.user.personalizacion.tcolor || 'amber',
-            tcolor_int: payload.user.personalizacion.tcolor_int || '500',
-            usuario: payload.user.personalizacion.usuario || payload.user.id,
-            sucursal_principal: payload.user.personalizacion.sucursal_principal,
-            empresa: payload.user.personalizacion.empresa,
-            fecha_creacion: payload.user.personalizacion.fecha_creacion || '',
-            fecha_modificacion: payload.user.personalizacion.fecha_modificacion || ''
-          };
-        }
       })
       .addCase(userMeThunk.rejected, (s, action) => {
         s.loading = false;
         s.error = action.payload;
-        toast.error(action.payload);
-      })
-      .addCase(obtenerPersonalizacionThunk.pending, (s) => {
-        s.loading = true;
-      })
-      .addCase(obtenerPersonalizacionThunk.fulfilled, (s, { payload }) => {
-        s.loading = false;
-        s.personalizacionUsuario = payload;
-      })
-      .addCase(obtenerPersonalizacionThunk.rejected, (s, action) => {
-        s.loading = false;
-        s.error = action.payload;
-        toast.error(action.payload);
-      })
-      .addCase(actualizarPersonalizacionThunk.fulfilled, (s, { payload }) => {
-        s.loading = false;
-        s.personalizacionUsuario = payload;
-      })
-      .addCase(actualizarPersonalizacionThunk.rejected, (s, action) => {
-        s.loading = false;
         toast.error(action.payload);
       });
   },

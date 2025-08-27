@@ -28,7 +28,7 @@ const columHelper = createColumnHelper<IUsuarioEmpresa>()
 
 function PedirVacaciones() {
     const dispatch = useAppDispatch()
-    const { personalizacionUsuario } = useAppSelector((state) => state.auth)
+    const { user } = useAppSelector((state) => state.auth)
     const { listaUsuariosEmpresa } = useAppSelector((state) => state.empresa)
     const [sorting, setSorting] = useState<SortingState>([]);
     const [globalFilter, setGlobalFilter] = useState<string>('');
@@ -54,7 +54,7 @@ function PedirVacaciones() {
 
     useEffect(() => {
         dispatch(listaUsuariosEmpresaThunk())
-    }, [personalizacionUsuario])
+    }, [])
 
     const validationSchema = Yup.object().shape({
         usuario_empresa: Yup.number().required('Requerido').min(1),
@@ -93,7 +93,7 @@ function PedirVacaciones() {
         validationSchema,
         onSubmit: async (values) => {
             try {
-                const response = await ApiService.fetchData({ url: `/api/solicitudes-vacaciones/`, method: 'post', headers: { 'Content-Type': 'application/json' }, data: JSON.stringify({ ...values, fecha_inicio: dayjs(values.fecha_inicio).format('YYYY-MM-DD'), fecha_fin: dayjs(values.fecha_fin).format('YYYY-MM-DD'), creado_por: personalizacionUsuario?.usuario }) })
+                const response = await ApiService.fetchData({ url: `/api/solicitudes-vacaciones/`, method: 'post', headers: { 'Content-Type': 'application/json' }, data: JSON.stringify({ ...values, fecha_inicio: dayjs(values.fecha_inicio).format('YYYY-MM-DD'), fecha_fin: dayjs(values.fecha_fin).format('YYYY-MM-DD'), creado_por: user?.id }) })
                 if (response.data) {
                     toast.success("Solicitud Creada", { autoClose: 1000 })
                     formik.resetForm()

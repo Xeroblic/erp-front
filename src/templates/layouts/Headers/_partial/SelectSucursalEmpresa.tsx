@@ -1,6 +1,7 @@
 import SelectReact, { TSelectGroups, TSelectOption } from '@/components/form/SelectReact';
 import ApiService from '@/services/ApiService';
-import { obtenerPersonalizacionThunk, useAppDispatch, useAppSelector } from '@/store';
+import {  useAppDispatch, useAppSelector } from '@/store';
+import {obtenerPersonalizacionThunk } from '@/store/slices/personalizacion/personalizacionSlice';
 // import { selectEmpresasThunk } from '@/store/slices/empresa/empresaSlice';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
@@ -8,7 +9,7 @@ import { toast } from 'react-toastify';
 
 function SelectSucursalEmpresa() {
     const dispatch = useAppDispatch();
-    const { personalizacionUsuario, access, isAuthenticated, listaGrupos } = useAppSelector((state) => state.auth);
+    const { access, isAuthenticated, listaGrupos } = useAppSelector((state) => state.auth);
     // const { selectEmpresas } = useAppSelector((state) => state.empresa);
     const [optionsEmpresas, setOptionsEmpresas] = useState<TSelectGroups>([]);
     const [selectedSucursal, setSelectedSucursal] = useState<{ value: string, label: string } | null>(null);
@@ -33,19 +34,20 @@ function SelectSucursalEmpresa() {
     // }, [selectEmpresas]);
 
     useEffect(() => {
-        if (personalizacionUsuario && personalizacionUsuario.sucursal_principal && optionsEmpresas.length > 0) {
-            // Buscar el label correspondiente al id de sucursal_principal
-            for (const group of optionsEmpresas) {
-                const sucursal = group.options.find(
-                    (option) => option.value === personalizacionUsuario.sucursal_principal!.toString()
-                );
-                if (sucursal) {
-                    setSelectedSucursal(sucursal);
-                    break;
-                }
-            }
-        }
-    }, [personalizacionUsuario?.sucursal_principal, optionsEmpresas]);
+        // TODO: Implementar selector de sucursal principal desde personalizacionSlice
+        // if (personalizacionUsuario && personalizacionUsuario.sucursal_principal && optionsEmpresas.length > 0) {
+        //     // Buscar el label correspondiente al id de sucursal_principal
+        //     for (const group of optionsEmpresas) {
+        //         const sucursal = group.options.find(
+        //             (option) => option.value === personalizacionUsuario.sucursal_principal!.toString()
+        //         );
+        //         if (sucursal) {
+        //             setSelectedSucursal(sucursal);
+        //             break;
+        //         }
+        //     }
+        // }
+    }, [optionsEmpresas]);
 
     return (
         <div className='w-[20vw]'>
@@ -58,16 +60,16 @@ function SelectSucursalEmpresa() {
                     name="select_empresa"
                     value={selectedSucursal}
                     options={optionsEmpresas}
-                    // onChange={ async (e) => {
-                    //     try {
-                    //         // const response = await ApiService.fetchData({url: `/api/personalizacion-usuarios/${personalizacionUsuario?.id}/`, method: 'patch', headers: {'Content-Type': 'application/json'}, data: JSON.stringify({sucursal_principal: parseInt((e as TSelectOption)?.value)})})
-                    //         if (response.data) {
-                    //             dispatch(obtenerPersonalizacionThunk({access}))
-                    //         }
-                    //     } catch (error: any) {
-                    //         toast.error(error)
-                    //     }
-                    // }}
+                // onChange={ async (e) => {
+                //     try {
+                //         const response = await ApiService.fetchData({url: `/api/personalizacion-usuarios/${personalizacionUsuario?.id}/`, method: 'patch', headers: {'Content-Type': 'application/json'}, data: JSON.stringify({sucursal_principal: parseInt((e as TSelectOption)?.value)})})
+                //         if (response.data) {
+                //             dispatch(obtenerPersonalizacionThunk({access}))
+                //         }
+                //     } catch (error: any) {
+                //         toast.error(error)
+                //     }
+                // }}
                 />
             )}
         </div>

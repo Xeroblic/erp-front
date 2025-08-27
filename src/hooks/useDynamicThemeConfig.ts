@@ -1,4 +1,5 @@
 import { useAppSelector } from '../store/hook';
+import { selectPersonalizacionUsuario } from '../store/slices/personalizacion/personalizacionSlice';
 import themeConfig from '../config/theme.config';
 
 /**
@@ -6,7 +7,7 @@ import themeConfig from '../config/theme.config';
  * basada en la personalización del usuario
  */
 const useDynamicThemeConfig = () => {
-    const { personalizacionUsuario } = useAppSelector((state) => state.auth);
+    const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
 
     return themeConfig.getDynamicConfig(personalizacionUsuario);
 };

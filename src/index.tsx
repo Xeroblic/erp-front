@@ -15,9 +15,12 @@ import 'react-date-range/dist/styles.css'; // main style file
 import 'react-date-range/dist/theme/default.css';
 import './styles/vendors.css';
 
-import store, {persistor} from './store'
+import store, { persistor } from './store'
 import { Provider } from 'react-redux'
 import { PersistGate } from 'redux-persist/integration/react'
+
+// Inicializar slice de personalización dinámicamente
+import './store/initializePersonalizacion';
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 root.render(
