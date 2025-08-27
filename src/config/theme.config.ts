@@ -44,15 +44,12 @@ type TThemeConfigs = {
 // Función para obtener la personalización del usuario desde localStorage o store
 const getPersonalizacionActual = () => {
 	try {
-		// Intentar obtener desde Redux store si está disponible
 		if (typeof window !== 'undefined' && (window as any).__REDUX_STORE__) {
 			const state = (window as any).__REDUX_STORE__.getState();
 			if (state.personalizacion?.personalizacionUsuario) {
 				return state.personalizacion.personalizacionUsuario;
 			}
 		}
-
-		// Fallback a localStorage
 		return {
 			tcolor: localStorage.getItem('fyr_themeColor') || 'amber',
 			tcolor_int: localStorage.getItem('fyr_themeColorShade') || '500',
@@ -62,7 +59,6 @@ const getPersonalizacionActual = () => {
 					: '3'
 		};
 	} catch (error) {
-		// Si hay error, devolver valores por defecto
 		return null;
 	}
 };

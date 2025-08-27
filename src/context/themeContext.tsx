@@ -90,10 +90,19 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
      * Dark Mode Effects
      */
     useLayoutEffect(() => {
+        console.log('🌙 ThemeContext - Dark Mode Effect:', {
+            isDarkTheme,
+            currentClasses: document.documentElement.className,
+            willAdd: isDarkTheme ? DARK_MODE.DARK : 'none',
+            willRemove: !isDarkTheme ? DARK_MODE.DARK : 'none'
+        });
+
         if (isDarkTheme) {
             document.documentElement.classList.add(DARK_MODE.DARK);
+            console.log('🌙 Añadida clase dark:', document.documentElement.className);
         } else {
             document.documentElement.classList.remove(DARK_MODE.DARK);
+            console.log('🌙 Removida clase dark:', document.documentElement.className);
         }
     }, [isDarkTheme]);
 

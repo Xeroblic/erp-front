@@ -17,6 +17,7 @@ import UserDataSimulator from '../components/debug/UserDataSimulator';
 import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { obtenerPersonalizacionThunk } from '@/store/slices/personalizacion/personalizacionSlice';
+import useReactiveThemeConfig from '@/hooks/useReactiveThemeConfig';
 // import BackendSimulator from '../components/debug/BackendSimulator';
 
 const App = () => {
@@ -25,7 +26,7 @@ const App = () => {
 	const { fontSize } = useFontSize();
 	const { themeColor } = useThemeColor();
 	dayjs.extend(localizedFormat);
-	const { isDarkTheme } = useDarkMode();
+	const { darkMode } = useReactiveThemeConfig();
 
 	// Redux hooks para verificar autenticación
 	const dispatch = useAppDispatch();
@@ -44,7 +45,7 @@ const App = () => {
 
 	return (
 		<>
-			<ToastContainer theme={isDarkTheme ? 'dark' : 'light'} draggable></ToastContainer>
+			<ToastContainer theme={darkMode ? 'dark' : 'light'} draggable></ToastContainer>
 			<style>{`:root {font-size: ${fontSize}px;
 				--toastify-toast-bd-radius: 0.75rem;
 				--toastify-color-dark:  ${colors.zinc['800']};

@@ -10,6 +10,7 @@ import useColorIntensity from '../../hooks/useColorIntensity';
 import { TRounded } from '../../types/rounded.type';
 import { TBorderWidth } from '../../types/borderWidth.type';
 import CloseButton from './CloseButton';
+import useReactiveThemeConfig from '@/hooks/useReactiveThemeConfig';
 
 export type TAlertVariants = 'solid' | 'outline' | 'default';
 
@@ -27,12 +28,13 @@ interface IAlertProps extends HTMLAttributes<HTMLDivElement> {
 	variant?: TAlertVariants;
 }
 const Alert: FC<IAlertProps> = (props) => {
+	const {themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade} = useReactiveThemeConfig();
 	const {
 		borderWidth = themeConfig.borderWidth,
 		children,
 		className,
-		color = themeConfig.themeColor,
-		colorIntensity = themeConfig.themeColorShade,
+		color = reactiveThemeColor,
+		colorIntensity = reactiveThemeColorShade,
 		icon,
 		iconSize = 'text-3xl',
 		isClosable,

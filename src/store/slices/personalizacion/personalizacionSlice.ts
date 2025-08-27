@@ -114,41 +114,41 @@ const personalizacionSlice = createSlice({
             state.fontSize = action.payload;
             state.hasUnsavedChanges = true;
             persistToLocalStorage('fyr_fontSize', action.payload);
-            console.log('📝 FontSize actualizado:', action.payload);
+            console.log('FontSize actualizado:', action.payload);
         },
 
         setThemeColor: (state, action: PayloadAction<TColors>) => {
             state.themeColor = action.payload;
             state.hasUnsavedChanges = true;
             persistToLocalStorage('fyr_themeColor', action.payload);
-            console.log('🎨 ThemeColor actualizado:', action.payload);
+            console.log('ThemeColor actualizado:', action.payload);
         },
 
         setThemeColorShade: (state, action: PayloadAction<TColorIntensity>) => {
             state.themeColorShade = action.payload;
             state.hasUnsavedChanges = true;
             persistToLocalStorage('fyr_themeColorShade', action.payload);
-            console.log('🎨 ThemeColorShade actualizado:', action.payload);
+            console.log('ThemeColorShade actualizado:', action.payload);
         },
 
         setLanguage: (state, action: PayloadAction<TLang>) => {
             state.language = action.payload;
             state.hasUnsavedChanges = true;
             persistToLocalStorage('fyr_language', action.payload);
-            console.log('🌐 Language actualizado:', action.payload);
+            console.log('Language actualizado:', action.payload);
         },
 
         setDarkMode: (state, action: PayloadAction<TDarkMode>) => {
             state.darkMode = action.payload;
             state.hasUnsavedChanges = true;
             persistToLocalStorage('theme', action.payload);
-            console.log('🌙 DarkMode actualizado:', action.payload);
+            console.log('DarkMode actualizado:', action.payload);
         },
 
         setAsideStatus: (state, action: PayloadAction<boolean>) => {
             state.asideStatus = action.payload;
             persistToLocalStorage('fyr_asideStatus', action.payload);
-            console.log('📱 AsideStatus actualizado:', action.payload);
+            console.log('AsideStatus actualizado:', action.payload);
         },
 
         // Sincronizar con datos de la API
@@ -181,7 +181,9 @@ const personalizacionSlice = createSlice({
                         : apiData.tema === '2' ? DARK_MODE.DARK
                             : DARK_MODE.SYSTEM;
 
-                    if (darkModeValue !== state.darkMode) {
+                    // Solo actualizar si el valor local no está configurado o es diferente
+                    const currentDarkMode = localStorage.getItem('theme') as TDarkMode;
+                    if (!currentDarkMode && darkModeValue !== state.darkMode) {
                         state.darkMode = darkModeValue;
                         persistToLocalStorage('theme', darkModeValue);
                         console.log('🔄 Sincronizando darkMode desde API:', darkModeValue);
@@ -303,9 +305,18 @@ export const selectIsInitialized = (state: LocalRootState) => state.personalizac
 // Selector computado para isDarkTheme
 export const selectIsDarkTheme = (state: LocalRootState) => {
     const darkMode = state.personalizacion?.darkMode || 'light';
-    return darkMode === DARK_MODE.DARK ||
-        (darkMode === DARK_MODE.SYSTEM &&
-            window.matchMedia(`(prefers-color-scheme: ${DARK_MODE.DARK})`).matches);
+    const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = darkMode === DARK_MODE.DARK ||
+        (darkMode === DARK_MODE.SYSTEM && isSystemDark);
+
+    console.log('🌙 DarkMode Debug:', {
+        darkMode,
+        isSystemDark,
+        isDark,
+        localStorage: localStorage.getItem('theme')
+    });
+
+    return isDark;
 };
 
 export default personalizacionSlice.reducer;

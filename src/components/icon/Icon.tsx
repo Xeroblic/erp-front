@@ -9,6 +9,7 @@ import { TColors } from '../../types/colors.type';
 import { TColorIntensity } from '../../types/colorIntensities.type';
 import { textColor } from '../../utils/textColor.util';
 import { TFontSizes } from '../../types/fontSizes.type';
+import useReactiveThemeConfig from '@/hooks/useReactiveThemeConfig';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface IRefWrapperProps extends Record<string, any> {
@@ -36,7 +37,14 @@ export interface IIconProps extends HTMLAttributes<HTMLSpanElement> {
 	size?: TFontSizes;
 }
 const Icon = forwardRef<HTMLSpanElement, IIconProps>((props, ref) => {
-	const { icon, className, color, colorIntensity, size, ...rest } = props;
+	const { themeColor: reactiveThemeColor } = useReactiveThemeConfig();
+	const { icon,
+		 className,
+		  color = reactiveThemeColor,
+			colorIntensity = '100',
+		    size,
+			 ...rest
+			 } = props;
 	const IconName = pascalcase(icon);
 
 	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
