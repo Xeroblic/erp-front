@@ -181,12 +181,17 @@ const personalizacionSlice = createSlice({
                         : apiData.tema === '2' ? DARK_MODE.DARK
                             : DARK_MODE.SYSTEM;
 
-                    // Solo actualizar si el valor local no está configurado o es diferente
+                    // Solo actualizar si no hay valor local configurado por el usuario
                     const currentDarkMode = localStorage.getItem('theme') as TDarkMode;
-                    if (!currentDarkMode && darkModeValue !== state.darkMode) {
+                    if (!currentDarkMode) {
+                        // No hay preferencia local, usar valor de la API
                         state.darkMode = darkModeValue;
                         persistToLocalStorage('theme', darkModeValue);
-                        console.log('🔄 Sincronizando darkMode desde API:', darkModeValue);
+                        console.log('🔄 Sincronizando darkMode desde API (no había valor local):', darkModeValue);
+                    } else if (currentDarkMode !== state.darkMode) {
+                        // Hay una preferencia local diferente, mantenerla
+                        console.log('🔒 Manteniendo darkMode local:', currentDarkMode, 'vs API:', darkModeValue);
+                        state.darkMode = currentDarkMode;
                     }
                 }
             }
@@ -222,6 +227,16 @@ const personalizacionSlice = createSlice({
             localStorage.removeItem('theme');
 
             console.log('🔄 Configuración restablecida a valores por defecto');
+        },
+
+        // Limpiar estado al hacer logout
+        clearPersonalizacionState: (state) => {
+            state.personalizacionUsuario = undefined;
+            state.loading = false;
+            state.error = undefined;
+            state.isInitialized = false;
+            state.hasUnsavedChanges = false;
+            console.log('🧹 Estado de personalización limpiado por logout');
         },
     },
 
@@ -282,6 +297,7 @@ export const {
     markAsInitialized,
     clearUnsavedChanges,
     resetToDefaults,
+    clearPersonalizacionState,
 } = personalizacionSlice.actions;
 
 // Interfaz mínima para evitar dependencia circular
@@ -309,12 +325,13 @@ export const selectIsDarkTheme = (state: LocalRootState) => {
     const isDark = darkMode === DARK_MODE.DARK ||
         (darkMode === DARK_MODE.SYSTEM && isSystemDark);
 
-    console.log('🌙 DarkMode Debug:', {
-        darkMode,
-        isSystemDark,
-        isDark,
-        localStorage: localStorage.getItem('theme')
-    });
+    // Deshabilitado temporalmente para evitar spam en logs
+    // console.log('🌙 DarkMode Debug:', {
+    //     darkMode,
+    //     isSystemDark,
+    //     isDark,
+    //     localStorage: localStorage.getItem('theme')
+    // });
 
     return isDark;
 };

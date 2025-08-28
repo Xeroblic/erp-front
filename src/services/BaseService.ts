@@ -9,6 +9,15 @@ interface CustomAxiosRequestConfig<D = any> extends InternalAxiosRequestConfig<D
     _retry?: boolean;
 }
 
+// Controller para cancelar peticiones
+let abortController = new AbortController();
+
+export const cancelAllRequests = () => {
+    console.log('🚫 Cancelando todas las peticiones pendientes...');
+    abortController.abort();
+    abortController = new AbortController();
+};
+
 const BaseService = axios.create({
     timeout: 60000,
     baseURL: `${process.env.VITE_API_URL}`
@@ -17,6 +26,11 @@ const BaseService = axios.create({
 // Interceptor de Solicitud
 BaseService.interceptors.request.use(
     (config: CustomAxiosRequestConfig) => {
+        // Agregar signal para cancelación
+        if (!config.isLoginRequest) {
+            config.signal = abortController.signal;
+        }
+
         if (!config.isLoginRequest) {
             const token = store.getState().auth.access
             if (token) {
@@ -59,13 +73,26 @@ BaseService.interceptors.response.use(
                     return BaseService(originalRequest);
                 } catch (refreshError) {
                     // Manejar el fallo del refresco del token
-                    // console.log("FALLO TOKEN")
-                    toast.error("Sesion Expirada")
-                    store.dispatch(logout())
+                    console.log("🔒 Fallo en refresh del token, cerrando sesión");
+                    toast.error("Sesión Expirada");
+                    store.dispatch(logout());
+                    cancelAllRequests(); // Cancelar todas las peticiones pendientes
+                    // Redirigir a login después de un breve delay
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 1000);
                     return Promise.reject(refreshError);
                 }
             } else {
                 // No hay token de refresco disponible
+                console.log("🔒 No hay refresh token, cerrando sesión");
+                toast.error("Sesión Expirada");
+                store.dispatch(logout());
+                cancelAllRequests(); // Cancelar todas las peticiones pendientes
+                // Redirigir a login después de un breve delay
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 1000);
                 return Promise.reject(error);
             }
         }

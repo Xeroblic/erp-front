@@ -17,7 +17,9 @@ import UserDataSimulator from '../components/debug/UserDataSimulator';
 import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { obtenerPersonalizacionThunk } from '@/store/slices/personalizacion/personalizacionSlice';
-import useReactiveThemeConfig from '@/hooks/useReactiveThemeConfig';
+import AppInitializer from '../components/AppInitializer';
+// import DarkModeDebug from '../components/debug/DarkModeDebug';
+// import DarkModeStatus from '../components/debug/DarkModeStatus';
 // import BackendSimulator from '../components/debug/BackendSimulator';
 
 const App = () => {
@@ -26,7 +28,7 @@ const App = () => {
 	const { fontSize } = useFontSize();
 	const { themeColor } = useThemeColor();
 	dayjs.extend(localizedFormat);
-	const { darkMode } = useReactiveThemeConfig();
+	const { isDarkTheme } = useDarkMode();
 
 	// Redux hooks para verificar autenticación
 	const dispatch = useAppDispatch();
@@ -45,7 +47,10 @@ const App = () => {
 
 	return (
 		<>
-			<ToastContainer theme={darkMode ? 'dark' : 'light'} draggable></ToastContainer>
+			<AppInitializer />
+			{/* <DarkModeDebug /> */}
+			{/* <DarkModeStatus /> */}
+			<ToastContainer theme={isDarkTheme ? 'dark' : 'light'} draggable></ToastContainer>
 			<style>{`:root {font-size: ${fontSize}px;
 				--toastify-toast-bd-radius: 0.75rem;
 				--toastify-color-dark:  ${colors.zinc['800']};

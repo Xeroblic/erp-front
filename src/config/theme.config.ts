@@ -68,7 +68,7 @@ const baseThemeConfig: TThemeConfigs = {
 	projectTitle: '',
 	projectName: '',
 	language: 'en',
-	theme: DARK_MODE.SYSTEM,
+	theme: DARK_MODE.LIGHT, // Cambiar default a light en lugar de system
 
 	// Getters dinámicos para colores y configuración
 	get themeColor(): TColors {
@@ -99,7 +99,7 @@ const baseThemeConfig: TThemeConfigs = {
 			fontSize: personalizacionUsuario?.font_size || this.fontSize,
 			theme: personalizacionUsuario?.tema === '1' ? DARK_MODE.LIGHT
 				: personalizacionUsuario?.tema === '2' ? DARK_MODE.DARK
-					: DARK_MODE.SYSTEM
+					: (localStorage.getItem('theme') as TDarkMode) || DARK_MODE.LIGHT
 		};
 	}
 };

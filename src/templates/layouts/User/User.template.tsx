@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Icon from '../../../components/icon/Icon';
 import Badge from '../../../components/ui/Badge';
 import { NavButton, NavItem, NavSeparator } from '../../../components/layouts/Navigation/Nav';
@@ -6,11 +7,28 @@ import { authPages } from '../../../config/pages.config';
 import User from '../../../components/layouts/User/User';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { logout } from '@/store/slices/auth/authSlice';
+import { clearPersonalizacionState } from '@/store/slices/personalizacion/personalizacionSlice';
+import { cancelAllRequests } from '../../../services/BaseService';
 
 const UserTemplate = () => {
 	// const { isLoading, userData, onLogout } = useAuth();
-    const dispatch = useAppDispatch()
-    const { user: userData, isAuthenticated, loading: isLoading } = useAppSelector((state) => state.auth)
+	const dispatch = useAppDispatch();
+	const navigate = useNavigate();
+	const { user: userData, isAuthenticated, loading: isLoading } = useAppSelector((state) => state.auth);
+
+	const handleLogout = () => {
+		console.log('🔓 Cerrando sesión...');
+		// Cancelar todas las peticiones pendientes
+		cancelAllRequests();
+		// Limpiar estado de autenticación
+		dispatch(logout());
+		// Limpiar estado de personalización
+		dispatch(clearPersonalizacionState());
+		// Forzar recarga completa de la página para limpiar todo el estado
+		setTimeout(() => {
+			window.location.href = '/login';
+		}, 100);
+	};
 
 	return (
 		<User
@@ -32,7 +50,7 @@ const UserTemplate = () => {
 				</Badge>
 				<NavButton icon='HeroPlusCircle' title='New Mail' onClick={() => {}} />
 			</NavItem> */}
-			<NavItem text='Logout' icon='HeroArrowRightOnRectangle' onClick={() => {dispatch(logout())}} />
+			<NavItem text='Logout' icon='HeroArrowRightOnRectangle' onClick={handleLogout} />
 		</User>
 	);
 };

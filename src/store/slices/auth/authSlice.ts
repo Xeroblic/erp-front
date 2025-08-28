@@ -23,15 +23,14 @@ export interface AuthState {
 }
 
 const initialState: AuthState = {
-  access: undefined,
-  refresh: undefined,
+  access: localStorage.getItem('access_token') || undefined,
+  refresh: localStorage.getItem('refresh_token') || undefined,
   loading: false,
   error: undefined,
-  isAuthenticated: false,
+  isAuthenticated: false, // Se establecerá a true solo después de validar con el servidor
   permisos: [],
   user: undefined,
   listaGrupos: undefined,
-
 };
 
 export const loginThunk = createAsyncThunk<LoginResponse, { email: string; password: string }, { rejectValue: string; dispatch: AppDispatch }>(
@@ -88,14 +87,47 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     logout: (state) => {
+      // Resetear completamente el estado
       state.access = undefined;
       state.user = undefined;
       state.refresh = undefined;
       state.permisos = [];
       state.isAuthenticated = false;
+      state.loading = false;
+      state.error = undefined;
+      state.listaGrupos = undefined;
+
+      // Limpiar localStorage completamente
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('persist:fyr');
+      localStorage.removeItem('fyr_themeColor');
+      localStorage.removeItem('fyr_themeColorShade');
+      localStorage.removeItem('fyr_fontSize');
+      localStorage.removeItem('theme');
+      localStorage.removeItem('fyr_language');
+      localStorage.removeItem('fyr_asideStatus');
+
+      console.log('🧹 Estado de autenticación completamente limpiado');
     },
     setToken: (state, action: PayloadAction<string>) => {
       state.access = action.payload;
+      localStorage.setItem('access_token', action.payload);
+    },
+    // Nuevo reducer para validar token al inicio
+    validateSession: (state) => {
+      const token = localStorage.getItem('access_token');
+      if (!token && !state.access) {
+        state.isAuthenticated = false;
+        state.access = undefined;
+        state.user = undefined;
+        state.refresh = undefined;
+        state.permisos = [];
+      } else if (token && !state.access) {
+        // Si hay token en localStorage pero no en state, restaurarlo
+        state.access = token;
+        // No marcar como autenticado hasta que se valide con el servidor
+      }
     }
   },
   extraReducers: (builder) => {
@@ -140,7 +172,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, setToken } = authSlice.actions;
+export const { logout, setToken, validateSession } = authSlice.actions;
 
 // Selectores
 export const selectIsAuthenticated = (state: RootState) => state.auth.isAuthenticated;

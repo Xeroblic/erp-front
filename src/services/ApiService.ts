@@ -6,11 +6,11 @@ const ApiService = {
         param: AxiosRequestConfig<Request> & { isLoginRequest?: boolean }
     ) {
         return new Promise<AxiosResponse<Response>>((resolve, reject) => {
-            BaseService(param)
-                .then((response: AxiosResponse<Response>) => {
-                    resolve(response);
-                })
-                
+            BaseService(param).then((response: AxiosResponse<Response>) => {
+                resolve(response);
+            }).catch((error: AxiosError) => {
+                reject(error);
+            });
         });
     },
 
