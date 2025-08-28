@@ -25,18 +25,17 @@ const AppInitializer = () => {
         // Validar sesión al inicio
         dispatch(validateSession());
 
-        // Verificar token en localStorage
+        // Verificar token en localStorage y cargar personalización
         const token = localStorage.getItem('access_token');
-        if (!token && !access) {
+        if (token) {
+            console.log('✅ Token encontrado, cargando personalización...');
+            dispatch(obtenerPersonalizacionThunk()).catch((error) => {
+                console.warn('⚠️ Error cargando personalización inicial:', error);
+            });
+        } else if (!access) {
             console.log('🔒 No hay token válido, redirigiendo a login...');
             navigate('/login');
             return;
-        }
-
-        // Si hay token y está autenticado, cargar personalización
-        if (isAuthenticated && access) {
-            console.log('✅ Usuario autenticado, cargando personalización...');
-            dispatch(obtenerPersonalizacionThunk());
         }
     }, []); // Solo ejecutar una vez
 
@@ -55,6 +54,16 @@ const AppInitializer = () => {
             window.location.href = '/login';
         }
     }, [isAuthenticated, access, location.pathname]);
+
+    // Cargar personalización cuando el usuario se autentica
+    useEffect(() => {
+        if (isAuthenticated && access && hasInitialized.current) {
+            console.log('🔄 Usuario autenticado detectado, cargando personalización...');
+            dispatch(obtenerPersonalizacionThunk()).catch((error) => {
+                console.warn('⚠️ Error cargando personalización después de autenticación:', error);
+            });
+        }
+    }, [isAuthenticated, access, dispatch]);
 
     return null; // Este componente no renderiza nada
 };

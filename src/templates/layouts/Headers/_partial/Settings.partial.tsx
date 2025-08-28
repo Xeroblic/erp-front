@@ -30,8 +30,19 @@ const SettingsPartial = () => {
 
     const updatePersonalizacion = async (tema: string, font_size: number) => {
         try {
-            dispatch(actualizarPersonalizacionThunk({ tema, font_size }));
+            // Incluir todos los valores actuales para evitar sobrescribir
+            const updateData = {
+                tema,
+                font_size,
+                tcolor: themeColor,
+                tcolor_int: themeColorShade
+            };
+
+            console.log('🔄 Actualizando personalización completa:', updateData);
+            await dispatch(actualizarPersonalizacionThunk(updateData)).unwrap();
+            toast.success('Personalización actualizada correctamente');
         } catch (error: any) {
+            console.error('❌ Error actualizando personalización:', error);
             toast.error(error || 'No se pudo actualizar la personalización');
         }
     };

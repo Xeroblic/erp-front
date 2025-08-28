@@ -139,10 +139,16 @@ const personalizacionSlice = createSlice({
         },
 
         setDarkMode: (state, action: PayloadAction<TDarkMode>) => {
-            state.darkMode = action.payload;
+            const newDarkMode = action.payload;
+            state.darkMode = newDarkMode;
             state.hasUnsavedChanges = true;
-            persistToLocalStorage('theme', action.payload);
-            console.log('DarkMode actualizado:', action.payload);
+            persistToLocalStorage('theme', newDarkMode);
+
+            console.log('🌙 DarkMode actualizado manualmente:', {
+                nuevoValor: newDarkMode,
+                anterior: state.darkMode,
+                localStorage: localStorage.getItem('theme')
+            });
         },
 
         setAsideStatus: (state, action: PayloadAction<boolean>) => {
@@ -155,7 +161,19 @@ const personalizacionSlice = createSlice({
         syncWithApiData: (state, action: PayloadAction<IPersonalizacionUsuario>) => {
             const apiData = action.payload;
 
-            // Solo actualizar si hay diferencias y es la primera sincronización
+            console.log('🔄 Iniciando sincronización con datos de API:', apiData);
+            console.log('🔄 Estado actual antes de sincronizar:', {
+                isInitialized: state.isInitialized,
+                hasUnsavedChanges: state.hasUnsavedChanges,
+                currentValues: {
+                    themeColor: state.themeColor,
+                    themeColorShade: state.themeColorShade,
+                    fontSize: state.fontSize,
+                    darkMode: state.darkMode
+                }
+            });
+
+            // Solo actualizar si hay diferencias y es la primera sincronización, o no hay cambios sin guardar
             if (!state.isInitialized || !state.hasUnsavedChanges) {
                 if (apiData.tcolor && apiData.tcolor !== state.themeColor) {
                     state.themeColor = apiData.tcolor as TColors;
@@ -176,28 +194,42 @@ const personalizacionSlice = createSlice({
                 }
 
                 // Mapear tema de la API al formato local
-                if (apiData.tema) {
+                if (apiData.tema !== undefined && apiData.tema !== null) {
                     const darkModeValue = apiData.tema === '1' ? DARK_MODE.LIGHT
                         : apiData.tema === '2' ? DARK_MODE.DARK
                             : DARK_MODE.SYSTEM;
 
-                    // Solo actualizar si no hay valor local configurado por el usuario
+                    console.log('🌙 Procesando tema de API:', {
+                        valorAPI: apiData.tema,
+                        valorMapeado: darkModeValue,
+                        estadoActual: state.darkMode
+                    });
+
+                    // Verificar si hay valor local diferente
                     const currentDarkMode = localStorage.getItem('theme') as TDarkMode;
-                    if (!currentDarkMode) {
-                        // No hay preferencia local, usar valor de la API
+
+                    if (!currentDarkMode || currentDarkMode !== state.darkMode) {
+                        // No hay preferencia local o es diferente al estado actual
                         state.darkMode = darkModeValue;
                         persistToLocalStorage('theme', darkModeValue);
-                        console.log('🔄 Sincronizando darkMode desde API (no había valor local):', darkModeValue);
-                    } else if (currentDarkMode !== state.darkMode) {
-                        // Hay una preferencia local diferente, mantenerla
-                        console.log('🔒 Manteniendo darkMode local:', currentDarkMode, 'vs API:', darkModeValue);
+                        console.log('🔄 Sincronizando darkMode desde API:', darkModeValue);
+                    } else {
+                        // Hay una preferencia local, actualizarla en el estado
                         state.darkMode = currentDarkMode;
+                        console.log('🔒 Manteniendo darkMode local:', currentDarkMode, 'vs API:', darkModeValue);
                     }
                 }
             }
 
             state.personalizacionUsuario = apiData;
             state.isInitialized = true;
+            console.log('✅ Sincronización completada, estado final:', {
+                themeColor: state.themeColor,
+                themeColorShade: state.themeColorShade,
+                fontSize: state.fontSize,
+                darkMode: state.darkMode,
+                isInitialized: state.isInitialized
+            });
         },
 
         // Marcar como inicializado
@@ -325,13 +357,18 @@ export const selectIsDarkTheme = (state: LocalRootState) => {
     const isDark = darkMode === DARK_MODE.DARK ||
         (darkMode === DARK_MODE.SYSTEM && isSystemDark);
 
-    // Deshabilitado temporalmente para evitar spam en logs
-    // console.log('🌙 DarkMode Debug:', {
-    //     darkMode,
-    //     isSystemDark,
-    //     isDark,
-    //     localStorage: localStorage.getItem('theme')
-    // });
+    // Log detallado solo cuando cambia el valor
+    const logKey = `isDark-${darkMode}-${isSystemDark}`;
+    if (!window.lastDarkModeLog || window.lastDarkModeLog !== logKey) {
+        console.log('🌙 DarkMode Debug:', {
+            darkMode,
+            isSystemDark,
+            isDark,
+            localStorage: localStorage.getItem('theme'),
+            finalResult: isDark
+        });
+        window.lastDarkModeLog = logKey;
+    }
 
     return isDark;
 };

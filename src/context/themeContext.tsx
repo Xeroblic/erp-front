@@ -92,6 +92,7 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
     useLayoutEffect(() => {
         console.log('🌙 ThemeContext - Dark Mode Effect:', {
             isDarkTheme,
+            darkModeStatus,
             currentClasses: document.documentElement.className,
             willAdd: isDarkTheme ? DARK_MODE.DARK : 'none',
             willRemove: !isDarkTheme ? DARK_MODE.DARK : 'none'
@@ -105,6 +106,32 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
             console.log('🌙 Removida clase dark:', document.documentElement.className);
         }
     }, [isDarkTheme]);
+
+    /**
+     * System Dark Mode Listener - Para detectar cambios del sistema cuando está en modo 'system'
+     */
+    useLayoutEffect(() => {
+        if (darkModeStatus === DARK_MODE.SYSTEM) {
+            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+            const handleSystemThemeChange = (e: MediaQueryListEvent) => {
+                console.log('🌙 Sistema cambió tema:', e.matches ? 'dark' : 'light');
+                // El selector selectIsDarkTheme ya maneja esto automáticamente
+                // Solo necesitamos forzar una actualización del DOM
+                if (e.matches) {
+                    document.documentElement.classList.add(DARK_MODE.DARK);
+                } else {
+                    document.documentElement.classList.remove(DARK_MODE.DARK);
+                }
+            };
+
+            mediaQuery.addEventListener('change', handleSystemThemeChange);
+
+            return () => {
+                mediaQuery.removeEventListener('change', handleSystemThemeChange);
+            };
+        }
+    }, [darkModeStatus]);
 
     /**
      * Aside Status for responsive design
@@ -160,6 +187,25 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
             console.warn(`🎨 Color ${themeColor} no encontrado en la paleta de colores`);
         }
     }, [themeColor, themeColorShade]);
+
+    /**
+     * Apply CSS variables when font size changes
+     */
+    useLayoutEffect(() => {
+        const root = document.documentElement;
+        const fontSizeInRem = fontSize / 16; // Convertir px a rem (16px = 1rem)
+
+        root.style.setProperty('--font-size-base', `${fontSizeInRem}rem`);
+        root.style.setProperty('--font-size-px', `${fontSize}px`);
+
+        // También aplicar directamente al html para mayor compatibilidad
+        root.style.fontSize = `${fontSize}px`;
+
+        console.log(`📝 Font size aplicado: ${fontSize}px (${fontSizeInRem}rem)`, {
+            cssVariable: `${fontSizeInRem}rem`,
+            htmlFontSize: root.style.fontSize
+        });
+    }, [fontSize]);
 
     /**
      * Wrapper functions for compatibility with existing components

@@ -7,5 +7,6 @@ declare module '*.jpg';
 declare global {
     interface Window {
         __REDUX_STORE__?: any;
+        lastDarkModeLog?: string; // Para controlar logs de dark mode
     }
 }

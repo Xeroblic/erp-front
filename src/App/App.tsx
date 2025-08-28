@@ -18,6 +18,7 @@ import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { obtenerPersonalizacionThunk } from '@/store/slices/personalizacion/personalizacionSlice';
 import AppInitializer from '../components/AppInitializer';
+import PersonalizacionDebug from '../components/debug/PersonalizacionDebug';
 // import DarkModeDebug from '../components/debug/DarkModeDebug';
 // import DarkModeStatus from '../components/debug/DarkModeStatus';
 // import BackendSimulator from '../components/debug/BackendSimulator';
@@ -51,6 +52,7 @@ const App = () => {
 			{/* <DarkModeDebug /> */}
 			{/* <DarkModeStatus /> */}
 			<ToastContainer theme={isDarkTheme ? 'dark' : 'light'} draggable></ToastContainer>
+			<PersonalizacionDebug />
 			<style>{`:root {font-size: ${fontSize}px;
 				--toastify-toast-bd-radius: 0.75rem;
 				--toastify-color-dark:  ${colors.zinc['800']};
