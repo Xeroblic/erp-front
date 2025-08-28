@@ -51,9 +51,9 @@ const getPersonalizacionActual = () => {
 			}
 		}
 		return {
-			tcolor: localStorage.getItem('fyr_themeColor') || 'amber',
-			tcolor_int: localStorage.getItem('fyr_themeColorShade') || '500',
-			font_size: Number(localStorage.getItem('fyr_fontSize')) || 13,
+			tcolor: localStorage.getItem('zentria_themeColor') || 'amber',
+			tcolor_int: localStorage.getItem('zentria_themeColorShade') || '500',
+			font_size: Number(localStorage.getItem('zentria_fontSize')) || 13,
 			tema: localStorage.getItem('theme') === 'light' ? '1'
 				: localStorage.getItem('theme') === 'dark' ? '2'
 					: '3'

@@ -10,6 +10,7 @@ import Button from '@/components/ui/Button';
 import FieldWrap from '@/components/form/FieldWrap';
 import Icon from '@/components/icon/Icon';
 import { useInvitationsManagement } from '../../hooks/useInvitationsManagement';
+import Badge from '@/components/ui/Badge';
 
 interface CreateInvitationModalProps {
     isOpen: boolean;
@@ -52,8 +53,8 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
         first_name: '',
         last_name: '',
         role_name: 'employee',
-        company_id: 1, // Valor por defecto, debería obtenerse del contexto
-        branch_id: 1, // Valor por defecto, debería obtenerse del contexto
+        company_id: 1,
+        branch_id: 1,
         message: ''
     };
 
@@ -77,10 +78,8 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
     return (
         <Modal isOpen={isOpen} setIsOpen={onClose} size="md">
             <ModalHeader>
-                <Button icon='HeroPlusCircle' variant='solid'>
-                    Nueva Invitación
-                </Button>
-              
+                <Icon icon='HeroPlusCircle'/>
+                <Badge> Nueva Invitación </Badge>
             </ModalHeader>
 
             <Formik

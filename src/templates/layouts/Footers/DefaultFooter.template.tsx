@@ -10,7 +10,7 @@ const DefaultFooterTemplate = () => {
 			</FooterLeft>
 			<FooterRight className='text-zinc-500'>
 				<span>
-					<b>Fyr</b> React Template
+					<b>Zentria</b> Desarrollado con ❤️ por R&M
 				</span>
 			</FooterRight>
 		</Footer>

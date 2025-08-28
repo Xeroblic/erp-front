@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '@/store'
 import {
-	fetchSubempresasByEmpresa,
-	createSubempresa,
-	deleteSubempresa
+	fetchMisSubsidiarias,
+	createSubsidiaria,
+	deleteSubsidiaria
 } from '@/store/slices/subempresa/subEmpresaSlice'
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper'
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader'
@@ -31,10 +31,9 @@ import Label from '@/components/form/Label'
 const columnHelper = createColumnHelper<ISubempresa>()
 
 export default function SubEmpresaLista() {
-	const { empresaId: empresaIdParam } = useParams<{ empresaId: string }>()
-	const empresaId = Number(empresaIdParam || 1)
 	const dispatch = useAppDispatch()
 	const navigate = useNavigate()
+	const user = useAppSelector((s) => s.auth.user)
 
 	interface SubEmpresaState {
 		lista: ISubempresa[];
@@ -42,7 +41,10 @@ export default function SubEmpresaLista() {
 		createLoading: boolean;
 	}
 
-	const { lista: subempresas, loading, createLoading }: SubEmpresaState = useAppSelector((s: { subEmpresa: SubEmpresaState }) => s.subEmpresa)
+	const { lista: subempresas = [], loading, createLoading }: SubEmpresaState = useAppSelector((s: { subEmpresa: SubEmpresaState }) => s.subEmpresa)
+
+	// Debug: verificar datos
+	console.log('🔍 Subempresas debug:', { subempresas, loading, createLoading });
 
 	// filtros / sorting
 	const [sorting, setSorting] = useState<SortingState>([])
@@ -55,8 +57,10 @@ export default function SubEmpresaLista() {
 
 	// carga inicial
 	useEffect(() => {
-		dispatch(fetchSubempresasByEmpresa(empresaId))
-	}, [dispatch, empresaId])
+		if (user) {
+			dispatch(fetchMisSubsidiarias())
+		}
+	}, [dispatch, user])
 
 	// formik para creación
 	const formik = useFormik({
@@ -68,11 +72,11 @@ export default function SubEmpresaLista() {
 		}),
 		onSubmit: async values => {
 			try {
-				await dispatch(createSubempresa({ empresaId, ...values })).unwrap()
+				await dispatch(createSubsidiaria(values as any)).unwrap()
 				toast.success('Subempresa creada correctamente')
 				setOpenCreate(false)
 				formik.resetForm()
-				dispatch(fetchSubempresasByEmpresa(empresaId))
+				dispatch(fetchMisSubsidiarias())
 			} catch (err: any) {
 				toast.error(err)
 			}
@@ -81,9 +85,9 @@ export default function SubEmpresaLista() {
 
 	// columnas de la tabla
 	const columns = [
-		columnHelper.accessor('subsidiary_name', { header: 'Subempresa', cell: info => info.getValue() }),
-		columnHelper.accessor('subsidiary_rut', { header: 'Rut Empresa', cell: info => info.getValue() }),
-		columnHelper.accessor('subsidiary_phone', {
+		columnHelper.accessor('name', { header: 'Subempresa', cell: info => info.getValue() }),
+		columnHelper.accessor('rut', { header: 'Rut Empresa', cell: info => info.getValue() }),
+		columnHelper.accessor('phone', {
 			header: 'N° telefono',
 			cell: info => info.getValue() || '—'
 		}),
@@ -96,7 +100,7 @@ export default function SubEmpresaLista() {
 						variant="outline"
 						size="sm"
 						icon="HeroEye"
-						onClick={() => navigate(`/gestion/empresa/${empresaId}/subempresa/${info.row.original.id}`)}
+						onClick={() => navigate(`/gestion/subempresas/${info.row.original.id}`)}
 					/>
 					<Button
 						variant="solid"
@@ -130,9 +134,9 @@ export default function SubEmpresaLista() {
 	const confirmDelete = async () => {
 		if (!toDeleteId) return
 		try {
-			await dispatch(deleteSubempresa(toDeleteId)).unwrap()
+			await dispatch(deleteSubsidiaria(toDeleteId)).unwrap()
 			toast.success('Subempresa eliminada correctamente')
-			dispatch(fetchSubempresasByEmpresa(empresaId))
+			dispatch(fetchMisSubsidiarias())
 		} catch {
 			toast.error('Error al eliminar subempresa')
 		} finally {

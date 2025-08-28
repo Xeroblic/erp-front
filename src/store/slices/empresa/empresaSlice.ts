@@ -1,14 +1,22 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import ApiService from '@/services/ApiService';
-import { IEmpresa, IUsuarioEmpresa } from '@/interface/empresas.interface';
+import { IEmpresa, ISubempresa, IUsuarioEmpresa } from '@/interface/empresas.interface';
 
 export interface EmpresaState {
   loading: boolean;
   error?: string;
-  listaEmpresas: IEmpresa[];
-  detalleEmpresa?: IEmpresa;
-  listaSubempresas: IEmpresa['subsidiaries'];
-  empresaUsuarios?: IEmpresa;
+  // 🔥 NUEVO: Estados dinámicos sin hardcoding
+  miEmpresa?: IEmpresa;                          // Empresa del usuario actual
+  miEmpresaSubsidiarias: ISubempresa[];          // Subsidiarias de mi empresa
+  miEmpresaUsuarios: IUsuarioEmpresa[];          // Usuarios de mi empresa
+
+  // 📋 Estados para operaciones específicas
+  updateLoading: boolean;
+  updateError?: string;
+  subsidiaryActionLoading: boolean;
+  subsidiaryActionError?: string;
+
+  // 👥 Estados para invitaciones
   inviteLoading: boolean;
   inviteError?: string;
   inviteResponse?: { usuario: IUsuarioEmpresa; password_temporal: string };
@@ -17,127 +25,192 @@ export interface EmpresaState {
 const initialState: EmpresaState = {
   loading: false,
   error: undefined,
-  listaEmpresas: [],
-  detalleEmpresa: undefined,
-  listaSubempresas: [],
-  empresaUsuarios: undefined,
+  // 🚀 Estados dinámicos iniciales
+  miEmpresa: undefined,
+  miEmpresaSubsidiarias: [],
+  miEmpresaUsuarios: [],
+
+  // 📋 Estados de operaciones
+  updateLoading: false,
+  updateError: undefined,
+  subsidiaryActionLoading: false,
+  subsidiaryActionError: undefined,
+
+  // 👥 Estados de invitaciones
   inviteLoading: false,
   inviteError: undefined,
   inviteResponse: undefined,
 };
 
-// Obtener todas las empresas
-export const fetchEmpresas = createAsyncThunk<IEmpresa[], void, { rejectValue: string }>(
-  'empresa/fetchEmpresas',
+// 🏢 ===== NUEVOS ACTIONS DINÁMICOS (SIN HARDCODING) =====
+
+/**
+ * 🔥 Obtener MI empresa (dinámico, sin ID)
+ * Endpoint: GET /api/my-company
+ */
+export const fetchMiEmpresa = createAsyncThunk<IEmpresa, void, { rejectValue: string }>(
+  'empresa/fetchMiEmpresa',
   async (_, { rejectWithValue }) => {
     try {
-      const empresas = await ApiService.fetchNormalized<IEmpresa[]>({
-        url: '/companies',
+      const empresa = await ApiService.fetchNormalized<IEmpresa>({
+        url: '/my-company',
         method: 'get'
       });
-      return empresas;
+      return empresa;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Error fetching empresas');
+      return rejectWithValue(error.response?.data?.message || 'Error al cargar tu empresa');
     }
   }
 );
 
-// Obtener detalle de una empresa principal (id fijo)
-export const fetchEmpresaPrincipal = createAsyncThunk<IEmpresa, number>(
-  'empresa/fetchEmpresaPrincipal',
-  async (empresaId, { rejectWithValue }) => {
-    try {
-      const empresa = await ApiService.fetchNormalized<IEmpresa>({
-        url: `/companies/${empresaId}`,
-        method: 'get',
-      });
-      return empresa;
-    } catch (e: any) {
-      return rejectWithValue(e.response?.data?.message ?? 'Error al cargar empresa');
-    }
-  }
-);
-
-// Obtener detalle de una empresa (otro caso)
-export const fetchEmpresaDetail = createAsyncThunk<IEmpresa, number>(
-  'empresa/fetchEmpresaDetail',
-  async (empresaId, { rejectWithValue }) => {
-    try {
-      const empresa = await ApiService.fetchNormalized<IEmpresa>({
-        url: `/companies/${empresaId}`,
-        method: 'get',
-      });
-      return empresa;
-    } catch (err: any) {
-      return rejectWithValue(err.response?.data?.message || 'Error al cargar la empresa');
-    }
-  }
-);
-
-// Actualizar la empresa principal
-export const patchEmpresaPrincipal = createAsyncThunk<
+/**
+ * 🔥 Actualizar MI empresa (dinámico, sin ID)
+ * Endpoint: PUT /api/my-company
+ */
+export const updateMiEmpresa = createAsyncThunk<
   IEmpresa,
   Partial<IEmpresa>,
   { rejectValue: string }
 >(
-  'empresa/patchEmpresaPrincipal',
+  'empresa/updateMiEmpresa',
   async (empresaData, { rejectWithValue }) => {
     try {
       const empresa = await ApiService.fetchNormalized<IEmpresa>({
-        url: '/companies/1',
-        method: 'patch',
+        url: '/my-company',
+        method: 'put',
         data: empresaData,
       });
       return empresa;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Error actualizando la empresa principal');
+      return rejectWithValue(error.response?.data?.message || 'Error al actualizar tu empresa');
     }
   }
 );
 
-// Obtener subempresas (responde como empresa con { subsidiaries: [...] }, no normalizado)
-export const fetchSubempresas = createAsyncThunk<IEmpresa['subsidiaries'], number, { rejectValue: string }>(
-  'empresa/fetchSubempresas',
-  async (empresaId, { rejectWithValue }) => {
+
+// Función para normalizar datos del backend al formato del frontend
+const normalizeSubsidiaryData = (backendData: any): ISubempresa => {
+  return {
+    ...backendData,
+    // Mapear campos del backend al formato del frontend
+    name: backendData.subsidiary_name || backendData.name || '',
+    rut: backendData.subsidiary_rut || backendData.rut,
+    website: backendData.subsidiary_website || backendData.website,
+    phone: backendData.subsidiary_phone || backendData.phone,
+    address: backendData.subsidiary_address || backendData.address,
+    email: backendData.subsidiary_email || backendData.email,
+    manager_name: backendData.subsidiary_manager_name || backendData.manager_name,
+    manager_phone: backendData.subsidiary_manager_phone || backendData.manager_phone,
+    manager_email: backendData.subsidiary_manager_email || backendData.manager_email,
+    status: backendData.subsidiary_status ?? backendData.status,
+    sucursales: backendData.sucursales || [],
+    branches_count: backendData.branches?.length || backendData.branches_count || 0
+  }
+}
+
+export const fetchMiEmpresaSubsidiarias = createAsyncThunk<ISubempresa[], void, { rejectValue: string }>(
+  'empresa/fetchMiEmpresaSubsidiarias',
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await ApiService.fetchData<IEmpresa>({
-        url: `/companies/${empresaId}/subsidiaries/`,
-        method: 'get',
+      const response = await ApiService.fetchData<{ subempresas: any[] }>({
+        url: '/my-company/subsidiaries',
+        method: 'get'
       });
-      return response.data.subsidiaries;
+      console.log('🔍 Empresa Slice - API Response Raw:', response.data)
+
+      // Normalizar los datos del backend
+      const normalizedSubsidiaries = response.data.subempresas.map(normalizeSubsidiaryData)
+      console.log('✅ Empresa Slice - Normalized Subsidiaries:', normalizedSubsidiaries)
+
+      return normalizedSubsidiaries;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Error fetching subempresas');
+      console.error('❌ Error fetching subsidiaries (empresa slice):', error)
+      return rejectWithValue(error.response?.data?.message || 'Error al cargar subsidiarias');
     }
   }
 );
 
-// Obtener usuarios de una empresa
-export const fetchEmpresaUsuarios = createAsyncThunk<IEmpresa, number, { rejectValue: string }>(
-  'empresa/fetchEmpresaUsuarios',
-  async (empresaId, { rejectWithValue }) => {
-    try {
-      const empresa = await ApiService.fetchNormalized<IEmpresa>({
-        url: `/empresas/${empresaId}/usuarios`,
-        method: 'get',
-      });
-      return empresa;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Error fetching usuarios');
-    }
-  }
-);
-
-// Invitar usuario (estructura custom: no tiene `data:`)
-export const inviteUsuario = createAsyncThunk<
-  { usuario: IUsuarioEmpresa; password_temporal: string },
-  { empresaId: number; nombre: string; email: string },
+/**
+ * 🏪 Crear nueva subsidiaria en MI empresa
+ * Endpoint: POST /api/my-company/subsidiaries
+ */
+export const createSubsidiaria = createAsyncThunk<
+  ISubempresa,
+  Partial<ISubempresa>,
   { rejectValue: string }
 >(
-  'empresa/inviteUsuario',
-  async ({ empresaId, nombre, email }, { rejectWithValue }) => {
+  'empresa/createSubsidiaria',
+  async (subsidiaryData, { rejectWithValue }) => {
+    try {
+      const subsidiary = await ApiService.fetchNormalized<ISubempresa>({
+        url: '/my-company/subsidiaries',
+        method: 'post',
+        data: subsidiaryData,
+      });
+      return subsidiary;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Error al crear subsidiaria');
+    }
+  }
+);
+
+/**
+ * 🏪 Actualizar subsidiaria de MI empresa
+ * Endpoint: PUT /api/my-company/subsidiaries/{id}
+ */
+export const updateSubsidiaria = createAsyncThunk<
+  ISubempresa,
+  { id: number; data: Partial<ISubempresa> },
+  { rejectValue: string }
+>(
+  'empresa/updateSubsidiaria',
+  async ({ id, data }, { rejectWithValue }) => {
+    try {
+      const subsidiary = await ApiService.fetchNormalized<ISubempresa>({
+        url: `/my-company/subsidiaries/${id}`,
+        method: 'put',
+        data,
+      });
+      return subsidiary;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Error al actualizar subsidiaria');
+    }
+  }
+);
+
+/**
+ * 👥 Obtener usuarios de MI empresa (dinámico)
+ * Endpoint: GET /api/my-company/users
+ */
+export const fetchMiEmpresaUsuarios = createAsyncThunk<IUsuarioEmpresa[], void, { rejectValue: string }>(
+  'empresa/fetchMiEmpresaUsuarios',
+  async (_, { rejectWithValue }) => {
+    try {
+      const users = await ApiService.fetchNormalized<IUsuarioEmpresa[]>({
+        url: '/my-company/users',
+        method: 'get'
+      });
+      return users;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Error al cargar usuarios');
+    }
+  }
+);
+
+/**
+ * 👥 Invitar usuario a MI empresa (dinámico)
+ * Endpoint: POST /api/my-company/invite
+ */
+export const inviteUsuarioToMiEmpresa = createAsyncThunk<
+  { usuario: IUsuarioEmpresa; password_temporal: string },
+  { nombre: string; email: string },
+  { rejectValue: string }
+>(
+  'empresa/inviteUsuarioToMiEmpresa',
+  async ({ nombre, email }, { rejectWithValue }) => {
     try {
       const response = await ApiService.fetchData<{ usuario: IUsuarioEmpresa; password_temporal: string }>({
-        url: `/empresas/${empresaId}/invitar`,
+        url: '/my-company/invite',
         method: 'post',
         data: { nombre, email },
       });
@@ -148,104 +221,134 @@ export const inviteUsuario = createAsyncThunk<
   }
 );
 
-// Slice
+// 🔥 NUEVO SLICE DINÁMICO
 const empresaSlice = createSlice({
   name: 'empresa',
   initialState,
-  reducers: {},
+  reducers: {
+    // 🧹 Limpiar errores manualmente
+    clearErrors: (state) => {
+      state.error = undefined;
+      state.updateError = undefined;
+      state.subsidiaryActionError = undefined;
+      state.inviteError = undefined;
+    },
+
+    // 🔄 Reset del estado
+    resetEmpresaState: () => initialState,
+  },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchEmpresas.pending, (state) => {
+      // 🏢 ===== MI EMPRESA =====
+      .addCase(fetchMiEmpresa.pending, (state) => {
         state.loading = true;
         state.error = undefined;
       })
-      .addCase(fetchEmpresas.fulfilled, (state, { payload }) => {
+      .addCase(fetchMiEmpresa.fulfilled, (state, { payload }) => {
         state.loading = false;
-        state.listaEmpresas = payload;
-      })
-      .addCase(fetchEmpresas.rejected, (state, { payload }) => {
-        state.loading = false;
-        state.error = payload as string;
-      })
-
-      .addCase(fetchEmpresaDetail.pending, (state) => {
-        state.loading = true;
+        state.miEmpresa = payload;
         state.error = undefined;
       })
-      .addCase(fetchEmpresaDetail.fulfilled, (state, { payload }) => {
-        state.loading = false;
-        state.detalleEmpresa = payload;
-      })
-      .addCase(fetchEmpresaDetail.rejected, (state, { payload }) => {
-        state.loading = false;
-        state.error = payload as string;
-      })
-
-      .addCase(fetchEmpresaPrincipal.pending, (state) => {
-        state.loading = true;
-        state.error = undefined;
-      })
-      .addCase(fetchEmpresaPrincipal.fulfilled, (state, { payload }) => {
-        state.loading = false;
-        state.detalleEmpresa = payload;
-      })
-      .addCase(fetchEmpresaPrincipal.rejected, (state, { payload }) => {
-        state.loading = false;
-        state.error = payload as string;
-      })
-
-      .addCase(patchEmpresaPrincipal.pending, (state) => {
-        state.loading = true;
-        state.error = undefined;
-      })
-      .addCase(patchEmpresaPrincipal.fulfilled, (state, { payload }) => {
-        state.loading = false;
-        state.detalleEmpresa = payload;
-      })
-      .addCase(patchEmpresaPrincipal.rejected, (state, { payload }) => {
+      .addCase(fetchMiEmpresa.rejected, (state, { payload }) => {
         state.loading = false;
         state.error = payload;
       })
 
-      .addCase(fetchSubempresas.pending, (state) => {
+      // 📝 ===== ACTUALIZAR MI EMPRESA =====
+      .addCase(updateMiEmpresa.pending, (state) => {
+        state.updateLoading = true;
+        state.updateError = undefined;
+      })
+      .addCase(updateMiEmpresa.fulfilled, (state, { payload }) => {
+        state.updateLoading = false;
+        state.miEmpresa = payload;
+        state.updateError = undefined;
+      })
+      .addCase(updateMiEmpresa.rejected, (state, { payload }) => {
+        state.updateLoading = false;
+        state.updateError = payload;
+      })
+
+      // 🏪 ===== SUBSIDIARIAS =====
+      .addCase(fetchMiEmpresaSubsidiarias.pending, (state) => {
         state.loading = true;
         state.error = undefined;
       })
-      .addCase(fetchSubempresas.fulfilled, (state, { payload }) => {
+      .addCase(fetchMiEmpresaSubsidiarias.fulfilled, (state, { payload }) => {
         state.loading = false;
-        state.listaSubempresas = payload;
+        state.miEmpresaSubsidiarias = payload;
+        state.error = undefined;
       })
-      .addCase(fetchSubempresas.rejected, (state, { payload }) => {
+      .addCase(fetchMiEmpresaSubsidiarias.rejected, (state, { payload }) => {
         state.loading = false;
         state.error = payload;
       })
 
-      .addCase(fetchEmpresaUsuarios.pending, (state) => {
+      // ➕ ===== CREAR SUBSIDIARIA =====
+      .addCase(createSubsidiaria.pending, (state) => {
+        state.subsidiaryActionLoading = true;
+        state.subsidiaryActionError = undefined;
+      })
+      .addCase(createSubsidiaria.fulfilled, (state, { payload }) => {
+        state.subsidiaryActionLoading = false;
+        state.miEmpresaSubsidiarias.push(payload);
+        state.subsidiaryActionError = undefined;
+      })
+      .addCase(createSubsidiaria.rejected, (state, { payload }) => {
+        state.subsidiaryActionLoading = false;
+        state.subsidiaryActionError = payload;
+      })
+
+      // ✏️ ===== ACTUALIZAR SUBSIDIARIA =====
+      .addCase(updateSubsidiaria.pending, (state) => {
+        state.subsidiaryActionLoading = true;
+        state.subsidiaryActionError = undefined;
+      })
+      .addCase(updateSubsidiaria.fulfilled, (state, { payload }) => {
+        state.subsidiaryActionLoading = false;
+        const index = state.miEmpresaSubsidiarias.findIndex(sub => sub.id === payload.id);
+        if (index !== -1) {
+          state.miEmpresaSubsidiarias[index] = payload;
+        }
+        state.subsidiaryActionError = undefined;
+      })
+      .addCase(updateSubsidiaria.rejected, (state, { payload }) => {
+        state.subsidiaryActionLoading = false;
+        state.subsidiaryActionError = payload;
+      })
+
+      // 👥 ===== USUARIOS DE MI EMPRESA =====
+      .addCase(fetchMiEmpresaUsuarios.pending, (state) => {
         state.loading = true;
         state.error = undefined;
       })
-      .addCase(fetchEmpresaUsuarios.fulfilled, (state, { payload }) => {
+      .addCase(fetchMiEmpresaUsuarios.fulfilled, (state, { payload }) => {
         state.loading = false;
-        state.empresaUsuarios = payload;
+        state.miEmpresaUsuarios = payload;
+        state.error = undefined;
       })
-      .addCase(fetchEmpresaUsuarios.rejected, (state, { payload }) => {
+      .addCase(fetchMiEmpresaUsuarios.rejected, (state, { payload }) => {
         state.loading = false;
         state.error = payload;
       })
 
-      .addCase(inviteUsuario.pending, (state) => {
+      // 📧 ===== INVITAR USUARIO =====
+      .addCase(inviteUsuarioToMiEmpresa.pending, (state) => {
         state.inviteLoading = true;
         state.inviteError = undefined;
       })
-      .addCase(inviteUsuario.fulfilled, (state, { payload }) => {
+      .addCase(inviteUsuarioToMiEmpresa.fulfilled, (state, { payload }) => {
         state.inviteLoading = false;
         state.inviteResponse = payload;
+        state.inviteError = undefined;
       })
-      .addCase(inviteUsuario.rejected, (state, { payload }) => {
+      .addCase(inviteUsuarioToMiEmpresa.rejected, (state, { payload }) => {
         state.inviteLoading = false;
         state.inviteError = payload;
       });
   },
 });
 
+// 🚀 Exportar actions y reducer
+export const { clearErrors, resetEmpresaState } = empresaSlice.actions;
 export default empresaSlice.reducer;

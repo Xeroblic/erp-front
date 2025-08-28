@@ -29,108 +29,131 @@ const initialState: SubempresaState = {
   deleteError: undefined,
 }
 
-// 1) Listar todas las subempresas de una empresa
-export const fetchSubempresasByEmpresa = createAsyncThunk<
+// 🔥 NUEVO: Listar subsidiarias de MI empresa (dinámico, sin hardcoding)
+// Función para normalizar datos del backend al formato del frontend
+const normalizeSubsidiaryData = (backendData: any): ISubempresa => {
+  return {
+    ...backendData,
+    // Mapear campos del backend al formato del frontend
+    name: backendData.subsidiary_name || backendData.name || '',
+    rut: backendData.subsidiary_rut || backendData.rut,
+    website: backendData.subsidiary_website || backendData.website,
+    phone: backendData.subsidiary_phone || backendData.phone,
+    address: backendData.subsidiary_address || backendData.address,
+    email: backendData.subsidiary_email || backendData.email,
+    manager_name: backendData.subsidiary_manager_name || backendData.manager_name,
+    manager_phone: backendData.subsidiary_manager_phone || backendData.manager_phone,
+    manager_email: backendData.subsidiary_manager_email || backendData.manager_email,
+    status: backendData.subsidiary_status ?? backendData.status,
+    sucursales: backendData.sucursales || [],
+    branches_count: backendData.branches?.length || backendData.branches_count || 0
+  }
+}
+
+export const fetchMisSubsidiarias = createAsyncThunk<
   ISubempresa[],
-  number,
+  void,
   { rejectValue: string }
 >(
-  'subempresa/fetchByEmpresa',
-  async (empresaId, { rejectWithValue }) => {
+  'subempresa/fetchMisSubsidiarias',
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await ApiService.fetchData<{ subempresas: ISubempresa[] }>({
-        url: `/companies/${empresaId}/subsidiaries`,
+      const response = await ApiService.fetchData<{ subempresas: any[] }>({
+        url: '/my-company/subsidiaries',
         method: 'get',
       })
-      return response.data.subempresas
+      console.log('🔍 API Response - Raw Subsidiaries:', response.data)
+
+      // Normalizar los datos del backend
+      const normalizedSubsidiaries = response.data.subempresas.map(normalizeSubsidiaryData)
+      console.log('✅ Normalized Subsidiaries:', normalizedSubsidiaries)
+
+      return normalizedSubsidiaries
     } catch (err: any) {
-      return rejectWithValue(err.response?.data?.message || 'Error al cargar subempresas')
+      console.error('❌ Error fetching subsidiaries:', err)
+      return rejectWithValue(err.response?.data?.message || 'Error al cargar subsidiarias')
     }
   }
 )
 
-// 2) Obtener detalle de una subempresa
-export const fetchSubempresaDetail = createAsyncThunk<
+// 🔥 NUEVO: Obtener detalle de una subsidiaria específica (dinámico)
+export const fetchSubsidiariaDetail = createAsyncThunk<
   ISubempresa,
   number,
   { rejectValue: string }
 >(
-  'subempresa/fetchDetail',
-  async (subempresaId, { rejectWithValue }) => {
+  'subempresa/fetchSubsidiariaDetail',
+  async (subsidiariaId, { rejectWithValue }) => {
     try {
-      const response = await ApiService.fetchData<ISubempresa>({
-        url: `/subempresas/${subempresaId}`,
+      const subsidiary = await ApiService.fetchNormalized<ISubempresa>({
+        url: `/my-company/subsidiaries/${subsidiariaId}`,
         method: 'get',
       })
-      return response.data
+      return subsidiary
     } catch (err: any) {
-      return rejectWithValue(err.response?.data?.message || 'Error al cargar detalle de subempresa')
+      return rejectWithValue(err.response?.data?.message || 'Error al cargar detalle de subsidiaria')
     }
   }
 )
 
-// 3) Crear nueva subempresa en empresa dada
-export const createSubempresa = createAsyncThunk<
+// 🔥 NUEVO: Crear nueva subsidiaria en MI empresa (dinámico)
+export const createSubsidiaria = createAsyncThunk<
   ISubempresa,
-  { empresaId: number; nombre: string; slug?: string; descripcion?: string },
+  Partial<ISubempresa>,
   { rejectValue: string }
 >(
-  'subempresa/create',
-  async ({ empresaId, nombre, slug, descripcion }, { rejectWithValue }) => {
+  'subempresa/createSubsidiaria',
+  async (subsidiariaData, { rejectWithValue }) => {
     try {
-      const response = await ApiService.fetchData<ISubempresa>({
-        url: `/companies/${empresaId}/subsidiaries`,
+      const subsidiary = await ApiService.fetchNormalized<ISubempresa>({
+        url: '/my-company/subsidiaries',
         method: 'post',
-        data: { nombre, slug, descripcion },
+        data: subsidiariaData,
       })
-      return response.data
+      return subsidiary
     } catch (err: any) {
-      return rejectWithValue(err.response?.data?.message || 'Error al crear subempresa')
+      return rejectWithValue(err.response?.data?.message || 'Error al crear subsidiaria')
     }
   }
 )
 
-// 4) Actualizar subempresa existente
-export const updateSubempresa = createAsyncThunk<
+// 🔥 NUEVO: Actualizar subsidiaria existente (dinámico, campos correctos)
+export const updateSubsidiaria = createAsyncThunk<
   ISubempresa,
-  ISubempresa,
+  { id: number; data: Partial<ISubempresa> },
   { rejectValue: string }
 >(
-  'subempresa/update',
-  async (subempresa, { rejectWithValue }) => {
+  'subempresa/updateSubsidiaria',
+  async ({ id, data }, { rejectWithValue }) => {
     try {
-      const response = await ApiService.fetchData<ISubempresa>({
-        url: `/subsidaries/${subempresa.id}`,
-        method: 'patch',
-        data: {
-          nombre: subempresa.name,
-          slug: subempresa.rut,
-          descripcion: subempresa.phone,
-        },
+      const subsidiary = await ApiService.fetchNormalized<ISubempresa>({
+        url: `/my-company/subsidiaries/${id}`,
+        method: 'put',
+        data,
       })
-      return response.data
+      return subsidiary
     } catch (err: any) {
-      return rejectWithValue(err.response?.data?.message || 'Error al actualizar subempresa')
+      return rejectWithValue(err.response?.data?.message || 'Error al actualizar subsidiaria')
     }
   }
 )
 
-// 5) Eliminar subempresa 
-export const deleteSubempresa = createAsyncThunk<
+// 🔥 NUEVO: Eliminar subsidiaria (dinámico)
+export const deleteSubsidiaria = createAsyncThunk<
   number,
   number,
   { rejectValue: string }
 >(
-  'subempresa/delete',
-  async (subempresaId, { rejectWithValue }) => {
+  'subempresa/deleteSubsidiaria',
+  async (subsidiariaId, { rejectWithValue }) => {
     try {
       await ApiService.fetchData<void>({
-        url: `/subsidaries/${subempresaId}`,
+        url: `/my-company/subsidiaries/${subsidiariaId}`,
         method: 'delete',
       })
-      return subempresaId
+      return subsidiariaId
     } catch (err: any) {
-      return rejectWithValue(err.response?.data?.message || 'Error al eliminar subempresa')
+      return rejectWithValue(err.response?.data?.message || 'Error al eliminar subsidiaria')
     }
   }
 )
@@ -139,75 +162,86 @@ const subempresaSlice = createSlice({
   name: 'subempresa',
   initialState,
   reducers: {
-    // si necesitas limpiar estado o detalle:
+    // 🧹 Limpiar estado
     clearDetalle(state) {
       state.detalle = undefined
       state.error = undefined
     },
+    clearErrors(state) {
+      state.error = undefined
+      state.createError = undefined
+      state.updateError = undefined
+      state.deleteError = undefined
+    },
+    resetSubempresaState: () => initialState,
   },
   extraReducers: builder => {
-    // fetchSubempresasByEmpresa
+    // 🔥 NUEVO: fetchMisSubsidiarias
     builder
-      .addCase(fetchSubempresasByEmpresa.pending, state => {
+      .addCase(fetchMisSubsidiarias.pending, state => {
         state.loading = true
         state.error = undefined
       })
       .addCase(
-        fetchSubempresasByEmpresa.fulfilled,
+        fetchMisSubsidiarias.fulfilled,
         (state, action: PayloadAction<ISubempresa[]>) => {
           state.loading = false
           state.lista = action.payload
+          state.error = undefined
+          console.log('✅ Redux state updated - subsidiaries:', action.payload)
         }
       )
-      .addCase(fetchSubempresasByEmpresa.rejected, (state, { payload }) => {
+      .addCase(fetchMisSubsidiarias.rejected, (state, { payload }) => {
         state.loading = false
         state.error = payload
       })
 
-    // fetchSubempresaDetail
+    // 🔥 NUEVO: fetchSubsidiariaDetail
     builder
-      .addCase(fetchSubempresaDetail.pending, state => {
+      .addCase(fetchSubsidiariaDetail.pending, state => {
         state.loading = true
         state.error = undefined
       })
       .addCase(
-        fetchSubempresaDetail.fulfilled,
+        fetchSubsidiariaDetail.fulfilled,
         (state, action: PayloadAction<ISubempresa>) => {
           state.loading = false
           state.detalle = action.payload
+          state.error = undefined
         }
       )
-      .addCase(fetchSubempresaDetail.rejected, (state, { payload }) => {
+      .addCase(fetchSubsidiariaDetail.rejected, (state, { payload }) => {
         state.loading = false
         state.error = payload
       })
 
-    // createSubempresa
+    // 🔥 NUEVO: createSubsidiaria
     builder
-      .addCase(createSubempresa.pending, state => {
+      .addCase(createSubsidiaria.pending, state => {
         state.createLoading = true
         state.createError = undefined
       })
       .addCase(
-        createSubempresa.fulfilled,
+        createSubsidiaria.fulfilled,
         (state, action: PayloadAction<ISubempresa>) => {
           state.createLoading = false
           state.lista.push(action.payload)
+          state.createError = undefined
         }
       )
-      .addCase(createSubempresa.rejected, (state, { payload }) => {
+      .addCase(createSubsidiaria.rejected, (state, { payload }) => {
         state.createLoading = false
         state.createError = payload
       })
 
-    // updateSubempresa
+    // 🔥 NUEVO: updateSubsidiaria
     builder
-      .addCase(updateSubempresa.pending, state => {
+      .addCase(updateSubsidiaria.pending, state => {
         state.updateLoading = true
         state.updateError = undefined
       })
       .addCase(
-        updateSubempresa.fulfilled,
+        updateSubsidiaria.fulfilled,
         (state, action: PayloadAction<ISubempresa>) => {
           state.updateLoading = false
           const idx = state.lista.findIndex(s => s.id === action.payload.id)
@@ -215,35 +249,37 @@ const subempresaSlice = createSlice({
           if (state.detalle?.id === action.payload.id) {
             state.detalle = action.payload
           }
+          state.updateError = undefined
         }
       )
-      .addCase(updateSubempresa.rejected, (state, { payload }) => {
+      .addCase(updateSubsidiaria.rejected, (state, { payload }) => {
         state.updateLoading = false
         state.updateError = payload
       })
 
-    // deleteSubempresa
+    // 🔥 NUEVO: deleteSubsidiaria
     builder
-      .addCase(deleteSubempresa.pending, state => {
+      .addCase(deleteSubsidiaria.pending, state => {
         state.deleteLoading = true
         state.deleteError = undefined
       })
       .addCase(
-        deleteSubempresa.fulfilled,
+        deleteSubsidiaria.fulfilled,
         (state, action: PayloadAction<number>) => {
           state.deleteLoading = false
           state.lista = state.lista.filter(s => s.id !== action.payload)
           if (state.detalle?.id === action.payload) {
             state.detalle = undefined
           }
+          state.deleteError = undefined
         }
       )
-      .addCase(deleteSubempresa.rejected, (state, { payload }) => {
+      .addCase(deleteSubsidiaria.rejected, (state, { payload }) => {
         state.deleteLoading = false
         state.deleteError = payload
       })
   },
 })
 
-export const { clearDetalle } = subempresaSlice.actions
+export const { clearDetalle, clearErrors, resetSubempresaState } = subempresaSlice.actions
 export default subempresaSlice.reducer

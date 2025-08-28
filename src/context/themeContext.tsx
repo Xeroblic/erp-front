@@ -122,7 +122,7 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
             dispatch(setAsideStatus(false));
         }
         return () => {
-            const storedStatus = localStorage.getItem('fyr_asideStatus');
+            const storedStatus = localStorage.getItem('zentria_asideStatus');
             if (storedStatus) {
                 dispatch(setAsideStatus(storedStatus === 'true'));
             }

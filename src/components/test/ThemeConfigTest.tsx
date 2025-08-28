@@ -9,8 +9,8 @@ import themeConfig from '../../config/theme.config';
 const ThemeConfigTest: React.FC = () => {
     // Función para cambiar los colores dinámicamente (solo para pruebas)
     const changeThemeColor = (color: string, intensity: string) => {
-        localStorage.setItem('fyr_themeColor', color);
-        localStorage.setItem('fyr_themeColorShade', intensity);
+        localStorage.setItem('zentria_themeColor', color);
+        localStorage.setItem('zentria_themeColorShade', intensity);
 
         // Forzar re-render
         window.location.reload();

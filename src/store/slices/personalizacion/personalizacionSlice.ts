@@ -33,12 +33,12 @@ export interface PersonalizacionState {
 const getInitialState = (): PersonalizacionState => {
     return {
         // Configuraciones locales (localStorage + defaults)
-        fontSize: Number(localStorage.getItem('fyr_fontSize')) || themeConfig.fontSize,
-        themeColor: (localStorage.getItem('fyr_themeColor') as TColors) || themeConfig.themeColor,
-        themeColorShade: (localStorage.getItem('fyr_themeColorShade') as TColorIntensity) || themeConfig.themeColorShade,
-        language: (localStorage.getItem('fyr_language') as TLang) || themeConfig.language,
+        fontSize: Number(localStorage.getItem('zentria_fontSize')) || themeConfig.fontSize,
+        themeColor: (localStorage.getItem('zentria_themeColor') as TColors) || themeConfig.themeColor,
+        themeColorShade: (localStorage.getItem('zentria_themeColorShade') as TColorIntensity) || themeConfig.themeColorShade,
+        language: (localStorage.getItem('zentria_language') as TLang) || themeConfig.language,
         darkMode: (localStorage.getItem('theme') as TDarkMode) || themeConfig.theme,
-        asideStatus: localStorage.getItem('fyr_asideStatus') ? localStorage.getItem('fyr_asideStatus') === 'true' : true,
+        asideStatus: localStorage.getItem('zentria_asideStatus') ? localStorage.getItem('zentria_asideStatus') === 'true' : true,
 
         // Estado de la API
         personalizacionUsuario: undefined,
@@ -113,28 +113,28 @@ const personalizacionSlice = createSlice({
         setFontSize: (state, action: PayloadAction<number>) => {
             state.fontSize = action.payload;
             state.hasUnsavedChanges = true;
-            persistToLocalStorage('fyr_fontSize', action.payload);
+            persistToLocalStorage('zentria_fontSize', action.payload);
             console.log('FontSize actualizado:', action.payload);
         },
 
         setThemeColor: (state, action: PayloadAction<TColors>) => {
             state.themeColor = action.payload;
             state.hasUnsavedChanges = true;
-            persistToLocalStorage('fyr_themeColor', action.payload);
+            persistToLocalStorage('zentria_themeColor', action.payload);
             console.log('ThemeColor actualizado:', action.payload);
         },
 
         setThemeColorShade: (state, action: PayloadAction<TColorIntensity>) => {
             state.themeColorShade = action.payload;
             state.hasUnsavedChanges = true;
-            persistToLocalStorage('fyr_themeColorShade', action.payload);
+            persistToLocalStorage('zentria_themeColorShade', action.payload);
             console.log('ThemeColorShade actualizado:', action.payload);
         },
 
         setLanguage: (state, action: PayloadAction<TLang>) => {
             state.language = action.payload;
             state.hasUnsavedChanges = true;
-            persistToLocalStorage('fyr_language', action.payload);
+            persistToLocalStorage('zentria_language', action.payload);
             console.log('Language actualizado:', action.payload);
         },
 
@@ -147,7 +147,7 @@ const personalizacionSlice = createSlice({
 
         setAsideStatus: (state, action: PayloadAction<boolean>) => {
             state.asideStatus = action.payload;
-            persistToLocalStorage('fyr_asideStatus', action.payload);
+            persistToLocalStorage('zentria_asideStatus', action.payload);
             console.log('AsideStatus actualizado:', action.payload);
         },
 
@@ -159,19 +159,19 @@ const personalizacionSlice = createSlice({
             if (!state.isInitialized || !state.hasUnsavedChanges) {
                 if (apiData.tcolor && apiData.tcolor !== state.themeColor) {
                     state.themeColor = apiData.tcolor as TColors;
-                    persistToLocalStorage('fyr_themeColor', apiData.tcolor);
+                    persistToLocalStorage('zentria_themeColor', apiData.tcolor);
                     console.log('🔄 Sincronizando themeColor desde API:', apiData.tcolor);
                 }
 
                 if (apiData.tcolor_int && apiData.tcolor_int !== state.themeColorShade) {
                     state.themeColorShade = apiData.tcolor_int as TColorIntensity;
-                    persistToLocalStorage('fyr_themeColorShade', apiData.tcolor_int);
+                    persistToLocalStorage('zentria_themeColorShade', apiData.tcolor_int);
                     console.log('🔄 Sincronizando themeColorShade desde API:', apiData.tcolor_int);
                 }
 
                 if (apiData.font_size && apiData.font_size !== state.fontSize) {
                     state.fontSize = apiData.font_size;
-                    persistToLocalStorage('fyr_fontSize', apiData.font_size);
+                    persistToLocalStorage('zentria_fontSize', apiData.font_size);
                     console.log('🔄 Sincronizando fontSize desde API:', apiData.font_size);
                 }
 
@@ -220,10 +220,10 @@ const personalizacionSlice = createSlice({
             state.hasUnsavedChanges = true;
 
             // Limpiar localStorage
-            localStorage.removeItem('fyr_fontSize');
-            localStorage.removeItem('fyr_themeColor');
-            localStorage.removeItem('fyr_themeColorShade');
-            localStorage.removeItem('fyr_language');
+            localStorage.removeItem('zentria_fontSize');
+            localStorage.removeItem('zentria_themeColor');
+            localStorage.removeItem('zentria_themeColorShade');
+            localStorage.removeItem('zentria_language');
             localStorage.removeItem('theme');
 
             console.log('🔄 Configuración restablecida a valores por defecto');

@@ -101,12 +101,12 @@ const authSlice = createSlice({
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('persist:fyr');
-      localStorage.removeItem('fyr_themeColor');
-      localStorage.removeItem('fyr_themeColorShade');
-      localStorage.removeItem('fyr_fontSize');
+      localStorage.removeItem('zentria_themeColor');
+      localStorage.removeItem('zentria_themeColorShade');
+      localStorage.removeItem('zentria_fontSize');
       localStorage.removeItem('theme');
-      localStorage.removeItem('fyr_language');
-      localStorage.removeItem('fyr_asideStatus');
+      localStorage.removeItem('zentria_language');
+      localStorage.removeItem('zentria_asideStatus');
 
       console.log('🧹 Estado de autenticación completamente limpiado');
     },

@@ -37,9 +37,6 @@ export default function UsuarioLista() {
 	const [sorting, setSorting] = useState<SortingState>([]);
 
 	useEffect(() => {
-		console.log("🧠 auth.user:", user);
-		console.log("🏢 empresaId:", empresaId);
-
 		if (!user) return; // aún no cargado
 
 		// Si el usuario es super-admin, puede ver todos los usuarios
@@ -71,7 +68,7 @@ export default function UsuarioLista() {
 		const fetchUsuarios = async () => {
 			try {
 				const { data } = await ApiService.fetchData<{ usuarios: IUserMe[] }>({
-					url: `/companies/${empresaId}/users`,
+					url: '/my-company/users',
 					method: 'get',
 				});
 				setUsuarios(data.usuarios);
