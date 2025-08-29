@@ -16,24 +16,25 @@ import { TDarkMode } from '../types/darkMode.type';
 import { TColors } from '../types/colors.type';
 import { TColorIntensity } from '../types/colorIntensities.type';
 import DARK_MODE from '../constants/darkMode.constant';
-import useDeviceScreen from '../hooks/useDeviceScreen';
-import { TLang } from '../types/lang.type';
-import { useAppDispatch, useAppSelector } from '../store/hook';
 import {
     selectLanguage,
-    selectDarkMode,
-    selectIsDarkTheme,
     selectAsideStatus,
     selectFontSize,
     selectThemeColor,
     selectThemeColorShade,
+    selectDarkMode,
+    selectIsDarkTheme,
     setLanguage,
-    setDarkMode,
     setAsideStatus,
     setFontSize,
     setThemeColor,
     setThemeColorShade,
-} from '@/store/slices/personalizacion/personalizacionSlice';
+    setDarkMode,
+} from '../store/slices/personalizacion/personalizacionSlice';
+import useDarkModeManager from '../hooks/useDarkModeManager.ts';
+import useDeviceScreen from '../hooks/useDeviceScreen';
+import { TLang } from '../types/lang.type';
+import { useAppDispatch, useAppSelector } from '../store/hook';
 
 // Interface simplificada - ahora solo para compatibilidad
 export interface IThemeContextProps {
@@ -63,12 +64,13 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
 
     // Leer estado desde Redux
     const language = useAppSelector(selectLanguage);
-    const darkModeStatus = useAppSelector(selectDarkMode);
-    const isDarkTheme = useAppSelector(selectIsDarkTheme);
     const asideStatus = useAppSelector(selectAsideStatus);
     const fontSize = useAppSelector(selectFontSize);
     const themeColor = useAppSelector(selectThemeColor);
     const themeColorShade = useAppSelector(selectThemeColorShade);
+
+    // Usar el nuevo hook de dark mode
+    const { darkModeStatus, isDarkTheme, setDarkModeStatus } = useDarkModeManager();
 
     /**
      * Language Effects
@@ -85,53 +87,6 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
 
         dayjs.locale(language);
     }, [language, i18n]);
-
-    /**
-     * Dark Mode Effects
-     */
-    useLayoutEffect(() => {
-        console.log('🌙 ThemeContext - Dark Mode Effect:', {
-            isDarkTheme,
-            darkModeStatus,
-            currentClasses: document.documentElement.className,
-            willAdd: isDarkTheme ? DARK_MODE.DARK : 'none',
-            willRemove: !isDarkTheme ? DARK_MODE.DARK : 'none'
-        });
-
-        if (isDarkTheme) {
-            document.documentElement.classList.add(DARK_MODE.DARK);
-            console.log('🌙 Añadida clase dark:', document.documentElement.className);
-        } else {
-            document.documentElement.classList.remove(DARK_MODE.DARK);
-            console.log('🌙 Removida clase dark:', document.documentElement.className);
-        }
-    }, [isDarkTheme]);
-
-    /**
-     * System Dark Mode Listener - Para detectar cambios del sistema cuando está en modo 'system'
-     */
-    useLayoutEffect(() => {
-        if (darkModeStatus === DARK_MODE.SYSTEM) {
-            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
-            const handleSystemThemeChange = (e: MediaQueryListEvent) => {
-                console.log('🌙 Sistema cambió tema:', e.matches ? 'dark' : 'light');
-                // El selector selectIsDarkTheme ya maneja esto automáticamente
-                // Solo necesitamos forzar una actualización del DOM
-                if (e.matches) {
-                    document.documentElement.classList.add(DARK_MODE.DARK);
-                } else {
-                    document.documentElement.classList.remove(DARK_MODE.DARK);
-                }
-            };
-
-            mediaQuery.addEventListener('change', handleSystemThemeChange);
-
-            return () => {
-                mediaQuery.removeEventListener('change', handleSystemThemeChange);
-            };
-        }
-    }, [darkModeStatus]);
 
     /**
      * Aside Status for responsive design
@@ -179,12 +134,8 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
             root.style.setProperty('--color-primary-900', colorPalette[900] || colorPalette['900']);
             root.style.setProperty('--color-primary-950', colorPalette[950] || colorPalette['950']);
 
-            console.log(`🎨 Tema aplicado correctamente: ${themeColor}-${themeColorShade}`, {
-                color: colorPalette[themeColorShade],
-                palette: colorPalette
-            });
         } else {
-            console.warn(`🎨 Color ${themeColor} no encontrado en la paleta de colores`);
+            // Color no encontrado - sin warning para mantener consola limpia
         }
     }, [themeColor, themeColorShade]);
 
@@ -201,10 +152,6 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
         // También aplicar directamente al html para mayor compatibilidad
         root.style.fontSize = `${fontSize}px`;
 
-        console.log(`📝 Font size aplicado: ${fontSize}px (${fontSizeInRem}rem)`, {
-            cssVariable: `${fontSizeInRem}rem`,
-            htmlFontSize: root.style.fontSize
-        });
     }, [fontSize]);
 
     /**
@@ -220,9 +167,10 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
         },
         setDarkModeStatus: (value: React.SetStateAction<TDarkMode>) => {
             if (typeof value === 'function') {
-                dispatch(setDarkMode((value as (prev: TDarkMode) => TDarkMode)(darkModeStatus)));
+                const newValue = (value as (prev: TDarkMode) => TDarkMode)(darkModeStatus);
+                setDarkModeStatus(newValue);
             } else {
-                dispatch(setDarkMode(value));
+                setDarkModeStatus(value);
             }
         },
         setAsideStatus: (value: React.SetStateAction<boolean>) => {

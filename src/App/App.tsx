@@ -11,14 +11,13 @@ import useThemeColor from '../hooks/useThemeColor';
 import getOS from '../utils/getOS.util';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import useDarkMode from '@/hooks/useDarkMode';
+import useDarkMode from '../hooks/useDarkMode';
 import AuthDebug from '../components/debug/AuthDebug';
 import UserDataSimulator from '../components/debug/UserDataSimulator';
-import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { obtenerPersonalizacionThunk } from '@/store/slices/personalizacion/personalizacionSlice';
 import AppInitializer from '../components/AppInitializer';
-import PersonalizacionDebug from '../components/debug/PersonalizacionDebug';
+// import PersonalizacionDebug from '../components/debug/PersonalizacionDebug';
+// import PersonalizacionTest from '../components/test/PersonalizacionTest';
 // import DarkModeDebug from '../components/debug/DarkModeDebug';
 // import DarkModeStatus from '../components/debug/DarkModeStatus';
 // import BackendSimulator from '../components/debug/BackendSimulator';
@@ -35,24 +34,14 @@ const App = () => {
 	const dispatch = useAppDispatch();
 	const { isAuthenticated, access } = useAppSelector((state) => state.auth);
 
-	// Cargar personalización al inicio si el usuario está autenticado
-	useEffect(() => {
-		if (isAuthenticated && access) {
-			console.log('Usuario autenticado detectado al inicio, cargando personalización...');
-			dispatch(obtenerPersonalizacionThunk());
-		}
-	}, [isAuthenticated, access, dispatch]);
-
-
-
-
 	return (
 		<>
 			<AppInitializer />
 			{/* <DarkModeDebug /> */}
 			{/* <DarkModeStatus /> */}
 			<ToastContainer theme={isDarkTheme ? 'dark' : 'light'} draggable></ToastContainer>
-			<PersonalizacionDebug />
+			{/* <PersonalizacionDebug /> */}
+			{/* <PersonalizacionTest /> */}
 			<style>{`:root {font-size: ${fontSize}px;
 				--toastify-toast-bd-radius: 0.75rem;
 				--toastify-color-dark:  ${colors.zinc['800']};

@@ -37,11 +37,11 @@ export interface IIconProps extends HTMLAttributes<HTMLSpanElement> {
 	size?: TFontSizes;
 }
 const Icon = forwardRef<HTMLSpanElement, IIconProps>((props, ref) => {
-	const { themeColor: reactiveThemeColor } = useReactiveThemeConfig();
+	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } = useReactiveThemeConfig();
 	const { icon,
 		 className,
 		  color = reactiveThemeColor,
-			colorIntensity = '100',
+			colorIntensity = reactiveThemeColorShade,
 		    size,
 			 ...rest
 			 } = props;

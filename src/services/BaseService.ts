@@ -13,7 +13,6 @@ interface CustomAxiosRequestConfig<D = any> extends InternalAxiosRequestConfig<D
 let abortController = new AbortController();
 
 export const cancelAllRequests = () => {
-    console.log('🚫 Cancelando todas las peticiones pendientes...');
     abortController.abort();
     abortController = new AbortController();
 };
@@ -73,7 +72,6 @@ BaseService.interceptors.response.use(
                     return BaseService(originalRequest);
                 } catch (refreshError) {
                     // Manejar el fallo del refresco del token
-                    console.log("🔒 Fallo en refresh del token, cerrando sesión");
                     toast.error("Sesión Expirada");
                     store.dispatch(logout());
                     cancelAllRequests(); // Cancelar todas las peticiones pendientes
@@ -85,7 +83,6 @@ BaseService.interceptors.response.use(
                 }
             } else {
                 // No hay token de refresco disponible
-                console.log("🔒 No hay refresh token, cerrando sesión");
                 toast.error("Sesión Expirada");
                 store.dispatch(logout());
                 cancelAllRequests(); // Cancelar todas las peticiones pendientes

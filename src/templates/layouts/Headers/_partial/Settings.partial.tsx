@@ -4,7 +4,7 @@ import Button from '../../../../components/ui/Button';
 import ButtonGroup from '../../../../components/ui/ButtonGroup';
 import DARK_MODE from '../../../../constants/darkMode.constant';
 import useFontSize from '../../../../hooks/useFontSize';
-import useDarkMode from '../../../../hooks/useDarkMode';
+import useDarkModeManager from '../../../../hooks/useDarkModeManager.ts';
 import useThemeColor from '../../../../hooks/useThemeColor';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
@@ -22,28 +22,24 @@ import { use } from 'i18next';
 const SettingsPartial = () => {
     const dispatch = useAppDispatch();
     const { fontSize, setFontSize } = useFontSize();
-    const { darkModeStatus, setDarkModeStatus } = useDarkMode();
+    const { darkModeStatus, isDarkTheme, setDarkModeStatus, isLight, isDark, isSystem } = useDarkModeManager();
     const { themeColor, setThemeColor, themeColorShade, setThemeColorShade } = useThemeColor();
     const { user } = useAppSelector((state) => state.auth);
     const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
     // const [isCompanySelectorOpen, setIsCompanySelectorOpen] = useState(false);
 
-    const updatePersonalizacion = async (tema: string, font_size: number) => {
+    const updateFontSize = async (newSize: number) => {
         try {
-            // Incluir todos los valores actuales para evitar sobrescribir
-            const updateData = {
-                tema,
-                font_size,
-                tcolor: themeColor,
-                tcolor_int: themeColorShade
-            };
+            // Actualizar localmente primero para respuesta inmediata
+            setFontSize(newSize);
 
-            console.log('🔄 Actualizando personalización completa:', updateData);
-            await dispatch(actualizarPersonalizacionThunk(updateData)).unwrap();
-            toast.success('Personalización actualizada correctamente');
+            // Luego guardar en API
+            await dispatch(actualizarPersonalizacionThunk({
+                font_size: newSize
+            })).unwrap();
+
         } catch (error: any) {
-            console.error('❌ Error actualizando personalización:', error);
-            toast.error(error || 'No se pudo actualizar la personalización');
+            toast.error('Error al actualizar el tamaño de fuente');
         }
     };
 
@@ -99,53 +95,43 @@ const SettingsPartial = () => {
                     <ButtonGroup>
                         <Button
                             icon='HeroMinus'
-                            onClick={() => {
-                                const newSize = fontSize - 1;
-                                setFontSize(newSize);
-                                updatePersonalizacion(personalizacionUsuario?.tema || '3', newSize);
-                            }}
+                            onClick={() => updateFontSize(fontSize - 1)}
                             isDisable={fontSize <= 12}
                         />
                         <Button isDisable>{fontSize}</Button>
                         <Button
                             icon='HeroPlus'
-                            onClick={() => {
-                                const newSize = fontSize + 1;
-                                setFontSize(newSize);
-                                updatePersonalizacion(personalizacionUsuario?.tema || '3', newSize);
-                            }}
+                            onClick={() => updateFontSize(fontSize + 1)}
                             isDisable={fontSize >= 18}
                         />
                     </ButtonGroup>
                 </DropdownItem>
                 <DropdownItem className='flex flex-col !items-start'>
-                    <div>Dark Mode:</div>
+                    <div className="mb-2">Modo Oscuro:</div>
                     <ButtonGroup>
                         <Button
                             icon='HeroMoon'
-                            onClick={() => {
-                                setDarkModeStatus(DARK_MODE.DARK);
-                                updatePersonalizacion('2', fontSize);
-                            }}
-                            isActive={darkModeStatus === DARK_MODE.DARK}
+                            onClick={() => setDarkModeStatus(DARK_MODE.DARK)}
+                            isActive={isDark}
+                            variant={isDark ? 'solid' : 'outline'}
                         />
                         <Button
                             icon='HeroSun'
-                            onClick={() => {
-                                setDarkModeStatus(DARK_MODE.LIGHT);
-                                updatePersonalizacion('1', fontSize);
-                            }}
-                            isActive={darkModeStatus === DARK_MODE.LIGHT}
+                            onClick={() => setDarkModeStatus(DARK_MODE.LIGHT)}
+                            isActive={isLight}
+                            variant={isLight ? 'solid' : 'outline'}
                         />
                         <Button
                             icon='HeroComputerDesktop'
-                            onClick={() => {
-                                setDarkModeStatus(DARK_MODE.SYSTEM);
-                                updatePersonalizacion('3', fontSize);
-                            }}
-                            isActive={darkModeStatus === DARK_MODE.SYSTEM}
+                            onClick={() => setDarkModeStatus(DARK_MODE.SYSTEM)}
+                            isActive={isSystem}
+                            variant={isSystem ? 'solid' : 'outline'}
                         />
                     </ButtonGroup>
+                    <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Actual: {isDarkTheme ? '🌙 Oscuro' : '☀️ Claro'}
+                        {isSystem && ` (${window.matchMedia('(prefers-color-scheme: dark)').matches ? 'Sistema: Oscuro' : 'Sistema: Claro'})`}
+                    </div>
                 </DropdownItem>
                 <DropdownItem className='flex flex-col !items-start'>
                     <div className="mb-2">Color del Tema:</div>

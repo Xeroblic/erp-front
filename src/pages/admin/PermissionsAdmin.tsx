@@ -55,36 +55,26 @@ export default function PermissionsAdmin() {
     setSelectedRoleIds,
   } = usePermissionsManagement();
 
-  // UI state
   const [sorting, setSorting] = useState<SortingState>([]);
   const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
 
-  // Load initial data
   useEffect(() => {
     loadInitialData();
   }, [loadInitialData]);
 
-  // Pre-selection logic for roles and permissions
   const { preselectedRoleIds, preselectedPermissionIds } = useMemo(() => {
     if (!selectedUserForPermissions || !roles.length || !permissions.length) {
       return { preselectedRoleIds: [], preselectedPermissionIds: [] };
     }
-
-    console.log('🔍 Calculando preselección para:', selectedUserForPermissions.first_name);
-
-    // ROLES: obtener IDs de roles asignados
     const roleNames = [
       ...(selectedUserForPermissions.global_roles || []),
       ...(selectedUserForPermissions.contextual_roles?.map((cr) => cr.role) || []),
     ];
 
-    // Eliminar duplicados de roles
     const uniqueRoleNames = Array.from(new Set(roleNames));
     const roleIds = uniqueRoleNames
       .map((name) => roleNameToId.get(name))
       .filter((id): id is number => typeof id === 'number');
-
-    // PERMISOS: solo mostrar permisos directos en el selector
     const directPermissionNames = selectedUserForPermissions.direct_permissions || [];
     const permissionIds = directPermissionNames
       .map((name) => permissionNameToId.get(name))
@@ -96,13 +86,11 @@ export default function PermissionsAdmin() {
     };
   }, [selectedUserForPermissions, roles, permissions, roleNameToId, permissionNameToId]);
 
-  // Sync selections when user or preselected values change
   useEffect(() => {
     setSelectedRoleIds(preselectedRoleIds);
     setSelectedPermissionIds(preselectedPermissionIds);
   }, [preselectedRoleIds, preselectedPermissionIds, setSelectedRoleIds, setSelectedPermissionIds]);
 
-  // Handle opening permissions modal
   const handleOpenPermissionsModal = useCallback(
     async (user: UserWithDetails) => {
       await openPermissionsModal(user);
@@ -111,23 +99,19 @@ export default function PermissionsAdmin() {
     [openPermissionsModal]
   );
 
-  // Handle closing permissions modal
   const handleClosePermissionsModal = useCallback(() => {
     setIsPermissionsModalOpen(false);
-    closePermissionsModal(); // Esto limpia el estado y refresca los datos
+    closePermissionsModal();
   }, [closePermissionsModal]);
 
-  // Handle save permissions
   const handleSavePermissions = useCallback(async () => {
     await savePermissions();
     setIsPermissionsModalOpen(false);
-    closePermissionsModal(); // Asegurar limpieza del estado
+    closePermissionsModal();
   }, [savePermissions, closePermissionsModal]);
 
-  // Table columns
   const columns = createUserTableColumns(handleOpenPermissionsModal, toggleUser, toggleUserLoading);
 
-  // Table configuration
   const table = useReactTable({
     data: users,
     columns,
@@ -141,7 +125,6 @@ export default function PermissionsAdmin() {
     initialState: { pagination: { pageSize: 10 } },
   });
 
-  // SELECT options with better formatting
   const roleOptions = useMemo<TSelectOption[]>(
     () =>
       (roles || []).map((r) => ({
@@ -160,20 +143,16 @@ export default function PermissionsAdmin() {
     [permissions]
   );
 
-  // Select change handlers
   const handleRoleChange = useCallback((selected: any) => {
     const ids = Array.isArray(selected) ? selected.map((o: TSelectOption) => parseInt(String(o.value), 10)) : [];
-    console.log('🔄 Roles seleccionados:', ids);
     setSelectedRoleIds(ids);
   }, [setSelectedRoleIds]);
 
   const handlePermissionChange = useCallback((selected: any) => {
     const ids = Array.isArray(selected) ? selected.map((o: TSelectOption) => parseInt(String(o.value), 10)) : [];
-    console.log('🔄 Permisos seleccionados:', ids);
     setSelectedPermissionIds(ids);
   }, [setSelectedPermissionIds]);
 
-  // Selected values for the selects
   const selectedRoleOptions = useMemo(
     () => roleOptions.filter((o) => selectedRoleIds.includes(parseInt(String(o.value), 10))),
     [roleOptions, selectedRoleIds]
@@ -184,7 +163,6 @@ export default function PermissionsAdmin() {
     [permissionOptions, selectedPermissionIds]
   );
 
-  // Main UI component
   return (
     <PageWrapper isProtectedRoute title="Administración de Permisos" name="Permisos">
       <Subheader>

@@ -10,6 +10,15 @@ const AppInitializer = () => {
     const location = useLocation();
     const { isAuthenticated, access } = useAppSelector((state) => state.auth);
     const hasInitialized = useRef(false);
+    const hasLoadedPersonalization = useRef(false);
+
+    // Cargar personalización una sola vez cuando el usuario esté autenticado
+    useEffect(() => {
+        if (isAuthenticated && access && !hasLoadedPersonalization.current) {
+            hasLoadedPersonalization.current = true;
+            dispatch(obtenerPersonalizacionThunk());
+        }
+    }, [isAuthenticated, access, dispatch]);
 
     useEffect(() => {
         // Solo inicializar una vez
@@ -25,15 +34,9 @@ const AppInitializer = () => {
         // Validar sesión al inicio
         dispatch(validateSession());
 
-        // Verificar token en localStorage y cargar personalización
+        // Verificar token en localStorage
         const token = localStorage.getItem('access_token');
-        if (token) {
-            console.log('✅ Token encontrado, cargando personalización...');
-            dispatch(obtenerPersonalizacionThunk()).catch((error) => {
-                console.warn('⚠️ Error cargando personalización inicial:', error);
-            });
-        } else if (!access) {
-            console.log('🔒 No hay token válido, redirigiendo a login...');
+        if (!token && !access) {
             navigate('/login');
             return;
         }
@@ -49,7 +52,6 @@ const AppInitializer = () => {
         }
 
         if (!isAuthenticated && !access) {
-            console.log('🔒 Sesión no válida, redirigiendo a login...');
             // Usar window.location para forzar recarga completa
             window.location.href = '/login';
         }
@@ -58,10 +60,7 @@ const AppInitializer = () => {
     // Cargar personalización cuando el usuario se autentica
     useEffect(() => {
         if (isAuthenticated && access && hasInitialized.current) {
-            console.log('🔄 Usuario autenticado detectado, cargando personalización...');
-            dispatch(obtenerPersonalizacionThunk()).catch((error) => {
-                console.warn('⚠️ Error cargando personalización después de autenticación:', error);
-            });
+            // Personalización se carga automáticamente
         }
     }, [isAuthenticated, access, dispatch]);
 

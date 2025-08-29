@@ -17,14 +17,9 @@ const UserTemplate = () => {
 	const { user: userData, isAuthenticated, loading: isLoading } = useAppSelector((state) => state.auth);
 
 	const handleLogout = () => {
-		console.log('🔓 Cerrando sesión...');
-		// Cancelar todas las peticiones pendientes
 		cancelAllRequests();
-		// Limpiar estado de autenticación
 		dispatch(logout());
-		// Limpiar estado de personalización
 		dispatch(clearPersonalizacionState());
-		// Forzar recarga completa de la página para limpiar todo el estado
 		setTimeout(() => {
 			window.location.href = '/login';
 		}, 100);

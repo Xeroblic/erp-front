@@ -73,7 +73,6 @@ export const fetchPermissions = createAsyncThunk(
     'permissions/fetchPermissions',
     async (_, { rejectWithValue }) => {
         try {
-            console.log('🔄 Iniciando fetch de permisos desde /admin/permissions');
             const response = await ApiService.fetchData<{
                 success: boolean;
                 data: Permission[]
@@ -81,10 +80,8 @@ export const fetchPermissions = createAsyncThunk(
                 url: '/admin/permissions',
                 method: 'get'
             });
-            console.log('✅ Permisos obtenidos:', response.data.data?.length || 0, 'permisos');
             return response.data.data;
         } catch (error: any) {
-            console.error('❌ Error al obtener permisos:', error?.response?.data?.message || error);
             return rejectWithValue(error?.response?.data?.message || 'Error al obtener permisos');
         }
     }
@@ -142,7 +139,6 @@ export const fetchRoles = createAsyncThunk(
     'permissions/fetchRoles',
     async (_, { rejectWithValue }) => {
         try {
-            console.log('🔄 Iniciando fetch de roles desde /admin/roles');
             const response = await ApiService.fetchData<{
                 success: boolean;
                 data: Role[]
@@ -150,10 +146,8 @@ export const fetchRoles = createAsyncThunk(
                 url: '/admin/roles',
                 method: 'get'
             });
-            console.log('✅ Roles obtenidos:', response.data.data?.length || 0, 'roles');
             return response.data.data;
         } catch (error: any) {
-            console.error('❌ Error al obtener roles:', error?.response?.data?.message || error);
             return rejectWithValue(error?.response?.data?.message || 'Error al obtener roles');
         }
     }
@@ -230,23 +224,13 @@ export const assignPermissionToUser = createAsyncThunk(
                 permissions: [String(permissionId)], // Backend ahora acepta IDs como strings
                 expires_at: expiresAt
             };
-
-            console.log('🎯 DEBUG - Enviando a API:', {
-                url: `/admin/users/${userId}/permissions`,
-                method: 'POST',
-                payload
-            });
-
             const response = await ApiService.fetchData<{ user_permission: UserPermission }>({
                 url: `/admin/users/${userId}/permissions`,
                 method: 'post',
                 data: payload
             });
-
-            console.log('🎯 DEBUG - Respuesta de API:', response);
             return response.data.user_permission;
         } catch (error: any) {
-            console.error('🎯 DEBUG - Error en API:', error);
             return rejectWithValue(error?.response?.data?.message || 'Error al asignar permiso');
         }
     }
@@ -293,23 +277,13 @@ export const assignRoleToUser = createAsyncThunk(
                 subsidiary_id: roleData.subsidiaryId,
                 branch_id: roleData.branchId
             };
-
-            console.log('🎯 DEBUG - Enviando rol a API:', {
-                url: `/admin/users/${roleData.userId}/roles`,
-                method: 'POST',
-                payload
-            });
-
             const response = await ApiService.fetchData<{ user_role: UserRole }>({
                 url: `/admin/users/${roleData.userId}/roles`,
                 method: 'post',
                 data: payload
             });
-
-            console.log('🎯 DEBUG - Respuesta de API para roles:', response);
             return response.data.user_role;
         } catch (error: any) {
-            console.error('🎯 DEBUG - Error en API para roles:', error);
             return rejectWithValue(error?.response?.data?.message || 'Error al asignar rol');
         }
     }

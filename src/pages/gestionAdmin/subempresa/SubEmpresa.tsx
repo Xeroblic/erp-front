@@ -42,27 +42,18 @@ export default function SubEmpresaLista() {
 	}
 
 	const { lista: subempresas = [], loading, createLoading }: SubEmpresaState = useAppSelector((s: { subEmpresa: SubEmpresaState }) => s.subEmpresa)
-
-	// Debug: verificar datos
-	console.log('🔍 Subempresas debug:', { subempresas, loading, createLoading });
-
-	// filtros / sorting
 	const [sorting, setSorting] = useState<SortingState>([])
 	const [globalFilter, setGlobalFilter] = useState('')
-
-	// apertura modales
 	const [openCreate, setOpenCreate] = useState(false)
 	const [openDelete, setOpenDelete] = useState(false)
 	const [toDeleteId, setToDeleteId] = useState<number | null>(null)
 
-	// carga inicial
 	useEffect(() => {
 		if (user) {
 			dispatch(fetchMisSubsidiarias())
 		}
 	}, [dispatch, user])
 
-	// formik para creación
 	const formik = useFormik({
 		initialValues: { nombre: '', slug: '', descripcion: '' },
 		validationSchema: Yup.object({
@@ -130,7 +121,6 @@ export default function SubEmpresaLista() {
 		initialState: { pagination: { pageSize: 5 } }
 	})
 
-	// petición de borrado
 	const confirmDelete = async () => {
 		if (!toDeleteId) return
 		try {

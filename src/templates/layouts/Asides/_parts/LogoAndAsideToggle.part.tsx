@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import Visible from '../../../../components/utils/Visible';
 import Icon from '../../../../components/icon/Icon';
 import useAsideStatus from '../../../../hooks/useAsideStatus';
-import LogoTemplate from '../../Logo/Logo.template';
+import LogoTemplate from '../../Logo/Logo.template.tsx';
 
 const LogoAndAsideTogglePart = () => {
 	const { asideStatus, setAsideStatus } = useAsideStatus();

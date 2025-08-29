@@ -7,7 +7,7 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { listaComunasThunk, listaProvinciasThunk, listaRegionesThunk } from '@/store/slices/core/coreSlice';
 import { userMeThunk } from '@/store/slices/auth/authSlice';
 import useFontSize from '@/hooks/useFontSize';
-import useDarkMode from '@/hooks/useDarkMode';
+import useDarkModeManager from '@/hooks/useDarkModeManager';
 
 interface IPageWrapperProps {
   children: ReactNode;
@@ -27,7 +27,7 @@ const PageWrapper: FC<IPageWrapperProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const { fontSize, setFontSize } = useFontSize();
-  const { darkModeStatus, setDarkModeStatus } = useDarkMode();
+  const { darkModeStatus, setDarkModeStatus } = useDarkModeManager();
   const { isAuthenticated, access, user } = useAppSelector(s => s.auth);
   const { listaComunas, listaProvincias, listaRegiones } = useAppSelector(s => s.core);
 
@@ -55,6 +55,8 @@ const PageWrapper: FC<IPageWrapperProps> = ({
   }, [dispatch, isProtectedRoute, isAuthenticated, access]);
 
   // 3) Aplica personalización cuando llegue
+  // COMENTADO TEMPORALMENTE - Causaba bucles infinitos al sobrescribir cambios manuales del usuario
+  /*
   useEffect(() => {
     const pref = user?.personalizacion;
     if (pref) {
@@ -70,6 +72,7 @@ const PageWrapper: FC<IPageWrapperProps> = ({
       setDarkModeStatus(tema);
     }
   }, [user?.personalizacion, fontSize, setFontSize, setDarkModeStatus]);
+  */
 
   if (isProtectedRoute && !isAuthenticated) {
     return <Navigate to={authPages.loginPage.to} />;

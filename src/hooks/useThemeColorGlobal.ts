@@ -16,11 +16,6 @@ const useThemeColorGlobal = () => {
         const themeColor = (personalizacionUsuario?.tcolor as TColors) || 'amber';
         const themeColorShade = (personalizacionUsuario?.tcolor_int as TColorIntensity) || '500';
 
-        console.log(`🎨 Aplicando tema: ${themeColor}-${themeColorShade}`);
-        console.log(`🔍 personalizacionUsuario:`, personalizacionUsuario);
-
-        // Aplicar como CSS variables globales que usa el template
-        // Variables primarias que usa el sistema
         document.documentElement.style.setProperty('--color-primary-50', `var(--color-${themeColor}-50)`);
         document.documentElement.style.setProperty('--color-primary-100', `var(--color-${themeColor}-100)`);
         document.documentElement.style.setProperty('--color-primary-200', `var(--color-${themeColor}-200)`);
@@ -46,7 +41,6 @@ const useThemeColorGlobal = () => {
         document.documentElement.style.setProperty('--color-primary-900-rgb', `var(--color-${themeColor}-900-rgb)`);
         document.documentElement.style.setProperty('--color-primary-950-rgb', `var(--color-${themeColor}-950-rgb)`);
 
-        console.log(`✅ Tema aplicado globalmente: ${themeColor}-${themeColorShade}`);
     }, [personalizacionUsuario?.tcolor, personalizacionUsuario?.tcolor_int]);
 
     // Retornar los valores actuales para uso opcional

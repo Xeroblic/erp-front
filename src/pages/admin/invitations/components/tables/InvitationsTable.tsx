@@ -80,20 +80,6 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
         }
     };
 
-    // Debug: mostrar estructura de datos para verificar qué campos vienen del backend
-    React.useEffect(() => {
-        if (invitations && invitations.length > 0) {
-            console.log('Invitations data structure:', {
-                total: invitations.length,
-                firstItem: invitations[0],
-                availableFields: Object.keys(invitations[0]),
-                roleField: invitations[0].role || invitations[0].role_name,
-                sentByField: invitations[0].sent_by_user,
-                statusField: invitations[0].status
-            });
-        }
-    }, [invitations]);
-
     const columns = [
         columnHelper.accessor('email', {
             header: 'Email',
@@ -403,10 +389,9 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
                     </p>
                     <Button
                         variant="outline"
-                        color="blue"
+                            color="red"
                         icon="HeroPlus"
                         onClick={() => {
-                            // TODO: Implementar acción para crear nueva invitación
                             console.log('Crear nueva invitación');
                         }}
                     >

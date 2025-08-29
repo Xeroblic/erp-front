@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
 import DARK_MODE from '../../../../constants/darkMode.constant';
 import Icon from '../../../../components/icon/Icon';
-import useDarkMode from '../../../../hooks/useDarkMode';
+import useDarkModeManager from '../../../../hooks/useDarkModeManager.ts';
 import { TIcons } from '../../../../types/icons.type';
 import { TDarkMode } from '../../../../types/darkMode.type';
 import useAsideStatus from '../../../../hooks/useAsideStatus';
@@ -15,7 +15,7 @@ interface IStyledButtonProps {
 	status: TDarkMode;
 }
 const StyledButton: FC<IStyledButtonProps> = ({ text, icon, status }) => {
-	const { darkModeStatus, setDarkModeStatus } = useDarkMode();
+	const { darkModeStatus, setDarkModeStatus } = useDarkModeManager();
 	const { asideStatus } = useAsideStatus();
 
 	const handeClick = () => {

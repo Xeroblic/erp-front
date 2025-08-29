@@ -42,12 +42,6 @@ const initialState: EmpresaState = {
   inviteResponse: undefined,
 };
 
-// 🏢 ===== NUEVOS ACTIONS DINÁMICOS (SIN HARDCODING) =====
-
-/**
- * 🔥 Obtener MI empresa (dinámico, sin ID)
- * Endpoint: GET /api/my-company
- */
 export const fetchMiEmpresa = createAsyncThunk<IEmpresa, void, { rejectValue: string }>(
   'empresa/fetchMiEmpresa',
   async (_, { rejectWithValue }) => {
@@ -116,24 +110,16 @@ export const fetchMiEmpresaSubsidiarias = createAsyncThunk<ISubempresa[], void, 
         url: '/my-company/subsidiaries',
         method: 'get'
       });
-      console.log('🔍 Empresa Slice - API Response Raw:', response.data)
-
-      // Normalizar los datos del backend
       const normalizedSubsidiaries = response.data.subempresas.map(normalizeSubsidiaryData)
-      console.log('✅ Empresa Slice - Normalized Subsidiaries:', normalizedSubsidiaries)
 
       return normalizedSubsidiaries;
     } catch (error: any) {
-      console.error('❌ Error fetching subsidiaries (empresa slice):', error)
       return rejectWithValue(error.response?.data?.message || 'Error al cargar subsidiarias');
     }
   }
 );
 
-/**
- * 🏪 Crear nueva subsidiaria en MI empresa
- * Endpoint: POST /api/my-company/subsidiaries
- */
+
 export const createSubsidiaria = createAsyncThunk<
   ISubempresa,
   Partial<ISubempresa>,

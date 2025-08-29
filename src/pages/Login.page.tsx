@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import PageWrapper from '../components/layouts/PageWrapper/PageWrapper';
 import Button from '../components/ui/Button';
 import Input from '../components/form/Input';
-import LogoTemplate from '../templates/layouts/Logo/Logo.template';
+import LogoTemplate from '../templates/layouts/Logo/Logo.template.tsx';
 import FieldWrap from '../components/form/FieldWrap';
 import Icon from '../components/icon/Icon';
 import Validation from '../components/form/Validation';

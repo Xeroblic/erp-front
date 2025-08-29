@@ -100,7 +100,7 @@ const persistToLocalStorage = (key: string, value: any) => {
     try {
         localStorage.setItem(key, typeof value === 'string' ? value : String(value));
     } catch (error) {
-        console.warn(`No se pudo guardar ${key} en localStorage:`, error);
+        // Error silencioso - no mostrar warnings
     }
 };
 
@@ -114,28 +114,24 @@ const personalizacionSlice = createSlice({
             state.fontSize = action.payload;
             state.hasUnsavedChanges = true;
             persistToLocalStorage('zentria_fontSize', action.payload);
-            console.log('FontSize actualizado:', action.payload);
         },
 
         setThemeColor: (state, action: PayloadAction<TColors>) => {
             state.themeColor = action.payload;
             state.hasUnsavedChanges = true;
             persistToLocalStorage('zentria_themeColor', action.payload);
-            console.log('ThemeColor actualizado:', action.payload);
         },
 
         setThemeColorShade: (state, action: PayloadAction<TColorIntensity>) => {
             state.themeColorShade = action.payload;
             state.hasUnsavedChanges = true;
             persistToLocalStorage('zentria_themeColorShade', action.payload);
-            console.log('ThemeColorShade actualizado:', action.payload);
         },
 
         setLanguage: (state, action: PayloadAction<TLang>) => {
             state.language = action.payload;
             state.hasUnsavedChanges = true;
             persistToLocalStorage('zentria_language', action.payload);
-            console.log('Language actualizado:', action.payload);
         },
 
         setDarkMode: (state, action: PayloadAction<TDarkMode>) => {
@@ -143,93 +139,51 @@ const personalizacionSlice = createSlice({
             state.darkMode = newDarkMode;
             state.hasUnsavedChanges = true;
             persistToLocalStorage('theme', newDarkMode);
-
-            console.log('🌙 DarkMode actualizado manualmente:', {
-                nuevoValor: newDarkMode,
-                anterior: state.darkMode,
-                localStorage: localStorage.getItem('theme')
-            });
         },
 
         setAsideStatus: (state, action: PayloadAction<boolean>) => {
             state.asideStatus = action.payload;
             persistToLocalStorage('zentria_asideStatus', action.payload);
-            console.log('AsideStatus actualizado:', action.payload);
         },
 
         // Sincronizar con datos de la API
         syncWithApiData: (state, action: PayloadAction<IPersonalizacionUsuario>) => {
             const apiData = action.payload;
 
-            console.log('🔄 Iniciando sincronización con datos de API:', apiData);
-            console.log('🔄 Estado actual antes de sincronizar:', {
-                isInitialized: state.isInitialized,
-                hasUnsavedChanges: state.hasUnsavedChanges,
-                currentValues: {
-                    themeColor: state.themeColor,
-                    themeColorShade: state.themeColorShade,
-                    fontSize: state.fontSize,
-                    darkMode: state.darkMode
-                }
-            });
-
-            // Solo actualizar si hay diferencias y es la primera sincronización, o no hay cambios sin guardar
-            if (!state.isInitialized || !state.hasUnsavedChanges) {
+            // Solo actualizar en la primera inicialización
+            if (!state.isInitialized) {
                 if (apiData.tcolor && apiData.tcolor !== state.themeColor) {
                     state.themeColor = apiData.tcolor as TColors;
                     persistToLocalStorage('zentria_themeColor', apiData.tcolor);
-                    console.log('🔄 Sincronizando themeColor desde API:', apiData.tcolor);
                 }
 
                 if (apiData.tcolor_int && apiData.tcolor_int !== state.themeColorShade) {
                     state.themeColorShade = apiData.tcolor_int as TColorIntensity;
                     persistToLocalStorage('zentria_themeColorShade', apiData.tcolor_int);
-                    console.log('🔄 Sincronizando themeColorShade desde API:', apiData.tcolor_int);
                 }
 
-                if (apiData.font_size && apiData.font_size !== state.fontSize) {
+                // Forzar fontSize en primera carga o si es diferente
+                if (apiData.font_size && (!state.isInitialized || apiData.font_size !== state.fontSize)) {
                     state.fontSize = apiData.font_size;
                     persistToLocalStorage('zentria_fontSize', apiData.font_size);
-                    console.log('🔄 Sincronizando fontSize desde API:', apiData.font_size);
                 }
 
                 // Mapear tema de la API al formato local
                 if (apiData.tema !== undefined && apiData.tema !== null) {
-                    const darkModeValue = apiData.tema === '1' ? DARK_MODE.LIGHT
-                        : apiData.tema === '2' ? DARK_MODE.DARK
+                    const darkModeValue = apiData.tema === 1 ? DARK_MODE.LIGHT
+                        : apiData.tema === 2 ? DARK_MODE.DARK
                             : DARK_MODE.SYSTEM;
 
-                    console.log('🌙 Procesando tema de API:', {
-                        valorAPI: apiData.tema,
-                        valorMapeado: darkModeValue,
-                        estadoActual: state.darkMode
-                    });
-
-                    // Verificar si hay valor local diferente
-                    const currentDarkMode = localStorage.getItem('theme') as TDarkMode;
-
-                    if (!currentDarkMode || currentDarkMode !== state.darkMode) {
-                        // No hay preferencia local o es diferente al estado actual
+                    // Solo aplicar en primera carga (inicialización)
+                    if (!state.isInitialized) {
                         state.darkMode = darkModeValue;
                         persistToLocalStorage('theme', darkModeValue);
-                        console.log('🔄 Sincronizando darkMode desde API:', darkModeValue);
-                    } else {
-                        // Hay una preferencia local, actualizarla en el estado
-                        state.darkMode = currentDarkMode;
-                        console.log('🔒 Manteniendo darkMode local:', currentDarkMode, 'vs API:', darkModeValue);
                     }
                 }
             }
 
             state.personalizacionUsuario = apiData;
             state.isInitialized = true;
-            console.log('✅ Sincronización completada, estado final:', {
-                themeColor: state.themeColor,
-                themeColorShade: state.themeColorShade,
-                fontSize: state.fontSize,
-                darkMode: state.darkMode,
-                isInitialized: state.isInitialized
-            });
         },
 
         // Marcar como inicializado
@@ -257,8 +211,6 @@ const personalizacionSlice = createSlice({
             localStorage.removeItem('zentria_themeColorShade');
             localStorage.removeItem('zentria_language');
             localStorage.removeItem('theme');
-
-            console.log('🔄 Configuración restablecida a valores por defecto');
         },
 
         // Limpiar estado al hacer logout
@@ -268,7 +220,6 @@ const personalizacionSlice = createSlice({
             state.error = undefined;
             state.isInitialized = false;
             state.hasUnsavedChanges = false;
-            console.log('🧹 Estado de personalización limpiado por logout');
         },
     },
 
@@ -283,17 +234,46 @@ const personalizacionSlice = createSlice({
                 state.loading = false;
                 state.error = undefined;
 
-                // Usar la acción syncWithApiData para manejar la sincronización
-                personalizacionSlice.caseReducers.syncWithApiData(state, {
-                    type: 'syncWithApiData',
-                    payload: action.payload,
-                } as any);
+                // Usar syncWithApiData para sincronizar los datos obtenidos
+                const apiData = action.payload;
+                state.personalizacionUsuario = apiData;
+
+                // Solo sincronizar si es la primera vez que se inicializa
+                if (!state.isInitialized) {
+                    // Sincronizar colores
+                    if (apiData.tcolor && apiData.tcolor !== state.themeColor) {
+                        state.themeColor = apiData.tcolor as TColors;
+                        persistToLocalStorage('zentria_themeColor', apiData.tcolor);
+                    }
+
+                    if (apiData.tcolor_int && apiData.tcolor_int !== state.themeColorShade) {
+                        state.themeColorShade = apiData.tcolor_int as TColorIntensity;
+                        persistToLocalStorage('zentria_themeColorShade', apiData.tcolor_int);
+                    }
+
+                    // Sincronizar fontSize SIEMPRE en primera carga
+                    if (apiData.font_size) {
+                        state.fontSize = apiData.font_size;
+                        persistToLocalStorage('zentria_fontSize', apiData.font_size);
+                    }
+
+                    // Mapear tema de la API al formato local
+                    if (apiData.tema !== undefined && apiData.tema !== null) {
+                        const darkModeValue = apiData.tema === 1 ? DARK_MODE.LIGHT
+                            : apiData.tema === 2 ? DARK_MODE.DARK
+                                : DARK_MODE.SYSTEM;
+
+                        state.darkMode = darkModeValue;
+                        persistToLocalStorage('theme', darkModeValue);
+                    }
+                }
+
+                state.isInitialized = true;
             })
             .addCase(obtenerPersonalizacionThunk.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
                 state.isInitialized = true; // Marcar como inicializado aunque falle
-                console.warn('❌ Error obteniendo personalización:', action.payload);
             })
 
             // Actualizar personalización
@@ -304,15 +284,14 @@ const personalizacionSlice = createSlice({
             .addCase(actualizarPersonalizacionThunk.fulfilled, (state, action) => {
                 state.loading = false;
                 state.error = undefined;
+                // Solo actualizar la data de la API, NO hacer sincronización
                 state.personalizacionUsuario = action.payload;
-                state.hasUnsavedChanges = false;
-                console.log('✅ Personalización actualizada exitosamente');
+                // state.hasUnsavedChanges = false; // ← COMENTADO para evitar bucles
             })
             .addCase(actualizarPersonalizacionThunk.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
                 toast.error(action.payload || 'Error al actualizar personalización');
-                console.error('❌ Error actualizando personalización:', action.payload);
             });
     },
 });
@@ -356,19 +335,6 @@ export const selectIsDarkTheme = (state: LocalRootState) => {
     const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const isDark = darkMode === DARK_MODE.DARK ||
         (darkMode === DARK_MODE.SYSTEM && isSystemDark);
-
-    // Log detallado solo cuando cambia el valor
-    const logKey = `isDark-${darkMode}-${isSystemDark}`;
-    if (!window.lastDarkModeLog || window.lastDarkModeLog !== logKey) {
-        console.log('🌙 DarkMode Debug:', {
-            darkMode,
-            isSystemDark,
-            isDark,
-            localStorage: localStorage.getItem('theme'),
-            finalResult: isDark
-        });
-        window.lastDarkModeLog = logKey;
-    }
 
     return isDark;
 };

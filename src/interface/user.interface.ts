@@ -2,7 +2,7 @@ export interface IPersonalizacionUsuario {
   id: number;
   fecha_creacion: string;
   fecha_modificacion: string;
-  tema: string;          // "1" | "2" | "3"
+  tema: number;          // "1" | "2" | "3"
   font_size: number;
   tcolor: string;
   tcolor_int: string;
@@ -26,8 +26,8 @@ export interface IUserMe {
   address: string | null;
   direccion?: string | null; // Para compatibilidad con el frontend existente
   gender: string | null;
-  genero?: string | null; // Para compatibilidad con el frontend existente
   is_active: boolean;
+  image: string | null;
   branch_id: number | null;
   // Nuevos campos para multi-empresa
   companies?: Array<{

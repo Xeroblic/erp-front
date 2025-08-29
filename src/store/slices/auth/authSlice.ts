@@ -48,7 +48,8 @@ export const loginThunk = createAsyncThunk<LoginResponse, { email: string; passw
       await dispatch(userMeThunk() as any);
 
       // Obtener personalización usando el nuevo slice
-      await dispatch(obtenerPersonalizacionFromSlice() as any);
+      // COMENTADO TEMPORALMENTE para evitar bucles en cambios de tema
+      // await dispatch(obtenerPersonalizacionFromSlice() as any);
 
       return { access: token, refresh: "" };
     } catch (error: any) {

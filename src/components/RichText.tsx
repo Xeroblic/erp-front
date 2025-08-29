@@ -124,7 +124,6 @@ const RichText: FC<IRichTextProps> = (props) => {
 	const renderLeaf = useCallback((props) => <Leaf {...props} />, []);
 	const editor = useMemo(() => withHistory(withReact(createEditor())), []);
 
-	// console.log(JSON.stringify(state), JSON.parse(JSON.stringify(state)));
 
 	return (
 		<div

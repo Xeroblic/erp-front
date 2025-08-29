@@ -29,16 +29,11 @@ export default function EmpresaDetalle() {
 	const { miEmpresa, miEmpresaSubsidiarias, loading, error, updateLoading } = useAppSelector(s => s.empresa)
 	const [activeTab, setActiveTab] = useState<'general' | 'contact' | 'subsidiaries'>('general')
 
-	// Debug: verificar datos
-	console.log('🔍 Empresa debug:', { miEmpresa, miEmpresaSubsidiarias, loading });
-
-	// 🚀 NUEVO: Carga dinámicamente MI empresa (sin hardcoding)
 	useEffect(() => {
 		dispatch(fetchMiEmpresa());
 		dispatch(fetchMiEmpresaSubsidiarias());
 	}, [dispatch]);
 
-	// 🔥 NUEVO: Formik dinámico usando miEmpresa
 	const formik = useFormik({
 		enableReinitialize: true,
 		initialValues: {

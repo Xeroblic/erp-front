@@ -23,7 +23,7 @@ import Icon from '../components/icon/Icon';
 import Badge from '../components/ui/Badge';
 // import RichText from '../components/RichText';
 import Radio, { RadioGroup } from '../components/form/Radio';
-import useDarkMode from '../hooks/useDarkMode';
+import useDarkModeManager from '../hooks/useDarkModeManager.ts';
 import { TDarkMode } from '../types/darkMode.type';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { selectDarkMode } from '@/store/slices/personalizacion/personalizacionSlice';
@@ -103,7 +103,7 @@ const TAB: TTabs = {
 
 const Perfil = () => {
 	const dispatch = useAppDispatch()
-	const { setDarkModeStatus } = useDarkMode();
+	const { setDarkModeStatus } = useDarkModeManager();
 	const { user: userData, access } = useAppSelector((state) => state.auth)
 	const darkMode = useAppSelector(selectDarkMode);
 	const { currentCompany } = useCompanyManager();

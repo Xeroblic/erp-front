@@ -29,8 +29,6 @@ const initialState: SubempresaState = {
   deleteError: undefined,
 }
 
-// 🔥 NUEVO: Listar subsidiarias de MI empresa (dinámico, sin hardcoding)
-// Función para normalizar datos del backend al formato del frontend
 const normalizeSubsidiaryData = (backendData: any): ISubempresa => {
   return {
     ...backendData,
@@ -62,21 +60,14 @@ export const fetchMisSubsidiarias = createAsyncThunk<
         url: '/my-company/subsidiaries',
         method: 'get',
       })
-      console.log('🔍 API Response - Raw Subsidiaries:', response.data)
-
-      // Normalizar los datos del backend
       const normalizedSubsidiaries = response.data.subempresas.map(normalizeSubsidiaryData)
-      console.log('✅ Normalized Subsidiaries:', normalizedSubsidiaries)
-
       return normalizedSubsidiaries
     } catch (err: any) {
-      console.error('❌ Error fetching subsidiaries:', err)
       return rejectWithValue(err.response?.data?.message || 'Error al cargar subsidiarias')
     }
   }
 )
 
-// 🔥 NUEVO: Obtener detalle de una subsidiaria específica (dinámico)
 export const fetchSubsidiariaDetail = createAsyncThunk<
   ISubempresa,
   number,
@@ -96,7 +87,6 @@ export const fetchSubsidiariaDetail = createAsyncThunk<
   }
 )
 
-// 🔥 NUEVO: Crear nueva subsidiaria en MI empresa (dinámico)
 export const createSubsidiaria = createAsyncThunk<
   ISubempresa,
   Partial<ISubempresa>,
@@ -117,7 +107,6 @@ export const createSubsidiaria = createAsyncThunk<
   }
 )
 
-// 🔥 NUEVO: Actualizar subsidiaria existente (dinámico, campos correctos)
 export const updateSubsidiaria = createAsyncThunk<
   ISubempresa,
   { id: number; data: Partial<ISubempresa> },
@@ -138,7 +127,6 @@ export const updateSubsidiaria = createAsyncThunk<
   }
 )
 
-// 🔥 NUEVO: Eliminar subsidiaria (dinámico)
 export const deleteSubsidiaria = createAsyncThunk<
   number,
   number,
@@ -162,7 +150,6 @@ const subempresaSlice = createSlice({
   name: 'subempresa',
   initialState,
   reducers: {
-    // 🧹 Limpiar estado
     clearDetalle(state) {
       state.detalle = undefined
       state.error = undefined
@@ -176,7 +163,6 @@ const subempresaSlice = createSlice({
     resetSubempresaState: () => initialState,
   },
   extraReducers: builder => {
-    // 🔥 NUEVO: fetchMisSubsidiarias
     builder
       .addCase(fetchMisSubsidiarias.pending, state => {
         state.loading = true
@@ -188,7 +174,6 @@ const subempresaSlice = createSlice({
           state.loading = false
           state.lista = action.payload
           state.error = undefined
-          console.log('✅ Redux state updated - subsidiaries:', action.payload)
         }
       )
       .addCase(fetchMisSubsidiarias.rejected, (state, { payload }) => {
@@ -196,7 +181,6 @@ const subempresaSlice = createSlice({
         state.error = payload
       })
 
-    // 🔥 NUEVO: fetchSubsidiariaDetail
     builder
       .addCase(fetchSubsidiariaDetail.pending, state => {
         state.loading = true
@@ -215,7 +199,6 @@ const subempresaSlice = createSlice({
         state.error = payload
       })
 
-    // 🔥 NUEVO: createSubsidiaria
     builder
       .addCase(createSubsidiaria.pending, state => {
         state.createLoading = true
@@ -234,7 +217,6 @@ const subempresaSlice = createSlice({
         state.createError = payload
       })
 
-    // 🔥 NUEVO: updateSubsidiaria
     builder
       .addCase(updateSubsidiaria.pending, state => {
         state.updateLoading = true
@@ -257,7 +239,6 @@ const subempresaSlice = createSlice({
         state.updateError = payload
       })
 
-    // 🔥 NUEVO: deleteSubsidiaria
     builder
       .addCase(deleteSubsidiaria.pending, state => {
         state.deleteLoading = true

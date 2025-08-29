@@ -207,7 +207,6 @@ export const fetchUsers = createAsyncThunk(
                 method: 'get'
             });
 
-            console.log('✅ Response from backend:', response.data);
 
             return {
                 users: response.data.data,
@@ -295,45 +294,29 @@ export const toggleUserStatus = createAsyncThunk(
                 method: 'patch',
                 data: { is_active: status }
             });
-
-            console.log('🔍 Respuesta completa del servidor:', response);
-            console.log('🔍 response.data:', response?.data);
-
-            // Validar que la respuesta tenga la estructura esperada del backend
             if (!response?.data) {
-                console.error('❌ No hay response.data');
                 return rejectWithValue('Respuesta del servidor inválida: sin data');
             }
-
-            // Si el backend devuelve success, message, data
             if (response.data.success && response.data.data && typeof response.data.data.is_active === 'boolean') {
-                console.log('✅ Estructura con success detectada, is_active:', response.data.data.is_active);
                 return {
                     userId,
                     is_active: response.data.data.is_active
                 };
             }
-
-            // Si el backend devuelve directamente { is_active: boolean }
             if (typeof response.data.is_active === 'boolean') {
-                console.log('✅ Estructura directa detectada, is_active:', response.data.is_active);
                 return {
                     userId,
                     is_active: response.data.is_active
                 };
             }
-
-            console.error('❌ Estructura no reconocida:', response.data);
             return rejectWithValue('Respuesta del servidor inválida: estructura no reconocida');
 
         } catch (error: any) {
-            console.error('❌ Error en toggleUserStatus:', error);
             return rejectWithValue(error?.response?.data?.message || 'Error al cambiar estado del usuario');
         }
     }
 );
 
-// Invitaciones
 export const fetchInvitations = createAsyncThunk(
     'usersAdmin/fetchInvitations',
     async (params: { status?: string; company_id?: number } = {}, { rejectWithValue }) => {
