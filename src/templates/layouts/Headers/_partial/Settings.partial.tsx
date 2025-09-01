@@ -26,7 +26,7 @@ const SettingsPartial = () => {
     const { themeColor, setThemeColor, themeColorShade, setThemeColorShade } = useThemeColor();
     const { user } = useAppSelector((state) => state.auth);
     const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
-    // const [isCompanySelectorOpen, setIsCompanySelectorOpen] = useState(false);
+    const [isCompanySelectorOpen, setIsCompanySelectorOpen] = useState(false);
 
     const updateFontSize = async (newSize: number) => {
         try {
@@ -55,7 +55,7 @@ const SettingsPartial = () => {
                 tcolor_int: intensity
             })).unwrap();
 
-            toast.success('Colores actualizados correctamente');
+            // toast.success('Colores actualizados correctamente');
         } catch (error: any) {
             toast.error(error || 'No se pudo actualizar los colores');
             // Revertir cambios locales si falla
@@ -63,9 +63,9 @@ const SettingsPartial = () => {
             setThemeColorShade(themeColorShade);
         }
     };    // Solo mostrar selector de empresa si el usuario tiene múltiples empresas o es super-admin
-    // const shouldShowCompanySelector = user?.authority?.includes('super-admin') ||
-    //   user?.roles?.includes('super-admin') ||
-    //   (user?.companies && user.companies.length > 1);
+    const shouldShowCompanySelector = user?.authority?.includes('super-admin') ||
+      user?.roles?.includes('super-admin') ||
+      (user?.companies && user.companies.length > 1);
 
     return (
         <Dropdown>
@@ -74,7 +74,7 @@ const SettingsPartial = () => {
             </DropdownToggle>
             <DropdownMenu placement='bottom-end'>
                 {/* Selector de Empresa - Movido a dropdown directo en header */}
-                {/* {shouldShowCompanySelector && (
+{shouldShowCompanySelector && ( 
         <DropdownItem>
             <Button
             variant="outline"
@@ -88,7 +88,7 @@ const SettingsPartial = () => {
             <Icon icon="HeroChevronRight" className="w-3 h-3" />
             </Button>
         </DropdownItem>
-        )} */}
+        )} 
 
                 <DropdownItem className='flex flex-col !items-start'>
                     <div>Tamaño de Fuente:</div>

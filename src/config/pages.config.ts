@@ -27,7 +27,7 @@ export const privatePages = {
     to: '/dashboard',
     text: 'Dashboard',
     icon: 'HeroChartBarSquare',
-    authority: ['view-dashboard'],
+    authority: [], // Temporalmente sin permisos para testing
     roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'employee'],
   },
   users: {

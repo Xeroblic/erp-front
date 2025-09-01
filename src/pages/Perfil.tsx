@@ -135,7 +135,7 @@ const Perfil = () => {
 			region: userData?.region?.toString() || '0',
 			provincia: userData?.provincia?.toString() || '0',
 			comuna: userData?.comuna?.toString() || '0',
-			genero: userData?.genero,
+			genero: userData?.gender,
 			theme: darkMode === "light" ? "light" : darkMode === "dark" ? "dark" : "system",
 			fecha_nacimiento: userData?.comuna,
 		},

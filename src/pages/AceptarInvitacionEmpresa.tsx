@@ -15,43 +15,43 @@ import * as Yup from 'yup'
 
 const validationSchema = Yup.object().shape({
 	password: Yup.string()
-	  	.min(8, 'La contraseña debe tener al menos 8 caracteres')
-	  	.required('La contraseña es obligatoria'),
+		.min(8, 'La contraseña debe tener al menos 8 caracteres')
+		.required('La contraseña es obligatoria'),
 	confirm_password: Yup.string()
-	  	.oneOf([Yup.ref('password')], 'Las contraseñas no coinciden')
-	  	.required('La confirmación de la contraseña es obligatoria'),
+		.oneOf([Yup.ref('password')], 'Las contraseñas no coinciden')
+		.required('La confirmación de la contraseña es obligatoria'),
 });
 
 function AceptarInvitacionEmpresa() {
 	const { token } = useParams()
-    const [passwordShowStatus, setPasswordShowStatus] = useState<boolean>(false)
+	const [passwordShowStatus, setPasswordShowStatus] = useState<boolean>(false)
 
-    const formik = useFormik({
-        enableReinitialize: true,
-        initialValues: {
-            password: "",
-            confirm_password: ""
-        },
+	const formik = useFormik({
+		enableReinitialize: true,
+		initialValues: {
+			password: "",
+			confirm_password: ""
+		},
 		validationSchema,
-        onSubmit: async (values) => {
-            try {
-				const response = await ApiService.fetchData({url: `/api/activar-cuenta/${token}/`, method: 'post', headers: {'Content-Type': 'application/json'}, data: JSON.stringify({password: values.password})})
+		onSubmit: async (values) => {
+			try {
+				const response = await ApiService.fetchData({ url: `/api/activar-cuenta/${token}/`, method: 'post', headers: { 'Content-Type': 'application/json' }, data: JSON.stringify({ password: values.password }) })
 				if (response.data) {
-					toast.success("Invitacion Aceptada", {autoClose: 1000})
-					
+					toast.success("Invitacion Aceptada", { autoClose: 1000 })
+
 				}
 			} catch (error: any) {
 				toast.error(error.response.data.detail)
 			}
-        }
-    })
+		}
+	})
 
-    return (
-        <PageWrapper isProtectedRoute={false} title="Aceptar Invitacion a Empresa">
-            <div className='container mx-auto flex h-full items-center justify-center'>
+	return (
+		<PageWrapper isProtectedRoute={false} title="Aceptar Invitacion a Empresa">
+			<div className='container mx-auto flex h-full items-center justify-center'>
 				<div className='flex max-w-sm flex-col gap-8'>
 					<div>
-						<LogoTemplate className='h-12' />
+						<LogoTemplate className='ml-12 h-12' />
 					</div>
 					<div>
 						<span className='text-4xl font-semibold'>¿Acepta la Invitación?</span>
@@ -62,28 +62,28 @@ function AceptarInvitacionEmpresa() {
 								isValid={formik.isValid}
 								isTouched={formik.touched.password}
 								invalidFeedback={formik.errors.password}>
-                                    <FieldWrap
-                                        firstSuffix={<Icon icon='HeroKey' className='mx-2' />}
-                                        lastSuffix={
-                                            <Icon
-                                                className='mx-2 cursor-pointer'
-                                                icon={passwordShowStatus ? 'HeroEyeSlash' : 'HeroEye'}
-                                                onClick={() => {
-                                                    setPasswordShowStatus(!passwordShowStatus);
-                                                }}
-                                            />
-                                        }>
-                                        <Input
-                                            dimension='lg'
-                                            type={passwordShowStatus ? 'text' : 'password'}
-                                            id='password'
-                                            name='password'
-                                            placeholder='Contraseña'
-                                            value={formik.values.password}
-                                            onChange={formik.handleChange}
-                                            onBlur={formik.handleBlur}
-                                        />
-                                    </FieldWrap>
+								<FieldWrap
+									firstSuffix={<Icon icon='HeroKey' className='mx-2' />}
+									lastSuffix={
+										<Icon
+											className='mx-2 cursor-pointer'
+											icon={passwordShowStatus ? 'HeroEyeSlash' : 'HeroEye'}
+											onClick={() => {
+												setPasswordShowStatus(!passwordShowStatus);
+											}}
+										/>
+									}>
+									<Input
+										dimension='lg'
+										type={passwordShowStatus ? 'text' : 'password'}
+										id='password'
+										name='password'
+										placeholder='Contraseña'
+										value={formik.values.password}
+										onChange={formik.handleChange}
+										onBlur={formik.handleBlur}
+									/>
+								</FieldWrap>
 							</Validation>
 						</div>
 						<div className={classNames({ 'mb-2': !formik.isValid, })}>
@@ -127,8 +127,8 @@ function AceptarInvitacionEmpresa() {
 					</div>
 				</div>
 			</div>
-        </PageWrapper>
-    )
+		</PageWrapper>
+	)
 }
 
 export default AceptarInvitacionEmpresa

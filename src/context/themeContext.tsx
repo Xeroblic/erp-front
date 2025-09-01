@@ -7,6 +7,7 @@ import React, {
     useEffect,
     useLayoutEffect,
     useMemo,
+    useState,
 } from 'react';
 import theme from 'tailwindcss/defaultTheme';
 import colors from 'tailwindcss/colors';
@@ -64,7 +65,6 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
 
     // Leer estado desde Redux
     const language = useAppSelector(selectLanguage);
-    const asideStatus = useAppSelector(selectAsideStatus);
     const fontSize = useAppSelector(selectFontSize);
     const themeColor = useAppSelector(selectThemeColor);
     const themeColorShade = useAppSelector(selectThemeColorShade);
@@ -91,25 +91,27 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
     /**
      * Aside Status for responsive design
      */
-    const { width } = useDeviceScreen();
-
-    useLayoutEffect(() => {
-        if (Number(theme.screens.md.replace('px', '')) <= Number(width)) {
-            // Solo persistir en pantallas grandes
-        }
-    }, [asideStatus, width]);
-
-    useEffect(() => {
-        if (Number(theme.screens.md.replace('px', '')) > Number(width)) {
-            dispatch(setAsideStatus(false));
-        }
-        return () => {
-            const storedStatus = localStorage.getItem('zentria_asideStatus');
-            if (storedStatus) {
-                dispatch(setAsideStatus(storedStatus === 'true'));
-            }
-        };
-    }, [width, dispatch]);
+	const { width } = useDeviceScreen();
+	const [asideStatus, setAsideStatus] = useState(
+		localStorage.getItem('fyr_asideStatus')
+			? localStorage.getItem('fyr_asideStatus') === 'true'
+			: true,
+	);
+	useLayoutEffect(() => {
+		if (Number(theme.screens.md.replace('px', '')) <= Number(width))
+			localStorage.setItem('fyr_asideStatus', asideStatus?.toString());
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [asideStatus]);
+	useEffect(() => {
+		if (Number(theme.screens.md.replace('px', '')) > Number(width)) setAsideStatus(false);
+		return () => {
+			setAsideStatus(
+				localStorage.getItem('fyr_asideStatus')
+					? localStorage.getItem('fyr_asideStatus') === 'true'
+					: true,
+			);
+		};
+	}, [width]);
 
     /**
      * Apply CSS variables when theme color changes
@@ -173,13 +175,13 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
                 setDarkModeStatus(value);
             }
         },
-        setAsideStatus: (value: React.SetStateAction<boolean>) => {
-            if (typeof value === 'function') {
-                dispatch(setAsideStatus((value as (prev: boolean) => boolean)(asideStatus)));
-            } else {
-                dispatch(setAsideStatus(value));
-            }
-        },
+        // setAsideStatus: (value: React.SetStateAction<boolean>) => {
+        //     if (typeof value === 'function') {
+        //         dispatch(setAsideStatus((value as (prev: boolean) => boolean)(asideStatus)));
+        //     } else {
+        //         dispatch(setAsideStatus(value));
+        //     }
+        // },
         setFontSize: (value: React.SetStateAction<number>) => {
             if (typeof value === 'function') {
                 dispatch(setFontSize((value as (prev: number) => number)(fontSize)));
@@ -209,7 +211,7 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
             darkModeStatus,
             setDarkModeStatus: setters.setDarkModeStatus,
             asideStatus,
-            setAsideStatus: setters.setAsideStatus,
+			setAsideStatus,
             fontSize,
             setFontSize: setters.setFontSize,
             language,
