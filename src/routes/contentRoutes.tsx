@@ -11,7 +11,7 @@ import SinPermisos from "@/pages/SinPermisos";
 import NotFoundPage from "@/pages/NotFound.page";
 
 const ProfilePage = lazy(() => import("@/pages/Perfil"));
-const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const Dashboard = lazy(() => import("@/pages/MainDashboard"));
 // const ProductosPage = lazy(() => import("@/pages/Productos"));
 // const UsuariosPage  = lazy(() => import("@/pages/Usuarios"));
 // const Cotizaciones  = lazy(() => import("@/pages/Cotizaciones"));
