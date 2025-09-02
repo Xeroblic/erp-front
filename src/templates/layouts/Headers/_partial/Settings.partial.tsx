@@ -107,31 +107,31 @@ const SettingsPartial = () => {
                     </ButtonGroup>
                 </DropdownItem>
                 <DropdownItem className='flex flex-col !items-start'>
-                    <div className="mb-2">Modo Oscuro:</div>
+                    <div className="mb-2">Tema del sistema:</div>
                     <ButtonGroup>
                         <Button
                             icon='HeroMoon'
                             onClick={() => setDarkModeStatus(DARK_MODE.DARK)}
                             isActive={isDark}
                             variant={isDark ? 'solid' : 'outline'}
+                            className='border-none'
                         />
                         <Button
                             icon='HeroSun'
                             onClick={() => setDarkModeStatus(DARK_MODE.LIGHT)}
                             isActive={isLight}
                             variant={isLight ? 'solid' : 'outline'}
+                            className='border-none'
                         />
                         <Button
                             icon='HeroComputerDesktop'
                             onClick={() => setDarkModeStatus(DARK_MODE.SYSTEM)}
                             isActive={isSystem}
                             variant={isSystem ? 'solid' : 'outline'}
+                            className='border-none'
                         />
                     </ButtonGroup>
-                    <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        Actual: {isDarkTheme ? '🌙 Oscuro' : '☀️ Claro'}
-                        {isSystem && ` (${window.matchMedia('(prefers-color-scheme: dark)').matches ? 'Sistema: Oscuro' : 'Sistema: Claro'})`}
-                    </div>
+                   
                 </DropdownItem>
                 <DropdownItem className='flex flex-col !items-start'>
                     <div className="mb-2">Color del Tema:</div>

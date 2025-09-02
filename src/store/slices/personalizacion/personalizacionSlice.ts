@@ -29,16 +29,16 @@ export interface PersonalizacionState {
     hasUnsavedChanges: boolean;
 }
 
-// Estado inicial con valores desde localStorage o defaults
+// Estado inicial con valores por defecto únicamente
 const getInitialState = (): PersonalizacionState => {
     return {
-        // Configuraciones locales (localStorage + defaults)
-        fontSize: Number(localStorage.getItem('zentria_fontSize')) || themeConfig.fontSize,
-        themeColor: (localStorage.getItem('zentria_themeColor') as TColors) || themeConfig.themeColor,
-        themeColorShade: (localStorage.getItem('zentria_themeColorShade') as TColorIntensity) || themeConfig.themeColorShade,
-        language: (localStorage.getItem('zentria_language') as TLang) || themeConfig.language,
-        darkMode: (localStorage.getItem('theme') as TDarkMode) || themeConfig.theme,
-        asideStatus: localStorage.getItem('zentria_asideStatus') ? localStorage.getItem('zentria_asideStatus') === 'true' : true,
+        // Usar valores por defecto, los datos de la API los sobrescribirán
+        fontSize: themeConfig.fontSize,
+        themeColor: themeConfig.themeColor,
+        themeColorShade: themeConfig.themeColorShade,
+        language: themeConfig.language,
+        darkMode: themeConfig.theme,
+        asideStatus: true,
 
         // Estado de la API
         personalizacionUsuario: undefined,
@@ -59,16 +59,20 @@ export const obtenerPersonalizacionThunk = createAsyncThunk<
 >(
     'personalizacion/obtenerPersonalizacion',
     async (_, { getState, rejectWithValue }) => {
-        const token = (getState() as any).auth.access;
+        const state = getState() as any;
+        const token = state.auth.access || localStorage.getItem('access_token');
         try {
-            const resp = await ApiService.fetchData<IPersonalizacionUsuario>({
+            const resp = await ApiService.fetchData<any>({
                 url: '/user/personalization',
                 method: 'get',
                 headers: { Authorization: `Bearer ${token}` },
             });
-            return resp.data;
-        } catch (error) {
-            return rejectWithValue('No se pudo obtener la personalización');
+
+            // Extraer los datos de personalización del objeto anidado
+            const personalizationData = resp.data.personalization || resp.data;
+            return personalizationData;
+        } catch (error: any) {
+            return rejectWithValue('No se pudo obtener la personalización: ' + (error.message || error));
         }
     }
 );
@@ -152,18 +156,19 @@ const personalizacionSlice = createSlice({
 
             // Solo actualizar en la primera inicialización
             if (!state.isInitialized) {
-                if (apiData.tcolor && apiData.tcolor !== state.themeColor) {
+                // Aplicar colores de la API
+                if (apiData.tcolor) {
                     state.themeColor = apiData.tcolor as TColors;
                     persistToLocalStorage('zentria_themeColor', apiData.tcolor);
                 }
 
-                if (apiData.tcolor_int && apiData.tcolor_int !== state.themeColorShade) {
+                if (apiData.tcolor_int) {
                     state.themeColorShade = apiData.tcolor_int as TColorIntensity;
                     persistToLocalStorage('zentria_themeColorShade', apiData.tcolor_int);
                 }
 
-                // Forzar fontSize en primera carga o si es diferente
-                if (apiData.font_size && (!state.isInitialized || apiData.font_size !== state.fontSize)) {
+                // Aplicar fontSize de la API
+                if (apiData.font_size) {
                     state.fontSize = apiData.font_size;
                     persistToLocalStorage('zentria_fontSize', apiData.font_size);
                 }
@@ -173,12 +178,8 @@ const personalizacionSlice = createSlice({
                     const darkModeValue = apiData.tema === 1 ? DARK_MODE.LIGHT
                         : apiData.tema === 2 ? DARK_MODE.DARK
                             : DARK_MODE.SYSTEM;
-
-                    // Solo aplicar en primera carga (inicialización)
-                    if (!state.isInitialized) {
-                        state.darkMode = darkModeValue;
-                        persistToLocalStorage('theme', darkModeValue);
-                    }
+                    state.darkMode = darkModeValue;
+                    persistToLocalStorage('theme', darkModeValue);
                 }
             }
 
@@ -234,46 +235,53 @@ const personalizacionSlice = createSlice({
                 state.loading = false;
                 state.error = undefined;
 
-                // Usar syncWithApiData para sincronizar los datos obtenidos
                 const apiData = action.payload;
+                console.log('✅ obtenerPersonalizacionThunk.fulfilled ejecutándose con datos:', apiData);
+
                 state.personalizacionUsuario = apiData;
 
-                // Solo sincronizar si es la primera vez que se inicializa
-                if (!state.isInitialized) {
-                    // Sincronizar colores
-                    if (apiData.tcolor && apiData.tcolor !== state.themeColor) {
-                        state.themeColor = apiData.tcolor as TColors;
-                        persistToLocalStorage('zentria_themeColor', apiData.tcolor);
-                    }
+                // Sincronizar SIEMPRE con la API
+                if (apiData.tcolor) {
+                    state.themeColor = apiData.tcolor as TColors;
+                    persistToLocalStorage('zentria_themeColor', apiData.tcolor);
+                    console.log('🎨 Color actualizado:', apiData.tcolor);
+                }
 
-                    if (apiData.tcolor_int && apiData.tcolor_int !== state.themeColorShade) {
-                        state.themeColorShade = apiData.tcolor_int as TColorIntensity;
-                        persistToLocalStorage('zentria_themeColorShade', apiData.tcolor_int);
-                    }
+                if (apiData.tcolor_int) {
+                    state.themeColorShade = apiData.tcolor_int as TColorIntensity;
+                    persistToLocalStorage('zentria_themeColorShade', apiData.tcolor_int);
+                    console.log('🎨 Color shade actualizado:', apiData.tcolor_int);
+                }
 
-                    // Sincronizar fontSize SIEMPRE en primera carga
-                    if (apiData.font_size) {
-                        state.fontSize = apiData.font_size;
-                        persistToLocalStorage('zentria_fontSize', apiData.font_size);
-                    }
+                if (apiData.font_size) {
+                    state.fontSize = apiData.font_size;
+                    persistToLocalStorage('zentria_fontSize', apiData.font_size);
+                    console.log('📝 Font size actualizado:', apiData.font_size);
+                }
 
-                    // Mapear tema de la API al formato local
-                    if (apiData.tema !== undefined && apiData.tema !== null) {
-                        const darkModeValue = apiData.tema === 1 ? DARK_MODE.LIGHT
-                            : apiData.tema === 2 ? DARK_MODE.DARK
-                                : DARK_MODE.SYSTEM;
-
-                        state.darkMode = darkModeValue;
-                        persistToLocalStorage('theme', darkModeValue);
-                    }
+                if (apiData.tema !== undefined && apiData.tema !== null) {
+                    const darkModeValue = apiData.tema === 1 ? DARK_MODE.LIGHT
+                        : apiData.tema === 2 ? DARK_MODE.DARK
+                            : DARK_MODE.SYSTEM;
+                    state.darkMode = darkModeValue;
+                    persistToLocalStorage('theme', darkModeValue);
+                    console.log('🌙 Dark mode actualizado:', darkModeValue, '(tema API:', apiData.tema, ')');
                 }
 
                 state.isInitialized = true;
+                console.log('✅ Sincronización completada, estado final:', {
+                    fontSize: state.fontSize,
+                    darkMode: state.darkMode,
+                    themeColor: state.themeColor,
+                    isInitialized: state.isInitialized
+                });
             })
             .addCase(obtenerPersonalizacionThunk.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
                 state.isInitialized = true; // Marcar como inicializado aunque falle
+                console.error('❌ obtenerPersonalizacionThunk.rejected:', action.payload);
+                console.error('❌ Error completo:', action.error);
             })
 
             // Actualizar personalización

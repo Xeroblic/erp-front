@@ -145,7 +145,8 @@ const LoginPage = () => {
                                         <Button
                                             onClick={() => formik.handleSubmit()}
                                             size='lg'
-                                            className='w-full font-semibold text-white rounded-xl py-4 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.01] bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700'>
+                                            variant='solid'
+                                            className='w-full font-semibold '>
                                             Iniciar sesión
                                         </Button>
                                     </form>

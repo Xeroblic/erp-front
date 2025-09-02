@@ -16,7 +16,7 @@ import AuthDebug from '../components/debug/AuthDebug';
 import UserDataSimulator from '../components/debug/UserDataSimulator';
 import { useAppDispatch, useAppSelector } from '@/store';
 import AppInitializer from '../components/AppInitializer';
-// import PersonalizacionDebug from '../components/debug/PersonalizacionDebug';
+import PersonalizacionDebug from '../components/debug/PersonalizacionDebug';
 // import PersonalizacionTest from '../components/test/PersonalizacionTest';
 // import DarkModeDebug from '../components/debug/DarkModeDebug';
 // import DarkModeStatus from '../components/debug/DarkModeStatus';

@@ -13,6 +13,7 @@ import useReactiveThemeConfig from '../../hooks/useReactiveThemeConfig';
 export type TButtonVariants = 'solid' | 'outline' | 'default';
 export type TButtonSize = 'xs' | 'sm' | 'default' | 'lg' | 'xl';
 
+
 export interface IButtonProps extends HTMLAttributes<HTMLButtonElement> {
 	borderWidth?: TBorderWidth;
 	children?: ReactNode;
@@ -47,9 +48,12 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 		variant = 'default',
 		...rest
 	} = props;
-	const HAS_CHILDREN = typeof children !== 'undefined';
 
 	const { textColor, shadeColorIntensity } = useColorIntensity(colorIntensity);
+
+	const isSolid = variant === 'solid';
+	const effectiveTextColor = isSolid ? 'text-white' : textColor;
+	const HAS_CHILDREN = typeof children !== 'undefined';
 
 	/**
 	 * Variant & Color & Status
@@ -60,6 +64,7 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 			{
 				[`bg-${color}-${colorIntensity}`]: !isActive,
 			},
+			[effectiveTextColor],
 			[`${borderWidth} border-${color}-${colorIntensity}`],
 			[`${textColor}`],
 			// Hover
@@ -197,7 +202,11 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 			{(!!icon || isLoading) && (
 				<Icon
 					icon={isLoading ? 'DuoLoading' : (icon as TIcons)}
-					className={classNames({ 'animate-spin': isLoading }, btnIconClasses)}
+					className={classNames(
+						{ 'animate-spin': isLoading },
+						btnIconClasses,
+						{ 'text-white': isSolid }
+					)}
 				/>
 			)}
 			{children}

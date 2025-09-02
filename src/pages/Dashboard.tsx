@@ -12,13 +12,6 @@ import FalabellaBackendService, { Product, InventorySummary, BestSellingProduct 
 
 const falabellaApi = new FalabellaBackendService();
 
-/**
- * Dashboard principal del ERP EcoPC con integración al backend Laravel.
- * Se conecta a los 9 endpoints de Falabella implementados en el backend.
- * ✅ Sin problemas de CORS
- * ✅ Seguridad manejada en el backend
- * ✅ Modo mock/real configurable desde el backend
- */
 const Dashboard: React.FC = () => {
 	const navigate = useNavigate();
 	const { user } = useAppSelector((state) => state.auth);
@@ -39,12 +32,12 @@ const Dashboard: React.FC = () => {
 	// Cargar datos al montar el componente
 	useEffect(() => {
 		const loadDashboardData = async () => {
-			console.log('🎯 Dashboard: Conectando con backend Laravel...');
+			console.log('Dashboard: Conectando con backend Laravel...');
 			try {
 				setLoading(true);
 				setError(null);
 
-				console.log('� Dashboard: Solicitando datos desde endpoints del backend...');
+				console.log('Dashboard: Solicitando datos desde endpoints del backend...');
 
 				const [summary, lowStock, bestSelling] = await Promise.all([
 					falabellaApi.getInventorySummary(),
@@ -69,9 +62,9 @@ const Dashboard: React.FC = () => {
 				setLowStockProducts(Array.isArray(lowStock) ? lowStock : []);
 				setBestSellingProducts(Array.isArray(bestSelling) ? bestSelling : []);
 
-				console.log('✅ Dashboard: Datos cargados exitosamente');
+				console.log('Dashboard: Datos cargados exitosamente');
 			} catch (err) {
-				console.error('❌ Dashboard: Error loading dashboard data:', err);
+				console.error('Dashboard: Error loading dashboard data:', err);
 				setError(err instanceof Error ? err.message : 'Error al cargar datos del dashboard');
 				// Setear valores por defecto en caso de error
 				setInventorySummary({
@@ -85,7 +78,7 @@ const Dashboard: React.FC = () => {
 				setBestSellingProducts([]);
 			} finally {
 				setLoading(false);
-				console.log('🏁 Dashboard: Carga completada');
+				console.log('Dashboard: Carga completada');
 			}
 		};
 
@@ -105,7 +98,7 @@ const Dashboard: React.FC = () => {
 	const nombre = userData?.first_name ?? '';
 	const authority = userData?.authority ?? [];
 	return (
-		<PageWrapper isProtectedRoute={true} className='bg-gray-50 dark:bg-gray-900' name='Dashboard EcoPC'>
+		<PageWrapper isProtectedRoute={true} title='Zentria' name='Dashboard EcoPC'>
 			{/* Encabezado */}
 			<Subheader>
 				<SubheaderLeft>
@@ -118,76 +111,6 @@ const Dashboard: React.FC = () => {
 
 			{/* Contenido principal */}
 			<Container className="flex flex-col w-full h-full space-y-6">
-
-				{/* Panel de Debug */}
-				{/* <Card className="border-yellow-200 bg-yellow-50">
-					<CardHeader className="bg-yellow-100">
-						<h3 className="text-sm font-semibold text-yellow-800">🐛 Panel de Debug - Estado API</h3>
-					</CardHeader>
-					<CardBody className="p-4">
-						<div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-							<div>
-								<strong>Estado:</strong>
-								<div className={loading ? 'text-blue-600' : error ? 'text-red-600' : 'text-green-600'}>
-									{loading ? '⏳ Cargando...' : error ? '❌ Error' : '✅ OK'}
-								</div>
-							</div>
-							<div>
-								<strong>Low Stock:</strong>
-								<div>{(lowStockProducts || []).length} productos</div>
-							</div>
-							<div>
-								<strong>Best Selling:</strong>
-								<div>{(bestSellingProducts || []).length} productos</div>
-							</div>
-							<div>
-								<strong>Consola:</strong>
-								<div className="text-blue-600">Ver DevTools (F12)</div>
-							</div>
-						</div>
-						{error && (
-							<div className="mt-2 p-2 bg-red-100 rounded text-red-700 text-xs">
-								<strong>Error:</strong> {error}
-							</div>
-						)}
-						<div className="mt-2 text-xs text-gray-600">
-							💡 Abre DevTools (F12) → Console para ver logs detallados de las peticiones
-						</div>
-						<div className="mt-3 flex space-x-2">
-							<Button
-								size="sm"
-								variant="outline"
-								className="text-xs"
-								onClick={() => {
-									console.clear();
-									window.location.reload();
-								}}
-							>
-								🔄 Recargar & Debug
-							</Button>
-							<Button
-								size="sm"
-								variant="outline"
-								className="text-xs"
-								onClick={async () => {
-									console.clear();
-									console.log('🧪 Test manual de API...');
-									try {
-										const result = await falabellaApi.getProducts();
-										console.log('✅ Test exitoso:', result);
-										alert('✅ API funcionando! Ver consola para detalles');
-									} catch (err) {
-										console.error('❌ Test falló:', err);
-										alert('❌ Error en API! Ver consola para detalles');
-									}
-								}}
-							>
-								🧪 Test API Manual
-							</Button>
-						</div>
-					</CardBody>
-				</Card> */}
-
 				{/* Mostrar error si existe */}
 				{error && (
 					<Card className="border-red-200 bg-red-50">

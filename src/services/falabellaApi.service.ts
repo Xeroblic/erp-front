@@ -65,31 +65,52 @@ class FalabellaBackendService {
         console.log(`🔄 Petición al backend: ${url}`);
 
         try {
+            // Try multiple possible token storage keys
+            const token = localStorage.getItem('auth_token') || 
+                        localStorage.getItem('token') || 
+                        localStorage.getItem('access_token') ||
+                        sessionStorage.getItem('auth_token') ||
+                        sessionStorage.getItem('token');
+
+            const headers: Record<string, string> = {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            };
+
+            // Add authentication header if token exists
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+                console.log(`Token encontrado, agregando autorización`);
+            } else {
+                console.warn(`No se encontró token de autenticación`);
+            }
+
             const response = await fetch(url, {
                 method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    // Agregar token de autenticación si existe
-                    ...(localStorage.getItem('auth_token') && {
-                        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-                    })
-                }
+                headers
             });
 
-            console.log(`📤 Respuesta del backend:`, {
+            console.log(`Respuesta del backend:`, {
                 status: response.status,
                 statusText: response.statusText,
                 ok: response.ok
             });
 
             if (!response.ok) {
+                // Handle 401 specifically
+                if (response.status === 401) {
+                    // Optionally clear invalid tokens
+                    localStorage.removeItem('auth_token');
+                    localStorage.removeItem('token');
+                    sessionStorage.removeItem('auth_token');
+                    sessionStorage.removeItem('token');
+                }
                 throw new Error(`Backend Error: ${response.status} ${response.statusText}`);
             }
 
             const result = await response.json() as ApiResponse<T>;
 
-            console.log(`✅ Datos del backend:`, result);
+            console.log(`Datos del backend:`, result);
 
             if (!result.success) {
                 throw new Error(result.error || result.message || 'Error en el backend');
@@ -98,11 +119,17 @@ class FalabellaBackendService {
             return result.data;
 
         } catch (error) {
-            console.error(`❌ Error conectando con backend:`, {
+            console.error(`Error conectando con backend:`, {
                 error: error,
                 message: error instanceof Error ? error.message : 'Error desconocido',
                 url: url
             });
+
+            // For 401 errors, use fallback immediately
+            if (error instanceof Error && error.message.includes('401')) {
+                console.log(`Error de autenticación, usando datos mock temporales...`);
+                return this.getMockFallback<T>(endpoint) as T;
+            }
 
             // Si es error de conexión con el backend, usar fallback temporal
             if (error instanceof TypeError && error.message.includes('fetch')) {
@@ -112,7 +139,8 @@ class FalabellaBackendService {
 
             throw error;
         }
-    }  // Fallback temporal si el backend no está disponible
+    }
+ // Fallback temporal si el backend no está disponible
     private getMockFallback<T>(endpoint: string): T {
         console.log(`🎭 Usando datos mock para: ${endpoint}`);
 

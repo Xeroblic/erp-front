@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store';
 import { validateSession } from '../store/slices/auth/authSlice';
 import { obtenerPersonalizacionThunk } from '../store/slices/personalizacion/personalizacionSlice';
+import { toast } from 'react-toastify';
 
 const AppInitializer = () => {
     const dispatch = useAppDispatch();
@@ -34,9 +35,19 @@ const AppInitializer = () => {
         // Validar sesión al inicio
         dispatch(validateSession());
 
-        // Verificar token en localStorage
+        // Verificar token en localStorage y cargar personalización
         const token = localStorage.getItem('access_token');
-        if (!token && !access) {
+        if (token) {
+            console.log('🔄 AppInitializer: Cargando personalización con token:', token.substring(0, 20) + '...');
+            dispatch(obtenerPersonalizacionThunk())
+                .then((result) => {
+                    console.log('✅ AppInitializer: Personalización cargada exitosamente:', result);
+                })
+                .catch((error) => {
+                    console.error('❌ AppInitializer: Error cargando personalización:', error);
+                    toast.error('Error al cargar la personalización del usuario');
+                });
+        } else if (!access) {
             navigate('/login');
             return;
         }
@@ -52,15 +63,14 @@ const AppInitializer = () => {
         }
 
         if (!isAuthenticated && !access) {
-            // Usar window.location para forzar recarga completa
-            window.location.href = '/login';
+            navigate('/login');
         }
     }, [isAuthenticated, access, location.pathname]);
 
     // Cargar personalización cuando el usuario se autentica
     useEffect(() => {
         if (isAuthenticated && access && hasInitialized.current) {
-            // Personalización se carga automáticamente
+            dispatch(obtenerPersonalizacionThunk());
         }
     }, [isAuthenticated, access, dispatch]);
 
