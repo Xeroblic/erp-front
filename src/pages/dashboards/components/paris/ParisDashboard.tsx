@@ -259,7 +259,7 @@ const ParisDashboard: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Productos Destacados */}
                 <Card className="col-span-1 shadow-lg">
-                    <CardHeader className="bg-gradient-to-r from-pink-500 to-pink-600 text-white">
+                    <CardHeader className="bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-t-xl">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-semibold flex items-center">
                                 <Icon icon="HeroSparkles" className="w-5 h-5 mr-2" />
@@ -315,7 +315,7 @@ const ParisDashboard: React.FC = () => {
 
                 {/* Promociones Activas */}
                 <Card className="col-span-1 shadow-lg">
-                    <CardHeader className="bg-gradient-to-r from-pink-600 to-rose-600 text-white">
+                    <CardHeader className="bg-gradient-to-r from-pink-600 to-rose-600 text-white rounded-t-xl">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-semibold flex items-center">
                                 <Icon icon="HeroTicket" className="w-5 h-5 mr-2" />
@@ -363,7 +363,7 @@ const ParisDashboard: React.FC = () => {
 
                 {/* Panel de Control Paris */}
                 <Card className="col-span-1 shadow-lg">
-                    <CardHeader className="bg-gradient-to-r from-pink-700 to-pink-800 text-white">
+                    <CardHeader className="bg-gradient-to-r from-pink-700 to-pink-800 text-white rounded-t-xl">
                         <h3 className="text-lg font-semibold flex items-center">
                             <Icon icon="HeroSparkles" className="w-5 h-5 mr-2" />
                             Control París

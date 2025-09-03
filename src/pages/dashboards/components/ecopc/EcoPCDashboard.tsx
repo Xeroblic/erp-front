@@ -300,7 +300,7 @@ const EcoPCDashboard: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Productos EcoPC Destacados */}
                 <Card className="col-span-1 shadow-lg">
-                    <CardHeader className="bg-gradient-to-r from-green-500 to-green-600 text-white">
+                        <CardHeader className="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-t-xl">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-semibold flex items-center">
                                 <Icon icon="HeroComputerDesktop" className="w-5 h-5 mr-2" />
@@ -371,7 +371,7 @@ const EcoPCDashboard: React.FC = () => {
 
                 {/* Alertas del Sistema */}
                 <Card className="col-span-1 shadow-lg">
-                    <CardHeader className="bg-gradient-to-r from-green-600 to-emerald-600 text-white">
+                    <CardHeader className="bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-xl">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-semibold flex items-center">
                                 <Icon icon="HeroBell" className="w-5 h-5 mr-2" />
@@ -431,7 +431,7 @@ const EcoPCDashboard: React.FC = () => {
 
                 {/* Panel de Control EcoPC */}
                 <Card className="col-span-1 shadow-lg">
-                    <CardHeader className="bg-gradient-to-r from-green-700 to-green-800 text-white">
+                    <CardHeader className="bg-gradient-to-r from-green-700 to-green-800 text-white rounded-t-xl">
                         <h3 className="text-lg font-semibold flex items-center">
                             <Icon icon="HeroCog6Tooth" className="w-5 h-5 mr-2" />
                             Control EcoPC

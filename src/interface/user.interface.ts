@@ -6,6 +6,7 @@ export interface IPersonalizacionUsuario {
   font_size: number;
   tcolor: string;
   tcolor_int: string;
+  dark_mode: number;
   usuario: number;
   sucursal_principal: number | null;
   empresa: number | null;

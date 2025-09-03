@@ -7,7 +7,6 @@ import Badge from '@/components/ui/Badge';
 import { DashboardType, DASHBOARD_CONFIGS } from './types';
 import { useAppSelector } from '@/store';
 
-// Componentes de dashboards
 import FalabellaDashboard from './components/falabella/FalabellaDashboard';
 import RipleyDashboard from './components/ripley/RipleyDashboard';
 import ParisDashboard from './components/paris/ParisDashboard';
@@ -19,26 +18,22 @@ const STORAGE_KEY = 'zentria_selected_dashboard';
 const DashboardContainer: React.FC = () => {
     const { user } = useAppSelector((state) => state.auth);
 
-    // Estado para el dashboard seleccionado
     const [selectedDashboard, setSelectedDashboard] = useState<DashboardType>(() => {
         const stored = localStorage.getItem(STORAGE_KEY);
         return (stored as DashboardType) || 'ecopc';
     });
 
-    // Guardar selección en localStorage
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY, selectedDashboard);
     }, [selectedDashboard]);
 
     const currentConfig = DASHBOARD_CONFIGS[selectedDashboard];
 
-    // Opciones para el selector
     const dashboardOptions = Object.values(DASHBOARD_CONFIGS).map(config => ({
         value: config.id,
         label: config.name
     }));
 
-    // Renderizar el dashboard correspondiente
     const renderDashboard = () => {
         switch (selectedDashboard) {
             case 'falabella':
@@ -58,12 +53,11 @@ const DashboardContainer: React.FC = () => {
 
     return (
         <PageWrapper isProtectedRoute={true} title='Dashboard' name={`Dashboard ${currentConfig.name}`}>
-            {/* Encabezado con selector */}
             <Subheader className="border-b border-gray-200 dark:border-gray-700">
                 <SubheaderLeft>
                     <div className="flex items-center space-x-4">
                         <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-                            ¡Hola {user?.first_name || 'Usuario'}! 👋
+                            ¡Hola {user?.first_name || 'Usuario'}!
                         </h1>
                         <Badge
                             className={`text-white ${currentConfig.colors.background}`}
@@ -93,7 +87,6 @@ const DashboardContainer: React.FC = () => {
                 </SubheaderRight>
             </Subheader>
 
-            {/* Contenido del dashboard */}
             <Container className="flex flex-col w-full h-full">
                 <div
                     className="transition-all duration-300 ease-in-out"

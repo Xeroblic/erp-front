@@ -155,7 +155,7 @@ const FalabellaDashboard: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Productos con Stock Bajo */}
                 <Card className="col-span-1 shadow-lg">
-                    <CardHeader className="bg-gradient-to-r from-red-500 to-red-600 text-white">
+                    <CardHeader className="bg-gradient-to-r from-red-500 to-red-600 text-white rounded-t-lg">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-semibold flex items-center">
                                 <Icon icon="HeroExclamationTriangle" className="w-5 h-5 mr-2" />
@@ -205,7 +205,7 @@ const FalabellaDashboard: React.FC = () => {
 
                 {/* Productos Más Vendidos */}
                 <Card className="col-span-1 shadow-lg">
-                    <CardHeader className="bg-gradient-to-r from-red-600 to-red-700 text-white">
+                    <CardHeader className="bg-gradient-to-r from-red-600 to-red-700 text-white rounded-t-lg">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-semibold flex items-center">
                                 <Icon icon="HeroTrophy" className="w-5 h-5 mr-2" />
@@ -261,7 +261,7 @@ const FalabellaDashboard: React.FC = () => {
 
                 {/* Panel de Control */}
                 <Card className="col-span-1 shadow-lg">
-                    <CardHeader className="bg-gradient-to-r from-red-700 to-red-800 text-white">
+                    <CardHeader className="bg-gradient-to-r from-red-700 to-red-800 text-white rounded-t-lg">
                         <h3 className="text-lg font-semibold flex items-center">
                             <Icon icon="HeroChartBarSquare" className="w-5 h-5 mr-2" />
                             Control Falabella

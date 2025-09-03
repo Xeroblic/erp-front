@@ -167,7 +167,7 @@ const RipleyDashboard: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Productos con Stock Crítico */}
                 <Card className="col-span-1 shadow-lg">
-                    <CardHeader className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
+                    <CardHeader className="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-t-xl">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-semibold flex items-center">
                                 <Icon icon="HeroExclamationTriangle" className="w-5 h-5 mr-2" />
@@ -213,7 +213,7 @@ const RipleyDashboard: React.FC = () => {
 
                 {/* Top Ventas */}
                 <Card className="col-span-1 shadow-lg">
-                    <CardHeader className="bg-gradient-to-r from-purple-600 to-purple-700 text-white">
+                    <CardHeader className="bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-t-xl">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-semibold flex items-center">
                                 <Icon icon="HeroTrophy" className="w-5 h-5 mr-2" />
@@ -264,9 +264,9 @@ const RipleyDashboard: React.FC = () => {
 
                 {/* Panel de Control Ripley */}
                 <Card className="col-span-1 shadow-lg">
-                    <CardHeader className="bg-gradient-to-r from-purple-700 to-purple-800 text-white">
+                    <CardHeader className="bg-gradient-to-r from-purple-700 to-purple-800 text-white rounded-t-xl">
                         <h3 className="text-lg font-semibold flex items-center">
-                            <Icon icon="HeroCommandLine" className="w-5 h-5 mr-2" />
+                            <Icon icon="HeroCommandLine" className="w-5 h-5 mr-2" /> 
                             Control Ripley
                         </h3>
                     </CardHeader>

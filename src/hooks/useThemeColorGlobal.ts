@@ -4,17 +4,11 @@ import { selectPersonalizacionUsuario } from '../store/slices/personalizacion/pe
 import { TColors } from '../types/colors.type';
 import { TColorIntensity } from '../types/colorIntensities.type';
 
-/**
- * Hook que aplica los colores del tema desde personalizacionUsuario a CSS variables globales
- * Se ejecuta automáticamente cuando cambia personalizacionUsuario
- */
 const useThemeColorGlobal = () => {
     const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
 
     useEffect(() => {
-        // Obtener colores desde personalizacionUsuario o usar defaults
         const themeColor = (personalizacionUsuario?.tcolor as TColors) || 'amber';
-        const themeColorShade = (personalizacionUsuario?.tcolor_int as TColorIntensity) || '500';
 
         document.documentElement.style.setProperty('--color-primary-50', `var(--color-${themeColor}-50)`);
         document.documentElement.style.setProperty('--color-primary-100', `var(--color-${themeColor}-100)`);

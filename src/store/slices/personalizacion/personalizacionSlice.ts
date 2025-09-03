@@ -79,7 +79,7 @@ export const obtenerPersonalizacionThunk = createAsyncThunk<
 
 export const actualizarPersonalizacionThunk = createAsyncThunk<
     IPersonalizacionUsuario,
-    Partial<Pick<IPersonalizacionUsuario, 'tema' | 'font_size' | 'tcolor' | 'tcolor_int'>>,
+    Partial<Pick<IPersonalizacionUsuario, 'tema' | 'font_size' | 'tcolor' | 'tcolor_int' | 'dark_mode'>>,
     { rejectValue: string }
 >(
     'personalizacion/actualizarPersonalizacion',

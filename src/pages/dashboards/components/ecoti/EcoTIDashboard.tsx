@@ -274,7 +274,7 @@ const EcoTIDashboard: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Servicios Activos */}
                 <Card className="col-span-1 shadow-lg">
-                    <CardHeader className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+                    <CardHeader className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-t-xl">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-semibold flex items-center">
                                 <Icon icon="HeroRocketLaunch" className="w-5 h-5 mr-2" />
@@ -348,7 +348,7 @@ const EcoTIDashboard: React.FC = () => {
 
                 {/* Métricas Técnicas */}
                 <Card className="col-span-1 shadow-lg">
-                    <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+                    <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-xl">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-semibold flex items-center">
                                 <Icon icon="HeroChartBarSquare" className="w-5 h-5 mr-2" />
@@ -407,7 +407,7 @@ const EcoTIDashboard: React.FC = () => {
 
                 {/* Panel de Control EcoTI */}
                 <Card className="col-span-1 shadow-lg">
-                    <CardHeader className="bg-gradient-to-r from-blue-700 to-blue-800 text-white">
+                    <CardHeader className="bg-gradient-to-r from-blue-700 to-blue-800 text-white rounded-t-xl">
                         <h3 className="text-lg font-semibold flex items-center">
                             <Icon icon="HeroCommandLine" className="w-5 h-5 mr-2" />
                             Control EcoTI
