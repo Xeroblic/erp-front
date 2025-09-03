@@ -227,7 +227,7 @@ const EcoTIDashboard: React.FC = () => {
                             <div>
                                 <p className="text-blue-100 text-sm font-medium">Ingresos Anuales</p>
                                 <p className="text-3xl font-bold">
-                                    {loading ? '...' : formatCurrency(stats.totalRevenue)}
+                                    {loading ? '...' : formatCurrency(stats.totalRevenue || 0)}
                                 </p>
                             </div>
                             <div className="bg-white/20 p-3 rounded-lg">

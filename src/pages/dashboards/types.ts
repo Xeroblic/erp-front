@@ -78,11 +78,13 @@ export const DASHBOARD_CONFIGS: Record<DashboardType, DashboardConfig> = {
 };
 
 export interface DashboardStats {
-    totalProducts: number;
-    totalValue: number;
-    lowStockCount: number;
-    outOfStockCount: number;
-    averagePrice: number;
-    recentSales: number;
-    pendingOrders: number;
+    totalProducts?: number;
+    totalValue?: number;
+    lowStockCount?: number;
+    outOfStockCount?: number;
+    averagePrice?: number;
+    totalRevenue?: number;
+    recentSales?: number;
+    pendingOrders?: number;
+    ordersCount?: number;
 }

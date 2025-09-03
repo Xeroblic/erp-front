@@ -66,11 +66,7 @@ const DashboardContainer: React.FC = () => {
                             ¡Hola {user?.first_name || 'Usuario'}! 👋
                         </h1>
                         <Badge
-                            className="text-white"
-                            style={{
-                                backgroundColor: currentConfig.colors.primary,
-                                color: 'white'
-                            }}
+                            className={`text-white ${currentConfig.colors.background}`}
                         >
                             {currentConfig.name}
                         </Badge>
@@ -82,6 +78,7 @@ const DashboardContainer: React.FC = () => {
                             Seleccionar Dashboard:
                         </span>
                         <Select
+                            name='dashboard-select'
                             value={selectedDashboard}
                             onChange={(e) => setSelectedDashboard(e.target.value as DashboardType)}
                             className="min-w-[150px]"

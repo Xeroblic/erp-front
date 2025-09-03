@@ -237,7 +237,7 @@ const EcoPCDashboard: React.FC = () => {
                             <div>
                                 <p className="text-green-100 text-sm font-medium">Total Productos</p>
                                 <p className="text-3xl font-bold">
-                                    {loading ? '...' : stats.totalProducts.toLocaleString()}
+                                    {loading ? '...' : stats.totalProducts?.toLocaleString()}
                                 </p>
                             </div>
                             <div className="bg-white/20 p-3 rounded-lg">
@@ -253,7 +253,7 @@ const EcoPCDashboard: React.FC = () => {
                             <div>
                                 <p className="text-green-100 text-sm font-medium">Ingresos Totales</p>
                                 <p className="text-3xl font-bold">
-                                    {loading ? '...' : formatCurrency(stats.totalRevenue)}
+                                    {loading ? '...' : formatCurrency(stats.totalRevenue || 0)}
                                 </p>
                             </div>
                             <div className="bg-white/20 p-3 rounded-lg">
