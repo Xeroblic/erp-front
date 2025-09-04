@@ -5,8 +5,8 @@ import useDarkModeManager from '../../../../hooks/useDarkModeManager.ts';
 import useThemeColor from '../../../../hooks/useThemeColor';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
-  actualizarPersonalizacionThunk,
-  selectPersonalizacionUsuario
+	actualizarPersonalizacionThunk,
+	selectPersonalizacionUsuario,
 } from '@/store/slices/personalizacion/personalizacionSlice';
 import { toast } from 'react-toastify';
 import { TColors } from '@/types/colors.type';
@@ -25,292 +25,309 @@ const MAX_FONT = 18;
 const clamp = (v: number, min = MIN_FONT, max = MAX_FONT) => Math.min(max, Math.max(min, v));
 
 const SettingsPartial = () => {
-  const dispatch = useAppDispatch();
+	const dispatch = useAppDispatch();
 
-  // Hooks de personalización existentes
-  const { fontSize, setFontSize } = useFontSize();
-  const { darkModeStatus, isDarkTheme, setDarkModeStatus, isLight, isDark, isSystem } = useDarkModeManager();
-  const { themeColor, setThemeColor, themeColorShade, setThemeColorShade } = useThemeColor();
+	// Hooks de personalización existentes
+	const { fontSize, setFontSize } = useFontSize();
+	const { darkModeStatus, isDarkTheme, setDarkModeStatus, isLight, isDark, isSystem } =
+		useDarkModeManager();
+	const { themeColor, setThemeColor, themeColorShade, setThemeColorShade } = useThemeColor();
 
-  // Estado global (para reset)
-  const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
-  const { user } = useAppSelector((s) => s.auth);
+	// Estado global (para reset)
+	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
+	const { user } = useAppSelector((s) => s.auth);
 
-  // Cargas locales por grupo (optimista)
-  const [isUpdatingFont, setIsUpdatingFont] = useState(false);
-  const [isUpdatingTheme, setIsUpdatingTheme] = useState(false);
-  const [isUpdatingColor, setIsUpdatingColor] = useState(false);
+	// Cargas locales por grupo (optimista)
+	const [isUpdatingFont, setIsUpdatingFont] = useState(false);
+	const [isUpdatingTheme, setIsUpdatingTheme] = useState(false);
+	const [isUpdatingColor, setIsUpdatingColor] = useState(false);
 
-  // Presets de tamaño (rápidos)
-  const fontPresets = useMemo(() => ([
-    { label: 'Compacto', value: 13 },
-    { label: 'Normal', value: 14 },
-    { label: 'Grande', value: 16 },
-  ]), []);
+	// Presets de tamaño (rápidos)
+	const fontPresets = useMemo(
+		() => [
+			{ label: 'Compacto', value: 13 },
+			{ label: 'Normal', value: 14 },
+			{ label: 'Grande', value: 16 },
+		],
+		[],
+	);
 
-  // ====== ACCIONES ======
-    const updateFontSize = useCallback(async (newSize: number) => {
-        const next = clamp(newSize);
-        if (next === fontSize) return;
-        try {
-            setIsUpdatingFont(true);
-            setFontSize(next); 
-            await dispatch(actualizarPersonalizacionThunk({ font_size: next })).unwrap();
-        } catch (error: any) {
-            toast.error('No se pudo actualizar el tamaño de fuente');
-            setFontSize(fontSize);
-        } finally {
-        setIsUpdatingFont(false);   
-        }
-    }, [dispatch, fontSize, setFontSize]);
+	// ====== ACCIONES ======
+	const updateFontSize = useCallback(
+		async (newSize: number) => {
+			const next = clamp(newSize);
+			if (next === fontSize) return;
+			try {
+				setIsUpdatingFont(true);
+				setFontSize(next);
+				await dispatch(actualizarPersonalizacionThunk({ font_size: next })).unwrap();
+			} catch (error: any) {
+				toast.error('No se pudo actualizar el tamaño de fuente');
+				setFontSize(fontSize);
+			} finally {
+				setIsUpdatingFont(false);
+			}
+		},
+		[dispatch, fontSize, setFontSize],
+	);
 
-  const handleColorChange = useCallback(async (color: TColors, intensity: TColorIntensity) => {
-    const prevColor = themeColor;
-    const prevShade = themeColorShade;
+	const handleColorChange = useCallback(
+		async (color: TColors, intensity: TColorIntensity) => {
+			const prevColor = themeColor;
+			const prevShade = themeColorShade;
 
-    try {
-      setIsUpdatingColor(true);
-      setThemeColor(color);
-      setThemeColorShade(intensity);
-      await dispatch(actualizarPersonalizacionThunk({ tcolor: color, tcolor_int: intensity })).unwrap();
-    } catch (error: any) {
-      toast.error(error || 'No se pudo actualizar los colores');
-      setThemeColor(prevColor);
-      setThemeColorShade(prevShade);
-    } finally {
-      setIsUpdatingColor(false);
-    }
-  }, [dispatch, themeColor, themeColorShade, setThemeColor, setThemeColorShade]);
+			try {
+				setIsUpdatingColor(true);
+				setThemeColor(color);
+				setThemeColorShade(intensity);
+				await dispatch(
+					actualizarPersonalizacionThunk({ tcolor: color, tcolor_int: intensity }),
+				).unwrap();
+			} catch (error: any) {
+				toast.error(error || 'No se pudo actualizar los colores');
+				setThemeColor(prevColor);
+				setThemeColorShade(prevShade);
+			} finally {
+				setIsUpdatingColor(false);
+			}
+		},
+		[dispatch, themeColor, themeColorShade, setThemeColor, setThemeColorShade],
+	);
 
-    const updateTheme = useCallback(async (mode: TDarkMode) => {
-        try {
-            setIsUpdatingTheme(true);
-            setDarkModeStatus(mode);
-            await dispatch(actualizarPersonalizacionThunk({ dark_mode: tDarkToApi(mode) })).unwrap();
-        } catch {
-            toast.error('No se pudo actualizar el tema');
-        } finally {
-            setIsUpdatingTheme(false);
-        }
-    }, [dispatch, setDarkModeStatus]);
+	const updateTheme = useCallback(
+		async (mode: TDarkMode) => {
+			try {
+				setIsUpdatingTheme(true);
+				setDarkModeStatus(mode);
+				await dispatch(
+					actualizarPersonalizacionThunk({ dark_mode: tDarkToApi(mode) }),
+				).unwrap();
+			} catch {
+				toast.error('No se pudo actualizar el tema');
+			} finally {
+				setIsUpdatingTheme(false);
+			}
+		},
+		[dispatch, setDarkModeStatus],
+	);
 
-    const handleReset = useCallback(async () => {
-    // font size OK
-    const targetFont = clamp(personalizacionUsuario?.font_size ?? 14);
+	const handleReset = useCallback(async () => {
+		// font size OK
+		const targetFont = clamp(personalizacionUsuario?.font_size ?? 14);
 
-    // modo: mapear num → TDarkMode; fallback al estado actual si no hay datos
-    const rawModeNum = personalizacionUsuario?.dark_mode ?? personalizacionUsuario?.tema;
-    const targetMode = rawModeNum != null ? apiToDark(rawModeNum) : darkModeStatus;
+		// modo: mapear num → TDarkMode; fallback al estado actual si no hay datos
+		const rawModeNum = personalizacionUsuario?.dark_mode ?? personalizacionUsuario?.tema;
+		const targetMode = rawModeNum != null ? apiToDark(rawModeNum) : darkModeStatus;
 
-    // color & shade: castear seguro
-    const targetColor = isTcolor(personalizacionUsuario?.tcolor)
-        ? (personalizacionUsuario!.tcolor as TColors)
-        : themeColor;
+		// color & shade: castear seguro
+		const targetColor = isTcolor(personalizacionUsuario?.tcolor)
+			? (personalizacionUsuario!.tcolor as TColors)
+			: themeColor;
 
-    const targetShade = isTIntensity(personalizacionUsuario?.tcolor_int)
-        ? (String(personalizacionUsuario!.tcolor_int) as TColorIntensity)
-        : themeColorShade;
+		const targetShade = isTIntensity(personalizacionUsuario?.tcolor_int)
+			? (String(personalizacionUsuario!.tcolor_int) as TColorIntensity)
+			: themeColorShade;
 
-    try {
-        setIsUpdatingFont(true);
-        setIsUpdatingTheme(true);
-        setIsUpdatingColor(true);
+		try {
+			setIsUpdatingFont(true);
+			setIsUpdatingTheme(true);
+			setIsUpdatingColor(true);
 
-        setFontSize(targetFont);
-        setDarkModeStatus(targetMode);
-        setThemeColor(targetColor);
-        setThemeColorShade(targetShade);
+			setFontSize(targetFont);
+			setDarkModeStatus(targetMode);
+			setThemeColor(targetColor);
+			setThemeColorShade(targetShade);
 
-        await dispatch(actualizarPersonalizacionThunk({
-        font_size: targetFont,
-        dark_mode: tDarkToApi(targetMode),
-        tcolor: targetColor,
-        tcolor_int: targetShade
-        })).unwrap();
+			await dispatch(
+				actualizarPersonalizacionThunk({
+					font_size: targetFont,
+					dark_mode: tDarkToApi(targetMode),
+					tcolor: targetColor,
+					tcolor_int: targetShade,
+				}),
+			).unwrap();
 
-        toast.success('Preferencias restablecidas');
-    } catch {
-        toast.error('No se pudo restablecer las preferencias');
-    } finally {
-        setIsUpdatingFont(false);
-        setIsUpdatingTheme(false);
-        setIsUpdatingColor(false);
-    }
-    }, [
-    dispatch,
-    personalizacionUsuario,
-    setFontSize,
-    setDarkModeStatus,
-    setThemeColor,
-    setThemeColorShade,
-    themeColor,
-    themeColorShade,
-    darkModeStatus
-    ]);
+			toast.success('Preferencias restablecidas');
+		} catch {
+			toast.error('No se pudo restablecer las preferencias');
+		} finally {
+			setIsUpdatingFont(false);
+			setIsUpdatingTheme(false);
+			setIsUpdatingColor(false);
+		}
+	}, [
+		dispatch,
+		personalizacionUsuario,
+		setFontSize,
+		setDarkModeStatus,
+		setThemeColor,
+		setThemeColorShade,
+		themeColor,
+		themeColorShade,
+		darkModeStatus,
+	]);
 
-  // ====== ATAJOS DE TECLADO ======
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (!e.altKey) return;
-      if (e.key === '-' || e.key === '_') {
-        e.preventDefault();
-        updateFontSize(fontSize - 1);
-      }
-      if (e.key === '=' || e.key === '+') {
-        e.preventDefault();
-        updateFontSize(fontSize + 1);
-      }
-      if (e.key.toLowerCase() === 'd') {
-        e.preventDefault();
-        updateTheme(DARK_MODE.DARK);
-      }
-      if (e.key.toLowerCase() === 'l') {
-        e.preventDefault();
-        updateTheme(DARK_MODE.LIGHT);
-      }
-      if (e.key.toLowerCase() === 's') {
-        e.preventDefault();
-        updateTheme(DARK_MODE.SYSTEM);
-      }
-      if (e.key.toLowerCase() === 'r') {
-        e.preventDefault();
-        handleReset();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [fontSize, updateFontSize, updateTheme, handleReset]);
+	// ====== ATAJOS DE TECLADO ======
+	useEffect(() => {
+		const onKey = (e: KeyboardEvent) => {
+			if (!e.altKey) return;
+			if (e.key === '-' || e.key === '_') {
+				e.preventDefault();
+				updateFontSize(fontSize - 1);
+			}
+			if (e.key === '=' || e.key === '+') {
+				e.preventDefault();
+				updateFontSize(fontSize + 1);
+			}
+			if (e.key.toLowerCase() === 'd') {
+				e.preventDefault();
+				updateTheme(DARK_MODE.DARK);
+			}
+			if (e.key.toLowerCase() === 'l') {
+				e.preventDefault();
+				updateTheme(DARK_MODE.LIGHT);
+			}
+			if (e.key.toLowerCase() === 's') {
+				e.preventDefault();
+				updateTheme(DARK_MODE.SYSTEM);
+			}
+			if (e.key.toLowerCase() === 'r') {
+				e.preventDefault();
+				handleReset();
+			}
+		};
+		window.addEventListener('keydown', onKey);
+		return () => window.removeEventListener('keydown', onKey);
+	}, [fontSize, updateFontSize, updateTheme, handleReset]);
 
-  // ====== UI ======
-  const isAnyUpdating = isUpdatingFont || isUpdatingTheme || isUpdatingColor;
+	// ====== UI ======
+	const isAnyUpdating = isUpdatingFont || isUpdatingTheme || isUpdatingColor;
 
-  return (
-    <Dropdown>
-      <DropdownToggle hasIcon={false}>
-        <Button
-          icon='HeroCog8Tooth'
-          aria-label='Abrir configuración'
-          title='Configuración'
-          isLoading={isAnyUpdating}
-        />
-      </DropdownToggle>
+	return (
+		<Dropdown>
+			<DropdownToggle hasIcon={false}>
+				<Button
+					icon='HeroCog8Tooth'
+					aria-label='Abrir configuración'
+					title='Configuración'
+					isLoading={isAnyUpdating}
+				/>
+			</DropdownToggle>
 
-      <DropdownMenu placement='bottom-end' className="min-w-72">
-        {/* Tamaño de fuente */}
-        <DropdownItem className='flex flex-col !items-start gap-2'>
-          <div className="flex w-full items-center justify-between">
-            <div className="text-sm font-medium">Tamaño de fuente</div>
-            <span className="text-xs opacity-70">Actual: {fontSize}px</span>
-          </div>
+			<DropdownMenu placement='bottom-end' className='min-w-72'>
+				{/* Tamaño de fuente */}
+				<DropdownItem className='flex flex-col !items-start gap-2'>
+					<div className='flex w-full items-center justify-between'>
+						<div className='text-sm font-medium'>Tamaño de fuente</div>
+						<span className='text-xs opacity-70'>Actual: {fontSize}px</span>
+					</div>
 
-          <ButtonGroup>
-            <Button
-              icon='HeroMinus'
-              onClick={() => updateFontSize(fontSize - 1)}
-              isDisable={fontSize <= MIN_FONT || isUpdatingFont}
-              aria-label='Disminuir fuente'
-              title='Alt + -'
-            />
-            <Button isDisable className="cursor-default">{fontSize}</Button>
-            <Button
-              icon='HeroPlus'
-              onClick={() => updateFontSize(fontSize + 1)}
-              isDisable={fontSize >= MAX_FONT || isUpdatingFont}
-              aria-label='Aumentar fuente'
-              title='Alt + ='
-            />
-          </ButtonGroup>
+					<ButtonGroup>
+						<Button
+							icon='HeroMinus'
+							onClick={() => updateFontSize(fontSize - 1)}
+							isDisable={fontSize <= MIN_FONT || isUpdatingFont}
+							aria-label='Disminuir fuente'
+							title='Alt + -'
+						/>
+						<Button isDisable className='cursor-default'>
+							{fontSize}
+						</Button>
+						<Button
+							icon='HeroPlus'
+							onClick={() => updateFontSize(fontSize + 1)}
+							isDisable={fontSize >= MAX_FONT || isUpdatingFont}
+							aria-label='Aumentar fuente'
+							title='Alt + ='
+						/>
+					</ButtonGroup>
 
-          <div className="flex gap-2">
-            {fontPresets.map(p => (
-              <Button
-                key={p.label}
-                size="sm"
-                variant={fontSize === p.value ? 'solid' : 'outline'}
-                onClick={() => updateFontSize(p.value)}
-                isDisable={isUpdatingFont}
-                aria-pressed={fontSize === p.value}
-                title={`Preset: ${p.label}`}
-              >
-                {p.label}
-              </Button>
-            ))}
-          </div>
-        </DropdownItem>
+					<div className='flex gap-2'>
+						{fontPresets.map((p) => (
+							<Button
+								key={p.label}
+								size='sm'
+								variant={fontSize === p.value ? 'solid' : 'outline'}
+								onClick={() => updateFontSize(p.value)}
+								isDisable={isUpdatingFont}
+								aria-pressed={fontSize === p.value}
+								title={`Preset: ${p.label}`}>
+								{p.label}
+							</Button>
+						))}
+					</div>
+				</DropdownItem>
 
-        {/* Tema */}
-        <DropdownItem className='flex flex-col !items-start gap-2'>
-          <div className="text-sm font-medium">Tema del sistema</div>
-          <ButtonGroup>
-            <Button
-              icon='HeroMoon'
-              onClick={() => updateTheme(DARK_MODE.DARK)}
-              isActive={isDark}
-              variant={isDark ? 'solid' : 'outline'}
-              className='border-none'
-              aria-label='Tema oscuro'
-              title='Alt + D'
-              isDisable={isUpdatingTheme}
-            />
-            <Button
-              icon='HeroSun'
-              onClick={() => updateTheme(DARK_MODE.LIGHT)}
-              isActive={isLight}
-              variant={isLight ? 'solid' : 'outline'}
-              className='border-none'
-              aria-label='Tema claro'
-              title='Alt + L'
-              isDisable={isUpdatingTheme}
-            />
-            <Button
-              icon='HeroComputerDesktop'
-              onClick={() => updateTheme(DARK_MODE.SYSTEM)}
-              isActive={isSystem}
-              variant={isSystem ? 'solid' : 'outline'}
-              className='border-none'
-              aria-label='Tema del sistema'
-              title='Alt + S'
-              isDisable={isUpdatingTheme}
-            />
-          </ButtonGroup>
-          <p className="text-xs opacity-70">
-            Sugerencia: en “Sistema” tu tema seguirá el modo del SO automáticamente.
-          </p>
-        </DropdownItem>
+				{/* Tema */}
+				<DropdownItem className='flex flex-col !items-start gap-2'>
+					<div className='text-sm font-medium'>Tema del sistema</div>
+					<ButtonGroup>
+						<Button
+							icon='HeroMoon'
+							onClick={() => updateTheme(DARK_MODE.DARK)}
+							isActive={isDark}
+							variant={isDark ? 'solid' : 'outline'}
+							className='border-none'
+							aria-label='Tema oscuro'
+							title='Alt + D'
+							isDisable={isUpdatingTheme}
+						/>
+						<Button
+							icon='HeroSun'
+							onClick={() => updateTheme(DARK_MODE.LIGHT)}
+							isActive={isLight}
+							variant={isLight ? 'solid' : 'outline'}
+							className='border-none'
+							aria-label='Tema claro'
+							title='Alt + L'
+							isDisable={isUpdatingTheme}
+						/>
+						<Button
+							icon='HeroComputerDesktop'
+							onClick={() => updateTheme(DARK_MODE.SYSTEM)}
+							isActive={isSystem}
+							variant={isSystem ? 'solid' : 'outline'}
+							className='border-none'
+							aria-label='Tema del sistema'
+							title='Alt + S'
+							isDisable={isUpdatingTheme}
+						/>
+					</ButtonGroup>
+					<p className='text-xs opacity-70'>
+						Sugerencia: en “Sistema” tu tema seguirá el modo del SO automáticamente.
+					</p>
+				</DropdownItem>
 
-        <DropdownItem className='flex flex-col !items-start gap-2'>
-          <div className="text-sm font-medium">Color del tema</div>
-          <ColorSelector onColorChange={handleColorChange} />
-          {isUpdatingColor && (
-            <div className="flex items-center gap-2 text-xs opacity-70">
-              <Icon icon="HeroArrowPath" className="animate-spin" />
-              Guardando color…
-            </div>
-          )}
-        </DropdownItem>
+				<DropdownItem className='flex flex-col !items-start gap-2'>
+					<div className='text-sm font-medium'>Color del tema</div>
+					<ColorSelector onColorChange={handleColorChange} />
+					{isUpdatingColor && (
+						<div className='flex items-center gap-2 text-xs opacity-70'>
+							<Icon icon='HeroArrowPath' className='animate-spin' />
+							Guardando color…
+						</div>
+					)}
+				</DropdownItem>
 
-        {/* Reset */}
-        <DropdownItem className="flex items-center justify-between">
-          <div className="text-sm opacity-80">Restablecer a mis valores</div>
-          <Button
-            size="sm"
-            variant="outline"
-            icon="HeroArrowUturnLeft"
-            onClick={handleReset}
-            title="Alt + R"
-            isDisable={isAnyUpdating}
-          >
-            Reset
-          </Button>
-        </DropdownItem>
-      </DropdownMenu>
-    </Dropdown>
-  );
+				{/* Reset */}
+				<DropdownItem className='flex items-center justify-between'>
+					<div className='text-sm opacity-80'>Restablecer a mis valores</div>
+					<Button
+						size='sm'
+						variant='outline'
+						icon='HeroArrowUturnLeft'
+						onClick={handleReset}
+						title='Alt + R'
+						isDisable={isAnyUpdating}>
+						Reset
+					</Button>
+				</DropdownItem>
+			</DropdownMenu>
+		</Dropdown>
+	);
 };
 
 export default SettingsPartial;
-
-
 
 /// version anterior -  no eliminar
 
@@ -389,7 +406,6 @@ export default SettingsPartial;
 //                 <Button icon='HeroCog8Tooth' aria-label='Settings' />
 //             </DropdownToggle>
 //             <DropdownMenu placement='bottom-end'>
-              
 
 //                 <DropdownItem className='flex flex-col !items-start'>
 //                     <div>Tamaño de Fuente:</div>
@@ -432,7 +448,7 @@ export default SettingsPartial;
 //                             className='border-none'
 //                         />
 //                     </ButtonGroup>
-                   
+
 //                 </DropdownItem>
 //                 <DropdownItem className='flex flex-col !items-start'>
 //                     <div className="mb-2">Color del Tema:</div>

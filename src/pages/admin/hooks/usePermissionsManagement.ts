@@ -19,17 +19,14 @@ import { toast } from 'react-toastify';
 export const usePermissionsManagement = () => {
     const dispatch = useAppDispatch();
 
-    // Store state
     const { users, loading: usersLoading, filters } = useAppSelector((s) => s.usersAdmin);
     const { permissions, roles, loading: permissionsLoading } = useAppSelector((s) => s.permissions);
 
-    // Local state
     const [selectedUserForPermissions, setSelectedUserForPermissions] = useState<UserWithDetails | null>(null);
     const [selectedPermissionIds, setSelectedPermissionIds] = useState<number[]>([]);
     const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
     const [toggleUserLoading, setToggleUserLoading] = useState<Set<number>>(new Set());
 
-    // Mappings
     const permissionNameToId = useMemo(
         () => new Map((permissions || []).map((p) => [p.name || p.code, p.id])),
         [permissions]
@@ -40,14 +37,12 @@ export const usePermissionsManagement = () => {
         [roles]
     );
 
-    // Load initial data
     const loadInitialData = useCallback(() => {
         dispatch(fetchUsers({}));
         dispatch(fetchPermissions());
         dispatch(fetchRoles());
     }, [dispatch]);
 
-    // Open permissions modal
     const openPermissionsModal = useCallback(
         async (user: UserWithDetails) => {
             setSelectedUserForPermissions(user);
@@ -58,29 +53,25 @@ export const usePermissionsManagement = () => {
                     setSelectedUserForPermissions(res.payload as UserWithDetails);
                 }
             } catch {
-                // Handle error silently
+                toast.error('Error al cargar detalles del usuario');
             }
         },
         [dispatch]
     );
 
-    // Toggle user status
     const toggleUser = useCallback(
         async (user: UserWithDetails) => {
-            // Validar que el usuario tenga un ID válido
             if (!user || !user.id || typeof user.id !== 'number') {
                 toast.error('Usuario inválido: ID no encontrado');
                 return;
             }
 
-            // Añadir el usuario al set de loading
             setToggleUserLoading(prev => new Set(prev).add(user.id));
 
             try {
                 const newStatus = !user.is_active;
                 const statusText = newStatus ? 'activado' : 'desactivado';
 
-                // Mostrar toast de carga inmediatamente
                 const loadingToast = toast.loading(`${newStatus ? 'Activando' : 'Desactivando'} usuario...`);
 
                 const result = await dispatch(
@@ -90,12 +81,10 @@ export const usePermissionsManagement = () => {
                     })
                 ).unwrap();
 
-                // Validar que el resultado tenga la estructura esperada
                 if (!result || !result.userId || typeof result.is_active !== 'boolean') {
                     throw new Error('Respuesta del servidor inválida');
                 }
 
-                // Actualizar toast de éxito
                 toast.update(loadingToast, {
                     render: `Usuario ${statusText} correctamente`,
                     type: 'success',
@@ -117,7 +106,6 @@ export const usePermissionsManagement = () => {
 
                 toast.error(`Error al cambiar estado del usuario: ${errorMessage}`);
             } finally {
-                // Remover el usuario del set de loading
                 setToggleUserLoading(prev => {
                     const newSet = new Set(prev);
                     newSet.delete(user.id);
@@ -128,18 +116,15 @@ export const usePermissionsManagement = () => {
         [dispatch]
     );
 
-    // Save permissions and roles
     const savePermissions = useCallback(async () => {
         if (!selectedUserForPermissions) return;
 
         try {
-            // Current direct permissions (name → id)
             const currentDirectPermIds =
                 (selectedUserForPermissions.direct_permissions || [])
                     .map((name) => permissionNameToId.get(name))
                     .filter((x): x is number => typeof x === 'number');
 
-            // Current roles by names (global/contextual)
             const currentRoleIdsFromNames =
                 [
                     ...(selectedUserForPermissions.global_roles || []),
@@ -150,13 +135,11 @@ export const usePermissionsManagement = () => {
 
             const currentRoleIds = Array.from(new Set(currentRoleIdsFromNames));
 
-            // Calculate diffs
             const toAddPerms = selectedPermissionIds.filter((id) => !currentDirectPermIds.includes(id));
             const toRemovePerms = currentDirectPermIds.filter((id) => !selectedPermissionIds.includes(id));
             const toAddRoles = selectedRoleIds.filter((id) => !currentRoleIds.includes(id));
             const toRemoveRoles = currentRoleIds.filter((id) => !selectedRoleIds.includes(id));
 
-            // Permission promises
             const permissionPromises = [
                 ...toAddPerms.map((id) =>
                     dispatch(
@@ -176,7 +159,6 @@ export const usePermissionsManagement = () => {
                 ),
             ];
 
-            // Role promises
             const rolePromises = [
                 ...toAddRoles.map((id) =>
                     dispatch(
@@ -225,18 +207,15 @@ export const usePermissionsManagement = () => {
         dispatch,
     ]);
 
-    // Close permissions modal and refresh data
     const closePermissionsModal = useCallback(() => {
         setSelectedUserForPermissions(null);
         setSelectedPermissionIds([]);
         setSelectedRoleIds([]);
 
-        // Refrescar datos cuando se cierre el modal para asegurar consistencia
         dispatch(fetchUsers({}));
     }, [dispatch]);
 
     return {
-        // State
         users,
         permissions,
         roles,
@@ -248,18 +227,15 @@ export const usePermissionsManagement = () => {
         selectedRoleIds,
         toggleUserLoading,
 
-        // Mappings
         permissionNameToId,
         roleNameToId,
 
-        // Actions
         loadInitialData,
         openPermissionsModal,
         closePermissionsModal,
         toggleUser,
         savePermissions,
 
-        // Setters
         setSelectedUserForPermissions,
         setSelectedPermissionIds,
         setSelectedRoleIds,

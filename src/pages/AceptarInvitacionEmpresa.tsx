@@ -1,17 +1,17 @@
-import FieldWrap from "@/components/form/FieldWrap";
-import Input from "@/components/form/Input";
-import Validation from "@/components/form/Validation";
-import Icon from "@/components/icon/Icon";
-import PageWrapper from "@/components/layouts/PageWrapper/PageWrapper"
-import Button from "@/components/ui/Button";
-import ApiService from "@/services/ApiService";
-import LogoTemplate from "@/templates/layouts/Logo/Logo.template";
-import classNames from "classnames";
-import { useFormik } from "formik";
-import { useState } from "react";
-import { useParams } from "react-router-dom";
-import { toast } from "react-toastify";
-import * as Yup from 'yup'
+import FieldWrap from '@/components/form/FieldWrap';
+import Input from '@/components/form/Input';
+import Validation from '@/components/form/Validation';
+import Icon from '@/components/icon/Icon';
+import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
+import Button from '@/components/ui/Button';
+import ApiService from '@/services/ApiService';
+import LogoTemplate from '@/templates/layouts/Logo/Logo.template';
+import classNames from 'classnames';
+import { useFormik } from 'formik';
+import { useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import * as Yup from 'yup';
 
 const validationSchema = Yup.object().shape({
 	password: Yup.string()
@@ -23,31 +23,35 @@ const validationSchema = Yup.object().shape({
 });
 
 function AceptarInvitacionEmpresa() {
-	const { token } = useParams()
-	const [passwordShowStatus, setPasswordShowStatus] = useState<boolean>(false)
+	const { token } = useParams();
+	const [passwordShowStatus, setPasswordShowStatus] = useState<boolean>(false);
 
 	const formik = useFormik({
 		enableReinitialize: true,
 		initialValues: {
-			password: "",
-			confirm_password: ""
+			password: '',
+			confirm_password: '',
 		},
 		validationSchema,
 		onSubmit: async (values) => {
 			try {
-				const response = await ApiService.fetchData({ url: `/api/activar-cuenta/${token}/`, method: 'post', headers: { 'Content-Type': 'application/json' }, data: JSON.stringify({ password: values.password }) })
+				const response = await ApiService.fetchData({
+					url: `/api/activar-cuenta/${token}/`,
+					method: 'post',
+					headers: { 'Content-Type': 'application/json' },
+					data: JSON.stringify({ password: values.password }),
+				});
 				if (response.data) {
-					toast.success("Invitacion Aceptada", { autoClose: 1000 })
-
+					toast.success('Invitacion Aceptada', { autoClose: 1000 });
 				}
 			} catch (error: any) {
-				toast.error(error.response.data.detail)
+				toast.error(error.response.data.detail);
 			}
-		}
-	})
+		},
+	});
 
 	return (
-		<PageWrapper isProtectedRoute={false} title="Aceptar Invitacion a Empresa">
+		<PageWrapper isProtectedRoute={false} title='Aceptar Invitacion a Empresa'>
 			<div className='container mx-auto flex h-full items-center justify-center'>
 				<div className='flex max-w-sm flex-col gap-8'>
 					<div>
@@ -57,7 +61,7 @@ function AceptarInvitacionEmpresa() {
 						<span className='text-4xl font-semibold'>¿Acepta la Invitación?</span>
 					</div>
 					<div className='flex flex-col gap-4'>
-						<div className={classNames({ 'mb-2': !formik.isValid, })}>
+						<div className={classNames({ 'mb-2': !formik.isValid })}>
 							<Validation
 								isValid={formik.isValid}
 								isTouched={formik.touched.password}
@@ -86,7 +90,7 @@ function AceptarInvitacionEmpresa() {
 								</FieldWrap>
 							</Validation>
 						</div>
-						<div className={classNames({ 'mb-2': !formik.isValid, })}>
+						<div className={classNames({ 'mb-2': !formik.isValid })}>
 							<Validation
 								isValid={formik.isValid}
 								isTouched={formik.touched.confirm_password}
@@ -128,7 +132,7 @@ function AceptarInvitacionEmpresa() {
 				</div>
 			</div>
 		</PageWrapper>
-	)
+	);
 }
 
-export default AceptarInvitacionEmpresa
+export default AceptarInvitacionEmpresa;
