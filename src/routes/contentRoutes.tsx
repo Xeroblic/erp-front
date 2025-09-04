@@ -6,7 +6,6 @@ import pagesConfig from '@/config/pages.config';
 import LoginPage from '@/pages/Login.page';
 import RecuperarPassword from '@/pages/ResetPassword/RecuperarPassword';
 import ConfirmarNuevaPass from '@/pages/ResetPassword/ConfirmarNuevaPass';
-import AceptarInvitacion from '@/pages/InvitacionEmpresa/AceptarInvitacionEmpresa';
 import SinPermisos from '@/pages/SinPermisos';
 import NotFoundPage from '@/pages/NotFound.page';
 
@@ -32,16 +31,12 @@ export interface IRoutePersonalizada extends PathRouteProps {
 const cfg = pagesConfig as any;
 
 const contentRoutes: IRoutePersonalizada[] = [
-	// Rutas públicas...
 	{ path: cfg.loginPage.to, element: <LoginPage />, public: true },
 	{ path: cfg.recuperarPassword.to, element: <RecuperarPassword />, public: true },
-	// ...otras rutas públicas...
 
-	// Rutas privadas (protegidas por permisos)...
 	{ path: cfg.profilePage.to, element: <ProfilePage />, authority: cfg.profilePage.authority },
 	{ path: cfg.dashboard.to, element: <Dashboard />, authority: cfg.dashboard.authority },
 
-	// Gestión (rutas anidadas bajo "Gestión")
 	{
 		path: cfg.manage.subPages.company.to,
 		element: <EmpresaPage />,
@@ -78,11 +73,9 @@ const contentRoutes: IRoutePersonalizada[] = [
 		authority: cfg.humanResources.subPages.invitationsAdmin.authority,
 	},
 
-	// ... (eventualmente aquí se agregarían rutas para Categorías, Fabricantes, Clientes, etc., con sus respectivos authority)
 
-	// Rutas genéricas
 	{ path: '/sin-permisos', element: <SinPermisos />, public: true },
-	{ path: '/', element: <Dashboard />, authority: cfg.dashboard.authority }, // Redirección raíz al dashboard
+	{ path: '/', element: <Dashboard />, authority: cfg.dashboard.authority },
 	{ path: '*', element: <NotFoundPage />, public: true },
 ];
 
