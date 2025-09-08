@@ -19,6 +19,12 @@ import feature from './slices/featuresSlice/featuresSlice';
 // Importamos el tipo sin crear dependencia circular
 import type { PersonalizacionState } from './slices/personalizacion/personalizacionSlice';
 
+// Importar nuevos slices ERP
+import transferencias, { TransferState } from './slices/transfers/transfersSlice';
+import cotizaciones, { QuoteState } from './slices/quotes/quotesSlice';
+import ventas from './slices/sales/salesSlice';
+import inventario from './slices/inventory/inventorySlice';
+
 export interface RootState {
     auth: AuthState;
     core: CoreState;
@@ -36,7 +42,12 @@ export interface RootState {
     // item?: ItemState;
     // bodega?: BodegaState;
     cliente: ClienteState;
-    [RtkQueryService.reducerPath]: any
+    // Nuevos slices ERP
+    transferencias: TransferState;
+    cotizaciones: QuoteState;
+    ventas: ReturnType<typeof ventas>;
+    inventario: ReturnType<typeof inventario>;
+    [RtkQueryService.reducerPath]: any;
 }
 
 export interface AsyncReducers {
@@ -57,6 +68,11 @@ const staticReducers = {
     permissions,
     usersAdmin,
     feature,
+    // Nuevos slices ERP
+    transferencias,
+    cotizaciones,
+    ventas,
+    inventario,
     // personalizacion, // Comentado temporalmente
     [RtkQueryService.reducerPath]: RtkQueryService.reducer,
 };

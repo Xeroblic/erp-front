@@ -27,7 +27,6 @@ const InvitationsAdmin: React.FC = () => {
         refreshInvitations
     } = useInvitationsManagement();
 
-    // Validación defensiva para asegurar que invitations es siempre un array válido
     const invitations = Array.isArray(rawInvitations) ? rawInvitations.filter(Boolean) : [];
 
     useEffect(() => {
@@ -35,7 +34,7 @@ const InvitationsAdmin: React.FC = () => {
     }, []);
 
     return (
-        <PageWrapper name="Gestión de Invitaciones">
+        <PageWrapper title='Gestión de Invitaciones' isProtectedRoute name="Gestión de Invitaciones">
             <Subheader>
                 <SubheaderLeft>
                     <div className="flex items-center space-x-3">
@@ -47,7 +46,7 @@ const InvitationsAdmin: React.FC = () => {
                                 Gestión de Invitaciones
                             </h1>
                             <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                                Administra las invitaciones del sistema para nuevos usuarios
+                                Administra las invitaciones enviadas a nuevos usuarios
                             </p>
                         </div>
                     </div>
@@ -65,9 +64,8 @@ const InvitationsAdmin: React.FC = () => {
 
             <Container>
                 <div className="space-y-6">
-                    {/* Estadísticas */}
+                
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {/* Total */}
                         <Card className="hover:shadow-md transition-shadow">
                             <CardBody className="p-6">
                                 <div className="flex items-center">
@@ -84,7 +82,6 @@ const InvitationsAdmin: React.FC = () => {
                             </CardBody>
                         </Card>
 
-                        {/* Pendientes */}
                         <Card className="hover:shadow-md transition-shadow">
                             <CardBody className="p-6">
                                 <div className="flex items-center">
@@ -101,7 +98,6 @@ const InvitationsAdmin: React.FC = () => {
                             </CardBody>
                         </Card>
 
-                        {/* Aceptadas */}
                         <Card className="hover:shadow-md transition-shadow">
                             <CardBody className="p-6">
                                 <div className="flex items-center">
@@ -118,7 +114,6 @@ const InvitationsAdmin: React.FC = () => {
                             </CardBody>
                         </Card>
 
-                        {/* Expiradas */}
                         <Card className="hover:shadow-md transition-shadow">
                             <CardBody className="p-6">
                                 <div className="flex items-center">
@@ -136,7 +131,6 @@ const InvitationsAdmin: React.FC = () => {
                         </Card>
                     </div>
 
-                    {/* Filtros */}
                     <Card>
                         <CardHeader>
                             <div className="flex items-center space-x-2">
@@ -146,7 +140,6 @@ const InvitationsAdmin: React.FC = () => {
                         </CardHeader>
                         <CardBody className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {/* Filtro de Estado */}
                                 <div>
                                     <Label htmlFor="status-filter">Estado</Label>
                                     <Select
@@ -164,8 +157,6 @@ const InvitationsAdmin: React.FC = () => {
                                         <option value="cancelled">Canceladas</option>
                                     </Select>
                                 </div>
-
-                                {/* Filtro de Rol */}
                                 <div>
                                     <Label htmlFor="role-filter">Rol</Label>
                                     <Select
@@ -183,8 +174,6 @@ const InvitationsAdmin: React.FC = () => {
                                         <option value="supervisor">Supervisor</option>
                                     </Select>
                                 </div>
-
-                                {/* Campo de Búsqueda */}
                                 <div>
                                     <Label htmlFor="search-filter">Buscar</Label>
                                     <Input
@@ -197,8 +186,6 @@ const InvitationsAdmin: React.FC = () => {
                                     />
                                 </div>
                             </div>
-
-                            {/* Filtros Activos */}
                             <div className="flex flex-wrap gap-2 pt-2">
                                 {filters.status && (
                                     <button
@@ -241,8 +228,6 @@ const InvitationsAdmin: React.FC = () => {
                             </div>
                         </CardBody>
                     </Card>
-
-                    {/* Tabla de Invitaciones */}
                     <InvitationsTable
                         invitations={invitations}
                         isLoading={isLoading}
@@ -253,7 +238,6 @@ const InvitationsAdmin: React.FC = () => {
                 </div>
             </Container>
 
-            {/* Modales */}
             <CreateInvitationModal
                 isOpen={isCreateModalOpen}
                 onClose={closeCreateModal}
