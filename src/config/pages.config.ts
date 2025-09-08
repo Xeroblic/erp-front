@@ -106,7 +106,7 @@ export const privatePages = {
         to: '/gestion/usuarios',
         text: 'Usuarios',
         icon: 'HeroUsers',
-        authority: ['view-user', 'manage-user'],
+        authority: ['view-user'],
         roles: ['super-admin', 'company-admin', 'subsidiary-admin'],
       },
       permissionsAdmin: {
