@@ -68,7 +68,6 @@ export const obtenerPersonalizacionThunk = createAsyncThunk<
                 headers: { Authorization: `Bearer ${token}` },
             });
 
-            // Extraer los datos de personalización del objeto anidado
             const personalizationData = resp.data.personalization || resp.data;
             return personalizationData;
         } catch (error: any) {
@@ -99,21 +98,18 @@ export const actualizarPersonalizacionThunk = createAsyncThunk<
     }
 );
 
-// Helper para persistir en localStorage
 const persistToLocalStorage = (key: string, value: any) => {
     try {
         localStorage.setItem(key, typeof value === 'string' ? value : String(value));
     } catch (error) {
-        // Error silencioso - no mostrar warnings
+        return null;
     }
 };
 
-// Slice de personalización
 const personalizacionSlice = createSlice({
     name: 'personalizacion',
     initialState: getInitialState(),
     reducers: {
-        // Setters locales que persisten en localStorage
         setFontSize: (state, action: PayloadAction<number>) => {
             state.fontSize = action.payload;
             state.hasUnsavedChanges = true;
@@ -150,13 +146,10 @@ const personalizacionSlice = createSlice({
             persistToLocalStorage('zentria_asideStatus', action.payload);
         },
 
-        // Sincronizar con datos de la API
         syncWithApiData: (state, action: PayloadAction<IPersonalizacionUsuario>) => {
             const apiData = action.payload;
 
-            // Solo actualizar en la primera inicialización
             if (!state.isInitialized) {
-                // Aplicar colores de la API
                 if (apiData.tcolor) {
                     state.themeColor = apiData.tcolor as TColors;
                     persistToLocalStorage('zentria_themeColor', apiData.tcolor);
@@ -167,13 +160,11 @@ const personalizacionSlice = createSlice({
                     persistToLocalStorage('zentria_themeColorShade', apiData.tcolor_int);
                 }
 
-                // Aplicar fontSize de la API
                 if (apiData.font_size) {
                     state.fontSize = apiData.font_size;
                     persistToLocalStorage('zentria_fontSize', apiData.font_size);
                 }
 
-                // Mapear tema de la API al formato local
                 if (apiData.tema !== undefined && apiData.tema !== null) {
                     const darkModeValue = apiData.tema === 1 ? DARK_MODE.LIGHT
                         : apiData.tema === 2 ? DARK_MODE.DARK
@@ -187,12 +178,10 @@ const personalizacionSlice = createSlice({
             state.isInitialized = true;
         },
 
-        // Marcar como inicializado
         markAsInitialized: (state) => {
             state.isInitialized = true;
         },
 
-        // Limpiar cambios no guardados
         clearUnsavedChanges: (state) => {
             state.hasUnsavedChanges = false;
         },
