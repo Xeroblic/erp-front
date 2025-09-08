@@ -191,7 +191,7 @@ export default function EmpresaDetalle() {
 					</div>
 
 					<CardBody>
-						<form onSubmit={formik.handleSubmit} className="space-y-6">
+						<form onSubmit={formik.handleSubmit} className="space-y-6 mt-6">
 							{/* Información General */}
 							{activeTab === 'general' && (
 								<div className="space-y-6">

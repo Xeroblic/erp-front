@@ -6,6 +6,7 @@ import Icon from '@/components/icon/Icon'
 import Card, { CardBody, CardHeader } from '@/components/ui/Card'
 import SubsidiaryModal from './SubsidiaryModal'
 import { ISubempresa } from '@/interface/empresas.interface'
+import { useNavigate } from 'react-router-dom'
 
 interface SubsidiariesTableProps {
     subsidiaries: ISubempresa[]
@@ -17,6 +18,7 @@ export default function SubsidiariesTable({ subsidiaries, loading, onRefresh }: 
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [editingSubsidiary, setEditingSubsidiary] = useState<ISubempresa | null>(null)
 
+    const navigate = useNavigate()
     const handleEdit = (subsidiary: ISubempresa) => {
         setEditingSubsidiary(subsidiary)
         setIsModalOpen(true)
@@ -179,6 +181,7 @@ export default function SubsidiariesTable({ subsidiaries, loading, onRefresh }: 
                                                     size="sm"
                                                     icon="HeroEye"
                                                     className="p-1"
+                                                    onClick={() => navigate(`/gestion/subempresa/${subsidiary.id}`)}
                                                 />
                                             </div>
                                         </Td>
