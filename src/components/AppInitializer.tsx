@@ -41,16 +41,14 @@ const AppInitializer = () => {
             dispatch(obtenerPersonalizacionThunk())
                 .then((result) => {
                     if (result.meta.requestStatus === 'rejected') {
-                        navigate('/login');
-                        toast.error('Sesión expirada. Por favor, inicia sesión nuevamente.');
+                        console.error('Error al cargar personalización:', result);
+                        toast.error('Error al cargar la personalización del usuario');
                     }
                 })
                 .catch((error) => {
+                    console.error('Error al cargar personalización:', error);
                     toast.error('Error al cargar la personalización del usuario');
                 });
-        } else if (!access) {
-            navigate('/login');
-            return;
         }
     }, []); // Solo ejecutar una vez
 

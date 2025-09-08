@@ -3,13 +3,11 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { set } from "lodash";
 import { toast } from "react-toastify";
 
-// Extender la interfaz de configuración para incluir isLoginRequest y _retry
 interface CustomAxiosRequestConfig<D = any> extends InternalAxiosRequestConfig<D> {
     isLoginRequest?: boolean;
     _retry?: boolean;
 }
 
-// Controller para cancelar peticiones
 let abortController = new AbortController();
 
 export const cancelAllRequests = () => {
@@ -22,10 +20,8 @@ const BaseService = axios.create({
     baseURL: `${process.env.VITE_API_URL}`
 });
 
-// Interceptor de Solicitud
 BaseService.interceptors.request.use(
     (config: CustomAxiosRequestConfig) => {
-        // Agregar signal para cancelación
         if (!config.isLoginRequest) {
             config.signal = abortController.signal;
         }
@@ -42,7 +38,6 @@ BaseService.interceptors.request.use(
     error => Promise.reject(error)
 );
 
-// Interceptor de Respuesta
 BaseService.interceptors.response.use(
     response => response,
     async (error: AxiosError) => {
@@ -68,32 +63,15 @@ BaseService.interceptors.response.use(
 
                     originalRequest.headers['Authorization'] = 'Bearer ' + newToken;
 
-                    // Reintentar la solicitud original con el nuevo token
                     return BaseService(originalRequest);
                 } catch (refreshError) {
-                    // Manejar el fallo del refresco del token
-                    toast.error("Sesión Expirada");
-                    store.dispatch(logout());
-                    cancelAllRequests(); // Cancelar todas las peticiones pendientes
-                    // Redirigir a login después de un breve delay
-                    setTimeout(() => {
-                        window.location.href = '/login';
-                    }, 1000);
+                    console.error("Error refreshing token:", refreshError);
                     return Promise.reject(refreshError);
                 }
-            } else {
-                // No hay token de refresco disponible
-                toast.error("Sesión Expirada");
-                store.dispatch(logout());
-                cancelAllRequests(); // Cancelar todas las peticiones pendientes
-                // Redirigir a login después de un breve delay
-                setTimeout(() => {
-                    window.location.href = '/login';
-                }, 1000);
-                return Promise.reject(error);
             }
         }
 
+        console.error("API Error:", error);
         return Promise.reject(error);
     }
 );
