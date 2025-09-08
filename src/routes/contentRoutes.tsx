@@ -14,9 +14,13 @@ const Dashboard = lazy(() => import('@/pages/MainDashboard'));
 // const ProductosPage = lazy(() => import("@/pages/Productos"));
 // const UsuariosPage  = lazy(() => import("@/pages/Usuarios"));
 // const Cotizaciones  = lazy(() => import("@/pages/Cotizaciones"));
-const EmpresaPage = lazy(() => import('@/pages/gestionAdmin/empresa/Empresa.tsx'));
-const SubEmpresa = lazy(() => import('@/pages/gestionAdmin/subempresa/SubEmpresa.tsx'));
+const EmpresaPage = lazy(() => import('@/pages/gestionAdmin/empresa/Empresa'));
+const SubEmpresa = lazy(() => import('@/pages/gestionAdmin/subempresa/SubEmpresa'));
+const SubEmpresaDetalle = lazy(
+	() => import('@/pages/gestionAdmin/subempresa/SubEmpresaDetalle'),
+);
 const Sucursales = lazy(() => import('@/pages/gestionAdmin/sucursales/Sucursales.tsx'));
+const SucursalDetalle = lazy(() => import('@/pages/gestionAdmin/sucursales/SucursalDetalle.tsx'));
 const RolesPermisos = lazy(() => import('@/pages/gestionAdmin/roles y permisos/RolesPermisos.tsx'));
 const GestionUsuarios = lazy(() => import('@/pages/gestionAdmin/usuarios/Usuarios.tsx'));
 const PermissionsAdmin = lazy(() => import('@/pages/admin/PermissionsAdmin.tsx'));
@@ -48,9 +52,19 @@ const contentRoutes: IRoutePersonalizada[] = [
 		authority: cfg.manage.subPages.subsidiary.authority,
 	},
 	{
+		path: cfg.manage.subPages.subsidiaryDetail.to,
+		element: <SubEmpresaDetalle />,
+		authority: cfg.manage.subPages.subsidiaryDetail.authority,
+	},
+	{
 		path: cfg.manage.subPages.branch.to,
 		element: <Sucursales />,
 		authority: cfg.manage.subPages.branch.authority,
+	},
+	{
+		path: cfg.manage.subPages.branchDetail.to,
+		element: <SucursalDetalle />,
+		authority: cfg.manage.subPages.branchDetail.authority,
 	},
 	{
 		path: cfg.manage.subPages.roles.to,
@@ -72,7 +86,6 @@ const contentRoutes: IRoutePersonalizada[] = [
 		element: <InvitationsAdmin />,
 		authority: cfg.humanResources.subPages.invitationsAdmin.authority,
 	},
-
 
 	{ path: '/sin-permisos', element: <SinPermisos />, public: true },
 	{ path: '/', element: <Dashboard />, authority: cfg.dashboard.authority },

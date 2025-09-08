@@ -17,7 +17,7 @@ import {
 	getPaginationRowModel,
 	getSortedRowModel,
 	flexRender,
-	SortingState
+	SortingState,
 } from '@tanstack/react-table';
 import Input from '@/components/form/Input';
 import { IUserMe } from '@/interface/user.interface';
@@ -29,7 +29,6 @@ const columnHelper = createColumnHelper<IUserMe>();
 export default function UsuarioLista() {
 	const user = useAppSelector((s) => s.auth.user);
 	const empresaId = user?.company?.id;
-
 
 	const [usuarios, setUsuarios] = useState<IUserMe[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -83,18 +82,21 @@ export default function UsuarioLista() {
 	}, [user, empresaId]);
 
 	const columns = [
-		columnHelper.accessor('first_name', { header: 'Nombre', cell: info => info.getValue() }),
-		columnHelper.accessor('last_name', { header: 'Apellido', cell: info => info.getValue() }),
-		columnHelper.accessor('email', { header: 'Email', cell: info => info.getValue() }),
-		columnHelper.accessor('rut', { header: 'RUT', cell: info => info.getValue() ?? '—' }),
-		columnHelper.accessor('position', { header: 'Rol / Cargo', cell: info => info.getValue() ?? '—' }),
+		columnHelper.accessor('first_name', { header: 'Nombre', cell: (info) => info.getValue() }),
+		columnHelper.accessor('last_name', { header: 'Apellido', cell: (info) => info.getValue() }),
+		columnHelper.accessor('email', { header: 'Email', cell: (info) => info.getValue() }),
+		columnHelper.accessor('rut', { header: 'RUT', cell: (info) => info.getValue() ?? '—' }),
+		columnHelper.accessor('position', {
+			header: 'Rol / Cargo',
+			cell: (info) => info.getValue() ?? '—',
+		}),
 		columnHelper.accessor('subsidiary.name', {
 			header: 'Subempresa',
-			cell: info => info.row.original.subsidiary?.name ?? '—',
+			cell: (info) => info.row.original.subsidiary?.name ?? '—',
 		}),
 		columnHelper.accessor('branch.name', {
 			header: 'Sucursal',
-			cell: info => info.row.original.branch?.name ?? '—',
+			cell: (info) => info.row.original.branch?.name ?? '—',
 		}),
 	];
 
@@ -108,92 +110,75 @@ export default function UsuarioLista() {
 		getFilteredRowModel: getFilteredRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		getPaginationRowModel: getPaginationRowModel(),
-		initialState: { pagination: { pageSize: 10 } }
+		initialState: { pagination: { pageSize: 10 } },
 	});
 
 	return (
-		<PermissionGuard
-			permissions={['view-users', 'manage-users']}
-			roles={['super-admin', 'company-admin', 'subsidiary-admin']}
-			companyId={empresaId}
-			fallback={
-				<PageWrapper isProtectedRoute title="Acceso Denegado" name="Sin Permisos">
-					<Container className="pt-4">
-						<Card>
-							<CardBody className="text-center p-8">
-								<div className="text-red-600 mb-4">
-									<Icon icon="HeroExclamationTriangle" className="w-16 h-16 mx-auto" />
-								</div>
-								<h3 className="text-lg font-semibold text-gray-900 mb-2">
-									Acceso Denegado
-								</h3>
-								<p className="text-gray-600">
-									No tienes permisos para ver la lista de usuarios de esta empresa
-								</p>
-							</CardBody>
-						</Card>
-					</Container>
-				</PageWrapper>
-			}
-		>
-			<PageWrapper isProtectedRoute title="Usuarios" name="Usuarios">
-				<Subheader>
-					<SubheaderLeft>
-						<Badge className="text-xl">Usuarios de la Empresa</Badge>
-					</SubheaderLeft>
-					<SubheaderRight>
-						<Input
-							name='search'
-							placeholder="Buscar..."
-							value={globalFilter}
-							onChange={e => setGlobalFilter(e.target.value)}
-							className="border rounded w-48"
-						/>
-					</SubheaderRight>
-				</Subheader>
+		<PageWrapper isProtectedRoute title='Usuarios' name='Usuarios'>
+			<Subheader>
+				<SubheaderLeft>
+					<Badge className='text-xl'>Usuarios de la Empresa</Badge>
+				</SubheaderLeft>
+				<SubheaderRight>
+					<Input
+						name='search'
+						placeholder='Buscar...'
+						value={globalFilter}
+						onChange={(e) => setGlobalFilter(e.target.value)}
+						className='w-48 rounded border'
+					/>
+				</SubheaderRight>
+			</Subheader>
 
-				<Container className="pt-4">
-					<Card>
-						<CardBody className="overflow-auto">
-							{loading ? (
-								<div className="p-8 text-center">Cargando usuarios…</div>
-							) : usuarios.length === 0 ? (
-								<div className="p-8 text-center text-gray-600">No hay usuarios registrados</div>
-							) : (
-								<>
-									<Table className="table-fixed w-full">
-										<THead>
-											{table.getHeaderGroups().map(hg => (
-												<Tr key={hg.id}>
-													{hg.headers.map(header => (
-														<Th key={header.id} className="text-left">
-															{flexRender(header.column.columnDef.header, header.getContext())}
-														</Th>
-													))}
-												</Tr>
-											))}
-										</THead>
-										<TBody>
-											{table.getRowModel().rows.map(row => (
-												<Tr key={row.id}>
-													{row.getVisibleCells().map(cell => (
-														<Td key={cell.id}>
-															{flexRender(cell.column.columnDef.cell, cell.getContext())}
-														</Td>
-													))}
-												</Tr>
-											))}
-										</TBody>
-									</Table>
-									<div className="mt-4">
-										<TableCardFooterTemplateV2 table={table} />
-									</div>
-								</>
-							)}
-						</CardBody>
-					</Card>
-				</Container>
-			</PageWrapper>
-		</PermissionGuard>
+			<Container className='pt-4'>
+				<Card>
+					<CardBody className='overflow-auto'>
+						{loading ? (
+							<div className='p-8 text-center'>Cargando usuarios…</div>
+						) : usuarios.length === 0 ? (
+							<div className='p-8 text-center text-gray-600'>
+								No hay usuarios registrados
+							</div>
+						) : (
+							<>
+								<Table className='w-full table-fixed'>
+									<THead>
+										{table.getHeaderGroups().map((hg) => (
+											<Tr key={hg.id}>
+												{hg.headers.map((header) => (
+													<Th key={header.id} className='text-left'>
+														{flexRender(
+															header.column.columnDef.header,
+															header.getContext(),
+														)}
+													</Th>
+												))}
+											</Tr>
+										))}
+									</THead>
+									<TBody>
+										{table.getRowModel().rows.map((row) => (
+											<Tr key={row.id}>
+												{row.getVisibleCells().map((cell) => (
+													<Td key={cell.id}>
+														{flexRender(
+															cell.column.columnDef.cell,
+															cell.getContext(),
+														)}
+													</Td>
+												))}
+											</Tr>
+										))}
+									</TBody>
+								</Table>
+								<div className='mt-4'>
+									<TableCardFooterTemplateV2 table={table} />
+								</div>
+							</>
+						)}
+					</CardBody>
+				</Card>
+			</Container>
+		</PageWrapper>
 	);
 }

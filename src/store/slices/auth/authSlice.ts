@@ -67,18 +67,77 @@ export const userMeThunk = createAsyncThunk<
 
   try {
     const resp = await ApiService.fetchData<{
-      user: IUserMe;
-      permisos: string[];
+      success?: boolean;
+      data?: {
+        id?: number;
+        email?: string;
+        first_name?: string;
+        last_name?: string;
+        global_roles?: string[];
+        all_permissions?: string[];
+        direct_permissions?: string[];
+        role_permissions?: string[];
+        branch?: any;
+        companies?: any[];
+        [key: string]: any;
+      };
+      user_context?: {
+        current_user_id: number;
+        is_super_admin: boolean;
+        can_manage_users: boolean;
+        access_level: string;
+      };
+      // Estructura antigua para compatibilidad
+      user?: IUserMe;
+      permisos?: string[];
       roles?: string[];
-      personalization?: any; // La personalización puede venir con el perfil
+      personalization?: any;
     }>({
       url: "/perfil",
       method: "get",
       headers: { Authorization: `Bearer ${token}` },
     });
 
-    return resp.data;
-  } catch {
+    // Compatibilidad con estructura antigua y nueva
+    let userData: IUserMe;
+    let permisos: string[];
+    let roles: string[];
+
+    if (resp.data.data && resp.data.data.id) {
+      // Nueva estructura del backend
+      const data = resp.data.data;
+      userData = {
+        id: data.id!,
+        email: data.email!,
+        first_name: data.first_name!,
+        last_name: data.last_name!,
+        // Mapear otros campos según sea necesario
+        ...data
+      } as IUserMe;
+
+      // Combinar todos los permisos disponibles
+      permisos = [
+        ...(data.all_permissions || []),
+        ...(data.direct_permissions || []),
+        ...(data.role_permissions || []),
+        ...(data.global_roles || [])
+      ];
+
+      roles = data.global_roles || [];
+    } else {
+      // Estructura antigua (compatibilidad)
+      userData = resp.data.user || ({} as IUserMe);
+      permisos = resp.data.permisos || [];
+      roles = resp.data.roles || [];
+    }
+
+    return {
+      user: userData,
+      permisos: Array.from(new Set(permisos)), // Eliminar duplicados
+      roles: Array.from(new Set(roles))
+    };
+  } catch (error: any) {
+    console.error('Error en userMeThunk:', error);
     return rejectWithValue("No se pudo obtener el perfil");
   }
 });

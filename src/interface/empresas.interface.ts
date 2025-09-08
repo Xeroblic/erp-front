@@ -10,13 +10,39 @@ export interface IUsuarioEmpresa {
 
 export interface ISucursal {
   id: number;
-  subempresa_id: number;
-  nombre: string;
-  direccion?: string;
+  subsidiary_id?: number; // Para compatibilidad con backend
+  subempresa_id?: number; // Para compatibilidad legacy
+  branch_name?: string; // Campo del backend
+  branch_rut?: string;
+  branch_phone?: string;
+  branch_address?: string;
+  branch_email?: string;
+  branch_manager_name?: string;
+  branch_manager_phone?: string;
+  branch_manager_email?: string;
+  branch_status?: string | number | boolean;
+  branch_created_at?: string;
+  branch_updated_at?: string;
+
+  // Campos normalizados para el frontend (mapeo de los anteriores)
+  nombre?: string; // Para compatibilidad legacy
+  name: string;
+  rut?: string;
+  phone?: string;
+  address?: string;
+  email?: string;
+  manager_name?: string;
+  manager_phone?: string;
+  manager_email?: string;
+  status?: string | number | boolean;
   descripcion?: string;
   created_at: string;
   updated_at: string;
-  usuarios: IUsuarioEmpresa[];
+  direccion?: string; // Para compatibilidad legacy
+  usuarios?: IUsuarioEmpresa[];
+
+  // Información adicional de la subsidiaria
+  subsidiary_name?: string;
 }
 
 export interface IBranch {

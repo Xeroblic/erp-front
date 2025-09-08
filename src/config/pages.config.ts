@@ -68,6 +68,14 @@ export const privatePages = {
         authority: ['view-subsidiary', 'edit-subsidiary'],
         roles: ['super-admin', 'company-admin'],
       },
+      subsidiaryDetail: {
+        id: 'subsidiaryDetail',
+        to: '/gestion/subempresa/:id',
+        text: 'Detalle Subempresa',
+        icon: 'HeroBuildingStorefront',
+        authority: ['view-subsidiary'],
+        roles: ['super-admin', 'company-admin', 'subsidiary-admin'],
+      },
       branch: {
         id: 'branch',
         to: '/gestion/sucursal',
@@ -75,6 +83,14 @@ export const privatePages = {
         icon: 'HeroBuildingStorefront',
         authority: ['view-branch', 'edit-branch'],
         roles: ['super-admin', 'company-admin', 'subsidiary-admin'],
+      },
+      branchDetail: {
+        id: 'branchDetail',
+        to: '/gestion/sucursal/:id',
+        text: 'Detalle Sucursal',
+        icon: 'HeroBuildingStorefront',
+        authority: ['view-branch'],
+        roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin'],
       },
       roles: {
         id: 'roles',
@@ -90,7 +106,7 @@ export const privatePages = {
         to: '/gestion/usuarios',
         text: 'Usuarios',
         icon: 'HeroUsers',
-        authority: ['view-users', 'manage-users'],
+        authority: ['view-user', 'manage-user'],
         roles: ['super-admin', 'company-admin', 'subsidiary-admin'],
       },
       permissionsAdmin: {

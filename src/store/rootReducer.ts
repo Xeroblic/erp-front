@@ -12,6 +12,7 @@ import item, { ItemState } from './slices/item/itemSlice';
 import cliente, { ClienteState } from './slices/clientes/clienteSlice';
 import rolesPermisos, { RolesPermisosState } from './slices/rolesPermisos/rolesPermisosSlice';
 import subEmpresa, { SubempresaState } from './slices/subempresa/subEmpresaSlice';
+import sucursales, { SucursalesState } from './slices/sucursales/sucursalesSlice';
 import permissions from './slices/permissions/permissionsSlice';
 import usersAdmin from './slices/usersAdmin/usersAdminSlice';
 import feature from './slices/featuresSlice/featuresSlice';
@@ -26,6 +27,7 @@ export interface RootState {
     empresa: EmpresaState;
     rolesPermisos: RolesPermisosState;
     subEmpresa: SubempresaState;
+    sucursales: SucursalesState;
     permissions: ReturnType<typeof permissions>;
     usersAdmin: ReturnType<typeof usersAdmin>;
     feature: ReturnType<typeof feature>;
@@ -50,6 +52,7 @@ const staticReducers = {
     invitations,
     rolesPermisos,
     subEmpresa,
+    sucursales,
     cliente,
     permissions,
     usersAdmin,

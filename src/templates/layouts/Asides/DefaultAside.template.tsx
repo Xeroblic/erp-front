@@ -1,30 +1,30 @@
 import React, { PropsWithChildren, useMemo } from 'react';
-import { useNavigate } from "react-router-dom";
-import Aside, { AsideBody } from "@/components/layouts/Aside/Aside";
+import { useNavigate } from 'react-router-dom';
+import Aside, { AsideBody } from '@/components/layouts/Aside/Aside';
 import Nav, {
 	NavItem,
 	NavCollapse,
 	NavSeparator,
-	NavTitle
-} from "@/components/layouts/Navigation/Nav";
-import { useAppSelector } from "@/store";
-import AsideHeadPart from "./_parts/AsideHead.part";
-import AsideFooterPart from "./_parts/AsideFooter.part";
-import Pages from "@/config/pages.config";
+	NavTitle,
+} from '@/components/layouts/Navigation/Nav';
+import { useAppSelector } from '@/store';
+import AsideHeadPart from './_parts/AsideHead.part';
+import AsideFooterPart from './_parts/AsideFooter.part';
+import Pages from '@/config/pages.config';
 import useAuthority from '@/hooks/useAuthority';
 
 type AuthorityGuardProps = PropsWithChildren<{
-	userAuthority?: string[]
-	authority?: string[]
+	userAuthority?: string[];
+	authority?: string[];
 	/** Modo AND - todos los permisos deben coincidir */
-	requireAll?: boolean
+	requireAll?: boolean;
 	/** ID de empresa específica */
-	companyId?: number
+	companyId?: number;
 	/** ID de subsidiaria específica */
-	subsidiaryId?: number
+	subsidiaryId?: number;
 	/** ID de sucursal específica */
-	branchId?: number
-}>
+	branchId?: number;
+}>;
 
 const AuthorityCheckNav = (props: AuthorityGuardProps) => {
 	const {
@@ -35,21 +35,22 @@ const AuthorityCheckNav = (props: AuthorityGuardProps) => {
 		subsidiaryId,
 		branchId,
 		children,
-	} = props
+	} = props;
 
 	const user = useAppSelector((s) => s.auth.user);
 
+	// IMPORTANTE: Siempre llamar hooks primero, antes de cualquier return condicional
+	const roleMatched = useAuthority(userAuthority, authority, requireAll, true);
+
 	// Si `authority` es vacío o `undefined`, la vista es sin protección
 	if (!authority || authority.length === 0) {
-		return <>{children}</>
+		return <>{children}</>;
 	}
 
 	// Si es super admin, acceso completo (excepto restricciones específicas)
 	if (user?.authority?.includes('super-admin') || userAuthority?.includes('super-admin')) {
-		return <>{children}</>
+		return <>{children}</>;
 	}
-
-	const roleMatched = useAuthority(userAuthority, authority, requireAll, true)
 
 	// Verificación contextual adicional
 	if (roleMatched && (companyId || subsidiaryId || branchId)) {
@@ -59,15 +60,15 @@ const AuthorityCheckNav = (props: AuthorityGuardProps) => {
 		}
 	}
 
-	return <>{roleMatched ? children : null}</>
-}
+	return <>{roleMatched ? children : null}</>;
+};
 
 // Función auxiliar para verificar acceso contextual en navegación
 function checkNavContextualAccess(
 	user: any,
 	companyId?: number,
 	subsidiaryId?: number,
-	branchId?: number
+	branchId?: number,
 ): boolean {
 	if (!user) return false;
 
@@ -103,7 +104,7 @@ const DefaultAsideTemplate = () => {
 	const userPermissionsAndRoles = [
 		...(userAuthority || []),
 		...(user?.roles || []),
-		...(user?.authority || [])
+		...(user?.authority || []),
 	];
 
 	return (
@@ -112,7 +113,9 @@ const DefaultAsideTemplate = () => {
 			<AsideBody>
 				<Nav>
 					{/* Dashboard */}
-					<AuthorityCheckNav authority={Pages.dashboard.authority} userAuthority={userPermissionsAndRoles}>
+					<AuthorityCheckNav
+						authority={Pages.dashboard.authority}
+						userAuthority={userPermissionsAndRoles}>
 						<NavItem
 							text={Pages.dashboard.text}
 							icon={Pages.dashboard.icon}
@@ -125,8 +128,10 @@ const DefaultAsideTemplate = () => {
 					<NavTitle>Gestión</NavTitle>
 
 					{/* Gestión - Empresa */}
-					<NavCollapse text="Registro" icon="HeroDocumentText" to={''}>
-						<AuthorityCheckNav authority={Pages.manage.subPages.company.authority} userAuthority={userPermissionsAndRoles}>
+					<NavCollapse text='Registro' icon='HeroDocumentText' to={''}>
+						<AuthorityCheckNav
+							authority={Pages.manage.subPages.company.authority}
+							userAuthority={userPermissionsAndRoles}>
 							<NavItem
 								text={Pages.manage.subPages.company.text}
 								to={Pages.manage.subPages.company.to}
@@ -137,7 +142,9 @@ const DefaultAsideTemplate = () => {
 						</AuthorityCheckNav>
 
 						{/* Gestión - Subempresas */}
-						<AuthorityCheckNav authority={Pages.manage.subPages.subsidiary.authority} userAuthority={userPermissionsAndRoles}>
+						<AuthorityCheckNav
+							authority={Pages.manage.subPages.subsidiary.authority}
+							userAuthority={userPermissionsAndRoles}>
 							<NavItem
 								text={Pages.manage.subPages.subsidiary.text}
 								to={Pages.manage.subPages.subsidiary.to}
@@ -148,7 +155,9 @@ const DefaultAsideTemplate = () => {
 						</AuthorityCheckNav>
 
 						{/* Gestión - Sucursales */}
-						<AuthorityCheckNav authority={Pages.manage.subPages.branch.authority} userAuthority={userPermissionsAndRoles}>
+						<AuthorityCheckNav
+							authority={Pages.manage.subPages.branch.authority}
+							userAuthority={userPermissionsAndRoles}>
 							<NavItem
 								text={Pages.manage.subPages.branch.text}
 								to={Pages.manage.subPages.branch.to}
@@ -159,7 +168,9 @@ const DefaultAsideTemplate = () => {
 						</AuthorityCheckNav>
 
 						{/* Gestión - Usuarios */}
-						<AuthorityCheckNav authority={Pages.manage.subPages.manageUsers.authority} userAuthority={userPermissionsAndRoles}>
+						<AuthorityCheckNav
+							authority={Pages.manage.subPages.manageUsers.authority}
+							userAuthority={userPermissionsAndRoles}>
 							<NavItem
 								text={Pages.manage.subPages.manageUsers.text}
 								to={Pages.manage.subPages.manageUsers.to}
@@ -173,11 +184,10 @@ const DefaultAsideTemplate = () => {
 						<AuthorityCheckNav
 							authority={[
 								...(Pages.manage.subPages.permissionsAdmin.authority || []),
-								...(Pages.manage.subPages.permissionsAdmin.roles || [])
+								...(Pages.manage.subPages.permissionsAdmin.roles || []),
 							]}
 							userAuthority={userPermissionsAndRoles}
-							requireAll={Pages.manage.subPages.permissionsAdmin.requireAll}
-						>
+							requireAll={Pages.manage.subPages.permissionsAdmin.requireAll}>
 							<NavItem
 								text={Pages.manage.subPages.permissionsAdmin.text}
 								to={Pages.manage.subPages.permissionsAdmin.to}
@@ -186,7 +196,6 @@ const DefaultAsideTemplate = () => {
 								onClick={() => navigate(Pages.manage.subPages.permissionsAdmin.to)}
 							/>
 						</AuthorityCheckNav>
-
 					</NavCollapse>
 
 					{/* Recursos Humanos */}
@@ -195,19 +204,17 @@ const DefaultAsideTemplate = () => {
 					<AuthorityCheckNav
 						authority={Pages.humanResources.subPages.invitationsAdmin.authority}
 						userAuthority={userPermissionsAndRoles}
-						requireAll={Pages.humanResources.subPages.invitationsAdmin.requireAll}
-					>
+						requireAll={Pages.humanResources.subPages.invitationsAdmin.requireAll}>
 						<NavItem
 							text={Pages.humanResources.subPages.invitationsAdmin.text}
 							to={Pages.humanResources.subPages.invitationsAdmin.to}
 							icon={Pages.humanResources.subPages.invitationsAdmin.icon}
 							id={Pages.humanResources.subPages.invitationsAdmin.id}
-							onClick={() => navigate(Pages.humanResources.subPages.invitationsAdmin.to)}
+							onClick={() =>
+								navigate(Pages.humanResources.subPages.invitationsAdmin.to)
+							}
 						/>
 					</AuthorityCheckNav>
-
-
-
 
 					{/* <AuthorityCheckNav authority={Pages.listaItem.authority} userAuthority={listaGrupos?.grupos}>
 						<NavItem text={Pages.listaItem.text} to={Pages.listaItem.to} icon={Pages.listaItem.icon} id={Pages.listaItem.id}></NavItem>
