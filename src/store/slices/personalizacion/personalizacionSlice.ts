@@ -236,7 +236,6 @@ const personalizacionSlice = createSlice({
                 state.error = undefined;
 
                 const apiData = action.payload;
-                console.log('✅ obtenerPersonalizacionThunk.fulfilled ejecutándose con datos:', apiData);
 
                 state.personalizacionUsuario = apiData;
 
@@ -244,19 +243,16 @@ const personalizacionSlice = createSlice({
                 if (apiData.tcolor) {
                     state.themeColor = apiData.tcolor as TColors;
                     persistToLocalStorage('zentria_themeColor', apiData.tcolor);
-                    console.log('🎨 Color actualizado:', apiData.tcolor);
                 }
 
                 if (apiData.tcolor_int) {
                     state.themeColorShade = apiData.tcolor_int as TColorIntensity;
                     persistToLocalStorage('zentria_themeColorShade', apiData.tcolor_int);
-                    console.log('🎨 Color shade actualizado:', apiData.tcolor_int);
                 }
 
                 if (apiData.font_size) {
                     state.fontSize = apiData.font_size;
                     persistToLocalStorage('zentria_fontSize', apiData.font_size);
-                    console.log('📝 Font size actualizado:', apiData.font_size);
                 }
 
                 if (apiData.tema !== undefined && apiData.tema !== null) {
@@ -265,23 +261,14 @@ const personalizacionSlice = createSlice({
                             : DARK_MODE.SYSTEM;
                     state.darkMode = darkModeValue;
                     persistToLocalStorage('theme', darkModeValue);
-                    console.log('🌙 Dark mode actualizado:', darkModeValue, '(tema API:', apiData.tema, ')');
                 }
 
                 state.isInitialized = true;
-                console.log('✅ Sincronización completada, estado final:', {
-                    fontSize: state.fontSize,
-                    darkMode: state.darkMode,
-                    themeColor: state.themeColor,
-                    isInitialized: state.isInitialized
-                });
             })
             .addCase(obtenerPersonalizacionThunk.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
                 state.isInitialized = true; // Marcar como inicializado aunque falle
-                console.error('❌ obtenerPersonalizacionThunk.rejected:', action.payload);
-                console.error('❌ Error completo:', action.error);
             })
 
             // Actualizar personalización

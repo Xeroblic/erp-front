@@ -38,13 +38,14 @@ const AppInitializer = () => {
         // Verificar token en localStorage y cargar personalización
         const token = localStorage.getItem('access_token');
         if (token) {
-            console.log('🔄 AppInitializer: Cargando personalización con token:', token.substring(0, 20) + '...');
             dispatch(obtenerPersonalizacionThunk())
                 .then((result) => {
-                    console.log('✅ AppInitializer: Personalización cargada exitosamente:', result);
+                    if (result.meta.requestStatus === 'rejected') {
+                        navigate('/login');
+                        toast.error('Sesión expirada. Por favor, inicia sesión nuevamente.');
+                    }
                 })
                 .catch((error) => {
-                    console.error('❌ AppInitializer: Error cargando personalización:', error);
                     toast.error('Error al cargar la personalización del usuario');
                 });
         } else if (!access) {
