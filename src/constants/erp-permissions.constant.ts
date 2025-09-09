@@ -1,223 +1,150 @@
 /**
- * Sistema de permisos expandido para ERP P0
- * Basado en la documentación del backend completado
+ * ROLES Y UTILIDADES DEL SISTEMA ERP
+ * 
+ * ✅ Los permisos se obtienen de la BD a través de permissionsSlice
+ * ✅ Los permisos específicos están definidos en pages.config.ts
+ * ✅ Los roles están normalizados según la estructura del negocio
  */
 
-// Permisos por módulo del sistema ERP
-export const ERP_PERMISSIONS = {
-    // Transferencias - Sistema completo backend implementado
-    TRANSFERS: {
-        VIEW: 'transfers.view',
-        CREATE: 'transfers.create',
-        UPDATE: 'transfers.update',
-        DELETE: 'transfers.delete',
-        SHIP: 'transfers.ship',
-        RECEIVE: 'transfers.receive',
-        APPROVE: 'transfers.approve',
-        CANCEL: 'transfers.cancel',
-        GENERATE_PDF: 'transfers.generate_pdf'
-    },
+/**
+ * ROLES DEL SISTEMA - NORMALIZADOS ✅
+ * Basado en la estructura organizacional real descrita por el usuario
+ */
+export const SYSTEM_ROLES = {
+    // Roles administrativos principales
+    SUPER_ADMIN: 'super-admin',           // Acceso exclusivo a la empresa principal  
+    COMPANY_ADMIN: 'company-admin',       // Supervisor Empresa - administra empresa principal
+    SUBSIDIARY_ADMIN: 'subsidiary-admin', // Administrador - gestiona sub-empresa
+    BRANCH_ADMIN: 'branch-admin',         // Administrador Sucursal
 
-    // Cotizaciones - Sistema completo backend implementado
-    QUOTES: {
-        VIEW: 'quotes.view',
-        CREATE: 'quotes.create',
-        UPDATE: 'quotes.update',
-        DELETE: 'quotes.delete',
-        SEND: 'quotes.send',
-        APPROVE: 'quotes.approve',
-        CONVERT: 'quotes.convert',
-        GENERATE_PDF: 'quotes.generate_pdf',
-        MANAGE_DISCOUNTS: 'quotes.manage_discounts'
-    },
+    // Roles operacionales específicos del negocio
+    WAREHOUSE_MANAGER: 'warehouse-manager',   // Encargado de Bodega
+    SALES_REP: 'sales-rep',                   // Vendedor  
+    TECHNICIAN: 'technician',                 // Técnico - acceso exclusivo a revisiones técnicas
+    AFTER_SALES: 'after-sales',               // Postventa - lectura de pedidos y ventas
+    CASHIER: 'cashier',                       // Cajero - cotizaciones y ventas
+    MANAGER: 'manager',                       // Gerente - dashboards y reportes
 
-    // Ventas - Sistema completo backend implementado
-    SALES: {
-        VIEW: 'sales.view',
-        CREATE: 'sales.create',
-        UPDATE: 'sales.update',
-        DELETE: 'sales.delete',
-        CONFIRM: 'sales.confirm',
-        DELIVER: 'sales.deliver',
-        CANCEL: 'sales.cancel',
-        ADD_PAYMENTS: 'sales.add_payments',
-        CONFIRM_PAYMENTS: 'sales.confirm_payments',
-        GENERATE_INVOICE: 'sales.generate_invoice',
-        MANAGE_DISCOUNTS: 'sales.manage_discounts'
-    },
+    // Roles generales
+    EMPLOYEE: 'employee',                     // Empleado general
+    VIEWER: 'viewer',                         // Solo lectura
+    SYSTEM: 'system'                          // Rol interno del sistema (no visible)
+} as const;
 
-    // Inventario - InventoryService completo backend implementado
-    INVENTORY: {
-        VIEW: 'inventory.view',
-        CREATE: 'inventory.create',
-        UPDATE: 'inventory.update',
-        DELETE: 'inventory.delete',
-        ADJUST: 'inventory.adjust',
-        RESERVE: 'inventory.reserve',
-        RELEASE: 'inventory.release',
-        TRANSFER: 'inventory.transfer',
-        VIEW_MOVEMENTS: 'inventory.view_movements',
-        GENERATE_REPORTS: 'inventory.generate_reports'
+/**
+ * DESCRIPCIONES DE ROLES - SEGÚN DOCUMENTACIÓN DEL NEGOCIO ✅
+ */
+export const ROLE_DESCRIPTIONS = {
+    'super-admin': {
+        name: 'Super Administrador',
+        description: 'Acceso exclusivo a la empresa principal. Puede ver y modificar datos generales. No gestiona sucursales ni sub-empresas.',
+        scope: 'Empresa Principal',
+        level: 12
     },
-
-    // Productos y Catálogo - Backend implementado
-    PRODUCTS: {
-        VIEW: 'products.view',
-        CREATE: 'products.create',
-        UPDATE: 'products.update',
-        DELETE: 'products.delete',
-        MANAGE_CATEGORIES: 'products.manage_categories',
-        MANAGE_BRANDS: 'products.manage_brands',
-        IMPORT: 'products.import',
-        EXPORT: 'products.export'
+    'company-admin': {
+        name: 'Supervisor Empresa',
+        description: 'Equivale al administrador de la empresa principal. Tiene acceso y supervisión de alto nivel.',
+        scope: 'Empresa Principal',
+        level: 11
     },
-
-    // Almacenes - Backend implementado con QR codes
-    WAREHOUSES: {
-        VIEW: 'warehouses.view',
-        CREATE: 'warehouses.create',
-        UPDATE: 'warehouses.update',
-        DELETE: 'warehouses.delete',
-        MANAGE_LOCATIONS: 'warehouses.manage_locations',
-        GENERATE_QR: 'warehouses.generate_qr'
+    'subsidiary-admin': {
+        name: 'Administrador',
+        description: 'Administra una sub-empresa o sucursal. Equivale al "Administrador del Sistema" para esa sub-empresa. Control total dentro de su ámbito.',
+        scope: 'Sub-empresa específica',
+        level: 10
     },
-
-    // Contactos (Clientes/Proveedores)
-    CONTACTS: {
-        VIEW: 'contacts.view',
-        CREATE: 'contacts.create',
-        UPDATE: 'contacts.update',
-        DELETE: 'contacts.delete',
-        IMPORT: 'contacts.import',
-        EXPORT: 'contacts.export'
+    'branch-admin': {
+        name: 'Administrador Sucursal',
+        description: 'Administra una sucursal específica.',
+        scope: 'Sucursal específica',
+        level: 9
     },
-
-    // Reportes - Dashboard implementado en backend
-    REPORTS: {
-        VIEW: 'reports.view',
-        SALES_DASHBOARD: 'reports.sales_dashboard',
-        INVENTORY_REPORTS: 'reports.inventory_reports',
-        TRANSFER_REPORTS: 'reports.transfer_reports',
-        QUOTE_CONVERSION: 'reports.quote_conversion',
-        FINANCIAL_REPORTS: 'reports.financial_reports',
-        EXPORT: 'reports.export'
+    'warehouse-manager': {
+        name: 'Encargado de Bodega',
+        description: 'Acceso restringido a información relacionada con bodega. Rol operativo con permisos menores que un supervisor.',
+        scope: 'Módulos de bodega e inventario',
+        level: 7
     },
-
-    // Configuración
-    SETTINGS: {
-        VIEW: 'settings.view',
-        UPDATE: 'settings.update',
-        MANAGE_SEQUENCES: 'settings.manage_sequences',
-        MANAGE_TAXES: 'settings.manage_taxes',
-        SYSTEM_CONFIG: 'settings.system_config'
+    'sales-rep': {
+        name: 'Vendedor',
+        description: 'Puede visualizar productos, stock y ventas. Tiene acceso en modo solo lectura a información de bodega. No puede editar información fuera de sus competencias.',
+        scope: 'Módulos de ventas y productos',
+        level: 6
+    },
+    'technician': {
+        name: 'Técnico',
+        description: 'Accede exclusivamente al módulo de revisiones técnicas. Puede agregar, editar o eliminar revisiones. El resto de los módulos son de solo lectura.',
+        scope: 'Revisiones técnicas',
+        level: 4
+    },
+    'after-sales': {
+        name: 'Postventa',
+        description: 'Accede en modo lectura a información relacionada con pedidos, órdenes de pedido y ventas. No puede modificar datos en otros módulos.',
+        scope: 'Información post-venta',
+        level: 3
+    },
+    'cashier': {
+        name: 'Cajero',
+        description: 'Puede generar y exportar cotizaciones, visualizar productos y realizar ventas.',
+        scope: 'Punto de venta',
+        level: 5
+    },
+    'manager': {
+        name: 'Gerente',
+        description: 'Accede a dashboards, informes y reportes. Tiene una visión general del funcionamiento del sistema.',
+        scope: 'Reportes y análisis',
+        level: 8
+    },
+    'employee': {
+        name: 'Empleado',
+        description: 'Acceso básico según su función específica.',
+        scope: 'Limitado',
+        level: 2
+    },
+    'viewer': {
+        name: 'Visualizador',
+        description: 'Solo lectura en módulos básicos.',
+        scope: 'Solo lectura',
+        level: 1
+    },
+    'system': {
+        name: 'Sistema',
+        description: 'Rol interno, relacionado con la configuración y lógica del sistema. No es visible para ningún usuario.',
+        scope: 'Interno',
+        level: 0
     }
 } as const;
 
-// Roles expandidos del sistema
-export const ERP_ROLES = {
-    SUPER_ADMIN: 'super-admin',
-    COMPANY_ADMIN: 'company-admin',
-    SUBSIDIARY_ADMIN: 'subsidiary-admin',
-    BRANCH_ADMIN: 'branch-admin',
-    SALES_MANAGER: 'sales-manager',
-    INVENTORY_MANAGER: 'inventory-manager',
-    SALES_REP: 'sales-rep',
-    WAREHOUSE_OPERATOR: 'warehouse-operator',
-    VIEWER: 'viewer',
-    EMPLOYEE: 'employee'
-} as const;
-
-// Mapeo de permisos por rol
-export const ROLE_PERMISSION_MAP = {
-    [ERP_ROLES.SUPER_ADMIN]: Object.values(ERP_PERMISSIONS).flatMap(module => Object.values(module)),
-
-    [ERP_ROLES.COMPANY_ADMIN]: [
-        ...Object.values(ERP_PERMISSIONS.TRANSFERS),
-        ...Object.values(ERP_PERMISSIONS.QUOTES),
-        ...Object.values(ERP_PERMISSIONS.SALES),
-        ...Object.values(ERP_PERMISSIONS.INVENTORY),
-        ...Object.values(ERP_PERMISSIONS.PRODUCTS),
-        ...Object.values(ERP_PERMISSIONS.WAREHOUSES),
-        ...Object.values(ERP_PERMISSIONS.CONTACTS),
-        ...Object.values(ERP_PERMISSIONS.REPORTS),
-        ...Object.values(ERP_PERMISSIONS.SETTINGS)
-    ],
-
-    [ERP_ROLES.SALES_MANAGER]: [
-        ...Object.values(ERP_PERMISSIONS.QUOTES),
-        ...Object.values(ERP_PERMISSIONS.SALES),
-        ...Object.values(ERP_PERMISSIONS.CONTACTS),
-        ERP_PERMISSIONS.INVENTORY.VIEW,
-        ERP_PERMISSIONS.INVENTORY.RESERVE,
-        ERP_PERMISSIONS.PRODUCTS.VIEW,
-        ERP_PERMISSIONS.REPORTS.SALES_DASHBOARD,
-        ERP_PERMISSIONS.REPORTS.QUOTE_CONVERSION
-    ],
-
-    [ERP_ROLES.INVENTORY_MANAGER]: [
-        ...Object.values(ERP_PERMISSIONS.TRANSFERS),
-        ...Object.values(ERP_PERMISSIONS.INVENTORY),
-        ...Object.values(ERP_PERMISSIONS.PRODUCTS),
-        ...Object.values(ERP_PERMISSIONS.WAREHOUSES),
-        ERP_PERMISSIONS.REPORTS.INVENTORY_REPORTS,
-        ERP_PERMISSIONS.REPORTS.TRANSFER_REPORTS
-    ],
-
-    [ERP_ROLES.SALES_REP]: [
-        ERP_PERMISSIONS.QUOTES.VIEW,
-        ERP_PERMISSIONS.QUOTES.CREATE,
-        ERP_PERMISSIONS.QUOTES.UPDATE,
-        ERP_PERMISSIONS.QUOTES.SEND,
-        ERP_PERMISSIONS.QUOTES.GENERATE_PDF,
-        ERP_PERMISSIONS.SALES.VIEW,
-        ERP_PERMISSIONS.SALES.CREATE,
-        ERP_PERMISSIONS.CONTACTS.VIEW,
-        ERP_PERMISSIONS.CONTACTS.CREATE,
-        ERP_PERMISSIONS.CONTACTS.UPDATE,
-        ERP_PERMISSIONS.PRODUCTS.VIEW,
-        ERP_PERMISSIONS.INVENTORY.VIEW
-    ],
-
-    [ERP_ROLES.WAREHOUSE_OPERATOR]: [
-        ERP_PERMISSIONS.TRANSFERS.VIEW,
-        ERP_PERMISSIONS.TRANSFERS.RECEIVE,
-        ERP_PERMISSIONS.TRANSFERS.SHIP,
-        ERP_PERMISSIONS.INVENTORY.VIEW,
-        ERP_PERMISSIONS.INVENTORY.UPDATE,
-        ERP_PERMISSIONS.INVENTORY.ADJUST,
-        ERP_PERMISSIONS.PRODUCTS.VIEW,
-        ERP_PERMISSIONS.WAREHOUSES.VIEW,
-        ERP_PERMISSIONS.WAREHOUSES.MANAGE_LOCATIONS
-    ],
-
-    [ERP_ROLES.VIEWER]: [
-        ERP_PERMISSIONS.TRANSFERS.VIEW,
-        ERP_PERMISSIONS.QUOTES.VIEW,
-        ERP_PERMISSIONS.SALES.VIEW,
-        ERP_PERMISSIONS.INVENTORY.VIEW,
-        ERP_PERMISSIONS.PRODUCTS.VIEW,
-        ERP_PERMISSIONS.WAREHOUSES.VIEW,
-        ERP_PERMISSIONS.CONTACTS.VIEW,
-        ERP_PERMISSIONS.REPORTS.VIEW
-    ]
-} as const;
-
-// Utilidades para validación de permisos
-export const hasERPPermission = (userPermissions: string[], requiredPermission: string): boolean => {
-    return userPermissions.includes(requiredPermission);
+/**
+ * UTILIDADES DE ROLES ✅
+ */
+export const hasRole = (userRoles: string[], requiredRole: string): boolean => {
+    return userRoles.includes(requiredRole);
 };
 
-export const hasAnyERPPermission = (userPermissions: string[], requiredPermissions: string[]): boolean => {
-    return requiredPermissions.some(permission => hasERPPermission(userPermissions, permission));
+export const hasAnyRole = (userRoles: string[], requiredRoles: string[]): boolean => {
+    return requiredRoles.some(role => hasRole(userRoles, role));
 };
 
-export const hasAllERPPermissions = (userPermissions: string[], requiredPermissions: string[]): boolean => {
-    return requiredPermissions.every(permission => hasERPPermission(userPermissions, permission));
+export const hasMinimumRoleLevel = (userRoles: string[], minimumRole: string): boolean => {
+    const userMaxLevel = Math.max(
+        ...userRoles.map(role => ROLE_DESCRIPTIONS[role as keyof typeof ROLE_DESCRIPTIONS]?.level || 0)
+    );
+    const requiredLevel = ROLE_DESCRIPTIONS[minimumRole as keyof typeof ROLE_DESCRIPTIONS]?.level || 0;
+    return userMaxLevel >= requiredLevel;
 };
 
-export const getPermissionsByERPRole = (role: string): string[] => {
-    return ROLE_PERMISSION_MAP[role as keyof typeof ROLE_PERMISSION_MAP] || [];
+export const getRoleDescription = (role: string) => {
+    return ROLE_DESCRIPTIONS[role as keyof typeof ROLE_DESCRIPTIONS] || {
+        name: 'Rol Desconocido',
+        description: 'Rol no definido en el sistema',
+        scope: 'No definido',
+        level: 0
+    };
 };
 
-export type ERPPermissionModule = keyof typeof ERP_PERMISSIONS;
-export type ERPRole = keyof typeof ERP_ROLES;
+/**
+ * TIPOS TYPESCRIPT ✅
+ */
+export type SystemRole = typeof SYSTEM_ROLES[keyof typeof SYSTEM_ROLES];
+export type RoleDescription = typeof ROLE_DESCRIPTIONS[SystemRole];

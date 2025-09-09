@@ -1,0 +1,560 @@
+{
+  "roles": [
+    {
+      "name": "Super Administrador",
+      "code": "super-admin",
+      "level": 0,
+      "description": "Control total del sistema, acceso a todas las funcionalidades"
+    },
+    {
+      "name": "Supervisor de Empresa",
+      "code": "supervisor-empresa", 
+      "level": 1,
+      "description": "Supervisión general de la empresa, acceso a reportes ejecutivos"
+    },
+    {
+      "name": "Administrador",
+      "code": "administrador",
+      "level": 2,
+      "description": "Administración operativa, gestión de usuarios y configuraciones"
+    },
+    {
+      "name": "Gestor Operativo",
+      "code": "gestor-operativo",
+      "level": 3,
+      "description": "Gestión de operaciones diarias, coordinación de procesos"
+    },
+    {
+      "name": "Coordinador Logístico",
+      "code": "coordinador-logistico",
+      "level": 4,
+      "description": "Coordinación de logística, inventario y transferencias"
+    },
+    {
+      "name": "Analista Senior",
+      "code": "analista-senior",
+      "level": 5,
+      "description": "Análisis avanzado de datos, reportes especializados"
+    },
+    {
+      "name": "Supervisor de Área",
+      "code": "supervisor-area",
+      "level": 6,
+      "description": "Supervisión departamental, control de equipos de trabajo"
+    },
+    {
+      "name": "Gestor de Inventario",
+      "code": "gestor-inventario",
+      "level": 7,
+      "description": "Gestión especializada de inventario y stock"
+    },
+    {
+      "name": "Analista Junior",
+      "code": "analista-junior",
+      "level": 8,
+      "description": "Análisis básico, reportes operativos"
+    },
+    {
+      "name": "Operador de Almacén",
+      "code": "operador-almacen",
+      "level": 9,
+      "description": "Operaciones de almacén, movimientos de inventario"
+    },
+    {
+      "name": "Vendedor",
+      "code": "vendedor",
+      "level": 10,
+      "description": "Ventas y atención al cliente"
+    },
+    {
+      "name": "Cajero",
+      "code": "cajero",
+      "level": 11,
+      "description": "Operaciones de caja, cobros y pagos"
+    },
+    {
+      "name": "Sistema",
+      "code": "system",
+      "level": 12,
+      "description": "Procesos automáticos del sistema"
+    }
+  ],
+  "permissions": [
+    {
+      "name": "Ver Dashboard",
+      "code": "view-dashboard",
+      "module": "system",
+      "description": "Acceso al panel principal del sistema"
+    },
+    {
+      "name": "Ver Perfil",
+      "code": "view-profile", 
+      "module": "system",
+      "description": "Visualizar y editar perfil personal"
+    },
+    {
+      "name": "Ver Usuarios",
+      "code": "view-users",
+      "module": "users",
+      "description": "Visualizar lista de usuarios"
+    },
+    {
+      "name": "Gestionar Usuarios",
+      "code": "manage-users",
+      "module": "users", 
+      "description": "Crear, editar y eliminar usuarios"
+    },
+    {
+      "name": "Ver Empresa",
+      "code": "view-company",
+      "module": "management",
+      "description": "Visualizar información de la empresa"
+    },
+    {
+      "name": "Editar Empresa",
+      "code": "edit-company",
+      "module": "management",
+      "description": "Modificar configuración de la empresa"
+    },
+    {
+      "name": "Ver Subsidiaria",
+      "code": "view-subsidiary",
+      "module": "management",
+      "description": "Visualizar información de subsidiarias"
+    },
+    {
+      "name": "Editar Subsidiaria", 
+      "code": "edit-subsidiary",
+      "module": "management",
+      "description": "Modificar configuración de subsidiarias"
+    },
+    {
+      "name": "Ver Sucursal",
+      "code": "view-branch",
+      "module": "management",
+      "description": "Visualizar información de sucursales"
+    },
+    {
+      "name": "Editar Sucursal",
+      "code": "edit-branch",
+      "module": "management", 
+      "description": "Modificar configuración de sucursales"
+    },
+    {
+      "name": "Editar Roles",
+      "code": "edit-roles",
+      "module": "management",
+      "description": "Gestionar roles del sistema"
+    },
+    {
+      "name": "Gestionar Permisos",
+      "code": "manage-permissions",
+      "module": "management",
+      "description": "Administrar permisos del sistema"
+    },
+    {
+      "name": "Gestionar Invitaciones",
+      "code": "manage-invitations",
+      "module": "management",
+      "description": "Enviar y gestionar invitaciones"
+    },
+    {
+      "name": "Ver Inventario",
+      "code": "inventory.view",
+      "module": "inventory",
+      "description": "Visualizar inventario general"
+    },
+    {
+      "name": "Crear Productos",
+      "code": "inventory.create",
+      "module": "inventory",
+      "description": "Agregar nuevos productos al inventario"
+    },
+    {
+      "name": "Actualizar Productos",
+      "code": "inventory.update",
+      "module": "inventory",
+      "description": "Modificar información de productos"
+    },
+    {
+      "name": "Eliminar Productos",
+      "code": "inventory.delete",
+      "module": "inventory",
+      "description": "Eliminar productos del inventario"
+    },
+    {
+      "name": "Ajustar Inventario",
+      "code": "inventory.adjust",
+      "module": "inventory",
+      "description": "Realizar ajustes de stock"
+    },
+    {
+      "name": "Reservar Stock",
+      "code": "inventory.reserve",
+      "module": "inventory",
+      "description": "Reservar productos para ventas"
+    },
+    {
+      "name": "Liberar Stock",
+      "code": "inventory.release",
+      "module": "inventory",
+      "description": "Liberar productos reservados"
+    },
+    {
+      "name": "Transferir Inventario",
+      "code": "inventory.transfer",
+      "module": "inventory",
+      "description": "Realizar transferencias entre almacenes"
+    },
+    {
+      "name": "Ver Movimientos",
+      "code": "inventory.view_movements",
+      "module": "inventory",
+      "description": "Visualizar historial de movimientos"
+    },
+    {
+      "name": "Actualizar Niveles",
+      "code": "inventory.update_levels",
+      "module": "inventory",
+      "description": "Modificar niveles mínimos y máximos"
+    },
+    {
+      "name": "Generar Reportes Inventario",
+      "code": "inventory.generate_reports",
+      "module": "inventory",
+      "description": "Crear reportes de inventario"
+    },
+    {
+      "name": "Ver Transferencias",
+      "code": "transfers.view",
+      "module": "transfers",
+      "description": "Visualizar transferencias"
+    },
+    {
+      "name": "Crear Transferencias",
+      "code": "transfers.create",
+      "module": "transfers",
+      "description": "Crear nuevas transferencias"
+    },
+    {
+      "name": "Actualizar Transferencias",
+      "code": "transfers.update",
+      "module": "transfers",
+      "description": "Modificar transferencias existentes"
+    },
+    {
+      "name": "Eliminar Transferencias",
+      "code": "transfers.delete",
+      "module": "transfers",
+      "description": "Eliminar transferencias"
+    },
+    {
+      "name": "Enviar Transferencias",
+      "code": "transfers.ship",
+      "module": "transfers",
+      "description": "Marcar transferencias como enviadas"
+    },
+    {
+      "name": "Recibir Transferencias",
+      "code": "transfers.receive",
+      "module": "transfers",
+      "description": "Procesar recepción de transferencias"
+    },
+    {
+      "name": "Aprobar Transferencias",
+      "code": "transfers.approve",
+      "module": "transfers",
+      "description": "Aprobar transferencias pendientes"
+    },
+    {
+      "name": "Cancelar Transferencias",
+      "code": "transfers.cancel",
+      "module": "transfers",
+      "description": "Cancelar transferencias"
+    },
+    {
+      "name": "Generar PDF Transferencias",
+      "code": "transfers.generate_pdf",
+      "module": "transfers",
+      "description": "Generar documentos PDF"
+    },
+    {
+      "name": "Ver Ventas",
+      "code": "sales.view",
+      "module": "sales",
+      "description": "Visualizar ventas realizadas"
+    },
+    {
+      "name": "Crear Ventas",
+      "code": "sales.create",
+      "module": "sales",
+      "description": "Registrar nuevas ventas"
+    },
+    {
+      "name": "Actualizar Ventas",
+      "code": "sales.update",
+      "module": "sales",
+      "description": "Modificar ventas existentes"
+    },
+    {
+      "name": "Eliminar Ventas",
+      "code": "sales.delete",
+      "module": "sales",
+      "description": "Eliminar registros de ventas"
+    },
+    {
+      "name": "Confirmar Ventas",
+      "code": "sales.confirm",
+      "module": "sales",
+      "description": "Confirmar ventas realizadas"
+    },
+    {
+      "name": "Entregar Ventas",
+      "code": "sales.deliver",
+      "module": "sales",
+      "description": "Marcar ventas como entregadas"
+    },
+    {
+      "name": "Cancelar Ventas",
+      "code": "sales.cancel",
+      "module": "sales",
+      "description": "Cancelar ventas"
+    },
+    {
+      "name": "Agregar Pagos",
+      "code": "sales.add_payments",
+      "module": "sales",
+      "description": "Registrar pagos de ventas"
+    },
+    {
+      "name": "Registrar Pago",
+      "code": "sales.record_payment",
+      "module": "sales",
+      "description": "Procesar pagos individuales"
+    },
+    {
+      "name": "Confirmar Pagos",
+      "code": "sales.confirm_payments",
+      "module": "sales",
+      "description": "Confirmar pagos recibidos"
+    },
+    {
+      "name": "Enviar Ventas",
+      "code": "sales.ship",
+      "module": "sales",
+      "description": "Procesar envío de ventas"
+    },
+    {
+      "name": "Generar Facturas",
+      "code": "sales.generate_invoice",
+      "module": "sales",
+      "description": "Crear facturas de ventas"
+    },
+    {
+      "name": "Gestionar Descuentos",
+      "code": "sales.manage_discounts",
+      "module": "sales",
+      "description": "Aplicar descuentos en ventas"
+    },
+    {
+      "name": "Ver Cotizaciones",
+      "code": "quotes.view",
+      "module": "quotes",
+      "description": "Visualizar cotizaciones"
+    },
+    {
+      "name": "Crear Cotizaciones",
+      "code": "quotes.create",
+      "module": "quotes",
+      "description": "Crear nuevas cotizaciones"
+    },
+    {
+      "name": "Actualizar Cotizaciones",
+      "code": "quotes.update",
+      "module": "quotes",
+      "description": "Modificar cotizaciones existentes"
+    },
+    {
+      "name": "Eliminar Cotizaciones",
+      "code": "quotes.delete",
+      "module": "quotes",
+      "description": "Eliminar cotizaciones"
+    },
+    {
+      "name": "Enviar Cotizaciones",
+      "code": "quotes.send",
+      "module": "quotes",
+      "description": "Enviar cotizaciones a clientes"
+    },
+    {
+      "name": "Aprobar Cotizaciones",
+      "code": "quotes.approve",
+      "module": "quotes",
+      "description": "Aprobar cotizaciones"
+    },
+    {
+      "name": "Convertir Cotizaciones",
+      "code": "quotes.convert",
+      "module": "quotes",
+      "description": "Convertir cotizaciones en ventas"
+    },
+    {
+      "name": "Generar PDF Cotizaciones",
+      "code": "quotes.generate_pdf",
+      "module": "quotes",
+      "description": "Generar documentos PDF"
+    },
+    {
+      "name": "Gestionar Descuentos Cotizaciones",
+      "code": "quotes.manage_discounts",
+      "module": "quotes",
+      "description": "Aplicar descuentos en cotizaciones"
+    },
+    {
+      "name": "Ver Técnico",
+      "code": "technical.view",
+      "module": "technical",
+      "description": "Acceso al módulo técnico"
+    },
+    {
+      "name": "Revisiones Técnicas",
+      "code": "technical.reviews",
+      "module": "technical",
+      "description": "Realizar y gestionar revisiones técnicas"
+    },
+    {
+      "name": "Ver Reportes",
+      "code": "reports.view",
+      "module": "reports",
+      "description": "Acceso al módulo de reportes"
+    },
+    {
+      "name": "Dashboard de Ventas",
+      "code": "reports.sales_dashboard",
+      "module": "reports",
+      "description": "Visualizar dashboard de ventas"
+    },
+    {
+      "name": "Reportes de Inventario",
+      "code": "reports.inventory_reports",
+      "module": "reports",
+      "description": "Generar reportes de inventario"
+    },
+    {
+      "name": "Reporte de Inventario",
+      "code": "reports.inventory_report",
+      "module": "reports",
+      "description": "Reporte específico de inventario"
+    },
+    {
+      "name": "Reportes de Transferencias",
+      "code": "reports.transfer_reports",
+      "module": "reports",
+      "description": "Generar reportes de transferencias"
+    },
+    {
+      "name": "Conversión de Cotizaciones",
+      "code": "reports.quote_conversion",
+      "module": "reports",
+      "description": "Reportes de conversión de cotizaciones"
+    },
+    {
+      "name": "Reportes Financieros",
+      "code": "reports.financial_reports",
+      "module": "reports",
+      "description": "Generar reportes financieros"
+    },
+    {
+      "name": "Exportar Reportes",
+      "code": "reports.export",
+      "module": "reports",
+      "description": "Exportar reportes a diferentes formatos"
+    },
+    {
+      "name": "Ver RRHH",
+      "code": "hr.view",
+      "module": "hr",
+      "description": "Acceso al módulo de recursos humanos"
+    }
+  ],
+  "role_permissions": {
+    "super-admin": "ALL",
+    "supervisor-empresa": [
+      "view-dashboard", "view-profile", "view-company", "view-subsidiary", "view-branch", "view-users",
+      "inventory.view", "inventory.view_movements", "inventory.generate_reports",
+      "transfers.view", "transfers.approve",
+      "sales.view", "sales.confirm",
+      "quotes.view", "quotes.approve", 
+      "reports.view", "reports.sales_dashboard", "reports.inventory_reports", "reports.financial_reports", "reports.export"
+    ],
+    "administrador": [
+      "view-dashboard", "view-profile", "view-users", "manage-users", "view-company", "edit-company", 
+      "view-subsidiary", "edit-subsidiary", "view-branch", "edit-branch", "edit-roles", "manage-permissions", "manage-invitations",
+      "inventory.view", "inventory.create", "inventory.update", "inventory.delete", "inventory.adjust", "inventory.transfer", "inventory.view_movements", "inventory.update_levels",
+      "transfers.view", "transfers.create", "transfers.update", "transfers.delete", "transfers.approve", "transfers.cancel",
+      "sales.view", "sales.create", "sales.update", "sales.delete", "sales.confirm", "sales.cancel", "sales.manage_discounts",
+      "quotes.view", "quotes.create", "quotes.update", "quotes.delete", "quotes.approve", "quotes.convert", "quotes.manage_discounts",
+      "reports.view", "reports.sales_dashboard", "reports.inventory_reports", "reports.financial_reports", "hr.view"
+    ],
+    "gestor-operativo": [
+      "view-dashboard", "view-profile",
+      "inventory.view", "inventory.create", "inventory.update", "inventory.adjust", "inventory.transfer", "inventory.view_movements",
+      "transfers.view", "transfers.create", "transfers.update", "transfers.ship", "transfers.receive",
+      "sales.view", "sales.create", "sales.update", "sales.confirm", "sales.deliver",
+      "quotes.view", "quotes.create", "quotes.update", "quotes.send", "quotes.convert",
+      "reports.view", "reports.inventory_reports", "reports.transfer_reports"
+    ],
+    "coordinador-logistico": [
+      "view-dashboard", "view-profile",
+      "inventory.view", "inventory.create", "inventory.update", "inventory.adjust", "inventory.reserve", "inventory.release", "inventory.transfer", "inventory.view_movements",
+      "transfers.view", "transfers.create", "transfers.update", "transfers.ship", "transfers.receive", "transfers.generate_pdf",
+      "sales.view", "sales.ship",
+      "reports.view", "reports.inventory_reports", "reports.transfer_reports"
+    ],
+    "analista-senior": [
+      "view-dashboard", "view-profile",
+      "inventory.view", "inventory.view_movements", "inventory.generate_reports",
+      "transfers.view", "sales.view", "quotes.view",
+      "reports.view", "reports.sales_dashboard", "reports.inventory_reports", "reports.transfer_reports", "reports.quote_conversion", "reports.financial_reports", "reports.export"
+    ],
+    "supervisor-area": [
+      "view-dashboard", "view-profile", "view-users",
+      "inventory.view", "inventory.update", "inventory.adjust", "inventory.view_movements",
+      "transfers.view", "transfers.update", "transfers.approve",
+      "sales.view", "sales.update", "sales.confirm",
+      "quotes.view", "quotes.update", "quotes.approve",
+      "reports.view", "reports.sales_dashboard", "reports.inventory_reports"
+    ],
+    "gestor-inventario": [
+      "view-dashboard", "view-profile",
+      "inventory.view", "inventory.create", "inventory.update", "inventory.delete", "inventory.adjust", "inventory.reserve", "inventory.release", "inventory.transfer", "inventory.view_movements", "inventory.update_levels", "inventory.generate_reports",
+      "transfers.view", "transfers.create", "transfers.update",
+      "reports.view", "reports.inventory_reports"
+    ],
+    "analista-junior": [
+      "view-dashboard", "view-profile",
+      "inventory.view", "inventory.view_movements",
+      "transfers.view", "sales.view", "quotes.view",
+      "reports.view", "reports.sales_dashboard", "reports.inventory_reports"
+    ],
+    "operador-almacen": [
+      "view-dashboard", "view-profile",
+      "inventory.view", "inventory.update", "inventory.adjust", "inventory.reserve", "inventory.release", "inventory.view_movements",
+      "transfers.view", "transfers.receive", "transfers.ship"
+    ],
+    "vendedor": [
+      "view-dashboard", "view-profile", "inventory.view",
+      "sales.view", "sales.create", "sales.update", "sales.deliver", "sales.add_payments",
+      "quotes.view", "quotes.create", "quotes.update", "quotes.send", "quotes.convert", "quotes.generate_pdf"
+    ],
+    "cajero": [
+      "view-dashboard", "view-profile", "inventory.view",
+      "sales.view", "sales.create", "sales.add_payments", "sales.record_payment", "sales.confirm_payments", "sales.generate_invoice",
+      "quotes.view"
+    ],
+    "system": [
+      "inventory.view", "inventory.update", "inventory.adjust",
+      "sales.view", "sales.update"
+    ]
+  }
+}

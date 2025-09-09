@@ -21,6 +21,13 @@ export interface IInventoryMovement {
     idempotency_key?: string;
     created_at: string;
 
+    // Propiedades adicionales para compatibilidad con páginas
+    warehouse_id?: number;
+    warehouse?: any;
+    movement_date?: string;
+    previous_stock?: number;
+    new_stock?: number;
+
     // Relaciones
     product?: any; // IProduct
     inventory_item?: IInventoryItem;
@@ -43,6 +50,16 @@ export interface IInventoryItem {
     is_reserved: boolean;
     created_at: string;
     updated_at: string;
+
+    // Propiedades adicionales para compatibilidad
+    warehouse_id?: number;
+    warehouse?: any;
+    current_stock?: number;
+    available_stock?: number;
+    reserved_stock?: number;
+    min_stock?: number;
+    max_stock?: number;
+    last_updated?: string;
 
     // Relaciones
     product?: any; // IProduct
@@ -99,12 +116,16 @@ export type MovementType =
     | 'IN'
     | 'OUT'
     | 'ADJUST'
+    | 'ADJUSTMENT'
+    | 'TRANSFER'
     | 'TRANSFER_OUT'
     | 'TRANSFER_IN'
     | 'RESERVE'
     | 'RELEASE'
     | 'CONSUME'
-    | 'PRODUCE';
+    | 'PRODUCE'
+    | 'PRODUCTION'
+    | 'RETURN';
 
 export type MovementScope = 'BIN' | 'ITEM';
 
@@ -190,4 +211,47 @@ export interface IInventoryReport {
         quantity: number;
         reserved_quantity: number;
     }>;
+}
+
+// Interfaces adicionales para compatibilidad con las páginas
+export interface IStockAlert {
+    id: number;
+    product_id: number;
+    product?: any;
+    warehouse_id?: number;
+    warehouse?: any;
+    alert_type: 'LOW' | 'OUT' | 'OVERSTOCK';
+    alert_level: string; // Agregado para compatibilidad
+    current_stock: number;
+    threshold: number;
+    min_stock?: number; // Agregado para compatibilidad
+    message: string;
+    is_resolved: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface IStockLevel {
+    id: number;
+    product_id: number;
+    product?: any;
+    warehouse_id?: number;
+    warehouse?: any;
+    current_stock?: number;
+    min_stock?: number;
+    max_stock?: number;
+    reorder_point?: number;
+    created_at: string;
+    updated_at: string;
+}
+
+// Requests
+export interface IInventoryRequest {
+    product_id: number;
+    warehouse_id: number;
+    movement_type: MovementType;
+    quantity: number;
+    reference_type?: string;
+    reference_id?: number;
+    notes?: string;
 }

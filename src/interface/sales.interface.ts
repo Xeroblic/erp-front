@@ -23,6 +23,12 @@ export interface ISale {
     created_at: string;
     updated_at: string;
 
+    // Propiedades adicionales para compatibilidad
+    payment_status?: string;
+    invoice_number?: string;
+    salesperson?: any;
+    salesperson_id?: number;
+
     // Relaciones
     customer?: any; // ICustomer
     quote?: any; // IQuote
@@ -90,6 +96,8 @@ export type SaleStatus =
     | 'CONFIRMED'
     | 'PARTIALLY_PAID'
     | 'PAID'
+    | 'INVOICED'
+    | 'SHIPPED'
     | 'DELIVERED'
     | 'CANCELLED'
     | 'REFUNDED';

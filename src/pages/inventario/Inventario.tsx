@@ -32,7 +32,7 @@ import Select from '@/components/form/Select';
 import Textarea from '@/components/form/Textarea';
 import Pagination from '@/components/ui/Pagination';
 import Tabs, { Tab } from '@/components/ui/Tabs';
-import { ERP_PERMISSIONS } from '@/constants/erp-permissions.constant';
+import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 import PermissionGuard from '@/components/authorization/PermissionGuard';
 import type {
 	IInventoryMovement,

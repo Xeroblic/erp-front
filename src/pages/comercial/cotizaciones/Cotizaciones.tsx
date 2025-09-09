@@ -23,7 +23,7 @@ import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Moda
 import Input from '@/components/form/Input';
 import Select from '@/components/form/Select';
 import Pagination from '@/components/ui/Pagination';
-import { ERP_PERMISSIONS } from '@/constants/erp-permissions.constant';
+import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 import PermissionGuard from '@/components/authorization/PermissionGuard';
 import type { IQuote, QuoteStatus } from '@/interface/quotes.interface';
 import { formatCurrency, formatDate } from '@/utils/format.utils';

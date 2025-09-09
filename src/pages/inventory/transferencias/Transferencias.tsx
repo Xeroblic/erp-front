@@ -25,7 +25,8 @@ import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Moda
 import Input from '@/components/form/Input';
 import Select from '@/components/form/Select';
 import Pagination from '@/components/ui/Pagination';
-import { ERP_PERMISSIONS } from '@/constants/erp-permissions.constant';
+// TODO: Los permisos están en pages.config.ts y vienen de la BD
+import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 import PermissionGuard from '@/components/authorization/PermissionGuard';
 import type { ITransfer, TransferStatus } from '@/interface/transfers.interface';
 import { toast } from 'react-toastify';
@@ -114,7 +115,7 @@ const Transferencias: React.FC = () => {
 		};
 
 		const config = statusConfig[status] || statusConfig['PENDING'];
-		return <Badge >{config.text}</Badge>;
+		return <Badge>{config.text}</Badge>;
 	};
 
 	const formatDate = (dateString: string) => {
@@ -150,7 +151,7 @@ const Transferencias: React.FC = () => {
 				<CardBody>
 					<div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5'>
 						<Select
-                        name='status'
+							name='status'
 							placeholder='Estado'
 							value={localFilters.status}
 							onChange={(e) =>
@@ -166,7 +167,7 @@ const Transferencias: React.FC = () => {
 						</Select>
 
 						<Input
-                        name='from_warehouse_id'
+							name='from_warehouse_id'
 							type='date'
 							placeholder='Fecha desde'
 							value={localFilters.date_from}
@@ -176,7 +177,7 @@ const Transferencias: React.FC = () => {
 						/>
 
 						<Input
-                        name='to_warehouse_id'
+							name='to_warehouse_id'
 							type='date'
 							placeholder='Fecha hasta'
 							value={localFilters.date_to}

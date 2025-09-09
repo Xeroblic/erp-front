@@ -16,15 +16,32 @@ const Dashboard = lazy(() => import('@/pages/MainDashboard'));
 // const Cotizaciones  = lazy(() => import("@/pages/Cotizaciones"));
 const EmpresaPage = lazy(() => import('@/pages/gestionAdmin/empresa/Empresa'));
 const SubEmpresa = lazy(() => import('@/pages/gestionAdmin/subempresa/SubEmpresa'));
-const SubEmpresaDetalle = lazy(
-	() => import('@/pages/gestionAdmin/subempresa/SubEmpresaDetalle'),
-);
+const SubEmpresaDetalle = lazy(() => import('@/pages/gestionAdmin/subempresa/SubEmpresaDetalle'));
 const Sucursales = lazy(() => import('@/pages/gestionAdmin/sucursales/Sucursales.tsx'));
 const SucursalDetalle = lazy(() => import('@/pages/gestionAdmin/sucursales/SucursalDetalle.tsx'));
 const RolesPermisos = lazy(() => import('@/pages/gestionAdmin/roles y permisos/RolesPermisos.tsx'));
 const GestionUsuarios = lazy(() => import('@/pages/gestionAdmin/usuarios/Usuarios.tsx'));
 const PermissionsAdmin = lazy(() => import('@/pages/admin/PermissionsAdmin.tsx'));
 const InvitationsAdmin = lazy(() => import('@/pages/invitations/InvitationsAdmin.tsx'));
+
+// Páginas ERP
+const InventarioPage = lazy(() => import('@/pages/inventario/Inventario'));
+const VentasPage = lazy(() => import('@/pages/comercial/ventas/Ventas'));
+const CotizacionesPage = lazy(() => import('@/pages/comercial/cotizaciones/Cotizaciones'));
+const TransferenciasInventario = lazy(
+	() => import('@/pages/inventory/transferencias/Transferencias'),
+);
+const TransferenciasComercial = lazy(
+	() => import('@/pages/comercial/transferencias/Transferencias'),
+);
+
+// Páginas de Catálogos
+const ProductosPage = lazy(() => import('@/pages/catalogos/productos/Productos'));
+const BodegasPage = lazy(() => import('@/pages/catalogos/bodegas/Bodegas'));
+const CategoriasPage = lazy(() => import('@/pages/catalogos/categorias/Categorias'));
+const MarcasPage = lazy(() => import('@/pages/catalogos/marcas/Marcas'));
+const ProveedoresPage = lazy(() => import('@/pages/catalogos/proveedores/Proveedores'));
+const ClientesPage = lazy(() => import('@/pages/catalogos/clientes/Clientes'));
 
 export interface IRoutePersonalizada extends PathRouteProps {
 	authority?: string[];
@@ -85,6 +102,65 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: cfg.humanResources.subPages.invitationsAdmin.to,
 		element: <InvitationsAdmin />,
 		authority: cfg.humanResources.subPages.invitationsAdmin.authority,
+	},
+
+	// Rutas ERP
+	{
+		path: cfg.inventory.to,
+		element: <InventarioPage />,
+		authority: cfg.inventory.authority,
+	},
+	{
+		path: cfg.inventory.subPages.transfers.to,
+		element: <TransferenciasInventario />,
+		authority: cfg.inventory.subPages.transfers.authority,
+	},
+	{
+		path: cfg.commercial.subPages.sales.to,
+		element: <VentasPage />,
+		authority: cfg.commercial.subPages.sales.authority,
+	},
+	{
+		path: cfg.commercial.subPages.quotes.to,
+		element: <CotizacionesPage />,
+		authority: cfg.commercial.subPages.quotes.authority,
+	},
+	{
+		path: cfg.commercial.subPages.transfers.to,
+		element: <TransferenciasComercial />,
+		authority: cfg.commercial.subPages.transfers.authority,
+	},
+
+	// Rutas de Catálogos
+	{
+		path: cfg.catalogs.subPages.products.to,
+		element: <ProductosPage />,
+		authority: cfg.catalogs.subPages.products.authority,
+	},
+	{
+		path: cfg.catalogs.subPages.warehouses.to,
+		element: <BodegasPage />,
+		authority: cfg.catalogs.subPages.warehouses.authority,
+	},
+	{
+		path: cfg.catalogs.subPages.categories.to,
+		element: <CategoriasPage />,
+		authority: cfg.catalogs.subPages.categories.authority,
+	},
+	{
+		path: cfg.catalogs.subPages.brands.to,
+		element: <MarcasPage />,
+		authority: cfg.catalogs.subPages.brands.authority,
+	},
+	{
+		path: cfg.catalogs.subPages.suppliers.to,
+		element: <ProveedoresPage />,
+		authority: cfg.catalogs.subPages.suppliers.authority,
+	},
+	{
+		path: cfg.catalogs.subPages.customers.to,
+		element: <ClientesPage />,
+		authority: cfg.catalogs.subPages.customers.authority,
 	},
 
 	{ path: '/sin-permisos', element: <SinPermisos />, public: true },

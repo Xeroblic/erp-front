@@ -47,8 +47,12 @@ const AuthorityCheckNav = (props: AuthorityGuardProps) => {
 		return <>{children}</>;
 	}
 
-	// Si es super admin, acceso completo (excepto restricciones específicas)
-	if (user?.authority?.includes('super-admin') || userAuthority?.includes('super-admin')) {
+	// SUPER ADMIN: Acceso completo sin restricciones
+	if (
+		user?.roles?.includes('super-admin') ||
+		user?.authority?.includes('super-admin') ||
+		userAuthority?.includes('super-admin')
+	) {
 		return <>{children}</>;
 	}
 
@@ -198,7 +202,110 @@ const DefaultAsideTemplate = () => {
 						</AuthorityCheckNav>
 					</NavCollapse>
 
-					{/* Recursos Humanos */}
+					{/* Módulos ERP */}
+					<NavTitle>ERP</NavTitle>
+
+					{/* Inventario */}
+					<NavCollapse text='Inventario' icon='HeroCubeTransparent' to={''}>
+						<AuthorityCheckNav
+							authority={Pages.inventory.authority}
+							userAuthority={userPermissionsAndRoles}>
+							<NavItem
+								text={Pages.inventory.text}
+								to={Pages.inventory.to}
+								icon={Pages.inventory.icon}
+								id={Pages.inventory.id}
+								onClick={() => navigate(Pages.inventory.to)}
+							/>
+						</AuthorityCheckNav>
+
+						<AuthorityCheckNav
+							authority={Pages.inventory.subPages.transfers.authority}
+							userAuthority={userPermissionsAndRoles}>
+							<NavItem
+								text={Pages.inventory.subPages.transfers.text}
+								to={Pages.inventory.subPages.transfers.to}
+								icon={Pages.inventory.subPages.transfers.icon}
+								id={Pages.inventory.subPages.transfers.id}
+								onClick={() => navigate(Pages.inventory.subPages.transfers.to)}
+							/>
+						</AuthorityCheckNav>
+					</NavCollapse>
+
+					{/* Comercial */}
+					<NavCollapse text='Comercial' icon='HeroShoppingBag' to={''}>
+						<AuthorityCheckNav
+							authority={Pages.commercial.subPages.sales.authority}
+							userAuthority={userPermissionsAndRoles}>
+							<NavItem
+								text={Pages.commercial.subPages.sales.text}
+								to={Pages.commercial.subPages.sales.to}
+								icon={Pages.commercial.subPages.sales.icon}
+								id={Pages.commercial.subPages.sales.id}
+								onClick={() => navigate(Pages.commercial.subPages.sales.to)}
+							/>
+						</AuthorityCheckNav>
+
+						<AuthorityCheckNav
+							authority={Pages.commercial.subPages.quotes.authority}
+							userAuthority={userPermissionsAndRoles}>
+							<NavItem
+								text={Pages.commercial.subPages.quotes.text}
+								to={Pages.commercial.subPages.quotes.to}
+								icon={Pages.commercial.subPages.quotes.icon}
+								id={Pages.commercial.subPages.quotes.id}
+								onClick={() => navigate(Pages.commercial.subPages.quotes.to)}
+							/>
+						</AuthorityCheckNav>
+
+						<AuthorityCheckNav
+							authority={Pages.commercial.subPages.transfers.authority}
+							userAuthority={userPermissionsAndRoles}>
+							<NavItem
+								text={Pages.commercial.subPages.transfers.text}
+								to={Pages.commercial.subPages.transfers.to}
+								icon={Pages.commercial.subPages.transfers.icon}
+								id={Pages.commercial.subPages.transfers.id}
+								onClick={() => navigate(Pages.commercial.subPages.transfers.to)}
+							/>
+						</AuthorityCheckNav>
+					</NavCollapse>
+
+					{/* Reportes */}
+					<AuthorityCheckNav
+						authority={Pages.reports.authority}
+						userAuthority={userPermissionsAndRoles}>
+						<NavCollapse text='Reportes' icon='HeroChartBar' to={''}>
+							<AuthorityCheckNav
+								authority={Pages.reports.subPages.salesDashboard.authority}
+								userAuthority={userPermissionsAndRoles}>
+								<NavItem
+									text={Pages.reports.subPages.salesDashboard.text}
+									to={Pages.reports.subPages.salesDashboard.to}
+									icon={Pages.reports.subPages.salesDashboard.icon}
+									id={Pages.reports.subPages.salesDashboard.id}
+									onClick={() =>
+										navigate(Pages.reports.subPages.salesDashboard.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
+							<AuthorityCheckNav
+								authority={Pages.reports.subPages.inventoryReports.authority}
+								userAuthority={userPermissionsAndRoles}>
+								<NavItem
+									text={Pages.reports.subPages.inventoryReports.text}
+									to={Pages.reports.subPages.inventoryReports.to}
+									icon={Pages.reports.subPages.inventoryReports.icon}
+									id={Pages.reports.subPages.inventoryReports.id}
+									onClick={() =>
+										navigate(Pages.reports.subPages.inventoryReports.to)
+									}
+								/>
+							</AuthorityCheckNav>
+						</NavCollapse>
+					</AuthorityCheckNav>
+
 					<NavTitle>Recursos Humanos</NavTitle>
 
 					<AuthorityCheckNav
@@ -213,6 +320,86 @@ const DefaultAsideTemplate = () => {
 							onClick={() =>
 								navigate(Pages.humanResources.subPages.invitationsAdmin.to)
 							}
+						/>
+					</AuthorityCheckNav>
+
+					<NavTitle>Catálogos</NavTitle>
+
+					<AuthorityCheckNav
+						authority={Pages.catalogs.subPages.products.authority}
+						userAuthority={userPermissionsAndRoles}
+						requireAll={Pages.catalogs.subPages.products.requireAll}>
+						<NavItem
+							text={Pages.catalogs.subPages.products.text}
+							to={Pages.catalogs.subPages.products.to}
+							icon={Pages.catalogs.subPages.products.icon}
+							id={Pages.catalogs.subPages.products.id}
+							onClick={() => navigate(Pages.catalogs.subPages.products.to)}
+						/>
+					</AuthorityCheckNav>
+
+					<AuthorityCheckNav
+						authority={Pages.catalogs.subPages.warehouses.authority}
+						userAuthority={userPermissionsAndRoles}
+						requireAll={Pages.catalogs.subPages.warehouses.requireAll}>
+						<NavItem
+							text={Pages.catalogs.subPages.warehouses.text}
+							to={Pages.catalogs.subPages.warehouses.to}
+							icon={Pages.catalogs.subPages.warehouses.icon}
+							id={Pages.catalogs.subPages.warehouses.id}
+							onClick={() => navigate(Pages.catalogs.subPages.warehouses.to)}
+						/>
+					</AuthorityCheckNav>
+
+					<AuthorityCheckNav
+						authority={Pages.catalogs.subPages.categories.authority}
+						userAuthority={userPermissionsAndRoles}
+						requireAll={Pages.catalogs.subPages.categories.requireAll}>
+						<NavItem
+							text={Pages.catalogs.subPages.categories.text}
+							to={Pages.catalogs.subPages.categories.to}
+							icon={Pages.catalogs.subPages.categories.icon}
+							id={Pages.catalogs.subPages.categories.id}
+							onClick={() => navigate(Pages.catalogs.subPages.categories.to)}
+						/>
+					</AuthorityCheckNav>
+
+					<AuthorityCheckNav
+						authority={Pages.catalogs.subPages.brands.authority}
+						userAuthority={userPermissionsAndRoles}
+						requireAll={Pages.catalogs.subPages.brands.requireAll}>
+						<NavItem
+							text={Pages.catalogs.subPages.brands.text}
+							to={Pages.catalogs.subPages.brands.to}
+							icon={Pages.catalogs.subPages.brands.icon}
+							id={Pages.catalogs.subPages.brands.id}
+							onClick={() => navigate(Pages.catalogs.subPages.brands.to)}
+						/>
+					</AuthorityCheckNav>
+
+					<AuthorityCheckNav
+						authority={Pages.catalogs.subPages.suppliers.authority}
+						userAuthority={userPermissionsAndRoles}
+						requireAll={Pages.catalogs.subPages.suppliers.requireAll}>
+						<NavItem
+							text={Pages.catalogs.subPages.suppliers.text}
+							to={Pages.catalogs.subPages.suppliers.to}
+							icon={Pages.catalogs.subPages.suppliers.icon}
+							id={Pages.catalogs.subPages.suppliers.id}
+							onClick={() => navigate(Pages.catalogs.subPages.suppliers.to)}
+						/>
+					</AuthorityCheckNav>
+
+					<AuthorityCheckNav
+						authority={Pages.catalogs.subPages.customers.authority}
+						userAuthority={userPermissionsAndRoles}
+						requireAll={Pages.catalogs.subPages.customers.requireAll}>
+						<NavItem
+							text={Pages.catalogs.subPages.customers.text}
+							to={Pages.catalogs.subPages.customers.to}
+							icon={Pages.catalogs.subPages.customers.icon}
+							id={Pages.catalogs.subPages.customers.id}
+							onClick={() => navigate(Pages.catalogs.subPages.customers.to)}
 						/>
 					</AuthorityCheckNav>
 
