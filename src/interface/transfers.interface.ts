@@ -3,6 +3,9 @@
  * Basado en los modelos del backend ERP P0
  */
 
+import { IWarehouse, IWarehouseLocation, IProduct } from './products.interface';
+import { IUser } from './users.interface';
+
 export interface ITransfer {
     id: number;
     company_id: number;
@@ -74,6 +77,7 @@ export interface ICreateTransferRequest {
         from_location_id?: number;
         to_location_id?: number;
     }>;
+    [key: string]: unknown;
 }
 
 export interface IReceiveTransferRequest {
@@ -82,4 +86,5 @@ export interface IReceiveTransferRequest {
         received_quantity: number;
         to_location_id?: number;
     }>;
+    [key: string]: unknown;
 }

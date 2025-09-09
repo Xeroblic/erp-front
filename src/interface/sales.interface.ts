@@ -3,6 +3,10 @@
  * Basado en los modelos del backend ERP P0
  */
 
+import { ICustomer } from './customers.interface';
+import { IProduct } from './products.interface';
+import { IUser } from './users.interface';
+
 export interface ISale {
     id: number;
     company_id: number;
@@ -30,12 +34,12 @@ export interface ISale {
     salesperson_id?: number;
 
     // Relaciones
-    customer?: any; // ICustomer
-    quote?: any; // IQuote
+    customer?: ICustomer;
+    quote?: any; // IQuote (evitar dependencia circular)
     items?: ISaleItem[];
     payments?: IPayment[];
-    creator?: any; // IUser
-    deliverer?: any; // IUser
+    creator?: IUser;
+    deliverer?: IUser;
 
     // Campos calculados
     items_count?: number;
@@ -60,7 +64,7 @@ export interface ISaleItem {
 
     // Relaciones
     sale?: ISale;
-    product?: any; // IProduct
+    product?: IProduct;
 
     // Campos calculados
     pending_quantity?: number;
@@ -87,8 +91,8 @@ export interface IPayment {
 
     // Relaciones
     sale?: ISale;
-    creator?: any; // IUser
-    confirmer?: any; // IUser
+    creator?: IUser;
+    confirmer?: IUser;
 }
 
 export type SaleStatus =
@@ -129,6 +133,7 @@ export interface ICreateSaleRequest {
         unit_price: number;
         discount_percentage?: number;
     }>;
+    [key: string]: unknown;
 }
 
 export interface IAddPaymentRequest {
@@ -137,6 +142,7 @@ export interface IAddPaymentRequest {
     payment_date: string;
     reference?: string;
     notes?: string;
+    [key: string]: unknown;
 }
 
 export interface IDeliverSaleRequest {
@@ -145,4 +151,26 @@ export interface IDeliverSaleRequest {
         delivered_quantity: number;
     }>;
     delivery_date: string;
+    [key: string]: unknown;
+}
+
+// Aliases para mantener compatibilidad con el slice
+export type ISaleRequest = ICreateSaleRequest;
+export type ISaleUpdateRequest = Partial<ICreateSaleRequest>;
+
+// Response interfaces para API
+export interface ISaleResponse {
+    data: ISale;
+    success?: boolean;
+    message?: string;
+}
+
+export interface ISalesResponse {
+    data: ISale[];
+    current_page: number;
+    last_page: number;
+    total: number;
+    per_page: number;
+    success?: boolean;
+    message?: string;
 }

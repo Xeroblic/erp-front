@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { toast } from 'react-toastify';
 import type { RootState } from '@/store';
 import type {
     IInventoryMovement,
@@ -12,7 +13,6 @@ import type {
     IStockAlert
 } from '@/interface/inventory.interface';
 import ApiService from '@/services/ApiService';
-import { showErrorToast, showSuccessToast } from '@/utils/toast.utils';
 
 // Tipos para el estado del slice
 interface InventoryState {
@@ -133,13 +133,14 @@ export const fetchInventoryMovements = createAsyncThunk(
                 ),
             });
 
-            const response = await ApiService.get<IInventoryResponse>(
-                `/inventory/movements?${queryParams.toString()}`
-            );
+            const response = await ApiService.fetchData<IInventoryResponse>({
+                url: `/inventory/movements?${queryParams.toString()}`,
+                method: "get"
+            });
 
             return response.data;
         } catch (error: any) {
-            showErrorToast('Error al cargar movimientos de inventario');
+            toast.error('Error al cargar movimientos de inventario');
             throw error;
         }
     }
@@ -165,13 +166,14 @@ export const fetchInventoryItems = createAsyncThunk(
                 ),
             });
 
-            const response = await ApiService.get<IInventoryItemResponse>(
-                `/inventory/items?${queryParams.toString()}`
-            );
+            const response = await ApiService.fetchData<IInventoryItemResponse>({
+                url: `/inventory/items?${queryParams.toString()}`,
+                method: "get"
+            });
 
             return response.data;
         } catch (error: any) {
-            showErrorToast('Error al cargar items de inventario');
+            toast.error('Error al cargar items de inventario');
             throw error;
         }
     }
@@ -185,10 +187,13 @@ export const fetchStockLevels = createAsyncThunk(
                 ? `/inventory/stock-levels?warehouse_id=${warehouseId}`
                 : '/inventory/stock-levels';
 
-            const response = await ApiService.get(url);
-            return response.data.data;
+            const response = await ApiService.fetchData<IStockLevel[]>({
+                url: url,
+                method: "get"
+            });
+            return response.data;
         } catch (error: any) {
-            showErrorToast('Error al cargar niveles de stock');
+            toast.error('Error al cargar niveles de stock');
             throw error;
         }
     }
@@ -198,10 +203,13 @@ export const fetchStockAlerts = createAsyncThunk(
     'inventory/fetchStockAlerts',
     async () => {
         try {
-            const response = await ApiService.get('/inventory/stock-alerts');
-            return response.data.data;
+            const response = await ApiService.fetchData<IStockAlert[]>({
+                url: '/inventory/stock-alerts',
+                method: "get"
+            });
+            return response.data;
         } catch (error: any) {
-            showErrorToast('Error al cargar alertas de stock');
+            toast.error('Error al cargar alertas de stock');
             throw error;
         }
     }
@@ -211,15 +219,15 @@ export const createInventoryMovement = createAsyncThunk(
     'inventory/createMovement',
     async (data: IInventoryRequest) => {
         try {
-            const response = await ApiService.post<{ data: IInventoryMovement }>(
-                '/inventory/movements',
-                data
-            );
-            showSuccessToast('Movimiento de inventario creado exitosamente');
+            const response = await ApiService.fetchData<{ data: IInventoryMovement }>({
+                url: '/inventory/movements',
+                method: "post",
+            });
+            toast.success('Movimiento de inventario creado exitosamente');
             return response.data.data;
         } catch (error: any) {
             const message = error.response?.data?.message || 'Error al crear el movimiento';
-            showErrorToast(message);
+            toast.error(message);
             throw error;
         }
     }
@@ -235,15 +243,16 @@ export const adjustInventory = createAsyncThunk(
         notes?: string;
     }) => {
         try {
-            const response = await ApiService.post<{ data: IInventoryMovement }>(
-                '/inventory/adjust',
-                data
-            );
-            showSuccessToast('Ajuste de inventario realizado exitosamente');
+            const response = await ApiService.fetchData<{ data: IInventoryMovement }>({
+                url: '/inventory/adjust',
+                method: "post",
+                data: data
+            });
+            toast.success('Ajuste de inventario realizado exitosamente');
             return response.data.data;
         } catch (error: any) {
             const message = error.response?.data?.message || 'Error al ajustar el inventario';
-            showErrorToast(message);
+            toast.error(message);
             throw error;
         }
     }
@@ -259,15 +268,16 @@ export const transferInventory = createAsyncThunk(
         notes?: string;
     }) => {
         try {
-            const response = await ApiService.post<{ data: IInventoryMovement[] }>(
-                '/inventory/transfer',
-                data
-            );
-            showSuccessToast('Transferencia de inventario realizada exitosamente');
+            const response = await ApiService.fetchData<{ data: IInventoryMovement[] }>({
+                url: '/inventory/transfer',
+                method: "post",
+                data: data
+            });
+            toast.success('Transferencia de inventario realizada exitosamente');
             return response.data.data;
         } catch (error: any) {
             const message = error.response?.data?.message || 'Error al transferir el inventario';
-            showErrorToast(message);
+            toast.error(message);
             throw error;
         }
     }
@@ -283,15 +293,16 @@ export const updateStockLevels = createAsyncThunk(
         reorder_point: number;
     }) => {
         try {
-            const response = await ApiService.put(
-                `/inventory/stock-levels/${data.product_id}/${data.warehouse_id}`,
-                data
-            );
-            showSuccessToast('Niveles de stock actualizados exitosamente');
+            const response = await ApiService.fetchData<{ data: IStockLevel }>({
+                url: `/inventory/stock-levels/${data.product_id}/${data.warehouse_id}`,
+                method: "put",
+                data: data
+            });
+            toast.success('Niveles de stock actualizados exitosamente');
             return response.data.data;
         } catch (error: any) {
             const message = error.response?.data?.message || 'Error al actualizar niveles de stock';
-            showErrorToast(message);
+            toast.error(message);
             throw error;
         }
     }
@@ -308,12 +319,16 @@ export const performStockCount = createAsyncThunk(
         }>;
     }) => {
         try {
-            const response = await ApiService.post('/inventory/stock-count', data);
-            showSuccessToast('Conteo físico registrado exitosamente');
+            const response = await ApiService.fetchData<{ data: IInventoryMovement[] }>({
+                url: '/inventory/stock-count',
+                method: "post",
+                data: data
+            });
+            toast.success('Conteo físico registrado exitosamente');
             return response.data.data;
         } catch (error: any) {
             const message = error.response?.data?.message || 'Error al registrar el conteo físico';
-            showErrorToast(message);
+            toast.error(message);
             throw error;
         }
     }
@@ -327,10 +342,13 @@ export const fetchInventoryStatistics = createAsyncThunk(
                 ? `/inventory/statistics?warehouse_id=${warehouseId}`
                 : '/inventory/statistics';
 
-            const response = await ApiService.get(url);
+            const response = await ApiService.fetchData<{ data: InventoryState['statistics'] }>({
+                url: url,
+                method: "get"
+            });
             return response.data.data;
         } catch (error: any) {
-            showErrorToast('Error al cargar estadísticas de inventario');
+            toast.error('Error al cargar estadísticas de inventario');
             throw error;
         }
     }

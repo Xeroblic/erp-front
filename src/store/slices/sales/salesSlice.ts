@@ -3,12 +3,12 @@ import { toast } from 'react-toastify';
 import type { RootState } from '@/store';
 import type {
     ISale,
-    SaleStatus,
     ISaleItem,
     ISaleRequest,
     ISaleUpdateRequest,
+    ISaleResponse,
     ISalesResponse,
-    ISaleResponse
+    SaleStatus
 } from '@/interface/sales.interface';
 import ApiService from '@/services/ApiService';
 
@@ -105,9 +105,10 @@ export const fetchSales = createAsyncThunk(
                 ),
             });
 
-            const response = await ApiService.get<ISalesResponse>(
-                `/sales?${queryParams.toString()}`
-            );
+            const response = await ApiService.fetchData<ISalesResponse>({
+                url: `/sales?${queryParams.toString()}`,
+                method: "get"
+            });
 
             return response.data;
         } catch (error: any) {
@@ -121,7 +122,10 @@ export const fetchSaleById = createAsyncThunk(
     'sales/fetchSaleById',
     async (id: number) => {
         try {
-            const response = await ApiService.get<ISaleResponse>(`/sales/${id}`);
+            const response = await ApiService.fetchData<ISaleResponse>({
+                url: `/sales/${id}`,
+                method: "get"
+            });
             return response.data;
         } catch (error: any) {
             toast.error('Error al cargar la venta');
@@ -134,12 +138,16 @@ export const createSale = createAsyncThunk(
     'sales/createSale',
     async (data: ISaleRequest) => {
         try {
-            const response = await ApiService.post<ISaleResponse>('/sales', data);
+            const response = await ApiService.fetchData<ISaleResponse>({
+                url: '/sales',
+                method: "post",
+                data: data
+            });
             toast.success('Venta creada exitosamente');
             return response.data;
         } catch (error: any) {
             const message = error.response?.data?.message || 'Error al crear la venta';
-            showErrorToast(message);
+            toast.error(message);
             throw error;
         }
     }
@@ -149,12 +157,16 @@ export const updateSale = createAsyncThunk(
     'sales/updateSale',
     async ({ id, data }: { id: number; data: ISaleUpdateRequest }) => {
         try {
-            const response = await ApiService.put<ISaleResponse>(`/sales/${id}`, data);
-            showSuccessToast('Venta actualizada exitosamente');
+            const response = await ApiService.fetchData<ISaleResponse>({
+                url: `/sales/${id}`,
+                method: "put",
+                data: data
+            });
+            toast.success('Venta actualizada exitosamente');
             return response.data;
         } catch (error: any) {
             const message = error.response?.data?.message || 'Error al actualizar la venta';
-            showErrorToast(message);
+            toast.error(message);
             throw error;
         }
     }
@@ -164,12 +176,15 @@ export const deleteSale = createAsyncThunk(
     'sales/deleteSale',
     async (id: number) => {
         try {
-            await ApiService.delete(`/sales/${id}`);
-            showSuccessToast('Venta eliminada exitosamente');
+            await ApiService.fetchData({
+                url: `/sales/${id}`,
+                method: "delete"
+            });
+            toast.success('Venta eliminada exitosamente');
             return id;
         } catch (error: any) {
             const message = error.response?.data?.message || 'Error al eliminar la venta';
-            showErrorToast(message);
+            toast.error(message);
             throw error;
         }
     }
@@ -179,12 +194,15 @@ export const generateInvoice = createAsyncThunk(
     'sales/generateInvoice',
     async (id: number) => {
         try {
-            const response = await ApiService.post<ISaleResponse>(`/sales/${id}/invoice`);
-            showSuccessToast('Factura generada exitosamente');
+            const response = await ApiService.fetchData<ISaleResponse>({
+                url: `/sales/${id}/invoice`,
+                method: "post"
+            });
+            toast.success('Factura generada exitosamente');
             return response.data;
         } catch (error: any) {
             const message = error.response?.data?.message || 'Error al generar la factura';
-            showErrorToast(message);
+            toast.error(message);
             throw error;
         }
     }
@@ -206,15 +224,16 @@ export const recordPayment = createAsyncThunk(
         };
     }) => {
         try {
-            const response = await ApiService.post<ISaleResponse>(
-                `/sales/${id}/payments`,
-                data
-            );
-            showSuccessToast('Pago registrado exitosamente');
+            const response = await ApiService.fetchData<ISaleResponse>({
+                url: `/sales/${id}/payments`,
+                method: "post",
+                data: data
+            });
+            toast.success('Pago registrado exitosamente');
             return response.data;
         } catch (error: any) {
             const message = error.response?.data?.message || 'Error al registrar el pago';
-            showErrorToast(message);
+            toast.error(message);
             throw error;
         }
     }
@@ -236,15 +255,16 @@ export const shipSale = createAsyncThunk(
         };
     }) => {
         try {
-            const response = await ApiService.post<ISaleResponse>(
-                `/sales/${id}/ship`,
-                data
-            );
-            showSuccessToast('Venta marcada como enviada');
+            const response = await ApiService.fetchData<ISaleResponse>({
+                url: `/sales/${id}/ship`,
+                method: "post",
+                data: data
+            });
+            toast.success('Venta marcada como enviada');
             return response.data;
         } catch (error: any) {
             const message = error.response?.data?.message || 'Error al enviar la venta';
-            showErrorToast(message);
+            toast.error(message);
             throw error;
         }
     }
@@ -264,15 +284,16 @@ export const deliverSale = createAsyncThunk(
         };
     }) => {
         try {
-            const response = await ApiService.post<ISaleResponse>(
-                `/sales/${id}/deliver`,
-                data
-            );
-            showSuccessToast('Venta marcada como entregada');
+            const response = await ApiService.fetchData<ISaleResponse>({
+                url: `/sales/${id}/deliver`,
+                method: "post",
+                data: data
+            });
+            toast.success('Venta marcada como entregada');
             return response.data;
         } catch (error: any) {
             const message = error.response?.data?.message || 'Error al entregar la venta';
-            showErrorToast(message);
+            toast.error(message);
             throw error;
         }
     }
@@ -292,15 +313,16 @@ export const cancelSale = createAsyncThunk(
         };
     }) => {
         try {
-            const response = await ApiService.post<ISaleResponse>(
-                `/sales/${id}/cancel`,
-                data
-            );
-            showSuccessToast('Venta cancelada exitosamente');
+            const response = await ApiService.fetchData<ISaleResponse>({
+                url: `/sales/${id}/cancel`,
+                method: "post",
+                data: data
+            });
+            toast.success('Venta cancelada exitosamente');
             return response.data;
         } catch (error: any) {
             const message = error.response?.data?.message || 'Error al cancelar la venta';
-            showErrorToast(message);
+            toast.error(message);
             throw error;
         }
     }
@@ -311,10 +333,20 @@ export const fetchSalesStatistics = createAsyncThunk(
     async (params: { period?: 'day' | 'week' | 'month' | 'year' } = {}) => {
         try {
             const { period = 'month' } = params;
-            const response = await ApiService.get(`/sales/statistics?period=${period}`);
-            return response.data.data;
+            const response = await ApiService.fetchData<{
+                totalSalesAmount: number;
+                totalSalesCount: number;
+                pendingSales: number;
+                deliveredSales: number;
+                cancelledSales: number;
+                monthlyGrowth: number;
+            }>({
+                url: `/sales/statistics?period=${period}`,
+                method: "get"
+            });
+            return response.data;
         } catch (error: any) {
-            showErrorToast('Error al cargar las estadísticas');
+            toast.error('Error al cargar las estadísticas');
             throw error;
         }
     }
@@ -340,23 +372,23 @@ const ventasSlice = createSlice({
         updateSaleItem: (state, action: PayloadAction<{ saleId: number; item: ISaleItem }>) => {
             const { saleId, item } = action.payload;
             const sale = state.sales.find(s => s.id === saleId);
-            if (sale) {
+            if (sale && sale.items) {
                 const itemIndex = sale.items.findIndex(i => i.id === item.id);
                 if (itemIndex !== -1) {
                     sale.items[itemIndex] = item;
                     // Recalcular total
                     sale.total_amount = sale.items.reduce(
-                        (total, item) => total + (item.price * item.quantity), 0
+                        (total, item) => total + (item.unit_price * item.quantity), 0
                     );
                 }
             }
 
-            if (state.currentSale && state.currentSale.id === saleId) {
+            if (state.currentSale && state.currentSale.id === saleId && state.currentSale.items) {
                 const itemIndex = state.currentSale.items.findIndex(i => i.id === item.id);
                 if (itemIndex !== -1) {
                     state.currentSale.items[itemIndex] = item;
                     state.currentSale.total_amount = state.currentSale.items.reduce(
-                        (total, item) => total + (item.price * item.quantity), 0
+                        (total, item) => total + (item.unit_price * item.quantity), 0
                     );
                 }
             }

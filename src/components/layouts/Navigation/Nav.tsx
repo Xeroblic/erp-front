@@ -269,23 +269,41 @@ interface INavCollapseProps extends HTMLAttributes<HTMLLIElement> {
 	text: string;
 	to: string;
 	className?: string;
+	isOpen?: boolean; // Prop opcional para controlar el estado externamente
+	onToggle?: () => void; // Callback opcional para manejar cambios
 }
 export const NavCollapse: FC<INavCollapseProps> = (props) => {
-	const { children, icon, text, className, to, ...rest } = props;
+	const { children, icon, text, className, to, isOpen, onToggle, ...rest } = props;
 
 	const { t } = useTranslation('menu');
 
 	const id = useId();
-	const [isActive, setIsActive] = useState<boolean>(false);
+	// Usar estado interno solo si no se pasa isOpen como prop
+	const [internalIsActive, setInternalIsActive] = useState<boolean>(false);
+
+	// Determinar qué estado usar: externo o interno
+	const isActive = isOpen !== undefined ? isOpen : internalIsActive;
 
 	const { asideStatus } = useAsideStatus();
 
 	const location = useLocation();
 	const here = to !== '/' && location.pathname.includes(to);
 
+	// Solo actualizar estado interno si no se usa control externo
 	useEffect(() => {
-		setIsActive(here);
-	}, [here, location.pathname]);
+		if (isOpen === undefined) {
+			setInternalIsActive(here);
+		}
+	}, [here, location.pathname, isOpen]);
+
+	// Handler para el click
+	const handleToggle = () => {
+		if (onToggle) {
+			onToggle(); // Usar callback externo si existe
+		} else {
+			setInternalIsActive(!internalIsActive); // Usar estado interno
+		}
+	};
 
 	return (
 		<li
@@ -300,7 +318,7 @@ export const NavCollapse: FC<INavCollapseProps> = (props) => {
 							? classNames(navItemClasses.default, navItemClasses.here)
 							: classNames(navItemClasses.default, navItemClasses.inactive)
 					}
-					onClick={() => setIsActive(!isActive)}>
+					onClick={handleToggle}>
 					<NavIcon icon={icon} />
 
 					<NavItemContent>

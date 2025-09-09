@@ -1,4 +1,4 @@
-import React, { PropsWithChildren, useMemo } from 'react';
+import React, { PropsWithChildren, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Aside, { AsideBody } from '@/components/layouts/Aside/Aside';
 import Nav, {
@@ -104,6 +104,17 @@ const DefaultAsideTemplate = () => {
 	const user = useAppSelector((s) => s.auth.user);
 	const navigate = useNavigate();
 
+	// Estado para controlar cada NavCollapse individualmente
+	const [collapseStates, setCollapseStates] = useState<Record<string, boolean>>({});
+
+	// Función para toggle individual de cada collapse
+	const toggleCollapse = (key: string) => {
+		setCollapseStates((prev) => ({
+			...prev,
+			[key]: !prev[key],
+		}));
+	};
+
 	// Crear un array combinado de permisos y roles para verificación
 	const userPermissionsAndRoles = [
 		...(userAuthority || []),
@@ -132,7 +143,13 @@ const DefaultAsideTemplate = () => {
 					<NavTitle>Gestión</NavTitle>
 
 					{/* Gestión - Empresa */}
-					<NavCollapse text='Registro' icon='HeroDocumentText' to={''}>
+					<NavCollapse
+						key='registro-nav'
+						text='Registro'
+						icon='HeroDocumentText'
+						to=''
+						isOpen={collapseStates.registro}
+						onToggle={() => toggleCollapse('registro')}>
 						<AuthorityCheckNav
 							authority={Pages.manage.subPages.company.authority}
 							userAuthority={userPermissionsAndRoles}>
@@ -206,7 +223,13 @@ const DefaultAsideTemplate = () => {
 					<NavTitle>ERP</NavTitle>
 
 					{/* Inventario */}
-					<NavCollapse text='Inventario' icon='HeroCubeTransparent' to={''}>
+					<NavCollapse
+						key='inventario-nav'
+						text='Inventario'
+						icon='HeroCubeTransparent'
+						to=''
+						isOpen={collapseStates.inventario}
+						onToggle={() => toggleCollapse('inventario')}>
 						<AuthorityCheckNav
 							authority={Pages.inventory.authority}
 							userAuthority={userPermissionsAndRoles}>
@@ -233,7 +256,13 @@ const DefaultAsideTemplate = () => {
 					</NavCollapse>
 
 					{/* Comercial */}
-					<NavCollapse text='Comercial' icon='HeroShoppingBag' to={''}>
+					<NavCollapse
+						key='comercial-nav'
+						text='Comercial'
+						icon='HeroShoppingBag'
+						to=''
+						isOpen={collapseStates.comercial}
+						onToggle={() => toggleCollapse('comercial')}>
 						<AuthorityCheckNav
 							authority={Pages.commercial.subPages.sales.authority}
 							userAuthority={userPermissionsAndRoles}>
@@ -275,7 +304,13 @@ const DefaultAsideTemplate = () => {
 					<AuthorityCheckNav
 						authority={Pages.reports.authority}
 						userAuthority={userPermissionsAndRoles}>
-						<NavCollapse text='Reportes' icon='HeroChartBar' to={''}>
+						<NavCollapse
+							key='reportes-nav'
+							text='Reportes'
+							icon='HeroChartBar'
+							to=''
+							isOpen={collapseStates.reportes}
+							onToggle={() => toggleCollapse('reportes')}>
 							<AuthorityCheckNav
 								authority={Pages.reports.subPages.salesDashboard.authority}
 								userAuthority={userPermissionsAndRoles}>

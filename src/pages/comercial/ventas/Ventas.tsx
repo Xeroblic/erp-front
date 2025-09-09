@@ -427,6 +427,7 @@ const Ventas: React.FC = () => {
 						</Select>
 
 						<Input
+							name='Fecha desde'
 							type='date'
 							placeholder='Fecha desde'
 							value={localFilters.sale_date_from}
@@ -436,6 +437,7 @@ const Ventas: React.FC = () => {
 						/>
 
 						<Input
+							name='Fecha hasta'
 							type='date'
 							placeholder='Fecha hasta'
 							value={localFilters.sale_date_to}
@@ -496,7 +498,7 @@ const Ventas: React.FC = () => {
 								sales.map((sale) => (
 									<Tr key={sale.id}>
 										<Td className='font-mono'>{sale.sale_number}</Td>
-										<Td>{sale.customer?.name || 'Cliente N/A'}</Td>
+										<Td>{sale.customer?.first_name || 'Cliente N/A'}</Td>
 										<Td>{getStatusBadge(sale.status)}</Td>
 										<Td>{getPaymentStatusBadge(sale.payment_status)}</Td>
 										<Td>{formatDate(sale.sale_date)}</Td>
@@ -528,7 +530,7 @@ const Ventas: React.FC = () => {
 														]}>
 														<Button
 															size='sm'
-															color='indigo'
+															color='violet'
 															icon='HeroDocument'
 															isLoading={actionLoading.invoice}
 															onClick={() =>
@@ -545,7 +547,7 @@ const Ventas: React.FC = () => {
 														]}>
 														<Button
 															size='sm'
-															color='green'
+															color='emerald'
 															icon='HeroCreditCard'
 															onClick={() => {
 																setSelectedSale(sale);
@@ -567,8 +569,9 @@ const Ventas: React.FC = () => {
 														permissions={[ERP_PERMISSIONS.SALES.SHIP]}>
 														<Button
 															size='sm'
-															color='purple'
+															color='violet'
 															icon='HeroTruck'
+															colorIntensity='300'
 															onClick={() => {
 																setSelectedSale(sale);
 																setShowShipModal(true);
@@ -646,7 +649,7 @@ const Ventas: React.FC = () => {
 									<strong>Venta:</strong> {selectedSale.sale_number}
 								</p>
 								<p>
-									<strong>Cliente:</strong> {selectedSale.customer?.name}
+									<strong>Cliente:</strong> {selectedSale.customer?.first_name || 'N/A'}
 								</p>
 								<p>
 									<strong>Total:</strong>{' '}
@@ -668,6 +671,7 @@ const Ventas: React.FC = () => {
 								<div>
 									<label className='mb-1 block text-sm font-medium'>Monto</label>
 									<Input
+										name='monto'
 										type='number'
 										step='0.01'
 										value={paymentForm.amount}
@@ -685,6 +689,7 @@ const Ventas: React.FC = () => {
 										Método de Pago
 									</label>
 									<Select
+										name='metodo de pago'										
 										value={paymentForm.payment_method}
 										onChange={(e) =>
 											setPaymentForm({
@@ -706,6 +711,7 @@ const Ventas: React.FC = () => {
 										Fecha de Pago
 									</label>
 									<Input
+										name='fecha de pago'
 										type='date'
 										value={paymentForm.payment_date}
 										onChange={(e) =>
@@ -722,6 +728,7 @@ const Ventas: React.FC = () => {
 										Referencia
 									</label>
 									<Input
+										name='referencia'
 										value={paymentForm.reference}
 										onChange={(e) =>
 											setPaymentForm({
@@ -757,7 +764,7 @@ const Ventas: React.FC = () => {
 						Cancelar
 					</Button>
 					<Button
-						color='green'
+						color='emerald'
 						isLoading={actionLoading.payment}
 						onClick={handleRecordPayment}>
 						Registrar Pago
@@ -778,7 +785,7 @@ const Ventas: React.FC = () => {
 									<strong>Venta:</strong> {selectedSale.sale_number}
 								</p>
 								<p>
-									<strong>Cliente:</strong> {selectedSale.customer?.name}
+									<strong>Cliente:</strong> {selectedSale.customer?.first_name}
 								</p>
 							</div>
 
@@ -788,6 +795,7 @@ const Ventas: React.FC = () => {
 										Número de Seguimiento
 									</label>
 									<Input
+										name='numero de seguimiento'
 										value={shipForm.tracking_number}
 										onChange={(e) =>
 											setShipForm({
@@ -804,6 +812,7 @@ const Ventas: React.FC = () => {
 										Transportista
 									</label>
 									<Input
+										name='transportista'
 										value={shipForm.carrier}
 										onChange={(e) =>
 											setShipForm({ ...shipForm, carrier: e.target.value })
@@ -819,6 +828,7 @@ const Ventas: React.FC = () => {
 										Fecha de Envío
 									</label>
 									<Input
+										name='fecha de envio'
 										type='date'
 										value={shipForm.shipped_date}
 										onChange={(e) =>
@@ -835,6 +845,7 @@ const Ventas: React.FC = () => {
 										Entrega Estimada
 									</label>
 									<Input
+										name='fecha de entrega estimada'
 										type='date'
 										value={shipForm.expected_delivery_date}
 										onChange={(e) =>
@@ -871,7 +882,7 @@ const Ventas: React.FC = () => {
 						}}>
 						Cancelar
 					</Button>
-					<Button color='purple' isLoading={actionLoading.ship} onClick={handleShipSale}>
+					<Button color='violet' colorIntensity='300' isLoading={actionLoading.ship} onClick={handleShipSale}>
 						Marcar como Enviada
 					</Button>
 				</ModalFooter>
@@ -893,7 +904,7 @@ const Ventas: React.FC = () => {
 									<strong>Venta:</strong> {selectedSale.sale_number}
 								</p>
 								<p>
-									<strong>Cliente:</strong> {selectedSale.customer?.name}
+									<strong>Cliente:</strong> {selectedSale.customer?.first_name || 'N/A'}
 								</p>
 							</div>
 
@@ -902,6 +913,7 @@ const Ventas: React.FC = () => {
 									Razón de Cancelación *
 								</label>
 								<Select
+									name='razon de cancelación'
 									value={cancelForm.reason}
 									onChange={(e) =>
 										setCancelForm({ ...cancelForm, reason: e.target.value })
@@ -920,6 +932,7 @@ const Ventas: React.FC = () => {
 									Monto de Reembolso
 								</label>
 								<Input
+									name='monto de reembolso'
 									type='number'
 									step='0.01'
 									value={cancelForm.refund_amount}
@@ -961,7 +974,7 @@ const Ventas: React.FC = () => {
 						color='red'
 						isLoading={actionLoading.cancel}
 						onClick={handleCancelSale}
-						disabled={!cancelForm.reason}>
+						isDisable={!cancelForm.reason}>
 						Confirmar Cancelación
 					</Button>
 				</ModalFooter>

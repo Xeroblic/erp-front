@@ -199,9 +199,9 @@ const Inventario: React.FC = () => {
 			RETURN: { color: 'orange' as const, text: 'Devolución', icon: '↩️' },
 		};
 
-		const config = typeConfig[type] || typeConfig['ADJUSTMENT'];
+		const config = typeConfig[type as keyof typeof typeConfig] || typeConfig['ADJUSTMENT'];
 		return (
-			<Badge color={config.color}>
+			<Badge>
 				{config.icon} {config.text}
 			</Badge>
 		);
@@ -211,9 +211,9 @@ const Inventario: React.FC = () => {
 		if (currentStock === 0) {
 			return <Badge color='red'>Sin Stock</Badge>;
 		} else if (minStock && currentStock <= minStock) {
-			return <Badge color='yellow'>Stock Bajo</Badge>;
+			return <Badge color='amber'>Stock Bajo</Badge>;
 		} else {
-			return <Badge color='green'>Normal</Badge>;
+			return <Badge color='emerald'>Normal</Badge>;
 		}
 	};
 
@@ -225,7 +225,7 @@ const Inventario: React.FC = () => {
 		};
 
 		const config = levelConfig[level as keyof typeof levelConfig] || levelConfig['LOW'];
-		return <Badge color={config.color}>{config.text}</Badge>;
+		return <Badge>{config.text}</Badge>;
 	};
 
 	return (
@@ -251,7 +251,8 @@ const Inventario: React.FC = () => {
 					<PermissionGuard permissions={[ERP_PERMISSIONS.INVENTORY.TRANSFER]}>
 						<Button
 							variant='outline'
-							color='purple'
+							color='violet'
+							colorIntensity='300'
 							onClick={() => setShowTransferModal(true)}
 							icon='HeroArrowsRightLeft'>
 							Transferir
@@ -423,6 +424,7 @@ const Inventario: React.FC = () => {
 					<div className='grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-5'>
 						{activeTab === 'movements' && (
 							<Select
+								name=''
 								placeholder='Tipo de Movimiento'
 								value={localFilters.movement_type}
 								onChange={(e) =>
@@ -442,6 +444,7 @@ const Inventario: React.FC = () => {
 						)}
 
 						<Input
+							name='Fecha desde'
 							type='date'
 							placeholder='Fecha desde'
 							value={localFilters.date_from}
@@ -451,6 +454,7 @@ const Inventario: React.FC = () => {
 						/>
 
 						<Input
+							name='Fecha hasta'
 							type='date'
 							placeholder='Fecha hasta'
 							value={localFilters.date_to}
@@ -560,16 +564,16 @@ const Inventario: React.FC = () => {
 									) : (
 										movements.map((movement) => (
 											<Tr key={movement.id}>
-												<Td>{formatDate(movement.movement_date)}</Td>
+												<Td>{movement.movement_date ? formatDate(movement.movement_date) : 'N/A'}</Td>
 												<Td>
 													{getMovementTypeBadge(movement.movement_type)}
 												</Td>
 												<Td>{movement.product?.name || 'N/A'}</Td>
 												<Td>{movement.warehouse?.name || 'N/A'}</Td>
 												<Td
-													className={`font-mono ${movement.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
-													{movement.quantity > 0 ? '+' : ''}
-													{movement.quantity}
+													className={`font-mono ${(movement.quantity ?? 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
+													{(movement.quantity ?? 0) > 0 ? '+' : ''}
+													{movement.quantity ?? 0}
 												</Td>
 												<Td className='font-mono'>
 													{movement.previous_stock}
@@ -657,11 +661,11 @@ const Inventario: React.FC = () => {
 												<Td className='font-mono'>{item.reserved_stock}</Td>
 												<Td>
 													{getStockStatusBadge(
-														item.current_stock,
+														item.current_stock ?? 0,
 														item.min_stock,
 													)}
 												</Td>
-												<Td>{formatDate(item.last_updated)}</Td>
+												<Td>{item.last_updated ? formatDate(item.last_updated) : 'N/A'}</Td>
 											</Tr>
 										))
 									)}
@@ -733,7 +737,7 @@ const Inventario: React.FC = () => {
 											</Td>
 											<Td>
 												{getStockStatusBadge(
-													level.current_stock,
+													level.current_stock || 0,
 													level.min_stock,
 												)}
 											</Td>
@@ -805,7 +809,7 @@ const Inventario: React.FC = () => {
 														]}>
 														<Button
 															size='sm'
-															color='green'
+															color='emerald'
 															icon='HeroPlus'
 															onClick={() => {
 																setAdjustForm({
@@ -813,7 +817,7 @@ const Inventario: React.FC = () => {
 																	product_id:
 																		alert.product_id.toString(),
 																	warehouse_id:
-																		alert.warehouse_id.toString(),
+																		alert.warehouse_id?.toString() || '',
 																});
 																setShowAdjustModal(true);
 															}}
@@ -841,6 +845,7 @@ const Inventario: React.FC = () => {
 							<div>
 								<label className='mb-1 block text-sm font-medium'>Producto *</label>
 								<Select
+									name='producto'
 									value={adjustForm.product_id}
 									onChange={(e) =>
 										setAdjustForm({ ...adjustForm, product_id: e.target.value })
@@ -855,6 +860,7 @@ const Inventario: React.FC = () => {
 							<div>
 								<label className='mb-1 block text-sm font-medium'>Almacén *</label>
 								<Select
+									name='almacen'
 									value={adjustForm.warehouse_id}
 									onChange={(e) =>
 										setAdjustForm({
@@ -876,6 +882,7 @@ const Inventario: React.FC = () => {
 									Cambio de Cantidad *
 								</label>
 								<Input
+									name='cambio_cantidad'
 									type='number'
 									step='0.01'
 									value={adjustForm.quantity_change}
@@ -895,6 +902,7 @@ const Inventario: React.FC = () => {
 							<div>
 								<label className='mb-1 block text-sm font-medium'>Razón *</label>
 								<Select
+									name='razon'
 									value={adjustForm.reason}
 									onChange={(e) =>
 										setAdjustForm({ ...adjustForm, reason: e.target.value })
@@ -929,7 +937,7 @@ const Inventario: React.FC = () => {
 						color='blue'
 						isLoading={actionLoading.adjust}
 						onClick={handleAdjustInventory}
-						disabled={
+						isDisable={
 							!adjustForm.product_id ||
 							!adjustForm.warehouse_id ||
 							!adjustForm.quantity_change
@@ -949,6 +957,7 @@ const Inventario: React.FC = () => {
 						<div>
 							<label className='mb-1 block text-sm font-medium'>Producto *</label>
 							<Select
+								name='producto'
 								value={transferForm.product_id}
 								onChange={(e) =>
 									setTransferForm({ ...transferForm, product_id: e.target.value })
@@ -965,6 +974,7 @@ const Inventario: React.FC = () => {
 									Almacén Origen *
 								</label>
 								<Select
+									name='almacen_origen'
 									value={transferForm.from_warehouse_id}
 									onChange={(e) =>
 										setTransferForm({
@@ -983,6 +993,7 @@ const Inventario: React.FC = () => {
 									Almacén Destino *
 								</label>
 								<Select
+									name='almacen_destino'
 									value={transferForm.to_warehouse_id}
 									onChange={(e) =>
 										setTransferForm({
@@ -1000,6 +1011,7 @@ const Inventario: React.FC = () => {
 						<div>
 							<label className='mb-1 block text-sm font-medium'>Cantidad *</label>
 							<Input
+								name='cantidad'
 								type='number'
 								min='0'
 								step='0.01'
@@ -1028,10 +1040,11 @@ const Inventario: React.FC = () => {
 						Cancelar
 					</Button>
 					<Button
-						color='purple'
+						color='violet'
+						colorIntensity='200'
 						isLoading={actionLoading.transfer}
 						onClick={handleTransferInventory}
-						disabled={
+						isDisable={
 							!transferForm.product_id ||
 							!transferForm.from_warehouse_id ||
 							!transferForm.to_warehouse_id ||

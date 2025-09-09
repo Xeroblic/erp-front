@@ -3,6 +3,11 @@
  * Basado en los modelos del backend ERP P0
  */
 
+import { ICustomer } from './customers.interface';
+import { IProduct } from './products.interface';
+import { IUser } from './users.interface';
+import { ISale } from './sales.interface';
+
 export interface IQuote {
     id: number;
     company_id: number;
@@ -78,6 +83,8 @@ export interface ICreateQuoteRequest {
         unit_price: number;
         discount_percentage?: number;
     }>;
+    [key: string]: unknown; // Añadir signatura de índice
+
 }
 
 export interface IUpdateQuoteRequest {
@@ -94,9 +101,11 @@ export interface IUpdateQuoteRequest {
         unit_price: number;
         discount_percentage?: number;
     }>;
+    [key: string]: unknown;
 }
 
 export interface IConvertQuoteRequest {
     sale_date?: string;
     delivery_date?: string;
+    [key: string]: unknown;
 }

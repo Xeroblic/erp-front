@@ -340,7 +340,7 @@ const Cotizaciones: React.FC = () => {
 								quotes.map((quote) => (
 									<Tr key={quote.id}>
 										<Td className='font-mono'>{quote.quote_number}</Td>
-										<Td>{quote.customer?.name || 'Cliente N/A'}</Td>
+										<Td>{quote.customer?.first_name || 'Cliente N/A'}</Td>
 										<Td>
 											<div className='flex items-center space-x-2'>
 												{getStatusBadge(quote.status)}
@@ -486,7 +486,7 @@ const Cotizaciones: React.FC = () => {
 								<strong>Número:</strong> {selectedQuote.quote_number}
 							</p>
 							<p>
-								<strong>Cliente:</strong> {selectedQuote.customer?.name}
+								<strong>Cliente:</strong> {selectedQuote.customer?.first_name}
 							</p>
 							<p>
 								<strong>Total:</strong> {formatCurrency(selectedQuote.total_amount)}

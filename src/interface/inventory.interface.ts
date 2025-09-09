@@ -254,4 +254,33 @@ export interface IInventoryRequest {
     reference_type?: string;
     reference_id?: number;
     notes?: string;
+    [key: string]: unknown;
+}
+
+export interface IInventoryUpdateRequest {
+    product_id?: number;
+    warehouse_id?: number;
+    movement_type?: MovementType;
+    quantity?: number;
+    reference_type?: string;
+    reference_id?: number;
+    notes?: string;
+    [key: string]: unknown;
+}
+
+// Response interfaces for API
+export interface IInventoryResponse {
+    data: IInventoryMovement[];
+    current_page: number;
+    last_page: number;
+    total: number;
+    per_page: number;
+}
+
+export interface IInventoryItemResponse {
+    data: IInventoryItem[];
+    current_page: number;
+    last_page: number;
+    total: number;
+    per_page: number;
 }
