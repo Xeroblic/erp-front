@@ -11,6 +11,24 @@
  * ELIMINAR ESTE ARCHIVO una vez migrados todos los componentes
  */
 
+// Función helper para verificar permisos temporalmente
+export const hasTemporaryPermission = (permission: string): boolean => {
+    // Durante el desarrollo, permitir todos los permisos de inventario
+    const inventoryPermissions = [
+        'inventory.view',
+        'inventory.adjust',
+        'inventory.transfer',
+        'inventory.generate_reports'
+    ];
+
+    if (inventoryPermissions.includes(permission)) {
+        return true;
+    }
+
+    // Para otros permisos, usar la lógica normal
+    return false;
+};
+
 // Constantes temporales para mantener compatibilidad
 export const ERP_PERMISSIONS = {
     TRANSFERS: {

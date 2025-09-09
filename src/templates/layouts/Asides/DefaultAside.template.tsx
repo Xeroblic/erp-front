@@ -105,7 +105,12 @@ const DefaultAsideTemplate = () => {
 	const navigate = useNavigate();
 
 	// Estado para controlar cada NavCollapse individualmente
-	const [collapseStates, setCollapseStates] = useState<Record<string, boolean>>({});
+	const [collapseStates, setCollapseStates] = useState<Record<string, boolean>>({
+		registro: false,
+		inventario: false,
+		comercial: false,
+		reportes: false,
+	});
 
 	// Función para toggle individual de cada collapse
 	const toggleCollapse = (key: string) => {

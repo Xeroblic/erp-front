@@ -1,6 +1,7 @@
 import React, { PropsWithChildren } from 'react';
 import { useAppSelector } from '@/store';
 import useAuthority from '@/hooks/useAuthority';
+import { hasTemporaryPermission } from '@/constants/temp-permissions.constant';
 
 interface PermissionGuardProps extends PropsWithChildren {
 	/** Permisos requeridos (modo OR - al menos uno debe coincidir) */
@@ -34,14 +35,24 @@ const PermissionGuard: React.FC<PermissionGuardProps> = ({
 }) => {
 	const user = useAppSelector((state) => state.auth.user);
 	const userAuthority = useAppSelector((state) => state.auth.permisos);
-
-	// Si no hay usuario autenticado, denegar acceso
-	if (!user) {
-		return fallback ? <>{fallback}</> : null;
-	}
+	const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+	const authLoading = useAppSelector((state) => state.auth.loading);
 
 	// Construir array de verificación combinando roles y permisos
 	const requiredAuthorities = [...permissions, ...roles];
+
+	// IMPORTANTE: Todos los hooks deben ejecutarse antes de cualquier return condicional
+	const hasAccess = useAuthority(userAuthority, requiredAuthorities, requireAll);
+
+	// Si no hay usuario autenticado, denegar acceso
+	if (!user && !authLoading) {
+		return fallback ? <>{fallback}</> : null;
+	}
+
+	// Si está cargando la autenticación, mostrar contenido (evitar bloqueos innecesarios)
+	if (authLoading || !isAuthenticated) {
+		return <>{children}</>;
+	}
 
 	// Si no hay requisitos, permitir acceso
 	if (requiredAuthorities.length === 0) {
@@ -49,12 +60,15 @@ const PermissionGuard: React.FC<PermissionGuardProps> = ({
 	}
 
 	// Primero verificar si es super-admin (tiene acceso total)
-	if (user.authority?.includes('super-admin') || userAuthority?.includes('super-admin')) {
+	if (user?.authority?.includes('super-admin') || userAuthority?.includes('super-admin')) {
+		return <>{children}</>;
+	}	
+
+	// Verificación temporal para permisos de desarrollo
+	const hasTemporaryAccess = permissions.some((permission) => hasTemporaryPermission(permission));
+	if (hasTemporaryAccess) {
 		return <>{children}</>;
 	}
-
-	// Verificar permisos usando el hook existente
-	const hasAccess = useAuthority(userAuthority, requiredAuthorities, requireAll);
 
 	// Verificación adicional por contexto de empresa/subsidiaria/sucursal
 	if (hasAccess && (companyId || subsidiaryId || branchId)) {

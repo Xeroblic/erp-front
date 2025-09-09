@@ -515,16 +515,16 @@ const Inventario: React.FC = () => {
 				<CardHeader>
 					<CardHeaderChild>
 						<Tabs activeTab={activeTab} onTabChange={setActiveTab}>
-							<Tab key='movements' text='Movimientos'>
+							<Tab id='movements' text='Movimientos'>
 								Movimientos
 							</Tab>
-							<Tab key='items' text='Items'>
+							<Tab id='items' text='Items'>
 								Items de Inventario
 							</Tab>
-							<Tab key='stock' text='Niveles'>
+							<Tab id='stock' text='Niveles'>
 								Niveles de Stock
 							</Tab>
-							<Tab key='alerts' text='Alertas'>
+							<Tab id='alerts' text='Alertas'>
 								Alertas ({stockAlerts.length})
 							</Tab>
 						</Tabs>
@@ -564,7 +564,11 @@ const Inventario: React.FC = () => {
 									) : (
 										movements.map((movement) => (
 											<Tr key={movement.id}>
-												<Td>{movement.movement_date ? formatDate(movement.movement_date) : 'N/A'}</Td>
+												<Td>
+													{movement.movement_date
+														? formatDate(movement.movement_date)
+														: 'N/A'}
+												</Td>
 												<Td>
 													{getMovementTypeBadge(movement.movement_type)}
 												</Td>
@@ -665,7 +669,11 @@ const Inventario: React.FC = () => {
 														item.min_stock,
 													)}
 												</Td>
-												<Td>{item.last_updated ? formatDate(item.last_updated) : 'N/A'}</Td>
+												<Td>
+													{item.last_updated
+														? formatDate(item.last_updated)
+														: 'N/A'}
+												</Td>
 											</Tr>
 										))
 									)}
@@ -817,7 +825,8 @@ const Inventario: React.FC = () => {
 																	product_id:
 																		alert.product_id.toString(),
 																	warehouse_id:
-																		alert.warehouse_id?.toString() || '',
+																		alert.warehouse_id?.toString() ||
+																		'',
 																});
 																setShowAdjustModal(true);
 															}}
