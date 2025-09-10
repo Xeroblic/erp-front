@@ -363,6 +363,21 @@ const DefaultAsideTemplate = () => {
 						/>
 					</AuthorityCheckNav>
 
+					<NavTitle>Administración del Sistema</NavTitle>
+
+					<AuthorityCheckNav
+						authority={Pages.systemAdmin.subPages.systemParameters.authority}
+						userAuthority={userPermissionsAndRoles}
+						requireAll={Pages.systemAdmin.subPages.systemParameters.requireAll}>
+						<NavItem
+							text={Pages.systemAdmin.subPages.systemParameters.text}
+							to={Pages.systemAdmin.subPages.systemParameters.to}
+							icon={Pages.systemAdmin.subPages.systemParameters.icon}
+							id={Pages.systemAdmin.subPages.systemParameters.id}
+							onClick={() => navigate(Pages.systemAdmin.subPages.systemParameters.to)}
+						/>
+					</AuthorityCheckNav>
+
 					<NavTitle>Catálogos</NavTitle>
 
 					<AuthorityCheckNav

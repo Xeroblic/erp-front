@@ -21,18 +21,26 @@ const Sucursales = lazy(() => import('@/pages/gestionAdmin/sucursales/Sucursales
 const SucursalDetalle = lazy(() => import('@/pages/gestionAdmin/sucursales/SucursalDetalle.tsx'));
 const RolesPermisos = lazy(() => import('@/pages/gestionAdmin/roles y permisos/RolesPermisos.tsx'));
 const GestionUsuarios = lazy(() => import('@/pages/gestionAdmin/usuarios/Usuarios.tsx'));
+
+// Páginas de Administración
 const PermissionsAdmin = lazy(() => import('@/pages/admin/PermissionsAdmin.tsx'));
 const InvitationsAdmin = lazy(() => import('@/pages/invitations/InvitationsAdmin.tsx'));
+const SystemParametersAdmin = lazy(
+	() => import('@/pages/admin/systemParameters/SystemParametersAdmin'),
+);
+const SystemParameterDetails = lazy(
+	() => import('@/pages/admin/systemParameters/SystemParameterDetails'),
+);
 
 // Páginas ERP
 const InventarioPage = lazy(() => import('@/pages/inventario/Inventario'));
-const VentasPage = lazy(() => import('@/pages/comercial/ventas/Ventas'));
-const CotizacionesPage = lazy(() => import('@/pages/comercial/cotizaciones/Cotizaciones'));
+const VentasAdmin = lazy(() => import('@/pages/comercial/ventas/VentasAdmin'));
+const CotizacionesPage = lazy(() => import('@/pages/comercial/cotizaciones/CotizacionesAdmin'));
 const TransferenciasInventario = lazy(
 	() => import('@/pages/inventory/transferencias/Transferencias'),
 );
 const TransferenciasComercial = lazy(
-	() => import('@/pages/comercial/transferencias/Transferencias'),
+	() => import('@/pages/comercial/transferencias/TransferenciasAdmin'),
 );
 
 // Páginas de Catálogos
@@ -104,6 +112,18 @@ const contentRoutes: IRoutePersonalizada[] = [
 		authority: cfg.humanResources.subPages.invitationsAdmin.authority,
 	},
 
+	// Rutas de Administración del Sistema
+	{
+		path: cfg.systemAdmin.subPages.systemParameters.to,
+		element: <SystemParametersAdmin />,
+		authority: cfg.systemAdmin.subPages.systemParameters.authority,
+	},
+	{
+		path: cfg.systemAdmin.subPages.systemParametersDetail.to,
+		element: <SystemParameterDetails />,
+		authority: cfg.systemAdmin.subPages.systemParametersDetail.authority,
+	},
+
 	// Rutas ERP
 	{
 		path: cfg.inventory.to,
@@ -117,7 +137,7 @@ const contentRoutes: IRoutePersonalizada[] = [
 	},
 	{
 		path: cfg.commercial.subPages.sales.to,
-		element: <VentasPage />,
+		element: <VentasAdmin />,
 		authority: cfg.commercial.subPages.sales.authority,
 	},
 	{

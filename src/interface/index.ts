@@ -24,6 +24,9 @@ export * from './quotes.interface';
 // Interfaces de transferencias
 export * from './transfers.interface';
 
+// Interfaces de parámetros del sistema
+export * from './systemParameters.interface';
+
 // Interfaces de personalización (si existe)
 // export * from './personalizacion.interface';
 

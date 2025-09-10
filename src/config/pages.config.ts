@@ -326,6 +326,37 @@ export const privatePages = {
       },
     },
   },
+
+  // Administración del Sistema
+  systemAdmin: {
+    id: 'systemAdmin',
+    to: '/admin',
+    text: 'Administración',
+    icon: 'HeroCog6Tooth',
+    authority: ['manage-invitations'],
+    roles: ['super-admin', 'company-admin'],
+    requireAll: false,
+    subPages: {
+      systemParameters: {
+        id: 'systemParameters',
+        to: '/admin/parametros-sistema',
+        text: 'Parámetros del Sistema',
+        icon: 'HeroAdjustmentsHorizontal',
+        authority: ['manage-invitations'],
+        roles: ['super-admin', 'company-admin'],
+        requireAll: false,
+      },
+      systemParametersDetail: {
+        id: 'systemParametersDetail',
+        to: '/admin/parametros-sistema/:id',
+        text: 'Detalle Parámetro',
+        icon: 'HeroAdjustmentsHorizontal',
+        authority: ['manage-invitations'],
+        roles: ['super-admin', 'company-admin'],
+        requireAll: false,
+      },
+    },
+  },
 };
 
 

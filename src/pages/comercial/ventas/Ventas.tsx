@@ -32,6 +32,7 @@ import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 import PermissionGuard from '@/components/authorization/PermissionGuard';
 import type { ISale, SaleStatus } from '@/interface/sales.interface';
 import { formatCurrency, formatDate } from '@/utils/format.utils';
+import Icon from '@/components/icon/Icon';
 
 const Ventas: React.FC = () => {
 	const dispatch = useAppDispatch();
@@ -330,7 +331,7 @@ const Ventas: React.FC = () => {
 					<CardBody>
 						<div className='flex items-center'>
 							<div className='mr-3 rounded-lg bg-blue-100 p-2'>
-								<span className='text-xl text-blue-600'>💰</span>
+								<Icon icon='HeroCurrencyDollar' className='h-5 w-5 text-blue-600' />
 							</div>
 							<div>
 								<p className='text-sm text-gray-600'>Total Ventas</p>
@@ -346,7 +347,10 @@ const Ventas: React.FC = () => {
 					<CardBody>
 						<div className='flex items-center'>
 							<div className='mr-3 rounded-lg bg-green-100 p-2'>
-								<span className='text-xl text-green-600'>📊</span>
+								<Icon
+									icon='HeroChartBarSquare'
+									className='h-5 w-5 text-green-600'
+								/>
 							</div>
 							<div>
 								<p className='text-sm text-gray-600'>Cantidad</p>
@@ -649,7 +653,8 @@ const Ventas: React.FC = () => {
 									<strong>Venta:</strong> {selectedSale.sale_number}
 								</p>
 								<p>
-									<strong>Cliente:</strong> {selectedSale.customer?.first_name || 'N/A'}
+									<strong>Cliente:</strong>{' '}
+									{selectedSale.customer?.first_name || 'N/A'}
 								</p>
 								<p>
 									<strong>Total:</strong>{' '}
@@ -689,7 +694,7 @@ const Ventas: React.FC = () => {
 										Método de Pago
 									</label>
 									<Select
-										name='metodo de pago'										
+										name='metodo de pago'
 										value={paymentForm.payment_method}
 										onChange={(e) =>
 											setPaymentForm({
@@ -882,7 +887,11 @@ const Ventas: React.FC = () => {
 						}}>
 						Cancelar
 					</Button>
-					<Button color='violet' colorIntensity='300' isLoading={actionLoading.ship} onClick={handleShipSale}>
+					<Button
+						color='violet'
+						colorIntensity='300'
+						isLoading={actionLoading.ship}
+						onClick={handleShipSale}>
 						Marcar como Enviada
 					</Button>
 				</ModalFooter>
@@ -904,7 +913,8 @@ const Ventas: React.FC = () => {
 									<strong>Venta:</strong> {selectedSale.sale_number}
 								</p>
 								<p>
-									<strong>Cliente:</strong> {selectedSale.customer?.first_name || 'N/A'}
+									<strong>Cliente:</strong>{' '}
+									{selectedSale.customer?.first_name || 'N/A'}
 								</p>
 							</div>
 

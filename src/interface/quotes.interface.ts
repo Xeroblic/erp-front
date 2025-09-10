@@ -27,6 +27,12 @@ export interface IQuote {
     created_at: string;
     updated_at: string;
 
+    // Campos CU025 - Gestión de Cotizaciones
+    payment_method?: string; // Método de pago
+    purchase_order?: string; // Orden de compra (OC)
+    payment_terms?: number; // Términos de pago en días
+    fixed_discount?: number; // Descuento fijo en valor absoluto
+
     // Relaciones
     customer?: ICustomer;
     items?: IQuoteItem[];
@@ -68,7 +74,12 @@ export type QuoteStatus =
     | 'APPROVED'
     | 'REJECTED'
     | 'CONVERTED'
-    | 'EXPIRED';
+    | 'EXPIRED'
+    // Estados específicos CU025
+    | 'ACCEPTED' // Aceptada
+    | 'WAITING' // En espera  
+    | 'CREDIT_30' // Crédito a 30 días
+    | 'PAID'; // Pagada
 
 export interface ICreateQuoteRequest {
     customer_id: number;
