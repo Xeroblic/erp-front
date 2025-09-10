@@ -1,7 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
+import { transferInventory } from '@/store/slices/inventory/inventorySlice';
 import {
 	fetchTransfers,
+	shipTransfer,
+	cancelTransfer,
 	setFilters,
 	clearFilters,
 	selectTransfers,
@@ -9,27 +12,57 @@ import {
 	selectTransfersPagination,
 	selectTransferFilters,
 } from '@/store/slices/transfers/transfersSlice';
-import {
-	fetchTransfers as fetchTransfersAction,
-	shipTransfer,
-	cancelTransfer,
-} from '@/store/slices/transfers/transfersSlice';
 
 // Components
 import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
 import Container from '@/components/layouts/Container/Container';
 import Button from '@/components/ui/Button';
-import Badge from '@/components/ui/Badge';
-import Table, { TBody, Td, TFoot, THead, Th, Tr } from '@/components/ui/Table';
-import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Input from '@/components/form/Input';
 import Select from '@/components/form/Select';
+import Textarea from '@/components/form/Textarea';
+import Table, { TBody, Td, TFoot, THead, Th, Tr } from '@/components/ui/Table';
+import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
+import Badge from '@/components/ui/Badge';
 import Pagination from '@/components/ui/Pagination';
-// TODO: Los permisos están en pages.config.ts y vienen de la BD
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 import PermissionGuard from '@/components/authorization/PermissionGuard';
-import type { ITransfer, TransferStatus } from '@/interface/transfers.interface';
 import { toast } from 'react-toastify';
+
+// Types
+import { ITransfer, TransferStatus } from '@/interface/transfers.interface';
+
+// Mock data para bodegas
+const MOCK_WAREHOUSES = [
+	{ id: 1, name: 'Bodega Central', code: 'BC01' },
+	{ id: 2, name: 'Bodega Norte', code: 'BN02' },
+	{ id: 3, name: 'Bodega Sur', code: 'BS03' },
+	{ id: 4, name: 'Bodega Distribución', code: 'BD04' },
+];
+
+// Mock data para productos
+const MOCK_PRODUCTS = [
+	{ id: 1, name: 'Laptop Dell Inspiron 15', sku: 'LAP-DELL-15', stock: 25 },
+	{ id: 2, name: 'Monitor Samsung 24"', sku: 'MON-SAM-24', stock: 40 },
+	{ id: 3, name: 'Teclado Mecánico Logitech', sku: 'TEC-LOG-MEC', stock: 15 },
+	{ id: 4, name: 'Mouse Óptico HP', sku: 'MOU-HP-OPT', stock: 60 },
+	{ id: 5, name: 'Impresora HP LaserJet', sku: 'IMP-HP-LASER', stock: 8 },
+];
+
+// Mock data para usuarios/responsables
+const MOCK_USERS = [
+	{ id: 1, name: 'Ana García', email: 'ana.garcia@empresa.com' },
+	{ id: 2, name: 'Carlos Rodríguez', email: 'carlos.rodriguez@empresa.com' },
+	{ id: 3, name: 'María López', email: 'maria.lopez@empresa.com' },
+	{ id: 4, name: 'José Martínez', email: 'jose.martinez@empresa.com' },
+];
+
+interface TransferItem {
+	product_id: number;
+	product_name: string;
+	product_sku: string;
+	quantity: number;
+	available_stock: number;
+}
 
 const Transferencias: React.FC = () => {
 	const dispatch = useAppDispatch();

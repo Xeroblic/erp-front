@@ -42,6 +42,7 @@ import type {
 	MovementType,
 } from '@/interface/inventory.interface';
 import { formatCurrency, formatDate } from '@/utils/format.utils';
+import { toast } from 'react-toastify';
 
 const Inventario: React.FC = () => {
 	const dispatch = useAppDispatch();
@@ -80,7 +81,6 @@ const Inventario: React.FC = () => {
 		notes: '',
 	});
 
-	// Filtros locales
 	const [localFilters, setLocalFilters] = useState({
 		movement_type: '',
 		product_id: '',
@@ -91,7 +91,6 @@ const Inventario: React.FC = () => {
 		out_of_stock_only: false,
 	});
 
-	// Cargar datos al montar
 	useEffect(() => {
 		dispatch(fetchInventoryMovements({ page: 1, filters }));
 		dispatch(fetchInventoryItems({ page: 1, filters }));
@@ -99,7 +98,6 @@ const Inventario: React.FC = () => {
 		dispatch(fetchStockAlerts());
 	}, [dispatch, filters]);
 
-	// Handlers
 	const handleApplyFilters = () => {
 		const activeFilters = Object.fromEntries(
 			Object.entries(localFilters).filter(([_, value]) => {
@@ -181,11 +179,10 @@ const Inventario: React.FC = () => {
 				notes: '',
 			});
 
-			// Recargar datos
 			dispatch(fetchInventoryMovements({ page: 1, filters }));
 			dispatch(fetchStockLevels());
 		} catch (error) {
-			// Error ya manejado en el slice
+			toast.error('Error al transferir inventario');
 		}
 	};
 
@@ -270,13 +267,12 @@ const Inventario: React.FC = () => {
 				</div>
 			</div>
 
-			{/* Estadísticas */}
 			<div className='mb-6 grid grid-cols-1 gap-4 md:grid-cols-4 lg:grid-cols-6'>
 				<Card>
 					<CardBody>
 						<div className='flex items-center'>
-							<div className='mr-3 rounded-lg bg-blue-100 p-2'>
-								<span className='text-xl text-blue-600'>📦</span>
+							<div className='mr-3 rounded-lg bg-sky-100 p-2'>
+								<span className='text-xl text-sky-600'>📦</span>
 							</div>
 							<div>
 								<p className='text-sm text-gray-600'>Items Total</p>
@@ -289,8 +285,8 @@ const Inventario: React.FC = () => {
 				<Card>
 					<CardBody>
 						<div className='flex items-center'>
-							<div className='mr-3 rounded-lg bg-green-100 p-2'>
-								<span className='text-xl text-green-600'>💰</span>
+							<div className='mr-3 rounded-lg bg-emerald-100 p-2'>
+								<span className='text-xl text-emerald-600'>💰</span>
 							</div>
 							<div>
 								<p className='text-sm text-gray-600'>Valor Total</p>
@@ -305,8 +301,8 @@ const Inventario: React.FC = () => {
 				<Card>
 					<CardBody>
 						<div className='flex items-center'>
-							<div className='mr-3 rounded-lg bg-yellow-100 p-2'>
-								<span className='text-xl text-yellow-600'>⚠️</span>
+							<div className='mr-3 rounded-lg bg-amber-100 p-2'>
+								<span className='text-xl text-amber-600'>⚠️</span>
 							</div>
 							<div>
 								<p className='text-sm text-gray-600'>Stock Bajo</p>
@@ -333,8 +329,8 @@ const Inventario: React.FC = () => {
 				<Card>
 					<CardBody>
 						<div className='flex items-center'>
-							<div className='mr-3 rounded-lg bg-purple-100 p-2'>
-								<span className='text-xl text-purple-600'>📈</span>
+							<div className='mr-3 rounded-lg bg-violet-100 p-2'>
+								<span className='text-xl text-violet-600'>📈</span>
 							</div>
 							<div>
 								<p className='text-sm text-gray-600'>Movimientos</p>
@@ -575,7 +571,7 @@ const Inventario: React.FC = () => {
 												<Td>{movement.product?.name || 'N/A'}</Td>
 												<Td>{movement.warehouse?.name || 'N/A'}</Td>
 												<Td
-													className={`font-mono ${(movement.quantity ?? 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
+													className={`font-mono ${(movement.quantity ?? 0) > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
 													{(movement.quantity ?? 0) > 0 ? '+' : ''}
 													{movement.quantity ?? 0}
 												</Td>
@@ -794,7 +790,7 @@ const Inventario: React.FC = () => {
 									</Tr>
 								) : stockAlerts.length === 0 ? (
 									<Tr>
-										<Td colSpan={7} className='py-8 text-center text-green-600'>
+										<Td colSpan={7} className='py-8 text-center text-emerald-600'>
 											🎉 No hay alertas de stock activas
 										</Td>
 									</Tr>

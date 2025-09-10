@@ -34,10 +34,11 @@ const SystemParameterDetails = lazy(
 
 // Páginas ERP
 const InventarioPage = lazy(() => import('@/pages/inventario/Inventario'));
+const HistorialInventario = lazy(() => import('@/pages/inventario/historial/HistorialInventario'));
 const VentasAdmin = lazy(() => import('@/pages/comercial/ventas/VentasAdmin'));
 const CotizacionesPage = lazy(() => import('@/pages/comercial/cotizaciones/CotizacionesAdmin'));
 const TransferenciasInventario = lazy(
-	() => import('@/pages/inventory/transferencias/Transferencias'),
+	() => import('@/pages/inventario/transferencias/Transferencias'),
 );
 const TransferenciasComercial = lazy(
 	() => import('@/pages/comercial/transferencias/TransferenciasAdmin'),
@@ -134,6 +135,11 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: cfg.inventory.subPages.transfers.to,
 		element: <TransferenciasInventario />,
 		authority: cfg.inventory.subPages.transfers.authority,
+	},
+	{
+		path: '/inventario/historial',
+		element: <HistorialInventario />,
+		authority: cfg.inventory.authority,
 	},
 	{
 		path: cfg.commercial.subPages.sales.to,
