@@ -14,7 +14,7 @@ export interface ToastOptions {
  */
 export const showSuccessToast = (message: string, options: ToastOptions = {}): void => {
     // Placeholder - implement with your actual toast library
-    console.log('✅ SUCCESS:', message, options);
+    console.log('[SUCCESS]:', message, options);
 
     // Example implementation with react-hot-toast:
     // toast.success(message, options);

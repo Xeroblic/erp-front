@@ -33,6 +33,7 @@ import PermissionGuard from '@/components/authorization/PermissionGuard';
 import type { ISale, SaleStatus } from '@/interface/sales.interface';
 import { formatCurrency, formatDate } from '@/utils/format.utils';
 import Icon from '@/components/icon/Icon';
+import { HiOutlineCheckCircle } from 'react-icons/hi2';
 
 const Ventas: React.FC = () => {
 	const dispatch = useAppDispatch();
@@ -378,7 +379,7 @@ const Ventas: React.FC = () => {
 					<CardBody>
 						<div className='flex items-center'>
 							<div className='mr-3 rounded-lg bg-emerald-100 p-2'>
-								<span className='text-xl text-emerald-600'>✅</span>
+								<HiOutlineCheckCircle className='text-xl text-emerald-600' />
 							</div>
 							<div>
 								<p className='text-sm text-gray-600'>Entregadas</p>

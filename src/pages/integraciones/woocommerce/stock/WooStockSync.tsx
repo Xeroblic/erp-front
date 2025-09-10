@@ -15,6 +15,11 @@ import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 import PermissionGuard from '@/components/authorization/PermissionGuard';
 import { toast } from 'react-toastify';
 import { formatDate } from '@/utils/format.utils';
+import {
+	HiOutlineCheckCircle,
+	HiOutlineExclamationTriangle,
+	HiOutlineXCircle,
+} from 'react-icons/hi2';
 
 // Mock API service
 const mockWooSyncApi = {
@@ -291,15 +296,21 @@ const WooStockSync: React.FC = () => {
 
 	const getSyncStatusBadge = (status: ProductStock['sync_status']) => {
 		const statusConfig = {
-			synced: { color: 'green' as const, text: 'Sincronizado', icon: '✅' },
-			out_of_sync: { color: 'amber' as const, text: 'Desincronizado', icon: '⚠️' },
-			error: { color: 'red' as const, text: 'Error', icon: '❌' },
+			synced: { color: 'emerald' as const, text: 'Sincronizado', icon: HiOutlineCheckCircle },
+			out_of_sync: {
+				color: 'amber' as const,
+				text: 'Desincronizado',
+				icon: HiOutlineExclamationTriangle,
+			},
+			error: { color: 'red' as const, text: 'Error', icon: HiOutlineXCircle },
 		};
 
 		const config = statusConfig[status];
+		const IconComponent = config.icon;
 		return (
 			<Badge color={config.color} variant='outline'>
-				{config.icon} {config.text}
+				<IconComponent className='mr-1 inline h-4 w-4' />
+				{config.text}
 			</Badge>
 		);
 	};
@@ -308,7 +319,7 @@ const WooStockSync: React.FC = () => {
 		const statusConfig = {
 			pending: { color: 'gray' as const, text: 'Pendiente' },
 			running: { color: 'blue' as const, text: 'Ejecutando' },
-			completed: { color: 'green' as const, text: 'Completado' },
+			completed: { color: 'emerald' as const, text: 'Completado' },
 			failed: { color: 'red' as const, text: 'Fallido' },
 		};
 
@@ -318,13 +329,19 @@ const WooStockSync: React.FC = () => {
 
 	const getConnectionStatusBadge = () => {
 		const statusConfig = {
-			connected: { color: 'green' as const, text: '🟢 Conectado' },
-			disconnected: { color: 'gray' as const, text: '⚫ Desconectado' },
-			error: { color: 'red' as const, text: '🔴 Error' },
+			connected: { color: 'emerald' as const, text: 'Conectado', icon: HiOutlineCheckCircle },
+			disconnected: { color: 'gray' as const, text: 'Desconectado', icon: HiOutlineXCircle },
+			error: { color: 'red' as const, text: 'Error', icon: HiOutlineExclamationTriangle },
 		};
 
 		const config = statusConfig[wooConfig.status];
-		return <Badge color={config.color}>{config.text}</Badge>;
+		const IconComponent = config.icon;
+		return (
+			<Badge color={config.color}>
+				<IconComponent className='mr-1 inline h-4 w-4' />
+				{config.text}
+			</Badge>
+		);
 	};
 
 	return (
@@ -424,7 +441,7 @@ const WooStockSync: React.FC = () => {
 										<Button
 											icon='HeroArrowDownTray'
 											color='blue'
-											loading={isProcessing && activeTab === 'import'}
+											isLoading={isProcessing && activeTab === 'import'}
 											onClick={handleImportStock}>
 											Importar Stock Ahora
 										</Button>
@@ -534,10 +551,10 @@ const WooStockSync: React.FC = () => {
 										permissions={[ERP_PERMISSIONS.INVENTORY.UPDATE]}>
 										<Button
 											icon='HeroArrowUpTray'
-											color='green'
-											loading={isProcessing && activeTab === 'export'}
+											color='emerald'
+											isLoading={isProcessing && activeTab === 'export'}
 											onClick={handleUpdateStock}
-											disabled={selectedProducts.length === 0}>
+											isDisable={selectedProducts.length === 0}>
 											Actualizar Stock Seleccionado
 										</Button>
 									</PermissionGuard>
@@ -576,7 +593,7 @@ const WooStockSync: React.FC = () => {
 													<Badge
 														variant='outline'
 														color={
-															job.type === 'pull' ? 'blue' : 'green'
+															job.type === 'pull' ? 'blue' : 'emerald'
 														}>
 														{job.type === 'pull'
 															? '📥 Pull'

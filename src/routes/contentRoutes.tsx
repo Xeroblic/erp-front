@@ -33,8 +33,10 @@ const SystemParameterDetails = lazy(
 );
 
 // Páginas ERP
-const InventarioPage = lazy(() => import('@/pages/inventario/Inventario'));
-const HistorialInventario = lazy(() => import('@/pages/inventario/historial/HistorialInventario'));
+const InventarioPage = lazy(() => import('@/pages/inventario/InventarioModular'));
+const HistorialInventario = lazy(
+	() => import('@/pages/inventario/historial/HistorialInventarioAdmin'),
+);
 const VentasAdmin = lazy(() => import('@/pages/comercial/ventas/VentasAdmin'));
 const CotizacionesPage = lazy(() => import('@/pages/comercial/cotizaciones/CotizacionesAdmin'));
 const TransferenciasInventario = lazy(

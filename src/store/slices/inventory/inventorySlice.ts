@@ -455,6 +455,7 @@ export const inventorySlice = createSlice({
             })
             .addCase(fetchStockLevels.rejected, (state) => {
                 state.loading.stockLevels = false;
+                state.stockLevels = [];
             })
 
             // Fetch stock alerts
@@ -467,6 +468,7 @@ export const inventorySlice = createSlice({
             })
             .addCase(fetchStockAlerts.rejected, (state) => {
                 state.loading.stockAlerts = false;
+                state.stockAlerts = [];
             })
 
             // Create movement
@@ -539,10 +541,10 @@ export const {
 } = inventorySlice.actions;
 
 // Selectors
-export const selectInventoryMovements = (state: RootState) => state.inventario.movements;
-export const selectInventoryItems = (state: RootState) => state.inventario.items;
-export const selectStockLevels = (state: RootState) => state.inventario.stockLevels;
-export const selectStockAlerts = (state: RootState) => state.inventario.stockAlerts;
+export const selectInventoryMovements = (state: RootState) => state.inventario.movements || [];
+export const selectInventoryItems = (state: RootState) => state.inventario.items || [];
+export const selectStockLevels = (state: RootState) => state.inventario.stockLevels || [];
+export const selectStockAlerts = (state: RootState) => state.inventario.stockAlerts || [];
 export const selectCurrentMovement = (state: RootState) => state.inventario.currentMovement;
 export const selectCurrentItem = (state: RootState) => state.inventario.currentItem;
 export const selectInventoryLoading = (state: RootState) => state.inventario.loading;

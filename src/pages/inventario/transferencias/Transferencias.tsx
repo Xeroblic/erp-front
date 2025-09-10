@@ -70,6 +70,9 @@ const Transferencias: React.FC = () => {
 	// Modal states
 	const [showConfirmModal, setShowConfirmModal] = useState(false);
 	const [showSuccessModal, setShowSuccessModal] = useState(false);
+	const [showRemoveConfirmModal, setShowRemoveConfirmModal] = useState(false);
+	const [showClearListModal, setShowClearListModal] = useState(false);
+	const [productToRemove, setProductToRemove] = useState<number | null>(null);
 	const [transferResult, setTransferResult] = useState<{
 		id: string;
 		total_items: number;
@@ -120,8 +123,27 @@ const Transferencias: React.FC = () => {
 	};
 
 	const handleRemoveProduct = (productId: number) => {
-		setItems(items.filter((item) => item.product_id !== productId));
-		toast.info('Producto removido de la transferencia');
+		setProductToRemove(productId);
+		setShowRemoveConfirmModal(true);
+	};
+
+	const confirmRemoveProduct = () => {
+		if (productToRemove) {
+			setItems(items.filter((item) => item.product_id !== productToRemove));
+			toast.info('Producto removido de la transferencia');
+		}
+		setShowRemoveConfirmModal(false);
+		setProductToRemove(null);
+	};
+
+	const handleClearList = () => {
+		setShowClearListModal(true);
+	};
+
+	const confirmClearList = () => {
+		setItems([]);
+		setShowClearListModal(false);
+		toast.info('Lista de productos limpiada');
 	};
 
 	const handleConfirmTransfer = async () => {
@@ -190,7 +212,6 @@ const Transferencias: React.FC = () => {
 			});
 			setItems([]);
 
-			// Mostrar modal de éxito
 			setShowSuccessModal(true);
 		} catch (error) {
 			toast.error('Error al procesar la transferencia');
@@ -225,62 +246,84 @@ const Transferencias: React.FC = () => {
 	};
 
 	return (
-		<Container className='flex shrink-0 grow basis-auto flex-col pb-0'>
-			{/* Header mejorado */}
-			<div className='flex items-center justify-between py-6'>
-				<div>
-					<h1 className='text-3xl font-semibold text-gray-900'>Nueva Transferencia</h1>
-					<p className='mt-1 text-zinc-600'>
-						Transferir productos entre bodegas de forma rápida y segura
-					</p>
-				</div>
-				<div className='flex gap-3'>
-					<Button
-						variant='outline'
-						icon='HeroClockIcon'
-						onClick={() => navigate('/inventario/historial?tipo=TRANSFER')}>
-						Ver Historial
-					</Button>
-					<Button
-						variant='outline'
-						icon='HeroDocumentTextIcon'
-						onClick={() => navigate('/inventario')}>
-						Ver Inventario
-					</Button>
-				</div>
-			</div>
+		<Container>
+			{/* Header */}
+            <Card className='mb-8'>
+                <CardHeader>
+                    <CardTitle className='text-center'>Nueva Transferencia</CardTitle>
+                </CardHeader>
+                <CardBody>
+                    <div className='text-center'>
+                        <p className='text-zinc-500 mb-4'>
+                            Transferir productos entre bodegas de forma rápida y segura
+                        </p>
+                        <div className='flex justify-center gap-3'>
+                            <Button
+                                variant='outline'
+                                color='gray'
+                                icon='HeroClockIcon'
+                                onClick={() => navigate('/inventario/historial?tipo=TRANSFER')}>
+                                Ver Historial
+                            </Button>
+                            <Button
+                                variant='outline'
+                                color='gray'
+                                icon='HeroDocumentTextIcon'
+                                onClick={() => navigate('/inventario')}>
+                                Ver Inventario
+                            </Button>
+                        </div>
+                    </div>
+                </CardBody>
+            </Card>
 
 			{/* Progress indicator */}
 			{items.length > 0 && (
-				<div className='mb-6 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-4'>
-					<div className='flex items-center justify-between'>
-						<div className='flex items-center gap-3'>
-							<div className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white'>
-								<span className='text-sm font-semibold'>{items.length}</span>
+				<Card className='mb-6'>
+					<CardBody>
+						<div className='flex items-center justify-between'>
+							<div className='flex items-center gap-3'>
+								<div className='flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-white'>
+									<span className='text-sm font-semibold'>{items.length}</span>
+								</div>
+								<div>
+									<p className='font-medium text-gray-900 dark:text-gray-100'>
+										{items.length} producto{items.length !== 1 ? 's' : ''}{' '}
+										agregado
+										{items.length !== 1 ? 's' : ''}
+									</p>
+									<p className='text-sm text-gray-500 dark:text-gray-400'>
+										Total: {getTotalItems()} unidades
+									</p>
+								</div>
 							</div>
-							<div>
-								<p className='font-medium text-blue-900'>
-									{items.length} producto{items.length !== 1 ? 's' : ''} agregado
-									{items.length !== 1 ? 's' : ''}
-								</p>
-								<p className='text-sm text-blue-700'>
-									Total: {getTotalItems()} unidades
-								</p>
-							</div>
+							<Badge color='emerald' variant='solid'>
+								Listo para transferir
+							</Badge>
 						</div>
-						<Badge color='blue' variant='solid'>
-							Listo para transferir
-						</Badge>
-					</div>
-				</div>
+					</CardBody>
+				</Card>
 			)}
 
-			<div className='grid grid-cols-1 gap-8 lg:grid-cols-2'>
+			<div className='grid grid-cols-1 gap-6 lg:grid-cols-2'>
 				{/* Formulario de transferencia */}
-				<Card className='border-0 bg-gradient-to-b from-gray-50 to-white shadow-lg'>
-					<CardHeader className='bg-gradient-to-r from-gray-900 to-gray-800 text-white'>
-						<CardTitle className='flex items-center gap-2 text-xl'>
-							<span>📦</span>
+				<Card>
+					<CardHeader>
+						<CardTitle className='flex items-center gap-3'>
+							<span>
+								<svg
+									className='h-6 w-6'
+									fill='none'
+									stroke='currentColor'
+									viewBox='0 0 24 24'>
+									<path
+										strokeLinecap='round'
+										strokeLinejoin='round'
+										strokeWidth='2'
+										d='M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4'
+									/>
+								</svg>
+							</span>
 							Información de Transferencia
 						</CardTitle>
 					</CardHeader>
@@ -382,10 +425,23 @@ const Transferencias: React.FC = () => {
 				</Card>
 
 				{/* Agregar productos */}
-				<Card className='border-0 bg-gradient-to-b from-emerald-50 to-white shadow-lg'>
-					<CardHeader className='bg-gradient-to-r from-emerald-600 to-emerald-700 text-white'>
-						<CardTitle className='flex items-center gap-2 text-xl'>
-							<span>🏷️</span>
+				<Card>
+					<CardHeader>
+						<CardTitle className='flex items-center gap-3'>
+							<span>
+								<svg
+									className='h-6 w-6'
+									fill='none'
+									stroke='currentColor'
+									viewBox='0 0 24 24'>
+									<path
+										strokeLinecap='round'
+										strokeLinejoin='round'
+										strokeWidth='2'
+										d='M12 6v6m0 0v6m0-6h6m-6 0H6'
+									/>
+								</svg>
+							</span>
 							Agregar Productos
 						</CardTitle>
 					</CardHeader>
@@ -422,6 +478,7 @@ const Transferencias: React.FC = () => {
 							<Button
 								onClick={handleAddProduct}
 								icon='HeroPlus'
+								color='emerald'
 								variant='solid'
 								isDisable={!selectedProduct || !quantity}>
 								Agregar Producto
@@ -431,26 +488,33 @@ const Transferencias: React.FC = () => {
 				</Card>
 			</div>
 
-			{/* Tabla de productos mejorada */}
+			{/* Tabla de productos */}
 			{items.length > 0 && (
-				<Card className='mt-8 border-0 bg-gradient-to-b from-gray-50 to-white shadow-xl'>
-					<CardHeader className='bg-gradient-to-r from-indigo-600 to-purple-600 text-white'>
-						<CardTitle className='flex items-center justify-between text-xl'>
-							<div className='flex items-center gap-2'>
-								<span>📋</span>
+				<Card className='mt-6'>
+					<CardHeader>
+						<CardTitle className='flex items-center justify-between'>
+							<div className='flex items-center gap-3'>
+								<span>
+									<svg
+										className='h-6 w-6'
+										fill='none'
+										stroke='currentColor'
+										viewBox='0 0 24 24'>
+										<path
+											strokeLinecap='round'
+											strokeLinejoin='round'
+											strokeWidth='2'
+											d='M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01'
+										/>
+									</svg>
+								</span>
 								Productos a Transferir
 							</div>
-							<div className='flex items-center gap-4'>
-								<Badge
-									color='gray'
-									variant='outline'
-									className='border-indigo-200 text-indigo-100'>
+							<div className='flex items-center gap-3'>
+								<Badge color='sky' variant='outline'>
 									{items.length} producto{items.length !== 1 ? 's' : ''}
 								</Badge>
-								<Badge
-									color='gray'
-									variant='outline'
-									className='border-indigo-200 text-indigo-100'>
+								<Badge color='emerald' variant='outline'>
 									{getTotalItems()} unidades
 								</Badge>
 							</div>
@@ -472,35 +536,35 @@ const Transferencias: React.FC = () => {
 									{items.map((item, index) => (
 										<Tr key={`${item.product_id}-${index}`}>
 											<Td>
-												<Badge color='blue' variant='outline'>
+												<div className='font-medium text-gray-900 dark:text-gray-100'>
 													{item.product_name}
+												</div>
+											</Td>
+											<Td>
+												<Badge color='sky' variant='outline'>
+													{item.product_sku}
 												</Badge>
 											</Td>
 											<Td>
-												<code className='rounded bg-gray-100 px-2 py-1 text-sm'>
-													{item.product_sku}
-												</code>
-											</Td>
-											<Td>
-												<span className='text-lg font-semibold text-sky-600'>
+												<span className='text-lg font-semibold text-emerald-600'>
 													{item.quantity}
 												</span>
 											</Td>
 											<Td>
-												<span className='text-gray-600'>
+												<span className='text-gray-500 dark:text-gray-400'>
 													{item.available_stock}
 												</span>
 											</Td>
 											<Td>
 												<Button
-													size='sm'
+													size='xs'
 													color='red'
 													variant='outline'
 													icon='HeroTrash'
 													onClick={() =>
 														handleRemoveProduct(item.product_id)
 													}>
-													Quitar
+													Remover
 												</Button>
 											</Td>
 										</Tr>
@@ -510,13 +574,14 @@ const Transferencias: React.FC = () => {
 						</div>
 
 						{/* Acciones finales */}
-						<div className='mt-6 flex items-center justify-between'>
+						<div className='mt-6 flex items-center justify-end gap-3'>
 							<Button
 								variant='outline'
 								color='gray'
-								onClick={() => setItems([])}
+								icon='HeroTrash'
+								onClick={handleClearList}
 								isDisable={items.length === 0}>
-								Cancelar
+								Limpiar Lista
 							</Button>
 
 							<PermissionGuard permissions={[ERP_PERMISSIONS.INVENTORY.TRANSFER]}>
@@ -537,65 +602,114 @@ const Transferencias: React.FC = () => {
 			{/* Modal de confirmación */}
 			<Modal isOpen={showConfirmModal} setIsOpen={setShowConfirmModal} size='2xl'>
 				<ModalHeader>
-					<h3 className='text-lg font-semibold text-gray-900'>Confirmar Transferencia</h3>
+					<h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
+						Confirmar Transferencia
+					</h3>
 				</ModalHeader>
 				<ModalBody>
-					<div className='space-y-4'>
-						<div className='rounded-lg border border-sky-200 bg-sky-50 p-4'>
-							<h4 className='mb-3 font-medium text-sky-900'>
-								Resumen de Transferencia
-							</h4>
-							<div className='grid grid-cols-2 gap-4 text-sm'>
-								<div>
-									<span className='text-gray-600'>Desde:</span>
-									<p className='font-medium'>
-										{getWarehouseName(transferForm.from_warehouse_id)}
-									</p>
+					<div className='space-y-6'>
+						<Card>
+							<CardHeader>
+								<CardTitle className='flex items-center gap-3'>
+									<span>
+										<svg
+											className='h-6 w-6'
+											fill='none'
+											stroke='currentColor'
+											viewBox='0 0 24 24'>
+											<path
+												strokeLinecap='round'
+												strokeLinejoin='round'
+												strokeWidth='2'
+												d='M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01'
+											/>
+										</svg>
+									</span>
+									Resumen de Transferencia
+								</CardTitle>
+							</CardHeader>
+							<CardBody>
+								<div className='grid grid-cols-2 gap-4'>
+									<div>
+										<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+											Desde
+										</label>
+										<p className='font-medium text-gray-900 dark:text-gray-100'>
+											{getWarehouseName(transferForm.from_warehouse_id)}
+										</p>
+									</div>
+									<div>
+										<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+											Hacia
+										</label>
+										<p className='font-medium text-gray-900 dark:text-gray-100'>
+											{getWarehouseName(transferForm.to_warehouse_id)}
+										</p>
+									</div>
+									<div>
+										<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+											Responsable
+										</label>
+										<p className='font-medium text-gray-900 dark:text-gray-100'>
+											{getResponsibleName(transferForm.responsible_id)}
+										</p>
+									</div>
+									<div>
+										<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+											Total productos
+										</label>
+										<p className='font-medium text-gray-900 dark:text-gray-100'>
+											{items.length} productos ({getTotalItems()} unidades)
+										</p>
+									</div>
+									{transferForm.notes && (
+										<div className='col-span-2'>
+											<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+												Notas
+											</label>
+											<p className='font-medium text-gray-900 dark:text-gray-100'>
+												{transferForm.notes}
+											</p>
+										</div>
+									)}
 								</div>
-								<div>
-									<span className='text-gray-600'>Hacia:</span>
-									<p className='font-medium'>
-										{getWarehouseName(transferForm.to_warehouse_id)}
-									</p>
-								</div>
-								<div>
-									<span className='text-gray-600'>Responsable:</span>
-									<p className='font-medium'>
-										{getResponsibleName(transferForm.responsible_id)}
-									</p>
-								</div>
-								<div>
-									<span className='text-gray-600'>Total productos:</span>
-									<p className='font-medium'>
-										{items.length} productos ({getTotalItems()} unidades)
-									</p>
-								</div>
-							</div>
-							{transferForm.notes && (
-								<div className='mt-3'>
-									<span className='text-gray-600'>Notas:</span>
-									<p className='font-medium'>{transferForm.notes}</p>
-								</div>
-							)}
-						</div>
+							</CardBody>
+						</Card>
 
-						<div className='rounded-lg border border-amber-200 bg-amber-50 p-4'>
-							<div className='flex items-start gap-3'>
-								<span className='text-2xl'>⚠️</span>
-								<div>
-									<h4 className='font-medium text-amber-900'>Importante</h4>
-									<p className='mt-1 text-sm text-amber-800'>
-										Esta acción creará movimientos de inventario y no podrá ser
-										revertida automáticamente. Asegúrese de que toda la
-										información esté correcta antes de continuar.
-									</p>
+						<Card>
+							<CardBody>
+								<div className='flex items-start gap-3'>
+									<span className='text-amber-600'>
+										<svg
+											className='h-6 w-6'
+											fill='currentColor'
+											viewBox='0 0 24 24'>
+											<path
+												fillRule='evenodd'
+												d='M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z'
+												clipRule='evenodd'
+											/>
+										</svg>
+									</span>
+									<div>
+										<h4 className='font-medium text-amber-600'>Importante</h4>
+										<p className='mt-1 text-sm text-gray-500 dark:text-gray-400'>
+											Esta acción creará movimientos de inventario y no podrá
+											ser revertida automáticamente. Asegúrese de que toda la
+											información esté correcta antes de continuar.
+										</p>
+									</div>
 								</div>
-							</div>
-						</div>
+							</CardBody>
+						</Card>
 					</div>
 				</ModalBody>
 				<ModalFooter>
-					<Button variant='outline' onClick={() => setShowConfirmModal(false)}>
+					<Button
+						variant='outline'
+						color='gray'
+						icon='HeroXMark'
+						onClick={() => setShowConfirmModal(false)}>
 						Cancelar
 					</Button>
 					<Button color='emerald' icon='HeroCheck' onClick={handleProceedWithTransfer}>
@@ -609,79 +723,268 @@ const Transferencias: React.FC = () => {
 				<ModalHeader>
 					<div className='flex items-center gap-3'>
 						<div className='flex h-10 w-10 items-center justify-center rounded-full bg-green-100'>
-							<span className='text-2xl'>✅</span>
+							<svg
+								className='h-6 w-6 text-green-600'
+								fill='currentColor'
+								viewBox='0 0 24 24'>
+								<path
+									fillRule='evenodd'
+									d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z'
+									clipRule='evenodd'
+								/>
+							</svg>
 						</div>
-						<h3 className='text-lg font-semibold text-gray-900'>
-							¡Transferencia Exitosa!
+						<h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
+							Transferencia Exitosa
 						</h3>
 					</div>
 				</ModalHeader>
 				<ModalBody>
 					{transferResult && (
-						<div className='space-y-4'>
-							<div className='rounded-lg border border-emerald-200 bg-emerald-50 p-4'>
-								<h4 className='mb-3 font-medium text-emerald-900'>
-									Transferencia Completada
-								</h4>
-								<div className='grid grid-cols-2 gap-4 text-sm'>
-									<div>
-										<span className='text-gray-600'>ID Transferencia:</span>
-										<p className='font-mono font-medium'>{transferResult.id}</p>
+						<div className='space-y-6'>
+							<Card>
+								<CardHeader>
+									<CardTitle className='flex items-center gap-3'>
+										<span className='text-green-600'>
+											<svg
+												className='h-6 w-6'
+												fill='currentColor'
+												viewBox='0 0 24 24'>
+												<path
+													fillRule='evenodd'
+													d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z'
+													clipRule='evenodd'
+												/>
+											</svg>
+										</span>
+										Transferencia Completada
+									</CardTitle>
+								</CardHeader>
+								<CardBody>
+									<div className='grid grid-cols-2 gap-4'>
+										<div>
+											<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+												ID Transferencia
+											</label>
+											<p className='font-mono font-medium text-gray-900 dark:text-gray-100'>
+												{transferResult.id}
+											</p>
+										</div>
+										<div>
+											<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+												Total Productos
+											</label>
+											<p className='font-medium text-gray-900 dark:text-gray-100'>
+												{transferResult.total_items} unidades
+											</p>
+										</div>
+										<div className='col-span-2'>
+											<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+												Fecha y Hora
+											</label>
+											<p className='font-medium text-gray-900 dark:text-gray-100'>
+												{new Date(transferResult.created_at).toLocaleString(
+													'es-ES',
+													{
+														year: 'numeric',
+														month: 'long',
+														day: 'numeric',
+														hour: '2-digit',
+														minute: '2-digit',
+													},
+												)}
+											</p>
+										</div>
 									</div>
-									<div>
-										<span className='text-gray-600'>Total Productos:</span>
-										<p className='font-medium'>
-											{transferResult.total_items} unidades
-										</p>
-									</div>
-									<div className='col-span-2'>
-										<span className='text-gray-600'>Fecha y Hora:</span>
-										<p className='font-medium'>
-											{new Date(transferResult.created_at).toLocaleString(
-												'es-ES',
-												{
-													year: 'numeric',
-													month: 'long',
-													day: 'numeric',
-													hour: '2-digit',
-													minute: '2-digit',
-												},
-											)}
-										</p>
-									</div>
-								</div>
-							</div>
+								</CardBody>
+							</Card>
 
-							<div className='rounded-lg border border-sky-200 bg-sky-50 p-4'>
-								<div className='flex items-start gap-3'>
-									<span className='text-2xl'>💡</span>
-									<div>
-										<h4 className='font-medium text-sky-900'>¿Qué sigue?</h4>
-										<ul className='mt-2 space-y-1 text-sm text-sky-800'>
-											<li>
-												• Los movimientos de inventario han sido registrados
-											</li>
-											<li>
-												• Puede revisar el historial de transferencias para
-												seguimiento
-											</li>
-											<li>
-												• Los reportes de inventario reflejarán estos
-												cambios
-											</li>
-										</ul>
+							<Card>
+								<CardBody>
+									<div className='flex items-start gap-3'>
+										<span className='text-sky-600'>
+											<svg
+												className='h-6 w-6'
+												fill='currentColor'
+												viewBox='0 0 24 24'>
+												<path
+													fillRule='evenodd'
+													d='M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z'
+													clipRule='evenodd'
+												/>
+											</svg>
+										</span>
+										<div>
+											<h4 className='font-medium text-sky-600'>
+												¿Qué sigue?
+											</h4>
+											<ul className='mt-2 space-y-1 text-sm text-gray-500 dark:text-gray-400'>
+												<li>
+													• Los movimientos de inventario han sido
+													registrados
+												</li>
+												<li>
+													• Puede revisar el historial de transferencias
+													para seguimiento
+												</li>
+												<li>
+													• Los reportes de inventario reflejarán estos
+													cambios
+												</li>
+											</ul>
+										</div>
 									</div>
-								</div>
-							</div>
+								</CardBody>
+							</Card>
 						</div>
 					)}
 				</ModalBody>
 				<ModalFooter>
-					<Button variant='outline' onClick={handleCreateAnother}>
+					<Button
+						variant='outline'
+						color='gray'
+						icon='HeroPlus'
+						onClick={handleCreateAnother}>
 						Crear Otra Transferencia
 					</Button>
-					<Button color='blue' icon='HeroEye' onClick={handleViewHistory}>
+					<Button color='sky' icon='HeroEye' onClick={handleViewHistory}>
 						Ver en Historial
+					</Button>
+				</ModalFooter>
+			</Modal>
+
+			{/* Modal de confirmación para remover producto */}
+			<Modal isOpen={showRemoveConfirmModal} setIsOpen={setShowRemoveConfirmModal} size='md'>
+				<ModalHeader>
+					<div className='flex items-center gap-3'>
+						<span className='text-red-600'>
+							<svg className='h-6 w-6' fill='currentColor' viewBox='0 0 24 24'>
+								<path
+									fillRule='evenodd'
+									d='M9 2a1 1 0 000 2h6a1 1 0 100-2H9z'
+									clipRule='evenodd'
+								/>
+								<path
+									fillRule='evenodd'
+									d='M10 5a2 2 0 00-2 2v1a1 1 0 001 1h6a1 1 0 001-1V7a2 2 0 00-2-2H10zM8.5 10a.5.5 0 000 1v6a1.5 1.5 0 001.5 1.5h4a1.5 1.5 0 001.5-1.5v-6a.5.5 0 000-1h-7z'
+									clipRule='evenodd'
+								/>
+							</svg>
+						</span>
+						<h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
+							Confirmar Eliminación
+						</h3>
+					</div>
+				</ModalHeader>
+				<ModalBody>
+					<div className='space-y-4'>
+						<p className='text-gray-500 dark:text-gray-400'>
+							¿Está seguro que desea remover este producto de la transferencia?
+						</p>
+						<Card>
+							<CardBody>
+								<div className='flex items-start gap-3'>
+									<span className='text-amber-600'>
+										<svg
+											className='h-5 w-5'
+											fill='currentColor'
+											viewBox='0 0 24 24'>
+											<path
+												fillRule='evenodd'
+												d='M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z'
+												clipRule='evenodd'
+											/>
+										</svg>
+									</span>
+									<div>
+										<p className='text-sm text-gray-500 dark:text-gray-400'>
+											Esta acción no se puede deshacer. El producto será
+											removido de la lista actual.
+										</p>
+									</div>
+								</div>
+							</CardBody>
+						</Card>
+					</div>
+				</ModalBody>
+				<ModalFooter>
+					<Button
+						variant='outline'
+						color='gray'
+						onClick={() => setShowRemoveConfirmModal(false)}>
+						Cancelar
+					</Button>
+					<Button color='red' icon='HeroTrash' onClick={confirmRemoveProduct}>
+						Sí, Remover
+					</Button>
+				</ModalFooter>
+			</Modal>
+
+			{/* Modal de confirmación para limpiar lista */}
+			<Modal isOpen={showClearListModal} setIsOpen={setShowClearListModal} size='md'>
+				<ModalHeader>
+					<div className='flex items-center gap-3'>
+						<span className='text-amber-600'>
+							<svg className='h-6 w-6' fill='currentColor' viewBox='0 0 24 24'>
+								<path
+									fillRule='evenodd'
+									d='M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z'
+									clipRule='evenodd'
+								/>
+							</svg>
+						</span>
+						<h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
+							Limpiar Lista de Productos
+						</h3>
+					</div>
+				</ModalHeader>
+				<ModalBody>
+					<div className='space-y-4'>
+						<p className='text-gray-500 dark:text-gray-400'>
+							¿Está seguro que desea limpiar toda la lista de productos? Esta acción
+							eliminará todos los productos agregados.
+						</p>
+						<Card>
+							<CardBody>
+								<div className='flex items-center justify-between'>
+									<div className='flex items-center gap-3'>
+										<span>
+											<svg
+												className='h-5 w-5'
+												fill='none'
+												stroke='currentColor'
+												viewBox='0 0 24 24'>
+												<path
+													strokeLinecap='round'
+													strokeLinejoin='round'
+													strokeWidth='2'
+													d='M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01'
+												/>
+											</svg>
+										</span>
+										<div className='text-sm'>
+											<p className='font-medium text-gray-900 dark:text-gray-100'>
+												Productos actuales
+											</p>
+											<p className='text-gray-500 dark:text-gray-400'>
+												{items.length} productos, {getTotalItems()} unidades
+											</p>
+										</div>
+									</div>
+								</div>
+							</CardBody>
+						</Card>
+					</div>
+				</ModalBody>
+				<ModalFooter>
+					<Button
+						variant='outline'
+						color='gray'
+						onClick={() => setShowClearListModal(false)}>
+						Cancelar
+					</Button>
+					<Button color='red' icon='HeroTrash' onClick={confirmClearList}>
+						Sí, Limpiar Lista
 					</Button>
 				</ModalFooter>
 			</Modal>

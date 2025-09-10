@@ -7,12 +7,7 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Select from '@/components/form/Select';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
-import Table, { TBody, Td, THead, Th, Tr } from '@/components/ui/								<Badge
-									key={state.id}
-									color={state.color as any}
-									variant='outline'>
-									{state.name}
-								</Badge>
+import Table, { TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 import PermissionGuard from '@/components/authorization/PermissionGuard';
 import { formatDate } from '@/utils/format.utils';
@@ -510,8 +505,7 @@ const InventarioEstadoTecnico: React.FC = () => {
 									<Badge
 										key={state.id}
 										color={state.color as any}
-										variant='outline'
-										title={state.description}>
+										variant='outline'>
 										{state.name}
 									</Badge>
 								))}
