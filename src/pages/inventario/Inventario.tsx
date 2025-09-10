@@ -790,7 +790,9 @@ const Inventario: React.FC = () => {
 									</Tr>
 								) : stockAlerts.length === 0 ? (
 									<Tr>
-										<Td colSpan={7} className='py-8 text-center text-emerald-600'>
+										<Td
+											colSpan={7}
+											className='py-8 text-center text-emerald-600'>
 											🎉 No hay alertas de stock activas
 										</Td>
 									</Tr>
