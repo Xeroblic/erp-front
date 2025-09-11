@@ -17,7 +17,6 @@ import SelectReact from '../../../components/form/SelectReact';
 import Badge from '../../../components/ui/Badge';
 import Checkbox from '../../../components/form/Checkbox';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '../../../components/ui/Modal';
-import CreateEditProductModal from './components/modals/CreateEditProductModal';
 import {
 	IProduct,
 	IProductFilters,
@@ -70,8 +69,6 @@ const ProductosMain: React.FC = () => {
 	});
 
 	// Estados para modales
-	const [createModalOpen, setCreateModalOpen] = useState(false);
-	const [editModalOpen, setEditModalOpen] = useState(false);
 	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 	const [viewModalOpen, setViewModalOpen] = useState(false);
 	const [selectedProduct, setSelectedProduct] = useState<IProduct | null>(null);
@@ -437,37 +434,6 @@ const ProductosMain: React.FC = () => {
 		}
 	};
 
-	const handleCreateSubmit = async (productData: any) => {
-		try {
-			console.log('Creating product:', productData);
-			// TODO: Llamar API de creación
-			// await createProduct(productData);
-
-			// Recargar productos después de crear
-			await loadProducts();
-			setCreateModalOpen(false);
-		} catch (error) {
-			console.error('Error creating product:', error);
-			throw error;
-		}
-	};
-
-	const handleEditSubmit = async (productData: any) => {
-		try {
-			console.log('Updating product:', selectedProduct?.id, productData);
-			// TODO: Llamar API de actualización
-			// await updateProduct(selectedProduct.id, productData);
-
-			// Recargar productos después de actualizar
-			await loadProducts();
-			setEditModalOpen(false);
-			setSelectedProduct(null);
-		} catch (error) {
-			console.error('Error updating product:', error);
-			throw error;
-		}
-	};
-
 	const handleDuplicateProduct = async (product: IProduct) => {
 		try {
 			console.log('Duplicating product:', product.id);
@@ -498,11 +464,11 @@ const ProductosMain: React.FC = () => {
 			case 'NOTEBOOK':
 				return 'blue';
 			case 'DESKTOP':
-				return 'emerald';
+				return 'green';
 			case 'GENERAL':
-				return 'violet';
+				return 'purple';
 			default:
-				return 'zinc';
+				return 'gray';
 		}
 	};
 
@@ -511,13 +477,13 @@ const ProductosMain: React.FC = () => {
 			case 'A':
 				return 'emerald';
 			case 'B':
-				return 'amber';
+				return 'yellow';
 			case 'C':
-				return 'red';
+				return 'orange';
 			case 'M':
 				return 'red';
 			default:
-				return 'zinc';
+				return 'gray';
 		}
 	};
 
@@ -526,13 +492,13 @@ const ProductosMain: React.FC = () => {
 			case 'NEW':
 				return 'emerald';
 			case 'USED':
-				return 'amber';
+				return 'yellow';
 			case 'REFURBISHED':
 				return 'blue';
 			case 'DAMAGED':
 				return 'red';
 			default:
-				return 'zinc';
+				return 'gray';
 		}
 	};
 
@@ -653,7 +619,7 @@ const ProductosMain: React.FC = () => {
 										size='sm'
 										variant='outline'
 										onClick={() => handleDeleteProduct(product)}
-										isDisable={product.available_stock > 0}
+										disabled={product.available_stock > 0}
 										className={`${
 											product.available_stock > 0
 												? 'cursor-not-allowed text-gray-400'
@@ -1031,10 +997,10 @@ const ProductosMain: React.FC = () => {
 						<Button
 							color='red'
 							onClick={handleConfirmDelete}
-							isDisable={Boolean(
+							disabled={
 								selectedProduct?.available_stock &&
-									selectedProduct.available_stock > 0,
-							)}
+								selectedProduct.available_stock > 0
+							}
 							isLoading={loading}>
 							Eliminar Producto
 						</Button>
@@ -1364,25 +1330,6 @@ const ProductosMain: React.FC = () => {
 					</div>
 				</ModalFooter>
 			</Modal>
-
-			{/* Modal de Crear Producto */}
-			<CreateEditProductModal
-				isOpen={createModalOpen}
-				onClose={() => setCreateModalOpen(false)}
-				onSubmit={handleCreateSubmit}
-				product={null}
-			/>
-
-			{/* Modal de Editar Producto */}
-			<CreateEditProductModal
-				isOpen={editModalOpen}
-				onClose={() => {
-					setEditModalOpen(false);
-					setSelectedProduct(null);
-				}}
-				onSubmit={handleEditSubmit}
-				product={selectedProduct}
-			/>
 		</PageWrapper>
 	);
 };

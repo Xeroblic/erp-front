@@ -17,6 +17,7 @@ interface ITextareaProps
 		Partial<IValidationBaseProps> {
 	borderWidth?: TBorderWidth;
 	className?: string;
+	label?: string;
 	color?: TColors;
 	colorIntensity?: TColorIntensity;
 	rounded?: TRounded;
@@ -34,6 +35,7 @@ const Textarea: FC<ITextareaProps> = (props) => {
 		rounded = themeConfig.rounded,
 		dimension = 'default',
 		isValid,
+		label,
 		isTouched,
 		invalidFeedback,
 		variant = 'solid',

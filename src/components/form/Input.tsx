@@ -14,6 +14,7 @@ export type TInputDimension = 'xs' | 'sm' | 'default' | 'lg' | 'xl';
 
 interface IInputProps extends InputHTMLAttributes<HTMLInputElement>, Partial<IValidationBaseProps> {
 	borderWidth?: TBorderWidth;
+	label?: string;
 	className?: string;
 	color?: TColors;
 	colorIntensity?: TColorIntensity;
@@ -29,6 +30,7 @@ const Input = forwardRef<HTMLInputElement, IInputProps>((props, ref) => {
 
 	const {
 		borderWidth = themeConfig.borderWidth,
+		label,
 		className,
 		color = reactiveThemeColor,
 		colorIntensity = reactiveThemeColorShade,

@@ -9,10 +9,10 @@ const DefaultHeaderTemplate = () => {
 	
 	return (
 		<Header>
-			<HeaderLeft>
-				<UserRoutesDropdown className="hidden md:block" />
+			{/* <HeaderLeft> */}
+				{/* <UserRoutesDropdown className="hidden md:block" /> */}
 				{/* <SearchPartial /> */}
-			</HeaderLeft>
+			{/* </HeaderLeft> */}
 			<HeaderRight>
 				{/* <CompanySelectorButton /> */}
 				<DefaultHeaderRightCommon />
