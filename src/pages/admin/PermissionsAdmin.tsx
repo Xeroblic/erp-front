@@ -330,6 +330,9 @@ export default function PermissionsAdmin() {
 				selectedUser={selectedUserForPermissions}
 				permissions={permissions}
 				roles={roles}
+				companies={[]} // TODO: Obtener de store
+				subsidiaries={[]} // TODO: Obtener de store
+				branches={[]} // TODO: Obtener de store
 				selectedPermissionIds={selectedPermissionIds}
 				selectedRoleIds={selectedRoleIds}
 				onPermissionChange={handlePermissionChange}

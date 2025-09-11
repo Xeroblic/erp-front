@@ -380,7 +380,8 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, pagination, o
 						variant='outline'
 						icon='HeroPlus'
 						onClick={() => {
-							console.log('Crear nuevo usuario');
+							// Emitir evento para abrir modal de creación
+							window.dispatchEvent(new CustomEvent('openCreateUserModal'));
 						}}>
 						Crear nuevo usuario
 					</Button>

@@ -180,6 +180,21 @@ const DefaultAsideTemplate = () => {
 							/>
 						</AuthorityCheckNav>
 
+						{/* Gestión - Personalización de Subempresas */}
+						<AuthorityCheckNav
+							authority={Pages.manage.subPages.subsidiaryCustomization.authority}
+							userAuthority={userPermissionsAndRoles}>
+							<NavItem
+								text={Pages.manage.subPages.subsidiaryCustomization.text}
+								to={Pages.manage.subPages.subsidiaryCustomization.to}
+								icon={Pages.manage.subPages.subsidiaryCustomization.icon}
+								id={Pages.manage.subPages.subsidiaryCustomization.id}
+								onClick={() =>
+									navigate(Pages.manage.subPages.subsidiaryCustomization.to)
+								}
+							/>
+						</AuthorityCheckNav>
+
 						{/* Gestión - Sucursales */}
 						<AuthorityCheckNav
 							authority={Pages.manage.subPages.branch.authority}

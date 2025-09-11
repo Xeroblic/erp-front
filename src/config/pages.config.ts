@@ -76,6 +76,14 @@ export const privatePages = {
         authority: ['view-subsidiary'],
         roles: ['super-admin', 'company-admin', 'subsidiary-admin'],
       },
+      subsidiaryCustomization: {
+        id: 'subsidiaryCustomization',
+        to: '/gestion/subempresa/personalizacion',
+        text: 'Personalización de Subempresa',
+        icon: 'HeroPaintBrush',
+        authority: ['view-subsidiary'], // customize-subsidiary
+        roles: ['super-admin', 'company-admin', 'subsidiary-admin'],
+      },
       branch: {
         id: 'branch',
         to: '/gestion/sucursal',

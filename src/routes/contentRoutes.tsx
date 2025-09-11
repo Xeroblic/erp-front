@@ -17,6 +17,9 @@ const Dashboard = lazy(() => import('@/pages/MainDashboard'));
 const EmpresaPage = lazy(() => import('@/pages/gestionAdmin/empresa/Empresa'));
 const SubEmpresa = lazy(() => import('@/pages/gestionAdmin/subempresa/SubEmpresa'));
 const SubEmpresaDetalle = lazy(() => import('@/pages/gestionAdmin/subempresa/SubEmpresaDetalle'));
+const SubEmpresaPersonalizacion = lazy(
+	() => import('@/pages/gestionAdmin/subempresa/SubEmpresaPersonalizacion'),
+);
 const Sucursales = lazy(() => import('@/pages/gestionAdmin/sucursales/Sucursales.tsx'));
 const SucursalDetalle = lazy(() => import('@/pages/gestionAdmin/sucursales/SucursalDetalle.tsx'));
 const RolesPermisos = lazy(() => import('@/pages/gestionAdmin/roles y permisos/RolesPermisos.tsx'));
@@ -85,6 +88,11 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: cfg.manage.subPages.subsidiaryDetail.to,
 		element: <SubEmpresaDetalle />,
 		authority: cfg.manage.subPages.subsidiaryDetail.authority,
+	},
+	{
+		path: cfg.manage.subPages.subsidiaryCustomization.to,
+		element: <SubEmpresaPersonalizacion />,
+		authority: cfg.manage.subPages.subsidiaryCustomization.authority,
 	},
 	{
 		path: cfg.manage.subPages.branch.to,

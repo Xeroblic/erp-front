@@ -83,6 +83,21 @@ export const useUsersManagement = () => {
         }
     }, [setActionLoading]);
 
+    // Crear usuario
+    const handleCreateUser = useCallback(async (userData: any): Promise<void> => {
+        try {
+            await ApiService.fetchData({
+                url: '/admin/users',
+                method: 'post',
+                data: userData,
+            });
+            toast.success('Usuario creado correctamente');
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || 'Error al crear usuario');
+            throw error;
+        }
+    }, []);
+
     // Actualizar usuario
     const handleUpdateUser = useCallback(async (userId: number, userData: any): Promise<void> => {
         setActionLoading(userId, true);
@@ -131,6 +146,7 @@ export const useUsersManagement = () => {
         fetchCompanyUsers,
 
         // Funciones de acciones
+        handleCreateUser,
         handleToggleUserStatus,
         handleUpdateUser,
         handleDeleteUser,
