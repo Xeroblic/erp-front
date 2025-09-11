@@ -378,6 +378,20 @@ const DefaultAsideTemplate = () => {
 						/>
 					</AuthorityCheckNav>
 
+					<NavTitle>Módulo Técnico</NavTitle>
+
+					<AuthorityCheckNav
+						authority={Pages.technical.subPages.reviews.authority}
+						userAuthority={userPermissionsAndRoles}>
+						<NavItem
+							text={Pages.technical.subPages.reviews.text}
+							to={Pages.technical.subPages.reviews.to}
+							icon={Pages.technical.subPages.reviews.icon}
+							id={Pages.technical.subPages.reviews.id}
+							onClick={() => navigate(Pages.technical.subPages.reviews.to)}
+						/>
+					</AuthorityCheckNav>
+
 					<NavTitle>Catálogos</NavTitle>
 
 					<AuthorityCheckNav
@@ -455,6 +469,19 @@ const DefaultAsideTemplate = () => {
 							icon={Pages.catalogs.subPages.customers.icon}
 							id={Pages.catalogs.subPages.customers.id}
 							onClick={() => navigate(Pages.catalogs.subPages.customers.to)}
+						/>
+					</AuthorityCheckNav>
+
+					<AuthorityCheckNav
+						authority={Pages.catalogs.subPages.documents.authority}
+						userAuthority={userPermissionsAndRoles}
+						requireAll={Pages.catalogs.subPages.documents.requireAll}>
+						<NavItem
+							text={Pages.catalogs.subPages.documents.text}
+							to={Pages.catalogs.subPages.documents.to}
+							icon={Pages.catalogs.subPages.documents.icon}
+							id={Pages.catalogs.subPages.documents.id}
+							onClick={() => navigate(Pages.catalogs.subPages.documents.to)}
 						/>
 					</AuthorityCheckNav>
 

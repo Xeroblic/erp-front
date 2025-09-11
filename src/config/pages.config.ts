@@ -192,9 +192,9 @@ export const privatePages = {
     subPages: {
       reviews: {
         id: 'technicalReviews',
-        to: '/tecnico/revisiones',
+        to: '/revisiones-tecnicas',
         text: 'Revisiones Técnicas',
-        icon: 'HeroClipboardDocumentCheck',
+        icon: 'HeroWrenchScrewdriver',
         authority: ['technical.reviews'],
         roles: ['super-admin', 'company-admin', 'technician'],
       },
@@ -298,6 +298,15 @@ export const privatePages = {
         icon: 'HeroUsers',
         authority: ['catalogs.customers'],
         roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'sales-manager', 'manager'],
+        requireAll: false,
+      },
+      documents: {
+        id: 'documents',
+        to: '/documentos',
+        text: 'Documentos',
+        icon: 'HeroDocumentArrowUp',
+        authority: ['catalogs.customers'],
+        roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'manager'],
         requireAll: false,
       },
     },

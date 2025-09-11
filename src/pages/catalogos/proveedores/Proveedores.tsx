@@ -4,7 +4,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import Button from '../../../components/ui/Button';
-import Card, { CardHeader, CardBody, CardTitle } from '../../../components/ui/Card';
+import Card, { CardHeader, CardBody, CardTitle, CardFooter } from '../../../components/ui/Card';
 import Container from '../../../components/layouts/Container/Container';
 import PageWrapper from '../../../components/layouts/PageWrapper/PageWrapper';
 import Subheader, {
@@ -14,6 +14,10 @@ import Subheader, {
 import Icon from '../../../components/icon/Icon';
 import Input from '../../../components/form/Input';
 import SelectReact from '../../../components/form/SelectReact';
+import Select from '../../../components/form/Select';
+import Textarea from '../../../components/form/Textarea';
+import Checkbox from '../../../components/form/Checkbox';
+import Label from '../../../components/form/Label';
 import Badge from '../../../components/ui/Badge';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '../../../components/ui/Modal';
 import { TSelectOption, TSelectOptions } from '../../../components/form/SelectReact';
@@ -238,6 +242,33 @@ const Proveedores: React.FC = () => {
 					orders_count: 23,
 					total_purchases: 34500000,
 				},
+				{
+					id: 5,
+					company_id: 1,
+					name: 'Proveedor Eliminable Test',
+					code: 'ELIM-005',
+					document_type: 'NIT',
+					document_number: '900777888-1',
+					email: 'test@eliminable.co',
+					phone: '+57 1 777-8888',
+					address: 'Calle 60 #25-30',
+					city: 'Bogotá',
+					country: 'Colombia',
+					website: 'www.eliminable.co',
+					contact_person: 'Pedro Martínez',
+					contact_email: 'pedro.martinez@eliminable.co',
+					contact_phone: '+57 300 777-8888',
+					payment_terms: 30,
+					credit_limit: 5000000,
+					category: 'OFICINA',
+					rating: 4,
+					is_active: true,
+					created_at: '2024-01-25T12:00:00Z',
+					updated_at: '2024-01-25T12:00:00Z',
+					products_count: 0,
+					orders_count: 0,
+					total_purchases: 0,
+				},
 			];
 
 			setSuppliers(mockSuppliers);
@@ -251,8 +282,8 @@ const Proveedores: React.FC = () => {
 	const loadStats = async () => {
 		try {
 			const mockStats: ISupplierStats = {
-				total_suppliers: 4,
-				active_suppliers: 3,
+				total_suppliers: 5,
+				active_suppliers: 4,
 				inactive_suppliers: 1,
 				total_purchases: 448200000,
 				avg_rating: 4.0,
@@ -302,6 +333,14 @@ const Proveedores: React.FC = () => {
 
 	const handleConfirmDelete = async () => {
 		if (!selectedSupplier) return;
+
+		// Validar si el proveedor puede ser eliminado
+		if (selectedSupplier.products_count > 0 || selectedSupplier.orders_count > 0) {
+			alert(
+				`No se puede eliminar el proveedor "${selectedSupplier.name}" porque tiene ${selectedSupplier.products_count} productos y ${selectedSupplier.orders_count} órdenes asociadas.`,
+			);
+			return;
+		}
 
 		try {
 			console.log('Deleting supplier:', selectedSupplier.id);
@@ -607,11 +646,9 @@ const Proveedores: React.FC = () => {
 					<CardBody>
 						<div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
 							<div>
-								<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-									Buscar
-								</label>
+								<Label htmlFor='filter-search'>Buscar</Label>
 								<Input
-									type='text'
+									id='filter-search'
 									name='search'
 									placeholder='Nombre, código, documento...'
 									value={filters.search || ''}
@@ -620,9 +657,7 @@ const Proveedores: React.FC = () => {
 							</div>
 
 							<div>
-								<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-									Categoría
-								</label>
+								<Label htmlFor='filter-category'>Categoría</Label>
 								<SelectReact
 									name='category'
 									options={categoryOptions}
@@ -638,9 +673,7 @@ const Proveedores: React.FC = () => {
 							</div>
 
 							<div>
-								<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-									Calificación
-								</label>
+								<Label htmlFor='filter-rating'>Calificación</Label>
 								<SelectReact
 									name='rating'
 									options={ratingOptions}
@@ -659,9 +692,7 @@ const Proveedores: React.FC = () => {
 							</div>
 
 							<div>
-								<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-									Estado
-								</label>
+								<Label htmlFor='filter-status'>Estado</Label>
 								<SelectReact
 									name='status'
 									options={statusOptions}
@@ -684,6 +715,15 @@ const Proveedores: React.FC = () => {
 							</div>
 						</div>
 					</CardBody>
+					<CardFooter className='flex justify-end'>
+						<Button
+							variant='outline'
+							onClick={clearFilters}
+							icon='HeroArrowPath'
+							className='w-full md:w-auto'>
+							Limpiar filtros
+						</Button>
+					</CardFooter>
 				</Card>
 
 				{/* Tabla de Proveedores */}
@@ -714,8 +754,322 @@ const Proveedores: React.FC = () => {
 				</Card>
 			</Container>
 
-			{/* Modal de Vista de Proveedor */}
-			<Modal isOpen={viewModalOpen} setIsOpen={setViewModalOpen} size='2xl'>
+			{/* Modal para crear proveedor */}
+			<Modal isOpen={createModalOpen} setIsOpen={setCreateModalOpen} size='xl'>
+				<ModalHeader>
+					<h3 className='text-lg font-semibold text-gray-900 dark:text-white'>
+						Crear Nuevo Proveedor
+					</h3>
+				</ModalHeader>
+				<ModalBody>
+					<div className='space-y-4'>
+						<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+							<div>
+								<Label htmlFor='create-name'>Nombre de la Empresa *</Label>
+								<Input
+									id='create-name'
+									name='name'
+									placeholder='Nombre de la empresa'
+									required
+								/>
+							</div>
+							<div>
+								<Label htmlFor='create-code'>Código *</Label>
+								<Input
+									id='create-code'
+									name='code'
+									placeholder='Código del proveedor'
+									required
+								/>
+							</div>
+						</div>
+						<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+							<div>
+								<Label htmlFor='create-document-type'>Tipo de Documento *</Label>
+								<Select id='create-document-type' name='document_type'>
+									<option value='NIT'>NIT</option>
+									<option value='CC'>Cédula de Ciudadanía</option>
+									<option value='CE'>Cédula de Extranjería</option>
+								</Select>
+							</div>
+							<div>
+								<Label htmlFor='create-document-number'>
+									Número de Documento *
+								</Label>
+								<Input
+									id='create-document-number'
+									name='document_number'
+									placeholder='Número de documento'
+									required
+								/>
+							</div>
+						</div>
+						<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+							<div>
+								<Label htmlFor='create-email'>Email *</Label>
+								<Input
+									id='create-email'
+									name='email'
+									type='email'
+									placeholder='email@empresa.com'
+									required
+								/>
+							</div>
+							<div>
+								<Label htmlFor='create-phone'>Teléfono *</Label>
+								<Input
+									id='create-phone'
+									name='phone'
+									placeholder='+57 1 234-5678'
+									required
+								/>
+							</div>
+						</div>
+						<div>
+							<Label htmlFor='create-address'>Dirección *</Label>
+							<Textarea
+								id='create-address'
+								name='address'
+								placeholder='Dirección completa'
+								rows={2}
+								required
+							/>
+						</div>
+						<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+							<div>
+								<Label htmlFor='create-city'>Ciudad *</Label>
+								<Input id='create-city' name='city' placeholder='Ciudad' required />
+							</div>
+							<div>
+								<Label htmlFor='create-category'>Categoría *</Label>
+								<Select id='create-category' name='category'>
+									<option value='TECNOLOGIA'>Tecnología</option>
+									<option value='OFICINA'>Oficina</option>
+									<option value='SERVICIOS'>Servicios</option>
+									<option value='INSUMOS'>Insumos</option>
+								</Select>
+							</div>
+						</div>
+						<div>
+							<h4 className='mb-2 text-sm font-medium text-gray-700 dark:text-gray-300'>
+								Contacto Principal
+							</h4>
+							<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
+								<div>
+									<Label htmlFor='create-contact-person' className='text-xs'>
+										Nombre *
+									</Label>
+									<Input
+										id='create-contact-person'
+										name='contact_person'
+										placeholder='Nombre del contacto'
+										required
+									/>
+								</div>
+								<div>
+									<Label htmlFor='create-contact-email' className='text-xs'>
+										Email *
+									</Label>
+									<Input
+										id='create-contact-email'
+										name='contact_email'
+										type='email'
+										placeholder='contacto@empresa.com'
+										required
+									/>
+								</div>
+								<div>
+									<Label htmlFor='create-contact-phone' className='text-xs'>
+										Teléfono *
+									</Label>
+									<Input
+										id='create-contact-phone'
+										name='contact_phone'
+										placeholder='+57 300 123-4567'
+										required
+									/>
+								</div>
+							</div>
+						</div>
+						<div>
+							<Checkbox
+								id='create-is-active'
+								name='is_active'
+								defaultChecked={true}
+								label='Proveedor activo'
+							/>
+						</div>
+					</div>
+				</ModalBody>
+				<ModalFooter>
+					<div className='flex justify-end space-x-3'>
+						<Button variant='outline' onClick={() => setCreateModalOpen(false)}>
+							Cancelar
+						</Button>
+						<Button
+							color='amber'
+							onClick={() => {
+								alert('Proveedor creado exitosamente (simulado)');
+								setCreateModalOpen(false);
+							}}>
+							Crear Proveedor
+						</Button>
+					</div>
+				</ModalFooter>
+			</Modal>
+
+			{/* Modal para editar proveedor */}
+			<Modal isOpen={editModalOpen} setIsOpen={setEditModalOpen} size='xl'>
+				<ModalHeader>
+					<h3 className='text-lg font-semibold text-gray-900 dark:text-white'>
+						Editar Proveedor
+					</h3>
+				</ModalHeader>
+				<ModalBody>
+					{selectedSupplier && (
+						<div className='space-y-4'>
+							<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+								<div>
+									<Label htmlFor='edit-name'>Nombre de la Empresa *</Label>
+									<Input
+										id='edit-name'
+										name='name'
+										defaultValue={selectedSupplier.name}
+									/>
+								</div>
+								<div>
+									<Label htmlFor='edit-code'>Código *</Label>
+									<Input
+										id='edit-code'
+										name='code'
+										defaultValue={selectedSupplier.code}
+									/>
+								</div>
+							</div>
+							<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+								<div>
+									<Label htmlFor='edit-email'>Email *</Label>
+									<Input
+										id='edit-email'
+										name='email'
+										type='email'
+										defaultValue={selectedSupplier.email}
+									/>
+								</div>
+								<div>
+									<Label htmlFor='edit-phone'>Teléfono *</Label>
+									<Input
+										id='edit-phone'
+										name='phone'
+										defaultValue={selectedSupplier.phone}
+									/>
+								</div>
+							</div>
+							<div>
+								<Label htmlFor='edit-address'>Dirección *</Label>
+								<Textarea
+									id='edit-address'
+									name='address'
+									defaultValue={selectedSupplier.address}
+									rows={2}
+								/>
+							</div>
+							<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+								<div>
+									<Label htmlFor='edit-city'>Ciudad *</Label>
+									<Input
+										id='edit-city'
+										name='city'
+										defaultValue={selectedSupplier.city}
+									/>
+								</div>
+								<div>
+									<Label htmlFor='edit-category'>Categoría *</Label>
+									<Select
+										id='edit-category'
+										name='category'
+										defaultValue={selectedSupplier.category}>
+										<option value='TECNOLOGIA'>Tecnología</option>
+										<option value='OFICINA'>Oficina</option>
+										<option value='SERVICIOS'>Servicios</option>
+										<option value='INSUMOS'>Insumos</option>
+									</Select>
+								</div>
+							</div>
+							<div>
+								<h4 className='mb-2 text-sm font-medium text-gray-700 dark:text-gray-300'>
+									Contacto Principal
+								</h4>
+								<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
+									<div>
+										<Label htmlFor='edit-contact-person' className='text-xs'>
+											Nombre *
+										</Label>
+										<Input
+											id='edit-contact-person'
+											name='contact_person'
+											defaultValue={selectedSupplier.contact_person}
+										/>
+									</div>
+									<div>
+										<Label htmlFor='edit-contact-email' className='text-xs'>
+											Email *
+										</Label>
+										<Input
+											id='edit-contact-email'
+											name='contact_email'
+											type='email'
+											defaultValue={selectedSupplier.contact_email}
+										/>
+									</div>
+									<div>
+										<Label htmlFor='edit-contact-phone' className='text-xs'>
+											Teléfono *
+										</Label>
+										<Input
+											id='edit-contact-phone'
+											name='contact_phone'
+											defaultValue={selectedSupplier.contact_phone}
+										/>
+									</div>
+								</div>
+							</div>
+							<div>
+								<Checkbox
+									id='edit-is-active'
+									name='is_active'
+									defaultChecked={selectedSupplier.is_active}
+									label='Proveedor activo'
+								/>
+							</div>
+						</div>
+					)}
+				</ModalBody>
+				<ModalFooter>
+					<div className='flex justify-end space-x-3'>
+						<Button
+							variant='outline'
+							onClick={() => {
+								setEditModalOpen(false);
+								setSelectedSupplier(null);
+							}}>
+							Cancelar
+						</Button>
+						<Button
+							color='amber'
+							onClick={() => {
+								alert('Proveedor actualizado exitosamente (simulado)');
+								setEditModalOpen(false);
+								setSelectedSupplier(null);
+							}}>
+							Actualizar Proveedor
+						</Button>
+					</div>
+				</ModalFooter>
+			</Modal>
+
+			{/* Modal para ver detalles del proveedor */}
+			<Modal isOpen={viewModalOpen} setIsOpen={setViewModalOpen} size='xl'>
 				<ModalHeader>
 					<div className='flex items-center space-x-3'>
 						<div className='flex h-10 w-10 items-center justify-center rounded-full bg-orange-100'>
@@ -876,6 +1230,91 @@ const Proveedores: React.FC = () => {
 								Editar Proveedor
 							</Button>
 						)}
+					</div>
+				</ModalFooter>
+			</Modal>
+
+			{/* Modal para confirmar eliminación */}
+			<Modal isOpen={deleteModalOpen} setIsOpen={setDeleteModalOpen} size='sm'>
+				<ModalHeader>
+					<h3 className='text-lg font-semibold text-red-600'>Confirmar Eliminación</h3>
+				</ModalHeader>
+				<ModalBody>
+					{selectedSupplier && (
+						<div className='space-y-4'>
+							<p className='text-gray-700 dark:text-gray-300'>
+								¿Estás seguro de que deseas eliminar el proveedor{' '}
+								<strong>"{selectedSupplier.name}"</strong>?
+							</p>
+
+							{(selectedSupplier.products_count > 0 ||
+								selectedSupplier.orders_count > 0) && (
+								<div className='rounded-md border border-red-200 bg-red-50 p-3'>
+									<div className='flex items-start'>
+										<Icon
+											icon='HeroExclamationTriangle'
+											className='mr-2 mt-0.5 h-5 w-5 text-red-400'
+										/>
+										<div>
+											<h4 className='mb-1 text-sm font-medium text-red-800'>
+												No se puede eliminar
+											</h4>
+											<p className='text-sm text-red-700'>
+												Este proveedor tiene{' '}
+												<strong>
+													{selectedSupplier.products_count} productos
+												</strong>{' '}
+												y{' '}
+												<strong>
+													{selectedSupplier.orders_count} órdenes
+												</strong>{' '}
+												asociadas.
+											</p>
+										</div>
+									</div>
+								</div>
+							)}
+
+							{selectedSupplier.products_count === 0 &&
+								selectedSupplier.orders_count === 0 && (
+									<div className='rounded-md border border-yellow-200 bg-yellow-50 p-3'>
+										<div className='flex items-start'>
+											<Icon
+												icon='HeroExclamationTriangle'
+												className='mr-2 mt-0.5 h-5 w-5 text-yellow-400'
+											/>
+											<div>
+												<h4 className='mb-1 text-sm font-medium text-yellow-800'>
+													Acción irreversible
+												</h4>
+												<p className='text-sm text-yellow-700'>
+													Esta acción no se puede deshacer. El proveedor
+													será eliminado permanentemente.
+												</p>
+											</div>
+										</div>
+									</div>
+								)}
+						</div>
+					)}
+				</ModalBody>
+				<ModalFooter>
+					<div className='flex justify-end space-x-3'>
+						<Button
+							variant='outline'
+							onClick={() => {
+								setDeleteModalOpen(false);
+								setSelectedSupplier(null);
+							}}>
+							Cancelar
+						</Button>
+						{selectedSupplier &&
+							selectedSupplier.products_count === 0 &&
+							selectedSupplier.orders_count === 0 && (
+								<Button color='red' onClick={handleConfirmDelete}>
+									Eliminar Proveedor
+								</Button>
+							)}
 					</div>
 				</ModalFooter>
 			</Modal>

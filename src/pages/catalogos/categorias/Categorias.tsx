@@ -14,6 +14,10 @@ import Subheader, {
 import Icon from '../../../components/icon/Icon';
 import Input from '../../../components/form/Input';
 import SelectReact from '../../../components/form/SelectReact';
+import Select from '../../../components/form/Select';
+import Textarea from '../../../components/form/Textarea';
+import Checkbox from '../../../components/form/Checkbox';
+import Label from '../../../components/form/Label';
 import Badge from '../../../components/ui/Badge';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '../../../components/ui/Modal';
 import { TSelectOption, TSelectOptions } from '../../../components/form/SelectReact';
@@ -169,11 +173,11 @@ const Categorias: React.FC = () => {
 					description: 'Teclados, ratones, monitores, cables y otros accesorios',
 					level: 1,
 					path: '/access',
-					is_active: true,
+					is_active: false,
 					color: '#F59E0B',
 					icon: 'HeroCube',
 					sort_order: 2,
-					products_count: 156,
+					products_count: 0, // ✅ Sin productos, pero tiene subcategorías (ID 5)
 					created_at: '2024-01-10T09:00:00Z',
 					updated_at: '2024-01-10T09:00:00Z',
 				},
@@ -211,6 +215,22 @@ const Categorias: React.FC = () => {
 					created_at: '2024-01-10T09:30:00Z',
 					updated_at: '2024-01-10T09:30:00Z',
 				},
+				{
+					id: 7,
+					company_id: 1,
+					name: 'Categoría de Prueba',
+					code: 'TEST',
+					description: 'Categoría vacía para probar eliminación jsajsajsa 😂',
+					level: 1,
+					path: '/test',
+					is_active: true,
+					color: '#F97316',
+					icon: 'HeroBeaker',
+					sort_order: 3,
+					products_count: 0,
+					created_at: '2024-01-11T10:00:00Z',
+					updated_at: '2024-01-11T10:00:00Z',
+				},
 			];
 
 			setCategories(mockCategories);
@@ -224,12 +244,12 @@ const Categorias: React.FC = () => {
 	const loadStats = async () => {
 		try {
 			const mockStats: ICategoryStats = {
-				total_categories: 6,
+				total_categories: 7,
 				active_categories: 6,
-				inactive_categories: 0,
-				main_categories: 2,
+				inactive_categories: 1,
+				main_categories: 3,
 				sub_categories: 4,
-				products_categorized: 368,
+				products_categorized: 212, // 89+45+32+34+12+0+0 = 212
 			};
 
 			setStats(mockStats);
@@ -276,13 +296,54 @@ const Categorias: React.FC = () => {
 		if (!selectedCategory) return;
 
 		try {
+			setLoading(true);
 			console.log('Deleting category:', selectedCategory.id);
+
+			// CU007.3 - Validación: Verificar que la categoría no tenga subcategorías dependientes
+			const hasSubcategories = categories.some(
+				(cat) => cat.parent_id === selectedCategory.id,
+			);
+
+			if (hasSubcategories) {
+				// Bloquear eliminación si tiene subcategorías
+				alert(
+					'❌ No se puede eliminar esta categoría porque tiene subcategorías dependientes. ' +
+						'Primero debe reasignar o eliminar las subcategorías.',
+				);
+				setLoading(false);
+				return;
+			}
+
+			// CU007.3 - Verificar que la categoría no tenga productos (ya implementado en UI)
+			if (selectedCategory.products_count > 0) {
+				alert(
+					'❌ No se puede eliminar esta categoría porque tiene productos asociados. ' +
+						'Primero debe reasignar los productos a otra categoría.',
+				);
+				setLoading(false);
+				return;
+			}
+
+			// Simular eliminación en el backend
 			await new Promise((resolve) => setTimeout(resolve, 1000));
+
+			// CU007.3 - Eliminar el registro (en este caso simulamos eliminación real)
+			// En un backend real, se podría marcar como is_active = false en lugar de eliminar
+			console.log(`✅ Categoría "${selectedCategory.name}" eliminada exitosamente`);
+
 			setDeleteModalOpen(false);
 			setSelectedCategory(null);
+
+			// CU007.3 - Actualizar listado sin la categoría eliminada
 			await Promise.all([loadCategories(), loadStats()]);
+
+			// CU007.3 - Mostrar mensaje de éxito
+			alert(`✅ La categoría "${selectedCategory.name}" ha sido eliminada exitosamente.`);
 		} catch (error) {
 			console.error('Error deleting category:', error);
+			alert('❌ Error al eliminar la categoría. Por favor intente nuevamente.');
+		} finally {
+			setLoading(false);
 		}
 	};
 
@@ -401,9 +462,20 @@ const Categorias: React.FC = () => {
 										size='sm'
 										variant='outline'
 										onClick={() => handleDeleteCategory(category)}
-										isDisable={category.products_count > 0}
+										isDisable={(() => {
+											// CU007.3 - Bloquear si tiene productos asociados
+											const hasProducts = category.products_count > 0;
+
+											// CU007.3 - Bloquear si tiene subcategorías dependientes
+											const hasSubcategories = categories.some(
+												(cat) => cat.parent_id === category.id,
+											);
+
+											return hasProducts || hasSubcategories;
+										})()}
 										className={`${
-											category.products_count > 0
+											category.products_count > 0 ||
+											categories.some((cat) => cat.parent_id === category.id)
 												? 'cursor-not-allowed text-gray-400'
 												: 'text-red-600 hover:text-red-900'
 										}`}>
@@ -607,6 +679,312 @@ const Categorias: React.FC = () => {
 				</Card>
 			</Container>
 
+			{/* Modal de Crear Categoría */}
+			<Modal isOpen={createModalOpen} setIsOpen={setCreateModalOpen} size='xl'>
+				<ModalHeader>
+					<div className='flex items-center space-x-3'>
+						<div className='flex h-10 w-10 items-center justify-center rounded-full bg-violet-100'>
+							<Icon icon='HeroPlus' className='h-6 w-6 text-violet-600' />
+						</div>
+						<div>
+							<h2 className='text-xl font-bold text-gray-900'>Nueva Categoría</h2>
+							<p className='text-sm text-gray-600'>
+								Crear una nueva categoría para organizar productos
+							</p>
+						</div>
+					</div>
+				</ModalHeader>
+				<ModalBody>
+					<div className='space-y-6'>
+						<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+							<div>
+								<Label htmlFor='code'>Código *</Label>
+								<Input
+									id='code'
+									name='code'
+									placeholder='COMP, ACCESS, etc.'
+									autoComplete='off'
+								/>
+							</div>
+
+							<div>
+								<Label htmlFor='name'>Nombre *</Label>
+								<Input
+									id='name'
+									name='name'
+									placeholder='Nombre de la categoría'
+									autoComplete='off'
+								/>
+							</div>
+						</div>
+
+						<div>
+							<Label htmlFor='description'>Descripción</Label>
+							<Textarea
+								id='description'
+								name='description'
+								placeholder='Descripción de la categoría'
+								rows={3}
+							/>
+						</div>
+
+						<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+							<div>
+								<Label htmlFor='parent_id'>Categoría Padre</Label>
+								<Select
+									id='parent_id'
+									name='parent_id'
+									placeholder='Sin categoría padre (Nivel 1)'>
+									<option value=''>Sin categoría padre (Nivel 1)</option>
+									<option value='1'>Equipos de Cómputo</option>
+									<option value='4'>Accesorios y Periféricos</option>
+								</Select>
+							</div>
+
+							<div>
+								<Label htmlFor='color'>Color</Label>
+								<div className='flex space-x-2'>
+									<input
+										type='color'
+										id='colorPicker'
+										defaultValue='#3B82F6'
+										className='h-10 w-16 rounded-lg border border-gray-300 bg-transparent'
+									/>
+									<Input
+										id='color'
+										name='color'
+										defaultValue='#3B82F6'
+										placeholder='#3B82F6'
+										className='flex-1'
+									/>
+								</div>
+							</div>
+						</div>
+
+						<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+							<div>
+								<Label htmlFor='icon'>Icono</Label>
+								<Select id='icon' name='icon' placeholder='Seleccionar icono...'>
+									<option value=''>Seleccionar icono...</option>
+									<option value='HeroComputerDesktop'>💻 Computadora</option>
+									<option value='HeroDevicePhoneMobile'>📱 Móvil/Laptop</option>
+									<option value='HeroCube'>📦 General</option>
+									<option value='HeroRectangleStack'>⌨️ Teclado</option>
+									<option value='HeroFire'>🔥 Gaming</option>
+								</Select>
+							</div>
+
+							<div>
+								<Label htmlFor='sort_order'>Orden</Label>
+								<Input
+									id='sort_order'
+									name='sort_order'
+									type='number'
+									placeholder='1'
+									min={1}
+								/>
+							</div>
+						</div>
+
+						<div className='flex items-center'>
+							<Checkbox id='is_active' name='is_active' defaultChecked />
+							<Label htmlFor='is_active' className='ml-2'>
+								Categoría activa
+							</Label>
+						</div>
+					</div>
+				</ModalBody>
+				<ModalFooter>
+					<div className='flex justify-end space-x-3'>
+						<Button variant='outline' onClick={() => setCreateModalOpen(false)}>
+							Cancelar
+						</Button>
+						<Button
+							color='violet'
+							onClick={() => {
+								console.log('Crear nueva categoría');
+								setCreateModalOpen(false);
+							}}>
+							Crear Categoría
+						</Button>
+					</div>
+				</ModalFooter>
+			</Modal>
+
+			{/* Modal de Editar Categoría */}
+			<Modal isOpen={editModalOpen} setIsOpen={setEditModalOpen} size='xl'>
+				<ModalHeader>
+					<div className='flex items-center space-x-3'>
+						<div className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-100'>
+							<Icon icon='HeroPencilSquare' className='h-6 w-6 text-blue-600' />
+						</div>
+						<div>
+							<h2 className='text-xl font-bold text-gray-900'>Editar Categoría</h2>
+							<p className='text-sm text-gray-600'>
+								Modificar información de la categoría
+							</p>
+						</div>
+					</div>
+				</ModalHeader>
+				<ModalBody>
+					{selectedCategory && (
+						<div className='space-y-6'>
+							<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+								<div>
+									<Label htmlFor='editCode'>Código *</Label>
+									<Input
+										id='editCode'
+										name='code'
+										defaultValue={selectedCategory.code}
+										autoComplete='off'
+									/>
+								</div>
+
+								<div>
+									<Label htmlFor='editName'>Nombre *</Label>
+									<Input
+										id='editName'
+										name='name'
+										defaultValue={selectedCategory.name}
+										autoComplete='off'
+									/>
+								</div>
+							</div>
+
+							<div>
+								<Label htmlFor='editDescription'>Descripción</Label>
+								<Textarea
+									id='editDescription'
+									name='description'
+									defaultValue={selectedCategory.description}
+									rows={3}
+								/>
+							</div>
+
+							<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+								<div>
+									<Label htmlFor='editParentId'>Categoría Padre</Label>
+									<Select
+										id='editParentId'
+										name='parent_id'
+										defaultValue={selectedCategory.parent_id?.toString() || ''}>
+										<option value=''>Sin categoría padre (Nivel 1)</option>
+										<option value='1'>Equipos de Cómputo</option>
+										<option value='4'>Accesorios y Periféricos</option>
+									</Select>
+								</div>
+
+								<div>
+									<Label htmlFor='editColor'>Color</Label>
+									<div className='flex space-x-2'>
+										<input
+											type='color'
+											id='editColorPicker'
+											defaultValue={selectedCategory.color}
+											className='h-10 w-16 rounded-lg border border-gray-300 bg-transparent'
+										/>
+										<Input
+											id='editColor'
+											name='color'
+											defaultValue={selectedCategory.color}
+											className='flex-1'
+										/>
+									</div>
+								</div>
+							</div>
+
+							<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+								<div>
+									<Label htmlFor='editIcon'>Icono</Label>
+									<Select
+										id='editIcon'
+										name='icon'
+										defaultValue={selectedCategory.icon || ''}>
+										<option value=''>Seleccionar icono...</option>
+										<option value='HeroComputerDesktop'>💻 Computadora</option>
+										<option value='HeroDevicePhoneMobile'>
+											📱 Móvil/Laptop
+										</option>
+										<option value='HeroCube'>📦 General</option>
+										<option value='HeroRectangleStack'>⌨️ Teclado</option>
+										<option value='HeroFire'>🔥 Gaming</option>
+									</Select>
+								</div>
+
+								<div>
+									<Label htmlFor='editSortOrder'>Orden</Label>
+									<Input
+										id='editSortOrder'
+										name='sort_order'
+										type='number'
+										defaultValue={selectedCategory.sort_order}
+										min={1}
+									/>
+								</div>
+							</div>
+
+							<div className='flex items-center'>
+								<Checkbox
+									id='editIsActive'
+									name='is_active'
+									defaultChecked={selectedCategory.is_active}
+								/>
+								<Label htmlFor='editIsActive' className='ml-2'>
+									Categoría activa
+								</Label>
+							</div>
+
+							<div className='rounded-lg bg-gray-50 p-4'>
+								<div className='text-sm text-gray-700'>
+									<p className='mb-2 font-semibold text-gray-900'>
+										Información del sistema:
+									</p>
+									<div className='grid grid-cols-2 gap-4'>
+										<div>
+											<span className='font-medium'>Nivel actual:</span>
+											<p>{selectedCategory.level}</p>
+										</div>
+										<div>
+											<span className='font-medium'>Ruta:</span>
+											<p className='font-mono text-xs'>
+												{selectedCategory.path}
+											</p>
+										</div>
+										<div className='col-span-2'>
+											<span className='font-medium'>
+												Productos asociados:
+											</span>
+											<p>{selectedCategory.products_count}</p>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					)}
+				</ModalBody>
+				<ModalFooter>
+					<div className='flex justify-end space-x-3'>
+						<Button
+							variant='outline'
+							onClick={() => {
+								setEditModalOpen(false);
+								setSelectedCategory(null);
+							}}>
+							Cancelar
+						</Button>
+						<Button
+							color='blue'
+							onClick={() => {
+								console.log('Actualizar categoría:', selectedCategory?.id);
+								setEditModalOpen(false);
+								setSelectedCategory(null);
+							}}>
+							Guardar Cambios
+						</Button>
+					</div>
+				</ModalFooter>
+			</Modal>
+
 			{/* Modal de Confirmación de Eliminación */}
 			<Modal isOpen={deleteModalOpen} setIsOpen={setDeleteModalOpen}>
 				<ModalHeader>
@@ -644,14 +1022,71 @@ const Categorias: React.FC = () => {
 											<p>
 												Código: <strong>{selectedCategory.code}</strong>
 											</p>
+
+											{/* CU007.3 - Validación de productos asociados */}
 											{selectedCategory.products_count > 0 && (
-												<p className='mt-2 font-medium text-red-800'>
-													⚠️ Esta categoría tiene{' '}
-													{selectedCategory.products_count} productos
-													asociados. No se puede eliminar hasta que todos
-													los productos sean reasignados.
-												</p>
+												<div className='mt-3 rounded bg-red-100 p-2'>
+													<p className='font-medium text-red-800'>
+														⚠️ Esta categoría tiene{' '}
+														<strong>
+															{selectedCategory.products_count}{' '}
+															productos
+														</strong>{' '}
+														asociados.
+													</p>
+													<p className='text-red-700'>
+														No se puede eliminar hasta que todos los
+														productos sean reasignados a otra categoría.
+													</p>
+												</div>
 											)}
+
+											{/* CU007.3 - Validación de subcategorías dependientes */}
+											{(() => {
+												const subcategories = categories.filter(
+													(cat) => cat.parent_id === selectedCategory.id,
+												);
+												return subcategories.length > 0 ? (
+													<div className='mt-3 rounded bg-red-100 p-2'>
+														<p className='font-medium text-red-800'>
+															⚠️ Esta categoría tiene{' '}
+															<strong>
+																{subcategories.length} subcategorías
+															</strong>{' '}
+															dependientes:
+														</p>
+														<ul className='mt-1 text-red-700'>
+															{subcategories.map((sub) => (
+																<li key={sub.id} className='ml-2'>
+																	• {sub.name} ({sub.code})
+																</li>
+															))}
+														</ul>
+														<p className='mt-1 text-red-700'>
+															No se puede eliminar hasta que las
+															subcategorías sean reasignadas o
+															eliminadas.
+														</p>
+													</div>
+												) : null;
+											})()}
+
+											{/* Mensaje de confirmación si se puede eliminar */}
+											{selectedCategory.products_count === 0 &&
+												!categories.some(
+													(cat) => cat.parent_id === selectedCategory.id,
+												) && (
+													<div className='mt-3 rounded bg-green-100 p-2'>
+														<p className='font-medium text-green-800'>
+															✅ Esta categoría se puede eliminar de
+															forma segura.
+														</p>
+														<p className='text-green-700'>
+															No tiene productos ni subcategorías
+															asociadas.
+														</p>
+													</div>
+												)}
 										</div>
 									</div>
 								</div>
@@ -672,21 +1107,41 @@ const Categorias: React.FC = () => {
 						<Button
 							color='red'
 							onClick={handleConfirmDelete}
-							isDisable={
-								selectedCategory?.products_count &&
-								selectedCategory.products_count > 0
-									? true
-									: false
-							}
+							isDisable={(() => {
+								if (!selectedCategory) return true;
+
+								// CU007.3 - Bloquear si tiene productos asociados
+								const hasProducts = selectedCategory.products_count > 0;
+
+								// CU007.3 - Bloquear si tiene subcategorías dependientes
+								const hasSubcategories = categories.some(
+									(cat) => cat.parent_id === selectedCategory.id,
+								);
+
+								return hasProducts || hasSubcategories;
+							})()}
 							isLoading={loading}>
-							Eliminar Categoría
+							{(() => {
+								if (!selectedCategory) return 'Eliminar Categoría';
+
+								const hasProducts = selectedCategory.products_count > 0;
+								const hasSubcategories = categories.some(
+									(cat) => cat.parent_id === selectedCategory.id,
+								);
+
+								if (hasProducts || hasSubcategories) {
+									return 'No se puede eliminar';
+								}
+
+								return 'Eliminar Categoría';
+							})()}
 						</Button>
 					</div>
 				</ModalFooter>
 			</Modal>
 
 			{/* Modal de Vista de Categoría */}
-			<Modal isOpen={viewModalOpen} setIsOpen={setViewModalOpen} size='2xl'>
+			<Modal isOpen={viewModalOpen} setIsOpen={setViewModalOpen}>
 				<ModalHeader>
 					<div className='flex items-center space-x-3'>
 						<div className='flex h-10 w-10 items-center justify-center rounded-full bg-purple-100'>

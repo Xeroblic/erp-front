@@ -4,7 +4,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import Button from '../../../components/ui/Button';
-import Card, { CardHeader, CardBody, CardTitle } from '../../../components/ui/Card';
+import Card, { CardHeader, CardBody, CardTitle, CardFooter } from '../../../components/ui/Card';
 import Container from '../../../components/layouts/Container/Container';
 import PageWrapper from '../../../components/layouts/PageWrapper/PageWrapper';
 import Subheader, {
@@ -14,6 +14,10 @@ import Subheader, {
 import Icon from '../../../components/icon/Icon';
 import Input from '../../../components/form/Input';
 import SelectReact from '../../../components/form/SelectReact';
+import Select from '../../../components/form/Select';
+import Textarea from '../../../components/form/Textarea';
+import Checkbox from '../../../components/form/Checkbox';
+import Label from '../../../components/form/Label';
 import Badge from '../../../components/ui/Badge';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '../../../components/ui/Modal';
 import { TSelectOption, TSelectOptions } from '../../../components/form/SelectReact';
@@ -39,6 +43,7 @@ interface IWarehouse {
 	is_active: boolean;
 	has_climate_control: boolean;
 	has_security_system: boolean;
+	has_loading_dock?: boolean;
 	operating_hours: string;
 	created_at: string;
 	updated_at: string;
@@ -147,6 +152,7 @@ const Bodegas: React.FC = () => {
 					is_active: true,
 					has_climate_control: true,
 					has_security_system: true,
+					has_loading_dock: true,
 					operating_hours: '6:00 AM - 10:00 PM',
 					created_at: '2023-01-15T08:00:00Z',
 					updated_at: '2024-01-20T16:30:00Z',
@@ -173,6 +179,7 @@ const Bodegas: React.FC = () => {
 					is_active: true,
 					has_climate_control: false,
 					has_security_system: true,
+					has_loading_dock: false,
 					operating_hours: '7:00 AM - 7:00 PM',
 					created_at: '2023-03-20T10:15:00Z',
 					updated_at: '2024-01-18T11:45:00Z',
@@ -199,6 +206,7 @@ const Bodegas: React.FC = () => {
 					is_active: true,
 					has_climate_control: true,
 					has_security_system: true,
+					has_loading_dock: true,
 					operating_hours: '6:30 AM - 8:00 PM',
 					created_at: '2023-05-10T14:30:00Z',
 					updated_at: '2024-01-15T09:20:00Z',
@@ -225,6 +233,7 @@ const Bodegas: React.FC = () => {
 					is_active: true,
 					has_climate_control: false,
 					has_security_system: true,
+					has_loading_dock: false,
 					operating_hours: '7:00 AM - 6:00 PM',
 					created_at: '2023-08-05T11:00:00Z',
 					updated_at: '2024-01-10T15:15:00Z',
@@ -251,9 +260,37 @@ const Bodegas: React.FC = () => {
 					is_active: false,
 					has_climate_control: false,
 					has_security_system: false,
+					has_loading_dock: false,
 					operating_hours: 'Variable según evento',
 					created_at: '2023-11-15T16:00:00Z',
 					updated_at: '2023-12-20T10:00:00Z',
+					products_count: 0,
+					total_value: 0,
+				},
+				{
+					id: 99,
+					company_id: 1,
+					code: 'WH-TEST-099',
+					name: 'Bodega de Prueba - Eliminable',
+					description: 'Esta bodega es solo para pruebas y puede ser eliminada',
+					address: 'Dirección de prueba 123',
+					city: 'Ciudad Test',
+					country: 'Colombia',
+					postal_code: '000000',
+					phone: '+57 1 000-0000',
+					email: 'test@ejemplo.com',
+					manager_name: 'Usuario Test',
+					manager_phone: '+57 300 000-0000',
+					warehouse_type: 'TEMPORAL',
+					max_capacity: 100,
+					current_capacity: 0,
+					is_active: true,
+					has_climate_control: false,
+					has_security_system: false,
+					has_loading_dock: false,
+					operating_hours: 'Solo para pruebas',
+					created_at: '2024-01-01T00:00:00Z',
+					updated_at: '2024-01-01T00:00:00Z',
 					products_count: 0,
 					total_value: 0,
 				},
@@ -330,6 +367,79 @@ const Bodegas: React.FC = () => {
 			await Promise.all([loadWarehouses(), loadStats()]);
 		} catch (error) {
 			console.error('Error deleting warehouse:', error);
+		}
+	};
+
+	// Funciones de manejo de formularios
+	const handleCreateSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+		e.preventDefault();
+		const formData = new FormData(e.currentTarget);
+
+		try {
+			const newWarehouse = {
+				name: formData.get('name') as string,
+				code: formData.get('code') as string,
+				description: (formData.get('description') as string) || '',
+				warehouse_type: formData.get('warehouse_type') as string,
+				capacity: parseFloat(formData.get('capacity') as string) || 0,
+				address: formData.get('address') as string,
+				city: formData.get('city') as string,
+				country: formData.get('country') as string,
+				phone: (formData.get('phone') as string) || '',
+				manager: (formData.get('manager') as string) || '',
+				email: (formData.get('email') as string) || '',
+				operating_hours: (formData.get('operating_hours') as string) || '',
+				has_climate_control: formData.get('has_climate_control') === 'on',
+				has_security_system: formData.get('has_security_system') === 'on',
+				has_loading_dock: formData.get('has_loading_dock') === 'on',
+				is_active: formData.get('is_active') === 'on',
+			};
+
+			console.log('Creating warehouse:', newWarehouse);
+			await new Promise((resolve) => setTimeout(resolve, 1000));
+
+			setCreateModalOpen(false);
+			await Promise.all([loadWarehouses(), loadStats()]);
+		} catch (error) {
+			console.error('Error creating warehouse:', error);
+		}
+	};
+
+	const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+		e.preventDefault();
+		if (!selectedWarehouse) return;
+
+		const formData = new FormData(e.currentTarget);
+
+		try {
+			const updatedWarehouse = {
+				id: selectedWarehouse.id,
+				name: formData.get('name') as string,
+				code: formData.get('code') as string,
+				description: (formData.get('description') as string) || '',
+				warehouse_type: formData.get('warehouse_type') as string,
+				capacity: parseFloat(formData.get('capacity') as string) || 0,
+				address: formData.get('address') as string,
+				city: formData.get('city') as string,
+				country: formData.get('country') as string,
+				phone: (formData.get('phone') as string) || '',
+				manager: (formData.get('manager') as string) || '',
+				email: (formData.get('email') as string) || '',
+				operating_hours: (formData.get('operating_hours') as string) || '',
+				has_climate_control: formData.get('has_climate_control') === 'on',
+				has_security_system: formData.get('has_security_system') === 'on',
+				has_loading_dock: formData.get('has_loading_dock') === 'on',
+				is_active: formData.get('is_active') === 'on',
+			};
+
+			console.log('Updating warehouse:', updatedWarehouse);
+			await new Promise((resolve) => setTimeout(resolve, 1000));
+
+			setEditModalOpen(false);
+			setSelectedWarehouse(null);
+			await Promise.all([loadWarehouses(), loadStats()]);
+		} catch (error) {
+			console.error('Error updating warehouse:', error);
 		}
 	};
 
@@ -656,11 +766,9 @@ const Bodegas: React.FC = () => {
 					<CardBody>
 						<div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
 							<div>
-								<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-									Buscar
-								</label>
+								<Label htmlFor='filter-search'>Buscar</Label>
 								<Input
-									type='text'
+									id='filter-search'
 									name='search'
 									placeholder='Nombre, código, ciudad...'
 									value={filters.search || ''}
@@ -669,9 +777,7 @@ const Bodegas: React.FC = () => {
 							</div>
 
 							<div>
-								<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-									Tipo
-								</label>
+								<Label htmlFor='filter-type'>Tipo</Label>
 								<SelectReact
 									name='warehouse_type'
 									options={typeOptions}
@@ -690,9 +796,7 @@ const Bodegas: React.FC = () => {
 							</div>
 
 							<div>
-								<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-									Clima Controlado
-								</label>
+								<Label htmlFor='filter-climate'>Clima Controlado</Label>
 								<SelectReact
 									name='climate'
 									options={climateOptions}
@@ -717,9 +821,7 @@ const Bodegas: React.FC = () => {
 							</div>
 
 							<div>
-								<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-									Estado
-								</label>
+								<Label htmlFor='filter-status'>Estado</Label>
 								<SelectReact
 									name='status'
 									options={statusOptions}
@@ -742,6 +844,11 @@ const Bodegas: React.FC = () => {
 							</div>
 						</div>
 					</CardBody>
+					<CardFooter>
+						<Button onClick={clearFilters} variant='outline' className='ml-auto'>
+							Limpiar filtros
+						</Button>
+					</CardFooter>
 				</Card>
 
 				{/* Tabla de Bodegas */}
@@ -848,8 +955,484 @@ const Bodegas: React.FC = () => {
 				</ModalFooter>
 			</Modal>
 
+			{/* Modal de Creación de Bodega */}
+			<Modal isOpen={createModalOpen} setIsOpen={setCreateModalOpen} size='lg'>
+				<ModalHeader>
+					<div className='flex items-center space-x-3'>
+						<div className='flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100'>
+							<Icon icon='HeroPlus' className='h-6 w-6 text-emerald-600' />
+						</div>
+						<div>
+							<h2 className='text-xl font-bold text-gray-900'>Crear Nueva Bodega</h2>
+							<p className='text-sm text-gray-600'>
+								Registra una nueva bodega en el sistema
+							</p>
+						</div>
+					</div>
+				</ModalHeader>
+				<ModalBody>
+					<form
+						id='createWarehouseForm'
+						className='space-y-4'
+						onSubmit={handleCreateSubmit}>
+						<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+							<div>
+								<Label htmlFor='create-name' className='required'>
+									Nombre
+								</Label>
+								<Input
+									id='create-name'
+									name='name'
+									type='text'
+									placeholder='Ej: Bodega Central'
+									required
+								/>
+							</div>
+							<div>
+								<Label htmlFor='create-code' className='required'>
+									Código
+								</Label>
+								<Input
+									id='create-code'
+									name='code'
+									type='text'
+									placeholder='Ej: BOD001'
+									required
+								/>
+							</div>
+						</div>
+
+						<div>
+							<Label htmlFor='create-description'>Descripción</Label>
+							<Textarea
+								id='create-description'
+								name='description'
+								rows={3}
+								placeholder='Descripción detallada de la bodega...'
+							/>
+						</div>
+
+						<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+							<div>
+								<Label htmlFor='create-type' className='required'>
+									Tipo
+								</Label>
+								<Select
+									defaultValue='storage'
+									id='create-type'
+									name='warehouse_type'>
+									<option value='storage'>Almacenamiento</option>
+									<option value='distribution'>Distribución</option>
+									<option value='cold_storage'>Almacén Frío</option>
+									<option value='transit'>Tránsito</option>
+									<option value='production'>Producción</option>
+								</Select>
+							</div>
+							<div>
+								<Label htmlFor='create-capacity'>Capacidad (m³)</Label>
+								<Input
+									id='create-capacity'
+									name='capacity'
+									type='number'
+									min='0'
+									step='0.01'
+									placeholder='Ej: 1500.00'
+								/>
+							</div>
+						</div>
+
+						<div>
+							<Label htmlFor='create-address' className='required'>
+								Dirección
+							</Label>
+							<Input
+								id='create-address'
+								name='address'
+								type='text'
+								placeholder='Dirección completa'
+								required
+							/>
+						</div>
+
+						<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+							<div>
+								<Label htmlFor='create-city' className='required'>
+									Ciudad
+								</Label>
+								<Input
+									id='create-city'
+									name='city'
+									type='text'
+									placeholder='Ciudad'
+									required
+								/>
+							</div>
+							<div>
+								<Label htmlFor='create-country' className='required'>
+									País
+								</Label>
+								<Input
+									id='create-country'
+									name='country'
+									type='text'
+									placeholder='País'
+									required
+								/>
+							</div>
+						</div>
+
+						<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+							<div>
+								<Label htmlFor='create-phone'>Teléfono</Label>
+								<Input
+									id='create-phone'
+									name='phone'
+									type='tel'
+									placeholder='Teléfono de contacto'
+								/>
+							</div>
+							<div>
+								<Label htmlFor='create-manager'>Gerente</Label>
+								<Input
+									id='create-manager'
+									name='manager'
+									type='text'
+									placeholder='Nombre del gerente'
+								/>
+							</div>
+						</div>
+
+						<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+							<div>
+								<Label htmlFor='create-email'>Email</Label>
+								<Input
+									id='create-email'
+									name='email'
+									type='email'
+									placeholder='email@ejemplo.com'
+								/>
+							</div>
+							<div>
+								<Label htmlFor='create-operating-hours'>Horario</Label>
+								<Input
+									id='create-operating-hours'
+									name='operating_hours'
+									type='text'
+									placeholder='Ej: 8:00 AM - 6:00 PM'
+								/>
+							</div>
+						</div>
+
+						<div className='space-y-3'>
+							<h4 className='font-medium text-gray-900'>Características</h4>
+							<div className='grid grid-cols-1 gap-3 md:grid-cols-2'>
+								<div className='flex items-center space-x-2'>
+									<Checkbox
+										id='create-climate-control'
+										name='has_climate_control'
+									/>
+									<Label htmlFor='create-climate-control'>Clima Controlado</Label>
+								</div>
+								<div className='flex items-center space-x-2'>
+									<Checkbox
+										id='create-security-system'
+										name='has_security_system'
+									/>
+									<Label htmlFor='create-security-system'>
+										Sistema de Seguridad
+									</Label>
+								</div>
+								<div className='flex items-center space-x-2'>
+									<Checkbox id='create-loading-dock' name='has_loading_dock' />
+									<Label htmlFor='create-loading-dock'>Muelle de Carga</Label>
+								</div>
+								<div className='flex items-center space-x-2'>
+									<Checkbox id='create-active' name='is_active' defaultChecked />
+									<Label htmlFor='create-active'>Activo</Label>
+								</div>
+							</div>
+						</div>
+					</form>
+				</ModalBody>
+				<ModalFooter>
+					<div className='flex justify-end space-x-2'>
+						<Button variant='outline' onClick={() => setCreateModalOpen(false)}>
+							Cancelar
+						</Button>
+						<Button
+							color='emerald'
+							onClick={(e) => {
+								e.preventDefault();
+								const form = document.getElementById(
+									'createWarehouseForm',
+								) as HTMLFormElement;
+								if (form)
+									handleCreateSubmit({
+										preventDefault: () => {},
+										currentTarget: form,
+									} as any);
+							}}>
+							Crear Bodega
+						</Button>
+					</div>
+				</ModalFooter>
+			</Modal>
+
+			{/* Modal de Edición de Bodega */}
+			<Modal isOpen={editModalOpen} setIsOpen={setEditModalOpen} size='lg'>
+				<ModalHeader>
+					<div className='flex items-center space-x-3'>
+						<div className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-100'>
+							<Icon icon='HeroPencil' className='h-6 w-6 text-blue-600' />
+						</div>
+						<div>
+							<h2 className='text-xl font-bold text-gray-900'>Editar Bodega</h2>
+							<p className='text-sm text-gray-600'>
+								Actualiza la información de la bodega
+							</p>
+						</div>
+					</div>
+				</ModalHeader>
+				<ModalBody>
+					{selectedWarehouse && (
+						<form
+							id='editWarehouseForm'
+							className='space-y-4'
+							onSubmit={handleEditSubmit}>
+							<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+								<div>
+									<Label htmlFor='edit-name' className='required'>
+										Nombre
+									</Label>
+									<Input
+										id='edit-name'
+										name='name'
+										type='text'
+										defaultValue={selectedWarehouse.name}
+										placeholder='Ej: Bodega Central'
+										required
+									/>
+								</div>
+								<div>
+									<Label htmlFor='edit-code' className='required'>
+										Código
+									</Label>
+									<Input
+										id='edit-code'
+										name='code'
+										type='text'
+										defaultValue={selectedWarehouse.code}
+										placeholder='Ej: BOD001'
+										required
+									/>
+								</div>
+							</div>
+
+							<div>
+								<Label htmlFor='edit-description'>Descripción</Label>
+								<Textarea
+									id='edit-description'
+									name='description'
+									rows={3}
+									defaultValue={selectedWarehouse.description}
+									placeholder='Descripción detallada de la bodega...'
+								/>
+							</div>
+
+							<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+								<div>
+									<Label htmlFor='edit-type' className='required'>
+										Tipo
+									</Label>
+									<Select
+										defaultValue={selectedWarehouse.warehouse_type}
+										id='edit-type'
+										name='warehouse_type'>
+										<option value='storage'>Almacenamiento</option>
+										<option value='distribution'>Distribución</option>
+										<option value='cold_storage'>Almacén Frío</option>
+										<option value='transit'>Tránsito</option>
+										<option value='production'>Producción</option>
+									</Select>
+								</div>
+								<div>
+									<Label htmlFor='edit-capacity'>Capacidad (m³)</Label>
+									<Input
+										id='edit-capacity'
+										name='capacity'
+										type='number'
+										min='0'
+										step='0.01'
+										defaultValue={selectedWarehouse.max_capacity}
+										placeholder='Ej: 1500.00'
+									/>
+								</div>
+							</div>
+
+							<div>
+								<Label htmlFor='edit-address' className='required'>
+									Dirección
+								</Label>
+								<Input
+									id='edit-address'
+									name='address'
+									type='text'
+									defaultValue={selectedWarehouse.address}
+									placeholder='Dirección completa'
+									required
+								/>
+							</div>
+
+							<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+								<div>
+									<Label htmlFor='edit-city' className='required'>
+										Ciudad
+									</Label>
+									<Input
+										id='edit-city'
+										name='city'
+										type='text'
+										defaultValue={selectedWarehouse.city}
+										placeholder='Ciudad'
+										required
+									/>
+								</div>
+								<div>
+									<Label htmlFor='edit-country' className='required'>
+										País
+									</Label>
+									<Input
+										id='edit-country'
+										name='country'
+										type='text'
+										defaultValue={selectedWarehouse.country}
+										placeholder='País'
+										required
+									/>
+								</div>
+							</div>
+
+							<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+								<div>
+									<Label htmlFor='edit-phone'>Teléfono</Label>
+									<Input
+										id='edit-phone'
+										name='phone'
+										type='tel'
+										defaultValue={selectedWarehouse.phone}
+										placeholder='Teléfono de contacto'
+									/>
+								</div>
+								<div>
+									<Label htmlFor='edit-manager'>Gerente</Label>
+									<Input
+										id='edit-manager'
+										name='manager'
+										type='text'
+										defaultValue={selectedWarehouse.manager_name}
+										placeholder='Nombre del gerente'
+									/>
+								</div>
+							</div>
+
+							<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+								<div>
+									<Label htmlFor='edit-email'>Email</Label>
+									<Input
+										id='edit-email'
+										name='email'
+										type='email'
+										defaultValue={selectedWarehouse.email}
+										placeholder='email@ejemplo.com'
+									/>
+								</div>
+								<div>
+									<Label htmlFor='edit-operating-hours'>Horario</Label>
+									<Input
+										id='edit-operating-hours'
+										name='operating_hours'
+										type='text'
+										defaultValue={selectedWarehouse.operating_hours}
+										placeholder='Ej: 8:00 AM - 6:00 PM'
+									/>
+								</div>
+							</div>
+
+							<div className='space-y-3'>
+								<h4 className='font-medium text-gray-900'>Características</h4>
+								<div className='grid grid-cols-1 gap-3 md:grid-cols-2'>
+									<div className='flex items-center space-x-2'>
+										<Checkbox
+											id='edit-climate-control'
+											name='has_climate_control'
+											defaultChecked={selectedWarehouse.has_climate_control}
+										/>
+										<Label htmlFor='edit-climate-control'>
+											Clima Controlado
+										</Label>
+									</div>
+									<div className='flex items-center space-x-2'>
+										<Checkbox
+											id='edit-security-system'
+											name='has_security_system'
+											defaultChecked={selectedWarehouse.has_security_system}
+										/>
+										<Label htmlFor='edit-security-system'>
+											Sistema de Seguridad
+										</Label>
+									</div>
+									<div className='flex items-center space-x-2'>
+										<Checkbox
+											id='edit-loading-dock'
+											name='has_loading_dock'
+											defaultChecked={selectedWarehouse.has_loading_dock}
+										/>
+										<Label htmlFor='edit-loading-dock'>Muelle de Carga</Label>
+									</div>
+									<div className='flex items-center space-x-2'>
+										<Checkbox
+											id='edit-active'
+											name='is_active'
+											defaultChecked={selectedWarehouse.is_active}
+										/>
+										<Label htmlFor='edit-active'>Activo</Label>
+									</div>
+								</div>
+							</div>
+						</form>
+					)}
+				</ModalBody>
+				<ModalFooter>
+					<div className='flex justify-end space-x-2'>
+						<Button
+							variant='outline'
+							onClick={() => {
+								setEditModalOpen(false);
+								setSelectedWarehouse(null);
+							}}>
+							Cancelar
+						</Button>
+						<Button
+							color='blue'
+							onClick={(e) => {
+								e.preventDefault();
+								const form = document.getElementById(
+									'editWarehouseForm',
+								) as HTMLFormElement;
+								if (form)
+									handleEditSubmit({
+										preventDefault: () => {},
+										currentTarget: form,
+									} as any);
+							}}>
+							Guardar Cambios
+						</Button>
+					</div>
+				</ModalFooter>
+			</Modal>
+
 			{/* Modal de Vista de Bodega */}
-			<Modal isOpen={viewModalOpen} setIsOpen={setViewModalOpen} size='2xl'>
+			<Modal isOpen={viewModalOpen} setIsOpen={setViewModalOpen} size='xl'>
 				<ModalHeader>
 					<div className='flex items-center space-x-3'>
 						<div className='flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100'>

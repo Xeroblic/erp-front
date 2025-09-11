@@ -4,7 +4,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import Button from '../../../components/ui/Button';
-import Card, { CardHeader, CardBody, CardTitle } from '../../../components/ui/Card';
+import Card, { CardHeader, CardBody, CardTitle, CardFooter } from '../../../components/ui/Card';
 import Container from '../../../components/layouts/Container/Container';
 import PageWrapper from '../../../components/layouts/PageWrapper/PageWrapper';
 import Subheader, {
@@ -14,6 +14,10 @@ import Subheader, {
 import Icon from '../../../components/icon/Icon';
 import Input from '../../../components/form/Input';
 import SelectReact from '../../../components/form/SelectReact';
+import Select from '../../../components/form/Select';
+import Textarea from '../../../components/form/Textarea';
+import Checkbox from '../../../components/form/Checkbox';
+import Label from '../../../components/form/Label';
 import Badge from '../../../components/ui/Badge';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '../../../components/ui/Modal';
 import { TSelectOption, TSelectOptions } from '../../../components/form/SelectReact';
@@ -263,30 +267,30 @@ const Clientes: React.FC = () => {
 				{
 					id: 5,
 					company_id: 1,
-					name: 'Distribuidora Comercial ABC',
-					code: 'COM-005',
-					document_type: 'NIT',
-					document_number: '800789456-3',
-					email: 'ventas@distrabccom',
+					name: 'Cliente Eliminable Test',
+					code: 'ELIM-005',
+					document_type: 'CC',
+					document_number: '87654321',
+					email: 'test@eliminable.co',
 					phone: '+57 1 789-4561',
-					address: 'Zona Industrial Sur',
+					address: 'Calle 60 #25-30',
 					city: 'Cali',
 					country: 'Colombia',
-					contact_person: 'María Elena Vargas',
-					contact_email: 'mvargas@distrabc.com',
+					contact_person: 'Pedro Martínez',
+					contact_email: 'pedro.martinez@eliminable.co',
 					contact_phone: '+57 315 789-4561',
-					credit_limit: 15000000,
-					payment_terms: 30,
-					segment: 'PYME',
-					industry: 'COMERCIO',
-					customer_since: '2022-06-30',
-					is_active: false,
-					created_at: '2022-06-30T11:00:00Z',
-					updated_at: '2023-12-01T09:30:00Z',
-					orders_count: 78,
-					total_sales: 156800000,
-					last_order_date: '2023-11-25',
-					loyalty_score: 45,
+					credit_limit: 2000000,
+					payment_terms: 15,
+					segment: 'PERSONA_NATURAL',
+					industry: 'SERVICIOS',
+					customer_since: '2024-01-15',
+					is_active: true,
+					created_at: '2024-01-15T11:00:00Z',
+					updated_at: '2024-01-15T11:00:00Z',
+					orders_count: 0,
+					total_sales: 0,
+					last_order_date: undefined,
+					loyalty_score: 50,
 				},
 			];
 
@@ -302,12 +306,12 @@ const Clientes: React.FC = () => {
 		try {
 			const mockStats: ICustomerStats = {
 				total_customers: 5,
-				active_customers: 4,
-				inactive_customers: 1,
-				total_sales: 752300000,
-				avg_loyalty_score: 72.2,
+				active_customers: 5,
+				inactive_customers: 0,
+				total_sales: 595600000,
+				avg_loyalty_score: 73.2,
 				top_segment: 'Corporativo',
-				new_this_month: 2,
+				new_this_month: 1,
 			};
 
 			setStats(mockStats);
@@ -494,12 +498,11 @@ const Clientes: React.FC = () => {
 										{customer.segment}
 									</Badge>
 									<div>
-                                        <Badge
-                                            color={getIndustryColor(customer.industry)}
-                                            variant='outline'
-                                            >
-                                            {customer.industry}
-                                        </Badge>
+										<Badge
+											color={getIndustryColor(customer.industry)}
+											variant='outline'>
+											{customer.industry}
+										</Badge>
 									</div>
 								</div>
 							</td>
@@ -509,9 +512,7 @@ const Clientes: React.FC = () => {
 										<div className='font-semibold text-gray-900'>
 											{customer.loyalty_score}/100
 										</div>
-										<Badge
-											color={getLoyaltyColor(customer.loyalty_score)}
-											>
+										<Badge color={getLoyaltyColor(customer.loyalty_score)}>
 											{getLoyaltyLevel(customer.loyalty_score)}
 										</Badge>
 									</div>
@@ -698,11 +699,9 @@ const Clientes: React.FC = () => {
 					<CardBody>
 						<div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
 							<div>
-								<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-									Buscar
-								</label>
+								<Label htmlFor='filter-search'>Buscar</Label>
 								<Input
-									type='text'
+									id='filter-search'
 									name='search'
 									placeholder='Nombre, código, documento...'
 									value={filters.search || ''}
@@ -711,9 +710,7 @@ const Clientes: React.FC = () => {
 							</div>
 
 							<div>
-								<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-									Segmento
-								</label>
+								<Label htmlFor='filter-segment'>Segmento</Label>
 								<SelectReact
 									name='segment'
 									options={segmentOptions}
@@ -729,9 +726,7 @@ const Clientes: React.FC = () => {
 							</div>
 
 							<div>
-								<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-									Industria
-								</label>
+								<Label htmlFor='filter-industry'>Industria</Label>
 								<SelectReact
 									name='industry'
 									options={industryOptions}
@@ -747,9 +742,7 @@ const Clientes: React.FC = () => {
 							</div>
 
 							<div>
-								<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-									Estado
-								</label>
+								<Label htmlFor='filter-status'>Estado</Label>
 								<SelectReact
 									name='status'
 									options={statusOptions}
@@ -772,6 +765,15 @@ const Clientes: React.FC = () => {
 							</div>
 						</div>
 					</CardBody>
+					<CardFooter className='flex justify-end'>
+						<Button
+							variant='outline'
+							onClick={clearFilters}
+							icon='HeroArrowPath'
+							className='w-full md:w-auto'>
+							Limpiar filtros
+						</Button>
+					</CardFooter>
 				</Card>
 
 				{/* Tabla de Clientes */}
@@ -803,7 +805,7 @@ const Clientes: React.FC = () => {
 			</Container>
 
 			{/* Modal de Vista de Cliente */}
-			<Modal isOpen={viewModalOpen} setIsOpen={setViewModalOpen} size='2xl'>
+			<Modal isOpen={viewModalOpen} setIsOpen={setViewModalOpen} size='xl'>
 				<ModalHeader>
 					<div className='flex items-center space-x-3'>
 						<div className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-100'>
@@ -967,6 +969,443 @@ const Clientes: React.FC = () => {
 									handleEditCustomer(selectedCustomer);
 								}}>
 								Editar Cliente
+							</Button>
+						)}
+					</div>
+				</ModalFooter>
+			</Modal>
+
+			{/* Modal para crear cliente */}
+			<Modal isOpen={createModalOpen} setIsOpen={setCreateModalOpen} size='xl'>
+				<ModalHeader>
+					<h3 className='text-lg font-semibold text-gray-900 dark:text-white'>
+						Crear Nuevo Cliente
+					</h3>
+				</ModalHeader>
+				<ModalBody>
+					<div className='space-y-4'>
+						<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+							<div>
+								<Label htmlFor='create-name'>Nombre del Cliente *</Label>
+								<Input
+									id='create-name'
+									name='name'
+									placeholder='Nombre o razón social'
+									required
+								/>
+							</div>
+							<div>
+								<Label htmlFor='create-code'>Código *</Label>
+								<Input
+									id='create-code'
+									name='code'
+									placeholder='Código del cliente'
+									required
+								/>
+							</div>
+						</div>
+						<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+							<div>
+								<Label htmlFor='create-document-type'>Tipo de Documento *</Label>
+								<Select id='create-document-type' name='document_type'>
+									<option value='NIT'>NIT</option>
+									<option value='CC'>Cédula de Ciudadanía</option>
+									<option value='CE'>Cédula de Extranjería</option>
+									<option value='PASSPORT'>Pasaporte</option>
+								</Select>
+							</div>
+							<div>
+								<Label htmlFor='create-document-number'>
+									Número de Documento *
+								</Label>
+								<Input
+									id='create-document-number'
+									name='document_number'
+									placeholder='Número de documento'
+									required
+								/>
+							</div>
+						</div>
+						<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+							<div>
+								<Label htmlFor='create-email'>Email *</Label>
+								<Input
+									id='create-email'
+									name='email'
+									type='email'
+									placeholder='email@cliente.com'
+									required
+								/>
+							</div>
+							<div>
+								<Label htmlFor='create-phone'>Teléfono *</Label>
+								<Input
+									id='create-phone'
+									name='phone'
+									placeholder='+57 1 234-5678'
+									required
+								/>
+							</div>
+						</div>
+						<div>
+							<Label htmlFor='create-address'>Dirección *</Label>
+							<Textarea
+								id='create-address'
+								name='address'
+								placeholder='Dirección completa'
+								rows={2}
+								required
+							/>
+						</div>
+						<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+							<div>
+								<Label htmlFor='create-city'>Ciudad *</Label>
+								<Input id='create-city' name='city' placeholder='Ciudad' required />
+							</div>
+							<div>
+								<Label htmlFor='create-segment'>Segmento *</Label>
+								<Select id='create-segment' name='segment'>
+									<option value='CORPORATIVO'>Corporativo</option>
+									<option value='PYME'>PYME</option>
+									<option value='PERSONA_NATURAL'>Persona Natural</option>
+								</Select>
+							</div>
+						</div>
+						<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+							<div>
+								<Label htmlFor='create-industry'>Industria *</Label>
+								<Select id='create-industry' name='industry'>
+									<option value='TECNOLOGIA'>Tecnología</option>
+									<option value='EDUCACION'>Educación</option>
+									<option value='SALUD'>Salud</option>
+									<option value='COMERCIO'>Comercio</option>
+									<option value='MANUFACTURA'>Manufactura</option>
+									<option value='SERVICIOS'>Servicios</option>
+								</Select>
+							</div>
+							<div>
+								<Label htmlFor='create-credit-limit'>Límite de Crédito</Label>
+								<Input
+									id='create-credit-limit'
+									name='credit_limit'
+									type='number'
+									placeholder='0'
+								/>
+							</div>
+						</div>
+						<div>
+							<h4 className='mb-2 text-sm font-medium text-gray-700 dark:text-gray-300'>
+								Contacto Principal
+							</h4>
+							<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
+								<div>
+									<Label htmlFor='create-contact-person' className='text-xs'>
+										Nombre *
+									</Label>
+									<Input
+										id='create-contact-person'
+										name='contact_person'
+										placeholder='Nombre del contacto'
+										required
+									/>
+								</div>
+								<div>
+									<Label htmlFor='create-contact-email' className='text-xs'>
+										Email *
+									</Label>
+									<Input
+										id='create-contact-email'
+										name='contact_email'
+										type='email'
+										placeholder='contacto@cliente.com'
+										required
+									/>
+								</div>
+								<div>
+									<Label htmlFor='create-contact-phone' className='text-xs'>
+										Teléfono *
+									</Label>
+									<Input
+										id='create-contact-phone'
+										name='contact_phone'
+										placeholder='+57 300 123-4567'
+										required
+									/>
+								</div>
+							</div>
+						</div>
+						<div>
+							<Checkbox
+								id='create-is-active'
+								name='is_active'
+								defaultChecked={true}
+								label='Cliente activo'
+							/>
+						</div>
+					</div>
+				</ModalBody>
+				<ModalFooter>
+					<div className='flex justify-end space-x-3'>
+						<Button variant='outline' onClick={() => setCreateModalOpen(false)}>
+							Cancelar
+						</Button>
+						<Button
+							color='blue'
+							onClick={() => {
+								alert('Cliente creado exitosamente (simulado)');
+								setCreateModalOpen(false);
+							}}>
+							Crear Cliente
+						</Button>
+					</div>
+				</ModalFooter>
+			</Modal>
+
+			{/* Modal para editar cliente */}
+			<Modal isOpen={editModalOpen} setIsOpen={setEditModalOpen} size='xl'>
+				<ModalHeader>
+					<h3 className='text-lg font-semibold text-gray-900 dark:text-white'>
+						Editar Cliente
+					</h3>
+				</ModalHeader>
+				<ModalBody>
+					{selectedCustomer && (
+						<div className='space-y-4'>
+							<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+								<div>
+									<Label htmlFor='edit-name'>Nombre del Cliente *</Label>
+									<Input
+										id='edit-name'
+										name='name'
+										defaultValue={selectedCustomer.name}
+									/>
+								</div>
+								<div>
+									<Label htmlFor='edit-code'>Código *</Label>
+									<Input
+										id='edit-code'
+										name='code'
+										defaultValue={selectedCustomer.code}
+									/>
+								</div>
+							</div>
+							<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+								<div>
+									<Label htmlFor='edit-email'>Email *</Label>
+									<Input
+										id='edit-email'
+										name='email'
+										type='email'
+										defaultValue={selectedCustomer.email}
+									/>
+								</div>
+								<div>
+									<Label htmlFor='edit-phone'>Teléfono *</Label>
+									<Input
+										id='edit-phone'
+										name='phone'
+										defaultValue={selectedCustomer.phone}
+									/>
+								</div>
+							</div>
+							<div>
+								<Label htmlFor='edit-address'>Dirección *</Label>
+								<Textarea
+									id='edit-address'
+									name='address'
+									defaultValue={selectedCustomer.address}
+									rows={2}
+								/>
+							</div>
+							<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+								<div>
+									<Label htmlFor='edit-city'>Ciudad *</Label>
+									<Input
+										id='edit-city'
+										name='city'
+										defaultValue={selectedCustomer.city}
+									/>
+								</div>
+								<div>
+									<Label htmlFor='edit-segment'>Segmento *</Label>
+									<Select
+										id='edit-segment'
+										name='segment'
+										defaultValue={selectedCustomer.segment}>
+										<option value='CORPORATIVO'>Corporativo</option>
+										<option value='PYME'>PYME</option>
+										<option value='PERSONA_NATURAL'>Persona Natural</option>
+									</Select>
+								</div>
+							</div>
+							<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+								<div>
+									<Label htmlFor='edit-industry'>Industria *</Label>
+									<Select
+										id='edit-industry'
+										name='industry'
+										defaultValue={selectedCustomer.industry}>
+										<option value='TECNOLOGIA'>Tecnología</option>
+										<option value='EDUCACION'>Educación</option>
+										<option value='SALUD'>Salud</option>
+										<option value='COMERCIO'>Comercio</option>
+										<option value='MANUFACTURA'>Manufactura</option>
+										<option value='SERVICIOS'>Servicios</option>
+									</Select>
+								</div>
+								<div>
+									<Label htmlFor='edit-credit-limit'>Límite de Crédito</Label>
+									<Input
+										id='edit-credit-limit'
+										name='credit_limit'
+										type='number'
+										defaultValue={selectedCustomer.credit_limit}
+									/>
+								</div>
+							</div>
+							<div>
+								<h4 className='mb-2 text-sm font-medium text-gray-700 dark:text-gray-300'>
+									Contacto Principal
+								</h4>
+								<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
+									<div>
+										<Label htmlFor='edit-contact-person' className='text-xs'>
+											Nombre *
+										</Label>
+										<Input
+											id='edit-contact-person'
+											name='contact_person'
+											defaultValue={selectedCustomer.contact_person}
+										/>
+									</div>
+									<div>
+										<Label htmlFor='edit-contact-email' className='text-xs'>
+											Email *
+										</Label>
+										<Input
+											id='edit-contact-email'
+											name='contact_email'
+											type='email'
+											defaultValue={selectedCustomer.contact_email}
+										/>
+									</div>
+									<div>
+										<Label htmlFor='edit-contact-phone' className='text-xs'>
+											Teléfono *
+										</Label>
+										<Input
+											id='edit-contact-phone'
+											name='contact_phone'
+											defaultValue={selectedCustomer.contact_phone}
+										/>
+									</div>
+								</div>
+							</div>
+							<div>
+								<Checkbox
+									id='edit-is-active'
+									name='is_active'
+									defaultChecked={selectedCustomer.is_active}
+									label='Cliente activo'
+								/>
+							</div>
+						</div>
+					)}
+				</ModalBody>
+				<ModalFooter>
+					<div className='flex justify-end space-x-3'>
+						<Button
+							variant='outline'
+							onClick={() => {
+								setEditModalOpen(false);
+								setSelectedCustomer(null);
+							}}>
+							Cancelar
+						</Button>
+						<Button
+							color='blue'
+							onClick={() => {
+								alert('Cliente actualizado exitosamente (simulado)');
+								setEditModalOpen(false);
+								setSelectedCustomer(null);
+							}}>
+							Actualizar Cliente
+						</Button>
+					</div>
+				</ModalFooter>
+			</Modal>
+
+			{/* Modal para confirmar eliminación */}
+			<Modal isOpen={deleteModalOpen} setIsOpen={setDeleteModalOpen} size='sm'>
+				<ModalHeader>
+					<h3 className='text-lg font-semibold text-red-600'>Confirmar Eliminación</h3>
+				</ModalHeader>
+				<ModalBody>
+					{selectedCustomer && (
+						<div className='space-y-4'>
+							<p className='text-gray-700 dark:text-gray-300'>
+								¿Estás seguro de que deseas eliminar el cliente{' '}
+								<strong>"{selectedCustomer.name}"</strong>?
+							</p>
+
+							{selectedCustomer.orders_count > 0 && (
+								<div className='rounded-md border border-red-200 bg-red-50 p-3'>
+									<div className='flex items-start'>
+										<Icon
+											icon='HeroExclamationTriangle'
+											className='mr-2 mt-0.5 h-5 w-5 text-red-400'
+										/>
+										<div>
+											<h4 className='mb-1 text-sm font-medium text-red-800'>
+												No se puede eliminar
+											</h4>
+											<p className='text-sm text-red-700'>
+												Este cliente tiene{' '}
+												<strong>
+													{selectedCustomer.orders_count} órdenes
+												</strong>{' '}
+												asociadas.
+											</p>
+										</div>
+									</div>
+								</div>
+							)}
+
+							{selectedCustomer.orders_count === 0 && (
+								<div className='rounded-md border border-yellow-200 bg-yellow-50 p-3'>
+									<div className='flex items-start'>
+										<Icon
+											icon='HeroExclamationTriangle'
+											className='mr-2 mt-0.5 h-5 w-5 text-yellow-400'
+										/>
+										<div>
+											<h4 className='mb-1 text-sm font-medium text-yellow-800'>
+												Acción irreversible
+											</h4>
+											<p className='text-sm text-yellow-700'>
+												Esta acción no se puede deshacer. El cliente será
+												eliminado permanentemente.
+											</p>
+										</div>
+									</div>
+								</div>
+							)}
+						</div>
+					)}
+				</ModalBody>
+				<ModalFooter>
+					<div className='flex justify-end space-x-3'>
+						<Button
+							variant='outline'
+							onClick={() => {
+								setDeleteModalOpen(false);
+								setSelectedCustomer(null);
+							}}>
+							Cancelar
+						</Button>
+						{selectedCustomer && selectedCustomer.orders_count === 0 && (
+							<Button color='red' onClick={handleConfirmDelete}>
+								Eliminar Cliente
 							</Button>
 						)}
 					</div>

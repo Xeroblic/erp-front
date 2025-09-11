@@ -4,7 +4,6 @@
  */
 import React from 'react';
 import Button from '../../../../../components/ui/Button';
-import Badge from '../../../../../components/ui/Badge';
 import Icon from '../../../../../components/icon/Icon';
 import {
 	IProduct,
@@ -12,6 +11,8 @@ import {
 	ProductCategory,
 	ProductCondition,
 } from '../../types/products.types';
+import { TColors } from '@/types/colors.type';
+import Badge from '@/components/ui/Badge';
 
 interface ProductsTableProps {
 	products: IProduct[];
@@ -30,52 +31,52 @@ const ProductsTable: React.FC<ProductsTableProps> = ({
 	onDelete,
 	onDuplicate,
 }) => {
-	const getTypeColor = (type: ProductType) => {
+	const getTypeColor = (type: ProductType): TColors => {
 		switch (type) {
 			case 'NOTEBOOK':
 				return 'blue';
 			case 'DESKTOP':
-				return 'green';
+				return 'emerald';
 			case 'GENERAL':
-				return 'purple';
+				return 'violet';
 			default:
-				return 'gray';
+				return 'zinc';
 		}
 	};
 
-	const getCategoryColor = (category: ProductCategory) => {
+	const getCategoryColor = (category: ProductCategory): TColors => {
 		switch (category) {
 			case 'A':
 				return 'emerald';
 			case 'B':
-				return 'yellow';
+				return 'amber';
 			case 'C':
-				return 'orange';
+				return 'violet';
 			case 'M':
 				return 'red';
 			default:
-				return 'gray';
+				return 'zinc';
 		}
 	};
 
-	const getConditionColor = (condition: ProductCondition) => {
+	const getConditionColor = (condition: ProductCondition): TColors => {
 		switch (condition) {
 			case 'NEW':
 				return 'emerald';
 			case 'USED':
-				return 'yellow';
+				return 'amber';
 			case 'REFURBISHED':
 				return 'blue';
 			case 'DAMAGED':
 				return 'red';
 			default:
-				return 'gray';
+				return 'zinc';
 		}
 	};
 
-	const getStockColor = (product: IProduct) => {
+	const getStockColor = (product: IProduct): TColors => {
 		if (product.available_stock === 0) return 'red';
-		if (product.available_stock <= product.min_stock) return 'yellow';
+		if (product.available_stock <= product.min_stock) return 'amber';
 		return 'emerald';
 	};
 
@@ -303,12 +304,7 @@ const ProductsTable: React.FC<ProductsTableProps> = ({
 											color='red'
 											size='sm'
 											onClick={() => onDelete(product)}
-											disabled={product.available_stock > 0}
-											title={
-												product.available_stock > 0
-													? 'No se puede eliminar con stock disponible'
-													: 'Eliminar producto'
-											}>
+											title='Eliminar producto'>
 											<Icon icon='HeroTrash' className='h-4 w-4' />
 										</Button>
 									</div>

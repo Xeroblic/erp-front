@@ -33,7 +33,7 @@ const SystemParameterDetails = lazy(
 );
 
 // Páginas ERP
-const InventarioPage = lazy(() => import('@/pages/inventario/InventarioModular'));
+const InventarioPage = lazy(() => import('@/pages/inventario/Inventario'));
 const HistorialInventario = lazy(
 	() => import('@/pages/inventario/historial/HistorialInventarioAdmin'),
 );
@@ -53,6 +53,8 @@ const CategoriasPage = lazy(() => import('@/pages/catalogos/categorias/Categoria
 const MarcasPage = lazy(() => import('@/pages/catalogos/marcas/Marcas'));
 const ProveedoresPage = lazy(() => import('@/pages/catalogos/proveedores/Proveedores'));
 const ClientesPage = lazy(() => import('@/pages/catalogos/clientes/Clientes'));
+const DocumentosPage = lazy(() => import('@/pages/documentos/Documentos'));
+const RevisionesTecnicasPage = lazy(() => import('@/pages/revisiones-tecnicas/RevisionesTecnicas'));
 
 export interface IRoutePersonalizada extends PathRouteProps {
 	authority?: string[];
@@ -189,6 +191,16 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: cfg.catalogs.subPages.customers.to,
 		element: <ClientesPage />,
 		authority: cfg.catalogs.subPages.customers.authority,
+	},
+	{
+		path: cfg.catalogs.subPages.documents.to,
+		element: <DocumentosPage />,
+		authority: cfg.catalogs.subPages.documents.authority,
+	},
+	{
+		path: cfg.technical.subPages.reviews.to,
+		element: <RevisionesTecnicasPage />,
+		authority: cfg.technical.subPages.reviews.authority,
 	},
 
 	{ path: '/sin-permisos', element: <SinPermisos />, public: true },
