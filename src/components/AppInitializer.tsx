@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store';
 import { validateSession } from '../store/slices/auth/authSlice';
@@ -6,74 +6,55 @@ import { obtenerPersonalizacionThunk } from '../store/slices/personalizacion/per
 import { toast } from 'react-toastify';
 
 const AppInitializer = () => {
-    const dispatch = useAppDispatch();
-    const navigate = useNavigate();
-    const location = useLocation();
-    const { isAuthenticated, access } = useAppSelector((state) => state.auth);
-    const hasInitialized = useRef(false);
-    const hasLoadedPersonalization = useRef(false);
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-    // Cargar personalización una sola vez cuando el usuario esté autenticado
-    useEffect(() => {
-        if (isAuthenticated && access && !hasLoadedPersonalization.current) {
-            hasLoadedPersonalization.current = true;
-            dispatch(obtenerPersonalizacionThunk());
-        }
-    }, [isAuthenticated, access, dispatch]);
+  const { isAuthenticated, access } = useAppSelector((s) => s.auth);
+  const personalizacion = useAppSelector((s) => s.personalizacion);
+  const hasInitialized = useRef(false);
+  const fetchedPersonalization = useRef(false);
 
-    useEffect(() => {
-        // Solo inicializar una vez
-        if (hasInitialized.current) return;
-        hasInitialized.current = true;
+  const publicRoutes = useMemo(
+    () => ['/login', '/recuperar-password', '/registro'],
+    []
+  );
+  const isPublic = publicRoutes.includes(location.pathname);
 
-        // No validar en rutas públicas
-        const publicRoutes = ['/login', '/recuperar-password', '/registro'];
-        if (publicRoutes.includes(location.pathname)) {
-            return;
-        }
+  // Validar sesión una sola vez (si no es ruta pública)
+  useEffect(() => {
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+    if (isPublic) return;
+    dispatch(validateSession());
+  }, [dispatch, isPublic]);
 
-        // Validar sesión al inicio
-        dispatch(validateSession());
+  // Redirección si no autenticado (en rutas privadas)
+  useEffect(() => {
+    if (isPublic) return;
+    if (!isAuthenticated || !access) {
+      navigate('/login');
+    }
+  }, [isAuthenticated, access, isPublic, navigate]);
 
-        // Verificar token en localStorage y cargar personalización
-        const token = localStorage.getItem('access_token');
-        if (token) {
-            dispatch(obtenerPersonalizacionThunk())
-                .then((result) => {
-                    if (result.meta.requestStatus === 'rejected') {
-                        console.error('Error al cargar personalización:', result);
-                        toast.error('Error al cargar la personalización del usuario');
-                    }
-                })
-                .catch((error) => {
-                    console.error('Error al cargar personalización:', error);
-                    toast.error('Error al cargar la personalización del usuario');
-                });
-        }
-    }, []); // Solo ejecutar una vez
+  // Cargar personalización SOLO una vez cuando ya esté autenticado
+  useEffect(() => {
+    if (isPublic) return;
+    if (!isAuthenticated || !access) return;
+    if (fetchedPersonalization.current) return;
 
-    // Escuchar cambios en la autenticación para redireccionar (solo si ya se inicializó)
-    useEffect(() => {
-        if (!hasInitialized.current) return;
+    fetchedPersonalization.current = true;
+    dispatch(obtenerPersonalizacionThunk())
+      .unwrap?.()
+      .catch((err: any) => {
+        console.error('Error al cargar personalización:', err);
+        toast.error('Error al cargar la personalización del usuario');
+        // Si falló, permite reintentar en el futuro:
+        fetchedPersonalization.current = false;
+      });
+  }, [dispatch, isAuthenticated, access, isPublic]);
 
-        const publicRoutes = ['/login', '/recuperar-password', '/registro'];
-        if (publicRoutes.includes(location.pathname)) {
-            return;
-        }
-
-        if (!isAuthenticated && !access) {
-            navigate('/login');
-        }
-    }, [isAuthenticated, access, location.pathname]);
-
-    // Cargar personalización cuando el usuario se autentica
-    useEffect(() => {
-        if (isAuthenticated && access && hasInitialized.current) {
-            dispatch(obtenerPersonalizacionThunk());
-        }
-    }, [isAuthenticated, access, dispatch]);
-
-    return null; // Este componente no renderiza nada
+  return null;
 };
 
 export default AppInitializer;

@@ -26,8 +26,6 @@ const PageWrapper: FC<IPageWrapperProps> = ({
   ...rest
 }) => {
   const dispatch = useAppDispatch();
-  const { fontSize, setFontSize } = useFontSize();
-  const { darkModeStatus, setDarkModeStatus } = useDarkModeManager();
   const { isAuthenticated, access, user } = useAppSelector(s => s.auth);
   const { listaComunas, listaProvincias, listaRegiones } = useAppSelector(s => s.core);
 

@@ -1,263 +1,313 @@
 import { useAppSelector, useAppDispatch } from '@/store';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import ApiService from '@/services/ApiService';
 import { toast } from 'react-toastify';
 import { userMeThunk } from '@/store/slices/auth/authSlice';
 
 interface CompanyInfo {
-    id: number;
-    name: string;
-    rut: string;
-    role: string;
-    is_primary: boolean;
-    subsidiary_id?: number; // Agregamos subsidiary_id para el nuevo flujo
+  id: number;
+  name: string;
+  rut: string;
+  role: string;
+  is_primary: boolean;
+  subsidiary_id?: number;
 }
 
 interface UseCompanyManager {
-    currentCompany: CompanyInfo | null;
-    availableCompanies: CompanyInfo[];
-    isLoading: boolean;
-    switchCompany: (companyId: number) => Promise<boolean>;
-    refreshCompanies: () => Promise<void>;
-    canAccessCompany: (companyId: number) => boolean;
-    canAccessSubsidiary: (subsidiaryId: number) => boolean;
-    canAccessBranch: (branchId: number) => boolean;
+  currentCompany: CompanyInfo | null;
+  availableCompanies: CompanyInfo[];
+  isLoading: boolean;
+  switchCompany: (companyId: number) => Promise<boolean>;
+  refreshCompanies: (opts?: { force?: boolean }) => Promise<void>;
+  canAccessCompany: (companyId: number) => boolean;
+  canAccessSubsidiary: (subsidiaryId: number) => boolean;
+  canAccessBranch: (branchId: number) => boolean;
 }
 
 const useCompanyManager = (): UseCompanyManager => {
-    const dispatch = useAppDispatch();
-    const user = useAppSelector((state) => state.auth.user);
-    const [availableCompanies, setAvailableCompanies] = useState<CompanyInfo[]>([]);
-    const [currentSubsidiaryName, setCurrentSubsidiaryName] = useState<string>('');
-    const [isLoading, setIsLoading] = useState(false);
+  const dispatch = useAppDispatch();
+  const user = useAppSelector((state) => state.auth.user);
 
-    // Empresa actual del usuario basada en personalización o datos actuales
-    const currentCompany = user?.subsidiary ? {
+  const [availableCompanies, setAvailableCompanies] = useState<CompanyInfo[]>([]);
+  const [currentSubsidiaryName, setCurrentSubsidiaryName] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // refs para dedupe/cancelación/cache
+  const refreshInFlightRef = useRef<AbortController | null>(null);
+  const lastLoadedAtRef = useRef<number | null>(null);
+  const cacheRef = useRef<{ companies: CompanyInfo[]; currentName: string } | null>(null);
+
+  const currentCompany = useMemo<CompanyInfo | null>(() => {
+    if (user?.subsidiary) {
+      return {
         id: user.subsidiary.id,
         name: user.subsidiary.name,
         rut: user.company?.rut || '',
         role: user.position || 'employee',
         is_primary: true,
-        subsidiary_id: user.subsidiary.id
-    } : user?.personalizacion?.sucursal_principal ? {
+        subsidiary_id: user.subsidiary.id,
+      };
+    }
+    if (user?.personalizacion?.sucursal_principal) {
+      return {
         id: user.personalizacion.sucursal_principal,
         name: currentSubsidiaryName || `Subsidiaria ${user.personalizacion.sucursal_principal}`,
         rut: '',
         role: user.position || 'employee',
         is_primary: false,
-        subsidiary_id: user.personalizacion.sucursal_principal
-    } : user?.authority?.includes('super-admin') ? {
+        subsidiary_id: user.personalizacion.sucursal_principal,
+      };
+    }
+    if (user?.authority?.includes('super-admin')) {
+      return {
         id: 0,
         name: 'Administración Global',
         rut: '00000000-0',
         role: 'super-admin',
         is_primary: true,
-        subsidiary_id: 0
-    } : null;
+        subsidiary_id: 0,
+      };
+    }
+    return null;
+  }, [user?.subsidiary, user?.company?.rut, user?.position, user?.personalizacion?.sucursal_principal, user?.authority, currentSubsidiaryName]);
 
-    // Cambiar empresa activa (cambiar subsidiaria)
-    const switchCompany = useCallback(async (subsidiaryId: number): Promise<boolean> => {
-        setIsLoading(true);
-        try {
-            // Para subsidiarias de la misma empresa, enviamos el company_id (1) y subsidiary_id
+  const switchCompany = useCallback(
+    async (subsidiaryId: number): Promise<boolean> => {
+      setIsLoading(true);
+      try {
+        // 1) Cambia compañía/subsidiaria (usa signal local por si quieres cancelar acá también)
+        const controller = new AbortController();
+        await ApiService.fetchData({
+          url: '/user/switch-company',
+          method: 'post',
+          data: {
+            company_id: 1, // TODO: reemplazar por real si corresponde
+            subsidiary_id: subsidiaryId,
+          },
+          signal: controller.signal,
+        });
+
+        // 2) Si la personalización YA tiene ese ID, no hagas PUT inútil
+        const currentPersonalization = user?.personalizacion;
+        if (currentPersonalization?.sucursal_principal !== subsidiaryId) {
+          try {
             await ApiService.fetchData({
-                url: '/user/switch-company',
-                method: 'post',
-                data: {
-                    company_id: 1, // ID de EcoTech SPA
-                    subsidiary_id: subsidiaryId // ID de la subsidiaria seleccionada
-                }
+              url: '/user/personalization',
+              method: 'put',
+              data: {
+                tema: currentPersonalization?.tema,
+                font_size: currentPersonalization?.font_size,
+                sucursal_principal: subsidiaryId,
+              },
             });
-
-            // Actualizar personalización con la nueva subsidiaria principal
-            const currentPersonalization = user?.personalizacion;
-            if (currentPersonalization) {
-                try {
-                    await ApiService.fetchData({
-                        url: '/user/personalization',
-                        method: 'put',
-                        data: {
-                            tema: currentPersonalization.tema,
-                            font_size: currentPersonalization.font_size,
-                            sucursal_principal: subsidiaryId
-                        }
-                    });
-                } catch (personalizationError) {
-                    console.warn('Error updating personalization:', personalizationError);
-                    // No fallar el cambio de empresa si falla la actualización de personalización
-                }
-            }
-
-            // Refrescar datos del usuario
-            await dispatch(userMeThunk()).unwrap();
-
-            // Actualizar el nombre de la subsidiaria actual
-            const selectedCompany = availableCompanies.find(c => c.subsidiary_id === subsidiaryId);
-            if (selectedCompany) {
-                setCurrentSubsidiaryName(selectedCompany.name);
-            }
-
-            toast.success('Empresa cambiada exitosamente');
-            return true;
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Error al cambiar empresa');
-            return false;
-        } finally {
-            setIsLoading(false);
+          } catch (err) {
+            // no bloquear por esto
+            console.warn('Error updating personalization:', err);
+          }
         }
-    }, [dispatch, user]);
 
-    // Obtener empresas disponibles desde personalización
-    const refreshCompanies = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const response = await ApiService.fetchData<{
-                personalization: {
-                    id: number;
-                    user_id: number;
-                    tema: number;
-                    font_size: number;
-                    sucursal_principal: number | null;
-                    company_id: number;
-                    created_at: string;
-                    updated_at: string;
-                };
-                companies: Array<{
-                    id: number;
-                    company_name: string;
-                    is_primary: number;
-                    position_in_company: string;
-                    subsidiaries_count: number;
-                    branches_count: number;
-                }>;
-                current_company: {
-                    id: number;
-                    company_name: string;
-                    subsidiaries: Array<{
-                        id: number;
-                        subsidiary_name: string;
-                        branches_count: number;
-                        branches: Array<{
-                            id: number;
-                            branch_name: string;
-                        }>;
-                    }>;
-                } | null;
-            }>({
-                url: '/user/personalization',
-                method: 'get'
-            });
+        // 3) Refresca el user (idealmente trae la nueva subsidiary)
+        await dispatch(userMeThunk()).unwrap();
 
-            // Si hay una empresa actual con subsidiarias, usamos esas
-            if (response.data.current_company?.subsidiaries) {
-                const subsidiaries = response.data.current_company.subsidiaries.map(subsidiary => ({
-                    id: subsidiary.id,
-                    name: subsidiary.subsidiary_name,
-                    rut: '', // No viene en la respuesta, podríamos agregarlo después
-                    role: user?.position || 'employee',
-                    is_primary: subsidiary.id === 1, // Asumir que la primera es primary
-                    subsidiary_id: subsidiary.id
-                }));
-                setAvailableCompanies(subsidiaries);
+        // 4) Actualiza el nombre de la subsidiaria actual usando el cache local
+        const selectedCompany =
+          availableCompanies.find((c) => c.subsidiary_id === subsidiaryId) ??
+          cacheRef.current?.companies.find((c) => c.subsidiary_id === subsidiaryId);
+        if (selectedCompany) setCurrentSubsidiaryName(selectedCompany.name);
 
-                // Actualizar currentCompany si se basa en sucursal_principal de personalización
-                if (user?.personalizacion?.sucursal_principal && !user?.subsidiary) {
-                    // Buscar el nombre correcto de la subsidiaria desde los datos obtenidos
-                    const currentSubsidiary = response.data.current_company.subsidiaries.find(
-                        sub => sub.id === user.personalizacion?.sucursal_principal
-                    );
-                    if (currentSubsidiary) {
-                        setCurrentSubsidiaryName(currentSubsidiary.subsidiary_name);
-                    }
-                }
-            }
-            // Si no hay empresa actual pero hay empresas disponibles, usamos esas
-            else if (response.data.companies && response.data.companies.length > 0) {
-                const companies = response.data.companies.map(company => ({
-                    id: company.id,
-                    name: company.company_name,
-                    rut: '', // No viene en la respuesta
-                    role: company.position_in_company || 'employee',
-                    is_primary: company.is_primary === 1,
-                    subsidiary_id: company.id
-                }));
-                setAvailableCompanies(companies);
-            }
-            // Si es super-admin sin empresas específicas, crear una entrada por defecto
-            else if (user?.authority?.includes('super-admin')) {
-                setAvailableCompanies([{
-                    id: 0,
-                    name: 'Administración Global',
-                    rut: '00000000-0',
-                    role: 'super-admin',
-                    is_primary: true,
-                    subsidiary_id: 0
-                }]);
-            } else {
-                setAvailableCompanies([]);
-            }
-        } catch (error: any) {
-            console.error('Error loading companies:', error);
-            toast.error('Error al cargar empresas disponibles');
-            setAvailableCompanies([]);
-        } finally {
-            setIsLoading(false);
+        // 5) Invalida cache de empresas (por si cambió accesos)
+        cacheRef.current = null;
+        lastLoadedAtRef.current = null;
+
+        toast.success('Empresa cambiada exitosamente');
+        return true;
+      } catch (error: any) {
+        if (error?.name === 'AbortError' || error?.name === 'CanceledError') {
+          // aborto: no tirar toast de error ruidoso
+          return false;
         }
-    }, [user]);
+        toast.error(error?.response?.data?.message || 'Error al cambiar empresa');
+        return false;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [dispatch, user, availableCompanies]
+  );
 
-    // Verificar acceso a empresa (realmente subsidiaria)
-    const canAccessCompany = useCallback((companyId: number): boolean => {
-        if (!user) return false;
+  const refreshCompanies = useCallback(
+    async ({ force = false }: { force?: boolean } = {}) => {
+      // usa cache si existe y no forzaste
+      if (!force && cacheRef.current) {
+        setAvailableCompanies(cacheRef.current.companies);
+        setCurrentSubsidiaryName(cacheRef.current.currentName);
+        return;
+      }
 
-        // Super admin tiene acceso total
-        if (user.authority?.includes('super-admin')) return true;
+      // dedupe: si ya hay una request corriendo, cancelar la anterior
+      if (refreshInFlightRef.current) {
+        refreshInFlightRef.current.abort();
+      }
+      const controller = new AbortController();
+      refreshInFlightRef.current = controller;
 
-        // Verificar si el usuario tiene acceso a esta subsidiaria
-        return user.subsidiary?.id === companyId ||
-            availableCompanies.some(company => company.subsidiary_id === companyId);
-    }, [user, availableCompanies]);
+      setIsLoading(true);
+      try {
+        const response = await ApiService.fetchData<{
+          personalization: {
+            id: number;
+            user_id: number;
+            tema: number;
+            font_size: number;
+            sucursal_principal: number | null;
+            company_id: number;
+            created_at: string;
+            updated_at: string;
+          };
+          companies: Array<{
+            id: number;
+            company_name: string;
+            is_primary: number;
+            position_in_company: string;
+            subsidiaries_count: number;
+            branches_count: number;
+          }>;
+          current_company: {
+            id: number;
+            company_name: string;
+            subsidiaries: Array<{
+              id: number;
+              subsidiary_name: string;
+              branches_count: number;
+              branches: Array<{
+                id: number;
+                branch_name: string;
+              }>;
+            }>;
+          } | null;
+        }>({
+          url: '/user/personalization',
+          method: 'get',
+          signal: controller.signal,
+        });
 
-    // Verificar acceso a subsidiaria
-    const canAccessSubsidiary = useCallback((subsidiaryId: number): boolean => {
-        if (!user) return false;
+        let companies: CompanyInfo[] = [];
+        let prettyName = currentSubsidiaryName;
 
-        // Super admin tiene acceso total
-        if (user.authority?.includes('super-admin')) return true;
+        if (response.data.current_company?.subsidiaries?.length) {
+          companies = response.data.current_company.subsidiaries.map((s) => ({
+            id: s.id,
+            name: s.subsidiary_name,
+            rut: '',
+            role: user?.position || 'employee',
+            is_primary: false, // evita adivinar, no asumas que la primera es primary
+            subsidiary_id: s.id,
+          }));
 
-        // Company admin tiene acceso a todas las subsidiarias de su empresa
-        if (user.authority?.includes('company-admin')) return true;
+          if (user?.personalizacion?.sucursal_principal && !user?.subsidiary) {
+            const current = response.data.current_company.subsidiaries.find(
+              (sub) => sub.id === user.personalizacion!.sucursal_principal
+            );
+            if (current) prettyName = current.subsidiary_name;
+          }
+        } else if (response.data.companies?.length) {
+          companies = response.data.companies.map((c) => ({
+            id: c.id,
+            name: c.company_name,
+            rut: '',
+            role: c.position_in_company || 'employee',
+            is_primary: c.is_primary === 1,
+            subsidiary_id: c.id,
+          }));
+        } else if (user?.authority?.includes('super-admin')) {
+          companies = [
+            {
+              id: 0,
+              name: 'Administración Global',
+              rut: '00000000-0',
+              role: 'super-admin',
+              is_primary: true,
+              subsidiary_id: 0,
+            },
+          ];
+        }
 
-        // Verificar si es admin de esa subsidiaria específica
-        return user.subsidiary?.id === subsidiaryId;
-    }, [user]);
+        setAvailableCompanies(companies);
+        setCurrentSubsidiaryName(prettyName);
 
-    // Verificar acceso a sucursal
-    const canAccessBranch = useCallback((branchId: number): boolean => {
-        if (!user) return false;
+        // guarda cache
+        cacheRef.current = { companies, currentName: prettyName };
+        lastLoadedAtRef.current = Date.now();
+      } catch (error: any) {
+        if (error?.name === 'AbortError' || error?.name === 'CanceledError') {
+          // abortado: silencio
+        } else {
+          console.error('Error loading companies:', error);
+          toast.error('Error al cargar empresas disponibles');
+          setAvailableCompanies([]);
+          cacheRef.current = null;
+          lastLoadedAtRef.current = null;
+        }
+      } finally {
+        if (refreshInFlightRef.current === controller) {
+          refreshInFlightRef.current = null;
+        }
+        setIsLoading(false);
+      }
+    },
+    [user, currentSubsidiaryName]
+  );
 
-        // Super admin tiene acceso total
-        if (user.authority?.includes('super-admin')) return true;
-
-        // Company admin tiene acceso a todas las sucursales
-        if (user.authority?.includes('company-admin')) return true;
-
-        // Subsidiary admin tiene acceso a sucursales de su subsidiaria
-        if (user.authority?.includes('subsidiary-admin')) return true;
-
-        // Branch admin solo a su sucursal
-        return user.branch?.id === branchId;
-    }, [user]);
-
-    return {
-        currentCompany,
-        availableCompanies,
-        isLoading,
-        switchCompany,
-        refreshCompanies,
-        canAccessCompany,
-        canAccessSubsidiary,
-        canAccessBranch
+  // Limpieza: abortar si se desmonta el hook
+  useEffect(() => {
+    return () => {
+      refreshInFlightRef.current?.abort();
     };
+  }, []);
+
+  const canAccessCompany = useCallback(
+    (companyId: number): boolean => {
+      if (!user) return false;
+      if (user.authority?.includes('super-admin')) return true;
+      return (
+        user.subsidiary?.id === companyId ||
+        availableCompanies.some((c) => c.subsidiary_id === companyId)
+      );
+    },
+    [user, availableCompanies]
+  );
+
+  const canAccessSubsidiary = useCallback(
+    (subsidiaryId: number): boolean => {
+      if (!user) return false;
+      if (user.authority?.includes('super-admin')) return true;
+      if (user.authority?.includes('company-admin')) return true;
+      return user.subsidiary?.id === subsidiaryId;
+    },
+    [user]
+  );
+
+  const canAccessBranch = useCallback(
+    (branchId: number): boolean => {
+      if (!user) return false;
+      if (user.authority?.includes('super-admin')) return true;
+      if (user.authority?.includes('company-admin')) return true;
+      if (user.authority?.includes('subsidiary-admin')) return true;
+      return user.branch?.id === branchId;
+    },
+    [user]
+  );
+
+  return {
+    currentCompany,
+    availableCompanies,
+    isLoading,
+    switchCompany,
+    refreshCompanies,
+    canAccessCompany,
+    canAccessSubsidiary,
+    canAccessBranch,
+  };
 };
 
 export default useCompanyManager;

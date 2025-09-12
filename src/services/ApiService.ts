@@ -1,25 +1,81 @@
+// ApiService.ts
 import BaseService from './BaseService';
-import type { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
+import type { AxiosRequestConfig, AxiosResponse } from 'axios';
+
+type ExtraFlags = {
+  isLoginRequest?: boolean;
+  dedupe?: boolean;        // activa dedupe
+  dedupeKey?: string;      // clave custom para dedupe
+  cacheTTLms?: number;     // cachea respuestas por X ms (sólo GET)
+};
+
+type ReqCfg<T = any> = AxiosRequestConfig<T> & ExtraFlags;
+
+const inFlight = new Map<string, Promise<AxiosResponse<any>>>();
+const responseCache = new Map<string, { at: number; resp: AxiosResponse<any> }>();
+
+function makeKey(cfg: AxiosRequestConfig, kind: 'dedupe' | 'cache') {
+  const { method = 'get', url = '', params, data } = cfg;
+  const p = params ? JSON.stringify(params) : '';
+  const d = data ? (typeof data === 'string' ? data : JSON.stringify(data)) : '';
+  // separa espacios para evitar colisiones raras
+  return `${kind}|${method.toUpperCase()}|${url}|p=${p}|d=${d}`;
+}
 
 const ApiService = {
-    fetchData<Response = unknown, Request = Record<string, unknown>>(
-        param: AxiosRequestConfig<Request> & { isLoginRequest?: boolean }
-    ) {
-        return new Promise<AxiosResponse<Response>>((resolve, reject) => {
-            BaseService(param).then((response: AxiosResponse<Response>) => {
-                resolve(response);
-            }).catch((error: AxiosError) => {
-                reject(error);
-            });
-        });
-    },
+  // Request “crudo” con dedupe/abort/cache
+  async fetchData<Response = unknown, Request = Record<string, unknown>>(
+    param: ReqCfg<Request>
+  ): Promise<AxiosResponse<Response>> {
+    const { dedupe, dedupeKey, cacheTTLms } = param;
 
-    async fetchNormalized<T = any>(
-        param: AxiosRequestConfig & { isLoginRequest?: boolean }
-    ): Promise<T> {
-        const response = await ApiService.fetchData<{ data: T }>(param);
-        return response.data.data;
-    },
+    // 1) cache TTL (sólo lecturas)
+    const isGet = (param.method ?? 'get').toLowerCase() === 'get';
+    const cacheKey = isGet ? makeKey(param, 'cache') : undefined;
+
+    if (isGet && cacheTTLms && cacheTTLms > 0 && cacheKey) {
+      const hit = responseCache.get(cacheKey);
+      if (hit && Date.now() - hit.at < cacheTTLms) {
+        return hit.resp as AxiosResponse<Response>;
+      }
+    }
+
+    // 2) dedupe (reutilizar la misma promesa si ya hay una idéntica en vuelo)
+    const dk = dedupeKey ?? makeKey(param, 'dedupe');
+    if (dedupe) {
+      const existing = inFlight.get(dk);
+      if (existing) return existing as Promise<AxiosResponse<Response>>;
+    }
+
+    // 3) asegurarnos de propagar AbortSignal (axios 1.x lo entiende)
+    // si ya viene signal desde fuera, se respeta
+    const cfg: AxiosRequestConfig<Request> = { ...param };
+
+    // 4) dispara la request
+    const reqPromise = (BaseService as any)(cfg)
+      .then((resp: AxiosResponse<Response>) => {
+        // cache TTL sólo para GET
+        if (isGet && cacheTTLms && cacheTTLms > 0 && cacheKey) {
+          responseCache.set(cacheKey, { at: Date.now(), resp });
+        }
+        return resp;
+      })
+      .finally(() => {
+        if (dedupe) inFlight.delete(dk);
+      });
+
+    if (dedupe) inFlight.set(dk, reqPromise as Promise<AxiosResponse<any>>);
+
+    return reqPromise;
+  },
+
+  // Normaliza asumiendo que el backend responde { data: T }
+  async fetchNormalized<T = any>(
+    param: ReqCfg
+  ): Promise<T> {
+    const response = await ApiService.fetchData<{ data: T }>(param);
+    return response.data.data;
+  },
 };
 
 export default ApiService;

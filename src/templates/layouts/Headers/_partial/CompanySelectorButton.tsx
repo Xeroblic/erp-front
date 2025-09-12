@@ -22,7 +22,7 @@ const CompanySelectorButton: React.FC = () => {
     // Cargar empresas al montar el componente
     useEffect(() => {
         refreshCompanies();
-    }, [refreshCompanies]);
+    }, [refreshCompanies!]);
 
     // Solo mostrar si el usuario tiene múltiples empresas o es super-admin
     const shouldShowSelector = user?.authority?.includes('super-admin') ||

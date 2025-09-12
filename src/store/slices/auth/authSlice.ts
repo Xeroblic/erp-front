@@ -19,7 +19,7 @@ export interface AuthState {
   permisos: string[];
   user?: IUserMe & { authority?: string[] };
   listaGrupos: IGruposUsuarios | undefined
-
+  userLastFetched?: number; // Timestamp del último fetch exitoso
 }
 
 const initialState: AuthState = {
@@ -31,6 +31,7 @@ const initialState: AuthState = {
   permisos: [],
   user: undefined,
   listaGrupos: undefined,
+  userLastFetched: undefined,
 };
 
 export const loginThunk = createAsyncThunk<LoginResponse, { email: string; password: string }, { rejectValue: string; dispatch: AppDispatch }>(
@@ -61,7 +62,7 @@ export const userMeThunk = createAsyncThunk<
   { user: IUserMe; permisos: string[]; roles?: string[] },
   void,
   { state: RootState; rejectValue: string }
->("auth/userMe", async (_, { getState, rejectWithValue }) => {
+>("auth/userMe", async (_, { getState, rejectWithValue, signal }) => {
   const token = getState().auth.access;
   if (!token) return rejectWithValue("Token inválido");
 
@@ -87,7 +88,6 @@ export const userMeThunk = createAsyncThunk<
         can_manage_users: boolean;
         access_level: string;
       };
-      // Estructura antigua para compatibilidad
       user?: IUserMe;
       permisos?: string[];
       roles?: string[];
@@ -96,26 +96,24 @@ export const userMeThunk = createAsyncThunk<
       url: "/perfil",
       method: "get",
       headers: { Authorization: `Bearer ${token}` },
+      dedupe: true,
+      signal: signal,
     });
 
-    // Compatibilidad con estructura antigua y nueva
     let userData: IUserMe;
     let permisos: string[];
     let roles: string[];
 
     if (resp.data.data && resp.data.data.id) {
-      // Nueva estructura del backend
       const data = resp.data.data;
       userData = {
         id: data.id!,
         email: data.email!,
         first_name: data.first_name!,
         last_name: data.last_name!,
-        // Mapear otros campos según sea necesario
         ...data
       } as IUserMe;
 
-      // Combinar todos los permisos disponibles
       permisos = [
         ...(data.all_permissions || []),
         ...(data.direct_permissions || []),
@@ -133,7 +131,7 @@ export const userMeThunk = createAsyncThunk<
 
     return {
       user: userData,
-      permisos: Array.from(new Set(permisos)), // Eliminar duplicados
+      permisos: Array.from(new Set(permisos)), // Eliminar Duplicados
       roles: Array.from(new Set(roles))
     };
   } catch (error: any) {
@@ -168,7 +166,6 @@ const authSlice = createSlice({
       localStorage.removeItem('zentria_language');
       localStorage.removeItem('zentria_asideStatus');
 
-      console.log('🧹 Estado de autenticación completamente limpiado');
     },
     setToken: (state, action: PayloadAction<string>) => {
       state.access = action.payload;

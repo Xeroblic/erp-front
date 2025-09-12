@@ -51,29 +51,59 @@ const getInitialState = (): PersonalizacionState => {
     };
 };
 
+type RejectStr = string | undefined;
+
 // Async Thunks para la API
 export const obtenerPersonalizacionThunk = createAsyncThunk<
-    IPersonalizacionUsuario,
-    void,
-    { rejectValue: string }
+  IPersonalizacionUsuario,
+  void,
+  { rejectValue: RejectStr }
 >(
-    'personalizacion/obtenerPersonalizacion',
-    async (_, { getState, rejectWithValue }) => {
-        const state = getState() as any;
-        const token = state.auth.access || localStorage.getItem('access_token');
-        try {
-            const resp = await ApiService.fetchData<any>({
-                url: '/user/personalization',
-                method: 'get',
-                headers: { Authorization: `Bearer ${token}` },
-            });
+  'personalizacion/obtenerPersonalizacion',
+  async (_, { getState, rejectWithValue, signal }) => {
+    try {
+      const state = getState() as any;
+      const token =
+        state.auth?.access || localStorage.getItem('access_token');
 
-            const personalizationData = resp.data.personalization || resp.data;
-            return personalizationData;
-        } catch (error: any) {
-            return rejectWithValue('No se pudo obtener la personalización: ' + (error.message || error));
-        }
+      // OBLIGADO: pasar signal al cliente HTTP para soportar cancelación
+      const resp = await ApiService.fetchData<any>({
+        url: '/user/personalization',
+        method: 'get',
+        headers: { Authorization: `Bearer ${token}` },
+          dedupe: true,          // ← evita duplicadas concurrentes
+            cacheTTLms: 300_000,    // ← opcional: evita repetir dentro de 30s
+            signal: signal,      // ← soporta cancelación
+      });
+
+      const personalizationData = resp.data.personalization ?? resp.data;
+      return personalizationData as IPersonalizacionUsuario;
+    } catch (error: any) {
+      // Si fue cancelación, lanza para que RTK lo marque como 'aborted'
+      if (error?.name === 'CanceledError' || error?.name === 'AbortError') {
+        throw error;
+      }
+      return rejectWithValue(
+        'No se pudo obtener la personalización: ' + (error?.message || String(error))
+      );
     }
+  },
+  {
+    // **Antiduplicados**: no dispares si ya está en curso o ya quedó OK
+    condition: (_, { getState }) => {
+      const state = getState() as any;
+      const status = state.personalizacion?.status;
+      // Evita si está cargando o ya cargó OK
+      if (status === 'loading' || status === 'succeeded') return false;
+
+      // (Opcional) Evita si no hay token aún
+      const hasToken =
+        !!state.auth?.access || !!localStorage.getItem('access_token');
+      if (!hasToken) return false;
+
+      return true;
+    },
+  }
 );
 
 export const actualizarPersonalizacionThunk = createAsyncThunk<

@@ -72,7 +72,7 @@ BaseService.interceptors.response.use(
                 } catch (refreshError) {
                     toast.error("Sesión Expirada");
                     store.dispatch(logout());
-                    cancelAllRequests(); // Cancelar todas las peticiones pendientes
+                    cancelAllRequests();
                     setTimeout(() => {
                         window.location.href = '/login';
                     }, 1000);
@@ -81,7 +81,7 @@ BaseService.interceptors.response.use(
             } else {
                 toast.error("Sesión Expirada");
                 store.dispatch(logout());
-                cancelAllRequests(); // Cancelar todas las peticiones pendientes
+                cancelAllRequests();
                 setTimeout(() => {
                     window.location.href = '/login';
                 }, 1000);

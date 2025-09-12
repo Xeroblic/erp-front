@@ -43,67 +43,57 @@ const CompanySelector: React.FC<CompanySelectorProps> = ({ isOpen, onClose }) =>
     } : null;
 
     // Obtener empresas disponibles desde personalización
-    const refreshCompanies = async () => {
-        setIsLoading(true);
-        try {
-            const response = await ApiService.fetchData<{
-                personalization: {
-                    id: number;
-                    user_id: number;
-                    tema: number;
-                    font_size: number;
-                    sucursal_principal: number | null;
-                    company_id: number;
-                    created_at: string;
-                    updated_at: string;
-                };
-                companies: Array<{
-                    id: number;
-                    company_name: string;
-                    is_primary: number;
-                    position_in_company: string;
-                    subsidiaries_count: number;
-                    branches_count: number;
-                }>;
-                current_company: {
-                    id: number;
-                    company_name: string;
-                    subsidiaries: Array<{
-                        id: number;
-                        subsidiary_name: string;
-                        branches_count: number;
-                        branches: Array<{
-                            id: number;
-                            branch_name: string;
-                        }>;
-                    }>;
-                } | null;
-            }>({
-                url: '/user/personalization',
-                method: 'get'
-            });
+    // const refreshCompanies = async () => {
+    //     setIsLoading(true);
+    //     try {
+    //         const response = await ApiService.fetchData<{
+    //             companies: Array<{
+    //                 id: number;
+    //                 company_name: string;
+    //                 is_primary: number;
+    //                 position_in_company: string;
+    //                 subsidiaries_count: number;
+    //                 branches_count: number;
+    //             }>;
+    //             current_company: {
+    //                 id: number;
+    //                 company_name: string;
+    //                 subsidiaries: Array<{
+    //                     id: number;
+    //                     subsidiary_name: string;
+    //                     branches_count: number;
+    //                     branches: Array<{
+    //                         id: number;
+    //                         branch_name: string;
+    //                     }>;
+    //                 }>;
+    //             } | null;
+    //         }>({
+    //             url: '/user/personalization',
+    //             method: 'get'
+    //         });
 
-            // Si hay una empresa actual con subsidiarias, usamos esas
-            if (response.data.current_company?.subsidiaries) {
-                const subsidiaries = response.data.current_company.subsidiaries.map(subsidiary => ({
-                    id: subsidiary.id,
-                    name: subsidiary.subsidiary_name,
-                    rut: '', // No viene en la respuesta
-                    role: user?.position || 'employee',
-                    is_primary: subsidiary.id === 1, // Asumir que la primera es primary
-                    subsidiary_id: subsidiary.id
-                }));
-                setAvailableCompanies(subsidiaries);
-            } else {
-                setAvailableCompanies([]);
-            }
-        } catch (error: any) {
-            toast.error('Error al cargar empresas disponibles');
-            setAvailableCompanies([]);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    //         // Si hay una empresa actual con subsidiarias, usamos esas
+    //         if (response.data.current_company?.subsidiaries) {
+    //             const subsidiaries = response.data.current_company.subsidiaries.map(subsidiary => ({
+    //                 id: subsidiary.id,
+    //                 name: subsidiary.subsidiary_name,
+    //                 rut: '', // No viene en la respuesta
+    //                 role: user?.position || 'employee',
+    //                 is_primary: subsidiary.id === 1, // Asumir que la primera es primary
+    //                 subsidiary_id: subsidiary.id
+    //             }));
+    //             setAvailableCompanies(subsidiaries);
+    //         } else {
+    //             setAvailableCompanies([]);
+    //         }
+    //     } catch (error: any) {
+    //         toast.error('Error al cargar empresas disponibles');
+    //         setAvailableCompanies([]);
+    //     } finally {
+    //         setIsLoading(false);
+    //     }
+    // };
 
     // Cambiar empresa activa (cambiar subsidiaria)
     const switchCompany = async (subsidiaryId: string): Promise<boolean> => {
@@ -154,7 +144,7 @@ const CompanySelector: React.FC<CompanySelectorProps> = ({ isOpen, onClose }) =>
 
     useEffect(() => {
         if (isOpen) {
-            refreshCompanies();
+            // refreshCompanies();
             setSelectedCompanyId(currentCompany?.id?.toString() || null);
         }
     }, [isOpen, currentCompany]);
