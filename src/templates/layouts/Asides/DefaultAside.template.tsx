@@ -104,7 +104,6 @@ const DefaultAsideTemplate = () => {
 	const user = useAppSelector((s) => s.auth.user);
 	const navigate = useNavigate();
 
-	// Estado para controlar cada NavCollapse individualmente
 	const [collapseStates, setCollapseStates] = useState<Record<string, boolean>>({
 		registro: false,
 		inventario: false,
@@ -112,7 +111,6 @@ const DefaultAsideTemplate = () => {
 		reportes: false,
 	});
 
-	// Función para toggle individual de cada collapse
 	const toggleCollapse = (key: string) => {
 		setCollapseStates((prev) => ({
 			...prev,
@@ -120,7 +118,6 @@ const DefaultAsideTemplate = () => {
 		}));
 	};
 
-	// Crear un array combinado de permisos y roles para verificación
 	const userPermissionsAndRoles = [
 		...(userAuthority || []),
 		...(user?.roles || []),
@@ -218,6 +215,67 @@ const DefaultAsideTemplate = () => {
 								icon={Pages.manage.subPages.manageUsers.icon}
 								id={Pages.manage.subPages.manageUsers.id}
 								onClick={() => navigate(Pages.manage.subPages.manageUsers.to)}
+							/>
+						</AuthorityCheckNav>
+
+						{/* Gestión - Integraciones */}
+						<AuthorityCheckNav
+							authority={Pages.manage.subPages.integrations.authority}
+							userAuthority={userPermissionsAndRoles}>
+							<NavItem
+								text={Pages.manage.subPages.integrations.text}
+								to={Pages.manage.subPages.integrations.to}
+								icon={Pages.manage.subPages.integrations.icon}
+								id={Pages.manage.subPages.integrations.id}
+								onClick={() => navigate(Pages.manage.subPages.integrations.to)}
+							/>
+							{/* Subpáginas WooCommerce */}
+							<NavItem
+								text={'WooCommerce Integración'}
+								to={'/gestion/integraciones/woocommerce'}
+								icon={'HeroGlobeAlt'}
+								id={'woocommerce-integration'}
+								onClick={() => navigate('/gestion/integraciones/woocommerce')}
+							/>
+							<AuthorityCheckNav
+								authority={
+									Pages.manage.subPages.integrations.subPages.woocommerceSync
+										.authority
+								}
+								userAuthority={userPermissionsAndRoles}>
+								<NavItem
+									text={
+										Pages.manage.subPages.integrations.subPages.woocommerceSync
+											.text
+									}
+									to={
+										Pages.manage.subPages.integrations.subPages.woocommerceSync
+											.to
+									}
+									icon={
+										Pages.manage.subPages.integrations.subPages.woocommerceSync
+											.icon
+									}
+									id={
+										Pages.manage.subPages.integrations.subPages.woocommerceSync
+											.id
+									}
+									onClick={() =>
+										navigate(
+											Pages.manage.subPages.integrations.subPages
+												.woocommerceSync.to,
+										)
+									}
+								/>
+							</AuthorityCheckNav>
+							<NavItem
+								text={'Importar Pedidos WooCommerce'}
+								to={'/gestion/integraciones/woocommerce-import'}
+								icon={'HeroDocumentArrowDown'}
+								id={'woocommerce-import'}
+								onClick={() =>
+									navigate('/gestion/integraciones/woocommerce-import')
+								}
 							/>
 						</AuthorityCheckNav>
 

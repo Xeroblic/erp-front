@@ -1,16 +1,14 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchMisSubsidiarias } from '@/store/slices/subempresa/subEmpresaSlice';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
-import Table, { Th, THead, Tr, TBody, Td } from '@/components/ui/Table';
 import Button from '@/components/ui/Button';
 import Input from '@/components/form/Input';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
-import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
 import Modal, {
 	ModalHeader,
 	ModalBody,
@@ -23,16 +21,6 @@ import * as Yup from 'yup';
 import { toast } from 'react-toastify';
 import Label from '@/components/form/Label';
 import SelectReact from '@/components/form/SelectReact';
-import {
-	createColumnHelper,
-	flexRender,
-	getCoreRowModel,
-	getFilteredRowModel,
-	getPaginationRowModel,
-	getSortedRowModel,
-	SortingState,
-	useReactTable,
-} from '@tanstack/react-table';
 
 // CU017 - Interfaces y tipos
 interface ISubempresaPersonalizacion {
@@ -89,14 +77,6 @@ const FORMATOS_FECHA_OPTIONS = [
 	{ value: 'YYYY-MM-DD', label: 'YYYY-MM-DD (año-mes-día)' },
 ];
 
-// Interface extendida para la tabla
-interface ISubempresaConPersonalizacion extends ISubempresa {
-	personalizacion?: ISubempresaPersonalizacion;
-	tienePersonalizacion: boolean;
-}
-
-const columnHelper = createColumnHelper<ISubempresaConPersonalizacion>();
-
 export default function SubEmpresaPersonalizacion() {
 	const dispatch = useAppDispatch();
 	const user = useAppSelector((s) => s.auth.user);
@@ -107,8 +87,6 @@ export default function SubEmpresaPersonalizacion() {
 		'todos' | 'con_personalizacion' | 'sin_personalizacion'
 	>('todos');
 	const [filtroTexto, setFiltroTexto] = useState('');
-	const [sorting, setSorting] = useState<SortingState>([]);
-	const [globalFilter, setGlobalFilter] = useState('');
 
 	// Estados de modales
 	const [modalPersonalizar, setModalPersonalizar] = useState(false);
@@ -297,193 +275,30 @@ export default function SubEmpresaPersonalizacion() {
 		}
 	};
 
-	// Definición de columnas
-	const columns = useMemo(
-		() => [
-			columnHelper.accessor('name', {
-				header: 'Subempresa',
-				cell: (info) => {
-					const personalizacion = info.row.original.personalizacion;
-					return (
-						<div className='flex items-center'>
-							<div
-								className='mr-3 flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-600'
-								style={{
-									backgroundColor:
-										personalizacion?.color_principal || 'transparent',
-								}}>
-								<Icon
-									icon='HeroBuildingStorefront'
-									className={`h-5 w-5 ${
-										personalizacion?.color_principal
-											? 'text-white'
-											: 'text-gray-600 dark:text-gray-400'
-									}`}
-								/>
-							</div>
-							<div>
-								<div className='text-sm font-medium text-gray-900 dark:text-gray-100'>
-									{info.getValue()}
-								</div>
-								<div className='text-sm text-gray-500 dark:text-gray-400'>
-									ID: {info.row.original.id}
-								</div>
-							</div>
-						</div>
-					);
-				},
-			}),
-			columnHelper.accessor('tienePersonalizacion', {
-				header: 'Estado',
-				cell: (info) => {
-					const tienePersonalizacion = info.getValue();
-					return tienePersonalizacion ? (
-						<Badge color='emerald' className='flex items-center gap-1'>
-							<Icon icon='HeroCheckCircle' className='h-3 w-3' />
-							Personalizada
-						</Badge>
-					) : (
-						<Badge color='gray' className='flex items-center gap-1'>
-							<Icon icon='HeroXCircle' className='h-3 w-3' />
-							Por defecto
-						</Badge>
-					);
-				},
-			}),
-			columnHelper.display({
-				id: 'configuracion',
-				header: 'Configuración',
-				cell: (info) => {
-					const personalizacion = info.row.original.personalizacion;
-					return personalizacion ? (
-						<div className='space-y-1 text-xs text-gray-600 dark:text-gray-400'>
-							<div className='flex items-center gap-2'>
-								<div
-									className='h-3 w-3 rounded-full border border-gray-300 dark:border-gray-600'
-									style={{
-										backgroundColor: personalizacion.color_principal,
-									}}
-								/>
-								<span className='font-mono'>{personalizacion.color_principal}</span>
-							</div>
-							<div>
-								Idioma:{' '}
-								{
-									IDIOMAS_OPTIONS.find(
-										(i) => i.value === personalizacion.idioma_predeterminado,
-									)?.label
-								}
-							</div>
-							<div>Moneda: {personalizacion.moneda_local}</div>
-						</div>
-					) : (
-						<span className='text-xs text-gray-400 dark:text-gray-500'>
-							Sin configurar
-						</span>
-					);
-				},
-			}),
-			columnHelper.display({
-				id: 'acciones',
-				header: 'Acciones',
-				cell: (info) => {
-					const subempresa = info.row.original;
-					const personalizacion = subempresa.personalizacion;
-					return (
-						<div className='flex justify-end gap-2'>
-							{personalizacion ? (
-								<>
-									<Button
-										variant='outline'
-										size='sm'
-										onClick={() => handleEditarPersonalizacion(subempresa)}
-										title='Editar personalización'>
-										<Icon icon='HeroPencil' className='h-4 w-4' />
-									</Button>
-									<Button
-										variant='outline'
-										size='sm'
-										color='amber'
-										onClick={() => handleEliminarPersonalizacion(subempresa)}
-										title='Restablecer a valores por defecto'>
-										<Icon icon='HeroArrowPath' className='h-4 w-4' />
-									</Button>
-								</>
-							) : (
-								<Button
-									variant='outline'
-									size='sm'
-									color='blue'
-									onClick={() => handleCrearPersonalizacion(subempresa)}
-									title='Crear personalización'>
-									<Icon icon='HeroPaintBrush' className='h-4 w-4' />
-								</Button>
-							)}
-						</div>
-					);
-				},
-			}),
-		],
-		[personalizaciones],
-	);
+	// CU017.4 - Filtrar subempresas
+	const subempresasFiltradas = subempresas.filter((subempresa) => {
+		// Filtro por texto
+		if (filtroTexto) {
+			const coincideTexto = subempresa.name.toLowerCase().includes(filtroTexto.toLowerCase());
+			if (!coincideTexto) return false;
+		}
 
-	// CU017.4 - Filtrar subempresas y preparar datos para la tabla
-	const subempresasConPersonalizacion = useMemo(() => {
-		return subempresas.map((subempresa): ISubempresaConPersonalizacion => {
-			const personalizacion = personalizaciones.find(
-				(p) => p.subempresa_id === subempresa.id,
-			);
-			return {
-				...subempresa,
-				personalizacion,
-				tienePersonalizacion: !!personalizacion,
-			};
-		});
-	}, [subempresas, personalizaciones]);
+		// Filtro por estado de personalización
+		const tienePersonalizacion = personalizaciones.some(
+			(p) => p.subempresa_id === subempresa.id,
+		);
 
-	const subempresasFiltradas = useMemo(() => {
-		return subempresasConPersonalizacion.filter((subempresa) => {
-			// Filtro por texto
-			if (filtroTexto) {
-				const coincideTexto = subempresa.name
-					.toLowerCase()
-					.includes(filtroTexto.toLowerCase());
-				if (!coincideTexto) return false;
-			}
-
-			// Filtro por estado de personalización
-			if (filtroEstado === 'con_personalizacion') return subempresa.tienePersonalizacion;
-			if (filtroEstado === 'sin_personalizacion') return !subempresa.tienePersonalizacion;
-			return true;
-		});
-	}, [subempresasConPersonalizacion, filtroTexto, filtroEstado]);
-
-	// Configuración de la tabla
-	const table = useReactTable({
-		data: subempresasFiltradas,
-		columns,
-		state: { sorting, globalFilter },
-		onSortingChange: setSorting,
-		enableGlobalFilter: true,
-		onGlobalFilterChange: setGlobalFilter,
-		getCoreRowModel: getCoreRowModel(),
-		getFilteredRowModel: getFilteredRowModel(),
-		getSortedRowModel: getSortedRowModel(),
-		getPaginationRowModel: getPaginationRowModel(),
-		initialState: { pagination: { pageSize: 10 } },
+		if (filtroEstado === 'con_personalizacion') return tienePersonalizacion;
+		if (filtroEstado === 'sin_personalizacion') return !tienePersonalizacion;
+		return true;
 	});
 
 	return (
 		<PageWrapper>
 			<Subheader>
 				<SubheaderLeft>
-					<Icon
-						icon='HeroPaintBrush'
-						className='mr-2 h-6 w-6 text-gray-700 dark:text-gray-300'
-					/>
-					<span className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
-						Personalización de Sub-empresas
-					</span>
+					<Icon icon='HeroPaintBrush' className='mr-2 h-6 w-6' />
+					<span className='text-lg font-semibold'>Personalización de Sub-empresas</span>
 				</SubheaderLeft>
 				<SubheaderRight>
 					<Button color='blue' variant='outline' onClick={() => window.location.reload()}>
@@ -494,79 +309,14 @@ export default function SubEmpresaPersonalizacion() {
 			</Subheader>
 
 			<Container>
-				<div className='mb-6 grid grid-cols-1 gap-4 md:grid-cols-3'>
-					<Card className='border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800'>
-						<CardBody className='p-6'>
-							<div className='flex items-center justify-between'>
-								<div>
-									<p className='text-sm font-medium text-gray-600 dark:text-gray-400'>
-										Total Subempresas
-									</p>
-									<p className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
-										{subempresas.length}
-									</p>
-								</div>
-								<div className='rounded-lg bg-gray-100 p-3 dark:bg-gray-700'>
-									<Icon
-										icon='HeroBuildingStorefront'
-										className='h-6 w-6 text-gray-600 dark:text-gray-400'
-									/>
-								</div>
-							</div>
-						</CardBody>
-					</Card>
-
-					<Card className='border-emerald-200 bg-emerald-50 shadow-sm dark:border-emerald-800 dark:bg-emerald-900/20'>
-						<CardBody className='p-6'>
-							<div className='flex items-center justify-between'>
-								<div>
-									<p className='text-sm font-medium text-emerald-700 dark:text-emerald-400'>
-										Con Personalización
-									</p>
-									<p className='text-2xl font-bold text-emerald-900 dark:text-emerald-100'>
-										{personalizaciones.length}
-									</p>
-								</div>
-								<div className='rounded-lg bg-emerald-100 p-3 dark:bg-emerald-800/50'>
-									<Icon
-										icon='HeroCheckCircle'
-										className='h-6 w-6 text-emerald-600 dark:text-emerald-400'
-									/>
-								</div>
-							</div>
-						</CardBody>
-					</Card>
-
-					<Card className='border-amber-200 bg-amber-50 shadow-sm dark:border-amber-800 dark:bg-amber-900/20'>
-						<CardBody className='p-6'>
-							<div className='flex items-center justify-between'>
-								<div>
-									<p className='text-sm font-medium text-amber-700 dark:text-amber-400'>
-										Sin Personalización
-									</p>
-									<p className='text-2xl font-bold text-amber-900 dark:text-amber-100'>
-										{subempresas.length - personalizaciones.length}
-									</p>
-								</div>
-								<div className='rounded-lg bg-amber-100 p-3 dark:bg-amber-800/50'>
-									<Icon
-										icon='HeroXCircle'
-										className='h-6 w-6 text-amber-600 dark:text-amber-400'
-									/>
-								</div>
-							</div>
-						</CardBody>
-					</Card>
-				</div>
-
 				<Card>
 					<CardHeader>
 						<div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between'>
 							<div>
-								<h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
+								<h3 className='text-lg font-semibold'>
 									Gestión de Personalizaciones
 								</h3>
-								<p className='text-sm text-gray-600 dark:text-gray-400'>
+								<p className='text-sm text-gray-600'>
 									Configure la apariencia y parámetros visuales de cada subempresa
 								</p>
 							</div>
@@ -576,8 +326,8 @@ export default function SubEmpresaPersonalizacion() {
 								<Input
 									name='filtroTexto'
 									placeholder='Buscar subempresa...'
-									value={globalFilter}
-									onChange={(e) => setGlobalFilter(e.target.value)}
+									value={filtroTexto}
+									onChange={(e) => setFiltroTexto(e.target.value)}
 									className='w-full md:w-64'
 								/>
 
@@ -614,90 +364,260 @@ export default function SubEmpresaPersonalizacion() {
 					</CardHeader>
 
 					<CardBody>
-						{/* Tabla de subempresas con TanStack */}
-						{loading ? (
-							<div className='py-12 text-center'>
-								<div className='flex items-center justify-center gap-3'>
-									<div className='h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent'></div>
-									<span className='text-gray-600 dark:text-gray-400'>
-										Cargando subempresas...
-									</span>
+						{/* Estadísticas */}
+						<div className='mb-6 grid grid-cols-1 gap-4 md:grid-cols-3'>
+							<div className='rounded-lg border border-gray-200 bg-gray-50 p-4'>
+								<div className='flex items-center justify-between'>
+									<div>
+										<p className='text-sm font-medium text-gray-600'>
+											Total Subempresas
+										</p>
+										<p className='text-2xl font-bold text-gray-900'>
+											{subempresas.length}
+										</p>
+									</div>
+									<Icon
+										icon='HeroBuildingStorefront'
+										className='h-8 w-8 text-gray-400'
+									/>
 								</div>
 							</div>
-						) : subempresasFiltradas.length === 0 ? (
-							<div className='py-12 text-center'>
-								<Icon
-									icon='HeroMagnifyingGlass'
-									className='mx-auto h-12 w-12 text-gray-400 dark:text-gray-500'
-								/>
-								<h3 className='mt-2 text-sm font-medium text-gray-900 dark:text-gray-100'>
-									No se encontraron subempresas
-								</h3>
-								<p className='mt-1 text-sm text-gray-500 dark:text-gray-400'>
-									Ajusta los filtros de búsqueda para ver más resultados.
-								</p>
-							</div>
-						) : (
-							<>
-								<Table className='w-full'>
-									<THead>
-										{table.getHeaderGroups().map((headerGroup) => (
-											<Tr key={headerGroup.id}>
-												{headerGroup.headers.map((header) => (
-													<Th
-														key={header.id}
-														className={`text-left ${
-															header.id === 'acciones'
-																? 'text-right'
-																: ''
-														}`}>
-														{header.isPlaceholder
-															? null
-															: flexRender(
-																	header.column.columnDef.header,
-																	header.getContext(),
-																)}
-													</Th>
-												))}
-											</Tr>
-										))}
-									</THead>
-									<TBody>
-										{table.getRowModel().rows.map((row) => (
-											<Tr
-												key={row.id}
-												className='hover:bg-gray-50 dark:hover:bg-gray-800'>
-												{row.getVisibleCells().map((cell) => (
-													<Td
-														key={cell.id}
-														className={`${
-															cell.column.id === 'acciones'
-																? 'text-right'
-																: ''
-														}`}>
-														{flexRender(
-															cell.column.columnDef.cell,
-															cell.getContext(),
-														)}
-													</Td>
-												))}
-											</Tr>
-										))}
-									</TBody>
-								</Table>
 
-								{/* Footer con paginación */}
-								<div className='mt-4'>
-									<TableCardFooterTemplateV2 table={table} />
+							<div className='rounded-lg border border-emerald-200 bg-emerald-50 p-4'>
+								<div className='flex items-center justify-between'>
+									<div>
+										<p className='text-sm font-medium text-emerald-600'>
+											Con Personalización
+										</p>
+										<p className='text-2xl font-bold text-emerald-900'>
+											{personalizaciones.length}
+										</p>
+									</div>
+									<Icon
+										icon='HeroCheckCircle'
+										className='h-8 w-8 text-emerald-400'
+									/>
 								</div>
-							</>
-						)}
+							</div>
+
+							<div className='rounded-lg border border-amber-200 bg-amber-50 p-4'>
+								<div className='flex items-center justify-between'>
+									<div>
+										<p className='text-sm font-medium text-amber-600'>
+											Sin Personalización
+										</p>
+										<p className='text-2xl font-bold text-amber-900'>
+											{subempresas.length - personalizaciones.length}
+										</p>
+									</div>
+									<Icon icon='HeroXCircle' className='h-8 w-8 text-amber-400' />
+								</div>
+							</div>
+						</div>
+
+						{/* Tabla de subempresas */}
+						<div className='overflow-hidden rounded-lg border border-gray-200'>
+							<div className='overflow-x-auto'>
+								<table className='min-w-full divide-y divide-gray-200'>
+									<thead className='bg-gray-50'>
+										<tr>
+											<th className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'>
+												Subempresa
+											</th>
+											<th className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'>
+												Estado
+											</th>
+											<th className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'>
+												Configuración
+											</th>
+											<th className='px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500'>
+												Acciones
+											</th>
+										</tr>
+									</thead>
+									<tbody className='divide-y divide-gray-200 bg-white'>
+										{subempresasFiltradas.map((subempresa) => {
+											const personalizacion = personalizaciones.find(
+												(p) => p.subempresa_id === subempresa.id,
+											);
+
+											return (
+												<tr
+													key={subempresa.id}
+													className='hover:bg-gray-50'>
+													<td className='whitespace-nowrap px-6 py-4'>
+														<div className='flex items-center'>
+															<div
+																className='mr-3 flex h-10 w-10 items-center justify-center rounded-lg'
+																style={{
+																	backgroundColor:
+																		personalizacion?.color_principal ||
+																		'#F3F4F6',
+																}}>
+																<Icon
+																	icon='HeroBuildingStorefront'
+																	className={`h-5 w-5 ${
+																		personalizacion?.color_principal
+																			? 'text-white'
+																			: 'text-gray-600'
+																	}`}
+																/>
+															</div>
+															<div>
+																<div className='text-sm font-medium text-gray-900'>
+																	{subempresa.name}
+																</div>
+																<div className='text-sm text-gray-500'>
+																	ID: {subempresa.id}
+																</div>
+															</div>
+														</div>
+													</td>
+
+													<td className='whitespace-nowrap px-6 py-4'>
+														{personalizacion ? (
+															<Badge
+																color='emerald'
+																className='flex items-center gap-1'>
+																<Icon
+																	icon='HeroCheckCircle'
+																	className='h-3 w-3'
+																/>
+																Personalizada
+															</Badge>
+														) : (
+															<Badge
+																color='gray'
+																className='flex items-center gap-1'>
+																<Icon
+																	icon='HeroXCircle'
+																	className='h-3 w-3'
+																/>
+																Por defecto
+															</Badge>
+														)}
+													</td>
+
+													<td className='whitespace-nowrap px-6 py-4'>
+														{personalizacion ? (
+															<div className='space-y-1 text-xs text-gray-600'>
+																<div className='flex items-center gap-2'>
+																	<div
+																		className='h-3 w-3 rounded-full border'
+																		style={{
+																			backgroundColor:
+																				personalizacion.color_principal,
+																		}}
+																	/>
+																	<span className='font-mono'>
+																		{
+																			personalizacion.color_principal
+																		}
+																	</span>
+																</div>
+																<div>
+																	Idioma:{' '}
+																	{
+																		IDIOMAS_OPTIONS.find(
+																			(i) =>
+																				i.value ===
+																				personalizacion.idioma_predeterminado,
+																		)?.label
+																	}
+																</div>
+																<div>
+																	Moneda:{' '}
+																	{personalizacion.moneda_local}
+																</div>
+															</div>
+														) : (
+															<span className='text-xs text-gray-400'>
+																Sin configurar
+															</span>
+														)}
+													</td>
+
+													<td className='whitespace-nowrap px-6 py-4 text-right'>
+														<div className='flex justify-end gap-2'>
+															{personalizacion ? (
+																<>
+																	<Button
+																		variant='outline'
+																		size='sm'
+																		onClick={() =>
+																			handleEditarPersonalizacion(
+																				subempresa,
+																			)
+																		}
+																		title='Editar personalización'>
+																		<Icon
+																			icon='HeroPencil'
+																			className='h-4 w-4'
+																		/>
+																	</Button>
+																	<Button
+																		variant='outline'
+																		size='sm'
+																		color='amber'
+																		onClick={() =>
+																			handleEliminarPersonalizacion(
+																				subempresa,
+																			)
+																		}
+																		title='Restablecer a valores por defecto'>
+																		<Icon
+																			icon='HeroArrowPath'
+																			className='h-4 w-4'
+																		/>
+																	</Button>
+																</>
+															) : (
+																<Button
+																	variant='outline'
+																	size='sm'
+																	color='blue'
+																	onClick={() =>
+																		handleCrearPersonalizacion(
+																			subempresa,
+																		)
+																	}
+																	title='Crear personalización'>
+																	<Icon
+																		icon='HeroPaintBrush'
+																		className='h-4 w-4'
+																	/>
+																</Button>
+															)}
+														</div>
+													</td>
+												</tr>
+											);
+										})}
+									</tbody>
+								</table>
+							</div>
+
+							{subempresasFiltradas.length === 0 && (
+								<div className='py-12 text-center'>
+									<Icon
+										icon='HeroMagnifyingGlass'
+										className='mx-auto h-12 w-12 text-gray-400'
+									/>
+									<h3 className='mt-2 text-sm font-medium text-gray-900'>
+										No se encontraron subempresas
+									</h3>
+									<p className='mt-1 text-sm text-gray-500'>
+										Ajusta los filtros de búsqueda para ver más resultados.
+									</p>
+								</div>
+							)}
+						</div>
 					</CardBody>
 				</Card>
 			</Container>
 
 			{/* Modal Crear/Editar Personalización */}
-			<Modal isOpen={modalPersonalizar} setIsOpen={setModalPersonalizar} size='lg'>
+			<Modal isOpen={modalPersonalizar} setIsOpen={setModalPersonalizar} size='4xl'>
 				<ModalHeader>
 					<div className='flex items-center gap-3'>
 						<div className='flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100'>

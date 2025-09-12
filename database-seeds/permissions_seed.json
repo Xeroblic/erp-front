@@ -159,6 +159,18 @@
       "description": "Enviar y gestionar invitaciones"
     },
     {
+      "name": "Ver Integraciones",
+      "code": "view-integrations",
+      "module": "management",
+      "description": "Visualizar configuración de integraciones externas"
+    },
+    {
+      "name": "Gestionar Integraciones",
+      "code": "manage-integrations",
+      "module": "management",
+      "description": "Configurar, editar y eliminar integraciones con servicios externos"
+    },
+    {
       "name": "Ver Inventario",
       "code": "inventory.view",
       "module": "inventory",
@@ -480,7 +492,7 @@
   "role_permissions": {
     "super-admin": "ALL",
     "supervisor-empresa": [
-      "view-dashboard", "view-profile", "view-company", "view-subsidiary", "view-branch", "view-users",
+      "view-dashboard", "view-profile", "view-company", "view-subsidiary", "view-branch", "view-users", "view-integrations",
       "inventory.view", "inventory.view_movements", "inventory.generate_reports",
       "transfers.view", "transfers.approve",
       "sales.view", "sales.confirm",
@@ -490,6 +502,7 @@
     "administrador": [
       "view-dashboard", "view-profile", "view-users", "manage-users", "view-company", "edit-company", 
       "view-subsidiary", "edit-subsidiary", "view-branch", "edit-branch", "edit-roles", "manage-permissions", "manage-invitations",
+      "view-integrations", "manage-integrations",
       "inventory.view", "inventory.create", "inventory.update", "inventory.delete", "inventory.adjust", "inventory.transfer", "inventory.view_movements", "inventory.update_levels",
       "transfers.view", "transfers.create", "transfers.update", "transfers.delete", "transfers.approve", "transfers.cancel",
       "sales.view", "sales.create", "sales.update", "sales.delete", "sales.confirm", "sales.cancel", "sales.manage_discounts",

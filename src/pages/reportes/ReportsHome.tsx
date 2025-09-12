@@ -1,0 +1,55 @@
+import React from 'react';
+import Card, { CardBody, CardHeader } from '@/components/ui/Card';
+import Icon from '@/components/icon/Icon';
+import Button from '@/components/ui/Button';
+import { useNavigate } from 'react-router-dom';
+import pagesConfig from '@/config/pages.config';
+
+const cfg = pagesConfig as any;
+
+const ReportsHome: React.FC = () => {
+  const navigate = useNavigate();
+
+  return (
+    <div className="space-y-6">
+      <Card className="border border-violet-200/60 bg-gradient-to-br from-violet-50 to-violet-50/60 dark:from-violet-900/10 dark:to-transparent shadow-sm">
+        <CardHeader className="bg-white/60 dark:bg-zinc-900/40 rounded-t-md">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100">
+              <Icon icon="HeroChartBar" className="h-6 w-6 text-violet-700" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-violet-900">Reportes</h2>
+              <p className="text-sm text-violet-700">Selecciona un reporte para comenzar</p>
+            </div>
+          </div>
+        </CardHeader>
+        <CardBody>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="rounded-lg border border-zinc-200 bg-white dark:bg-zinc-900 p-4">
+              <div className="flex items-center gap-2 text-zinc-700"><Icon icon="HeroReceiptPercent" className="h-5 w-5" /> Dashboard de Ventas</div>
+              <Button className="mt-3" variant="outline" color="violet" onClick={() => navigate(cfg.reports.subPages.salesDashboard.to)}>
+                Abrir
+              </Button>
+            </div>
+            <div className="rounded-lg border border-zinc-200 bg-white dark:bg-zinc-900 p-4">
+              <div className="flex items-center gap-2 text-zinc-700"><Icon icon="HeroCubeTransparent" className="h-5 w-5" /> Reportes de Inventario</div>
+              <Button className="mt-3" variant="outline" color="violet" onClick={() => navigate(cfg.reports.subPages.inventoryReports.to)}>
+                Abrir
+              </Button>
+            </div>
+            <div className="rounded-lg border border-zinc-200 bg-white dark:bg-zinc-900 p-4">
+              <div className="flex items-center gap-2 text-zinc-700"><Icon icon="HeroBanknotes" className="h-5 w-5" /> Reportes Financieros</div>
+              <Button className="mt-3" variant="outline" color="violet" onClick={() => navigate(cfg.reports.subPages.financialReports.to)}>
+                Abrir
+              </Button>
+            </div>
+          </div>
+        </CardBody>
+      </Card>
+    </div>
+  );
+};
+
+export default ReportsHome;
+

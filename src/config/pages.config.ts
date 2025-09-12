@@ -106,7 +106,7 @@ export const privatePages = {
         text: 'Roles y permisos',
         icon: 'HeroShieldCheck',
         authority: ['edit-roles'],
-        roles: ['super-admin'],
+        roles: ['super-admin', 'company-admin', 'subsidiary-admin'],
         requireAll: true,
       },
       manageUsers: {
@@ -116,6 +116,24 @@ export const privatePages = {
         icon: 'HeroUsers',
         authority: ['view-users'],
         roles: ['super-admin', 'company-admin', 'subsidiary-admin'],
+      },
+      integrations: {
+        id: 'integrations',
+        to: '/gestion/integraciones',
+        text: 'Integraciones',
+        icon: 'HeroGlobeAlt',
+        authority: ['view-users'], // 'view-integrations', 'manage-integrations'
+        roles: ['super-admin', 'company-admin'],
+        subPages: {
+          woocommerceSync: {
+            id: 'woocommerceSync',
+            to: '/gestion/integraciones/woocommerce-sync',
+            text: 'Sincronizar WooCommerce',
+            icon: 'HeroArrowPath',
+            authority: ['view-users'], //'manage-integrations', 'view-integrations'
+            roles: ['super-admin', 'company-admin'],
+          },
+        },
       },
       permissionsAdmin: {
         id: 'permissionsAdmin',
@@ -214,7 +232,7 @@ export const privatePages = {
     to: '/reportes',
     text: 'Reportes',
     icon: 'HeroChartBar',
-    authority: ['reports.view'],
+    authority: ['view-users'],//reports.view
     roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'manager'],
     subPages: {
       salesDashboard: {
@@ -222,7 +240,7 @@ export const privatePages = {
         to: '/reportes/ventas',
         text: 'Dashboard de Ventas',
         icon: 'HeroReceiptPercent',
-        authority: ['reports.sales_dashboard'],
+        authority: ['view-users'], //'reports.sales_dashboard'
         roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'manager'],
       },
       inventoryReports: {

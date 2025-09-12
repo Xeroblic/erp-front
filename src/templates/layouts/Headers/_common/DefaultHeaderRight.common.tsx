@@ -9,7 +9,7 @@ const DefaultHeaderRightCommon = () => {
 	return (
 		<>
 			{/* <MessagesPartial /> */}
-			{/* <NotificationPartial /> */}
+			<NotificationPartial />
 			<CompanySelectorButton />
 			<SettingsPartial />
 			{/* <LanguageSelectorPartial /> */}

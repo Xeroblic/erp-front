@@ -205,7 +205,7 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 	};
 
 	return (
-		<Modal isOpen={isOpen} setIsOpen={onClose} size='4xl'>
+		<Modal isOpen={isOpen} setIsOpen={onClose} size='lg'>
 			<ModalHeader>
 				<div className='flex items-center space-x-3'>
 					<div className='flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/20'>
