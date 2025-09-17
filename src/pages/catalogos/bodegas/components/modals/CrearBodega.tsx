@@ -8,9 +8,11 @@ import Textarea from '@/components/form/Textarea';
 import Select from '@/components/form/Select';
 import Checkbox from '@/components/form/Checkbox';
 
+import { Dispatch, SetStateAction } from 'react';
+
 type CrearBodegaProps = {
   isOpen: boolean;
-  setIsOpen: (open: boolean) => void;
+  setIsOpen: Dispatch<SetStateAction<boolean>>;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 };
 
@@ -22,7 +24,7 @@ const CrearBodega: React.FC<CrearBodegaProps> = ({ isOpen, setIsOpen, onSubmit }
           <div className='flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100'>
             <Icon icon='HeroPlus' className='h-6 w-6 text-emerald-600' />
           </div>
-          <div>
+          <div>|
             <h2 className='text-xl font-bold text-gray-900'>Crear Nueva Bodega</h2>
             <p className='text-sm text-gray-600'>Registra una nueva bodega en el sistema</p>
           </div>
@@ -55,12 +57,11 @@ const CrearBodega: React.FC<CrearBodegaProps> = ({ isOpen, setIsOpen, onSubmit }
               <Label htmlFor='create-type' className='required'>
                 Tipo
               </Label>
-              <Select defaultValue='storage' id='create-type' name='warehouse_type'>
-                <option value='storage'>Almacenamiento</option>
-                <option value='distribution'>Distribución</option>
-                <option value='cold_storage'>Almacén Frío</option>
-                <option value='transit'>Tránsito</option>
-                <option value='production'>Producción</option>
+              <Select defaultValue='CENTRAL' id='create-type' name='warehouse_type'>
+                <option value='CENTRAL'>Central</option>
+                <option value='SUCURSAL'>Sucursal</option>
+                <option value='DISTRIBUCION'>Distribución</option>
+                <option value='TEMPORAL'>Temporal</option>
               </Select>
             </div>
             <div>
@@ -157,4 +158,3 @@ const CrearBodega: React.FC<CrearBodegaProps> = ({ isOpen, setIsOpen, onSubmit }
 };
 
 export default CrearBodega;
-

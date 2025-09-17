@@ -2,16 +2,16 @@ import React, { Dispatch, SetStateAction } from 'react';
 import Icon from '@/components/icon/Icon';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
-import { IWarehouse } from '../types';
+import { ICustomer } from '../types';
 
-type EliminarBodegaProps = {
+type EliminarClienteProps = {
   isOpen: boolean;
   setIsOpen: Dispatch<SetStateAction<boolean>>;
-  warehouse: IWarehouse | null;
+  customer: ICustomer | null;
   onConfirm: () => void;
 };
 
-const EliminarBodega: React.FC<EliminarBodegaProps> = ({ isOpen, setIsOpen, warehouse, onConfirm }) => {
+const EliminarCliente: React.FC<EliminarClienteProps> = ({ isOpen, setIsOpen, customer, onConfirm }) => {
   return (
     <Modal isOpen={isOpen} setIsOpen={setIsOpen}>
       <ModalHeader>
@@ -20,26 +20,26 @@ const EliminarBodega: React.FC<EliminarBodegaProps> = ({ isOpen, setIsOpen, ware
             <Icon icon='HeroTrash' className='h-6 w-6 text-red-600' />
           </div>
           <div>
-            <h2 className='text-xl font-bold text-gray-900'>Eliminar Bodega</h2>
+            <h2 className='text-xl font-bold text-gray-900'>Eliminar Cliente</h2>
             <p className='text-sm text-gray-600'>Esta acción no se puede deshacer</p>
           </div>
         </div>
       </ModalHeader>
       <ModalBody>
-        {warehouse ? (
+        {customer ? (
           <div className='space-y-2 text-sm text-gray-700'>
             <p>
-              ¿Estás seguro que deseas eliminar la bodega
-              <span className='font-semibold'> {warehouse.name}</span> ({warehouse.code})?
+              ¿Estás seguro que deseas eliminar al cliente
+              <span className='font-semibold'> {customer.name}</span>?
             </p>
-            {warehouse.products_count > 0 && (
+            {customer.orders_count > 0 && (
               <p className='text-red-600'>
-                No se puede eliminar: tiene {warehouse.products_count} productos.
+                No se puede eliminar: tiene {customer.orders_count} órdenes.
               </p>
             )}
           </div>
         ) : (
-          <div className='text-sm text-gray-500'>No hay bodega seleccionada.</div>
+          <div className='text-sm text-gray-500'>No hay cliente seleccionado.</div>
         )}
       </ModalBody>
       <ModalFooter>
@@ -47,7 +47,7 @@ const EliminarBodega: React.FC<EliminarBodegaProps> = ({ isOpen, setIsOpen, ware
           <Button variant='outline' onClick={() => setIsOpen(false)}>
             Cancelar
           </Button>
-          <Button color='red' onClick={onConfirm} isDisable={!!warehouse && warehouse.products_count > 0}>
+          <Button color='red' onClick={onConfirm} isDisable={!!customer && customer.orders_count > 0}>
             Eliminar
           </Button>
         </div>
@@ -56,4 +56,5 @@ const EliminarBodega: React.FC<EliminarBodegaProps> = ({ isOpen, setIsOpen, ware
   );
 };
 
-export default EliminarBodega;
+export default EliminarCliente;
+

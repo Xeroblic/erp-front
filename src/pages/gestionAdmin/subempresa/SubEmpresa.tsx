@@ -38,6 +38,7 @@ import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { toast } from 'react-toastify';
 import Label from '@/components/form/Label';
+import Spinner from '@/components/ui/Spinner';
 
 const columnHelper = createColumnHelper<ISubempresa>();
 
@@ -287,13 +288,8 @@ export default function SubEmpresaLista() {
 				<Card>
 					<CardBody className='overflow-auto'>
 						{loading ? (
-							<div className='p-8 text-center'>
-								<div className='flex items-center justify-center gap-3'>
-									<div className='h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent'></div>
-									<span className='text-zinc-600'>Cargando subempresas...</span>
-								</div>
-							</div>
-						) : subempresas.length === 0 ? (
+							<Spinner nombre='Sub Empresas'/>
+						) : subempresas.length === 0 ? (	
 							<div className='flex flex-col items-center justify-center py-12 text-center'>
 								<div className='mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800'>
 									<Icon
