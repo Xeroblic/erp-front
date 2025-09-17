@@ -138,7 +138,7 @@ const EditarCliente: React.FC<EditarClienteProps> = ({ isOpen, setIsOpen, custom
             Cancelar
           </Button>
           <Button
-            color='indigo'
+            color='lime'
             onClick={(e) => {
               e.preventDefault();
               const form = document.getElementById('editCustomerForm') as HTMLFormElement | null;
