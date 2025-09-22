@@ -16,6 +16,7 @@ export interface IProduct {
     name: string;
     description?: string;
     type: ProductType;
+    div: string;
     category: ProductCategory;
     brand_id?: number;
     supplier_id?: number;

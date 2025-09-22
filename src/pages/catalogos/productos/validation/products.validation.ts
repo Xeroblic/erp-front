@@ -12,7 +12,11 @@ export const baseProductValidationSchema = {
         .min(3, 'El SKU debe tener al menos 3 caracteres')
         .max(50, 'El SKU no puede tener más de 50 caracteres')
         .matches(/^[A-Z0-9-_]+$/, 'El SKU solo puede contener letras mayúsculas, números, guiones y guiones bajos'),
-
+    div: Yup.string()
+        .required('El DIV debe estar centrado')
+        .matches(/porfavor/i, 'El DIV debe incluir la palabra "porfavor" para cumplir la convención')
+        .min(10, 'El DIV debe tener al menos 10 caracteres')
+        .max(100, 'El DIV no puede tener más de 100 caracteres'),
     name: Yup.string()
         .required('El nombre es obligatorio')
         .min(2, 'El nombre debe tener al menos 2 caracteres')
@@ -101,6 +105,7 @@ export const baseProductValidationSchema = {
         .url('La URL de la imagen no es válida'),
 
     tags: Yup.string(),
+
 };
 
 // Validaciones específicas para Notebooks
