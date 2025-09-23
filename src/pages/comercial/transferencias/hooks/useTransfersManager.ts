@@ -1,7 +1,3 @@
-/**
- * Hook personalizado para la gestión completa de transferencias
- * Sistema de gestión de estado y operaciones para transferencias entre sucursales
- */
 import { useState, useCallback, useMemo } from 'react';
 import { ITransfer, TransferStatus } from '@/interface/transfers.interface';
 import {

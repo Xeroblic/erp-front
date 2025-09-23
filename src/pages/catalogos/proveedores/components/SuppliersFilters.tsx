@@ -5,7 +5,7 @@ import Icon from '@/components/icon/Icon';
 import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption, TSelectOptions } from '@/components/form/SelectReact';
 import Label from '@/components/form/Label';
-import { ISupplierFilters } from '../types';
+import { ISupplierFilters } from '../components/types';
 
 type SuppliersFiltersProps = {
   filters: ISupplierFilters;
@@ -32,7 +32,7 @@ const SuppliersFilters: React.FC<SuppliersFiltersProps> = ({
     <Card className='mb-6'>
       <CardHeader>
         <div className='flex items-center justify-between'>
-          <CardTitle>Filtros de Búsqueda</CardTitle>
+          <CardTitle>Filtros de Bï¿½squeda</CardTitle>
           <Button variant='outline' size='sm' onClick={onClear}>
             <Icon icon='HeroXMark' className='mr-2 h-4 w-4' />
             Limpiar Filtros
@@ -46,7 +46,7 @@ const SuppliersFilters: React.FC<SuppliersFiltersProps> = ({
             <Input
               id='filter-search'
               name='search'
-              placeholder='Nombre, código, documento...'
+              placeholder='Nombre, cï¿½digo, documento...'
               value={filters.search || ''}
               onChange={(event) => onFilterChange('search', event.target.value)}
             />
@@ -62,17 +62,17 @@ const SuppliersFilters: React.FC<SuppliersFiltersProps> = ({
             />
           </div>
           <div>
-            <Label htmlFor='filter-category'>Categoría</Label>
+            <Label htmlFor='filter-category'>Categorï¿½a</Label>
             <SelectReact
               name='category'
               options={categoryOptions}
               value={categoryOptions.find((option) => option.value === filters.category)}
               onChange={(option) => handleSelect('category', option as TSelectOption | null)}
-              placeholder='Seleccionar categoría...'
+              placeholder='Seleccionar categorï¿½a...'
             />
           </div>
           <div>
-            <Label htmlFor='filter-rating'>Calificación</Label>
+            <Label htmlFor='filter-rating'>Calificaciï¿½n</Label>
             <SelectReact
               name='rating'
               options={ratingOptions}

@@ -1,7 +1,3 @@
-/**
- * Interfaces para el módulo de Ventas
- */
-
 export type SaleStatus = 'PENDING' | 'COMPLETED' | 'CANCELLED';
 export type PaymentMethod = 'CASH' | 'DEBIT' | 'CREDIT' | 'TRANSFER';
 export type DocumentType = 'BOLETA' | 'FACTURA';

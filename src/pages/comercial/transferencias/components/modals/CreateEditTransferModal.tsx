@@ -1,7 +1,3 @@
-/**
- * Modal para Crear/Editar Transferencias
- * Incluye selección de sucursales, productos y validaciones
- */
 import React, { useState, useEffect } from 'react';
 import { Formik, Form, FieldArray } from 'formik';
 import * as Yup from 'yup';

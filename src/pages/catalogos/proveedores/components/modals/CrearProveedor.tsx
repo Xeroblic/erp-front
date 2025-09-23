@@ -34,8 +34,8 @@ const CrearProveedor: React.FC<CrearProveedorProps> = ({ isOpen, setIsOpen, onSu
                 <Input id='create-name' name='name' placeholder='Nombre de la empresa' required />
               </div>
               <div>
-                <Label htmlFor='create-code'>Código *</Label>
-                <Input id='create-code' name='code' placeholder='Código del proveedor' required />
+                <Label htmlFor='create-code'>Cï¿½digo *</Label>
+                <Input id='create-code' name='code' placeholder='Cï¿½digo del proveedor' required />
               </div>
             </div>
 
@@ -44,14 +44,14 @@ const CrearProveedor: React.FC<CrearProveedorProps> = ({ isOpen, setIsOpen, onSu
                 <Label htmlFor='create-document-type'>Tipo de Documento *</Label>
                 <Select id='create-document-type' name='document_type' defaultValue='NIT'>
                   <option value='NIT'>NIT</option>
-                  <option value='CC'>Cédula de Ciudadanía</option>
-                  <option value='CE'>Cédula de Extranjería</option>
+                  <option value='CC'>CÃ©dula de CiudadanÃ­a</option>
+                  <option value='CE'>CÃ©dula de ExtranjerÃ­a</option>
                   <option value='PASSPORT'>Pasaporte</option>
                 </Select>
               </div>
               <div>
-                <Label htmlFor='create-document-number'>Número de Documento *</Label>
-                <Input id='create-document-number' name='document_number' placeholder='Número de documento' required />
+                <Label htmlFor='create-document-number'>NÃºmero de Documento *</Label>
+                <Input id='create-document-number' name='document_number' placeholder='NÃºmero de documento' required />
               </div>
             </div>
 
@@ -61,14 +61,14 @@ const CrearProveedor: React.FC<CrearProveedorProps> = ({ isOpen, setIsOpen, onSu
                 <Input id='create-email' name='email' type='email' placeholder='email@empresa.com' required />
               </div>
               <div>
-                <Label htmlFor='create-phone'>Teléfono *</Label>
+                <Label htmlFor='create-phone'>TelÃ©fono *</Label>
                 <Input id='create-phone' name='phone' placeholder='+57 1 234-5678' required />
               </div>
             </div>
 
             <div>
-              <Label htmlFor='create-address'>Dirección *</Label>
-              <Textarea id='create-address' name='address' placeholder='Dirección completa' rows={2} required />
+              <Label htmlFor='create-address'>DirecciÃ³n *</Label>
+              <Textarea id='create-address' name='address' placeholder='DirecciÃ³n completa' rows={2} required />
             </div>
 
             <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
@@ -77,9 +77,9 @@ const CrearProveedor: React.FC<CrearProveedorProps> = ({ isOpen, setIsOpen, onSu
                 <Input id='create-city' name='city' placeholder='Ciudad' required />
               </div>
               <div>
-                <Label htmlFor='create-category'>Categoría *</Label>
+                <Label htmlFor='create-category'>CategorÃ­a *</Label>
                 <Select id='create-category' name='category' defaultValue='TECNOLOGIA'>
-                  <option value='TECNOLOGIA'>Tecnología</option>
+                  <option value='TECNOLOGIA'>TecnologÃ­a</option>
                   <option value='OFICINA'>Oficina</option>
                   <option value='SERVICIOS'>Servicios</option>
                   <option value='INSUMOS'>Insumos</option>
@@ -89,11 +89,11 @@ const CrearProveedor: React.FC<CrearProveedorProps> = ({ isOpen, setIsOpen, onSu
 
             <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
               <div>
-                <Label htmlFor='create-payment-terms'>Términos de Pago (días)</Label>
+                <Label htmlFor='create-payment-terms'>TÃ©rminos de Pago (dÃ­as)</Label>
                 <Input id='create-payment-terms' name='payment_terms' type='number' min='0' placeholder='30' />
               </div>
               <div>
-                <Label htmlFor='create-credit-limit'>Límite de Crédito</Label>
+                <Label htmlFor='create-credit-limit'>LÃ­mite de CrÃ©dito</Label>
                 <Input id='create-credit-limit' name='credit_limit' type='number' min='0' placeholder='50000000' />
               </div>
               <div>
@@ -120,7 +120,7 @@ const CrearProveedor: React.FC<CrearProveedorProps> = ({ isOpen, setIsOpen, onSu
                   />
                 </div>
                 <div>
-                  <Label htmlFor='create-contact-phone' className='text-xs'>Teléfono *</Label>
+                  <Label htmlFor='create-contact-phone' className='text-xs'>TelÃ©fono *</Label>
                   <Input
                     id='create-contact-phone'
                     name='contact_phone'

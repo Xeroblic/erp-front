@@ -3,9 +3,9 @@ import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Moda
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
-import { ISupplier } from '../../types';
-import SupplierRating from '../../SupplierRating';
-import { formatCurrency, formatDate } from '../../utils';
+import { ISupplier } from '../../components/types';
+import SupplierRating from '../../components/SupplierRating';
+import { formatCurrency, formatDate } from '../../components/utils';
 
 type DetalleProveedorProps = {
   isOpen: boolean;
@@ -23,7 +23,7 @@ const DetalleProveedor: React.FC<DetalleProveedorProps> = ({ isOpen, setIsOpen, 
         </div>
         <div>
           <h2 className='text-xl font-bold text-gray-900'>Detalles del Proveedor</h2>
-          <p className='text-sm text-gray-600'>Información general y métricas comerciales</p>
+          <p className='text-sm text-gray-600'>Informaciï¿½n general y mï¿½tricas comerciales</p>
         </div>
       </div>
     </ModalHeader>
@@ -54,7 +54,7 @@ const DetalleProveedor: React.FC<DetalleProveedorProps> = ({ isOpen, setIsOpen, 
 
           <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
             <div className='space-y-3 rounded-lg border p-4'>
-              <h4 className='font-semibold text-gray-700'>Información de Contacto</h4>
+              <h4 className='font-semibold text-gray-700'>Informaciï¿½n de Contacto</h4>
               <div className='text-sm text-gray-600'>
                 <p>{supplier.address}</p>
                 <p>
@@ -79,23 +79,23 @@ const DetalleProveedor: React.FC<DetalleProveedorProps> = ({ isOpen, setIsOpen, 
               </div>
             </div>
             <div className='space-y-3 rounded-lg border p-4'>
-              <h4 className='font-semibold text-gray-700'>Métricas Comerciales</h4>
+              <h4 className='font-semibold text-gray-700'>Mï¿½tricas Comerciales</h4>
               <div className='space-y-2 text-sm text-gray-600'>
                 <p>
                   <span className='font-medium text-gray-700'>Compras totales:</span>{' '}
                   <span className='text-green-600'>{formatCurrency(supplier.total_purchases)}</span>
                 </p>
                 <p>
-                  <span className='font-medium text-gray-700'>Órdenes:</span> {supplier.orders_count}
+                  <span className='font-medium text-gray-700'>ï¿½rdenes:</span> {supplier.orders_count}
                 </p>
                 <p>
                   <span className='font-medium text-gray-700'>Productos:</span> {supplier.products_count}
                 </p>
                 <p>
-                  <span className='font-medium text-gray-700'>Términos de pago:</span> {supplier.payment_terms} días
+                  <span className='font-medium text-gray-700'>Tï¿½rminos de pago:</span> {supplier.payment_terms} dï¿½as
                 </p>
                 <p>
-                  <span className='font-medium text-gray-700'>Límite de crédito:</span> {formatCurrency(supplier.credit_limit)}
+                  <span className='font-medium text-gray-700'>Lï¿½mite de crï¿½dito:</span> {formatCurrency(supplier.credit_limit)}
                 </p>
               </div>
             </div>

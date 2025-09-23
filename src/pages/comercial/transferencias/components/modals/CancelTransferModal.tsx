@@ -1,7 +1,3 @@
-/**
- * Modal de confirmación para cancelar transferencia
- * Proporciona confirmación visual antes de cancelar una transferencia
- */
 import React from 'react';
 import Modal, {
 	ModalBody,

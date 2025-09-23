@@ -1,7 +1,3 @@
-/**
- * Modal de Detalle de Transferencia
- * Muestra información completa de una transferencia con historial
- */
 import React from 'react';
 import Modal, {
 	ModalBody,

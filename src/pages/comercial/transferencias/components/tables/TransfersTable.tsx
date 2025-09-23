@@ -1,7 +1,3 @@
-/**
- * Componente de tabla para Transferencias
- * Muestra las transferencias con acciones y filtros
- */
 import React from 'react';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';

@@ -298,7 +298,7 @@ export default function SubEmpresaLista() {
 									/>
 								</div>
 								<h3 className='mb-2 font-medium text-zinc-900 dark:text-zinc-100'>
-									No hay subempresas registradas
+									No hay sub empresas creadas
 								</h3>
 								<p className='mb-4 max-w-sm text-sm text-zinc-500'>
 									Comienza agregando tu primera subempresa para organizar mejor tu

@@ -1,7 +1,3 @@
-/**
- * Página Principal de Administración de Transferencias
- * Sistema completo de gestión de transferencias entre sucursales
- */
 import React, { useState, useEffect } from 'react';
 import Button from '@/components/ui/Button';
 import Card, { CardHeader, CardBody, CardTitle } from '@/components/ui/Card';

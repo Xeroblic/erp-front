@@ -83,11 +83,9 @@ export default function EmpresaDetalle() {
 		}),
 		onSubmit: async values => {
 			try {
-				// 🚀 NUEVO: Usar updateMiEmpresa dinámico (sin ID hardcodeado)
 				const action = await dispatch(updateMiEmpresa(values));
 				unwrapResult(action);
 				toast.success('Empresa actualizada correctamente');
-				// 🔄 Recargar datos actualizados
 				dispatch(fetchMiEmpresa());
 			} catch (e: any) {
 				if (e?.response?.data?.errors) {
@@ -100,13 +98,11 @@ export default function EmpresaDetalle() {
 		}
 	})
 
-	// Tabs para organizar el contenido
 	const tabs = [
 		{ id: 'general', label: 'Información General', icon: 'HeroBuilding' },
 		{ id: 'contact', label: 'Contacto', icon: 'HeroPhone' },
 		{ id: 'subsidiaries', label: 'Subempresas', icon: 'HeroBuildingStorefront' },
 	] as const
-	// 3) Estados
 	if (loading)
 		return (
 			<div className="flex flex-col items-center justify-center h-64 rounded-lg shadow-inner">
@@ -297,11 +293,9 @@ export default function EmpresaDetalle() {
 								</div>
 							)}
 
-							{/* Información de Contacto */}
 							{activeTab === 'contact' && (
 								<div className="space-y-6">
 									<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-										{/* Teléfono */}
 										<div>
 											<Label htmlFor="company_phone">Teléfono Principal</Label>
 											<Input
@@ -318,7 +312,6 @@ export default function EmpresaDetalle() {
 											)}
 										</div>
 
-										{/* Email de Contacto */}
 										<div>
 											<Label htmlFor="contact_email">Email de Contacto *</Label>
 											<Input
@@ -336,7 +329,6 @@ export default function EmpresaDetalle() {
 										</div>
 									</div>
 
-									{/* Dirección */}
 									<div>
 										<Label htmlFor="company_address">Dirección *</Label>
 										<Textarea

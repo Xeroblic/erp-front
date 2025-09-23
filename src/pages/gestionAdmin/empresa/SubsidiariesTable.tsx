@@ -213,7 +213,6 @@ export default function SubsidiariesTable({ subsidiaries, loading, onRefresh }: 
                 </CardBody>
             </Card>
 
-            {/* Modal para crear/editar subempresa */}
             <SubsidiaryModal
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}

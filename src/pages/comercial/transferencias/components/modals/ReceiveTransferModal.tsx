@@ -1,7 +1,3 @@
-/**
- * Modal para Recibir Transferencias
- * Permite confirmar recepción de productos con validación de cantidades
- */
 import React, { useState } from 'react';
 import { Formik, Form, FieldArray } from 'formik';
 import * as Yup from 'yup';

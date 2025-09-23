@@ -1,7 +1,3 @@
-/**
- * Página Principal de Administración de Ventas
- * Sistema completo de gestión de ventas con filtros, estadísticas y operaciones CRUD
- */
 import React, { useState, useEffect } from 'react';
 import Button from '@/components/ui/Button';
 import Card, { CardHeader, CardBody, CardTitle } from '@/components/ui/Card';

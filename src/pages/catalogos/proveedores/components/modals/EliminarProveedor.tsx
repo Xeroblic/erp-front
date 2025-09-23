@@ -3,7 +3,7 @@ import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Moda
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
-import { ISupplier } from '../../types';
+import { ISupplier } from '../../components/types';
 
 type EliminarProveedorProps = {
   isOpen: boolean;
@@ -22,17 +22,17 @@ const EliminarProveedor: React.FC<EliminarProveedorProps> = ({ isOpen, setIsOpen
           <div className='flex h-10 w-10 items-center justify-center rounded-full bg-red-100'>
             <Icon icon='HeroTrash' className='h-6 w-6 text-red-600' />
           </div>
-          <h3 className='text-lg font-semibold text-red-600'>Confirmar Eliminación</h3>
+          <h3 className='text-lg font-semibold text-red-600'>Confirmar Eliminaciï¿½n</h3>
         </div>
       </ModalHeader>
       <ModalBody>
         {supplier ? (
           <div className='space-y-4 text-sm'>
             <p className='text-gray-700 dark:text-gray-300'>
-              ¿Estás seguro de que deseas eliminar el proveedor <strong>{supplier.name}</strong>?
+              ï¿½Estï¿½s seguro de que deseas eliminar el proveedor <strong>{supplier.name}</strong>?
             </p>
             <div className='flex items-center space-x-2 text-gray-600'>
-              <span>Código:</span>
+              <span>Cï¿½digo:</span>
               <Badge variant='outline'>{supplier.code}</Badge>
             </div>
             {hasAssociations ? (
@@ -42,7 +42,7 @@ const EliminarProveedor: React.FC<EliminarProveedorProps> = ({ isOpen, setIsOpen
                   <div>
                     <h4 className='text-sm font-medium text-red-800'>No se puede eliminar</h4>
                     <p>
-                      Este proveedor tiene {supplier.products_count} productos y {supplier.orders_count} órdenes asociadas.
+                      Este proveedor tiene {supplier.products_count} productos y {supplier.orders_count} ï¿½rdenes asociadas.
                       Debes reasignar o eliminar esas asociaciones antes de continuar.
                     </p>
                   </div>
@@ -53,8 +53,8 @@ const EliminarProveedor: React.FC<EliminarProveedorProps> = ({ isOpen, setIsOpen
                 <div className='flex items-start'>
                   <Icon icon='HeroExclamationTriangle' className='mr-2 mt-0.5 h-5 w-5 text-yellow-400' />
                   <div>
-                    <h4 className='text-sm font-medium text-yellow-800'>Acción irreversible</h4>
-                    <p>Esta acción no se puede deshacer. El proveedor será eliminado permanentemente.</p>
+                    <h4 className='text-sm font-medium text-yellow-800'>Acciï¿½n irreversible</h4>
+                    <p>Esta acciï¿½n no se puede deshacer. El proveedor serï¿½ eliminado permanentemente.</p>
                   </div>
                 </div>
               </div>
