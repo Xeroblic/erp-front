@@ -20,188 +20,191 @@ import {
 	HiOutlineExclamationTriangle,
 	HiOutlineXCircle,
 } from 'react-icons/hi2';
+import { ProductStock, WooSyncJob } from './types/wooSync.types';
+import { MOCK_SYNC_HISTORY } from './mocks/mockSyncHistory';
+import { MOCK_PRODUCT_STOCKS } from './mocks/mockProductStocks';
 
 // Mock API service
-const mockWooSyncApi = {
-	async pullStock(): Promise<WooSyncJob> {
-		// Simular delay de API
-		await new Promise((resolve) => setTimeout(resolve, 2000));
+// const mockWooSyncApi = {
+// 	async pullStock(): Promise<WooSyncJob> {
+// 		// Simular delay de API
+// 		await new Promise((resolve) => setTimeout(resolve, 2000));
 
-		const jobId = Date.now();
-		return {
-			id: jobId,
-			type: 'pull',
-			status: 'completed',
-			started_at: new Date().toISOString(),
-			completed_at: new Date().toISOString(),
-			products_processed: 15,
-			products_updated: 12,
-			products_failed: 1,
-			errors: ['SKU-404: Producto no encontrado en WooCommerce'],
-			log: [
-				`[${new Date().toLocaleTimeString()}] Iniciando importación de stock desde WooCommerce`,
-				`[${new Date().toLocaleTimeString()}] Conectando a WooCommerce API...`,
-				`[${new Date().toLocaleTimeString()}] Obteniendo lista de productos...`,
-				`[${new Date().toLocaleTimeString()}] Procesando 15 productos`,
-				`[${new Date().toLocaleTimeString()}] Actualizando stock local...`,
-				`[${new Date().toLocaleTimeString()}] 12 productos actualizados exitosamente`,
-				`[${new Date().toLocaleTimeString()}] 1 producto con errores`,
-				`[${new Date().toLocaleTimeString()}] Importación completada`,
-			],
-		};
-	},
+// 		const jobId = Date.now();
+// 		return {
+// 			id: jobId,
+// 			type: 'pull',
+// 			status: 'completed',
+// 			started_at: new Date().toISOString(),
+// 			completed_at: new Date().toISOString(),
+// 			products_processed: 15,
+// 			products_updated: 12,
+// 			products_failed: 1,
+// 			errors: ['SKU-404: Producto no encontrado en WooCommerce'],
+// 			log: [
+// 				`[${new Date().toLocaleTimeString()}] Iniciando importación de stock desde WooCommerce`,
+// 				`[${new Date().toLocaleTimeString()}] Conectando a WooCommerce API...`,
+// 				`[${new Date().toLocaleTimeString()}] Obteniendo lista de productos...`,
+// 				`[${new Date().toLocaleTimeString()}] Procesando 15 productos`,
+// 				`[${new Date().toLocaleTimeString()}] Actualizando stock local...`,
+// 				`[${new Date().toLocaleTimeString()}] 12 productos actualizados exitosamente`,
+// 				`[${new Date().toLocaleTimeString()}] 1 producto con errores`,
+// 				`[${new Date().toLocaleTimeString()}] Importación completada`,
+// 			],
+// 		};
+// 	},
 
-	async pushStock(selectedProducts: number[]): Promise<WooSyncJob> {
-		await new Promise((resolve) => setTimeout(resolve, 3000));
+// 	async pushStock(selectedProducts: number[]): Promise<WooSyncJob> {
+// 		await new Promise((resolve) => setTimeout(resolve, 3000));
 
-		const jobId = Date.now();
-		return {
-			id: jobId,
-			type: 'push',
-			status: 'completed',
-			started_at: new Date().toISOString(),
-			completed_at: new Date().toISOString(),
-			products_processed: selectedProducts.length,
-			products_updated: selectedProducts.length - 1,
-			products_failed: 1,
-			errors: ['LAP-DELL-15: Error de conexión al actualizar en WooCommerce'],
-			log: [
-				`[${new Date().toLocaleTimeString()}] Iniciando actualización de stock en WooCommerce`,
-				`[${new Date().toLocaleTimeString()}] Productos seleccionados: ${selectedProducts.length}`,
-				`[${new Date().toLocaleTimeString()}] Conectando a WooCommerce API...`,
-				`[${new Date().toLocaleTimeString()}] Actualizando productos en WooCommerce...`,
-				`[${new Date().toLocaleTimeString()}] ${selectedProducts.length - 1} productos actualizados`,
-				`[${new Date().toLocaleTimeString()}] 1 producto con errores`,
-				`[${new Date().toLocaleTimeString()}] Actualización completada`,
-			],
-		};
-	},
-};
+// 		const jobId = Date.now();
+// 		return {
+// 			id: jobId,
+// 			type: 'push',
+// 			status: 'completed',
+// 			started_at: new Date().toISOString(),
+// 			completed_at: new Date().toISOString(),
+// 			products_processed: selectedProducts.length,
+// 			products_updated: selectedProducts.length - 1,
+// 			products_failed: 1,
+// 			errors: ['LAP-DELL-15: Error de conexión al actualizar en WooCommerce'],
+// 			log: [
+// 				`[${new Date().toLocaleTimeString()}] Iniciando actualización de stock en WooCommerce`,
+// 				`[${new Date().toLocaleTimeString()}] Productos seleccionados: ${selectedProducts.length}`,
+// 				`[${new Date().toLocaleTimeString()}] Conectando a WooCommerce API...`,
+// 				`[${new Date().toLocaleTimeString()}] Actualizando productos en WooCommerce...`,
+// 				`[${new Date().toLocaleTimeString()}] ${selectedProducts.length - 1} productos actualizados`,
+// 				`[${new Date().toLocaleTimeString()}] 1 producto con errores`,
+// 				`[${new Date().toLocaleTimeString()}] Actualización completada`,
+// 			],
+// 		};
+// 	},
+// };
 
 // Interfaces
-interface WooSyncJob {
-	id: number;
-	type: 'pull' | 'push';
-	status: 'pending' | 'running' | 'completed' | 'failed';
-	started_at: string;
-	completed_at?: string;
-	products_processed?: number;
-	products_updated?: number;
-	products_failed?: number;
-	errors?: string[];
-	log?: string[];
-}
+// interface WooSyncJob {
+// 	id: number;
+// 	type: 'pull' | 'push';
+// 	status: 'pending' | 'running' | 'completed' | 'failed';
+// 	started_at: string;
+// 	completed_at?: string;
+// 	products_processed?: number;
+// 	products_updated?: number;
+// 	products_failed?: number;
+// 	errors?: string[];
+// 	log?: string[];
+// }
 
-interface ProductStock {
-	id: number;
-	sku: string;
-	name: string;
-	local_stock: number;
-	woo_stock: number;
-	sync_status: 'synced' | 'out_of_sync' | 'error';
-	last_sync: string;
-	woo_product_id?: number;
-}
+// interface ProductStock {
+// 	id: number;
+// 	sku: string;
+// 	name: string;
+// 	local_stock: number;
+// 	woo_stock: number;
+// 	sync_status: 'synced' | 'out_of_sync' | 'error';
+// 	last_sync: string;
+// 	woo_product_id?: number;
+// }
 
 // Mock data
-const MOCK_PRODUCT_STOCKS: ProductStock[] = [
-	{
-		id: 1,
-		sku: 'LAP-DELL-15',
-		name: 'Laptop Dell Inspiron 15',
-		local_stock: 25,
-		woo_stock: 23,
-		sync_status: 'out_of_sync',
-		last_sync: '2025-09-09T14:30:00Z',
-		woo_product_id: 101,
-	},
-	{
-		id: 2,
-		sku: 'MON-SAM-24',
-		name: 'Monitor Samsung 24"',
-		local_stock: 40,
-		woo_stock: 40,
-		sync_status: 'synced',
-		last_sync: '2025-09-10T08:15:00Z',
-		woo_product_id: 102,
-	},
-	{
-		id: 3,
-		sku: 'TEC-LOG-MEC',
-		name: 'Teclado Mecánico Logitech',
-		local_stock: 15,
-		woo_stock: 12,
-		sync_status: 'out_of_sync',
-		last_sync: '2025-09-08T16:45:00Z',
-		woo_product_id: 103,
-	},
-	{
-		id: 4,
-		sku: 'MOU-HP-OPT',
-		name: 'Mouse Óptico HP',
-		local_stock: 60,
-		woo_stock: 58,
-		sync_status: 'out_of_sync',
-		last_sync: '2025-09-07T11:20:00Z',
-		woo_product_id: 104,
-	},
-	{
-		id: 5,
-		sku: 'IMP-HP-LASER',
-		name: 'Impresora HP LaserJet',
-		local_stock: 8,
-		woo_stock: 0,
-		sync_status: 'error',
-		last_sync: '2025-09-06T09:30:00Z',
-		woo_product_id: null,
-	},
-	{
-		id: 6,
-		sku: 'CAB-USB-C',
-		name: 'Cable USB-C Premium',
-		local_stock: 120,
-		woo_stock: 120,
-		sync_status: 'synced',
-		last_sync: '2025-09-10T07:00:00Z',
-		woo_product_id: 106,
-	},
-];
+// const MOCK_PRODUCT_STOCKS: ProductStock[] = [
+// 	{
+// 		id: 1,
+// 		sku: 'LAP-DELL-15',
+// 		name: 'Laptop Dell Inspiron 15',
+// 		local_stock: 25,
+// 		woo_stock: 23,
+// 		sync_status: 'out_of_sync',
+// 		last_sync: '2025-09-09T14:30:00Z',
+// 		woo_product_id: 101,
+// 	},
+// 	{
+// 		id: 2,
+// 		sku: 'MON-SAM-24',
+// 		name: 'Monitor Samsung 24"',
+// 		local_stock: 40,
+// 		woo_stock: 40,
+// 		sync_status: 'synced',
+// 		last_sync: '2025-09-10T08:15:00Z',
+// 		woo_product_id: 102,
+// 	},
+// 	{
+// 		id: 3,
+// 		sku: 'TEC-LOG-MEC',
+// 		name: 'Teclado Mecánico Logitech',
+// 		local_stock: 15,
+// 		woo_stock: 12,
+// 		sync_status: 'out_of_sync',
+// 		last_sync: '2025-09-08T16:45:00Z',
+// 		woo_product_id: 103,
+// 	},
+// 	{
+// 		id: 4,
+// 		sku: 'MOU-HP-OPT',
+// 		name: 'Mouse Óptico HP',
+// 		local_stock: 60,
+// 		woo_stock: 58,
+// 		sync_status: 'out_of_sync',
+// 		last_sync: '2025-09-07T11:20:00Z',
+// 		woo_product_id: 104,
+// 	},
+// 	{
+// 		id: 5,
+// 		sku: 'IMP-HP-LASER',
+// 		name: 'Impresora HP LaserJet',
+// 		local_stock: 8,
+// 		woo_stock: 0,
+// 		sync_status: 'error',
+// 		last_sync: '2025-09-06T09:30:00Z',
+// 		woo_product_id: null,
+// 	},
+// 	{
+// 		id: 6,
+// 		sku: 'CAB-USB-C',
+// 		name: 'Cable USB-C Premium',
+// 		local_stock: 120,
+// 		woo_stock: 120,
+// 		sync_status: 'synced',
+// 		last_sync: '2025-09-10T07:00:00Z',
+// 		woo_product_id: 106,
+// 	},
+// ];
 
-const MOCK_SYNC_HISTORY: WooSyncJob[] = [
-	{
-		id: 1001,
-		type: 'pull',
-		status: 'completed',
-		started_at: '2025-09-10T08:00:00Z',
-		completed_at: '2025-09-10T08:05:00Z',
-		products_processed: 15,
-		products_updated: 15,
-		products_failed: 0,
-		log: ['Importación exitosa', 'Todos los productos actualizados'],
-	},
-	{
-		id: 1002,
-		type: 'push',
-		status: 'completed',
-		started_at: '2025-09-09T16:30:00Z',
-		completed_at: '2025-09-09T16:33:00Z',
-		products_processed: 8,
-		products_updated: 7,
-		products_failed: 1,
-		errors: ['SKU-404: Producto no encontrado'],
-	},
-	{
-		id: 1003,
-		type: 'pull',
-		status: 'failed',
-		started_at: '2025-09-08T14:15:00Z',
-		completed_at: '2025-09-08T14:16:00Z',
-		products_processed: 0,
-		products_updated: 0,
-		products_failed: 0,
-		errors: ['Error de conexión con WooCommerce API'],
-	},
-];
+// const MOCK_SYNC_HISTORY: WooSyncJob[] = [
+// 	{
+// 		id: 1001,
+// 		type: 'pull',
+// 		status: 'completed',
+// 		started_at: '2025-09-10T08:00:00Z',
+// 		completed_at: '2025-09-10T08:05:00Z',
+// 		products_processed: 15,
+// 		products_updated: 15,
+// 		products_failed: 0,
+// 		log: ['Importación exitosa', 'Todos los productos actualizados'],
+// 	},
+// 	{
+// 		id: 1002,
+// 		type: 'push',
+// 		status: 'completed',
+// 		started_at: '2025-09-09T16:30:00Z',
+// 		completed_at: '2025-09-09T16:33:00Z',
+// 		products_processed: 8,
+// 		products_updated: 7,
+// 		products_failed: 1,
+// 		errors: ['SKU-404: Producto no encontrado'],
+// 	},
+// 	{
+// 		id: 1003,
+// 		type: 'pull',
+// 		status: 'failed',
+// 		started_at: '2025-09-08T14:15:00Z',
+// 		completed_at: '2025-09-08T14:16:00Z',
+// 		products_processed: 0,
+// 		products_updated: 0,
+// 		products_failed: 0,
+// 		errors: ['Error de conexión con WooCommerce API'],
+// 	},
+// ];
 
 const WooStockSync: React.FC = () => {
 	const [activeTab, setActiveTab] = useState('import');
@@ -400,8 +403,8 @@ const WooStockSync: React.FC = () => {
 
 			{/* Tabs principales */}
 			<Tabs activeTab={activeTab} onTabChange={setActiveTab} className='mb-6'>
+				{/* Tab Importar */}
 				<Tab id='import' text='Importar Stock (Pull)'>
-					{/* Tab Importar */}
 					<Card>
 						<CardHeader>
 							<CardTitle>Importar Stock desde WooCommerce</CardTitle>
@@ -452,8 +455,8 @@ const WooStockSync: React.FC = () => {
 					</Card>
 				</Tab>
 
+				{/* Tab Actualizar */}
 				<Tab id='export' text='Actualizar Stock (Push)'>
-					{/* Tab Actualizar */}
 					<Card>
 						<CardHeader>
 							<div className='flex items-center justify-between'>
@@ -564,8 +567,8 @@ const WooStockSync: React.FC = () => {
 					</Card>
 				</Tab>
 
+				{/* Tab Historial */}
 				<Tab id='history' text='Historial'>
-					{/* Tab Historial */}
 					<Card>
 						<CardHeader>
 							<CardTitle>Historial de Sincronizaciones</CardTitle>
