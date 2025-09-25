@@ -3,7 +3,7 @@ import Icon from '@/components/icon/Icon';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-import { IBrand } from '../../types';
+import { IBrand } from '../types';
 
 type EliminarMarcaProps = {
   isOpen: boolean;
@@ -21,7 +21,7 @@ const EliminarMarca: React.FC<EliminarMarcaProps> = ({ isOpen, setIsOpen, brand,
         </div>
         <div>
           <h2 className='text-xl font-bold text-gray-900'>Eliminar Marca</h2>
-          <p className='text-sm text-gray-600'>Esta acción no se puede deshacer</p>
+          <p className='text-sm text-gray-600'>Esta acciï¿½n no se puede deshacer</p>
         </div>
       </div>
     </ModalHeader>
@@ -33,10 +33,10 @@ const EliminarMarca: React.FC<EliminarMarcaProps> = ({ isOpen, setIsOpen, brand,
               <Icon icon='HeroExclamationTriangle' className='mr-3 h-5 w-5 flex-shrink-0 text-red-500' />
               <div className='space-y-2 text-sm text-red-700'>
                 <p>
-                  ¿Estás seguro de que deseas eliminar la marca <strong>{brand.name}</strong>?
+                  ï¿½Estï¿½s seguro de que deseas eliminar la marca <strong>{brand.name}</strong>?
                 </p>
                 <p>
-                  Código: <span className='font-mono font-semibold text-red-800'>{brand.code}</span>
+                  Cï¿½digo: <span className='font-mono font-semibold text-red-800'>{brand.code}</span>
                 </p>
                 <p>Fabricante: {brand.manufacturer}</p>
                 {brand.products_count > 0 && (

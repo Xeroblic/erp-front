@@ -3,9 +3,9 @@ import Icon from '@/components/icon/Icon';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-import { IBrand } from '../../types';
-import BrandRating from '../../BrandRating';
-import { formatCurrency } from '../../utils';
+import { IBrand } from '../types';
+import BrandRating from '../BrandRating';
+import { formatCurrency } from '../utils';
 
 type DetalleMarcaProps = {
   isOpen: boolean;
@@ -23,7 +23,7 @@ const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, o
         </div>
         <div>
           <h2 className='text-xl font-bold text-gray-900'>Detalles de la Marca</h2>
-          <p className='text-sm text-gray-600'>Información completa y métricas</p>
+          <p className='text-sm text-gray-600'>InformaciÃ³n completa y mÃ©tricas</p>
         </div>
       </div>
     </ModalHeader>
@@ -53,18 +53,18 @@ const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, o
 
           <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
             <div className='space-y-3 rounded-lg border p-4'>
-              <h4 className='font-semibold text-gray-700'>Información General</h4>
+              <h4 className='font-semibold text-gray-700'>InformaciÃ³n General</h4>
               <div className='space-y-2 text-sm'>
                 <div className='flex justify-between'>
                   <span className='text-gray-600'>Fabricante</span>
                   <span className='font-medium text-gray-900'>{brand.manufacturer}</span>
                 </div>
                 <div className='flex justify-between'>
-                  <span className='text-gray-600'>País de origen</span>
+                  <span className='text-gray-600'>PaÃ­s de origen</span>
                   <span className='font-medium text-gray-900'>{brand.origin_country}</span>
                 </div>
                 <div className='flex justify-between'>
-                  <span className='text-gray-600'>Categoría principal</span>
+                  <span className='text-gray-600'>CategorÃ­a principal</span>
                   <span className='font-medium text-gray-900'>{brand.category_focus}</span>
                 </div>
                 {brand.website_url && (
@@ -79,7 +79,7 @@ const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, o
             </div>
 
             <div className='space-y-3 rounded-lg border p-4'>
-              <h4 className='font-semibold text-gray-700'>Métricas Comerciales</h4>
+              <h4 className='font-semibold text-gray-700'>MÃ©tricas Comerciales</h4>
               <div className='space-y-3 text-sm'>
                 <div className='flex items-center justify-between'>
                   <span className='text-gray-600'>Calidad promedio</span>
@@ -109,7 +109,7 @@ const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, o
           </div>
 
           <div className='rounded-lg border p-4'>
-            <h4 className='font-semibold text-gray-700'>Descripción</h4>
+            <h4 className='font-semibold text-gray-700'>Descripciï¿½n</h4>
             <p className='mt-2 text-sm text-gray-600'>{brand.description}</p>
           </div>
         </div>

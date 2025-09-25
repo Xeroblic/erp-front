@@ -7,7 +7,7 @@ import Input from '@/components/form/Input';
 import Select from '@/components/form/Select';
 import Checkbox from '@/components/form/Checkbox';
 import Textarea from '@/components/form/Textarea';
-import { IBrand } from '../../types';
+import { IBrand } from '../types';
 
 type EditarMarcaProps = {
   isOpen: boolean;
@@ -34,7 +34,7 @@ const EditarMarca: React.FC<EditarMarcaProps> = ({ isOpen, setIsOpen, brand, onS
           </div>
           <div>
             <h2 className='text-xl font-bold text-gray-900'>Editar Marca</h2>
-            <p className='text-sm text-gray-600'>Modificar información de la marca</p>
+            <p className='text-sm text-gray-600'>Modificar informaciï¿½n de la marca</p>
           </div>
         </div>
       </ModalHeader>
@@ -43,7 +43,7 @@ const EditarMarca: React.FC<EditarMarcaProps> = ({ isOpen, setIsOpen, brand, onS
           <form id='editBrandForm' className='space-y-4' onSubmit={onSubmit}>
             <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
               <div>
-                <Label htmlFor='edit-brand-code' className='required'>Código</Label>
+                <Label htmlFor='edit-brand-code' className='required'>Cï¿½digo</Label>
                 <Input id='edit-brand-code' name='code' type='text' defaultValue={brand.code} required />
               </div>
               <div>
@@ -53,13 +53,13 @@ const EditarMarca: React.FC<EditarMarcaProps> = ({ isOpen, setIsOpen, brand, onS
             </div>
 
             <div>
-              <Label htmlFor='edit-brand-description'>Descripción</Label>
+              <Label htmlFor='edit-brand-description'>Descripciï¿½n</Label>
               <Textarea id='edit-brand-description' name='description' defaultValue={brand.description} rows={3} />
             </div>
 
             <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
               <div>
-                <Label htmlFor='edit-brand-origin'>País de Origen</Label>
+                <Label htmlFor='edit-brand-origin'>Paï¿½s de Origen</Label>
                 <Input id='edit-brand-origin' name='origin_country' type='text' defaultValue={brand.origin_country} />
               </div>
               <div>
@@ -70,11 +70,11 @@ const EditarMarca: React.FC<EditarMarcaProps> = ({ isOpen, setIsOpen, brand, onS
 
             <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
               <div>
-                <Label htmlFor='edit-brand-market-position'>Posición de Mercado</Label>
+                <Label htmlFor='edit-brand-market-position'>Posiciï¿½n de Mercado</Label>
                 <Select id='edit-brand-market-position' name='market_position' defaultValue={brand.market_position}>
                   <option value='PREMIUM'>Premium</option>
                   <option value='MEDIO'>Medio</option>
-                  <option value='ECONOMICO'>Económico</option>
+                  <option value='ECONOMICO'>Econï¿½mico</option>
                 </Select>
               </div>
               <div>
