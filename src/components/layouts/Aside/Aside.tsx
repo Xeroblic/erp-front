@@ -11,7 +11,7 @@ export const AsideHead: FC<IAsideHeadProps> = (props) => {
 	const { children, className, ...rest } = props;
 
 	return (
-		<div
+		<divw
 			data-component-name='Aside/AsideHead'
 			className={classNames(
 				'flex items-center justify-between px-6 pb-6 max-md:flex-row-reverse',
@@ -19,7 +19,7 @@ export const AsideHead: FC<IAsideHeadProps> = (props) => {
 			)}
 			{...rest}>
 			{children}
-		</div>
+		</divw>
 	);
 };
 

@@ -32,7 +32,7 @@ const WooCommerceProductsSyncPage = lazy(
 const WooCommerceOrdersImportPage = lazy(
     () => import('@/pages/gestionAdmin/integraciones/woocommerce/WooCommerceOrdersImportPage'),
 );
-
+const WooStockSync = lazy(() => import('@/pages/integraciones/WooComerceSync/WooStockSync'));
 // Reportes
 const ReportsHome = lazy(() => import('@/pages/reportes/ReportsHome'));
 const SalesDashboard = lazy(() => import('@/pages/reportes/SalesDashboard'));
@@ -97,6 +97,11 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: '/gestion/integraciones/woocommerce-sync',
 		element: <WooCommerceProductsSyncPage />,
 		authority: cfg.manage.subPages.integrations.subPages.woocommerceSync.authority,
+	},
+	{
+		path: '/gestion/integraciones/woocommerce-stock-sync',
+		element: <WooStockSync />,
+		authority: cfg.manage.subPages.integrations.subPages.woocommerceStockSync.authority,
 	},
 	{
 		path: '/gestion/integraciones/woocommerce-import',

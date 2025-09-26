@@ -132,8 +132,24 @@ export const privatePages = {
             icon: 'HeroArrowPath',
             authority: ['view-users'], //'manage-integrations', 'view-integrations'
             roles: ['super-admin', 'company-admin'],
+            },
+              woocommerceStockSync: {
+              id: 'woocommerceStockSync',
+              to: '/gestion/integraciones/woocommerce-stock-sync',
+              text: 'Sincronización de Stock WooCommerce',
+              icon: 'HeroArrowPath',
+              authority: ['view-users'], //'manage-integrations', 'view-integrations'
+              roles: ['super-admin', 'company-admin'],
+            },
           },
-        },
+    },
+      woocommerceStockSync: {
+        id: 'woocommerceStockSync',
+        to: '/gestion/integraciones/woocommerce-stock-sync',
+        text: 'Sincronización de Stock WooCommerce',
+        icon: 'HeroArrowPath',
+        authority: ['view-users'], //'manage-integrations', 'view-integrations'
+        roles: ['super-admin', 'company-admin'],
       },
       permissionsAdmin: {
         id: 'permissionsAdmin',

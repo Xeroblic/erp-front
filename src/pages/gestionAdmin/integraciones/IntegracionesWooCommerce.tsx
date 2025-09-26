@@ -53,8 +53,8 @@ const MODOS_OPERACION_OPTIONS = [
 ];
 
 const ESTADOS_INTEGRACION_OPTIONS = [
-	{ value: true, label: 'Activa' },
-	{ value: false, label: 'Inactiva' },
+	{ value: 'true', label: 'Activa' },
+	{ value: 'false', label: 'Inactiva' },
 ];
 
 const columnHelper = createColumnHelper<IWooCommerceIntegracion>();
@@ -812,12 +812,14 @@ export default function IntegracionesWooCommerce() {
 											name='estado_integracion'
 											options={ESTADOS_INTEGRACION_OPTIONS}
 											value={ESTADOS_INTEGRACION_OPTIONS.find(
-												(e) => e.value === formik.values.estado_integracion,
+												(e) => e.value === String(formik.values.estado_integracion),
 											)}
 											onChange={(option: any) =>
 												formik.setFieldValue(
 													'estado_integracion',
-													option?.value,
+													option?.value === 'true'
+														? true
+														: false,
 												)
 											}
 											placeholder='Seleccionar estado...'
@@ -970,8 +972,9 @@ export default function IntegracionesWooCommerce() {
 								<CardBody className='space-y-4'>
 									<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
 										<div>
-											<Label>Última Sincronización Exitosa</Label>
+											<Label htmlFor='ultima_sincronizacion_exitosa'>Última Sincronización Exitosa</Label>
 											<Input
+												name='ultima_sincronizacion_exitosa'
 												value={
 													selectedIntegracion.ultima_sincronizacion_exitosa
 														? new Date(
@@ -985,8 +988,9 @@ export default function IntegracionesWooCommerce() {
 										</div>
 
 										<div>
-											<Label>Creada</Label>
+											<Label htmlFor='created_at'>Creada</Label>
 											<Input
+												name='created_at'
 												value={
 													selectedIntegracion.created_at
 														? new Date(
@@ -1002,7 +1006,7 @@ export default function IntegracionesWooCommerce() {
 
 									{selectedIntegracion.log_errores_recientes && (
 										<div>
-											<Label>Log de Errores Recientes</Label>
+											<Label htmlFor='log_errores_recientes'>Log de Errores Recientes</Label>
 											<Textarea
 												value={selectedIntegracion.log_errores_recientes}
 												readOnly
@@ -1118,7 +1122,7 @@ export default function IntegracionesWooCommerce() {
 
 						{selectedIntegracion?.log_errores_recientes && (
 							<div>
-								<Label>Log de Errores (Referencia)</Label>
+								<Label htmlFor='log_errores_recientes'>Log de Errores (Referencia)</Label>
 								<Textarea
 									value={selectedIntegracion.log_errores_recientes}
 									readOnly
@@ -1174,7 +1178,7 @@ export default function IntegracionesWooCommerce() {
 				<ModalBody>
 					<div className='space-y-4'>
 						<div>
-							<Label>Detalles del Error</Label>
+							<Label htmlFor='log_errores_recientes'>Detalles del Error</Label>
 							<Textarea
 								value={
 									selectedIntegracion?.log_errores_recientes ||

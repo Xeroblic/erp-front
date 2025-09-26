@@ -25,7 +25,7 @@ export default function LastSyncCard({ lastSync, onViewLog }: Props) {
 							<p className='text-sm text-red-600'>
 								{lastSync.errors.length} errores encontrados
 							</p>
-						)}
+						)}				
 					</div>
 					<div className='flex items-center space-x-2'>
 						<JobStatusBadge status={lastSync.status} />

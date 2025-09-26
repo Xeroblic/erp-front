@@ -237,6 +237,13 @@ const DefaultAsideTemplate = () => {
 								id={'woocommerce-integration'}
 								onClick={() => navigate('/gestion/integraciones/woocommerce')}
 							/>
+							<NavItem
+								text={'Sincronización de Stock WooCommerce'}
+								to={'/gestion/integraciones/woocommerce-stock-sync'}
+								icon={'HeroArrowPath'}
+								id={'woocommerce-stock-sync'}
+								onClick={() => navigate('/gestion/integraciones/woocommerce-stock-sync')}
+							/>
 							<AuthorityCheckNav
 								authority={
 									Pages.manage.subPages.integrations.subPages.woocommerceSync
@@ -267,6 +274,7 @@ const DefaultAsideTemplate = () => {
 										)
 									}
 								/>
+
 							</AuthorityCheckNav>
 							<NavItem
 								text={'Importar Pedidos WooCommerce'}
@@ -277,6 +285,7 @@ const DefaultAsideTemplate = () => {
 									navigate('/gestion/integraciones/woocommerce-import')
 								}
 							/>
+
 						</AuthorityCheckNav>
 
 						{/* Administrar Permisos */}
