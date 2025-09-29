@@ -55,6 +55,10 @@ module.exports = {
       pattern: /text-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|primary)-(50|100|200|300|400|500|600|700|800|900|950)$/,
       variants: ['hover','active','dark:hover'],
     },
+      {
+    pattern:
+      /^(text|border|bg)-(red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-(100|200|300|400|500|600|700|800|900)$/,
+  },
 
     // fill-<color>-<shade>
     {

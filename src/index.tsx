@@ -14,6 +14,7 @@ import './styles/index.css';
 import 'react-date-range/dist/styles.css'; // main style file
 import 'react-date-range/dist/theme/default.css';
 import './styles/vendors.css';
+import './components/customCss/nav-anim.css'
 
 import store, { persistor } from './store'
 import { Provider } from 'react-redux'

@@ -12,23 +12,37 @@ import Avatar from '../../Avatar';
 import { TColors } from '../../../types/colors.type';
 import Badge from '@/components/ui/Badge';
 
-const navItemClasses = {
-	default: classNames(
-		'mb-2 p-3',
-		'flex items-center',
-		'cursor-pointer',
-		'overflow-hidden',
-		'rounded-xl',
-		'border',
-		'text-zinc-500',
-		'hover:text-zinc-950 dark:hover:text-zinc-100',
-		'grow',
-		themeConfig.transition,
-	),
-	inactive: 'border-transparent',
-	active: 'border-zinc-300 text-zinc-950 dark:border-zinc-800 dark:text-zinc-100',
-	here: 'text-zinc-950 dark:text-zinc-100 border-transparent',
+import useReactiveThemeConfig from '@/hooks/useReactiveThemeConfig';
+const useNavItemClasses = () => {
+  const { themeColor, themeColorShade, darkMode } = useReactiveThemeConfig();
+
+  const tone = darkMode ? 400 : 700;
+
+  return {
+    default: classNames(
+      'mb-2 p-3',
+      'flex items-center',
+      'cursor-pointer',
+      'overflow-hidden',
+      'rounded-xl',
+      'border',
+      'text-zinc-500',
+      'hover:text-zinc-950 dark:hover:text-zinc-100',
+      'grow',
+      themeConfig.transition,
+    ),
+    inactive: 'border-transparent',
+    active: classNames(
+      `text-${themeColor}-${tone}`,
+      'border-transparent',
+      `dark:border-${themeColor}-${themeColorShade}`,
+      'nav-active-conic'
+    ),
+    here: `text-${themeColor}-${themeColorShade} border-transparent`,
+  };
 };
+
+
 
 const navItemChildCheck = (
 	children:
@@ -163,6 +177,8 @@ interface INavItemProps extends HTMLAttributes<HTMLLIElement> {
 	className?: string;
 }
 export const NavItem: FC<INavItemProps> = (props) => {
+	const navItemClasses = useNavItemClasses(); 
+
 	const { children, icon, text, to, className, ...rest } = props;
 
 	const { t } = useTranslation('menu');
@@ -273,6 +289,8 @@ interface INavCollapseProps extends HTMLAttributes<HTMLLIElement> {
 	onToggle?: () => void; // Callback opcional para manejar cambios
 }
 export const NavCollapse: FC<INavCollapseProps> = (props) => {
+	const navItemClasses = useNavItemClasses(); 
+
 	const { children, icon, text, className, to, isOpen, onToggle, ...rest } = props;
 
 	const { t } = useTranslation('menu');
@@ -401,6 +419,8 @@ interface INavUserProps extends HTMLAttributes<HTMLLIElement> {
 	className?: string;
 }
 export const NavUser: FC<INavUserProps> = (props) => {
+	const navItemClasses = useNavItemClasses();
+
 	const { children, image, text, to, className, ...rest } = props;
 
 	const { t } = useTranslation('menu');

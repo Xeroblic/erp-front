@@ -1,0 +1,49 @@
+/* nav-anim.css */
+
+@property --border-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes border-rotate { to { --border-angle: 360deg; } }
+
+.nav-active-conic {
+  position: relative;
+  isolation: isolate;
+  border-color: transparent !important;
+  z-index: 0;                 /* base */
+  --nav-accent: currentColor; /* fallback por si no seteas desde React */
+}
+
+/* eleva el contenido por sobre ::before */
+.nav-active-conic > * { position: relative; z-index: 1; }
+
+.nav-active-conic::before {
+  content: "";
+  position: absolute;
+  inset: 0;                   /* ocupa todo el borde */
+  padding: 2px;               /* grosor del aro */
+  border-radius: inherit;
+  z-index: 0;                 /* por debajo del contenido, encima del fondo */
+
+  background: conic-gradient(
+    from var(--border-angle),
+    var(--nav-accent) 0deg,
+    transparent 90deg,
+    var(--nav-accent) 180deg,
+    transparent 270deg,
+    var(--nav-accent) 360deg
+  );
+
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+
+  animation: border-rotate 3s linear infinite;
+  pointer-events: none;
+}
