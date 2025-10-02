@@ -14,7 +14,7 @@ import DARK_MODE from '../constants/darkMode.constant';
  * - Sincroniza con Redux
  * - Aplica clases al DOM
  * - Guarda en la API
- * - Maneja el modo sistema automáticamente
+ * - Maneja el modo sistema automÃ¡ticamente
  */
 export const useDarkModeManager = () => {
     const dispatch = useAppDispatch();
@@ -32,13 +32,13 @@ export const useDarkModeManager = () => {
         }
     }, [isDarkTheme]);
 
-    // Listener para cambios del sistema cuando está en modo 'system'
+    // Listener para cambios del sistema cuando estÃ¡ en modo 'system'
     useEffect(() => {
         if (darkModeStatus === DARK_MODE.SYSTEM) {
             const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
             const handleSystemChange = (_e: MediaQueryListEvent) => {
-                // El selector ya maneja esto automáticamente, solo forzamos re-render
+                // El selector ya maneja esto automÃ¡ticamente, solo forzamos re-render
             };
 
             mediaQuery.addEventListener('change', handleSystemChange);
@@ -50,6 +50,10 @@ export const useDarkModeManager = () => {
     }, [darkModeStatus]);
 
     const setDarkModeStatus = async (newMode: TDarkMode, saveToAPI: boolean = true) => {
+        if (newMode === darkModeStatus) {
+            return;
+        }
+
         // Actualizar estado local inmediatamente
         dispatch(setDarkMode(newMode));
 
@@ -70,7 +74,7 @@ export const useDarkModeManager = () => {
     };
 
     /**
-     * Función para alternar entre light y dark (sin system)
+     * FunciÃ³n para alternar entre light y dark (sin system)
      */
     const toggleDarkMode = () => {
         const newMode = isDarkTheme ? DARK_MODE.LIGHT : DARK_MODE.DARK;
@@ -78,7 +82,7 @@ export const useDarkModeManager = () => {
     };
 
     /**
-     * Función para sincronizar desde datos de API
+     * FunciÃ³n para sincronizar desde datos de API
      * @param temaFromAPI - Valor tema de la API (1=light, 2=dark, 3=system)
      */
     const syncFromAPI = (temaFromAPI: number) => {

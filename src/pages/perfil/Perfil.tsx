@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { toast } from 'react-toastify';
@@ -46,6 +46,7 @@ const Perfil = () => {
     dispatch(userMeThunk());
   }, [dispatch]);
 
+  const themeSyncingRef = useRef(false);
   const formik = useFormik<ProfileFormValues>({
     enableReinitialize: true,
     initialValues: {
@@ -123,8 +124,27 @@ const Perfil = () => {
   });
 
   useEffect(() => {
-    setDarkModeStatus(formik.values.theme as TDarkMode);
-  }, [formik.values.theme, setDarkModeStatus]);
+    const currentTheme = (darkMode || 'system') as TDarkMode;
+    const formTheme = (formik.values.theme || 'system') as TDarkMode;
+
+    if (currentTheme !== formTheme) {
+      themeSyncingRef.current = true;
+      formik.setFieldValue('theme', currentTheme, false);
+    }
+  }, [darkMode]);
+
+  useEffect(() => {
+    const selectedTheme = (formik.values.theme || 'system') as TDarkMode;
+
+    if (themeSyncingRef.current) {
+      themeSyncingRef.current = false;
+      return;
+    }
+
+    if (selectedTheme !== darkMode) {
+      setDarkModeStatus(selectedTheme);
+    }
+  }, [formik.values.theme, darkMode, setDarkModeStatus]);
 
   useEffect(() => {
     setOptionsRegion(
@@ -266,3 +286,4 @@ const Perfil = () => {
 };
 
 export default Perfil;
+
