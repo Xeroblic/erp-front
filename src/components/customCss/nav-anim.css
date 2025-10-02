@@ -1,4 +1,4 @@
-/* nav-anim.css */
+
 
 @property --border-angle {
   syntax: "<angle>";
@@ -11,20 +11,19 @@
   position: relative;
   isolation: isolate;
   border-color: transparent !important;
-  z-index: 0;                 /* base */
-  --nav-accent: currentColor; /* fallback por si no seteas desde React */
+  z-index: 0;
+  --nav-accent: currentColor;
 }
 
-/* eleva el contenido por sobre ::before */
 .nav-active-conic > * { position: relative; z-index: 1; }
 
 .nav-active-conic::before {
   content: "";
   position: absolute;
-  inset: 0;                   /* ocupa todo el borde */
-  padding: 2px;               /* grosor del aro */
+  inset: 0;
+  padding: 2px;
   border-radius: inherit;
-  z-index: 0;                 /* por debajo del contenido, encima del fondo */
+  z-index: 0;
 
   background: conic-gradient(
     from var(--border-angle),

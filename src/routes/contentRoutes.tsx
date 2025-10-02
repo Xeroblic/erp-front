@@ -9,7 +9,7 @@ import ConfirmarNuevaPass from '@/pages/ResetPassword/ConfirmarNuevaPass';
 import SinPermisos from '@/pages/SinPermisos';
 import NotFoundPage from '@/pages/NotFound.page';
 
-const ProfilePage = lazy(() => import('@/pages/Perfil'));
+const ProfilePage = lazy(() => import('@/pages/perfil/Perfil'));
 const Dashboard = lazy(() => import('@/pages/MainDashboard'));
 // const ProductosPage = lazy(() => import("@/pages/Productos"));
 // const UsuariosPage  = lazy(() => import("@/pages/Usuarios"));

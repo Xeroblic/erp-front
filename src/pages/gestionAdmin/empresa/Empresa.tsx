@@ -22,6 +22,7 @@ import { IEmpresa } from '@/interface/empresas.interface'
 import { toast } from 'react-toastify'
 import { unwrapResult } from '@reduxjs/toolkit'
 import SubsidiariesTable from './SubsidiariesTable'
+import Spinner from '@/components/ui/Spinner'
 
 export default function EmpresaDetalle() {
 	const dispatch = useAppDispatch()
@@ -103,35 +104,7 @@ export default function EmpresaDetalle() {
 		{ id: 'contact', label: 'Contacto', icon: 'HeroPhone' },
 		{ id: 'subsidiaries', label: 'Subempresas', icon: 'HeroBuildingStorefront' },
 	] as const
-	if (loading)
-		return (
-			<div className="flex flex-col items-center justify-center h-64 rounded-lg shadow-inner">
-				<span className="animate-spin rounded-full h-10 w-10 border-4 border-blue-400 border-t-transparent mb-4"></span>
-				<span className="text-lg text-blue-700 font-medium">Cargando empresa…</span>
-			</div>
-		)
-	if (error)
-		return (
-			<div className="flex flex-col items-center justify-center h-64 bg-red-50 rounded-lg shadow-inner">
-				<span className="inline-flex items-center text-lg text-red-700 font-semibold bg-red-100 border border-red-300 rounded px-8 py-4 shadow-sm">
-					<svg className="w-6 h-6 mr-2 text-red-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-						<path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" />
-					</svg>
-					Error: {error}
-				</span>
-			</div>
-		)
-	if (!miEmpresa)
-		return (
-			<div className="flex flex-col items-center justify-center h-64 bg-gray-50 rounded-lg shadow-inner">
-				<span className="inline-flex items-center text-lg text-gray-600 bg-gray-100 border border-gray-300 rounded px-8 py-4 shadow-sm">
-					<svg className="w-6 h-6 mr-2 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-						<path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M12 21c4.97 0 9-4.03 9-9s-4.03-9-9-9-9 4.03-9 9 4.03 9 9 9z" />
-					</svg>
-					No existe empresa configurada
-				</span>
-			</div>
-		)
+
 
 	// 4) Render
 	return (
@@ -187,202 +160,229 @@ export default function EmpresaDetalle() {
 					</div>
 
 					<CardBody>
-						<form onSubmit={formik.handleSubmit} className="space-y-6 mt-6">
-							{/* Información General */}
-							{activeTab === 'general' && (
-								<div className="space-y-6">
-									<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-										{/* Nombre Comercial */}
+						{/* Loading/Error/Empty States */}
+						{loading && (
+							<Spinner nombre="Cargando empresa" />
+						)}
+						{error && (
+							<div className="flex flex-col items-center justify-center h-64 bg-red-50 rounded-lg shadow-inner">
+								<span className="inline-flex items-center text-lg text-red-700 font-semibold bg-red-100 border border-red-300 rounded px-8 py-4 shadow-sm">
+									<svg className="w-6 h-6 mr-2 text-red-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+										<path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" />
+									</svg>
+									Error: {error}
+								</span>
+							</div>
+						)}
+						{!loading && !error && !miEmpresa && (
+							<div className="flex flex-col items-center justify-center h-64 bg-gray-50 rounded-lg shadow-inner">
+								<span className="inline-flex items-center text-lg text-gray-600 bg-gray-100 border border-gray-300 rounded px-8 py-4 shadow-sm">
+									<svg className="w-6 h-6 mr-2 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+										<path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M12 21c4.97 0 9-4.03 9-9s-4.03-9-9-9-9 4.03-9 9 4.03 9 9 9z" />
+									</svg>
+									No existe empresa configurada
+								</span>
+							</div>
+						)}
+						{/* Main Form */}
+						{!loading && !error && miEmpresa && (
+							<form onSubmit={formik.handleSubmit} className="space-y-6 mt-6">
+								{/* Información General */}
+								{activeTab === 'general' && (
+									<div className="space-y-6">
+										<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+											{/* Nombre Comercial */}
+											<div>
+												<Label htmlFor="company_name">Nombre Comercial *</Label>
+												<Input
+													id="company_name"
+													name="company_name"
+													value={formik.values.company_name}
+													onChange={formik.handleChange}
+													onBlur={formik.handleBlur}
+													placeholder="Ej: EcoTech SPA"
+												/>
+												{formik.touched.company_name && formik.errors.company_name && (
+													<p className="mt-1 text-red-600 text-sm">{formik.errors.company_name}</p>
+												)}
+											</div>
+
+											{/* Razón Social */}
+											<div>
+												<Label htmlFor="legal_name">Razón Social *</Label>
+												<Input
+													id="legal_name"
+													name="legal_name"
+													value={formik.values.legal_name}
+													onChange={formik.handleChange}
+													onBlur={formik.handleBlur}
+													placeholder="Ej: EcoTech Soluciones Tecnológicas SpA"
+												/>
+												{formik.touched.legal_name && formik.errors.legal_name && (
+													<p className="mt-1 text-red-600 text-sm">{formik.errors.legal_name}</p>
+												)}
+											</div>
+
+											{/* RUT */}
+											<div>
+												<Label htmlFor="company_rut">RUT *</Label>
+												<Input
+													id="company_rut"
+													name="company_rut"
+													value={formik.values.company_rut}
+													onChange={formik.handleChange}
+													onBlur={formik.handleBlur}
+													placeholder="Ej: 76.795.560-9"
+												/>
+												{formik.touched.company_rut && formik.errors.company_rut && (
+													<p className="mt-1 text-red-600 text-sm">{formik.errors.company_rut}</p>
+												)}
+											</div>
+
+											{/* Tipo de Empresa */}
+											<div>
+												<Label htmlFor="company_type">Tipo de Empresa *</Label>
+												<Input
+													id="company_type"
+													name="company_type"
+													value={formik.values.company_type}
+													onChange={formik.handleChange}
+													onBlur={formik.handleBlur}
+													placeholder="Ej: SPA, LTDA, SA"
+												/>
+												{formik.touched.company_type && formik.errors.company_type && (
+													<p className="mt-1 text-red-600 text-sm">{formik.errors.company_type}</p>
+												)}
+											</div>
+										</div>
+
+										{/* Actividad Comercial */}
 										<div>
-											<Label htmlFor="company_name">Nombre Comercial *</Label>
-											<Input
-												id="company_name"
-												name="company_name"
-												value={formik.values.company_name}
+											<Label htmlFor="business_activity">Actividad Comercial *</Label>
+											<Textarea
+												id="business_activity"
+												name="business_activity"
+												value={formik.values.business_activity}
 												onChange={formik.handleChange}
 												onBlur={formik.handleBlur}
-												placeholder="Ej: EcoTech SPA"
+												placeholder="Describe la actividad principal de la empresa"
+												rows={3}
 											/>
-											{formik.touched.company_name && formik.errors.company_name && (
-												<p className="mt-1 text-red-600 text-sm">{formik.errors.company_name}</p>
+											{formik.touched.business_activity && formik.errors.business_activity && (
+												<p className="mt-1 text-red-600 text-sm">{formik.errors.business_activity}</p>
 											)}
 										</div>
 
-										{/* Razón Social */}
+										{/* Sitio Web */}
 										<div>
-											<Label htmlFor="legal_name">Razón Social *</Label>
+											<Label htmlFor="company_website">Sitio Web</Label>
 											<Input
-												id="legal_name"
-												name="legal_name"
-												value={formik.values.legal_name}
+												id="company_website"
+												name="company_website"
+												type="url"
+												value={formik.values.company_website}
 												onChange={formik.handleChange}
 												onBlur={formik.handleBlur}
-												placeholder="Ej: EcoTech Soluciones Tecnológicas SpA"
+												placeholder="https://www.ejemplo.cl"
 											/>
-											{formik.touched.legal_name && formik.errors.legal_name && (
-												<p className="mt-1 text-red-600 text-sm">{formik.errors.legal_name}</p>
-											)}
-										</div>
-
-										{/* RUT */}
-										<div>
-											<Label htmlFor="company_rut">RUT *</Label>
-											<Input
-												id="company_rut"
-												name="company_rut"
-												value={formik.values.company_rut}
-												onChange={formik.handleChange}
-												onBlur={formik.handleBlur}
-												placeholder="Ej: 76.795.560-9"
-											/>
-											{formik.touched.company_rut && formik.errors.company_rut && (
-												<p className="mt-1 text-red-600 text-sm">{formik.errors.company_rut}</p>
-											)}
-										</div>
-
-										{/* Tipo de Empresa */}
-										<div>
-											<Label htmlFor="company_type">Tipo de Empresa *</Label>
-											<Input
-												id="company_type"
-												name="company_type"
-												value={formik.values.company_type}
-												onChange={formik.handleChange}
-												onBlur={formik.handleBlur}
-												placeholder="Ej: SPA, LTDA, SA"
-											/>
-											{formik.touched.company_type && formik.errors.company_type && (
-												<p className="mt-1 text-red-600 text-sm">{formik.errors.company_type}</p>
+											{formik.touched.company_website && formik.errors.company_website && (
+												<p className="mt-1 text-red-600 text-sm">{formik.errors.company_website}</p>
 											)}
 										</div>
 									</div>
+								)}
 
-									{/* Actividad Comercial */}
-									<div>
-										<Label htmlFor="business_activity">Actividad Comercial *</Label>
-										<Textarea
-											id="business_activity"
-											name="business_activity"
-											value={formik.values.business_activity}
-											onChange={formik.handleChange}
-											onBlur={formik.handleBlur}
-											placeholder="Describe la actividad principal de la empresa"
-											rows={3}
+								{activeTab === 'contact' && (
+									<div className="space-y-6">
+										<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+											<div>
+												<Label htmlFor="company_phone">Teléfono Principal</Label>
+												<Input
+													id="company_phone"
+													name="company_phone"
+													type="tel"
+													value={formik.values.company_phone}
+													onChange={formik.handleChange}
+													onBlur={formik.handleBlur}
+													placeholder="+56 9 1234 5678"
+												/>
+												{formik.touched.company_phone && formik.errors.company_phone && (
+													<p className="mt-1 text-red-600 text-sm">{formik.errors.company_phone}</p>
+												)}
+											</div>
+
+											<div>
+												<Label htmlFor="contact_email">Email de Contacto *</Label>
+												<Input
+													id="contact_email"
+													name="contact_email"
+													type="email"
+													value={formik.values.contact_email}
+													onChange={formik.handleChange}
+													onBlur={formik.handleBlur}
+													placeholder="contacto@empresa.cl"
+												/>
+												{formik.touched.contact_email && formik.errors.contact_email && (
+													<p className="mt-1 text-red-600 text-sm">{formik.errors.contact_email}</p>
+												)}
+											</div>
+										</div>
+
+										<div>
+											<Label htmlFor="company_address">Dirección *</Label>
+											<Textarea
+												id="company_address"
+												name="company_address"
+												value={formik.values.company_address}
+												onChange={formik.handleChange}
+												onBlur={formik.handleBlur}
+												placeholder="Dirección completa de la empresa"
+												rows={2}
+											/>
+											{formik.touched.company_address && formik.errors.company_address && (
+												<p className="mt-1 text-red-600 text-sm">{formik.errors.company_address}</p>
+											)}
+										</div>
+
+										{/* Representante Legal */}
+										<div>
+											<Label htmlFor="representative_name">Representante Legal *</Label>
+											<Input
+												id="representative_name"
+												name="representative_name"
+												value={formik.values.representative_name}
+												onChange={formik.handleChange}
+												onBlur={formik.handleBlur}
+												placeholder="Nombre completo del representante legal"
+											/>
+											{formik.touched.representative_name && formik.errors.representative_name && (
+												<p className="mt-1 text-red-600 text-sm">{formik.errors.representative_name}</p>
+											)}
+										</div>
+									</div>
+								)}
+
+								{/* Subempresas */}
+								{activeTab === 'subsidiaries' && (
+									<div className="space-y-6">
+										<div className="flex items-center justify-between">
+											<div>
+												<h3 className="text-lg font-medium">Subempresas</h3>
+												<p className="text-sm text-zinc-500">
+													Gestiona las subempresas asociadas a {miEmpresa?.company_name}
+												</p>
+											</div>
+										</div>
+
+										<SubsidiariesTable
+											subsidiaries={miEmpresaSubsidiarias || []}
+											loading={loading}
+											onRefresh={() => dispatch(fetchMiEmpresaSubsidiarias())}
 										/>
-										{formik.touched.business_activity && formik.errors.business_activity && (
-											<p className="mt-1 text-red-600 text-sm">{formik.errors.business_activity}</p>
-										)}
 									</div>
-
-									{/* Sitio Web */}
-									<div>
-										<Label htmlFor="company_website">Sitio Web</Label>
-										<Input
-											id="company_website"
-											name="company_website"
-											type="url"
-											value={formik.values.company_website}
-											onChange={formik.handleChange}
-											onBlur={formik.handleBlur}
-											placeholder="https://www.ejemplo.cl"
-										/>
-										{formik.touched.company_website && formik.errors.company_website && (
-											<p className="mt-1 text-red-600 text-sm">{formik.errors.company_website}</p>
-										)}
-									</div>
-								</div>
-							)}
-
-							{activeTab === 'contact' && (
-								<div className="space-y-6">
-									<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-										<div>
-											<Label htmlFor="company_phone">Teléfono Principal</Label>
-											<Input
-												id="company_phone"
-												name="company_phone"
-												type="tel"
-												value={formik.values.company_phone}
-												onChange={formik.handleChange}
-												onBlur={formik.handleBlur}
-												placeholder="+56 9 1234 5678"
-											/>
-											{formik.touched.company_phone && formik.errors.company_phone && (
-												<p className="mt-1 text-red-600 text-sm">{formik.errors.company_phone}</p>
-											)}
-										</div>
-
-										<div>
-											<Label htmlFor="contact_email">Email de Contacto *</Label>
-											<Input
-												id="contact_email"
-												name="contact_email"
-												type="email"
-												value={formik.values.contact_email}
-												onChange={formik.handleChange}
-												onBlur={formik.handleBlur}
-												placeholder="contacto@empresa.cl"
-											/>
-											{formik.touched.contact_email && formik.errors.contact_email && (
-												<p className="mt-1 text-red-600 text-sm">{formik.errors.contact_email}</p>
-											)}
-										</div>
-									</div>
-
-									<div>
-										<Label htmlFor="company_address">Dirección *</Label>
-										<Textarea
-											id="company_address"
-											name="company_address"
-											value={formik.values.company_address}
-											onChange={formik.handleChange}
-											onBlur={formik.handleBlur}
-											placeholder="Dirección completa de la empresa"
-											rows={2}
-										/>
-										{formik.touched.company_address && formik.errors.company_address && (
-											<p className="mt-1 text-red-600 text-sm">{formik.errors.company_address}</p>
-										)}
-									</div>
-
-									{/* Representante Legal */}
-									<div>
-										<Label htmlFor="representative_name">Representante Legal *</Label>
-										<Input
-											id="representative_name"
-											name="representative_name"
-											value={formik.values.representative_name}
-											onChange={formik.handleChange}
-											onBlur={formik.handleBlur}
-											placeholder="Nombre completo del representante legal"
-										/>
-										{formik.touched.representative_name && formik.errors.representative_name && (
-											<p className="mt-1 text-red-600 text-sm">{formik.errors.representative_name}</p>
-										)}
-									</div>
-								</div>
-							)}
-
-							{/* Subempresas */}
-							{activeTab === 'subsidiaries' && (
-								<div className="space-y-6">
-									<div className="flex items-center justify-between">
-										<div>
-											<h3 className="text-lg font-medium">Subempresas</h3>
-											<p className="text-sm text-zinc-500">
-												Gestiona las subempresas asociadas a {miEmpresa?.company_name}
-											</p>
-										</div>
-									</div>
-
-									<SubsidiariesTable
-										subsidiaries={miEmpresaSubsidiarias || []}
-										loading={loading}
-										onRefresh={() => dispatch(fetchMiEmpresaSubsidiarias())}
-									/>
-								</div>
-							)}
-						</form>
+								)}
+							</form>
+						)}
 					</CardBody>
 				</Card>
 			</Container>

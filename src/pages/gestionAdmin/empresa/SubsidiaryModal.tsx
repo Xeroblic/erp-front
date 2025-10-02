@@ -73,7 +73,7 @@ export default function SubsidiaryModal({ isOpen, onClose, subsidiary, onSuccess
                 };
 
                 if (isEditing && subsidiary?.id) {
-                    // 📝 Actualizar subsidiaria existente
+                    // Actualizar subsidiaria existente
                     const action = await dispatch(updateSubsidiaria({
                         id: subsidiary.id,
                         data: subsidiaryData
@@ -117,7 +117,7 @@ export default function SubsidiaryModal({ isOpen, onClose, subsidiary, onSuccess
                 <h3 className="text-lg font-semibold">
                     {isEditing ? 'Editar Subempresa' : 'Nueva Subempresa'}
                 </h3>
-                <p className="text-sm text-zinc-500 mt-1">
+                <p className="text-sm text-zinc-500 mt-1 ml-3">
                     {isEditing
                         ? 'Modifica los datos de la subempresa'
                         : 'Ingresa los datos de la nueva subempresa'
