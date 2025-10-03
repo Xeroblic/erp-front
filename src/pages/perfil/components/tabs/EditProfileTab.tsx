@@ -171,7 +171,7 @@ const EditProfileTab = ({ formik, onAvatarUpload }: Props) => {
           </Validation>
         </div>
         <div className='col-span-12 lg:col-span-6'>
-          <Label>Genero</Label>
+          <Label htmlFor='genero'>Genero</Label>
           <RadioGroup isInline>
             {[
               { value: '0', label: 'No Especificado' },

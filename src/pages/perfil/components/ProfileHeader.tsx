@@ -17,7 +17,7 @@ const ProfileHeader = ({ fullName, onSubmit, saveButton }: Props) => {
     <Subheader>
       <SubheaderLeft>
         {fullName}{' '}
-        <Badge color='emerald' variant='outline' rounded='rounded-full' className='border-transparent'>
+        <Badge  variant='outline' rounded='rounded-full' className='border-transparent'>
           Editar Usuario
         </Badge>
       </SubheaderLeft>

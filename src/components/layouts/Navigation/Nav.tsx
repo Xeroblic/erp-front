@@ -134,6 +134,7 @@ const NavIcon: FC<INavIconProps> = (props) => {
 		/>
 	);
 };
+
 NavIcon.displayName = 'NavIcon';
 
 interface INavButtonProps extends HTMLAttributes<HTMLButtonElement> {
