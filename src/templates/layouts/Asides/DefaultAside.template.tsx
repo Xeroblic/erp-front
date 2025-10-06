@@ -107,8 +107,8 @@ const DefaultAsideTemplate = () => {
 	const [collapseStates, setCollapseStates] = useState<Record<string, boolean>>({
 		registro: false,
 		inventario: false,
-		comercial: false,
-		reportes: false,
+		// comercial: false,    // COMENTADO: Módulo aún no operativo
+		// reportes: false,     // COMENTADO: Módulo aún no operativo
 	});
 
 	const toggleCollapse = (key: string) => {
@@ -129,7 +129,11 @@ const DefaultAsideTemplate = () => {
 			<AsideHeadPart />
 			<AsideBody>
 				<Nav>
-					{/* Dashboard */}
+					{/* =================================================
+					MÓDULOS OPERATIVOS DEL ERP ZENTRIA
+					================================================= */}
+
+					{/* Dashboard - OPERATIVO */}
 					<AuthorityCheckNav
 						authority={Pages.dashboard.authority}
 						userAuthority={userPermissionsAndRoles}>
@@ -144,7 +148,7 @@ const DefaultAsideTemplate = () => {
 
 					<NavTitle>Gestión</NavTitle>
 
-					{/* Gestión - Empresa */}
+					{/* Gestión - OPERATIVO: Empresa, Subempresas, Sucursales, Usuarios, Integraciones, Permisos */}
 					<NavCollapse
 						key='registro-nav'
 						text='Registro'
@@ -242,7 +246,9 @@ const DefaultAsideTemplate = () => {
 								to={'/gestion/integraciones/woocommerce-stock-sync'}
 								icon={'HeroArrowPath'}
 								id={'woocommerce-stock-sync'}
-								onClick={() => navigate('/gestion/integraciones/woocommerce-stock-sync')}
+								onClick={() =>
+									navigate('/gestion/integraciones/woocommerce-stock-sync')
+								}
 							/>
 							<AuthorityCheckNav
 								authority={
@@ -274,7 +280,6 @@ const DefaultAsideTemplate = () => {
 										)
 									}
 								/>
-
 							</AuthorityCheckNav>
 							<NavItem
 								text={'Importar Pedidos WooCommerce'}
@@ -285,7 +290,6 @@ const DefaultAsideTemplate = () => {
 									navigate('/gestion/integraciones/woocommerce-import')
 								}
 							/>
-
 						</AuthorityCheckNav>
 
 						{/* Administrar Permisos */}
@@ -309,7 +313,7 @@ const DefaultAsideTemplate = () => {
 					{/* Módulos ERP */}
 					<NavTitle>ERP</NavTitle>
 
-					{/* Inventario */}
+					{/* Inventario - OPERATIVO: Productos, Transferencias */}
 					<NavCollapse
 						key='inventario-nav'
 						text='Inventario'
@@ -342,8 +346,12 @@ const DefaultAsideTemplate = () => {
 						</AuthorityCheckNav>
 					</NavCollapse>
 
-					{/* Comercial */}
-					<NavCollapse
+					{/* =================================================
+					MÓDULOS PENDIENTES POR IMPLEMENTAR
+					================================================= */}
+
+					{/* Comercial - PENDIENTE: Módulo aún no operativo */}
+					{/* <NavCollapse
 						key='comercial-nav'
 						text='Comercial'
 						icon='HeroShoppingBag'
@@ -360,7 +368,7 @@ const DefaultAsideTemplate = () => {
 								id={Pages.commercial.subPages.sales.id}
 								onClick={() => navigate(Pages.commercial.subPages.sales.to)}
 							/>
-						</AuthorityCheckNav>
+		</AuthorityCheckNav>
 
 						<AuthorityCheckNav
 							authority={Pages.commercial.subPages.quotes.authority}
@@ -385,10 +393,10 @@ const DefaultAsideTemplate = () => {
 								onClick={() => navigate(Pages.commercial.subPages.transfers.to)}
 							/>
 						</AuthorityCheckNav>
-					</NavCollapse>
+					</NavCollapse> */}
 
-					{/* Reportes */}
-					<AuthorityCheckNav
+					{/* Reportes - PENDIENTE: Módulo aún no operativo */}
+					{/* <AuthorityCheckNav
 						authority={Pages.reports.authority}
 						userAuthority={userPermissionsAndRoles}>
 						<NavCollapse
@@ -426,9 +434,11 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 						</NavCollapse>
-					</AuthorityCheckNav>
+					</AuthorityCheckNav> */}
 
 					<NavTitle>Recursos Humanos</NavTitle>
+
+					{/* Invitaciones - OPERATIVO */}
 
 					<AuthorityCheckNav
 						authority={Pages.humanResources.subPages.invitationsAdmin.authority}
@@ -447,6 +457,8 @@ const DefaultAsideTemplate = () => {
 
 					<NavTitle>Administración del Sistema</NavTitle>
 
+					{/* Parámetros del Sistema - OPERATIVO */}
+
 					<AuthorityCheckNav
 						authority={Pages.systemAdmin.subPages.systemParameters.authority}
 						userAuthority={userPermissionsAndRoles}
@@ -460,9 +472,8 @@ const DefaultAsideTemplate = () => {
 						/>
 					</AuthorityCheckNav>
 
-					<NavTitle>Módulo Técnico</NavTitle>
-
-					<AuthorityCheckNav
+					{/* Módulo Técnico - PENDIENTE: Módulo aún no operativo */}
+					{/* <AuthorityCheckNav
 						authority={Pages.technical.subPages.reviews.authority}
 						userAuthority={userPermissionsAndRoles}>
 						<NavItem
@@ -472,9 +483,12 @@ const DefaultAsideTemplate = () => {
 							id={Pages.technical.subPages.reviews.id}
 							onClick={() => navigate(Pages.technical.subPages.reviews.to)}
 						/>
-					</AuthorityCheckNav>
+					</AuthorityCheckNav> */}
 
 					<NavTitle>Catálogos</NavTitle>
+
+					{/* CATÁLOGOS OPERATIVOS: Productos, Bodegas, Categorías, Marcas */}
+					{/* Los catálogos corresponden a los modelos operativos mostrados en la imagen */}
 
 					<AuthorityCheckNav
 						authority={Pages.catalogs.subPages.products.authority}
@@ -528,7 +542,8 @@ const DefaultAsideTemplate = () => {
 						/>
 					</AuthorityCheckNav>
 
-					<AuthorityCheckNav
+					{/* Proveedores - PENDIENTE: No está operativo aún */}
+					{/* <AuthorityCheckNav
 						authority={Pages.catalogs.subPages.suppliers.authority}
 						userAuthority={userPermissionsAndRoles}
 						requireAll={Pages.catalogs.subPages.suppliers.requireAll}>
@@ -539,9 +554,10 @@ const DefaultAsideTemplate = () => {
 							id={Pages.catalogs.subPages.suppliers.id}
 							onClick={() => navigate(Pages.catalogs.subPages.suppliers.to)}
 						/>
-					</AuthorityCheckNav>
+					</AuthorityCheckNav> */}
 
-					<AuthorityCheckNav
+					{/* Clientes - PENDIENTE: No está operativo aún */}
+					{/* <AuthorityCheckNav
 						authority={Pages.catalogs.subPages.customers.authority}
 						userAuthority={userPermissionsAndRoles}
 						requireAll={Pages.catalogs.subPages.customers.requireAll}>
@@ -552,9 +568,10 @@ const DefaultAsideTemplate = () => {
 							id={Pages.catalogs.subPages.customers.id}
 							onClick={() => navigate(Pages.catalogs.subPages.customers.to)}
 						/>
-					</AuthorityCheckNav>
+					</AuthorityCheckNav> */}
 
-					<AuthorityCheckNav
+					{/* Documentos - PENDIENTE: No está operativo aún */}
+					{/* <AuthorityCheckNav
 						authority={Pages.catalogs.subPages.documents.authority}
 						userAuthority={userPermissionsAndRoles}
 						requireAll={Pages.catalogs.subPages.documents.requireAll}>
@@ -565,7 +582,7 @@ const DefaultAsideTemplate = () => {
 							id={Pages.catalogs.subPages.documents.id}
 							onClick={() => navigate(Pages.catalogs.subPages.documents.to)}
 						/>
-					</AuthorityCheckNav>
+					</AuthorityCheckNav> */}
 
 					{/* <AuthorityCheckNav authority={Pages.listaItem.authority} userAuthority={listaGrupos?.grupos}>
 						<NavItem text={Pages.listaItem.text} to={Pages.listaItem.to} icon={Pages.listaItem.icon} id={Pages.listaItem.id}></NavItem>
@@ -594,6 +611,11 @@ const DefaultAsideTemplate = () => {
 					<AuthorityCheckNav authority={Pages.listaClientes.authority} userAuthority={listaGrupos?.grupos}>
 						<NavItem text={Pages.listaClientes.text} to={Pages.listaClientes.to} icon={Pages.listaClientes.icon} id={Pages.listaClientes.id}></NavItem>
 					</AuthorityCheckNav> */}
+					{/* =================================================
+					SECCIONES DE LA TEMPLATE ORIGINAL - COMENTADAS
+					================================================= */}
+
+					{/* Apps de ejemplo de la template original */}
 					{/* <NavItem {...appPages.salesAppPages.subPages.salesDashboardPage} />
 					<NavItem {...appPages.aiAppPages.subPages.aiDashboardPage}>
 						<Badge

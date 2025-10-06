@@ -73,13 +73,17 @@ export const fetchPermissions = createAsyncThunk(
     'permissions/fetchPermissions',
     async (_, { rejectWithValue }) => {
         try {
+            console.log('🔍 Fetching permissions from /permissions');
             const response = await ApiService.fetchData<{
                 success: boolean;
                 data: Permission[]
             }>({
-                url: '/admin/permissions',
-                method: 'get'
+                url: '/permissions', // Corregido: usar la ruta del backend PHP
+                method: 'get',
+                dedupe: true,
+                dedupeKey: 'permissions-list'
             });
+            console.log('🔍 Permissions response:', response.data);
             return response.data.data;
         } catch (error: any) {
             return rejectWithValue(error?.response?.data?.message || 'Error al obtener permisos');
@@ -92,7 +96,7 @@ export const createPermission = createAsyncThunk(
     async (permissionData: Omit<Permission, 'id' | 'created_at' | 'updated_at'>, { rejectWithValue }) => {
         try {
             const response = await ApiService.fetchData<{ permission: Permission }>({
-                url: '/admin/permissions',
+                url: '/permissions', // Corregido: usar la ruta del backend PHP
                 method: 'post',
                 data: permissionData
             });
@@ -108,7 +112,7 @@ export const updatePermission = createAsyncThunk(
     async ({ id, ...permissionData }: Partial<Permission> & { id: number }, { rejectWithValue }) => {
         try {
             const response = await ApiService.fetchData<{ permission: Permission }>({
-                url: `/admin/permissions/${id}`,
+                url: `/permissions/${id}`, // Corregido: usar la ruta del backend PHP
                 method: 'put',
                 data: permissionData
             });
@@ -124,7 +128,7 @@ export const deletePermission = createAsyncThunk(
     async (id: number, { rejectWithValue }) => {
         try {
             await ApiService.fetchData({
-                url: `/admin/permissions/${id}`,
+                url: `/permissions/${id}`, // Corregido: usar la ruta del backend PHP
                 method: 'delete'
             });
             return id;
@@ -139,13 +143,17 @@ export const fetchRoles = createAsyncThunk(
     'permissions/fetchRoles',
     async (_, { rejectWithValue }) => {
         try {
+            console.log('🔍 Fetching roles from /roles');
             const response = await ApiService.fetchData<{
                 success: boolean;
                 data: Role[]
             }>({
-                url: '/admin/roles',
-                method: 'get'
+                url: '/roles', // Corregido: usar la ruta del backend PHP
+                method: 'get',
+                dedupe: true,
+                dedupeKey: 'roles-list'
             });
+            console.log('🔍 Roles response:', response.data);
             return response.data.data;
         } catch (error: any) {
             return rejectWithValue(error?.response?.data?.message || 'Error al obtener roles');
@@ -158,7 +166,7 @@ export const createRole = createAsyncThunk(
     async (roleData: { name: string; description?: string; level: number; permission_ids: number[] }, { rejectWithValue }) => {
         try {
             const response = await ApiService.fetchData<{ role: Role }>({
-                url: '/admin/roles',
+                url: '/roles', // Corregido: usar la ruta del backend PHP
                 method: 'post',
                 data: roleData
             });
@@ -174,7 +182,7 @@ export const updateRole = createAsyncThunk(
     async ({ id, permission_ids, ...roleData }: Partial<Role> & { id: number; permission_ids?: number[] }, { rejectWithValue }) => {
         try {
             const response = await ApiService.fetchData<{ role: Role }>({
-                url: `/admin/roles/${id}`,
+                url: `/roles/${id}`, // Corregido: usar la ruta del backend PHP
                 method: 'put',
                 data: { ...roleData, permission_ids }
             });
@@ -190,7 +198,7 @@ export const deleteRole = createAsyncThunk(
     async (id: number, { rejectWithValue }) => {
         try {
             await ApiService.fetchData({
-                url: `/admin/roles/${id}`,
+                url: `/roles/${id}`, // Corregido: usar la ruta del backend PHP
                 method: 'delete'
             });
             return id;
@@ -206,7 +214,7 @@ export const fetchUserPermissions = createAsyncThunk(
     async (userId: number, { rejectWithValue }) => {
         try {
             const response = await ApiService.fetchData<{ user_permissions: UserPermission[] }>({
-                url: `/admin/users/${userId}/permissions`,
+                url: `/users/${userId}/permissions`, // Corregido: usar la ruta del backend PHP
                 method: 'get'
             });
             return response.data.user_permissions;
@@ -225,7 +233,7 @@ export const assignPermissionToUser = createAsyncThunk(
                 expires_at: expiresAt
             };
             const response = await ApiService.fetchData<{ user_permission: UserPermission }>({
-                url: `/admin/users/${userId}/permissions`,
+                url: `/users/${userId}/permissions`, // Corregido: usar la ruta del backend PHP
                 method: 'post',
                 data: payload
             });
@@ -241,7 +249,7 @@ export const revokePermissionFromUser = createAsyncThunk(
     async ({ userId, permissionId }: { userId: number; permissionId: number }, { rejectWithValue }) => {
         try {
             await ApiService.fetchData({
-                url: `/admin/users/${userId}/permissions/${permissionId}`,
+                url: `/users/${userId}/permissions/${permissionId}`, // Corregido: usar la ruta del backend PHP
                 method: 'delete'
             });
             return { userId, permissionId };
@@ -257,7 +265,7 @@ export const fetchUserRoles = createAsyncThunk(
     async (userId: number, { rejectWithValue }) => {
         try {
             const response = await ApiService.fetchData<{ user_roles: UserRole[] }>({
-                url: `/admin/users/${userId}/roles`,
+                url: `/users/${userId}/roles`, // Corregido: usar la ruta del backend PHP
                 method: 'get'
             });
             return response.data.user_roles;
@@ -278,7 +286,7 @@ export const assignRoleToUser = createAsyncThunk(
                 branch_id: roleData.branchId
             };
             const response = await ApiService.fetchData<{ user_role: UserRole }>({
-                url: `/admin/users/${roleData.userId}/roles`,
+                url: `/users/${roleData.userId}/roles`, // Corregido: usar la ruta del backend PHP
                 method: 'post',
                 data: payload
             });
@@ -294,7 +302,7 @@ export const revokeRoleFromUser = createAsyncThunk(
     async ({ userId, roleId }: { userId: number; roleId: number }, { rejectWithValue }) => {
         try {
             await ApiService.fetchData({
-                url: `/admin/users/${userId}/roles/${roleId}`,
+                url: `/users/${userId}/roles/${roleId}`, // Corregido: usar la ruta del backend PHP
                 method: 'delete'
             });
             return { userId, roleId };

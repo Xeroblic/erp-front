@@ -69,11 +69,16 @@ const RolesPermisos: React.FC = () => {
 		}),
 		columnHelper.accessor('permisos', {
 			header: 'Permisos',
-			cell: (info) =>
-				info
-					.getValue()
-					.map((p) => p.clave)
-					.join(', '),
+			cell: (info) => {
+				const permisos = info.getValue();
+				// Verificar si permisos existe y es un array
+				if (!permisos || !Array.isArray(permisos) || permisos.length === 0) {
+					return 'Sin permisos asignados';
+				}
+				return permisos
+					.map((p: any) => p.clave || p.code || p.name || 'Permiso')
+					.join(', ');
+			},
 		}),
 		columnHelper.display({
 			id: 'acciones',
@@ -127,7 +132,7 @@ const RolesPermisos: React.FC = () => {
 	const openEditor = (u: IUsuario) => setEditingUser(u);
 
 	return (
-		<PageWrapper isProtectedRoute title='Roles y Permisos' name='Roles y Permisos'>
+		<PageWrapper isProtectedRoute title='Roles y Permisos' name='Roles y Permisos '>
 			<Subheader>
 				<SubheaderLeft>
 					<h1 className='text-2xl font-semibold'>Roles y Permisos</h1>

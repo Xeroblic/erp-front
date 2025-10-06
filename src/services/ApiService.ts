@@ -23,13 +23,11 @@ function makeKey(cfg: AxiosRequestConfig, kind: 'dedupe' | 'cache') {
 }
 
 const ApiService = {
-  // Request “crudo” con dedupe/abort/cache
   async fetchData<Response = unknown, Request = Record<string, unknown>>(
     param: ReqCfg<Request>
   ): Promise<AxiosResponse<Response>> {
     const { dedupe, dedupeKey, cacheTTLms } = param;
 
-    // 1) cache TTL (sólo lecturas)
     const isGet = (param.method ?? 'get').toLowerCase() === 'get';
     const cacheKey = isGet ? makeKey(param, 'cache') : undefined;
 
@@ -40,15 +38,13 @@ const ApiService = {
       }
     }
 
-    // 2) dedupe (reutilizar la misma promesa si ya hay una idéntica en vuelo)
     const dk = dedupeKey ?? makeKey(param, 'dedupe');
     if (dedupe) {
       const existing = inFlight.get(dk);
       if (existing) return existing as Promise<AxiosResponse<Response>>;
     }
 
-    // 3) asegurarnos de propagar AbortSignal (axios 1.x lo entiende)
-    // si ya viene signal desde fuera, se respeta
+
     const cfg: AxiosRequestConfig<Request> = { ...param };
 
     // 4) dispara la request

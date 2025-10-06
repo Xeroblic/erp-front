@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { setFilters, type UserWithDetails } from '@/store/slices/usersAdmin/usersAdminSlice';
+import { type UserWithDetails } from '@/store/slices/usersAdmin/usersAdminSlice';
 import { TSelectOption } from '@/components/form/SelectReact';
 
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
@@ -29,8 +29,6 @@ import { usePermissionsManagement } from './hooks/usePermissionsManagement';
 import { formatRoleName, formatPermissionName } from './utils/formatters';
 
 export default function PermissionsAdmin() {
-	const dispatch = useAppDispatch();
-
 	// Hook personalizado para gestión de permisos
 	const {
 		users,
@@ -56,11 +54,14 @@ export default function PermissionsAdmin() {
 	} = usePermissionsManagement();
 
 	const [sorting, setSorting] = useState<SortingState>([]);
+	const [globalFilter, setGlobalFilter] = useState('');
 	const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
 
 	useEffect(() => {
+		console.log('PermissionsAdmin - Ejecutando loadInitialData (solo debe aparecer UNA vez)');
 		loadInitialData();
-	}, [loadInitialData]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []); // Solo ejecutar una vez al montar
 
 	const { preselectedRoleIds, preselectedPermissionIds } = useMemo(() => {
 		if (!selectedUserForPermissions || !roles.length || !permissions.length) {
@@ -127,8 +128,8 @@ export default function PermissionsAdmin() {
 	const table = useReactTable({
 		data: users,
 		columns,
-		state: { globalFilter: filters.search, sorting },
-		onGlobalFilterChange: (value) => dispatch(setFilters({ search: value })),
+		state: { globalFilter, sorting },
+		onGlobalFilterChange: setGlobalFilter,
 		onSortingChange: setSorting,
 		getCoreRowModel: getCoreRowModel(),
 		getFilteredRowModel: getFilteredRowModel(),
@@ -210,8 +211,8 @@ export default function PermissionsAdmin() {
 						<Input
 							name='search'
 							placeholder='Buscar por nombre, email...'
-							value={filters.search}
-							onChange={(e) => dispatch(setFilters({ search: e.target.value }))}
+							value={globalFilter}
+							onChange={(e) => setGlobalFilter(e.target.value)}
 							className='w-64 rounded border md:w-80'
 						/>
 					</div>
@@ -257,7 +258,7 @@ export default function PermissionsAdmin() {
 						</Subheader>
 					</CardHeader>
 					<CardBody className='overflow-auto p-0'>
-						{usersLoading.users ? (
+						{usersLoading === 'loading' ? (
 							<div className='p-12 text-center'>
 								<Icon
 									icon='HeroArrowPath'
@@ -338,7 +339,11 @@ export default function PermissionsAdmin() {
 				onPermissionChange={handlePermissionChange}
 				onRoleChange={handleRoleChange}
 				onSave={handleSavePermissions}
-				isLoading={permissionsLoading.userPermissions || permissionsLoading.userRoles}
+				isLoading={
+					permissionsLoading.permissions ||
+					permissionsLoading.roles ||
+					usersLoading === 'loading'
+				}
 			/>
 		</PageWrapper>
 	);

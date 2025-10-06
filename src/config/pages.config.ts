@@ -1,4 +1,9 @@
 // src/config/pages.config.ts
+
+/* =================================================
+   ZENTRIA ERP - CONFIGURACIÓN DE PÁGINAS
+   ================================================= */
+
 export interface PageConfig {
   id: string;
   to: string;
@@ -13,15 +18,56 @@ export interface PageConfig {
   requireAll?: boolean;
 }
 
+/* =================================================
+   PÁGINAS DE AUTENTICACIÓN - OPERATIVAS
+   ================================================= */
+
 export const authPages = {
-  loginPage: { id: 'loginPage', to: '/login', text: 'Login', icon: 'HeroArrowRightOnRectangle', authority: [] },
-  profilePage: { id: 'profilePage', to: '/profile', text: 'Perfil', icon: 'HeroUser', authority: [] },
-  aceptarInvitacion: { id: 'aceptarInvitacion', to: '/invitar/aceptar/:token', text: 'Aceptar invitación', icon: 'HeroMailOpen', authority: [] },
-  recuperarPassword: { id: 'recuperarPassword', to: '/recuperar-password', text: 'Recuperar contraseña', icon: 'HeroKey', authority: [] },
-  confirmarNuevaPass: { id: 'confirmarNuevaPass', to: '/recuperar-password/confirmar/:uid/:token', text: 'Confirmar nueva contraseña', icon: 'HeroDocument', authority: [] },
+  loginPage: {
+    id: 'loginPage',
+    to: '/login',
+    text: 'Login',
+    icon: 'HeroArrowRightOnRectangle',
+    authority: []
+  },
+  profilePage: {
+    id: 'profilePage',
+    to: '/profile',
+    text: 'Perfil',
+    icon: 'HeroUser',
+    authority: []
+  },
+  aceptarInvitacion: {
+    id: 'aceptarInvitacion',
+    to: '/invitar/aceptar/:token',
+    text: 'Aceptar invitación',
+    icon: 'HeroMailOpen',
+    authority: []
+  },
+  recuperarPassword: {
+    id: 'recuperarPassword',
+    to: '/recuperar-password',
+    text: 'Recuperar contraseña',
+    icon: 'HeroKey',
+    authority: []
+  },
+  confirmarNuevaPass: {
+    id: 'confirmarNuevaPass',
+    to: '/recuperar-password/confirmar/:uid/:token',
+    text: 'Confirmar nueva contraseña',
+    icon: 'HeroDocument',
+    authority: []
+  },
 } satisfies Record<string, PageConfig>;
 
+/* =================================================
+   PÁGINAS PRIVADAS - MÓDULOS ERP
+   ================================================= */
+
 export const privatePages = {
+  /* =================================================
+     DASHBOARD - OPERATIVO
+     ================================================= */
   dashboard: {
     id: 'dashboard',
     to: '/dashboard',
@@ -30,14 +76,11 @@ export const privatePages = {
     authority: ['view-dashboard'],
     roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'manager', 'employee'],
   },
-  users: {
-    id: 'users',
-    to: '/usuarios',
-    text: 'Usuarios',
-    icon: 'HeroUsers',
-    authority: ['view-users', 'manage-users'],
-    roles: ['super-admin', 'company-admin', 'subsidiary-admin'],
-  },
+
+  /* =================================================
+     GESTIÓN - MÓDULOS OPERATIVOS
+     Empresa, Subempresas, Sucursales, Usuarios, Integraciones, Permisos
+     ================================================= */
   manage: {
     id: 'manage',
     to: '/gestion',
@@ -47,8 +90,8 @@ export const privatePages = {
       'view-company',
       'view-subsidiary',
       'view-branch',
-      'view-users',
-      'edit-roles'
+      'view-user',
+      'manage-roles'
     ],
     roles: ['super-admin', 'company-admin', 'subsidiary-admin'],
     subPages: {
@@ -81,7 +124,7 @@ export const privatePages = {
         to: '/gestion/subempresa/personalizacion',
         text: 'Personalización de Subempresa',
         icon: 'HeroPaintBrush',
-        authority: ['view-subsidiary'], // customize-subsidiary
+        authority: ['view-subsidiary'],
         roles: ['super-admin', 'company-admin', 'subsidiary-admin'],
       },
       branch: {
@@ -100,21 +143,12 @@ export const privatePages = {
         authority: ['view-branch'],
         roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin'],
       },
-      roles: {
-        id: 'roles',
-        to: '/gestion/roles-permisos',
-        text: 'Roles y permisos',
-        icon: 'HeroShieldCheck',
-        authority: ['edit-roles'],
-        roles: ['super-admin', 'company-admin', 'subsidiary-admin'],
-        requireAll: true,
-      },
       manageUsers: {
         id: 'manageUsers',
         to: '/gestion/usuarios',
         text: 'Usuarios',
         icon: 'HeroUsers',
-        authority: ['view-users'],
+        authority: ['view-user'],
         roles: ['super-admin', 'company-admin', 'subsidiary-admin'],
       },
       integrations: {
@@ -122,7 +156,7 @@ export const privatePages = {
         to: '/gestion/integraciones',
         text: 'Integraciones',
         icon: 'HeroGlobeAlt',
-        authority: ['view-users'], // 'view-integrations', 'manage-integrations'
+        authority: ['access-admin-panel'], // Integraciones requieren acceso admin
         roles: ['super-admin', 'company-admin'],
         subPages: {
           woocommerceSync: {
@@ -130,26 +164,18 @@ export const privatePages = {
             to: '/gestion/integraciones/woocommerce-sync',
             text: 'Sincronizar WooCommerce',
             icon: 'HeroArrowPath',
-            authority: ['view-users'], //'manage-integrations', 'view-integrations'
+            authority: ['access-admin-panel'],
             roles: ['super-admin', 'company-admin'],
-            },
-              woocommerceStockSync: {
-              id: 'woocommerceStockSync',
-              to: '/gestion/integraciones/woocommerce-stock-sync',
-              text: 'Sincronización de Stock WooCommerce',
-              icon: 'HeroArrowPath',
-              authority: ['view-users'], //'manage-integrations', 'view-integrations'
-              roles: ['super-admin', 'company-admin'],
-            },
           },
-    },
-      woocommerceStockSync: {
-        id: 'woocommerceStockSync',
-        to: '/gestion/integraciones/woocommerce-stock-sync',
-        text: 'Sincronización de Stock WooCommerce',
-        icon: 'HeroArrowPath',
-        authority: ['view-users'], //'manage-integrations', 'view-integrations'
-        roles: ['super-admin', 'company-admin'],
+          woocommerceStockSync: {
+            id: 'woocommerceStockSync',
+            to: '/gestion/integraciones/woocommerce-stock-sync',
+            text: 'Sincronización de Stock WooCommerce',
+            icon: 'HeroArrowPath',
+            authority: ['access-admin-panel'],
+            roles: ['super-admin', 'company-admin'],
+          },
+        },
       },
       permissionsAdmin: {
         id: 'permissionsAdmin',
@@ -163,7 +189,10 @@ export const privatePages = {
     },
   },
 
-  // Módulos ERP con roles normalizados
+  /* =================================================
+     INVENTARIO - OPERATIVO
+     Productos, Transferencias
+     ================================================= */
   inventory: {
     id: 'inventory',
     to: '/inventario',
@@ -188,6 +217,150 @@ export const privatePages = {
     },
   },
 
+  /* =================================================
+     CATÁLOGOS - OPERATIVOS
+     Productos, Bodegas, Categorías, Marcas
+     ================================================= */
+  catalogs: {
+    id: 'catalogs',
+    to: '/catalogos',
+    text: 'Catálogos',
+    icon: 'HeroArchiveBox',
+    authority: ['view-product', 'view-category', 'view-brand'], // Permisos principales de catálogos
+    roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'warehouse-employee', 'manager'],
+    requireAll: false,
+    subPages: {
+      products: {
+        id: 'products',
+        to: '/catalogos/productos',
+        text: 'Productos',
+        icon: 'HeroQueueList',
+        authority: ['view-product'],
+        roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'warehouse-employee', 'manager'],
+        requireAll: false,
+      },
+      warehouses: {
+        id: 'warehouses',
+        to: '/catalogos/bodegas',
+        text: 'Bodegas',
+        icon: 'HeroBuildingStorefront',
+        authority: ['view-branch'], // Las bodegas están relacionadas con branches
+        roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'warehouse-employee'],
+        requireAll: false,
+      },
+      categories: {
+        id: 'categories',
+        to: '/catalogos/categorias',
+        text: 'Categorías',
+        icon: 'HeroRectangleGroup',
+        authority: ['view-category'],
+        roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'manager'],
+        requireAll: false,
+      },
+      brands: {
+        id: 'brands',
+        to: '/catalogos/marcas',
+        text: 'Marcas',
+        icon: 'HeroTag',
+        authority: ['view-brand'],
+        roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'manager'],
+        requireAll: false,
+      },
+      // PENDIENTES - No operativos aún
+      suppliers: {
+        id: 'suppliers',
+        to: '/catalogos/proveedores',
+        text: 'Proveedores',
+        icon: 'HeroTruck',
+        authority: ['catalogs.suppliers'],
+        roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'purchasing-manager', 'manager'],
+        requireAll: false,
+      },
+      customers: {
+        id: 'customers',
+        to: '/catalogos/clientes',
+        text: 'Clientes',
+        icon: 'HeroUsers',
+        authority: ['catalogs.customers'],
+        roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'sales-manager', 'manager'],
+        requireAll: false,
+      },
+      documents: {
+        id: 'documents',
+        to: '/documentos',
+        text: 'Documentos',
+        icon: 'HeroDocumentArrowUp',
+        authority: ['catalogs.customers'],
+        roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'manager'],
+        requireAll: false,
+      },
+    },
+  },
+
+  /* =================================================
+     RECURSOS HUMANOS - OPERATIVO
+     Invitaciones
+     ================================================= */
+  humanResources: {
+    id: 'humanResources',
+    to: '/rrhh',
+    text: 'Recursos Humanos',
+    icon: 'HeroUserGroup',
+    authority: ['view-payslips', 'manage-invitations'], // RH incluye nóminas e invitaciones
+    roles: ['super-admin', 'company-admin'],
+    requireAll: false,
+    subPages: {
+      invitationsAdmin: {
+        id: 'invitationsAdmin',
+        to: '/admin/invitaciones',
+        text: 'Gestionar Invitaciones',
+        icon: 'HeroPaperAirplane',
+        authority: ['manage-invitations'],
+        roles: ['super-admin', 'company-admin'],
+        requireAll: false,
+      },
+    },
+  },
+
+  /* =================================================
+     ADMINISTRACIÓN DEL SISTEMA - OPERATIVO
+     Parámetros del Sistema
+     ================================================= */
+  systemAdmin: {
+    id: 'systemAdmin',
+    to: '/admin',
+    text: 'Administración',
+    icon: 'HeroCog6Tooth',
+    authority: ['access-admin-panel'],
+    roles: ['super-admin', 'company-admin'],
+    requireAll: false,
+    subPages: {
+      systemParameters: {
+        id: 'systemParameters',
+        to: '/admin/parametros-sistema',
+        text: 'Parámetros del Sistema',
+        icon: 'HeroAdjustmentsHorizontal',
+        authority: ['access-admin-panel'],
+        roles: ['super-admin', 'company-admin'],
+        requireAll: false,
+      },
+      systemParametersDetail: {
+        id: 'systemParametersDetail',
+        to: '/admin/parametros-sistema/:id',
+        text: 'Detalle Parámetro',
+        icon: 'HeroAdjustmentsHorizontal',
+        authority: ['access-admin-panel'],
+        roles: ['super-admin', 'company-admin'],
+        requireAll: false,
+      },
+    },
+  },
+
+  /* =================================================
+     MÓDULOS PENDIENTES - NO OPERATIVOS AÚN
+     ================================================= */
+
+  // COMERCIAL - PENDIENTE
   commercial: {
     id: 'commercial',
     to: '/comercial',
@@ -224,31 +397,13 @@ export const privatePages = {
     },
   },
 
-  technical: {
-    id: 'technical',
-    to: '/tecnico',
-    text: 'Técnico',
-    icon: 'HeroWrench',
-    authority: ['technical.view'],
-    roles: ['super-admin', 'company-admin', 'technician'],
-    subPages: {
-      reviews: {
-        id: 'technicalReviews',
-        to: '/revisiones-tecnicas',
-        text: 'Revisiones Técnicas',
-        icon: 'HeroWrenchScrewdriver',
-        authority: ['technical.reviews'],
-        roles: ['super-admin', 'company-admin', 'technician'],
-      },
-    },
-  },
-
+  // REPORTES - PENDIENTE
   reports: {
     id: 'reports',
     to: '/reportes',
     text: 'Reportes',
     icon: 'HeroChartBar',
-    authority: ['view-users'],//reports.view
+    authority: ['view-reports'], // Permiso correcto del PHP
     roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'manager'],
     subPages: {
       salesDashboard: {
@@ -256,7 +411,7 @@ export const privatePages = {
         to: '/reportes/ventas',
         text: 'Dashboard de Ventas',
         icon: 'HeroReceiptPercent',
-        authority: ['view-users'], //'reports.sales_dashboard'
+        authority: ['view-reports'],
         roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'manager'],
       },
       inventoryReports: {
@@ -264,149 +419,44 @@ export const privatePages = {
         to: '/reportes/inventario',
         text: 'Reportes de Inventario',
         icon: 'HeroCubeTransparent',
-        authority: ['reports.inventory_reports'],
-        roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'warehouse-manager', 'manager'],
+        authority: ['view-reports'],
+        roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'warehouse-employee', 'manager'],
       },
       financialReports: {
         id: 'financialReports',
         to: '/reportes/financieros',
         text: 'Reportes Financieros',
         icon: 'HeroBanknotes',
-        authority: ['reports.financial_reports'],
+        authority: ['view-reports', 'export-reports'], // Reportes financieros pueden necesitar exportación
         roles: ['super-admin', 'company-admin', 'manager'],
       },
     },
   },
 
-  // Sección ERP - Catálogos
-  catalogs: {
-    id: 'catalogs',
-    to: '/catalogos',
-    text: 'Catálogos',
-    icon: 'HeroArchiveBox',
-    authority: ['catalogs.view'],
-    roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'warehouse-manager', 'manager'],
-    requireAll: false,
+  // MÓDULO TÉCNICO - PENDIENTE (Sin permisos específicos en backend aún)
+  technical: {
+    id: 'technical',
+    to: '/tecnico',
+    text: 'Técnico',
+    icon: 'HeroWrench',
+    authority: ['view-user'], // Permiso temporal hasta definir permisos técnicos
+    roles: ['super-admin', 'company-admin', 'technician'],
     subPages: {
-      products: {
-        id: 'products',
-        to: '/catalogos/productos',
-        text: 'Productos',
-        icon: 'HeroQueueList',
-        authority: ['catalogs.products'],
-        roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'warehouse-manager', 'manager'],
-        requireAll: false,
-      },
-      warehouses: {
-        id: 'warehouses',
-        to: '/catalogos/bodegas',
-        text: 'Bodegas',
-        icon: 'HeroBuildingStorefront',
-        authority: ['catalogs.warehouses'],
-        roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'warehouse-manager'],
-        requireAll: false,
-      },
-      categories: {
-        id: 'categories',
-        to: '/catalogos/categorias',
-        text: 'Categorías',
-        icon: 'HeroRectangleGroup',
-        authority: ['catalogs.categories'],
-        roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'manager'],
-        requireAll: false,
-      },
-      brands: {
-        id: 'brands',
-        to: '/catalogos/marcas',
-        text: 'Marcas',
-        icon: 'HeroTag',
-        authority: ['catalogs.brands'],
-        roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'manager'],
-        requireAll: false,
-      },
-      suppliers: {
-        id: 'suppliers',
-        to: '/catalogos/proveedores',
-        text: 'Proveedores',
-        icon: 'HeroTruck',
-        authority: ['catalogs.suppliers'],
-        roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'purchasing-manager', 'manager'],
-        requireAll: false,
-      },
-      customers: {
-        id: 'customers',
-        to: '/catalogos/clientes',
-        text: 'Clientes',
-        icon: 'HeroUsers',
-        authority: ['catalogs.customers'],
-        roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'sales-manager', 'manager'],
-        requireAll: false,
-      },
-      documents: {
-        id: 'documents',
-        to: '/documentos',
-        text: 'Documentos',
-        icon: 'HeroDocumentArrowUp',
-        authority: ['catalogs.customers'],
-        roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'manager'],
-        requireAll: false,
-      },
-    },
-  },
-
-  humanResources: {
-    id: 'humanResources',
-    to: '/rrhh',
-    text: 'Recursos Humanos',
-    icon: 'HeroUserGroup',
-    authority: ['hr.view'],
-    roles: ['super-admin', 'company-admin'],
-    requireAll: false,
-    subPages: {
-      invitationsAdmin: {
-        id: 'invitationsAdmin',
-        to: '/admin/invitaciones',
-        text: 'Gestionar Invitaciones',
-        icon: 'HeroPaperAirplane',
-        authority: ['manage-invitations'],
-        roles: ['super-admin', 'company-admin'],
-        requireAll: false,
-      },
-    },
-  },
-
-  // Administración del Sistema
-  systemAdmin: {
-    id: 'systemAdmin',
-    to: '/admin',
-    text: 'Administración',
-    icon: 'HeroCog6Tooth',
-    authority: ['manage-invitations'],
-    roles: ['super-admin', 'company-admin'],
-    requireAll: false,
-    subPages: {
-      systemParameters: {
-        id: 'systemParameters',
-        to: '/admin/parametros-sistema',
-        text: 'Parámetros del Sistema',
-        icon: 'HeroAdjustmentsHorizontal',
-        authority: ['manage-invitations'],
-        roles: ['super-admin', 'company-admin'],
-        requireAll: false,
-      },
-      systemParametersDetail: {
-        id: 'systemParametersDetail',
-        to: '/admin/parametros-sistema/:id',
-        text: 'Detalle Parámetro',
-        icon: 'HeroAdjustmentsHorizontal',
-        authority: ['manage-invitations'],
-        roles: ['super-admin', 'company-admin'],
-        requireAll: false,
+      reviews: {
+        id: 'technicalReviews',
+        to: '/revisiones-tecnicas',
+        text: 'Revisiones Técnicas',
+        icon: 'HeroWrenchScrewdriver',
+        authority: ['view-user'], // Permiso temporal
+        roles: ['super-admin', 'company-admin', 'technician'],
       },
     },
   },
 };
 
+/* =================================================
+   CONFIGURACIÓN FINAL DE PÁGINAS
+   ================================================= */
 
 export const pagesConfig = { ...authPages, ...privatePages };
 export default pagesConfig;

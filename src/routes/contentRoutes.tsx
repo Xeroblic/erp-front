@@ -30,7 +30,7 @@ const WooCommerceProductsSyncPage = lazy(
 	() => import('@/pages/gestionAdmin/integraciones/woocommerce/WooCommerceProductsSyncPage'),
 );
 const WooCommerceOrdersImportPage = lazy(
-    () => import('@/pages/gestionAdmin/integraciones/woocommerce/WooCommerceOrdersImportPage'),
+	() => import('@/pages/gestionAdmin/integraciones/woocommerce/WooCommerceOrdersImportPage'),
 );
 const WooStockSync = lazy(() => import('@/pages/integraciones/WooComerceSync/WooStockSync'));
 // Reportes
@@ -45,7 +45,7 @@ const RolesPermisos = lazy(() => import('@/pages/gestionAdmin/roles y permisos/R
 const GestionUsuarios = lazy(() => import('@/pages/gestionAdmin/usuarios/Usuarios.tsx'));
 
 // Páginas de Administración
-const PermissionsAdmin = lazy(() => import('@/pages/admin/PermissionsAdmin.tsx'));
+const PermissionsAdmin = lazy(() => import('@/pages/admin/Permission/PermissionsAdmin'));
 const InvitationsAdmin = lazy(() => import('@/pages/invitations/InvitationsAdmin.tsx'));
 const SystemParametersAdmin = lazy(
 	() => import('@/pages/admin/systemParameters/SystemParametersAdmin'),
@@ -145,9 +145,9 @@ const contentRoutes: IRoutePersonalizada[] = [
 		authority: cfg.manage.subPages.branchDetail.authority,
 	},
 	{
-		path: cfg.manage.subPages.roles.to,
-		element: <RolesPermisos />,
-		authority: cfg.manage.subPages.roles.authority,
+		path: cfg.manage.subPages.permissionsAdmin.to,
+		element: <PermissionsAdmin />,
+		authority: cfg.manage.subPages.permissionsAdmin.authority,
 	},
 	{
 		path: cfg.manage.subPages.manageUsers.to,
@@ -159,15 +159,10 @@ const contentRoutes: IRoutePersonalizada[] = [
 		element: <IntegracionesWooCommerce />,
 		authority: cfg.manage.subPages.integrations.authority,
 	},
-    {
-        path: cfg.manage.subPages.integrations.subPages.woocommerceSync.to,
-        element: <WooCommerceProductsSyncPage />,
-        authority: cfg.manage.subPages.integrations.subPages.woocommerceSync.authority,
-    },
 	{
-		path: cfg.manage.subPages.permissionsAdmin.to,
-		element: <PermissionsAdmin />,
-		authority: cfg.manage.subPages.permissionsAdmin.authority,
+		path: cfg.manage.subPages.integrations.subPages.woocommerceSync.to,
+		element: <WooCommerceProductsSyncPage />,
+		authority: cfg.manage.subPages.integrations.subPages.woocommerceSync.authority,
 	},
 	{
 		path: cfg.humanResources.subPages.invitationsAdmin.to,
@@ -181,13 +176,12 @@ const contentRoutes: IRoutePersonalizada[] = [
 		element: <SystemParametersAdmin />,
 		authority: cfg.systemAdmin.subPages.systemParameters.authority,
 	},
-    {
-        path: cfg.systemAdmin.subPages.systemParametersDetail.to,
-        element: <SystemParameterDetails />,
-        authority: cfg.systemAdmin.subPages.systemParametersDetail.authority,
-        
-    },
-		{
+	{
+		path: cfg.systemAdmin.subPages.systemParametersDetail.to,
+		element: <SystemParameterDetails />,
+		authority: cfg.systemAdmin.subPages.systemParametersDetail.authority,
+	},
+	{
 		path: '/gestion/integraciones/woocommerce',
 		element: <WooCommerceIntegrationPage />,
 		authority: cfg.manage.subPages.integrations.authority,
@@ -201,9 +195,9 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: '/gestion/integraciones/woocommerce-import',
 		element: <WooCommerceOrdersImportPage />,
 		authority: cfg.manage.subPages.integrations.authority,
-    },
+	},
 
-    // Rutas ERP
+	// Rutas ERP
 	{
 		path: cfg.inventory.to,
 		element: <InventarioPage />,
@@ -233,31 +227,31 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: cfg.commercial.subPages.transfers.to,
 		element: <TransferenciasComercial />,
 		authority: cfg.commercial.subPages.transfers.authority,
-    },
+	},
 
-    // Reportes
-    {
-        path: cfg.reports.to,
-        element: <ReportsHome />,
-        authority: cfg.reports.authority,
-    },
-    {
-        path: cfg.reports.subPages.salesDashboard.to,
-        element: <SalesDashboard />,
-        authority: cfg.reports.subPages.salesDashboard.authority,
-    },
-    {
-        path: cfg.reports.subPages.inventoryReports.to,
-        element: <InventoryReports />,
-        authority: cfg.reports.subPages.inventoryReports.authority,
-    },
-    {
-        path: cfg.reports.subPages.financialReports.to,
-        element: <FinancialReports />,
-        authority: cfg.reports.subPages.financialReports.authority,
-    },
+	// Reportes
+	{
+		path: cfg.reports.to,
+		element: <ReportsHome />,
+		authority: cfg.reports.authority,
+	},
+	{
+		path: cfg.reports.subPages.salesDashboard.to,
+		element: <SalesDashboard />,
+		authority: cfg.reports.subPages.salesDashboard.authority,
+	},
+	{
+		path: cfg.reports.subPages.inventoryReports.to,
+		element: <InventoryReports />,
+		authority: cfg.reports.subPages.inventoryReports.authority,
+	},
+	{
+		path: cfg.reports.subPages.financialReports.to,
+		element: <FinancialReports />,
+		authority: cfg.reports.subPages.financialReports.authority,
+	},
 
-    // Rutas de Catálogos
+	// Rutas de Catálogos
 	{
 		path: cfg.catalogs.subPages.products.to,
 		element: <ProductosPage />,

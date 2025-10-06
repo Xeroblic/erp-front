@@ -1,8 +1,10 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
-    fetchUsers,
-    fetchUserDetails,
+    fetchUsuariosConRolesPerms,
+    updateUsuarioRolesPerms,
+} from '@/store/slices/rolesPermisos/rolesPermisosSlice';
+import {
     toggleUserStatus,
     type UserWithDetails,
 } from '@/store/slices/usersAdmin/usersAdminSlice';
@@ -19,8 +21,33 @@ import { toast } from 'react-toastify';
 export const usePermissionsManagement = () => {
     const dispatch = useAppDispatch();
 
-    const { users, loading: usersLoading, filters } = useAppSelector((s) => s.usersAdmin);
-    const { permissions, roles, loading: permissionsLoading } = useAppSelector((s) => s.permissions);
+    const rolesPermisosState = useAppSelector((s) => s.rolesPermisos);
+    const permissionsState = useAppSelector((s) => s.permissions);
+
+    const { data: rawUsers, status: usersLoading } = rolesPermisosState;
+    const { permissions, roles, loading: permissionsLoading } = permissionsState;
+
+    // Los datos ya vienen en el formato correcto del backend PHP
+    const users = useMemo(() => {
+        if (!rawUsers || !Array.isArray(rawUsers)) return [];
+
+        console.log('🔍 Raw users from backend:', rawUsers[0]); // Log del primer usuario
+
+        // Los datos del backend PHP ya vienen en el formato correcto, no necesitan transformación
+        return rawUsers.map((user: any) => {
+            console.log('🔍 Usuario completo del backend PHP:', JSON.stringify(user, null, 2));
+            console.log('🔍 Todas las propiedades del usuario:', Object.keys(user));
+            console.log('🔍 Global roles:', user.global_roles);
+            console.log('🔍 Direct permissions:', user.direct_permissions);
+            console.log('🔍 Contextual roles:', user.contextual_roles);
+
+            // Retornar los datos tal como vienen del backend
+            return user;
+        });
+    }, [rawUsers]);
+
+    // Crear un objeto filters para compatibilidad
+    const filters = useMemo(() => ({ search: '' }), []);
 
     const [selectedUserForPermissions, setSelectedUserForPermissions] = useState<UserWithDetails | null>(null);
     const [selectedPermissionIds, setSelectedPermissionIds] = useState<number[]>([]);
@@ -38,25 +65,22 @@ export const usePermissionsManagement = () => {
     );
 
     const loadInitialData = useCallback(() => {
-        dispatch(fetchUsers({}));
+        dispatch(fetchUsuariosConRolesPerms());
         dispatch(fetchPermissions());
         dispatch(fetchRoles());
     }, [dispatch]);
 
     const openPermissionsModal = useCallback(
         async (user: UserWithDetails) => {
+            console.log('🔍 Usuario seleccionado para modal:', user);
+            console.log('🔍 Roles del usuario:', user.global_roles);
+            console.log('🔍 Permisos directos:', user.direct_permissions);
+            console.log('🔍 Roles contextuales:', user.contextual_roles);
             setSelectedUserForPermissions(user);
-
-            try {
-                const res = await dispatch(fetchUserDetails(user.id));
-                if (fetchUserDetails.fulfilled.match(res) && res.payload) {
-                    setSelectedUserForPermissions(res.payload as UserWithDetails);
-                }
-            } catch {
-                toast.error('Error al cargar detalles del usuario');
-            }
+            // Ya tenemos toda la información necesaria del usuario
+            // No necesitamos hacer una petición adicional
         },
-        [dispatch]
+        []
     );
 
     const toggleUser = useCallback(
@@ -182,17 +206,13 @@ export const usePermissionsManagement = () => {
             await Promise.all([...permissionPromises, ...rolePromises]);
 
             await Promise.all([
-                dispatch(fetchUsers({})),
+                dispatch(fetchUsuariosConRolesPerms()),
                 dispatch(fetchRoles()),
                 dispatch(fetchPermissions())
             ]);
 
-            if (selectedUserForPermissions?.id) {
-                const updatedUserRes = await dispatch(fetchUserDetails(selectedUserForPermissions.id));
-                if (fetchUserDetails.fulfilled.match(updatedUserRes) && updatedUserRes.payload) {
-                    setSelectedUserForPermissions(updatedUserRes.payload as UserWithDetails);
-                }
-            }
+            // Recargar la lista completa de usuarios para obtener datos actualizados
+            dispatch(fetchUsuariosConRolesPerms());
 
             toast.success('Permisos actualizados correctamente');
         } catch (error: any) {
@@ -212,7 +232,7 @@ export const usePermissionsManagement = () => {
         setSelectedPermissionIds([]);
         setSelectedRoleIds([]);
 
-        dispatch(fetchUsers({}));
+        dispatch(fetchUsuariosConRolesPerms());
     }, [dispatch]);
 
     return {
