@@ -40,14 +40,14 @@ export const fetchUsuariosConRolesPerms = createAsyncThunk<UsuarioConRolesPerms[
   async (_, { rejectWithValue }) => {
     try {
       console.log('🔍 Calling API endpoint: /users');
-      
+
       // Primero probemos obteniendo un usuario específico para ver si tiene más datos
       const testUserRes = await ApiService.fetchData<any>({
         url: '/users/6', // Probar con un usuario específico
         method: 'get',
       });
       console.log('🔍 Single user response:', testUserRes.data);
-      
+
       const res = await ApiService.fetchData<{ data: UsuarioConRolesPerms[] }>({
         url: '/users', // El endpoint correcto según el controlador PHP
         method: 'get',
@@ -61,7 +61,7 @@ export const fetchUsuariosConRolesPerms = createAsyncThunk<UsuarioConRolesPerms[
 
       // La respuesta puede venir como array directo o envuelta en data
       const usersArray = Array.isArray(res.data) ? res.data : (res.data as any).data || [];
-      
+
       if (usersArray && usersArray.length > 0) {
         console.log('🔍 First user detailed from slice:', JSON.stringify(usersArray[0], null, 2));
       }      // La respuesta puede venir como array directo o envuelta en data
