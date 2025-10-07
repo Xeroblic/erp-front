@@ -24,6 +24,8 @@ import transferencias, { TransferState } from './slices/transfers/transfersSlice
 import cotizaciones, { QuoteState } from './slices/quotes/quotesSlice';
 import ventas from './slices/sales/salesSlice';
 import inventario from './slices/inventory/inventorySlice';
+import brands from './slices/brands/brandsSlice';
+import categories, { CategoriesState } from './slices/categories/categoriesSlice';
 
 export interface RootState {
     auth: AuthState;
@@ -47,6 +49,7 @@ export interface RootState {
     cotizaciones: QuoteState;
     ventas: ReturnType<typeof ventas>;
     inventario: ReturnType<typeof inventario>;
+    brands: ReturnType<typeof brands>;
     [RtkQueryService.reducerPath]: any;
 }
 
@@ -73,6 +76,7 @@ const staticReducers = {
     cotizaciones,
     ventas,
     inventario,
+    brands,
     // personalizacion, // Comentado temporalmente
     [RtkQueryService.reducerPath]: RtkQueryService.reducer,
 };
@@ -92,3 +96,6 @@ const rootReducer =
         }
 
 export default rootReducer
+
+
+

@@ -133,6 +133,13 @@ export const PermissionsModal: React.FC<PermissionsModalProps> = ({
 		return branches.map((b) => ({ value: String(b.id), label: b.name }));
 	}, [branches]);
 
+	const globalRoleIds = useMemo(() => {
+		if (!selectedUser?.global_roles?.length) return [];
+		return selectedUser.global_roles
+			.map((roleName) => roles.find((role) => role.name === roleName)?.id)
+			.filter((id): id is number => typeof id === 'number');
+	}, [roles, selectedUser]);
+
 	// Inicializar contextos de roles existentes
 	useEffect(() => {
 		if (selectedUser?.contextual_roles) {
@@ -255,6 +262,38 @@ export const PermissionsModal: React.FC<PermissionsModalProps> = ({
 		setValidationErrors((prev) => prev.filter((err) => !err.field.includes(id)));
 	}, []);
 
+	const areArraysEqual = useCallback((a: number[], b: number[]) => {
+		if (a.length !== b.length) return false;
+		const sortedA = [...a].sort((x, y) => x - y);
+		const sortedB = [...b].sort((x, y) => x - y);
+		return sortedA.every((value, index) => value === sortedB[index]);
+	}, []);
+
+	useEffect(() => {
+		const contextRoleIds = roleContexts
+			.filter((context) => context.roleId > 0)
+			.map((context) => context.roleId);
+
+		const combinedRoleIds = Array.from(
+			new Set<number>([...globalRoleIds, ...contextRoleIds]),
+		);
+
+		if (!areArraysEqual(combinedRoleIds, selectedRoleIds)) {
+			const selectedOptions = roleOptions.filter((option) =>
+				combinedRoleIds.includes(parseInt(String(option.value), 10)),
+			);
+			onRoleChange(selectedOptions);
+		}
+	}, [
+		areArraysEqual,
+		globalRoleIds,
+		onRoleChange,
+		roleContexts,
+		roleOptions,
+		selectedRoleIds,
+	]);
+
+
 	// Función para mostrar confirmación de eliminación
 	const showDeleteConfirmation = useCallback(
 		(contextId: string) => {
@@ -358,7 +397,6 @@ export const PermissionsModal: React.FC<PermissionsModalProps> = ({
 		// Implementar lógica de guardado con contextos
 		try {
 			await onSave();
-			toast.success('Permisos actualizados correctamente');
 		} catch (error) {
 			toast.error('Error al guardar los cambios');
 		}
@@ -1164,3 +1202,4 @@ export const PermissionsModal: React.FC<PermissionsModalProps> = ({
 		</>
 	);
 };
+

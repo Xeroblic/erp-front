@@ -1,9 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
-import {
-    fetchUsuariosConRolesPerms,
-    updateUsuarioRolesPerms,
-} from '@/store/slices/rolesPermisos/rolesPermisosSlice';
+import { fetchUsuariosConRolesPerms } from '@/store/slices/rolesPermisos/rolesPermisosSlice';
 import {
     toggleUserStatus,
     type UserWithDetails,
