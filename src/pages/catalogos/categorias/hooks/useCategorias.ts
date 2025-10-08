@@ -13,12 +13,27 @@ import {
   type UpdateCategoryPayload,
   type ICategory,
   type ICategoryFilters,
+  ICategoryTreeNode,
 } from '@/interface/category.interface';
-import { flattenCategoryTree } from '@/components/helper/category.helper';
+import { buildCategoryParentOptions } from '@/components/helper/category.helper';
+import { CATEGORY_EMPTY_STATS } from '@/constants/category.constant';
+
+const INITIAL_SAFE_STATE = {
+  items: [] as ICategory[],
+  stats: { ...CATEGORY_EMPTY_STATS },
+  tree: [] as ICategoryTreeNode[],
+  loading: false,
+  treeLoading: false,
+  creating: false,
+  updating: false,
+  deleting: false,
+  error: null as string | null,
+};
 
 export function useCategorias(filters: ICategoryFilters) {
   const dispatch = useAppDispatch();
-  const categoriesState = useAppSelector((state) => state.categories);
+  const categoriesStateRaw = useAppSelector((state) => state.categories);
+  const categoriesState = categoriesStateRaw ?? INITIAL_SAFE_STATE;
 
   useEffect(() => {
     void dispatch(fetchCategories({ search: filters.search, parent_id: filters.parent_id }));
@@ -30,7 +45,10 @@ export function useCategorias(filters: ICategoryFilters) {
     }
   }, [dispatch, categoriesState.tree.length]);
 
-  const parentOptions = useMemo(() => flattenCategoryTree(categoriesState.tree), [categoriesState.tree]);
+  const parentOptions = useMemo(
+    () => buildCategoryParentOptions(categoriesState.items, categoriesState.tree),
+    [categoriesState.items, categoriesState.tree],
+  );
 
   const createCategory = useCallback(
     async (payload: CreateCategoryPayload) => {
@@ -94,4 +112,3 @@ export function useCategorias(filters: ICategoryFilters) {
     },
   };
 }
-

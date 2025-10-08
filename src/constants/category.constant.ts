@@ -5,9 +5,10 @@ export interface CategoryStatsShape {
   products_total: number;
 }
 
-export const CATEGORY_EMPTY_STATS: CategoryStatsShape = {
+export const CATEGORY_EMPTY_STATS: CategoryStatsShape = Object.freeze({
   total_categories: 0,
   active_categories: 0,
   inactive_categories: 0,
   products_total: 0,
-};
+});
+

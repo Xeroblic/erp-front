@@ -26,6 +26,7 @@ import ventas from './slices/sales/salesSlice';
 import inventario from './slices/inventory/inventorySlice';
 import brands from './slices/brands/brandsSlice';
 import categories, { CategoriesState } from './slices/categories/categoriesSlice';
+import products, { ProductsState } from './slices/products/productsSlice';
 
 export interface RootState {
     auth: AuthState;
@@ -50,6 +51,8 @@ export interface RootState {
     ventas: ReturnType<typeof ventas>;
     inventario: ReturnType<typeof inventario>;
     brands: ReturnType<typeof brands>;
+    categories: CategoriesState;
+    products: ProductsState;
     [RtkQueryService.reducerPath]: any;
 }
 
@@ -77,6 +80,8 @@ const staticReducers = {
     ventas,
     inventario,
     brands,
+    categories,
+    products,
     // personalizacion, // Comentado temporalmente
     [RtkQueryService.reducerPath]: RtkQueryService.reducer,
 };
@@ -96,6 +101,8 @@ const rootReducer =
         }
 
 export default rootReducer
+
+
 
 
 

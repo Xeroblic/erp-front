@@ -45,10 +45,10 @@ const CrearCategoria: React.FC<CrearCategoriaProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} setIsOpen={setIsOpen} size="lg">
+    <Modal isOpen={isOpen} setIsOpen={() => setIsOpen(false)} size="lg">
       <ModalHeader>
         <div className="flex items-center space-x-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">  
             <Icon icon="HeroPlus" className="h-6 w-6 text-emerald-600" />
           </div>
           <div>

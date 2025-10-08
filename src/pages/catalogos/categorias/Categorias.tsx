@@ -15,6 +15,7 @@ import EliminarCategoria from './components/modals/EliminarCategoria';
 import DetalleCategoria from './components/modals/DetalleCategoria';
 import { useCategorias } from './hooks/useCategorias';
 import type { ICategory, ICategoryFilters } from './types';
+import { buildCategoryTableRows } from '@/components/helper/category.helper';
 
 const Categorias: React.FC = () => {
   const [filters, setFilters] = useState<ICategoryFilters>({ search: '' });
@@ -37,9 +38,14 @@ const Categorias: React.FC = () => {
     updateCategory,
     toggleCategoryStatus,
     deleteCategory,
+    tree,
   } = useCategorias(filters);
 
   const parentOptionsForSelect = useMemo(() => parentOptions, [parentOptions]);
+  const tableRows = useMemo(
+    () => buildCategoryTableRows(categories, tree),
+    [categories, tree],
+  );
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setFilters((prev) => ({ ...prev, search: event.target.value }));
@@ -151,6 +157,7 @@ const Categorias: React.FC = () => {
         <SubheaderRight>
           <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
             <Input
+              name="search"
               placeholder="Buscar por nombre o descripcion"
               value={filters.search}
               onChange={handleSearchChange}
@@ -178,7 +185,7 @@ const Categorias: React.FC = () => {
           </div>
         ) : (
           <CategoriesTable
-            categories={categories}
+            rows={tableRows}
             onView={handleView}
             onEdit={handleEdit}
             onDelete={handleDelete}
