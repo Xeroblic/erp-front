@@ -165,7 +165,7 @@ const validateDetailForm = (values: ProductDetailForm) => {
 	if (!values.name.trim()) {
 		errors.name = 'El nombre es obligatorio';
 	}
-	if (values.brand_id === '' || Number(values.brand_id) <= 0) {
+	if (values.brand_id === '' || values.brand_id === 0) {
 		errors.brand_id = 'Debes seleccionar una marca';
 	}
 	if (!values.category_ids.length) {

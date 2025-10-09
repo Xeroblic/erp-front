@@ -121,25 +121,29 @@ export const buildCreateProductPayload = (
 	};
 };
 
-export const mapProductToDetailForm = (product: IProduct): ProductDetailForm => ({
-	sku: product.sku ?? '',
-	name: product.name ?? '',
-	brand_id: product.brand_id ?? '',
-	product_type: (product.product_type as ProductType) ?? 'general',
-	serial_tracking: Boolean(product.serial_tracking),
-	is_active: Boolean(product.is_active),
-	category_ids: extractCategoryIds(product),
-	price: typeof product.price === 'number' ? product.price : '',
-	offer_price: parseNumberOrNull(product.offer_price) ?? '',
-	cost: parseNumberOrNull(product.cost) ?? '',
-	warranty_months: parseNumberOrNull(product.warranty_months) ?? '',
-	stock: typeof product.stock === 'number' ? product.stock : '',
-	snippet_description: product.snippet_description ?? '',
-	short_description: product.short_description ?? '',
-	long_description: product.long_description ?? '',
-	product_status: (product.product_status as ProductStatus) ?? 'pending',
-	attributes_json: (product.attributes_json as ProductAttributesForm) ?? null,
-});
+export const mapProductToDetailForm = (product: IProduct): ProductDetailForm => {
+	const brandId = product.brand?.id ?? product.brand_id ?? '';
+
+	return {
+		sku: product.sku ?? '',
+		name: product.name ?? '',
+		brand_id: brandId,
+		product_type: (product.product_type as ProductType) ?? 'general',
+		serial_tracking: Boolean(product.serial_tracking),
+		is_active: Boolean(product.is_active),
+		category_ids: extractCategoryIds(product),
+		price: typeof product.price === 'number' ? product.price : '',
+		offer_price: parseNumberOrNull(product.offer_price) ?? '',
+		cost: parseNumberOrNull(product.cost) ?? '',
+		warranty_months: parseNumberOrNull(product.warranty_months) ?? '',
+		stock: typeof product.stock === 'number' ? product.stock : '',
+		snippet_description: product.snippet_description ?? '',
+		short_description: product.short_description ?? '',
+		long_description: product.long_description ?? '',
+		product_status: (product.product_status as ProductStatus) ?? 'pending',
+		attributes_json: (product.attributes_json as ProductAttributesForm) ?? null,
+	};
+};
 
 const hasDifferentValue = <T>(current: T, previous: T) => {
 	if (typeof current === 'object' && current !== null && previous !== null) {
@@ -158,7 +162,12 @@ export const buildDetailUpdatePayload = (
 
 	if (normaliseString(form.sku) !== product.sku) payload.sku = normaliseString(form.sku);
 	if (normaliseString(form.name) !== product.name) payload.name = normaliseString(form.name);
-	if ((form.brand_id ?? '') !== (product.brand_id ?? '')) payload.brand_id = Number(form.brand_id);
+
+	const currentBrandId = product.brand?.id ?? product.brand_id ?? '';
+	if (Number(form.brand_id || 0) !== Number(currentBrandId || 0)) {
+		payload.brand_id = Number(form.brand_id);
+	}
+
 	if ((form.product_type ?? 'general') !== (product.product_type ?? 'general')) payload.product_type = form.product_type;
 	if (form.serial_tracking !== product.serial_tracking) payload.serial_tracking = form.serial_tracking;
 	if (form.is_active !== product.is_active) payload.is_active = form.is_active;
@@ -205,8 +214,8 @@ export const buildDetailUpdatePayload = (
 		payload.product_status = form.product_status;
 	}
 
-	if (includeAttributes && hasDifferentValue(form.attributes_json, product.attributes_json)) {
-		payload.attributes_json = form.attributes_json ?? null;
+	if (includeAttributes && hasDifferentValue(form.attributes_json as any, product.attributes_json)) {
+		payload.attributes_json = form.attributes_json as any ?? null;
 	}
 
 	return payload;

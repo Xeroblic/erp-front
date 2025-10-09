@@ -45,13 +45,16 @@ const GeneralTab: React.FC<GeneralTabProps> = ({ brands, brandsLoading }) => {
 			</div>
 
 			<div className='space-y-1'>
-				<label className='text-sm font-medium'>Marca</label>
+				<label className='text-sm font-medium'>
+					Marca {brandsLoading ? '(Cargando...)' : `(${brands.length} disponibles)`}
+				</label>
 				<Select
 					name='brand_id'
-					value={values.brand_id}
-					onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
-						setFieldValue('brand_id', event.target.value)
-					}
+					value={String(values.brand_id || '')}
+					onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
+						const value = event.target.value;
+						setFieldValue('brand_id', value === '' ? '' : Number(value));
+					}}
 					disabled={brandsLoading}>
 					<option value=''>Seleccionar marca</option>
 					{brands.map((brand) => (
