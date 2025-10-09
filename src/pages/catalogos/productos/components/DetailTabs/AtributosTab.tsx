@@ -8,7 +8,7 @@ const AtributosTab: React.FC = () => {
 				<div className='mb-4 border-b border-gray-200 pb-4'>
 					<h3 className='text-lg font-semibold text-gray-900'>Atributos del producto</h3>
 					<p className='text-sm text-gray-600'>
-						Configure las especificaciones técnicas del producto según su tipo
+						Configure las especificaciones tecnicas del producto segun su tipo
 					</p>
 				</div>
 
