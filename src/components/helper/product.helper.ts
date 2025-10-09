@@ -169,14 +169,18 @@ export const buildUpdatePayload = (
 	if (data.serial_tracking !== undefined) payload.serial_tracking = Boolean(data.serial_tracking);
 	if (data.uom !== undefined) payload.uom = data.uom;
 	if (data.warranty_months !== undefined)
-		payload.warranty_months = toNullableNumber(data.warranty_months) ?? undefined;
-	if (data.cost !== undefined) payload.cost = toNullableNumber(data.cost) ?? undefined;
+		payload.warranty_months = toNullableNumber(data.warranty_months);
+	if (data.cost !== undefined) payload.cost = toNullableNumber(data.cost);
 	if (data.price !== undefined) payload.price = Number(data.price);
 	if (data.offer_price !== undefined)
-		payload.offer_price = toNullableNumber(data.offer_price) ?? undefined;
-	if (data.attributes_json !== undefined && data.attributes_json !== null)
-		payload.attributes_json = data.attributes_json;
+		payload.offer_price = toNullableNumber(data.offer_price);
+	if (data.stock !== undefined) payload.stock = toNullableNumber(data.stock);
+	if (data.attributes_json !== undefined) payload.attributes_json = data.attributes_json;
 	if (data.is_active !== undefined) payload.is_active = Boolean(data.is_active);
+	if (data.product_status !== undefined) payload.product_status = data.product_status;
+	if (data.snippet_description !== undefined) payload.snippet_description = data.snippet_description;
+	if (data.short_description !== undefined) payload.short_description = data.short_description;
+	if (data.long_description !== undefined) payload.long_description = data.long_description;
 	if (categoryIds) payload.category_ids = categoryIds;
 
 	return payload;
@@ -196,4 +200,3 @@ export const serializeFilters = (filters: ProductFilters): Record<string, unknow
 	if (filters.order_dir) params.order_dir = filters.order_dir;
 	return params;
 };
-

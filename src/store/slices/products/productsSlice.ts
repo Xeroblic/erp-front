@@ -21,11 +21,14 @@ export interface ProductsState {
 	items: IProduct[];
 	meta: ProductListMeta;
 	stats: ProductsStateStats;
+	current: IProduct | null;
 	loading: boolean;
+	currentLoading: boolean;
 	creating: boolean;
 	updating: boolean;
 	deleting: boolean;
 	error: string | null;
+	currentError: string | null;
 }
 
 const initialState: ProductsState = {
@@ -37,11 +40,14 @@ const initialState: ProductsState = {
 		last_page: 1,
 	},
 	stats: { ...PRODUCT_EMPTY_STATS },
+	current: null,
 	loading: false,
+	currentLoading: false,
 	creating: false,
 	updating: false,
 	deleting: false,
 	error: null,
+	currentError: null,
 };
 
 export const fetchProducts = createAsyncThunk<
@@ -87,6 +93,26 @@ export const fetchProducts = createAsyncThunk<
 	} catch (error: any) {
 		return rejectWithValue(
 			error?.response?.data?.message ?? error?.message ?? 'No se pudieron cargar los productos',
+		);
+	}
+});
+
+export const fetchProductById = createAsyncThunk<
+	IProduct,
+	{ branchId: number; productId: number },
+	{ rejectValue: string }
+>('products/fetchProductById', async ({ branchId, productId }, { rejectWithValue }) => {
+	try {
+		const response = await ApiService.fetchData<{ data?: any }>({
+			url: `/branches/${branchId}/products/${productId}`,
+			method: 'get',
+		});
+
+		const raw = response.data?.data ?? response.data;
+		return normalizeProduct(raw ?? { id: productId, branch_id: branchId });
+	} catch (error: any) {
+		return rejectWithValue(
+			error?.response?.data?.message ?? error?.message ?? 'No se pudo obtener el producto',
 		);
 	}
 });
@@ -165,6 +191,7 @@ const productsSlice = createSlice({
 	reducers: {
 		clearProductsError: (state) => {
 			state.error = null;
+			state.currentError = null;
 		},
 	},
 	extraReducers: (builder) => {
@@ -182,6 +209,22 @@ const productsSlice = createSlice({
 			.addCase(fetchProducts.rejected, (state, action) => {
 				state.loading = false;
 				state.error = action.payload ?? 'No se pudieron cargar los productos';
+			})
+			.addCase(fetchProductById.pending, (state) => {
+				state.currentLoading = true;
+				state.currentError = null;
+			})
+			.addCase(fetchProductById.fulfilled, (state, action) => {
+				state.currentLoading = false;
+				state.current = action.payload;
+				const index = state.items.findIndex((product) => product.id === action.payload.id);
+				if (index !== -1) {
+					state.items[index] = action.payload;
+				}
+			})
+			.addCase(fetchProductById.rejected, (state, action) => {
+				state.currentLoading = false;
+				state.currentError = action.payload ?? 'No se pudo obtener el producto';
 			})
 			.addCase(createProduct.pending, (state) => {
 				state.creating = true;
@@ -208,6 +251,9 @@ const productsSlice = createSlice({
 					state.items[index] = action.payload;
 					state.stats = computeProductStats(state.items);
 				}
+				if (state.current && state.current.id === action.payload.id) {
+					state.current = action.payload;
+				}
 			})
 			.addCase(updateProduct.rejected, (state, action) => {
 				state.updating = false;
@@ -222,6 +268,9 @@ const productsSlice = createSlice({
 				state.items = state.items.filter((product) => product.id !== action.payload);
 				state.meta.total = Math.max(0, state.meta.total - 1);
 				state.stats = computeProductStats(state.items);
+				if (state.current && state.current.id === action.payload) {
+					state.current = null;
+				}
 			})
 			.addCase(deleteProduct.rejected, (state, action) => {
 				state.deleting = false;

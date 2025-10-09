@@ -11,6 +11,7 @@ interface ProductsTableProps {
 	products: IProduct[];
 	meta: ProductListMeta;
 	loading?: boolean;
+	onView?: (product: IProduct) => void;
 	onEdit: (product: IProduct) => void;
 	onDelete: (product: IProduct) => void;
 }
@@ -22,8 +23,16 @@ const currencyFormatter = new Intl.NumberFormat('es-CO', {
 
 const DEFAULT_TYPE_META = { label: 'Sin tipo', icon: 'HeroCube', badgeColor: 'zinc' };
 
-const ProductsTable: React.FC<ProductsTableProps> = ({ products, meta, loading = false, onEdit, onDelete }) => {
-	const resolveTypeMeta = (type: string | null | undefined) => PRODUCT_TYPE_META[type ?? ''] ?? DEFAULT_TYPE_META;
+const ProductsTable: React.FC<ProductsTableProps> = ({
+	products,
+	meta,
+	loading = false,
+	onView,
+	onEdit,
+	onDelete,
+}) => {
+	const resolveTypeMeta = (type: keyof typeof PRODUCT_TYPE_META | null | undefined) =>
+		PRODUCT_TYPE_META[type as keyof typeof PRODUCT_TYPE_META] ?? DEFAULT_TYPE_META;
 
 	const renderSkeleton = () => (
 		<tr>
@@ -47,7 +56,7 @@ const ProductsTable: React.FC<ProductsTableProps> = ({ products, meta, loading =
 
 	const renderRows = () =>
 		products.map((product) => {
-			const typeMeta = resolveTypeMeta(product.product_type);
+			const typeMeta = resolveTypeMeta(product.product_type as keyof typeof PRODUCT_TYPE_META | null | undefined);
 
 			return (
 				<tr key={product.id} className='border-t'>
@@ -108,6 +117,11 @@ const ProductsTable: React.FC<ProductsTableProps> = ({ products, meta, loading =
 					</td>
 					<td className='px-6 py-3 text-right'>
 						<div className='flex items-center justify-end gap-2'>
+							{onView && (
+								<Button variant='outline' size='sm' onClick={() => onView(product)} icon='HeroEye'>
+									Detalle
+								</Button>
+							)}
 							<Button variant='outline' size='sm' onClick={() => onEdit(product)} icon='HeroPencil'>
 								Editar
 							</Button>
@@ -147,4 +161,3 @@ const ProductsTable: React.FC<ProductsTableProps> = ({ products, meta, loading =
 };
 
 export default ProductsTable;
-

@@ -5,11 +5,12 @@ import {
 	createProduct as createProductThunk,
 	updateProduct as updateProductThunk,
 	deleteProduct as deleteProductThunk,
+	ProductsState,
 } from '@/store/slices/products/productsSlice';
 import { fetchMisSucursales } from '@/store/slices/sucursales/sucursalesSlice';
 import { fetchBrands } from '@/store/slices/brands/brandsSlice';
 import { fetchCategories } from '@/store/slices/categories/categoriesSlice';
-import type { IProduct, ProductsState, ProductFilters } from '@/interface/product.interface';
+import type { IProduct, ProductFilters } from '@/interface/product.interface';
 import { PRODUCT_EMPTY_STATS } from '@/constants/product.constant';
 
 interface UseProductosParams {
@@ -28,11 +29,14 @@ const INITIAL_PRODUCTS_STATE: ProductsState = {
 		last_page: 1,
 	},
 	stats: { ...PRODUCT_EMPTY_STATS },
+	current: null,
 	loading: false,
+	currentLoading: false,
 	creating: false,
 	updating: false,
 	deleting: false,
 	error: null,
+	currentError: null,
 };
 
 export function useProductos({ branchId, filters, page = 1, perPage = 15 }: UseProductosParams) {

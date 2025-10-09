@@ -1,8 +1,36 @@
-import type { ProductFilters } from '@/interface/product.interface';
+import type { ProductFilters, ProductStatus, ProductType } from '@/interface/product.interface';
+
+export const PRODUCT_STATUS = ['pending', 'validated', 'archived'] as const;
+
+export const PRODUCT_TYPES = [
+	'general',
+	'desktop_pc_reacondicionado',
+	'notebook_reacondicionado',
+	'aio_reacondicionado',
+	'monitor_reacondicionado',
+] as const;
+
+export const PRODUCT_STATUS_LABELS: Record<string, string> = {
+	pending: 'Pendiente',
+	validated: 'Validado',
+	archived: 'Archivado',
+};
+
+export const PRODUCT_TYPE_LABELS: Record<string, string> = {
+	general: 'General',
+	desktop_pc_reacondicionado: 'Desktop reacondicionado',
+	notebook_reacondicionado: 'Notebook reacondicionado',
+	aio_reacondicionado: 'AIO reacondicionado',
+	monitor_reacondicionado: 'Monitor reacondicionado',
+	GENERAL: 'General',
+	NOTEBOOK: 'Notebook',
+	DESKTOP: 'Desktop',
+};
 
 export const PRODUCT_DEFAULT_FILTERS: ProductFilters = {
 	search: '',
 	is_active: undefined,
+	product_status: undefined,
 	brand_id: undefined,
 	category_id: undefined,
 	product_type: undefined,
@@ -10,15 +38,18 @@ export const PRODUCT_DEFAULT_FILTERS: ProductFilters = {
 
 export const PRODUCT_STATUS_FILTER_OPTIONS = [
 	{ value: '', label: 'Todos los estados' },
-	{ value: 'active', label: 'Activos' },
-	{ value: 'inactive', label: 'Inactivos' },
+	...PRODUCT_STATUS.map((status) => ({
+		value: status,
+		label: PRODUCT_STATUS_LABELS[status] ?? status,
+	})),
 ];
 
 export const PRODUCT_TYPE_FILTER_OPTIONS = [
 	{ value: '', label: 'Todos los tipos' },
-	{ value: 'GENERAL', label: 'General' },
-	{ value: 'NOTEBOOK', label: 'Notebook' },
-	{ value: 'DESKTOP', label: 'Desktop' },
+	...PRODUCT_TYPES.map((type) => ({
+		value: type,
+		label: PRODUCT_TYPE_LABELS[type] ?? type,
+	})),
 ];
 
 export const PRODUCT_STATS_META = [
@@ -49,7 +80,32 @@ export const PRODUCT_STATS_META = [
 	},
 ] as const;
 
-export const PRODUCT_TYPE_META = {
+export const PRODUCT_TYPE_META: Record<string, { label: string; icon: string; badgeColor: string }> = {
+	general: {
+		label: 'General',
+		icon: 'HeroCubeTransparent',
+		badgeColor: 'violet',
+	},
+	desktop_pc_reacondicionado: {
+		label: 'Desktop reacondicionado',
+		icon: 'HeroComputerDesktop',
+		badgeColor: 'emerald',
+	},
+	notebook_reacondicionado: {
+		label: 'Notebook reacondicionado',
+		icon: 'HeroComputerLaptop',
+		badgeColor: 'blue',
+	},
+	aio_reacondicionado: {
+		label: 'AIO reacondicionado',
+		icon: 'HeroDeviceTablet',
+		badgeColor: 'amber',
+	},
+	monitor_reacondicionado: {
+		label: 'Monitor reacondicionado',
+		icon: 'HeroPresentationChartLine',
+		badgeColor: 'cyan',
+	},
 	GENERAL: {
 		label: 'General',
 		icon: 'HeroCubeTransparent',
@@ -65,7 +121,7 @@ export const PRODUCT_TYPE_META = {
 		icon: 'HeroComputerDesktop',
 		badgeColor: 'emerald',
 	},
-} as const;
+};
 
 export const PRODUCT_TOGGLES = [
 	{
@@ -105,3 +161,5 @@ export const PRODUCT_FORM_SECTIONS = [
 		cardClass: '',
 	},
 ] as const;
+
+export const PRODUCT_DRAFT_CATEGORY_SLUG = 'borrador';

@@ -230,15 +230,24 @@ export const privatePages = {
     roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'warehouse-employee', 'manager'],
     requireAll: false,
     subPages: {
-      products: {
-        id: 'products',
-        to: '/catalogos/productos',
-        text: 'Productos',
-        icon: 'HeroQueueList',
-        authority: ['view-product'],
-        roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'warehouse-employee', 'manager'],
-        requireAll: false,
-      },
+        products: {
+          id: 'products',
+          to: '/catalogos/productos',
+          text: 'Productos',
+          icon: 'HeroQueueList',
+          authority: ['view-product'],
+          roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'warehouse-employee', 'manager'],
+          requireAll: false,
+        },
+        productsDetail: {
+          id: 'productsDetail',
+          to: '/catalogos/productos/:productId',
+          text: 'Detalle de producto',
+          icon: 'HeroCube',
+          authority: ['view-product'],
+          roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'warehouse-employee', 'manager'],
+          requireAll: false,
+        },
       warehouses: {
         id: 'warehouses',
         to: '/catalogos/bodegas',

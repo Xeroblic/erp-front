@@ -1,20 +1,72 @@
 import type {
 	IProduct,
-	IProductBrandSummary,
-	IProductCategorySummary,
+	ProductStatus,
 	ProductType,
-	ProductConditionPolicy,
 } from '@/interface/product.interface';
+import type { AttributesJson } from './attributes.types';
 
-export type { IProduct, IProductBrandSummary, IProductCategorySummary, ProductType };
-export type ProductCondition = ProductConditionPolicy;
-
-export interface ProductOption {
+export type ProductOption = {
 	value: string;
 	label: string;
+};
+
+export interface ProductCreateForm {
+	sku: string;
+	name: string;
+	brand_id: number | '';
+	price: number | '';
+	category_ids: number[];
 }
 
-export interface ProductFormValues {
+export interface ProductDetailForm {
+	sku: string;
+	name: string;
+	brand_id: number | '';
+	product_type: ProductType;
+	serial_tracking: boolean;
+	is_active: boolean;
+	category_ids: number[];
+	price: number | '';
+	offer_price: number | '';
+	cost: number | '';
+	warranty_months: number | '';
+	stock: number | '';
+	snippet_description: string;
+	short_description: string;
+	long_description: string;
+	product_status: ProductStatus;
+	attributes_json: AttributesJson;
+}
+
+export type ProductAttributesForm = AttributesJson;
+
+export type ProductValidationErrorMap = Record<string, string[]>;
+
+export interface ProductPublishingContext {
+	hasValidatedAttributes: boolean;
+	attributesErrors?: string[];
+}
+
+export interface ProductDetailValidationResult {
+	errors: ProductValidationErrorMap;
+	isValid: boolean;
+}
+
+export interface BuildCreatePayloadOptions {
+	defaultCategoryId?: number | null;
+	productStatus?: ProductStatus;
+	productType?: ProductType;
+	isActive?: boolean;
+}
+
+export interface BuildUpdatePayloadOptions {
+	includeDescriptions?: boolean;
+	includeAttributes?: boolean;
+}
+
+// Legacy forms (compatibility with current UI while refactor progresses)
+
+export interface LegacyProductFormValues {
 	sku: string;
 	name: string;
 	brand_id: string;
@@ -30,8 +82,10 @@ export interface ProductFormValues {
 	categories: ProductOption[];
 }
 
-export interface ProductFormSubmitPayload {
+export interface LegacyProductFormSubmitPayload {
 	data: Partial<IProduct>;
 	categoryIds: number[];
 }
 
+export type ProductFormValues = LegacyProductFormValues;
+export type ProductFormSubmitPayload = LegacyProductFormSubmitPayload;
