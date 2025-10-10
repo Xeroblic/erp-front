@@ -68,12 +68,12 @@ const ProductFiltersCard: React.FC<ProductFiltersCardProps> = ({
 	return (
 		<Card className='mb-6'>
 			<CardHeader className='pb-3'>
-				<div className='flex flex-wrap items-center justify-between gap-2'>
+				<div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
 					<CardTitle className='flex items-center gap-2 text-base font-semibold'>
 						<Icon icon='HeroFunnel' className='h-5 w-5' />
 						Filtros avanzados
 					</CardTitle>
-					<div className='flex items-center gap-2'>
+					<div className='flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end'>
 						<Badge variant='outline' color='blue'>
 							{totalRecords.toLocaleString('es-CO')} registros
 						</Badge>
@@ -82,14 +82,15 @@ const ProductFiltersCard: React.FC<ProductFiltersCardProps> = ({
 							size='sm'
 							icon='HeroArrowPath'
 							onClick={onResetFilters}
-							isDisable={loading}>
+							isDisable={loading}
+							className='w-full sm:w-auto'>
 							Limpiar filtros
 						</Button>
 					</div>
 				</div>
 			</CardHeader>
-			<CardBody className='grid gap-4 lg:grid-cols-4'>
-				<div className='space-y-2 lg:col-span-2'>
+			<CardBody className='grid gap-4 md:grid-cols-2 xl:grid-cols-4'>
+				<div className='space-y-2 xl:col-span-2'>
 					<label className='flex items-center gap-2 text-sm font-medium'>
 						<Icon icon='HeroMagnifyingGlass' className='h-4 w-4' />
 						Busqueda

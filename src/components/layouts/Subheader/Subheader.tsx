@@ -11,7 +11,11 @@ export const SubheaderLeft: FC<ISubheaderLeftProps> = (props) => {
 	return (
 		<div
 			data-component-name='Subheader/SubheaderLeft'
-			className={classNames('flex flex-wrap items-center gap-4', 'md:me-auto', className)}
+			className={classNames(
+				'flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-4',
+				'md:me-auto',
+				className,
+			)}
 			{...rest}>
 			{children}
 		</div>
@@ -29,8 +33,7 @@ export const SubheaderRight: FC<ISubheaderRightProps> = (props) => {
 		<div
 			data-component-name='Subheader/SubheaderRight'
 			className={classNames(
-				'flex flex-shrink-0 flex-wrap items-center gap-4',
-				'md:ms-auto',
+				'flex w-full flex-wrap items-center gap-3 sm:gap-4 md:ms-auto md:w-auto md:flex-shrink-0',
 				className,
 			)}
 			{...rest}>
@@ -75,9 +78,9 @@ const Subheader: FC<ISubheaderProps> = (props) => {
 				ref={divRef}
 				className={classNames(
 					'sticky top-[var(--header-height)] z-[9]',
-					'flex flex-wrap justify-between gap-4',
+					'flex flex-wrap items-start justify-between gap-3 sm:gap-4',
 					'border-b border-zinc-300/25 bg-white/75',
-					'px-6 py-4',
+					'px-4 py-3 sm:px-6 sm:py-4',
 					'backdrop-blur-md',
 					'dark:border-zinc-800/50 dark:bg-zinc-900/75 dark:text-white',
 					className,

@@ -1,11 +1,11 @@
 // Constantes para el sistema de atributos de productos ECOPC
 
 export const PRODUCT_DEVICE_TYPES = [
-    { value: 'general', label: 'GENERAL' },
-    { value: 'notebook', label: 'NOTEBOOK REACONDICIONADO' },
-    { value: 'desktop_pc', label: 'DESKTOP REACONDICIONADO' },
-    { value: 'aio', label: 'AIO REACONDICIONADO' },
-    { value: 'monitor', label: 'MONITOR REACONDICIONADO' },
+    { value: 'general', label: 'General' },
+    { value: 'notebook', label: 'Notebook reacondicionado' },
+    { value: 'desktop_pc', label: 'Desktop reacondicionado' },
+    { value: 'aio', label: 'AIO reacondicionado' },
+    { value: 'monitor', label: 'Monitor reacondicionado' },
 ] as const;
 
 export const CATEGORY_GRADES = [

@@ -98,26 +98,38 @@ export const useDynamicAttributesEditor = () => {
 
 	const previousProductType = useRef<string>(productType);
 
-	useEffect(() => {
-		if (!values.attributes_json) {
-			return;
-		}
+useEffect(() => {
+	if (!values.attributes_json) {
+		setAttributes((prev) => {
+			if (Object.keys(prev ?? {}).length === 0) {
+				return prev;
+			}
+			return {};
+		});
+		return;
+	}
 
-		try {
-			const parsed =
-				typeof values.attributes_json === 'string'
-					? JSON.parse(values.attributes_json)
-					: values.attributes_json;
-			setAttributes(parsed || {});
-		} catch (error) {
-			console.error('Error parsing attributes_json:', error);
-			setAttributes({});
-		}
-	}, [values.attributes_json]);
+	try {
+		const parsed =
+			typeof values.attributes_json === 'string'
+				? JSON.parse(values.attributes_json)
+				: values.attributes_json;
+		const nextAttributes = parsed || {};
+		setAttributes((prev) => {
+			if (JSON.stringify(prev) === JSON.stringify(nextAttributes)) {
+				return prev;
+			}
+			return nextAttributes;
+		});
+	} catch (error) {
+		console.error('Error parsing attributes_json:', error);
+		setAttributes({});
+	}
+}, [values.attributes_json]);
 
-	useEffect(() => {
-		setFieldValue('attributes_json', attributes);
-	}, [attributes, setFieldValue]);
+useEffect(() => {
+	setFieldValue('attributes_json', attributes);
+}, [attributes, setFieldValue]);
 
 	useEffect(() => {
 		setAttributes((prev) => {

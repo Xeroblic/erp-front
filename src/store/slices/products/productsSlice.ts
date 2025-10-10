@@ -29,6 +29,9 @@ export interface ProductsState {
 	deleting: boolean;
 	error: string | null;
 	currentError: string | null;
+	attributesLoading: boolean;
+	attributesUpdating: boolean;
+	attributesError: string | null;
 }
 
 const initialState: ProductsState = {
@@ -48,6 +51,9 @@ const initialState: ProductsState = {
 	deleting: false,
 	error: null,
 	currentError: null,
+	attributesLoading: false,
+	attributesUpdating: false,
+	attributesError: null,
 };
 
 export const fetchProducts = createAsyncThunk<
@@ -116,6 +122,66 @@ export const fetchProductById = createAsyncThunk<
 		);
 	}
 });
+
+export interface ProductAttributesPatchPayload {
+	set?: Record<string, unknown>;
+	unset?: string[];
+}
+
+export const fetchProductAttributes = createAsyncThunk<
+	{ productId: number; attributes: Record<string, unknown> | null },
+	{ branchId: number; productId: number },
+	{ rejectValue: string }
+>('products/fetchProductAttributes', async ({ branchId, productId }, { rejectWithValue }) => {
+	try {
+		const response = await ApiService.fetchData<{ attributes?: Record<string, unknown> | null }>({
+			url: `/branches/${branchId}/products/${productId}/attributes`,
+			method: 'get',
+		});
+
+		return {
+			productId,
+			attributes: (response.data?.attributes as Record<string, unknown> | null) ?? null,
+		};
+	} catch (error: any) {
+		return rejectWithValue(
+			error?.response?.data?.message ??
+				error?.message ??
+				'No se pudieron cargar los atributos del producto',
+		);
+	}
+});
+
+export const patchProductAttributes = createAsyncThunk<
+	{ productId: number; attributes: Record<string, unknown> | null },
+	{ branchId: number; productId: number; payload: ProductAttributesPatchPayload },
+	{ rejectValue: string }
+>(
+	'products/patchProductAttributes',
+	async ({ branchId, productId, payload }, { rejectWithValue }) => {
+		try {
+			const response = await ApiService.fetchData<
+				{ attributes?: Record<string, unknown> | null },
+				ProductAttributesPatchPayload
+			>({
+				url: `/branches/${branchId}/products/${productId}/attributes`,
+				method: 'patch',
+				data: payload,
+			});
+
+			return {
+				productId,
+				attributes: (response.data?.attributes as Record<string, unknown> | null) ?? null,
+			};
+		} catch (error: any) {
+			return rejectWithValue(
+				error?.response?.data?.message ??
+					error?.message ??
+					'No se pudieron actualizar los atributos del producto',
+			);
+		}
+	},
+);
 
 export const createProduct = createAsyncThunk<
 	IProduct,
@@ -225,6 +291,48 @@ const productsSlice = createSlice({
 			.addCase(fetchProductById.rejected, (state, action) => {
 				state.currentLoading = false;
 				state.currentError = action.payload ?? 'No se pudo obtener el producto';
+			})
+			.addCase(fetchProductAttributes.pending, (state) => {
+				state.attributesLoading = true;
+				state.attributesError = null;
+			})
+			.addCase(fetchProductAttributes.fulfilled, (state, action) => {
+				state.attributesLoading = false;
+				state.attributesError = null;
+				const { productId, attributes } = action.payload;
+				if (state.current && state.current.id === productId) {
+					state.current.attributes_json = attributes;
+				}
+				const index = state.items.findIndex((product) => product.id === productId);
+				if (index !== -1) {
+					state.items[index].attributes_json = attributes;
+				}
+			})
+			.addCase(fetchProductAttributes.rejected, (state, action) => {
+				state.attributesLoading = false;
+				state.attributesError =
+					action.payload ?? 'No se pudieron cargar los atributos del producto';
+			})
+			.addCase(patchProductAttributes.pending, (state) => {
+				state.attributesUpdating = true;
+				state.attributesError = null;
+			})
+			.addCase(patchProductAttributes.fulfilled, (state, action) => {
+				state.attributesUpdating = false;
+				state.attributesError = null;
+				const { productId, attributes } = action.payload;
+				if (state.current && state.current.id === productId) {
+					state.current.attributes_json = attributes;
+				}
+				const index = state.items.findIndex((product) => product.id === productId);
+				if (index !== -1) {
+					state.items[index].attributes_json = attributes;
+				}
+			})
+			.addCase(patchProductAttributes.rejected, (state, action) => {
+				state.attributesUpdating = false;
+				state.attributesError =
+					action.payload ?? 'No se pudieron actualizar los atributos del producto';
 			})
 			.addCase(createProduct.pending, (state) => {
 				state.creating = true;

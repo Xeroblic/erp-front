@@ -126,7 +126,7 @@ const DynamicAttributesEditor: React.FC = () => {
 				isFieldVisible={isFieldVisible}
 			/>
 
-			<JsonPreviewSection attributes={attributes} />
+			<JsonPreviewSection />
 		</div>
 	);
 };

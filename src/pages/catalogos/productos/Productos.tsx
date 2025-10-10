@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
@@ -9,7 +9,8 @@ import Card, { CardBody } from '@/components/ui/Card';
 import ProductsHeader from './components/ProductsHeader';
 import ProductStats from './components/ProductStats';
 import CreateEditProductModal from './components/modals/CreateEditProductModal';
-import { Tabs, ProductListTab, InventoryTab, AnalyticsTab, type TabItem } from './components/Tabs';
+import { ProductListTab, InventoryTab, AnalyticsTab } from './components/Tabs';
+import Tabs, { Tab } from '@/components/ui/Tabs';
 
 // Hooks y tipos
 import { useProductos } from './hooks/useProductos';
@@ -152,54 +153,7 @@ const Productos: React.FC = () => {
 		}
 	};
 
-	// Configuración de tabs
-	const tabs: TabItem[] = [
-		{
-			id: 'products',
-			label: 'Productos',
-			icon: 'HeroCubeTransparent',
-			badge: meta.total,
-			content: (
-				<ProductListTab
-					products={products}
-					meta={meta}
-					loading={loading}
-					filters={filters}
-					onSearchChange={handleSearchChange}
-					onStatusChange={handleStatusChange}
-					onBrandChange={handleBrandChange}
-					onCategoryChange={handleCategoryChange}
-					onTypeChange={handleTypeChange}
-					onResetFilters={handleResetFilters}
-					brands={brands}
-					categories={categories}
-					brandsLoading={brandsLoading}
-					categoriesLoading={categoriesLoading}
-					page={page}
-					onPageChange={setPage}
-					onView={handleViewProduct}
-					onEdit={(product) => {
-						setSelectedProduct(product);
-						setEditOpen(true);
-					}}
-					onDelete={handleDeleteProduct}
-				/>
-			),
-		},
-		{
-			id: 'inventory',
-			label: 'Inventario',
-			icon: 'HeroCubeTransparent',
-			content: <InventoryTab />,
-		},
-		{
-			id: 'analytics',
-			label: 'Análisis',
-			icon: 'HeroChartBarSquare',
-			content: <AnalyticsTab />,
-		},
-	];
-
+	// ConfiguraciÃƒÆ’Ã‚Â³n de tabs
 	return (
 		<PageWrapper name='catalog-products'>
 			<ProductsHeader
@@ -220,12 +174,40 @@ const Productos: React.FC = () => {
 
 				<ProductStats stats={stats} loading={loading} />
 
-				<Tabs
-					tabs={tabs}
-					activeTab={activeTab}
-					onTabChange={setActiveTab}
-					className='mt-6'
+		<Tabs activeTab={activeTab} onTabChange={setActiveTab} className='mt-6'>
+			<Tab id='products' text='Productos' icon='HeroCubeTransparent' badge={meta.total}>
+				<ProductListTab
+					products={products}
+					meta={meta}
+					loading={loading}
+					filters={filters}
+					onSearchChange={handleSearchChange}
+					onStatusChange={handleStatusChange}
+					onBrandChange={handleBrandChange}
+					onCategoryChange={handleCategoryChange}
+					onTypeChange={handleTypeChange}
+					onResetFilters={handleResetFilters}
+					brands={brands}
+					categories={categories}
+					brandsLoading={brandsLoading}
+					categoriesLoading={categoriesLoading}
+					page={page}
+					onPageChange={setPage}
+					onView={handleViewProduct}
+					onEdit={(product) => {
+					setSelectedProduct(product);
+					setEditOpen(true);
+					}}
+					onDelete={handleDeleteProduct}
 				/>
+			</Tab>
+			<Tab id='inventory' text='Inventario' icon='HeroBuildingStorefront'>
+				<InventoryTab />
+			</Tab>
+			<Tab id='analytics' text='Analisis' icon='HeroChartBarSquare'>
+				<AnalyticsTab />
+			</Tab>
+		</Tabs>
 			</Container>
 
 			{/* Modales */}

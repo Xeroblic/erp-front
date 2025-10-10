@@ -37,6 +37,9 @@ const INITIAL_PRODUCTS_STATE: ProductsState = {
 	deleting: false,
 	error: null,
 	currentError: null,
+	attributesLoading: false,
+	attributesUpdating: false,
+	attributesError: null,
 };
 
 export function useProductos({ branchId, filters, page = 1, perPage = 15 }: UseProductosParams) {

@@ -3,7 +3,13 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchMisSucursales } from '@/store/slices/sucursales/sucursalesSlice';
 import { fetchBrands } from '@/store/slices/brands/brandsSlice';
 import { fetchCategories } from '@/store/slices/categories/categoriesSlice';
-import { fetchProductById, updateProduct as updateProductThunk } from '@/store/slices/products/productsSlice';
+import {
+	fetchProductById,
+	fetchProductAttributes,
+	patchProductAttributes,
+	updateProduct as updateProductThunk,
+	type ProductAttributesPatchPayload,
+} from '@/store/slices/products/productsSlice';
 import type { IProduct } from '@/interface/product.interface';
 
 interface UseProductDetailParams {
@@ -46,19 +52,25 @@ export const useProductDetail = ({ productId, branchId }: UseProductDetailParams
 		void dispatch(fetchBrands({ branchId: effectiveBranchId, search: '' }));
 	}, [dispatch, effectiveBranchId]);
 
-	useEffect(() => {
-		if (!productId || !effectiveBranchId) return;
-		void dispatch(fetchProductById({ branchId: effectiveBranchId, productId }));
-	}, [dispatch, productId, effectiveBranchId]);
+useEffect(() => {
+	if (!productId || !effectiveBranchId) return;
+	void dispatch(fetchProductById({ branchId: effectiveBranchId, productId }));
+}, [dispatch, productId, effectiveBranchId]);
 
-	const refresh = useCallback(() => {
-		if (!productId || !effectiveBranchId) return;
-		void dispatch(fetchProductById({ branchId: effectiveBranchId, productId }));
-	}, [dispatch, productId, effectiveBranchId]);
+useEffect(() => {
+	if (!productId || !effectiveBranchId) return;
+	void dispatch(fetchProductAttributes({ branchId: effectiveBranchId, productId }));
+}, [dispatch, productId, effectiveBranchId]);
 
-	const updateProduct = useCallback(
-		async (payload: { data: Partial<IProduct>; categoryIds?: number[] }) => {
-			if (!productId || !effectiveBranchId) {
+const refresh = useCallback(() => {
+	if (!productId || !effectiveBranchId) return;
+	void dispatch(fetchProductById({ branchId: effectiveBranchId, productId }));
+	void dispatch(fetchProductAttributes({ branchId: effectiveBranchId, productId }));
+}, [dispatch, productId, effectiveBranchId]);
+
+const updateProduct = useCallback(
+	async (payload: { data: Partial<IProduct>; categoryIds?: number[] }) => {
+		if (!productId || !effectiveBranchId) {
 				throw new Error('No se pudo determinar la sucursal del producto');
 			}
 			await dispatch(
@@ -70,15 +82,44 @@ export const useProductDetail = ({ productId, branchId }: UseProductDetailParams
 				}),
 			).unwrap();
 			refresh();
-		},
-		[dispatch, effectiveBranchId, productId, refresh],
-	);
+	},
+	[dispatch, effectiveBranchId, productId, refresh],
+);
+
+const updateProductAttributes = useCallback(
+	async (payload: ProductAttributesPatchPayload) => {
+		if (!productId || !effectiveBranchId) {
+			throw new Error('No se pudo determinar la sucursal del producto');
+		}
+
+		const body: ProductAttributesPatchPayload = {};
+		if (payload.set && Object.keys(payload.set).length) {
+			body.set = payload.set;
+		}
+		if (payload.unset && payload.unset.length) {
+			body.unset = payload.unset;
+		}
+		if (!body.set && !body.unset) return;
+
+		await dispatch(
+			patchProductAttributes({
+				branchId: effectiveBranchId,
+				productId,
+				payload: body,
+			}),
+		).unwrap();
+	},
+	[dispatch, effectiveBranchId, productId],
+);
 
 	return {
 		product: productsState.current,
 		productLoading: productsState.currentLoading || branchesLoading,
 		productError: productsState.currentError ?? productsState.error,
 		updating: productsState.updating,
+		attributesLoading: productsState.attributesLoading,
+		attributesUpdating: productsState.attributesUpdating,
+		attributesError: productsState.attributesError,
 		branches,
 		brands: brandsState.items,
 		brandsLoading: brandsState.loading,
@@ -87,6 +128,7 @@ export const useProductDetail = ({ productId, branchId }: UseProductDetailParams
 		effectiveBranchId,
 		refresh,
 		updateProduct,
+		updateProductAttributes,
 	};
 };
 

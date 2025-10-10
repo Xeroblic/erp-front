@@ -27,16 +27,17 @@ const Pagination: React.FC<PaginationProps> = ({
 	};
 
 	return (
-		<div className='mt-6 flex items-center justify-between'>
+		<div className='mt-6 flex flex-wrap items-center justify-between gap-3'>
 			<Button
 				variant='outline'
 				size='sm'
 				onClick={handlePrevious}
 				isDisable={loading || currentPage <= 1}
-				icon='HeroChevronLeft'>
+				icon='HeroChevronLeft'
+				className='w-full sm:w-auto'>
 				Anterior
 			</Button>
-			<div className='text-sm text-neutral-500'>
+			<div className='w-full text-center text-sm text-neutral-500 sm:w-auto'>
 				Pagina {currentPage} de {totalPages}
 			</div>
 			<Button
@@ -44,7 +45,8 @@ const Pagination: React.FC<PaginationProps> = ({
 				size='sm'
 				onClick={handleNext}
 				isDisable={loading || currentPage >= totalPages}
-				rightIcon='HeroChevronRight'>
+				rightIcon='HeroChevronRight'
+				className='w-full sm:w-auto'>
 				Siguiente
 			</Button>
 		</div>

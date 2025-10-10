@@ -21,7 +21,11 @@ const BasicConfigurationSection: React.FC<BasicConfigurationSectionProps> = ({
 					<label className='text-sm font-medium'>Tipo de producto</label>
 					<Select
 						name='product_kind'
-						value={currentProductKind}
+						value={
+							PRODUCT_DEVICE_TYPES.some(opt => opt.value === currentProductKind)
+								? currentProductKind
+								: ''
+						}
 						onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
 							updateAttribute('product_kind', event.target.value)
 						}>

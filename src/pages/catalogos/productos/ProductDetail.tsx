@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Formik, Form, Field, type FormikHelpers, useFormikContext } from 'formik';
 import { toast } from 'react-toastify';
@@ -14,8 +14,7 @@ import Select from '@/components/form/Select';
 import Checkbox from '@/components/form/Checkbox';
 import Textarea from '@/components/form/Textarea';
 import SelectReact, { type TSelectOption } from '@/components/form/SelectReact';
-import { Tabs } from './components/Tabs';
-import type { TabItem } from './components/Tabs/Tabs';
+import Tabs, { Tab } from '@/components/ui/Tabs';
 import { GeneralTab, ComercialTab, ContenidoTab, AtributosTab } from './components/DetailTabs';
 import type { ProductDetailForm } from './types/products.types';
 import { useProductDetail } from './hooks/useProductDetail';
@@ -388,7 +387,7 @@ const ProductDetail: React.FC = () => {
 	}
 
 	// Configuración de tabs
-	const tabs: TabItem[] = [
+	const tabsData = [
 		{
 			id: 'general',
 			label: 'General',
@@ -531,7 +530,7 @@ const ProductDetail: React.FC = () => {
 							</Subheader>
 
 							<Container>
-								<div className='grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]'>
+								<div className='grid gap-6 w-full lg:grid-cols-[minmax(0,1fr)_320px]'>
 									<div className='space-y-6'>
 										<Card>
 											<CardHeader>
@@ -541,12 +540,58 @@ const ProductDetail: React.FC = () => {
 													producto utilizando las pestañas.
 												</p>
 											</CardHeader>
-											<CardBody>
-												<Tabs
-													tabs={tabs}
-													activeTab={activeTab}
-													onTabChange={setActiveTab}
-												/>
+											<CardBody className='p-0'>
+												<div className='w-full'>
+													<div 
+														className='product-tabs-container overflow-x-auto overflow-y-hidden border-b border-gray-200 dark:border-gray-700'
+														style={{ 
+															WebkitOverflowScrolling: 'touch',
+															scrollbarWidth: 'none',
+															msOverflowStyle: 'none'
+														}}>
+														<div 
+															className='flex w-max min-w-full'
+															style={{ gap: '0px' }}>
+															{tabsData.map((tab) => (
+																<button
+																	key={tab.id}
+																	onClick={() => setActiveTab(tab.id)}
+																	className={`flex-shrink-0 inline-flex items-center gap-2 px-6 py-4 text-sm font-medium transition-colors duration-200 border-b-2 ${
+																		activeTab === tab.id
+																			? 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/20'
+																			: 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+																	}`}
+																	style={{ 
+																		minWidth: 'max-content',
+																		whiteSpace: 'nowrap' as const
+																	}}>
+																	{tab.icon && (
+																		<Icon
+																			icon={tab.icon}
+																			className={`h-5 w-5 flex-shrink-0 ${
+																				activeTab === tab.id
+																					? 'text-blue-500 dark:text-blue-400'
+																					: 'text-gray-400'
+																			}`}
+																		/>
+																	)}
+																	<span className='flex-shrink-0'>{tab.label}</span>
+																</button>
+															))}
+														</div>
+													</div>
+													<style>{`
+														.product-tabs-container::-webkit-scrollbar {
+															display: none;
+														}
+													`}</style>
+												</div>
+												<div className='p-6'>
+													{
+														tabsData.find((tab) => tab.id === activeTab)
+															?.content
+													}
+												</div>
 											</CardBody>
 										</Card>
 									</div>
