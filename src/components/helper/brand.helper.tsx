@@ -39,10 +39,8 @@ export const ensureAbsoluteUrl = (value?: string | null): string | null => {
 		url = `${BACKEND_ORIGIN.origin}${path}`;
 	}
 
-	// 💀 Fallback visual: si apunta a branch-N pero no existe, probar branch-public
 	if (/branch-\d+\//.test(url)) {
 		const safeUrl = url.replace(/branch-\d+\//, 'branch-public/');
-		// opcional: validar con HEAD
 		return safeUrl;
 	}
 
