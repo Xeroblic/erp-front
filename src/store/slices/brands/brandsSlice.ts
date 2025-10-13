@@ -1,8 +1,19 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import ApiService from '@/services/ApiService';
-import { CreateBrandPayload, FetchBrandsParams, IBrand, UpdateBrandPayload } from '@/interface/brand.interface';
+import {
+	CreateBrandPayload,
+	FetchBrandsParams,
+	IBrand,
+	IBrandImage,
+	UpdateBrandPayload,
+} from '@/interface/brand.interface';
 import { EMPTY_STATS } from '@/constants/brand.constant';
-import { buildFormData, computeStats, normalizeBrand } from '@/components/helper/brand.helper';
+import {
+	convertFileToWebP,
+	ensureAbsoluteUrl,
+	computeStats,
+	normalizeBrand,
+} from '@/components/helper/brand.helper';
 
 
 export interface BrandStatsState {
@@ -68,23 +79,157 @@ export const fetchBrands = createAsyncThunk<
 	}
 });
 
+const extractMediaUrl = (payload: any): string | null => {
+	if (!payload) return null;
+
+	const pickCandidate = (value: any): any => {
+		if (!value) return null;
+		if (Array.isArray(value)) return value[0] ?? null;
+		if (Array.isArray(value?.data)) return value.data[0] ?? null;
+		if (Array.isArray(value?.media)) return value.media[0] ?? null;
+		return value;
+	};
+
+	const candidate = pickCandidate(payload);
+	if (!candidate || typeof candidate !== 'object') return null;
+
+	const possibilities = [
+		candidate.url,
+		candidate.original_url,
+		candidate.preview_url,
+		candidate.full_url,
+		candidate.thumbnail_url,
+		candidate.thumb,
+	];
+
+	const raw = possibilities.find((item) => typeof item === 'string' && item.length > 0) ?? null;
+	return ensureAbsoluteUrl(raw);
+};
+
+const ensureImageObject = (url: string, base: unknown, fallbackAlt: string): IBrandImage => {
+	if (typeof base === 'string') {
+		const absolute = ensureAbsoluteUrl(base);
+		return { url, thumb: absolute ?? url, alt: fallbackAlt };
+	}
+
+	const cast = base as IBrandImage | null | undefined;
+	const thumb = cast?.thumb ? ensureAbsoluteUrl(cast.thumb) ?? url : url;
+	return {
+		id: cast?.id,
+		url,
+		thumb,
+		alt: cast?.alt ?? fallbackAlt,
+	};
+};
+
+const mergeBrandWithLogo = (brand: IBrand, url: string | null): IBrand => {
+	if (!url) return brand;
+
+	return {
+		...brand,
+		logo_url: url,
+		photo_url: url,
+		image: ensureImageObject(url, brand.image as unknown, brand.name),
+	};
+};
+
+const fetchBrandDetails = async (branchId: number, brandId: number): Promise<IBrand | null> => {
+	try {
+		const response = await ApiService.fetchData<{ data?: any }>({
+			url: `/branches/${branchId}/brands/${brandId}`,
+			method: 'get',
+		});
+
+		const raw = response.data?.data ?? response.data;
+		return raw ? normalizeBrand(raw) : null;
+	} catch {
+		return null;
+	}
+};
+
+const uploadBrandLogo = async (
+	branchId: number,
+	brandId: number,
+	file: File,
+): Promise<string | null> => {
+	const processed = await convertFileToWebP(file);
+	if (!processed) return null;
+
+	const formData = new FormData();
+	formData.append('files[]', processed, processed.name);
+	formData.append('collection', 'logo');
+	formData.append('primary', 'first');
+
+	try {
+		const response = await ApiService.fetchData<{ data?: any }, FormData>({
+			url: `/branches/${branchId}/brands/${brandId}/media/upload-multiple`,
+			method: 'post',
+			data: formData,
+			headers: { 'Content-Type': 'multipart/form-data' },
+		});
+
+		const payload = response.data?.data ?? response.data;
+		const url = extractMediaUrl(payload);
+		const absolute = ensureAbsoluteUrl(url);
+
+		if (absolute) return absolute;
+
+		const refreshed = await fetchBrandDetails(branchId, brandId);
+		return refreshed?.logo_url ?? refreshed?.photo_url ?? null;
+	} catch {
+		const refreshed = await fetchBrandDetails(branchId, brandId);
+		return refreshed?.logo_url ?? refreshed?.photo_url ?? null;
+	}
+};
+
+type BrandRequestShape = {
+	name: string;
+	is_active: boolean;
+	code?: string;
+	origin_country?: string;
+	manufacturer?: string;
+};
+
+const makeBrandRequestBody = (payload: BrandRequestShape) => {
+	const body: Record<string, unknown> = {
+		name: payload.name,
+		is_active: payload.is_active,
+	};
+
+	if (payload.code) body.code = payload.code;
+	if (payload.origin_country) body.origin_country = payload.origin_country;
+	if (payload.manufacturer) body.manufacturer = payload.manufacturer;
+
+	return body;
+};
+
 export const createBrand = createAsyncThunk<
 	IBrand,
 	{ branchId: number; data: CreateBrandPayload },
 	{ rejectValue: string }
 >('brands/createBrand', async ({ branchId, data }, { rejectWithValue }) => {
 	try {
-		const formData = await buildFormData(data);
-
-		const response = await ApiService.fetchData<{ data?: any }, FormData>({
+		const { image, ...brandPayload } = data;
+		const response = await ApiService.fetchData<{ data?: any }>({
 			url: `/branches/${branchId}/brands`,
 			method: 'post',
-			data: formData,
-			headers: { 'Content-Type': 'multipart/form-data' },
+			data: makeBrandRequestBody(brandPayload),
 		});
 
 		const raw = response.data?.data ?? response.data;
-		return normalizeBrand(raw ?? { ...data, id: Date.now(), company_id: 0 });
+		let normalized = normalizeBrand(raw ?? { ...brandPayload, id: Date.now(), company_id: 0 });
+
+		if (image instanceof File) {
+			const uploadedUrl = await uploadBrandLogo(branchId, normalized.id, image);
+			if (uploadedUrl) {
+				normalized = mergeBrandWithLogo(normalized, uploadedUrl);
+			} else {
+				const refreshed = await fetchBrandDetails(branchId, normalized.id);
+				if (refreshed) normalized = refreshed;
+			}
+		}
+
+		return normalized;
 	} catch (error: any) {
 		return rejectWithValue(
 			error?.response?.data?.message ?? error?.message ?? 'Error al crear la marca',
@@ -98,17 +243,27 @@ export const updateBrand = createAsyncThunk<
 	{ rejectValue: string }
 >('brands/updateBrand', async ({ branchId, data }, { rejectWithValue }) => {
 	try {
-		const formData = await buildFormData(data);
-
-		const response = await ApiService.fetchData<{ data?: any }, FormData>({
-			url: `/branches/${branchId}/brands/${data.id}`,
+		const { image, id, ...rest } = data;
+		const response = await ApiService.fetchData<{ data?: any }>({
+			url: `/branches/${branchId}/brands/${id}`,
 			method: 'patch',
-			data: formData,
-			headers: { 'Content-Type': 'multipart/form-data' },
+			data: makeBrandRequestBody(rest),
 		});
 
 		const raw = response.data?.data ?? response.data;
-		return normalizeBrand(raw ?? data);
+		let normalized = normalizeBrand(raw ?? data);
+
+		if (image instanceof File) {
+			const uploadedUrl = await uploadBrandLogo(branchId, normalized.id, image);
+			if (uploadedUrl) {
+				normalized = mergeBrandWithLogo(normalized, uploadedUrl);
+			} else {
+				const refreshed = await fetchBrandDetails(branchId, normalized.id);
+				if (refreshed) normalized = refreshed;
+			}
+		}
+
+		return normalized;
 	} catch (error: any) {
 		return rejectWithValue(
 			error?.response?.data?.message ?? error?.message ?? 'Error al actualizar la marca',

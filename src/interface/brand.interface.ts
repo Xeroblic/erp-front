@@ -20,6 +20,13 @@ export interface FetchBrandsParams {
 
 
 
+export interface IBrandImage {
+  id?: number;
+  url: string;
+  thumb?: string | null;
+  alt?: string | null;
+}
+
 export interface IBrand {
   id: number;
   company_id: number;
@@ -37,6 +44,8 @@ export interface IBrand {
   products_count: number;
   total_sales: number;
   photo_url?: string | null;
+  image?: IBrandImage | null;
+  gallery?: IBrandImage[];
 }
 
 export interface IBrandFilters {

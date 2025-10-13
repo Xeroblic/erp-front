@@ -4,6 +4,7 @@ import Modal, { ModalBody, ModalFooter, ModalHeader } from "@/components/ui/Moda
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { IBrand } from "../types";
+import { ensureAbsoluteUrl } from "@/components/helper/brand.helper";
 import { formatCurrency } from "../utils";
 
 type DetalleMarcaProps = {
@@ -30,8 +31,12 @@ const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, o
       {brand ? (
         <div className="space-y-6">
           <div className="flex flex-col space-y-4 md:flex-row md:items-center md:space-x-4 md:space-y-0">
-            {brand.logo_url ? (
-              <img src={brand.logo_url} alt={brand.name} className="h-20 w-20 rounded-lg border bg-white object-contain" />
+            {ensureAbsoluteUrl(brand.image?.url ?? brand.logo_url ?? undefined) ? (
+              <img
+                src={ensureAbsoluteUrl(brand.image?.url ?? brand.logo_url ?? undefined) ?? ''}
+                alt={brand.image?.alt ?? brand.name}
+                className="h-20 w-20 rounded-lg border bg-white object-contain"
+              />
             ) : (
               <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-gray-200">
                 <Icon icon="HeroTag" className="h-8 w-8 text-gray-400" />

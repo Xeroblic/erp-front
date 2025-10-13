@@ -78,6 +78,22 @@ const formatCurrency = (amount: number) =>
 const CustomersTable: React.FC<CustomersTableProps> = ({ customers, onView, onEdit, onDelete }) => {
   const { isDarkTheme: isDark } = useDarkMode();
   const [sorting, setSorting] = React.useState<SortingState>([{ id: 'name', desc: false }]);
+  const [openDropdownId, setOpenDropdownId] = React.useState<string | null>(null);
+  const actionRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
+
+  React.useEffect(() => {
+    const handleDocClick = (event: MouseEvent) => {
+      if (!openDropdownId) return;
+      const target = event.target as Node;
+      const container = actionRefs.current[openDropdownId];
+      if (container && !container.contains(target)) {
+        setOpenDropdownId(null);
+      }
+    };
+
+    document.addEventListener('click', handleDocClick);
+    return () => document.removeEventListener('click', handleDocClick);
+  }, [openDropdownId]);
 
   const columns = React.useMemo<ColumnDef<ICustomer>[]>(
     () => [
@@ -177,30 +193,110 @@ const CustomersTable: React.FC<CustomersTableProps> = ({ customers, onView, onEd
         header: 'Acciones',
         cell: ({ row }) => {
           const c = row.original;
+          const idKey = String(c.id ?? row.id);
+          const menuItemClass =
+            'flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700';
+
           return (
-            <div className='flex space-x-2'>
-              <Button size='sm' variant='outline' onClick={() => onView(c)} className='text-blue-600 hover:text-blue-900'>
-                <Icon icon='HeroEye' className='h-4 w-4' />
-              </Button>
-              <Button size='sm' variant='outline' onClick={() => onEdit(c)} className='text-indigo-600 hover:text-indigo-900'>
-                <Icon icon='HeroPencilSquare' className='h-4 w-4' />
-              </Button>
-              <Button
-                size='sm'
-                variant='outline'
-                onClick={() => onDelete(c)}
-                isDisable={c.orders_count > 0}
-                className={c.orders_count > 0 ? 'cursor-not-allowed text-gray-400' : 'text-red-600 hover:text-red-900'}
-              >
-                <Icon icon='HeroTrash' className='h-4 w-4' />
-              </Button>
+            <div
+              ref={(el) => (actionRefs.current[idKey] = el)}
+              className='flex items-center justify-end space-x-2'
+            >
+              <div className='hidden space-x-2 sm:flex'>
+                <Button
+                  size='sm'
+                  variant='outline'
+                  onClick={() => onView(c)}
+                  className='text-blue-600 hover:text-blue-900'
+                >
+                  <Icon icon='HeroEye' className='h-4 w-4' />
+                </Button>
+                <Button
+                  size='sm'
+                  variant='outline'
+                  onClick={() => onEdit(c)}
+                  className='text-indigo-600 hover:text-indigo-900'
+                >
+                  <Icon icon='HeroPencilSquare' className='h-4 w-4' />
+                </Button>
+                <Button
+                  size='sm'
+                  variant='outline'
+                  onClick={() => onDelete(c)}
+                  isDisable={c.orders_count > 0}
+                  className={
+                    c.orders_count > 0
+                      ? 'cursor-not-allowed text-gray-400'
+                      : 'text-red-600 hover:text-red-900'
+                  }
+                >
+                  <Icon icon='HeroTrash' className='h-4 w-4' />
+                </Button>
+              </div>
+
+              <div className='relative sm:hidden'>
+                <Button
+                  size='sm'
+                  variant='outline'
+                  onClick={() => setOpenDropdownId((prev) => (prev === idKey ? null : idKey))}
+                  aria-expanded={openDropdownId === idKey}
+                  aria-controls={`customer-actions-${idKey}`}
+                >
+                  <Icon icon='HeroDotsVertical' className='h-4 w-4' />
+                </Button>
+
+                {openDropdownId === idKey && (
+                  <div
+                    id={`customer-actions-${idKey}`}
+                    className='absolute right-0 z-20 mt-2 w-44 rounded-md border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800'
+                  >
+                    <button
+                      onClick={() => {
+                        onView(c);
+                        setOpenDropdownId(null);
+                      }}
+                      className={menuItemClass}
+                    >
+                      <Icon icon='HeroEye' className='h-4 w-4' />
+                      Ver
+                    </button>
+                    <button
+                      onClick={() => {
+                        onEdit(c);
+                        setOpenDropdownId(null);
+                      }}
+                      className={menuItemClass}
+                    >
+                      <Icon icon='HeroPencilSquare' className='h-4 w-4' />
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (c.orders_count === 0) {
+                          onDelete(c);
+                        }
+                        setOpenDropdownId(null);
+                      }}
+                      className={`${menuItemClass} ${
+                        c.orders_count > 0
+                          ? 'cursor-not-allowed text-gray-400'
+                          : 'text-red-600'
+                      }`}
+                      disabled={c.orders_count > 0}
+                    >
+                      <Icon icon='HeroTrash' className='h-4 w-4' />
+                      {c.orders_count > 0 ? 'Bloqueado' : 'Eliminar'}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           );
         },
         enableSorting: false,
       },
     ],
-    [isDark, onDelete, onEdit, onView],
+    [isDark, onDelete, onEdit, onView, openDropdownId],
   );
 
   const table = useReactTable({
@@ -214,9 +310,9 @@ const CustomersTable: React.FC<CustomersTableProps> = ({ customers, onView, onEd
 
   return (
     <Container>
-      <Card className='overflow-x-auto'>
-        <CardBody>
-          <Table className='w-full table-fixed'>
+      <Card>
+        <CardBody className='overflow-x-auto'>
+          <Table className='w-full'>
             <THead>
               {table.getHeaderGroups().map((hg) => (
                 <Tr key={hg.id}>
@@ -250,4 +346,3 @@ const CustomersTable: React.FC<CustomersTableProps> = ({ customers, onView, onEd
 };
 
 export default CustomersTable;
-
