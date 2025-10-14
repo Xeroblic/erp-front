@@ -18,7 +18,7 @@ export const createUserTableColumns = (
 			const user = info.row.original;
 			return (
 				<div className='flex items-center gap-3'>
-					<div className='flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-zinc-500 font-semibold text-white'>
+					<div className='flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-red-900 font-semibold text-white'>
 						{info.getValue().charAt(0)}
 						{user.last_name?.charAt(0)}
 					</div>

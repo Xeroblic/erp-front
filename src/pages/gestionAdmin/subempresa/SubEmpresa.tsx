@@ -286,7 +286,7 @@ export default function SubEmpresaLista() {
 
 			<Container className='pt-4'>
 				<Card>
-					<CardBody className='overflow-auto'>
+					<CardBody className='overflow-x-auto'>
 						{loading ? (
 							<Spinner nombre='Sub Empresas'/>
 						) : subempresas.length === 0 ? (	
@@ -314,7 +314,7 @@ export default function SubEmpresaLista() {
 							</div>
 						) : (
 							<>
-								<Table className='w-full table-fixed'>
+								<Table className='w-full'>
 									<THead>
 										{table.getHeaderGroups().map((hg) => (
 											<Tr key={hg.id}>

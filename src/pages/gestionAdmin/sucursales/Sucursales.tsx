@@ -264,7 +264,7 @@ export default function SucursalesLista() {
 
 			<Container className='pt-4'>
 				<Card>
-					<CardBody className='overflow-auto'>
+					<CardBody className='overflow-x-auto'>
 						{loading ? (
 							<div className='p-8 text-center'>
 								<div className='flex items-center justify-center gap-3'>
@@ -297,7 +297,7 @@ export default function SucursalesLista() {
 							</div>
 						) : (
 							<>
-								<Table className='w-full table-fixed'>
+								<Table className='w-full'>
 									<THead>
 										{table.getHeaderGroups().map((hg) => (
 											<Tr key={hg.id}>

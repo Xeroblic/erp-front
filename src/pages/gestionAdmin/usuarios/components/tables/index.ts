@@ -1,1 +1,1 @@
-export { default as UsersTable } from './UsersTableNew';
+export { default as UsersTable } from './UsersTable';

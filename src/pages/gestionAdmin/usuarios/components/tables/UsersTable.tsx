@@ -8,7 +8,6 @@ import {
 
 import { useUsersManagement } from '../../hooks/useUsersManagement';
 import { UserDetailsModal, DeleteConfirmationModal } from '../modals';
-import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
 import { IUserMe } from '@/interface/user.interface';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
@@ -32,7 +31,7 @@ interface UsersTableProps {
 
 const columnHelper = createColumnHelper<IUserMe>();
 
-const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, pagination, onUserUpdated }) => {
+const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, onUserUpdated }) => {
 	const { handleToggleUserStatus, handleDeleteUser, isActionLoading } = useUsersManagement();
 
 	// Estados para los modales
@@ -80,117 +79,104 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, pagination, o
 
 	const columns = [
 		columnHelper.display({
-			id: 'full_name',
-			header: 'Nombre Completo',
+			id: 'usuario',
+			header: 'Usuario',
 			cell: (info) => {
 				const user = info.row.original;
 				const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
-				const email = user.email;
+				const initials =
+					fullName
+						.split(' ')
+						.map((name) => name.charAt(0))
+						.join('')
+						.toUpperCase()
+						.slice(0, 2) || 'U';
 
 				return (
-					<div className='flex items-center space-x-3'>
-						<div className='flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-700'>
-							<Icon
-								icon='HeroUser'
-								className='h-5 w-5 text-zinc-600 dark:text-zinc-300'
-							/>
+					<div className='flex min-w-[200px] items-center space-x-3'>
+						<div className='flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-zinc-500 text-sm font-medium text-white'>
+							{initials}
 						</div>
-						<div className='flex flex-col'>
-							<span className='text-sm font-medium text-zinc-900 dark:text-zinc-100'>
+						<div className='flex min-w-0 flex-col'>
+							<span className='truncate text-sm font-medium text-zinc-900 dark:text-zinc-100'>
 								{fullName || 'Sin nombre'}
 							</span>
-							<span className='text-xs text-zinc-500 dark:text-zinc-400'>
-								{email}
+							<span className='truncate text-xs text-zinc-500 dark:text-zinc-400'>
+								{user.email}
 							</span>
 						</div>
 					</div>
 				);
 			},
 		}),
-		columnHelper.accessor('position', {
-			header: 'Cargo',
-			cell: (info) => {
-				const position = info.getValue();
-				return (
-					<span className='text-sm text-zinc-900 dark:text-zinc-100'>
-						{position || '—'}
-					</span>
-				);
-			},
-		}),
 		columnHelper.display({
-			id: 'branch',
-			header: 'Sucursal',
+			id: 'cargo_empresa',
+			header: 'Cargo y Empresa',
 			cell: (info) => {
 				const user = info.row.original;
-				const branchName = user.branch?.name;
-
-				if (!branchName) {
-					return <span className='text-zinc-500 dark:text-zinc-400'>—</span>;
-				}
+				// Usar el campo 'position' de la interfaz, pero si el API devuelve 'cargo', también manejarlo
+				const position = (user as any).cargo || user.position || 'Sin cargo';
+				// Obtener la empresa primaria del array companies o usar company
+				const primaryCompany =
+					user.companies?.find((c) => c.is_primary) || user.companies?.[0];
+				const company = primaryCompany?.name || user.company?.name || 'Sin empresa';
 
 				return (
-					<div className='flex items-center space-x-2'>
-						<Icon icon='HeroOfficeBuilding' className='h-4 w-4 text-zinc-500' />
-						<span className='text-sm text-zinc-900 dark:text-zinc-100'>
-							{branchName}
+					<div className='flex min-w-[150px] flex-col'>
+						<span className='truncate text-sm font-medium text-zinc-900 dark:text-zinc-100'>
+							{position}
+						</span>
+						<span className='truncate text-xs text-zinc-500 dark:text-zinc-400'>
+							{company}
 						</span>
 					</div>
 				);
 			},
 		}),
 		columnHelper.display({
-			id: 'roles',
-			header: 'Roles',
+			id: 'rut_celular',
+			header: 'RUT y Contacto',
 			cell: (info) => {
 				const user = info.row.original;
-				const roles = user.roles || [];
-
-				if (roles.length === 0) {
-					return <span className='text-zinc-500 dark:text-zinc-400'>—</span>;
-				}
-
-				const roleLabels: Record<string, string> = {
-					'super-admin': 'Super Admin',
-					admin: 'Administrador',
-					hr: 'RRHH',
-					employee: 'Empleado',
-					manager: 'Gerente',
-					supervisor: 'Supervisor',
-				};
-
-				const roleColors: Record<string, { color: any; variant: any }> = {
-					'super-admin': { color: 'purple', variant: 'solid' },
-					admin: { color: 'blue', variant: 'solid' },
-					hr: { color: 'emerald', variant: 'solid' },
-					employee: { color: 'zinc', variant: 'outline' },
-					manager: { color: 'amber', variant: 'solid' },
-					supervisor: { color: 'orange', variant: 'solid' },
-				};
+				const rut = user.rut || 'Sin RUT';
+				const celular = user.celular || user.phone_number || 'Sin teléfono';
 
 				return (
-					<div className='flex flex-wrap gap-1'>
-						{roles.slice(0, 2).map((role) => {
-							const config = roleColors[role] || {
-								color: 'zinc',
-								variant: 'outline',
-							};
-							const label = roleLabels[role] || role;
+					<div className='flex min-w-[120px] flex-col'>
+						<span className='truncate text-sm font-medium text-zinc-900 dark:text-zinc-100'>
+							{rut}
+						</span>
+						<span className='truncate text-xs text-zinc-500 dark:text-zinc-400'>
+							{celular}
+						</span>
+					</div>
+				);
+			},
+		}),
+		columnHelper.display({
+			id: 'sucursal',
+			header: 'Sucursal',
+			cell: (info) => {
+				const user = info.row.original;
+				// Adaptarse a la estructura del API que puede tener branch_name o name
+				const branchData = (user as any).branch;
+				const branchName =
+					branchData?.branch_name ||
+					branchData?.name ||
+					user.branch?.name ||
+					'Sin sucursal';
+				const subsidiaryName =
+					branchData?.subsidiary?.subsidiary_name || user.subsidiary?.name || '';
 
-							return (
-								<Badge
-									key={role}
-									color={config.color}
-									variant={config.variant}
-									className='text-xs'>
-									{label}
-								</Badge>
-							);
-						})}
-						{roles.length > 2 && (
-							<Badge variant='outline' className='text-xs'>
-								+{roles.length - 2}
-							</Badge>
+				return (
+					<div className='flex min-w-[140px] flex-col'>
+						<span className='truncate text-sm font-medium text-zinc-900 dark:text-zinc-100'>
+							{branchName}
+						</span>
+						{subsidiaryName && (
+							<span className='truncate text-xs text-zinc-500 dark:text-zinc-400'>
+								{subsidiaryName}
+							</span>
 						)}
 					</div>
 				);
@@ -201,132 +187,67 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, pagination, o
 			cell: (info) => {
 				const isActive = info.getValue();
 				return (
-					<Badge
-						color={isActive ? 'emerald' : 'red'}
-						variant={isActive ? 'solid' : 'outline'}
-						className='inline-flex items-center text-xs font-medium'>
-						<Icon
-							icon={isActive ? 'HeroCheckCircle' : 'HeroXCircle'}
-							className='me-1.5 h-4 w-4'
+					<div className='flex min-w-[100px] items-center'>
+						<div
+							className={`mr-2 h-2 w-2 rounded-full ${isActive ? 'bg-green-500' : 'bg-red-500'}`}
 						/>
-						{isActive ? 'Activo' : 'Inactivo'}
-					</Badge>
-				);
-			},
-		}),
-		columnHelper.display({
-			id: 'company',
-			header: 'Empresa',
-			cell: (info) => {
-				const user = info.row.original;
-				const company = user.company;
-
-				if (!company) {
-					return <span className='text-zinc-500 dark:text-zinc-400'>—</span>;
-				}
-
-				return (
-					<div className='flex items-center space-x-2'>
-						<Icon icon='HeroBuilding2' className='h-4 w-4 text-zinc-500' />
 						<span className='text-sm text-zinc-900 dark:text-zinc-100'>
-							{company.name}
+							{isActive ? 'Activo' : 'Inactivo'}
 						</span>
 					</div>
 				);
 			},
 		}),
 		columnHelper.display({
-			id: 'user_info',
-			header: 'Información Adicional',
-			cell: (info) => {
-				const user = info.row.original;
-
-				return (
-					<div className='flex flex-col space-y-1'>
-						{user.phone_number && (
-							<div className='flex items-center space-x-1'>
-								<Icon icon='HeroPhone' className='h-3 w-3 text-zinc-400' />
-								<span className='text-xs text-zinc-500 dark:text-zinc-400'>
-									{user.phone_number}
-								</span>
-							</div>
-						)}
-						{user.rut && (
-							<div className='flex items-center space-x-1'>
-								<Icon icon='HeroIdentification' className='h-3 w-3 text-zinc-400' />
-								<span className='text-xs text-zinc-500 dark:text-zinc-400'>
-									{user.rut}
-								</span>
-							</div>
-						)}
-					</div>
-				);
-			},
-		}),
-		columnHelper.display({
-			id: 'actions',
+			id: 'acciones',
 			header: 'Acciones',
 			cell: (info) => {
 				const user = info.row.original;
 				const isLoading = isActionLoading(user.id);
 
 				return (
-					<div className='flex items-center justify-end space-x-2'>
-						{/* Ver Detalles */}
+					<div className='flex min-w-[200px] items-center space-x-1'>
 						<Button
 							variant='outline'
 							size='sm'
 							onClick={() => openModal('details', user, 'view')}
-							className='flex items-center justify-center p-0 transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/20'
-							title='Ver detalles'>
-							<Icon icon='HeroEye' />
+							className='flex items-center gap-1 px-2 py-1 text-xs'
+							title='Gestionar usuario'>
+							<Icon icon='HeroShieldCheck' className='h-3 w-3' />
+							Gestionar
 						</Button>
 
-						{/* Editar */}
-						<Button
-							variant='outline'
-							size='sm'
-							onClick={() => openModal('details', user, 'edit')}
-							isDisable={isLoading}
-							className='flex items-center justify-center p-0 transition-colors hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
-							title='Editar usuario'>
-							{isLoading ? (
-								<Icon icon='HeroArrowPath' className='animate-spin' />
-							) : (
-								<Icon icon='HeroPencilSquare' />
-							)}
-						</Button>
-
-						{/* Activar/Desactivar */}
 						<Button
 							variant='outline'
 							size='sm'
 							color={user.is_active ? 'red' : 'emerald'}
 							onClick={() => handleToggleStatus(user)}
 							isDisable={isLoading}
-							className='flex items-center justify-center p-0 transition-colors'
+							className='flex items-center gap-1 px-2 py-1 text-xs'
 							title={user.is_active ? 'Desactivar usuario' : 'Activar usuario'}>
-							{isLoading ? (
-								<Icon icon='HeroArrowPath' className='animate-spin' />
-							) : (
-								<Icon icon={user.is_active ? 'HeroXMark' : 'HeroCheck'} />
-							)}
+							<Icon
+								icon={
+									isLoading
+										? 'HeroArrowPath'
+										: user.is_active
+											? 'HeroXMark'
+											: 'HeroCheck'
+								}
+								className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`}
+							/>
+							{user.is_active ? 'Desactivar' : 'Activar'}
 						</Button>
 
-						{/* Eliminar */}
 						<Button
 							variant='outline'
 							size='sm'
 							color='red'
 							onClick={() => openModal('delete', user)}
 							isDisable={isLoading}
-							className='flex items-center justify-center p-0 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20'
+							className='flex items-center gap-1 px-2 py-1 text-xs'
 							title='Eliminar usuario'>
-							{isLoading ? (
-								<Icon icon='HeroArrowPath' className='animate-spin' />
-							) : (
-								<Icon icon='HeroTrash' />
-							)}
+							<Icon icon='HeroTrash' className='h-3 w-3' />
+							Eliminar
 						</Button>
 					</div>
 				);
@@ -339,7 +260,7 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, pagination, o
 		columns,
 		getCoreRowModel: getCoreRowModel(),
 		manualPagination: true,
-		pageCount: pagination.totalPages,
+		pageCount: Math.ceil(users.length / 10),
 	});
 
 	if (isLoading && users.length === 0) {
@@ -376,15 +297,6 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, pagination, o
 					<p className='mb-4 text-sm text-zinc-500 dark:text-zinc-400'>
 						No se encontraron usuarios registrados.
 					</p>
-					<Button
-						variant='outline'
-						icon='HeroPlus'
-						onClick={() => {
-							// Emitir evento para abrir modal de creación
-							window.dispatchEvent(new CustomEvent('openCreateUserModal'));
-						}}>
-						Crear nuevo usuario
-					</Button>
 				</CardBody>
 			</Card>
 		);
@@ -393,46 +305,47 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, pagination, o
 	return (
 		<>
 			<Card className='border border-zinc-200 shadow-sm dark:border-zinc-700'>
-				<CardBody className='overflow-x-auto p-0'>
-					<Table className='w-full'>
-						<THead className='bg-zinc-50 dark:bg-zinc-800/50'>
-							{table.getHeaderGroups().map((headerGroup) => (
-								<Tr key={headerGroup.id}>
-									{headerGroup.headers.map((header) => (
-										<Th
-											key={header.id}
-											className='border-b border-zinc-200 p-4 text-left font-semibold text-zinc-700 dark:border-zinc-700 dark:text-zinc-300'>
-											{header.isPlaceholder
-												? null
-												: flexRender(
-														header.column.columnDef.header,
-														header.getContext(),
+				<CardBody className='p-0'>
+					{/* Contenedor con scroll horizontal */}
+					<div className='overflow-x-auto'>
+						<Table className='w-full min-w-[1000px]'>
+							<THead className='bg-zinc-50 dark:bg-zinc-800/50'>
+								{table.getHeaderGroups().map((headerGroup) => (
+									<Tr key={headerGroup.id}>
+										{headerGroup.headers.map((header) => (
+											<Th
+												key={header.id}
+												className='whitespace-nowrap px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400'>
+												{header.isPlaceholder
+													? null
+													: flexRender(
+															header.column.columnDef.header,
+															header.getContext(),
+														)}
+											</Th>
+										))}
+									</Tr>
+								))}
+							</THead>
+							<TBody className='divide-y divide-zinc-200 bg-white dark:divide-zinc-700 dark:bg-zinc-900'>
+								{table.getRowModel().rows.map((row) => (
+									<Tr
+										key={row.id}
+										className='transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50'>
+										{row.getVisibleCells().map((cell) => (
+											<Td key={cell.id} className='px-6 py-4'>
+												<div className='max-w-xs'>
+													{flexRender(
+														cell.column.columnDef.cell,
+														cell.getContext(),
 													)}
-										</Th>
-									))}
-								</Tr>
-							))}
-						</THead>
-						<TBody>
-							{table.getRowModel().rows.map((row, index) => (
-								<Tr
-									key={row.id}
-									className={`transition-colors duration-150 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 ${index % 2 === 0 ? 'bg-white dark:bg-zinc-900' : 'bg-zinc-50/30 dark:bg-zinc-800/20'} border-b border-zinc-100 dark:border-zinc-800`}>
-									{row.getVisibleCells().map((cell) => (
-										<Td key={cell.id} className='p-4'>
-											{flexRender(
-												cell.column.columnDef.cell,
-												cell.getContext(),
-											)}
-										</Td>
-									))}
-								</Tr>
-							))}
-						</TBody>
-					</Table>
-
-					<div className='mt-4'>
-						<TableCardFooterTemplateV2 table={table} />
+												</div>
+											</Td>
+										))}
+									</Tr>
+								))}
+							</TBody>
+						</Table>
 					</div>
 				</CardBody>
 			</Card>
