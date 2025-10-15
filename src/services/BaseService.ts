@@ -1,6 +1,5 @@
 import store, { setToken, logout } from "@/store";
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
-import { set } from "lodash";
 import { toast } from "react-toastify";
 
 // Extender la interfaz de configuración para incluir isLoginRequest y _retry
@@ -17,10 +16,24 @@ export const cancelAllRequests = () => {
     abortController = new AbortController();
 };
 
+const API_URL = import.meta.env.VITE_API_URL || "";
+
 const BaseService = axios.create({
     timeout: 60000,
-    baseURL: `${process.env.VITE_API_URL}`
+    baseURL: API_URL
 });
+
+const extractAuthHeader = (headers?: CustomAxiosRequestConfig["headers"]): string | undefined => {
+    if (!headers) return undefined;
+
+    const maybeAxiosHeaders = headers as unknown as { get?: (key: string) => string | undefined };
+    if (typeof maybeAxiosHeaders.get === "function") {
+        return maybeAxiosHeaders.get("Authorization") || maybeAxiosHeaders.get("authorization");
+    }
+
+    const normalizedHeaders = headers as Record<string, string | undefined>;
+    return normalizedHeaders?.Authorization || normalizedHeaders?.authorization;
+};
 
 // Interceptor de Solicitud
 BaseService.interceptors.request.use(
@@ -33,8 +46,10 @@ BaseService.interceptors.request.use(
         if (!config.isLoginRequest) {
             const token = store.getState().auth.access
             if (token) {
-                config.headers = config.headers || {};
-                config.headers['Authorization'] = 'Bearer ' + token;
+                if (!config.headers) {
+                    config.headers = {} as any;
+                }
+                config.headers.set('Authorization', `Bearer ${token}`);
             }
         }
         return config;
@@ -56,17 +71,36 @@ BaseService.interceptors.response.use(
         ) {
             originalRequest._retry = true;
 
-            const refreshToken = store.getState().auth.refresh;
-            if (refreshToken) {
+            const headerAuth = extractAuthHeader(originalRequest.headers);
+            const expiredToken = headerAuth?.startsWith("Bearer ")
+                ? headerAuth.substring(7)
+                : (headerAuth || store.getState().auth.access);
+            if (expiredToken) {
                 try {
-                    const refreshResponse = await axios.post(`${process.env.VITE_API_URL}/auth/jwt/refresh`, {
-                        refresh: refreshToken
-                    });
+                    if (!API_URL) {
+                        throw new Error("VITE_API_URL no está configurado");
+                    }
 
-                    const newToken = refreshResponse.data.access;
-                    store.dispatch(setToken(newToken))
+                    const refreshResponse = await axios.post(
+                        `${API_URL}/refresh`,
+                        {},
+                        {
+                            headers: {
+                                Authorization: `Bearer ${expiredToken}`
+                            }
+                        }
+                    );
 
-                    originalRequest.headers['Authorization'] = 'Bearer ' + newToken;
+                    const newToken = refreshResponse?.data?.token;
+                    if (!newToken) {
+                        throw new Error("El endpoint /refresh no devolvió un token");
+                    }
+
+                    store.dispatch(setToken(newToken));
+
+                    if (originalRequest.headers) {
+                        originalRequest.headers.set('Authorization', `Bearer ${newToken}`);
+                    }
 
                     return BaseService(originalRequest);
                 } catch (refreshError) {

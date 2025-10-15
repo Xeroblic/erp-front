@@ -92,6 +92,11 @@ const Perfil = () => {
       comuna: Yup.string().nullable(),
     }),
     onSubmit: async (values) => {
+      if (!userData?.id) {
+        toast.error('No se encontro la informacion del usuario activo');
+        return;
+      }
+
       setIsSaving(true);
       const toNumber = (value?: string) => {
         if (!value) return null;
@@ -108,7 +113,7 @@ const Perfil = () => {
         };
 
         await ApiService.fetchData({
-          url: `/auth/users/${userData?.id}/`,
+          url: `/auth/users/${userData.id}/`,
           method: 'patch',
           data: payload,
         });
@@ -215,12 +220,17 @@ const Perfil = () => {
   });
 
   const handleAvatarUpload = async (file: File) => {
+    if (!userData?.id) {
+      toast.error('No se encontro la informacion del usuario activo');
+      return;
+    }
+
     const formData = new FormData();
     formData.append('image', file);
 
     try {
       const response = await ApiService.fetchData({
-        url: `/api/users/${userData?.id}/`,
+        url: `/users/${userData.id}/`,
         method: 'patch',
         data: formData,
       });

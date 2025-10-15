@@ -6,13 +6,11 @@ import { IGruposUsuarios, IUserMe } from "@/interface/user.interface";
 import { obtenerPersonalizacionThunk as obtenerPersonalizacionFromSlice } from "@/store/slices/personalizacion/personalizacionSlice";
 
 interface LoginResponse {
-  access: string
-  refresh: string
+  access: string;
 }
 
 export interface AuthState {
   access?: string;
-  refresh: string | undefined
   loading: boolean;
   error?: string;
   isAuthenticated: boolean;
@@ -24,7 +22,6 @@ export interface AuthState {
 
 const initialState: AuthState = {
   access: localStorage.getItem('access_token') || undefined,
-  refresh: localStorage.getItem('refresh_token') || undefined,
   loading: false,
   error: undefined,
   isAuthenticated: false, // Se establecerá a true solo después de validar con el servidor
@@ -42,6 +39,7 @@ export const loginThunk = createAsyncThunk<LoginResponse, { email: string; passw
         url: "/login",
         method: "post",
         data: { email, password },
+        isLoginRequest: true
       });
 
       const token = resp.data.token;
@@ -52,7 +50,7 @@ export const loginThunk = createAsyncThunk<LoginResponse, { email: string; passw
       // COMENTADO TEMPORALMENTE para evitar bucles en cambios de tema
       // await dispatch(obtenerPersonalizacionFromSlice() as any);
 
-      return { access: token, refresh: "" };
+      return { access: token };
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.error || "Error de autenticación");
     }
@@ -148,7 +146,6 @@ const authSlice = createSlice({
       // Resetear completamente el estado
       state.access = undefined;
       state.user = undefined;
-      state.refresh = undefined;
       state.permisos = [];
       state.isAuthenticated = false;
       state.loading = false;
@@ -178,7 +175,6 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.access = undefined;
         state.user = undefined;
-        state.refresh = undefined;
         state.permisos = [];
       } else if (token && !state.access) {
         // Si hay token en localStorage pero no en state, restaurarlo
@@ -195,7 +191,6 @@ const authSlice = createSlice({
       .addCase(loginThunk.fulfilled, (state, action) => {
         state.loading = false
         state.access = action.payload.access
-        state.refresh = action.payload.refresh
         state.isAuthenticated = true
       })
       .addCase(loginThunk.rejected, (state, action) => {
