@@ -265,29 +265,78 @@ const Perfil = () => {
   });
 
   const handleAvatarUpload = async (file: File) => {
-    if (!userData?.id) {
+    if (!userId) {
       toast.error('No se encontro la informacion del usuario activo');
       return;
     }
 
-    const formData = new FormData();
-    formData.append('image', file);
+    if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+      toast.error('Solo se permiten imagenes JPG o PNG');
+      return;
+    }
+
+    const maxSizeInBytes = MAX_AVATAR_FILE_SIZE_MB * 1024 * 1024;
+    if (file.size > maxSizeInBytes) {
+      toast.error(`La imagen debe pesar menos de ${MAX_AVATAR_FILE_SIZE_MB}MB`);
+      return;
+    }
 
     try {
-      const response = await ApiService.fetchData({
-        url: `/users/${userData.id}/`,
-        method: 'patch',
+      const formData = new FormData();
+      formData.append('avatar', file);
+      formData.append('image', file);
+
+      const response = await ApiService.fetchData<{ data?: any; image?: any }, FormData>({
+        url: `/users/${userId}/avatar`,
+        method: 'post',
         data: formData,
       });
 
-      if (response.data) {
-        toast.success('Imagen actualizada', { autoClose: 1000 });
-        dispatch(userMeThunk());
+      const hasMedia = Boolean(response.data?.data ?? response.data?.image);
+      toast.success('Imagen actualizada', { autoClose: 1000 });
+      await dispatch(userMeThunk() as any);
+
+      if (!hasMedia) {
+        setTimeout(() => {
+          dispatch(userMeThunk() as any);
+        }, 500);
       }
     } catch (error: any) {
-      toast.error(error?.response?.detail ?? 'No se pudo actualizar la imagen');
+      const status = error?.response?.status;
+      const backendErrors =
+        error?.response?.data?.error ||
+        error?.response?.data?.detail ||
+        error?.response?.data?.message ||
+        (Array.isArray(error?.response?.data) ? error.response.data.join(', ') : null);
+      const message =
+        status === 404
+          ? 'El endpoint para subir avatar no esta disponible. Verifica la version del backend.'
+          : backendErrors || error?.message || 'No se pudo actualizar la imagen';
+      toast.error(message);
     }
   };
+
+  const avatarData = (userData as any)?.image;
+  const avatarUrl = (() => {
+    if (typeof avatarData === 'string') return avatarData;
+    if (!avatarData) return null;
+    const candidates = [
+      avatarData?.md,
+      avatarData?.sm,
+      avatarData?.lg,
+      avatarData?.original_url,
+      avatarData?.url,
+      avatarData?.path,
+      avatarData?.thumb,
+      avatarData?.medium,
+      avatarData?.full,
+      avatarData?.urls?.md,
+      avatarData?.urls?.sm,
+      avatarData?.urls?.lg,
+      avatarData?.urls?.original,
+    ];
+    return candidates.find((item) => typeof item === 'string' && item.length > 0) ?? null;
+  })();
 
   const fullName = `${userData?.first_name ?? ''} ${userData?.last_name ?? ''}`.trim();
 
@@ -305,7 +354,11 @@ const Perfil = () => {
               <ProfileTabs tabs={PROFILE_TABS} activeTab={activeTab} onTabChange={setActiveTab} />
               <div className='col-span-12 flex flex-col gap-4 sm:col-span-8 md:col-span-10'>
                 {activeTab === 'EDIT' && (
-                  <EditProfileTab formik={formik} onAvatarUpload={handleAvatarUpload} />
+                  <EditProfileTab
+                    formik={formik}
+                    onAvatarUpload={handleAvatarUpload}
+                    avatarUrl={avatarUrl}
+                  />
                 )}
                 {activeTab === 'CONTACT' && (
                   <ContactTab
