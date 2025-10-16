@@ -28,6 +28,38 @@ const PROFILE_TABS: ProfileTabDefinition[] = [
   { key: 'APPEARANCE', label: 'Apariencia', icon: 'HeroSwatch' },
 ];
 
+const NAME_REGEX = /^[A-Za-zÀ-ÿ'`´\s-]+$/;
+const RUT_REGEX = /^(?:\d{1,2}\.\d{3}\.\d{3}|\d{7,8})-[\dkK]$/;
+const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/jpg'];
+const MAX_AVATAR_FILE_SIZE_MB = 5;
+
+const toGenderFormValue = (value?: string | null) => {
+  if (!value) return '';
+  switch (value) {
+    case 'male':
+      return '1';
+    case 'female':
+      return '2';
+    case 'other':
+      return '0';
+    default:
+      return value;
+  }
+};
+
+const toGenderApiValue = (value?: string | null) => {
+  switch (value) {
+    case '1':
+      return 'male';
+    case '2':
+      return 'female';
+    case '0':
+      return 'other';
+    default:
+      return value || null;
+  }
+};
+
 const Perfil = () => {
   const dispatch = useAppDispatch();
   const { setDarkModeStatus } = useDarkModeManager();
@@ -43,56 +75,55 @@ const Perfil = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    dispatch(userMeThunk());
+    dispatch(userMeThunk() as any);
   }, [dispatch]);
 
   const themeSyncingRef = useRef(false);
+  const userId = userData?.id ?? (userData as any)?.pk ?? null;
   const formik = useFormik<ProfileFormValues>({
     enableReinitialize: true,
     initialValues: {
       email: userData?.email ?? '',
       first_name: userData?.first_name ?? '',
-      second_name: userData?.second_name ?? '',
+      second_name: userData?.second_name ?? (userData as any)?.middle_name ?? '',
       last_name: userData?.last_name ?? '',
       second_last_name: userData?.second_last_name ?? '',
       rut: userData?.rut ?? '',
-      celular: userData?.celular ?? '',
-      fono_fijo: userData?.phone_number ?? '',
-      direccion: userData?.direccion ?? '',
-      region: userData?.region?.toString() ?? '',
-      provincia: userData?.provincia?.toString() ?? '',
-      comuna: userData?.comuna?.toString() ?? '',
-      genero: userData?.gender ?? '',
+      phone_number: userData?.celular ?? userData?.phone_number ?? '',
+      direccion: userData?.direccion ?? userData?.address ?? '',
+      region: userData?.region != null ? String(userData.region) : '',
+      provincia: userData?.provincia != null ? String(userData.provincia) : '',
+      comuna: userData?.comuna != null ? String(userData.comuna) : '',
+      genero: toGenderFormValue((userData as any)?.genero ?? userData?.gender),
       theme: darkMode === 'light' ? 'light' : darkMode === 'dark' ? 'dark' : 'system',
-      fecha_nacimiento: userData?.comuna?.toString() ?? '',
+      fecha_nacimiento: (userData as any)?.fecha_nacimiento ?? '',
     },
     validationSchema: Yup.object().shape({
       first_name: Yup.string()
         .required('El primer nombre es requerido')
-        .matches(/^[a-zA-Z\s]+$/, 'El primer nombre solo puede contener letras y espacios'),
+        .matches(NAME_REGEX, 'El primer nombre solo puede contener letras y espacios'),
       second_name: Yup.string()
-        .matches(/^[a-zA-Z\s]+$/, 'El segundo nombre solo puede contener letras y espacios')
+        .matches(NAME_REGEX, 'El segundo nombre solo puede contener letras y espacios')
         .nullable(),
       last_name: Yup.string()
         .required('El primer apellido es requerido')
-        .matches(/^[a-zA-Z\s]+$/, 'El primer apellido solo puede contener letras y espacios'),
+        .matches(NAME_REGEX, 'El primer apellido solo puede contener letras y espacios'),
       second_last_name: Yup.string()
-        .matches(/^[a-zA-Z\s]+$/, 'El segundo apellido solo puede contener letras y espacios')
+        .matches(NAME_REGEX, 'El segundo apellido solo puede contener letras y espacios')
         .nullable(),
       rut: Yup.string()
         .required('El RUT es requerido')
-        .matches(/^\d{1,2}\.\d{3}\.\d{3}-[\dkK]$/, 'El formato del RUT no es valido'),
-      celular: Yup.string()
+        .matches(RUT_REGEX, 'El formato del RUT no es valido'),
+      phone_number: Yup.string()
         .matches(/^(\+569|569|9)[\d]{8}$/, 'El numero de celular debe tener 9 digitos comenzando con 9')
         .nullable(),
-      fono_fijo: Yup.string().matches(/^\d{9}$/, 'El numero de telefono fijo debe tener 9 digitos').nullable(),
       direccion: Yup.string().max(250, 'La direccion debe tener menos de 250 caracteres').nullable(),
-      region: Yup.string().required('La region es requerida'),
+      region: Yup.string().nullable(),
       provincia: Yup.string().nullable(),
       comuna: Yup.string().nullable(),
     }),
     onSubmit: async (values) => {
-      if (!userData?.id) {
+      if (!userId) {
         toast.error('No se encontro la informacion del usuario activo');
         return;
       }
@@ -105,21 +136,35 @@ const Perfil = () => {
       };
 
       try {
+        const trimOrNull = (value?: string | null) => {
+          if (value == null) return null;
+          const trimmed = value.trim();
+          return trimmed.length > 0 ? trimmed : null;
+        };
+
         const payload = {
-          ...values,
+          first_name: values.first_name?.trim() ?? '',
+          middle_name: trimOrNull(values.second_name),
+          last_name: values.last_name?.trim() ?? '',
+          second_last_name: trimOrNull(values.second_last_name),
+          rut: values.rut?.trim() ?? '',
+          phone_number: trimOrNull(values.phone_number),
+          address: trimOrNull(values.direccion),
           region: toNumber(values.region),
           provincia: toNumber(values.provincia),
           comuna: toNumber(values.comuna),
+          gender: toGenderApiValue(values.genero),
+          fecha_nacimiento: trimOrNull(values.fecha_nacimiento),
         };
 
         await ApiService.fetchData({
-          url: `/auth/users/${userData.id}/`,
-          method: 'patch',
+          url: `/users/${userId}`,
+          method: 'put',
           data: payload,
         });
 
         toast.success('Perfil actualizado');
-        dispatch(userMeThunk());
+        await dispatch(userMeThunk() as any);
       } catch (error: any) {
         toast.error(error?.message ?? 'No se pudo actualizar el perfil');
       } finally {

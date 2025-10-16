@@ -205,7 +205,7 @@ const authSlice = createSlice({
 
         const authority = [
           ...payload.permisos,
-          ...(payload.user.position ? [payload.user.position] : []),
+          ...(payload.user.cargo ? [payload.user.cargo] : []),
         ];
 
         s.user = {

@@ -20,7 +20,7 @@ export interface IUserMe {
 	second_name?: string | null;
 	last_name: string;
 	second_last_name: string | null;
-	position: string | null;
+	cargo: string | null;
 	rut: string | null;
 	phone_number: string | null;
 	celular?: string | null;
@@ -28,7 +28,25 @@ export interface IUserMe {
 	direccion?: string | null;
 	gender: string | null;
 	is_active: boolean;
-	image: string | null;
+	image: string | null | {
+		exists?: boolean;
+		original_url?: string;
+		sm?: string;
+		md?: string;
+		lg?: string;
+		url?: string;
+		path?: string;
+		thumb?: string;
+		medium?: string;
+		full?: string;
+		urls?: {
+			sm?: string;
+			md?: string;
+			lg?: string;
+			original?: string;
+		};
+		[key: string]: any;
+	};
 	branch_id: number | null;
 	// Nuevos campos para multi-empresa
 	companies?: Array<{

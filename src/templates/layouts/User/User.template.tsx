@@ -1,20 +1,18 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import Icon from '../../../components/icon/Icon';
 import Badge from '../../../components/ui/Badge';
-import { NavButton, NavItem, NavSeparator } from '../../../components/layouts/Navigation/Nav';
+import { NavItem, NavSeparator } from '../../../components/layouts/Navigation/Nav';
 import { authPages } from '../../../config/pages.config';
 import User from '../../../components/layouts/User/User';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { logout } from '@/store/slices/auth/authSlice';
 import { clearPersonalizacionState } from '@/store/slices/personalizacion/personalizacionSlice';
 import { cancelAllRequests } from '../../../services/BaseService';
+import type { IUserMe } from '@/interface/user.interface';
 
 const UserTemplate = () => {
-	// const { isLoading, userData, onLogout } = useAuth();
 	const dispatch = useAppDispatch();
-	const navigate = useNavigate();
-	const { user: userData, isAuthenticated, loading: isLoading } = useAppSelector((state) => state.auth);
+	const { user: userData, loading: isLoading } = useAppSelector((state) => state.auth);
 
 	const handleLogout = () => {
 		cancelAllRequests();
@@ -25,16 +23,44 @@ const UserTemplate = () => {
 		}, 100);
 	};
 
+	const resolveAvatar = (image: IUserMe['image'] | undefined) => {
+		if (!image) return '';
+		if (typeof image === 'string') return image;
+		const candidates = [
+			image?.md,
+			image?.sm,
+			image?.lg,
+			image?.original_url,
+			image?.url,
+			image?.path,
+			image?.thumb,
+			image?.medium,
+			image?.full,
+			image?.urls?.md,
+			image?.urls?.sm,
+			image?.urls?.lg,
+			image?.urls?.original,
+		];
+		return candidates.find((item) => typeof item === 'string' && item.length > 0) ?? '';
+	};
+
+	const userName =
+		[userData?.first_name, userData?.last_name].filter(Boolean).join(' ').trim() ||
+		userData?.email ||
+		'Usuario';
+	const avatarSrc = resolveAvatar(userData?.image);
+	const userPosition = userData?.cargo ?? '';
+
 	return (
 		<User
 			isLoading={isLoading}
-			name={userData?.first_name || ''}
+			name={userName}
 			nameSuffix={<Icon icon='HeroCheckBadge' color='blue' />}
-			position={"POSITION ?"}
-			src={userData?.image ? userData.image : ""}
+			position={userPosition}
+			src={avatarSrc || undefined}
 			suffix={
-				<Badge color='amber' variant='solid' className='text-xs font-bold'>
-					PRO
+				<Badge color='amber' variant='outline' className='text-xs font-bold'>
+					{userData?.cargo ?? 'Usuario'}
 				</Badge>
 			}>
 			<NavSeparator />

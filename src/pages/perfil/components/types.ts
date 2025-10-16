@@ -16,8 +16,7 @@ export type ProfileFormValues = {
   last_name?: string;
   second_last_name?: string;
   rut?: string;
-  celular?: string;
-  fono_fijo?: string;
+  phone_number?: string;
   direccion?: string;
   region?: string;
   provincia?: string;
