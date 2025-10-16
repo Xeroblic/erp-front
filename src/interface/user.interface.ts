@@ -20,7 +20,8 @@ export interface IUserMe {
 	second_name?: string | null;
 	last_name: string;
 	second_last_name: string | null;
-	cargo: string | null;
+	position: string | null;
+	cargo?: string | null;
 	rut: string | null;
 	phone_number: string | null;
 	celular?: string | null;
