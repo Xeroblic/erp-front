@@ -204,7 +204,7 @@ const SettingsPartial = () => {
 	const isAnyUpdating = isUpdatingFont || isUpdatingTheme || isUpdatingColor;
 
 	return (
-		<Dropdown>
+		<Dropdown className='md:overflow-visible'>
 			<DropdownToggle hasIcon={false}>
 				<Button
 					icon='HeroCog8Tooth'
@@ -214,7 +214,9 @@ const SettingsPartial = () => {
 				/>
 			</DropdownToggle>
 
-			<DropdownMenu placement='bottom-end' className='min-w-72'>
+			<DropdownMenu
+				placement='bottom-end'
+				className='max-h-[70vh] w-[calc(100vw-32px)] min-w-0 max-w-sm overflow-y-auto md:w-auto md:min-w-72'>
 				{/* Tamaño de fuente */}
 				<DropdownItem className='flex flex-col !items-start gap-2'>
 					<div className='flex w-full items-center justify-between'>
@@ -242,7 +244,7 @@ const SettingsPartial = () => {
 						/>
 					</ButtonGroup>
 
-					<div className='flex gap-2'>
+					<div className='flex flex-wrap gap-2'>
 						{fontPresets.map((p) => (
 							<Button
 								key={p.label}
