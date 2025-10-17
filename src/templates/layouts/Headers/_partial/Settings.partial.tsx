@@ -66,12 +66,15 @@ const SettingsPartial = () => {
 
 	const handleColorChange = useCallback(
 		async (color: TColors, intensity: TColorIntensity) => {
+			if (color === themeColor && intensity === themeColorShade) return;
 			const prevColor = themeColor;
 			const prevShade = themeColorShade;
 
 			try {
-				// transición
-				document.documentElement.classList.add('theme-transition');
+				// transición (espera al siguiente frame para asegurar repaint)
+				requestAnimationFrame(() => {
+					document.documentElement.classList.add('theme-transition');
+				});
 				setIsUpdatingColor(true);
 				setThemeColor(color);
 				setThemeColorShade(intensity);
@@ -86,7 +89,7 @@ const SettingsPartial = () => {
 				setIsUpdatingColor(false);
 				setTimeout(
 					() => document.documentElement.classList.remove('theme-transition'),
-					250,
+					220,
 				);
 			}
 		},
@@ -95,10 +98,12 @@ const SettingsPartial = () => {
 
 	const updateTheme = useCallback(
 		async (mode: TDarkMode) => {
+			if (mode === darkModeStatus || isUpdatingTheme) return;
 			try {
-				// aplica transición suave en el root
-				const root = document.documentElement;
-				root.classList.add('theme-transition');
+				// aplica transición suave en el root en el siguiente frame
+				requestAnimationFrame(() => {
+					document.documentElement.classList.add('theme-transition');
+				});
 				setIsUpdatingTheme(true);
 				setDarkModeStatus(mode);
 				await dispatch(
@@ -108,14 +113,13 @@ const SettingsPartial = () => {
 				toast.error('No se pudo actualizar el tema');
 			} finally {
 				setIsUpdatingTheme(false);
-				// limpiar clase de transición luego de 250ms
 				setTimeout(
 					() => document.documentElement.classList.remove('theme-transition'),
-					250,
+					220,
 				);
 			}
 		},
-		[dispatch, setDarkModeStatus],
+		[dispatch, setDarkModeStatus, darkModeStatus, isUpdatingTheme],
 	);
 
 	const handleReset = useCallback(async () => {
