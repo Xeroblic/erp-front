@@ -159,7 +159,7 @@ const Perfil = () => {
 
         await ApiService.fetchData({
           url: `/users/${userId}`,
-          method: 'put',
+          method: 'patch',
           data: payload,
         });
 
