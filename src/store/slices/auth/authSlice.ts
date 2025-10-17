@@ -62,83 +62,96 @@ export const userMeThunk = createAsyncThunk<
 	{ user: IUserMe; permisos: string[]; roles?: string[] },
 	void,
 	{ state: RootState; rejectValue: string }
->('auth/userMe', async (_, { getState, rejectWithValue, signal }) => {
-	const token = getState().auth.access;
-	if (!token) return rejectWithValue('Token inválido');
+>(
+	'auth/userMe',
+	async (_, { getState, rejectWithValue, signal }) => {
+		const token = getState().auth.access;
+		if (!token) return rejectWithValue('Token inválido');
 
-	try {
-		const resp = await ApiService.fetchData<{
-			success?: boolean;
-			data?: {
-				id?: number;
-				email?: string;
-				first_name?: string;
-				last_name?: string;
-				global_roles?: string[];
-				all_permissions?: string[];
-				direct_permissions?: string[];
-				role_permissions?: string[];
-				branch?: any;
-				companies?: any[];
-				[key: string]: any;
+		try {
+			const resp = await ApiService.fetchData<{
+				success?: boolean;
+				data?: {
+					id?: number;
+					email?: string;
+					first_name?: string;
+					last_name?: string;
+					global_roles?: string[];
+					all_permissions?: string[];
+					direct_permissions?: string[];
+					role_permissions?: string[];
+					branch?: any;
+					companies?: any[];
+					[key: string]: any;
+				};
+				user_context?: {
+					current_user_id: number;
+					is_super_admin: boolean;
+					can_manage_users: boolean;
+					access_level: string;
+				};
+				user?: IUserMe;
+				permisos?: string[];
+				roles?: string[];
+				personalization?: any;
+			}>({
+				url: '/perfil',
+				method: 'get',
+				headers: { Authorization: `Bearer ${token}` },
+				dedupe: true,
+				signal: signal,
+			});
+
+			let userData: IUserMe;
+			let permisos: string[];
+			let roles: string[];
+
+			if (resp.data.data && resp.data.data.id) {
+				const data = resp.data.data;
+				userData = {
+					id: data.id!,
+					email: data.email!,
+					first_name: data.first_name!,
+					last_name: data.last_name!,
+					...data,
+				} as IUserMe;
+
+				permisos = [
+					...(data.all_permissions || []),
+					...(data.direct_permissions || []),
+					...(data.role_permissions || []),
+					...(data.global_roles || []),
+				];
+
+				roles = data.global_roles || [];
+			} else {
+				// Estructura antigua (compatibilidad)
+				userData = resp.data.user || ({} as IUserMe);
+				permisos = resp.data.permisos || [];
+				roles = resp.data.roles || [];
+			}
+
+			return {
+				user: userData,
+				permisos: Array.from(new Set(permisos)), // Eliminar Duplicados
+				roles: Array.from(new Set(roles)),
 			};
-			user_context?: {
-				current_user_id: number;
-				is_super_admin: boolean;
-				can_manage_users: boolean;
-				access_level: string;
-			};
-			user?: IUserMe;
-			permisos?: string[];
-			roles?: string[];
-			personalization?: any;
-		}>({
-			url: '/perfil',
-			method: 'get',
-			headers: { Authorization: `Bearer ${token}` },
-			dedupe: true,
-			signal: signal,
-		});
-
-		let userData: IUserMe;
-		let permisos: string[];
-		let roles: string[];
-
-		if (resp.data.data && resp.data.data.id) {
-			const data = resp.data.data;
-			userData = {
-				id: data.id!,
-				email: data.email!,
-				first_name: data.first_name!,
-				last_name: data.last_name!,
-				...data,
-			} as IUserMe;
-
-			permisos = [
-				...(data.all_permissions || []),
-				...(data.direct_permissions || []),
-				...(data.role_permissions || []),
-				...(data.global_roles || []),
-			];
-
-			roles = data.global_roles || [];
-		} else {
-			// Estructura antigua (compatibilidad)
-			userData = resp.data.user || ({} as IUserMe);
-			permisos = resp.data.permisos || [];
-			roles = resp.data.roles || [];
+		} catch (error: any) {
+			console.error('Error en userMeThunk:', error);
+			return rejectWithValue('No se pudo obtener el perfil');
 		}
-
-		return {
-			user: userData,
-			permisos: Array.from(new Set(permisos)), // Eliminar Duplicados
-			roles: Array.from(new Set(roles)),
-		};
-	} catch (error: any) {
-		console.error('Error en userMeThunk:', error);
-		return rejectWithValue('No se pudo obtener el perfil');
-	}
-});
+	},
+	{
+		// Throttle: evita relanzar si se pidió hace < 15s
+		condition: (_, { getState }) => {
+			const s = getState() as RootState;
+			const last = s.auth.userLastFetched;
+			if (!last) return true;
+			const elapsed = Date.now() - last;
+			return elapsed > 15000; // 15s
+		},
+	},
+);
 
 const authSlice = createSlice({
 	name: 'auth',
@@ -212,6 +225,7 @@ const authSlice = createSlice({
 				s.user = { ...payload.user, authority, roles: payload.roles || [] };
 				s.permisos = authority;
 				s.isAuthenticated = true;
+				s.userLastFetched = Date.now();
 			})
 			.addCase(userMeThunk.rejected, (s, action) => {
 				s.loading = false;

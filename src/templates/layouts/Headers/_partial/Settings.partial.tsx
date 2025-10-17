@@ -27,22 +27,16 @@ const clamp = (v: number, min = MIN_FONT, max = MAX_FONT) => Math.min(max, Math.
 const SettingsPartial = () => {
 	const dispatch = useAppDispatch();
 
-	// Hooks de personalización existentes
 	const { fontSize, setFontSize } = useFontSize();
-	const { darkModeStatus, isDarkTheme, setDarkModeStatus, isLight, isDark, isSystem } =
-		useDarkModeManager();
+	const { darkModeStatus, setDarkModeStatus, isLight, isDark, isSystem } = useDarkModeManager();
 	const { themeColor, setThemeColor, themeColorShade, setThemeColorShade } = useThemeColor();
 
-	// Estado global (para reset)
 	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
-	const { user } = useAppSelector((s) => s.auth);
 
-	// Cargas locales por grupo (optimista)
 	const [isUpdatingFont, setIsUpdatingFont] = useState(false);
 	const [isUpdatingTheme, setIsUpdatingTheme] = useState(false);
 	const [isUpdatingColor, setIsUpdatingColor] = useState(false);
 
-	// Presets de tamaño (rápidos)
 	const fontPresets = useMemo(
 		() => [
 			{ label: 'Compacto', value: 13 },
@@ -52,20 +46,19 @@ const SettingsPartial = () => {
 		[],
 	);
 
-	// ====== ACCIONES ======
 	const updateFontSize = useCallback(
 		async (newSize: number) => {
 			const next = clamp(newSize);
 			if (next === fontSize) return;
 			try {
-				setIsUpdatingFont(true);
-				setFontSize(next);
+				setIsUpdatingFont(true as boolean);
+				setFontSize(next as number);
 				await dispatch(actualizarPersonalizacionThunk({ font_size: next })).unwrap();
 			} catch (error: any) {
-				toast.error('No se pudo actualizar el tamaño de fuente');
-				setFontSize(fontSize);
+				toast.error(error || 'No se pudo actualizar el tamaño de fuente');
+				setFontSize(fontSize as number);
 			} finally {
-				setIsUpdatingFont(false);
+				setIsUpdatingFont(false as boolean);
 			}
 		},
 		[dispatch, fontSize, setFontSize],
@@ -77,6 +70,8 @@ const SettingsPartial = () => {
 			const prevShade = themeColorShade;
 
 			try {
+				// transición
+				document.documentElement.classList.add('theme-transition');
 				setIsUpdatingColor(true);
 				setThemeColor(color);
 				setThemeColorShade(intensity);
@@ -89,6 +84,10 @@ const SettingsPartial = () => {
 				setThemeColorShade(prevShade);
 			} finally {
 				setIsUpdatingColor(false);
+				setTimeout(
+					() => document.documentElement.classList.remove('theme-transition'),
+					250,
+				);
 			}
 		},
 		[dispatch, themeColor, themeColorShade, setThemeColor, setThemeColorShade],
@@ -97,6 +96,9 @@ const SettingsPartial = () => {
 	const updateTheme = useCallback(
 		async (mode: TDarkMode) => {
 			try {
+				// aplica transición suave en el root
+				const root = document.documentElement;
+				root.classList.add('theme-transition');
 				setIsUpdatingTheme(true);
 				setDarkModeStatus(mode);
 				await dispatch(
@@ -106,20 +108,22 @@ const SettingsPartial = () => {
 				toast.error('No se pudo actualizar el tema');
 			} finally {
 				setIsUpdatingTheme(false);
+				// limpiar clase de transición luego de 250ms
+				setTimeout(
+					() => document.documentElement.classList.remove('theme-transition'),
+					250,
+				);
 			}
 		},
 		[dispatch, setDarkModeStatus],
 	);
 
 	const handleReset = useCallback(async () => {
-		// font size OK
 		const targetFont = clamp(personalizacionUsuario?.font_size ?? 14);
 
-		// modo: mapear num → TDarkMode; fallback al estado actual si no hay datos
 		const rawModeNum = personalizacionUsuario?.dark_mode ?? personalizacionUsuario?.tema;
 		const targetMode = rawModeNum != null ? apiToDark(rawModeNum) : darkModeStatus;
 
-		// color & shade: castear seguro
 		const targetColor = isTcolor(personalizacionUsuario?.tcolor)
 			? (personalizacionUsuario!.tcolor as TColors)
 			: themeColor;
@@ -167,7 +171,6 @@ const SettingsPartial = () => {
 		darkModeStatus,
 	]);
 
-	// ====== ATAJOS DE TECLADO ======
 	useEffect(() => {
 		const onKey = (e: KeyboardEvent) => {
 			if (!e.altKey) return;
@@ -200,7 +203,6 @@ const SettingsPartial = () => {
 		return () => window.removeEventListener('keydown', onKey);
 	}, [fontSize, updateFontSize, updateTheme, handleReset]);
 
-	// ====== UI ======
 	const isAnyUpdating = isUpdatingFont || isUpdatingTheme || isUpdatingColor;
 
 	return (
@@ -217,7 +219,6 @@ const SettingsPartial = () => {
 			<DropdownMenu
 				placement='bottom-end'
 				className='max-h-[70vh] w-[calc(100vw-32px)] min-w-0 max-w-sm overflow-y-auto md:w-auto md:min-w-72'>
-				{/* Tamaño de fuente */}
 				<DropdownItem className='flex flex-col !items-start gap-2'>
 					<div className='flex w-full items-center justify-between'>
 						<div className='text-sm font-medium'>Tamaño de fuente</div>
@@ -260,7 +261,6 @@ const SettingsPartial = () => {
 					</div>
 				</DropdownItem>
 
-				{/* Tema */}
 				<DropdownItem className='flex flex-col !items-start gap-2'>
 					<div className='text-sm font-medium'>Tema del sistema</div>
 					<ButtonGroup>
@@ -311,7 +311,6 @@ const SettingsPartial = () => {
 					)}
 				</DropdownItem>
 
-				{/* Reset */}
 				<DropdownItem className='flex items-center justify-between'>
 					<div className='text-sm opacity-80'>Restablecer a mis valores</div>
 					<Button

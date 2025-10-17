@@ -23,18 +23,13 @@ export default function UsuarioLista() {
 	const [showCreateModal, setShowCreateModal] = useState(false);
 
 	// Datos de paginación (puedes implementar paginación real después)
-	const [pagination] = useState({
-		page: 1,
-		pageSize: 10,
-		total: 0,
-		totalPages: 1,
-	});
+	const [pagination] = useState({ page: 1, pageSize: 10, total: 0, totalPages: 1 });
 
 	// Cargar usuarios
 	const loadUsers = useCallback(async () => {
 		setLoading(true);
 		try {
-			let users: IUserMe[] = [];
+			let users: IUserMe[] | undefined = [];
 
 			if (user?.roles?.includes('super-admin')) {
 				users = await fetchAllUsers();
@@ -42,8 +37,8 @@ export default function UsuarioLista() {
 				users = await fetchCompanyUsers();
 			}
 
-			setUsuarios(users);
-			setFilteredUsuarios(users);
+			setUsuarios(users || []);
+			setFilteredUsuarios(users || []);
 		} catch (error) {
 			console.error('Error al cargar usuarios:', error);
 		} finally {

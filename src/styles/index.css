@@ -4,11 +4,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Transición suave al cambiar tema/colores (respeta reduced motion) */
+@media (prefers-reduced-motion: no-preference) {
+	.theme-transition,
+	.theme-transition * {
+		transition:
+			background-color 220ms ease,
+			color 220ms ease,
+			border-color 220ms ease,
+			fill 220ms ease,
+			stroke 220ms ease;
+	}
+}
+
 @layer base {
 	:root {
 		--header-height: 0px;
 		--subheader-height: 0px;
-		
+
 		/* Theme Color Variables */
 		--color-primary-50: #fafafa;
 		--color-primary-100: #f4f4f5;
@@ -152,4 +165,3 @@
 		}
 	}
 }
-
