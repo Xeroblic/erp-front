@@ -64,6 +64,32 @@ const SettingsPartial = () => {
 		[dispatch, fontSize, setFontSize],
 	);
 
+	// Efecto radial: cubre con el color anterior y se encoge
+	const runRadialWipe = useCallback(
+		(corner: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' = 'top-right', duration = 600) => {
+			try {
+				const prevBg =
+					getComputedStyle(document.body).backgroundColor ||
+					getComputedStyle(document.documentElement).backgroundColor;
+				const overlay = document.createElement('div');
+				overlay.className = 'theme-wipe-overlay';
+				overlay.style.setProperty('--theme-wipe-bg', prevBg);
+				overlay.style.setProperty('--wipe-duration', `${duration}ms`);
+				let x = '100%';
+				let y = '0%';
+				if (corner === 'top-left') { x = '0%'; y = '0%'; }
+				if (corner === 'bottom-right') { x = '100%'; y = '100%'; }
+				if (corner === 'bottom-left') { x = '0%'; y = '100%'; }
+				overlay.style.setProperty('--wipe-x', x);
+				overlay.style.setProperty('--wipe-y', y);
+				document.body.appendChild(overlay);
+				requestAnimationFrame(() => overlay.classList.add('animate'));
+				overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
+			} catch {}
+		},
+		[],
+	);
+
 	const handleColorChange = useCallback(
 		async (color: TColors, intensity: TColorIntensity) => {
 			if (color === themeColor && intensity === themeColorShade) return;
@@ -100,14 +126,22 @@ const SettingsPartial = () => {
 		async (mode: TDarkMode) => {
 			if (mode === darkModeStatus || isUpdatingTheme) return;
 			try {
-				// aplica transición suave en el root en el siguiente frame
+				// Suavizado general de colores mientras corre el wipe
 				requestAnimationFrame(() => {
 					document.documentElement.classList.add('theme-transition');
 				});
+				// Wipe radial: LIGHT -> top-right, DARK -> bottom-left, SYSTEM -> según preferencia SO
+				const sysDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+				const corner = mode === DARK_MODE.DARK
+					? 'bottom-left'
+					: mode === DARK_MODE.LIGHT
+						? 'top-right'
+						: (sysDark ? 'bottom-left' : 'top-right');
+				runRadialWipe(corner, 800);
 				setIsUpdatingTheme(true);
 				setDarkModeStatus(mode);
 				await dispatch(
-					actualizarPersonalizacionThunk({ dark_mode: tDarkToApi(mode) }),
+					actualizarPersonalizacionThunk({ tema: tDarkToApi(mode) }),
 				).unwrap();
 			} catch {
 				toast.error('No se pudo actualizar el tema');
@@ -115,17 +149,17 @@ const SettingsPartial = () => {
 				setIsUpdatingTheme(false);
 				setTimeout(
 					() => document.documentElement.classList.remove('theme-transition'),
-					220,
+					850,
 				);
 			}
 		},
-		[dispatch, setDarkModeStatus, darkModeStatus, isUpdatingTheme],
+		[dispatch, setDarkModeStatus, darkModeStatus, isUpdatingTheme, runRadialWipe],
 	);
 
 	const handleReset = useCallback(async () => {
 		const targetFont = clamp(personalizacionUsuario?.font_size ?? 14);
 
-		const rawModeNum = personalizacionUsuario?.dark_mode ?? personalizacionUsuario?.tema;
+		const rawModeNum = personalizacionUsuario?.tema ?? personalizacionUsuario?.dark_mode;
 		const targetMode = rawModeNum != null ? apiToDark(rawModeNum) : darkModeStatus;
 
 		const targetColor = isTcolor(personalizacionUsuario?.tcolor)
@@ -149,7 +183,7 @@ const SettingsPartial = () => {
 			await dispatch(
 				actualizarPersonalizacionThunk({
 					font_size: targetFont,
-					dark_mode: tDarkToApi(targetMode),
+					tema: tDarkToApi(targetMode),
 					tcolor: targetColor,
 					tcolor_int: targetShade,
 				}),
@@ -210,7 +244,7 @@ const SettingsPartial = () => {
 	const isAnyUpdating = isUpdatingFont || isUpdatingTheme || isUpdatingColor;
 
 	return (
-		<Dropdown className='md:overflow-visible'>
+		<Dropdown>
 			<DropdownToggle hasIcon={false}>
 				<Button
 					icon='HeroCog8Tooth'

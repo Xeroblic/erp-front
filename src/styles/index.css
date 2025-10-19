@@ -17,6 +17,36 @@
 	}
 }
 
+/* Wipe radial desde una esquina para cambio de tema (más fluido) */
+@media (prefers-reduced-motion: no-preference) {
+  .theme-wipe-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    background: var(--theme-wipe-bg, #fff);
+    /* Toma coordenadas desde variables para elegir esquina */
+    --wipe-x: 100%; /* default: top-right */
+    --wipe-y: 0%;
+    --wipe-duration: 800ms;
+    clip-path: circle(180vmax at var(--wipe-x) var(--wipe-y));
+    opacity: 1;
+    will-change: clip-path, opacity;
+    contain: paint;
+    backface-visibility: hidden;
+    transition:
+      clip-path var(--wipe-duration) cubic-bezier(.22,.61,.36,1),
+      opacity calc(var(--wipe-duration) - 120ms) ease-out;
+  }
+  .theme-wipe-overlay.animate {
+    clip-path: circle(0 at var(--wipe-x) var(--wipe-y));
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-wipe-overlay { display: none !important; }
+}
+
 @layer base {
 	:root {
 		--header-height: 0px;
