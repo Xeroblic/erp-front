@@ -19,6 +19,7 @@ import Button from '@/components/ui/Button.tsx';
 import ButtonGroup from '@/components/ui/ButtonGroup.tsx';
 import ColorSelector from '@/components/ColorSelector.tsx';
 import Icon from '@/components/icon/Icon.tsx';
+import { runThemeWipe, cornerForThemeMode } from '@/utils/themeWipe.util';
 const MIN_FONT = 12;
 const MAX_FONT = 18;
 
@@ -64,31 +65,7 @@ const SettingsPartial = () => {
 		[dispatch, fontSize, setFontSize],
 	);
 
-	// Efecto radial: cubre con el color anterior y se encoge
-	const runRadialWipe = useCallback(
-		(corner: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' = 'top-right', duration = 600) => {
-			try {
-				const prevBg =
-					getComputedStyle(document.body).backgroundColor ||
-					getComputedStyle(document.documentElement).backgroundColor;
-				const overlay = document.createElement('div');
-				overlay.className = 'theme-wipe-overlay';
-				overlay.style.setProperty('--theme-wipe-bg', prevBg);
-				overlay.style.setProperty('--wipe-duration', `${duration}ms`);
-				let x = '100%';
-				let y = '0%';
-				if (corner === 'top-left') { x = '0%'; y = '0%'; }
-				if (corner === 'bottom-right') { x = '100%'; y = '100%'; }
-				if (corner === 'bottom-left') { x = '0%'; y = '100%'; }
-				overlay.style.setProperty('--wipe-x', x);
-				overlay.style.setProperty('--wipe-y', y);
-				document.body.appendChild(overlay);
-				requestAnimationFrame(() => overlay.classList.add('animate'));
-				overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
-			} catch {}
-		},
-		[],
-	);
+
 
 	const handleColorChange = useCallback(
 		async (color: TColors, intensity: TColorIntensity) => {
@@ -131,13 +108,8 @@ const SettingsPartial = () => {
 					document.documentElement.classList.add('theme-transition');
 				});
 				// Wipe radial: LIGHT -> top-right, DARK -> bottom-left, SYSTEM -> según preferencia SO
-				const sysDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-				const corner = mode === DARK_MODE.DARK
-					? 'bottom-left'
-					: mode === DARK_MODE.LIGHT
-						? 'top-right'
-						: (sysDark ? 'bottom-left' : 'top-right');
-				runRadialWipe(corner, 800);
+				const corner = cornerForThemeMode(mode);
+				runThemeWipe(corner, 900);
 				setIsUpdatingTheme(true);
 				setDarkModeStatus(mode);
 				await dispatch(
@@ -149,11 +121,11 @@ const SettingsPartial = () => {
 				setIsUpdatingTheme(false);
 				setTimeout(
 					() => document.documentElement.classList.remove('theme-transition'),
-					850,
+					950,
 				);
 			}
 		},
-		[dispatch, setDarkModeStatus, darkModeStatus, isUpdatingTheme, runRadialWipe],
+		[dispatch, setDarkModeStatus, darkModeStatus, isUpdatingTheme],
 	);
 
 	const handleReset = useCallback(async () => {

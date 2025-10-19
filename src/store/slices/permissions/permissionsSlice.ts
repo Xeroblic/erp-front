@@ -214,7 +214,7 @@ export const fetchUserPermissions = createAsyncThunk(
     async (userId: number, { rejectWithValue }) => {
         try {
             const response = await ApiService.fetchData<{ user_permissions: UserPermission[] }>({
-                url: `/admin/users/${userId}/permissions`, // Ruta correcta en backend PHP
+                url: `/users/${userId}/permissions`, // Ruta correcta en backend PHP
                 method: 'get'
             });
             return response.data.user_permissions;
@@ -233,7 +233,7 @@ export const assignPermissionToUser = createAsyncThunk(
                 expires_at: expiresAt
             };
             const response = await ApiService.fetchData<{ user_permission: UserPermission }>({
-                url: `/admin/users/${userId}/permissions`,
+                url: `/users/${userId}/permissions`,
                 method: 'post',
                 data: payload
             });
@@ -249,7 +249,7 @@ export const revokePermissionFromUser = createAsyncThunk(
     async ({ userId, permissionId }: { userId: number; permissionId: number }, { rejectWithValue }) => {
         try {
             await ApiService.fetchData({
-                url: `/admin/users/${userId}/permissions/${permissionId}`,
+                url: `/users/${userId}/permissions/${permissionId}`,
                 method: 'delete'
             });
             return { userId, permissionId };
@@ -265,7 +265,7 @@ export const fetchUserRoles = createAsyncThunk(
     async (userId: number, { rejectWithValue }) => {
         try {
             const response = await ApiService.fetchData<{ user_roles: UserRole[] }>({
-                url: `/admin/users/${userId}/roles`,
+                url: `/users/${userId}/roles`,
                 method: 'get'
             });
             return response.data.user_roles;
@@ -286,7 +286,7 @@ export const assignRoleToUser = createAsyncThunk(
                 branch_id: roleData.branchId
             };
             const response = await ApiService.fetchData<{ user_role: UserRole }>({
-                url: `/admin/users/${roleData.userId}/roles`,
+                url: `/users/${roleData.userId}/roles`,
                 method: 'post',
                 data: payload
             });
@@ -302,7 +302,7 @@ export const revokeRoleFromUser = createAsyncThunk(
     async ({ userId, roleId }: { userId: number; roleId: number }, { rejectWithValue }) => {
         try {
             await ApiService.fetchData({
-                url: `/admin/users/${userId}/roles/${roleId}`,
+                url: `/users/${userId}/roles/${roleId}`,
                 method: 'delete'
             });
             return { userId, roleId };

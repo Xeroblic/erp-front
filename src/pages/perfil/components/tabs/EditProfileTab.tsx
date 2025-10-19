@@ -1,5 +1,6 @@
 import Label from '@/components/form/Label';
 import Input from '@/components/form/Input';
+import DateInput from '@/components/form/DateInput';
 import FieldWrap from '@/components/form/FieldWrap';
 import Icon from '@/components/icon/Icon';
 import Validation from '@/components/form/Validation';
@@ -154,14 +155,16 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 						isValid={formik.isValid}
 						isTouched={formik.touched.fecha_nacimiento}
 						invalidFeedback={formik.errors.fecha_nacimiento}>
-						<Input
-							type='date'
-							id='fecha_nacimiento'
-							name='fecha_nacimiento'
-							value={formik.values.fecha_nacimiento || ''}
-							onChange={formik.handleChange}
-							onBlur={formik.handleBlur}
-						/>
+                    <DateInput
+                      id='fecha_nacimiento'
+                      name='fecha_nacimiento'
+                      value={formik.values.fecha_nacimiento || ''}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      maxYear={new Date().getFullYear()}
+                      maxDate={new Date()}
+                      minYear={1900}
+                    />
 					</Validation>
 				</div>
 				<div className='col-span-12 lg:col-span-6'>

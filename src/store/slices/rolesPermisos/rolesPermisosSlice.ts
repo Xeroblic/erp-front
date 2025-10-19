@@ -24,7 +24,7 @@ export const fetchUsuariosConRolesPerms = createAsyncThunk<UserWithDetails[], vo
         data: UserWithDetails[];
         meta?: Record<string, unknown>;
       }>({
-        url: '/admin/users',
+        url: '/users',
         method: 'get',
         dedupe: true,
         dedupeKey: 'users-with-roles-permissions',

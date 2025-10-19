@@ -8,6 +8,7 @@ import Card, { CardBody, CardFooter, CardFooterChild } from '@/components/ui/Car
 import Button from '@/components/ui/Button';
 import useSaveBtn from '@/hooks/useSaveBtn';
 import useDarkModeManager from '@/hooks/useDarkModeManager';
+import { runThemeWipe, cornerForThemeMode } from '@/utils/themeWipe.util';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { selectDarkMode } from '@/store/slices/personalizacion/personalizacionSlice';
 import { userMeThunk } from '@/store/slices/auth/authSlice';
@@ -21,6 +22,7 @@ import EditProfileTab from './components/tabs/EditProfileTab';
 import ContactTab from './components/tabs/ContactTab';
 import AppearanceTab from './components/tabs/AppearanceTab';
 import { ProfileFormValues, ProfileTabDefinition, ProfileTabKey } from './components/types';
+import { toApiDate, toInputDate } from '@/utils/dateNormalize.util';
 
 const PROFILE_TABS: ProfileTabDefinition[] = [
   { key: 'EDIT', label: 'Editar Perfil', icon: 'HeroPencil' },
@@ -96,7 +98,7 @@ const Perfil = () => {
       comuna: userData?.comuna != null ? String(userData.comuna) : '',
       genero: toGenderFormValue((userData as any)?.genero ?? userData?.gender),
       theme: darkMode === 'light' ? 'light' : darkMode === 'dark' ? 'dark' : 'system',
-      fecha_nacimiento: (userData as any)?.fecha_nacimiento ?? '',
+      fecha_nacimiento: toInputDate((userData as any)?.fecha_nacimiento ?? (userData as any)?.date_of_birth ?? ''),
     },
     validationSchema: Yup.object().shape({
       first_name: Yup.string()
@@ -121,6 +123,21 @@ const Perfil = () => {
       region: Yup.string().nullable(),
       provincia: Yup.string().nullable(),
       comuna: Yup.string().nullable(),
+      fecha_nacimiento: Yup.string()
+        .nullable()
+        .test('not-in-future', 'La fecha no puede ser futura', (val) => {
+          if (!val) return true;
+          const d = new Date(val + 'T00:00:00');
+          const today = new Date();
+          return d.getTime() <= new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+        })
+        .test('age-18', 'No puedes ser la wawa Blass aqui mano', (val) => {
+          if (!val) return true;
+          const d = new Date(val + 'T00:00:00');
+          const today = new Date();
+          const eighteen = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+          return d.getTime() <= eighteen.getTime();
+        }),
     }),
     onSubmit: async (values) => {
       if (!userId) {
@@ -154,7 +171,9 @@ const Perfil = () => {
           provincia: toNumber(values.provincia),
           comuna: toNumber(values.comuna),
           gender: toGenderApiValue(values.genero),
-          fecha_nacimiento: trimOrNull(values.fecha_nacimiento),
+          // Enviar ambas claves por compatibilidad backend
+          fecha_nacimiento: toApiDate(values.fecha_nacimiento),
+          date_of_birth: toApiDate(values.fecha_nacimiento),
         };
 
         await ApiService.fetchData({
@@ -192,6 +211,11 @@ const Perfil = () => {
     }
 
     if (selectedTheme !== darkMode) {
+      // Animación radial coherente con el modo elegido
+      const corner = cornerForThemeMode(selectedTheme);
+      runThemeWipe(corner, 900);
+      requestAnimationFrame(() => document.documentElement.classList.add('theme-transition'));
+      setTimeout(() => document.documentElement.classList.remove('theme-transition'), 950);
       setDarkModeStatus(selectedTheme);
     }
   }, [formik.values.theme, darkMode, setDarkModeStatus]);

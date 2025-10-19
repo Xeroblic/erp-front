@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import isEmpty from 'lodash/isEmpty'
+import { normalizePermissions } from '@/utils/permissionNormalize'
 
 function useAuthority(
     userAuthority: string[] = [],
@@ -8,17 +9,19 @@ function useAuthority(
     emptyCheck = true
 ) {
     const roleMatched = useMemo(() => {
+        const normalizedUser = normalizePermissions(userAuthority)
+        const normalizedRequired = normalizePermissions(authority)
         // Si es super admin, acceso completo
-        if (userAuthority.includes('super-admin')) {
+        if (normalizedUser.includes('super-admin')) {
             return true;
         }
 
         if (requireAll) {
             // Modo AND - todos los permisos deben estar presentes
-            return authority.every((role) => userAuthority.includes(role));
+            return normalizedRequired.every((role) => normalizedUser.includes(role));
         } else {
             // Modo OR - al menos uno debe coincidir
-            return authority.some((role) => userAuthority.includes(role));
+            return normalizedRequired.some((role) => normalizedUser.includes(role));
         }
     }, [authority, userAuthority, requireAll])
 
