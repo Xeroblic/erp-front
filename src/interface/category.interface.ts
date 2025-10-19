@@ -3,6 +3,7 @@ export type CreateCategoryPayload = {
   description?: string;
   parent_id?: number | null;
   is_active: boolean;
+  image?: File | null;
 };
 
 export type UpdateCategoryPayload = CreateCategoryPayload & {
@@ -28,12 +29,15 @@ export interface ICategory {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  image?: ICategoryImage | null;
+  gallery?: ICategoryImage[];
 }
 
 export interface ICategoryFilters {
   search: string;
   parent_id?: number;
   is_active?: boolean;
+  branch_id?: number;
 }
 
 export interface ICategoryStats {
@@ -47,4 +51,11 @@ export interface ICategoryTreeNode {
   id: number;
   name: string;
   children?: ICategoryTreeNode[];
+}
+
+export interface ICategoryImage {
+  id?: number;
+  url: string;
+  thumb?: string | null;
+  alt?: string | null;
 }

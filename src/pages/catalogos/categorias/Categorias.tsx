@@ -6,6 +6,7 @@ import Container from '@/components/layouts/Container/Container';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import Input from '@/components/form/Input';
+import Select from '@/components/form/Select';
 import Spinner from '@/components/ui/Spinner';
 import CategoryStats from './components/CategoryStats';
 import CategoriesTable from './components/tables/CategoriesTable';
@@ -31,6 +32,8 @@ const Categorias: React.FC = () => {
     loading,
     error,
     parentOptions,
+    branches,
+    activeBranchId,
     creating,
     updating,
     deleting,
@@ -42,6 +45,10 @@ const Categorias: React.FC = () => {
   } = useCategorias(filters);
 
   const parentOptionsForSelect = useMemo(() => parentOptions, [parentOptions]);
+  const branchOptions = useMemo(
+    () => (branches ?? []).map((b) => ({ value: String(b.id), label: b.name ?? `Sucursal ${b.id}` })),
+    [branches],
+  );
   const tableRows = useMemo(
     () => buildCategoryTableRows(categories, tree),
     [categories, tree],
@@ -51,11 +58,17 @@ const Categorias: React.FC = () => {
     setFilters((prev) => ({ ...prev, search: event.target.value }));
   };
 
+  const handleBranchChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = event.target.value;
+    setFilters((prev) => ({ ...prev, branch_id: value ? Number(value) : undefined }));
+  };
+
   const handleCreateSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
 
     try {
+      const image = (formData.get('image') as File | null) || null;
       await createCategory({
         name: String(formData.get('name') ?? '').trim(),
         description: formData.get('description')?.toString().trim() || undefined,
@@ -66,6 +79,7 @@ const Categorias: React.FC = () => {
           return Number.isFinite(value) ? value : undefined;
         })(),
         is_active: formData.get('is_active') === 'on',
+        image,
       });
 
       toast.success('Categoria creada correctamente');
@@ -83,6 +97,7 @@ const Categorias: React.FC = () => {
     const formData = new FormData(event.currentTarget);
 
     try {
+      const image = (formData.get('image') as File | null) || null;
       await updateCategory({
         id: selected.id,
         name: String(formData.get('name') ?? '').trim(),
@@ -94,6 +109,7 @@ const Categorias: React.FC = () => {
           return Number.isFinite(value) ? value : undefined;
         })(),
         is_active: formData.get('is_active') === 'on',
+        image,
       });
 
       toast.success('Categoria actualizada');
@@ -163,6 +179,19 @@ const Categorias: React.FC = () => {
               onChange={handleSearchChange}
               className="w-full sm:w-72"
             />
+            <Select
+              name="branch_id"
+              value={filters.branch_id ? String(filters.branch_id) : activeBranchId ? String(activeBranchId) : ''}
+              onChange={handleBranchChange}
+              className="w-full sm:w-60"
+            >
+              <option value="">Todas las sucursales</option>
+              {branchOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </Select>
             <Button color="indigo" onClick={handleOpenCreate} icon="HeroPlus">
               Nueva categoria
             </Button>

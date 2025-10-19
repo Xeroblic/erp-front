@@ -28,6 +28,40 @@ const DetalleCategoria: React.FC<DetalleCategoriaProps> = ({ isOpen, setIsOpen, 
     <ModalBody>
       {category ? (
         <div className="space-y-6">
+          {/* Imagen principal y galería */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="md:col-span-1">
+              <div className="aspect-square w-full overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
+                {category.image?.url ? (
+                  <img
+                    src={category.image.thumb || category.image.url}
+                    alt={category.image.alt || category.name}
+                    className="h-full w-full object-cover"
+                  />)
+                  : (
+                  <div className="flex h-full w-full items-center justify-center text-sm text-zinc-500 dark:text-zinc-400">
+                    Sin imagen
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="md:col-span-2">
+              <div className="space-y-2">
+                <h4 className="font-semibold text-gray-700">Galería</h4>
+                {category.gallery && category.gallery.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                    {category.gallery.map((img, idx) => (
+                      <div key={`${img.id ?? idx}`} className="aspect-square overflow-hidden rounded border border-zinc-200 dark:border-zinc-700">
+                        <img src={img.thumb || img.url} alt={img.alt || `${category.name}-${idx + 1}`} className="h-full w-full object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">Sin imágenes en la galería.</p>
+                )}
+              </div>
+            </div>
+          </div>
           <div className="flex flex-col space-y-3 md:flex-row md:items-center md:space-x-4 md:space-y-0">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">{category.name}</h3>

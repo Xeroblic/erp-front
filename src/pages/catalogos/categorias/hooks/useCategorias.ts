@@ -8,6 +8,7 @@ import {
   deleteCategory as deleteCategoryThunk,
   toggleCategoryStatus as toggleCategoryStatusThunk,
 } from '@/store/slices/categories/categoriesSlice';
+import { fetchMisSucursales } from '@/store/slices/sucursales/sucursalesSlice';
 import {
   type CreateCategoryPayload,
   type UpdateCategoryPayload,
@@ -39,6 +40,19 @@ export function useCategorias(filters: ICategoryFilters) {
     void dispatch(fetchCategories({ search: filters.search, parent_id: filters.parent_id }));
   }, [dispatch, filters.search, filters.parent_id]);
 
+  // Cargar sucursales para disponer de branchId al subir media
+  const branchesState = useAppSelector((s) => s.sucursales);
+  useEffect(() => {
+    if (!branchesState.lista.length && !branchesState.loading) {
+      void dispatch(fetchMisSucursales());
+    }
+  }, [branchesState.lista.length, branchesState.loading, dispatch]);
+
+  const activeBranchId = useMemo<number | null>(() => {
+    if (filters.branch_id) return filters.branch_id;
+    return branchesState.lista[0]?.id ?? null;
+  }, [branchesState.lista, filters.branch_id]);
+
   useEffect(() => {
     if (!categoriesState.tree.length) {
       void dispatch(fetchCategoryTree());
@@ -52,24 +66,28 @@ export function useCategorias(filters: ICategoryFilters) {
 
   const createCategory = useCallback(
     async (payload: CreateCategoryPayload) => {
-      await dispatch(createCategoryThunk(payload)).unwrap();
+      const branchId = activeBranchId;
+      if (!branchId) throw new Error('Debe seleccionar una sucursal para subir imágenes');
+      await dispatch(createCategoryThunk({ branchId, data: payload })).unwrap();
       await Promise.all([
         dispatch(fetchCategories({ search: filters.search, parent_id: filters.parent_id })),
         dispatch(fetchCategoryTree()),
       ]);
     },
-    [dispatch, filters.search, filters.parent_id],
+    [dispatch, filters.search, filters.parent_id, activeBranchId],
   );
 
   const updateCategory = useCallback(
     async (payload: UpdateCategoryPayload) => {
-      await dispatch(updateCategoryThunk(payload)).unwrap();
+      const branchId = activeBranchId;
+      if (!branchId) throw new Error('No se encontró una sucursal para subir imágenes');
+      await dispatch(updateCategoryThunk({ branchId, data: payload })).unwrap();
       await Promise.all([
         dispatch(fetchCategories({ search: filters.search, parent_id: filters.parent_id })),
         dispatch(fetchCategoryTree()),
       ]);
     },
-    [dispatch, filters.search, filters.parent_id],
+    [dispatch, filters.search, filters.parent_id, activeBranchId],
   );
 
   const toggleCategoryStatus = useCallback(
@@ -96,6 +114,8 @@ export function useCategorias(filters: ICategoryFilters) {
     stats: categoriesState.stats,
     tree: categoriesState.tree,
     parentOptions,
+    branches: branchesState.lista,
+    activeBranchId,
     loading: categoriesState.loading,
     treeLoading: categoriesState.treeLoading,
     creating: categoriesState.creating,

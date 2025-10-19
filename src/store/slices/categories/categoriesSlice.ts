@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import ApiService from '@/services/ApiService';
+import type { RootState } from '@/store/rootReducer';
 import type {
 	CreateCategoryPayload,
 	FetchCategoriesParams,
@@ -8,6 +9,7 @@ import type {
 	UpdateCategoryPayload,
 } from '@/interface/category.interface';
 import { CATEGORY_EMPTY_STATS, type CategoryStatsShape } from '@/constants/category.constant';
+import { convertFileToWebP, ensureAbsoluteUrl } from '@/components/helper/brand.helper';
 import {
 	buildCategoryPayload,
 	computeCategoryStats,
@@ -76,6 +78,81 @@ export const fetchCategories = createAsyncThunk<
 	}
 });
 
+const extractMediaUrl = (payload: any): string | null => {
+    if (!payload) return null;
+    const pickCandidate = (value: any): any => {
+        if (!value) return null;
+        if (Array.isArray(value)) return value[0] ?? null;
+        if (Array.isArray(value?.data)) return value.data[0] ?? null;
+        if (Array.isArray(value?.media)) return value.media[0] ?? null;
+        return value;
+    };
+    const candidate = pickCandidate(payload);
+    if (!candidate || typeof candidate !== 'object') return null;
+    const possibilities = [
+        candidate.url,
+        candidate.original_url,
+        candidate.preview_url,
+        candidate.full_url,
+        candidate.thumbnail_url,
+        candidate.thumb,
+    ];
+    const raw = possibilities.find((item) => typeof item === 'string' && item.length > 0) ?? null;
+    return ensureAbsoluteUrl(raw);
+};
+
+const fetchCategoryDetails = async (id: number): Promise<ICategory | null> => {
+    try {
+        const response = await ApiService.fetchData<{ data?: any }>({
+            url: `/categories/${id}`,
+            method: 'get',
+        });
+        const raw = response.data?.data ?? response.data;
+        return raw ? normalizeCategory(raw) : null;
+    } catch {
+        return null;
+    }
+};
+
+const uploadCategoryImage = async (
+    categoryId: number,
+    branchId: number | null | undefined,
+    file: File,
+): Promise<string | null> => {
+    if (!branchId) {
+        // La ruta requiere branches/{branch}/...; sin branch no se puede subir
+        if (typeof window !== 'undefined') {
+            console.warn('[categoriesSlice] uploadCategoryImage: branchId es requerido para subir media');
+        }
+        return null;
+    }
+    const processed = await convertFileToWebP(file);
+    if (!processed) return null;
+
+    const formData = new FormData();
+    formData.append('files[]', processed, processed.name);
+    formData.append('collection', 'image');
+    formData.append('primary', 'first');
+
+    try {
+        const response = await ApiService.fetchData<{ data?: any }, FormData>({
+            url: `/branches/${branchId}/categories/${categoryId}/media/upload-multiple`,
+            method: 'post',
+            data: formData,
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        const payload = response.data?.data ?? response.data;
+        const url = extractMediaUrl(payload);
+        const absolute = ensureAbsoluteUrl(url);
+        if (absolute) return absolute;
+        const refreshed = await fetchCategoryDetails(categoryId);
+        return refreshed?.image?.url ?? null;
+    } catch {
+        const refreshed = await fetchCategoryDetails(categoryId);
+        return refreshed?.image?.url ?? null;
+    }
+};
+
 export const fetchCategoryTree = createAsyncThunk<
 	ICategoryTreeNode[],
 	void,
@@ -103,11 +180,12 @@ export const fetchCategoryTree = createAsyncThunk<
 
 export const createCategory = createAsyncThunk<
 	ICategory,
-	CreateCategoryPayload,
-	{ rejectValue: string }
->('categories/createCategory', async (payload, { rejectWithValue }) => {
+	{ branchId: number; data: CreateCategoryPayload },
+ 	{ rejectValue: string }
+>('categories/createCategory', async ({ branchId, data }, { rejectWithValue }) => {
 	try {
-		const body = buildCategoryPayload(payload);
+		const { image, ...rest } = data;
+		const body = buildCategoryPayload(rest);
 
 		const response = await ApiService.fetchData<{ data?: any }, CreateCategoryPayload>({
 			url: '/categories',
@@ -117,7 +195,20 @@ export const createCategory = createAsyncThunk<
 		});
 
 		const raw = response.data?.data ?? response.data;
-		return normalizeCategory(raw ?? body);
+		let normalized = normalizeCategory(raw ?? body);
+
+		if (image instanceof File) {
+			const uploadedUrl = await uploadCategoryImage(normalized.id, branchId, image);
+			if (uploadedUrl) {
+				// merge
+				normalized = { ...normalized, image: { id: normalized.image?.id, url: uploadedUrl, thumb: uploadedUrl, alt: normalized.name } };
+			} else {
+				const refreshed = await fetchCategoryDetails(normalized.id);
+				if (refreshed) normalized = refreshed;
+			}
+		}
+
+		return normalized;
 	} catch (error: any) {
 		return rejectWithValue(
 			error?.response?.data?.message ?? error?.message ?? 'Error al crear categoria',
@@ -127,21 +218,34 @@ export const createCategory = createAsyncThunk<
 
 export const updateCategory = createAsyncThunk<
 	ICategory,
-	UpdateCategoryPayload,
-	{ rejectValue: string }
->('categories/updateCategory', async (payload, { rejectWithValue }) => {
+	{ branchId: number; data: UpdateCategoryPayload },
+ 	{ rejectValue: string }
+>('categories/updateCategory', async ({ branchId, data }, { rejectWithValue }) => {
 	try {
-		const body = buildCategoryPayload(payload);
+		const { image, id, ...rest } = data as any;
+		const body = buildCategoryPayload(rest);
 
 		const response = await ApiService.fetchData<{ data?: any }, CreateCategoryPayload>({
-			url: `/categories/${payload.id}`,
+			url: `/categories/${id}`,
 			method: 'patch',
 			data: body,
 			headers: { 'Content-Type': 'application/json' },
 		});
 
 		const raw = response.data?.data ?? response.data;
-		return normalizeCategory(raw ?? payload);
+		let normalized = normalizeCategory(raw ?? data);
+
+		if (image instanceof File) {
+			const uploadedUrl = await uploadCategoryImage(normalized.id, branchId, image);
+			if (uploadedUrl) {
+				normalized = { ...normalized, image: { id: normalized.image?.id, url: uploadedUrl, thumb: uploadedUrl, alt: normalized.name } };
+			} else {
+				const refreshed = await fetchCategoryDetails(normalized.id);
+				if (refreshed) normalized = refreshed;
+			}
+		}
+
+		return normalized;
 	} catch (error: any) {
 		return rejectWithValue(
 			error?.response?.data?.message ?? error?.message ?? 'Error al actualizar categoria',

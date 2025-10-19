@@ -96,6 +96,12 @@ const EditarCategoria: React.FC<EditarCategoriaProps> = ({
             />
           </div>
 
+          <div>
+            <Label htmlFor="edit-image">Imagen principal</Label>
+            <Input id="edit-image" name="image" type="file" accept="image/*" />
+            <p className="mt-1 text-xs text-gray-500">Opcional. Reemplaza la imagen actual.</p>
+          </div>
+
           <div className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2">
             <div>
               <p className="text-sm font-medium text-gray-700">Categoria activa</p>

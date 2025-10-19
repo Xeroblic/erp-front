@@ -1,8 +1,10 @@
 import { CATEGORY_EMPTY_STATS, type CategoryStatsShape } from '@/constants/category.constant';
+import { ensureAbsoluteUrl } from '@/components/helper/brand.helper';
 import type {
   CreateCategoryPayload,
   ICategory,
   ICategoryTreeNode,
+  ICategoryImage,
 } from '@/interface/category.interface';
 
 export type CategoryTableRow = {
@@ -11,20 +13,96 @@ export type CategoryTableRow = {
   parentNames: string[];
 };
 
-export const normalizeCategory = (category: any): ICategory => ({
-  id: Number(category.id),
-  company_id: category.company_id ?? category.company?.id ?? undefined,
-  name: category.name ?? '',
-  slug: category.slug ?? undefined,
-  description: category.description ?? null,
-  parent_id: category.parent_id ?? category.parent?.id ?? null,
-  parent_name: category.parent_name ?? category.parent?.name ?? null,
-  children_count: category.children_count ?? category.children?.length ?? 0,
-  products_count: category.products_count ?? category.products_total ?? 0,
-  is_active: Boolean(category.is_active ?? category.active ?? true),
-  created_at: category.created_at ?? new Date().toISOString(),
-  updated_at: category.updated_at ?? new Date().toISOString(),
-});
+const resolveMediaCandidate = (value: any): any => {
+  if (!value) return null;
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) return value[0] ?? null;
+  if (Array.isArray(value?.data)) return value.data[0] ?? null;
+  if (Array.isArray(value?.media)) return value.media[0] ?? null;
+  return value;
+};
+
+const normalizeCategoryImage = (input: any): ICategoryImage | null => {
+  if (!input) return null;
+  if (typeof input === 'string') {
+    const absolute = ensureAbsoluteUrl(input);
+    if (!absolute) return null;
+    return { url: absolute, thumb: absolute, alt: null };
+  }
+
+  const candidate = resolveMediaCandidate(input);
+  if (!candidate || typeof candidate !== 'object') return null;
+
+  const url =
+    candidate.url ??
+    candidate.original_url ??
+    candidate.full_url ??
+    candidate.preview_url ??
+    candidate.thumbnail_url ??
+    candidate.thumb ??
+    null;
+
+  if (!url || typeof url !== 'string') return null;
+
+  const thumb =
+    candidate.thumb ??
+    candidate.thumbnail_url ??
+    candidate.preview_url ??
+    candidate.conversion_url ??
+    url;
+
+  const idValue = candidate.id ?? candidate.media_id ?? candidate.pivot?.media_id;
+  const parsedId = typeof idValue === 'number' ? idValue : Number(idValue);
+
+  const absoluteUrl = ensureAbsoluteUrl(url);
+  if (!absoluteUrl) return null;
+
+  const absoluteThumb = ensureAbsoluteUrl(typeof thumb === 'string' ? thumb : undefined);
+
+  return {
+    id: Number.isFinite(parsedId) ? Number(parsedId) : undefined,
+    url: absoluteUrl,
+    thumb: absoluteThumb ?? absoluteUrl,
+    alt: candidate.alt ?? candidate.alt_text ?? candidate.custom_properties?.alt ?? null,
+  };
+};
+
+export const normalizeCategory = (category: any): ICategory => {
+  const primaryImage =
+    normalizeCategoryImage(category.image) ??
+    normalizeCategoryImage(category.primary_image) ??
+    normalizeCategoryImage(category.primaryImage) ??
+    null;
+
+  const rawGallery =
+    category.gallery ??
+    category.images ??
+    category.media ??
+    (category.image && Array.isArray(category.image) ? category.image : []);
+
+  const gallery: ICategoryImage[] = Array.isArray(rawGallery)
+    ? rawGallery
+        .map((item: any) => normalizeCategoryImage(item))
+        .filter((v): v is ICategoryImage => Boolean(v?.url))
+    : [];
+
+  return {
+    id: Number(category.id),
+    company_id: category.company_id ?? category.company?.id ?? undefined,
+    name: category.name ?? '',
+    slug: category.slug ?? undefined,
+    description: category.description ?? null,
+    parent_id: category.parent_id ?? category.parent?.id ?? null,
+    parent_name: category.parent_name ?? category.parent?.name ?? null,
+    children_count: category.children_count ?? category.children?.length ?? 0,
+    products_count: category.products_count ?? category.products_total ?? 0,
+    is_active: Boolean(category.is_active ?? category.active ?? true),
+    created_at: category.created_at ?? new Date().toISOString(),
+    updated_at: category.updated_at ?? new Date().toISOString(),
+    image: primaryImage,
+    gallery,
+  };
+};
 
 export const computeCategoryStats = (items: ICategory[]): CategoryStatsShape => {
   if (!items.length) return { ...CATEGORY_EMPTY_STATS };

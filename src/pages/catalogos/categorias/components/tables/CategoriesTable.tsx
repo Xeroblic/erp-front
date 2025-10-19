@@ -55,6 +55,29 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
 	const columns = React.useMemo<ColumnDef<CategoryTableRow>[]>(
 		() => [
 			{
+				id: 'image',
+				header: 'Imagen',
+				enableSorting: false,
+				cell: ({ row }) => {
+					const img = row.original.category.image;
+					return (
+						<div className='h-10 w-10 overflow-hidden rounded-md border border-zinc-200 dark:border-zinc-700'>
+							{img?.url ? (
+								<img
+									src={img.thumb || img.url}
+									alt={img.alt || row.original.category.name}
+									className='h-full w-full object-cover'
+								/>
+							) : (
+								<div className='flex h-full w-full items-center justify-center bg-zinc-100 text-xs text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'>
+									N/A
+								</div>
+							)}
+						</div>
+					);
+				},
+			},
+			{
 				id: 'name',
 				accessorFn: (row) => row.category.name,
 				header: 'Categoria',

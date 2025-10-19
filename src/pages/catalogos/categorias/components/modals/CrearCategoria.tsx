@@ -82,9 +82,15 @@ const CrearCategoria: React.FC<CrearCategoriaProps> = ({
           <div>
             <Label htmlFor="create-description">Descripcion</Label>
             <Textarea id="create-description" name="description" rows={3} placeholder="Descripcion de la categoria" />
-          </div>
+        </div>
 
-          <div className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2">
+        <div>
+          <Label htmlFor="create-image">Imagen principal</Label>
+          <Input id="create-image" name="image" type="file" accept="image/*" />
+          <p className="mt-1 text-xs text-gray-500">Opcional. Se convertirá a WebP.</p>
+        </div>
+
+        <div className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2">
             <div>
               <p className="text-sm font-medium text-gray-700">Categoria activa</p>
               <p className="text-xs text-gray-500">Controla si la categoria esta disponible en el catalogo.</p>
