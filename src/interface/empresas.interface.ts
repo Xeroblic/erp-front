@@ -43,6 +43,7 @@ export interface ISucursal {
 
   // Información adicional de la subsidiaria
   subsidiary_name?: string;
+  subsidiary_rut?: string;
 }
 
 export interface IBranch {

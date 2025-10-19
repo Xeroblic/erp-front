@@ -34,7 +34,8 @@ const normalizeBranchData = (backendData: any): ISucursal => {
         ...backendData,
         // Mapear campos del backend al formato del frontend
         name: backendData.branch_name || backendData.name || backendData.nombre || '',
-        rut: backendData.branch_rut || backendData.rut,
+        // El RUT de la sucursal hereda el de la subsidiaria si no viene uno propio
+        rut: backendData.branch_rut || backendData.rut || backendData.subsidiary_rut,
         phone: backendData.branch_phone || backendData.phone,
         address: backendData.branch_address || backendData.address || backendData.direccion,
         email: backendData.branch_email || backendData.email,
@@ -48,6 +49,7 @@ const normalizeBranchData = (backendData: any): ISucursal => {
         usuarios: backendData.usuarios || [],
         // Datos adicionales de la subsidiaria si están disponibles
         subsidiary_name: backendData.subsidiary_name,
+        subsidiary_rut: backendData.subsidiary_rut,
     }
 }
 
@@ -71,9 +73,21 @@ export const fetchMisSucursales = createAsyncThunk<
                 // Extraer todas las sucursales de todas las subsidiarias
                 branchesData = response.data.subempresas.flatMap((sub: any) =>
                     (sub.branches || sub.sucursales || []).map((branch: any) => ({
-                        ...branch,
+                        id: branch.id,
                         subsidiary_id: sub.id,
-                        subsidiary_name: sub.subsidiary_name || sub.name
+                        branch_name: branch.branch_name,
+                        branch_address: branch.branch_address,
+                        branch_phone: branch.branch_phone,
+                        branch_email: branch.branch_email,
+                        branch_status: branch.branch_status,
+                        branch_manager_name: branch.branch_manager_name,
+                        branch_manager_phone: branch.branch_manager_phone,
+                        branch_manager_email: branch.branch_manager_email,
+                        branch_created_at: branch.branch_created_at,
+                        branch_updated_at: branch.branch_updated_at,
+                        // datos mínimos necesarios desde la subempresa
+                        subsidiary_name: sub.subsidiary_name || sub.name,
+                        subsidiary_rut: sub.subsidiary_rut || sub.rut,
                     }))
                 )
             } else if (response.data.branches) {
@@ -98,11 +112,32 @@ export const fetchSucursalDetail = createAsyncThunk<
     'sucursales/fetchSucursalDetail',
     async (sucursalId, { rejectWithValue }) => {
         try {
-            const branch = await ApiService.fetchNormalized<ISucursal>({
+            const resp = await ApiService.fetchData<{ data: any }>({
                 url: `/branches/${sucursalId}`,
                 method: 'get',
             })
-            return normalizeBranchData(branch)
+            const raw: any = (resp as any).data?.data ?? (resp as any).data
+            const minimal = {
+                id: raw?.id,
+                subsidiary_id: raw?.subsidiary_id,
+                branch_name: raw?.branch_name,
+                branch_address: raw?.branch_address,
+                branch_phone: raw?.branch_phone,
+                branch_email: raw?.branch_email,
+                branch_status: raw?.branch_status,
+                branch_manager_name: raw?.branch_manager_name,
+                branch_manager_phone: raw?.branch_manager_phone,
+                branch_manager_email: raw?.branch_manager_email,
+                branch_opening_hours: raw?.branch_opening_hours,
+                branch_location: raw?.branch_location,
+                branch_created_at: raw?.branch_created_at,
+                branch_updated_at: raw?.branch_updated_at,
+                created_at: raw?.created_at,
+                updated_at: raw?.updated_at,
+                subsidiary_rut: raw?.subsidiary_rut,
+                subsidiary_name: raw?.subsidiary_name,
+            }
+            return normalizeBranchData(minimal)
         } catch (err: any) {
             return rejectWithValue(err.response?.data?.message || 'Error al cargar detalle de sucursal')
         }
