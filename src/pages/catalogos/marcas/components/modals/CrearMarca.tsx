@@ -31,7 +31,7 @@ const CrearMarca: React.FC<CrearMarcaProps> = ({ isOpen, setIsOpen, onSubmit, is
 	};
 
 	return (
-		<Modal isOpen={isOpen} setIsOpen={setIsOpen} size='2xl'>
+		<Modal isOpen={isOpen} setIsOpen={setIsOpen} size='lg'>
 			<ModalHeader>
 				<div className='flex items-center space-x-3'>
 					<div className='flex h-10 w-10 items-center justify-center rounded-full bg-violet-100'>

@@ -39,10 +39,8 @@ export const ensureAbsoluteUrl = (value?: string | null): string | null => {
 		url = `${BACKEND_ORIGIN.origin}${path}`;
 	}
 
-	if (/branch-\d+\//.test(url)) {
-		const safeUrl = url.replace(/branch-\d+\//, 'branch-public/');
-		return safeUrl;
-	}
+    // Mantener la URL exacta que entrega el backend.
+    // Antes se forzaba a 'branch-public', pero ahora se requiere 'branch-{id}'.
 
 	try {
 		const parsed = new URL(url);

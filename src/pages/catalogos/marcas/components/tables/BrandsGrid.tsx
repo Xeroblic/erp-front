@@ -13,16 +13,14 @@ type BrandsGridProps = {
 	onView: (brand: IBrand) => void;
 	onEdit: (brand: IBrand) => void;
 	onDelete: (brand: IBrand) => void;
-	onToggle: (brand: IBrand) => void;
 };
 
 const BrandsGrid: React.FC<BrandsGridProps> = ({
 	brands,
 	loading,
-	onView,
-	onEdit,
-	onDelete,
-	onToggle,
+    onView,
+    onEdit,
+    onDelete,
 }) => {
 	const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 	const containerRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -135,15 +133,7 @@ const BrandsGrid: React.FC<BrandsGridProps> = ({
 									</div>
 
 									<div className='mt-4 flex items-center justify-end lg:justify-between'>
-										{/* Desktop / tablet: show inline buttons */}
-										<Button
-											size='sm'
-											variant='outline'
-											onClick={() => onToggle(brand)}
-											className='hidden lg:inline-flex'>
-											<Icon icon='HeroPower' className='mr-1 h-4 w-4' />
-											{brand.is_active ? 'Desactivar' : 'Activar'}
-										</Button>
+										{/* Desktop / tablet: acciones principales */}
 
 										<div className='hidden space-x-2 lg:flex'>
 											<Button
@@ -199,19 +189,7 @@ const BrandsGrid: React.FC<BrandsGridProps> = ({
 												<div
 													id={`brand-menu-${idKey}`}
 													className='absolute right-0 z-20 mt-2 w-44 rounded-md border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800'>
-													<button
-														onClick={() => {
-															onToggle(brand);
-															setOpenDropdownId(null);
-														}}
-														className='flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700'
-														type='button'>
-														<Icon
-															icon='HeroPower'
-															className='h-4 w-4'
-														/>
-														{brand.is_active ? 'Desactivar' : 'Activar'}
-													</button>
+
 													<button
 														onClick={() => {
 															onView(brand);

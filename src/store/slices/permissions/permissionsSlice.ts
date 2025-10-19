@@ -73,7 +73,6 @@ export const fetchPermissions = createAsyncThunk(
     'permissions/fetchPermissions',
     async (_, { rejectWithValue }) => {
         try {
-            console.log('🔍 Fetching permissions from /permissions');
             const response = await ApiService.fetchData<{
                 success: boolean;
                 data: Permission[]
@@ -83,7 +82,6 @@ export const fetchPermissions = createAsyncThunk(
                 dedupe: true,
                 dedupeKey: 'permissions-list'
             });
-            console.log('🔍 Permissions response:', response.data);
             return response.data.data;
         } catch (error: any) {
             return rejectWithValue(error?.response?.data?.message || 'Error al obtener permisos');
@@ -143,7 +141,6 @@ export const fetchRoles = createAsyncThunk(
     'permissions/fetchRoles',
     async (_, { rejectWithValue }) => {
         try {
-            console.log('🔍 Fetching roles from /roles');
             const response = await ApiService.fetchData<{
                 success: boolean;
                 data: Role[]
@@ -153,7 +150,6 @@ export const fetchRoles = createAsyncThunk(
                 dedupe: true,
                 dedupeKey: 'roles-list'
             });
-            console.log('🔍 Roles response:', response.data);
             return response.data.data;
         } catch (error: any) {
             return rejectWithValue(error?.response?.data?.message || 'Error al obtener roles');

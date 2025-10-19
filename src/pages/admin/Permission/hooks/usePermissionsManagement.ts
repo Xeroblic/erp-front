@@ -28,15 +28,9 @@ export const usePermissionsManagement = () => {
     const users = useMemo(() => {
         if (!rawUsers || !Array.isArray(rawUsers)) return [];
 
-        console.log('🔍 Raw users from backend:', rawUsers[0]); // Log del primer usuario
 
         // Los datos del backend PHP ya vienen en el formato correcto, no necesitan transformación
         return rawUsers.map((user: any) => {
-            console.log('🔍 Usuario completo del backend PHP:', JSON.stringify(user, null, 2));
-            console.log('🔍 Todas las propiedades del usuario:', Object.keys(user));
-            console.log('🔍 Global roles:', user.global_roles);
-            console.log('🔍 Direct permissions:', user.direct_permissions);
-            console.log('🔍 Contextual roles:', user.contextual_roles);
 
             // Retornar los datos tal como vienen del backend
             return user;
@@ -69,10 +63,6 @@ export const usePermissionsManagement = () => {
 
     const openPermissionsModal = useCallback(
         async (user: UserWithDetails) => {
-            console.log('🔍 Usuario seleccionado para modal:', user);
-            console.log('🔍 Roles del usuario:', user.global_roles);
-            console.log('🔍 Permisos directos:', user.direct_permissions);
-            console.log('🔍 Roles contextuales:', user.contextual_roles);
             setSelectedUserForPermissions(user);
             // Ya tenemos toda la información necesaria del usuario
             // No necesitamos hacer una petición adicional

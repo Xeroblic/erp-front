@@ -4,7 +4,7 @@ import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Moda
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import { IBrand } from '@/interface/brand.interface';
-// import { ensureAbsoluteUrl } from '@/components/helper/brand.helper';
+import { ensureAbsoluteUrl } from '@/components/helper/brand.helper';
 import { formatCurrency } from '../utils';
 
 type DetalleMarcaProps = {
@@ -15,7 +15,7 @@ type DetalleMarcaProps = {
 };
 
 const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, onEdit }) => (
-	<Modal isOpen={isOpen} setIsOpen={setIsOpen} size='2xl'>
+	<Modal isOpen={isOpen} setIsOpen={setIsOpen} size='lg'>
 		<ModalHeader>
 			<div className='flex items-center space-x-3'>
 				<div className='flex h-10 w-10 items-center justify-center rounded-full bg-green-100'>

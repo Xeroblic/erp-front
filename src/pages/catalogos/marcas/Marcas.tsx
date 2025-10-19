@@ -36,7 +36,6 @@ const Marcas: React.FC = () => {
 		deleting,
 		createBrand,
 		updateBrand,
-		toggleBrandStatus,
 		deleteBrand,
 	} = useMarcas(filters);
 
@@ -126,14 +125,6 @@ const Marcas: React.FC = () => {
 		}
 	};
 
-	const handleToggleStatus = async (brand: IBrand) => {
-		try {
-			await toggleBrandStatus(brand);
-			toast.info(`Marca ${brand.is_active ? 'desactivada' : 'activada'}`);
-		} catch (err: any) {
-			toast.error(err?.message ?? 'No se pudo actualizar el estado');
-		}
-	};
 
 	return (
 		<PageWrapper name='marcas-admin'>
@@ -191,23 +182,22 @@ const Marcas: React.FC = () => {
 					</div>
 				)}
 				<BrandStats stats={stats} />
-				<BrandsGrid
-					brands={brands}
-					loading={loading}
-					onView={(brand) => {
-						setSelected(brand);
-						setViewOpen(true);
-					}}
-					onEdit={(brand) => {
-						setSelected(brand);
-						setEditOpen(true);
-					}}
-					onDelete={(brand) => {
-						setSelected(brand);
-						setDeleteOpen(true);
-					}}
-					onToggle={handleToggleStatus}
-				/>
+                <BrandsGrid
+                    brands={brands}
+                    loading={loading}
+                    onView={(brand) => {
+                        setSelected(brand);
+                        setViewOpen(true);
+                    }}
+                    onEdit={(brand) => {
+                        setSelected(brand);
+                        setEditOpen(true);
+                    }}
+                    onDelete={(brand) => {
+                        setSelected(brand);
+                        setDeleteOpen(true);
+                    }}
+                />
 			</Container>
 
 			<CrearMarca

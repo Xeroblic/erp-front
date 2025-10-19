@@ -58,7 +58,6 @@ export default function PermissionsAdmin() {
 	const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
 
 	useEffect(() => {
-		console.log('PermissionsAdmin - Ejecutando loadInitialData (solo debe aparecer UNA vez)');
 		loadInitialData();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []); // Solo ejecutar una vez al montar
