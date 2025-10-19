@@ -60,7 +60,6 @@ export function useProfileGeo(
 		})();
 	}, [formik.values.comuna]);
 
-	// Cascada: Región -> Provincias
 	useEffect(() => {
 		if (!formik.values.region) {
 			setOptionsProvincia([]);
@@ -82,17 +81,14 @@ export function useProfileGeo(
 		}
 	}, [formik.values.region, listaProvincias]);
 
-	// Cascada: Provincia -> Comunas
   useEffect(() => {
     if (!formik.values.provincia) {
       setOptionsComuna([]);
-      // No limpiar inmediatamente la comuna si aún no hay datos
       return;
     }
 
     const all = listaComunas || [];
     if (all.length === 0) {
-      // Esperar a que cargue la lista para evitar borrar una comuna ya existente
       return;
     }
 
@@ -101,24 +97,20 @@ export function useProfileGeo(
     );
 
     let opts = filtered.map((c) => ({ value: String(c.codigo), label: c.nombre }));
-    // Si el valor de comuna ya existe (por perfil o derivación) pero aún no está en opts, inclúyelo
     const currentComuna = formik.values.comuna ? String(formik.values.comuna) : '';
     if (currentComuna) {
       const exists = opts.some((o) => String(o.value) === currentComuna);
       if (!exists) {
-        // intenta buscarla sin filtrar por si el catálogo trae la comuna pero con provincia distinta cargada tarde
         const inAll = all.find((c) => String(c.codigo) === currentComuna);
         if (inAll) {
           opts = [{ value: String(inAll.codigo), label: inAll.nombre }, ...opts];
         } else {
-          // fallback mínimo: crear opción sintética para mostrar el valor
           opts = [{ value: currentComuna, label: currentComuna }, ...opts];
         }
       }
     }
     setOptionsComuna(opts);
 
-    // Solo limpiar si hay opciones y la comuna actual no pertenece a la provincia
     if (opts.length > 0) {
       const comunaValida = opts.some((c) => String(c.value) === String(formik.values.comuna));
       if (!comunaValida && formik.values.comuna) {
