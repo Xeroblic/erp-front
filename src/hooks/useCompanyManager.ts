@@ -219,7 +219,7 @@ const useCompanyManager = (): UseCompanyManager => {
 
 			setIsLoading(true);
 			try {
-				const response = await ApiService.fetchData<{
+            const response = await ApiService.fetchData<{
 					personalization: {
 						id: number;
 						user_id: number;
@@ -248,7 +248,7 @@ const useCompanyManager = (): UseCompanyManager => {
 							branches: Array<{ id: number; branch_name: string }>;
 						}>;
 					} | null;
-				}>({ url: '/user/personalization', method: 'get', signal: controller.signal });
+                }>({ url: '/user/personalization', method: 'get', signal: controller.signal, dedupe: true, cacheTTLms: 300000 });
 
 				let companies: CompanyInfo[] = [];
 				let prettyName = currentSubsidiaryName;

@@ -111,10 +111,8 @@ const SettingsPartial = () => {
 				const corner = cornerForThemeMode(mode);
 				runThemeWipe(corner, 900);
 				setIsUpdatingTheme(true);
+				// Persistencia centralizada en useDarkModeManager (evita doble request)
 				setDarkModeStatus(mode);
-				await dispatch(
-					actualizarPersonalizacionThunk({ tema: tDarkToApi(mode) }),
-				).unwrap();
 			} catch {
 				toast.error('No se pudo actualizar el tema');
 			} finally {
@@ -148,7 +146,8 @@ const SettingsPartial = () => {
 			setIsUpdatingColor(true);
 
 			setFontSize(targetFont);
-			setDarkModeStatus(targetMode);
+			// Evitar doble persistencia: local only, API en el PUT combinado
+			setDarkModeStatus(targetMode, false);
 			setThemeColor(targetColor);
 			setThemeColorShade(targetShade);
 
