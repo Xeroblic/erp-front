@@ -12,6 +12,8 @@ import Label from '@/components/form/Label';
 import FieldWrap from '@/components/form/FieldWrap';
 import SelectReact from '@/components/form/SelectReact';
 import Icon from '@/components/icon/Icon';
+import Avatar from '@/components/Avatar';
+import getUserAvatarUrl from '@/utils/getUserAvatarUrl';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
 import { useUsersManagement } from '../../hooks/useUsersManagement';
 
@@ -166,8 +168,8 @@ export default function UserDetailsModal({
 			<Modal isOpen={isOpen} setIsOpen={onClose} size='xl'>
 				<ModalHeader>
 					<div className='flex items-center justify-between'>
-						<div className='flex items-center gap-2'>
-							<Icon icon='HeroUser' className='h-5 w-5' />
+						<div className='flex items-center gap-3'>
+							<Avatar src={getUserAvatarUrl(user)} name={`${user.first_name || ''} ${user.last_name || ''}`} className='h-10 w-10' />
 							<div>
 								<h3 className='text-lg font-semibold'>Detalles del Usuario</h3>
 								<p className='text-sm text-gray-600 dark:text-gray-400'>

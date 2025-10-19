@@ -4,6 +4,8 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import { formatRoleName } from '../../utils/formatters';
+import Avatar from '@/components/Avatar';
+import getUserAvatarUrl from '@/utils/getUserAvatarUrl';
 
 const columnHelper = createColumnHelper<UserWithDetails>();
 
@@ -16,16 +18,13 @@ export const createUserTableColumns = (
 		header: 'Usuario',
 		cell: (info) => {
 			const user = info.row.original;
+			const full = `${info.getValue() || ''} ${user.last_name || ''}`.trim();
+			const avatarUrl = getUserAvatarUrl(user as any);
 			return (
 				<div className='flex items-center gap-3'>
-					<div className='flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-red-900 font-semibold text-white'>
-						{info.getValue().charAt(0)}
-						{user.last_name?.charAt(0)}
-					</div>
+					<Avatar src={avatarUrl} name={full} className='h-10 w-10' />
 					<div>
-						<div className='font-medium'>
-							{info.getValue()} {user.last_name}
-						</div>
+						<div className='font-medium'>{full || 'Sin nombre'}</div>
 						<div className='text-sm text-zinc-500'>{user.email}</div>
 					</div>
 				</div>

@@ -9,6 +9,8 @@ import Icon from '@/components/icon/Icon';
 import SelectReact from '@/components/form/SelectReact';
 import { formatRoleName, formatPermissionName } from '../../utils/formatters';
 import { toast } from 'react-toastify';
+import Avatar from '@/components/Avatar';
+import getUserAvatarUrl from '@/utils/getUserAvatarUrl';
 
 // Tipos para contextos de roles
 interface RoleContext {
@@ -422,11 +424,12 @@ export const PermissionsModal: React.FC<PermissionsModalProps> = ({
 			<Modal isOpen={isOpen} setIsOpen={onClose} size='lg' isStaticBackdrop>
 				<ModalHeader>
 					<div className='flex w-full items-center justify-between'>
-						<div className='flex items-center gap-3'>
-							<div className='flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gray-600 font-semibold text-white'>
-								{selectedUser.first_name?.charAt(0)}
-								{selectedUser.last_name?.charAt(0)}
-							</div>
+							<div className='flex items-center gap-3'>
+								<Avatar
+									src={getUserAvatarUrl(selectedUser as any)}
+									name={`${selectedUser.first_name || ''} ${selectedUser.last_name || ''}`.trim()}
+									className='h-10 w-10'
+								/>
 							<div>
 								<h3 className='text-lg font-semibold text-gray-900'>
 									Gestionar Permisos y Roles

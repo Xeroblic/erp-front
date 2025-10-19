@@ -14,6 +14,8 @@ import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
 import Card, { CardBody } from '@/components/ui/Card';
 import Table, { TBody, THead, Td, Th, Tr } from '@/components/ui/Table';
+import Avatar from '@/components/Avatar';
+import getUserAvatarUrl from '@/utils/getUserAvatarUrl';
 
 interface UsersTableProps {
 	users: IUserMe[];
@@ -84,19 +86,11 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, onUserUpdated
 			cell: (info) => {
 				const user = info.row.original;
 				const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
-				const initials =
-					fullName
-						.split(' ')
-						.map((name) => name.charAt(0))
-						.join('')
-						.toUpperCase()
-						.slice(0, 2) || 'U';
+				const avatarUrl = getUserAvatarUrl(user as any);
 
 				return (
 					<div className='flex min-w-[200px] items-center space-x-3'>
-						<div className='flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-zinc-500 text-sm font-medium text-white'>
-							{initials}
-						</div>
+						<Avatar src={avatarUrl} name={fullName} className='h-10 w-10' />
 						<div className='flex min-w-0 flex-col'>
 							<span className='truncate text-sm font-medium text-zinc-900 dark:text-zinc-100'>
 								{fullName || 'Sin nombre'}
