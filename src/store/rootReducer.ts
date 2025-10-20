@@ -1,9 +1,8 @@
 import { combineReducers, CombinedState, AnyAction, Reducer } from 'redux';
-import RtkQueryService from '@/services/RtkQueryService'
+import RtkQueryService from '@/services/RtkQueryService';
 
 import auth, { AuthState, logout } from './slices/auth/authSlice';
 import core, { CoreState } from './slices/core/coreSlice';
-import invitacion, { InvitacionState } from './slices/invitacion/invitacionSlice';
 import invitations from './slices/invitations/invitationsSlice';
 import empresa, { EmpresaState } from './slices/empresa/empresaSlice';
 import calendario, { CalendarioState } from './slices/calendario/calendarioSlice';
@@ -29,80 +28,72 @@ import categories, { CategoriesState } from './slices/categories/categoriesSlice
 import products, { ProductsState } from './slices/products/productsSlice';
 
 export interface RootState {
-    auth: AuthState;
-    core: CoreState;
-    invitacion: InvitacionState;
-    invitations: ReturnType<typeof invitations>;
-    empresa: EmpresaState;
-    rolesPermisos: RolesPermisosState;
-    subEmpresa: SubempresaState;
-    sucursales: SucursalesState;
-    permissions: ReturnType<typeof permissions>;
-    usersAdmin: ReturnType<typeof usersAdmin>;
-    feature: ReturnType<typeof feature>;
-    personalizacion?: PersonalizacionState; // Opcional al inicio, se agrega dinámicamente
-    // calendario?: CalendarioState;
-    // item?: ItemState;
-    // bodega?: BodegaState;
-    cliente: ClienteState;
-    // Nuevos slices ERP
-    transferencias: TransferState;
-    cotizaciones: QuoteState;
-    ventas: ReturnType<typeof ventas>;
-    inventario: ReturnType<typeof inventario>;
-    brands: ReturnType<typeof brands>;
-    categories: CategoriesState;
-    products: ProductsState;
-    [RtkQueryService.reducerPath]: any;
+	auth: AuthState;
+	core: CoreState;
+	invitations: ReturnType<typeof invitations>;
+	empresa: EmpresaState;
+	rolesPermisos: RolesPermisosState;
+	subEmpresa: SubempresaState;
+	sucursales: SucursalesState;
+	permissions: ReturnType<typeof permissions>;
+	usersAdmin: ReturnType<typeof usersAdmin>;
+	feature: ReturnType<typeof feature>;
+	personalizacion?: PersonalizacionState; // Opcional al inicio, se agrega dinámicamente
+	// calendario?: CalendarioState;
+	// item?: ItemState;
+	// bodega?: BodegaState;
+	cliente: ClienteState;
+	// Nuevos slices ERP
+	transferencias: TransferState;
+	cotizaciones: QuoteState;
+	ventas: ReturnType<typeof ventas>;
+	inventario: ReturnType<typeof inventario>;
+	brands: ReturnType<typeof brands>;
+	categories: CategoriesState;
+	products: ProductsState;
+	[RtkQueryService.reducerPath]: any;
 }
 
 export interface AsyncReducers {
-    [key: string]: Reducer<any, AnyAction>;
+	[key: string]: Reducer<any, AnyAction>;
 }
 
 // Reducers estáticos
 const staticReducers = {
-    auth,
-    core,
-    empresa,
-    invitacion,
-    invitations,
-    rolesPermisos,
-    subEmpresa,
-    sucursales,
-    cliente,
-    permissions,
-    usersAdmin,
-    feature,
-    // Nuevos slices ERP
-    transferencias,
-    cotizaciones,
-    ventas,
-    inventario,
-    brands,
-    categories,
-    products,
-    // personalizacion, // Comentado temporalmente
-    [RtkQueryService.reducerPath]: RtkQueryService.reducer,
+	auth,
+	core,
+	empresa,
+	invitations,
+	rolesPermisos,
+	subEmpresa,
+	sucursales,
+	cliente,
+	permissions,
+	usersAdmin,
+	feature,
+	// Nuevos slices ERP
+	transferencias,
+	cotizaciones,
+	ventas,
+	inventario,
+	brands,
+	categories,
+	products,
+	// personalizacion, // Comentado temporalmente
+	[RtkQueryService.reducerPath]: RtkQueryService.reducer,
 };
 
 const rootReducer =
-    (asyncReducers?: AsyncReducers) =>
-        (state: RootState | undefined, action: AnyAction) => {
-            // Quitar Estado si es LOGOUT
-            if (action.type === logout.type) {
-                state = undefined;
-            }
-            const combinedReducer = combineReducers({
-                ...staticReducers,
-                ...asyncReducers,
-            })
-            return combinedReducer(state, action)
-        }
+	(asyncReducers?: AsyncReducers) => (state: RootState | undefined, action: AnyAction) => {
+		// Quitar Estado si es LOGOUT
+		if (action.type === logout.type) {
+			state = undefined;
+		}
+		const combinedReducer = combineReducers({
+			...staticReducers,
+			...asyncReducers,
+		});
+		return combinedReducer(state, action);
+	};
 
-export default rootReducer
-
-
-
-
-
+export default rootReducer;

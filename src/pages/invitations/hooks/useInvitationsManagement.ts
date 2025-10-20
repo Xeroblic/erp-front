@@ -1,195 +1,229 @@
-import { useState, useCallback } from 'react';
+/* eslint-disable import/extensions */
+/* eslint-disable no-console */
+import { useState, useCallback, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
-    fetchInvitations,
-    createInvitation,
-    resendInvitation,
-    cancelInvitation,
-    setFilters,
-    setPagination,
+	fetchInvitations,
+	createInvitation,
+	resendInvitation,
+	cancelInvitation,
+	setFilters,
+	setPagination,
 } from '@/store/slices/invitations/invitationsSlice';
-import { toast } from 'react-toastify';
-import {InvitationFilters, CreateInvitationData} from '@/interface/invitacion.interface';
+import { fetchPermissions, fetchRoles } from '@/store/slices/permissions/permissionsSlice';
+import type { InvitationFilters, CreateInvitationData } from '@/interface/invitacion.interface';
+
+const INVITATION_REQUEST_ERROR = 'Error al enviar la invitación';
+
+const resolveApiErrorMessage = (error: unknown): string => {
+	if (!error) return INVITATION_REQUEST_ERROR;
+
+	if (typeof error === 'string') return error;
+
+	if (error instanceof Error && error.message) {
+		return error.message;
+	}
+
+	if (typeof error === 'object') {
+		const payload = error as { message?: string; errors?: Record<string, string[]> };
+		if (payload.message && payload.message.trim().length > 0) {
+			return payload.message;
+		}
+		if (payload.errors) {
+			for (const key of Object.keys(payload.errors)) {
+				const messages = payload.errors[key];
+				if (Array.isArray(messages) && messages.length > 0) {
+					return messages[0];
+				}
+			}
+		}
+	}
+
+	return INVITATION_REQUEST_ERROR;
+};
+
 export const useInvitationsManagement = () => {
-    const dispatch = useAppDispatch();
-    const {
-        invitations,
-        isLoading,
-        pagination,
-        filters,
-        error
-    } = useAppSelector((state) => state.invitations);
+	const dispatch = useAppDispatch();
+	const { invitations, filteredInvitations, stats, loading, pagination, filters, error } =
+		useAppSelector((state) => state.invitations);
+	const {
+		permissions,
+		roles,
+		loading: permissionsLoading,
+	} = useAppSelector((state) => state.permissions);
 
-    // Modal states
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const [selectedInvitation, setSelectedInvitation] = useState<number | null>(null);
+	const isLoading = loading.invitations;
+	const isLoadingRoles = permissionsLoading.roles;
+	const isLoadingPermissions = permissionsLoading.permissions;
 
-    // Action states
-    const [loadingActions, setLoadingActions] = useState<Set<number>>(new Set());
+	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+	const [selectedInvitation, setSelectedInvitation] = useState<number | null>(null);
+	const [loadingActions, setLoadingActions] = useState<Set<number>>(new Set());
 
-    // Modal handlers
-    const openCreateModal = useCallback(() => {
-        setIsCreateModalOpen(true);
-    }, []);
+	const ensureRolesAndPermissions = useCallback(() => {
+		if (!roles.length && !permissionsLoading.roles) {
+			void dispatch(fetchRoles());
+		}
+		if (!permissions.length && !permissionsLoading.permissions) {
+			void dispatch(fetchPermissions());
+		}
+	}, [
+		dispatch,
+		roles.length,
+		permissions.length,
+		permissionsLoading.roles,
+		permissionsLoading.permissions,
+	]);
 
-    const closeCreateModal = useCallback(() => {
-        setIsCreateModalOpen(false);
-    }, []);
+	useEffect(() => {
+		ensureRolesAndPermissions();
+	}, [ensureRolesAndPermissions]);
 
-    // Data fetching
-    const refreshInvitations = useCallback(async () => {
-        try {
-            await dispatch(fetchInvitations({
-                page: pagination.page,
-                per_page: pagination.pageSize,
-                search: filters.search || undefined,
-                status: filters.status || undefined,
-                company_id: filters.company_id || undefined,
-                branch_id: filters.branch_id || undefined,
-            })).unwrap();
-        } catch (error) {
-            console.error('Error fetching invitations:', error);
-            toast.error('Error al cargar las invitaciones');
-        }
-    }, [dispatch, pagination.page, pagination.pageSize, filters]);
+	const refreshInvitations = useCallback(async () => {
+		try {
+			await dispatch(fetchInvitations()).unwrap();
+		} catch (err) {
+			if (process.env.NODE_ENV !== 'production') {
+				console.error('Error fetching invitations:', err);
+			}
+			toast.error('Error al cargar las invitaciones');
+		}
+	}, [dispatch]);
 
-    // Filter handlers
-    const handleFilterChange = useCallback((newFilters: Partial<InvitationFilters>) => {
-        dispatch(setFilters(newFilters));
-        // Reset to first page when filters change
-        dispatch(setPagination({ page: 1 }));
-        // Refetch with new filters
-        const updatedFilters = { ...filters, ...newFilters };
-        dispatch(fetchInvitations({
-            page: 1,
-            per_page: pagination.pageSize,
-            search: updatedFilters.search || undefined,
-            status: updatedFilters.status || undefined,
-            company_id: updatedFilters.company_id || undefined,
-            branch_id: updatedFilters.branch_id || undefined,
-        }));
-    }, [dispatch, pagination.pageSize, filters]);
+	const openCreateModal = useCallback(() => setIsCreateModalOpen(true), []);
+	const closeCreateModal = useCallback(() => setIsCreateModalOpen(false), []);
 
-    // Pagination handlers
-    const handlePageChange = useCallback((page: number) => {
-        dispatch(setPagination({ page }));
-        dispatch(fetchInvitations({
-            page,
-            per_page: pagination.pageSize,
-            search: filters.search || undefined,
-            status: filters.status || undefined,
-            company_id: filters.company_id || undefined,
-            branch_id: filters.branch_id || undefined,
-        }));
-    }, [dispatch, pagination.pageSize, filters]);
+	const handleFilterChange = useCallback(
+		(newFilters: Partial<InvitationFilters>) => {
+			dispatch(setFilters(newFilters));
+		},
+		[dispatch],
+	);
 
-    const handlePageSizeChange = useCallback((pageSize: number) => {
-        dispatch(setPagination({ page: 1, pageSize }));
-        dispatch(fetchInvitations({
-            page: 1,
-            per_page: pageSize,
-            search: filters.search || undefined,
-            status: filters.status || undefined,
-            company_id: filters.company_id || undefined,
-            branch_id: filters.branch_id || undefined,
-        }));
-    }, [dispatch, filters]);
+	const handlePageChange = useCallback(
+		(page: number) => {
+			dispatch(setPagination({ page }));
+		},
+		[dispatch],
+	);
 
-    // Invitation actions
-    const handleCreateInvitation = useCallback(async (data: CreateInvitationData) => {
-        try {
-            await dispatch(createInvitation(data)).unwrap();
-            toast.success('Invitación enviada exitosamente');
-            closeCreateModal();
-            refreshInvitations();
-        } catch (error: any) {
-            console.error('Error creating invitation:', error);
-            toast.error(error?.message || 'Error al enviar la invitación');
-            throw error;
-        }
-    }, [dispatch, closeCreateModal, refreshInvitations]);
+	const handlePageSizeChange = useCallback(
+		(pageSize: number) => {
+			dispatch(setPagination({ page: 1, pageSize }));
+		},
+		[dispatch],
+	);
 
-    const handleResendInvitation = useCallback(async (invitationId: number) => {
-        if (loadingActions.has(invitationId)) return;
+	const handleCreateInvitation = useCallback(
+		async (data: CreateInvitationData) => {
+			try {
+				await dispatch(createInvitation(data)).unwrap();
+				toast.success('Invitación enviada exitosamente');
+				closeCreateModal();
+				await refreshInvitations();
+			} catch (err: any) {
+				if (process.env.NODE_ENV !== 'production') {
+					console.error('Error creating invitation:', err);
+				}
+				const message = resolveApiErrorMessage(err);
+				toast.error(message);
+				throw err;
+			}
+		},
+		[dispatch, closeCreateModal, refreshInvitations],
+	);
 
-        setLoadingActions(prev => new Set(prev).add(invitationId));
+	const handleResendInvitation = useCallback(
+		async (invitationId: number) => {
+			if (loadingActions.has(invitationId)) return;
 
-        try {
-            await dispatch(resendInvitation(invitationId)).unwrap();
-            toast.success('Invitación reenviada exitosamente');
-            refreshInvitations();
-        } catch (error: any) {
-            console.error('Error resending invitation:', error);
-            toast.error(error?.message || 'Error al reenviar la invitación');
-        } finally {
-            setLoadingActions(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(invitationId);
-                return newSet;
-            });
-        }
-    }, [dispatch, loadingActions, refreshInvitations]);
+			setLoadingActions((prev) => new Set(prev).add(invitationId));
+			try {
+				await dispatch(resendInvitation(invitationId)).unwrap();
+				toast.success('Invitación reenviada exitosamente');
+				await refreshInvitations();
+			} catch (err: any) {
+				if (process.env.NODE_ENV !== 'production') {
+					console.error('Error resending invitation:', err);
+				}
+				toast.error(err?.message || 'Error al reenviar la invitación');
+			} finally {
+				setLoadingActions((prev) => {
+					const next = new Set(prev);
+					next.delete(invitationId);
+					return next;
+				});
+			}
+		},
+		[dispatch, loadingActions, refreshInvitations],
+	);
 
-    const handleCancelInvitation = useCallback(async (invitationId: number) => {
-        if (loadingActions.has(invitationId)) return;
+	const handleCancelInvitation = useCallback(
+		async (invitationId: number) => {
+			if (loadingActions.has(invitationId)) return;
 
-        setLoadingActions(prev => new Set(prev).add(invitationId));
+			setLoadingActions((prev) => new Set(prev).add(invitationId));
+			try {
+				await dispatch(cancelInvitation(invitationId)).unwrap();
+				toast.success('Invitación cancelada exitosamente');
+				await refreshInvitations();
+			} catch (err: any) {
+				if (process.env.NODE_ENV !== 'production') {
+					console.error('Error cancelling invitation:', err);
+				}
+				toast.error(err?.message || 'Error al cancelar la invitación');
+			} finally {
+				setLoadingActions((prev) => {
+					const next = new Set(prev);
+					next.delete(invitationId);
+					return next;
+				});
+			}
+		},
+		[dispatch, loadingActions, refreshInvitations],
+	);
 
-        try {
-            await dispatch(cancelInvitation(invitationId)).unwrap();
-            toast.success('Invitación cancelada exitosamente');
-            refreshInvitations();
-        } catch (error: any) {
-            console.error('Error cancelling invitation:', error);
-            toast.error(error?.message || 'Error al cancelar la invitación');
-        } finally {
-            setLoadingActions(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(invitationId);
-                return newSet;
-            });
-        }
-    }, [dispatch, loadingActions, refreshInvitations]);
+	const isActionLoading = useCallback(
+		(invitationId: number) => loadingActions.has(invitationId),
+		[loadingActions],
+	);
 
-    // Helper functions
-    const isActionLoading = useCallback((invitationId: number) => {
-        return loadingActions.has(invitationId);
-    }, [loadingActions]);
+	const getInvitationById = useCallback(
+		(id: number) => filteredInvitations.find((invitation) => invitation.id === id),
+		[filteredInvitations],
+	);
 
-    const getInvitationById = useCallback((id: number) => {
-        return invitations.find(invitation => invitation.id === id);
-    }, [invitations]);
+	return {
+		invitations,
+		filteredInvitations,
+		stats,
+		isLoading,
+		pagination,
+		filters,
+		error,
+		roles,
+		permissions,
+		isLoadingRoles,
+		isLoadingPermissions,
 
-    return {
-        // Data
-        invitations,
-        isLoading,
-        pagination,
-        filters,
-        error,
+		isCreateModalOpen,
+		selectedInvitation,
 
-        // Modal states
-        isCreateModalOpen,
-        selectedInvitation,
+		openCreateModal,
+		closeCreateModal,
+		setSelectedInvitation,
 
-        // Modal handlers
-        openCreateModal,
-        closeCreateModal,
-        setSelectedInvitation,
+		refreshInvitations,
+		handleFilterChange,
+		handlePageChange,
+		handlePageSizeChange,
 
-        // Data handlers
-        refreshInvitations,
-        handleFilterChange,
-        handlePageChange,
-        handlePageSizeChange,
+		handleCreateInvitation,
+		handleResendInvitation,
+		handleCancelInvitation,
 
-        // Action handlers
-        handleCreateInvitation,
-        handleResendInvitation,
-        handleCancelInvitation,
-
-        // Helper functions
-        isActionLoading,
-        getInvitationById
-    };
+		isActionLoading,
+		getInvitationById,
+	};
 };

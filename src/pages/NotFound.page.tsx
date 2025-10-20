@@ -21,6 +21,7 @@ const NotFoundPage = () => {
 						<img src={DeliveryMan5WithDog as string} alt='' className='max-h-[32rem]' />
 					</div>
 				</div>
+				
 			</Container>
 		</PageWrapper>
 	);

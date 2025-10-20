@@ -6,6 +6,7 @@ import pagesConfig from '@/config/pages.config';
 import LoginPage from '@/pages/Login.page';
 import RecuperarPassword from '@/pages/ResetPassword/RecuperarPassword';
 import ConfirmarNuevaPass from '@/pages/ResetPassword/ConfirmarNuevaPass';
+import AceptarInvitacionEmpresa from '@/pages/AceptarInvitacionEmpresa';
 import SinPermisos from '@/pages/SinPermisos';
 import NotFoundPage from '@/pages/NotFound.page';
 
@@ -111,6 +112,7 @@ const contentRoutes: IRoutePersonalizada[] = [
 	},
 	{ path: cfg.loginPage.to, element: <LoginPage />, public: true },
 	{ path: cfg.recuperarPassword.to, element: <RecuperarPassword />, public: true },
+	{ path: '/usuarios/activar/:token', element: <AceptarInvitacionEmpresa />, public: true },
 
 	{ path: cfg.profilePage.to, element: <ProfilePage />, authority: cfg.profilePage.authority },
 	{ path: cfg.dashboard.to, element: <Dashboard />, authority: cfg.dashboard.authority },

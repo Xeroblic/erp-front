@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import {
+	OnChangeFn,
+	PaginationState,
 	createColumnHelper,
 	flexRender,
 	getCoreRowModel,
@@ -35,6 +37,8 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 	invitations,
 	isLoading,
 	pagination,
+	onPageChange,
+	onPageSizeChange,
 }) => {
 	const { handleResendInvitation, handleCancelInvitation, isActionLoading } =
 		useInvitationsManagement();
@@ -55,11 +59,6 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 
 	const closeModal = (type: 'details' | 'delete' | 'resend') => {
 		setModals((prev) => ({ ...prev, [type]: false }));
-		setSelectedInvitation(null);
-	};
-
-	const closeAllModals = () => {
-		setModals({ details: false, delete: false, resend: false });
 		setSelectedInvitation(null);
 	};
 
@@ -353,10 +352,34 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 		}),
 	];
 
+	const handlePaginationChange: OnChangeFn<PaginationState> = (updater) => {
+		const current: PaginationState = {
+			pageIndex: Math.max(pagination.page - 1, 0),
+			pageSize: pagination.pageSize,
+		};
+		const next = typeof updater === 'function' ? updater(current) : updater;
+
+		if (next.pageSize !== current.pageSize) {
+			onPageSizeChange(next.pageSize);
+			return;
+		}
+
+		if (next.pageIndex !== current.pageIndex) {
+			onPageChange(next.pageIndex + 1);
+		}
+	};
+
 	const table = useReactTable({
 		data: invitations,
 		columns,
 		getCoreRowModel: getCoreRowModel(),
+		state: {
+			pagination: {
+				pageIndex: Math.max(pagination.page - 1, 0),
+				pageSize: pagination.pageSize,
+			},
+		},
+		onPaginationChange: handlePaginationChange,
 		manualPagination: true,
 		pageCount: pagination.totalPages,
 	});
