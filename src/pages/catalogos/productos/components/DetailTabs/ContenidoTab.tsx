@@ -1,10 +1,16 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { useFormikContext } from 'formik';
 import Textarea from '@/components/form/Textarea';
 import type { ProductDetailForm } from '../../types/products.types';
 
-const ContenidoTab: React.FC = () => {
+interface ContenidoTabProps {
+	onUploadFile?: (file?: File | null) => Promise<void>;
+	onOpenLibrary?: () => void;
+}
+
+const ContenidoTab: React.FC<ContenidoTabProps> = ({ onUploadFile, onOpenLibrary }) => {
 	const { values, errors, touched, setFieldValue } = useFormikContext<ProductDetailForm>();
+	const fileRef = useRef<HTMLInputElement | null>(null);
 
 	return (
 		<div className='space-y-4'>
@@ -54,6 +60,39 @@ const ContenidoTab: React.FC = () => {
 				{touched.long_description && errors.long_description && (
 					<p className='text-xs text-red-500'>{errors.long_description}</p>
 				)}
+			</div>
+
+			<div className='space-y-1'>
+				<label className='text-sm font-medium'>Imágenes / Media</label>
+				<div className='flex items-center gap-2'>
+					<input
+						ref={fileRef}
+						type='file'
+						accept='image/*'
+						className='hidden'
+						id='product-image-input'
+					/>
+					<button
+						className='rounded border px-3 py-2 text-sm'
+						onClick={() => fileRef.current?.click()}>
+						Seleccionar imagen
+					</button>
+					<button
+						className='rounded bg-blue-600 px-3 py-2 text-sm text-white'
+						onClick={async () => {
+							const file = fileRef.current?.files?.[0] ?? null;
+							if (!file) return;
+							await onUploadFile?.(file);
+							if (fileRef.current) fileRef.current.value = '';
+						}}>
+						Subir imagen
+					</button>
+					<button
+						className='rounded border px-3 py-2 text-sm'
+						onClick={() => onOpenLibrary?.()}>
+						Abrir biblioteca
+					</button>
+				</div>
 			</div>
 		</div>
 	);

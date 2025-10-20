@@ -98,7 +98,6 @@ export default function SubsidiariesTable({ subsidiaries, loading, onRefresh }: 
                                     <Th>Teléfono</Th>
                                     <Th>Email</Th>
                                     <Th>Sucursales</Th>
-                                    <Th>Comuna</Th>
                                     <Th className="w-24">Acciones</Th>
                                 </Tr>
                             </THead>
@@ -167,16 +166,6 @@ export default function SubsidiariesTable({ subsidiaries, loading, onRefresh }: 
                                                     {subsidiary.branches_count || subsidiary.sucursales?.length || 0}
                                                 </span>
                                             </div>
-                                        </Td>
-                                        <Td>
-                                            {(subsidiary as any)?.commune?.name ? (
-                                                <div className="flex items-center gap-1">
-                                                    <Icon icon="HeroMap" className="text-xs text-zinc-400" />
-                                                    <span className="text-sm">{(subsidiary as any).commune.name}</span>
-                                                </div>
-                                            ) : (
-                                                <Badge variant="outline" className="text-zinc-400">Sin comuna</Badge>
-                                            )}
                                         </Td>
                                         <Td>
                                             <div className="flex gap-1">

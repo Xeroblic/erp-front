@@ -25,6 +25,13 @@ import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import Label from '@/components/form/Label';
 import Input from '@/components/form/Input';
+import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
+import {
+	listaComunasThunk,
+	listaProvinciasThunk,
+	listaRegionesThunk,
+} from '@/store/slices/core/coreSlice';
+import { useGeoSelector } from '@/hooks/useGeoSelector';
 
 export default function SubEmpresaDetalle() {
 	const { id } = useParams<{ id: string }>();
@@ -57,9 +64,19 @@ export default function SubEmpresaDetalle() {
 			}
 		}
 	}, [id, subempresas, navigate]);
+	
 
 	const formik = useFormik({
-		initialValues: { nombre: '', rut: '', telefono: '', email: '', direccion: '' },
+		initialValues: {
+			nombre: '',
+			rut: '',
+			telefono: '',
+			email: '',
+			direccion: '',
+			region: '',
+			provincia: '',
+			comuna: '',
+		},
 		validationSchema: Yup.object({
 			nombre: Yup.string().required('El nombre es obligatorio'),
 			rut: Yup.string(),
@@ -102,15 +119,43 @@ export default function SubEmpresaDetalle() {
 				telefono: subempresa.phone || '',
 				email: subempresa.email || '',
 				direccion: subempresa.address || '',
+				region: '',
+				provincia: '',
+				comuna: (subempresa as any)?.commune_id
+					? String((subempresa as any).commune_id)
+					: (subempresa as any)?.commune?.id
+						? String((subempresa as any).commune.id)
+						: '',
 			});
 		}
 		setOpenEdit(true);
 	};
 
+	// Load geo lists when opening edit modal
+	useEffect(() => {
+		if (openEdit) {
+			dispatch(listaRegionesThunk());
+			dispatch(listaProvinciasThunk());
+			dispatch(listaComunasThunk());
+		}
+	}, [openEdit, dispatch]);
+
+	const { listaRegiones, listaProvincias, listaComunas } = useAppSelector((s) => s.core);
+	const { optionsRegion, optionsProvincia, optionsComuna } = useGeoSelector(
+		formik as any,
+		{
+			regiones: listaRegiones as any,
+			provincias: listaProvincias as any,
+			comunas: listaComunas as any,
+		},
+		{ fieldRegion: 'region', fieldProvincia: 'provincia', fieldComuna: 'comuna' },
+	);
+
 	const handleCloseEdit = () => {
 		setOpenEdit(false);
 		formik.resetForm();
 	};
+
 
 	const confirmDelete = async () => {
 		if (!subempresa?.id) return;
@@ -160,8 +205,10 @@ export default function SubEmpresaDetalle() {
 						<Button
 							variant='solid'
 							onClick={() => navigate('/gestion/subempresa')}
-							size='sm'>
+							size='sm'
+							>
 							Volver a Subempresas
+
 						</Button>
 					</div>
 				</Container>
@@ -432,6 +479,73 @@ export default function SubEmpresaDetalle() {
 										{formik.errors.direccion}
 									</p>
 								)}
+							</div>
+
+							{/* Región / Provincia / Comuna */}
+							<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
+								<div>
+									<Label htmlFor='region'>Región</Label>
+									<SelectReact
+										name='region'
+										placeholder='Seleccione región'
+										value={
+											optionsRegion.find(
+												(o) => o.value === String(formik.values.region),
+											) || null
+										}
+										onChange={(opt) =>
+											formik.setFieldValue(
+												'region',
+												(opt as TSelectOption | null)?.value || '',
+											)
+										}
+										options={optionsRegion}
+									/>
+								</div>
+								<div>
+									<Label htmlFor='provincia'>Provincia</Label>
+									<SelectReact
+										name='provincia'
+										placeholder='Seleccione provincia'
+										value={
+											optionsProvincia.find(
+												(o) => o.value === String(formik.values.provincia),
+											) || null
+										}
+										onChange={(opt) =>
+											formik.setFieldValue(
+												'provincia',
+												(opt as TSelectOption | null)?.value || '',
+											)
+										}
+										options={optionsProvincia}
+									/>
+								</div>
+								<div>
+									<Label htmlFor='comuna'>Comuna</Label>
+									<SelectReact
+										name='comuna'
+										placeholder='Seleccione comuna'
+										value={
+											optionsComuna.find(
+												(o) => o.value === String(formik.values.comuna),
+											) ||
+											(formik.values.comuna
+												? {
+														value: String(formik.values.comuna),
+														label: 'Cargando…',
+													}
+												: null)
+										}
+										onChange={(opt) =>
+											formik.setFieldValue(
+												'comuna',
+												(opt as TSelectOption | null)?.value || '',
+											)
+										}
+										options={optionsComuna}
+									/>
+								</div>
 							</div>
 						</form>
 					</ModalBody>

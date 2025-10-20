@@ -38,6 +38,9 @@ import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { toast } from 'react-toastify';
 import Label from '@/components/form/Label';
+import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
+import { listaComunasThunk, listaProvinciasThunk, listaRegionesThunk } from '@/store/slices/core/coreSlice'
+import { useGeoSelector } from '@/hooks/useGeoSelector'
 import Spinner from '@/components/ui/Spinner';
 
 const columnHelper = createColumnHelper<ISubempresa>();
@@ -72,7 +75,7 @@ export default function SubEmpresaLista() {
 	}, [dispatch, user]);
 
 	const formik = useFormik({
-		initialValues: { nombre: '', rut: '', telefono: '', email: '', direccion: '' },
+		initialValues: { nombre: '', rut: '', telefono: '', email: '', direccion: '', region: '', provincia: '', comuna: '' },
 		validationSchema: Yup.object({
 			nombre: Yup.string().required('El nombre es obligatorio'),
 			rut: Yup.string(),
@@ -88,6 +91,7 @@ export default function SubEmpresaLista() {
 					phone: values.telefono || undefined,
 					email: values.email || undefined,
 					address: values.direccion || undefined,
+					commune_id: values.comuna ? Number(values.comuna) : undefined,
 				};
 
 				if (editingSubempresa?.id) {
@@ -124,6 +128,9 @@ export default function SubEmpresaLista() {
 			telefono: subempresa.phone || '',
 			email: subempresa.email || '',
 			direccion: subempresa.address || '',
+			region: '',
+			provincia: '',
+			comuna: (subempresa as any)?.commune_id ? String((subempresa as any).commune_id) : (subempresa as any)?.commune?.id ? String((subempresa as any).commune.id) : '',
 		});
 		setOpenCreate(true);
 	};
@@ -133,6 +140,26 @@ export default function SubEmpresaLista() {
 		formik.resetForm();
 		setOpenCreate(true);
 	};
+
+	// Load geo lists when opening create modal
+	useEffect(() => {
+		if (openCreate) {
+			if (!useAppSelector) {
+				// noop to satisfy lint in case
+			}
+			dispatch(listaRegionesThunk());
+			dispatch(listaProvinciasThunk());
+			dispatch(listaComunasThunk());
+		}
+	}, [openCreate, dispatch]);
+
+	// useGeoSelector wiring
+	const { listaRegiones, listaProvincias, listaComunas } = useAppSelector(s => s.core);
+	const { optionsRegion, optionsProvincia, optionsComuna } = useGeoSelector(
+		formik as any,
+		{ regiones: listaRegiones as any, provincias: listaProvincias as any, comunas: listaComunas as any },
+		{ fieldRegion: 'region', fieldProvincia: 'provincia', fieldComuna: 'comuna' },
+	);
 
 	const handleCloseModal = () => {
 		setOpenCreate(false);
@@ -441,6 +468,40 @@ export default function SubEmpresaLista() {
 										{formik.errors.direccion}
 									</p>
 								)}
+							</div>
+
+							{/* Región / Provincia / Comuna */}
+							<div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+								<div>
+									<Label htmlFor='region'>Región</Label>
+									<SelectReact
+										name='region'
+										placeholder='Seleccione región'
+										value={optionsRegion.find(o => o.value === String(formik.values.region)) || null}
+										onChange={(opt) => formik.setFieldValue('region', (opt as TSelectOption | null)?.value || '')}
+										options={optionsRegion}
+									/>
+								</div>
+								<div>
+									<Label htmlFor='provincia'>Provincia</Label>
+									<SelectReact
+										name='provincia'
+										placeholder='Seleccione provincia'
+										value={optionsProvincia.find(o => o.value === String(formik.values.provincia)) || null}
+										onChange={(opt) => formik.setFieldValue('provincia', (opt as TSelectOption | null)?.value || '')}
+										options={optionsProvincia}
+									/>
+								</div>
+								<div>
+									<Label htmlFor='comuna'>Comuna</Label>
+									<SelectReact
+										name='comuna'
+										placeholder='Seleccione comuna'
+										value={optionsComuna.find(o => o.value === String(formik.values.comuna)) || (formik.values.comuna ? { value: String(formik.values.comuna), label: 'Cargando…' } : null)}
+										onChange={(opt) => formik.setFieldValue('comuna', (opt as TSelectOption | null)?.value || '')}
+										options={optionsComuna}
+									/>
+								</div>
 							</div>
 						</form>
 					</ModalBody>

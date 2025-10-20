@@ -7,6 +7,8 @@ import type {
 	UpdateProductPayload,
 } from '@/interface/product.interface';
 import { PRODUCT_EMPTY_STATS } from '@/constants/product.constant';
+import { extractMediaUrl } from '@/utils/apiHelpers';
+import { ensureAbsoluteUrl } from '@/components/helper/brand.helper';
 
 const toNullableNumber = (value: unknown): number | null => {
 	if (value === null || value === undefined || value === '') return null;
@@ -34,7 +36,7 @@ const normalizeCategories = (raw: unknown): IProductCategorySummary[] => {
 				return {
 					id,
 					name: String(source.name ?? source.category_name ?? ''),
-					slug: (source.slug ?? source.category_slug ?? null) as string | null | undefined,
+					slug: (source.slug ?? source.category_slug ?? null) as string | null,
 				};
 			}
 			if (typeof item === 'number') {
@@ -42,7 +44,7 @@ const normalizeCategories = (raw: unknown): IProductCategorySummary[] => {
 			}
 			return null;
 		})
-		.filter((category): category is IProductCategorySummary => Boolean(category));
+		.filter((category): category is IProductCategorySummary => category !== null);
 };
 
 export const normalizeProduct = (raw: any): IProduct => {
@@ -55,7 +57,8 @@ export const normalizeProduct = (raw: any): IProduct => {
 
 	return {
 		id: Number(safe.id ?? 0),
-		branch_id: Number(safe.branch_id ?? safe.branch?.id ?? 0),
+		product_status: (safe.product_status ?? 'pending') as any,
+		branch_id: Number(safe.branch_id ?? (safe.branch as any)?.id ?? 0),
 		sku: String(safe.sku ?? ''),
 		commercial_sku: (safe.commercial_sku ?? null) as string | null,
 		barcode: (safe.barcode ?? null) as string | null,
@@ -63,10 +66,10 @@ export const normalizeProduct = (raw: any): IProduct => {
 		brand_id: toNullableNumber(safe.brand_id),
 		brand: safe.brand
 			? {
-					id: Number((safe.brand as any).id ?? 0),
-					name: String((safe.brand as any).name ?? ''),
-					slug: ((safe.brand as any).slug ?? null) as string | null | undefined,
-			  }
+				id: Number((safe.brand as any).id ?? 0),
+				name: String((safe.brand as any).name ?? ''),
+				slug: ((safe.brand as any).slug ?? null) as string | null | undefined,
+			}
 			: null,
 		product_type: (safe.product_type ?? safe.type ?? null) as string | null,
 		condition_policy: (safe.condition_policy ?? safe.condition ?? null) as string | null,
@@ -86,6 +89,36 @@ export const normalizeProduct = (raw: any): IProduct => {
 		),
 		created_at: String(safe.created_at ?? ''),
 		updated_at: String(safe.updated_at ?? ''),
+		// image/gallery normalization: try common keys used by backend
+		image:
+			(() => {
+				const candidate = (safe.image ?? safe.media ?? safe.media_first ?? null) as any;
+				if (!candidate) return undefined;
+				const pickedUrl = extractMediaUrl(candidate);
+				if (!pickedUrl) return undefined;
+				const abs = ensureAbsoluteUrl(pickedUrl);
+				if (!abs) return undefined;
+				const thumbRaw = candidate.thumb ?? candidate.thumbnail_url ?? pickedUrl;
+				const thumbAbs = ensureAbsoluteUrl(thumbRaw) ?? abs;
+				return { id: candidate.id, url: abs, thumb: thumbAbs, alt: candidate.alt ?? null };
+			})(),
+		gallery:
+			(() => {
+				const g = (safe.gallery ?? safe.media ?? safe.images ?? null) as any;
+				if (!g) return undefined;
+				const arr = Array.isArray(g) ? g : Array.isArray(g.data) ? g.data : Array.isArray(g.media) ? g.media : [];
+				return arr
+					.map((item: any) => {
+						const url = extractMediaUrl(item) ?? extractMediaUrl(g);
+						if (!url) return null;
+						const abs = ensureAbsoluteUrl(url);
+						if (!abs) return null;
+						const thumbRaw = item.thumb ?? item.thumbnail_url ?? url;
+						const thumb = ensureAbsoluteUrl(thumbRaw) ?? abs;
+						return { id: item.id, url: abs, thumb, alt: item.alt ?? null, sort: item.sort ?? null };
+					})
+					.filter((x: any) => x !== null) as unknown as any[];
+			})(),
 	};
 };
 
@@ -198,5 +231,20 @@ export const serializeFilters = (filters: ProductFilters): Record<string, unknow
 	if (typeof filters.max_price === 'number') params.max_price = filters.max_price;
 	if (filters.order_by) params.order_by = filters.order_by;
 	if (filters.order_dir) params.order_dir = filters.order_dir;
+
+	// attribute based filters (optional)
+	if (filters.attributes && typeof filters.attributes === 'object') {
+		Object.entries(filters.attributes).forEach(([key, value]) => {
+			params[`attr[${key}]`] = value;
+		});
+	}
+	if (filters.attributes_like && typeof filters.attributes_like === 'object') {
+		Object.entries(filters.attributes_like).forEach(([key, value]) => {
+			params[`attr_like[${key}]`] = value;
+		});
+	}
+	if (filters.attributes_any_like) {
+		params.attr_any_like = filters.attributes_any_like;
+	}
 	return params;
 };

@@ -16,6 +16,8 @@ import {
 	serializeFilters,
 } from '@/components/helper/product.helper';
 import { PRODUCT_EMPTY_STATS } from '@/constants/product.constant';
+import { validateFile, extractMediaUrl } from '@/utils/apiHelpers';
+import { convertFileToWebP } from '@/components/helper/brand.helper';
 
 export interface ProductsState {
 	items: IProduct[];
@@ -32,6 +34,10 @@ export interface ProductsState {
 	attributesLoading: boolean;
 	attributesUpdating: boolean;
 	attributesError: string | null;
+	// media/library state
+	mediaUploading: boolean;
+	libraryLoading: boolean;
+	mediaError: string | null;
 }
 
 const initialState: ProductsState = {
@@ -54,6 +60,9 @@ const initialState: ProductsState = {
 	attributesLoading: false,
 	attributesUpdating: false,
 	attributesError: null,
+	mediaUploading: false,
+	libraryLoading: false,
+	mediaError: null,
 };
 
 export const fetchProducts = createAsyncThunk<
@@ -146,8 +155,8 @@ export const fetchProductAttributes = createAsyncThunk<
 	} catch (error: any) {
 		return rejectWithValue(
 			error?.response?.data?.message ??
-				error?.message ??
-				'No se pudieron cargar los atributos del producto',
+			error?.message ??
+			'No se pudieron cargar los atributos del producto',
 		);
 	}
 });
@@ -176,8 +185,8 @@ export const patchProductAttributes = createAsyncThunk<
 		} catch (error: any) {
 			return rejectWithValue(
 				error?.response?.data?.message ??
-					error?.message ??
-					'No se pudieron actualizar los atributos del producto',
+				error?.message ??
+				'No se pudieron actualizar los atributos del producto',
 			);
 		}
 	},
@@ -186,12 +195,40 @@ export const patchProductAttributes = createAsyncThunk<
 export const createProduct = createAsyncThunk<
 	IProduct,
 	{ branchId: number; data: Partial<IProduct>; categoryIds: number[] },
-	{ rejectValue: string }
+	{ rejectValue: any }
 >('products/createProduct', async ({ branchId, data, categoryIds }, { rejectWithValue }) => {
 	try {
-		const body = buildProductPayload(data, categoryIds);
+		// Build a permissive payload: only send defined, non-null values.
+		const body: Record<string, any> = {};
 
-		const response = await ApiService.fetchData<{ data?: any }, CreateProductPayload>({
+		const assignIfDefined = (key: string, val: any) => {
+			if (val !== undefined && val !== null && val !== '') body[key] = val;
+		};
+
+		assignIfDefined('sku', data.sku);
+		assignIfDefined('name', data.name);
+		if (data.price !== undefined && data.price !== null) body.price = Number(data.price);
+		assignIfDefined('commercial_sku', data.commercial_sku);
+		assignIfDefined('barcode', data.barcode);
+		if (data.brand_id !== undefined && data.brand_id !== null) body.brand_id = Number(data.brand_id);
+		assignIfDefined('product_type', data.product_type);
+		if (data.serial_tracking !== undefined) body.serial_tracking = Boolean(data.serial_tracking);
+		assignIfDefined('condition_policy', data.condition_policy);
+		assignIfDefined('uom', data.uom);
+		if (data.warranty_months !== undefined) body.warranty_months = Number(data.warranty_months);
+		if (data.cost !== undefined) body.cost = Number(data.cost);
+		if (data.offer_price !== undefined) body.offer_price = Number(data.offer_price);
+		if (data.attributes_json !== undefined && data.attributes_json !== null) body.attributes_json = data.attributes_json;
+		if (data.is_active !== undefined) body.is_active = Boolean(data.is_active);
+		if (data.product_status !== undefined) body.product_status = data.product_status;
+		if (data.snippet_description !== undefined) body.snippet_description = data.snippet_description;
+		if (data.short_description !== undefined) body.short_description = data.short_description;
+		if (data.long_description !== undefined) body.long_description = data.long_description;
+		if (data.stock !== undefined) body.stock = Number(data.stock);
+
+		if (Array.isArray(categoryIds) && categoryIds.length) body.category_ids = categoryIds;
+
+		const response = await ApiService.fetchData<{ data?: any }, any>({
 			url: `/branches/${branchId}/products`,
 			method: 'post',
 			data: body,
@@ -200,9 +237,9 @@ export const createProduct = createAsyncThunk<
 		const raw = response.data?.data ?? response.data;
 		return normalizeProduct(raw ?? body);
 	} catch (error: any) {
-		return rejectWithValue(
-			error?.response?.data?.message ?? error?.message ?? 'No se pudo crear el producto',
-		);
+		// Forward the server response body when possible so callers can map validation errors
+		const payload = error?.response?.data ?? { message: error?.message ?? 'No se pudo crear el producto' };
+		return rejectWithValue(payload);
 	}
 });
 
@@ -248,6 +285,97 @@ export const deleteProduct = createAsyncThunk<
 		return rejectWithValue(
 			error?.response?.data?.message ?? error?.message ?? 'No se pudo eliminar el producto',
 		);
+	}
+});
+
+// Upload multiple files directly to a product (FormData files[])
+export const uploadProductMedia = createAsyncThunk<
+	string | null,
+	{ branchId: number; productId: number; file: File; meta?: string },
+	{ rejectValue: string }
+>('products/uploadProductMedia', async ({ branchId, productId, file, meta }, { rejectWithValue }) => {
+	try {
+		const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/svg+xml'];
+		const v = validateFile(file, { maxKB: 8192, allowedMimes: allowed });
+		if (!v.ok) return null;
+
+		const processed = await convertFileToWebP(file);
+		if (!processed) return null;
+
+		const formData = new FormData();
+		formData.append('files[]', processed, processed.name);
+		if (meta) formData.append('meta', meta);
+
+		const response = await ApiService.fetchData<{ data?: any }, FormData>({
+			url: `/branches/${branchId}/products/${productId}/media/upload-multiple`,
+			method: 'post',
+			data: formData,
+		});
+
+		const payload = response.data?.data ?? response.data;
+		const url = extractMediaUrl(payload);
+		return url;
+	} catch (error: any) {
+		return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'Error uploading media');
+	}
+});
+
+// Attach existing library media to a product
+export const attachProductMediaFromLibrary = createAsyncThunk<
+	{ id?: number; url?: string; thumb_url?: string } | null,
+	{ branchId: number; productId: number; payload: { library_media_id: number; collection?: string; sort_order?: number; alt_text?: string } },
+	{ rejectValue: string }
+>('products/attachProductMediaFromLibrary', async ({ branchId, productId, payload }, { rejectWithValue }) => {
+	try {
+		const response = await ApiService.fetchData<{ status?: string; id?: number; url?: string; thumb_url?: string }, any>({
+			url: `/branches/${branchId}/products/${productId}/media/attach-from-library`,
+			method: 'post',
+			data: payload,
+		});
+		return response.data ?? null;
+	} catch (error: any) {
+		return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'Error attaching media from library');
+	}
+});
+
+// Fetch branch library media (simple wrapper)
+export const fetchBranchLibraryMedia = createAsyncThunk<
+	{ data: any[]; meta?: any },
+	{ branchId: number; params?: Record<string, any> },
+	{ rejectValue: string }
+>('products/fetchBranchLibraryMedia', async ({ branchId, params }, { rejectWithValue }) => {
+	try {
+		const response = await ApiService.fetchData<{ data?: any[]; meta?: any }>({
+			url: `/branches/${branchId}/library/media`,
+			method: 'get',
+			params,
+		});
+		const dataArr = Array.isArray(response.data?.data) ? response.data?.data : Array.isArray(response.data) ? response.data : [];
+		return { data: dataArr ?? [], meta: response.data?.meta };
+	} catch (error: any) {
+		return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'Error fetching library media');
+	}
+});
+
+// Delete attributes via query param or body
+export const deleteProductAttributes = createAsyncThunk<
+	boolean,
+	{ branchId: number; productId: number; paths?: string[]; path?: string },
+	{ rejectValue: string }
+>('products/deleteProductAttributes', async ({ branchId, productId, paths, path }, { rejectWithValue }) => {
+	try {
+		const params: Record<string, any> = {};
+		if (path) params.path = path;
+		if (paths) params['paths[]'] = paths;
+
+		await ApiService.fetchData({
+			url: `/branches/${branchId}/products/${productId}/attributes`,
+			method: 'delete',
+			params,
+		});
+		return true;
+	} catch (error: any) {
+		return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'Error deleting attributes');
 	}
 });
 
@@ -383,6 +511,50 @@ const productsSlice = createSlice({
 			.addCase(deleteProduct.rejected, (state, action) => {
 				state.deleting = false;
 				state.error = action.payload ?? 'No se pudo eliminar el producto';
+			});
+
+		// Media thunks
+		builder
+			.addCase(uploadProductMedia.pending, (state) => {
+				state.mediaUploading = true;
+				state.mediaError = null;
+			})
+			.addCase(uploadProductMedia.fulfilled, (state) => {
+				state.mediaUploading = false;
+				state.mediaError = null;
+			})
+			.addCase(uploadProductMedia.rejected, (state, action) => {
+				state.mediaUploading = false;
+				state.mediaError = action.payload ?? 'Error al subir media';
+			})
+			.addCase(fetchBranchLibraryMedia.pending, (state) => {
+				state.libraryLoading = true;
+			})
+			.addCase(fetchBranchLibraryMedia.fulfilled, (state) => {
+				state.libraryLoading = false;
+			})
+			.addCase(fetchBranchLibraryMedia.rejected, (state) => {
+				state.libraryLoading = false;
+			})
+			.addCase(attachProductMediaFromLibrary.pending, (state) => {
+				state.mediaUploading = true;
+			})
+			.addCase(attachProductMediaFromLibrary.fulfilled, (state) => {
+				state.mediaUploading = false;
+			})
+			.addCase(attachProductMediaFromLibrary.rejected, (state, action) => {
+				state.mediaUploading = false;
+				state.mediaError = action.payload ?? 'Error al adjuntar media';
+			})
+			.addCase(deleteProductAttributes.pending, (state) => {
+				state.attributesUpdating = true;
+			})
+			.addCase(deleteProductAttributes.fulfilled, (state) => {
+				state.attributesUpdating = false;
+			})
+			.addCase(deleteProductAttributes.rejected, (state, action) => {
+				state.attributesUpdating = false;
+				state.attributesError = action.payload ?? 'Error al borrar atributos';
 			});
 	},
 });

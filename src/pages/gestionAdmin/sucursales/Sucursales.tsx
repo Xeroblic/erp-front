@@ -127,6 +127,22 @@ export default function SucursalesLista() {
 				);
 			},
 		}),
+		columnHelper.accessor('commune_name' as any, {
+			header: 'Comuna',
+			cell: (info) => {
+				const value = (info.row.original as any).commune_name;
+				return value ? (
+					<div className='flex items-center gap-1'>
+						<Icon icon='HeroMap' className='text-xs text-zinc-400' />
+						<span className='text-sm'>{value}</span>
+					</div>
+				) : (
+					<Badge variant='outline' className='text-zinc-400'>
+						Sin comuna
+					</Badge>
+				);
+			},
+		}),
 		columnHelper.accessor('phone', {
 			header: 'Teléfono',
 			cell: (info) => {

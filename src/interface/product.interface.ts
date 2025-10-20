@@ -23,9 +23,18 @@ export interface IProductCategorySummary {
 	slug?: string | null;
 }
 
+export interface IProductImage {
+	id?: number | null;
+	url: string;
+	thumb?: string | null;
+	alt?: string | null;
+}
+
 export interface IProduct {
 	id: number;
 	branch_id: number;
+	image?: IProductImage | null;
+	gallery?: Array<IProductImage> | null;
 	product_status: ProductStatus;
 	sku: string;
 	commercial_sku?: string | null;
@@ -71,6 +80,10 @@ export interface ProductFilters {
 	max_price?: number;
 	order_by?: string;
 	order_dir?: 'asc' | 'desc';
+	// attribute filters (optional)
+	attributes?: Record<string, string | number | boolean>;
+	attributes_like?: Record<string, string | number>;
+	attributes_any_like?: string | number;
 }
 
 export interface ProductsStateStats {

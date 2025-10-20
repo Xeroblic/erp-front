@@ -10,6 +10,7 @@ import type {
 } from '@/interface/category.interface';
 import { CATEGORY_EMPTY_STATS, type CategoryStatsShape } from '@/constants/category.constant';
 import { convertFileToWebP, ensureAbsoluteUrl } from '@/components/helper/brand.helper';
+import { validateFile, extractMediaUrl as extractMediaUrlUtil } from '@/utils/apiHelpers';
 import {
 	buildCategoryPayload,
 	computeCategoryStats,
@@ -79,78 +80,85 @@ export const fetchCategories = createAsyncThunk<
 });
 
 const extractMediaUrl = (payload: any): string | null => {
-    if (!payload) return null;
-    const pickCandidate = (value: any): any => {
-        if (!value) return null;
-        if (Array.isArray(value)) return value[0] ?? null;
-        if (Array.isArray(value?.data)) return value.data[0] ?? null;
-        if (Array.isArray(value?.media)) return value.media[0] ?? null;
-        return value;
-    };
-    const candidate = pickCandidate(payload);
-    if (!candidate || typeof candidate !== 'object') return null;
-    const possibilities = [
-        candidate.url,
-        candidate.original_url,
-        candidate.preview_url,
-        candidate.full_url,
-        candidate.thumbnail_url,
-        candidate.thumb,
-    ];
-    const raw = possibilities.find((item) => typeof item === 'string' && item.length > 0) ?? null;
-    return ensureAbsoluteUrl(raw);
+	if (!payload) return null;
+	const pickCandidate = (value: any): any => {
+		if (!value) return null;
+		if (Array.isArray(value)) return value[0] ?? null;
+		if (Array.isArray(value?.data)) return value.data[0] ?? null;
+		if (Array.isArray(value?.media)) return value.media[0] ?? null;
+		return value;
+	};
+	const candidate = pickCandidate(payload);
+	if (!candidate || typeof candidate !== 'object') return null;
+	const possibilities = [
+		candidate.url,
+		candidate.original_url,
+		candidate.preview_url,
+		candidate.full_url,
+		candidate.thumbnail_url,
+		candidate.thumb,
+	];
+	const raw = possibilities.find((item) => typeof item === 'string' && item.length > 0) ?? null;
+	return ensureAbsoluteUrl(raw);
 };
 
 const fetchCategoryDetails = async (id: number): Promise<ICategory | null> => {
-    try {
-        const response = await ApiService.fetchData<{ data?: any }>({
-            url: `/categories/${id}`,
-            method: 'get',
-        });
-        const raw = response.data?.data ?? response.data;
-        return raw ? normalizeCategory(raw) : null;
-    } catch {
-        return null;
-    }
+	try {
+		const response = await ApiService.fetchData<{ data?: any }>({
+			url: `/categories/${id}`,
+			method: 'get',
+		});
+		const raw = response.data?.data ?? response.data;
+		return raw ? normalizeCategory(raw) : null;
+	} catch {
+		return null;
+	}
 };
 
 const uploadCategoryImage = async (
-    categoryId: number,
-    branchId: number | null | undefined,
-    file: File,
+	categoryId: number,
+	branchId: number | null | undefined,
+	file: File,
 ): Promise<string | null> => {
-    if (!branchId) {
-        // La ruta requiere branches/{branch}/...; sin branch no se puede subir
-        if (typeof window !== 'undefined') {
-            console.warn('[categoriesSlice] uploadCategoryImage: branchId es requerido para subir media');
-        }
-        return null;
-    }
-    const processed = await convertFileToWebP(file);
-    if (!processed) return null;
+	if (!branchId) {
+		// La ruta requiere branches/{branch}/...; sin branch no se puede subir
+		if (typeof window !== 'undefined') {
+			console.warn('[categoriesSlice] uploadCategoryImage: branchId es requerido para subir media');
+		}
+		return null;
+	}
+	// validate original file before processing
+	const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/svg+xml'];
+	const v = validateFile(file, { maxKB: 8192, allowedMimes: allowed });
+	if (!v.ok) {
+		console.warn('[categoriesSlice] uploadCategoryImage: file validation failed', v.reason);
+		return null;
+	}
 
-    const formData = new FormData();
-    formData.append('files[]', processed, processed.name);
-    formData.append('collection', 'image');
-    formData.append('primary', 'first');
+	const processed = await convertFileToWebP(file);
+	if (!processed) return null;
 
-    try {
-        const response = await ApiService.fetchData<{ data?: any }, FormData>({
-            url: `/branches/${branchId}/categories/${categoryId}/media/upload-multiple`,
-            method: 'post',
-            data: formData,
-            headers: { 'Content-Type': 'multipart/form-data' },
-        });
-        const payload = response.data?.data ?? response.data;
-        const url = extractMediaUrl(payload);
-        const absolute = ensureAbsoluteUrl(url);
-        if (absolute) return absolute;
-        const refreshed = await fetchCategoryDetails(categoryId);
-        return refreshed?.image?.url ?? null;
-    } catch {
-        const refreshed = await fetchCategoryDetails(categoryId);
-        return refreshed?.image?.url ?? null;
-    }
+	const formData = new FormData();
+	formData.append('files[]', processed, processed.name);
+	formData.append('collection', 'image');
+	formData.append('primary', 'first');
+
+	try {
+		const response = await ApiService.fetchData<{ data?: any }, FormData>({
+			url: `/branches/${branchId}/categories/${categoryId}/media/upload-multiple`,
+			method: 'post',
+			data: formData,
+		});
+		const payload = response.data?.data ?? response.data;
+		const url = extractMediaUrlUtil(payload);
+		const absolute = ensureAbsoluteUrl(url);
+		if (absolute) return absolute;
+		const refreshed = await fetchCategoryDetails(categoryId);
+		return refreshed?.image?.url ?? null;
+	} catch {
+		const refreshed = await fetchCategoryDetails(categoryId);
+		return refreshed?.image?.url ?? null;
+	}
 };
 
 export const fetchCategoryTree = createAsyncThunk<
@@ -181,7 +189,7 @@ export const fetchCategoryTree = createAsyncThunk<
 export const createCategory = createAsyncThunk<
 	ICategory,
 	{ branchId: number; data: CreateCategoryPayload },
- 	{ rejectValue: string }
+	{ rejectValue: string }
 >('categories/createCategory', async ({ branchId, data }, { rejectWithValue }) => {
 	try {
 		const { image, ...rest } = data;
@@ -219,7 +227,7 @@ export const createCategory = createAsyncThunk<
 export const updateCategory = createAsyncThunk<
 	ICategory,
 	{ branchId: number; data: UpdateCategoryPayload },
- 	{ rejectValue: string }
+	{ rejectValue: string }
 >('categories/updateCategory', async ({ branchId, data }, { rejectWithValue }) => {
 	try {
 		const { image, id, ...rest } = data as any;

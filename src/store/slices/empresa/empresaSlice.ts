@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import ApiService from '@/services/ApiService';
+import { normalizeCommunePayload } from '@/utils/apiHelpers';
 import { IEmpresa, ISubempresa, IUsuarioEmpresa } from '@/interface/empresas.interface';
 
 export interface EmpresaState {
@@ -98,21 +99,48 @@ const normalizeSubsidiaryData = (backendData: any): ISubempresa => {
     manager_email: backendData.subsidiary_manager_email || backendData.manager_email,
     status: backendData.subsidiary_status ?? backendData.status,
     sucursales: backendData.sucursales || [],
-    branches_count: backendData.branches?.length || backendData.branches_count || 0
+    branches_count: backendData.branches?.length || backendData.branches_count || 0,
+    // Comuna (si viene expandida)
+    commune_id: backendData.commune_id ?? backendData?.commune?.id,
+    commune: backendData.commune
   }
 }
 
-export const fetchMiEmpresaSubsidiarias = createAsyncThunk<ISubempresa[], void, { rejectValue: string }>(
+export const fetchMiEmpresaSubsidiarias = createAsyncThunk<
+  ISubempresa[],
+  void,
+  { rejectValue: string; state: any }
+>(
   'empresa/fetchMiEmpresaSubsidiarias',
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, getState }) => {
     try {
+      const state: any = getState();
+      const companyId = state?.empresa?.miEmpresa?.id;
+
+      if (companyId) {
+        // Preferir datos completos desde /subsidiaries filtrando por company_id
+        const response = await ApiService.fetchData<{ data?: any[]; subsidiaries?: any[] }>({
+          url: '/subsidiaries',
+          method: 'get',
+          params: { company_id: companyId, with: 'commune,branches,branches.commune' },
+        });
+
+        const rawList: any[] =
+          Array.isArray(response.data?.data)
+            ? (response.data.data as any[])
+            : Array.isArray((response.data as any)?.subsidiaries)
+              ? ((response.data as any).subsidiaries as any[])
+              : [];
+
+        return rawList.map(normalizeSubsidiaryData);
+      }
+
+      // Fallback: usar endpoint de mi empresa (puede traer datos resumidos)
       const response = await ApiService.fetchData<{ subempresas: any[] }>({
         url: '/my-company/subsidiaries',
         method: 'get'
       });
-      const normalizedSubsidiaries = response.data.subempresas.map(normalizeSubsidiaryData)
-
-      return normalizedSubsidiaries;
+      return response.data.subempresas.map(normalizeSubsidiaryData);
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Error al cargar subsidiarias');
     }
@@ -128,10 +156,12 @@ export const createSubsidiaria = createAsyncThunk<
   'empresa/createSubsidiaria',
   async (subsidiaryData, { rejectWithValue }) => {
     try {
+      const payload = normalizeCommunePayload(subsidiaryData);
+
       const subsidiary = await ApiService.fetchNormalized<ISubempresa>({
-        url: '/my-company/subsidiaries',
+        url: '/subsidiaries',
         method: 'post',
-        data: subsidiaryData,
+        data: payload,
       });
       return subsidiary;
     } catch (error: any) {
@@ -153,7 +183,7 @@ export const updateSubsidiaria = createAsyncThunk<
   async ({ id, data }, { rejectWithValue }) => {
     try {
       const subsidiary = await ApiService.fetchNormalized<ISubempresa>({
-        url: `/my-company/subsidiaries/${id}`,
+        url: `/subsidiaries/${id}`,
         method: 'put',
         data,
       });

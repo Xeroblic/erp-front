@@ -52,10 +52,10 @@ export const buildSubmitPayload = (values: ProductFormValues): ProductFormSubmit
 	const data: Partial<IProduct> = {
 		sku: values.sku.trim(),
 		name: values.name.trim(),
-		brand_id: Number(values.brand_id),
-		price: Number(values.price),
-		cost: values.cost ? Number(values.cost) : undefined,
-		offer_price: values.offer_price ? Number(values.offer_price) : undefined,
+		brand_id: values.brand_id ? Number(values.brand_id) : undefined,
+		price: values.price !== '' && values.price !== undefined ? Number(values.price) : undefined,
+		cost: values.cost !== '' && values.cost !== undefined ? Number(values.cost) : undefined,
+		offer_price: values.offer_price !== '' && values.offer_price !== undefined ? Number(values.offer_price) : undefined,
 		product_type: values.product_type || undefined,
 		condition_policy: values.condition_policy || undefined,
 		uom: values.uom || undefined,
@@ -119,6 +119,17 @@ export const buildCreateProductPayload = (
 		is_active: isActive,
 		category_ids: categoryIds,
 	};
+};
+
+// Build a minimal payload for quick creation: only include fields that are strictly present
+export const buildMinimalCreatePayload = (form: ProductCreateForm) => {
+	const body: Record<string, any> = {};
+	if (form.sku && String(form.sku).trim()) body.sku = String(form.sku).trim();
+	if (form.name && String(form.name).trim()) body.name = String(form.name).trim();
+	if (form.brand_id) body.brand_id = Number(form.brand_id);
+	if (form.price !== undefined && form.price !== '') body.price = Number(form.price);
+	if (Array.isArray(form.category_ids) && form.category_ids.length) body.category_ids = form.category_ids;
+	return body;
 };
 
 export const mapProductToDetailForm = (product: IProduct): ProductDetailForm => {

@@ -197,7 +197,7 @@ export const fetchUsers = createAsyncThunk(
                 };
                 user_context: {
                     can_manage_users: boolean;
-                    access_level: number;
+                    access_level: string;
                     company_id?: number;
                     subsidiary_id?: number;
                     branch_id?: number;
@@ -227,11 +227,11 @@ export const fetchUserDetails = createAsyncThunk(
     'usersAdmin/fetchUserDetails',
     async (userId: number, { rejectWithValue }) => {
         try {
-            const response = await ApiService.fetchData<{ user: UserWithDetails }>({
-                url: `/users/${userId}?include=roles,permissions,company,subsidiary,branch`, // Corregido: usar la ruta del backend PHP
+            const response = await ApiService.fetchData<{ success: boolean; data: UserWithDetails; user_context?: any }>({
+                url: `/users/${userId}?include=roles,permissions,company,subsidiary,branch`,
                 method: 'get'
             });
-            return response.data.user;
+            return (response.data as any)?.data ?? (response.data as any)?.user;
         } catch (error: any) {
             return rejectWithValue(error?.response?.data?.message || 'Error al obtener detalles del usuario');
         }
@@ -242,12 +242,12 @@ export const createUser = createAsyncThunk(
     'usersAdmin/createUser',
     async (userData: CreateUserData, { rejectWithValue }) => {
         try {
-            const response = await ApiService.fetchData<{ user: UserWithDetails }>({
-                url: '/users', // Corregido: usar la ruta del backend PHP
+            const response = await ApiService.fetchData<{ success: boolean; data: UserWithDetails }>({
+                url: '/users',
                 method: 'post',
                 data: userData as unknown as Record<string, unknown>
             });
-            return response.data.user;
+            return (response.data as any)?.data ?? (response.data as any)?.user;
         } catch (error: any) {
             return rejectWithValue(error?.response?.data?.message || 'Error al crear usuario');
         }
@@ -258,12 +258,12 @@ export const updateUser = createAsyncThunk(
     'usersAdmin/updateUser',
     async ({ id, ...userData }: UpdateUserData, { rejectWithValue }) => {
         try {
-            const response = await ApiService.fetchData<{ user: UserWithDetails }>({
-                url: `/users/${id}`, // Corregido: usar la ruta del backend PHP
-                method: 'put',
+            const response = await ApiService.fetchData<{ success: boolean; data: UserWithDetails }>({
+                url: `/users/${id}`,
+                method: 'patch',
                 data: userData as unknown as Record<string, unknown>
             });
-            return response.data.user;
+            return (response.data as any)?.data ?? (response.data as any)?.user;
         } catch (error: any) {
             return rejectWithValue(error?.response?.data?.message || 'Error al actualizar usuario');
         }

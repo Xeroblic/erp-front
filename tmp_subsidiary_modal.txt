@@ -4,15 +4,12 @@ import * as Yup from 'yup'
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal'
 import Button from '@/components/ui/Button'
 import Input from '@/components/form/Input'
-import SelectReact, { TSelectOption } from '@/components/form/SelectReact'
 import Label from '@/components/form/Label'
 import { toast } from 'react-toastify'
-import { useAppDispatch, useAppSelector } from '@/store'
+import { useAppDispatch } from '@/store'
 import { ISubempresa } from '@/interface/empresas.interface'
 import { createSubsidiaria, updateSubsidiaria } from '@/store/slices/empresa/empresaSlice'
 import { unwrapResult } from '@reduxjs/toolkit'
-import { listaComunasThunk, listaProvinciasThunk, listaRegionesThunk } from '@/store/slices/core/coreSlice'
-import { useGeoSelector } from '@/hooks/useGeoSelector'
 
 interface SubsidiaryModalProps {
     isOpen: boolean
@@ -49,7 +46,6 @@ const validationSchema = Yup.object({
 
 export default function SubsidiaryModal({ isOpen, onClose, subsidiary, onSuccess }: SubsidiaryModalProps) {
     const dispatch = useAppDispatch()
-    const { listaRegiones, listaProvincias, listaComunas } = useAppSelector(s => s.core)
     const isEditing = Boolean(subsidiary)
 
     const formik = useFormik({
@@ -59,15 +55,7 @@ export default function SubsidiaryModal({ isOpen, onClose, subsidiary, onSuccess
             address: subsidiary?.address || '',
             phone: subsidiary?.phone || '',
             email: subsidiary?.email || '',
-            website: subsidiary?.website || '',
-            region: '',
-            provincia: '',
-            comuna: (subsidiary as any)?.commune_id
-                ? String((subsidiary as any).commune_id)
-                : (subsidiary as any)?.commune?.id
-                  ? String((subsidiary as any).commune.id)
-                  : '',
-            commune_id: (subsidiary as any)?.commune_id ?? (subsidiary as any)?.commune?.id ?? undefined
+            website: subsidiary?.website || ''
         },
         validationSchema,
         enableReinitialize: true,
@@ -81,8 +69,7 @@ export default function SubsidiaryModal({ isOpen, onClose, subsidiary, onSuccess
                     address: values.address.trim() || undefined,
                     phone: values.phone.trim() || undefined,
                     email: values.email.trim() || undefined,
-                    website: values.website.trim() || undefined,
-                    commune_id: values.comuna ? Number(values.comuna) : undefined
+                    website: values.website.trim() || undefined
                 };
 
                 if (isEditing && subsidiary?.id) {
@@ -115,22 +102,6 @@ export default function SubsidiaryModal({ isOpen, onClose, subsidiary, onSuccess
             }
         }
     })
-
-    // Cargar listas geo si faltan al abrir
-    React.useEffect(() => {
-        if (isOpen) {
-            if (!listaRegiones?.length) dispatch(listaRegionesThunk());
-            if (!listaProvincias?.length) dispatch(listaProvinciasThunk());
-            if (!listaComunas?.length) dispatch(listaComunasThunk());
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen]);
-
-    const { optionsRegion, optionsProvincia, optionsComuna } = useGeoSelector(
-        formik as any,
-        { regiones: listaRegiones as any, provincias: listaProvincias as any, comunas: listaComunas as any },
-        { fieldRegion: 'region', fieldProvincia: 'provincia', fieldComuna: 'comuna' },
-    );
 
     const handleClose = () => {
         formik.resetForm()
@@ -256,45 +227,6 @@ export default function SubsidiaryModal({ isOpen, onClose, subsidiary, onSuccess
                         {formik.touched.website && formik.errors.website && (
                             <p className="mt-1 text-red-600 text-sm">{formik.errors.website}</p>
                         )}
-                    </div>
-
-                    {/* Región / Provincia / Comuna */}
-                    <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                        <div>
-                            <Label htmlFor='region'>Región</Label>
-                            <SelectReact
-                                name='region'
-                                placeholder='Seleccione región'
-                                value={optionsRegion.find(o => o.value === String(formik.values.region)) || null}
-                                onChange={(opt) => formik.setFieldValue('region', (opt as TSelectOption | null)?.value || '')}
-                                options={optionsRegion}
-                            />
-                        </div>
-                        <div>
-                            <Label  htmlFor='provincia'>Provincia</Label>
-                            <SelectReact
-                                name='provincia'
-                                placeholder='Seleccione provincia'
-                                value={optionsProvincia.find(o => o.value === String(formik.values.provincia)) || null}
-                                onChange={(opt) => formik.setFieldValue('provincia', (opt as TSelectOption | null)?.value || '')}
-                                options={optionsProvincia}
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor='comuna'>Comuna</Label>
-                            <SelectReact
-                                name='comuna'
-                                placeholder='Seleccione comuna'
-                                value={
-                                    optionsComuna.find(o => o.value === String(formik.values.comuna)) ||
-                                    (formik.values.comuna
-                                        ? { value: String(formik.values.comuna), label: 'Cargando…' }
-                                        : null)
-                                }
-                                onChange={(opt) => formik.setFieldValue('comuna', (opt as TSelectOption | null)?.value || '')}
-                                options={optionsComuna}
-                            />
-                        </div>
                     </div>
 
                     <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-700">

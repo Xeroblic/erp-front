@@ -14,6 +14,7 @@ import {
 	computeStats,
 	normalizeBrand,
 } from '@/components/helper/brand.helper';
+import { validateFile, extractMediaUrl as extractMediaUrlUtil } from '@/utils/apiHelpers';
 
 
 export interface BrandStatsState {
@@ -79,32 +80,7 @@ export const fetchBrands = createAsyncThunk<
 	}
 });
 
-const extractMediaUrl = (payload: any): string | null => {
-	if (!payload) return null;
-
-	const pickCandidate = (value: any): any => {
-		if (!value) return null;
-		if (Array.isArray(value)) return value[0] ?? null;
-		if (Array.isArray(value?.data)) return value.data[0] ?? null;
-		if (Array.isArray(value?.media)) return value.media[0] ?? null;
-		return value;
-	};
-
-	const candidate = pickCandidate(payload);
-	if (!candidate || typeof candidate !== 'object') return null;
-
-	const possibilities = [
-		candidate.url,
-		candidate.original_url,
-		candidate.preview_url,
-		candidate.full_url,
-		candidate.thumbnail_url,
-		candidate.thumb,
-	];
-
-	const raw = possibilities.find((item) => typeof item === 'string' && item.length > 0) ?? null;
-	return ensureAbsoluteUrl(raw);
-};
+// use extractMediaUrl from utils
 
 const ensureImageObject = (url: string, base: unknown, fallbackAlt: string): IBrandImage => {
 	if (typeof base === 'string') {
@@ -152,6 +128,15 @@ const uploadBrandLogo = async (
 	brandId: number,
 	file: File,
 ): Promise<string | null> => {
+	// validate original file before heavy processing
+	const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/svg+xml'];
+	const v = validateFile(file, { maxKB: 8192, allowedMimes: allowed });
+	if (!v.ok) {
+		// small UX-friendly warning; keep silent failure for now
+		console.warn('[brandsSlice] uploadBrandLogo: file validation failed', v.reason);
+		return null;
+	}
+
 	const processed = await convertFileToWebP(file);
 	if (!processed) return null;
 
@@ -165,11 +150,10 @@ const uploadBrandLogo = async (
 			url: `/branches/${branchId}/brands/${brandId}/media/upload-multiple`,
 			method: 'post',
 			data: formData,
-			headers: { 'Content-Type': 'multipart/form-data' },
 		});
 
 		const payload = response.data?.data ?? response.data;
-		const url = extractMediaUrl(payload);
+		const url = extractMediaUrlUtil(payload);
 		const absolute = ensureAbsoluteUrl(url);
 
 		if (absolute) return absolute;

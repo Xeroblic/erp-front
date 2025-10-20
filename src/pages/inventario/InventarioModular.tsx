@@ -57,12 +57,12 @@ const Inventario: React.FC = () => {
 	const stockAlerts = useMemo(() => getStockAlerts(), []);
 
 	// Handlers
-	const handleViewMovement = (movement: MockInventoryMovement) => {
-		console.log('Ver movimiento:', movement);
+	const handleViewMovement = (_movement: MockInventoryMovement) => {
+		// view movement (log removed)
 	};
 
-	const handleViewItem = (item: MockInventoryItem) => {
-		console.log('Ver item:', item);
+	const handleViewItem = (_item: MockInventoryItem) => {
+		// view item (log removed)
 	};
 
 	const handleAdjustStock = (item: MockInventoryItem) => {
@@ -86,7 +86,7 @@ const Inventario: React.FC = () => {
 			setAdjustModalOpen(false);
 			setSelectedItem(undefined);
 			// En una app real, recargarías los datos aquí
-			console.log('Ajuste realizado:', data);
+			// adjustment made (log removed)
 		} catch (error) {
 			console.error('Error al ajustar stock:', error);
 		}
@@ -133,7 +133,7 @@ const Inventario: React.FC = () => {
 
 			setTransferModalOpen(false);
 			setSelectedItem(undefined);
-			console.log('Transferencia realizada:', data);
+			// transfer completed (log removed)
 		} catch (error) {
 			console.error('Error al transferir stock:', error);
 		}

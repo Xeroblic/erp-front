@@ -118,9 +118,9 @@ const Productos: React.FC = () => {
 			toast.success('Producto creado correctamente');
 			setCreateOpen(false);
 		} catch (err: any) {
-			const message =
-				typeof err === 'string' ? err : err?.message ?? 'No se pudo crear el producto';
-			toast.error(message);
+			console.error('Create product failed', err);
+			// rethrow so callers (or tests) can inspect server response
+			throw err;
 		}
 	};
 

@@ -15,7 +15,7 @@ export interface AuthState {
 	error?: string;
 	isAuthenticated: boolean;
 	permisos: string[];
-	user?: IUserMe & { authority?: string[] };
+	user?: IUserMe;
 	listaGrupos: IGruposUsuarios | undefined;
 	userLastFetched?: number; // Timestamp del último fetch exitoso
 }
@@ -31,31 +31,23 @@ const initialState: AuthState = {
 	userLastFetched: undefined,
 };
 
-export const loginThunk = createAsyncThunk<
-	LoginResponse,
-	{ email: string; password: string },
-	{ rejectValue: string; dispatch: AppDispatch }
->('auth/login', async ({ email, password }, { dispatch, rejectWithValue }) => {
-	try {
-		const resp = await ApiService.fetchData<{ token: string }>({
-			url: '/login',
-			method: 'post',
-			data: { email, password },
-			isLoginRequest: true,
-		});
+export const loginThunk = createAsyncThunk<LoginResponse,{ email: string; password: string },{ rejectValue: string; dispatch: AppDispatch }>(
+	'auth/login', async ({ email, password }, { dispatch, rejectWithValue }) => {
+		try {
+			const resp = await ApiService.fetchData<{ token: string }>({
+				url: '/login',
+				method: 'post',
+				data: { email, password },
+				isLoginRequest: true,
+			});
 
-		const token = resp.data.token;
-		dispatch(setToken(token));
-		await dispatch(userMeThunk() as any);
-
-		// Obtener personalización usando el nuevo slice
-		// COMENTADO TEMPORALMENTE para evitar bucles en cambios de tema
-		// await dispatch(obtenerPersonalizacionFromSlice() as any);
-
-		return { access: token };
-	} catch (error: any) {
-		return rejectWithValue(error.response?.data?.error || 'Error de autenticación');
-	}
+			const token = resp.data.token;
+			dispatch(setToken(token));
+			await dispatch(userMeThunk() as any);
+			return { access: token };
+		} catch (error: any) {
+			return rejectWithValue(error.response?.data?.error || 'Error de autenticación');
+		}
 });
 
 export const userMeThunk = createAsyncThunk<

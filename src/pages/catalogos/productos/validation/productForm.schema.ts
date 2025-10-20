@@ -1,43 +1,43 @@
 import * as Yup from 'yup';
 
 const optionSchema = Yup.object({
-	value: Yup.string().required(),
-	label: Yup.string().required(),
+  value: Yup.string().required(),
+  label: Yup.string().required(),
 });
 
 export const attributesSchema = Yup.object({
   cpu: Yup.object({
-    brand: Yup.string().oneOf(["Intel","AMD"]).required(),
+    brand: Yup.string().oneOf(["Intel", "AMD"]).required(),
     family: Yup.string().required(),
     generation: Yup.string().required(),
     model: Yup.string().required(),
     cores: Yup.object({ min: Yup.number().min(1).required(), max: Yup.number().min(1).required() })
-      .test("cores-range","cores.min debe ser <= cores.max", (v)=>!v||v.min<=v.max),
+      .test("cores-range", "cores.min debe ser <= cores.max", (v) => !v || v.min <= v.max),
     threads: Yup.object({ min: Yup.number().min(1).required(), max: Yup.number().min(1).required() })
-      .test("threads-range","threads.min debe ser <= threads.max", (v)=>!v||v.min<=v.max),
+      .test("threads-range", "threads.min debe ser <= threads.max", (v) => !v || v.min <= v.max),
     base_clock_mhz: Yup.object({ min: Yup.number().min(200).required(), max: Yup.number().min(200).required() })
-      .test("base-range","base.min <= base.max",(v)=>!v||v.min<=v.max),
+      .test("base-range", "base.min <= base.max", (v) => !v || v.min <= v.max),
     boost_clock_mhz: Yup.object({ min: Yup.number().min(200).required(), max: Yup.number().min(200).required() })
-      .test("boost-range","boost.min <= boost.max",(v)=>!v||v.min<=v.max),
+      .test("boost-range", "boost.min <= boost.max", (v) => !v || v.min <= v.max),
   }).required(),
   ram: Yup.object({
-    type: Yup.string().oneOf(["DDR3","DDR4","DDR5"]).required(),
+    type: Yup.string().oneOf(["DDR3", "DDR4", "DDR5"]).required(),
     min_gb: Yup.number().min(1).required(),
     max_gb: Yup.number().min(1).required(),
-  }).test("ram-range","min_gb <= max_gb",(v)=>!v||v.min_gb<=v.max_gb),
+  }).test("ram-range", "min_gb <= max_gb", (v) => !v || v.min_gb <= v.max_gb),
   storage: Yup.object({
-    config: Yup.string().oneOf(["single","hybrid"]).required(),
+    config: Yup.string().oneOf(["single", "hybrid"]).required(),
     single: Yup.object({
-      type: Yup.string().oneOf(["NVMe","SSD_SATA","HDD"]).nullable(),
+      type: Yup.string().oneOf(["NVMe", "SSD_SATA", "HDD"]).nullable(),
       size_gb: Yup.object({ min: Yup.number().nullable(), max: Yup.number().nullable() }).nullable(),
     }).nullable(),
     hybrid: Yup.object({
       primary: Yup.object({
-        type: Yup.string().oneOf(["NVMe","SSD_SATA"]).nullable(),
+        type: Yup.string().oneOf(["NVMe", "SSD_SATA"]).nullable(),
         size_gb: Yup.object({ min: Yup.number().nullable(), max: Yup.number().nullable() }).nullable(),
       }).nullable(),
       secondary: Yup.object({
-        type: Yup.string().oneOf(["HDD","SSD_SATA","NVMe"]).nullable(),
+        type: Yup.string().oneOf(["HDD", "SSD_SATA", "NVMe"]).nullable(),
         size_gb: Yup.object({ min: Yup.number().nullable(), max: Yup.number().nullable() }).nullable(),
       }).nullable(),
       allowed_combinations: Yup.array().of(Yup.array().of(Yup.string())).nullable(),
@@ -57,17 +57,26 @@ export const productSchema = Yup.object({
   offer_price: Yup.number().typeError("Precio oferta inválido").min(0).nullable(),
   warranty_months: Yup.number().typeError("Meses inválidos").min(0).integer().nullable(),
 
-  product_type: Yup.string().oneOf(["general","computador_reacondicionado"]).required(),
+  product_type: Yup.string().oneOf(["general", "computador_reacondicionado"]).required(),
   device_type: Yup.string().when("product_type", {
     is: "computador_reacondicionado",
-    then: (s)=>s.oneOf(["notebook","aio","desktop"]).required("Tipo de equipo requerido"),
-    otherwise: (s)=>s.nullable(),
+    then: (s) => s.oneOf(["notebook", "aio", "desktop"]).required("Tipo de equipo requerido"),
+    otherwise: (s) => s.nullable(),
   }),
 
   categories: Yup.array().of(Yup.object({ value: Yup.number().required(), label: Yup.string().required() })),
   attributes_json: Yup.mixed().when("product_type", {
     is: "computador_reacondicionado",
-    then: ()=>attributesSchema.required("Debes definir atributos del computador"),
-    otherwise: ()=>Yup.mixed().nullable(),
+    then: () => attributesSchema.required("Debes definir atributos del computador"),
+    otherwise: () => Yup.mixed().nullable(),
   }),
+});
+
+// Schema relajado para creación rápida: solo requiere nombre; sku/price/brand son opcionales
+export const productSchemaCreate = productSchema.shape({
+  sku: Yup.string().nullable(),
+  name: Yup.string().required('Nombre requerido'),
+  brand_id: Yup.number().typeError('Marca inválida').nullable(),
+  product_type: Yup.string().oneOf(['general', 'computador_reacondicionado']).nullable(),
+  price: Yup.number().typeError('Precio inválido').nullable(),
 });

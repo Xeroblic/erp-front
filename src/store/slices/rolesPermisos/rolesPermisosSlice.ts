@@ -68,7 +68,7 @@ export const updateUsuarioRolesPerms = createAsyncThunk<
 
       if (rolesToAdd.length > 0) {
         await ApiService.fetchData({
-          url: `/admin/users/${id}/roles`,
+          url: `/users/${id}/roles`,
           method: 'post',
           data: { roles: rolesToAdd },
         });
@@ -76,7 +76,7 @@ export const updateUsuarioRolesPerms = createAsyncThunk<
 
       if (rolesToRemove.length > 0) {
         await ApiService.fetchData({
-          url: `/admin/users/${id}/roles`,
+          url: `/users/${id}/roles`,
           method: 'delete',
           data: { roles: rolesToRemove },
         });
@@ -84,7 +84,7 @@ export const updateUsuarioRolesPerms = createAsyncThunk<
 
       if (permissionsToAdd.length > 0) {
         await ApiService.fetchData({
-          url: `/admin/users/${id}/permissions`,
+          url: `/users/${id}/permissions`,
           method: 'post',
           data: { permissions: permissionsToAdd },
         });
@@ -92,7 +92,7 @@ export const updateUsuarioRolesPerms = createAsyncThunk<
 
       if (permissionsToRemove.length > 0) {
         await ApiService.fetchData({
-          url: `/admin/users/${id}/permissions`,
+          url: `/users/${id}/permissions`,
           method: 'delete',
           data: { permissions: permissionsToRemove },
         });

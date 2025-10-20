@@ -16,20 +16,20 @@ export interface IUserMe {
 	id: number;
 	email: string;
 	first_name: string;
-	middle_name: string | null;
-	second_name?: string | null;
+	middle_name: string | undefined;
+	second_name?: string | undefined;
 	last_name: string;
-	second_last_name: string | null;
-	position: string | null;
-	cargo?: string | null;
-	rut: string | null;
-	phone_number: string | null;
-	celular?: string | null;
-	address: string | null;
-	direccion?: string | null;
-	gender: string | null;
+	second_last_name: string | undefined;
+	position: string | undefined;
+	cargo?: string | undefined;
+	rut: string | undefined;
+	phone_number: string | undefined;
+	celular?: string | undefined;
+	address: string | undefined;
+	direccion?: string | undefined;
+	gender: string | undefined;
 	is_active: boolean;
-	image: string | null | {
+	image: string | undefined | {
 		exists?: boolean;
 		original_url?: string;
 		sm?: string;
@@ -48,7 +48,7 @@ export interface IUserMe {
 		};
 		[key: string]: any;
 	};
-	branch_id: number | null;
+	branch_id: number | undefined;
 	// Nuevos campos para multi-empresa
 	companies?: Array<{
 		id: number;

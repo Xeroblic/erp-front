@@ -1,6 +1,7 @@
 // src/store/slices/subempresa/subempresaSlice.ts
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
 import ApiService from '@/services/ApiService'
+import { normalizeCommunePayload } from '@/utils/apiHelpers'
 import { ISubempresa } from '@/interface/empresas.interface'
 
 export interface SubempresaState {
@@ -44,7 +45,9 @@ const normalizeSubsidiaryData = (backendData: any): ISubempresa => {
     manager_email: backendData.subsidiary_manager_email || backendData.manager_email,
     status: backendData.subsidiary_status ?? backendData.status,
     sucursales: backendData.sucursales || [],
-    branches_count: backendData.branches?.length || backendData.branches_count || 0
+    branches_count: backendData.branches?.length || backendData.branches_count || 0,
+    commune_id: backendData.commune_id ?? backendData?.commune?.id,
+    commune: backendData.commune
   }
 }
 
@@ -56,11 +59,19 @@ export const fetchMisSubsidiarias = createAsyncThunk<
   'subempresa/fetchMisSubsidiarias',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await ApiService.fetchData<{ subempresas: any[] }>({
-        url: '/my-company/subsidiaries',
-        method: 'get',
+      // Obtener subsidiarias visibles con datos completos desde /subsidiaries
+      const response = await ApiService.fetchData<{ data?: any[]; subsidiaries?: any[] }>({url: '/subsidiaries',method: 'get',
+        params: { with: 'commune,branches,branches.commune' },
       })
-      const normalizedSubsidiaries = response.data.subempresas.map(normalizeSubsidiaryData)
+
+      const rawList: any[] =
+        Array.isArray(response.data?.data)
+          ? (response.data.data as any[])
+          : Array.isArray((response.data as any)?.subsidiaries)
+            ? ((response.data as any).subsidiaries as any[])
+            : []
+
+      const normalizedSubsidiaries = rawList.map(normalizeSubsidiaryData)
       return normalizedSubsidiaries
     } catch (err: any) {
       return rejectWithValue(err.response?.data?.message || 'Error al cargar subsidiarias')
@@ -77,7 +88,7 @@ export const fetchSubsidiariaDetail = createAsyncThunk<
   async (subsidiariaId, { rejectWithValue }) => {
     try {
       const subsidiary = await ApiService.fetchNormalized<ISubempresa>({
-        url: `/my-company/subsidiaries/${subsidiariaId}`,
+        url: `/subsidiaries/${subsidiariaId}`,
         method: 'get',
       })
       return subsidiary
@@ -95,10 +106,12 @@ export const createSubsidiaria = createAsyncThunk<
   'subempresa/createSubsidiaria',
   async (subsidiariaData, { rejectWithValue }) => {
     try {
+      const payload = normalizeCommunePayload(subsidiariaData);
+
       const subsidiary = await ApiService.fetchNormalized<ISubempresa>({
-        url: '/my-company/subsidiaries',
+        url: '/subsidiaries',
         method: 'post',
-        data: subsidiariaData,
+        data: payload,
       })
       return subsidiary
     } catch (err: any) {
@@ -115,10 +128,12 @@ export const updateSubsidiaria = createAsyncThunk<
   'subempresa/updateSubsidiaria',
   async ({ id, data }, { rejectWithValue }) => {
     try {
+      const payload = normalizeCommunePayload(data);
+
       const subsidiary = await ApiService.fetchNormalized<ISubempresa>({
-        url: `/my-company/subsidiaries/${id}`,
+        url: `/subsidiaries/${id}`,
         method: 'put',
-        data,
+        data: payload,
       })
       return subsidiary
     } catch (err: any) {
@@ -136,7 +151,7 @@ export const deleteSubsidiaria = createAsyncThunk<
   async (subsidiariaId, { rejectWithValue }) => {
     try {
       await ApiService.fetchData<void>({
-        url: `/my-company/subsidiaries/${subsidiariaId}`,
+        url: `/subsidiaries/${subsidiariaId}`,
         method: 'delete',
       })
       return subsidiariaId

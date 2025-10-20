@@ -17,6 +17,8 @@ import Input from '@/components/form/Input';
 import Button from '@/components/ui/Button';
 import SelectReact, { TSelectOption } from '../../../../components/form/SelectReact';
 import { ISucursal } from '@/interface/empresas.interface';
+import { listaComunasThunk, listaProvinciasThunk, listaRegionesThunk } from '@/store/slices/core/coreSlice';
+import { useGeoSelector } from '@/hooks/useGeoSelector';
 
 interface SucursalModalProps {
 	isOpen: boolean;
@@ -65,6 +67,7 @@ export default function SucursalModal({
 }: SucursalModalProps) {
 	const dispatch = useAppDispatch();
 	const subsidiaries = useAppSelector((s) => s.subEmpresa.lista);
+	const { listaRegiones, listaProvincias, listaComunas } = useAppSelector((s) => s.core);
 	const isEditing = Boolean(sucursal);
 
 	// Cargar subsidiarias al abrir el modal
@@ -73,6 +76,16 @@ export default function SucursalModal({
 			dispatch(fetchMisSubsidiarias());
 		}
 	}, [isOpen, dispatch]);
+
+	// Cargar listas geo si faltan
+	useEffect(() => {
+		if (isOpen) {
+			if (!listaRegiones?.length) dispatch(listaRegionesThunk());
+			if (!listaProvincias?.length) dispatch(listaProvinciasThunk());
+			if (!listaComunas?.length) dispatch(listaComunasThunk());
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [isOpen]);
 
 	const formik = useFormik({
 		initialValues: {
@@ -85,6 +98,10 @@ export default function SucursalModal({
 			manager_name: '',
 			manager_phone: '',
 			manager_email: '',
+			region: '',
+			provincia: '',
+			comuna: '',
+			commune_id: undefined as any,
 		},
 		validationSchema,
 		onSubmit: async (values) => {
@@ -100,6 +117,7 @@ export default function SucursalModal({
 					manager_name: values.manager_name.trim() || undefined,
 					manager_phone: values.manager_phone.trim() || undefined,
 					manager_email: values.manager_email.trim() || undefined,
+					commune_id: values.comuna ? Number(values.comuna) : undefined,
 				};
 
 				if (isEditing && sucursal?.id) {
@@ -147,6 +165,14 @@ export default function SucursalModal({
 					manager_name: sucursal.manager_name || '',
 					manager_phone: sucursal.manager_phone || '',
 					manager_email: sucursal.manager_email || '',
+					region: '',
+					provincia: '',
+					comuna: (sucursal as any)?.commune_id
+						? String((sucursal as any).commune_id)
+						: (sucursal as any)?.commune?.id
+						  ? String((sucursal as any).commune.id)
+						  : '',
+					commune_id: (sucursal as any)?.commune_id ?? (sucursal as any)?.commune?.id ?? undefined,
 				});
 			} else {
 				formik.resetForm();
@@ -164,6 +190,12 @@ export default function SucursalModal({
 		value: sub.id.toString(),
 		label: sub.name,
 	}));
+
+	const { optionsRegion, optionsProvincia, optionsComuna } = useGeoSelector(
+		formik as any,
+		{ regiones: listaRegiones as any, provincias: listaProvincias as any, comunas: listaComunas as any },
+		{ fieldRegion: 'region', fieldProvincia: 'provincia', fieldComuna: 'comuna' },
+	);
 
 	return (
 		<Modal isOpen={isOpen} setIsOpen={handleClose}>
@@ -252,6 +284,49 @@ export default function SucursalModal({
 							{formik.touched.address && formik.errors.address && (
 								<p className='mt-1 text-sm text-red-600'>{formik.errors.address}</p>
 							)}
+						</div>
+
+						{/* Región / Provincia / Comuna */}
+						<div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+							<div>
+								<Label>Región</Label>
+								<SelectReact
+									name='region'
+									placeholder='Seleccione región'
+									value={optionsRegion.find(o => o.value === String(formik.values.region)) || null}
+									onChange={(opt) => formik.setFieldValue('region', (opt as TSelectOption | null)?.value || '')}
+									options={optionsRegion}
+								/>
+							</div>
+							<div>
+								<Label>Provincia</Label>
+								<SelectReact
+									name='provincia'
+									placeholder='Seleccione provincia'
+									value={optionsProvincia.find(o => o.value === String(formik.values.provincia)) || null}
+									onChange={(opt) => formik.setFieldValue('provincia', (opt as TSelectOption | null)?.value || '')}
+									options={optionsProvincia}
+								/>
+							</div>
+							<div>
+								<Label>Comuna</Label>
+                            <SelectReact
+                                name='comuna'
+                                placeholder='Seleccione comuna'
+                                value={
+                                    optionsComuna.find(o => o.value === String(formik.values.comuna)) ||
+                                    (formik.values.comuna
+                                        ? { value: String(formik.values.comuna), label: 'Cargando…' }
+                                        : null)
+                                }
+                                onChange={(opt) => {
+                                    const v = (opt as TSelectOption | null)?.value || '';
+                                    formik.setFieldValue('comuna', v);
+                                    formik.setFieldValue('commune_id', v ? Number(v) : undefined);
+                                }}
+                                options={optionsComuna}
+                            />
+							</div>
 						</div>
 					</div>
 

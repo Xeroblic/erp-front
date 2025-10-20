@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Formik, Form, Field, type FormikHelpers, useFormikContext } from 'formik';
 import { toast } from 'react-toastify';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
+import MediaLibraryModal from '../../../components/MediaLibrary/MediaLibraryModal';
 import Container from '@/components/layouts/Container/Container';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -31,6 +32,13 @@ import {
 } from './constants/products.constant';
 import { ATTRIBUTES_DEFAULT_BY_TYPE } from './constants/attributes.schemas';
 import type { ProductStatus, ProductType } from '@/interface/product.interface';
+import {
+	uploadProductMedia,
+	fetchBranchLibraryMedia,
+	attachProductMediaFromLibrary,
+	fetchProductById,
+} from '@/store/slices/products/productsSlice';
+import { useAppDispatch } from '@/store';
 
 const DETAIL_TABS = [
 	{ id: 'general', text: 'General' },
@@ -158,55 +166,30 @@ const AttributesEditor: React.FC<{ disabled?: boolean }> = ({ disabled = false }
 const validateDetailForm = (values: ProductDetailForm) => {
 	const errors: Partial<Record<keyof ProductDetailForm, string>> = {};
 
-	if (!values.sku.trim()) {
-		errors.sku = 'El SKU es obligatorio';
-	}
-	if (!values.name.trim()) {
-		errors.name = 'El nombre es obligatorio';
-	}
-	if (values.brand_id === '' || values.brand_id === 0) {
+	if (!values.sku.trim()) errors.sku = 'El SKU es obligatorio';
+	if (!values.name.trim()) errors.name = 'El nombre es obligatorio';
+	if (values.brand_id === '' || values.brand_id === 0)
 		errors.brand_id = 'Debes seleccionar una marca';
-	}
-	if (!values.category_ids.length) {
-		errors.category_ids = 'Selecciona al menos una categoría';
-	}
-
-	const priceValue = values.price === '' ? NaN : Number(values.price);
-	if (!Number.isFinite(priceValue) || priceValue < 0) {
-		errors.price = 'El precio debe ser un número válido';
-	}
-
-	if (values.offer_price !== '') {
-		const offerValue = Number(values.offer_price);
-		if (!Number.isFinite(offerValue) || offerValue < 0) {
-			errors.offer_price = 'El precio de oferta no es válido';
-		}
-	}
+	if (!values.category_ids.length) errors.category_ids = 'Selecciona al menos una categoría';
 
 	if (values.cost !== '') {
 		const costValue = Number(values.cost);
-		if (!Number.isFinite(costValue) || costValue < 0) {
-			errors.cost = 'El costo no es válido';
-		}
+		if (!Number.isFinite(costValue) || costValue < 0) errors.cost = 'El costo no es válido';
 	}
 
 	if (values.warranty_months !== '') {
 		const warrantyValue = Number(values.warranty_months);
-		if (!Number.isFinite(warrantyValue) || warrantyValue < 0) {
+		if (!Number.isFinite(warrantyValue) || warrantyValue < 0)
 			errors.warranty_months = 'La garantía debe ser un número positivo';
-		}
 	}
 
 	if (values.stock !== '') {
 		const stockValue = Number(values.stock);
-		if (!Number.isFinite(stockValue) || stockValue < 0) {
+		if (!Number.isFinite(stockValue) || stockValue < 0)
 			errors.stock = 'El stock debe ser un número positivo';
-		}
 	}
 
-	if (!values.product_status) {
-		errors.product_status = 'Selecciona el estado del producto';
-	}
+	if (!values.product_status) errors.product_status = 'Selecciona el estado del producto';
 
 	return errors;
 };
@@ -239,6 +222,33 @@ const ProductDetail: React.FC = () => {
 		effectiveBranchId,
 		updateProduct,
 	} = useProductDetail({ productId, branchId });
+
+	const dispatch = useAppDispatch();
+	const [showLibrary, setShowLibrary] = useState(false);
+
+	const handleLibrarySelect = async (items: any[]) => {
+		if (!items || items.length === 0 || !product || !effectiveBranchId) return;
+		const ids = items.map((i) => i.id);
+		try {
+			await dispatch(
+				attachProductMediaFromLibrary({
+					branchId: effectiveBranchId,
+					productId: product.id,
+					payload: {
+						library_media_id: ids[0],
+						collection: 'gallery',
+						sort_order: 0,
+						alt_text: '',
+					},
+				}),
+			).unwrap();
+			await dispatch(
+				fetchProductById({ branchId: effectiveBranchId, productId: product.id }),
+			).unwrap();
+		} catch (e) {
+			// noop
+		}
+	};
 
 	useEffect(() => {
 		if (!branchId && effectiveBranchId) {
@@ -300,6 +310,65 @@ const ProductDetail: React.FC = () => {
 			toast.error(message);
 		} finally {
 			setSubmitting(false);
+		}
+	};
+
+	// Media handlers (upload + attach)
+	const handleFileUpload = async (file?: File | null) => {
+		if (!file || !product || !effectiveBranchId) return;
+		try {
+			const meta = JSON.stringify([
+				{
+					index: 0,
+					collection: 'gallery',
+					sort_order: 0,
+					alt_text: 'Uploaded',
+					primary: false,
+				},
+			]);
+			const url = await dispatch(
+				uploadProductMedia({
+					branchId: effectiveBranchId,
+					productId: product.id,
+					file,
+					meta,
+				}),
+			).unwrap();
+			if (url) {
+				await dispatch(
+					fetchProductById({ branchId: effectiveBranchId, productId: product.id }),
+				).unwrap();
+			}
+		} catch (err) {
+			console.error('Upload failed', err);
+		}
+	};
+
+	const handleAttachFirstFromLibrary = async () => {
+		if (!product || !effectiveBranchId) return;
+		try {
+			const lib = await dispatch(
+				fetchBranchLibraryMedia({ branchId: effectiveBranchId, params: { q: '' } }),
+			).unwrap();
+			const first = lib.data?.[0];
+			if (!first) return;
+			await dispatch(
+				attachProductMediaFromLibrary({
+					branchId: effectiveBranchId,
+					productId: product.id,
+					payload: {
+						library_media_id: first.id,
+						collection: 'gallery',
+						sort_order: 0,
+						alt_text: first.alt ?? '',
+					},
+				}),
+			).unwrap();
+			await dispatch(
+				fetchProductById({ branchId: effectiveBranchId, productId: product.id }),
+			).unwrap();
+		} catch (err) {
+			console.error('Attach from library failed', err);
 		}
 	};
 
@@ -410,7 +479,12 @@ const ProductDetail: React.FC = () => {
 			id: 'contenido',
 			label: 'Contenido',
 			icon: 'HeroDocumentText',
-			content: <ContenidoTab />,
+			content: (
+				<ContenidoTab
+					onUploadFile={handleFileUpload}
+					onOpenLibrary={() => setShowLibrary(true)}
+				/>
+			),
 		},
 		{
 			id: 'atributos',
@@ -530,7 +604,7 @@ const ProductDetail: React.FC = () => {
 							</Subheader>
 
 							<Container>
-								<div className='grid gap-6 w-full lg:grid-cols-[minmax(0,1fr)_320px]'>
+								<div className='grid w-full gap-6 lg:grid-cols-[minmax(0,1fr)_320px]'>
 									<div className='space-y-6'>
 										<Card>
 											<CardHeader>
@@ -542,28 +616,31 @@ const ProductDetail: React.FC = () => {
 											</CardHeader>
 											<CardBody className='p-0'>
 												<div className='w-full'>
-													<div 
+													<div
 														className='product-tabs-container overflow-x-auto overflow-y-hidden border-b border-gray-200 dark:border-gray-700'
-														style={{ 
+														style={{
 															WebkitOverflowScrolling: 'touch',
 															scrollbarWidth: 'none',
-															msOverflowStyle: 'none'
+															msOverflowStyle: 'none',
 														}}>
-														<div 
+														<div
 															className='flex w-max min-w-full'
 															style={{ gap: '0px' }}>
 															{tabsData.map((tab) => (
 																<button
 																	key={tab.id}
-																	onClick={() => setActiveTab(tab.id)}
-																	className={`flex-shrink-0 inline-flex items-center gap-2 px-6 py-4 text-sm font-medium transition-colors duration-200 border-b-2 ${
+																	onClick={() =>
+																		setActiveTab(tab.id)
+																	}
+																	className={`inline-flex flex-shrink-0 items-center gap-2 border-b-2 px-6 py-4 text-sm font-medium transition-colors duration-200 ${
 																		activeTab === tab.id
-																			? 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/20'
+																			? 'border-blue-500 bg-blue-50/50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
 																			: 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
 																	}`}
-																	style={{ 
+																	style={{
 																		minWidth: 'max-content',
-																		whiteSpace: 'nowrap' as const
+																		whiteSpace:
+																			'nowrap' as const,
 																	}}>
 																	{tab.icon && (
 																		<Icon
@@ -575,7 +652,9 @@ const ProductDetail: React.FC = () => {
 																			}`}
 																		/>
 																	)}
-																	<span className='flex-shrink-0'>{tab.label}</span>
+																	<span className='flex-shrink-0'>
+																		{tab.label}
+																	</span>
 																</button>
 															))}
 														</div>
@@ -701,6 +780,12 @@ const ProductDetail: React.FC = () => {
 					);
 				}}
 			</Formik>
+			<MediaLibraryModal
+				open={showLibrary}
+				branchId={effectiveBranchId ?? 0}
+				onClose={() => setShowLibrary(false)}
+				onSelect={handleLibrarySelect}
+			/>
 		</PageWrapper>
 	);
 };

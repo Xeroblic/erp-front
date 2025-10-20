@@ -1,6 +1,7 @@
 // src/store/slices/sucursales/sucursalesSlice.ts
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
 import ApiService from '@/services/ApiService'
+import { normalizeCommunePayload } from '@/utils/apiHelpers'
 import { ISucursal } from '@/interface/empresas.interface'
 
 export interface SucursalesState {
@@ -50,6 +51,8 @@ const normalizeBranchData = (backendData: any): ISucursal => {
         // Datos adicionales de la subsidiaria si están disponibles
         subsidiary_name: backendData.subsidiary_name,
         subsidiary_rut: backendData.subsidiary_rut,
+        commune_id: backendData.commune_id,
+        commune_name: backendData.commune_name,
     }
 }
 
@@ -61,40 +64,38 @@ export const fetchMisSucursales = createAsyncThunk<
     'sucursales/fetchMisSucursales',
     async (_, { rejectWithValue }) => {
         try {
-            // Intentar desde el endpoint específico de sucursales o desde subsidiarias con branches
-            const response = await ApiService.fetchData<{ sucursales?: any[], branches?: any[], subempresas?: any[] }>({
-                url: '/my-company/subsidiaries', // Usar endpoint de subsidiarias que incluye branches
+            // Obtener sucursales visibles directamente desde /branches (nuevo backend)
+            const response = await ApiService.fetchData<{ data?: any[]; branches?: any[] }>({
+                url: '/branches',
                 method: 'get',
+                params: { with: 'subsidiary,commune' },
             })
 
-            // Extraer sucursales desde subsidiarias.branches o desde sucursales directas
-            let branchesData: any[] = []
-            if (response.data.subempresas) {
-                // Extraer todas las sucursales de todas las subsidiarias
-                branchesData = response.data.subempresas.flatMap((sub: any) =>
-                    (sub.branches || sub.sucursales || []).map((branch: any) => ({
-                        id: branch.id,
-                        subsidiary_id: sub.id,
-                        branch_name: branch.branch_name,
-                        branch_address: branch.branch_address,
-                        branch_phone: branch.branch_phone,
-                        branch_email: branch.branch_email,
-                        branch_status: branch.branch_status,
-                        branch_manager_name: branch.branch_manager_name,
-                        branch_manager_phone: branch.branch_manager_phone,
-                        branch_manager_email: branch.branch_manager_email,
-                        branch_created_at: branch.branch_created_at,
-                        branch_updated_at: branch.branch_updated_at,
-                        // datos mínimos necesarios desde la subempresa
-                        subsidiary_name: sub.subsidiary_name || sub.name,
-                        subsidiary_rut: sub.subsidiary_rut || sub.rut,
-                    }))
-                )
-            } else if (response.data.branches) {
-                branchesData = response.data.branches
-            } else if (response.data.sucursales) {
-                branchesData = response.data.sucursales
-            }
+            const rawList: any[] =
+                Array.isArray(response.data?.data)
+                    ? (response.data.data as any[])
+                    : Array.isArray((response.data as any)?.branches)
+                        ? ((response.data as any).branches as any[])
+                        : []
+
+            const branchesData = rawList.map((b: any) => ({
+                id: b.id,
+                subsidiary_id: b.subsidiary_id ?? b.subsidiary?.id,
+                branch_name: b.branch_name ?? b.name,
+                branch_address: b.branch_address ?? b.address,
+                branch_phone: b.branch_phone ?? b.phone,
+                branch_email: b.branch_email ?? b.email,
+                branch_status: b.branch_status ?? b.status,
+                branch_manager_name: b.branch_manager_name ?? b.manager_name,
+                branch_manager_phone: b.branch_manager_phone ?? b.manager_phone,
+                branch_manager_email: b.branch_manager_email ?? b.manager_email,
+                branch_created_at: b.branch_created_at ?? b.created_at,
+                branch_updated_at: b.branch_updated_at ?? b.updated_at,
+                subsidiary_name: b.subsidiary?.subsidiary_name ?? b.subsidiary?.name,
+                subsidiary_rut: b.subsidiary?.subsidiary_rut ?? b.subsidiary?.rut,
+                commune_id: b.commune_id ?? b.commune?.id,
+                commune_name: b.commune?.name,
+            }))
 
             const normalizedBranches = branchesData.map(normalizeBranchData)
             return normalizedBranches
@@ -152,10 +153,31 @@ export const createSucursal = createAsyncThunk<
     'sucursales/createSucursal',
     async (sucursalData, { rejectWithValue }) => {
         try {
+            const normalizeCommunePayload = (d: any) => {
+                const p: any = { ...d };
+                if (p.commune !== undefined) {
+                    const v = p.commune?.value ?? p.commune?.id ?? p.commune;
+                    p.commune_id = v || v === 0 ? Number(v) : null;
+                    delete p.commune;
+                }
+                if (p.comuna !== undefined) {
+                    const v = p.comuna?.value ?? p.comuna?.id ?? p.comuna;
+                    p.commune_id = v || v === 0 ? Number(v) : null;
+                    delete p.comuna;
+                }
+                if (p.commune_id !== undefined) {
+                    p.commune_id = p.commune_id === '' || p.commune_id === null ? null : Number(p.commune_id);
+                    if (Number.isNaN(p.commune_id)) p.commune_id = null;
+                }
+                return p;
+            };
+
+            const payload = normalizeCommunePayload(sucursalData);
+
             const branch = await ApiService.fetchNormalized<ISucursal>({
                 url: '/branches',
                 method: 'post',
-                data: sucursalData,
+                data: payload,
             })
             return normalizeBranchData(branch)
         } catch (err: any) {
@@ -172,10 +194,31 @@ export const updateSucursal = createAsyncThunk<
     'sucursales/updateSucursal',
     async ({ id, data }, { rejectWithValue }) => {
         try {
+            const normalizeCommunePayload = (d: any) => {
+                const p: any = { ...d };
+                if (p.commune !== undefined) {
+                    const v = p.commune?.value ?? p.commune?.id ?? p.commune;
+                    p.commune_id = v || v === 0 ? Number(v) : null;
+                    delete p.commune;
+                }
+                if (p.comuna !== undefined) {
+                    const v = p.comuna?.value ?? p.comuna?.id ?? p.comuna;
+                    p.commune_id = v || v === 0 ? Number(v) : null;
+                    delete p.comuna;
+                }
+                if (p.commune_id !== undefined) {
+                    p.commune_id = p.commune_id === '' || p.commune_id === null ? null : Number(p.commune_id);
+                    if (Number.isNaN(p.commune_id)) p.commune_id = null;
+                }
+                return p;
+            };
+
+            const payload = normalizeCommunePayload(data);
+
             const branch = await ApiService.fetchNormalized<ISucursal>({
                 url: `/branches/${id}`,
                 method: 'put',
-                data,
+                data: payload,
             })
             return normalizeBranchData(branch)
         } catch (err: any) {

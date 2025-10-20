@@ -7,3 +7,4 @@ import type { RootState } from './rootReducer'
 export type AppThunkDispatch = ThunkDispatch<RootState, any, AnyAction>
 export const useAppDispatch = () => useDispatch<AppThunkDispatch>()
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector
+
