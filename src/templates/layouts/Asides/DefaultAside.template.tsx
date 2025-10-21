@@ -308,6 +308,25 @@ const DefaultAsideTemplate = () => {
 								onClick={() => navigate(Pages.manage.subPages.permissionsAdmin.to)}
 							/>
 						</AuthorityCheckNav>
+
+						{/* Roles y Permisos */}
+						<AuthorityCheckNav
+							authority={[
+								...(Pages.manage.subPages.rolesPermisos.authority || []),
+								...(Pages.manage.subPages.rolesPermisos.roles || []),
+							]}
+							userAuthority={userPermissionsAndRoles}
+							requireAll={Pages.manage.subPages.rolesPermisos.requireAll}>
+							<NavItem
+								text={Pages.manage.subPages.rolesPermisos.text}
+								to={Pages.manage.subPages.rolesPermisos.to}
+								icon={Pages.manage.subPages.rolesPermisos.icon}
+								id={Pages.manage.subPages.rolesPermisos.id}
+								onClick={() => navigate(Pages.manage.subPages.rolesPermisos.to)}
+							/>
+						</AuthorityCheckNav>
+
+						<AuthorityCheckNav authority={[]}></AuthorityCheckNav>
 					</NavCollapse>
 
 					{/* Módulos ERP */}

@@ -43,6 +43,9 @@ const FinancialReports = lazy(() => import('@/pages/reportes/FinancialReports'))
 const Sucursales = lazy(() => import('@/pages/gestionAdmin/sucursales/Sucursales.tsx'));
 const SucursalDetalle = lazy(() => import('@/pages/gestionAdmin/sucursales/SucursalDetalle.tsx'));
 const RolesPermisos = lazy(() => import('@/pages/gestionAdmin/roles y permisos/RolesPermisos.tsx'));
+const UserPermissionsDetail = lazy(
+	() => import('@/pages/gestionAdmin/roles y permisos/UserPermissionsDetail.tsx'),
+);
 const GestionUsuarios = lazy(() => import('@/pages/gestionAdmin/usuarios/Usuarios.tsx'));
 
 // Páginas de Administración
@@ -151,6 +154,16 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: cfg.manage.subPages.permissionsAdmin.to,
 		element: <PermissionsAdmin />,
 		authority: cfg.manage.subPages.permissionsAdmin.authority,
+	},
+	{
+		path: cfg.manage.subPages.rolesPermisos.to,
+		element: <RolesPermisos />,
+		authority: cfg.manage.subPages.rolesPermisos.authority,
+	},
+	{
+		path: cfg.manage.subPages.rolesPermisosDetail.to,
+		element: <UserPermissionsDetail />,
+		authority: cfg.manage.subPages.rolesPermisosDetail.authority,
 	},
 	{
 		path: cfg.manage.subPages.manageUsers.to,

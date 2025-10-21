@@ -1,4 +1,4 @@
-/* eslint-disable import/extensions */
+﻿/* eslint-disable import/extensions */
 import React, { useMemo } from 'react';
 import { Formik, Form, type FormikHelpers } from 'formik';
 import { toast } from 'react-toastify';
@@ -148,7 +148,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 		err: any,
 		setFieldError: FormikHelpers<FormValues>['setFieldError'],
 	) => {
-		const errorPayload = err?.response?.data;
+		const errorPayload = err?.response?.data    ;
 
 		if (errorPayload?.errors) {
 			Object.entries(errorPayload.errors).forEach(([field, messages]) => {
