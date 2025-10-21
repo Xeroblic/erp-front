@@ -170,7 +170,7 @@ const TableUser: React.FC<Props> = ({ tableData, status, error, globalFilter, se
 
     return (
         <div>
-            <Card className='overflow-hidden bg-zinc-900'>
+            <Card className='overflow-hidden'>
                 <CardBody className='p-0'>
                     <div className='flex items-center justify-between border-b border-zinc-700 p-6'>
                         <div className='flex items-center gap-3'>
@@ -178,12 +178,12 @@ const TableUser: React.FC<Props> = ({ tableData, status, error, globalFilter, se
                                 <Icon icon='HeroUsers' className='h-6 w-6 text-blue-400' />
                             </div>
                             <div>
-                                <h2 className='text-lg font-semibold text-white'>Lista de Usuarios</h2>
-                                <p className='text-sm text-zinc-400'>Gestiona permisos y roles de usuarios</p>
+                                <h2 className='text-lg font-semibold'>Lista de Usuarios</h2>
+                                <p className='text-sm'>Gestiona permisos y roles de usuarios</p>
                             </div>
                         </div>
-                        <div className='rounded-full bg-white/10 px-4 py-1.5'>
-                            <span className='text-sm font-medium text-white'>
+                        <div className='rounded-full px-4 py-1.5'>
+                            <span className='text-sm font-medium'>
                                 <Icon icon='HeroUsers' className='mr-1 inline h-4 w-4' />
                                 {tableData.length} usuarios encontrados
                             </span>
@@ -196,44 +196,45 @@ const TableUser: React.FC<Props> = ({ tableData, status, error, globalFilter, se
                         {status === 'failed' && <div className='py-12 text-center text-red-400'>Error: {error}</div>}
                         {status === 'idle' && (
                             <>
-                                <Table className='w-full'>
-                                    <THead className='bg-zinc-800'>
-                                        {table.getHeaderGroups().map((hg) => (
-                                            <Tr key={hg.id}>
-                                                {hg.headers.map((header) => (
-                                                    <Th key={header.id} className='px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-zinc-300'>
-                                                        {header.isPlaceholder ? null : (
-                                                            <div
-                                                                className={header.column.getCanSort() ? 'flex cursor-pointer select-none items-center gap-2 hover:text-white' : ''}
-                                                                onClick={header.column.getToggleSortingHandler()}>
-                                                                {flexRender(header.column.columnDef.header, header.getContext())}
-                                                                {{
-                                                                    asc: <span>▲</span>,
-                                                                    desc: <span>▼</span>,
-                                                                }[header.column.getIsSorted() as string] ?? null}
-                                                            </div>
-                                                        )}
-                                                    </Th>
-                                                ))}
-                                            </Tr>
-                                        ))}
-                                    </THead>
-                                    <TBody className='divide-y divide-zinc-700'>
-                                        {table.getRowModel().rows.map((row) => (
-                                            <Tr key={row.id} className='transition-colors hover:bg-zinc-800/50'>
-                                                {row.getVisibleCells().map((cell) => (
-                                                    <Td key={cell.id} className='px-6 py-4 text-sm text-zinc-300'>
-                                                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                                    </Td>
-                                                ))}
-                                            </Tr>
-                                        ))}
-                                    </TBody>
-                                </Table>
-
-                                <div className='border-t border-zinc-700 p-4'>
-                                    <TableCardFooterTemplateV2 table={table} />
-                                </div>
+                               <div className='overflow-x-auto'>
+									<Table className='min-w-full'>
+										<THead>
+											{table.getHeaderGroups().map((hg) => (
+												<Tr key={hg.id}>
+													{hg.headers.map((header) => (
+														<Th
+															key={header.id}
+															className='p-4 text-left font-semibold'>
+															{flexRender(
+																header.column.columnDef.header,
+																header.getContext(),
+															)}
+														</Th>
+													))}
+												</Tr>
+											))}
+										</THead>
+										<TBody>
+											{table.getRowModel().rows.map((row) => (
+												<Tr
+													key={row.id}
+													className={`border-b transition-colors`}>
+													{row.getVisibleCells().map((cell) => (
+														<Td key={cell.id} className='p-4'>
+															{flexRender(
+																cell.column.columnDef.cell,
+																cell.getContext(),
+															)}
+														</Td>
+													))}
+												</Tr>
+											))}
+										</TBody>
+									</Table>
+								</div>
+								<div className='border-t p-4'>
+									<TableCardFooterTemplateV2 table={table} />
+								</div>
                             </>
                         )}
                     </div>

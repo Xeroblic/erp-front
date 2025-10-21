@@ -9,10 +9,12 @@ roles y permisos/
 ├── tabs/               # Componentes de cada tab
 │   ├── InformacionTab.tsx  # Tab de información del usuario
 │   ├── RolesTab.tsx       # Tab de gestión de roles
-│   └── PermisosTab.tsx    # Tab de gestión de permisos
+│   ├── PermisosTab.tsx    # Tab de gestión de permisos
+│   └── AccesoJerarquico.tsx # Tab de accesos jerárquicos
 ├── hooks/              # Custom hooks
 │   ├── useUserData.ts      # Hook para transformar datos de usuario
-│   └── useUserPermissions.ts # Hook para gestionar permisos
+│   ├── useUserPermissions.ts # Hook para gestionar permisos
+│   └── useUserAccess.ts    # Hook para obtener accesos jerárquicos
 ├── utils/              # Utilidades y helpers
 │   ├── transformers.ts # Funciones de transformación de datos
 │   └── filters.ts      # Funciones de filtrado para tablas
@@ -32,11 +34,13 @@ roles y permisos/
 - **InformacionTab**: Muestra datos básicos del usuario y resumen
 - **RolesTab**: Formulario para asignar/editar roles
 - **PermisosTab**: Formulario para gestionar permisos directos
+- **AccesoJerarquico**: Tab para gestionar accesos a subsidiarias y sucursales
 
 ### Custom Hooks
 
 - **useUserData**: Transforma y enriquece datos del usuario
 - **useUserPermissions**: Gestiona opciones de roles y permisos disponibles
+- **useUserAccess**: Obtiene y transforma accesos jerárquicos desde los slices de subsidiarias y sucursales
 
 ### Utilidades
 

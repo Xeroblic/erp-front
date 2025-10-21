@@ -17,11 +17,12 @@ import {
 } from '@/store/slices/rolesPermisos/rolesPermisosSlice';
 import { fetchPermissions, fetchRoles } from '@/store/slices/permissions/permissionsSlice';
 
-// Importaciones modulares
 import DynamicTabs from './components/DynamicTabs';
 import InformacionTab from './tabs/InformacionTab';
 import RolesTab from './tabs/RolesTab';
 import PermisosTab from './tabs/PermisosTab';
+import AccesoJerarquico from './tabs/AccesoJerarquico';
+import { useUserAccess } from './hooks/useUserAccess';
 import { useUserPermissions } from './hooks/useUserPermissions';
 import { useUserData } from './hooks/useUserData';
 import { USER_DETAIL_TABS } from './constants/tabs';
@@ -43,6 +44,13 @@ const UserPermissionsDetail: React.FC = () => {
 
 	const selectedUser = usuarios?.find((u) => u.id === parseInt(userId || '0'));
 
+	// Access initial data and pending changes
+	const { access: initialAccess } = useUserAccess(parseInt(userId || '0'));
+	const [accessPending, setAccessPending] = React.useState<any | null>(null);
+
+	const [dirty, setDirty] = React.useState(false);
+	const [saving, setSaving] = React.useState(false);
+
 	// Usar hooks personalizados
 	const userData = useUserData(selectedUser);
 	const { roleOptions, permissionOptions, currentRoles, currentPermissions } =
@@ -61,6 +69,12 @@ const UserPermissionsDetail: React.FC = () => {
 		onSubmit: async (values, { setSubmitting }) => {
 			if (selectedUser) {
 				try {
+					console.debug('[UserPermissionsDetail] submit payload', {
+						userId: selectedUser.id,
+						values,
+						currentRoles,
+						currentPermissions,
+					});
 					await dispatch(
 						updateUsuarioRolesPerms({
 							id: selectedUser.id,
@@ -81,6 +95,70 @@ const UserPermissionsDetail: React.FC = () => {
 			}
 		},
 	});
+
+	// Helpers
+	const arraysEqual = (a: any[] = [], b: any[] = []) => {
+		if (a.length !== b.length) return false;
+		const sa = [...a].sort();
+		const sb = [...b].sort();
+		return sa.every((v, i) => v === sb[i]);
+	};
+
+	const accessEquals = (a: any | null, b: any | null) => {
+		if (!a && !b) return true;
+		if (!a || !b) return false;
+		// compare branch ids and subsidiary ids
+		const ba = (a.branches || []).map((x: any) => x.id).sort();
+		const bb = (b.branches || []).map((x: any) => x.id).sort();
+		const sa = (a.subsidiaries || []).map((x: any) => x.id).sort();
+		const sb = (b.subsidiaries || []).map((x: any) => x.id).sort();
+		return arraysEqual(ba, bb) && arraysEqual(sa, sb);
+	};
+
+	// Derivar estado dirty cuando cambian roles/permisos o accesos pendientes
+	React.useEffect(() => {
+		const rolesChanged = !arraysEqual(formik.values.roles, currentRoles);
+		const permsChanged = !arraysEqual(formik.values.permisos, currentPermissions);
+		const accessChanged = !accessEquals(accessPending, initialAccess);
+		setDirty(rolesChanged || permsChanged || accessChanged);
+	}, [
+		formik.values.roles,
+		formik.values.permisos,
+		accessPending,
+		initialAccess,
+		currentRoles,
+		currentPermissions,
+	]);
+
+	const handleAccessChange = (next: any) => {
+		setAccessPending(next);
+	};
+
+	const handleSaveAll = async () => {
+		if (!selectedUser) return;
+		setSaving(true);
+		try {
+			// First save roles & permissions via formik
+			await formik.submitForm();
+
+			// TODO: persist accessPending if backend supports it. For now log and show toast.
+			if (accessPending) {
+				// eslint-disable-next-line no-console
+				console.debug('[UserPermissionsDetail] accessPending to save', accessPending);
+				toast.info('Cambios en accesos detectados. Implementa endpoint para persistirlos.');
+			}
+
+			// Refresh users list
+			await dispatch(fetchUsuariosConRolesPerms());
+
+			setDirty(false);
+			toast.success('Cambios guardados');
+		} catch (err: any) {
+			toast.error(err?.message || 'Error al guardar cambios');
+		} finally {
+			setSaving(false);
+		}
+	};
 
 	if (!selectedUser || !userData) {
 		return (
@@ -131,7 +209,39 @@ const UserPermissionsDetail: React.FC = () => {
 							{selectedUser.is_active ? 'Activo' : 'Inactivo'}
 						</Badge>
 					</div>
-					<Button variant='outline' size='sm' onClick={() => navigate('/gestion/roles-permisos')}>
+					<div className='ml-auto flex items-center gap-3'>
+						{/* status tag */}
+						<span
+							className={`rounded-full px-3 py-1 text-sm ${saving ? 'bg-yellow-100 text-yellow-800' : dirty ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'}`}>
+							{saving ? 'Guardando...' : dirty ? 'No guardado' : 'Guardado'}
+						</span>
+						{/* Save button */}
+						<Button
+							color='blue'
+							variant='solid'
+							onClick={handleSaveAll}
+							isDisable={!dirty || saving}>
+							{saving ? 'Guardando...' : 'Guardar cambios'}
+						</Button>
+					</div>
+					<div className='ml-4 flex items-center gap-3'>
+						<div className='flex h-12 w-12 items-center justify-center rounded-full bg-blue-500 text-lg font-bold text-white'>
+							{selectedUser.first_name?.charAt(0) ||
+								selectedUser.email?.charAt(0) ||
+								'?'}
+						</div>
+						<div>
+							<h1 className='text-xl font-semibold'>{displayName}</h1>
+							<p className='text-sm text-zinc-500'>{selectedUser.email}</p>
+						</div>
+						<Badge color={selectedUser.is_active ? 'emerald' : 'red'}>
+							{selectedUser.is_active ? 'Activo' : 'Inactivo'}
+						</Badge>
+					</div>
+					<Button
+						variant='outline'
+						size='sm'
+						onClick={() => navigate('/gestion/roles-permisos')}>
 						<Icon icon='HeroArrowLeft' className='mr-2' />
 						Volver
 					</Button>
@@ -167,7 +277,6 @@ const UserPermissionsDetail: React.FC = () => {
 									formik={formik}
 									roleOptions={roleOptions}
 									currentRoles={currentRoles}
-									onCancel={() => navigate('/gestion/roles-permisos')}
 								/>
 							)}
 
@@ -177,7 +286,14 @@ const UserPermissionsDetail: React.FC = () => {
 									permissionOptions={permissionOptions}
 									currentPermissions={currentPermissions}
 									user={selectedUser}
-									onCancel={() => navigate('/gestion/roles-permisos')}
+								/>
+							)}
+
+							{activeTab === 'acceso_jerarquico' && (
+								<AccesoJerarquico
+									userId={parseInt(userId || '0')}
+									editable={true}
+									onChange={handleAccessChange}
 								/>
 							)}
 						</div>

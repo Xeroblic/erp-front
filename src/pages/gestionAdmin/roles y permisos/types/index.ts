@@ -1,6 +1,6 @@
 import type { UserWithDetails } from '@/store/slices/usersAdmin/usersAdminSlice';
 
-export type TabType = 'informacion' | 'roles' | 'permisos';
+export type TabType = 'informacion' | 'roles' | 'permisos' | 'acceso_jerarquico';
 
 export interface UserRow extends UserWithDetails {
     displayName: string;

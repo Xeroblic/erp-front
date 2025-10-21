@@ -16,4 +16,9 @@ export const USER_DETAIL_TABS: TabConfig[] = [
         label: 'Permisos',
         icon: 'HeroLockClosed',
     },
+    {
+        id: 'acceso_jerarquico',
+        label: 'Acceso Jerárquico',
+        icon: 'HeroUsers',
+    },
 ];

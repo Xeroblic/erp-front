@@ -1,6 +1,6 @@
 import React from 'react';
 import { FormikProps } from 'formik';
-import Button from '@/components/ui/Button';
+// Local Button removed; global save is in header
 import Label from '@/components/form/Label';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import Badge from '@/components/ui/Badge';
@@ -13,7 +13,6 @@ interface PermisosTabProps {
 	permissionOptions: TSelectOption[];
 	currentPermissions: string[];
 	user: UserWithDetails;
-	onCancel: () => void;
 }
 
 const PermisosTab: React.FC<PermisosTabProps> = ({
@@ -21,7 +20,6 @@ const PermisosTab: React.FC<PermisosTabProps> = ({
 	permissionOptions,
 	currentPermissions,
 	user,
-	onCancel,
 }) => {
 	return (
 		<form onSubmit={formik.handleSubmit} className='space-y-6'>
@@ -95,16 +93,7 @@ const PermisosTab: React.FC<PermisosTabProps> = ({
 				</div>
 			</div>
 
-			<div className='flex justify-end gap-2'>
-				<Button variant='outline' onClick={onCancel}>
-					Cancelar
-				</Button>
-				<button type='submit'>
-					<Button variant='solid' color='blue' isDisable={formik.isSubmitting}>
-						{formik.isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
-					</Button>
-				</button>
-			</div>
+			{/* Local action buttons removed: use global "Guardar cambios" button in header */}
 		</form>
 	);
 };
