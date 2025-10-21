@@ -267,8 +267,10 @@ function AceptarInvitacionEmpresa() {
 				<div className='relative flex min-h-screen items-center justify-center px-4 py-12'>
 					<div className='w-full max-w-[440px]'>
 						<div className='rounded-2xl border border-gray-200 bg-white p-10 shadow-lg'>
-							<div className='mb-10 flex justify-center'>
+							<div className='mb-10 flex flex-col items-center justify-center gap-1'>
 								<LogoTemplate className='h-12' />
+								<p className='text-xs tracking-wide text-gray-500'>Zentria ERP</p>
+								<p className='text-xs tracking-wide text-gray-500'>Zentria ERP</p>
 							</div>
 
 							<div className='mb-2 text-center'>
@@ -291,6 +293,8 @@ function AceptarInvitacionEmpresa() {
 									</p>
 								</div>
 							)}
+
+							<div className='mb-6 border-t border-gray-200' />
 
 							<form className='space-y-5' onSubmit={formik.handleSubmit}>
 								<div>
@@ -382,22 +386,16 @@ function AceptarInvitacionEmpresa() {
 										)}
 								</div>
 
-								<button
-									type='submit'
-									disabled={formik.isSubmitting}
-									className='mt-7 w-full rounded-lg bg-blue-600 py-3.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500'>
-									{formik.isSubmitting ? (
-										<span className='flex items-center justify-center gap-2'>
-											<Icon
-												icon='DuoLoading'
-												className='h-[18px] w-[18px] animate-spin'
-											/>
-											Activando cuenta...
-										</span>
-									) : (
-										'Activar cuenta'
-									)}
-								</button>
+							<Button
+								type='submit'
+								variant='solid'
+								color='blue'
+								size='lg'
+								icon={formik.isSubmitting ? 'DuoLoading' : 'HeroCheck'}
+								isLoading={formik.isSubmitting}
+								className='mt-7 w-full'>
+								{formik.isSubmitting ? 'Activando cuenta...' : 'Activar cuenta'}
+							</Button>
 							</form>
 
 							<div className='mt-8 border-t border-gray-200 pt-6'>
