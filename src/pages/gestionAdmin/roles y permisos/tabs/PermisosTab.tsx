@@ -93,7 +93,6 @@ const PermisosTab: React.FC<PermisosTabProps> = ({
 				</div>
 			</div>
 
-			{/* Local action buttons removed: use global "Guardar cambios" button in header */}
 		</form>
 	);
 };

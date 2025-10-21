@@ -224,27 +224,6 @@ const UserPermissionsDetail: React.FC = () => {
 							{saving ? 'Guardando...' : 'Guardar cambios'}
 						</Button>
 					</div>
-					<div className='ml-4 flex items-center gap-3'>
-						<div className='flex h-12 w-12 items-center justify-center rounded-full bg-blue-500 text-lg font-bold text-white'>
-							{selectedUser.first_name?.charAt(0) ||
-								selectedUser.email?.charAt(0) ||
-								'?'}
-						</div>
-						<div>
-							<h1 className='text-xl font-semibold'>{displayName}</h1>
-							<p className='text-sm text-zinc-500'>{selectedUser.email}</p>
-						</div>
-						<Badge color={selectedUser.is_active ? 'emerald' : 'red'}>
-							{selectedUser.is_active ? 'Activo' : 'Inactivo'}
-						</Badge>
-					</div>
-					<Button
-						variant='outline'
-						size='sm'
-						onClick={() => navigate('/gestion/roles-permisos')}>
-						<Icon icon='HeroArrowLeft' className='mr-2' />
-						Volver
-					</Button>
 				</SubheaderLeft>
 			</Subheader>
 

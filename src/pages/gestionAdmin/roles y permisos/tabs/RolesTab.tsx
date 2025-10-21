@@ -35,7 +35,6 @@ const RolesTab: React.FC<RolesTabProps> = ({ formik, roleOptions, currentRoles }
 										if (next.has(opt.value as string))
 											next.delete(opt.value as string);
 										else next.add(opt.value as string);
-										// Garantizar que no haya duplicados y convertir a array
 										formik.setFieldValue('roles', Array.from(next));
 									}}
 								/>
@@ -65,8 +64,6 @@ const RolesTab: React.FC<RolesTabProps> = ({ formik, roleOptions, currentRoles }
 					)}
 				</div>
 			</div>
-
-			{/* Local action buttons removed: use global "Guardar cambios" button in header */}
 		</form>
 	);
 };
