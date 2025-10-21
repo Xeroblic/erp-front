@@ -136,7 +136,9 @@ const Productos: React.FC = () => {
 			setSelectedProduct(null);
 		} catch (err: any) {
 			const message =
-				typeof err === 'string' ? err : err?.message ?? 'No se pudo actualizar el producto';
+				typeof err === 'string'
+					? err
+					: (err?.message ?? 'No se pudo actualizar el producto');
 			toast.error(message);
 		}
 	};
@@ -174,40 +176,44 @@ const Productos: React.FC = () => {
 
 				<ProductStats stats={stats} loading={loading} />
 
-		<Tabs activeTab={activeTab} onTabChange={setActiveTab} className='mt-6'>
-			<Tab id='products' text='Productos' icon='HeroCubeTransparent' badge={meta.total}>
-				<ProductListTab
-					products={products}
-					meta={meta}
-					loading={loading}
-					filters={filters}
-					onSearchChange={handleSearchChange}
-					onStatusChange={handleStatusChange}
-					onBrandChange={handleBrandChange}
-					onCategoryChange={handleCategoryChange}
-					onTypeChange={handleTypeChange}
-					onResetFilters={handleResetFilters}
-					brands={brands}
-					categories={categories}
-					brandsLoading={brandsLoading}
-					categoriesLoading={categoriesLoading}
-					page={page}
-					onPageChange={setPage}
-					onView={handleViewProduct}
-					onEdit={(product) => {
-					setSelectedProduct(product);
-					setEditOpen(true);
-					}}
-					onDelete={handleDeleteProduct}
-				/>
-			</Tab>
-			<Tab id='inventory' text='Inventario' icon='HeroBuildingStorefront'>
-				<InventoryTab />
-			</Tab>
-			<Tab id='analytics' text='Analisis' icon='HeroChartBarSquare'>
-				<AnalyticsTab />
-			</Tab>
-		</Tabs>
+				<Tabs activeTab={activeTab} onTabChange={setActiveTab} className='mt-6'>
+					<Tab
+						id='products'
+						text='Productos'
+						icon='HeroCubeTransparent'
+						badge={meta.total}>
+						<ProductListTab
+							products={products}
+							meta={meta}
+							loading={loading}
+							filters={filters}
+							onSearchChange={handleSearchChange}
+							onStatusChange={handleStatusChange}
+							onBrandChange={handleBrandChange}
+							onCategoryChange={handleCategoryChange}
+							onTypeChange={handleTypeChange}
+							onResetFilters={handleResetFilters}
+							brands={brands}
+							categories={categories}
+							brandsLoading={brandsLoading}
+							categoriesLoading={categoriesLoading}
+							page={page}
+							onPageChange={setPage}
+							onView={handleViewProduct}
+							onEdit={(product) => {
+								setSelectedProduct(product);
+								setEditOpen(true);
+							}}
+							onDelete={handleDeleteProduct}
+						/>
+					</Tab>
+					<Tab id='inventory' text='Inventario' icon='HeroBuildingStorefront'>
+						<InventoryTab />
+					</Tab>
+					<Tab id='analytics' text='Analisis' icon='HeroChartBarSquare'>
+						<AnalyticsTab />
+					</Tab>
+				</Tabs>
 			</Container>
 
 			{/* Modales */}

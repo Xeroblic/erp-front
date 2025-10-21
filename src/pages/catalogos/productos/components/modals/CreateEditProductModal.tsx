@@ -74,49 +74,51 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 		values: ProductFormValues,
 		{ setSubmitting, resetForm, setErrors }: FormikHelpers<ProductFormValues>,
 	) => {
-    try {
-        let payload: { data: Partial<IProduct>; categoryIds: number[] };
-        if (product) {
-            // Edición: usar el builder completo que ya mapea categorías correctamente
-            payload = buildSubmitPayload(values);
-        } else {
-            // Creación: construir payload mínimo pero respetando categorías y toggles
-            const categoryIds = (values.categories || []).map((c) => Number(c.value));
+		try {
+			let payload: { data: Partial<IProduct>; categoryIds: number[] };
+			if (product) {
+				// Edición: usar el builder completo que ya mapea categorías correctamente
+				payload = buildSubmitPayload(values);
+			} else {
+				// Creación: construir payload mínimo pero respetando categorías y toggles
+				const categoryIds = (values.categories || []).map((c) => Number(c.value));
 
-            const data: Partial<IProduct> = {};
-            if (values.sku && values.sku.trim()) data.sku = values.sku.trim();
-            if (values.name && values.name.trim()) data.name = values.name.trim();
-            if (values.brand_id) data.brand_id = Number(values.brand_id);
-            if (values.price !== '' && values.price !== undefined) data.price = Number(values.price);
-            if (values.product_type) data.product_type = values.product_type;
-            // Incluir toggles del formulario para no perderlos en la creación rápida
-            if (typeof values.serial_tracking === 'boolean') data.serial_tracking = values.serial_tracking;
-            if (typeof values.is_active === 'boolean') data.is_active = values.is_active;
+				const data: Partial<IProduct> = {};
+				if (values.sku && values.sku.trim()) data.sku = values.sku.trim();
+				if (values.name && values.name.trim()) data.name = values.name.trim();
+				if (values.brand_id) data.brand_id = Number(values.brand_id);
+				if (values.price !== '' && values.price !== undefined)
+					data.price = Number(values.price);
+				if (values.product_type) data.product_type = values.product_type;
+				// Incluir toggles del formulario para no perderlos en la creación rápida
+				if (typeof values.serial_tracking === 'boolean')
+					data.serial_tracking = values.serial_tracking;
+				if (typeof values.is_active === 'boolean') data.is_active = values.is_active;
 
-            payload = { data, categoryIds };
-        }
+				payload = { data, categoryIds };
+			}
 
-        await onSubmit(payload);
-        resetForm();
-        toast.success(
-            product ? 'Producto actualizado correctamente' : 'Producto creado correctamente',
-        );
+			await onSubmit(payload);
+			resetForm();
+			toast.success(
+				product ? 'Producto actualizado correctamente' : 'Producto creado correctamente',
+			);
 		} catch (error: any) {
 			// If backend returned structured validation errors, map them into Formik
 			const payload = error?.response?.data ?? error ?? {};
 			// payload could be { message: '...', errors: { field: ['msg'] } }
 			if (payload && typeof payload === 'object') {
 				const serverErrors: Record<string, string> = {};
-            if (payload.errors && typeof payload.errors === 'object') {
-                Object.entries(payload.errors).forEach(([key, val]) => {
-                    if (Array.isArray(val) && val.length) serverErrors[key] = String(val[0]);
-                    else if (typeof val === 'string') serverErrors[key] = val;
-                });
-                // Mapear errores de backend en 'category_ids' al campo UI 'categories'
-                if (serverErrors['category_ids'] && !serverErrors['categories']) {
-                    serverErrors['categories'] = serverErrors['category_ids'];
-                }
-            }
+				if (payload.errors && typeof payload.errors === 'object') {
+					Object.entries(payload.errors).forEach(([key, val]) => {
+						if (Array.isArray(val) && val.length) serverErrors[key] = String(val[0]);
+						else if (typeof val === 'string') serverErrors[key] = val;
+					});
+					// Mapear errores de backend en 'category_ids' al campo UI 'categories'
+					if (serverErrors['category_ids'] && !serverErrors['categories']) {
+						serverErrors['categories'] = serverErrors['category_ids'];
+					}
+				}
 
 				if (Object.keys(serverErrors).length) {
 					setErrors(serverErrors as any);
@@ -125,13 +127,14 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 				const message =
 					typeof payload.message === 'string'
 						? payload.message
-						: payload?.message ?? 'No se pudo guardar el producto. Intenta nuevamente.';
+						: (payload?.message ??
+							'No se pudo guardar el producto. Intenta nuevamente.');
 				toast.error(message);
 			} else {
 				const message =
 					typeof error === 'string'
 						? error
-						: error?.message ?? 'No se pudo guardar el producto. Intenta nuevamente.';
+						: (error?.message ?? 'No se pudo guardar el producto. Intenta nuevamente.');
 				toast.error(message);
 			}
 		} finally {

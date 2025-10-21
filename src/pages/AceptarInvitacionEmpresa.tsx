@@ -3,6 +3,7 @@ import Input from '@/components/form/Input';
 import Validation from '@/components/form/Validation';
 import Icon from '@/components/icon/Icon';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
+import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import ApiService from '@/services/ApiService';
 import LogoTemplate from '@/templates/layouts/Logo/Logo.template';
@@ -73,18 +74,36 @@ const renderInvalidState = (
 	title: string,
 ) => (
 	<PageWrapper isProtectedRoute={false} title={title}>
-		<div className='container mx-auto flex h-full items-center justify-center px-4'>
-			<div className='flex max-w-md flex-col items-center gap-6 text-center'>
-				<LogoTemplate className='h-12' />
-				<h2 className='text-2xl font-semibold text-white'>Invitacion no disponible</h2>
-				<p className='text-sm text-zinc-400'>{message}</p>
-				<Button
-					size='lg'
-					variant='solid'
-					className='font-semibold'
-					onClick={() => navigate('/login')}>
-					Ir al inicio de sesion
-				</Button>
+		<div className='relative min-h-screen overflow-hidden bg-gradient-to-br from-red-50 via-white to-orange-50'>
+			<div className='absolute inset-0 overflow-hidden'>
+				<div className='absolute -left-40 -top-40 h-80 w-80 animate-pulse rounded-full bg-gradient-to-br from-red-400/20 to-orange-400/20 blur-3xl' />
+				<div className='absolute -right-40 top-40 h-96 w-96 animate-pulse rounded-full bg-gradient-to-br from-orange-400/20 to-yellow-400/20 blur-3xl delay-700' />
+			</div>
+
+			<div className='relative flex min-h-screen items-center justify-center px-4'>
+				<div className='w-full max-w-md text-center'>
+					<div className='rounded-3xl bg-white/80 p-8 shadow-2xl ring-1 ring-gray-200/50 backdrop-blur-xl'>
+						<div className='mb-6 flex justify-center'>
+							<LogoTemplate className='h-16' />
+						</div>
+						<div className='mb-6 flex justify-center'>
+							<div className='rounded-full bg-red-100 p-4'>
+								<Icon icon='HeroXCircle' className='h-12 w-12 text-red-500' />
+							</div>
+						</div>
+						<h2 className='mb-3 text-2xl font-bold text-gray-900'>{title}</h2>
+						<p className='mb-6 text-gray-600'>{message}</p>
+						<button
+							onClick={() => navigate('/login')}
+							className='group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-gray-600 to-gray-700 px-6 py-3 font-semibold text-white shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl'>
+							<span className='relative z-10 flex items-center justify-center gap-2'>
+								<Icon icon='HeroArrowLeft' className='h-5 w-5' />
+								Ir al inicio de sesión
+							</span>
+							<div className='absolute inset-0 -z-0 bg-gradient-to-r from-gray-700 to-gray-800 opacity-0 transition-opacity duration-300 group-hover:opacity-100' />
+						</button>
+					</div>
+				</div>
 			</div>
 		</div>
 	</PageWrapper>
@@ -195,11 +214,29 @@ function AceptarInvitacionEmpresa() {
 	if (isLoadingInvitation) {
 		return (
 			<PageWrapper isProtectedRoute={false} title='Validando invitacion'>
-				<div className='container mx-auto flex h-full items-center justify-center px-4'>
-					<div className='flex max-w-md flex-col items-center gap-4 text-center'>
-						<LogoTemplate className='h-12' />
-						<Icon icon='DuoLoading' className='h-10 w-10 animate-spin text-white' />
-						<p className='text-sm text-zinc-400'>Validando invitacion, por favor espera...</p>
+				<div className='relative min-h-screen overflow-hidden bg-gradient-to-br from-blue-50 via-white to-indigo-50'>
+					<div className='absolute inset-0 overflow-hidden'>
+						<div className='absolute -left-40 -top-40 h-80 w-80 animate-pulse rounded-full bg-gradient-to-br from-blue-400/20 to-purple-400/20 blur-3xl' />
+						<div className='absolute -right-40 top-40 h-96 w-96 animate-pulse rounded-full bg-gradient-to-br from-indigo-400/20 to-pink-400/20 blur-3xl delay-700' />
+					</div>{' '}
+					<div className='relative flex min-h-screen items-center justify-center px-4'>
+						<div className='w-full max-w-md text-center'>
+							<div className='rounded-3xl bg-white/80 p-12 shadow-2xl ring-1 ring-gray-200/50 backdrop-blur-xl'>
+								<div className='mb-6 flex justify-center'>
+									<LogoTemplate className='h-16' />
+								</div>
+								<div className='mb-6 flex justify-center'>
+									<Icon
+										icon='DuoLoading'
+										className='h-16 w-16 animate-spin text-blue-500'
+									/>
+								</div>
+								<h3 className='mb-2 text-xl font-semibold text-gray-900'>
+									Validando invitación
+								</h3>
+								<p className='text-gray-600'>Por favor espera un momento...</p>
+							</div>
+						</div>
 					</div>
 				</div>
 			</PageWrapper>
@@ -212,99 +249,188 @@ function AceptarInvitacionEmpresa() {
 
 	return (
 		<PageWrapper isProtectedRoute={false} title='Aceptar invitacion a empresa'>
-			<div className='container mx-auto flex h-full items-center justify-center px-4'>
-				<div className='flex w-full max-w-sm flex-col gap-8'>
-					<div className='flex justify-center'>
-						<LogoTemplate className='h-12' />
-					</div>
-					<div className='text-center'>
-						<span className='text-3xl font-semibold text-white'>Acepta la invitacion</span>
-						<p className='mt-2 text-sm text-zinc-400'>
-							Define una contrasena para activar tu cuenta y comenzar a usar el ERP.
-						</p>
-						{invitationInfo?.email ? (
-							<p className='mt-3 text-xs text-zinc-500'>
-								Invitacion enviada a{' '}
-								<span className='font-semibold text-white'>{invitationInfo.email}</span>
+			<div className='relative min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50'>
+				<div
+					className='absolute inset-0 opacity-[0.03]'
+					style={{
+						backgroundImage:
+							'radial-gradient(circle at 1px 1px, rgb(0 0 0) 1px, transparent 0)',
+						backgroundSize: '40px 40px',
+					}}
+				/>
+
+				<div className='absolute inset-0 overflow-hidden'>
+					<div className='absolute -left-20 top-0 h-96 w-96 rounded-full bg-blue-400/5 blur-3xl' />
+					<div className='absolute -right-20 bottom-0 h-96 w-96 rounded-full bg-indigo-400/5 blur-3xl' />
+				</div>
+
+				<div className='relative flex min-h-screen items-center justify-center px-4 py-12'>
+					<div className='w-full max-w-[440px]'>
+						<div className='rounded-2xl border border-gray-200 bg-white p-10 shadow-lg'>
+							<div className='mb-10 flex justify-center'>
+								<LogoTemplate className='h-12' />
+							</div>
+
+							<div className='mb-2 text-center'>
+								<Badge className='text-2xl font-bold text-gray-900'>
+									Activa tu cuenta
+								</Badge>
+							</div>
+
+							<p className='mb-8 text-center text-sm text-gray-600'>
+								Configura tu contraseña para acceder al sistema ERP
 							</p>
-						) : null}
+
+							{invitationInfo?.email && (
+								<div className='mb-8 rounded-lg bg-gray-50 px-4 py-3.5 text-center'>
+									<p className='text-xs font-medium uppercase tracking-wider text-gray-500'>
+										Cuenta
+									</p>
+									<p className='mt-1.5 text-sm font-semibold text-gray-900'>
+										{invitationInfo.email}
+									</p>
+								</div>
+							)}
+
+							<form className='space-y-5' onSubmit={formik.handleSubmit}>
+								<div>
+									<label
+										htmlFor='password'
+										className='mb-2.5 block text-sm font-medium text-gray-700'>
+										Contraseña
+									</label>
+									<div className='relative'>
+										<div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5'>
+											<Icon
+												icon='HeroKey'
+												className='h-[18px] w-[18px] text-gray-400'
+											/>
+										</div>
+										<input
+											type={passwordShowStatus ? 'text' : 'password'}
+											id='password'
+											name='password'
+											placeholder='Mínimo 8 caracteres'
+											value={formik.values.password}
+											onChange={formik.handleChange}
+											onBlur={formik.handleBlur}
+											autoComplete='new-password'
+											className='block w-full rounded-lg border border-gray-300 bg-white py-3 pl-11 pr-11 text-sm text-gray-900 placeholder-gray-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20'
+										/>
+										<button
+											type='button'
+											onClick={togglePasswordVisibility}
+											tabIndex={-1}
+											className='absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400 transition-colors hover:text-gray-600'>
+											<Icon
+												icon={
+													passwordShowStatus ? 'HeroEyeSlash' : 'HeroEye'
+												}
+												className='h-[18px] w-[18px]'
+											/>
+										</button>
+									</div>
+									{formik.touched.password && formik.errors.password && (
+										<p className='mt-2 text-xs text-red-600'>
+											{formik.errors.password}
+										</p>
+									)}
+								</div>
+
+								<div>
+									<label
+										htmlFor='confirm_password'
+										className='mb-2.5 block text-sm font-medium text-gray-700'>
+										Confirmar contraseña
+									</label>
+									<div className='relative'>
+										<div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5'>
+											<Icon
+												icon='HeroKey'
+												className='h-[18px] w-[18px] text-gray-400'
+											/>
+										</div>
+										<input
+											type={passwordShowStatus ? 'text' : 'password'}
+											id='confirm_password'
+											name='confirm_password'
+											placeholder='Repite la contraseña'
+											value={formik.values.confirm_password}
+											onChange={formik.handleChange}
+											onBlur={formik.handleBlur}
+											autoComplete='new-password'
+											className='block w-full rounded-lg border border-gray-300 bg-white py-3 pl-11 pr-11 text-sm text-gray-900 placeholder-gray-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20'
+										/>
+										<button
+											type='button'
+											onClick={togglePasswordVisibility}
+											tabIndex={-1}
+											className='absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400 transition-colors hover:text-gray-600'>
+											<Icon
+												icon={
+													passwordShowStatus ? 'HeroEyeSlash' : 'HeroEye'
+												}
+												className='h-[18px] w-[18px]'
+											/>
+										</button>
+									</div>
+									{formik.touched.confirm_password &&
+										formik.errors.confirm_password && (
+											<p className='mt-2 text-xs text-red-600'>
+												{formik.errors.confirm_password}
+											</p>
+										)}
+								</div>
+
+								<button
+									type='submit'
+									disabled={formik.isSubmitting}
+									className='mt-7 w-full rounded-lg bg-blue-600 py-3.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500'>
+									{formik.isSubmitting ? (
+										<span className='flex items-center justify-center gap-2'>
+											<Icon
+												icon='DuoLoading'
+												className='h-[18px] w-[18px] animate-spin'
+											/>
+											Activando cuenta...
+										</span>
+									) : (
+										'Activar cuenta'
+									)}
+								</button>
+							</form>
+
+							<div className='mt-8 border-t border-gray-200 pt-6'>
+								<p className='text-center text-xs leading-relaxed text-gray-500'>
+									Al activar tu cuenta, aceptas los términos y condiciones del
+									sistema ERP.
+								</p>
+							</div>
+						</div>
+
+						<div className='mt-6 flex items-center justify-center gap-1.5 text-xs text-gray-500'>
+							<Icon icon='HeroLockClosed' className='h-3.5 w-3.5' />
+							<span>Conexión segura y encriptada</span>
+						</div>
 					</div>
-					<form className='flex flex-col gap-4' onSubmit={formik.handleSubmit}>
-						<div
-							className={classNames({
-								'mb-2': Boolean(formik.touched.password && formik.errors.password),
-							})}>
-							<Validation
-								isValid={!formik.errors.password}
-								isTouched={Boolean(formik.touched.password)}
-								invalidFeedback={formik.errors.password}>
-								<FieldWrap
-									firstSuffix={<Icon icon='HeroKey' className='mx-2' />}
-									lastSuffix={
-										<Icon
-											className='mx-2 cursor-pointer'
-											icon={passwordShowStatus ? 'HeroEyeSlash' : 'HeroEye'}
-											onClick={togglePasswordVisibility}
-										/>
-									}>
-									<Input
-										dimension='lg'
-										type={passwordShowStatus ? 'text' : 'password'}
-										id='password'
-										name='password'
-										placeholder='Contrasena'
-										value={formik.values.password}
-										onChange={formik.handleChange}
-										onBlur={formik.handleBlur}
-										autoComplete='new-password'
-									/>
-								</FieldWrap>
-							</Validation>
-						</div>
-						<div
-							className={classNames({
-								'mb-2': Boolean(formik.touched.confirm_password && formik.errors.confirm_password),
-							})}>
-							<Validation
-								isValid={!formik.errors.confirm_password}
-								isTouched={Boolean(formik.touched.confirm_password)}
-								invalidFeedback={formik.errors.confirm_password}>
-								<FieldWrap
-									firstSuffix={<Icon icon='HeroKey' className='mx-2' />}
-									lastSuffix={
-										<Icon
-											className='mx-2 cursor-pointer'
-											icon={passwordShowStatus ? 'HeroEyeSlash' : 'HeroEye'}
-											onClick={togglePasswordVisibility}
-										/>
-									}>
-									<Input
-										dimension='lg'
-										type={passwordShowStatus ? 'text' : 'password'}
-										id='confirm_password'
-										name='confirm_password'
-										placeholder='Confirmar contrasena'
-										value={formik.values.confirm_password}
-										onChange={formik.handleChange}
-										onBlur={formik.handleBlur}
-										autoComplete='new-password'
-									/>
-								</FieldWrap>
-							</Validation>
-						</div>
-						<div>
-							<Button
-								type='submit'
-								size='lg'
-								variant='solid'
-								className='w-full font-semibold'
-								disabled={formik.isSubmitting}>
-								{formik.isSubmitting ? 'Activando...' : 'Activar cuenta'}
-							</Button>
-						</div>
-					</form>
 				</div>
 			</div>
+
+			<style>{`
+				@keyframes fade-in {
+					from {
+						opacity: 0;
+						transform: translateY(-10px);
+					}
+					to {
+						opacity: 1;
+						transform: translateY(0);
+					}
+				}
+				.animate-fade-in {
+					animation: fade-in 0.6s ease-out;
+				}
+			`}</style>
 		</PageWrapper>
 	);
 }

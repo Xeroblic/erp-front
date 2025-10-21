@@ -11,7 +11,7 @@ import { useAppSelector } from '@/store';
 import { selectUserAuthority } from '@/store/selectors';
 
 const ContentRouter = () => {
-  const userAuthority = useAppSelector(selectUserAuthority)
+	const userAuthority = useAppSelector(selectUserAuthority);
 
 	return (
 		<Suspense
@@ -83,21 +83,24 @@ const ContentRouter = () => {
 				</>
 			}>
 			<Routes>
-        {contentRoutes.map((route) => (
-          <Route
-            key={route.path}
-            path={route.path}
-            element={
-              <AuthorityCheck
-                userAuthority={userAuthority}
-                authority={route.authority}
-              >
-                {route.element}
-              </AuthorityCheck>
-            }
-          />
-        ))}
-      </Routes>
+				{contentRoutes.map((route) => (
+					<Route
+						key={route.path}
+						path={route.path}
+						element={
+							route.public ? (
+								route.element
+							) : (
+								<AuthorityCheck
+									userAuthority={userAuthority}
+									authority={route.authority}>
+									{route.element}
+								</AuthorityCheck>
+							)
+						}
+					/>
+				))}
+			</Routes>
 		</Suspense>
 	);
 };

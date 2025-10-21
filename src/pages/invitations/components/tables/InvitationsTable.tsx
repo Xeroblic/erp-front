@@ -200,7 +200,11 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 		columnHelper.accessor('created_at', {
 			header: 'Fecha de Invitación',
 			cell: (info) => {
-				const date = new Date(info.getValue());
+				const value = info.getValue();
+				if (!value) {
+					return <span className='text-zinc-500 dark:text-zinc-400'>-</span>;
+				}
+				const date = new Date(value);
 				return (
 					<div className='flex flex-col'>
 						<span className='text-sm font-medium'>

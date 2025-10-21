@@ -89,7 +89,8 @@ export interface CreateInvitationData {
 	company_id: number;
 	subsidiary_id?: number;
 	branch_id: number;
-	role_name: string;
+	role_name?: string;
+	role_id?: number;
 	permissions?: string[];
 	additional_data?: Record<string, unknown>;
 	send_immediately?: boolean;

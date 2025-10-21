@@ -3,11 +3,12 @@ import DefaultAsideTemplate from '../templates/layouts/Asides/DefaultAside.templ
 import { authPages } from '../config/pages.config';
 
 const asideRoutes: RouteProps[] = [
-  { path: authPages.loginPage.to,            element: null },
-  { path: authPages.aceptarInvitacion.to,    element: null },
-  { path: authPages.recuperarPassword.to,    element: null },
-  { path: authPages.confirmarNuevaPass.to,   element: null },
-  { path: '*',                               element: <DefaultAsideTemplate /> },
+	{ path: authPages.loginPage.to, element: null },
+	{ path: authPages.aceptarInvitacion.to, element: null },
+	{ path: '/usuarios/activar/:token', element: null },
+	{ path: authPages.recuperarPassword.to, element: null },
+	{ path: authPages.confirmarNuevaPass.to, element: null },
+	{ path: '*', element: <DefaultAsideTemplate /> },
 ];
 
 export default asideRoutes;
