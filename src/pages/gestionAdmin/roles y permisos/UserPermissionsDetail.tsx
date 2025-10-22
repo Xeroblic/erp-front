@@ -44,14 +44,12 @@ const UserPermissionsDetail: React.FC = () => {
 
 	const selectedUser = usuarios?.find((u) => u.id === parseInt(userId || '0'));
 
-	// Access initial data and pending changes
 	const { access: initialAccess } = useUserAccess(parseInt(userId || '0'));
 	const [accessPending, setAccessPending] = React.useState<any | null>(null);
 
 	const [dirty, setDirty] = React.useState(false);
 	const [saving, setSaving] = React.useState(false);
 
-	// Usar hooks personalizados
 	const userData = useUserData(selectedUser);
 	const { roleOptions, permissionOptions, currentRoles, currentPermissions } =
 		useUserPermissions(selectedUser);
@@ -96,7 +94,6 @@ const UserPermissionsDetail: React.FC = () => {
 		},
 	});
 
-	// Helpers
 	const arraysEqual = (a: any[] = [], b: any[] = []) => {
 		if (a.length !== b.length) return false;
 		const sa = [...a].sort();
@@ -107,7 +104,6 @@ const UserPermissionsDetail: React.FC = () => {
 	const accessEquals = (a: any | null, b: any | null) => {
 		if (!a && !b) return true;
 		if (!a || !b) return false;
-		// compare branch ids and subsidiary ids
 		const ba = (a.branches || []).map((x: any) => x.id).sort();
 		const bb = (b.branches || []).map((x: any) => x.id).sort();
 		const sa = (a.subsidiaries || []).map((x: any) => x.id).sort();
@@ -115,7 +111,6 @@ const UserPermissionsDetail: React.FC = () => {
 		return arraysEqual(ba, bb) && arraysEqual(sa, sb);
 	};
 
-	// Derivar estado dirty cuando cambian roles/permisos o accesos pendientes
 	React.useEffect(() => {
 		const rolesChanged = !arraysEqual(formik.values.roles, currentRoles);
 		const permsChanged = !arraysEqual(formik.values.permisos, currentPermissions);
@@ -138,17 +133,13 @@ const UserPermissionsDetail: React.FC = () => {
 		if (!selectedUser) return;
 		setSaving(true);
 		try {
-			// First save roles & permissions via formik
 			await formik.submitForm();
 
-			// TODO: persist accessPending if backend supports it. For now log and show toast.
 			if (accessPending) {
-				// eslint-disable-next-line no-console
-				console.debug('[UserPermissionsDetail] accessPending to save', accessPending);
+				// console.debug('[UserPermissionsDetail] accessPending to save', accessPending);
 				toast.info('Cambios en accesos detectados. Implementa endpoint para persistirlos.');
 			}
 
-			// Refresh users list
 			await dispatch(fetchUsuariosConRolesPerms());
 
 			setDirty(false);

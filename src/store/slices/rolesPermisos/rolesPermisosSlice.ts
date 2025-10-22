@@ -61,18 +61,9 @@ export const updateUsuarioRolesPerms = createAsyncThunk<
 	'rolesPermisos/updateUsuarioRolesPerms',
 	async ({ id, nextRoles, nextPermissions, currentRoles, currentPermissions }, { rejectWithValue }) => {
 		try {
-			// Helpers
 			const computeDiffs = (nextArr: string[], currentArr: string[]) => {
-				const nextIsSubsetOfCurrent = nextArr.length > 0 && nextArr.every((r) => currentArr.includes(r));
-				let toAdd: string[] = [];
-				let toRemove: string[] = [];
-				if (nextIsSubsetOfCurrent && nextArr.length < currentArr.length) {
-					toRemove = Array.from(new Set(nextArr));
-					toAdd = [];
-				} else {
-					toAdd = Array.from(new Set(nextArr.filter((v) => !currentArr.includes(v))));
-					toRemove = Array.from(new Set(currentArr.filter((v) => !nextArr.includes(v))));
-				}
+				const toAdd = Array.from(new Set(nextArr.filter((v) => !currentArr.includes(v))));
+				const toRemove = Array.from(new Set(currentArr.filter((v) => !nextArr.includes(v))));
 				return { toAdd, toRemove };
 			};
 
@@ -107,22 +98,18 @@ export const updateUsuarioRolesPerms = createAsyncThunk<
 					tasks.push(ApiService.fetchData({ url: `/users/${userId}/permissions`, method: 'delete', data: { permissions: permsToRemove } }));
 				}
 				if (tasks.length === 0) return;
-				// Run in parallel but don't fail-fast
 				await Promise.allSettled(tasks);
 			};
 
-			// Compute diffs
 			const { toAdd: rolesToAdd, toRemove: rolesToRemove } = computeDiffs(nextRoles, currentRoles);
 			const permissionsToAdd = Array.from(new Set(nextPermissions.filter((perm) => !currentPermissions.includes(perm))));
 			const permissionsToRemove = Array.from(new Set(currentPermissions.filter((perm) => !nextPermissions.includes(perm))));
 
 			console.debug('[rolesPermisos] updateUsuarioRolesPerms diff', { id, currentRoles, nextRoles, rolesToAdd, rolesToRemove, permissionsToAdd, permissionsToRemove });
 
-			// Apply role changes
 			await bulkAddRoles(id, rolesToAdd);
 			await deleteRolesWithFallback(id, rolesToRemove);
 
-			// Apply permission changes concurrently
 			await applyPermissionsDiff(id, permissionsToAdd, permissionsToRemove);
 		} catch (err: any) {
 			const message =
