@@ -11,38 +11,63 @@ type Props = {
 	userId?: number;
 	editable?: boolean;
 	onChange?: (next: UserAccess) => void;
+	initialAccess?: UserAccess;
+	availableAccess?: UserAccess;
+	loading?: boolean;
 };
 
-export default function AccesoJerarquico({ userId, editable = true, onChange }: Props) {
+export default function AccesoJerarquico({
+	userId,
+	editable = true,
+	onChange,
+	initialAccess,
+	availableAccess,
+	loading,
+}: Props) {
 	const dispatch = useAppDispatch();
-	const { access, isLoading } = useUserAccess(userId);
+	const fallback = useUserAccess(userId);
+	const access = availableAccess ?? fallback.access;
+	const isLoading = loading ?? fallback.isLoading;
 
 	useEffect(() => {
 		dispatch(fetchMisSubsidiarias());
 		dispatch(fetchMisSucursales());
 	}, [dispatch]);
 
-	const originalBranches = useMemo(() => access.branches, [access.branches]);
-	const originalSubs = useMemo(() => access.subsidiaries, [access.subsidiaries]);
+	const availableBranches = useMemo<AccessBranch[]>(() => access.branches ?? [], [access.branches]);
+	const availableSubs = useMemo<AccessSubsidiary[]>(() => access.subsidiaries ?? [], [access.subsidiaries]);
+
+	const initialSelection = useMemo<UserAccess>(
+		() => ({
+			subsidiaries: initialAccess?.subsidiaries ?? [],
+			branches: initialAccess?.branches ?? [],
+		}),
+		[initialAccess],
+	);
 
 	const [selectedBranchIds, setSelectedBranchIds] = useState<Set<number>>(
-		new Set(originalBranches.map((b) => b.id)),
+		new Set(initialSelection.branches.map((b) => b.id)),
 	);
 
 	const [selectedSubsIds, setSelectedSubsIds] = useState<Set<number>>(
-		new Set(originalSubs.map((s) => s.id)),
+		new Set(initialSelection.subsidiaries.map((s) => s.id)),
 	);
+
+	useEffect(() => {
+		setSelectedBranchIds(new Set(initialSelection.branches.map((b) => b.id)));
+		setSelectedSubsIds(new Set(initialSelection.subsidiaries.map((s) => s.id)));
+	}, [initialSelection]);
 
 	const branchesBySubs = useMemo(() => {
 		const map = new Map<number, AccessBranch[]>();
-		originalBranches.forEach((b) => {
+		availableBranches.forEach((b) => {
 			const sid = b.subsidiary?.id ?? 0;
 			const arr = map.get(sid) ?? [];
 			arr.push(b);
 			map.set(sid, arr);
 		});
 		return map;
-	}, [originalBranches]);
+	}, [availableBranches]);
 
 	const toggleBranch = (id: number) => {
 		if (!editable) return;
@@ -78,8 +103,8 @@ export default function AccesoJerarquico({ userId, editable = true, onChange }: 
 	function emitChange(branchSet: Set<number>, subsSet: Set<number>) {
 		if (!onChange) return;
 		const nextAccess: UserAccess = {
-			subsidiaries: originalSubs.filter((s) => subsSet.has(s.id)),
-			branches: originalBranches.filter((b) => branchSet.has(b.id)),
+			subsidiaries: availableSubs.filter((s) => subsSet.has(s.id)),
+			branches: availableBranches.filter((b) => branchSet.has(b.id)),
 		};
 		onChange(nextAccess);
 	}
@@ -87,7 +112,7 @@ export default function AccesoJerarquico({ userId, editable = true, onChange }: 
 	const cards: { sid: number; title: string; company?: string; branches: AccessBranch[] }[] = [];
 
 	const usedSubsIds = new Set<number>();
-	originalSubs.forEach((s) => {
+	availableSubs.forEach((s) => {
 		const branches = branchesBySubs.get(s.id) ?? [];
 		cards.push({
 			sid: s.id,
@@ -110,6 +135,11 @@ export default function AccesoJerarquico({ userId, editable = true, onChange }: 
 	return (
 		<div>
 			<h3 className='mb-4 text-lg font-semibold'>Accesos Jerárquicos</h3>
+			{!editable && (
+				<p className='mb-3 text-sm text-zinc-500'>
+					Solo puedes visualizar los accesos asignados. Los cambios requieren privilegios de administración.
+				</p>
+			)}
 			{isLoading && <div className='px-3 py-2 text-zinc-500'>Cargando accesos...</div>}
 			{!isLoading && (
 				<>
@@ -119,10 +149,6 @@ export default function AccesoJerarquico({ userId, editable = true, onChange }: 
 						)}
 						{cards.map((card) => {
 							const subsChecked = selectedSubsIds.has(card.sid);
-							const subsIndeterminate =
-								card.branches.length > 0 &&
-								card.branches.some((b) => selectedBranchIds.has(b.id)) &&
-								!card.branches.every((b) => selectedBranchIds.has(b.id));
 							return (
 								<Card key={card.sid} className='min-w-[280px] max-w-[420px] border'>
 									<CardBody className='p-3'>

@@ -13,9 +13,15 @@ interface RolesTabProps {
 	formik: FormikProps<UserPermissionsFormValues>;
 	roleOptions: RoleOption[];
 	currentRoles: string[];
+	editable?: boolean;
 }
 
-const RolesTab: React.FC<RolesTabProps> = ({ formik, roleOptions, currentRoles }) => {
+const RolesTab: React.FC<RolesTabProps> = ({
+	formik,
+	roleOptions,
+	currentRoles,
+	editable = true,
+}) => {
 	return (
 		<form onSubmit={formik.handleSubmit} className='space-y-6'>
 			<div>
@@ -30,7 +36,9 @@ const RolesTab: React.FC<RolesTabProps> = ({ formik, roleOptions, currentRoles }
 							<label key={opt.value} className='flex items-center gap-2'>
 								<Checkbox
 									checked={checked}
+									disabled={!editable}
 									onChange={() => {
+										if (!editable) return;
 										const next = new Set(formik.values.roles);
 										if (next.has(opt.value as string))
 											next.delete(opt.value as string);
@@ -47,6 +55,11 @@ const RolesTab: React.FC<RolesTabProps> = ({ formik, roleOptions, currentRoles }
 				</div>
 				{formik.touched.roles && formik.errors.roles && (
 					<p className='mt-1 text-xs text-red-500'>{formik.errors.roles}</p>
+				)}
+				{!editable && (
+					<p className='mt-2 text-xs text-zinc-500'>
+						No tienes permisos para modificar los roles de este usuario.
+					</p>
 				)}
 			</div>
 

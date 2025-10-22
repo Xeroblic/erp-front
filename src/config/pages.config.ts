@@ -189,7 +189,7 @@ export const privatePages = {
       rolesPermisos: {
         id: 'rolesPermisos',
         to: '/gestion/roles-permisos',
-        text: 'Roles y Permisos',
+        text: 'Gestion de usuarios',
         icon: 'HeroUserGroup',
         authority: ['manage-roles', 'view-user'],
         roles: ['super-admin', 'company-admin'],

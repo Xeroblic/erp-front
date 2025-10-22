@@ -13,6 +13,7 @@ interface PermisosTabProps {
 	permissionOptions: TSelectOption[];
 	currentPermissions: string[];
 	user: UserWithDetails;
+	editable?: boolean;
 }
 
 const PermisosTab: React.FC<PermisosTabProps> = ({
@@ -20,6 +21,7 @@ const PermisosTab: React.FC<PermisosTabProps> = ({
 	permissionOptions,
 	currentPermissions,
 	user,
+	editable = true,
 }) => {
 	return (
 		<form onSubmit={formik.handleSubmit} className='space-y-6'>
@@ -42,13 +44,20 @@ const PermisosTab: React.FC<PermisosTabProps> = ({
 							}
 						);
 					})}
+					isDisabled={!editable}
 					onChange={(newValue) => {
+						if (!editable) return;
 						const permisos = Array.isArray(newValue)
 							? newValue.map((o) => o.value)
 							: [];
 						formik.setFieldValue('permisos', permisos);
 					}}
 				/>
+				{!editable && (
+					<p className='mt-2 text-xs text-zinc-500'>
+						Visualización solamente. No cuentas con permisos para asignar permisos directos.
+					</p>
+				)}
 			</div>
 
 			<div className='grid gap-4 md:grid-cols-2'>

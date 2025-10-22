@@ -4,18 +4,18 @@ import type { RootState } from '../../../../store/rootReducer';
 import type { ISubempresa, ISucursal } from '../../../../interface/empresas.interface';
 
 export type AccessBranch = {
-    id: number;
-    name: string;
-    subsidiary?: { id: number; name: string };
-    source?: string;
-    is_primary?: boolean;
-    position?: string;
+	id: number;
+	name: string;
+	subsidiary?: { id: number; name: string };
+	source?: string;
+	is_primary?: boolean;
+	position?: string | null;
 };
 
 export type AccessSubsidiary = {
-    id: number;
-    name: string;
-    company?: { id: number; name: string };
+	id: number;
+	name: string;
+	company?: { id: number; name: string } | null;
 };
 
 export type UserAccess = {
