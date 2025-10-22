@@ -52,11 +52,11 @@ export interface UserWithDetails extends Omit<IUserMe, 'roles' | 'companies'> {
         };
     }>;
 
-    // Información jerárquica del backend actualizada
-    branch?: {
-        id: number;
-        branch_name: string;
-        is_primary?: number;
+	// Información jerárquica del backend actualizada
+	branch?: {
+		id: number;
+		branch_name: string;
+		is_primary?: number;
         position?: string;
         name: string; // legacy, now always string
         subsidiary?: {
@@ -67,12 +67,54 @@ export interface UserWithDetails extends Omit<IUserMe, 'roles' | 'companies'> {
                 id: number;
                 company_name: string;
             };
-        };
-    };
+		};
+	};
 
-    // Campos de control
-    can_edit?: boolean;
-    is_super_admin?: boolean;
+	access?: {
+		subsidiaries?: Array<{
+			id: number;
+			name: string;
+			company?: {
+				id: number;
+				name: string;
+			};
+			source?: string;
+		}>;
+		branches?: Array<{
+			id: number;
+			name: string;
+			subsidiary?: {
+				id: number;
+				name: string;
+			};
+			source?: string;
+			is_primary?: boolean;
+			position?: string | null;
+		}>;
+	};
+
+	visible?: {
+		subsidiaries?: Array<{
+			id: number;
+			name: string;
+			company?: {
+				id: number;
+				name: string;
+			};
+		}>;
+		branches?: Array<{
+			id: number;
+			name: string;
+			subsidiary?: {
+				id: number;
+				name: string;
+			};
+		}>;
+	};
+
+	// Campos de control
+	can_edit?: boolean;
+	is_super_admin?: boolean;
 }
 
 export interface CreateUserData {
@@ -203,7 +245,7 @@ export const fetchUsers = createAsyncThunk(
                     branch_id?: number;
                 };
             }>({
-                url: `/users?${queryParams.toString()}`, // Corregido: usar la ruta del backend PHP
+                url: `/users?${queryParams.toString()}`,
                 method: 'get'
             });
 
@@ -275,7 +317,7 @@ export const deleteUser = createAsyncThunk(
     async (userId: number, { rejectWithValue }) => {
         try {
             await ApiService.fetchData({
-                url: `/users/${userId}`, // Corregido: usar la ruta del backend PHP
+                url: `/users/${userId}`,
                 method: 'delete'
             });
             return userId;
@@ -290,7 +332,7 @@ export const toggleUserStatus = createAsyncThunk(
     async ({ userId, status }: { userId: number; status: boolean }, { rejectWithValue }) => {
         try {
             const response = await ApiService.fetchData<any>({
-                url: `/users/${userId}/toggle-status`, // Corregido: usar la ruta del backend PHP
+                url: `/users/${userId}/toggle-status`,
                 method: 'patch',
                 data: { is_active: status }
             });
@@ -330,7 +372,7 @@ export const fetchInvitations = createAsyncThunk(
             });
 
             const response = await ApiService.fetchData<{ invitations: UserInvitation[] }>({
-                url: `/invitations?${queryParams.toString()}`, // Corregido: usar la ruta del backend PHP
+                url: `/invitations?${queryParams.toString()}`,
                 method: 'get'
             });
             return response.data.invitations;
@@ -354,7 +396,7 @@ export const sendInvitation = createAsyncThunk(
     }, { rejectWithValue }) => {
         try {
             const response = await ApiService.fetchData<{ invitation: UserInvitation }>({
-                url: '/invitations', // Corregido: usar la ruta del backend PHP
+                url: '/invitations',
                 method: 'post',
                 data: invitationData as unknown as Record<string, unknown>
             });
@@ -370,7 +412,7 @@ export const cancelInvitation = createAsyncThunk(
     async (invitationId: number, { rejectWithValue }) => {
         try {
             await ApiService.fetchData({
-                url: `/invitations/${invitationId}/cancel`, // Corregido: usar la ruta del backend PHP
+                url: `/invitations/${invitationId}/cancel`,
                 method: 'patch'
             });
             return invitationId;
@@ -385,7 +427,7 @@ export const resendInvitation = createAsyncThunk(
     async (invitationId: number, { rejectWithValue }) => {
         try {
             const response = await ApiService.fetchData<{ invitation: UserInvitation }>({
-                url: `/invitations/${invitationId}/resend`, // Corregido: usar la ruta del backend PHP
+                url: `/invitations/${invitationId}/resend`,
                 method: 'post'
             });
             return response.data.invitation;

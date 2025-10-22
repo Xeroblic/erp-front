@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/store';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
-import Badge from '@/components/ui/Badge';
 import Container from '@/components/layouts/Container/Container';
 import Input from '@/components/form/Input';
 import { fetchUsuariosConRolesPerms } from '@/store/slices/rolesPermisos/rolesPermisosSlice';
@@ -22,7 +21,9 @@ type UserRow = UserWithDetails & {
 
 const RolesPermisos: React.FC = () => {
 	const dispatch = useAppDispatch();
-	const { data: usuarios, status, error } = useAppSelector((s) => s.rolesPermisos);
+	const { data: usuarios, loading, error } = useAppSelector((s) => s.rolesPermisos.users);
+	const listStatus: 'idle' | 'loading' | 'failed' =
+		loading ? 'loading' : error ? 'failed' : 'idle';
 
 	const [globalFilter, setGlobalFilter] = useState('');
 
@@ -111,7 +112,7 @@ const RolesPermisos: React.FC = () => {
 			<Container>
 				<TableUser
 					tableData={tableData}
-					status={status}
+					status={listStatus}
 					error={error}
 					globalFilter={globalFilter}
 					setGlobalFilter={setGlobalFilter}

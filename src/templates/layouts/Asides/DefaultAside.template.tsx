@@ -182,7 +182,7 @@ const DefaultAsideTemplate = () => {
 						</AuthorityCheckNav>
 
 						{/* Gestión - Personalización de Subempresas */}
-						<AuthorityCheckNav
+						{/* <AuthorityCheckNav
 							authority={Pages.manage.subPages.subsidiaryCustomization.authority}
 							userAuthority={userPermissionsAndRoles}>
 							<NavItem
@@ -194,7 +194,7 @@ const DefaultAsideTemplate = () => {
 									navigate(Pages.manage.subPages.subsidiaryCustomization.to)
 								}
 							/>
-						</AuthorityCheckNav>
+						</AuthorityCheckNav> */}
 
 						{/* Gestión - Sucursales */}
 						<AuthorityCheckNav
@@ -210,7 +210,7 @@ const DefaultAsideTemplate = () => {
 						</AuthorityCheckNav>
 
 						{/* Gestión - Usuarios */}
-						<AuthorityCheckNav
+						{/* <AuthorityCheckNav
 							authority={Pages.manage.subPages.manageUsers.authority}
 							userAuthority={userPermissionsAndRoles}>
 							<NavItem
@@ -220,10 +220,10 @@ const DefaultAsideTemplate = () => {
 								id={Pages.manage.subPages.manageUsers.id}
 								onClick={() => navigate(Pages.manage.subPages.manageUsers.to)}
 							/>
-						</AuthorityCheckNav>
+						</AuthorityCheckNav> */}
 
 						{/* Gestión - Integraciones */}
-						<AuthorityCheckNav
+						{/* <AuthorityCheckNav
 							authority={Pages.manage.subPages.integrations.authority}
 							userAuthority={userPermissionsAndRoles}>
 							<NavItem
@@ -233,7 +233,6 @@ const DefaultAsideTemplate = () => {
 								id={Pages.manage.subPages.integrations.id}
 								onClick={() => navigate(Pages.manage.subPages.integrations.to)}
 							/>
-							{/* Subpáginas WooCommerce */}
 							<NavItem
 								text={'WooCommerce Integración'}
 								to={'/gestion/integraciones/woocommerce'}
@@ -290,10 +289,11 @@ const DefaultAsideTemplate = () => {
 									navigate('/gestion/integraciones/woocommerce-import')
 								}
 							/>
-						</AuthorityCheckNav>
+						</AuthorityCheckNav> */}
 
 						{/* Administrar Permisos */}
-						<AuthorityCheckNav
+						
+						{/* <AuthorityCheckNav
 							authority={[
 								...(Pages.manage.subPages.permissionsAdmin.authority || []),
 								...(Pages.manage.subPages.permissionsAdmin.roles || []),
@@ -307,7 +307,7 @@ const DefaultAsideTemplate = () => {
 								id={Pages.manage.subPages.permissionsAdmin.id}
 								onClick={() => navigate(Pages.manage.subPages.permissionsAdmin.to)}
 							/>
-						</AuthorityCheckNav>
+						</AuthorityCheckNav> */}
 
 						{/* Roles y Permisos */}
 						<AuthorityCheckNav
@@ -330,10 +330,10 @@ const DefaultAsideTemplate = () => {
 					</NavCollapse>
 
 					{/* Módulos ERP */}
-					<NavTitle>ERP</NavTitle>
+					{/* <NavTitle>ERP</NavTitle> */}
 
 					{/* Inventario - OPERATIVO: Productos, Transferencias */}
-					<NavCollapse
+					{/* <NavCollapse
 						key='inventario-nav'
 						text='Inventario'
 						icon='HeroCubeTransparent'
@@ -363,7 +363,7 @@ const DefaultAsideTemplate = () => {
 								onClick={() => navigate(Pages.inventory.subPages.transfers.to)}
 							/>
 						</AuthorityCheckNav>
-					</NavCollapse>
+					</NavCollapse> */}
 
 					{/* =================================================
 					MÓDULOS PENDIENTES POR IMPLEMENTAR
@@ -474,11 +474,11 @@ const DefaultAsideTemplate = () => {
 						/>
 					</AuthorityCheckNav>
 
-					<NavTitle>Administración del Sistema</NavTitle>
+					{/* <NavTitle>Administración del Sistema</NavTitle> */}
 
 					{/* Parámetros del Sistema - OPERATIVO */}
 
-					<AuthorityCheckNav
+					{/* <AuthorityCheckNav
 						authority={Pages.systemAdmin.subPages.systemParameters.authority}
 						userAuthority={userPermissionsAndRoles}
 						requireAll={Pages.systemAdmin.subPages.systemParameters.requireAll}>
@@ -489,7 +489,7 @@ const DefaultAsideTemplate = () => {
 							id={Pages.systemAdmin.subPages.systemParameters.id}
 							onClick={() => navigate(Pages.systemAdmin.subPages.systemParameters.to)}
 						/>
-					</AuthorityCheckNav>
+					</AuthorityCheckNav> */}
 
 					{/* Módulo Técnico - PENDIENTE: Módulo aún no operativo */}
 					{/* <AuthorityCheckNav

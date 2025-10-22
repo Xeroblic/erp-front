@@ -4,7 +4,6 @@ import type { UserWithDetails } from '@/store/slices/usersAdmin/usersAdminSlice'
 
 interface InformacionTabProps {
 	user: UserWithDetails;
-	displayName: string;
 	cargoResolved: string;
 	companyResolved: string;
 	uniqueRoles: string[];
@@ -14,7 +13,6 @@ interface InformacionTabProps {
 
 const InformacionTab: React.FC<InformacionTabProps> = ({
 	user,
-	displayName,
 	cargoResolved,
 	companyResolved,
 	uniqueRoles,
