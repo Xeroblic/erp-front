@@ -31,6 +31,16 @@ const FieldWrap = forwardRef<HTMLDivElement, IFieldWrapProps>((props, ref) => {
 		...rest
 	} = props;
 
+	// Filtrar props que no deben pasarse al DOM
+	const {
+		isValid: _isValid,
+		isTouched: _isTouched,
+		invalidFeedback: _invalidFeedback,
+		validFeedback: _validFeedback,
+		isValidMessage: _isValidMessage,
+		...domProps
+	} = rest;
+
 	const sharedClasses = classNames(
 		'absolute top-[2px] bottom-[2px] flex justify-center items-center px-1 rounded',
 	);
@@ -48,7 +58,7 @@ const FieldWrap = forwardRef<HTMLDivElement, IFieldWrapProps>((props, ref) => {
 			ref={ref}
 			data-component-name='FieldWrap'
 			className={classNames('relative', className)}
-			{...rest}>
+			{...domProps}>
 			{firstSuffix && (
 				<div ref={divFirstRef} className={classNames(sharedClasses, 'start-px')}>
 					{firstSuffix}

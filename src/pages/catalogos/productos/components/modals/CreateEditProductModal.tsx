@@ -17,7 +17,6 @@ import {
 	buildSubmitPayload,
 	createBrandOptions,
 	createCategoryOptions,
-	buildMinimalCreatePayload,
 } from '../../utils/productForm.utils';
 import { productSchema, productSchemaCreate } from '../../validation/productForm.schema';
 import type { ProductFormValues } from '../../types/products.types';
@@ -80,20 +79,35 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 				// Edición: usar el builder completo que ya mapea categorías correctamente
 				payload = buildSubmitPayload(values);
 			} else {
-				// Creación: construir payload mínimo pero respetando categorías y toggles
+				// Creación: construir payload completo con campos obligatorios
 				const categoryIds = (values.categories || []).map((c) => Number(c.value));
 
-				const data: Partial<IProduct> = {};
-				if (values.sku && values.sku.trim()) data.sku = values.sku.trim();
-				if (values.name && values.name.trim()) data.name = values.name.trim();
-				if (values.brand_id) data.brand_id = Number(values.brand_id);
-				if (values.price !== '' && values.price !== undefined)
-					data.price = Number(values.price);
+				const data: Partial<IProduct> = {
+					// Campos obligatorios
+					sku: values.sku.trim(),
+					name: values.name.trim(),
+					brand_id: Number(values.brand_id),
+					price: Number(values.price),
+					is_active: typeof values.is_active === 'boolean' ? values.is_active : true,
+					serial_tracking:
+						typeof values.serial_tracking === 'boolean'
+							? values.serial_tracking
+							: false,
+				};
+
+				// Campos opcionales
+				if (values.commercial_sku?.trim())
+					data.commercial_sku = values.commercial_sku.trim();
+				if (values.barcode?.trim()) data.barcode = values.barcode.trim();
 				if (values.product_type) data.product_type = values.product_type;
-				// Incluir toggles del formulario para no perderlos en la creación rápida
-				if (typeof values.serial_tracking === 'boolean')
-					data.serial_tracking = values.serial_tracking;
-				if (typeof values.is_active === 'boolean') data.is_active = values.is_active;
+				if (values.condition_policy) data.condition_policy = values.condition_policy;
+				if (values.uom) data.uom = values.uom;
+				if (values.cost !== '' && values.cost !== undefined)
+					data.cost = Number(values.cost);
+				if (values.offer_price !== '' && values.offer_price !== undefined)
+					data.offer_price = Number(values.offer_price);
+				if (values.warranty_months !== '' && values.warranty_months !== undefined)
+					data.warranty_months = Number(values.warranty_months);
 
 				payload = { data, categoryIds };
 			}

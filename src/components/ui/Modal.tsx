@@ -307,7 +307,8 @@ const Modal: FC<IModalProps> = (props) => {
 		// @ts-ignore
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 		if (ref.current && !ref.current.contains(event.target) && isStaticBackdrop) {
-			if (isStaticBackdropAnimation) { // Added condition
+			if (isStaticBackdropAnimation) {
+				// Added condition
 				// @ts-ignore
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
 				refModal.current.classList.add('!scale-105');
@@ -334,7 +335,7 @@ const Modal: FC<IModalProps> = (props) => {
 				animate: { opacity: 1, x: '0%', y: '0%' },
 				exit: { opacity: 0, y: '-50%' },
 				transition: { ease: 'easeInOut', duration: 0.3 },
-		  }
+			}
 		: null;
 
 	return (
@@ -356,7 +357,7 @@ const Modal: FC<IModalProps> = (props) => {
 							role='dialog'
 							tabIndex={-1}
 							aria-labelledby={titleId}
-							aria-hidden='true'
+							aria-hidden={!isOpen}
 							{...animationProps}
 							{...rest}>
 							<Dialog

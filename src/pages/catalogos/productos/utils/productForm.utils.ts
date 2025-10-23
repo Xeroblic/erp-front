@@ -11,10 +11,8 @@ import type {
 	ProductFormValues,
 	ProductFormSubmitPayload,
 	ProductOption,
-	ProductCreateForm,
 	ProductDetailForm,
 	ProductAttributesForm,
-	BuildCreatePayloadOptions,
 	BuildUpdatePayloadOptions,
 } from '../types/products.types';
 import { PRODUCT_DRAFT_CATEGORY_SLUG, PRODUCT_TYPE_LABELS } from '../constants/products.constant';
@@ -81,55 +79,6 @@ const extractCategoryIds = (product: IProduct | null | undefined): number[] =>
 const isEqualArray = (current: number[], previous: number[]): boolean => {
 	if (current.length !== previous.length) return false;
 	return current.every((value) => previous.includes(value));
-};
-
-export const mapProductToCreateForm = (product?: IProduct | null): ProductCreateForm => ({
-	sku: product?.sku ?? '',
-	name: product?.name ?? '',
-	brand_id: product?.brand_id ?? '',
-	price: typeof product?.price === 'number' ? product.price : '',
-	category_ids: extractCategoryIds(product),
-});
-
-export const buildCreateProductPayload = (
-	form: ProductCreateForm,
-	options: BuildCreatePayloadOptions = {},
-): CreateProductPayload => {
-	const {
-		defaultCategoryId = null,
-		productStatus = 'pending',
-		productType = 'general',
-		isActive = false,
-	} = options;
-
-	const categoryIds = form.category_ids.length
-		? form.category_ids
-		: defaultCategoryId !== null
-			? [defaultCategoryId]
-			: [];
-
-	return {
-		sku: normaliseString(form.sku),
-		name: normaliseString(form.name),
-		brand_id: Number(form.brand_id),
-		price: Number(form.price),
-		product_status: productStatus as ProductStatus,
-		product_type: productType as ProductType,
-		serial_tracking: false,
-		is_active: isActive,
-		category_ids: categoryIds,
-	};
-};
-
-// Build a minimal payload for quick creation: only include fields that are strictly present
-export const buildMinimalCreatePayload = (form: ProductCreateForm) => {
-	const body: Record<string, any> = {};
-	if (form.sku && String(form.sku).trim()) body.sku = String(form.sku).trim();
-	if (form.name && String(form.name).trim()) body.name = String(form.name).trim();
-	if (form.brand_id) body.brand_id = Number(form.brand_id);
-	if (form.price !== undefined && form.price !== '') body.price = Number(form.price);
-	if (Array.isArray(form.category_ids) && form.category_ids.length) body.category_ids = form.category_ids;
-	return body;
 };
 
 export const mapProductToDetailForm = (product: IProduct): ProductDetailForm => {

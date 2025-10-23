@@ -525,7 +525,15 @@ const ProductDetail: React.FC = () => {
 								<SubheaderLeft>
 									<div className='flex items-center gap-3'>
 										<div className='flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300'>
-											<Icon icon='HeroCube' className='h-6 w-6' />
+											{product.image?.thumb ? (
+												<img
+													src={product.image.thumb}
+													alt={product.image.alt ?? product.name}
+													className='h-12 w-12 rounded-lg object-cover'
+												/>
+											) : (
+												<Icon icon='HeroCube' className='h-6 w-6' />
+											)}
 										</div>
 										<div>
 											<h1 className='text-xl font-semibold text-neutral-800 dark:text-neutral-100'>

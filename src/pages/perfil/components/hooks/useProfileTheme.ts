@@ -1,10 +1,13 @@
 import { useEffect, useRef } from 'react';
-import { runThemeWipe, cornerForThemeMode } from '@/utils/themeWipe.util';
 import { TDarkMode } from '@/types/darkMode.type';
 
 type FormikLike = { values: { theme?: string } };
 
-export function useProfileTheme(formik: FormikLike, darkMode: string, setDarkModeStatus: (m: TDarkMode) => void) {
+export function useProfileTheme(
+	formik: FormikLike,
+	darkMode: string,
+	setDarkModeStatus: (m: TDarkMode) => Promise<void> | void,
+) {
 	const themeSyncingRef = useRef(false);
 
 	useEffect(() => {
@@ -23,12 +26,7 @@ export function useProfileTheme(formik: FormikLike, darkMode: string, setDarkMod
 			return;
 		}
 		if (selectedTheme !== darkMode) {
-			const corner = cornerForThemeMode(selectedTheme);
-			runThemeWipe(corner, 900);
-			requestAnimationFrame(() => document.documentElement.classList.add('theme-transition'));
-			setTimeout(() => document.documentElement.classList.remove('theme-transition'), 950);
-			setDarkModeStatus(selectedTheme);
+			void setDarkModeStatus(selectedTheme);
 		}
 	}, [formik.values.theme, darkMode, setDarkModeStatus]);
 }
-

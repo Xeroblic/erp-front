@@ -236,10 +236,9 @@ export const createInvitation = createAsyncThunk<
 		const payload = (response.data as any)?.invitation ?? response.data;
 		return payload as Partial<Invitation>;
 	} catch (error: any) {
-		const payload =
-			(error?.response?.data && typeof error.response.data === 'object'
-				? error.response.data
-				: undefined) ?? { message: error?.message ?? DEFAULT_INVITATION_ERROR };
+		const payload = (error?.response?.data && typeof error.response.data === 'object'
+			? error.response.data
+			: undefined) ?? { message: error?.message ?? DEFAULT_INVITATION_ERROR };
 		return rejectWithValue(payload);
 	}
 });
@@ -363,7 +362,10 @@ const invitationsSlice = createSlice({
 			.addCase(createInvitation.rejected, (state, action) => {
 				state.loading.create = false;
 				if (action.payload) {
-					state.error = resolveInvitationErrorMessage(action.payload, DEFAULT_INVITATION_ERROR);
+					state.error = resolveInvitationErrorMessage(
+						action.payload,
+						DEFAULT_INVITATION_ERROR,
+					);
 				} else {
 					state.error = action.error.message ?? DEFAULT_INVITATION_ERROR;
 				}
@@ -398,16 +400,23 @@ const invitationsSlice = createSlice({
 			})
 			.addCase(cancelInvitation.fulfilled, (state, action) => {
 				state.loading.cancel = false;
-				const updateIndex = state.allInvitations.findIndex(
-					(invitation) => invitation.id === action.payload.id,
-				);
-				if (updateIndex !== -1) {
-					state.allInvitations[updateIndex] = action.payload;
+				// Verificar que action.payload existe y tiene la estructura esperada
+				if (
+					action.payload &&
+					typeof action.payload === 'object' &&
+					'id' in action.payload
+				) {
+					const updateIndex = state.allInvitations.findIndex(
+						(invitation) => invitation.id === action.payload.id,
+					);
+					if (updateIndex !== -1) {
+						state.allInvitations[updateIndex] = action.payload;
+					}
+					if (state.selectedInvitation?.id === action.payload.id) {
+						state.selectedInvitation = action.payload;
+					}
+					applyFiltersAndPagination(state);
 				}
-				if (state.selectedInvitation?.id === action.payload.id) {
-					state.selectedInvitation = action.payload;
-				}
-				applyFiltersAndPagination(state);
 			})
 			.addCase(cancelInvitation.rejected, (state, action) => {
 				state.loading.cancel = false;

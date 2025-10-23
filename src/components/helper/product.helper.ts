@@ -142,30 +142,31 @@ export const buildProductPayload = (
 	data: Partial<IProduct>,
 	categoryIds: number[],
 ): CreateProductPayload => {
-	if (!data.sku) {
+	// Validación de campos obligatorios según backend (StoreProductRequest)
+	if (!data.sku?.trim()) {
 		throw new Error('El SKU del producto es obligatorio');
 	}
-	if (!data.name) {
+	if (!data.name?.trim()) {
 		throw new Error('El nombre del producto es obligatorio');
 	}
-	if (!data.price && data.price !== 0) {
-		throw new Error('El precio del producto es obligatorio');
-	}
-	const brandId = Number(data.brand_id);
-	if (!Number.isFinite(brandId) || brandId <= 0) {
+	if (!data.brand_id) {
 		throw new Error('La marca del producto es obligatoria');
 	}
-	if (!categoryIds.length) {
-		throw new Error('Debe seleccionar al menos una categoria');
+	if (data.price === undefined || data.price === null) {
+		throw new Error('El precio del producto es obligatorio');
+	}
+	if (!Array.isArray(categoryIds) || categoryIds.length === 0) {
+		throw new Error('Debe seleccionar al menos una categoría');
 	}
 
 	const payload: CreateProductPayload = {
-		sku: data.sku,
-		name: data.name,
+		// Campos obligatorios
+		sku: data.sku.trim(),
+		name: data.name.trim(),
+		brand_id: Number(data.brand_id),
 		price: Number(data.price),
-		serial_tracking: Boolean(data.serial_tracking),
+		serial_tracking: Boolean(data.serial_tracking ?? false),
 		is_active: Boolean(data.is_active ?? true),
-		brand_id: brandId,
 		category_ids: categoryIds,
 	};
 

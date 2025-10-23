@@ -10,14 +10,6 @@ export type ProductOption = {
 	label: string;
 };
 
-export interface ProductCreateForm {
-	sku: string;
-	name: string;
-	brand_id: number | '';
-	price: number | '';
-	category_ids: number[];
-}
-
 export interface ProductDetailForm {
 	sku: string;
 	name: string;
@@ -52,13 +44,6 @@ export interface ProductDetailValidationResult {
 	isValid: boolean;
 }
 
-export interface BuildCreatePayloadOptions {
-	defaultCategoryId?: number | null;
-	productStatus?: ProductStatus;
-	productType?: ProductType;
-	isActive?: boolean;
-}
-
 export interface BuildUpdatePayloadOptions {
 	includeDescriptions?: boolean;
 	includeAttributes?: boolean;
@@ -80,6 +65,9 @@ export interface LegacyProductFormValues {
 	serial_tracking: boolean;
 	is_active: boolean;
 	categories: ProductOption[];
+	// Campos adicionales opcionales
+	commercial_sku?: string;
+	barcode?: string;
 }
 
 export interface LegacyProductFormSubmitPayload {
