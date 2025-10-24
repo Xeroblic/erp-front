@@ -16,6 +16,13 @@ const toNullableNumber = (value: unknown): number | null => {
 	return Number.isFinite(num) ? num : null;
 };
 
+const toNullableString = (value: unknown): string | null => {
+	if (value === null || value === undefined) return null;
+	if (typeof value === 'string') return value;
+	if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+	return null;
+};
+
 const toBoolean = (value: unknown, fallback = false): boolean => {
 	if (typeof value === 'boolean') return value;
 	if (typeof value === 'string') {
@@ -79,11 +86,19 @@ export const normalizeProduct = (raw: any): IProduct => {
 		cost: toNullableNumber(safe.cost),
 		price,
 		offer_price: toNullableNumber(safe.offer_price),
+		stock: toNullableNumber(safe.stock),
 		attributes_json:
 			typeof safe.attributes_json === 'object' && safe.attributes_json !== null
 				? (safe.attributes_json as Record<string, unknown>)
 				: null,
 		is_active: toBoolean(safe.is_active, true),
+		snippet_description: toNullableString(
+			safe.snippet_description ?? (safe as any).snippet ?? null,
+		),
+		short_description: toNullableString(safe.short_description ?? null),
+		long_description: toNullableString(
+			safe.long_description ?? (safe as any).description ?? null,
+		),
 		categories: normalizeCategories(
 			safe.categories ?? safe.category_ids ?? safe.product_categories ?? [],
 		),

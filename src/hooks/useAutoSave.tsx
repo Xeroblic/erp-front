@@ -50,12 +50,10 @@ export function useAutoSave<T = any>(options: UseAutoSaveOptions<T>): AutoSaveSt
 	const [isSaving, setIsSaving] = useState(false);
 
 	const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
-	const lastActivityRef = useRef<number>(Date.now());
 	const cachedValuesRef = useRef<T>(values);
 	const previousValuesRef = useRef<string | null>(null);
 	const initialValuesRef = useRef<string | null>(null);
 	const isFirstMountRef = useRef<boolean>(true);
-	const userHasInteractedRef = useRef<boolean>(false);
 
 	const detectChanges = useCallback(
 		(current: T, initial: T): boolean => {
@@ -77,8 +75,6 @@ export function useAutoSave<T = any>(options: UseAutoSaveOptions<T>): AutoSaveSt
 		if (!enabled || !isDirty || isSubmitting) {
 			return;
 		}
-
-		lastActivityRef.current = Date.now();
 
 		inactivityTimerRef.current = setTimeout(() => {
 			setShowSavePrompt(true);
@@ -159,7 +155,6 @@ export function useAutoSave<T = any>(options: UseAutoSaveOptions<T>): AutoSaveSt
 			}
 
 			isFirstMountRef.current = true;
-			userHasInteractedRef.current = false;
 			previousValuesRef.current = null;
 			initialValuesRef.current = null;
 		};
