@@ -57,19 +57,11 @@ export const productSchema = Yup.object({
   offer_price: Yup.number().typeError("Precio oferta inválido").min(0).nullable(),
   warranty_months: Yup.number().typeError("Meses inválidos").min(0).integer().nullable(),
 
-  product_type: Yup.string().oneOf(["general", "computador_reacondicionado"]).required(),
-  device_type: Yup.string().when("product_type", {
-    is: "computador_reacondicionado",
-    then: (s) => s.oneOf(["notebook", "aio", "desktop"]).required("Tipo de equipo requerido"),
-    otherwise: (s) => s.nullable(),
-  }),
+  product_type: Yup.string().nullable(), // Permitir cualquier valor o null
+  device_type: Yup.string().nullable(),
 
   categories: Yup.array().of(Yup.object({ value: Yup.number().required(), label: Yup.string().required() })),
-  attributes_json: Yup.mixed().when("product_type", {
-    is: "computador_reacondicionado",
-    then: () => attributesSchema.required("Debes definir atributos del computador"),
-    otherwise: () => Yup.mixed().nullable(),
-  }),
+  attributes_json: Yup.mixed().nullable(),
 });
 
 // Schema para creación: requiere campos obligatorios según backend (StoreProductRequest)
@@ -85,7 +77,8 @@ export const productSchemaCreate = Yup.object({
   // Campos opcionales
   commercial_sku: Yup.string().max(255).nullable(),
   barcode: Yup.string().max(255).nullable(),
-  product_type: Yup.string().oneOf(['general', 'computador_reacondicionado']).nullable(),
+  product_type: Yup.string().nullable(), // Permitir cualquier valor
+  device_type: Yup.string().nullable(),
   condition_policy: Yup.string().nullable(),
   uom: Yup.string().nullable(),
   cost: Yup.number().typeError('Costo inválido').min(0).nullable(),
@@ -93,4 +86,5 @@ export const productSchemaCreate = Yup.object({
   warranty_months: Yup.number().typeError('Meses inválidos').min(0).integer().nullable(),
   serial_tracking: Yup.boolean(),
   is_active: Yup.boolean(),
+  attributes_json: Yup.mixed().nullable(),
 });

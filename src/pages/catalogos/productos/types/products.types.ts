@@ -59,6 +59,7 @@ export interface LegacyProductFormValues {
 	cost: string;
 	offer_price: string;
 	product_type: string;
+	device_type?: string;
 	condition_policy: string;
 	uom: string;
 	warranty_months: string;

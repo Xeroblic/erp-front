@@ -20,6 +20,8 @@ import {
 } from '../../utils/productForm.utils';
 import { productSchema, productSchemaCreate } from '../../validation/productForm.schema';
 import type { ProductFormValues } from '../../types/products.types';
+import Select from '@/components/form/Select';
+import { PRODUCT_DEVICE_TYPES } from '../../constants/product-attributes.constants';
 
 interface CreateEditProductModalProps {
 	isOpen: boolean;
@@ -67,7 +69,14 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 		[categories],
 	);
 
-	const initialValues = useMemo<ProductFormValues>(() => buildInitialValues(product), [product]);
+	const initialValues = useMemo<ProductFormValues>(() => {
+		const values = buildInitialValues(product);
+		if (product) {
+			console.log('🔍 Producto original:', product);
+			console.log('📝 Valores iniciales:', values);
+		}
+		return values;
+	}, [product]);
 
 	const handleSubmit = async (
 		values: ProductFormValues,
@@ -76,14 +85,11 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 		try {
 			let payload: { data: Partial<IProduct>; categoryIds: number[] };
 			if (product) {
-				// Edición: usar el builder completo que ya mapea categorías correctamente
 				payload = buildSubmitPayload(values);
 			} else {
-				// Creación: construir payload completo con campos obligatorios
 				const categoryIds = (values.categories || []).map((c) => Number(c.value));
 
 				const data: Partial<IProduct> = {
-					// Campos obligatorios
 					sku: values.sku.trim(),
 					name: values.name.trim(),
 					brand_id: Number(values.brand_id),
@@ -95,7 +101,6 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 							: false,
 				};
 
-				// Campos opcionales
 				if (values.commercial_sku?.trim())
 					data.commercial_sku = values.commercial_sku.trim();
 				if (values.barcode?.trim()) data.barcode = values.barcode.trim();
@@ -113,14 +118,13 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 			}
 
 			await onSubmit(payload);
-			resetForm();
-			toast.success(
-				product ? 'Producto actualizado correctamente' : 'Producto creado correctamente',
-			);
+
+			if (!product) {
+				resetForm();
+			}
+			onClose();
 		} catch (error: any) {
-			// If backend returned structured validation errors, map them into Formik
 			const payload = error?.response?.data ?? error ?? {};
-			// payload could be { message: '...', errors: { field: ['msg'] } }
 			if (payload && typeof payload === 'object') {
 				const serverErrors: Record<string, string> = {};
 				if (payload.errors && typeof payload.errors === 'object') {
@@ -128,7 +132,6 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 						if (Array.isArray(val) && val.length) serverErrors[key] = String(val[0]);
 						else if (typeof val === 'string') serverErrors[key] = val;
 					});
-					// Mapear errores de backend en 'category_ids' al campo UI 'categories'
 					if (serverErrors['category_ids'] && !serverErrors['categories']) {
 						serverErrors['categories'] = serverErrors['category_ids'];
 					}
@@ -179,8 +182,17 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 				validationSchema={product ? productSchema : productSchemaCreate}
 				enableReinitialize
 				onSubmit={handleSubmit}>
-				{({ values, errors, touched, setFieldValue, setFieldTouched, isSubmitting }) => {
+				{({
+					values,
+					errors,
+					touched,
+					setFieldValue,
+					setFieldTouched,
+					isSubmitting,
+					submitForm,
+				}) => {
 					const isBusy = isLoading || isSubmitting;
+
 					return (
 						<Form id='productForm'>
 							<ModalBody className='space-y-5'>
@@ -248,8 +260,8 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 															value={
 																brandOptions.find(
 																	(option) =>
-																		option.value ===
-																		values.brand_id,
+																		String(option.value) ===
+																		String(values.brand_id),
 																) ?? null
 															}
 															onChange={(option) =>
@@ -380,24 +392,42 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 
 											{section.key === 'classification' && (
 												<>
-													<Field name='product_type'>
-														{({ field, meta }: FieldProps) => (
-															<FieldContainer
-																id='product_type'
-																label='Tipo de producto'
-																error={
-																	meta.touched
-																		? (meta.error as string)
-																		: undefined
-																}>
-																<Input
-																	id='product_type'
-																	{...field}
-																	disabled={isBusy}
-																/>
-															</FieldContainer>
-														)}
-													</Field>
+													<div className='space-y-2'>
+														<p className='text-sm font-medium'>
+															Tipo de dispositivo
+														</p>
+														<Select
+															name='product_type'
+															value={
+																PRODUCT_DEVICE_TYPES.some(
+																	(opt) =>
+																		opt.value ===
+																		values.product_type,
+																)
+																	? values.product_type
+																	: ''
+															}
+															onChange={(
+																event: React.ChangeEvent<HTMLSelectElement>,
+															) =>
+																setFieldValue(
+																	'product_type',
+																	event.target.value,
+																)
+															}
+															disabled={isBusy}>
+															<option value=''>
+																Seleccionar tipo
+															</option>
+															{PRODUCT_DEVICE_TYPES.map((option) => (
+																<option
+																	key={option.value}
+																	value={option.value}>
+																	{option.label}
+																</option>
+															))}
+														</Select>
+													</div>
 													<div className='space-y-2 md:col-span-2'>
 														<p className='text-sm font-medium'>
 															Categorias
@@ -500,14 +530,9 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 										Cancelar
 									</Button>
 									<Button
-										onClick={() => {
-											const form = document.getElementById('productForm');
-											form?.dispatchEvent(
-												new Event('submit', {
-													cancelable: true,
-													bubbles: true,
-												}),
-											);
+										onClick={(e) => {
+											e.preventDefault();
+											submitForm();
 										}}
 										color='blue'
 										isLoading={isBusy}

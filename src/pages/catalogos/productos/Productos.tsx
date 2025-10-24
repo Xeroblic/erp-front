@@ -119,8 +119,7 @@ const Productos: React.FC = () => {
 			setCreateOpen(false);
 		} catch (err: any) {
 			console.error('Create product failed', err);
-			// rethrow so callers (or tests) can inspect server response
-			throw err;
+			// No re-lanzar el error, dejarlo que el modal lo maneje
 		}
 	};
 

@@ -42,25 +42,47 @@ export const buildInitialValues = (product?: IProduct | null): ProductFormValues
 	serial_tracking: product?.serial_tracking ?? false,
 	is_active: product?.is_active ?? true,
 	categories: product?.categories?.map((category) => toOption(category.id, category.name)) ?? [],
+	commercial_sku: product?.commercial_sku ?? '',
+	barcode: product?.barcode ?? '',
 });
 
 export const buildSubmitPayload = (values: ProductFormValues): ProductFormSubmitPayload => {
 	const categoryIds = values.categories.map((category) => Number(category.value));
 
-	const data: Partial<IProduct> = {
-		sku: values.sku.trim(),
-		name: values.name.trim(),
-		brand_id: values.brand_id ? Number(values.brand_id) : undefined,
-		price: values.price !== '' && values.price !== undefined ? Number(values.price) : undefined,
-		cost: values.cost !== '' && values.cost !== undefined ? Number(values.cost) : undefined,
-		offer_price: values.offer_price !== '' && values.offer_price !== undefined ? Number(values.offer_price) : undefined,
-		product_type: values.product_type || undefined,
-		condition_policy: values.condition_policy || undefined,
-		uom: values.uom || undefined,
-		warranty_months: values.warranty_months ? Number(values.warranty_months) : undefined,
-		serial_tracking: values.serial_tracking,
-		is_active: values.is_active,
-	};
+	// Solo incluir campos que tienen valor (no enviar undefined/null para no sobrescribir)
+	const data: Partial<IProduct> = {};
+
+	// Campos siempre presentes
+	if (values.sku?.trim()) data.sku = values.sku.trim();
+	if (values.name?.trim()) data.name = values.name.trim();
+
+	// Brand ID
+	if (values.brand_id) data.brand_id = Number(values.brand_id);
+
+	// Números: solo enviar si tienen valor
+	if (values.price !== '' && values.price !== undefined && values.price !== null) {
+		data.price = Number(values.price);
+	}
+	if (values.cost !== '' && values.cost !== undefined && values.cost !== null) {
+		data.cost = Number(values.cost);
+	}
+	if (values.offer_price !== '' && values.offer_price !== undefined && values.offer_price !== null) {
+		data.offer_price = Number(values.offer_price);
+	}
+	if (values.warranty_months !== '' && values.warranty_months !== undefined && values.warranty_months !== null) {
+		data.warranty_months = Number(values.warranty_months);
+	}
+
+	// Strings opcionales
+	if (values.product_type) data.product_type = values.product_type;
+	if (values.condition_policy) data.condition_policy = values.condition_policy;
+	if (values.uom) data.uom = values.uom;
+	if (values.commercial_sku?.trim()) data.commercial_sku = values.commercial_sku.trim();
+	if (values.barcode?.trim()) data.barcode = values.barcode.trim();
+
+	// Booleanos: siempre enviar
+	data.serial_tracking = Boolean(values.serial_tracking);
+	data.is_active = Boolean(values.is_active);
 
 	return { data, categoryIds };
 };

@@ -81,11 +81,33 @@ export const PRODUCT_STATS_META = [
 ] as const;
 
 export const PRODUCT_TYPE_META: Record<string, { label: string; icon: string; badgeColor: string }> = {
+	// Tipos básicos (sin "reacondicionado")
 	general: {
 		label: 'General',
 		icon: 'HeroCubeTransparent',
 		badgeColor: 'violet',
 	},
+	notebook: {
+		label: 'Notebook',
+		icon: 'HeroComputerDesktop',
+		badgeColor: 'blue',
+	},
+	desktop_pc: {
+		label: 'Desktop PC',
+		icon: 'HeroComputerDesktop',
+		badgeColor: 'emerald',
+	},
+	aio: {
+		label: 'AIO',
+		icon: 'HeroDeviceTablet',
+		badgeColor: 'amber',
+	},
+	monitor: {
+		label: 'Monitor',
+		icon: 'HeroPresentationChartLine',
+		badgeColor: 'cyan',
+	},
+	// Tipos reacondicionados
 	desktop_pc_reacondicionado: {
 		label: 'Desktop reacondicionado',
 		icon: 'HeroComputerDesktop',
@@ -93,7 +115,7 @@ export const PRODUCT_TYPE_META: Record<string, { label: string; icon: string; ba
 	},
 	notebook_reacondicionado: {
 		label: 'Notebook reacondicionado',
-		icon: 'HeroComputerLaptop',
+		icon: 'HeroComputerDesktop',
 		badgeColor: 'blue',
 	},
 	aio_reacondicionado: {
@@ -106,6 +128,7 @@ export const PRODUCT_TYPE_META: Record<string, { label: string; icon: string; ba
 		icon: 'HeroPresentationChartLine',
 		badgeColor: 'cyan',
 	},
+	// Legacy uppercase (por compatibilidad)
 	GENERAL: {
 		label: 'General',
 		icon: 'HeroCubeTransparent',
