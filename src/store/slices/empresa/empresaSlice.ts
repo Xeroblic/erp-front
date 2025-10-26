@@ -108,11 +108,11 @@ const normalizeSubsidiaryData = (backendData: any): ISubempresa => {
 
 export const fetchMiEmpresaSubsidiarias = createAsyncThunk<
   ISubempresa[],
-  void,
+  { force?: boolean } | void,
   { rejectValue: string; state: any }
 >(
   'empresa/fetchMiEmpresaSubsidiarias',
-  async (_, { rejectWithValue, getState }) => {
+  async (_params, { rejectWithValue, getState }) => {
     try {
       const state: any = getState();
       const companyId = state?.empresa?.miEmpresa?.id;
@@ -144,10 +144,21 @@ export const fetchMiEmpresaSubsidiarias = createAsyncThunk<
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Error al cargar subsidiarias');
     }
+  },
+  {
+    condition: (params, { getState }) => {
+      const state: any = getState();
+      const existingSubsidiaries = state?.empresa?.miEmpresaSubsidiarias || [];
+
+      // Si ya hay subsidiarias y no se fuerza el refresh, cancelar la ejecución
+      if (existingSubsidiaries.length > 0 && !params?.force) {
+        return false;
+      }
+
+      return true;
+    }
   }
 );
-
-
 export const createSubsidiaria = createAsyncThunk<
   ISubempresa,
   Partial<ISubempresa>,

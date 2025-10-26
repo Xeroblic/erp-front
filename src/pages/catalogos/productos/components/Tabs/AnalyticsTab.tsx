@@ -4,7 +4,7 @@ import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
 
 interface AnalyticsTabProps {
-	// Aquí puedes agregar props específicas para el análisis
+	// Agregar props específicas para el análisis
 }
 
 const AnalyticsTab: React.FC<AnalyticsTabProps> = () => {

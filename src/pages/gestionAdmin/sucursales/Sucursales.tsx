@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
@@ -60,11 +60,14 @@ export default function SucursalesLista() {
 	const [openDelete, setOpenDelete] = useState(false);
 	const [toDeleteId, setToDeleteId] = useState<number | null>(null);
 	const [editingSucursal, setEditingSucursal] = useState<ISucursal | null>(null);
+	const hasLoadedSucursales = useRef(false);
 
 	useEffect(() => {
-		if (user) {
-			dispatch(fetchMisSucursales());
-		}
+		if (!user) return;
+		if (hasLoadedSucursales.current) return;
+
+		hasLoadedSucursales.current = true;
+		dispatch(fetchMisSucursales());
 	}, [dispatch, user]);
 
 	// columnas de la tabla
@@ -241,7 +244,7 @@ export default function SucursalesLista() {
 
 	const handleSuccess = () => {
 		handleCloseModal();
-		dispatch(fetchMisSucursales());
+		dispatch(fetchMisSucursales({ force: true }));
 	};
 
 	const confirmDelete = async () => {
@@ -249,7 +252,7 @@ export default function SucursalesLista() {
 		try {
 			await dispatch(deleteSucursal(toDeleteId)).unwrap();
 			toast.success('Sucursal eliminada correctamente');
-			dispatch(fetchMisSucursales());
+			dispatch(fetchMisSucursales({ force: true }));
 		} catch {
 			toast.error('Error al eliminar sucursal');
 		} finally {

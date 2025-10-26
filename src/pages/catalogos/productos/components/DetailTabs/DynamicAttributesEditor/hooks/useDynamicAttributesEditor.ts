@@ -86,6 +86,55 @@ const shouldShowFieldByProductKind = (productKind: ProductKind, fieldName: strin
 	return !hiddenFields.includes(fieldName);
 };
 
+const DEFAULT_ATTRIBUTES: AttributesData = {
+	packaging: {
+		charger_included: false,
+	},
+};
+
+const applyDefaults = (data: AttributesData): AttributesData => {
+	const result: AttributesData = {
+		...DEFAULT_ATTRIBUTES,
+		...data,
+	};
+
+	if (data.packaging) {
+		result.packaging = {
+			...DEFAULT_ATTRIBUTES.packaging,
+			...data.packaging,
+		};
+	}
+
+	return result;
+};
+
+const sanitiseAttributesInput = (value: unknown): AttributesData => {
+	if (!value) {
+		return applyDefaults({});
+	}
+
+	let parsed: unknown = value;
+
+	if (typeof parsed === 'string') {
+		try {
+			parsed = JSON.parse(parsed);
+		} catch {
+			return applyDefaults({});
+		}
+	}
+
+	if (Array.isArray(parsed) || typeof parsed !== 'object' || parsed === null) {
+		return applyDefaults({});
+	}
+
+	const attributes = parsed as AttributesData;
+	return applyDefaults(attributes);
+};
+
+const areAttributesEqual = (a: AttributesData, b: AttributesData): boolean => {
+	return JSON.stringify(a) === JSON.stringify(b);
+};
+
 export const useDynamicAttributesEditor = () => {
 	const { values, setFieldValue } = useFormikContext<ProductDetailForm>();
 	const [attributes, setAttributes] = useState<AttributesData>({});
@@ -98,38 +147,20 @@ export const useDynamicAttributesEditor = () => {
 
 	const previousProductType = useRef<string>(productType);
 
-useEffect(() => {
-	if (!values.attributes_json) {
-		setAttributes((prev) => {
-			if (Object.keys(prev ?? {}).length === 0) {
-				return prev;
-			}
-			return {};
-		});
-		return;
-	}
+	useEffect(() => {
+		const nextAttributes = sanitiseAttributesInput(values.attributes_json);
 
-	try {
-		const parsed =
-			typeof values.attributes_json === 'string'
-				? JSON.parse(values.attributes_json)
-				: values.attributes_json;
-		const nextAttributes = parsed || {};
 		setAttributes((prev) => {
-			if (JSON.stringify(prev) === JSON.stringify(nextAttributes)) {
+			if (areAttributesEqual(prev, nextAttributes)) {
 				return prev;
 			}
 			return nextAttributes;
 		});
-	} catch (error) {
-		console.error('Error parsing attributes_json:', error);
-		setAttributes({});
-	}
-}, [values.attributes_json]);
+	}, [values.attributes_json]);
 
-useEffect(() => {
-	setFieldValue('attributes_json', attributes);
-}, [attributes, setFieldValue]);
+	useEffect(() => {
+		setFieldValue('attributes_json', attributes);
+	}, [attributes, setFieldValue]);
 
 	useEffect(() => {
 		setAttributes((prev) => {

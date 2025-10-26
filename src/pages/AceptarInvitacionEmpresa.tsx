@@ -387,7 +387,7 @@ function AceptarInvitacionEmpresa() {
 								</div>
 
 							<Button
-								type='submit'
+								onClick={() => formik.handleSubmit()}
 								variant='solid'
 								color='blue'
 								size='lg'
@@ -398,7 +398,7 @@ function AceptarInvitacionEmpresa() {
 							</Button>
 							</form>
 
-							<div className='mt-8 border-t border-gray-200 pt-6'>
+							<div className='mt-8 border-t width border-gray-200 pt-6'>
 								<p className='text-center text-xs leading-relaxed text-gray-500'>
 									Al activar tu cuenta, aceptas los términos y condiciones del
 									sistema ERP.

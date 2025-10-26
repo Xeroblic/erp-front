@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import DARK_MODE from '../../../../constants/darkMode.constant';
 import Icon from '../../../../components/icon/Icon';
 import useDarkModeManager from '../../../../hooks/useDarkModeManager.ts';
-import { runThemeWipe, cornerForThemeMode } from '@/utils/themeWipe.util';
 import { TIcons } from '../../../../types/icons.type';
 import { TDarkMode } from '../../../../types/darkMode.type';
 import useAsideStatus from '../../../../hooks/useAsideStatus';
@@ -19,24 +18,18 @@ const StyledButton: FC<IStyledButtonProps> = ({ text, icon, status }) => {
 	const { darkModeStatus, setDarkModeStatus } = useDarkModeManager();
 	const { asideStatus } = useAsideStatus();
 
-    const handeClick = () => {
-        let nextMode: TDarkMode;
-        if (!asideStatus) {
-            if (darkModeStatus === DARK_MODE.DARK) nextMode = DARK_MODE.LIGHT;
-            else if (darkModeStatus === DARK_MODE.LIGHT) nextMode = DARK_MODE.SYSTEM;
-            else nextMode = DARK_MODE.DARK;
-        } else {
-            nextMode = status;
-        }
+	const handeClick = () => {
+		let nextMode: TDarkMode;
+		if (!asideStatus) {
+			if (darkModeStatus === DARK_MODE.DARK) nextMode = DARK_MODE.LIGHT;
+			else if (darkModeStatus === DARK_MODE.LIGHT) nextMode = DARK_MODE.SYSTEM;
+			else nextMode = DARK_MODE.DARK;
+		} else {
+			nextMode = status;
+		}
 
-        // Animación radial reutilizable antes del cambio
-        const corner = cornerForThemeMode(nextMode);
-        runThemeWipe(corner, 900);
-        requestAnimationFrame(() => document.documentElement.classList.add('theme-transition'));
-        setTimeout(() => document.documentElement.classList.remove('theme-transition'), 950);
-
-        setDarkModeStatus(nextMode);
-    };
+		void setDarkModeStatus(nextMode);
+	};
 
 	if (!asideStatus && darkModeStatus !== status) return null;
 	return (
@@ -50,8 +43,7 @@ const StyledButton: FC<IStyledButtonProps> = ({ text, icon, status }) => {
 				'flex flex-auto items-center justify-center',
 				'truncate',
 				{
-					'bg-white shadow-lg dark:bg-zinc-800 dark:text-white':
-						darkModeStatus === status,
+					'bg-white shadow-lg dark:bg-zinc-800 dark:text-white': darkModeStatus === status,
 					'hover:text-zinc-950': darkModeStatus !== status,
 				},
 				themeConfig.transition,

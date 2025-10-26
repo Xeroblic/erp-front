@@ -19,7 +19,6 @@ import Button from '@/components/ui/Button.tsx';
 import ButtonGroup from '@/components/ui/ButtonGroup.tsx';
 import ColorSelector from '@/components/ColorSelector.tsx';
 import Icon from '@/components/icon/Icon.tsx';
-import { runThemeWipe, cornerForThemeMode } from '@/utils/themeWipe.util';
 const MIN_FONT = 12;
 const MAX_FONT = 18;
 
@@ -103,27 +102,15 @@ const SettingsPartial = () => {
 		async (mode: TDarkMode) => {
 			if (mode === darkModeStatus || isUpdatingTheme) return;
 			try {
-				// Suavizado general de colores mientras corre el wipe
-				requestAnimationFrame(() => {
-					document.documentElement.classList.add('theme-transition');
-				});
-				// Wipe radial: LIGHT -> top-right, DARK -> bottom-left, SYSTEM -> según preferencia SO
-				const corner = cornerForThemeMode(mode);
-				runThemeWipe(corner, 900);
 				setIsUpdatingTheme(true);
-				// Persistencia centralizada en useDarkModeManager (evita doble request)
-				setDarkModeStatus(mode);
+				await setDarkModeStatus(mode);
 			} catch {
 				toast.error('No se pudo actualizar el tema');
 			} finally {
 				setIsUpdatingTheme(false);
-				setTimeout(
-					() => document.documentElement.classList.remove('theme-transition'),
-					950,
-				);
 			}
 		},
-		[dispatch, setDarkModeStatus, darkModeStatus, isUpdatingTheme],
+		[setDarkModeStatus, darkModeStatus, isUpdatingTheme],
 	);
 
 	const handleReset = useCallback(async () => {

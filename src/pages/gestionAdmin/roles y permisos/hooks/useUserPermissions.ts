@@ -16,6 +16,8 @@ export const useUserPermissions = (selectedUser: UserWithDetails | undefined) =>
         }));
     }, [availableRoles]);
 
+    const availableRoleNames = useMemo(() => new Set(availableRoles.map((role) => role.name)), [availableRoles]);
+
     const permissionOptions = useMemo<TSelectOption[]>(() => {
         return availablePermissions.map((permission) => ({
             value: permission.name,
@@ -25,15 +27,20 @@ export const useUserPermissions = (selectedUser: UserWithDetails | undefined) =>
 
     const extractUserRoles = (user: UserWithDetails | undefined) => {
         if (!user) return [];
-        return Array.from(
-            new Set([
-                ...(user.global_roles ?? []),
-                ...(user.contextual_roles?.map((cr: any) => cr.role) ?? []),
-            ]),
-        );
+
+        const directRoles = [
+            ...(user.global_roles ?? []),
+            ...(user.roles?.map((legacy) => legacy.name) ?? []),
+        ].filter((role): role is string => typeof role === 'string' && availableRoleNames.has(role));
+
+        return Array.from(new Set(directRoles));
     };
 
-    const currentRoles = useMemo(() => extractUserRoles(selectedUser), [selectedUser]);
+    const currentRoles = useMemo(
+        () => extractUserRoles(selectedUser),
+        // Depend on availableRoleNames to refresh when catalog updates
+        [selectedUser, availableRoleNames],
+    );
     const currentPermissions = useMemo(() => selectedUser?.direct_permissions ?? [], [selectedUser]);
 
     return {

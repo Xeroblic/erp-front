@@ -1,11 +1,12 @@
 import React from 'react';
-import ProductsTable from '../tables/ProductsTable';
+// import ProductsTable from '../tables/ProductsTableV2.tsx';
 import ProductFiltersCard from '../ProductFiltersCard';
 import ActiveFiltersDisplay from '../ActiveFiltersDisplay';
 import Pagination from '../Pagination';
 import type { IProduct } from '@/interface/product.interface';
 import type { IBrand } from '@/interface/brand.interface';
 import type { ICategory } from '@/interface/category.interface';
+import { ProductsTableV2 } from '../tables';
 
 interface ProductFilters {
 	search?: string;
@@ -87,7 +88,7 @@ const ProductListTab: React.FC<ProductListTabProps> = ({
 
 			<ActiveFiltersDisplay filters={filters} />
 
-			<ProductsTable
+			<ProductsTableV2
 				products={products}
 				meta={meta}
 				loading={loading}

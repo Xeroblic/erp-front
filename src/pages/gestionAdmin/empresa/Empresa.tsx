@@ -1,5 +1,5 @@
 // src/pages/EmpresaDetalle.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { useAppDispatch, useAppSelector } from '@/store';
@@ -33,16 +33,36 @@ import { useGeoSelector } from '@/hooks/useGeoSelector';
 
 export default function EmpresaDetalle() {
 	const dispatch = useAppDispatch();
-	// 🔥 NUEVO: Usar estado dinámico
+	const user = useAppSelector((s) => s.auth.user);
 	const { miEmpresa, miEmpresaSubsidiarias, loading, error, updateLoading } = useAppSelector(
 		(s) => s.empresa,
 	);
 	const [activeTab, setActiveTab] = useState<'general' | 'contact' | 'subsidiaries'>('general');
+	const hasLoadedData = useRef(false);
 
 	useEffect(() => {
-		dispatch(fetchMiEmpresa());
-		dispatch(fetchMiEmpresaSubsidiarias());
-	}, [dispatch]);
+		if (!user) return;
+
+		if (hasLoadedData.current) return;
+
+		const loadData = async () => {
+			hasLoadedData.current = true;
+
+			try {
+				await dispatch(fetchMiEmpresa()).unwrap();
+			} catch (err) {
+				console.error('Error al cargar empresa:', err);
+			}
+
+			try {
+				await dispatch(fetchMiEmpresaSubsidiarias());
+			} catch (err) {
+				console.error('Error al cargar subsidiarias:', err);
+			}
+		};
+
+		loadData();
+	}, [dispatch, user]);
 
 	const formik = useFormik({
 		enableReinitialize: true,
@@ -120,7 +140,6 @@ export default function EmpresaDetalle() {
 		},
 	});
 
-	// Cargar listas geo si faltan
 	useEffect(() => {
 		dispatch(listaRegionesThunk());
 		dispatch(listaProvinciasThunk());
@@ -138,7 +157,6 @@ export default function EmpresaDetalle() {
 		{ fieldRegion: 'region', fieldProvincia: 'provincia', fieldComuna: 'comuna' },
 	);
 
-	// Mostrar la etiqueta real de la comuna aunque aún no esté en optionsComuna
 	const selectedComunaValue = formik.values.comuna ? String(formik.values.comuna) : '';
 	const selectedComunaOption: TSelectOption | null =
 		optionsComuna.find((o) => o.value === selectedComunaValue) ||
@@ -153,14 +171,12 @@ export default function EmpresaDetalle() {
 				: { value: selectedComunaValue, label: 'Cargando…' }
 			: null);
 
-	// Asegurar que la lista de opciones que pase al Select incluya la opción seleccionada
 	const effectiveOptionsComuna: TSelectOption[] = React.useMemo(() => {
 		if (!selectedComunaOption) return optionsComuna;
 		const exists = optionsComuna.some((o) => o.value === selectedComunaOption.value);
 		return exists ? optionsComuna : [selectedComunaOption, ...optionsComuna];
 	}, [optionsComuna, selectedComunaOption]);
 
-	// Debug: log when comuna-related data changes and try to sync value from listaComunas
 	useEffect(() => {
 		try {
 			// debug logs removed
@@ -189,12 +205,10 @@ export default function EmpresaDetalle() {
 				}
 			}
 		} catch (e) {
-			// error logged to console intentionally omitted in production
-			// console.error('DBG comuna effect error', e);
+			console.warn('Error syncing comuna field:', e);
 		}
 	}, [listaComunas, optionsComuna, miEmpresa, formik.values.comuna]);
 
-	// Force-sync region/provincia/comuna from miEmpresa once comunas/provincias are loaded
 	useEffect(() => {
 		if (!miEmpresa) return;
 		const communeId = (miEmpresa as any)?.commune_id ?? (miEmpresa as any)?.commune?.id;
@@ -209,7 +223,6 @@ export default function EmpresaDetalle() {
 		);
 		const regionCode = provinciaObj ? provinciaObj.codigo_padre : '';
 
-		// Set in order: region -> provincia -> comuna to avoid hook clearing
 		if (regionCode && String(formik.values.region) !== String(regionCode)) {
 			formik.setFieldValue('region', String(regionCode), false);
 		}
@@ -227,7 +240,6 @@ export default function EmpresaDetalle() {
 		{ id: 'subsidiaries', label: 'Subempresas', icon: 'HeroBuildingStorefront' },
 	] as const;
 
-	// 4) Render
 	return (
 		<PageWrapper isProtectedRoute title='Gestión de Empresa' name='Empresa Principal'>
 			<Subheader>
@@ -626,7 +638,11 @@ export default function EmpresaDetalle() {
 										<SubsidiariesTable
 											subsidiaries={miEmpresaSubsidiarias || []}
 											loading={loading}
-											onRefresh={() => dispatch(fetchMiEmpresaSubsidiarias())}
+											onRefresh={() =>
+												dispatch(
+													fetchMiEmpresaSubsidiarias({ force: true }),
+												)
+											}
 										/>
 									</div>
 								)}

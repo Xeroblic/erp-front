@@ -78,31 +78,42 @@ export const assignUserRoles = createAsyncThunk<
 	}
 });
 
+type RemoveRolesResponse = {
+	success?: boolean;
+	message?: string;
+	data?: {
+		removed_roles?: string[];
+		existing_roles?: string[];
+		no_assigned_roles?: string[];
+		not_existing_roles?: string[];
+	};
+};
+
 export const removeUserRoles = createAsyncThunk<
-	void,
+	{ removedRoles: string[]; existingRoles: string[] } | undefined,
 	{ id: number; roles: string[] },
 	{ rejectValue: string }
 >('rolesPermisos/removeUserRoles', async ({ id, roles }, { rejectWithValue }) => {
 	if (!roles || roles.length === 0) return;
 	try {
-		for (const role of roles) {
-			try {
-				await ApiService.fetchData({
-					url: `/users/${id}/roles/${encodeURIComponent(role)}`,
-					method: 'delete',
-				});
-			} catch (_err) {
-				await ApiService.fetchData({
-					url: `/users/${id}/roles`,
-					method: 'delete',
-					data: { roles },
-				});
-				return;
-			}
-		}
+		const res = await ApiService.fetchData<RemoveRolesResponse>({
+			url: `/users/${id}/roles`,
+			method: 'delete',
+			data: { roles },
+		});
+
+		const payload = res.data?.data ?? {};
+		return {
+			removedRoles: Array.isArray(payload.removed_roles) ? payload.removed_roles : [],
+			existingRoles: Array.isArray(payload.existing_roles) ? payload.existing_roles : [],
+		};
 	} catch (err: any) {
+		const backendData = err?.response?.data as RemoveRolesResponse | undefined;
 		const message =
-			err?.response?.data?.message ?? err?.message ?? 'Error al revocar roles del usuario';
+			backendData?.message ??
+			err?.response?.data?.message ??
+			err?.message ??
+			'Error al revocar roles del usuario';
 		return rejectWithValue(message);
 	}
 });

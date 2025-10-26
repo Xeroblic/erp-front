@@ -16,6 +16,13 @@ const toNullableNumber = (value: unknown): number | null => {
 	return Number.isFinite(num) ? num : null;
 };
 
+const toNullableString = (value: unknown): string | null => {
+	if (value === null || value === undefined) return null;
+	if (typeof value === 'string') return value;
+	if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+	return null;
+};
+
 const toBoolean = (value: unknown, fallback = false): boolean => {
 	if (typeof value === 'boolean') return value;
 	if (typeof value === 'string') {
@@ -79,11 +86,19 @@ export const normalizeProduct = (raw: any): IProduct => {
 		cost: toNullableNumber(safe.cost),
 		price,
 		offer_price: toNullableNumber(safe.offer_price),
+		stock: toNullableNumber(safe.stock),
 		attributes_json:
 			typeof safe.attributes_json === 'object' && safe.attributes_json !== null
 				? (safe.attributes_json as Record<string, unknown>)
 				: null,
 		is_active: toBoolean(safe.is_active, true),
+		snippet_description: toNullableString(
+			safe.snippet_description ?? (safe as any).snippet ?? null,
+		),
+		short_description: toNullableString(safe.short_description ?? null),
+		long_description: toNullableString(
+			safe.long_description ?? (safe as any).description ?? null,
+		),
 		categories: normalizeCategories(
 			safe.categories ?? safe.category_ids ?? safe.product_categories ?? [],
 		),
@@ -142,30 +157,31 @@ export const buildProductPayload = (
 	data: Partial<IProduct>,
 	categoryIds: number[],
 ): CreateProductPayload => {
-	if (!data.sku) {
+	// Validación de campos obligatorios según backend (StoreProductRequest)
+	if (!data.sku?.trim()) {
 		throw new Error('El SKU del producto es obligatorio');
 	}
-	if (!data.name) {
+	if (!data.name?.trim()) {
 		throw new Error('El nombre del producto es obligatorio');
 	}
-	if (!data.price && data.price !== 0) {
-		throw new Error('El precio del producto es obligatorio');
-	}
-	const brandId = Number(data.brand_id);
-	if (!Number.isFinite(brandId) || brandId <= 0) {
+	if (!data.brand_id) {
 		throw new Error('La marca del producto es obligatoria');
 	}
-	if (!categoryIds.length) {
-		throw new Error('Debe seleccionar al menos una categoria');
+	if (data.price === undefined || data.price === null) {
+		throw new Error('El precio del producto es obligatorio');
+	}
+	if (!Array.isArray(categoryIds) || categoryIds.length === 0) {
+		throw new Error('Debe seleccionar al menos una categoría');
 	}
 
 	const payload: CreateProductPayload = {
-		sku: data.sku,
-		name: data.name,
+		// Campos obligatorios
+		sku: data.sku.trim(),
+		name: data.name.trim(),
+		brand_id: Number(data.brand_id),
 		price: Number(data.price),
-		serial_tracking: Boolean(data.serial_tracking),
+		serial_tracking: Boolean(data.serial_tracking ?? false),
 		is_active: Boolean(data.is_active ?? true),
-		brand_id: brandId,
 		category_ids: categoryIds,
 	};
 

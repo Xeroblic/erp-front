@@ -18,6 +18,7 @@ export interface AuthState {
 	user?: IUserMe;
 	listaGrupos: IGruposUsuarios | undefined;
 	userLastFetched?: number; // Timestamp del último fetch exitoso
+	inactivityTimeoutMs?: number; // Timeout de inactividad en milisegundos
 }
 
 const initialState: AuthState = {
@@ -29,25 +30,28 @@ const initialState: AuthState = {
 	user: undefined,
 	listaGrupos: undefined,
 	userLastFetched: undefined,
+	inactivityTimeoutMs: undefined,
 };
 
-export const loginThunk = createAsyncThunk<LoginResponse,{ email: string; password: string },{ rejectValue: string; dispatch: AppDispatch }>(
-	'auth/login', async ({ email, password }, { dispatch, rejectWithValue }) => {
-		try {
-			const resp = await ApiService.fetchData<{ token: string }>({
-				url: '/login',
-				method: 'post',
-				data: { email, password },
-				isLoginRequest: true,
-			});
+export const loginThunk = createAsyncThunk<
+	LoginResponse,
+	{ email: string; password: string },
+	{ rejectValue: string; dispatch: AppDispatch }
+>('auth/login', async ({ email, password }, { dispatch, rejectWithValue }) => {
+	try {
+		const resp = await ApiService.fetchData<{ token: string }>({
+			url: '/login',
+			method: 'post',
+			data: { email, password },
+			isLoginRequest: true,
+		});
 
-			const token = resp.data.token;
-			dispatch(setToken(token));
-			await dispatch(userMeThunk() as any);
-			return { access: token };
-		} catch (error: any) {
-			return rejectWithValue(error.response?.data?.error || 'Error de autenticación');
-		}
+		const token = resp.data.token;
+		dispatch(setToken(token));
+		return { access: token };
+	} catch (error: any) {
+		return rejectWithValue(error.response?.data?.error || 'Error de autenticación');
+	}
 });
 
 export const userMeThunk = createAsyncThunk<
@@ -158,34 +162,101 @@ const authSlice = createSlice({
 			state.loading = false;
 			state.error = undefined;
 			state.listaGrupos = undefined;
+			state.userLastFetched = undefined;
 
-			// Limpiar localStorage completamente
-			localStorage.removeItem('access_token');
-			localStorage.removeItem('refresh_token');
-			localStorage.removeItem('persist:fyr');
-			localStorage.removeItem('zentria_themeColor');
-			localStorage.removeItem('zentria_themeColorShade');
-			localStorage.removeItem('zentria_fontSize');
-			localStorage.removeItem('theme');
-			localStorage.removeItem('zentria_language');
-			localStorage.removeItem('zentria_asideStatus');
+			// Limpiar tokenManager si está disponible
+			try {
+				const { tokenManager } = require('@/services/auth/tokenManager');
+				tokenManager.clearTokens();
+			} catch (err) {
+				// tokenManager no disponible, limpiar manualmente
+				localStorage.removeItem('access_token');
+				localStorage.removeItem('refresh_token');
+				localStorage.removeItem('access_token_expires_at');
+				localStorage.removeItem('refresh_token_expires_at');
+				localStorage.removeItem('auth_last_activity');
+			}
+
+			// Limpiar solo datos de autenticación, mantener personalización
+			// localStorage.removeItem('persist:fyr'); // NO limpiar persist para mantener tema
+			// localStorage.removeItem('zentria_themeColor'); // NO limpiar tema
+			// localStorage.removeItem('zentria_themeColorShade'); // NO limpiar tema
+			// localStorage.removeItem('zentria_fontSize'); // NO limpiar fuente
+			// localStorage.removeItem('theme'); // NO limpiar tema
+			// localStorage.removeItem('zentria_language'); // NO limpiar idioma
+			// localStorage.removeItem('zentria_asideStatus'); // NO limpiar estado aside
 		},
-		setToken: (state, action: PayloadAction<string>) => {
-			state.access = action.payload;
-			localStorage.setItem('access_token', action.payload);
+		setToken: (
+			state,
+			action: PayloadAction<
+				{ access: string; refresh?: string; markActivity?: boolean } | string
+			>,
+		) => {
+			if (typeof action.payload === 'string') {
+				// Compatibilidad con código existente
+				state.access = action.payload;
+				localStorage.setItem('access_token', action.payload);
+			} else {
+				// Nuevo formato con objeto
+				state.access = action.payload.access;
+				localStorage.setItem('access_token', action.payload.access);
+
+				if (action.payload.refresh) {
+					localStorage.setItem('refresh_token', action.payload.refresh);
+				}
+
+				if (action.payload.markActivity) {
+					// Marcar actividad en tokenManager si está disponible
+					try {
+						const { tokenManager } = require('@/services/auth/tokenManager');
+						tokenManager.markActivity();
+					} catch (err) {
+						// tokenManager no disponible, continuar
+					}
+				}
+			}
 		},
 		// Nuevo reducer para validar token al inicio
 		validateSession: (state) => {
-			const token = localStorage.getItem('access_token');
-			if (!token && !state.access) {
-				state.isAuthenticated = false;
-				state.access = undefined;
-				state.user = undefined;
-				state.permisos = [];
-			} else if (token && !state.access) {
-				// Si hay token en localStorage pero no en state, restaurarlo
-				state.access = token;
-				// No marcar como autenticado hasta que se valide con el servidor
+			try {
+				const { tokenManager } = require('@/services/auth/tokenManager');
+				const token = tokenManager.getAccessToken();
+
+				if (!token) {
+					state.isAuthenticated = false;
+					state.access = undefined;
+					state.user = undefined;
+					state.permisos = [];
+					return;
+				}
+
+				// Verificar si el token está expirado
+				if (tokenManager.isAccessTokenExpiring(0)) {
+					// Token expirado, limpiar estado
+					state.isAuthenticated = false;
+					state.access = undefined;
+					state.user = undefined;
+					state.permisos = [];
+					tokenManager.clearTokens();
+					return;
+				}
+
+				// Token válido, restaurar en estado si no está presente
+				if (!state.access) {
+					state.access = token;
+					// No marcar como autenticado hasta que se valide con el servidor
+				}
+			} catch (err) {
+				// Fallback a localStorage si tokenManager no está disponible
+				const token = localStorage.getItem('access_token');
+				if (!token && !state.access) {
+					state.isAuthenticated = false;
+					state.access = undefined;
+					state.user = undefined;
+					state.permisos = [];
+				} else if (token && !state.access) {
+					state.access = token;
+				}
 			}
 		},
 	},

@@ -8,18 +8,36 @@
 @media (prefers-reduced-motion: no-preference) {
 	.theme-transition,
 	.theme-transition * {
-		transition:
-			background-color 220ms ease,
-			color 220ms ease,
-			border-color 220ms ease,
-			fill 220ms ease,
-			stroke 220ms ease;
+		--theme-transition-duration: 420ms;
+		--theme-transition-easing: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+		transition-property: background-color, color, border-color, box-shadow, fill, stroke, outline-color, background-image;
+		transition-duration: var(--theme-transition-duration);
+		transition-timing-function: var(--theme-transition-easing);
+	}
+
+	.theme-transition {
+		animation: themeFadeIn var(--theme-transition-duration) var(--theme-transition-easing) both;
+	}
+
+	@keyframes themeFadeIn {
+		0% {
+			opacity: 0.92;
+			filter: saturate(0.94) brightness(0.96);
+		}
+		100% {
+			opacity: 1;
+			filter: none;
+		}
 	}
 }
 
-/* Wipe radial desde una esquina para cambio de tema (más fluido) */
 @media (prefers-reduced-motion: no-preference) {
   .theme-wipe-overlay {
+		--wipe-duration: var(--theme-transition-duration, 420ms);
+		--wipe-easing: var(--theme-transition-easing, cubic-bezier(0.22, 0.61, 0.36, 1));
+		--wipe-radius: 220vmax;
+
     position: fixed;
     inset: 0;
     z-index: 9999;
@@ -28,9 +46,6 @@
     /* Toma coordenadas desde variables para elegir esquina */
     --wipe-x: 100%; /* default: top-right */
     --wipe-y: 0%;
-    --wipe-duration: 900ms;
-    --wipe-easing: cubic-bezier(.4,0,.2,1); /* Material easing */
-    --wipe-radius: 220vmax;
     clip-path: circle(var(--wipe-radius) at var(--wipe-x) var(--wipe-y));
     opacity: 1;
     will-change: clip-path, opacity;
@@ -39,7 +54,7 @@
     transform: translateZ(0); /* forza layer */
     transition:
       clip-path var(--wipe-duration) var(--wipe-easing),
-      opacity calc(var(--wipe-duration) - 150ms) ease-out;
+      opacity var(--wipe-duration) var(--wipe-easing);
   }
   .theme-wipe-overlay.animate {
     clip-path: circle(0 at var(--wipe-x) var(--wipe-y));

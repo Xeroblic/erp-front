@@ -58,49 +58,102 @@ const normalizeBranchData = (backendData: any): ISucursal => {
 
 export const fetchMisSucursales = createAsyncThunk<
     ISucursal[],
-    void,
-    { rejectValue: string }
+    { force?: boolean } | void,
+    { rejectValue: string; state: any }
 >(
     'sucursales/fetchMisSucursales',
-    async (_, { rejectWithValue }) => {
+    async (_params, { rejectWithValue, getState }) => {
         try {
-            // Obtener sucursales visibles directamente desde /branches (nuevo backend)
-            const response = await ApiService.fetchData<{ data?: any[]; branches?: any[] }>({
+            // Obtener sucursales desde /branches
+            const branchesResponse = await ApiService.fetchData<{ data?: any[]; branches?: any[] }>({
                 url: '/branches',
                 method: 'get',
                 params: { with: 'subsidiary,commune' },
             })
 
-            const rawList: any[] =
-                Array.isArray(response.data?.data)
-                    ? (response.data.data as any[])
-                    : Array.isArray((response.data as any)?.branches)
-                        ? ((response.data as any).branches as any[])
+            const rawBranches: any[] =
+                Array.isArray(branchesResponse.data?.data)
+                    ? (branchesResponse.data.data as any[])
+                    : Array.isArray((branchesResponse.data as any)?.branches)
+                        ? ((branchesResponse.data as any).branches as any[])
                         : []
 
-            const branchesData = rawList.map((b: any) => ({
-                id: b.id,
-                subsidiary_id: b.subsidiary_id ?? b.subsidiary?.id,
-                branch_name: b.branch_name ?? b.name,
-                branch_address: b.branch_address ?? b.address,
-                branch_phone: b.branch_phone ?? b.phone,
-                branch_email: b.branch_email ?? b.email,
-                branch_status: b.branch_status ?? b.status,
-                branch_manager_name: b.branch_manager_name ?? b.manager_name,
-                branch_manager_phone: b.branch_manager_phone ?? b.manager_phone,
-                branch_manager_email: b.branch_manager_email ?? b.manager_email,
-                branch_created_at: b.branch_created_at ?? b.created_at,
-                branch_updated_at: b.branch_updated_at ?? b.updated_at,
-                subsidiary_name: b.subsidiary?.subsidiary_name ?? b.subsidiary?.name,
-                subsidiary_rut: b.subsidiary?.subsidiary_rut ?? b.subsidiary?.rut,
-                commune_id: b.commune_id ?? b.commune?.id,
-                commune_name: b.commune?.name,
-            }))
+            // Intentar usar subsidiarias de Redux primero
+            const state: any = getState();
+            const subsidiariesFromRedux = state?.empresa?.miEmpresaSubsidiarias || [];
+
+            let subsidiariesMap: Record<number, any> = {}
+
+            // Si hay subsidiarias en Redux, usarlas
+            if (subsidiariesFromRedux.length > 0) {
+                subsidiariesFromRedux.forEach((sub: any) => {
+                    subsidiariesMap[sub.id] = sub
+                })
+            } else {
+                // Solo si no hay en Redux, cargar desde API
+                try {
+                    const subsidiariesResponse = await ApiService.fetchData<{ data?: any[]; subsidiaries?: any[] }>({
+                        url: '/subsidiaries',
+                        method: 'get',
+                    })
+
+                    const subsidiariesList = Array.isArray(subsidiariesResponse.data?.data)
+                        ? subsidiariesResponse.data.data
+                        : Array.isArray((subsidiariesResponse.data as any)?.subsidiaries)
+                            ? (subsidiariesResponse.data as any).subsidiaries
+                            : []
+
+                    // Crear mapa de subsidiarias por ID
+                    subsidiariesList.forEach((sub: any) => {
+                        subsidiariesMap[sub.id] = sub
+                    })
+                } catch (error) {
+                    // Silenciar error si no se pueden cargar subsidiarias
+                }
+            }
+
+            // Mapear sucursales con datos de subsidiarias
+            const branchesData = rawBranches.map((b: any) => {
+                const subsidiary = b.subsidiary || subsidiariesMap[b.subsidiary_id]
+
+                return {
+                    id: b.id,
+                    subsidiary_id: b.subsidiary_id ?? subsidiary?.id,
+                    branch_name: b.branch_name ?? b.name,
+                    branch_rut: b.branch_rut ?? subsidiary?.subsidiary_rut ?? subsidiary?.rut,
+                    branch_address: b.branch_address ?? b.address,
+                    branch_phone: b.branch_phone ?? b.phone,
+                    branch_email: b.branch_email ?? b.email,
+                    branch_status: b.branch_status ?? b.status,
+                    branch_manager_name: b.branch_manager_name ?? b.manager_name,
+                    branch_manager_phone: b.branch_manager_phone ?? b.manager_phone,
+                    branch_manager_email: b.branch_manager_email ?? b.manager_email,
+                    branch_created_at: b.branch_created_at ?? b.created_at,
+                    branch_updated_at: b.branch_updated_at ?? b.updated_at,
+                    subsidiary_name: subsidiary?.subsidiary_name ?? subsidiary?.name,
+                    subsidiary_rut: subsidiary?.subsidiary_rut ?? subsidiary?.rut,
+                    commune_id: b.commune_id ?? b.commune?.id,
+                    commune_name: b.commune?.name,
+                }
+            })
 
             const normalizedBranches = branchesData.map(normalizeBranchData)
             return normalizedBranches
         } catch (err: any) {
             return rejectWithValue(err.response?.data?.message || 'Error al cargar sucursales')
+        }
+    },
+    {
+        condition: (params, { getState }) => {
+            const state: any = getState();
+            const existingBranches = state?.sucursales?.lista || [];
+
+            // Si ya hay sucursales y no se fuerza, cancelar la ejecución
+            if (existingBranches.length > 0 && !params?.force) {
+                return false;
+            }
+
+            return true;
         }
     }
 )
