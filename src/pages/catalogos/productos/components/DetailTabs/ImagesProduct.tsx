@@ -3,7 +3,6 @@ import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
-import Alert from '@/components/ui/Alert';
 import React from 'react';
 import { useFormikContext } from 'formik';
 import type { ProductDetailForm } from '../../types/products.types';
@@ -34,7 +33,29 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 	const [modalOpen, setModalOpen] = React.useState(false);
 	const [isZoomed, setIsZoomed] = React.useState(false);
 	const [mousePosition, setMousePosition] = React.useState({ x: 50, y: 50 });
+
+	const [renameModalOpen, setRenameModalOpen] = React.useState(false);
+	const [pendingFile, setPendingFile] = React.useState<File | null>(null);
+	const [uploadType, setUploadType] = React.useState<'main' | 'gallery'>('gallery');
+	const [newFileName, setNewFileName] = React.useState('');
+
 	const { values } = useFormikContext<ProductDetailForm>();
+
+	const sanitizeFileName = (name: string): string => {
+		const lastDot = name.lastIndexOf('.');
+		const nameWithoutExt = lastDot > 0 ? name.substring(0, lastDot) : name;
+		const extension = lastDot > 0 ? name.substring(lastDot) : '';
+
+		const sanitized = nameWithoutExt
+			.normalize('NFD') 
+			.replace(/[\u0300-\u036f]/g, '')
+			.toLowerCase()
+			.replace(/[^a-z0-9]+/g, '-')
+			.replace(/^-+|-+$/g, '')
+			.replace(/-+/g, '-');
+
+		return sanitized + extension.toLowerCase();
+	};
 
 	const handleDragOver = (e: React.DragEvent) => {
 		e.preventDefault();
@@ -52,23 +73,61 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 		const files = Array.from(e.dataTransfer.files);
 		const imageFile = files.find((f) => f.type.startsWith('image/'));
 
-		if (imageFile && onUploadGalleryImage) {
-			await onUploadGalleryImage(imageFile);
+		if (imageFile) {
+			setPendingFile(imageFile);
+			setUploadType('gallery');
+			setNewFileName(sanitizeFileName(imageFile.name));
+			setRenameModalOpen(true);
 		}
 	};
 
 	const handleMainImageSelect = async () => {
 		const file = mainImageRef.current?.files?.[0] ?? null;
 		if (!file) return;
-		await onUploadMainImage?.(file);
+
+		setPendingFile(file);
+		setUploadType('main');
+		setNewFileName(sanitizeFileName(file.name));
+		setRenameModalOpen(true);
+
 		if (mainImageRef.current) mainImageRef.current.value = '';
 	};
 
 	const handleGalleryImageSelect = async () => {
 		const file = galleryImageRef.current?.files?.[0] ?? null;
 		if (!file) return;
-		await onUploadGalleryImage?.(file);
+
+		setPendingFile(file);
+		setUploadType('gallery');
+		setNewFileName(sanitizeFileName(file.name));
+		setRenameModalOpen(true);
+
 		if (galleryImageRef.current) galleryImageRef.current.value = '';
+	};
+
+	const handleConfirmUpload = async () => {
+		if (!pendingFile) return;
+
+		const sanitizedName = sanitizeFileName(newFileName);
+		const renamedFile = new File([pendingFile], sanitizedName, {
+			type: pendingFile.type,
+		});
+
+		if (uploadType === 'main') {
+			await onUploadMainImage?.(renamedFile);
+		} else {
+			await onUploadGalleryImage?.(renamedFile);
+		}
+
+		setRenameModalOpen(false);
+		setPendingFile(null);
+		setNewFileName('');
+	};
+
+	const handleCancelUpload = () => {
+		setRenameModalOpen(false);
+		setPendingFile(null);
+		setNewFileName('');
 	};
 
 	const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -85,39 +144,24 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 		setIsZoomed(!isZoomed);
 	};
 
-	const handleCloseLightbox = () => {
-		console.log('🚪 handleCloseLightbox llamado');
-		setLightboxImage(null);
+	const handleCloseModal = () => {
 		setModalOpen(false);
-		setIsZoomed(false);
-		setMousePosition({ x: 50, y: 50 });
+
+		setTimeout(() => {
+			setLightboxImage(null);
+			setIsZoomed(false);
+			setMousePosition({ x: 50, y: 50 });
+		}, 200);
 	};
 
-	// Debug: ver cuando cambia lightboxImage
-	React.useEffect(() => {
-		console.log('🖼️ lightboxImage cambió a:', lightboxImage);
-		console.log('🔓 Modal isOpen:', !!lightboxImage);
-	}, [lightboxImage]);
-
-	// Sincronizar modalOpen con lightboxImage
 	React.useEffect(() => {
 		if (lightboxImage) {
-			console.log('📂 Abriendo modal con imagen:', lightboxImage);
 			setModalOpen(true);
 		}
 	}, [lightboxImage]);
 
 	return (
 		<div className='space-y-6'>
-			{/* Alerta informativa */}
-			<Alert color='yellow' icon='HeroExclamationTriangle' variant='outline'>
-				<div className='text-sm'>
-					<strong>Importante:</strong> No subas la misma imagen como principal y en
-					galería. Si eliminas una, se borrarán ambas porque comparten el mismo archivo.
-				</div>
-			</Alert>
-
-			{/* Zona de Upload */}
 			<Card>
 				<CardHeader>
 					<CardHeaderChild>
@@ -190,7 +234,6 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 				</CardBody>
 			</Card>
 
-			{/* Imagen Principal */}
 			{productImage && (
 				<Card>
 					<CardHeader>
@@ -221,7 +264,6 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 											productImage.url,
 										);
 										console.log('productImage completo:', productImage);
-										// Intentar con thumb si url falla
 										if (
 											productImage.thumb &&
 											e.currentTarget.src !== productImage.thumb
@@ -261,7 +303,6 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 				</Card>
 			)}
 
-			{/* Galería */}
 			{productGallery && productGallery.length > 0 && (
 				<Card>
 					<CardHeader>
@@ -299,7 +340,6 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 													image.thumb || image.url,
 												);
 												console.log('image completo:', image);
-												// Intentar con url completa si thumb falla
 												if (
 													image.url &&
 													e.currentTarget.src !== image.url
@@ -317,13 +357,7 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 											className='bg-white text-gray-900 shadow-2xl ring-4 ring-white/50 hover:scale-110 hover:bg-gray-100'
 											onClick={(e) => {
 												e.stopPropagation();
-												console.log('Click en ampliar, URL:', image.url);
-												console.log(
-													'Estado anterior lightboxImage:',
-													lightboxImage,
-												);
 												setLightboxImage(image.url);
-												console.log('Después de setLightboxImage');
 											}}>
 											<Icon
 												icon='HeroMagnifyingGlassPlus'
@@ -360,7 +394,6 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 				</Card>
 			)}
 
-			{/* Estado vacío */}
 			{!productImage && (!productGallery || productGallery.length === 0) && (
 				<Card>
 					<CardBody>
@@ -379,9 +412,93 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 				</Card>
 			)}
 
-			{/* Lightbox Modal con Zoom */}
-			<Modal isOpen={modalOpen} setIsOpen={setModalOpen} size='lg'>
-				<ModalHeader setIsOpen={setModalOpen}>
+			<Modal isOpen={renameModalOpen} setIsOpen={setRenameModalOpen} size='md'>
+				<ModalHeader setIsOpen={handleCancelUpload}>
+					<div className='flex items-center gap-3'>
+						<div className='flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600'>
+							<Icon icon='HeroPencil' className='h-5 w-5 text-white' />
+						</div>
+						<div>
+							<h3 className='text-lg font-semibold'>Renombrar Archivo</h3>
+							<p className='text-sm text-gray-500 dark:text-gray-400'>
+								Edita el nombre antes de subir la imagen
+							</p>
+						</div>
+					</div>
+				</ModalHeader>
+				<ModalBody>
+					<div className='space-y-4'>
+						{pendingFile && (
+							<div className='overflow-hidden rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900'>
+								<img
+									src={URL.createObjectURL(pendingFile)}
+									alt='Preview'
+									className='h-48 w-full object-contain'
+								/>
+							</div>
+						)}
+
+						<div className='rounded-lg bg-yellow-50 p-3 dark:bg-yellow-900/20'>
+							<p className='text-xs font-medium text-yellow-800 dark:text-yellow-200'>
+								Nombre original:
+							</p>
+							<p className='mt-1 text-sm text-yellow-900 dark:text-yellow-100'>
+								{pendingFile?.name}
+							</p>
+						</div>
+
+						<div>
+							<label className='mb-2 block text-sm font-medium text-gray-900 dark:text-white'>
+								Nuevo nombre del archivo
+							</label>
+							<Input
+								name='newFileName'
+								value={newFileName}
+								onChange={(e) => {
+									const sanitized = sanitizeFileName(e.target.value);
+									setNewFileName(sanitized);
+								}}
+								placeholder='nombre-del-archivo.jpg'
+								className='w-full'
+							/>
+							<p className='mt-2 text-xs text-gray-500 dark:text-gray-400'>
+								El nombre se sanitiza automáticamente: sin espacios, sin acentos,
+								sin caracteres especiales
+							</p>
+						</div>
+
+						<div className='rounded-lg bg-green-50 p-3 dark:bg-green-900/20'>
+							<p className='text-xs font-medium text-green-800 dark:text-green-200'>
+								Se guardará como:
+							</p>
+							<p className='mt-1 font-mono text-sm text-green-900 dark:text-green-100'>
+								{sanitizeFileName(newFileName)}
+							</p>
+						</div>
+
+						<div className='flex gap-3'>
+							<Button
+								variant='outline'
+								className='flex-1'
+								onClick={handleCancelUpload}>
+								<Icon icon='HeroXMark' className='mr-2 h-5 w-5' />
+								Cancelar
+							</Button>
+							<Button
+								color='blue'
+								className='flex-1'
+								onClick={handleConfirmUpload}
+								isDisable={!newFileName.trim()}>
+								<Icon icon='HeroCloudArrowUp' className='mr-2 h-5 w-5' />
+								Subir Imagen
+							</Button>
+						</div>
+					</div>
+				</ModalBody>
+			</Modal>
+
+			<Modal isOpen={modalOpen} setIsOpen={handleCloseModal} size='lg'>
+				<ModalHeader setIsOpen={handleCloseModal}>
 					<div className='flex items-center justify-between'>
 						<span>Vista Ampliada</span>
 						<Button
