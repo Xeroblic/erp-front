@@ -1,6 +1,7 @@
 import Input from '@/components/form/Input';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
+import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import React from 'react';
@@ -27,8 +28,12 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 }) => {
 	const mainImageRef = React.useRef<HTMLInputElement | null>(null);
 	const galleryImageRef = React.useRef<HTMLInputElement | null>(null);
+	const imageContainerRef = React.useRef<HTMLDivElement | null>(null);
 	const [isDragging, setIsDragging] = React.useState(false);
-	const [hoveredImage, setHoveredImage] = React.useState<string | null>(null);
+	const [lightboxImage, setLightboxImage] = React.useState<string | null>(null);
+	const [modalOpen, setModalOpen] = React.useState(false);
+	const [isZoomed, setIsZoomed] = React.useState(false);
+	const [mousePosition, setMousePosition] = React.useState({ x: 50, y: 50 });
 	const { values } = useFormikContext<ProductDetailForm>();
 
 	const handleDragOver = (e: React.DragEvent) => {
@@ -66,10 +71,45 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 		if (galleryImageRef.current) galleryImageRef.current.value = '';
 	};
 
-	const hasMainImage = !!productImage?.url;
+	const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+		if (!isZoomed || !imageContainerRef.current) return;
+
+		const rect = imageContainerRef.current.getBoundingClientRect();
+		const x = ((e.clientX - rect.left) / rect.width) * 100;
+		const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+		setMousePosition({ x, y });
+	};
+
+	const handleImageClick = () => {
+		setIsZoomed(!isZoomed);
+	};
+
+	const handleCloseLightbox = () => {
+		console.log('🚪 handleCloseLightbox llamado');
+		setLightboxImage(null);
+		setModalOpen(false);
+		setIsZoomed(false);
+		setMousePosition({ x: 50, y: 50 });
+	};
+
+	// Debug: ver cuando cambia lightboxImage
+	React.useEffect(() => {
+		console.log('🖼️ lightboxImage cambió a:', lightboxImage);
+		console.log('🔓 Modal isOpen:', !!lightboxImage);
+	}, [lightboxImage]);
+
+	// Sincronizar modalOpen con lightboxImage
+	React.useEffect(() => {
+		if (lightboxImage) {
+			console.log('📂 Abriendo modal con imagen:', lightboxImage);
+			setModalOpen(true);
+		}
+	}, [lightboxImage]);
 
 	return (
 		<div className='space-y-6'>
+			{/* Alerta informativa */}
 			<Alert color='yellow' icon='HeroExclamationTriangle' variant='outline'>
 				<div className='text-sm'>
 					<strong>Importante:</strong> No subas la misma imagen como principal y en
@@ -77,6 +117,7 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 				</div>
 			</Alert>
 
+			{/* Zona de Upload */}
 			<Card>
 				<CardHeader>
 					<CardHeaderChild>
@@ -149,6 +190,7 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 				</CardBody>
 			</Card>
 
+			{/* Imagen Principal */}
 			{productImage && (
 				<Card>
 					<CardHeader>
@@ -167,10 +209,7 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 						</CardHeaderChild>
 					</CardHeader>
 					<CardBody>
-						<div
-							className='group relative overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'
-							onMouseEnter={() => setHoveredImage(productImage.url)}
-							onMouseLeave={() => setHoveredImage(null)}>
+						<div className='group relative overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'>
 							<div className='aspect-video w-full overflow-hidden bg-gray-50 dark:bg-gray-900'>
 								<img
 									src={productImage.url}
@@ -182,6 +221,7 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 											productImage.url,
 										);
 										console.log('productImage completo:', productImage);
+										// Intentar con thumb si url falla
 										if (
 											productImage.thumb &&
 											e.currentTarget.src !== productImage.thumb
@@ -192,6 +232,14 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 								/>
 							</div>
 							<div className='absolute inset-0 flex items-center justify-center gap-3 bg-black/80 opacity-0 backdrop-blur-sm transition-all duration-300 group-hover:opacity-100'>
+								<Button
+									size='lg'
+									variant='solid'
+									className='bg-white text-gray-900 shadow-2xl ring-4 ring-white/50 hover:scale-110 hover:bg-gray-100'
+									onClick={() => setLightboxImage(productImage.url)}>
+									<Icon icon='HeroMagnifyingGlassPlus' className='mr-2 h-5 w-5' />
+									Ampliar
+								</Button>
 								{productImage.id && onDeleteImage && (
 									<Button
 										size='lg'
@@ -213,6 +261,7 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 				</Card>
 			)}
 
+			{/* Galería */}
 			{productGallery && productGallery.length > 0 && (
 				<Card>
 					<CardHeader>
@@ -234,13 +283,11 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 						</CardHeaderChild>
 					</CardHeader>
 					<CardBody>
-						<div className='relative grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'>
+						<div className='grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'>
 							{productGallery.map((image, index) => (
 								<div
 									key={image.id || index}
-									className='group relative overflow-visible rounded-lg border border-gray-200 bg-white transition-all duration-300 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800'
-									onMouseEnter={() => setHoveredImage(image.url)}
-									onMouseLeave={() => setHoveredImage(null)}>
+									className='group relative overflow-hidden rounded-lg border border-gray-200 bg-white transition-all duration-300 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800'>
 									<div className='aspect-square w-full overflow-hidden bg-gray-50 dark:bg-gray-900'>
 										<img
 											src={image.thumb || image.url}
@@ -252,6 +299,7 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 													image.thumb || image.url,
 												);
 												console.log('image completo:', image);
+												// Intentar con url completa si thumb falla
 												if (
 													image.url &&
 													e.currentTarget.src !== image.url
@@ -262,20 +310,41 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 										/>
 									</div>
 
-									{image.id && onDeleteImage && (
+									<div className='absolute inset-0 flex items-center justify-center gap-3 bg-black/85 opacity-0 backdrop-blur-sm transition-all duration-200 group-hover:opacity-100'>
 										<Button
 											size='sm'
-											color='red'
-											className='absolute right-2 top-2 z-10 opacity-0 shadow-xl transition-opacity group-hover:opacity-100'
+											variant='solid'
+											className='bg-white text-gray-900 shadow-2xl ring-4 ring-white/50 hover:scale-110 hover:bg-gray-100'
 											onClick={(e) => {
 												e.stopPropagation();
-												onDeleteImage(image.id!);
+												console.log('Click en ampliar, URL:', image.url);
+												console.log(
+													'Estado anterior lightboxImage:',
+													lightboxImage,
+												);
+												setLightboxImage(image.url);
+												console.log('Después de setLightboxImage');
 											}}>
-											<Icon icon='HeroTrash' className='h-4 w-4' />
+											<Icon
+												icon='HeroMagnifyingGlassPlus'
+												className='h-4 w-4'
+											/>
 										</Button>
-									)}
+										{image.id && onDeleteImage && (
+											<Button
+												size='sm'
+												color='red'
+												className='shadow-2xl ring-4 ring-red-300/50 hover:scale-110'
+												onClick={(e) => {
+													e.stopPropagation();
+													onDeleteImage(image.id!);
+												}}>
+												<Icon icon='HeroTrash' className='h-4 w-4' />
+											</Button>
+										)}
+									</div>
 
-									<div className='absolute bottom-2 right-2 rounded-full bg-blue-600 px-2 py-1 text-xs font-semibold text-white shadow-sm'>
+									<div className='absolute right-2 top-2 rounded-full bg-blue-600 px-2 py-1 text-xs font-semibold text-white shadow-sm'>
 										#{index + 1}
 									</div>
 
@@ -291,6 +360,7 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 				</Card>
 			)}
 
+			{/* Estado vacío */}
 			{!productImage && (!productGallery || productGallery.length === 0) && (
 				<Card>
 					<CardBody>
@@ -309,27 +379,83 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 				</Card>
 			)}
 
-			{hoveredImage && (
-				<div
-					className='pointer-events-none fixed z-[9999] flex items-center justify-center'
-					style={{
-						left: '50%',
-						top: '50%',
-						transform: 'translate(-50%, -50%)',
-					}}>
-					<div className='rounded-xl border-4 border-white bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800'>
-						<img
-							src={hoveredImage}
-							alt='Preview'
-							className='max-h-[80vh] max-w-[80vw] rounded-lg object-contain'
-							style={{
-								minWidth: '400px',
-								minHeight: '400px',
-							}}
-						/>
+			{/* Lightbox Modal con Zoom */}
+			<Modal isOpen={modalOpen} setIsOpen={setModalOpen} size='lg'>
+				<ModalHeader setIsOpen={setModalOpen}>
+					<div className='flex items-center justify-between'>
+						<span>Vista Ampliada</span>
+						<Button
+							size='sm'
+							variant='outline'
+							onClick={(e) => {
+								e.stopPropagation();
+								setIsZoomed(!isZoomed);
+							}}>
+							<Icon
+								icon={
+									isZoomed
+										? 'HeroMagnifyingGlassMinus'
+										: 'HeroMagnifyingGlassPlus'
+								}
+								className='mr-2 h-4 w-4'
+							/>
+							{isZoomed ? 'Zoom Out' : 'Zoom In'}
+						</Button>
 					</div>
-				</div>
-			)}
+				</ModalHeader>
+				<ModalBody>
+					{lightboxImage && (
+						<div
+							ref={imageContainerRef}
+							className='relative flex items-center justify-center overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-900'
+							style={{ height: '70vh' }}>
+							<div
+								className={`relative h-full w-full ${
+									isZoomed ? 'cursor-move' : 'cursor-zoom-in'
+								}`}
+								onMouseMove={handleMouseMove}
+								onClick={handleImageClick}>
+								<img
+									src={lightboxImage}
+									alt='Vista ampliada'
+									className='pointer-events-none absolute left-1/2 top-1/2 select-none transition-transform duration-150 ease-out'
+									draggable={false}
+									style={{
+										transform: isZoomed
+											? `translate(-50%, -50%) translate(${(50 - mousePosition.x) * 2.5}%, ${(50 - mousePosition.y) * 2.5}%) scale(2.5)`
+											: 'translate(-50%, -50%)',
+										maxWidth: isZoomed ? 'none' : '90%',
+										maxHeight: isZoomed ? 'none' : '90%',
+										width: isZoomed ? 'auto' : 'auto',
+										height: isZoomed ? 'auto' : 'auto',
+										objectFit: 'contain',
+									}}
+								/>
+							</div>
+							{!isZoomed && (
+								<div className='pointer-events-none absolute inset-0 flex items-center justify-center bg-black/10 opacity-0 transition-opacity hover:opacity-100'>
+									<div className='rounded-lg bg-white px-4 py-3 text-sm font-medium text-gray-900 shadow-xl dark:bg-gray-800 dark:text-white'>
+										<Icon
+											icon='HeroMagnifyingGlassPlus'
+											className='mr-2 inline h-5 w-5'
+										/>
+										Haz clic para hacer zoom
+									</div>
+								</div>
+							)}
+							{isZoomed && (
+								<div className='pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-lg bg-black/80 px-4 py-2 text-xs text-white shadow-lg backdrop-blur-sm'>
+									<Icon
+										icon='HeroCursorArrowRays'
+										className='mr-2 inline h-4 w-4'
+									/>
+									Mueve el cursor para explorar • Click para salir del zoom
+								</div>
+							)}
+						</div>
+					)}
+				</ModalBody>
+			</Modal>
 		</div>
 	);
 };
