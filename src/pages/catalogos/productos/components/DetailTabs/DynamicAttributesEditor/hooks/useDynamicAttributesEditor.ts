@@ -1,17 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFormikContext } from 'formik';
 import type { ProductDetailForm } from '@/pages/catalogos/productos/types/products.types';
 import type { AttributesData, ProductKind } from '../types';
 
-const PRODUCT_TYPE_TO_KIND: Record<string, ProductKind> = {
-	computador_reacondicionado: 'desktop_pc',
-	notebook_reacondicionado: 'notebook',
-	aio_reacondicionado: 'aio',
-	monitor_reacondicionado: 'monitor',
-};
+const VALID_PRODUCT_KINDS: ProductKind[] = ['desktop_pc', 'notebook', 'aio', 'monitor'];
 
 const FIELDS_TO_HIDE: Record<ProductKind, string[]> = {
-	general: [],
 	desktop_pc: [
 		'cpu.cores',
 		'cpu.threads',
@@ -74,11 +68,9 @@ const FIELDS_TO_HIDE: Record<ProductKind, string[]> = {
 		'connectivity.wifi',
 		'connectivity.bluetooth',
 		'connectivity.ethernet',
+		'connectivity.power_input',
+		'notes',
 	],
-};
-
-const getDefaultProductKind = (productType: string): ProductKind => {
-	return PRODUCT_TYPE_TO_KIND[productType] ?? 'desktop_pc';
 };
 
 const shouldShowFieldByProductKind = (productKind: ProductKind, fieldName: string) => {
@@ -108,9 +100,9 @@ const applyDefaults = (data: AttributesData): AttributesData => {
 	return result;
 };
 
-const sanitiseAttributesInput = (value: unknown): AttributesData => {
+const sanitiseAttributesInput = (value: unknown, applyDefaultsFlag = true): AttributesData => {
 	if (!value) {
-		return applyDefaults({});
+		return applyDefaultsFlag ? applyDefaults({}) : {};
 	}
 
 	let parsed: unknown = value;
@@ -119,16 +111,16 @@ const sanitiseAttributesInput = (value: unknown): AttributesData => {
 		try {
 			parsed = JSON.parse(parsed);
 		} catch {
-			return applyDefaults({});
+			return applyDefaultsFlag ? applyDefaults({}) : {};
 		}
 	}
 
 	if (Array.isArray(parsed) || typeof parsed !== 'object' || parsed === null) {
-		return applyDefaults({});
+		return applyDefaultsFlag ? applyDefaults({}) : {};
 	}
 
 	const attributes = parsed as AttributesData;
-	return applyDefaults(attributes);
+	return applyDefaultsFlag ? applyDefaults(attributes) : attributes;
 };
 
 const areAttributesEqual = (a: AttributesData, b: AttributesData): boolean => {
@@ -138,14 +130,16 @@ const areAttributesEqual = (a: AttributesData, b: AttributesData): boolean => {
 export const useDynamicAttributesEditor = () => {
 	const { values, setFieldValue } = useFormikContext<ProductDetailForm>();
 	const [attributes, setAttributes] = useState<AttributesData>({});
+	const setFieldValueRef = useRef(setFieldValue);
+	const isUpdatingFromFormik = useRef(false);
 
-	const productType = values.product_type || 'general';
-	const defaultProductKind = useMemo(
-		() => getDefaultProductKind(productType),
-		[productType],
-	);
+	useEffect(() => {
+		setFieldValueRef.current = setFieldValue;
+	}, [setFieldValue]);
 
-	const previousProductType = useRef<string>(productType);
+	const productTypeStr = values.product_type || 'desktop_pc';
+	const currentProductKind: ProductKind =
+		(attributes.product_kind as ProductKind) || (productTypeStr as ProductKind);
 
 	useEffect(() => {
 		const nextAttributes = sanitiseAttributesInput(values.attributes_json);
@@ -154,32 +148,41 @@ export const useDynamicAttributesEditor = () => {
 			if (areAttributesEqual(prev, nextAttributes)) {
 				return prev;
 			}
+			isUpdatingFromFormik.current = true;
 			return nextAttributes;
 		});
 	}, [values.attributes_json]);
 
 	useEffect(() => {
-		setFieldValue('attributes_json', attributes);
-	}, [attributes, setFieldValue]);
+		if (isUpdatingFromFormik.current) {
+			isUpdatingFromFormik.current = false;
+			return;
+		}
+
+		const currentFormikValue = values.attributes_json;
+		const sanitised = sanitiseAttributesInput(currentFormikValue, false);
+
+		if (!areAttributesEqual(attributes, sanitised)) {
+			setFieldValueRef.current('attributes_json', attributes, false);
+		}
+	}, [attributes]);
 
 	useEffect(() => {
-		setAttributes((prev) => {
-			const shouldSync =
-				!prev.product_kind || previousProductType.current !== productType;
+		const productType = values.product_type;
 
-			if (!shouldSync) {
-				return prev;
-			}
+		if (!productType || !VALID_PRODUCT_KINDS.includes(productType as ProductKind)) {
+			return;
+		}
 
-			if (prev.product_kind === defaultProductKind) {
-				return prev;
-			}
+		const currentProductKind = attributes.product_kind;
 
-			return { ...prev, product_kind: defaultProductKind };
-		});
-
-		previousProductType.current = productType;
-	}, [defaultProductKind, productType]);
+		if (currentProductKind !== productType) {
+			setAttributes((prev) => ({
+				...prev,
+				product_kind: productType,
+			}));
+		}
+	}, [values.product_type, attributes.product_kind]);
 
 	const updateAttribute = useCallback((path: string, value: unknown) => {
 		setAttributes((prev) => {
@@ -201,7 +204,6 @@ export const useDynamicAttributesEditor = () => {
 		});
 	}, []);
 
-	const currentProductKind = (attributes.product_kind as ProductKind | undefined) ?? defaultProductKind;
 	const currentCpuBrand = attributes.cpu?.brand || '';
 
 	const isFieldVisible = useCallback(
@@ -219,4 +221,4 @@ export const useDynamicAttributesEditor = () => {
 };
 
 export type { ProductKind };
-export { getDefaultProductKind, shouldShowFieldByProductKind };
+export { shouldShowFieldByProductKind };
