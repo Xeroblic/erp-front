@@ -1,7 +1,6 @@
 // src/pages/EmpresaDetalle.tsx
 import React, { useEffect, useState, useRef } from 'react';
 import { useFormik } from 'formik';
-import * as Yup from 'yup';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
 	fetchMiEmpresa,
@@ -11,18 +10,13 @@ import {
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
-import Card, { CardBody, CardHeader } from '@/components/ui/Card';
-import Label from '@/components/form/Label';
-import Input from '@/components/form/Input';
-import Textarea from '@/components/form/Textarea';
-import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
+import Card, { CardBody } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
-import { IEmpresa } from '@/interface/empresas.interface';
 import { toast } from 'react-toastify';
 import { unwrapResult } from '@reduxjs/toolkit';
-import SubsidiariesTable from './SubsidiariesTable';
+import { SubsidiariesTable } from './components';
 import Spinner from '@/components/ui/Spinner';
 import {
 	listaComunasThunk,
@@ -30,6 +24,9 @@ import {
 	listaRegionesThunk,
 } from '@/store/slices/core/coreSlice';
 import { useGeoSelector } from '@/hooks/useGeoSelector';
+import { TSelectOption } from '@/components/form/SelectReact';
+import { companyValidationSchema } from './helpers/companyValidation';
+import { CompanyGeneralFields, CompanyContactFields } from './components';
 
 export default function EmpresaDetalle() {
 	const dispatch = useAppDispatch();
@@ -85,39 +82,7 @@ export default function EmpresaDetalle() {
 					? String((miEmpresa as any).commune.id)
 					: '',
 		},
-		validationSchema: Yup.object({
-			company_name: Yup.string()
-				.required('El nombre es requerido')
-				.min(3, 'El nombre debe tener al menos 3 caracteres')
-				.max(100, 'El nombre no puede superar los 100 caracteres'),
-			legal_name: Yup.string()
-				.required('La razón social es requerida')
-				.min(3, 'La razón social debe tener al menos 3 caracteres')
-				.max(150, 'La razón social no puede superar los 150 caracteres'),
-			company_rut: Yup.string()
-				.required('El RUT es requerido')
-				.matches(
-					/^[0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}\-?[0-9kK]{1}$/,
-					'El RUT no tiene un formato válido',
-				),
-			company_type: Yup.string().required('El tipo de empresa es requerido'),
-			business_activity: Yup.string()
-				.required('La actividad comercial es requerida')
-				.max(255, 'La actividad comercial no puede superar los 255 caracteres'),
-			company_website: Yup.string().url('Debe ser una URL válida').nullable(),
-			company_phone: Yup.string()
-				.matches(/^\+?[0-9\s\-\(\)]{8,20}$/, 'El teléfono no tiene un formato válido')
-				.nullable(),
-			company_address: Yup.string()
-				.required('La dirección es requerida')
-				.max(255, 'La dirección no puede superar los 255 caracteres'),
-			representative_name: Yup.string()
-				.required('El nombre del representante es requerido')
-				.max(100, 'El nombre del representante no puede superar los 100 caracteres'),
-			contact_email: Yup.string()
-				.email('Debe ser un email válido')
-				.required('El email de contacto es requerido'),
-		}),
+		validationSchema: companyValidationSchema,
 		onSubmit: async (values) => {
 			try {
 				const action = await dispatch(
@@ -341,285 +306,17 @@ export default function EmpresaDetalle() {
 							<form onSubmit={formik.handleSubmit} className='mt-6 space-y-6'>
 								{/* Información General */}
 								{activeTab === 'general' && (
-									<div className='space-y-6'>
-										<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
-											{/* Nombre Comercial */}
-											<div>
-												<Label htmlFor='company_name'>
-													Nombre Comercial *
-												</Label>
-												<Input
-													id='company_name'
-													name='company_name'
-													value={formik.values.company_name}
-													onChange={formik.handleChange}
-													onBlur={formik.handleBlur}
-													placeholder='Ej: EcoTech SPA'
-												/>
-												{formik.touched.company_name &&
-													formik.errors.company_name && (
-														<p className='mt-1 text-sm text-red-600'>
-															{formik.errors.company_name}
-														</p>
-													)}
-											</div>
-
-											{/* Razón Social */}
-											<div>
-												<Label htmlFor='legal_name'>Razón Social *</Label>
-												<Input
-													id='legal_name'
-													name='legal_name'
-													value={formik.values.legal_name}
-													onChange={formik.handleChange}
-													onBlur={formik.handleBlur}
-													placeholder='Ej: EcoTech Soluciones Tecnológicas SpA'
-												/>
-												{formik.touched.legal_name &&
-													formik.errors.legal_name && (
-														<p className='mt-1 text-sm text-red-600'>
-															{formik.errors.legal_name}
-														</p>
-													)}
-											</div>
-
-											{/* RUT */}
-											<div>
-												<Label htmlFor='company_rut'>RUT *</Label>
-												<Input
-													id='company_rut'
-													name='company_rut'
-													value={formik.values.company_rut}
-													onChange={formik.handleChange}
-													onBlur={formik.handleBlur}
-													placeholder='Ej: 76.795.560-9'
-												/>
-												{formik.touched.company_rut &&
-													formik.errors.company_rut && (
-														<p className='mt-1 text-sm text-red-600'>
-															{formik.errors.company_rut}
-														</p>
-													)}
-											</div>
-
-											{/* Tipo de Empresa */}
-											<div>
-												<Label htmlFor='company_type'>
-													Tipo de Empresa *
-												</Label>
-												<Input
-													id='company_type'
-													name='company_type'
-													value={formik.values.company_type}
-													onChange={formik.handleChange}
-													onBlur={formik.handleBlur}
-													placeholder='Ej: SPA, LTDA, SA'
-												/>
-												{formik.touched.company_type &&
-													formik.errors.company_type && (
-														<p className='mt-1 text-sm text-red-600'>
-															{formik.errors.company_type}
-														</p>
-													)}
-											</div>
-										</div>
-
-										{/* Actividad Comercial */}
-										<div>
-											<Label htmlFor='business_activity'>
-												Actividad Comercial *
-											</Label>
-											<Textarea
-												id='business_activity'
-												name='business_activity'
-												value={formik.values.business_activity}
-												onChange={formik.handleChange}
-												onBlur={formik.handleBlur}
-												placeholder='Describe la actividad principal de la empresa'
-												rows={3}
-											/>
-											{formik.touched.business_activity &&
-												formik.errors.business_activity && (
-													<p className='mt-1 text-sm text-red-600'>
-														{formik.errors.business_activity}
-													</p>
-												)}
-										</div>
-
-										{/* Sitio Web */}
-										<div>
-											<Label htmlFor='company_website'>Sitio Web</Label>
-											<Input
-												id='company_website'
-												name='company_website'
-												type='url'
-												value={formik.values.company_website}
-												onChange={formik.handleChange}
-												onBlur={formik.handleBlur}
-												placeholder='https://www.ejemplo.cl'
-											/>
-											{formik.touched.company_website &&
-												formik.errors.company_website && (
-													<p className='mt-1 text-sm text-red-600'>
-														{formik.errors.company_website}
-													</p>
-												)}
-										</div>
-									</div>
+									<CompanyGeneralFields formik={formik} />
 								)}
 
 								{activeTab === 'contact' && (
-									<div className='space-y-6'>
-										<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
-											<div>
-												<Label htmlFor='company_phone'>
-													Teléfono Principal
-												</Label>
-												<Input
-													id='company_phone'
-													name='company_phone'
-													type='tel'
-													value={formik.values.company_phone}
-													onChange={formik.handleChange}
-													onBlur={formik.handleBlur}
-													placeholder='+56 9 1234 5678'
-												/>
-												{formik.touched.company_phone &&
-													formik.errors.company_phone && (
-														<p className='mt-1 text-sm text-red-600'>
-															{formik.errors.company_phone}
-														</p>
-													)}
-											</div>
-
-											<div>
-												<Label htmlFor='contact_email'>
-													Email de Contacto *
-												</Label>
-												<Input
-													id='contact_email'
-													name='contact_email'
-													type='email'
-													value={formik.values.contact_email}
-													onChange={formik.handleChange}
-													onBlur={formik.handleBlur}
-													placeholder='contacto@empresa.cl'
-												/>
-												{formik.touched.contact_email &&
-													formik.errors.contact_email && (
-														<p className='mt-1 text-sm text-red-600'>
-															{formik.errors.contact_email}
-														</p>
-													)}
-											</div>
-										</div>
-
-										<div>
-											<Label htmlFor='company_address'>Dirección *</Label>
-											<Textarea
-												id='company_address'
-												name='company_address'
-												value={formik.values.company_address}
-												onChange={formik.handleChange}
-												onBlur={formik.handleBlur}
-												placeholder='Dirección completa de la empresa'
-												rows={2}
-											/>
-											{formik.touched.company_address &&
-												formik.errors.company_address && (
-													<p className='mt-1 text-sm text-red-600'>
-														{formik.errors.company_address}
-													</p>
-												)}
-										</div>
-
-										{/* Región / Provincia / Comuna */}
-										<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
-											<div>
-												<Label htmlFor='region'>Región</Label>
-												<SelectReact
-													name='region'
-													placeholder='Seleccione región'
-													value={
-														optionsRegion.find(
-															(o) =>
-																o.value ===
-																String(formik.values.region),
-														) || null
-													}
-													onChange={(opt) =>
-														formik.setFieldValue(
-															'region',
-															(opt as TSelectOption | null)?.value ||
-																'',
-														)
-													}
-													options={optionsRegion}
-												/>
-											</div>
-
-											<div>
-												<Label htmlFor='provincia'>Provincia</Label>
-												<SelectReact
-													name='provincia'
-													placeholder='Seleccione provincia'
-													value={
-														optionsProvincia.find(
-															(o) =>
-																o.value ===
-																String(formik.values.provincia),
-														) || null
-													}
-													onChange={(opt) =>
-														formik.setFieldValue(
-															'provincia',
-															(opt as TSelectOption | null)?.value ||
-																'',
-														)
-													}
-													options={optionsProvincia}
-												/>
-											</div>
-
-											<div>
-												<Label htmlFor='comuna'>Comuna</Label>
-												<SelectReact
-													name='comuna'
-													placeholder='Seleccione comuna'
-													value={selectedComunaOption}
-													onChange={(opt) =>
-														formik.setFieldValue(
-															'comuna',
-															(opt as TSelectOption | null)?.value ||
-																'',
-														)
-													}
-													options={effectiveOptionsComuna}
-												/>
-											</div>
-										</div>
-
-										{/* Representante Legal */}
-										<div>
-											<Label htmlFor='representative_name'>
-												Representante Legal *
-											</Label>
-											<Input
-												id='representative_name'
-												name='representative_name'
-												value={formik.values.representative_name}
-												onChange={formik.handleChange}
-												onBlur={formik.handleBlur}
-												placeholder='Nombre completo del representante legal'
-											/>
-											{formik.touched.representative_name &&
-												formik.errors.representative_name && (
-													<p className='mt-1 text-sm text-red-600'>
-														{formik.errors.representative_name}
-													</p>
-												)}
-										</div>
-									</div>
+									<CompanyContactFields
+										formik={formik}
+										optionsRegion={optionsRegion}
+										optionsProvincia={optionsProvincia}
+										optionsComuna={effectiveOptionsComuna}
+										selectedComunaOption={selectedComunaOption}
+									/>
 								)}
 
 								{/* Subempresas */}

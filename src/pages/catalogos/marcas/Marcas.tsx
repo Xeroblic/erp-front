@@ -73,12 +73,12 @@ const Marcas: React.FC = () => {
 					const file = formData.get('image');
 					return file instanceof File && file.size > 0 ? file : null;
 				})(),
-		});
+			});
 
-		toast.success('Marca creada correctamente');
-		setCreateOpen(false);
-	} catch (err: any) {
-		toast.error(err?.message ?? 'No se pudo crear la marca');
+			toast.success('Marca creada correctamente');
+			setCreateOpen(false);
+		} catch (err: any) {
+			toast.error(err?.message ?? 'No se pudo crear la marca');
 		}
 	};
 
@@ -123,7 +123,6 @@ const Marcas: React.FC = () => {
 			toast.error(err?.message ?? 'No se pudo eliminar la marca');
 		}
 	};
-
 
 	return (
 		<PageWrapper name='marcas-admin'>
@@ -181,22 +180,22 @@ const Marcas: React.FC = () => {
 					</div>
 				)}
 				<BrandStats stats={stats} />
-                <BrandsGrid
-                    brands={brands}
-                    loading={loading}
-                    onView={(brand) => {
-                        setSelected(brand);
-                        setViewOpen(true);
-                    }}
-                    onEdit={(brand) => {
-                        setSelected(brand);
-                        setEditOpen(true);
-                    }}
-                    onDelete={(brand) => {
-                        setSelected(brand);
-                        setDeleteOpen(true);
-                    }}
-                />
+				<BrandsGrid
+					brands={brands}
+					loading={loading}
+					onView={(brand) => {
+						setSelected(brand);
+						setViewOpen(true);
+					}}
+					onEdit={(brand) => {
+						setSelected(brand);
+						setEditOpen(true);
+					}}
+					onDelete={(brand) => {
+						setSelected(brand);
+						setDeleteOpen(true);
+					}}
+				/>
 			</Container>
 
 			<CrearMarca
