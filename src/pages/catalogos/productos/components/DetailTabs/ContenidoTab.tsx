@@ -6,12 +6,9 @@ import Input from '@/components/form/Input';
 import Button from '@/components/ui/Button';
 import Label from '@/components/form/Label';
 
-interface ContenidoTabProps {
-	onUploadFile?: (file?: File | null) => Promise<void>;
-	onOpenLibrary?: () => void;
-}
 
-const ContenidoTab: React.FC<ContenidoTabProps> = ({ onUploadFile, onOpenLibrary }) => {
+
+const ContenidoTab = () => {
 	const { values, errors, touched, setFieldValue } = useFormikContext<ProductDetailForm>();
 	const fileRef = useRef<HTMLInputElement | null>(null);
 
@@ -80,38 +77,7 @@ const ContenidoTab: React.FC<ContenidoTabProps> = ({ onUploadFile, onOpenLibrary
 				)}
 			</div>
 
-			{/* Sección de imágenes */}
-			<div className='space-y-2 border-t pt-6'>
-				<Label htmlFor='imagenes_media' className='text-sm font-medium'>
-					Imágenes / Media
-				</Label>
-				<div className='flex flex-wrap items-center gap-2'>
-					<Input
-						name='imagen'
-						ref={fileRef}
-						type='file'
-						accept='image/*'
-						className='hidden'
-						id='product-image-input'
-					/>
-					<Button variant='outline' onClick={() => fileRef.current?.click()}>
-						Seleccionar imagen
-					</Button>
-					<Button
-						color='blue'
-						onClick={async () => {
-							const file = fileRef.current?.files?.[0] ?? null;
-							if (!file) return;
-							await onUploadFile?.(file);
-							if (fileRef.current) fileRef.current.value = '';
-						}}>
-						Subir imagen
-					</Button>
-					<Button variant='outline' onClick={() => onOpenLibrary?.()}>
-						Abrir biblioteca
-					</Button>
-				</div>
-			</div>
+			
 		</div>
 	);
 };

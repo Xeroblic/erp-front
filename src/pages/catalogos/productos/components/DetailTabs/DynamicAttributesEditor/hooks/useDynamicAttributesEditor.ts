@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFormikContext } from 'formik';
 import type { ProductDetailForm } from '@/pages/catalogos/productos/types/products.types';
+import {
+	areAttributesEqual,
+	sanitiseAttributesInput,
+} from '@/pages/catalogos/productos/utils/dynamicAttributes.utils';
 import type { AttributesData, ProductKind } from '../types';
 
 const VALID_PRODUCT_KINDS: ProductKind[] = ['desktop_pc', 'notebook', 'aio', 'monitor'];
@@ -76,55 +80,6 @@ const FIELDS_TO_HIDE: Record<ProductKind, string[]> = {
 const shouldShowFieldByProductKind = (productKind: ProductKind, fieldName: string) => {
 	const hiddenFields = FIELDS_TO_HIDE[productKind] ?? [];
 	return !hiddenFields.includes(fieldName);
-};
-
-const DEFAULT_ATTRIBUTES: AttributesData = {
-	packaging: {
-		charger_included: false,
-	},
-};
-
-const applyDefaults = (data: AttributesData): AttributesData => {
-	const result: AttributesData = {
-		...DEFAULT_ATTRIBUTES,
-		...data,
-	};
-
-	if (data.packaging) {
-		result.packaging = {
-			...DEFAULT_ATTRIBUTES.packaging,
-			...data.packaging,
-		};
-	}
-
-	return result;
-};
-
-const sanitiseAttributesInput = (value: unknown, applyDefaultsFlag = true): AttributesData => {
-	if (!value) {
-		return applyDefaultsFlag ? applyDefaults({}) : {};
-	}
-
-	let parsed: unknown = value;
-
-	if (typeof parsed === 'string') {
-		try {
-			parsed = JSON.parse(parsed);
-		} catch {
-			return applyDefaultsFlag ? applyDefaults({}) : {};
-		}
-	}
-
-	if (Array.isArray(parsed) || typeof parsed !== 'object' || parsed === null) {
-		return applyDefaultsFlag ? applyDefaults({}) : {};
-	}
-
-	const attributes = parsed as AttributesData;
-	return applyDefaultsFlag ? applyDefaults(attributes) : attributes;
-};
-
-const areAttributesEqual = (a: AttributesData, b: AttributesData): boolean => {
-	return JSON.stringify(a) === JSON.stringify(b);
 };
 
 export const useDynamicAttributesEditor = () => {

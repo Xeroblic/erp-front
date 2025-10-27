@@ -22,13 +22,12 @@ const BasicConfigurationSection: React.FC<BasicConfigurationSectionProps> = ({
 					<Select
 						name='product_kind'
 						value={
-							PRODUCT_DEVICE_TYPES.some(opt => opt.value === currentProductKind)
+							PRODUCT_DEVICE_TYPES.some((opt) => opt.value === currentProductKind)
 								? currentProductKind
 								: ''
 						}
-						onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
-							updateAttribute('product_kind', event.target.value)
-						}>
+						disabled
+						aria-readonly='true'>
 						<option value=''>Seleccionar tipo</option>
 						{PRODUCT_DEVICE_TYPES.map((option) => (
 							<option key={option.value} value={option.value}>

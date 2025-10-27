@@ -1,10 +1,11 @@
 import React from 'react';
 import Icon from '@/components/icon/Icon';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
-import { GeneralTab, ComercialTab, ContenidoTab, AtributosTab } from './DetailTabs';
+import { GeneralTab, ComercialTab, ContenidoTab, AtributosTab, ImagesProduct } from './DetailTabs';
 import type { IBrand } from '@/interface/brand.interface';
 import type { ICategory } from '@/interface/category.interface';
 import type { TSelectOption } from '@/components/form/SelectReact';
+import type { IProduct, IProductImage } from '@/interface/product.interface';
 
 interface ProductDetailTabsProps {
 	activeTab: string;
@@ -14,8 +15,11 @@ interface ProductDetailTabsProps {
 	categories: ICategory[];
 	categoriesLoading: boolean;
 	categoryOptions: TSelectOption[];
-	onUploadFile: (file?: File | null) => Promise<void>;
+	onUploadMainImage: (file?: File | null) => Promise<void>;
+	onUploadGalleryImage: (file?: File | null) => Promise<void>;
 	onOpenLibrary: () => void;
+	product?: IProduct | null;
+	onDeleteImage?: (imageId: number) => Promise<void>;
 }
 
 const TABS_CONFIG = [
@@ -39,6 +43,11 @@ const TABS_CONFIG = [
 		label: 'Atributos',
 		icon: 'HeroListBullet' as const,
 	},
+	{
+		id: 'imagenes',
+		label: 'Imágenes',
+		icon: 'HeroPhoto' as const,
+	},
 ];
 
 export const ProductDetailTabs: React.FC<ProductDetailTabsProps> = ({
@@ -49,8 +58,11 @@ export const ProductDetailTabs: React.FC<ProductDetailTabsProps> = ({
 	categories,
 	categoriesLoading,
 	categoryOptions,
-	onUploadFile,
+	onUploadMainImage,
+	onUploadGalleryImage,
 	onOpenLibrary,
+	product,
+	onDeleteImage,
 }) => {
 	const renderTabContent = () => {
 		switch (activeTab) {
@@ -65,9 +77,21 @@ export const ProductDetailTabs: React.FC<ProductDetailTabsProps> = ({
 					/>
 				);
 			case 'contenido':
-				return <ContenidoTab onUploadFile={onUploadFile} onOpenLibrary={onOpenLibrary} />;
+				return <ContenidoTab />;
 			case 'atributos':
 				return <AtributosTab />;
+
+			case 'imagenes':
+				return (
+					<ImagesProduct
+						onUploadMainImage={onUploadMainImage}
+						onUploadGalleryImage={onUploadGalleryImage}
+						onOpenLibrary={onOpenLibrary}
+						productImage={product?.image}
+						productGallery={product?.gallery}
+						onDeleteImage={onDeleteImage}
+					/>
+				);
 			default:
 				return null;
 		}

@@ -16,6 +16,10 @@ import type {
 	BuildUpdatePayloadOptions,
 } from '../types/products.types';
 import { PRODUCT_DRAFT_CATEGORY_SLUG, PRODUCT_TYPE_LABELS } from '../constants/products.constant';
+import {
+	areAttributeRecordsEqual,
+	prepareAttributesForSubmit,
+} from './dynamicAttributes.utils';
 
 const toOption = (value: number | string, label: string): ProductOption => ({
 	value: String(value),
@@ -127,13 +131,6 @@ export const mapProductToDetailForm = (product: IProduct): ProductDetailForm => 
 	};
 };
 
-const hasDifferentValue = <T>(current: T, previous: T) => {
-	if (typeof current === 'object' && current !== null && previous !== null) {
-		return JSON.stringify(current) !== JSON.stringify(previous);
-	}
-	return current !== previous;
-};
-
 export const buildDetailUpdatePayload = (
 	product: IProduct,
 	form: ProductDetailForm,
@@ -196,8 +193,13 @@ export const buildDetailUpdatePayload = (
 		payload.product_status = form.product_status;
 	}
 
-	if (includeAttributes && hasDifferentValue(form.attributes_json as any, product.attributes_json)) {
-		payload.attributes_json = form.attributes_json as any ?? null;
+	if (includeAttributes) {
+		const nextAttributes = prepareAttributesForSubmit(form.attributes_json, true);
+		const previousAttributes = prepareAttributesForSubmit(product.attributes_json, false);
+
+		if (!areAttributeRecordsEqual(nextAttributes, previousAttributes)) {
+			payload.attributes_json = nextAttributes;
+		}
 	}
 
 	return payload;
