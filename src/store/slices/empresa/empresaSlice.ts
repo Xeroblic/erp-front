@@ -118,7 +118,6 @@ export const fetchMiEmpresaSubsidiarias = createAsyncThunk<
       const companyId = state?.empresa?.miEmpresa?.id;
 
       if (companyId) {
-        // Preferir datos completos desde /subsidiaries filtrando por company_id
         const response = await ApiService.fetchData<{ data?: any[]; subsidiaries?: any[] }>({
           url: '/subsidiaries',
           method: 'get',
@@ -135,7 +134,6 @@ export const fetchMiEmpresaSubsidiarias = createAsyncThunk<
         return rawList.map(normalizeSubsidiaryData);
       }
 
-      // Fallback: usar endpoint de mi empresa (puede traer datos resumidos)
       const response = await ApiService.fetchData<{ subempresas: any[] }>({
         url: '/my-company/subsidiaries',
         method: 'get'
@@ -150,7 +148,6 @@ export const fetchMiEmpresaSubsidiarias = createAsyncThunk<
       const state: any = getState();
       const existingSubsidiaries = state?.empresa?.miEmpresaSubsidiarias || [];
 
-      // Si ya hay subsidiarias y no se fuerza el refresh, cancelar la ejecución
       if (existingSubsidiaries.length > 0 && !params?.force) {
         return false;
       }
@@ -181,10 +178,6 @@ export const createSubsidiaria = createAsyncThunk<
   }
 );
 
-/**
- * 🏪 Actualizar subsidiaria de MI empresa
- * Endpoint: PUT /api/my-company/subsidiaries/{id}
- */
 export const updateSubsidiaria = createAsyncThunk<
   ISubempresa,
   { id: number; data: Partial<ISubempresa> },
@@ -205,10 +198,7 @@ export const updateSubsidiaria = createAsyncThunk<
   }
 );
 
-/**
- * 👥 Obtener usuarios de MI empresa (dinámico)
- * Endpoint: GET /api/my-company/users
- */
+
 export const fetchMiEmpresaUsuarios = createAsyncThunk<IUsuarioEmpresa[], void, { rejectValue: string }>(
   'empresa/fetchMiEmpresaUsuarios',
   async (_, { rejectWithValue }) => {
@@ -224,10 +214,7 @@ export const fetchMiEmpresaUsuarios = createAsyncThunk<IUsuarioEmpresa[], void, 
   }
 );
 
-/**
- * 👥 Invitar usuario a MI empresa (dinámico)
- * Endpoint: POST /api/my-company/invite
- */
+
 export const inviteUsuarioToMiEmpresa = createAsyncThunk<
   { usuario: IUsuarioEmpresa; password_temporal: string },
   { nombre: string; email: string },
@@ -248,7 +235,6 @@ export const inviteUsuarioToMiEmpresa = createAsyncThunk<
   }
 );
 
-// 🔥 NUEVO SLICE DINÁMICO
 const empresaSlice = createSlice({
   name: 'empresa',
   initialState,
@@ -261,12 +247,10 @@ const empresaSlice = createSlice({
       state.inviteError = undefined;
     },
 
-    // 🔄 Reset del estado
     resetEmpresaState: () => initialState,
   },
   extraReducers: (builder) => {
     builder
-      // 🏢 ===== MI EMPRESA =====
       .addCase(fetchMiEmpresa.pending, (state) => {
         state.loading = true;
         state.error = undefined;
@@ -281,7 +265,6 @@ const empresaSlice = createSlice({
         state.error = payload;
       })
 
-      // 📝 ===== ACTUALIZAR MI EMPRESA =====
       .addCase(updateMiEmpresa.pending, (state) => {
         state.updateLoading = true;
         state.updateError = undefined;
@@ -296,7 +279,6 @@ const empresaSlice = createSlice({
         state.updateError = payload;
       })
 
-      // 🏪 ===== SUBSIDIARIAS =====
       .addCase(fetchMiEmpresaSubsidiarias.pending, (state) => {
         state.loading = true;
         state.error = undefined;
@@ -311,7 +293,6 @@ const empresaSlice = createSlice({
         state.error = payload;
       })
 
-      // ➕ ===== CREAR SUBSIDIARIA =====
       .addCase(createSubsidiaria.pending, (state) => {
         state.subsidiaryActionLoading = true;
         state.subsidiaryActionError = undefined;
@@ -326,7 +307,6 @@ const empresaSlice = createSlice({
         state.subsidiaryActionError = payload;
       })
 
-      // ✏️ ===== ACTUALIZAR SUBSIDIARIA =====
       .addCase(updateSubsidiaria.pending, (state) => {
         state.subsidiaryActionLoading = true;
         state.subsidiaryActionError = undefined;
@@ -344,7 +324,6 @@ const empresaSlice = createSlice({
         state.subsidiaryActionError = payload;
       })
 
-      // 👥 ===== USUARIOS DE MI EMPRESA =====
       .addCase(fetchMiEmpresaUsuarios.pending, (state) => {
         state.loading = true;
         state.error = undefined;
@@ -359,7 +338,6 @@ const empresaSlice = createSlice({
         state.error = payload;
       })
 
-      // 📧 ===== INVITAR USUARIO =====
       .addCase(inviteUsuarioToMiEmpresa.pending, (state) => {
         state.inviteLoading = true;
         state.inviteError = undefined;
@@ -376,6 +354,5 @@ const empresaSlice = createSlice({
   },
 });
 
-// 🚀 Exportar actions y reducer
 export const { clearErrors, resetEmpresaState } = empresaSlice.actions;
 export default empresaSlice.reducer;
