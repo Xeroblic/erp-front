@@ -36,122 +36,87 @@ empresa/
 └── README.md
 ```
 
-## Reducción de código lograda 🎯
+## Reducción de código lograda
 
-| Archivo                       | Antes         | Después     | Reducción  |
-| ----------------------------- | ------------- | ----------- | ---------- |
-| **Empresa.tsx**               | ~450 líneas   | ~270 líneas | **40%** ⬇️ |
-| **CreateSubsidiaryModal.tsx** | ~640 líneas   | ~450 líneas | **30%** ⬇️ |
-| **SubsidiariesTable.tsx**     | ~220 líneas   | ~85 líneas  | **61%** ⬇️ |
-| **Total**                     | ~1,310 líneas | ~805 líneas | **39%** ⬇️ |
+| Archivo                       | Antes         | Después     | Reducción |
+| ----------------------------- | ------------- | ----------- | --------- |
+| **Empresa.tsx**               | ~450 líneas   | ~270 líneas | **40%**   |
+| **CreateSubsidiaryModal.tsx** | ~640 líneas   | ~450 líneas | **30%**   |
+| **SubsidiariesTable.tsx**     | ~220 líneas   | ~85 líneas  | **61%**   |
+| **Total**                     | ~1,310 líneas | ~805 líneas | **39%**   |
 
-## Estructura Similar a Usuarios ✨
+## Estructura Similar a Usuarios y Subempresa
 
-La estructura ahora es consistente con el módulo de usuarios:
+La estructura es consistente con los módulos `usuarios` y `subempresa`:
 
--   ✅ `modals/` - Todos los modales con sus campos inline
--   ✅ `tables/` - Componentes de tabla principales
--   ✅ `forms/` - Solo para campos reutilizables de Empresa (no subsidiaria)
--   ✅ `helpers/` - Lógica de negocio separada
+-   `components/modals/` - Modales con campos inline (no separados)
+-   `components/tables/` - Componentes de tabla principales
+-   `components/forms/` - Solo para campos de Empresa (no subsidiaria)
+-   `helpers/` - Lógica de negocio separada
+-   Archivo principal reducido, solo renderizado y estado
 
 ## Componentes
 
-### Formulario de Subsidiarias
+### Modales (`components/modals/`)
 
-#### SubsidiaryBasicFields
+#### CreateSubsidiaryModal
 
-Campos básicos del formulario de subsidiaria:
+Modal para crear y editar subsidiarias con:
 
--   Nombre (requerido)
--   RUT (opcional)
--   Dirección (opcional)
+-   Todos los campos integrados inline (no componentes separados)
+-   Campos: nombre, RUT, dirección, teléfono, email, sitio web
+-   Selector de gerente responsable
+-   Selectores geográficos: región, provincia, comuna
+-   Validación con Yup
+-   Manejo de errores específicos
 
-#### SubsidiaryContactFields
+### Tabla de Subsidiarias (`components/tables/`)
 
-Campos de contacto del formulario:
+#### SubsidiariesTable
 
--   Teléfono (opcional)
--   Email (opcional, único)
--   Sitio web (opcional)
+Tabla principal con:
 
-#### SubsidiaryManagerSelect
+-   Columnas: nombre, RUT, dirección, teléfono, email, sucursales, comuna, acciones
+-   Estados: loading, empty, data
+-   Integra componentes internos (header, loading, empty, content)
+-   Acciones: crear, editar, ver
 
-Selector de gerente responsable:
-
--   Filtra usuarios con roles admin/manager
--   Muestra mensaje si no hay gerentes disponibles
--   Campo requerido
-
-#### SubsidiaryGeoSelect
-
-Selectores geográficos en cascada:
-
--   Región → Provincia → Comuna
--   Integrado con el sistema geográfico del core
-
-### Tabla de Subsidiarias
+### Componentes Internos de Tabla (`components/table/`)
 
 #### SubsidiariesTableHeader
 
-Header de la tabla con:
-
--   Título y contador
--   Botón de actualizar
--   Botón de crear nueva subsidiaria
+Header de la tabla con título, contador y botones de acción
 
 #### SubsidiariesLoadingState
 
-Estado de carga con:
-
--   Spinner animado
--   Mensaje "Cargando subempresas..."
+Estado de carga con spinner y mensaje
 
 #### SubsidiariesEmptyState
 
-Estado vacío con:
-
--   Icono ilustrativo
--   Mensaje descriptivo
--   Botón para crear primera subsidiaria
+Estado vacío con icono y botón para crear primera subsidiaria
 
 #### SubsidiariesTableContent
 
-Renderizado de la tabla con:
-
--   Headers dinámicos
--   Filas de datos
--   Celdas con columnas personalizadas
+Renderizado de filas y celdas de la tabla
 
 #### useSubsidiaryColumns
 
-Hook para definir columnas de la tabla:
+Hook que define las columnas y su renderizado
 
--   Nombre con avatar
--   RUT, dirección, teléfono, email
--   Sucursales asociadas
--   Comuna
--   Acciones (editar, ver)
-
-### Formulario de Empresa
+### Formularios de Empresa (`components/forms/`)
 
 #### CompanyGeneralFields
 
 Campos generales de información de empresa:
 
--   Nombre comercial
--   Razón social
--   RUT
--   Tipo de empresa
--   Actividad comercial
--   Sitio web
+-   Nombre comercial, razón social, RUT
+-   Tipo de empresa, actividad comercial, sitio web
 
 #### CompanyContactFields
 
 Campos de contacto de empresa:
 
--   Teléfono principal
--   Email de contacto
--   Dirección completa
+-   Teléfono, email, dirección
 -   Selectores geográficos
 -   Representante legal
 
@@ -191,41 +156,29 @@ Campos de contacto de empresa:
 
 ## Uso
 
-### Importar componentes:
-
 ```typescript
-import {
-	SubsidiaryBasicFields,
-	SubsidiaryContactFields,
-	SubsidiaryManagerSelect,
-	SubsidiaryGeoSelect,
-	SubsidiariesTableHeader,
-	SubsidiariesLoadingState,
-	SubsidiariesEmptyState,
-	SubsidiariesTableContent,
-} from './components';
-```
-
-### Importar helpers:
-
-```typescript
+import { CreateSubsidiaryModal, SubsidiariesTable } from './components';
 import {
 	subsidiaryValidationSchema,
 	handleSubsidiaryError,
 	buildSubsidiaryPayload,
-	filterAdminUsers,
-	runAllPreSubmitValidations,
+	runAllPreSubmitValidations
 } from './helpers';
+
+// En Empresa.tsx
+<SubsidiariesTable
+	subsidiaries={subsidiaries}
+	loading={loading}
+	onEdit={handleEdit}
+	onCreate={handleCreate}
+/>
 ```
 
 ## Flujo de datos
 
 1. **Carga inicial**: `Empresa.tsx` carga datos de empresa y subsidiarias
-2. **Renderizado tabla**:
-    - Loading → `SubsidiariesLoadingState`
-    - Vacío → `SubsidiariesEmptyState`
-    - Con datos → `SubsidiariesTableContent`
-3. **Creación/Edición**: `SubsidiaryModal.tsx` usa componentes separados para el formulario
+2. **Renderizado tabla**: `SubsidiariesTable` maneja estados loading/empty/data
+3. **Creación/Edición**: `CreateSubsidiaryModal` con todos los campos inline
 4. **Validación**: Formik + Yup validan campos antes del submit
 5. **Pre-validación**: `runAllPreSubmitValidations()` valida todo antes de API
 6. **Envío**: Payload construido con `buildSubsidiaryPayload()`
@@ -234,12 +187,12 @@ import {
 
 ## Validaciones
 
-### Campos obligatorios:
+### Campos obligatorios
 
 -   Nombre de subsidiaria (3-100 caracteres)
 -   Gerente responsable (ID de usuario válido)
 
-### Campos opcionales con validación:
+### Campos opcionales con validación
 
 -   RUT (9-12 caracteres, formato chileno)
 -   Email (único, formato válido)
@@ -251,11 +204,11 @@ import {
 
 El sistema detecta y muestra mensajes específicos para:
 
--   ✅ Duplicados (email, RUT, nombre) - muestra el valor duplicado
--   ✅ Errores de validación - muestra campo específico
--   ✅ Errores de permisos - mensaje de autorización
--   ✅ Errores de red - mensaje de conexión
--   ✅ Errores de servidor - mensaje genérico
+-   Duplicados (email, RUT, nombre) - muestra el valor duplicado
+-   Errores de validación - muestra campo específico
+-   Errores de permisos - mensaje de autorización
+-   Errores de red - mensaje de conexión
+-   Errores de servidor - mensaje genérico
 
 ## Beneficios de la refactorización
 
@@ -278,20 +231,20 @@ El sistema detecta y muestra mensajes específicos para:
     │                         │
 ┌───▼───────────┐    ┌───────▼──────────┐
 │ General Tab   │    │ Subsidiaries Tab │
-│ ├─ Company    │    │ ├─ Table Header  │
-│ │  General    │    │ ├─ Loading State │
-│ └─ Company    │    │ ├─ Empty State   │
-│    Contact    │    │ ├─ Table Content │
-└───────────────┘    │ └─ Modal         │
+│ ├─ Company    │    │ ├─ Subsidiaries  │
+│ │  General    │    │ │  Table         │
+│ └─ Company    │    │ └─ Create        │
+│    Contact    │    │    Subsidiary    │
+└───────────────┘    │    Modal         │
                      └──────────────────┘
                               │
                      ┌────────┴────────┐
                      │                 │
               ┌──────▼──────┐   ┌─────▼──────┐
-              │ Components  │   │  Helpers   │
-              │ ├─ Basic    │   │ ├─ Valid   │
-              │ ├─ Contact  │   │ ├─ Error   │
-              │ ├─ Manager  │   │ ├─ Data    │
-              │ └─ Geo      │   │ └─ PreVal  │
+              │   Modal     │   │  Helpers   │
+              │ (All fields │   │ ├─ Valid   │
+              │   inline)   │   │ ├─ Error   │
+              │             │   │ ├─ Data    │
+              │             │   │ └─ PreVal  │
               └─────────────┘   └────────────┘
 ```
