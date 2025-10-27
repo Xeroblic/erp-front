@@ -11,19 +11,27 @@ export const handleSubempresaError = (error: any, isEditing: boolean) => {
         errorMessage.includes('duplicate') ||
         errorMessage.includes('duplicado') ||
         errorMessage.includes('unique') ||
+        errorMessage.includes('violation') ||
         fullError.includes('duplicate') ||
         fullError.includes('unique') ||
+        fullError.includes('violation') ||
         statusCode === 409;
 
     if (isDuplicate) {
-        if (errorMessage.includes('email') || fullError.includes('subsidiary_email')) {
-            toast.error('Email ya está en uso');
-        } else if (errorMessage.includes('rut') || fullError.includes('subsidiary_rut')) {
-            toast.error('RUT ya está registrado');
-        } else if (errorMessage.includes('name') || fullError.includes('subsidiary_name')) {
-            toast.error('Nombre ya existe');
+        if (
+            errorMessage.includes('subsidiary_manager_email') ||
+            errorMessage.includes('manager_email') ||
+            fullError.includes('subsidiary_manager_email')
+        ) {
+            toast.error('Este gerente ya está asignado a otra subempresa. Seleccione otro gerente.');
+        } else if (errorMessage.includes('email') || fullError.includes('subsidiary_email') || fullError.includes('email')) {
+            toast.error('El email ingresado ya está registrado en otra subempresa');
+        } else if (errorMessage.includes('rut') || fullError.includes('subsidiary_rut') || fullError.includes('rut')) {
+            toast.error('El RUT ingresado ya está registrado en otra subempresa');
+        } else if (errorMessage.includes('name') || fullError.includes('subsidiary_name') || fullError.includes('name')) {
+            toast.error('El nombre ingresado ya existe en otra subempresa');
         } else {
-            toast.error('Ya existe un registro con estos datos');
+            toast.error('Ya existe una subempresa con estos datos');
         }
     } else if (errorMessage.includes('permission') || statusCode === 403) {
         toast.error('No tiene permisos suficientes');

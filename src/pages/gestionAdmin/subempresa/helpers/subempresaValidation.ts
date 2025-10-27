@@ -5,6 +5,8 @@ export const subempresaValidationSchema = Yup.object({
         .min(3, 'El nombre debe tener al menos 3 caracteres')
         .max(100, 'El nombre no puede exceder 100 caracteres')
         .required('El nombre es obligatorio'),
+    managerId: Yup.string()
+        .required('Debe seleccionar un gerente responsable'),
     rut: Yup.string()
         .min(9, 'El RUT debe tener al menos 9 caracteres')
         .max(12, 'El RUT no puede exceder 12 caracteres')

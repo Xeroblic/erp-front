@@ -19,10 +19,6 @@ export const handleSubsidiaryError = (
     values: SubsidiaryFormValues,
     setFieldError: (field: string, message: string) => void,
 ) => {
-    console.error('Error al guardar subsidiaria:', error);
-    console.error('Response:', error?.response);
-    console.error('Data:', error?.response?.data);
-
     const errorMessage = String(
         error?.message || error?.response?.data?.message || '',
     ).toLowerCase();
@@ -34,10 +30,12 @@ export const handleSubsidiaryError = (
         errorMessage.includes('duplicate') ||
         errorMessage.includes('duplicado') ||
         errorMessage.includes('unique') ||
+        errorMessage.includes('violation') ||
         errorMessage.includes('ya existe') ||
         errorMessage.includes('already exists') ||
         fullError.includes('duplicate') ||
         fullError.includes('unique') ||
+        fullError.includes('violation') ||
         statusCode === 409
     ) {
         if (
@@ -46,21 +44,21 @@ export const handleSubsidiaryError = (
         ) {
             toast.error('Este gerente ya está asignado a otra subsidiaria');
             setFieldError('managerId', 'Gerente ya asignado');
-        } else if (errorMessage.includes('email') || fullError.includes('subsidiary_email')) {
-            toast.error(`Email "${values.email}" ya existe`);
+        } else if (errorMessage.includes('email') || fullError.includes('subsidiary_email') || fullError.includes('email')) {
+            toast.error(`El email "${values.email}" ya está registrado en otra subsidiaria`);
             setFieldError('email', 'Email duplicado');
-        } else if (errorMessage.includes('rut') || fullError.includes('subsidiary_rut')) {
-            toast.error(`RUT "${values.rut}" ya existe`);
+        } else if (errorMessage.includes('rut') || fullError.includes('subsidiary_rut') || fullError.includes('rut')) {
+            toast.error(`El RUT "${values.rut}" ya está registrado en otra subsidiaria`);
             setFieldError('rut', 'RUT duplicado');
         } else if (
             errorMessage.includes('name') ||
             errorMessage.includes('nombre') ||
             fullError.includes('subsidiary_name')
         ) {
-            toast.error(`Nombre "${values.name}" ya existe`);
+            toast.error(`El nombre "${values.name}" ya existe en otra subsidiaria`);
             setFieldError('name', 'Nombre duplicado');
         } else {
-            toast.error('Ya existe un registro con estos datos');
+            toast.error('Ya existe una subsidiaria con estos datos');
         }
     } else if (
         errorMessage.includes('commune') &&

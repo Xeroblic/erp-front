@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
 import Modal, {
@@ -23,9 +23,10 @@ import {
 	listaProvinciasThunk,
 	listaRegionesThunk,
 } from '@/store/slices/core/coreSlice';
+import { fetchUsers } from '@/store/slices/usersAdmin/usersAdminSlice';
 import { useGeoSelector } from '@/hooks/useGeoSelector';
 import { subempresaValidationSchema } from '../../helpers/subempresaValidation';
-import { buildSubempresaPayload } from '../../helpers/subempresaDataMapper';
+import { buildSubempresaPayload, filterAdminUsers } from '../../helpers/subempresaDataMapper';
 import { handleSubempresaError } from '../../helpers/subempresaErrorHandler';
 
 interface CreateSubempresaModalProps {
@@ -43,11 +44,22 @@ export default function CreateSubempresaModal({
 }: CreateSubempresaModalProps) {
 	const dispatch = useAppDispatch();
 	const { listaRegiones, listaProvincias, listaComunas } = useAppSelector((s) => s.core);
+	const { users } = useAppSelector((s) => s.usersAdmin);
 	const isEditing = Boolean(subempresa);
+
+	const adminUsers = useMemo(() => filterAdminUsers(users), [users]);
+
+	const managerOptions: TSelectOption[] = useMemo(() => {
+		return adminUsers.map((user: any) => ({
+			value: String(user.id),
+			label: `${user.first_name} ${user.last_name} - ${user.cargo || 'Sin cargo'}`,
+		}));
+	}, [adminUsers]);
 
 	const formik = useFormik({
 		initialValues: {
 			nombre: subempresa?.name || '',
+			managerId: (subempresa as any)?.manager_id || '',
 			rut: subempresa?.rut || '',
 			telefono: subempresa?.phone || '',
 			email: subempresa?.email || '',
@@ -64,7 +76,16 @@ export default function CreateSubempresaModal({
 		enableReinitialize: true,
 		onSubmit: async (values, { setSubmitting }) => {
 			try {
-				const data = buildSubempresaPayload(values, companyId);
+				const selectedManager = adminUsers.find(
+					(user: any) => String(user.id) === String(values.managerId),
+				);
+
+				if (!selectedManager) {
+					toast.error('Debe seleccionar un gerente responsable');
+					return;
+				}
+
+				const data = buildSubempresaPayload(values, companyId, selectedManager);
 
 				if (isEditing && subempresa?.id) {
 					await dispatch(
@@ -94,8 +115,15 @@ export default function CreateSubempresaModal({
 			dispatch(listaRegionesThunk());
 			dispatch(listaProvinciasThunk());
 			dispatch(listaComunasThunk());
+			if (users.length === 0) dispatch(fetchUsers({}));
 		}
-	}, [isOpen, dispatch]);
+	}, [isOpen, dispatch, users.length]);
+
+	useEffect(() => {
+		if (isOpen && adminUsers.length === 0 && users.length > 0) {
+			toast.warning('No hay usuarios con rol administrador disponibles');
+		}
+	}, [isOpen, adminUsers.length, users.length]);
 
 	const { optionsRegion, optionsProvincia, optionsComuna } = useGeoSelector(
 		formik as any,
@@ -132,6 +160,39 @@ export default function CreateSubempresaModal({
 							formik.errors.nombre &&
 							typeof formik.errors.nombre === 'string' && (
 								<p className='mt-1 text-sm text-red-600'>{formik.errors.nombre}</p>
+							)}
+					</div>
+
+					<div>
+						<Label htmlFor='managerId'>Gerente Responsable *</Label>
+						<SelectReact
+							id='managerId'
+							name='managerId'
+							options={managerOptions}
+							value={
+								managerOptions.find(
+									(opt) => opt.value === String(formik.values.managerId),
+								) || null
+							}
+							onChange={(option: any) => {
+								formik.setFieldValue('managerId', option?.value || '');
+								formik.setFieldTouched('managerId', true);
+							}}
+							isDisabled={formik.isSubmitting || adminUsers.length === 0}
+							placeholder='Seleccione un gerente'
+						/>
+						{adminUsers.length === 0 && (
+							<p className='mt-2 text-sm text-amber-600'>
+								No hay gerentes disponibles. Debe crear usuarios con rol
+								administrador primero.
+							</p>
+						)}
+						{formik.touched.managerId &&
+							formik.errors.managerId &&
+							typeof formik.errors.managerId === 'string' && (
+								<p className='mt-1 text-sm text-red-600'>
+									{formik.errors.managerId}
+								</p>
 							)}
 					</div>
 
