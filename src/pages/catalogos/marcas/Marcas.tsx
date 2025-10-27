@@ -73,13 +73,12 @@ const Marcas: React.FC = () => {
 					const file = formData.get('image');
 					return file instanceof File && file.size > 0 ? file : null;
 				})(),
-			});
+		});
 
-			toast.success('Marca creada correctamente');
-			event.currentTarget.reset();
-			setCreateOpen(false);
-		} catch (err: any) {
-			toast.error(err?.message ?? 'No se pudo crear la marca');
+		toast.success('Marca creada correctamente');
+		setCreateOpen(false);
+	} catch (err: any) {
+		toast.error(err?.message ?? 'No se pudo crear la marca');
 		}
 	};
 

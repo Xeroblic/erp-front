@@ -39,8 +39,12 @@ import * as Yup from 'yup';
 import { toast } from 'react-toastify';
 import Label from '@/components/form/Label';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
-import { listaComunasThunk, listaProvinciasThunk, listaRegionesThunk } from '@/store/slices/core/coreSlice'
-import { useGeoSelector } from '@/hooks/useGeoSelector'
+import {
+	listaComunasThunk,
+	listaProvinciasThunk,
+	listaRegionesThunk,
+} from '@/store/slices/core/coreSlice';
+import { useGeoSelector } from '@/hooks/useGeoSelector';
 import Spinner from '@/components/ui/Spinner';
 
 const columnHelper = createColumnHelper<ISubempresa>();
@@ -49,6 +53,13 @@ export default function SubEmpresaLista() {
 	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
 	const user = useAppSelector((s) => s.auth.user);
+	const personalizacionState = useAppSelector((s) => s.personalizacion);
+
+	const companyId =
+		personalizacionState?.personalizacionUsuario?.company_id ||
+		personalizacionState?.personalizacionUsuario?.empresa ||
+		user?.company?.id ||
+		(user?.personalizacion?.empresa ?? undefined);
 
 	interface SubEmpresaState {
 		lista: ISubempresa[];
@@ -75,7 +86,16 @@ export default function SubEmpresaLista() {
 	}, [dispatch, user]);
 
 	const formik = useFormik({
-		initialValues: { nombre: '', rut: '', telefono: '', email: '', direccion: '', region: '', provincia: '', comuna: '' },
+		initialValues: {
+			nombre: '',
+			rut: '',
+			telefono: '',
+			email: '',
+			direccion: '',
+			region: '',
+			provincia: '',
+			comuna: '',
+		},
 		validationSchema: Yup.object({
 			nombre: Yup.string().required('El nombre es obligatorio'),
 			rut: Yup.string(),
@@ -86,12 +106,13 @@ export default function SubEmpresaLista() {
 		onSubmit: async (values) => {
 			try {
 				const data = {
-					name: values.nombre,
-					rut: values.rut || undefined,
-					phone: values.telefono || undefined,
-					email: values.email || undefined,
-					address: values.direccion || undefined,
+					subsidiary_name: values.nombre,
+					subsidiary_rut: values.rut || undefined,
+					subsidiary_phone: values.telefono || undefined,
+					subsidiary_email: values.email || undefined,
+					subsidiary_address: values.direccion || undefined,
 					commune_id: values.comuna ? Number(values.comuna) : undefined,
+					company_id: companyId,
 				};
 
 				if (editingSubempresa?.id) {
@@ -130,7 +151,11 @@ export default function SubEmpresaLista() {
 			direccion: subempresa.address || '',
 			region: '',
 			provincia: '',
-			comuna: (subempresa as any)?.commune_id ? String((subempresa as any).commune_id) : (subempresa as any)?.commune?.id ? String((subempresa as any).commune.id) : '',
+			comuna: (subempresa as any)?.commune_id
+				? String((subempresa as any).commune_id)
+				: (subempresa as any)?.commune?.id
+					? String((subempresa as any).commune.id)
+					: '',
 		});
 		setOpenCreate(true);
 	};
@@ -154,10 +179,14 @@ export default function SubEmpresaLista() {
 	}, [openCreate, dispatch]);
 
 	// useGeoSelector wiring
-	const { listaRegiones, listaProvincias, listaComunas } = useAppSelector(s => s.core);
+	const { listaRegiones, listaProvincias, listaComunas } = useAppSelector((s) => s.core);
 	const { optionsRegion, optionsProvincia, optionsComuna } = useGeoSelector(
 		formik as any,
-		{ regiones: listaRegiones as any, provincias: listaProvincias as any, comunas: listaComunas as any },
+		{
+			regiones: listaRegiones as any,
+			provincias: listaProvincias as any,
+			comunas: listaComunas as any,
+		},
 		{ fieldRegion: 'region', fieldProvincia: 'provincia', fieldComuna: 'comuna' },
 	);
 
@@ -315,8 +344,8 @@ export default function SubEmpresaLista() {
 				<Card>
 					<CardBody className='overflow-x-auto'>
 						{loading ? (
-							<Spinner nombre='Sub Empresas'/>
-						) : subempresas.length === 0 ? (	
+							<Spinner nombre='Sub Empresas' />
+						) : subempresas.length === 0 ? (
 							<div className='flex flex-col items-center justify-center py-12 text-center'>
 								<div className='mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800'>
 									<Icon
@@ -471,14 +500,23 @@ export default function SubEmpresaLista() {
 							</div>
 
 							{/* Región / Provincia / Comuna */}
-							<div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+							<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
 								<div>
 									<Label htmlFor='region'>Región</Label>
 									<SelectReact
 										name='region'
 										placeholder='Seleccione región'
-										value={optionsRegion.find(o => o.value === String(formik.values.region)) || null}
-										onChange={(opt) => formik.setFieldValue('region', (opt as TSelectOption | null)?.value || '')}
+										value={
+											optionsRegion.find(
+												(o) => o.value === String(formik.values.region),
+											) || null
+										}
+										onChange={(opt) =>
+											formik.setFieldValue(
+												'region',
+												(opt as TSelectOption | null)?.value || '',
+											)
+										}
 										options={optionsRegion}
 									/>
 								</div>
@@ -487,8 +525,17 @@ export default function SubEmpresaLista() {
 									<SelectReact
 										name='provincia'
 										placeholder='Seleccione provincia'
-										value={optionsProvincia.find(o => o.value === String(formik.values.provincia)) || null}
-										onChange={(opt) => formik.setFieldValue('provincia', (opt as TSelectOption | null)?.value || '')}
+										value={
+											optionsProvincia.find(
+												(o) => o.value === String(formik.values.provincia),
+											) || null
+										}
+										onChange={(opt) =>
+											formik.setFieldValue(
+												'provincia',
+												(opt as TSelectOption | null)?.value || '',
+											)
+										}
 										options={optionsProvincia}
 									/>
 								</div>
@@ -497,8 +544,23 @@ export default function SubEmpresaLista() {
 									<SelectReact
 										name='comuna'
 										placeholder='Seleccione comuna'
-										value={optionsComuna.find(o => o.value === String(formik.values.comuna)) || (formik.values.comuna ? { value: String(formik.values.comuna), label: 'Cargando…' } : null)}
-										onChange={(opt) => formik.setFieldValue('comuna', (opt as TSelectOption | null)?.value || '')}
+										value={
+											optionsComuna.find(
+												(o) => o.value === String(formik.values.comuna),
+											) ||
+											(formik.values.comuna
+												? {
+														value: String(formik.values.comuna),
+														label: 'Cargando…',
+													}
+												: null)
+										}
+										onChange={(opt) =>
+											formik.setFieldValue(
+												'comuna',
+												(opt as TSelectOption | null)?.value || '',
+											)
+										}
 										options={optionsComuna}
 									/>
 								</div>

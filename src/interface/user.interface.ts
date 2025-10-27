@@ -2,7 +2,7 @@ export interface IPersonalizacionUsuario {
 	id: number;
 	fecha_creacion: string;
 	fecha_modificacion: string;
-	tema: number;          // "1" | "2" | "3"
+	tema: number;
 	font_size: number;
 	tcolor: string;
 	tcolor_int: string;
@@ -10,6 +10,7 @@ export interface IPersonalizacionUsuario {
 	usuario: number;
 	sucursal_principal: number | null;
 	empresa: number | null;
+	company_id?: number;
 }
 
 export interface IUserMe {

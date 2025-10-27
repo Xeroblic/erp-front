@@ -83,7 +83,6 @@ const Categorias: React.FC = () => {
       });
 
       toast.success('Categoria creada correctamente');
-      event.currentTarget.reset();
       setCreateOpen(false);
     } catch (err: any) {
       toast.error(err?.message ?? 'No se pudo crear la categoria');
