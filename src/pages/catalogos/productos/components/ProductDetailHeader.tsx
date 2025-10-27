@@ -23,10 +23,10 @@ const formatProductStatus = (status: string | null | undefined) =>
 
 export const ProductDetailHeader: React.FC<ProductDetailHeaderProps> = ({
 	product,
-	branches,
-	branchId,
-	effectiveBranchId,
-	onBranchChange,
+	// branches,
+	// branchId,
+	// effectiveBranchId,
+	// onBranchChange,
 	onSave,
 	isSubmitting,
 	isUpdating,
@@ -68,7 +68,7 @@ export const ProductDetailHeader: React.FC<ProductDetailHeaderProps> = ({
 			</SubheaderLeft>
 			<SubheaderRight>
 				<div className='flex flex-wrap items-center gap-3'>
-					{branches.length > 1 && (
+					{/* {branches.length > 1 && (
 						<div className='flex items-center gap-2'>
 							<Icon
 								icon='HeroBuildingStorefront'
@@ -91,7 +91,7 @@ export const ProductDetailHeader: React.FC<ProductDetailHeaderProps> = ({
 								))}
 							</select>
 						</div>
-					)}
+					)} */}
 					<Button
 						variant='outline'
 						icon='HeroListBullet'

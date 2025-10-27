@@ -1,12 +1,8 @@
 export type ProductType =
-	| 'general'
-	| 'desktop_pc_reacondicionado'
-	| 'notebook_reacondicionado'
-	| 'aio_reacondicionado'
-	| 'monitor_reacondicionado'
-	| 'NOTEBOOK'
-	| 'DESKTOP'
-	| 'GENERAL'
+	| 'desktop_pc'
+	| 'notebook'
+	| 'aio'
+	| 'monitor'
 	| string;
 export type ProductConditionPolicy = 'NEW' | 'USED' | 'REFURBISHED' | 'DAMAGED' | string;
 export type ProductStatus = 'pending' | 'validated' | 'archived' | string;

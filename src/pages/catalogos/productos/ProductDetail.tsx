@@ -31,7 +31,7 @@ const EMPTY_DETAIL_FORM: ProductDetailForm = {
 	sku: '',
 	name: '',
 	brand_id: '',
-	product_type: 'general',
+	product_type: 'desktop_pc',
 	serial_tracking: false,
 	is_active: true,
 	category_ids: [],
@@ -78,8 +78,11 @@ const validateDetailForm = (values: ProductDetailForm) => {
 	return errors;
 };
 
-// ✅ Componente AutoSaveHandler - ESTABLE, fuera del formulario
-const AutoSaveHandler: React.FC = React.memo(() => {
+interface AutoSaveHandlerProps {
+	activeTab: string;
+}
+
+const AutoSaveHandler: React.FC<AutoSaveHandlerProps> = React.memo(() => {
 	const { submitForm } = useFormikContext<ProductDetailForm>();
 
 	const { showSavePrompt, confirmSave, cancelSave, isSaving } = useAutoSave<ProductDetailForm>({
@@ -179,7 +182,6 @@ const ProductDetail: React.FC = () => {
 		}
 	};
 
-	// Estados de error y carga
 	if (!productId || Number.isNaN(productId)) {
 		return <InvalidProductError />;
 	}
@@ -201,7 +203,7 @@ const ProductDetail: React.FC = () => {
 				onSubmit={handleSubmit}>
 				{({ isSubmitting, submitForm }) => (
 					<Form>
-						<AutoSaveHandler />
+						<AutoSaveHandler activeTab={activeTab} />
 
 						<Subheader>
 							<ProductDetailHeader

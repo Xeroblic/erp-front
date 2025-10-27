@@ -110,7 +110,7 @@ export const mapProductToDetailForm = (product: IProduct): ProductDetailForm => 
 		sku: product.sku ?? '',
 		name: product.name ?? '',
 		brand_id: brandId,
-		product_type: (product.product_type as ProductType) ?? 'general',
+		product_type: (product.product_type as ProductType) ?? 'desktop_pc',
 		serial_tracking: Boolean(product.serial_tracking),
 		is_active: Boolean(product.is_active),
 		category_ids: extractCategoryIds(product),
@@ -150,7 +150,7 @@ export const buildDetailUpdatePayload = (
 		payload.brand_id = Number(form.brand_id);
 	}
 
-	if ((form.product_type ?? 'general') !== (product.product_type ?? 'general')) payload.product_type = form.product_type;
+	if ((form.product_type ?? 'desktop_pc') !== (product.product_type ?? 'desktop_pc')) payload.product_type = form.product_type;
 	if (form.serial_tracking !== product.serial_tracking) payload.serial_tracking = form.serial_tracking;
 	if (form.is_active !== product.is_active) payload.is_active = form.is_active;
 

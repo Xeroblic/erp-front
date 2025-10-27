@@ -1,4 +1,4 @@
-export type ProductKind = 'general' | 'desktop_pc' | 'notebook' | 'aio' | 'monitor';
+export type ProductKind = 'desktop_pc' | 'notebook' | 'aio' | 'monitor';
 export type IsFieldVisibleFn = (fieldName: string) => boolean;
 
 export interface AttributesData {

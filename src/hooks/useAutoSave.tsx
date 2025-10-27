@@ -54,6 +54,7 @@ export function useAutoSave<T = any>(options: UseAutoSaveOptions<T>): AutoSaveSt
 	const previousValuesRef = useRef<string | null>(null);
 	const initialValuesRef = useRef<string | null>(null);
 	const isFirstMountRef = useRef<boolean>(true);
+	const isDirtyRef = useRef<boolean>(false);
 
 	const detectChanges = useCallback(
 		(current: T, initial: T): boolean => {
@@ -72,14 +73,25 @@ export function useAutoSave<T = any>(options: UseAutoSaveOptions<T>): AutoSaveSt
 			inactivityTimerRef.current = null;
 		}
 
-		if (!enabled || !isDirty || isSubmitting) {
+		console.log('⏰ resetInactivityTimer:', {
+			enabled,
+			isDirtyRef: isDirtyRef.current,
+			isSubmitting,
+			delay,
+		});
+
+		// 🔧 Usar isDirtyRef.current en lugar de isDirty para evitar dependencia circular
+		if (!enabled || !isDirtyRef.current || isSubmitting) {
+			console.log('❌ Timer NO iniciado (condiciones no cumplidas)');
 			return;
 		}
 
+		console.log(`⏱️ Timer iniciado: ${delay}ms`);
 		inactivityTimerRef.current = setTimeout(() => {
+			console.log('🔔 TIMER COMPLETADO - Mostrando prompt');
 			setShowSavePrompt(true);
 		}, delay);
-	}, [enabled, isDirty, isSubmitting, delay]);
+	}, [enabled, delay, isSubmitting]); // 🚫 Removemos isDirty de las dependencias
 
 	useEffect(() => {
 		if (!enabled) {
@@ -115,17 +127,28 @@ export function useAutoSave<T = any>(options: UseAutoSaveOptions<T>): AutoSaveSt
 
 		const hasChangedFromInitial = detectChanges(values, initialValues);
 
+		console.log('🔍 AutoSave Debug:', {
+			hasChangedFromInitial,
+			enabled,
+			isSubmitting,
+			delay,
+			currentIsDirty: isDirtyRef.current,
+		});
+
 		setIsDirty(hasChangedFromInitial);
+		isDirtyRef.current = hasChangedFromInitial; // 🆕 Sincronizar ref con state
 
 		if (hasChangedFromInitial) {
 			cachedValuesRef.current = values;
+			console.log('✅ Iniciando timer de inactividad...');
 			resetInactivityTimer();
 		} else if (inactivityTimerRef.current) {
 			clearTimeout(inactivityTimerRef.current);
 			inactivityTimerRef.current = null;
 		}
-	}, [values, initialValues, enabled, detectChanges, resetInactivityTimer]);
+	}, [values, initialValues, enabled, detectChanges]); // 🔧 Removido resetInactivityTimer
 
+	// ⚠️ NO incluir resetInactivityTimer en las dependencias para evitar recrear listeners
 	useEffect(() => {
 		if (!enabled || !isDirty) {
 			return;
@@ -146,7 +169,7 @@ export function useAutoSave<T = any>(options: UseAutoSaveOptions<T>): AutoSaveSt
 			window.removeEventListener('click', handleActivity);
 			window.removeEventListener('scroll', handleActivity);
 		};
-	}, [enabled, isDirty, resetInactivityTimer]);
+	}, [enabled, isDirty]); // 🔧 Removido resetInactivityTimer de las dependencias
 
 	useEffect(() => {
 		return () => {
@@ -167,6 +190,7 @@ export function useAutoSave<T = any>(options: UseAutoSaveOptions<T>): AutoSaveSt
 		try {
 			await onSave(cachedValuesRef.current);
 			setIsDirty(false);
+			isDirtyRef.current = false; // 🆕 Sincronizar ref
 			setShowSavePrompt(false);
 			if (inactivityTimerRef.current) {
 				clearTimeout(inactivityTimerRef.current);
@@ -185,10 +209,11 @@ export function useAutoSave<T = any>(options: UseAutoSaveOptions<T>): AutoSaveSt
 	const cancelSave = useCallback(() => {
 		setShowSavePrompt(false);
 		resetInactivityTimer();
-	}, [resetInactivityTimer]);
+	}, []); // 🔧 Removido resetInactivityTimer - la función siempre está disponible por closure
 
 	const reset = useCallback(() => {
 		setIsDirty(false);
+		isDirtyRef.current = false; // 🆕 Sincronizar ref
 		setShowSavePrompt(false);
 		if (inactivityTimerRef.current) {
 			clearTimeout(inactivityTimerRef.current);

@@ -3,11 +3,10 @@ import type { ProductFilters, ProductStatus, ProductType } from '@/interface/pro
 export const PRODUCT_STATUS = ['pending', 'validated', 'archived'] as const;
 
 export const PRODUCT_TYPES = [
-	'general',
-	'desktop_pc_reacondicionado',
-	'notebook_reacondicionado',
-	'aio_reacondicionado',
-	'monitor_reacondicionado',
+	'desktop_pc',
+	'notebook',
+	'aio',
+	'monitor',
 ] as const;
 
 export const PRODUCT_STATUS_LABELS: Record<string, string> = {
@@ -17,14 +16,10 @@ export const PRODUCT_STATUS_LABELS: Record<string, string> = {
 };
 
 export const PRODUCT_TYPE_LABELS: Record<string, string> = {
-	general: 'General',
-	desktop_pc_reacondicionado: 'Desktop reacondicionado',
-	notebook_reacondicionado: 'Notebook reacondicionado',
-	aio_reacondicionado: 'AIO reacondicionado',
-	monitor_reacondicionado: 'Monitor reacondicionado',
-	GENERAL: 'General',
-	NOTEBOOK: 'Notebook',
-	DESKTOP: 'Desktop',
+	desktop_pc: 'Computador reacondicionado',
+	notebook: 'Notebook reacondicionado',
+	aio: 'AIO reacondicionado',
+	monitor: 'Monitor reacondicionado',
 };
 
 export const PRODUCT_DEFAULT_FILTERS: ProductFilters = {
@@ -81,68 +76,25 @@ export const PRODUCT_STATS_META = [
 ] as const;
 
 export const PRODUCT_TYPE_META: Record<string, { label: string; icon: string; badgeColor: string }> = {
-	// Tipos básicos (sin "reacondicionado")
-	general: {
-		label: 'General',
-		icon: 'HeroCubeTransparent',
-		badgeColor: 'violet',
+	desktop_pc: {
+		label: 'Computador reacondicionado',
+		icon: 'HeroComputerDesktop',
+		badgeColor: 'emerald',
 	},
 	notebook: {
-		label: 'Notebook',
-		icon: 'HeroComputerDesktop',
-		badgeColor: 'blue',
-	},
-	desktop_pc: {
-		label: 'Desktop PC',
-		icon: 'HeroComputerDesktop',
-		badgeColor: 'emerald',
-	},
-	aio: {
-		label: 'AIO',
-		icon: 'HeroDeviceTablet',
-		badgeColor: 'amber',
-	},
-	monitor: {
-		label: 'Monitor',
-		icon: 'HeroPresentationChartLine',
-		badgeColor: 'cyan',
-	},
-	// Tipos reacondicionados
-	desktop_pc_reacondicionado: {
-		label: 'Desktop reacondicionado',
-		icon: 'HeroComputerDesktop',
-		badgeColor: 'emerald',
-	},
-	notebook_reacondicionado: {
 		label: 'Notebook reacondicionado',
 		icon: 'HeroComputerDesktop',
 		badgeColor: 'blue',
 	},
-	aio_reacondicionado: {
+	aio: {
 		label: 'AIO reacondicionado',
 		icon: 'HeroDeviceTablet',
 		badgeColor: 'amber',
 	},
-	monitor_reacondicionado: {
+	monitor: {
 		label: 'Monitor reacondicionado',
 		icon: 'HeroPresentationChartLine',
 		badgeColor: 'cyan',
-	},
-	// Legacy uppercase (por compatibilidad)
-	GENERAL: {
-		label: 'General',
-		icon: 'HeroCubeTransparent',
-		badgeColor: 'violet',
-	},
-	NOTEBOOK: {
-		label: 'Notebook',
-		icon: 'HeroComputerLaptop',
-		badgeColor: 'blue',
-	},
-	DESKTOP: {
-		label: 'Desktop',
-		icon: 'HeroComputerDesktop',
-		badgeColor: 'emerald',
 	},
 };
 
