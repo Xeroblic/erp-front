@@ -9,6 +9,7 @@ import Card, { CardBody } from '@/components/ui/Card';
 import ProductsHeader from './components/ProductsHeader';
 import ProductStats from './components/ProductStats';
 import CreateEditProductModal from './components/modals/CreateEditProductModal';
+import DeleteProductModal from './components/modals/DeleteProductModal';
 import { ProductListTab, InventoryTab, AnalyticsTab } from './components/Tabs';
 import Tabs, { Tab } from '@/components/ui/Tabs';
 
@@ -27,6 +28,8 @@ const Productos: React.FC = () => {
 	const [createOpen, setCreateOpen] = useState(false);
 	const [editOpen, setEditOpen] = useState(false);
 	const [selectedProduct, setSelectedProduct] = useState<IProduct | null>(null);
+	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+	const [productToDelete, setProductToDelete] = useState<IProduct | null>(null);
 	const [activeTab, setActiveTab] = useState('products');
 
 	const {
@@ -143,14 +146,21 @@ const Productos: React.FC = () => {
 	};
 
 	const handleDeleteProduct = async (product: IProduct) => {
-		const confirmed = window.confirm(`Eliminar el producto "${product.name}"?`);
-		if (!confirmed) return;
+		setProductToDelete(product);
+		setDeleteModalOpen(true);
+	};
+
+	const confirmDelete = async () => {
+		if (!productToDelete) return;
 
 		try {
-			await deleteProduct(product.id);
-			toast.success('Producto eliminado');
+			await deleteProduct(productToDelete.id);
+			toast.success('Producto eliminado correctamente');
 		} catch (err: any) {
 			toast.error(err?.message ?? 'No se pudo eliminar el producto');
+		} finally {
+			setDeleteModalOpen(false);
+			setProductToDelete(null);
 		}
 	};
 
@@ -236,6 +246,16 @@ const Productos: React.FC = () => {
 				brands={brands}
 				categories={categories}
 				isLoading={updating}
+			/>
+
+			<DeleteProductModal
+				isOpen={deleteModalOpen}
+				onClose={() => {
+					setDeleteModalOpen(false);
+					setProductToDelete(null);
+				}}
+				product={productToDelete}
+				onConfirm={confirmDelete}
 			/>
 		</PageWrapper>
 	);

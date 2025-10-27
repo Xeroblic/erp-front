@@ -8,7 +8,7 @@ interface AtributosTabProps {
 const AtributosTab: React.FC<AtributosTabProps> = ({ loading = false }) => {
 	return (
 		<div className='space-y-6'>
-			<div className='rounded-lg  p-6'>
+			<div className='rounded-lg '>
 				<div className='mb-4  pb-4'>
 					<h3 className='text-lg font-semibold text-gray-900'>Atributos del producto</h3>
 					<p className='text-sm text-gray-600'>

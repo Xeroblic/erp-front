@@ -26,6 +26,12 @@ import {
 	createCategoryOptions,
 	mapProductToDetailForm,
 } from './utils/productForm.utils';
+import { useAppDispatch } from '@/store';
+import {
+	deleteProductMedia,
+	setProductMainImage,
+	fetchProductById,
+} from '@/store/slices/products/productsSlice';
 
 const EMPTY_DETAIL_FORM: ProductDetailForm = {
 	sku: '',
@@ -109,6 +115,7 @@ AutoSaveHandler.displayName = 'AutoSaveHandler';
 
 const ProductDetail: React.FC = () => {
 	const { productId: productIdParam } = useParams<{ productId: string }>();
+	const dispatch = useAppDispatch();
 
 	const parsedProductId = productIdParam ? Number(productIdParam) : NaN;
 	const productId = Number.isFinite(parsedProductId) ? parsedProductId : null;
@@ -135,10 +142,8 @@ const ProductDetail: React.FC = () => {
 		effectiveBranchId,
 	);
 
-	const { handleFileUpload, handleLibrarySelect } = useProductMediaHandlers(
-		product,
-		effectiveBranchId,
-	);
+	const { handleMainImageUpload, handleGalleryImageUpload, handleLibrarySelect } =
+		useProductMediaHandlers(product, effectiveBranchId);
 
 	const [showLibrary, setShowLibrary] = useState(false);
 
@@ -150,9 +155,30 @@ const ProductDetail: React.FC = () => {
 		[product],
 	);
 
+	// Manejar eliminación de imagen
+	const handleDeleteImage = async (mediaId: number) => {
+		if (!product || !effectiveBranchId) return;
+		try {
+			await dispatch(
+				deleteProductMedia({
+					branchId: effectiveBranchId,
+					productId: product.id,
+					mediaId,
+				}),
+			).unwrap();
+			toast.success('Imagen eliminada correctamente');
+			// Recargar el producto para ver los cambios
+			await dispatch(
+				fetchProductById({ branchId: effectiveBranchId, productId: product.id }),
+			).unwrap();
+		} catch (error: any) {
+			toast.error(error?.message ?? 'Error al eliminar la imagen');
+		}
+	};
+
 	const handleSubmit = async (
 		values: ProductDetailForm,
-		{ setSubmitting }: FormikHelpers<ProductDetailForm>,
+		{ setSubmitting, setErrors, setFieldTouched }: FormikHelpers<ProductDetailForm>,
 	) => {
 		if (!product) return;
 		try {
@@ -172,11 +198,29 @@ const ProductDetail: React.FC = () => {
 			});
 			toast.success('Producto actualizado correctamente');
 		} catch (error: any) {
-			const message =
-				error?.response?.data?.message ??
-				error?.message ??
-				'No se pudo actualizar el producto';
-			toast.error(message);
+			if (error?.response?.data?.errors) {
+				const backendErrors = error.response.data.errors;
+				const formikErrors: Record<string, string> = {};
+
+				Object.keys(backendErrors).forEach((key) => {
+					const errorMessages = backendErrors[key];
+					if (Array.isArray(errorMessages) && errorMessages.length > 0) {
+						formikErrors[key] = errorMessages[0];
+						setFieldTouched(key, true, false);
+					}
+				});
+
+				setErrors(formikErrors);
+
+				const message = error?.response?.data?.message ?? 'Error de validación';
+				toast.error(message);
+			} else {
+				const message =
+					error?.response?.data?.message ??
+					error?.message ??
+					'No se pudo actualizar el producto';
+				toast.error(message);
+			}
 		} finally {
 			setSubmitting(false);
 		}
@@ -229,8 +273,11 @@ const ProductDetail: React.FC = () => {
 										categories={categories}
 										categoriesLoading={categoriesLoading}
 										categoryOptions={categoryOptions}
-										onUploadFile={handleFileUpload}
+										onUploadMainImage={handleMainImageUpload}
+										onUploadGalleryImage={handleGalleryImageUpload}
 										onOpenLibrary={() => setShowLibrary(true)}
+										product={product}
+										onDeleteImage={handleDeleteImage}
 									/>
 								</div>
 

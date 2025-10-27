@@ -379,6 +379,120 @@ export const deleteProductAttributes = createAsyncThunk<
 	}
 });
 
+// Delete product media/image
+export const deleteProductMedia = createAsyncThunk<
+	boolean,
+	{ branchId: number; productId: number; mediaId: number },
+	{ rejectValue: string }
+>('products/deleteProductMedia', async ({ branchId, productId, mediaId }, { rejectWithValue }) => {
+	try {
+		await ApiService.fetchData({
+			url: `/branches/${branchId}/media/${mediaId}`,
+			method: 'delete',
+		});
+		return true;
+	} catch (error: any) {
+		return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'Error al eliminar la imagen');
+	}
+});
+
+// Set product main image
+export const setProductMainImage = createAsyncThunk<
+	IProduct,
+	{ branchId: number; productId: number; mediaId: number },
+	{ rejectValue: string }
+>('products/setProductMainImage', async ({ branchId, productId, mediaId }, { rejectWithValue }) => {
+	try {
+		// El backend espera que la imagen principal se suba directamente a 'main'
+		// Solución: Descargar la imagen de gallery y re-subirla a 'main'
+
+		// Paso 1: Obtener el producto actual para acceder a la imagen de gallery
+		const currentProductResponse = await ApiService.fetchData<{ data: any }>({
+			url: `/branches/${branchId}/products/${productId}`,
+			method: 'get',
+		});
+		const currentProduct = normalizeProduct(currentProductResponse.data?.data ?? currentProductResponse.data);
+
+		// Paso 2: Buscar la imagen en la gallery por su ID
+		const galleryImage = currentProduct.gallery?.find((img) => img.id === mediaId);
+
+		if (!galleryImage) {
+			return rejectWithValue('La imagen no se encuentra en la galería');
+		}
+
+		// Paso 3: Descargar la imagen como blob
+		// Como la URL es /storage/media/... y requiere autenticación,
+		// extraemos la ruta relativa y usamos un endpoint del backend
+		// O, si no hay endpoint, usamos fetch con credentials
+		let imageBlob: Blob;
+
+		try {
+			// Intentar descargar con credentials para incluir cookies de sesión
+			const response = await fetch(galleryImage.url, {
+				credentials: 'include', // Incluye cookies de autenticación
+				headers: {
+					'Accept': 'image/*',
+				},
+			});
+
+			if (!response.ok) {
+				throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+			}
+
+			imageBlob = await response.blob();
+		} catch (fetchError) {
+			// Si falla con fetch, intentar con ApiService
+			// Convertir la URL de storage a una relativa
+			const urlPath = galleryImage.url.replace(/^https?:\/\/[^/]+/, '');
+
+			const imageResponse = await ApiService.fetchData<Blob>({
+				url: urlPath,
+				method: 'get',
+				responseType: 'blob',
+			});
+
+			imageBlob = imageResponse.data as unknown as Blob;
+		}
+
+		// Paso 4: Crear un File desde el blob
+		const fileName = galleryImage.url.split('/').pop()?.split('?')[0] || `image-${mediaId}.jpg`;
+		const imageFile = new File([imageBlob], fileName, { type: imageBlob.type });
+
+		// Paso 5: Subir la imagen a la colección 'main' usando uploadMultipleDirect
+		const formData = new FormData();
+		formData.append('files', imageFile);
+		formData.append('collection', 'main');
+		formData.append('alt_text', galleryImage.alt || 'Imagen principal');
+
+		await ApiService.fetchData({
+			url: `/branches/${branchId}/products/${productId}/media/upload-multiple`,
+			method: 'post',
+			data: formData,
+		});
+
+		// Paso 6: Eliminar la imagen de gallery
+		try {
+			await ApiService.fetchData({
+				url: `/branches/${branchId}/media/${mediaId}`,
+				method: 'delete',
+			});
+		} catch (deleteError) {
+			// Si falla la eliminación, no es crítico
+			console.warn('No se pudo eliminar la imagen de gallery:', deleteError);
+		}
+
+		// Paso 7: Recargar el producto para obtener el estado actualizado
+		const finalProductResponse = await ApiService.fetchData<{ data: any }>({
+			url: `/branches/${branchId}/products/${productId}`,
+			method: 'get',
+		});
+
+		return normalizeProduct(finalProductResponse.data?.data ?? finalProductResponse.data);
+	} catch (error: any) {
+		return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'Error al establecer imagen principal');
+	}
+});
+
 const productsSlice = createSlice({
 	name: 'products/productsSlice',
 	initialState,
@@ -555,6 +669,28 @@ const productsSlice = createSlice({
 			.addCase(deleteProductAttributes.rejected, (state, action) => {
 				state.attributesUpdating = false;
 				state.attributesError = action.payload ?? 'Error al borrar atributos';
+			})
+			.addCase(deleteProductMedia.pending, (state) => {
+				state.mediaUploading = true;
+				state.mediaError = null;
+			})
+			.addCase(deleteProductMedia.fulfilled, (state) => {
+				state.mediaUploading = false;
+			})
+			.addCase(deleteProductMedia.rejected, (state, action) => {
+				state.mediaUploading = false;
+				state.mediaError = action.payload ?? 'Error al eliminar imagen';
+			})
+			.addCase(setProductMainImage.pending, (state) => {
+				state.updating = true;
+			})
+			.addCase(setProductMainImage.fulfilled, (state, action) => {
+				state.updating = false;
+				state.current = action.payload;
+			})
+			.addCase(setProductMainImage.rejected, (state, action) => {
+				state.updating = false;
+				state.mediaError = action.payload ?? 'Error al establecer imagen principal';
 			});
 	},
 });
