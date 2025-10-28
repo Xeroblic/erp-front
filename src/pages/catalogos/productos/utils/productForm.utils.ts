@@ -36,6 +36,7 @@ export const buildInitialValues = (product?: IProduct | null): ProductFormValues
 	sku: product?.sku ?? '',
 	name: product?.name ?? '',
 	brand_id: product?.brand_id ? String(product.brand_id) : '',
+	branch_id: null, // Siempre null en valores iniciales, solo se usa en crear
 	price: product?.price ? String(product.price) : '',
 	cost: product?.cost ? String(product.cost) : '',
 	offer_price: product?.offer_price ? String(product.offer_price) : '',

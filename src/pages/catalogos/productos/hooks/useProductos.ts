@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
 	fetchProducts,
+	fetchProductsFromMultipleBranches,
 	createProduct as createProductThunk,
 	updateProduct as updateProductThunk,
 	deleteProduct as deleteProductThunk,
@@ -40,6 +41,9 @@ const INITIAL_PRODUCTS_STATE: ProductsState = {
 	attributesLoading: false,
 	attributesUpdating: false,
 	attributesError: null,
+	mediaUploading: false,
+	libraryLoading: false,
+	mediaError: null,
 };
 
 export function useProductos({ branchId, filters, page = 1, perPage = 15 }: UseProductosParams) {
@@ -57,14 +61,23 @@ export function useProductos({ branchId, filters, page = 1, perPage = 15 }: UseP
 	}, [branches.length, branchesLoading, dispatch]);
 
 	const activeBranchId = useMemo<number | null>(() => {
+		if (branchId === null) return null;
 		if (branchId) return branchId;
 		return branches[0]?.id ?? null;
 	}, [branchId, branches]);
 
+	const userBranchIds = useMemo(() => branches.map(b => b.id), [branches]);
+
 	useEffect(() => {
-		if (!activeBranchId) return;
-		void dispatch(fetchProducts({ branchId: activeBranchId, params: { ...filters, page, per_page: perPage } }));
-	}, [dispatch, activeBranchId, filters, page, perPage]);
+		if (activeBranchId === null && userBranchIds.length > 0) {
+			void dispatch(fetchProductsFromMultipleBranches({
+				branchIds: userBranchIds,
+				params: { ...filters, page, per_page: perPage }
+			}));
+		} else if (activeBranchId) {
+			void dispatch(fetchProducts({ branchId: activeBranchId, params: { ...filters, page, per_page: perPage } }));
+		}
+	}, [dispatch, activeBranchId, userBranchIds, filters, page, perPage]);
 
 	useEffect(() => {
 		if (!activeBranchId) return;
@@ -78,21 +91,32 @@ export function useProductos({ branchId, filters, page = 1, perPage = 15 }: UseP
 	}, [dispatch, categoriesState.items.length, categoriesState.loading]);
 
 	const refresh = useCallback(() => {
-		if (!activeBranchId) return;
-		void dispatch(fetchProducts({ branchId: activeBranchId, params: { ...filters, page, per_page: perPage } }));
-	}, [dispatch, activeBranchId, filters, page, perPage]);
+		if (activeBranchId === null && userBranchIds.length > 0) {
+			void dispatch(fetchProductsFromMultipleBranches({
+				branchIds: userBranchIds,
+				params: { ...filters, page, per_page: perPage }
+			}));
+		} else if (activeBranchId) {
+			void dispatch(fetchProducts({ branchId: activeBranchId, params: { ...filters, page, per_page: perPage } }));
+		}
+	}, [dispatch, activeBranchId, userBranchIds, filters, page, perPage]);
 
 	const createProduct = useCallback(
 		async (payload: { data: Partial<IProduct>; categoryIds: number[] }) => {
-			if (!activeBranchId) throw new Error('Debe seleccionar una sucursal');
+			const targetBranchId = payload.data.branch_id || activeBranchId;
+			if (!targetBranchId) throw new Error('Debe seleccionar una sucursal');
+
 			await dispatch(
 				createProductThunk({
-					branchId: activeBranchId,
+					branchId: targetBranchId,
 					data: payload.data,
 					categoryIds: payload.categoryIds,
 				}),
 			).unwrap();
-			refresh();
+
+			if (targetBranchId === activeBranchId) {
+				refresh();
+			}
 		},
 		[dispatch, activeBranchId, refresh],
 	);

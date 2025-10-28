@@ -112,6 +112,63 @@ export const fetchProducts = createAsyncThunk<
 	}
 });
 
+export const fetchProductsFromMultipleBranches = createAsyncThunk<
+	{ items: IProduct[]; meta: ProductListMeta; stats: ProductsStateStats },
+	{ branchIds: number[]; params?: FetchProductsParams },
+	{ rejectValue: string }
+>('products/fetchProductsFromMultipleBranches', async ({ branchIds, params }, { rejectWithValue }) => {
+	try {
+		// Hacer llamadas paralelas a todas las sucursales
+		const promises = branchIds.map(branchId =>
+			ApiService.fetchData<{
+				data?: any[];
+				meta?: Partial<ProductListMeta> & Record<string, any>;
+			}>({
+				url: `/branches/${branchId}/products`,
+				method: 'get',
+				params: {
+					page: params?.page ?? 1,
+					per_page: params?.per_page ?? 15,
+					...serializeFilters(params ?? {}),
+				},
+			})
+		);
+
+		const responses = await Promise.all(promises);
+
+		// Combinar todos los productos de todas las sucursales
+		const allRawItems: any[] = [];
+		responses.forEach(response => {
+			const rawItems = Array.isArray(response.data?.data)
+				? response.data?.data
+				: Array.isArray(response.data)
+					? (response.data as any[])
+					: [];
+			allRawItems.push(...rawItems);
+		});
+
+		const items = allRawItems.map(normalizeProduct);
+
+		// Meta para paginación combinada
+		const meta: ProductListMeta = {
+			total: items.length,
+			current_page: params?.page ?? 1,
+			per_page: params?.per_page ?? 15,
+			last_page: Math.ceil(items.length / (params?.per_page ?? 15)),
+		};
+
+		return {
+			items,
+			meta,
+			stats: computeProductStats(items),
+		};
+	} catch (error: any) {
+		return rejectWithValue(
+			error?.response?.data?.message ?? error?.message ?? 'No se pudieron cargar los productos',
+		);
+	}
+});
+
 export const fetchProductById = createAsyncThunk<
 	IProduct,
 	{ branchId: number; productId: number },
@@ -211,6 +268,7 @@ export const createProduct = createAsyncThunk<
 		assignIfDefined('commercial_sku', data.commercial_sku);
 		assignIfDefined('barcode', data.barcode);
 		if (data.brand_id !== undefined && data.brand_id !== null) body.brand_id = Number(data.brand_id);
+		if (data.branch_id !== undefined && data.branch_id !== null) body.branch_id = Number(data.branch_id);
 		assignIfDefined('product_type', data.product_type);
 		if (data.serial_tracking !== undefined) body.serial_tracking = Boolean(data.serial_tracking);
 		assignIfDefined('condition_policy', data.condition_policy);
@@ -515,6 +573,21 @@ const productsSlice = createSlice({
 				state.stats = action.payload.stats;
 			})
 			.addCase(fetchProducts.rejected, (state, action) => {
+				state.loading = false;
+				state.error = action.payload ?? 'No se pudieron cargar los productos';
+			})
+			// Casos para fetchProductsFromMultipleBranches
+			.addCase(fetchProductsFromMultipleBranches.pending, (state) => {
+				state.loading = true;
+				state.error = null;
+			})
+			.addCase(fetchProductsFromMultipleBranches.fulfilled, (state, action) => {
+				state.loading = false;
+				state.items = action.payload.items;
+				state.meta = action.payload.meta;
+				state.stats = action.payload.stats;
+			})
+			.addCase(fetchProductsFromMultipleBranches.rejected, (state, action) => {
 				state.loading = false;
 				state.error = action.payload ?? 'No se pudieron cargar los productos';
 			})

@@ -22,6 +22,8 @@ import { productSchema, productSchemaCreate } from '../../validation/productForm
 import type { ProductFormValues } from '../../types/products.types';
 import Select from '@/components/form/Select';
 import { PRODUCT_DEVICE_TYPES } from '../../constants/product-attributes.constants';
+import UserBranchSelector from './components/UserBranchSelector';
+import { useAppSelector } from '@/store';
 
 interface CreateEditProductModalProps {
 	isOpen: boolean;
@@ -59,6 +61,11 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 	categories,
 	isLoading = false,
 }) => {
+	const currentUser = useAppSelector((state) => state.auth.user);
+	const isEditMode = !!product;
+
+	const userId = currentUser?.id || currentUser?.pk;
+
 	const brandOptions: TSelectOptions = useMemo(
 		() => createBrandOptions(brands).map((option) => ({ ...option })),
 		[brands],
@@ -71,10 +78,6 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 
 	const initialValues = useMemo<ProductFormValues>(() => {
 		const values = buildInitialValues(product);
-		if (product) {
-			console.log('🔍 Producto original:', product);
-			console.log('📝 Valores iniciales:', values);
-		}
 		return values;
 	}, [product]);
 
@@ -100,6 +103,11 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 							? values.serial_tracking
 							: false,
 				};
+
+				// Agregar branch_id si está presente (solo en crear)
+				if (values.branch_id) {
+					data.branch_id = Number(values.branch_id);
+				}
 
 				if (values.commercial_sku?.trim())
 					data.commercial_sku = values.commercial_sku.trim();
@@ -292,6 +300,41 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 															</p>
 														)}
 													</div>
+
+													{/* Selector de Branch - Solo en modo CREAR */}
+													{!isEditMode && userId && (
+														<div className='space-y-2 md:col-span-2'>
+															<UserBranchSelector
+																userId={userId}
+																name='branch_id'
+																value={values.branch_id ?? ''}
+																onChange={(branchId) => {
+																	setFieldValue(
+																		'branch_id',
+																		branchId,
+																	);
+																	setFieldTouched(
+																		'branch_id',
+																		true,
+																	);
+																}}
+																label='Sucursal *'
+																placeholder='Selecciona la sucursal para este producto'
+																disabled={isBusy}
+																required
+															/>
+															{touched.branch_id &&
+																errors.branch_id && (
+																	<p className='text-xs text-red-500'>
+																		{typeof errors.branch_id ===
+																		'string'
+																			? errors.branch_id
+																			: 'Selecciona una sucursal'}
+																	</p>
+																)}
+														</div>
+													)}
+
 													<Field name='uom'>
 														{({ field }: FieldProps) => (
 															<FieldContainer

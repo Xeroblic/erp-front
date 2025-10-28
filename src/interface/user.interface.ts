@@ -14,6 +14,7 @@ export interface IPersonalizacionUsuario {
 }
 
 export interface IUserMe {
+	pk:number;
 	id: number;
 	email: string;
 	first_name: string;

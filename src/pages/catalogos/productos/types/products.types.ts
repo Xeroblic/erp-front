@@ -55,6 +55,7 @@ export interface LegacyProductFormValues {
 	sku: string;
 	name: string;
 	brand_id: string;
+	branch_id?: number | null; // ID de la branch seleccionada (solo en crear)
 	price: string;
 	cost: string;
 	offer_price: string;

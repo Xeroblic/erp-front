@@ -69,6 +69,7 @@ export const productSchemaCreate = Yup.object({
   sku: Yup.string().required('SKU requerido').max(255, 'Máximo 255 caracteres'),
   name: Yup.string().required('Nombre requerido').max(255, 'Máximo 255 caracteres'),
   brand_id: Yup.number().typeError('Marca inválida').required('Marca requerida'),
+  branch_id: Yup.number().typeError('Sucursal inválida').required('Debe seleccionar una sucursal').nullable(),
   price: Yup.number().typeError('Precio inválido').min(0, 'Precio debe ser mayor o igual a 0').required('Precio requerido'),
   categories: Yup.array()
     .of(Yup.object({ value: Yup.number().required(), label: Yup.string().required() }))
