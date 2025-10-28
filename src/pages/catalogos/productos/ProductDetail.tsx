@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Formik, Form, type FormikHelpers, useFormikContext } from 'formik';
 import { toast } from 'react-toastify';
@@ -60,23 +60,23 @@ const validateDetailForm = (values: ProductDetailForm) => {
 	if (!values.name.trim()) errors.name = 'El nombre es obligatorio';
 	if (values.brand_id === '' || values.brand_id === 0)
 		errors.brand_id = 'Debes seleccionar una marca';
-	if (!values.category_ids.length) errors.category_ids = 'Selecciona al menos una categoría';
+	if (!values.category_ids.length) errors.category_ids = 'Selecciona al menos una categorÃ­a';
 
 	if (values.cost !== '') {
 		const costValue = Number(values.cost);
-		if (!Number.isFinite(costValue) || costValue < 0) errors.cost = 'El costo no es válido';
+		if (!Number.isFinite(costValue) || costValue < 0) errors.cost = 'El costo no es vÃ¡lido';
 	}
 
 	if (values.warranty_months !== '') {
 		const warrantyValue = Number(values.warranty_months);
 		if (!Number.isFinite(warrantyValue) || warrantyValue < 0)
-			errors.warranty_months = 'La garantía debe ser un número positivo';
+			errors.warranty_months = 'La garantÃ­a debe ser un nÃºmero positivo';
 	}
 
 	if (values.stock !== '') {
 		const stockValue = Number(values.stock);
 		if (!Number.isFinite(stockValue) || stockValue < 0)
-			errors.stock = 'El stock debe ser un número positivo';
+			errors.stock = 'El stock debe ser un nÃºmero positivo';
 	}
 
 	if (!values.product_status) errors.product_status = 'Selecciona el estado del producto';
@@ -105,8 +105,8 @@ const AutoSaveHandler: React.FC<AutoSaveHandlerProps> = React.memo(() => {
 			onConfirm={confirmSave}
 			onCancel={cancelSave}
 			isLoading={isSaving}
-			title='¿Guardar cambios?'
-			message='Has estado inactivo por 30 segundos y tienes cambios sin guardar. ¿Deseas guardar estos cambios ahora?'
+			title='Â¿Guardar cambios?'
+			message='Has estado inactivo por 30 segundos y tienes cambios sin guardar. Â¿Deseas guardar estos cambios ahora?'
 		/>
 	);
 });
@@ -155,7 +155,7 @@ const ProductDetail: React.FC = () => {
 		[product],
 	);
 
-	// Manejar eliminación de imagen
+	// Manejar eliminaciÃ³n de imagen
 	const handleDeleteImage = async (mediaId: number) => {
 		if (!product || !effectiveBranchId) return;
 		try {
@@ -212,7 +212,7 @@ const ProductDetail: React.FC = () => {
 
 				setErrors(formikErrors);
 
-				const message = error?.response?.data?.message ?? 'Error de validación';
+				const message = error?.response?.data?.message ?? 'Error de validaciÃ³n';
 				toast.error(message);
 			} else {
 				const message =
@@ -263,8 +263,8 @@ const ProductDetail: React.FC = () => {
 						</Subheader>
 
 						<Container>
-							<div className='grid w-full gap-6 lg:grid-cols-[minmax(0,1fr)_320px]'>
-								<div className='space-y-6'>
+							<div className='flex w-full flex-col gap-6 xl:flex-row xl:items-start'>
+								<div className='order-1 space-y-6 xl:order-1 xl:flex-1'>
 									<ProductDetailTabs
 										activeTab={activeTab}
 										onTabChange={setActiveTab}
@@ -281,7 +281,9 @@ const ProductDetail: React.FC = () => {
 									/>
 								</div>
 
-								<ProductDetailSidebar product={product} branches={branches} />
+								<div className='order-2 xl:order-2 xl:w-[320px] xl:flex-shrink-0'>
+									<ProductDetailSidebar product={product} branches={branches} />
+								</div>
 							</div>
 						</Container>
 					</Form>
