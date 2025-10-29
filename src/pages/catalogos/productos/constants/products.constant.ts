@@ -3,6 +3,7 @@ import type { ProductFilters, ProductStatus, ProductType } from '@/interface/pro
 export const PRODUCT_STATUS = ['pending', 'validated', 'archived'] as const;
 
 export const PRODUCT_TYPES = [
+	'general',
 	'desktop_pc',
 	'notebook',
 	'aio',
@@ -16,6 +17,7 @@ export const PRODUCT_STATUS_LABELS: Record<string, string> = {
 };
 
 export const PRODUCT_TYPE_LABELS: Record<string, string> = {
+	general: 'General',
 	desktop_pc: 'Computador reacondicionado',
 	notebook: 'Notebook reacondicionado',
 	aio: 'AIO reacondicionado',

@@ -65,7 +65,7 @@ export const ProductDetailTabs: React.FC<ProductDetailTabsProps> = ({
 	onDeleteImage,
 }) => {
 	const renderTabContent = () => {
-		switch (activeTab) {
+		switch (effectiveActiveTab) {
 			case 'general':
 				return <GeneralTab brands={brands} brandsLoading={brandsLoading} />;
 			case 'comercial':
@@ -97,7 +97,16 @@ export const ProductDetailTabs: React.FC<ProductDetailTabsProps> = ({
 		}
 	};
 
-	return (
+	// When product type is explicitly 'general', hide the atributos tab
+	const showAtributos = !!(product && product.product_type && product.product_type !== 'general');
+	const visibleTabs = TABS_CONFIG.filter((t) => (t.id === 'atributos' ? showAtributos : true));
+
+	// If the currently activeTab was 'atributos' but atributos is hidden, pick the first visible tab
+	const effectiveActiveTab = visibleTabs.find((t) => t.id === activeTab)
+		? activeTab
+		: visibleTabs[0]?.id || activeTab;
+
+		return (
 		<Card>
 			<CardHeader>
 				<CardTitle>Edición del producto</CardTitle>
@@ -116,13 +125,13 @@ export const ProductDetailTabs: React.FC<ProductDetailTabsProps> = ({
 							msOverflowStyle: 'none',
 						}}>
 						<div className='flex w-max min-w-full' style={{ gap: '0px' }}>
-							{TABS_CONFIG.map((tab) => (
+							{visibleTabs.map((tab) => (
 								<button
 									key={tab.id}
 									type='button'
 									onClick={() => onTabChange(tab.id)}
 									className={`inline-flex flex-shrink-0 items-center gap-2 border-b-2 px-6 py-4 text-sm font-medium transition-colors duration-200 ${
-										activeTab === tab.id
+										effectiveActiveTab === tab.id
 											? 'border-blue-500 bg-blue-50/50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
 											: 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
 									}`}

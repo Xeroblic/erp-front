@@ -260,49 +260,8 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 															</FieldContainer>
 														)}
 													</Field>
-													<div className='space-y-2 md:col-span-2'>
-														<p className='text-sm font-medium'>Marca</p>
-														<SelectReact
-															name='brand_id'
-															options={brandOptions}
-															value={
-																brandOptions.find(
-																	(option) =>
-																		String(option.value) ===
-																		String(values.brand_id),
-																) ?? null
-															}
-															onChange={(option) =>
-																setFieldValue(
-																	'brand_id',
-																	(option as TSelectOption | null)
-																		?.value ?? '',
-																)
-															}
-															onBlur={() =>
-																setFieldTouched('brand_id', true)
-															}
-															placeholder='Selecciona una marca'
-															isDisabled={
-																isBusy || !brandOptions.length
-															}
-															menuPortalTarget={document.body}
-															styles={{
-																menuPortal: (base) => ({
-																	...base,
-																	zIndex: 9999,
-																}),
-															}}
-														/>
-														{touched.brand_id && errors.brand_id && (
-															<p className='text-xs text-red-500'>
-																{errors.brand_id}
-															</p>
-														)}
-													</div>
-
 													{/* Selector de Branch - Solo en modo CREAR */}
-													{!isEditMode && userId && (
+													{(!isEditMode && userId) && (
 														<div className='space-y-2 md:col-span-2'>
 															<UserBranchSelector
 																userId={userId}
@@ -334,6 +293,52 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 																)}
 														</div>
 													)}
+
+													<div className='space-y-2 md:col-span-2'>
+														<p className='text-sm font-medium'>Marca</p>
+														<SelectReact
+															name='brand_id'
+															options={brandOptions}
+															value={
+																brandOptions.find(
+																	(option) =>
+																		String(option.value) ===
+																		String(values.brand_id),
+																) ?? null
+															}
+															onChange={(option) =>
+																setFieldValue(
+																	'brand_id',
+																	(option as TSelectOption | null)
+																		?.value ?? '',
+																)
+															}
+															onBlur={() =>
+																setFieldTouched('brand_id', true)
+															}
+															placeholder={
+																isBusy
+																	? 'Cargando marcas...'
+																	: !brandOptions.length && !values.branch_id
+																	? 'Selecciona la sucursal primero'
+																	: 'Selecciona una marca'
+															}
+															// Disable only while busy or when there are no brands for the selected branch
+															isDisabled={isBusy || (!brandOptions.length && !values.branch_id)}
+															menuPortalTarget={document.body}
+															styles={{
+																menuPortal: (base) => ({
+																	...base,
+																	zIndex: 9999,
+																}),
+															}}
+														/>
+														{touched.brand_id && errors.brand_id && (
+															<p className='text-xs text-red-500'>
+																{errors.brand_id}
+															</p>
+														)}
+													</div>
 
 													<Field name='uom'>
 														{({ field }: FieldProps) => (

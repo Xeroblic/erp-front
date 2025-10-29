@@ -92,7 +92,10 @@ export const useDynamicAttributesEditor = () => {
 		setFieldValueRef.current = setFieldValue;
 	}, [setFieldValue]);
 
-	const productTypeStr = values.product_type || 'desktop_pc';
+	// If product_type is not set (producto "general"), use empty string so
+	// fields are shown by default. Previously defaulted to 'desktop_pc'
+	// which caused many CPU fields to be hidden for products without type.
+	const productTypeStr = values.product_type || '';
 	const currentProductKind: ProductKind =
 		(attributes.product_kind as ProductKind) || (productTypeStr as ProductKind);
 

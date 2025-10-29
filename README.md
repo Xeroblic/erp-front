@@ -146,30 +146,6 @@ export const examplePages = {
 ```
 
 Si guardas la información de tu página en el formato anterior en el archivo [src/config/pages.config.ts](src/config/pages.config.ts), puedes usarla fácilmente en los menús.
-
-## Docker / Desarrollo en contenedor
-
-Se agregaron archivos para facilitar el desarrollo dentro de un contenedor Docker:
-
-- `Dockerfile` - multi-stage (builder + runner) y una etapa `dev` para desarrollo.
-- `docker-compose.dev.yml` - configuración para levantar el servidor de desarrollo (Vite) con bind-mount y hot-reload.
-- `start-dev.bat` / `stop-dev.bat` - scripts Windows para arrancar y parar el entorno con doble-clic.
-- `nginx.conf` - configuración para servir la build en producción (etapa runner).
-
-Comando para levantar el entorno de desarrollo (en la raíz del repo):
-
-```cmd
-docker compose -f docker-compose.dev.yml up -d --build
-```
-
-Para detener y eliminar los contenedores:
-
-```cmd
-docker compose -f docker-compose.dev.yml down
-```
-
-Si prefieres no usar `-f`, puedo crear un `docker-compose.yml` por defecto que apunte a la configuración de desarrollo.
-
 # Arquitectura del Proyecto
 
 ## src/index.tsx
