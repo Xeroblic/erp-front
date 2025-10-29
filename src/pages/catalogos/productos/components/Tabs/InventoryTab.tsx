@@ -39,6 +39,17 @@ const getFriendlyDate = (value?: string | null): string => {
 	});
 };
 
+type CriticalItemRow = {
+	product: IProduct;
+	id: number;
+	name: string;
+	sku: string;
+	brand: string;
+	stock: number;
+	status: 'low' | 'out';
+	updatedAt?: string | null;
+};
+
 const InventoryTab: React.FC<InventoryTabProps> = ({
 	products = [],
 	loading = false,
@@ -47,17 +58,6 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 	onShowLowStock,
 	onViewProduct,
 }) => {
-	type CriticalItemRow = {
-		product: IProduct;
-		id: number;
-		name: string;
-		sku: string;
-		brand: string;
-		stock: number;
-		status: 'low' | 'out';
-		updatedAt?: string | null;
-	};
-
 	const inventory = useMemo(() => {
 		if (!products.length) {
 			return {
@@ -113,7 +113,7 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 				sku: product.sku,
 				brand: product.brand?.name ?? 'Sin marca',
 				stock: Number(product.stock ?? 0),
-				status: Number(product.stock ?? 0) <= 0 ? 'out' : 'low',
+				status: (Number(product.stock ?? 0) <= 0 ? 'out' : 'low') as 'out' | 'low',
 				updatedAt: product.updated_at,
 			}))
 			.sort((a, b) => {
@@ -135,11 +135,11 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 					const item = row.original;
 					return (
 						<div className='space-y-1'>
-							<p className='font-medium text-neutral-100'>{item.name}</p>
-							<p className='text-xs text-neutral-400'>
+							<p className='font-medium text-neutral-800 dark:text-neutral-100'>{item.name}</p>
+							<p className='text-xs text-neutral-500 dark:text-neutral-400'>
 								SKU: {item.sku} · Marca: {item.brand}
 							</p>
-							<p className='text-xs text-neutral-500'>
+							<p className='text-xs text-neutral-400 dark:text-neutral-500'>
 								Actualizado: {getFriendlyDate(item.updatedAt)}
 							</p>
 						</div>
@@ -149,21 +149,20 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 			{
 				id: 'status',
 				header: 'Estado',
+				// size: 140,
 				cell: ({ row }) => {
 					const { status, stock } = row.original;
 					return (
 						<Badge color={status === 'out' ? 'red' : 'amber'} variant='outline'>
-							{status === 'out'
-								? 'Sin stock'
-								: `Stock bajo · ${formatNumber(stock)}`}
+							{status === 'out' ? 'Sin stock' : `Stock bajo · ${formatNumber(stock)}`}
 						</Badge>
 					);
 				},
 			},
 			{
 				id: 'actions',
-				header: '',
-				size: 120,
+				header: 'Acciones',
+				// size: 160,
 				cell: ({ row }) => {
 					const { product } = row.original;
 					return (
@@ -172,7 +171,9 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 							variant='outline'
 							icon='HeroEye'
 							isDisable={!onViewProduct}
-							onClick={() => onViewProduct?.(product)}>
+							onClick={() => {
+								if (onViewProduct) onViewProduct(product);
+							}}>
 							Ver producto
 						</Button>
 					);
@@ -195,8 +196,7 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 			label: 'Stock total',
 			value: inventory.totalStock,
 			description: `${inventory.productCount} productos sincronizados`,
-			accentBg: 'bg-blue-100',
-			accentText: 'text-blue-600',
+			valueClass: 'text-emerald-600 dark:text-emerald-300',
 		},
 		{
 			id: 'average',
@@ -204,8 +204,7 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 			label: 'Stock promedio',
 			value: Math.round(inventory.averageStock),
 			description: `${inventory.serialTracked} con tracking de serie`,
-			accentBg: 'bg-indigo-100',
-			accentText: 'text-indigo-600',
+			valueClass: 'text-indigo-600 dark:text-indigo-300',
 		},
 		{
 			id: 'low',
@@ -213,12 +212,8 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 			label: `Stock bajo (≤ ${lowStockThreshold})`,
 			value: inventory.lowStockItems.length,
 			description:
-				inventory.lowStockItems.length > 0
-					? 'Revisa los productos en alerta'
-					: 'Sin alertas por ahora',
-			accentBg: 'bg-amber-100',
-			accentText: 'text-amber-600',
-			valueClass: inventory.lowStockItems.length > 0 ? 'text-amber-600' : undefined,
+				inventory.lowStockItems.length > 0 ? 'Revisa los productos en alerta' : 'Sin alertas por ahora',
+			valueClass: 'text-amber-600 dark:text-amber-300',
 		},
 		{
 			id: 'out',
@@ -226,38 +221,36 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 			label: 'Productos agotados',
 			value: inventory.outOfStockItems.length,
 			description:
-				inventory.outOfStockItems.length > 0
-					? 'Necesitan reposición'
-					: 'Todos con stock disponible',
-			accentBg: 'bg-red-100',
-			accentText: 'text-red-600',
-			valueClass: inventory.outOfStockItems.length > 0 ? 'text-red-600' : undefined,
+				inventory.outOfStockItems.length > 0 ? 'Necesitan reposición' : 'Todos con stock disponible',
+			valueClass: 'text-rose-600 dark:text-rose-300',
 		},
 	];
 
-	const summaryStyles: Record<
-		typeof summaryCards[number]['id'],
-		{ iconBg: string; iconColor: string; accentBorder: string }
-	> = {
+	const summaryStyles: Record<string, { border: string; iconBg: string; iconColor: string }> = {
 		total: {
-			iconBg: 'bg-emerald-500/10',
-			iconColor: 'text-emerald-500',
-			accentBorder: 'border-emerald-500/40',
+			border: 'border-emerald-200/80 dark:border-emerald-500/40',
+			iconBg: 'bg-emerald-100 dark:bg-emerald-500/10',
+			iconColor: 'text-emerald-600 dark:text-emerald-300',
 		},
 		average: {
-			iconBg: 'bg-indigo-500/10',
-			iconColor: 'text-indigo-500',
-			accentBorder: 'border-indigo-500/40',
+			border: 'border-indigo-200/80 dark:border-indigo-500/40',
+			iconBg: 'bg-indigo-100 dark:bg-indigo-500/10',
+			iconColor: 'text-indigo-600 dark:text-indigo-300',
 		},
 		low: {
-			iconBg: 'bg-amber-500/10',
-			iconColor: 'text-amber-500',
-			accentBorder: 'border-amber-500/40',
+			border: 'border-amber-200/80 dark:border-amber-500/40',
+			iconBg: 'bg-amber-100 dark:bg-amber-500/10',
+			iconColor: 'text-amber-600 dark:text-amber-300',
 		},
 		out: {
-			iconBg: 'bg-rose-500/10',
-			iconColor: 'text-rose-500',
-			accentBorder: 'border-rose-500/40',
+			border: 'border-rose-200/80 dark:border-rose-500/40',
+			iconBg: 'bg-rose-100 dark:bg-rose-500/10',
+			iconColor: 'text-rose-600 dark:text-rose-300',
+		},
+		default: {
+			border: 'border-neutral-200 dark:border-neutral-700',
+			iconBg: 'bg-neutral-100 dark:bg-neutral-800',
+			iconColor: 'text-neutral-500 dark:text-neutral-300',
 		},
 	};
 
@@ -269,11 +262,11 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 
 	return (
 		<div className='space-y-6'>
-			<Card>
+			<Card className='border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900/70'>
 				<CardHeader>
 					<CardHeaderChild className='flex flex-col gap-1'>
 						<CardTitle className='flex items-center gap-2'>
-							<Icon icon='HeroCubeTransparent' className='h-5 w-5' />
+							<Icon icon='HeroCubeTransparent' className='h-5 w-5 text-emerald-600 dark:text-emerald-300' />
 							Gestión de Inventario
 						</CardTitle>
 						<p className='text-sm text-neutral-500'>
@@ -288,47 +281,42 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 				</CardHeader>
 				<CardBody>
 					<div className='grid gap-4 md:grid-cols-2 xl:grid-cols-4'>
-						{summaryCards.map((card) => (
-							<Card
-								key={card.id}
-								className={`h-full border border-dashed ${summaryStyles[card.id].accentBorder}`}>
-								<CardBody className='flex h-full flex-col justify-between gap-4'>
-									<div className='flex items-start justify-between gap-3'>
-										<div>
-											<p className='text-sm text-neutral-500'>{card.label}</p>
-											{loading ? (
-												<div className='mt-3 h-7 w-24 animate-pulse rounded bg-gray-200 dark:bg-gray-700' />
-											) : (
-												<>
-													<p
-														className={`text-2xl font-semibold ${card.valueClass ?? ''}`}>
-														{formatNumber(card.value)}
-													</p>
-													{card.description && (
-														<p className='mt-1 text-xs text-neutral-500'>
-															{card.description}
+						{summaryCards.map((card) => {
+							const style = summaryStyles[card.id] ?? summaryStyles.default;
+							return (
+								<Card
+									key={card.id}
+									className={`h-full overflow-hidden rounded-xl border ${style.border} bg-white shadow-sm dark:bg-neutral-900/60`}>
+									<CardBody className='flex h-full flex-col justify-between gap-4 !p-5'>
+										<div className='flex items-start justify-between gap-3'>
+											<div>
+												<p className='text-sm text-neutral-500'>{card.label}</p>
+												{loading ? (
+													<div className='mt-3 h-7 w-24 animate-pulse rounded bg-neutral-200 dark:bg-neutral-800' />
+												) : (
+													<>
+														<p className={`text-2xl font-semibold ${card.valueClass}`}>
+															{formatNumber(card.value)}
 														</p>
-													)}
-												</>
-											)}
+														{card.description && (
+															<p className='mt-1 text-xs text-neutral-500'>{card.description}</p>
+														)}
+													</>
+												)}
+											</div>
+											<div className={`flex h-10 w-10 items-center justify-center rounded-xl ${style.iconBg}`}>
+												<Icon icon={card.icon as any} className={`h-5 w-5 ${style.iconColor}`} />
+											</div>
 										</div>
-										<div
-											className={`flex h-10 w-10 items-center justify-center rounded-xl ${summaryStyles[card.id].iconBg}`}>
-											<Icon
-												icon={card.icon as any}
-												className={`h-5 w-5 ${summaryStyles[card.id].iconColor}`}
-											/>
-										</div>
-									</div>
-								</CardBody>
-							</Card>
-						))}
+									</CardBody>
+								</Card>
+							);
+						})}
 					</div>
 
-					<div className='mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-dashed pt-4'>
+					<div className='mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-neutral-200 pt-4 dark:border-neutral-700'>
 						<p className='text-xs text-neutral-500'>
-							Inventario total: {formatNumber(inventory.totalStock)} unidades en{' '}
-							{inventory.productCount} productos.
+							Inventario total: {formatNumber(inventory.totalStock)} unidades en {inventory.productCount} productos.
 						</p>
 						<div className='flex flex-wrap gap-2'>
 							<Button variant='outline' icon='HeroArrowDownTray' size='sm'>
@@ -354,16 +342,18 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 				</CardBody>
 			</Card>
 
-			<Card>
+			<Card className='border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900/70'>
 				<CardHeader>
 					<CardHeaderChild>
 						<CardTitle>Productos con stock crítico</CardTitle>
 					</CardHeaderChild>
-					<CardHeaderChild>
-						<Badge variant='outline' color='red'>
-							{criticalItems.length} productos
-						</Badge>
-					</CardHeaderChild>
+					{!loading ? (
+						<CardHeaderChild>
+							<Badge variant='outline' color='red'>
+								{criticalItems.length} producto{criticalItems.length === 1 ? '' : 's'}
+							</Badge>
+						</CardHeaderChild>
+					) : null}
 				</CardHeader>
 				<CardBody>
 					{loading ? (
@@ -371,55 +361,46 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 							{Array.from({ length: 4 }).map((_, index) => (
 								<div
 									key={index}
-									className='flex items-center justify-between gap-4 rounded border p-3'>
-									<div className='h-4 w-40 animate-pulse rounded bg-gray-200 dark:bg-gray-700' />
-									<div className='h-4 w-24 animate-pulse rounded bg-gray-200 dark:bg-gray-700' />
+									className='flex gap-3 rounded border border-dashed border-neutral-200 p-3 dark:border-neutral-700'>
+									<div className='h-12 flex-1 animate-pulse rounded bg-neutral-100 dark:bg-neutral-800' />
+									<div className='h-8 w-28 animate-pulse rounded bg-neutral-100 dark:bg-neutral-800' />
 								</div>
 							))}
 						</div>
 					) : criticalItems.length === 0 ? (
-						<div className='rounded-lg border border-dashed p-6 text-center text-sm text-neutral-500'>
+						<div className='rounded-lg border border-dashed border-neutral-200 p-6 text-center text-sm text-neutral-500 dark:border-neutral-700'>
 							No hay productos con alertas de stock para esta sucursal.
 						</div>
 					) : (
-						<div className='space-y-3'>
-							{criticalItems.map((item) => (
-								<Card key={item.id}>
-									<CardBody className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
-										<div className='space-y-1'>
-											<p className='font-semibold text-gray-900 dark:text-gray-100'>
-												{item.name}
-											</p>
-											<p className='text-xs text-neutral-500'>
-												SKU: {item.sku} · Marca: {item.brand}
-											</p>
-											<p className='text-xs text-neutral-400'>
-												Actualizado: {getFriendlyDate(item.updatedAt)}
-											</p>
-										</div>
-										<div className='flex flex-wrap items-center gap-2'>
-											<Badge
-												color={item.status === 'out' ? 'red' : 'amber'}
-												variant='outline'
-												className='text-xs font-semibold'>
-												{item.status === 'out'
-													? 'Sin stock'
-													: `Stock bajo · ${formatNumber(item.stock)}`}
-											</Badge>
-											<Button
-												size='sm'
-												variant='outline'
-												icon='HeroEye'
-												isDisable={!onViewProduct}
-												onClick={() => {
-													if (onViewProduct) onViewProduct(item.product);
-												}}>
-												Ver producto
-											</Button>
-										</div>
-									</CardBody>
-								</Card>
-							))}
+						<div className='overflow-hidden rounded-lg border border-dashed border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900/40'>
+							<table className='min-w-full divide-y divide-neutral-200 dark:divide-neutral-800'>
+								<thead className='bg-neutral-50 dark:bg-neutral-900/60'>
+									{table.getHeaderGroups().map((headerGroup) => (
+										<tr key={headerGroup.id}>
+											{headerGroup.headers.map((header) => (
+												<th
+													key={header.id}
+													className='px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 dark:text-neutral-400'>
+													{header.isPlaceholder
+														? null
+														: flexRender(header.column.columnDef.header, header.getContext())}
+												</th>
+											))}
+										</tr>
+									))}
+								</thead>
+								<tbody className='divide-y divide-neutral-200 bg-white dark:divide-neutral-800 dark:bg-neutral-950/60'>
+									{table.getRowModel().rows.map((row) => (
+										<tr key={row.id} className='hover:bg-neutral-100 dark:hover:bg-neutral-900/40'>
+											{row.getVisibleCells().map((cell) => (
+												<td key={cell.id} className='px-4 py-4 align-top text-sm text-neutral-700 dark:text-neutral-200'>
+													{flexRender(cell.column.columnDef.cell, cell.getContext())}
+												</td>
+											))}
+										</tr>
+									))}
+								</tbody>
+							</table>
 						</div>
 					)}
 				</CardBody>
@@ -429,4 +410,3 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 };
 
 export default InventoryTab;
-
