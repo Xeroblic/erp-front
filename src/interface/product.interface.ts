@@ -123,3 +123,45 @@ export interface UpdateProductPayload extends Partial<CreateProductPayload> {
 	id: number;
 	branch_id?: number;
 }
+
+export interface ProductInventoryCriticalProduct {
+	id: number;
+	name: string;
+	sku: string;
+	brand_name?: string | null;
+	stock?: number | null;
+}
+
+export interface ProductInventorySummaryResponse {
+	branch_id: number;
+	params?: {
+		critical_threshold?: number;
+	};
+	summary?: {
+		products_total?: number;
+		active?: number;
+		inactive?: number;
+		with_offer?: number;
+		with_serial_tracking?: number;
+		stock_total?: number;
+		synced_products?: number;
+		stock_average?: number;
+		serial_tracking_count?: number;
+		low_stock_count?: number;
+		out_of_stock?: number;
+		with_stock_available?: number;
+	};
+	critical_products?: ProductInventoryCriticalProduct[];
+}
+
+export interface ProductInventorySummary {
+	branchId: number | null;
+	criticalThreshold: number;
+	stockTotal: number;
+	stockAverage: number;
+	lowStockCount: number;
+	outOfStock: number;
+	withStockAvailable: number;
+	syncedProducts: number;
+	serialTrackingCount: number;
+}

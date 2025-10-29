@@ -9,10 +9,17 @@ import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/compon
 import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-import type { IProduct } from '@/interface/product.interface';
+import type {
+	IProduct,
+	ProductInventoryCriticalProduct,
+	ProductInventorySummary,
+} from '@/interface/product.interface';
+import { PRODUCT_EMPTY_INVENTORY_SUMMARY } from '@/constants/product.constant';
 
 interface InventoryTabProps {
 	products: IProduct[];
+	summary?: ProductInventorySummary;
+	criticalProducts?: ProductInventoryCriticalProduct[];
 	loading?: boolean;
 	branchName?: string;
 	lowStockThreshold?: number;
@@ -40,25 +47,27 @@ const getFriendlyDate = (value?: string | null): string => {
 };
 
 type CriticalItemRow = {
-	product: IProduct;
+	product?: IProduct | null;
 	id: number;
 	name: string;
 	sku: string;
 	brand: string;
-	stock: number;
+	stock?: number | null;
 	status: 'low' | 'out';
 	updatedAt?: string | null;
 };
 
 const InventoryTab: React.FC<InventoryTabProps> = ({
 	products = [],
+	summary = PRODUCT_EMPTY_INVENTORY_SUMMARY,
+	criticalProducts = [],
 	loading = false,
 	branchName,
 	lowStockThreshold = DEFAULT_LOW_STOCK_THRESHOLD,
 	onShowLowStock,
 	onViewProduct,
 }) => {
-	const inventory = useMemo(() => {
+	const localInventory = useMemo(() => {
 		if (!products.length) {
 			return {
 				totalStock: 0,
@@ -103,8 +112,72 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 		};
 	}, [products, lowStockThreshold]);
 
-	const criticalItems = useMemo<CriticalItemRow[]>(() => {
-		const merged = [...inventory.lowStockItems, ...inventory.outOfStockItems];
+	const hasServerSummary = summary.branchId !== null;
+
+	const summaryData = useMemo<ProductInventorySummary>(() => {
+		if (hasServerSummary) {
+			return summary;
+		}
+
+		return {
+			...summary,
+			stockTotal: localInventory.totalStock,
+			stockAverage: localInventory.averageStock,
+			lowStockCount: localInventory.lowStockItems.length,
+			outOfStock: localInventory.outOfStockItems.length,
+			withStockAvailable: Math.max(
+				0,
+				localInventory.productCount - localInventory.outOfStockItems.length,
+			),
+			syncedProducts: localInventory.productCount,
+			serialTrackingCount: localInventory.serialTracked,
+			criticalThreshold: lowStockThreshold,
+		};
+	}, [hasServerSummary, summary, localInventory, lowStockThreshold]);
+
+	const productsById = useMemo(() => {
+		const map = new Map<number, IProduct>();
+		products.forEach((product) => {
+			map.set(product.id, product);
+		});
+		return map;
+	}, [products]);
+
+	const hasCriticalFromServer = hasServerSummary && criticalProducts.length > 0;
+
+	const criticalItems = useMemo<CriticalItemRow[]>(
+		() => {
+		if (hasCriticalFromServer) {
+			return criticalProducts
+				.map((item) => {
+					const product = productsById.get(item.id) ?? null;
+					const stockSource = product?.stock ?? item.stock ?? null;
+					const numericStock =
+						typeof stockSource === 'number' ? Number(stockSource) : null;
+					const status: 'low' | 'out' =
+						numericStock !== null && numericStock <= 0 ? 'out' : 'low';
+
+					return {
+						product,
+						id: item.id,
+						name: item.name,
+						sku: item.sku,
+						brand: product?.brand?.name ?? item.brand_name ?? 'Sin marca',
+						stock: numericStock,
+						status,
+						updatedAt: product?.updated_at ?? null,
+					};
+				})
+				.sort((a, b) => {
+					const stockA = typeof a.stock === 'number' ? a.stock : Number.MAX_SAFE_INTEGER;
+					const stockB = typeof b.stock === 'number' ? b.stock : Number.MAX_SAFE_INTEGER;
+					if (stockA !== stockB) return stockA - stockB;
+					return a.name.localeCompare(b.name);
+				})
+				.slice(0, 8);
+		}
+
+		const merged = [...localInventory.lowStockItems, ...localInventory.outOfStockItems];
 		return merged
 			.map((product) => ({
 				product,
@@ -117,14 +190,14 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 				updatedAt: product.updated_at,
 			}))
 			.sort((a, b) => {
-				const stockDiff = a.stock - b.stock;
+				const stockDiff = (a.stock ?? 0) - (b.stock ?? 0);
 				if (stockDiff !== 0) return stockDiff;
 				const aDate = a.updatedAt ? Date.parse(a.updatedAt) : 0;
 				const bDate = b.updatedAt ? Date.parse(b.updatedAt) : 0;
 				return bDate - aDate;
 			})
 			.slice(0, 8);
-	}, [inventory.lowStockItems, inventory.outOfStockItems]);
+	}, [hasCriticalFromServer, criticalProducts, productsById, localInventory]);
 
 	const columns = useMemo<ColumnDef<CriticalItemRow>[]>(
 		() => [
@@ -137,7 +210,7 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 						<div className='space-y-1'>
 							<p className='font-medium text-neutral-800 dark:text-neutral-100'>{item.name}</p>
 							<p className='text-xs text-neutral-500 dark:text-neutral-400'>
-								SKU: {item.sku} · Marca: {item.brand}
+								SKU: {item.sku} - Marca: {item.brand}
 							</p>
 							<p className='text-xs text-neutral-400 dark:text-neutral-500'>
 								Actualizado: {getFriendlyDate(item.updatedAt)}
@@ -152,32 +225,39 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 				// size: 140,
 				cell: ({ row }) => {
 					const { status, stock } = row.original;
+					const label =
+						status === 'out'
+							? 'Sin stock'
+							: typeof stock === 'number'
+								? `Stock bajo (${formatNumber(stock)})`
+								: 'Stock bajo';
 					return (
 						<Badge color={status === 'out' ? 'red' : 'amber'} variant='outline'>
-							{status === 'out' ? 'Sin stock' : `Stock bajo · ${formatNumber(stock)}`}
+							{label}
 						</Badge>
 					);
 				},
 			},
 			{
-				id: 'actions',
-				header: 'Acciones',
-				// size: 160,
-				cell: ({ row }) => {
-					const { product } = row.original;
-					return (
-						<Button
-							size='sm'
-							variant='outline'
-							icon='HeroEye'
-							isDisable={!onViewProduct}
-							onClick={() => {
-								if (onViewProduct) onViewProduct(product);
-							}}>
-							Ver producto
-						</Button>
-					);
-				},
+ 				id: 'actions',
+ 				header: 'Acciones',
+ 				// size: 160,
+ 				cell: ({ row }) => {
+ 					const { product } = row.original;
+					const disabled = !onViewProduct || !product;
+ 					return (
+ 						<Button
+ 							size='sm'
+ 							variant='outline'
+ 							icon='HeroEye'
+							isDisable={disabled}
+ 							onClick={() => {
+								if (!disabled && onViewProduct && product) onViewProduct(product);
+ 							}}>
+ 							Ver producto
+ 						</Button>
+ 					);
+ 				},
 			},
 		],
 		[onViewProduct],
@@ -194,34 +274,34 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 			id: 'total',
 			icon: 'HeroCubeTransparent',
 			label: 'Stock total',
-			value: inventory.totalStock,
-			description: `${inventory.productCount} productos sincronizados`,
+			value: summaryData.stockTotal,
+			description: `${summaryData.syncedProducts} productos sincronizados`,
 			valueClass: 'text-emerald-600 dark:text-emerald-300',
 		},
 		{
 			id: 'average',
 			icon: 'HeroChartBarSquare',
 			label: 'Stock promedio',
-			value: Math.round(inventory.averageStock),
-			description: `${inventory.serialTracked} con tracking de serie`,
+			value: Math.round(summaryData.stockAverage),
+			description: `${summaryData.serialTrackingCount} con tracking de serie`,
 			valueClass: 'text-indigo-600 dark:text-indigo-300',
 		},
 		{
 			id: 'low',
 			icon: 'HeroExclamationTriangle',
-			label: `Stock bajo (≤ ${lowStockThreshold})`,
-			value: inventory.lowStockItems.length,
+			label: `Stock bajo (<= ${summaryData.criticalThreshold})`,
+			value: summaryData.lowStockCount,
 			description:
-				inventory.lowStockItems.length > 0 ? 'Revisa los productos en alerta' : 'Sin alertas por ahora',
+				summaryData.lowStockCount > 0 ? 'Revisa los productos en alerta' : 'Sin alertas por ahora',
 			valueClass: 'text-amber-600 dark:text-amber-300',
 		},
 		{
 			id: 'out',
 			icon: 'HeroXCircle',
 			label: 'Productos agotados',
-			value: inventory.outOfStockItems.length,
+			value: summaryData.outOfStock,
 			description:
-				inventory.outOfStockItems.length > 0 ? 'Necesitan reposición' : 'Todos con stock disponible',
+				summaryData.outOfStock > 0 ? 'Necesitan reposición' : 'Todos con stock disponible',
 			valueClass: 'text-rose-600 dark:text-rose-300',
 		},
 	];
@@ -256,7 +336,7 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 
 	const branchLabel = branchName ?? 'Todas las sucursales disponibles';
 	const handleLowStockClick = () => {
-		if (inventory.lowStockItems.length === 0 && inventory.outOfStockItems.length === 0) return;
+		if (criticalItems.length === 0) return;
 		onShowLowStock?.();
 	};
 
@@ -316,7 +396,7 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 
 					<div className='mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-neutral-200 pt-4 dark:border-neutral-700'>
 						<p className='text-xs text-neutral-500'>
-							Inventario total: {formatNumber(inventory.totalStock)} unidades en {inventory.productCount} productos.
+							Inventario total: {formatNumber(summaryData.stockTotal)} unidades en {summaryData.syncedProducts} productos.
 						</p>
 						<div className='flex flex-wrap gap-2'>
 							<Button variant='outline' icon='HeroArrowDownTray' size='sm'>
@@ -333,7 +413,7 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 								onClick={handleLowStockClick}
 								isDisable={
 									!onShowLowStock ||
-									(inventory.lowStockItems.length === 0 && inventory.outOfStockItems.length === 0)
+									(criticalItems.length === 0)
 								}>
 								Ver productos críticos
 							</Button>
@@ -410,3 +490,6 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 };
 
 export default InventoryTab;
+
+
+

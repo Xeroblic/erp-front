@@ -48,7 +48,10 @@ const Productos: React.FC = () => {
 		products,
 		meta,
 		stats,
+		inventory,
+		criticalProducts,
 		loading,
+		inventoryLoading,
 		error,
 		branches,
 		activeBranchId,
@@ -313,7 +316,9 @@ const Productos: React.FC = () => {
 					<Tab id='inventory' text='Inventario' icon='HeroBuildingStorefront'>
 						<InventoryTab
 							products={products}
-							loading={loading}
+							summary={inventory}
+							criticalProducts={criticalProducts}
+							loading={inventoryLoading || loading}
 							branchName={currentBranchName}
 							onShowLowStock={handleShowCriticalInventory}
 							onViewProduct={handleViewProduct}
