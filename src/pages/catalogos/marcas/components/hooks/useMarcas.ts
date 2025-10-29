@@ -86,10 +86,11 @@ export function useMarcas(filters: IBrandFilters) {
 
   const createBrand = useCallback(
     async (payload: CreateBrandInput) => {
-      const branchId = filters.branch_id ?? activeBranchId;
+      const branchId = payload.branch_id ?? filters.branch_id ?? activeBranchId;
       if (!branchId) throw new Error('Debe seleccionar una sucursal para crear una marca');
       if (!payload.name) throw new Error('El nombre de la marca es obligatorio');
-      await dispatch(createBrandThunk({ branchId, data: payload })).unwrap();
+      const { branch_id: _branchId, ...brandPayload } = payload;
+      await dispatch(createBrandThunk({ branchId, data: brandPayload })).unwrap();
     },
     [dispatch, filters.branch_id, activeBranchId],
   );

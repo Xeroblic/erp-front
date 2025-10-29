@@ -62,13 +62,17 @@ const Marcas: React.FC = () => {
 		const formData = new FormData(event.currentTarget);
 
 		try {
+			const branchIdValue = formData.get('branch_id');
+			const branchId =
+				branchIdValue && branchIdValue !== 'null' ? Number(branchIdValue) : undefined;
+
 			await createBrand({
 				name: String(formData.get('name') ?? '').trim(),
 				code: formData.get('code')?.toString().trim() || undefined,
 				origin_country: formData.get('origin_country')?.toString().trim() || undefined,
 				manufacturer: formData.get('manufacturer')?.toString().trim() || undefined,
 				is_active: formData.get('is_active') === '1',
-				branch_id: filters.branch_id ?? activeBranchId ?? undefined,
+				branch_id: branchId ?? filters.branch_id ?? activeBranchId ?? undefined,
 				image: (() => {
 					const file = formData.get('image');
 					return file instanceof File && file.size > 0 ? file : null;
@@ -203,6 +207,7 @@ const Marcas: React.FC = () => {
 				setIsOpen={setCreateOpen}
 				onSubmit={handleCreateSubmit}
 				isLoading={creating}
+				defaultBranchId={filters.branch_id ?? activeBranchId ?? undefined}
 			/>
 			<EditarMarca
 				isOpen={editOpen}

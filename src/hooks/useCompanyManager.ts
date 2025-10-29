@@ -88,16 +88,16 @@ const useCompanyManager = (): UseCompanyManager => {
 			setIsLoading(true);
 			try {
 				// 1) Cambia compañía/subsidiaria (usa signal local por si quieres cancelar acá también)
-				const controller = new AbortController();
-				await ApiService.fetchData({
-					url: '/user/switch-company',
-					method: 'post',
-					data: {
-						company_id: 1, // TODO: reemplazar por real si corresponde
-						subsidiary_id: subsidiaryId,
-					},
-					signal: controller.signal,
-				});
+		const controller = new AbortController();
+		await ApiService.fetchData({
+			url: '/user/switch-company',
+			method: 'post',
+			data: {
+				company_id: 1, // TODO: reemplazar por real si corresponde
+				subsidiary_id: subsidiaryId,
+			},
+			signal: controller.signal,
+		});
 
 				// 2) Si la personalización YA tiene ese ID, no hagas PUT inútil
 				const currentPersonalization = user?.personalizacion;
@@ -119,13 +119,19 @@ const useCompanyManager = (): UseCompanyManager => {
 				}
 
 				// 3) Refresca el user (idealmente trae la nueva subsidiary)
-				await dispatch(userMeThunk()).unwrap();
+		await dispatch(userMeThunk()).unwrap();
 
-				// 4) Actualiza el nombre de la subsidiaria actual usando el cache local
-				const selectedCompany =
-					availableCompanies.find((c) => c.subsidiary_id === subsidiaryId) ??
-					cacheRef.current?.companies.find((c) => c.subsidiary_id === subsidiaryId);
-				if (selectedCompany) setCurrentSubsidiaryName(selectedCompany.name);
+		// 4) Actualiza el nombre de la subsidiaria actual usando el cache local
+		const selectedCompany =
+			availableCompanies.find((c) => c.subsidiary_id === subsidiaryId) ??
+			cacheRef.current?.companies.find((c) => c.subsidiary_id === subsidiaryId);
+		if (selectedCompany) setCurrentSubsidiaryName(selectedCompany.name);
+
+		window.dispatchEvent(
+			new CustomEvent('user-branch-changed', {
+				detail: { branchId: selectedCompany?.subsidiary_id ?? null },
+			}),
+		);
 
 				// 5) Invalida cache de empresas (por si cambió accesos)
 				cacheRef.current = null;

@@ -124,13 +124,6 @@ export const PRODUCT_FORM_SECTIONS = [
 		cardClass: '',
 	},
 	{
-		key: 'pricing',
-		icon: 'HeroBanknotes',
-		title: 'Precios y garantia',
-		description: 'Configura precios, costos y garantias.',
-		cardClass: '',
-	},
-	{
 		key: 'classification',
 		icon: 'HeroSquares2X2',
 		title: 'Clasificacion y categorias',

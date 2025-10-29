@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
@@ -15,15 +15,27 @@ import Tabs, { Tab } from '@/components/ui/Tabs';
 
 // Hooks y tipos
 import { useProductos } from './hooks/useProductos';
+import { useAppDispatch, useAppSelector } from '@/store';
+import {
+	selectPersonalizacionUsuario,
+	selectIsInitialized as selectPersonalizacionInitialized,
+	obtenerPersonalizacionThunk,
+} from '@/store/slices/personalizacion/personalizacionSlice';
 import type { IProduct } from '@/interface/product.interface';
-import type { IBrand } from '@/interface/brand.interface';
-import type { ICategory } from '@/interface/category.interface';
 import { PRODUCT_DEFAULT_FILTERS } from './constants/products.constant';
+import { useUserBranches } from './components/modals/hooks/userBranch';
 
 const Productos: React.FC = () => {
 	const navigate = useNavigate();
+	const dispatch = useAppDispatch();
+
+	const currentUser = useAppSelector((state) => state.auth.user);
+	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
+	const personalizacionInitialized = useAppSelector(selectPersonalizacionInitialized);
+
 	const [filters, setFilters] = useState(PRODUCT_DEFAULT_FILTERS);
 	const [branchId, setBranchId] = useState<number | null>(null);
+	const [branchInitialized, setBranchInitialized] = useState(false);
 	const [page, setPage] = useState(1);
 	const [createOpen, setCreateOpen] = useState(false);
 	const [editOpen, setEditOpen] = useState(false);
@@ -51,16 +63,87 @@ const Productos: React.FC = () => {
 		deleteProduct,
 	} = useProductos({ branchId, filters, page, perPage: 15 });
 
-	// Handlers para filtros
+	const {
+		branches: accessibleBranches,
+	} = useUserBranches(currentUser?.id || (currentUser as any)?.pk, {
+		enabled: !!(currentUser?.id || (currentUser as any)?.pk),
+	});
+
+	const filteredBranches = useMemo(() => {
+		if (!accessibleBranches.length) return branches;
+		const allowed = new Set(accessibleBranches.map((branch) => branch.id));
+		return branches.filter((branch) => allowed.has(branch.id));
+	}, [branches, accessibleBranches]);
+
+	useEffect(() => {
+		if (!personalizacionInitialized) {
+			dispatch(obtenerPersonalizacionThunk());
+		}
+	}, [dispatch, personalizacionInitialized]);
+
+	const defaultBranchFromUser = useMemo(() => {
+		if (personalizacionUsuario?.sucursal_principal) {
+			return personalizacionUsuario.sucursal_principal;
+		}
+		if (currentUser?.branch?.id) return currentUser.branch.id;
+		if (currentUser?.branch_id) return currentUser.branch_id;
+		return null;
+	}, [
+		personalizacionUsuario?.sucursal_principal,
+		currentUser?.branch?.id,
+		currentUser?.branch_id,
+	]);
+
+	useEffect(() => {
+		if (branchInitialized) return;
+		if (!filteredBranches.length) return;
+
+		let fallback: number | null = null;
+
+		if (
+			defaultBranchFromUser !== null &&
+			defaultBranchFromUser !== undefined &&
+			filteredBranches.some((branch) => branch.id === defaultBranchFromUser)
+		) {
+			fallback = defaultBranchFromUser;
+		} else {
+			fallback = filteredBranches[0]?.id ?? null;
+		}
+
+		if (fallback !== null && fallback !== branchId) {
+			setBranchId(fallback);
+			setBranchInitialized(true);
+		}
+	}, [branchInitialized, filteredBranches, defaultBranchFromUser, branchId]);
+
+	useEffect(() => {
+		if (!branchInitialized) return;
+		if (defaultBranchFromUser === null || defaultBranchFromUser === undefined) return;
+		if (branchId === defaultBranchFromUser) return;
+		if (!filteredBranches.some((branch) => branch.id === defaultBranchFromUser)) return;
+		setBranchId(defaultBranchFromUser);
+	}, [defaultBranchFromUser, branchId, branchInitialized, filteredBranches]);
+
+	useEffect(() => {
+		const handleExternalBranchChange = (event: Event) => {
+			const customEvent = event as CustomEvent<{ branchId: number | null }>;
+			const nextBranchId = customEvent.detail?.branchId ?? null;
+			if (nextBranchId === null) return;
+			if (!filteredBranches.some((branch) => branch.id === nextBranchId)) return;
+			setBranchId(nextBranchId);
+			setBranchInitialized(true);
+			setPage(1);
+		};
+
+		window.addEventListener('user-branch-changed', handleExternalBranchChange);
+		return () => {
+			window.removeEventListener('user-branch-changed', handleExternalBranchChange);
+		};
+	}, [filteredBranches]);
+
 	const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const value = event.target.value;
 		setFilters((prev) => ({ ...prev, search: value }));
-		setPage(1);
-	};
-
-	const handleBranchChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-		const value = event.target.value;
-		setBranchId(value ? Number(value) : null);
 		setPage(1);
 	};
 
@@ -105,34 +188,28 @@ const Productos: React.FC = () => {
 		setPage(1);
 	};
 
-	// Handlers para productos
 	const handleViewProduct = (product: IProduct) => {
 		const targetBranchId = branchId ?? activeBranchId ?? product.branch_id ?? null;
 		const search = targetBranchId ? `?branchId=${targetBranchId}` : '';
 		navigate(`/catalogos/productos/${product.id}${search}`);
 	};
 
-	const handleCreateSubmit = async (payload: {
-		data: Partial<IProduct>;
-		categoryIds: number[];
-	}) => {
+	const handleCreateSubmit = async (payload: { data: Partial<IProduct>; categoryIds: number[] }) => {
 		try {
 			await createProduct(payload);
 			toast.success('Producto creado correctamente');
 			setCreateOpen(false);
 		} catch (err: any) {
 			console.error('Create product failed', err);
-			// No re-lanzar el error, dejarlo que el modal lo maneje
 		}
 	};
 
-	const handleUpdateSubmit = async (payload: {
-		data: Partial<IProduct>;
-		categoryIds: number[];
-	}) => {
-		if (!selectedProduct) return;
+	const handleUpdateSubmit = async (
+		product: IProduct,
+		payload: { data: Partial<IProduct>; categoryIds?: number[] },
+	) => {
 		try {
-			await updateProduct(selectedProduct.id, payload);
+			await updateProduct(product.id, payload);
 			toast.success('Producto actualizado correctamente');
 			setEditOpen(false);
 			setSelectedProduct(null);
@@ -164,15 +241,11 @@ const Productos: React.FC = () => {
 		}
 	};
 
-	// ConfiguraciÃƒÆ’Ã‚Â³n de tabs
 	return (
 		<PageWrapper name='catalog-products'>
 			<ProductsHeader
 				searchValue={filters.search ?? ''}
 				onSearchChange={handleSearchChange}
-				branchId={branchId}
-				onBranchChange={handleBranchChange}
-				branches={branches}
 				onCreateClick={() => setCreateOpen(true)}
 			/>
 
@@ -225,7 +298,6 @@ const Productos: React.FC = () => {
 				</Tabs>
 			</Container>
 
-			{/* Modales */}
 			<CreateEditProductModal
 				isOpen={createOpen}
 				onClose={() => setCreateOpen(false)}
@@ -233,6 +305,8 @@ const Productos: React.FC = () => {
 				brands={brands}
 				categories={categories}
 				isLoading={creating}
+				brandsLoading={brandsLoading}
+				defaultBranchId={branchId ?? defaultBranchFromUser ?? activeBranchId ?? null}
 			/>
 
 			<CreateEditProductModal
@@ -241,11 +315,18 @@ const Productos: React.FC = () => {
 					setEditOpen(false);
 					setSelectedProduct(null);
 				}}
-				onSubmit={handleUpdateSubmit}
+				onSubmit={(payload) => {
+					if (!selectedProduct) return Promise.resolve();
+					return handleUpdateSubmit(selectedProduct, payload);
+				}}
 				product={selectedProduct ?? undefined}
 				brands={brands}
 				categories={categories}
 				isLoading={updating}
+				brandsLoading={brandsLoading}
+				defaultBranchId={
+					selectedProduct?.branch_id ?? branchId ?? defaultBranchFromUser ?? activeBranchId ?? null
+				}
 			/>
 
 			<DeleteProductModal

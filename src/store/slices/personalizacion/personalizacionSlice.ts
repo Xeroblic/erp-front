@@ -83,24 +83,60 @@ export const obtenerPersonalizacionThunk = createAsyncThunk<
   },
 );
 
+const extractPersonalization = (payload: any): IPersonalizacionUsuario => {
+  if (payload?.personalization) return payload.personalization as IPersonalizacionUsuario;
+  return payload as IPersonalizacionUsuario;
+};
+
 export const actualizarPersonalizacionThunk = createAsyncThunk<
   IPersonalizacionUsuario,
-  Partial<Pick<IPersonalizacionUsuario, 'tema' | 'font_size' | 'tcolor' | 'tcolor_int' | 'dark_mode'>>,
+  Partial<
+    Pick<
+      IPersonalizacionUsuario,
+      'tema' | 'font_size' | 'tcolor' | 'tcolor_int' | 'dark_mode' | 'sucursal_principal'
+    >
+  >,
   { rejectValue: string }
 >(
   'personalizacion/actualizarPersonalizacion',
   async (data, { getState, rejectWithValue }) => {
     const token = (getState() as any).auth?.access;
     try {
-      const resp = await ApiService.fetchData<IPersonalizacionUsuario>({
+      const resp = await ApiService.fetchData<any>({
         url: '/user/personalization',
         method: 'put',
         data,
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
-      return resp.data as any;
+      return extractPersonalization(resp.data);
     } catch (error) {
       return rejectWithValue('No se pudo actualizar la personalización');
+    }
+  },
+);
+
+export const actualizarSucursalPrincipalThunk = createAsyncThunk<
+  IPersonalizacionUsuario,
+  number | null,
+  { rejectValue: string }
+>(
+  'personalizacion/actualizarSucursalPrincipal',
+  async (branchId, { getState, rejectWithValue }) => {
+    const token = (getState() as any).auth?.access;
+    try {
+      const resp = await ApiService.fetchData<any>({
+        url: '/user/personalization',
+        method: 'put',
+        data: { sucursal_principal: branchId },
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      return extractPersonalization(resp.data);
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error?.message ||
+          'No se pudo actualizar la sucursal principal',
+      );
     }
   },
 );
@@ -239,12 +275,26 @@ const personalizacionSlice = createSlice({
       .addCase(actualizarPersonalizacionThunk.fulfilled, (state, action) => {
         state.loading = false;
         state.error = undefined;
-        state.personalizacionUsuario = action.payload;
+        state.personalizacionUsuario = extractPersonalization(action.payload);
       })
       .addCase(actualizarPersonalizacionThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as any;
         toast.error((action.payload as any) || 'Error al actualizar personalización');
+      })
+      .addCase(actualizarSucursalPrincipalThunk.pending, (state) => {
+        state.loading = true;
+        state.error = undefined;
+      })
+      .addCase(actualizarSucursalPrincipalThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = undefined;
+        state.personalizacionUsuario = extractPersonalization(action.payload);
+      })
+      .addCase(actualizarSucursalPrincipalThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as any;
+        toast.error((action.payload as any) || 'No se pudo actualizar la sucursal principal');
       });
   },
 });
