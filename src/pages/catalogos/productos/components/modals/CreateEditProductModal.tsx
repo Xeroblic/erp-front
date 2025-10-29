@@ -234,6 +234,12 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 					submitForm,
 				}) => {
 					const isBusy = isLoading || isSubmitting;
+					const selectedBrandOption: TSelectOption | null = (
+						brandOptions.find((option) => String(option.value) === String(values.brand_id)) ??
+						(isEditMode && product?.brand
+							? { value: String(product.brand.id), label: product.brand.name }
+							: null)
+					);
 
 					return (
 						<Form id='productForm'>
@@ -342,13 +348,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 														<SelectReact
 															name='brand_id'
 															options={brandOptions}
-															value={
-																brandOptions.find(
-																	(option) =>
-																		String(option.value) ===
-																		String(values.brand_id),
-																) ?? null
-															}
+															value={selectedBrandOption}
 															onChange={(option) =>
 																setFieldValue(
 																	'brand_id',

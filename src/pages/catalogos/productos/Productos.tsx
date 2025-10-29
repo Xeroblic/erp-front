@@ -69,18 +69,6 @@ const Productos: React.FC = () => {
 		enabled: !!(currentUser?.id || (currentUser as any)?.pk),
 	});
 
-	const filteredBranches = useMemo(() => {
-		if (!accessibleBranches.length) return branches;
-		const allowed = new Set(accessibleBranches.map((branch) => branch.id));
-		return branches.filter((branch) => allowed.has(branch.id));
-	}, [branches, accessibleBranches]);
-
-	useEffect(() => {
-		if (!personalizacionInitialized) {
-			dispatch(obtenerPersonalizacionThunk());
-		}
-	}, [dispatch, personalizacionInitialized]);
-
 	const defaultBranchFromUser = useMemo(() => {
 		if (personalizacionUsuario?.sucursal_principal) {
 			return personalizacionUsuario.sucursal_principal;
@@ -93,6 +81,35 @@ const Productos: React.FC = () => {
 		currentUser?.branch?.id,
 		currentUser?.branch_id,
 	]);
+
+	const filteredBranches = useMemo(() => {
+		if (!accessibleBranches.length) return branches;
+		const allowed = new Set(accessibleBranches.map((branch) => branch.id));
+		return branches.filter((branch) => allowed.has(branch.id));
+	}, [branches, accessibleBranches]);
+
+	const currentBranch = useMemo(() => {
+		const targetBranchId = branchId ?? activeBranchId ?? defaultBranchFromUser ?? null;
+		if (!targetBranchId) return null;
+		const sources = [filteredBranches, branches];
+		for (const source of sources) {
+			const found = source.find((branch) => branch.id === targetBranchId);
+			if (found) return found;
+		}
+		return null;
+	}, [branchId, activeBranchId, defaultBranchFromUser, filteredBranches, branches]);
+
+	const currentBranchName =
+		currentBranch?.name ??
+		(currentBranch as any)?.branch_name ??
+		(currentBranch as any)?.branchName ??
+		undefined;
+
+	useEffect(() => {
+		if (!personalizacionInitialized) {
+			dispatch(obtenerPersonalizacionThunk());
+		}
+	}, [dispatch, personalizacionInitialized]);
 
 	useEffect(() => {
 		if (branchInitialized) return;
@@ -186,6 +203,10 @@ const Productos: React.FC = () => {
 	const handleResetFilters = () => {
 		setFilters(PRODUCT_DEFAULT_FILTERS);
 		setPage(1);
+	};
+
+	const handleShowCriticalInventory = () => {
+		setActiveTab('products');
 	};
 
 	const handleViewProduct = (product: IProduct) => {
@@ -290,7 +311,13 @@ const Productos: React.FC = () => {
 						/>
 					</Tab>
 					<Tab id='inventory' text='Inventario' icon='HeroBuildingStorefront'>
-						<InventoryTab />
+						<InventoryTab
+							products={products}
+							loading={loading}
+							branchName={currentBranchName}
+							onShowLowStock={handleShowCriticalInventory}
+							onViewProduct={handleViewProduct}
+						/>
 					</Tab>
 					<Tab id='analytics' text='Analisis' icon='HeroChartBarSquare'>
 						<AnalyticsTab />

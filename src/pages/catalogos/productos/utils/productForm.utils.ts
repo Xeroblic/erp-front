@@ -3,6 +3,7 @@ import type { ICategory } from '@/interface/category.interface';
 import type {
 	CreateProductPayload,
 	IProduct,
+	IProductBrandSummary,
 	ProductStatus,
 	ProductType,
 	UpdateProductPayload,
@@ -26,7 +27,9 @@ const toOption = (value: number | string, label: string): ProductOption => ({
 	label,
 });
 
-export const createBrandOptions = (brands: IBrand[]): ProductOption[] =>
+type BrandOptionSource = Pick<IBrand, 'id' | 'name'> | IProductBrandSummary;
+
+export const createBrandOptions = (brands: BrandOptionSource[]): ProductOption[] =>
 	brands.map((brand) => toOption(brand.id, brand.name));
 
 export const createCategoryOptions = (categories: ICategory[]): ProductOption[] =>

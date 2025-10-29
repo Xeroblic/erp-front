@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
 	fetchProducts,
-	fetchProductsFromMultipleBranches,
 	createProduct as createProductThunk,
 	updateProduct as updateProductThunk,
 	deleteProduct as deleteProductThunk,
@@ -66,18 +65,15 @@ export function useProductos({ branchId, filters, page = 1, perPage = 15 }: UseP
 		return branches[0]?.id ?? null;
 	}, [branchId, branches]);
 
-	const userBranchIds = useMemo(() => branches.map(b => b.id), [branches]);
-
 	useEffect(() => {
-		if (activeBranchId === null && userBranchIds.length > 0) {
-			void dispatch(fetchProductsFromMultipleBranches({
-				branchIds: userBranchIds,
-				params: { ...filters, page, per_page: perPage }
-			}));
-		} else if (activeBranchId) {
-			void dispatch(fetchProducts({ branchId: activeBranchId, params: { ...filters, page, per_page: perPage } }));
-		}
-	}, [dispatch, activeBranchId, userBranchIds, filters, page, perPage]);
+		if (!activeBranchId) return;
+		void dispatch(
+			fetchProducts({
+				branchId: activeBranchId,
+				params: { ...filters, page, per_page: perPage },
+			}),
+		);
+	}, [dispatch, activeBranchId, filters, page, perPage]);
 
 	useEffect(() => {
 		if (!activeBranchId) return;
@@ -91,15 +87,14 @@ export function useProductos({ branchId, filters, page = 1, perPage = 15 }: UseP
 	}, [dispatch, categoriesState.items.length, categoriesState.loading]);
 
 	const refresh = useCallback(() => {
-		if (activeBranchId === null && userBranchIds.length > 0) {
-			void dispatch(fetchProductsFromMultipleBranches({
-				branchIds: userBranchIds,
-				params: { ...filters, page, per_page: perPage }
-			}));
-		} else if (activeBranchId) {
-			void dispatch(fetchProducts({ branchId: activeBranchId, params: { ...filters, page, per_page: perPage } }));
-		}
-	}, [dispatch, activeBranchId, userBranchIds, filters, page, perPage]);
+		if (!activeBranchId) return;
+		void dispatch(
+			fetchProducts({
+				branchId: activeBranchId,
+				params: { ...filters, page, per_page: perPage },
+			}),
+		);
+	}, [dispatch, activeBranchId, filters, page, perPage]);
 
 	const createProduct = useCallback(
 		async (payload: { data: Partial<IProduct>; categoryIds: number[] }) => {
