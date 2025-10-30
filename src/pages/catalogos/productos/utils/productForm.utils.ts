@@ -159,10 +159,14 @@ export const buildDetailUpdatePayload = (
 	if (parseNumberOrNull(product.price) !== nextPrice && typeof nextPrice === 'number') {
 		payload.price = nextPrice;
 	}
+	const currentPriceSnapshot = parseNumberOrNull(product.price);
 
 	const nextOffer = parseNumberOrNull(form.offer_price);
 	if (parseNumberOrNull(product.offer_price) !== nextOffer) {
 		payload.offer_price = nextOffer ?? null;
+		if (payload.price === undefined && typeof currentPriceSnapshot === 'number') {
+			payload.price = currentPriceSnapshot;
+		}
 	}
 	const nextCost = parseNumberOrNull(form.cost);
 	if (parseNumberOrNull(product.cost) !== nextCost) {
