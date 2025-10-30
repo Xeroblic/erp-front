@@ -166,7 +166,13 @@ const Perfil = () => {
 
 			// 1) Intentar leer comuna desde userData en múltiples formas
 			const anyUser: any = userData as any;
-			const foundId = anyUser?.comuna ?? anyUser?.comuna_id ?? anyUser?.commune?.id ?? anyUser?.commune?.pk ?? anyUser?.commune_id ?? null;
+			const foundId =
+				anyUser?.comuna ??
+				anyUser?.comuna_id ??
+				anyUser?.commune?.id ??
+				anyUser?.commune?.pk ??
+				anyUser?.commune_id ??
+				null;
 			if (foundId) {
 				console.debug('[Perfil] preselecting comuna from userData', foundId);
 				if (mounted) formik.setFieldValue('comuna', String(foundId), false);
@@ -178,7 +184,8 @@ const Perfil = () => {
 				console.debug('[Perfil] no comuna en userData, fetching /perfil as fallback');
 				const full = await ApiService.fetchData<any>({ url: '/perfil', method: 'get' });
 				const payload = full.data?.data ?? full.data?.user ?? full.data ?? null;
-				const remoteId = payload?.comuna_id ?? payload?.comune?.id ?? payload?.commune?.id ?? null;
+				const remoteId =
+					payload?.comuna_id ?? payload?.comune?.id ?? payload?.commune?.id ?? null;
 				if (mounted && remoteId) {
 					console.debug('[Perfil] found comuna in /perfil response', remoteId);
 					formik.setFieldValue('comuna', String(remoteId), false);
