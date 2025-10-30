@@ -97,11 +97,9 @@ export const ProductDetailTabs: React.FC<ProductDetailTabsProps> = ({
 		}
 	};
 
-	// When product type is explicitly 'general', hide the atributos tab
 	const showAtributos = !!(product && product.product_type && product.product_type !== 'general');
 	const visibleTabs = TABS_CONFIG.filter((t) => (t.id === 'atributos' ? showAtributos : true));
 
-	// If the currently activeTab was 'atributos' but atributos is hidden, pick the first visible tab
 	const effectiveActiveTab = visibleTabs.find((t) => t.id === activeTab)
 		? activeTab
 		: visibleTabs[0]?.id || activeTab;

@@ -155,6 +155,44 @@ const Perfil = () => {
 		setOptionsComuna(geo.optionsComuna);
 	}, [geo.optionsRegion, geo.optionsProvincia, geo.optionsComuna]);
 
+	// Fallback: intentar usar los datos ya cargados en `userData` para setear
+	// `comuna` en el form. Si no existe, re-consultamos `/perfil` (el endpoint
+	// que devuelve la estructura completa) en vez de un endpoint inexistente.
+	useEffect(() => {
+		let mounted = true;
+		async function trySetFromUserOrRefresh() {
+			if (!userData) return;
+			if (formik.values.comuna) return; // ya tiene valor
+
+			// 1) Intentar leer comuna desde userData en múltiples formas
+			const anyUser: any = userData as any;
+			const foundId = anyUser?.comuna ?? anyUser?.comuna_id ?? anyUser?.commune?.id ?? anyUser?.commune?.pk ?? anyUser?.commune_id ?? null;
+			if (foundId) {
+				console.debug('[Perfil] preselecting comuna from userData', foundId);
+				if (mounted) formik.setFieldValue('comuna', String(foundId), false);
+				return;
+			}
+
+			// 2) Si no hay info en userData, re-consultar `/perfil` para obtener la versión completa
+			try {
+				console.debug('[Perfil] no comuna en userData, fetching /perfil as fallback');
+				const full = await ApiService.fetchData<any>({ url: '/perfil', method: 'get' });
+				const payload = full.data?.data ?? full.data?.user ?? full.data ?? null;
+				const remoteId = payload?.comuna_id ?? payload?.comune?.id ?? payload?.commune?.id ?? null;
+				if (mounted && remoteId) {
+					console.debug('[Perfil] found comuna in /perfil response', remoteId);
+					formik.setFieldValue('comuna', String(remoteId), false);
+				}
+			} catch (err) {
+				console.debug('[Perfil] fetching /perfil fallback failed', err);
+			}
+		}
+		trySetFromUserOrRefresh();
+		return () => {
+			mounted = false;
+		};
+	}, [userData, formik.values.comuna]);
+
 	useProfileTheme(formik as any, darkMode, setDarkModeStatus);
 
 	const { saveBtnText, saveBtnColor, saveBtnDisable } = useSaveBtn({
