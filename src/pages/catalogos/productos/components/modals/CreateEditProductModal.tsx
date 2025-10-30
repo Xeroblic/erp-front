@@ -349,16 +349,21 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 															name='brand_id'
 															options={brandOptions}
 															value={selectedBrandOption}
-															onChange={(option) =>
-																setFieldValue(
+															onChange={(option) => {
+																if (Array.isArray(option)) {
+																	void setFieldValue('brand_id', '');
+																	return;
+																}
+																const singleOption = (option ??
+																	null) as TSelectOption | null;
+																void setFieldValue(
 																	'brand_id',
-																	(option as TSelectOption | null)
-																		?.value ?? '',
-																)
-															}
-															onBlur={() =>
-																setFieldTouched('brand_id', true)
-															}
+																	singleOption?.value ?? '',
+																);
+															}}
+															onBlur={() => {
+																void setFieldTouched('brand_id', true);
+															}}
 															placeholder={
 																brandsLoading
 																	? 'Cargando marcas...'
@@ -444,21 +449,23 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 																	label: option.label,
 																}),
 															)}
-															onChange={(option) =>
-																setFieldValue(
+															onChange={(option) => {
+																const nextOptions = Array.isArray(option)
+																	? option
+																	: option
+																	? [option]
+																	: [];
+																void setFieldValue(
 																	'categories',
-																	(
-																		(option as TSelectOption[]) ??
-																		[]
-																	).map((item) => ({
+																	nextOptions.map((item) => ({
 																		value: item.value,
 																		label: item.label,
 																	})),
-																)
-															}
-															onBlur={() =>
-																setFieldTouched('categories', true)
-															}
+																);
+															}}
+															onBlur={() => {
+																void setFieldTouched('categories', true);
+															}}
 															isDisabled={
 																isBusy || !categoryOptions.length
 															}

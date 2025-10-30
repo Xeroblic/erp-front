@@ -1,13 +1,16 @@
-import React, { FC } from 'react';
+import React, { FC, ReactNode, FocusEventHandler } from 'react';
 import ReactSelect, {
+  ActionMeta,
   ClassNamesConfig,
   ControlProps,
   GroupBase,
+  StylesConfig,
   MultiValueProps,
   MultiValueRemoveProps,
   OptionProps,
   SingleValue,
   MultiValue,
+  FormatOptionLabelMeta,
 } from 'react-select';
 import { PublicBaseSelectProps } from 'react-select/base';
 import classNames from 'classnames';
@@ -57,12 +60,35 @@ interface ISelectReactProps extends TReactSelect, Partial<IValidationBaseProps> 
   className?: string;
   color?: TColors;
   colorIntensity?: TColorIntensity;
+  id?: string;
+  inputId?: string;
   name: string;
   rounded?: TRounded;
   dimension?: TSelectDimension;
   variant?: TSelectVariant;
   disabled?: boolean;
+  isDisabled?: boolean;
   isCreatable?: boolean;
+  noOptionsMessage?: (obj: { inputValue: string }) => ReactNode;
+  options?: TSelectOptions | TSelectGroups;
+  value?: TSelectOption | readonly TSelectOption[] | null;
+  onChange?: (
+    newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption> | null,
+    actionMeta?: ActionMeta<TSelectOption>,
+  ) => void;
+  isMulti?: boolean;
+  onBlur?: FocusEventHandler<HTMLInputElement>;
+  placeholder?: string;
+  menuPortalTarget?: HTMLElement | null;
+  styles?: StylesConfig<TSelectOption, boolean, GroupBase<TSelectOption>> | undefined;
+  isClearable?: boolean;
+  isLoading?: boolean;
+  isSearchable?: boolean;
+  formatOptionLabel?: (
+    data: TSelectOption,
+    formatOptionLabelMeta: FormatOptionLabelMeta<TSelectOption>,
+  ) => ReactNode;
+  formatGroupLabel?: (group: GroupBase<TSelectOption>) => ReactNode;
 }
 
 const SelectReact: FC<ISelectReactProps> = (props) => {
@@ -78,15 +104,18 @@ const SelectReact: FC<ISelectReactProps> = (props) => {
     rounded = themeConfig.rounded,
     dimension = 'default',
     validFeedback,
-    variant = 'solid',
-    isValid,
-    isTouched,
-    invalidFeedback,
-    disabled = false,
-    isCreatable = false,
-    isMulti = false,
-    ...rest
-  } = props;
+  variant = 'solid',
+  isValid,
+  isTouched,
+  invalidFeedback,
+  disabled = false,
+  isCreatable = false,
+  isMulti = false,
+  id,
+  inputId,
+  isDisabled: isDisabledProp,
+  ...rest
+} = props;
 
   const { textColor } = useColorIntensity(colorIntensity);
 
@@ -156,8 +185,11 @@ const SelectReact: FC<ISelectReactProps> = (props) => {
     }
   };
 
+  const computedIsDisabled = disabled || Boolean(isDisabledProp);
+
   const reactSelectProps = {
-    inputId: rest.id || name,
+    inputId: inputId ?? id ?? name,
+    id,
     'data-component-name': 'Select',
     unstyled: true,
     classNames: {
@@ -183,7 +215,10 @@ const SelectReact: FC<ISelectReactProps> = (props) => {
           'opacity-50': state?.data?.isDisabled,
         }),
       menu: () =>
-        classNames('bg-white dark:bg-black overflow-hidden shadow-lg', [`${rounded}`]),
+        classNames(
+          'bg-white dark:bg-black overflow-hidden shadow-lg z-[1000]',
+          [`${rounded}`],
+        ),
       group: () => classNames('border-zinc-500/25', '[&:not(:last-child)]:border-b'),
       groupHeading: () => classNames('font-semibold', 'px-1.5', 'pt-1.5', 'pb-0.5'),
       placeholder: () => classNames('text-black/50', 'dark:text-white/50'),
@@ -205,7 +240,7 @@ const SelectReact: FC<ISelectReactProps> = (props) => {
           'opacity-50 pointer-events-none': state?.data?.isDisabled,
         }),
     } as ClassNamesConfig<TSelectOption, boolean, GroupBase<TSelectOption>>,
-    isDisabled: disabled || rest?.isDisabled,
+    isDisabled: computedIsDisabled,
     isMulti,
     onChange: handleChange,
     ...rest,

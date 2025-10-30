@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import SelectReact, { TSelectGroups, TSelectOption } from '@/components/form/SelectReact';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
@@ -7,21 +7,40 @@ import {
 	obtenerPersonalizacionThunk,
 	actualizarSucursalPrincipalThunk,
 } from '@/store/slices/personalizacion/personalizacionSlice';
-import { useUserBranches } from '@/pages/catalogos/productos/components/modals/hooks/userBranch';
+import { useUserBranches, type UserBranch } from '@/pages/catalogos/productos/components/modals/hooks/userBranch';
 import { toast } from 'react-toastify';
 import ApiService from '@/services/ApiService';
+import Icon from '@/components/icon/Icon';
+import { GroupBase,} from 'react-select';
 
-function SelectSucursalEmpresa() {
+type BranchOptionMeta = {
+	branch: UserBranch;
+	isPreferred: boolean;
+};
+
+type BranchOption = TSelectOption & {
+	meta?: BranchOptionMeta;
+};
+
+const FALLBACK_GROUP_LABEL = 'Sucursales';
+
+const buildGroupLabel = (branch: UserBranch): string => {
+	if (branch.subsidiaryName) return branch.subsidiaryName;
+	if (branch.companyName) return branch.companyName;
+	return FALLBACK_GROUP_LABEL;
+};
+
+const SelectSucursalEmpresa = () => {
 	const dispatch = useAppDispatch();
 	const { user } = useAppSelector((state) => state.auth);
 	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
 	const personalizacionInitialized = useAppSelector(selectPersonalizacionInitialized);
 
-	const userId = user?.id || (user as any)?.pk || null;
+	const userId = user?.id ?? (user as any)?.pk ?? null;
 
 	useEffect(() => {
 		if (!personalizacionInitialized) {
-			dispatch(obtenerPersonalizacionThunk());
+			void dispatch(obtenerPersonalizacionThunk());
 		}
 	}, [dispatch, personalizacionInitialized]);
 
@@ -29,7 +48,7 @@ function SelectSucursalEmpresa() {
 		branches,
 		loading: branchesLoading,
 		error: branchesError,
-	} = useUserBranches(userId ?? undefined, { enabled: !!userId });
+	} = useUserBranches(userId ?? undefined, { enabled: Boolean(userId) });
 
 	const preferredBranchId = useMemo(() => {
 		if (personalizacionUsuario?.sucursal_principal) {
@@ -40,20 +59,39 @@ function SelectSucursalEmpresa() {
 		return null;
 	}, [personalizacionUsuario?.sucursal_principal, user?.branch?.id, user?.branch_id]);
 
-	const [selectedSucursal, setSelectedSucursal] = useState<TSelectOption | null>(null);
+	const [selectedSucursal, setSelectedSucursal] = useState<BranchOption | null>(null);
 
-	const optionsEmpresas = useMemo<TSelectGroups>(() => {
+	const groupedOptions = useMemo<TSelectGroups>(() => {
 		if (!branches.length) return [];
-		return [
-			{
-				label: 'Sucursales',
-				options: branches.map((branch) => ({
-					value: String(branch.id),
-					label: branch.name ?? `Sucursal ${branch.id}`,
-				})),
-			},
-		];
-	}, [branches]);
+
+		const groups = new Map<string, BranchOption[]>();
+
+		branches.forEach((branch) => {
+			const groupLabel = buildGroupLabel(branch);
+
+			const option: BranchOption = {
+				value: String(branch.id),
+				label: branch.name ?? `Sucursal ${branch.id}`,
+				meta: {
+					branch,
+					isPreferred:
+						preferredBranchId !== null && branch.id === preferredBranchId,
+				},
+			};
+
+			if (!groups.has(groupLabel)) {
+				groups.set(groupLabel, []);
+			}
+			groups.get(groupLabel)?.push(option);
+		});
+
+		return Array.from(groups.entries())
+			.sort(([a], [b]) => a.localeCompare(b))
+			.map(([label, options]) => ({
+				label,
+				options: options.sort((a, b) => a.label.localeCompare(b.label)),
+			})) as TSelectGroups;
+	}, [branches, preferredBranchId]);
 
 	useEffect(() => {
 		if (!branches.length) {
@@ -62,66 +100,161 @@ function SelectSucursalEmpresa() {
 		}
 
 		if (preferredBranchId == null) {
-			const firstOption = optionsEmpresas[0]?.options?.[0] ?? null;
+			const firstOption = groupedOptions[0]?.options?.[0] as BranchOption | undefined;
 			setSelectedSucursal(firstOption ?? null);
 			return;
 		}
 
-		const match = optionsEmpresas
+		const match = groupedOptions
 			.flatMap((group) => group.options)
-			.find((option) => Number(option.value) === Number(preferredBranchId));
+			.find((option) => Number(option.value) === Number(preferredBranchId)) as
+			| BranchOption
+			| undefined;
 
 		setSelectedSucursal(match ?? null);
-	}, [branches, optionsEmpresas, preferredBranchId]);
+	}, [branches, groupedOptions, preferredBranchId]);
 
-	const handleChange = async (option: TSelectOption | null) => {
-		setSelectedSucursal(option);
-		const nextBranchId = option ? Number(option.value) : null;
-		if (nextBranchId === preferredBranchId || nextBranchId === null) return;
-		try {
-			await dispatch(actualizarSucursalPrincipalThunk(nextBranchId)).unwrap();
-			const companyId = personalizacionUsuario?.company_id ?? user?.company?.id;
-			if (companyId) {
-				try {
-					await ApiService.fetchData({
-						url: '/user/switch-company',
-						method: 'post',
-						data: { company_id: companyId },
-					});
-				} catch (err) {
-					console.warn('switch-company fallback failed:', err);
+	const handleChange = useCallback(
+		async (option: BranchOption | null) => {
+			setSelectedSucursal(option);
+			const nextBranchId = option ? Number(option.value) : null;
+			if (nextBranchId === preferredBranchId || nextBranchId === null) return;
+
+			try {
+				await dispatch(actualizarSucursalPrincipalThunk(nextBranchId)).unwrap();
+				const companyId = personalizacionUsuario?.company_id ?? user?.company?.id;
+				if (companyId) {
+					try {
+						await ApiService.fetchData({
+							url: '/user/switch-company',
+							method: 'post',
+							data: { company_id: companyId },
+						});
+					} catch (err) {
+						console.warn('switch-company fallback failed:', err);
+					}
 				}
+
+				window.dispatchEvent(
+					new CustomEvent('user-branch-changed', {
+						detail: { branchId: nextBranchId },
+					}),
+				);
+				toast.success('Sucursal principal actualizada');
+			} catch (error: any) {
+				toast.error(error?.message ?? 'No se pudo actualizar la sucursal principal');
 			}
-			window.dispatchEvent(
-				new CustomEvent('user-branch-changed', {
-					detail: { branchId: nextBranchId },
-				}),
-			);
-			toast.success('Sucursal principal actualizada');
-		} catch (error: any) {
-			toast.error(error?.message ?? 'No se pudo actualizar la sucursal principal');
-		}
-	};
+		},
+		[
+			dispatch,
+			personalizacionUsuario?.company_id,
+			preferredBranchId,
+			user?.company?.id,
+		],
+	);
+
+	const formatOptionLabel = useCallback((option: BranchOption) => {
+		const branchMeta = option.meta?.branch;
+		const isPreferred = option.meta?.isPreferred ?? false;
+
+		const displayName = branchMeta?.name ?? option.label;
+		const displaySubsidiary = branchMeta?.subsidiaryName ?? null;
+		const displayCity = branchMeta?.city ?? null;
+
+		return (
+			<div className='flex items-center gap-3'>
+				<span className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300'>
+					<Icon icon='HeroBuildingOffice2' className='h-4 w-4' />
+				</span>
+				<div className='flex flex-col'>
+					<span className='font-medium text-neutral-800 dark:text-neutral-50'>
+						{displayName}
+					</span>
+					<div className='flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400'>
+						{displaySubsidiary && <span>{displaySubsidiary}</span>}
+						{displayCity && (
+							<>
+								<span aria-hidden='true' className='text-neutral-400'>&middot;</span>
+								<span>{displayCity}</span>
+							</>
+						)}
+						{isPreferred && (
+							<>
+								<span aria-hidden='true' className='text-neutral-400'>&middot;</span>
+								<span className='flex items-center gap-1 text-emerald-500'>
+									<Icon icon='HeroStar' className='h-3.5 w-3.5' />
+									<span>Preferida</span>
+								</span>
+							</>
+						)}
+					</div>
+				</div>
+			</div>
+		);
+	}, []);
+
+	const formatGroupLabel = useCallback(
+		(group: GroupBase<TSelectOption>) => (
+			<div className='flex items-center justify-between px-2 py-1 text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400'>
+				<span className='flex items-center gap-2'>
+					<Icon icon='HeroBuildingStorefront' className='h-4 w-4 text-neutral-400' />
+					{group.label ?? FALLBACK_GROUP_LABEL}
+				</span>
+			</div>
+		),
+		[],
+	);
+
+	const selectPortalTarget = useMemo(() => {
+		if (typeof document === 'undefined') return undefined;
+		return document.body;
+	}, []);
 
 	return (
-		<div className='w-[20vw]'>
+		<div className='min-w-[260px] max-w-xs space-y-1'>
 			<SelectReact
-				className='w-full'
+				className='w-full branch-selector'
 				noOptionsMessage={() => (branchesError ? 'Error al cargar' : 'Sin Opciones')}
-				placeholder='Selecciona la sucursal'
+				placeholder={
+					branchesLoading
+						? 'Cargando sucursales...'
+						: !groupedOptions.length
+						? 'Sin sucursales disponibles'
+						: 'Selecciona una sucursal'
+				}
 				dimension='sm'
 				name='select_empresa'
 				isLoading={branchesLoading}
 				isDisabled={branchesLoading || !!branchesError}
-				value={selectedSucursal}
-				options={optionsEmpresas}
-				onChange={(option) => handleChange((option as TSelectOption) ?? null)}
+				isClearable={false}
+				isSearchable
+				value={selectedSucursal as TSelectOption | null}
+				options={groupedOptions}
+				formatOptionLabel={(option: TSelectOption) => formatOptionLabel(option as BranchOption)}
+				formatGroupLabel={formatGroupLabel}
+				onChange={(option) => {
+					if (Array.isArray(option)) {
+						void handleChange(null);
+						return;
+					}
+					void handleChange((option as BranchOption) ?? null);
+				}}
+				menuPortalTarget={selectPortalTarget}
+				styles={{
+					menuPortal: (base) => ({
+						...base,
+						zIndex: 1200,
+					}),
+				}}
 			/>
 			{branchesError && (
-				<p className='mt-1 text-xs text-red-500'>{branchesError}</p>
+				<p className='mt-1 text-xs text-red-500' role='alert'>
+					{branchesError}
+				</p>
 			)}
 		</div>
 	);
-}
+};
 
 export default SelectSucursalEmpresa;
+

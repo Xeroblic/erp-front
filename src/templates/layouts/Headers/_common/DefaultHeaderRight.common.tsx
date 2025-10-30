@@ -11,7 +11,7 @@ const DefaultHeaderRightCommon = () => {
 			{/* <MessagesPartial /> */}
 			<NotificationPartial />
 			<SelectSucursalEmpresa />
-			<CompanySelectorButton />
+			{/* <CompanySelectorButton /> */}
 			<SettingsPartial />
 			{/* <LanguageSelectorPartial /> */}
 		</>

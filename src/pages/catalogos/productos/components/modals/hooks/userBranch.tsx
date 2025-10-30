@@ -8,6 +8,11 @@ import ApiService from '@/services/ApiService';
 export interface UserBranch {
 	id: number;
 	name: string;
+	subsidiaryId?: number | null;
+	subsidiaryName?: string | null;
+	companyId?: number | null;
+	companyName?: string | null;
+	city?: string | null;
 }
 
 /**
@@ -109,10 +114,55 @@ export const useUserBranches = (
 			const rawBranches = userData.access?.branches || [];
 
 			// Mapear a la estructura simplificada
-			const normalizedBranches: UserBranch[] = rawBranches.map((branch) => ({
-				id: branch.id,
-				name: branch.name || branch.branch_name || `Branch ${branch.id}`,
-			}));
+			const normalizedBranches: UserBranch[] = rawBranches.map((branch) => {
+				const subsidiary =
+					(branch as any)?.subsidiary ??
+					(branch as any)?.subsidiary_info ??
+					(branch as any)?.subsidiary_id ??
+					null;
+				const company = (branch as any)?.company ?? null;
+
+				const subsidiaryId =
+					typeof subsidiary === 'object'
+						? subsidiary?.id ?? null
+						: typeof subsidiary === 'number'
+							? subsidiary
+							: null;
+
+				const subsidiaryName =
+					typeof subsidiary === 'object'
+						? subsidiary?.name ??
+							subsidiary?.subsidiary_name ??
+							subsidiary?.branch_name ??
+							null
+						: (branch as any)?.subsidiary_name ?? null;
+
+				const companyId =
+					typeof company === 'object'
+						? company?.id ?? null
+						: typeof company === 'number'
+							? company
+							: null;
+
+				const companyName =
+					typeof company === 'object'
+						? company?.name ?? company?.company_name ?? null
+						: (branch as any)?.company_name ?? null;
+
+				return {
+					id: branch.id,
+					name: branch.name || branch.branch_name || `Branch ${branch.id}`,
+					subsidiaryId,
+					subsidiaryName,
+					companyId,
+					companyName,
+					city:
+						(branch as any)?.city ??
+						(branch as any)?.city_name ??
+						(branch as any)?.location ??
+						null,
+				};
+			});
 
 			setState({
 				branches: normalizedBranches,
