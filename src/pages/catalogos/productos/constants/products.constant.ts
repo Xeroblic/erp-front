@@ -1,6 +1,6 @@
 import type { ProductFilters, ProductStatus, ProductType } from '@/interface/product.interface';
 
-export const PRODUCT_STATUS = ['pending', 'validated', 'archived'] as const;
+export const PRODUCT_STATUS = ['pending', 'validated', 'rejected', 'archived'] as const;
 
 export const PRODUCT_TYPES = [
 	'general',
@@ -13,6 +13,7 @@ export const PRODUCT_TYPES = [
 export const PRODUCT_STATUS_LABELS: Record<string, string> = {
 	pending: 'Pendiente',
 	validated: 'Validado',
+	rejected: 'Rechazado',
 	archived: 'Archivado',
 };
 

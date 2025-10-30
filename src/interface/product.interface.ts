@@ -5,7 +5,7 @@ export type ProductType =
 	| 'monitor'
 	| string;
 export type ProductConditionPolicy = 'NEW' | 'USED' | 'REFURBISHED' | 'DAMAGED' | string;
-export type ProductStatus = 'pending' | 'validated' | 'archived' | string;
+export type ProductStatus = 'pending' | 'validated' | 'rejected' | 'archived' | string;
 
 export interface IProductBrandSummary {
 	id: number;

@@ -201,11 +201,27 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 						treatEmptyStringAsMissing: true,
 					}) as any;
 
-					// Display logic:
-					// - Si faltan atributos -> En revisión
-					// - Si atributos completos pero no publicado -> Pendiente
-					// - Si product_status === 'validated' -> Publicado
 					const isPublished = product.product_status === 'validated';
+					const isRejected = product.product_status === 'rejected';
+
+					if (isRejected) {
+						return (
+							<div className='flex flex-col gap-1.5'>
+								<div>
+									<Badge color='red'>Rechazado</Badge>
+									{!attributesComplete ? (
+										<div className='mt-1 text-xs text-neutral-500'>
+											{missingCount} atributos incompletos
+										</div>
+									) : (
+										<div className='text-xs text-neutral-500'>
+											Revisar observaciones
+										</div>
+									)}
+								</div>
+							</div>
+						);
+					}
 
 					return (
 						<div className='flex flex-col gap-1.5'>
@@ -396,7 +412,6 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 					</table>
 				</div>
 
-				{/* Footer con paginación info */}
 				<div className='flex items-center justify-between border-t border-zinc-200 px-6 py-3 dark:border-zinc-800'>
 					<div className='text-xs text-zinc-500'>
 						Mostrando{' '}

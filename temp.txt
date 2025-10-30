@@ -52,7 +52,7 @@ const DynamicAttributesEditor: React.FC<{
 	useEffect(() => {
 		if (!product) return;
 		if (attributesComplete) {
-			// if product is already validated or pending, no-op
+			// if product is already validated, pending or explicitly rechazado, no-op
 			if (
 				product.product_status === 'validated' ||
 				product.product_status === 'pending' ||
@@ -82,16 +82,7 @@ const DynamicAttributesEditor: React.FC<{
 			{/* Estado y acciones de publicación */}
 			<div className='flex items-center justify-between gap-4'>
 				<div>
-					{product && product.product_status === 'rejected' ? (
-						<div className='flex items-center gap-3'>
-							<Badge color='red'>Rechazado</Badge>
-							{!attributesComplete && (
-								<span className='text-sm text-neutral-500'>
-									{missingCount} atributos incompletos
-								</span>
-							)}
-						</div>
-					) : !attributesComplete ? (
+					{!attributesComplete ? (
 						<div className='flex items-center gap-3'>
 							<Badge color='amber'>En revisión</Badge>
 							<span className='text-sm text-neutral-500'>
