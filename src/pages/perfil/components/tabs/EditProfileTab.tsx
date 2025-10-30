@@ -1,3 +1,5 @@
+import { useCallback, useRef, useState } from 'react';
+import classNames from 'classnames';
 import Label from '@/components/form/Label';
 import Input from '@/components/form/Input';
 import DateInput from '@/components/form/DateInput';
@@ -20,86 +22,211 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 	const avatarName =
 		[formik.values.first_name, formik.values.last_name].filter(Boolean).join(' ') || 'Usuario';
 
-		const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-			const file = event.target.files?.[0];
-			if (!file) return;
-		
+	const [isDraggingFile, setIsDraggingFile] = useState(false);
+	const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+	const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+	const compressAndUpload = useCallback(
+		async (file: File) => {
 			try {
-				// 🧽 Paso 1: compresión base con menos calidad y resolución
 				const compressed = await imageCompression(file, {
-					maxSizeMB: 0.3, // 300 KB máximo
-					maxWidthOrHeight: 400, // resolución aún más baja
+					maxSizeMB: 0.3,
+					maxWidthOrHeight: 400,
 					useWebWorker: true,
-					initialQuality: 0.4, // súper comprimido
+					initialQuality: 0.4,
 				});
-		
-				// 🔄 Paso 2: convertir a WebP de nuevo con compresión extra
+
 				const bitmap = await createImageBitmap(compressed);
 				const canvas = document.createElement('canvas');
-		
-				// ajustar tamaño para que no se pase de resolución
+
 				canvas.width = Math.min(bitmap.width, 400);
 				canvas.height = Math.min(bitmap.height, 400);
-		
+
 				const ctx = canvas.getContext('2d');
 				ctx?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-		
+
 				const blob = await new Promise<Blob>((resolve, reject) => {
 					canvas.toBlob(
-						(b) => (b ? resolve(b) : reject('No se pudo generar el blob')),
+						(b) => (b ? resolve(b) : reject(new Error('No se pudo generar el blob'))),
 						'image/webp',
-						0.5 // calidad final 50%
+						0.5,
 					);
 				});
-		
+
 				const webpFile = new File([blob], 'avatar.webp', { type: 'image/webp' });
-		
-				console.log('✅ Archivo final:', webpFile.name, webpFile.size / 1024, 'KB');
-		
+
 				await onAvatarUpload(webpFile);
-				event.target.value = '';
-				toast.success('Avatar comprimido y subido correctamente 🚀');
+				toast.success('Avatar comprimido y subido correctamente');
 			} catch (error) {
-				console.error('Error al comprimir la imagen:', error);
-				toast.error('Error al comprimir la imagen 😭');
+				toast.error('Error al comprimir la imagen');
 			}
-		};
-		
+		},
+		[onAvatarUpload],
+	);
+
+	const openFilePicker = useCallback(() => {
+		fileInputRef.current?.click();
+	}, []);
+
+	const handleFileUpload = useCallback(
+		async (event: React.ChangeEvent<HTMLInputElement>) => {
+			const file = event.target.files?.[0];
+			if (!file) return;
+
+			await compressAndUpload(file);
+			event.target.value = '';
+		},
+		[compressAndUpload],
+	);
+
+	const handleDrop = useCallback(
+		async (event: React.DragEvent<HTMLDivElement>) => {
+			event.preventDefault();
+			setIsDraggingFile(false);
+
+			const file = event.dataTransfer.files?.[0];
+			if (file) {
+				await compressAndUpload(file);
+			}
+		},
+		[compressAndUpload],
+	);
+
+	const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+		event.preventDefault();
+		event.dataTransfer.dropEffect = 'copy';
+		setIsDraggingFile(true);
+	}, []);
+
+	const handleDragLeave = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+		event.preventDefault();
+
+		const related = event.relatedTarget as Node | null;
+		if (related && event.currentTarget.contains(related)) return;
+
+		setIsDraggingFile(false);
+	}, []);
+
+	const handleDragEnter = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+		event.preventDefault();
+		setIsDraggingFile(true);
+	}, []);
+
+	const dropZoneClassName = classNames(
+		'flex w-full sm:w-[320px] flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-6 text-center transition-all cursor-pointer',
+		'focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 dark:focus:ring-offset-neutral-900',
+		isDraggingFile
+			? 'border-primary bg-primary/10 text-primary'
+			: 'border-neutral-300 bg-white/60 text-neutral-600 hover:border-primary hover:bg-primary/5 dark:border-neutral-700 dark:bg-neutral-900/60 dark:text-neutral-300',
+	);
 
 	return (
 		<>
 			<div className='text-4xl font-semibold'>Editar Perfil</div>
-			<div className='flex flex-col sm:flex-row items-center gap-6 w-full'>
-				<div className='relative group'>
-					<Avatar
-						src={avatarUrl ?? undefined}
-						name={avatarName}
-						className='h-28 w-28 border-4 border-primary/40 rounded-full shadow-lg transition-transform group-hover:scale-105 group-hover:border-primary'
-					/>
-					<label
-						htmlFor='fileUpload'
-						className='absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer'>
-						<Icon icon='HeroCamera' className='text-white text-3xl' />
-					</label>
+			<div className='flex w-full flex-col items-center gap-6 sm:flex-row'>
+				<div
+					role='button'
+					tabIndex={0}
+					aria-label='Ver avatar'
+					onClick={() => setIsPreviewOpen(true)}
+					onKeyDown={(event) => {
+						if (event.key === 'Enter' || event.key === ' ') {
+							event.preventDefault();
+							setIsPreviewOpen(true);
+						}
+					}}
+					className='group relative inline-flex h-28 w-28 cursor-pointer items-center justify-center'>
+					<div className='absolute inset-0 overflow-hidden rounded-full transition-transform duration-200 ease-out group-hover:scale-110'>
+						<Avatar
+							src={avatarUrl ?? undefined}
+							name={avatarName}
+							className='border-primary/40 group-hover:border-primary h-full w-full rounded-full border-4 shadow-lg transition-colors duration-200 ease-out'
+						/>
+					</div>
+					<span className='group-hover:border-primary absolute inset-0 rounded-full border-4 border-transparent transition-colors duration-200' />
+					<span className='absolute inset-0 rounded-full bg-black/50 opacity-0 transition-opacity duration-200 group-hover:opacity-100' />
+					<Icon icon='HeroMagnifyingGlassPlus' className='relative text-3xl text-white' />
 				</div>
 
-				<div className='w-full sm:w-auto'>
-					<p className='text-sm text-gray-500 mb-2'>
-						Puedes subir cualquier archivo (se convertirá a WebP y comprimirá automáticamente)
+				<div className='w-full'>
+					<p className='mb-3 max-w-sm text-sm text-gray-500'>
+						Arrastra una imagen o selecciona un archivo desde tu computador. Se
+						convertirá a WebP y se comprimirá automáticamente.
 					</p>
-					<Input
+					<input
+						ref={fileInputRef}
 						id='fileUpload'
 						name='fileUpload'
 						type='file'
-						accept='*/*'
+						accept='image/*'
 						onChange={handleFileUpload}
-						className='cursor-pointer'
+						className='sr-only'
 					/>
+					<div
+						role='button'
+						tabIndex={0}
+						onClick={openFilePicker}
+						onKeyDown={(event) => {
+							if (event.key === 'Enter' || event.key === ' ') {
+								event.preventDefault();
+								openFilePicker();
+							}
+						}}
+						onDragEnter={handleDragEnter}
+						onDragOver={handleDragOver}
+						onDragLeave={handleDragLeave}
+						onDrop={handleDrop}
+						className={dropZoneClassName}>
+						<Icon icon='HeroArrowUpTray' className='mb-3 h-10 w-10 text-current' />
+						<span className='text-sm font-semibold'>Suelta tu imagen aquí</span>
+						<span className='text-xs text-neutral-500 dark:text-neutral-400'>
+							o haz clic para explorar tus archivos
+						</span>
+						<span className='mt-3 text-xs text-neutral-400 dark:text-neutral-500'>
+							Formatos sugeridos: JPG, PNG, WEBP (máx. 2&nbsp;MB)
+						</span>
+					</div>
 				</div>
 			</div>
 
-			<div className='mt-6 grid grid-cols-12 gap-4'>
-			</div>
+			{isPreviewOpen && (
+				<div className='fixed inset-0 z-[1200] flex items-center justify-center bg-black/70 px-4'>
+					<div className='relative flex w-full max-w-md flex-col items-center gap-4 rounded-2xl bg-white p-6 shadow-2xl dark:bg-neutral-900'>
+						<button
+							type='button'
+							onClick={() => setIsPreviewOpen(false)}
+							className='absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-neutral-200 text-neutral-700 transition hover:bg-neutral-300 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700'>
+							<Icon icon='HeroXMark' className='h-5 w-5' />
+						</button>
+						<Avatar
+							src={avatarUrl ?? undefined}
+							name={avatarName}
+							className='h-64 w-64 rounded-full border-8 border-primary/40 shadow-xl'
+						/>
+						<div className='flex flex-wrap justify-center gap-2'>
+							<button
+								type='button'
+								onClick={() => {
+									setIsPreviewOpen(false);
+									openFilePicker();
+								}}
+								className='inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-primary/90'>
+								<Icon icon='HeroCamera' className='h-4 w-4' />
+								Cambiar imagen
+							</button>
+							<button
+								type='button'
+								onClick={() => setIsPreviewOpen(false)}
+								className='inline-flex items-center gap-2 rounded-lg border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-600 transition hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800'>
+								<Icon icon='HeroEyeSlash' className='h-4 w-4' />
+								Cerrar
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+
+			<div className='mt-6 grid grid-cols-12 gap-4' />
 			<div className='grid grid-cols-12 gap-4'>
 				<div className='col-span-12 lg:col-span-6'>
 					<Label htmlFor='email'>Email</Label>
