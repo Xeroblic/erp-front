@@ -278,6 +278,7 @@ const ProductDetail: React.FC = () => {
 										onOpenLibrary={() => setShowLibrary(true)}
 										product={product}
 										onDeleteImage={handleDeleteImage}
+										updateProduct={updateProduct}
 									/>
 								</div>
 

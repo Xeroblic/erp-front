@@ -4,6 +4,8 @@ import Card, { CardBody } from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
+import { useAttributesValidator } from '../../hooks/useAttributesValidator';
+import REQUIRED_ATTRIBUTES_BY_TYPE from '../../constants/requiredAttributesByType';
 import type { TColors } from '@/types/colors.type';
 import type { IProduct, ProductListMeta } from '@/interface/product.interface';
 import { PRODUCT_TYPE_META } from '../../constants/products.constant';
@@ -163,11 +165,79 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 									Seguimiento serie
 								</span>
 							)}
-							{product.warranty_months && (
+							{/* Garantía: si es 0 o null mostrar "Sin garantía" en rojo */}
+							{product.warranty_months && product.warranty_months > 0 ? (
 								<span className='inline-flex items-center gap-1 text-xs text-neutral-500'>
 									<Icon icon='HeroShieldCheck' className='h-3.5 w-3.5' />
 									{product.warranty_months} meses
 								</span>
+							) : (
+								<span className='inline-flex items-center gap-1 text-xs font-medium text-red-500'>
+									<Icon
+										icon='HeroShieldCheck'
+										className='h-3.5 w-3.5 text-red-400'
+									/>
+									Sin garantía
+								</span>
+							)}
+						</div>
+					);
+				},
+			},
+			{
+				id: 'publication',
+				header: 'Estado publicación',
+				cell: ({ row }) => {
+					const product = row.original;
+					// use hook to validate attributes (frontend-only). No new attribute defs created.
+					const requiredForType =
+						REQUIRED_ATTRIBUTES_BY_TYPE[product.product_type ?? ''] ?? undefined;
+					const {
+						ok: attributesComplete,
+						missingCount,
+						missingLabels,
+					} = useAttributesValidator(product.product_type, product.attributes_json, {
+						requiredPaths: requiredForType,
+						treatEmptyStringAsMissing: true,
+					}) as any;
+
+					// Display logic:
+					// - Si faltan atributos -> En revisión
+					// - Si atributos completos pero no publicado -> Pendiente
+					// - Si product_status === 'validated' -> Publicado
+					const isPublished = product.product_status === 'validated';
+
+					return (
+						<div className='flex flex-col gap-1.5'>
+							{!attributesComplete ? (
+								<div>
+									<Badge color='amber'>En revisión</Badge>
+									<div className='mt-1 text-xs text-neutral-500'>
+										{missingCount} atributos incompletos
+										{Array.isArray(missingLabels) &&
+											missingLabels.length > 0 && (
+												<div
+													className='mt-1 text-xs text-neutral-400'
+													title={missingLabels.join(', ')}>
+													Ver campos faltantes
+												</div>
+											)}
+									</div>
+								</div>
+							) : isPublished ? (
+								<div>
+									<Badge color='emerald'>Publicado</Badge>
+									<div className='text-xs text-neutral-500'>
+										Atributos completos
+									</div>
+								</div>
+							) : (
+								<div>
+									<Badge color='amber'>Pendiente</Badge>
+									<div className='text-xs text-neutral-500'>
+										Atributos completos
+									</div>
+								</div>
 							)}
 						</div>
 					);
@@ -244,7 +314,7 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 		<>
 			{Array.from({ length: 3 }).map((_, index) => (
 				<tr key={index}>
-					<td colSpan={6} className='px-6 py-4'>
+					<td colSpan={7} className='px-6 py-4'>
 						<div className='flex items-center gap-3'>
 							<div className='h-12 w-12 animate-pulse rounded-lg bg-zinc-200 dark:bg-zinc-700' />
 							<div className='flex-1 space-y-2'>
@@ -260,7 +330,7 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 
 	const renderEmpty = () => (
 		<tr>
-			<td colSpan={6} className='px-6 py-12'>
+			<td colSpan={7} className='px-6 py-12'>
 				<div className='flex flex-col items-center justify-center gap-3 text-center'>
 					<div className='rounded-full bg-zinc-100 p-4 dark:bg-zinc-800'>
 						<Icon icon='HeroInboxStack' className='h-8 w-8 text-zinc-400' />

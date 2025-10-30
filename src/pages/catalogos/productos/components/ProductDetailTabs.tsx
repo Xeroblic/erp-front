@@ -20,6 +20,7 @@ interface ProductDetailTabsProps {
 	onOpenLibrary: () => void;
 	product?: IProduct | null;
 	onDeleteImage?: (imageId: number) => Promise<void>;
+	updateProduct?: (payload: { data: Partial<IProduct>; categoryIds?: number[] }) => Promise<void>;
 }
 
 const TABS_CONFIG = [
@@ -63,6 +64,7 @@ export const ProductDetailTabs: React.FC<ProductDetailTabsProps> = ({
 	onOpenLibrary,
 	product,
 	onDeleteImage,
+	updateProduct,
 }) => {
 	const renderTabContent = () => {
 		switch (effectiveActiveTab) {
@@ -79,7 +81,7 @@ export const ProductDetailTabs: React.FC<ProductDetailTabsProps> = ({
 			case 'contenido':
 				return <ContenidoTab />;
 			case 'atributos':
-				return <AtributosTab />;
+				return <AtributosTab product={product} updateProduct={updateProduct} />;
 
 			case 'imagenes':
 				return (
@@ -104,7 +106,7 @@ export const ProductDetailTabs: React.FC<ProductDetailTabsProps> = ({
 		? activeTab
 		: visibleTabs[0]?.id || activeTab;
 
-		return (
+	return (
 		<Card>
 			<CardHeader>
 				<CardTitle>Edición del producto</CardTitle>
