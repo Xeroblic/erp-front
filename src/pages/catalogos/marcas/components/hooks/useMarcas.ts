@@ -7,6 +7,7 @@ import {
   updateBrand as updateBrandThunk,
   deleteBrand as deleteBrandThunk,
   toggleBrandStatus as toggleBrandStatusThunk,
+  uploadBrandGallery as uploadBrandGalleryThunk,
 } from "@/store/slices/brands/brandsSlice";
 import type { CreateBrandInput, IBrandFilters, IBrand, IBrandStats, UpdateBrandInput } from "@/interface/brand.interface";
 
@@ -44,14 +45,10 @@ const applyLocalFilters = (items: IBrand[], filters: IBrandFilters): IBrand[] =>
     result = result.filter((brand) =>
       brand.name.toLowerCase().includes(query) ||
       (brand.code ?? '').toLowerCase().includes(query) ||
-      (brand.manufacturer ?? '').toLowerCase().includes(query),
+      (brand.slug ?? '').toLowerCase().includes(query),
     );
   }
-
-  if (filters.origin_country) {
-    const origin = filters.origin_country.toLowerCase();
-    result = result.filter((brand) => (brand.origin_country ?? '').toLowerCase() === origin);
-  }
+  // Filtro por origen eliminado: backend no entrega origin_country
 
   if (filters.is_active !== undefined) {
     result = result.filter((brand) => brand.is_active === filters.is_active);
@@ -90,7 +87,8 @@ export function useMarcas(filters: IBrandFilters) {
       if (!branchId) throw new Error('Debe seleccionar una sucursal para crear una marca');
       if (!payload.name) throw new Error('El nombre de la marca es obligatorio');
       const { branch_id: _branchId, ...brandPayload } = payload;
-      await dispatch(createBrandThunk({ branchId, data: brandPayload })).unwrap();
+      const created = await dispatch(createBrandThunk({ branchId, data: brandPayload })).unwrap();
+      return created;
     },
     [dispatch, filters.branch_id, activeBranchId],
   );
@@ -99,7 +97,8 @@ export function useMarcas(filters: IBrandFilters) {
     async (payload: UpdateBrandInput) => {
       const branchId = payload.branch_id ?? filters.branch_id ?? activeBranchId;
       if (!branchId) throw new Error('No se encontro la sucursal asociada a la marca');
-      await dispatch(updateBrandThunk({ branchId, data: payload })).unwrap();
+      const updated = await dispatch(updateBrandThunk({ branchId, data: payload })).unwrap();
+      return updated;
     },
     [dispatch, filters.branch_id, activeBranchId],
   );
@@ -136,5 +135,14 @@ export function useMarcas(filters: IBrandFilters) {
     updateBrand,
     toggleBrandStatus,
     deleteBrand,
+    uploadBrandGallery: useCallback(
+      async (brandId: number, files: File[], branchIdOverride?: number | null) => {
+        const branchId = branchIdOverride ?? filters.branch_id ?? activeBranchId;
+        if (!branchId) throw new Error('Debe seleccionar una sucursal para subir galería');
+        await dispatch(uploadBrandGalleryThunk({ branchId, brandId, files })).unwrap();
+        await dispatch(fetchBrands({ branchId, search: filters.search }));
+      },
+      [activeBranchId, dispatch, filters.branch_id, filters.search],
+    ),
   };
 }

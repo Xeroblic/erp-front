@@ -4,6 +4,8 @@ import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Moda
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import type { ICategory } from '../../types';
+import ApiService from '@/services/ApiService';
+import { normalizeCategory } from '@/components/helper/category.helper';
 
 type DetalleCategoriaProps = {
   isOpen: boolean;
@@ -12,16 +14,47 @@ type DetalleCategoriaProps = {
   onEdit?: (category: ICategory) => void;
 };
 
-const DetalleCategoria: React.FC<DetalleCategoriaProps> = ({ isOpen, setIsOpen, category, onEdit }) => (
+const DetalleCategoria: React.FC<DetalleCategoriaProps> = ({ isOpen, setIsOpen, category, onEdit }) => {
+  const [desc, setDesc] = React.useState<string>('');
+  const [loading, setLoading] = React.useState<boolean>(false);
+
+  React.useEffect(() => {
+    setDesc(category?.description ?? '');
+  }, [category]);
+
+  React.useEffect(() => {
+    const run = async () => {
+      if (!isOpen || !category?.id) return;
+      try {
+        setLoading(true);
+        const response = await ApiService.fetchData<{ data?: any }>({
+          url: `/categories/${category.id}`,
+          method: 'get',
+        });
+        const raw = response.data?.data ?? response.data;
+        if (raw) {
+          const normalized = normalizeCategory(raw);
+          setDesc(normalized.description ?? '');
+        }
+      } catch {
+        // ignore; keep existing desc
+      } finally {
+        setLoading(false);
+      }
+    };
+    void run();
+  }, [isOpen, category?.id]);
+
+  return (
   <Modal isOpen={isOpen} setIsOpen={setIsOpen} size="lg">
     <ModalHeader>
       <div className="flex items-center space-x-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-100">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-100 dark:bg-sky-900/20">
           <Icon icon="HeroEye" className="h-6 w-6 text-sky-600" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Detalle de la categoria</h2>
-          <p className="text-sm text-gray-600">Informacion general y estado actual</p>
+          <h2 className="text-xl font-bold">Detalle de la categoria</h2>
+          <p className="text-sm opacity-80">Informacion general y estado actual</p>
         </div>
       </div>
     </ModalHeader>
@@ -31,7 +64,7 @@ const DetalleCategoria: React.FC<DetalleCategoriaProps> = ({ isOpen, setIsOpen, 
           {/* Imagen principal y galería */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="md:col-span-1">
-              <div className="aspect-square w-full overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
+              <div className="aspect-square w-full overflow-hidden rounded-md ring-1 ring-zinc-200 dark:ring-white/10">
                 {category.image?.url ? (
                   <img
                     src={category.image.thumb || category.image.url}
@@ -47,7 +80,7 @@ const DetalleCategoria: React.FC<DetalleCategoriaProps> = ({ isOpen, setIsOpen, 
             </div>
             <div className="md:col-span-2">
               <div className="space-y-2">
-                <h4 className="font-semibold text-gray-700">Galería</h4>
+                <h4 className="font-semibold">Galería</h4>
                 {category.gallery && category.gallery.length > 0 ? (
                   <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                     {category.gallery.map((img, idx) => (
@@ -57,16 +90,16 @@ const DetalleCategoria: React.FC<DetalleCategoriaProps> = ({ isOpen, setIsOpen, 
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500">Sin imágenes en la galería.</p>
+                  <p className="text-sm opacity-80">Sin imágenes en la galería.</p>
                 )}
               </div>
             </div>
           </div>
           <div className="flex flex-col space-y-3 md:flex-row md:items-center md:space-x-4 md:space-y-0">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">{category.name}</h3>
+              <h3 className="text-lg font-semibold ">{category.name}</h3>
               {category.parent_name && (
-                <p className="text-sm text-gray-500">Pertenece a: {category.parent_name}</p>
+                <p className="text-sm opacity-80">Pertenece a: {category.parent_name}</p>
               )}
             </div>
             <Badge color={category.is_active ? 'emerald' : 'red'}>
@@ -75,34 +108,51 @@ const DetalleCategoria: React.FC<DetalleCategoriaProps> = ({ isOpen, setIsOpen, 
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="space-y-2 rounded-lg border p-4 text-sm">
-              <h4 className="font-semibold text-gray-700">Informacion</h4>
+            <div className="space-y-2 rounded-md p-4 text-sm ring-1 ring-zinc-200 dark:ring-white/10">
+              <h4 className="font-semibold">Informacion</h4>
               <div className="flex justify-between">
-                <span className="text-gray-600">Productos asociados</span>
-                <span className="font-medium text-gray-900">{category.products_count ?? 0}</span>
+                <span className="opacity-80">Productos asociados</span>
+                <span className="font-medium ">{category.products_count ?? 0}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Creada</span>
-                <span className="font-medium text-gray-900">
+                <span className="opacity-80">Creada</span>
+                <span className="font-medium ">
                   {category.created_at ? new Date(category.created_at).toLocaleDateString() : '-'}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Actualizada</span>
-                <span className="font-medium text-gray-900">
+                <span className="opacity-80">Actualizada</span>
+                <span className="font-medium ">
                   {category.updated_at ? new Date(category.updated_at).toLocaleDateString() : '-'}
                 </span>
               </div>
             </div>
-
-            <div className="space-y-2 rounded-lg border p-4 text-sm">
-              <h4 className="font-semibold text-gray-700">Descripcion</h4>
-              <p className="text-gray-600">{category.description || 'Sin descripcion registrada.'}</p>
+            {!loading && desc && desc.trim().length > 0 && (
+              <div className="space-y-2 rounded-md p-4 text-sm ring-1 ring-zinc-200 dark:ring-white/10">
+                <h4 className="font-semibold">Descripcion</h4>
+                <p className="opacity-80 whitespace-pre-line">{desc}</p>
+              </div>
+            )}
+            <div className="space-y-2 rounded-md p-4 text-sm ring-1 ring-zinc-200 dark:ring-white/10">
+              <h4 className="font-semibold">Detalles</h4>
+              <div className="flex justify-between">
+                <span className="opacity-80">Slug</span>
+                <span className="font-mono ">{category.slug || '-'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="opacity-80">Padre</span>
+                <span className="font-medium ">{category.parent_name || 'Principal'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="opacity-80">Subcategorías</span>
+                <span className="font-medium ">{category.children_count ?? 0}</span>
+              </div>
+              {/* ID oculto para no mostrar al usuario final */}
             </div>
           </div>
         </div>
       ) : (
-        <div className="py-6 text-center text-sm text-gray-500">Selecciona una categoria para ver sus detalles.</div>
+        <div className="py-6 text-center text-sm opacity-80">Selecciona una categoria para ver sus detalles.</div>
       )}
     </ModalBody>
     <ModalFooter>
@@ -124,6 +174,7 @@ const DetalleCategoria: React.FC<DetalleCategoriaProps> = ({ isOpen, setIsOpen, 
       </div>
     </ModalFooter>
   </Modal>
-);
+  );
+};
 
 export default DetalleCategoria;

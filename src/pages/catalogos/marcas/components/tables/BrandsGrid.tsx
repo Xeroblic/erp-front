@@ -72,7 +72,9 @@ const BrandsGrid: React.FC<BrandsGridProps> = ({
 								<div
 									key={idKey}
 									className='relative rounded-lg border p-4 transition-shadow hover:shadow-md'
-									ref={(el) => (containerRefs.current[idKey] = el)}
+									ref={(el) => {
+										containerRefs.current[idKey] = el;
+									}}
 									data-brand-id={idKey}>
 									<div className='mb-3 flex items-center space-x-3'>
 										{imageUrl ? (
@@ -98,11 +100,7 @@ const BrandsGrid: React.FC<BrandsGridProps> = ({
 													{brand.code}
 												</p>
 											)}
-											{brand.manufacturer && (
-												<p className='text-xs text-gray-500'>
-													Fabricante: {brand.manufacturer}
-												</p>
-											)}
+											{/* Fabricante removido: backend no lo entrega */}
 										</div>
 										<Badge color={brand.is_active ? 'emerald' : 'red'}>
 											{brand.is_active ? 'Activa' : 'Inactiva'}
@@ -110,26 +108,21 @@ const BrandsGrid: React.FC<BrandsGridProps> = ({
 									</div>
 
 									<div className='space-y-2 text-sm'>
-										<div className='flex justify-between'>
-											<span className='text-gray-600'>Origen</span>
-											<span className='font-medium'>
-												{brand.origin_country || '-'}
-											</span>
-										</div>
+										
 										<div className='flex justify-between'>
 											<span className='text-gray-600'>
 												Productos asociados
 											</span>
-											<span className='font-medium'>
-												{brand.products_count}
-											</span>
+                                    <span className='font-medium'>
+                                        {brand.products_count ?? (brand as any)?.associated_products ?? 0}
+                                    </span>
 										</div>
-										<div className='flex justify-between'>
+										{/* <div className='flex justify-between'>
 											<span className='text-gray-600'>Ventas vinculadas</span>
 											<span className='font-medium text-green-600'>
 												{formatCurrency(brand.total_sales)}
 											</span>
-										</div>
+										</div> */}
 									</div>
 
 									<div className='mt-4 flex items-center justify-end lg:justify-between'>

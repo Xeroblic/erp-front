@@ -116,9 +116,9 @@ const fetchCategoryDetails = async (id: number): Promise<ICategory | null> => {
 };
 
 const uploadCategoryImage = async (
-	categoryId: number,
-	branchId: number | null | undefined,
-	file: File,
+    categoryId: number,
+    branchId: number | null | undefined,
+    file: File,
 ): Promise<string | null> => {
 	if (!branchId) {
 		// La ruta requiere branches/{branch}/...; sin branch no se puede subir
@@ -159,6 +159,49 @@ const uploadCategoryImage = async (
 		const refreshed = await fetchCategoryDetails(categoryId);
 		return refreshed?.image?.url ?? null;
 	}
+};
+
+const uploadCategoryGalleryFiles = async (
+    categoryId: number,
+    branchId: number | null | undefined,
+    files: File[],
+): Promise<ICategory | null> => {
+    if (!branchId || !files?.length) return null;
+
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/svg+xml'];
+    const validFiles: File[] = [];
+    for (const f of files) {
+        const v = validateFile(f, { maxKB: 8192, allowedMimes: allowed });
+        if (!v.ok) continue;
+        const processed = await convertFileToWebP(f);
+        if (processed) validFiles.push(processed);
+    }
+    if (!validFiles.length) return await fetchCategoryDetails(categoryId);
+
+    const formData = new FormData();
+    validFiles.forEach((f) => formData.append('files[]', f, f.name));
+    // Enviar meta similar a productos: una entrada por archivo
+    const meta = validFiles.map((_, idx) => ({
+        index: idx,
+        collection: 'gallery',
+        sort_order: idx,
+        alt_text: 'Galería',
+        primary: false,
+    }));
+    formData.append('meta', JSON.stringify(meta));
+
+    try {
+        await ApiService.fetchData<{ data?: any }, FormData>({
+            url: `/branches/${branchId}/categories/${categoryId}/media/upload-multiple`,
+            method: 'post',
+            data: formData,
+        });
+        const refreshed = await fetchCategoryDetails(categoryId);
+        return refreshed;
+    } catch {
+        const refreshed = await fetchCategoryDetails(categoryId);
+        return refreshed;
+    }
 };
 
 export const fetchCategoryTree = createAsyncThunk<
@@ -259,6 +302,21 @@ export const updateCategory = createAsyncThunk<
 			error?.response?.data?.message ?? error?.message ?? 'Error al actualizar categoria',
 		);
 	}
+});
+
+export const uploadCategoryGallery = createAsyncThunk<
+    ICategory | null,
+    { categoryId: number; branchId: number; files: File[] },
+    { rejectValue: string }
+>('categories/uploadCategoryGallery', async ({ categoryId, branchId, files }, { rejectWithValue }) => {
+    try {
+        const refreshed = await uploadCategoryGalleryFiles(categoryId, branchId, files);
+        return refreshed;
+    } catch (error: any) {
+        return rejectWithValue(
+            error?.response?.data?.message ?? error?.message ?? 'Error al subir galería',
+        );
+    }
 });
 
 export const toggleCategoryStatus = createAsyncThunk<
@@ -364,10 +422,23 @@ const categoriesSlice = createSlice({
 					state.stats = computeCategoryStats(state.items);
 				}
 			})
-			.addCase(updateCategory.rejected, (state, action) => {
-				state.updating = false;
-				state.error = action.payload ?? 'Error al actualizar categoria';
-			})
+        .addCase(updateCategory.rejected, (state, action) => {
+            state.updating = false;
+            state.error = action.payload ?? 'Error al actualizar categoria';
+        })
+        // Upload gallery
+        .addCase(uploadCategoryGallery.fulfilled, (state, action) => {
+            const payload = action.payload;
+            if (!payload) return;
+            const index = state.items.findIndex((c) => c.id === payload.id);
+            if (index !== -1) {
+                state.items[index] = payload;
+                state.stats = computeCategoryStats(state.items);
+            }
+        })
+        .addCase(uploadCategoryGallery.rejected, (state, action) => {
+            state.error = action.payload ?? 'No se pudo subir la galería';
+        })
 			// Toggle status
 			.addCase(toggleCategoryStatus.fulfilled, (state, action) => {
 				const index = state.items.findIndex((category) => category.id === action.payload.id);

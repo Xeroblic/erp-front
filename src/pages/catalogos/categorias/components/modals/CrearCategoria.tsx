@@ -4,9 +4,7 @@ import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Moda
 import Button from '@/components/ui/Button';
 import Label from '@/components/form/Label';
 import Input from '@/components/form/Input';
-import Textarea from '@/components/form/Textarea';
 import Select from '@/components/form/Select';
-import Checkbox from '@/components/form/Checkbox';
 
 type ParentOption = {
   id: number;
@@ -28,11 +26,8 @@ const CrearCategoria: React.FC<CrearCategoriaProps> = ({
   parentOptions,
   isLoading,
 }) => {
-  const [active, setActive] = React.useState(true);
-
   React.useEffect(() => {
     if (!isOpen) {
-      setActive(true);
       const form = document.getElementById('createCategoryForm') as HTMLFormElement | null;
       form?.reset();
     }
@@ -79,10 +74,7 @@ const CrearCategoria: React.FC<CrearCategoriaProps> = ({
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="create-description">Descripcion</Label>
-            <Textarea id="create-description" name="description" rows={3} placeholder="Descripcion de la categoria" />
-        </div>
+          {/* Descripcion removida del formulario de creación por solicitud */}
 
         <div>
           <Label htmlFor="create-image">Imagen principal</Label>
@@ -90,18 +82,13 @@ const CrearCategoria: React.FC<CrearCategoriaProps> = ({
           <p className="mt-1 text-xs text-gray-500">Opcional. Se convertirá a WebP.</p>
         </div>
 
-        <div className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2">
-            <div>
-              <p className="text-sm font-medium text-gray-700">Categoria activa</p>
-              <p className="text-xs text-gray-500">Controla si la categoria esta disponible en el catalogo.</p>
-            </div>
-            <Checkbox
-              id="create-active"
-              name="is_active"
-              checked={active}
-              onChange={(event) => setActive(event.currentTarget.checked)}
-            />
-          </div>
+        <div>
+          <Label htmlFor='create-gallery'>Galería</Label>
+          <Input id='create-gallery' name='gallery' type='file' accept='image/*' multiple />
+          <p className='mt-1 text-xs text-gray-500'>Puedes seleccionar varias imágenes para la galería.</p>
+        </div>
+
+        {/* Toggle de activo eliminado por solicitud */}
         </form>
       </ModalBody>
       <ModalFooter>

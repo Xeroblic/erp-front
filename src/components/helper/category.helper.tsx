@@ -91,11 +91,30 @@ export const normalizeCategory = (category: any): ICategory => {
 		company_id: category.company_id ?? category.company?.id ?? undefined,
 		name: category.name ?? '',
 		slug: category.slug ?? undefined,
-		description: category.description ?? null,
+		// Some backends send description under different keys
+		description:
+			(typeof category.description === 'string' && category.description.length
+				? category.description
+				: typeof category.content === 'string' && category.content.length
+				? category.content
+				: typeof category.details === 'string' && category.details.length
+				? category.details
+				: typeof category.summary === 'string' && category.summary.length
+				? category.summary
+				: typeof category.meta?.description === 'string' && category.meta.description.length
+				? category.meta.description
+				: null),
 		parent_id: category.parent_id ?? category.parent?.id ?? null,
 		parent_name: category.parent_name ?? category.parent?.name ?? null,
 		children_count: category.children_count ?? category.children?.length ?? 0,
-		products_count: category.products_count ?? category.products_total ?? 0,
+		// Some endpoints return the product count as `associated_products`.
+		// Normalize all variants into `products_count` used by the UI.
+		products_count: Number(
+			category.products_count ??
+			category.associated_products ??
+			category.products_total ??
+			0,
+		),
 		is_active: Boolean(category.is_active ?? category.active ?? true),
 		created_at: category.created_at ?? new Date().toISOString(),
 		updated_at: category.updated_at ?? new Date().toISOString(),

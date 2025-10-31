@@ -57,7 +57,7 @@ const Marcas: React.FC = () => {
 		setFilters((prev) => ({ ...prev, branch_id: value ? Number(value) : undefined }));
 	};
 
-	const handleCreateSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleCreateSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		const formData = new FormData(event.currentTarget);
 
@@ -66,18 +66,20 @@ const Marcas: React.FC = () => {
 			const branchId =
 				branchIdValue && branchIdValue !== 'null' ? Number(branchIdValue) : undefined;
 
-			await createBrand({
-				name: String(formData.get('name') ?? '').trim(),
-				code: formData.get('code')?.toString().trim() || undefined,
-				origin_country: formData.get('origin_country')?.toString().trim() || undefined,
-				manufacturer: formData.get('manufacturer')?.toString().trim() || undefined,
-				is_active: formData.get('is_active') === '1',
-				branch_id: branchId ?? filters.branch_id ?? activeBranchId ?? undefined,
-				image: (() => {
-					const file = formData.get('image');
-					return file instanceof File && file.size > 0 ? file : null;
-				})(),
-			});
+      const created = await createBrand({
+        name: String(formData.get('name') ?? '').trim(),
+        code: formData.get('code')?.toString().trim() || undefined,
+        is_active: formData.get('is_active') === '1',
+        branch_id: branchId ?? filters.branch_id ?? activeBranchId ?? undefined,
+        image: (() => {
+          const file = formData.get('image');
+          return file instanceof File && file.size > 0 ? file : null;
+        })(),
+      });
+      const galleryFiles = (formData.getAll('gallery') as File[]).filter((f) => f && typeof (f as any).size === 'number');
+      if (created?.id && (galleryFiles?.length ?? 0) > 0) {
+        await uploadBrandGallery(created.id, galleryFiles, created.branch_id ?? branchId ?? activeBranchId ?? undefined);
+      }
 
 			toast.success('Marca creada correctamente');
 			setCreateOpen(false);
@@ -93,19 +95,21 @@ const Marcas: React.FC = () => {
 		const formData = new FormData(event.currentTarget);
 
 		try {
-			await updateBrand({
-				id: selected.id,
-				branch_id: selected.branch_id ?? activeBranchId ?? undefined,
-				name: String(formData.get('name') ?? '').trim(),
-				code: formData.get('code')?.toString().trim() || undefined,
-				origin_country: formData.get('origin_country')?.toString().trim() || undefined,
-				manufacturer: formData.get('manufacturer')?.toString().trim() || undefined,
-				is_active: formData.get('is_active') === '1',
-				image: (() => {
-					const file = formData.get('image');
-					return file instanceof File && file.size > 0 ? file : null;
-				})(),
-			});
+      const updated = await updateBrand({
+        id: selected.id,
+        branch_id: selected.branch_id ?? activeBranchId ?? undefined,
+        name: String(formData.get('name') ?? '').trim(),
+        code: formData.get('code')?.toString().trim() || undefined,
+        is_active: formData.get('is_active') === '1',
+        image: (() => {
+          const file = formData.get('image');
+          return file instanceof File && file.size > 0 ? file : null;
+        })(),
+      });
+      const galleryFilesEdit = (formData.getAll('gallery') as File[]).filter((f) => f && typeof (f as any).size === 'number');
+      if (updated?.id && (galleryFilesEdit?.length ?? 0) > 0) {
+        await uploadBrandGallery(updated.id, galleryFilesEdit, updated.branch_id ?? activeBranchId ?? undefined);
+      }
 
 			toast.success('Marca actualizada');
 			setEditOpen(false);

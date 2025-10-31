@@ -105,7 +105,6 @@ const DynamicAttributesEditor: React.FC<{
 					)}
 				</div>
 				<div className='flex items-center gap-2'>
-					{/* Botones para rol admin: validar/rechazar */}
 					<Button
 						variant='outline'
 						size='sm'

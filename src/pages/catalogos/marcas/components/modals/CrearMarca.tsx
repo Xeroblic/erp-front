@@ -101,24 +101,7 @@ const CrearMarca: React.FC<CrearMarcaProps> = ({
 					</div>
 
 					<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-						<div>
-							<Label htmlFor='brand-origin'>Pais de origen</Label>
-							<Input
-								id='brand-origin'
-								name='origin_country'
-								type='text'
-								placeholder='Colombia'
-							/>
-						</div>
-						<div>
-							<Label htmlFor='brand-manufacturer'>Fabricante</Label>
-							<Input
-								id='brand-manufacturer'
-								name='manufacturer'
-								type='text'
-								placeholder='Nombre del fabricante'
-							/>
-						</div>
+						{/* Fabricante removido: backend no lo entrega */}
 					</div>
 
 					<div>
@@ -127,6 +110,12 @@ const CrearMarca: React.FC<CrearMarcaProps> = ({
 						<p className='mt-1 text-xs text-gray-500'>
 							La imagen se convertira automaticamente a formato WebP.
 						</p>
+					</div>
+
+					<div>
+						<Label htmlFor='brand-gallery'>Galería</Label>
+						<Input id='brand-gallery' name='gallery' type='file' accept='image/*' multiple />
+						<p className='mt-1 text-xs text-gray-500'>Puedes seleccionar varias imágenes para la galería.</p>
 					</div>
 
 					<div className='flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2'>

@@ -7,6 +7,7 @@ import {
   updateCategory as updateCategoryThunk,
   deleteCategory as deleteCategoryThunk,
   toggleCategoryStatus as toggleCategoryStatusThunk,
+  uploadCategoryGallery as uploadCategoryGalleryThunk,
 } from '@/store/slices/categories/categoriesSlice';
 import { fetchMisSucursales } from '@/store/slices/sucursales/sucursalesSlice';
 import {
@@ -68,11 +69,12 @@ export function useCategorias(filters: ICategoryFilters) {
     async (payload: CreateCategoryPayload) => {
       const branchId = activeBranchId;
       if (!branchId) throw new Error('Debe seleccionar una sucursal para subir imágenes');
-      await dispatch(createCategoryThunk({ branchId, data: payload })).unwrap();
+      const created = await dispatch(createCategoryThunk({ branchId, data: payload })).unwrap();
       await Promise.all([
         dispatch(fetchCategories({ search: filters.search, parent_id: filters.parent_id })),
         dispatch(fetchCategoryTree()),
       ]);
+      return created;
     },
     [dispatch, filters.search, filters.parent_id, activeBranchId],
   );
@@ -81,11 +83,12 @@ export function useCategorias(filters: ICategoryFilters) {
     async (payload: UpdateCategoryPayload) => {
       const branchId = activeBranchId;
       if (!branchId) throw new Error('No se encontró una sucursal para subir imágenes');
-      await dispatch(updateCategoryThunk({ branchId, data: payload })).unwrap();
+      const updated = await dispatch(updateCategoryThunk({ branchId, data: payload })).unwrap();
       await Promise.all([
         dispatch(fetchCategories({ search: filters.search, parent_id: filters.parent_id })),
         dispatch(fetchCategoryTree()),
       ]);
+      return updated;
     },
     [dispatch, filters.search, filters.parent_id, activeBranchId],
   );
@@ -126,6 +129,15 @@ export function useCategorias(filters: ICategoryFilters) {
     updateCategory,
     toggleCategoryStatus,
     deleteCategory,
+    uploadCategoryGallery: useCallback(
+      async (categoryId: number, files: File[]) => {
+        const branchId = activeBranchId;
+        if (!branchId) throw new Error('Debe seleccionar una sucursal para subir galería');
+        await dispatch(uploadCategoryGalleryThunk({ categoryId, branchId, files })).unwrap();
+        await dispatch(fetchCategories({ search: filters.search, parent_id: filters.parent_id }));
+      },
+      [activeBranchId, dispatch, filters.parent_id, filters.search],
+    ),
     refresh: () => {
       void dispatch(fetchCategories({ search: filters.search, parent_id: filters.parent_id }));
       void dispatch(fetchCategoryTree());

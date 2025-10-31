@@ -81,24 +81,7 @@ const EditarMarca: React.FC<EditarMarcaProps> = ({
 					</div>
 
 					<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-						<div>
-							<Label htmlFor='edit-brand-origin'>Pais de origen</Label>
-							<Input
-								id='edit-brand-origin'
-								name='origin_country'
-								type='text'
-								defaultValue={brand.origin_country ?? ''}
-							/>
-						</div>
-						<div>
-							<Label htmlFor='edit-brand-manufacturer'>Fabricante</Label>
-							<Input
-								id='edit-brand-manufacturer'
-								name='manufacturer'
-								type='text'
-								defaultValue={brand.manufacturer ?? ''}
-							/>
-						</div>
+						{/* Fabricante removido */}
 					</div>
 
 					<div>
@@ -107,6 +90,12 @@ const EditarMarca: React.FC<EditarMarcaProps> = ({
 						<p className='mt-1 text-xs text-gray-500'>
 							Si subes una nueva imagen se convertira automaticamente a WebP.
 						</p>
+					</div>
+
+					<div>
+						<Label htmlFor='edit-brand-gallery'>Galería</Label>
+						<Input id='edit-brand-gallery' name='gallery' type='file' accept='image/*' multiple />
+						<p className='mt-1 text-xs text-gray-500'>Puedes seleccionar varias imágenes para agregar a la galería.</p>
 					</div>
 
 					<div className='flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2'>
