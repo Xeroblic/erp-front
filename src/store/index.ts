@@ -12,6 +12,7 @@ export * from './slices/personalizacion/personalizacionSlice'
 export * from './slices/transfers/transfersSlice'
 export * from './slices/categories/categoriesSlice'
 export * from './slices/products/productsSlice'
+export * from './slices/notifications/notificationsSlice'
 
 export default store
 

@@ -386,6 +386,18 @@ export const privatePages = {
   },
 
   /* =================================================
+     NOTIFICACIONES - OPERATIVO
+     ================================================= */
+  notifications: {
+    id: 'notifications',
+    to: '/notificaciones',
+    text: 'Notificaciones',
+    icon: 'HeroBell',
+    authority: [],
+    roles: ['super-admin','company-admin','subsidiary-admin','branch-admin','manager','employee','technician','cashier','sales-rep'],
+  },
+
+  /* =================================================
      MÓDULOS PENDIENTES - NO OPERATIVOS AÚN
      ================================================= */
 

@@ -82,6 +82,7 @@ const ProveedoresPage = lazy(() => import('@/pages/catalogos/proveedores/Proveed
 const ClientesPage = lazy(() => import('@/pages/catalogos/clientes/Clientes'));
 const DocumentosPage = lazy(() => import('@/pages/documentos/Documentos'));
 const RevisionesTecnicasPage = lazy(() => import('@/pages/revisiones-tecnicas/RevisionesTecnicas'));
+const NotificationsAllPage = lazy(() => import('@/pages/notificaciones/NotificationsAll'));
 
 export interface IRoutePersonalizada extends PathRouteProps {
 	authority?: string[];
@@ -265,6 +266,13 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: cfg.reports.subPages.financialReports.to,
 		element: <FinancialReports />,
 		authority: cfg.reports.subPages.financialReports.authority,
+	},
+
+	// Notificaciones
+	{
+		path: cfg.notifications.to,
+		element: <NotificationsAllPage />,
+		authority: cfg.notifications.authority,
 	},
 
 	// Rutas de Catálogos
