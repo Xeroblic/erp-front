@@ -112,10 +112,16 @@ const DefaultAsideTemplate = () => {
 	});
 
 	const toggleCollapse = (key: string) => {
-		setCollapseStates((prev) => ({
-			...prev,
-			[key]: !prev[key],
-		}));
+		setCollapseStates((prev) => {
+			const closedAll = Object.keys(prev).reduce((acc, k) => {
+				acc[k] = false;
+				return acc;
+			}, {} as Record<string, boolean>);
+			return {
+				...closedAll,
+				[key]: !prev[key],
+			};
+		});
 	};
 
 	const userPermissionsAndRoles = [

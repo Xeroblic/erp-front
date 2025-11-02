@@ -1,7 +1,7 @@
 ﻿import React, { useEffect, useMemo, useState } from 'react';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
-import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
+import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Select from '@/components/form/Select';
 import { useAppDispatch, useAppSelector } from '@/store';
@@ -93,13 +93,12 @@ const NotificationsAll: React.FC = () => {
             <CardTitle>Notificaciones</CardTitle>
           </CardHeader>
           <CardBody>
-            <div className='flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center'>
-              {/* Estado */}
-              <div className='flex w-full flex-wrap gap-2 sm:w-auto'>
+            <div className='flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center'>
+              <div className='inline-flex w-full overflow-hidden rounded-md border border-zinc-200 shadow-sm dark:border-zinc-800 sm:w-auto'>
                 <Button
-                  className={`px-3 py-1.5 text-sm rounded-md ring-1 ring-zinc-200 dark:ring-zinc-700 ${
+                  className={`w-full px-3 py-1.5 text-sm sm:w-auto ${
                     statusFilter === 'all'
-                      ? 'bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-white'
+                      ? 'bg-zinc-900 text-white'
                       : 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200'
                   }`}
                   onClick={() => setStatusFilter('all')}
@@ -107,29 +106,29 @@ const NotificationsAll: React.FC = () => {
                   Todas
                 </Button>
                 <Button
-                  className={`px-3 py-1.5 text-sm rounded-md ring-1 ring-zinc-200 dark:ring-zinc-700 ${
+                  className={`w-full px-3 py-1.5 text-sm sm:w-auto ${
                     statusFilter === 'read'
-                      ? 'bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-white'
+                      ? 'bg-zinc-900 text-white'
                       : 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200'
                   }`}
                   onClick={() => setStatusFilter('read')}
                 >
-                  Leídas
+                  LeÃ­das
                 </Button>
                 <Button
-                  className={`px-3 py-1.5 text-sm rounded-md ring-1 ring-zinc-200 dark:ring-zinc-700 ${
+                  className={`w-full px-3 py-1.5 text-sm sm:w-auto ${
                     statusFilter === 'unread'
-                      ? 'bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-white'
+                      ? 'bg-zinc-900 text-white'
                       : 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200'
                   }`}
                   onClick={() => setStatusFilter('unread')}
                 >
-                  No leídas
+                  No leÃ­das
                 </Button>
                 <Button
-                  className={`px-3 py-1.5 text-sm rounded-md ring-1 ring-zinc-200 dark:ring-zinc-700 ${
+                  className={`w-full px-3 py-1.5 text-sm sm:w-auto ${
                     statusFilter === 'ack'
-                      ? 'bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-white'
+                      ? 'bg-zinc-900 text-white'
                       : 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200'
                   }`}
                   onClick={() => setStatusFilter('ack')}
@@ -137,41 +136,28 @@ const NotificationsAll: React.FC = () => {
                   Archivadas
                 </Button>
               </div>
-
-              {/* Selects */}
-              <div className='flex w-full gap-2 sm:w-auto'>
-                <Select
-                  name='module'
-                  value={moduleFilter}
-                  onChange={(e) => setModuleFilter(String(e.target.value))}
-                  className='sm:w-56 w-full'
-                  dimension='sm'
-                  disabled={loading}
-                >
-                  <option value=''>Todos los modulos</option>
-                  {moduleOptions.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </Select>
-                <Select
-                  name='priority'
-                  value={priorityFilter}
-                  onChange={(e) => setPriorityFilter(String(e.target.value))}
-                  className='sm:w-40 w-full'
-                  dimension='sm'
-                  disabled={loading}
-                >
-                  {PRIORITY_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-
-              {/* Acciones */}
+              <select
+                className='w-full rounded border border-zinc-200 bg-white px-2 py-2 text-sm text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 sm:w-48'
+                value={moduleFilter}
+                onChange={(e) => setModuleFilter(e.target.value)}
+              >
+                <option value=''>Todos los mÃ³dulos</option>
+                {moduleOptions.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+              <select
+                className='w-full rounded border border-zinc-200 bg-white px-2 py-2 text-sm text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 sm:w-48'
+                value={priorityFilter}
+                onChange={(e) => setPriorityFilter(e.target.value)}
+              >
+                <option value=''>Todas las prioridades</option>
+                <option value='P1'>P1</option>
+                <option value='P2'>P2</option>
+                <option value='P3'>P3</option>
+              </select>
               <div className='flex w-full gap-2 sm:w-auto'>
                 <Button
                   className='w-full sm:w-auto'
@@ -181,7 +167,7 @@ const NotificationsAll: React.FC = () => {
                   onClick={() => dispatch(markAllRead())}
                   isDisable={unreadCount === 0}
                 >
-                  Marcar leídas
+                  Marcar leÃ­das
                 </Button>
                 <Button
                   className='w-full sm:w-auto'
@@ -200,15 +186,6 @@ const NotificationsAll: React.FC = () => {
                   isLoading={loading}
                 >
                   Refrescar
-                </Button>
-                <Button
-                  className='w-full sm:w-auto'
-                  size='sm'
-                  variant='outline'
-                  onClick={clearFilters}
-                  isDisable={loading}
-                >
-                  Limpiar
                 </Button>
               </div>
             </div>
@@ -254,7 +231,5 @@ const NotificationsAll: React.FC = () => {
 };
 
 export default NotificationsAll;
-
-
 
 
