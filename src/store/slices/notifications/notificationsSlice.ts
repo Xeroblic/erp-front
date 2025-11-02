@@ -93,7 +93,9 @@ const normalizeFromSse = (s: NotificationSsePayload): UserNotificationDTO => {
   }
 }
 
-const recomputeUnread = (arr: UserNotificationDTO[]) => arr.filter((n) => n.status !== 'read' && !n.read_at).length
+// Contar no leídas basándose en el estado, ignorando read_at
+const recomputeUnread = (arr: UserNotificationDTO[]) =>
+  arr.filter((n) => n.status !== 'read' && n.status !== 'ack').length
 
 export const fetchNotifications = createAsyncThunk<
   { items: UserNotificationDTO[]; meta: NotificationsMeta },
@@ -102,6 +104,7 @@ export const fetchNotifications = createAsyncThunk<
 >('notifications/fetch', async (filters, { rejectWithValue }) => {
   try {
     const params: Record<string, any> = {}
+    // Si status es 'all' o no viene, no enviar para que el backend devuelva todo
     if (filters?.status && filters.status !== 'all') params.status = filters.status
     if (filters?.priority != null) params.priority = filters.priority as any
     if (filters?.module) params.module = filters.module
@@ -197,10 +200,35 @@ export const ackNotification = createAsyncThunk<
   'notifications/ack',
   async ({ id }, { rejectWithValue }) => {
     try {
-      const resp = await ApiService.fetchData<{ ok: boolean; ack_at?: string }>({ url: `/notifications/${id}/ack`, method: 'post' })
+      const resp = await ApiService.fetchData<{ ok: boolean; ack_at?: string }>({
+        url: `/notifications/${id}/ack`,
+        method: 'post',
+      })
       return { id, ack_at: resp.data?.ack_at }
     } catch (e: any) {
       return rejectWithValue(e?.response?.data?.message ?? e?.message ?? 'No se pudo archivar')
+    }
+  },
+)
+
+// Quitar de archivadas (UNACK). Se intenta primero DELETE /ack y como fallback POST /unack
+export const unackNotification = createAsyncThunk<
+  { id: number },
+  { id: number },
+  { rejectValue: string }
+>(
+  'notifications/unack',
+  async ({ id }, { rejectWithValue }) => {
+    try {
+      // Única ruta soportada para desarchivar (toggle en backend)
+      await ApiService.fetchData<{ ok: boolean }>({
+        url: `/notifications/${id}/ack`,
+        method: 'post',
+        params: { action: 'unack' } as any,
+      })
+      return { id }
+    } catch (e: any) {
+      return rejectWithValue(e?.response?.data?.message ?? e?.message ?? 'No se pudo desarchivar')
     }
   },
 )
@@ -209,6 +237,18 @@ const notificationsSlice = createSlice({
   name: 'notifications',
   initialState,
   reducers: {
+    setLocalStatus(
+      state,
+      action: PayloadAction<{ id: number; status?: NotificationStatus; read_at?: string | null; ack_at?: string | null }>,
+    ) {
+      const it = state.items.find((n) => n.id === action.payload.id)
+      if (it) {
+        if (action.payload.status) it.status = action.payload.status
+        if (action.payload.read_at !== undefined) it.read_at = action.payload.read_at
+        if (action.payload.ack_at !== undefined) it.ack_at = action.payload.ack_at
+      }
+      state.unreadCount = recomputeUnread(state.items)
+    },
     upsertMany(state, action: PayloadAction<UserNotificationDTO[]>) {
       const map = new Map<number, UserNotificationDTO>()
       for (const n of state.items) map.set(n.id, n)
@@ -281,10 +321,21 @@ const notificationsSlice = createSlice({
           it.status = 'ack'
           it.ack_at = action.payload.ack_at ?? new Date().toISOString()
         }
+        state.unreadCount = recomputeUnread(state.items)
+      })
+      .addCase(unackNotification.fulfilled, (state, action) => {
+        const it = state.items.find((n) => n.id === action.payload.id)
+        if (it) {
+          // Al desarchivar, mandar a "unread" por defecto
+          it.status = 'unread'
+          it.read_at = null
+          it.ack_at = null
+        }
+        state.unreadCount = recomputeUnread(state.items)
       })
   },
 })
 
-export const { upsertMany, upsertFromSse, setStreamingConnected } = notificationsSlice.actions
+export const { upsertMany, upsertFromSse, setStreamingConnected, setLocalStatus } = notificationsSlice.actions
 
 export default notificationsSlice.reducer

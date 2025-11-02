@@ -38,8 +38,10 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 	}, [streaming?.lastEventId]);
 
 	useEffect(() => {
-		// Carga inicial de notificaciones
-		dispatch(fetchNotifications({ per_page: 20, branch_id: activeBranchId ?? undefined })).catch(() => void 0);
+		// Carga inicial de notificaciones (todas para soportar tabs del dropdown)
+		dispatch(
+			fetchNotifications({ per_page: 20, status: 'all', branch_id: activeBranchId ?? undefined }),
+		).catch(() => void 0);
 
 		const connect = () => {
 			// Cerrar flujo previo si existe
@@ -76,9 +78,11 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 		// Conectar inicialmente; al finalizar el stream el servicio llamará onError y reconectaremos
 		connect();
 
-		// Polling fallback cada 50s
+		// Polling fallback cada 50s (traer todas)
 		const iv = window.setInterval(() => {
-			dispatch(fetchNotifications({ per_page: 20, branch_id: activeBranchId ?? undefined })).catch(() => void 0);
+			dispatch(
+				fetchNotifications({ per_page: 20, status: 'all', branch_id: activeBranchId ?? undefined }),
+			).catch(() => void 0);
 		}, 50_000);
 
 		return () => {
@@ -98,8 +102,14 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 				// reconectar de inmediato
 				streamRef.current?.close();
 				lastEventIdRef.current = 0; // opcional: o mantener
-				// relanzar carga inicial para la nueva sucursal
-				dispatch(fetchNotifications({ per_page: 20, branch_id: (e?.detail?.branchId ?? activeBranchId) || undefined })).catch(() => void 0);
+				// relanzar carga inicial para la nueva sucursal (todas)
+				dispatch(
+					fetchNotifications({
+						per_page: 20,
+						status: 'all',
+						branch_id: (e?.detail?.branchId ?? activeBranchId) || undefined,
+					}),
+				).catch(() => void 0);
 				// reconectar stream (useEffect con deps activeBranchId hará el resto si state cambia)
 			} catch {}
 		};

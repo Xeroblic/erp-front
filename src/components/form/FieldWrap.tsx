@@ -64,19 +64,19 @@ const FieldWrap = forwardRef<HTMLDivElement, IFieldWrapProps>((props, ref) => {
 					{firstSuffix}
 				</div>
 			)}
-			{cloneElement(children, {
-				isValid,
-				isTouched,
-				invalidFeedback,
-				style: {
+			{(() => {
+				const isDomElement = typeof children.type === 'string';
+				const style = {
 					paddingLeft:
-						(firstSuffix && isLTR && domFirstRect?.width) ||
-						(lastSuffix && !isLTR && domLastRect?.width),
+						(firstSuffix && isLTR && (domFirstRect?.width as number)) ||
+						(lastSuffix && !isLTR && (domLastRect?.width as number)),
 					paddingRight:
-						(firstSuffix && !isLTR && domFirstRect?.width) ||
-						(lastSuffix && isLTR && domLastRect?.width),
-				},
-			})}
+						(firstSuffix && !isLTR && (domFirstRect?.width as number)) ||
+						(lastSuffix && isLTR && (domLastRect?.width as number)),
+				} as React.CSSProperties;
+				// Evitar pasar props desconocidos a elementos DOM nativos
+				return cloneElement(children, isDomElement ? { style } : { isValid, isTouched, invalidFeedback, style });
+			})()}
 			{lastSuffix && (
 				<div ref={divLastRef} className={classNames(sharedClasses, 'end-px')}>
 					{lastSuffix}

@@ -59,40 +59,40 @@ const NotificationDetail: React.FC = () => {
 
 		if (isImportant) {
 			return {
-				bg: 'bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/30 dark:to-pink-950/30',
-				border: 'border-rose-200 dark:border-rose-900/50',
+				bg: '',
+				border: 'border-zinc-200',
 				icon: 'HeroExclamationTriangle',
-				iconColor: 'text-rose-600 dark:text-rose-400',
-				iconBg: 'bg-rose-100 dark:bg-rose-900/50',
+				iconColor: 'text-zinc-600',
+				iconBg: 'bg-zinc-100',
 			};
 		}
 
 		if (module.toLowerCase().includes('inventario')) {
 			return {
-				bg: 'bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30',
-				border: 'border-blue-200 dark:border-blue-900/50',
+				bg: '',
+				border: 'border-zinc-200',
 				icon: 'HeroArchiveBox',
-				iconColor: 'text-blue-600 dark:text-blue-400',
-				iconBg: 'bg-blue-100 dark:bg-blue-900/50',
+				iconColor: 'text-zinc-600',
+				iconBg: 'bg-zinc-100',
 			};
 		}
 
 		if (module.toLowerCase().includes('producto')) {
 			return {
-				bg: 'bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/30 dark:to-violet-950/30',
-				border: 'border-purple-200 dark:border-purple-900/50',
+				bg: '',
+				border: 'border-zinc-200',
 				icon: 'HeroCube',
-				iconColor: 'text-purple-600 dark:text-purple-400',
-				iconBg: 'bg-purple-100 dark:bg-purple-900/50',
+				iconColor: 'text-zinc-600',
+				iconBg: 'bg-zinc-100',
 			};
 		}
 
 		return {
-			bg: 'bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30',
-			border: 'border-emerald-200 dark:border-emerald-900/50',
+			bg: '',
+			border: 'border-zinc-200',
 			icon: 'HeroBell',
-			iconColor: 'text-emerald-600 dark:text-emerald-400',
-			iconBg: 'bg-emerald-100 dark:bg-emerald-900/50',
+			iconColor: 'text-zinc-600',
+			iconBg: 'bg-zinc-100',
 		};
 	};
 

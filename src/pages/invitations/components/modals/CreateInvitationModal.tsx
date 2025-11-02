@@ -219,7 +219,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 								isTouched={touched.email}
 								invalidFeedback={errors.email}>
 								<div>
-									<Label htmlFor='email' className='text-zinc-200'>
+									<Label htmlFor='email'>
 										Email *
 									</Label>
 									<Input
@@ -229,7 +229,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 										onChange={handleChange}
 										onBlur={handleBlur}
 										placeholder='ejemplo@empresa.com'
-										className='border-zinc-700 bg-zinc-800/50 text-white placeholder-zinc-400'
+										
 										isValid={!errors.email}
 										isTouched={touched.email}
 										invalidFeedback={errors.email}
@@ -242,7 +242,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 								isTouched={touched.first_name}
 								invalidFeedback={errors.first_name}>
 								<div>
-									<Label htmlFor='first_name' className='text-zinc-200'>
+									<Label htmlFor='first_name'>
 										Nombre *
 									</Label>
 									<Input
@@ -252,7 +252,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 										onChange={handleChange}
 										onBlur={handleBlur}
 										placeholder='Juan'
-										className='border-zinc-700 bg-zinc-800/50 text-white placeholder-zinc-400'
+										
 										isValid={!errors.first_name}
 										isTouched={touched.first_name}
 										invalidFeedback={errors.first_name}
@@ -265,7 +265,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 								isTouched={touched.last_name}
 								invalidFeedback={errors.last_name}>
 								<div>
-									<Label htmlFor='last_name' className='text-zinc-200'>
+									<Label htmlFor='last_name'>
 										Apellido *
 									</Label>
 									<Input
@@ -275,7 +275,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 										onChange={handleChange}
 										onBlur={handleBlur}
 										placeholder='Perez'
-										className='border-zinc-700 bg-zinc-800/50 text-white placeholder-zinc-400'
+										
 										isValid={!errors.last_name}
 										isTouched={touched.last_name}
 										invalidFeedback={errors.last_name}
@@ -288,7 +288,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 								isTouched={touched.role_id}
 								invalidFeedback={errors.role_id}>
 								<div>
-									<Label htmlFor='role_id' className='text-zinc-200'>
+									<Label htmlFor='role_id'>
 										Rol *
 									</Label>
 									<SelectReact
@@ -316,7 +316,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 									isTouched={touched.rut}
 									invalidFeedback={errors.rut}>
 									<div>
-										<Label htmlFor='rut' className='text-zinc-200'>
+										<Label htmlFor='rut'>
 											RUT *
 										</Label>
 										<Input
@@ -326,7 +326,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 											onChange={handleChange}
 											onBlur={handleBlur}
 											placeholder='12.345.678-9'
-											className='border-zinc-700 bg-zinc-800/50 text-white placeholder-zinc-400'
+											
 											isValid={!errors.rut}
 											isTouched={touched.rut}
 											invalidFeedback={errors.rut}
@@ -335,7 +335,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 								</FieldWrap>
 								<FieldWrap>
 									<div>
-										<Label htmlFor='position' className='text-zinc-200'>
+										<Label htmlFor='position'>
 											Cargo
 										</Label>
 										<Input
@@ -345,7 +345,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 											onChange={handleChange}
 											onBlur={handleBlur}
 											placeholder='Administrador de Recursos Humanos'
-											className='border-zinc-700 bg-zinc-800/50 text-white placeholder-zinc-400'
+											
 										/>
 									</div>
 								</FieldWrap>
@@ -354,7 +354,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 							<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
 								<FieldWrap>
 									<div>
-										<Label htmlFor='middle_name' className='text-zinc-200'>
+										<Label htmlFor='middle_name'>
 											Segundo nombre
 										</Label>
 										<Input
@@ -364,13 +364,13 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 											onChange={handleChange}
 											onBlur={handleBlur}
 											placeholder='Segundo nombre'
-											className='border-zinc-700 bg-zinc-800/50 text-white placeholder-zinc-400'
+											
 										/>
 									</div>
 								</FieldWrap>
 								<FieldWrap>
 									<div>
-										<Label htmlFor='second_last_name' className='text-zinc-200'>
+										<Label htmlFor='second_last_name'>
 											Segundo apellido
 										</Label>
 										<Input
@@ -380,7 +380,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 											onChange={handleChange}
 											onBlur={handleBlur}
 											placeholder='Segundo apellido'
-											className='border-zinc-700 bg-zinc-800/50 text-white placeholder-zinc-400'
+											
 										/>
 									</div>
 								</FieldWrap>
@@ -389,7 +389,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 							<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
 								<FieldWrap>
 									<div>
-										<Label htmlFor='phone_number' className='text-zinc-200'>
+										<Label htmlFor='phone_number'>
 											Telefono
 										</Label>
 										<Input
@@ -399,13 +399,13 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 											onChange={handleChange}
 											onBlur={handleBlur}
 											placeholder='+56 9 1234 5678'
-											className='border-zinc-700 bg-zinc-800/50 text-white placeholder-zinc-400'
+											
 										/>
 									</div>
 								</FieldWrap>
 								<FieldWrap>
 									<div>
-										<Label htmlFor='address' className='text-zinc-200'>
+										<Label htmlFor='address'>
 											Direccion
 										</Label>
 										<Input
@@ -415,7 +415,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 											onChange={handleChange}
 											onBlur={handleBlur}
 											placeholder='Av. Providencia 1234'
-											className='border-zinc-700 bg-zinc-800/50 text-white placeholder-zinc-400'
+											
 										/>
 									</div>
 								</FieldWrap>
@@ -423,7 +423,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 
 							<FieldWrap>
 								<div>
-									<Label htmlFor='permissions' className='text-zinc-200'>
+										<Label htmlFor='permissions'>
 										Permisos adicionales
 									</Label>
 									<SelectReact
@@ -447,7 +447,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 											isLoadingPermissions || permissionOptions.length === 0
 										}
 									/>
-									<p className='mt-2 text-xs text-zinc-400'>
+									<p className='mt-2 text-xs text-zinc-500'>
 										Estos permisos se agregaran ademas de los permisos otorgados
 										por el rol seleccionado.
 									</p>
@@ -456,7 +456,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 
 							<FieldWrap>
 								<div>
-									<Label htmlFor='message' className='text-zinc-200'>
+									<Label htmlFor='message'>
 										Mensaje personalizado (opcional)
 									</Label>
 									<Textarea
@@ -466,7 +466,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 										onChange={handleChange}
 										onBlur={handleBlur}
 										placeholder='Mensaje adicional para incluir en la invitacion...'
-										className='border-zinc-700 bg-zinc-800/50 text-white placeholder-zinc-400'
+										
 									/>
 								</div>
 							</FieldWrap>
@@ -474,23 +474,15 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 
 						<ModalFooter>
 							<ModalFooterChild>
-								<button
-									type='button'
-									onClick={handleClose}
-									className='inline-flex items-center rounded-md border border-zinc-700 bg-zinc-800/50 px-4 py-2 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-700/50 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2'>
-									<Icon icon='HeroXMark' className='me-2 h-4 w-4' />
+								<Button type='button' variant='outline' onClick={handleClose} icon='HeroXMark'>
 									Cancelar
-								</button>
+								</Button>
 							</ModalFooterChild>
 
 							<ModalFooterChild>
-								<button
-									type='submit'
-									disabled={isSubmitting || !values.role_id}
-									className='inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'>
-									<Icon icon='HeroPaperAirplane' className='me-2 h-4 w-4' />
+								<Button type='submit' variant='solid' color='blue' icon='HeroPaperAirplane' isDisable={isSubmitting || !values.role_id}>
 									{isSubmitting ? 'Enviando...' : 'Enviar Invitacion'}
-								</button>
+								</Button>
 							</ModalFooterChild>
 						</ModalFooter>
 					</Form>

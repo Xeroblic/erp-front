@@ -12,6 +12,8 @@ import {
   markUnread,
   deleteNotification,
   ackNotification,
+  unackNotification,
+  setLocalStatus,
 } from '@/store/slices/notifications/notificationsSlice';
 import NotificationSwipeItem from './components/NotificationSwipeItem';
 import { useNavigate } from 'react-router-dom';
@@ -83,6 +85,8 @@ const NotificationsAll: React.FC = () => {
     if (statusFilter === 'ack') return items.filter((n) => n.status === 'ack');
     return items;
   }, [items, statusFilter]);
+
+  const isArchiveView = statusFilter === 'ack';
 
   return (
     <PageWrapper isProtectedRoute title='Notificaciones' name='Notificaciones'>
@@ -231,7 +235,25 @@ const NotificationsAll: React.FC = () => {
                     n={n}
                     onRead={(id) => dispatch(markRead({ id }))}
                     onUnread={(id) => dispatch(markUnread({ id }))}
-                    onArchive={(id) => dispatch(ackNotification({ id }))}
+                    onArchive={(id) => {
+                      if (isArchiveView) {
+                        // Optimista: mandar a "unread" y sacarla de Archivadas al instante
+                        dispatch(setLocalStatus({ id, status: 'unread', read_at: null, ack_at: null }));
+                        dispatch(unackNotification({ id }))
+                          .unwrap()
+                          .then(() => {
+                            // Asegurar persistencia en backend: dejar como No leída
+                            dispatch(markUnread({ id })).catch(() => void 0);
+                          })
+                          .catch(() => {
+                            // Revertir si falla
+                            dispatch(setLocalStatus({ id, status: 'ack' }));
+                          });
+                      } else {
+                        dispatch(ackNotification({ id }));
+                      }
+                    }}
+                    archiveLabel={isArchiveView ? 'Desarchivar' : 'Archivar'}
                     onDelete={(id) => dispatch(deleteNotification({ id }))}
                     onOpen={(id) => {
                       if (n.status !== 'read') dispatch(markRead({ id }));
@@ -254,7 +276,3 @@ const NotificationsAll: React.FC = () => {
 };
 
 export default NotificationsAll;
-
-
-
-
