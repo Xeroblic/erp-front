@@ -1,0 +1,32 @@
+*** Begin Patch
+*** Update File: src/pages/notificaciones/components/NotificationSwipeItem.tsx
+@@
+-  onOpen?: (id: number) => void;
+-  onUnarchive?: (id: number) => void;\\r\\n};\\r\\n\\r\\nconst sanitize = (s?: string | null) => (s ? String(s) : '').replace(/\\n|\\r|\\t/g, ' ').replace(/\\s+/g, ' ').trim();
++  onOpen?: (id: number) => void;
++  onUnarchive?: (id: number) => void;
++};
++
++const sanitize = (s?: string | null) => (s ? String(s) : '').replace(/\n|\r|\t/g, ' ').replace(/\s+/g, ' ').trim();
+@@
+-      // swipe right => Marcar le?da solamente (no se permite volver a No le?da)
++      // swipe right => Marcar leída solamente (no se permite volver a No leída)
+@@
+-  const title = sanitize(n.event?.type_label ?? n.event?.type_key ?? 'Notificaci?n');
++  const title = sanitize(n.event?.type_label ?? n.event?.type_key ?? 'Notificación');
+   const moduleLabel = sanitize(n.event?.module_label ?? n.event?.module ?? ((n.delivered_channels ?? []).includes('email') ? 'Correo' : 'Sistema'));
+   const message = sanitize(n.message ?? '');
+@@
+-            <span className='hidden sm:inline text-sm'>{n.status !== 'read' ? 'Marcar le?da' : 'Le?da'}</span>
++            <span className='hidden sm:inline text-sm'>{n.status !== 'read' ? 'Marcar leída' : 'Leída'}</span>
+@@
+-              <span className='text-zinc-500'>? {moduleLabel}</span>
++              <span className='text-zinc-500'>• {moduleLabel}</span>
+@@
+-                <span className='text-xs rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5'>No le?da</span>
++                <span className='text-xs rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5'>No leída</span>
+               ) : (
+-                <span className='text-xs rounded-full bg-zinc-100 text-zinc-700 px-2 py-0.5'>Le?da</span>
++                <span className='text-xs rounded-full bg-zinc-100 text-zinc-700 px-2 py-0.5'>Leída</span>
+               )}
+*** End Patch

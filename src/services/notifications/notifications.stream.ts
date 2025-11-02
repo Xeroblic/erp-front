@@ -9,6 +9,7 @@ const API_BASE = import.meta.env.VITE_API_URL || ''
 type Options = {
   history?: number
   lastEventId?: number
+  branchId?: number
 }
 
 // Native EventSource no permite headers. Usamos fetch con reader
@@ -24,6 +25,7 @@ export function openNotificationsStream(
   const params = new URLSearchParams()
   if (typeof opts.history === 'number') params.set('history', String(opts.history))
   if (typeof opts.lastEventId === 'number' && opts.lastEventId > 0) params.set('lastEventId', String(opts.lastEventId))
+  if (typeof opts.branchId === 'number' && opts.branchId > 0) params.set('branch_id', String(opts.branchId))
 
   const url = `${API_BASE}/me/notifications/stream?${params.toString()}`
   const controller = new AbortController()
@@ -80,4 +82,3 @@ export function openNotificationsStream(
     close: () => controller.abort(),
   }
 }
-

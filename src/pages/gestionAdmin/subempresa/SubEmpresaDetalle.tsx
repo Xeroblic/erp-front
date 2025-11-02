@@ -98,6 +98,7 @@ export default function SubEmpresaDetalle() {
 				await dispatch(
 					updateSubsidiaria({
 						id: subempresa.id,
+						company_id: 1,
 						data: data as any,
 					}),
 				).unwrap();

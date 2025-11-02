@@ -16,7 +16,7 @@ export interface NotificationsMeta {
 
 export interface NotificationsFilters {
   status?: NotificationStatus | 'all'
-  priority?: number
+  priority?: number | string
   module?: string
   branch_id?: number
   page?: number
@@ -54,7 +54,16 @@ const normalizeFromApi = (n: any): UserNotificationDTO => {
     created_at: n.created_at ?? null,
     origin: n.origin ?? null,
     message: n.message ?? null,
-    event: n.event ?? null,
+    event: {
+      id: n.event?.id ?? n.event_id ?? n.id ?? null,
+      type_key: n.event?.type_key ?? n.type_key ?? null,
+      type_label: n.event?.type_label ?? n.type_label ?? null,
+      module: n.event?.module ?? n.module ?? null,
+      module_label: n.event?.module_label ?? n.module_label ?? null,
+      priority: n.event?.priority ?? n.priority ?? null,
+      payload: n.event?.payload ?? n.payload ?? null,
+      scope: n.event?.scope ?? null,
+    },
   }
 }
 
@@ -70,8 +79,17 @@ const normalizeFromSse = (s: NotificationSsePayload): UserNotificationDTO => {
     ack_at: null,
     created_at: s.created_at ?? null,
     origin: null,
-    message: s.message ?? null,
-    event: { id: s.id, type_key: s.title ?? 'notification', payload: s.payload ?? {}, scope: null, module: undefined, priority: s.priority ?? undefined },
+    message: s.message ?? (s.type_label ?? s.title ?? null),
+    event: {
+      id: s.id,
+      type_key: s.type_key ?? null,
+      type_label: s.type_label ?? s.title ?? null,
+      module: s.module ?? null,
+      module_label: s.module_label ?? null,
+      payload: s.payload ?? {},
+      scope: null,
+      priority: s.priority ?? undefined,
+    },
   }
 }
 
@@ -85,7 +103,7 @@ export const fetchNotifications = createAsyncThunk<
   try {
     const params: Record<string, any> = {}
     if (filters?.status && filters.status !== 'all') params.status = filters.status
-    if (typeof filters?.priority === 'number') params.priority = filters?.priority
+    if (filters?.priority != null) params.priority = filters.priority as any
     if (filters?.module) params.module = filters.module
     if (filters?.branch_id) params.branch_id = filters.branch_id
     if (filters?.page) params.page = filters.page
@@ -170,6 +188,23 @@ export const deleteNotification = createAsyncThunk<{ id: number }, { id: number 
   },
 )
 
+// Marcar como archivada (ACK)
+export const ackNotification = createAsyncThunk<
+  { id: number; ack_at?: string },
+  { id: number },
+  { rejectValue: string }
+>(
+  'notifications/ack',
+  async ({ id }, { rejectWithValue }) => {
+    try {
+      const resp = await ApiService.fetchData<{ ok: boolean; ack_at?: string }>({ url: `/notifications/${id}/ack`, method: 'post' })
+      return { id, ack_at: resp.data?.ack_at }
+    } catch (e: any) {
+      return rejectWithValue(e?.response?.data?.message ?? e?.message ?? 'No se pudo archivar')
+    }
+  },
+)
+
 const notificationsSlice = createSlice({
   name: 'notifications',
   initialState,
@@ -239,6 +274,13 @@ const notificationsSlice = createSlice({
       .addCase(deleteNotification.fulfilled, (state, action) => {
         state.items = state.items.filter((n) => n.id !== action.payload.id)
         state.unreadCount = recomputeUnread(state.items)
+      })
+      .addCase(ackNotification.fulfilled, (state, action) => {
+        const it = state.items.find((n) => n.id === action.payload.id)
+        if (it) {
+          it.status = 'ack'
+          it.ack_at = action.payload.ack_at ?? new Date().toISOString()
+        }
       })
   },
 })

@@ -19,7 +19,7 @@ interface INotificationItemProps {
 
 const NotificationItem: FC<INotificationItemProps> = ({ image, name, icon, firstLine, secondLine, isUnread, time }) => {
   return (
-    <div className='flex min-w-[24rem] gap-2'>
+    <div className={`flex min-w-[24rem] gap-2 rounded-md border px-2 py-2 ${isUnread ? 'bg-rose-50/60 border-rose-200/60' : 'bg-emerald-50/40 border-emerald-200/50'}`}>
       <div className='relative flex-shrink-0'>
         <Avatar src={image} name={name} />
         {icon && (
@@ -44,6 +44,8 @@ const NotificationItem: FC<INotificationItemProps> = ({ image, name, icon, first
     </div>
   );
 };
+
+const clean = (s?: string | null) => (s ? String(s) : '').replace(/\n|\r|\t/g, ' ').replace(/\s+/g, ' ').trim();
 
 const NotificationPartial = () => {
   const dispatch = useAppDispatch();
@@ -72,26 +74,24 @@ const NotificationPartial = () => {
           <Button icon='HeroBell' aria-label='Notification' />
         </DropdownToggle>
         <DropdownMenu placement='bottom-end' className='min-w-[22rem] p-0'>
-          <div className='flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-zinc-800'>
+          <div className='flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800'>
             <div className='font-semibold text-zinc-800 dark:text-zinc-100'>Notificaciones</div>
-            <Button size='sm' variant='default' color='violet' onClick={handleMarkAll}>
-              Marcar leídas
-            </Button>
+            <Button size='sm' variant='default' color='violet' onClick={handleMarkAll}>Marcar leídas</Button>
           </div>
 
-          <div className='max-h-96 overflow-auto px-4 py-2 divide-y divide-dashed divide-zinc-500/30'>
+          <div className='max-h-96 divide-y divide-dashed divide-zinc-500/30 overflow-auto px-4 py-2'>
             {recent.map((n) => (
-              <div key={n.id} className='py-3 cursor-pointer' onClick={() => handleItemClick(n.id)}>
+              <div key={n.id} className='cursor-pointer py-3' onClick={() => handleItemClick(n.id)}>
                 <NotificationItem
-                  name={n.event?.type_key ?? 'Notificación'}
+                  name={clean(n.event?.type_label ?? n.event?.type_key ?? 'Notificación')}
                   icon={(n.delivered_channels ?? []).includes('email') ? 'HeroEnvelope' : 'HeroGlobeAlt'}
                   firstLine={
                     <>
-                      <b>{formatTitle(n)}</b>
-                      <span className='text-zinc-500'> · {n.event?.module ?? ((n.delivered_channels ?? []).includes('email') ? 'Correo' : 'Sistema')}</span>
+                      <b>{clean(n.event?.type_label ?? formatTitle(n))}</b>
+                      <span className='text-zinc-500'> · {clean(n.event?.module_label ?? n.event?.module ?? ((n.delivered_channels ?? []).includes('email') ? 'Correo' : 'Sistema'))}</span>
                     </>
                   }
-                  secondLine={<span className='text-zinc-700'>{n.message ?? ''}</span>}
+                  secondLine={<span className='text-zinc-700'>{clean(n.message ?? '')}</span>}
                   isUnread={n.status !== 'read' && !n.read_at}
                   time={timeAgo(n.created_at)}
                 />
@@ -102,7 +102,7 @@ const NotificationPartial = () => {
             )}
           </div>
 
-          <div className='border-t border-zinc-200 dark:border-zinc-800 px-2 py-2'>
+          <div className='border-t border-zinc-200 px-2 py-2 dark:border-zinc-800'>
             <DropdownNavLinkItem className='justify-center text-sm' icon='HeroInbox' to='/notificaciones'>
               Ver todas
             </DropdownNavLinkItem>

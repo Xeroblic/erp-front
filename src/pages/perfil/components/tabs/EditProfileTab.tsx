@@ -9,7 +9,6 @@ import Validation from '@/components/form/Validation';
 import Radio, { RadioGroup } from '@/components/form/Radio';
 import Avatar from '@/components/Avatar';
 import { ProfileFormik } from '../types';
-import imageCompression from 'browser-image-compression';
 import { toast } from 'react-toastify';
 
 type Props = {
@@ -29,22 +28,15 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 	const compressAndUpload = useCallback(
 		async (file: File) => {
 			try {
-				const compressed = await imageCompression(file, {
-					maxSizeMB: 0.3,
-					maxWidthOrHeight: 400,
-					useWebWorker: true,
-					initialQuality: 0.4,
-				});
-
-				const bitmap = await createImageBitmap(compressed);
+				// Redimensionar en canvas y exportar a WebP sin dependencias externas
+				const bitmap = await createImageBitmap(file);
+				const maxSize = 400;
+				const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height));
 				const canvas = document.createElement('canvas');
-
-				canvas.width = Math.min(bitmap.width, 400);
-				canvas.height = Math.min(bitmap.height, 400);
-
+				canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+				canvas.height = Math.max(1, Math.round(bitmap.height * scale));
 				const ctx = canvas.getContext('2d');
 				ctx?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-
 				const blob = await new Promise<Blob>((resolve, reject) => {
 					canvas.toBlob(
 						(b) => (b ? resolve(b) : reject(new Error('No se pudo generar el blob'))),
@@ -52,9 +44,7 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 						0.5,
 					);
 				});
-
 				const webpFile = new File([blob], 'avatar.webp', { type: 'image/webp' });
-
 				await onAvatarUpload(webpFile);
 				toast.success('Avatar comprimido y subido correctamente');
 			} catch (error) {

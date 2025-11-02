@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import ApiService from '@/services/ApiService';
+import { useAppSelector } from '@/store';
 
 /**
  * Interface para las branches del usuario
@@ -64,6 +65,12 @@ export const useUserBranches = (
 ): UseUserBranchesReturn => {
 	const { fetchOnMount = true, enabled = !!userId } = options;
 
+	const currentUserId = useAppSelector(
+		(s) => s.auth.user?.id ?? (s.auth.user as any)?.pk ?? undefined,
+	);
+	const permisos = useAppSelector((s) => s.auth.permisos ?? []);
+  const authUser = useAppSelector((s) => s.auth.user as any);
+
 	const [state, setState] = useState<UseUserBranchesState>({
 		branches: [],
 		loading: false,
@@ -86,6 +93,36 @@ export const useUserBranches = (
 		setState((prev) => ({ ...prev, loading: true, error: null }));
 
 		try {
+			// Si es self o no tiene permiso para ver usuarios, intentar desde store y luego /perfil
+			const isSelf = currentUserId && Number(currentUserId) === Number(userId);
+			const canViewUser = Array.isArray(permisos) && permisos.includes('view-user');
+			if (isSelf || !canViewUser) {
+				// 1) desde store
+				if (authUser) {
+					const meData = authUser;
+					let raw = meData?.access?.branches ?? meData?.visible?.branches ?? [];
+					if (!Array.isArray(raw) || raw.length === 0) {
+						const b = meData?.branch;
+						if (b?.id) raw = [{ id: b.id, name: b.name ?? b.branch_name }];
+					}
+					if (Array.isArray(raw) && raw.length) {
+						const normalizedSelf: UserBranch[] = raw.map((b: any) => ({ id: b.id, name: b.name || b.branch_name || `Branch ${b.id}` }));
+						setState({ branches: normalizedSelf, loading: false, error: null });
+						return;
+					}
+				}
+				// 2) fallback a /perfil
+				const meResp = await ApiService.fetchData<{ success?: boolean; data?: any }>({ url: '/perfil', method: 'get' });
+				const meData = (meResp as any)?.data?.data ?? (meResp as any)?.data ?? ({} as any);
+				let raw = meData?.access?.branches ?? meData?.visible?.branches ?? [];
+				if (!Array.isArray(raw) || raw.length === 0) {
+					const b = meData?.branch;
+					if (b?.id) raw = [{ id: b.id, name: b.name ?? b.branch_name }];
+				}
+				const normalizedSelf: UserBranch[] = raw.map((b: any) => ({ id: b.id, name: b.name || b.branch_name || `Branch ${b.id}` }));
+				setState({ branches: normalizedSelf, loading: false, error: null });
+				return;
+			}
 			// Hacer petición al endpoint del usuario con includes específicos
 			const response = await ApiService.fetchData<{
 				success: boolean;
@@ -104,9 +141,19 @@ export const useUserBranches = (
 				method: 'get',
 			});
 
-			// Extraer y normalizar las branches del usuario
+			// Extraer y normalizar las branches del usuario (access + visible + branch)
 			const userData = response.data.data || response.data;
-			const rawBranches = userData.access?.branches || [];
+			const acc = (userData as any)?.access?.branches ?? [];
+			const vis = (userData as any)?.visible?.branches ?? [];
+			const primary = (userData as any)?.branch;
+			const _map = new Map<number, any>();
+			[...acc, ...vis].forEach((b: any) => {
+				if (b?.id && !_map.has(b.id)) _map.set(b.id, b);
+			});
+			if (primary?.id && !_map.has(primary.id)) {
+				_map.set(primary.id, { id: primary.id, name: primary.name ?? primary.branch_name });
+			}
+			const rawBranches = Array.from(_map.values());
 
 			// Mapear a la estructura simplificada
 			const normalizedBranches: UserBranch[] = rawBranches.map((branch) => ({
@@ -133,7 +180,7 @@ export const useUserBranches = (
 
 			console.error('[useUserBranches] Error:', errorMessage, error);
 		}
-	}, [userId, enabled]);
+	}, [userId, enabled, currentUserId, permisos]);
 
 	/**
 	 * Función para limpiar el error

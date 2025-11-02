@@ -13,8 +13,10 @@ export interface NotificationScope {
 export interface NotificationEventDTO {
   id: number | string | null
   type_key?: string | null
+  type_label?: string | null
   module?: string | null
-  priority?: number | null
+  module_label?: string | null
+  priority?: number | string | null
   payload?: Record<string, unknown> | null
   scope?: NotificationScope | null
 }
@@ -48,9 +50,13 @@ export interface PaginatedNotificationsResponse {
 export interface NotificationSsePayload {
   id: number
   title: string
+  type_key?: string | null
+  type_label?: string | null
+  module?: string | null
+  module_label?: string | null
   is_read: boolean
   bucket?: NotificationBucket
-  priority?: number | null
+  priority?: number | string | null
   created_at?: string | null
   aggregate_count?: number
   payload?: Record<string, unknown> | null
@@ -60,4 +66,3 @@ export interface NotificationSsePayload {
   updated_by?: string | null
   updated_by_id?: number | null
 }
-

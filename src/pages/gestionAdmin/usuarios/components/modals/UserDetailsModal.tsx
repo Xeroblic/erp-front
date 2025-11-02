@@ -7,6 +7,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
+import Can from '@/components/auth/Can';
 import Input from '@/components/form/Input';
 import Label from '@/components/form/Label';
 import FieldWrap from '@/components/form/FieldWrap';
@@ -344,10 +345,12 @@ export default function UserDetailsModal({
 
 				<ModalFooter>
 					<div className='flex justify-end gap-2'>
-						<Button onClick={() => onModeChange?.('edit')}>
-							<Icon icon='HeroPencilSquare' className='mr-2 h-4 w-4' />
-							Editar
-						</Button>
+						<Can any={['edit-user']}>
+							<Button onClick={() => onModeChange?.('edit')}>
+								<Icon icon='HeroPencilSquare' className='mr-2 h-4 w-4' />
+								Editar
+							</Button>
+						</Can>
 						<Button variant='outline' onClick={onClose}>
 							<Icon icon='HeroXMark' className='mr-2 h-4 w-4' />
 							Cerrar

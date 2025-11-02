@@ -18,6 +18,15 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 		(s) => s.notifications ?? { streaming: { connected: false, lastEventId: 0 } },
 	);
 
+	// Branch activa desde personalización o perfil
+	const activeBranchId = useAppSelector((s) => {
+		const pref = (s as any)?.personalizacion?.personalizacionUsuario;
+		const user = (s as any)?.auth?.user;
+		return (
+			pref?.sucursal_principal ?? user?.branch?.id ?? user?.branch_id ?? null
+		);
+	});
+
 	const streamRef = useRef<ReturnType<typeof openNotificationsStream> | null>(null);
 	const reconnectTimerRef = useRef<number | null>(null);
 	const lastEventIdRef = useRef<number>(streaming?.lastEventId ?? 0);
@@ -30,7 +39,7 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
 	useEffect(() => {
 		// Carga inicial de notificaciones
-		dispatch(fetchNotifications({ per_page: 20 })).catch(() => void 0);
+		dispatch(fetchNotifications({ per_page: 20, branch_id: activeBranchId ?? undefined })).catch(() => void 0);
 
 		const connect = () => {
 			// Cerrar flujo previo si existe
@@ -59,8 +68,8 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 						connect();
 						backoffRef.current = Math.min(backoffRef.current * 2, 30000);
 					}, backoffRef.current) as unknown as number;
-				},
-				{ history: 0, lastEventId: lastEventIdRef.current },
+					},
+					{ history: 0, lastEventId: lastEventIdRef.current, branchId: activeBranchId ?? undefined },
 			);
 		};
 
@@ -69,7 +78,7 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
 		// Polling fallback cada 50s
 		const iv = window.setInterval(() => {
-			dispatch(fetchNotifications({ per_page: 20 })).catch(() => void 0);
+			dispatch(fetchNotifications({ per_page: 20, branch_id: activeBranchId ?? undefined })).catch(() => void 0);
 		}, 50_000);
 
 		return () => {
@@ -79,7 +88,24 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 			dispatch(setStreamingConnected(false));
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [dispatch]);
+	}, [dispatch, activeBranchId]);
+
+	// Reaccionar a cambios de sucursal en runtime
+	useEffect(() => {
+		const handler = (e: any) => {
+			try {
+				if (reconnectTimerRef.current) window.clearTimeout(reconnectTimerRef.current);
+				// reconectar de inmediato
+				streamRef.current?.close();
+				lastEventIdRef.current = 0; // opcional: o mantener
+				// relanzar carga inicial para la nueva sucursal
+				dispatch(fetchNotifications({ per_page: 20, branch_id: (e?.detail?.branchId ?? activeBranchId) || undefined })).catch(() => void 0);
+				// reconectar stream (useEffect con deps activeBranchId hará el resto si state cambia)
+			} catch {}
+		};
+		window.addEventListener('user-branch-changed', handler as any);
+		return () => window.removeEventListener('user-branch-changed', handler as any);
+	}, [dispatch, activeBranchId]);
 
 	return <>{children}</>;
 };

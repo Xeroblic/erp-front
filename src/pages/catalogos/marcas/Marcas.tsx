@@ -37,6 +37,7 @@ const Marcas: React.FC = () => {
 		createBrand,
 		updateBrand,
 		deleteBrand,
+		uploadBrandGallery,
 	} = useMarcas(filters);
 
 	const branchOptions = useMemo(
