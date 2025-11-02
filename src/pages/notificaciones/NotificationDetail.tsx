@@ -56,7 +56,7 @@ const NotificationDetail: React.FC = () => {
 	const getNotificationColors = () => {
 		const module = notif?.event?.module_label ?? notif?.event?.module ?? '';
 		const isImportant = notif?.bucket === 'Important';
-		
+
 		if (isImportant) {
 			return {
 				bg: 'bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/30 dark:to-pink-950/30',
@@ -66,7 +66,7 @@ const NotificationDetail: React.FC = () => {
 				iconBg: 'bg-rose-100 dark:bg-rose-900/50',
 			};
 		}
-		
+
 		if (module.toLowerCase().includes('inventario')) {
 			return {
 				bg: 'bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30',
@@ -76,7 +76,7 @@ const NotificationDetail: React.FC = () => {
 				iconBg: 'bg-blue-100 dark:bg-blue-900/50',
 			};
 		}
-		
+
 		if (module.toLowerCase().includes('producto')) {
 			return {
 				bg: 'bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/30 dark:to-violet-950/30',
@@ -86,7 +86,7 @@ const NotificationDetail: React.FC = () => {
 				iconBg: 'bg-purple-100 dark:bg-purple-900/50',
 			};
 		}
-		
+
 		return {
 			bg: 'bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30',
 			border: 'border-emerald-200 dark:border-emerald-900/50',
@@ -207,35 +207,46 @@ const NotificationDetail: React.FC = () => {
 						{notif && (
 							<div className='space-y-6'>
 								{/* Header Section with Icon and Main Info */}
-								<div className={`relative overflow-hidden rounded-xl border ${colors.border} ${colors.bg} p-6 shadow-sm transition-all duration-300 hover:shadow-md`}>
+								<div
+									className={`relative overflow-hidden rounded-xl border ${colors.border} ${colors.bg} p-6 shadow-sm transition-all duration-300 hover:shadow-md`}>
 									<div className='flex items-start gap-4'>
 										{/* Icon */}
-										<div className={`flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl ${colors.iconBg} shadow-sm`}>
-											<Icon icon={colors.icon} className={`text-2xl ${colors.iconColor}`} />
+										<div
+											className={`flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl ${colors.iconBg} shadow-sm`}>
+											<Icon
+												icon={colors.icon}
+												className={`text-2xl ${colors.iconColor}`}
+											/>
 										</div>
 
 										{/* Main Content */}
-										<div className='flex-1 min-w-0'>
-											<div className='flex flex-wrap items-start gap-2 mb-2'>
+										<div className='min-w-0 flex-1'>
+											<div className='mb-2 flex flex-wrap items-start gap-2'>
 												<h2 className='text-xl font-bold text-zinc-900 dark:text-zinc-50'>
 													{notif.event?.type_label ??
 														notif.event?.type_key ??
 														'Notificación'}
 												</h2>
-												<span className='inline-flex items-center gap-1.5 rounded-lg bg-white/80 dark:bg-zinc-800/80 px-3 py-1 text-sm font-medium text-zinc-700 dark:text-zinc-200 shadow-sm backdrop-blur-sm'>
-													<Icon icon='HeroRectangleStack' className='text-base' />
+												<span className='inline-flex items-center gap-1.5 rounded-lg bg-white/80 px-3 py-1 text-sm font-medium text-zinc-700 shadow-sm backdrop-blur-sm dark:bg-zinc-800/80 dark:text-zinc-200'>
+													<Icon
+														icon='HeroRectangleStack'
+														className='text-base'
+													/>
 													{notif.event?.module_label ??
 														notif.event?.module ??
 														'Sistema'}
 												</span>
 												{notif.bucket === 'Important' && (
-													<span className='inline-flex items-center gap-1.5 rounded-lg bg-rose-500 px-3 py-1 text-sm font-semibold text-white shadow-sm animate-pulse'>
-														<Icon icon='HeroExclamationTriangle' className='text-base' />
+													<span className='inline-flex animate-pulse items-center gap-1.5 rounded-lg bg-rose-500 px-3 py-1 text-sm font-semibold text-white shadow-sm'>
+														<Icon
+															icon='HeroExclamationTriangle'
+															className='text-base'
+														/>
 														Importante
 													</span>
 												)}
 											</div>
-											<p className='text-base text-zinc-700 dark:text-zinc-300 leading-relaxed mb-3'>
+											<p className='mb-3 text-base leading-relaxed text-zinc-700 dark:text-zinc-300'>
 												{notif.message ?? ''}
 											</p>
 											<div className='flex flex-wrap items-center gap-3 text-sm'>
@@ -244,13 +255,16 @@ const NotificationDetail: React.FC = () => {
 													{timeAgo(notif.created_at)}
 												</span>
 												{notif.status !== 'read' ? (
-													<span className='inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300 ring-2 ring-emerald-200 dark:ring-emerald-800'>
-														<span className='h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse'></span>
+													<span className='inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 ring-2 ring-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-300 dark:ring-emerald-800'>
+														<span className='h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500'></span>
 														No leída
 													</span>
 												) : (
-													<span className='inline-flex items-center gap-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 px-3 py-1 text-xs font-medium text-zinc-600 dark:text-zinc-400'>
-														<Icon icon='HeroCheckCircle' className='text-sm' />
+													<span className='inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'>
+														<Icon
+															icon='HeroCheckCircle'
+															className='text-sm'
+														/>
 														Leída
 													</span>
 												)}
@@ -263,19 +277,22 @@ const NotificationDetail: React.FC = () => {
 								{cards.length > 0 && (
 									<div>
 										<h3 className='mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400'>
-											<Icon icon='HeroInformationCircle' className='text-lg' />
+											<Icon
+												icon='HeroInformationCircle'
+												className='text-lg'
+											/>
 											Detalles
 										</h3>
 										<div className='grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3'>
 											{cards.map((c) => (
 												<div
 													key={c.key}
-													className={`group relative overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-600 ${orderClassFor(c.key)}`}>
-													<div className='absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-blue-400 to-purple-400 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300'></div>
-													<div className='text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5'>
+													className={`group relative overflow-hidden rounded-lg border border-zinc-200 bg-white p-4 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600 ${orderClassFor(c.key)}`}>
+													<div className='absolute left-0 top-0 h-1 w-full scale-x-0 transform bg-gradient-to-r from-blue-400 to-purple-400 transition-transform duration-300 group-hover:scale-x-100'></div>
+													<div className='mb-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400'>
 														{c.label}
 													</div>
-													<div className='text-base font-medium text-zinc-900 dark:text-zinc-50 break-words'>
+													<div className='break-words text-base font-medium text-zinc-900 dark:text-zinc-50'>
 														{c.value}
 													</div>
 												</div>
@@ -286,7 +303,7 @@ const NotificationDetail: React.FC = () => {
 
 								{/* Additional Details Section */}
 								{extraEntries.length > 0 && (
-									<div className='rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-900/50 p-5 backdrop-blur-sm'>
+									<div className='rounded-lg border border-zinc-200 bg-zinc-50/50 p-5 backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-900/50'>
 										<h3 className='mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400'>
 											<Icon icon='HeroListBullet' className='text-lg' />
 											Información Adicional
@@ -297,7 +314,7 @@ const NotificationDetail: React.FC = () => {
 													<div className='text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400'>
 														{k}
 													</div>
-													<div className='text-sm font-medium text-zinc-800 dark:text-zinc-200 break-words'>
+													<div className='break-words text-sm font-medium text-zinc-800 dark:text-zinc-200'>
 														{String(v)}
 													</div>
 												</div>
