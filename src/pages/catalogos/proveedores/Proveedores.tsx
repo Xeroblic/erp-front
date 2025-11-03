@@ -12,7 +12,7 @@ import SupplierStats from './components/SupplierStats';
 import SuppliersFilters from './components/SuppliersFilters';
 import SuppliersTable from './components/tables/SuppliersTable';
 import CrearProveedor from './components/modals/CrearProveedor';
-import EditarProveedor from './components/modals/EditarProveedor';
+// import EditarProveedor from './components/modals/EditarProveedor';
 import EliminarProveedor from './components/modals/EliminarProveedor';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/personalizacionSlice';
@@ -161,7 +161,7 @@ const Proveedores: React.FC = () => {
 					suppliers={suppliers}
 					loading={loading}
 					onView={handleView}
-					onEdit={handleEdit}
+					// onEdit={handleEdit}
 					onDelete={handleDelete}
 				/>
 			</Container>
@@ -172,12 +172,12 @@ const Proveedores: React.FC = () => {
 				onSubmit={handleCreateSubmit}
 				defaultSubsidiaryId={subsidiaryId}
 			/>
-			<EditarProveedor
+			{/* <EditarProveedor
 				isOpen={editOpen}
 				setIsOpen={setEditOpen}
 				supplier={selected}
 				onSubmit={handleEditSubmit}
-			/>
+			/> */}
 			<EliminarProveedor
 				isOpen={deleteOpen}
 				setIsOpen={setDeleteOpen}

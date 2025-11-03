@@ -10,7 +10,7 @@ type SuppliersTableProps = {
 	suppliers: ISupplier[];
 	loading: boolean;
 	onView: (supplier: ISupplier) => void;
-	onEdit: (supplier: ISupplier) => void;
+	// onEdit: (supplier: ISupplier) => void;
 	onDelete: (supplier: ISupplier) => void;
 };
 
@@ -18,7 +18,7 @@ const SuppliersTable: React.FC<SuppliersTableProps> = ({
 	suppliers,
 	loading,
 	onView,
-	onEdit,
+	// onEdit,
 	onDelete,
 }) => (
 	<Card>
@@ -115,7 +115,7 @@ const SuppliersTable: React.FC<SuppliersTableProps> = ({
 													className='text-blue-600 hover:text-blue-900 dark:text-blue-400'>
 													<Icon icon='HeroEye' className='h-4 w-4' />
 												</Button>
-												<Button
+												{/* <Button
 													size='sm'
 													variant='outline'
 													onClick={() => onEdit(supplier)}
@@ -124,7 +124,7 @@ const SuppliersTable: React.FC<SuppliersTableProps> = ({
 														icon='HeroPencilSquare'
 														className='h-4 w-4'
 													/>
-												</Button>
+												</Button> */}
 												<Button
 													size='sm'
 													variant='outline'

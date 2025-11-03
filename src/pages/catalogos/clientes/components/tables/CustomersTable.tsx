@@ -12,7 +12,7 @@ interface CustomersTableProps {
 	onDelete: (c: ICustomerSupplier) => void;
 }
 
-const CustomersTable: React.FC<CustomersTableProps> = ({ customers, onView, onEdit, onDelete }) => (
+const CustomersTable: React.FC<CustomersTableProps> = ({ customers, onView, onDelete }) => (
 	<Card>
 		<CardHeader>
 			<div className='flex items-center justify-between'>
@@ -57,13 +57,13 @@ const CustomersTable: React.FC<CustomersTableProps> = ({ customers, onView, onEd
 											className='text-blue-600 hover:text-blue-900'>
 											<Icon icon='HeroEye' className='h-4 w-4' />
 										</Button>
-										<Button
+										{/* <Button
 											size='sm'
 											variant='outline'
 											onClick={() => onEdit(c)}
 											className='text-indigo-600 hover:text-indigo-900'>
 											<Icon icon='HeroPencilSquare' className='h-4 w-4' />
-										</Button>
+										</Button> */}
 										<Button
 											size='sm'
 											variant='outline'

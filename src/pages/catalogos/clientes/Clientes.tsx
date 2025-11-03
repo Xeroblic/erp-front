@@ -13,7 +13,7 @@ import type { ICustomerSupplier } from '@/interface/customerSupplier.interface';
 import { useClientes } from './components/hooks/useClientes';
 import CustomersTable from './components/tables/CustomersTable';
 import CrearCliente from './components/modals/CrearCliente';
-import EditarCliente from './components/modals/EditarCliente';
+// import EditarCliente from './components/modals/EditarCliente';
 import EliminarCliente from './components/modals/EliminarCliente';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/personalizacionSlice';
@@ -158,12 +158,12 @@ const Clientes: React.FC = () => {
 				onSubmit={handleCreateSubmit}
 				defaultSubsidiaryId={subsidiaryId}
 			/>
-			<EditarCliente
+			{/* <EditarCliente
 				isOpen={editOpen}
 				setIsOpen={setEditOpen}
 				customer={selected}
 				onSubmit={handleEditSubmit}
-			/>
+			/> */}
 			<EliminarCliente
 				isOpen={deleteOpen}
 				setIsOpen={setDeleteOpen}
