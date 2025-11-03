@@ -27,6 +27,8 @@ import brands from './slices/brands/brandsSlice';
 import categories, { CategoriesState } from './slices/categories/categoriesSlice';
 import products, { ProductsState } from './slices/products/productsSlice';
 import notifications from './slices/notifications/notificationsSlice';
+import suppliers from './slices/suppliers/suppliersSlice';
+import customerSuppliers from './slices/customerSuppliers/customerSuppliersSlice';
 
 export interface RootState {
 	auth: AuthState;
@@ -53,6 +55,8 @@ export interface RootState {
 	categories: CategoriesState;
 	products: ProductsState;
 	notifications: ReturnType<typeof notifications>;
+	suppliers: ReturnType<typeof suppliers>;
+	customerSuppliers: ReturnType<typeof customerSuppliers>;
 	[RtkQueryService.reducerPath]: any;
 }
 
@@ -82,6 +86,8 @@ const staticReducers = {
 	categories,
 	products,
 	notifications,
+	suppliers,
+	customerSuppliers,
 	// personalizacion, // Comentado temporalmente
 	[RtkQueryService.reducerPath]: RtkQueryService.reducer,
 };

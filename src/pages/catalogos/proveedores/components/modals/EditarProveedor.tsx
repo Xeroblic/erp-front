@@ -1,161 +1,120 @@
-import React, { Dispatch, SetStateAction, useRef } from 'react';
+import React, { Dispatch, SetStateAction } from 'react';
+import { Formik, Form } from 'formik';
+import * as Yup from 'yup';
+import Icon from '@/components/icon/Icon';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
+import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import Label from '@/components/form/Label';
 import Input from '@/components/form/Input';
-import Select from '@/components/form/Select';
-import Textarea from '@/components/form/Textarea';
-import Checkbox from '@/components/form/Checkbox';
-import { ISupplier } from '../../components/types';
+import type { ISupplier } from '@/interface/supplier.interface';
 
 type EditarProveedorProps = {
-  isOpen: boolean;
-  setIsOpen: Dispatch<SetStateAction<boolean>>;
-  supplier: ISupplier | null;
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+	isOpen: boolean;
+	setIsOpen: Dispatch<SetStateAction<boolean>>;
+	supplier: ISupplier | null;
+	onSubmit: (values: { name: string }) => Promise<void>;
 };
 
-const EditarProveedor: React.FC<EditarProveedorProps> = ({ isOpen, setIsOpen, supplier, onSubmit }) => {
-  const formRef = useRef<HTMLFormElement | null>(null);
+const validationSchema = Yup.object({
+	name: Yup.string()
+		.required('El nombre es requerido')
+		.min(2, 'El nombre debe tener al menos 2 caracteres')
+		.max(255, 'El nombre no puede exceder 255 caracteres'),
+});
 
-  const handleSubmitClick = () => {
-    formRef.current?.requestSubmit();
-  };
+const EditarProveedor: React.FC<EditarProveedorProps> = ({
+	isOpen,
+	setIsOpen,
+	supplier,
+	onSubmit,
+}) => {
+	if (!supplier) return null;
 
-  return (
-    <Modal isOpen={isOpen} setIsOpen={setIsOpen} size='xl'>
-      <ModalHeader>
-        <h3 className='text-lg font-semibold text-gray-900 dark:text-white'>Editar Proveedor</h3>
-      </ModalHeader>
-      <form ref={formRef} id='editSupplierForm' onSubmit={onSubmit}>
-        <ModalBody>
-          <div className='space-y-4'>
-            {supplier ? (
-              <>
-                <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-                  <div>
-                    <Label htmlFor='edit-name'>Nombre de la Empresa *</Label>
-                    <Input id='edit-name' name='name' defaultValue={supplier.name} required />
-                  </div>
-                  <div>
-                    <Label htmlFor='edit-code'>C�digo *</Label>
-                    <Input id='edit-code' name='code' defaultValue={supplier.code} required />
-                  </div>
-                </div>
+	return (
+		<Modal isOpen={isOpen} setIsOpen={setIsOpen} size='lg'>
+			<ModalHeader>
+				<div className='flex items-center space-x-3'>
+					<div className='flex h-10 w-10 items-center justify-center rounded-full bg-amber-100'>
+						<Icon icon='HeroPencilSquare' className='h-6 w-6 text-amber-600' />
+					</div>
+					<div>
+						<h2 className='text-xl font-bold text-gray-900'>Editar Proveedor</h2>
+						<p className='text-sm text-gray-600'>Actualiza el nombre del proveedor</p>
+					</div>
+				</div>
+			</ModalHeader>
 
-                <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-                  <div>
-                    <Label htmlFor='edit-email'>Email *</Label>
-                    <Input id='edit-email' name='email' type='email' defaultValue={supplier.email} required />
-                  </div>
-                  <div>
-                    <Label htmlFor='edit-phone'>Tel�fono *</Label>
-                    <Input id='edit-phone' name='phone' defaultValue={supplier.phone} required />
-                  </div>
-                </div>
+			<Formik
+				initialValues={{ name: supplier.name }}
+				validationSchema={validationSchema}
+				onSubmit={async (values, { setSubmitting }) => {
+					try {
+						await onSubmit(values);
+						setIsOpen(false);
+					} catch (error) {
+						console.error('Error al editar proveedor:', error);
+					} finally {
+						setSubmitting(false);
+					}
+				}}>
+				{({ values, errors, touched, handleChange, handleBlur, isSubmitting }) => (
+					<Form>
+						<ModalBody>
+							<Card>
+								<CardHeader>
+									<CardTitle>Información del Proveedor</CardTitle>
+								</CardHeader>
+								<CardBody className='space-y-4'>
+									<div>
+										<label
+											htmlFor='name'
+											className='mb-2 block text-sm font-medium text-gray-700'>
+											Nombre <span className='text-red-500'>*</span>
+										</label>
+										<Input
+											id='name'
+											name='name'
+											type='text'
+											placeholder='Ej: Proveedor Global S.A.'
+											value={values.name}
+											onChange={handleChange}
+											onBlur={handleBlur}
+											className={
+												touched.name && errors.name ? 'border-red-500' : ''
+											}
+										/>
+										{touched.name && errors.name && (
+											<p className='mt-1 text-sm text-red-600'>
+												{errors.name}
+											</p>
+										)}
+									</div>
+								</CardBody>
+							</Card>
+						</ModalBody>
 
-                <div>
-                  <Label htmlFor='edit-address'>Direcci�n *</Label>
-                  <Textarea id='edit-address' name='address' defaultValue={supplier.address} rows={2} required />
-                </div>
-
-                <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-                  <div>
-                    <Label htmlFor='edit-city'>Ciudad *</Label>
-                    <Input id='edit-city' name='city' defaultValue={supplier.city} required />
-                  </div>
-                  <div>
-                    <Label htmlFor='edit-category'>Categor�a *</Label>
-                    <Select id='edit-category' name='category' defaultValue={supplier.category}>
-                      <option value='TECNOLOGIA'>Tecnolog�a</option>
-                      <option value='OFICINA'>Oficina</option>
-                      <option value='SERVICIOS'>Servicios</option>
-                      <option value='INSUMOS'>Insumos</option>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
-                  <div>
-                    <Label htmlFor='edit-payment-terms'>T�rminos de Pago (d�as)</Label>
-                    <Input
-                      id='edit-payment-terms'
-                      name='payment_terms'
-                      type='number'
-                      min='0'
-                      defaultValue={supplier.payment_terms}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor='edit-credit-limit'>L�mite de Cr�dito</Label>
-                    <Input
-                      id='edit-credit-limit'
-                      name='credit_limit'
-                      type='number'
-                      min='0'
-                      defaultValue={supplier.credit_limit}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor='edit-website'>Sitio Web</Label>
-                    <Input id='edit-website' name='website' defaultValue={supplier.website || ''} />
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className='mb-2 text-sm font-medium text-gray-700 dark:text-gray-300'>Contacto Principal</h4>
-                  <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
-                    <div>
-                      <Label htmlFor='edit-contact-person' className='text-xs'>Nombre *</Label>
-                      <Input id='edit-contact-person' name='contact_person' defaultValue={supplier.contact_person} required />
-                    </div>
-                    <div>
-                      <Label htmlFor='edit-contact-email' className='text-xs'>Email *</Label>
-                      <Input
-                        id='edit-contact-email'
-                        name='contact_email'
-                        type='email'
-                        defaultValue={supplier.contact_email}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor='edit-contact-phone' className='text-xs'>Tel�fono *</Label>
-                      <Input
-                        id='edit-contact-phone'
-                        name='contact_phone'
-                        defaultValue={supplier.contact_phone}
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <Checkbox
-                  id='edit-is-active'
-                  name='is_active'
-                  defaultChecked={supplier.is_active}
-                  label='Proveedor activo'
-                />
-              </>
-            ) : (
-              <div className="text-center text-gray-500">No hay datos de proveedor para editar.</div>
-            )}
-          </div>
-        </ModalBody>
-        <ModalFooter>
-          <div className='flex justify-end space-x-3'>
-            <Button variant='outline' onClick={() => setIsOpen(false)}>
-              Cancelar
-            </Button>
-            <Button color='amber' onClick={handleSubmitClick} isDisable={!supplier}>
-              Guardar Cambios
-            </Button>
-          </div>
-        </ModalFooter>
-      </form>
-    </Modal>
-  );
+						<ModalFooter>
+							<div className='flex justify-end space-x-2'>
+								<Button
+									variant='outline'
+									onClick={() => setIsOpen(false)}
+									isDisable={isSubmitting}>
+									Cancelar
+								</Button>
+								<Button
+									onClick={() => {}}
+									color='amber'
+									isLoading={isSubmitting}
+									isDisable={isSubmitting}>
+									Guardar Cambios
+								</Button>
+							</div>
+						</ModalFooter>
+					</Form>
+				)}
+			</Formik>
+		</Modal>
+	);
 };
 
 export default EditarProveedor;

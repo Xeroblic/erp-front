@@ -7,11 +7,14 @@ import {
 	obtenerPersonalizacionThunk,
 	actualizarSucursalPrincipalThunk,
 } from '@/store/slices/personalizacion/personalizacionSlice';
-import { useUserBranches, type UserBranch } from '@/pages/catalogos/productos/components/modals/hooks/userBranch';
+import {
+	useUserBranches,
+	type UserBranch,
+} from '@/pages/catalogos/productos/components/modals/hooks/userBranch';
 import { toast } from 'react-toastify';
 import ApiService from '@/services/ApiService';
 import Icon from '@/components/icon/Icon';
-import { GroupBase,} from 'react-select';
+import { GroupBase } from 'react-select';
 
 type BranchOptionMeta = {
 	branch: UserBranch;
@@ -50,6 +53,38 @@ const SelectSucursalEmpresa = () => {
 		error: branchesError,
 	} = useUserBranches(userId ?? undefined, { enabled: Boolean(userId) });
 
+	// 🔐 Obtener subsidiarias accesibles del usuario
+	const accessibleSubsidiaryIds = useMemo(() => {
+		const subsidiaries = new Set<number>();
+
+		// ✅ USAR SOLO access.subsidiaries - Es la fuente autoritativa del backend
+		(user as any)?.access?.subsidiaries?.forEach((sub: any) => {
+			if (sub?.id) subsidiaries.add(sub.id);
+			else if (typeof sub === 'number') subsidiaries.add(sub);
+		});
+
+		return subsidiaries;
+	}, [user]);
+
+	// ✅ FILTRAR: Solo branches de subsidiarias accesibles
+	const filteredBranches = useMemo(() => {
+		if (!branches.length) return [];
+
+		// Si no podemos determinar subsidiarias accesibles, mostrar todas
+		if (accessibleSubsidiaryIds.size === 0) {
+			return branches;
+		}
+
+		const filtered = branches.filter((branch) => {
+			// Si la branch no tiene subsidiaryId, permitirla (puede ser legacy)
+			if (!branch.subsidiaryId) return true;
+			// Solo incluir si la subsidiaria está en accesibles
+			return accessibleSubsidiaryIds.has(branch.subsidiaryId);
+		});
+
+		return filtered;
+	}, [branches, accessibleSubsidiaryIds]);
+
 	const preferredBranchId = useMemo(() => {
 		if (personalizacionUsuario?.sucursal_principal) {
 			return personalizacionUsuario.sucursal_principal;
@@ -62,11 +97,11 @@ const SelectSucursalEmpresa = () => {
 	const [selectedSucursal, setSelectedSucursal] = useState<BranchOption | null>(null);
 
 	const groupedOptions = useMemo<TSelectGroups>(() => {
-		if (!branches.length) return [];
+		if (!filteredBranches.length) return [];
 
 		const groups = new Map<string, BranchOption[]>();
 
-		branches.forEach((branch) => {
+		filteredBranches.forEach((branch) => {
 			const groupLabel = buildGroupLabel(branch);
 
 			const option: BranchOption = {
@@ -74,8 +109,7 @@ const SelectSucursalEmpresa = () => {
 				label: branch.name ?? `Sucursal ${branch.id}`,
 				meta: {
 					branch,
-					isPreferred:
-						preferredBranchId !== null && branch.id === preferredBranchId,
+					isPreferred: preferredBranchId !== null && branch.id === preferredBranchId,
 				},
 			};
 
@@ -91,10 +125,10 @@ const SelectSucursalEmpresa = () => {
 				label,
 				options: options.sort((a, b) => a.label.localeCompare(b.label)),
 			})) as TSelectGroups;
-	}, [branches, preferredBranchId]);
+	}, [filteredBranches, preferredBranchId]);
 
 	useEffect(() => {
-		if (!branches.length) {
+		if (!filteredBranches.length) {
 			setSelectedSucursal(null);
 			return;
 		}
@@ -111,8 +145,22 @@ const SelectSucursalEmpresa = () => {
 			| BranchOption
 			| undefined;
 
+		// Si la branch preferida no está en las accesibles, usar la primera disponible
+		if (!match && groupedOptions.length > 0) {
+			console.warn('⚠️ Branch preferida no accesible, usando primera disponible');
+			const firstOption = groupedOptions[0]?.options?.[0] as BranchOption | undefined;
+			setSelectedSucursal(firstOption ?? null);
+
+			// Actualizar preferencia automáticamente a una branch accesible
+			if (firstOption) {
+				const firstBranchId = Number(firstOption.value);
+				dispatch(actualizarSucursalPrincipalThunk(firstBranchId)).catch(console.error);
+			}
+			return;
+		}
+
 		setSelectedSucursal(match ?? null);
-	}, [branches, groupedOptions, preferredBranchId]);
+	}, [filteredBranches, groupedOptions, preferredBranchId, dispatch]);
 
 	const handleChange = useCallback(
 		async (option: BranchOption | null) => {
@@ -145,12 +193,7 @@ const SelectSucursalEmpresa = () => {
 				toast.error(error?.message ?? 'No se pudo actualizar la sucursal principal');
 			}
 		},
-		[
-			dispatch,
-			personalizacionUsuario?.company_id,
-			preferredBranchId,
-			user?.company?.id,
-		],
+		[dispatch, personalizacionUsuario?.company_id, preferredBranchId, user?.company?.id],
 	);
 
 	const formatOptionLabel = useCallback((option: BranchOption) => {
@@ -174,13 +217,17 @@ const SelectSucursalEmpresa = () => {
 						{displaySubsidiary && <span>{displaySubsidiary}</span>}
 						{displayCity && (
 							<>
-								<span aria-hidden='true' className='text-neutral-400'>&middot;</span>
+								<span aria-hidden='true' className='text-neutral-400'>
+									&middot;
+								</span>
 								<span>{displayCity}</span>
 							</>
 						)}
 						{isPreferred && (
 							<>
-								<span aria-hidden='true' className='text-neutral-400'>&middot;</span>
+								<span aria-hidden='true' className='text-neutral-400'>
+									&middot;
+								</span>
 								<span className='flex items-center gap-1 text-emerald-500'>
 									<Icon icon='HeroStar' className='h-3.5 w-3.5' />
 									<span>Preferida</span>
@@ -213,14 +260,14 @@ const SelectSucursalEmpresa = () => {
 	return (
 		<div className='min-w-[260px] max-w-xs space-y-1'>
 			<SelectReact
-				className='w-full branch-selector'
+				className='branch-selector w-full'
 				noOptionsMessage={() => (branchesError ? 'Error al cargar' : 'Sin Opciones')}
 				placeholder={
 					branchesLoading
 						? 'Cargando sucursales...'
 						: !groupedOptions.length
-						? 'Sin sucursales disponibles'
-						: 'Selecciona una sucursal'
+							? 'Sin sucursales disponibles'
+							: 'Selecciona una sucursal'
 				}
 				dimension='sm'
 				name='select_empresa'
@@ -230,7 +277,9 @@ const SelectSucursalEmpresa = () => {
 				isSearchable
 				value={selectedSucursal as TSelectOption | null}
 				options={groupedOptions}
-				formatOptionLabel={(option: TSelectOption) => formatOptionLabel(option as BranchOption)}
+				formatOptionLabel={(option: TSelectOption) =>
+					formatOptionLabel(option as BranchOption)
+				}
 				formatGroupLabel={formatGroupLabel}
 				onChange={(option) => {
 					if (Array.isArray(option)) {
@@ -257,4 +306,3 @@ const SelectSucursalEmpresa = () => {
 };
 
 export default SelectSucursalEmpresa;
-

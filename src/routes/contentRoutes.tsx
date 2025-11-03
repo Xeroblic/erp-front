@@ -79,7 +79,9 @@ const BodegasPage = lazy(() => import('@/pages/catalogos/bodegas/Bodegas'));
 const CategoriasPage = lazy(() => import('@/pages/catalogos/categorias/Categorias'));
 const MarcasPage = lazy(() => import('@/pages/catalogos/marcas/Marcas'));
 const ProveedoresPage = lazy(() => import('@/pages/catalogos/proveedores/Proveedores'));
+const DetalleProveedorPage = lazy(() => import('@/pages/catalogos/proveedores/DetalleProveedor'));
 const ClientesPage = lazy(() => import('@/pages/catalogos/clientes/Clientes'));
+const DetalleClientePage = lazy(() => import('@/pages/catalogos/clientes/DetalleCliente'));
 const DocumentosPage = lazy(() => import('@/pages/documentos/Documentos'));
 const RevisionesTecnicasPage = lazy(() => import('@/pages/revisiones-tecnicas/RevisionesTecnicas'));
 const NotificationsAllPage = lazy(() => import('@/pages/notificaciones/NotificationsAll'));
@@ -275,11 +277,11 @@ const contentRoutes: IRoutePersonalizada[] = [
 		element: <NotificationsAllPage />,
 		authority: cfg.notifications.authority,
 	},
-  {
-    path: '/notificaciones/:id',
-    element: <NotificationDetailPage />,
-    authority: cfg.notifications.authority,
-  },
+	{
+		path: '/notificaciones/:id',
+		element: <NotificationDetailPage />,
+		authority: cfg.notifications.authority,
+	},
 
 	// Rutas de Catálogos
 	{
@@ -313,8 +315,18 @@ const contentRoutes: IRoutePersonalizada[] = [
 		authority: cfg.catalogs.subPages.suppliers.authority,
 	},
 	{
+		path: '/catalogos/proveedores/:id',
+		element: <DetalleProveedorPage />,
+		authority: cfg.catalogs.subPages.suppliers.authority,
+	},
+	{
 		path: cfg.catalogs.subPages.customers.to,
 		element: <ClientesPage />,
+		authority: cfg.catalogs.subPages.customers.authority,
+	},
+	{
+		path: '/catalogos/clientes/:id',
+		element: <DetalleClientePage />,
 		authority: cfg.catalogs.subPages.customers.authority,
 	},
 	{

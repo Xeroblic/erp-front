@@ -123,6 +123,19 @@ export const userMeThunk = createAsyncThunk<
 			} else {
 				// Estructura antigua (compatibilidad)
 				userData = resp.data.user || ({} as IUserMe);
+
+				// ✅ Incluir access y visible si vienen en la respuesta
+				const respData = resp.data as any;
+				if (respData.access) {
+					(userData as any).access = respData.access;
+				}
+				if (respData.visible) {
+					(userData as any).visible = respData.visible;
+				}
+				if (respData.branch) {
+					(userData as any).branch = respData.branch;
+				}
+
 				permisos = resp.data.permisos || [];
 				roles = resp.data.roles || [];
 			}

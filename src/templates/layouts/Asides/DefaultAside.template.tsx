@@ -567,6 +567,32 @@ const DefaultAsideTemplate = () => {
 						/>
 					</AuthorityCheckNav>
 
+					<AuthorityCheckNav
+						authority={Pages.catalogs.subPages.suppliers.authority}
+						userAuthority={userPermissionsAndRoles}
+						requireAll={Pages.catalogs.subPages.suppliers.requireAll}>
+						<NavItem
+							text={Pages.catalogs.subPages.suppliers.text}
+							to={Pages.catalogs.subPages.suppliers.to}
+							icon={Pages.catalogs.subPages.suppliers.icon}
+							id={Pages.catalogs.subPages.suppliers.id}
+							onClick={() => navigate(Pages.catalogs.subPages.suppliers.to)}
+						/>
+					</AuthorityCheckNav>
+
+					<AuthorityCheckNav
+						authority={Pages.catalogs.subPages.customers.authority}
+						userAuthority={userPermissionsAndRoles}
+						requireAll={Pages.catalogs.subPages.customers.requireAll}>
+						<NavItem
+							text={Pages.catalogs.subPages.customers.text}
+							to={Pages.catalogs.subPages.customers.to}
+							icon={Pages.catalogs.subPages.customers.icon}
+							id={Pages.catalogs.subPages.customers.id}
+							onClick={() => navigate(Pages.catalogs.subPages.customers.to)}
+						/>
+					</AuthorityCheckNav>
+
 					{/* Proveedores - PENDIENTE: No está operativo aún */}
 					{/* <AuthorityCheckNav
 						authority={Pages.catalogs.subPages.suppliers.authority}

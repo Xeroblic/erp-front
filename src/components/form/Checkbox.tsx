@@ -41,7 +41,7 @@ const Checkbox = forwardRef<HTMLInputElement, ICheckboxProps>((props, ref) => {
 	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } = useReactiveThemeConfig();
 
 	const {
-	checked = false,
+	checked,
 	className,
 	color = reactiveThemeColor,
 	colorIntensity = reactiveThemeColorShade,
@@ -56,6 +56,8 @@ const Checkbox = forwardRef<HTMLInputElement, ICheckboxProps>((props, ref) => {
 	isValid,
 	isTouched,
 	invalidFeedback,
+	onChange,
+	defaultChecked,
 	...rest
 	} = props;
 
@@ -186,11 +188,16 @@ const Checkbox = forwardRef<HTMLInputElement, ICheckboxProps>((props, ref) => {
 		)}>
 		<input
 		ref={ref}
-		checked={checked}
 		id={id || inputHintId}
 		value={id || inputHintId}
 		type='checkbox'
 		className={checkboxClasses}
+		{...(typeof checked !== 'undefined'
+			? { checked, readOnly: typeof onChange !== 'function' }
+			: typeof defaultChecked !== 'undefined'
+				? { defaultChecked }
+				: {})}
+		{...(typeof onChange === 'function' ? { onChange } : {})}
 		{...rest}
 		/>
 		{!!label && (
