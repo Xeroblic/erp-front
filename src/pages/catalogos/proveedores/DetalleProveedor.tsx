@@ -21,9 +21,8 @@ import { useSupplierCustomers } from './components/hooks/useSupplierCustomers';
 import type { ISupplier } from '@/interface/supplier.interface';
 import { formatDate } from './components/utils';
 
-// Tipo extendido para incluir propiedades adicionales del backend
 interface ISupplierExtended extends ISupplier {
-	customers_count?: number; // Calculado por el backend
+	customers_count?: number;
 }
 
 type CustomerRow = {
@@ -43,7 +42,6 @@ const DetalleProveedorPage: React.FC = () => {
 
 	const supplierId = id ? parseInt(id, 10) : 0;
 
-	// Obtener subsidiaryId de la personalización del usuario
 	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
 	const subsidiaryId = personalizacionUsuario?.sucursal_principal ?? 0;
 
@@ -58,7 +56,6 @@ const DetalleProveedorPage: React.FC = () => {
 	} = useSupplierCustomers(supplierId, true);
 	const { items: allCustomers, loading: loadingAll } = useAppSelector((s) => s.customerSuppliers);
 
-	// 🔄 useEffect 1: Cargar proveedores (siempre para datos frescos)
 	useEffect(() => {
 		if (subsidiaryId) {
 			void dispatch(
@@ -70,7 +67,6 @@ const DetalleProveedorPage: React.FC = () => {
 		}
 	}, [dispatch, subsidiaryId]);
 
-	// 🔄 useEffect 2: Buscar y establecer proveedor específico
 	useEffect(() => {
 		if (supplierId && allSuppliers && allSuppliers.length > 0) {
 			const found = allSuppliers.find((s: any) => s.id === supplierId);
@@ -82,7 +78,6 @@ const DetalleProveedorPage: React.FC = () => {
 		}
 	}, [supplierId, allSuppliers, loadingSuppliers]);
 
-	// 🔄 useEffect 3: Cargar todos los clientes de la subsidiaria
 	useEffect(() => {
 		if (subsidiaryId) {
 			void dispatch(
@@ -94,7 +89,6 @@ const DetalleProveedorPage: React.FC = () => {
 		}
 	}, [dispatch, subsidiaryId]);
 
-	// Clientes NO asociados (disponibles)
 	const availableCustomers = useMemo(() => {
 		if (!allCustomers || !associatedCustomers) return [];
 
@@ -102,7 +96,6 @@ const DetalleProveedorPage: React.FC = () => {
 		return allCustomers.filter((c: any) => !associatedIds.has(c.id));
 	}, [allCustomers, associatedCustomers]);
 
-	// Columnas para clientes ASOCIADOS
 	const associatedColumns = useMemo(
 		() => [
 			columnHelper.accessor('name', {

@@ -40,9 +40,19 @@ const normalizeBranchData = (backendData: any): ISucursal => {
         phone: backendData.branch_phone || backendData.phone,
         address: backendData.branch_address || backendData.address || backendData.direccion,
         email: backendData.branch_email || backendData.email,
-        manager_name: backendData.branch_manager_name || backendData.manager_name,
-        manager_phone: backendData.branch_manager_phone || backendData.manager_phone,
-        manager_email: backendData.branch_manager_email || backendData.manager_email,
+
+        // ✅ Nuevo: Soportar manager_id y relación manager
+        manager_id: backendData.manager_id,
+        manager: backendData.manager,
+        // DEPRECATED: Mantener por compatibilidad temporal
+        manager_name: backendData.manager?.name // Backend devuelve "name" directamente
+            ? backendData.manager.name
+            : backendData.manager?.first_name && backendData.manager?.last_name
+                ? `${backendData.manager.first_name} ${backendData.manager.last_name}`.trim()
+                : backendData.branch_manager_name || backendData.manager_name || null,
+        manager_phone: backendData.manager?.phone || backendData.manager?.phone_number || backendData.branch_manager_phone || backendData.manager_phone || null,
+        manager_email: backendData.manager?.email || backendData.branch_manager_email || backendData.manager_email || null,
+
         status: backendData.branch_status ?? backendData.status,
         subsidiary_id: backendData.subsidiary_id || backendData.subempresa_id,
         created_at: backendData.branch_created_at || backendData.created_at || new Date().toISOString(),
@@ -64,11 +74,11 @@ export const fetchMisSucursales = createAsyncThunk<
     'sucursales/fetchMisSucursales',
     async (_params, { rejectWithValue, getState }) => {
         try {
-            // Obtener sucursales desde /branches
+            // Obtener sucursales desde /branches con manager incluido
             const branchesResponse = await ApiService.fetchData<{ data?: any[]; branches?: any[] }>({
                 url: '/branches',
                 method: 'get',
-                params: { with: 'subsidiary,commune' },
+                params: { with: 'subsidiary,commune,manager' }, // ✅ Agregar manager
             })
 
             const rawBranches: any[] =
@@ -125,9 +135,18 @@ export const fetchMisSucursales = createAsyncThunk<
                     branch_phone: b.branch_phone ?? b.phone,
                     branch_email: b.branch_email ?? b.email,
                     branch_status: b.branch_status ?? b.status,
-                    branch_manager_name: b.branch_manager_name ?? b.manager_name,
-                    branch_manager_phone: b.branch_manager_phone ?? b.manager_phone,
-                    branch_manager_email: b.branch_manager_email ?? b.manager_email,
+
+                    // ✅ Nuevo: Campos de manager
+                    manager_id: b.manager_id,
+                    manager: b.manager,
+
+                    // DEPRECATED: Mantener por compatibilidad
+                    branch_manager_name: b.manager?.first_name
+                        ? `${b.manager.first_name} ${b.manager.last_name}`
+                        : b.branch_manager_name ?? b.manager_name,
+                    branch_manager_phone: b.manager?.phone_number ?? b.branch_manager_phone ?? b.manager_phone,
+                    branch_manager_email: b.manager?.email ?? b.branch_manager_email ?? b.manager_email,
+
                     branch_created_at: b.branch_created_at ?? b.created_at,
                     branch_updated_at: b.branch_updated_at ?? b.updated_at,
                     subsidiary_name: subsidiary?.subsidiary_name ?? subsidiary?.name,
@@ -169,6 +188,7 @@ export const fetchSucursalDetail = createAsyncThunk<
             const resp = await ApiService.fetchData<{ data: any }>({
                 url: `/branches/${sucursalId}`,
                 method: 'get',
+                params: { with: 'commune,manager' }, // ✅ Agregar manager
             })
             const raw: any = (resp as any).data?.data ?? (resp as any).data
             const minimal = {
@@ -179,9 +199,20 @@ export const fetchSucursalDetail = createAsyncThunk<
                 branch_phone: raw?.branch_phone,
                 branch_email: raw?.branch_email,
                 branch_status: raw?.branch_status,
-                branch_manager_name: raw?.branch_manager_name,
-                branch_manager_phone: raw?.branch_manager_phone,
-                branch_manager_email: raw?.branch_manager_email,
+
+                // ✅ Nuevo: Campos de manager
+                manager_id: raw?.manager_id,
+                manager: raw?.manager,
+
+                // DEPRECATED: Mantener por compatibilidad
+                branch_manager_name: raw?.manager?.name // Backend devuelve "name" directamente
+                    ? raw.manager.name
+                    : raw?.manager?.first_name
+                        ? `${raw.manager.first_name} ${raw.manager.last_name}`
+                        : raw?.branch_manager_name,
+                branch_manager_phone: raw?.manager?.phone ?? raw?.manager?.phone_number ?? raw?.branch_manager_phone,
+                branch_manager_email: raw?.manager?.email ?? raw?.branch_manager_email,
+
                 branch_opening_hours: raw?.branch_opening_hours,
                 branch_location: raw?.branch_location,
                 branch_created_at: raw?.branch_created_at,
@@ -231,6 +262,7 @@ export const createSucursal = createAsyncThunk<
                 url: '/branches',
                 method: 'post',
                 data: payload,
+                params: { with: 'subsidiary,commune,manager' }, // ✅ Incluir manager en respuesta
             })
             return normalizeBranchData(branch)
         } catch (err: any) {
@@ -270,8 +302,9 @@ export const updateSucursal = createAsyncThunk<
 
             const branch = await ApiService.fetchNormalized<ISucursal>({
                 url: `/branches/${id}`,
-                method: 'put',
+                method: 'patch', // ✅ Cambiar a PATCH para coincidir con el backend
                 data: payload,
+                params: { with: 'subsidiary,commune,manager' }, // ✅ Incluir manager en respuesta
             })
             return normalizeBranchData(branch)
         } catch (err: any) {

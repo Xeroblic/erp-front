@@ -17,9 +17,25 @@ export interface ISucursal {
   branch_phone?: string;
   branch_address?: string;
   branch_email?: string;
+
+  // ✅ Nuevo: Manager como relación
+  manager_id?: number;
+  manager?: {
+    id: number;
+    name?: string; // Backend puede devolver "name" directamente
+    first_name?: string; // O first_name + last_name separados
+    last_name?: string;
+    email: string;
+    phone?: string; // Backend puede usar "phone" o "phone_number"
+    phone_number?: string;
+    position?: string;
+  };
+
+  // DEPRECATED: Campos antiguos de manager (mantener por compatibilidad)
   branch_manager_name?: string;
   branch_manager_phone?: string;
   branch_manager_email?: string;
+
   branch_status?: string | number | boolean;
   branch_created_at?: string;
   branch_updated_at?: string;
@@ -31,9 +47,12 @@ export interface ISucursal {
   phone?: string;
   address?: string;
   email?: string;
+
+  // DEPRECATED: Mantener por compatibilidad
   manager_name?: string;
   manager_phone?: string;
   manager_email?: string;
+
   status?: string | number | boolean;
   descripcion?: string;
   created_at: string;
@@ -44,6 +63,10 @@ export interface ISucursal {
   // Información adicional de la subsidiaria
   subsidiary_name?: string;
   subsidiary_rut?: string;
+
+  // Información adicional de la comuna
+  commune_id?: number;
+  commune_name?: string;
 }
 
 export interface IBranch {

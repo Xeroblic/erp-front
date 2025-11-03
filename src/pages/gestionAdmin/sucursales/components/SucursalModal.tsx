@@ -17,8 +17,14 @@ import Input from '@/components/form/Input';
 import Button from '@/components/ui/Button';
 import SelectReact, { TSelectOption } from '../../../../components/form/SelectReact';
 import { ISucursal } from '@/interface/empresas.interface';
-import { listaComunasThunk, listaProvinciasThunk, listaRegionesThunk } from '@/store/slices/core/coreSlice';
+import {
+	listaComunasThunk,
+	listaProvinciasThunk,
+	listaRegionesThunk,
+} from '@/store/slices/core/coreSlice';
 import { useGeoSelector } from '@/hooks/useGeoSelector';
+import { useBranchManagers } from '../hooks/useBranchManagers';
+import Icon from '@/components/icon/Icon';
 
 interface SucursalModalProps {
 	isOpen: boolean;
@@ -35,7 +41,8 @@ const validationSchema = Yup.object({
 	subsidiary_id: Yup.number().required('Debe seleccionar una subsidiaria'),
 	rut: Yup.string()
 		.nullable()
-		.matches(/^[\d\.-k]+$/i, 'Formato de RUT inválido')
+		.matches(/^[\dkK\-]+$/i, 'Formato de RUT inválido')
+		.min(8, 'El RUT debe tener al menos 8 caracteres')
 		.max(12, 'El RUT no puede exceder 12 caracteres'),
 	address: Yup.string().nullable().max(200, 'La dirección no puede exceder 200 caracteres'),
 	phone: Yup.string()
@@ -46,17 +53,7 @@ const validationSchema = Yup.object({
 		.nullable()
 		.email('Formato de email inválido')
 		.max(100, 'El email no puede exceder 100 caracteres'),
-	manager_name: Yup.string()
-		.nullable()
-		.max(100, 'El nombre del encargado no puede exceder 100 caracteres'),
-	manager_phone: Yup.string()
-		.nullable()
-		.matches(/^[\d\s\-\+\(\)]*$/, 'Formato de teléfono inválido')
-		.max(20, 'El teléfono no puede exceder 20 caracteres'),
-	manager_email: Yup.string()
-		.nullable()
-		.email('Formato de email inválido')
-		.max(100, 'El email no puede exceder 100 caracteres'),
+	manager_id: Yup.number().nullable().integer('Debe seleccionar un usuario válido'),
 });
 
 export default function SucursalModal({
@@ -95,9 +92,7 @@ export default function SucursalModal({
 			address: '',
 			phone: '',
 			email: '',
-			manager_name: '',
-			manager_phone: '',
-			manager_email: '',
+			manager_id: '',
 			region: '',
 			provincia: '',
 			comuna: '',
@@ -106,17 +101,15 @@ export default function SucursalModal({
 		validationSchema,
 		onSubmit: async (values) => {
 			try {
-				// Limpiar valores vacíos
+				// Limpiar valores vacíos y mapear a nombres del backend
 				const sucursalData = {
-					name: values.name.trim(),
+					branch_name: values.name.trim(), // ✅ Backend espera branch_name
 					subsidiary_id: Number(values.subsidiary_id),
-					rut: values.rut.trim() || undefined,
-					address: values.address.trim() || undefined,
-					phone: values.phone.trim() || undefined,
-					email: values.email.trim() || undefined,
-					manager_name: values.manager_name.trim() || undefined,
-					manager_phone: values.manager_phone.trim() || undefined,
-					manager_email: values.manager_email.trim() || undefined,
+					branch_rut: values.rut.trim() || undefined,
+					branch_address: values.address.trim() || undefined,
+					branch_phone: values.phone.trim() || undefined,
+					branch_email: values.email.trim() || undefined,
+					manager_id: values.manager_id ? Number(values.manager_id) : undefined,
 					commune_id: values.comuna ? Number(values.comuna) : undefined,
 				};
 
@@ -162,17 +155,18 @@ export default function SucursalModal({
 					address: sucursal.address || '',
 					phone: sucursal.phone || '',
 					email: sucursal.email || '',
-					manager_name: sucursal.manager_name || '',
-					manager_phone: sucursal.manager_phone || '',
-					manager_email: sucursal.manager_email || '',
+					manager_id: (sucursal as any)?.manager_id?.toString() || '',
 					region: '',
 					provincia: '',
 					comuna: (sucursal as any)?.commune_id
 						? String((sucursal as any).commune_id)
 						: (sucursal as any)?.commune?.id
-						  ? String((sucursal as any).commune.id)
-						  : '',
-					commune_id: (sucursal as any)?.commune_id ?? (sucursal as any)?.commune?.id ?? undefined,
+							? String((sucursal as any).commune.id)
+							: '',
+					commune_id:
+						(sucursal as any)?.commune_id ??
+						(sucursal as any)?.commune?.id ??
+						undefined,
 				});
 			} else {
 				formik.resetForm();
@@ -191,9 +185,20 @@ export default function SucursalModal({
 		label: sub.name,
 	}));
 
+	// Hook para obtener managers disponibles (usuarios con acceso a la sucursal)
+	const { managerOptions, loading: loadingManagers } = useBranchManagers({
+		branchId: isEditing ? sucursal?.id : undefined,
+		subsidiaryId: formik.values.subsidiary_id || undefined,
+		enabled: isOpen && (!!formik.values.subsidiary_id || isEditing),
+	});
+
 	const { optionsRegion, optionsProvincia, optionsComuna } = useGeoSelector(
 		formik as any,
-		{ regiones: listaRegiones as any, provincias: listaProvincias as any, comunas: listaComunas as any },
+		{
+			regiones: listaRegiones as any,
+			provincias: listaProvincias as any,
+			comunas: listaComunas as any,
+		},
 		{ fieldRegion: 'region', fieldProvincia: 'provincia', fieldComuna: 'comuna' },
 	);
 
@@ -242,8 +247,6 @@ export default function SucursalModal({
 								onBlur={() => formik.setFieldTouched('subsidiary_id', true)}
 								isDisabled={formik.isSubmitting}
 								options={subsidiaryOptions}
-								className='react-select-container'
-								classNamePrefix='react-select'
 							/>
 							{formik.touched.subsidiary_id && formik.errors.subsidiary_id && (
 								<p className='mt-1 text-sm text-red-600'>
@@ -287,45 +290,71 @@ export default function SucursalModal({
 						</div>
 
 						{/* Región / Provincia / Comuna */}
-						<div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+						<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
 							<div>
-								<Label>Región</Label>
+								<Label htmlFor='region'>Región</Label>
 								<SelectReact
 									name='region'
 									placeholder='Seleccione región'
-									value={optionsRegion.find(o => o.value === String(formik.values.region)) || null}
-									onChange={(opt) => formik.setFieldValue('region', (opt as TSelectOption | null)?.value || '')}
+									value={
+										optionsRegion.find(
+											(o) => o.value === String(formik.values.region),
+										) || null
+									}
+									onChange={(opt) =>
+										formik.setFieldValue(
+											'region',
+											(opt as TSelectOption | null)?.value || '',
+										)
+									}
 									options={optionsRegion}
 								/>
 							</div>
 							<div>
-								<Label>Provincia</Label>
+								<Label htmlFor='provincia'>Provincia</Label>
 								<SelectReact
 									name='provincia'
 									placeholder='Seleccione provincia'
-									value={optionsProvincia.find(o => o.value === String(formik.values.provincia)) || null}
-									onChange={(opt) => formik.setFieldValue('provincia', (opt as TSelectOption | null)?.value || '')}
+									value={
+										optionsProvincia.find(
+											(o) => o.value === String(formik.values.provincia),
+										) || null
+									}
+									onChange={(opt) =>
+										formik.setFieldValue(
+											'provincia',
+											(opt as TSelectOption | null)?.value || '',
+										)
+									}
 									options={optionsProvincia}
 								/>
 							</div>
 							<div>
-								<Label>Comuna</Label>
-                            <SelectReact
-                                name='comuna'
-                                placeholder='Seleccione comuna'
-                                value={
-                                    optionsComuna.find(o => o.value === String(formik.values.comuna)) ||
-                                    (formik.values.comuna
-                                        ? { value: String(formik.values.comuna), label: 'Cargando…' }
-                                        : null)
-                                }
-                                onChange={(opt) => {
-                                    const v = (opt as TSelectOption | null)?.value || '';
-                                    formik.setFieldValue('comuna', v);
-                                    formik.setFieldValue('commune_id', v ? Number(v) : undefined);
-                                }}
-                                options={optionsComuna}
-                            />
+								<Label htmlFor='comuna'>Comuna</Label>
+								<SelectReact
+									name='comuna'
+									placeholder='Seleccione comuna'
+									value={
+										optionsComuna.find(
+											(o) => o.value === String(formik.values.comuna),
+										) ||
+										(formik.values.comuna
+											? {
+													value: String(formik.values.comuna),
+													label: 'Cargando…',
+												}
+											: null)
+									}
+									onChange={(opt) => {
+										const v = (opt as TSelectOption | null)?.value || '';
+										formik.setFieldValue('comuna', v);
+										formik.setFieldValue(
+											'commune_id',
+											v ? Number(v) : undefined,
+										);
+									}}
+									options={optionsComuna}
+								/>
 							</div>
 						</div>
 					</div>
@@ -374,66 +403,75 @@ export default function SucursalModal({
 
 					{/* Información del Encargado */}
 					<div className='space-y-4'>
-						<h3 className='border-b pb-2 text-lg font-medium'>Encargado de Sucursal</h3>
+						<h3 className='flex items-center gap-2 border-b pb-2 text-lg font-medium'>
+							<Icon icon='HeroUser' className='text-zinc-600' />
+							Encargado de Sucursal
+						</h3>
 
-						{/* Nombre del Encargado */}
-						<div>
-							<Label htmlFor='manager_name'>Nombre del Encargado</Label>
-							<Input
-								id='manager_name'
-								name='manager_name'
-								placeholder='Ej: Juan Pérez'
-								value={formik.values.manager_name}
-								onChange={formik.handleChange}
-								onBlur={formik.handleBlur}
-								disabled={formik.isSubmitting}
-							/>
-							{formik.touched.manager_name && formik.errors.manager_name && (
-								<p className='mt-1 text-sm text-red-600'>
-									{formik.errors.manager_name}
-								</p>
-							)}
+						<div className='rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20'>
+							<div className='flex items-start gap-3'>
+								<Icon
+									icon='HeroInformationCircle'
+									className='mt-0.5 flex-shrink-0 text-blue-600'
+								/>
+								<div className='text-sm text-blue-800 dark:text-blue-300'>
+									<p className='mb-1 font-medium'>
+										Seleccione un usuario registrado
+									</p>
+									<p>
+										El encargado debe ser un usuario activo con acceso a esta
+										sucursal y con permisos de administración o gestión.
+									</p>
+								</div>
+							</div>
 						</div>
 
-						<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-							{/* Teléfono del Encargado */}
-							<div>
-								<Label htmlFor='manager_phone'>Teléfono del Encargado</Label>
-								<Input
-									id='manager_phone'
-									name='manager_phone'
-									placeholder='Ej: +56 9 8765 4321'
-									value={formik.values.manager_phone}
-									onChange={formik.handleChange}
-									onBlur={formik.handleBlur}
-									disabled={formik.isSubmitting}
-								/>
-								{formik.touched.manager_phone && formik.errors.manager_phone && (
-									<p className='mt-1 text-sm text-red-600'>
-										{formik.errors.manager_phone}
+						{/* Selector de Encargado */}
+						<div>
+							<Label htmlFor='manager_id'>Encargado / Manager</Label>
+							<SelectReact
+								id='manager_id'
+								name='manager_id'
+								placeholder={
+									loadingManagers
+										? 'Cargando usuarios...'
+										: managerOptions.length === 0
+											? 'No hay usuarios disponibles'
+											: 'Seleccione un encargado...'
+								}
+								value={
+									managerOptions.find(
+										(opt) => opt.value === formik.values.manager_id,
+									) || null
+								}
+								onChange={(selectedOption) => {
+									const option = selectedOption as TSelectOption | null;
+									formik.setFieldValue('manager_id', option?.value || '');
+								}}
+								onBlur={() => formik.setFieldTouched('manager_id', true)}
+								isDisabled={
+									formik.isSubmitting ||
+									loadingManagers ||
+									managerOptions.length === 0
+								}
+								isLoading={loadingManagers}
+								options={managerOptions}
+								isClearable
+							/>
+							{formik.touched.manager_id && formik.errors.manager_id && (
+								<p className='mt-1 text-sm text-red-600'>
+									{formik.errors.manager_id}
+								</p>
+							)}
+							{!loadingManagers &&
+								managerOptions.length === 0 &&
+								formik.values.subsidiary_id && (
+									<p className='mt-2 flex items-center gap-1 text-sm text-amber-600'>
+										<Icon icon='HeroExclamationTriangle' className='text-xs' />
+										No se encontraron usuarios elegibles. Asegúrese de que hay
+										usuarios con acceso a esta subsidiaria.
 									</p>
 								)}
-							</div>
-
-							{/* Email del Encargado */}
-							<div>
-								<Label htmlFor='manager_email'>Email del Encargado</Label>
-								<Input
-									id='manager_email'
-									name='manager_email'
-									type='email'
-									placeholder='Ej: juan.perez@empresa.com'
-									value={formik.values.manager_email}
-									onChange={formik.handleChange}
-									onBlur={formik.handleBlur}
-									disabled={formik.isSubmitting}
-								/>
-								{formik.touched.manager_email && formik.errors.manager_email && (
-									<p className='mt-1 text-sm text-red-600'>
-										{formik.errors.manager_email}
-									</p>
-								)}
-							</div>
 						</div>
 					</div>
 				</form>

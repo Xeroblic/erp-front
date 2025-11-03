@@ -75,23 +75,26 @@ const NotificationPartial = () => {
 	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
 	const { items, unreadCount } = useAppSelector(
-		(s) => s.notifications ?? { items: [], unreadCount: 0 }
+		(s) => s.notifications ?? { items: [], unreadCount: 0 },
 	);
 
 	const isFetchingRef = useRef(false);
 	const lastFetchTsRef = useRef(0);
-	const refresh = useCallback((force = false) => {
-		if (isFetchingRef.current) return;
-		const now = Date.now();
-		if (!force && now - lastFetchTsRef.current < 5000) return;
-		isFetchingRef.current = true;
-		dispatch(fetchNotifications({ per_page: 20 }))
-			.catch(() => void 0)
-			.finally(() => {
-				lastFetchTsRef.current = Date.now();
-				isFetchingRef.current = false;
-			});
-	}, [dispatch]);
+	const refresh = useCallback(
+		(force = false) => {
+			if (isFetchingRef.current) return;
+			const now = Date.now();
+			if (!force && now - lastFetchTsRef.current < 1000) return;
+			isFetchingRef.current = true;
+			dispatch(fetchNotifications({ per_page: 20 }))
+				.catch(() => void 0)
+				.finally(() => {
+					lastFetchTsRef.current = Date.now();
+					isFetchingRef.current = false;
+				});
+		},
+		[dispatch],
+	);
 
 	// Prefetch + polling cada 60s + refresh en focus/visibility para mantener el badge al dia
 	useEffect(() => {
@@ -110,8 +113,6 @@ const NotificationPartial = () => {
 		};
 	}, [items.length, refresh]);
 
-
-	// Filtro local en el dropdown: por defecto mostrar Todas
 	const [tab, setTab] = useState<'unread' | 'read' | 'all'>('all');
 
 	const isRead = (n: any) => (n.status === 'read' || !!n.read_at) && n.status !== 'ack';
@@ -120,7 +121,7 @@ const NotificationPartial = () => {
 	const filtered = useMemo(() => {
 		if (tab === 'unread') return items.filter(isUnread);
 		if (tab === 'read') return items.filter(isRead);
-		return items; // all
+		return items;
 	}, [items, tab]);
 
 	const recent = useMemo(() => filtered.slice(0, 10), [filtered]);
@@ -142,7 +143,6 @@ const NotificationPartial = () => {
 		navigate(`/notificaciones/${id}`);
 	};
 
-	// Fallback local en caso de que el contador tarde en actualizar
 	const hasUnread = useMemo(
 		() => items.some((n) => n.status !== 'read' && n.status !== 'ack'),
 		[items],

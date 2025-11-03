@@ -27,9 +27,7 @@ const Proveedores: React.FC = () => {
 	const currentUser = useAppSelector((state) => state.auth.user);
 	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
 
-	// 🎯 Inicializar subsidiaryId INMEDIATAMENTE con el valor de personalización
 	const [subsidiaryId, setSubsidiaryId] = useState<number | null>(() => {
-		// Si ya tenemos la personalización, usarla de inmediato
 		return personalizacionUsuario?.sucursal_principal ?? null;
 	});
 
@@ -47,7 +45,6 @@ const Proveedores: React.FC = () => {
 	});
 	const dispatch = useAppDispatch();
 
-	// Actualizar subsidiaryId cuando cambia la personalización (solo si aún no está establecido)
 	useEffect(() => {
 		const principal = personalizacionUsuario?.sucursal_principal;
 		if (principal && !subsidiaryId) {
@@ -55,7 +52,6 @@ const Proveedores: React.FC = () => {
 		}
 	}, [personalizacionUsuario?.sucursal_principal, subsidiaryId]);
 
-	// Escuchar cambios externos de subsidiary
 	useEffect(() => {
 		const handleExternalSubsidiaryChange = (event: Event) => {
 			const customEvent = event as CustomEvent<{ branchId: number | null }>;
@@ -89,17 +85,17 @@ const Proveedores: React.FC = () => {
 		setCreateOpen(false);
 	};
 
-	const handleEditSubmit = async (values: { name: string }) => {
-		if (!selected || !activeSubsidiaryId) return;
-		await dispatch(
-			updateSupplier({
-				subsidiaryId: activeSubsidiaryId,
-				data: { id: selected.id, name: values.name },
-			}),
-		);
-		setEditOpen(false);
-		setSelected(null);
-	};
+	// const handleEditSubmit = async (values: { name: string }) => {
+	// 	if (!selected || !activeSubsidiaryId) return;
+	// 	await dispatch(
+	// 		updateSupplier({
+	// 			subsidiaryId: activeSubsidiaryId,
+	// 			data: { id: selected.id, name: values.name },
+	// 		}),
+	// 	);
+	// 	setEditOpen(false);
+	// 	setSelected(null);
+	// };
 
 	const handleDeleteConfirm = async () => {
 		if (!selected || !activeSubsidiaryId) return;
@@ -138,7 +134,7 @@ const Proveedores: React.FC = () => {
 								Proveedores
 							</h1>
 							<p className='text-sm text-gray-600 dark:text-gray-400'>
-								Gesti�n de proveedores y condiciones comerciales
+								Gestión de proveedores y condiciones comerciales
 							</p>
 						</div>
 					</div>

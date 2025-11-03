@@ -47,132 +47,144 @@ const SUPPLIERS_PREFIX = (import.meta as any)?.env?.VITE_API_SUPPLIERS_PREFIX ||
 const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
 const ep = (p: string) => join(SUPPLIERS_PREFIX, p);
 
-export const fetchSuppliers = createAsyncThunk<
-	ISupplier[],
-	{ subsidiaryId: number; search?: string; with_customers?: boolean },
-	{ rejectValue: string }
->('suppliers/fetchSuppliers', async ({ subsidiaryId, search, with_customers }, { rejectWithValue }) => {
-	try {
-		const resp = await ApiService.fetchData<{ data?: any[] }>({
-			url: ep(`/subsidiaries/${subsidiaryId}/suppliers/`),
-			method: 'get',
-			params: { q: search || undefined, with_customers: with_customers ? 1 : undefined, per_page: 200 },
-			dedupe: true,
-			cacheTTLms: 10_000,
-		});
-		return normalizeArray(resp.data) as ISupplier[];
-	} catch (error: any) {
-		if (error?.response?.status === 404 && error?.response?.data?.message?.includes('No query results for model')) {
-			return [] as ISupplier[]; // Retornar vacío en lugar de error
+export const fetchSuppliers = createAsyncThunk<ISupplier[], { subsidiaryId: number; search?: string; with_customers?: boolean }, { rejectValue: string }>(
+	'suppliers/fetchSuppliers', async ({ subsidiaryId, search, with_customers }, { rejectWithValue }) => {
+		try {
+			const resp = await ApiService.fetchData<{ data?: any[] }>({
+				url: ep(`/subsidiaries/${subsidiaryId}/suppliers/`),
+				method: 'get',
+				params: { q: search || undefined, with_customers: with_customers ? 1 : undefined, per_page: 200 },
+				dedupe: true,
+				cacheTTLms: 10_000,
+			});
+			return normalizeArray(resp.data) as ISupplier[];
+		} catch (error: any) {
+			if (error?.response?.status === 404 && error?.response?.data?.message?.includes('No query results for model')) {
+				return [] as ISupplier[];
+			}
+			return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'No se pudieron cargar los proveedores');
 		}
-		return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'No se pudieron cargar los proveedores');
+	});
+
+export const fetchSupplierById = createAsyncThunk<ISupplier, { subsidiaryId: number; id: number }, { rejectValue: string }>(
+	'suppliers/fetchSupplierById',
+	async ({ subsidiaryId, id }, { rejectWithValue }) => {
+		try {
+			const resp = await ApiService.fetchData<{
+				data?: any
+			}>({
+				url: ep(`/subsidiaries/${subsidiaryId}/suppliers/${id}/`),
+				method: 'get'
+			});
+			return normalizeObject(resp.data) as ISupplier;
+		} catch (error: any) {
+			return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'No se pudo cargar el proveedor');
+		}
+	});
+
+export const createSupplier = createAsyncThunk<ISupplier, { subsidiaryId: number; data: ICreateSupplierRequest }, { rejectValue: string }>(
+	'suppliers/createSupplier', async ({ subsidiaryId, data }, { rejectWithValue }) => {
+		try {
+			const payload = { ...data } as Record<string, unknown>;
+			const resp = await ApiService.fetchData<{ data?: any }>({
+				url: ep(`/subsidiaries/${subsidiaryId}/suppliers/`),
+				method: 'post',
+				data: payload,
+			});
+			return normalizeObject(resp.data) as ISupplier;
+		} catch (error: any) {
+			return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'No se pudo crear el proveedor');
+		}
 	}
-});
+);
 
-export const fetchSupplierById = createAsyncThunk<
-	ISupplier,
-	{ subsidiaryId: number; id: number },
-	{ rejectValue: string }
->('suppliers/fetchSupplierById', async ({ subsidiaryId, id }, { rejectWithValue }) => {
-	try {
-		const resp = await ApiService.fetchData<{ data?: any }>({ url: ep(`/subsidiaries/${subsidiaryId}/suppliers/${id}/`), method: 'get' });
-		return normalizeObject(resp.data) as ISupplier;
-	} catch (error: any) {
-		return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'No se pudo cargar el proveedor');
+
+export const updateSupplier = createAsyncThunk<ISupplier, { subsidiaryId: number; data: IUpdateSupplierRequest }, { rejectValue: string }>(
+	'suppliers/updateSupplier',
+	async ({ subsidiaryId, data }, { rejectWithValue }) => {
+		try {
+			const { id, ...rest } = data;
+			const payload = { ...rest } as Record<string, unknown>;
+			const resp = await ApiService.fetchData<{ data?: any }>({
+				url: ep(`/subsidiaries/${subsidiaryId}/suppliers/${id}/`),
+				method: 'patch',
+				data: payload,
+			});
+			return normalizeObject(resp.data) as ISupplier;
+		} catch (error: any) {
+			return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'No se pudo actualizar el proveedor');
+		}
 	}
-});
+);
 
-export const createSupplier = createAsyncThunk<
-	ISupplier,
-	{ subsidiaryId: number; data: ICreateSupplierRequest },
-	{ rejectValue: string }
->('suppliers/createSupplier', async ({ subsidiaryId, data }, { rejectWithValue }) => {
-	try {
-		const resp = await ApiService.fetchData<{ data?: any }>({ url: ep(`/subsidiaries/${subsidiaryId}/suppliers/`), method: 'post', data });
-		return normalizeObject(resp.data) as ISupplier;
-	} catch (error: any) {
-		return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'No se pudo crear el proveedor');
-	}
-});
+export const deleteSupplier = createAsyncThunk<number, { subsidiaryId: number; id: number }, { rejectValue: string }>(
+	'suppliers/deleteSupplier',
+	async ({ subsidiaryId, id }, { rejectWithValue }) => {
+		try {
+			await ApiService.fetchData({
+				url: ep(`/subsidiaries/${subsidiaryId}/suppliers/${id}/`),
+				method: 'delete'
+			});
+			return id;
+		} catch (error: any) {
+			return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'No se pudo eliminar el proveedor');
+		}
+	});
 
+export const fetchSupplierCustomers = createAsyncThunk<ICustomerSupplier[], { subsidiaryId: number; supplierId: number; search?: string }, { rejectValue: string }>(
+	'suppliers/fetchSupplierCustomers',
+	async ({ subsidiaryId, supplierId, search }, { rejectWithValue }) => {
+		try {
+			const resp = await ApiService.fetchData<{
+				data?: any[]
+			}>({
+				url: ep(`/subsidiaries/${subsidiaryId}/suppliers/${supplierId}/customers/`),
+				method: 'get',
+				params: { q: search || undefined, per_page: 200 },
+				dedupe: true,
+				cacheTTLms: 5_000,
+			});
+			return normalizeArray(resp.data) as ICustomerSupplier[];
+		} catch (error: any) {
+			return rejectWithValue(
+				error?.response?.data?.message ?? error?.message ?? 'No se pudieron cargar los clientes del proveedor',
+			);
+		}
+	});
 
+export const attachCustomersToSupplier = createAsyncThunk<ICustomerSupplier[], { subsidiaryId: number; supplierId: number; payload: IAttachCustomersToSupplierRequest }, { rejectValue: string }>(
+	'suppliers/attachCustomersToSupplier',
+	async ({ subsidiaryId, supplierId, payload }, { rejectWithValue, dispatch }) => {
+		try {
+			const body = { ...payload } as Record<string, unknown>;
+			await ApiService.fetchData({
+				url: ep(`/subsidiaries/${subsidiaryId}/suppliers/${supplierId}/attach-customers/`),
+				method: 'post',
+				data: body,
+			});
+			const refreshed = await dispatch(fetchSupplierCustomers({ subsidiaryId, supplierId })).unwrap();
+			return refreshed;
+		} catch (error: any) {
+			return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'No se pudo asociar clientes');
+		}
+	});
 
-
-export const updateSupplier = createAsyncThunk<
-	ISupplier,
-	{ subsidiaryId: number; data: IUpdateSupplierRequest },
-	{ rejectValue: string }
->('suppliers/updateSupplier', async ({ subsidiaryId, data }, { rejectWithValue }) => {
-	try {
-		const { id, ...rest } = data;
-		const resp = await ApiService.fetchData<{ data?: any }>({ url: ep(`/subsidiaries/${subsidiaryId}/suppliers/${id}/`), method: 'patch', data: rest });
-		return normalizeObject(resp.data) as ISupplier;
-	} catch (error: any) {
-		return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'No se pudo actualizar el proveedor');
-	}
-});
-
-export const deleteSupplier = createAsyncThunk<
-	number,
-	{ subsidiaryId: number; id: number },
-	{ rejectValue: string }
->('suppliers/deleteSupplier', async ({ subsidiaryId, id }, { rejectWithValue }) => {
-	try {
-		await ApiService.fetchData({ url: ep(`/subsidiaries/${subsidiaryId}/suppliers/${id}/`), method: 'delete' });
-		return id;
-	} catch (error: any) {
-		return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'No se pudo eliminar el proveedor');
-	}
-});
-
-export const fetchSupplierCustomers = createAsyncThunk<
-	ICustomerSupplier[],
-	{ subsidiaryId: number; supplierId: number; search?: string },
-	{ rejectValue: string }
->('suppliers/fetchSupplierCustomers', async ({ subsidiaryId, supplierId, search }, { rejectWithValue }) => {
-	try {
-		const resp = await ApiService.fetchData<{ data?: any[] }>({
-			url: ep(`/subsidiaries/${subsidiaryId}/suppliers/${supplierId}/customers/`),
-			method: 'get',
-			params: { q: search || undefined, per_page: 200 },
-			dedupe: true,
-			cacheTTLms: 5_000,
-		});
-		return normalizeArray(resp.data) as ICustomerSupplier[];
-	} catch (error: any) {
-		return rejectWithValue(
-			error?.response?.data?.message ?? error?.message ?? 'No se pudieron cargar los clientes del proveedor',
-		);
-	}
-});
-
-export const attachCustomersToSupplier = createAsyncThunk<
-	ICustomerSupplier[],
-	{ subsidiaryId: number; supplierId: number; payload: IAttachCustomersToSupplierRequest },
-	{ rejectValue: string }
->('suppliers/attachCustomersToSupplier', async ({ subsidiaryId, supplierId, payload }, { rejectWithValue, dispatch }) => {
-	try {
-		await ApiService.fetchData({ url: ep(`/subsidiaries/${subsidiaryId}/suppliers/${supplierId}/attach-customers/`), method: 'post', data: payload });
-		const refreshed = await dispatch(fetchSupplierCustomers({ subsidiaryId, supplierId })).unwrap();
-		return refreshed;
-	} catch (error: any) {
-		return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'No se pudo asociar clientes');
-	}
-});
-
-export const detachCustomersFromSupplier = createAsyncThunk<
-	ICustomerSupplier[],
-	{ subsidiaryId: number; supplierId: number; payload: IAttachCustomersToSupplierRequest },
-	{ rejectValue: string }
->('suppliers/detachCustomersFromSupplier', async ({ subsidiaryId, supplierId, payload }, { rejectWithValue, dispatch }) => {
-	try {
-		await ApiService.fetchData({ url: ep(`/subsidiaries/${subsidiaryId}/suppliers/${supplierId}/detach-customers/`), method: 'post', data: payload });
-		const refreshed = await dispatch(fetchSupplierCustomers({ subsidiaryId, supplierId })).unwrap();
-		return refreshed;
-	} catch (error: any) {
-		return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'No se pudo desasociar clientes');
-	}
-});
+export const detachCustomersFromSupplier = createAsyncThunk<ICustomerSupplier[], { subsidiaryId: number; supplierId: number; payload: IAttachCustomersToSupplierRequest }, { rejectValue: string }>(
+	'suppliers/detachCustomersFromSupplier',
+	async ({ subsidiaryId, supplierId, payload }, { rejectWithValue, dispatch }) => {
+		try {
+			const body = { ...payload } as Record<string, unknown>;
+			await ApiService.fetchData({
+				url: ep(`/subsidiaries/${subsidiaryId}/suppliers/${supplierId}/detach-customers/`),
+				method: 'post',
+				data: body,
+			});
+			const refreshed = await dispatch(fetchSupplierCustomers({ subsidiaryId, supplierId })).unwrap();
+			return refreshed;
+		} catch (error: any) {
+			return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'No se pudo desasociar clientes');
+		}
+	});
 
 const suppliersSlice = createSlice({
 	name: 'suppliers/suppliersSlice',
@@ -188,7 +200,6 @@ const suppliersSlice = createSlice({
 			.addCase(fetchSuppliers.pending, (state) => {
 				state.loading = true;
 				state.error = null;
-				// Limpiar items anteriores cuando cambia de subsidiaria
 				state.items = [];
 			})
 			.addCase(fetchSuppliers.fulfilled, (state, action) => {
@@ -198,14 +209,11 @@ const suppliersSlice = createSlice({
 			.addCase(fetchSuppliers.rejected, (state, action) => {
 				state.loading = false;
 				state.error = action.payload ?? 'Error al cargar proveedores';
-				// Limpiar items cuando hay error (ej: subsidiaria sin acceso)
 				state.items = [];
 			})
-			// Detail
 			.addCase(fetchSupplierById.fulfilled, (state, action) => {
 				state.current = action.payload;
 			})
-			// Create
 			.addCase(createSupplier.pending, (state) => {
 				state.creating = true;
 				state.error = null;
@@ -218,7 +226,6 @@ const suppliersSlice = createSlice({
 				state.creating = false;
 				state.error = action.payload ?? 'Error al crear proveedor';
 			})
-			// Update
 			.addCase(updateSupplier.pending, (state) => {
 				state.updating = true;
 				state.error = null;
@@ -233,7 +240,6 @@ const suppliersSlice = createSlice({
 				state.updating = false;
 				state.error = action.payload ?? 'Error al actualizar proveedor';
 			})
-			// Delete
 			.addCase(deleteSupplier.pending, (state) => {
 				state.deleting = true;
 				state.error = null;
@@ -247,7 +253,6 @@ const suppliersSlice = createSlice({
 				state.deleting = false;
 				state.error = action.payload ?? 'Error al eliminar proveedor';
 			})
-			// Customers of supplier
 			.addCase(fetchSupplierCustomers.pending, (state) => {
 				state.customersLoading = true;
 			})
