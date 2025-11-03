@@ -46,23 +46,3 @@ export interface PaginatedNotificationsResponse {
   }
 }
 
-// SSE payload shape (from backend StreamController)
-export interface NotificationSsePayload {
-  id: number
-  title: string
-  type_key?: string | null
-  type_label?: string | null
-  module?: string | null
-  module_label?: string | null
-  is_read: boolean
-  bucket?: NotificationBucket
-  priority?: number | string | null
-  created_at?: string | null
-  aggregate_count?: number
-  payload?: Record<string, unknown> | null
-  message?: string | null
-  created_by?: string | null
-  created_by_id?: number | null
-  updated_by?: string | null
-  updated_by_id?: number | null
-}

@@ -1,4 +1,4 @@
-﻿import React, { FC, ReactNode, useEffect, useMemo, useState } from 'react';
+import React, { FC, ReactNode, useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import Dropdown, {
 	DropdownMenu,
 	DropdownToggle,
@@ -75,14 +75,28 @@ const NotificationPartial = () => {
 	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
 	const { items, unreadCount } = useAppSelector(
-		(s) => s.notifications ?? { items: [], unreadCount: 0 },
+		(s) => s.notifications ?? { items: [], unreadCount: 0 }
 	);
 
-	// Prefetch + polling breve + refresh en focus/visibility para mantener el badge al d
+	const isFetchingRef = useRef(false);
+	const lastFetchTsRef = useRef(0);
+	const refresh = useCallback((force = false) => {
+		if (isFetchingRef.current) return;
+		const now = Date.now();
+		if (!force && now - lastFetchTsRef.current < 5000) return;
+		isFetchingRef.current = true;
+		dispatch(fetchNotifications({ per_page: 20 }))
+			.catch(() => void 0)
+			.finally(() => {
+				lastFetchTsRef.current = Date.now();
+				isFetchingRef.current = false;
+			});
+	}, [dispatch]);
+
+	// Prefetch + polling cada 60s + refresh en focus/visibility para mantener el badge al dia
 	useEffect(() => {
-		const refresh = () => dispatch(fetchNotifications({ per_page: 20 })).catch(() => void 0);
-		if (!items.length) refresh();
-		const iv = window.setInterval(refresh, 30000);
+		if (!items.length) refresh(true);
+		const iv = window.setInterval(() => refresh(), 60000);
 		const onFocus = () => refresh();
 		const onVis = () => {
 			if (!document.hidden) refresh();
@@ -94,8 +108,8 @@ const NotificationPartial = () => {
 			window.removeEventListener('focus', onFocus);
 			document.removeEventListener('visibilitychange', onVis);
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
+	}, [items.length, refresh]);
+
 
 	// Filtro local en el dropdown: por defecto mostrar Todas
 	const [tab, setTab] = useState<'unread' | 'read' | 'all'>('all');
@@ -161,7 +175,7 @@ const NotificationPartial = () => {
 							color='violet'
 							onClick={handleMarkAll}
 							isDisable={unreadCount === 0}>
-							Marcar leídas
+							Marcar leidas
 						</Button>
 					</div>
 
@@ -173,7 +187,7 @@ const NotificationPartial = () => {
 								onClick={() => handleItemClick(n.id)}>
 								<NotificationItem
 									name={clean(
-										n.event?.type_label ?? n.event?.type_key ?? 'Notificación',
+										n.event?.type_label ?? n.event?.type_key ?? 'Notificacion',
 									)}
 									icon={
 										(n.delivered_channels ?? []).includes('email')
@@ -221,15 +235,15 @@ const NotificationPartial = () => {
 								type='button'
 								className={`rounded-md px-2 py-1 text-xs ${tab === 'unread' ? 'bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-white' : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'}`}
 								onClick={() => setTab('unread')}
-								aria-label={'Mostrar no leídas'}>
-								{'No leídas'}
+								aria-label={'Mostrar no leidas'}>
+								{'No leidas'}
 							</button>
 							<button
 								type='button'
 								className={`rounded-md px-2 py-1 text-xs ${tab === 'read' ? 'bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-white' : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'}`}
 								onClick={() => setTab('read')}
-								aria-label={'Mostrar leídas'}>
-								{'Leídas'}
+								aria-label={'Mostrar leidas'}>
+								{'Leidas'}
 							</button>
 							<button
 								type='button'
@@ -265,11 +279,11 @@ export default NotificationPartial;
 // Helpers
 function formatTitle(n: { event?: { type_key?: string | null } | null }): string {
 	const key = n.event?.type_key ?? '';
-	if (!key) return 'Notificación';
+	if (!key) return 'Notificacion';
 	const map: Record<string, string> = {
-		'system.sync-failed': 'Sincronización fallida',
+		'system.sync-failed': 'Sincronizacion fallida',
 		'payment.confirmed': 'Pago confirmado',
-		'quote.expiring-soon': 'Cotización por expirar',
+		'quote.expiring-soon': 'Cotizacion por expirar',
 	};
 	if (map[key]) return map[key];
 	return key.replace(/[._-]+/g, ' ').replace(/\\b\\w/g, (s) => s.toUpperCase());

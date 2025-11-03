@@ -1,11 +1,6 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit'
 import ApiService from '@/services/ApiService'
-import type {
-  NotificationSsePayload,
-  PaginatedNotificationsResponse,
-  UserNotificationDTO,
-  NotificationStatus,
-} from '@/interface/notifications.interface'
+import type { PaginatedNotificationsResponse, UserNotificationDTO, NotificationStatus } from '@/interface/notifications.interface'
 
 export interface NotificationsMeta {
   current_page: number
@@ -29,7 +24,6 @@ export interface NotificationsState {
   error: string | null
   meta: NotificationsMeta | null
   unreadCount: number
-  streaming: { connected: boolean; lastEventId: number }
 }
 
 const initialState: NotificationsState = {
@@ -38,7 +32,6 @@ const initialState: NotificationsState = {
   error: null,
   meta: null,
   unreadCount: 0,
-  streaming: { connected: false, lastEventId: 0 },
 }
 
 const normalizeFromApi = (n: any): UserNotificationDTO => {
@@ -67,32 +60,6 @@ const normalizeFromApi = (n: any): UserNotificationDTO => {
   }
 }
 
-const normalizeFromSse = (s: NotificationSsePayload): UserNotificationDTO => {
-  return {
-    id: Number(s.id),
-    status: s.is_read ? 'read' : 'unread',
-    bucket: s.bucket ?? null,
-    assigned_to: null,
-    delivered_channels: [],
-    aggregate_count: typeof s.aggregate_count === 'number' ? s.aggregate_count : 1,
-    read_at: s.is_read ? s.created_at ?? null : null,
-    ack_at: null,
-    created_at: s.created_at ?? null,
-    origin: null,
-    message: s.message ?? (s.type_label ?? s.title ?? null),
-    event: {
-      id: s.id,
-      type_key: s.type_key ?? null,
-      type_label: s.type_label ?? s.title ?? null,
-      module: s.module ?? null,
-      module_label: s.module_label ?? null,
-      payload: s.payload ?? {},
-      scope: null,
-      priority: s.priority ?? undefined,
-    },
-  }
-}
-
 // Contar no leídas basándose en el estado, ignorando read_at
 const recomputeUnread = (arr: UserNotificationDTO[]) =>
   arr.filter((n) => n.status !== 'read' && n.status !== 'ack').length
@@ -116,8 +83,6 @@ export const fetchNotifications = createAsyncThunk<
       url: '/me/notifications',
       method: 'get',
       params,
-      dedupe: true,
-      cacheTTLms: 5_000,
     })
 
     const raw = response.data
@@ -256,17 +221,6 @@ const notificationsSlice = createSlice({
       state.items = Array.from(map.values()).sort((a, b) => (b.id || 0) - (a.id || 0))
       state.unreadCount = recomputeUnread(state.items)
     },
-    upsertFromSse(state, action: PayloadAction<NotificationSsePayload>) {
-      const dto = normalizeFromSse(action.payload)
-      const idx = state.items.findIndex((x) => x.id === dto.id)
-      if (idx >= 0) state.items[idx] = { ...state.items[idx], ...dto }
-      else state.items.unshift(dto)
-      state.unreadCount = recomputeUnread(state.items)
-      state.streaming.lastEventId = Math.max(state.streaming.lastEventId, dto.id)
-    },
-    setStreamingConnected(state, action: PayloadAction<boolean>) {
-      state.streaming.connected = action.payload
-    },
   },
   extraReducers: (builder) => {
     builder
@@ -279,9 +233,6 @@ const notificationsSlice = createSlice({
         state.items = action.payload.items
         state.meta = action.payload.meta
         state.unreadCount = recomputeUnread(state.items)
-        // track highest id for SSE resume and polling-diff
-        const maxId = state.items.reduce((m, it) => (it.id > m ? it.id : m), state.streaming.lastEventId)
-        state.streaming.lastEventId = maxId
       })
       .addCase(fetchNotifications.rejected, (state, action) => {
         state.loading = false
@@ -336,6 +287,6 @@ const notificationsSlice = createSlice({
   },
 })
 
-export const { upsertMany, upsertFromSse, setStreamingConnected, setLocalStatus } = notificationsSlice.actions
+export const { upsertMany, setLocalStatus } = notificationsSlice.actions
 
 export default notificationsSlice.reducer

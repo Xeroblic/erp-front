@@ -256,7 +256,7 @@ const DetalleClientePage: React.FC = () => {
 											/>
 										</div>
 										<div>
-											<p className='text-xs text-gray-600 dark:text-gray-400'>
+											<p className='text-gray-600 dark:text-gray-400'>
 												Fecha de Creación
 											</p>
 											<p className='text-sm font-semibold text-gray-900 dark:text-white'>
@@ -282,7 +282,7 @@ const DetalleClientePage: React.FC = () => {
 											/>
 										</div>
 										<div>
-											<p className='text-xs text-gray-600 dark:text-gray-400'>
+											<p className='text-gray-600 dark:text-gray-400'>
 												Última Actualización
 											</p>
 											<p className='text-sm font-semibold text-gray-900 dark:text-white'>
@@ -305,7 +305,7 @@ const DetalleClientePage: React.FC = () => {
 											<Icon icon='HeroUsers' className='h-6 w-6 text-white' />
 										</div>
 										<div>
-											<p className='text-xs text-gray-600 dark:text-gray-400'>
+											<p className='text-gray-600 dark:text-gray-400'>
 												Proveedores Asociados
 											</p>
 											<p className='text-2xl font-bold text-green-700 dark:text-green-400'>
@@ -371,12 +371,13 @@ const DetalleClientePage: React.FC = () => {
 										<p className='mt-4 text-sm font-medium text-gray-700 dark:text-gray-300'>
 											Sin proveedores asociados
 										</p>
-										<p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
+										<p className='mt-1  text-gray-500 dark:text-gray-400'>
 											Este cliente no tiene proveedores vinculados aún
 										</p>
 										{isEditable && (
-											<p className='mt-2 text-xs text-blue-600 dark:text-blue-400'>
-												💡 Activa el modo edición para asociar proveedores
+											<p className='mt-2  text-blue-600 dark:text-blue-400 flex items-center gap-2'>
+												<Icon icon='DuoLamp2' color='amber' className='h-4 w-4' />
+												<span>Activa el modo edición para asociar proveedores</span>
 											</p>
 										)}
 									</div>
@@ -392,7 +393,7 @@ const DetalleClientePage: React.FC = () => {
 														{headerGroup.headers.map((header) => (
 															<th
 																key={header.id}
-																className='px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300'>
+																className='px-6 py-3 text-left  font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300'>
 																{flexRender(
 																	header.column.columnDef.header,
 																	header.getContext(),
@@ -477,7 +478,7 @@ const DetalleClientePage: React.FC = () => {
 											<p className='mt-4 text-sm font-medium text-gray-700 dark:text-gray-300'>
 												¡Todos los proveedores ya están asociados!
 											</p>
-											<p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
+											<p className='mt-1  text-gray-500 dark:text-gray-400'>
 												No hay más proveedores disponibles para vincular
 											</p>
 										</div>
@@ -493,7 +494,7 @@ const DetalleClientePage: React.FC = () => {
 															{headerGroup.headers.map((header) => (
 																<th
 																	key={header.id}
-																	className='px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300'>
+																	className='px-6 py-3 text-left  font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300'>
 																	{flexRender(
 																		header.column.columnDef
 																			.header,
