@@ -66,11 +66,12 @@ const Productos: React.FC = () => {
 		deleteProduct,
 	} = useProductos({ branchId, filters, page, perPage: 15 });
 
-	const {
-		branches: accessibleBranches,
-	} = useUserBranches(currentUser?.id || (currentUser as any)?.pk, {
-		enabled: !!(currentUser?.id || (currentUser as any)?.pk),
-	});
+	const { branches: accessibleBranches } = useUserBranches(
+		currentUser?.id || (currentUser as any)?.pk,
+		{
+			enabled: !!(currentUser?.id || (currentUser as any)?.pk),
+		},
+	);
 
 	const defaultBranchFromUser = useMemo(() => {
 		if (personalizacionUsuario?.sucursal_principal) {
@@ -218,7 +219,10 @@ const Productos: React.FC = () => {
 		navigate(`/catalogos/productos/${product.id}${search}`);
 	};
 
-	const handleCreateSubmit = async (payload: { data: Partial<IProduct>; categoryIds: number[] }) => {
+	const handleCreateSubmit = async (payload: {
+		data: Partial<IProduct>;
+		categoryIds: number[];
+	}) => {
 		try {
 			await createProduct(payload);
 			toast.success('Producto creado correctamente');
@@ -226,9 +230,7 @@ const Productos: React.FC = () => {
 		} catch (err: any) {
 			console.error('Create product failed', err);
 			const message =
-				typeof err === 'string'
-					? err
-					: (err?.message ?? 'No se pudo crear el producto');
+				typeof err === 'string' ? err : (err?.message ?? 'No se pudo crear el producto');
 			toast.error(message);
 		}
 	};
@@ -362,7 +364,11 @@ const Productos: React.FC = () => {
 				isLoading={updating}
 				brandsLoading={brandsLoading}
 				defaultBranchId={
-					selectedProduct?.branch_id ?? branchId ?? defaultBranchFromUser ?? activeBranchId ?? null
+					selectedProduct?.branch_id ??
+					branchId ??
+					defaultBranchFromUser ??
+					activeBranchId ??
+					null
 				}
 			/>
 

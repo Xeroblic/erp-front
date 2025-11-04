@@ -6,10 +6,10 @@ import { fetchNotifications } from '@/store/slices/notifications/notificationsSl
 
 /**
  * Provider de notificaciones con POLLING (SIN SSE).
- * 
+ *
  * EventSource NO soporta headers personalizados, y no podemos modificar el backend.
  * Solución: Polling cada 5 segundos usando ApiService (que SÍ envía headers).
- * 
+ *
  * Flujo:
  * 1. Carga inicial de notificaciones
  * 2. Polling cada 5s para detectar cambios
@@ -44,14 +44,14 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 	// ✅ POLLING: Cada 5 segundos (usa ApiService que SÍ envía headers)
 	useEffect(() => {
 		console.log('[NOTIF] 🚀 Inicializando sistema de notificaciones con POLLING...');
-		
+
 		const doFetch = () => {
 			dispatch(fetchNotifications({ per_page: 20 })).catch(() => void 0);
 		};
-		
+
 		// Primera carga inmediata
 		doFetch();
-		
+
 		// Polling cada 5 segundos
 		const interval = setInterval(() => {
 			console.log('[NOTIF] 🔄 Polling notificaciones...');
@@ -69,7 +69,7 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 				doFetch();
 			}
 		};
-		
+
 		window.addEventListener('focus', onFocus);
 		document.addEventListener('visibilitychange', onVis);
 
