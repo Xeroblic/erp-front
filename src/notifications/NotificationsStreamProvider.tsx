@@ -1,191 +1,241 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
+import {
+	fetchNotifications,
+	upsertMany,
+	markDelivered,
+} from '@/store/slices/notifications/notificationsSlice';
 import type { UserNotificationDTO } from '@/interface/notifications.interface';
-import NotificationPopup from './NotificationPopup';
-import { fetchNotifications } from '@/store/slices/notifications/notificationsSlice';
+import { tokenManager } from '@/services/auth/tokenManager';
 
-/**
- * Provider de notificaciones con POLLING (SIN SSE).
- *
- * EventSource NO soporta headers personalizados, y no podemos modificar el backend.
- * Solución: Polling cada 5 segundos usando ApiService (que SÍ envía headers).
- *
- * Flujo:
- * 1. Carga inicial de notificaciones
- * 2. Polling cada 5s para detectar cambios
- * 3. Muestra popups nativos de Windows para TODAS las notificaciones
- * 4. Solo filtra las que ya fueron mostradas (evita duplicados en misma sesión)
- */
 const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 	const dispatch = useAppDispatch();
-	const { items } = useAppSelector((s) => s.notifications ?? { items: [] });
+	const { items } = useAppSelector((state) => state.notifications ?? { items: [] });
+	const processingRef = useRef<Set<number>>(new Set());
+	const lastSeenCountRef = useRef<Map<number, number>>(new Map());
 
-	// Refs para control
-	const shownIdsRef = useRef<Set<number>>(new Set());
+	const [useSSE, setUseSSE] = useState(true);
+	const eventSourceRef = useRef<EventSource | null>(null);
+	const connectionOpenedRef = useRef(false);
 
-	// Cola + modal actual para popup tipo Windows
-	const [queue, setQueue] = useState<UserNotificationDTO[]>([]);
-	const [current, setCurrent] = useState<UserNotificationDTO | null>(null);
-	const [open, setOpen] = useState(false);
-
-	// Solicitar permiso del navegador al montar
+	// Solicitar permiso de notificaciones al montar
 	useEffect(() => {
-		try {
-			if (typeof window !== 'undefined' && 'Notification' in window) {
-				if (Notification.permission === 'default') {
-					void Notification.requestPermission();
-				}
+		if (typeof window !== 'undefined' && 'Notification' in window) {
+			if (Notification.permission === 'default') {
+				Notification.requestPermission();
 			}
-		} catch {
-			// noop
 		}
 	}, []);
 
-	// ✅ POLLING: Cada 5 segundos (usa ApiService que SÍ envía headers)
+	// Configurar sistema de notificaciones
 	useEffect(() => {
-		console.log('[NOTIF] 🚀 Inicializando sistema de notificaciones con POLLING...');
+		// Carga inicial del inbox
+		dispatch(fetchNotifications({ per_page: 20 }));
 
-		const doFetch = () => {
-			dispatch(fetchNotifications({ per_page: 20 })).catch(() => void 0);
-		};
-
-		// Primera carga inmediata
-		doFetch();
-
-		// Polling cada 5 segundos
-		const interval = setInterval(() => {
-			console.log('[NOTIF] 🔄 Polling notificaciones...');
-			doFetch();
-		}, 5000);
-
-		// Refrescar al volver al foco
-		const onFocus = () => {
-			console.log('[NOTIF] 👀 Ventana enfocada, refrescando...');
-			doFetch();
-		};
-		const onVis = () => {
-			if (!document.hidden) {
-				console.log('[NOTIF] 👁️ Ventana visible, refrescando...');
-				doFetch();
-			}
-		};
-
-		window.addEventListener('focus', onFocus);
-		document.addEventListener('visibilitychange', onVis);
+		// Intentar SSE, fallback a polling
+		if (useSSE && typeof EventSource !== 'undefined') {
+			setupSSEConnection();
+		} else {
+			return setupPolling();
+		}
 
 		return () => {
-			console.log('[NOTIF] 🛑 Deteniendo polling...');
-			clearInterval(interval);
-			window.removeEventListener('focus', onFocus);
-			document.removeEventListener('visibilitychange', onVis);
+			if (eventSourceRef.current) {
+				eventSourceRef.current.close();
+				eventSourceRef.current = null;
+			}
 		};
-	}, [dispatch]);
+	}, [dispatch, useSSE]);
 
-	// ✅ DETECTAR NOTIFICACIONES del store - SIN FILTROS, MUESTRA TODO
-	useEffect(() => {
-		if (!items || !Array.isArray(items)) return;
-
-		console.log('[NOTIF] 📊 Store tiene', items.length, 'notificaciones');
-
-		// Filtrar solo las que NO hemos mostrado aún
-		const newcomers = items.filter((n) => !shownIdsRef.current.has(n.id));
-
-		if (!newcomers.length) {
+	const setupSSEConnection = () => {
+		const token = tokenManager.getAccessToken();
+		if (!token || !tokenManager.isTokenValid(token)) {
+			setUseSSE(false);
 			return;
 		}
 
-		console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-		console.log('[NOTIF] 🆕 NUEVAS NOTIFICACIONES:', newcomers.length);
-		console.log(
-			'[NOTIF] IDs:',
-			newcomers.map((n) => `${n.id}(${n.event?.type_key})`).join(', '),
-		);
+		const baseURL = import.meta.env.VITE_API_URL;
+		const lastEventId = getLastEventId();
+		const url = `${baseURL}/me/notifications/stream?access_token=${token}&lastEventId=${lastEventId}&history=1`;
 
-		// Mostrar cada una
-		for (const n of newcomers) {
-			shownIdsRef.current.add(n.id);
+		const eventSource = new EventSource(url);
+		eventSourceRef.current = eventSource;
 
-			const shown = showNativeNotification(n);
-			if (!shown) {
-				console.log('[NOTIF] 📋 Agregando ID', n.id, 'a cola popup');
-				setQueue((prev) => [...prev, n]);
+		eventSource.onopen = () => {
+			connectionOpenedRef.current = true;
+		};
+
+		eventSource.addEventListener('notification', (event) => {
+			try {
+				const notification = JSON.parse(event.data) as UserNotificationDTO;
+				saveLastEventId(notification.id);
+				dispatch(upsertMany([notification]));
+			} catch (err) {
+				console.error('[Notificaciones] Error procesando SSE:', err);
 			}
+		});
+
+		eventSource.onerror = () => {
+			eventSource.close();
+			eventSourceRef.current = null;
+
+			if (!connectionOpenedRef.current) {
+				setUseSSE(false);
+				return;
+			}
+
+			// Timeout normal del servidor (60s), reconectar
+			connectionOpenedRef.current = false;
+			setTimeout(() => {
+				if (useSSE) setupSSEConnection();
+			}, 1000);
+		};
+	};
+
+	const setupPolling = () => {
+		const fetchData = () => {
+			dispatch(fetchNotifications({ per_page: 20 }));
+		};
+
+		const interval = setInterval(fetchData, 60000);
+		const handleFocus = () => fetchData();
+		const handleVisibility = () => {
+			if (!document.hidden) fetchData();
+		};
+
+		window.addEventListener('focus', handleFocus);
+		document.addEventListener('visibilitychange', handleVisibility);
+
+		return () => {
+			clearInterval(interval);
+			window.removeEventListener('focus', handleFocus);
+			window.removeEventListener('visibilitychange', handleVisibility);
+		};
+	};
+
+	const getLastEventId = (): number => {
+		const stored = sessionStorage.getItem('notif_last_event_id');
+		return stored ? parseInt(stored, 10) : 0;
+	};
+
+	const saveLastEventId = (id: number): void => {
+		const current = getLastEventId();
+		if (id > current) {
+			sessionStorage.setItem('notif_last_event_id', id.toString());
 		}
+	};
 
-		console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-	}, [items]);
+	// Detectar y mostrar notificaciones nuevas/actualizadas
+	useEffect(() => {
+		if (!Array.isArray(items)) return;
 
-	// ✅ MOSTRAR NOTIFICACIÓN NATIVA DE WINDOWS
-	const showNativeNotification = (n: UserNotificationDTO): boolean => {
-		const isSupported = typeof window !== 'undefined' && 'Notification' in window;
+		const newItems = items.filter((n) => {
+			if (processingRef.current.has(n.id)) return false;
 
-		if (!isSupported || Notification.permission !== 'granted') {
-			console.log('[NOTIF] ⚠️ No se puede mostrar notificación nativa:', {
-				isSupported,
-				permission: isSupported ? Notification.permission : 'N/A',
-			});
+			const lastCount = lastSeenCountRef.current.get(n.id);
+			const currentCount = n.aggregate_count ?? 1;
+
+			// Caso 1: No entregada
+			if (n.delivered_to_user === false) return true;
+
+			// Caso 2: Ya entregada PERO count cambió (actualización)
+			if (
+				n.delivered_to_user === true &&
+				lastCount !== undefined &&
+				currentCount > lastCount
+			) {
+				return true;
+			}
+
 			return false;
+		});
+
+		if (newItems.length === 0) return;
+
+		newItems.forEach((n) => {
+			processingRef.current.add(n.id);
+			lastSeenCountRef.current.set(n.id, n.aggregate_count ?? 1);
+
+			showNativeNotification(n);
+
+			dispatch(markDelivered({ ids: [n.id] })).finally(() => {
+				setTimeout(() => {
+					processingRef.current.delete(n.id);
+				}, 2000);
+			});
+		});
+	}, [items, dispatch]);
+
+	// Mostrar notificación nativa mejorada
+	const showNativeNotification = (n: UserNotificationDTO): void => {
+		if (typeof window === 'undefined' || !('Notification' in window)) return;
+		if (Notification.permission !== 'granted') return;
+
+		// Título descriptivo con módulo
+		const module = n.event?.module_label || n.event?.module || '';
+		const typeLabel = n.event?.type_label || n.event?.type_key || 'Notificación';
+		const title = module ? `${module} · ${typeLabel}` : typeLabel;
+
+		// Body enriquecido
+		let body = n.message || typeLabel;
+
+		// Contador de agregación
+		if (n.aggregate_count && n.aggregate_count > 1) {
+			body = `📊 ${n.aggregate_count} eventos similares\n\n${body}`;
 		}
 
-		const title = n.event?.type_label || n.event?.type_key || 'Notificación';
-		const body = n.message || title;
+		// Hora formateada
+		const time = n.created_at
+			? new Date(n.created_at).toLocaleTimeString('es-CL', {
+					hour: '2-digit',
+					minute: '2-digit',
+				})
+			: '';
+		if (time) {
+			body = `${body}\n\n🕐 ${time}`;
+		}
+
+		// Configuración de la notificación
+		const config: NotificationOptions = {
+			body,
+			icon: '/logo192.png?v=zentria1',
+			badge: '/logo192.png?v=zentria1',
+			tag: `notification-${n.id}`,
+			requireInteraction: false,
+			silent: false,
+			...(n.event?.priority === 'P1' && { urgency: 'high' as any }),
+		};
 
 		try {
-			const icon = '/logo192.png?v=zentria1';
-			// Tag ÚNICO para que Windows muestre todas las notificaciones
-			const uniqueTag = `notification-${n.id}-${Date.now()}-${Math.random()}`;
+			const notification = new Notification(title, config);
 
-			console.log('[NOTIF] 🚀 Creando notificación nativa:', {
-				id: n.id,
-				title,
-				body,
-				tag: uniqueTag,
-			});
+			// Auto-cerrar en 5 segundos
+			const autoCloseTimeout = setTimeout(() => {
+				notification.close();
+			}, 5000);
 
-			const notif = new Notification(title, {
-				body,
-				tag: uniqueTag,
-				icon,
-				badge: icon,
-				requireInteraction: true,
-			});
-
-			notif.onclick = () => {
-				try {
-					window.focus();
-				} finally {
-					notif.close();
-				}
+			// Click para enfocar y cerrar
+			notification.onclick = () => {
+				clearTimeout(autoCloseTimeout);
+				window.focus();
+				notification.close();
 			};
 
-			console.log('[NOTIF] ✅ Notificación nativa creada');
-			return true;
+			// Limpiar timeout al cerrar
+			notification.onclose = () => {
+				clearTimeout(autoCloseTimeout);
+			};
+
+			notification.onerror = (err) => {
+				console.error('[Notificaciones] Error mostrando popup:', err);
+				clearTimeout(autoCloseTimeout);
+			};
 		} catch (err) {
-			console.error('[NOTIF] ❌ Error al crear notificación:', err);
-			return false;
+			console.error('[Notificaciones] Error creando popup:', err);
 		}
 	};
 
-	// Consumir la cola secuencialmente en un sólo popup
-	useEffect(() => {
-		if (!open && queue.length > 0) {
-			setCurrent(queue[0]);
-			setQueue((prev) => prev.slice(1));
-			setOpen(true);
-		}
-	}, [queue, open]);
-
-	const handleClose = () => {
-		setOpen(false);
-		setCurrent(null);
-	};
-
-	return (
-		<>
-			{children}
-			<NotificationPopup isOpen={open} notification={current} onClose={handleClose} />
-		</>
-	);
+	return <>{children}</>;
 };
 
 export default NotificationsStreamProvider;

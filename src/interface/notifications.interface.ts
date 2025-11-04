@@ -34,6 +34,7 @@ export interface UserNotificationDTO {
   event?: NotificationEventDTO | null
   origin?: string | null
   message?: string | null
+  delivered_to_user?: boolean // Indica si la notificación fue entregada al usuario (popup mostrado)
 }
 
 export interface PaginatedNotificationsResponse {

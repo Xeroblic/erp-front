@@ -47,6 +47,7 @@ const normalizeFromApi = (n: any): UserNotificationDTO => {
     created_at: n.created_at ?? null,
     origin: n.origin ?? null,
     message: n.message ?? null,
+    delivered_to_user: typeof n.delivered_to_user === 'boolean' ? n.delivered_to_user : false,
     event: {
       id: n.event?.id ?? n.event_id ?? n.id ?? null,
       type_key: n.event?.type_key ?? n.type_key ?? null,
@@ -198,6 +199,42 @@ export const unackNotification = createAsyncThunk<
   },
 )
 
+// Marcar notificaciones como entregadas (delivered_to_user = true)
+export const markDelivered = createAsyncThunk<
+  { ids: number[] },
+  { ids: number[] },
+  { rejectValue: string }
+>(
+  'notifications/markDelivered',
+  async ({ ids }, { rejectWithValue }) => {
+    try {
+      await ApiService.fetchData({
+        url: '/me/notifications/delivered',
+        method: 'post',
+        data: { notification_ids: ids },
+      })
+      return { ids }
+    } catch (e: any) {
+      return rejectWithValue(e?.response?.data?.message ?? e?.message ?? 'No se pudo marcar como entregada')
+    }
+  },
+)
+
+// Marcar TODAS las notificaciones como entregadas
+export const markAllDelivered = createAsyncThunk<void, void, { rejectValue: string }>(
+  'notifications/markAllDelivered',
+  async (_, { rejectWithValue }) => {
+    try {
+      await ApiService.fetchData({
+        url: '/me/notifications/delivered-all',
+        method: 'post',
+      })
+    } catch (e: any) {
+      return rejectWithValue(e?.response?.data?.message ?? e?.message ?? 'No se pudo marcar todas como entregadas')
+    }
+  },
+)
+
 const notificationsSlice = createSlice({
   name: 'notifications',
   initialState,
@@ -283,6 +320,19 @@ const notificationsSlice = createSlice({
           it.ack_at = null
         }
         state.unreadCount = recomputeUnread(state.items)
+      })
+      .addCase(markDelivered.fulfilled, (state, action) => {
+        for (const id of action.payload.ids) {
+          const it = state.items.find((n) => n.id === id)
+          if (it) {
+            it.delivered_to_user = true
+          }
+        }
+      })
+      .addCase(markAllDelivered.fulfilled, (state) => {
+        for (const it of state.items) {
+          it.delivered_to_user = true
+        }
       })
   },
 })

@@ -134,7 +134,7 @@ export const tokenManager = {
 		return Date.now() - lastActivityAt >= timeoutMs;
 	},
 
-	// Validar si un token es válido (no expirado y bien formado)
+	
 	isTokenValid(token?: string | null): boolean {
 		if (!token) return false;
 		const payload = decodeJwtPayload(token);
@@ -146,7 +146,6 @@ export const tokenManager = {
 		return Date.now() < exp * 1000;
 	},
 
-	// Obtener tiempo restante del token en milisegundos
 	getTokenTimeRemaining(token?: string | null): number {
 		if (!token) return 0;
 		const payload = decodeJwtPayload(token);
