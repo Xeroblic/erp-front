@@ -225,6 +225,11 @@ const Productos: React.FC = () => {
 			setCreateOpen(false);
 		} catch (err: any) {
 			console.error('Create product failed', err);
+			const message =
+				typeof err === 'string'
+					? err
+					: (err?.message ?? 'No se pudo crear el producto');
+			toast.error(message);
 		}
 	};
 

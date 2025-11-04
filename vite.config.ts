@@ -5,11 +5,20 @@ import path from "path";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-	plugins: [react(), EnvironmentPlugin('all', {prefix: 'VITE_'})],
+	plugins: [react(), EnvironmentPlugin('all', { prefix: 'VITE_' })],
 	assetsInclude: ['**/*.md'],
 	resolve: {
 		alias: {
-		  '@': path.join(__dirname, 'src'),
+			'@': path.join(__dirname, 'src'),
+		},
+	},
+	server: {
+		proxy: {
+			'/api': {
+				target: 'http://localhost:8000',
+				changeOrigin: true,
+				secure: false,
+			},
 		},
 	},
 });

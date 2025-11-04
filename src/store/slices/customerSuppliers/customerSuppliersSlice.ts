@@ -80,7 +80,8 @@ export const fetchCustomerSupplierById = createAsyncThunk<ICustomerSupplier, { s
 		} catch (error: any) {
 			return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'No se pudo cargar el cliente-proveedor');
 		}
-	});
+	}
+);
 
 export const createCustomerSupplier = createAsyncThunk<ICustomerSupplier, { subsidiaryId: number; data: ICreateCustomerSupplierRequest }, { rejectValue: string }>(
 	'customerSuppliers/create', async ({ subsidiaryId, data }, { rejectWithValue }) => {

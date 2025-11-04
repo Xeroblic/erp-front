@@ -14,7 +14,6 @@ import subEmpresa, { SubempresaState } from './slices/subempresa/subEmpresaSlice
 import sucursales, { SucursalesState } from './slices/sucursales/sucursalesSlice';
 import permissions from './slices/permissions/permissionsSlice';
 import usersAdmin from './slices/usersAdmin/usersAdminSlice';
-import feature from './slices/featuresSlice/featuresSlice';
 // Importamos el tipo sin crear dependencia circular
 import type { PersonalizacionState } from './slices/personalizacion/personalizacionSlice';
 
@@ -40,7 +39,6 @@ export interface RootState {
 	sucursales: SucursalesState;
 	permissions: ReturnType<typeof permissions>;
 	usersAdmin: ReturnType<typeof usersAdmin>;
-	feature: ReturnType<typeof feature>;
 	personalizacion?: PersonalizacionState; // Opcional al inicio, se agrega dinámicamente
 	// calendario?: CalendarioState;
 	// item?: ItemState;
@@ -76,7 +74,6 @@ const staticReducers = {
 	cliente,
 	permissions,
 	usersAdmin,
-	feature,
 	// Nuevos slices ERP
 	transferencias,
 	cotizaciones,
