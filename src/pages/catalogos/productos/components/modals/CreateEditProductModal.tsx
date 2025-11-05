@@ -18,7 +18,11 @@ import {
 	createBrandOptions,
 	createCategoryOptions,
 } from '../../utils/productForm.utils';
-import { productSchema, productSchemaCreate } from '../../validation/productForm.schema';
+import {
+	productSchema,
+	productSchemaCreate,
+	productDetailSchema,
+} from '../../validation/productForm.schema';
 import type { ProductFormValues } from '../../types/products.types';
 import Select from '@/components/form/Select';
 import { PRODUCT_DEVICE_TYPES } from '../../constants/product-attributes.constants';
@@ -106,9 +110,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 	// Pre-cargar marcas al abrir el modal según la sucursal relevante
 	useEffect(() => {
 		if (!isOpen) return;
-		const branchToLoad = isEditMode
-			? product?.branch_id ?? null
-			: defaultBranchId ?? null;
+		const branchToLoad = isEditMode ? (product?.branch_id ?? null) : (defaultBranchId ?? null);
 		if (branchToLoad) {
 			void dispatch(fetchBrands({ branchId: branchToLoad, search: '' }));
 		}
@@ -234,12 +236,13 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 					submitForm,
 				}) => {
 					const isBusy = isLoading || isSubmitting;
-					const selectedBrandOption: TSelectOption | null = (
-						brandOptions.find((option) => String(option.value) === String(values.brand_id)) ??
+					const selectedBrandOption: TSelectOption | null =
+						brandOptions.find(
+							(option) => String(option.value) === String(values.brand_id),
+						) ??
 						(isEditMode && product?.brand
 							? { value: String(product.brand.id), label: product.brand.name }
-							: null)
-					);
+							: null);
 
 					return (
 						<Form id='productForm'>
@@ -301,7 +304,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 														)}
 													</Field>
 													{/* Selector de Branch - Solo en modo CREAR */}
-													{(!isEditMode && userId) && (
+													{!isEditMode && userId && (
 														<div className='space-y-2 md:col-span-2'>
 															<UserBranchSelector
 																userId={userId}
@@ -351,7 +354,10 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 															value={selectedBrandOption}
 															onChange={(option) => {
 																if (Array.isArray(option)) {
-																	void setFieldValue('brand_id', '');
+																	void setFieldValue(
+																		'brand_id',
+																		'',
+																	);
 																	return;
 																}
 																const singleOption = (option ??
@@ -362,14 +368,18 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 																);
 															}}
 															onBlur={() => {
-																void setFieldTouched('brand_id', true);
+																void setFieldTouched(
+																	'brand_id',
+																	true,
+																);
 															}}
 															placeholder={
 																brandsLoading
 																	? 'Cargando marcas...'
-																	: !brandOptions.length && !values.branch_id
-																	? 'Selecciona la sucursal primero'
-																	: 'Selecciona una marca'
+																	: !brandOptions.length &&
+																		  !values.branch_id
+																		? 'Selecciona la sucursal primero'
+																		: 'Selecciona una marca'
 															}
 															// Disable only while busy or when there are no brands for the selected branch
 															isDisabled={
@@ -393,7 +403,6 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 															</p>
 														)}
 													</div>
-
 												</>
 											)}
 
@@ -450,11 +459,13 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 																}),
 															)}
 															onChange={(option) => {
-																const nextOptions = Array.isArray(option)
+																const nextOptions = Array.isArray(
+																	option,
+																)
 																	? option
 																	: option
-																	? [option]
-																	: [];
+																		? [option]
+																		: [];
 																void setFieldValue(
 																	'categories',
 																	nextOptions.map((item) => ({
@@ -464,7 +475,10 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 																);
 															}}
 															onBlur={() => {
-																void setFieldTouched('categories', true);
+																void setFieldTouched(
+																	'categories',
+																	true,
+																);
 															}}
 															isDisabled={
 																isBusy || !categoryOptions.length

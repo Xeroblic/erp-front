@@ -18,7 +18,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({ brands, brandsLoading }) => {
 
 	return (
 		<>
-			<div className='block mb-6'>
+			<div className='mb-6 block'>
 				<Label htmlFor='product_type' className='text-sm font-medium'>
 					Tipo de producto
 				</Label>
@@ -50,6 +50,9 @@ const GeneralTab: React.FC<GeneralTabProps> = ({ brands, brandsLoading }) => {
 						onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
 							setFieldValue('sku', event.target.value)
 						}
+						isValid={!errors.sku}
+						isTouched={touched.sku}
+						invalidFeedback={errors.sku}
 					/>
 					{touched.sku && errors.sku && (
 						<p className='text-xs text-red-500'>{errors.sku}</p>
@@ -67,129 +70,13 @@ const GeneralTab: React.FC<GeneralTabProps> = ({ brands, brandsLoading }) => {
 						onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
 							setFieldValue('name', event.target.value)
 						}
+						isValid={!errors.name}
+						isTouched={touched.name}
+						invalidFeedback={errors.name}
 					/>
-
-					{/* {!values.product_type && (
-						<div className='col-span-1 rounded-lg border p-4 md:col-span-2'>
-							<h4 className='mb-4 text-sm font-medium'>Procesador (CPU)</h4>
-							<div className='grid grid-cols-1 gap-4 md:grid-cols-4'>
-								<div className='space-y-1'>
-									<Label htmlFor='cpu_cores' className='text-sm font-medium'>
-										Núcleos
-									</Label>
-									<Input
-										name='cpu_cores'
-										type='number'
-										placeholder='Ej: 6'
-										value={values.attributes_json?.cpu?.cores ?? ''}
-										onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-											const v =
-												e.target.value === ''
-													? undefined
-													: Number(e.target.value);
-											const next = {
-												...(values.attributes_json || {}),
-												cpu: {
-													...(values.attributes_json?.cpu || {}),
-													cores: v,
-												},
-											};
-											setFieldValue('attributes_json', next);
-										}}
-										className='input'
-									/>
-								</div>
-
-								<div className='space-y-1'>
-									<Label htmlFor='cpu_threads' className='text-sm font-medium'>
-										Hilos
-									</Label>
-									<Input
-										name='cpu_threads'
-										type='number'
-										placeholder='Ej: 6'
-										value={values.attributes_json?.cpu?.threads ?? ''}
-										onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-											const v =
-												e.target.value === ''
-													? undefined
-													: Number(e.target.value);
-											const next = {
-												...(values.attributes_json || {}),
-												cpu: {
-													...(values.attributes_json?.cpu || {}),
-													threads: v,
-												},
-											};
-											setFieldValue('attributes_json', next);
-										}}
-										className='input'
-									/>
-								</div>
-
-								<div className='space-y-1'>
-									<Label
-										htmlFor='cpu_base_clock_mhz'
-										className='text-sm font-medium'>
-										Frecuencia base (MHz)
-									</Label>
-									<Input
-										name='cpu_base_clock_mhz'
-										type='number'
-										placeholder='Ej: 3200'
-										value={values.attributes_json?.cpu?.base_clock_mhz ?? ''}
-										onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-											const v =
-												e.target.value === ''
-													? undefined
-													: Number(e.target.value);
-											const next = {
-												...(values.attributes_json || {}),
-												cpu: {
-													...(values.attributes_json?.cpu || {}),
-													base_clock_mhz: v,
-												},
-											};
-											setFieldValue('attributes_json', next);
-										}}
-										className='input'
-									/>
-								</div>
-
-								<div className='space-y-1'>
-									<Label
-										htmlFor='cpu_boost_clock_mhz'
-										className='text-sm font-medium'>
-										Frecuencia turbo (MHz)
-									</Label>
-									<Input
-										name='cpu_boost_clock_mhz'
-										type='number'
-										placeholder='Ej: 4100'
-										value={values.attributes_json?.cpu?.boost_clock_mhz ?? ''}
-										onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-											const v =
-												e.target.value === ''
-													? undefined
-													: Number(e.target.value);
-											const next = {
-												...(values.attributes_json || {}),
-												cpu: {
-													...(values.attributes_json?.cpu || {}),
-													boost_clock_mhz: v,
-												},
-											};
-											setFieldValue('attributes_json', next);
-										}}
-										className='input'
-									/>
-								</div>
-							</div>
-						</div>
-					)}
 					{touched.name && errors.name && (
 						<p className='text-xs text-red-500'>{errors.name}</p>
-					)} */}
+					)}
 				</div>
 
 				<div className='space-y-1'>

@@ -20,6 +20,50 @@ const ComercialTab: React.FC<ComercialTabProps> = ({
 }) => {
 	const { values, errors, touched, setFieldValue } = useFormikContext<ProductDetailForm>();
 
+	// Validar que el número no exceda el límite de la BD (NUMERIC(14,2))
+	const handlePriceChange = (fieldName: string, value: string) => {
+		if (value === '') {
+			setFieldValue(fieldName, '');
+			return;
+		}
+
+		const numValue = Number(value);
+
+		// Límite: 999,999,999,999.99 (12 dígitos enteros + 2 decimales)
+		if (numValue > 999999999999.99) {
+			return; // No permite escribir más
+		}
+
+		// Validar máximo 2 decimales
+		const decimalParts = value.split('.');
+		if (decimalParts.length > 1 && decimalParts[1].length > 2) {
+			return; // No permite más de 2 decimales
+		}
+
+		setFieldValue(fieldName, numValue);
+	};
+
+	// Validar números enteros con límite
+	const handleIntegerChange = (fieldName: string, value: string, max: number) => {
+		if (value === '') {
+			setFieldValue(fieldName, '');
+			return;
+		}
+
+		const numValue = Number(value);
+
+		if (numValue > max) {
+			return; // No permite escribir más
+		}
+
+		// Solo enteros
+		if (!Number.isInteger(numValue)) {
+			return;
+		}
+
+		setFieldValue(fieldName, numValue);
+	};
+
 	return (
 		<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
 			<div className='space-y-1'>
@@ -28,13 +72,16 @@ const ComercialTab: React.FC<ComercialTabProps> = ({
 					name='price'
 					type='number'
 					placeholder='0.00'
+					min='0'
+					max='999999999999.99'
+					step='0.01'
 					value={values.price === '' ? '' : String(values.price)}
 					onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-						setFieldValue(
-							'price',
-							event.target.value === '' ? '' : Number(event.target.value),
-						)
+						handlePriceChange('price', event.target.value)
 					}
+					isValid={!errors.price}
+					isTouched={touched.price}
+					invalidFeedback={errors.price}
 				/>
 				{touched.price && errors.price && (
 					<p className='text-xs text-red-500'>{errors.price}</p>
@@ -47,13 +94,16 @@ const ComercialTab: React.FC<ComercialTabProps> = ({
 					name='offer_price'
 					type='number'
 					placeholder='0.00'
+					min='0'
+					max='999999999999.99'
+					step='0.01'
 					value={values.offer_price === '' ? '' : String(values.offer_price)}
 					onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-						setFieldValue(
-							'offer_price',
-							event.target.value === '' ? '' : Number(event.target.value),
-						)
+						handlePriceChange('offer_price', event.target.value)
 					}
+					isValid={!errors.offer_price}
+					isTouched={touched.offer_price}
+					invalidFeedback={errors.offer_price}
 				/>
 				{touched.offer_price && errors.offer_price && (
 					<p className='text-xs text-red-500'>{errors.offer_price}</p>
@@ -66,13 +116,16 @@ const ComercialTab: React.FC<ComercialTabProps> = ({
 					name='cost'
 					type='number'
 					placeholder='0.00'
+					min='0'
+					max='999999999999.99'
+					step='0.01'
 					value={values.cost === '' ? '' : String(values.cost)}
 					onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-						setFieldValue(
-							'cost',
-							event.target.value === '' ? '' : Number(event.target.value),
-						)
+						handlePriceChange('cost', event.target.value)
 					}
+					isValid={!errors.cost}
+					isTouched={touched.cost}
+					invalidFeedback={errors.cost}
 				/>
 				{touched.cost && errors.cost && (
 					<p className='text-xs text-red-500'>{errors.cost}</p>
@@ -85,13 +138,16 @@ const ComercialTab: React.FC<ComercialTabProps> = ({
 					name='warranty_months'
 					type='number'
 					placeholder='12'
+					min='0'
+					max='999'
+					step='1'
 					value={values.warranty_months === '' ? '' : String(values.warranty_months)}
 					onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-						setFieldValue(
-							'warranty_months',
-							event.target.value === '' ? '' : Number(event.target.value),
-						)
+						handleIntegerChange('warranty_months', event.target.value, 999)
 					}
+					isValid={!errors.warranty_months}
+					isTouched={touched.warranty_months}
+					invalidFeedback={errors.warranty_months}
 				/>
 				{touched.warranty_months && errors.warranty_months && (
 					<p className='text-xs text-red-500'>{errors.warranty_months}</p>
@@ -104,13 +160,16 @@ const ComercialTab: React.FC<ComercialTabProps> = ({
 					name='stock'
 					type='number'
 					placeholder='0'
+					min='0'
+					max='999999999'
+					step='1'
 					value={values.stock === '' ? '' : String(values.stock)}
 					onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-						setFieldValue(
-							'stock',
-							event.target.value === '' ? '' : Number(event.target.value),
-						)
+						handleIntegerChange('stock', event.target.value, 999999999)
 					}
+					isValid={!errors.stock}
+					isTouched={touched.stock}
+					invalidFeedback={errors.stock}
 				/>
 				{touched.stock && errors.stock && (
 					<p className='text-xs text-red-500'>{errors.stock}</p>

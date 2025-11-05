@@ -13,6 +13,7 @@ export * from './slices/transfers/transfersSlice'
 export * from './slices/categories/categoriesSlice'
 export * from './slices/products/productsSlice'
 export * from './slices/notifications/notificationsSlice'
+export * from './slices/warehouses/warehouseSlice'
 
 export default store
 

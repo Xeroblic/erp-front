@@ -28,6 +28,7 @@ import products, { ProductsState } from './slices/products/productsSlice';
 import notifications from './slices/notifications/notificationsSlice';
 import suppliers from './slices/suppliers/suppliersSlice';
 import customerSuppliers from './slices/customerSuppliers/customerSuppliersSlice';
+import warehouse from './slices/warehouses/warehouseSlice';
 
 export interface RootState {
 	auth: AuthState;
@@ -55,6 +56,7 @@ export interface RootState {
 	notifications: ReturnType<typeof notifications>;
 	suppliers: ReturnType<typeof suppliers>;
 	customerSuppliers: ReturnType<typeof customerSuppliers>;
+	warehouse: ReturnType<typeof warehouse>;
 	[RtkQueryService.reducerPath]: any;
 }
 
@@ -85,6 +87,7 @@ const staticReducers = {
 	notifications,
 	suppliers,
 	customerSuppliers,
+	warehouse,
 	// personalizacion, // Comentado temporalmente
 	[RtkQueryService.reducerPath]: RtkQueryService.reducer,
 };

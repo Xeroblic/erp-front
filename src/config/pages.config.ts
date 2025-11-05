@@ -273,7 +273,7 @@ export const privatePages = {
         to: '/catalogos/bodegas',
         text: 'Bodegas',
         icon: 'HeroBuildingStorefront',
-        authority: ['view-branch'], // Las bodegas están relacionadas con branches
+        authority: ['view-branch'],
         roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'warehouse-employee'],
         requireAll: false,
       },

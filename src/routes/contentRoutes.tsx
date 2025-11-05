@@ -75,7 +75,8 @@ const TransferenciasComercial = lazy(
 // Páginas de Catálogos
 const ProductosPage = lazy(() => import('@/pages/catalogos/productos/Productos'));
 const ProductDetailPage = lazy(() => import('@/pages/catalogos/productos/ProductDetail'));
-const BodegasPage = lazy(() => import('@/pages/catalogos/bodegas/Bodegas'));
+const BodegasPage = lazy(() => import('@/pages/catalogos/bodegas/WarehouseListPage'));
+const BodegasDetailPage = lazy(() => import('@/pages/catalogos/bodegas/WarehouseDetailPage'));
 const CategoriasPage = lazy(() => import('@/pages/catalogos/categorias/Categorias'));
 const MarcasPage = lazy(() => import('@/pages/catalogos/marcas/Marcas'));
 const ProveedoresPage = lazy(() => import('@/pages/catalogos/proveedores/Proveedores'));
@@ -297,6 +298,11 @@ const contentRoutes: IRoutePersonalizada[] = [
 	{
 		path: cfg.catalogs.subPages.warehouses.to,
 		element: <BodegasPage />,
+		authority: cfg.catalogs.subPages.warehouses.authority,
+	},
+	{
+		path: `${cfg.catalogs.subPages.warehouses.to}/:id`,
+		element: <BodegasDetailPage />,
 		authority: cfg.catalogs.subPages.warehouses.authority,
 	},
 	{

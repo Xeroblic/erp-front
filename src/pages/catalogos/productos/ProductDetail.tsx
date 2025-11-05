@@ -26,6 +26,7 @@ import {
 	createCategoryOptions,
 	mapProductToDetailForm,
 } from './utils/productForm.utils';
+import { productDetailSchema } from './validation/productForm.schema';
 import { useAppDispatch } from '@/store';
 import {
 	deleteProductMedia,
@@ -53,37 +54,6 @@ const EMPTY_DETAIL_FORM: ProductDetailForm = {
 	attributes_json: null,
 };
 
-const validateDetailForm = (values: ProductDetailForm) => {
-	const errors: Partial<Record<keyof ProductDetailForm, string>> = {};
-
-	if (!values.sku.trim()) errors.sku = 'El SKU es obligatorio';
-	if (!values.name.trim()) errors.name = 'El nombre es obligatorio';
-	if (values.brand_id === '' || values.brand_id === 0)
-		errors.brand_id = 'Debes seleccionar una marca';
-	if (!values.category_ids.length) errors.category_ids = 'Selecciona al menos una categorÃ­a';
-
-	if (values.cost !== '') {
-		const costValue = Number(values.cost);
-		if (!Number.isFinite(costValue) || costValue < 0) errors.cost = 'El costo no es vÃ¡lido';
-	}
-
-	if (values.warranty_months !== '') {
-		const warrantyValue = Number(values.warranty_months);
-		if (!Number.isFinite(warrantyValue) || warrantyValue < 0)
-			errors.warranty_months = 'La garantÃ­a debe ser un nÃºmero positivo';
-	}
-
-	if (values.stock !== '') {
-		const stockValue = Number(values.stock);
-		if (!Number.isFinite(stockValue) || stockValue < 0)
-			errors.stock = 'El stock debe ser un nÃºmero positivo';
-	}
-
-	if (!values.product_status) errors.product_status = 'Selecciona el estado del producto';
-
-	return errors;
-};
-
 interface AutoSaveHandlerProps {
 	activeTab: string;
 }
@@ -105,8 +75,8 @@ const AutoSaveHandler: React.FC<AutoSaveHandlerProps> = React.memo(() => {
 			onConfirm={confirmSave}
 			onCancel={cancelSave}
 			isLoading={isSaving}
-			title='Â¿Guardar cambios?'
-			message='Has estado inactivo por 30 segundos y tienes cambios sin guardar. Â¿Deseas guardar estos cambios ahora?'
+			title='¿Guardar cambios?'
+			message='Has estado inactivo por 30 segundos y tienes cambios sin guardar. ¿Deseas guardar estos cambios ahora?'
 		/>
 	);
 });
@@ -212,7 +182,7 @@ const ProductDetail: React.FC = () => {
 
 				setErrors(formikErrors);
 
-				const message = error?.response?.data?.message ?? 'Error de validaciÃ³n';
+				const message = error?.response?.data?.message ?? 'Error de validación';
 				toast.error(message);
 			} else {
 				const message =
@@ -243,7 +213,9 @@ const ProductDetail: React.FC = () => {
 			<Formik
 				initialValues={initialValues}
 				enableReinitialize
-				validate={validateDetailForm}
+				validationSchema={productDetailSchema}
+				validateOnBlur={true}
+				validateOnChange={true}
 				onSubmit={handleSubmit}>
 				{({ isSubmitting, submitForm }) => (
 					<Form>
