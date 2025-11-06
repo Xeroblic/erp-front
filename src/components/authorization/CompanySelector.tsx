@@ -109,7 +109,7 @@ const CompanySelector: React.FC<CompanySelectorProps> = ({ isOpen, onClose }) =>
                     subsidiary_id: subsidiaryIdNum // ID de la subsidiaria seleccionada
                 }
             });
-
+            
             // Actualizar personalización con la nueva subsidiaria principal
             const currentPersonalization = user?.personalizacion;
             if (currentPersonalization) {

@@ -10,34 +10,76 @@ import { fetchCustomerSuppliers } from '@/store/slices/customerSuppliers/custome
 import useCompanyManager from '@/hooks/useCompanyManager';
 import { fetchMisSubsidiarias } from '@/store/slices/subempresa/subEmpresaSlice';
 
-export const useSupplierCustomers = (supplierId?: number, enabled: boolean = true) => {
+type UseSupplierCustomersOptions =
+  | boolean
+  | {
+      enabled?: boolean;
+      subsidiaryId?: number | null;
+    };
+
+export const useSupplierCustomers = (supplierId?: number, options: UseSupplierCustomersOptions = true) => {
   const dispatch = useAppDispatch();
   const { customers, customersLoading, attaching, detaching } = useAppSelector((s) => s.suppliers);
   const { currentCompany } = useCompanyManager();
   const { lista: subsidiaries } = useAppSelector((s) => s.subEmpresa);
-  const initialSubsidiaryId = currentCompany?.subsidiary_id ?? currentCompany?.id ?? 0;
-  const [effectiveSubsidiaryId, setEffectiveSubsidiaryId] = useState<number>(initialSubsidiaryId);
+
+  const normalizedOptions =
+    typeof options === 'boolean'
+      ? { enabled: options }
+      : {
+          enabled: options?.enabled ?? true,
+          subsidiaryId: options?.subsidiaryId ?? null,
+        };
+
+  const providedSubsidiaryId =
+    normalizedOptions.subsidiaryId !== null && normalizedOptions.subsidiaryId !== undefined
+      ? normalizedOptions.subsidiaryId
+      : null;
+
+  const isEnabled = normalizedOptions.enabled ?? true;
+
+  const companySubsidiaryId = currentCompany?.subsidiary_id ?? currentCompany?.id ?? null;
+
+  const [effectiveSubsidiaryId, setEffectiveSubsidiaryId] = useState<number | null>(
+    providedSubsidiaryId ?? companySubsidiaryId ?? null,
+  );
   const requestedSubsRef = useRef(false);
 
   useEffect(() => {
-    if (initialSubsidiaryId && initialSubsidiaryId !== effectiveSubsidiaryId) {
-      setEffectiveSubsidiaryId(initialSubsidiaryId);
+    if (providedSubsidiaryId !== null && providedSubsidiaryId !== undefined) {
+      if (providedSubsidiaryId !== effectiveSubsidiaryId) {
+        setEffectiveSubsidiaryId(providedSubsidiaryId);
+      }
       return;
     }
-    if (!initialSubsidiaryId) {
+
+    if (companySubsidiaryId && companySubsidiaryId !== effectiveSubsidiaryId) {
+      setEffectiveSubsidiaryId(companySubsidiaryId);
+      return;
+    }
+
+    if (!companySubsidiaryId) {
       if (!requestedSubsRef.current) {
         requestedSubsRef.current = true;
         dispatch(fetchMisSubsidiarias());
       }
-      const firstId = subsidiaries?.[0]?.id;
-      if (firstId && firstId !== effectiveSubsidiaryId) setEffectiveSubsidiaryId(firstId);
+      const firstId = subsidiaries?.[0]?.id ?? null;
+      if (firstId && firstId !== effectiveSubsidiaryId) {
+        setEffectiveSubsidiaryId(firstId);
+      }
     }
-  }, [initialSubsidiaryId, subsidiaries, effectiveSubsidiaryId, dispatch]);
+  }, [
+    providedSubsidiaryId,
+    companySubsidiaryId,
+    subsidiaries,
+    effectiveSubsidiaryId,
+    dispatch,
+  ]);
 
   useEffect(() => {
-    if (!supplierId || !enabled || !effectiveSubsidiaryId) return;
+    if (!supplierId || !isEnabled || !effectiveSubsidiaryId) return;
     dispatch(fetchSupplierCustomers({ subsidiaryId: effectiveSubsidiaryId, supplierId }));
-  }, [dispatch, supplierId, enabled, effectiveSubsidiaryId]);
+  }, [dispatch, supplierId, isEnabled, effectiveSubsidiaryId]);
 
   const attach = useCallback(
     async (ids: number[]) => {
@@ -52,7 +94,6 @@ export const useSupplierCustomers = (supplierId?: number, enabled: boolean = tru
           })
         ).unwrap();
 
-        // 🔄 Recargar TODA la data en paralelo para actualizar TODO
         await Promise.all([
           dispatch(
             fetchSupplierCustomers({

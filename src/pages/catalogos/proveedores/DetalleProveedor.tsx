@@ -20,6 +20,7 @@ import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/per
 import { useSupplierCustomers } from './components/hooks/useSupplierCustomers';
 import type { ISupplier } from '@/interface/supplier.interface';
 import { formatDate } from './components/utils';
+import { useUserBranches } from '@/pages/catalogos/productos/components/modals/hooks/userBranch';
 
 interface ISupplierExtended extends ISupplier {
 	customers_count?: number;
@@ -42,8 +43,59 @@ const DetalleProveedorPage: React.FC = () => {
 
 	const supplierId = id ? parseInt(id, 10) : 0;
 
+	const currentUser = useAppSelector((state) => state.auth.user);
 	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
-	const subsidiaryId = personalizacionUsuario?.sucursal_principal ?? 0;
+	const userId = currentUser?.id ?? (currentUser as any)?.pk ?? undefined;
+	const { branches } = useUserBranches(userId, { enabled: Boolean(userId) });
+
+	const branchToSubsidiary = useMemo(() => {
+		const map = new Map<number, number>();
+		branches.forEach((branch) => {
+			if (branch?.id && branch?.subsidiaryId) {
+				map.set(branch.id, branch.subsidiaryId);
+			}
+		});
+		return map;
+	}, [branches]);
+
+	const initialSubsidiaryGuess = useMemo(() => {
+		if (personalizacionUsuario?.subsidiary_id) return personalizacionUsuario.subsidiary_id;
+		if (currentUser?.subsidiary?.id) return currentUser.subsidiary.id;
+
+		const preferredBranchId =
+			personalizacionUsuario?.sucursal_principal ??
+			currentUser?.branch?.id ??
+			currentUser?.branch_id ??
+			null;
+		if (preferredBranchId && branchToSubsidiary.has(preferredBranchId)) {
+			return branchToSubsidiary.get(preferredBranchId) ?? null;
+		}
+
+		const branchSubsidiaryId =
+			currentUser?.branch?.subsidiary?.id ?? (currentUser?.branch as any)?.subsidiary_id ?? null;
+		if (branchSubsidiaryId) return branchSubsidiaryId;
+
+		const accessSubs = (currentUser as any)?.access?.subsidiaries;
+		if (Array.isArray(accessSubs)) {
+			for (const sub of accessSubs) {
+				if (sub && typeof sub === 'object' && sub.id) return sub.id;
+				if (typeof sub === 'number') return sub;
+			}
+		}
+
+		const firstAvailable = branches.find((branch) => branch.subsidiaryId)?.subsidiaryId ?? null;
+		return firstAvailable ?? null;
+	}, [
+		branchToSubsidiary,
+		branches,
+		currentUser,
+		personalizacionUsuario?.subsidiary_id,
+		personalizacionUsuario?.sucursal_principal,
+	]);
+
+	const [effectiveSubsidiaryId, setEffectiveSubsidiaryId] = useState<number | null>(
+		initialSubsidiaryGuess,
+	);
 
 	const { items: allSuppliers, loading: loadingSuppliers } = useAppSelector((s) => s.suppliers);
 	const {
@@ -53,41 +105,60 @@ const DetalleProveedorPage: React.FC = () => {
 		loading: loadingAssociated,
 		attaching,
 		detaching,
-	} = useSupplierCustomers(supplierId, true);
+	} = useSupplierCustomers(supplierId, {
+		enabled: Boolean(supplierId && effectiveSubsidiaryId),
+		subsidiaryId: effectiveSubsidiaryId,
+	});
 	const { items: allCustomers, loading: loadingAll } = useAppSelector((s) => s.customerSuppliers);
 
 	useEffect(() => {
-		if (subsidiaryId) {
+		if (effectiveSubsidiaryId === null && initialSubsidiaryGuess) {
+			setEffectiveSubsidiaryId(initialSubsidiaryGuess);
+		}
+	}, [effectiveSubsidiaryId, initialSubsidiaryGuess]);
+
+	useEffect(() => {
+		if (supplier?.subsidiary_id && supplier.subsidiary_id !== effectiveSubsidiaryId) {
+			setEffectiveSubsidiaryId(supplier.subsidiary_id);
+		}
+	}, [supplier?.subsidiary_id, effectiveSubsidiaryId]);
+
+	useEffect(() => {
+		if (effectiveSubsidiaryId) {
 			void dispatch(
 				fetchSuppliers({
-					subsidiaryId,
+					subsidiaryId: effectiveSubsidiaryId,
 					with_customers: true,
 				}),
 			);
 		}
-	}, [dispatch, subsidiaryId]);
+	}, [dispatch, effectiveSubsidiaryId]);
 
 	useEffect(() => {
 		if (supplierId && allSuppliers && allSuppliers.length > 0) {
 			const found = allSuppliers.find((s: any) => s.id === supplierId);
 			if (found) {
-				setSupplier(found as ISupplierExtended);
+				const normalized = found as ISupplierExtended;
+				setSupplier(normalized);
+				if (normalized.subsidiary_id && normalized.subsidiary_id !== effectiveSubsidiaryId) {
+					setEffectiveSubsidiaryId(normalized.subsidiary_id);
+				}
 			} else if (!loadingSuppliers) {
 				console.warn(`Proveedor con ID ${supplierId} no encontrado`);
 			}
 		}
-	}, [supplierId, allSuppliers, loadingSuppliers]);
+	}, [supplierId, allSuppliers, loadingSuppliers, effectiveSubsidiaryId]);
 
 	useEffect(() => {
-		if (subsidiaryId) {
+		if (effectiveSubsidiaryId) {
 			void dispatch(
 				fetchCustomerSuppliers({
-					subsidiaryId,
+					subsidiaryId: effectiveSubsidiaryId,
 					with_suppliers: false,
 				}),
 			);
 		}
-	}, [dispatch, subsidiaryId]);
+	}, [dispatch, effectiveSubsidiaryId]);
 
 	const availableCustomers = useMemo(() => {
 		if (!allCustomers || !associatedCustomers) return [];

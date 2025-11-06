@@ -44,7 +44,10 @@ const DetalleProveedor: React.FC<DetalleProveedorProps> = ({
 		detach,
 		attach,
 		loading: loadingAssociated,
-	} = useSupplierCustomers(supplierId, isOpen);
+	} = useSupplierCustomers(supplierId, {
+		enabled: Boolean(isOpen && supplierId && subsidiaryId),
+		subsidiaryId,
+	});
 	const { items: allCustomers, loading: loadingAll } = useAppSelector((s) => s.customerSuppliers);
 
 	// Fetch todos los clientes de la subsidiaria

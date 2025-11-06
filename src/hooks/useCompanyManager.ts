@@ -127,9 +127,10 @@ const useCompanyManager = (): UseCompanyManager => {
 					cacheRef.current?.companies.find((c) => c.subsidiary_id === subsidiaryId);
 				if (selectedCompany) setCurrentSubsidiaryName(selectedCompany.name);
 
+				const nextSubsidiaryId = selectedCompany?.subsidiary_id ?? subsidiaryId ?? null;
 				window.dispatchEvent(
 					new CustomEvent('user-branch-changed', {
-						detail: { branchId: selectedCompany?.subsidiary_id ?? null },
+						detail: { branchId: selectedCompany?.subsidiary_id ?? null, subsidiaryId: nextSubsidiaryId },
 					}),
 				);
 

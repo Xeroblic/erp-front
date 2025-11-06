@@ -168,6 +168,8 @@ const SelectSucursalEmpresa = () => {
 			const nextBranchId = option ? Number(option.value) : null;
 			if (nextBranchId === preferredBranchId || nextBranchId === null) return;
 
+			const nextSubsidiaryId = option?.meta?.branch?.subsidiaryId ?? null;
+
 			try {
 				await dispatch(actualizarSucursalPrincipalThunk(nextBranchId)).unwrap();
 				const companyId = personalizacionUsuario?.company_id ?? user?.company?.id;
@@ -185,7 +187,7 @@ const SelectSucursalEmpresa = () => {
 
 				window.dispatchEvent(
 					new CustomEvent('user-branch-changed', {
-						detail: { branchId: nextBranchId },
+						detail: { branchId: nextBranchId, subsidiaryId: nextSubsidiaryId },
 					}),
 				);
 				toast.success('Sucursal principal actualizada');

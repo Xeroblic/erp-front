@@ -22,17 +22,69 @@ import {
 	updateCustomerSupplier,
 	deleteCustomerSupplier,
 } from '@/store/slices/customerSuppliers/customerSuppliersSlice';
+import { useUserBranches } from '@/pages/catalogos/productos/components/modals/hooks/userBranch';
 
 const Clientes: React.FC = () => {
 	const navigate = useNavigate();
 	const currentUser = useAppSelector((state) => state.auth.user);
 	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
 
-	// 🎯 Inicializar subsidiaryId INMEDIATAMENTE con el valor de personalización
-	const [subsidiaryId, setSubsidiaryId] = useState<number | null>(() => {
-		// Si ya tenemos la personalización, usarla de inmediato
-		return personalizacionUsuario?.sucursal_principal ?? null;
-	});
+	const [subsidiaryId, setSubsidiaryId] = useState<number | null>(
+		personalizacionUsuario?.subsidiary_id ??
+			currentUser?.subsidiary?.id ??
+			currentUser?.branch?.subsidiary?.id ??
+			null,
+	);
+
+	const userId = currentUser?.id ?? (currentUser as any)?.pk ?? undefined;
+	const { branches } = useUserBranches(userId, { enabled: Boolean(userId) });
+
+	const branchToSubsidiary = useMemo(() => {
+		const map = new Map<number, number>();
+		branches.forEach((branch) => {
+			if (branch?.id && branch?.subsidiaryId) {
+				map.set(branch.id, branch.subsidiaryId);
+			}
+		});
+		return map;
+	}, [branches]);
+
+	const preferredBranchId = useMemo(() => {
+		if (personalizacionUsuario?.sucursal_principal) return personalizacionUsuario.sucursal_principal;
+		if (currentUser?.branch?.id) return currentUser.branch.id;
+		if (currentUser?.branch_id) return currentUser.branch_id;
+		return null;
+	}, [personalizacionUsuario?.sucursal_principal, currentUser?.branch?.id, currentUser?.branch_id]);
+
+	const defaultSubsidiaryId = useMemo(() => {
+		if (personalizacionUsuario?.subsidiary_id) return personalizacionUsuario.subsidiary_id;
+		if (currentUser?.subsidiary?.id) return currentUser.subsidiary.id;
+
+		if (preferredBranchId && branchToSubsidiary.has(preferredBranchId)) {
+			return branchToSubsidiary.get(preferredBranchId) ?? null;
+		}
+
+		const branchSubsidiaryId =
+			currentUser?.branch?.subsidiary?.id ?? (currentUser?.branch as any)?.subsidiary_id ?? null;
+		if (branchSubsidiaryId) return branchSubsidiaryId;
+
+		const accessSubs = (currentUser as any)?.access?.subsidiaries;
+		if (Array.isArray(accessSubs)) {
+			for (const sub of accessSubs) {
+				if (sub && typeof sub === 'object' && sub.id) return sub.id;
+				if (typeof sub === 'number') return sub;
+			}
+		}
+
+		const firstAvailable = branches.find((branch) => branch.subsidiaryId)?.subsidiaryId ?? null;
+		return firstAvailable ?? null;
+	}, [branchToSubsidiary, branches, currentUser, personalizacionUsuario?.subsidiary_id, preferredBranchId]);
+
+	useEffect(() => {
+		if (subsidiaryId === null && defaultSubsidiaryId) {
+			setSubsidiaryId(defaultSubsidiaryId);
+		}
+	}, [defaultSubsidiaryId, subsidiaryId]);
 
 	const [filters] = useState<ICustomerSupplierFilters>({ search: '' });
 	const [createOpen, setCreateOpen] = useState(false);
@@ -43,19 +95,17 @@ const Clientes: React.FC = () => {
 	const { customers, loading, activeSubsidiaryId } = useClientes({ subsidiaryId, filters });
 	const dispatch = useAppDispatch();
 
-	// Actualizar subsidiaryId cuando cambia la personalización (solo si aún no está establecido)
-	useEffect(() => {
-		const principal = personalizacionUsuario?.sucursal_principal;
-		if (principal && !subsidiaryId) {
-			setSubsidiaryId(principal);
-		}
-	}, [personalizacionUsuario?.sucursal_principal, subsidiaryId]);
-
 	// Escuchar cambios externos de subsidiary (cuando cambia en el selector)
 	useEffect(() => {
 		const handleExternalSubsidiaryChange = (event: Event) => {
-			const customEvent = event as CustomEvent<{ branchId: number | null }>;
-			const nextSubsidiaryId = customEvent.detail?.branchId ?? null;
+			const customEvent = event as CustomEvent<{
+				branchId: number | null;
+				subsidiaryId?: number | null;
+			}>;
+			const detail = customEvent.detail;
+			const nextSubsidiaryId =
+				detail?.subsidiaryId ??
+				(detail?.branchId != null ? branchToSubsidiary.get(detail.branchId) ?? null : null);
 			if (nextSubsidiaryId === null) return;
 			setSubsidiaryId(nextSubsidiaryId);
 		};
@@ -63,7 +113,7 @@ const Clientes: React.FC = () => {
 		window.addEventListener('user-branch-changed', handleExternalSubsidiaryChange);
 		return () =>
 			window.removeEventListener('user-branch-changed', handleExternalSubsidiaryChange);
-	}, []);
+	}, [branchToSubsidiary]);
 
 	const onCreate = () => setCreateOpen(true);
 	const onView = (c: ICustomerSupplier) => {
