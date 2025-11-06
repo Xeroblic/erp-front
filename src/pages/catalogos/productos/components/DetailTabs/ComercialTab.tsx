@@ -2,6 +2,7 @@ import React from 'react';
 import { useFormikContext } from 'formik';
 import Input from '@/components/form/Input';
 import SelectReact from '@/components/form/SelectReact';
+import { toast } from 'react-toastify';
 import type { ProductDetailForm } from '../../types/products.types';
 import type { ICategory } from '@/interface/category.interface';
 import type { TSelectOption } from '@/components/form/SelectReact';
@@ -18,10 +19,13 @@ const ComercialTab: React.FC<ComercialTabProps> = ({
 	categoriesLoading,
 	categoryOptions,
 }) => {
-	const { values, errors, touched, setFieldValue } = useFormikContext<ProductDetailForm>();
+	const { values, errors, touched, setFieldValue, setFieldTouched } =
+		useFormikContext<ProductDetailForm>();
 
 	// Validar que el número no exceda el límite de la BD (NUMERIC(14,2))
 	const handlePriceChange = (fieldName: string, value: string) => {
+		setFieldTouched(fieldName, true); // Marcar como touched siempre
+
 		if (value === '') {
 			setFieldValue(fieldName, '');
 			return;
@@ -45,6 +49,8 @@ const ComercialTab: React.FC<ComercialTabProps> = ({
 
 	// Validar números enteros con límite
 	const handleIntegerChange = (fieldName: string, value: string, max: number) => {
+		setFieldTouched(fieldName, true); // Marcar como touched siempre
+
 		if (value === '') {
 			setFieldValue(fieldName, '');
 			return;
@@ -62,6 +68,21 @@ const ComercialTab: React.FC<ComercialTabProps> = ({
 		}
 
 		setFieldValue(fieldName, numValue);
+	};
+
+	// Handler específico para stock con validación de serial_tracking
+	const handleStockChange = (value: string) => {
+		// Si el producto usa tracking por serie, bloquear edición
+		if (values.serial_tracking) {
+			toast.warning(
+				'⚠️ No se puede modificar el stock manualmente. Este producto usa tracking por serie y el stock se calcula automáticamente.',
+				{ autoClose: 5000 },
+			);
+			return;
+		}
+
+		// Si no tiene tracking, permitir edición normal
+		handleIntegerChange('stock', value, 999999999);
 	};
 
 	return (
@@ -155,7 +176,14 @@ const ComercialTab: React.FC<ComercialTabProps> = ({
 			</div>
 
 			<div className='space-y-1'>
-				<label className='text-sm font-medium'>Stock disponible</label>
+				<label className='text-sm font-medium'>
+					Stock disponible
+					{values.serial_tracking && (
+						<span className='ml-2 text-xs text-amber-500'>
+							(Solo lectura - calculado por series)
+						</span>
+					)}
+				</label>
 				<Input
 					name='stock'
 					type='number'
@@ -165,12 +193,20 @@ const ComercialTab: React.FC<ComercialTabProps> = ({
 					step='1'
 					value={values.stock === '' ? '' : String(values.stock)}
 					onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-						handleIntegerChange('stock', event.target.value, 999999999)
+						handleStockChange(event.target.value)
 					}
+					disabled={values.serial_tracking}
 					isValid={!errors.stock}
 					isTouched={touched.stock}
 					invalidFeedback={errors.stock}
+					className={values.serial_tracking ? 'cursor-not-allowed opacity-60' : ''}
 				/>
+				{values.serial_tracking && (
+					<p className='text-xs text-amber-600 dark:text-amber-400'>
+						El stock se calcula automáticamente desde las series aprobadas en
+						revisión técnica
+					</p>
+				)}
 				{touched.stock && errors.stock && (
 					<p className='text-xs text-red-500'>{errors.stock}</p>
 				)}

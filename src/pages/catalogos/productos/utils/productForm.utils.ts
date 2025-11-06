@@ -176,9 +176,14 @@ export const buildDetailUpdatePayload = (
 	if (parseNumberOrNull(product.warranty_months) !== nextWarranty) {
 		payload.warranty_months = nextWarranty ?? null;
 	}
+
+	// Stock: siempre debe ser un número válido
 	const nextStock = parseNumberOrNull(form.stock);
-	if (parseNumberOrNull(product.stock) !== nextStock) {
-		payload.stock = nextStock ?? null;
+	const currentStock = parseNumberOrNull(product.stock);
+
+	// Solo agregar al payload si hay un cambio Y el nuevo valor es un número válido
+	if (currentStock !== nextStock && typeof nextStock === 'number') {
+		payload.stock = nextStock;
 	}
 
 	if (includeDescriptions) {

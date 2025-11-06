@@ -21,26 +21,12 @@ import type {
 import { toast } from 'react-toastify';
 
 /**
- * Hook personalizado para la gestión de bodegas
+ * Hook personalizado para la gestión completa de bodegas
  * Centraliza toda la lógica de negocio y comunicación con Redux
  */
 export const useWarehouseManagement = (branchId: number) => {
     const dispatch = useAppDispatch();
-    const {
-        warehouses,
-        warehouseDetail,
-        meta,
-        stats,
-        loading,
-        warehouseDetailLoading,
-        creating,
-        updating,
-        deleting,
-        attachingProducts,
-        detachingProduct,
-        error,
-        warehouseDetailError,
-    } = useAppSelector((state) => state.warehouse);
+    const state = useAppSelector((s) => s.warehouse);
 
     /**
      * Cargar listado de bodegas
@@ -49,8 +35,8 @@ export const useWarehouseManagement = (branchId: number) => {
         async (params?: IFetchWarehousesParams) => {
             try {
                 await dispatch(fetchWarehouses({ branchId, params })).unwrap();
-            } catch (error: any) {
-                toast.error(error || 'Error al cargar las bodegas');
+            } catch (e: any) {
+                toast.error(e?.message || 'Error al cargar bodegas');
             }
         },
         [dispatch, branchId],
@@ -63,8 +49,8 @@ export const useWarehouseManagement = (branchId: number) => {
         async (warehouseId: number) => {
             try {
                 await dispatch(fetchWarehouseDetail({ branchId, warehouseId })).unwrap();
-            } catch (error: any) {
-                toast.error(error || 'Error al cargar el detalle de la bodega');
+            } catch (e: any) {
+                toast.error(e?.message || 'Error al cargar el detalle de la bodega');
             }
         },
         [dispatch, branchId],
@@ -79,9 +65,8 @@ export const useWarehouseManagement = (branchId: number) => {
                 await dispatch(createWarehouse({ branchId, data })).unwrap();
                 toast.success('Bodega creada exitosamente');
                 return true;
-            } catch (error: any) {
-                const message = error?.message || 'Error al crear la bodega';
-                toast.error(message);
+            } catch (e: any) {
+                toast.error(e?.message || 'Error al crear la bodega');
                 return false;
             }
         },
@@ -95,11 +80,10 @@ export const useWarehouseManagement = (branchId: number) => {
         async (warehouseId: number, data: IUpdateWarehouseRequest) => {
             try {
                 await dispatch(updateWarehouse({ branchId, warehouseId, data })).unwrap();
-                toast.success('Bodega actualizada exitosamente');
+                toast.success('Bodega actualizada');
                 return true;
-            } catch (error: any) {
-                const message = error?.message || 'Error al actualizar la bodega';
-                toast.error(message);
+            } catch (e: any) {
+                toast.error(e?.message || 'Error al actualizar la bodega');
                 return false;
             }
         },
@@ -108,16 +92,24 @@ export const useWarehouseManagement = (branchId: number) => {
 
     /**
      * Eliminar bodega
+     * Maneja validaciones específicas del backend
      */
     const handleDeleteWarehouse = useCallback(
         async (warehouseId: number) => {
             try {
                 await dispatch(deleteWarehouse({ branchId, warehouseId })).unwrap();
-                toast.success('Bodega eliminada exitosamente');
+                toast.success('Bodega eliminada');
                 return true;
-            } catch (error: any) {
-                const message = error?.message || 'Error al eliminar la bodega';
-                toast.error(message);
+            } catch (e: any) {
+                const msg = e?.response?.data?.message || e?.message;
+
+                // Mensaje específico si tiene productos asociados
+                if (msg?.includes('productos asociados')) {
+                    toast.error('No se puede eliminar, tiene productos asociados');
+                } else {
+                    toast.error(msg || 'Error al eliminar la bodega');
+                }
+
                 return false;
             }
         },
@@ -125,17 +117,31 @@ export const useWarehouseManagement = (branchId: number) => {
     );
 
     /**
-     * Agregar productos a la bodega
+     * Asociar productos a la bodega
+     * Maneja diferentes escenarios de error
      */
     const handleAttachProducts = useCallback(
         async (warehouseId: number, data: IAttachProductRequest) => {
             try {
                 await dispatch(attachWarehouseProducts({ branchId, warehouseId, data })).unwrap();
-                toast.success('Productos agregados exitosamente');
+                toast.success('Producto asociado correctamente');
                 return true;
-            } catch (error: any) {
-                const message = error?.message || 'Error al agregar productos';
-                toast.error(message);
+            } catch (e: any) {
+                const msg = e?.response?.data?.message || e?.message;
+
+                // Mensajes específicos según el error del backend
+                if (msg?.includes('ya está asociado')) {
+                    toast.warning('El producto ya se encuentra en la bodega');
+                } else if (msg?.includes('sucursal')) {
+                    toast.error('El producto pertenece a otra sucursal');
+                } else if (msg?.includes('capacidad')) {
+                    toast.error('No hay capacidad suficiente en la bodega');
+                } else if (msg?.includes('stock disponible')) {
+                    toast.error('No hay stock disponible para sincronizar');
+                } else {
+                    toast.error('Error al asociar el producto');
+                }
+
                 return false;
             }
         },
@@ -144,16 +150,28 @@ export const useWarehouseManagement = (branchId: number) => {
 
     /**
      * Quitar producto de la bodega
+     * Maneja validaciones específicas
      */
     const handleDetachProduct = useCallback(
         async (warehouseId: number, data: IDetachProductRequest) => {
             try {
                 await dispatch(detachWarehouseProduct({ branchId, warehouseId, data })).unwrap();
-                toast.success('Producto quitado exitosamente');
+
+                // Auto-reload: recargar el detalle de la bodega después de desasociar
+                await dispatch(fetchWarehouseDetail({ branchId, warehouseId })).unwrap();
+
+                toast.success('Producto quitado correctamente');
                 return true;
-            } catch (error: any) {
-                const message = error?.message || 'Error al quitar el producto';
-                toast.error(message);
+            } catch (e: any) {
+                const msg = e?.response?.data?.message || e?.message;
+
+                // Mensaje específico si el producto no existe
+                if (msg?.includes('no está asociado')) {
+                    toast.error('El producto no existe en esta bodega');
+                } else {
+                    toast.error('Error al quitar el producto');
+                }
+
                 return false;
             }
         },
@@ -182,20 +200,8 @@ export const useWarehouseManagement = (branchId: number) => {
     }, [dispatch]);
 
     return {
-        // State
-        warehouses,
-        warehouseDetail,
-        meta,
-        stats,
-        loading,
-        warehouseDetailLoading,
-        creating,
-        updating,
-        deleting,
-        attachingProducts,
-        detachingProduct,
-        error,
-        warehouseDetailError,
+        // Spread todo el state de Redux
+        ...state,
 
         // Actions
         loadWarehouses,

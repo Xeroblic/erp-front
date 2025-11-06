@@ -12,6 +12,7 @@ import WarehousesTable from './tables/WarehousesTable';
 import CreateWarehouseModal from './modals/CreateWarehouseModal';
 import EditWarehouseModal from './modals/EditWarehouseModal';
 import DeleteWarehouseModal from './modals/DeleteWarehouseModal';
+import WarehousesCharts from './components/WarehousesCharts';
 import type { IWarehouse } from '@/interface/warehouse.interface';
 
 /**
@@ -203,6 +204,9 @@ const WarehouseListPage: React.FC = () => {
 						</div>
 					</div>
 				)}
+
+				{/* Charts de análisis */}
+				{!loading && warehouses.length > 0 && <WarehousesCharts warehouses={warehouses} />}
 
 				{/* Tabla de bodegas */}
 				<WarehousesTable

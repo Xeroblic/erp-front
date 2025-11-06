@@ -7,14 +7,15 @@ import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/S
 import Container from '@/components/layouts/Container/Container';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
-import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
-import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
-import Badge from '@/components/ui/Badge';
-import Checkbox from '@/components/form/Checkbox';
-import Input from '@/components/form/Input';
+import Collapse from '@/components/utils/Collapse';
 import { useWarehouseManagement } from './hooks/useWarehouseManagement';
-import WarehouseCapacityBar from './components/WarehouseCapacityBar';
-import { toast } from 'react-toastify';
+import WarehouseInfoCard from './detallesComponents/cards/WarehouseInfoCard';
+import AssociatedProductsCard from './detallesComponents/cards/AssociatedProductsCard';
+import AvailableProductsCard from './detallesComponents/cards/AvailableProductsCard';
+import RemoveProductModal from './detallesComponents/modals/RemoveProductModal';
+import AttachProductModal from './detallesComponents/modals/AttachProductModal';
+import WarehouseCapacityChart from './detallesComponents/charts/WarehouseCapacityChart';
+import ProductBrandsChart from './detallesComponents/charts/ProductBrandsChart';
 
 const WarehouseDetailPage: React.FC = () => {
 	const { id } = useParams<{ id: string }>();
@@ -35,21 +36,11 @@ const WarehouseDetailPage: React.FC = () => {
 
 	const [isEditable, setIsEditable] = useState(false);
 	const [productToRemove, setProductToRemove] = useState<any | null>(null);
-	const [updatingSyncIds, setUpdatingSyncIds] = useState<number[]>([]);
+	const [showCharts, setShowCharts] = useState(false); // Estado para collapse de charts
 
 	// attach modal state
 	const [attachProduct, setAttachProduct] = useState<any | null>(null);
-	const [attachSync, setAttachSync] = useState(true);
-	const [attachQty, setAttachQty] = useState<number>(1);
 	const [attaching, setAttaching] = useState(false);
-
-	// qty modal for turning OFF sync on associated product
-	const [qtyModal, setQtyModal] = useState<{
-		open: boolean;
-		productId: number | null;
-		initialQty: number;
-	}>({ open: false, productId: null, initialQty: 1 });
-	const [qtyInput, setQtyInput] = useState<number>(1);
 
 	useEffect(() => {
 		if (branchId && id) {
@@ -60,14 +51,21 @@ const WarehouseDetailPage: React.FC = () => {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [branchId, id]);
 
-	const availableProducts = useMemo(
-		() =>
-			allProducts.filter(
-				(p) =>
-					p.branch_id === branchId && !warehouse?.products?.some((wp) => wp.id === p.id),
-			),
-		[allProducts, warehouse?.products, branchId],
-	);
+	// Filtrar productos disponibles: solo los que NO están asociados a la bodega
+	const availableProducts = useMemo(() => {
+		if (!warehouse?.products) return [];
+
+		const associatedProductIds = new Set(warehouse.products.map((wp) => wp.id));
+
+		return allProducts.filter(
+			(product) => product.branch_id === branchId && !associatedProductIds.has(product.id),
+		);
+	}, [allProducts, warehouse?.products, branchId]);
+
+	// Helper: verificar si un producto ya está asociado
+	const isProductAssociated = (productId: number): boolean => {
+		return warehouse?.products?.some((p) => p.id === productId) ?? false;
+	};
 
 	const searchTimerRef = useRef<number | null>(null);
 	const handleProductSearch = (val: string) => {
@@ -77,19 +75,34 @@ const WarehouseDetailPage: React.FC = () => {
 		}, 300) as unknown as number;
 	};
 
-	const openAttachModal = (p: any) => {
-		setAttachProduct(p);
-		setAttachSync(true);
-		setAttachQty(1);
+	const handleAttachProduct = (product: any) => {
+		// Validación preventiva: verificar que el producto NO esté ya asociado
+		if (isProductAssociated(product.id)) {
+			// Este caso NO debería ocurrir si el filtro funciona bien,
+			// pero es una capa extra de seguridad
+			console.warn(`[UX Safety] Producto ${product.id} ya está asociado a la bodega`);
+			return;
+		}
+
+		setAttachProduct(product);
 	};
-	const confirmAttach = async () => {
-		if (!attachProduct || !warehouse) return;
+
+	const confirmAttach = async (productId: number, sync: boolean, quantity: number) => {
+		if (!warehouse) return;
+
+		// Validación final antes de enviar al backend
+		if (isProductAssociated(productId)) {
+			console.warn(`[Backend Safety] Evitando POST duplicado para producto ${productId}`);
+			setAttachProduct(null);
+			return;
+		}
+
 		setAttaching(true);
 		try {
 			const payload = {
-				product_id: attachProduct.id,
-				quantity: attachSync ? null : attachQty,
-				sync_stock: attachSync,
+				product_id: productId,
+				quantity: sync ? null : quantity,
+				sync_stock: sync,
 			} as any;
 			const success = await handleAttachProducts(warehouse.id, payload);
 			if (success) {
@@ -101,27 +114,15 @@ const WarehouseDetailPage: React.FC = () => {
 		}
 	};
 
-	const confirmQtyModal = async () => {
-		if (!qtyModal.productId || !warehouse) {
-			setQtyModal({ open: false, productId: null, initialQty: 1 });
-			return;
-		}
-		const qty = Number(qtyInput) || 0;
-		if (qty <= 0) {
-			toast.error('La cantidad debe ser mayor a 0');
-			return;
-		}
-		setUpdatingSyncIds((s) => [...s, qtyModal.productId!]);
-		try {
-			await handleAttachProducts(warehouse.id, {
-				product_id: qtyModal.productId,
-				quantity: qty,
-				sync_stock: false,
-			} as any);
-			await loadWarehouseDetail(warehouse.id);
-		} finally {
-			setUpdatingSyncIds((s) => s.filter((id) => id !== qtyModal.productId));
-			setQtyModal({ open: false, productId: null, initialQty: 1 });
+	const confirmRemoveProduct = async (productId: number) => {
+		if (!warehouse) return;
+
+		const success = await handleDetachProduct(warehouse.id, {
+			product_id: productId,
+		} as any);
+
+		if (success) {
+			setProductToRemove(null);
 		}
 	};
 
@@ -162,385 +163,75 @@ const WarehouseDetailPage: React.FC = () => {
 
 			<Container>
 				<div className='space-y-4'>
-					<Card>
-						<CardHeader>
-							<CardTitle>Información General</CardTitle>
-						</CardHeader>
-						<CardBody>
-							<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
-								<div>
-									<p className='text-sm text-gray-600'>Nombre</p>
-									<p className='font-semibold'>{warehouse.name}</p>
-								</div>
-								<div>
-									<p className='text-sm text-gray-600'>Código</p>
-									<p className='font-mono'>{warehouse.code}</p>
-								</div>
-								<div>
-									<p className='text-sm text-gray-600'>Sucursal</p>
-									<p className='font-semibold'>
-										{warehouse.branch_name || 'N/A'}
-									</p>
+					<WarehouseInfoCard warehouse={warehouse} />
+
+					{/* Gráficos de análisis - Colapsable */}
+					<div className='rounded-lg border border-zinc-200 dark:border-zinc-800'>
+						<button
+							onClick={() => setShowCharts(!showCharts)}
+							className='flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50'>
+							<div className='flex items-center gap-2'>
+								<Icon icon='HeroChartBarSquare' className='size-5 text-blue-500' />
+								<h3 className='text-lg font-semibold'>Análisis y Estadísticas</h3>
+								<span className='text-sm text-zinc-500'>
+									({warehouse.products?.length || 0} productos)
+								</span>
+							</div>
+							<Icon
+								icon={showCharts ? 'HeroChevronUp' : 'HeroChevronDown'}
+								className='size-5 text-zinc-400'
+							/>
+						</button>
+
+						<Collapse isOpen={showCharts}>
+							<div className='border-t border-zinc-200 p-4 dark:border-zinc-800'>
+								<div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
+									<WarehouseCapacityChart
+										currentCapacity={warehouse.current_capacity ?? 0}
+										maximumCapacity={warehouse.maximum_capacity ?? 0}
+									/>
+									<ProductBrandsChart
+										products={warehouse.products || []}
+										allProducts={allProducts}
+									/>
 								</div>
 							</div>
-						</CardBody>
-					</Card>
+						</Collapse>
+					</div>
 
-					<Card>
-						<CardHeader>
-							<CardTitle>
-								Productos Asociados ({warehouse.products?.length || 0})
-							</CardTitle>
-						</CardHeader>
-						<CardBody>
-							{!warehouse.products || warehouse.products.length === 0 ? (
-								<div className='py-8 text-center text-sm text-gray-600'>
-									No hay productos asociados
-								</div>
-							) : (
-								<div className='overflow-x-auto'>
-									<table className='min-w-full divide-y divide-gray-200'>
-										<thead className='bg-gray-50'>
-											<tr>
-												<th className='px-4 py-2 text-left text-xs font-medium text-gray-500'>
-													SKU
-												</th>
-												<th className='px-4 py-2 text-left text-xs font-medium text-gray-500'>
-													Nombre
-												</th>
-												<th className='px-4 py-2 text-left text-xs font-medium text-gray-500'>
-													Marca
-												</th>
-												<th className='px-4 py-2 text-right text-xs font-medium text-gray-500'>
-													Stock
-												</th>
-												<th className='px-4 py-2 text-right text-xs font-medium text-gray-500'>
-													Cantidad
-												</th>
-												<th className='px-4 py-2 text-center text-xs font-medium text-gray-500'>
-													Modo
-												</th>
-												<th className='px-4 py-2 text-center text-xs font-medium text-gray-500'>
-													Acciones
-												</th>
-											</tr>
-										</thead>
-										<tbody className='divide-y divide-gray-200 bg-white'>
-											{warehouse.products.map((p: any) => (
-												<tr key={p.id} className='hover:bg-gray-50'>
-													<td className='px-4 py-2 font-mono text-sm'>
-														{p.sku}
-													</td>
-													<td className='px-4 py-2 text-sm'>{p.name}</td>
-													<td className='px-4 py-2 text-sm text-gray-600'>
-														{p.brand_name ??
-															allProducts.find((x) => x.id === p.id)
-																?.brand?.name ??
-															'N/A'}
-													</td>
-													<td className='px-4 py-2 text-right text-sm'>
-														{allProducts.find((x) => x.id === p.id)
-															?.stock ?? 0}
-													</td>
-													<td className='px-4 py-2 text-right font-semibold'>
-														{p.quantity}
-													</td>
-													<td className='px-4 py-2 text-center'>
-														{p.sync_stock ? (
-															<Badge color='blue' variant='outline'>
-																Auto-Sync
-															</Badge>
-														) : (
-															<Badge color='gray' variant='outline'>
-																Manual
-															</Badge>
-														)}
-													</td>
-													<td className='px-4 py-2 text-center'>
-														<div className='flex items-center justify-center gap-2'>
-															{updatingSyncIds.includes(p.id) && (
-																<Icon
-																	icon='HeroArrowPath'
-																	className='animate-spin'
-																/>
-															)}
-															<Checkbox
-																variant='switch'
-																id={`sync-${p.id}`}
-																checked={p.sync_stock}
-																onChange={async (e) => {
-																	const turningOn =
-																		e.target.checked;
-																	if (!turningOn) {
-																		setQtyModal({
-																			open: true,
-																			productId: p.id,
-																			initialQty: p.quantity,
-																		});
-																	} else {
-																		setUpdatingSyncIds((s) => [
-																			...s,
-																			p.id,
-																		]);
-																		try {
-																			await handleAttachProducts(
-																				warehouse.id,
-																				{
-																					product_id:
-																						p.id,
-																					quantity: null,
-																					sync_stock: true,
-																				} as any,
-																			);
-																			await loadWarehouseDetail(
-																				warehouse.id,
-																			);
-																		} finally {
-																			setUpdatingSyncIds(
-																				(s) =>
-																					s.filter(
-																						(id) =>
-																							id !==
-																							p.id,
-																					),
-																			);
-																		}
-																	}
-																}}
-															/>
-
-															<Button
-																size='sm'
-																variant='outline'
-																onClick={() =>
-																	navigate(`/producto/${p.id}`)
-																}>
-																Ver
-															</Button>
-															<Button
-																size='sm'
-																variant='outline'
-																color='red'
-																onClick={() =>
-																	setProductToRemove(p)
-																}>
-																Quitar
-															</Button>
-														</div>
-													</td>
-												</tr>
-											))}
-										</tbody>
-									</table>
-								</div>
-							)}
-						</CardBody>
-					</Card>
+					<AssociatedProductsCard
+						products={warehouse.products || []}
+						allProducts={allProducts}
+						branchId={branchId}
+						onRemoveProduct={setProductToRemove}
+					/>
 
 					{isEditable && (
-						<Card>
-							<CardHeader>
-								<CardTitle>Productos Disponibles</CardTitle>
-							</CardHeader>
-							<CardBody>
-								{productsLoading ? (
-									<div className='py-8 text-center'>
-										<Icon icon='HeroArrowPath' className='animate-spin' />
-									</div>
-								) : availableProducts.length === 0 ? (
-									<div className='py-8 text-center text-sm text-gray-600'>
-										No hay productos disponibles
-									</div>
-								) : (
-									<div className='overflow-x-auto'>
-										<table className='min-w-full divide-y divide-gray-200'>
-											<thead className='bg-gray-50'>
-												<tr>
-													<th className='px-4 py-2 text-left text-xs font-medium text-gray-500'>
-														SKU
-													</th>
-													<th className='px-4 py-2 text-left text-xs font-medium text-gray-500'>
-														Nombre
-													</th>
-													<th className='px-4 py-2 text-left text-xs font-medium text-gray-500'>
-														Marca
-													</th>
-													<th className='px-4 py-2 text-right text-xs font-medium text-gray-500'>
-														Stock
-													</th>
-													<th className='px-4 py-2 text-center text-xs font-medium text-gray-500'>
-														Acción
-													</th>
-												</tr>
-											</thead>
-											<tbody className='divide-y divide-gray-200 bg-white'>
-												{availableProducts.map((p: any) => (
-													<tr key={p.id} className='hover:bg-gray-50'>
-														<td className='px-4 py-2 font-mono text-sm'>
-															{p.sku}
-														</td>
-														<td className='px-4 py-2 text-sm'>
-															{p.name}
-														</td>
-														<td className='px-4 py-2 text-sm text-gray-600'>
-															{p.brand?.name ?? 'N/A'}
-														</td>
-														<td className='px-4 py-2 text-right text-sm'>
-															{p.stock ?? 0}
-														</td>
-														<td className='px-4 py-2 text-center'>
-															<div className='flex items-center justify-center gap-2'>
-																<Button
-																	size='sm'
-																	variant='outline'
-																	color='blue'
-																	onClick={() =>
-																		openAttachModal(p)
-																	}>
-																	Asociar
-																</Button>
-															</div>
-														</td>
-													</tr>
-												))}
-											</tbody>
-										</table>
-									</div>
-								)}
-							</CardBody>
-						</Card>
+						<AvailableProductsCard
+							products={availableProducts}
+							loading={productsLoading}
+							onAttachProduct={handleAttachProduct}
+						/>
 					)}
 				</div>
 			</Container>
 
-			{productToRemove && (
-				<Modal
-					isOpen={!!productToRemove}
-					setIsOpen={() => setProductToRemove(null)}
-					size='md'>
-					<ModalHeader>
-						<div className='flex items-center gap-3'>
-							<div className='flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20'>
-								<Icon
-									icon='HeroExclamationTriangle'
-									className='text-red-600 dark:text-red-400'
-								/>
-							</div>
-							<h3 className='text-lg font-semibold'>Confirmar eliminación</h3>
-						</div>
-					</ModalHeader>
-					<ModalBody>
-						<p className='text-sm'>
-							¿Estás seguro de quitar este producto de la bodega?
-						</p>
-						<div className='mt-3 rounded-lg border p-3'>
-							<p className='font-medium'>Producto: {productToRemove.name}</p>
-							<p className='text-sm text-gray-600'>SKU: {productToRemove.sku}</p>
-							<p className='text-sm text-gray-600'>
-								Cantidad: {productToRemove.quantity}
-							</p>
-						</div>
-					</ModalBody>
-					<ModalFooter>
-						<div className='flex justify-end gap-2'>
-							<Button variant='outline' onClick={() => setProductToRemove(null)}>
-								Cancelar
-							</Button>
-							<Button
-								color='red'
-								onClick={async () => {
-									const success = await handleDetachProduct(warehouse.id, {
-										product_id: productToRemove.id,
-									} as any);
-									if (success) setProductToRemove(null);
-								}}>
-								Sí, quitar
-							</Button>
-						</div>
-					</ModalFooter>
-				</Modal>
-			)}
+			<RemoveProductModal
+				isOpen={!!productToRemove}
+				product={productToRemove}
+				onClose={() => setProductToRemove(null)}
+				onConfirm={confirmRemoveProduct}
+			/>
 
-			{attachProduct && (
-				<Modal isOpen={!!attachProduct} setIsOpen={() => setAttachProduct(null)} size='sm'>
-					<ModalHeader>
-						<h3 className='text-lg font-semibold'>Asociar producto</h3>
-					</ModalHeader>
-					<ModalBody>
-						<p className='text-sm'>
-							Producto: <strong>{attachProduct.name}</strong>
-						</p>
-						<div className='mt-3 flex items-center gap-3'>
-							<Checkbox
-								id='attach-sync'
-								variant='switch'
-								checked={attachSync}
-								onChange={(e) => setAttachSync(e.target.checked)}
-							/>
-							<label htmlFor='attach-sync' className='text-sm'>
-								Sincronizar
-							</label>
-						</div>
-						{!attachSync && (
-							<div className='mt-3'>
-								<label className='mb-1 block text-sm'>Cantidad</label>
-								<Input
-                                    name='cantidad'
-									type='number'
-									min='1'
-									value={attachQty}
-									onChange={(e) => setAttachQty(parseInt(e.target.value || '0'))}
-								/>
-							</div>
-						)}
-					</ModalBody>
-					<ModalFooter>
-						<div className='flex justify-end gap-2'>
-							<Button variant='outline' onClick={() => setAttachProduct(null)}>
-								Cancelar
-							</Button>
-							<Button color='blue' onClick={confirmAttach} isLoading={attaching}>
-								Confirmar
-							</Button>
-						</div>
-					</ModalFooter>
-				</Modal>
-			)}
-
-			{qtyModal.open && (
-				<Modal
-					isOpen={qtyModal.open}
-					setIsOpen={() => setQtyModal({ open: false, productId: null, initialQty: 1 })}
-					size='sm'>
-					<ModalHeader>
-						<h3 className='text-lg font-semibold'>Cantidad manual</h3>
-					</ModalHeader>
-					<ModalBody>
-						<p className='text-sm'>Ingrese la cantidad manual para este producto</p>
-						<Input
-                            name='cantidad_manual'
-							type='number'
-							min='1'
-							value={qtyInput}
-							onChange={(e) => setQtyInput(parseInt(e.target.value || '0'))}
-						/>
-					</ModalBody>
-					<ModalFooter>
-						<div className='flex justify-end gap-2'>
-							<Button
-								variant='outline'
-								onClick={() =>
-									setQtyModal({ open: false, productId: null, initialQty: 1 })
-								}>
-								Cancelar
-							</Button>
-							<Button color='blue' onClick={confirmQtyModal}>
-								Confirmar
-							</Button>
-						</div>
-					</ModalFooter>
-				</Modal>
-			)}
+			<AttachProductModal
+				isOpen={!!attachProduct}
+				product={attachProduct}
+				allProducts={allProducts}
+				associatedProducts={warehouse?.products || []}
+				onClose={() => setAttachProduct(null)}
+				onConfirm={confirmAttach}
+				isLoading={attaching}
+			/>
 		</PageWrapper>
 	);
 };

@@ -223,7 +223,10 @@ export const buildUpdatePayload = (
 	if (data.price !== undefined) payload.price = Number(data.price);
 	if (data.offer_price !== undefined)
 		payload.offer_price = toNullableNumber(data.offer_price);
-	if (data.stock !== undefined) payload.stock = toNullableNumber(data.stock);
+	// Stock: enviar como número válido, no como null
+	if (data.stock !== undefined && typeof data.stock === 'number') {
+		payload.stock = data.stock;
+	}
 	if (data.attributes_json !== undefined) payload.attributes_json = data.attributes_json;
 	if (data.is_active !== undefined) payload.is_active = Boolean(data.is_active);
 	if (data.product_status !== undefined) payload.product_status = data.product_status;
