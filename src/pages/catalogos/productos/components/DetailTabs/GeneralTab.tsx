@@ -7,14 +7,41 @@ import type { IBrand } from '@/interface/brand.interface';
 import { PRODUCT_STATUS_LABELS, PRODUCT_TYPE_LABELS } from '../../constants/products.constant';
 import Label from '@/components/form/Label';
 import Checkbox from '@/components/form/Checkbox';
+import Modal, { ModalBody, ModalHeader, ModalFooter } from '@/components/ui/Modal';
+import Button from '@/components/ui/Button';
+import { useFormik } from 'formik';
 
 interface GeneralTabProps {
 	brands: IBrand[];
 	brandsLoading: boolean;
+	hasRevisionSerials?: boolean;
 }
 
-const GeneralTab: React.FC<GeneralTabProps> = ({ brands, brandsLoading }) => {
-	const { values, errors, touched, setFieldValue } = useFormikContext<ProductDetailForm>();
+const GeneralTab: React.FC<GeneralTabProps> = ({
+	brands,
+	brandsLoading,
+	hasRevisionSerials = false,
+}) => {
+	const { values, errors, touched, setFieldValue, submitForm } =
+		useFormikContext<ProductDetailForm>();
+	const [showConfirm, setShowConfirm] = React.useState(false);
+	const [blockMessage, setBlockMessage] = React.useState<string | null>(null);
+
+	const confirmFormik = useFormik<{ confirmText: string }>({
+		initialValues: { confirmText: '' },
+		validate: (vals) => {
+			const errs: Record<string, string> = {};
+			if (vals.confirmText !== 'SI') {
+				errs.confirmText = "Debes escribir 'SI' para confirmar";
+			}
+			return errs;
+		},
+		onSubmit: () => {
+			/* no-op: manejamos la confirmación manualmente */
+		},
+		validateOnChange: true,
+		validateOnBlur: true,
+	});
 
 	// Sincronizar product_kind en attributes_json cuando cambia product_type
 	useEffect(() => {
@@ -166,9 +193,25 @@ const GeneralTab: React.FC<GeneralTabProps> = ({ brands, brandsLoading }) => {
 						<Checkbox
 							id='serial_tracking'
 							checked={values.serial_tracking}
-							onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-								setFieldValue('serial_tracking', event.target.checked)
-							}
+							onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+								const next = event.target.checked;
+
+								if (!next && values.serial_tracking) {
+									if (hasRevisionSerials) {
+										setBlockMessage(
+											'No se puede quitar el seguimiento: existen series registradas en revisiones. Asigne o edite las series antes de desactivar.',
+										);
+										return;
+									}
+
+									setShowConfirm(true);
+									return;
+								}
+
+								setBlockMessage(null);
+								setShowConfirm(false);
+								setFieldValue('serial_tracking', next);
+							}}
 							className='rounded border-gray-300 text-blue-600 focus:ring-blue-500'
 						/>
 						<span className='text-sm font-medium'>Seguimiento por número de serie</span>
@@ -176,6 +219,73 @@ const GeneralTab: React.FC<GeneralTabProps> = ({ brands, brandsLoading }) => {
 					{touched.serial_tracking && errors.serial_tracking && (
 						<p className='text-xs text-red-500'>{errors.serial_tracking}</p>
 					)}
+
+					{blockMessage && (
+						<p className='mt-2 text-xs text-red-600' role='alert'>
+							{blockMessage}
+						</p>
+					)}
+
+					<Modal isOpen={showConfirm} setIsOpen={setShowConfirm} size='sm' isCentered>
+						<ModalHeader>Confirmar</ModalHeader>
+						<ModalBody>
+							<p className='mb-4 text-sm text-neutral-700 dark:text-neutral-300'>
+								Para confirmar que deseas quitar el seguimiento, escribe{' '}
+								<strong>SI</strong> en el campo y confirma.
+							</p>
+							<div className='max-w-sm'>
+								<Input
+									name='confirmText'
+									placeholder='Escribe SI para confirmar'
+									value={confirmFormik.values.confirmText}
+									onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+										confirmFormik.setFieldValue('confirmText', e.target.value)
+									}
+									onBlur={() =>
+										confirmFormik.setFieldTouched('confirmText', true)
+									}
+									isValid={!confirmFormik.errors.confirmText}
+									isTouched={Boolean(confirmFormik.touched.confirmText)}
+									invalidFeedback={confirmFormik.errors.confirmText}
+								/>
+								<p className='mt-2 text-xs text-neutral-500'>
+									Escribe explicitamente y en mayusculas SI
+								</p>
+							</div>
+						</ModalBody>
+						<ModalFooter>
+							<div />
+							<div className='flex items-center gap-2'>
+								<Button
+									variant='outline'
+									onClick={() => {
+										setShowConfirm(false);
+										confirmFormik.resetForm();
+									}}>
+									No
+								</Button>
+								<Button
+									variant='solid'
+									color='red'
+									onClick={() => {
+										const errors = confirmFormik.validateForm();
+										errors.then((errs) => {
+											if (!errs || Object.keys(errs).length === 0) {
+												setFieldValue('serial_tracking', false);
+												void submitForm();
+												setShowConfirm(false);
+												setBlockMessage(null);
+												confirmFormik.resetForm();
+											} else {
+												confirmFormik.setFieldTouched('confirmText', true);
+											}
+										});
+									}}>
+									Sí, quitar seguimiento
+								</Button>
+							</div>
+						</ModalFooter>
+					</Modal>
 				</div>
 			</div>
 		</>
