@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import { Formik, Form, Field, ErrorMessage, FormikHelpers, FieldProps } from 'formik';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -17,6 +17,7 @@ import {
 	buildSubmitPayload,
 	createBrandOptions,
 	createCategoryOptions,
+	initializeAttributesJson,
 } from '../../utils/productForm.utils';
 import {
 	productSchema,
@@ -157,6 +158,9 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 				if (values.product_type) {
 					data.product_type = values.product_type;
 				}
+				if (values.attributes_json) {
+					data.attributes_json = values.attributes_json as any;
+				}
 
 				payload = { data, categoryIds };
 			}
@@ -243,6 +247,57 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 						(isEditMode && product?.brand
 							? { value: String(product.brand.id), label: product.brand.name }
 							: null);
+
+					// Ref para evitar loops infinitos
+					const lastSyncedProductType = useRef<string | null>(null);
+
+					// Auto-sincronizar product_kind cuando cambia product_type
+					useEffect(() => {
+						// Evitar ejecutar en la carga inicial o si ya sincronizamos este tipo
+						if (
+							!values.product_type ||
+							lastSyncedProductType.current === values.product_type
+						) {
+							return;
+						}
+
+						const productKindMap: Record<string, string> = {
+							notebook: 'notebook',
+							desktop_pc: 'desktop_pc',
+							aio: 'aio',
+							monitor: 'monitor',
+							docking: 'docking',
+						};
+
+						const newProductKind = productKindMap[values.product_type];
+
+						if (newProductKind) {
+							const currentProductKind =
+								values.attributes_json &&
+								typeof values.attributes_json === 'object' &&
+								'product_kind' in values.attributes_json
+									? (values.attributes_json as any).product_kind
+									: null;
+
+							// Solo actualizar si es diferente
+							if (currentProductKind !== newProductKind) {
+								void setFieldValue(
+									'attributes_json',
+									{
+										...(values.attributes_json || {}),
+										product_kind: newProductKind,
+									},
+									false,
+								);
+							}
+						} else if (values.product_type === 'general' && values.attributes_json) {
+							// Si es general, limpiar attributes_json
+							void setFieldValue('attributes_json', null, false);
+						}
+
+						// Marcar como sincronizado
+						lastSyncedProductType.current = values.product_type;
+					}, [values.product_type, values.attributes_json, setFieldValue]);
 
 					return (
 						<Form id='productForm'>

@@ -1,29 +1,16 @@
 import type { AttributesJson } from '../types/attributes.types';
 import type { AttributesData } from '../components/DetailTabs/DynamicAttributesEditor/types';
 
-export const DEFAULT_ATTRIBUTES: AttributesData = {
-	packaging: {
-		charger_included: false,
-	},
-};
+// Removed DEFAULT_ATTRIBUTES to prevent auto-initialization of fields
+// Only product_kind should be initialized when creating/editing a product
+export const DEFAULT_ATTRIBUTES: AttributesData = {};
 
 const applyDefaults = (data: AttributesData): AttributesData => {
-	const result: AttributesData = {
-		...DEFAULT_ATTRIBUTES,
-		...data,
-	};
-
-	if (data.packaging) {
-		result.packaging = {
-			...DEFAULT_ATTRIBUTES.packaging,
-			...data.packaging,
-		};
-	}
-
-	return result;
+	// No defaults applied anymore - only preserve existing data
+	return { ...data };
 };
 
-export const sanitiseAttributesInput = (value: unknown, applyDefaultsFlag = true): AttributesData => {
+export const sanitiseAttributesInput = (value: unknown, applyDefaultsFlag = false): AttributesData => {
 	if (!value) {
 		return applyDefaultsFlag ? applyDefaults({}) : {};
 	}
@@ -95,7 +82,7 @@ const pruneAttributes = (attributes: AttributesData): AttributesData => {
 
 export const prepareAttributesForSubmit = (
 	value: AttributesData | AttributesJson | string | null | undefined,
-	applyDefaultsFlag = true,
+	applyDefaultsFlag = false,
 ): Record<string, unknown> | null => {
 	const sanitised = sanitiseAttributesInput(value ?? {}, applyDefaultsFlag);
 	const pruned = pruneAttributes(sanitised);
@@ -112,7 +99,7 @@ export const areAttributeRecordsEqual = (
 export const formatAttributesPreview = (
 	value: AttributesData | AttributesJson | string | null | undefined,
 ): string => {
-	const sanitised = sanitiseAttributesInput(value ?? {}, true);
+	const sanitised = sanitiseAttributesInput(value ?? {}, false);
 	const pruned = pruneAttributes(sanitised);
 	return Object.keys(pruned).length > 0 ? JSON.stringify(pruned, null, 2) : '';
 };

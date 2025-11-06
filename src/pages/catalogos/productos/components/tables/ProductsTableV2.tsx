@@ -15,7 +15,6 @@ interface ProductsTableProps {
 	meta: ProductListMeta;
 	loading?: boolean;
 	onView?: (product: IProduct) => void;
-	onEdit: (product: IProduct) => void;
 	onDelete: (product: IProduct) => void;
 }
 
@@ -37,7 +36,6 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 	meta,
 	loading = false,
 	onView,
-	onEdit,
 	onDelete,
 }) => {
 	const columns = useMemo<ColumnDef<IProduct>[]>(
@@ -300,13 +298,6 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 							)}
 							<Button
 								variant='outline'
-								size='sm'
-								onClick={() => onEdit(product)}
-								icon='HeroPencil'>
-								Editar
-							</Button>
-							<Button
-								variant='outline'
 								color='red'
 								size='sm'
 								onClick={() => onDelete(product)}
@@ -317,7 +308,7 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 				},
 			},
 		],
-		[onView, onEdit, onDelete],
+		[onView, onDelete],
 	);
 
 	const table = useReactTable({

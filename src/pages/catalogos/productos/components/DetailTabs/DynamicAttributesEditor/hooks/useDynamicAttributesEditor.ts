@@ -7,7 +7,7 @@ import {
 } from '@/pages/catalogos/productos/utils/dynamicAttributes.utils';
 import type { AttributesData, ProductKind } from '../types';
 
-const VALID_PRODUCT_KINDS: ProductKind[] = ['desktop_pc', 'notebook', 'aio', 'monitor'];
+const VALID_PRODUCT_KINDS: ProductKind[] = ['desktop_pc', 'notebook', 'aio', 'monitor', 'docking'];
 
 const FIELDS_TO_HIDE: Record<ProductKind, string[]> = {
 	desktop_pc: [
@@ -74,6 +74,21 @@ const FIELDS_TO_HIDE: Record<ProductKind, string[]> = {
 		'connectivity.ethernet',
 		'connectivity.power_input',
 		'notes',
+	],
+	docking: [
+		'cpu',
+		'ram',
+		'storage',
+		'gpu',
+		'os',
+		'camera',
+		'audio',
+		'keyboard',
+		'display',
+		'connectivity',
+		'packaging',
+		'notes',
+		'category_grade',
 	],
 };
 

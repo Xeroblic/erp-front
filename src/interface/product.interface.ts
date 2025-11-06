@@ -1,8 +1,10 @@
 export type ProductType =
+	| 'general'
 	| 'desktop_pc'
 	| 'notebook'
 	| 'aio'
 	| 'monitor'
+	| 'docking'
 	| string;
 export type ProductConditionPolicy = 'NEW' | 'USED' | 'REFURBISHED' | 'DAMAGED' | string;
 export type ProductStatus = 'pending' | 'validated' | 'rejected' | 'archived' | string;

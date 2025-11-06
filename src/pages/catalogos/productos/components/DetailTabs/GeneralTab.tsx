@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useFormikContext } from 'formik';
 import Input from '@/components/form/Input';
 import Select from '@/components/form/Select';
@@ -15,6 +15,43 @@ interface GeneralTabProps {
 
 const GeneralTab: React.FC<GeneralTabProps> = ({ brands, brandsLoading }) => {
 	const { values, errors, touched, setFieldValue } = useFormikContext<ProductDetailForm>();
+
+	// Sincronizar product_kind en attributes_json cuando cambia product_type
+	useEffect(() => {
+		if (values.product_type) {
+			const productKindMap: Record<string, string> = {
+				notebook: 'notebook',
+				desktop_pc: 'desktop_pc',
+				aio: 'aio',
+				monitor: 'monitor',
+				docking: 'docking',
+			};
+
+			const newProductKind = productKindMap[values.product_type];
+
+			if (newProductKind) {
+				const currentProductKind =
+					values.attributes_json &&
+					typeof values.attributes_json === 'object' &&
+					'product_kind' in values.attributes_json
+						? (values.attributes_json as any).product_kind
+						: null;
+
+				if (currentProductKind !== newProductKind) {
+					void setFieldValue(
+						'attributes_json',
+						{
+							...(values.attributes_json || {}),
+							product_kind: newProductKind,
+						},
+						false,
+					);
+				}
+			} else if (values.product_type === 'general' && values.attributes_json) {
+				void setFieldValue('attributes_json', null, false);
+			}
+		}
+	}, [values.product_type, setFieldValue]);
 
 	return (
 		<>

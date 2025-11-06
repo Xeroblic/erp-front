@@ -38,8 +38,6 @@ const Productos: React.FC = () => {
 	const [branchInitialized, setBranchInitialized] = useState(false);
 	const [page, setPage] = useState(1);
 	const [createOpen, setCreateOpen] = useState(false);
-	const [editOpen, setEditOpen] = useState(false);
-	const [selectedProduct, setSelectedProduct] = useState<IProduct | null>(null);
 	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 	const [productToDelete, setProductToDelete] = useState<IProduct | null>(null);
 	const [activeTab, setActiveTab] = useState('products');
@@ -60,7 +58,6 @@ const Productos: React.FC = () => {
 		categories,
 		categoriesLoading,
 		creating,
-		updating,
 		createProduct,
 		updateProduct,
 		deleteProduct,
@@ -235,24 +232,6 @@ const Productos: React.FC = () => {
 		}
 	};
 
-	const handleUpdateSubmit = async (
-		product: IProduct,
-		payload: { data: Partial<IProduct>; categoryIds?: number[] },
-	) => {
-		try {
-			await updateProduct(product.id, payload);
-			toast.success('Producto actualizado correctamente');
-			setEditOpen(false);
-			setSelectedProduct(null);
-		} catch (err: any) {
-			const message =
-				typeof err === 'string'
-					? err
-					: (err?.message ?? 'No se pudo actualizar el producto');
-			toast.error(message);
-		}
-	};
-
 	const handleDeleteProduct = async (product: IProduct) => {
 		setProductToDelete(product);
 		setDeleteModalOpen(true);
@@ -313,10 +292,6 @@ const Productos: React.FC = () => {
 							page={page}
 							onPageChange={setPage}
 							onView={handleViewProduct}
-							onEdit={(product) => {
-								setSelectedProduct(product);
-								setEditOpen(true);
-							}}
 							onDelete={handleDeleteProduct}
 						/>
 					</Tab>
@@ -346,30 +321,6 @@ const Productos: React.FC = () => {
 				isLoading={creating}
 				brandsLoading={brandsLoading}
 				defaultBranchId={branchId ?? defaultBranchFromUser ?? activeBranchId ?? null}
-			/>
-
-			<CreateEditProductModal
-				isOpen={editOpen}
-				onClose={() => {
-					setEditOpen(false);
-					setSelectedProduct(null);
-				}}
-				onSubmit={(payload) => {
-					if (!selectedProduct) return Promise.resolve();
-					return handleUpdateSubmit(selectedProduct, payload);
-				}}
-				product={selectedProduct ?? undefined}
-				brands={brands}
-				categories={categories}
-				isLoading={updating}
-				brandsLoading={brandsLoading}
-				defaultBranchId={
-					selectedProduct?.branch_id ??
-					branchId ??
-					defaultBranchFromUser ??
-					activeBranchId ??
-					null
-				}
 			/>
 
 			<DeleteProductModal

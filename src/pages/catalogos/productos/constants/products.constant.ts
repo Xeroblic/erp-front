@@ -8,6 +8,7 @@ export const PRODUCT_TYPES = [
 	'notebook',
 	'aio',
 	'monitor',
+	'docking',
 ] as const;
 
 export const PRODUCT_STATUS_LABELS: Record<string, string> = {
@@ -19,10 +20,11 @@ export const PRODUCT_STATUS_LABELS: Record<string, string> = {
 
 export const PRODUCT_TYPE_LABELS: Record<string, string> = {
 	general: 'General',
-	desktop_pc: 'Computador reacondicionado',
+	desktop_pc: 'Desktop reacondicionado',
 	notebook: 'Notebook reacondicionado',
 	aio: 'AIO reacondicionado',
 	monitor: 'Monitor reacondicionado',
+	docking: 'Docking reacondicionada',
 };
 
 export const PRODUCT_DEFAULT_FILTERS: ProductFilters = {
@@ -79,8 +81,13 @@ export const PRODUCT_STATS_META = [
 ] as const;
 
 export const PRODUCT_TYPE_META: Record<string, { label: string; icon: string; badgeColor: string }> = {
+	general: {
+		label: 'General',
+		icon: 'HeroCube',
+		badgeColor: 'gray',
+	},
 	desktop_pc: {
-		label: 'Computador reacondicionado',
+		label: 'Desktop reacondicionado',
 		icon: 'HeroComputerDesktop',
 		badgeColor: 'emerald',
 	},
@@ -98,6 +105,11 @@ export const PRODUCT_TYPE_META: Record<string, { label: string; icon: string; ba
 		label: 'Monitor reacondicionado',
 		icon: 'HeroPresentationChartLine',
 		badgeColor: 'cyan',
+	},
+	docking: {
+		label: 'Docking reacondicionada',
+		icon: 'HeroSquare3Stack3D',
+		badgeColor: 'purple',
 	},
 };
 

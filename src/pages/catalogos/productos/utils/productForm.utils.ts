@@ -16,6 +16,7 @@ import type {
 	ProductAttributesForm,
 	BuildUpdatePayloadOptions,
 } from '../types/products.types';
+import type { AttributesJson } from '../types/attributes.types';
 import { PRODUCT_DRAFT_CATEGORY_SLUG, PRODUCT_TYPE_LABELS } from '../constants/products.constant';
 import {
 	areAttributeRecordsEqual,
@@ -50,6 +51,7 @@ export const buildInitialValues = (product?: IProduct | null): ProductFormValues
 	serial_tracking: product?.serial_tracking ?? false,
 	is_active: product?.is_active ?? true,
 	categories: product?.categories?.map((category) => toOption(category.id, category.name)) ?? [],
+	attributes_json: (product?.attributes_json as AttributesJson) ?? null,
 	commercial_sku: product?.commercial_sku ?? '',
 	barcode: product?.barcode ?? '',
 });
@@ -236,4 +238,34 @@ export const collectValidationErrors = (error: unknown): string[] => {
 		return [(error as any).message as string];
 	}
 	return ['Ha ocurrido un error inesperado.'];
+};
+
+/**
+ * Inicializa attributes_json basado en el product_type seleccionado
+ * @param productType - El tipo de dispositivo seleccionado
+ * @returns El objeto attributes_json inicial o null si es 'general'
+ */
+export const initializeAttributesJson = (productType: string): Record<string, any> | null => {
+	if (!productType || productType === 'general') {
+		return null;
+	}
+
+	const productKindMap: Record<string, string> = {
+		notebook: 'notebook',
+		desktop_pc: 'desktop_pc',
+		aio: 'aio',
+		monitor: 'monitor',
+		docking: 'docking',
+	};
+
+	const productKind = productKindMap[productType];
+
+	if (!productKind) {
+		return null;
+	}
+
+	// Solo retornar el product_kind, el resto se inicializará al editar
+	return {
+		product_kind: productKind,
+	};
 };

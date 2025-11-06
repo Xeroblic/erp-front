@@ -41,7 +41,6 @@ interface ProductListTabProps {
 	page: number;
 	onPageChange: (page: number) => void;
 	onView: (product: IProduct) => void;
-	onEdit: (product: IProduct) => void;
 	onDelete: (product: IProduct) => void;
 }
 
@@ -63,7 +62,6 @@ const ProductListTab: React.FC<ProductListTabProps> = ({
 	page,
 	onPageChange,
 	onView,
-	onEdit,
 	onDelete,
 }) => {
 	const totalPages = Math.max(1, meta.last_page);
@@ -93,7 +91,6 @@ const ProductListTab: React.FC<ProductListTabProps> = ({
 				meta={meta}
 				loading={loading}
 				onView={onView}
-				onEdit={onEdit}
 				onDelete={onDelete}
 			/>
 
