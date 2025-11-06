@@ -5,7 +5,7 @@ import Icon from '@/components/icon/Icon';
 import { ApexOptions } from 'apexcharts';
 import useDarkMode from '@/hooks/useDarkMode';
 import { IWarehouse } from '@/interface/warehouse.interface';
-import Collapse from '@/components/ui/Collapse';
+import Collapse from '@/components/utils/Collapse';
 import Button from '@/components/ui/Button';
 
 interface WarehousesChartsProps {
@@ -316,8 +316,13 @@ const WarehousesCharts: React.FC<WarehousesChartsProps> = ({ warehouses }) => {
 						<Card>
 							<CardHeader>
 								<div className='flex items-center gap-2'>
-									<Icon icon='HeroSquares2x2' className='size-4 text-violet-500' />
-									<CardTitle className='text-base'>Distribución por Tipo</CardTitle>
+									<Icon
+										icon='HeroSquares2x2'
+										className='size-4 text-violet-500'
+									/>
+									<CardTitle className='text-base'>
+										Distribución por Tipo
+									</CardTitle>
 								</div>
 							</CardHeader>
 							<CardBody>
@@ -335,7 +340,10 @@ const WarehousesCharts: React.FC<WarehousesChartsProps> = ({ warehouses }) => {
 						<Card>
 							<CardHeader>
 								<div className='flex items-center gap-2'>
-									<Icon icon='HeroCheckCircle' className='size-4 text-emerald-500' />
+									<Icon
+										icon='HeroCheckCircle'
+										className='size-4 text-emerald-500'
+									/>
 									<CardTitle className='text-base'>Estado de Bodegas</CardTitle>
 								</div>
 							</CardHeader>

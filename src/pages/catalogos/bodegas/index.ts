@@ -12,6 +12,7 @@ export { default as WarehousesTable } from './tables/WarehousesTable';
 
 // Exportar componentes
 export { default as WarehouseCapacityBar } from './components/WarehouseCapacityBar';
+export { default as WarehousesCharts } from './components/WarehousesCharts';
 
 // Exportar hooks
 export { useWarehouseManagement } from './hooks/useWarehouseManagement';
