@@ -14,6 +14,7 @@ import EditWarehouseModal from './modals/EditWarehouseModal';
 import DeleteWarehouseModal from './modals/DeleteWarehouseModal';
 import WarehousesCharts from './components/WarehousesCharts';
 import type { IWarehouse } from '@/interface/warehouse.interface';
+import Card, { CardBody } from '@/components/ui/Card';
 
 /**
  * Página principal de listado de bodegas
@@ -144,8 +145,8 @@ const WarehouseListPage: React.FC = () => {
 				{/* Estadísticas rápidas */}
 				{!loading && warehouses.length > 0 && (
 					<div className='mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
-						<div className='rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800'>
-							<div className='flex items-center justify-between'>
+						<Card className='rounded-lg p-4'>
+							<CardBody className='flex items-center justify-between'>
 								<div>
 									<p className='text-sm font-medium text-gray-600 dark:text-gray-400'>
 										Total
@@ -155,10 +156,10 @@ const WarehouseListPage: React.FC = () => {
 									</p>
 								</div>
 								<Icon icon='HeroHomeModern' className='size-8 text-blue-600' />
-							</div>
-						</div>
+							</CardBody>
+						</Card>
 
-						<div className='rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800'>
+						<Card className='rounded-lg p-4'>
 							<div className='flex items-center justify-between'>
 								<div>
 									<p className='text-sm font-medium text-gray-600 dark:text-gray-400'>
@@ -170,10 +171,10 @@ const WarehouseListPage: React.FC = () => {
 								</div>
 								<Icon icon='HeroCheckCircle' className='size-8 text-emerald-600' />
 							</div>
-						</div>
+						</Card>
 
-						<div className='rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800'>
-							<div className='flex items-center justify-between'>
+						<Card className='rounded-lg p-4'>
+							<CardBody className='flex items-center justify-between'>
 								<div>
 									<p className='text-sm font-medium text-gray-600 dark:text-gray-400'>
 										Con productos
@@ -183,11 +184,11 @@ const WarehouseListPage: React.FC = () => {
 									</p>
 								</div>
 								<Icon icon='HeroArchiveBox' className='size-8 text-blue-600' />
-							</div>
-						</div>
+							</CardBody>
+						</Card>
 
-						<div className='rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800'>
-							<div className='flex items-center justify-between'>
+						<Card className='rounded-lg p-4'>
+							<CardBody className='flex items-center justify-between'>
 								<div>
 									<p className='text-sm font-medium text-gray-600 dark:text-gray-400'>
 										Cerca capacidad
@@ -200,8 +201,8 @@ const WarehouseListPage: React.FC = () => {
 									icon='HeroExclamationTriangle'
 									className='size-8 text-amber-600'
 								/>
-							</div>
-						</div>
+							</CardBody>
+						</Card>
 					</div>
 				)}
 
