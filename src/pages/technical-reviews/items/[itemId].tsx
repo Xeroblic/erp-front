@@ -87,8 +87,6 @@ const ItemReviewStandalonePage: React.FC = () => {
 		reviewStatus: item?.review_status,
 		equipmentType: equipmentType || undefined,
 		onSaveSuccess: (savedItemId) => {
-			console.log('✅ Guardado exitoso, item ID:', savedItemId);
-			// Si era creación, actualizar URL con el ID real
 			if (itemId === 'create') {
 				if (batchIdToUse) {
 					navigate(`/technical-reviews/batches/${batchIdToUse}/items/${savedItemId}`, {
@@ -566,8 +564,6 @@ const ItemReviewStandalonePage: React.FC = () => {
 						initialValues={(() => {
 							const attrs = (item.attributes_json ||
 								{}) as Partial<UpdateItemDetailsPayload>;
-							console.log('📋 InitialValues para Step2:', attrs);
-							console.log('📋 Item completo:', item);
 							return attrs;
 						})()}
 						onBack={() => setCurrentStep('basic')}

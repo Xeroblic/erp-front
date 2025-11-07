@@ -205,13 +205,10 @@ const ItemReviewPage: React.FC = () => {
 				equipment_type: equipmentType,
 			});
 
-			// Verificar que se creó el item y que el ID es válido
 			if (createdItemId == null) {
 				return;
 			}
 
-
-			// Iniciar revisión (cambia status a in_review)
 			const result = await dispatch(
 				startReview({
 					branchId,
@@ -220,7 +217,8 @@ const ItemReviewPage: React.FC = () => {
 			).unwrap();
 
 			setItem(result);
-			setCurrentStep('review');
+			// No cambiar al Step 2 aquí, dejar que la navegación lo maneje
+			// setCurrentStep('review');
 		} catch (error) {
 			toast.error(`Error al iniciar revisión: ${error}`);
 		}
@@ -481,7 +479,6 @@ const ItemReviewPage: React.FC = () => {
 						</CardHeader>
 						<CardBody>
 							<div className='space-y-6'>
-								{/* Serial Number */}
 								<div>
 									<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
 										Número de Serie <span className='text-red-500'>*</span>
