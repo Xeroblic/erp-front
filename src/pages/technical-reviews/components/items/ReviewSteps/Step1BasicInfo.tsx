@@ -106,57 +106,55 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 		if (error) return; // si ya había error de existencia, no crear
 
 		try {
-			const response = await fetch(
-				`/api/branches/${branchId}/technical-reviews/items`,
-				{
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						Authorization: `Bearer ${localStorage.getItem('access')}`,
-					},
-					body: JSON.stringify({
+			// Crear el item usando Redux thunk
+			const createResult = await dispatch(
+				createItem({
+					branchId,
+					data: {
 						batch_id: 0,
 						serial_number: serialNumber.trim(),
 						product_id: Number(selectedProduct.value),
 						equipment_type: equipmentType,
-					}),
-				},
-			);
-
-			if (response.status === 422) {
-			const data = await response.json();
-			const msg =
-				data?.message ||
-				data?.errors?.serial_number?.[0] ||
-				'Error de validación del número de serie';
-			setError(msg);
-			toast.error(`ERROR ${msg}`);
-			return;
-			}
-
-			if (!response.ok) throw new Error('Error al crear el item');
-
-			const createResult = await response.json();
-
-			if (!createResult?.id) throw new Error('El servidor no retornó un ID válido');
-
-			// Iniciar revisión
-			await dispatch(
-				startReview({
-					branchId,
-					itemId: createResult.id,
+					},
 				}),
 			).unwrap();
 
-			onComplete(createResult.id, serialNumber.trim(), equipmentType);
+			console.log('🔍 CreateResult completo:', createResult);
+
+			// Validar que el ID existe y es válido
+			if (!createResult || !createResult.id || isNaN(createResult.id)) {
+				console.error('❌ ID inválido recibido:', createResult);
+				throw new Error('El servidor no retornó un ID válido para el item creado');
+			}
+
+			const newItemId = createResult.id;
+
+			// Iniciar la revisión
+			await dispatch(
+				startReview({
+					branchId,
+					itemId: newItemId,
+				}),
+			).unwrap();
+
+			// Callback con el itemId, serial y tipo
+			onComplete(newItemId, serialNumber.trim(), equipmentType);
 		} catch (err: any) {
-			console.error('Error en handleSubmit:', err);
-			toast.error(err.message || 'Error al crear el item', {
+			console.error('❌ Error en handleSubmit:', err);
+			
+			// Manejar error 422 (validación)
+			const errorMessage = err?.message || err || 'Error al crear el item';
+			
+			setError(errorMessage);
+			
+			toast.error(errorMessage, {
 				position: 'top-right',
-				autoClose: 4000,
-				theme: 'colored',
+				autoClose: 5000,
+				hideProgressBar: false,
+				closeOnClick: true,
+				pauseOnHover: true,
+				draggable: true,
 			});
-			setError(err.message || 'Error al crear el item');
 		}
 	};
 
