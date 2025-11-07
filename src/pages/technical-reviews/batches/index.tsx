@@ -19,6 +19,9 @@ import {
 } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import BatchList from '../components/batches/BatchList';
+import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import Badge from '@/components/ui/Badge';
+import Label from '@/components/form/Label';
 
 const BatchesListPage: React.FC = () => {
 	const navigate = useNavigate();
@@ -61,20 +64,22 @@ const BatchesListPage: React.FC = () => {
 		<PageWrapper name='technical-reviews-batches'>
 			<Container>
 				{/* Header */}
-				<div className='mb-6 flex items-center justify-between'>
-					<div>
-						<h1 className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
+				<Subheader className='mb-6 flex items-center justify-between'>
+					<SubheaderLeft>
+						<Badge className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
 							Lotes de Revisión
-						</h1>
-						<p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
+						</Badge>
+						<Label htmlFor='subtitulo' className='text-sm text-gray-600 dark:text-gray-400'>
 							Gestiona lotes y sus equipos organizados por tipo
-						</p>
-					</div>
-					<Button onClick={handleCreateBatch}>
-						<Icon icon='HeroPlus' className='mr-2 h-4 w-4' />
-						Crear Lote
-					</Button>
-				</div>
+						</Label>
+					</SubheaderLeft>
+					<SubheaderRight>
+						<Button onClick={handleCreateBatch}>
+							<Icon icon='HeroPlus' className='mr-2 h-4 w-4' />
+							Crear Lote
+						</Button>
+					</SubheaderRight>
+				</Subheader>
 
 				{/* Error */}
 				{error && (

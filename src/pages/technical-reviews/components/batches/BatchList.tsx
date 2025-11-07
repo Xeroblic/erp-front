@@ -20,6 +20,8 @@ import {
 	type Updater,
 } from '@tanstack/react-table';
 import Input from '@/components/form/Input';
+import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
+import Container from '@/components/layouts/Container/Container';
 
 interface BatchListProps {
 	batches: IBatch[];
@@ -225,10 +227,10 @@ const BatchList: React.FC<BatchListProps> = ({
 		meta.total === 0 ? 0 : Math.min(meta.current_page * meta.per_page, meta.total);
 
 	return (
-		<div className='space-y-4'>
+		<Container>
 			{/* Filtros y Búsqueda */}
 			<Card>
-				<CardBody className='p-4'>
+				<CardBody >
 					<div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between'>
 						{/* Buscador */}
 						<form onSubmit={handleSearchSubmit} className='flex-1'>
@@ -239,6 +241,7 @@ const BatchList: React.FC<BatchListProps> = ({
 										className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400'
 									/>
 									<Input
+										name='search'
 										type='text'
 										placeholder='Buscar por ID, proveedor, bodega...'
 										value={searchQuery}
@@ -257,15 +260,30 @@ const BatchList: React.FC<BatchListProps> = ({
 							<span className='text-sm text-gray-600 dark:text-gray-400'>
 								Estado:
 							</span>
-							<select
-								value={selectedStatus}
-								onChange={(e) => handleStatusChange(e.target.value)}
-								className='rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-gray-600 dark:bg-gray-800'>
-								<option value='all'>Todos</option>
-								<option value='pending'>Pendiente</option>
-								<option value='completed'>Completado</option>
-								<option value='partial'>Parcial</option>
-							</select>
+								<div className='w-40'>
+									<SelectReact
+										name='status'
+										options={[
+											{ value: 'all', label: 'Todos' },
+											{ value: 'pending', label: 'Pendiente' },
+											{ value: 'completed', label: 'Completado' },
+											{ value: 'partial', label: 'Parcial' },
+										] as TSelectOption[]}
+										value={(
+											[
+												{ value: 'all', label: 'Todos' },
+												{ value: 'pending', label: 'Pendiente' },
+												{ value: 'completed', label: 'Completado' },
+												{ value: 'partial', label: 'Parcial' },
+											] as TSelectOption[]
+										).find((o) => o.value === selectedStatus) ?? null}
+										onChange={(newVal) =>
+											handleStatusChange(((newVal as TSelectOption) || { value: 'all' }).value)
+										}
+										dimension='sm'
+										isClearable={false}
+									/>
+								</div>
 						</div>
 					</div>
 				</CardBody>
@@ -332,7 +350,7 @@ const BatchList: React.FC<BatchListProps> = ({
 					)}
 				</CardBody>
 			</Card>
-		</div>
+		</Container>
 	);
 };
 

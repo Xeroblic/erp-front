@@ -6,6 +6,8 @@ import React from 'react';
 import Card, { CardBody } from '@/components/ui/Card';
 import Icon from '@/components/icon/Icon';
 import type { IBatch } from '@/interface/technicalReviews.interface';
+import Container from '@/components/layouts/Container/Container';
+import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 
 interface BatchDetailProps {
 	batch: IBatch;
@@ -36,33 +38,45 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 	const progressPercentage = expectedQty > 0 ? Math.round((completedQty / expectedQty) * 100) : 0;
 
 	return (
-		<Card className='border-l-4 border-green-500'>
-			<CardBody className='p-6'>
-				<div className='space-y-6'>
-					{/* Header */}
-					<div className='flex items-start justify-between'>
-						<div className='flex items-center gap-3'>
-							<div className='rounded-lg bg-green-100 p-3 dark:bg-green-900'>
-								<Icon icon='HeroInboxStack' className='h-6 w-6 text-green-600' />
-							</div>
-							<div>
-								<h2 className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
-									Lote #{batch.id}
-								</h2>
-								<p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
-									{new Date(batch.entry_date).toLocaleDateString('es-ES', {
-										year: 'numeric',
-										month: 'long',
-										day: 'numeric',
-									})}
-								</p>
+		<PageWrapper name='technical-reviews-batch-detail'>
+			<Container className='space-y-6'>
+				{/* Header Card */}
+				<Card className='border-l-4 border-green-500'>
+					<CardBody className='p-6'>
+						<div className='flex items-start justify-between'>
+							<div className='flex items-center gap-3'>
+								<div className='rounded-lg bg-green-100 p-3 dark:bg-green-900'>
+									<Icon
+										icon='HeroInboxStack'
+										className='h-6 w-6 text-green-600'
+									/>
+								</div>
+								<div>
+									<h2 className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
+										Lote #{batch.id}
+									</h2>
+									<p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
+										{batch.entry_date
+											? new Date(batch.entry_date).toLocaleDateString(
+													'es-ES',
+													{
+														year: 'numeric',
+														month: 'long',
+														day: 'numeric',
+													},
+												)
+											: 'Sin fecha'}
+									</p>
+								</div>
 							</div>
 						</div>
-					</div>
-					{/* Metadata Grid */}
-					<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-						{/* Proveedor */}
-						<div className='rounded-lg border border-gray-200 p-4 dark:border-gray-700'>
+					</CardBody>
+				</Card>
+
+				{/* Metadata: Supplier + Warehouse */}
+				<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+					<Card  className='border-l-4 border-green-500'>
+						<CardBody className='p-4'>
 							<div className='mb-2 flex items-center gap-2'>
 								<Icon icon='HeroTruck' className='h-5 w-5 text-blue-600' />
 								<h3 className='text-sm font-semibold text-gray-700 dark:text-gray-300'>
@@ -77,10 +91,11 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 									ID: {batch.customer_supplier?.id || batch.customer_supplier_id}
 								</p>
 							)}
-						</div>
+						</CardBody>
+					</Card>
 
-						{/* Bodega */}
-						<div className='rounded-lg border border-gray-200 p-4 dark:border-gray-700'>
+					<Card  className='border-l-4 border-green-500'>
+						<CardBody className='p-4'>
 							<div className='mb-2 flex items-center gap-2'>
 								<Icon icon='HeroHomeModern' className='h-5 w-5 text-purple-600' />
 								<h3 className='text-sm font-semibold text-gray-700 dark:text-gray-300'>
@@ -95,15 +110,17 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 									ID: {batch.warehouse_id}
 								</p>
 							)}
-						</div>
-					</div>
-					{/* KPIs */}
-					<div>
+						</CardBody>
+					</Card>
+				</div>
+
+				{/* KPIs Card */}
+				<Card  className='border-l-4 border-green-500'>
+					<CardBody className='p-4'>
 						<h3 className='mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300'>
 							Estado del Lote
 						</h3>
 						<div className='grid grid-cols-2 gap-3 md:grid-cols-4'>
-							{/* Esperada */}
 							<div className='rounded-lg bg-blue-50 p-4 text-center dark:bg-blue-950'>
 								<div className='text-2xl font-bold text-blue-600 dark:text-blue-400'>
 									{expectedQty}
@@ -113,7 +130,6 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 								</div>
 							</div>
 
-							{/* Recibida */}
 							<div className='rounded-lg bg-indigo-50 p-4 text-center dark:bg-indigo-950'>
 								<div className='text-2xl font-bold text-indigo-600 dark:text-indigo-400'>
 									{receivedQty}
@@ -123,7 +139,6 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 								</div>
 							</div>
 
-							{/* Completada */}
 							<div className='rounded-lg bg-green-50 p-4 text-center dark:bg-green-950'>
 								<div className='text-2xl font-bold text-green-600 dark:text-green-400'>
 									{completedQty}
@@ -133,7 +148,6 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 								</div>
 							</div>
 
-							{/* Pendiente */}
 							<div className='rounded-lg bg-yellow-50 p-4 text-center dark:bg-yellow-950'>
 								<div className='text-2xl font-bold text-yellow-600 dark:text-yellow-400'>
 									{pendingQty}
@@ -143,9 +157,12 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 								</div>
 							</div>
 						</div>
-					</div>
-					{/* Progress Bar */}
-					<div>
+					</CardBody>
+				</Card>
+
+				{/* Progress Card */}
+				<Card  className='border-l-4 border-green-500'>
+					<CardBody className='p-4'>
 						<div className='mb-2 flex items-center justify-between'>
 							<span className='text-sm font-medium text-gray-700 dark:text-gray-300'>
 								Progreso General
@@ -163,10 +180,13 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 						<div className='mt-2 text-xs text-gray-500 dark:text-gray-400'>
 							{completedQty} de {expectedQty} equipos revisados
 						</div>
-					</div>
-					{/* Resumen de Items por Tipo */}
-					{batch.items_summary?.by_equipment_type && (
-						<div>
+					</CardBody>
+				</Card>
+
+				{/* Distribución por Tipo */}
+				{batch.items_summary?.by_equipment_type && (
+					<Card  className='border-l-4 border-green-500'>
+						<CardBody className=''>
 							<h3 className='mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300'>
 								Distribución por Tipo
 							</h3>
@@ -206,11 +226,14 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 									),
 								)}
 							</div>
-						</div>
-					)}{' '}
-					{/* Notas */}
-					{batch.notes && (
-						<div className='rounded-lg bg-gray-50 p-4 dark:bg-gray-800'>
+						</CardBody>
+					</Card>
+				)}
+
+				{/* Notas */}
+				{batch.notes && (
+					<Card  className='border-l-4 border-green-500'>
+						<CardBody className='p-4'>
 							<div className='mb-2 flex items-center gap-2'>
 								<Icon icon='HeroDocumentText' className='h-4 w-4 text-gray-600' />
 								<h3 className='text-sm font-semibold text-gray-700 dark:text-gray-300'>
@@ -220,11 +243,11 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 							<p className='text-sm text-gray-600 dark:text-gray-400'>
 								{batch.notes}
 							</p>
-						</div>
-					)}
-				</div>
-			</CardBody>
-		</Card>
+						</CardBody>
+					</Card>
+				)}
+			</Container>
+		</PageWrapper>
 	);
 };
 
