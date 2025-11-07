@@ -23,10 +23,10 @@ Este documento describe el flujo completo para crear nuevas páginas en el siste
 
 ### Tecnologías Involucradas
 
--   **React 18** + TypeScript para componentes
--   **React Router v6** para enrutamiento
--   **Redux Toolkit** para estado global
--   **Sistema de autorización personalizado** con permisos granulares en cada pagina 
+- **React 18** + TypeScript para componentes
+- **React Router v6** para enrutamiento
+- **Redux Toolkit** para estado global
+- **Sistema de autorización personalizado** con permisos granulares en cada pagina
 
 ---
 
@@ -143,9 +143,9 @@ export const privatePages = {
 | `text`       | `string`   | Texto mostrado en navegación     | ✅          |
 | `icon`       | `TIcons`   | Icono Heroicons para navegación  | ✅          |
 | `authority`  | `string[]` | Permisos requeridos              | ✅          |
-| `roles`      | `string[]` | Roles que pueden acceder         | ❌          |
-| `requireAll` | `boolean`  | Modo AND vs OR para permisos     | ❌          |
-| `companyId`  | `number`   | Empresa específica requerida     | ❌          |
+| `roles`      | `string[]` | Roles que pueden acceder         |             |
+| `requireAll` | `boolean`  | Modo AND vs OR para permisos     |             |
+| `companyId`  | `number`   | Empresa específica requerida     |             |
 
 ### Paso 3: Agregar la Ruta en contentRoutes.tsx
 
@@ -362,25 +362,25 @@ const contentRoutes: IRoutePersonalizada[] = [
 
 #### 1. Rutas Públicas
 
--   No requieren autenticación
--   `public: true`
--   Ejemplos: login, recuperar contraseña, 404
+- No requieren autenticación
+- `public: true`
+- Ejemplos: login, recuperar contraseña, 404
 
 #### 2. Rutas Protegidas Básicas
 
--   Requieren autenticación
--   Sin permisos específicos
--   `authority: []`
+- Requieren autenticación
+- Sin permisos específicos
+- `authority: []`
 
 #### 3. Rutas con Permisos
 
--   Requieren permisos específicos
--   `authority: ['permission1', 'permission2']`
+- Requieren permisos específicos
+- `authority: ['permission1', 'permission2']`
 
 #### 4. Rutas con Feature Flags
 
--   Controladas por features habilitadas
--   `feature: 'new-dashboard'`
+- Controladas por features habilitadas
+- `feature: 'new-dashboard'`
 
 ---
 
@@ -1190,9 +1190,9 @@ Siguiendo este flujo, cualquier desarrollador puede agregar nuevas funcionalidad
 
 **Puntos Clave**:
 
--   Siempre configurar permisos en `pages.config.ts` ANTES de crear las rutas
--   Usar `AuthorityCheckNav` para navegación condicional
--   Implementar `PermissionGuard` dentro de páginas para contenido específico
--   Mantener nomenclatura consistente para permisos y rutas
--   Usar lazy loading para optimizar performance
--   Testear con diferentes roles y permisos durante desarrollo
+- Siempre configurar permisos en `pages.config.ts` ANTES de crear las rutas
+- Usar `AuthorityCheckNav` para navegación condicional
+- Implementar `PermissionGuard` dentro de páginas para contenido específico
+- Mantener nomenclatura consistente para permisos y rutas
+- Usar lazy loading para optimizar performance
+- Testear con diferentes roles y permisos durante desarrollo

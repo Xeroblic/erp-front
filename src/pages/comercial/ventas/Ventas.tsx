@@ -908,7 +908,7 @@ const Ventas: React.FC = () => {
 						<div className='space-y-4'>
 							<div className='rounded-lg border border-red-200 bg-red-50 p-3'>
 								<p className='text-red-800'>
-									⚠️ Esta acción cancelará la venta permanentemente.
+									Esta acción cancelará la venta permanentemente.
 								</p>
 								<p>
 									<strong>Venta:</strong> {selectedSale.sale_number}

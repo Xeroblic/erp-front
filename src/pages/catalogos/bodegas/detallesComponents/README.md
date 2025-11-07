@@ -204,14 +204,14 @@ detallesComponents/
 
 **Validaciones de `handleAttachProducts`:**
 
-- ⚠️ "ya está asociado" → Warning (producto duplicado)
-- ❌ "sucursal" → Error (producto de otra sucursal)
-- ❌ "capacidad" → Error (sin capacidad en bodega)
-- ❌ "stock disponible" → Error (sin stock para sync)
+- "ya está asociado" → Warning (producto duplicado)
+- "sucursal" → Error (producto de otra sucursal)
+- "capacidad" → Error (sin capacidad en bodega)
+- "stock disponible" → Error (sin stock para sync)
 
 **Validaciones de `handleDetachProduct`:**
 
-- ❌ "no está asociado" → Error (producto no existe en bodega)
+- "no está asociado" → Error (producto no existe en bodega)
 
 ---
 

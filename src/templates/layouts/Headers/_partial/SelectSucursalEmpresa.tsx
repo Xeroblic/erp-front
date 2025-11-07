@@ -147,7 +147,7 @@ const SelectSucursalEmpresa = () => {
 
 		// Si la branch preferida no está en las accesibles, usar la primera disponible
 		if (!match && groupedOptions.length > 0) {
-			console.warn('⚠️ Branch preferida no accesible, usando primera disponible');
+			console.warn(' Branch preferida no accesible, usando primera disponible');
 			const firstOption = groupedOptions[0]?.options?.[0] as BranchOption | undefined;
 			setSelectedSucursal(firstOption ?? null);
 

@@ -14,16 +14,16 @@
       ✅ [batchId]/
          ✅ index.tsx                    # Detalle del lote + tabs
          ✅ [itemId].tsx                 # Serie dentro del lote (3 pasos)
-         ❌ approve.tsx                  # FALTA: Aprobación manual (opcional)
+         approve.tsx                  # FALTA: Aprobación manual (opcional)
 
    ✅ items/                             # MODO B: Vista Global
       ✅ index.tsx                       # Lista global de series
       ✅ [itemId].tsx                    # Serie individual (3 pasos)
-      ❌ approve.tsx                     # FALTA: Aprobación manual (opcional)
+      approve.tsx                     # FALTA: Aprobación manual (opcional)
 
-   ❌ validation/                        # FALTA: Debug/Admin
-      ❌ rules.tsx                       # FALTA: Vista de reglas
-      ❌ validate-field.tsx              # FALTA: Test de validación
+   validation/                        # FALTA: Debug/Admin
+      rules.tsx                       # FALTA: Vista de reglas
+      validate-field.tsx              # FALTA: Test de validación
 ```
 
 ### 🧩 Componentes
@@ -31,14 +31,14 @@
 ```
 ✅ components/technical-reviews/
 
-   ❌ batches/                           # FALTA TODO
-      ❌ BatchList.tsx                   # FALTA: Tabla + filtros
-      ❌ BatchDetail.tsx                 # FALTA: Info del lote
-      ❌ BatchTabs.tsx                   # FALTA: Tabs por tipo
+   batches/                           # FALTA TODO
+      BatchList.tsx                   # FALTA: Tabla + filtros
+      BatchDetail.tsx                 # FALTA: Info del lote
+      BatchTabs.tsx                   # FALTA: Tabs por tipo
 
-   ❌ items/                             # FALTA PARCIAL
-      ❌ ItemList.tsx                    # FALTA: Tabla de series
-      ❌ ItemDetail.tsx                  # FALTA: Info de la serie
+   items/                             # FALTA PARCIAL
+      ItemList.tsx                    # FALTA: Tabla de series
+      ItemDetail.tsx                  # FALTA: Info de la serie
       ✅ ReviewSteps/                    # COMPLETADO
          ✅ Step1BasicInfo.tsx
          ✅ Step2FullReview.tsx
@@ -66,7 +66,7 @@
 
 ---
 
-## ❌ ARCHIVOS FALTANTES CRÍTICOS
+## ARCHIVOS FALTANTES CRÍTICOS
 
 ### 🔴 PRIORIDAD ALTA (Necesarios para funcionalidad básica)
 
@@ -216,12 +216,12 @@
 - ✅ Rutas principales (pages)
 - ✅ Store (slices, thunks, selectors)
 
-### ❌ Faltante (30%)
+### Faltante (30%)
 
-- ❌ Componentes de lista (BatchList, ItemList)
-- ❌ Componentes de detalle (BatchDetail, ItemDetail, BatchTabs)
-- ❌ Páginas de validación (rules, validate-field)
-- ❌ Páginas de aprobación dedicadas (approve.tsx)
+- Componentes de lista (BatchList, ItemList)
+- Componentes de detalle (BatchDetail, ItemDetail, BatchTabs)
+- Páginas de validación (rules, validate-field)
+- Páginas de aprobación dedicadas (approve.tsx)
 
 ---
 

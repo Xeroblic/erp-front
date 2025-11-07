@@ -71,7 +71,7 @@ src/store/slices/technicalReviews/
 │   ├── 📄 QUICK_REFERENCE.md                    ~300 líneas | Cheat sheet
 │   └── 📄 FILE_TREE.md                          Este archivo
 │
-└── ⚠️ [DEPRECATED]/                             # NO USAR - Solo referencia
+└──  [DEPRECATED]/                             # NO USAR - Solo referencia
     ├── 📄 technicalReviewsThunks.ts             638 líneas | Archivo monolítico antiguo
     ├── 📄 technicalReviewsSlice.ts              554 líneas | Slice antiguo
     ├── 📄 README.md                             Documentación v1.0
@@ -83,6 +83,7 @@ src/store/slices/technicalReviews/
 ## 📊 Métricas del Árbol
 
 ### Archivos Activos
+
 ```
 Slice:          2 archivos     820 líneas
 Thunks:         5 archivos   1,130 líneas
@@ -94,6 +95,7 @@ TOTAL:         13 archivos   3,663 líneas
 ```
 
 ### Archivos Deprecados
+
 ```
 Código:         2 archivos   1,192 líneas
 Docs:           4 archivos     800 líneas
@@ -104,41 +106,49 @@ TOTAL:          6 archivos   1,992 líneas
 ## 🎯 Mapa de Navegación
 
 ### Buscar Operaciones de Lotes
+
 ```
 └─ thunks/batchesThunks.ts
 ```
 
 ### Buscar Operaciones de Series
+
 ```
 └─ thunks/itemsThunks.ts
 ```
 
 ### Buscar Flujo de Revisión
+
 ```
 └─ thunks/reviewThunks.ts
 ```
 
 ### Buscar Estados Comerciales
+
 ```
 └─ thunks/traceabilityThunks.ts
 ```
 
 ### Buscar Validaciones
+
 ```
 └─ thunks/validationThunks.ts
 ```
 
 ### Buscar Selectores
+
 ```
 └─ slice/selectors.ts
 ```
 
 ### Buscar Tipos
+
 ```
 └─ types.ts
 ```
 
 ### Ver Cómo Importar
+
 ```
 └─ index.ts
 ```
@@ -146,6 +156,7 @@ TOTAL:          6 archivos   1,992 líneas
 ## 🔍 Búsqueda Rápida
 
 ### Por Endpoint HTTP
+
 - `GET /batches` → `thunks/batchesThunks.ts` → `fetchBatches()`
 - `POST /items` → `thunks/itemsThunks.ts` → `createItem()`
 - `POST /items/{id}/start-review` → `thunks/reviewThunks.ts` → `startReview()`
@@ -153,6 +164,7 @@ TOTAL:          6 archivos   1,992 líneas
 - `GET /validation-rules` → `thunks/validationThunks.ts` → `fetchValidationRules()`
 
 ### Por Operación
+
 - Crear lote → `batchesThunks.ts:createBatch()`
 - Listar series → `itemsThunks.ts:fetchItems()`
 - Iniciar revisión → `reviewThunks.ts:startReview()`
@@ -160,12 +172,14 @@ TOTAL:          6 archivos   1,992 líneas
 - Validar campo → `validationThunks.ts:validateField()`
 
 ### Por Selector
+
 - Ver lotes → `selectors.ts:selectBatches`
 - Ver series → `selectors.ts:selectItems`
 - Ver loading global → `selectors.ts:selectIsLoading`
 - Ver errores → `selectors.ts:selectHasErrors`
 
 ### Por Tipo
+
 - Estado de revisión → `types.ts:ReviewStatus`
 - Estado comercial → `types.ts:CommercialStatus`
 - Tipo de equipo → `types.ts:EquipmentType`
@@ -213,6 +227,7 @@ TOTAL:          6 archivos   1,992 líneas
 ## 🧭 Flujo de Datos
 
 ### READ (Lectura)
+
 ```
 Component
    │ useSelector(selectBatches)
@@ -226,6 +241,7 @@ technicalReviewsSlice
 ```
 
 ### WRITE (Escritura)
+
 ```
 Component
    │ dispatch(createBatch(...))
@@ -249,26 +265,31 @@ Component (re-render)
 ## 🎓 Patrones de Uso
 
 ### Pattern 1: Lista Simple
+
 ```typescript
 Component → dispatch(fetchX) → useSelector(selectX) → Render
 ```
 
 ### Pattern 2: Detalle con Loading
+
 ```typescript
 Component → dispatch(fetchById) → useSelector(selectLoading) → Conditional Render
 ```
 
 ### Pattern 3: Formulario CRUD
+
 ```typescript
 Form → dispatch(createX) → useSelector(selectCreating) → Disable/Enable Button
 ```
 
 ### Pattern 4: Workflow Multi-Paso
+
 ```typescript
 Component → dispatch(step1) → await → dispatch(step2) → await → dispatch(step3)
 ```
 
 ### Pattern 5: Validación Before Submit
+
 ```typescript
 Form → dispatch(validateField) → Check result → dispatch(createX)
 ```

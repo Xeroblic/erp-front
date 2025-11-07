@@ -1,4 +1,4 @@
-# ⚠️ PENDIENTE: Barra de Capacidad
+# PENDIENTE: Barra de Capacidad
 
 ## Problema Actual
 
@@ -10,7 +10,7 @@ La barra de capacidad en el listado de bodegas **NO se está mostrando** porque 
 {
 	"id": 7,
 	"maximum_capacity": 50,
-	"current_capacity": undefined // ❌ FALTA ESTE CAMPO
+	"current_capacity": undefined // FALTA ESTE CAMPO
 }
 ```
 
@@ -67,7 +67,7 @@ El componente `WarehouseCapacityBar` espera:
 
 1. ✅ **Backend**: Agregar `current_capacity` al endpoint de listado
 2. ✅ **Frontend**: El código ya está listo, solo necesita los datos
-3. ⚠️ **Opcional**: Agregar `available_capacity` para evitar calcularlo en frontend
+3. **Opcional**: Agregar `available_capacity` para evitar calcularlo en frontend
 
 ---
 

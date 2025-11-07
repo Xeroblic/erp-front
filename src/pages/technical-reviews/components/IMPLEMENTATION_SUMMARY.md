@@ -37,7 +37,7 @@ All equipment type review forms implemented with full field coverage:
     - Product SelectReact (from fetchProducts)
     - Equipment type button grid (5 types with icons/colors)
     - createItem → startReview → onComplete callback
-    - ⚠️ Has errors: fetchProducts not exported, needs store integration
+    - Has errors: fetchProducts not exported, needs store integration
 - **Step2FullReview.tsx** ✅ (208 lines → updated to 187 lines)
     - Switch statement for all 5 equipment types
     - Renders: NotebookForm | DesktopForm | AioForm | DockingForm | MonitorForm
@@ -67,7 +67,7 @@ All equipment type review forms implemented with full field coverage:
     - ReviewStatus: pending → amber, in_review → blue, reviewed → purple, approved → green, rejected → red
     - CommercialStatus: available → green, reserved → blue, sold → red, disposed → gray, in_repair → orange
     - Uses Badge component with variant colors
-    - ⚠️ Minor errors: Badge variant type mismatch, some status types not matching interface
+    - Minor errors: Badge variant type mismatch, some status types not matching interface
 - **ReviewProgress.tsx** ✅ (68 lines)
     - Visual 4-step progress bar: Pending → In Review → Reviewed → Approved
     - Circular icons with step status (active/current/inactive)
@@ -84,7 +84,7 @@ All equipment type review forms implemented with full field coverage:
     - ToolbarAction: `{ label, icon, onClick, color?, variant?, disabled? }`
     - Renders button array with icons
     - Useful for page-level action bars
-    - ⚠️ Minor errors: TColor should be TColors, TIcons not exported
+    - Minor errors: TColor should be TColors, TIcons not exported
 - **SearchSerialInput.tsx** ✅ (75 lines)
     - Debounced search input (default 500ms)
     - Props: `{ onSearch, placeholder?, debounceMs?, disabled? }`
@@ -134,7 +134,7 @@ All equipment type review forms implemented with full field coverage:
 
 **Total: 16/16 components fully implemented**
 
-### ⚠️ **MINOR ISSUES (Not Blockers)**
+### **MINOR ISSUES (Not Blockers)**
 
 - Step1BasicInfo: Store integration errors (fetchProducts not exported, itemCreating should be creating, Input/SelectReact missing `name` prop)
 - StatusBadge: Badge variant type mismatch, some status enum values not matching interface

@@ -45,6 +45,9 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 	// Detectar si es marca Dell para lógica de batería
 	const isDell = values.brand?.toLowerCase() === 'dell';
 
+	// Detectar si el equipo NO enciende (para bloquear campos)
+	const doesNotTurnOn = values.extra_attributes?.does_not_turn_on === true;
+
 	// Opciones de marcas desde el slice brands (filtradas por branchId)
 	const brandOptions: TSelectOption[] = brands.map((brand) => ({
 		value: brand.name,
@@ -91,12 +94,14 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 	];
 
 	const ramTypeOptions: TSelectOption[] = [
+		{ value: 'no_ram', label: 'Sin RAM' },
 		{ value: 'DDR3', label: 'DDR3' },
 		{ value: 'DDR4', label: 'DDR4' },
 		{ value: 'DDR5', label: 'DDR5' },
 	];
 
 	const storageTechOptions: TSelectOption[] = [
+		{ value: 'no_storage', label: 'Sin disco / No aplica' },
 		{ value: 'HDD', label: 'Disco duro (HDD)' },
 		{ value: 'SSD', label: 'Unidad sólida (SSD)' },
 		{ value: 'M2', label: 'M.2' },
@@ -126,6 +131,15 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 		onChange(name, val);
 	};
 
+	const handleTurnOnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const doesNotTurnOn = e.target.checked;
+		// Actualizar extra_attributes
+		onChange('extra_attributes', {
+			...values.extra_attributes,
+			does_not_turn_on: doesNotTurnOn,
+		});
+	};
+
 	if (validationLoading || brandsLoading) {
 		return (
 			<Card>
@@ -145,6 +159,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 
 	return (
 		<div className='space-y-6'>
+
 			{/* 1️⃣ Información General */}
 			<Card>
 				<CardHeader>
@@ -235,9 +250,16 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 								name='ram_size'
 								value={values.ram_size || ''}
 								onChange={handleInputChange}
-								placeholder='Ej: 16 GB'
+								placeholder={
+									doesNotTurnOn ? 'Ej: Sin RAM, No aplica' : 'Ej: 16 GB, 8 GB'
+								}
 								disabled={readOnly}
 							/>
+							{doesNotTurnOn && (
+								<p className='mt-1 text-xs text-amber-600'>
+									Si no enciende, indicar "Sin RAM" o dejar vacío
+								</p>
+							)}
 						</div>
 						<div>
 							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
@@ -248,8 +270,8 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 								name='ram_slots'
 								value={values.ram_slots || ''}
 								onChange={handleInputChange}
-								placeholder='Ej: 8x2, 16x1'
-								disabled={readOnly}
+								placeholder={doesNotTurnOn ? 'No aplica' : 'Ej: 8x2, 16x1'}
+								disabled={readOnly || doesNotTurnOn}
 							/>
 						</div>
 						<div>
@@ -266,9 +288,14 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 										: null
 								}
 								onChange={handleSelectChange('ram_type')}
-								placeholder='Seleccionar tipo'
+								placeholder={doesNotTurnOn ? 'Sin RAM' : 'Seleccionar tipo'}
 								isDisabled={readOnly}
 							/>
+							{doesNotTurnOn && (
+								<p className='mt-1 text-xs text-amber-600'>
+									Seleccionar "Sin RAM" si no se puede verificar
+								</p>
+							)}
 						</div>
 						<div>
 							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
@@ -279,9 +306,16 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 								name='storage_size'
 								value={values.storage_size || ''}
 								onChange={handleInputChange}
-								placeholder='Ej: 512 GB, 1 TB'
+								placeholder={
+									doesNotTurnOn ? 'Ej: Sin disco, No aplica' : 'Ej: 512 GB, 1 TB'
+								}
 								disabled={readOnly}
 							/>
+							{doesNotTurnOn && (
+								<p className='mt-1 text-xs text-amber-600'>
+									Si no enciende, indicar "Sin disco" o dejar vacío
+								</p>
+							)}
 						</div>
 						<div>
 							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
@@ -298,9 +332,14 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 										: null
 								}
 								onChange={handleSelectChange('storage_technology')}
-								placeholder='Seleccionar tecnología'
+								placeholder={doesNotTurnOn ? 'Sin disco' : 'Seleccionar tecnología'}
 								isDisabled={readOnly}
 							/>
+							{doesNotTurnOn && (
+								<p className='mt-1 text-xs text-amber-600'>
+									Seleccionar "Sin disco / No aplica" si no se puede verificar
+								</p>
+							)}
 						</div>
 					</div>
 				</CardBody>
@@ -381,8 +420,12 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 											: null
 									}
 									onChange={handleSelectChange('battery_status')}
-									placeholder='Seleccionar (BIOS format)'
-									isDisabled={readOnly}
+									placeholder={
+										doesNotTurnOn
+											? 'No se puede verificar'
+											: 'Seleccionar (BIOS format)'
+									}
+									isDisabled={readOnly || doesNotTurnOn}
 								/>
 							) : (
 								<Input
@@ -390,14 +433,23 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 									name='battery_status'
 									value={values.battery_status || ''}
 									onChange={handleInputChange}
-									placeholder='Ej: 83%, 80'
-									disabled={readOnly}
+									placeholder={
+										doesNotTurnOn ? 'No se puede verificar' : 'Ej: 83%, 80'
+									}
+									disabled={readOnly || doesNotTurnOn}
 								/>
 							)}
 							<p className='mt-1 text-xs text-gray-500'>
-								{isDell
-									? 'Dell: Seleccionar estado según BIOS (Excellent, Good, Fair, Poor)'
-									: 'Otras marcas: Ingresar porcentaje exacto (Ej: 82%)'}
+								{doesNotTurnOn ? (
+									<span className='text-amber-600'>
+										Equipo sin encendido - No se puede verificar estado de
+										batería
+									</span>
+								) : isDell ? (
+									'Dell: Seleccionar estado según BIOS (Excellent, Good, Fair, Poor)'
+								) : (
+									'Otras marcas: Ingresar porcentaje exacto (Ej: 82%)'
+								)}
 							</p>
 						</div>
 
@@ -410,8 +462,10 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 								name='battery_health'
 								value={values.battery_health || ''}
 								onChange={handleInputChange}
-								placeholder='Ej: Design Capacity 50000 mWh'
-								disabled={readOnly}
+								placeholder={
+									doesNotTurnOn ? 'No aplica' : 'Ej: Design Capacity 50000 mWh'
+								}
+								disabled={readOnly || doesNotTurnOn}
 							/>
 						</div>
 					</div>
@@ -568,8 +622,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 								disabled={readOnly}
 							/>
 							<p className='mt-1 text-xs text-amber-600'>
-								⚠️ Solo 1 puerto dañado = Máximo Grado C. Más de 1 = Grado M
-								automático
+								Solo 1 puerto dañado = Máximo Grado C. Más de 1 = Grado M automático
 							</p>
 						</div>
 					)}

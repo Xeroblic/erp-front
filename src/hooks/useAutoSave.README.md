@@ -146,7 +146,7 @@ interface SavePromptProps {
 />
 ```
 
-## 💡 Ejemplos de Uso
+## Ejemplos de Uso
 
 ### 1. Guardado Manual Adicional
 
@@ -226,7 +226,7 @@ const normalAutoSave = useAutoSave({
     - **"Guardar"** → Ejecuta `onSave()`, muestra toast de éxito
     - **"Continuar editando"** → Cierra popup, reinicia temporizador
 
-## ⚠️ Consideraciones
+## Consideraciones
 
 1. **Debe usarse dentro de un FormikContext**: El hook necesita acceso a `values`, `initialValues` e `isSubmitting`
 2. **Un componente por formulario**: No uses múltiples `AutoSaveHandler` en el mismo formulario

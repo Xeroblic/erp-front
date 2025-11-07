@@ -36,7 +36,7 @@ export function useClientes({ subsidiaryId, filters }: UseClientesParams) {
     // ✅ VALIDAR ACCESO: Solo validar si tenemos lista de subsidiarias accesibles Y currentUser está cargado
     if (currentUser && accessibleSubsidiaryIds.size > 0) {
       if (!accessibleSubsidiaryIds.has(subsidiaryId)) {
-        // ❌ NO hacer fetch si sabemos que no tiene acceso
+        // NO hacer fetch si sabemos que no tiene acceso
         return null;
       }
     } else if (!currentUser) {

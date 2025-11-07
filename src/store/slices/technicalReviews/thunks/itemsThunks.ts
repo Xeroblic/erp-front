@@ -105,6 +105,7 @@ export const createItem = createAsyncThunk<
             serial_number: string;
             product_id?: number;
             equipment_type?: EquipmentType;
+            extra_attributes?: Record<string, any>;
         };
     },
     { rejectValue: string }

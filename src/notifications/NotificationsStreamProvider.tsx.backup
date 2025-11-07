@@ -29,19 +29,19 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 						if (permission === 'granted') {
 							console.log('✅ [NOTIF] ¡Permiso otorgado!');
 						} else if (permission === 'denied') {
-							console.error('❌ [NOTIF] Permiso denegado.');
+							console.error('[NOTIF] Permiso denegado.');
 						}
 					})
 					.catch((err) => {
-						console.error('❌ [NOTIF] Error al solicitar permiso:', err);
+						console.error('[NOTIF] Error al solicitar permiso:', err);
 					});
 			} else if (Notification.permission === 'granted') {
 				console.log('✅ [NOTIF] Permiso ya otorgado previamente.');
 			} else if (Notification.permission === 'denied') {
-				console.error('❌ [NOTIF] Permiso denegado previamente.');
+				console.error('[NOTIF] Permiso denegado previamente.');
 			}
 		} else {
-			console.error('❌ [NOTIF] Notification API NO soportada');
+			console.error('[NOTIF] Notification API NO soportada');
 		}
 	}, []);
 
@@ -56,7 +56,7 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 					console.log(`✅ [NOTIF] Inbox cargado: ${result.items.length} notificaciones`);
 				})
 				.catch((err) => {
-					console.error('❌ [NOTIF] Error cargando inbox:', err);
+					console.error('[NOTIF] Error cargando inbox:', err);
 				});
 		};
 
@@ -85,14 +85,14 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 			// Obtener token usando tokenManager
 			const token = tokenManager.getAccessToken();
 			if (!token) {
-				console.error('❌ [NOTIF] No hay token de autenticación');
+				console.error('[NOTIF] No hay token de autenticación');
 				setUseSSE(false);
 				return;
 			}
 
 			// Validar que el token sea válido
 			if (!tokenManager.isTokenValid(token)) {
-				console.error('❌ [NOTIF] Token expirado o inválido');
+				console.error('[NOTIF] Token expirado o inválido');
 				setUseSSE(false);
 				return;
 			}
@@ -126,7 +126,7 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 					// Agregar al store
 					dispatch(upsertMany([notification]));
 				} catch (err) {
-					console.error('❌ [NOTIF] Error procesando evento SSE:', err);
+					console.error('[NOTIF] Error procesando evento SSE:', err);
 				}
 			});
 
@@ -138,7 +138,7 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
 				// Si NUNCA se abrió la conexión (onopen nunca se disparó), es error de autenticación
 				if (!connectionOpenedRef.current) {
-					console.error('❌ [NOTIF] Error de autenticación SSE (nunca se conectó):', error);
+					console.error('[NOTIF] Error de autenticación SSE (nunca se conectó):', error);
 					console.log('📊 [NOTIF] Estado:', {
 						readyState: eventSource.readyState,
 						url: eventSource.url,
@@ -166,7 +166,7 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 				}, 1000);
 			};
 		} catch (err) {
-			console.error('❌ [NOTIF] Error configurando SSE:', err);
+			console.error('[NOTIF] Error configurando SSE:', err);
 			setUseSSE(false);
 		}
 	};
@@ -186,7 +186,7 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 					);
 				})
 				.catch((err) => {
-					console.error(`❌ [NOTIF] [${timestamp}] Error en polling:`, err);
+					console.error(`[NOTIF] [${timestamp}] Error en polling:`, err);
 				});
 		};
 
@@ -275,7 +275,7 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 					console.log('✅ [NOTIF] Marcada como entregada en backend:', n.id);
 				})
 				.catch((err) => {
-					console.error('❌ [NOTIF] Error marcando como entregada:', n.id, err);
+					console.error('[NOTIF] Error marcando como entregada:', n.id, err);
 				})
 				.finally(() => {
 					// Remover del processing después de 2 segundos
@@ -371,13 +371,13 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 			};
 
 			notification.onerror = (err) => {
-				console.error('❌ [NOTIF] Error mostrando popup:', n.id, err);
+				console.error('[NOTIF] Error mostrando popup:', n.id, err);
 				clearTimeout(autoCloseTimeout);
 			};
 
 			console.log('🔔 [NOTIF] Popup creado:', n.id, '|', title);
 		} catch (err) {
-			console.error('❌ [NOTIF] Error al crear popup:', err);
+			console.error('[NOTIF] Error al crear popup:', err);
 		}
 	};
 

@@ -75,7 +75,7 @@ const ComercialTab: React.FC<ComercialTabProps> = ({
 		// Si el producto usa tracking por serie, bloquear edición
 		if (values.serial_tracking) {
 			toast.warning(
-				'⚠️ No se puede modificar el stock manualmente. Este producto usa tracking por serie y el stock se calcula automáticamente.',
+				' No se puede modificar el stock manualmente. Este producto usa tracking por serie y el stock se calcula automáticamente.',
 				{ autoClose: 5000 },
 			);
 			return;
@@ -203,8 +203,8 @@ const ComercialTab: React.FC<ComercialTabProps> = ({
 				/>
 				{values.serial_tracking && (
 					<p className='text-xs text-amber-600 dark:text-amber-400'>
-						El stock se calcula automáticamente desde las series aprobadas en
-						revisión técnica
+						El stock se calcula automáticamente desde las series aprobadas en revisión
+						técnica
 					</p>
 				)}
 				{touched.stock && errors.stock && (

@@ -8,22 +8,30 @@ import Icon from '@/components/icon/Icon';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
 import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
+import Checkbox from '@/components/form/Checkbox';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { createItem, startReview } from '@/store/slices/technicalReviews';
+import { createItem, startReview, completeReview } from '@/store/slices/technicalReviews';
 import type { EquipmentType } from '@/interface/technicalReviews.interface';
 
 interface Step1BasicInfoProps {
 	branchId: number;
 	onComplete: (itemId: number, serialNumber: string, equipmentType: EquipmentType) => void;
+	onFinishGradeM?: (itemId: number) => void; // ← Callback para finalizar con Grado M
 }
 
-const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({ branchId, onComplete }) => {
+const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
+	branchId,
+	onComplete,
+	onFinishGradeM,
+}) => {
 	const dispatch = useAppDispatch();
 	const creating = useAppSelector((s) => s.technicalReviews.creating);
 
 	const [serialNumber, setSerialNumber] = useState('');
 	const [selectedProduct, setSelectedProduct] = useState<TSelectOption | null>(null);
 	const [equipmentType, setEquipmentType] = useState<EquipmentType | null>(null);
+	const [doesNotTurnOn, setDoesNotTurnOn] = useState(false); // ← Estado para "No enciende"
+	const [isFinishing, setIsFinishing] = useState(false); // ← Estado para finalizar Grado M
 	const [error, setError] = useState<string | null>(null);
 
 	// TODO: Integrar con slice de productos global cuando esté disponible
@@ -84,7 +92,7 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({ branchId, onComplete })
 
 			// Validar que el ID existe y es válido
 			if (!createResult || !createResult.id || isNaN(createResult.id)) {
-				console.error('❌ ID inválido recibido:', createResult);
+				console.error('ID inválido recibido:', createResult);
 				throw new Error('El servidor no retornó un ID válido para el item creado');
 			}
 
@@ -101,8 +109,89 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({ branchId, onComplete })
 			// Callback con el itemId, serial y tipo
 			onComplete(newItemId, serialNumber.trim(), equipmentType);
 		} catch (err: any) {
-			console.error('❌ Error en handleSubmit:', err);
+			console.error('Error en handleSubmit:', err);
 			setError(err.message || 'Error al crear el item');
+		}
+	};
+
+	/**
+	 * Handler para finalizar con Grado M automático (equipo no enciende)
+	 */
+	const handleFinishGradeM = async () => {
+		setError(null);
+		setIsFinishing(true);
+
+		// Validación
+		if (!serialNumber.trim()) {
+			setError('Ingresa un número de serie');
+			setIsFinishing(false);
+			return;
+		}
+		if (!selectedProduct) {
+			setError('Selecciona un producto');
+			setIsFinishing(false);
+			return;
+		}
+		if (!equipmentType) {
+			setError('Selecciona un tipo de equipo');
+			setIsFinishing(false);
+			return;
+		}
+
+		try {
+			// Crear el item con campos técnicos vacíos
+			const createResult = await dispatch(
+				createItem({
+					branchId,
+					data: {
+						batch_id: 0,
+						serial_number: serialNumber.trim(),
+						product_id: Number(selectedProduct.value),
+						equipment_type: equipmentType,
+						extra_attributes: {
+							does_not_turn_on: true,
+						},
+					},
+				}),
+			).unwrap();
+
+			console.log('🔍 CreateResult (Grado M):', createResult);
+
+			// Validar ID
+			if (!createResult || !createResult.id || isNaN(createResult.id)) {
+				console.error('ID inválido recibido:', createResult);
+				throw new Error('El servidor no retornó un ID válido para el item creado');
+			}
+
+			const newItemId = createResult.id;
+
+			// Iniciar la revisión
+			await dispatch(
+				startReview({
+					branchId,
+					itemId: newItemId,
+				}),
+			).unwrap();
+
+			// Completar la revisión automáticamente (Grado M)
+			await dispatch(
+				completeReview({
+					branchId,
+					itemId: newItemId,
+				}),
+			).unwrap();
+
+			console.log('✅ Item finalizado con Grado M automático');
+
+			// Callback específico para Grado M
+			if (onFinishGradeM) {
+				onFinishGradeM(newItemId);
+			}
+		} catch (err: any) {
+			console.error('Error en handleFinishGradeM:', err);
+			setError(err.message || 'Error al finalizar con Grado M');
+		} finally {
+			setIsFinishing(false);
 		}
 	};
 
@@ -151,6 +240,27 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({ branchId, onComplete })
 						/>
 					</div>
 
+					{/* Estado de Encendido - Checkbox para Grado M */}
+					<div className='rounded-lg border-2 border-orange-300 bg-orange-50 p-4 dark:border-orange-700 dark:bg-orange-950'>
+						<Checkbox
+							id='does_not_turn_on'
+							checked={doesNotTurnOn}
+							onChange={(e) => setDoesNotTurnOn(e.target.checked)}
+							label={
+								<span className='font-semibold text-orange-800 dark:text-orange-200'>
+									🔴 El equipo NO enciende (Grado M automático)
+								</span>
+							}
+						/>
+						{doesNotTurnOn && (
+							<p className='mt-2 text-sm text-orange-700 dark:text-orange-300'>
+								Al marcar esta opción, el equipo se clasificará automáticamente como{' '}
+								<strong>Grado M</strong> y se finalizará sin revisión técnica
+								detallada.
+							</p>
+						)}
+					</div>
+
 					{/* Equipment Type */}
 					<div>
 						<label className='mb-2 block text-sm font-medium'>
@@ -194,16 +304,28 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({ branchId, onComplete })
 						</div>
 					)}
 
-					{/* Submit Button */}
-					<div className='flex justify-end'>
-						<Button
-							variant='solid'
-							onClick={handleSubmit}
-							isDisable={!isFormValid || creating}
-							icon={creating ? 'HeroArrowPath' : 'HeroArrowRight'}
-							className={creating ? 'animate-spin' : ''}>
-							{creating ? 'Creando...' : 'Siguiente: Revisión Técnica'}
-						</Button>
+					{/* Submit Buttons */}
+					<div className='flex justify-end gap-3'>
+						{doesNotTurnOn ? (
+							<Button
+								variant='solid'
+								color='red'
+								onClick={handleFinishGradeM}
+								isDisable={!isFormValid || isFinishing}
+								icon={isFinishing ? 'HeroArrowPath' : 'HeroCheckCircle'}
+								className={isFinishing ? 'animate-spin' : ''}>
+								{isFinishing ? 'Finalizando...' : 'Finalizar - Grado M'}
+							</Button>
+						) : (
+							<Button
+								variant='solid'
+								onClick={handleSubmit}
+								isDisable={!isFormValid || creating}
+								icon={creating ? 'HeroArrowPath' : 'HeroArrowRight'}
+								className={creating ? 'animate-spin' : ''}>
+								{creating ? 'Creando...' : 'Siguiente: Revisión Técnica'}
+							</Button>
+						)}
 					</div>
 				</CardBody>
 			</Card>

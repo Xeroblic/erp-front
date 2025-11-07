@@ -212,10 +212,8 @@ export const getSuggestedGrade = createAsyncThunk<
 
 /**
  * Volver item a estado "in_review" para permitir re-edición
- * PATCH /api/branches/{branch}/technical-reviews/items/{item}/details
- * 
- * Intenta enviar review_status como parte del payload de details.
- * El backend valida campos específicos pero puede aceptar campos adicionales.
+ * POST /api/branches/{branch}/technical-reviews/items/{item}/reopen-review
+ * Efecto: review_status cambia de 'reviewed' → 'in_review'
  */
 export const reopenReview = createAsyncThunk<
     IItem,
@@ -226,11 +224,8 @@ export const reopenReview = createAsyncThunk<
     async ({ branchId, itemId }, { rejectWithValue }) => {
         try {
             const response = await ApiService.fetchData<{ data?: any }>({
-                url: ep(branchId, `/items/${itemId}/details`),
-                method: 'patch',
-                data: {
-                    review_status: 'in_review',
-                },
+                url: ep(branchId, `/items/${itemId}/reopen-review`),
+                method: 'post', // ← Cambiado de 'patch' a 'post'
             });
 
             return normalizeObject(response.data) as IItem;

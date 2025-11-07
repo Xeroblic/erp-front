@@ -41,7 +41,7 @@
 
 ---
 
-## ❌ LO QUE FALTA IMPLEMENTAR
+## LO QUE FALTA IMPLEMENTAR
 
 ### 1. 🎯 COMPONENTES CRÍTICOS (0% - TODO)
 
@@ -50,11 +50,11 @@
 **Ubicación:** `src/pages/technical-reviews/components/forms/`
 
 ```
-❌ NotebookForm.tsx       - Formulario específico con ~30 campos
-❌ DesktopForm.tsx        - Formulario con ~25 campos
-❌ AioForm.tsx            - Formulario con ~28 campos
-❌ DockingForm.tsx        - Formulario con ~15 campos
-❌ MonitorForm.tsx        - Formulario con ~20 campos
+NotebookForm.tsx       - Formulario específico con ~30 campos
+DesktopForm.tsx        - Formulario con ~25 campos
+AioForm.tsx            - Formulario con ~28 campos
+DockingForm.tsx        - Formulario con ~15 campos
+MonitorForm.tsx        - Formulario con ~20 campos
 ```
 
 **Qué deben hacer:**
@@ -94,15 +94,15 @@
 **Ubicación:** `src/pages/technical-reviews/components/items/ReviewSteps/`
 
 ```
-❌ Step1BasicInfo.tsx     - Crear/editar serial + producto + tipo
+Step1BasicInfo.tsx     - Crear/editar serial + producto + tipo
                           - Botón "Iniciar Revisión" (startReview thunk)
 
-❌ Step2FullReview.tsx    - Renderiza form según equipment_type
+Step2FullReview.tsx    - Renderiza form según equipment_type
                           - NotebookForm | DesktopForm | AioForm | etc.
                           - Botón "Guardar" (parcial)
                           - Botón "Finalizar Revisión" (completeReview thunk)
 
-❌ Step3GradeReview.tsx   - Muestra suggested_grade, confidence, breakdown
+Step3GradeReview.tsx   - Muestra suggested_grade, confidence, breakdown
                           - Card con score visual (A, B, C, D)
                           - Desglose de puntuación por categoría
                           - Botón "Aceptar Sugerencia" (approveItem)
@@ -116,15 +116,15 @@
 **Ubicación:** `src/pages/technical-reviews/components/modals/`
 
 ```
-❌ ApproveModal.tsx           - Select grade manual (A-D)
+ApproveModal.tsx           - Select grade manual (A-D)
                                - Textarea override_reason
                                - approveItem con override_suggestion: true
 
-❌ ChangeStatusModal.tsx      - Select new_status (CommercialStatus)
+ChangeStatusModal.tsx      - Select new_status (CommercialStatus)
                                - Textarea reason
                                - changeCommercialStatus thunk
 
-❌ ReserveModal.tsx           - Input quotation_id
+ReserveModal.tsx           - Input quotation_id
                                - reserveItem thunk
 ```
 
@@ -135,18 +135,18 @@
 **Ubicación:** `src/pages/technical-reviews/components/shared/`
 
 ```
-❌ ReviewProgress.tsx         - Barra visual de 3 pasos
+ReviewProgress.tsx         - Barra visual de 3 pasos
                                - Indicadores: pending → in_review → reviewed → approved
 
-❌ StatusBadge.tsx            - Badges coloreados según ReviewStatus y CommercialStatus
+StatusBadge.tsx            - Badges coloreados según ReviewStatus y CommercialStatus
 
-❌ ValidationSummary.tsx      - Lista de campos required faltantes
+ValidationSummary.tsx      - Lista de campos required faltantes
                                - Errores de validación del backend
 
-❌ SearchSerialInput.tsx      - Input con debounce para buscar series
+SearchSerialInput.tsx      - Input con debounce para buscar series
                                - Estilo "CTRL+F Excel" con highlighting
 
-❌ GradeDisplay.tsx           - Visualización del grado (A, B, C, D)
+GradeDisplay.tsx           - Visualización del grado (A, B, C, D)
                                - Badge grande con color según grado
                                - Confidence % bar
                                - Breakdown collapsible
@@ -159,16 +159,16 @@
 **Ubicación:** `src/pages/technical-reviews/components/`
 
 ```
-❌ batches/BatchList.tsx      - Tabla optimizada de lotes
+batches/BatchList.tsx      - Tabla optimizada de lotes
                                - Columnas: Code, Bodega, Proveedor, Fecha, Cant., Estado
 
-❌ batches/BatchDetail.tsx    - Card con metadata del lote
+batches/BatchDetail.tsx    - Card con metadata del lote
                                - KPIs: esperado vs recibido vs completado
 
-❌ batches/BatchTabs.tsx      - Tabs con badges de conteo
+batches/BatchTabs.tsx      - Tabs con badges de conteo
                                - Usa items_summary.by_equipment_type
 
-❌ items/ItemList.tsx         - Tabla de series con filtros
+items/ItemList.tsx         - Tabla de series con filtros
                                - Columnas: Serial, Tipo, Producto, Estado Rev., Estado Com., Grado
 ```
 
@@ -181,13 +181,13 @@
 **Lo que falta:**
 
 ```typescript
-❌ Integrar Step1BasicInfo component
-❌ Integrar Step2FullReview component (con forms dinámicos)
-❌ Integrar Step3GradeReview component
-❌ Lógica de navegación entre pasos
-❌ Validación antes de pasar al siguiente paso
-❌ Manejo de estados: creating, startingReview, completingReview, approving
-❌ Toast notifications de éxito/error
+Integrar Step1BasicInfo component
+Integrar Step2FullReview component (con forms dinámicos)
+Integrar Step3GradeReview component
+Lógica de navegación entre pasos
+Validación antes de pasar al siguiente paso
+Manejo de estados: creating, startingReview, completingReview, approving
+Toast notifications de éxito/error
 ```
 
 **Actualmente tiene:**
@@ -196,8 +196,8 @@
 - ✅ Input de serial number (Input component)
 - ✅ Select de producto (SelectReact con productos dinámicos)
 - ✅ Botones de tipo de equipo
-- ⚠️ Paso 2: placeholder "TODO: Implementar formulario específico"
-- ⚠️ Paso 3: muestra grado automático pero falta UI completa
+- Paso 2: placeholder "TODO: Implementar formulario específico"
+- Paso 3: muestra grado automático pero falta UI completa
 
 ---
 
@@ -206,9 +206,9 @@
 **Lo que falta:**
 
 ```typescript
-❌ Reutilizar componentes de ReviewSteps
-❌ Mismo flujo que batches/[batchId]/[itemId].tsx
-❌ Lógica idéntica pero sin batchId
+Reutilizar componentes de ReviewSteps
+Mismo flujo que batches/[batchId]/[itemId].tsx
+Lógica idéntica pero sin batchId
 ```
 
 ---
@@ -218,14 +218,14 @@
 **Lo que falta:**
 
 ```typescript
-❌ Usar items_summary para mostrar badges en tabs
+Usar items_summary para mostrar badges en tabs
    - Actualmente no muestra el conteo de items por tipo
    - Debería mostrar: "Notebooks (15)" en el tab
 
-❌ Agregar SearchSerialInput component
+Agregar SearchSerialInput component
    - Buscador tipo "CTRL+F Excel" dentro del lote
 
-❌ Mejorar tabla de items:
+Mejorar tabla de items:
    - Usar ItemList component (cuando esté creado)
    - Mostrar más columnas: review_status, grade, current_status
 ```
@@ -235,7 +235,7 @@
 - ✅ Tabs por equipment_type
 - ✅ fetchBatchById y fetchBatchItems
 - ✅ Subheader component
-- ⚠️ Tabla básica sin todos los campos
+- Tabla básica sin todos los campos
 
 ---
 
@@ -246,13 +246,13 @@
 **Ubicación:** `src/pages/technical-reviews/validation/`
 
 ```
-❌ rules.tsx              - Vista debug de reglas de validación
+rules.tsx              - Vista debug de reglas de validación
                           - Select equipment_type
                           - Tabla con IValidationRule[] (label, required, type, options)
                           - Botón refresh
                           - Usa fetchValidationRules thunk
 
-❌ validate-field.tsx     - Tool de testing en vivo
+validate-field.tsx     - Tool de testing en vivo
                           - Form: equipment_type, field_name, field_value
                           - Botón "Validar"
                           - Muestra resultado: valid/invalid + message
@@ -266,7 +266,7 @@
 **Ubicación:** `src/pages/technical-reviews/batches/[batchId]/[itemId]/`
 
 ```
-❌ approve.tsx            - Página dedicada para aprobación manual
+approve.tsx            - Página dedicada para aprobación manual
                           - Alternativa a ApproveModal embebido
                           - Puede ser útil para flujo desktop
 ```
@@ -276,14 +276,14 @@
 ### 4. 🎨 MEJORAS DE UX/UI
 
 ```
-❌ Loading skeletons en tablas
-❌ Toast notifications sistema (éxito/error)
-❌ Confirmación antes de acciones destructivas
-❌ Drag & drop para cargar múltiples series (bulk)
-❌ Export a Excel de lotes/series
-❌ Filtros avanzados con date range picker
-❌ Vista de impresión para reportes
-❌ Dark mode completo (ya parcialmente implementado)
+Loading skeletons en tablas
+Toast notifications sistema (éxito/error)
+Confirmación antes de acciones destructivas
+Drag & drop para cargar múltiples series (bulk)
+Export a Excel de lotes/series
+Filtros avanzados con date range picker
+Vista de impresión para reportes
+Dark mode completo (ya parcialmente implementado)
 ```
 
 ---
@@ -291,23 +291,23 @@
 ### 5. 🧪 INTEGRACIONES PENDIENTES
 
 ```
-❌ Cargar validationRules al entrar a revisión
+Cargar validationRules al entrar a revisión
    - fetchValidationRulesByType cuando se selecciona equipment_type
 
-❌ Implementar guardado automático (auto-save)
+Implementar guardado automático (auto-save)
    - updateItemDetails cada X segundos si hay cambios
 
-❌ Implementar búsqueda de series global
+Implementar búsqueda de series global
    - Debounce en SearchSerialInput
    - Highlight de resultados
 
-❌ Integrar con módulo de cotizaciones
+Integrar con módulo de cotizaciones
    - Para reserveItem({ quotation_id })
 
-❌ Integrar con módulo de ventas
+Integrar con módulo de ventas
    - Para markAsSold({ sale_id, customer_id })
 
-❌ Notificaciones en tiempo real
+Notificaciones en tiempo real
    - Cuando alguien más está revisando una serie
 ```
 
@@ -395,11 +395,11 @@
 - **Backend Integration:** ✅ 100%
 - **Routing & Navigation:** ✅ 100%
 - **State Management:** ✅ 100%
-- **Base Pages:** ⚠️ 70%
-- **Core Components:** ❌ 0%
-- **Forms:** ❌ 0%
-- **Modals:** ❌ 0%
-- **UX Enhancements:** ❌ 20%
+- **Base Pages:** 70%
+- **Core Components:** 0%
+- **Forms:** 0%
+- **Modals:** 0%
+- **UX Enhancements:** 20%
 
 ### Estimación Global
 

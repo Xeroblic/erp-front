@@ -1,5 +1,5 @@
 /**
- * ⚠️ ARCHIVO TEMPORAL DE COMPATIBILIDAD ⚠️
+ *  ARCHIVO TEMPORAL DE COMPATIBILIDAD 
  * 
  * Este archivo mantiene las constantes ERP_PERMISSIONS para evitar que se rompan
  * los archivos existentes durante la migración.

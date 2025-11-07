@@ -206,7 +206,7 @@ const useCompanyManager = (): UseCompanyManager => {
 					];
 					derivedName = userSnapshot.subsidiary.name;
 				} else if (personalization?.sucursal_principal) {
-					// ⚠️ Solo agregar si está en accesibles o no podemos determinar
+					//  Solo agregar si está en accesibles o no podemos determinar
 					if (!accessibleSubsidiaryIds.size || accessibleSubsidiaryIds.has(personalization.sucursal_principal)) {
 						derived = [
 							{
@@ -219,7 +219,7 @@ const useCompanyManager = (): UseCompanyManager => {
 							},
 						];
 					} else {
-						console.warn('⚠️ sucursal_principal no accesible en derived:', personalization.sucursal_principal);
+						console.warn(' sucursal_principal no accesible en derived:', personalization.sucursal_principal);
 					}
 				}
 
@@ -324,8 +324,8 @@ const useCompanyManager = (): UseCompanyManager => {
 						if (current) {
 							prettyName = current.subsidiary_name;
 						} else {
-							// ⚠️ sucursal_principal no está en accesibles, usar la primera disponible
-							console.warn('⚠️ sucursal_principal no accesible, usando primera disponible');
+							//  sucursal_principal no está en accesibles, usar la primera disponible
+							console.warn(' sucursal_principal no accesible, usando primera disponible');
 							if (accessibleSubsidiaries.length > 0) {
 								prettyName = accessibleSubsidiaries[0].subsidiary_name;
 							}

@@ -6,54 +6,54 @@ Interface completa para sincronización bidireccional de stock entre ERP y WooCo
 
 ## Casos de Uso
 
--   **CU029**: Importar stock desde WooCommerce (Pull)
--   **CU030**: Actualizar stock en WooCommerce (Push)
+- **CU029**: Importar stock desde WooCommerce (Pull)
+- **CU030**: Actualizar stock en WooCommerce (Push)
 
 ## Ubicación
 
--   **Ruta**: `/integraciones/woocommerce/stock`
--   **Componente**: `src/pages/integraciones/woocommerce/stock/WooStockSync.tsx`
+- **Ruta**: `/integraciones/woocommerce/stock`
+- **Componente**: `src/pages/integraciones/woocommerce/stock/WooStockSync.tsx`
 
 ## Funcionalidades
 
 ### Sistema de Tabs
 
--   **Importar Stock (Pull)**: Traer stock desde WooCommerce hacia ERP
--   **Actualizar Stock (Push)**: Enviar stock desde ERP hacia WooCommerce
--   **Historial**: Registro de todas las sincronizaciones ejecutadas
+- **Importar Stock (Pull)**: Traer stock desde WooCommerce hacia ERP
+- **Actualizar Stock (Push)**: Enviar stock desde ERP hacia WooCommerce
+- **Historial**: Registro de todas las sincronizaciones ejecutadas
 
 ### Tab 1: Importar Stock (Pull)
 
--   **Descripción explicativa** del proceso de importación
--   **Botón de acción** para ejecutar importación inmediata
--   **Estado de conexión** con WooCommerce API
--   **Procesamiento con loading** y feedback visual
+- **Descripción explicativa** del proceso de importación
+- **Botón de acción** para ejecutar importación inmediata
+- **Estado de conexión** con WooCommerce API
+- **Procesamiento con loading** y feedback visual
 
 ### Tab 2: Actualizar Stock (Push)
 
--   **Tabla de productos** con selección múltiple
--   **Comparación visual** entre stock local vs WooCommerce
--   **Estados de sincronización** con badges de colores
--   **Botones de selección** (todo/individual)
--   **Actualización de productos** seleccionados únicamente
+- **Tabla de productos** con selección múltiple
+- **Comparación visual** entre stock local vs WooCommerce
+- **Estados de sincronización** con badges de colores
+- **Botones de selección** (todo/individual)
+- **Actualización de productos** seleccionados únicamente
 
 ### Tab 3: Historial
 
--   **Tabla de jobs ejecutados** con toda la información
--   **Estados de ejecución** (pending/running/completed/failed)
--   **Estadísticas** de productos procesados/actualizados/con errores
--   **Modal de logs** con información detallada
+- **Tabla de jobs ejecutados** con toda la información
+- **Estados de ejecución** (pending/running/completed/failed)
+- **Estadísticas** de productos procesados/actualizados/con errores
+- **Modal de logs** con información detallada
 
 ### Mock API Service
 
--   **Simulación real** de llamadas a WooCommerce API
--   **Delays realistas** para simular procesamiento
--   **Generación de logs** paso a paso
--   **Manejo de errores** y estados fallos
+- **Simulación real** de llamadas a WooCommerce API
+- **Delays realistas** para simular procesamiento
+- **Generación de logs** paso a paso
+- **Manejo de errores** y estados fallos
 
 ## Permisos Requeridos
 
--   `inventory.update` - Para ejecutar sincronizaciones de stock
+- `inventory.update` - Para ejecutar sincronizaciones de stock
 
 ## Estados de Conexión
 
@@ -61,9 +61,9 @@ Interface completa para sincronización bidireccional de stock entre ERP y WooCo
 type ConnectionStatus = 'connected' | 'disconnected' | 'error';
 ```
 
--   **🟢 Conectado**: API funcional y configurada
--   **⚫ Desconectado**: Sin configuración o deshabilitada
--   **🔴 Error**: Error de conexión o credenciales inválidas
+- **🟢 Conectado**: API funcional y configurada
+- **⚫ Desconectado**: Sin configuración o deshabilitada
+- **🔴 Error**: Error de conexión o credenciales inválidas
 
 ## Estados de Sincronización de Productos
 
@@ -71,9 +71,9 @@ type ConnectionStatus = 'connected' | 'disconnected' | 'error';
 type SyncStatus = 'synced' | 'out_of_sync' | 'error';
 ```
 
--   **✅ Sincronizado**: Stock local y WooCommerce coinciden
--   **⚠️ Desincronizado**: Diferencias entre stock local y WooCommerce
--   **❌ Error**: Error en el último intento de sincronización
+- **✅ Sincronizado**: Stock local y WooCommerce coinciden
+- ** Desincronizado**: Diferencias entre stock local y WooCommerce
+- **Error**: Error en el último intento de sincronización
 
 ## Datos Mock
 
@@ -172,10 +172,10 @@ interface ProductStock {
 
 ### Resultado esperado
 
--   Actualización del stock local con valores de WooCommerce
--   Cambio de estado de productos a 'synced'
--   Generación de job en historial
--   Toast de confirmación con estadísticas
+- Actualización del stock local con valores de WooCommerce
+- Cambio de estado de productos a 'synced'
+- Generación de job en historial
+- Toast de confirmación con estadísticas
 
 ## Proceso de Actualización (Push)
 
@@ -190,26 +190,26 @@ interface ProductStock {
 
 ### Resultado esperado
 
--   Sincronización de productos seleccionados hacia WooCommerce
--   Cambio de estado a 'synced' para productos exitosos
--   Limpieza de selección de productos
--   Toast con estadísticas de actualización
+- Sincronización de productos seleccionados hacia WooCommerce
+- Cambio de estado a 'synced' para productos exitosos
+- Limpieza de selección de productos
+- Toast con estadísticas de actualización
 
 ## Modal de Logs
 
 ### Información mostrada
 
--   **Header**: ID del job y tipo de operación
--   **Información básica**: Tipo, estado, fechas de inicio/fin
--   **Estadísticas visuales**: Cards con procesados/actualizados/errores
--   **Lista de errores**: Si existen, con detalles específicos
--   **Log detallado**: Consola paso a paso del proceso
+- **Header**: ID del job y tipo de operación
+- **Información básica**: Tipo, estado, fechas de inicio/fin
+- **Estadísticas visuales**: Cards con procesados/actualizados/errores
+- **Lista de errores**: Si existen, con detalles específicos
+- **Log detallado**: Consola paso a paso del proceso
 
 ### Diseño del modal
 
--   **Size**: 3xl para mostrar toda la información
--   **Scroll**: Área de log con scroll interno
--   **Colores**: Verde para éxitos, rojo para errores, azul para info
+- **Size**: 3xl para mostrar toda la información
+- **Scroll**: Área de log con scroll interno
+- **Colores**: Verde para éxitos, rojo para errores, azul para info
 
 ## Integración con Sistema
 
@@ -224,49 +224,49 @@ mockWooSyncApi = {
 
 ### Estados de la aplicación
 
--   **Loading states**: Durante ejecución de jobs
--   **Product selection**: Manejo de selección múltiple
--   **History management**: Actualización de historial
--   **Error handling**: Toast notifications y logs
+- **Loading states**: Durante ejecución de jobs
+- **Product selection**: Manejo de selección múltiple
+- **History management**: Actualización de historial
+- **Error handling**: Toast notifications y logs
 
 ## Diseño Visual
 
 ### Colores de Estado
 
--   **Verde**: Sincronizado, completado, conexión OK
--   **Amarillo/Amber**: Desincronizado, advertencias
--   **Rojo**: Errores, fallos, sin conexión
--   **Azul**: Importaciones, información
--   **Gris**: Pendiente, desconectado
+- **Verde**: Sincronizado, completado, conexión OK
+- **Amarillo/Amber**: Desincronizado, advertencias
+- **Rojo**: Errores, fallos, sin conexión
+- **Azul**: Importaciones, información
+- **Gris**: Pendiente, desconectado
 
 ### Iconografía
 
--   **📥 Pull**: Importación desde WooCommerce
--   **📤 Push**: Actualización hacia WooCommerce
--   **✅ Synced**: Estado sincronizado
--   **⚠️ Warning**: Desincronizado
--   **❌ Error**: Estado de error
--   **🟢🔴⚫**: Estados de conexión
+- **📥 Pull**: Importación desde WooCommerce
+- **📤 Push**: Actualización hacia WooCommerce
+- **✅ Synced**: Estado sincronizado
+- ** Warning**: Desincronizado
+- **Error**: Estado de error
+- **🟢🔴⚫**: Estados de conexión
 
 ## UX y Usabilidad
 
 ### Feedback al Usuario
 
--   **Loading states** durante procesamiento (2-3 segundos)
--   **Progress indicators** en botones de acción
--   **Toast notifications** con estadísticas de resultado
--   **Visual badges** para estados de productos y jobs
+- **Loading states** durante procesamiento (2-3 segundos)
+- **Progress indicators** en botones de acción
+- **Toast notifications** con estadísticas de resultado
+- **Visual badges** para estados de productos y jobs
 
 ### Información Contextual
 
--   **Cards explicativos** en cada tab describiendo el proceso
--   **Tooltips y ayuda** para acciones complejas
--   **Comparación visual** de stock local vs WooCommerce
--   **Timestamps** formateados para fechas de sincronización
+- **Cards explicativos** en cada tab describiendo el proceso
+- **Tooltips y ayuda** para acciones complejas
+- **Comparación visual** de stock local vs WooCommerce
+- **Timestamps** formateados para fechas de sincronización
 
 ### Accesibilidad
 
--   **Keyboard navigation** completa
--   **Screen reader support** con labels apropiados
--   **Color contrast** cumpliendo estándares
--   **Focus management** en modales y formularios
+- **Keyboard navigation** completa
+- **Screen reader support** con labels apropiados
+- **Color contrast** cumpliendo estándares
+- **Focus management** en modales y formularios

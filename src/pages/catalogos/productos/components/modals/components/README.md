@@ -52,15 +52,15 @@ const MyComponent = () => {
 | Prop          | Tipo                                 | Requerido | Default                     | Descripción                              |
 | ------------- | ------------------------------------ | --------- | --------------------------- | ---------------------------------------- |
 | `userId`      | `number`                             | ✅ Sí     | -                           | ID del usuario para obtener sus branches |
-| `value`       | `number \| string \| null`           | ❌ No     | `undefined`                 | Valor seleccionado (branch_id)           |
+| `value`       | `number \| string \| null`           | No        | `undefined`                 | Valor seleccionado (branch_id)           |
 | `onChange`    | `(branchId: number \| null) => void` | ✅ Sí     | -                           | Callback cuando cambia la selección      |
-| `name`        | `string`                             | ❌ No     | `'branch_id'`               | Nombre del campo (para formularios)      |
-| `label`       | `string`                             | ❌ No     | `'Sucursal'`                | Etiqueta del campo                       |
-| `placeholder` | `string`                             | ❌ No     | `'Selecciona una sucursal'` | Texto placeholder                        |
-| `disabled`    | `boolean`                            | ❌ No     | `false`                     | Si el select está deshabilitado          |
-| `required`    | `boolean`                            | ❌ No     | `false`                     | Si el campo es requerido                 |
-| `className`   | `string`                             | ❌ No     | `undefined`                 | Clases CSS adicionales                   |
-| `showError`   | `boolean`                            | ❌ No     | `true`                      | Si debe mostrar mensajes de error        |
+| `name`        | `string`                             | No        | `'branch_id'`               | Nombre del campo (para formularios)      |
+| `label`       | `string`                             | No        | `'Sucursal'`                | Etiqueta del campo                       |
+| `placeholder` | `string`                             | No        | `'Selecciona una sucursal'` | Texto placeholder                        |
+| `disabled`    | `boolean`                            | No        | `false`                     | Si el select está deshabilitado          |
+| `required`    | `boolean`                            | No        | `false`                     | Si el campo es requerido                 |
+| `className`   | `string`                             | No        | `undefined`                 | Clases CSS adicionales                   |
+| `showError`   | `boolean`                            | No        | `true`                      | Si debe mostrar mensajes de error        |
 
 ---
 
@@ -233,7 +233,7 @@ onChange={(branchId) => {
 │ ┌─────────────────────────┐ │
 │ │ -- Selecciona --       ▼│ │
 │ └─────────────────────────┘ │
-│ ⚠️ No tiene acceso a ninguna│
+│  No tiene acceso a ninguna│
 │    sucursal                 │
 └─────────────────────────────┘
 ```
@@ -244,7 +244,7 @@ onChange={(branchId) => {
 ┌─────────────────────────────┐
 │ Sucursal *                  │
 │ ┌─────────────────────────┐ │
-│ │ ❌ Error al cargar      │ │
+│ │ Error al cargar      │ │
 │ │ sucursales              │ │
 │ │ Error: Network timeout  │ │
 │ └─────────────────────────┘ │

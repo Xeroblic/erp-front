@@ -115,8 +115,8 @@
 ### Deprecados (NO usar)
 
 ```
-❌ technicalReviewsThunks.ts     638 líneas | Monolítico antiguo
-❌ technicalReviewsSlice.ts      554 líneas | Slice antiguo v1.0
+technicalReviewsThunks.ts     638 líneas | Monolítico antiguo
+technicalReviewsSlice.ts      554 líneas | Slice antiguo v1.0
 ```
 
 ## 🔍 Búsqueda Rápida por Necesidad

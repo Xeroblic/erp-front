@@ -62,17 +62,17 @@ const {
 - Asocia un producto a la bodega
 - Retorna `true` si tuvo éxito
 - Validaciones automáticas:
-    - ⚠️ Producto duplicado → Warning
-    - ❌ Producto de otra sucursal → Error
-    - ❌ Sin capacidad → Error
-    - ❌ Sin stock para sync → Error
+    - Producto duplicado → Warning
+    - Producto de otra sucursal → Error
+    - Sin capacidad → Error
+    - Sin stock para sync → Error
 
 **`handleDetachProduct(warehouseId: number, data: IDetachProductRequest): Promise<boolean>`**
 
 - Quita un producto de la bodega
 - Retorna `true` si tuvo éxito
 - Validaciones automáticas:
-    - ❌ Producto no existe → Error
+    - Producto no existe → Error
 
 **`handleClearDetail(): void`**
 

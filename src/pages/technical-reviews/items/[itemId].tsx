@@ -99,7 +99,7 @@ const ItemReviewStandalonePage: React.FC = () => {
 			}
 		},
 		onSaveError: (error) => {
-			console.error('❌ Error al guardar:', error);
+			console.error('Error al guardar:', error);
 		},
 	});
 
@@ -281,7 +281,7 @@ const ItemReviewStandalonePage: React.FC = () => {
 
 			setAutomaticGrade(grading?.grade ?? null);
 		} catch (error) {
-			console.error('❌ Error al recalcular grado:', error);
+			console.error('Error al recalcular grado:', error);
 			throw error;
 		}
 	};
@@ -305,7 +305,7 @@ const ItemReviewStandalonePage: React.FC = () => {
 			console.log('✅ Item vuelto a in_review:', updatedItem);
 			setItem(updatedItem);
 		} catch (error) {
-			console.error('❌ Error al volver a in_review:', error);
+			console.error('Error al volver a in_review:', error);
 			throw error;
 		}
 	};
@@ -468,9 +468,9 @@ const ItemReviewStandalonePage: React.FC = () => {
 									)}
 									{productsWithSerial.length === 0 && !productsLoading && (
 										<p className='mt-1 text-xs text-amber-600 dark:text-amber-400'>
-											⚠️ No hay productos con seguimiento por serie
-											disponibles. Debe activar "Seguimiento por Serie" en la
-											configuración del producto.
+											No hay productos con seguimiento por serie disponibles.
+											Debe activar "Seguimiento por Serie" en la configuración
+											del producto.
 										</p>
 									)}
 								</div>
@@ -582,7 +582,7 @@ const ItemReviewStandalonePage: React.FC = () => {
 							// Si el item ya fue revisado, ir directo al Step 3 (sin volver a completar)
 							if (reviewStatus === 'reviewed' || reviewStatus === 'approved') {
 								console.log(
-									'⚠️ Item ya revisado, saltando al Step 3 sin llamar complete-review',
+									' Item ya revisado, saltando al Step 3 sin llamar complete-review',
 								);
 								setCurrentStep('grading');
 								return;

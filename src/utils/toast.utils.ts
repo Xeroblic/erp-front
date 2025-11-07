@@ -51,7 +51,7 @@ export const showWarningToast = (_message: string, _options: ToastOptions = {}):
     // no-op to avoid console noise in production
 
     // Example implementation with react-hot-toast:
-    // toast(message, { icon: '⚠️', ...options });
+    // toast(message, { icon: '', ...options });
 
     // Example implementation with react-toastify:
     // toast.warning(message, options);
