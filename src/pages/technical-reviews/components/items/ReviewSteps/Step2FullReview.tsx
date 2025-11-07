@@ -25,6 +25,11 @@ interface Step2FullReviewProps {
 	initialValues?: Partial<UpdateItemDetailsPayload>;
 	onBack: () => void;
 	onComplete: () => void;
+	onFieldChange?: (data: UpdateItemDetailsPayload) => void; // Callback para auto-save
+	onItemUpdate?: (updatedItem: any) => void; // Callback cuando se actualiza el item
+	isDirty?: boolean;
+	isSaving?: boolean;
+	lastSaved?: Date | null;
 }
 
 const Step2FullReview: React.FC<Step2FullReviewProps> = ({
@@ -34,72 +39,83 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 	initialValues = {},
 	onBack,
 	onComplete,
+	onFieldChange, // Nuevo: callback para auto-save
+	onItemUpdate, // Nuevo: callback para actualizar item del padre
+	isDirty = false,
+	isSaving = false,
+	lastSaved = null,
 }) => {
 	const dispatch = useAppDispatch();
 	const updating = useAppSelector((s) => s.technicalReviews.updating);
 
 	const [formValues, setFormValues] = useState<Partial<UpdateItemDetailsPayload>>(initialValues);
-	const [lastSaved, setLastSaved] = useState<Date | null>(null);
 	const [saveError, setSaveError] = useState<string | null>(null);
 
 	// Sincronizar formValues cuando cambien los initialValues o cuando se monte el componente
 	useEffect(() => {
-		console.log('🔄 Sincronizando initialValues:', initialValues);
 		setFormValues(initialValues);
 	}, [initialValues]);
 
 	const handleFieldChange = (field: string, value: any) => {
-		setFormValues((prev) => ({
-			...prev,
+		const newValues = {
+			...formValues,
 			[field]: value,
-		}));
+		};
+		setFormValues(newValues);
 		setSaveError(null);
+
+		// Notificar al padre (usado para auto-save si está habilitado)
+		// Si onFieldChange es undefined, solo guardado manual
+		if (onFieldChange) {
+			onFieldChange(newValues as UpdateItemDetailsPayload);
+		}
 	};
 
-	// Guardar parcial (sin finalizar revisión)
+	// Guardar cambios manualmente
 	const handleSave = async () => {
 		try {
-			console.log('💾 Guardando formValues:', formValues);
-			console.log('📋 Equipment Type:', equipmentType);
-
-			await dispatch(
+			const updatedItem = await dispatch(
 				updateItemDetails({
 					branchId,
 					itemId,
 					data: formValues,
-					equipmentType, // Pasar el tipo de equipo para filtrar campos
+					equipmentType,
 				}),
 			).unwrap();
 
-			setLastSaved(new Date());
 			setSaveError(null);
+
+			// Notificar al padre que el item se actualizó
+			if (onItemUpdate) {
+				onItemUpdate(updatedItem);
+			}
 		} catch (error: any) {
-			console.error('❌ Error al guardar:', error);
 			setSaveError(error || 'Error al guardar');
 		}
 	};
 
-	// Finalizar revisión (pasa al paso 3)
 	const handleFinalize = async () => {
 		try {
 			// Primero guardar cualquier cambio pendiente
-			await dispatch(
+			const updatedItem = await dispatch(
 				updateItemDetails({
 					branchId,
 					itemId,
 					data: formValues,
-					equipmentType, // Pasar el tipo de equipo para filtrar campos
+					equipmentType,
 				}),
 			).unwrap();
 
-			// Luego notificar completado (el padre llamará completeReview)
+			if (onItemUpdate) {
+				onItemUpdate(updatedItem);
+			}
+
 			onComplete();
 		} catch (error: any) {
 			setSaveError(error || 'Error al finalizar revisión');
 		}
 	};
 
-	// Obtener mensaje de campos requeridos según tipo de equipo
 	const getRequiredFieldsMessage = () => {
 		switch (equipmentType) {
 			case 'notebook':
@@ -115,7 +131,6 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 		}
 	};
 
-	// Validación básica de campos requeridos según tipo de equipo
 	const isFormValid = () => {
 		let required: string[] = [];
 
@@ -210,15 +225,39 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 									Revisión Técnica Completa
 								</h4>
 								<p className='mt-1 text-sm text-blue-800 dark:text-blue-200'>
-									Completa todos los campos requeridos. Puedes guardar
-									parcialmente y continuar después.
+									Completa todos los campos técnicos del equipo. Usa el botón
+									"Guardar" para persistir los cambios.
 								</p>
 							</div>
 						</div>
-						{lastSaved && (
-							<div className='text-right text-xs text-blue-700 dark:text-blue-300'>
-								<Icon icon='HeroCheckCircle' className='mr-1 inline h-4 w-4' />
-								Guardado {lastSaved.toLocaleTimeString()}
+
+						{/* Indicador de estado (solo si auto-save está activado) */}
+						{onFieldChange && (
+							<div className='text-right text-xs'>
+								{isSaving && (
+									<div className='text-blue-600 dark:text-blue-400'>
+										<Icon
+											icon='HeroArrowPath'
+											className='mr-1 inline h-4 w-4 animate-spin'
+										/>
+										Guardando...
+									</div>
+								)}
+								{!isSaving && isDirty && (
+									<div className='text-yellow-600 dark:text-yellow-400'>
+										<Icon icon='HeroClock' className='mr-1 inline h-4 w-4' />
+										Cambios sin guardar
+									</div>
+								)}
+								{!isSaving && !isDirty && lastSaved && (
+									<div className='text-green-600 dark:text-green-400'>
+										<Icon
+											icon='HeroCheckCircle'
+											className='mr-1 inline h-4 w-4'
+										/>
+										Guardado {lastSaved.toLocaleTimeString()}
+									</div>
+								)}
 							</div>
 						)}
 					</div>

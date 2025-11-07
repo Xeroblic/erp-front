@@ -67,7 +67,9 @@ const BatchDetailPage: React.FC = () => {
 					{/* Botón para registrar serie dentro del lote (ruta semántica REST) */}
 					<Button
 						color='green'
-						onClick={() => navigate(`/technical-reviews/batches/${batch?.id}/items/create`)}>
+						onClick={() =>
+							navigate(`/technical-reviews/batches/${batch?.id}/items/create`)
+						}>
 						<Icon icon='HeroPlus' className='mr-2 h-4 w-4' />
 						Registrar Serie
 					</Button>

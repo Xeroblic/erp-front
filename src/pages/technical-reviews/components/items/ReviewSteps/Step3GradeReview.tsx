@@ -22,6 +22,8 @@ interface Step3GradeReviewProps {
 	equipmentType: string;
 	onBack: () => void;
 	onComplete: () => void;
+	onRecalculate?: () => Promise<void>; // Callback para recalcular grado
+	onModifyReview?: () => Promise<void>; // Callback para volver a modificar revisión (vuelve a in_review)
 }
 
 const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
@@ -34,6 +36,8 @@ const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 	equipmentType,
 	onBack,
 	onComplete,
+	onRecalculate, // Prop para recalcular
+	onModifyReview, // Prop para modificar revisión
 }) => {
 	const dispatch = useAppDispatch();
 	const approving = useAppSelector((s) => s.technicalReviews.approving);
@@ -42,6 +46,8 @@ const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 	const [manualGrade, setManualGrade] = useState<string | null>(null);
 	const [overrideReason, setOverrideReason] = useState('');
 	const [error, setError] = useState<string | null>(null);
+	const [isRecalculating, setIsRecalculating] = useState(false); // Estado para recalcular
+	const [isModifying, setIsModifying] = useState(false); // Estado para modificar
 
 	const gradeOptions: TSelectOption[] = [
 		{ value: 'A', label: 'Grado A - Excelente' },
@@ -63,6 +69,41 @@ const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 				return 'bg-orange-500 text-white';
 			default:
 				return 'bg-gray-500 text-white';
+		}
+	};
+
+	// Recalcular grado después de modificaciones
+	const handleRecalculateGrade = async () => {
+		if (!onRecalculate) return;
+
+		try {
+			setIsRecalculating(true);
+			setError(null);
+			await onRecalculate();
+		} catch (error: any) {
+			setError(error?.message || 'Error al recalcular el grado');
+		} finally {
+			setIsRecalculating(false);
+		}
+	};
+
+	// Modificar revisión (volver al Step 2 en modo in_review)
+	const handleModifyReview = async () => {
+		try {
+			setIsModifying(true);
+			setError(null);
+
+			// Si existe el callback, llamarlo primero para volver a in_review
+			if (onModifyReview) {
+				await onModifyReview();
+			}
+
+			// Luego volver al paso anterior
+			onBack();
+		} catch (error: any) {
+			setError(error?.message || 'Error al modificar la revisión');
+		} finally {
+			setIsModifying(false);
 		}
 	};
 
@@ -178,6 +219,34 @@ const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 					</div>
 				</CardBody>
 			</Card>
+
+			{/* Botón de Recalcular Grado */}
+			{onRecalculate && (
+				<Card className='border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950'>
+					<CardBody className='p-6'>
+						<div className='flex flex-col items-center gap-4 text-center'>
+							<div>
+								<h4 className='font-semibold text-blue-900 dark:text-blue-100'>
+									¿Modificaste los detalles técnicos?
+								</h4>
+								<p className='mt-2 text-sm text-blue-700 dark:text-blue-300'>
+									Si cambiaste información importante (RAM, procesador,
+									condiciones, etc.), puedes recalcular el grado automáticamente.
+								</p>
+							</div>
+							<Button
+								variant='solid'
+								color='blue'
+								onClick={handleRecalculateGrade}
+								isLoading={isRecalculating}
+								icon='HeroArrowPath'
+								className='gap-2'>
+								{isRecalculating ? 'Recalculando...' : 'Recalcular Grado'}
+							</Button>
+						</div>
+					</CardBody>
+				</Card>
+			)}
 
 			{/* Resumen */}
 			<Card>
@@ -330,9 +399,13 @@ const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 
 			{/* Botones de acción */}
 			<div className='flex justify-between gap-3'>
-				<Button variant='outline' onClick={onBack} isDisable={approving}>
+				<Button
+					variant='outline'
+					onClick={handleModifyReview}
+					isDisable={approving || isModifying}
+					isLoading={isModifying}>
 					<Icon icon='HeroArrowLeft' className='mr-2 h-4 w-4' />
-					Modificar Revisión
+					{isModifying ? 'Volviendo...' : 'Modificar Revisión'}
 				</Button>
 
 				<div className='flex gap-3'>

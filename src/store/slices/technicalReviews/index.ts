@@ -59,6 +59,7 @@ export {
     completeReview,
     approveItem,
     getSuggestedGrade,
+    reopenReview,
 } from './thunks/reviewThunks';
 
 // ========== THUNKS - TRAZABILIDAD ==========

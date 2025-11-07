@@ -22,6 +22,7 @@ import {
 	updateItemDetails,
 	completeReview,
 	approveItem,
+	reopenReview,
 	selectItemsLoading,
 	type EquipmentType,
 } from '@/store/slices/technicalReviews';
@@ -30,8 +31,10 @@ import { fetchProducts } from '@/store/slices/products/productsSlice';
 import Textarea from '@/components/form/Textarea';
 import Step2FullReview from '@/pages/technical-reviews/components/items/ReviewSteps/Step2FullReview';
 import Step3GradeReview from '@/pages/technical-reviews/components/items/ReviewSteps/Step3GradeReview';
+import { useAutoSaveReview } from '@/hooks/useAutoSaveReview';
+import { toast } from 'react-toastify';
 
-type ReviewStep = 'basic' | 'review' | 'grading';
+type ReviewStep = 'basic' | 'review' | 'grading' | 'detail';
 
 const ItemReviewPage: React.FC = () => {
 	const { batchId, itemId } = useParams<{ batchId: string; itemId: string }>();
@@ -57,6 +60,42 @@ const ItemReviewPage: React.FC = () => {
 	// Step 3: Grading
 	const [automaticGrade, setAutomaticGrade] = useState<string | null>(null);
 
+	// Helper: Extraer valor de objeto o devolver string
+	const extractValue = (field: any): string => {
+		if (!field) return 'N/A';
+		if (typeof field === 'object') {
+			return field.value || field.label || JSON.stringify(field);
+		}
+		return String(field);
+	};
+
+	// Auto-save hook
+	const {
+		isDirty,
+		isSaving,
+		lastSaved,
+		saveBasicInfo,
+		markDetailsChanged,
+		saveDetailsNow,
+		resetDirty,
+	} = useAutoSaveReview({
+		branchId,
+		itemId: itemId && itemId !== 'create' ? parseInt(itemId) : undefined,
+		reviewStatus: item?.review_status?.value || item?.review_status,
+		equipmentType: equipmentType,
+		onSaveSuccess: (savedItemId) => {
+
+			if (itemId === 'create' && batchId) {
+				navigate(`/technical-reviews/batches/${batchId}/items/${savedItemId}`, {
+					replace: true,
+				});
+			}
+		},
+		onSaveError: (error) => {
+			toast.error(`Error al guardar: ${error}`);
+		},
+	});
+
 	// Cargar productos al montar el componente
 	useEffect(() => {
 		if (branchId) {
@@ -72,52 +111,54 @@ const ItemReviewPage: React.FC = () => {
 	useEffect(() => {
 		if (!itemId || !branchId) return;
 
-		// Si itemId es "create", estamos creando un nuevo item, no cargamos
-		if (itemId === 'create') {
-			console.log('🆕 Modo creación de nuevo item');
-			return;
-		}
+		
 
 		const parsedItemId = parseInt(itemId);
-
-		// Validar que el ID sea un número válido
-		if (isNaN(parsedItemId)) {
-			console.error('❌ itemId inválido:', itemId);
-			return;
-		}
-
-		console.log('📥 Cargando item existente:', parsedItemId);
 
 		// Cargar el item si ya existe
 		dispatch(fetchItemDetail({ branchId, itemId: parsedItemId }))
 			.unwrap()
 			.then((loadedItem) => {
-				console.log('✅ Item cargado:', loadedItem);
-				
-				// Sincronizar estados locales con el item cargado
 				setItem(loadedItem);
 				if (loadedItem.serial_number) setSerialNumber(loadedItem.serial_number);
 				if (loadedItem.product_id) setProductId(loadedItem.product_id);
-				if (loadedItem.equipment_type) setEquipmentType(loadedItem.equipment_type);
 
+				// IMPORTANTE: equipment_type puede venir como objeto {value, label} o como string
+				const equipType =
+					typeof loadedItem.equipment_type === 'object'
+						? (loadedItem.equipment_type as any)?.value
+						: loadedItem.equipment_type;
+				if (equipType) setEquipmentType(equipType as EquipmentType);
+
+				// IMPORTANTE: review_status también puede venir como objeto
+				const reviewStatus =
+					typeof loadedItem.review_status === 'object'
+						? (loadedItem.review_status as any)?.value
+						: loadedItem.review_status;
 				// Determinar en qué paso debe estar según el estado
-				if (loadedItem.review_status === 'approved') {
-					console.log('✅ Item aprobado, mostrando vista de detalle');
-					// NO mostrar steps, ir directo a vista de detalle
-					setCurrentStep('detail' as any); // Lo cambiaremos a un componente de detalle
-				} else if (loadedItem.review_status === 'reviewed') {
-					console.log('⏭️ Item revisado (pending approval), saltando al Step 3');
+				if (reviewStatus === 'approved') {
+					setCurrentStep('detail');
+				} else if (reviewStatus === 'reviewed') {
 					setCurrentStep('grading');
 					setAutomaticGrade(loadedItem.suggested_grade || null);
-				} else if (loadedItem.review_status === 'in_review') {
-					console.log('⏭️ Item en revisión, saltando al Step 2');
+				} else if (reviewStatus === 'in_review') {
 					setCurrentStep('review');
+				} else if (reviewStatus === 'pending') {
+					dispatch(startReview({ branchId, itemId: parsedItemId }))
+						.unwrap()
+						.then((reviewedItem) => {
+							setItem(reviewedItem);
+							setCurrentStep('review');
+						})
+						.catch((error) => {
+							toast.error(`Error al iniciar revisión: ${error}`);
+						});
 				} else {
-					console.log('📝 Item pendiente, quedando en Step 1');
+					toast.error(`Item en estado desconocido: ${reviewStatus}`);
 				}
 			})
 			.catch((error) => {
-				console.error('❌ Error al cargar item:', error);
+				toast.error(`Error al cargar item: ${error}`);
 			});
 	}, [dispatch, itemId, branchId]);
 
@@ -143,48 +184,53 @@ const ItemReviewPage: React.FC = () => {
 		}
 	};
 
-	// STEP 1: Crear item con info básica
+	// STEP 1: Crear item con info básica (status=pending) y luego iniciar revisión (status=in_review)
 	const handleStep1Submit = async () => {
-		if (!branchId) {
-			console.error('No hay branchId disponible');
+		if (!branchId || !batchId) {
+			toast.error('No hay branchId o batchId disponible');
+			return;
+		}
+
+		if (!serialNumber || !productId) {
+			toast.warn('Faltan datos obligatorios');
 			return;
 		}
 
 		try {
-			const parsedBatchId = batchId ? parseInt(batchId) : 0;
+			const parsedBatchId = parseInt(batchId);
 
-			// Primero crear el item
-			const createdItem = await dispatch(
-				createItem({
-					branchId,
-					data: {
-						batch_id: parsedBatchId,
-						serial_number: serialNumber,
-						product_id: productId!,
-						equipment_type: equipmentType,
-					},
-				}),
-			).unwrap();
+			// Usar el hook de auto-save para guardar info básica
+			const createdItemId = await saveBasicInfo({
+				batch_id: parsedBatchId,
+				serial_number: serialNumber,
+				product_id: productId,
+				equipment_type: equipmentType,
+			});
 
-			// Luego iniciar la revisión
+			if (!createdItemId) {
+				toast.error('No se pudo crear el item');
+				return;
+			}
+
+			// Iniciar revisión (cambia status a in_review)
 			const result = await dispatch(
 				startReview({
 					branchId,
-					itemId: createdItem.id,
+					itemId: createdItemId,
 				}),
 			).unwrap();
 
 			setItem(result);
 			setCurrentStep('review');
 		} catch (error) {
-			console.error('Error al iniciar revisión:', error);
+			toast.error(`Error al iniciar revisión: ${error}`);
 		}
 	};
 
 	// STEP 2: Actualizar detalles técnicos (formulario específico por tipo)
 	const handleStep2Submit = async () => {
 		if (!branchId) {
-			console.error('No hay branchId disponible');
+			toast.error('No hay branchId disponible');
 			return;
 		}
 
@@ -209,26 +255,24 @@ const ItemReviewPage: React.FC = () => {
 			setAutomaticGrade(grading?.grade ?? null);
 			setCurrentStep('grading');
 		} catch (error) {
-			console.error('Error al actualizar detalles:', error);
+			toast.error(`Error al actualizar detalles: ${error}`);
 		}
 	};
 
 	// STEP 2 Complete: Handler para cuando Step2FullReview completa
 	const handleStep2Complete = async () => {
 		if (!branchId || !item) {
-			console.error('No hay branchId o item disponible');
+			toast.error('No hay branchId o item disponible');
 			return;
 		}
+		const reviewStatus = extractValue(item.review_status);
 
-		// Si el item ya fue revisado, ir directo al Step 3
-		if (item.review_status === 'reviewed' || item.review_status === 'approved') {
-			console.log('⚠️ Item ya revisado, saltando al Step 3');
+		if (reviewStatus === 'reviewed' || reviewStatus === 'approved') {
 			setCurrentStep('grading');
 			return;
 		}
 
 		try {
-			// Completar revisión para obtener calificación automática
 			const grading = await dispatch(
 				completeReview({
 					branchId,
@@ -240,14 +284,75 @@ const ItemReviewPage: React.FC = () => {
 			setItem({ ...item, ...grading }); // Actualizar item con datos de grading
 			setCurrentStep('grading');
 		} catch (error) {
-			console.error('Error al completar revisión:', error);
+			toast.error(`Error al completar revisión: ${error}`);
+		}
+	};
+
+	// STEP 3: Recalcular grado después de modificaciones
+	const handleRecalculateGrade = async () => {
+		if (!branchId || !item) {
+			toast.error('No hay branchId o item disponible para recalcular');
+			return;
+		}
+
+		try {
+			await dispatch(
+				reopenReview({
+					branchId,
+					itemId: item.id,
+				}),
+			).unwrap();
+
+			const grading = await dispatch(
+				completeReview({
+					branchId,
+					itemId: item.id,
+				}),
+			).unwrap();
+
+			setItem((prevItem: any) => ({
+				...prevItem,
+				suggested_grade: grading?.grade || grading?.suggested_grade,
+				confidence: grading?.confidence,
+				breakdown: grading?.breakdown,
+				review_status: grading?.review_status, // Actualizar estado también
+			}));
+
+			setAutomaticGrade(grading?.grade ?? null);
+		} catch (error) {
+			toast.error(`Error al recalcular grado: ${error}`);
+			throw error;
+		}
+	};
+
+	// STEP 3: Modificar revisión (volver a in_review)
+	const handleModifyReview = async () => {
+		if (!branchId || !item) {
+			toast.error('No hay branchId o item disponible para modificar');
+			return;
+		}
+
+		try {
+			toast.info('Volviendo a modo revisión (in_review)...');
+			const updatedItem = await dispatch(
+				reopenReview({
+					branchId,
+					itemId: item.id,
+				}),
+			).unwrap();
+
+			toast.success(`Item vuelto a in_review: ${updatedItem}`);
+			setItem(updatedItem);
+		} catch (error) {
+			toast.error(`Error al volver a in_review: ${error}`);
+			throw error;
 		}
 	};
 
 	// STEP 3: Aprobar ítem
 	const handleStep3Submit = async () => {
 		if (!branchId) {
-			console.error('No hay branchId disponible');
+			toast.error('No hay branchId disponible');
 			return;
 		}
 
@@ -265,7 +370,7 @@ const ItemReviewPage: React.FC = () => {
 			// Volver al listado
 			handleBack();
 		} catch (error) {
-			console.error('Error al aprobar ítem:', error);
+			toast.error(`Error al aprobar ítem: ${error}`);
 		}
 	};
 
@@ -276,6 +381,26 @@ const ItemReviewPage: React.FC = () => {
 	];
 
 	const currentStepIndex = steps.findIndex((s) => s.id === currentStep);
+
+	// Verificar si el item está aprobado (no se puede editar)
+	const isApproved =
+		item?.review_status === 'approved' || item?.review_status?.value === 'approved';
+
+	// Handler para navegar entre pasos haciendo click
+	const handleStepClick = (stepId: ReviewStep) => {
+		// No permitir navegación si está aprobado
+		if (isApproved) {
+			return;
+		}
+
+		// Si es creación (no hay item), solo permitir estar en 'basic'
+		if (!item && stepId !== 'basic') {
+			return;
+		}
+
+		// Permitir navegación libre entre los pasos disponibles
+		setCurrentStep(stepId);
+	};
 
 	return (
 		<PageWrapper name='item-review'>
@@ -299,46 +424,55 @@ const ItemReviewPage: React.FC = () => {
 				<Card className='mb-6'>
 					<CardBody>
 						<div className='flex items-center justify-between'>
-							{steps.map((step, index) => (
-								<React.Fragment key={step.id}>
-									<div
-										className={`flex items-center gap-3 ${
-											index <= currentStepIndex
-												? 'text-blue-600 dark:text-blue-400'
-												: 'text-gray-400'
-										}`}>
+							{steps.map((step, index) => {
+								const canNavigate = !isApproved && (item || step.id === 'basic');
+								return (
+									<React.Fragment key={step.id}>
 										<div
-											className={`flex h-10 w-10 items-center justify-center rounded-full ${
-												index < currentStepIndex
-													? 'bg-blue-600 text-white'
-													: index === currentStepIndex
-														? 'border-2 border-blue-600 bg-white text-blue-600 dark:bg-gray-900'
-														: 'border-2 border-gray-300 bg-white text-gray-400 dark:bg-gray-900'
-											}`}>
-											{index < currentStepIndex ? (
-												<Icon icon='HeroCheck' className='h-5 w-5' />
-											) : (
-												<Icon icon={step.icon} className='h-5 w-5' />
-											)}
+											onClick={() =>
+												canNavigate &&
+												handleStepClick(step.id as ReviewStep)
+											}
+											className={`flex items-center gap-3 ${
+												index <= currentStepIndex
+													? 'text-blue-600 dark:text-blue-400'
+													: 'text-gray-400'
+											} ${canNavigate ? 'cursor-pointer transition-all hover:scale-105' : 'cursor-not-allowed opacity-60'}`}>
+											<div
+												className={`flex h-10 w-10 items-center justify-center rounded-full ${
+													index < currentStepIndex
+														? 'bg-blue-600 text-white'
+														: index === currentStepIndex
+															? 'border-2 border-blue-600 bg-white text-blue-600 dark:bg-gray-900'
+															: 'border-2 border-gray-300 bg-white text-gray-400 dark:bg-gray-900'
+												}`}>
+												{index < currentStepIndex ? (
+													<Icon icon='HeroCheck' className='h-5 w-5' />
+												) : (
+													<Icon icon={step.icon} className='h-5 w-5' />
+												)}
+											</div>
+											<div className='hidden md:block'>
+												<p className='text-sm font-semibold'>
+													{step.label}
+												</p>
+												<p className='text-xs text-gray-500'>
+													Paso {index + 1}
+												</p>
+											</div>
 										</div>
-										<div className='hidden md:block'>
-											<p className='text-sm font-semibold'>{step.label}</p>
-											<p className='text-xs text-gray-500'>
-												Paso {index + 1}
-											</p>
-										</div>
-									</div>
-									{index < steps.length - 1 && (
-										<div
-											className={`h-0.5 flex-1 ${
-												index < currentStepIndex
-													? 'bg-blue-600'
-													: 'bg-gray-300'
-											}`}
-										/>
-									)}
-								</React.Fragment>
-							))}
+										{index < steps.length - 1 && (
+											<div
+												className={`h-0.5 flex-1 ${
+													index < currentStepIndex
+														? 'bg-blue-600'
+														: 'bg-gray-300'
+												}`}
+											/>
+										)}
+									</React.Fragment>
+								);
+							})}
 						</div>
 					</CardBody>
 				</Card>
@@ -379,9 +513,11 @@ const ItemReviewPage: React.FC = () => {
 										placeholder='Seleccionar producto'
 										options={productOptions}
 										value={
-											productOptions.find(
-												(opt) => opt.value === String(productId ?? ''),
-											) || productOptions[0]
+											productId
+												? productOptions.find(
+														(opt) => opt.value === String(productId),
+													) || null
+												: null
 										}
 										onChange={(option) => {
 											const selectedOption = option as TSelectOption | null;
@@ -453,19 +589,39 @@ const ItemReviewPage: React.FC = () => {
 									</div>
 								</div>
 
-								<div className='flex justify-end gap-3'>
+								{/* Botones de acción */}
+								<div className='flex justify-between gap-3'>
 									<Button
 										variant='outline'
 										onClick={handleBack}
 										isDisable={loading}>
-										Cancelar
+										{itemId && itemId !== 'create'
+											? 'Volver al Lote'
+											: 'Cancelar'}
 									</Button>
-									<Button
-										onClick={handleStep1Submit}
-										isDisable={loading || !serialNumber || !productId}>
-										Continuar
-										<Icon icon='HeroArrowRight' className='ml-2 h-4 w-4' />
-									</Button>
+
+									{/* Mostrar botón Continuar si es creación O si ya existe pero queremos avanzar */}
+									{itemId === 'create' || !itemId ? (
+										<Button
+											onClick={handleStep1Submit}
+											isDisable={loading || !serialNumber || !productId}>
+											Continuar
+											<Icon icon='HeroArrowRight' className='ml-2 h-4 w-4' />
+										</Button>
+									) : (
+										<div className='flex gap-3'>
+											<Button
+												variant='outline'
+												onClick={() => setCurrentStep('review')}
+												isDisable={loading}>
+												Ir a Revisión Técnica
+												<Icon
+													icon='HeroArrowRight'
+													className='ml-2 h-4 w-4'
+												/>
+											</Button>
+										</div>
+									)}
 								</div>
 							</div>
 						</CardBody>
@@ -478,9 +634,17 @@ const ItemReviewPage: React.FC = () => {
 						branchId={branchId}
 						itemId={item.id}
 						equipmentType={equipmentType}
-						initialValues={item?.attributes_json || {}}
+						initialValues={item?.details || item?.attributes_json || {}}
 						onBack={() => setCurrentStep('basic')}
 						onComplete={handleStep2Complete}
+						onItemUpdate={(updatedItem) => {
+							toast.info(`Item actualizado desde Step2: ${updatedItem}`);
+							setItem(updatedItem); // Actualizar el estado local del item
+						}}
+						onFieldChange={undefined} // Desactivar auto-save, solo guardado manual
+						isDirty={isDirty}
+						isSaving={isSaving}
+						lastSaved={lastSaved}
 					/>
 				)}
 
@@ -493,10 +657,149 @@ const ItemReviewPage: React.FC = () => {
 						confidence={item.confidence || 0}
 						breakdown={item.breakdown || {}}
 						serialNumber={serialNumber || item.serial_number}
-						equipmentType={equipmentType}
+						equipmentType={String(equipmentType)}
 						onBack={() => setCurrentStep('review')}
 						onComplete={handleBack}
+						onRecalculate={handleRecalculateGrade}
+						onModifyReview={handleModifyReview}
 					/>
+				)}
+
+				{/* VISTA DE DETALLE (read-only para items aprobados) */}
+				{currentStep === 'detail' && item && (
+					<div className='space-y-6'>
+						<Card>
+							<CardHeader>
+								<div className='flex items-center justify-between'>
+									<div>
+										<h3 className='text-lg font-semibold text-green-700 dark:text-green-300'>
+											✅ Revisión Completada y Aprobada
+										</h3>
+										<p className='text-sm text-gray-600 dark:text-gray-400'>
+											Este ítem ha sido revisado y aprobado exitosamente
+										</p>
+									</div>
+									<Button variant='outline' onClick={handleBack}>
+										<Icon icon='HeroArrowLeft' className='mr-2 h-4 w-4' />
+										Volver al Lote
+									</Button>
+								</div>
+							</CardHeader>
+							<CardBody className='space-y-6'>
+								{/* Información Básica */}
+								<div>
+									<h4 className='mb-3 font-semibold text-gray-900 dark:text-gray-100'>
+										Información Básica
+									</h4>
+									<dl className='grid grid-cols-2 gap-4'>
+										<div>
+											<dt className='text-sm font-medium text-gray-500'>
+												Número de Serie
+											</dt>
+											<dd className='mt-1 font-mono text-sm font-semibold text-gray-900 dark:text-gray-100'>
+												{item.serial_number}
+											</dd>
+										</div>
+										<div>
+											<dt className='text-sm font-medium text-gray-500'>
+												Tipo de Equipo
+											</dt>
+											<dd className='mt-1 text-sm text-gray-900 dark:text-gray-100'>
+												{extractValue(item.equipment_type)}
+											</dd>
+										</div>
+										<div>
+											<dt className='text-sm font-medium text-gray-500'>
+												Grado Final
+											</dt>
+											<dd className='mt-1'>
+												<span className='inline-flex rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-800'>
+													{extractValue(item.grade) ||
+														extractValue(item.suggested_grade) ||
+														'N/A'}
+												</span>
+											</dd>
+										</div>
+										<div>
+											<dt className='text-sm font-medium text-gray-500'>
+												Estado
+											</dt>
+											<dd className='mt-1'>
+												<span className='inline-flex rounded-full bg-blue-100 px-3 py-1 text-sm font-semibold text-blue-800'>
+													{extractValue(item.review_status)}
+												</span>
+											</dd>
+										</div>
+										<div>
+											<dt className='text-sm font-medium text-gray-500'>
+												Estado Comercial
+											</dt>
+											<dd className='mt-1'>
+												<span className='inline-flex rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-800'>
+													{extractValue(item.current_status)}
+												</span>
+											</dd>
+										</div>
+										<div>
+											<dt className='text-sm font-medium text-gray-500'>
+												Producto
+											</dt>
+											<dd className='mt-1 text-sm text-gray-900 dark:text-gray-100'>
+												{extractValue(item.product?.name)}
+											</dd>
+										</div>
+									</dl>
+								</div>
+
+								{/* Detalles Técnicos */}
+								{item.attributes_json &&
+									Object.keys(item.attributes_json).length > 0 && (
+										<div>
+											<h4 className='mb-3 font-semibold text-gray-900 dark:text-gray-100'>
+												Detalles Técnicos
+											</h4>
+											<div className='grid grid-cols-2 gap-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-800'>
+												{Object.entries(item.attributes_json).map(
+													([key, value]) => (
+														<div key={key}>
+															<dt className='text-xs font-medium text-gray-500'>
+																{key
+																	.replace(/_/g, ' ')
+																	.toUpperCase()}
+															</dt>
+															<dd className='mt-1 text-sm text-gray-900 dark:text-gray-100'>
+																{extractValue(value)}
+															</dd>
+														</div>
+													),
+												)}
+											</div>
+										</div>
+									)}
+
+								{/* También mostrar details si existe */}
+								{item.details && Object.keys(item.details).length > 0 && (
+									<div>
+										<h4 className='mb-3 font-semibold text-gray-900 dark:text-gray-100'>
+											Detalles Adicionales
+										</h4>
+										<div className='grid grid-cols-2 gap-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-800'>
+											{Object.entries(item.details).map(([key, value]) => (
+												<div key={key}>
+													<dt className='text-xs font-medium text-gray-500'>
+														{key.replace(/_/g, ' ').toUpperCase()}
+													</dt>
+													<dd className='mt-1 text-sm text-gray-900 dark:text-gray-100'>
+														{extractValue(value)}
+													</dd>
+												</div>
+											))}
+										</div>
+									</div>
+								)}
+							</CardBody>
+						</Card>
+					</div>
 				)}
 			</Container>
 		</PageWrapper>

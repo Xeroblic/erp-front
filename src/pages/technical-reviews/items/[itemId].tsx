@@ -17,6 +17,7 @@ import {
 	createItem,
 	startReview,
 	completeReview,
+	reopenReview,
 	selectItemsLoading,
 	fetchBatchById,
 	selectSelectedBatch,
@@ -29,8 +30,18 @@ import { fetchProducts } from '@/store/slices/products/productsSlice';
 import { Step2FullReview, Step3GradeReview } from '../components/items/ReviewSteps';
 import ItemDetail from '../components/items/ItemDetail';
 import type { UpdateItemDetailsPayload } from '@/interface/technicalReviews.interface';
+import { useAutoSaveReview } from '@/hooks/useAutoSaveReview';
 
 type ReviewStep = 'basic' | 'review' | 'grading';
+
+// Helper: Extraer valor de objeto o devolver string
+const extractValue = (field: any): string => {
+	if (!field) return '';
+	if (typeof field === 'object') {
+		return field.value || field.label || '';
+	}
+	return String(field);
+};
 
 const ItemReviewStandalonePage: React.FC = () => {
 	const { itemId, batchId: batchIdFromPath } = useParams<{ itemId: string; batchId?: string }>();
@@ -53,6 +64,44 @@ const ItemReviewStandalonePage: React.FC = () => {
 
 	// Step 3: Grading
 	const [automaticGrade, setAutomaticGrade] = useState<string | null>(null);
+
+	// STEP 1: Obtener batch_id (del path o query para compatibilidad)
+	const location = useLocation();
+	const query = new URLSearchParams(location.search);
+	const batchIdFromQuery = query.get('batch_id');
+	const batchIdToUse = batchIdFromPath || batchIdFromQuery;
+
+	// Auto-save hook
+	const {
+		isDirty,
+		isSaving,
+		lastSaved,
+		saveBasicInfo,
+		markDetailsChanged,
+		saveDetailsNow,
+		resetDirty,
+	} = useAutoSaveReview({
+		branchId,
+		itemId: itemId && itemId !== 'create' ? parseInt(itemId) : undefined,
+		reviewStatus: item?.review_status,
+		equipmentType: equipmentType || undefined,
+		onSaveSuccess: (savedItemId) => {
+			console.log('✅ Guardado exitoso, item ID:', savedItemId);
+			// Si era creación, actualizar URL con el ID real
+			if (itemId === 'create') {
+				if (batchIdToUse) {
+					navigate(`/technical-reviews/batches/${batchIdToUse}/items/${savedItemId}`, {
+						replace: true,
+					});
+				} else {
+					navigate(`/technical-reviews/items/${savedItemId}`, { replace: true });
+				}
+			}
+		},
+		onSaveError: (error) => {
+			console.error('❌ Error al guardar:', error);
+		},
+	});
 
 	// Cargar productos
 	useEffect(() => {
@@ -79,12 +128,6 @@ const ItemReviewStandalonePage: React.FC = () => {
 			navigate('/technical-reviews/items');
 		}
 	};
-
-	// STEP 1: Crear item (lee batch_id del path o query para compatibilidad)
-	const location = useLocation();
-	const query = new URLSearchParams(location.search);
-	const batchIdFromQuery = query.get('batch_id');
-	const batchIdToUse = batchIdFromPath || batchIdFromQuery;
 
 	// Si venimos con batch_id en query, intentar obtener el lote seleccionado
 	const selectedBatch = useAppSelector(selectSelectedBatch);
@@ -124,8 +167,8 @@ const ItemReviewStandalonePage: React.FC = () => {
 			return;
 		}
 
-		if (!equipmentType) {
-			console.error('No hay tipo de equipo seleccionado');
+		if (!equipmentType || !serialNumber || !productId) {
+			console.error('Faltan datos obligatorios');
 			return;
 		}
 
@@ -139,26 +182,26 @@ const ItemReviewStandalonePage: React.FC = () => {
 				equipment_type: equipmentType,
 			});
 
-			// Primero crear el item (batch_id puede venir por path o query)
-			const createdItem = await dispatch(
-				createItem({
-					branchId,
-					data: {
-						batch_id: batchIdValue,
-						serial_number: serialNumber,
-						product_id: productId!,
-						equipment_type: equipmentType,
-					},
-				}),
-			).unwrap();
+			// Usar el hook de auto-save para guardar info básica
+			const createdItemId = await saveBasicInfo({
+				batch_id: batchIdValue,
+				serial_number: serialNumber,
+				product_id: productId,
+				equipment_type: equipmentType,
+			});
 
-			console.log('✅ Item creado:', createdItem);
+			if (!createdItemId) {
+				console.error('No se pudo crear el item');
+				return;
+			}
 
-			// Luego iniciar la revisión
+			console.log('✅ Item creado:', createdItemId);
+
+			// Iniciar la revisión (cambia status a in_review)
 			const result = await dispatch(
 				startReview({
 					branchId,
-					itemId: createdItem.id,
+					itemId: createdItemId,
 				}),
 			).unwrap();
 
@@ -177,6 +220,96 @@ const ItemReviewStandalonePage: React.FC = () => {
 
 	const currentStepIndex = steps.findIndex((s) => s.id === currentStep);
 
+	// Verificar si el item está aprobado (no se puede editar)
+	const isApproved =
+		item?.review_status === 'approved' || item?.review_status?.value === 'approved';
+
+	// Handler para navegar entre pasos haciendo click
+	const handleStepClick = (stepId: ReviewStep) => {
+		// No permitir navegación si está aprobado
+		if (isApproved) {
+			return;
+		}
+
+		// Si es creación (no hay item), solo permitir estar en 'basic'
+		if (!item && stepId !== 'basic') {
+			return;
+		}
+
+		// Permitir navegación libre entre los pasos disponibles
+		setCurrentStep(stepId);
+	};
+
+	// STEP 3: Recalcular grado después de modificaciones
+	const handleRecalculateGrade = async () => {
+		if (!branchId || !item) {
+			console.error('No hay branchId o item disponible para recalcular');
+			return;
+		}
+
+		try {
+			console.log('🔄 Recalculando grado del item...');
+
+			// Paso 1: Volver el item a estado "in_review" (requerido por el backend)
+			console.log('📝 Paso 1: Volviendo item a estado in_review...');
+			await dispatch(
+				reopenReview({
+					branchId,
+					itemId: item.id,
+				}),
+			).unwrap();
+
+			// Paso 2: Completar revisión para calcular el nuevo grado
+			console.log('📝 Paso 2: Calculando nuevo grado...');
+			const grading = await dispatch(
+				completeReview({
+					branchId,
+					itemId: item.id,
+				}),
+			).unwrap();
+
+			console.log('✅ Grado recalculado:', grading);
+
+			// Actualizar el item con los nuevos valores de gradación
+			setItem((prevItem: any) => ({
+				...prevItem,
+				suggested_grade: grading?.grade || grading?.suggested_grade,
+				confidence: grading?.confidence,
+				breakdown: grading?.breakdown,
+				review_status: grading?.review_status, // Actualizar estado también
+			}));
+
+			setAutomaticGrade(grading?.grade ?? null);
+		} catch (error) {
+			console.error('❌ Error al recalcular grado:', error);
+			throw error;
+		}
+	};
+
+	// STEP 3: Modificar revisión (volver a in_review)
+	const handleModifyReview = async () => {
+		if (!branchId || !item) {
+			console.error('No hay branchId o item disponible para modificar');
+			return;
+		}
+
+		try {
+			console.log('🔙 Volviendo a modo revisión (in_review)...');
+			const updatedItem = await dispatch(
+				reopenReview({
+					branchId,
+					itemId: item.id,
+				}),
+			).unwrap();
+
+			console.log('✅ Item vuelto a in_review:', updatedItem);
+			setItem(updatedItem);
+		} catch (error) {
+			console.error('❌ Error al volver a in_review:', error);
+			throw error;
+		}
+	};
+
 	return (
 		<PageWrapper name='item-review-standalone'>
 			<Container>
@@ -190,8 +323,8 @@ const ItemReviewStandalonePage: React.FC = () => {
 							{item ? `Revisión #${item.id}` : 'Nueva Revisión'}
 						</h1>
 						<p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
-							{batchIdToUse 
-								? `Lote #${batchIdToUse}` 
+							{batchIdToUse
+								? `Lote #${batchIdToUse}`
 								: 'Revisión individual (sin lote)'}
 						</p>
 					</div>
@@ -201,46 +334,55 @@ const ItemReviewStandalonePage: React.FC = () => {
 				<Card className='mb-6'>
 					<CardBody>
 						<div className='flex items-center justify-between'>
-							{steps.map((step, index) => (
-								<React.Fragment key={step.id}>
-									<div
-										className={`flex items-center gap-3 ${
-											index <= currentStepIndex
-												? 'text-blue-600 dark:text-blue-400'
-												: 'text-gray-400'
-										}`}>
+							{steps.map((step, index) => {
+								const canNavigate = !isApproved && (item || step.id === 'basic');
+								return (
+									<React.Fragment key={step.id}>
 										<div
-											className={`flex h-10 w-10 items-center justify-center rounded-full ${
-												index < currentStepIndex
-													? 'bg-blue-600 text-white'
-													: index === currentStepIndex
-														? 'border-2 border-blue-600 bg-white text-blue-600 dark:bg-gray-900'
-														: 'border-2 border-gray-300 bg-white text-gray-400 dark:bg-gray-900'
-											}`}>
-											{index < currentStepIndex ? (
-												<Icon icon='HeroCheck' className='h-5 w-5' />
-											) : (
-												<Icon icon={step.icon} className='h-5 w-5' />
-											)}
+											onClick={() =>
+												canNavigate &&
+												handleStepClick(step.id as ReviewStep)
+											}
+											className={`flex items-center gap-3 ${
+												index <= currentStepIndex
+													? 'text-blue-600 dark:text-blue-400'
+													: 'text-gray-400'
+											} ${canNavigate ? 'cursor-pointer transition-all hover:scale-105' : 'cursor-not-allowed opacity-60'}`}>
+											<div
+												className={`flex h-10 w-10 items-center justify-center rounded-full ${
+													index < currentStepIndex
+														? 'bg-blue-600 text-white'
+														: index === currentStepIndex
+															? 'border-2 border-blue-600 bg-white text-blue-600 dark:bg-gray-900'
+															: 'border-2 border-gray-300 bg-white text-gray-400 dark:bg-gray-900'
+												}`}>
+												{index < currentStepIndex ? (
+													<Icon icon='HeroCheck' className='h-5 w-5' />
+												) : (
+													<Icon icon={step.icon} className='h-5 w-5' />
+												)}
+											</div>
+											<div className='hidden md:block'>
+												<p className='text-sm font-semibold'>
+													{step.label}
+												</p>
+												<p className='text-xs text-gray-500'>
+													Paso {index + 1}
+												</p>
+											</div>
 										</div>
-										<div className='hidden md:block'>
-											<p className='text-sm font-semibold'>{step.label}</p>
-											<p className='text-xs text-gray-500'>
-												Paso {index + 1}
-											</p>
-										</div>
-									</div>
-									{index < steps.length - 1 && (
-										<div
-											className={`h-0.5 flex-1 ${
-												index < currentStepIndex
-													? 'bg-blue-600'
-													: 'bg-gray-300'
-											}`}
-										/>
-									)}
-								</React.Fragment>
-							))}
+										{index < steps.length - 1 && (
+											<div
+												className={`h-0.5 flex-1 ${
+													index < currentStepIndex
+														? 'bg-blue-600'
+														: 'bg-gray-300'
+												}`}
+											/>
+										)}
+									</React.Fragment>
+								);
+							})}
 						</div>
 					</CardBody>
 				</Card>
@@ -300,13 +442,15 @@ const ItemReviewStandalonePage: React.FC = () => {
 											}))}
 											value={
 												productId
-													? {
-															value: String(productId),
-															label:
-																productsWithSerial.find(
-																	(p) => p.id === productId,
-																)?.name || '',
-														}
+													? productsWithSerial
+															.map((p) => ({
+																value: String(p.id),
+																label: `${p.name} - ${p.sku}`,
+															}))
+															.find(
+																(opt) =>
+																	opt.value === String(productId),
+															)
 													: null
 											}
 											onChange={(option) => {
@@ -324,8 +468,9 @@ const ItemReviewStandalonePage: React.FC = () => {
 									)}
 									{productsWithSerial.length === 0 && !productsLoading && (
 										<p className='mt-1 text-xs text-amber-600 dark:text-amber-400'>
-											⚠️ No hay productos con seguimiento por serie disponibles. 
-											Debe activar "Seguimiento por Serie" en la configuración del producto.
+											⚠️ No hay productos con seguimiento por serie
+											disponibles. Debe activar "Seguimiento por Serie" en la
+											configuración del producto.
 										</p>
 									)}
 								</div>
@@ -384,19 +529,32 @@ const ItemReviewStandalonePage: React.FC = () => {
 									</div>
 								</div>
 
-								<div className='flex justify-end gap-3'>
+								{/* Botones de acción */}
+								<div className='flex justify-between gap-3'>
 									<Button
 										variant='outline'
 										onClick={handleBack}
 										isDisable={loading}>
-										Cancelar
+										{itemId && itemId !== 'create' ? 'Volver' : 'Cancelar'}
 									</Button>
-									<Button
-										onClick={handleStep1Submit}
-										isDisable={loading || !serialNumber || !productId}>
-										Continuar
-										<Icon icon='HeroArrowRight' className='ml-2 h-4 w-4' />
-									</Button>
+
+									{/* Mostrar botón Continuar si es creación O Ir a Revisión si ya existe */}
+									{itemId === 'create' || !itemId ? (
+										<Button
+											onClick={handleStep1Submit}
+											isDisable={loading || !serialNumber || !productId}>
+											Continuar
+											<Icon icon='HeroArrowRight' className='ml-2 h-4 w-4' />
+										</Button>
+									) : (
+										<Button
+											variant='outline'
+											onClick={() => setCurrentStep('review')}
+											isDisable={loading}>
+											Ir a Revisión Técnica
+											<Icon icon='HeroArrowRight' className='ml-2 h-4 w-4' />
+										</Button>
+									)}
 								</div>
 							</div>
 						</CardBody>
@@ -418,18 +576,23 @@ const ItemReviewStandalonePage: React.FC = () => {
 						})()}
 						onBack={() => setCurrentStep('basic')}
 						onComplete={async () => {
-							// Si el item ya fue revisado, ir directo al Step 3
-							if (
-								item.review_status === 'reviewed' ||
-								item.review_status === 'approved'
-							) {
-								console.log('⚠️ Item ya revisado, saltando al Step 3');
+							// Extraer el valor del review_status (puede venir como objeto o string)
+							const reviewStatus = extractValue(item.review_status);
+
+							// Si el item ya fue revisado, ir directo al Step 3 (sin volver a completar)
+							if (reviewStatus === 'reviewed' || reviewStatus === 'approved') {
+								console.log(
+									'⚠️ Item ya revisado, saltando al Step 3 sin llamar complete-review',
+								);
 								setCurrentStep('grading');
 								return;
 							}
 
-							// Completar revisión para obtener calificación automática
+							// Solo llamar complete-review si está en 'in_review'
 							try {
+								console.log(
+									'📋 Item en revisión, completando para calcular grado...',
+								);
 								const grading = await dispatch(
 									completeReview({
 										branchId,
@@ -445,6 +608,14 @@ const ItemReviewStandalonePage: React.FC = () => {
 								console.error('Error al completar revisión:', error);
 							}
 						}}
+						onItemUpdate={(updatedItem) => {
+							console.log('📥 Item actualizado desde Step2:', updatedItem);
+							setItem(updatedItem); // Actualizar el estado local del item
+						}}
+						onFieldChange={markDetailsChanged} // Auto-save después de 30s de inactividad
+						isDirty={isDirty}
+						isSaving={isSaving}
+						lastSaved={lastSaved}
 					/>
 				)}
 
@@ -460,6 +631,8 @@ const ItemReviewStandalonePage: React.FC = () => {
 						equipmentType={equipmentType}
 						onBack={() => setCurrentStep('review')}
 						onComplete={handleBack}
+						onRecalculate={handleRecalculateGrade}
+						onModifyReview={handleModifyReview}
 					/>
 				)}
 			</Container>

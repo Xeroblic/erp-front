@@ -209,3 +209,37 @@ export const getSuggestedGrade = createAsyncThunk<
         }
     }
 );
+
+/**
+ * Volver item a estado "in_review" para permitir re-edición
+ * PATCH /api/branches/{branch}/technical-reviews/items/{item}/details
+ * 
+ * Intenta enviar review_status como parte del payload de details.
+ * El backend valida campos específicos pero puede aceptar campos adicionales.
+ */
+export const reopenReview = createAsyncThunk<
+    IItem,
+    { branchId: number; itemId: number },
+    { rejectValue: string }
+>(
+    'technicalReviews/reopenReview',
+    async ({ branchId, itemId }, { rejectWithValue }) => {
+        try {
+            const response = await ApiService.fetchData<{ data?: any }>({
+                url: ep(branchId, `/items/${itemId}/details`),
+                method: 'patch',
+                data: {
+                    review_status: 'in_review',
+                },
+            });
+
+            return normalizeObject(response.data) as IItem;
+        } catch (error: any) {
+            return rejectWithValue(
+                error?.response?.data?.message ??
+                error?.message ??
+                'No se pudo reabrir la revisión'
+            );
+        }
+    }
+);
