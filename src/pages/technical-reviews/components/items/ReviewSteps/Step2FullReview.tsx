@@ -2,7 +2,7 @@
  * Step2FullReview - Paso 2: Revisión Técnica Completa
  * Renderiza el formulario específico según el tipo de equipo
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import Card, { CardBody } from '@/components/ui/Card';
@@ -13,6 +13,10 @@ import type {
 	UpdateItemDetailsPayload,
 } from '@/interface/technicalReviews.interface';
 import NotebookForm from '../../forms/NotebookForm';
+import DesktopForm from '../../forms/DesktopForm';
+import AioForm from '../../forms/AioForm';
+import DockingForm from '../../forms/DockingForm';
+import MonitorForm from '../../forms/MonitorForm';
 
 interface Step2FullReviewProps {
 	branchId: number;
@@ -38,6 +42,12 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 	const [lastSaved, setLastSaved] = useState<Date | null>(null);
 	const [saveError, setSaveError] = useState<string | null>(null);
 
+	// Sincronizar formValues cuando cambien los initialValues o cuando se monte el componente
+	useEffect(() => {
+		console.log('🔄 Sincronizando initialValues:', initialValues);
+		setFormValues(initialValues);
+	}, [initialValues]);
+
 	const handleFieldChange = (field: string, value: any) => {
 		setFormValues((prev) => ({
 			...prev,
@@ -49,17 +59,22 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 	// Guardar parcial (sin finalizar revisión)
 	const handleSave = async () => {
 		try {
+			console.log('💾 Guardando formValues:', formValues);
+			console.log('📋 Equipment Type:', equipmentType);
+
 			await dispatch(
 				updateItemDetails({
 					branchId,
 					itemId,
 					data: formValues,
+					equipmentType, // Pasar el tipo de equipo para filtrar campos
 				}),
 			).unwrap();
 
 			setLastSaved(new Date());
 			setSaveError(null);
 		} catch (error: any) {
+			console.error('❌ Error al guardar:', error);
 			setSaveError(error || 'Error al guardar');
 		}
 	};
@@ -73,6 +88,7 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 					branchId,
 					itemId,
 					data: formValues,
+					equipmentType, // Pasar el tipo de equipo para filtrar campos
 				}),
 			).unwrap();
 
@@ -83,10 +99,50 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 		}
 	};
 
-	// Validación básica de campos requeridos
+	// Obtener mensaje de campos requeridos según tipo de equipo
+	const getRequiredFieldsMessage = () => {
+		switch (equipmentType) {
+			case 'notebook':
+			case 'desktop':
+			case 'aio':
+				return 'Marca, Modelo, Procesador, RAM y Almacenamiento';
+			case 'docking':
+				return 'Marca y Modelo';
+			case 'monitor':
+				return 'Marca y Modelo';
+			default:
+				return 'Marca y Modelo';
+		}
+	};
+
+	// Validación básica de campos requeridos según tipo de equipo
 	const isFormValid = () => {
-		const required = ['brand', 'model', 'processor', 'ram_size', 'storage_size'];
-		return required.every((field) => formValues[field as keyof UpdateItemDetailsPayload]);
+		let required: string[] = [];
+
+		switch (equipmentType) {
+			case 'notebook':
+				required = ['brand', 'model', 'processor', 'ram_size', 'storage_size'];
+				break;
+			case 'desktop':
+				required = ['brand', 'model', 'processor', 'ram_size', 'storage_size'];
+				break;
+			case 'aio':
+				required = ['brand', 'model', 'processor', 'ram_size', 'storage_size'];
+				break;
+			case 'docking':
+				required = ['brand', 'model'];
+				break;
+			case 'monitor':
+				required = ['brand', 'model'];
+				break;
+			default:
+				required = ['brand', 'model'];
+		}
+
+		return required.every((field) => {
+			const value = formValues[field as keyof UpdateItemDetailsPayload];
+			return value !== undefined && value !== null && value !== '';
+		});
 	};
 
 	// Renderizar el formulario según el tipo
@@ -103,70 +159,34 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 
 			case 'desktop':
 				return (
-					<Card>
-						<CardBody className='p-6'>
-							<div className='rounded-lg bg-yellow-50 p-4 dark:bg-yellow-950'>
-								<p className='text-sm text-yellow-800 dark:text-yellow-300'>
-									<Icon
-										icon='HeroExclamationTriangle'
-										className='mr-2 inline h-5 w-5'
-									/>
-									TODO: Implementar DesktopForm
-								</p>
-							</div>
-						</CardBody>
-					</Card>
+					<DesktopForm
+						branchId={branchId}
+						values={formValues}
+						onChange={handleFieldChange}
+					/>
 				);
 
 			case 'aio':
 				return (
-					<Card>
-						<CardBody className='p-6'>
-							<div className='rounded-lg bg-yellow-50 p-4 dark:bg-yellow-950'>
-								<p className='text-sm text-yellow-800 dark:text-yellow-300'>
-									<Icon
-										icon='HeroExclamationTriangle'
-										className='mr-2 inline h-5 w-5'
-									/>
-									TODO: Implementar AioForm
-								</p>
-							</div>
-						</CardBody>
-					</Card>
+					<AioForm branchId={branchId} values={formValues} onChange={handleFieldChange} />
 				);
 
 			case 'docking':
 				return (
-					<Card>
-						<CardBody className='p-6'>
-							<div className='rounded-lg bg-yellow-50 p-4 dark:bg-yellow-950'>
-								<p className='text-sm text-yellow-800 dark:text-yellow-300'>
-									<Icon
-										icon='HeroExclamationTriangle'
-										className='mr-2 inline h-5 w-5'
-									/>
-									TODO: Implementar DockingForm
-								</p>
-							</div>
-						</CardBody>
-					</Card>
+					<DockingForm
+						branchId={branchId}
+						values={formValues}
+						onChange={handleFieldChange}
+					/>
 				);
 
 			case 'monitor':
 				return (
-					<Card>
-						<CardBody className='p-6'>
-							<div className='rounded-lg bg-yellow-50 p-4 dark:bg-yellow-950'>
-								<p className='text-sm text-yellow-800 dark:text-yellow-300'>
-									<Icon
-										icon='HeroExclamationTriangle'
-										className='mr-2 inline h-5 w-5'
-									/>
-									TODO: Implementar MonitorForm
-								</p>
-							</div>
-						</CardBody>
-					</Card>
+					<MonitorForm
+						branchId={branchId}
+						values={formValues}
+						onChange={handleFieldChange}
+					/>
 				);
 
 			default:
@@ -244,8 +264,8 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 									Campos requeridos pendientes
 								</h4>
 								<p className='mt-1 text-sm text-yellow-800 dark:text-yellow-200'>
-									Asegúrate de completar: Marca, Modelo, Procesador, RAM y
-									Almacenamiento antes de finalizar.
+									Asegúrate de completar: {getRequiredFieldsMessage()} antes de
+									finalizar.
 								</p>
 							</div>
 						</div>

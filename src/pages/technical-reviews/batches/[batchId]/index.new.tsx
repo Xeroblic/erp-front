@@ -40,7 +40,7 @@ const BatchDetailPage: React.FC = () => {
 	};
 
 	const handleViewItem = (itemId: number) => {
-		navigate(`/technical-reviews/items/${itemId}`);
+		navigate(`/technical-reviews/batches/${batchId}/${itemId}`);
 	};
 
 	return (
@@ -50,18 +50,13 @@ const BatchDetailPage: React.FC = () => {
 					<Button variant='outline' onClick={handleBack} icon='HeroArrowLeft'>
 						Volver
 					</Button>
-					<div className='ml-3'>
-						<h1 className='text-2xl font-bold text-gray-900 dark:text-white'>
-							{batch?.code || `Lote #${batchId}`}
-						</h1>
-						{batch && (
-							<p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
-								{batch.warehouse?.name || `Bodega #${batch.warehouse_id}`} •
-								Entrada: {batch.entry_date}
-							</p>
-						)}
-					</div>
 				</SubheaderLeft>
+				<SubheaderRight>
+					<span className='text-lg font-semibold'>
+						Lote #{batchId}
+						{batch?.code && ` - ${batch.code}`}
+					</span>
+				</SubheaderRight>
 			</Subheader>
 
 			<Container>
@@ -88,10 +83,12 @@ const BatchDetailPage: React.FC = () => {
 					</Card>
 				) : (
 					<>
-						{/* Información general del lote */}
-						<BatchDetail batch={batch} />
+						{/* Información del lote con BatchDetail */}
+						<div className='mb-6'>
+							<BatchDetail batch={batch} loading={batchLoading} />
+						</div>
 
-						{/* Tabs con equipos por tipo */}
+						{/* Tabs con items por tipo usando BatchTabs */}
 						<BatchTabs batch={batch} onItemClick={handleViewItem} />
 					</>
 				)}

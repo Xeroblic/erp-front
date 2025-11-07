@@ -1,6 +1,5 @@
 /**
- * NotebookForm - Formulario de revisión técnica para Notebooks
- * Mapea todos los campos según UpdateItemDetailsPayload
+ * AioForm - Formulario de revisión técnica para All-in-One
  */
 import React, { useEffect } from 'react';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
@@ -13,30 +12,23 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchValidationRulesByType } from '@/store/slices/technicalReviews';
 import type { UpdateItemDetailsPayload } from '@/interface/technicalReviews.interface';
 
-interface NotebookFormProps {
+interface AioFormProps {
 	branchId: number;
 	values: Partial<UpdateItemDetailsPayload>;
 	onChange: (field: string, value: any) => void;
 	readOnly?: boolean;
 }
 
-const NotebookForm: React.FC<NotebookFormProps> = ({
-	branchId,
-	values,
-	onChange,
-	readOnly = false,
-}) => {
+const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly = false }) => {
 	const dispatch = useAppDispatch();
-	const validationRules = useAppSelector((s) => s.technicalReviews.validationRules);
 	const validationLoading = useAppSelector((s) => s.technicalReviews.validationRulesLoading);
 
 	useEffect(() => {
 		if (branchId) {
-			dispatch(fetchValidationRulesByType({ branchId, equipmentType: 'notebook' }));
+			dispatch(fetchValidationRulesByType({ branchId, equipmentType: 'aio' }));
 		}
 	}, [dispatch, branchId]);
 
-	// Opciones para selects
 	const generalConditionOptions: TSelectOption[] = [
 		{ value: 'like_new', label: 'Como nuevo' },
 		{ value: 'good_shape', label: 'Buen estado' },
@@ -52,26 +44,12 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 		{ value: 'no_incluye', label: 'No incluye' },
 	];
 
-	const batteryStatusOptions: TSelectOption[] = [
-		{ value: 'excellent', label: 'Excelente (>80%)' },
-		{ value: 'good', label: 'Bueno (60-80%)' },
-		{ value: 'fair', label: 'Regular (40-60%)' },
-		{ value: 'poor', label: 'Malo (<40%)' },
-		{ value: 'not_detected', label: 'No detectada' },
-	];
-
 	const conditionOptions: TSelectOption[] = [
 		{ value: 'ok', label: 'OK' },
 		{ value: 'worn', label: 'Desgastado' },
 		{ value: 'missing_pieces', label: 'Faltan piezas' },
 		{ value: 'scratched', label: 'Rayado' },
 		{ value: 'broken', label: 'Roto' },
-	];
-
-	const keyboardLayoutOptions: TSelectOption[] = [
-		{ value: 'ES', label: 'Español (ES)' },
-		{ value: 'EN', label: 'Inglés (EN)' },
-		{ value: 'LA', label: 'Latinoamericano (LA)' },
 	];
 
 	const ramTypeOptions: TSelectOption[] = [
@@ -115,9 +93,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 				<CardBody className='p-6'>
 					<div className='flex items-center justify-center py-8'>
 						<Icon icon='HeroArrowPath' className='mr-2 h-5 w-5 animate-spin' />
-						<span className='text-gray-600 dark:text-gray-400'>
-							Cargando reglas de validación...
-						</span>
+						<span className='text-gray-600 dark:text-gray-400'>Cargando reglas...</span>
 					</div>
 				</CardBody>
 			</Card>
@@ -137,7 +113,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 				<CardBody className='space-y-4'>
 					<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
 						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+							<label className='mb-2 block text-sm font-medium'>
 								Marca <span className='text-red-500'>*</span>
 							</label>
 							<Input
@@ -145,12 +121,12 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 								name='brand'
 								value={values.brand || ''}
 								onChange={handleInputChange}
-								placeholder='Ej: Dell, HP, Lenovo'
+								placeholder='Ej: Dell, HP'
 								disabled={readOnly}
 							/>
 						</div>
 						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+							<label className='mb-2 block text-sm font-medium'>
 								Modelo <span className='text-red-500'>*</span>
 							</label>
 							<Input
@@ -158,25 +134,23 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 								name='model'
 								value={values.model || ''}
 								onChange={handleInputChange}
-								placeholder='Ej: LATITUDE 5420'
+								placeholder='Ej: Optiplex 5270'
 								disabled={readOnly}
 							/>
 						</div>
 						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-								Línea
-							</label>
+							<label className='mb-2 block text-sm font-medium'>Línea</label>
 							<Input
 								type='text'
 								name='line'
 								value={values.line || ''}
 								onChange={handleInputChange}
-								placeholder='Ej: Latitude, EliteBook'
+								placeholder='Ej: AIO'
 								disabled={readOnly}
 							/>
 						</div>
 						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+							<label className='mb-2 block text-sm font-medium'>
 								Estado General <span className='text-red-500'>*</span>
 							</label>
 							<SelectReact
@@ -190,7 +164,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 										: null
 								}
 								onChange={handleSelectChange('general_condition')}
-								placeholder='Seleccionar estado'
+								placeholder='Seleccionar'
 								isDisabled={readOnly}
 							/>
 						</div>
@@ -209,7 +183,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 				<CardBody className='space-y-4'>
 					<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
 						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+							<label className='mb-2 block text-sm font-medium'>
 								Procesador <span className='text-red-500'>*</span>
 							</label>
 							<Input
@@ -217,12 +191,12 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 								name='processor'
 								value={values.processor || ''}
 								onChange={handleInputChange}
-								placeholder='Ej: I7-1165G7 2.80GHz'
+								placeholder='Ej: i5 8500 @3,0'
 								disabled={readOnly}
 							/>
 						</div>
 						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+							<label className='mb-2 block text-sm font-medium'>
 								Tamaño RAM <span className='text-red-500'>*</span>
 							</label>
 							<Input
@@ -230,27 +204,23 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 								name='ram_size'
 								value={values.ram_size || ''}
 								onChange={handleInputChange}
-								placeholder='Ej: 16 GB'
+								placeholder='Ej: 8 GB'
 								disabled={readOnly}
 							/>
 						</div>
 						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-								Slots RAM
-							</label>
+							<label className='mb-2 block text-sm font-medium'>Slots RAM</label>
 							<Input
 								type='text'
 								name='ram_slots'
 								value={values.ram_slots || ''}
 								onChange={handleInputChange}
-								placeholder='Ej: 8X2, 16X1'
+								placeholder='Ej: 8X1'
 								disabled={readOnly}
 							/>
 						</div>
 						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-								Tipo RAM
-							</label>
+							<label className='mb-2 block text-sm font-medium'>Tipo RAM</label>
 							<SelectReact
 								name='ram_type'
 								options={ramTypeOptions}
@@ -261,12 +231,12 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 										: null
 								}
 								onChange={handleSelectChange('ram_type')}
-								placeholder='Seleccionar tipo'
+								placeholder='Seleccionar'
 								isDisabled={readOnly}
 							/>
 						</div>
 						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+							<label className='mb-2 block text-sm font-medium'>
 								Tamaño Almacenamiento <span className='text-red-500'>*</span>
 							</label>
 							<Input
@@ -274,12 +244,12 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 								name='storage_size'
 								value={values.storage_size || ''}
 								onChange={handleInputChange}
-								placeholder='Ej: 512 GB, 1 TB'
+								placeholder='Ej: 512 GB'
 								disabled={readOnly}
 							/>
 						</div>
 						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+							<label className='mb-2 block text-sm font-medium'>
 								Tecnología Almacenamiento
 							</label>
 							<SelectReact
@@ -293,12 +263,12 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 										: null
 								}
 								onChange={handleSelectChange('storage_technology')}
-								placeholder='Seleccionar tecnología'
+								placeholder='Seleccionar'
 								isDisabled={readOnly}
 							/>
 						</div>
 						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+							<label className='mb-2 block text-sm font-medium'>
 								Sistema Operativo
 							</label>
 							<Input
@@ -308,6 +278,16 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 								onChange={handleInputChange}
 								placeholder='Ej: Windows 11 Pro'
 								disabled={readOnly}
+							/>
+						</div>
+						<div className='flex items-center pt-8'>
+							<Checkbox
+								id='has_cd_drive'
+								name='has_cd_drive'
+								checked={values.has_cd_drive || false}
+								onChange={handleCheckboxChange('has_cd_drive')}
+								disabled={readOnly}
+								label='Tiene Unidad CD/DVD'
 							/>
 						</div>
 					</div>
@@ -325,7 +305,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 				<CardBody className='space-y-4'>
 					<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
 						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+							<label className='mb-2 block text-sm font-medium'>
 								Pulgadas <span className='text-red-500'>*</span>
 							</label>
 							<Input
@@ -333,12 +313,12 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 								name='screen_inches'
 								value={values.screen_inches || ''}
 								onChange={handleInputChange}
-								placeholder='Ej: 14"FHD, 15.6"'
+								placeholder='Ej: 22"FHD'
 								disabled={readOnly}
 							/>
 						</div>
 						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+							<label className='mb-2 block text-sm font-medium'>
 								Estado Pantalla
 							</label>
 							<SelectReact
@@ -370,109 +350,18 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 				</CardBody>
 			</Card>
 
-			{/* Teclado y Touchpad */}
-			<Card>
-				<CardHeader>
-					<div className='flex items-center gap-2'>
-						<Icon icon='HeroCommandLine' className='h-5 w-5 text-orange-600' />
-						<h3 className='text-lg font-semibold'>Teclado y Touchpad</h3>
-					</div>
-				</CardHeader>
-				<CardBody className='space-y-4'>
-					<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-								Estado Teclado
-							</label>
-							<SelectReact
-								name='keyboard_condition'
-								options={conditionOptions}
-								value={
-									values.keyboard_condition
-										? conditionOptions.find(
-												(o) => o.value === values.keyboard_condition,
-											) || null
-										: null
-								}
-								onChange={handleSelectChange('keyboard_condition')}
-								placeholder='Seleccionar'
-								isDisabled={readOnly}
-							/>
-						</div>
-						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-								Layout Teclado
-							</label>
-							<SelectReact
-								name='keyboard_layout'
-								options={keyboardLayoutOptions}
-								value={
-									values.keyboard_layout
-										? keyboardLayoutOptions.find(
-												(o) => o.value === values.keyboard_layout,
-											) || null
-										: null
-								}
-								onChange={handleSelectChange('keyboard_layout')}
-								placeholder='Seleccionar'
-								isDisabled={readOnly}
-							/>
-						</div>
-						<div className='flex items-center'>
-							<Checkbox
-								id='has_numeric_keypad'
-								name='has_numeric_keypad'
-								checked={values.has_numeric_keypad || false}
-								onChange={handleCheckboxChange('has_numeric_keypad')}
-								disabled={readOnly}
-								label='Tiene Teclado Numérico'
-							/>
-						</div>
-						<div className='flex items-center'>
-							<Checkbox
-								id='has_backlit_keyboard'
-								name='has_backlit_keyboard'
-								checked={values.has_backlit_keyboard || false}
-								onChange={handleCheckboxChange('has_backlit_keyboard')}
-								disabled={readOnly}
-								label='Teclado Retroiluminado'
-							/>
-						</div>
-						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-								Estado Touchpad
-							</label>
-							<SelectReact
-								name='touchpad_condition'
-								options={conditionOptions}
-								value={
-									values.touchpad_condition
-										? conditionOptions.find(
-												(o) => o.value === values.touchpad_condition,
-											) || null
-										: null
-								}
-								onChange={handleSelectChange('touchpad_condition')}
-								placeholder='Seleccionar'
-								isDisabled={readOnly}
-							/>
-						</div>
-					</div>
-				</CardBody>
-			</Card>
-
-			{/* Carcasa y Estructura */}
+			{/* Carcasa y Soporte */}
 			<Card>
 				<CardHeader>
 					<div className='flex items-center gap-2'>
 						<Icon icon='HeroShieldCheck' className='h-5 w-5 text-gray-600' />
-						<h3 className='text-lg font-semibold'>Carcasa y Estructura</h3>
+						<h3 className='text-lg font-semibold'>Carcasa y Soporte</h3>
 					</div>
 				</CardHeader>
-				<CardBody className='space-y-4'>
+				<CardBody>
 					<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
 						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+							<label className='mb-2 block text-sm font-medium'>
 								Estado Cubierta
 							</label>
 							<SelectReact
@@ -491,39 +380,20 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 							/>
 						</div>
 						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-								Estado Bisagras
+							<label className='mb-2 block text-sm font-medium'>
+								Estado Soporte/Base
 							</label>
 							<SelectReact
-								name='hinge_condition'
+								name='stand_condition'
 								options={conditionOptions}
 								value={
-									values.hinge_condition
+									values.stand_condition
 										? conditionOptions.find(
-												(o) => o.value === values.hinge_condition,
+												(o) => o.value === values.stand_condition,
 											) || null
 										: null
 								}
-								onChange={handleSelectChange('hinge_condition')}
-								placeholder='Seleccionar'
-								isDisabled={readOnly}
-							/>
-						</div>
-						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-								Estado Base
-							</label>
-							<SelectReact
-								name='bottom_condition'
-								options={conditionOptions}
-								value={
-									values.bottom_condition
-										? conditionOptions.find(
-												(o) => o.value === values.bottom_condition,
-											) || null
-										: null
-								}
-								onChange={handleSelectChange('bottom_condition')}
+								onChange={handleSelectChange('stand_condition')}
 								placeholder='Seleccionar'
 								isDisabled={readOnly}
 							/>
@@ -532,15 +402,15 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 				</CardBody>
 			</Card>
 
-			{/* Cargador y Batería */}
+			{/* Cargador */}
 			<Card>
 				<CardHeader>
 					<div className='flex items-center gap-2'>
 						<Icon icon='HeroBolt' className='h-5 w-5 text-yellow-600' />
-						<h3 className='text-lg font-semibold'>Cargador y Batería</h3>
+						<h3 className='text-lg font-semibold'>Cargador</h3>
 					</div>
 				</CardHeader>
-				<CardBody className='space-y-4'>
+				<CardBody>
 					<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
 						<div className='flex items-center'>
 							<Checkbox
@@ -554,7 +424,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 						</div>
 						{values.includes_charger && (
 							<div>
-								<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+								<label className='mb-2 block text-sm font-medium'>
 									Estado Cargador
 								</label>
 								<SelectReact
@@ -573,133 +443,20 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 								/>
 							</div>
 						)}
-						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-								Estado Batería
-							</label>
-							<SelectReact
-								name='battery_status'
-								options={batteryStatusOptions}
-								value={
-									values.battery_status
-										? batteryStatusOptions.find(
-												(o) => o.value === values.battery_status,
-											) || null
-										: null
-								}
-								onChange={handleSelectChange('battery_status')}
-								placeholder='Seleccionar'
-								isDisabled={readOnly}
-							/>
-						</div>
 					</div>
 				</CardBody>
 			</Card>
 
-			{/* Puertos y Conectividad */}
+			{/* Conectividad - Simplificada para AIO */}
 			<Card>
 				<CardHeader>
 					<div className='flex items-center gap-2'>
 						<Icon icon='HeroSignal' className='h-5 w-5 text-blue-600' />
-						<h3 className='text-lg font-semibold'>Puertos y Conectividad</h3>
+						<h3 className='text-lg font-semibold'>Conectividad</h3>
 					</div>
 				</CardHeader>
 				<CardBody className='space-y-4'>
-					<div className='grid grid-cols-2 gap-4 md:grid-cols-4'>
-						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-								VGA
-							</label>
-							<Input
-								type='number'
-								name='vga_ports'
-								value={values.vga_ports || 0}
-								onChange={handleNumberChange('vga_ports')}
-								min='0'
-								disabled={readOnly}
-							/>
-						</div>
-						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-								HDMI
-							</label>
-							<Input
-								type='number'
-								name='hdmi_ports'
-								value={values.hdmi_ports || 0}
-								onChange={handleNumberChange('hdmi_ports')}
-								min='0'
-								disabled={readOnly}
-							/>
-						</div>
-						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-								DisplayPort
-							</label>
-							<Input
-								type='number'
-								name='displayport_ports'
-								value={values.displayport_ports || 0}
-								onChange={handleNumberChange('displayport_ports')}
-								min='0'
-								disabled={readOnly}
-							/>
-						</div>
-						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-								USB-A
-							</label>
-							<Input
-								type='number'
-								name='usb_a_ports'
-								value={values.usb_a_ports || 0}
-								onChange={handleNumberChange('usb_a_ports')}
-								min='0'
-								disabled={readOnly}
-							/>
-						</div>
-						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-								USB-C
-							</label>
-							<Input
-								type='number'
-								name='usb_c_ports'
-								value={values.usb_c_ports || 0}
-								onChange={handleNumberChange('usb_c_ports')}
-								min='0'
-								disabled={readOnly}
-							/>
-						</div>
-						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-								SD Readers
-							</label>
-							<Input
-								type='number'
-								name='sd_readers'
-								value={values.sd_readers || 0}
-								onChange={handleNumberChange('sd_readers')}
-								min='0'
-								disabled={readOnly}
-							/>
-						</div>
-						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-								RJ45
-							</label>
-							<Input
-								type='number'
-								name='rj45_ports'
-								value={values.rj45_ports || 0}
-								onChange={handleNumberChange('rj45_ports')}
-								min='0'
-								disabled={readOnly}
-							/>
-						</div>
-					</div>
-
-					<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
+					<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
 						<div className='flex items-center'>
 							<Checkbox
 								id='has_wifi'
@@ -720,33 +477,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 								label='Tiene Bluetooth'
 							/>
 						</div>
-						<div className='flex items-center'>
-							<Checkbox
-								id='all_ports_functional'
-								name='all_ports_functional'
-								checked={values.all_ports_functional || false}
-								onChange={handleCheckboxChange('all_ports_functional')}
-								disabled={readOnly}
-								label='Todos los Puertos Funcionales'
-							/>
-						</div>
 					</div>
-
-					{!values.all_ports_functional && (
-						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-								Cantidad de Puertos Defectuosos
-							</label>
-							<Input
-								type='number'
-								name='defective_ports_count'
-								value={values.defective_ports_count || 0}
-								onChange={handleNumberChange('defective_ports_count')}
-								min='0'
-								disabled={readOnly}
-							/>
-						</div>
-					)}
 				</CardBody>
 			</Card>
 
@@ -764,7 +495,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 						value={values.observations || ''}
 						onChange={handleTextareaChange}
 						rows={4}
-						placeholder='Notas adicionales sobre el estado del equipo...'
+						placeholder='Notas adicionales...'
 						disabled={readOnly}
 					/>
 				</CardBody>
@@ -773,4 +504,4 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 	);
 };
 
-export default NotebookForm;
+export default AioForm;

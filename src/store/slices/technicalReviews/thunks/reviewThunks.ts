@@ -45,6 +45,45 @@ export const startReview = createAsyncThunk<
 );
 
 /**
+ * Campos de puertos que solo aplican a ciertos tipos de equipos
+ */
+const PORT_FIELDS = [
+    'vga_ports',
+    'hdmi_ports',
+    'displayport_ports',
+    'usb_a_ports',
+    'usb_c_ports',
+    'sd_readers',
+    'rj45_ports',
+    'dvi_ports',
+    'all_ports_functional',
+    'defective_ports_count',
+    'defective_ports_critical_count',
+];
+
+/**
+ * Filtra campos según el tipo de equipo para evitar errores de SQL
+ * AIO y Desktop no tienen columnas de puertos en sus tablas
+ */
+const filterFieldsByEquipmentType = (data: UpdateItemDetailsPayload, equipmentType?: string): UpdateItemDetailsPayload => {
+    // Si no conocemos el tipo, no filtramos (modo seguro)
+    if (!equipmentType) {
+        return data;
+    }
+
+    const filteredData = { ...data };
+
+    // AIO y Desktop no tienen columnas de puertos
+    if (equipmentType === 'aio' || equipmentType === 'desktop') {
+        PORT_FIELDS.forEach(field => {
+            delete filteredData[field];
+        });
+    }
+
+    return filteredData;
+};
+
+/**
  * Paso 2: Guardar/actualizar detalles técnicos (repetible)
  * PATCH /api/branches/{branch}/technical-reviews/items/{item}/details
  * Acepta charger_status a nivel raíz; backend lo normaliza a extra_attributes
@@ -52,16 +91,19 @@ export const startReview = createAsyncThunk<
  */
 export const updateItemDetails = createAsyncThunk<
     IItem,
-    { branchId: number; itemId: number; data: UpdateItemDetailsPayload },
+    { branchId: number; itemId: number; data: UpdateItemDetailsPayload; equipmentType?: string },
     { rejectValue: string }
 >(
     'technicalReviews/updateItemDetails',
-    async ({ branchId, itemId, data }, { rejectWithValue }) => {
+    async ({ branchId, itemId, data, equipmentType }, { rejectWithValue }) => {
         try {
+            // Filtrar campos según el tipo de equipo
+            const filteredData = filterFieldsByEquipmentType(data, equipmentType);
+
             const response = await ApiService.fetchData<{ data?: any }>({
                 url: ep(branchId, `/items/${itemId}/details`),
                 method: 'patch',
-                data,
+                data: filteredData,
             });
 
             return normalizeObject(response.data) as IItem;

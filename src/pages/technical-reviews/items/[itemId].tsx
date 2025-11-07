@@ -24,6 +24,7 @@ import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import { fetchProducts } from '@/store/slices/products/productsSlice';
 import { Step2FullReview, Step3GradeReview } from '../components/items/ReviewSteps';
+import ItemDetail from '../components/items/ItemDetail';
 import type { UpdateItemDetailsPayload } from '@/interface/technicalReviews.interface';
 
 type ReviewStep = 'basic' | 'review' | 'grading';
@@ -178,6 +179,17 @@ const ItemReviewStandalonePage: React.FC = () => {
 					</CardBody>
 				</Card>
 
+				{/* Item Detail Card - Solo si existe el item */}
+				{item && currentStep !== 'basic' && (
+					<ItemDetail
+						item={item}
+						loading={loading}
+						onEditClick={() => setCurrentStep('review')}
+						onApproveClick={() => setCurrentStep('grading')}
+						showActions={false}
+					/>
+				)}
+
 				{/* STEP 1: Basic Info */}
 				{currentStep === 'basic' && (
 					<Card>
@@ -324,11 +336,25 @@ const ItemReviewStandalonePage: React.FC = () => {
 						branchId={branchId}
 						itemId={item.id}
 						equipmentType={equipmentType}
-						initialValues={
-							(item.attributes_json || {}) as Partial<UpdateItemDetailsPayload>
-						}
+						initialValues={(() => {
+							const attrs = (item.attributes_json ||
+								{}) as Partial<UpdateItemDetailsPayload>;
+							console.log('📋 InitialValues para Step2:', attrs);
+							console.log('📋 Item completo:', item);
+							return attrs;
+						})()}
 						onBack={() => setCurrentStep('basic')}
 						onComplete={async () => {
+							// Si el item ya fue revisado, ir directo al Step 3
+							if (
+								item.review_status === 'reviewed' ||
+								item.review_status === 'approved'
+							) {
+								console.log('⚠️ Item ya revisado, saltando al Step 3');
+								setCurrentStep('grading');
+								return;
+							}
+
 							// Completar revisión para obtener calificación automática
 							try {
 								const grading = await dispatch(
@@ -338,6 +364,7 @@ const ItemReviewStandalonePage: React.FC = () => {
 									}),
 								).unwrap();
 
+								console.log('✅ Grading completo:', grading);
 								setAutomaticGrade(grading?.suggested_grade ?? null);
 								setItem(grading);
 								setCurrentStep('grading');

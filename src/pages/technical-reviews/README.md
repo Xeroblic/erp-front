@@ -1,5 +1,17 @@
 # Technical Reviews - Pages Structure
 
+---
+
+## 📚 DOCUMENTACIÓN PRINCIPAL
+
+### ⭐ Lee estos documentos PRIMERO:
+
+- **[EXECUTIVE_SUMMARY.md](./EXECUTIVE_SUMMARY.md)** → 📊 Estado actual (69%), métricas, próximos pasos
+- **[STRUCTURE_ANALYSIS.md](./STRUCTURE_ANALYSIS.md)** → 🔍 Análisis detallado: qué existe vs qué falta
+- **[TODO_CRITICAL.md](./TODO_CRITICAL.md)** → ✅ Plan de 3 días para completar el módulo
+
+---
+
 ## 📁 Estructura de Páginas
 
 ```
