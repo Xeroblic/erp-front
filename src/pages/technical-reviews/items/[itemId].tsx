@@ -15,17 +15,16 @@ import {
 	fetchItemDetail,
 	createItem,
 	startReview,
-	updateItemDetails,
 	completeReview,
-	approveItem,
 	selectItemsLoading,
 	type EquipmentType,
 } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
-import Textarea from '@/components/form/Textarea';
 import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import { fetchProducts } from '@/store/slices/products/productsSlice';
+import { Step2FullReview, Step3GradeReview } from '../components/items/ReviewSteps';
+import type { UpdateItemDetailsPayload } from '@/interface/technicalReviews.interface';
 
 type ReviewStep = 'basic' | 'review' | 'grading';
 
@@ -46,9 +45,6 @@ const ItemReviewStandalonePage: React.FC = () => {
 	const [serialNumber, setSerialNumber] = useState('');
 	const [productId, setProductId] = useState<number | null>(null);
 	const [equipmentType, setEquipmentType] = useState<EquipmentType>('notebook');
-
-	// Step 2: Review Details
-	const [reviewDetails, setReviewDetails] = useState<any>({});
 
 	// Step 3: Grading
 	const [automaticGrade, setAutomaticGrade] = useState<string | null>(null);
@@ -105,62 +101,6 @@ const ItemReviewStandalonePage: React.FC = () => {
 			setCurrentStep('review');
 		} catch (error) {
 			console.error('Error al iniciar revisión:', error);
-		}
-	};
-
-	// STEP 2: Actualizar detalles técnicos
-	const handleStep2Submit = async () => {
-		if (!branchId) {
-			console.error('No hay branchId disponible');
-			return;
-		}
-
-		try {
-			await dispatch(
-				updateItemDetails({
-					branchId,
-					itemId: item.id,
-					data: reviewDetails,
-				}),
-			).unwrap();
-
-			// Completar revisión para obtener calificación automática
-			const grading = await dispatch(
-				completeReview({
-					branchId,
-					itemId: item.id,
-				}),
-			).unwrap();
-
-			setAutomaticGrade(grading?.grade ?? null);
-			setCurrentStep('grading');
-		} catch (error) {
-			console.error('Error al actualizar detalles:', error);
-		}
-	};
-
-	// STEP 3: Aprobar ítem
-	const handleStep3Submit = async () => {
-		if (!branchId) {
-			console.error('No hay branchId disponible');
-			return;
-		}
-
-		try {
-			await dispatch(
-				approveItem({
-					branchId,
-					itemId: item.id,
-					data: {
-						grade: automaticGrade ?? 'C', // Usar el grado automático o C por defecto
-					},
-				}),
-			).unwrap();
-
-			// Volver al listado
-			handleBack();
-		} catch (error) {
-			console.error('Error al aprobar ítem:', error);
 		}
 	};
 
@@ -292,7 +232,8 @@ const ItemReviewStandalonePage: React.FC = () => {
 													: null
 											}
 											onChange={(option) => {
-												const selectedOption = option as TSelectOption | null;
+												const selectedOption =
+													option as TSelectOption | null;
 												setProductId(
 													selectedOption
 														? parseInt(selectedOption.value)
@@ -378,138 +319,48 @@ const ItemReviewStandalonePage: React.FC = () => {
 				)}
 
 				{/* STEP 2: Full Review */}
-				{currentStep === 'review' && (
-					<Card>
-						<CardHeader>
-							<h3 className='text-lg font-semibold'>
-								Paso 2: Revisión Técnica Completa
-							</h3>
-							<p className='text-sm text-gray-600'>
-								Formulario específico para {equipmentType}
-							</p>
-						</CardHeader>
-						<CardBody>
-							<div className='space-y-6'>
-								<div className='rounded-lg bg-yellow-50 p-4 dark:bg-yellow-950'>
-									<p className='text-sm text-yellow-800 dark:text-yellow-300'>
-										<Icon
-											icon='HeroExclamationTriangle'
-											className='mr-2 inline h-5 w-5'
-										/>
-										TODO: Implementar formulario específico para {equipmentType}
-									</p>
-									<p className='mt-2 text-xs text-yellow-700 dark:text-yellow-400'>
-										Aquí se renderizará el formulario correspondiente
-										(NotebookForm, DesktopForm, AioForm, etc.)
-									</p>
-								</div>
+				{currentStep === 'review' && item && branchId && (
+					<Step2FullReview
+						branchId={branchId}
+						itemId={item.id}
+						equipmentType={equipmentType}
+						initialValues={
+							(item.attributes_json || {}) as Partial<UpdateItemDetailsPayload>
+						}
+						onBack={() => setCurrentStep('basic')}
+						onComplete={async () => {
+							// Completar revisión para obtener calificación automática
+							try {
+								const grading = await dispatch(
+									completeReview({
+										branchId,
+										itemId: item.id,
+									}),
+								).unwrap();
 
-								{/* Ejemplo de campos genéricos */}
-								<div>
-									<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-										Observaciones
-									</label>
-									<Textarea
-										value={reviewDetails.observations || ''}
-										onChange={(e) =>
-											setReviewDetails({
-												...reviewDetails,
-												observations: e.target.value,
-											})
-										}
-										className='w-full rounded-lg border border-gray-300 p-2.5 text-sm'
-										rows={4}
-										placeholder='Notas sobre el estado del equipo...'
-									/>
-								</div>
-
-								<div className='flex justify-between'>
-									<Button
-										variant='outline'
-										onClick={() => setCurrentStep('basic')}>
-										<Icon icon='HeroArrowLeft' className='mr-2 h-4 w-4' />
-										Volver
-									</Button>
-									<Button onClick={handleStep2Submit} isDisable={loading}>
-										Finalizar Revisión
-										<Icon icon='HeroArrowRight' className='ml-2 h-4 w-4' />
-									</Button>
-								</div>
-							</div>
-						</CardBody>
-					</Card>
+								setAutomaticGrade(grading?.suggested_grade ?? null);
+								setItem(grading);
+								setCurrentStep('grading');
+							} catch (error) {
+								console.error('Error al completar revisión:', error);
+							}
+						}}
+					/>
 				)}
 
 				{/* STEP 3: Automatic Grading */}
-				{currentStep === 'grading' && (
-					<Card>
-						<CardHeader>
-							<h3 className='text-lg font-semibold'>
-								Paso 3: Calificación Automática
-							</h3>
-							<p className='text-sm text-gray-600'>
-								Revisión completada, calificación generada
-							</p>
-						</CardHeader>
-						<CardBody>
-							<div className='space-y-6'>
-								{/* Automatic Grade Display */}
-								<div className='rounded-lg bg-green-50 p-6 text-center dark:bg-green-950'>
-									<Icon
-										icon='HeroCheckBadge'
-										className='mx-auto h-16 w-16 text-green-600 dark:text-green-400'
-									/>
-									<p className='mt-4 text-2xl font-bold text-green-800 dark:text-green-300'>
-										Calificación: {automaticGrade || 'Calculando...'}
-									</p>
-									<p className='mt-2 text-sm text-green-700 dark:text-green-400'>
-										La calificación se calculó automáticamente según los
-										criterios configurados
-									</p>
-								</div>
-
-								{/* Summary */}
-								<div className='rounded-lg border border-gray-200 p-4'>
-									<h4 className='mb-3 font-semibold'>Resumen de la Revisión</h4>
-									<dl className='space-y-2 text-sm'>
-										<div className='flex justify-between'>
-											<dt className='text-gray-600'>Serie:</dt>
-											<dd className='font-mono font-medium'>
-												{serialNumber}
-											</dd>
-										</div>
-										<div className='flex justify-between'>
-											<dt className='text-gray-600'>Tipo:</dt>
-											<dd className='font-medium'>{equipmentType}</dd>
-										</div>
-										<div className='flex justify-between'>
-											<dt className='text-gray-600'>Producto:</dt>
-											<dd className='font-medium'>#{productId}</dd>
-										</div>
-										<div className='flex justify-between'>
-											<dt className='text-gray-600'>Lote:</dt>
-											<dd className='font-medium text-gray-400'>
-												Sin lote (revisión individual)
-											</dd>
-										</div>
-									</dl>
-								</div>
-
-								<div className='flex justify-between'>
-									<Button
-										variant='outline'
-										onClick={() => setCurrentStep('review')}>
-										<Icon icon='HeroArrowLeft' className='mr-2 h-4 w-4' />
-										Modificar Revisión
-									</Button>
-									<Button onClick={handleStep3Submit} isDisable={loading}>
-										<Icon icon='HeroCheck' className='mr-2 h-4 w-4' />
-										Aprobar y Finalizar
-									</Button>
-								</div>
-							</div>
-						</CardBody>
-					</Card>
+				{currentStep === 'grading' && item && branchId && (
+					<Step3GradeReview
+						branchId={branchId}
+						itemId={item.id}
+						suggestedGrade={item.suggested_grade || automaticGrade || 'C'}
+						confidence={item.confidence}
+						breakdown={item.breakdown}
+						serialNumber={serialNumber}
+						equipmentType={equipmentType}
+						onBack={() => setCurrentStep('review')}
+						onComplete={handleBack}
+					/>
 				)}
 			</Container>
 		</PageWrapper>
