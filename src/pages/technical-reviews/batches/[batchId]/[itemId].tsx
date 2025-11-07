@@ -86,22 +86,34 @@ const ItemReviewPage: React.FC = () => {
 			return;
 		}
 
+		console.log('📥 Cargando item existente:', parsedItemId);
+
 		// Cargar el item si ya existe
 		dispatch(fetchItemDetail({ branchId, itemId: parsedItemId }))
 			.unwrap()
 			.then((loadedItem) => {
+				console.log('✅ Item cargado:', loadedItem);
+				
 				// Sincronizar estados locales con el item cargado
 				setItem(loadedItem);
 				if (loadedItem.serial_number) setSerialNumber(loadedItem.serial_number);
 				if (loadedItem.product_id) setProductId(loadedItem.product_id);
 				if (loadedItem.equipment_type) setEquipmentType(loadedItem.equipment_type);
 
-				// Si el item ya está en revisión, ir directamente al paso 2
-				if (loadedItem.review_status === 'in_review') {
-					setCurrentStep('review');
-				} else if (loadedItem.review_status === 'reviewed' || loadedItem.suggested_grade) {
+				// Determinar en qué paso debe estar según el estado
+				if (loadedItem.review_status === 'approved') {
+					console.log('✅ Item aprobado, mostrando vista de detalle');
+					// NO mostrar steps, ir directo a vista de detalle
+					setCurrentStep('detail' as any); // Lo cambiaremos a un componente de detalle
+				} else if (loadedItem.review_status === 'reviewed') {
+					console.log('⏭️ Item revisado (pending approval), saltando al Step 3');
 					setCurrentStep('grading');
 					setAutomaticGrade(loadedItem.suggested_grade || null);
+				} else if (loadedItem.review_status === 'in_review') {
+					console.log('⏭️ Item en revisión, saltando al Step 2');
+					setCurrentStep('review');
+				} else {
+					console.log('📝 Item pendiente, quedando en Step 1');
 				}
 			})
 			.catch((error) => {

@@ -40,7 +40,7 @@ const BatchDetailPage: React.FC = () => {
 	};
 
 	const handleViewItem = (itemId: number) => {
-		navigate(`/technical-reviews/items/${itemId}`);
+		navigate(`/technical-reviews/batches/${batchId}/items/${itemId}`);
 	};
 
 	return (
@@ -62,6 +62,16 @@ const BatchDetailPage: React.FC = () => {
 						)}
 					</div>
 				</SubheaderLeft>
+
+				<SubheaderRight>
+					{/* Botón para registrar serie dentro del lote (ruta semántica REST) */}
+					<Button
+						color='green'
+						onClick={() => navigate(`/technical-reviews/batches/${batch?.id}/items/create`)}>
+						<Icon icon='HeroPlus' className='mr-2 h-4 w-4' />
+						Registrar Serie
+					</Button>
+				</SubheaderRight>
 			</Subheader>
 
 			<Container>

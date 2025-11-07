@@ -377,6 +377,16 @@ const contentRoutes: IRoutePersonalizada[] = [
 		authority: cfg.technical.subPages.reviews.authority,
 	},
 	{
+		path: '/technical-reviews/batches/:batchId/items/create',
+		element: <ItemReview />,
+		authority: cfg.technical.subPages.reviews.authority,
+	},
+	{
+		path: '/technical-reviews/batches/:batchId/items/:itemId',
+		element: <BatchItemReview />,
+		authority: cfg.technical.subPages.reviews.authority,
+	},
+	{
 		path: '/technical-reviews/items',
 		element: <ItemsList />,
 		authority: cfg.technical.subPages.reviews.authority,

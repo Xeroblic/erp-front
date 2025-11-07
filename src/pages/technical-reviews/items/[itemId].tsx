@@ -4,6 +4,7 @@
  * Reutiliza la misma lógica que [batchId]/[itemId].tsx pero sin batch_id
  */
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
@@ -17,6 +18,8 @@ import {
 	startReview,
 	completeReview,
 	selectItemsLoading,
+	fetchBatchById,
+	selectSelectedBatch,
 	type EquipmentType,
 } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
@@ -30,7 +33,7 @@ import type { UpdateItemDetailsPayload } from '@/interface/technicalReviews.inte
 type ReviewStep = 'basic' | 'review' | 'grading';
 
 const ItemReviewStandalonePage: React.FC = () => {
-	const { itemId } = useParams<{ itemId: string }>();
+	const { itemId, batchId: batchIdFromPath } = useParams<{ itemId: string; batchId?: string }>();
 	const navigate = useNavigate();
 	const dispatch = useAppDispatch();
 	const { branchId } = useCurrentBranch();
@@ -45,7 +48,8 @@ const ItemReviewStandalonePage: React.FC = () => {
 	// Step 1: Basic Info
 	const [serialNumber, setSerialNumber] = useState('');
 	const [productId, setProductId] = useState<number | null>(null);
-	const [equipmentType, setEquipmentType] = useState<EquipmentType>('notebook');
+	const [equipmentType, setEquipmentType] = useState<EquipmentType | null>(null);
+	const [hasUserSelectedType, setHasUserSelectedType] = useState(false);
 
 	// Step 3: Grading
 	const [automaticGrade, setAutomaticGrade] = useState<string | null>(null);
@@ -57,6 +61,9 @@ const ItemReviewStandalonePage: React.FC = () => {
 		}
 	}, [dispatch, branchId]);
 
+	// Filtrar solo productos con seguimiento por serie
+	const productsWithSerial = products.filter((p) => p.serial_tracking === true);
+
 	useEffect(() => {
 		if (!itemId || itemId === 'create' || !branchId) return;
 
@@ -66,29 +73,86 @@ const ItemReviewStandalonePage: React.FC = () => {
 	}, [dispatch, itemId, branchId]);
 
 	const handleBack = () => {
-		navigate('/technical-reviews/items');
+		if (batchIdToUse) {
+			navigate(`/technical-reviews/batches/${batchIdToUse}`);
+		} else {
+			navigate('/technical-reviews/items');
+		}
 	};
 
-	// STEP 1: Crear item sin lote
+	// STEP 1: Crear item (lee batch_id del path o query para compatibilidad)
+	const location = useLocation();
+	const query = new URLSearchParams(location.search);
+	const batchIdFromQuery = query.get('batch_id');
+	const batchIdToUse = batchIdFromPath || batchIdFromQuery;
+
+	// Si venimos con batch_id en query, intentar obtener el lote seleccionado
+	const selectedBatch = useAppSelector(selectSelectedBatch);
+
+	useEffect(() => {
+		if (!batchIdToUse) return;
+		const parsed = Number(batchIdToUse);
+		if (isNaN(parsed)) return;
+
+		// Si no tenemos el batch en el store o es otro, traerlo
+		if (!selectedBatch || selectedBatch.id !== parsed) {
+			dispatch(fetchBatchById({ branchId: branchId!, batchId: parsed }));
+		}
+	}, [batchIdToUse, selectedBatch, dispatch, branchId]);
+
+	// Cuando tengamos el batch en el store, preseleccionar el tipo de equipo dominante
+	// SOLO si el usuario NO ha seleccionado manualmente un tipo
+	useEffect(() => {
+		if (!batchIdToUse || !selectedBatch || hasUserSelectedType) return;
+		const parsed = Number(batchIdToUse);
+		if (isNaN(parsed) || selectedBatch.id !== parsed) return;
+
+		const byType = selectedBatch.items_summary?.by_equipment_type;
+		if (!byType) return;
+
+		// Escoger el tipo con mayor cantidad
+		const entries = Object.entries(byType) as Array<[EquipmentType, number]>;
+		if (entries.length === 0) return;
+		entries.sort((a, b) => b[1] - a[1]);
+		const dominant = entries[0][0];
+		setEquipmentType(dominant);
+	}, [batchIdToUse, selectedBatch, hasUserSelectedType]);
+
 	const handleStep1Submit = async () => {
 		if (!branchId) {
 			console.error('No hay branchId disponible');
 			return;
 		}
 
+		if (!equipmentType) {
+			console.error('No hay tipo de equipo seleccionado');
+			return;
+		}
+
 		try {
-			// Primero crear el item (sin batch_id = 0)
+			const batchIdValue = batchIdToUse ? Number(batchIdToUse) : 0;
+
+			console.log('🚀 Creando item con:', {
+				batch_id: batchIdValue,
+				serial_number: serialNumber,
+				product_id: productId,
+				equipment_type: equipmentType,
+			});
+
+			// Primero crear el item (batch_id puede venir por path o query)
 			const createdItem = await dispatch(
 				createItem({
 					branchId,
 					data: {
-						batch_id: 0, // Sin lote
+						batch_id: batchIdValue,
 						serial_number: serialNumber,
 						product_id: productId!,
 						equipment_type: equipmentType,
 					},
 				}),
 			).unwrap();
+
+			console.log('✅ Item creado:', createdItem);
 
 			// Luego iniciar la revisión
 			const result = await dispatch(
@@ -126,7 +190,9 @@ const ItemReviewStandalonePage: React.FC = () => {
 							{item ? `Revisión #${item.id}` : 'Nueva Revisión'}
 						</h1>
 						<p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
-							Revisión individual (sin lote)
+							{batchIdToUse 
+								? `Lote #${batchIdToUse}` 
+								: 'Revisión individual (sin lote)'}
 						</p>
 					</div>
 				</div>
@@ -228,7 +294,7 @@ const ItemReviewStandalonePage: React.FC = () => {
 									) : (
 										<SelectReact
 											name='product_id'
-											options={products.map((p) => ({
+											options={productsWithSerial.map((p) => ({
 												value: String(p.id),
 												label: `${p.name} - ${p.sku}`,
 											}))}
@@ -237,7 +303,7 @@ const ItemReviewStandalonePage: React.FC = () => {
 													? {
 															value: String(productId),
 															label:
-																products.find(
+																productsWithSerial.find(
 																	(p) => p.id === productId,
 																)?.name || '',
 														}
@@ -252,9 +318,15 @@ const ItemReviewStandalonePage: React.FC = () => {
 														: null,
 												);
 											}}
-											placeholder='Seleccionar producto'
+											placeholder='Seleccionar producto con seguimiento por serie'
 											isDisabled={productsLoading}
 										/>
+									)}
+									{productsWithSerial.length === 0 && !productsLoading && (
+										<p className='mt-1 text-xs text-amber-600 dark:text-amber-400'>
+											⚠️ No hay productos con seguimiento por serie disponibles. 
+											Debe activar "Seguimiento por Serie" en la configuración del producto.
+										</p>
 									)}
 								</div>
 
@@ -294,9 +366,10 @@ const ItemReviewStandalonePage: React.FC = () => {
 											<button
 												key={type.value}
 												type='button'
-												onClick={() =>
-													setEquipmentType(type.value as EquipmentType)
-												}
+												onClick={() => {
+													setEquipmentType(type.value as EquipmentType);
+													setHasUserSelectedType(true);
+												}}
 												className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
 													equipmentType === type.value
 														? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950'
@@ -331,7 +404,7 @@ const ItemReviewStandalonePage: React.FC = () => {
 				)}
 
 				{/* STEP 2: Full Review */}
-				{currentStep === 'review' && item && branchId && (
+				{currentStep === 'review' && item && branchId && equipmentType && (
 					<Step2FullReview
 						branchId={branchId}
 						itemId={item.id}
@@ -376,7 +449,7 @@ const ItemReviewStandalonePage: React.FC = () => {
 				)}
 
 				{/* STEP 3: Automatic Grading */}
-				{currentStep === 'grading' && item && branchId && (
+				{currentStep === 'grading' && item && branchId && equipmentType && (
 					<Step3GradeReview
 						branchId={branchId}
 						itemId={item.id}
