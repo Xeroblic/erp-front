@@ -5,13 +5,15 @@
  * 2. Full Review (formulario específico por tipo)
  * 3. Automatic Grading (calificación automática + aprobación)
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
+import Input from '@/components/form/Input';
+import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
 	fetchItemDetail,
@@ -24,6 +26,8 @@ import {
 	type EquipmentType,
 } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import { fetchProducts } from '@/store/slices/products/productsSlice';
+import Textarea from '@/components/form/Textarea';
 
 type ReviewStep = 'basic' | 'review' | 'grading';
 
@@ -34,6 +38,8 @@ const ItemReviewPage: React.FC = () => {
 	const { branchId } = useCurrentBranch();
 
 	const loading = useAppSelector(selectItemsLoading);
+	const products = useAppSelector((s) => s.products.items);
+	const productsLoading = useAppSelector((s) => s.products.loading);
 
 	const [currentStep, setCurrentStep] = useState<ReviewStep>('basic');
 	const [item, setItem] = useState<any>(null);
@@ -49,6 +55,18 @@ const ItemReviewPage: React.FC = () => {
 	// Step 3: Grading
 	const [automaticGrade, setAutomaticGrade] = useState<string | null>(null);
 
+	// Cargar productos al montar el componente
+	useEffect(() => {
+		if (branchId) {
+			dispatch(
+				fetchProducts({
+					branchId,
+					params: { page: 1, per_page: 100 },
+				}),
+			);
+		}
+	}, [dispatch, branchId]);
+
 	useEffect(() => {
 		if (!itemId || !branchId) return;
 
@@ -57,6 +75,20 @@ const ItemReviewPage: React.FC = () => {
 		// Cargar el item si ya existe
 		dispatch(fetchItemDetail({ branchId, itemId: parsedItemId }));
 	}, [dispatch, itemId, branchId]);
+
+	// Convertir productos a opciones para SelectReact
+	const productOptions: TSelectOption[] = useMemo(() => {
+		if (!products || products.length === 0) {
+			return [{ value: '', label: 'No hay productos disponibles' }];
+		}
+		return [
+			{ value: '', label: 'Seleccionar producto' },
+			...products.map((product) => ({
+				value: String(product.id),
+				label: `${product.name} - ${product.sku || ''}`,
+			})),
+		];
+	}, [products]);
 
 	const handleBack = () => {
 		if (batchId) {
@@ -250,11 +282,12 @@ const ItemReviewPage: React.FC = () => {
 									<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
 										Número de Serie <span className='text-red-500'>*</span>
 									</label>
-									<input
+									<Input
+										name='serial_number'
 										type='text'
 										value={serialNumber}
-										onChange={(e) => setSerialNumber(e.target.value)}
-										className='w-full rounded-lg border border-gray-300 p-2.5 font-mono text-sm'
+										onChange={(e: any) => setSerialNumber(e.target.value)}
+										className='font-mono'
 										placeholder='Ej: SN001234567'
 									/>
 								</div>
@@ -264,19 +297,30 @@ const ItemReviewPage: React.FC = () => {
 									<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
 										Producto <span className='text-red-500'>*</span>
 									</label>
-									<select
-										value={productId ?? ''}
-										onChange={(e) =>
-											setProductId(
-												e.target.value ? parseInt(e.target.value) : null,
-											)
+									<SelectReact
+										name='product_id'
+										placeholder='Seleccionar producto'
+										options={productOptions}
+										value={
+											productOptions.find(
+												(opt) => opt.value === String(productId ?? ''),
+											) || productOptions[0]
 										}
-										className='w-full rounded-lg border border-gray-300 p-2.5 text-sm'>
-										<option value=''>Seleccionar producto</option>
-										{/* TODO: Cargar productos dinámicamente */}
-										<option value='1'>Producto A</option>
-										<option value='2'>Producto B</option>
-									</select>
+										onChange={(option) => {
+											const selectedOption = option as TSelectOption | null;
+											setProductId(
+												selectedOption?.value
+													? parseInt(selectedOption.value)
+													: null,
+											);
+										}}
+										isDisabled={productsLoading}
+									/>
+									{productsLoading && (
+										<p className='mt-1 text-xs text-gray-500'>
+											Cargando productos...
+										</p>
+									)}
 								</div>
 
 								{/* Equipment Type */}
@@ -383,7 +427,7 @@ const ItemReviewPage: React.FC = () => {
 									<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
 										Observaciones
 									</label>
-									<textarea
+									<Textarea
 										value={reviewDetails.observations || ''}
 										onChange={(e) =>
 											setReviewDetails({

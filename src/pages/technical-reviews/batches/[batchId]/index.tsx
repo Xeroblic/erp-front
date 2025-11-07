@@ -5,6 +5,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
+import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -73,29 +74,31 @@ const BatchDetailPage: React.FC = () => {
 
 	return (
 		<PageWrapper name='batch-detail'>
-			<Container>
-				{/* Header */}
-				<div className='mb-6 flex items-center gap-4'>
-					<Button variant='outline' onClick={handleBack}>
-						<Icon icon='HeroArrowLeft' className='h-4 w-4' />
+			<Subheader>
+				<SubheaderLeft>
+					<Button variant='outline' onClick={handleBack} icon='HeroArrowLeft'>
+						Volver
 					</Button>
-					<div className='flex-1'>
-						<h1 className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
-							Lote #{batchId}
+					<div className='ml-3'>
+						<h1 className='text-2xl font-bold text-gray-900 dark:text-white'>
+							{batch?.code || `Lote #${batchId}`}
 						</h1>
 						{batch && (
 							<p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
-								{batch.warehouse?.name || `Bodega #${batch.warehouse_id}`} -
+								{batch.warehouse?.name || `Bodega #${batch.warehouse_id}`} •
 								Entrada: {batch.entry_date}
 							</p>
 						)}
 					</div>
-					<Button onClick={handleCreateItem}>
-						<Icon icon='HeroPlus' className='mr-2 h-4 w-4' />
+				</SubheaderLeft>
+				<SubheaderRight>
+					<Button color='blue' onClick={handleCreateItem} icon='HeroPlus'>
 						Agregar Equipo
 					</Button>
-				</div>
+				</SubheaderRight>
+			</Subheader>
 
+			<Container>
 				{batchLoading ? (
 					<Card>
 						<CardBody>

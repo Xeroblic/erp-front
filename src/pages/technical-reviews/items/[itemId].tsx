@@ -22,6 +22,10 @@ import {
 	type EquipmentType,
 } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import Textarea from '@/components/form/Textarea';
+import Input from '@/components/form/Input';
+import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
+import { fetchProducts } from '@/store/slices/products/productsSlice';
 
 type ReviewStep = 'basic' | 'review' | 'grading';
 
@@ -32,6 +36,8 @@ const ItemReviewStandalonePage: React.FC = () => {
 	const { branchId } = useCurrentBranch();
 
 	const loading = useAppSelector(selectItemsLoading);
+	const products = useAppSelector((s) => s.products.items);
+	const productsLoading = useAppSelector((s) => s.products.loading);
 
 	const [currentStep, setCurrentStep] = useState<ReviewStep>('basic');
 	const [item, setItem] = useState<any>(null);
@@ -46,6 +52,13 @@ const ItemReviewStandalonePage: React.FC = () => {
 
 	// Step 3: Grading
 	const [automaticGrade, setAutomaticGrade] = useState<string | null>(null);
+
+	// Cargar productos
+	useEffect(() => {
+		if (branchId) {
+			dispatch(fetchProducts({ branchId, params: { page: 1, per_page: 100 } }));
+		}
+	}, [dispatch, branchId]);
 
 	useEffect(() => {
 		if (!itemId || itemId === 'create' || !branchId) return;
@@ -241,11 +254,12 @@ const ItemReviewStandalonePage: React.FC = () => {
 									<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
 										Número de Serie <span className='text-red-500'>*</span>
 									</label>
-									<input
+									<Input
 										type='text'
+										name='serial_number'
 										value={serialNumber}
 										onChange={(e) => setSerialNumber(e.target.value)}
-										className='w-full rounded-lg border border-gray-300 p-2.5 font-mono text-sm'
+										className='font-mono'
 										placeholder='Ej: SN001234567'
 									/>
 								</div>
@@ -255,19 +269,40 @@ const ItemReviewStandalonePage: React.FC = () => {
 									<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
 										Producto <span className='text-red-500'>*</span>
 									</label>
-									<select
-										value={productId ?? ''}
-										onChange={(e) =>
-											setProductId(
-												e.target.value ? parseInt(e.target.value) : null,
-											)
-										}
-										className='w-full rounded-lg border border-gray-300 p-2.5 text-sm'>
-										<option value=''>Seleccionar producto</option>
-										{/* TODO: Cargar productos dinámicamente */}
-										<option value='1'>Producto A</option>
-										<option value='2'>Producto B</option>
-									</select>
+									{productsLoading ? (
+										<div className='text-sm text-gray-500'>
+											Cargando productos...
+										</div>
+									) : (
+										<SelectReact
+											name='product_id'
+											options={products.map((p) => ({
+												value: String(p.id),
+												label: `${p.name} - ${p.sku}`,
+											}))}
+											value={
+												productId
+													? {
+															value: String(productId),
+															label:
+																products.find(
+																	(p) => p.id === productId,
+																)?.name || '',
+														}
+													: null
+											}
+											onChange={(option) => {
+												const selectedOption = option as TSelectOption | null;
+												setProductId(
+													selectedOption
+														? parseInt(selectedOption.value)
+														: null,
+												);
+											}}
+											placeholder='Seleccionar producto'
+											isDisabled={productsLoading}
+										/>
+									)}
 								</div>
 
 								{/* Equipment Type */}
@@ -374,7 +409,7 @@ const ItemReviewStandalonePage: React.FC = () => {
 									<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
 										Observaciones
 									</label>
-									<textarea
+									<Textarea
 										value={reviewDetails.observations || ''}
 										onChange={(e) =>
 											setReviewDetails({
