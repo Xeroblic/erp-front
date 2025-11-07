@@ -19,13 +19,44 @@ export type EquipmentType = 'notebook' | 'desktop' | 'docking' | 'aio' | 'monito
  */
 export interface IBatch {
     id: number;
+    code?: string; // Código generado automáticamente por el backend
     warehouse_id: number;
+    warehouse?: {
+        id: number;
+        name: string;
+    };
     customer_supplier_id: number;
+    customer_supplier?: {
+        id: number;
+        name: string;
+    };
+    branch?: {
+        id: number;
+        name: string;
+    };
     entry_date: string; // YYYY-MM-DD
     expected_quantity: number;
+    received_quantity?: number;
+    completed_quantity?: number;
+    pending_count?: number;
+    progress?: number;
     status: CommercialStatus;
     notes?: string | null;
-    items_summary?: Record<string, any>; // Conteos por tipo/estado/grado para tabs
+    items_summary?: {
+        total: number;
+        by_equipment_type?: Record<EquipmentType, number>;
+        by_review_status?: Array<{ status: ReviewStatus; count: number }>;
+        by_current_status?: Array<{ status: CommercialStatus; count: number }>;
+        by_grade?: Record<string, number>;
+    };
+    created_by?: {
+        id: number;
+        name: string;
+    };
+    updated_by?: {
+        id: number;
+        name: string;
+    } | null;
     created_at?: string;
     updated_at?: string;
 }

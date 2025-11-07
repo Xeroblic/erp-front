@@ -394,7 +394,7 @@ export const privatePages = {
     text: 'Notificaciones',
     icon: 'HeroBell',
     authority: [],
-    roles: ['super-admin','company-admin','subsidiary-admin','branch-admin','manager','employee','technician','cashier','sales-rep'],
+    roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'manager', 'employee', 'technician', 'cashier', 'sales-rep'],
   },
 
   /* =================================================
@@ -474,7 +474,7 @@ export const privatePages = {
     },
   },
 
-  // MÓDULO TÉCNICO - PENDIENTE (Sin permisos específicos en backend aún)
+  // MÓDULO TÉCNICO - OPERATIVO
   technical: {
     id: 'technical',
     to: '/tecnico',
@@ -485,7 +485,7 @@ export const privatePages = {
     subPages: {
       reviews: {
         id: 'technicalReviews',
-        to: '/revisiones-tecnicas',
+        to: '/technical-reviews',
         text: 'Revisiones Técnicas',
         icon: 'HeroWrenchScrewdriver',
         authority: ['view-user'], // Permiso temporal

@@ -113,10 +113,13 @@ const DefaultAsideTemplate = () => {
 
 	const toggleCollapse = (key: string) => {
 		setCollapseStates((prev) => {
-			const closedAll = Object.keys(prev).reduce((acc, k) => {
-				acc[k] = false;
-				return acc;
-			}, {} as Record<string, boolean>);
+			const closedAll = Object.keys(prev).reduce(
+				(acc, k) => {
+					acc[k] = false;
+					return acc;
+				},
+				{} as Record<string, boolean>,
+			);
 			return {
 				...closedAll,
 				[key]: !prev[key],
@@ -298,7 +301,7 @@ const DefaultAsideTemplate = () => {
 						</AuthorityCheckNav> */}
 
 						{/* Administrar Permisos */}
-						
+
 						{/* <AuthorityCheckNav
 							authority={[
 								...(Pages.manage.subPages.permissionsAdmin.authority || []),
@@ -480,25 +483,10 @@ const DefaultAsideTemplate = () => {
 						/>
 					</AuthorityCheckNav>
 
-					{/* <NavTitle>Administración del Sistema</NavTitle> */}
+					<NavTitle>Módulo Técnico</NavTitle>
 
-					{/* Parámetros del Sistema - OPERATIVO */}
-
-					{/* <AuthorityCheckNav
-						authority={Pages.systemAdmin.subPages.systemParameters.authority}
-						userAuthority={userPermissionsAndRoles}
-						requireAll={Pages.systemAdmin.subPages.systemParameters.requireAll}>
-						<NavItem
-							text={Pages.systemAdmin.subPages.systemParameters.text}
-							to={Pages.systemAdmin.subPages.systemParameters.to}
-							icon={Pages.systemAdmin.subPages.systemParameters.icon}
-							id={Pages.systemAdmin.subPages.systemParameters.id}
-							onClick={() => navigate(Pages.systemAdmin.subPages.systemParameters.to)}
-						/>
-					</AuthorityCheckNav> */}
-
-					{/* Módulo Técnico - PENDIENTE: Módulo aún no operativo */}
-					{/* <AuthorityCheckNav
+					{/* Revisiones Técnicas - OPERATIVO */}
+					<AuthorityCheckNav
 						authority={Pages.technical.subPages.reviews.authority}
 						userAuthority={userPermissionsAndRoles}>
 						<NavItem
@@ -508,7 +496,7 @@ const DefaultAsideTemplate = () => {
 							id={Pages.technical.subPages.reviews.id}
 							onClick={() => navigate(Pages.technical.subPages.reviews.to)}
 						/>
-					</AuthorityCheckNav> */}
+					</AuthorityCheckNav>
 
 					<NavTitle>Catálogos</NavTitle>
 

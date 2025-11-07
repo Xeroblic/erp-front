@@ -84,7 +84,16 @@ const DetalleProveedorPage = lazy(() => import('@/pages/catalogos/proveedores/De
 const ClientesPage = lazy(() => import('@/pages/catalogos/clientes/Clientes'));
 const DetalleClientePage = lazy(() => import('@/pages/catalogos/clientes/DetalleCliente'));
 const DocumentosPage = lazy(() => import('@/pages/documentos/Documentos'));
-const RevisionesTecnicasPage = lazy(() => import('@/pages/revisiones-tecnicas/RevisionesTecnicas'));
+
+// Páginas de Technical Reviews
+const TechnicalReviewsHub = lazy(() => import('@/pages/technical-reviews/index'));
+const BatchesList = lazy(() => import('@/pages/technical-reviews/batches/index'));
+const BatchCreate = lazy(() => import('@/pages/technical-reviews/batches/create'));
+const BatchDetail = lazy(() => import('@/pages/technical-reviews/batches/[batchId]/index'));
+const BatchItemReview = lazy(() => import('@/pages/technical-reviews/batches/[batchId]/[itemId]'));
+const ItemsList = lazy(() => import('@/pages/technical-reviews/items/index'));
+const ItemReview = lazy(() => import('@/pages/technical-reviews/items/[itemId]'));
+
 const NotificationsAllPage = lazy(() => import('@/pages/notificaciones/NotificationsAll'));
 const NotificationDetailPage = lazy(() => import('@/pages/notificaciones/NotificationDetail'));
 
@@ -340,9 +349,46 @@ const contentRoutes: IRoutePersonalizada[] = [
 		element: <DocumentosPage />,
 		authority: cfg.catalogs.subPages.documents.authority,
 	},
+
+	// Technical Reviews Routes
+	{
+		path: '/technical-reviews',
+		element: <TechnicalReviewsHub />,
+		authority: cfg.technical.subPages.reviews.authority,
+	},
+	{
+		path: '/technical-reviews/batches',
+		element: <BatchesList />,
+		authority: cfg.technical.subPages.reviews.authority,
+	},
+	{
+		path: '/technical-reviews/batches/create',
+		element: <BatchCreate />,
+		authority: cfg.technical.subPages.reviews.authority,
+	},
+	{
+		path: '/technical-reviews/batches/:batchId',
+		element: <BatchDetail />,
+		authority: cfg.technical.subPages.reviews.authority,
+	},
+	{
+		path: '/technical-reviews/batches/:batchId/:itemId',
+		element: <BatchItemReview />,
+		authority: cfg.technical.subPages.reviews.authority,
+	},
+	{
+		path: '/technical-reviews/items',
+		element: <ItemsList />,
+		authority: cfg.technical.subPages.reviews.authority,
+	},
+	{
+		path: '/technical-reviews/items/:itemId',
+		element: <ItemReview />,
+		authority: cfg.technical.subPages.reviews.authority,
+	},
 	{
 		path: cfg.technical.subPages.reviews.to,
-		element: <RevisionesTecnicasPage />,
+		element: <TechnicalReviewsHub />,
 		authority: cfg.technical.subPages.reviews.authority,
 	},
 
