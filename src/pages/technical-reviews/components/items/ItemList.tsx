@@ -33,6 +33,14 @@ const ItemList: React.FC<ItemListProps> = ({
 }) => {
 	const navigate = useNavigate();
 
+	// Helper para extraer valor de objetos {value, label, description} o devolver el valor directamente
+	const extractValue = (value: any): string | null => {
+		if (value == null) return null;
+		if (typeof value === 'string' || typeof value === 'number') return String(value);
+		if (typeof value === 'object' && 'value' in value) return String(value.value);
+		return String(value);
+	};
+
 	const handleItemClick = (itemId: number) => {
 		if (onItemClick) {
 			onItemClick(itemId);
@@ -154,21 +162,21 @@ const ItemList: React.FC<ItemListProps> = ({
 										/>
 									</td>
 									<td className='whitespace-nowrap px-4 py-3'>
-										{item.grade ? (
+										{extractValue(item.grade) ? (
 											<span className='inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-bold text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'>
 												<Icon icon='HeroStar' className='h-3 w-3' />
-												{item.grade}
-												{item.suggested_grade &&
-													item.grade !== item.suggested_grade && (
+												{extractValue(item.grade)}
+												{extractValue(item.suggested_grade) &&
+													extractValue(item.grade) !== extractValue(item.suggested_grade) && (
 														<span className='text-[10px] text-yellow-600 dark:text-yellow-400'>
-															(Sugerido: {item.suggested_grade})
+															(Sugerido: {extractValue(item.suggested_grade)})
 														</span>
 													)}
 											</span>
-										) : item.suggested_grade ? (
+										) : extractValue(item.suggested_grade) ? (
 											<span className='inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-400'>
 												<Icon icon='HeroSparkles' className='h-3 w-3' />
-												{item.suggested_grade}
+												{extractValue(item.suggested_grade)}
 											</span>
 										) : (
 											<span className='text-xs text-gray-400'>Pendiente</span>

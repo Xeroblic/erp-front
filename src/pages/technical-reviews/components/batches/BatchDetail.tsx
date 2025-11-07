@@ -59,7 +59,6 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 							</div>
 						</div>
 					</div>
-
 					{/* Metadata Grid */}
 					<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
 						{/* Proveedor */}
@@ -98,7 +97,6 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 							)}
 						</div>
 					</div>
-
 					{/* KPIs */}
 					<div>
 						<h3 className='mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300'>
@@ -146,7 +144,6 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 							</div>
 						</div>
 					</div>
-
 					{/* Progress Bar */}
 					<div>
 						<div className='mb-2 flex items-center justify-between'>
@@ -167,7 +164,6 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 							{completedQty} de {expectedQty} equipos revisados
 						</div>
 					</div>
-
 					{/* Resumen de Items por Tipo */}
 					{batch.items_summary?.by_equipment_type && (
 						<div>
@@ -196,7 +192,11 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 											/>
 											<div>
 												<div className='text-lg font-bold text-gray-900 dark:text-gray-100'>
-													{count}
+													{typeof count === 'object' &&
+													count !== null &&
+													'value' in count
+														? (count as any).value
+														: count}
 												</div>
 												<div className='text-xs capitalize text-gray-500'>
 													{type}
@@ -207,8 +207,7 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 								)}
 							</div>
 						</div>
-					)}
-
+					)}{' '}
 					{/* Notas */}
 					{batch.notes && (
 						<div className='rounded-lg bg-gray-50 p-4 dark:bg-gray-800'>

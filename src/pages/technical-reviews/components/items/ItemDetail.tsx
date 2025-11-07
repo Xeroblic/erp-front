@@ -26,6 +26,14 @@ const ItemDetail: React.FC<ItemDetailProps> = ({
 	onChangeStatusClick,
 	showActions = true,
 }) => {
+	// Helper para extraer valor de objetos {value, label, description} o devolver el valor directamente
+	const extractValue = (value: any): string | null => {
+		if (value == null) return null;
+		if (typeof value === 'string' || typeof value === 'number') return String(value);
+		if (typeof value === 'object' && 'value' in value) return String(value.value);
+		return String(value);
+	};
+
 	if (loading) {
 		return (
 			<Card>
@@ -107,10 +115,10 @@ const ItemDetail: React.FC<ItemDetailProps> = ({
 								Grado Actual
 							</p>
 							<div className='mt-1'>
-								{item.grade ? (
+								{extractValue(item.grade) ? (
 									<span className='inline-flex items-center gap-1 text-lg font-bold text-yellow-600 dark:text-yellow-400'>
 										<Icon icon='HeroStar' className='h-5 w-5' />
-										{item.grade}
+										{extractValue(item.grade)}
 									</span>
 								) : (
 									<span className='text-sm text-gray-400'>Pendiente</span>
@@ -119,14 +127,14 @@ const ItemDetail: React.FC<ItemDetailProps> = ({
 						</div>
 
 						{/* Grado Sugerido */}
-						{item.suggested_grade && (
+						{extractValue(item.suggested_grade) && (
 							<div>
 								<p className='text-xs font-medium uppercase text-gray-500 dark:text-gray-400'>
 									Grado Sugerido
 								</p>
 								<div className='mt-1 flex items-center gap-2'>
 									<span className='text-lg font-bold text-blue-600 dark:text-blue-400'>
-										{item.suggested_grade}
+										{extractValue(item.suggested_grade)}
 									</span>
 									{item.confidence !== undefined && item.confidence !== null && (
 										<span className='text-xs text-gray-500'>

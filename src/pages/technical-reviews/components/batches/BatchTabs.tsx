@@ -106,7 +106,7 @@ const BatchTabs: React.FC<BatchTabsProps> = ({ batch, onItemClick }) => {
 							const isActive = activeTab === tab.type;
 
 							return (
-								<button
+								<Button
 									key={tab.type}
 									onClick={() => handleTabChange(tab.type)}
 									className={`flex items-center gap-2 border-b-2 px-6 py-4 transition-colors ${
@@ -126,7 +126,7 @@ const BatchTabs: React.FC<BatchTabsProps> = ({ batch, onItemClick }) => {
 										}`}>
 										{count}
 									</span>
-								</button>
+								</Button>
 							);
 						})}
 					</div>
