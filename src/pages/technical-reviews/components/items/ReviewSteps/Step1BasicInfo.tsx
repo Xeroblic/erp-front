@@ -78,13 +78,12 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 				setError(null);
 			}
 		} catch (err) {
-			console.error('Error verificando serie existente:', err);
+			toast.error('Error verificando serie existente:', err);
 		} finally {
 			setChecking(false);
 		}
 	};
 
-	// ⌨️ Manejo del input con debounce
 	const handleSerialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const val = e.target.value;
 		setSerialNumber(val);
@@ -106,7 +105,6 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 		if (error) return; // si ya había error de existencia, no crear
 
 		try {
-			// Crear el item usando Redux thunk
 			const createResult = await dispatch(
 				createItem({
 					branchId,
@@ -119,30 +117,20 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 				}),
 			).unwrap();
 
-			console.log('🔍 CreateResult completo:', createResult);
-
-			// Validar que el ID existe y es válido
 			if (!createResult || !createResult.id || isNaN(createResult.id)) {
-				console.error('❌ ID inválido recibido:', createResult);
 				throw new Error('El servidor no retornó un ID válido para el item creado');
 			}
 
 			const newItemId = createResult.id;
 
-			// Iniciar la revisión
 			await dispatch(
 				startReview({
 					branchId,
 					itemId: newItemId,
 				}),
 			).unwrap();
-
-			// Callback con el itemId, serial y tipo
 			onComplete(newItemId, serialNumber.trim(), equipmentType);
 		} catch (err: any) {
-			console.error('❌ Error en handleSubmit:', err);
-
-			// Manejar error 422 (validación)
 			const errorMessage = err?.message || err || 'Error al crear el item';
 
 			setError(errorMessage);

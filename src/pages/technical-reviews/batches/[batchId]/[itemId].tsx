@@ -91,7 +91,14 @@ const ItemReviewPage: React.FC = () => {
 			}
 		},
 		onSaveError: (error) => {
-			toast.error(`Error al guardar: ${error}`);
+			toast.error(`Error: ${error}`, {
+				position: 'top-right',
+				autoClose: 5000,
+				hideProgressBar: false,
+				closeOnClick: true,
+				pauseOnHover: true,
+				draggable: true,
+			});
 		},
 	});
 
@@ -198,10 +205,11 @@ const ItemReviewPage: React.FC = () => {
 				equipment_type: equipmentType,
 			});
 
-			if (!createdItemId) {
-				toast.error('No se pudo crear el item');
+			// Verificar que se creó el item y que el ID es válido
+			if (createdItemId == null) {
 				return;
 			}
+
 
 			// Iniciar revisión (cambia status a in_review)
 			const result = await dispatch(

@@ -31,6 +31,7 @@ import { Step2FullReview, Step3GradeReview } from '../components/items/ReviewSte
 import ItemDetail from '../components/items/ItemDetail';
 import type { UpdateItemDetailsPayload } from '@/interface/technicalReviews.interface';
 import { useAutoSaveReview } from '@/hooks/useAutoSaveReview';
+import { toast } from 'react-toastify';
 
 type ReviewStep = 'basic' | 'review' | 'grading';
 
@@ -99,7 +100,14 @@ const ItemReviewStandalonePage: React.FC = () => {
 			}
 		},
 		onSaveError: (error) => {
-			console.error('Error al guardar:', error);
+			toast.error(`Error: ${error}`, {
+				position: 'top-right',
+				autoClose: 5000,
+				hideProgressBar: false,
+				closeOnClick: true,
+				pauseOnHover: true,
+				draggable: true,
+			});
 		},
 	});
 
@@ -175,14 +183,6 @@ const ItemReviewStandalonePage: React.FC = () => {
 		try {
 			const batchIdValue = batchIdToUse ? Number(batchIdToUse) : 0;
 
-			console.log('🚀 Creando item con:', {
-				batch_id: batchIdValue,
-				serial_number: serialNumber,
-				product_id: productId,
-				equipment_type: equipmentType,
-			});
-
-			// Usar el hook de auto-save para guardar info básica
 			const createdItemId = await saveBasicInfo({
 				batch_id: batchIdValue,
 				serial_number: serialNumber,
@@ -191,13 +191,9 @@ const ItemReviewStandalonePage: React.FC = () => {
 			});
 
 			if (!createdItemId) {
-				console.error('No se pudo crear el item');
 				return;
 			}
 
-			console.log('✅ Item creado:', createdItemId);
-
-			// Iniciar la revisión (cambia status a in_review)
 			const result = await dispatch(
 				startReview({
 					branchId,
