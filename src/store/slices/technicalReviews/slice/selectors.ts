@@ -8,7 +8,7 @@ import type {
     IItem,
     IValidationRules,
     ListMeta,
-} from '../types';
+} from '../../../../interface/technicalReviews.interface.ts';
 
 // ====================================================================
 // LOTES (BATCHES)

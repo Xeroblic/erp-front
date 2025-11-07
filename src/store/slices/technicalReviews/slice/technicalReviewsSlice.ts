@@ -4,7 +4,7 @@
  * Mantiene un único estado global sincronizado entre lotes, series, revisiones y trazabilidad.
  */
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { TechnicalReviewsState, IBatch, IItem } from '../types';
+import type { TechnicalReviewsState, IBatch, IItem } from '../../../../interface/technicalReviews.interface.ts';
 
 // Importar thunks por flujo
 import * as batchesThunks from '../thunks/batchesThunks';
@@ -602,6 +602,6 @@ export const { clearSelected, clearErrors, setSelectedBatch, setSelectedItem } =
     technicalReviewsSlice.actions;
 
 // Exportar el tipo para usarlo en rootReducer
-export type { TechnicalReviewsState } from '../types';
+export type { TechnicalReviewsState } from '../../../../interface/technicalReviews.interface.ts';
 
 export default technicalReviewsSlice.reducer;

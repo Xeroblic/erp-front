@@ -1,9 +1,3 @@
-/**
- * Technical Reviews Types
- * Define todos los tipos base para sincronizar la UI con el backend.
- * Cada entidad refleja el flujo descrito en la guía de Revisiones Técnicas.
- */
-
 // --- Estados de revisión y comerciales ---
 export type ReviewStatus = 'pending' | 'in_review' | 'reviewed' | 'approved';
 

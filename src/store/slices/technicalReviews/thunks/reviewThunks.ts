@@ -4,7 +4,7 @@
  */
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import ApiService from '@/services/ApiService';
-import type { IItem, UpdateItemDetailsPayload, ApproveItemPayload } from '../types';
+import type { IItem, UpdateItemDetailsPayload, ApproveItemPayload } from '../../../../interface/technicalReviews.interface.ts';
 
 // --- Helpers ---
 const TECHNICAL_REVIEWS_PREFIX =

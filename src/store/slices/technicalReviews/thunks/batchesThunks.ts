@@ -4,7 +4,7 @@
  */
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import ApiService from '@/services/ApiService';
-import type { IBatch, FetchBatchesParams, FetchBatchItemsParams, IItem } from '../types';
+import type { IBatch, FetchBatchesParams, FetchBatchItemsParams, IItem } from '../../../../interface/technicalReviews.interface.ts';
 
 // --- Helpers ---
 const TECHNICAL_REVIEWS_PREFIX =

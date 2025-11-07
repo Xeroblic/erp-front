@@ -4,7 +4,7 @@
  */
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import ApiService from '@/services/ApiService';
-import type { IValidationRules, IValidationRule, EquipmentType } from '../types';
+import type { IValidationRules, IValidationRule, EquipmentType } from '../../../../interface/technicalReviews.interface.ts';
 
 // --- Helpers ---
 const TECHNICAL_REVIEWS_PREFIX =

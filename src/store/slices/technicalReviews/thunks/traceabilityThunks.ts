@@ -9,7 +9,7 @@ import type {
     ChangeCommercialStatusPayload,
     ReserveItemPayload,
     MarkAsSoldPayload,
-} from '../types';
+} from '../../../../interface/technicalReviews.interface.ts';
 
 // --- Helpers ---
 const TECHNICAL_REVIEWS_PREFIX =

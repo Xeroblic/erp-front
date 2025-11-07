@@ -31,7 +31,7 @@ export type {
     ChangeCommercialStatusPayload,
     ReserveItemPayload,
     MarkAsSoldPayload,
-} from './types';
+} from '../../../interface/technicalReviews.interface.ts';
 
 // ========== THUNKS - LOTES ==========
 export {
