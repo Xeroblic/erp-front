@@ -58,13 +58,13 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 				`/api/branches/${branchId}/technical-reviews/items?search=${encodeURIComponent(serial.trim())}`,
 				{
 					headers: { Authorization: `Bearer ${localStorage.getItem('access')}` },
-				}
+				},
 			);
 			if (!res.ok) throw new Error('Error al verificar serie');
 			const data = await res.json();
 			const exists = data?.data?.some(
 				(item: any) =>
-					item.serial_number?.trim().toLowerCase() === serial.trim().toLowerCase()
+					item.serial_number?.trim().toLowerCase() === serial.trim().toLowerCase(),
 			);
 
 			if (exists) {
@@ -141,12 +141,12 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 			onComplete(newItemId, serialNumber.trim(), equipmentType);
 		} catch (err: any) {
 			console.error('❌ Error en handleSubmit:', err);
-			
+
 			// Manejar error 422 (validación)
 			const errorMessage = err?.message || err || 'Error al crear el item';
-			
+
 			setError(errorMessage);
-			
+
 			toast.error(errorMessage, {
 				position: 'top-right',
 				autoClose: 5000,
@@ -192,9 +192,7 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 							)}
 						</div>
 						{error && (
-							<p className='mt-1 text-sm text-red-600 dark:text-red-400'>
-								{error}
-							</p>
+							<p className='mt-1 text-sm text-red-600 dark:text-red-400'>{error}</p>
 						)}
 					</div>
 
@@ -207,7 +205,9 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 							name='product'
 							options={productOptions}
 							value={selectedProduct}
-							onChange={(option) => setSelectedProduct(option as TSelectOption | null)}
+							onChange={(option) =>
+								setSelectedProduct(option as TSelectOption | null)
+							}
 							placeholder='Seleccionar producto'
 							isDisabled={creating}
 						/>
