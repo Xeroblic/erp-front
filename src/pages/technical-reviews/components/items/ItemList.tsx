@@ -167,9 +167,11 @@ const ItemList: React.FC<ItemListProps> = ({
 												<Icon icon='HeroStar' className='h-3 w-3' />
 												{extractValue(item.grade)}
 												{extractValue(item.suggested_grade) &&
-													extractValue(item.grade) !== extractValue(item.suggested_grade) && (
+													extractValue(item.grade) !==
+														extractValue(item.suggested_grade) && (
 														<span className='text-[10px] text-yellow-600 dark:text-yellow-400'>
-															(Sugerido: {extractValue(item.suggested_grade)})
+															(Sugerido:{' '}
+															{extractValue(item.suggested_grade)})
 														</span>
 													)}
 											</span>
