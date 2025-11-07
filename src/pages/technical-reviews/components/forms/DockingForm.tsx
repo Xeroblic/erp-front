@@ -304,12 +304,12 @@ const DockingForm: React.FC<DockingFormProps> = ({
 							/>
 						</div>
 						<div>
-							<label className='mb-2 block text-sm font-medium'>SD Readers</label>
+							<label className='mb-2 block text-sm font-medium'>Lector de tarjetas SD</label>
 							<Input
 								type='number'
-								name='sd_readers'
-								value={values.sd_readers || 0}
-								onChange={handleNumberChange('sd_readers')}
+								name='lector_de_tarjetas_sd'
+								value={values.lector_de_tarjetas_sd || 0}
+								onChange={handleNumberChange('lector_de_tarjetas_sd')}
 								min='0'
 								disabled={readOnly}
 							/>

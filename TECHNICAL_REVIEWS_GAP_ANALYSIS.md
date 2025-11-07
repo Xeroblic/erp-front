@@ -79,7 +79,7 @@ MonitorForm.tsx        - Formulario con ~20 campos
 - cover_condition, hinge_condition, bottom_condition
 - battery_status (input o select)
 - vga_ports, hdmi_ports, displayport_ports
-- usb_a_ports, usb_c_ports, sd_readers
+- usb_a_ports, usb_c_ports, lector_de_tarjetas_sd
 - rj45_ports, has_wifi, has_bluetooth
 - all_ports_functional, defective_ports_count
 - operating_system

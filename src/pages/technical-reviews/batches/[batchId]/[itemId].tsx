@@ -112,7 +112,6 @@ const ItemReviewPage: React.FC = () => {
 
 		const parsedItemId = parseInt(itemId);
 
-		// Cargar el item si ya existe
 		dispatch(fetchItemDetail({ branchId, itemId: parsedItemId }))
 			.unwrap()
 			.then((loadedItem) => {
@@ -120,19 +119,16 @@ const ItemReviewPage: React.FC = () => {
 				if (loadedItem.serial_number) setSerialNumber(loadedItem.serial_number);
 				if (loadedItem.product_id) setProductId(loadedItem.product_id);
 
-				// IMPORTANTE: equipment_type puede venir como objeto {value, label} o como string
 				const equipType =
 					typeof loadedItem.equipment_type === 'object'
 						? (loadedItem.equipment_type as any)?.value
 						: loadedItem.equipment_type;
 				if (equipType) setEquipmentType(equipType as EquipmentType);
 
-				// IMPORTANTE: review_status también puede venir como objeto
 				const reviewStatus =
 					typeof loadedItem.review_status === 'object'
 						? (loadedItem.review_status as any)?.value
 						: loadedItem.review_status;
-				// Determinar en qué paso debe estar según el estado
 				if (reviewStatus === 'approved' || reviewStatus === 'reviewed') {
 					setCurrentStep('grading');
 					setAutomaticGrade(loadedItem.suggested_grade || null);
@@ -235,11 +231,10 @@ const ItemReviewPage: React.FC = () => {
 					branchId,
 					itemId: item.id,
 					data: reviewDetails,
-					equipmentType: item.equipment_type, // Pasar el tipo de equipo
+					equipmentType: item.equipment_type,
 				}),
 			).unwrap();
 
-			// Completar revisión para obtener calificación automática
 			const grading = await dispatch(
 				completeReview({
 					branchId,
@@ -254,7 +249,6 @@ const ItemReviewPage: React.FC = () => {
 		}
 	};
 
-	// STEP 2 Complete: Handler para cuando Step2FullReview completa
 	const handleStep2Complete = async () => {
 		if (!branchId || !item) {
 			toast.error('No hay branchId o item disponible');
@@ -323,12 +317,10 @@ const ItemReviewPage: React.FC = () => {
 	// STEP 3: Modificar revisión (volver a in_review)
 	const handleModifyReview = async () => {
 		if (!branchId || !item) {
-			toast.error('No hay branchId o item disponible para modificar');
 			return;
 		}
 
 		try {
-			toast.info('Volviendo a modo revisión (in_review)...');
 			const updatedItem = await dispatch(
 				reopenReview({
 					branchId,
@@ -336,10 +328,8 @@ const ItemReviewPage: React.FC = () => {
 				}),
 			).unwrap();
 
-			toast.success(`Item vuelto a in_review: ${updatedItem}`);
 			setItem(updatedItem);
 		} catch (error) {
-			toast.error(`Error al volver a in_review: ${error}`);
 			throw error;
 		}
 	};

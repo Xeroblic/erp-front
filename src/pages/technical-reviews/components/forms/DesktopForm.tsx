@@ -60,7 +60,7 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 		{ value: 'HDD', label: 'HDD' },
 		{ value: 'SSD', label: 'SSD' },
 		{ value: 'M.2', label: 'M.2' },
-		{ value: 'NVMe', label: 'NVMe' },
+		// { value: 'NVMe', label: 'NVMe' },
 	];
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

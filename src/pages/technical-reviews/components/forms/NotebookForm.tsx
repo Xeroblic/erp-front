@@ -90,7 +90,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 	const keyboardLayoutOptions: TSelectOption[] = [
 		{ value: 'es', label: 'Español (ES)' },
 		{ value: 'us', label: 'Inglés (US)' },
-		{ value: 'latam', label: 'Latinoamericano' },
+		// { value: 'latam', label: 'Latinoamericano' },
 	];
 
 	const ramTypeOptions: TSelectOption[] = [
@@ -105,7 +105,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 		{ value: 'HDD', label: 'Disco duro (HDD)' },
 		{ value: 'SSD', label: 'Unidad sólida (SSD)' },
 		{ value: 'M2', label: 'M.2' },
-		{ value: 'NVME', label: 'NVMe' },
+		// { value: 'NVME', label: 'NVMe' },
 		{ value: 'HYBRID', label: 'Híbrido' },
 	];
 
@@ -549,13 +549,13 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 						</div>
 						<div>
 							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-								SD Readers
+								Lector de tarjetas SD
 							</label>
 							<Input
 								type='number'
-								name='sd_readers'
-								value={values.sd_readers || 0}
-								onChange={handleNumberChange('sd_readers')}
+								name='lector_de_tarjetas_sd'
+								value={values.lector_de_tarjetas_sd || 0}
+								onChange={handleNumberChange('lector_de_tarjetas_sd')}
 								min='0'
 								disabled={readOnly}
 							/>
@@ -716,7 +716,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 						</div>
 						<div>
 							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-								Layout Teclado
+								Idioma Teclado
 							</label>
 							<SelectReact
 								name='keyboard_layout'
