@@ -34,7 +34,7 @@ import Step3GradeReview from '@/pages/technical-reviews/components/items/ReviewS
 import { useAutoSaveReview } from '@/hooks/useAutoSaveReview';
 import { toast } from 'react-toastify';
 
-type ReviewStep = 'basic' | 'review' | 'grading' | 'detail';
+type ReviewStep = 'basic' | 'review' | 'grading';
 
 const ItemReviewPage: React.FC = () => {
 	const { batchId, itemId } = useParams<{ batchId: string; itemId: string }>();
@@ -84,7 +84,6 @@ const ItemReviewPage: React.FC = () => {
 		reviewStatus: item?.review_status?.value || item?.review_status,
 		equipmentType: equipmentType,
 		onSaveSuccess: (savedItemId) => {
-
 			if (itemId === 'create' && batchId) {
 				navigate(`/technical-reviews/batches/${batchId}/items/${savedItemId}`, {
 					replace: true,
@@ -111,8 +110,6 @@ const ItemReviewPage: React.FC = () => {
 	useEffect(() => {
 		if (!itemId || !branchId) return;
 
-		
-
 		const parsedItemId = parseInt(itemId);
 
 		// Cargar el item si ya existe
@@ -136,9 +133,7 @@ const ItemReviewPage: React.FC = () => {
 						? (loadedItem.review_status as any)?.value
 						: loadedItem.review_status;
 				// Determinar en qué paso debe estar según el estado
-				if (reviewStatus === 'approved') {
-					setCurrentStep('detail');
-				} else if (reviewStatus === 'reviewed') {
+				if (reviewStatus === 'approved' || reviewStatus === 'reviewed') {
 					setCurrentStep('grading');
 					setAutomaticGrade(loadedItem.suggested_grade || null);
 				} else if (reviewStatus === 'in_review') {
@@ -663,143 +658,6 @@ const ItemReviewPage: React.FC = () => {
 						onRecalculate={handleRecalculateGrade}
 						onModifyReview={handleModifyReview}
 					/>
-				)}
-
-				{/* VISTA DE DETALLE (read-only para items aprobados) */}
-				{currentStep === 'detail' && item && (
-					<div className='space-y-6'>
-						<Card>
-							<CardHeader>
-								<div className='flex items-center justify-between'>
-									<div>
-										<h3 className='text-lg font-semibold text-green-700 dark:text-green-300'>
-											✅ Revisión Completada y Aprobada
-										</h3>
-										<p className='text-sm text-gray-600 dark:text-gray-400'>
-											Este ítem ha sido revisado y aprobado exitosamente
-										</p>
-									</div>
-									<Button variant='outline' onClick={handleBack}>
-										<Icon icon='HeroArrowLeft' className='mr-2 h-4 w-4' />
-										Volver al Lote
-									</Button>
-								</div>
-							</CardHeader>
-							<CardBody className='space-y-6'>
-								{/* Información Básica */}
-								<div>
-									<h4 className='mb-3 font-semibold text-gray-900 dark:text-gray-100'>
-										Información Básica
-									</h4>
-									<dl className='grid grid-cols-2 gap-4'>
-										<div>
-											<dt className='text-sm font-medium text-gray-500'>
-												Número de Serie
-											</dt>
-											<dd className='mt-1 font-mono text-sm font-semibold text-gray-900 dark:text-gray-100'>
-												{item.serial_number}
-											</dd>
-										</div>
-										<div>
-											<dt className='text-sm font-medium text-gray-500'>
-												Tipo de Equipo
-											</dt>
-											<dd className='mt-1 text-sm text-gray-900 dark:text-gray-100'>
-												{extractValue(item.equipment_type)}
-											</dd>
-										</div>
-										<div>
-											<dt className='text-sm font-medium text-gray-500'>
-												Grado Final
-											</dt>
-											<dd className='mt-1'>
-												<span className='inline-flex rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-800'>
-													{extractValue(item.grade) ||
-														extractValue(item.suggested_grade) ||
-														'N/A'}
-												</span>
-											</dd>
-										</div>
-										<div>
-											<dt className='text-sm font-medium text-gray-500'>
-												Estado
-											</dt>
-											<dd className='mt-1'>
-												<span className='inline-flex rounded-full bg-blue-100 px-3 py-1 text-sm font-semibold text-blue-800'>
-													{extractValue(item.review_status)}
-												</span>
-											</dd>
-										</div>
-										<div>
-											<dt className='text-sm font-medium text-gray-500'>
-												Estado Comercial
-											</dt>
-											<dd className='mt-1'>
-												<span className='inline-flex rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-800'>
-													{extractValue(item.current_status)}
-												</span>
-											</dd>
-										</div>
-										<div>
-											<dt className='text-sm font-medium text-gray-500'>
-												Producto
-											</dt>
-											<dd className='mt-1 text-sm text-gray-900 dark:text-gray-100'>
-												{extractValue(item.product?.name)}
-											</dd>
-										</div>
-									</dl>
-								</div>
-
-								{/* Detalles Técnicos */}
-								{item.attributes_json &&
-									Object.keys(item.attributes_json).length > 0 && (
-										<div>
-											<h4 className='mb-3 font-semibold text-gray-900 dark:text-gray-100'>
-												Detalles Técnicos
-											</h4>
-											<div className='grid grid-cols-2 gap-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-800'>
-												{Object.entries(item.attributes_json).map(
-													([key, value]) => (
-														<div key={key}>
-															<dt className='text-xs font-medium text-gray-500'>
-																{key
-																	.replace(/_/g, ' ')
-																	.toUpperCase()}
-															</dt>
-															<dd className='mt-1 text-sm text-gray-900 dark:text-gray-100'>
-																{extractValue(value)}
-															</dd>
-														</div>
-													),
-												)}
-											</div>
-										</div>
-									)}
-
-								{/* También mostrar details si existe */}
-								{item.details && Object.keys(item.details).length > 0 && (
-									<div>
-										<h4 className='mb-3 font-semibold text-gray-900 dark:text-gray-100'>
-											Detalles Adicionales
-										</h4>
-										<div className='grid grid-cols-2 gap-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-800'>
-											{Object.entries(item.details).map(([key, value]) => (
-												<div key={key}>
-													<dt className='text-xs font-medium text-gray-500'>
-														{key.replace(/_/g, ' ').toUpperCase()}
-													</dt>
-													<dd className='mt-1 text-sm text-gray-900 dark:text-gray-100'>
-														{extractValue(value)}
-													</dd>
-												</div>
-											))}
-										</div>
-									</div>
-								)}
-							</CardBody>
-						</Card>
-					</div>
 				)}
 			</Container>
 		</PageWrapper>
