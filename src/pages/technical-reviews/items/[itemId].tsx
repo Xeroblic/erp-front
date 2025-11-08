@@ -1,10 +1,20 @@
 /**
- * Technical Reviews - Item Review (Modo B - Without Batch)
- * Revisión individual sin lote - mismo flujo de 3 pasos
- * Reutiliza la misma lógica que [batchId]/[itemId].tsx pero sin batch_id
+ * Technical Reviews - Standalone Item Review (WITHOUT BATCH)
+ * ⚠️ FLUJO INDEPENDIENTE - NO MEZCLAR CON BATCHES ⚠️
+ *
+ * Este componente maneja la revisión de items INDIVIDUALES sin lote asociado.
+ * Requiere warehouse_id y customer_supplier_id obligatorios.
+ *
+ * URL: /technical-reviews/items/{itemId}
+ * URL Create: /technical-reviews/items/create
+ *
+ * DIFERENCIAS CON BATCH FLOW:
+ * - ❌ NO acepta batch_id (siempre null)
+ * - ✅ Requiere warehouse_id
+ * - ✅ Requiere customer_supplier_id
+ * - ✅ Opcionalmente permite asociar a lote manual
  */
 import React, { useEffect, useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
@@ -19,8 +29,6 @@ import {
 	completeReview,
 	reopenReview,
 	selectItemsLoading,
-	fetchBatchById,
-	selectSelectedBatch,
 	selectSelectedItem,
 	type EquipmentType,
 } from '@/store/slices/technicalReviews';
@@ -32,30 +40,28 @@ import { fetchWarehouses } from '@/store/slices/warehouses/warehouseSlice';
 import { fetchCustomerSuppliers } from '@/store/slices/customerSuppliers/customerSuppliersSlice';
 import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/personalizacionSlice';
 import { Step2FullReview, Step3GradeReview } from '../components/items/ReviewSteps';
-import ItemDetail from '../components/items/ItemDetail';
 import type { UpdateItemDetailsPayload } from '@/interface/technicalReviews.interface';
 import { useAutoSaveReview } from '@/hooks/useAutoSaveReview';
 import { toast } from 'react-toastify';
 import ApiService from '@/services/ApiService';
+// Importar constantes compartidas
+import {
+	EQUIPMENT_TYPE_OPTIONS,
+	REVIEW_STEPS,
+	getStepFromReviewStatus,
+	getStepIndex,
+	type ReviewStep,
+} from '../constants';
+import { extractFieldValue } from '../constants/field-helpers.constant';
 
 const TECHNICAL_REVIEWS_PREFIX = (import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
 const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
 const ep = (branchId: number, path: string) =>
 	join(TECHNICAL_REVIEWS_PREFIX, `/branches/${branchId}/technical-reviews${path}`);
 
-type ReviewStep = 'basic' | 'review' | 'grading';
-
-// Helper: Extraer valor de objeto o devolver string
-const extractValue = (field: any): string => {
-	if (!field) return '';
-	if (typeof field === 'object') {
-		return field.value || field.label || '';
-	}
-	return String(field);
-};
-
 const ItemReviewStandalonePage: React.FC = () => {
-	const { itemId, batchId: batchIdFromPath } = useParams<{ itemId: string; batchId?: string }>();
+	// ⚠️ IMPORTANTE: Solo acepta itemId, NO batchId
+	const { itemId } = useParams<{ itemId: string }>();
 	const navigate = useNavigate();
 	const dispatch = useAppDispatch();
 	const { branchId } = useCurrentBranch();
@@ -81,6 +87,8 @@ const ItemReviewStandalonePage: React.FC = () => {
 	const [hasUserSelectedType, setHasUserSelectedType] = useState(false);
 	const [warehouseId, setWarehouseId] = useState<number | null>(null);
 	const [customerSupplierId, setCustomerSupplierId] = useState<number | null>(null);
+
+	// ⚠️ OPCIONAL: Asociación manual a lote (solo para lotes manuales)
 	const [batchOptions, setBatchOptions] = useState<TSelectOption[]>([]);
 	const [selectedBatchOption, setSelectedBatchOption] = useState<TSelectOption | null>(null);
 	const [manualBatchId, setManualBatchId] = useState<number | null>(null);
@@ -89,13 +97,6 @@ const ItemReviewStandalonePage: React.FC = () => {
 
 	// Step 3: Grading
 	const [automaticGrade, setAutomaticGrade] = useState<string | null>(null);
-
-	// STEP 1: Obtener batch_id (del path o query para compatibilidad)
-	const location = useLocation();
-	const query = new URLSearchParams(location.search);
-	const batchIdFromQuery = query.get('batch_id');
-	const batchIdToUse = batchIdFromPath || batchIdFromQuery;
-	const isBatchFlow = Boolean(batchIdToUse);
 
 	const subsidiaryId = useMemo(() => {
 		return (
@@ -121,14 +122,9 @@ const ItemReviewStandalonePage: React.FC = () => {
 		reviewStatus: item?.review_status,
 		equipmentType: equipmentType || undefined,
 		onSaveSuccess: (savedItemId) => {
+			// ✅ STANDALONE FLOW: Siempre navegar a /items (nunca a batch)
 			if (itemId === 'create') {
-				if (batchIdToUse) {
-					navigate(`/technical-reviews/batches/${batchIdToUse}/items/${savedItemId}`, {
-						replace: true,
-					});
-				} else {
-					navigate(`/technical-reviews/items/${savedItemId}`, { replace: true });
-				}
+				navigate(`/technical-reviews/items/${savedItemId}`, { replace: true });
 			}
 		},
 		onSaveError: (error) => {
@@ -172,11 +168,12 @@ const ItemReviewStandalonePage: React.FC = () => {
 		}
 	}, [dispatch, subsidiaryId]);
 
+	// ⚠️ OPCIONAL: Cargar lotes abiertos para asociación manual
 	useEffect(() => {
-		if (branchId && !isBatchFlow) {
+		if (branchId) {
 			fetchOpenBatches();
 		}
-	}, [branchId, isBatchFlow]);
+	}, [branchId]);
 
 	// Filtrar solo productos con seguimiento por serie
 	const productsWithSerial = useMemo(
@@ -298,9 +295,8 @@ const ItemReviewStandalonePage: React.FC = () => {
 			: null;
 	}, [customerSupplierId, customerSupplierOptions]);
 
-	const canContinue = Boolean(
-		serialNumber && productId && equipmentType && (isBatchFlow || warehouseId),
-	);
+	// ✅ STANDALONE FLOW: Siempre requiere warehouse_id
+	const canContinue = Boolean(serialNumber && productId && equipmentType && warehouseId);
 
 	// Inicializar modo create
 	useEffect(() => {
@@ -343,15 +339,14 @@ const ItemReviewStandalonePage: React.FC = () => {
 				selectedItemStore.customer_supplier?.id ??
 				null,
 		);
-		if (!isBatchFlow) {
-			const existingBatchId =
-				selectedItemStore.batch_id ?? selectedItemStore.batch?.id ?? null;
-			if (existingBatchId) {
-				setSelectedBatchOption({
-					value: String(existingBatchId),
-					label: `Lote #${existingBatchId}`,
-				});
-			}
+
+		// ⚠️ OPCIONAL: Si el item ya tiene batch asociado, mostrarlo
+		const existingBatchId = selectedItemStore.batch_id ?? selectedItemStore.batch?.id ?? null;
+		if (existingBatchId) {
+			setSelectedBatchOption({
+				value: String(existingBatchId),
+				label: `Lote #${existingBatchId}`,
+			});
 		}
 
 		// Determinar el step correcto basado en el estado del item
@@ -371,61 +366,14 @@ const ItemReviewStandalonePage: React.FC = () => {
 			// Si es 'pending', iniciar en basic pero permitir ir a review
 			setCurrentStep('basic');
 		}
-	}, [selectedItemStore, itemId, isBatchFlow]);
+	}, [selectedItemStore, itemId]);
 
+	// ✅ STANDALONE FLOW: Siempre navegar a lista de items
 	const handleBack = () => {
-		if (batchIdToUse) {
-			navigate(`/technical-reviews/batches/${batchIdToUse}`);
-		} else {
-			navigate('/technical-reviews/items');
-		}
+		navigate('/technical-reviews/items');
 	};
 
-	// Si venimos con batch_id en query, intentar obtener el lote seleccionado
-	const selectedBatch = useAppSelector(selectSelectedBatch);
-
-	useEffect(() => {
-		if (!batchIdToUse) return;
-		const parsed = Number(batchIdToUse);
-		if (isNaN(parsed)) return;
-
-		// Si no tenemos el batch en el store o es otro, traerlo
-		if (!selectedBatch || selectedBatch.id !== parsed) {
-			dispatch(fetchBatchById({ branchId: branchId!, batchId: parsed }));
-		}
-	}, [batchIdToUse, selectedBatch, dispatch, branchId]);
-
-	// Cuando tengamos el batch en el store, preseleccionar el tipo de equipo dominante
-	// SOLO si el usuario NO ha seleccionado manualmente un tipo
-	useEffect(() => {
-		if (!batchIdToUse || !selectedBatch || hasUserSelectedType) return;
-		const parsed = Number(batchIdToUse);
-		if (isNaN(parsed) || selectedBatch.id !== parsed) return;
-
-		const byType = selectedBatch.items_summary?.by_equipment_type;
-		if (!byType) return;
-
-		// Escoger el tipo con mayor cantidad
-		const entries = Object.entries(byType) as Array<[EquipmentType, number]>;
-		if (entries.length === 0) return;
-		entries.sort((a, b) => b[1] - a[1]);
-		const dominant = entries[0][0];
-		setEquipmentType(dominant);
-	}, [batchIdToUse, selectedBatch, hasUserSelectedType]);
-
-	useEffect(() => {
-		if (!batchIdToUse || !selectedBatch) return;
-		const parsed = Number(batchIdToUse);
-		if (isNaN(parsed) || selectedBatch.id !== parsed) return;
-		setWarehouseId(selectedBatch.warehouse_id ?? selectedBatch.warehouse?.id ?? null);
-		setCustomerSupplierId(
-			selectedBatch.customer_supplier_id ?? selectedBatch.customer_supplier?.id ?? null,
-		);
-		setSelectedBatchOption({
-			value: String(selectedBatch.id),
-			label: selectedBatch.code || selectedBatch.name || `Lote #${selectedBatch.id}`,
-		});
-	}, [batchIdToUse, selectedBatch]);
+	// ✅ Lógica simple para items standalone - No necesitamos cargar batch store
 
 	const handleStep1Submit = async () => {
 		if (!branchId) {
@@ -433,38 +381,20 @@ const ItemReviewStandalonePage: React.FC = () => {
 			return;
 		}
 
-		const resolvedWarehouseId = isBatchFlow
-			? (selectedBatch?.warehouse_id ?? warehouseId)
-			: warehouseId;
-
-		if (!equipmentType || !serialNumber || !productId) {
-			console.error('Faltan datos obligatorios');
+		// ✅ STANDALONE FLOW: warehouse_id es OBLIGATORIO
+		if (!equipmentType || !serialNumber || !productId || !warehouseId) {
+			console.error(
+				'Faltan datos obligatorios (equipmentType, serialNumber, productId, warehouseId)',
+			);
 			return;
 		}
 
-		if (!resolvedWarehouseId) {
-			console.error('Selecciona una bodega válida');
-			return;
-		}
-
+		// ⚠️ OPCIONAL: batch_id solo si usuario seleccionó un lote manual
 		let finalBatchId: number | null = null;
-
-		if (isBatchFlow) {
-			if (!selectedBatch) {
-				console.error('El lote no está disponible todavía');
-				return;
-			}
-			finalBatchId = Number(batchIdToUse);
-		} else {
-			if (selectedBatchOption) {
-				finalBatchId = Number(selectedBatchOption.value);
-			} else if (manualBatchId) {
-				finalBatchId = manualBatchId;
-			}
-			if (!finalBatchId) {
-				setBatchesError('Selecciona un lote válido');
-				return;
-			}
+		if (selectedBatchOption) {
+			finalBatchId = Number(selectedBatchOption.value);
+		} else if (manualBatchId) {
+			finalBatchId = manualBatchId;
 		}
 
 		try {
@@ -475,7 +405,7 @@ const ItemReviewStandalonePage: React.FC = () => {
 				serial_number: serialNumber,
 				product_id: productId,
 				equipment_type: equipmentType,
-				warehouse_id: resolvedWarehouseId,
+				warehouse_id: warehouseId,
 				customer_supplier_id: customerSupplierId ?? undefined,
 			});
 
@@ -608,9 +538,8 @@ const ItemReviewStandalonePage: React.FC = () => {
 							{item ? `Revisión #${item.id}` : 'Nueva Revisión'}
 						</h1>
 						<p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
-							{batchIdToUse
-								? `Lote #${batchIdToUse}`
-								: 'Revisión individual (sin lote)'}
+							{/* ✅ STANDALONE: Siempre es revisión individual */}
+							Revisión individual de item
 						</p>
 					</div>
 				</div>
@@ -721,16 +650,8 @@ const ItemReviewStandalonePage: React.FC = () => {
 									<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
 										Bodega <span className='text-red-500'>*</span>
 									</label>
-									{isBatchFlow ? (
-										<Input
-											name='warehouse_display'
-											value={
-												selectedBatch?.warehouse?.name ||
-												'Bodega asignada al lote'
-											}
-											disabled
-										/>
-									) : warehousesLoading ? (
+									{/* ✅ STANDALONE: Siempre selector de bodega */}
+									{warehousesLoading ? (
 										<div className='text-sm text-gray-500'>
 											Cargando bodegas...
 										</div>
@@ -813,38 +734,32 @@ const ItemReviewStandalonePage: React.FC = () => {
 									/>
 								</div>
 
-								{/* Batch selection when no batch preselected */}
-								{!isBatchFlow && (
-									<div>
-										<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-											Lote de Revisión <span className='text-red-500'>*</span>
-										</label>
-										<SelectReact
-											name='batch_id'
-											placeholder='Seleccionar lote abierto'
-											options={batchOptions}
-											value={selectedBatchOption}
-											onChange={(option) => {
-												setSelectedBatchOption(
-													option as TSelectOption | null,
-												);
-												setBatchesError(null);
-											}}
-											isLoading={loadingBatches}
-										/>
-										{batchesError && (
-											<p className='mt-1 text-xs text-red-500'>
-												{batchesError}
-											</p>
-										)}
-										{!loadingBatches && manualBatchId === null && (
-											<p className='mt-1 text-xs text-amber-600'>
-												⚠️ Debe existir un lote "Manual" para registrar
-												revisiones sueltas.
-											</p>
-										)}
-									</div>
-								)}
+								{/* ⚠️ OPCIONAL: Batch selection (standalone items can optionally associate to manual batch) */}
+								<div>
+									<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+										Lote de Revisión (Opcional)
+									</label>
+									<SelectReact
+										name='batch_id'
+										placeholder='Seleccionar lote abierto'
+										options={batchOptions}
+										value={selectedBatchOption}
+										onChange={(option) => {
+											setSelectedBatchOption(option as TSelectOption | null);
+											setBatchesError(null);
+										}}
+										isLoading={loadingBatches}
+									/>
+									{batchesError && (
+										<p className='mt-1 text-xs text-red-500'>{batchesError}</p>
+									)}
+									{!loadingBatches && manualBatchId === null && (
+										<p className='mt-1 text-xs text-amber-600'>
+											💡 Tip: Puedes asociar este item a un lote manual si
+											existe uno
+										</p>
+									)}
+								</div>
 
 								{/* Equipment Type */}
 								<div>
@@ -945,8 +860,8 @@ const ItemReviewStandalonePage: React.FC = () => {
 						})()}
 						onBack={() => setCurrentStep('basic')}
 						onComplete={async () => {
-							// Extraer el valor del review_status (puede venir como objeto o string)
-							const reviewStatus = extractValue(item.review_status);
+							// ✅ Usar extractFieldValue desde constantes compartidas
+							const reviewStatus = extractFieldValue(item.review_status);
 
 							// Si el item ya fue revisado, ir directo al Step 3 (sin volver a completar)
 							if (reviewStatus === 'reviewed' || reviewStatus === 'approved') {

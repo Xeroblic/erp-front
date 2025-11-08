@@ -77,7 +77,7 @@ export const useAutoSaveReview = ({
         setIsSaving(true);
         try {
             const payload = {
-                batch_id: data.batch_id ?? null,
+                batch_id: data.batch_id ?? undefined, // ✅ Usar undefined en lugar de null
                 serial_number: data.serial_number,
                 product_id: data.product_id,
                 equipment_type: data.equipment_type,
@@ -128,7 +128,6 @@ export const useAutoSaveReview = ({
      */
     const markDetailsChanged = useCallback((details: UpdateItemDetailsPayload) => {
         if (!itemId || reviewStatus !== 'in_review') {
-            toast.info('Auto-save solo disponible para items en revisión');
             return;
         }
 

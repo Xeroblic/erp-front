@@ -81,7 +81,14 @@ export const fetchValidationRulesByType = createAsyncThunk<
  * POST /api/branches/{branch}/technical-reviews/validation/validate-field
  */
 export const validateField = createAsyncThunk<
-    { valid: boolean; message?: string },
+    {
+        valid: boolean;
+        message?: string;
+        errors?: string[];
+        warnings?: string[];
+        suggestion?: string;
+        help_text?: string;
+    },
     {
         branchId: number;
         data: {
@@ -101,7 +108,14 @@ export const validateField = createAsyncThunk<
                 data,
             });
 
-            return normalizeObject(response.data) as { valid: boolean; message?: string };
+            return normalizeObject(response.data) as {
+                valid: boolean;
+                message?: string;
+                errors?: string[];
+                warnings?: string[];
+                suggestion?: string;
+                help_text?: string;
+            };
         } catch (error: any) {
             return rejectWithValue(
                 error?.response?.data?.message ??
@@ -117,7 +131,16 @@ export const validateField = createAsyncThunk<
  * POST /api/branches/{branch}/technical-reviews/validation/suggest-grade
  */
 export const suggestGrade = createAsyncThunk<
-    { suggested_grade: string; confidence: number; breakdown: Record<string, any> },
+    {
+        suggested_grade: string;
+        grade_label: string;
+        confidence: number;
+        total_score: number;
+        breakdown: Record<string, any>;
+        reasoning: string[];
+        is_auto_assignable: boolean;
+        warnings: string[];
+    },
     { branchId: number; itemId: number },
     { rejectValue: string }
 >(
@@ -132,8 +155,13 @@ export const suggestGrade = createAsyncThunk<
 
             return normalizeObject(response.data) as {
                 suggested_grade: string;
+                grade_label: string;
                 confidence: number;
+                total_score: number;
                 breakdown: Record<string, any>;
+                reasoning: string[];
+                is_auto_assignable: boolean;
+                warnings: string[];
             };
         } catch (error: any) {
             return rejectWithValue(
