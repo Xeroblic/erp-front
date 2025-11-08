@@ -16,7 +16,7 @@ import { createBatch, selectBatchesLoading } from '@/store/slices/technicalRevie
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import Textarea from '@/components/form/Textarea';
 import { fetchWarehouses } from '@/store/slices/warehouses/warehouseSlice';
-import { fetchSuppliers } from '@/store/slices/suppliers/suppliersSlice';
+import { fetchCustomerSuppliers } from '@/store/slices/customerSuppliers/customerSuppliersSlice';
 import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/personalizacionSlice';
 
 // Tipo local para el payload del formulario
@@ -39,8 +39,8 @@ const CreateBatchPage: React.FC = () => {
 	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
 	const warehouses = useAppSelector((s) => s.warehouse.warehouses);
 	const warehousesLoading = useAppSelector((s) => s.warehouse.loading);
-	const suppliers = useAppSelector((s) => s.suppliers.items);
-	const suppliersLoading = useAppSelector((s) => s.suppliers.loading);
+	const customer_supplier = useAppSelector((s) => s.customerSuppliers.items);
+	const customer_supplier_loading = useAppSelector((s) => s.customerSuppliers.loading);
 
 	// Obtener subsidiaryId del usuario
 	const subsidiaryId = useMemo(() => {
@@ -60,6 +60,7 @@ const CreateBatchPage: React.FC = () => {
 	});
 
 	const [errors, setErrors] = useState<Record<string, string>>({});
+	const [selectedSupplierId, setSelectedSupplierId] = useState<number | null>(null);
 
 	// Cargar bodegas y proveedores al montar el componente
 	useEffect(() => {
@@ -76,9 +77,9 @@ const CreateBatchPage: React.FC = () => {
 	useEffect(() => {
 		if (subsidiaryId) {
 			dispatch(
-				fetchSuppliers({
+				fetchCustomerSuppliers({
 					subsidiaryId,
-					with_customers: false,
+					with_suppliers: true,
 				}),
 			);
 		}
@@ -95,19 +96,47 @@ const CreateBatchPage: React.FC = () => {
 		}));
 	}, [warehouses]);
 
-	// Convertir proveedores a opciones para el SelectReact
-	const supplierOptions: TSelectOption[] = useMemo(() => {
-		if (!suppliers || suppliers.length === 0) {
-			return [{ value: '', label: 'No hay proveedores disponibles' }];
+	// Convertir clientes a opciones para el SelectReact
+	const customerOptions: TSelectOption[] = useMemo(() => {
+		if (!customer_supplier || customer_supplier.length === 0) {
+			return [{ value: '', label: 'No hay clientes disponibles' }];
 		}
-		return suppliers.map((supplier) => ({
-			value: String(supplier.id),
-			label: supplier.name,
+		return customer_supplier.map((customerSupplier) => ({
+			value: String(customerSupplier.id),
+			label: customerSupplier.name || 'N/A',
 		}));
-	}, [suppliers]);
+	}, [customer_supplier]);
+
+	const selectedCustomer = useMemo(() => {
+		return (
+			customer_supplier.find(
+				(customerSupplier) => customerSupplier.id === formData.customer_supplier_id,
+			) || null
+		);
+	}, [customer_supplier, formData.customer_supplier_id]);
+
+	const supplierOptions: TSelectOption[] = useMemo(() => {
+		if (!selectedCustomer?.suppliers?.length) return [];
+		return selectedCustomer.suppliers.map((supplier) => ({
+			value: String(supplier.id),
+			label: supplier.name || 'Proveedor sin nombre',
+		}));
+	}, [selectedCustomer]);
+
+	useEffect(() => {
+		if (
+			selectedSupplierId !== null &&
+			!supplierOptions.some((opt) => opt.value === String(selectedSupplierId))
+		) {
+			setSelectedSupplierId(null);
+		}
+	}, [supplierOptions, selectedSupplierId]);
 
 	const handleChange = (field: keyof CreateBatchFormData, value: any) => {
 		setFormData((prev) => ({ ...prev, [field]: value }));
+		if (field === 'customer_supplier_id') {
+			setSelectedSupplierId(null);
+		}
 		// Limpiar error del campo
 		if (errors[field]) {
 			setErrors((prev) => {
@@ -125,7 +154,7 @@ const CreateBatchPage: React.FC = () => {
 			newErrors.warehouse_id = 'Selecciona una bodega';
 		}
 		if (!formData.customer_supplier_id) {
-			newErrors.customer_supplier_id = 'Selecciona un proveedor';
+			newErrors.customer_supplier_id = 'Selecciona un Cliente/Proveedor';
 		}
 		if (!formData.entry_date) {
 			newErrors.entry_date = 'Ingresa la fecha de entrada';
@@ -222,17 +251,17 @@ const CreateBatchPage: React.FC = () => {
 										</p>
 									)}
 								</div>
-								{/* Proveedor */}
+								{/* Cliente/Proveedor */}
 								<div>
 									<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-										Proveedor <span className='text-red-500'>*</span>
+										Cliente/Proveedor <span className='text-red-500'>*</span>
 									</label>
 									<SelectReact
 										name='customer_supplier_id'
-										placeholder='Seleccionar proveedor'
-										options={supplierOptions}
+										placeholder='Seleccionar cliente/proveedor'
+										options={customerOptions}
 										value={
-											supplierOptions.find(
+											customerOptions.find(
 												(opt) =>
 													opt.value ===
 													String(formData.customer_supplier_id),
@@ -249,6 +278,36 @@ const CreateBatchPage: React.FC = () => {
 											errors.customer_supplier_id ? 'border-red-500' : ''
 										}
 									/>
+									{supplierOptions.length > 0 && (
+										<div className='mt-4'>
+											<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+												Proveedor asociado
+											</label>
+											<SelectReact
+												name='supplier_id'
+												placeholder='Seleccionar proveedor'
+												options={supplierOptions}
+												value={
+													selectedSupplierId !== null
+														? supplierOptions.find(
+																(opt) =>
+																	opt.value ===
+																	String(selectedSupplierId),
+														  ) || null
+														: null
+												}
+												onChange={(option) => {
+													const selectedOption =
+														option as TSelectOption | null;
+													setSelectedSupplierId(
+														selectedOption
+															? parseInt(selectedOption.value)
+															: null,
+													);
+												}}
+											/>
+										</div>
+									)}
 									{errors.customer_supplier_id && (
 										<p className='mt-1 text-xs text-red-500'>
 											{errors.customer_supplier_id}

@@ -120,7 +120,7 @@ const BatchList: React.FC<BatchListProps> = ({
 					<div className='flex items-center gap-2'>
 						<Icon icon='HeroHomeModern' className='h-4 w-4 text-gray-400' />
 						<span className='text-sm text-gray-700 dark:text-gray-300'>
-							{info.row.original.warehouse?.name || 'N/A'}
+							{info.row.original.code || 'N/A'}
 						</span>
 					</div>
 				),
