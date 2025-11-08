@@ -16,6 +16,7 @@ import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import ItemList from '../items/ItemList';
 import type { IItem, IBatch, EquipmentType } from '@/interface/technicalReviews.interface';
+import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 
 interface BatchTabsProps {
 	batch: IBatch;
@@ -34,6 +35,31 @@ const TABS: TabConfig[] = [
 	{ type: 'aio', label: 'All-in-One', icon: 'HeroDeviceTablet' },
 	{ type: 'docking', label: 'Dockings', icon: 'HeroCpuChip' },
 	{ type: 'monitor', label: 'Monitores', icon: 'HeroTv' },
+];
+
+const REVIEW_STATUS_OPTIONS: TSelectOption[] = [
+	{ value: 'all', label: 'Todos los estados' },
+	{ value: 'pending', label: 'Pendiente' },
+	{ value: 'in_progress', label: 'En revisión' },
+	{ value: 'reviewed', label: 'Revisado' },
+	{ value: 'approved', label: 'Aprobado' },
+];
+
+const COMMERCIAL_STATUS_OPTIONS: TSelectOption[] = [
+	{ value: 'all', label: 'Estado comercial' },
+	{ value: 'in_stock', label: 'En bodega' },
+	{ value: 'reserved', label: 'Reservado' },
+	{ value: 'sold', label: 'Vendido' },
+	{ value: 'rma', label: 'RMA' },
+	{ value: 'scrapped', label: 'Descartado' },
+];
+
+const GRADE_OPTIONS: TSelectOption[] = [
+	{ value: 'all', label: 'Todos los grados' },
+	{ value: 'A', label: 'Grado A' },
+	{ value: 'B', label: 'Grado B' },
+	{ value: 'C', label: 'Grado C' },
+	{ value: 'M', label: 'Grado M' },
 ];
 
 const BatchTabs: React.FC<BatchTabsProps> = ({ batch, onItemClick }) => {
@@ -145,51 +171,57 @@ const BatchTabs: React.FC<BatchTabsProps> = ({ batch, onItemClick }) => {
 						</div>
 
 						{/* Estado de Revisión */}
-						<select
-							value={reviewStatusFilter}
-							onChange={(e) => {
-								setReviewStatusFilter(e.target.value);
+						<SelectReact
+							name='review_status_filter'
+							placeholder='Todos los estados'
+							options={REVIEW_STATUS_OPTIONS}
+							value={
+								REVIEW_STATUS_OPTIONS.find(
+									(option) => option.value === reviewStatusFilter,
+								) ?? REVIEW_STATUS_OPTIONS[0]
+							}
+							onChange={(option) => {
+								const selectedOption = option as TSelectOption | null;
+								setReviewStatusFilter(selectedOption?.value ?? 'all');
 								setCurrentPage(1);
 							}}
-							className='rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-gray-600 dark:bg-gray-800'>
-							<option value='all'>Todos los estados</option>
-							<option value='pending'>Pendiente</option>
-							<option value='in_progress'>En revisión</option>
-							<option value='reviewed'>Revisado</option>
-							<option value='approved'>Aprobado</option>
-						</select>
+							className='min-w-[200px]'
+						/>
 
 						{/* Estado Comercial */}
-						<select
-							value={commercialStatusFilter}
-							onChange={(e) => {
-								setCommercialStatusFilter(e.target.value);
+						<SelectReact
+							name='commercial_status_filter'
+							placeholder='Estado comercial'
+							options={COMMERCIAL_STATUS_OPTIONS}
+							value={
+								COMMERCIAL_STATUS_OPTIONS.find(
+									(option) => option.value === commercialStatusFilter,
+								) ?? COMMERCIAL_STATUS_OPTIONS[0]
+							}
+							onChange={(option) => {
+								const selectedOption = option as TSelectOption | null;
+								setCommercialStatusFilter(selectedOption?.value ?? 'all');
 								setCurrentPage(1);
 							}}
-							className='rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-gray-600 dark:bg-gray-800'>
-							<option value='all'>Estado comercial</option>
-							<option value='in_stock'>En bodega</option>
-							<option value='reserved'>Reservado</option>
-							<option value='sold'>Vendido</option>
-							<option value='rma'>RMA</option>
-							<option value='scrapped'>Descartado</option>
-						</select>
+							className='min-w-[180px]'
+						/>
 
 						{/* Grado */}
-						<select
-							value={gradeFilter}
-							onChange={(e) => {
-								setGradeFilter(e.target.value);
+						<SelectReact
+							name='grade_filter'
+							placeholder='Todos los grados'
+							options={GRADE_OPTIONS}
+							value={
+								GRADE_OPTIONS.find((option) => option.value === gradeFilter) ??
+								GRADE_OPTIONS[0]
+							}
+							onChange={(option) => {
+								const selectedOption = option as TSelectOption | null;
+								setGradeFilter(selectedOption?.value ?? 'all');
 								setCurrentPage(1);
 							}}
-							className='rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-gray-600 dark:bg-gray-800'>
-							<option value='all'>Todos los grados</option>
-							<option value='A'>Grado A</option>
-							<option value='B'>Grado B</option>
-							<option value='C'>Grado C</option>
-							<option value='D'>Grado D</option>
-							<option value='E'>Grado E</option>
-						</select>
+							className='min-w-[180px]'
+						/>
 
 						{/* Limpiar Filtros */}
 						{(reviewStatusFilter !== 'all' ||
