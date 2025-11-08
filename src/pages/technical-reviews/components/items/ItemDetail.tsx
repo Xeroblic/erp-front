@@ -48,11 +48,11 @@ const ItemDetail: React.FC<ItemDetailProps> = ({
 	}
 
 	return (
-		<Card className='border-l-4 border-blue-500'>
+		<Card className='border-l-4 border-blue-500 space-y-6'>
 			<CardBody className='p-6'>
 				<div className='space-y-4'>
 					{/* Header con Serial y Estados */}
-					<Card className='flex flex-wrap items-start justify-between gap-4'>
+					<div className='flex flex-wrap items-start justify-between gap-4'>
 						<div className='flex-1'>
 							<div className='flex items-center gap-3'>
 								<Icon icon='HeroQrCode' className='h-6 w-6 text-blue-600' />
@@ -71,10 +71,10 @@ const ItemDetail: React.FC<ItemDetailProps> = ({
 							<StatusBadge type='review' status={item.review_status} />
 							<StatusBadge type='commercial' status={item.current_status} />
 						</div>
-					</Card>
+					</div>
 
 					{/* Info Grid */}
-					<Card className='grid grid-cols-1 gap-4 border-t pt-4 md:grid-cols-2 lg:grid-cols-4'>
+					<div className='grid grid-cols-1 gap-4 border-t pt-4 md:grid-cols-2 lg:grid-cols-4'>
 						{/* Tipo de Equipo */}
 						<div>
 							<p className='text-xs font-medium uppercase text-gray-500 dark:text-gray-400'>
@@ -158,7 +158,7 @@ const ItemDetail: React.FC<ItemDetailProps> = ({
 								</div>
 							</div>
 						)}
-					</Card>
+					</div>
 
 					{/* Breakdown (si existe) */}
 					{item.breakdown && Object.keys(item.breakdown).length > 0 && (

@@ -19,6 +19,7 @@ interface ItemListProps {
 	onItemClick?: (itemId: number) => void;
 	baseUrl?: string; // URL base para navegación (ej: '/technical-reviews/items' o '/technical-reviews/batches/5')
 	emptyMessage?: string;
+	variant?: 'batch' | 'global';
 }
 
 const ItemList: React.FC<ItemListProps> = ({
@@ -30,6 +31,7 @@ const ItemList: React.FC<ItemListProps> = ({
 	onItemClick,
 	baseUrl = '/technical-reviews/items',
 	emptyMessage = 'No hay series para mostrar',
+	variant = 'batch',
 }) => {
 	const navigate = useNavigate();
 
@@ -49,14 +51,23 @@ const ItemList: React.FC<ItemListProps> = ({
 		}
 	};
 
-	const resolveEquipmentTypeMeta = (equipmentType: any): { value: string; label: string; icon: string } => {
-		const value = (typeof equipmentType === 'object' && equipmentType !== null && 'value' in equipmentType
-			? equipmentType.value
-			: equipmentType) as string | null;
+	const resolveEquipmentTypeMeta = (
+		equipmentType: any,
+	): { value: string; label: string; icon: string } => {
+		const value = (
+			typeof equipmentType === 'object' && equipmentType !== null && 'value' in equipmentType
+				? equipmentType.value
+				: equipmentType
+		) as string | null;
 
 		const normalizedValue = value ?? 'unknown';
 
-		if (typeof equipmentType === 'object' && equipmentType !== null && 'label' in equipmentType && equipmentType.label) {
+		if (
+			typeof equipmentType === 'object' &&
+			equipmentType !== null &&
+			'label' in equipmentType &&
+			equipmentType.label
+		) {
 			return {
 				value: normalizedValue,
 				label: String(equipmentType.label),
@@ -98,6 +109,16 @@ const ItemList: React.FC<ItemListProps> = ({
 							: 'HeroTv';
 
 		return { value: normalizedValue, label, icon };
+	};
+
+	const formatDateTime = (value?: string | null): string => {
+		if (!value) return '—';
+		const date = new Date(value);
+		if (Number.isNaN(date.getTime())) return '—';
+		return date.toLocaleString('es-CL', {
+			dateStyle: 'short',
+			timeStyle: 'short',
+		});
 	};
 
 	if (loading) {
@@ -142,6 +163,11 @@ const ItemList: React.FC<ItemListProps> = ({
 								<th className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
 									Serie
 								</th>
+								{variant === 'global' && (
+									<th className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
+										Producto
+									</th>
+								)}
 								<th className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
 									Tipo
 								</th>
@@ -154,6 +180,16 @@ const ItemList: React.FC<ItemListProps> = ({
 								<th className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
 									Grado
 								</th>
+								{variant === 'global' && (
+									<>
+										<th className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
+											Bodega
+										</th>
+										<th className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
+											Última actualización
+										</th>
+									</>
+								)}
 								<th className='px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
 									Acciones
 								</th>
@@ -176,9 +212,18 @@ const ItemList: React.FC<ItemListProps> = ({
 											</span>
 										</div>
 									</td>
+									{variant === 'global' && (
+										<td className='whitespace-nowrap px-4 py-3 text-sm text-gray-700 dark:text-gray-300'>
+											{(item as any)?.product?.name ||
+												(item as any)?.product_name ||
+												'Sin producto'}
+										</td>
+									)}
 									<td className='whitespace-nowrap px-4 py-3'>
 										{(() => {
-											const { label, icon } = resolveEquipmentTypeMeta(item.equipment_type);
+											const { label, icon } = resolveEquipmentTypeMeta(
+												item.equipment_type,
+											);
 											return (
 												<span className='inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200'>
 													<Icon icon={icon as any} className='h-3 w-3' />
@@ -219,6 +264,18 @@ const ItemList: React.FC<ItemListProps> = ({
 											<span className='text-xs text-gray-400'>Pendiente</span>
 										)}
 									</td>
+									{variant === 'global' && (
+										<>
+											<td className='whitespace-nowrap px-4 py-3 text-sm text-gray-700 dark:text-gray-300'>
+												{(item as any)?.warehouse?.name ||
+													(item as any)?.warehouse_name ||
+													'—'}
+											</td>
+											<td className='whitespace-nowrap px-4 py-3 text-sm text-gray-600 dark:text-gray-400'>
+												{formatDateTime(item.updated_at || item.created_at)}
+											</td>
+										</>
+									)}
 									<td className='whitespace-nowrap px-4 py-3 text-right'>
 										<Button
 											size='sm'

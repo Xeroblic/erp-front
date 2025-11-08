@@ -33,10 +33,12 @@ interface UseAutoSaveReviewProps {
 }
 
 interface BasicInfoData {
-    batch_id: number;
+    batch_id?: number | null;
     serial_number: string;
     product_id?: number;
     equipment_type?: EquipmentType;
+    warehouse_id?: number;
+    customer_supplier_id?: number | null;
 }
 
 const AUTO_SAVE_DELAY = 30000; // 30 segundos de inactividad
@@ -74,18 +76,22 @@ export const useAutoSaveReview = ({
     const saveBasicInfo = useCallback(async (data: BasicInfoData): Promise<number | null> => {
         setIsSaving(true);
         try {
+            const payload = {
+                batch_id: data.batch_id ?? null,
+                serial_number: data.serial_number,
+                product_id: data.product_id,
+                equipment_type: data.equipment_type,
+                warehouse_id: data.warehouse_id,
+                customer_supplier_id: data.customer_supplier_id,
+            };
+
             if (itemId) {
                 // Actualizar item existente
                 const result = await dispatch(
                     updateItem({
                         branchId,
                         itemId,
-                        data: {
-                            batch_id: data.batch_id,
-                            serial_number: data.serial_number,
-                            product_id: data.product_id,
-                            equipment_type: data.equipment_type,
-                        },
+                        data: payload,
                     })
                 ).unwrap();
 
@@ -98,7 +104,7 @@ export const useAutoSaveReview = ({
                 const result = await dispatch(
                     createItem({
                         branchId,
-                        data,
+                        data: payload,
                     })
                 ).unwrap();
 

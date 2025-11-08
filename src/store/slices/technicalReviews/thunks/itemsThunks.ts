@@ -101,9 +101,11 @@ export const createItem = createAsyncThunk<
     {
         branchId: number;
         data: {
-            batch_id: number;
+            batch_id?: number | null;
             serial_number: string;
             product_id?: number;
+            warehouse_id?: number;
+            customer_supplier_id?: number | null;
             equipment_type?: EquipmentType;
             extra_attributes?: Record<string, any>;
         };
@@ -144,6 +146,8 @@ export const updateItem = createAsyncThunk<
             serial_number: string;
             product_id: number;
             equipment_type: EquipmentType;
+            warehouse_id: number;
+            customer_supplier_id: number | null;
         }>;
     },
     { rejectValue: string }

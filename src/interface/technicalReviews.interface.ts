@@ -20,6 +20,7 @@ export type EquipmentType = 'notebook' | 'desktop' | 'docking' | 'aio' | 'monito
 export interface IBatch {
     id: number;
     code?: string; // Código generado automáticamente por el backend
+    name?: string; // Nombre o descripción del lote
     warehouse_id: number;
     warehouse?: {
         id: number;
@@ -67,8 +68,27 @@ export interface IBatch {
 export interface IItem {
     id: number;
     batch_id: number;
+    batch?: {
+        id: number;
+        code?: string;
+        name?: string;
+    };
     serial_number: string;
     product_id?: number | null;
+    product?: {
+        id: number;
+        name: string;
+    };
+    warehouse_id?: number | null;
+    warehouse?: {
+        id: number;
+        name: string;
+    };
+    customer_supplier_id?: number | null;
+    customer_supplier?: {
+        id: number;
+        name: string;
+    };
     equipment_type: EquipmentType;
     review_status: ReviewStatus;
     current_status: CommercialStatus;

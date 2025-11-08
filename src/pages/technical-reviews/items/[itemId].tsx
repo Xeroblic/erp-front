@@ -3,7 +3,7 @@
  * Revisión individual sin lote - mismo flujo de 3 pasos
  * Reutiliza la misma lógica que [batchId]/[itemId].tsx pero sin batch_id
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
@@ -21,17 +21,27 @@ import {
 	selectItemsLoading,
 	fetchBatchById,
 	selectSelectedBatch,
+	selectSelectedItem,
 	type EquipmentType,
 } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import { fetchProducts } from '@/store/slices/products/productsSlice';
+import { fetchWarehouses } from '@/store/slices/warehouses/warehouseSlice';
+import { fetchCustomerSuppliers } from '@/store/slices/customerSuppliers/customerSuppliersSlice';
+import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/personalizacionSlice';
 import { Step2FullReview, Step3GradeReview } from '../components/items/ReviewSteps';
 import ItemDetail from '../components/items/ItemDetail';
 import type { UpdateItemDetailsPayload } from '@/interface/technicalReviews.interface';
 import { useAutoSaveReview } from '@/hooks/useAutoSaveReview';
 import { toast } from 'react-toastify';
+import ApiService from '@/services/ApiService';
+
+const TECHNICAL_REVIEWS_PREFIX = (import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
+const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
+const ep = (branchId: number, path: string) =>
+	join(TECHNICAL_REVIEWS_PREFIX, `/branches/${branchId}/technical-reviews${path}`);
 
 type ReviewStep = 'basic' | 'review' | 'grading';
 
@@ -53,6 +63,13 @@ const ItemReviewStandalonePage: React.FC = () => {
 	const loading = useAppSelector(selectItemsLoading);
 	const products = useAppSelector((s) => s.products.items);
 	const productsLoading = useAppSelector((s) => s.products.loading);
+	const warehouses = useAppSelector((s) => s.warehouse.warehouses);
+	const warehousesLoading = useAppSelector((s) => s.warehouse.loading);
+	const customerSuppliers = useAppSelector((s) => s.customerSuppliers.items);
+	const customerSuppliersLoading = useAppSelector((s) => s.customerSuppliers.loading);
+	const selectedItemStore = useAppSelector(selectSelectedItem);
+	const currentUser = useAppSelector((s) => s.auth.user);
+	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
 
 	const [currentStep, setCurrentStep] = useState<ReviewStep>('basic');
 	const [item, setItem] = useState<any>(null);
@@ -62,6 +79,13 @@ const ItemReviewStandalonePage: React.FC = () => {
 	const [productId, setProductId] = useState<number | null>(null);
 	const [equipmentType, setEquipmentType] = useState<EquipmentType | null>(null);
 	const [hasUserSelectedType, setHasUserSelectedType] = useState(false);
+	const [warehouseId, setWarehouseId] = useState<number | null>(null);
+	const [customerSupplierId, setCustomerSupplierId] = useState<number | null>(null);
+	const [batchOptions, setBatchOptions] = useState<TSelectOption[]>([]);
+	const [selectedBatchOption, setSelectedBatchOption] = useState<TSelectOption | null>(null);
+	const [manualBatchId, setManualBatchId] = useState<number | null>(null);
+	const [loadingBatches, setLoadingBatches] = useState(false);
+	const [batchesError, setBatchesError] = useState<string | null>(null);
 
 	// Step 3: Grading
 	const [automaticGrade, setAutomaticGrade] = useState<string | null>(null);
@@ -71,6 +95,16 @@ const ItemReviewStandalonePage: React.FC = () => {
 	const query = new URLSearchParams(location.search);
 	const batchIdFromQuery = query.get('batch_id');
 	const batchIdToUse = batchIdFromPath || batchIdFromQuery;
+	const isBatchFlow = Boolean(batchIdToUse);
+
+	const subsidiaryId = useMemo(() => {
+		return (
+			personalizacionUsuario?.subsidiary_id ??
+			currentUser?.subsidiary?.id ??
+			currentUser?.branch?.subsidiary?.id ??
+			null
+		);
+	}, [personalizacionUsuario, currentUser]);
 
 	// Auto-save hook
 	const {
@@ -116,16 +150,225 @@ const ItemReviewStandalonePage: React.FC = () => {
 		}
 	}, [dispatch, branchId]);
 
-	// Filtrar solo productos con seguimiento por serie
-	const productsWithSerial = products.filter((p) => p.serial_tracking === true);
+	useEffect(() => {
+		if (branchId) {
+			dispatch(
+				fetchWarehouses({
+					branchId,
+					params: { page: 1, per_page: 100, is_active: true },
+				}),
+			);
+		}
+	}, [dispatch, branchId]);
 
 	useEffect(() => {
-		if (!itemId || itemId === 'create' || !branchId) return;
+		if (subsidiaryId) {
+			dispatch(
+				fetchCustomerSuppliers({
+					subsidiaryId,
+					with_suppliers: true,
+				}),
+			);
+		}
+	}, [dispatch, subsidiaryId]);
+
+	useEffect(() => {
+		if (branchId && !isBatchFlow) {
+			fetchOpenBatches();
+		}
+	}, [branchId, isBatchFlow]);
+
+	// Filtrar solo productos con seguimiento por serie
+	const productsWithSerial = useMemo(
+		() => products.filter((p) => p.serial_tracking === true),
+		[products],
+	);
+
+	const productOptions = useMemo(() => {
+		return productsWithSerial.map((p) => ({
+			value: String(p.id),
+			label: `${p.name} - ${p.sku}`,
+		}));
+	}, [productsWithSerial]);
+
+	const selectedProductOption = useMemo(() => {
+		return productId
+			? (productOptions.find((opt) => opt.value === String(productId)) ?? null)
+			: null;
+	}, [productId, productOptions]);
+
+	const fetchOpenBatches = async () => {
+		if (!branchId) return;
+		setLoadingBatches(true);
+		try {
+			const url = ep(branchId, '/batches');
+			console.log('🔍 Fetching batches from:', url);
+
+			const response = await ApiService.fetchData<{ data?: any[] }>({
+				url,
+				method: 'get',
+				params: { per_page: 200 }, // ⚠️ Sin filtro status, traemos todos
+			});
+
+			console.log('📦 Response data:', response.data);
+
+			const rawList = Array.isArray(response.data?.data)
+				? response.data?.data
+				: Array.isArray(response.data)
+					? (response.data as any[])
+					: [];
+
+			// Filtrar del lado del cliente: solo lotes que NO estén closed
+			const list = rawList.filter((batch: any) => {
+				const status = (batch.status || '').toLowerCase();
+				return status !== 'closed' && status !== 'completed' && status !== 'finished';
+			});
+
+			console.log('📋 Total lotes:', rawList.length, '| Lotes abiertos:', list.length, list);
+
+			const options = list.map((batch: any) => {
+				const entryDate = batch.entry_date
+					? new Date(batch.entry_date).toLocaleDateString('es-CL')
+					: null;
+				const status = batch.status ? ` [${batch.status}]` : '';
+				return {
+					value: String(batch.id),
+					label: `${batch.code || batch.name || `Lote #${batch.id}`}${status} ${
+						entryDate ? `• ${entryDate}` : ''
+					}`,
+				};
+			});
+			setBatchOptions(options);
+
+			const manual = list.find((batch: any) => {
+				const base =
+					`${batch.name ?? ''} ${batch.slug ?? ''} ${batch.code ?? ''}`.toLowerCase();
+				return base.includes('manual');
+			});
+
+			if (manual) {
+				console.log('✅ Lote Manual encontrado:', manual);
+				setManualBatchId(manual.id);
+				if (!selectedBatchOption) {
+					const opt = options.find((o) => o.value === String(manual.id)) ?? null;
+					setSelectedBatchOption(opt);
+				}
+			} else {
+				console.log('⚠️ No se encontró lote Manual');
+				setManualBatchId(null);
+			}
+			setBatchesError(null);
+		} catch (error: any) {
+			console.error('❌ Error al cargar lotes:', error);
+			setBatchesError(error?.message ?? 'No se pudieron cargar los lotes');
+		} finally {
+			setLoadingBatches(false);
+		}
+	};
+	const warehouseOptions = useMemo(() => {
+		if (!warehouses || warehouses.length === 0) {
+			return [];
+		}
+		return warehouses.map((warehouse) => ({
+			value: String(warehouse.id),
+			label: `${warehouse.name} (${warehouse.code})`,
+		}));
+	}, [warehouses]);
+
+	const customerSupplierOptions = useMemo(() => {
+		if (!customerSuppliers || customerSuppliers.length === 0) {
+			return [];
+		}
+		return customerSuppliers.map((cs) => ({
+			value: String(cs.id),
+			label: cs.name || `Cliente/Proveedor #${cs.id}`,
+		}));
+	}, [customerSuppliers]);
+
+	const selectedWarehouseOption = useMemo(() => {
+		return warehouseId
+			? (warehouseOptions.find((opt) => opt.value === String(warehouseId)) ?? null)
+			: null;
+	}, [warehouseId, warehouseOptions]);
+
+	const selectedCustomerSupplierOption = useMemo(() => {
+		return customerSupplierId
+			? (customerSupplierOptions.find((opt) => opt.value === String(customerSupplierId)) ??
+					null)
+			: null;
+	}, [customerSupplierId, customerSupplierOptions]);
+
+	const canContinue = Boolean(
+		serialNumber && productId && equipmentType && (isBatchFlow || warehouseId),
+	);
+
+	// Inicializar modo create
+	useEffect(() => {
+		if (itemId === 'create') {
+			setCurrentStep('basic');
+			setItem(null);
+			return;
+		}
+
+		if (!itemId || !branchId) return;
 
 		const parsedItemId = parseInt(itemId);
-
 		dispatch(fetchItemDetail({ branchId, itemId: parsedItemId }));
 	}, [dispatch, itemId, branchId]);
+
+	useEffect(() => {
+		if (
+			!selectedItemStore ||
+			!itemId ||
+			itemId === 'create' ||
+			selectedItemStore.id !== Number(itemId)
+		) {
+			return;
+		}
+
+		setItem(selectedItemStore);
+		setSerialNumber(selectedItemStore.serial_number || '');
+		setProductId(selectedItemStore.product_id ?? selectedItemStore.product?.id ?? null);
+		const normalizedType =
+			typeof selectedItemStore.equipment_type === 'object' && selectedItemStore.equipment_type !== null
+				? (selectedItemStore.equipment_type as any)?.value
+				: selectedItemStore.equipment_type;
+		if (normalizedType) {
+			setEquipmentType(normalizedType as EquipmentType);
+		}
+		setWarehouseId(selectedItemStore.warehouse_id ?? selectedItemStore.warehouse?.id ?? null);
+		setCustomerSupplierId(
+			selectedItemStore.customer_supplier_id ??
+				selectedItemStore.customer_supplier?.id ??
+				null,
+		);
+		if (!isBatchFlow) {
+			const existingBatchId =
+				selectedItemStore.batch_id ?? selectedItemStore.batch?.id ?? null;
+			if (existingBatchId) {
+				setSelectedBatchOption({
+					value: String(existingBatchId),
+					label: `Lote #${existingBatchId}`,
+				});
+			}
+		}
+
+		// Determinar el step correcto basado en el estado del item
+		const reviewStatus = typeof selectedItemStore.review_status === 'object' && selectedItemStore.review_status !== null
+			? (selectedItemStore.review_status as any).value
+			: selectedItemStore.review_status;
+
+		if (reviewStatus === 'approved') {
+			setCurrentStep('grading');
+		} else if (reviewStatus === 'reviewed') {
+			setCurrentStep('grading');
+		} else if (reviewStatus === 'in_review') {
+			setCurrentStep('review');
+		} else {
+			// Si es 'pending', iniciar en basic pero permitir ir a review
+			setCurrentStep('basic');
+		}
+	}, [selectedItemStore, itemId, isBatchFlow]);
 
 	const handleBack = () => {
 		if (batchIdToUse) {
@@ -167,25 +410,70 @@ const ItemReviewStandalonePage: React.FC = () => {
 		setEquipmentType(dominant);
 	}, [batchIdToUse, selectedBatch, hasUserSelectedType]);
 
+	useEffect(() => {
+		if (!batchIdToUse || !selectedBatch) return;
+		const parsed = Number(batchIdToUse);
+		if (isNaN(parsed) || selectedBatch.id !== parsed) return;
+		setWarehouseId(selectedBatch.warehouse_id ?? selectedBatch.warehouse?.id ?? null);
+		setCustomerSupplierId(
+			selectedBatch.customer_supplier_id ?? selectedBatch.customer_supplier?.id ?? null,
+		);
+		setSelectedBatchOption({
+			value: String(selectedBatch.id),
+			label: selectedBatch.code || selectedBatch.name || `Lote #${selectedBatch.id}`,
+		});
+	}, [batchIdToUse, selectedBatch]);
+
 	const handleStep1Submit = async () => {
 		if (!branchId) {
 			console.error('No hay branchId disponible');
 			return;
 		}
 
+		const resolvedWarehouseId = isBatchFlow
+			? (selectedBatch?.warehouse_id ?? warehouseId)
+			: warehouseId;
+
 		if (!equipmentType || !serialNumber || !productId) {
 			console.error('Faltan datos obligatorios');
 			return;
 		}
 
+		if (!resolvedWarehouseId) {
+			console.error('Selecciona una bodega válida');
+			return;
+		}
+
+		let finalBatchId: number | null = null;
+
+		if (isBatchFlow) {
+			if (!selectedBatch) {
+				console.error('El lote no está disponible todavía');
+				return;
+			}
+			finalBatchId = Number(batchIdToUse);
+		} else {
+			if (selectedBatchOption) {
+				finalBatchId = Number(selectedBatchOption.value);
+			} else if (manualBatchId) {
+				finalBatchId = manualBatchId;
+			}
+			if (!finalBatchId) {
+				setBatchesError('Selecciona un lote válido');
+				return;
+			}
+		}
+
 		try {
-			const batchIdValue = batchIdToUse ? Number(batchIdToUse) : 0;
+			const batchIdValue = finalBatchId ?? undefined;
 
 			const createdItemId = await saveBasicInfo({
 				batch_id: batchIdValue,
 				serial_number: serialNumber,
 				product_id: productId,
 				equipment_type: equipmentType,
+				warehouse_id: resolvedWarehouseId,
+				customer_supplier_id: customerSupplierId ?? undefined,
 			});
 
 			if (!createdItemId) {
@@ -381,8 +669,14 @@ const ItemReviewStandalonePage: React.FC = () => {
 					</CardBody>
 				</Card>
 
-				{/* Item Detail Card - Solo si existe el item */}
-				{item && currentStep !== 'basic' && (
+			{/* COMENTADO: Item Detail Card - No es necesario durante el flujo de revisión 
+			     Usuario debe poder navegar por los steps sin este resumen visual
+			{item &&
+				itemId &&
+				itemId !== 'create' &&
+				item.id &&
+				item.id === Number(itemId) &&
+				currentStep !== 'basic' && (
 					<ItemDetail
 						item={item}
 						loading={loading}
@@ -391,6 +685,7 @@ const ItemReviewStandalonePage: React.FC = () => {
 						showActions={false}
 					/>
 				)}
+			*/}
 
 				{/* STEP 1: Basic Info */}
 				{currentStep === 'basic' && (
@@ -418,6 +713,44 @@ const ItemReviewStandalonePage: React.FC = () => {
 									/>
 								</div>
 
+								{/* Warehouse */}
+								<div>
+									<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+										Bodega <span className='text-red-500'>*</span>
+									</label>
+									{isBatchFlow ? (
+										<Input
+											name='warehouse_display'
+											value={
+												selectedBatch?.warehouse?.name ||
+												'Bodega asignada al lote'
+											}
+											disabled
+										/>
+									) : warehousesLoading ? (
+										<div className='text-sm text-gray-500'>
+											Cargando bodegas...
+										</div>
+									) : (
+										<SelectReact
+											name='warehouse_id'
+											placeholder='Seleccionar bodega'
+											options={warehouseOptions}
+											value={selectedWarehouseOption}
+											onChange={(option) => {
+												const selectedOption =
+													option as TSelectOption | null;
+												setWarehouseId(
+													selectedOption
+														? parseInt(selectedOption.value)
+														: null,
+												);
+											}}
+											isDisabled={warehousesLoading}
+										/>
+									)}
+								</div>
+
 								{/* Product ID */}
 								<div>
 									<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
@@ -430,23 +763,8 @@ const ItemReviewStandalonePage: React.FC = () => {
 									) : (
 										<SelectReact
 											name='product_id'
-											options={productsWithSerial.map((p) => ({
-												value: String(p.id),
-												label: `${p.name} - ${p.sku}`,
-											}))}
-											value={
-												productId
-													? productsWithSerial
-															.map((p) => ({
-																value: String(p.id),
-																label: `${p.name} - ${p.sku}`,
-															}))
-															.find(
-																(opt) =>
-																	opt.value === String(productId),
-															)
-													: null
-											}
+											options={productOptions}
+											value={selectedProductOption}
 											onChange={(option) => {
 												const selectedOption =
 													option as TSelectOption | null;
@@ -468,6 +786,62 @@ const ItemReviewStandalonePage: React.FC = () => {
 										</p>
 									)}
 								</div>
+
+								{/* Customer Supplier (optional) */}
+								<div>
+									<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+										Cliente / Proveedor (opcional)
+									</label>
+									<SelectReact
+										name='customer_supplier_id'
+										placeholder='Seleccionar cliente/proveedor'
+										options={customerSupplierOptions}
+										value={selectedCustomerSupplierOption}
+										onChange={(option) => {
+											const selectedOption = option as TSelectOption | null;
+											setCustomerSupplierId(
+												selectedOption
+													? parseInt(selectedOption.value)
+													: null,
+											);
+										}}
+										isLoading={customerSuppliersLoading}
+										isClearable
+									/>
+								</div>
+
+								{/* Batch selection when no batch preselected */}
+								{!isBatchFlow && (
+									<div>
+										<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+											Lote de Revisión <span className='text-red-500'>*</span>
+										</label>
+										<SelectReact
+											name='batch_id'
+											placeholder='Seleccionar lote abierto'
+											options={batchOptions}
+											value={selectedBatchOption}
+											onChange={(option) => {
+												setSelectedBatchOption(
+													option as TSelectOption | null,
+												);
+												setBatchesError(null);
+											}}
+											isLoading={loadingBatches}
+										/>
+										{batchesError && (
+											<p className='mt-1 text-xs text-red-500'>
+												{batchesError}
+											</p>
+										)}
+										{!loadingBatches && manualBatchId === null && (
+											<p className='mt-1 text-xs text-amber-600'>
+												⚠️ Debe existir un lote "Manual" para registrar
+												revisiones sueltas.
+											</p>
+										)}
+									</div>
+								)}
 
 								{/* Equipment Type */}
 								<div>
@@ -536,7 +910,7 @@ const ItemReviewStandalonePage: React.FC = () => {
 									{itemId === 'create' || !itemId ? (
 										<Button
 											onClick={handleStep1Submit}
-											isDisable={loading || !serialNumber || !productId}>
+											isDisable={loading || !canContinue}>
 											Continuar
 											<Icon icon='HeroArrowRight' className='ml-2 h-4 w-4' />
 										</Button>
