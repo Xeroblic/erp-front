@@ -330,7 +330,8 @@ const ItemReviewStandalonePage: React.FC = () => {
 		setSerialNumber(selectedItemStore.serial_number || '');
 		setProductId(selectedItemStore.product_id ?? selectedItemStore.product?.id ?? null);
 		const normalizedType =
-			typeof selectedItemStore.equipment_type === 'object' && selectedItemStore.equipment_type !== null
+			typeof selectedItemStore.equipment_type === 'object' &&
+			selectedItemStore.equipment_type !== null
 				? (selectedItemStore.equipment_type as any)?.value
 				: selectedItemStore.equipment_type;
 		if (normalizedType) {
@@ -354,9 +355,11 @@ const ItemReviewStandalonePage: React.FC = () => {
 		}
 
 		// Determinar el step correcto basado en el estado del item
-		const reviewStatus = typeof selectedItemStore.review_status === 'object' && selectedItemStore.review_status !== null
-			? (selectedItemStore.review_status as any).value
-			: selectedItemStore.review_status;
+		const reviewStatus =
+			typeof selectedItemStore.review_status === 'object' &&
+			selectedItemStore.review_status !== null
+				? (selectedItemStore.review_status as any).value
+				: selectedItemStore.review_status;
 
 		if (reviewStatus === 'approved') {
 			setCurrentStep('grading');
@@ -669,7 +672,7 @@ const ItemReviewStandalonePage: React.FC = () => {
 					</CardBody>
 				</Card>
 
-			{/* COMENTADO: Item Detail Card - No es necesario durante el flujo de revisión 
+				{/* COMENTADO: Item Detail Card - No es necesario durante el flujo de revisión 
 			     Usuario debe poder navegar por los steps sin este resumen visual
 			{item &&
 				itemId &&

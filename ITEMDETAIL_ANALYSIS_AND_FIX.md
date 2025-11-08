@@ -13,23 +13,25 @@
 ## 🎯 Propósito Real de ItemDetail
 
 ### Definición según código fuente:
+
 ```tsx
 /**
  * ItemDetail - Cabecera con información clave de la serie
  * Muestra estado, grado, sugerencia y botones de acción
  */
 interface ItemDetailProps {
-	item: IItem;  // ❌ REQUIERE un item existente
-	onEditClick?: () => void;     // ✅ Para EDITAR revisión
-	onApproveClick?: () => void;  // ✅ Para APROBAR
+	item: IItem; // ❌ REQUIERE un item existente
+	onEditClick?: () => void; // ✅ Para EDITAR revisión
+	onApproveClick?: () => void; // ✅ Para APROBAR
 	onChangeStatusClick?: () => void; // ✅ Para cambiar estado comercial
-	showActions?: boolean;        // ✅ Muestra botones de acción
+	showActions?: boolean; // ✅ Muestra botones de acción
 }
 ```
 
 ### Funcionalidad:
 
 **✅ SÍ es para:**
+
 - Mostrar resumen visual del item durante EDICIÓN
 - Ver estado de revisión (pending/in_review/reviewed/approved)
 - Ver estado comercial (received/in_review/available_for_sale/etc)
@@ -38,6 +40,7 @@ interface ItemDetailProps {
 - Navegar entre steps con contexto visual
 
 **❌ NO es para:**
+
 - Crear nuevos items
 - Flujo de batches (no se usa en `batches/[batchId]/[itemId].tsx`)
 - Modo inicial básico (step 1)
@@ -51,24 +54,28 @@ interface ItemDetailProps {
 **Ubicación:** Línea 666-677
 
 **Condición de renderizado (NUEVA):**
+
 ```tsx
-{item && 
- itemId && 
- itemId !== 'create' && 
- item.id && 
- item.id === Number(itemId) && 
- currentStep !== 'basic' && (
-	<ItemDetail
-		item={item}
-		loading={loading}
-		onEditClick={() => setCurrentStep('review')}
-		onApproveClick={() => setCurrentStep('grading')}
-		showActions={false}
-	/>
-)}
+{
+	item &&
+		itemId &&
+		itemId !== 'create' &&
+		item.id &&
+		item.id === Number(itemId) &&
+		currentStep !== 'basic' && (
+			<ItemDetail
+				item={item}
+				loading={loading}
+				onEditClick={() => setCurrentStep('review')}
+				onApproveClick={() => setCurrentStep('grading')}
+				showActions={false}
+			/>
+		);
+}
 ```
 
 **Validaciones:**
+
 1. `item` existe
 2. `itemId` existe (no es undefined)
 3. `itemId !== 'create'` (no estamos creando)
@@ -89,6 +96,7 @@ interface ItemDetailProps {
 **URL:** `/technical-reviews/items/create`
 
 **Comportamiento:**
+
 - Aparecía un div azul (ItemDetail) con información de un item previamente visualizado
 - Al presionar F5, el div desaparecía
 - Al volver a crear, volvía a aparecer
@@ -96,12 +104,14 @@ interface ItemDetailProps {
 ### Causa Raíz:
 
 **1. Redux State Persistente:**
+
 ```typescript
 // selectedItemStore contenía data del item anterior
 const selectedItemStore = useAppSelector(selectSelectedItem);
 ```
 
 **2. Condición Insuficiente (ANTES):**
+
 ```tsx
 {item && currentStep !== 'basic' && (
 	<ItemDetail ... />
@@ -109,12 +119,14 @@ const selectedItemStore = useAppSelector(selectSelectedItem);
 ```
 
 **3. Sin Inicialización Explícita:**
+
 - No se limpiaba `item` al entrar en modo create
 - No se forzaba `currentStep = 'basic'` en modo create
 
 ### Por qué F5 lo "arreglaba":
 
 Al recargar la página:
+
 1. Redux se reiniciaba → `selectedItemStore = null`
 2. `item` se inicializaba a `null`
 3. Condición `item && ...` fallaba
@@ -123,6 +135,7 @@ Al recargar la página:
 ### Por qué volvía a aparecer:
 
 Al navegar a `/items/123` y luego a `/items/create`:
+
 1. Redux mantenía `selectedItemStore` del item 123
 2. useEffect con `itemId === 'create'` retornaba sin limpiar
 3. `item` seguía teniendo valor del item anterior
@@ -141,17 +154,18 @@ Al navegar a `/items/123` y luego a `/items/create`:
 )}
 
 // DESPUÉS:
-{item && 
- itemId && 
- itemId !== 'create' && 
- item.id && 
- item.id === Number(itemId) && 
+{item &&
+ itemId &&
+ itemId !== 'create' &&
+ item.id &&
+ item.id === Number(itemId) &&
  currentStep !== 'basic' && (
 	<ItemDetail ... />
 )}
 ```
 
 **Beneficios:**
+
 - Verifica que `item.id` existe
 - Verifica que el item cargado corresponde al itemId de la URL
 - Previene renderizar item de Redux obsoleto
@@ -175,6 +189,7 @@ useEffect(() => {
 ```
 
 **Beneficios:**
+
 - Limpia `item` explícitamente en modo create
 - Fuerza `currentStep = 'basic'` siempre en create
 - Previene lógica posterior si está en modo create
@@ -188,6 +203,7 @@ useEffect(() => {
 **URL:** `/technical-reviews/items/create`
 
 **Steps:**
+
 1. Usuario navega a `/items/create`
 2. useEffect detecta `itemId === 'create'`
 3. Se ejecuta: `setCurrentStep('basic')` + `setItem(null)`
@@ -203,12 +219,13 @@ useEffect(() => {
 **URL:** `/technical-reviews/items/123`
 
 **Steps:**
+
 1. Usuario navega a `/items/123`
 2. useEffect dispara `fetchItemDetail(123)`
 3. Backend devuelve item con `review_status = 'in_review'`
 4. useEffect de sincronización:
-   - `setItem(selectedItemStore)`
-   - `setCurrentStep('review')` (basado en status)
+    - `setItem(selectedItemStore)`
+    - `setCurrentStep('review')` (basado en status)
 5. ItemDetail SÍ renderiza (todas las guards pasan)
 6. Usuario ve resumen del item + formulario Step 2
 
@@ -219,6 +236,7 @@ useEffect(() => {
 **URL:** `/technical-reviews/items/123` (ya existente)
 
 **Steps:**
+
 1. Usuario está en Step 2 (review)
 2. ItemDetail muestra: serial, status, grado, breakdown
 3. Usuario hace clic en Step 1 para cambiar tipo de equipo
@@ -234,6 +252,7 @@ useEffect(() => {
 ### Flujo D: Navegación Secuencial (Bug Original)
 
 **Antes:**
+
 1. Usuario navega a `/items/123`
 2. Redux carga `selectedItemStore` con item 123
 3. Usuario navega a `/items/create`
@@ -242,6 +261,7 @@ useEffect(() => {
 6. ItemDetail renderiza con datos obsoletos ❌
 
 **Ahora:**
+
 1. Usuario navega a `/items/123`
 2. Redux carga `selectedItemStore` con item 123
 3. Usuario navega a `/items/create`
@@ -274,12 +294,12 @@ if (itemId === 'create') {
 **Solución:** Guards en capas:
 
 ```tsx
-item &&          // Existe localmente
-itemId &&        // URL tiene parámetro
-itemId !== 'create' &&  // No es modo create
-item.id &&       // Item tiene ID del backend
-item.id === Number(itemId) &&  // IDs coinciden
-currentStep !== 'basic'  // No es step inicial
+item && // Existe localmente
+	itemId && // URL tiene parámetro
+	itemId !== 'create' && // No es modo create
+	item.id && // Item tiene ID del backend
+	item.id === Number(itemId) && // IDs coinciden
+	currentStep !== 'basic'; // No es step inicial
 ```
 
 ### 3. State Machine Initialization
@@ -290,7 +310,7 @@ currentStep !== 'basic'  // No es step inicial
 
 ```tsx
 if (itemId === 'create') {
-	setCurrentStep('basic');  // ✅ Create siempre en basic
+	setCurrentStep('basic'); // ✅ Create siempre en basic
 } else {
 	// Determinar step según review_status del backend
 	if (reviewStatus === 'approved') setCurrentStep('grading');
@@ -306,7 +326,7 @@ if (itemId === 'create') {
 **Solución:** Verificar coincidencia de IDs:
 
 ```tsx
-item.id === Number(itemId)  // ✅ Previene rendering con datos incorrectos
+item.id === Number(itemId); // ✅ Previene rendering con datos incorrectos
 ```
 
 ---
@@ -314,6 +334,7 @@ item.id === Number(itemId)  // ✅ Previene rendering con datos incorrectos
 ## 🧪 Testing Checklist
 
 ### Caso 1: Crear desde cero
+
 - [ ] Navegar a `/items/create`
 - [ ] Verificar que NO aparece ItemDetail
 - [ ] Verificar que solo se ve formulario Step 1
@@ -321,6 +342,7 @@ item.id === Number(itemId)  // ✅ Previene rendering con datos incorrectos
 - [ ] Verificar navegación a `/items/{newId}`
 
 ### Caso 2: Editar existente
+
 - [ ] Navegar a `/items/123` (existente)
 - [ ] Verificar que SÍ aparece ItemDetail
 - [ ] Verificar datos correctos (serial, status, grado)
@@ -328,6 +350,7 @@ item.id === Number(itemId)  // ✅ Previene rendering con datos incorrectos
 - [ ] Navegar a Step 2 → ItemDetail reaparece
 
 ### Caso 3: Navegación secuencial
+
 - [ ] Ver item existente `/items/123`
 - [ ] Navegar a `/items/create`
 - [ ] Verificar que ItemDetail NO aparece
@@ -336,6 +359,7 @@ item.id === Number(itemId)  // ✅ Previene rendering con datos incorrectos
 - [ ] Verificar comportamiento idéntico (sin ItemDetail)
 
 ### Caso 4: Cambio de items
+
 - [ ] Ver item `/items/123`
 - [ ] Navegar a item `/items/456`
 - [ ] Verificar que ItemDetail muestra datos de item 456 (NO 123)
@@ -345,17 +369,21 @@ item.id === Number(itemId)  // ✅ Previene rendering con datos incorrectos
 ## 📊 Métricas de Impacto
 
 ### Archivos Modificados:
+
 - ✅ `src/pages/technical-reviews/items/[itemId].tsx` (2 cambios)
 
 ### Líneas de Código:
+
 - Línea 304-313: Inicialización explícita (10 líneas)
 - Línea 666-677: Guard reforzado (2 condiciones adicionales)
 
 ### Condiciones de Guard:
+
 - **Antes:** 3 condiciones
 - **Después:** 6 condiciones
 
 ### Bugs Resueltos:
+
 1. ✅ ItemDetail en modo create con datos obsoletos
 2. ✅ ItemDetail persistente después de F5
 3. ✅ Rendering con item incorrecto
@@ -372,7 +400,7 @@ Crear acción para limpiar `selectedItemStore`:
 // En technicalReviews slice
 clearSelectedItem: (state) => {
 	state.selectedItemStore = null;
-}
+};
 
 // En componente
 useEffect(() => {
@@ -387,12 +415,12 @@ useEffect(() => {
 Agregar guard en router para prevenir navegación inválida:
 
 ```tsx
-<Route 
-	path="items/:itemId" 
+<Route
+	path='items/:itemId'
 	element={<ItemReviewPage />}
 	loader={({ params }) => {
 		if (params.itemId !== 'create' && isNaN(Number(params.itemId))) {
-			throw new Response("Not Found", { status: 404 });
+			throw new Response('Not Found', { status: 404 });
 		}
 		return null;
 	}}
@@ -404,7 +432,7 @@ Agregar guard en router para prevenir navegación inválida:
 Usar discriminated union para modos:
 
 ```typescript
-type PageMode = 
+type PageMode =
 	| { mode: 'create' }
 	| { mode: 'edit'; itemId: number; item: IItem };
 
@@ -419,12 +447,14 @@ const [pageMode, setPageMode] = useState<PageMode>({ mode: 'create' });
 ## 📚 Referencias
 
 ### Archivos Relacionados:
+
 - `src/pages/technical-reviews/items/[itemId].tsx` - Página principal
 - `src/pages/technical-reviews/components/items/ItemDetail.tsx` - Componente
 - `src/store/slices/technicalReviews/index.ts` - Redux slice
 - `src/interface/technicalReviews.interface.ts` - Interfaces
 
 ### Documentación:
+
 - `ITEMS_MODULE_ANALYSIS.md` - Análisis completo del módulo
 - `BUGS_FIXED_ITEMS_VIEW.md` - Bugs anteriores resueltos
 - `BACKEND_FRONTEND_CONSISTENCY_ANALYSIS.md` - Consistencia con backend
@@ -436,6 +466,7 @@ const [pageMode, setPageMode] = useState<PageMode>({ mode: 'create' });
 El `ItemDetail` es un componente **esencial** para el flujo de edición, proporcionando contexto visual durante la revisión técnica. Su propósito NO es para creación, sino para mostrar información del item mientras se navega entre los pasos de revisión.
 
 La solución implementada:
+
 1. ✅ Previene rendering en modo create
 2. ✅ Verifica consistencia de datos (ID matching)
 3. ✅ Inicializa estado explícitamente

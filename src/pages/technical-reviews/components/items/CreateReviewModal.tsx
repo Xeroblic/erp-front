@@ -11,8 +11,7 @@ import { createItem } from '@/store/slices/technicalReviews';
 import type { EquipmentType } from '@/interface/technicalReviews.interface';
 import ApiService from '@/services/ApiService';
 
-const TECHNICAL_REVIEWS_PREFIX =
-	(import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
+const TECHNICAL_REVIEWS_PREFIX = (import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
 const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
 const ep = (branchId: number, path: string) =>
 	join(TECHNICAL_REVIEWS_PREFIX, `/branches/${branchId}/technical-reviews${path}`);
@@ -56,8 +55,9 @@ const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
 		EQUIPMENT_OPTIONS[0],
 	);
 	const [selectedWarehouse, setSelectedWarehouse] = useState<TSelectOption | null>(null);
-	const [selectedCustomerSupplier, setSelectedCustomerSupplier] =
-		useState<TSelectOption | null>(null);
+	const [selectedCustomerSupplier, setSelectedCustomerSupplier] = useState<TSelectOption | null>(
+		null,
+	);
 	const [batchOptions, setBatchOptions] = useState<BatchOption[]>([]);
 	const [selectedBatch, setSelectedBatch] = useState<BatchOption | null>(null);
 	const [manualBatchId, setManualBatchId] = useState<number | null>(null);
@@ -121,7 +121,8 @@ const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
 			setBatchOptions(options);
 
 			const manualBatch = list.find((batch: any) => {
-				const base = `${batch.name ?? ''} ${batch.slug ?? ''} ${batch.code ?? ''}`.toLowerCase();
+				const base =
+					`${batch.name ?? ''} ${batch.slug ?? ''} ${batch.code ?? ''}`.toLowerCase();
 				return base.includes('manual');
 			});
 
@@ -161,8 +162,7 @@ const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
 		}
 
 		const finalBatchId =
-			selectedBatch?.value ??
-			(manualBatchId !== null ? String(manualBatchId) : null);
+			selectedBatch?.value ?? (manualBatchId !== null ? String(manualBatchId) : null);
 
 		if (!finalBatchId) {
 			setError('Debes seleccionar un lote (se recomienda crear uno manual)');
@@ -227,124 +227,119 @@ const CreateReviewModal: React.FC<CreateReviewModalProps> = ({
 			</ModalHeader>
 			<ModalBody>
 				<form onSubmit={handleSubmit} className='space-y-4'>
-						{!hasManualBatch && (
-							<Card className='border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950'>
-								<CardBody className='flex items-start gap-2 text-sm text-amber-700 dark:text-amber-200'>
-									<Icon icon='HeroExclamationTriangle' className='mt-0.5 h-4 w-4' />
-									<span>
-										⚠️ Debe existir un lote "Manual" para registrar revisiones
-										sueltas. Crea uno o selecciona un lote existente.
-									</span>
-								</CardBody>
-							</Card>
-						)}
+					{!hasManualBatch && (
+						<Card className='border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950'>
+							<CardBody className='flex items-start gap-2 text-sm text-amber-700 dark:text-amber-200'>
+								<Icon icon='HeroExclamationTriangle' className='mt-0.5 h-4 w-4' />
+								<span>
+									⚠️ Debe existir un lote "Manual" para registrar revisiones
+									sueltas. Crea uno o selecciona un lote existente.
+								</span>
+							</CardBody>
+						</Card>
+					)}
 
-						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-								Número de serie <span className='text-red-500'>*</span>
-							</label>
-							<Input
-								name='serial_number'
-								value={serialNumber}
-								onChange={(e) => setSerialNumber(e.target.value)}
-								placeholder='Ej: NB-001-REV'
-								autoComplete='off'
-							/>
-						</div>
+					<div>
+						<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+							Número de serie <span className='text-red-500'>*</span>
+						</label>
+						<Input
+							name='serial_number'
+							value={serialNumber}
+							onChange={(e) => setSerialNumber(e.target.value)}
+							placeholder='Ej: NB-001-REV'
+							autoComplete='off'
+						/>
+					</div>
 
-						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-								Tipo de equipo <span className='text-red-500'>*</span>
-							</label>
-							<SelectReact
-								name='equipment_type'
-								options={EQUIPMENT_OPTIONS}
-								value={selectedEquipment}
-								onChange={(option) =>
-									setSelectedEquipment(option as TSelectOption | null)
-								}
-								placeholder='Seleccionar tipo'
-								isSearchable={false}
-							/>
-						</div>
+					<div>
+						<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+							Tipo de equipo <span className='text-red-500'>*</span>
+						</label>
+						<SelectReact
+							name='equipment_type'
+							options={EQUIPMENT_OPTIONS}
+							value={selectedEquipment}
+							onChange={(option) =>
+								setSelectedEquipment(option as TSelectOption | null)
+							}
+							placeholder='Seleccionar tipo'
+							isSearchable={false}
+						/>
+					</div>
 
-						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-								Producto (opcional)
-							</label>
-							<SelectReact
-								name='product_id'
-								options={productOptions}
-								value={selectedProduct}
-								onChange={(option) =>
-									setSelectedProduct(option as TSelectOption | null)
-								}
-								placeholder='Seleccionar producto'
-								isClearable
-							/>
-						</div>
+					<div>
+						<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+							Producto (opcional)
+						</label>
+						<SelectReact
+							name='product_id'
+							options={productOptions}
+							value={selectedProduct}
+							onChange={(option) =>
+								setSelectedProduct(option as TSelectOption | null)
+							}
+							placeholder='Seleccionar producto'
+							isClearable
+						/>
+					</div>
 
-						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-								Bodega <span className='text-red-500'>*</span>
-							</label>
-							<SelectReact
-								name='warehouse_id'
-								options={warehouseOptions}
-								value={selectedWarehouse}
-								onChange={(option) =>
-									setSelectedWarehouse(option as TSelectOption | null)
-								}
-								placeholder='Seleccionar bodega'
-							/>
-						</div>
+					<div>
+						<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+							Bodega <span className='text-red-500'>*</span>
+						</label>
+						<SelectReact
+							name='warehouse_id'
+							options={warehouseOptions}
+							value={selectedWarehouse}
+							onChange={(option) =>
+								setSelectedWarehouse(option as TSelectOption | null)
+							}
+							placeholder='Seleccionar bodega'
+						/>
+					</div>
 
-						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-								Cliente / Proveedor (opcional)
-							</label>
-							<SelectReact
-								name='customer_supplier_id'
-								options={customerSupplierOptions}
-								value={selectedCustomerSupplier}
-								onChange={(option) =>
-									setSelectedCustomerSupplier(option as TSelectOption | null)
-								}
-								placeholder='Seleccionar cliente/proveedor'
-								isClearable
-							/>
-						</div>
+					<div>
+						<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+							Cliente / Proveedor (opcional)
+						</label>
+						<SelectReact
+							name='customer_supplier_id'
+							options={customerSupplierOptions}
+							value={selectedCustomerSupplier}
+							onChange={(option) =>
+								setSelectedCustomerSupplier(option as TSelectOption | null)
+							}
+							placeholder='Seleccionar cliente/proveedor'
+							isClearable
+						/>
+					</div>
 
-						<div>
-							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-								Lote de revisión <span className='text-red-500'>*</span>
-							</label>
-							<SelectReact
-								name='batch_id'
-								options={batchOptions}
-								value={selectedBatch}
-								onChange={(option) =>
-									setSelectedBatch(option as BatchOption | null)
-								}
-								isLoading={loadingBatches}
-								placeholder='Seleccionar lote abierto'
-							/>
-						</div>
+					<div>
+						<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+							Lote de revisión <span className='text-red-500'>*</span>
+						</label>
+						<SelectReact
+							name='batch_id'
+							options={batchOptions}
+							value={selectedBatch}
+							onChange={(option) => setSelectedBatch(option as BatchOption | null)}
+							isLoading={loadingBatches}
+							placeholder='Seleccionar lote abierto'
+						/>
+					</div>
 
-						{error && <p className='text-sm text-red-500'>{error}</p>}
+					{error && <p className='text-sm text-red-500'>{error}</p>}
 
-						<div className='flex justify-end gap-2 border-t pt-4'>
-							<Button
-								variant='outline'
-								onClick={onClose}
-								isDisable={creatingItem}>
-								Cancelar
-							</Button>
-							<Button color='blue' isLoading={creatingItem}>
-								Crear revisión
-							</Button>
-						</div>
-					</form>
+					<div className='flex justify-end gap-2 border-t pt-4'>
+						<Button variant='outline' onClick={onClose} isDisable={creatingItem}>
+							Cancelar
+						</Button>
+						<Button color='blue' isLoading={creatingItem}>
+							Crear revisión
+						</Button>
+					</div>
+				</form>
 			</ModalBody>
 		</Modal>
 	);
