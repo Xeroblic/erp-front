@@ -17,6 +17,7 @@ import Icon from '@/components/icon/Icon';
 import ItemList from '../items/ItemList';
 import type { IItem, IBatch, EquipmentType } from '@/interface/technicalReviews.interface';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
+import Container from '@/components/layouts/Container/Container';
 
 interface BatchTabsProps {
 	batch: IBatch;
@@ -122,7 +123,7 @@ const BatchTabs: React.FC<BatchTabsProps> = ({ batch, onItemClick }) => {
 	};
 
 	return (
-		<div className='space-y-4'>
+		<Container className='space-y-6'>
 			{/* Tabs */}
 			<Card>
 				<CardBody className='p-0'>
@@ -241,8 +242,6 @@ const BatchTabs: React.FC<BatchTabsProps> = ({ batch, onItemClick }) => {
 							</Button>
 						)}
 					</div>
-				</CardBody>
-			</Card>
 
 			{/* Tabla de Items */}
 			<ItemList
@@ -255,8 +254,10 @@ const BatchTabs: React.FC<BatchTabsProps> = ({ batch, onItemClick }) => {
 					setCurrentPage(1);
 				}}
 				onItemClick={onItemClick}
-			/>
-		</div>
+				/>
+				</CardBody>
+			</Card>
+		</Container>
 	);
 };
 

@@ -49,6 +49,57 @@ const ItemList: React.FC<ItemListProps> = ({
 		}
 	};
 
+	const resolveEquipmentTypeMeta = (equipmentType: any): { value: string; label: string; icon: string } => {
+		const value = (typeof equipmentType === 'object' && equipmentType !== null && 'value' in equipmentType
+			? equipmentType.value
+			: equipmentType) as string | null;
+
+		const normalizedValue = value ?? 'unknown';
+
+		if (typeof equipmentType === 'object' && equipmentType !== null && 'label' in equipmentType && equipmentType.label) {
+			return {
+				value: normalizedValue,
+				label: String(equipmentType.label),
+				icon:
+					normalizedValue === 'notebook'
+						? 'HeroComputerDesktop'
+						: normalizedValue === 'desktop'
+							? 'HeroServerStack'
+							: normalizedValue === 'aio'
+								? 'HeroDeviceTablet'
+								: normalizedValue === 'docking'
+									? 'HeroCpuChip'
+									: 'HeroTv',
+			};
+		}
+
+		const label =
+			normalizedValue === 'notebook'
+				? 'Notebook'
+				: normalizedValue === 'desktop'
+					? 'Desktop'
+					: normalizedValue === 'aio'
+						? 'AIO'
+						: normalizedValue === 'docking'
+							? 'Docking'
+							: normalizedValue === 'monitor'
+								? 'Monitor'
+								: 'Desconocido';
+
+		const icon =
+			normalizedValue === 'notebook'
+				? 'HeroComputerDesktop'
+				: normalizedValue === 'desktop'
+					? 'HeroServerStack'
+					: normalizedValue === 'aio'
+						? 'HeroDeviceTablet'
+						: normalizedValue === 'docking'
+							? 'HeroCpuChip'
+							: 'HeroTv';
+
+		return { value: normalizedValue, label, icon };
+	};
+
 	if (loading) {
 		return (
 			<Card>
@@ -126,31 +177,15 @@ const ItemList: React.FC<ItemListProps> = ({
 										</div>
 									</td>
 									<td className='whitespace-nowrap px-4 py-3'>
-										<span className='inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200'>
-											<Icon
-												icon={
-													item.equipment_type === 'notebook'
-														? 'HeroComputerDesktop'
-														: item.equipment_type === 'desktop'
-															? 'HeroServerStack'
-															: item.equipment_type === 'aio'
-																? 'HeroDeviceTablet'
-																: item.equipment_type === 'docking'
-																	? 'HeroCpuChip'
-																	: 'HeroTv'
-												}
-												className='h-3 w-3'
-											/>
-											{item.equipment_type === 'notebook'
-												? 'Notebook'
-												: item.equipment_type === 'desktop'
-													? 'Desktop'
-													: item.equipment_type === 'aio'
-														? 'AIO'
-														: item.equipment_type === 'docking'
-															? 'Docking'
-															: 'Monitor'}
-										</span>
+										{(() => {
+											const { label, icon } = resolveEquipmentTypeMeta(item.equipment_type);
+											return (
+												<span className='inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200'>
+													<Icon icon={icon as any} className='h-3 w-3' />
+													{label}
+												</span>
+											);
+										})()}
 									</td>
 									<td className='whitespace-nowrap px-4 py-3'>
 										<StatusBadge type='review' status={item.review_status} />

@@ -2,12 +2,17 @@
  * BatchDetail - Card con metadata y KPIs del lote
  * Muestra información del proveedor, bodega, fechas y estadísticas de progreso
  */
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Card, { CardBody } from '@/components/ui/Card';
 import Icon from '@/components/icon/Icon';
 import type { IBatch } from '@/interface/technicalReviews.interface';
 import Container from '@/components/layouts/Container/Container';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
+import Input from '@/components/form/Input';
+import Button from '@/components/ui/Button';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { updateBatch, selectUpdating } from '@/store/slices/technicalReviews';
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 
 interface BatchDetailProps {
 	batch: IBatch;
@@ -15,6 +20,67 @@ interface BatchDetailProps {
 }
 
 const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => {
+	const dispatch = useAppDispatch();
+	const updatingBatch = useAppSelector(selectUpdating);
+	const { branchId } = useCurrentBranch();
+	const [isEditingExpectedQty, setIsEditingExpectedQty] = useState(false);
+	const [expectedQtyDraft, setExpectedQtyDraft] = useState(
+		String(batch.expected_quantity ?? 0),
+	);
+	const [expectedQtyError, setExpectedQtyError] = useState<string | null>(null);
+
+	useEffect(() => {
+		setExpectedQtyDraft(String(batch.expected_quantity ?? 0));
+	}, [batch.expected_quantity]);
+
+	const handleStartEditingExpectedQty = () => {
+		setExpectedQtyDraft(String(batch.expected_quantity ?? 0));
+		setExpectedQtyError(null);
+		setIsEditingExpectedQty(true);
+	};
+
+	const handleCancelExpectedQty = () => {
+		setExpectedQtyDraft(String(batch.expected_quantity ?? 0));
+		setExpectedQtyError(null);
+		setIsEditingExpectedQty(false);
+	};
+
+	const handleSaveExpectedQty = async () => {
+		const parsedValue = Number(expectedQtyDraft);
+		if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+			setExpectedQtyError('Ingresa una cantidad válida mayor a 0');
+			return;
+		}
+
+		if (!branchId) {
+			setExpectedQtyError('Selecciona una sucursal válida antes de guardar');
+			return;
+		}
+
+		if (parsedValue === (batch.expected_quantity || 0)) {
+			setIsEditingExpectedQty(false);
+			return;
+		}
+
+		try {
+			await dispatch(
+				updateBatch({
+					branchId,
+					batchId: batch.id,
+					data: { expected_quantity: parsedValue },
+				}),
+			).unwrap();
+			setIsEditingExpectedQty(false);
+			setExpectedQtyError(null);
+		} catch (error: any) {
+			const message =
+				typeof error === 'string'
+					? error
+					: error?.message ?? 'No se pudo actualizar la cantidad esperada';
+			setExpectedQtyError(message);
+		}
+	};
+
 	if (loading) {
 		return (
 			<Card>
@@ -121,13 +187,56 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 							Estado del Lote
 						</h3>
 						<div className='grid grid-cols-2 gap-3 md:grid-cols-4'>
-							<div className='rounded-lg bg-blue-50 p-4 text-center dark:bg-blue-950'>
-								<div className='text-2xl font-bold text-blue-600 dark:text-blue-400'>
-									{expectedQty}
+							<div className='relative rounded-lg bg-blue-50 p-4 text-center dark:bg-blue-950'>
+								<div className='mb-2 flex items-center justify-between text-xs font-semibold text-blue-700 dark:text-blue-300'>
+									<span>Esperada</span>
+									{!isEditingExpectedQty && (
+										<button
+											type='button'
+											onClick={handleStartEditingExpectedQty}
+											className='rounded-full p-1 text-blue-600 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50'
+											disabled={updatingBatch}>
+											<Icon icon='HeroPencilSquare' className='h-4 w-4' />
+										</button>
+									)}
 								</div>
-								<div className='mt-1 text-xs text-blue-700 dark:text-blue-300'>
-									Esperada
-								</div>
+								{isEditingExpectedQty ? (
+									<>
+										<Input
+											type='number'
+											min={1}
+											value={expectedQtyDraft}
+											onChange={(e) => {
+												setExpectedQtyDraft(e.target.value);
+												if (expectedQtyError) setExpectedQtyError(null);
+											}}
+											className='text-center'
+										/>
+										{expectedQtyError && (
+											<p className='mt-1 text-xs text-red-500'>{expectedQtyError}</p>
+										)}
+										<div className='mt-3 flex flex-col gap-2 sm:flex-row sm:justify-center'>
+											<Button
+												size='sm'
+												color='green'
+												onClick={handleSaveExpectedQty}
+												disabled={updatingBatch}>
+												{updatingBatch ? 'Guardando...' : 'Guardar'}
+											</Button>
+											<Button
+												size='sm'
+												variant='outline'
+												onClick={handleCancelExpectedQty}
+												disabled={updatingBatch}>
+												Cancelar
+											</Button>
+										</div>
+									</>
+								) : (
+									<div className='text-2xl font-bold text-blue-600 dark:text-blue-400'>
+										{expectedQty}
+									</div>
+								)}
 							</div>
 
 							<div className='rounded-lg bg-indigo-50 p-4 text-center dark:bg-indigo-950'>

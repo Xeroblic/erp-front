@@ -78,6 +78,7 @@ interface ISelectReactProps extends TReactSelect, Partial<IValidationBaseProps> 
 	) => void;
 	isMulti?: boolean;
 	onBlur?: FocusEventHandler<HTMLInputElement>;
+	onFocus?: FocusEventHandler<HTMLInputElement>;
 	placeholder?: string;
 	menuPortalTarget?: HTMLElement | null;
 	styles?: StylesConfig<TSelectOption, boolean, GroupBase<TSelectOption>> | undefined;
