@@ -60,6 +60,14 @@ const ResendInvitationModal: React.FC<ResendInvitationModalProps> = ({
 	};
 
 	const statusDetails = statusConfig[invitation.status] || statusConfig.pending;
+	const originalInviteDate = invitation.invited_at || invitation.created_at || invitation.accepted_at;
+	const formattedOriginalInviteDate = (() => {
+		if (!originalInviteDate) return null;
+		const parsed = new Date(originalInviteDate);
+		return Number.isNaN(parsed.getTime())
+			? null
+			: parsed.toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' });
+	})();
 
 	return (
 		<Modal isOpen={isOpen} setIsOpen={onClose} size='md'>
@@ -108,12 +116,17 @@ const ResendInvitationModal: React.FC<ResendInvitationModalProps> = ({
 								</Badge>
 							</div>
 							<p className='mb-1 text-sm text-blue-700 dark:text-blue-300'>
-								{`${invitation.first_name} ${invitation.last_name}`.trim() ||
-									'Sin nombre'}
+								{(() => {
+									const fullName = [invitation.first_name, invitation.last_name]
+										.filter(Boolean)
+										.join(' ')
+										.trim();
+									return fullName || invitation.email || 'Sin nombre';
+								})()}
 							</p>
 							<p className='text-xs text-blue-600 dark:text-blue-400'>
-								Invitado originalmente el{' '}
-								{new Date(invitation.created_at).toLocaleDateString('es-ES')}
+								Invitado originalmente{' '}
+								{formattedOriginalInviteDate ?? 'Sin fecha registrada'}
 							</p>
 						</div>
 					</div>

@@ -1,6 +1,6 @@
 ﻿/* eslint-disable import/extensions */
-import React, { useMemo } from 'react';
-import { Formik, Form, type FormikHelpers } from 'formik';
+import React, { useMemo, useEffect, useState, useCallback, useRef } from 'react';
+import { Formik, Form, type FormikHelpers, type FormikProps } from 'formik';
 import { toast } from 'react-toastify';
 import * as Yup from 'yup';
 import Modal, {
@@ -21,6 +21,7 @@ import type { Permission, Role } from '@/store/slices/permissions/permissionsSli
 import type { CreateInvitationData } from '@/interface/invitacion.interface';
 import type { MultiValue, SingleValue } from 'react-select';
 import Button from '@/components/ui/Button';
+import ApiService from '@/services/ApiService';
 
 interface CreateInvitationModalProps {
 	isOpen: boolean;
@@ -38,14 +39,10 @@ interface FormValues {
 	first_name: string;
 	last_name: string;
 	role_id: string;
-	middle_name: string;
-	second_last_name: string;
 	position: string;
 	rut: string;
-	company_id: number;
-	branch_id: number;
-	phone_number: string;
-	address: string;
+	company_id: number | null;
+	branch_id: string;
 	message: string;
 	permissions: string[];
 }
@@ -55,6 +52,7 @@ const validationSchema = Yup.object({
 	first_name: Yup.string().required('El nombre es requerido'),
 	last_name: Yup.string().required('El apellido es requerido'),
 	role_id: Yup.string().required('El rol es requerido'),
+	branch_id: Yup.string().required('La sucursal es requerida'),
 	rut: Yup.string(),
 	message: Yup.string(),
 });
@@ -69,6 +67,13 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 	isLoadingRoles,
 	isLoadingPermissions,
 }) => {
+	const [branchOptions, setBranchOptions] = useState<TSelectOption[]>([]);
+	const [isLoadingBranches, setIsLoadingBranches] = useState(false);
+	const [companyIdSnapshot, setCompanyIdSnapshot] = useState<number | null>(null);
+	const [branchDefaultSnapshot, setBranchDefaultSnapshot] = useState<string>('');
+	const branchSubsidiaryMapRef = useRef<Record<string, number>>({});
+	const formikRef = useRef<FormikProps<FormValues>>(null);
+
 	const roleOptions = useMemo<TSelectOption[]>(() => {
 		return roles.map((role) => ({
 			value: String(role.id),
@@ -85,6 +90,91 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 		[permissions],
 	);
 
+	const fetchCompanyContext = useCallback(async () => {
+		setIsLoadingBranches(true);
+		try {
+			const response = await ApiService.fetchData<{
+				current_company?: {
+					id: number;
+					company_name: string;
+					subsidiaries?: Array<{
+						id: number;
+						subsidiary_name: string;
+						branches?: Array<{ id: number; branch_name: string }>;
+					}>;
+				} | null;
+			}>({ url: '/user/personalization', method: 'get', dedupe: true });
+
+			const currentCompany = response.data.current_company || null;
+			setCompanyIdSnapshot(currentCompany?.id ?? null);
+
+			const options: TSelectOption[] = [];
+			const branchMap: Record<string, number> = {};
+
+			currentCompany?.subsidiaries?.forEach((subsidiary) => {
+				subsidiary.branches?.forEach((branch) => {
+					const value = String(branch.id);
+					const label = `${subsidiary.subsidiary_name} - ${branch.branch_name}`;
+					options.push({ value, label });
+					branchMap[value] = subsidiary.id;
+				});
+			});
+
+			branchSubsidiaryMapRef.current = branchMap;
+			setBranchOptions(options);
+			setBranchDefaultSnapshot(options[0]?.value ?? '');
+
+			const formik = formikRef.current;
+			if (formik) {
+				const hasCompany = Boolean(formik.values.company_id);
+				if (!hasCompany && currentCompany?.id) {
+					formik.setFieldValue('company_id', currentCompany.id, false);
+				} else if (
+					currentCompany?.id &&
+					formik.values.company_id !== currentCompany.id
+				) {
+					formik.setFieldValue('company_id', currentCompany.id, false);
+				}
+
+				const currentBranch = formik.values.branch_id;
+				const branchStillValid =
+					currentBranch &&
+					options.some((option) => option.value === currentBranch);
+				if (!branchStillValid) {
+					formik.setFieldValue('branch_id', options[0]?.value ?? '', false);
+				}
+			}
+		} catch (error) {
+			console.error('Error fetching company context for invitations:', error);
+			toast.error('No se pudo cargar la información de la empresa');
+			branchSubsidiaryMapRef.current = {};
+			setBranchOptions([]);
+			setCompanyIdSnapshot(null);
+			setBranchDefaultSnapshot('');
+		} finally {
+			setIsLoadingBranches(false);
+		}
+	}, []);
+
+	useEffect(() => {
+		if (isOpen) {
+			void fetchCompanyContext();
+		}
+	}, [isOpen, fetchCompanyContext]);
+
+	useEffect(() => {
+		const formik = formikRef.current;
+		if (!formik) return;
+
+		if (!formik.values.company_id && companyIdSnapshot) {
+			formik.setFieldValue('company_id', companyIdSnapshot, false);
+		}
+
+		if (!formik.values.branch_id && branchDefaultSnapshot) {
+			formik.setFieldValue('branch_id', branchDefaultSnapshot, false);
+		}
+	}, [companyIdSnapshot, branchDefaultSnapshot]);
+
 	const rolePlaceholder = useMemo(() => {
 		if (isLoadingRoles) return 'Cargando roles...';
 		if (!roleOptions.length) return 'No hay roles disponibles';
@@ -97,20 +187,22 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 		return 'Selecciona permisos opcionales';
 	}, [isLoadingPermissions, permissionOptions.length]);
 
+	const branchPlaceholder = useMemo(() => {
+		if (isLoadingBranches) return 'Cargando sucursales...';
+		if (!branchOptions.length) return 'No hay sucursales disponibles';
+		return 'Selecciona una sucursal';
+	}, [isLoadingBranches, branchOptions.length]);
+
 	const initialValues = useMemo<FormValues>(
 		() => ({
 			email: '',
 			first_name: '',
 			last_name: '',
 			role_id: roleOptions[0]?.value ?? '',
-			middle_name: '',
-			second_last_name: '',
 			position: '',
 			rut: '',
-			company_id: 1,
-			branch_id: 1,
-			phone_number: '',
-			address: '',
+			company_id: null,
+			branch_id: '',
 			message: '',
 			permissions: [],
 		}),
@@ -122,22 +214,35 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 		return trimmed || undefined;
 	};
 
-	const buildPayload = (values: FormValues, selectedRole: Role): CreateInvitationData => {
+	const buildPayload = (
+		values: FormValues,
+		selectedRole: Role,
+	): CreateInvitationData => {
 		const message = values.message.trim();
+		const companyIdentifier = values.company_id ?? undefined;
+		const branchIdentifier = values.branch_id ? Number(values.branch_id) : undefined;
+		const subsidiaryId =
+			values.branch_id && branchSubsidiaryMapRef.current[values.branch_id]
+				? branchSubsidiaryMapRef.current[values.branch_id]
+				: undefined;
+
+		if (!companyIdentifier) {
+			throw new Error('No se pudo determinar la empresa seleccionada');
+		}
+		if (!branchIdentifier) {
+			throw new Error('Selecciona una sucursal válida');
+		}
 
 		return {
 			email: values.email.trim(),
 			first_name: values.first_name.trim(),
 			last_name: values.last_name.trim(),
 			role_id: selectedRole.id,
-			company_id: values.company_id,
-			branch_id: values.branch_id,
-			middle_name: normalizeField(values.middle_name),
-			second_last_name: normalizeField(values.second_last_name),
+			company_id: companyIdentifier,
+			subsidiary_id: subsidiaryId,
+			branch_id: branchIdentifier,
 			position: normalizeField(values.position),
 			rut: normalizeField(values.rut),
-			phone_number: normalizeField(values.phone_number),
-			address: normalizeField(values.address),
 			data: message ? { message } : undefined,
 			ttl_days: 7,
 			permissions: values.permissions.length ? values.permissions : undefined,
@@ -174,7 +279,15 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 				return;
 			}
 
-			const payload = buildPayload(values, selectedRole);
+			let payload: CreateInvitationData;
+			try {
+				payload = buildPayload(values, selectedRole);
+			} catch (buildError: any) {
+				const errorMessage =
+					buildError?.message || 'No se pudo preparar la invitación';
+				toast.error(errorMessage);
+				return;
+			}
 			await onSubmit(payload);
 
 			resetForm();
@@ -192,13 +305,14 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 	};
 
 	return (
-		<Modal isOpen={isOpen} setIsOpen={handleClose} size='md'>
+		<Modal isOpen={isOpen} setIsOpen={handleClose} size='md' isStaticBackdrop isStaticBackdropAnimation>
 			<ModalHeader>
 				<Icon icon='HeroPlusCircle' />
 				<Badge> Nueva Invitacion </Badge>
 			</ModalHeader>
 
 			<Formik
+				innerRef={formikRef}
 				initialValues={initialValues}
 				enableReinitialize
 				validationSchema={validationSchema}
@@ -310,6 +424,33 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 								</div>
 							</FieldWrap>
 
+							<FieldWrap
+								isValid={!errors.branch_id}
+								isTouched={touched.branch_id}
+								invalidFeedback={errors.branch_id}>
+								<div>
+									<Label htmlFor='branch_id'>Sucursal *</Label>
+									<SelectReact
+										name='branch_id'
+										options={branchOptions}
+										value={
+											branchOptions.find(
+												(option) => option.value === values.branch_id,
+											) ?? null
+										}
+										onChange={(option) => {
+											const selected = option as SingleValue<TSelectOption>;
+											setFieldValue('branch_id', selected?.value ?? '');
+										}}
+										isLoading={isLoadingBranches}
+										placeholder={branchPlaceholder}
+										isDisabled={
+											isLoadingBranches || branchOptions.length === 0
+										}
+									/>
+								</div>
+							</FieldWrap>
+
 							<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
 								<FieldWrap
 									isValid={!errors.rut}
@@ -345,76 +486,6 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 											onChange={handleChange}
 											onBlur={handleBlur}
 											placeholder='Administrador de Recursos Humanos'
-											
-										/>
-									</div>
-								</FieldWrap>
-							</div>
-
-							<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-								<FieldWrap>
-									<div>
-										<Label htmlFor='middle_name'>
-											Segundo nombre
-										</Label>
-										<Input
-											name='middle_name'
-											type='text'
-											value={values.middle_name}
-											onChange={handleChange}
-											onBlur={handleBlur}
-											placeholder='Segundo nombre'
-											
-										/>
-									</div>
-								</FieldWrap>
-								<FieldWrap>
-									<div>
-										<Label htmlFor='second_last_name'>
-											Segundo apellido
-										</Label>
-										<Input
-											name='second_last_name'
-											type='text'
-											value={values.second_last_name}
-											onChange={handleChange}
-											onBlur={handleBlur}
-											placeholder='Segundo apellido'
-											
-										/>
-									</div>
-								</FieldWrap>
-							</div>
-
-							<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-								<FieldWrap>
-									<div>
-										<Label htmlFor='phone_number'>
-											Telefono
-										</Label>
-										<Input
-											name='phone_number'
-											type='text'
-											value={values.phone_number}
-											onChange={handleChange}
-											onBlur={handleBlur}
-											placeholder='+56 9 1234 5678'
-											
-										/>
-									</div>
-								</FieldWrap>
-								<FieldWrap>
-									<div>
-										<Label htmlFor='address'>
-											Direccion
-										</Label>
-										<Input
-											name='address'
-											type='text'
-											value={values.address}
-											onChange={handleChange}
-											onBlur={handleBlur}
-											placeholder='Av. Providencia 1234'
 											
 										/>
 									</div>
@@ -474,13 +545,18 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 
 						<ModalFooter>
 							<ModalFooterChild>
-								<Button type='button' variant='outline' onClick={handleClose} icon='HeroXMark'>
+								<Button variant='outline' onClick={handleClose} icon='HeroXMark'>
 									Cancelar
 								</Button>
 							</ModalFooterChild>
 
 							<ModalFooterChild>
-								<Button type='submit' variant='solid' color='blue' icon='HeroPaperAirplane' isDisable={isSubmitting || !values.role_id}>
+								<Button
+									onClick={() => formikRef.current?.submitForm()}
+									variant='solid'
+									color='blue'
+									icon='HeroPaperAirplane'
+									isDisable={isSubmitting || !values.role_id}>
 									{isSubmitting ? 'Enviando...' : 'Enviar Invitacion'}
 								</Button>
 							</ModalFooterChild>

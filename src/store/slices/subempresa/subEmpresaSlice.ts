@@ -30,23 +30,97 @@ const initialState: SubempresaState = {
 	deleteError: undefined,
 }
 
+const normalizeBranchForSubsidiary = (branch: any = {}): any => {
+	const name =
+		branch.name ||
+		branch.branch_name ||
+		branch.nombre ||
+		(branch.id ? `Sucursal ${branch.id}` : 'Sucursal');
+
+	return {
+		...branch,
+		id: branch.id,
+		name,
+		branch_name: branch.branch_name ?? name,
+		address: branch.address || branch.branch_address || branch.direccion,
+		branch_address: branch.branch_address || branch.address || branch.direccion,
+		commune_id:
+			branch.commune_id ??
+			branch.commune?.id ??
+			branch.communeId ??
+			branch.comuna_id ??
+			branch.comuna?.id,
+		commune_name:
+			branch.commune_name ||
+			branch.commune?.name ||
+			branch.comuna?.nombre ||
+			branch.comuna?.name,
+		commune: branch.commune || branch.comuna,
+	};
+};
+
 const normalizeSubsidiaryData = (backendData: any): ISubempresa => {
+	const managerObj = backendData.manager || backendData.manager_data || null;
+	const normalizedManagerName =
+		backendData.subsidiary_manager_name ||
+		backendData.manager_name ||
+		(managerObj
+			? (managerObj.name ||
+					`${managerObj.first_name ?? ''} ${managerObj.last_name ?? ''}`.trim())
+			: undefined);
+	const managerPhone =
+		backendData.subsidiary_manager_phone ||
+		backendData.manager_phone ||
+		managerObj?.phone ||
+		managerObj?.phone_number;
+	const managerEmail =
+		backendData.subsidiary_manager_email || backendData.manager_email || managerObj?.email;
+
 	return {
 		...backendData,
 		// Mapear campos del backend al formato del frontend
 		name: backendData.subsidiary_name || backendData.name || '',
 		company_id: backendData.company_id ?? backendData?.company?.id ?? backendData?.empresa_id ?? backendData?.companyId,
+		manager_id:
+			backendData.subsidiary_manager_id ??
+			backendData.manager_id ??
+			managerObj?.id ??
+			managerObj?.user_id,
 		rut: backendData.subsidiary_rut || backendData.rut,
 		website: backendData.subsidiary_website || backendData.website,
 		phone: backendData.subsidiary_phone || backendData.phone,
 		address: backendData.subsidiary_address || backendData.address,
 		email: backendData.subsidiary_email || backendData.email,
-		manager_name: backendData.subsidiary_manager_name || backendData.manager_name,
-		manager_phone: backendData.subsidiary_manager_phone || backendData.manager_phone,
-		manager_email: backendData.subsidiary_manager_email || backendData.manager_email,
+		manager_name: normalizedManagerName,
+		manager_phone: managerPhone,
+		manager_email: managerEmail,
+		manager:
+			managerObj && typeof managerObj === 'object'
+				? {
+						id: managerObj.id ?? managerObj.user_id,
+						name:
+							managerObj.name ||
+							`${managerObj.first_name ?? ''} ${managerObj.last_name ?? ''}`.trim() ||
+							undefined,
+						first_name: managerObj.first_name,
+						last_name: managerObj.last_name,
+						email: managerObj.email,
+						phone: managerObj.phone ?? managerObj.phone_number ?? null,
+						phone_number: managerObj.phone_number,
+				  }
+				: undefined,
 		status: backendData.subsidiary_status ?? backendData.status,
-		sucursales: backendData.sucursales || [],
-		branches_count: backendData.branches?.length || backendData.branches_count || 0,
+		sucursales:
+			(backendData.sucursales && backendData.sucursales.length
+				? backendData.sucursales
+				: backendData.branches || []
+			).map(normalizeBranchForSubsidiary),
+		branches: backendData.branches?.map(normalizeBranchForSubsidiary),
+		branches_count:
+			backendData.branches_count ||
+			backendData.branches?.length ||
+			backendData.sucursales?.length ||
+			0,
 		commune_id: backendData.commune_id ?? backendData?.commune?.id,
 		commune: backendData.commune
 	}
@@ -61,8 +135,9 @@ export const fetchMisSubsidiarias = createAsyncThunk<
 	async (_, { rejectWithValue }) => {
 		try {
 			const response = await ApiService.fetchData<{ data?: any[]; subsidiaries?: any[] }>({
-				url: '/subsidiaries', method: 'get',
-				params: { with: 'commune,branches,branches.commune' },
+				url: '/subsidiaries',
+				method: 'get',
+				params: { with: 'commune,manager,branches,branches.manager,branches.commune' },
 			})
 
 			const rawList: any[] =
@@ -91,6 +166,7 @@ export const fetchSubsidiariaDetail = createAsyncThunk<
 			const subsidiary = await ApiService.fetchNormalized<ISubempresa>({
 				url: `/subsidiaries/${subsidiariaId}`,
 				method: 'get',
+				params: { with: 'commune,manager,branches,branches.manager,branches.commune' },
 			})
 			return subsidiary
 		} catch (err: any) {

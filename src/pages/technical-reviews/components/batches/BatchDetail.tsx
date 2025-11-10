@@ -24,9 +24,7 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 	const updatingBatch = useAppSelector(selectUpdating);
 	const { branchId } = useCurrentBranch();
 	const [isEditingExpectedQty, setIsEditingExpectedQty] = useState(false);
-	const [expectedQtyDraft, setExpectedQtyDraft] = useState(
-		String(batch.expected_quantity ?? 0),
-	);
+	const [expectedQtyDraft, setExpectedQtyDraft] = useState(String(batch.expected_quantity ?? 0));
 	const [expectedQtyError, setExpectedQtyError] = useState<string | null>(null);
 
 	useEffect(() => {
@@ -76,7 +74,7 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 			const message =
 				typeof error === 'string'
 					? error
-					: error?.message ?? 'No se pudo actualizar la cantidad esperada';
+					: (error?.message ?? 'No se pudo actualizar la cantidad esperada');
 			setExpectedQtyError(message);
 		}
 	};
@@ -124,7 +122,7 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 									<p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
 										{batch.entry_date
 											? new Date(batch.entry_date).toLocaleDateString(
-													'es-ES',
+													'es-CL',
 													{
 														year: 'numeric',
 														month: 'long',
@@ -141,7 +139,7 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 
 				{/* Metadata: Supplier + Warehouse */}
 				<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-					<Card  className='border-l-4 border-green-500'>
+					<Card className='border-l-4 border-green-500'>
 						<CardBody className='p-4'>
 							<div className='mb-2 flex items-center gap-2'>
 								<Icon icon='HeroTruck' className='h-5 w-5 text-blue-600' />
@@ -160,7 +158,7 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 						</CardBody>
 					</Card>
 
-					<Card  className='border-l-4 border-green-500'>
+					<Card className='border-l-4 border-green-500'>
 						<CardBody className='p-4'>
 							<div className='mb-2 flex items-center gap-2'>
 								<Icon icon='HeroHomeModern' className='h-5 w-5 text-purple-600' />
@@ -181,7 +179,7 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 				</div>
 
 				{/* KPIs Card */}
-				<Card  className='border-l-4 border-green-500'>
+				<Card className='border-l-4 border-green-500'>
 					<CardBody className='p-4'>
 						<h3 className='mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300'>
 							Estado del Lote
@@ -203,6 +201,7 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 								{isEditingExpectedQty ? (
 									<>
 										<Input
+											name=''
 											type='number'
 											min={1}
 											value={expectedQtyDraft}
@@ -213,21 +212,23 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 											className='text-center'
 										/>
 										{expectedQtyError && (
-											<p className='mt-1 text-xs text-red-500'>{expectedQtyError}</p>
+											<p className='mt-1 text-xs text-red-500'>
+												{expectedQtyError}
+											</p>
 										)}
 										<div className='mt-3 flex flex-col gap-2 sm:flex-row sm:justify-center'>
 											<Button
 												size='sm'
 												color='green'
 												onClick={handleSaveExpectedQty}
-												disabled={updatingBatch}>
+												isDisable={updatingBatch}>
 												{updatingBatch ? 'Guardando...' : 'Guardar'}
 											</Button>
 											<Button
 												size='sm'
 												variant='outline'
 												onClick={handleCancelExpectedQty}
-												disabled={updatingBatch}>
+												isDisable={updatingBatch}>
 												Cancelar
 											</Button>
 										</div>
@@ -270,7 +271,7 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 				</Card>
 
 				{/* Progress Card */}
-				<Card  className='border-l-4 border-green-500'>
+				<Card className='border-l-4 border-green-500'>
 					<CardBody className='p-4'>
 						<div className='mb-2 flex items-center justify-between'>
 							<span className='text-sm font-medium text-gray-700 dark:text-gray-300'>
@@ -294,7 +295,7 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 
 				{/* Distribución por Tipo */}
 				{batch.items_summary?.by_equipment_type && (
-					<Card  className='border-l-4 border-green-500'>
+					<Card className='border-l-4 border-green-500'>
 						<CardBody className=''>
 							<h3 className='mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300'>
 								Distribución por Tipo
@@ -341,7 +342,7 @@ const BatchDetail: React.FC<BatchDetailProps> = ({ batch, loading = false }) => 
 
 				{/* Notas */}
 				{batch.notes && (
-					<Card  className='border-l-4 border-green-500'>
+					<Card className='border-l-4 border-green-500'>
 						<CardBody className='p-4'>
 							<div className='mb-2 flex items-center gap-2'>
 								<Icon icon='HeroDocumentText' className='h-4 w-4 text-gray-600' />

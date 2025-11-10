@@ -68,6 +68,7 @@ const ItemDetail: React.FC<ItemDetailProps> = ({
 						</div>
 
 						<div className='flex flex-wrap items-center gap-2'>
+							{/* ✅ STANDALONE: Siempre es revisión individual */}
 							<StatusBadge type='review' status={item.review_status} />
 							<StatusBadge type='commercial' status={item.current_status} />
 						</div>

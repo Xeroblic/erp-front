@@ -9,7 +9,11 @@ import {
 } from '@tanstack/react-table';
 
 import { useInvitationsManagement } from '../../hooks/useInvitationsManagement';
-import { InvitationDetailsModal, DeleteConfirmationModal, ResendInvitationModal } from '../modals';
+import {
+	InvitationDetailsModal,
+	DeleteConfirmationModal,
+	ResendInvitationModal,
+} from '../modals';
 import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
 import { Invitation } from '@/interface/invitacion.interface';
 import Badge from '@/components/ui/Badge';
@@ -29,6 +33,7 @@ interface InvitationsTableProps {
 	};
 	onPageChange: (page: number) => void;
 	onPageSizeChange: (pageSize: number) => void;
+	openCreateModal: () => void;
 }
 
 const columnHelper = createColumnHelper<Invitation>();
@@ -39,6 +44,7 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 	pagination,
 	onPageChange,
 	onPageSizeChange,
+	openCreateModal,
 }) => {
 	const { handleResendInvitation, handleCancelInvitation, isActionLoading } =
 		useInvitationsManagement();
@@ -197,10 +203,12 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 				);
 			},
 		}),
-		columnHelper.accessor('created_at', {
+		columnHelper.display({
+			id: 'invited_at',
 			header: 'Fecha de Invitación',
 			cell: (info) => {
-				const value = info.getValue();
+				const invitation = info.row.original;
+				const value = invitation.invited_at || invitation.created_at;
 				if (!value) {
 					return <span className='text-zinc-500 dark:text-zinc-400'>-</span>;
 				}
@@ -254,25 +262,27 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 				const invitation = info.row.original;
 				// Usar solo sent_by_user que está definido en el interface
 				const sentBy = invitation.sent_by_user;
+				const invitedBy = invitation.invited_by;
 
-				if (!sentBy) {
+				if (!sentBy && !invitedBy) {
 					return <span className='text-zinc-500 dark:text-zinc-400'>-</span>;
 				}
 
-				const firstName = sentBy.first_name || '';
-				const lastName = sentBy.last_name || '';
-				const email = sentBy.email || '';
-				const fullName = `${firstName} ${lastName}`.trim() || email || 'Usuario';
+				const firstName = sentBy?.first_name || '';
+				const lastName = sentBy?.last_name || '';
+				const email = sentBy?.email || '';
+				const fullName =
+					invitedBy || `${firstName} ${lastName}`.trim() || email || 'Usuario';
 
 				return (
 					<div className='flex items-center space-x-2'>
-						<div className='flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-700'>
+						{/* <div className='flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-700'>
 							<Icon
 								icon='HeroUser'
 								size='text-2xl'
 								className='h-5 w-5 text-zinc-600 dark:text-zinc-300'
 							/>
-						</div>
+						</div> */}
 						<div className='flex flex-col'>
 							<span className='text-sm font-medium text-zinc-900 dark:text-zinc-100'>
 								{fullName}
@@ -426,9 +436,7 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 						variant='outline'
 						color='red'
 						icon='HeroPlus'
-						onClick={() => {
-							console.log('Crear nueva invitación');
-						}}>
+						onClick={openCreateModal}>
 						Crear nueva invitación
 					</Button>
 				</CardBody>

@@ -384,7 +384,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 																		);
 																	}
 																}}
-																label='Sucursal *'
+																label='Sucursal'
 																placeholder='Selecciona la sucursal para este producto'
 																disabled={isBusy}
 																required

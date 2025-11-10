@@ -2,11 +2,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useFormik } from 'formik';
 import { useAppDispatch, useAppSelector } from '@/store';
-import {
-	fetchMiEmpresa,
-	updateMiEmpresa,
-	fetchMiEmpresaSubsidiarias,
-} from '@/store/slices/empresa/empresaSlice';
+import { fetchMiEmpresa, updateMiEmpresa } from '@/store/slices/empresa/empresaSlice';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
@@ -16,7 +12,6 @@ import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import { toast } from 'react-toastify';
 import { unwrapResult } from '@reduxjs/toolkit';
-import { SubsidiariesTable } from './components';
 import Spinner from '@/components/ui/Spinner';
 import {
 	listaComunasThunk,
@@ -31,10 +26,8 @@ import { CompanyGeneralFields, CompanyContactFields } from './components';
 export default function EmpresaDetalle() {
 	const dispatch = useAppDispatch();
 	const user = useAppSelector((s) => s.auth.user);
-	const { miEmpresa, miEmpresaSubsidiarias, loading, error, updateLoading } = useAppSelector(
-		(s) => s.empresa,
-	);
-	const [activeTab, setActiveTab] = useState<'general' | 'contact' | 'subsidiaries'>('general');
+	const { miEmpresa, loading, error } = useAppSelector((s) => s.empresa);
+	const [activeTab, setActiveTab] = useState<'general' | 'contact'>('general');
 	const hasLoadedData = useRef(false);
 
 	useEffect(() => {
@@ -51,11 +44,6 @@ export default function EmpresaDetalle() {
 				console.error('Error al cargar empresa:', err);
 			}
 
-			try {
-				await dispatch(fetchMiEmpresaSubsidiarias());
-			} catch (err) {
-				console.error('Error al cargar subsidiarias:', err);
-			}
 		};
 
 		loadData();
@@ -202,7 +190,6 @@ export default function EmpresaDetalle() {
 	const tabs = [
 		{ id: 'general', label: 'Información General', icon: 'HeroBuilding' },
 		{ id: 'contact', label: 'Contacto', icon: 'HeroPhone' },
-		{ id: 'subsidiaries', label: 'Subempresas', icon: 'HeroBuildingStorefront' },
 	] as const;
 
 	return (
@@ -319,30 +306,6 @@ export default function EmpresaDetalle() {
 									/>
 								)}
 
-								{/* Subempresas */}
-								{activeTab === 'subsidiaries' && (
-									<div className='space-y-6'>
-										<div className='flex items-center justify-between'>
-											<div>
-												<h3 className='text-lg font-medium'>Subempresas</h3>
-												<p className='text-sm text-zinc-500'>
-													Gestiona las subempresas asociadas a{' '}
-													{miEmpresa?.company_name}
-												</p>
-											</div>
-										</div>
-
-										<SubsidiariesTable
-											subsidiaries={miEmpresaSubsidiarias || []}
-											loading={loading}
-											onRefresh={() =>
-												dispatch(
-													fetchMiEmpresaSubsidiarias({ force: true }),
-												)
-											}
-										/>
-									</div>
-								)}
 							</form>
 						)}
 					</CardBody>

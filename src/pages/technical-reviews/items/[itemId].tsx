@@ -538,7 +538,6 @@ const ItemReviewStandalonePage: React.FC = () => {
 							{item ? `Revisión #${item.id}` : 'Nueva Revisión'}
 						</h1>
 						<p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
-							{/* ✅ STANDALONE: Siempre es revisión individual */}
 							Revisión individual de item
 						</p>
 					</div>

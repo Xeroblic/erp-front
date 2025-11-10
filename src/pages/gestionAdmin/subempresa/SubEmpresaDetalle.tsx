@@ -352,7 +352,7 @@ export default function SubEmpresaDetalle() {
 						<CardHeader>
 							<CardTitle>Estadísticas</CardTitle>
 						</CardHeader>
-						<CardBody className='space-y-4'>
+						<CardBody className='space-y-6'>
 							<div className='flex items-center justify-between rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800'>
 								<div className='flex items-center gap-3'>
 									<div className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-100'>
@@ -364,27 +364,65 @@ export default function SubEmpresaDetalle() {
 									<div>
 										<div className='font-medium'>Sucursales</div>
 										<div className='text-sm text-zinc-500'>
-											Total de sucursales
+											Total de sucursales activas
 										</div>
 									</div>
 								</div>
 								<div className='text-2xl font-bold text-blue-600'>
 									{subempresa.branches_count ||
-										subempresa.sucursales?.length ||
-										0}
+										(subempresa.sucursales?.length ??
+											subempresa.branches?.length ??
+											0)}
 								</div>
 							</div>
 
-							<div className='py-8 text-center'>
-								<div className='mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800'>
-									<Icon
-										icon='HeroChartBarSquare'
-										className='text-xl text-zinc-400'
-									/>
+							<div className='space-y-3'>
+								<div className='text-sm font-semibold text-zinc-700 dark:text-zinc-200'>
+									Sucursales registradas
 								</div>
-								<p className='text-sm text-zinc-500'>
-									Más estadísticas próximamente
-								</p>
+								<div className='space-y-2 max-h-64 overflow-y-auto pr-1'>
+									{(subempresa.sucursales?.length ||
+									subempresa.branches?.length) ? (
+										(subempresa.sucursales?.length
+											? subempresa.sucursales
+											: subempresa.branches || []
+										)?.map((sucursal) => (
+											<div
+												key={sucursal.id}
+												className='flex items-start justify-between rounded-lg border border-zinc-100 p-3 text-sm dark:border-zinc-700'>
+												<div className='flex items-start gap-3'>
+													<div className='flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100'>
+														<Icon
+															icon='HeroBuildingLibrary'
+															className='text-emerald-600'
+														/>
+													</div>
+													<div>
+														<p className='font-medium text-zinc-900 dark:text-zinc-100'>
+															{sucursal.branch_name}
+														</p>
+														{sucursal.branch_address ? (
+															<p className='text-xs text-zinc-500'>
+																{sucursal.branch_address}
+															</p>
+														) : null}
+													</div>
+												</div>
+												<div className='text-right text-xs text-zinc-500'>
+													{sucursal.commune?.name
+														? sucursal.commune?.name
+														: 'Sin comuna'}
+												</div>
+											</div>
+										))
+									) : (
+										<div className='rounded-lg border border-dashed border-zinc-200 p-4 text-sm text-zinc-500 dark:border-zinc-700'>
+											No hay sucursales registradas actualmente.
+										</div>
+									)}
+								</div>
+								
+								
 							</div>
 						</CardBody>
 					</Card>
