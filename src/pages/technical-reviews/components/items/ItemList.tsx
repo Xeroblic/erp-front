@@ -2,7 +2,7 @@
  * ItemList - Tabla reutilizable de series/ítems
  * Usado en: pages/items/index.tsx y BatchTabs.tsx
  */
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card, { CardBody } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -14,6 +14,14 @@ import { useAppDispatch } from '@/store';
 import { deleteItem } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { toast } from 'react-toastify';
+import {
+    createColumnHelper,
+    flexRender,
+    getCoreRowModel,
+    OnChangeFn,
+    PaginationState,
+    useReactTable,
+} from '@tanstack/react-table';
 import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
 
 interface ItemListProps {
@@ -177,245 +185,246 @@ const ItemList: React.FC<ItemListProps> = ({
 		);
 	}
 
+	// TanStack Table setup
+	const columnHelper = useMemo(() => createColumnHelper<IItem>(), []);
+
+	const columns = useMemo(() => {
+		const cols = [
+			columnHelper.display({
+				id: 'serial_number',
+				header: 'Serie',
+				cell: (info) => {
+					const item = info.row.original;
+					return (
+						<div className='flex items-center gap-2'>
+							<Icon icon='HeroQrCode' className='h-4 w-4 text-gray-400' />
+							<span className='font-mono text-sm font-medium text-gray-900 dark:text-gray-100'>
+								{item.serial_number}
+							</span>
+						</div>
+					);
+				},
+			}),
+
+			// Tipo
+			columnHelper.display({
+				id: 'equipment_type',
+				header: 'Tipo',
+				cell: (info) => {
+					const item = info.row.original;
+					const { label, icon } = resolveEquipmentTypeMeta(item.equipment_type);
+					return (
+						<span className='inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200'>
+							<Icon icon={icon as any} className='h-3 w-3' />
+							{label}
+						</span>
+					);
+				},
+			}),
+
+			// Estado revisión
+			columnHelper.display({
+				id: 'review_status',
+				header: 'Estado Revisión',
+				cell: (info) => <StatusBadge type='review' status={info.row.original.review_status} />,
+			}),
+
+			// Estado comercial
+			columnHelper.display({
+				id: 'current_status',
+				header: 'Estado Comercial',
+				cell: (info) => (
+					<StatusBadge type='commercial' status={info.row.original.current_status} />
+				),
+			}),
+
+			// Grado
+			columnHelper.display({
+				id: 'grade',
+				header: 'Grado',
+				cell: (info) => {
+					const item = info.row.original;
+					return extractValue(item.grade) ? (
+						<span className='inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-bold text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'>
+							<Icon icon='HeroStar' className='h-3 w-3' />
+							{extractValue(item.grade)}
+							{extractValue(item.suggested_grade) &&
+								extractValue(item.grade) !== extractValue(item.suggested_grade) && (
+								<span className='text-[10px] text-yellow-600 dark:text-yellow-400'>
+									(Sugerido: {extractValue(item.suggested_grade)})
+								</span>
+							)}
+						</span>
+					) : extractValue(item.suggested_grade) ? (
+						<span className='inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-400'>
+							<Icon icon='HeroSparkles' className='h-3 w-3' />
+							{extractValue(item.suggested_grade)}
+						</span>
+					) : (
+						<span className='text-xs text-gray-400'>Pendiente</span>
+					);
+				},
+			}),
+		] as any[];
+
+		if (variant === 'global') {
+			cols.splice(1, 0,
+				// Producto (solo global)
+				columnHelper.display({
+					id: 'product_name',
+					header: 'Producto',
+					cell: (info) => {
+						const item = info.row.original as any;
+						return (
+							<span className='text-sm text-gray-700 dark:text-gray-300'>
+								{item?.product?.name || item?.product_name || 'Sin producto'}
+							</span>
+						);
+					},
+				}),
+			);
+
+			cols.push(
+				// Bodega (solo global)
+				columnHelper.display({
+					id: 'warehouse_name',
+					header: 'Bodega',
+					cell: (info) => {
+						const item = info.row.original as any;
+						return (
+							<span className='text-sm text-gray-700 dark:text-gray-300'>
+								{item?.warehouse?.name || item?.warehouse_name || '—'}
+							</span>
+						);
+					},
+				}),
+				// Última actualización (solo global)
+				columnHelper.display({
+					id: 'updated_at',
+					header: 'Última actualización',
+					cell: (info) => (
+						<span className='text-sm text-gray-600 dark:text-gray-400'>
+							{formatDateTime(info.row.original.updated_at || info.row.original.created_at)}
+						</span>
+					),
+				}),
+			);
+		}
+
+		// Acciones
+		cols.push(
+			columnHelper.display({
+				id: 'actions',
+				header: 'Acciones',
+				cell: (info) => {
+					const item = info.row.original;
+					const reviewStatus = (extractValue(item.review_status) || '').toLowerCase();
+					const isApproved = reviewStatus === 'approved';
+					return (
+						<div className='inline-flex w-full justify-end gap-2'>
+							<Button
+								variant='outline'
+								size='sm'
+								onClick={(e) => {
+									e.stopPropagation();
+									handleItemClick(item.id);
+								}}>
+								<Icon icon='HeroEye' className='h-4 w-4' />
+							</Button>
+							<Button
+								variant='outline'
+								size='sm'
+								color='red'
+								isDisable={isApproved}
+								onClick={(e) => {
+									e.stopPropagation();
+									handleDelete(item.id);
+								}}
+								title={isApproved ? 'No se puede eliminar una revisión aprobada' : 'Eliminar revisión'}>
+								<Icon icon='HeroTrash' className='h-4 w-4' />
+							</Button>
+						</div>
+					);
+				},
+			}),
+		);
+
+		return cols;
+	}, [columnHelper, variant]);
+
+	const handlePaginationChange: OnChangeFn<PaginationState> = (updater) => {
+		const current: PaginationState = {
+			pageIndex: Math.max((meta?.current_page || 1) - 1, 0),
+			pageSize: meta?.per_page || 10,
+		};
+		const next = typeof updater === 'function' ? updater(current) : updater;
+
+		if (next.pageSize !== current.pageSize) {
+			onLimitChange?.(next.pageSize);
+			return;
+		}
+
+		if (next.pageIndex !== current.pageIndex) {
+			onPageChange?.(next.pageIndex + 1);
+		}
+	};
+
+	const table = useReactTable({
+		data: items,
+		columns,
+		getCoreRowModel: getCoreRowModel(),
+		state: {
+			pagination: {
+				pageIndex: Math.max((meta?.current_page || 1) - 1, 0),
+				pageSize: meta?.per_page || 10,
+			},
+		},
+		onPaginationChange: handlePaginationChange,
+		manualPagination: true,
+		pageCount: meta?.last_page || 1,
+	});
+
 	return (
 		<div className='space-y-4'>
 			<Card>
 				<CardBody className='overflow-x-auto p-0'>
 					<Table className='w-full'>
 						<THead className='bg-gray-50 dark:bg-gray-800'>
-							<Tr>
-								<Th className='text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
-									Serie
-								</Th>
-								{variant === 'global' && (
-									<Th className='text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
-										Producto
-									</Th>
-								)}
-								<Th className='text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
-									Tipo
-								</Th>
-								<Th className='text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
-									Estado Revisión
-								</Th>
-								<Th className='text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
-									Estado Comercial
-								</Th>
-								<Th className='text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
-									Grado
-								</Th>
-								{variant === 'global' && (
-									<>
-										<Th className='text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
-											Bodega
+							{table.getHeaderGroups().map((headerGroup) => (
+								<Tr key={headerGroup.id} className='select-none'>
+									{headerGroup.headers.map((header) => (
+										<Th
+											key={header.id}
+											className='text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
+											{header.isPlaceholder
+												? null
+												: flexRender(header.column.columnDef.header, header.getContext())}
 										</Th>
-										<Th className='text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
-											Última actualización
-										</Th>
-									</>
-								)}
-								<Th className='text-right text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
-									Acciones
-								</Th>
-							</Tr>
+									))}
+								</Tr>
+							))}
 						</THead>
 						<TBody className='bg-white dark:bg-gray-900'>
-							{items.map((item) => (
+							{table.getRowModel().rows.map((row, index) => (
 								<Tr
-									key={item.id}
-									className='cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800'
-									onClick={() => handleItemClick(item.id)}>
-									<Td className='whitespace-nowrap'>
-										<div className='flex items-center gap-2'>
-											<Icon
-												icon='HeroQrCode'
-												className='h-4 w-4 text-gray-400'
-											/>
-											<span className='font-mono text-sm font-medium text-gray-900 dark:text-gray-100'>
-												{item.serial_number}
-											</span>
-										</div>
-									</Td>
-									{variant === 'global' && (
-										<Td className='whitespace-nowrap text-sm text-gray-700 dark:text-gray-300'>
-											{(item as any)?.product?.name ||
-												(item as any)?.product_name ||
-												'Sin producto'}
+									key={row.id}
+									className={`cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 ${index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-zinc-50/30 dark:bg-zinc-800/20'}`}
+									onClick={() => handleItemClick(row.original.id)}>
+									{row.getVisibleCells().map((cell) => (
+										<Td key={cell.id} className='align-middle'>
+											{flexRender(cell.column.columnDef.cell, cell.getContext())}
 										</Td>
-									)}
-									<Td className='whitespace-nowrap'>
-										{(() => {
-											const { label, icon } = resolveEquipmentTypeMeta(
-												item.equipment_type,
-											);
-											return (
-												<span className='inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200'>
-													<Icon icon={icon as any} className='h-3 w-3' />
-													{label}
-												</span>
-											);
-										})()}
-									</Td>
-									<Td className='whitespace-nowrap'>
-										<StatusBadge type='review' status={item.review_status} />
-									</Td>
-									<Td className='whitespace-nowrap'>
-										<StatusBadge
-											type='commercial'
-											status={item.current_status}
-										/>
-									</Td>
-									<Td className='whitespace-nowrap'>
-										{extractValue(item.grade) ? (
-											<span className='inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-bold text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'>
-												<Icon icon='HeroStar' className='h-3 w-3' />
-												{extractValue(item.grade)}
-												{extractValue(item.suggested_grade) &&
-													extractValue(item.grade) !==
-														extractValue(item.suggested_grade) && (
-														<span className='text-[10px] text-yellow-600 dark:text-yellow-400'>
-															(Sugerido:{' '}
-															{extractValue(item.suggested_grade)})
-														</span>
-													)}
-											</span>
-										) : extractValue(item.suggested_grade) ? (
-											<span className='inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-400'>
-												<Icon icon='HeroSparkles' className='h-3 w-3' />
-												{extractValue(item.suggested_grade)}
-											</span>
-										) : (
-											<span className='text-xs text-gray-400'>Pendiente</span>
-										)}
-									</Td>
-									{variant === 'global' && (
-										<>
-											<Td className='whitespace-nowrap text-sm text-gray-700 dark:text-gray-300'>
-												{(item as any)?.warehouse?.name ||
-													(item as any)?.warehouse_name ||
-													'—'}
-											</Td>
-											<Td className='whitespace-nowrap text-sm text-gray-600 dark:text-gray-400'>
-												{formatDateTime(item.updated_at || item.created_at)}
-											</Td>
-										</>
-									)}
-														<Td className='whitespace-nowrap text-right'>
-                                        <div className='inline-flex gap-2'>
-                                            <Button
-                                                size='sm'
-                                                variant='outline'
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleItemClick(item.id);
-                                                }}>
-                                                <Icon icon='HeroEye' className='h-4 w-4' />
-                                            </Button>
-                                            {(() => {
-                                                const reviewStatus = (extractValue(item.review_status) || '').toLowerCase();
-                                                const isApproved = reviewStatus === 'approved';
-                                                return (
-                                                    <Button
-                                                        size='sm'
-                                                        variant='outline'
-                                                        color='red'
-                                                        isDisable={isApproved}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleDelete(item.id);
-                                                        }}
-                                                        title={isApproved ? 'No se puede eliminar una revisión aprobada' : 'Eliminar revisión'}>
-                                                        <Icon icon='HeroTrash' className='h-4 w-4' />
-                                                    </Button>
-                                                );
-                                            })()}
-                                        </div>
-                                    </Td>
+									))}
 								</Tr>
 							))}
 						</TBody>
 					</Table>
+
 					<div className='mt-4'>
 						<TableCardFooterTemplateV2 table={table} />
 					</div>
 				</CardBody>
 			</Card>
-
-			{/* Paginación */}
-			{meta.last_page > 1 && (
-				<div className='flex items-center justify-between'>
-					<div className='text-sm text-gray-600 dark:text-gray-400'>
-						Mostrando {(meta.current_page - 1) * meta.per_page + 1} -{' '}
-						{Math.min(meta.current_page * meta.per_page, meta.total)} de {meta.total}{' '}
-						series
-					</div>
-
-					<div className='flex gap-2'>
-						<Button
-							variant='outline'
-							size='sm'
-							onClick={() => onPageChange?.(meta.current_page - 1)}
-							isDisable={meta.current_page === 1}>
-							<Icon icon='HeroChevronLeft' className='h-4 w-4' />
-							Anterior
-						</Button>
-
-						<div className='flex items-center gap-1'>
-							{Array.from({ length: meta.last_page }, (_, i) => i + 1)
-								.filter((page) => {
-									const distance = Math.abs(page - meta.current_page);
-									return (
-										distance === 0 ||
-										page === 1 ||
-										page === meta.last_page ||
-										distance <= 2
-									);
-								})
-								.map((page, idx, arr) => {
-									const prevPage = arr[idx - 1];
-									const showEllipsis = prevPage && page - prevPage > 1;
-
-									return (
-										<React.Fragment key={page}>
-											{showEllipsis && (
-												<span className='px-2 text-gray-400'>...</span>
-											)}
-											<Button
-												variant={
-													page === meta.current_page ? 'solid' : 'outline'
-												}
-												size='sm'
-												onClick={() => onPageChange?.(page)}>
-												{page}
-											</Button>
-										</React.Fragment>
-									);
-								})}
-						</div>
-
-						<Button
-							variant='outline'
-							size='sm'
-							onClick={() => onPageChange?.(meta.current_page + 1)}
-							isDisable={meta.current_page === meta.last_page}>
-							Siguiente
-							<Icon icon='HeroChevronRight' className='h-4 w-4' />
-						</Button>
-
-						{onLimitChange && (
-							<select
-								value={meta.per_page}
-								onChange={(e) => onLimitChange(Number(e.target.value))}
-								className='ml-2 rounded border border-gray-300 px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-800'>
-								<option value={10}>10</option>
-								<option value={20}>20</option>
-								<option value={50}>50</option>
-								<option value={100}>100</option>
-							</select>
-						)}
-					</div>
-				</div>
-			)}
 		</div>
 	);
 };
