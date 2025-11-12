@@ -17,12 +17,14 @@ import SelectReact from '@/components/form/SelectReact';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { listaComunasThunk } from '@/store/slices/core/coreSlice';
 import type { ICreateWarehouseRequest } from '@/interface/warehouse.interface';
+import { useWarehouseManagers } from '../hooks/useWarehouseManagers';
 
 interface CreateWarehouseModalProps {
 	isOpen: boolean;
 	setIsOpen: (isOpen: boolean) => void;
 	onSubmit: (data: ICreateWarehouseRequest) => Promise<boolean>;
 	loading?: boolean;
+	branchId?: number;
 }
 
 const validationSchema = Yup.object({
@@ -67,9 +69,11 @@ const CreateWarehouseModal: React.FC<CreateWarehouseModalProps> = ({
 	setIsOpen,
 	onSubmit,
 	loading = false,
+	branchId,
 }) => {
 	const dispatch = useAppDispatch();
 	const { listaComunas } = useAppSelector((state) => state.core);
+	const { managerOptions, loading: managersLoading } = useWarehouseManagers(branchId);
 
 	// Cargar comunas al montar el componente
 	useEffect(() => {
@@ -136,9 +140,10 @@ const CreateWarehouseModal: React.FC<CreateWarehouseModalProps> = ({
 				onSubmit={handleSubmit}>
 				{(formik) => (
 					<Form>
-						<ModalBody>
-							{/* Datos Principales */}
-							<Card className='mb-4'>
+						<ModalBody className='space-y-4'>
+							<div className='grid gap-4 lg:grid-cols-2'>
+								{/* Datos Principales */}
+								<Card className='lg:col-span-2'>
 								<CardHeader>
 									<CardTitle>Datos principales</CardTitle>
 								</CardHeader>
@@ -197,17 +202,45 @@ const CreateWarehouseModal: React.FC<CreateWarehouseModalProps> = ({
 										/>
 									</div>
 
-									<div>
-										<Label htmlFor='manager_id'>Encargado</Label>
-										<Input
+									<div className='md:col-span-2'>
+										<Label htmlFor='manager_id'>Encargado de bodega</Label>
+										<SelectReact
 											id='manager_id'
 											name='manager_id'
-											type='number'
-											placeholder='ID del encargado'
-											value={formik.values.manager_id || ''}
-											onChange={formik.handleChange}
-											onBlur={formik.handleBlur}
+											options={managerOptions}
+											value={
+												managerOptions.find(
+													(option) =>
+														Number(option.value) ===
+														Number(formik.values.manager_id ?? Number.NaN),
+												) || null
+											}
+											onChange={(option: any) => {
+												const value = option?.value
+													? Number(option.value)
+													: null;
+												formik.setFieldValue('manager_id', value);
+											}}
+											onBlur={() =>
+												formik.setFieldTouched('manager_id', true)
+											}
+											isClearable
+											isDisabled={managersLoading || managerOptions.length === 0}
+											isLoading={managersLoading}
+											placeholder={
+												managersLoading
+													? 'Cargando encargados...'
+													: managerOptions.length === 0
+														? 'No hay encargados disponibles'
+														: 'Selecciona un encargado'
+											}
 										/>
+										<p className='mt-1 text-xs text-gray-500'>
+											Solo se muestran usuarios con rol{' '}
+											<span className='font-semibold'>
+												warehouse-manager
+											</span>
+										</p>
 									</div>
 
 									<div className='md:col-span-2'>
@@ -226,7 +259,7 @@ const CreateWarehouseModal: React.FC<CreateWarehouseModalProps> = ({
 							</Card>
 
 							{/* Capacidad y Estado */}
-							<Card className='mb-4'>
+							<Card>
 								<CardHeader>
 									<CardTitle>Capacidad y estado</CardTitle>
 								</CardHeader>
@@ -274,7 +307,7 @@ const CreateWarehouseModal: React.FC<CreateWarehouseModalProps> = ({
 							</Card>
 
 							{/* Ubicación */}
-							<Card>
+							<Card className='lg:col-span-2'>
 								<CardHeader>
 									<CardTitle>Ubicación</CardTitle>
 								</CardHeader>
@@ -328,6 +361,7 @@ const CreateWarehouseModal: React.FC<CreateWarehouseModalProps> = ({
 									</div>
 								</CardBody>
 							</Card>
+							</div>
 						</ModalBody>
 
 						<ModalFooter>

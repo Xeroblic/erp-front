@@ -223,6 +223,7 @@ const WarehouseListPage: React.FC = () => {
 				isOpen={createModalOpen}
 				setIsOpen={setCreateModalOpen}
 				onSubmit={handleCreateWarehouse}
+				branchId={branchId}
 			/>
 
 			<EditWarehouseModal
@@ -230,6 +231,7 @@ const WarehouseListPage: React.FC = () => {
 				setIsOpen={setEditModalOpen}
 				warehouse={selectedWarehouse}
 				onSubmit={handleUpdateWarehouse}
+				branchId={branchId}
 			/>
 
 			<DeleteWarehouseModal

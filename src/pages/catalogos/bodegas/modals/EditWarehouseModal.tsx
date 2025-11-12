@@ -17,6 +17,7 @@ import SelectReact from '@/components/form/SelectReact';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { listaComunasThunk } from '@/store/slices/core/coreSlice';
 import type { IWarehouse, IUpdateWarehouseRequest } from '@/interface/warehouse.interface';
+import { useWarehouseManagers } from '../hooks/useWarehouseManagers';
 
 interface EditWarehouseModalProps {
 	isOpen: boolean;
@@ -24,6 +25,7 @@ interface EditWarehouseModalProps {
 	warehouse: IWarehouse | null;
 	onSubmit: (id: number, data: IUpdateWarehouseRequest) => Promise<boolean>;
 	loading?: boolean;
+	branchId?: number;
 }
 
 const validationSchema = Yup.object({
@@ -55,9 +57,11 @@ const EditWarehouseModal: React.FC<EditWarehouseModalProps> = ({
 	warehouse,
 	onSubmit,
 	loading = false,
+	branchId,
 }) => {
 	const dispatch = useAppDispatch();
 	const { listaComunas } = useAppSelector((state) => state.core);
+	const { managerOptions, loading: managersLoading } = useWarehouseManagers(branchId);
 
 	// Cargar comunas al montar el componente
 	useEffect(() => {
@@ -126,8 +130,9 @@ const EditWarehouseModal: React.FC<EditWarehouseModalProps> = ({
 				{(formik) => (
 					<Form>
 						<ModalBody className='space-y-4'>
-							{/* Información Principal */}
-							<Card>
+							<div className='grid gap-4 lg:grid-cols-2'>
+								{/* Información Principal */}
+								<Card className='lg:col-span-2'>
 								<CardHeader>
 									<CardTitle>Información Principal</CardTitle>
 								</CardHeader>
@@ -208,6 +213,47 @@ const EditWarehouseModal: React.FC<EditWarehouseModalProps> = ({
 											rows={3}
 										/>
 									</div>
+
+									<div className='md:col-span-2'>
+										<Label htmlFor='manager_id'>Encargado de bodega</Label>
+										<SelectReact
+											id='manager_id'
+											name='manager_id'
+											options={managerOptions}
+											value={
+												managerOptions.find(
+													(option) =>
+														Number(option.value) ===
+														Number(formik.values.manager_id ?? Number.NaN),
+												) || null
+											}
+											onChange={(option: any) => {
+												const value = option?.value
+													? Number(option.value)
+													: null;
+												formik.setFieldValue('manager_id', value);
+											}}
+											onBlur={() =>
+												formik.setFieldTouched('manager_id', true)
+											}
+											isClearable
+											isDisabled={managersLoading || managerOptions.length === 0}
+											isLoading={managersLoading}
+											placeholder={
+												managersLoading
+													? 'Cargando encargados...'
+													: managerOptions.length === 0
+														? 'No hay encargados disponibles'
+														: 'Selecciona un encargado'
+											}
+										/>
+										<p className='mt-1 text-sm text-gray-500'>
+											Solo se listan usuarios con rol{' '}
+											<span className='font-semibold'>
+												warehouse-manager
+											</span>
+										</p>
+									</div>
 								</CardBody>
 							</Card>
 
@@ -253,7 +299,7 @@ const EditWarehouseModal: React.FC<EditWarehouseModalProps> = ({
 							</Card>
 
 							{/* Ubicación */}
-							<Card>
+							<Card className='lg:col-span-2'>
 								<CardHeader>
 									<CardTitle>Ubicación</CardTitle>
 								</CardHeader>
@@ -307,6 +353,7 @@ const EditWarehouseModal: React.FC<EditWarehouseModalProps> = ({
 									</div>
 								</CardBody>
 							</Card>
+							</div>
 						</ModalBody>
 
 						<ModalFooter>

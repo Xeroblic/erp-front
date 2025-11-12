@@ -78,8 +78,16 @@ const WarehousesTable: React.FC<WarehousesTableProps> = ({
 				id: 'manager',
 				header: 'Encargado',
 				cell: (info) => (
-					<div className='text-sm text-gray-700 dark:text-gray-300'>
-						{info.getValue() || '-'}
+					<div>
+						{info.getValue() ? (
+							<div className='text-sm text-gray-700 dark:text-gray-300'>
+								{info.getValue()}
+							</div>
+						) : (
+							<div className='text-sm text-red-600 dark:text-red-400 font-medium'>
+								Sin encargado
+							</div>
+						)}
 					</div>
 				),
 			}),
