@@ -2,7 +2,7 @@
  * ItemList - Tabla reutilizable de series/ítems
  * Usado en: pages/items/index.tsx y BatchTabs.tsx
  */
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card, { CardBody } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -23,6 +23,7 @@ import {
     useReactTable,
 } from '@tanstack/react-table';
 import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
+import Modal, { ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
 
 interface ItemListProps {
 	items: IItem[];
@@ -58,30 +59,6 @@ const ItemList: React.FC<ItemListProps> = ({
 		if (typeof value === 'object' && 'value' in value) return String(value.value);
 		return String(value);
 	};
-
-    const handleItemClick = (itemId: number) => {
-        if (onItemClick) {
-            onItemClick(itemId);
-        } else {
-            navigate(`${baseUrl}/${itemId}`);
-        }
-    };
-
-    const handleDelete = async (itemId: number) => {
-        if (!branchId) {
-            toast.error('No hay sucursal activa para eliminar la revisión');
-            return;
-        }
-        const ok = window.confirm('¿Eliminar esta revisión? Esta acción no se puede deshacer.');
-        if (!ok) return;
-        try {
-            await dispatch(deleteItem({ branchId, itemId })).unwrap();
-            toast.success('Revisión eliminada');
-            onPageChange?.(meta.current_page);
-        } catch (err: any) {
-            toast.error(err?.message || 'No se pudo eliminar la revisión');
-        }
-    };
 
 	const resolveEquipmentTypeMeta = (
 		equipmentType: any,
@@ -153,6 +130,244 @@ const ItemList: React.FC<ItemListProps> = ({
 		});
 	};
 
+    const handleItemClick = (itemId: number) => {
+        if (onItemClick) {
+            onItemClick(itemId);
+        } else {
+            navigate(`${baseUrl}/${itemId}`);
+        }
+    };
+
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<IItem | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDelete = async (itemId: number) => {
+        if (!branchId) {
+            toast.error('No hay sucursal activa para eliminar la revisión');
+            return;
+        }
+        try {
+            setIsDeleting(true);
+            await dispatch(deleteItem({ branchId, itemId })).unwrap();
+            toast.success('Revisión eliminada');
+            onPageChange?.(meta.current_page);
+        } catch (err: any) {
+            toast.error(err?.message || 'No se pudo eliminar la revisión');
+        } finally {
+            setIsDeleting(false);
+            setDeleteModalOpen(false);
+            setItemToDelete(null);
+        }
+    };
+
+    // TanStack Table setup (debe ejecutarse SIEMPRE antes de cualquier return condicional)
+    const columnHelper = useMemo(() => createColumnHelper<IItem>(), []);
+
+    const columns = useMemo(() => {
+        const cols = [
+            columnHelper.display({
+                id: 'serial_number',
+                header: 'Serie',
+                cell: (info) => {
+                    const item = info.row.original;
+                    return (
+                        <div className='flex items-center gap-2'>
+                            <Icon icon='HeroQrCode' className='h-4 w-4 text-gray-400' />
+                            <span className='font-mono text-sm font-medium text-gray-900 dark:text-gray-100'>
+                                {item.serial_number}
+                            </span>
+                        </div>
+                    );
+                },
+            }),
+
+            // Tipo
+            columnHelper.display({
+                id: 'equipment_type',
+                header: 'Tipo',
+                cell: (info) => {
+                    const item = info.row.original;
+                    const { label, icon } = resolveEquipmentTypeMeta(item.equipment_type);
+                    return (
+                        <span className='inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200'>
+                            <Icon icon={icon as any} className='h-3 w-3' />
+                            {label}
+                        </span>
+                    );
+                },
+            }),
+
+            // Estado revisión
+            columnHelper.display({
+                id: 'review_status',
+                header: 'Estado Revisión',
+                cell: (info) => <StatusBadge type='review' status={info.row.original.review_status} />,
+            }),
+
+            // Estado comercial
+            columnHelper.display({
+                id: 'current_status',
+                header: 'Estado Comercial',
+                cell: (info) => (
+                    <StatusBadge type='commercial' status={info.row.original.current_status} />
+                ),
+            }),
+
+            // Grado
+            columnHelper.display({
+                id: 'grade',
+                header: 'Grado',
+                cell: (info) => {
+                    const item = info.row.original;
+                    return extractValue(item.grade) ? (
+                        <span className='inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-bold text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'>
+                            <Icon icon='HeroStar' className='h-3 w-3' />
+                            {extractValue(item.grade)}
+                            {extractValue(item.suggested_grade) &&
+                                extractValue(item.grade) !== extractValue(item.suggested_grade) && (
+                                    <span className='text-[10px] text-yellow-600 dark:text-yellow-400'>
+                                        (Sugerido: {extractValue(item.suggested_grade)})
+                                    </span>
+                                )}
+                        </span>
+                    ) : extractValue(item.suggested_grade) ? (
+                        <span className='inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-400'>
+                            <Icon icon='HeroSparkles' className='h-3 w-3' />
+                            {extractValue(item.suggested_grade)}
+                        </span>
+                    ) : (
+                        <span className='text-xs text-gray-400'>Pendiente</span>
+                    );
+                },
+            }),
+        ] as any[];
+
+        if (variant === 'global') {
+            cols.splice(
+                1,
+                0,
+                // Producto (solo global)
+                columnHelper.display({
+                    id: 'product_name',
+                    header: 'Producto',
+                    cell: (info) => {
+                        const item = info.row.original as any;
+                        return (
+                            <span className='text-sm text-gray-700 dark:text-gray-300'>
+                                {item?.product?.name || item?.product_name || 'Sin producto'}
+                            </span>
+                        );
+                    },
+                }),
+            );
+
+            cols.push(
+                // Bodega (solo global)
+                columnHelper.display({
+                    id: 'warehouse_name',
+                    header: 'Bodega',
+                    cell: (info) => {
+                        const item = info.row.original as any;
+                        return (
+                            <span className='text-sm text-gray-700 dark:text-gray-300'>
+                                {item?.warehouse?.name || item?.warehouse_name || '—'}
+                            </span>
+                        );
+                    },
+                }),
+                // Última actualización (solo global)
+                columnHelper.display({
+                    id: 'updated_at',
+                    header: 'Última actualización',
+                    cell: (info) => (
+                        <span className='text-sm text-gray-600 dark:text-gray-400'>
+                            {formatDateTime(info.row.original.updated_at || info.row.original.created_at)}
+                        </span>
+                    ),
+                }),
+            );
+        }
+
+        // Acciones
+        cols.push(
+            columnHelper.display({
+                id: 'actions',
+                header: 'Acciones',
+                cell: (info) => {
+                    const item = info.row.original;
+                    const reviewStatus = (extractValue(item.review_status) || '').toLowerCase();
+                    const isApproved = reviewStatus === 'approved';
+                    return (
+                        <div className='inline-flex w-full justify-end gap-2'>
+                            <Button
+                                variant='outline'
+                                size='sm'
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleItemClick(item.id);
+                                }}>
+                                <Icon icon='HeroEye' className='h-4 w-4' />
+                            </Button>
+                            <Button
+                                variant='outline'
+                                size='sm'
+                                color='red'
+                                isDisable={isApproved}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setItemToDelete(item);
+                                    setDeleteModalOpen(true);
+                                }}
+                                title={
+                                    isApproved
+                                        ? 'No se puede eliminar una revisión aprobada'
+                                        : 'Eliminar revisión'
+                                }>
+                                <Icon icon='HeroTrash' className='h-4 w-4' />
+                            </Button>
+                        </div>
+                    );
+                },
+            }),
+        );
+
+        return cols;
+    }, [columnHelper, variant]);
+
+    const handlePaginationChange: OnChangeFn<PaginationState> = (updater) => {
+        const current: PaginationState = {
+            pageIndex: Math.max((meta?.current_page || 1) - 1, 0),
+            pageSize: meta?.per_page || 10,
+        };
+        const next = typeof updater === 'function' ? updater(current) : updater;
+
+        if (next.pageSize !== current.pageSize) {
+            onLimitChange?.(next.pageSize);
+            return;
+        }
+
+        if (next.pageIndex !== current.pageIndex) {
+            onPageChange?.(next.pageIndex + 1);
+        }
+    };
+
+    const table = useReactTable({
+        data: items ?? [],
+        columns,
+        getCoreRowModel: getCoreRowModel(),
+        state: {
+            pagination: {
+                pageIndex: Math.max((meta?.current_page || 1) - 1, 0),
+                pageSize: meta?.per_page || 10,
+            },
+        },
+        onPaginationChange: handlePaginationChange,
+        manualPagination: true,
+        pageCount: meta?.last_page || 1,
+    });
+
+
 	if (loading) {
 		return (
 			<Card>
@@ -185,204 +400,7 @@ const ItemList: React.FC<ItemListProps> = ({
 		);
 	}
 
-	// TanStack Table setup
-	const columnHelper = useMemo(() => createColumnHelper<IItem>(), []);
 
-	const columns = useMemo(() => {
-		const cols = [
-			columnHelper.display({
-				id: 'serial_number',
-				header: 'Serie',
-				cell: (info) => {
-					const item = info.row.original;
-					return (
-						<div className='flex items-center gap-2'>
-							<Icon icon='HeroQrCode' className='h-4 w-4 text-gray-400' />
-							<span className='font-mono text-sm font-medium text-gray-900 dark:text-gray-100'>
-								{item.serial_number}
-							</span>
-						</div>
-					);
-				},
-			}),
-
-			// Tipo
-			columnHelper.display({
-				id: 'equipment_type',
-				header: 'Tipo',
-				cell: (info) => {
-					const item = info.row.original;
-					const { label, icon } = resolveEquipmentTypeMeta(item.equipment_type);
-					return (
-						<span className='inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200'>
-							<Icon icon={icon as any} className='h-3 w-3' />
-							{label}
-						</span>
-					);
-				},
-			}),
-
-			// Estado revisión
-			columnHelper.display({
-				id: 'review_status',
-				header: 'Estado Revisión',
-				cell: (info) => <StatusBadge type='review' status={info.row.original.review_status} />,
-			}),
-
-			// Estado comercial
-			columnHelper.display({
-				id: 'current_status',
-				header: 'Estado Comercial',
-				cell: (info) => (
-					<StatusBadge type='commercial' status={info.row.original.current_status} />
-				),
-			}),
-
-			// Grado
-			columnHelper.display({
-				id: 'grade',
-				header: 'Grado',
-				cell: (info) => {
-					const item = info.row.original;
-					return extractValue(item.grade) ? (
-						<span className='inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-bold text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'>
-							<Icon icon='HeroStar' className='h-3 w-3' />
-							{extractValue(item.grade)}
-							{extractValue(item.suggested_grade) &&
-								extractValue(item.grade) !== extractValue(item.suggested_grade) && (
-								<span className='text-[10px] text-yellow-600 dark:text-yellow-400'>
-									(Sugerido: {extractValue(item.suggested_grade)})
-								</span>
-							)}
-						</span>
-					) : extractValue(item.suggested_grade) ? (
-						<span className='inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-400'>
-							<Icon icon='HeroSparkles' className='h-3 w-3' />
-							{extractValue(item.suggested_grade)}
-						</span>
-					) : (
-						<span className='text-xs text-gray-400'>Pendiente</span>
-					);
-				},
-			}),
-		] as any[];
-
-		if (variant === 'global') {
-			cols.splice(1, 0,
-				// Producto (solo global)
-				columnHelper.display({
-					id: 'product_name',
-					header: 'Producto',
-					cell: (info) => {
-						const item = info.row.original as any;
-						return (
-							<span className='text-sm text-gray-700 dark:text-gray-300'>
-								{item?.product?.name || item?.product_name || 'Sin producto'}
-							</span>
-						);
-					},
-				}),
-			);
-
-			cols.push(
-				// Bodega (solo global)
-				columnHelper.display({
-					id: 'warehouse_name',
-					header: 'Bodega',
-					cell: (info) => {
-						const item = info.row.original as any;
-						return (
-							<span className='text-sm text-gray-700 dark:text-gray-300'>
-								{item?.warehouse?.name || item?.warehouse_name || '—'}
-							</span>
-						);
-					},
-				}),
-				// Última actualización (solo global)
-				columnHelper.display({
-					id: 'updated_at',
-					header: 'Última actualización',
-					cell: (info) => (
-						<span className='text-sm text-gray-600 dark:text-gray-400'>
-							{formatDateTime(info.row.original.updated_at || info.row.original.created_at)}
-						</span>
-					),
-				}),
-			);
-		}
-
-		// Acciones
-		cols.push(
-			columnHelper.display({
-				id: 'actions',
-				header: 'Acciones',
-				cell: (info) => {
-					const item = info.row.original;
-					const reviewStatus = (extractValue(item.review_status) || '').toLowerCase();
-					const isApproved = reviewStatus === 'approved';
-					return (
-						<div className='inline-flex w-full justify-end gap-2'>
-							<Button
-								variant='outline'
-								size='sm'
-								onClick={(e) => {
-									e.stopPropagation();
-									handleItemClick(item.id);
-								}}>
-								<Icon icon='HeroEye' className='h-4 w-4' />
-							</Button>
-							<Button
-								variant='outline'
-								size='sm'
-								color='red'
-								isDisable={isApproved}
-								onClick={(e) => {
-									e.stopPropagation();
-									handleDelete(item.id);
-								}}
-								title={isApproved ? 'No se puede eliminar una revisión aprobada' : 'Eliminar revisión'}>
-								<Icon icon='HeroTrash' className='h-4 w-4' />
-							</Button>
-						</div>
-					);
-				},
-			}),
-		);
-
-		return cols;
-	}, [columnHelper, variant]);
-
-	const handlePaginationChange: OnChangeFn<PaginationState> = (updater) => {
-		const current: PaginationState = {
-			pageIndex: Math.max((meta?.current_page || 1) - 1, 0),
-			pageSize: meta?.per_page || 10,
-		};
-		const next = typeof updater === 'function' ? updater(current) : updater;
-
-		if (next.pageSize !== current.pageSize) {
-			onLimitChange?.(next.pageSize);
-			return;
-		}
-
-		if (next.pageIndex !== current.pageIndex) {
-			onPageChange?.(next.pageIndex + 1);
-		}
-	};
-
-	const table = useReactTable({
-		data: items,
-		columns,
-		getCoreRowModel: getCoreRowModel(),
-		state: {
-			pagination: {
-				pageIndex: Math.max((meta?.current_page || 1) - 1, 0),
-				pageSize: meta?.per_page || 10,
-			},
-		},
-		onPaginationChange: handlePaginationChange,
-		manualPagination: true,
-		pageCount: meta?.last_page || 1,
-	});
 
 	return (
 		<div className='space-y-4'>
@@ -404,11 +422,11 @@ const ItemList: React.FC<ItemListProps> = ({
 								</Tr>
 							))}
 						</THead>
-						<TBody className='bg-white dark:bg-gray-900'>
+						<TBody >
 							{table.getRowModel().rows.map((row, index) => (
 								<Tr
 									key={row.id}
-									className={`cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 ${index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-zinc-50/30 dark:bg-zinc-800/20'}`}
+									// className={`cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 ${index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-zinc-50/30 dark:bg-zinc-800/20'}`}
 									onClick={() => handleItemClick(row.original.id)}>
 									{row.getVisibleCells().map((cell) => (
 										<Td key={cell.id} className='align-middle'>
@@ -425,6 +443,42 @@ const ItemList: React.FC<ItemListProps> = ({
 					</div>
 				</CardBody>
 			</Card>
+
+			{/* Modal de confirmación de eliminación */}
+			<Modal isOpen={deleteModalOpen} setIsOpen={setDeleteModalOpen} size='md'>
+				<ModalHeader>
+					<div className='flex items-center gap-2'>
+						<Icon icon='HeroExclamationTriangle' className='h-5 w-5 text-red-600 dark:text-red-400' />
+						<h3 className='text-lg font-semibold'>Confirmar eliminación</h3>
+					</div>
+				</ModalHeader>
+				<ModalBody>
+					<p className='text-sm text-zinc-600 dark:text-zinc-300'>
+						¿Eliminar la revisión de la serie{' '}
+						<strong className='font-mono'>{itemToDelete?.serial_number}</strong>? Esta acción no se puede deshacer.
+					</p>
+				</ModalBody>
+				<ModalFooter>
+					<div className='flex w-full justify-end gap-2'>
+						<Button variant='outline' onClick={() => setDeleteModalOpen(false)} isDisable={isDeleting}>
+							Cancelar
+						</Button>
+						<Button color='red' onClick={() => itemToDelete && handleDelete(itemToDelete.id)} isDisable={isDeleting}>
+							{isDeleting ? (
+								<>
+									<Icon icon='HeroArrowPath' className='mr-2 h-4 w-4 animate-spin' />
+									Eliminando...
+								</>
+							) : (
+								<>
+									<Icon icon='HeroTrash' className='mr-2 h-4 w-4' />
+									Eliminar
+								</>
+							)}
+						</Button>
+					</div>
+				</ModalFooter>
+			</Modal>
 		</div>
 	);
 };
