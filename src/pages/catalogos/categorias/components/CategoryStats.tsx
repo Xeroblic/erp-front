@@ -14,7 +14,7 @@ const CategoryStats: React.FC<CategoryStatsProps> = ({ stats }) => {
   );
 
   return (
-    <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
       <Card>
         <CardBody className="flex items-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/20">
@@ -27,7 +27,7 @@ const CategoryStats: React.FC<CategoryStatsProps> = ({ stats }) => {
         </CardBody>
       </Card>
 
-      <Card>
+      {/* <Card>
         <CardBody className="flex items-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/20">
             <Icon icon="HeroPauseCircle" className="h-6 w-6 text-amber-600" />
@@ -37,7 +37,7 @@ const CategoryStats: React.FC<CategoryStatsProps> = ({ stats }) => {
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{noProducts}</p>
           </div>
         </CardBody>
-      </Card>
+      </Card> */}
 
       <Card>
         <CardBody className="flex items-center">

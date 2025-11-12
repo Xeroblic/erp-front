@@ -50,13 +50,13 @@ const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, o
 						)}
 						<div>
 							<h3 className='text-xl font-bold'>{brand.name}</h3>
-							{brand.slug && (
-								<p className='text-xs opacity-80'>{brand.slug}</p>
+							{brand.code && (
+								<p className='text-xs opacity-80'>{brand.code}</p>
 							)}
 							<div className='mt-2 flex items-center space-x-2'>
-								<Badge color={brand.is_active ? 'emerald' : 'red'}>
+								{/* <Badge color={brand.is_active ? 'emerald' : 'red'}>
 									{brand.is_active ? 'Activa' : 'Inactiva'}
-								</Badge>
+								</Badge> */}
 								{/* Origen removido: backend no lo entrega */}
 							</div>
 						</div>

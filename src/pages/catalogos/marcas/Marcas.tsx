@@ -49,6 +49,24 @@ const Marcas: React.FC = () => {
 		[branches],
 	);
 
+	const branchLookup = useMemo(() => {
+		const lookup: Record<number, string> = {};
+		branchOptions.forEach((item) => {
+			const id = Number(item.value);
+			if (!Number.isNaN(id)) {
+				lookup[id] = item.label;
+			}
+		});
+		return lookup;
+	}, [branchOptions]);
+
+	const selectedBranchValue =
+		filters.branch_id !== undefined && filters.branch_id !== null
+			? String(filters.branch_id)
+			: activeBranchId !== null
+				? String(activeBranchId)
+				: '';
+
 	const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		setFilters((prev) => ({ ...prev, search: event.target.value }));
 	};
@@ -163,18 +181,32 @@ const Marcas: React.FC = () => {
 							onChange={handleSearchChange}
 							className='w-full sm:w-72'
 						/>
-						<Select
+						{/* <Select
 							name='branch_id'
-							value={filters.branch_id ? String(filters.branch_id) : ''}
+							value={selectedBranchValue}
 							onChange={handleBranchChange}
 							className='w-full sm:w-60'>
-							<option value=''>Todas las sucursales</option>
+							<option value=''>
+								{branchOptions.length > 0
+									? 'Sucursal predeterminada'
+									: 'Sin sucursales visibles'}
+							</option>
 							{branchOptions.map((option) => (
 								<option key={option.value} value={option.value}>
 									{option.label}
 								</option>
 							))}
 						</Select>
+						{(filters.branch_id || activeBranchId) && (
+							<p className='text-xs text-gray-500 sm:w-48'>
+								Mostrando datos de{' '}
+								<span className='font-semibold'>
+									{branchLookup[
+										Number(filters.branch_id ?? activeBranchId ?? NaN)
+									] ?? 'tu sucursal asignada'}
+								</span>
+							</p>
+						)} */}
 						<Button color='violet' onClick={() => setCreateOpen(true)} icon='HeroPlus'>
 							Nueva marca
 						</Button>
@@ -192,6 +224,7 @@ const Marcas: React.FC = () => {
 				<BrandsGrid
 					brands={brands}
 					loading={loading}
+					branchLookup={branchLookup}
 					onView={(brand) => {
 						setSelected(brand);
 						setViewOpen(true);

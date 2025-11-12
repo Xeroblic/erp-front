@@ -10,6 +10,7 @@ import {
   uploadBrandGallery as uploadBrandGalleryThunk,
 } from "@/store/slices/brands/brandsSlice";
 import type { CreateBrandInput, IBrandFilters, IBrand, IBrandStats, UpdateBrandInput } from "@/interface/brand.interface";
+import { useCurrentBranch } from "@/hooks/useCurrentBranch";
 
 const computeStats = (items: IBrand[]): IBrandStats => {
   if (!items.length) {
@@ -57,10 +58,28 @@ const applyLocalFilters = (items: IBrand[], filters: IBrandFilters): IBrand[] =>
   return result;
 };
 
+const normalizeBranches = (branches: any[]): { id: number; name: string }[] => {
+  return branches
+    .map((branch) => {
+      if (!branch) return null;
+      const id = Number(branch.id ?? branch.branch_id ?? branch?.sucursal_id ?? 0);
+      if (!id || Number.isNaN(id)) return null;
+      const name =
+        branch.name ??
+        branch.branch_name ??
+        branch.nombre ??
+        branch.alias ??
+        `Sucursal ${id}`;
+      return { id, name };
+    })
+    .filter((branch): branch is { id: number; name: string } => Boolean(branch));
+};
+
 export function useMarcas(filters: IBrandFilters) {
   const dispatch = useAppDispatch();
-  const { lista: branches, loading: branchesLoading } = useAppSelector((state) => state.sucursales);
+  const { lista: branches = [], loading: branchesLoading } = useAppSelector((state) => state.sucursales ?? { lista: [], loading: false });
   const brandsState = useAppSelector((state) => state.brands);
+  const { branchId: currentBranchId, visibleBranches: hookVisibleBranches = [] } = useCurrentBranch();
 
   useEffect(() => {
     if (!branches.length && !branchesLoading) {
@@ -68,10 +87,24 @@ export function useMarcas(filters: IBrandFilters) {
     }
   }, [branches.length, branchesLoading, dispatch]);
 
+  const allowedBranches = useMemo(() => {
+    if (hookVisibleBranches.length) return hookVisibleBranches;
+    return normalizeBranches(branches);
+  }, [hookVisibleBranches, branches]);
+
+  const allowedBranchIds = useMemo(() => new Set(allowedBranches.map((branch) => branch.id)), [allowedBranches]);
+
   const activeBranchId = useMemo<number | null>(() => {
-    if (filters.branch_id) return filters.branch_id;
-    return branches[0]?.id ?? null;
-  }, [branches, filters.branch_id]);
+    if (filters.branch_id && allowedBranchIds.has(filters.branch_id)) {
+      return filters.branch_id;
+    }
+
+    if (currentBranchId && allowedBranchIds.has(currentBranchId)) {
+      return currentBranchId;
+    }
+
+    return allowedBranches[0]?.id ?? null;
+  }, [allowedBranchIds, allowedBranches, currentBranchId, filters.branch_id]);
 
   useEffect(() => {
     if (!activeBranchId) return;
@@ -126,7 +159,7 @@ export function useMarcas(filters: IBrandFilters) {
     stats: visibleStats,
     loading: brandsState.loading || branchesLoading,
     error: brandsState.error,
-    branches,
+    branches: allowedBranches,
     activeBranchId,
     creating: brandsState.creating,
     updating: brandsState.updating,
