@@ -2,6 +2,7 @@ import type {
 	CreateProductPayload,
 	IProduct,
 	IProductCategorySummary,
+	IProductChild,
 	ProductFilters,
 	ProductsStateStats,
 	UpdateProductPayload,
@@ -54,6 +55,55 @@ const normalizeCategories = (raw: unknown): IProductCategorySummary[] => {
 		.filter((category): category is IProductCategorySummary => category !== null);
 };
 
+const normalizeChildren = (raw: unknown): IProductChild[] => {
+	const toChildArray = (source: unknown): unknown[] => {
+		if (Array.isArray(source)) return source;
+		if (source && typeof source === 'object') {
+			const data = (source as any).data;
+			if (Array.isArray(data)) return data;
+		}
+		return [];
+	};
+
+	const rawAny = raw as any;
+	const sources: unknown[] = [raw, rawAny?.data, rawAny?.children, rawAny?.attributes];
+
+	for (const source of sources) {
+		if (!source) continue;
+		const arr = toChildArray(source);
+		if (arr.length) {
+			return arr
+				.map((item): IProductChild | null => {
+					if (!item || typeof item !== 'object') return null;
+					const entry = item as Record<string, unknown>;
+					const id = Number(entry.id ?? 0);
+					if (!Number.isFinite(id) || id <= 0) return null;
+
+					return {
+						id,
+						grade: toNullableString(entry.grade),
+						sku: String(entry.sku ?? ''),
+						name: String(entry.name ?? ''),
+						price: entry.price ?? null,
+						offer_price: entry.offer_price ?? null,
+						stock: toNullableNumber(entry.stock),
+						stock_by_status:
+							entry.stock_by_status && typeof entry.stock_by_status === 'object'
+								? (entry.stock_by_status as Record<string, number>)
+								: null,
+						marketplace_external_ids:
+							entry.marketplace_external_ids && typeof entry.marketplace_external_ids === 'object'
+								? (entry.marketplace_external_ids as Record<string, string | number>)
+								: null,
+					};
+				})
+				.filter((child): child is IProductChild => child !== null);
+		}
+	}
+
+	return [];
+};
+
 export const normalizeProduct = (raw: any): IProduct => {
 	if (!raw || typeof raw !== 'object') {
 		throw new Error('Invalid product payload');
@@ -64,6 +114,7 @@ export const normalizeProduct = (raw: any): IProduct => {
 
 	return {
 		id: Number(safe.id ?? 0),
+		parent_product_id: toNullableNumber(safe.parent_product_id),
 		product_status: (safe.product_status ?? 'pending') as any,
 		branch_id: Number(safe.branch_id ?? (safe.branch as any)?.id ?? 0),
 		sku: String(safe.sku ?? ''),
@@ -101,6 +152,9 @@ export const normalizeProduct = (raw: any): IProduct => {
 		),
 		categories: normalizeCategories(
 			safe.categories ?? safe.category_ids ?? safe.product_categories ?? [],
+		),
+		children: normalizeChildren(
+			safe.children ?? safe.children_data ?? safe.variants ?? safe.variations ?? null,
 		),
 		created_at: String(safe.created_at ?? ''),
 		updated_at: String(safe.updated_at ?? ''),

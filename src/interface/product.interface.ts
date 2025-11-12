@@ -28,9 +28,32 @@ export interface IProductImage {
 	alt?: string | null;
 }
 
+export interface IProductChildStockStatus {
+	available?: number;
+	on_hold?: number;
+	reserved?: number;
+	in_quotation?: number;
+	sold?: number;
+	total_approved?: number;
+	[key: string]: number | undefined;
+}
+
+export interface IProductChild {
+	id: number;
+	grade?: string | null;
+	sku: string;
+	name: string;
+	price?: number | string | null;
+	offer_price?: number | string | null;
+	stock?: number | null;
+	stock_by_status?: IProductChildStockStatus | null;
+	marketplace_external_ids?: Record<string, string | number> | null;
+}
+
 export interface IProduct {
 	id: number;
 	branch_id: number;
+	parent_product_id?: number | null;
 	image?: IProductImage | null;
 	gallery?: Array<IProductImage> | null;
 	product_status: ProductStatus;
@@ -55,6 +78,7 @@ export interface IProduct {
 	long_description?: string | null;
 	stock?: number | null;
 	categories?: IProductCategorySummary[];
+	children?: IProductChild[] | null;
 	created_at: string;
 	updated_at: string;
 }
