@@ -90,7 +90,7 @@ const TechnicalReviewsHub = lazy(() => import('@/pages/technical-reviews/index')
 const BatchesList = lazy(() => import('@/pages/technical-reviews/batches/index'));
 const BatchCreate = lazy(() => import('@/pages/technical-reviews/batches/create'));
 const BatchDetail = lazy(() => import('@/pages/technical-reviews/batches/[batchId]/index'));
-const BatchItemReview = lazy(() => import('@/pages/technical-reviews/batches/[batchId]/[itemId]'));
+const BatchItemReview = lazy(() => import('@/pages/technical-reviews/batches/[batchId]/[batchItemId]'));
 const ItemsList = lazy(() => import('@/pages/technical-reviews/items/index'));
 const ItemReview = lazy(() => import('@/pages/technical-reviews/items/[itemId]'));
 
@@ -376,11 +376,11 @@ const contentRoutes: IRoutePersonalizada[] = [
 		element: <BatchItemReview />,
 		authority: cfg.technical.subPages.reviews.authority,
 	},
-	{
-		path: '/technical-reviews/batches/:batchId/items/create',
-		element: <ItemReview />,
-		authority: cfg.technical.subPages.reviews.authority,
-	},
+    {
+        path: '/technical-reviews/batches/:batchId/items/create',
+        element: <BatchItemReview />,
+        authority: cfg.technical.subPages.reviews.authority,
+    },
 	{
 		path: '/technical-reviews/batches/:batchId/items/:itemId',
 		element: <BatchItemReview />,

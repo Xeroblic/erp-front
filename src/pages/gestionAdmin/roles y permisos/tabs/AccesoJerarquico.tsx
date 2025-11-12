@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import classNames from 'classnames';
 import { useAppDispatch } from '../../../../store';
 import { useUserAccess, UserAccess, AccessBranch, AccessSubsidiary } from '../hooks/useUserAccess';
 import { fetchMisSubsidiarias } from '../../../../store/slices/subempresa/subEmpresaSlice';
@@ -150,7 +151,9 @@ export default function AccesoJerarquico({
 						{cards.map((card) => {
 							const subsChecked = selectedSubsIds.has(card.sid);
 							return (
-								<Card key={card.sid} className='min-w-[280px] max-w-[420px] border'>
+								<Card
+									key={card.sid}
+									className='min-w-[280px] max-w-[420px] border border-zinc-200/70 bg-white transition-colors dark:border-zinc-700 dark:bg-zinc-900/60'>
 									<CardBody className='p-3'>
 										<div className='flex items-center justify-between'>
 											<div className='flex items-center gap-3'>
@@ -196,7 +199,13 @@ export default function AccesoJerarquico({
 												return (
 													<div
 														key={b.id}
-														className={`flex items-center justify-between rounded-md p-2 ${checked ? 'bg-blue-50' : ''}`}>
+														className={classNames(
+															'flex items-center justify-between rounded-md p-2 transition-colors',
+															{
+																'bg-blue-50 dark:bg-blue-900/30': checked,
+																'hover:bg-zinc-100 dark:hover:bg-white/5': !checked,
+															},
+														)}>
 														<div className='flex items-center gap-3'>
 															<Checkbox
 																checked={checked}

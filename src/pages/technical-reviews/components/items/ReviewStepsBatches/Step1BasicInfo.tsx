@@ -42,7 +42,7 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 	];
 
 	const equipmentTypes = [
-		{ type: 'notebook', label: 'Notebook', icon: 'HeroComputerDesktop', color: 'blue' },
+		{ type: 'notebook', label: 'Notebooks', icon: 'HeroComputerDesktop', color: 'blue' },
 		{ type: 'desktop', label: 'Desktop', icon: 'HeroCpuChip', color: 'purple' },
 		{ type: 'aio', label: 'All-in-One', icon: 'HeroDeviceTablet', color: 'green' },
 		{ type: 'docking', label: 'Docking', icon: 'HeroServerStack', color: 'orange' },

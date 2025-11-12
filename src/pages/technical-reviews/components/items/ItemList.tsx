@@ -6,9 +6,15 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card, { CardBody } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import Table, { THead, TBody, Tr, Th, Td } from '@/components/ui/Table';
 import Icon from '@/components/icon/Icon';
 import type { IItem, ListMeta } from '@/interface/technicalReviews.interface';
 import StatusBadge from '../shared/StatusBadge';
+import { useAppDispatch } from '@/store';
+import { deleteItem } from '@/store/slices/technicalReviews';
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import { toast } from 'react-toastify';
+import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
 
 interface ItemListProps {
 	items: IItem[];
@@ -33,7 +39,9 @@ const ItemList: React.FC<ItemListProps> = ({
 	emptyMessage = 'No hay series para mostrar',
 	variant = 'batch',
 }) => {
-	const navigate = useNavigate();
+    const navigate = useNavigate();
+    const dispatch = useAppDispatch();
+    const { branchId } = useCurrentBranch();
 
 	// Helper para extraer valor de objetos {value, label, description} o devolver el valor directamente
 	const extractValue = (value: any): string | null => {
@@ -43,13 +51,29 @@ const ItemList: React.FC<ItemListProps> = ({
 		return String(value);
 	};
 
-	const handleItemClick = (itemId: number) => {
-		if (onItemClick) {
-			onItemClick(itemId);
-		} else {
-			navigate(`${baseUrl}/${itemId}`);
-		}
-	};
+    const handleItemClick = (itemId: number) => {
+        if (onItemClick) {
+            onItemClick(itemId);
+        } else {
+            navigate(`${baseUrl}/${itemId}`);
+        }
+    };
+
+    const handleDelete = async (itemId: number) => {
+        if (!branchId) {
+            toast.error('No hay sucursal activa para eliminar la revisión');
+            return;
+        }
+        const ok = window.confirm('¿Eliminar esta revisión? Esta acción no se puede deshacer.');
+        if (!ok) return;
+        try {
+            await dispatch(deleteItem({ branchId, itemId })).unwrap();
+            toast.success('Revisión eliminada');
+            onPageChange?.(meta.current_page);
+        } catch (err: any) {
+            toast.error(err?.message || 'No se pudo eliminar la revisión');
+        }
+    };
 
 	const resolveEquipmentTypeMeta = (
 		equipmentType: any,
@@ -157,51 +181,51 @@ const ItemList: React.FC<ItemListProps> = ({
 		<div className='space-y-4'>
 			<Card>
 				<CardBody className='overflow-x-auto p-0'>
-					<table className='w-full'>
-						<thead className='bg-gray-50 dark:bg-gray-800'>
-							<tr>
-								<th className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
+					<Table className='w-full'>
+						<THead className='bg-gray-50 dark:bg-gray-800'>
+							<Tr>
+								<Th className='text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
 									Serie
-								</th>
+								</Th>
 								{variant === 'global' && (
-									<th className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
+									<Th className='text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
 										Producto
-									</th>
+									</Th>
 								)}
-								<th className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
+								<Th className='text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
 									Tipo
-								</th>
-								<th className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
+								</Th>
+								<Th className='text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
 									Estado Revisión
-								</th>
-								<th className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
+								</Th>
+								<Th className='text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
 									Estado Comercial
-								</th>
-								<th className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
+								</Th>
+								<Th className='text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
 									Grado
-								</th>
+								</Th>
 								{variant === 'global' && (
 									<>
-										<th className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
+										<Th className='text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
 											Bodega
-										</th>
-										<th className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
+										</Th>
+										<Th className='text-left text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
 											Última actualización
-										</th>
+										</Th>
 									</>
 								)}
-								<th className='px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
+								<Th className='text-right text-xs font-medium uppercase tracking-wider text-gray-700 dark:text-gray-300'>
 									Acciones
-								</th>
-							</tr>
-						</thead>
-						<tbody className='divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900'>
+								</Th>
+							</Tr>
+						</THead>
+						<TBody className='bg-white dark:bg-gray-900'>
 							{items.map((item) => (
-								<tr
+								<Tr
 									key={item.id}
 									className='cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800'
 									onClick={() => handleItemClick(item.id)}>
-									<td className='whitespace-nowrap px-4 py-3'>
+									<Td className='whitespace-nowrap'>
 										<div className='flex items-center gap-2'>
 											<Icon
 												icon='HeroQrCode'
@@ -211,15 +235,15 @@ const ItemList: React.FC<ItemListProps> = ({
 												{item.serial_number}
 											</span>
 										</div>
-									</td>
+									</Td>
 									{variant === 'global' && (
-										<td className='whitespace-nowrap px-4 py-3 text-sm text-gray-700 dark:text-gray-300'>
+										<Td className='whitespace-nowrap text-sm text-gray-700 dark:text-gray-300'>
 											{(item as any)?.product?.name ||
 												(item as any)?.product_name ||
 												'Sin producto'}
-										</td>
+										</Td>
 									)}
-									<td className='whitespace-nowrap px-4 py-3'>
+									<Td className='whitespace-nowrap'>
 										{(() => {
 											const { label, icon } = resolveEquipmentTypeMeta(
 												item.equipment_type,
@@ -231,17 +255,17 @@ const ItemList: React.FC<ItemListProps> = ({
 												</span>
 											);
 										})()}
-									</td>
-									<td className='whitespace-nowrap px-4 py-3'>
+									</Td>
+									<Td className='whitespace-nowrap'>
 										<StatusBadge type='review' status={item.review_status} />
-									</td>
-									<td className='whitespace-nowrap px-4 py-3'>
+									</Td>
+									<Td className='whitespace-nowrap'>
 										<StatusBadge
 											type='commercial'
 											status={item.current_status}
 										/>
-									</td>
-									<td className='whitespace-nowrap px-4 py-3'>
+									</Td>
+									<Td className='whitespace-nowrap'>
 										{extractValue(item.grade) ? (
 											<span className='inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-bold text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'>
 												<Icon icon='HeroStar' className='h-3 w-3' />
@@ -263,34 +287,57 @@ const ItemList: React.FC<ItemListProps> = ({
 										) : (
 											<span className='text-xs text-gray-400'>Pendiente</span>
 										)}
-									</td>
+									</Td>
 									{variant === 'global' && (
 										<>
-											<td className='whitespace-nowrap px-4 py-3 text-sm text-gray-700 dark:text-gray-300'>
+											<Td className='whitespace-nowrap text-sm text-gray-700 dark:text-gray-300'>
 												{(item as any)?.warehouse?.name ||
 													(item as any)?.warehouse_name ||
 													'—'}
-											</td>
-											<td className='whitespace-nowrap px-4 py-3 text-sm text-gray-600 dark:text-gray-400'>
+											</Td>
+											<Td className='whitespace-nowrap text-sm text-gray-600 dark:text-gray-400'>
 												{formatDateTime(item.updated_at || item.created_at)}
-											</td>
+											</Td>
 										</>
 									)}
-									<td className='whitespace-nowrap px-4 py-3 text-right'>
-										<Button
-											size='sm'
-											variant='outline'
-											onClick={(e) => {
-												e.stopPropagation();
-												handleItemClick(item.id);
-											}}>
-											<Icon icon='HeroEye' className='h-4 w-4' />
-										</Button>
-									</td>
-								</tr>
+														<Td className='whitespace-nowrap text-right'>
+                                        <div className='inline-flex gap-2'>
+                                            <Button
+                                                size='sm'
+                                                variant='outline'
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleItemClick(item.id);
+                                                }}>
+                                                <Icon icon='HeroEye' className='h-4 w-4' />
+                                            </Button>
+                                            {(() => {
+                                                const reviewStatus = (extractValue(item.review_status) || '').toLowerCase();
+                                                const isApproved = reviewStatus === 'approved';
+                                                return (
+                                                    <Button
+                                                        size='sm'
+                                                        variant='outline'
+                                                        color='red'
+                                                        isDisable={isApproved}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDelete(item.id);
+                                                        }}
+                                                        title={isApproved ? 'No se puede eliminar una revisión aprobada' : 'Eliminar revisión'}>
+                                                        <Icon icon='HeroTrash' className='h-4 w-4' />
+                                                    </Button>
+                                                );
+                                            })()}
+                                        </div>
+                                    </Td>
+								</Tr>
 							))}
-						</tbody>
-					</table>
+						</TBody>
+					</Table>
+					<div className='mt-4'>
+						<TableCardFooterTemplateV2 table={table} />
+					</div>
 				</CardBody>
 			</Card>
 

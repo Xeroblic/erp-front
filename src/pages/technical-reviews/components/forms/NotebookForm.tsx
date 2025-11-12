@@ -453,7 +453,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 							</p>
 						</div>
 
-						<div>
+						{/* <div>
 							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
 								Health Batería
 							</label>
@@ -467,7 +467,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 								}
 								disabled={readOnly || doesNotTurnOn}
 							/>
-						</div>
+						</div> */}
 					</div>
 				</CardBody>
 			</Card>

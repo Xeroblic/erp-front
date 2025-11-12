@@ -12,8 +12,7 @@ import Container from '@/components/layouts/Container/Container';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
-import Input from '@/components/form/Input';
-import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
+import type { TSelectOption } from '@/components/form/SelectReact';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
 	fetchItemDetail,
@@ -29,10 +28,11 @@ import {
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { fetchProducts } from '@/store/slices/products/productsSlice';
 import Textarea from '@/components/form/Textarea';
-import Step2FullReview from '@/pages/technical-reviews/components/items/ReviewSteps/Step2FullReview';
-import Step3GradeReview from '@/pages/technical-reviews/components/items/ReviewSteps/Step3GradeReview';
+import Step2FullReview from '@/pages/technical-reviews/components/items/ReviewStepsBatches/Step2FullReview';
+import Step3GradeReview from '@/pages/technical-reviews/components/items/ReviewStepsBatches/Step3GradeReview';
 import { useAutoSaveReview } from '@/hooks/useAutoSaveReview';
 import { toast } from 'react-toastify';
+import BatchStep1BasicInfo from '@/pages/technical-reviews/components/items/ReviewStepsBatches/BatchStep1BasicInfo';
 
 type ReviewStep = 'basic' | 'review' | 'grading';
 
@@ -174,6 +174,18 @@ const ItemReviewPage: React.FC = () => {
 		];
 	}, [products]);
 
+	const canContinue = Boolean(serialNumber && productId);
+	const batchDisplayLabel = useMemo(() => {
+		const fromItem =
+			item?.batch?.code ||
+			item?.batch?.name ||
+			item?.batch?.label ||
+			(item?.batch && `Lote #${item.batch.id}`);
+		if (fromItem) return fromItem;
+		if (batchId) return `Lote #${batchId}`;
+		return 'Sin lote';
+	}, [item?.batch, batchId]);
+
 	const handleBack = () => {
 		if (batchId) {
 			navigate(`/technical-reviews/batches/${batchId}`);
@@ -197,7 +209,7 @@ const ItemReviewPage: React.FC = () => {
 		try {
 			const parsedBatchId = parseInt(batchId);
 
-			// Usar el hook de auto-save para guardar info básica
+			// Guardar info básica y crear item en el lote
 			const createdItemId = await saveBasicInfo({
 				batch_id: parsedBatchId,
 				serial_number: serialNumber,
@@ -217,8 +229,8 @@ const ItemReviewPage: React.FC = () => {
 			).unwrap();
 
 			setItem(result);
-			// No cambiar al Step 2 aquí, dejar que la navegación lo maneje
-			// setCurrentStep('review');
+			// Avanzar explícitamente al Paso 2 (Revisión Técnica)
+			setCurrentStep('review');
 		} catch (error) {
 			toast.error(`Error al iniciar revisión: ${error}`);
 		}
@@ -394,7 +406,7 @@ const ItemReviewPage: React.FC = () => {
 	};
 
 	return (
-		<PageWrapper name='item-review'>
+		<PageWrapper name='technical-review-batch' title='Revisión Técnica por Lote'>
 			<Container>
 				{/* Header */}
 				<div className='mb-6 flex items-center gap-4'>
@@ -470,152 +482,21 @@ const ItemReviewPage: React.FC = () => {
 
 				{/* STEP 1: Basic Info */}
 				{currentStep === 'basic' && (
-					<Card>
-						<CardHeader>
-							<h3 className='text-lg font-semibold'>Paso 1: Información Básica</h3>
-							<p className='text-sm text-gray-600'>
-								Ingresa el número de serie, producto y tipo de equipo
-							</p>
-						</CardHeader>
-						<CardBody>
-							<div className='space-y-6'>
-								<div>
-									<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-										Número de Serie <span className='text-red-500'>*</span>
-									</label>
-									<Input
-										name='serial_number'
-										type='text'
-										value={serialNumber}
-										onChange={(e: any) => setSerialNumber(e.target.value)}
-										className='font-mono'
-										placeholder='Ej: SN001234567'
-									/>
-								</div>
-
-								{/* Product ID */}
-								<div>
-									<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-										Producto <span className='text-red-500'>*</span>
-									</label>
-									<SelectReact
-										name='product_id'
-										placeholder='Seleccionar producto'
-										options={productOptions}
-										value={
-											productId
-												? productOptions.find(
-														(opt) => opt.value === String(productId),
-													) || null
-												: null
-										}
-										onChange={(option) => {
-											const selectedOption = option as TSelectOption | null;
-											setProductId(
-												selectedOption?.value
-													? parseInt(selectedOption.value)
-													: null,
-											);
-										}}
-										isDisabled={productsLoading}
-									/>
-									{productsLoading && (
-										<p className='mt-1 text-xs text-gray-500'>
-											Cargando productos...
-										</p>
-									)}
-								</div>
-
-								{/* Equipment Type */}
-								<div>
-									<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-										Tipo de Equipo <span className='text-red-500'>*</span>
-									</label>
-									<div className='grid grid-cols-2 gap-3 md:grid-cols-5'>
-										{[
-											{
-												value: 'notebook',
-												label: 'Notebook',
-												icon: 'HeroComputerDesktop',
-											},
-											{
-												value: 'desktop',
-												label: 'Desktop',
-												icon: 'HeroServerStack',
-											},
-											{
-												value: 'aio',
-												label: 'All-in-One',
-												icon: 'HeroDeviceTablet',
-											},
-											{
-												value: 'docking',
-												label: 'Docking',
-												icon: 'HeroCube',
-											},
-											{
-												value: 'monitor',
-												label: 'Monitor',
-												icon: 'HeroTv',
-											},
-										].map((type) => (
-											<button
-												key={type.value}
-												type='button'
-												onClick={() =>
-													setEquipmentType(type.value as EquipmentType)
-												}
-												className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
-													equipmentType === type.value
-														? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950'
-														: 'border-gray-300 hover:border-blue-300'
-												}`}>
-												<Icon icon={type.icon} className='h-8 w-8' />
-												<span className='text-sm font-medium'>
-													{type.label}
-												</span>
-											</button>
-										))}
-									</div>
-								</div>
-
-								{/* Botones de acción */}
-								<div className='flex justify-between gap-3'>
-									<Button
-										variant='outline'
-										onClick={handleBack}
-										isDisable={loading}>
-										{itemId && itemId !== 'create'
-											? 'Volver al Lote'
-											: 'Cancelar'}
-									</Button>
-
-									{/* Mostrar botón Continuar si es creación O si ya existe pero queremos avanzar */}
-									{itemId === 'create' || !itemId ? (
-										<Button
-											onClick={handleStep1Submit}
-											isDisable={loading || !serialNumber || !productId}>
-											Continuar
-											<Icon icon='HeroArrowRight' className='ml-2 h-4 w-4' />
-										</Button>
-									) : (
-										<div className='flex gap-3'>
-											<Button
-												variant='outline'
-												onClick={() => setCurrentStep('review')}
-												isDisable={loading}>
-												Ir a Revisión Técnica
-												<Icon
-													icon='HeroArrowRight'
-													className='ml-2 h-4 w-4'
-												/>
-											</Button>
-										</div>
-									)}
-								</div>
-							</div>
-						</CardBody>
-					</Card>
+					<BatchStep1BasicInfo
+						serialNumber={serialNumber}
+						onSerialChange={setSerialNumber}
+						productId={productId}
+						onProductChange={(id) => setProductId(id)}
+						productOptions={productOptions}
+						productsLoading={productsLoading}
+						equipmentType={equipmentType}
+						onEquipmentTypeChange={(type) => setEquipmentType(type)}
+						canContinue={canContinue}
+						loading={loading}
+						onBack={handleBack}
+						onSubmit={handleStep1Submit}
+						batchLabel={batchDisplayLabel}
+					/>
 				)}
 
 				{/* STEP 2: Full Review */}
@@ -628,8 +509,8 @@ const ItemReviewPage: React.FC = () => {
 						onBack={() => setCurrentStep('basic')}
 						onComplete={handleStep2Complete}
 						onItemUpdate={(updatedItem) => {
-							toast.info(`Item actualizado desde Step2: ${updatedItem}`);
-							setItem(updatedItem); // Actualizar el estado local del item
+							// toast.info(`Item actualizado desde Step2: ${updatedItem}`);
+							setItem(updatedItem); 
 						}}
 						onFieldChange={undefined} // Desactivar auto-save, solo guardado manual
 						isDirty={isDirty}
@@ -644,7 +525,7 @@ const ItemReviewPage: React.FC = () => {
 						branchId={branchId}
 						itemId={item.id}
 						suggestedGrade={item.suggested_grade || automaticGrade || 'C'}
-						confidence={item.confidence || 0}
+						confidence={item.scoring_confidence || 0}
 						breakdown={item.breakdown || {}}
 						serialNumber={serialNumber || item.serial_number}
 						equipmentType={String(equipmentType)}

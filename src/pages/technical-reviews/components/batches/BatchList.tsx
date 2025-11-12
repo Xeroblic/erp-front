@@ -190,6 +190,15 @@ const BatchList: React.FC<BatchListProps> = ({
 							<Icon icon='HeroEye' className='mr-1 h-4 w-4' />
 							Ver
 						</Button>
+						{/* TODO: poner btn de eliminar lote */}
+						{/* <Button
+							variant='outline'		
+							size='sm'
+							color='red'
+							onClick={() => handleDeleteBatch(info.row.original.id)}>
+							<Icon icon='HeroTrash' className='mr-1 h-4 w-4' />
+							Eliminar
+						</Button> */}
 					</div>
 				),
 			}),

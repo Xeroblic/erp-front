@@ -26,6 +26,7 @@ import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import type { EquipmentType } from '@/interface/technicalReviews.interface';
 import ApiService from '@/services/ApiService';
+import { toast } from 'react-toastify';
 
 const EQUIPMENT_TYPE_OPTIONS: TSelectOption[] = [
 	{ value: 'notebook', label: 'Notebook' },
@@ -136,10 +137,12 @@ const BatchDetailPage: React.FC = () => {
 					},
 				}),
 			).unwrap();
+
 			setQuickEntrySerial('');
 			setQuickEntryError(null);
 			setQuickEntrySuccess(`Serie ${serial} registrada en estado pendiente.`);
 			dispatch(fetchBatchById({ branchId, batchId: batch.id }));
+			toast.success(`Serie ${serial} registrada correctamente.`);
 		} catch (error: any) {
 			const message =
 				typeof error === 'string'
@@ -313,7 +316,7 @@ const BatchDetailPage: React.FC = () => {
 				</Container>
 			</PageWrapper>
 
-			<Modal isOpen={isQuickEntryOpen} setIsOpen={() => handleQuickEntryModalToggle(false)}>
+			<Modal isOpen={isQuickEntryOpen} setIsOpen={() => handleQuickEntryModalToggle(false)} isCentered>
 				<ModalHeader>
 					<div className='flex items-center gap-2'>
 						<Icon icon='HeroBolt' className='h-5 w-5 text-blue-500' />
@@ -345,7 +348,7 @@ const BatchDetailPage: React.FC = () => {
 								}
 							}}
 						/>
-						<div
+						{/* <div
 							className='mt-4'
 							data-quick-entry-allow-blur='true'
 							onPointerDownCapture={() => {
@@ -383,7 +386,7 @@ const BatchDetailPage: React.FC = () => {
 									isTypeSelectorFocusedRef.current = false;
 								}}
 							/>
-						</div>
+						</div> */}
 						{quickEntryError && (
 							<p className='mt-2 text-sm text-red-500'>{quickEntryError}</p>
 						)}
@@ -400,6 +403,7 @@ const BatchDetailPage: React.FC = () => {
 						</Button>
 						<Button
 							color='blue'
+							onClick={handleQuickEntrySubmit}
 							isLoading={creatingItem}>
 							Guardar serie
 						</Button>

@@ -24,18 +24,21 @@ interface BatchTabsProps {
 	onItemClick?: (itemId: number) => void;
 }
 
+type TabKey = EquipmentType | 'all';
+
 interface TabConfig {
-	type: EquipmentType;
-	label: string;
-	icon: string;
+    type: TabKey;
+    label: string;
+    icon: string;
 }
 
 const TABS: TabConfig[] = [
-	{ type: 'notebook', label: 'Notebooks', icon: 'HeroComputerDesktop' },
-	{ type: 'desktop', label: 'Desktops', icon: 'HeroServerStack' },
-	{ type: 'aio', label: 'All-in-One', icon: 'HeroDeviceTablet' },
-	{ type: 'docking', label: 'Dockings', icon: 'HeroCpuChip' },
-	{ type: 'monitor', label: 'Monitores', icon: 'HeroTv' },
+    { type: 'all', label: 'Todos', icon: 'HeroSquares2X2' },
+    { type: 'notebook', label: 'Notebooks', icon: 'HeroComputerDesktop' },
+    { type: 'desktop', label: 'Desktops', icon: 'HeroServerStack' },
+    { type: 'aio', label: 'All-in-One', icon: 'HeroDeviceTablet' },
+    { type: 'docking', label: 'Dockings', icon: 'HeroCpuChip' },
+    { type: 'monitor', label: 'Monitores', icon: 'HeroTv' },
 ];
 
 const REVIEW_STATUS_OPTIONS: TSelectOption[] = [
@@ -70,7 +73,7 @@ const BatchTabs: React.FC<BatchTabsProps> = ({ batch, onItemClick }) => {
 	const itemsMeta = useAppSelector(selectItemsMeta);
 	const loadingItems = useAppSelector(selectItemsLoading);
 
-	const [activeTab, setActiveTab] = useState<EquipmentType>('notebook');
+    const [activeTab, setActiveTab] = useState<TabKey>('all');
 	const [reviewStatusFilter, setReviewStatusFilter] = useState<string>('all');
 	const [commercialStatusFilter, setCommercialStatusFilter] = useState<string>('all');
 	const [gradeFilter, setGradeFilter] = useState<string>('all');
@@ -81,12 +84,15 @@ const BatchTabs: React.FC<BatchTabsProps> = ({ batch, onItemClick }) => {
 	useEffect(() => {
 		if (!branchId) return;
 
-		const params: Record<string, string | number> = {
-			batch_id: batch.id,
-			equipment_type: activeTab,
-			page: currentPage,
-			per_page: limitPerPage,
-		};
+        const params: Record<string, string | number> = {
+            batch_id: batch.id,
+            page: currentPage,
+            per_page: limitPerPage,
+        };
+
+        if (activeTab !== 'all') {
+            params.equipment_type = activeTab as EquipmentType;
+        }
 
 		if (reviewStatusFilter !== 'all') {
 			params.review_status = reviewStatusFilter;
@@ -112,21 +118,31 @@ const BatchTabs: React.FC<BatchTabsProps> = ({ batch, onItemClick }) => {
 	]);
 
 	// Resetear página cuando cambia el tab
-	const handleTabChange = (type: EquipmentType) => {
-		setActiveTab(type);
-		setCurrentPage(1);
-	};
+    const handleTabChange = (type: TabKey) => {
+        setActiveTab(type);
+        setCurrentPage(1);
+    };
 
 	// Obtener conteo del tab
-	const getTabCount = (type: EquipmentType): number => {
-		return batch.items_summary?.by_equipment_type?.[type] || 0;
-	};
+    const getTabCount = (type: TabKey): number => {
+        if (type === 'all') {
+            const byType = batch.items_summary?.by_equipment_type || {} as Record<string, number>;
+            return (
+                (byType['notebook'] || 0) +
+                (byType['desktop'] || 0) +
+                (byType['aio'] || 0) +
+                (byType['docking'] || 0) +
+                (byType['monitor'] || 0)
+            );
+        }
+        return batch.items_summary?.by_equipment_type?.[type] || 0;
+    };
 
 	return (
 		<Container className='space-y-6'>
 			{/* Tabs */}
 			<Card>
-				<CardBody className='p-0'>
+				<CardBody>
 					<div className='flex overflow-x-auto border-b dark:border-gray-700'>
 						{TABS.map((tab) => {
 							const count = getTabCount(tab.type);
@@ -136,7 +152,7 @@ const BatchTabs: React.FC<BatchTabsProps> = ({ batch, onItemClick }) => {
 								<Button
 									key={tab.type}
 									onClick={() => handleTabChange(tab.type)}
-									className={`flex items-center gap-2 border-b-2 px-6 py-4 transition-colors ${
+									className={`flex items-center gap-2 border-b-2 px-4 py-4 transition-colors ${
 										isActive
 											? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
 											: 'border-transparent text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800'
@@ -162,6 +178,7 @@ const BatchTabs: React.FC<BatchTabsProps> = ({ batch, onItemClick }) => {
 
 			{/* Filtros */}
 			<Card>
+				
 				<CardBody className='p-4'>
 					<div className='flex flex-wrap items-center gap-4'>
 						<div className='flex items-center gap-2'>
