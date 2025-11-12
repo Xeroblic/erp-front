@@ -2,7 +2,7 @@
  * BatchTabs - Tabs para filtrar items por tipo de equipo
  * Incluye badges con conteo y tabla de items dentro de cada tab
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
 	fetchItems,
@@ -18,6 +18,13 @@ import ItemList from '../items/ItemList';
 import type { IItem, IBatch, EquipmentType } from '@/interface/technicalReviews.interface';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import Container from '@/components/layouts/Container/Container';
+import ApiService from '@/services/ApiService';
+
+const TECHNICAL_REVIEWS_PREFIX =
+	(import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
+const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
+const buildItemsUrl = (branchId: number, suffix = '') =>
+	join(TECHNICAL_REVIEWS_PREFIX, `/branches/${branchId}/technical-reviews${suffix}`);
 
 interface BatchTabsProps {
 	batch: IBatch;
@@ -80,20 +87,13 @@ const BatchTabs: React.FC<BatchTabsProps> = ({ batch, onItemClick }) => {
 	const [currentPage, setCurrentPage] = useState(1);
 	const [limitPerPage, setLimitPerPage] = useState(20);
 
-	// Cargar items cuando cambia el tab o los filtros
-	useEffect(() => {
-		if (!branchId) return;
-
-        const params: Record<string, string | number> = {
-            batch_id: batch.id,
-            page: currentPage,
-            per_page: limitPerPage,
-        };
-
-        if (activeTab !== 'all') {
-            params.equipment_type = activeTab as EquipmentType;
-        }
-
+	const buildBaseParams = useCallback(() => {
+		const params: Record<string, string | number> = {
+			batch_id: batch.id,
+		};
+		if (activeTab !== 'all') {
+			params.equipment_type = activeTab as EquipmentType;
+		}
 		if (reviewStatusFilter !== 'all') {
 			params.review_status = reviewStatusFilter;
 		}
@@ -103,6 +103,49 @@ const BatchTabs: React.FC<BatchTabsProps> = ({ batch, onItemClick }) => {
 		if (gradeFilter !== 'all') {
 			params.grade = gradeFilter;
 		}
+		return params;
+	}, [batch.id, activeTab, reviewStatusFilter, commercialStatusFilter, gradeFilter]);
+
+	const fetchAllForExport = useCallback(async (includeDetails = false): Promise<IItem[]> => {
+		if (!branchId) return [];
+		const params = buildBaseParams();
+		const perPage = 1000;
+		let page = 1;
+		let lastPage = 1;
+		const allItems: IItem[] = [];
+		do {
+			const response = await ApiService.fetchData<{ data?: any[]; meta?: any }>({
+				url: buildItemsUrl(branchId, '/items'),
+				method: 'get',
+				params: {
+					...params,
+					page,
+					per_page: perPage,
+					with_details: includeDetails ? 1 : undefined,
+					with_attributes: includeDetails ? 1 : undefined,
+				},
+			});
+			const list = Array.isArray(response.data?.data)
+				? response.data?.data
+				: Array.isArray(response.data)
+					? (response.data as any[])
+					: [];
+			allItems.push(...list);
+			lastPage = response.data?.meta?.last_page ?? page;
+			page += 1;
+		} while (page <= lastPage);
+		return allItems;
+	}, [branchId, buildBaseParams]);
+
+	// Cargar items cuando cambia el tab o los filtros
+	useEffect(() => {
+		if (!branchId) return;
+
+        const params = {
+            ...buildBaseParams(),
+            page: currentPage,
+            per_page: limitPerPage,
+        };
 
 		dispatch(fetchItems({ branchId, params }));
 	}, [
@@ -115,6 +158,7 @@ const BatchTabs: React.FC<BatchTabsProps> = ({ batch, onItemClick }) => {
 		gradeFilter,
 		currentPage,
 		limitPerPage,
+		buildBaseParams,
 	]);
 
 	// Resetear página cuando cambia el tab
@@ -271,6 +315,8 @@ const BatchTabs: React.FC<BatchTabsProps> = ({ batch, onItemClick }) => {
 					setCurrentPage(1);
 				}}
 				onItemClick={onItemClick}
+				exportFileName={batch.code || batch.name || `lote-${batch.id}`}
+				onExportFetchAll={fetchAllForExport}
 				/>
 				</CardBody>
 			</Card>

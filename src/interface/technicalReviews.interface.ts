@@ -101,6 +101,7 @@ export interface IItem {
     traceability_id?: number | null; // ID de trazabilidad para cambios de estado comercial
     created_at?: string;
     updated_at?: string;
+    details: Record<string, any> | null;
 }
 
 /**

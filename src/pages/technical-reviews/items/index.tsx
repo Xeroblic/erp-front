@@ -2,7 +2,7 @@
  * Technical Reviews - Items List (Modo B - Global View)
  * Vista global de todos los items sin agrupar por lote
  */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
@@ -20,6 +20,14 @@ import { fetchCustomerSuppliers } from '@/store/slices/customerSuppliers/custome
 import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/personalizacionSlice';
 import { fetchProducts } from '@/store/slices/products/productsSlice';
 import { toast } from 'react-toastify';
+import ApiService from '@/services/ApiService';
+import type { IItem } from '@/interface/technicalReviews.interface';
+
+const TECHNICAL_REVIEWS_PREFIX =
+	(import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
+const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
+const buildItemsUrl = (branchId: number, suffix = '') =>
+	join(TECHNICAL_REVIEWS_PREFIX, `/branches/${branchId}/technical-reviews${suffix}`);
 
 const EQUIPMENT_FILTER_OPTIONS: TSelectOption[] = [
 	{ value: 'all', label: 'Todos los tipos' },
@@ -196,18 +204,68 @@ const ItemsListPage: React.FC = () => {
 			page,
 			per_page: limit,
 		};
-		if (debouncedSearch) params.search = debouncedSearch;
-		if (equipmentType !== 'all') params.equipment_type = equipmentType;
-		if (reviewStatus !== 'all') params.review_status = reviewStatus;
-		if (currentStatusFilter !== 'all') params.current_status = currentStatusFilter;
-		if (warehouseFilter !== 'all') params.warehouse_id = Number(warehouseFilter);
+		const baseFilters: Record<string, string | number> = {};
+		if (debouncedSearch) baseFilters.search = debouncedSearch;
+		if (equipmentType !== 'all') baseFilters.equipment_type = equipmentType;
+		if (reviewStatus !== 'all') baseFilters.review_status = reviewStatus;
+		if (currentStatusFilter !== 'all') baseFilters.current_status = currentStatusFilter;
+		if (warehouseFilter !== 'all') baseFilters.warehouse_id = Number(warehouseFilter);
 		if (customerSupplierFilter !== 'all')
-			params.customer_supplier_id = Number(customerSupplierFilter);
-		if (gradeFilter !== 'all') params.grade = gradeFilter;
+			baseFilters.customer_supplier_id = Number(customerSupplierFilter);
+		if (gradeFilter !== 'all') baseFilters.grade = gradeFilter;
+		Object.assign(params, baseFilters);
 		return params;
 	}, [
 		page,
 		limit,
+		debouncedSearch,
+		equipmentType,
+		reviewStatus,
+		currentStatusFilter,
+		warehouseFilter,
+		customerSupplierFilter,
+		gradeFilter,
+	]);
+
+	const fetchAllForExport = useCallback(async (includeDetails = false): Promise<IItem[]> => {
+		if (!branchId) return [];
+		const baseFilters: Record<string, string | number> = {};
+		if (debouncedSearch) baseFilters.search = debouncedSearch;
+		if (equipmentType !== 'all') baseFilters.equipment_type = equipmentType;
+		if (reviewStatus !== 'all') baseFilters.review_status = reviewStatus;
+		if (currentStatusFilter !== 'all') baseFilters.current_status = currentStatusFilter;
+		if (warehouseFilter !== 'all') baseFilters.warehouse_id = Number(warehouseFilter);
+		if (customerSupplierFilter !== 'all')
+			baseFilters.customer_supplier_id = Number(customerSupplierFilter);
+		if (gradeFilter !== 'all') baseFilters.grade = gradeFilter;
+		const perPage = 1000;
+		let pageCursor = 1;
+		let lastPage = 1;
+		const collected: IItem[] = [];
+		do {
+			const response = await ApiService.fetchData<{ data?: any[]; meta?: any }>({
+				url: buildItemsUrl(branchId, '/items'),
+				method: 'get',
+				params: {
+					...baseFilters,
+					page: pageCursor,
+					per_page: perPage,
+					with_details: includeDetails ? 1 : undefined,
+					with_attributes: includeDetails ? 1 : undefined,
+				},
+			});
+			const pageItems = Array.isArray(response.data?.data)
+				? response.data?.data
+				: Array.isArray(response.data)
+					? (response.data as any[])
+					: [];
+			collected.push(...pageItems);
+			lastPage = response.data?.meta?.last_page ?? pageCursor;
+			pageCursor += 1;
+		} while (pageCursor <= lastPage);
+		return collected;
+	}, [
+		branchId,
 		debouncedSearch,
 		equipmentType,
 		reviewStatus,
@@ -627,6 +685,8 @@ const ItemsListPage: React.FC = () => {
 					onLimitChange={setLimit}
 					onItemClick={handleViewItem}
 					variant='global'
+					exportFileName='revisiones-globales'
+					onExportFetchAll={fetchAllForExport}
 				/>
 			</Container>
 		</PageWrapper>

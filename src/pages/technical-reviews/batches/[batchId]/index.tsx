@@ -36,6 +36,11 @@ const EQUIPMENT_TYPE_OPTIONS: TSelectOption[] = [
 	{ value: 'monitor', label: 'Monitor' },
 ];
 
+const TECHNICAL_REVIEWS_PREFIX = (import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
+const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
+const ep = (branchId: number, path: string) =>
+	join(TECHNICAL_REVIEWS_PREFIX, `/branches/${branchId}/technical-reviews${path}`);
+
 const BatchDetailPage: React.FC = () => {
 	const { batchId } = useParams<{ batchId: string }>();
 	const navigate = useNavigate();
@@ -50,10 +55,15 @@ const BatchDetailPage: React.FC = () => {
 	const [quickEntryError, setQuickEntryError] = useState<string | null>(null);
 	const [quickEntryType, setQuickEntryType] = useState<EquipmentType>('notebook');
 	const [quickEntrySuccess, setQuickEntrySuccess] = useState<string | null>(null);
+	const [missingSerial, setMissingSerial] = useState<string | null>(null);
+	const [isMissingSerialModalOpen, setIsMissingSerialModalOpen] = useState(false);
+	const [firstReviewDate, setFirstReviewDate] = useState<string | null>(null);
+	const [firstReviewLoading, setFirstReviewLoading] = useState(false);
 	const isTypeSelectorFocusedRef = useRef(false);
 	const quickEntryInputRef = useRef<HTMLInputElement | null>(null);
 	const scannerBufferRef = useRef('');
 	const scannerTimeoutRef = useRef<number | null>(null);
+	const batchNumericId = batch?.id;
 
 	const resetQuickEntryForm = useCallback(() => {
 		setQuickEntrySerial('');
@@ -96,6 +106,66 @@ const BatchDetailPage: React.FC = () => {
 		const parsedBatchId = parseInt(batchId);
 		dispatch(fetchBatchById({ branchId, batchId: parsedBatchId }));
 	}, [dispatch, batchId, branchId]);
+
+	useEffect(() => {
+		if (!branchId || !batchNumericId) {
+			setFirstReviewDate(null);
+			setFirstReviewLoading(false);
+			return;
+		}
+
+		let isMounted = true;
+
+		const fetchFirstReviewedItem = async () => {
+			setFirstReviewLoading(true);
+			try {
+				const response = await ApiService.fetchData<{ data?: any[] }>({
+					url: ep(branchId, '/items'),
+					method: 'get',
+					params: {
+						batch_id: batchNumericId,
+						review_status: 'approved',
+						sort: 'reviewed_at',
+						direction: 'asc',
+						per_page: 1,
+					},
+				});
+
+				const list = Array.isArray(response.data?.data)
+					? response.data?.data
+					: Array.isArray(response.data)
+						? (response.data as any[])
+						: [];
+
+				const firstItem = list[0];
+				const date =
+					firstItem?.reviewed_at ||
+					firstItem?.completed_review_at ||
+					firstItem?.updated_at ||
+					firstItem?.created_at ||
+					null;
+
+				if (isMounted) {
+					setFirstReviewDate(date ?? null);
+				}
+			} catch (error) {
+				console.error('Error al obtener la primera revisión del lote', error);
+				if (isMounted) {
+					setFirstReviewDate(null);
+				}
+			} finally {
+				if (isMounted) {
+					setFirstReviewLoading(false);
+				}
+			}
+		};
+
+		fetchFirstReviewedItem();
+
+		return () => {
+			isMounted = false;
+		};
+	}, [branchId, batchNumericId]);
 
 	const handleBack = () => {
 		navigate('/technical-reviews/batches');
@@ -161,7 +231,7 @@ const BatchDetailPage: React.FC = () => {
 			if (!normalizedSerial) return;
 			try {
 				const response = await ApiService.fetchData<{ data?: any[] }>({
-					url: `/api/branches/${branchId}/technical-reviews/items`,
+					url: ep(branchId, '/items'),
 					method: 'get',
 					params: {
 						batch_id: batch.id,
@@ -180,16 +250,8 @@ const BatchDetailPage: React.FC = () => {
 					return;
 				}
 
-				const shouldOpenQuickEntry = window.confirm(
-					`La serie ${normalizedSerial} no existe en este lote. ¿Deseas iniciar un ingreso rápido?`,
-				);
-
-				if (shouldOpenQuickEntry) {
-					resetQuickEntryForm();
-					setQuickEntrySerial(normalizedSerial);
-					setQuickEntrySuccess(null);
-					setIsQuickEntryOpen(true);
-				}
+				setMissingSerial(normalizedSerial);
+				setIsMissingSerialModalOpen(true);
 			} catch (error) {
 				console.error('Error al buscar la serie escaneada', error);
 			}
@@ -239,6 +301,39 @@ const BatchDetailPage: React.FC = () => {
 		};
 	}, [handleScannedSerial, isQuickEntryOpen]);
 
+	const formatFirstReviewDate = (value: string | null): string => {
+		if (!value) return 'Sin revisiones registradas';
+		const parsed = new Date(value);
+		if (Number.isNaN(parsed.getTime())) {
+			return value;
+		}
+		return parsed.toLocaleString('es-CL', {
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit',
+		});
+	};
+
+	const firstReviewDisplay = firstReviewLoading
+		? 'Buscando primera revisión aprobada…'
+		: formatFirstReviewDate(firstReviewDate);
+
+	const handleMissingSerialCancel = () => {
+		setIsMissingSerialModalOpen(false);
+		setMissingSerial(null);
+	};
+
+	const handleMissingSerialConfirm = () => {
+		if (!missingSerial) return;
+		resetQuickEntryForm();
+		setQuickEntrySerial(missingSerial);
+		setQuickEntrySuccess(null);
+		setIsQuickEntryOpen(true);
+		setIsMissingSerialModalOpen(false);
+	};
+
 	return (
 		<>
 			<PageWrapper name='batch-detail'>
@@ -253,8 +348,9 @@ const BatchDetailPage: React.FC = () => {
 							</h1>
 							{batch && (
 								<p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
-									{batch.warehouse?.name || `Bodega #${batch.warehouse_id}`} •
-									Entrada: {batch.entry_date}
+									{batch.warehouse?.name || `Bodega #${batch.warehouse_id}`} •{' '}
+									Entrada: {batch.entry_date} •{' '}
+									Primera revisión aprobada: {firstReviewDisplay}
 								</p>
 							)}
 						</div>
@@ -313,8 +409,8 @@ const BatchDetailPage: React.FC = () => {
 							<BatchTabs batch={batch} onItemClick={handleViewItem} />
 						</>
 					)}
-				</Container>
-			</PageWrapper>
+			</Container>
+		</PageWrapper>
 
 			<Modal isOpen={isQuickEntryOpen} setIsOpen={() => handleQuickEntryModalToggle(false)} isCentered>
 				<ModalHeader>
@@ -409,6 +505,35 @@ const BatchDetailPage: React.FC = () => {
 						</Button>
 					</ModalFooter>
 				</form>
+			</Modal>
+
+			<Modal
+				isOpen={isMissingSerialModalOpen}
+				setIsOpen={handleMissingSerialCancel}
+				size='sm'>
+				<ModalHeader>
+					<div className='flex items-center gap-2'>
+						<Icon icon='HeroInformationCircle' className='h-5 w-5 text-amber-500' />
+						<span>Serie no encontrada</span>
+					</div>
+				</ModalHeader>
+				<ModalBody>
+					<p className='text-sm text-gray-600 dark:text-gray-300'>
+						La serie{' '}
+						<span className='font-mono font-semibold text-gray-900 dark:text-gray-100'>
+							{missingSerial}
+						</span>{' '}
+						no existe en este lote. ¿Deseas crearla mediante ingreso rápido?
+					</p>
+				</ModalBody>
+				<ModalFooter className='flex justify-end gap-3'>
+					<Button variant='outline' onClick={handleMissingSerialCancel}>
+						Cancelar
+					</Button>
+					<Button color='green' onClick={handleMissingSerialConfirm}>
+						Iniciar ingreso rápido
+					</Button>
+				</ModalFooter>
 			</Modal>
 		</>
 	);
