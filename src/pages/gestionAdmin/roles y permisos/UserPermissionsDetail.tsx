@@ -41,6 +41,7 @@ const UserPermissionsDetail: React.FC = () => {
 		(s) => s.usersAdmin,
 	);
 	const userAuthority = useAppSelector((s) => s.auth.permisos ?? []);
+	const userRoles = useAppSelector((s) => s.auth.user?.roles ?? []);
 	const [activeTab, setActiveTab] = useState<TabType>('informacion');
 
 	const numericUserId = React.useMemo(() => {
@@ -80,22 +81,10 @@ const UserPermissionsDetail: React.FC = () => {
 
 	const [accessPending, setAccessPending] = React.useState<UserAccess | null>(null);
 
-	const canManageRoles = useAuthority(userAuthority, [
-		'super-admin',
-		'admin',
-		'manage-roles',
-		'manage-permissions',
-		'edit-roles-user',
-		'edit-user',
-	]);
-	const canManagePermissions = useAuthority(userAuthority, [
-		'super-admin',
-		'admin',
-		'manage-permissions',
-		'manage-roles',
-		'edit-roles-user',
-		'edit-user',
-	]);
+	const isSuperAdmin =
+		userRoles.includes('super-admin') || useAuthority(userAuthority, ['super-admin']);
+	const canManageRoles = isSuperAdmin;
+	const canManagePermissions = isSuperAdmin;
 	const canManageAccess = useAuthority(userAuthority, [
 		'super-admin',
 		'admin',
@@ -354,11 +343,7 @@ const UserPermissionsDetail: React.FC = () => {
 				<Card>
 					<CardBody className='p-0'>
 						{/* Tabs Dinámicos */}
-						<DynamicTabs
-							tabs={USER_DETAIL_TABS}
-							activeTab={activeTab}
-							onTabChange={setActiveTab}
-						/>
+						<DynamicTabs tabs={USER_DETAIL_TABS} activeTab={activeTab} onTabChange={setActiveTab} />
 
 						{/* Tab Content */}
 						<div className='p-6'>

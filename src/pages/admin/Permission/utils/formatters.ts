@@ -1,17 +1,73 @@
+const CONNECTOR_WORDS = new Set(['de', 'del', 'la', 'el', 'y', 'en']);
+
+const ROLE_LABELS: Record<string, string> = {
+    superadmin: 'Super Administrador',
+    superadministrador: 'Super Administrador',
+    admin: 'Administrador',
+    administrador: 'Administrador',
+    companyadmin: 'Administrador de Empresa',
+    administradordeempresa: 'Administrador de Empresa',
+    branchadmin: 'Administrador de Sucursal',
+    administradordesucursal: 'Administrador de Sucursal',
+    subsidiaryadmin: 'Administrador de Subsidiaria',
+    administradordesubsidiaria: 'Administrador de Subsidiaria',
+    catalogadmin: 'Administrador de Catálogo',
+    catalogmanager: 'Administrador de Catálogo',
+    companymember: 'Miembro de Empresa',
+    miembrodeempresa: 'Miembro de Empresa',
+    employe: 'Empleado',
+    employee: 'Empleado',
+    user: 'Usuario',
+    viewer: 'Visualizador',
+    technician: 'Técnico',
+    tecnico: 'Técnico',
+    salesperson: 'Vendedor',
+    salesrep: 'Vendedor',
+    aftersales: 'Postventa',
+    cashier: 'Cajero',
+    manager: 'Gerente',
+    warehousemanager: 'Encargado de Bodega',
+    employeebodega: 'Empleado de Bodega',
+    employeedebodega: 'Empleado de Bodega',
+    empleadodebodega: 'Empleado de Bodega',
+    subsidiarymember: 'Miembro de Subsidiaria',
+    companysupervisor: 'Supervisor de Empresa',
+    supervisorcompany: 'Supervisor de Empresa',
+    warehouseemployee: 'Empleado de Bodega',
+};
+
+const toTitleCase = (value: string) => {
+    return value
+        .split(' ')
+        .filter(Boolean)
+        .map((word, index) => {
+            const lower = word.toLowerCase();
+            if (index > 0 && CONNECTOR_WORDS.has(lower)) {
+                return lower;
+            }
+            return lower.charAt(0).toUpperCase() + lower.slice(1);
+        })
+        .join(' ');
+};
+
+export const normalizeRoleKey = (roleName?: string) => {
+    if (!roleName) return '';
+    return roleName
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '');
+};
+
 // Helper para formatear nombres de roles
 export const formatRoleName = (roleName: string) => {
-    const roleMap: Record<string, string> = {
-        'super-admin': 'Super Administrador',
-        'company-admin': 'Administrador de Empresa',
-        'subsidiary-admin': 'Administrador de Subsidiaria',
-        'branch-admin': 'Administrador de Sucursal',
-        'manager': 'Gerente',
-        'employee': 'Empleado',
-        'technician': 'Técnico',
-        'warehouse-employee': 'Empleado de Bodega'
-    };
-
-    return roleMap[roleName] || roleName.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    if (!roleName) return 'Rol';
+    const normalized = normalizeRoleKey(roleName);
+    if (normalized && ROLE_LABELS[normalized]) {
+        return ROLE_LABELS[normalized];
+    }
+    const cleaned = roleName.replace(/[_-]/g, ' ').replace(/\s+/g, ' ').trim();
+    return toTitleCase(cleaned || roleName);
 };
 
 // Helper para formatear nombres de permisos

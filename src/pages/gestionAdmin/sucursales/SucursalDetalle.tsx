@@ -22,7 +22,7 @@ import Modal, {
 	ModalFooterChild,
 } from '@/components/ui/Modal';
 import SucursalModal from './components/SucursalModal';
-import { ISucursal } from '@/interface/empresas.interface';
+import { IBranch, ISucursal } from '@/interface/empresas.interface';
 import { toast } from 'react-toastify';
 import { unwrapResult } from '@reduxjs/toolkit';
 
@@ -34,7 +34,7 @@ export default function SucursalDetalle() {
 	const sucursales = useAppSelector((s) => s.sucursales.lista);
 	const loading = useAppSelector((s) => s.sucursales.loading);
 	const { users, loading: loadingUsers } = useAppSelector((state) => state.usersAdmin);
-	const [sucursal, setSucursal] = useState<ISucursal | null>(null);
+	const [sucursal, setSucursal] = useState<IBranch | null>(null);
 	const [openEdit, setOpenEdit] = useState(false);
 	const [openDelete, setOpenDelete] = useState(false);
 
@@ -169,7 +169,7 @@ export default function SucursalDetalle() {
 	}
 
 	return (
-		<PageWrapper isProtectedRoute title={`Sucursal: ${sucursal.name}`} name='Detalle Sucursal'>
+		<PageWrapper isProtectedRoute title={`Sucursal: ${sucursal.branch_name}`} name='Detalle Sucursal'>
 			<Subheader>
 				<SubheaderLeft>
 					<div className='flex items-center gap-3'>
@@ -188,7 +188,7 @@ export default function SucursalDetalle() {
 								/>
 							</div>
 							<div>
-								<h1 className='text-lg font-semibold'>{sucursal.name}</h1>
+								<h1 className='text-lg font-semibold'>{sucursal.branch_name}</h1>
 								<p className='text-sm text-zinc-500'>ID: {sucursal.id}</p>
 							</div>
 						</div>
@@ -256,12 +256,12 @@ export default function SucursalDetalle() {
 								<p className='text-sm font-medium text-zinc-500'>Estado</p>
 								<Badge
 									variant='solid'
-									color={sucursal.status ? 'emerald' : 'red'}
+									color={sucursal.branch_status ? 'emerald' : 'red'}
 									className='mt-1'>
-									{sucursal.status ? 'Activa' : 'Inactiva'}
+									{sucursal.branch_status ? 'Activa' : 'Inactiva'}
 								</Badge>
 								<p className='mt-1 text-xs text-zinc-400'>
-									{sucursal.commune_name || 'Sin ubicación'}
+									{sucursal.commune?.name || 'Sin ubicación'}
 								</p>
 							</div>
 							<div className='flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/20'>
@@ -275,13 +275,13 @@ export default function SucursalDetalle() {
 						<CardBody className='flex items-center justify-between'>
 							<div>
 								<p className='text-sm font-medium text-zinc-500'>Encargado</p>
-								{sucursal.manager_name ? (
+								{sucursal.manager?.name ? (
 									<>
 										<p className='mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
-											{sucursal.manager_name}
+											{sucursal.manager?.name}
 										</p>
 										<p className='mt-1 text-xs text-zinc-400'>
-											ID: {sucursal.manager_id}
+											ID: {sucursal.manager?.id}
 										</p>
 									</>
 								) : (
@@ -299,7 +299,7 @@ export default function SucursalDetalle() {
 
 				<div className='grid grid-cols-1 gap-6 lg:grid-cols-3'>
 					{/* Información básica */}
-					<div className='lg:col-span-2'>
+					<div className='lg:col-span-full'>
 						<Card>
 							<CardHeader>
 								<CardTitle>Información Básica</CardTitle>
@@ -310,20 +310,20 @@ export default function SucursalDetalle() {
 										<label className='mb-1 block text-sm font-medium text-zinc-700'>
 											Nombre
 										</label>
-										<div className='text-base font-medium'>{sucursal.name}</div>
+										<div className='text-base font-medium'>{sucursal.branch_name}</div>
 									</div>
 									<div>
 										<label className='mb-1 block text-sm font-medium text-zinc-700'>
 											Subsidiaria
 										</label>
 										<div className='flex items-center gap-2'>
-											{sucursal.subsidiary_name ? (
+											{sucursal.branch_name ? (
 												<>
 													<Icon
 														icon='HeroBuildingStorefront'
 														className='text-sm text-zinc-400'
 													/>
-													<span>{sucursal.subsidiary_name}</span>
+													<span>{sucursal.branch_name}</span>
 												</>
 											) : (
 												<Badge variant='outline' className='text-zinc-400'>
@@ -337,8 +337,8 @@ export default function SucursalDetalle() {
 											RUT
 										</label>
 										<div>
-											{sucursal.rut ? (
-												<span className='font-mono'>{sucursal.rut}</span>
+											{sucursal.branch_rut ? (
+												<span className='font-mono'>{sucursal.branch_rut}</span>
 											) : (
 												<Badge variant='outline' className='text-zinc-400'>
 													Sin RUT
@@ -351,13 +351,13 @@ export default function SucursalDetalle() {
 											Teléfono
 										</label>
 										<div>
-											{sucursal.phone ? (
+											{sucursal.branch_phone ? (
 												<div className='flex items-center gap-2'>
 													<Icon
 														icon='HeroPhone'
 														className='text-sm text-zinc-400'
 													/>
-													<span>{sucursal.phone}</span>
+													<span>{sucursal.branch_phone}</span>
 												</div>
 											) : (
 												<Badge variant='outline' className='text-zinc-400'>
@@ -373,13 +373,13 @@ export default function SucursalDetalle() {
 										Dirección
 									</label>
 									<div>
-										{sucursal.address ? (
+										{sucursal.branch_address ? (
 											<div className='flex items-start gap-2'>
 												<Icon
 													icon='HeroMapPin'
 													className='mt-0.5 text-sm text-zinc-400'
 												/>
-												<span>{sucursal.address}</span>
+												<span>{sucursal.branch_address}</span>
 											</div>
 										) : (
 											<Badge variant='outline' className='text-zinc-400'>
@@ -389,7 +389,7 @@ export default function SucursalDetalle() {
 									</div>
 								</div>
 
-								{sucursal.email && (
+								{sucursal.branch_email && (
 									<div>
 										<label className='mb-1 block text-sm font-medium text-zinc-700'>
 											Email
@@ -400,9 +400,9 @@ export default function SucursalDetalle() {
 												className='text-sm text-zinc-400'
 											/>
 											<a
-												href={`mailto:${sucursal.email}`}
+												href={`mailto:${sucursal.branch_email}`}
 												className='text-primary-600 hover:text-primary-800'>
-												{sucursal.email}
+												{sucursal.branch_email}
 											</a>
 										</div>
 									</div>
@@ -412,77 +412,7 @@ export default function SucursalDetalle() {
 					</div>
 
 					{/* Información del encargado */}
-					<div>
-						<Card>
-							<CardHeader>
-								<CardTitle>Encargado</CardTitle>
-							</CardHeader>
-							<CardBody className='space-y-4'>
-								{sucursal.manager_name ? (
-									<>
-										<div>
-											<label className='mb-1 block text-sm font-medium text-zinc-700'>
-												Nombre
-											</label>
-											<div className='flex items-center gap-2'>
-												<Icon
-													icon='HeroUser'
-													className='text-sm text-zinc-400'
-												/>
-												<span>{sucursal.manager_name}</span>
-											</div>
-										</div>
-
-										{sucursal.manager_phone && (
-											<div>
-												<label className='mb-1 block text-sm font-medium text-zinc-700'>
-													Teléfono
-												</label>
-												<div className='flex items-center gap-2'>
-													<Icon
-														icon='HeroPhone'
-														className='text-sm text-zinc-400'
-													/>
-													<span>{sucursal.manager_phone}</span>
-												</div>
-											</div>
-										)}
-
-										{sucursal.manager_email && (
-											<div>
-												<label className='mb-1 block text-sm font-medium text-zinc-700'>
-													Email
-												</label>
-												<div className='flex items-center gap-2'>
-													<Icon
-														icon='HeroEnvelope'
-														className='text-sm text-zinc-400'
-													/>
-													<a
-														href={`mailto:${sucursal.manager_email}`}
-														className='text-sm text-primary-600 hover:text-primary-800'>
-														{sucursal.manager_email}
-													</a>
-												</div>
-											</div>
-										)}
-									</>
-								) : (
-									<div className='py-8 text-center'>
-										<div className='mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800'>
-											<Icon
-												icon='HeroUser'
-												className='text-xl text-zinc-400'
-											/>
-										</div>
-										<p className='text-sm text-zinc-500'>
-											Sin encargado asignado
-										</p>
-									</div>
-								)}
-							</CardBody>
-						</Card>
-					</div>
+					
 				</div>
 
 				{/* Sección de gráficos y estadísticas adicionales */}
@@ -509,7 +439,7 @@ export default function SucursalDetalle() {
 											<h3 className='font-semibold text-zinc-900 dark:text-zinc-100'>
 												{sucursal.manager.name ||
 													`${sucursal.manager.first_name} ${sucursal.manager.last_name}` ||
-													sucursal.manager_name}
+													sucursal.manager?.name}
 											</h3>
 											<p className='text-sm text-zinc-500'>
 												{sucursal.manager.position ||
@@ -597,7 +527,7 @@ export default function SucursalDetalle() {
 								<span className='text-sm text-zinc-500'>Comuna</span>
 								<div className='flex items-center gap-2'>
 									<span className='text-sm font-medium'>
-										{sucursal.commune_name || 'No especificada'}
+										{sucursal.commune?.name || 'No especificada'}
 									</span>
 									{sucursal.commune_id && (
 										<Badge variant='outline' className='font-mono text-xs'>
@@ -610,22 +540,22 @@ export default function SucursalDetalle() {
 							<div className='flex items-center justify-between border-b border-zinc-200 pb-3 dark:border-zinc-700'>
 								<span className='text-sm text-zinc-500'>Fecha de creación</span>
 								<span className='text-sm font-medium'>
-									{new Date(sucursal.created_at).toLocaleDateString('es-CL', {
+									{sucursal.branch_created_at ? new Date(sucursal.branch_created_at).toLocaleDateString('es-CL', {
 										year: 'numeric',
 										month: 'long',
 										day: 'numeric',
-									})}
+									}) : 'No disponible'}
 								</span>
 							</div>
 
 							<div className='flex items-center justify-between border-b border-zinc-200 pb-3 dark:border-zinc-700'>
 								<span className='text-sm text-zinc-500'>Última actualización</span>
 								<span className='text-sm font-medium'>
-									{new Date(sucursal.updated_at).toLocaleDateString('es-CL', {
+									{sucursal.branch_updated_at ? new Date(sucursal.branch_updated_at).toLocaleDateString('es-CL', {
 										year: 'numeric',
 										month: 'long',
 										day: 'numeric',
-									})}
+									}) : 'No disponible'}
 								</span>
 							</div>
 
@@ -665,7 +595,7 @@ export default function SucursalDetalle() {
 							</div>
 							<div>
 								<h3 className='font-medium text-zinc-900'>
-									¿Eliminar sucursal "{sucursal.name}"?
+									¿Eliminar sucursal "{sucursal.branch_name}"?
 								</h3>
 								<p className='text-sm text-zinc-500'>
 									Esta acción no se puede deshacer.
