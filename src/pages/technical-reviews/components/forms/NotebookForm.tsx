@@ -83,7 +83,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 		{ value: 'ok', label: 'OK' },
 		{ value: 'worn', label: 'Desgastado' },
 		{ value: 'missing_pieces', label: 'Faltan piezas' },
-		{ value: 'scratched', label: 'Rayado' },
+		// { value: 'scratched', label: 'Rayado' },
 		{ value: 'broken', label: 'Roto' },
 	];
 
