@@ -81,6 +81,9 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 							<div className='min-w-0 flex-1'>
 								<div className='flex items-center gap-2'>
 									<span className='truncate font-medium'>{product.name}</span>
+								</div>
+
+								<div className='mt-1 flex items-start gap-2'>
 									<Badge
 										variant='outline'
 										color={typeMeta.badgeColor as TColors}
@@ -88,12 +91,11 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 										{typeMeta.label}
 									</Badge>
 								</div>
-								<div className='flex items-center gap-2 text-xs text-neutral-500'>
+
+								<div className='mt-1 flex items-center gap-2 text-xs text-neutral-500'>
 									<span>SKU: {product.sku}</span>
 									{product.commercial_sku && (
-										<span className='text-neutral-400'>
-											• {product.commercial_sku}
-										</span>
+										<span className='text-neutral-400'>• {product.commercial_sku}</span>
 									)}
 								</div>
 							</div>
@@ -263,16 +265,27 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 				cell: ({ row }) => {
 					const categories = row.original.categories;
 					return categories?.length ? (
-						<div className='flex flex-wrap gap-1'>
-							{categories.map((category) => (
-								<Badge
-									key={category.id}
-									variant='outline'
-									color='blue'
-									className='text-xs'>
-									{category.name}
-								</Badge>
-							))}
+						<div className='flex flex-col items-start gap-1'>
+							<div className='flex flex-col gap-1'>
+								{categories.slice(0, 3).map((category) => (
+									<Badge
+										key={category.id}
+										variant='outline'
+										color='blue'
+										className='text-xs truncate'
+										>
+										{category.name}
+									</Badge>
+								))}
+								{categories.length > 3 && (
+									<Badge
+										variant='outline'
+										color='blue'
+										className='text-xs'>
+										+{categories.length - 3}
+									</Badge>
+								)}
+							</div>
 						</div>
 					) : (
 						<span className='text-xs text-neutral-400'>Sin categorías</span>
