@@ -111,73 +111,112 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 	);
 
 	return (
-		<>
-			<div className='text-4xl font-semibold'>Editar Perfil</div>
-			<div className='flex w-full flex-col items-center gap-6 sm:flex-row'>
-				<div
-					role='button'
-					tabIndex={0}
-					aria-label='Ver avatar'
-					onClick={() => setIsPreviewOpen(true)}
-					onKeyDown={(event) => {
-						if (event.key === 'Enter' || event.key === ' ') {
-							event.preventDefault();
-							setIsPreviewOpen(true);
-						}
-					}}
-					className='group relative inline-flex h-28 w-28 cursor-pointer items-center justify-center'>
-					<div className='absolute inset-0 overflow-hidden rounded-full transition-transform duration-200 ease-out group-hover:scale-110'>
-						<Avatar
-							src={avatarUrl ?? undefined}
-							name={avatarName}
-							className='border-primary/40 group-hover:border-primary h-full w-full rounded-full border-4 shadow-lg transition-colors duration-200 ease-out'
-						/>
-					</div>
-					<span className='group-hover:border-primary absolute inset-0 rounded-full border-4 border-transparent transition-colors duration-200' />
-					<span className='absolute inset-0 rounded-full bg-black/50 opacity-0 transition-opacity duration-200 group-hover:opacity-100' />
-					<Icon icon='HeroMagnifyingGlassPlus' className='relative text-3xl text-white' />
-				</div>
+		<div className='space-y-8'>
+			<header className='space-y-1'>
+				<p className='text-sm font-semibold uppercase tracking-[0.2em] text-primary/70'>
+					Perfil
+				</p>
+				<h1 className='text-3xl font-semibold text-neutral-900 dark:text-white'>
+					Editar perfil
+				</h1>
+				<p className='text-sm text-neutral-500 dark:text-neutral-400'>
+					Actualiza tu información básica y mantén una imagen de perfil clara. Optimizar
+					tu foto ayuda al resto del equipo a reconocerte fácilmente.
+				</p>
+			</header>
 
-				<div className='w-full'>
-					<p className='mb-3 max-w-sm text-sm text-gray-500'>
-						Arrastra una imagen o selecciona un archivo desde tu computador. Se
-						convertirá a WebP y se comprimirá automáticamente.
-					</p>
-					<input
-						ref={fileInputRef}
-						id='fileUpload'
-						name='fileUpload'
-						type='file'
-						accept='image/*'
-						onChange={handleFileUpload}
-						className='sr-only'
-					/>
-					<div
-						role='button'
-						tabIndex={0}
-						onClick={openFilePicker}
-						onKeyDown={(event) => {
-							if (event.key === 'Enter' || event.key === ' ') {
-								event.preventDefault();
-								openFilePicker();
-							}
-						}}
-						onDragEnter={handleDragEnter}
-						onDragOver={handleDragOver}
-						onDragLeave={handleDragLeave}
-						onDrop={handleDrop}
-						className={dropZoneClassName}>
-						<Icon icon='HeroArrowUpTray' className='mb-3 h-10 w-10 text-current' />
-						<span className='text-sm font-semibold'>Suelta tu imagen aquí</span>
-						<span className='text-xs text-neutral-500 dark:text-neutral-400'>
-							o haz clic para explorar tus archivos
-						</span>
-						<span className='mt-3 text-xs text-neutral-400 dark:text-neutral-500'>
-							Formatos sugeridos: JPG, PNG, WEBP (máx. 2&nbsp;MB)
-						</span>
+			<section className='rounded-3xl border border-neutral-100/70 bg-white/90 p-6 shadow-lg shadow-neutral-900/5 backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/80'>
+				<div className='grid gap-6 md:grid-cols-[auto,1fr] md:items-center'>
+					<div className='flex flex-col items-center gap-4 text-center md:items-start md:text-left'>
+						<div
+							role='button'
+							tabIndex={0}
+							aria-label='Ver avatar'
+							onClick={() => setIsPreviewOpen(true)}
+							onKeyDown={(event) => {
+								if (event.key === 'Enter' || event.key === ' ') {
+									event.preventDefault();
+									setIsPreviewOpen(true);
+								}
+							}}
+							className='group relative flex h-32 w-32 items-center justify-center rounded-full shadow-xl ring-4 ring-neutral-50 transition hover:-translate-y-1 dark:ring-neutral-800'>
+							<div className='absolute inset-0 overflow-hidden rounded-full border border-white/70 dark:border-neutral-800'>
+								<Avatar
+									src={avatarUrl ?? undefined}
+									name={avatarName}
+									className='h-full w-full rounded-full border border-transparent object-cover'
+								/>
+							</div>
+							<span className='pointer-events-none absolute inset-0 rounded-full bg-black/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100' />
+							<Icon icon='HeroMagnifyingGlassPlus' className='relative text-3xl text-white' />
+						</div>
+						<div className='space-y-1'>
+							<p className='text-base font-semibold text-neutral-900 dark:text-white'>
+								{avatarName}
+							</p>
+							<p className='text-xs text-neutral-500 dark:text-neutral-400'>
+								Haz clic o arrastra un archivo para actualizar tu foto.
+							</p>
+							<button
+								type='button'
+								onClick={openFilePicker}
+								className='inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80'>
+								<Icon icon='HeroCamera' className='h-4 w-4' />
+								Cambiar imagen
+							</button>
+						</div>
+					</div>
+
+					<div className='w-full space-y-4'>
+						{/* <div className='flex flex-wrap gap-2 text-xs'>
+							<span className='inline-flex items-center rounded-full bg-primary/10 px-3 py-1 font-medium text-primary'>
+								WebP automático
+							</span>
+							<span className='inline-flex items-center rounded-full bg-neutral-100 px-3 py-1 font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-200'>
+								Tamaño recomendado 400px
+							</span>
+						</div> */}
+						<p className='text-sm text-neutral-600 dark:text-neutral-300'>
+							Arrastra una imagen o selecciona un archivo desde tu computador. Se
+							convertirá a WebP, se comprimirá y se redimensionará a un tamaño óptimo
+							para el sistema.
+						</p>
+						<input
+							ref={fileInputRef}
+							id='fileUpload'
+							name='fileUpload'
+							type='file'
+							accept='image/*'
+							onChange={handleFileUpload}
+							className='sr-only'
+						/>
+						<div
+							role='button'
+							tabIndex={0}
+							onClick={openFilePicker}
+							onKeyDown={(event) => {
+								if (event.key === 'Enter' || event.key === ' ') {
+									event.preventDefault();
+									openFilePicker();
+								}
+							}}
+							onDragEnter={handleDragEnter}
+							onDragOver={handleDragOver}
+							onDragLeave={handleDragLeave}
+							onDrop={handleDrop}
+							className={dropZoneClassName}>
+							<Icon icon='HeroArrowUpTray' className='mb-3 h-10 w-10 text-current' />
+							<span className='text-sm font-semibold'>Suelta tu imagen aquí</span>
+							<span className='text-xs text-neutral-500 dark:text-neutral-400'>
+								o haz clic para explorar tus archivos
+							</span>
+							<span className='mt-3 text-xs text-neutral-400 dark:text-neutral-500'>
+								Formatos sugeridos: JPG, PNG, WEBP (máx. 2&nbsp;MB)
+							</span>
+						</div>
 					</div>
 				</div>
-			</div>
+			</section>
 
 			{isPreviewOpen && (
 				<div className='fixed inset-0 z-[1200] flex items-center justify-center bg-black/70 px-4'>
@@ -216,7 +255,6 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 				</div>
 			)}
 
-			<div className='mt-6 grid grid-cols-12 gap-4' />
 			<div className='grid grid-cols-12 gap-4'>
 				<div className='col-span-12 lg:col-span-6'>
 					<Label htmlFor='email'>Email</Label>
@@ -358,7 +396,7 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 					</RadioGroup>
 				</div>
 			</div>
-		</>
+		</div>
 	);
 };
 

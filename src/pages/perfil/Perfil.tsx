@@ -40,7 +40,7 @@ import { useProfileTheme } from './components/hooks/useProfileTheme';
 const PROFILE_TABS: ProfileTabDefinition[] = [
 	{ key: 'EDIT', label: 'Editar Perfil', icon: 'HeroPencil' },
 	{ key: 'CONTACT', label: 'Contacto', icon: 'HeroGlobeAmericas' },
-	{ key: 'APPEARANCE', label: 'Apariencia', icon: 'HeroSwatch' },
+	// { key: 'APPEARANCE', label: 'Apariencia', icon: 'HeroSwatch' },
 ];
 
 const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/jpg'];
@@ -244,12 +244,12 @@ const Perfil = () => {
 										comunaOptions={optionsComuna}
 									/>
 								)}
-								{activeTab === 'APPEARANCE' && (
+								{/* {activeTab === 'APPEARANCE' && (
 									<AppearanceTab
 										formik={formik}
 										currentCompany={currentCompany}
 									/>
-								)}
+								)} */}
 							</div>
 						</div>
 					</CardBody>

@@ -384,7 +384,7 @@ const DefaultAsideTemplate = () => {
 								id={Pages.commercial.subPages.sales.id}
 								onClick={() => navigate(Pages.commercial.subPages.sales.to)}
 							/>
-		</AuthorityCheckNav>
+						</AuthorityCheckNav>
 
 						<AuthorityCheckNav
 							authority={Pages.commercial.subPages.quotes.authority}
