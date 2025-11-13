@@ -18,13 +18,11 @@ import Label from '@/components/form/Label';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import { toast } from 'react-toastify';
 import type { UnmappedWooCommerceProduct } from '@/types/integrations.types';
+import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 
 const UnmappedProductsPage: React.FC = () => {
 	const dispatch = useAppDispatch();
-	const subsidiaryId = useAppSelector(
-		(state) =>
-			state.auth.user?.subsidiary?.id || state.auth.user?.personalizacion?.subsidiary_id,
-	);
+	const subsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
 	const { integrations } = useAppSelector((state) => state.integrations);
 	const { unmappedProducts, loading } = useAppSelector((state) => state.unmappedProducts);
 
@@ -142,9 +140,7 @@ const UnmappedProductsPage: React.FC = () => {
 								name='integration'
 								value={selectedIntegrationId || ''}
 								onChange={(e) =>
-									setSelectedIntegrationId(
-										e.target.value ? e.target.value : null,
-									)
+									setSelectedIntegrationId(e.target.value ? e.target.value : null)
 								}>
 								<option value=''>Selecciona una integración</option>
 								{integrations
@@ -205,66 +201,70 @@ const UnmappedProductsPage: React.FC = () => {
 												<th className='px-4 py-2 text-left'>Estado</th>
 												<th className='px-4 py-2 text-center'>Acciones</th>
 											</tr>
-									</thead>
-									<tbody>
-										{filteredProducts.map((product: UnmappedWooCommerceProduct) => (
-											<tr
-												key={product.woocommerce_product_id}
-												className='border-b hover:bg-gray-50'>
-												<td className='px-4 py-2'>
-													{product.woocommerce_product_id}
-												</td>
-													<td className='px-4 py-2'>{product.name}</td>
-													<td className='px-4 py-2'>
-														<code className='rounded bg-gray-100 px-2 py-1 text-xs'>
-															{product.sku || 'Sin SKU'}
-														</code>
-													</td>
-													<td className='px-4 py-2'>
-														${product.price || '0'}
-													</td>
-													<td className='px-4 py-2'>
-														{product.stock_quantity ?? 'N/A'}
-													</td>
-													<td className='px-4 py-2'>
-														<Badge
-															color={
-																product.status === 'publish'
-																	? 'green'
-																	: 'gray'
-															}>
-															{product.status}
-														</Badge>
-													</td>
-													<td className='px-4 py-2'>
-														<div className='flex justify-center gap-2'>
-															<Button
-																size='sm'
-																variant='outline'
-																icon='HeroLink'
-																onClick={() => {
-																	setSelectedProduct(product);
-																	setMappingSku(
-																		product.sku || '',
-																	);
-																	setShowMapModal(true);
-																}}>
-																Mapear
-															</Button>
-															<Button
-																size='sm'
-																variant='outline'
-																color='red'
-																icon='HeroXMark'
-																onClick={() =>
-																	handleIgnoreProduct(product)
+										</thead>
+										<tbody>
+											{filteredProducts.map(
+												(product: UnmappedWooCommerceProduct) => (
+													<tr
+														key={product.woocommerce_product_id}
+														className='border-b hover:bg-gray-50'>
+														<td className='px-4 py-2'>
+															{product.woocommerce_product_id}
+														</td>
+														<td className='px-4 py-2'>
+															{product.name}
+														</td>
+														<td className='px-4 py-2'>
+															<code className='rounded bg-gray-100 px-2 py-1 text-xs'>
+																{product.sku || 'Sin SKU'}
+															</code>
+														</td>
+														<td className='px-4 py-2'>
+															${product.price || '0'}
+														</td>
+														<td className='px-4 py-2'>
+															{product.stock_quantity ?? 'N/A'}
+														</td>
+														<td className='px-4 py-2'>
+															<Badge
+																color={
+																	product.status === 'publish'
+																		? 'green'
+																		: 'gray'
 																}>
-																Ignorar
-															</Button>
-														</div>
-													</td>
-												</tr>
-											))}
+																{product.status}
+															</Badge>
+														</td>
+														<td className='px-4 py-2'>
+															<div className='flex justify-center gap-2'>
+																<Button
+																	size='sm'
+																	variant='outline'
+																	icon='HeroLink'
+																	onClick={() => {
+																		setSelectedProduct(product);
+																		setMappingSku(
+																			product.sku || '',
+																		);
+																		setShowMapModal(true);
+																	}}>
+																	Mapear
+																</Button>
+																<Button
+																	size='sm'
+																	variant='outline'
+																	color='red'
+																	icon='HeroXMark'
+																	onClick={() =>
+																		handleIgnoreProduct(product)
+																	}>
+																	Ignorar
+																</Button>
+															</div>
+														</td>
+													</tr>
+												),
+											)}
 										</tbody>
 									</table>
 								</div>

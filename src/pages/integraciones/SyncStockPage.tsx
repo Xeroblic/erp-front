@@ -13,13 +13,11 @@ import Label from '@/components/form/Label';
 import Textarea from '@/components/form/Textarea';
 import Badge from '@/components/ui/Badge';
 import { toast } from 'react-toastify';
+import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 
 const SyncStockPage: React.FC = () => {
 	const dispatch = useAppDispatch();
-	const subsidiaryId = useAppSelector(
-		(state) =>
-			state.auth.user?.subsidiary?.id || state.auth.user?.personalizacion?.subsidiary_id,
-	);
+	const subsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
 	const { integrations } = useAppSelector((state) => state.integrations);
 
 	const [selectedIntegrationId, setSelectedIntegrationId] = useState<string | null>(null);

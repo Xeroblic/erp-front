@@ -11,16 +11,14 @@ import { fetchIntegrations, setSelectedIntegration } from '@/store/slices/integr
 import type { Integration } from '@/types/integrations.types';
 import ModalIntegration from './components/ModalIntegration';
 import { toast } from 'react-toastify';
+import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 
 const IntegrationsListPage: React.FC = () => {
 	const dispatch = useAppDispatch();
 
 	// Obtener subsidiary_id del usuario autenticado
 	const currentUser = useAppSelector((state) => state.auth.user);
-	const subsidiaryId =
-		currentUser?.subsidiary?.id ||
-		currentUser?.personalizacion?.subsidiary_id ||
-		currentUser?.branch?.subsidiary?.id;
+	const subsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
 
 	// Debug: Ver qué hay en el usuario
 	useEffect(() => {

@@ -12,13 +12,11 @@ import Input from '@/components/form/Input';
 import Label from '@/components/form/Label';
 import Badge from '@/components/ui/Badge';
 import { toast } from 'react-toastify';
+import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 
 const ImportOrdersPage: React.FC = () => {
 	const dispatch = useAppDispatch();
-	const subsidiaryId = useAppSelector(
-		(state) =>
-			state.auth.user?.subsidiary?.id || state.auth.user?.personalizacion?.subsidiary_id,
-	);
+	const subsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
 	const { integrations } = useAppSelector((state) => state.integrations);
 
 	const [selectedIntegrationId, setSelectedIntegrationId] = useState<string | null>(null);
@@ -103,16 +101,18 @@ const ImportOrdersPage: React.FC = () => {
 			<Container>
 				<div className='grid gap-4 md:grid-cols-2'>
 					{/* Importar Orden Individual */}
-					<Card>
+					<Card className='border border-neutral-100/70 bg-white/95 shadow-lg shadow-black/10 dark:border-white/5 dark:bg-neutral-900/80'>
 						<CardHeader>
 							<CardHeaderChild>
 								<CardTitle>Importar Orden Individual</CardTitle>
 							</CardHeaderChild>
 						</CardHeader>
 						<CardBody>
-							<div className='space-y-4'>
+							<div className='space-y-5'>
 								<div>
-									<Label htmlFor='integration-select-1'>Integración de WooCommerce</Label>
+									<Label htmlFor='integration-select-1'>
+										Integración de WooCommerce
+									</Label>
 									<Select
 										name='integration-select-1'
 										value={selectedIntegrationId || ''}
@@ -133,7 +133,9 @@ const ImportOrdersPage: React.FC = () => {
 								</div>
 
 								<div>
-									<Label htmlFor='order-id-input'>ID de Orden de WooCommerce</Label>
+									<Label htmlFor='order-id-input'>
+										ID de Orden de WooCommerce
+									</Label>
 									<Input
 										name='order-id-input'
 										type='number'
@@ -156,23 +158,25 @@ const ImportOrdersPage: React.FC = () => {
 
 								{importResult && (
 									<div
-										className={`rounded-lg p-4 ${
+										className={`rounded-lg border p-4 text-sm ${
 											importResult.imported
-												? 'border border-green-200 bg-green-50'
-												: 'border border-blue-200 bg-blue-50'
+												? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-950/20 dark:text-emerald-100'
+												: 'border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-500/30 dark:bg-sky-950/20 dark:text-sky-100'
 										}`}>
-										<p className='font-semibold'>
+										<p className='text-base font-semibold'>
 											{importResult.imported
-												? '✅ Orden Importada'
-												: 'ℹ️ Orden Ya Existe'}
+												? '✅ Orden importada con éxito'
+												: 'ℹ️ La orden ya estaba en ERP'}
 										</p>
-										<p className='text-sm'>
-											Orden WC: #{importResult.woocommerce_order_id}
-										</p>
+										<p className='mt-1'>Orden WC: #{importResult.woocommerce_order_id}</p>
 										{importResult.erp_order_id && (
-											<p className='text-sm'>
-												Orden ERP: #{importResult.erp_order_id}
-											</p>
+											<p>Orden ERP: #{importResult.erp_order_id}</p>
+										)}
+										{importResult.sale && (
+											<div className='mt-3 grid gap-1 text-xs opacity-80 md:grid-cols-2'>
+												<span>Total: {importResult.sale.total_amount}</span>
+												<span>Estado: {importResult.sale.status}</span>
+											</div>
 										)}
 									</div>
 								)}
@@ -181,16 +185,18 @@ const ImportOrdersPage: React.FC = () => {
 					</Card>
 
 					{/* Importar Órdenes Faltantes */}
-					<Card>
+					<Card className='border border-neutral-100/70 bg-white/95 shadow-lg shadow-black/10 dark:border-white/5 dark:bg-neutral-900/80'>
 						<CardHeader>
 							<CardHeaderChild>
 								<CardTitle>Importar Órdenes Faltantes (Rango de Fechas)</CardTitle>
 							</CardHeaderChild>
 						</CardHeader>
 						<CardBody>
-							<div className='space-y-4'>
+							<div className='space-y-5'>
 								<div>
-									<Label htmlFor='integration-select-2'>Integración de WooCommerce</Label>
+									<Label htmlFor='integration-select-2'>
+										Integración de WooCommerce
+									</Label>
 									<Select
 										name='integration-select-2'
 										value={selectedIntegrationId || ''}
@@ -250,7 +256,7 @@ const ImportOrdersPage: React.FC = () => {
 
 				{/* Resultado de Importación Masiva */}
 				{bulkResult && (
-					<Card className='mt-4'>
+					<Card className='mt-4 border border-neutral-100/70 bg-white/95 shadow-lg shadow-black/10 dark:border-white/5 dark:bg-neutral-900/80'>
 						<CardHeader>
 							<CardHeaderChild>
 								<CardTitle>Resultado de Importación Masiva</CardTitle>
@@ -259,21 +265,21 @@ const ImportOrdersPage: React.FC = () => {
 						<CardBody>
 							<div className='space-y-4'>
 								<div className='grid grid-cols-3 gap-4'>
-									<div className='rounded-lg border border-green-200 bg-green-50 p-4'>
-										<div className='text-sm text-green-600'>Importadas</div>
-										<div className='text-2xl font-bold text-green-700'>
+									<div className='rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-500/30 dark:bg-emerald-950/20'>
+										<div className='text-sm text-emerald-700 dark:text-emerald-200'>Importadas</div>
+										<div className='text-2xl font-bold text-emerald-800 dark:text-emerald-100'>
 											{bulkResult.imported?.length || 0}
 										</div>
 									</div>
-									<div className='rounded-lg border border-blue-200 bg-blue-50 p-4'>
-										<div className='text-sm text-blue-600'>Ya Existentes</div>
-										<div className='text-2xl font-bold text-blue-700'>
+									<div className='rounded-lg border border-sky-200 bg-sky-50 p-4 dark:border-sky-500/30 dark:bg-sky-950/20'>
+										<div className='text-sm text-sky-700 dark:text-sky-200'>Ya Existentes</div>
+										<div className='text-2xl font-bold text-sky-800 dark:text-sky-100'>
 											{bulkResult.already_exists?.length || 0}
 										</div>
 									</div>
-									<div className='rounded-lg border border-red-200 bg-red-50 p-4'>
-										<div className='text-sm text-red-600'>Errores</div>
-										<div className='text-2xl font-bold text-red-700'>
+									<div className='rounded-lg border border-rose-200 bg-rose-50 p-4 dark:border-rose-500/40 dark:bg-rose-950/30'>
+										<div className='text-sm text-rose-700 dark:text-rose-200'>Errores</div>
+										<div className='text-2xl font-bold text-rose-800 dark:text-rose-100'>
 											{bulkResult.errors?.length || 0}
 										</div>
 									</div>
@@ -281,14 +287,14 @@ const ImportOrdersPage: React.FC = () => {
 
 								{bulkResult.imported && bulkResult.imported.length > 0 && (
 									<div>
-										<h3 className='mb-2 font-semibold text-green-700'>
+										<h3 className='mb-2 font-semibold text-emerald-700 dark:text-emerald-200'>
 											Órdenes Importadas:
 										</h3>
 										<div className='space-y-1'>
 											{bulkResult.imported.map((item: any, idx: number) => (
 												<div
 													key={idx}
-													className='flex items-center justify-between rounded bg-green-50 p-2'>
+													className='flex items-center justify-between rounded bg-emerald-50 p-2 dark:bg-emerald-950/20'>
 													<span className='text-sm'>
 														WC Order #{item.woocommerce_order_id}
 													</span>
@@ -303,14 +309,14 @@ const ImportOrdersPage: React.FC = () => {
 
 								{bulkResult.errors && bulkResult.errors.length > 0 && (
 									<div>
-										<h3 className='mb-2 font-semibold text-red-700'>
+										<h3 className='mb-2 font-semibold text-rose-700 dark:text-rose-200'>
 											Errores:
 										</h3>
 										<div className='space-y-1'>
 											{bulkResult.errors.map((item: any, idx: number) => (
 												<div
 													key={idx}
-													className='rounded bg-red-50 p-2 text-sm'>
+													className='rounded bg-rose-50 p-2 text-sm dark:bg-rose-950/20'>
 													<strong>Order #{item.order_id}</strong>:{' '}
 													{item.error}
 												</div>

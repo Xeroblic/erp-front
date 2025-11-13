@@ -19,6 +19,7 @@ import type {
 import { toast } from 'react-toastify';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
+import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 
 interface ModalIntegrationProps {
 	isOpen: boolean;
@@ -36,10 +37,7 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 	mode,
 }) => {
 	const dispatch = useAppDispatch();
-	const subsidiaryId = useAppSelector(
-		(state) =>
-			state.auth.user?.subsidiary?.id || state.auth.user?.personalizacion?.subsidiary_id,
-	);
+	const subsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
 	const { loading } = useAppSelector((state) => state.integrations);
 
 	const [showSecrets, setShowSecrets] = useState(false);
@@ -235,8 +233,8 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 					Credenciales de Integración (Solo se mostrarán una vez)
 				</ModalHeader>
 				<ModalBody>
-					<div className='space-y-4 rounded-lg border border-yellow-200 bg-yellow-50 p-4'>
-						<p className='text-sm font-semibold text-yellow-800'>
+					<div className='space-y-4 rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-500/30 dark:bg-yellow-950/30'>
+						<p className='text-sm font-semibold text-yellow-800 dark:text-yellow-100'>
 							⚠️ Guarda estas credenciales ahora. No podrás volver a verlas.
 						</p>
 
@@ -250,7 +248,7 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 										type='text'
 										value={secrets.api_key}
 										readOnly
-										className='font-mono text-sm'
+										className='font-mono text-sm dark:bg-neutral-900 dark:text-white'
 									/>
 									<Button
 										size='sm'
@@ -262,7 +260,7 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 									</Button>
 								</div>
 								{formData.mode === 'webhook' && (
-									<p className='mt-2 text-xs text-gray-600'>
+									<p className='mt-2 text-xs text-gray-600 dark:text-gray-300'>
 										URL del Webhook:{' '}
 										<code className='rounded bg-gray-100 px-2 py-1'>
 											{window.location.origin}
@@ -284,7 +282,7 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 										type='text'
 										value={secrets.webhook_secret}
 										readOnly
-										className='font-mono text-sm'
+										className='font-mono text-sm dark:bg-neutral-900 dark:text-white'
 									/>
 									<Button
 										size='sm'
@@ -298,7 +296,7 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 										Copiar
 									</Button>
 								</div>
-								<p className='mt-2 text-xs text-gray-600'>
+								<p className='mt-2 text-xs text-gray-600 dark:text-gray-300'>
 									Usa este secret en la configuración del Webhook en WooCommerce
 								</p>
 							</div>
@@ -411,42 +409,60 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 						</p>
 					</div>
 
-					{/* Credenciales REST (solo para modo read o read_write) */}
-					{mode === 'create' && formData.mode !== 'webhook' && (
-						<>
-							<div>
-								<Label htmlFor='consumer_key'>Consumer Key</Label>
-								<Input
-									id='consumer_key'
-									name='consumer_key'
-									type='text'
-									value={formData.consumer_key}
-									onChange={(e) =>
-										setFormData({ ...formData, consumer_key: e.target.value })
-									}
-									placeholder='ck_...'
-									required
-								/>
-							</div>
-							<div>
-								<Label htmlFor='consumer_secret'>Consumer Secret</Label>
-								<Input
-									id='consumer_secret'
-									name='consumer_secret'
-									type='password'
-									value={formData.consumer_secret}
-									onChange={(e) =>
-										setFormData({
-											...formData,
-											consumer_secret: e.target.value,
-										})
-									}
-									placeholder='cs_...'
-									required
-								/>
-							</div>
-						</>
-					)}
+					<div className='grid gap-4 md:grid-cols-2'>
+						<div>
+							<Label htmlFor='consumer_key'>Consumer Key</Label>
+							<Input
+								id='consumer_key'
+								name='consumer_key'
+								type='text'
+								value={formData.consumer_key}
+								onChange={(e) =>
+									setFormData({ ...formData, consumer_key: e.target.value })
+								}
+								placeholder={
+									formData.mode === 'webhook'
+										? 'Se generará automáticamente'
+										: 'ck_...'
+								}
+								disabled={formData.mode === 'webhook'}
+								required={formData.mode !== 'webhook'}
+							/>
+							{formData.mode === 'webhook' && (
+								<p className='mt-1 text-xs text-gray-500'>
+									Esta integración es solo webhook, la clave se generará y se
+									mostrará una vez al guardar.
+								</p>
+							)}
+						</div>
+						<div>
+							<Label htmlFor='consumer_secret'>Consumer Secret</Label>
+							<Input
+								id='consumer_secret'
+								name='consumer_secret'
+								type='password'
+								value={formData.consumer_secret}
+								onChange={(e) =>
+									setFormData({
+										...formData,
+										consumer_secret: e.target.value,
+									})
+								}
+								placeholder={
+									formData.mode === 'webhook'
+										? 'Se generará automáticamente'
+										: 'cs_...'
+								}
+								disabled={formData.mode === 'webhook'}
+								required={formData.mode !== 'webhook'}
+							/>
+							{formData.mode === 'webhook' && (
+								<p className='mt-1 text-xs text-gray-500'>
+									El secret también se mostrará al finalizar la creación.
+								</p>
+							)}
+						</div>
+					</div>
 
 					{/* Estado */}
 					<div className='flex items-center gap-2'>
