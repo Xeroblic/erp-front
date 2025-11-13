@@ -199,6 +199,10 @@ const authSlice = createSlice({
 			// localStorage.removeItem('zentria_language'); // NO limpiar idioma
 			// localStorage.removeItem('zentria_asideStatus'); // NO limpiar estado aside
 		},
+		clearAuthState: () => ({
+			...initialState,
+			access: localStorage.getItem('access_token') || undefined,
+		}),
 		setToken: (
 			state,
 			action: PayloadAction<
@@ -311,7 +315,7 @@ const authSlice = createSlice({
 	},
 });
 
-export const { logout, setToken, validateSession } = authSlice.actions;
+export const { logout, clearAuthState, setToken, validateSession } = authSlice.actions;
 
 // Selectores
 export const selectIsAuthenticated = (state: RootState) => state.auth.isAuthenticated;
