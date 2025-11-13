@@ -15,6 +15,7 @@ import EditarMarca from './components/modals/EditarMarca';
 import DetalleMarca from './components/modals/DetalleMarca';
 import EliminarMarca from './components/modals/EliminarMarca';
 import type { IBrand, IBrandFilters } from '@/interface/brand.interface';
+import { IBranch } from '@/interface';
 
 const Marcas: React.FC = () => {
 	const [filters, setFilters] = useState<IBrandFilters>({ search: '' });
@@ -42,16 +43,16 @@ const Marcas: React.FC = () => {
 
 	const branchOptions = useMemo(
 		() =>
-			branches.map((branch) => ({
+			branches.map((branch : IBranch) => ({
 				value: String(branch.id),
-				label: branch.name ?? `Sucursal ${branch.id}`,
+				label: branch.branch_name ?? `Sucursal ${branch.id}`,
 			})),
 		[branches],
 	);
 
 	const branchLookup = useMemo(() => {
 		const lookup: Record<number, string> = {};
-		branchOptions.forEach((item) => {
+		branchOptions.forEach((item: any) => {
 			const id = Number(item.value);
 			if (!Number.isNaN(id)) {
 				lookup[id] = item.label;
