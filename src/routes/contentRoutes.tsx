@@ -21,19 +21,13 @@ const SubEmpresaDetalle = lazy(() => import('@/pages/gestionAdmin/subempresa/Sub
 const SubEmpresaPersonalizacion = lazy(
 	() => import('@/pages/gestionAdmin/subempresa/SubEmpresaPersonalizacion'),
 );
-const IntegracionesWooCommerce = lazy(
-	() => import('@/pages/gestionAdmin/integraciones/IntegracionesWooCommerce'),
-);
-const WooCommerceIntegrationPage = lazy(
-	() => import('@/pages/gestionAdmin/integraciones/woocommerce/WooCommerceIntegrationPage'),
-);
-const WooCommerceProductsSyncPage = lazy(
-	() => import('@/pages/gestionAdmin/integraciones/woocommerce/WooCommerceProductsSyncPage'),
-);
-const WooCommerceOrdersImportPage = lazy(
-	() => import('@/pages/gestionAdmin/integraciones/woocommerce/WooCommerceOrdersImportPage'),
-);
-const WooStockSync = lazy(() => import('@/pages/integraciones/WooComerceSync/WooStockSync'));
+
+// Páginas de Integraciones (nuevo módulo)
+const IntegrationsListPage = lazy(() => import('@/pages/integraciones/IntegrationsListPage'));
+const UnmappedProductsPage = lazy(() => import('@/pages/integraciones/UnmappedProductsPage'));
+const SyncStockPage = lazy(() => import('@/pages/integraciones/SyncStockPage'));
+const ImportOrdersPage = lazy(() => import('@/pages/integraciones/ImportOrdersPage'));
+
 // Reportes
 const ReportsHome = lazy(() => import('@/pages/reportes/ReportsHome'));
 const SalesDashboard = lazy(() => import('@/pages/reportes/SalesDashboard'));
@@ -90,7 +84,9 @@ const TechnicalReviewsHub = lazy(() => import('@/pages/technical-reviews/index')
 const BatchesList = lazy(() => import('@/pages/technical-reviews/batches/index'));
 const BatchCreate = lazy(() => import('@/pages/technical-reviews/batches/create'));
 const BatchDetail = lazy(() => import('@/pages/technical-reviews/batches/[batchId]/index'));
-const BatchItemReview = lazy(() => import('@/pages/technical-reviews/batches/[batchId]/[batchItemId]'));
+const BatchItemReview = lazy(
+	() => import('@/pages/technical-reviews/batches/[batchId]/[batchItemId]'),
+);
 const ItemsList = lazy(() => import('@/pages/technical-reviews/items/index'));
 const ItemReview = lazy(() => import('@/pages/technical-reviews/items/[itemId]'));
 
@@ -106,27 +102,6 @@ export interface IRoutePersonalizada extends PathRouteProps {
 const cfg = pagesConfig as any;
 
 const contentRoutes: IRoutePersonalizada[] = [
-	// Páginas WooCommerce
-	{
-		path: '/gestion/integraciones/woocommerce',
-		element: <WooCommerceIntegrationPage />,
-		authority: cfg.manage.subPages.integrations.authority,
-	},
-	{
-		path: '/gestion/integraciones/woocommerce-sync',
-		element: <WooCommerceProductsSyncPage />,
-		authority: cfg.manage.subPages.integrations.subPages.woocommerceSync.authority,
-	},
-	{
-		path: '/gestion/integraciones/woocommerce-stock-sync',
-		element: <WooStockSync />,
-		authority: cfg.manage.subPages.integrations.subPages.woocommerceStockSync.authority,
-	},
-	{
-		path: '/gestion/integraciones/woocommerce-import',
-		element: <WooCommerceOrdersImportPage />,
-		authority: cfg.manage.subPages.integrations.authority,
-	},
 	{ path: cfg.loginPage.to, element: <LoginPage />, public: true },
 	{ path: cfg.recuperarPassword.to, element: <RecuperarPassword />, public: true },
 	{ path: '/usuarios/activar/:token', element: <AceptarInvitacionEmpresa />, public: true },
@@ -185,16 +160,6 @@ const contentRoutes: IRoutePersonalizada[] = [
 		authority: cfg.manage.subPages.manageUsers.authority,
 	},
 	{
-		path: cfg.manage.subPages.integrations.to,
-		element: <IntegracionesWooCommerce />,
-		authority: cfg.manage.subPages.integrations.authority,
-	},
-	{
-		path: cfg.manage.subPages.integrations.subPages.woocommerceSync.to,
-		element: <WooCommerceProductsSyncPage />,
-		authority: cfg.manage.subPages.integrations.subPages.woocommerceSync.authority,
-	},
-	{
 		path: cfg.humanResources.subPages.invitationsAdmin.to,
 		element: <InvitationsAdmin />,
 		authority: cfg.humanResources.subPages.invitationsAdmin.authority,
@@ -210,21 +175,6 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: cfg.systemAdmin.subPages.systemParametersDetail.to,
 		element: <SystemParameterDetails />,
 		authority: cfg.systemAdmin.subPages.systemParametersDetail.authority,
-	},
-	{
-		path: '/gestion/integraciones/woocommerce',
-		element: <WooCommerceIntegrationPage />,
-		authority: cfg.manage.subPages.integrations.authority,
-	},
-	{
-		path: '/gestion/integraciones/woocommerce-sync',
-		element: <WooCommerceProductsSyncPage />,
-		authority: cfg.manage.subPages.integrations.subPages.woocommerceSync.authority,
-	},
-	{
-		path: '/gestion/integraciones/woocommerce-import',
-		element: <WooCommerceOrdersImportPage />,
-		authority: cfg.manage.subPages.integrations.authority,
 	},
 
 	// Rutas ERP
@@ -279,6 +229,28 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: cfg.reports.subPages.financialReports.to,
 		element: <FinancialReports />,
 		authority: cfg.reports.subPages.financialReports.authority,
+	},
+
+	// Integraciones (WooCommerce)
+	{
+		path: cfg.integrations.subPages.list.to,
+		element: <IntegrationsListPage />,
+		authority: cfg.integrations.subPages.list.authority,
+	},
+	{
+		path: cfg.integrations.subPages.unmappedProducts.to,
+		element: <UnmappedProductsPage />,
+		authority: cfg.integrations.subPages.unmappedProducts.authority,
+	},
+	{
+		path: cfg.integrations.subPages.syncStock.to,
+		element: <SyncStockPage />,
+		authority: cfg.integrations.subPages.syncStock.authority,
+	},
+	{
+		path: cfg.integrations.subPages.importOrders.to,
+		element: <ImportOrdersPage />,
+		authority: cfg.integrations.subPages.importOrders.authority,
 	},
 
 	// Notificaciones
@@ -376,11 +348,11 @@ const contentRoutes: IRoutePersonalizada[] = [
 		element: <BatchItemReview />,
 		authority: cfg.technical.subPages.reviews.authority,
 	},
-    {
-        path: '/technical-reviews/batches/:batchId/items/create',
-        element: <BatchItemReview />,
-        authority: cfg.technical.subPages.reviews.authority,
-    },
+	{
+		path: '/technical-reviews/batches/:batchId/items/create',
+		element: <BatchItemReview />,
+		authority: cfg.technical.subPages.reviews.authority,
+	},
 	{
 		path: '/technical-reviews/batches/:batchId/items/:itemId',
 		element: <BatchItemReview />,

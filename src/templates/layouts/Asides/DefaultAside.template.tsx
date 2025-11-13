@@ -109,7 +109,8 @@ const DefaultAsideTemplate = () => {
 		inventario: false,
 		catalogos: false,
 		servicio: false,
-		// comercial: false,    // COMENTADO: Módulo aún no operativo
+		comercial: false, // COMENTADO: Módulo aún no operativo
+		integraciones: false, // Módulo de Integraciones WooCommerce
 		// reportes: false,     // COMENTADO: Módulo aún no operativo
 	});
 
@@ -451,6 +452,94 @@ const DefaultAsideTemplate = () => {
 							</AuthorityCheckNav>
 						</NavCollapse>
 					</AuthorityCheckNav> */}
+
+					{/* =================================================
+					INTEGRACIONES - SOLO SUPER ADMIN
+					================================================= */}
+					<NavTitle>Integraciones</NavTitle>
+
+					<AuthorityCheckNav
+						authority={[
+							...(Pages.integrations.authority || []),
+							...(Pages.integrations.roles || []),
+						]}
+						userAuthority={userPermissionsAndRoles}
+						requireAll={Pages.integrations.requireAll}>
+						<NavCollapse
+							key='integraciones-nav'
+							text={Pages.integrations.text}
+							icon={Pages.integrations.icon}
+							to=''
+							isOpen={collapseStates.integraciones || false}
+							onToggle={() => toggleCollapse('integraciones')}>
+							<AuthorityCheckNav
+								authority={[
+									...(Pages.integrations.subPages.list.authority || []),
+									...(Pages.integrations.subPages.list.roles || []),
+								]}
+								userAuthority={userPermissionsAndRoles}>
+								<NavItem
+									text={Pages.integrations.subPages.list.text}
+									to={Pages.integrations.subPages.list.to}
+									icon={Pages.integrations.subPages.list.icon}
+									id={Pages.integrations.subPages.list.id}
+									onClick={() => navigate(Pages.integrations.subPages.list.to)}
+								/>
+							</AuthorityCheckNav>
+
+							<AuthorityCheckNav
+								authority={[
+									...(Pages.integrations.subPages.unmappedProducts.authority ||
+										[]),
+									...(Pages.integrations.subPages.unmappedProducts.roles || []),
+								]}
+								userAuthority={userPermissionsAndRoles}>
+								<NavItem
+									text={Pages.integrations.subPages.unmappedProducts.text}
+									to={Pages.integrations.subPages.unmappedProducts.to}
+									icon={Pages.integrations.subPages.unmappedProducts.icon}
+									id={Pages.integrations.subPages.unmappedProducts.id}
+									onClick={() =>
+										navigate(Pages.integrations.subPages.unmappedProducts.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
+							<AuthorityCheckNav
+								authority={[
+									...(Pages.integrations.subPages.syncStock.authority || []),
+									...(Pages.integrations.subPages.syncStock.roles || []),
+								]}
+								userAuthority={userPermissionsAndRoles}>
+								<NavItem
+									text={Pages.integrations.subPages.syncStock.text}
+									to={Pages.integrations.subPages.syncStock.to}
+									icon={Pages.integrations.subPages.syncStock.icon}
+									id={Pages.integrations.subPages.syncStock.id}
+									onClick={() =>
+										navigate(Pages.integrations.subPages.syncStock.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
+							<AuthorityCheckNav
+								authority={[
+									...(Pages.integrations.subPages.importOrders.authority || []),
+									...(Pages.integrations.subPages.importOrders.roles || []),
+								]}
+								userAuthority={userPermissionsAndRoles}>
+								<NavItem
+									text={Pages.integrations.subPages.importOrders.text}
+									to={Pages.integrations.subPages.importOrders.to}
+									icon={Pages.integrations.subPages.importOrders.icon}
+									id={Pages.integrations.subPages.importOrders.id}
+									onClick={() =>
+										navigate(Pages.integrations.subPages.importOrders.to)
+									}
+								/>
+							</AuthorityCheckNav>
+						</NavCollapse>
+					</AuthorityCheckNav>
 
 					<NavTitle>Recursos Humanos</NavTitle>
 

@@ -22,7 +22,7 @@ interface CrearProveedorProps {
 }
 
 const validationSchema = Yup.object().shape({
-	name: Yup.string().required('El nombre es requerido').min(3, 'Mínimo 3 caracteres'),
+	name: Yup.string().required('El nombre es requerido').min(1, 'Mínimo 1 caracteres'),
 	subsidiaryId: Yup.number()
 		.required('Debes seleccionar una subsidiaria')
 		.min(1, 'Selecciona una subsidiaria válida'),

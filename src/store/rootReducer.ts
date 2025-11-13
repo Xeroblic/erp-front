@@ -30,6 +30,7 @@ import suppliers from './slices/suppliers/suppliersSlice';
 import customerSuppliers from './slices/customerSuppliers/customerSuppliersSlice';
 import warehouse from './slices/warehouses/warehouseSlice';
 import technicalReviews, { TechnicalReviewsState } from './slices/technicalReviews/slice/technicalReviewsSlice';
+import { integrationsReducer, unmappedProductsReducer } from './slices/integrations';
 
 export interface RootState {
 	auth: AuthState;
@@ -59,6 +60,8 @@ export interface RootState {
 	customerSuppliers: ReturnType<typeof customerSuppliers>;
 	warehouse: ReturnType<typeof warehouse>;
 	technicalReviews: TechnicalReviewsState;
+	integrations: ReturnType<typeof integrationsReducer>;
+	unmappedProducts: ReturnType<typeof unmappedProductsReducer>;
 	[RtkQueryService.reducerPath]: any;
 }
 
@@ -91,6 +94,8 @@ const staticReducers = {
 	customerSuppliers,
 	warehouse,
 	technicalReviews,
+	integrations: integrationsReducer,
+	unmappedProducts: unmappedProductsReducer,
 	// personalizacion, // Comentado temporalmente
 	[RtkQueryService.reducerPath]: RtkQueryService.reducer,
 };

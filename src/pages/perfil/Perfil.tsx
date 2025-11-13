@@ -43,15 +43,12 @@ const PROFILE_TABS: ProfileTabDefinition[] = [
 	// { key: 'APPEARANCE', label: 'Apariencia', icon: 'HeroSwatch' },
 ];
 
-const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/jpg'];
-const MAX_AVATAR_FILE_SIZE_MB = 5;
 
 const Perfil = () => {
 	const dispatch = useAppDispatch();
 	const { setDarkModeStatus } = useDarkModeManager();
 	const { user: userData } = useAppSelector((state) => state.auth);
 	const darkMode = useAppSelector(selectDarkMode);
-	const { currentCompany } = useCompanyManager();
 	const { listaComunas, listaProvincias, listaRegiones } = useAppSelector((state) => state.core);
 
 	const [activeTab, setActiveTab] = useState<ProfileTabKey>('EDIT');
@@ -155,16 +152,12 @@ const Perfil = () => {
 		setOptionsComuna(geo.optionsComuna);
 	}, [geo.optionsRegion, geo.optionsProvincia, geo.optionsComuna]);
 
-	// Fallback: intentar usar los datos ya cargados en `userData` para setear
-	// `comuna` en el form. Si no existe, re-consultamos `/perfil` (el endpoint
-	// que devuelve la estructura completa) en vez de un endpoint inexistente.
 	useEffect(() => {
 		let mounted = true;
 		async function trySetFromUserOrRefresh() {
 			if (!userData) return;
-			if (formik.values.comuna) return; // ya tiene valor
+			if (formik.values.comuna) return; 
 
-			// 1) Intentar leer comuna desde userData en múltiples formas
 			const anyUser: any = userData as any;
 			const foundId =
 				anyUser?.comuna ??

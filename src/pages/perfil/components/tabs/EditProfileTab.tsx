@@ -8,6 +8,8 @@ import Icon from '@/components/icon/Icon';
 import Validation from '@/components/form/Validation';
 import Radio, { RadioGroup } from '@/components/form/Radio';
 import Avatar from '@/components/Avatar';
+import Button from '@/components/ui/Button';
+import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import { ProfileFormik } from '../types';
 import { toast } from 'react-toastify';
 
@@ -103,11 +105,11 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 	}, []);
 
 	const dropZoneClassName = classNames(
-		'flex w-full sm:w-[320px] flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-6 text-center transition-all cursor-pointer',
+		'flex w-full max-w-2xl flex-col items-center justify-center rounded-2xl border-2 border-dashed px-8 py-8 text-center transition-all cursor-pointer',
 		'focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 dark:focus:ring-offset-neutral-900',
 		isDraggingFile
 			? 'border-primary bg-primary/10 text-primary'
-			: 'border-neutral-300 bg-white/60 text-neutral-600 hover:border-primary hover:bg-primary/5 dark:border-neutral-700 dark:bg-neutral-900/60 dark:text-neutral-300',
+			: 'border-neutral-300 bg-white text-neutral-600 hover:border-primary hover:bg-primary/5 dark:border-neutral-700 dark:bg-neutral-900/60 dark:text-neutral-300',
 	);
 
 	return (
@@ -125,61 +127,48 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 				</p>
 			</header>
 
-			<section className='rounded-3xl border border-neutral-100/70 bg-white/90 p-6 shadow-lg shadow-neutral-900/5 backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/80'>
-				<div className='grid gap-6 md:grid-cols-[auto,1fr] md:items-center'>
-					<div className='flex flex-col items-center gap-4 text-center md:items-start md:text-left'>
-						<div
-							role='button'
-							tabIndex={0}
-							aria-label='Ver avatar'
-							onClick={() => setIsPreviewOpen(true)}
-							onKeyDown={(event) => {
-								if (event.key === 'Enter' || event.key === ' ') {
-									event.preventDefault();
-									setIsPreviewOpen(true);
-								}
-							}}
-							className='group relative flex h-32 w-32 items-center justify-center rounded-full shadow-xl ring-4 ring-neutral-50 transition hover:-translate-y-1 dark:ring-neutral-800'>
-							<div className='absolute inset-0 overflow-hidden rounded-full border border-white/70 dark:border-neutral-800'>
-								<Avatar
-									src={avatarUrl ?? undefined}
-									name={avatarName}
-									className='h-full w-full rounded-full border border-transparent object-cover'
-								/>
-							</div>
-							<span className='pointer-events-none absolute inset-0 rounded-full bg-black/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100' />
-							<Icon icon='HeroMagnifyingGlassPlus' className='relative text-3xl text-white' />
-						</div>
-						<div className='space-y-1'>
-							<p className='text-base font-semibold text-neutral-900 dark:text-white'>
-								{avatarName}
-							</p>
-							<p className='text-xs text-neutral-500 dark:text-neutral-400'>
-								Haz clic o arrastra un archivo para actualizar tu foto.
-							</p>
+			<section className='rounded-3xl border border-neutral-100/70 bg-white/95 p-6 shadow-lg shadow-neutral-900/5 backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/80'>
+				<div className='grid gap-8 lg:grid-cols-[320px,1fr] lg:items-center'>
+					<div className='rounded-2xl border border-neutral-200/60 bg-gradient-to-b from-white to-neutral-50 p-5 text-center shadow-sm dark:border-neutral-800 dark:from-neutral-900 dark:to-neutral-900/70'>
+						<div className='flex flex-col items-center gap-4'>
 							<button
 								type='button'
-								onClick={openFilePicker}
-								className='inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80'>
-								<Icon icon='HeroCamera' className='h-4 w-4' />
-								Cambiar imagen
+								aria-label='Ver avatar ampliado'
+								onClick={() => setIsPreviewOpen(true)}
+								className='group relative flex h-32 w-32 items-center justify-center rounded-full shadow-xl ring-4 ring-neutral-50 transition hover:-translate-y-1 dark:ring-neutral-800'>
+								<div className='absolute inset-0 overflow-hidden rounded-full border border-white/70 dark:border-neutral-800'>
+									<Avatar
+										src={avatarUrl ?? undefined}
+										name={avatarName}
+										className='h-full w-full rounded-full border border-transparent object-cover'
+									/>
+								</div>
+								<span className='pointer-events-none absolute inset-0 rounded-full bg-black/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100' />
+								<Icon icon='HeroMagnifyingGlassPlus' className='relative text-3xl text-white' />
 							</button>
+							<div className='space-y-1'>
+								<p className='text-base font-semibold text-neutral-900 dark:text-white'>{avatarName}</p>
+								<p className='text-xs text-neutral-500 dark:text-neutral-400'>
+									Mantén una foto nítida para que el resto del equipo te identifique fácilmente.
+								</p>
+							</div>
+							<Button
+								variant='outline'
+								size='sm'
+								icon='HeroCamera'
+								onClick={openFilePicker}
+								className='w-full justify-center text-sm font-semibold'>
+								Cambiar imagen
+							</Button>
+							
 						</div>
 					</div>
 
 					<div className='w-full space-y-4'>
-						{/* <div className='flex flex-wrap gap-2 text-xs'>
-							<span className='inline-flex items-center rounded-full bg-primary/10 px-3 py-1 font-medium text-primary'>
-								WebP automático
-							</span>
-							<span className='inline-flex items-center rounded-full bg-neutral-100 px-3 py-1 font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-200'>
-								Tamaño recomendado 400px
-							</span>
-						</div> */}
+						
 						<p className='text-sm text-neutral-600 dark:text-neutral-300'>
-							Arrastra una imagen o selecciona un archivo desde tu computador. Se
-							convertirá a WebP, se comprimirá y se redimensionará a un tamaño óptimo
-							para el sistema.
+							Arrastra una imagen o selecciona un archivo desde tu computador. El sistema la comprimirá,
+							convertirá a WebP y ajustará su tamaño para que luzca impecable en toda la plataforma.
 						</p>
 						<input
 							ref={fileInputRef}
@@ -210,50 +199,49 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 							<span className='text-xs text-neutral-500 dark:text-neutral-400'>
 								o haz clic para explorar tus archivos
 							</span>
-							<span className='mt-3 text-xs text-neutral-400 dark:text-neutral-500'>
-								Formatos sugeridos: JPG, PNG, WEBP (máx. 2&nbsp;MB)
-							</span>
+							<div className='mt-4 space-y-1 text-xs text-neutral-400 dark:text-neutral-500'>
+								<p>Formatos sugeridos: JPG, PNG, WEBP.</p>
+								<p>Peso máximo permitido: 2&nbsp;MB.</p>
+							</div>
 						</div>
 					</div>
 				</div>
 			</section>
 
-			{isPreviewOpen && (
-				<div className='fixed inset-0 z-[1200] flex items-center justify-center bg-black/70 px-4'>
-					<div className='relative flex w-full max-w-md flex-col items-center gap-4 rounded-2xl bg-white p-6 shadow-2xl dark:bg-neutral-900'>
-						<button
-							type='button'
-							onClick={() => setIsPreviewOpen(false)}
-							className='absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-neutral-200 text-neutral-700 transition hover:bg-neutral-300 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700'>
-							<Icon icon='HeroXMark' className='h-5 w-5' />
-						</button>
-						<Avatar
-							src={avatarUrl ?? undefined}
-							name={avatarName}
-							className='h-64 w-64 rounded-full border-8 border-primary/40 shadow-xl'
-						/>
-						<div className='flex flex-wrap justify-center gap-2'>
-							<button
-								type='button'
-								onClick={() => {
-									setIsPreviewOpen(false);
-									openFilePicker();
-								}}
-								className='inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-primary/90'>
-								<Icon icon='HeroCamera' className='h-4 w-4' />
-								Cambiar imagen
-							</button>
-							<button
-								type='button'
-								onClick={() => setIsPreviewOpen(false)}
-								className='inline-flex items-center gap-2 rounded-lg border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-600 transition hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800'>
-								<Icon icon='HeroEyeSlash' className='h-4 w-4' />
-								Cerrar
-							</button>
+			<Modal isOpen={isPreviewOpen} setIsOpen={setIsPreviewOpen} size='2xl' isCentered>
+				<ModalHeader>
+					<div className='flex items-center gap-2 text-lg font-semibold'>
+						<Icon icon='HeroUserCircle' className='h-5 w-5 text-primary' />
+						Vista previa del avatar
+					</div>
+				</ModalHeader>
+				<ModalBody>
+					<div className='flex justify-center'>
+						<div className='relative flex h-56 w-56 items-center justify-center rounded-full shadow-inner ring-8 ring-primary/20'>
+							<Avatar
+								src={avatarUrl ?? undefined}
+								name={avatarName}
+								className='h-52 w-52 rounded-full border-4 border-white object-cover dark:border-neutral-900'
+							/>
 						</div>
 					</div>
-				</div>
-			)}
+				</ModalBody>
+				<ModalFooter>
+					<Button
+						variant='outline'
+						size='sm'
+						icon='HeroCamera'
+						onClick={() => {
+							setIsPreviewOpen(false);
+							openFilePicker();
+						}}>
+						Cambiar imagen
+					</Button>
+					<Button variant='solid' size='sm' color='emerald' icon='HeroCheck' onClick={() => setIsPreviewOpen(false)}>
+						Cerrar
+					</Button>
+				</ModalFooter>
+			</Modal>
 
 			<div className='grid grid-cols-12 gap-4'>
 				<div className='col-span-12 lg:col-span-6'>
