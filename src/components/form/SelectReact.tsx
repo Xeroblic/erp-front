@@ -117,6 +117,7 @@ const SelectReact: FC<ISelectReactProps> = (props) => {
 		id,
 		inputId,
 		isDisabled: isDisabledProp,
+		onChange: userOnChange,
 		...rest
 	} = props;
 
@@ -178,6 +179,7 @@ const SelectReact: FC<ISelectReactProps> = (props) => {
 
 	const handleChange = (
 		newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption> | null,
+		actionMeta?: ActionMeta<TSelectOption>,
 	) => {
 		if (!isMulti && newValue && !Array.isArray(newValue)) {
 			const option = newValue as TSelectOption;
@@ -185,6 +187,9 @@ const SelectReact: FC<ISelectReactProps> = (props) => {
 			newValue.forEach((option) => {
 				const opt = option as TSelectOption;
 			});
+		}
+		if (typeof userOnChange === 'function') {
+			userOnChange(newValue, actionMeta);
 		}
 	};
 

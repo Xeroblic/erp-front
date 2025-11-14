@@ -277,8 +277,9 @@ export const syncStock = async (
     payload: SyncStockPayload,
 ) => {
     const response = await ApiService.fetchData<SyncStockResponse>({
-        url: `/subsidiaries/${subsidiaryId}/integrations/${integrationId}/woocommerce/sync-stock`,
+        url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/sync-stock`,
         method: 'POST',
+        params: { integration_id: integrationId },
         data: payload,
     });
     return response.data;

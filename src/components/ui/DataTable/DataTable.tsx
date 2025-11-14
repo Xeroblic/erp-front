@@ -13,10 +13,10 @@ import {
 	GlobalFilterTableState,
 } from '@tanstack/react-table';
 import Table, { THead, Tr, Th, TBody, Td } from '@/components/ui/Table';
-import Button from '@/components/ui/Button';
 import Input from '@/components/form/Input';
 import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
+import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
 
 interface DataTableProps<TData> {
 	columns: ColumnDef<TData>[];
@@ -84,13 +84,19 @@ export default function DataTable<TData>({
 			{/* Barra de búsqueda */}
 			<div className='flex items-center justify-between'>
 				<div className='flex items-center space-x-2'>
-					<Input
-						placeholder={searchPlaceholder}
-						value={globalFilter ?? ''}
-						onChange={(e) => setGlobalFilter(String(e.target.value))}
-						className='max-w-sm'
-						prefix={<Icon icon='HeroMagnifyingGlass' className='h-4 w-4' />}
-					/>
+					<div className='relative max-w-sm'>
+						<Icon
+							icon='HeroMagnifyingGlass'
+							className='pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400'
+						/>
+						<Input
+							name='filtro'
+							placeholder={searchPlaceholder}
+							value={globalFilter ?? ''}
+							onChange={(e) => setGlobalFilter(String(e.target.value))}
+							className='w-full pl-9'
+						/>
+					</div>
 				</div>
 				<div className='flex items-center space-x-2'>
 					<Badge variant='outline'>
@@ -194,58 +200,7 @@ export default function DataTable<TData>({
 			</div>
 
 			{/* Paginación */}
-			<div className='flex items-center justify-between px-2'>
-				<div className='flex items-center space-x-6 lg:space-x-8'>
-					<div className='flex items-center space-x-2'>
-						<p className='text-sm font-medium'>Filas por página</p>
-						<select
-							value={table.getState().pagination.pageSize}
-							onChange={(e) => {
-								table.setPageSize(Number(e.target.value));
-							}}
-							className='border-input bg-background h-8 w-16 rounded border px-3 py-1 text-sm'>
-							{[10, 20, 30, 40, 50].map((pageSize) => (
-								<option key={pageSize} value={pageSize}>
-									{pageSize}
-								</option>
-							))}
-						</select>
-					</div>
-					<div className='flex w-24 items-center justify-center text-sm font-medium'>
-						Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
-					</div>
-				</div>
-				<div className='flex items-center space-x-2'>
-					<Button
-						variant='outline'
-						size='sm'
-						onClick={() => table.setPageIndex(0)}
-						disabled={!table.getCanPreviousPage()}>
-						<Icon icon='HeroChevronDoubleLeft' className='h-4 w-4' />
-					</Button>
-					<Button
-						variant='outline'
-						size='sm'
-						onClick={() => table.previousPage()}
-						disabled={!table.getCanPreviousPage()}>
-						<Icon icon='HeroChevronLeft' className='h-4 w-4' />
-					</Button>
-					<Button
-						variant='outline'
-						size='sm'
-						onClick={() => table.nextPage()}
-						disabled={!table.getCanNextPage()}>
-						<Icon icon='HeroChevronRight' className='h-4 w-4' />
-					</Button>
-					<Button
-						variant='outline'
-						size='sm'
-						onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-						disabled={!table.getCanNextPage()}>
-						<Icon icon='HeroChevronDoubleRight' className='h-4 w-4' />
-					</Button>
-				</div>
-			</div>
+			<TableCardFooterTemplateV2 table={table} />
 
 			{/* Información de selección */}
 			<div className='text-muted-foreground flex items-center justify-between text-sm'>

@@ -164,6 +164,8 @@ export interface UpdateItemDetailsPayload {
     storage_technology?: string;
     general_condition?: string;
     observations?: string | null;
+    includes_power_adapter?: boolean;
+    power_cable_status?: string | null;
 
     // Puertos (común para la mayoría)
     vga_ports?: number;
@@ -172,6 +174,7 @@ export interface UpdateItemDetailsPayload {
     usb_a_ports?: number;
     usb_c_ports?: number;
     lector_de_tarjetas_sd?: number;
+    sd_readers?: number;
     rj45_ports?: number;
     has_wifi?: boolean;
     has_bluetooth?: boolean;

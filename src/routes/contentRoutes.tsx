@@ -57,7 +57,7 @@ const InventarioPage = lazy(() => import('@/pages/inventario/Inventario'));
 const HistorialInventario = lazy(
 	() => import('@/pages/inventario/historial/HistorialInventarioAdmin'),
 );
-const VentasAdmin = lazy(() => import('@/pages/comercial/ventas/VentasAdmin'));
+const SalesListPage = lazy(() => import('@/pages/ventas/SalesListPage'));
 const CotizacionesPage = lazy(() => import('@/pages/comercial/cotizaciones/CotizacionesAdmin'));
 const TransferenciasInventario = lazy(
 	() => import('@/pages/inventario/transferencias/Transferencias'),
@@ -195,7 +195,7 @@ const contentRoutes: IRoutePersonalizada[] = [
 	},
 	{
 		path: cfg.commercial.subPages.sales.to,
-		element: <VentasAdmin />,
+		element: <SalesListPage />,
 		authority: cfg.commercial.subPages.sales.authority,
 	},
 	{

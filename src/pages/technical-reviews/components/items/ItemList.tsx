@@ -64,8 +64,10 @@ const FIELD_LABELS_ES: Record<string, string> = {
 	storage_size: 'Capacidad Almacenamiento',
 	storage_technology: 'Tecnología Almacenamiento',
 	includes_charger: 'Incluye Cargador',
+	includes_power_adapter: 'Incluye Cargador',
 	charger_watts: 'Watts Cargador',
 	charger_status: 'Estado Cargador',
+	power_cable_status: 'Estado Cargador',
 	other_includes: 'Incluye Otros',
 	battery_status: 'Estado Batería',
 	battery_health: 'Salud Batería',
@@ -79,6 +81,7 @@ const FIELD_LABELS_ES: Record<string, string> = {
 	usb_a_ports: 'Puertos USB-A',
 	usb_c_ports: 'Puertos USB-C',
 	lector_de_tarjetas_sd: 'Lectores SD',
+	sd_readers: 'Lectores SD',
 	rj45_ports: 'Puertos RJ-45',
 	has_wifi: 'Wi-Fi',
 	has_bluetooth: 'Bluetooth',
@@ -229,7 +232,9 @@ const DETAIL_FIELDS_TEMPLATE: Record<string, string[]> = {
 		'model',
 		'line',
 		'general_condition',
+		'includes_power_adapter',
 		'includes_charger',
+		'power_cable_status',
 		'charger_status',
 		'cover_condition',
 		'vga_ports',
@@ -237,6 +242,7 @@ const DETAIL_FIELDS_TEMPLATE: Record<string, string[]> = {
 		'displayport_ports',
 		'usb_a_ports',
 		'usb_c_ports',
+		'sd_readers',
 		'lector_de_tarjetas_sd',
 		'rj45_ports',
 		'has_wifi',
@@ -887,21 +893,27 @@ const formatAttributeLabel = (key: string) => {
 								))}
 							</THead>
 							<TBody>
-								{table.getRowModel().rows.map((row, index) => (
-									<Tr
-										key={row.id}
-										// className={`cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 ${index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-zinc-50/30 dark:bg-zinc-800/20'}`}
-										onClick={() => handleItemClick(row.original.id)}>
-										{row.getVisibleCells().map((cell) => (
-											<Td key={cell.id} className='align-middle'>
-												{flexRender(
-													cell.column.columnDef.cell,
-													cell.getContext(),
-												)}
-											</Td>
-										))}
-									</Tr>
-								))}
+				{table.getRowModel().rows.map((row, index) => {
+					const zebraBg =
+						index % 2 === 0
+							? 'bg-white dark:bg-gray-900'
+							: 'bg-gray-50 dark:bg-gray-800/40';
+					return (
+						<Tr
+							key={row.id}
+							className={`cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 ${zebraBg}`}
+							onClick={() => handleItemClick(row.original.id)}>
+							{row.getVisibleCells().map((cell) => (
+								<Td key={cell.id} className='align-middle'>
+									{flexRender(
+										cell.column.columnDef.cell,
+										cell.getContext(),
+									)}
+								</Td>
+							))}
+						</Tr>
+					);
+				})}
 							</TBody>
 						</Table>
 					</div>

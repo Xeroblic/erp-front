@@ -1,7 +1,7 @@
 /**
  * DockingForm - Formulario de revisión técnica para Docking Stations
  */
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
 import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
@@ -11,6 +11,7 @@ import Icon from '@/components/icon/Icon';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchValidationRulesByType } from '@/store/slices/technicalReviews';
 import type { UpdateItemDetailsPayload } from '@/interface/technicalReviews.interface';
+import { fetchBrands } from '@/store/slices/brands/brandsSlice';
 
 interface DockingFormProps {
 	branchId: number;
@@ -18,6 +19,39 @@ interface DockingFormProps {
 	onChange: (field: string, value: any) => void;
 	readOnly?: boolean;
 }
+
+const generalConditionOptions: TSelectOption[] = [
+	{ value: 'like_new', label: 'Como nuevo' },
+	{ value: 'good_shape', label: 'Buen estado' },
+	{ value: 'visible_wear', label: 'Desgaste visible' },
+	{ value: 'needs_repair', label: 'Requiere reparación' },
+	{ value: 'scrap', label: 'Solo repuestos' },
+];
+
+const powerCableStatusOptions: TSelectOption[] = [
+	{ value: 'good_condition', label: 'Buen estado' },
+	{ value: 'damaged_cable', label: 'Cable dañado' },
+	{ value: 'not_matching_equipment', label: 'No corresponde al equipo' },
+	{ value: 'not_included', label: 'No incluye' },
+];
+
+const coverConditionOptions: TSelectOption[] = [
+	{ value: 'ok', label: 'OK' },
+	{ value: 'worn', label: 'Desgastado' },
+	{ value: 'missing_pieces', label: 'Faltan piezas' },
+	{ value: 'scratched', label: 'Rayado' },
+	{ value: 'broken', label: 'Roto' },
+];
+
+const portFields: Array<{ name: keyof UpdateItemDetailsPayload; label: string }> = [
+	{ name: 'vga_ports', label: 'VGA' },
+	{ name: 'hdmi_ports', label: 'HDMI' },
+	{ name: 'displayport_ports', label: 'DisplayPort' },
+	{ name: 'usb_a_ports', label: 'USB-A' },
+	{ name: 'usb_c_ports', label: 'USB-C' },
+	{ name: 'sd_readers', label: 'Lectores SD' },
+	{ name: 'rj45_ports', label: 'RJ45' },
+];
 
 const DockingForm: React.FC<DockingFormProps> = ({
 	branchId,
@@ -27,35 +61,41 @@ const DockingForm: React.FC<DockingFormProps> = ({
 }) => {
 	const dispatch = useAppDispatch();
 	const validationLoading = useAppSelector((s) => s.technicalReviews.validationRulesLoading);
+	const brands = useAppSelector((s: any) => s.brands?.items ?? []);
+	const brandsLoading = useAppSelector((s: any) => s.brands?.loading ?? false);
 
 	useEffect(() => {
 		if (branchId) {
 			dispatch(fetchValidationRulesByType({ branchId, equipmentType: 'docking' }));
+			dispatch(fetchBrands({ branchId, search: '' }));
 		}
 	}, [dispatch, branchId]);
 
-	const generalConditionOptions: TSelectOption[] = [
-		{ value: 'like_new', label: 'Como nuevo' },
-		{ value: 'good_shape', label: 'Buen estado' },
-		{ value: 'visible_wear', label: 'Desgaste visible' },
-		{ value: 'needs_repair', label: 'Requiere reparación' },
-		{ value: 'scrap', label: 'Solo repuestos' },
-	];
+	const brandOptions = useMemo(() => {
+		const unique = new Map<string, TSelectOption>();
+		(brands || [])
+			.filter((brand: any) => Boolean(brand?.name))
+			.forEach((brand: any) => {
+				const name = String(brand.name);
+				if (!unique.has(name)) {
+					unique.set(name, { value: name, label: name });
+				}
+			});
+		if (values.brand && !unique.has(values.brand)) {
+			unique.set(values.brand, { value: values.brand, label: values.brand });
+		}
+		return Array.from(unique.values());
+	}, [brands, values.brand]);
 
-	const chargerStatusOptions: TSelectOption[] = [
-		{ value: 'buen_estado', label: 'Buen estado' },
-		{ value: 'cable_en_mal_estado', label: 'Cable en mal estado' },
-		{ value: 'conector_roto', label: 'Conector roto' },
-		{ value: 'no_incluye', label: 'No incluye' },
-	];
-
-	const conditionOptions: TSelectOption[] = [
-		{ value: 'ok', label: 'OK' },
-		{ value: 'worn', label: 'Desgastado' },
-		{ value: 'missing_pieces', label: 'Faltan piezas' },
-		{ value: 'scratched', label: 'Rayado' },
-		{ value: 'broken', label: 'Roto' },
-	];
+	const brandSelectValue = useMemo(() => {
+		if (!values.brand) return null;
+		return (
+			brandOptions.find((option) => option.value === values.brand) ?? {
+				value: values.brand,
+				label: values.brand,
+			}
+		);
+	}, [brandOptions, values.brand]);
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		onChange(e.target.name, e.target.value);
@@ -63,29 +103,43 @@ const DockingForm: React.FC<DockingFormProps> = ({
 
 	const handleSelectChange = (name: string) => (option: any) => {
 		const selectedOption = option as TSelectOption | null;
-		onChange(name, selectedOption?.value || null);
+		onChange(name, selectedOption?.value ?? null);
 	};
 
-	const handleCheckboxChange = (name: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
-		onChange(name, e.target.checked);
-	};
+	const handleCheckboxChange =
+		(name: string, extra?: (checked: boolean) => void) =>
+		(e: React.ChangeEvent<HTMLInputElement>) => {
+			onChange(name, e.target.checked);
+			extra?.(e.target.checked);
+		};
 
 	const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
 		onChange(e.target.name, e.target.value);
 	};
 
 	const handleNumberChange = (name: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
-		const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+		const val = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
 		onChange(name, val);
 	};
 
-	if (validationLoading) {
+	const includesPowerAdapter = Boolean(values.includes_power_adapter);
+	const powerCableStatusValue = values.power_cable_status ?? null;
+
+	const handleTogglePowerAdapter = (checked: boolean) => {
+		if (!checked) {
+			onChange('power_cable_status', 'not_included');
+		}
+	};
+
+	if (validationLoading && brandsLoading) {
 		return (
 			<Card>
 				<CardBody className='p-6'>
 					<div className='flex items-center justify-center py-8'>
 						<Icon icon='HeroArrowPath' className='mr-2 h-5 w-5 animate-spin' />
-						<span className='text-gray-600 dark:text-gray-400'>Cargando reglas...</span>
+						<span className='text-gray-600 dark:text-gray-400'>
+							Cargando configuraciones…
+						</span>
 					</div>
 				</CardBody>
 			</Card>
@@ -94,77 +148,80 @@ const DockingForm: React.FC<DockingFormProps> = ({
 
 	return (
 		<div className='space-y-6'>
-			{/* Información General */}
 			<Card>
 				<CardHeader>
 					<div className='flex items-center gap-2'>
 						<Icon icon='HeroInformationCircle' className='h-5 w-5 text-blue-600' />
-						<h3 className='text-lg font-semibold'>Información General</h3>
+						<h3 className='text-lg font-semibold'>Identificación</h3>
 					</div>
 				</CardHeader>
-				<CardBody className='space-y-4'>
-					<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-						<div>
-							<label className='mb-2 block text-sm font-medium'>
-								Marca <span className='text-red-500'>*</span>
-							</label>
-							<Input
-								type='text'
-								name='brand'
-								value={values.brand || ''}
-								onChange={handleInputChange}
-								placeholder='Ej: Dell, HP'
-								disabled={readOnly}
-							/>
-						</div>
-						<div>
-							<label className='mb-2 block text-sm font-medium'>
-								Modelo <span className='text-red-500'>*</span>
-							</label>
-							<Input
-								type='text'
-								name='model'
-								value={values.model || ''}
-								onChange={handleInputChange}
-								placeholder='Ej: WD19S'
-								disabled={readOnly}
-							/>
-						</div>
-						<div>
-							<label className='mb-2 block text-sm font-medium'>Línea</label>
-							<Input
-								type='text'
-								name='line'
-								value={values.line || ''}
-								onChange={handleInputChange}
-								placeholder='Ej: Docking'
-								disabled={readOnly}
-							/>
-						</div>
-						<div>
-							<label className='mb-2 block text-sm font-medium'>
-								Estado General <span className='text-red-500'>*</span>
-							</label>
-							<SelectReact
-								name='general_condition'
-								options={generalConditionOptions}
-								value={
-									values.general_condition
-										? generalConditionOptions.find(
-												(o) => o.value === values.general_condition,
-											) || null
-										: null
-								}
-								onChange={handleSelectChange('general_condition')}
-								placeholder='Seleccionar'
-								isDisabled={readOnly}
-							/>
-						</div>
+				<CardBody className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+					<div>
+						<label className='mb-2 block text-sm font-medium'>
+							Marca <span className='text-red-500'>*</span>
+						</label>
+						<SelectReact
+							name='brand'
+							options={brandOptions}
+							value={brandSelectValue}
+							onChange={handleSelectChange('brand')}
+							placeholder='Seleccionar marca'
+							isDisabled={readOnly || brandsLoading}
+							isCreatable
+						/>
+					</div>
+					<div>
+						<label className='mb-2 block text-sm font-medium'>
+							Modelo <span className='text-red-500'>*</span>
+						</label>
+						<Input
+							type='text'
+							name='model'
+							value={values.model || ''}
+							onChange={handleInputChange}
+							placeholder='Ej: WD19S'
+							disabled={readOnly}
+						/>
+					</div>
+					<div>
+						<label className='mb-2 block text-sm font-medium'>Línea</label>
+						<Input
+							type='text'
+							name='line'
+							value={values.line || ''}
+							onChange={handleInputChange}
+							placeholder='Ej: Docking'
+							disabled={readOnly}
+						/>
 					</div>
 				</CardBody>
 			</Card>
 
-			{/* Cargador */}
+			<Card>
+				<CardHeader>
+					<div className='flex items-center gap-2'>
+						<Icon icon='HeroShieldCheck' className='h-5 w-5 text-emerald-600' />
+						<h3 className='text-lg font-semibold'>Condición General</h3>
+					</div>
+				</CardHeader>
+				<CardBody>
+					<SelectReact
+						name='general_condition'
+						options={generalConditionOptions}
+						value={
+							values.general_condition
+								? generalConditionOptions.find(
+										(o) => o.value === values.general_condition,
+									) || null
+								: null
+						}
+						onChange={handleSelectChange('general_condition')}
+						placeholder='Seleccionar'
+						isDisabled={readOnly}
+					/>
+				</CardBody>
+			</Card>
+
 			<Card>
 				<CardHeader>
 					<div className='flex items-center gap-2'>
@@ -172,162 +229,63 @@ const DockingForm: React.FC<DockingFormProps> = ({
 						<h3 className='text-lg font-semibold'>Cargador</h3>
 					</div>
 				</CardHeader>
-				<CardBody>
-					<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-						<div className='flex items-center'>
-							<Checkbox
-								id='includes_charger'
-								name='includes_charger'
-								checked={values.includes_charger || false}
-								onChange={handleCheckboxChange('includes_charger')}
-								disabled={readOnly}
-								label='Incluye Cargador'
-							/>
-						</div>
-						{values.includes_charger && (
-							<div>
-								<label className='mb-2 block text-sm font-medium'>
-									Estado Cargador
-								</label>
-								<SelectReact
-									name='charger_status'
-									options={chargerStatusOptions}
-									value={
-										values.charger_status
-											? chargerStatusOptions.find(
-													(o) => o.value === values.charger_status,
-												) || null
-											: null
-									}
-									onChange={handleSelectChange('charger_status')}
-									placeholder='Seleccionar'
-									isDisabled={readOnly}
-								/>
-							</div>
-						)}
-					</div>
-				</CardBody>
-			</Card>
-
-			{/* Carcasa */}
-			<Card>
-				<CardHeader>
-					<div className='flex items-center gap-2'>
-						<Icon icon='HeroShieldCheck' className='h-5 w-5 text-gray-600' />
-						<h3 className='text-lg font-semibold'>Carcasa</h3>
-					</div>
-				</CardHeader>
-				<CardBody>
-					<div>
-						<label className='mb-2 block text-sm font-medium'>Estado Cubierta</label>
-						<SelectReact
-							name='cover_condition'
-							options={conditionOptions}
-							value={
-								values.cover_condition
-									? conditionOptions.find(
-											(o) => o.value === values.cover_condition,
-										) || null
-									: null
-							}
-							onChange={handleSelectChange('cover_condition')}
-							placeholder='Seleccionar'
-							isDisabled={readOnly}
+				<CardBody className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+					<div className='flex items-center'>
+						<Checkbox
+							id='includes_power_adapter'
+							name='includes_power_adapter'
+							checked={includesPowerAdapter}
+							onChange={handleCheckboxChange('includes_power_adapter', handleTogglePowerAdapter)}
+							disabled={readOnly}
+							label='Incluye cargador'
 						/>
 					</div>
+					{includesPowerAdapter && (
+						<div>
+							<label className='mb-2 block text-sm font-medium'>Estado del cargador</label>
+							<SelectReact
+								name='power_cable_status'
+								options={powerCableStatusOptions}
+								value={
+									powerCableStatusValue
+										? powerCableStatusOptions.find(
+												(o) => o.value === powerCableStatusValue,
+											) || null
+										: null
+								}
+								onChange={handleSelectChange('power_cable_status')}
+								placeholder='Seleccionar'
+								isDisabled={readOnly}
+							/>
+						</div>
+					)}
 				</CardBody>
 			</Card>
 
-			{/* Puertos y Conectividad */}
 			<Card>
 				<CardHeader>
 					<div className='flex items-center gap-2'>
 						<Icon icon='HeroSignal' className='h-5 w-5 text-blue-600' />
-						<h3 className='text-lg font-semibold'>Puertos y Conectividad</h3>
+						<h3 className='text-lg font-semibold'>Puertos y conectividad</h3>
 					</div>
 				</CardHeader>
 				<CardBody className='space-y-4'>
 					<div className='grid grid-cols-2 gap-4 md:grid-cols-4'>
-						<div>
-							<label className='mb-2 block text-sm font-medium'>VGA</label>
-							<Input
-								type='number'
-								name='vga_ports'
-								value={values.vga_ports || 0}
-								onChange={handleNumberChange('vga_ports')}
-								min='0'
-								disabled={readOnly}
-							/>
-						</div>
-						<div>
-							<label className='mb-2 block text-sm font-medium'>HDMI</label>
-							<Input
-								type='number'
-								name='hdmi_ports'
-								value={values.hdmi_ports || 0}
-								onChange={handleNumberChange('hdmi_ports')}
-								min='0'
-								disabled={readOnly}
-							/>
-						</div>
-						<div>
-							<label className='mb-2 block text-sm font-medium'>DisplayPort</label>
-							<Input
-								type='number'
-								name='displayport_ports'
-								value={values.displayport_ports || 0}
-								onChange={handleNumberChange('displayport_ports')}
-								min='0'
-								disabled={readOnly}
-							/>
-						</div>
-						<div>
-							<label className='mb-2 block text-sm font-medium'>USB-A</label>
-							<Input
-								type='number'
-								name='usb_a_ports'
-								value={values.usb_a_ports || 0}
-								onChange={handleNumberChange('usb_a_ports')}
-								min='0'
-								disabled={readOnly}
-							/>
-						</div>
-						<div>
-							<label className='mb-2 block text-sm font-medium'>USB-C</label>
-							<Input
-								type='number'
-								name='usb_c_ports'
-								value={values.usb_c_ports || 0}
-								onChange={handleNumberChange('usb_c_ports')}
-								min='0'
-								disabled={readOnly}
-							/>
-						</div>
-						<div>
-							<label className='mb-2 block text-sm font-medium'>Lector de tarjetas SD</label>
-							<Input
-								type='number'
-								name='lector_de_tarjetas_sd'
-								value={values.lector_de_tarjetas_sd || 0}
-								onChange={handleNumberChange('lector_de_tarjetas_sd')}
-								min='0'
-								disabled={readOnly}
-							/>
-						</div>
-						<div>
-							<label className='mb-2 block text-sm font-medium'>RJ45</label>
-							<Input
-								type='number'
-								name='rj45_ports'
-								value={values.rj45_ports || 0}
-								onChange={handleNumberChange('rj45_ports')}
-								min='0'
-								disabled={readOnly}
-							/>
-						</div>
+						{portFields.map((field) => (
+							<div key={field.name as string}>
+								<label className='mb-2 block text-sm font-medium'>{field.label}</label>
+								<Input
+									type='number'
+									name={field.name as string}
+									value={((values as any)[field.name] as number | undefined) ?? 0}
+									onChange={handleNumberChange(field.name as string)}
+									min='0'
+									disabled={readOnly}
+								/>
+							</div>
+						))}
 					</div>
-
-					<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
+					<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
 						<div className='flex items-center'>
 							<Checkbox
 								id='has_wifi'
@@ -340,31 +298,18 @@ const DockingForm: React.FC<DockingFormProps> = ({
 						</div>
 						<div className='flex items-center'>
 							<Checkbox
-								id='has_bluetooth'
-								name='has_bluetooth'
-								checked={values.has_bluetooth || false}
-								onChange={handleCheckboxChange('has_bluetooth')}
-								disabled={readOnly}
-								label='Tiene Bluetooth'
-							/>
-						</div>
-						<div className='flex items-center'>
-							<Checkbox
 								id='all_ports_functional'
 								name='all_ports_functional'
 								checked={values.all_ports_functional || false}
 								onChange={handleCheckboxChange('all_ports_functional')}
 								disabled={readOnly}
-								label='Todos Funcionales'
+								label='Todos los puertos funcionan'
 							/>
 						</div>
 					</div>
-
-					{!values.all_ports_functional && (
+					{values.all_ports_functional === false && (
 						<div>
-							<label className='mb-2 block text-sm font-medium'>
-								Puertos Defectuosos
-							</label>
+							<label className='mb-2 block text-sm font-medium'>Puertos defectuosos</label>
 							<Input
 								type='number'
 								name='defective_ports_count'
@@ -378,7 +323,31 @@ const DockingForm: React.FC<DockingFormProps> = ({
 				</CardBody>
 			</Card>
 
-			{/* Observaciones */}
+			<Card>
+				<CardHeader>
+					<div className='flex items-center gap-2'>
+						<Icon icon='HeroShieldCheck' className='h-5 w-5 text-gray-600' />
+						<h3 className='text-lg font-semibold'>Condición de carcasa</h3>
+					</div>
+				</CardHeader>
+				<CardBody>
+					<SelectReact
+						name='cover_condition'
+						options={coverConditionOptions}
+						value={
+							values.cover_condition
+								? coverConditionOptions.find(
+										(o) => o.value === values.cover_condition,
+									) || null
+								: null
+						}
+						onChange={handleSelectChange('cover_condition')}
+						placeholder='Seleccionar'
+						isDisabled={readOnly}
+					/>
+				</CardBody>
+			</Card>
+
 			<Card>
 				<CardHeader>
 					<div className='flex items-center gap-2'>

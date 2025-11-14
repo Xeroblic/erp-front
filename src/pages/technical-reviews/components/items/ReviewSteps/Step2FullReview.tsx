@@ -18,6 +18,56 @@ import AioForm from '../../forms/AioForm';
 import DockingForm from '../../forms/DockingForm';
 import MonitorForm from '../../forms/MonitorForm';
 
+const DOCKING_ALLOWED_FIELDS: Array<keyof UpdateItemDetailsPayload> = [
+	'brand',
+	'model',
+	'line',
+	'includes_power_adapter',
+	'power_cable_status',
+	'vga_ports',
+	'hdmi_ports',
+	'displayport_ports',
+	'usb_a_ports',
+	'usb_c_ports',
+	'sd_readers',
+	'rj45_ports',
+	'has_wifi',
+	'all_ports_functional',
+	'defective_ports_count',
+	'general_condition',
+	'cover_condition',
+	'observations',
+];
+
+const ALLOWED_FIELDS_BY_TYPE: Partial<
+	Record<EquipmentType, Array<keyof UpdateItemDetailsPayload>>
+> = {
+	docking: DOCKING_ALLOWED_FIELDS,
+};
+
+const sanitizeByEquipmentType = (
+	values: Partial<UpdateItemDetailsPayload>,
+	equipmentType?: EquipmentType,
+): Partial<UpdateItemDetailsPayload> => {
+	if (!equipmentType) return values;
+	const allowedFields = ALLOWED_FIELDS_BY_TYPE[equipmentType];
+	if (!allowedFields) return values;
+	const sanitized: Partial<UpdateItemDetailsPayload> = {};
+	allowedFields.forEach((field) => {
+		if (values[field] !== undefined) {
+			sanitized[field] = values[field];
+		}
+	});
+	if (sanitized.includes_power_adapter === undefined) {
+		sanitized.includes_power_adapter = Boolean(values.includes_power_adapter);
+	}
+	if (!sanitized.includes_power_adapter) {
+		sanitized.includes_power_adapter = false;
+		sanitized.power_cable_status = 'not_included';
+	}
+	return sanitized;
+};
+
 interface Step2FullReviewProps {
 	branchId: number;
 	itemId: number;
@@ -64,21 +114,21 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 		setFormValues(newValues);
 		setSaveError(null);
 
-		// Notificar al padre (usado para auto-save si está habilitado)
-		// Si onFieldChange es undefined, solo guardado manual
+		const sanitized = sanitizeByEquipmentType(newValues, equipmentType);
 		if (onFieldChange) {
-			onFieldChange(newValues as UpdateItemDetailsPayload);
+			onFieldChange(sanitized as UpdateItemDetailsPayload);
 		}
 	};
 
 	// Guardar cambios manualmente
 	const handleSave = async () => {
 		try {
+			const payload = sanitizeByEquipmentType(formValues, equipmentType);
 			const updatedItem = await dispatch(
 				updateItemDetails({
 					branchId,
 					itemId,
-					data: formValues,
+					data: payload,
 					equipmentType,
 				}),
 			).unwrap();
@@ -97,11 +147,12 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 	const handleFinalize = async () => {
 		try {
 			// Primero guardar cualquier cambio pendiente
+			const payload = sanitizeByEquipmentType(formValues, equipmentType);
 			const updatedItem = await dispatch(
 				updateItemDetails({
 					branchId,
 					itemId,
-					data: formValues,
+					data: payload,
 					equipmentType,
 				}),
 			).unwrap();
