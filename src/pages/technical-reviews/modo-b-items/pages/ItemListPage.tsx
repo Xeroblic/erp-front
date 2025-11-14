@@ -12,7 +12,7 @@ import Icon from '@/components/icon/Icon';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchItems, selectItemsLoading, selectItemsError } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
-import ItemList from '../components/items/ItemList';
+import ItemList from '@/pages/technical-reviews/components/items/ItemList';
 import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import { fetchWarehouses } from '@/store/slices/warehouses/warehouseSlice';

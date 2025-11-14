@@ -28,11 +28,9 @@ import {
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { fetchProducts } from '@/store/slices/products/productsSlice';
 import Textarea from '@/components/form/Textarea';
-import Step2FullReview from '@/pages/technical-reviews/components/items/ReviewStepsBatches/Step2FullReview';
-import Step3GradeReview from '@/pages/technical-reviews/components/items/ReviewStepsBatches/Step3GradeReview';
+import { Step1BasicInfo, Step2FullReview, Step3GradeReview } from '../components/steps';
 import { useAutoSaveReview } from '@/hooks/useAutoSaveReview';
 import { toast } from 'react-toastify';
-import BatchStep1BasicInfo from '@/pages/technical-reviews/components/items/ReviewStepsBatches/BatchStep1BasicInfo';
 
 type ReviewStep = 'basic' | 'review' | 'grading';
 
@@ -482,7 +480,7 @@ const ItemReviewPage: React.FC = () => {
 
 				{/* STEP 1: Basic Info */}
 				{currentStep === 'basic' && (
-					<BatchStep1BasicInfo
+					<Step1BasicInfo
 						serialNumber={serialNumber}
 						onSerialChange={setSerialNumber}
 						productId={productId}

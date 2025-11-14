@@ -19,8 +19,8 @@ import {
 	selectCreating,
 } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
-import BatchDetail from '../../components/batches/BatchDetail';
-import BatchTabs from '../../components/batches/BatchTabs';
+import BatchDetail from '@/pages/technical-reviews/components/batches/BatchDetail';
+import BatchTabs from '@/pages/technical-reviews/components/batches/BatchTabs';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';

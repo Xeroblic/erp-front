@@ -9,29 +9,17 @@ import Container from '@/components/layouts/Container/Container';
 import Card, { CardBody } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
-import { useAppDispatch, useAppSelector } from '@/store';
-import {
-	fetchBatches,
-	selectBatches,
-	selectBatchesMeta,
-	selectBatchesLoading,
-	selectBatchesError,
-} from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
-import BatchList from '../components/batches/BatchList';
+import BatchList from '@/pages/technical-reviews/components/batches/BatchList';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Badge from '@/components/ui/Badge';
 import Label from '@/components/form/Label';
+import { useBatchList } from '../hooks';
 
 const BatchesListPage: React.FC = () => {
 	const navigate = useNavigate();
-	const dispatch = useAppDispatch();
 	const { branchId } = useCurrentBranch();
-
-	const batches = useAppSelector(selectBatches);
-	const meta = useAppSelector(selectBatchesMeta);
-	const loading = useAppSelector(selectBatchesLoading);
-	const error = useAppSelector(selectBatchesError);
+	const { batches, meta, loading, error, fetchBatches } = useBatchList(branchId);
 
 	const [page, setPage] = useState(1);
 	const [limit, setLimit] = useState(20);
@@ -43,8 +31,8 @@ const BatchesListPage: React.FC = () => {
 		const params: any = { page, per_page: limit };
 		if (searchQuery) params.search = searchQuery;
 		if (statusFilter !== 'all') params.status = statusFilter;
-		dispatch(fetchBatches({ branchId, params }));
-	}, [dispatch, page, limit, searchQuery, statusFilter, branchId]);
+		fetchBatches({ page, per_page: limit, search: searchQuery || undefined, status: statusFilter !== 'all' ? statusFilter : undefined });
+	}, [fetchBatches, page, limit, searchQuery, statusFilter]);
 
 	const handleSearch = (query: string) => {
 		setSearchQuery(query);

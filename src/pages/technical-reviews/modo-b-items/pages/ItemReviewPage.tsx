@@ -33,8 +33,7 @@ import {
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import type { TSelectOption } from '@/components/form/SelectReact';
 import { fetchProducts } from '@/store/slices/products/productsSlice';
-import { Step2FullReview, Step3GradeReview } from '../components/items/ReviewSteps';
-import StandaloneStep1BasicInfo from '@/pages/technical-reviews/components/items/ReviewSteps/StandaloneStep1BasicInfo';
+import { Step1BasicInfo, Step2FullReview, Step3GradeReview } from '../components/steps';
 import type { UpdateItemDetailsPayload } from '@/interface/technicalReviews.interface';
 import { useAutoSaveReview } from '@/hooks/useAutoSaveReview';
 import { toast } from 'react-toastify';
@@ -45,9 +44,9 @@ import {
 	REVIEW_STEPS,
 	getStepFromReviewStatus,
 	getStepIndex,
+	extractFieldValue,
 	type ReviewStep,
-} from '../constants';
-import { extractFieldValue } from '../constants/field-helpers.constant';
+} from '@/pages/technical-reviews/constants';
 
 const mapProductTypeToEquipment = (productType?: string | null): EquipmentType => {
 	if (!productType) return 'notebook';
@@ -586,7 +585,7 @@ const handleBatchOptionChange = (option: TSelectOption | null) => {
 
 				{/* STEP 1: Basic Info */}
 				{currentStep === 'basic' && (
-					<StandaloneStep1BasicInfo
+					<Step1BasicInfo
 						serialNumber={serialNumber}
 						onSerialChange={handleSerialChange}
 						productId={productId}

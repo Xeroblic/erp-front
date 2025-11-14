@@ -81,14 +81,14 @@ const DocumentosPage = lazy(() => import('@/pages/documentos/Documentos'));
 
 // Páginas de Technical Reviews
 const TechnicalReviewsHub = lazy(() => import('@/pages/technical-reviews/index'));
-const BatchesList = lazy(() => import('@/pages/technical-reviews/batches/index'));
-const BatchCreate = lazy(() => import('@/pages/technical-reviews/batches/create'));
-const BatchDetail = lazy(() => import('@/pages/technical-reviews/batches/[batchId]/index'));
+const BatchesList = lazy(() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchListPage'));
+const BatchCreate = lazy(() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchCreatePage'));
+const BatchDetail = lazy(() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchDetailPage'));
 const BatchItemReview = lazy(
-	() => import('@/pages/technical-reviews/batches/[batchId]/[batchItemId]'),
+	() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchItemReviewPage'),
 );
-const ItemsList = lazy(() => import('@/pages/technical-reviews/items/index'));
-const ItemReview = lazy(() => import('@/pages/technical-reviews/items/[itemId]'));
+const ItemsList = lazy(() => import('@/pages/technical-reviews/modo-b-items/pages/ItemListPage'));
+const ItemReview = lazy(() => import('@/pages/technical-reviews/modo-b-items/pages/ItemReviewPage'));
 
 const NotificationsAllPage = lazy(() => import('@/pages/notificaciones/NotificationsAll'));
 const NotificationDetailPage = lazy(() => import('@/pages/notificaciones/NotificationDetail'));

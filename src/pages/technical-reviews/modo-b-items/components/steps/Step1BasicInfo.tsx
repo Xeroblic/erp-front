@@ -6,20 +6,25 @@ import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import type { EquipmentType } from '@/interface/technicalReviews.interface';
 
-type BatchStep1BasicInfoProps = {
+type Step1BasicInfoProps = {
 	serialNumber: string;
 	onSerialChange: (value: string) => void;
 	productId: number | null;
 	onProductChange: (value: number | null) => void;
 	productOptions: TSelectOption[];
 	productsLoading: boolean;
-	equipmentType: EquipmentType;
+	equipmentType: EquipmentType | null;
 	onEquipmentTypeChange: (value: EquipmentType) => void;
+	manualBatchLabel: string | null;
+	batchOptions: TSelectOption[];
+	selectedBatchOption: TSelectOption | null;
+	onBatchChange: (option: TSelectOption | null) => void;
+	manualBatchLoading: boolean;
+	manualBatchError: string | null;
 	canContinue: boolean;
 	loading: boolean;
 	onBack: () => void;
 	onSubmit: () => void;
-	batchLabel: string;
 };
 
 const EQUIPMENT_TYPE_OPTIONS = [
@@ -30,7 +35,7 @@ const EQUIPMENT_TYPE_OPTIONS = [
 	{ value: 'monitor', label: 'Monitor', icon: 'HeroTv' },
 ] as const;
 
-const BatchStep1BasicInfo: React.FC<BatchStep1BasicInfoProps> = ({
+const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 	serialNumber,
 	onSerialChange,
 	productId,
@@ -39,22 +44,34 @@ const BatchStep1BasicInfo: React.FC<BatchStep1BasicInfoProps> = ({
 	productsLoading,
 	equipmentType,
 	onEquipmentTypeChange,
+	manualBatchLabel,
+	batchOptions,
+	selectedBatchOption,
+	onBatchChange,
+	manualBatchLoading,
+	manualBatchError,
 	canContinue,
 	loading,
 	onBack,
 	onSubmit,
-	batchLabel,
 }) => {
 	const selectedProductOption = productId
-		? productOptions.find((opt) => opt.value === String(productId)) ?? null
+		? (productOptions.find((opt) => opt.value === String(productId)) ?? null)
 		: null;
+
+	const manualBatchMessage = manualBatchLoading
+		? 'Buscando lote disponible...'
+		: manualBatchLabel
+			? `Esta revisión se asociará automáticamente al lote ${manualBatchLabel}.`
+			: 'No se encontró un lote abierto disponible. Debes crear uno en la sección de Lotes.';
 
 	return (
 		<Card>
 			<CardHeader>
 				<h3 className='text-lg font-semibold'>Paso 1: Información Básica</h3>
 				<p className='text-sm text-gray-600'>
-					Ingresa el número de serie, producto y tipo de equipo
+					Ingresa el número de serie y selecciona el producto. El tipo de equipo se asigna
+					de manera automática según el producto (puedes ajustarlo si es necesario).
 				</p>
 			</CardHeader>
 			<CardBody>
@@ -86,7 +103,9 @@ const BatchStep1BasicInfo: React.FC<BatchStep1BasicInfoProps> = ({
 								value={selectedProductOption}
 								onChange={(option) => {
 									const selectedOption = option as TSelectOption | null;
-									onProductChange(selectedOption ? Number(selectedOption.value) : null);
+									onProductChange(
+										selectedOption ? Number(selectedOption.value) : null,
+									);
 								}}
 								placeholder='Seleccionar producto con seguimiento por serie'
 								isDisabled={productsLoading}
@@ -96,6 +115,26 @@ const BatchStep1BasicInfo: React.FC<BatchStep1BasicInfoProps> = ({
 
 					<div>
 						<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+							Lote Manual<span className='text-red-500'>*</span>
+						</label>
+						<SelectReact
+							name='batch_id'
+							placeholder='Selecciona un lote abierto'
+							options={batchOptions}
+							value={selectedBatchOption}
+							onChange={(option) => onBatchChange(option as TSelectOption | null)}
+							isLoading={manualBatchLoading}
+							isDisabled={manualBatchLoading || batchOptions.length === 0}
+						/>
+						{manualBatchError && (
+							<p className='mt-1 text-xs text-red-500'>{manualBatchError}</p>
+						)}
+						<div className='text-xs text-gray-500 dark:text-gray-400'>
+							{manualBatchMessage}
+						</div>
+					</div>
+					<div>
+						<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
 							Tipo de Equipo <span className='text-red-500'>*</span>
 						</label>
 						<div className='grid grid-cols-2 gap-3 md:grid-cols-5'>
@@ -103,7 +142,9 @@ const BatchStep1BasicInfo: React.FC<BatchStep1BasicInfoProps> = ({
 								<button
 									key={type.value}
 									type='button'
-									onClick={() => onEquipmentTypeChange(type.value as EquipmentType)}
+									onClick={() =>
+										onEquipmentTypeChange(type.value as EquipmentType)
+									}
 									className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
 										equipmentType === type.value
 											? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950'
@@ -131,4 +172,4 @@ const BatchStep1BasicInfo: React.FC<BatchStep1BasicInfoProps> = ({
 	);
 };
 
-export default BatchStep1BasicInfo;
+export default Step1BasicInfo;
