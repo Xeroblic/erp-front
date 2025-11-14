@@ -64,8 +64,6 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 		setFormValues(newValues);
 		setSaveError(null);
 
-		// Notificar al padre (usado para auto-save si está habilitado)
-		// Si onFieldChange es undefined, solo guardado manual
 		if (onFieldChange) {
 			onFieldChange(newValues as UpdateItemDetailsPayload);
 		}
