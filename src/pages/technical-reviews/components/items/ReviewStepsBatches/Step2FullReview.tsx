@@ -222,7 +222,7 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 							/>
 							<div>
 								<h4 className='font-semibold text-blue-900 dark:text-blue-100'>
-									Revisión Técnica Completa
+									Revisión Técnica Completa batches
 								</h4>
 								<p className='mt-1 text-sm text-blue-800 dark:text-blue-200'>
 									Completa todos los campos técnicos del equipo. Usa el botón
