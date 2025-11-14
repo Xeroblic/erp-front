@@ -12,6 +12,7 @@ import { IUserMe } from '@/interface/user.interface';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
+import Can from '@/components/auth/Can';
 import Card, { CardBody } from '@/components/ui/Card';
 import Table, { TBody, THead, Td, Th, Tr } from '@/components/ui/Table';
 import Avatar from '@/components/Avatar';
@@ -201,6 +202,7 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, onUserUpdated
 
 				return (
 					<div className='flex min-w-[200px] items-center space-x-1'>
+						<Can any={['view-user']}>
 						<Button
 							variant='outline'
 							size='sm'
@@ -210,7 +212,9 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, onUserUpdated
 							<Icon icon='HeroShieldCheck' className='h-3 w-3' />
 							Gestionar
 						</Button>
+						</Can>
 
+						<Can any={['edit-user']}>
 						<Button
 							variant='outline'
 							size='sm'
@@ -231,7 +235,9 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, onUserUpdated
 							/>
 							{user.is_active ? 'Desactivar' : 'Activar'}
 						</Button>
+						</Can>
 
+						<Can any={['delete-user']}>
 						<Button
 							variant='outline'
 							size='sm'
@@ -243,6 +249,7 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, onUserUpdated
 							<Icon icon='HeroTrash' className='h-3 w-3' />
 							Eliminar
 						</Button>
+						</Can>
 					</div>
 				);
 			},

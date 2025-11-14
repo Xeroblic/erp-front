@@ -92,7 +92,7 @@ const ContentRouter = () => {
 								route.element
 							) : (
 								<AuthorityCheck
-									userAuthority={userAuthority}
+									userAuthority={userAuthority as string[]}
 									authority={route.authority}>
 									{route.element}
 								</AuthorityCheck>

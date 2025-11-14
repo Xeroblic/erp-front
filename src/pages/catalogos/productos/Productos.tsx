@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
@@ -15,19 +15,29 @@ import Tabs, { Tab } from '@/components/ui/Tabs';
 
 // Hooks y tipos
 import { useProductos } from './hooks/useProductos';
+import { useAppDispatch, useAppSelector } from '@/store';
+import {
+	selectPersonalizacionUsuario,
+	selectIsInitialized as selectPersonalizacionInitialized,
+	obtenerPersonalizacionThunk,
+} from '@/store/slices/personalizacion/personalizacionSlice';
 import type { IProduct } from '@/interface/product.interface';
-import type { IBrand } from '@/interface/brand.interface';
-import type { ICategory } from '@/interface/category.interface';
 import { PRODUCT_DEFAULT_FILTERS } from './constants/products.constant';
+import { useUserBranches } from './components/modals/hooks/userBranch';
 
 const Productos: React.FC = () => {
 	const navigate = useNavigate();
+	const dispatch = useAppDispatch();
+
+	const currentUser = useAppSelector((state) => state.auth.user);
+	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
+	const personalizacionInitialized = useAppSelector(selectPersonalizacionInitialized);
+
 	const [filters, setFilters] = useState(PRODUCT_DEFAULT_FILTERS);
 	const [branchId, setBranchId] = useState<number | null>(null);
+	const [branchInitialized, setBranchInitialized] = useState(false);
 	const [page, setPage] = useState(1);
 	const [createOpen, setCreateOpen] = useState(false);
-	const [editOpen, setEditOpen] = useState(false);
-	const [selectedProduct, setSelectedProduct] = useState<IProduct | null>(null);
 	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 	const [productToDelete, setProductToDelete] = useState<IProduct | null>(null);
 	const [activeTab, setActiveTab] = useState('products');
@@ -36,7 +46,10 @@ const Productos: React.FC = () => {
 		products,
 		meta,
 		stats,
+		inventory,
+		criticalProducts,
 		loading,
+		inventoryLoading,
 		error,
 		branches,
 		activeBranchId,
@@ -45,22 +58,110 @@ const Productos: React.FC = () => {
 		categories,
 		categoriesLoading,
 		creating,
-		updating,
 		createProduct,
 		updateProduct,
 		deleteProduct,
 	} = useProductos({ branchId, filters, page, perPage: 15 });
 
-	// Handlers para filtros
+	const { branches: accessibleBranches } = useUserBranches(
+		currentUser?.id || (currentUser as any)?.pk,
+		{
+			enabled: !!(currentUser?.id || (currentUser as any)?.pk),
+		},
+	);
+
+	const defaultBranchFromUser = useMemo(() => {
+		if (personalizacionUsuario?.sucursal_principal) {
+			return personalizacionUsuario.sucursal_principal;
+		}
+		if (currentUser?.branch?.id) return currentUser.branch.id;
+		if (currentUser?.branch_id) return currentUser.branch_id;
+		return null;
+	}, [
+		personalizacionUsuario?.sucursal_principal,
+		currentUser?.branch?.id,
+		currentUser?.branch_id,
+	]);
+
+	const filteredBranches = useMemo(() => {
+		if (!accessibleBranches.length) return branches;
+		const allowed = new Set(accessibleBranches.map((branch) => branch.id));
+		return branches.filter((branch) => allowed.has(branch.id));
+	}, [branches, accessibleBranches]);
+
+	const currentBranch = useMemo(() => {
+		const targetBranchId = branchId ?? activeBranchId ?? defaultBranchFromUser ?? null;
+		if (!targetBranchId) return null;
+		const sources = [filteredBranches, branches];
+		for (const source of sources) {
+			const found = source.find((branch) => branch.id === targetBranchId);
+			if (found) return found;
+		}
+		return null;
+	}, [branchId, activeBranchId, defaultBranchFromUser, filteredBranches, branches]);
+
+	const currentBranchName =
+		currentBranch?.name ??
+		(currentBranch as any)?.branch_name ??
+		(currentBranch as any)?.branchName ??
+		undefined;
+
+	useEffect(() => {
+		if (!personalizacionInitialized) {
+			dispatch(obtenerPersonalizacionThunk());
+		}
+	}, [dispatch, personalizacionInitialized]);
+
+	useEffect(() => {
+		if (branchInitialized) return;
+		if (!filteredBranches.length) return;
+
+		let fallback: number | null = null;
+
+		if (
+			defaultBranchFromUser !== null &&
+			defaultBranchFromUser !== undefined &&
+			filteredBranches.some((branch) => branch.id === defaultBranchFromUser)
+		) {
+			fallback = defaultBranchFromUser;
+		} else {
+			fallback = filteredBranches[0]?.id ?? null;
+		}
+
+		if (fallback !== null && fallback !== branchId) {
+			setBranchId(fallback);
+			setBranchInitialized(true);
+		}
+	}, [branchInitialized, filteredBranches, defaultBranchFromUser, branchId]);
+
+	useEffect(() => {
+		if (!branchInitialized) return;
+		if (defaultBranchFromUser === null || defaultBranchFromUser === undefined) return;
+		if (branchId === defaultBranchFromUser) return;
+		if (!filteredBranches.some((branch) => branch.id === defaultBranchFromUser)) return;
+		setBranchId(defaultBranchFromUser);
+	}, [defaultBranchFromUser, branchId, branchInitialized, filteredBranches]);
+
+	useEffect(() => {
+		const handleExternalBranchChange = (event: Event) => {
+			const customEvent = event as CustomEvent<{ branchId: number | null }>;
+			const nextBranchId = customEvent.detail?.branchId ?? null;
+			if (nextBranchId === null) return;
+			if (!filteredBranches.some((branch) => branch.id === nextBranchId)) return;
+			setBranchId(nextBranchId);
+			setBranchInitialized(true);
+			setPage(1);
+		};
+
+		window.addEventListener('user-branch-changed', handleExternalBranchChange);
+		return () => {
+			window.removeEventListener('user-branch-changed', handleExternalBranchChange);
+		};
+	}, [filteredBranches]);
+
 	const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const value = event.target.value;
 		setFilters((prev) => ({ ...prev, search: value }));
-		setPage(1);
-	};
-
-	const handleBranchChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-		const value = event.target.value;
-		setBranchId(value ? Number(value) : null);
 		setPage(1);
 	};
 
@@ -105,7 +206,10 @@ const Productos: React.FC = () => {
 		setPage(1);
 	};
 
-	// Handlers para productos
+	const handleShowCriticalInventory = () => {
+		setActiveTab('products');
+	};
+
 	const handleViewProduct = (product: IProduct) => {
 		const targetBranchId = branchId ?? activeBranchId ?? product.branch_id ?? null;
 		const search = targetBranchId ? `?branchId=${targetBranchId}` : '';
@@ -122,25 +226,8 @@ const Productos: React.FC = () => {
 			setCreateOpen(false);
 		} catch (err: any) {
 			console.error('Create product failed', err);
-			// No re-lanzar el error, dejarlo que el modal lo maneje
-		}
-	};
-
-	const handleUpdateSubmit = async (payload: {
-		data: Partial<IProduct>;
-		categoryIds: number[];
-	}) => {
-		if (!selectedProduct) return;
-		try {
-			await updateProduct(selectedProduct.id, payload);
-			toast.success('Producto actualizado correctamente');
-			setEditOpen(false);
-			setSelectedProduct(null);
-		} catch (err: any) {
 			const message =
-				typeof err === 'string'
-					? err
-					: (err?.message ?? 'No se pudo actualizar el producto');
+				typeof err === 'string' ? err : (err?.message ?? 'No se pudo crear el producto');
 			toast.error(message);
 		}
 	};
@@ -164,15 +251,11 @@ const Productos: React.FC = () => {
 		}
 	};
 
-	// ConfiguraciÃƒÆ’Ã‚Â³n de tabs
 	return (
 		<PageWrapper name='catalog-products'>
 			<ProductsHeader
 				searchValue={filters.search ?? ''}
 				onSearchChange={handleSearchChange}
-				branchId={branchId}
-				onBranchChange={handleBranchChange}
-				branches={branches}
 				onCreateClick={() => setCreateOpen(true)}
 			/>
 
@@ -209,15 +292,19 @@ const Productos: React.FC = () => {
 							page={page}
 							onPageChange={setPage}
 							onView={handleViewProduct}
-							onEdit={(product) => {
-								setSelectedProduct(product);
-								setEditOpen(true);
-							}}
 							onDelete={handleDeleteProduct}
 						/>
 					</Tab>
 					<Tab id='inventory' text='Inventario' icon='HeroBuildingStorefront'>
-						<InventoryTab />
+						<InventoryTab
+							products={products}
+							summary={inventory}
+							criticalProducts={criticalProducts}
+							loading={inventoryLoading || loading}
+							branchName={currentBranchName}
+							onShowLowStock={handleShowCriticalInventory}
+							onViewProduct={handleViewProduct}
+						/>
 					</Tab>
 					<Tab id='analytics' text='Analisis' icon='HeroChartBarSquare'>
 						<AnalyticsTab />
@@ -225,7 +312,6 @@ const Productos: React.FC = () => {
 				</Tabs>
 			</Container>
 
-			{/* Modales */}
 			<CreateEditProductModal
 				isOpen={createOpen}
 				onClose={() => setCreateOpen(false)}
@@ -233,19 +319,8 @@ const Productos: React.FC = () => {
 				brands={brands}
 				categories={categories}
 				isLoading={creating}
-			/>
-
-			<CreateEditProductModal
-				isOpen={editOpen}
-				onClose={() => {
-					setEditOpen(false);
-					setSelectedProduct(null);
-				}}
-				onSubmit={handleUpdateSubmit}
-				product={selectedProduct ?? undefined}
-				brands={brands}
-				categories={categories}
-				isLoading={updating}
+				brandsLoading={brandsLoading}
+				defaultBranchId={branchId ?? defaultBranchFromUser ?? activeBranchId ?? null}
 			/>
 
 			<DeleteProductModal

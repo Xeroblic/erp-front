@@ -250,7 +250,10 @@ export const normalizeBrand = (brand: any): IBrand => {
 		is_active: Boolean(brand.is_active ?? brand.active ?? true),
 		created_at: brand.created_at ?? new Date().toISOString(),
 		updated_at: brand.updated_at ?? new Date().toISOString(),
-		products_count: Number(brand.products_count ?? brand.total_products ?? 0),
+		// Mapear variantes del backend para conteo de productos
+		products_count: Number(
+			brand.products_count ?? brand.associated_products ?? brand.total_products ?? 0,
+		),
 		total_sales: Number(brand.total_sales ?? brand.sales_total ?? 0),
 		image: primaryImage,
 		gallery,

@@ -40,18 +40,15 @@ import { useProfileTheme } from './components/hooks/useProfileTheme';
 const PROFILE_TABS: ProfileTabDefinition[] = [
 	{ key: 'EDIT', label: 'Editar Perfil', icon: 'HeroPencil' },
 	{ key: 'CONTACT', label: 'Contacto', icon: 'HeroGlobeAmericas' },
-	{ key: 'APPEARANCE', label: 'Apariencia', icon: 'HeroSwatch' },
+	// { key: 'APPEARANCE', label: 'Apariencia', icon: 'HeroSwatch' },
 ];
 
-const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/jpg'];
-const MAX_AVATAR_FILE_SIZE_MB = 5;
 
 const Perfil = () => {
 	const dispatch = useAppDispatch();
 	const { setDarkModeStatus } = useDarkModeManager();
 	const { user: userData } = useAppSelector((state) => state.auth);
 	const darkMode = useAppSelector(selectDarkMode);
-	const { currentCompany } = useCompanyManager();
 	const { listaComunas, listaProvincias, listaRegiones } = useAppSelector((state) => state.core);
 
 	const [activeTab, setActiveTab] = useState<ProfileTabKey>('EDIT');
@@ -155,6 +152,47 @@ const Perfil = () => {
 		setOptionsComuna(geo.optionsComuna);
 	}, [geo.optionsRegion, geo.optionsProvincia, geo.optionsComuna]);
 
+	useEffect(() => {
+		let mounted = true;
+		async function trySetFromUserOrRefresh() {
+			if (!userData) return;
+			if (formik.values.comuna) return; 
+
+			const anyUser: any = userData as any;
+			const foundId =
+				anyUser?.comuna ??
+				anyUser?.comuna_id ??
+				anyUser?.commune?.id ??
+				anyUser?.commune?.pk ??
+				anyUser?.commune_id ??
+				null;
+			if (foundId) {
+				console.debug('[Perfil] preselecting comuna from userData', foundId);
+				if (mounted) formik.setFieldValue('comuna', String(foundId), false);
+				return;
+			}
+
+			// 2) Si no hay info en userData, re-consultar `/perfil` para obtener la versión completa
+			try {
+				console.debug('[Perfil] no comuna en userData, fetching /perfil as fallback');
+				const full = await ApiService.fetchData<any>({ url: '/perfil', method: 'get' });
+				const payload = full.data?.data ?? full.data?.user ?? full.data ?? null;
+				const remoteId =
+					payload?.comuna_id ?? payload?.comune?.id ?? payload?.commune?.id ?? null;
+				if (mounted && remoteId) {
+					console.debug('[Perfil] found comuna in /perfil response', remoteId);
+					formik.setFieldValue('comuna', String(remoteId), false);
+				}
+			} catch (err) {
+				console.debug('[Perfil] fetching /perfil fallback failed', err);
+			}
+		}
+		trySetFromUserOrRefresh();
+		return () => {
+			mounted = false;
+		};
+	}, [userData, formik.values.comuna]);
+
 	useProfileTheme(formik as any, darkMode, setDarkModeStatus);
 
 	const { saveBtnText, saveBtnColor, saveBtnDisable } = useSaveBtn({
@@ -199,12 +237,12 @@ const Perfil = () => {
 										comunaOptions={optionsComuna}
 									/>
 								)}
-								{activeTab === 'APPEARANCE' && (
+								{/* {activeTab === 'APPEARANCE' && (
 									<AppearanceTab
 										formik={formik}
 										currentCompany={currentCompany}
 									/>
-								)}
+								)} */}
 							</div>
 						</div>
 					</CardBody>

@@ -1,16 +1,14 @@
-import React from 'react';
+﻿import React from 'react';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
-import Badge from '@/components/ui/Badge';
 import type { IProduct } from '@/interface/product.interface';
 
 interface DeleteProductModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	product: IProduct | null;
-	onConfirm: () => void;
-	isProcessing?: boolean;
+	onConfirm: () => Promise<void>;
 }
 
 const DeleteProductModal: React.FC<DeleteProductModalProps> = ({
@@ -18,64 +16,58 @@ const DeleteProductModal: React.FC<DeleteProductModalProps> = ({
 	onClose,
 	product,
 	onConfirm,
-	isProcessing = false,
 }) => {
-	const handleCancel = () => {
-		if (isProcessing) return;
-		onClose();
-	};
+	const [isDeleting, setIsDeleting] = React.useState(false);
 
+	const handleConfirm = async () => {
+		setIsDeleting(true);
+		try {
+			await onConfirm();
+		} finally {
+			setIsDeleting(false);
+		}
+	};
 	return (
-		<Modal isOpen={isOpen} setIsOpen={handleCancel}>
+		<Modal isOpen={isOpen} setIsOpen={onClose}>
 			<ModalHeader>
 				<div className='flex items-center gap-3'>
-					<span className='flex h-10 w-10 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-500'>
+					<span className='flex h-10 w-10 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-600'>
 						<Icon icon='HeroTrash' className='h-5 w-5' />
 					</span>
 					<div>
 						<p className='text-lg font-semibold'>Eliminar producto</p>
-						<p className='text-sm text-neutral-500'>Esta accion no se puede deshacer.</p>
+						<p className='text-sm text-neutral-500'>Esta acción no se puede deshacer</p>
 					</div>
 				</div>
 			</ModalHeader>
-
 			<ModalBody>
-				{product ? (
-					<div className='space-y-4 text-sm'>
-						<p>
-							Estas seguro de que deseas eliminar el producto{' '}
-							<strong>{product.name}</strong>?
-						</p>
-						<div className='flex flex-wrap items-center gap-2'>
-							<Badge variant='outline'>SKU: {product.sku}</Badge>
-							{product.brand?.name && <Badge variant='outline'>Marca: {product.brand.name}</Badge>}
+				<div className='space-y-4 py-4'>
+					{product && (
+						<div className='rounded-lg border border-gray-200 bg-gray-50 p-4'>
+							<p className='text-sm font-medium text-gray-900'>{product.name}</p>
+							{product.sku && (
+								<p className='text-sm text-gray-500'>SKU: {product.sku}</p>
+							)}
 						</div>
-						<div className='rounded-lg border border-red-200 bg-red-50 p-3 text-red-700'>
-							<div className='flex items-start gap-2'>
-								<Icon icon='HeroExclamationTriangle' className='mt-0.5 h-5 w-5' />
-								<div>
-									<p className='text-sm font-medium'>Confirma la eliminacion</p>
-									<p className='text-xs'>
-										El producto se eliminara definitivamente y no podras recuperarlo.
-									</p>
-								</div>
-							</div>
-						</div>
-					</div>
-				) : (
-					<div className='py-6 text-center text-sm text-neutral-500'>
-						Selecciona un producto para eliminar.
-					</div>
-				)}
+					)}
+					<p className='text-sm text-neutral-600'>
+						¿Estás seguro de que deseas eliminar este producto? Esta acción eliminará
+						permanentemente el producto y toda su información asociada.
+					</p>
+				</div>
 			</ModalBody>
-
 			<ModalFooter>
 				<div className='flex w-full justify-end gap-3'>
-					<Button variant='outline' onClick={handleCancel} isDisable={isProcessing}>
+					<Button variant='outline' onClick={onClose} isDisable={isDeleting}>
 						Cancelar
 					</Button>
-					<Button color='red' onClick={onConfirm} isDisable={!product || isProcessing} isLoading={isProcessing}>
-						Eliminar producto
+					<Button
+						variant='solid'
+						color='red'
+						onClick={handleConfirm}
+						isLoading={isDeleting}
+						isDisable={isDeleting}>
+						{isDeleting ? 'Eliminando...' : 'Eliminar producto'}
 					</Button>
 				</div>
 			</ModalFooter>
@@ -84,4 +76,3 @@ const DeleteProductModal: React.FC<DeleteProductModalProps> = ({
 };
 
 export default DeleteProductModal;
-

@@ -11,6 +11,7 @@ const DefaultHeaderTemplate = () => {
 		<Header>
 			<HeaderLeft>
 				{/* <UserRoutesDropdown /> */}
+				<>Zentria</>
 			</HeaderLeft>
 			<HeaderRight>
 				{/* <CompanySelectorButton /> */}

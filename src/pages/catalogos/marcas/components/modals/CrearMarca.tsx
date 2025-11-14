@@ -5,30 +5,53 @@ import Button from '@/components/ui/Button';
 import Label from '@/components/form/Label';
 import Input from '@/components/form/Input';
 import Checkbox from '@/components/form/Checkbox';
+import { useAppSelector } from '@/store';
+import UserBranchSelector from '@/pages/catalogos/productos/components/modals/components/UserBranchSelector';
 
 type CrearMarcaProps = {
 	isOpen: boolean;
 	setIsOpen: Dispatch<SetStateAction<boolean>>;
 	onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 	isLoading?: boolean;
+	defaultBranchId?: number;
 };
 
-const CrearMarca: React.FC<CrearMarcaProps> = ({ isOpen, setIsOpen, onSubmit, isLoading }) => {
+const CrearMarca: React.FC<CrearMarcaProps> = ({
+	isOpen,
+	setIsOpen,
+	onSubmit,
+	isLoading,
+	defaultBranchId,
+}) => {
 	const [isActive, setIsActive] = React.useState(true);
+	const [selectedBranchId, setSelectedBranchId] = React.useState<number | null>(null);
+	const currentUser = useAppSelector((state) => state.auth.user);
+	const userId = currentUser?.id || (currentUser as any)?.pk || undefined;
 
 	React.useEffect(() => {
 		if (!isOpen) {
 			setIsActive(true);
+			setSelectedBranchId(null);
 			const form = document.getElementById('createBrandForm') as HTMLFormElement | null;
 			form?.reset();
 		}
 	}, [isOpen]);
+
+	React.useEffect(() => {
+		if (!isOpen) return;
+		setSelectedBranchId((prev) => {
+			if (prev !== null) return prev;
+			return defaultBranchId ?? null;
+		});
+	}, [isOpen, defaultBranchId]);
 
 	const handleSubmitClick = (event: React.MouseEvent<HTMLButtonElement>) => {
 		event.preventDefault();
 		const form = document.getElementById('createBrandForm') as HTMLFormElement | null;
 		form?.requestSubmit();
 	};
+
+	const canSubmit = !isLoading && selectedBranchId !== null;
 
 	return (
 		<Modal isOpen={isOpen} setIsOpen={setIsOpen} size='lg'>
@@ -47,6 +70,17 @@ const CrearMarca: React.FC<CrearMarcaProps> = ({ isOpen, setIsOpen, onSubmit, is
 			</ModalHeader>
 			<ModalBody>
 				<form id='createBrandForm' className='space-y-4' onSubmit={onSubmit}>
+					<UserBranchSelector
+						userId={userId ?? 0}
+						value={selectedBranchId}
+						onChange={(branchId) => setSelectedBranchId(branchId)}
+						name='branch_id'
+						label='Sucursal'
+						placeholder='Selecciona una sucursal'
+						required
+						showError
+					/>
+
 					<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
 						<div>
 							<Label htmlFor='brand-name' className='required'>
@@ -67,24 +101,7 @@ const CrearMarca: React.FC<CrearMarcaProps> = ({ isOpen, setIsOpen, onSubmit, is
 					</div>
 
 					<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-						<div>
-							<Label htmlFor='brand-origin'>Pais de origen</Label>
-							<Input
-								id='brand-origin'
-								name='origin_country'
-								type='text'
-								placeholder='Colombia'
-							/>
-						</div>
-						<div>
-							<Label htmlFor='brand-manufacturer'>Fabricante</Label>
-							<Input
-								id='brand-manufacturer'
-								name='manufacturer'
-								type='text'
-								placeholder='Nombre del fabricante'
-							/>
-						</div>
+						{/* Fabricante removido: backend no lo entrega */}
 					</div>
 
 					<div>
@@ -93,6 +110,12 @@ const CrearMarca: React.FC<CrearMarcaProps> = ({ isOpen, setIsOpen, onSubmit, is
 						<p className='mt-1 text-xs text-gray-500'>
 							La imagen se convertira automaticamente a formato WebP.
 						</p>
+					</div>
+
+					<div>
+						<Label htmlFor='brand-gallery'>Galería</Label>
+						<Input id='brand-gallery' name='gallery' type='file' accept='image/*' multiple />
+						<p className='mt-1 text-xs text-gray-500'>Puedes seleccionar varias imágenes para la galería.</p>
 					</div>
 
 					<div className='flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2'>
@@ -134,7 +157,11 @@ const CrearMarca: React.FC<CrearMarcaProps> = ({ isOpen, setIsOpen, onSubmit, is
 					<Button variant='outline' onClick={() => setIsOpen(false)}>
 						Cancelar
 					</Button>
-					<Button color='violet' onClick={handleSubmitClick} isDisable={isLoading}>
+					<Button
+						color='violet'
+						onClick={handleSubmitClick}
+						isDisable={!canSubmit}
+						isLoading={isLoading}>
 						{isLoading ? 'Guardando...' : 'Crear marca'}
 					</Button>
 				</div>

@@ -1,16 +1,11 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { useFormikContext } from 'formik';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import type { ProductDetailForm } from '../../types/products.types';
-import Input from '@/components/form/Input';
-import Button from '@/components/ui/Button';
 import Label from '@/components/form/Label';
-
-
 
 const ContenidoTab = () => {
 	const { values, errors, touched, setFieldValue } = useFormikContext<ProductDetailForm>();
-	const fileRef = useRef<HTMLInputElement | null>(null);
 
 	return (
 		<div className='space-y-6'>
@@ -28,7 +23,8 @@ const ContenidoTab = () => {
 					placeholder='Escribe una descripción breve del producto (1-2 líneas)...'
 					minHeight='120px'
 					maxHeight='200px'
-					compact={true}
+					compact={false}
+					resizable
 				/>
 				{touched.snippet_description && errors.snippet_description && (
 					<p className='text-xs text-red-500'>{errors.snippet_description}</p>
@@ -50,6 +46,7 @@ const ContenidoTab = () => {
 					minHeight='200px'
 					maxHeight='300px'
 					compact={false}
+					resizable
 				/>
 				{touched.short_description && errors.short_description && (
 					<p className='text-xs text-red-500'>{errors.short_description}</p>
@@ -71,13 +68,12 @@ const ContenidoTab = () => {
 					minHeight='300px'
 					maxHeight='600px'
 					compact={false}
+					resizable
 				/>
 				{touched.long_description && errors.long_description && (
 					<p className='text-xs text-red-500'>{errors.long_description}</p>
 				)}
 			</div>
-
-			
 		</div>
 	);
 };

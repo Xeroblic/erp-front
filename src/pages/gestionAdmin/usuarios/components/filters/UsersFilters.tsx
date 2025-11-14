@@ -195,7 +195,7 @@ export default function UsersFilters({ onFiltersChange, onClearFilters }: UsersF
                                         <Icon icon='HeroXMark' className='mr-2 h-4 w-4' />
                                         Limpiar Filtros
                                     </Button>
-                                    <Button onClick={() => handleSubmit(values)}>
+                                    <Button onClick={() => (values)}>
                                         <Icon icon='HeroMagnifyingGlass' className='mr-2 h-4 w-4' />
                                         Aplicar Filtros
                                     </Button>

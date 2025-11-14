@@ -19,6 +19,27 @@ const StorageSection: React.FC<SectionBaseProps> = ({
 
 	const isHybrid = attributes.storage?.config === 'hybrid';
 
+	const handleNumericAttributeChange = (
+		path: string,
+		event: React.ChangeEvent<HTMLInputElement>,
+		minimum: number,
+	) => {
+		const rawValue = event.target.value;
+		if (rawValue === '') {
+			updateAttribute(path, null);
+			return;
+		}
+
+		const parsed = Number(rawValue);
+		if (Number.isNaN(parsed)) {
+			updateAttribute(path, null);
+			return;
+		}
+
+		const clamped = Math.max(minimum, parsed);
+		updateAttribute(path, clamped);
+	};
+
 	return (
 		<div className='rounded-lg border p-4'>
 			<h4 className='mb-4 text-sm font-medium'>Almacenamiento</h4>
@@ -61,12 +82,14 @@ const StorageSection: React.FC<SectionBaseProps> = ({
 							<Input
 								name='storage_max_supported_gb'
 								type='number'
+								min={1}
 								placeholder='Ej: 2000'
-								value={attributes.storage?.max_supported_gb || ''}
+								value={attributes.storage?.max_supported_gb ?? ''}
 								onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-									updateAttribute(
+									handleNumericAttributeChange(
 										'storage.max_supported_gb',
-										Number(event.target.value),
+										event,
+										1,
 									)
 								}
 							/>
@@ -77,12 +100,14 @@ const StorageSection: React.FC<SectionBaseProps> = ({
 							<Input
 								name='storage_available_slots_m2'
 								type='number'
+								min={0}
 								placeholder='Ej: 1'
-								value={attributes.storage?.available_slots?.m2 || ''}
+								value={attributes.storage?.available_slots?.m2 ?? ''}
 								onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-									updateAttribute(
+									handleNumericAttributeChange(
 										'storage.available_slots.m2',
-										Number(event.target.value),
+										event,
+										0,
 									)
 								}
 							/>
@@ -93,12 +118,14 @@ const StorageSection: React.FC<SectionBaseProps> = ({
 							<Input
 								name='storage_available_slots_sata'
 								type='number'
+								min={0}
 								placeholder='Ej: 2'
-								value={attributes.storage?.available_slots?.sata || ''}
+								value={attributes.storage?.available_slots?.sata ?? ''}
 								onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-									updateAttribute(
+									handleNumericAttributeChange(
 										'storage.available_slots.sata',
-										Number(event.target.value),
+										event,
+										0,
 									)
 								}
 							/>

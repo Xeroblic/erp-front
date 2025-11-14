@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
 import Modal, {
@@ -28,6 +28,7 @@ import { useGeoSelector } from '@/hooks/useGeoSelector';
 import { subempresaValidationSchema } from '../../helpers/subempresaValidation';
 import { buildSubempresaPayload, filterAdminUsers } from '../../helpers/subempresaDataMapper';
 import { handleSubempresaError } from '../../helpers/subempresaErrorHandler';
+import ApiService from '@/services/ApiService';
 
 interface CreateSubempresaModalProps {
 	isOpen: boolean;
@@ -46,8 +47,64 @@ export default function CreateSubempresaModal({
 	const { listaRegiones, listaProvincias, listaComunas } = useAppSelector((s) => s.core);
 	const { users } = useAppSelector((s) => s.usersAdmin);
 	const isEditing = Boolean(subempresa);
+	const [resolvedCompanyId, setResolvedCompanyId] = useState<number | null>(
+		subempresa?.company_id ?? companyId ?? null,
+	);
+	const [isResolvingCompany, setIsResolvingCompany] = useState(false);
 
 	const adminUsers = useMemo(() => filterAdminUsers(users), [users]);
+	const isCompanyReady = Boolean(subempresa?.company_id ?? resolvedCompanyId ?? companyId);
+
+	useEffect(() => {
+		if (subempresa?.company_id) {
+			setResolvedCompanyId(subempresa.company_id);
+			return;
+		}
+		if (companyId) {
+			setResolvedCompanyId(companyId);
+		}
+	}, [subempresa?.company_id, companyId]);
+
+	useEffect(() => {
+		let isMounted = true;
+		const needsFetch =
+			!resolvedCompanyId &&
+			(!companyId || Number(companyId) <= 0) &&
+			isOpen &&
+			!subempresa?.company_id;
+
+		if (!needsFetch) return;
+
+		setIsResolvingCompany(true);
+		ApiService.fetchData<{ current_company?: { id?: number }; personalization?: { company_id?: number } }>(
+			{
+				url: '/user/personalization',
+				method: 'get',
+			},
+		)
+			.then((response) => {
+				if (!isMounted) return;
+				const fetchedId =
+					response.data?.current_company?.id ?? response.data?.personalization?.company_id ?? null;
+				if (fetchedId) {
+					setResolvedCompanyId(fetchedId);
+				}
+			})
+			.catch(() => {
+				if (isMounted) {
+					toast.error('No se pudo determinar la empresa actual');
+				}
+			})
+			.finally(() => {
+				if (isMounted) {
+					setIsResolvingCompany(false);
+				}
+			});
+
+		return () => {
+			isMounted = false;
+		};
+	}, [resolvedCompanyId, companyId, isOpen, subempresa?.company_id]);
 
 	const managerOptions: TSelectOption[] = useMemo(() => {
 		return adminUsers.map((user: any) => ({
@@ -59,7 +116,11 @@ export default function CreateSubempresaModal({
 	const formik = useFormik({
 		initialValues: {
 			nombre: subempresa?.name || '',
-			managerId: (subempresa as any)?.manager_id || '',
+			managerId:
+				(subempresa as any)?.manager_id ||
+				subempresa?.manager?.id ||
+				(subempresa as any)?.subsidiary_manager_id ||
+				'',
 			rut: subempresa?.rut || '',
 			telefono: subempresa?.phone || '',
 			email: subempresa?.email || '',
@@ -85,7 +146,15 @@ export default function CreateSubempresaModal({
 					return;
 				}
 
-				const data = buildSubempresaPayload(values, companyId, selectedManager);
+				const effectiveCompanyId =
+					subempresa?.company_id ?? resolvedCompanyId ?? companyId ?? null;
+
+				if (!effectiveCompanyId || Number(effectiveCompanyId) <= 0) {
+					toast.error('No se pudo determinar la empresa actual');
+					return;
+				}
+
+				const data = buildSubempresaPayload(values, Number(effectiveCompanyId), selectedManager);
 
 				if (isEditing && subempresa?.id) {
 					await dispatch(
@@ -109,6 +178,8 @@ export default function CreateSubempresaModal({
 			}
 		},
 	});
+
+	const isSubmitDisabled = formik.isSubmitting || isResolvingCompany;
 
 	useEffect(() => {
 		if (isOpen) {
@@ -178,7 +249,7 @@ export default function CreateSubempresaModal({
 								formik.setFieldValue('managerId', option?.value || '');
 								formik.setFieldTouched('managerId', true);
 							}}
-							isDisabled={formik.isSubmitting || adminUsers.length === 0}
+							isDisabled={formik.isSubmitting || adminUsers.length === 0 || isResolvingCompany}
 							placeholder='Seleccione un gerente'
 						/>
 						{adminUsers.length === 0 && (
@@ -194,6 +265,11 @@ export default function CreateSubempresaModal({
 									{formik.errors.managerId}
 								</p>
 							)}
+						{isResolvingCompany && !isCompanyReady && (
+							<p className='mt-2 text-xs text-blue-600'>
+								Determinando empresa actual...
+							</p>
+						)}
 					</div>
 
 					<div>
@@ -339,7 +415,7 @@ export default function CreateSubempresaModal({
 			</ModalBody>
 			<ModalFooter>
 				<ModalFooterChild>
-					<Button variant='outline' onClick={handleClose} isDisable={formik.isSubmitting}>
+					<Button variant='outline' onClick={handleClose} isDisable={isSubmitDisabled}>
 						Cancelar
 					</Button>
 				</ModalFooterChild>
@@ -348,7 +424,7 @@ export default function CreateSubempresaModal({
 						variant='solid'
 						onClick={() => formik.handleSubmit()}
 						isLoading={formik.isSubmitting}
-						isDisable={formik.isSubmitting}>
+						isDisable={isSubmitDisabled || !isCompanyReady}>
 						{isEditing ? 'Actualizar' : 'Crear'} Subempresa
 					</Button>
 				</ModalFooterChild>

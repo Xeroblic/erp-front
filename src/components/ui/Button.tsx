@@ -13,8 +13,8 @@ import useReactiveThemeConfig from '../../hooks/useReactiveThemeConfig';
 export type TButtonVariants = 'solid' | 'outline' | 'default';
 export type TButtonSize = 'xs' | 'sm' | 'default' | 'lg' | 'xl';
 
-
-export interface IButtonProps extends HTMLAttributes<HTMLButtonElement> {
+export interface IButtonProps
+	extends Omit<HTMLAttributes<HTMLButtonElement>, 'disabled' | 'color'> {
 	borderWidth?: TBorderWidth;
 	children?: ReactNode;
 	className?: string;
@@ -28,9 +28,13 @@ export interface IButtonProps extends HTMLAttributes<HTMLButtonElement> {
 	rounded?: TRounded;
 	size?: TButtonSize;
 	variant?: TButtonVariants;
+	type?: 'button' | 'submit' | 'reset';
+	disabled?: boolean;
 }
+
 const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
-	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } = useReactiveThemeConfig();
+	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } =
+		useReactiveThemeConfig();
 
 	const {
 		borderWidth = themeConfig.borderWidth,
@@ -46,6 +50,8 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 		rounded = themeConfig.rounded,
 		size = 'default',
 		variant = 'default',
+		type = 'button',
+		disabled = false,
 		...rest
 	} = props;
 
@@ -55,22 +61,14 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 	const effectiveTextColor = isSolid ? 'text-white' : textColor;
 	const HAS_CHILDREN = typeof children !== 'undefined';
 
-	/**
-	 * Variant & Color & Status
-	 */
 	const btnVariants: { [key in TButtonVariants]: string } = {
 		solid: classNames(
-			// Default
-			{
-				[`bg-${color}-${colorIntensity}`]: !isActive,
-			},
+			{ [`bg-${color}-${colorIntensity}`]: !isActive },
 			[effectiveTextColor],
 			[`${borderWidth} border-${color}-${colorIntensity}`],
 			[`${textColor}`],
-			// Hover
 			[`hover:bg-${color}-${shadeColorIntensity as TColorIntensity}`],
 			[`hover:border-${color}-${shadeColorIntensity as TColorIntensity}`],
-			// Active
 			[`active:bg-${color}-${shadeColorIntensity as TColorIntensity}`],
 			[`active:border-${color}-${shadeColorIntensity as TColorIntensity}`],
 			{
@@ -79,30 +77,24 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 			},
 		),
 		outline: classNames(
-			// Default
 			'bg-transparent',
 			[`${borderWidth}`],
 			{
 				[`border-${color}-${colorIntensity}/50`]: !isActive,
 			},
 			'text-black dark:text-white',
-			// Hover
 			[`hover:border-${color}-${colorIntensity}`],
-			// Active
 			[`active:border-${color}-${colorIntensity}`],
 			{
 				[`border-${color}-${colorIntensity}`]: isActive,
 			},
 		),
 		default: classNames(
-			// Default
 			'bg-transparent',
 			{ 'text-zinc-600 dark:text-zinc-400': !isActive },
 			[`${borderWidth}`],
 			'border-transparent',
-			// Hover
 			[`hover:text-${color}-${colorIntensity} dark:hover:text-${color}-${colorIntensity}`],
-			// Active
 			[`active:text-${color}-${colorIntensity}`],
 			{
 				[`text-${color}-${colorIntensity}`]: isActive,
@@ -111,18 +103,12 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 	};
 	const btnVariantClasses = btnVariants[variant];
 
-	/**
-	 * Padding & Font Size & Icon Margin
-	 */
 	const btnSizes: {
 		[key in TButtonSize]: { general: string; icon: string; rightIcon: string };
 	} = {
 		xs: {
 			general: classNames(
-				{
-					'px-3': HAS_CHILDREN,
-					'px-0.5': !HAS_CHILDREN,
-				},
+				{ 'px-3': HAS_CHILDREN, 'px-0.5': !HAS_CHILDREN },
 				'py-0.5',
 				'text-xs',
 			),
@@ -131,10 +117,7 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 		},
 		sm: {
 			general: classNames(
-				{
-					'px-4': HAS_CHILDREN,
-					'px-1': !HAS_CHILDREN,
-				},
+				{ 'px-4': HAS_CHILDREN, 'px-1': !HAS_CHILDREN },
 				'py-1',
 				'text-sm',
 			),
@@ -143,10 +126,7 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 		},
 		default: {
 			general: classNames(
-				{
-					'px-5': HAS_CHILDREN,
-					'px-1.5': !HAS_CHILDREN,
-				},
+				{ 'px-5': HAS_CHILDREN, 'px-1.5': !HAS_CHILDREN },
 				'py-1.5',
 				'text-base',
 			),
@@ -155,10 +135,7 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 		},
 		lg: {
 			general: classNames(
-				{
-					'px-6': HAS_CHILDREN,
-					'px-2': !HAS_CHILDREN,
-				},
+				{ 'px-6': HAS_CHILDREN, 'px-2': !HAS_CHILDREN },
 				'py-2',
 				'text-lg',
 			),
@@ -167,10 +144,7 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 		},
 		xl: {
 			general: classNames(
-				{
-					'px-7': HAS_CHILDREN,
-					'px-2.5': !HAS_CHILDREN,
-				},
+				{ 'px-7': HAS_CHILDREN, 'px-2.5': !HAS_CHILDREN },
 				'py-2.5',
 				'text-xl',
 			),
@@ -182,10 +156,8 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 	const btnIconClasses = btnSizes[size].icon;
 	const btnRightIconClasses = HAS_CHILDREN ? btnSizes[size].rightIcon : undefined;
 
-	/**
-	 * Disable
-	 */
 	const btnDisabledClasses = 'opacity-50 pointer-events-none';
+	const isButtonDisabled = isDisable || isLoading || disabled;
 
 	const classes = classNames(
 		'inline-flex items-center justify-center',
@@ -193,19 +165,25 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 		btnSizeClasses,
 		rounded,
 		themeConfig.transition,
-		{ [`${btnDisabledClasses}`]: isDisable || isLoading },
+		{ [`${btnDisabledClasses}`]: isButtonDisabled },
 		className,
 	);
 
 	return (
-		<button ref={ref} data-component-name='Button' type='button' className={classes} {...rest}>
+		<button
+			ref={ref}
+			data-component-name='Button'
+			type={type}
+			className={classes}
+			disabled={isButtonDisabled}
+			{...rest}>
 			{(!!icon || isLoading) && (
 				<Icon
 					icon={isLoading ? 'DuoLoading' : (icon as TIcons)}
 					className={classNames(
 						{ 'animate-spin': isLoading },
 						btnIconClasses,
-						{ 'text-white': isSolid }
+						{ 'text-white': isSolid },
 					)}
 				/>
 			)}
@@ -214,6 +192,7 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 		</button>
 	);
 });
+
 Button.displayName = 'Button';
 
 export default Button;

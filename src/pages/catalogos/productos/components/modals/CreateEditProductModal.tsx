@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import { Formik, Form, Field, ErrorMessage, FormikHelpers, FieldProps } from 'formik';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -17,13 +17,19 @@ import {
 	buildSubmitPayload,
 	createBrandOptions,
 	createCategoryOptions,
+	initializeAttributesJson,
 } from '../../utils/productForm.utils';
-import { productSchema, productSchemaCreate } from '../../validation/productForm.schema';
+import {
+	productSchema,
+	productSchemaCreate,
+	productDetailSchema,
+} from '../../validation/productForm.schema';
 import type { ProductFormValues } from '../../types/products.types';
 import Select from '@/components/form/Select';
 import { PRODUCT_DEVICE_TYPES } from '../../constants/product-attributes.constants';
 import UserBranchSelector from './components/UserBranchSelector';
-import { useAppSelector } from '@/store';
+import { useAppSelector, useAppDispatch } from '@/store';
+import { fetchBrands } from '@/store/slices/brands/brandsSlice';
 
 interface CreateEditProductModalProps {
 	isOpen: boolean;
@@ -33,6 +39,8 @@ interface CreateEditProductModalProps {
 	brands: IBrand[];
 	categories: ICategory[];
 	isLoading?: boolean;
+	brandsLoading?: boolean;
+	defaultBranchId?: number | null;
 }
 
 type ProductToggleKey = Extract<(typeof PRODUCT_TOGGLES)[number]['key'], keyof ProductFormValues>;
@@ -60,15 +68,28 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 	brands,
 	categories,
 	isLoading = false,
+	brandsLoading = false,
+	defaultBranchId = null,
 }) => {
 	const currentUser = useAppSelector((state) => state.auth.user);
+	const dispatch = useAppDispatch();
 	const isEditMode = !!product;
 
 	const userId = currentUser?.id || currentUser?.pk;
 
+	const enhancedBrands = useMemo(() => {
+		if (isEditMode && product?.brand) {
+			const exists = brands.some((brand) => brand.id === product.brand!.id);
+			if (!exists) {
+				return [...brands, product.brand];
+			}
+		}
+		return brands;
+	}, [brands, isEditMode, product?.brand]);
+
 	const brandOptions: TSelectOptions = useMemo(
-		() => createBrandOptions(brands).map((option) => ({ ...option })),
-		[brands],
+		() => createBrandOptions(enhancedBrands).map((option) => ({ ...option })),
+		[enhancedBrands],
 	);
 
 	const categoryOptions: TSelectOptions = useMemo(
@@ -78,8 +99,23 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 
 	const initialValues = useMemo<ProductFormValues>(() => {
 		const values = buildInitialValues(product);
+		// Prefijar sucursal solo en modo creación
+		if (!isEditMode) {
+			values.branch_id = defaultBranchId ?? null;
+		} else if (product?.branch_id) {
+			values.branch_id = product.branch_id;
+		}
 		return values;
-	}, [product]);
+	}, [product, isEditMode, defaultBranchId]);
+
+	// Pre-cargar marcas al abrir el modal según la sucursal relevante
+	useEffect(() => {
+		if (!isOpen) return;
+		const branchToLoad = isEditMode ? (product?.branch_id ?? null) : (defaultBranchId ?? null);
+		if (branchToLoad) {
+			void dispatch(fetchBrands({ branchId: branchToLoad, search: '' }));
+		}
+	}, [isOpen, isEditMode, product?.branch_id, defaultBranchId, dispatch]);
 
 	const handleSubmit = async (
 		values: ProductFormValues,
@@ -92,11 +128,16 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 			} else {
 				const categoryIds = (values.categories || []).map((c) => Number(c.value));
 
+				const normalizedPrice =
+					values.price === '' || values.price === null || values.price === undefined
+						? 0
+						: Number(values.price);
+
 				const data: Partial<IProduct> = {
 					sku: values.sku.trim(),
 					name: values.name.trim(),
 					brand_id: Number(values.brand_id),
-					price: Number(values.price),
+					price: normalizedPrice,
 					is_active: typeof values.is_active === 'boolean' ? values.is_active : true,
 					serial_tracking:
 						typeof values.serial_tracking === 'boolean'
@@ -104,23 +145,22 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 							: false,
 				};
 
-				// Agregar branch_id si está presente (solo en crear)
 				if (values.branch_id) {
 					data.branch_id = Number(values.branch_id);
 				}
 
-				if (values.commercial_sku?.trim())
+				if (values.commercial_sku?.trim()) {
 					data.commercial_sku = values.commercial_sku.trim();
-				if (values.barcode?.trim()) data.barcode = values.barcode.trim();
-				if (values.product_type) data.product_type = values.product_type;
-				if (values.condition_policy) data.condition_policy = values.condition_policy;
-				if (values.uom) data.uom = values.uom;
-				if (values.cost !== '' && values.cost !== undefined)
-					data.cost = Number(values.cost);
-				if (values.offer_price !== '' && values.offer_price !== undefined)
-					data.offer_price = Number(values.offer_price);
-				if (values.warranty_months !== '' && values.warranty_months !== undefined)
-					data.warranty_months = Number(values.warranty_months);
+				}
+				if (values.barcode?.trim()) {
+					data.barcode = values.barcode.trim();
+				}
+				if (values.product_type) {
+					data.product_type = values.product_type;
+				}
+				if (values.attributes_json) {
+					data.attributes_json = values.attributes_json as any;
+				}
 
 				payload = { data, categoryIds };
 			}
@@ -200,6 +240,64 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 					submitForm,
 				}) => {
 					const isBusy = isLoading || isSubmitting;
+					const selectedBrandOption: TSelectOption | null =
+						brandOptions.find(
+							(option) => String(option.value) === String(values.brand_id),
+						) ??
+						(isEditMode && product?.brand
+							? { value: String(product.brand.id), label: product.brand.name }
+							: null);
+
+					// Ref para evitar loops infinitos
+					const lastSyncedProductType = useRef<string | null>(null);
+
+					// Auto-sincronizar product_kind cuando cambia product_type
+					useEffect(() => {
+						// Evitar ejecutar en la carga inicial o si ya sincronizamos este tipo
+						if (
+							!values.product_type ||
+							lastSyncedProductType.current === values.product_type
+						) {
+							return;
+						}
+
+						const productKindMap: Record<string, string> = {
+							notebook: 'notebook',
+							desktop_pc: 'desktop_pc',
+							aio: 'aio',
+							monitor: 'monitor',
+							docking: 'docking',
+						};
+
+						const newProductKind = productKindMap[values.product_type];
+
+						if (newProductKind) {
+							const currentProductKind =
+								values.attributes_json &&
+								typeof values.attributes_json === 'object' &&
+								'product_kind' in values.attributes_json
+									? (values.attributes_json as any).product_kind
+									: null;
+
+							// Solo actualizar si es diferente
+							if (currentProductKind !== newProductKind) {
+								void setFieldValue(
+									'attributes_json',
+									{
+										...(values.attributes_json || {}),
+										product_kind: newProductKind,
+									},
+									false,
+								);
+							}
+						} else if (values.product_type === 'general' && values.attributes_json) {
+							// Si es general, limpiar attributes_json
+							void setFieldValue('attributes_json', null, false);
+						}
+
+						// Marcar como sincronizado
+						lastSyncedProductType.current = values.product_type;
+					}, [values.product_type, values.attributes_json, setFieldValue]);
 
 					return (
 						<Form id='productForm'>
@@ -260,47 +358,6 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 															</FieldContainer>
 														)}
 													</Field>
-													<div className='space-y-2 md:col-span-2'>
-														<p className='text-sm font-medium'>Marca</p>
-														<SelectReact
-															name='brand_id'
-															options={brandOptions}
-															value={
-																brandOptions.find(
-																	(option) =>
-																		String(option.value) ===
-																		String(values.brand_id),
-																) ?? null
-															}
-															onChange={(option) =>
-																setFieldValue(
-																	'brand_id',
-																	(option as TSelectOption | null)
-																		?.value ?? '',
-																)
-															}
-															onBlur={() =>
-																setFieldTouched('brand_id', true)
-															}
-															placeholder='Selecciona una marca'
-															isDisabled={
-																isBusy || !brandOptions.length
-															}
-															menuPortalTarget={document.body}
-															styles={{
-																menuPortal: (base) => ({
-																	...base,
-																	zIndex: 9999,
-																}),
-															}}
-														/>
-														{touched.brand_id && errors.brand_id && (
-															<p className='text-xs text-red-500'>
-																{errors.brand_id}
-															</p>
-														)}
-													</div>
-
 													{/* Selector de Branch - Solo en modo CREAR */}
 													{!isEditMode && userId && (
 														<div className='space-y-2 md:col-span-2'>
@@ -309,6 +366,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 																name='branch_id'
 																value={values.branch_id ?? ''}
 																onChange={(branchId) => {
+																	setFieldValue('brand_id', '');
 																	setFieldValue(
 																		'branch_id',
 																		branchId,
@@ -317,8 +375,16 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 																		'branch_id',
 																		true,
 																	);
+																	if (branchId) {
+																		void dispatch(
+																			fetchBrands({
+																				branchId,
+																				search: '',
+																			}),
+																		);
+																	}
 																}}
-																label='Sucursal *'
+																label='Sucursal'
 																placeholder='Selecciona la sucursal para este producto'
 																disabled={isBusy}
 																required
@@ -335,101 +401,63 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 														</div>
 													)}
 
-													<Field name='uom'>
-														{({ field }: FieldProps) => (
-															<FieldContainer
-																id='uom'
-																label='Unidad de medida'>
-																<Input
-																	id='uom'
-																	{...field}
-																	disabled={isBusy}
-																/>
-															</FieldContainer>
+													<div className='space-y-2 md:col-span-2'>
+														<p className='text-sm font-medium'>Marca</p>
+														<SelectReact
+															name='brand_id'
+															options={brandOptions}
+															value={selectedBrandOption}
+															onChange={(option) => {
+																if (Array.isArray(option)) {
+																	void setFieldValue(
+																		'brand_id',
+																		'',
+																	);
+																	return;
+																}
+																const singleOption = (option ??
+																	null) as TSelectOption | null;
+																void setFieldValue(
+																	'brand_id',
+																	singleOption?.value ?? '',
+																);
+															}}
+															onBlur={() => {
+																void setFieldTouched(
+																	'brand_id',
+																	true,
+																);
+															}}
+															placeholder={
+																brandsLoading
+																	? 'Cargando marcas...'
+																	: !brandOptions.length &&
+																		  !values.branch_id
+																		? 'Selecciona la sucursal primero'
+																		: 'Selecciona una marca'
+															}
+															// Disable only while busy or when there are no brands for the selected branch
+															isDisabled={
+																isBusy ||
+																brandsLoading ||
+																(!brandOptions.length &&
+																	!values.brand_id &&
+																	!values.branch_id)
+															}
+															menuPortalTarget={document.body}
+															styles={{
+																menuPortal: (base) => ({
+																	...base,
+																	zIndex: 9999,
+																}),
+															}}
+														/>
+														{touched.brand_id && errors.brand_id && (
+															<p className='text-xs text-red-500'>
+																{errors.brand_id}
+															</p>
 														)}
-													</Field>
-													<Field name='condition_policy'>
-														{({ field }: FieldProps) => (
-															<FieldContainer
-																id='condition_policy'
-																label='Condicion'>
-																<Input
-																	id='condition_policy'
-																	{...field}
-																	disabled={isBusy}
-																/>
-															</FieldContainer>
-														)}
-													</Field>
-												</>
-											)}
-
-											{section.key === 'pricing' && (
-												<>
-													<Field name='price'>
-														{({ field, meta }: FieldProps) => (
-															<FieldContainer
-																id='price'
-																label='Precio'
-																error={
-																	meta.touched
-																		? (meta.error as string)
-																		: undefined
-																}>
-																<Input
-																	id='price'
-																	type='number'
-																	min='0'
-																	{...field}
-																	required
-																	disabled={isBusy}
-																/>
-															</FieldContainer>
-														)}
-													</Field>
-													<Field name='cost'>
-														{({ field }: FieldProps) => (
-															<FieldContainer id='cost' label='Costo'>
-																<Input
-																	id='cost'
-																	type='number'
-																	min='0'
-																	{...field}
-																	disabled={isBusy}
-																/>
-															</FieldContainer>
-														)}
-													</Field>
-													<Field name='offer_price'>
-														{({ field }: FieldProps) => (
-															<FieldContainer
-																id='offer_price'
-																label='Precio oferta'>
-																<Input
-																	id='offer_price'
-																	type='number'
-																	min='0'
-																	{...field}
-																	disabled={isBusy}
-																/>
-															</FieldContainer>
-														)}
-													</Field>
-													<Field name='warranty_months'>
-														{({ field }: FieldProps) => (
-															<FieldContainer
-																id='warranty_months'
-																label='Meses de garantia'>
-																<Input
-																	id='warranty_months'
-																	type='number'
-																	min='0'
-																	{...field}
-																	disabled={isBusy}
-																/>
-															</FieldContainer>
-														)}
-													</Field>
+													</div>
 												</>
 											)}
 
@@ -485,21 +513,28 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 																	label: option.label,
 																}),
 															)}
-															onChange={(option) =>
-																setFieldValue(
+															onChange={(option) => {
+																const nextOptions = Array.isArray(
+																	option,
+																)
+																	? option
+																	: option
+																		? [option]
+																		: [];
+																void setFieldValue(
 																	'categories',
-																	(
-																		(option as TSelectOption[]) ??
-																		[]
-																	).map((item) => ({
+																	nextOptions.map((item) => ({
 																		value: item.value,
 																		label: item.label,
 																	})),
-																)
-															}
-															onBlur={() =>
-																setFieldTouched('categories', true)
-															}
+																);
+															}}
+															onBlur={() => {
+																void setFieldTouched(
+																	'categories',
+																	true,
+																);
+															}}
 															isDisabled={
 																isBusy || !categoryOptions.length
 															}

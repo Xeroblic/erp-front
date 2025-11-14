@@ -1,70 +1,94 @@
-import { useEffect, useState } from 'react';
-import {
-  mockSuppliers,
-  mockSupplierStats,
-  supplierCategoryOptions,
-  supplierRatingOptions,
-  supplierStatusOptions,
-} from '../mocks/proveedoresMock';
-import { ISupplier, ISupplierFilters, ISupplierStats } from '../types';
+import { useEffect, useMemo } from 'react';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { fetchSuppliers } from '@/store/slices/suppliers/suppliersSlice';
+import { ISupplierFilters } from '../types';
+import type { ISupplier } from '@/interface/supplier.interface';
 
-export function useProveedores(filters: ISupplierFilters) {
-  const [suppliers, setSuppliers] = useState<ISupplier[]>([]);
-  const [stats, setStats] = useState<ISupplierStats>(mockSupplierStats);
-  const [loading, setLoading] = useState(false);
+interface UseProveedoresParams {
+  subsidiaryId?: number | null;
+  filters: ISupplierFilters;
+}
 
+export function useProveedores({ subsidiaryId, filters }: UseProveedoresParams) {
+  const dispatch = useAppDispatch();
+  const { items, loading } = useAppSelector((s) => s.suppliers);
+  const currentUser = useAppSelector((state) => state.auth.user);
+
+  // Obtener lista de subsidiarias accesibles del usuario
+  const accessibleSubsidiaryIds = useMemo(() => {
+    const subsidiaries = new Set<number>();
+
+    // ✅ USAR SOLO access.subsidiaries - Es la fuente autoritativa del backend
+    (currentUser as any)?.access?.subsidiaries?.forEach((sub: any) => {
+      if (sub?.id) subsidiaries.add(sub.id);
+      else if (typeof sub === 'number') subsidiaries.add(sub);
+    });
+
+    return subsidiaries;
+  }, [currentUser]);
+
+  // Calcular el subsidiaryId activo
+  const activeSubsidiaryId = useMemo<number | null>(() => {
+    if (subsidiaryId === null || subsidiaryId === undefined || subsidiaryId === 0) {
+      return null;
+    }
+
+    // ✅ VALIDAR ACCESO: Solo validar si tenemos lista de subsidiarias accesibles Y currentUser está cargado
+    if (currentUser && accessibleSubsidiaryIds.size > 0) {
+      if (!accessibleSubsidiaryIds.has(subsidiaryId)) {
+        // NO hacer fetch si sabemos que no tiene acceso
+        return null;
+      }
+    } else if (!currentUser) {
+      return null;
+    }
+
+    return subsidiaryId;
+  }, [subsidiaryId, accessibleSubsidiaryIds, currentUser]);
+
+  // Fetch proveedores cuando cambia el subsidiaryId o el filtro
   useEffect(() => {
-    setLoading(true);
-    const timer = setTimeout(() => {
-      let data = [...mockSuppliers];
+    if (!activeSubsidiaryId || activeSubsidiaryId === 0) {
+      return;
+    }
 
-      if (filters.search) {
-        const query = filters.search.toLowerCase();
-        data = data.filter((supplier) =>
-          [
-            supplier.name,
-            supplier.code,
-            supplier.document_number,
-            supplier.contact_person,
-            supplier.contact_email,
-          ]
-            .join(' ')
-            .toLowerCase()
-            .includes(query),
-        );
-      }
+    void dispatch(fetchSuppliers({
+      subsidiaryId: activeSubsidiaryId,
+      search: filters.search || undefined,
+      with_customers: true
+    }));
+  }, [dispatch, activeSubsidiaryId, filters.search]);  // Mapear items del store
+  const suppliers = useMemo<ISupplier[]>(() => {
+    return (items || []).map((s: any) => ({
+      id: s.id,
+      subsidiary_id: s.subsidiary_id ?? activeSubsidiaryId ?? 0,
+      name: s.name ?? `Proveedor ${s.id}`,
+      created_at: s.created_at ?? new Date().toISOString(),
+      updated_at: s.updated_at ?? new Date().toISOString(),
+      customer_suppliers_count: s.customer_suppliers_count ?? 0,
+      customerSuppliers: s.customerSuppliers ?? s.customer_suppliers ?? [],
+      subsidiary: s.subsidiary ?? null,
+    }));
+  }, [items, activeSubsidiaryId]);
 
-      if (filters.category) {
-        data = data.filter((supplier) => supplier.category === filters.category);
-      }
+  // Estadísticas básicas de proveedores
+  const stats = useMemo(() => {
+    const total = suppliers.length;
+    const withCustomers = suppliers.filter((s) => (s.customer_suppliers_count ?? 0) > 0).length;
+    const totalCustomers = suppliers.reduce((acc, s) => acc + (s.customer_suppliers_count ?? 0), 0);
 
-      if (filters.city) {
-        const cityQuery = filters.city.toLowerCase();
-        data = data.filter((supplier) => supplier.city.toLowerCase().includes(cityQuery));
-      }
-
-      if (filters.rating !== undefined) {
-        data = data.filter((supplier) => supplier.rating >= (filters.rating ?? 0));
-      }
-
-      if (filters.is_active !== undefined) {
-        data = data.filter((supplier) => supplier.is_active === filters.is_active);
-      }
-
-      setSuppliers(data);
-      setStats(mockSupplierStats);
-      setLoading(false);
-    }, 600);
-
-    return () => clearTimeout(timer);
-  }, [filters]);
+    return {
+      total_suppliers: total,
+      with_customers: withCustomers,
+      without_customers: total - withCustomers,
+      total_customer_relations: totalCustomers,
+    };
+  }, [suppliers]);
 
   return {
     suppliers,
     stats,
     loading,
-    categoryOptions: supplierCategoryOptions,
-    ratingOptions: supplierRatingOptions,
-    statusOptions: supplierStatusOptions,
+    activeSubsidiaryId,
   };
 }

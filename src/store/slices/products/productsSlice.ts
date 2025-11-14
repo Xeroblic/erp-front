@@ -4,6 +4,9 @@ import type {
 	CreateProductPayload,
 	FetchProductsParams,
 	IProduct,
+	ProductInventoryCriticalProduct,
+	ProductInventorySummary,
+	ProductInventorySummaryResponse,
 	ProductListMeta,
 	ProductsStateStats,
 	UpdateProductPayload,
@@ -15,7 +18,7 @@ import {
 	normalizeProduct,
 	serializeFilters,
 } from '@/components/helper/product.helper';
-import { PRODUCT_EMPTY_STATS } from '@/constants/product.constant';
+import { PRODUCT_EMPTY_INVENTORY_SUMMARY, PRODUCT_EMPTY_STATS } from '@/constants/product.constant';
 import { validateFile, extractMediaUrl } from '@/utils/apiHelpers';
 import { convertFileToWebP } from '@/components/helper/brand.helper';
 
@@ -23,14 +26,18 @@ export interface ProductsState {
 	items: IProduct[];
 	meta: ProductListMeta;
 	stats: ProductsStateStats;
+	inventory: ProductInventorySummary;
+	criticalProducts: ProductInventoryCriticalProduct[];
 	current: IProduct | null;
 	loading: boolean;
+	inventoryLoading: boolean;
 	currentLoading: boolean;
 	creating: boolean;
 	updating: boolean;
 	deleting: boolean;
 	error: string | null;
 	currentError: string | null;
+	inventoryError: string | null;
 	attributesLoading: boolean;
 	attributesUpdating: boolean;
 	attributesError: string | null;
@@ -49,14 +56,18 @@ const initialState: ProductsState = {
 		last_page: 1,
 	},
 	stats: { ...PRODUCT_EMPTY_STATS },
+	inventory: { ...PRODUCT_EMPTY_INVENTORY_SUMMARY },
+	criticalProducts: [],
 	current: null,
 	loading: false,
+	inventoryLoading: false,
 	currentLoading: false,
 	creating: false,
 	updating: false,
 	deleting: false,
 	error: null,
 	currentError: null,
+	inventoryError: null,
 	attributesLoading: false,
 	attributesUpdating: false,
 	attributesError: null,
@@ -108,6 +119,89 @@ export const fetchProducts = createAsyncThunk<
 	} catch (error: any) {
 		return rejectWithValue(
 			error?.response?.data?.message ?? error?.message ?? 'No se pudieron cargar los productos',
+		);
+	}
+});
+
+export const fetchBranchInventorySummary = createAsyncThunk<
+	{
+		stats: ProductsStateStats;
+		inventory: ProductInventorySummary;
+		criticalProducts: ProductInventoryCriticalProduct[];
+		branchId: number;
+	},
+	{ branchId: number; criticalThreshold?: number },
+	{ rejectValue: string }
+>('products/fetchBranchInventorySummary', async ({ branchId, criticalThreshold }, { rejectWithValue }) => {
+	try {
+		const response = await ApiService.fetchData<ProductInventorySummaryResponse>({
+			url: `/branches/${branchId}/products/summary`,
+			method: 'get',
+			params:
+				typeof criticalThreshold === 'number'
+					? { critical_threshold: criticalThreshold }
+					: undefined,
+		});
+
+		const payload = response.data ?? {};
+		const summary = payload.summary ?? {};
+		const params = payload.params ?? {};
+
+		const stats: ProductsStateStats = {
+			total: Number(summary.products_total ?? 0),
+			actives: Number(summary.active ?? 0),
+			inactives: Number(summary.inactive ?? 0),
+			with_offer: Number(summary.with_offer ?? 0),
+			serial_tracked: Number(
+				summary.serial_tracking_count ?? summary.with_serial_tracking ?? 0,
+			),
+		};
+
+		const inventory: ProductInventorySummary = {
+			branchId: Number(payload.branch_id ?? branchId) || branchId,
+			criticalThreshold:
+				typeof params?.critical_threshold === 'number'
+					? Number(params.critical_threshold)
+					: typeof criticalThreshold === 'number'
+						? criticalThreshold
+						: PRODUCT_EMPTY_INVENTORY_SUMMARY.criticalThreshold,
+			stockTotal: Number(summary.stock_total ?? 0),
+			stockAverage: Number(summary.stock_average ?? 0),
+			lowStockCount: Number(summary.low_stock_count ?? 0),
+			outOfStock: Number(summary.out_of_stock ?? 0),
+			withStockAvailable: Number(summary.with_stock_available ?? 0),
+			syncedProducts: Number(summary.synced_products ?? summary.products_total ?? 0),
+			serialTrackingCount: Number(
+				summary.serial_tracking_count ?? summary.with_serial_tracking ?? 0,
+			),
+		};
+
+		const criticalProducts: ProductInventoryCriticalProduct[] = Array.isArray(
+			payload.critical_products,
+		)
+			? payload.critical_products
+					.map((item) => ({
+						id: Number(item?.id ?? 0),
+						name: String(item?.name ?? ''),
+						sku: String(item?.sku ?? ''),
+						brand_name:
+							item?.brand_name !== undefined && item?.brand_name !== null
+								? String(item.brand_name)
+								: null,
+						stock:
+							item && typeof item === 'object' && 'stock' in item
+								? Number((item as any).stock ?? 0)
+								: null,
+					}))
+					.filter((item) => Number.isFinite(item.id) && item.id > 0)
+			: [];
+
+		return { stats, inventory, criticalProducts, branchId };
+	} catch (error: any) {
+		return rejectWithValue(
+			error?.response?.data?.message ??
+				error?.message ??
+				'No se pudo cargar el resumen de inventario',
 		);
 	}
 });
@@ -570,11 +664,31 @@ const productsSlice = createSlice({
 				state.loading = false;
 				state.items = action.payload.items;
 				state.meta = action.payload.meta;
-				state.stats = action.payload.stats;
+				const requestedBranchId = action.meta.arg.branchId;
+				const hasSummaryForBranch =
+					state.inventory.branchId !== null && state.inventory.branchId === requestedBranchId;
+				if (!hasSummaryForBranch || state.inventoryLoading) {
+					state.stats = action.payload.stats;
+				}
 			})
 			.addCase(fetchProducts.rejected, (state, action) => {
 				state.loading = false;
 				state.error = action.payload ?? 'No se pudieron cargar los productos';
+			})
+			.addCase(fetchBranchInventorySummary.pending, (state) => {
+				state.inventoryLoading = true;
+				state.inventoryError = null;
+			})
+			.addCase(fetchBranchInventorySummary.fulfilled, (state, action) => {
+				state.inventoryLoading = false;
+				state.stats = action.payload.stats;
+				state.inventory = { ...action.payload.inventory };
+				state.criticalProducts = action.payload.criticalProducts;
+			})
+			.addCase(fetchBranchInventorySummary.rejected, (state, action) => {
+				state.inventoryLoading = false;
+				state.inventoryError =
+					action.payload ?? 'No se pudo cargar el resumen de inventario';
 			})
 			// Casos para fetchProductsFromMultipleBranches
 			.addCase(fetchProductsFromMultipleBranches.pending, (state) => {

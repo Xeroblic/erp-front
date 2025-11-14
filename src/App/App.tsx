@@ -12,11 +12,10 @@ import getOS from '../utils/getOS.util';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import useDarkMode from '../hooks/useDarkMode';
-import AuthDebug from '../components/debug/AuthDebug';
-import UserDataSimulator from '../components/debug/UserDataSimulator';
 import { useAppDispatch, useAppSelector } from '@/store';
 import AppInitializer from '../components/AppInitializer';
-import PersonalizacionDebug from '../components/debug/PersonalizacionDebug';
+// import PersonalizacionDebug from '../components/debug/PersonalizacionDebug';
+import NotificationsStreamProvider from '@/notifications/NotificationsStreamProvider';
 // import PersonalizacionTest from '../components/test/PersonalizacionTest';
 // import DarkModeDebug from '../components/debug/DarkModeDebug';
 // import DarkModeStatus from '../components/debug/DarkModeStatus';
@@ -42,31 +41,49 @@ const App = () => {
 			<ToastContainer theme={isDarkTheme ? 'dark' : 'light'} draggable></ToastContainer>
 			{/* <PersonalizacionDebug /> */}
 			{/* <PersonalizacionTest /> */}
-			<style>{`:root {font-size: ${fontSize}px;
-				--toastify-toast-bd-radius: 0.75rem;
-				--toastify-color-dark:  ${colors.zinc['800']};
-				--toastify-color-info: ${colors.blue['500']};
-				--toastify-color-success: ${colors.emerald['500']};
-				--toastify-color-warning: ${colors[themeColor]['500']};
-				--toastify-color-error: ${colors.red['500']};
-				--toastify-color-progress-light: linear-gradient(
-					to right,
-					${colors.blue['500']},
-					${colors.emerald['500']},
-					${colors[themeColor]['500']},
-					${colors.red['500']});`}
+			<style>
+				{`:root {font-size: ${fontSize}px;
+				 --toastify-toast-bd-radius: 0.75rem;
+				 --toastify-color-dark:  ${colors.zinc['800']};
+				 --toastify-color-info: ${colors.blue['500']};
+				 --toastify-color-success: ${colors.emerald['500']};
+				 --toastify-color-warning: ${colors[themeColor]['500']};
+				 --toastify-color-error: ${colors.red['500']};
+				 --toastify-color-progress-light: linear-gradient(
+					 to right,
+					 ${colors.blue['500']},
+					 ${colors.emerald['500']},
+					 ${colors[themeColor]['500']},
+					 ${colors.red['500']});`}
 			</style>
-			<div data-component-name='App' className='flex grow flex-col'>
-				{/* <AuthDebug /> */}
-				{/* <UserDataSimulator /> */}
-				{/* <BackendSimulator /> */}
-				<AsideRouter />
-				<Wrapper>
-					<HeaderRouter />
-					<ContentRouter />
-					<FooterRouter />
-				</Wrapper>
-			</div>
+			{isAuthenticated && (
+				<NotificationsStreamProvider>
+					<div data-component-name='App' className='flex grow flex-col'>
+						{/* <AuthDebug /> */}
+						{/* <UserDataSimulator /> */}
+						{/* <BackendSimulator /> */}
+						<AsideRouter />
+						<Wrapper>
+							<HeaderRouter />
+							<ContentRouter />
+							<FooterRouter />
+						</Wrapper>
+					</div>
+				</NotificationsStreamProvider>
+			)}
+			{!isAuthenticated && (
+				<div data-component-name='App' className='flex grow flex-col'>
+					{/* <AuthDebug /> */}
+					{/* <UserDataSimulator /> */}
+					{/* <BackendSimulator /> */}
+					<AsideRouter />
+					<Wrapper>
+						<HeaderRouter />
+						<ContentRouter />
+						<FooterRouter />
+					</Wrapper>
+				</div>
+			)}
 		</>
 	);
 };

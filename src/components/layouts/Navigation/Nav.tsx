@@ -1,4 +1,4 @@
-import React, { FC, HTMLAttributes, ReactNode, useEffect, useId, useState } from 'react';
+import React, { FC, HTMLAttributes, ReactNode, useEffect, useId, useState, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
@@ -99,9 +99,7 @@ const NavItemContent: FC<INavItemContentProps> = (props) => {
 			data-component-name='Nav/NavItemContent'
 			className={classNames(
 				'flex w-full items-center justify-between truncate',
-				{
-					hidden: !asideStatus,
-				},
+				!asideStatus && 'hidden md:group-hover/aside:flex',
 				className,
 			)}
 			{...rest}>
@@ -125,7 +123,7 @@ const NavIcon: FC<INavIconProps> = (props) => {
 			data-component-name='Nav/NavIcon'
 			icon={icon}
 			className={classNames(
-				'w-6 flex-none text-2xl',
+				'w-6 flex-none text-2xl md:group-hover/aside:me-3',
 				{
 					'me-3': asideStatus,
 				},
@@ -271,8 +269,10 @@ export const NavItem: FC<INavItemProps> = (props) => {
 						</div>
 					</>
 				)}
-				{asideStatus && children && isChildrenNavButton && (
-					<div className='mb-2 flex items-center gap-3 px-3'>{children as ReactNode}</div>
+				{children && isChildrenNavButton && (
+					<div className={classNames('mb-2 flex items-center gap-3 px-3', !asideStatus && 'hidden md:group-hover/aside:flex')}>
+						{children as ReactNode}
+					</div>
 				)}
 			</li>
 		</>
@@ -305,6 +305,9 @@ export const NavCollapse: FC<INavCollapseProps> = (props) => {
 
 	const { asideStatus } = useAsideStatus();
 
+	// Ref para detectar el <nav> contenedor y coordinar acordeón por eventos
+	const collapseRef = useRef<HTMLLIElement>(null);
+
 	const location = useLocation();
 	const here = to !== '/' && location.pathname.includes(to);
 
@@ -314,6 +317,33 @@ export const NavCollapse: FC<INavCollapseProps> = (props) => {
 			setInternalIsActive(here);
 		}
 	}, [here, location.pathname, isOpen]);
+
+	// Disparar evento global cuando este collapse queda abierto
+	useEffect(() => {
+		if (!isActive) return;
+		const navEl = collapseRef.current?.closest('nav');
+		const ev = new CustomEvent('nav-collapse-open', {
+			detail: { navEl, sourceId: id },
+		});
+		window.dispatchEvent(ev);
+	}, [isActive, id]);
+
+	// Cerrar este collapse si otro del mismo <nav> se abre
+	useEffect(() => {
+		const handler = (e: any) => {
+			const navEl: Element | null | undefined = e?.detail?.navEl as Element | null | undefined;
+			const sourceId: string | undefined = e?.detail?.sourceId as string | undefined;
+			const myNav = collapseRef.current?.closest('nav');
+			if (!myNav || !navEl || myNav !== navEl) return;
+			if (sourceId === id) return; // no cerrarse a sí mismo
+			// Solo cerrar si usamos estado interno; cuando es controlado, el padre decide
+			if (isOpen === undefined) {
+				setInternalIsActive(false);
+			}
+		};
+		window.addEventListener('nav-collapse-open', handler as EventListener);
+		return () => window.removeEventListener('nav-collapse-open', handler as EventListener);
+	}, [id, isOpen]);
 
 	// Handler para el click
 	const handleToggle = () => {
@@ -326,6 +356,7 @@ export const NavCollapse: FC<INavCollapseProps> = (props) => {
 
 	return (
 		<li
+			ref={collapseRef}
 			data-component-name='Nav/NavCollapse'
 			className={classNames('list-none overflow-hidden', className)}
 			{...rest}>
@@ -369,7 +400,7 @@ export const NavCollapse: FC<INavCollapseProps> = (props) => {
 							collapsed: { height: 0 },
 						}}
 						transition={{ duration: 0.3 }}
-						className={classNames('!transition-margin !duration-300 !ease-in-out', {
+						className={classNames('!transition-margin !duration-300 !ease-in-out md:group-hover/aside:ms-4', {
 							'ms-4': asideStatus,
 						})}>
 						{children}
@@ -401,11 +432,24 @@ export const NavTitle: FC<INavTitleProps> = (props) => {
 					className,
 				)}
 				{...rest}>
-				{asideStatus ? (
-					children
-				) : (
-					<div className='my-1.5 h-2 w-full max-w-[6rem] rounded-full bg-zinc-500' />
-				)}
+				<div>
+					<span
+						className={classNames({
+							inline: asideStatus,
+							'hidden md:group-hover/aside:inline': !asideStatus,
+						})}>
+						{children}
+					</span>
+					<div
+						className={classNames(
+							'my-1.5 h-2 w-full max-w-[6rem] rounded-full bg-zinc-500',
+							{
+								hidden: asideStatus,
+								'md:group-hover/aside:hidden': !asideStatus,
+							},
+						)}
+					/>
+				</div>
 			</li>
 		</Tooltip>
 	);
@@ -435,7 +479,7 @@ export const NavUser: FC<INavUserProps> = (props) => {
 			<Avatar
 				src={image}
 				name={text}
-				className={classNames('w-6 rounded-full', {
+				className={classNames('w-6 rounded-full md:group-hover/aside:me-3', {
 					'me-3': asideStatus,
 				})}
 				rounded='rounded'
@@ -520,8 +564,10 @@ export const NavUser: FC<INavUserProps> = (props) => {
 						</div>
 					</>
 				)}
-				{asideStatus && children && isChildrenNavButton && (
-					<div className='mb-2 flex items-center gap-3 px-3'>{children as ReactNode}</div>
+				{children && isChildrenNavButton && (
+					<div className={classNames('mb-2 flex items-center gap-3 px-3', !asideStatus && 'hidden md:group-hover/aside:flex')}>
+						{children as ReactNode}
+					</div>
 				)}
 			</li>
 		</Tooltip>

@@ -2,36 +2,19 @@ import React from 'react';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import Input from '@/components/form/Input';
-import Select from '@/components/form/Select';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
-
-interface Branch {
-	id: number;
-	name?: string;
-}
 
 interface ProductsHeaderProps {
 	searchValue: string;
 	onSearchChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-	branchId: number | null;
-	onBranchChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
-	branches: Branch[];
 	onCreateClick: () => void;
 }
 
 const ProductsHeader: React.FC<ProductsHeaderProps> = ({
 	searchValue,
 	onSearchChange,
-	branchId,
-	onBranchChange,
-	branches,
 	onCreateClick,
 }) => {
-	const branchOptions = branches.map((branch) => ({
-		value: String(branch.id),
-		label: branch.name ?? `Sucursal ${branch.id}`,
-	}));
-
 	return (
 		<Subheader>
 			<SubheaderLeft>
@@ -56,18 +39,6 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
 						onChange={onSearchChange}
 						className='w-full sm:w-72'
 					/>
-					<Select
-						name='branch'
-						value={branchId ? String(branchId) : ''}
-						onChange={onBranchChange}
-						className='w-full sm:w-60'>
-						<option value=''>Todas las sucursales</option>
-						{branchOptions.map((option) => (
-							<option key={option.value} value={option.value}>
-								{option.label}
-							</option>
-						))}
-					</Select>
 					<Button
 						color='blue'
 						icon='HeroPlus'

@@ -104,6 +104,55 @@ export default function SubempresasTable({
 				},
 			}),
 			columnHelper.display({
+				id: 'manager',
+				header: 'Gerente',
+				cell: (info) => {
+					const subempresa = info.row.original;
+					const managerName =
+						subempresa.manager_name ||
+						subempresa.manager?.name ||
+						subempresa.subsidiary_manager_name ||
+						[subempresa.manager?.first_name, subempresa.manager?.last_name]
+							.filter(Boolean)
+							.join(' ')
+							.trim();
+					const managerEmail =
+						subempresa.manager_email ||
+						subempresa.manager?.email ||
+						subempresa.subsidiary_manager_email;
+					const managerPhone =
+						subempresa.manager_phone ||
+						subempresa.manager?.phone ||
+						subempresa.manager?.phone_number ||
+						subempresa.subsidiary_manager_phone;
+
+					if (!managerName) {
+						return (
+							<Badge variant='outline' className='text-zinc-400'>
+								Sin gerente
+							</Badge>
+						);
+					}
+
+					return (
+						<div className='flex flex-col'>
+							<div className='flex items-center gap-1'>
+								<Icon icon='HeroUser' className='text-xs text-zinc-400' />
+								<span className='text-sm font-medium text-zinc-800 dark:text-zinc-100'>
+									{managerName}
+								</span>
+							</div>
+							{managerEmail && (
+								<span className='text-xs text-zinc-500'>{managerEmail}</span>
+							)}
+							{managerPhone && (
+								<span className='text-xs text-zinc-500'>{managerPhone}</span>
+							)}
+						</div>
+					);
+				},
+			}),
+			columnHelper.display({
 				id: 'acciones',
 				header: 'Acciones',
 				cell: (info) => (
@@ -189,7 +238,7 @@ export default function SubempresasTable({
 	return (
 		<Card>
 			<CardBody className='overflow-x-auto'>
-				<Table className='w-full'>
+				<Table >
 					<THead>
 						{table.getHeaderGroups().map((hg) => (
 							<Tr key={hg.id}>

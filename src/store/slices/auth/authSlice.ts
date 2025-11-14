@@ -123,6 +123,19 @@ export const userMeThunk = createAsyncThunk<
 			} else {
 				// Estructura antigua (compatibilidad)
 				userData = resp.data.user || ({} as IUserMe);
+
+				// ✅ Incluir access y visible si vienen en la respuesta
+				const respData = resp.data as any;
+				if (respData.access) {
+					(userData as any).access = respData.access;
+				}
+				if (respData.visible) {
+					(userData as any).visible = respData.visible;
+				}
+				if (respData.branch) {
+					(userData as any).branch = respData.branch;
+				}
+
 				permisos = resp.data.permisos || [];
 				roles = resp.data.roles || [];
 			}
@@ -186,6 +199,10 @@ const authSlice = createSlice({
 			// localStorage.removeItem('zentria_language'); // NO limpiar idioma
 			// localStorage.removeItem('zentria_asideStatus'); // NO limpiar estado aside
 		},
+		clearAuthState: () => ({
+			...initialState,
+			access: localStorage.getItem('access_token') || undefined,
+		}),
 		setToken: (
 			state,
 			action: PayloadAction<
@@ -298,7 +315,7 @@ const authSlice = createSlice({
 	},
 });
 
-export const { logout, setToken, validateSession } = authSlice.actions;
+export const { logout, clearAuthState, setToken, validateSession } = authSlice.actions;
 
 // Selectores
 export const selectIsAuthenticated = (state: RootState) => state.auth.isAuthenticated;

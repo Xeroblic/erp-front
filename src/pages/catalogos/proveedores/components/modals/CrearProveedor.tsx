@@ -1,152 +1,179 @@
-import React, { Dispatch, SetStateAction, useRef } from 'react';
-import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
+import React, { useMemo } from 'react';
+import { Formik, Form } from 'formik';
+import * as Yup from 'yup';
+import Modal, {
+	ModalBody,
+	ModalFooter,
+	ModalFooterChild,
+	ModalHeader,
+} from '@/components/ui/Modal';
+import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import Label from '@/components/form/Label';
 import Input from '@/components/form/Input';
+import Icon from '@/components/icon/Icon';
+import { useAppSelector } from '@/store';
 import Select from '@/components/form/Select';
-import Textarea from '@/components/form/Textarea';
-import Checkbox from '@/components/form/Checkbox';
 
-type CrearProveedorProps = {
-  isOpen: boolean;
-  setIsOpen: Dispatch<SetStateAction<boolean>>;
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
-};
+interface CrearProveedorProps {
+	isOpen: boolean;
+	setIsOpen: (open: boolean) => void;
+	onSubmit: (values: { name: string; subsidiaryId: number }) => Promise<void>;
+	defaultSubsidiaryId?: number | null;
+}
 
-const CrearProveedor: React.FC<CrearProveedorProps> = ({ isOpen, setIsOpen, onSubmit }) => {
-  const formRef = useRef<HTMLFormElement | null>(null);
+const validationSchema = Yup.object().shape({
+	name: Yup.string().required('El nombre es requerido').min(1, 'Mínimo 1 caracteres'),
+	subsidiaryId: Yup.number()
+		.required('Debes seleccionar una subsidiaria')
+		.min(1, 'Selecciona una subsidiaria válida'),
+});
 
-  const handleSubmitClick = () => {
-    formRef.current?.requestSubmit();
-  };
+const CrearProveedor: React.FC<CrearProveedorProps> = ({
+	isOpen,
+	setIsOpen,
+	onSubmit,
+	defaultSubsidiaryId,
+}) => {
+	const currentUser = useAppSelector((state) => state.auth.user);
 
-  return (
-    <Modal isOpen={isOpen} setIsOpen={setIsOpen} size='xl'>
-      <ModalHeader>
-        <h3 className='text-lg font-semibold text-gray-900 dark:text-white'>Crear Nuevo Proveedor</h3>
-      </ModalHeader>
-      <form ref={formRef} id='createSupplierForm' onSubmit={onSubmit}>
-        <ModalBody>
-          <div className='space-y-4'>
-            <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-              <div>
-                <Label htmlFor='create-name'>Nombre de la Empresa *</Label>
-                <Input id='create-name' name='name' placeholder='Nombre de la empresa' required />
-              </div>
-              <div>
-                <Label htmlFor='create-code'>C�digo *</Label>
-                <Input id='create-code' name='code' placeholder='C�digo del proveedor' required />
-              </div>
-            </div>
+	// Obtener subsidiarias donde el usuario tiene acceso de escritura
+	const accessibleSubsidiaries = useMemo(() => {
+		const subsidiaries = (currentUser as any)?.access?.subsidiaries || [];
+		return subsidiaries.map((sub: any) => ({
+			value: sub.id,
+			label: sub.name,
+		}));
+	}, [currentUser]);
 
-            <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-              <div>
-                <Label htmlFor='create-document-type'>Tipo de Documento *</Label>
-                <Select id='create-document-type' name='document_type' defaultValue='NIT'>
-                  <option value='NIT'>NIT</option>
-                  <option value='CC'>Cédula de Ciudadanía</option>
-                  <option value='CE'>Cédula de Extranjería</option>
-                  <option value='PASSPORT'>Pasaporte</option>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor='create-document-number'>Número de Documento *</Label>
-                <Input id='create-document-number' name='document_number' placeholder='Número de documento' required />
-              </div>
-            </div>
+	return (
+		<Modal isOpen={isOpen} setIsOpen={() => setIsOpen(false)}>
+			<ModalHeader>
+				<div className='flex items-center space-x-3'>
+					<div className='flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/20'>
+						<Icon
+							icon='HeroTruck'
+							className='h-6 w-6 text-orange-600 dark:text-orange-400'
+						/>
+					</div>
+					<div>
+						<h2 className='text-xl font-semibold'>Nuevo Proveedor</h2>
+						<p className='text-sm text-gray-600 dark:text-gray-400'>
+							Registra un nuevo proveedor
+						</p>
+					</div>
+				</div>
+			</ModalHeader>
 
-            <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-              <div>
-                <Label htmlFor='create-email'>Email *</Label>
-                <Input id='create-email' name='email' type='email' placeholder='email@empresa.com' required />
-              </div>
-              <div>
-                <Label htmlFor='create-phone'>Teléfono *</Label>
-                <Input id='create-phone' name='phone' placeholder='+57 1 234-5678' required />
-              </div>
-            </div>
+			<ModalBody>
+				<Formik
+					initialValues={{
+						name: '',
+						subsidiaryId: defaultSubsidiaryId || 0,
+					}}
+					validationSchema={validationSchema}
+					onSubmit={async (values, { resetForm }) => {
+						await onSubmit(values);
+						resetForm();
+					}}
+					enableReinitialize>
+					{({ values, errors, touched, handleSubmit, setFieldValue }) => (
+						<Form id='create-supplier-form' onSubmit={handleSubmit}>
+							<Card>
+								<CardHeader>
+									<CardHeaderChild>
+										<CardTitle>Información Básica</CardTitle>
+									</CardHeaderChild>
+								</CardHeader>
+								<CardBody>
+									<div className='space-y-4'>
+										<div>
+											<label
+												htmlFor='subsidiaryId'
+												className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+												Subsidiaria *
+											</label>
+											<Select
+												id='subsidiaryId'
+												name='subsidiaryId'
+												value={values.subsidiaryId}
+												onChange={(e) =>
+													setFieldValue(
+														'subsidiaryId',
+														Number(e.target.value),
+													)
+												}
+												placeholder='Selecciona una subsidiaria'>
+												<option value={0} disabled>
+													-- Selecciona una subsidiaria --
+												</option>
+												{accessibleSubsidiaries.map(
+													(sub: { value: number; label: string }) => (
+														<option key={sub.value} value={sub.value}>
+															{sub.label}
+														</option>
+													),
+												)}
+											</Select>
+											{touched.subsidiaryId && errors.subsidiaryId && (
+												<p className='mt-1 text-sm text-red-600 dark:text-red-400'>
+													{errors.subsidiaryId}
+												</p>
+											)}
+										</div>
 
-            <div>
-              <Label htmlFor='create-address'>Dirección *</Label>
-              <Textarea id='create-address' name='address' placeholder='Dirección completa' rows={2} required />
-            </div>
+										<div>
+											<label
+												htmlFor='name'
+												className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+												Nombre del Proveedor *
+											</label>
+											<Input
+												id='name'
+												name='name'
+												type='text'
+												placeholder='Ej: Proveedor Global S.A.S.'
+												value={values.name}
+												onChange={(e) =>
+													setFieldValue('name', e.target.value)
+												}
+											/>
+											{touched.name && errors.name && (
+												<p className='mt-1 text-sm text-red-600 dark:text-red-400'>
+													{errors.name}
+												</p>
+											)}
+										</div>
+									</div>
+								</CardBody>
+							</Card>
+						</Form>
+					)}
+				</Formik>
+			</ModalBody>
 
-            <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-              <div>
-                <Label htmlFor='create-city'>Ciudad *</Label>
-                <Input id='create-city' name='city' placeholder='Ciudad' required />
-              </div>
-              <div>
-                <Label htmlFor='create-category'>Categoría *</Label>
-                <Select id='create-category' name='category' defaultValue='TECNOLOGIA'>
-                  <option value='TECNOLOGIA'>Tecnología</option>
-                  <option value='OFICINA'>Oficina</option>
-                  <option value='SERVICIOS'>Servicios</option>
-                  <option value='INSUMOS'>Insumos</option>
-                </Select>
-              </div>
-            </div>
-
-            <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
-              <div>
-                <Label htmlFor='create-payment-terms'>Términos de Pago (días)</Label>
-                <Input id='create-payment-terms' name='payment_terms' type='number' min='0' placeholder='30' />
-              </div>
-              <div>
-                <Label htmlFor='create-credit-limit'>Límite de Crédito</Label>
-                <Input id='create-credit-limit' name='credit_limit' type='number' min='0' placeholder='50000000' />
-              </div>
-              <div>
-                <Label htmlFor='create-website'>Sitio Web</Label>
-                <Input id='create-website' name='website' placeholder='www.proveedor.com' />
-              </div>
-            </div>
-
-            <div>
-              <h4 className='mb-2 text-sm font-medium text-gray-700 dark:text-gray-300'>Contacto Principal</h4>
-              <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
-                <div>
-                  <Label htmlFor='create-contact-person' className='text-xs'>Nombre *</Label>
-                  <Input id='create-contact-person' name='contact_person' placeholder='Nombre del contacto' required />
-                </div>
-                <div>
-                  <Label htmlFor='create-contact-email' className='text-xs'>Email *</Label>
-                  <Input
-                    id='create-contact-email'
-                    name='contact_email'
-                    type='email'
-                    placeholder='contacto@empresa.com'
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor='create-contact-phone' className='text-xs'>Teléfono *</Label>
-                  <Input
-                    id='create-contact-phone'
-                    name='contact_phone'
-                    placeholder='+57 300 123-4567'
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            <Checkbox id='create-is-active' name='is_active' defaultChecked label='Proveedor activo' />
-          </div>
-        </ModalBody>
-        <ModalFooter>
-          <div className='flex justify-end space-x-3'>
-            <Button variant='outline' onClick={() => setIsOpen(false)}>
-              Cancelar
-            </Button>
-            <Button color='amber' onClick={handleSubmitClick}>
-              Crear Proveedor
-            </Button>
-          </div>
-        </ModalFooter>
-      </form>
-    </Modal>
-  );
+			<ModalFooter>
+				<ModalFooterChild>
+					<Button variant='outline' onClick={() => setIsOpen(false)}>
+						Cancelar
+					</Button>
+					<Button
+						color='amber'
+						onClick={() => {
+							const form = document.getElementById(
+								'create-supplier-form',
+							) as HTMLFormElement | null;
+							if (form) {
+								form.dispatchEvent(
+									new Event('submit', { bubbles: true, cancelable: true }),
+								);
+							}
+						}}>
+						Crear Proveedor
+					</Button>
+				</ModalFooterChild>
+			</ModalFooter>
+		</Modal>
+	);
 };
 
 export default CrearProveedor;

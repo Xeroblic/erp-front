@@ -1,75 +1,91 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useFormikContext } from 'formik';
 import Input from '@/components/form/Input';
 import Select from '@/components/form/Select';
 import type { ProductDetailForm } from '../../types/products.types';
 import type { IBrand } from '@/interface/brand.interface';
 import { PRODUCT_STATUS_LABELS, PRODUCT_TYPE_LABELS } from '../../constants/products.constant';
+import Label from '@/components/form/Label';
+import Checkbox from '@/components/form/Checkbox';
+import Modal, { ModalBody, ModalHeader, ModalFooter } from '@/components/ui/Modal';
+import Button from '@/components/ui/Button';
+import { useFormik } from 'formik';
 
 interface GeneralTabProps {
 	brands: IBrand[];
 	brandsLoading: boolean;
+	hasRevisionSerials?: boolean;
 }
 
-const GeneralTab: React.FC<GeneralTabProps> = ({ brands, brandsLoading }) => {
-	const { values, errors, touched, setFieldValue } = useFormikContext<ProductDetailForm>();
+const GeneralTab: React.FC<GeneralTabProps> = ({
+	brands,
+	brandsLoading,
+	hasRevisionSerials = false,
+}) => {
+	const { values, errors, touched, setFieldValue, submitForm } =
+		useFormikContext<ProductDetailForm>();
+	const [showConfirm, setShowConfirm] = React.useState(false);
+	const [blockMessage, setBlockMessage] = React.useState<string | null>(null);
+
+	const confirmFormik = useFormik<{ confirmText: string }>({
+		initialValues: { confirmText: '' },
+		validate: (vals) => {
+			const errs: Record<string, string> = {};
+			if (vals.confirmText !== 'SI') {
+				errs.confirmText = "Debes escribir 'SI' para confirmar";
+			}
+			return errs;
+		},
+		onSubmit: () => {
+			/* no-op: manejamos la confirmación manualmente */
+		},
+		validateOnChange: true,
+		validateOnBlur: true,
+	});
+
+	// Sincronizar product_kind en attributes_json cuando cambia product_type
+	useEffect(() => {
+		if (values.product_type) {
+			const productKindMap: Record<string, string> = {
+				notebook: 'notebook',
+				desktop_pc: 'desktop_pc',
+				aio: 'aio',
+				monitor: 'monitor',
+				docking: 'docking',
+			};
+
+			const newProductKind = productKindMap[values.product_type];
+
+			if (newProductKind) {
+				const currentProductKind =
+					values.attributes_json &&
+					typeof values.attributes_json === 'object' &&
+					'product_kind' in values.attributes_json
+						? (values.attributes_json as any).product_kind
+						: null;
+
+				if (currentProductKind !== newProductKind) {
+					void setFieldValue(
+						'attributes_json',
+						{
+							...(values.attributes_json || {}),
+							product_kind: newProductKind,
+						},
+						false,
+					);
+				}
+			} else if (values.product_type === 'general' && values.attributes_json) {
+				void setFieldValue('attributes_json', null, false);
+			}
+		}
+	}, [values.product_type, setFieldValue]);
 
 	return (
-		<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-			<div className='space-y-1'>
-				<label className='text-sm font-medium'>SKU</label>
-				<Input
-					name='sku'
-					placeholder='Ej: PROD-001'
-					value={values.sku}
-					onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-						setFieldValue('sku', event.target.value)
-					}
-				/>
-				{touched.sku && errors.sku && <p className='text-xs text-red-500'>{errors.sku}</p>}
-			</div>
-
-			<div className='space-y-1'>
-				<label className='text-sm font-medium'>Nombre del producto</label>
-				<Input
-					name='name'
-					placeholder='Nombre descriptivo del producto'
-					value={values.name}
-					onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-						setFieldValue('name', event.target.value)
-					}
-				/>
-				{touched.name && errors.name && (
-					<p className='text-xs text-red-500'>{errors.name}</p>
-				)}
-			</div>
-
-			<div className='space-y-1'>
-				<label className='text-sm font-medium'>
-					Marca {brandsLoading ? '(Cargando...)' : `(${brands.length} disponibles)`}
-				</label>
-				<Select
-					name='brand_id'
-					value={String(values.brand_id || '')}
-					onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
-						const value = event.target.value;
-						setFieldValue('brand_id', value === '' ? '' : Number(value));
-					}}
-					disabled={brandsLoading}>
-					<option value=''>Seleccionar marca</option>
-					{brands.map((brand) => (
-						<option key={brand.id} value={String(brand.id)}>
-							{brand.name}
-						</option>
-					))}
-				</Select>
-				{touched.brand_id && errors.brand_id && (
-					<p className='text-xs text-red-500'>{errors.brand_id}</p>
-				)}
-			</div>
-
-			<div className='space-y-1'>
-				<label className='text-sm font-medium'>Tipo de producto</label>
+		<>
+			<div className='mb-6 block'>
+				<Label htmlFor='product_type' className='text-sm font-medium'>
+					Tipo de producto
+				</Label>
 				<Select
 					name='product_type'
 					value={values.product_type}
@@ -86,43 +102,193 @@ const GeneralTab: React.FC<GeneralTabProps> = ({ brands, brandsLoading }) => {
 					<p className='text-xs text-red-500'>{errors.product_type}</p>
 				)}
 			</div>
-
-			<div className='space-y-1'>
-				<label className='text-sm font-medium'>Estado</label>
-				<Select
-					name='is_active'
-					value={values.is_active ? 'true' : 'false'}
-					onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
-						setFieldValue('is_active', event.target.value === 'true')
-					}>
-					{Object.entries(PRODUCT_STATUS_LABELS).map(([key, label]) => (
-						<option key={key} value={key}>
-							{label}
-						</option>
-					))}
-				</Select>
-				{touched.is_active && errors.is_active && (
-					<p className='text-xs text-red-500'>{errors.is_active}</p>
-				)}
-			</div>
-
-			<div className='space-y-1'>
-				<label className='flex items-center gap-2'>
-					<input
-						type='checkbox'
-						checked={values.serial_tracking}
+			<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+				<div className='space-y-1'>
+					<Label htmlFor='sku' className='text-sm font-medium'>
+						SKU
+					</Label>
+					<Input
+						name='sku'
+						placeholder='Ej: PROD-001'
+						value={values.sku}
 						onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-							setFieldValue('serial_tracking', event.target.checked)
+							setFieldValue('sku', event.target.value)
 						}
-						className='h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500'
+						isValid={!errors.sku}
+						isTouched={touched.sku}
+						invalidFeedback={errors.sku}
 					/>
-					<span className='text-sm font-medium'>Seguimiento por número de serie</span>
-				</label>
-				{touched.serial_tracking && errors.serial_tracking && (
-					<p className='text-xs text-red-500'>{errors.serial_tracking}</p>
-				)}
+					{touched.sku && errors.sku && (
+						<p className='text-xs text-red-500'>{errors.sku}</p>
+					)}
+				</div>
+
+				<div className='space-y-1'>
+					<Label htmlFor='name_product' className='text-sm font-medium'>
+						Nombre del producto
+					</Label>
+					<Input
+						name='name'
+						placeholder='Nombre descriptivo del producto'
+						value={values.name}
+						onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+							setFieldValue('name', event.target.value)
+						}
+						isValid={!errors.name}
+						isTouched={touched.name}
+						invalidFeedback={errors.name}
+					/>
+					{touched.name && errors.name && (
+						<p className='text-xs text-red-500'>{errors.name}</p>
+					)}
+				</div>
+
+				<div className='space-y-1'>
+					<Label htmlFor='brand_id' className='text-sm font-medium'>
+						Marca {brandsLoading ? '(Cargando...)' : `(${brands.length} disponibles)`}
+					</Label>
+					<Select
+						name='brand_id'
+						value={String(values.brand_id || '')}
+						onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
+							const value = event.target.value;
+							setFieldValue('brand_id', value === '' ? '' : Number(value));
+						}}
+						disabled={brandsLoading}>
+						<option value=''>Seleccionar marca</option>
+						{brands.map((brand) => (
+							<option key={brand.id} value={String(brand.id)}>
+								{brand.name}
+							</option>
+						))}
+					</Select>
+					{touched.brand_id && errors.brand_id && (
+						<p className='text-xs text-red-500'>{errors.brand_id}</p>
+					)}
+				</div>
+
+				<div className='space-y-1'>
+					<Label htmlFor='is_active' className='text-sm font-medium'>
+						Estado
+					</Label>
+					<Select
+						name='is_active'
+						value={values.is_active ? 'true' : 'false'}
+						onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
+							setFieldValue('is_active', event.target.value === 'true')
+						}>
+						{Object.entries(PRODUCT_STATUS_LABELS).map(([key, label]) => (
+							<option key={key} value={key}>
+								{label}
+							</option>
+						))}
+					</Select>
+					{touched.is_active && errors.is_active && (
+						<p className='text-xs text-red-500'>{errors.is_active}</p>
+					)}
+				</div>
+
+				<div className='space-y-1'>
+					<Label htmlFor='serial_tracking' className='flex items-center gap-2'>
+						<Checkbox
+							id='serial_tracking'
+							checked={values.serial_tracking}
+							onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+								const next = event.target.checked;
+
+								if (!next && values.serial_tracking) {
+									if (hasRevisionSerials) {
+										setBlockMessage(
+											'No se puede quitar el seguimiento: existen series registradas en revisiones. Asigne o edite las series antes de desactivar.',
+										);
+										return;
+									}
+
+									setShowConfirm(true);
+									return;
+								}
+
+								setBlockMessage(null);
+								setShowConfirm(false);
+								setFieldValue('serial_tracking', next);
+							}}
+							className='rounded border-gray-300 text-blue-600 focus:ring-blue-500'
+						/>
+						<span className='text-sm font-medium'>Seguimiento por número de serie</span>
+					</Label>
+					{touched.serial_tracking && errors.serial_tracking && (
+						<p className='text-xs text-red-500'>{errors.serial_tracking}</p>
+					)}
+
+					{blockMessage && (
+						<p className='mt-2 text-xs text-red-600' role='alert'>
+							{blockMessage}
+						</p>
+					)}
+
+					<Modal isOpen={showConfirm} setIsOpen={setShowConfirm} size='sm' isCentered>
+						<ModalHeader>Confirmar</ModalHeader>
+						<ModalBody>
+							<p className='mb-4 text-sm text-neutral-700 dark:text-neutral-300'>
+								Para confirmar que deseas quitar el seguimiento, escribe{' '}
+								<strong>SI</strong> en el campo y confirma.
+							</p>
+							<div className='max-w-sm'>
+								<Input
+									name='confirmText'
+									placeholder='Escribe SI para confirmar'
+									value={confirmFormik.values.confirmText}
+									onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+										confirmFormik.setFieldValue('confirmText', e.target.value)
+									}
+									onBlur={() =>
+										confirmFormik.setFieldTouched('confirmText', true)
+									}
+									isValid={!confirmFormik.errors.confirmText}
+									isTouched={Boolean(confirmFormik.touched.confirmText)}
+									invalidFeedback={confirmFormik.errors.confirmText}
+								/>
+								<p className='mt-2 text-xs text-neutral-500'>
+									Escribe explicitamente y en mayusculas SI
+								</p>
+							</div>
+						</ModalBody>
+						<ModalFooter>
+							<div />
+							<div className='flex items-center gap-2'>
+								<Button
+									variant='outline'
+									onClick={() => {
+										setShowConfirm(false);
+										confirmFormik.resetForm();
+									}}>
+									No
+								</Button>
+								<Button
+									variant='solid'
+									color='red'
+									onClick={() => {
+										const errors = confirmFormik.validateForm();
+										errors.then((errs) => {
+											if (!errs || Object.keys(errs).length === 0) {
+												setFieldValue('serial_tracking', false);
+												void submitForm();
+												setShowConfirm(false);
+												setBlockMessage(null);
+												confirmFormik.resetForm();
+											} else {
+												confirmFormik.setFieldTouched('confirmText', true);
+											}
+										});
+									}}>
+									Sí, quitar seguimiento
+								</Button>
+							</div>
+						</ModalFooter>
+					</Modal>
+				</div>
 			</div>
-		</div>
+		</>
 	);
 };
 

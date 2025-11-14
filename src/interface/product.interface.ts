@@ -1,11 +1,13 @@
 export type ProductType =
+	| 'general'
 	| 'desktop_pc'
 	| 'notebook'
 	| 'aio'
 	| 'monitor'
+	| 'docking'
 	| string;
 export type ProductConditionPolicy = 'NEW' | 'USED' | 'REFURBISHED' | 'DAMAGED' | string;
-export type ProductStatus = 'pending' | 'validated' | 'archived' | string;
+export type ProductStatus = 'pending' | 'validated' | 'rejected' | 'archived' | string;
 
 export interface IProductBrandSummary {
 	id: number;
@@ -26,9 +28,32 @@ export interface IProductImage {
 	alt?: string | null;
 }
 
+export interface IProductChildStockStatus {
+	available?: number;
+	on_hold?: number;
+	reserved?: number;
+	in_quotation?: number;
+	sold?: number;
+	total_approved?: number;
+	[key: string]: number | undefined;
+}
+
+export interface IProductChild {
+	id: number;
+	grade?: string | null;
+	sku: string;
+	name: string;
+	price?: number | string | null;
+	offer_price?: number | string | null;
+	stock?: number | null;
+	stock_by_status?: IProductChildStockStatus | null;
+	marketplace_external_ids?: Record<string, string | number> | null;
+}
+
 export interface IProduct {
 	id: number;
 	branch_id: number;
+	parent_product_id?: number | null;
 	image?: IProductImage | null;
 	gallery?: Array<IProductImage> | null;
 	product_status: ProductStatus;
@@ -53,6 +78,7 @@ export interface IProduct {
 	long_description?: string | null;
 	stock?: number | null;
 	categories?: IProductCategorySummary[];
+	children?: IProductChild[] | null;
 	created_at: string;
 	updated_at: string;
 }
@@ -122,4 +148,46 @@ export interface CreateProductPayload {
 export interface UpdateProductPayload extends Partial<CreateProductPayload> {
 	id: number;
 	branch_id?: number;
+}
+
+export interface ProductInventoryCriticalProduct {
+	id: number;
+	name: string;
+	sku: string;
+	brand_name?: string | null;
+	stock?: number | null;
+}
+
+export interface ProductInventorySummaryResponse {
+	branch_id: number;
+	params?: {
+		critical_threshold?: number;
+	};
+	summary?: {
+		products_total?: number;
+		active?: number;
+		inactive?: number;
+		with_offer?: number;
+		with_serial_tracking?: number;
+		stock_total?: number;
+		synced_products?: number;
+		stock_average?: number;
+		serial_tracking_count?: number;
+		low_stock_count?: number;
+		out_of_stock?: number;
+		with_stock_available?: number;
+	};
+	critical_products?: ProductInventoryCriticalProduct[];
+}
+
+export interface ProductInventorySummary {
+	branchId: number | null;
+	criticalThreshold: number;
+	stockTotal: number;
+	stockAverage: number;
+	lowStockCount: number;
+	outOfStock: number;
+	withStockAvailable: number;
+	syncedProducts: number;
+	serialTrackingCount: number;
 }

@@ -1,33 +1,95 @@
-import { useEffect, useState } from 'react';
-import { mockCustomers, mockCustomerStats } from '../mocks/customersMock';
-import { ICustomer, ICustomerFilters, ICustomerStats } from '../types';
+import { useEffect, useMemo } from 'react';
+import { ICustomerSupplierFilters } from '../types';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { fetchCustomerSuppliers } from '@/store/slices/customerSuppliers/customerSuppliersSlice';
+import type { ICustomerSupplier } from '@/interface/customerSupplier.interface';
 
-export function useClientes(filters: ICustomerFilters) {
-  const [customers, setCustomers] = useState<ICustomer[]>([]);
-  const [stats, setStats] = useState<ICustomerStats>(mockCustomerStats);
-  const [loading, setLoading] = useState(false);
+interface UseClientesParams {
+  subsidiaryId?: number | null;
+  filters: ICustomerSupplierFilters;
+}
 
-  useEffect(() => {
-    setLoading(true);
-    const t = setTimeout(() => {
-      let data = [...mockCustomers];
-      if (filters.search) {
-        const q = filters.search.toLowerCase();
-        data = data.filter((c) => c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q));
+export function useClientes({ subsidiaryId, filters }: UseClientesParams) {
+  const dispatch = useAppDispatch();
+  const { items, loading } = useAppSelector((s) => s.customerSuppliers);
+  const currentUser = useAppSelector((state) => state.auth.user);
+
+  // Obtener lista de subsidiarias accesibles del usuario
+  const accessibleSubsidiaryIds = useMemo(() => {
+    const subsidiaries = new Set<number>();
+
+    // ✅ USAR SOLO access.subsidiaries - Es la fuente autoritativa del backend
+    (currentUser as any)?.access?.subsidiaries?.forEach((sub: any) => {
+      if (sub?.id) subsidiaries.add(sub.id);
+      else if (typeof sub === 'number') subsidiaries.add(sub);
+    });
+
+    return subsidiaries;
+  }, [currentUser]);
+
+  // Calcular el subsidiaryId activo
+  const activeSubsidiaryId = useMemo<number | null>(() => {
+    if (subsidiaryId === null || subsidiaryId === undefined || subsidiaryId === 0) {
+      return null;
+    }
+
+    // ✅ VALIDAR ACCESO: Solo validar si tenemos lista de subsidiarias accesibles Y currentUser está cargado
+    if (currentUser && accessibleSubsidiaryIds.size > 0) {
+      if (!accessibleSubsidiaryIds.has(subsidiaryId)) {
+        // NO hacer fetch si sabemos que no tiene acceso
+        return null;
       }
-      if (filters.segment) data = data.filter((c) => c.segment === filters.segment);
-      if (filters.industry) data = data.filter((c) => c.industry === filters.industry);
-      if (filters.city) data = data.filter((c) => c.city === filters.city);
-      if (filters.is_active !== undefined) data = data.filter((c) => c.is_active === filters.is_active);
-      if (filters.loyalty_score) data = data.filter((c) => c.loyalty_score >= (filters.loyalty_score || 0));
+    } else if (!currentUser) {
+      return null;
+    }
 
-      setCustomers(data);
-      setStats(mockCustomerStats);
-      setLoading(false);
-    }, 600);
-    return () => clearTimeout(t);
-  }, [filters]);
+    return subsidiaryId;
+  }, [subsidiaryId, accessibleSubsidiaryIds, currentUser]);
 
-  return { customers, stats, loading };
+  // Fetch clientes cuando cambia el subsidiaryId o el filtro
+  useEffect(() => {
+    if (!activeSubsidiaryId || activeSubsidiaryId === 0) {
+      return;
+    }
+
+    void dispatch(fetchCustomerSuppliers({
+      subsidiaryId: activeSubsidiaryId,
+      search: filters.search || undefined,
+      with_suppliers: true
+    }));
+  }, [dispatch, activeSubsidiaryId, filters.search]);  // Mapear items del store (ya vienen filtrados por el subsidiaryId que pedimos)
+  const customers = useMemo<ICustomerSupplier[]>(() => {
+    return (items || []).map((c: any) => ({
+      id: c.id,
+      subsidiary_id: c.subsidiary_id ?? activeSubsidiaryId ?? 0,
+      name: c.name ?? `Cliente ${c.id}`,
+      created_at: c.created_at ?? new Date().toISOString(),
+      updated_at: c.updated_at ?? new Date().toISOString(),
+      suppliers_count: c.suppliers_count ?? 0,
+      suppliers: c.suppliers ?? [],
+      subsidiary: c.subsidiary ?? null,
+    }));
+  }, [items, activeSubsidiaryId]);
+
+  // Estadísticas básicas de clientes
+  const stats = useMemo(() => {
+    const total = customers.length;
+    const withSuppliers = customers.filter((c) => (c.suppliers_count ?? 0) > 0).length;
+    const totalSuppliers = customers.reduce((acc, c) => acc + (c.suppliers_count ?? 0), 0);
+
+    return {
+      total_customers: total,
+      with_suppliers: withSuppliers,
+      without_suppliers: total - withSuppliers,
+      total_suppliers_relations: totalSuppliers,
+    };
+  }, [customers]);
+
+  return {
+    customers,
+    stats,
+    loading,
+    activeSubsidiaryId
+  };
 }
 

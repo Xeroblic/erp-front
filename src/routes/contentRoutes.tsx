@@ -21,19 +21,13 @@ const SubEmpresaDetalle = lazy(() => import('@/pages/gestionAdmin/subempresa/Sub
 const SubEmpresaPersonalizacion = lazy(
 	() => import('@/pages/gestionAdmin/subempresa/SubEmpresaPersonalizacion'),
 );
-const IntegracionesWooCommerce = lazy(
-	() => import('@/pages/gestionAdmin/integraciones/IntegracionesWooCommerce'),
-);
-const WooCommerceIntegrationPage = lazy(
-	() => import('@/pages/gestionAdmin/integraciones/woocommerce/WooCommerceIntegrationPage'),
-);
-const WooCommerceProductsSyncPage = lazy(
-	() => import('@/pages/gestionAdmin/integraciones/woocommerce/WooCommerceProductsSyncPage'),
-);
-const WooCommerceOrdersImportPage = lazy(
-	() => import('@/pages/gestionAdmin/integraciones/woocommerce/WooCommerceOrdersImportPage'),
-);
-const WooStockSync = lazy(() => import('@/pages/integraciones/WooComerceSync/WooStockSync'));
+
+// Páginas de Integraciones (nuevo módulo)
+const IntegrationsListPage = lazy(() => import('@/pages/integraciones/IntegrationsListPage'));
+const UnmappedProductsPage = lazy(() => import('@/pages/integraciones/UnmappedProductsPage'));
+const SyncStockPage = lazy(() => import('@/pages/integraciones/SyncStockPage'));
+const ImportOrdersPage = lazy(() => import('@/pages/integraciones/ImportOrdersPage'));
+
 // Reportes
 const ReportsHome = lazy(() => import('@/pages/reportes/ReportsHome'));
 const SalesDashboard = lazy(() => import('@/pages/reportes/SalesDashboard'));
@@ -63,7 +57,7 @@ const InventarioPage = lazy(() => import('@/pages/inventario/Inventario'));
 const HistorialInventario = lazy(
 	() => import('@/pages/inventario/historial/HistorialInventarioAdmin'),
 );
-const VentasAdmin = lazy(() => import('@/pages/comercial/ventas/VentasAdmin'));
+const SalesListPage = lazy(() => import('@/pages/ventas/SalesListPage'));
 const CotizacionesPage = lazy(() => import('@/pages/comercial/cotizaciones/CotizacionesAdmin'));
 const TransferenciasInventario = lazy(
 	() => import('@/pages/inventario/transferencias/Transferencias'),
@@ -75,13 +69,29 @@ const TransferenciasComercial = lazy(
 // Páginas de Catálogos
 const ProductosPage = lazy(() => import('@/pages/catalogos/productos/Productos'));
 const ProductDetailPage = lazy(() => import('@/pages/catalogos/productos/ProductDetail'));
-const BodegasPage = lazy(() => import('@/pages/catalogos/bodegas/Bodegas'));
+const BodegasPage = lazy(() => import('@/pages/catalogos/bodegas/WarehouseListPage'));
+const BodegasDetailPage = lazy(() => import('@/pages/catalogos/bodegas/WarehouseDetailPage'));
 const CategoriasPage = lazy(() => import('@/pages/catalogos/categorias/Categorias'));
 const MarcasPage = lazy(() => import('@/pages/catalogos/marcas/Marcas'));
 const ProveedoresPage = lazy(() => import('@/pages/catalogos/proveedores/Proveedores'));
+const DetalleProveedorPage = lazy(() => import('@/pages/catalogos/proveedores/DetalleProveedor'));
 const ClientesPage = lazy(() => import('@/pages/catalogos/clientes/Clientes'));
+const DetalleClientePage = lazy(() => import('@/pages/catalogos/clientes/DetalleCliente'));
 const DocumentosPage = lazy(() => import('@/pages/documentos/Documentos'));
-const RevisionesTecnicasPage = lazy(() => import('@/pages/revisiones-tecnicas/RevisionesTecnicas'));
+
+// Páginas de Technical Reviews
+const TechnicalReviewsHub = lazy(() => import('@/pages/technical-reviews/index'));
+const BatchesList = lazy(() => import('@/pages/technical-reviews/batches/index'));
+const BatchCreate = lazy(() => import('@/pages/technical-reviews/batches/create'));
+const BatchDetail = lazy(() => import('@/pages/technical-reviews/batches/[batchId]/index'));
+const BatchItemReview = lazy(
+	() => import('@/pages/technical-reviews/batches/[batchId]/[batchItemId]'),
+);
+const ItemsList = lazy(() => import('@/pages/technical-reviews/items/index'));
+const ItemReview = lazy(() => import('@/pages/technical-reviews/items/[itemId]'));
+
+const NotificationsAllPage = lazy(() => import('@/pages/notificaciones/NotificationsAll'));
+const NotificationDetailPage = lazy(() => import('@/pages/notificaciones/NotificationDetail'));
 
 export interface IRoutePersonalizada extends PathRouteProps {
 	authority?: string[];
@@ -92,27 +102,6 @@ export interface IRoutePersonalizada extends PathRouteProps {
 const cfg = pagesConfig as any;
 
 const contentRoutes: IRoutePersonalizada[] = [
-	// Páginas WooCommerce
-	{
-		path: '/gestion/integraciones/woocommerce',
-		element: <WooCommerceIntegrationPage />,
-		authority: cfg.manage.subPages.integrations.authority,
-	},
-	{
-		path: '/gestion/integraciones/woocommerce-sync',
-		element: <WooCommerceProductsSyncPage />,
-		authority: cfg.manage.subPages.integrations.subPages.woocommerceSync.authority,
-	},
-	{
-		path: '/gestion/integraciones/woocommerce-stock-sync',
-		element: <WooStockSync />,
-		authority: cfg.manage.subPages.integrations.subPages.woocommerceStockSync.authority,
-	},
-	{
-		path: '/gestion/integraciones/woocommerce-import',
-		element: <WooCommerceOrdersImportPage />,
-		authority: cfg.manage.subPages.integrations.authority,
-	},
 	{ path: cfg.loginPage.to, element: <LoginPage />, public: true },
 	{ path: cfg.recuperarPassword.to, element: <RecuperarPassword />, public: true },
 	{ path: '/usuarios/activar/:token', element: <AceptarInvitacionEmpresa />, public: true },
@@ -171,16 +160,6 @@ const contentRoutes: IRoutePersonalizada[] = [
 		authority: cfg.manage.subPages.manageUsers.authority,
 	},
 	{
-		path: cfg.manage.subPages.integrations.to,
-		element: <IntegracionesWooCommerce />,
-		authority: cfg.manage.subPages.integrations.authority,
-	},
-	{
-		path: cfg.manage.subPages.integrations.subPages.woocommerceSync.to,
-		element: <WooCommerceProductsSyncPage />,
-		authority: cfg.manage.subPages.integrations.subPages.woocommerceSync.authority,
-	},
-	{
 		path: cfg.humanResources.subPages.invitationsAdmin.to,
 		element: <InvitationsAdmin />,
 		authority: cfg.humanResources.subPages.invitationsAdmin.authority,
@@ -196,21 +175,6 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: cfg.systemAdmin.subPages.systemParametersDetail.to,
 		element: <SystemParameterDetails />,
 		authority: cfg.systemAdmin.subPages.systemParametersDetail.authority,
-	},
-	{
-		path: '/gestion/integraciones/woocommerce',
-		element: <WooCommerceIntegrationPage />,
-		authority: cfg.manage.subPages.integrations.authority,
-	},
-	{
-		path: '/gestion/integraciones/woocommerce-sync',
-		element: <WooCommerceProductsSyncPage />,
-		authority: cfg.manage.subPages.integrations.subPages.woocommerceSync.authority,
-	},
-	{
-		path: '/gestion/integraciones/woocommerce-import',
-		element: <WooCommerceOrdersImportPage />,
-		authority: cfg.manage.subPages.integrations.authority,
 	},
 
 	// Rutas ERP
@@ -231,7 +195,7 @@ const contentRoutes: IRoutePersonalizada[] = [
 	},
 	{
 		path: cfg.commercial.subPages.sales.to,
-		element: <VentasAdmin />,
+		element: <SalesListPage />,
 		authority: cfg.commercial.subPages.sales.authority,
 	},
 	{
@@ -267,6 +231,40 @@ const contentRoutes: IRoutePersonalizada[] = [
 		authority: cfg.reports.subPages.financialReports.authority,
 	},
 
+	// Integraciones (WooCommerce)
+	{
+		path: cfg.integrations.subPages.list.to,
+		element: <IntegrationsListPage />,
+		authority: cfg.integrations.subPages.list.authority,
+	},
+	{
+		path: cfg.integrations.subPages.unmappedProducts.to,
+		element: <UnmappedProductsPage />,
+		authority: cfg.integrations.subPages.unmappedProducts.authority,
+	},
+	{
+		path: cfg.integrations.subPages.syncStock.to,
+		element: <SyncStockPage />,
+		authority: cfg.integrations.subPages.syncStock.authority,
+	},
+	{
+		path: cfg.integrations.subPages.importOrders.to,
+		element: <ImportOrdersPage />,
+		authority: cfg.integrations.subPages.importOrders.authority,
+	},
+
+	// Notificaciones
+	{
+		path: cfg.notifications.to,
+		element: <NotificationsAllPage />,
+		authority: cfg.notifications.authority,
+	},
+	{
+		path: '/notificaciones/:id',
+		element: <NotificationDetailPage />,
+		authority: cfg.notifications.authority,
+	},
+
 	// Rutas de Catálogos
 	{
 		path: cfg.catalogs.subPages.products.to,
@@ -281,6 +279,11 @@ const contentRoutes: IRoutePersonalizada[] = [
 	{
 		path: cfg.catalogs.subPages.warehouses.to,
 		element: <BodegasPage />,
+		authority: cfg.catalogs.subPages.warehouses.authority,
+	},
+	{
+		path: `${cfg.catalogs.subPages.warehouses.to}/:id`,
+		element: <BodegasDetailPage />,
 		authority: cfg.catalogs.subPages.warehouses.authority,
 	},
 	{
@@ -299,8 +302,18 @@ const contentRoutes: IRoutePersonalizada[] = [
 		authority: cfg.catalogs.subPages.suppliers.authority,
 	},
 	{
+		path: '/catalogos/proveedores/:id',
+		element: <DetalleProveedorPage />,
+		authority: cfg.catalogs.subPages.suppliers.authority,
+	},
+	{
 		path: cfg.catalogs.subPages.customers.to,
 		element: <ClientesPage />,
+		authority: cfg.catalogs.subPages.customers.authority,
+	},
+	{
+		path: '/catalogos/clientes/:id',
+		element: <DetalleClientePage />,
 		authority: cfg.catalogs.subPages.customers.authority,
 	},
 	{
@@ -308,9 +321,56 @@ const contentRoutes: IRoutePersonalizada[] = [
 		element: <DocumentosPage />,
 		authority: cfg.catalogs.subPages.documents.authority,
 	},
+
+	// Technical Reviews Routes
+	{
+		path: '/technical-reviews',
+		element: <TechnicalReviewsHub />,
+		authority: cfg.technical.subPages.reviews.authority,
+	},
+	{
+		path: '/technical-reviews/batches',
+		element: <BatchesList />,
+		authority: cfg.technical.subPages.reviews.authority,
+	},
+	{
+		path: '/technical-reviews/batches/create',
+		element: <BatchCreate />,
+		authority: cfg.technical.subPages.reviews.authority,
+	},
+	{
+		path: '/technical-reviews/batches/:batchId',
+		element: <BatchDetail />,
+		authority: cfg.technical.subPages.reviews.authority,
+	},
+	{
+		path: '/technical-reviews/batches/:batchId/:itemId',
+		element: <BatchItemReview />,
+		authority: cfg.technical.subPages.reviews.authority,
+	},
+	{
+		path: '/technical-reviews/batches/:batchId/items/create',
+		element: <BatchItemReview />,
+		authority: cfg.technical.subPages.reviews.authority,
+	},
+	{
+		path: '/technical-reviews/batches/:batchId/items/:itemId',
+		element: <BatchItemReview />,
+		authority: cfg.technical.subPages.reviews.authority,
+	},
+	{
+		path: '/technical-reviews/items',
+		element: <ItemsList />,
+		authority: cfg.technical.subPages.reviews.authority,
+	},
+	{
+		path: '/technical-reviews/items/:itemId',
+		element: <ItemReview />,
+		authority: cfg.technical.subPages.reviews.authority,
+	},
 	{
 		path: cfg.technical.subPages.reviews.to,
-		element: <RevisionesTecnicasPage />,
+		element: <TechnicalReviewsHub />,
 		authority: cfg.technical.subPages.reviews.authority,
 	},
 

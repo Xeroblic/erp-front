@@ -3,6 +3,7 @@ import type { ICategory } from '@/interface/category.interface';
 import type {
 	CreateProductPayload,
 	IProduct,
+	IProductBrandSummary,
 	ProductStatus,
 	ProductType,
 	UpdateProductPayload,
@@ -15,6 +16,7 @@ import type {
 	ProductAttributesForm,
 	BuildUpdatePayloadOptions,
 } from '../types/products.types';
+import type { AttributesJson } from '../types/attributes.types';
 import { PRODUCT_DRAFT_CATEGORY_SLUG, PRODUCT_TYPE_LABELS } from '../constants/products.constant';
 import {
 	areAttributeRecordsEqual,
@@ -26,7 +28,9 @@ const toOption = (value: number | string, label: string): ProductOption => ({
 	label,
 });
 
-export const createBrandOptions = (brands: IBrand[]): ProductOption[] =>
+type BrandOptionSource = Pick<IBrand, 'id' | 'name'> | IProductBrandSummary;
+
+export const createBrandOptions = (brands: BrandOptionSource[]): ProductOption[] =>
 	brands.map((brand) => toOption(brand.id, brand.name));
 
 export const createCategoryOptions = (categories: ICategory[]): ProductOption[] =>
@@ -47,6 +51,7 @@ export const buildInitialValues = (product?: IProduct | null): ProductFormValues
 	serial_tracking: product?.serial_tracking ?? false,
 	is_active: product?.is_active ?? true,
 	categories: product?.categories?.map((category) => toOption(category.id, category.name)) ?? [],
+	attributes_json: (product?.attributes_json as AttributesJson) ?? null,
 	commercial_sku: product?.commercial_sku ?? '',
 	barcode: product?.barcode ?? '',
 });
@@ -156,10 +161,14 @@ export const buildDetailUpdatePayload = (
 	if (parseNumberOrNull(product.price) !== nextPrice && typeof nextPrice === 'number') {
 		payload.price = nextPrice;
 	}
+	const currentPriceSnapshot = parseNumberOrNull(product.price);
 
 	const nextOffer = parseNumberOrNull(form.offer_price);
 	if (parseNumberOrNull(product.offer_price) !== nextOffer) {
 		payload.offer_price = nextOffer ?? null;
+		if (payload.price === undefined && typeof currentPriceSnapshot === 'number') {
+			payload.price = currentPriceSnapshot;
+		}
 	}
 	const nextCost = parseNumberOrNull(form.cost);
 	if (parseNumberOrNull(product.cost) !== nextCost) {
@@ -169,9 +178,14 @@ export const buildDetailUpdatePayload = (
 	if (parseNumberOrNull(product.warranty_months) !== nextWarranty) {
 		payload.warranty_months = nextWarranty ?? null;
 	}
+
+	// Stock: siempre debe ser un número válido
 	const nextStock = parseNumberOrNull(form.stock);
-	if (parseNumberOrNull(product.stock) !== nextStock) {
-		payload.stock = nextStock ?? null;
+	const currentStock = parseNumberOrNull(product.stock);
+
+	// Solo agregar al payload si hay un cambio Y el nuevo valor es un número válido
+	if (currentStock !== nextStock && typeof nextStock === 'number') {
+		payload.stock = nextStock;
 	}
 
 	if (includeDescriptions) {
@@ -224,4 +238,34 @@ export const collectValidationErrors = (error: unknown): string[] => {
 		return [(error as any).message as string];
 	}
 	return ['Ha ocurrido un error inesperado.'];
+};
+
+/**
+ * Inicializa attributes_json basado en el product_type seleccionado
+ * @param productType - El tipo de dispositivo seleccionado
+ * @returns El objeto attributes_json inicial o null si es 'general'
+ */
+export const initializeAttributesJson = (productType: string): Record<string, any> | null => {
+	if (!productType || productType === 'general') {
+		return null;
+	}
+
+	const productKindMap: Record<string, string> = {
+		notebook: 'notebook',
+		desktop_pc: 'desktop_pc',
+		aio: 'aio',
+		monitor: 'monitor',
+		docking: 'docking',
+	};
+
+	const productKind = productKindMap[productType];
+
+	if (!productKind) {
+		return null;
+	}
+
+	// Solo retornar el product_kind, el resto se inicializará al editar
+	return {
+		product_kind: productKind,
+	};
 };

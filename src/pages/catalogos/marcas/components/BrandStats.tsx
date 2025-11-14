@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAppSelector } from '@/store';
 import Icon from '@/components/icon/Icon';
 import Card, { CardBody } from '@/components/ui/Card';
 import { formatCurrency } from './utils';
@@ -8,8 +9,12 @@ type BrandStatsProps = {
 	stats: IBrandStats;
 };
 
-const BrandStats: React.FC<BrandStatsProps> = ({ stats }) => (
-	<div className='mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
+const BrandStats: React.FC<BrandStatsProps> = ({ stats }) => {
+  const brands = useAppSelector((s) => s.brands.items ?? []);
+  const noProducts = brands.filter((b: any) => (b?.products_count ?? b?.associated_products ?? 0) === 0).length;
+
+  return (
+	<div className='mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-2'>
 		<Card>
 			<CardBody className='flex items-center'>
 				<div className='flex h-12 w-12 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-900/20'>
@@ -26,7 +31,7 @@ const BrandStats: React.FC<BrandStatsProps> = ({ stats }) => (
 			</CardBody>
 		</Card>
 
-		<Card>
+		{/* <Card>
 			<CardBody className='flex items-center'>
 				<div className='flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/20'>
 					<Icon icon='HeroCheckCircle' className='h-6 w-6 text-emerald-600' />
@@ -40,7 +45,7 @@ const BrandStats: React.FC<BrandStatsProps> = ({ stats }) => (
 					</p>
 				</div>
 			</CardBody>
-		</Card>
+		</Card> */}
 
 		<Card>
 			<CardBody className='flex items-center'>
@@ -48,17 +53,13 @@ const BrandStats: React.FC<BrandStatsProps> = ({ stats }) => (
 					<Icon icon='HeroPauseCircle' className='h-6 w-6 text-amber-600' />
 				</div>
 				<div className='ml-4'>
-					<p className='text-sm font-medium text-gray-600 dark:text-gray-400'>
-						Marcas inactivas
-					</p>
-					<p className='text-2xl font-bold text-gray-900 dark:text-white'>
-						{stats.inactive_brands}
-					</p>
+					<p className='text-sm font-medium text-gray-600 dark:text-gray-400'>Marcas sin productos</p>
+					<p className='text-2xl font-bold text-gray-900 dark:text-white'>{noProducts}</p>
 				</div>
 			</CardBody>
 		</Card>
 
-		<Card>
+		{/* <Card>
 			<CardBody className='flex items-center'>
 				<div className='flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20'>
 					<Icon icon='HeroCurrencyDollar' className='h-6 w-6 text-green-600' />
@@ -75,8 +76,9 @@ const BrandStats: React.FC<BrandStatsProps> = ({ stats }) => (
 					</p>
 				</div>
 			</CardBody>
-		</Card>
+		</Card> */}
 	</div>
-);
+  );
+};
 
 export default BrandStats;

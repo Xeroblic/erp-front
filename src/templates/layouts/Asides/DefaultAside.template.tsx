@@ -107,15 +107,27 @@ const DefaultAsideTemplate = () => {
 	const [collapseStates, setCollapseStates] = useState<Record<string, boolean>>({
 		registro: false,
 		inventario: false,
-		// comercial: false,    // COMENTADO: Módulo aún no operativo
+		catalogos: false,
+		servicio: false,
+		comercial: false, // COMENTADO: Módulo aún no operativo
+		integraciones: false, // Módulo de Integraciones WooCommerce
 		// reportes: false,     // COMENTADO: Módulo aún no operativo
 	});
 
 	const toggleCollapse = (key: string) => {
-		setCollapseStates((prev) => ({
-			...prev,
-			[key]: !prev[key],
-		}));
+		setCollapseStates((prev) => {
+			const closedAll = Object.keys(prev).reduce(
+				(acc, k) => {
+					acc[k] = false;
+					return acc;
+				},
+				{} as Record<string, boolean>,
+			);
+			return {
+				...closedAll,
+				[key]: !prev[key],
+			};
+		});
 	};
 
 	const userPermissionsAndRoles = [
@@ -292,7 +304,7 @@ const DefaultAsideTemplate = () => {
 						</AuthorityCheckNav> */}
 
 						{/* Administrar Permisos */}
-						
+
 						{/* <AuthorityCheckNav
 							authority={[
 								...(Pages.manage.subPages.permissionsAdmin.authority || []),
@@ -329,48 +341,34 @@ const DefaultAsideTemplate = () => {
 						<AuthorityCheckNav authority={[]}></AuthorityCheckNav>
 					</NavCollapse>
 
-					{/* Módulos ERP */}
-					{/* <NavTitle>ERP</NavTitle> */}
-
-					{/* Inventario - OPERATIVO: Productos, Transferencias */}
-					{/* <NavCollapse
+					<NavTitle>Inventario</NavTitle>
+					<NavCollapse
 						key='inventario-nav'
-						text='Inventario'
-						icon='HeroCubeTransparent'
+						text={Pages.inventory.text}
+						icon={Pages.inventory.icon}
 						to=''
 						isOpen={collapseStates.inventario}
 						onToggle={() => toggleCollapse('inventario')}>
 						<AuthorityCheckNav
-							authority={Pages.inventory.authority}
-							userAuthority={userPermissionsAndRoles}>
+							authority={Pages.catalogs.subPages.warehouses.authority}
+							userAuthority={userPermissionsAndRoles}
+							requireAll={Pages.catalogs.subPages.warehouses.requireAll}>
 							<NavItem
-								text={Pages.inventory.text}
-								to={Pages.inventory.to}
-								icon={Pages.inventory.icon}
-								id={Pages.inventory.id}
-								onClick={() => navigate(Pages.inventory.to)}
+								text={Pages.catalogs.subPages.warehouses.text}
+								to={Pages.catalogs.subPages.warehouses.to}
+								icon={Pages.catalogs.subPages.warehouses.icon}
+								id={Pages.catalogs.subPages.warehouses.id}
+								onClick={() => navigate(Pages.catalogs.subPages.warehouses.to)}
 							/>
 						</AuthorityCheckNav>
-
-						<AuthorityCheckNav
-							authority={Pages.inventory.subPages.transfers.authority}
-							userAuthority={userPermissionsAndRoles}>
-							<NavItem
-								text={Pages.inventory.subPages.transfers.text}
-								to={Pages.inventory.subPages.transfers.to}
-								icon={Pages.inventory.subPages.transfers.icon}
-								id={Pages.inventory.subPages.transfers.id}
-								onClick={() => navigate(Pages.inventory.subPages.transfers.to)}
-							/>
-						</AuthorityCheckNav>
-					</NavCollapse> */}
+					</NavCollapse>
 
 					{/* =================================================
 					MÓDULOS PENDIENTES POR IMPLEMENTAR
 					================================================= */}
 
 					{/* Comercial - PENDIENTE: Módulo aún no operativo */}
-					{/* <NavCollapse
+					<NavCollapse
 						key='comercial-nav'
 						text='Comercial'
 						icon='HeroShoppingBag'
@@ -387,7 +385,7 @@ const DefaultAsideTemplate = () => {
 								id={Pages.commercial.subPages.sales.id}
 								onClick={() => navigate(Pages.commercial.subPages.sales.to)}
 							/>
-		</AuthorityCheckNav>
+						</AuthorityCheckNav>
 
 						<AuthorityCheckNav
 							authority={Pages.commercial.subPages.quotes.authority}
@@ -412,7 +410,7 @@ const DefaultAsideTemplate = () => {
 								onClick={() => navigate(Pages.commercial.subPages.transfers.to)}
 							/>
 						</AuthorityCheckNav>
-					</NavCollapse> */}
+					</NavCollapse>
 
 					{/* Reportes - PENDIENTE: Módulo aún no operativo */}
 					{/* <AuthorityCheckNav
@@ -455,6 +453,94 @@ const DefaultAsideTemplate = () => {
 						</NavCollapse>
 					</AuthorityCheckNav> */}
 
+					{/* =================================================
+					INTEGRACIONES - SOLO SUPER ADMIN
+					================================================= */}
+					<NavTitle>Integraciones</NavTitle>
+
+					<AuthorityCheckNav
+						authority={[
+							...(Pages.integrations.authority || []),
+							...(Pages.integrations.roles || []),
+						]}
+						userAuthority={userPermissionsAndRoles}
+						requireAll={Pages.integrations.requireAll}>
+						<NavCollapse
+							key='integraciones-nav'
+							text={Pages.integrations.text}
+							icon={Pages.integrations.icon}
+							to=''
+							isOpen={collapseStates.integraciones || false}
+							onToggle={() => toggleCollapse('integraciones')}>
+							<AuthorityCheckNav
+								authority={[
+									...(Pages.integrations.subPages.list.authority || []),
+									...(Pages.integrations.subPages.list.roles || []),
+								]}
+								userAuthority={userPermissionsAndRoles}>
+								<NavItem
+									text={Pages.integrations.subPages.list.text}
+									to={Pages.integrations.subPages.list.to}
+									icon={Pages.integrations.subPages.list.icon}
+									id={Pages.integrations.subPages.list.id}
+									onClick={() => navigate(Pages.integrations.subPages.list.to)}
+								/>
+							</AuthorityCheckNav>
+
+							<AuthorityCheckNav
+								authority={[
+									...(Pages.integrations.subPages.unmappedProducts.authority ||
+										[]),
+									...(Pages.integrations.subPages.unmappedProducts.roles || []),
+								]}
+								userAuthority={userPermissionsAndRoles}>
+								<NavItem
+									text={Pages.integrations.subPages.unmappedProducts.text}
+									to={Pages.integrations.subPages.unmappedProducts.to}
+									icon={Pages.integrations.subPages.unmappedProducts.icon}
+									id={Pages.integrations.subPages.unmappedProducts.id}
+									onClick={() =>
+										navigate(Pages.integrations.subPages.unmappedProducts.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
+							<AuthorityCheckNav
+								authority={[
+									...(Pages.integrations.subPages.syncStock.authority || []),
+									...(Pages.integrations.subPages.syncStock.roles || []),
+								]}
+								userAuthority={userPermissionsAndRoles}>
+								<NavItem
+									text={Pages.integrations.subPages.syncStock.text}
+									to={Pages.integrations.subPages.syncStock.to}
+									icon={Pages.integrations.subPages.syncStock.icon}
+									id={Pages.integrations.subPages.syncStock.id}
+									onClick={() =>
+										navigate(Pages.integrations.subPages.syncStock.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
+							<AuthorityCheckNav
+								authority={[
+									...(Pages.integrations.subPages.importOrders.authority || []),
+									...(Pages.integrations.subPages.importOrders.roles || []),
+								]}
+								userAuthority={userPermissionsAndRoles}>
+								<NavItem
+									text={Pages.integrations.subPages.importOrders.text}
+									to={Pages.integrations.subPages.importOrders.to}
+									icon={Pages.integrations.subPages.importOrders.icon}
+									id={Pages.integrations.subPages.importOrders.id}
+									onClick={() =>
+										navigate(Pages.integrations.subPages.importOrders.to)
+									}
+								/>
+							</AuthorityCheckNav>
+						</NavCollapse>
+					</AuthorityCheckNav>
+
 					<NavTitle>Recursos Humanos</NavTitle>
 
 					{/* Invitaciones - OPERATIVO */}
@@ -474,92 +560,102 @@ const DefaultAsideTemplate = () => {
 						/>
 					</AuthorityCheckNav>
 
-					{/* <NavTitle>Administración del Sistema</NavTitle> */}
+					<NavTitle>Servicio Técnico</NavTitle>
+					<NavCollapse
+						key='servicio-nav'
+						text='Servicio Técnico'
+						icon={Pages.technical.icon}
+						to=''
+						isOpen={collapseStates.servicio}
+						onToggle={() => toggleCollapse('servicio')}>
+						<AuthorityCheckNav
+							authority={Pages.technical.subPages.reviews.authority}
+							userAuthority={userPermissionsAndRoles}>
+							<NavItem
+								text={Pages.technical.subPages.reviews.text}
+								to={Pages.technical.subPages.reviews.to}
+								icon={Pages.technical.subPages.reviews.icon}
+								id={Pages.technical.subPages.reviews.id}
+								onClick={() => navigate(Pages.technical.subPages.reviews.to)}
+							/>
+						</AuthorityCheckNav>
 
-					{/* Parámetros del Sistema - OPERATIVO */}
+						<AuthorityCheckNav
+							authority={Pages.catalogs.subPages.suppliers.authority}
+							userAuthority={userPermissionsAndRoles}
+							requireAll={Pages.catalogs.subPages.suppliers.requireAll}>
+							<NavItem
+								text={Pages.catalogs.subPages.suppliers.text}
+								to={Pages.catalogs.subPages.suppliers.to}
+								icon={Pages.catalogs.subPages.suppliers.icon}
+								id={Pages.catalogs.subPages.suppliers.id}
+								onClick={() => navigate(Pages.catalogs.subPages.suppliers.to)}
+							/>
+						</AuthorityCheckNav>
 
-					{/* <AuthorityCheckNav
-						authority={Pages.systemAdmin.subPages.systemParameters.authority}
-						userAuthority={userPermissionsAndRoles}
-						requireAll={Pages.systemAdmin.subPages.systemParameters.requireAll}>
-						<NavItem
-							text={Pages.systemAdmin.subPages.systemParameters.text}
-							to={Pages.systemAdmin.subPages.systemParameters.to}
-							icon={Pages.systemAdmin.subPages.systemParameters.icon}
-							id={Pages.systemAdmin.subPages.systemParameters.id}
-							onClick={() => navigate(Pages.systemAdmin.subPages.systemParameters.to)}
-						/>
-					</AuthorityCheckNav> */}
-
-					{/* Módulo Técnico - PENDIENTE: Módulo aún no operativo */}
-					{/* <AuthorityCheckNav
-						authority={Pages.technical.subPages.reviews.authority}
-						userAuthority={userPermissionsAndRoles}>
-						<NavItem
-							text={Pages.technical.subPages.reviews.text}
-							to={Pages.technical.subPages.reviews.to}
-							icon={Pages.technical.subPages.reviews.icon}
-							id={Pages.technical.subPages.reviews.id}
-							onClick={() => navigate(Pages.technical.subPages.reviews.to)}
-						/>
-					</AuthorityCheckNav> */}
+						<AuthorityCheckNav
+							authority={Pages.catalogs.subPages.customers.authority}
+							userAuthority={userPermissionsAndRoles}
+							requireAll={Pages.catalogs.subPages.customers.requireAll}>
+							<NavItem
+								text={Pages.catalogs.subPages.customers.text}
+								to={Pages.catalogs.subPages.customers.to}
+								icon={Pages.catalogs.subPages.customers.icon}
+								id={Pages.catalogs.subPages.customers.id}
+								onClick={() => navigate(Pages.catalogs.subPages.customers.to)}
+							/>
+						</AuthorityCheckNav>
+					</NavCollapse>
 
 					<NavTitle>Catálogos</NavTitle>
 
-					{/* CATÁLOGOS OPERATIVOS: Productos, Bodegas, Categorías, Marcas */}
-					{/* Los catálogos corresponden a los modelos operativos mostrados en la imagen */}
+					{/* CATÁLOGOS OPERATIVOS: Productos, Categorías, Marcas */}
+					<NavCollapse
+						key='catalogos-nav'
+						text={Pages.catalogs.text}
+						icon={Pages.catalogs.icon}
+						to=''
+						isOpen={collapseStates.catalogos}
+						onToggle={() => toggleCollapse('catalogos')}>
+						<AuthorityCheckNav
+							authority={Pages.catalogs.subPages.products.authority}
+							userAuthority={userPermissionsAndRoles}
+							requireAll={Pages.catalogs.subPages.products.requireAll}>
+							<NavItem
+								text={Pages.catalogs.subPages.products.text}
+								to={Pages.catalogs.subPages.products.to}
+								icon={Pages.catalogs.subPages.products.icon}
+								id={Pages.catalogs.subPages.products.id}
+								onClick={() => navigate(Pages.catalogs.subPages.products.to)}
+							/>
+						</AuthorityCheckNav>
 
-					<AuthorityCheckNav
-						authority={Pages.catalogs.subPages.products.authority}
-						userAuthority={userPermissionsAndRoles}
-						requireAll={Pages.catalogs.subPages.products.requireAll}>
-						<NavItem
-							text={Pages.catalogs.subPages.products.text}
-							to={Pages.catalogs.subPages.products.to}
-							icon={Pages.catalogs.subPages.products.icon}
-							id={Pages.catalogs.subPages.products.id}
-							onClick={() => navigate(Pages.catalogs.subPages.products.to)}
-						/>
-					</AuthorityCheckNav>
+						<AuthorityCheckNav
+							authority={Pages.catalogs.subPages.categories.authority}
+							userAuthority={userPermissionsAndRoles}
+							requireAll={Pages.catalogs.subPages.categories.requireAll}>
+							<NavItem
+								text={Pages.catalogs.subPages.categories.text}
+								to={Pages.catalogs.subPages.categories.to}
+								icon={Pages.catalogs.subPages.categories.icon}
+								id={Pages.catalogs.subPages.categories.id}
+								onClick={() => navigate(Pages.catalogs.subPages.categories.to)}
+							/>
+						</AuthorityCheckNav>
 
-					<AuthorityCheckNav
-						authority={Pages.catalogs.subPages.warehouses.authority}
-						userAuthority={userPermissionsAndRoles}
-						requireAll={Pages.catalogs.subPages.warehouses.requireAll}>
-						<NavItem
-							text={Pages.catalogs.subPages.warehouses.text}
-							to={Pages.catalogs.subPages.warehouses.to}
-							icon={Pages.catalogs.subPages.warehouses.icon}
-							id={Pages.catalogs.subPages.warehouses.id}
-							onClick={() => navigate(Pages.catalogs.subPages.warehouses.to)}
-						/>
-					</AuthorityCheckNav>
-
-					<AuthorityCheckNav
-						authority={Pages.catalogs.subPages.categories.authority}
-						userAuthority={userPermissionsAndRoles}
-						requireAll={Pages.catalogs.subPages.categories.requireAll}>
-						<NavItem
-							text={Pages.catalogs.subPages.categories.text}
-							to={Pages.catalogs.subPages.categories.to}
-							icon={Pages.catalogs.subPages.categories.icon}
-							id={Pages.catalogs.subPages.categories.id}
-							onClick={() => navigate(Pages.catalogs.subPages.categories.to)}
-						/>
-					</AuthorityCheckNav>
-
-					<AuthorityCheckNav
-						authority={Pages.catalogs.subPages.brands.authority}
-						userAuthority={userPermissionsAndRoles}
-						requireAll={Pages.catalogs.subPages.brands.requireAll}>
-						<NavItem
-							text={Pages.catalogs.subPages.brands.text}
-							to={Pages.catalogs.subPages.brands.to}
-							icon={Pages.catalogs.subPages.brands.icon}
-							id={Pages.catalogs.subPages.brands.id}
-							onClick={() => navigate(Pages.catalogs.subPages.brands.to)}
-						/>
-					</AuthorityCheckNav>
+						<AuthorityCheckNav
+							authority={Pages.catalogs.subPages.brands.authority}
+							userAuthority={userPermissionsAndRoles}
+							requireAll={Pages.catalogs.subPages.brands.requireAll}>
+							<NavItem
+								text={Pages.catalogs.subPages.brands.text}
+								to={Pages.catalogs.subPages.brands.to}
+								icon={Pages.catalogs.subPages.brands.icon}
+								id={Pages.catalogs.subPages.brands.id}
+								onClick={() => navigate(Pages.catalogs.subPages.brands.to)}
+							/>
+						</AuthorityCheckNav>
+					</NavCollapse>
 
 					{/* Proveedores - PENDIENTE: No está operativo aún */}
 					{/* <AuthorityCheckNav

@@ -67,6 +67,7 @@ export interface LegacyProductFormValues {
 	serial_tracking: boolean;
 	is_active: boolean;
 	categories: ProductOption[];
+	attributes_json?: AttributesJson | null;
 	// Campos adicionales opcionales
 	commercial_sku?: string;
 	barcode?: string;

@@ -7,7 +7,7 @@ import {
 } from '@/pages/catalogos/productos/utils/dynamicAttributes.utils';
 import type { AttributesData, ProductKind } from '../types';
 
-const VALID_PRODUCT_KINDS: ProductKind[] = ['desktop_pc', 'notebook', 'aio', 'monitor'];
+const VALID_PRODUCT_KINDS: ProductKind[] = ['desktop_pc', 'notebook', 'aio', 'monitor', 'docking'];
 
 const FIELDS_TO_HIDE: Record<ProductKind, string[]> = {
 	desktop_pc: [
@@ -75,6 +75,21 @@ const FIELDS_TO_HIDE: Record<ProductKind, string[]> = {
 		'connectivity.power_input',
 		'notes',
 	],
+	docking: [
+		'cpu',
+		'ram',
+		'storage',
+		'gpu',
+		'os',
+		'camera',
+		'audio',
+		'keyboard',
+		'display',
+		'connectivity',
+		'packaging',
+		'notes',
+		'category_grade',
+	],
 };
 
 const shouldShowFieldByProductKind = (productKind: ProductKind, fieldName: string) => {
@@ -92,7 +107,10 @@ export const useDynamicAttributesEditor = () => {
 		setFieldValueRef.current = setFieldValue;
 	}, [setFieldValue]);
 
-	const productTypeStr = values.product_type || 'desktop_pc';
+	// If product_type is not set (producto "general"), use empty string so
+	// fields are shown by default. Previously defaulted to 'desktop_pc'
+	// which caused many CPU fields to be hidden for products without type.
+	const productTypeStr = values.product_type || '';
 	const currentProductKind: ProductKind =
 		(attributes.product_kind as ProductKind) || (productTypeStr as ProductKind);
 

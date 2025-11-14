@@ -1,45 +1,128 @@
 <!doctype html>
 <html lang="es" dir="ltr">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <meta name="color-scheme" content="dark light" />
 
-        <!-- Favicon & PWA -->
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/logo192.png" />
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#18181b" />
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#18181b" />
 
-        <!-- SEO básico -->
-        <title>Zentria | Plataforma Central de Gestión</title>
-        <meta name="description" content="Zentria es un ERP modular para la gestión centralizada de empresas, ventas, soporte técnico y operaciones." />
+    <title>Zentria | Plataforma Central de Gestión</title>
+    <meta name="description" content="Zentria es un ERP modular para la gestión centralizada de empresas, ventas, soporte técnico y operaciones." />
+    <link rel="canonical" href="https://www.tu-dominio.com" />
 
-        <!-- Performance hints -->
-        <meta http-equiv="x-dns-prefetch-control" content="on" />
-        <!-- Si usas Google Fonts, descomenta estas 2 líneas -->
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <meta property="og:title" content="Zentria | Plataforma Central de Gestión" />
+    <meta property="og:description" content="Zentria es un ERP modular para la gestión centralizada." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.tu-dominio.com" />
+    <meta property="og:image" content="https://www.tu-dominio.com/zentria-og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="es_ES" />
 
-        <!-- Preload de recursos probables -->
-        <link rel="preload" as="image" href="/logo192.png" imagesizes="192x192" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Zentria | Plataforma Central de Gestión" />
+    <meta name="twitter:description" content="Zentria es un ERP modular para la gestión centralizada." />
+    <meta name="twitter:image" content="https://www.tu-dominio.com/zentria-twitter-image.png" />
+    <link rel="icon" href="/logo192.png?v=zentria1" type="image/png" />
+    <link rel="apple-touch-icon" href="/logo192.png?v=zentria1" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
-        <!-- iOS PWA -->
-        <meta name="mobile-web-app-capable" content="yes">    
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta http-equiv="x-dns-prefetch-control" content="on" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" as="image" href="/logo192.png" imagesizes="192x192" />
+    <style id="critical-styles">
+        /* Reseteo básico y fondo de carga */
+        html, body {
+            margin: 0;
+            padding: 0;
+            background-color: #18181b; /* Coincide con tu theme-color dark */
+            color: #f4f4f5;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
 
+        /* Estilos para el "Skip Link" de Accesibilidad (a11y)
+          Oculto por defecto, visible al hacer 'focus' (navegar con Tab)
+        */
+        .skip-link {
+            position: absolute;
+            top: -100px; /* Oculto fuera de la pantalla */
+            left: 10px;
+            background: #f4f4f5;
+            color: #18181b;
+            padding: 10px 15px;
+            z-index: 9999;
+            text-decoration: none;
+            font-weight: 600;
+            border-radius: 4px;
+            transition: top 0.3s ease-in-out;
+        }
+        .skip-link:focus {
+            top: 10px; /* Visible al recibir foco */
+        }
 
+        /* Estilos de carga inicial (antes de que React se monte)
+          Se aplica solo si #root está vacío.
+        */
+        #root:empty::before {
+            content: 'Iniciando Zentria...';
+            display: block;
+            text-align: center;
+            padding-top: 5rem;
+            font-size: 1.125rem;
+            opacity: 0.6;
+        }
+    </style>
 
-    <!-- <meta http-equiv="Cache-Control" content="no-cache" /> -->
-    </head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=TU_GA_ID"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'TU_GA_ID');
+    </script>
 
-    <body>
-        <noscript>Debes habilitar JavaScript para ejecutar esta aplicación.</noscript>
-        <div id="root"></div>
-        <div id="portal-root"></div>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Zentria",
+      "applicationCategory": "BusinessApplication",
+      "description": "Zentria es un ERP modular para la gestión centralizada de empresas, ventas, soporte técnico y operaciones.",
+      "operatingSystem": "Web (Cross-platform)",
+      "offers": {
+        "@type": "Offer",
+        "price": "0", // Ajusta si es necesario
+        "priceCurrency": "CLP" // Ajusta la moneda
+      },
+      "organization": {
+        "@type": "Organization",
+        "name": "Zentria",
+        "url": "https://www.tu-dominio.com",
+        "logo": "https://www.tu-dominio.com/logo192.png"
+      }
+    }
+    </script>
+</head>
 
-        <!-- Vite inyecta modulepreload automático para los chunks importados.
-            Mantén el entrypoint en module para ES modules. -->
-        <script type="module" src="/src/index.tsx"></script>
-    </body>
+<body>
+    <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+
+    <noscript>
+      <div style="padding: 2rem; text-align: center;">
+        Debes habilitar JavaScript para ejecutar esta aplicación.
+      </div>
+    </noscript>
+
+    <div id="root"></div>
+    <div id="portal-root"></div>
+
+    <script type="module" src="/src/index.tsx"></script>
+</body>
+
 </html>

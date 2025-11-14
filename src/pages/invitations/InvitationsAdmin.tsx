@@ -236,18 +236,6 @@ const InvitationsAdmin: React.FC = () => {
 								<h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
 									Invitaciones
 								</h3>
-								<div className='flex items-center space-x-3'>
-									<Badge color='blue' className='text-xs'>
-										{invitations.length} de {totalResults}
-									</Badge>
-									<Button
-										color='blue'
-										size='sm'
-										onClick={openCreateModal}
-										icon='HeroPlus'>
-										Nueva Invitación
-									</Button>
-								</div>
 							</div>
 						</CardHeader>
 						<CardBody>
@@ -257,6 +245,7 @@ const InvitationsAdmin: React.FC = () => {
 								pagination={pagination}
 								onPageChange={handlePageChange}
 								onPageSizeChange={handlePageSizeChange}
+								openCreateModal={openCreateModal}
 							/>
 						</CardBody>
 					</Card>

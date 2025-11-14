@@ -163,9 +163,14 @@ export interface MonitorAttributes {
 	notes: NotesAttributes;
 }
 
+export interface DockingAttributes {
+	product_kind: 'docking';
+}
+
 export type AttributesJson =
 	| DesktopAttributes
 	| NotebookAttributes
 	| AioAttributes
 	| MonitorAttributes
+	| DockingAttributes
 	| null;

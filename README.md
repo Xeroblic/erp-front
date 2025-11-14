@@ -300,4 +300,3 @@ const footerRoutes: RouteProps[] = [
 Puedes establecer las "Plantillas de Footer" para que se muestren en las rutas que desees. Si no deseas ningún "Footer" en una ruta, puedes establecer el elemento en `null`.
 
 Si tendrás datos sobre la página en "Footer", especifica que no habrá ningún "Footer" en esa ruta con `null` y defínelo dentro de la página. Así no tendrás que preocuparte por mover los datos hacia arriba.
-

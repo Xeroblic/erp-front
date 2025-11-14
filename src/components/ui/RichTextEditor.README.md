@@ -233,7 +233,7 @@ En mobile, el toolbar se adapta automáticamente mostrando menos botones en modo
 />
 ```
 
-## ⚠️ Notas
+## Notas
 
 - El contenido se guarda como **HTML** en la base de datos
 - El HTML generado es limpio y sanitizado

@@ -15,51 +15,65 @@ interface IStyledButtonProps {
 	status: TDarkMode;
 }
 const StyledButton: FC<IStyledButtonProps> = ({ text, icon, status }) => {
-	const { darkModeStatus, setDarkModeStatus } = useDarkModeManager();
-	const { asideStatus } = useAsideStatus();
+    const { darkModeStatus, setDarkModeStatus } = useDarkModeManager();
+    const { asideStatus } = useAsideStatus();
 
-	const handeClick = () => {
-		let nextMode: TDarkMode;
-		if (!asideStatus) {
-			if (darkModeStatus === DARK_MODE.DARK) nextMode = DARK_MODE.LIGHT;
-			else if (darkModeStatus === DARK_MODE.LIGHT) nextMode = DARK_MODE.SYSTEM;
-			else nextMode = DARK_MODE.DARK;
-		} else {
-			nextMode = status;
-		}
+    const handeClick = () => {
+        // Detectar si el aside está hoverado para permitir selección directa
+        const asideHovered = !!document.querySelector('aside[data-component-name="Aside"]:hover');
+        let nextMode: TDarkMode;
+        if (!asideStatus && !asideHovered) {
+            // Ciclar cuando está colapsado y sin hover
+            if (darkModeStatus === DARK_MODE.DARK) nextMode = DARK_MODE.LIGHT;
+            else if (darkModeStatus === DARK_MODE.LIGHT) nextMode = DARK_MODE.SYSTEM;
+            else nextMode = DARK_MODE.DARK;
+        } else {
+            // Selección directa cuando está expandido o en hover
+            nextMode = status;
+        }
 
-		void setDarkModeStatus(nextMode);
-	};
+        void setDarkModeStatus(nextMode);
+    };
 
-	if (!asideStatus && darkModeStatus !== status) return null;
-	return (
-		<button
-			type='button'
-			aria-label={`${text} Mode`}
-			className={classNames(
-				'p-1.5',
-				'rounded-full',
-				'text-zinc-500 dark:hover:text-zinc-100',
-				'flex flex-auto items-center justify-center',
-				'truncate',
-				{
-					'bg-white shadow-lg dark:bg-zinc-800 dark:text-white': darkModeStatus === status,
-					'hover:text-zinc-950': darkModeStatus !== status,
-				},
-				themeConfig.transition,
-			)}
-			onClick={handeClick}>
-			<Icon
-				icon={icon}
-				className={classNames('text-xl', {
-					'ltr:mr-1.5 rtl:ml-1.5': asideStatus,
-				})}
-			/>
-			{asideStatus && (
-				<span className='overflow-hidden truncate whitespace-nowrap'>{text}</span>
-			)}
-		</button>
-	);
+    return (
+        <button
+            type='button'
+            aria-label={`${text} Mode`}
+            className={classNames(
+                'p-1.5',
+                'rounded-full',
+                'text-zinc-500 dark:hover:text-zinc-100',
+                'flex flex-auto items-center justify-center',
+                'truncate',
+                {
+                    'bg-white shadow-lg dark:bg-zinc-800 dark:text-white': darkModeStatus === status,
+                    'hover:text-zinc-950': darkModeStatus !== status,
+                },
+                // Cuando está colapsado, ocultar los que no son el modo actual hasta hover
+                !asideStatus && darkModeStatus !== status && 'hidden md:group-hover/aside:flex',
+                themeConfig.transition,
+            )}
+            onClick={handeClick}>
+            <Icon
+                icon={icon}
+                className={classNames(
+                    'text-xl',
+                    {
+                        'ltr:mr-1.5 rtl:ml-1.5': asideStatus,
+                    },
+                    // Añadir separación al hacer hover cuando está colapsado
+                    !asideStatus && 'md:group-hover/aside:ltr:mr-1.5 md:group-hover/aside:rtl:ml-1.5',
+                )}
+            />
+            <span
+                className={classNames(
+                    'overflow-hidden truncate whitespace-nowrap',
+                    asideStatus ? 'inline' : 'hidden md:group-hover/aside:inline',
+                )}>
+                {text}
+            </span>
+        </button>
+    );
 };
 const DarkModeSwitcherPart = () => {
 	const { t } = useTranslation();

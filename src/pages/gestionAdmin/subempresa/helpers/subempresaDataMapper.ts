@@ -1,15 +1,27 @@
 export const buildSubempresaPayload = (values: any, companyId: number, selectedManager: any) => {
+    const managerFullName = `${selectedManager.first_name ?? ''} ${selectedManager.last_name ?? ''}`.trim();
+
     const payload: any = {
         subsidiary_name: values.nombre.trim(),
-        subsidiary_manager_name: `${selectedManager.first_name} ${selectedManager.last_name}`.trim(),
         company_id: companyId,
     };
+
+    const managerId = Number(values.managerId ?? selectedManager.id ?? selectedManager.user_id);
+    if (managerId && !Number.isNaN(managerId)) {
+        payload.manager_id = managerId;
+        payload.subsidiary_manager_id = managerId;
+    }
+
+    if (managerFullName) {
+        payload.subsidiary_manager_name = managerFullName;
+    }
 
     if (selectedManager.email) {
         payload.subsidiary_manager_email = selectedManager.email;
     }
-    if (selectedManager.celular) {
-        payload.subsidiary_manager_phone = selectedManager.celular;
+    const managerPhone = selectedManager.celular || selectedManager.phone || selectedManager.phone_number;
+    if (managerPhone) {
+        payload.subsidiary_manager_phone = managerPhone;
     }
     if (values.rut?.trim()) {
         payload.subsidiary_rut = values.rut.trim();

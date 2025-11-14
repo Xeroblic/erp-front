@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
 	fetchProducts,
-	fetchProductsFromMultipleBranches,
+	fetchBranchInventorySummary,
 	createProduct as createProductThunk,
 	updateProduct as updateProductThunk,
 	deleteProduct as deleteProductThunk,
@@ -12,7 +12,7 @@ import { fetchMisSucursales } from '@/store/slices/sucursales/sucursalesSlice';
 import { fetchBrands } from '@/store/slices/brands/brandsSlice';
 import { fetchCategories } from '@/store/slices/categories/categoriesSlice';
 import type { IProduct, ProductFilters } from '@/interface/product.interface';
-import { PRODUCT_EMPTY_STATS } from '@/constants/product.constant';
+import { PRODUCT_EMPTY_INVENTORY_SUMMARY, PRODUCT_EMPTY_STATS } from '@/constants/product.constant';
 
 interface UseProductosParams {
 	branchId?: number | null;
@@ -30,14 +30,18 @@ const INITIAL_PRODUCTS_STATE: ProductsState = {
 		last_page: 1,
 	},
 	stats: { ...PRODUCT_EMPTY_STATS },
+	inventory: { ...PRODUCT_EMPTY_INVENTORY_SUMMARY },
+	criticalProducts: [],
 	current: null,
 	loading: false,
+	inventoryLoading: false,
 	currentLoading: false,
 	creating: false,
 	updating: false,
 	deleting: false,
 	error: null,
 	currentError: null,
+	inventoryError: null,
 	attributesLoading: false,
 	attributesUpdating: false,
 	attributesError: null,
@@ -66,18 +70,20 @@ export function useProductos({ branchId, filters, page = 1, perPage = 15 }: UseP
 		return branches[0]?.id ?? null;
 	}, [branchId, branches]);
 
-	const userBranchIds = useMemo(() => branches.map(b => b.id), [branches]);
+	useEffect(() => {
+		if (!activeBranchId) return;
+		void dispatch(
+			fetchProducts({
+				branchId: activeBranchId,
+				params: { ...filters, page, per_page: perPage },
+			}),
+		);
+	}, [dispatch, activeBranchId, filters, page, perPage]);
 
 	useEffect(() => {
-		if (activeBranchId === null && userBranchIds.length > 0) {
-			void dispatch(fetchProductsFromMultipleBranches({
-				branchIds: userBranchIds,
-				params: { ...filters, page, per_page: perPage }
-			}));
-		} else if (activeBranchId) {
-			void dispatch(fetchProducts({ branchId: activeBranchId, params: { ...filters, page, per_page: perPage } }));
-		}
-	}, [dispatch, activeBranchId, userBranchIds, filters, page, perPage]);
+		if (!activeBranchId) return;
+		void dispatch(fetchBranchInventorySummary({ branchId: activeBranchId }));
+	}, [dispatch, activeBranchId]);
 
 	useEffect(() => {
 		if (!activeBranchId) return;
@@ -91,15 +97,15 @@ export function useProductos({ branchId, filters, page = 1, perPage = 15 }: UseP
 	}, [dispatch, categoriesState.items.length, categoriesState.loading]);
 
 	const refresh = useCallback(() => {
-		if (activeBranchId === null && userBranchIds.length > 0) {
-			void dispatch(fetchProductsFromMultipleBranches({
-				branchIds: userBranchIds,
-				params: { ...filters, page, per_page: perPage }
-			}));
-		} else if (activeBranchId) {
-			void dispatch(fetchProducts({ branchId: activeBranchId, params: { ...filters, page, per_page: perPage } }));
-		}
-	}, [dispatch, activeBranchId, userBranchIds, filters, page, perPage]);
+		if (!activeBranchId) return;
+		void dispatch(
+			fetchProducts({
+				branchId: activeBranchId,
+				params: { ...filters, page, per_page: perPage },
+			}),
+		);
+		void dispatch(fetchBranchInventorySummary({ branchId: activeBranchId }));
+	}, [dispatch, activeBranchId, filters, page, perPage]);
 
 	const createProduct = useCallback(
 		async (payload: { data: Partial<IProduct>; categoryIds: number[] }) => {
@@ -150,11 +156,15 @@ export function useProductos({ branchId, filters, page = 1, perPage = 15 }: UseP
 		products: productsState.items,
 		meta: productsState.meta,
 		stats: productsState.stats,
+		inventory: productsState.inventory,
+		criticalProducts: productsState.criticalProducts,
 		loading: productsState.loading || branchesLoading,
+		inventoryLoading: productsState.inventoryLoading,
 		creating: productsState.creating,
 		updating: productsState.updating,
 		deleting: productsState.deleting,
 		error: productsState.error,
+		inventoryError: productsState.inventoryError,
 		branches,
 		activeBranchId,
 		brands: brandsState.items,

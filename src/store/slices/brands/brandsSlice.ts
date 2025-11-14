@@ -124,9 +124,9 @@ const fetchBrandDetails = async (branchId: number, brandId: number): Promise<IBr
 };
 
 const uploadBrandLogo = async (
-	branchId: number,
-	brandId: number,
-	file: File,
+    branchId: number,
+    brandId: number,
+    file: File,
 ): Promise<string | null> => {
 	// validate original file before heavy processing
 	const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/svg+xml'];
@@ -170,9 +170,59 @@ type BrandRequestShape = {
 	name: string;
 	is_active: boolean;
 	code?: string;
-	origin_country?: string;
-	manufacturer?: string;
 };
+
+// Subir múltiples imágenes a la galería de la marca
+const uploadBrandGalleryFiles = async (
+    branchId: number,
+    brandId: number,
+    files: File[],
+): Promise<IBrand | null> => {
+    if (!files?.length) return await fetchBrandDetails(branchId, brandId);
+
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/svg+xml'];
+    const valid: File[] = [];
+    for (const f of files) {
+        const v = validateFile(f, { maxKB: 8192, allowedMimes: allowed });
+        if (!v.ok) continue;
+        const processed = await convertFileToWebP(f);
+        if (processed) valid.push(processed);
+    }
+    if (!valid.length) return await fetchBrandDetails(branchId, brandId);
+
+    const formData = new FormData();
+    valid.forEach((f) => formData.append('files[]', f, f.name));
+    const meta = valid.map((_, idx) => ({ index: idx, collection: 'gallery', sort_order: idx, alt_text: 'Galería', primary: false }));
+    formData.append('meta', JSON.stringify(meta));
+
+    try {
+        await ApiService.fetchData<{ data?: any }, FormData>({
+            url: `/branches/${branchId}/brands/${brandId}/media/upload-multiple`,
+            method: 'post',
+            data: formData,
+        });
+        const refreshed = await fetchBrandDetails(branchId, brandId);
+        return refreshed;
+    } catch {
+        const refreshed = await fetchBrandDetails(branchId, brandId);
+        return refreshed;
+    }
+};
+
+export const uploadBrandGallery = createAsyncThunk<
+    IBrand | null,
+    { branchId: number; brandId: number; files: File[] },
+    { rejectValue: string }
+>('brands/uploadBrandGallery', async ({ branchId, brandId, files }, { rejectWithValue }) => {
+    try {
+        const refreshed = await uploadBrandGalleryFiles(branchId, brandId, files);
+        return refreshed;
+    } catch (error: any) {
+        return rejectWithValue(
+            error?.response?.data?.message ?? error?.message ?? 'Error al subir galería de la marca',
+        );
+    }
+});
 
 const makeBrandRequestBody = (payload: BrandRequestShape) => {
 	const body: Record<string, unknown> = {
@@ -181,8 +231,7 @@ const makeBrandRequestBody = (payload: BrandRequestShape) => {
 	};
 
 	if (payload.code) body.code = payload.code;
-	if (payload.origin_country) body.origin_country = payload.origin_country;
-	if (payload.manufacturer) body.manufacturer = payload.manufacturer;
+	// Campos removidos del formulario (no entregados por backend): origin_country, manufacturer
 
 	return body;
 };
@@ -373,6 +422,19 @@ const brandsSlice = createSlice({
 			.addCase(deleteBrand.rejected, (state, action) => {
 				state.deleting = false;
 				state.error = action.payload ?? 'No se pudo eliminar la marca';
+			})
+			// Upload gallery
+			.addCase(uploadBrandGallery.fulfilled, (state, action) => {
+				const payload = action.payload;
+				if (!payload) return;
+				const index = state.items.findIndex((b) => b.id === payload.id);
+				if (index !== -1) {
+					state.items[index] = payload;
+					state.stats = computeStats(state.items);
+				}
+			})
+			.addCase(uploadBrandGallery.rejected, (state, action) => {
+				state.error = action.payload ?? 'No se pudo subir la galería de la marca';
 			});
 	},
 });

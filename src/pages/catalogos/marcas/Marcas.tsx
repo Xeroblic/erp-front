@@ -15,6 +15,7 @@ import EditarMarca from './components/modals/EditarMarca';
 import DetalleMarca from './components/modals/DetalleMarca';
 import EliminarMarca from './components/modals/EliminarMarca';
 import type { IBrand, IBrandFilters } from '@/interface/brand.interface';
+import { IBranch } from '@/interface';
 
 const Marcas: React.FC = () => {
 	const [filters, setFilters] = useState<IBrandFilters>({ search: '' });
@@ -37,16 +38,35 @@ const Marcas: React.FC = () => {
 		createBrand,
 		updateBrand,
 		deleteBrand,
+		uploadBrandGallery,
 	} = useMarcas(filters);
 
 	const branchOptions = useMemo(
 		() =>
-			branches.map((branch) => ({
+			branches.map((branch : IBranch) => ({
 				value: String(branch.id),
-				label: branch.name ?? `Sucursal ${branch.id}`,
+				label: branch.branch_name ?? `Sucursal ${branch.id}`,
 			})),
 		[branches],
 	);
+
+	const branchLookup = useMemo(() => {
+		const lookup: Record<number, string> = {};
+		branchOptions.forEach((item: any) => {
+			const id = Number(item.value);
+			if (!Number.isNaN(id)) {
+				lookup[id] = item.label;
+			}
+		});
+		return lookup;
+	}, [branchOptions]);
+
+	const selectedBranchValue =
+		filters.branch_id !== undefined && filters.branch_id !== null
+			? String(filters.branch_id)
+			: activeBranchId !== null
+				? String(activeBranchId)
+				: '';
 
 	const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		setFilters((prev) => ({ ...prev, search: event.target.value }));
@@ -57,23 +77,29 @@ const Marcas: React.FC = () => {
 		setFilters((prev) => ({ ...prev, branch_id: value ? Number(value) : undefined }));
 	};
 
-	const handleCreateSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleCreateSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		const formData = new FormData(event.currentTarget);
 
 		try {
-			await createBrand({
-				name: String(formData.get('name') ?? '').trim(),
-				code: formData.get('code')?.toString().trim() || undefined,
-				origin_country: formData.get('origin_country')?.toString().trim() || undefined,
-				manufacturer: formData.get('manufacturer')?.toString().trim() || undefined,
-				is_active: formData.get('is_active') === '1',
-				branch_id: filters.branch_id ?? activeBranchId ?? undefined,
-				image: (() => {
-					const file = formData.get('image');
-					return file instanceof File && file.size > 0 ? file : null;
-				})(),
-			});
+			const branchIdValue = formData.get('branch_id');
+			const branchId =
+				branchIdValue && branchIdValue !== 'null' ? Number(branchIdValue) : undefined;
+
+      const created = await createBrand({
+        name: String(formData.get('name') ?? '').trim(),
+        code: formData.get('code')?.toString().trim() || undefined,
+        is_active: formData.get('is_active') === '1',
+        branch_id: branchId ?? filters.branch_id ?? activeBranchId ?? undefined,
+        image: (() => {
+          const file = formData.get('image');
+          return file instanceof File && file.size > 0 ? file : null;
+        })(),
+      });
+      const galleryFiles = (formData.getAll('gallery') as File[]).filter((f) => f && typeof (f as any).size === 'number');
+      if (created?.id && (galleryFiles?.length ?? 0) > 0) {
+        await uploadBrandGallery(created.id, galleryFiles, created.branch_id ?? branchId ?? activeBranchId ?? undefined);
+      }
 
 			toast.success('Marca creada correctamente');
 			setCreateOpen(false);
@@ -89,19 +115,21 @@ const Marcas: React.FC = () => {
 		const formData = new FormData(event.currentTarget);
 
 		try {
-			await updateBrand({
-				id: selected.id,
-				branch_id: selected.branch_id ?? activeBranchId ?? undefined,
-				name: String(formData.get('name') ?? '').trim(),
-				code: formData.get('code')?.toString().trim() || undefined,
-				origin_country: formData.get('origin_country')?.toString().trim() || undefined,
-				manufacturer: formData.get('manufacturer')?.toString().trim() || undefined,
-				is_active: formData.get('is_active') === '1',
-				image: (() => {
-					const file = formData.get('image');
-					return file instanceof File && file.size > 0 ? file : null;
-				})(),
-			});
+      const updated = await updateBrand({
+        id: selected.id,
+        branch_id: selected.branch_id ?? activeBranchId ?? undefined,
+        name: String(formData.get('name') ?? '').trim(),
+        code: formData.get('code')?.toString().trim() || undefined,
+        is_active: formData.get('is_active') === '1',
+        image: (() => {
+          const file = formData.get('image');
+          return file instanceof File && file.size > 0 ? file : null;
+        })(),
+      });
+      const galleryFilesEdit = (formData.getAll('gallery') as File[]).filter((f) => f && typeof (f as any).size === 'number');
+      if (updated?.id && (galleryFilesEdit?.length ?? 0) > 0) {
+        await uploadBrandGallery(updated.id, galleryFilesEdit, updated.branch_id ?? activeBranchId ?? undefined);
+      }
 
 			toast.success('Marca actualizada');
 			setEditOpen(false);
@@ -154,18 +182,32 @@ const Marcas: React.FC = () => {
 							onChange={handleSearchChange}
 							className='w-full sm:w-72'
 						/>
-						<Select
+						{/* <Select
 							name='branch_id'
-							value={filters.branch_id ? String(filters.branch_id) : ''}
+							value={selectedBranchValue}
 							onChange={handleBranchChange}
 							className='w-full sm:w-60'>
-							<option value=''>Todas las sucursales</option>
+							<option value=''>
+								{branchOptions.length > 0
+									? 'Sucursal predeterminada'
+									: 'Sin sucursales visibles'}
+							</option>
 							{branchOptions.map((option) => (
 								<option key={option.value} value={option.value}>
 									{option.label}
 								</option>
 							))}
 						</Select>
+						{(filters.branch_id || activeBranchId) && (
+							<p className='text-xs text-gray-500 sm:w-48'>
+								Mostrando datos de{' '}
+								<span className='font-semibold'>
+									{branchLookup[
+										Number(filters.branch_id ?? activeBranchId ?? NaN)
+									] ?? 'tu sucursal asignada'}
+								</span>
+							</p>
+						)} */}
 						<Button color='violet' onClick={() => setCreateOpen(true)} icon='HeroPlus'>
 							Nueva marca
 						</Button>
@@ -183,6 +225,7 @@ const Marcas: React.FC = () => {
 				<BrandsGrid
 					brands={brands}
 					loading={loading}
+					branchLookup={branchLookup}
 					onView={(brand) => {
 						setSelected(brand);
 						setViewOpen(true);
@@ -203,6 +246,7 @@ const Marcas: React.FC = () => {
 				setIsOpen={setCreateOpen}
 				onSubmit={handleCreateSubmit}
 				isLoading={creating}
+				defaultBranchId={filters.branch_id ?? activeBranchId ?? undefined}
 			/>
 			<EditarMarca
 				isOpen={editOpen}

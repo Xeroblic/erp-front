@@ -1,12 +1,15 @@
 // Constantes para el sistema de atributos de productos ECOPC
 
-export const PRODUCT_DEVICE_TYPES = [
-    { value: 'general', label: 'General' },
-    { value: 'notebook', label: 'Notebook reacondicionado' },
-    { value: 'desktop_pc', label: 'Desktop reacondicionado' },
-    { value: 'aio', label: 'AIO reacondicionado' },
-    { value: 'monitor', label: 'Monitor reacondicionado' },
-] as const;
+import { PRODUCT_TYPES, PRODUCT_TYPE_LABELS } from './products.constant';
+
+/**
+ * Opciones de tipos de dispositivo para selects
+ * Se genera automáticamente desde PRODUCT_TYPE_LABELS para mantener sincronización
+ */
+export const PRODUCT_DEVICE_TYPES = PRODUCT_TYPES.map((type) => ({
+    value: type,
+    label: PRODUCT_TYPE_LABELS[type] ?? type,
+}));
 
 export const CATEGORY_GRADES = [
     { value: 'A', label: 'A - Excelente estado (70–100% estética, batería >50%)' },

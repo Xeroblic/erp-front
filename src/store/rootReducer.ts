@@ -14,7 +14,6 @@ import subEmpresa, { SubempresaState } from './slices/subempresa/subEmpresaSlice
 import sucursales, { SucursalesState } from './slices/sucursales/sucursalesSlice';
 import permissions from './slices/permissions/permissionsSlice';
 import usersAdmin from './slices/usersAdmin/usersAdminSlice';
-import feature from './slices/featuresSlice/featuresSlice';
 // Importamos el tipo sin crear dependencia circular
 import type { PersonalizacionState } from './slices/personalizacion/personalizacionSlice';
 
@@ -26,6 +25,12 @@ import inventario from './slices/inventory/inventorySlice';
 import brands from './slices/brands/brandsSlice';
 import categories, { CategoriesState } from './slices/categories/categoriesSlice';
 import products, { ProductsState } from './slices/products/productsSlice';
+import notifications from './slices/notifications/notificationsSlice';
+import suppliers from './slices/suppliers/suppliersSlice';
+import customerSuppliers from './slices/customerSuppliers/customerSuppliersSlice';
+import warehouse from './slices/warehouses/warehouseSlice';
+import technicalReviews, { TechnicalReviewsState } from './slices/technicalReviews/slice/technicalReviewsSlice';
+import { integrationsReducer, unmappedProductsReducer } from './slices/integrations';
 
 export interface RootState {
 	auth: AuthState;
@@ -37,7 +42,6 @@ export interface RootState {
 	sucursales: SucursalesState;
 	permissions: ReturnType<typeof permissions>;
 	usersAdmin: ReturnType<typeof usersAdmin>;
-	feature: ReturnType<typeof feature>;
 	personalizacion?: PersonalizacionState; // Opcional al inicio, se agrega dinámicamente
 	// calendario?: CalendarioState;
 	// item?: ItemState;
@@ -51,6 +55,13 @@ export interface RootState {
 	brands: ReturnType<typeof brands>;
 	categories: CategoriesState;
 	products: ProductsState;
+	notifications: ReturnType<typeof notifications>;
+	suppliers: ReturnType<typeof suppliers>;
+	customerSuppliers: ReturnType<typeof customerSuppliers>;
+	warehouse: ReturnType<typeof warehouse>;
+	technicalReviews: TechnicalReviewsState;
+	integrations: ReturnType<typeof integrationsReducer>;
+	unmappedProducts: ReturnType<typeof unmappedProductsReducer>;
 	[RtkQueryService.reducerPath]: any;
 }
 
@@ -70,7 +81,6 @@ const staticReducers = {
 	cliente,
 	permissions,
 	usersAdmin,
-	feature,
 	// Nuevos slices ERP
 	transferencias,
 	cotizaciones,
@@ -79,6 +89,13 @@ const staticReducers = {
 	brands,
 	categories,
 	products,
+	notifications,
+	suppliers,
+	customerSuppliers,
+	warehouse,
+	technicalReviews,
+	integrations: integrationsReducer,
+	unmappedProducts: unmappedProductsReducer,
 	// personalizacion, // Comentado temporalmente
 	[RtkQueryService.reducerPath]: RtkQueryService.reducer,
 };

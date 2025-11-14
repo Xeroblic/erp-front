@@ -52,7 +52,12 @@ export const productSchema = Yup.object({
   uom: Yup.string().nullable(),
   condition_policy: Yup.string().nullable(),
 
-  price: Yup.number().typeError("Precio inválido").min(0).required("Precio requerido"),
+  price: Yup.number()
+    .transform((value, originalValue) => (originalValue === '' || originalValue === null || originalValue === undefined ? 0 : value))
+    .typeError("Precio inválido")
+    .min(0)
+    .notRequired()
+    .default(0),
   cost: Yup.number().typeError("Costo inválido").min(0).nullable(),
   offer_price: Yup.number().typeError("Precio oferta inválido").min(0).nullable(),
   warranty_months: Yup.number().typeError("Meses inválidos").min(0).integer().nullable(),
@@ -70,7 +75,12 @@ export const productSchemaCreate = Yup.object({
   name: Yup.string().required('Nombre requerido').max(255, 'Máximo 255 caracteres'),
   brand_id: Yup.number().typeError('Marca inválida').required('Marca requerida'),
   branch_id: Yup.number().typeError('Sucursal inválida').required('Debe seleccionar una sucursal').nullable(),
-  price: Yup.number().typeError('Precio inválido').min(0, 'Precio debe ser mayor o igual a 0').required('Precio requerido'),
+  price: Yup.number()
+    .transform((value, originalValue) => (originalValue === '' || originalValue === null || originalValue === undefined ? 0 : value))
+    .typeError('Precio inválido')
+    .min(0, 'Precio debe ser mayor o igual a 0')
+    .default(0)
+    .notRequired(),
   categories: Yup.array()
     .of(Yup.object({ value: Yup.number().required(), label: Yup.string().required() }))
     .min(1, 'Selecciona al menos una categoría')
@@ -88,4 +98,63 @@ export const productSchemaCreate = Yup.object({
   serial_tracking: Yup.boolean(),
   is_active: Yup.boolean(),
   attributes_json: Yup.mixed().nullable(),
+});
+
+
+export const productDetailSchema = Yup.object().shape({
+  sku: Yup.string().trim().required('El SKU es obligatorio'),
+  name: Yup.string().trim().required('El nombre es obligatorio').max(255, 'Máximo 255 caracteres'),
+  brand_id: Yup.mixed()
+    .required('Debes seleccionar una marca')
+    .test('brand_id', 'Debes seleccionar una marca válida', (v) => v !== '' && v !== 0),
+  category_ids: Yup.array()
+    .of(Yup.number())
+    .min(1, 'Selecciona al menos una categoría'),
+
+  price: Yup.number()
+    .typeError('El precio debe ser un número')
+    .min(0, 'El precio no puede ser negativo')
+    .max(999999999999.99, 'El precio es demasiado grande (máximo: 999,999,999,999.99)')
+    .test('decimal-places', 'Máximo 2 decimales', (value) => {
+      if (value == null) return true;
+      return /^\d+(\.\d{1,2})?$/.test(value.toString());
+    })
+    .required('El precio base es obligatorio'),
+
+  offer_price: Yup.number()
+    .typeError('El precio oferta debe ser un número')
+    .min(0, 'El precio oferta no puede ser negativo')
+    .max(999999999999.99, 'El precio oferta es demasiado grande (máximo: 999,999,999,999.99)')
+    .test('decimal-places', 'Máximo 2 decimales', (value) => {
+      if (value == null) return true;
+      return /^\d+(\.\d{1,2})?$/.test(value.toString());
+    })
+    .max(Yup.ref('price'), 'El precio oferta no puede superar el precio base')
+    .nullable(),
+
+  cost: Yup.number()
+    .typeError('El costo debe ser un número')
+    .min(0, 'El costo no puede ser negativo')
+    .max(999999999999.99, 'El costo es demasiado grande (máximo: 999,999,999,999.99)')
+    .test('decimal-places', 'Máximo 2 decimales', (value) => {
+      if (value == null) return true;
+      return /^\d+(\.\d{1,2})?$/.test(value.toString());
+    })
+    .nullable(),
+
+  warranty_months: Yup.number()
+    .typeError('La garantía debe ser un número')
+    .integer('Debe ser un número entero')
+    .min(0, 'Debe ser 0 o mayor')
+    .max(999, 'La garantía no puede exceder 999 meses')
+    .nullable(),
+
+  stock: Yup.number()
+    .typeError('El stock debe ser un número')
+    .integer('Debe ser un número entero')
+    .min(0, 'El stock no puede ser negativo')
+    .max(999999999, 'El stock es demasiado grande')
+    .nullable(),
+
+  product_status: Yup.string().required('Selecciona el estado del producto'),
 });

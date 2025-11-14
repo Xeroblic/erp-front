@@ -1,0 +1,387 @@
+/**
+ * DesktopForm - Formulario de revisión técnica para Desktop
+ */
+import React, { useEffect } from 'react';
+import Card, { CardBody, CardHeader } from '@/components/ui/Card';
+import Input from '@/components/form/Input';
+import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
+import Textarea from '@/components/form/Textarea';
+import Checkbox from '@/components/form/Checkbox';
+import Icon from '@/components/icon/Icon';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { fetchValidationRulesByType } from '@/store/slices/technicalReviews';
+import type { UpdateItemDetailsPayload } from '@/interface/technicalReviews.interface';
+
+interface DesktopFormProps {
+	branchId: number;
+	values: Partial<UpdateItemDetailsPayload>;
+	onChange: (field: string, value: any) => void;
+	readOnly?: boolean;
+}
+
+const DesktopForm: React.FC<DesktopFormProps> = ({
+	branchId,
+	values,
+	onChange,
+	readOnly = false,
+}) => {
+	const dispatch = useAppDispatch();
+	const validationLoading = useAppSelector((s) => s.technicalReviews.validationRulesLoading);
+
+	useEffect(() => {
+		if (branchId) {
+			dispatch(fetchValidationRulesByType({ branchId, equipmentType: 'desktop' }));
+		}
+	}, [dispatch, branchId]);
+
+	const generalConditionOptions: TSelectOption[] = [
+		{ value: 'like_new', label: 'Como nuevo' },
+		{ value: 'good_shape', label: 'Buen estado' },
+		{ value: 'visible_wear', label: 'Desgaste visible' },
+		{ value: 'needs_repair', label: 'Requiere reparación' },
+		{ value: 'scrap', label: 'Solo repuestos' },
+	];
+
+	const conditionOptions: TSelectOption[] = [
+		{ value: 'ok', label: 'OK' },
+		{ value: 'worn', label: 'Desgastado' },
+		{ value: 'missing_pieces', label: 'Faltan piezas' },
+		{ value: 'scratched', label: 'Rayado' },
+		{ value: 'broken', label: 'Roto' },
+	];
+
+	const ramTypeOptions: TSelectOption[] = [
+		{ value: 'DDR3', label: 'DDR3' },
+		{ value: 'DDR4', label: 'DDR4' },
+		{ value: 'DDR5', label: 'DDR5' },
+	];
+
+	const storageTechOptions: TSelectOption[] = [
+		{ value: 'HDD', label: 'HDD' },
+		{ value: 'SSD', label: 'SSD' },
+		{ value: 'M.2', label: 'M.2' },
+		// { value: 'NVMe', label: 'NVMe' },
+	];
+
+	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		onChange(e.target.name, e.target.value);
+	};
+
+	const handleSelectChange = (name: string) => (option: any) => {
+		const selectedOption = option as TSelectOption | null;
+		onChange(name, selectedOption?.value || null);
+	};
+
+	const handleCheckboxChange = (name: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+		onChange(name, e.target.checked);
+	};
+
+	const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+		onChange(e.target.name, e.target.value);
+	};
+
+	const handleNumberChange = (name: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+		const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+		onChange(name, val);
+	};
+
+	if (validationLoading) {
+		return (
+			<Card>
+				<CardBody className='p-6'>
+					<div className='flex items-center justify-center py-8'>
+						<Icon icon='HeroArrowPath' className='mr-2 h-5 w-5 animate-spin' />
+						<span className='text-gray-600 dark:text-gray-400'>
+							Cargando reglas de validación...
+						</span>
+					</div>
+				</CardBody>
+			</Card>
+		);
+	}
+
+	return (
+		<div className='space-y-6'>
+			{/* Información General */}
+			<Card>
+				<CardHeader>
+					<div className='flex items-center gap-2'>
+						<Icon icon='HeroInformationCircle' className='h-5 w-5 text-blue-600' />
+						<h3 className='text-lg font-semibold'>Información General</h3>
+					</div>
+				</CardHeader>
+				<CardBody className='space-y-4'>
+					<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+						<div>
+							<label className='mb-2 block text-sm font-medium'>
+								Marca <span className='text-red-500'>*</span>
+							</label>
+							<Input
+								type='text'
+								name='brand'
+								value={values.brand || ''}
+								onChange={handleInputChange}
+								placeholder='Ej: Dell, HP'
+								disabled={readOnly}
+							/>
+						</div>
+						<div>
+							<label className='mb-2 block text-sm font-medium'>
+								Modelo <span className='text-red-500'>*</span>
+							</label>
+							<Input
+								type='text'
+								name='model'
+								value={values.model || ''}
+								onChange={handleInputChange}
+								placeholder='Ej: OPTIPLEX 7090'
+								disabled={readOnly}
+							/>
+						</div>
+						<div>
+							<label className='mb-2 block text-sm font-medium'>Línea</label>
+							<Input
+								type='text'
+								name='line'
+								value={values.line || ''}
+								onChange={handleInputChange}
+								placeholder='Ej: Optiplex'
+								disabled={readOnly}
+							/>
+						</div>
+						<div>
+							<label className='mb-2 block text-sm font-medium'>
+								Estado General <span className='text-red-500'>*</span>
+							</label>
+							<SelectReact
+								name='general_condition'
+								options={generalConditionOptions}
+								value={
+									values.general_condition
+										? generalConditionOptions.find(
+												(o) => o.value === values.general_condition,
+											) || null
+										: null
+								}
+								onChange={handleSelectChange('general_condition')}
+								placeholder='Seleccionar estado'
+								isDisabled={readOnly}
+							/>
+						</div>
+					</div>
+				</CardBody>
+			</Card>
+
+			{/* Especificaciones Técnicas */}
+			<Card>
+				<CardHeader>
+					<div className='flex items-center gap-2'>
+						<Icon icon='HeroCpuChip' className='h-5 w-5 text-purple-600' />
+						<h3 className='text-lg font-semibold'>Especificaciones Técnicas</h3>
+					</div>
+				</CardHeader>
+				<CardBody className='space-y-4'>
+					<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+						<div>
+							<label className='mb-2 block text-sm font-medium'>
+								Procesador <span className='text-red-500'>*</span>
+							</label>
+							<Input
+								type='text'
+								name='processor'
+								value={values.processor || ''}
+								onChange={handleInputChange}
+								placeholder='Ej: I7-10700 2.90GHz'
+								disabled={readOnly}
+							/>
+						</div>
+						<div>
+							<label className='mb-2 block text-sm font-medium'>
+								Tamaño RAM <span className='text-red-500'>*</span>
+							</label>
+							<Input
+								type='text'
+								name='ram_size'
+								value={values.ram_size || ''}
+								onChange={handleInputChange}
+								placeholder='Ej: 16 GB'
+								disabled={readOnly}
+							/>
+						</div>
+						<div>
+							<label className='mb-2 block text-sm font-medium'>Slots RAM</label>
+							<Input
+								type='text'
+								name='ram_slots'
+								value={values.ram_slots || ''}
+								onChange={handleInputChange}
+								placeholder='Ej: 16X1'
+								disabled={readOnly}
+							/>
+						</div>
+						<div>
+							<label className='mb-2 block text-sm font-medium'>Tipo RAM</label>
+							<SelectReact
+								name='ram_type'
+								options={ramTypeOptions}
+								value={
+									values.ram_type
+										? ramTypeOptions.find((o) => o.value === values.ram_type) ||
+											null
+										: null
+								}
+								onChange={handleSelectChange('ram_type')}
+								placeholder='Seleccionar tipo'
+								isDisabled={readOnly}
+							/>
+						</div>
+						<div>
+							<label className='mb-2 block text-sm font-medium'>
+								Tamaño Almacenamiento <span className='text-red-500'>*</span>
+							</label>
+							<Input
+								type='text'
+								name='storage_size'
+								value={values.storage_size || ''}
+								onChange={handleInputChange}
+								placeholder='Ej: 512 GB'
+								disabled={readOnly}
+							/>
+						</div>
+						<div>
+							<label className='mb-2 block text-sm font-medium'>
+								Tecnología Almacenamiento
+							</label>
+							<SelectReact
+								name='storage_technology'
+								options={storageTechOptions}
+								value={
+									values.storage_technology
+										? storageTechOptions.find(
+												(o) => o.value === values.storage_technology,
+											) || null
+										: null
+								}
+								onChange={handleSelectChange('storage_technology')}
+								placeholder='Seleccionar'
+								isDisabled={readOnly}
+							/>
+						</div>
+						<div>
+							<label className='mb-2 block text-sm font-medium'>
+								Sistema Operativo
+							</label>
+							<Input
+								type='text'
+								name='operating_system'
+								value={values.operating_system || ''}
+								onChange={handleInputChange}
+								placeholder='Ej: Windows 11 Pro'
+								disabled={readOnly}
+							/>
+						</div>
+						<div className='flex items-center pt-8'>
+							<Checkbox
+								id='has_cd_drive'
+								name='has_cd_drive'
+								checked={values.has_cd_drive || false}
+								onChange={handleCheckboxChange('has_cd_drive')}
+								disabled={readOnly}
+								label='Tiene Unidad CD/DVD'
+							/>
+						</div>
+					</div>
+				</CardBody>
+			</Card>
+
+			{/* Carcasa */}
+			<Card>
+				<CardHeader>
+					<div className='flex items-center gap-2'>
+						<Icon icon='HeroShieldCheck' className='h-5 w-5 text-gray-600' />
+						<h3 className='text-lg font-semibold'>Carcasa</h3>
+					</div>
+				</CardHeader>
+				<CardBody>
+					<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+						<div>
+							<label className='mb-2 block text-sm font-medium'>
+								Estado Cubierta
+							</label>
+							<SelectReact
+								name='cover_condition'
+								options={conditionOptions}
+								value={
+									values.cover_condition
+										? conditionOptions.find(
+												(o) => o.value === values.cover_condition,
+											) || null
+										: null
+								}
+								onChange={handleSelectChange('cover_condition')}
+								placeholder='Seleccionar'
+								isDisabled={readOnly}
+							/>
+						</div>
+					</div>
+				</CardBody>
+			</Card>
+
+			{/* Conectividad - Simplificada para Desktop */}
+			<Card>
+				<CardHeader>
+					<div className='flex items-center gap-2'>
+						<Icon icon='HeroSignal' className='h-5 w-5 text-blue-600' />
+						<h3 className='text-lg font-semibold'>Conectividad</h3>
+					</div>
+				</CardHeader>
+				<CardBody className='space-y-4'>
+					<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+						<div className='flex items-center'>
+							<Checkbox
+								id='has_wifi'
+								name='has_wifi'
+								checked={values.has_wifi || false}
+								onChange={handleCheckboxChange('has_wifi')}
+								disabled={readOnly}
+								label='Tiene Wi-Fi'
+							/>
+						</div>
+						<div className='flex items-center'>
+							<Checkbox
+								id='has_bluetooth'
+								name='has_bluetooth'
+								checked={values.has_bluetooth || false}
+								onChange={handleCheckboxChange('has_bluetooth')}
+								disabled={readOnly}
+								label='Tiene Bluetooth'
+							/>
+						</div>
+					</div>
+				</CardBody>
+			</Card>
+
+			{/* Observaciones */}
+			<Card>
+				<CardHeader>
+					<div className='flex items-center gap-2'>
+						<Icon icon='HeroDocumentText' className='h-5 w-5 text-gray-600' />
+						<h3 className='text-lg font-semibold'>Observaciones</h3>
+					</div>
+				</CardHeader>
+				<CardBody>
+					<Textarea
+						name='observations'
+						value={values.observations || ''}
+						onChange={handleTextareaChange}
+						rows={4}
+						placeholder='Notas adicionales...'
+						disabled={readOnly}
+					/>
+				</CardBody>
+			</Card>
+		</div>
+	);
+};
+
+export default DesktopForm;

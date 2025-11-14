@@ -9,12 +9,13 @@ export interface IPersonalizacionUsuario {
 	dark_mode: number;
 	usuario: number;
 	sucursal_principal: number | null;
+	subsidiary_id: number | null;
 	empresa: number | null;
 	company_id?: number;
 }
 
 export interface IUserMe {
-	pk:number;
+	pk: number;
 	id: number;
 	email: string;
 	first_name: string;
@@ -71,6 +72,10 @@ export interface IUserMe {
 	branch?: {
 		id: number;
 		name: string;
+		subsidiary?: {
+			id: number;
+			name: string;
+		} | null;
 	} | null;
 	region?: number;
 	provincia?: number;

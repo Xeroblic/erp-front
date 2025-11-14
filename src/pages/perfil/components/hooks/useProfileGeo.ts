@@ -81,43 +81,69 @@ export function useProfileGeo(
 		}
 	}, [formik.values.region, listaProvincias]);
 
-  useEffect(() => {
-    if (!formik.values.provincia) {
-      setOptionsComuna([]);
-      return;
-    }
+	useEffect(() => {
+		// If provincia isn't set but the form already has a comuna value, keep the comuna
+		// visible in the select so the user sees the preselected value (even if the
+		// full list hasn't loaded yet).
+		if (!formik.values.provincia) {
+			const currentComuna = formik.values.comuna ? String(formik.values.comuna) : '';
+			if (!currentComuna) {
+				setOptionsComuna([]);
+				return;
+			}
 
-    const all = listaComunas || [];
-    if (all.length === 0) {
-      return;
-    }
+			const all = listaComunas || [];
+			const found = all.find((c) => String(c.codigo) === currentComuna);
+			const opt = found ? { value: String(found.codigo), label: found.nombre } : { value: currentComuna, label: 'Cargando…' };
+			setOptionsComuna([opt]);
+			return;
+		}
 
-    const filtered = all.filter(
-      (c) => c?.codigo !== undefined && String(c.codigo_padre) === formik.values.provincia,
-    );
+		const all = listaComunas || [];
+		// DEBUG: help trace why comuna selection may not appear
+		try {
+			// eslint-disable-next-line no-console
+			console.debug('[useProfileGeo] provincia=', formik.values.provincia, 'comuna=', formik.values.comuna, 'listaComunas.length=', (all || []).length);
+		} catch (e) {
+			/* ignore */
+		}
+		if (all.length === 0) {
+			return;
+		}
 
-    let opts = filtered.map((c) => ({ value: String(c.codigo), label: c.nombre }));
-    const currentComuna = formik.values.comuna ? String(formik.values.comuna) : '';
-    if (currentComuna) {
-      const exists = opts.some((o) => String(o.value) === currentComuna);
-      if (!exists) {
-        const inAll = all.find((c) => String(c.codigo) === currentComuna);
-        if (inAll) {
-          opts = [{ value: String(inAll.codigo), label: inAll.nombre }, ...opts];
-        } else {
-          opts = [{ value: currentComuna, label: currentComuna }, ...opts];
-        }
-      }
-    }
-    setOptionsComuna(opts);
+		const filtered = all.filter(
+			(c) => c?.codigo !== undefined && String(c.codigo_padre) === formik.values.provincia,
+		);
 
-    if (opts.length > 0) {
-      const comunaValida = opts.some((c) => String(c.value) === String(formik.values.comuna));
-      if (!comunaValida && formik.values.comuna) {
-        formik.setFieldValue('comuna', '', false);
-      }
-    }
-  }, [formik.values.provincia, listaComunas]);
+		let opts = filtered.map((c) => ({ value: String(c.codigo), label: c.nombre }));
+		const currentComuna = formik.values.comuna ? String(formik.values.comuna) : '';
+		if (currentComuna) {
+			const exists = opts.some((o) => String(o.value) === currentComuna);
+			if (!exists) {
+				const inAll = all.find((c) => String(c.codigo) === currentComuna);
+				if (inAll) {
+					opts = [{ value: String(inAll.codigo), label: inAll.nombre }, ...opts];
+				} else {
+					opts = [{ value: currentComuna, label: currentComuna }, ...opts];
+				}
+			}
+		}
+		try {
+			// eslint-disable-next-line no-console
+			console.debug('[useProfileGeo] comuna options prepared, opts.length=', opts.length, 'opts[0]=', opts[0]);
+		} catch (e) {
+			/* ignore */
+		}
+
+		setOptionsComuna(opts);
+
+		if (opts.length > 0) {
+			const comunaValida = opts.some((c) => String(c.value) === String(formik.values.comuna));
+			if (!comunaValida && formik.values.comuna) {
+				formik.setFieldValue('comuna', '', false);
+			}
+		}
+	}, [formik.values.provincia, listaComunas]);
 
 	return { optionsRegion, optionsProvincia, optionsComuna };
 }

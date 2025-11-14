@@ -12,7 +12,7 @@ export function useProfileAvatar(userData: any, userId: number | null, dispatch:
 			toast.error('No se encontro la informacion del usuario activo');
 			return;
 		}
-		const allowed = ['image/jpeg', 'image/png', 'image/jpg'];
+		const allowed = ['image/jpeg', 'image/webp', 'image/png', 'image/jpg'];
 		if (!allowed.includes(file.type)) {
 			toast.error('Solo se permiten imagenes JPG o PNG');
 			return;

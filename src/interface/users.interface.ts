@@ -21,9 +21,9 @@ export interface IUser {
     roles?: string[];
     authority?: string[];
     permissions?: string[];
-    company?: any; // IEmpresa
-    subsidiary?: any; // ISubempresa
-    branch?: any; // IBranch
+    company?: any;
+    subsidiary?: any;
+    branch?: any;
 
     // Campos calculados
     full_name?: string;

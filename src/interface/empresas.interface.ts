@@ -8,54 +8,82 @@ export interface IUsuarioEmpresa {
   updated_at: string;
 }
 
-export interface ISucursal {
+export interface IBranch {
   id: number;
-  subsidiary_id?: number; // Para compatibilidad con backend
-  subempresa_id?: number; // Para compatibilidad legacy
-  branch_name?: string; // Campo del backend
+  subsidiary_id?: number;
+  subempresa_id?: number;
+  branch_name: string;
   branch_rut?: string;
   branch_phone?: string;
   branch_address?: string;
   branch_email?: string;
-  branch_manager_name?: string;
-  branch_manager_phone?: string;
-  branch_manager_email?: string;
+
+  manager_id?: number | null;
+  manager?: {
+    id?: number;
+    name?: string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    phone?: string | null;
+    phone_number?: string | null;
+    position?: string;
+  };
+
   branch_status?: string | number | boolean;
+  branch_opening_hours?: string | null;
+  branch_location?: string | null;
   branch_created_at?: string;
   branch_updated_at?: string;
 
-  // Campos normalizados para el frontend (mapeo de los anteriores)
-  nombre?: string; // Para compatibilidad legacy
-  name: string;
+  commune_id?: number;
+  commune?: {
+    id: number;
+    name: string;
+    province_id?: number;
+  };
+
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ISucursal extends IBranch {
+  // Alias normalizados usados en el frontend
+  nombre?: string;
+  name?: string;
   rut?: string;
   phone?: string;
-  address?: string;
   email?: string;
+  address?: string;
+  direccion?: string;
+
   manager_name?: string;
   manager_phone?: string;
   manager_email?: string;
+
   status?: string | number | boolean;
   descripcion?: string;
-  created_at: string;
-  updated_at: string;
-  direccion?: string; // Para compatibilidad legacy
   usuarios?: IUsuarioEmpresa[];
 
-  // Información adicional de la subsidiaria
   subsidiary_name?: string;
   subsidiary_rut?: string;
+
+  commune_name?: string;
 }
-
-export interface IBranch {
-  id: number;
-  branch_name: string;
-}
-
-
 
 export interface ISubempresa {
   id: number;
   company_id: number;
+  manager_id?: number;
+  manager?: {
+    id?: number;
+    name?: string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    phone?: string | null;
+    phone_number?: string | null;
+  };
   subsidiary_name?: string;
   subsidiary_rut?: string;
   subsidiary_website?: string;
@@ -80,11 +108,11 @@ export interface ISubempresa {
   manager_phone?: string;
   manager_email?: string;
   status?: string | number | boolean;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 
-  sucursales: ISucursal[];
-  branches?: IBranch[]; // Nueva propiedad para la estructura del backend
+  sucursales?: ISucursal[];
+  branches?: IBranch[];
   branches_count?: number;
 }
 

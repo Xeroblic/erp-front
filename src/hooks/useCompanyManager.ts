@@ -127,6 +127,13 @@ const useCompanyManager = (): UseCompanyManager => {
 					cacheRef.current?.companies.find((c) => c.subsidiary_id === subsidiaryId);
 				if (selectedCompany) setCurrentSubsidiaryName(selectedCompany.name);
 
+				const nextSubsidiaryId = selectedCompany?.subsidiary_id ?? subsidiaryId ?? null;
+				window.dispatchEvent(
+					new CustomEvent('user-branch-changed', {
+						detail: { branchId: selectedCompany?.subsidiary_id ?? null, subsidiaryId: nextSubsidiaryId },
+					}),
+				);
+
 				// 5) Invalida cache de empresas (por si cambió accesos)
 				cacheRef.current = null;
 				lastLoadedAtRef.current = null;
@@ -159,15 +166,33 @@ const useCompanyManager = (): UseCompanyManager => {
 				let derived: CompanyInfo[] = [];
 				let derivedName = currentSubsidiaryName;
 
+				// 🔐 Obtener subsidiarias accesibles del usuario
+				const accessibleSubsidiaryIds = new Set<number>();
+				// De companies (multi-empresa)
+				(userSnapshot as any)?.companies?.forEach((company: any) => {
+					if (company.id) accessibleSubsidiaryIds.add(company.id);
+				});
+				// De subsidiary actual
+				if (userSnapshot?.subsidiary?.id) {
+					accessibleSubsidiaryIds.add(userSnapshot.subsidiary.id);
+				}
+				// De company actual
+				if (userSnapshot?.company?.id) {
+					accessibleSubsidiaryIds.add(userSnapshot.company.id);
+				}
+
 				if (userSnapshot?.companies?.length) {
-					derived = userSnapshot.companies.map((c: any) => ({
-						id: c.id,
-						name: c.name || c.company_name,
-						rut: c.rut || '',
-						role: c.role || userSnapshot.position || 'employee',
-						is_primary: Boolean(c.is_primary),
-						subsidiary_id: c.id,
-					}));
+					// ✅ Solo companies accesibles
+					derived = userSnapshot.companies
+						.filter((c: any) => !accessibleSubsidiaryIds.size || accessibleSubsidiaryIds.has(c.id))
+						.map((c: any) => ({
+							id: c.id,
+							name: c.name || c.company_name,
+							rut: c.rut || '',
+							role: c.role || userSnapshot.position || 'employee',
+							is_primary: Boolean(c.is_primary),
+							subsidiary_id: c.id,
+						}));
 				} else if (userSnapshot?.subsidiary) {
 					derived = [
 						{
@@ -181,17 +206,21 @@ const useCompanyManager = (): UseCompanyManager => {
 					];
 					derivedName = userSnapshot.subsidiary.name;
 				} else if (personalization?.sucursal_principal) {
-					// fallback mínimo con la sucursal guardada en personalización
-					derived = [
-						{
-							id: personalization.sucursal_principal,
-							name: `Subsidiaria ${personalization.sucursal_principal}`,
-							rut: '',
-							role: userSnapshot?.position || 'employee',
-							is_primary: false,
-							subsidiary_id: personalization.sucursal_principal,
-						},
-					];
+					//  Solo agregar si está en accesibles o no podemos determinar
+					if (!accessibleSubsidiaryIds.size || accessibleSubsidiaryIds.has(personalization.sucursal_principal)) {
+						derived = [
+							{
+								id: personalization.sucursal_principal,
+								name: `Subsidiaria ${personalization.sucursal_principal}`,
+								rut: '',
+								role: userSnapshot?.position || 'employee',
+								is_primary: false,
+								subsidiary_id: personalization.sucursal_principal,
+							},
+						];
+					} else {
+						console.warn(' sucursal_principal no accesible en derived:', personalization.sucursal_principal);
+					}
 				}
 
 				if (derived.length > 0) {
@@ -219,7 +248,7 @@ const useCompanyManager = (): UseCompanyManager => {
 
 			setIsLoading(true);
 			try {
-            const response = await ApiService.fetchData<{
+				const response = await ApiService.fetchData<{
 					personalization: {
 						id: number;
 						user_id: number;
@@ -248,26 +277,59 @@ const useCompanyManager = (): UseCompanyManager => {
 							branches: Array<{ id: number; branch_name: string }>;
 						}>;
 					} | null;
-                }>({ url: '/user/personalization', method: 'get', signal: controller.signal, dedupe: true, cacheTTLms: 300000 });
+				}>({ url: '/user/personalization', method: 'get', signal: controller.signal, dedupe: true, cacheTTLms: 300000 });
 
 				let companies: CompanyInfo[] = [];
 				let prettyName = currentSubsidiaryName;
 
+				// 🔐 Obtener subsidiarias accesibles del usuario
+				const accessibleSubsidiaryIds = new Set<number>();
+				// De companies (multi-empresa)
+				(user as any)?.companies?.forEach((company: any) => {
+					if (company.id) accessibleSubsidiaryIds.add(company.id);
+				});
+				// De subsidiary actual
+				if (user?.subsidiary?.id) {
+					accessibleSubsidiaryIds.add(user.subsidiary.id);
+				}
+				// De company actual
+				if (user?.company?.id) {
+					accessibleSubsidiaryIds.add(user.company.id);
+				}
+
+				console.log('🔐 useCompanyManager - Subsidiarias accesibles:', Array.from(accessibleSubsidiaryIds));
+
 				if (response.data.current_company?.subsidiaries?.length) {
-					companies = response.data.current_company.subsidiaries.map((s) => ({
+					// ✅ FILTRAR: Solo mostrar subsidiarias a las que el usuario tiene acceso
+					const allSubsidiaries = response.data.current_company.subsidiaries;
+					const accessibleSubsidiaries = accessibleSubsidiaryIds.size > 0
+						? allSubsidiaries.filter(s => accessibleSubsidiaryIds.has(s.id))
+						: allSubsidiaries; // Si no podemos determinar, mostrar todas (fallback)
+
+					console.log(`🔒 useCompanyManager - Filtrando subsidiarias: ${allSubsidiaries.length} total → ${accessibleSubsidiaries.length} accesibles`);
+
+					companies = accessibleSubsidiaries.map((s) => ({
 						id: s.id,
 						name: s.subsidiary_name,
 						rut: '',
 						role: user?.position || 'employee',
-						is_primary: false, // evita adivinar, no asumas que la primera es primary
+						is_primary: false,
 						subsidiary_id: s.id,
 					}));
 
 					if (user?.personalizacion?.sucursal_principal && !user?.subsidiary) {
-						const current = response.data.current_company.subsidiaries.find(
+						const current = accessibleSubsidiaries.find(
 							(sub) => sub.id === user.personalizacion!.sucursal_principal,
 						);
-						if (current) prettyName = current.subsidiary_name;
+						if (current) {
+							prettyName = current.subsidiary_name;
+						} else {
+							//  sucursal_principal no está en accesibles, usar la primera disponible
+							console.warn(' sucursal_principal no accesible, usando primera disponible');
+							if (accessibleSubsidiaries.length > 0) {
+								prettyName = accessibleSubsidiaries[0].subsidiary_name;
+							}
+						}
 					}
 				} else if (response.data.companies?.length) {
 					companies = response.data.companies.map((c) => ({

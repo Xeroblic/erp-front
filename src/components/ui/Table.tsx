@@ -176,7 +176,7 @@ export interface ITableProps extends TableHTMLAttributes<HTMLTableElement> {
 	children: ReactNode;
 	className?: string;
 }
-const Table: FC<ITableProps> = (props) => {
+export const Table: FC<ITableProps> = (props) => {
 	const { children, className, ...rest } = props;
 
 	const classes = classNames('w-full', className);
