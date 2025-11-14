@@ -17,7 +17,7 @@ import type { UpdateItemDetailsPayload } from '@/interface/technicalReviews.inte
 interface NotebookFormProps {
 	branchId: number;
 	values: Partial<UpdateItemDetailsPayload>;
-	onChange: (field: string, value: any) => void;
+	onChange: (field: string, value: unknown) => void;
 	readOnly?: boolean;
 }
 
@@ -79,13 +79,20 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 		{ value: 'no_battery', label: 'No Battery' },
 	];
 
-	const conditionOptions: TSelectOption[] = [
-		{ value: 'ok', label: 'OK' },
-		{ value: 'worn', label: 'Desgastado' },
-		{ value: 'missing_pieces', label: 'Faltan piezas' },
-		// { value: 'scratched', label: 'Rayado' },
-		{ value: 'broken', label: 'Roto' },
-	];
+const conditionOptions: TSelectOption[] = [
+	{ value: 'ok', label: 'OK' },
+	{ value: 'worn', label: 'Desgastado' },
+	{ value: 'missing_pieces', label: 'Faltan piezas' },
+	// { value: 'scratched', label: 'Rayado' },
+	{ value: 'broken', label: 'Roto' },
+];
+
+const hingeKeyboardOptions: TSelectOption[] = [
+	{ value: 'ok', label: 'OK' },
+	{ value: 'worn', label: 'Desgastado' },
+	{ value: 'missing_pieces', label: 'Faltan piezas' },
+	{ value: 'broken', label: 'Roto' },
+];
 
 	const keyboardLayoutOptions: TSelectOption[] = [
 		{ value: 'es', label: 'Español (ES)' },
@@ -113,10 +120,11 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 		onChange(e.target.name, e.target.value);
 	};
 
-	const handleSelectChange = (name: string) => (option: any) => {
-		const selectedOption = option as TSelectOption | null;
-		onChange(name, selectedOption?.value || null);
-	};
+	const handleSelectChange =
+		(name: string) =>
+		(option: TSelectOption | null) => {
+			onChange(name, option?.value ?? null);
+		};
 
 	const handleCheckboxChange = (name: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
 		onChange(name, e.target.checked);
@@ -701,10 +709,10 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 							</label>
 							<SelectReact
 								name='keyboard_condition'
-								options={conditionOptions}
+								options={hingeKeyboardOptions}
 								value={
 									values.keyboard_condition
-										? conditionOptions.find(
+										? hingeKeyboardOptions.find(
 												(o) => o.value === values.keyboard_condition,
 											) || null
 										: null
@@ -759,10 +767,10 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 							</label>
 							<SelectReact
 								name='touchpad_condition'
-								options={conditionOptions}
+								options={hingeKeyboardOptions}
 								value={
 									values.touchpad_condition
-										? conditionOptions.find(
+										? hingeKeyboardOptions.find(
 												(o) => o.value === values.touchpad_condition,
 											) || null
 										: null
@@ -830,10 +838,10 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 							</label>
 							<SelectReact
 								name='hinge_condition'
-								options={conditionOptions}
+								options={hingeKeyboardOptions}
 								value={
 									values.hinge_condition
-										? conditionOptions.find(
+										? hingeKeyboardOptions.find(
 												(o) => o.value === values.hinge_condition,
 											) || null
 										: null

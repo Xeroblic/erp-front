@@ -16,7 +16,7 @@ import { fetchBrands } from '@/store/slices/brands/brandsSlice';
 interface DockingFormProps {
 	branchId: number;
 	values: Partial<UpdateItemDetailsPayload>;
-	onChange: (field: string, value: any) => void;
+	onChange: (field: string, value: unknown) => void;
 	readOnly?: boolean;
 }
 
@@ -60,9 +60,9 @@ const DockingForm: React.FC<DockingFormProps> = ({
 	readOnly = false,
 }) => {
 	const dispatch = useAppDispatch();
-	const validationLoading = useAppSelector((s) => s.technicalReviews.validationRulesLoading);
-	const brands = useAppSelector((s: any) => s.brands?.items ?? []);
-	const brandsLoading = useAppSelector((s: any) => s.brands?.loading ?? false);
+	const validationLoading = useAppSelector((state) => state.technicalReviews.validationRulesLoading);
+	const brands = useAppSelector((state) => state.brands.items);
+	const brandsLoading = useAppSelector((state) => state.brands.loading);
 
 	useEffect(() => {
 		if (branchId) {
@@ -73,9 +73,9 @@ const DockingForm: React.FC<DockingFormProps> = ({
 
 	const brandOptions = useMemo(() => {
 		const unique = new Map<string, TSelectOption>();
-		(brands || [])
-			.filter((brand: any) => Boolean(brand?.name))
-			.forEach((brand: any) => {
+		brands
+			.filter((brand) => Boolean(brand?.name))
+			.forEach((brand) => {
 				const name = String(brand.name);
 				if (!unique.has(name)) {
 					unique.set(name, { value: name, label: name });
@@ -101,10 +101,11 @@ const DockingForm: React.FC<DockingFormProps> = ({
 		onChange(e.target.name, e.target.value);
 	};
 
-	const handleSelectChange = (name: string) => (option: any) => {
-		const selectedOption = option as TSelectOption | null;
-		onChange(name, selectedOption?.value ?? null);
-	};
+	const handleSelectChange =
+		(name: string) =>
+		(option: TSelectOption | null) => {
+			onChange(name, option?.value ?? null);
+		};
 
 	const handleCheckboxChange =
 		(name: string, extra?: (checked: boolean) => void) =>
@@ -119,7 +120,12 @@ const DockingForm: React.FC<DockingFormProps> = ({
 
 	const handleNumberChange = (name: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
 		const val = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
-		onChange(name, val);
+		onChange(name, Number.isNaN(val) ? 0 : val);
+	};
+
+	const getNumericValue = (fieldName: keyof UpdateItemDetailsPayload): number => {
+		const value = values[fieldName];
+		return typeof value === 'number' ? value : 0;
 	};
 
 	const includesPowerAdapter = Boolean(values.includes_power_adapter);
@@ -200,31 +206,6 @@ const DockingForm: React.FC<DockingFormProps> = ({
 			<Card>
 				<CardHeader>
 					<div className='flex items-center gap-2'>
-						<Icon icon='HeroShieldCheck' className='h-5 w-5 text-emerald-600' />
-						<h3 className='text-lg font-semibold'>Condición General</h3>
-					</div>
-				</CardHeader>
-				<CardBody>
-					<SelectReact
-						name='general_condition'
-						options={generalConditionOptions}
-						value={
-							values.general_condition
-								? generalConditionOptions.find(
-										(o) => o.value === values.general_condition,
-									) || null
-								: null
-						}
-						onChange={handleSelectChange('general_condition')}
-						placeholder='Seleccionar'
-						isDisabled={readOnly}
-					/>
-				</CardBody>
-			</Card>
-
-			<Card>
-				<CardHeader>
-					<div className='flex items-center gap-2'>
 						<Icon icon='HeroBolt' className='h-5 w-5 text-yellow-600' />
 						<h3 className='text-lg font-semibold'>Cargador</h3>
 					</div>
@@ -277,7 +258,7 @@ const DockingForm: React.FC<DockingFormProps> = ({
 								<Input
 									type='number'
 									name={field.name as string}
-									value={((values as any)[field.name] as number | undefined) ?? 0}
+									value={getNumericValue(field.name)}
 									onChange={handleNumberChange(field.name as string)}
 									min='0'
 									disabled={readOnly}
@@ -327,24 +308,46 @@ const DockingForm: React.FC<DockingFormProps> = ({
 				<CardHeader>
 					<div className='flex items-center gap-2'>
 						<Icon icon='HeroShieldCheck' className='h-5 w-5 text-gray-600' />
-						<h3 className='text-lg font-semibold'>Condición de carcasa</h3>
+						<h3 className='text-lg font-semibold'>Estado general y carcasa</h3>
 					</div>
 				</CardHeader>
-				<CardBody>
-					<SelectReact
-						name='cover_condition'
-						options={coverConditionOptions}
-						value={
-							values.cover_condition
-								? coverConditionOptions.find(
-										(o) => o.value === values.cover_condition,
-									) || null
-								: null
-						}
-						onChange={handleSelectChange('cover_condition')}
-						placeholder='Seleccionar'
-						isDisabled={readOnly}
-					/>
+				<CardBody className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+					<div>
+						<label className='mb-2 block text-sm font-medium'>
+							Condición general <span className='text-red-500'>*</span>
+						</label>
+						<SelectReact
+							name='general_condition'
+							options={generalConditionOptions}
+							value={
+								values.general_condition
+									? generalConditionOptions.find(
+											(o) => o.value === values.general_condition,
+										) || null
+									: null
+							}
+							onChange={handleSelectChange('general_condition')}
+							placeholder='Seleccionar'
+							isDisabled={readOnly}
+						/>
+					</div>
+					<div>
+						<label className='mb-2 block text-sm font-medium'>Condición carcasa</label>
+						<SelectReact
+							name='cover_condition'
+							options={coverConditionOptions}
+							value={
+								values.cover_condition
+									? coverConditionOptions.find(
+											(o) => o.value === values.cover_condition,
+										) || null
+									: null
+							}
+							onChange={handleSelectChange('cover_condition')}
+							placeholder='Seleccionar'
+							isDisabled={readOnly}
+						/>
+					</div>
 				</CardBody>
 			</Card>
 

@@ -15,6 +15,7 @@ import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/S
 import Badge from '@/components/ui/Badge';
 import Label from '@/components/form/Label';
 import { useBatchList } from '../hooks';
+import type { CommercialStatus } from '@/interface/technicalReviews.interface';
 
 const BatchesListPage: React.FC = () => {
 	const navigate = useNavigate();
@@ -24,15 +25,17 @@ const BatchesListPage: React.FC = () => {
 	const [page, setPage] = useState(1);
 	const [limit, setLimit] = useState(20);
 	const [searchQuery, setSearchQuery] = useState('');
-	const [statusFilter, setStatusFilter] = useState('all');
+	const [statusFilter, setStatusFilter] = useState<'all' | CommercialStatus>('all');
 
 	useEffect(() => {
 		if (!branchId) return;
-		const params: any = { page, per_page: limit };
-		if (searchQuery) params.search = searchQuery;
-		if (statusFilter !== 'all') params.status = statusFilter;
-		fetchBatches({ page, per_page: limit, search: searchQuery || undefined, status: statusFilter !== 'all' ? statusFilter : undefined });
-	}, [fetchBatches, page, limit, searchQuery, statusFilter]);
+		fetchBatches({
+			page,
+			per_page: limit,
+			search: searchQuery || undefined,
+			status: statusFilter === 'all' ? undefined : statusFilter,
+		});
+	}, [branchId, fetchBatches, limit, page, searchQuery, statusFilter]);
 
 	const handleSearch = (query: string) => {
 		setSearchQuery(query);
@@ -40,7 +43,8 @@ const BatchesListPage: React.FC = () => {
 	};
 
 	const handleStatusFilter = (status: string) => {
-		setStatusFilter(status);
+		const nextStatus: 'all' | CommercialStatus = status === 'all' ? 'all' : (status as CommercialStatus);
+		setStatusFilter(nextStatus);
 		setPage(1);
 	};
 

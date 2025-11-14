@@ -3,5 +3,11 @@
  * Hooks de validación compartidos
  */
 
-export { useFieldValidation } from './useFieldValidation';
+export {
+	useFieldValidation,
+	type UseFieldValidationProps,
+	type ValidationResult,
+	type ValidationStatus,
+	type UseFieldValidationReturn,
+} from './useFieldValidation';
 export { useGradeSuggestion } from './useGradeSuggestion';
