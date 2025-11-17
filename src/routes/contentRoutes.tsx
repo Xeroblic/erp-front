@@ -78,6 +78,8 @@ const DetalleProveedorPage = lazy(() => import('@/pages/catalogos/proveedores/De
 const ClientesPage = lazy(() => import('@/pages/catalogos/clientes/Clientes'));
 const DetalleClientePage = lazy(() => import('@/pages/catalogos/clientes/DetalleCliente'));
 const DocumentosPage = lazy(() => import('@/pages/documentos/Documentos'));
+const GarantiasPage = lazy(() => import('@/pages/garantias/GarantiasPage'));
+const GarantiaDetailsPage = lazy(() => import('@/pages/garantias/GarantiaDetailsPage'));
 
 // Páginas de Technical Reviews
 const TechnicalReviewsHub = lazy(() => import('@/pages/technical-reviews/index'));
@@ -320,6 +322,16 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: cfg.catalogs.subPages.documents.to,
 		element: <DocumentosPage />,
 		authority: cfg.catalogs.subPages.documents.authority,
+	},
+	{
+		path: cfg.catalogs.subPages.warranties.to,
+		element: <GarantiasPage />,
+		authority: cfg.catalogs.subPages.warranties.authority,
+	},
+	{
+		path: cfg.catalogs.subPages.warrantyDetail.to,
+		element: <GarantiaDetailsPage />,
+		authority: cfg.catalogs.subPages.warrantyDetail.authority,
 	},
 
 	// Technical Reviews Routes
