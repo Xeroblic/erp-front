@@ -78,9 +78,11 @@ const PermissionGuard: React.FC<PermissionGuardProps> = ({
 			return fallback ? (
 				<>{fallback}</>
 			) : (
-				<div className='rounded-lg bg-red-50 p-4 text-center text-red-600'>
-					{deniedMessage}
-				</div>
+				// <div className='rounded-lg bg-red-50 p-4 text-center text-red-600'>
+				// 	{deniedMessage}
+				// </div>
+				<>
+				</>
 			);
 		}
 	}
@@ -92,7 +94,8 @@ const PermissionGuard: React.FC<PermissionGuardProps> = ({
 	return fallback ? (
 		<>{fallback}</>
 	) : (
-		<div className='rounded-lg bg-red-50 p-4 text-center text-red-600'>{deniedMessage}</div>
+		<></>
+		// <div className='rounded-lg bg-red-50 p-4 text-center text-red-600'>{deniedMessage}</div>
 	);
 };
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Formik, Form, FieldArray } from 'formik';
 import * as Yup from 'yup';
 import Modal, {
@@ -7,665 +7,645 @@ import Modal, {
 	ModalFooter,
 	ModalFooterChild,
 } from '@/components/ui/Modal';
-import Card, { CardHeader, CardBody, CardTitle } from '@/components/ui/Card';
-import Button from '@/components/ui/Button';
-import Icon from '@/components/icon/Icon';
 import Input from '@/components/form/Input';
-import SelectReact, { TSelectOption, TSelectOptions } from '@/components/form/SelectReact';
 import Textarea from '@/components/form/Textarea';
-import Table, { TBody, THead, Th, Tr, Td } from '@/components/ui/Table';
-import Badge from '@/components/ui/Badge';
-import { ITransfer } from '@/interface/transfers.interface';
-import {
-	ICreateTransferForm,
-	ITransferItemForm,
-	IWarehouseOption,
-	IProductStock,
-	ICreateTransferRequest,
-} from '../../types/transfers.types';
+import Button from '@/components/ui/Button';
+import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
+import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
+import type { ICreateTransferRequest, TransferPriority } from '@/interface/transfers.interface';
+import type { ICreateTransferForm, ITransferItemForm } from '../../types/transfers.types';
+import type { IProduct } from '@/interface/product.interface';
+import type { IWarehouse } from '@/interface/warehouse.interface';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { fetchMisSucursales } from '@/store/slices/sucursales/sucursalesSlice';
+import { fetchProducts } from '@/store/slices/products/productsSlice';
+import { fetchWarehouses } from '@/store/slices/warehouses/warehouseSlice';
+import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 
 interface CreateEditTransferModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onSubmit: (transferData: ICreateTransferRequest) => Promise<void>;
-	transfer?: ITransfer | null;
+	onSubmit: (payload: ICreateTransferRequest) => Promise<void>;
 	isLoading?: boolean;
 }
 
-// Esquema de validación
-const transferValidationSchema = Yup.object().shape({
-	from_warehouse_id: Yup.number().required('Sucursal origen es requerida'),
-	to_warehouse_id: Yup.number()
-		.required('Sucursal destino es requerida')
-		.notOneOf(
-			[Yup.ref('from_warehouse_id')],
-			'Sucursal destino debe ser diferente a la origen',
-		),
-	items: Yup.array()
-		.of(
-			Yup.object().shape({
-				product_id: Yup.number().required('Producto requerido'),
-				quantity: Yup.number()
-					.min(1, 'Cantidad debe ser mayor a 0')
-					.required('Cantidad requerida'),
-			}),
-		)
-		.min(1, 'Debe agregar al menos un producto'),
+const createEmptyItem = (): ITransferItemForm => ({
+	product_id: 0,
+	product_name: '',
+	product_sku: '',
+	quantity: 1,
+});
+
+const INITIAL_VALUES: ICreateTransferForm = {
+	to_branch_id: '',
+	from_warehouse_id: '',
+	to_warehouse_id: '',
+	auto_create_destination_product: true,
+	expected_date: '',
+	priority: undefined,
+	notes: '',
+	items: [createEmptyItem()],
+};
+
+const formatPayload = (values: ICreateTransferForm): ICreateTransferRequest => ({
+	to_branch_id: Number(values.to_branch_id),
+	from_warehouse_id: values.from_warehouse_id ? Number(values.from_warehouse_id) : undefined,
+	to_warehouse_id: values.to_warehouse_id ? Number(values.to_warehouse_id) : undefined,
+	auto_create_destination_product: values.auto_create_destination_product,
+	expected_date: values.expected_date || undefined,
+	priority: values.priority as TransferPriority | undefined,
+	notes: values.notes?.trim() || undefined,
+	items: values.items.map((item) => ({
+		product_id: Number(item.product_id),
+		quantity: Number(item.quantity),
+	})),
 });
 
 const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 	isOpen,
 	onClose,
 	onSubmit,
-	transfer,
-	isLoading = false,
+	isLoading,
 }) => {
-	// Estados locales para datos mock - reemplazar con datos reales
-	const [warehouses] = useState<TSelectOptions>([
-		{ value: '1', label: 'Almacén Central - Bogotá' },
-		{ value: '2', label: 'Sucursal Norte - Medellín' },
-		{ value: '3', label: 'Sucursal Sur - Cali' },
-		{ value: '4', label: 'Sucursal Oriente - Bucaramanga' },
-	]);
+	const dispatch = useAppDispatch();
+	const branches = useAppSelector((state) => state.sucursales.lista);
+	const branchesLoading = useAppSelector((state) => state.sucursales.loading);
+	const currentBranchId = useAppSelector(selectEffectiveSubsidiaryId);
 
-	const [products] = useState<TSelectOptions>([
-		{ value: '1', label: 'Producto A - SKU001' },
-		{ value: '2', label: 'Producto B - SKU002' },
-		{ value: '3', label: 'Producto C - SKU003' },
-		{ value: '4', label: 'Producto D - SKU004' },
-	]);
+	const [originWarehouses, setOriginWarehouses] = useState<IWarehouse[]>([]);
+	const [destinationWarehouses, setDestinationWarehouses] = useState<IWarehouse[]>([]);
+	const [originWarehousesLoading, setOriginWarehousesLoading] = useState(false);
+	const [destinationWarehousesLoading, setDestinationWarehousesLoading] = useState(false);
 
-	// Mock de stock por almacén
-	const [productStock] = useState<Record<string, IProductStock>>({
-		'1_1': {
-			product_id: 1,
-			product_name: 'Producto A',
-			product_sku: 'SKU001',
-			warehouse_id: 1,
-			available_quantity: 100,
-			reserved_quantity: 10,
-			total_quantity: 110,
-			unit_cost: 15000,
-		},
-		'1_2': {
-			product_id: 2,
-			product_name: 'Producto B',
-			product_sku: 'SKU002',
-			warehouse_id: 1,
-			available_quantity: 50,
-			reserved_quantity: 5,
-			total_quantity: 55,
-			unit_cost: 25000,
-		},
-		'2_1': {
-			product_id: 1,
-			product_name: 'Producto A',
-			product_sku: 'SKU001',
-			warehouse_id: 2,
-			available_quantity: 30,
-			reserved_quantity: 3,
-			total_quantity: 33,
-			unit_cost: 15000,
-		},
-		'3_3': {
-			product_id: 3,
-			product_name: 'Producto C',
-			product_sku: 'SKU003',
-			warehouse_id: 3,
-			available_quantity: 75,
-			reserved_quantity: 8,
-			total_quantity: 83,
-			unit_cost: 35000,
-		},
-	});
+	const [availableProducts, setAvailableProducts] = useState<IProduct[]>([]);
+	const [productsLoading, setProductsLoading] = useState(false);
+	const [productsLoaded, setProductsLoaded] = useState(false);
 
-	const priorityOptions: TSelectOptions = [
-		{ value: 'LOW', label: 'Baja' },
-		{ value: 'NORMAL', label: 'Normal' },
-		{ value: 'HIGH', label: 'Alta' },
-		{ value: 'URGENT', label: 'Urgente' },
-	];
+	const branchOptions = useMemo<TSelectOption[]>(
+		() =>
+			branches.map((branch) => ({
+				value: String(branch.id),
+				label: branch.name || branch.branch_name || `Sucursal ${branch.id}`,
+			})),
+		[branches],
+	);
 
-	// Valores iniciales
-	const getInitialValues = (): ICreateTransferForm => {
-		if (transfer) {
-			return {
-				from_warehouse_id: transfer.from_warehouse_id,
-				to_warehouse_id: transfer.to_warehouse_id,
-				items:
-					transfer.items?.map((item) => ({
-						product_id: item.product_id,
-						product_name: item.product?.name || '',
-						product_sku: item.product?.sku || '',
-						quantity: item.quantity,
-						available_quantity: 0, // Se calculará
-						from_location_id: item.from_location_id,
-						to_location_id: item.to_location_id,
-					})) || [],
-				notes: '',
-				expected_date: '',
-				priority: 'NORMAL',
-			};
-		}
+	const originWarehouseOptions = useMemo<TSelectOption[]>(
+		() =>
+			originWarehouses.map((warehouse) => ({
+				value: String(warehouse.id),
+				label: warehouse.name || `Bodega ${warehouse.id}`,
+			})),
+		[originWarehouses],
+	);
 
-		return {
-			from_warehouse_id: 0,
-			to_warehouse_id: 0,
-			items: [
-				{
-					product_id: 0,
-					product_name: '',
-					product_sku: '',
-					quantity: 1,
-					available_quantity: 0,
-					from_location_id: undefined,
-					to_location_id: undefined,
-				},
-			],
-			notes: '',
-			expected_date: '',
-			priority: 'NORMAL',
-		};
-	};
+	const destinationWarehouseOptions = useMemo<TSelectOption[]>(
+		() =>
+			destinationWarehouses.map((warehouse) => ({
+				value: String(warehouse.id),
+				label: warehouse.name || `Bodega ${warehouse.id}`,
+			})),
+		[destinationWarehouses],
+	);
 
-	// Obtener stock disponible para un producto en un almacén
-	const getAvailableStock = (productId: number, warehouseId: number): number => {
-		const key = `${warehouseId}_${productId}`;
-		return productStock[key]?.available_quantity || 0;
-	};
-
-	// Validar disponibilidad de stock
-	const validateStock = (items: ITransferItemForm[], fromWarehouseId: number) => {
-		return items.every((item) => {
-			if (!item.product_id || !item.quantity) return true;
-			const availableStock = getAvailableStock(item.product_id, fromWarehouseId);
-			return item.quantity <= availableStock;
+	const productStockMap = useMemo(() => {
+		const map = new Map<number, { stock: number; serialTracking: boolean }>();
+		availableProducts.forEach((product) => {
+			map.set(product.id, {
+				stock: product.stock ?? 0,
+				serialTracking: product.serial_tracking,
+			});
 		});
-	};
+		return map;
+	}, [availableProducts]);
 
-	const formatCurrency = (amount: number) => {
-		return new Intl.NumberFormat('es-CO', {
-			style: 'currency',
-			currency: 'COP',
-		}).format(amount);
-	};
+	const productOptions = useMemo<TSelectOption[]>(
+		() =>
+			availableProducts.map((product) => ({
+				value: String(product.id),
+				label: `${product.name ?? 'Producto'}${product.sku ? ` (${product.sku})` : ''} (stock: ${
+					product.stock ?? 0
+				})`,
+			})),
+		[availableProducts],
+	);
 
-	const calculateTotalValue = (items: ITransferItemForm[]) => {
-		return items.reduce((total, item) => {
-			if (!item.product_id || !item.quantity) return total;
-			const stockInfo = Object.values(productStock).find(
-				(stock) => stock.product_id === item.product_id,
+	const priorityOptions = useMemo<TSelectOption[]>(
+		() => [
+			{ value: 'alta', label: 'Alta' },
+			{ value: 'media', label: 'Media' },
+			{ value: 'baja', label: 'Baja' },
+		],
+		[],
+	);
+
+	const validationSchema = useMemo(
+		() =>
+			Yup.object({
+				to_branch_id: Yup.number()
+					.required('Sucursal destino requerida')
+					.min(1, 'Valor inválido')
+					.notOneOf(
+						currentBranchId ? [currentBranchId] : [],
+						'La sucursal destino debe ser distinta a la de origen',
+					),
+				from_warehouse_id: Yup.number()
+					.nullable()
+					.transform((value) => (Number.isNaN(value) ? null : value)),
+				to_warehouse_id: Yup.number()
+					.nullable()
+					.transform((value) => (Number.isNaN(value) ? null : value))
+					.test(
+						'different-warehouse',
+						'La bodega destino debe ser diferente a la bodega origen',
+						function (value) {
+							const fromWarehouseId = this.parent.from_warehouse_id;
+							if (!value || !fromWarehouseId) return true;
+							return value !== fromWarehouseId;
+						},
+					),
+				items: Yup.array()
+					.of(
+						Yup.object().shape({
+							product_id: Yup.number().min(1, 'Producto requerido').required('Producto requerido'),
+							quantity: Yup.number()
+								.min(1, 'Cantidad mínima 1')
+								.required('Cantidad requerida')
+								.test('max-stock', 'La cantidad supera el stock disponible', function (value) {
+									const productId = this.parent.product_id;
+									if (!productId) return true;
+									const stock = productStockMap.get(Number(productId))?.stock ?? 0;
+									if (!stock) return true;
+									return !value || value <= stock;
+								}),
+						}),
+					)
+					.min(1, 'Debe agregar al menos un producto')
+					.test('unique-products', 'No puedes repetir el mismo producto', (items) => {
+						const ids = (items ?? [])
+							.map((item) => item?.product_id)
+							.filter((id): id is number => Boolean(id));
+						return ids.length === new Set(ids).size;
+					}),
+			}),
+		[currentBranchId, productStockMap],
+	);
+
+	const findOption = useCallback(
+		(options: TSelectOption[], value?: string | number | ''): TSelectOption | null => {
+			if (value === '' || value === undefined || value === null) return null;
+			const stringValue = String(value);
+			return options.find((option) => option.value === stringValue) ?? null;
+		},
+		[],
+	);
+
+	useEffect(() => {
+		if (isOpen && branches.length === 0 && !branchesLoading) {
+			dispatch(fetchMisSucursales());
+		}
+	}, [isOpen, branches.length, branchesLoading, dispatch]);
+
+	useEffect(() => {
+		const loadOriginWarehouses = async () => {
+			if (!isOpen || !currentBranchId) return;
+			try {
+				setOriginWarehousesLoading(true);
+				const result = await dispatch(
+					fetchWarehouses({ branchId: currentBranchId, params: { per_page: 100 } }),
+				).unwrap();
+				setOriginWarehouses(result.items);
+			} catch {
+				setOriginWarehouses([]);
+			} finally {
+				setOriginWarehousesLoading(false);
+			}
+		};
+
+		loadOriginWarehouses();
+	}, [dispatch, isOpen, currentBranchId]);
+
+	useEffect(() => {
+		if (!isOpen) {
+			setDestinationWarehouses([]);
+			setAvailableProducts([]);
+			setProductsLoaded(false);
+		}
+	}, [isOpen]);
+
+	const loadOriginProducts = useCallback(async () => {
+		if (!currentBranchId || productsLoaded || productsLoading) return;
+		try {
+			setProductsLoading(true);
+			const response = await dispatch(
+				fetchProducts({ branchId: currentBranchId, params: { per_page: 500 } }),
+			).unwrap();
+			const filtered = response.items.filter(
+				(product) => !product.serial_tracking && (product.stock ?? 0) > 0,
 			);
-			return total + item.quantity * (stockInfo?.unit_cost || 0);
-		}, 0);
-	};
+			setAvailableProducts(filtered);
+			setProductsLoaded(true);
+		} catch {
+			setAvailableProducts([]);
+			setProductsLoaded(false);
+		} finally {
+			setProductsLoading(false);
+		}
+	}, [currentBranchId, dispatch, productsLoaded, productsLoading]);
+
+	const handleLoadDestinationWarehouses = useCallback(
+		async (branchId?: number) => {
+			if (!branchId) {
+				setDestinationWarehouses([]);
+				return;
+			}
+			try {
+				setDestinationWarehousesLoading(true);
+				const result = await dispatch(
+					fetchWarehouses({ branchId, params: { per_page: 100 } }),
+				).unwrap();
+				setDestinationWarehouses(result.items);
+			} catch {
+				setDestinationWarehouses([]);
+			} finally {
+				setDestinationWarehousesLoading(false);
+			}
+		},
+		[dispatch],
+	);
+
+	const handleDestinationBranchChange = useCallback(
+		async (
+			option: TSelectOption | null,
+			setFieldValue: (field: string, value: unknown) => void,
+			setFieldError: (field: string, message: string | undefined) => void,
+		) => {
+			const selectedBranch = option ? Number(option.value) : '';
+			setFieldValue('to_branch_id', selectedBranch);
+			setFieldValue('to_warehouse_id', '');
+			setFieldValue('items', [createEmptyItem()]);
+
+			if (currentBranchId && selectedBranch === currentBranchId) {
+				setFieldError(
+					'to_branch_id',
+					'La sucursal destino debe ser distinta a la de origen',
+				);
+			}
+
+			await handleLoadDestinationWarehouses(selectedBranch || undefined);
+			if (selectedBranch) {
+				await loadOriginProducts();
+			}
+		},
+		[currentBranchId, handleLoadDestinationWarehouses, loadOriginProducts],
+	);
 
 	return (
-		<Modal isOpen={isOpen} setIsOpen={onClose} size='lg'>
+		<Modal isOpen={isOpen} setIsOpen={onClose} size='xl'>
 			<ModalHeader>
-				<div className='flex items-center space-x-3'>
-					<div className='flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/20'>
-						<Icon
-							icon='HeroTruck'
-							className='h-6 w-6 text-purple-600 dark:text-purple-400'
-						/>
-					</div>
-					<div>
-						<h3 className='text-lg font-semibold text-gray-900 dark:text-white'>
-							{transfer ? 'Editar Transferencia' : 'Nueva Transferencia'}
-						</h3>
-						<p className='text-sm text-gray-500 dark:text-gray-400'>
-							Complete los datos para la transferencia entre sucursales
-						</p>
-					</div>
+				<div>
+					<h3 className='text-lg font-semibold text-gray-900 dark:text-white'>
+						Nueva transferencia
+					</h3>
+					<p className='text-sm text-gray-500'>
+						Ingresa la sucursal destino y los productos a transferir.
+					</p>
 				</div>
 			</ModalHeader>
-
 			<Formik
-				initialValues={getInitialValues()}
-				validationSchema={transferValidationSchema}
-				onSubmit={async (values) => {
-					const transferData: ICreateTransferRequest = {
-						from_warehouse_id: values.from_warehouse_id,
-						to_warehouse_id: values.to_warehouse_id,
-						items: values.items
-							.filter((item) => item.product_id && item.quantity > 0)
-							.map((item) => ({
-								product_id: item.product_id,
-								quantity: item.quantity,
-								from_location_id: item.from_location_id,
-								to_location_id: item.to_location_id,
-							})),
-					};
-
-					if (values.notes) transferData.notes = values.notes;
-					if (values.expected_date) transferData.expected_date = values.expected_date;
-					if (values.priority) transferData.priority = values.priority;
-
-					await onSubmit(transferData);
+				initialValues={INITIAL_VALUES}
+				validationSchema={validationSchema}
+				onSubmit={async (values, helpers) => {
+					try {
+						helpers.setStatus(undefined);
+						await onSubmit(formatPayload(values));
+						helpers.resetForm({ values: { ...INITIAL_VALUES, items: [createEmptyItem()] } });
+					} catch (error: any) {
+						const apiError = (error ?? {}) as {
+							message?: string;
+							errors?: Record<string, string[] | string>;
+						};
+						if (apiError.errors) {
+							Object.entries(apiError.errors).forEach(([field, messages]) => {
+								const message = Array.isArray(messages)
+									? messages.join(' ')
+									: messages;
+								if (field === 'items') {
+									helpers.setFieldError('items', message);
+								} else if (
+									field === 'to_branch_id' ||
+									field === 'from_warehouse_id' ||
+									field === 'to_warehouse_id' ||
+									field === 'notes'
+								) {
+									helpers.setFieldError(field as keyof ICreateTransferForm, message);
+								}
+							});
+						}
+						helpers.setStatus({
+							apiError: apiError.message || 'No se pudo crear la transferencia',
+						});
+					}
 				}}>
-				{(formik) => {
-					const totalValue = calculateTotalValue(formik.values.items);
-					const hasStockIssues = !validateStock(
-						formik.values.items,
-						formik.values.from_warehouse_id,
-					);
+				{({
+					values,
+					errors,
+					touched,
+					handleChange,
+					handleBlur,
+					isSubmitting,
+					setFieldValue,
+					status,
+					setFieldError,
+				}) => (
+					<Form>
+						<ModalBody className='space-y-4'>
+							{status?.apiError && (
+								<p className='rounded-md bg-red-50 px-3 py-2 text-sm text-red-700'>
+									{status.apiError}
+								</p>
+							)}
 
-					return (
-						<Form>
-							<ModalBody className='space-y-6'>
-								{/* Información General */}
-								<Card>
-									<CardHeader>
-										<CardTitle>Información de Transferencia</CardTitle>
-									</CardHeader>
-									<CardBody className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-										<div>
-											<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-												Sucursal Origen *
-											</label>
-											<SelectReact
-												name='from_warehouse_id'
-												options={warehouses}
-												value={warehouses.find(
-													(opt) =>
-														opt.value ===
-														String(formik.values.from_warehouse_id),
-												)}
-												onChange={(selectedOption) => {
-													const option = selectedOption as TSelectOption;
-													formik.setFieldValue(
-														'from_warehouse_id',
-														Number(option?.value || 0),
-													);
-													// Limpiar items al cambiar origen
-													formik.setFieldValue('items', [
-														{
-															product_id: 0,
-															product_name: '',
-															product_sku: '',
-															quantity: 1,
-															available_quantity: 0,
-														},
-													]);
-												}}
-												isValid={formik.isValid}
-												isTouched={!!formik.touched.from_warehouse_id}
-												invalidFeedback={
-													formik.errors.from_warehouse_id as string
-												}
-												placeholder='Seleccionar sucursal origen...'
-											/>
-										</div>
-
-										<div>
-											<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-												Sucursal Destino *
-											</label>
-											<SelectReact
-												name='to_warehouse_id'
-												options={warehouses.filter(
-													(w) =>
-														w.value !==
-														String(formik.values.from_warehouse_id),
-												)}
-												value={warehouses.find(
-													(opt) =>
-														opt.value ===
-														String(formik.values.to_warehouse_id),
-												)}
-												onChange={(selectedOption) => {
-													const option = selectedOption as TSelectOption;
-													formik.setFieldValue(
-														'to_warehouse_id',
-														Number(option?.value || 0),
-													);
-												}}
-												isValid={formik.isValid}
-												isTouched={!!formik.touched.to_warehouse_id}
-												invalidFeedback={
-													formik.errors.to_warehouse_id as string
-												}
-												placeholder='Seleccionar sucursal destino...'
-												isDisabled={!formik.values.from_warehouse_id}
-											/>
-										</div>
-
-										<div>
-											<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-												Fecha Esperada
-											</label>
-											<Input
-												type='date'
-												name='expected_date'
-												value={formik.values.expected_date}
-												onChange={formik.handleChange}
-												onBlur={formik.handleBlur}
-												min={new Date().toISOString().split('T')[0]}
-											/>
-										</div>
-
-										<div>
-											<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-												Prioridad
-											</label>
-											<SelectReact
-												name='priority'
-												options={priorityOptions}
-												value={priorityOptions.find(
-													(opt) => opt.value === formik.values.priority,
-												)}
-												onChange={(selectedOption) => {
-													const option = selectedOption as TSelectOption;
-													formik.setFieldValue(
-														'priority',
-														option?.value || 'NORMAL',
-													);
-												}}
-											/>
-										</div>
-
-										<div className='md:col-span-2'>
-											<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-												Notas
-											</label>
-											<Textarea
-												name='notes'
-												value={formik.values.notes}
-												onChange={formik.handleChange}
-												onBlur={formik.handleBlur}
-												placeholder='Notas adicionales sobre la transferencia...'
-												rows={3}
-											/>
-										</div>
-									</CardBody>
-								</Card>
-
-								{/* Productos */}
-								{formik.values.from_warehouse_id > 0 && (
-									<Card>
-										<CardHeader>
-											<div className='flex items-center justify-between'>
-												<CardTitle>Productos a Transferir</CardTitle>
-												<FieldArray name='items'>
-													{({ push }) => (
-														<Button
-															size='sm'
-															onClick={() =>
-																push({
-																	product_id: 0,
-																	product_name: '',
-																	product_sku: '',
-																	quantity: 1,
-																	available_quantity: 0,
-																})
-															}
-															icon='HeroPlus'>
-															Agregar Producto
-														</Button>
-													)}
-												</FieldArray>
-											</div>
-										</CardHeader>
-										<CardBody>
-											<FieldArray name='items'>
-												{({ remove }) => (
-													<div className='space-y-4'>
-														{formik.values.items.map((item, index) => {
-															const availableStock =
-																getAvailableStock(
-																	item.product_id,
-																	formik.values.from_warehouse_id,
-																);
-															const hasStockIssue =
-																item.quantity > availableStock &&
-																item.product_id > 0;
-
-															return (
-																<Card
-																	key={index}
-																	className={`border ${
-																		hasStockIssue
-																			? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/10'
-																			: 'border-gray-200'
-																	}`}>
-																	<CardBody>
-																		<div className='mb-4 flex items-start justify-between'>
-																			<h4 className='text-sm font-medium text-gray-900 dark:text-white'>
-																				Producto #
-																				{index + 1}
-																			</h4>
-																			{formik.values.items
-																				.length > 1 && (
-																				<Button
-																					variant='outline'
-																					size='xs'
-																					color='red'
-																					onClick={() =>
-																						remove(
-																							index,
-																						)
-																					}>
-																					<Icon
-																						icon='HeroTrash'
-																						className='h-3 w-3'
-																					/>
-																				</Button>
-																			)}
-																		</div>
-
-																		<div className='grid grid-cols-1 gap-4 md:grid-cols-4'>
-																			<div className='md:col-span-2'>
-																				<label className='mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300'>
-																					Producto *
-																				</label>
-																				<SelectReact
-																					name={`items.${index}.product_id`}
-																					options={
-																						products
-																					}
-																					value={products.find(
-																						(opt) =>
-																							opt.value ===
-																							String(
-																								item.product_id,
-																							),
-																					)}
-																					onChange={(
-																						selectedOption,
-																					) => {
-																						const option =
-																							selectedOption as TSelectOption;
-																						const productId =
-																							Number(
-																								option?.value ||
-																									0,
-																							);
-																						formik.setFieldValue(
-																							`items.${index}.product_id`,
-																							productId,
-																						);
-																						formik.setFieldValue(
-																							`items.${index}.product_name`,
-																							option?.label.split(
-																								' - ',
-																							)[0] ||
-																								'',
-																						);
-																						formik.setFieldValue(
-																							`items.${index}.product_sku`,
-																							option?.label.split(
-																								' - ',
-																							)[1] ||
-																								'',
-																						);
-																						formik.setFieldValue(
-																							`items.${index}.available_quantity`,
-																							getAvailableStock(
-																								productId,
-																								formik
-																									.values
-																									.from_warehouse_id,
-																							),
-																						);
-																					}}
-																					placeholder='Seleccionar producto...'
-																				/>
-																			</div>
-
-																			<div>
-																				<label className='mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300'>
-																					Cantidad *
-																				</label>
-																				<Input
-																					type='number'
-																					name={`items.${index}.quantity`}
-																					value={
-																						item.quantity
-																					}
-																					onChange={
-																						formik.handleChange
-																					}
-																					min='1'
-																					max={
-																						availableStock
-																					}
-																					className={
-																						hasStockIssue
-																							? 'border-red-300 focus:border-red-500'
-																							: ''
-																					}
-																				/>
-																			</div>
-
-																			<div>
-																				<label className='mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300'>
-																					Disponible
-																				</label>
-																				<div className='flex items-center space-x-2'>
-																					<Badge
-																						color={
-																							availableStock >
-																							0
-																								? 'emerald'
-																								: 'red'
-																						}>
-																						{
-																							availableStock
-																						}
-																					</Badge>
-																					{hasStockIssue && (
-																						<Badge color='red'>
-																							Stock
-																							insuficiente
-																						</Badge>
-																					)}
-																				</div>
-																			</div>
-																		</div>
-																	</CardBody>
-																</Card>
-															);
-														})}
-													</div>
-												)}
-											</FieldArray>
-
-											{/* Resumen */}
-											<div className='mt-6 border-t pt-4'>
-												<div className='flex justify-between'>
-													<div className='space-y-2 text-left'>
-														<div className='flex items-center space-x-4'>
-															<span className='text-sm text-gray-600 dark:text-gray-400'>
-																Total de productos:
-															</span>
-															<span className='text-sm font-medium text-gray-900 dark:text-white'>
-																{
-																	formik.values.items.filter(
-																		(item) =>
-																			item.product_id > 0,
-																	).length
-																}
-															</span>
-														</div>
-														<div className='flex items-center space-x-4'>
-															<span className='text-sm text-gray-600 dark:text-gray-400'>
-																Total de unidades:
-															</span>
-															<span className='text-sm font-medium text-gray-900 dark:text-white'>
-																{formik.values.items
-																	.filter(
-																		(item) =>
-																			item.product_id > 0,
-																	)
-																	.reduce(
-																		(sum, item) =>
-																			sum + item.quantity,
-																		0,
-																	)}
-															</span>
-														</div>
-													</div>
-													<div className='space-y-2 text-right'>
-														<div className='flex justify-between space-x-8'>
-															<span className='text-sm text-gray-600 dark:text-gray-400'>
-																Valor estimado:
-															</span>
-															<span className='text-base font-bold text-gray-900 dark:text-white'>
-																{formatCurrency(totalValue)}
-															</span>
-														</div>
-													</div>
-												</div>
-											</div>
-										</CardBody>
-									</Card>
-								)}
-							</ModalBody>
-
-							<ModalFooter>
-								<ModalFooterChild>
-									<Button
-										variant='outline'
-										color='gray'
-										onClick={onClose}
-										isDisable={isLoading}>
-										<Icon icon='HeroXMark' className='mr-2 h-4 w-4' />
-										Cancelar
-									</Button>
-									<Button
-										color='blue'
-										isDisable={
-											isLoading ||
-											!formik.isValid ||
-											hasStockIssues ||
-											formik.values.items.filter(
-												(item) => item.product_id > 0,
-											).length === 0
+							<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+								<div className='flex flex-col space-y-1'>
+									<label className='text-sm font-medium text-gray-600 dark:text-gray-300'>
+										Sucursal destino (ID)
+									</label>
+									<SelectReact
+										name='to_branch_id'
+										options={branchOptions}
+										value={findOption(branchOptions, values.to_branch_id)}
+										onChange={(option) =>
+											void handleDestinationBranchChange(
+												option as TSelectOption | null,
+												setFieldValue,
+												setFieldError,
+											)
 										}
-										onClick={() => formik.handleSubmit()}>
-										{isLoading ? (
+										onBlur={handleBlur}
+										placeholder='Selecciona una sucursal'
+										isLoading={branchesLoading}
+										isClearable
+									/>
+									{touched.to_branch_id && typeof errors.to_branch_id === 'string' && (
+										<p className='text-xs text-red-500'>{errors.to_branch_id}</p>
+									)}
+								</div>
+								<div className='flex flex-col space-y-1'>
+									<label className='text-sm font-medium text-gray-600 dark:text-gray-300'>
+										Bodega origen (opcional)
+									</label>
+									<SelectReact
+										name='from_warehouse_id'
+										options={originWarehouseOptions}
+										value={findOption(originWarehouseOptions, values.from_warehouse_id)}
+										onChange={(option) => {
+											const selected = option as TSelectOption | null;
+											setFieldValue('from_warehouse_id', selected ? Number(selected.value) : '');
+										}}
+										placeholder='Selecciona bodega'
+										isClearable
+										isLoading={originWarehousesLoading}
+									/>
+									{touched.from_warehouse_id && typeof errors.from_warehouse_id === 'string' && (
+										<p className='text-xs text-red-500'>{errors.from_warehouse_id}</p>
+									)}
+								</div>
+								<div className='flex flex-col space-y-1'>
+									<label className='text-sm font-medium text-gray-600 dark:text-gray-300'>
+										Bodega destino (opcional)
+									</label>
+									<SelectReact
+										name='to_warehouse_id'
+										options={destinationWarehouseOptions}
+										value={findOption(destinationWarehouseOptions, values.to_warehouse_id)}
+										onChange={(option) => {
+											const selected = option as TSelectOption | null;
+											setFieldValue('to_warehouse_id', selected ? Number(selected.value) : '');
+										}}
+										placeholder='Selecciona bodega'
+										isClearable
+										isLoading={destinationWarehousesLoading}
+										isDisabled={!values.to_branch_id}
+									/>
+									{touched.to_warehouse_id && typeof errors.to_warehouse_id === 'string' && (
+										<p className='text-xs text-red-500'>{errors.to_warehouse_id}</p>
+									)}
+								</div>
+								<div className='flex flex-col space-y-1'>
+									<label className='text-sm font-medium text-gray-600 dark:text-gray-300'>
+										Fecha esperada (opcional)
+									</label>
+									<Input
+										name='expected_date'
+										type='date'
+										value={values.expected_date}
+										onChange={handleChange}
+										onBlur={handleBlur}
+									/>
+								</div>
+							</div>
+
+							<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+								<div className='flex flex-col space-y-1'>
+									<label className='text-sm font-medium text-gray-600 dark:text-gray-300'>
+										Prioridad (opcional)
+									</label>
+									<SelectReact
+										name='priority'
+										options={priorityOptions}
+										value={findOption(priorityOptions, values.priority ?? '')}
+										onChange={(option) => {
+											const selected = option as TSelectOption | null;
+											setFieldValue('priority', selected?.value ?? '');
+										}}
+										isClearable
+										placeholder='Selecciona prioridad'
+									/>
+								</div>
+								<label className='flex items-center space-x-2 text-sm text-gray-700 dark:text-gray-300'>
+									<input
+										type='checkbox'
+										name='auto_create_destination_product'
+										checked={values.auto_create_destination_product}
+										onChange={handleChange}
+									/>
+									<span>Crear producto en destino si no existe</span>
+								</label>
+							</div>
+
+							<div className='flex flex-col space-y-1'>
+								<label className='text-sm font-medium text-gray-600 dark:text-gray-300'>
+									Notas
+								</label>
+								<Textarea
+									name='notes'
+									rows={3}
+									value={values.notes}
+									onChange={handleChange}
+									onBlur={handleBlur}
+									placeholder='Instrucciones especiales, prioridad operativa, etc.'
+								/>
+							</div>
+
+							<Card>
+								<CardHeader>
+									<CardTitle>Productos a transferir</CardTitle>
+								</CardHeader>
+								<CardBody className='space-y-3'>
+									<FieldArray name='items'>
+										{({ push, remove }) => (
 											<>
-												<Icon
-													icon='HeroArrowPath'
-													className='mr-2 h-4 w-4 animate-spin'
-												/>
-												Procesando...
-											</>
-										) : (
-											<>
-												<Icon icon='HeroCheck' className='mr-2 h-4 w-4' />
-												{transfer
-													? 'Actualizar Transferencia'
-													: 'Crear Transferencia'}
-											</>
-										)}
-									</Button>
-								</ModalFooterChild>
-							</ModalFooter>
-						</Form>
-					);
-				}}
+												{values.items.map((item, index) => {
+													const selectedIds = values.items
+														.map((entry) => entry.product_id)
+														.filter((id): id is number => Boolean(id));
+													const optionsForRow = productOptions.filter(
+														(option) =>
+															option.value === String(item.product_id || '') ||
+															!selectedIds.includes(Number(option.value)),
+													);
+													const stock = item.product_id
+														? productStockMap.get(Number(item.product_id))?.stock ?? 0
+														: 0;
+
+													return (
+														<div
+															key={index}
+															className='grid grid-cols-1 gap-3 rounded-lg border border-gray-100 p-3 md:grid-cols-12'
+														>
+															<div className='md:col-span-6'>
+																<label className='text-sm font-medium text-gray-600 dark:text-gray-300'>
+																	Producto
+																</label>
+																<SelectReact
+																	name={`items.${index}.product_id`}
+																	options={optionsForRow}
+																	value={findOption(productOptions, item.product_id)}
+																	onChange={(option) => {
+																		const selected = option as TSelectOption | null;
+																		if (!selected) {
+																			setFieldValue(`items.${index}`, createEmptyItem());
+																			return;
+																		}
+																		const productInfo = availableProducts.find(
+																			(product) => String(product.id) === selected.value,
+																		);
+																		if (productInfo?.serial_tracking) {
+																			setFieldError(
+																				`items.${index}.product_id`,
+																				'Este producto usa tracking por serie. Usa el traslado de equipos.',
+																			);
+																			setFieldValue(`items.${index}.product_id`, '');
+																			return;
+																		}
+
+																		setFieldValue(`items.${index}.product_id`, Number(selected.value));
+																		if (values.items[index].quantity > (productInfo?.stock ?? 0)) {
+																			setFieldValue(
+																				`items.${index}.quantity`,
+																				Math.max(1, productInfo?.stock ?? 1),
+																			);
+																		}
+																	}}
+																	placeholder={
+																		values.to_branch_id
+																			? 'Selecciona producto'
+																			: 'Selecciona una sucursal destino primero'
+																	}
+																	isClearable
+																	isDisabled={!values.to_branch_id || !productsLoaded}
+																	isLoading={productsLoading}
+															/>
+															{touched.items &&
+																errors.items &&
+																typeof errors.items !== 'string' &&
+																(errors.items[index] as any)?.product_id && (
+																	<p className='mt-1 text-xs text-red-500'>
+																		{(errors.items[index] as any)?.product_id}
+																	</p>
+																)}
+															{!values.to_branch_id && (
+																<p className='mt-1 text-xs text-gray-500'>
+																	Selecciona la sucursal destino para habilitar los productos.
+																</p>
+															)}
+														</div>
+														<div className='md:col-span-4'>
+															<Input
+																name={`items.${index}.quantity`}
+																label='Cantidad'
+																type='number'
+																min={1}
+																value={item.quantity}
+																onChange={handleChange}
+																onBlur={handleBlur}
+																disabled={!values.to_branch_id || !item.product_id}
+															/>
+															{touched.items &&
+																errors.items &&
+																typeof errors.items !== 'string' &&
+																(errors.items[index] as any)?.quantity && (
+																	<p className='mt-1 text-xs text-red-500'>
+																		{(errors.items[index] as any)?.quantity}
+																	</p>
+															)}
+															{item.product_id && (
+																<p className='mt-1 text-xs text-gray-500'>
+																	Stock disponible: {stock}
+																</p>
+															)}
+														</div>
+														<div className='md:col-span-2 flex items-end'>
+															<Button
+																type='button'
+																variant='outline'
+																color='red'
+																icon='HeroTrash'
+																onClick={() => remove(index)}
+																disabled={values.items.length === 1}>
+																Quitar
+															</Button>
+														</div>
+													</div>
+											);
+										})}
+
+										<Button
+											type='button'
+											variant='outline'
+											icon='HeroPlus'
+											onClick={() => push(createEmptyItem())}
+											disabled={!values.to_branch_id || !productsLoaded}>
+											Agregar producto
+										</Button>
+									</>
+								)}
+								</FieldArray>
+								{typeof errors.items === 'string' && (
+									<p className='text-sm text-red-500'>{errors.items}</p>
+								)}
+							</CardBody>
+						</Card>
+					</ModalBody>
+					<ModalFooter>
+						<ModalFooterChild>
+							<Button variant='outline' onClick={onClose}>
+								Cancelar
+							</Button>
+						</ModalFooterChild>
+						<ModalFooterChild>
+							<Button
+								type='submit'
+								variant='solid'
+								icon='HeroPaperAirplane'
+								disabled={isSubmitting || Boolean(isLoading)}>
+								Crear transferencia
+							</Button>
+						</ModalFooterChild>
+					</ModalFooter>
+				</Form>
+				)}
 			</Formik>
 		</Modal>
 	);

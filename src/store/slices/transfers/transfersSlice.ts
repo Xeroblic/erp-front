@@ -1,336 +1,314 @@
-import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, PayloadAction, createSelector } from '@reduxjs/toolkit';
 import { toast } from 'react-toastify';
 import ApiService from '@/services/ApiService';
 import type {
-    ITransfer,
-    ICreateTransferRequest,
-    IReceiveTransferRequest,
-    TransferStatus
+	ICreateTransferRequest,
+	ITransfer,
+	TransferDirection,
 } from '@/interface/transfers.interface';
+import type { RootState } from '@/store/rootReducer';
+import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 
-// Estado del slice
-export interface TransferState {
-    loading: boolean;
-    error?: string;
-
-    // Lista de transferencias
-    transfers: ITransfer[];
-    totalTransfers: number;
-    currentPage: number;
-    totalPages: number;
-
-    // Transferencia actual
-    currentTransfer?: ITransfer;
-
-    // Estados específicos para acciones
-    createLoading: boolean;
-    updateLoading: boolean;
-    shipLoading: boolean;
-    receiveLoading: boolean;
-
-    // Filtros
-    filters: {
-        status?: TransferStatus;
-        from_warehouse_id?: number;
-        to_warehouse_id?: number;
-        date_from?: string;
-        date_to?: string;
-    };
-}
-
-const initialState: TransferState = {
-    loading: false,
-    transfers: [],
-    totalTransfers: 0,
-    currentPage: 1,
-    totalPages: 1,
-    createLoading: false,
-    updateLoading: false,
-    shipLoading: false,
-    receiveLoading: false,
-    filters: {}
+type TransferFiltersState = {
+	direction: TransferDirection;
+	q: string;
+	per_page: number;
 };
 
-// Async thunks
+type TransferMeta = {
+	current_page: number;
+	last_page: number;
+	per_page: number;
+	total: number;
+};
+
+interface TransferListResponsePayload {
+	success?: boolean;
+	message?: string;
+	filters?: {
+		direction?: TransferDirection;
+		q?: string | null;
+		per_page?: number;
+	};
+	data: ITransfer[];
+	meta: TransferMeta;
+}
+
+interface TransferPagination {
+	currentPage: number;
+	totalPages: number;
+	perPage: number;
+	totalTransfers: number;
+}
+
+export interface TransferState {
+	loading: boolean;
+	createLoading: boolean;
+	error?: string;
+	transfers: ITransfer[];
+	pagination: TransferPagination;
+	filters: TransferFiltersState;
+	currentTransfer?: ITransfer;
+}
+
+const DEFAULT_FILTERS: TransferFiltersState = {
+	direction: 'all',
+	q: '',
+	per_page: 15,
+};
+
+const initialState: TransferState = {
+	loading: false,
+	createLoading: false,
+	transfers: [],
+	error: undefined,
+	currentTransfer: undefined,
+	filters: { ...DEFAULT_FILTERS },
+	pagination: {
+		currentPage: 1,
+		totalPages: 1,
+		perPage: DEFAULT_FILTERS.per_page,
+		totalTransfers: 0,
+	},
+};
+
+const buildFilters = (
+	current: TransferFiltersState,
+	updates?: Partial<TransferFiltersState>,
+): TransferFiltersState => ({
+	direction: updates?.direction ?? current.direction,
+	q: updates?.q ?? current.q,
+	per_page: updates?.per_page ?? current.per_page,
+});
+
+const ensureBranch = (state: RootState): number | null => {
+	return selectEffectiveSubsidiaryId(state);
+};
+
 export const fetchTransfers = createAsyncThunk<
-    { data: ITransfer[]; total: number; page: number; totalPages: number },
-    { page?: number; limit?: number; filters?: any },
-    { rejectValue: string }
->(
-    'transfers/fetchTransfers',
-    async ({ page = 1, limit = 10, filters = {} }, { rejectWithValue }) => {
-        try {
-            const params = {
-                page,
-                limit,
-                ...filters
-            };
+	{ data: ITransfer[]; meta: TransferMeta; filters: TransferFiltersState },
+	Partial<{ page: number; direction: TransferDirection; q: string; per_page: number }> | undefined,
+	{ rejectValue: string; state: RootState }
+>('transfers/fetchTransfers', async (params, { getState, rejectWithValue }) => {
+	const state = getState();
+	const branchId = ensureBranch(state);
 
-            const response = await ApiService.fetchData<{
-                data: ITransfer[];
-                meta: { total: number; current_page: number; last_page: number };
-            }>({
-                url: '/transfers',
-                method: 'get',
-                params
-            });
+	if (!branchId) {
+		return rejectWithValue('Selecciona una sucursal para consultar transferencias');
+	}
 
-            return {
-                data: response.data.data,
-                total: response.data.meta.total,
-                page: response.data.meta.current_page,
-                totalPages: response.data.meta.last_page
-            };
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Error al obtener transferencias');
-        }
-    }
-);
+	const overrides = params ?? {};
+	const appliedFilters = buildFilters(state.transferencias.filters, {
+		direction: overrides.direction,
+		q: overrides.q,
+		per_page: overrides.per_page,
+	});
+
+	try {
+		const response = await ApiService.fetchData<TransferListResponsePayload | ITransfer[]>({
+			url: `/branches/${branchId}/transfers`,
+			method: 'get',
+			params: {
+				page: overrides.page ?? state.transferencias.pagination.currentPage,
+				direction: appliedFilters.direction,
+				q: appliedFilters.q || undefined,
+				per_page: appliedFilters.per_page,
+			},
+		});
+
+		const raw = response.data;
+
+		const payload: TransferListResponsePayload =
+			Array.isArray(raw)
+				? {
+						data: raw,
+						meta: undefined,
+				  }
+				: raw;
+		const serverFilters = payload.filters || {};
+
+		const meta = payload.meta ?? {
+			current_page: overrides.page ?? state.transferencias.pagination.currentPage,
+			last_page: 1,
+			per_page: appliedFilters.per_page,
+			total: payload.data?.length ?? 0,
+		};
+
+		return {
+			data: payload.data ?? [],
+			meta,
+			filters: {
+				direction: serverFilters.direction ?? appliedFilters.direction,
+				q: (serverFilters.q ?? appliedFilters.q) || '',
+				per_page: serverFilters.per_page ?? appliedFilters.per_page,
+			},
+		};
+	} catch (error: any) {
+		return rejectWithValue(
+			error.response?.data?.message || 'Error al obtener transferencias',
+		);
+	}
+});
 
 export const fetchTransferById = createAsyncThunk<
-    ITransfer,
-    number,
-    { rejectValue: string }
->(
-    'transfers/fetchTransferById',
-    async (id, { rejectWithValue }) => {
-        try {
-            const response = await ApiService.fetchData<ITransfer>({
-                url: `/transfers/${id}`,
-                method: 'get'
-            });
-            return response.data;
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Error al obtener transferencia');
-        }
-    }
-);
+	ITransfer,
+	number,
+	{ rejectValue: string; state: RootState }
+>('transfers/fetchTransferById', async (id, { getState, rejectWithValue }) => {
+	const state = getState();
+	const branchId = ensureBranch(state);
+
+	if (!branchId) {
+		return rejectWithValue('Selecciona una sucursal para consultar transferencias');
+	}
+
+	try {
+		const response = await ApiService.fetchData<{ data?: ITransfer } & Partial<ITransfer>>({
+			url: `/branches/${branchId}/transfers/${id}`,
+			method: 'get',
+		});
+
+		const payload = response.data;
+		if (payload?.data) {
+			return payload.data;
+		}
+
+		return payload as ITransfer;
+	} catch (error: any) {
+		return rejectWithValue(
+			error.response?.data?.message || 'Error al obtener la transferencia',
+		);
+	}
+});
+
+type TransferErrorPayload = {
+	message: string;
+	errors?: Record<string, string[] | string>;
+};
 
 export const createTransfer = createAsyncThunk<
-    ITransfer,
-    ICreateTransferRequest,
-    { rejectValue: string }
->(
-    'transfers/createTransfer',
-    async (transferData, { rejectWithValue }) => {
-        try {
-            const response = await ApiService.fetchData<ITransfer>({
-                url: '/transfers',
-                method: 'post',
-                data: transferData
-            });
-            return response.data;
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Error al crear transferencia');
-        }
-    }
-);
+	ITransfer | null,
+	ICreateTransferRequest,
+	{ rejectValue: TransferErrorPayload; state: RootState }
+>('transfers/createTransfer', async (transferData, { getState, rejectWithValue }) => {
+	const state = getState();
+	const branchId = ensureBranch(state);
 
-export const shipTransfer = createAsyncThunk<
-    ITransfer,
-    number,
-    { rejectValue: string }
->(
-    'transfers/shipTransfer',
-    async (id, { rejectWithValue }) => {
-        try {
-            const response = await ApiService.fetchData<ITransfer>({
-                url: `/transfers/${id}/ship`,
-                method: 'post'
-            });
-            return response.data;
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Error al enviar transferencia');
-        }
-    }
-);
+	if (!branchId) {
+		return rejectWithValue({
+			message: 'Selecciona una sucursal para crear transferencias',
+		});
+	}
 
-export const receiveTransfer = createAsyncThunk<
-    ITransfer,
-    { id: number; data: IReceiveTransferRequest },
-    { rejectValue: string }
->(
-    'transfers/receiveTransfer',
-    async ({ id, data }, { rejectWithValue }) => {
-        try {
-            const response = await ApiService.fetchData<ITransfer>({
-                url: `/transfers/${id}/receive`,
-                method: 'post',
-                data
-            });
-            return response.data;
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Error al recibir transferencia');
-        }
-    }
-);
+	try {
+		const response = await ApiService.fetchData<{ data?: ITransfer }>({
+			url: `/branches/${branchId}/transfers`,
+			method: 'post',
+			data: transferData,
+		});
 
-export const cancelTransfer = createAsyncThunk<
-    ITransfer,
-    number,
-    { rejectValue: string }
->(
-    'transfers/cancelTransfer',
-    async (id, { rejectWithValue }) => {
-        try {
-            const response = await ApiService.fetchData<ITransfer>({
-                url: `/transfers/${id}`,
-                method: 'delete'
-            });
-            return response.data;
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Error al cancelar transferencia');
-        }
-    }
-);
+		return response.data?.data ?? null;
+	} catch (error: any) {
+		const payload = error.response?.data;
+		return rejectWithValue({
+			message: payload?.message || 'Error al crear transferencia',
+			errors: payload?.errors,
+		});
+	}
+});
 
-// Slice
 const transfersSlice = createSlice({
-    name: 'transferencias',
-    initialState,
-    reducers: {
-        setFilters: (state, action: PayloadAction<Partial<TransferState['filters']>>) => {
-            state.filters = { ...state.filters, ...action.payload };
-        },
-        clearFilters: (state) => {
-            state.filters = {};
-        },
-        clearCurrentTransfer: (state) => {
-            state.currentTransfer = undefined;
-        },
-        clearError: (state) => {
-            state.error = undefined;
-        }
-    },
-    extraReducers: (builder) => {
-        builder
-            // Fetch transfers
-            .addCase(fetchTransfers.pending, (state) => {
-                state.loading = true;
-                state.error = undefined;
-            })
-            .addCase(fetchTransfers.fulfilled, (state, action) => {
-                state.loading = false;
-                state.transfers = action.payload.data;
-                state.totalTransfers = action.payload.total;
-                state.currentPage = action.payload.page;
-                state.totalPages = action.payload.totalPages;
-            })
-            .addCase(fetchTransfers.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload;
-                toast.error(action.payload || 'Error al cargar transferencias');
-            })
-
-            // Fetch transfer by ID
-            .addCase(fetchTransferById.pending, (state) => {
-                state.loading = true;
-            })
-            .addCase(fetchTransferById.fulfilled, (state, action) => {
-                state.loading = false;
-                state.currentTransfer = action.payload;
-            })
-            .addCase(fetchTransferById.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload;
-                toast.error(action.payload || 'Error al cargar transferencia');
-            })
-
-            // Create transfer
-            .addCase(createTransfer.pending, (state) => {
-                state.createLoading = true;
-                state.error = undefined;
-            })
-            .addCase(createTransfer.fulfilled, (state, action) => {
-                state.createLoading = false;
-                state.transfers.unshift(action.payload);
-                state.totalTransfers += 1;
-                toast.success('Transferencia creada exitosamente');
-            })
-            .addCase(createTransfer.rejected, (state, action) => {
-                state.createLoading = false;
-                state.error = action.payload;
-                toast.error(action.payload || 'Error al crear transferencia');
-            })
-
-            // Ship transfer
-            .addCase(shipTransfer.pending, (state) => {
-                state.shipLoading = true;
-            })
-            .addCase(shipTransfer.fulfilled, (state, action) => {
-                state.shipLoading = false;
-                const index = state.transfers.findIndex(t => t.id === action.payload.id);
-                if (index !== -1) {
-                    state.transfers[index] = action.payload;
-                }
-                if (state.currentTransfer?.id === action.payload.id) {
-                    state.currentTransfer = action.payload;
-                }
-                toast.success('Transferencia enviada exitosamente');
-            })
-            .addCase(shipTransfer.rejected, (state, action) => {
-                state.shipLoading = false;
-                state.error = action.payload;
-                toast.error(action.payload || 'Error al enviar transferencia');
-            })
-
-            // Receive transfer
-            .addCase(receiveTransfer.pending, (state) => {
-                state.receiveLoading = true;
-            })
-            .addCase(receiveTransfer.fulfilled, (state, action) => {
-                state.receiveLoading = false;
-                const index = state.transfers.findIndex(t => t.id === action.payload.id);
-                if (index !== -1) {
-                    state.transfers[index] = action.payload;
-                }
-                if (state.currentTransfer?.id === action.payload.id) {
-                    state.currentTransfer = action.payload;
-                }
-                toast.success('Transferencia recibida exitosamente');
-            })
-            .addCase(receiveTransfer.rejected, (state, action) => {
-                state.receiveLoading = false;
-                state.error = action.payload;
-                toast.error(action.payload || 'Error al recibir transferencia');
-            })
-
-            // Cancel transfer
-            .addCase(cancelTransfer.fulfilled, (state, action) => {
-                const index = state.transfers.findIndex(t => t.id === action.payload.id);
-                if (index !== -1) {
-                    state.transfers[index] = action.payload;
-                }
-                if (state.currentTransfer?.id === action.payload.id) {
-                    state.currentTransfer = action.payload;
-                }
-                toast.success('Transferencia cancelada');
-            })
-            .addCase(cancelTransfer.rejected, (state, action) => {
-                state.error = action.payload;
-                toast.error(action.payload || 'Error al cancelar transferencia');
-            });
-    }
+	name: 'transferencias',
+	initialState,
+	reducers: {
+		setFilters: (state, action: PayloadAction<Partial<TransferFiltersState>>) => {
+			state.filters = buildFilters(state.filters, action.payload);
+		},
+		clearFilters: (state) => {
+			state.filters = { ...DEFAULT_FILTERS };
+		},
+		clearCurrentTransfer: (state) => {
+			state.currentTransfer = undefined;
+		},
+		clearError: (state) => {
+			state.error = undefined;
+		},
+	},
+	extraReducers: (builder) => {
+		builder
+			.addCase(fetchTransfers.pending, (state) => {
+				state.loading = true;
+				state.error = undefined;
+			})
+			.addCase(fetchTransfers.fulfilled, (state, action) => {
+				state.loading = false;
+				state.transfers = action.payload.data;
+				state.filters = action.payload.filters;
+				state.pagination = {
+					currentPage: action.payload.meta.current_page,
+					totalPages: action.payload.meta.last_page,
+					perPage: action.payload.meta.per_page,
+					totalTransfers: action.payload.meta.total,
+				};
+			})
+			.addCase(fetchTransfers.rejected, (state, action) => {
+				state.loading = false;
+				state.error = action.payload;
+				toast.error(action.payload || 'Error al cargar transferencias');
+			})
+			.addCase(fetchTransferById.pending, (state) => {
+				state.loading = true;
+			})
+			.addCase(fetchTransferById.fulfilled, (state, action) => {
+				state.loading = false;
+				state.currentTransfer = action.payload;
+			})
+			.addCase(fetchTransferById.rejected, (state, action) => {
+				state.loading = false;
+				state.error = action.payload;
+				toast.error(action.payload || 'Error al obtener la transferencia');
+			})
+			.addCase(createTransfer.pending, (state) => {
+				state.createLoading = true;
+				state.error = undefined;
+			})
+			.addCase(createTransfer.fulfilled, (state, action) => {
+				state.createLoading = false;
+				if (action.payload) {
+					state.transfers = [action.payload, ...state.transfers];
+					state.pagination.totalTransfers += 1;
+				}
+				toast.success('Transferencia registrada correctamente (scaffold)');
+			})
+			.addCase(createTransfer.rejected, (state, action) => {
+				state.createLoading = false;
+				const errorMessage = action.payload?.message || 'Error al crear transferencia';
+				state.error = errorMessage;
+				toast.error(errorMessage);
+			});
+	},
 });
 
-// Actions
-export const { setFilters, clearFilters, clearCurrentTransfer, clearError } = transfersSlice.actions;
+export const { setFilters, clearFilters, clearCurrentTransfer, clearError } =
+	transfersSlice.actions;
 
-// Selectors
-export const selectTransfers = (state: { transferencias: TransferState }) => state.transferencias.transfers;
-export const selectCurrentTransfer = (state: { transferencias: TransferState }) => state.transferencias.currentTransfer;
-export const selectTransfersLoading = (state: { transferencias: TransferState }) => state.transferencias.loading;
-export const selectTransfersPagination = (state: { transferencias: TransferState }) => ({
-    currentPage: state.transferencias.currentPage,
-    totalPages: state.transferencias.totalPages,
-    totalTransfers: state.transferencias.totalTransfers
-});
-export const selectTransferFilters = (state: { transferencias: TransferState }) => state.transferencias.filters;
-export const selectTransferActionLoading = (state: { transferencias: TransferState }) => ({
-    create: state.transferencias.createLoading,
-    update: state.transferencias.updateLoading,
-    ship: state.transferencias.shipLoading,
-    receive: state.transferencias.receiveLoading
-});
+export const selectTransfers = (state: RootState) => state.transferencias.transfers;
+export const selectCurrentTransfer = (state: RootState) =>
+	state.transferencias.currentTransfer;
+export const selectTransfersLoading = (state: RootState) => state.transferencias.loading;
+const selectTransfersSlice = (state: RootState) => state.transferencias;
+
+export const selectTransfersPagination = createSelector(
+	selectTransfersSlice,
+	(slice) => slice.pagination,
+);
+export const selectTransferFilters = createSelector(
+	selectTransfersSlice,
+	(slice) => slice.filters,
+);
+export const selectTransferActionLoading = createSelector(
+	selectTransfersSlice,
+	(slice) => ({ create: slice.createLoading }),
+);
 
 export default transfersSlice.reducer;

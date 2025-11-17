@@ -14,7 +14,7 @@ export const selectEffectiveSubsidiaryId = (state: RootState): number | null => 
 		user?.personalizacion?.subsidiary_id ??
 		user?.personalizacion?.sucursal_principal ??
 		user?.branch?.subsidiary?.id ??
-		(user?.branch?.subsidiary_id as number | undefined) ??
+		(user?.branch?.subsidiary?.id as number | undefined) ??
 		(typeof (user as any)?.subsidiary_id === 'number' ? ((user as any).subsidiary_id as number) : null) ??
 		null
 	);

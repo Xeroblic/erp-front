@@ -24,16 +24,13 @@ export const hasTemporaryPermission = (permission: string): boolean => {
     if (inventoryPermissions.includes(permission)) {
         return true;
     }
-
-    // Para otros permisos, usar la lógica normal
     return false;
 };
 
-// Constantes temporales para mantener compatibilidad
 export const ERP_PERMISSIONS = {
     TRANSFERS: {
         VIEW: 'transfers.view',
-        CREATE: 'transfers.create',
+        CREATE: 'create-transfer',
         UPDATE: 'transfers.update',
         DELETE: 'transfers.delete',
         SHIP: 'transfers.ship',

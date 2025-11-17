@@ -1,341 +1,148 @@
 import React from 'react';
+import Table, { TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import Button from '@/components/ui/Button';
-import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
-import Tooltip from '@/components/ui/Tooltip';
-import Table, { TBody, THead, Th, Tr, Td } from '@/components/ui/Table';
-import { ITransfer } from '@/interface/transfers.interface';
+import Icon from '@/components/icon/Icon';
+import type { ITransfer, TransferStatus } from '@/interface/transfers.interface';
 
 interface TransfersTableProps {
 	transfers: ITransfer[];
 	isLoading?: boolean;
 	onView: (transfer: ITransfer) => void;
-	onEdit?: (transfer: ITransfer) => void;
-	onReceive?: (transfer: ITransfer) => void;
-	onCancel?: (transfer: ITransfer) => void;
-	currentUser?: any; // Reemplazar con el tipo correcto del usuario
 }
 
-const TransfersTable: React.FC<TransfersTableProps> = ({
-	transfers,
-	isLoading = false,
-	onView,
-	onEdit,
-	onReceive,
-	onCancel,
-	// currentUser, // Para uso futuro
-}) => {
-	const getStatusColor = (status: string) => {
-		switch (status.toLowerCase()) {
-			case 'pending':
-				return 'amber';
-			case 'shipped':
-				return 'blue';
-			case 'completed':
-				return 'emerald';
-			case 'cancelled':
-				return 'red';
-			default:
-				return 'gray';
-		}
-	};
+const statusConfig: Record<
+	TransferStatus,
+	{ label: string; color: React.ComponentProps<typeof Badge>['color'] }
+> = {
+	pending: { label: 'Pendiente', color: 'amber' },
+	sent: { label: 'Enviada', color: 'blue' },
+	received: { label: 'Recibida', color: 'emerald' },
+	completed: { label: 'Completada', color: 'violet' },
+	cancelled: { label: 'Cancelada', color: 'red' },
+	draft: { label: 'Borrador', color: 'gray' },
+};
 
-	const getStatusLabel = (status: string) => {
-		switch (status.toLowerCase()) {
-			case 'pending':
-				return 'Pendiente';
-			case 'shipped':
-				return 'Enviado';
-			case 'completed':
-				return 'Completado';
-			case 'cancelled':
-				return 'Cancelado';
-			default:
-				return status;
-		}
-	};
-
-	const formatDate = (dateString: string) => {
-		return new Date(dateString).toLocaleDateString('es-CO', {
+const formatDate = (date: string) => {
+	try {
+		return new Intl.DateTimeFormat('es-CL', {
 			year: 'numeric',
 			month: 'short',
 			day: 'numeric',
-		});
-	};
+			hour: '2-digit',
+			minute: '2-digit',
+		}).format(new Date(date));
+	} catch {
+		return date;
+	}
+};
 
-	const calculateProgress = (transfer: ITransfer) => {
-		if (!transfer.items?.length) return 0;
-
-		const totalItems = transfer.items.length;
-		const receivedItems = transfer.items.filter((item) => item.received_quantity > 0).length;
-
-		return Math.round((receivedItems / totalItems) * 100);
-	};
-
-	const canEdit = (transfer: ITransfer) => {
-		return transfer.status === 'PENDING';
-	};
-
-	const canReceive = (transfer: ITransfer) => {
-		return transfer.status === 'SHIPPED';
-	};
-
-	const canCancel = (transfer: ITransfer) => {
-		return transfer.status === 'PENDING' || transfer.status === 'SHIPPED';
-	};
-
+const TransfersTable: React.FC<TransfersTableProps> = ({ transfers, isLoading, onView }) => {
 	if (isLoading) {
 		return (
-			<div className='space-y-3'>
-				{[...Array(5)].map((_, index) => (
-					<div key={index} className='animate-pulse'>
-						<div className='h-16 rounded-lg bg-gray-200 dark:bg-gray-700'></div>
-					</div>
+			<div className='space-y-3 p-4'>
+				{Array.from({ length: 5 }).map((_, index) => (
+					<div key={index} className='h-16 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800' />
 				))}
 			</div>
 		);
 	}
 
-	if (transfers.length === 0) {
+	if (!transfers.length) {
 		return (
-			<div className='py-12 text-center'>
-				<Icon icon='HeroInboxStack' className='mx-auto h-12 w-12 text-gray-400' />
-				<h3 className='mt-2 text-sm font-semibold text-gray-900 dark:text-white'>
-					No hay transferencias
-				</h3>
-				<p className='mt-1 text-sm text-gray-500 dark:text-gray-400'>
-					No se encontraron transferencias con los filtros aplicados.
+			<div className='flex flex-col items-center justify-center space-y-3 py-12 text-center'>
+				<Icon icon='HeroInboxStack' className='h-12 w-12 text-gray-400' />
+				<p className='text-base font-medium text-gray-700 dark:text-gray-200'>
+					Aún no hay transferencias registradas
+				</p>
+				<p className='text-sm text-gray-500'>
+					Usa el botón “Nueva transferencia” para crear la primera.
 				</p>
 			</div>
 		);
 	}
 
 	return (
-		<div className='overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg'>
-			<Table>
+		<div className='overflow-x-auto'>
+			<Table className='min-w-full'>
 				<THead>
 					<Tr>
-						<Th>Transferencia</Th>
+						<Th>#</Th>
 						<Th>Origen → Destino</Th>
-						<Th>Productos</Th>
+						<Th>Totales</Th>
+						<Th>Responsable</Th>
 						<Th>Estado</Th>
-						<Th>Progreso</Th>
-						<Th>Fechas</Th>
-						<Th className='text-center'>Acciones</Th>
+						<Th>Notas</Th>
+						<Th></Th>
 					</Tr>
 				</THead>
 				<TBody>
 					{transfers.map((transfer) => {
-						const progress = calculateProgress(transfer);
+						const totals = transfer.totals || {
+							items: transfer.items?.length || 0,
+							quantity:
+								transfer.items?.reduce((sum, item) => sum + item.quantity, 0) || 0,
+						};
+
+						const status = statusConfig[transfer.status] || statusConfig.pending;
 
 						return (
-							<Tr
-								key={transfer.id}
-								className='hover:bg-gray-50 dark:hover:bg-gray-800'>
-								{/* Información de Transferencia */}
+							<Tr key={transfer.id}>
 								<Td>
-									<div className='flex flex-col space-y-1'>
-										<div className='flex items-center space-x-2'>
-											<Icon
-												icon='HeroTruck'
-												className='h-4 w-4 flex-shrink-0 text-gray-400'
-											/>
-											<span className='text-sm font-semibold text-gray-900 dark:text-white'>
-												#{transfer.transfer_number}
-											</span>
-										</div>
-										<span className='text-xs text-gray-500 dark:text-gray-400'>
-											ID: {transfer.id}
+									<div className='flex flex-col'>
+										<span className='text-sm font-semibold text-gray-900 dark:text-white'>
+											{transfer.transfer_number || `TR-${transfer.id}`}
+										</span>
+										<span className='text-xs text-gray-500'>
+											{formatDate(transfer.created_at)}
 										</span>
 									</div>
 								</Td>
-
-								{/* Origen y Destino */}
 								<Td>
-									<div className='flex flex-col space-y-1'>
+									<div className='text-sm text-gray-800 dark:text-gray-100'>
 										<div className='flex items-center space-x-1'>
 											<Icon
-												icon='HeroMapPin'
-												className='h-3 w-3 text-green-500'
+												icon='HeroBuildingStorefront'
+												className='h-4 w-4 text-green-500'
 											/>
-											<span className='text-sm font-medium text-gray-900 dark:text-white'>
-												{transfer.from_warehouse?.name || 'N/A'}
-											</span>
+											<span>{transfer.from_branch?.name || 'Sucursal origen'}</span>
 										</div>
-										<div className='flex items-center space-x-1'>
-											<Icon
-												icon='HeroArrowRight'
-												className='h-3 w-3 text-gray-400'
-											/>
+										<div className='flex items-center space-x-1 text-gray-500'>
+											<Icon icon='HeroArrowLongRight' className='h-4 w-4' />
+											<span>{transfer.from_warehouse?.name || 'Bodega origen'}</span>
 										</div>
-										<div className='flex items-center space-x-1'>
-											<Icon
-												icon='HeroMapPin'
-												className='h-3 w-3 text-blue-500'
-											/>
-											<span className='text-sm font-medium text-gray-900 dark:text-white'>
-												{transfer.to_warehouse?.name || 'N/A'}
-											</span>
+										<div className='mt-1 flex items-center space-x-1'>
+											<Icon icon='HeroBuildingOffice' className='h-4 w-4 text-blue-500' />
+											<span>{transfer.to_branch?.name || 'Sucursal destino'}</span>
+										</div>
+										<div className='flex items-center space-x-1 text-gray-500'>
+											<Icon icon='HeroArrowLongRight' className='h-4 w-4' />
+											<span>{transfer.to_warehouse?.name || 'Bodega destino'}</span>
 										</div>
 									</div>
 								</Td>
-
-								{/* Información de Productos */}
 								<Td>
-									<div className='flex flex-col space-y-1'>
-										<div className='flex items-center space-x-2'>
-											<Icon
-												icon='HeroCubeTransparent'
-												className='h-4 w-4 text-gray-400'
-											/>
-											<span className='text-sm font-semibold text-gray-900 dark:text-white'>
-												{transfer.items?.length || 0}
-											</span>
-											<span className='text-xs text-gray-500'>productos</span>
-										</div>
-										<div className='flex items-center space-x-2'>
-											<Icon
-												icon='HeroQueueList'
-												className='h-4 w-4 text-gray-400'
-											/>
-											<span className='text-sm font-semibold text-gray-900 dark:text-white'>
-												{transfer.total_quantity || 0}
-											</span>
-											<span className='text-xs text-gray-500'>unidades</span>
-										</div>
+									<div className='text-sm'>
+										<p className='font-semibold'>{totals.items} productos</p>
+										<p className='text-gray-500'>{totals.quantity} unidades</p>
 									</div>
 								</Td>
-
-								{/* Estado */}
 								<Td>
-									<Badge
-										color={getStatusColor(transfer.status)}
-										variant='outline'>
-										{getStatusLabel(transfer.status)}
-									</Badge>
+									<p className='text-sm font-medium text-gray-900 dark:text-white'>
+										{transfer.responsible?.name || 'Sin asignar'}
+									</p>
+									<p className='text-xs text-gray-500'>{transfer.responsible?.email}</p>
 								</Td>
-
-								{/* Progreso */}
 								<Td>
-									<div className='flex flex-col space-y-2'>
-										<div className='flex items-center justify-between'>
-											<span className='text-xs text-gray-500'>
-												{progress}% completo
-											</span>
-										</div>
-										<div className='h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700'>
-											<div
-												className={`h-2 rounded-full transition-all duration-300 ${
-													progress === 100
-														? 'bg-green-500'
-														: progress > 0
-															? 'bg-blue-500'
-															: 'bg-gray-300'
-												}`}
-												style={{ width: `${progress}%` }}></div>
-										</div>
-										{transfer.received_quantity !== undefined && (
-											<span className='text-xs text-gray-500'>
-												{transfer.received_quantity}/
-												{transfer.total_quantity || 0} recibidas
-											</span>
-										)}
-									</div>
+									<Badge color={status.color}>{status.label}</Badge>
 								</Td>
-
-								{/* Fechas */}
-								<Td>
-									<div className='flex flex-col space-y-1'>
-										<div className='flex items-center space-x-1'>
-											<Icon
-												icon='HeroCalendar'
-												className='h-3 w-3 text-gray-400'
-											/>
-											<span className='text-xs text-gray-600 dark:text-gray-300'>
-												{formatDate(transfer.created_at)}
-											</span>
-										</div>
-										{transfer.shipped_at && (
-											<div className='flex items-center space-x-1'>
-												<Icon
-													icon='HeroTruck'
-													className='h-3 w-3 text-blue-500'
-												/>
-												<span className='text-xs text-blue-600 dark:text-blue-400'>
-													{formatDate(transfer.shipped_at)}
-												</span>
-											</div>
-										)}
-										{transfer.received_at && (
-											<div className='flex items-center space-x-1'>
-												<Icon
-													icon='HeroCheckCircle'
-													className='h-3 w-3 text-green-500'
-												/>
-												<span className='text-xs text-green-600 dark:text-green-400'>
-													{formatDate(transfer.received_at)}
-												</span>
-											</div>
-										)}
-									</div>
+								<Td className='max-w-xs text-sm text-gray-600 dark:text-gray-300'>
+									{transfer.notes || '—'}
 								</Td>
-
-								{/* Acciones */}
-								<Td>
-									<div className='flex items-center justify-center space-x-1'>
-										{/* Ver Detalle */}
-										<Tooltip text='Ver detalle'>
-											<Button
-												variant='outline'
-												size='xs'
-												color='blue'
-												onClick={() => onView(transfer)}>
-												<Icon icon='HeroEye' className='h-3 w-3' />
-											</Button>
-										</Tooltip>
-
-										{/* Editar */}
-										{onEdit && canEdit(transfer) && (
-											<Tooltip text='Editar transferencia'>
-												<Button
-													variant='outline'
-													size='xs'
-													color='amber'
-													onClick={() => onEdit(transfer)}>
-													<Icon icon='HeroPencil' className='h-3 w-3' />
-												</Button>
-											</Tooltip>
-										)}
-
-										{/* Recibir */}
-										{onReceive && canReceive(transfer) && (
-											<Tooltip text='Recibir transferencia'>
-												<Button
-													variant='outline'
-													size='xs'
-													color='emerald'
-													onClick={() => onReceive(transfer)}>
-													<Icon
-														icon='HeroCheckCircle'
-														className='h-3 w-3'
-													/>
-												</Button>
-											</Tooltip>
-										)}
-
-										{/* Cancelar */}
-										{onCancel && canCancel(transfer) && (
-											<Tooltip text='Cancelar transferencia'>
-												<Button
-													variant='outline'
-													size='xs'
-													color='red'
-													onClick={() => onCancel(transfer)}>
-													<Icon icon='HeroXMark' className='h-3 w-3' />
-												</Button>
-											</Tooltip>
-										)}
-									</div>
+								<Td className='text-right'>
+									<Button size='sm' variant='outline' onClick={() => onView(transfer)}>
+										Ver detalle
+									</Button>
 								</Td>
 							</Tr>
 						);

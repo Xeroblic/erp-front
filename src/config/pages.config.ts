@@ -420,7 +420,7 @@ export const privatePages = {
 				to: '/comercial/transferencias',
 				text: 'Transferencias Comerciales',
 				icon: 'HeroTruck',
-				authority: ['view-transfers'],
+				authority: ['view-sale'],
 				roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'sales-rep'],
 			},
 		},
