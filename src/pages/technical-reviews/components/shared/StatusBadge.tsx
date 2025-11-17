@@ -6,6 +6,7 @@ import Badge from '@/components/ui/Badge';
 import type { ReviewStatus, CommercialStatus } from '@/interface/technicalReviews.interface';
 import type { TColors } from '@/types/colors.type';
 import { arrColors } from '@/types/colors.type';
+import { COMMERCIAL_STATUS_CONFIG } from '@/pages/technical-reviews/constants';
 
 type StatusOption = {
 	value?: ReviewStatus | CommercialStatus | string | null;
@@ -77,22 +78,14 @@ const getReviewStatusConfig = (status: string) => {
 };
 
 const getCommercialStatusConfig = (status: string) => {
-	switch (status as CommercialStatus) {
-		case 'unknown':
-			return { color: 'gray' as TColors, label: 'Desconocido' };
-		case 'received':
-			return { color: 'blue' as TColors, label: 'Recibido' };
-		case 'available_for_sale':
-			return { color: 'green' as TColors, label: 'Disponible' };
-		case 'in_quotation':
-			return { color: 'amber' as TColors, label: 'En Cotización' };
-		case 'sold':
-			return { color: 'red' as TColors, label: 'Vendido' };
-		case 'reserved':
-			return { color: 'orange' as TColors, label: 'Reservado' };
-		default:
-			return { color: 'gray' as TColors, label: formatLabel(status) || 'Sin dato' };
+	const normalized = status as CommercialStatus;
+	const config = COMMERCIAL_STATUS_CONFIG[normalized];
+
+	if (config) {
+		return config;
 	}
+
+	return { color: 'gray' as TColors, label: formatLabel(status) || 'Sin dato' };
 };
 
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status, type }) => {

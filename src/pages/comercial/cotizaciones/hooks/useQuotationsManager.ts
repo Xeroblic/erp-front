@@ -1,353 +1,551 @@
 /**
- * Hook para gestión de cotizaciones
- * Maneja el estado y operaciones CRUD del módulo de cotizaciones
+ * Hook para gestión de cotizaciones contra el backend real
+ * Se apoya en el slice Redux de cotizaciones y expone la misma API
+ * que consumen los componentes actuales del módulo.
  */
-import { useState, useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
-import { IQuote, QuoteStatus } from '../../../../interface';
 import {
-    mockQuotations,
-    getQuotationById,
-    getQuotationsByStatus,
-    getQuotationStats
-} from '../mocks/quotations.mock';
+	IQuote,
+	type IQuoteItem,
+	QuoteStatus,
+	type QuoteCreateDTO,
+	type QuoteUpdateDTO,
+	type QuoteItemDTO,
+} from '../../../../interface';
+import { normalizeQuoteStatusValue } from '../constants/quoteStatuses';
+import { useAppDispatch, useAppSelector } from '@/store';
+import {
+	fetchQuotes,
+	fetchQuoteById,
+	createQuote,
+	updateQuote,
+	deleteQuote,
+	fetchQuoteItems,
+	addQuoteItem,
+	updateQuoteItem,
+	deleteQuoteItem,
+	convertQuoteToSale as convertQuoteToSaleThunk,
+	selectQuotes,
+	selectQuotesLoading,
+	selectQuoteMeta,
+	selectQuoteActionsLoading,
+} from '@/store/slices/quotes/quotesSlice';
 
 export interface QuotationsFilters {
-    status?: QuoteStatus;
-    search?: string;
-    dateFrom?: string;
-    dateTo?: string;
-    customerId?: number;
-    minAmount?: number;
-    maxAmount?: number;
+	status?: QuoteStatus;
+	search?: string;
+	dateFrom?: string;
+	dateTo?: string;
+	customerId?: number;
+	minAmount?: number;
+	maxAmount?: number;
 }
 
 export interface UseQuotationsManagerReturn {
-    // Estado
-    quotations: IQuote[];
-    filteredQuotations: IQuote[];
-    loading: boolean;
-    error: string | null;
-    totalItems: number;
-
-    // Filtros y paginación
-    filters: QuotationsFilters;
-    setFilters: (filters: QuotationsFilters) => void;
-    currentPage: number;
-    setCurrentPage: (page: number) => void;
-    itemsPerPage: number;
-    setItemsPerPage: (items: number) => void;
-
-    // Estadísticas
-    stats: ReturnType<typeof getQuotationStats>;
-
-    // Operaciones CRUD
-    createQuotation: (quotation: Omit<IQuote, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
-    updateQuotation: (id: number, quotation: Partial<IQuote>) => Promise<void>;
-    deleteQuotation: (id: number) => Promise<void>;
-    duplicateQuotation: (id: number) => Promise<void>;
-    changeStatus: (id: number, status: QuoteStatus) => Promise<void>;
-    convertToSale: (id: number) => Promise<void>;
-
-    // Utilidades
-    refreshData: () => void;
-    exportQuotations: () => void;
-    getQuotationById: (id: number) => IQuote | undefined;
-    resetFilters: () => void;
+	quotations: IQuote[];
+	filteredQuotations: IQuote[];
+	loading: boolean;
+	error: string | null;
+	totalItems: number;
+	filters: QuotationsFilters;
+	setFilters: (filters: QuotationsFilters) => void;
+	currentPage: number;
+	setCurrentPage: (page: number) => void;
+	itemsPerPage: number;
+	setItemsPerPage: (items: number) => void;
+	stats: {
+		total: number;
+		byStatus: Record<string, number>;
+		totalAmount: number;
+		avgAmount: number;
+	};
+	createQuotation: (quotation: Partial<IQuote>) => Promise<void>;
+	updateQuotation: (id: number, quotation: Partial<IQuote>) => Promise<void>;
+	deleteQuotation: (id: number) => Promise<void>;
+	duplicateQuotation: (id: number) => Promise<void>;
+	changeStatus: (id: number, status: QuoteStatus) => Promise<void>;
+	convertToSale: (id: number) => Promise<void>;
+	refreshData: () => void;
+	exportQuotations: () => void;
+	getQuotationById: (id: number) => IQuote | undefined;
+	resetFilters: () => void;
+	loadQuotationDetails: (id: number) => Promise<IQuote>;
 }
 
 const initialFilters: QuotationsFilters = {
-    status: undefined,
-    search: '',
-    dateFrom: '',
-    dateTo: '',
-    customerId: undefined,
-    minAmount: undefined,
-    maxAmount: undefined,
+	status: undefined,
+	search: '',
+	dateFrom: '',
+	dateTo: '',
+	customerId: undefined,
+	minAmount: undefined,
+	maxAmount: undefined,
 };
 
-export const useQuotationsManager = (): UseQuotationsManagerReturn => {
-    // Estado local
-    const [quotations, setQuotations] = useState<IQuote[]>(mockQuotations);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [filters, setFilters] = useState<QuotationsFilters>(initialFilters);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+const useQuotationsManager = (): UseQuotationsManagerReturn => {
+	const dispatch = useAppDispatch();
+	const quotations = useAppSelector(selectQuotes);
+	const listLoading = useAppSelector(selectQuotesLoading);
+	const meta = useAppSelector(selectQuoteMeta);
+	const actionsLoading = useAppSelector(selectQuoteActionsLoading);
+	const user = useAppSelector((state) => state.auth.user);
+	const subsidiaryId =
+		user?.subsidiary?.id ??
+		user?.subsidiary_id ??
+		user?.branch?.subsidiary?.id ??
+		user?.empresa?.subsidiary_id ??
+		null;
 
-    // Filtros aplicados
-    const filteredQuotations = useMemo(() => {
-        let filtered = [...quotations];
+	const [filters, setFilters] = useState<QuotationsFilters>(initialFilters);
+	const [currentPage, setCurrentPage] = useState(1);
+	const [itemsPerPage, setItemsPerPage] = useState(meta.perPage || 20);
+	const [error, setError] = useState<string | null>(null);
+	const API_FETCH_LIMIT = 500;
 
-        // Filtro por estado
-        if (filters.status) {
-            filtered = filtered.filter(q => q.status === filters.status);
-        }
+	const effectiveLoading =
+		listLoading ||
+		actionsLoading.creating ||
+		actionsLoading.updating ||
+		actionsLoading.deleting ||
+		actionsLoading.itemsSaving ||
+		actionsLoading.itemsDeleting ||
+		actionsLoading.convertLoading;
 
-        // Filtro por búsqueda (número de cotización, notas)
-        if (filters.search) {
-            const searchTerm = filters.search.toLowerCase();
-            filtered = filtered.filter(q =>
-                q.quote_number.toLowerCase().includes(searchTerm) ||
-                (q.notes && q.notes.toLowerCase().includes(searchTerm))
-            );
-        }
+	const requestQuotes = useCallback(async () => {
+		if (!subsidiaryId) return;
+		try {
+			await dispatch(
+				fetchQuotes({
+					subsidiaryId,
+					page: 1,
+					perPage: API_FETCH_LIMIT,
+					status: filters.status,
+					search: filters.search,
+				}),
+			).unwrap();
+			setError(null);
+		} catch (err: any) {
+			const message = err?.message || 'No se pudieron obtener las cotizaciones';
+			setError(message);
+			toast.error(message);
+		}
+	}, [dispatch, subsidiaryId, filters.status, filters.search, API_FETCH_LIMIT]);
 
-        // Filtro por rango de fechas
-        if (filters.dateFrom) {
-            filtered = filtered.filter(q => q.quote_date >= filters.dateFrom!);
-        }
-        if (filters.dateTo) {
-            filtered = filtered.filter(q => q.quote_date <= filters.dateTo!);
-        }
+	useEffect(() => {
+		requestQuotes();
+	}, [requestQuotes]);
 
-        // Filtro por cliente
-        if (filters.customerId) {
-            filtered = filtered.filter(q => q.customer_id === filters.customerId);
-        }
+	const filteredQuotations = useMemo(() => {
+		let data = [...quotations];
 
-        // Filtro por monto
-        if (filters.minAmount) {
-            filtered = filtered.filter(q => q.total_amount >= filters.minAmount!);
-        }
-        if (filters.maxAmount) {
-            filtered = filtered.filter(q => q.total_amount <= filters.maxAmount!);
-        }
+		if (filters.dateFrom) {
+			data = data.filter((q) => q.quote_date >= filters.dateFrom!);
+		}
+		if (filters.dateTo) {
+			data = data.filter((q) => q.quote_date <= filters.dateTo!);
+		}
+		if (filters.customerId) {
+			data = data.filter((q) => q.customer_id === filters.customerId);
+		}
+		if (filters.minAmount) {
+			data = data.filter((q) => q.total_amount >= filters.minAmount!);
+		}
+		if (filters.maxAmount) {
+			data = data.filter((q) => q.total_amount <= filters.maxAmount!);
+		}
+		if (filters.search) {
+			const term = filters.search.toLowerCase();
+			data = data.filter(
+				(q) =>
+					q.quote_number?.toLowerCase().includes(term) ||
+					String(q.id).includes(term) ||
+					(q.notes && q.notes.toLowerCase().includes(term)),
+			);
+		}
 
-        // Ordenar por fecha más reciente
-        return filtered.sort((a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-    }, [quotations, filters]);
+		return data;
+	}, [quotations, filters]);
 
-    // Estadísticas
-    const stats = useMemo(() => getQuotationStats(), [quotations]);
+	const stats = useMemo(() => {
+		const total = quotations.length;
+		const totalAmount = quotations.reduce((sum, quote) => sum + (quote.total_amount ?? 0), 0);
+		const byStatus = quotations.reduce<Record<string, number>>((acc, quote) => {
+			const key = normalizeQuoteStatusValue(quote.status);
+			acc[key] = (acc[key] || 0) + 1;
+			return acc;
+		}, {});
+		return {
+			total,
+			byStatus,
+			totalAmount,
+			avgAmount: total > 0 ? totalAmount / total : 0,
+		};
+	}, [quotations]);
 
-    // Operaciones CRUD
-    const createQuotation = useCallback(async (
-        quotationData: Omit<IQuote, 'id' | 'created_at' | 'updated_at'>
-    ) => {
-        setLoading(true);
-        try {
-            // Simular delay de API
-            await new Promise(resolve => setTimeout(resolve, 1000));
+const normalizeStatus = (status?: QuoteStatus): QuoteStatus | undefined => {
+	if (!status) return undefined;
+	return status.toString().toLowerCase() as QuoteStatus;
+};
 
-            const newQuotation: IQuote = {
-                ...quotationData,
-                id: Math.max(...quotations.map(q => q.id)) + 1,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-            };
+type QuoteItemPayload = QuoteItemDTO & { id?: number };
 
-            setQuotations(prev => [newQuotation, ...prev]);
-            toast.success('Cotización creada exitosamente');
-            setError(null);
-        } catch (err) {
-            const errorMessage = 'Error al crear la cotización';
-            setError(errorMessage);
-            toast.error(errorMessage);
-        } finally {
-            setLoading(false);
-        }
-    }, [quotations]);
+const normalizeQuoteItems = (items?: IQuoteItem[] | null): QuoteItemPayload[] => {
+	if (!items || items.length === 0) return [];
+	return items
+		.map((item) => {
+			const hasProduct = Boolean(item.product_id);
+			const baseName = item.customer_name ?? item.product?.name ?? '';
+			const baseSku = item.customer_sku ?? item.product?.sku ?? '';
+			const quantity = Math.max(1, Number(item.quantity) || 1);
+			const rawUnitPrice = Number(
+				item.unit_price ??
+					(item as any).unit_net ??
+					(item as any).unitPrice ??
+					(item as any).unit ??
+					0,
+			);
+			const unitPrice =
+				hasProduct && rawUnitPrice <= 0 ? undefined : rawUnitPrice > 0 ? rawUnitPrice : undefined;
+			const discountAmount =
+				item.discount_amount !== undefined && item.discount_amount !== null
+					? Number(item.discount_amount)
+					: undefined;
 
-    const updateQuotation = useCallback(async (id: number, updates: Partial<IQuote>) => {
-        setLoading(true);
-        try {
-            await new Promise(resolve => setTimeout(resolve, 800));
+			if (!hasProduct && !baseName.trim()) {
+				return null;
+			}
+			if (!hasProduct && (!unitPrice || unitPrice <= 0)) {
+				throw new Error(
+					'Los ítems sin producto asociado deben incluir un nombre y un precio neto mayor a 0.',
+				);
+			}
 
-            setQuotations(prev => prev.map(q =>
-                q.id === id
-                    ? { ...q, ...updates, updated_at: new Date().toISOString() }
-                    : q
-            ));
+			return {
+				id: item.id && item.id > 0 ? item.id : undefined,
+				product_id: item.product_id ?? null,
+				customer_name: baseName.trim() || undefined,
+				customer_sku: baseSku.trim() || undefined,
+				description: item.description ?? undefined,
+				notes: item.notes ?? undefined,
+				quantity,
+				unit_price: unitPrice,
+				discount_amount:
+					discountAmount && discountAmount > 0 ? Number(discountAmount.toFixed(2)) : undefined,
+			};
+		})
+		.filter((payload): payload is QuoteItemPayload => Boolean(payload));
+};
 
-            toast.success('Cotización actualizada exitosamente');
-            setError(null);
-        } catch (err) {
-            const errorMessage = 'Error al actualizar la cotización';
-            setError(errorMessage);
-            toast.error(errorMessage);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+const mapToCreateDTO = (quotation: Partial<IQuote>): QuoteCreateDTO => {
+	if (!quotation.customer_id) {
+		throw new Error('Debes seleccionar un cliente para la cotización');
+	}
+	return {
+		customer_id: quotation.customer_id,
+		quote_number: quotation.quote_number ?? undefined,
+		quote_date: quotation.quote_date || new Date().toISOString().split('T')[0],
+		expiry_date:
+			quotation.expiry_date ||
+			(quotation as any).valid_until ||
+			new Date().toISOString().split('T')[0],
+		tax_rate:
+			(quotation as any).tax_rate ??
+			(quotation as any).tax_percentage ??
+			quotation.totals?.tax_rate ??
+			0.19,
+		notes: quotation.notes ?? undefined,
+		internal_notes: (quotation as any).internal_notes ?? undefined,
+		payment_method: quotation.payment_method ?? undefined,
+		purchase_order: quotation.purchase_order ?? undefined,
+		payment_terms: quotation.payment_terms ?? undefined,
+		fixed_discount: (quotation as any).fixed_discount ?? undefined,
+		discount_percentage: quotation.discount_percentage ?? undefined,
+		status: normalizeStatus(quotation.status) ?? ('draft' as QuoteStatus),
+	};
+};
 
-    const deleteQuotation = useCallback(async (id: number) => {
-        setLoading(true);
-        try {
-            await new Promise(resolve => setTimeout(resolve, 600));
+const mapToUpdateDTO = (quotation: Partial<IQuote>): QuoteUpdateDTO => ({
+	quote_number: quotation.quote_number,
+	customer_id: quotation.customer_id,
+	quote_date: quotation.quote_date,
+	expiry_date: quotation.expiry_date ?? (quotation as any).valid_until,
+	tax_rate:
+		(quotation as any).tax_rate ??
+			(quotation as any).tax_percentage ??
+			quotation.totals?.tax_rate,
+	notes: quotation.notes,
+	internal_notes: (quotation as any).internal_notes,
+	payment_method: quotation.payment_method,
+	purchase_order: quotation.purchase_order,
+	payment_terms: quotation.payment_terms,
+	fixed_discount: (quotation as any).fixed_discount,
+	discount_percentage: quotation.discount_percentage,
+	status: normalizeStatus(quotation.status),
+});
 
-            setQuotations(prev => prev.filter(q => q.id !== id));
-            toast.success('Cotización eliminada exitosamente');
-            setError(null);
-        } catch (err) {
-            const errorMessage = 'Error al eliminar la cotización';
-            setError(errorMessage);
-            toast.error(errorMessage);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+	const syncQuoteItems = useCallback(
+		async (quoteId: number, desiredItems?: IQuoteItem[] | null) => {
+			if (!subsidiaryId || desiredItems === undefined) return;
 
-    const duplicateQuotation = useCallback(async (id: number) => {
-        setLoading(true);
-        try {
-            const originalQuotation = quotations.find(q => q.id === id);
-            if (!originalQuotation) {
-                throw new Error('Cotización no encontrada');
-            }
+			let desiredPayload: QuoteItemPayload[] = [];
+			try {
+				desiredPayload = normalizeQuoteItems(desiredItems);
+			} catch (error: any) {
+				const message =
+					error?.message || 'Uno de los ítems no tiene la información mínima requerida.';
+				toast.error(message);
+				throw error;
+			}
 
-            await new Promise(resolve => setTimeout(resolve, 800));
+			const hasInputItems = Array.isArray(desiredItems) && desiredItems.length > 0;
 
-            const duplicatedQuotation: IQuote = {
-                ...originalQuotation,
-                id: Math.max(...quotations.map(q => q.id)) + 1,
-                quote_number: `${originalQuotation.quote_number}-COPY`,
-                status: 'DRAFT',
-                quote_date: new Date().toISOString().split('T')[0],
-                valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-                approved_by: undefined,
-                converted_sale: undefined,
-                can_convert: true,
-                is_expired: false,
-            };
+			if (hasInputItems && desiredPayload.length === 0) {
+				throw new Error('Debes agregar al menos un ítem válido a la cotización.');
+			}
 
-            setQuotations(prev => [duplicatedQuotation, ...prev]);
-            toast.success('Cotización duplicada exitosamente');
-            setError(null);
-        } catch (err) {
-            const errorMessage = 'Error al duplicar la cotización';
-            setError(errorMessage);
-            toast.error(errorMessage);
-        } finally {
-            setLoading(false);
-        }
-    }, [quotations]);
+			const existing = await dispatch(
+				fetchQuoteItems({ subsidiaryId, quoteId }),
+			).unwrap();
 
-    const changeStatus = useCallback(async (id: number, status: QuoteStatus) => {
-        setLoading(true);
-        try {
-            await new Promise(resolve => setTimeout(resolve, 600));
+			const toUpdate = desiredPayload.filter((item) => item.id && item.id > 0);
+			const toCreate = desiredPayload.filter((item) => !item.id || item.id <= 0);
+			const toDelete =
+				desiredPayload.length === 0
+					? existing
+					: existing.filter(
+							(item) => !toUpdate.some((desiredItem) => desiredItem.id === item.id),
+						);
 
-            setQuotations(prev => prev.map(q =>
-                q.id === id
-                    ? {
-                        ...q,
-                        status,
-                        updated_at: new Date().toISOString(),
-                        approved_by: status === 'APPROVED' ? 1 : q.approved_by,
-                        can_convert: status === 'APPROVED',
-                    }
-                    : q
-            ));
+			if (!toUpdate.length && !toCreate.length && !toDelete.length) {
+				return;
+			}
 
-            toast.success(`Estado cambiado a ${status} exitosamente`);
-            setError(null);
-        } catch (err) {
-            const errorMessage = 'Error al cambiar el estado';
-            setError(errorMessage);
-            toast.error(errorMessage);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+			for (const item of toUpdate) {
+				await dispatch(
+					updateQuoteItem({
+						subsidiaryId,
+						quoteId,
+						itemId: item.id!,
+						data: item,
+					}),
+				).unwrap();
+			}
 
-    const convertToSale = useCallback(async (id: number) => {
-        setLoading(true);
-        try {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+			for (const item of toCreate) {
+				await dispatch(
+					addQuoteItem({
+						subsidiaryId,
+						quoteId,
+						data: item,
+					}),
+				).unwrap();
+			}
 
-            setQuotations(prev => prev.map(q =>
-                q.id === id
-                    ? {
-                        ...q,
-                        status: 'CONVERTED',
-                        updated_at: new Date().toISOString(),
-                        can_convert: false,
-                        converted_sale: { id: Date.now() } as any, // Mock sale
-                    }
-                    : q
-            ));
+			for (const item of toDelete) {
+				await dispatch(
+					deleteQuoteItem({
+						subsidiaryId,
+						quoteId,
+						itemId: item.id,
+					}),
+				).unwrap();
+			}
+		},
+		[dispatch, subsidiaryId],
+	);
 
-            toast.success('Cotización convertida a venta exitosamente');
-            setError(null);
-        } catch (err) {
-            const errorMessage = 'Error al convertir la cotización';
-            setError(errorMessage);
-            toast.error(errorMessage);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+	const createQuotation = useCallback(
+		async (quotationData: Partial<IQuote>) => {
+			if (!subsidiaryId) {
+				toast.error('Selecciona una subsidiaria antes de crear cotizaciones');
+				return;
+			}
+			try {
+				const payload = mapToCreateDTO(quotationData);
+				const createdQuote = await dispatch(
+					createQuote({ subsidiaryId, data: payload }),
+				).unwrap();
+				await syncQuoteItems(createdQuote.id, quotationData.items as IQuoteItem[]);
+				await requestQuotes();
+			} catch (err: any) {
+				const message = err?.message || 'Error al crear la cotización';
+				setError(message);
+				toast.error(message);
+			}
+		},
+		[dispatch, subsidiaryId, requestQuotes, syncQuoteItems],
+	);
 
-    // Utilidades
-    const refreshData = useCallback(() => {
-        setQuotations(mockQuotations);
-        setError(null);
-        toast.info('Datos actualizados');
-    }, []);
+	const updateQuotationHandler = useCallback(
+		async (id: number, updates: Partial<IQuote>) => {
+			if (!subsidiaryId) return;
+			try {
+				const payload = mapToUpdateDTO(updates);
+				await dispatch(updateQuote({ subsidiaryId, quoteId: id, data: payload })).unwrap();
+				await syncQuoteItems(id, updates.items as IQuoteItem[] | undefined);
+				await requestQuotes();
+			} catch (err: any) {
+				const message = err?.message || 'Error al actualizar la cotización';
+				setError(message);
+				toast.error(message);
+			}
+		},
+		[dispatch, subsidiaryId, requestQuotes, syncQuoteItems],
+	);
 
-    const exportQuotations = useCallback(() => {
-        // Simular exportación
-        const csvContent = filteredQuotations.map(q =>
-            `${q.quote_number},${q.customer_id},${q.quote_date},${q.status},${q.total_amount}`
-        ).join('\n');
+	const deleteQuotationHandler = useCallback(
+		async (id: number) => {
+			if (!subsidiaryId) return;
+			try {
+				await dispatch(deleteQuote({ subsidiaryId, quoteId: id })).unwrap();
+				await requestQuotes();
+			} catch (err: any) {
+				const message = err?.message || 'Error al eliminar la cotización';
+				setError(message);
+				toast.error(message);
+			}
+		},
+		[dispatch, subsidiaryId, requestQuotes],
+	);
 
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `cotizaciones_${new Date().toISOString().split('T')[0]}.csv`;
-        a.click();
+	const duplicateQuotation = useCallback(
+		async (id: number) => {
+			if (!subsidiaryId) return;
+			try {
+				let baseQuote = quotations.find((q) => q.id === id);
+				if (!baseQuote) {
+					baseQuote = await dispatch(fetchQuoteById({ subsidiaryId, quoteId: id })).unwrap();
+				}
+				let baseItems = baseQuote.items ?? [];
+				if (!baseItems.length) {
+					try {
+						baseItems = await dispatch(
+							fetchQuoteItems({ subsidiaryId, quoteId: id }),
+						).unwrap();
+					} catch (e) {
+						baseItems = [];
+					}
+				}
+				const payload = mapToCreateDTO({
+					...baseQuote,
+					quote_date: new Date().toISOString().split('T')[0],
+				});
+				payload.quote_number = undefined;
+				const createdQuote = await dispatch(
+					createQuote({ subsidiaryId, data: payload }),
+				).unwrap();
+				if (baseItems.length) {
+					await syncQuoteItems(createdQuote.id, baseItems as IQuoteItem[]);
+				}
+				toast.success('Cotización duplicada exitosamente');
+				await requestQuotes();
+			} catch (err: any) {
+				const message = err?.message || 'Error al duplicar la cotización';
+				setError(message);
+				toast.error(message);
+			}
+		},
+		[dispatch, subsidiaryId, quotations, requestQuotes, syncQuoteItems],
+	);
 
-        toast.success('Cotizaciones exportadas exitosamente');
-    }, [filteredQuotations]);
+	const changeStatus = useCallback(
+		async (id: number, status: QuoteStatus) => {
+			await updateQuotationHandler(id, { status });
+		},
+		[updateQuotationHandler],
+	);
 
-    const getQuotationByIdLocal = useCallback((id: number) => {
-        return quotations.find(q => q.id === id);
-    }, [quotations]);
+	const convertToSale = useCallback(
+		async (id: number) => {
+			if (!subsidiaryId) return;
+			try {
+				await dispatch(convertQuoteToSaleThunk({ subsidiaryId, quoteId: id })).unwrap();
+				await requestQuotes();
+			} catch (err: any) {
+				const message = err?.message || 'Error al convertir la cotización';
+				setError(message);
+				toast.error(message);
+			}
+		},
+		[dispatch, subsidiaryId, requestQuotes],
+	);
 
-    const resetFilters = useCallback(() => {
-        setFilters(initialFilters);
-        setCurrentPage(1);
-    }, []);
+	const refreshData = useCallback(() => {
+		requestQuotes();
+	}, [requestQuotes]);
 
-    return {
-        // Estado
-        quotations,
-        filteredQuotations,
-        loading,
-        error,
-        totalItems: filteredQuotations.length,
+	const loadQuotationDetails = useCallback(
+		async (id: number) => {
+			if (!subsidiaryId) {
+				throw new Error('No hay una filial seleccionada');
+			}
+			const detail = await dispatch(
+				fetchQuoteById({ subsidiaryId, quoteId: id }),
+			).unwrap();
+			if (!detail.items || detail.items.length === 0) {
+				try {
+					const items = await dispatch(
+						fetchQuoteItems({ subsidiaryId, quoteId: id }),
+					).unwrap();
+					return { ...detail, items };
+				} catch (error) {
+					return detail;
+				}
+			}
+			return detail;
+		},
+		[dispatch, subsidiaryId],
+	);
 
-        // Filtros y paginación
-        filters,
-        setFilters,
-        currentPage,
-        setCurrentPage,
-        itemsPerPage,
-        setItemsPerPage,
+	const exportQuotations = useCallback(() => {
+		const csvContent = filteredQuotations
+			.map((q) => `${q.id},${q.customer_id},${q.quote_date},${q.status},${q.total_amount}`)
+			.join('\n');
+		const blob = new Blob([csvContent], { type: 'text/csv' });
+		const url = window.URL.createObjectURL(blob);
+		const link = document.createElement('a');
+		link.href = url;
+		link.download = `cotizaciones_${new Date().toISOString().split('T')[0]}.csv`;
+		link.click();
+		toast.success('Cotizaciones exportadas');
+	}, [filteredQuotations]);
 
-        // Estadísticas
-        stats,
+	const getQuotationById = useCallback(
+		(id: number) => quotations.find((q) => q.id === id),
+		[quotations],
+	);
 
-        // Operaciones CRUD
-        createQuotation,
-        updateQuotation,
-        deleteQuotation,
-        duplicateQuotation,
-        changeStatus,
-        convertToSale,
+	const resetFilters = useCallback(() => {
+		setFilters(initialFilters);
+		setCurrentPage(1);
+	}, []);
 
-        // Utilidades
-        refreshData,
-        exportQuotations,
-        getQuotationById: getQuotationByIdLocal,
-        resetFilters,
-    };
+	return {
+		quotations,
+		filteredQuotations,
+		loading: effectiveLoading,
+		error,
+		totalItems: filteredQuotations.length,
+		filters,
+		setFilters,
+		currentPage,
+		setCurrentPage,
+		itemsPerPage,
+		setItemsPerPage,
+		stats,
+		createQuotation,
+		updateQuotation: updateQuotationHandler,
+		deleteQuotation: deleteQuotationHandler,
+		duplicateQuotation,
+		changeStatus,
+		convertToSale,
+		refreshData,
+		exportQuotations,
+		getQuotationById,
+		resetFilters,
+		loadQuotationDetails,
+	};
 };
 
 export default useQuotationsManager;

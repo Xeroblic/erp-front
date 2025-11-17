@@ -2,7 +2,7 @@
  * Step3GradeReview - Paso 3: Gradación Automática y Aprobación
  * Muestra el grado sugerido por el sistema y permite aprobar o modificar
  */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
@@ -10,7 +10,7 @@ import Badge from '@/components/ui/Badge';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import Textarea from '@/components/form/Textarea';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { approveItem } from '@/store/slices/technicalReviews';
+import { approveItem, completeReview } from '@/store/slices/technicalReviews';
 
 interface Step3GradeReviewProps {
 	branchId: number;
@@ -20,10 +20,12 @@ interface Step3GradeReviewProps {
 	breakdown?: Record<string, any>;
 	serialNumber: string;
 	equipmentType: string;
+	reviewStatus?: string | null;
 	onBack: () => void;
 	onComplete: () => void;
 	onRecalculate?: () => Promise<void>; // Callback para recalcular grado
 	onModifyReview?: () => Promise<void>; // Callback para volver a modificar revisión (vuelve a in_review)
+	onReviewCompleted?: (item: any) => void;
 }
 
 const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
@@ -34,10 +36,12 @@ const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 	breakdown,
 	serialNumber,
 	equipmentType,
+	reviewStatus,
 	onBack,
 	onComplete,
 	onRecalculate, // Prop para recalcular
 	onModifyReview, // Prop para modificar revisión
+	onReviewCompleted,
 }) => {
 	const dispatch = useAppDispatch();
 	const approving = useAppSelector((s) => s.technicalReviews.approving);
@@ -48,6 +52,49 @@ const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 	const [error, setError] = useState<string | null>(null);
 	const [isRecalculating, setIsRecalculating] = useState(false); // Estado para recalcular
 	const [isModifying, setIsModifying] = useState(false); // Estado para modificar
+	const [currentReviewStatus, setCurrentReviewStatus] = useState<string | null>(reviewStatus ?? null);
+
+	useEffect(() => {
+		setCurrentReviewStatus(reviewStatus ?? null);
+	}, [reviewStatus]);
+
+	const formatDisplayValue = (value: any, fallback = 'Sin dato') => {
+		if (value === null || value === undefined) return fallback;
+		if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+			return String(value);
+		}
+		if (typeof value === 'object') {
+			const candidate = (value as Record<string, any>).label ?? value.value ?? value.description;
+			if (candidate) return String(candidate);
+			try {
+				return JSON.stringify(value);
+			} catch {
+				return fallback;
+			}
+		}
+		return fallback;
+	};
+
+	const formatBreakdownValue = (value: any) => {
+		if (typeof value === 'number') {
+			return Number.isInteger(value) ? String(value) : value.toFixed(1);
+		}
+		if (typeof value === 'boolean') {
+			return value ? 'Sí' : 'No';
+		}
+		return formatDisplayValue(value, '-');
+	};
+
+	const resolvedSuggestedGrade =
+		typeof suggestedGrade === 'string'
+			? suggestedGrade
+			: (suggestedGrade as any)?.value ||
+				(suggestedGrade as any)?.label ||
+				(suggestedGrade as any)?.description ||
+				'C';
+	const displaySuggestedGrade = formatDisplayValue(resolvedSuggestedGrade, 'N/A').toUpperCase();
+	const displaySerialNumber = formatDisplayValue(serialNumber, 'Sin serie');
+	const displayEquipmentType = formatDisplayValue(equipmentType, 'N/A');
 
 	const gradeOptions: TSelectOption[] = [
 		{ value: 'A', label: 'Grado A - Excelente' },
@@ -70,6 +117,33 @@ const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 			default:
 				return 'bg-gray-500 text-white';
 		}
+	};
+
+	const normalizeStatus = (value: any): string | null => {
+		if (!value) return null;
+		if (typeof value === 'string') return value;
+		if (typeof value === 'object') {
+			return value.value ?? value.label ?? null;
+		}
+		return String(value);
+	};
+
+	const ensureReviewIsCompleted = async () => {
+		const normalized = currentReviewStatus;
+		if (normalized === 'reviewed' || normalized === 'approved') {
+			return;
+		}
+
+		const result = await dispatch(
+			completeReview({
+				branchId,
+				itemId,
+			}),
+		).unwrap();
+
+		const nextStatus = normalizeStatus(result?.review_status) ?? 'reviewed';
+		setCurrentReviewStatus(nextStatus);
+		onReviewCompleted?.(result);
 	};
 
 	// Recalcular grado después de modificaciones
@@ -110,12 +184,13 @@ const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 	// Aceptar sugerencia automática
 	const handleAcceptSuggestion = async () => {
 		try {
+			await ensureReviewIsCompleted();
 			await dispatch(
 				approveItem({
 					branchId,
 					itemId,
 					data: {
-						grade: suggestedGrade,
+						grade: resolvedSuggestedGrade,
 						override_suggestion: false,
 					},
 				}),
@@ -140,6 +215,7 @@ const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 		}
 
 		try {
+			await ensureReviewIsCompleted();
 			await dispatch(
 				approveItem({
 					branchId,
@@ -199,9 +275,9 @@ const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 					<div className='mt-6'>
 						<div
 							className={`mx-auto flex h-32 w-32 items-center justify-center rounded-full ${getGradeColor(
-								suggestedGrade,
+								displaySuggestedGrade,
 							)} shadow-lg`}>
-							<span className='text-6xl font-bold'>{suggestedGrade}</span>
+							<span className='text-6xl font-bold'>{displaySuggestedGrade}</span>
 						</div>
 						{confidence !== undefined && (
 							<div className='mt-4'>
@@ -259,13 +335,13 @@ const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 							<dt className='font-medium text-gray-700 dark:text-gray-300'>
 								Número de Serie:
 							</dt>
-							<dd className='font-mono font-semibold'>{serialNumber}</dd>
+							<dd className='font-mono font-semibold'>{displaySerialNumber}</dd>
 						</div>
 						<div className='flex justify-between border-b border-gray-200 pb-2 dark:border-gray-700'>
 							<dt className='font-medium text-gray-700 dark:text-gray-300'>
 								Tipo de Equipo:
 							</dt>
-							<dd className='font-medium capitalize'>{equipmentType}</dd>
+							<dd className='font-medium capitalize'>{displayEquipmentType}</dd>
 						</div>
 						<div className='flex justify-between border-b border-gray-200 pb-2 dark:border-gray-700'>
 							<dt className='font-medium text-gray-700 dark:text-gray-300'>
@@ -274,8 +350,8 @@ const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 							<dd>
 								<Badge
 									variant='solid'
-									className={`${getGradeColor(suggestedGrade)} px-3 py-1`}>
-									{suggestedGrade}
+									className={`${getGradeColor(displaySuggestedGrade)} px-3 py-1`}>
+									{displaySuggestedGrade}
 								</Badge>
 							</dd>
 						</div>
@@ -294,9 +370,7 @@ const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 											{key.replace(/_/g, ' ')}:
 										</span>
 										<span className='font-medium text-gray-900 dark:text-gray-100'>
-											{typeof value === 'number'
-												? value.toFixed(1)
-												: String(value)}
+											{formatBreakdownValue(value)}
 										</span>
 									</div>
 								))}

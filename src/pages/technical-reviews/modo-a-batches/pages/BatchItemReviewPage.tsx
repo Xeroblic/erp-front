@@ -285,8 +285,13 @@ const ItemReviewPage: React.FC = () => {
 				}),
 			).unwrap();
 
-			setAutomaticGrade(grading?.grade ?? null);
-			setItem({ ...item, ...grading }); // Actualizar item con datos de grading
+			setAutomaticGrade(grading?.grade ?? grading?.suggested_grade ?? null);
+			setItem((prev: any) => ({
+				...prev,
+				...grading,
+				review_status: grading?.review_status ?? 'reviewed',
+				suggested_grade: grading?.grade ?? grading?.suggested_grade ?? prev?.suggested_grade,
+			})); // Actualizar item con datos de grading
 			setCurrentStep('grading');
 		} catch (error) {
 			toast.error(`Error al completar revisión: ${error}`);
@@ -320,7 +325,7 @@ const ItemReviewPage: React.FC = () => {
 				suggested_grade: grading?.grade || grading?.suggested_grade,
 				confidence: grading?.confidence,
 				breakdown: grading?.breakdown,
-				review_status: grading?.review_status, // Actualizar estado también
+				review_status: grading?.review_status ?? prevItem?.review_status, // Actualizar estado también
 			}));
 
 			setAutomaticGrade(grading?.grade ?? null);
@@ -382,6 +387,7 @@ const ItemReviewPage: React.FC = () => {
 	];
 
 	const currentStepIndex = steps.findIndex((s) => s.id === currentStep);
+	const normalizedReviewStatus = extractValue(item?.review_status);
 
 	// Verificar si el item está aprobado (no se puede editar)
 	const isApproved =
@@ -396,6 +402,15 @@ const ItemReviewPage: React.FC = () => {
 
 		// Si es creación (no hay item), solo permitir estar en 'basic'
 		if (!item && stepId !== 'basic') {
+			return;
+		}
+
+		if (
+			stepId === 'grading' &&
+			normalizedReviewStatus !== 'reviewed' &&
+			normalizedReviewStatus !== 'approved'
+		) {
+			toast.warn('Debes finalizar la revisión antes de aprobar');
 			return;
 		}
 
@@ -527,10 +542,21 @@ const ItemReviewPage: React.FC = () => {
 						breakdown={item.breakdown || {}}
 						serialNumber={serialNumber || item.serial_number}
 						equipmentType={String(equipmentType)}
+						reviewStatus={normalizedReviewStatus}
 						onBack={() => setCurrentStep('review')}
 						onComplete={handleBack}
 						onRecalculate={handleRecalculateGrade}
 						onModifyReview={handleModifyReview}
+						onReviewCompleted={(updated) => {
+							setItem((prev: any) => ({
+								...prev,
+								...updated,
+								review_status: updated?.review_status ?? prev?.review_status,
+							}));
+							if (updated?.grade || updated?.suggested_grade) {
+								setAutomaticGrade(updated.grade ?? updated.suggested_grade ?? automaticGrade);
+							}
+						}}
 					/>
 				)}
 			</Container>

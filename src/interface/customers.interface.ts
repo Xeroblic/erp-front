@@ -3,6 +3,8 @@
  * Basado en los modelos del backend ERP P0
  */
 
+import type { Quote } from './quotes.interface';
+
 export interface ICustomer {
     id: number;
     company_id: number;
@@ -29,7 +31,7 @@ export interface ICustomer {
 
     // Relaciones
     sales?: any[]; // ISale[]
-    quotes?: any[]; // IQuote[]
+    quotes?: Quote[];
 
     // Campos calculados
     full_name?: string;

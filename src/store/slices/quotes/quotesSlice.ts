@@ -1,394 +1,520 @@
-import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, createSelector, type PayloadAction } from '@reduxjs/toolkit';
 import { toast } from 'react-toastify';
 import ApiService from '@/services/ApiService';
 import type {
-    IQuote,
-    ICreateQuoteRequest,
-    IUpdateQuoteRequest,
-    IConvertQuoteRequest,
-    QuoteStatus
+	Quote,
+	QuoteCreateDTO,
+	QuoteItem,
+	QuoteItemDTO,
+	QuoteListMeta,
+	QuotePDFResponse,
+	QuoteStatus,
+	QuoteUpdateDTO,
 } from '@/interface/quotes.interface';
 
-// Estado del slice
+const buildQuoteUrl = (subsidiaryId: number, suffix = '') =>
+	`/subsidiaries/${subsidiaryId}/quotes${suffix}`;
+
+const normalizeListResponse = (payload: any): { quotes: Quote[]; meta: QuoteListMeta } => {
+	const quotes: Quote[] = Array.isArray(payload?.data)
+		? payload.data
+		: Array.isArray(payload)
+			? payload
+			: Array.isArray(payload?.quotes)
+				? payload.quotes
+				: [];
+	const meta: QuoteListMeta = {
+		total: payload?.meta?.total ?? quotes.length,
+		current_page: payload?.meta?.current_page ?? 1,
+		per_page: payload?.meta?.per_page ?? quotes.length,
+		last_page: payload?.meta?.last_page ?? 1,
+	};
+	return { quotes, meta };
+};
+
+const extractEntity = <T>(payload: any): T => {
+	if (payload?.data) {
+		return payload.data as T;
+	}
+	return payload as T;
+};
+
+export interface QuoteFiltersState {
+	status?: QuoteStatus | 'all';
+	search?: string;
+}
+
+export interface QuoteStateMeta {
+	total: number;
+	currentPage: number;
+	perPage: number;
+	lastPage: number;
+}
+
 export interface QuoteState {
-    loading: boolean;
-    error?: string;
-
-    // Lista de cotizaciones
-    quotes: IQuote[];
-    totalQuotes: number;
-    currentPage: number;
-    totalPages: number;
-
-    // Cotización actual
-    currentQuote?: IQuote;
-
-    // Estados específicos para acciones
-    createLoading: boolean;
-    updateLoading: boolean;
-    convertLoading: boolean;
-    sendLoading: boolean;
-
-    // Filtros
-    filters: {
-        status?: QuoteStatus;
-        customer_id?: number;
-        date_from?: string;
-        date_to?: string;
-        valid_until_from?: string;
-        valid_until_to?: string;
-    };
-
-    // Reportes
-    conversionReport?: {
-        total_quotes: number;
-        converted_quotes: number;
-        conversion_rate: number;
-        total_value: number;
-        converted_value: number;
-    };
+	list: Quote[];
+	quoteItems: QuoteItem[];
+	currentQuote: Quote | null;
+	loadingList: boolean;
+	loadingDetails: boolean;
+	loadingItems: boolean;
+	creating: boolean;
+	updating: boolean;
+	deleting: boolean;
+	itemsSaving: boolean;
+	itemsDeleting: boolean;
+	convertLoading: boolean;
+	pdfLoading: boolean;
+	error?: string;
+	filters: QuoteFiltersState;
+	meta: QuoteStateMeta;
 }
 
 const initialState: QuoteState = {
-    loading: false,
-    quotes: [],
-    totalQuotes: 0,
-    currentPage: 1,
-    totalPages: 1,
-    createLoading: false,
-    updateLoading: false,
-    convertLoading: false,
-    sendLoading: false,
-    filters: {}
+	list: [],
+	quoteItems: [],
+	currentQuote: null,
+	loadingList: false,
+	loadingDetails: false,
+	loadingItems: false,
+	creating: false,
+	updating: false,
+	deleting: false,
+	itemsSaving: false,
+	itemsDeleting: false,
+	convertLoading: false,
+	pdfLoading: false,
+	error: undefined,
+	filters: {},
+	meta: {
+		total: 0,
+		currentPage: 1,
+		perPage: 20,
+		lastPage: 1,
+	},
 };
 
-// Async thunks
+export interface FetchQuotesParams {
+	subsidiaryId: number;
+	page?: number;
+	perPage?: number;
+	status?: QuoteStatus | 'all';
+	search?: string;
+}
+
 export const fetchQuotes = createAsyncThunk<
-    { data: IQuote[]; total: number; page: number; totalPages: number },
-    { page?: number; limit?: number; filters?: any },
-    { rejectValue: string }
->(
-    'quotes/fetchQuotes',
-    async ({ page = 1, limit = 10, filters = {} }, { rejectWithValue }) => {
-        try {
-            const params = { page, limit, ...filters };
+	{ quotes: Quote[]; meta: QuoteListMeta },
+	FetchQuotesParams,
+	{ rejectValue: string }
+>('quotes/fetchQuotes', async ({ subsidiaryId, page = 1, perPage = 20, status, search }, { rejectWithValue }) => {
+	try {
+		const response = await ApiService.fetchData<{ data?: Quote[]; meta?: QuoteListMeta }>({
+			url: buildQuoteUrl(subsidiaryId),
+			method: 'get',
+			params: {
+				page,
+				per_page: perPage,
+				status: status && status !== 'all' ? status : undefined,
+				q: search?.trim() || undefined,
+				with_customer: 1,
+			},
+		});
 
-            const response = await ApiService.fetchData<{
-                data: IQuote[];
-                meta: { total: number; current_page: number; last_page: number };
-            }>({
-                url: '/quotes',
-                method: 'get',
-                params
-            });
-
-            return {
-                data: response.data.data,
-                total: response.data.meta.total,
-                page: response.data.meta.current_page,
-                totalPages: response.data.meta.last_page
-            };
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Error al obtener cotizaciones');
-        }
-    }
-);
+		return normalizeListResponse(response.data);
+	} catch (error: any) {
+		return rejectWithValue(error?.response?.data?.message || 'No se pudieron obtener las cotizaciones');
+	}
+});
 
 export const fetchQuoteById = createAsyncThunk<
-    IQuote,
-    number,
-    { rejectValue: string }
->(
-    'quotes/fetchQuoteById',
-    async (id, { rejectWithValue }) => {
-        try {
-            const response = await ApiService.fetchData<IQuote>({
-                url: `/quotes/${id}`,
-                method: 'get'
-            });
-            return response.data;
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Error al obtener cotización');
-        }
-    }
-);
+	Quote,
+	{ subsidiaryId: number; quoteId: number },
+	{ rejectValue: string }
+>('quotes/fetchQuoteById', async ({ subsidiaryId, quoteId }, { rejectWithValue }) => {
+	try {
+		const response = await ApiService.fetchData<{ data?: Quote }>({
+			url: buildQuoteUrl(subsidiaryId, `/${quoteId}`),
+			method: 'get',
+			params: {
+				with_customer: 1,
+			},
+		});
+		const quote = extractEntity<Quote>(response.data);
+		try {
+			const itemsResponse = await ApiService.fetchData<{ data?: QuoteItem[] }>({
+				url: buildQuoteUrl(subsidiaryId, `/${quoteId}/items`),
+				method: 'get',
+			});
+			const items = Array.isArray(itemsResponse.data?.data)
+				? itemsResponse.data?.data
+				: Array.isArray(itemsResponse.data)
+					? (itemsResponse.data as QuoteItem[])
+					: [];
+			return { ...quote, items };
+		} catch (e) {
+			return quote;
+		}
+	} catch (error: any) {
+		return rejectWithValue(error?.response?.data?.message || 'No se pudo cargar la cotización');
+	}
+});
 
 export const createQuote = createAsyncThunk<
-    IQuote,
-    ICreateQuoteRequest,
-    { rejectValue: string }
->(
-    'quotes/createQuote',
-    async (quoteData, { rejectWithValue }) => {
-        try {
-            const response = await ApiService.fetchData<IQuote>({
-                url: '/quotes',
-                method: 'post',
-                data: quoteData
-            });
-            return response.data;
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Error al crear cotización');
-        }
-    }
-);
+	Quote,
+	{ subsidiaryId: number; data: QuoteCreateDTO },
+	{ rejectValue: string }
+>('quotes/createQuote', async ({ subsidiaryId, data }, { rejectWithValue }) => {
+	try {
+		const response = await ApiService.fetchData<{ data?: Quote }>({
+			url: buildQuoteUrl(subsidiaryId),
+			method: 'post',
+			data,
+		});
+		return extractEntity<Quote>(response.data);
+	} catch (error: any) {
+		return rejectWithValue(error?.response?.data?.message || 'No se pudo crear la cotización');
+	}
+});
 
 export const updateQuote = createAsyncThunk<
-    IQuote,
-    { id: number; data: IUpdateQuoteRequest },
-    { rejectValue: string }
->(
-    'quotes/updateQuote',
-    async ({ id, data }, { rejectWithValue }) => {
-        try {
-            const response = await ApiService.fetchData<IQuote>({
-                url: `/quotes/${id}`,
-                method: 'put',
-                data
-            });
-            return response.data;
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Error al actualizar cotización');
-        }
-    }
-);
+	Quote,
+	{ subsidiaryId: number; quoteId: number; data: QuoteUpdateDTO },
+	{ rejectValue: string }
+>('quotes/updateQuote', async ({ subsidiaryId, quoteId, data }, { rejectWithValue }) => {
+	try {
+		const response = await ApiService.fetchData<{ data?: Quote }>({
+			url: buildQuoteUrl(subsidiaryId, `/${quoteId}`),
+			method: 'patch',
+			data,
+		});
+		return extractEntity<Quote>(response.data);
+	} catch (error: any) {
+		return rejectWithValue(error?.response?.data?.message || 'No se pudo actualizar la cotización');
+	}
+});
+
+export const deleteQuote = createAsyncThunk<
+	number,
+	{ subsidiaryId: number; quoteId: number },
+	{ rejectValue: string }
+>('quotes/deleteQuote', async ({ subsidiaryId, quoteId }, { rejectWithValue }) => {
+	try {
+		await ApiService.fetchData({
+			url: buildQuoteUrl(subsidiaryId, `/${quoteId}`),
+			method: 'delete',
+		});
+		return quoteId;
+	} catch (error: any) {
+		return rejectWithValue(error?.response?.data?.message || 'No se pudo eliminar la cotización');
+	}
+});
+
+export const fetchQuoteItems = createAsyncThunk<
+	QuoteItem[],
+	{ subsidiaryId: number; quoteId: number },
+	{ rejectValue: string }
+>('quotes/fetchQuoteItems', async ({ subsidiaryId, quoteId }, { rejectWithValue }) => {
+	try {
+		const response = await ApiService.fetchData<{ data?: QuoteItem[] }>({
+			url: buildQuoteUrl(subsidiaryId, `/${quoteId}/items`),
+			method: 'get',
+		});
+		if (Array.isArray(response.data?.data)) {
+			return response.data.data;
+		}
+		if (Array.isArray(response.data)) {
+			return response.data as QuoteItem[];
+		}
+		return [];
+	} catch (error: any) {
+		return rejectWithValue(error?.response?.data?.message || 'No se pudieron obtener los ítems');
+	}
+});
+
+export const addQuoteItem = createAsyncThunk<
+	QuoteItem,
+	{ subsidiaryId: number; quoteId: number; data: QuoteItemDTO },
+	{ rejectValue: string }
+>('quotes/addQuoteItem', async ({ subsidiaryId, quoteId, data }, { rejectWithValue }) => {
+	try {
+		const response = await ApiService.fetchData<{ data?: QuoteItem }>({
+			url: buildQuoteUrl(subsidiaryId, `/${quoteId}/items`),
+			method: 'post',
+			data,
+		});
+		return extractEntity<QuoteItem>(response.data);
+	} catch (error: any) {
+		return rejectWithValue(error?.response?.data?.message || 'No se pudo agregar el ítem');
+	}
+});
+
+export const updateQuoteItem = createAsyncThunk<
+	QuoteItem,
+	{ subsidiaryId: number; quoteId: number; itemId: number; data: QuoteItemDTO },
+	{ rejectValue: string }
+>('quotes/updateQuoteItem', async ({ subsidiaryId, quoteId, itemId, data }, { rejectWithValue }) => {
+	try {
+		const response = await ApiService.fetchData<{ data?: QuoteItem }>({
+			url: buildQuoteUrl(subsidiaryId, `/${quoteId}/items/${itemId}`),
+			method: 'patch',
+			data,
+		});
+		return extractEntity<QuoteItem>(response.data);
+	} catch (error: any) {
+		return rejectWithValue(error?.response?.data?.message || 'No se pudo actualizar el ítem');
+	}
+});
+
+export const deleteQuoteItem = createAsyncThunk<
+	number,
+	{ subsidiaryId: number; quoteId: number; itemId: number },
+	{ rejectValue: string }
+>('quotes/deleteQuoteItem', async ({ subsidiaryId, quoteId, itemId }, { rejectWithValue }) => {
+	try {
+		await ApiService.fetchData({
+			url: buildQuoteUrl(subsidiaryId, `/${quoteId}/items/${itemId}`),
+			method: 'delete',
+		});
+		return itemId;
+	} catch (error: any) {
+		return rejectWithValue(error?.response?.data?.message || 'No se pudo eliminar el ítem');
+	}
+});
 
 export const convertQuoteToSale = createAsyncThunk<
-    { quote: IQuote; sale: any },
-    { id: number; data?: IConvertQuoteRequest },
-    { rejectValue: string }
->(
-    'quotes/convertQuoteToSale',
-    async ({ id, data = {} }, { rejectWithValue }) => {
-        try {
-            const response = await ApiService.fetchData<{ quote: IQuote; sale: any }>({
-                url: `/quotes/${id}/convert`,
-                method: 'post',
-                data
-            });
-            return response.data;
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Error al convertir cotización');
-        }
-    }
-);
+	{ quote: Quote; sale: Record<string, any> },
+	{ subsidiaryId: number; quoteId: number },
+	{ rejectValue: string }
+>('quotes/convertQuoteToSale', async ({ subsidiaryId, quoteId }, { rejectWithValue }) => {
+	try {
+		const response = await ApiService.fetchData<{ quote: Quote; sale: Record<string, any> }>({
+			url: buildQuoteUrl(subsidiaryId, `/${quoteId}/convert-to-sale`),
+			method: 'post',
+		});
+		return response.data;
+	} catch (error: any) {
+		return rejectWithValue(error?.response?.data?.message || 'No se pudo convertir la cotización');
+	}
+});
 
-export const sendQuote = createAsyncThunk<
-    IQuote,
-    number,
-    { rejectValue: string }
->(
-    'quotes/sendQuote',
-    async (id, { rejectWithValue }) => {
-        try {
-            const response = await ApiService.fetchData<IQuote>({
-                url: `/quotes/${id}/send`,
-                method: 'post'
-            });
-            return response.data;
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Error al enviar cotización');
-        }
-    }
-);
+export const downloadQuotePDF = createAsyncThunk<
+	QuotePDFResponse,
+	{ subsidiaryId: number; quoteId: number },
+	{ rejectValue: string }
+>('quotes/downloadQuotePDF', async ({ subsidiaryId, quoteId }, { rejectWithValue }) => {
+	try {
+		const response = await ApiService.fetchData<{ data?: QuotePDFResponse }>({
+			url: buildQuoteUrl(subsidiaryId, `/${quoteId}/pdf`),
+			method: 'get',
+		});
+		return extractEntity<QuotePDFResponse>(response.data);
+	} catch (error: any) {
+		return rejectWithValue(error?.response?.data?.message || 'No se pudo generar el PDF');
+	}
+});
 
-export const approveQuote = createAsyncThunk<
-    IQuote,
-    number,
-    { rejectValue: string }
->(
-    'quotes/approveQuote',
-    async (id, { rejectWithValue }) => {
-        try {
-            const response = await ApiService.fetchData<IQuote>({
-                url: `/quotes/${id}/approve`,
-                method: 'post'
-            });
-            return response.data;
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Error al aprobar cotización');
-        }
-    }
-);
-
-export const fetchConversionReport = createAsyncThunk<
-    any,
-    { date_from?: string; date_to?: string },
-    { rejectValue: string }
->(
-    'quotes/fetchConversionReport',
-    async (params, { rejectWithValue }) => {
-        try {
-            const response = await ApiService.fetchData<any>({
-                url: '/reports/quotes/conversion',
-                method: 'get',
-                params
-            });
-            return response.data;
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Error al obtener reporte');
-        }
-    }
-);
-
-// Slice
 const cotizacionesSlice = createSlice({
-    name: 'cotizaciones',
-    initialState,
-    reducers: {
-        setFilters: (state, action: PayloadAction<Partial<QuoteState['filters']>>) => {
-            state.filters = { ...state.filters, ...action.payload };
-        },
-        clearFilters: (state) => {
-            state.filters = {};
-        },
-        clearCurrentQuote: (state) => {
-            state.currentQuote = undefined;
-        },
-        clearError: (state) => {
-            state.error = undefined;
-        }
-    },
-    extraReducers: (builder) => {
-        builder
-            // Fetch quotes
-            .addCase(fetchQuotes.pending, (state) => {
-                state.loading = true;
-                state.error = undefined;
-            })
-            .addCase(fetchQuotes.fulfilled, (state, action) => {
-                state.loading = false;
-                state.quotes = action.payload.data;
-                state.totalQuotes = action.payload.total;
-                state.currentPage = action.payload.page;
-                state.totalPages = action.payload.totalPages;
-            })
-            .addCase(fetchQuotes.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload;
-                toast.error(action.payload || 'Error al cargar cotizaciones');
-            })
-
-            // Fetch quote by ID
-            .addCase(fetchQuoteById.pending, (state) => {
-                state.loading = true;
-            })
-            .addCase(fetchQuoteById.fulfilled, (state, action) => {
-                state.loading = false;
-                state.currentQuote = action.payload;
-            })
-            .addCase(fetchQuoteById.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload;
-                toast.error(action.payload || 'Error al cargar cotización');
-            })
-
-            // Create quote
-            .addCase(createQuote.pending, (state) => {
-                state.createLoading = true;
-                state.error = undefined;
-            })
-            .addCase(createQuote.fulfilled, (state, action) => {
-                state.createLoading = false;
-                state.quotes.unshift(action.payload);
-                state.totalQuotes += 1;
-                toast.success('Cotización creada exitosamente');
-            })
-            .addCase(createQuote.rejected, (state, action) => {
-                state.createLoading = false;
-                state.error = action.payload;
-                toast.error(action.payload || 'Error al crear cotización');
-            })
-
-            // Update quote
-            .addCase(updateQuote.pending, (state) => {
-                state.updateLoading = true;
-            })
-            .addCase(updateQuote.fulfilled, (state, action) => {
-                state.updateLoading = false;
-                const index = state.quotes.findIndex(q => q.id === action.payload.id);
-                if (index !== -1) {
-                    state.quotes[index] = action.payload;
-                }
-                if (state.currentQuote?.id === action.payload.id) {
-                    state.currentQuote = action.payload;
-                }
-                toast.success('Cotización actualizada exitosamente');
-            })
-            .addCase(updateQuote.rejected, (state, action) => {
-                state.updateLoading = false;
-                state.error = action.payload;
-                toast.error(action.payload || 'Error al actualizar cotización');
-            })
-
-            // Convert quote to sale
-            .addCase(convertQuoteToSale.pending, (state) => {
-                state.convertLoading = true;
-            })
-            .addCase(convertQuoteToSale.fulfilled, (state, action) => {
-                state.convertLoading = false;
-                const index = state.quotes.findIndex(q => q.id === action.payload.quote.id);
-                if (index !== -1) {
-                    state.quotes[index] = action.payload.quote;
-                }
-                if (state.currentQuote?.id === action.payload.quote.id) {
-                    state.currentQuote = action.payload.quote;
-                }
-                toast.success('Cotización convertida a venta exitosamente');
-            })
-            .addCase(convertQuoteToSale.rejected, (state, action) => {
-                state.convertLoading = false;
-                state.error = action.payload;
-                toast.error(action.payload || 'Error al convertir cotización');
-            })
-
-            // Send quote
-            .addCase(sendQuote.pending, (state) => {
-                state.sendLoading = true;
-            })
-            .addCase(sendQuote.fulfilled, (state, action) => {
-                state.sendLoading = false;
-                const index = state.quotes.findIndex(q => q.id === action.payload.id);
-                if (index !== -1) {
-                    state.quotes[index] = action.payload;
-                }
-                if (state.currentQuote?.id === action.payload.id) {
-                    state.currentQuote = action.payload;
-                }
-                toast.success('Cotización enviada exitosamente');
-            })
-            .addCase(sendQuote.rejected, (state, action) => {
-                state.sendLoading = false;
-                state.error = action.payload;
-                toast.error(action.payload || 'Error al enviar cotización');
-            })
-
-            // Conversion report
-            .addCase(fetchConversionReport.fulfilled, (state, action) => {
-                state.conversionReport = action.payload;
-            });
-    }
+	name: 'cotizaciones',
+	initialState,
+	reducers: {
+		setQuoteFilters: (state, action: PayloadAction<Partial<QuoteFiltersState>>) => {
+			state.filters = { ...state.filters, ...action.payload };
+		},
+		resetQuoteState: () => initialState,
+		clearQuoteError: (state) => {
+			state.error = undefined;
+		},
+	},
+	extraReducers: (builder) => {
+		builder
+			.addCase(fetchQuotes.pending, (state) => {
+				state.loadingList = true;
+				state.error = undefined;
+			})
+			.addCase(fetchQuotes.fulfilled, (state, action) => {
+				state.loadingList = false;
+				state.list = action.payload.quotes;
+				state.meta = {
+					total: action.payload.meta.total,
+					currentPage: action.payload.meta.current_page,
+					perPage: action.payload.meta.per_page,
+					lastPage: action.payload.meta.last_page,
+				};
+			})
+			.addCase(fetchQuotes.rejected, (state, action) => {
+				state.loadingList = false;
+				state.error = action.payload;
+				toast.error(action.payload || 'Error al cargar cotizaciones');
+			})
+			.addCase(fetchQuoteById.pending, (state) => {
+				state.loadingDetails = true;
+				state.error = undefined;
+			})
+			.addCase(fetchQuoteById.fulfilled, (state, action) => {
+				state.loadingDetails = false;
+				state.currentQuote = action.payload;
+			})
+			.addCase(fetchQuoteById.rejected, (state, action) => {
+				state.loadingDetails = false;
+				state.error = action.payload;
+				toast.error(action.payload || 'Error al cargar la cotización');
+			})
+			.addCase(createQuote.pending, (state) => {
+				state.creating = true;
+				state.error = undefined;
+			})
+			.addCase(createQuote.fulfilled, (state, action) => {
+				state.creating = false;
+				state.list = [action.payload, ...state.list];
+				state.meta.total += 1;
+				toast.success('Cotización creada correctamente');
+			})
+			.addCase(createQuote.rejected, (state, action) => {
+				state.creating = false;
+				state.error = action.payload;
+				toast.error(action.payload || 'Error al crear la cotización');
+			})
+			.addCase(updateQuote.pending, (state) => {
+				state.updating = true;
+			})
+			.addCase(updateQuote.fulfilled, (state, action) => {
+				state.updating = false;
+				state.list = state.list.map((quote) =>
+					quote.id === action.payload.id ? action.payload : quote,
+				);
+				if (state.currentQuote?.id === action.payload.id) {
+					state.currentQuote = action.payload;
+				}
+				toast.success('Cotización actualizada');
+			})
+			.addCase(updateQuote.rejected, (state, action) => {
+				state.updating = false;
+				state.error = action.payload;
+				toast.error(action.payload || 'Error al actualizar la cotización');
+			})
+			.addCase(deleteQuote.pending, (state) => {
+				state.deleting = true;
+			})
+			.addCase(deleteQuote.fulfilled, (state, action) => {
+				state.deleting = false;
+				state.list = state.list.filter((quote) => quote.id !== action.payload);
+				if (state.currentQuote?.id === action.payload) {
+					state.currentQuote = null;
+				}
+				state.meta.total = Math.max(0, state.meta.total - 1);
+				toast.success('Cotización eliminada');
+			})
+			.addCase(deleteQuote.rejected, (state, action) => {
+				state.deleting = false;
+				state.error = action.payload;
+				toast.error(action.payload || 'Error al eliminar la cotización');
+			})
+			.addCase(fetchQuoteItems.pending, (state) => {
+				state.loadingItems = true;
+			})
+			.addCase(fetchQuoteItems.fulfilled, (state, action) => {
+				state.loadingItems = false;
+				state.quoteItems = action.payload;
+			})
+			.addCase(fetchQuoteItems.rejected, (state, action) => {
+				state.loadingItems = false;
+				state.error = action.payload;
+				toast.error(action.payload || 'Error al obtener los ítems');
+			})
+			.addCase(addQuoteItem.pending, (state) => {
+				state.itemsSaving = true;
+			})
+			.addCase(addQuoteItem.fulfilled, (state, action) => {
+				state.itemsSaving = false;
+				state.quoteItems = [action.payload, ...state.quoteItems];
+				toast.success('Ítem agregado');
+			})
+			.addCase(addQuoteItem.rejected, (state, action) => {
+				state.itemsSaving = false;
+				state.error = action.payload;
+				toast.error(action.payload || 'Error al agregar el ítem');
+			})
+			.addCase(updateQuoteItem.pending, (state) => {
+				state.itemsSaving = true;
+			})
+			.addCase(updateQuoteItem.fulfilled, (state, action) => {
+				state.itemsSaving = false;
+				state.quoteItems = state.quoteItems.map((item) =>
+					item.id === action.payload.id ? action.payload : item,
+				);
+				toast.success('Ítem actualizado');
+			})
+			.addCase(updateQuoteItem.rejected, (state, action) => {
+				state.itemsSaving = false;
+				state.error = action.payload;
+				toast.error(action.payload || 'Error al actualizar el ítem');
+			})
+			.addCase(deleteQuoteItem.pending, (state) => {
+				state.itemsDeleting = true;
+			})
+			.addCase(deleteQuoteItem.fulfilled, (state, action) => {
+				state.itemsDeleting = false;
+				state.quoteItems = state.quoteItems.filter((item) => item.id !== action.payload);
+				toast.success('Ítem eliminado');
+			})
+			.addCase(deleteQuoteItem.rejected, (state, action) => {
+				state.itemsDeleting = false;
+				state.error = action.payload;
+				toast.error(action.payload || 'Error al eliminar el ítem');
+			})
+			.addCase(convertQuoteToSale.pending, (state) => {
+				state.convertLoading = true;
+			})
+			.addCase(convertQuoteToSale.fulfilled, (state, action) => {
+				state.convertLoading = false;
+				state.list = state.list.map((quote) =>
+					quote.id === action.payload.quote.id ? action.payload.quote : quote,
+				);
+				if (state.currentQuote?.id === action.payload.quote.id) {
+					state.currentQuote = action.payload.quote;
+				}
+				toast.success('Cotización convertida a venta');
+			})
+			.addCase(convertQuoteToSale.rejected, (state, action) => {
+				state.convertLoading = false;
+				state.error = action.payload;
+				toast.error(action.payload || 'Error al convertir la cotización');
+			})
+			.addCase(downloadQuotePDF.pending, (state) => {
+				state.pdfLoading = true;
+			})
+			.addCase(downloadQuotePDF.fulfilled, (state) => {
+				state.pdfLoading = false;
+				toast.success('PDF generado correctamente');
+			})
+			.addCase(downloadQuotePDF.rejected, (state, action) => {
+				state.pdfLoading = false;
+				state.error = action.payload;
+				toast.error(action.payload || 'Error al generar el PDF');
+			});
+	},
 });
 
-// Actions
-export const { setFilters, clearFilters, clearCurrentQuote, clearError } = cotizacionesSlice.actions;
-
-// Selectors
-export const selectQuotes = (state: { cotizaciones: QuoteState }) => state.cotizaciones.quotes;
-export const selectCurrentQuote = (state: { cotizaciones: QuoteState }) => state.cotizaciones.currentQuote;
-export const selectQuotesLoading = (state: { cotizaciones: QuoteState }) => state.cotizaciones.loading;
-export const selectQuotesPagination = (state: { cotizaciones: QuoteState }) => ({
-    currentPage: state.cotizaciones.currentPage,
-    totalPages: state.cotizaciones.totalPages,
-    totalQuotes: state.cotizaciones.totalQuotes
-});
-export const selectQuoteFilters = (state: { cotizaciones: QuoteState }) => state.cotizaciones.filters;
-export const selectQuoteActionLoading = (state: { cotizaciones: QuoteState }) => ({
-    create: state.cotizaciones.createLoading,
-    update: state.cotizaciones.updateLoading,
-    convert: state.cotizaciones.convertLoading,
-    send: state.cotizaciones.sendLoading
-});
-export const selectConversionReport = (state: { cotizaciones: QuoteState }) => state.cotizaciones.conversionReport;
+export const { setQuoteFilters, resetQuoteState, clearQuoteError } = cotizacionesSlice.actions;
 
 export default cotizacionesSlice.reducer;
+
+// Selectores
+type QuotesRootState = { cotizaciones: QuoteState };
+
+export const selectQuotesState = (state: QuotesRootState) => state.cotizaciones;
+export const selectQuotes = createSelector(selectQuotesState, (state) => state.list);
+export const selectQuoteMeta = createSelector(selectQuotesState, (state) => state.meta);
+export const selectQuoteFilters = createSelector(selectQuotesState, (state) => state.filters);
+export const selectQuotesLoading = createSelector(selectQuotesState, (state) => state.loadingList);
+export const selectCurrentQuote = createSelector(selectQuotesState, (state) => state.currentQuote);
+export const selectQuoteItems = createSelector(selectQuotesState, (state) => state.quoteItems);
+export const selectQuoteActionsLoading = createSelector(selectQuotesState, (state) => ({
+	creating: state.creating,
+	updating: state.updating,
+	deleting: state.deleting,
+	itemsSaving: state.itemsSaving,
+	itemsDeleting: state.itemsDeleting,
+	convertLoading: state.convertLoading,
+	pdfLoading: state.pdfLoading,
+}));

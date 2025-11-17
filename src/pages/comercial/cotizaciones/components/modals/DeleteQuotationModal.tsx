@@ -9,7 +9,11 @@ import Card, { CardHeader, CardBody } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
-import { IQuote, QuoteStatus } from '../../../../../interface';
+import { IQuote } from '../../../../../interface';
+import {
+	getQuoteStatusBadge,
+	normalizeQuoteStatusValue,
+} from '../../constants/quoteStatuses';
 
 interface DeleteQuotationModalProps {
 	isOpen: boolean;
@@ -28,22 +32,12 @@ const DeleteQuotationModal: React.FC<DeleteQuotationModalProps> = ({
 }) => {
 	if (!quotation) return null;
 
-	const statusConfig: Record<QuoteStatus, { label: string; color: any; variant: any }> = {
-		DRAFT: { label: 'Borrador', color: 'gray', variant: 'solid' },
-		SENT: { label: 'Enviada', color: 'blue', variant: 'solid' },
-		APPROVED: { label: 'Aprobada', color: 'emerald', variant: 'solid' },
-		REJECTED: { label: 'Rechazada', color: 'red', variant: 'solid' },
-		EXPIRED: { label: 'Vencida', color: 'gray', variant: 'solid' },
-		CONVERTED: { label: 'Convertida', color: 'blue', variant: 'solid' },
-		ACCEPTED: { label: 'Aceptada', color: 'green', variant: 'solid' },
-		WAITING: { label: 'En Espera', color: 'amber', variant: 'solid' },
-		CREDIT_30: { label: 'Crédito 30 días', color: 'purple', variant: 'solid' },
-		PAID: { label: 'Pagada', color: 'emerald', variant: 'solid' },
-	};
-
-	const currentStatus = statusConfig[quotation.status];
+	const normalizedStatus = normalizeQuoteStatusValue(quotation.status);
+	const currentStatus = getQuoteStatusBadge(quotation.status);
 	const isConvertedOrApproved =
-		quotation.status === 'CONVERTED' || quotation.status === 'APPROVED';
+		normalizedStatus === 'converted' || normalizedStatus === 'approved';
+	const isConverted = normalizedStatus === 'converted';
+	const isDraft = normalizedStatus === 'draft';
 
 	return (
 		<Modal isOpen={isOpen} setIsOpen={() => onClose()} size='md'>
@@ -129,7 +123,7 @@ const DeleteQuotationModal: React.FC<DeleteQuotationModalProps> = ({
 											eliminarla podrías afectar registros relacionados en el
 											sistema.
 										</p>
-										{quotation.status === 'CONVERTED' && (
+										{isConverted && (
 											<div className='mt-2 flex items-start space-x-2'>
 												<Icon
 													icon='HeroExclamationCircle'
@@ -148,7 +142,7 @@ const DeleteQuotationModal: React.FC<DeleteQuotationModalProps> = ({
 					)}
 
 					{/* Card informativo para borradores */}
-					{quotation.status === 'DRAFT' && (
+					{isDraft && (
 						<Card>
 							<CardBody>
 								<div className='flex items-start space-x-3'>

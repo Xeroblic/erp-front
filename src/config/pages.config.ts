@@ -289,8 +289,8 @@ export const privatePages = {
 				to: '/documentos',
 				text: 'Documentos',
 				icon: 'HeroDocumentArrowUp',
-				authority: ['view-document'],
-				roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'manager'],
+				authority: ['view-brand'],
+				roles: ['super-admin'],
 				requireAll: false,
 			},
 		},
@@ -377,7 +377,7 @@ export const privatePages = {
 		to: '/comercial',
 		text: 'Comercial',
 		icon: 'HeroShoppingBag',
-		authority: ['view-sales', 'view-quotes'],
+		authority: ['view-sale'],
 		roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'sales-rep', 'cashier', 'manager'],
 		requireAll: false,
 		subPages: {
@@ -394,7 +394,7 @@ export const privatePages = {
 				to: '/comercial/cotizaciones',
 				text: 'Cotizaciones',
 				icon: 'HeroDocumentText',
-				authority: ['view-quotes'],
+				authority: ['view-sale'],
 				roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'sales-rep', 'cashier'],
 			},
 			transfers: {

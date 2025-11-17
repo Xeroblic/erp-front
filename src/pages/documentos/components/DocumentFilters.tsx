@@ -8,23 +8,23 @@ import Label from '@/components/form/Label';
 import { IDocumentFilters } from '../types/documentos.types';
 
 type DocumentFiltersProps = {
-  filters: IDocumentFilters;
-  documentTypeOptions: TSelectOptions;
-  fileTypeOptions: TSelectOptions;
-  moduleOptions: TSelectOptions;
-  statusOptions: TSelectOptions;
-  onFilterChange: (key: keyof IDocumentFilters, value: unknown) => void;
-  onClear: () => void;
+	filters: IDocumentFilters;
+	documentTypeOptions: TSelectOptions;
+	outputFormatOptions: TSelectOptions;
+	moduleOptions: TSelectOptions;
+	statusOptions: TSelectOptions;
+	onFilterChange: (key: keyof IDocumentFilters, value: unknown) => void;
+	onClear: () => void;
 };
 
 const DocumentFilters: React.FC<DocumentFiltersProps> = ({
-  filters,
-  documentTypeOptions,
-  fileTypeOptions,
-  moduleOptions,
-  statusOptions,
-  onFilterChange,
-  onClear,
+	filters,
+	documentTypeOptions,
+	outputFormatOptions,
+	moduleOptions,
+	statusOptions,
+	onFilterChange,
+	onClear,
 }) => (
   <Card className='mb-6'>
     <CardHeader>
@@ -37,7 +37,7 @@ const DocumentFilters: React.FC<DocumentFiltersProps> = ({
       </div>
     </CardHeader>
     <CardBody>
-      <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5'>
+      <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-6'>
         <div>
           <Label htmlFor='filter-search'>Buscar</Label>
           <Input
@@ -49,32 +49,37 @@ const DocumentFilters: React.FC<DocumentFiltersProps> = ({
           />
         </div>
         <div>
-          <Label htmlFor='filter-document-type'>Tipo de documento</Label>
-          <SelectReact
-            name='document_type'
-            options={documentTypeOptions}
-            value={documentTypeOptions.find((option) => option.value === filters.document_type)}
-            onChange={(option) => {
-              const selected = option as TSelectOption | null;
-              onFilterChange('document_type', selected?.value || undefined);
-            }}
-            isClearable
-            placeholder='Todos los tipos'
-          />
+					<Label htmlFor='filter-document-type'>Tipo de documento</Label>
+					<SelectReact
+						name='document_type_id'
+						options={documentTypeOptions}
+						value={documentTypeOptions.find(
+							(option) => option.value === String(filters.document_type_id ?? ''),
+						)}
+						onChange={(option) => {
+							const selected = option as TSelectOption | null;
+							onFilterChange(
+								'document_type_id',
+								selected?.value ? Number(selected.value) : undefined,
+							);
+						}}
+						isClearable
+						placeholder='Todos los tipos'
+					/>
         </div>
         <div>
-          <Label htmlFor='filter-file-type'>Tipo de archivo</Label>
-          <SelectReact
-            name='file_type'
-            options={fileTypeOptions}
-            value={fileTypeOptions.find((option) => option.value === filters.file_type)}
-            onChange={(option) => {
-              const selected = option as TSelectOption | null;
-              onFilterChange('file_type', selected?.value || undefined);
-            }}
-            isClearable
-            placeholder='Todos los formatos'
-          />
+					<Label htmlFor='filter-file-type'>Tipo de archivo</Label>
+					<SelectReact
+						name='output_format'
+						options={outputFormatOptions}
+						value={outputFormatOptions.find((option) => option.value === filters.output_format)}
+						onChange={(option) => {
+							const selected = option as TSelectOption | null;
+							onFilterChange('output_format', selected?.value || undefined);
+						}}
+						isClearable
+						placeholder='Todos los formatos'
+					/>
         </div>
         <div>
           <Label htmlFor='filter-module'>Módulo relacionado</Label>
@@ -108,6 +113,23 @@ const DocumentFilters: React.FC<DocumentFiltersProps> = ({
             placeholder='Todos los estados'
           />
         </div>
+				<div>
+					<Label htmlFor='filter-related-id'>ID relacionado</Label>
+					<Input
+						id='filter-related-id'
+						name='related_id'
+						type='number'
+						min='1'
+						placeholder='ID'
+						value={filters.related_id ?? ''}
+						onChange={(event) =>
+							onFilterChange(
+								'related_id',
+								event.target.value ? Number(event.target.value) : undefined,
+							)
+						}
+					/>
+				</div>
       </div>
     </CardBody>
     <CardFooter className='flex justify-end'>

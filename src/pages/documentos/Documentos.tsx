@@ -1,17 +1,10 @@
-﻿import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
-import {
-	IDocument,
-	IDocumentFilters,
-	IDocumentPayload,
-	TDocumentType,
-	TFileType,
-	TRelatedModule,
-} from './types/documentos.types';
+import { IDocument, IDocumentFilters, IDocumentPayload } from './types/documentos.types';
 import { useDocumentos } from './components/hooks/useDocumentos';
 import DocumentStats from './components/DocumentStats';
 import DocumentFilters from './components/DocumentFilters';
@@ -24,8 +17,8 @@ import DeleteDocumentModal from './components/modals/DeleteDocumentModal';
 const Documentos: React.FC = () => {
 	const [filters, setFilters] = useState<IDocumentFilters>({
 		search: '',
-		document_type: undefined,
-		file_type: undefined,
+		document_type_id: undefined,
+		output_format: undefined,
 		related_module: undefined,
 		related_id: undefined,
 		is_active: undefined,
@@ -35,15 +28,25 @@ const Documentos: React.FC = () => {
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [detailOpen, setDetailOpen] = useState(false);
 	const [selected, setSelected] = useState<IDocument | null>(null);
+	const [detailLoading, setDetailLoading] = useState(false);
+	const [attachmentsLoading, setAttachmentsLoading] = useState(false);
 
 	const {
 		documents,
 		stats,
 		loading,
+		actionLoading,
 		documentTypeOptions,
-		fileTypeOptions,
+		outputFormatOptions,
 		moduleOptions,
 		statusOptions,
+		createDocument,
+		updateDocument,
+		deleteDocument,
+		loadDocument,
+		uploadAttachments,
+		deleteAttachment,
+		refreshDocuments,
 	} = useDocumentos(filters);
 
 	const handleFilterChange = useCallback((key: keyof IDocumentFilters, value: unknown) => {
@@ -56,76 +59,91 @@ const Documentos: React.FC = () => {
 	const handleClearFilters = () => {
 		setFilters({
 			search: '',
-			document_type: undefined,
-			file_type: undefined,
+			document_type_id: undefined,
+			output_format: undefined,
 			related_module: undefined,
 			related_id: undefined,
 			is_active: undefined,
 		});
 	};
 
-	const handleCreateSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-		event.preventDefault();
-		const formData = new FormData(event.currentTarget);
-
-		const payload: IDocumentPayload = {
-			name: String(formData.get('name') || ''),
-			file_path: String(formData.get('file_path') || ''),
-			file_type: formData.get('file_type') as TFileType,
-			document_type: formData.get('document_type') as TDocumentType,
-			related_module: formData.get('related_module') as TRelatedModule,
-			related_id: Number(formData.get('related_id') || 0),
-			description: String(formData.get('description') || '') || undefined,
-			is_active: formData.get('is_active') === 'on',
-		};
-
-		console.log('Create document:', payload);
-		event.currentTarget.reset();
-		setCreateOpen(false);
+	const handleCreateSubmit = async (payload: IDocumentPayload, files?: FileList | File[] | null) => {
+		await createDocument(payload, files || undefined);
 	};
 
-	const handleEditSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-		event.preventDefault();
-		if (!selected) return;
-
-		const formData = new FormData(event.currentTarget);
-
-		const payload: IDocumentPayload = {
-			name: String(formData.get('name') || ''),
-			file_path: String(formData.get('file_path') || ''),
-			file_type: formData.get('file_type') as TFileType,
-			document_type: formData.get('document_type') as TDocumentType,
-			related_module: formData.get('related_module') as TRelatedModule,
-			related_id: Number(formData.get('related_id') || 0),
-			description: String(formData.get('description') || '') || undefined,
-			is_active: formData.get('is_active') === 'on',
-		};
-
-		console.log('Update document:', { id: selected.id, ...payload });
-		setEditOpen(false);
+	const handleEditSubmit = async (
+		id: number,
+		payload: Partial<IDocumentPayload>,
+		files?: FileList | File[] | null,
+	) => {
+		await updateDocument(id, payload, files || undefined);
 		setSelected(null);
 	};
 
-	const handleDeleteConfirm = () => {
+	const handleDeleteConfirm = async () => {
 		if (!selected) return;
-		console.log('Delete document:', selected.id);
+		await deleteDocument(selected.id);
 		setDeleteOpen(false);
 		setSelected(null);
 	};
 
-	const handleView = (document: IDocument) => {
-		setSelected(document);
+	const handleView = async (document: IDocument) => {
 		setDetailOpen(true);
+		setDetailLoading(true);
+		setSelected(null);
+		try {
+			const detail = await loadDocument(document.id);
+			setSelected(detail);
+		} catch (error) {
+			console.error('Error al cargar el documento', error);
+			setSelected(document);
+		} finally {
+			setDetailLoading(false);
+		}
 	};
 
-	const handleEdit = (document: IDocument) => {
-		setSelected(document);
-		setEditOpen(true);
+	const handleEdit = async (document: IDocument) => {
+		setDetailLoading(true);
+		try {
+			const detail = await loadDocument(document.id);
+			setSelected(detail);
+			setEditOpen(true);
+		} catch (error) {
+			console.error('Error al cargar documento', error);
+		} finally {
+			setDetailLoading(false);
+		}
 	};
 
 	const handleDelete = (document: IDocument) => {
 		setSelected(document);
 		setDeleteOpen(true);
+	};
+
+	const handleUploadAttachments = async (files: FileList | File[] | null) => {
+		if (!selected || !files?.length) return;
+		try {
+			setAttachmentsLoading(true);
+			await uploadAttachments(selected.id, files);
+			const updated = await loadDocument(selected.id);
+			setSelected(updated);
+			await refreshDocuments();
+		} finally {
+			setAttachmentsLoading(false);
+		}
+	};
+
+	const handleDeleteAttachment = async (attachmentId: number) => {
+		if (!selected) return;
+		try {
+			setAttachmentsLoading(true);
+			await deleteAttachment(selected.id, attachmentId);
+			const updated = await loadDocument(selected.id);
+			setSelected(updated);
+			await refreshDocuments();
+		} finally {
+			setAttachmentsLoading(false);
+		}
 	};
 
 	return (
@@ -137,9 +155,7 @@ const Documentos: React.FC = () => {
 							<Icon icon='HeroDocumentText' className='h-6 w-6' />
 						</div>
 						<div>
-							<h1 className='text-2xl font-bold text-gray-900'>
-								Gestión de documentos
-							</h1>
+							<h1 className='text-2xl font-bold text-gray-900'>Gestión de documentos</h1>
 							<p className='text-sm text-gray-600'>
 								Administra documentos asociados a las entidades del sistema
 							</p>
@@ -158,7 +174,7 @@ const Documentos: React.FC = () => {
 				<DocumentFilters
 					filters={filters}
 					documentTypeOptions={documentTypeOptions}
-					fileTypeOptions={fileTypeOptions}
+					outputFormatOptions={outputFormatOptions}
 					moduleOptions={moduleOptions}
 					statusOptions={statusOptions}
 					onFilterChange={handleFilterChange}
@@ -176,25 +192,38 @@ const Documentos: React.FC = () => {
 			<CreateDocumentModal
 				isOpen={createOpen}
 				setIsOpen={setCreateOpen}
+				documentTypeOptions={documentTypeOptions}
+				moduleOptions={moduleOptions}
+				outputFormatOptions={outputFormatOptions}
 				onSubmit={handleCreateSubmit}
+				isLoading={actionLoading}
 			/>
 			<EditDocumentModal
 				isOpen={editOpen}
 				setIsOpen={setEditOpen}
 				document={selected}
+				documentTypeOptions={documentTypeOptions}
+				moduleOptions={moduleOptions}
+				outputFormatOptions={outputFormatOptions}
 				onSubmit={handleEditSubmit}
+				isLoading={actionLoading}
 			/>
 			<ViewDocumentModal
 				isOpen={detailOpen}
 				setIsOpen={setDetailOpen}
 				document={selected}
 				onEdit={handleEdit}
+				onUploadAttachments={handleUploadAttachments}
+				onDeleteAttachment={handleDeleteAttachment}
+				uploading={attachmentsLoading}
+				loading={detailLoading}
 			/>
 			<DeleteDocumentModal
 				isOpen={deleteOpen}
 				setIsOpen={setDeleteOpen}
 				document={selected}
 				onConfirm={handleDeleteConfirm}
+				loading={actionLoading}
 			/>
 		</PageWrapper>
 	);

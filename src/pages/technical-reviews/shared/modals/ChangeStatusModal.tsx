@@ -8,6 +8,16 @@ import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import Textarea from '@/components/form/Textarea';
 import Icon from '@/components/icon/Icon';
 import type { CommercialStatus } from '@/interface/technicalReviews.interface';
+import {
+	CHANGEABLE_COMMERCIAL_STATUSES,
+	COMMERCIAL_STATUS_CONFIG,
+	getCommercialStatusLabel,
+} from '@/pages/technical-reviews/constants';
+
+const STATUS_OPTIONS: TSelectOption[] = CHANGEABLE_COMMERCIAL_STATUSES.map((status) => ({
+	value: status,
+	label: COMMERCIAL_STATUS_CONFIG[status].label,
+}));
 
 interface ChangeStatusModalProps {
 	isOpen: boolean;
@@ -28,13 +38,7 @@ const ChangeStatusModal: React.FC<ChangeStatusModalProps> = ({
 	const [reason, setReason] = useState('');
 	const [error, setError] = useState<string | null>(null);
 
-	const statusOptions: TSelectOption[] = [
-		{ value: 'available', label: 'Disponible' },
-		{ value: 'reserved', label: 'Reservado' },
-		{ value: 'sold', label: 'Vendido' },
-		{ value: 'disposed', label: 'Descartado' },
-		{ value: 'in_repair', label: 'En Reparación' },
-	];
+	const currentStatusLabel = getCommercialStatusLabel(currentStatus) ?? currentStatus;
 
 	const handleConfirm = () => {
 		setError(null);
@@ -70,7 +74,7 @@ const ChangeStatusModal: React.FC<ChangeStatusModalProps> = ({
 			<ModalBody className='space-y-4'>
 				<div className='rounded-lg bg-gray-100 p-3 dark:bg-gray-800'>
 					<p className='text-sm text-gray-700 dark:text-gray-300'>
-						Estado actual: <strong className='capitalize'>{currentStatus}</strong>
+						Estado actual: <strong className='capitalize'>{currentStatusLabel}</strong>
 					</p>
 				</div>
 
@@ -80,7 +84,7 @@ const ChangeStatusModal: React.FC<ChangeStatusModalProps> = ({
 					</label>
 					<SelectReact
 						name='status'
-						options={statusOptions}
+						options={STATUS_OPTIONS}
 						value={selectedStatus}
 						onChange={(option) => setSelectedStatus(option as TSelectOption | null)}
 						placeholder='Seleccionar estado'

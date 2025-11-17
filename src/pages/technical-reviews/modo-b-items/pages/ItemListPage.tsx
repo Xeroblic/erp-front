@@ -22,6 +22,7 @@ import { fetchProducts } from '@/store/slices/products/productsSlice';
 import { toast } from 'react-toastify';
 import ApiService from '@/services/ApiService';
 import type { IItem } from '@/interface/technicalReviews.interface';
+import { COMMERCIAL_STATUS_FILTER_OPTIONS } from '@/pages/technical-reviews/constants';
 
 const TECHNICAL_REVIEWS_PREFIX =
 	(import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
@@ -48,14 +49,10 @@ const REVIEW_STATUS_OPTIONS: TSelectOption[] = [
 
 const CURRENT_STATUS_OPTIONS: TSelectOption[] = [
 	{ value: 'all', label: 'Todos los estados' },
-	{ value: 'received', label: 'Recibido' },
-	{ value: 'in_review', label: 'En revisión técnica' },
-	{ value: 'reviewed', label: 'Revisado' },
-	{ value: 'available_for_sale', label: 'Disponible para venta' },
-	{ value: 'reserved', label: 'Reservado' },
-	{ value: 'in_quotation', label: 'En cotización' },
-	{ value: 'sold', label: 'Vendido' },
-	{ value: 'unknown', label: 'Desconocido' },
+	...COMMERCIAL_STATUS_FILTER_OPTIONS.map((option) => ({
+		value: option.value,
+		label: option.label,
+	})),
 ];
 
 const GRADE_OPTIONS: TSelectOption[] = [

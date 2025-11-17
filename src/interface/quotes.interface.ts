@@ -1,122 +1,138 @@
-/**
- * Interfaces para el módulo de Cotizaciones
- * Basado en los modelos del backend ERP P0
- */
+import type { ICustomer } from './customers.interface';
+import type { IProduct } from './products.interface';
 
-import { ICustomer } from './customers.interface';
-import { IProduct } from './products.interface';
-import { IUser } from './users.interface';
-import { ISale } from './sales.interface';
+type QuoteStatusLower = 'draft' | 'sent' | 'approved' | 'rejected' | 'converted' | 'expired';
 
-export interface IQuote {
-    id: number;
-    company_id: number;
-    quote_number: string;
-    customer_id: number;
-    quote_date: string;
-    valid_until: string;
-    status: QuoteStatus;
-    subtotal: number;
-    discount_amount: number;
-    discount_percentage: number;
-    tax_percentage: number;
-    total_amount: number;
-    notes?: string;
-    created_by?: number;
-    approved_by?: number;
-    created_at: string;
-    updated_at: string;
+export type QuoteStatus = QuoteStatusLower | Uppercase<QuoteStatusLower>;
 
-    // Campos CU025 - Gestión de Cotizaciones
-    payment_method?: string; // Método de pago
-    purchase_order?: string; // Orden de compra (OC)
-    payment_terms?: number; // Términos de pago en días
-    fixed_discount?: number; // Descuento fijo en valor absoluto
-
-    // Relaciones
-    customer?: ICustomer;
-    items?: IQuoteItem[];
-    creator?: IUser;
-    approver?: IUser;
-    converted_sale?: ISale;
-
-    // Campos calculados
-    items_count?: number;
-    days_until_expiry?: number;
-    is_expired?: boolean;
-    can_convert?: boolean;
+export interface QuoteCustomerSummary {
+	id: number;
+	name: string;
+	rut?: string | null;
+	email?: string | null;
+	billing_company?: string | null;
+	contact_name?: string | null;
+	default_document_type?: string | null;
+	address?: string | null;
+	phone?: string | null;
 }
 
-export interface IQuoteItem {
-    id: number;
-    quote_id: number;
-    product_id: number;
-    quantity: number;
-    unit_price: number;
-    discount_percentage: number;
-    subtotal: number;
-    total: number;
-    created_at: string;
-    updated_at: string;
-
-    // Relaciones
-    quote?: IQuote;
-    product?: IProduct;
-
-    // Campos calculados
-    unit_discount?: number;
-    unit_total?: number;
+export interface QuoteItem {
+	id: number;
+	quote_id: number;
+	product_id?: number | null;
+	quantity: number;
+	unit_price: number; // NETO
+	total_net?: number;
+	customer_sku?: string | null;
+	customer_name?: string | null;
+	description?: string | null;
+	notes?: string | null;
+	discount_amount?: number | null;
+	discount_percentage?: number | null;
+	product?: Pick<IProduct, 'id' | 'name' | 'sku'> | null;
+	metadata?: Record<string, any>;
+	terms_conditions?: Record<string, any>;
+	created_at?: string;
+	updated_at?: string;
 }
 
-export type QuoteStatus =
-    | 'DRAFT'
-    | 'SENT'
-    | 'APPROVED'
-    | 'REJECTED'
-    | 'CONVERTED'
-    | 'EXPIRED'
-    // Estados específicos CU025
-    | 'ACCEPTED' // Aceptada
-    | 'WAITING' // En espera  
-    | 'CREDIT_30' // Crédito a 30 días
-    | 'PAID'; // Pagada
-
-export interface ICreateQuoteRequest {
-    customer_id: number;
-    quote_date: string;
-    valid_until: string;
-    discount_percentage?: number;
-    tax_percentage?: number;
-    notes?: string;
-    items: Array<{
-        product_id: number;
-        quantity: number;
-        unit_price: number;
-        discount_percentage?: number;
-    }>;
-    [key: string]: unknown; // Añadir signatura de índice
-
+export interface QuoteTotals {
+	total_net: number;
+	tax_rate: number;
+	tax_amount: number;
+	grand_total: number;
+	shipping_net?: number | null;
 }
 
-export interface IUpdateQuoteRequest {
-    customer_id?: number;
-    quote_date?: string;
-    valid_until?: string;
-    discount_percentage?: number;
-    tax_percentage?: number;
-    notes?: string;
-    items?: Array<{
-        id?: number;
-        product_id: number;
-        quantity: number;
-        unit_price: number;
-        discount_percentage?: number;
-    }>;
-    [key: string]: unknown;
+export interface Quote {
+	id: number;
+	subsidiary_id: number;
+	customer_id: number;
+	quote_number?: string | null;
+	quote_date: string;
+	expiry_date: string;
+	valid_until?: string | null;
+	status: QuoteStatus;
+	tax_rate: number;
+	notes?: string | null;
+	internal_notes?: string | null;
+	payment_method?: string | null;
+	purchase_order?: string | null;
+	payment_terms?: number | null;
+	fixed_discount?: number | null;
+	total_net?: number | string;
+	total_tax?: number | string;
+	total_amount?: number | string;
+	subtotal?: number | string;
+	tax_amount?: number | string;
+	discount_amount?: number | string;
+	discount_percentage?: number | string;
+	tax_percentage?: number | string;
+	created_at?: string;
+	updated_at?: string;
+	created_by?: number | null;
+	approved_by?: number | null;
+	customer?: QuoteCustomerSummary | ICustomer | null;
+	items?: QuoteItem[];
+	totals?: QuoteTotals;
+	metadata?: Record<string, any>;
+	can_convert?: boolean;
+	items_count?: number;
+	is_converted_to_sale?: boolean;
+	converted_at?: string | null;
+	salesperson_id?: number | null;
 }
 
-export interface IConvertQuoteRequest {
-    sale_date?: string;
-    delivery_date?: string;
-    [key: string]: unknown;
+export interface QuotePDFResponse {
+	quote_id: number;
+	storage_relative: string;
+	url?: string;
 }
+
+export interface QuoteItemDTO {
+	id?: number;
+	product_id?: number | null;
+	customer_name?: string | null;
+	customer_sku?: string | null;
+	description?: string | null;
+	notes?: string | null;
+	quantity: number;
+	unit_price?: number;
+	discount_amount?: number | null;
+	metadata?: Record<string, any>;
+}
+
+export interface QuoteCreateDTO {
+	customer_id: number;
+	quote_number?: string | null;
+	quote_date: string;
+	expiry_date: string;
+	tax_rate: number;
+	notes?: string | null;
+	internal_notes?: string | null;
+	payment_method?: string | null;
+	purchase_order?: string | null;
+	payment_terms?: number | null;
+	fixed_discount?: number | null;
+	discount_percentage?: number | null;
+	status?: QuoteStatus;
+}
+
+export interface QuoteUpdateDTO extends Partial<QuoteCreateDTO> {
+	status?: QuoteStatus;
+}
+
+export interface QuoteListMeta {
+	total: number;
+	current_page: number;
+	per_page: number;
+	last_page: number;
+}
+
+// Aliases para compatibilidad con código existente
+export type IQuote = Quote;
+export type IQuoteItem = QuoteItem;
+export type ICreateQuoteRequest = QuoteCreateDTO;
+export type IUpdateQuoteRequest = QuoteUpdateDTO;
+export type IConvertQuoteRequest = Record<string, any>;

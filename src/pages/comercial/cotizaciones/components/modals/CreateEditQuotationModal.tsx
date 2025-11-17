@@ -24,6 +24,7 @@ import Input from '../../../../../components/form/Input';
 import SelectReact from '../../../../../components/form/SelectReact';
 import Textarea from '../../../../../components/form/Textarea';
 import type { TSelectOption, TSelectOptions } from '../../../../../components/form/SelectReact';
+import { quoteStatusOptions, normalizeQuoteStatusValue } from '../../constants/quoteStatuses';
 
 interface CreateEditQuotationModalProps {
 	isOpen: boolean;
@@ -113,18 +114,10 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 		{ value: '60', label: '60 días' },
 	];
 
-	const statusOptions: TSelectOptions = [
-		{ value: 'DRAFT', label: 'Borrador' },
-		{ value: 'SENT', label: 'Enviada' },
-		{ value: 'APPROVED', label: 'Aprobada' },
-		{ value: 'REJECTED', label: 'Rechazada' },
-		{ value: 'CONVERTED', label: 'Convertida' },
-		{ value: 'EXPIRED', label: 'Vencida' },
-		{ value: 'ACCEPTED', label: 'Aceptada' },
-		{ value: 'WAITING', label: 'En Espera' },
-		{ value: 'CREDIT_30', label: 'Crédito 30 días' },
-		{ value: 'PAID', label: 'Pagada' },
-	];
+	const statusOptions: TSelectOptions = quoteStatusOptions.map((option) => ({
+		value: option.value,
+		label: option.label,
+	}));
 
 	const productOptions: TSelectOptions = [
 		{ value: '1', label: 'Laptop Dell Inspiron 15' },
@@ -146,7 +139,7 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 				customer_id: quotation.customer_id,
 				quote_date: quotation.quote_date,
 				valid_until: quotation.valid_until,
-				status: quotation.status,
+				status: normalizeQuoteStatusValue(quotation.status) as QuoteStatus,
 				subtotal: quotation.subtotal,
 				discount_amount: quotation.discount_amount,
 				discount_percentage: quotation.discount_percentage,
@@ -183,7 +176,7 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 			customer_id: 0,
 			quote_date: today,
 			valid_until: validUntil,
-			status: 'DRAFT' as QuoteStatus,
+			status: 'draft' as QuoteStatus,
 			payment_method: '',
 			purchase_order: '',
 			payment_terms: 0,

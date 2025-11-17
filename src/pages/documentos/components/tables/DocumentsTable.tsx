@@ -68,7 +68,7 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
 									<div className='flex items-center space-x-3'>
 										<div className='flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100'>
 											<Icon
-												icon={getFileIcon(document.file_type)}
+												icon={getFileIcon(document.output_format)}
 												className='h-5 w-5 text-gray-600'
 											/>
 										</div>
@@ -77,30 +77,34 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
 												{document.name}
 											</p>
 											<p className='text-sm text-gray-500'>
-												ID relacionado: {document.related_id}
+												ID relacionado: {document.related_id ?? '—'}
 											</p>
 										</div>
 									</div>
 								</Td>
 								<Td>
-									<Badge
-										color={getDocumentTypeColor(document.document_type) as any}>
-										{getDocumentTypeLabel(document.document_type)}
+									<Badge color={getDocumentTypeColor(document) as any}>
+										{getDocumentTypeLabel(document)}
 									</Badge>
 								</Td>
 								<Td>
 									<Badge variant='outline' color='gray'>
-										{getFileTypeLabel(document.file_type)}
+										{getFileTypeLabel(document.output_format)}
 									</Badge>
 								</Td>
 								<Td className='text-sm text-gray-900'>
 									{getModuleLabel(document.related_module)}
 								</Td>
 								<Td className='text-sm text-gray-600'>
-									{formatFileSize(document.file_size || 0)}
+									{formatFileSize(
+										document.attachments?.reduce(
+											(sum, att) => sum + (att.size ?? 0),
+											0,
+										) || 0,
+									)}
 								</Td>
 								<Td className='text-sm text-gray-900'>
-									{document.uploaded_by_name}
+									{document.metadata?.uploaded_by_name || 'N/A'}
 								</Td>
 								<Td className='text-sm text-gray-600'>
 									{formatDateTime(document.created_at)}

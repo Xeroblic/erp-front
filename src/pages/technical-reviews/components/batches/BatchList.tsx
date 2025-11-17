@@ -22,6 +22,7 @@ import {
 import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import Container from '@/components/layouts/Container/Container';
+import { COMMERCIAL_STATUS_FILTER_OPTIONS } from '@/pages/technical-reviews/constants';
 
 interface BatchListProps {
 	batches: IBatch[];
@@ -216,6 +217,16 @@ const BatchList: React.FC<BatchListProps> = ({
 		onPaginationChange: handlePaginationChange,
 	});
 
+	const statusFilterOptions = useMemo<TSelectOption[]>(() => {
+		return [
+			{ value: 'all', label: 'Todos' },
+			...COMMERCIAL_STATUS_FILTER_OPTIONS.map((option) => ({
+				value: option.value,
+				label: option.label,
+			})),
+		];
+	}, []);
+
 	if (loading) {
 		return (
 			<Card>
@@ -272,20 +283,8 @@ const BatchList: React.FC<BatchListProps> = ({
 								<div className='w-40'>
 									<SelectReact
 										name='status'
-										options={[
-											{ value: 'all', label: 'Todos' },
-											{ value: 'pending', label: 'Pendiente' },
-											{ value: 'completed', label: 'Completado' },
-											{ value: 'partial', label: 'Parcial' },
-										] as TSelectOption[]}
-										value={(
-											[
-												{ value: 'all', label: 'Todos' },
-												{ value: 'pending', label: 'Pendiente' },
-												{ value: 'completed', label: 'Completado' },
-												{ value: 'partial', label: 'Parcial' },
-											] as TSelectOption[]
-										).find((o) => o.value === selectedStatus) ?? null}
+										options={statusFilterOptions}
+										value={statusFilterOptions.find((o) => o.value === selectedStatus) ?? null}
 										onChange={(newVal) =>
 											handleStatusChange(((newVal as TSelectOption) || { value: 'all' }).value)
 										}
@@ -300,7 +299,7 @@ const BatchList: React.FC<BatchListProps> = ({
 
 			{/* Tabla */}
 			<Card>
-				<CardBody className='p-0'>
+				<CardBody className='p-0 overflow-auto'>
 					{!hasBatches ? (
 						<div className='flex flex-col items-center justify-center py-12 text-center'>
 							<Icon icon='HeroInboxStack' className='mb-2 h-12 w-12 text-gray-400' />

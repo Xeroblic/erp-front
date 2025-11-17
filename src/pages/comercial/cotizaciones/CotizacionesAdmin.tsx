@@ -4,6 +4,7 @@
  */
 import React, { useState, useMemo } from 'react';
 import { toast } from 'react-toastify';
+import { saveAs } from 'file-saver';
 import { IQuote, QuoteStatus } from '../../../interface';
 import useQuotationsManager, { QuotationsFilters } from './hooks/useQuotationsManager';
 import QuotationsTable from './components/tables/QuotationsTable';
@@ -11,6 +12,12 @@ import CreateEditQuotationModal from './components/modals/CreateEditQuotationMod
 import { QuotationDetailsModal } from './components/modals/QuotationDetailsModal';
 import DuplicateQuotationModal from './components/modals/DuplicateQuotationModal';
 import DeleteQuotationModal from './components/modals/DeleteQuotationModal';
+import { generateQuotePdf } from './components/QuotePdfDocument';
+import {
+	getQuoteStatusLabel,
+	normalizeQuoteStatusValue,
+	quoteStatusOptions,
+} from './constants/quoteStatuses';
 
 // UI Components
 import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
@@ -28,6 +35,7 @@ const CotizacionesAdmin: React.FC = () => {
 	const [showFilters, setShowFilters] = useState(false);
 	const [viewingQuotation, setViewingQuotation] = useState<IQuote | null>(null);
 	const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+	const [detailsLoading, setDetailsLoading] = useState(false);
 
 	// Estados para los nuevos modales
 	const [duplicatingQuotation, setDuplicatingQuotation] = useState<IQuote | null>(null);
@@ -49,18 +57,19 @@ const CotizacionesAdmin: React.FC = () => {
 		setCurrentPage,
 		itemsPerPage,
 		setItemsPerPage,
-		stats,
-		createQuotation,
-		updateQuotation,
-		deleteQuotation,
-		duplicateQuotation,
-		changeStatus,
-		convertToSale,
-		refreshData,
-		exportQuotations,
-		getQuotationById,
-		resetFilters,
-	} = useQuotationsManager();
+	stats,
+	createQuotation,
+	updateQuotation,
+	deleteQuotation,
+	duplicateQuotation,
+	changeStatus,
+	convertToSale,
+	refreshData,
+	exportQuotations,
+	getQuotationById,
+	resetFilters,
+	loadQuotationDetails,
+} = useQuotationsManager();
 
 	// Datos paginados
 	const paginatedQuotations = useMemo(() => {
@@ -76,9 +85,18 @@ const CotizacionesAdmin: React.FC = () => {
 		setIsCreateModalOpen(true);
 	};
 
-	const handleEdit = (quotation: IQuote) => {
-		setEditingQuotation(quotation);
-		setIsCreateModalOpen(true);
+	const handleEdit = async (quotation: IQuote) => {
+		setIsActionLoading(true);
+		try {
+			const detail = await loadQuotationDetails(quotation.id);
+			setEditingQuotation(detail);
+			setIsCreateModalOpen(true);
+		} catch (error) {
+			toast.error('No se pudo cargar la cotización para editar');
+			console.error('Error al editar cotización:', error);
+		} finally {
+			setIsActionLoading(false);
+		}
 	};
 
 	const handleSubmit = async (
@@ -98,34 +116,48 @@ const CotizacionesAdmin: React.FC = () => {
 	};
 
 	const handleChangeStatus = async (id: number, status: QuoteStatus) => {
-		const statusText: Record<QuoteStatus, string> = {
-			DRAFT: 'borrador',
-			SENT: 'enviada',
-			APPROVED: 'aprobada',
-			REJECTED: 'rechazada',
-			CONVERTED: 'convertida',
-			EXPIRED: 'vencida',
-			ACCEPTED: 'aceptada',
-			WAITING: 'en espera',
-			CREDIT_30: 'crédito 30 días',
-			PAID: 'pagada',
-		};
-
-		const text = statusText[status] || status;
+		const normalizedStatus = normalizeQuoteStatusValue(status) as QuoteStatus;
+		const text = getQuoteStatusLabel(normalizedStatus);
 
 		if (window.confirm(`¿Confirma cambiar el estado a "${text}"?`)) {
-			await changeStatus(id, status);
+			await changeStatus(id, normalizedStatus);
 		}
 	};
 
-	const handleView = (quotation: IQuote) => {
-		setViewingQuotation(quotation);
+	const handleView = async (quotation: IQuote) => {
 		setIsDetailsModalOpen(true);
+		setDetailsLoading(true);
+		setViewingQuotation(null);
+		try {
+			const fullQuote = await loadQuotationDetails(quotation.id);
+			setViewingQuotation(fullQuote);
+		} catch (error) {
+			toast.error('No se pudieron cargar los detalles de la cotización');
+			console.error('Error al cargar detalles:', error);
+			setIsDetailsModalOpen(false);
+		} finally {
+			setDetailsLoading(false);
+		}
 	};
 
 	const handleConvertToSale = async (id: number) => {
 		if (window.confirm('¿Desea convertir esta cotización en una venta?')) {
 			await convertToSale(id);
+		}
+	};
+
+	const handleDownloadPdf = async (id: number) => {
+		setIsActionLoading(true);
+		try {
+			const detail = await loadQuotationDetails(id);
+			const blob = await generateQuotePdf(detail);
+			const filename = `cotizacion-${detail.quote_number ?? detail.id}.pdf`;
+			saveAs(blob, filename);
+		} catch (error) {
+			toast.error('No se pudo generar el PDF');
+			console.error('Error al generar PDF:', error);
+		} finally {
+			setIsActionLoading(false);
 		}
 	};
 
@@ -214,24 +246,19 @@ const CotizacionesAdmin: React.FC = () => {
 
 					<Select
 						name='status'
-						value={filters.status || ''}
+						value={filters.status ? normalizeQuoteStatusValue(filters.status) : ''}
 						onChange={(e) =>
 							setFilters({
 								...filters,
-								status: e.target.value as QuoteStatus | undefined,
+								status: e.target.value ? (e.target.value as QuoteStatus) : undefined,
 							})
 						}>
 						<option value=''>Todos los estados</option>
-						<option value='DRAFT'>Borrador</option>
-						<option value='SENT'>Enviada</option>
-						<option value='APPROVED'>Aprobada</option>
-						<option value='REJECTED'>Rechazada</option>
-						<option value='EXPIRED'>Vencida</option>
-						<option value='CONVERTED'>Convertida</option>
-						<option value='ACCEPTED'>Aceptada</option>
-						<option value='WAITING'>En Espera</option>
-						<option value='CREDIT_30'>Crédito 30d</option>
-						<option value='PAID'>Pagada</option>
+						{quoteStatusOptions.map((option) => (
+							<option key={option.value} value={option.value}>
+								{option.label}
+							</option>
+						))}
 					</Select>
 
 					<Input
@@ -328,7 +355,7 @@ const CotizacionesAdmin: React.FC = () => {
 						<div>
 							<p className='text-sm font-medium text-gray-600'>Borradores</p>
 							<p className='text-2xl font-bold text-gray-900'>
-								{stats.byStatus.DRAFT || 0}
+								{stats.byStatus.draft || 0}
 							</p>
 						</div>
 					</div>
@@ -344,7 +371,7 @@ const CotizacionesAdmin: React.FC = () => {
 						<div>
 							<p className='text-sm font-medium text-gray-600'>Enviadas</p>
 							<p className='text-2xl font-bold text-gray-900'>
-								{stats.byStatus.SENT || 0}
+								{stats.byStatus.sent || 0}
 							</p>
 						</div>
 					</div>
@@ -360,7 +387,7 @@ const CotizacionesAdmin: React.FC = () => {
 						<div>
 							<p className='text-sm font-medium text-gray-600'>Aprobadas</p>
 							<p className='text-2xl font-bold text-gray-900'>
-								{stats.byStatus.APPROVED || 0}
+								{stats.byStatus.approved || 0}
 							</p>
 						</div>
 					</div>
@@ -440,6 +467,7 @@ const CotizacionesAdmin: React.FC = () => {
 						onView={handleView}
 						onChangeStatus={handleChangeStatus}
 						onConvertToSale={handleConvertToSale}
+						onDownloadPdf={handleDownloadPdf}
 					/>
 
 					{totalItems > 0 && (
@@ -508,14 +536,16 @@ const CotizacionesAdmin: React.FC = () => {
 			/>
 
 			{/* Modal de Detalles */}
-			<QuotationDetailsModal
-				isOpen={isDetailsModalOpen}
-				onClose={() => {
-					setIsDetailsModalOpen(false);
-					setViewingQuotation(null);
-				}}
-				quotation={viewingQuotation}
-			/>
+	<QuotationDetailsModal
+		isOpen={isDetailsModalOpen}
+		onClose={() => {
+			setIsDetailsModalOpen(false);
+			setViewingQuotation(null);
+		}}
+		quotation={viewingQuotation}
+		isLoading={detailsLoading}
+		onDownloadPdf={handleDownloadPdf}
+	/>
 
 			{/* Modal de Confirmación de Duplicación */}
 			<DuplicateQuotationModal

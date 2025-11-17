@@ -260,7 +260,17 @@ export default BatchesList;
 ```typescript
 // Estados
 type ReviewStatus = 'pending' | 'in_review' | 'reviewed' | 'approved';
-type CommercialStatus = 'pending' | 'in_review' | 'available_for_sale' | 'reserved' | 'sold' | 'in_repair' | 'disposed';
+type CommercialStatus =
+    | 'unknown'
+    | 'received'
+    | 'in_review'
+    | 'reviewed'
+    | 'available_for_sale'
+    | 'in_quotation'
+    | 'reserved'
+    | 'sold'
+    | 'returned'
+    | 'scrapped';
 type EquipmentType = 'notebook' | 'desktop' | 'docking' | 'aio' | 'monitor';
 
 // Entidades

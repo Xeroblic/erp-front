@@ -685,8 +685,7 @@ const DefaultAsideTemplate = () => {
 						/>
 					</AuthorityCheckNav> */}
 
-					{/* Documentos - PENDIENTE: No está operativo aún */}
-					{/* <AuthorityCheckNav
+					<AuthorityCheckNav
 						authority={Pages.catalogs.subPages.documents.authority}
 						userAuthority={userPermissionsAndRoles}
 						requireAll={Pages.catalogs.subPages.documents.requireAll}>
@@ -697,7 +696,7 @@ const DefaultAsideTemplate = () => {
 							id={Pages.catalogs.subPages.documents.id}
 							onClick={() => navigate(Pages.catalogs.subPages.documents.to)}
 						/>
-					</AuthorityCheckNav> */}
+					</AuthorityCheckNav>
 
 					{/* <AuthorityCheckNav authority={Pages.listaItem.authority} userAuthority={listaGrupos?.grupos}>
 						<NavItem text={Pages.listaItem.text} to={Pages.listaItem.to} icon={Pages.listaItem.icon} id={Pages.listaItem.id}></NavItem>

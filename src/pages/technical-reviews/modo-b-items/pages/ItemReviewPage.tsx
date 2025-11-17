@@ -397,6 +397,7 @@ const handleBatchOptionChange = (option: TSelectOption | null) => {
 	];
 
 	const currentStepIndex = steps.findIndex((s) => s.id === currentStep);
+	const normalizedReviewStatus = extractFieldValue(item?.review_status);
 
 	// Verificar si el item está aprobado (no se puede editar)
 	const isApproved =
@@ -411,6 +412,15 @@ const handleBatchOptionChange = (option: TSelectOption | null) => {
 
 		// Si es creación (no hay item), solo permitir estar en 'basic'
 		if (!item && stepId !== 'basic') {
+			return;
+		}
+
+		if (
+			stepId === 'grading' &&
+			normalizedReviewStatus !== 'reviewed' &&
+			normalizedReviewStatus !== 'approved'
+		) {
+			toast.warn('Debes finalizar la revisión antes de aprobar');
 			return;
 		}
 
@@ -454,7 +464,7 @@ const handleBatchOptionChange = (option: TSelectOption | null) => {
 				suggested_grade: grading?.grade || grading?.suggested_grade,
 				confidence: grading?.confidence,
 				breakdown: grading?.breakdown,
-				review_status: grading?.review_status, // Actualizar estado también
+				review_status: grading?.review_status ?? prevItem?.review_status, // Actualizar estado también
 			}));
 
 			setAutomaticGrade(grading?.grade ?? null);
@@ -645,8 +655,14 @@ const handleBatchOptionChange = (option: TSelectOption | null) => {
 								).unwrap();
 
 								console.log('✅ Grading completo:', grading);
-								setAutomaticGrade(grading?.suggested_grade ?? null);
-								setItem(grading);
+								setAutomaticGrade(grading?.grade ?? grading?.suggested_grade ?? null);
+								setItem((prev: any) => ({
+									...prev,
+									...grading,
+									review_status: grading?.review_status ?? 'reviewed',
+									suggested_grade:
+										grading?.grade ?? grading?.suggested_grade ?? prev?.suggested_grade,
+								}));
 								setCurrentStep('grading');
 							} catch (error) {
 								console.error('Error al completar revisión:', error);
@@ -673,10 +689,21 @@ const handleBatchOptionChange = (option: TSelectOption | null) => {
 						breakdown={item.breakdown}
 						serialNumber={serialNumber}
 						equipmentType={equipmentType}
+						reviewStatus={normalizedReviewStatus}
 						onBack={() => setCurrentStep('review')}
 						onComplete={handleBack}
 						onRecalculate={handleRecalculateGrade}
 						onModifyReview={handleModifyReview}
+						onReviewCompleted={(updated) => {
+							setItem((prev: any) => ({
+								...prev,
+								...updated,
+								review_status: updated?.review_status ?? prev?.review_status,
+							}));
+							if (updated?.grade || updated?.suggested_grade) {
+								setAutomaticGrade(updated.grade ?? updated.suggested_grade ?? automaticGrade);
+							}
+						}}
 					/>
 				)}
 			</Container>

@@ -19,6 +19,7 @@ import type { IItem, IBatch, EquipmentType } from '@/interface/technicalReviews.
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import Container from '@/components/layouts/Container/Container';
 import ApiService from '@/services/ApiService';
+import { COMMERCIAL_STATUS_FILTER_OPTIONS } from '@/pages/technical-reviews/constants';
 
 const TECHNICAL_REVIEWS_PREFIX =
 	(import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
@@ -51,18 +52,17 @@ const TABS: TabConfig[] = [
 const REVIEW_STATUS_OPTIONS: TSelectOption[] = [
 	{ value: 'all', label: 'Todos los estados' },
 	{ value: 'pending', label: 'Pendiente' },
-	{ value: 'in_progress', label: 'En revisión' },
+	{ value: 'in_review', label: 'En revisión' },
 	{ value: 'reviewed', label: 'Revisado' },
 	{ value: 'approved', label: 'Aprobado' },
 ];
 
 const COMMERCIAL_STATUS_OPTIONS: TSelectOption[] = [
 	{ value: 'all', label: 'Estado comercial' },
-	{ value: 'in_stock', label: 'En bodega' },
-	{ value: 'reserved', label: 'Reservado' },
-	{ value: 'sold', label: 'Vendido' },
-	{ value: 'rma', label: 'RMA' },
-	{ value: 'scrapped', label: 'Descartado' },
+	...COMMERCIAL_STATUS_FILTER_OPTIONS.map((option) => ({
+		value: option.value,
+		label: option.label,
+	})),
 ];
 
 const GRADE_OPTIONS: TSelectOption[] = [
