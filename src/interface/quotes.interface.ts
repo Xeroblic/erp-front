@@ -77,6 +77,7 @@ export interface Quote {
 	items?: QuoteItem[];
 	totals?: QuoteTotals;
 	metadata?: Record<string, any>;
+	terms_conditions?: Record<string, any> | null;
 	can_convert?: boolean;
 	items_count?: number;
 	is_converted_to_sale?: boolean;
