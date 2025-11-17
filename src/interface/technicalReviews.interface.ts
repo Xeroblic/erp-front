@@ -4,10 +4,14 @@ export type ReviewStatus = 'pending' | 'in_review' | 'reviewed' | 'approved';
 export type CommercialStatus =
     | 'unknown'
     | 'received'
+    | 'in_review'
+    | 'reviewed'
     | 'available_for_sale'
     | 'in_quotation'
+    | 'reserved'
     | 'sold'
-    | 'reserved';
+    | 'returned'
+    | 'scrapped';
 
 // Tipos de equipos soportados
 export type EquipmentType = 'notebook' | 'desktop' | 'docking' | 'aio' | 'monitor';

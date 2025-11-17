@@ -1,4 +1,4 @@
-﻿import React, { Dispatch, SetStateAction, useRef, useState } from 'react';
+import React, { Dispatch, SetStateAction, useRef, useState } from 'react';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Select from '@/components/form/Select';
@@ -7,25 +7,59 @@ import Textarea from '@/components/form/Textarea';
 import Checkbox from '@/components/form/Checkbox';
 import Label from '@/components/form/Label';
 import Icon from '@/components/icon/Icon';
-import { DOCUMENT_TYPES, FILE_TYPES, RELATED_MODULES } from '../../types/documentos.types';
+import type { IDocumentPayload } from '../../types/documentos.types';
+import type { TSelectOptions } from '@/components/form/SelectReact';
 
 type CreateDocumentModalProps = {
 	isOpen: boolean;
 	setIsOpen: Dispatch<SetStateAction<boolean>>;
-	onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+	documentTypeOptions: TSelectOptions;
+	moduleOptions: TSelectOptions;
+	outputFormatOptions: TSelectOptions;
+	onSubmit: (payload: IDocumentPayload, files?: FileList | File[] | null) => Promise<void> | void;
+	isLoading?: boolean;
 };
 
 const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 	isOpen,
 	setIsOpen,
+	documentTypeOptions,
+	moduleOptions,
+	outputFormatOptions,
 	onSubmit,
+	isLoading = false,
 }) => {
 	const formRef = useRef<HTMLFormElement | null>(null);
+	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const [isActive, setIsActive] = useState(true);
 
-	const handleSubmitClick = () => {
-		formRef.current?.requestSubmit();
+	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		const formData = new FormData(event.currentTarget);
+		const payload: IDocumentPayload = {
+			name: String(formData.get('name') || '').trim(),
+			document_type_id: Number(formData.get('document_type_id') || 0),
+			output_format: String(formData.get('output_format') || ''),
+			related_module: formData.get('related_module') as any,
+			related_id: formData.get('related_id')
+				? Number(formData.get('related_id'))
+				: undefined,
+			description: String(formData.get('description') || '') || undefined,
+			is_active: formData.get('is_active') === 'on',
+		};
+
+		try {
+			await onSubmit(payload, fileInputRef.current?.files);
+			event.currentTarget.reset();
+			if (fileInputRef.current) fileInputRef.current.value = '';
+			setIsActive(true);
+			setIsOpen(false);
+		} catch (error) {
+			console.error('Error al crear documento', error);
+		}
 	};
+
+	const handleSubmitClick = () => formRef.current?.requestSubmit();
 
 	return (
 		<Modal isOpen={isOpen} setIsOpen={setIsOpen} size='lg'>
@@ -42,7 +76,7 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 					</div>
 				</div>
 			</ModalHeader>
-			<form ref={formRef} id='createDocumentForm' onSubmit={onSubmit} className='space-y-4'>
+			<form ref={formRef} id='createDocumentForm' onSubmit={handleSubmit} className='space-y-4'>
 				<ModalBody>
 					<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
 						<div className='md:col-span-2'>
@@ -58,47 +92,33 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 						</div>
 					</div>
 
-					<div>
-						<Label htmlFor='create-file-path' className='required'>
-							Ruta del archivo
-						</Label>
-						<Input
-							id='create-file-path'
-							name='file_path'
-							placeholder='Ej: /documents/contratos/contrato_2024.pdf'
-							required
-						/>
-					</div>
-
 					<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
 						<div>
 							<Label htmlFor='create-document-type' className='required'>
 								Tipo de documento
 							</Label>
-							<Select
-								id='create-document-type'
-								name='document_type'
-								defaultValue='contrato'
-								required>
-								{DOCUMENT_TYPES.map((type) => (
-									<option key={type.value} value={type.value}>
-										{type.label}
+							<Select id='create-document-type' name='document_type_id' required defaultValue=''>
+								<option value='' disabled>
+									Selecciona un tipo
+								</option>
+								{documentTypeOptions.map((option) => (
+									<option key={option.value} value={option.value}>
+										{option.label}
 									</option>
 								))}
 							</Select>
 						</div>
 						<div>
 							<Label htmlFor='create-file-type' className='required'>
-								Tipo de archivo
+								Formato de archivo
 							</Label>
-							<Select
-								id='create-file-type'
-								name='file_type'
-								defaultValue='pdf'
-								required>
-								{FILE_TYPES.map((type) => (
-									<option key={type.value} value={type.value}>
-										{type.label}
+							<Select id='create-file-type' name='output_format' required defaultValue=''>
+								<option value='' disabled>
+									Selecciona formato
+								</option>
+								{outputFormatOptions.map((option) => (
+									<option key={option.value} value={option.value}>
+										{option.label}
 									</option>
 								))}
 							</Select>
@@ -110,12 +130,11 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 							<Label htmlFor='create-related-module' className='required'>
 								Módulo relacionado
 							</Label>
-							<Select
-								id='create-related-module'
-								name='related_module'
-								defaultValue='customer'
-								required>
-								{RELATED_MODULES.map((module) => (
+							<Select id='create-related-module' name='related_module' required defaultValue=''>
+								<option value='' disabled>
+									Selecciona módulo
+								</option>
+								{moduleOptions.map((module) => (
 									<option key={module.value} value={module.value}>
 										{module.label}
 									</option>
@@ -123,16 +142,13 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 							</Select>
 						</div>
 						<div>
-							<Label htmlFor='create-related-id' className='required'>
-								ID relacionado
-							</Label>
+							<Label htmlFor='create-related-id'>ID relacionado</Label>
 							<Input
 								id='create-related-id'
 								name='related_id'
 								type='number'
 								min='1'
 								placeholder='ID de la entidad'
-								required
 							/>
 						</div>
 					</div>
@@ -142,9 +158,17 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 						<Textarea
 							id='create-description'
 							name='description'
-							placeholder='Propósito o detalles adicionales del documento'
+							placeholder='Propósito o detalles adicionales'
 							rows={3}
 						/>
+					</div>
+
+					<div className='space-y-2'>
+						<Label htmlFor='create-files'>Adjuntos (opcional)</Label>
+						<Input id='create-files' name='files' type='file' multiple ref={fileInputRef} />
+						<p className='text-xs text-gray-500'>
+							Puedes adjuntar varios archivos; se subirán al guardar el documento.
+						</p>
 					</div>
 
 					<div className='space-y-2'>
@@ -153,7 +177,7 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 							id='create-is-active'
 							name='is_active'
 							checked={isActive}
-              onClick={() => setIsActive(!isActive)}
+							onChange={() => setIsActive((prev) => !prev)}
 							label='Documento activo'
 						/>
 					</div>
@@ -163,7 +187,7 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 						<Button variant='outline' onClick={() => setIsOpen(false)}>
 							Cancelar
 						</Button>
-						<Button color='blue' onClick={handleSubmitClick}>
+						<Button color='blue' onClick={handleSubmitClick} isLoading={isLoading}>
 							Subir documento
 						</Button>
 					</div>

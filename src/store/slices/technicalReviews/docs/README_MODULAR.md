@@ -259,7 +259,7 @@ dispatch(
 	changeCommercialStatus({
 		branch: 1,
 		itemId: 456,
-		data: { new_status: 'in_repair' },
+		data: { new_status: 'reserved' },
 	}),
 );
 
@@ -457,13 +457,16 @@ type ReviewStatus = 'pending' | 'in_review' | 'reviewed' | 'approved';
 
 // Estados comerciales
 type CommercialStatus =
-	| 'pending'
+	| 'unknown'
+	| 'received'
 	| 'in_review'
+	| 'reviewed'
 	| 'available_for_sale'
+	| 'in_quotation'
 	| 'reserved'
 	| 'sold'
-	| 'in_repair'
-	| 'disposed';
+	| 'returned'
+	| 'scrapped';
 
 // Tipos de equipos
 type EquipmentType = 'notebook' | 'desktop' | 'docking' | 'aio' | 'monitor';

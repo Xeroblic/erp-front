@@ -29,8 +29,12 @@ import notifications from './slices/notifications/notificationsSlice';
 import suppliers from './slices/suppliers/suppliersSlice';
 import customerSuppliers from './slices/customerSuppliers/customerSuppliersSlice';
 import warehouse from './slices/warehouses/warehouseSlice';
-import technicalReviews, { TechnicalReviewsState } from './slices/technicalReviews/slice/technicalReviewsSlice';
+import technicalReviews, {
+	TechnicalReviewsState,
+} from './slices/technicalReviews/slice/technicalReviewsSlice';
 import { integrationsReducer, unmappedProductsReducer } from './slices/integrations';
+import garantiasReducer, { GarantiasState } from './slices/garantias/garantiasSlice';
+
 
 export interface RootState {
 	auth: AuthState;
@@ -62,6 +66,7 @@ export interface RootState {
 	technicalReviews: TechnicalReviewsState;
 	integrations: ReturnType<typeof integrationsReducer>;
 	unmappedProducts: ReturnType<typeof unmappedProductsReducer>;
+	garantias: GarantiasState;
 	[RtkQueryService.reducerPath]: any;
 }
 
@@ -96,6 +101,7 @@ const staticReducers = {
 	technicalReviews,
 	integrations: integrationsReducer,
 	unmappedProducts: unmappedProductsReducer,
+	garantias: garantiasReducer,
 	// personalizacion, // Comentado temporalmente
 	[RtkQueryService.reducerPath]: RtkQueryService.reducer,
 };

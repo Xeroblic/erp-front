@@ -65,7 +65,7 @@ All equipment type review forms implemented with full field coverage:
 - **StatusBadge.tsx** ✅ (55 lines)
     - Props: `{ status, type: 'review' | 'commercial' }`
     - ReviewStatus: pending → amber, in_review → blue, reviewed → purple, approved → green, rejected → red
-    - CommercialStatus: available → green, reserved → blue, sold → red, disposed → gray, in_repair → orange
+    - CommercialStatus: unknown → gray, received → sky, in_review → blue, reviewed → violet, available_for_sale → green, in_quotation → amber, reserved → orange, sold → red, returned → pink, scrapped → slate
     - Uses Badge component with variant colors
     - Minor errors: Badge variant type mismatch, some status types not matching interface
 - **ReviewProgress.tsx** ✅ (68 lines)

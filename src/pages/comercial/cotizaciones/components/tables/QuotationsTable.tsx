@@ -12,11 +12,15 @@ import {
 	getSortedRowModel,
 	SortingState,
 } from '@tanstack/react-table';
-import { IQuote, QuoteStatus } from '../../../../../interface';
+import { IQuote } from '../../../../../interface';
 import Table, { Th, THead, Tr, TBody, Td } from '../../../../../components/ui/Table';
 import Button from '../../../../../components/ui/Button';
 import Badge from '../../../../../components/ui/Badge';
 import Icon from '../../../../../components/icon/Icon';
+import {
+	getQuoteStatusBadge,
+	normalizeQuoteStatusValue,
+} from '../../constants/quoteStatuses';
 
 interface QuotationsTableProps {
 	data: IQuote[];
@@ -27,6 +31,7 @@ interface QuotationsTableProps {
 	onView?: (quotation: IQuote) => void;
 	onChangeStatus?: (id: number, status: QuoteStatus) => void;
 	onConvertToSale?: (id: number) => void;
+	onDownloadPdf?: (id: number) => void;
 }
 
 const columnHelper = createColumnHelper<IQuote>();
@@ -40,6 +45,7 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 	onView,
 	onChangeStatus,
 	onConvertToSale,
+	onDownloadPdf,
 }) => {
 	const [sorting, setSorting] = React.useState<SortingState>([]);
 
@@ -53,8 +59,11 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 	};
 
 	// Formatear fecha
-	const formatDate = (dateString: string) => {
-		return new Date(dateString).toLocaleDateString('es-CO', {
+	const formatDate = (value?: string | null) => {
+		if (!value) return '—';
+		const date = new Date(value);
+		if (Number.isNaN(date.getTime())) return '—';
+		return date.toLocaleDateString('es-CL', {
 			year: 'numeric',
 			month: '2-digit',
 			day: '2-digit',
@@ -63,8 +72,9 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 
 	// columnas de la tabla
 	const columns = [
-		columnHelper.accessor('quote_number', {
+		columnHelper.accessor((row) => row.quote_number || `Q-${row.id}`, {
 			header: 'Número',
+			id: 'quote_number',
 			cell: (info) => (
 				<div className='flex items-center gap-3'>
 					<div className='flex h-10 w-10 items-center justify-center rounded-full bg-primary-100'>
@@ -81,8 +91,9 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 			header: 'Fecha',
 			cell: (info) => <span className='text-sm'>{formatDate(info.getValue())}</span>,
 		}),
-		columnHelper.accessor('valid_until', {
+		columnHelper.accessor((row) => row.expiry_date || (row as any).valid_until, {
 			header: 'Válida Hasta',
+			id: 'expiry_date',
 			cell: (info) => <span className='text-sm'>{formatDate(info.getValue())}</span>,
 		}),
 		columnHelper.accessor('customer_id', {
@@ -97,40 +108,17 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 				);
 			},
 		}),
-		columnHelper.accessor('status', {
-			header: 'Estado',
-			cell: (info) => {
-				const status = info.getValue();
-				const getStatusText = (status: QuoteStatus) => {
-					switch (status) {
-						case 'DRAFT':
-							return 'Borrador';
-						case 'SENT':
-							return 'Enviada';
-						case 'APPROVED':
-							return 'Aprobada';
-						case 'REJECTED':
-							return 'Rechazada';
-						case 'CONVERTED':
-							return 'Convertida';
-						case 'EXPIRED':
-							return 'Vencida';
-						case 'ACCEPTED':
-							return 'Aceptada';
-						case 'WAITING':
-							return 'En Espera';
-						case 'CREDIT_30':
-							return 'Crédito 30d';
-						case 'PAID':
-							return 'Pagada';
-						default:
-							return status;
-					}
-				};
-
-				return <span className='text-sm'>{getStatusText(status)}</span>;
-			},
-		}),
+			columnHelper.accessor('status', {
+				header: 'Estado',
+				cell: (info) => {
+					const badge = getQuoteStatusBadge(info.getValue());
+					return (
+						<Badge color={badge.color} variant={badge.variant} className='text-xs'>
+							{badge.label}
+						</Badge>
+					);
+				},
+			}),
 		columnHelper.accessor('total_amount', {
 			header: 'Total',
 			cell: (info) => <span className='font-medium'>{formatCurrency(info.getValue())}</span>,
@@ -139,7 +127,15 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 			id: 'acciones',
 			header: 'Acciones',
 			cell: (info) => (
-				<div className='flex justify-end gap-2'>
+								<div className='flex justify-end gap-2'>
+					<Button
+						variant='outline'
+						size='sm'
+						icon='HeroArrowDownTray'
+						onClick={() => onDownloadPdf?.(info.row.original.id)}
+						className='p-1'
+						title='Descargar PDF'
+					/>
 					<Button
 						variant='outline'
 						size='sm'
@@ -161,7 +157,8 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 						onClick={() => onDuplicate?.(info.row.original.id)}
 						className='p-1'
 					/>
-					{info.row.original.status === 'APPROVED' && info.row.original.can_convert && (
+					{normalizeQuoteStatusValue(info.row.original.status) === 'approved' &&
+						info.row.original.can_convert && (
 						<Button
 							variant='outline'
 							size='sm'

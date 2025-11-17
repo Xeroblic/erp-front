@@ -1,175 +1,106 @@
 /**
- * Tipos e interfaces para el módulo de Documentos
- * CU012 - Sistema de gestión de documentos
+ * Tipos e interfaces para el módulo de Documentos conectados al backend real
  */
 
-// Tipos de archivo permitidos
-export type TFileType =
-    | 'pdf'
-    | 'doc'
-    | 'docx'
-    | 'xls'
-    | 'xlsx'
-    | 'ppt'
-    | 'pptx'
-    | 'txt'
-    | 'jpg'
-    | 'jpeg'
-    | 'png'
-    | 'gif'
-    | 'zip'
-    | 'rar';
+export interface IDocumentTypeSummary {
+	id: number;
+	name: string;
+	code?: string | null;
+	description?: string | null;
+}
 
-// Tipos de documento
-export type TDocumentType =
-    | 'contrato'
-    | 'factura'
-    | 'cotizacion'
-    | 'orden_compra'
-    | 'orden_venta'
-    | 'certificado'
-    | 'manual'
-    | 'politica'
-    | 'procedimiento'
-    | 'imagen'
-    | 'otro';
+export type TDocumentModule =
+	| 'CLIENTE'
+	| 'CLIENTE-PROVEEDOR'
+	| 'VENTAS'
+	| 'REVISIONES TÉCNICAS'
+	| 'PRODUCTO';
 
-// Módulos relacionados
-export type TRelatedModule =
-    | 'customer'
-    | 'supplier'
-    | 'product'
-    | 'category'
-    | 'warehouse'
-    | 'order'
-    | 'invoice'
-    | 'purchase'
-    | 'employee'
-    | 'company'
-    | 'branch';
+export const DOCUMENT_MODULE_OPTIONS: { value: TDocumentModule; label: string }[] = [
+	{ value: 'CLIENTE', label: 'Cliente' },
+	{ value: 'CLIENTE-PROVEEDOR', label: 'Cliente - Proveedor' },
+	{ value: 'VENTAS', label: 'Ventas' },
+	{ value: 'REVISIONES TÉCNICAS', label: 'Revisiones Técnicas' },
+	{ value: 'PRODUCTO', label: 'Producto' },
+];
 
-// Interface principal del documento
+export type TDocumentOutputFormat = 'pdf' | 'docx' | 'doc' | 'xlsx' | 'csv' | 'jpg' | 'png';
+
+export const DOCUMENT_OUTPUT_FORMATS: { value: TDocumentOutputFormat; label: string }[] = [
+	{ value: 'pdf', label: 'PDF' },
+	{ value: 'docx', label: 'Word (.docx)' },
+	{ value: 'doc', label: 'Word (.doc)' },
+	{ value: 'xlsx', label: 'Excel (.xlsx)' },
+	{ value: 'csv', label: 'CSV' },
+	{ value: 'jpg', label: 'Imagen (.jpg)' },
+	{ value: 'png', label: 'Imagen (.png)' },
+];
+
+export interface IDocumentAttachment {
+	id: number;
+	collection?: string | null;
+	url: string;
+	file_name?: string | null;
+	original_name?: string | null;
+	mime_type?: string | null;
+	size?: number | null;
+	uploaded_at?: string | null;
+}
+
 export interface IDocument {
-    id: number;
-    company_id: number;
-    name: string;
-    file_path: string;
-    file_type: TFileType;
-    document_type: TDocumentType;
-    related_module: TRelatedModule;
-    related_id: number;
-    description?: string;
-    file_size?: number;
-    is_active: boolean;
-    uploaded_by: number;
-    uploaded_by_name?: string;
-    created_at: string;
-    updated_at: string;
+	id: number;
+	subsidiary_id: number;
+	document_type_id: number;
+	document_type?: IDocumentTypeSummary | null;
+	name: string;
+	description?: string | null;
+	output_format: TDocumentOutputFormat | string;
+	related_module: TDocumentModule;
+	related_id?: number | null;
+	is_active: boolean;
+	metadata?: Record<string, any> | null;
+	attachments?: IDocumentAttachment[];
+	created_at: string;
+	updated_at: string;
 }
 
-// Filtros para listado de documentos
 export interface IDocumentFilters {
-    search?: string;
-    document_type?: TDocumentType;
-    file_type?: TFileType;
-    related_module?: TRelatedModule;
-    related_id?: number;
-    is_active?: boolean;
-    date_from?: string;
-    date_to?: string;
-    uploaded_by?: number;
+	search?: string;
+	document_type_id?: number;
+	output_format?: TDocumentOutputFormat | string;
+	related_module?: TDocumentModule;
+	related_id?: number;
+	is_active?: boolean;
+	per_page?: number;
 }
 
-// Estadísticas de documentos
-export interface IDocumentStats {
-    total_documents: number;
-    active_documents: number;
-    total_size: number;
-    documents_by_type: {
-        type: TDocumentType;
-        count: number;
-    }[];
-    documents_by_module: {
-        module: TRelatedModule;
-        count: number;
-    }[];
-    recent_uploads: number;
-}
-
-// Payload para crear/editar documento
 export interface IDocumentPayload {
-    name: string;
-    file_path: string;
-    file_type: TFileType;
-    document_type: TDocumentType;
-    related_module: TRelatedModule;
-    related_id: number;
-    description?: string;
-    is_active: boolean;
+	name: string;
+	document_type_id: number;
+	output_format: TDocumentOutputFormat | string;
+	related_module: TDocumentModule;
+	related_id?: number | null;
+	description?: string;
+	is_active?: boolean;
+	metadata?: Record<string, any> | null;
 }
 
-// Opciones para selects
-export interface IDocumentSelectOption {
-    value: string;
-    label: string;
+export interface IDocumentStats {
+	total_documents: number;
+	active_documents: number;
+	total_size: number;
+	recent_uploads: number;
+	documents_by_type: {
+		label: string;
+		count: number;
+	}[];
+	documents_by_module: {
+		module: string;
+		count: number;
+	}[];
 }
 
-// Validación de duplicados
-export interface IDuplicateCheck {
-    related_module: TRelatedModule;
-    related_id: number;
-    name: string;
-}
-
-// Response de validación
-export interface IValidationResponse {
-    isValid: boolean;
-    errors: string[];
-    warnings?: string[];
-}
-
-// Constantes del módulo
-export const DOCUMENT_TYPES: { value: TDocumentType; label: string }[] = [
-    { value: 'contrato', label: 'Contrato' },
-    { value: 'factura', label: 'Factura' },
-    { value: 'cotizacion', label: 'Cotización' },
-    { value: 'orden_compra', label: 'Orden de Compra' },
-    { value: 'orden_venta', label: 'Orden de Venta' },
-    { value: 'certificado', label: 'Certificado' },
-    { value: 'manual', label: 'Manual' },
-    { value: 'politica', label: 'Política' },
-    { value: 'procedimiento', label: 'Procedimiento' },
-    { value: 'imagen', label: 'Imagen' },
-    { value: 'otro', label: 'Otro' },
-];
-
-export const FILE_TYPES: { value: TFileType; label: string }[] = [
-    { value: 'pdf', label: 'PDF' },
-    { value: 'doc', label: 'Word (.doc)' },
-    { value: 'docx', label: 'Word (.docx)' },
-    { value: 'xls', label: 'Excel (.xls)' },
-    { value: 'xlsx', label: 'Excel (.xlsx)' },
-    { value: 'ppt', label: 'PowerPoint (.ppt)' },
-    { value: 'pptx', label: 'PowerPoint (.pptx)' },
-    { value: 'txt', label: 'Texto (.txt)' },
-    { value: 'jpg', label: 'Imagen (.jpg)' },
-    { value: 'jpeg', label: 'Imagen (.jpeg)' },
-    { value: 'png', label: 'Imagen (.png)' },
-    { value: 'gif', label: 'Imagen (.gif)' },
-    { value: 'zip', label: 'Comprimido (.zip)' },
-    { value: 'rar', label: 'Comprimido (.rar)' },
-];
-
-export const RELATED_MODULES: { value: TRelatedModule; label: string }[] = [
-    { value: 'customer', label: 'Cliente' },
-    { value: 'supplier', label: 'Proveedor' },
-    { value: 'product', label: 'Producto' },
-    { value: 'category', label: 'Categoría' },
-    { value: 'warehouse', label: 'Bodega' },
-    { value: 'order', label: 'Pedido' },
-    { value: 'invoice', label: 'Factura' },
-    { value: 'purchase', label: 'Compra' },
-    { value: 'employee', label: 'Empleado' },
-    { value: 'company', label: 'Empresa' },
-    { value: 'branch', label: 'Sucursal' },
-];
+export type DocumentFormSubmitPayload = {
+	payload: IDocumentPayload;
+	files?: File[] | FileList;
+};
