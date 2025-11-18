@@ -387,32 +387,29 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 				header: () => <div className='text-right'>Acciones</div>,
 				cell: ({ row }) => {
 					const product = row.original;
-					const isExpanded = Boolean(expandedRows[product.id]);
 					return (
 						<div className='flex items-center justify-end gap-2'>
-							<Button
-								variant='outline'
-								size='sm'
-								onClick={() => toggleExpand(product.id)}
-								icon={isExpanded ? 'HeroChevronUp' : 'HeroEye'}
-								className='hidden lg:inline-flex'>
-								{isExpanded ? 'Ocultar' : 'Detalle'}
-							</Button>
-							{/* {onView && (
+							{onView && (
 								<Button
 									variant='outline'
 									size='sm'
-									onClick={() => onView(product)}
+									onClick={(event) => {
+										event.stopPropagation();
+										onView(product);
+									}}
 									icon='HeroArrowTopRightOnSquare'
-									className='hidden lg:inline-flex'>
-									Abrir
+									className='inline-flex'>
+									Ver detalle
 								</Button>
-							)} */}
+							)}
 							<Button
 								variant='outline'
 								color='red'
 								size='sm'
-								onClick={() => onDelete(product)}
+								onClick={(event) => {
+									event.stopPropagation();
+									onDelete(product);
+								}}
 								icon='HeroTrash'
 							/>
 						</div>
@@ -420,7 +417,7 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 				},
 			},
 		],
-		[expandedRows, onView, onDelete, toggleExpand],
+		[onView, onDelete],
 	);
 
 	const table = useReactTable({
@@ -501,10 +498,21 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 									: table.getRowModel().rows.map((row) => {
 											const product = row.original;
 											const isExpanded = Boolean(expandedRows[product.id]);
+											const childVariants = extractProductVariants(product);
+											const hasVariants = childVariants.length > 0;
+
+											const handleRowToggle = () => {
+												if (!hasVariants) return;
+												toggleExpand(product.id);
+											};
 
 											return (
 												<React.Fragment key={row.id}>
-													<tr className='transition-colors hover:bg-zinc-50/50 dark:hover:bg-zinc-900/50'>
+													<tr
+														className={`transition-colors hover:bg-zinc-50/50 dark:hover:bg-zinc-900/50 ${
+															hasVariants ? 'cursor-pointer' : 'cursor-default'
+														}`}
+														onClick={handleRowToggle}>
 														{row.getVisibleCells().map((cell) => (
 															<td key={cell.id} className='px-6 py-4'>
 																{flexRender(
@@ -514,12 +522,11 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 															</td>
 														))}
 													</tr>
-													{isExpanded && (
-														<tr className='bg-zinc-50/40 dark:bg-zinc-900/40'>
-															<td colSpan={columnCount} className='px-6 pb-6 pt-0'>
-																{(() => {
-																	const childVariants = extractProductVariants(product);
-																	return (
+														{isExpanded && (
+															<tr className='bg-zinc-50/40 dark:bg-zinc-900/40'>
+																<td colSpan={columnCount} className='px-6 pb-6 pt-0'>
+																	{(() => {
+																		return (
 																		<div className='mt-2 rounded-xl border border-dashed border-zinc-200 bg-white/80 p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/70'>
 																			<div>
 																				<p className='text-sm font-semibold text-zinc-800 dark:text-zinc-100'>
