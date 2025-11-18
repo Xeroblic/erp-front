@@ -16,12 +16,15 @@ import FieldWrap from '@/components/form/FieldWrap';
 import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
 import SelectReact, { type TSelectOption } from '@/components/form/SelectReact';
-import { formatPermissionName } from '@/pages/admin/Permission/utils/formatters';
+import RoleSelect from '@/components/form/RoleSelect';
+import PermissionSelect from '@/components/form/PermissionSelect';
+import { normalizeRoleKey } from '@/pages/admin/Permission/utils/formatters';
 import type { Permission, Role } from '@/store/slices/permissions/permissionsSlice';
 import type { CreateInvitationData } from '@/interface/invitacion.interface';
-import type { MultiValue, SingleValue } from 'react-select';
+import type { SingleValue } from 'react-select';
 import Button from '@/components/ui/Button';
 import ApiService from '@/services/ApiService';
+import { useAppSelector } from '@/store';
 
 interface CreateInvitationModalProps {
 	isOpen: boolean;
@@ -73,22 +76,31 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 	const [branchDefaultSnapshot, setBranchDefaultSnapshot] = useState<string>('');
 	const branchSubsidiaryMapRef = useRef<Record<string, number>>({});
 	const formikRef = useRef<FormikProps<FormValues>>(null);
+	const currentUser = useAppSelector((state) => state.auth.user);
+	const currentAuthority = useAppSelector((state) => state.auth.permisos);
 
-	const roleOptions = useMemo<TSelectOption[]>(() => {
-		return roles.map((role) => ({
-			value: String(role.id),
-			label: role.display_name || role.name,
-		}));
-	}, [roles]);
+	const isSuperAdmin = useMemo(() => {
+		const possibleRoles = [
+			...(currentUser?.roles ?? []),
+			...(Array.isArray(currentUser?.authority) ? currentUser.authority : []),
+			...currentAuthority,
+		];
 
-	const permissionOptions = useMemo<TSelectOption[]>(
-		() =>
-			permissions.map((permission) => ({
-				value: permission.code || permission.name,
-				label: formatPermissionName(permission.code || permission.name),
-			})),
-		[permissions],
-	);
+		return possibleRoles.some(
+			(role) => normalizeRoleKey(typeof role === 'string' ? role : String(role)) === 'superadmin',
+		);
+	}, [currentUser?.roles, currentUser?.authority, currentAuthority]);
+
+	const availableRoles = useMemo(() => {
+		return roles.filter((role) => {
+			if (isSuperAdmin) return true;
+			return normalizeRoleKey(role.display_name || role.name) !== 'superadmin';
+		});
+	}, [roles, isSuperAdmin]);
+
+	const defaultRoleId = useMemo(() => {
+		return availableRoles.length ? String(availableRoles[0].id) : '';
+	}, [availableRoles]);
 
 	const fetchCompanyContext = useCallback(async () => {
 		setIsLoadingBranches(true);
@@ -175,17 +187,24 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 		}
 	}, [companyIdSnapshot, branchDefaultSnapshot]);
 
-	const rolePlaceholder = useMemo(() => {
-		if (isLoadingRoles) return 'Cargando roles...';
-		if (!roleOptions.length) return 'No hay roles disponibles';
-		return 'Selecciona un rol';
-	}, [isLoadingRoles, roleOptions.length]);
+	useEffect(() => {
+		const formik = formikRef.current;
+		if (!formik) return;
 
-	const permissionsPlaceholder = useMemo(() => {
-		if (isLoadingPermissions) return 'Cargando permisos...';
-		if (!permissionOptions.length) return 'No hay permisos disponibles';
-		return 'Selecciona permisos opcionales';
-	}, [isLoadingPermissions, permissionOptions.length]);
+		if (!availableRoles.length) {
+			if (formik.values.role_id) {
+				formik.setFieldValue('role_id', '', false);
+			}
+			return;
+		}
+
+		const hasCurrentRole = availableRoles.some(
+			(role) => String(role.id) === String(formik.values.role_id),
+		);
+		if (!hasCurrentRole) {
+			formik.setFieldValue('role_id', String(availableRoles[0].id), false);
+		}
+	}, [availableRoles]);
 
 	const branchPlaceholder = useMemo(() => {
 		if (isLoadingBranches) return 'Cargando sucursales...';
@@ -198,7 +217,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 			email: '',
 			first_name: '',
 			last_name: '',
-			role_id: roleOptions[0]?.value ?? '',
+			role_id: defaultRoleId,
 			position: '',
 			rut: '',
 			company_id: null,
@@ -206,7 +225,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 			message: '',
 			permissions: [],
 		}),
-		[roleOptions],
+		[defaultRoleId],
 	);
 
 	const normalizeField = (value: string): string | undefined => {
@@ -397,32 +416,23 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 								</div>
 							</FieldWrap>
 
-							<FieldWrap
-								isValid={!errors.role_id}
-								isTouched={touched.role_id}
-								invalidFeedback={errors.role_id}>
-								<div>
-									<Label htmlFor='role_id'>
-										Rol *
-									</Label>
-									<SelectReact
-										name='role_id'
-										options={roleOptions}
-										value={
-											roleOptions.find(
-												(option) => option.value === values.role_id,
-											) ?? null
-										}
-										onChange={(option) => {
-											const selected = option as SingleValue<TSelectOption>;
-											setFieldValue('role_id', selected?.value ?? '');
-										}}
-										isLoading={isLoadingRoles}
-										placeholder={rolePlaceholder}
-										isDisabled={isLoadingRoles || roleOptions.length === 0}
-									/>
-								</div>
-							</FieldWrap>
+			<FieldWrap
+				isValid={!errors.role_id}
+				isTouched={touched.role_id}
+				invalidFeedback={errors.role_id}>
+				<div>
+					<Label htmlFor='role_id'>
+						Rol *
+					</Label>
+					<RoleSelect
+						name='role_id'
+						roles={availableRoles}
+						value={values.role_id}
+						onChange={(roleId) => setFieldValue('role_id', roleId)}
+						isLoading={isLoadingRoles}
+					/>
+				</div>
+			</FieldWrap>
 
 							<FieldWrap
 								isValid={!errors.branch_id}
@@ -492,38 +502,24 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 								</FieldWrap>
 							</div>
 
-							<FieldWrap>
-								<div>
-										<Label htmlFor='permissions'>
-										Permisos adicionales
-									</Label>
-									<SelectReact
-										name='permissions'
-										isMulti
-										options={permissionOptions}
-										value={permissionOptions.filter((option) =>
-											values.permissions.includes(option.value),
-										)}
-										onChange={(selected) => {
-											const selection = (selected ??
-												[]) as MultiValue<TSelectOption>;
-											setFieldValue(
-												'permissions',
-												selection.map((option) => option.value),
-											);
-										}}
-										isLoading={isLoadingPermissions}
-										placeholder={permissionsPlaceholder}
-										isDisabled={
-											isLoadingPermissions || permissionOptions.length === 0
-										}
-									/>
-									<p className='mt-2 text-xs text-zinc-500'>
-										Estos permisos se agregaran ademas de los permisos otorgados
-										por el rol seleccionado.
-									</p>
-								</div>
-							</FieldWrap>
+			<FieldWrap>
+				<div>
+					<Label htmlFor='permissions'>
+						Permisos adicionales
+					</Label>
+					<PermissionSelect
+						name='permissions'
+						permissions={permissions}
+						value={values.permissions}
+						onChange={(selected) => setFieldValue('permissions', selected)}
+						isLoading={isLoadingPermissions}
+					/>
+					<p className='mt-2 text-xs text-zinc-500'>
+						Estos permisos se agregaran ademas de los permisos otorgados
+						por el rol seleccionado.
+					</p>
+				</div>
+			</FieldWrap>
 
 							<FieldWrap>
 								<div>

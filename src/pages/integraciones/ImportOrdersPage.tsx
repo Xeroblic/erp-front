@@ -13,6 +13,13 @@ import Label from '@/components/form/Label';
 import Badge from '@/components/ui/Badge';
 import { toast } from 'react-toastify';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
+import Modal, {
+	ModalBody,
+	ModalFooter,
+	ModalFooterChild,
+	ModalHeader,
+} from '@/components/ui/Modal';
+import Icon from '@/components/icon/Icon';
 
 const ImportOrdersPage: React.FC = () => {
 	const dispatch = useAppDispatch();
@@ -25,10 +32,10 @@ const ImportOrdersPage: React.FC = () => {
 	const [importResult, setImportResult] = useState<any>(null);
 
 	// Estados para importación masiva
-	const [startDate, setStartDate] = useState('');
-	const [endDate, setEndDate] = useState('');
 	const [importingBulk, setImportingBulk] = useState(false);
 	const [bulkResult, setBulkResult] = useState<any>(null);
+	const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+	const [confirmationText, setConfirmationText] = useState('');
 
 	useEffect(() => {
 		if (subsidiaryId) {
@@ -65,12 +72,11 @@ const ImportOrdersPage: React.FC = () => {
 		}
 	};
 
-	const handleImportMissing = async () => {
-		if (!subsidiaryId || !selectedIntegrationId || !startDate || !endDate) {
-			toast.error('Debes seleccionar una integración y un rango de fechas');
+	const performImportMissing = async () => {
+		if (!subsidiaryId || !selectedIntegrationId) {
+			toast.error('Debes seleccionar una integración válida');
 			return;
 		}
-
 		setImportingBulk(true);
 		setBulkResult(null);
 
@@ -90,6 +96,18 @@ const ImportOrdersPage: React.FC = () => {
 			setImportingBulk(false);
 		}
 	};
+
+	const handleOpenConfirmationModal = () => {
+		if (!subsidiaryId || !selectedIntegrationId) {
+			toast.error('Debes seleccionar una integración para importar órdenes faltantes');
+			return;
+		}
+		setConfirmationText('');
+		setIsConfirmationModalOpen(true);
+	};
+
+	const selectedIntegration = integrations.find((integration) => integration.id === selectedIntegrationId);
+	const confirmationIsValid = confirmationText.trim().toLowerCase() === 'confirmar';
 
 	return (
 		<PageWrapper name='Importar Órdenes'>
@@ -185,18 +203,23 @@ const ImportOrdersPage: React.FC = () => {
 					</Card>
 
 					{/* Importar Órdenes Faltantes */}
-					<Card className='border border-neutral-100/70 bg-white/95 shadow-lg shadow-black/10 dark:border-white/5 dark:bg-neutral-900/80'>
-						<CardHeader>
-							<CardHeaderChild>
-								<CardTitle>Importar Órdenes Faltantes (Rango de Fechas)</CardTitle>
-							</CardHeaderChild>
-						</CardHeader>
-						<CardBody>
-							<div className='space-y-5'>
-								<div>
-									<Label htmlFor='integration-select-2'>
-										Integración de WooCommerce
-									</Label>
+				<Card className='border border-neutral-100/70 bg-white/95 shadow-lg shadow-black/10 dark:border-white/5 dark:bg-neutral-900/80'>
+					<CardHeader>
+						<CardHeaderChild>
+							<CardTitle>Importar Órdenes Faltantes</CardTitle>
+						</CardHeaderChild>
+					</CardHeader>
+					<CardBody>
+						<div className='space-y-5'>
+							<p className='rounded-md border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800 dark:border-yellow-500/40 dark:bg-yellow-950/30 dark:text-yellow-100'>
+								Esta acción intentará importar todas las órdenes pendientes detectadas en WooCommerce
+								para la integración seleccionada. Úsala únicamente cuando estés seguro de que es necesario,
+								pues requiere escribir <strong>CONFIRMAR</strong> para continuar.
+							</p>
+							<div>
+								<Label htmlFor='integration-select-2'>
+									Integración de WooCommerce
+								</Label>
 									<Select
 										name='integration-select-2'
 										value={selectedIntegrationId || ''}
@@ -216,43 +239,18 @@ const ImportOrdersPage: React.FC = () => {
 									</Select>
 								</div>
 
-								<div>
-									<Label htmlFor='start-date'>Fecha Inicio</Label>
-									<Input
-										name='start-date'
-										type='date'
-										value={startDate}
-										onChange={(e) => setStartDate(e.target.value)}
-									/>
-								</div>
-
-								<div>
-									<Label htmlFor='end-date'>Fecha Fin</Label>
-									<Input
-										name='end-date'
-										type='date'
-										value={endDate}
-										onChange={(e) => setEndDate(e.target.value)}
-									/>
-								</div>
-
-								<Button
-									variant='solid'
-									icon='HeroArrowDownTray'
-									onClick={handleImportMissing}
-									disabled={
-										importingBulk ||
-										!selectedIntegrationId ||
-										!startDate ||
-										!endDate
-									}
-									className='w-full'>
-									{importingBulk ? 'Importando...' : 'Importar Faltantes'}
-								</Button>
-							</div>
-						</CardBody>
-					</Card>
-				</div>
+				<Button
+					variant='solid'
+					icon='HeroArrowDownTray'
+					onClick={handleOpenConfirmationModal}
+					disabled={importingBulk || !selectedIntegrationId}
+					className='w-full'>
+					{importingBulk ? 'Importando...' : 'Importar Faltantes'}
+				</Button>
+			</div>
+		</CardBody>
+	</Card>
+	</div>
 
 				{/* Resultado de Importación Masiva */}
 				{bulkResult && (
@@ -329,6 +327,67 @@ const ImportOrdersPage: React.FC = () => {
 					</Card>
 				)}
 			</Container>
+			<Modal
+				isOpen={isConfirmationModalOpen}
+				setIsOpen={(open) => {
+					if (!importingBulk) {
+						setIsConfirmationModalOpen(open);
+					}
+				}}
+				size='sm'
+				isStaticBackdrop>
+				<ModalHeader>
+					<Icon icon='HeroExclamationTriangle' className='text-yellow-500' />
+					<span>Confirmar importación masiva</span>
+				</ModalHeader>
+				<ModalBody className='space-y-4'>
+					<p className='text-sm text-zinc-600 dark:text-zinc-300'>
+						Se importarán todas las órdenes faltantes detectadas en WooCommerce
+						para la integración seleccionada. Esta operación puede tardar varios minutos.
+					</p>
+					{selectedIntegration && (
+						<div className='rounded-md bg-zinc-100 p-3 text-xs dark:bg-zinc-800'>
+							<strong>Integración:</strong> {selectedIntegration.name} -{' '}
+							<span className='break-all'>{selectedIntegration.base_url}</span>
+						</div>
+					)}
+					<div>
+						<Label htmlFor='confirm-import-input'>Escribe CONFIRMAR para continuar</Label>
+						<Input
+						name='confirm'
+							id='confirm-import-input'
+							value={confirmationText}
+							onChange={(event) => setConfirmationText(event.target.value)}
+							placeholder='CONFIRMAR'
+						/>
+					</div>
+				</ModalBody>
+				<ModalFooter>
+					<ModalFooterChild>
+						<Button
+							variant='outline'
+							icon='HeroXMark'
+							onClick={() => setIsConfirmationModalOpen(false)}
+							disabled={importingBulk}>
+							Cancelar
+						</Button>
+					</ModalFooterChild>
+					<ModalFooterChild>
+						<Button
+							variant='solid'
+							color='yellow'
+							icon='HeroArrowDownTray'
+							onClick={() => {
+								setIsConfirmationModalOpen(false);
+								setConfirmationText('');
+								void performImportMissing();
+							}}
+							disabled={!confirmationIsValid || importingBulk}>
+							Importar
+						</Button>
+					</ModalFooterChild>
+				</ModalFooter>
+			</Modal>
 		</PageWrapper>
 	);
 };

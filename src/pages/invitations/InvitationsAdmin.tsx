@@ -93,9 +93,9 @@ const InvitationsAdmin: React.FC = () => {
 			return roles
 				.map((role) => ({
 					value: role.name,
-					label: role.display_name ? role.display_name : formatRoleName(role.name),
+					label: formatRoleName(role.display_name || role.name),
 				}))
-				.sort((a, b) => a.label.localeCompare(b.label));
+				.sort((a, b) => a.label.localeCompare(b.label, 'es'));
 		}
 
 		const fallbackRoles = new Set<string>();
@@ -107,7 +107,7 @@ const InvitationsAdmin: React.FC = () => {
 		});
 
 		return Array.from(fallbackRoles)
-			.sort((a, b) => a.localeCompare(b))
+			.sort((a, b) => a.localeCompare(b, 'es'))
 			.map((roleName) => ({
 				value: roleName,
 				label: formatRoleName(roleName),
