@@ -1,4 +1,4 @@
-import React, { FC, HTMLAttributes, ReactNode, useState } from 'react';
+import React, { FC, HTMLAttributes, ReactNode } from 'react';
 import classNames from 'classnames';
 import useAsideStatus from '../../../hooks/useAsideStatus';
 import themeConfig from '../../../config/theme.config';
@@ -54,10 +54,7 @@ interface IAsideProps extends HTMLAttributes<HTMLElement> {
 }
 
 const Aside: FC<IAsideProps> = ({ children, className, ...rest }) => {
-	const { asideStatus, setAsideStatus } = useAsideStatus();
-	const [hovering, setHovering] = useState(false);
-
-	const isExpanded = asideStatus || hovering;
+	const { asideStatus } = useAsideStatus();
 
 	return (
 		<aside
@@ -68,15 +65,12 @@ const Aside: FC<IAsideProps> = ({ children, className, ...rest }) => {
 				className,
 				// Mobile layout
 				'max-md:w-[20rem] max-md:shadow-2xl ltr:max-md:-left-[20rem] rtl:max-md:-right-[20rem]',
+				asideStatus ? 'md:w-[20rem]' : 'md:w-[6.225em] md:hover:w-[20rem]',
 				{
-					'md:w-[20rem]': isExpanded,
-					'md:w-[6.225em]': !isExpanded,
 					'ltr:max-md:-left-[20rem] rtl:max-md:-right-[20rem]': !asideStatus,
 					'ltr:max-md:left-0 rtl:max-md:right-0': asideStatus,
 				},
 			)}
-			onMouseEnter={() => setHovering(true)}
-			onMouseLeave={() => setHovering(false)}
 			{...rest}
 		>
 			{children}
