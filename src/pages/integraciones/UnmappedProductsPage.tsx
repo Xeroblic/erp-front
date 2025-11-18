@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useAppSelector, useAppDispatch } from '@/store';
 import {
 	fetchUnmappedProducts,
+	fetchMappedProducts,
 	mapProduct,
 	ignoreProduct,
 } from '@/store/slices/integrations/unmappedProductsSlice';
@@ -12,25 +13,47 @@ import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/S
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
-import Select from '@/components/form/Select';
+import SelectReact, { type TSelectOption } from '@/components/form/SelectReact';
 import Input from '@/components/form/Input';
 import Label from '@/components/form/Label';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import { toast } from 'react-toastify';
 import type { UnmappedWooCommerceProduct } from '@/types/integrations.types';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
+import DataTable from '@/components/ui/DataTable/DataTable';
+import type { ColumnDef } from '@tanstack/react-table';
+import type { SingleValue } from 'react-select';
 
 const UnmappedProductsPage: React.FC = () => {
 	const dispatch = useAppDispatch();
 	const subsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
 	const { integrations } = useAppSelector((state) => state.integrations);
-	const { unmappedProducts, loading } = useAppSelector((state) => state.unmappedProducts);
+	const { unmappedProducts, mappedProducts, loading } = useAppSelector(
+		(state) => state.unmappedProducts,
+	);
 
 	const [selectedIntegrationId, setSelectedIntegrationId] = useState<string | null>(null);
-	const [searchTerm, setSearchTerm] = useState('');
 	const [showMapModal, setShowMapModal] = useState(false);
 	const [selectedProduct, setSelectedProduct] = useState<UnmappedWooCommerceProduct | null>(null);
 	const [mappingSku, setMappingSku] = useState('');
+	const [mappingProductId, setMappingProductId] = useState('');
+	const [activeTab, setActiveTab] = useState<'pending' | 'mapped'>('pending');
+
+	const integrationOptions = useMemo<TSelectOption[]>(
+		() =>
+			integrations
+				.filter((integration) => integration.is_active)
+				.map((integration) => ({
+					value: integration.id,
+					label: `${integration.name} - ${integration.base_url}`,
+				})),
+		[integrations],
+	);
+
+	const selectedIntegrationOption = useMemo(
+		() => integrationOptions.find((option) => option.value === selectedIntegrationId) ?? null,
+		[integrationOptions, selectedIntegrationId],
+	);
 
 	// Cargar integraciones al montar
 	useEffect(() => {
@@ -39,35 +62,55 @@ const UnmappedProductsPage: React.FC = () => {
 		}
 	}, [dispatch, subsidiaryId]);
 
-	// Cargar productos sin mapear cuando se selecciona una integración
+// Cargar productos según pestaña activa
 	useEffect(() => {
-		if (subsidiaryId && selectedIntegrationId) {
+		if (!subsidiaryId || !selectedIntegrationId) return;
+		if (activeTab === 'pending') {
 			dispatch(fetchUnmappedProducts({ subsidiaryId, integrationId: selectedIntegrationId }));
+		} else {
+			dispatch(fetchMappedProducts({ subsidiaryId, integrationId: selectedIntegrationId }));
 		}
-	}, [dispatch, subsidiaryId, selectedIntegrationId]);
+	}, [dispatch, subsidiaryId, selectedIntegrationId, activeTab]);
 
-	const handleMapProduct = async () => {
-		if (!subsidiaryId || !selectedIntegrationId || !selectedProduct || !mappingSku.trim()) {
-			toast.error('Faltan datos para mapear el producto');
-			return;
-		}
+const handleMapProduct = async () => {
+	if (
+		!subsidiaryId ||
+		!selectedIntegrationId ||
+		!selectedProduct ||
+		!mappingSku.trim() ||
+		!mappingProductId.trim()
+	) {
+		toast.error('Faltan datos para mapear el producto');
+		return;
+	}
 
-		const resultAction = await dispatch(
-			mapProduct({
-				subsidiaryId,
-				integrationId: selectedIntegrationId,
-				unmappedProductId: selectedProduct.id,
-				payload: { erp_sku: mappingSku },
-			}),
-		);
+	const parsedProductId = Number(mappingProductId);
+	if (!Number.isFinite(parsedProductId)) {
+		toast.error('Ingresa un ID de producto válido');
+		return;
+	}
 
-		if (mapProduct.fulfilled.match(resultAction)) {
-			toast.success('Producto mapeado correctamente');
-			setShowMapModal(false);
-			setSelectedProduct(null);
-			setMappingSku('');
-			// Refrescar lista
-			dispatch(fetchUnmappedProducts({ subsidiaryId, integrationId: selectedIntegrationId }));
+	const resultAction = await dispatch(
+		mapProduct({
+			subsidiaryId,
+			integrationId: selectedIntegrationId,
+			unmappedProductId: selectedProduct.id,
+			payload: { erp_sku: mappingSku, product_id: parsedProductId },
+		}),
+	);
+
+	if (mapProduct.fulfilled.match(resultAction)) {
+		toast.success('Producto mapeado correctamente');
+		setShowMapModal(false);
+		setSelectedProduct(null);
+		setMappingSku('');
+		setMappingProductId('');
+			// Refrescar lista activa
+			if (activeTab === 'pending') {
+				dispatch(fetchUnmappedProducts({ subsidiaryId, integrationId: selectedIntegrationId }));
+			} else {
+				dispatch(fetchMappedProducts({ subsidiaryId, integrationId: selectedIntegrationId }));
+			}
 		} else {
 			toast.error('Error al mapear el producto');
 		}
@@ -93,41 +136,161 @@ const UnmappedProductsPage: React.FC = () => {
 		}
 	};
 
-	const filteredProducts = unmappedProducts.filter(
-		(product: UnmappedWooCommerceProduct) =>
-			product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			product.sku?.toLowerCase().includes(searchTerm.toLowerCase()),
-	);
+const displayedProducts = activeTab === 'pending' ? unmappedProducts : mappedProducts;
+
+const SALE_STATUS_LABELS: Record<string, string> = {
+	draft: 'Borrador',
+	confirmed: 'Confirmada',
+	partially_paid: 'Pago parcial',
+	paid: 'Pagada',
+	delivered: 'Entregada',
+	cancelled: 'Cancelada',
+	refunded: 'Reembolsada',
+};
+
+const columns = useMemo<ColumnDef<UnmappedWooCommerceProduct>[]>(
+	() => [
+		{
+			accessorFn: (row) =>
+				String(
+					row.external_product_id ??
+					(row as any).woocommerce_product_id ??
+					row.line_item_data?.product_id ??
+					'',
+				),
+			header: 'ID WC',
+			cell: ({ row }) => {
+				const product = row.original;
+				const wcId =
+					product.external_product_id ??
+					(product as any).woocommerce_product_id ??
+					product.line_item_data?.product_id ??
+					'-';
+				return <span>{wcId}</span>;
+			},
+		},
+		{
+			id: 'product',
+			accessorFn: (row) => `${row.name ?? ''} ${row.sale?.sale_number ?? ''}`.trim(),
+			header: 'Producto',
+			cell: ({ row }) => (
+				<div>
+					<p className='font-medium text-gray-900'>{row.original.name}</p>
+					<p className='text-xs text-gray-500'>Venta: {row.original.sale?.sale_number ?? 'N/A'}</p>
+				</div>
+			),
+		},
+		{
+			id: 'sku',
+			accessorFn: (row) => row.sku ?? '',
+			header: 'SKU',
+			cell: ({ row }) => (
+				<code className='rounded bg-gray-100 px-2 py-1 text-xs'>
+					{row.original.sku || 'Sin SKU'}
+				</code>
+			),
+		},
+		{
+			id: 'price',
+			accessorFn: (row) => row.price ?? '',
+			header: 'Precio',
+			cell: ({ row }) => {
+				const value = Number(row.original.price ?? 0);
+				return new Intl.NumberFormat('es-CL', {
+					style: 'currency',
+					currency: 'CLP',
+				}).format(Number.isFinite(value) ? value : 0);
+			},
+		},
+		{
+			id: 'status',
+			accessorFn: (row) => row.sale?.status ?? '',
+			header: 'Estado venta',
+			cell: ({ row }) => {
+				const status = row.original.sale?.status ?? 'N/A';
+				const label = SALE_STATUS_LABELS[status as keyof typeof SALE_STATUS_LABELS] ?? status;
+				const badgeColor = status === 'paid' ? 'green' : status === 'cancelled' ? 'red' : 'gray';
+				return <Badge color={badgeColor}>{label}</Badge>;
+			},
+		},
+		{
+			id: 'actions',
+			header: 'Acciones',
+			cell: ({ row }) => {
+				if (activeTab === 'mapped') {
+					return row.original.mapped_product ? (
+						<div className='text-xs text-gray-500'>
+							Mapeado con {row.original.mapped_product.name} ({row.original.mapped_product.sku})
+						</div>
+					) : (
+						<span className='text-xs text-gray-400'>Sin referencia</span>
+					);
+				}
+
+				return (
+					<div className='flex flex-wrap gap-2'>
+						<Button
+							size='sm'
+							variant='outline'
+							icon='HeroLink'
+							onClick={() => {
+								setSelectedProduct(row.original);
+								setMappingSku(row.original.sku || '');
+								setMappingProductId('');
+								setShowMapModal(true);
+							}}>
+							Mapear
+						</Button>
+						<Button
+							size='sm'
+							variant='outline'
+							color='red'
+							onClick={() => handleIgnoreProduct(row.original)}
+							icon='HeroXMark'>
+							Ignorar
+						</Button>
+					</div>
+				);
+			},
+		},
+	],
+	[activeTab],
+);
 
 	return (
 		<PageWrapper name='Productos Sin Mapear'>
 			<Subheader>
-				<SubheaderLeft>
-					<span className='text-2xl font-semibold'>Productos Sin Mapear</span>
-					<Badge color='amber' className='ml-2'>
-						{filteredProducts.length}
-					</Badge>
+		<SubheaderLeft>
+			<span className='text-2xl font-semibold'>Productos de WooCommerce</span>
+			<Badge color='amber' className='ml-2'>
+				{displayedProducts.length}
+			</Badge>
 				</SubheaderLeft>
 				<SubheaderRight>
-					<Button
-						variant='solid'
-						icon='HeroArrowPath'
-						onClick={() => {
-							if (subsidiaryId && selectedIntegrationId) {
-								dispatch(
-									fetchUnmappedProducts({
+			<Button
+				variant='solid'
+				icon='HeroArrowPath'
+				onClick={() => {
+					if (subsidiaryId && selectedIntegrationId) {
+						dispatch(
+							activeTab === 'pending'
+								? fetchUnmappedProducts({
+										subsidiaryId,
+										integrationId: selectedIntegrationId,
+									})
+								: fetchMappedProducts({
 										subsidiaryId,
 										integrationId: selectedIntegrationId,
 									}),
-								);
-							}
-						}}>
-						Actualizar
-					</Button>
+						);
+					}
+				}}>
+				Actualizar
+			</Button>
 				</SubheaderRight>
 			</Subheader>
 			<Container>
-				<Card>
+		<Card>
 					<CardHeader>
 						<CardHeaderChild>
 							<CardTitle>Seleccionar Integración</CardTitle>
@@ -136,140 +299,57 @@ const UnmappedProductsPage: React.FC = () => {
 					<CardBody>
 						<div className='mb-4'>
 							<Label htmlFor='integration'>Integración de WooCommerce</Label>
-							<Select
+							<SelectReact
 								name='integration'
-								value={selectedIntegrationId || ''}
-								onChange={(e) =>
-									setSelectedIntegrationId(e.target.value ? e.target.value : null)
-								}>
-								<option value=''>Selecciona una integración</option>
-								{integrations
-									.filter((i) => i.is_active)
-									.map((integration) => (
-										<option key={integration.id} value={integration.id}>
-											{integration.name} - {integration.base_url}
-										</option>
-									))}
-							</Select>
+								value={selectedIntegrationOption}
+								onChange={(option) => {
+									const selected = option as SingleValue<TSelectOption>;
+									setSelectedIntegrationId(selected?.value ?? null);
+								}}
+								options={integrationOptions}
+								placeholder='Selecciona una integración'
+							/>
 						</div>
 
-						{selectedIntegrationId && (
-							<div className='mb-4'>
-								<Label htmlFor='search'>Buscar Producto</Label>
-								<Input
-									name='search'
-									type='text'
-									placeholder='Buscar por nombre o SKU...'
-									value={searchTerm}
-									onChange={(e) => setSearchTerm(e.target.value)}
-								/>
-							</div>
-						)}
+				{selectedIntegrationId && (
+					<div className='flex items-center gap-3'>
+						<Button
+							variant={activeTab === 'pending' ? 'solid' : 'outline'}
+							onClick={() => setActiveTab('pending')}
+							disabled={activeTab === 'pending'}>
+							Pendientes
+						</Button>
+						<Button
+							variant={activeTab === 'mapped' ? 'solid' : 'outline'}
+							onClick={() => setActiveTab('mapped')}
+							disabled={activeTab === 'mapped'}>
+							Mapeados
+						</Button>
+					</div>
+				)}
 					</CardBody>
 				</Card>
 
 				{selectedIntegrationId && (
 					<Card className='mt-4'>
 						<CardHeader>
-							<CardHeaderChild>
-								<CardTitle>
-									Productos de WooCommerce sin mapear ({filteredProducts.length})
-								</CardTitle>
+				<CardHeaderChild>
+					<CardTitle>
+						{activeTab === 'pending'
+							? `Productos de WooCommerce sin mapear (${displayedProducts.length})`
+							: `Productos mapeados (${displayedProducts.length})`}
+					</CardTitle>
 							</CardHeaderChild>
 						</CardHeader>
-						<CardBody>
-							{loading ? (
-								<div className='flex justify-center py-8'>
-									<span>Cargando productos...</span>
-								</div>
-							) : filteredProducts.length === 0 ? (
-								<div className='py-8 text-center text-gray-500'>
-									{searchTerm
-										? 'No se encontraron productos con ese criterio'
-										: 'No hay productos sin mapear'}
-								</div>
-							) : (
-								<div className='overflow-x-auto'>
-									<table className='w-full'>
-										<thead>
-											<tr className='border-b'>
-												<th className='px-4 py-2 text-left'>ID WC</th>
-												<th className='px-4 py-2 text-left'>Nombre</th>
-												<th className='px-4 py-2 text-left'>SKU</th>
-												<th className='px-4 py-2 text-left'>Precio</th>
-												<th className='px-4 py-2 text-left'>Stock</th>
-												<th className='px-4 py-2 text-left'>Estado</th>
-												<th className='px-4 py-2 text-center'>Acciones</th>
-											</tr>
-										</thead>
-										<tbody>
-											{filteredProducts.map(
-												(product: UnmappedWooCommerceProduct) => (
-													<tr
-														key={product.woocommerce_product_id}
-														className='border-b hover:bg-gray-50'>
-														<td className='px-4 py-2'>
-															{product.woocommerce_product_id}
-														</td>
-														<td className='px-4 py-2'>
-															{product.name}
-														</td>
-														<td className='px-4 py-2'>
-															<code className='rounded bg-gray-100 px-2 py-1 text-xs'>
-																{product.sku || 'Sin SKU'}
-															</code>
-														</td>
-														<td className='px-4 py-2'>
-															${product.price || '0'}
-														</td>
-														<td className='px-4 py-2'>
-															{product.stock_quantity ?? 'N/A'}
-														</td>
-														<td className='px-4 py-2'>
-															<Badge
-																color={
-																	product.status === 'publish'
-																		? 'green'
-																		: 'gray'
-																}>
-																{product.status}
-															</Badge>
-														</td>
-														<td className='px-4 py-2'>
-															<div className='flex justify-center gap-2'>
-																<Button
-																	size='sm'
-																	variant='outline'
-																	icon='HeroLink'
-																	onClick={() => {
-																		setSelectedProduct(product);
-																		setMappingSku(
-																			product.sku || '',
-																		);
-																		setShowMapModal(true);
-																	}}>
-																	Mapear
-																</Button>
-																<Button
-																	size='sm'
-																	variant='outline'
-																	color='red'
-																	icon='HeroXMark'
-																	onClick={() =>
-																		handleIgnoreProduct(product)
-																	}>
-																	Ignorar
-																</Button>
-															</div>
-														</td>
-													</tr>
-												),
-											)}
-										</tbody>
-									</table>
-								</div>
-							)}
-						</CardBody>
+				<CardBody>
+					<DataTable
+						columns={columns}
+						data={displayedProducts}
+						loading={loading}
+						searchPlaceholder='Buscar por nombre o SKU...'
+						emptyMessage='No hay productos para mostrar'
+					/>
+				</CardBody>
 					</Card>
 				)}
 			</Container>
@@ -282,9 +362,10 @@ const UnmappedProductsPage: React.FC = () => {
 						<div className='space-y-4'>
 							<div className='rounded-lg bg-blue-50 p-4'>
 								<h3 className='mb-2 font-semibold'>Producto de WooCommerce:</h3>
-								<p className='text-sm'>
-									<strong>ID:</strong> {selectedProduct.woocommerce_product_id}
-								</p>
+					<p className='text-sm'>
+						<strong>ID:</strong>{' '}
+						{selectedProduct.external_product_id || selectedProduct.line_item_data?.product_id || 'N/A'}
+					</p>
 								<p className='text-sm'>
 									<strong>Nombre:</strong> {selectedProduct.name}
 								</p>
@@ -293,38 +374,56 @@ const UnmappedProductsPage: React.FC = () => {
 								</p>
 							</div>
 
-							<div>
-								<Label htmlFor='erp_sku'>SKU del Producto en el ERP</Label>
-								<Input
-									name='erp_sku'
-									id='erp_sku'
-									type='text'
-									value={mappingSku}
-									onChange={(e) => setMappingSku(e.target.value)}
-									placeholder='Ingresa el SKU del producto en el ERP'
-									required
-								/>
-								<p className='mt-1 text-xs text-gray-500'>
-									Este SKU debe existir en tu inventario del ERP
-								</p>
-							</div>
+					<div className='grid gap-4 md:grid-cols-2'>
+						<div>
+							<Label htmlFor='erp_sku'>SKU del Producto en el ERP</Label>
+							<Input
+								name='erp_sku'
+								id='erp_sku'
+								type='text'
+								value={mappingSku}
+								onChange={(e) => setMappingSku(e.target.value)}
+								placeholder='Ingresa el SKU del producto en el ERP'
+								required
+							/>
+							<p className='mt-1 text-xs text-gray-500'>
+								Este SKU debe existir en tu inventario del ERP
+							</p>
+						</div>
+						<div>
+							<Label htmlFor='erp_product_id'>ID del producto en el ERP</Label>
+							<Input
+								name='erp_product_id'
+								id='erp_product_id'
+								type='number'
+								value={mappingProductId}
+								onChange={(e) => setMappingProductId(e.target.value)}
+								placeholder='Ejemplo: 12345'
+								required
+							/>
+							<p className='mt-1 text-xs text-gray-500'>
+								Puedes obtenerlo desde la ficha del producto en el ERP
+							</p>
+						</div>
+					</div>
 
 							<div className='flex justify-end gap-2 border-t pt-4'>
-								<Button
-									variant='outline'
-									onClick={() => {
-										setShowMapModal(false);
-										setSelectedProduct(null);
-										setMappingSku('');
-									}}>
-									Cancelar
+					<Button
+						variant='outline'
+						onClick={() => {
+							setShowMapModal(false);
+							setSelectedProduct(null);
+							setMappingSku('');
+							setMappingProductId('');
+						}}>
+						Cancelar
 								</Button>
-								<Button
-									variant='solid'
-									onClick={handleMapProduct}
-									disabled={!mappingSku.trim() || loading}>
-									{loading ? 'Mapeando...' : 'Confirmar Mapeo'}
-								</Button>
+					<Button
+						variant='solid'
+						onClick={handleMapProduct}
+						disabled={!mappingSku.trim() || !mappingProductId.trim() || loading}>
+						{loading ? 'Mapeando...' : 'Confirmar Mapeo'}
+					</Button>
 							</div>
 						</div>
 					)}

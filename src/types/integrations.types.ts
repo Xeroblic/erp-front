@@ -125,6 +125,7 @@ export interface UnmappedWooCommerceProduct {
  */
 export interface MapProductPayload {
     erp_sku: string;
+    product_id?: number;
     [key: string]: any;
 }
 
