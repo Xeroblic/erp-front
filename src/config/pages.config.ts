@@ -53,7 +53,7 @@ export const authPages = {
 	},
 	confirmarNuevaPass: {
 		id: 'confirmarNuevaPass',
-		to: '/recuperar-password/confirmar/:uid/:token',
+		to: '/reset-password',
 		text: 'Confirmar nueva contraseña',
 		icon: 'HeroDocument',
 		authority: []

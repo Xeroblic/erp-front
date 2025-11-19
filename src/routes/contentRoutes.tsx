@@ -115,6 +115,7 @@ const cfg = pagesConfig as any;
 const contentRoutes: IRoutePersonalizada[] = [
 	{ path: cfg.loginPage.to, element: <LoginPage />, public: true },
 	{ path: cfg.recuperarPassword.to, element: <RecuperarPassword />, public: true },
+	{ path: cfg.confirmarNuevaPass.to, element: <ConfirmarNuevaPass />, public: true },
 	{ path: '/usuarios/activar/:token', element: <AceptarInvitacionEmpresa />, public: true },
 
 	{ path: cfg.profilePage.to, element: <ProfilePage />, authority: cfg.profilePage.authority },

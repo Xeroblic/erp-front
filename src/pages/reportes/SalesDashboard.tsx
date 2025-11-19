@@ -345,7 +345,7 @@ const SalesDashboard: React.FC = () => {
 
 					<div className='mt-6'>
 						{series && series.length > 0 && categories && categories.length > 0 ? (
-							<div className='overflow-x-auto'>
+							<div className=''>
 								<div style={{ minWidth: categories.length > 30 ? `${categories.length * 40}px` : '100%' }}>
 									<Chart
 										type='line'

@@ -15,10 +15,11 @@ const AppInitializer = () => {
   const hasInitialized = useRef(false);
   const fetchedPersonalization = useRef(false);
 
-  const publicRoutes = useMemo(
-    () => ['/login', '/recuperar-password', '/registro'],
-    []
-  );
+const publicRoutes = useMemo(
+  () => ['/login', '/recuperar-password', '/reset-password', '/usuarios/activar'],
+  []
+);
+
   const isPublic = publicRoutes.includes(location.pathname);
 
   // Validar sesión una sola vez (si no es ruta pública)

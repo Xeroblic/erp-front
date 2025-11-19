@@ -26,8 +26,10 @@ interface IInputProps extends InputHTMLAttributes<HTMLInputElement>, Partial<IVa
 	variant?: TInputVariants;
 }
 const Input = forwardRef<HTMLInputElement, IInputProps>((props, ref) => {
-	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } = useReactiveThemeConfig();
+	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } =
+		useReactiveThemeConfig();
 
+	// Extraer props personalizados para no pasarlos al input nativo
 	const {
 		borderWidth = themeConfig.borderWidth,
 		label,
@@ -41,8 +43,18 @@ const Input = forwardRef<HTMLInputElement, IInputProps>((props, ref) => {
 		isValid,
 		isTouched,
 		invalidFeedback,
+		validFeedback, // props personalizados
+		isValidMessage, // props personalizados
 		...rest
 	} = props;
+
+	// Eliminar props personalizados del objeto rest
+	const inputProps = { ...rest };
+	delete (inputProps as any).validFeedback;
+	delete (inputProps as any).isValidMessage;
+	delete (inputProps as any).invalidFeedback;
+	delete (inputProps as any).isValid;
+	delete (inputProps as any).isTouched;
 
 	const inputVariants: { [key in TInputVariants]: { general: string; validation: string } } = {
 		solid: {
@@ -103,7 +115,13 @@ const Input = forwardRef<HTMLInputElement, IInputProps>((props, ref) => {
 	);
 
 	return (
-		<input ref={ref} data-component-name='Input' className={classes} name={name} {...rest} />
+		<input
+			ref={ref}
+			data-component-name='Input'
+			className={classes}
+			name={name}
+			{...inputProps}
+		/>
 	);
 });
 Input.displayName = 'Input';

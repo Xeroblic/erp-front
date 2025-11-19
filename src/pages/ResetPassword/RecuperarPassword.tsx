@@ -29,9 +29,10 @@ const RecuperarPassword = () => {
 		validationSchema,
 		onSubmit: async (values) => {
 			try {
-				await axios.post('http://127.0.0.1:8000/auth/users/reset_password/', {
+				await axios.post(`${import.meta.env.VITE_API_URL}/auth/forgot-password`, {
 					email: values.email,
 				});
+
 				toast.success('Enlace de restablecimiento de contraseña enviado a tu correo.');
 				setIsFormSubmitted(true);
 			} catch (error) {
