@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button';
 import { ensureAbsoluteUrl } from '@/components/helper/brand.helper';
 import { IBrand } from '@/interface/brand.interface';
 import Container from '@/components/layouts/Container/Container';
+import { formatCLP } from '@/pages/ventas/utils';
 
 type BrandsGridProps = {
 	brands: IBrand[];
@@ -105,7 +106,14 @@ const BrandsGrid: React.FC<BrandsGridProps> = ({
 										{brand.products_count ?? 0}
 									</p>
 								</div>
+								<div className='rounded-xl border border-violet-100 bg-violet-50/70 p-3 dark:border-emerald-900/40 dark:bg-emerald-900/20'>
+									<p className='text-xs text-emerald-700 dark:text-violet-200'>Total Ventas</p>
+									<p className='mt-1 text-xl font-semibold text-emerald-900 dark:text-violet-100'>
+										{formatCLP(Number(brand.total_sales ?? 0))}
+									</p>
+								</div>
 							</div>
+							
 
 							{/* additional info */}
 							<div className='flex flex-wrap gap-2 text-xs text-zinc-500'>
