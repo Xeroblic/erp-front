@@ -67,7 +67,9 @@ const TransferenciasComercial = lazy(
 	() => import('@/pages/comercial/transferencias/TransferenciasAdmin'),
 );
 const ClientesVentas = lazy(() => import('@/pages/comercial/clientesVentas/ClientesVentas'));
-const ClientesVentasDetalle = lazy(() => import('@/pages/comercial/clientesVentas/ClientesVentasDetalle'));
+const ClientesVentasDetalle = lazy(
+	() => import('@/pages/comercial/clientesVentas/ClientesVentasDetalle'),
+);
 
 // Páginas de Catálogos
 const ProductosPage = lazy(() => import('@/pages/catalogos/productos/Productos'));
@@ -222,7 +224,7 @@ const contentRoutes: IRoutePersonalizada[] = [
 		element: <TransferenciasComercial />,
 		authority: cfg.commercial.subPages.transfers.authority,
 	},
-		{
+	{
 		path: cfg.commercial.subPages.warranties.to,
 		element: <GarantiasPage />,
 		authority: cfg.commercial.subPages.warranties.authority,
@@ -242,7 +244,6 @@ const contentRoutes: IRoutePersonalizada[] = [
 		element: <ClientesVentasDetalle />,
 		authority: cfg.commercial.subPages.clientesVentasDetalle.authority,
 	},
-
 
 	// Reportes
 	// Rutas RESTful del módulo de reportes por subsidiaria
@@ -354,7 +355,6 @@ const contentRoutes: IRoutePersonalizada[] = [
 		element: <DocumentosPage />,
 		authority: cfg.catalogs.subPages.documents.authority,
 	},
-
 
 	// Technical Reviews Routes
 	{
