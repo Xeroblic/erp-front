@@ -220,6 +220,16 @@ const contentRoutes: IRoutePersonalizada[] = [
 		element: <TransferenciasComercial />,
 		authority: cfg.commercial.subPages.transfers.authority,
 	},
+		{
+		path: cfg.commercial.subPages.warranties.to,
+		element: <GarantiasPage />,
+		authority: cfg.commercial.subPages.warranties.authority,
+	},
+	{
+		path: cfg.commercial.subPages.warrantyDetail.to,
+		element: <GarantiaDetailsPage />,
+		authority: cfg.commercial.subPages.warrantyDetail.authority,
+	},
 
 	// Reportes
 	// Rutas RESTful del módulo de reportes por subsidiaria
@@ -331,16 +341,7 @@ const contentRoutes: IRoutePersonalizada[] = [
 		element: <DocumentosPage />,
 		authority: cfg.catalogs.subPages.documents.authority,
 	},
-	{
-		path: cfg.catalogs.subPages.warranties.to,
-		element: <GarantiasPage />,
-		authority: cfg.catalogs.subPages.warranties.authority,
-	},
-	{
-		path: cfg.catalogs.subPages.warrantyDetail.to,
-		element: <GarantiaDetailsPage />,
-		authority: cfg.catalogs.subPages.warrantyDetail.authority,
-	},
+
 
 	// Technical Reviews Routes
 	{

@@ -135,7 +135,7 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset
               onChange={(e) => setFilters((f) => ({ ...f, dateTo: e.target.value }))}
             />
           </div>
-          <div>
+          {/* <div>
             <label className="text-xs text-zinc-500">Parámetro</label>
             <Select
               name="parameter"
@@ -148,7 +148,7 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset
               <option value="usuarios">Usuarios</option>
               <option value="movimientos">Movimientos</option>
             </Select>
-          </div>
+          </div> */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-zinc-500">Precio mín.</label>
@@ -175,7 +175,7 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset
               />
             </div>
           </div>
-          <div>
+          {/* <div>
             <label className="text-xs text-zinc-500">Subempresa</label>
             <Select
               name="subsidiary"
@@ -190,8 +190,8 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset
                 </option>
               ))}
             </Select>
-          </div>
-          <div>
+          </div> */}
+          {/* <div>
             <label className="text-xs text-zinc-500">Sucursal</label>
             <Select
               name="branch"
@@ -206,8 +206,8 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset
                 </option>
               ))}
             </Select>
-          </div>
-          <div>
+          </div> */}
+          {/* <div>
             <label className="text-xs text-zinc-500">Cliente</label>
             <Select
               name="customer"
@@ -218,7 +218,7 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset
               <option value="c-1">Cliente A</option>
               <option value="c-2">Cliente B</option>
             </Select>
-          </div>
+          </div> */}
         </div>
 
         {!validation.isValid && (

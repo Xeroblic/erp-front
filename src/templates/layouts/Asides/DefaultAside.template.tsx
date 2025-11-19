@@ -412,8 +412,20 @@ const DefaultAsideTemplate = () => {
 								onClick={() => navigate(Pages.commercial.subPages.transfers.to)}
 							/>
 						</AuthorityCheckNav>
+						<AuthorityCheckNav
+							authority={Pages.commercial.subPages.warranties.authority}
+							userAuthority={userPermissionsAndRoles}
+							requireAll={Pages.commercial.subPages.warranties.requireAll}>
+							<NavItem
+								text={Pages.commercial.subPages.warranties.text}
+								to={Pages.commercial.subPages.warranties.to}
+								icon={Pages.commercial.subPages.warranties.icon}
+								id={Pages.commercial.subPages.warranties.id}
+								onClick={() => navigate(Pages.commercial.subPages.warranties.to)}
+							/>
+						</AuthorityCheckNav>
 					</NavCollapse>
-
+					<NavTitle>Gerencia</NavTitle>
 					{/* Reportes - Mostrar sólo listado por subsidiaria (List + Results) */}
 					<AuthorityCheckNav
 						authority={Pages.reports.authority}
@@ -575,6 +587,19 @@ const DefaultAsideTemplate = () => {
 						/>
 					</AuthorityCheckNav>
 
+					<AuthorityCheckNav
+						authority={Pages.catalogs.subPages.documents.authority}
+						userAuthority={userPermissionsAndRoles}
+						requireAll={Pages.catalogs.subPages.documents.requireAll}>
+						<NavItem
+							text={Pages.catalogs.subPages.documents.text}
+							to={Pages.catalogs.subPages.documents.to}
+							icon={Pages.catalogs.subPages.documents.icon}
+							id={Pages.catalogs.subPages.documents.id}
+							onClick={() => navigate(Pages.catalogs.subPages.documents.to)}
+						/>
+					</AuthorityCheckNav>
+
 					<NavTitle>Servicio Técnico</NavTitle>
 					<NavCollapse
 						key='servicio-nav'
@@ -699,31 +724,6 @@ const DefaultAsideTemplate = () => {
 							onClick={() => navigate(Pages.catalogs.subPages.customers.to)}
 						/>
 					</AuthorityCheckNav> */}
-
-					<AuthorityCheckNav
-						authority={Pages.catalogs.subPages.documents.authority}
-						userAuthority={userPermissionsAndRoles}
-						requireAll={Pages.catalogs.subPages.documents.requireAll}>
-						<NavItem
-							text={Pages.catalogs.subPages.documents.text}
-							to={Pages.catalogs.subPages.documents.to}
-							icon={Pages.catalogs.subPages.documents.icon}
-							id={Pages.catalogs.subPages.documents.id}
-							onClick={() => navigate(Pages.catalogs.subPages.documents.to)}
-						/>
-					</AuthorityCheckNav>
-					<AuthorityCheckNav
-						authority={Pages.catalogs.subPages.warranties.authority}
-						userAuthority={userPermissionsAndRoles}
-						requireAll={Pages.catalogs.subPages.warranties.requireAll}>
-						<NavItem
-							text={Pages.catalogs.subPages.warranties.text}
-							to={Pages.catalogs.subPages.warranties.to}
-							icon={Pages.catalogs.subPages.warranties.icon}
-							id={Pages.catalogs.subPages.warranties.id}
-							onClick={() => navigate(Pages.catalogs.subPages.warranties.to)}
-						/>
-					</AuthorityCheckNav>
 
 					{/* <AuthorityCheckNav authority={Pages.listaItem.authority} userAuthority={listaGrupos?.grupos}>
 						<NavItem text={Pages.listaItem.text} to={Pages.listaItem.to} icon={Pages.listaItem.icon} id={Pages.listaItem.id}></NavItem>
