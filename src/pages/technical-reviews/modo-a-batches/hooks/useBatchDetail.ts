@@ -13,7 +13,7 @@ import {
 
 export const useBatchDetail = (branchId: number, batchId: number | null) => {
 	const dispatch = useAppDispatch();
-	
+
 	const batch = useAppSelector(selectSelectedBatch);
 	const loading = useAppSelector(selectBatchesLoading);
 	const error = useAppSelector(selectBatchesError);

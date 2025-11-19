@@ -14,57 +14,53 @@ import Badge from '@/components/ui/Badge';
 
 import useReactiveThemeConfig from '@/hooks/useReactiveThemeConfig';
 const useNavItemClasses = () => {
-  const { themeColor, themeColorShade, darkMode } = useReactiveThemeConfig();
+	const { themeColor, themeColorShade, darkMode } = useReactiveThemeConfig();
 
-  const tone = darkMode ? 400 : 700;
+	const tone = darkMode ? 400 : 700;
 
-  return {
-    default: classNames(
-      'mb-2 p-3',
-      'flex items-center',
-      'cursor-pointer',
-      'overflow-hidden',
-      'rounded-xl',
-      'border',
-      'text-zinc-500',
-      'hover:text-zinc-950 dark:hover:text-zinc-100',
-      'grow',
-      themeConfig.transition,
-    ),
-    inactive: 'border-transparent',
-    active: classNames(
-      `text-${themeColor}-${tone}`,
-      'border-transparent',
-      `dark:border-${themeColor}-${themeColorShade}`,
-      'nav-active-conic'
-    ),
-    here: `text-${themeColor}-${themeColorShade} border-transparent`,
-  };
+	return {
+		default: classNames(
+			'mb-2 p-3',
+			'flex items-center',
+			'cursor-pointer',
+			'overflow-hidden',
+			'rounded-xl',
+			'border',
+			'text-zinc-500',
+			'hover:text-zinc-950 dark:hover:text-zinc-100',
+			'grow',
+			themeConfig.transition,
+		),
+		inactive: 'border-transparent',
+		active: classNames(
+			`text-${themeColor}-${tone}`,
+			'border-transparent',
+			`dark:border-${themeColor}-${themeColorShade}`,
+			'nav-active-conic',
+		),
+		here: `text-${themeColor}-${themeColorShade} border-transparent`,
+	};
 };
 
+const navItemChildCheck = (children: React.ReactNode | INavButtonProps): boolean => {
+	if (!children) return false;
 
+	// Si es array, comprobar si alguno es un elemento React con displayName 'NavButton'
+	// Si es array, comprobar si alguno es un elemento React con displayName 'NavButton'
+	if (Array.isArray(children)) {
+		// children puede ser una mezcla de tipos: filtrar sólo elementos React
+		return (children as React.ReactNode[]).some(
+			(child) =>
+				React.isValidElement(child) && (child.type as any)?.displayName === 'NavButton',
+		);
+	}
 
-const navItemChildCheck = (
-	children:
-		| React.ReactElement<unknown, string | React.JSXElementConstructor<unknown>>
-		| string
-		| number
-		| Iterable<React.ReactNode>
-		| React.ReactPortal
-		| boolean
-		| null
-		| undefined
-		| INavButtonProps,
-): boolean => {
-	// @ts-ignore
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-return
-	return children?.length > 1
-		? // @ts-ignore
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-return
-			children?.map((child) => child.type.displayName).includes('NavButton')
-		: // @ts-ignore
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-return
-			children?.type?.displayName === 'NavButton';
+	// Si es un único elemento React
+	if (React.isValidElement(children)) {
+		return (children.type as any)?.displayName === 'NavButton';
+	}
+
+	return false;
 };
 
 interface INavItemTextProps extends HTMLAttributes<HTMLDivElement> {
@@ -176,7 +172,7 @@ interface INavItemProps extends HTMLAttributes<HTMLLIElement> {
 	className?: string;
 }
 export const NavItem: FC<INavItemProps> = (props) => {
-	const navItemClasses = useNavItemClasses(); 
+	const navItemClasses = useNavItemClasses();
 
 	const { children, icon, text, to, className, ...rest } = props;
 
@@ -270,7 +266,11 @@ export const NavItem: FC<INavItemProps> = (props) => {
 					</>
 				)}
 				{children && isChildrenNavButton && (
-					<div className={classNames('mb-2 flex items-center gap-3 px-3', !asideStatus && 'hidden md:group-hover/aside:flex')}>
+					<div
+						className={classNames(
+							'mb-2 flex items-center gap-3 px-3',
+							!asideStatus && 'hidden md:group-hover/aside:flex',
+						)}>
 						{children as ReactNode}
 					</div>
 				)}
@@ -290,7 +290,7 @@ interface INavCollapseProps extends HTMLAttributes<HTMLLIElement> {
 	onToggle?: () => void; // Callback opcional para manejar cambios
 }
 export const NavCollapse: FC<INavCollapseProps> = (props) => {
-	const navItemClasses = useNavItemClasses(); 
+	const navItemClasses = useNavItemClasses();
 
 	const { children, icon, text, className, to, isOpen, onToggle, ...rest } = props;
 
@@ -331,7 +331,10 @@ export const NavCollapse: FC<INavCollapseProps> = (props) => {
 	// Cerrar este collapse si otro del mismo <nav> se abre
 	useEffect(() => {
 		const handler = (e: any) => {
-			const navEl: Element | null | undefined = e?.detail?.navEl as Element | null | undefined;
+			const navEl: Element | null | undefined = e?.detail?.navEl as
+				| Element
+				| null
+				| undefined;
 			const sourceId: string | undefined = e?.detail?.sourceId as string | undefined;
 			const myNav = collapseRef.current?.closest('nav');
 			if (!myNav || !navEl || myNav !== navEl) return;
@@ -400,9 +403,12 @@ export const NavCollapse: FC<INavCollapseProps> = (props) => {
 							collapsed: { height: 0 },
 						}}
 						transition={{ duration: 0.3 }}
-						className={classNames('!transition-margin !duration-300 !ease-in-out md:group-hover/aside:ms-4', {
-							'ms-4': asideStatus,
-						})}>
+						className={classNames(
+							'!transition-margin !duration-300 !ease-in-out md:group-hover/aside:ms-4',
+							{
+								'ms-4': asideStatus,
+							},
+						)}>
 						{children}
 					</motion.ul>
 				)}
@@ -565,7 +571,11 @@ export const NavUser: FC<INavUserProps> = (props) => {
 					</>
 				)}
 				{children && isChildrenNavButton && (
-					<div className={classNames('mb-2 flex items-center gap-3 px-3', !asideStatus && 'hidden md:group-hover/aside:flex')}>
+					<div
+						className={classNames(
+							'mb-2 flex items-center gap-3 px-3',
+							!asideStatus && 'hidden md:group-hover/aside:flex',
+						)}>
 						{children as ReactNode}
 					</div>
 				)}

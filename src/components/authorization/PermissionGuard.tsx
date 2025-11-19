@@ -31,7 +31,6 @@ const PermissionGuard: React.FC<PermissionGuardProps> = ({
 	subsidiaryId,
 	branchId,
 	fallback,
-	deniedMessage = 'No tienes permisos para acceder a esta sección',
 }) => {
 	const user = useAppSelector((state) => state.auth.user);
 	const userAuthority = useAppSelector((state) => state.auth.permisos);

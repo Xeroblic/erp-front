@@ -84,8 +84,8 @@ const normalizeChildren = (raw: unknown): IProductChild[] => {
 						grade: toNullableString(entry.grade),
 						sku: String(entry.sku ?? ''),
 						name: String(entry.name ?? ''),
-						price: entry.price ?? null,
-						offer_price: entry.offer_price ?? null,
+						price: toNullableNumber(entry.price),
+						offer_price: toNullableNumber(entry.offer_price),
 						stock: toNullableNumber(entry.stock),
 						stock_by_status:
 							entry.stock_by_status && typeof entry.stock_by_status === 'object'

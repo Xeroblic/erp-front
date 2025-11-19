@@ -18,12 +18,12 @@ import type { FetchBatchItemsParams } from '@/interface/technicalReviews.interfa
 
 export const useBatchItems = (branchId: number, batchId: number | null) => {
 	const dispatch = useAppDispatch();
-	
+
 	const items = useAppSelector(selectItems);
 	const loading = useAppSelector(selectItemsLoading);
 	const error = useAppSelector(selectItemsError);
 	const meta = useAppSelector(selectItemsMeta);
-	
+
 	const selectedItem = useAppSelector(selectSelectedItem);
 	const selectedItemLoading = useAppSelector(selectItemDetailLoading);
 

@@ -34,6 +34,7 @@ import technicalReviews, {
 } from './slices/technicalReviews/slice/technicalReviewsSlice';
 import { integrationsReducer, unmappedProductsReducer } from './slices/integrations';
 import garantiasReducer, { GarantiasState } from './slices/garantias/garantiasSlice';
+import reports, { ReportsState } from './slices/reports/reportSlice';
 
 
 export interface RootState {
@@ -67,6 +68,7 @@ export interface RootState {
 	integrations: ReturnType<typeof integrationsReducer>;
 	unmappedProducts: ReturnType<typeof unmappedProductsReducer>;
 	garantias: GarantiasState;
+	reports: ReportsState;
 	[RtkQueryService.reducerPath]: any;
 }
 
@@ -102,6 +104,7 @@ const staticReducers = {
 	integrations: integrationsReducer,
 	unmappedProducts: unmappedProductsReducer,
 	garantias: garantiasReducer,
+	reports,
 	// personalizacion, // Comentado temporalmente
 	[RtkQueryService.reducerPath]: RtkQueryService.reducer,
 };

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import QuotePrintableView from '../QuotePrintableView';
 import type { IQuote } from '../../../../../interface/quotes.interface';
-import { generateQuotePdf } from '../QuotePdfDocument';
 import Modal, {
 	ModalHeader,
 	ModalBody,
@@ -11,6 +10,7 @@ import Modal, {
 import Button from '../../../../../components/ui/Button';
 import { saveAs } from 'file-saver';
 import { toast } from 'react-toastify';
+import { generateQuotePdf } from '../../utils/pdf/generateQuotePdf';
 
 interface QuotationDetailsModalProps {
 	isOpen: boolean;
@@ -76,7 +76,7 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
 	};
 
 	return (
-		<Modal isOpen={isOpen} setIsOpen={onClose}>
+		<Modal isOpen={isOpen} setIsOpen={onClose} size='2xl'>
 			<ModalHeader>
 				<div>
 					<h2 className='text-xl font-semibold'>Detalles de Cotización</h2>

@@ -15,7 +15,7 @@ import type { FetchBatchesParams } from '@/interface/technicalReviews.interface'
 
 export const useBatchList = (branchId?: number | null) => {
 	const dispatch = useAppDispatch();
-	
+
 	const batches = useAppSelector(selectBatches);
 	const loading = useAppSelector(selectBatchesLoading);
 	const error = useAppSelector(selectBatchesError);

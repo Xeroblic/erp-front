@@ -92,9 +92,7 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 	const user = useAppSelector((state) => state.auth.user);
 	const subsidiaryId =
 		user?.subsidiary?.id ??
-		user?.subsidiary_id ??
 		user?.branch?.subsidiary?.id ??
-		user?.empresa?.subsidiary_id ??
 		null;
 
 	const [filters, setFilters] = useState<QuotationsFilters>(initialFilters);
@@ -148,11 +146,11 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 		if (filters.customerId) {
 			data = data.filter((q) => q.customer_id === filters.customerId);
 		}
-		if (filters.minAmount) {
-			data = data.filter((q) => q.total_amount >= filters.minAmount!);
+		if (filters.minAmount !== undefined) {
+			data = data.filter((q) => Number(q.total_amount ?? 0) >= filters.minAmount!);
 		}
-		if (filters.maxAmount) {
-			data = data.filter((q) => q.total_amount <= filters.maxAmount!);
+		if (filters.maxAmount !== undefined) {
+			data = data.filter((q) => Number(q.total_amount ?? 0) <= filters.maxAmount!);
 		}
 		if (filters.search) {
 			const term = filters.search.toLowerCase();
@@ -160,16 +158,15 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 				(q) =>
 					q.quote_number?.toLowerCase().includes(term) ||
 					String(q.id).includes(term) ||
-					(q.notes && q.notes.toLowerCase().includes(term)),
+					(q.notes && q.notes.toLowerCase().includes(term))
 			);
 		}
-
 		return data;
 	}, [quotations, filters]);
 
 	const stats = useMemo(() => {
 		const total = quotations.length;
-		const totalAmount = quotations.reduce((sum, quote) => sum + (quote.total_amount ?? 0), 0);
+		const totalAmount = quotations.reduce((sum: number, quote: IQuote) => sum + Number(quote.total_amount ?? 0), 0);
 		const byStatus = quotations.reduce<Record<string, number>>((acc, quote) => {
 			const key = normalizeQuoteStatusValue(quote.status);
 			acc[key] = (acc[key] || 0) + 1;
@@ -183,128 +180,103 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 		};
 	}, [quotations]);
 
-const normalizeStatus = (status?: QuoteStatus): QuoteStatus | undefined => {
-	if (!status) return undefined;
-	return status.toString().toLowerCase() as QuoteStatus;
-};
+	const normalizeStatus = (status?: QuoteStatus): QuoteStatus | undefined => {
+		if (!status) return undefined;
+		return status.toString().toLowerCase() as QuoteStatus;
+	};
 
-type QuoteItemPayload = QuoteItemDTO & { id?: number };
+	type QuoteItemPayload = QuoteItemDTO & { id?: number };
 
-const normalizeQuoteItems = (items?: IQuoteItem[] | null): QuoteItemPayload[] => {
-	if (!items || items.length === 0) return [];
-	return items
-		.map((item) => {
-			const hasProduct = Boolean(item.product_id);
-			const baseName = item.customer_name ?? item.product?.name ?? '';
-			const baseSku = item.customer_sku ?? item.product?.sku ?? '';
-			const quantity = Math.max(1, Number(item.quantity) || 1);
-			const rawUnitPrice = Number(
-				item.unit_price ??
+	const normalizeQuoteItems = (items?: IQuoteItem[] | null): QuoteItemPayload[] => {
+		if (!items || items.length === 0) return [];
+		const mapped = items
+			.map((item) => {
+				const hasProduct = Boolean(item.product_id);
+				const baseName = item.customer_name ?? item.product?.name ?? '';
+				const baseSku = item.customer_sku ?? item.product?.sku ?? '';
+				const quantity = Math.max(1, Number(item.quantity) || 1);
+				const rawUnitPrice = Number(
+					item.unit_price ??
 					(item as any).unit_net ??
 					(item as any).unitPrice ??
 					(item as any).unit ??
 					0,
-			);
-			const unitPrice =
-				hasProduct && rawUnitPrice <= 0 ? undefined : rawUnitPrice > 0 ? rawUnitPrice : undefined;
-			const discountAmount =
-				item.discount_amount !== undefined && item.discount_amount !== null
-					? Number(item.discount_amount)
-					: undefined;
-
-			if (!hasProduct && !baseName.trim()) {
-				return null;
-			}
-			if (!hasProduct && (!unitPrice || unitPrice <= 0)) {
-				throw new Error(
-					'Los ítems sin producto asociado deben incluir un nombre y un precio neto mayor a 0.',
 				);
-			}
+				const unitPrice =
+					hasProduct && rawUnitPrice <= 0 ? undefined : rawUnitPrice > 0 ? rawUnitPrice : undefined;
+				const discountAmount =
+					item.discount_amount !== undefined && item.discount_amount !== null
+						? Number(item.discount_amount)
+						: undefined;
 
-			return {
-				id: item.id && item.id > 0 ? item.id : undefined,
-				product_id: item.product_id ?? null,
-				customer_name: baseName.trim() || undefined,
-				customer_sku: baseSku.trim() || undefined,
-				description: item.description ?? undefined,
-				notes: item.notes ?? undefined,
-				quantity,
-				unit_price: unitPrice,
-				discount_amount:
-					discountAmount && discountAmount > 0 ? Number(discountAmount.toFixed(2)) : undefined,
-			};
-		})
-		.filter((payload): payload is QuoteItemPayload => Boolean(payload));
-};
+				if (!hasProduct && !baseName.trim()) {
+					return null;
+				}
+				if (!hasProduct && (!unitPrice || unitPrice <= 0)) {
+					throw new Error(
+						'Los ítems sin producto asociado deben incluir un nombre y un precio neto mayor a 0.',
+					);
+				}
 
-const mapToCreateDTO = (quotation: Partial<IQuote>): QuoteCreateDTO => {
-	if (!quotation.customer_id) {
-		throw new Error('Debes seleccionar un cliente para la cotización');
-	}
-	return {
-		customer_id: quotation.customer_id,
-		quote_number: quotation.quote_number ?? undefined,
-		quote_date: quotation.quote_date || new Date().toISOString().split('T')[0],
-		expiry_date:
-			quotation.expiry_date ||
-			(quotation as any).valid_until ||
-			new Date().toISOString().split('T')[0],
-		tax_rate:
-			(quotation as any).tax_rate ??
-			(quotation as any).tax_percentage ??
-			quotation.totals?.tax_rate ??
-			0.19,
-		notes: quotation.notes ?? undefined,
-		internal_notes: (quotation as any).internal_notes ?? undefined,
-		payment_method: quotation.payment_method ?? undefined,
-		purchase_order: quotation.purchase_order ?? undefined,
-		payment_terms: quotation.payment_terms ?? undefined,
-		fixed_discount: (quotation as any).fixed_discount ?? undefined,
-		discount_percentage: quotation.discount_percentage ?? undefined,
-		status: normalizeStatus(quotation.status) ?? ('draft' as QuoteStatus),
+				return {
+					id: item.id && item.id > 0 ? item.id : undefined,
+					product_id: item.product_id ?? null,
+					customer_name: baseName.trim() || undefined,
+					customer_sku: baseSku.trim() || undefined,
+					description: item.description ?? undefined,
+					notes: item.notes ?? undefined,
+					quantity,
+					unit_price: unitPrice,
+					discount_amount:
+						discountAmount && discountAmount > 0 ? Number(discountAmount.toFixed(2)) : undefined,
+				};
+			});
+		return mapped.filter(Boolean) as QuoteItemPayload[];
 	};
-};
 
-const mapToUpdateDTO = (quotation: Partial<IQuote>): QuoteUpdateDTO => ({
-	quote_number: quotation.quote_number,
-	customer_id: quotation.customer_id,
-	quote_date: quotation.quote_date,
-	expiry_date: quotation.expiry_date ?? (quotation as any).valid_until,
-	tax_rate:
-		(quotation as any).tax_rate ??
-			(quotation as any).tax_percentage ??
-			quotation.totals?.tax_rate,
-	notes: quotation.notes,
-	internal_notes: (quotation as any).internal_notes,
-	payment_method: quotation.payment_method,
-	purchase_order: quotation.purchase_order,
-	payment_terms: quotation.payment_terms,
-	fixed_discount: (quotation as any).fixed_discount,
-	discount_percentage: quotation.discount_percentage,
-	status: normalizeStatus(quotation.status),
-});
+	// Helpers para mapToCreateDTO, mapToUpdateDTO y syncQuoteItems
+	function mapToCreateDTO(quotation: Partial<IQuote>): QuoteCreateDTO {
+		// Ajusta los campos según la definición real de QuoteCreateDTO
+		const { customer_id, quote_date, status, notes, ...rest } = quotation;
+		return {
+			customer_id: customer_id!,
+			quote_date: quote_date!,
+			status: status!,
+			notes: notes ?? '',
+			...rest,
+		} as QuoteCreateDTO;
+	}
+
+	function mapToUpdateDTO(quotation: Partial<IQuote>): QuoteUpdateDTO {
+		// Ajusta los campos según la definición real de QuoteUpdateDTO
+		const { customer_id, quote_date, status, notes, ...rest } = quotation;
+		return {
+			customer_id: customer_id!,
+			quote_date: quote_date!,
+			status: status!,
+			notes: notes ?? '',
+			...rest,
+		} as QuoteUpdateDTO;
+	}
 
 	const syncQuoteItems = useCallback(
-		async (quoteId: number, desiredItems?: IQuoteItem[] | null) => {
-			if (!subsidiaryId || desiredItems === undefined) return;
-
+		async (quoteId: number, desiredItems?: IQuoteItem[]) => {
+			if (!subsidiaryId) throw new Error('No hay una filial seleccionada');
 			let desiredPayload: QuoteItemPayload[] = [];
 			try {
 				desiredPayload = normalizeQuoteItems(desiredItems);
 			} catch (error: any) {
-				const message =
-					error?.message || 'Uno de los ítems no tiene la información mínima requerida.';
+				const message = error?.message || 'Uno de los ítems no tiene la información mínima requerida.';
 				toast.error(message);
 				throw error;
 			}
 
 			const hasInputItems = Array.isArray(desiredItems) && desiredItems.length > 0;
-
 			if (hasInputItems && desiredPayload.length === 0) {
 				throw new Error('Debes agregar al menos un ítem válido a la cotización.');
 			}
 
-			const existing = await dispatch(
+			const existing: IQuoteItem[] = await dispatch(
 				fetchQuoteItems({ subsidiaryId, quoteId }),
 			).unwrap();
 
@@ -314,8 +286,8 @@ const mapToUpdateDTO = (quotation: Partial<IQuote>): QuoteUpdateDTO => ({
 				desiredPayload.length === 0
 					? existing
 					: existing.filter(
-							(item) => !toUpdate.some((desiredItem) => desiredItem.id === item.id),
-						);
+						(item) => !toUpdate.some((desiredItem) => desiredItem.id === item.id),
+					);
 
 			if (!toUpdate.length && !toCreate.length && !toDelete.length) {
 				return;
@@ -347,7 +319,7 @@ const mapToUpdateDTO = (quotation: Partial<IQuote>): QuoteUpdateDTO => ({
 					deleteQuoteItem({
 						subsidiaryId,
 						quoteId,
-						itemId: item.id,
+						itemId: item.id!,
 					}),
 				).unwrap();
 			}

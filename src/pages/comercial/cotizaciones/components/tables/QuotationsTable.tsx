@@ -12,15 +12,12 @@ import {
 	getSortedRowModel,
 	SortingState,
 } from '@tanstack/react-table';
-import { IQuote } from '../../../../../interface';
+import { IQuote, QuoteStatus } from '../../../../../interface';
 import Table, { Th, THead, Tr, TBody, Td } from '../../../../../components/ui/Table';
 import Button from '../../../../../components/ui/Button';
 import Badge from '../../../../../components/ui/Badge';
 import Icon from '../../../../../components/icon/Icon';
-import {
-	getQuoteStatusBadge,
-	normalizeQuoteStatusValue,
-} from '../../constants/quoteStatuses';
+import { getQuoteStatusBadge, normalizeQuoteStatusValue } from '../../constants/quoteStatuses';
 
 interface QuotationsTableProps {
 	data: IQuote[];
@@ -43,7 +40,7 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 	onDelete,
 	onDuplicate,
 	onView,
-	onChangeStatus,
+	// onChangeStatus,
 	onConvertToSale,
 	onDownloadPdf,
 }) => {
@@ -108,26 +105,32 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 				);
 			},
 		}),
-			columnHelper.accessor('status', {
-				header: 'Estado',
-				cell: (info) => {
-					const badge = getQuoteStatusBadge(info.getValue());
-					return (
-						<Badge color={badge.color} variant={badge.variant} className='text-xs'>
-							{badge.label}
-						</Badge>
-					);
-				},
-			}),
+		columnHelper.accessor('status', {
+			header: 'Estado',
+			cell: (info) => {
+				const badge = getQuoteStatusBadge(info.getValue());
+				return (
+					<Badge variant={badge.variant} className='text-xs'>
+						{badge.label}
+					</Badge>
+				);
+			},
+		}),
 		columnHelper.accessor('total_amount', {
 			header: 'Total',
-			cell: (info) => <span className='font-medium'>{formatCurrency(info.getValue())}</span>,
+			cell: (info) => {
+				const value = info.getValue();
+
+				const amount = typeof value === 'number' ? value : Number(value ?? 0);
+
+				return <span className='font-medium'>{formatCurrency(amount)}</span>;
+			},
 		}),
 		columnHelper.display({
 			id: 'acciones',
 			header: 'Acciones',
 			cell: (info) => (
-								<div className='flex justify-end gap-2'>
+				<div className='flex justify-end gap-2'>
 					<Button
 						variant='outline'
 						size='sm'
@@ -159,15 +162,15 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 					/>
 					{normalizeQuoteStatusValue(info.row.original.status) === 'approved' &&
 						info.row.original.can_convert && (
-						<Button
-							variant='outline'
-							size='sm'
-							icon='HeroBolt'
-							onClick={() => onConvertToSale?.(info.row.original.id)}
-							className='p-1'
-							title='Convertir a venta'
-						/>
-					)}
+							<Button
+								variant='outline'
+								size='sm'
+								icon='HeroBolt'
+								onClick={() => onConvertToSale?.(info.row.original.id)}
+								className='p-1'
+								title='Convertir a venta'
+							/>
+						)}
 					<Button
 						variant='solid'
 						size='sm'

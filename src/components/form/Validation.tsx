@@ -8,8 +8,11 @@ export interface IValidationBaseProps {
 	validFeedback?: string;
 }
 
+type TChildProps = Record<string, unknown>;
+
 interface IValidationProps extends IValidationBaseProps {
-	children: ReactElement;
+	// Hijo tipado como objeto genérico sin usar `any`
+	children: ReactElement<TChildProps>;
 }
 const Validation: FC<IValidationProps> = (props) => {
 	const {
@@ -22,11 +25,20 @@ const Validation: FC<IValidationProps> = (props) => {
 	} = props;
 	return (
 		<>
-			{cloneElement(children, {
-				isValid,
-				isTouched,
-				invalidFeedback,
-			})}
+			{(() => {
+				// Construir las props de inyección con tipos concretos
+				const child = children as ReactElement<TChildProps & Partial<IValidationBaseProps>>;
+				const injection: Partial<IValidationBaseProps> = {
+					isValid,
+					isTouched,
+					invalidFeedback,
+				};
+
+				return cloneElement(
+					child,
+					injection as Partial<TChildProps & IValidationBaseProps>,
+				);
+			})()}
 			{isValidMessage && !isValid && isTouched && (
 				<>
 					{invalidFeedback && (

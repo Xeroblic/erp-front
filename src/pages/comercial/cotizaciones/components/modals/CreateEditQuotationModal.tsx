@@ -43,7 +43,7 @@ const quotationSchema = Yup.object().shape({
 		.required('Debe seleccionar un cliente')
 		.min(1, 'Debe seleccionar un cliente válido'),
 	quote_date: Yup.date().required('La fecha de cotización es requerida'),
-	valid_until: Yup.date()
+	expiry_date: Yup.date()
 		.required('La fecha de validez es requerida')
 		.min(
 			Yup.ref('quote_date'),
@@ -134,48 +134,47 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 	const getInitialValues = (): Omit<IQuote, 'id' | 'created_at' | 'updated_at'> => {
 		if (quotation) {
 			return {
-				company_id: quotation.company_id,
-				quote_number: quotation.quote_number,
-				customer_id: quotation.customer_id,
-				quote_date: quotation.quote_date,
-				valid_until: quotation.valid_until,
+				subsidiary_id: quotation.subsidiary_id,
+				quote_number: quotation.quote_number ?? '',
+				customer_id: quotation.customer_id ?? 0,
+				quote_date: quotation.quote_date ?? '',
+				expiry_date: quotation.expiry_date ?? quotation.valid_until ?? '',
 				status: normalizeQuoteStatusValue(quotation.status) as QuoteStatus,
-				subtotal: quotation.subtotal,
-				discount_amount: quotation.discount_amount,
-				discount_percentage: quotation.discount_percentage,
-				tax_percentage: quotation.tax_percentage,
-				total_amount: quotation.total_amount,
-				notes: quotation.notes || '',
-				created_by: quotation.created_by,
-				approved_by: quotation.approved_by,
-				payment_method: quotation.payment_method,
-				purchase_order: quotation.purchase_order,
-				payment_terms: quotation.payment_terms,
-				fixed_discount: quotation.fixed_discount,
+				subtotal: quotation.subtotal ?? 0,
+				tax_rate: quotation.tax_rate ?? Number(quotation.tax_percentage ?? 0),
+				discount_amount: quotation.discount_amount ?? 0,
+				discount_percentage: quotation.discount_percentage ?? 0,
+				tax_percentage: quotation.tax_percentage ?? 0,
+				total_amount: quotation.total_amount ?? 0,
+				notes: quotation.notes ?? '',
+				created_by: quotation.created_by ?? undefined,
+				approved_by: quotation.approved_by ?? undefined,
+				payment_method: quotation.payment_method ?? '',
+				purchase_order: quotation.purchase_order ?? '',
+				payment_terms: quotation.payment_terms ?? 0,
+				fixed_discount: quotation.fixed_discount ?? 0,
 				items: quotation.items || [],
 				customer: quotation.customer,
-				creator: quotation.creator,
-				approver: quotation.approver,
-				converted_sale: quotation.converted_sale,
 				items_count: quotation.items_count,
-				days_until_expiry: quotation.days_until_expiry,
-				is_expired: quotation.is_expired,
 				can_convert: quotation.can_convert,
+				is_converted_to_sale: quotation.is_converted_to_sale,
+				converted_at: quotation.converted_at,
 			};
 		}
 
 		// Valores por defecto para nueva cotización según CU025
 		const today = new Date().toISOString().split('T')[0];
-		const validUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+		const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
 			.toISOString()
 			.split('T')[0];
 
 		return {
-			company_id: 1,
+			subsidiary_id: 1,
 			quote_number: `COT-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`,
 			customer_id: 0,
 			quote_date: today,
-			valid_until: validUntil,
+			expiry_date: expiryDate,
+			tax_rate: 0,
 			status: 'draft' as QuoteStatus,
 			payment_method: '',
 			purchase_order: '',
@@ -196,8 +195,7 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 					quantity: 1,
 					unit_price: 0,
 					discount_percentage: 0,
-					subtotal: 0,
-					total: 0,
+					// omit unknown 'total' property (not in QuoteItem interface)
 					created_at: '',
 					updated_at: '',
 				},
@@ -241,7 +239,7 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 	if (!isOpen) return null;
 
 	return (
-		<Modal isOpen={isOpen} setIsOpen={() => onClose()}>
+		<Modal isOpen={isOpen} setIsOpen={() => onClose()} size='2xl'>
 			<ModalHeader>
 				<div>
 					<h2 className='text-xl font-semibold'>
@@ -282,7 +280,7 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 											<Input
 												name='quote_number'
 												placeholder='COT-2024-001'
-												value={values.quote_number}
+												value={values.quote_number ?? ''}
 												onChange={(e) =>
 													setFieldValue('quote_number', e.target.value)
 												}
@@ -344,15 +342,15 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 												Válida Hasta *
 											</label>
 											<Input
-												name='valid_until'
+												name='expiry_date'
 												type='date'
-												value={values.valid_until}
+												value={values.expiry_date ?? ''}
 												onChange={(e) =>
-													setFieldValue('valid_until', e.target.value)
+													setFieldValue('expiry_date', e.target.value)
 												}
-												isValid={!errors.valid_until}
-												isTouched={touched.valid_until}
-												invalidFeedback={errors.valid_until}
+												isValid={!errors.expiry_date}
+												isTouched={touched.expiry_date}
+												invalidFeedback={errors.expiry_date}
 											/>
 										</div>
 									</div>
@@ -404,7 +402,7 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 											<Input
 												name='purchase_order'
 												placeholder='OC-2024-001'
-												value={values.purchase_order}
+												value={values.purchase_order ?? ''}
 												onChange={(e) =>
 													setFieldValue('purchase_order', e.target.value)
 												}
@@ -479,7 +477,7 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 											<Textarea
 												name='notes'
 												placeholder='Observaciones adicionales...'
-												value={values.notes}
+												value={values.notes ?? ''}
 												onChange={(e) =>
 													setFieldValue('notes', e.target.value)
 												}
@@ -556,7 +554,7 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 																	name={`items.${index}.quantity`}
 																	type='number'
 																	placeholder='1'
-																	value={item.quantity}
+																	value={item.quantity ?? 0}
 																	onChange={(e) =>
 																		setFieldValue(
 																			`items.${index}.quantity`,
@@ -575,7 +573,7 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 																	name={`items.${index}.unit_price`}
 																	type='number'
 																	placeholder='0'
-																	value={item.unit_price}
+																	value={item.unit_price ?? 0}
 																	onChange={(e) =>
 																		setFieldValue(
 																			`items.${index}.unit_price`,
@@ -594,7 +592,10 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 																	name={`items.${index}.discount_percentage`}
 																	type='number'
 																	placeholder='0'
-																	value={item.discount_percentage}
+																	value={
+																		item.discount_percentage ??
+																		0
+																	}
 																	onChange={(e) =>
 																		setFieldValue(
 																			`items.${index}.discount_percentage`,
@@ -633,11 +634,9 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 															quantity: 1,
 															unit_price: 0,
 															discount_percentage: 0,
-															subtotal: 0,
-															total: 0,
 															created_at: '',
 															updated_at: '',
-														})
+														} as any)
 													}
 													icon='plus'>
 													Agregar Ítem
@@ -665,7 +664,7 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 												name='fixed_discount'
 												type='number'
 												placeholder='0'
-												value={values.fixed_discount}
+												value={values.fixed_discount ?? 0}
 												onChange={(e) =>
 													setFieldValue(
 														'fixed_discount',
@@ -683,7 +682,7 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 												name='discount_percentage'
 												type='number'
 												placeholder='0'
-												value={values.discount_percentage}
+												value={values.discount_percentage ?? 0}
 												onChange={(e) =>
 													setFieldValue(
 														'discount_percentage',
@@ -701,7 +700,7 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 												name='tax_percentage'
 												type='number'
 												placeholder='19'
-												value={values.tax_percentage}
+												value={values.tax_percentage ?? 0}
 												onChange={(e) =>
 													setFieldValue(
 														'tax_percentage',

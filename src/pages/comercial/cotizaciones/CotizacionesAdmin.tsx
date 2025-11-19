@@ -12,7 +12,6 @@ import CreateEditQuotationModal from './components/modals/CreateEditQuotationMod
 import { QuotationDetailsModal } from './components/modals/QuotationDetailsModal';
 import DuplicateQuotationModal from './components/modals/DuplicateQuotationModal';
 import DeleteQuotationModal from './components/modals/DeleteQuotationModal';
-import { generateQuotePdf } from './components/QuotePdfDocument';
 import {
 	getQuoteStatusLabel,
 	normalizeQuoteStatusValue,
@@ -27,6 +26,7 @@ import Badge from '@/components/ui/Badge';
 import Input from '@/components/form/Input';
 import Select from '@/components/form/Select';
 import Icon from '@/components/icon/Icon';
+import { generateQuotePdf } from './utils/pdf/generateQuotePdf';
 
 const CotizacionesAdmin: React.FC = () => {
 	// Estados locales
