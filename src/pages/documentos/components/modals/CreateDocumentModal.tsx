@@ -41,11 +41,9 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 			document_type_id: Number(formData.get('document_type_id') || 0),
 			output_format: String(formData.get('output_format') || ''),
 			related_module: formData.get('related_module') as any,
-			related_id: formData.get('related_id')
-				? Number(formData.get('related_id'))
-				: undefined,
+			related_id: formData.get('related_id') ? Number(formData.get('related_id')) : undefined,
 			description: String(formData.get('description') || '') || undefined,
-			is_active: formData.get('is_active') === 'on',
+			is_active: formData.get('is_active') === '1',
 		};
 
 		try {
@@ -76,7 +74,11 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 					</div>
 				</div>
 			</ModalHeader>
-			<form ref={formRef} id='createDocumentForm' onSubmit={handleSubmit} className='space-y-4'>
+			<form
+				ref={formRef}
+				id='createDocumentForm'
+				onSubmit={handleSubmit}
+				className='space-y-4'>
 				<ModalBody>
 					<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
 						<div className='md:col-span-2'>
@@ -97,7 +99,11 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 							<Label htmlFor='create-document-type' className='required'>
 								Tipo de documento
 							</Label>
-							<Select id='create-document-type' name='document_type_id' required defaultValue=''>
+							<Select
+								id='create-document-type'
+								name='document_type_id'
+								required
+								defaultValue=''>
 								<option value='' disabled>
 									Selecciona un tipo
 								</option>
@@ -112,7 +118,11 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 							<Label htmlFor='create-file-type' className='required'>
 								Formato de archivo
 							</Label>
-							<Select id='create-file-type' name='output_format' required defaultValue=''>
+							<Select
+								id='create-file-type'
+								name='output_format'
+								required
+								defaultValue=''>
 								<option value='' disabled>
 									Selecciona formato
 								</option>
@@ -130,7 +140,11 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 							<Label htmlFor='create-related-module' className='required'>
 								Módulo relacionado
 							</Label>
-							<Select id='create-related-module' name='related_module' required defaultValue=''>
+							<Select
+								id='create-related-module'
+								name='related_module'
+								required
+								defaultValue=''>
 								<option value='' disabled>
 									Selecciona módulo
 								</option>
@@ -165,7 +179,13 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 
 					<div className='space-y-2'>
 						<Label htmlFor='create-files'>Adjuntos (opcional)</Label>
-						<Input id='create-files' name='files' type='file' multiple ref={fileInputRef} />
+						<Input
+							id='create-files'
+							name='files'
+							type='file'
+							multiple
+							ref={fileInputRef}
+						/>
 						<p className='text-xs text-gray-500'>
 							Puedes adjuntar varios archivos; se subirán al guardar el documento.
 						</p>
@@ -173,13 +193,18 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 
 					<div className='space-y-2'>
 						<Label htmlFor='create-is-active'>Estado</Label>
+
+						{/* Checkbox visual (custom) */}
 						<Checkbox
 							id='create-is-active'
-							name='is_active'
+							name='is_active_checkbox'
 							checked={isActive}
 							onChange={() => setIsActive((prev) => !prev)}
 							label='Documento activo'
 						/>
+
+						{/* Valor REAL enviado al backend */}
+						<input type='hidden' name='is_active' value={isActive ? '1' : '0'} />
 					</div>
 				</ModalBody>
 				<ModalFooter>

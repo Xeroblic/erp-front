@@ -10,7 +10,7 @@ import ProductsHeader from './components/ProductsHeader';
 import ProductStats from './components/ProductStats';
 import CreateEditProductModal from './components/modals/CreateEditProductModal';
 import DeleteProductModal from './components/modals/DeleteProductModal';
-import { ProductListTab, InventoryTab, AnalyticsTab } from './components/Tabs';
+import { ProductListTab, InventoryTab } from './components/Tabs';
 import Tabs, { Tab } from '@/components/ui/Tabs';
 
 // Hooks y tipos
@@ -306,9 +306,9 @@ const Productos: React.FC = () => {
 							onViewProduct={handleViewProduct}
 						/>
 					</Tab>
-					<Tab id='analytics' text='Analisis' icon='HeroChartBarSquare'>
+					{/* <Tab id='analytics' text='Analisis' icon='HeroChartBarSquare'>
 						<AnalyticsTab />
-					</Tab>
+					</Tab> */}
 				</Tabs>
 			</Container>
 

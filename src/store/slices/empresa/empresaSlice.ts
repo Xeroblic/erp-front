@@ -6,7 +6,6 @@ import { IEmpresa, ISubempresa, IUsuarioEmpresa } from '@/interface/empresas.int
 export interface EmpresaState {
   loading: boolean;
   error?: string;
-  // 🔥 NUEVO: Estados dinámicos sin hardcoding
   miEmpresa?: IEmpresa;                          // Empresa del usuario actual
   miEmpresaSubsidiarias: ISubempresa[];          // Subsidiarias de mi empresa
   miEmpresaUsuarios: IUsuarioEmpresa[];          // Usuarios de mi empresa
