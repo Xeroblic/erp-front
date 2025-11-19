@@ -225,7 +225,7 @@ const Marcas: React.FC = () => {
 				<BrandsGrid
 					brands={brands}
 					loading={loading}
-					branchLookup={branchLookup}
+					// branchLookup={branchLookup}
 					onView={(brand) => {
 						setSelected(brand);
 						setViewOpen(true);

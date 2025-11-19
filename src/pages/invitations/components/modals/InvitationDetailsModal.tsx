@@ -99,10 +99,10 @@ const InvitationDetailsModal: React.FC<InvitationDetailsModalProps> = ({
 						</div>
 						<div>
 							<label className='block text-sm font-medium text-zinc-600 dark:text-zinc-400'>
-								Nombre Completo
+								Invitado por:
 							</label>
 							<p className='text-sm text-zinc-900 dark:text-zinc-100'>
-								{`${invitation.first_name} ${invitation.last_name}`.trim() || '-'}
+								{`${invitation.invited_by}` || '-'}
 							</p>
 						</div>
 						{invitation.rut && (
@@ -170,7 +170,7 @@ const InvitationDetailsModal: React.FC<InvitationDetailsModalProps> = ({
 								Fecha de Invitación
 							</label>
 							<p className='text-sm text-zinc-900 dark:text-zinc-100'>
-								{new Date(invitation.created_at).toLocaleDateString('es-ES', {
+								{new Date(invitation?.invited_at ?? '').toLocaleDateString('es-ES', {
 									year: 'numeric',
 									month: 'long',
 									day: 'numeric',
