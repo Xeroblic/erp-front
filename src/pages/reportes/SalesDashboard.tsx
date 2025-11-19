@@ -68,10 +68,16 @@ const SalesDashboard: React.FC = () => {
 		if (results && results.length > 0) {
 			results.forEach((r: any, index: number) => {
 				// Obtener fecha de la venta - intentar múltiples campos
-				const saleDate = r?.sale_date || r?.date || r?.created_at || r?.fecha || r?.fecha_venta;
+				const saleDate =
+					r?.sale_date || r?.date || r?.created_at || r?.fecha || r?.fecha_venta;
 				if (!saleDate) {
 					if (index < 3) {
-						console.warn('[SalesDashboard] Registro sin fecha (índice', index, '):', Object.keys(r));
+						console.warn(
+							'[SalesDashboard] Registro sin fecha (índice',
+							index,
+							'):',
+							Object.keys(r),
+						);
 					}
 					return;
 				}
@@ -81,32 +87,48 @@ const SalesDashboard: React.FC = () => {
 					const dateObj = new Date(saleDate);
 					if (isNaN(dateObj.getTime())) {
 						if (index < 3) {
-							console.warn('[SalesDashboard] Fecha inválida (índice', index, '):', saleDate);
+							console.warn(
+								'[SalesDashboard] Fecha inválida (índice',
+								index,
+								'):',
+								saleDate,
+							);
 						}
 						return;
 					}
 					dateKey = dateObj.toISOString().split('T')[0]; // YYYY-MM-DD
 				} catch (e) {
 					if (index < 3) {
-						console.warn('[SalesDashboard] Error al parsear fecha (índice', index, '):', saleDate, e);
+						console.warn(
+							'[SalesDashboard] Error al parsear fecha (índice',
+							index,
+							'):',
+							saleDate,
+							e,
+						);
 					}
 					return;
 				}
 
 				// Obtener total_amount - priorizar total_amount como solicitado
-				const totalAmountRaw = r?.total_amount ?? r?.total ?? r?.amount ?? r?.monto ?? r?.price ?? 0;
-				const totalAmount = typeof totalAmountRaw === 'string' 
-					? parseFloat(totalAmountRaw) || 0 
-					: Number(totalAmountRaw) || 0;
-				
+				const totalAmountRaw =
+					r?.total_amount ?? r?.total ?? r?.amount ?? r?.monto ?? r?.price ?? 0;
+				const totalAmount =
+					typeof totalAmountRaw === 'string'
+						? parseFloat(totalAmountRaw) || 0
+						: Number(totalAmountRaw) || 0;
+
 				// Obtener devoluciones (si existe)
 				const returnsRaw = r?.returns ?? r?.devoluciones ?? r?.return_amount ?? 0;
-				const returns = typeof returnsRaw === 'string' 
-					? parseFloat(returnsRaw) || 0 
-					: Number(returnsRaw) || 0;
+				const returns =
+					typeof returnsRaw === 'string'
+						? parseFloat(returnsRaw) || 0
+						: Number(returnsRaw) || 0;
 
 				if (index < 3) {
-					console.log(`[SalesDashboard] Procesando registro ${index}: fecha=${dateKey}, total_amount=${totalAmount}, returns=${returns}`);
+					console.log(
+						`[SalesDashboard] Procesando registro ${index}: fecha=${dateKey}, total_amount=${totalAmount}, returns=${returns}`,
+					);
 				}
 
 				if (!salesByDate.has(dateKey)) {
@@ -121,14 +143,14 @@ const SalesDashboard: React.FC = () => {
 
 		// Generar todas las fechas en el rango (o usar las fechas de los datos si no hay filtros)
 		let allDates: string[] = [];
-		
+
 		if (dateFrom && dateTo && !isNaN(dateFrom.getTime()) && !isNaN(dateTo.getTime())) {
 			// Generar todas las fechas entre dateFrom y dateTo
 			const current = new Date(dateFrom);
 			current.setHours(0, 0, 0, 0);
 			const end = new Date(dateTo);
 			end.setHours(23, 59, 59, 999);
-			
+
 			while (current <= end) {
 				const dateKey = current.toISOString().split('T')[0];
 				allDates.push(dateKey);
@@ -146,15 +168,10 @@ const SalesDashboard: React.FC = () => {
 		// Ordenar todas las fechas
 		const sortedDates = allDates.sort((a, b) => a.localeCompare(b));
 
-		console.log('[SalesDashboard] Fechas agrupadas:', Array.from(salesByDate.entries()).map(([date, data]) => ({ date, total: data.total, returns: data.returns })));
-		console.log('[SalesDashboard] Todas las fechas ordenadas:', sortedDates);
-
 		const totals: number[] = sortedDates.map((dateKey) => salesByDate.get(dateKey)?.total || 0);
-		const returns: number[] = sortedDates.map((dateKey) => salesByDate.get(dateKey)?.returns || 0);
-
-		console.log('[SalesDashboard] Series finales - Ventas:', totals.slice(0, 10), '... (total:', totals.length, 'días)');
-		console.log('[SalesDashboard] Series finales - Devoluciones:', returns.slice(0, 10), '... (total:', returns.length, 'días)');
-
+		const returns: number[] = sortedDates.map(
+			(dateKey) => salesByDate.get(dateKey)?.returns || 0,
+		);
 		return [
 			{ name: 'Ventas', data: totals },
 			{ name: 'Devoluciones', data: returns },
@@ -187,14 +204,14 @@ const SalesDashboard: React.FC = () => {
 
 		// Generar todas las fechas en el rango (o usar las fechas de los datos si no hay filtros)
 		let allDates: string[] = [];
-		
+
 		if (dateFrom && dateTo && !isNaN(dateFrom.getTime()) && !isNaN(dateTo.getTime())) {
 			// Generar todas las fechas entre dateFrom y dateTo
 			const current = new Date(dateFrom);
 			current.setHours(0, 0, 0, 0);
 			const end = new Date(dateTo);
 			end.setHours(23, 59, 59, 999);
-			
+
 			while (current <= end) {
 				const dateKey = current.toISOString().split('T')[0];
 				allDates.push(dateKey);
@@ -211,12 +228,12 @@ const SalesDashboard: React.FC = () => {
 			try {
 				const dt = new Date(dateStr);
 				if (isNaN(dt.getTime())) return dateStr;
-				
+
 				const day = String(dt.getDate()).padStart(2, '0');
 				const month = String(dt.getMonth() + 1).padStart(2, '0');
 				const year = dt.getFullYear();
 				const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-				
+
 				// Si hay más de 90 días, mostrar formato compacto DD/MM/YY
 				if (allDates.length > 90) {
 					const shortYear = String(year).slice(-2);
@@ -240,37 +257,6 @@ const SalesDashboard: React.FC = () => {
 		return formattedDates;
 	}, [results, filters.dateFrom, filters.dateTo]);
 
-	// Debug: Log para verificar datos
-	React.useEffect(() => {
-		console.log('[SalesDashboard] ========== DEBUG COMPLETO ==========');
-		console.log('[SalesDashboard] resultsData:', resultsData);
-		console.log('[SalesDashboard] resultsDataType:', typeof resultsData);
-		console.log('[SalesDashboard] resultsDataIsArray:', Array.isArray(resultsData));
-		if (resultsData && typeof resultsData === 'object' && !Array.isArray(resultsData)) {
-			console.log('[SalesDashboard] resultsDataKeys:', Object.keys(resultsData));
-			console.log('[SalesDashboard] resultsData.data:', (resultsData as any)?.data);
-			console.log('[SalesDashboard] resultsData.data es array:', Array.isArray((resultsData as any)?.data));
-			console.log('[SalesDashboard] resultsData.data.length:', Array.isArray((resultsData as any)?.data) ? (resultsData as any).data.length : 'N/A');
-			console.log('[SalesDashboard] resultsData.meta:', (resultsData as any)?.meta);
-		}
-		console.log('[SalesDashboard] results (extraído):', results);
-		console.log('[SalesDashboard] results.length:', results?.length || 0);
-		console.log('[SalesDashboard] loading:', reportsLoading);
-		console.log('[SalesDashboard] error:', reportsError);
-		if (results && results.length > 0) {
-			console.log('[SalesDashboard] ✅ Datos recibidos:', results.length, 'registros');
-			console.log('[SalesDashboard] Primer registro:', results[0]);
-			console.log('[SalesDashboard] Series calculadas:', series);
-			console.log('[SalesDashboard] Categories:', categories);
-		} else {
-			console.log('[SalesDashboard] ❌ No hay datos disponibles');
-			if (resultsData) {
-				console.log('[SalesDashboard] resultsData completo (JSON):', JSON.stringify(resultsData, null, 2));
-			}
-		}
-		console.log('[SalesDashboard] ====================================');
-	}, [results, resultsData, reportsLoading, reportsError, series, categories]);
-
 	return (
 		<div className='space-y-6'>
 			<Card className='border border-indigo-200/60 bg-gradient-to-br from-indigo-50 to-indigo-50/60 shadow-sm dark:from-indigo-900/10 dark:to-transparent'>
@@ -278,7 +264,10 @@ const SalesDashboard: React.FC = () => {
 					<div className='flex items-center justify-between'>
 						<div className='flex items-center gap-3'>
 							<div className='flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100'>
-								<Icon icon='HeroReceiptPercent' className='h-6 w-6 text-indigo-700' />
+								<Icon
+									icon='HeroReceiptPercent'
+									className='h-6 w-6 text-indigo-700'
+								/>
 							</div>
 							<div>
 								<h2 className='text-lg font-bold text-indigo-900'>
@@ -303,34 +292,46 @@ const SalesDashboard: React.FC = () => {
 						// Calcular métricas reales desde los datos - usar total_amount como solicitado
 						const totalSales = results.reduce((sum: number, r: any) => {
 							const amountRaw = r?.total_amount ?? r?.total ?? r?.amount ?? 0;
-							const amount = typeof amountRaw === 'string' 
-								? parseFloat(amountRaw) || 0 
-								: Number(amountRaw) || 0;
+							const amount =
+								typeof amountRaw === 'string'
+									? parseFloat(amountRaw) || 0
+									: Number(amountRaw) || 0;
 							return sum + amount;
 						}, 0);
 						const totalReturns = results.reduce((sum: number, r: any) => {
-							const returnsRaw = r?.returns ?? r?.devoluciones ?? r?.return_amount ?? 0;
-							const returns = typeof returnsRaw === 'string' 
-								? parseFloat(returnsRaw) || 0 
-								: Number(returnsRaw) || 0;
+							const returnsRaw =
+								r?.returns ?? r?.devoluciones ?? r?.return_amount ?? 0;
+							const returns =
+								typeof returnsRaw === 'string'
+									? parseFloat(returnsRaw) || 0
+									: Number(returnsRaw) || 0;
 							return sum + returns;
 						}, 0);
 						const salesCount = results.length;
 						const avgTicket = salesCount > 0 ? totalSales / salesCount : 0;
-						const returnsPercent = totalSales > 0 ? (totalReturns / totalSales) * 100 : 0;
+						const returnsPercent =
+							totalSales > 0 ? (totalReturns / totalSales) * 100 : 0;
 
 						return (
 							<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
 								<div className='rounded-lg border border-zinc-200 bg-white p-4 dark:bg-zinc-900'>
 									<div className='text-xs text-zinc-500'>Ventas totales</div>
 									<div className='mt-1 text-2xl font-bold text-zinc-900 dark:text-zinc-100'>
-										$ {totalSales.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+										${' '}
+										{totalSales.toLocaleString('es-CL', {
+											minimumFractionDigits: 0,
+											maximumFractionDigits: 0,
+										})}
 									</div>
 								</div>
 								<div className='rounded-lg border border-zinc-200 bg-white p-4 dark:bg-zinc-900'>
 									<div className='text-xs text-zinc-500'>Ticket promedio</div>
 									<div className='mt-1 text-2xl font-bold text-zinc-900 dark:text-zinc-100'>
-										$ {avgTicket.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+										${' '}
+										{avgTicket.toLocaleString('es-CL', {
+											minimumFractionDigits: 2,
+											maximumFractionDigits: 2,
+										})}
 									</div>
 								</div>
 								<div className='rounded-lg border border-zinc-200 bg-white p-4 dark:bg-zinc-900'>
@@ -345,38 +346,69 @@ const SalesDashboard: React.FC = () => {
 
 					<div className='mt-6'>
 						{series && series.length > 0 && categories && categories.length > 0 ? (
-							<div className=''>
-								<div style={{ minWidth: categories.length > 30 ? `${categories.length * 40}px` : '100%' }}>
+							<div className='overflow-x-auto'>
+								<div
+									style={{
+										minWidth:
+											categories.length > 30
+												? `${categories.length * 40}px`
+												: '100%',
+									}}>
 									<Chart
 										type='line'
 										height={320}
 										series={series as any}
-										options={{ 
-											xaxis: { 
+										options={{
+											stroke: { width: 3, curve: 'smooth' },
+
+											colors: ['#4F46E5', '#E11D48'], // Ventas + Devoluciones tipo original
+
+											xaxis: {
 												categories,
 												type: 'category',
 												labels: {
-													rotate: categories.length > 30 ? -45 : categories.length > 7 ? -30 : 0,
+													rotate:
+														categories.length > 30
+															? -45
+															: categories.length > 7
+																? -30
+																: 0,
 													rotateAlways: categories.length > 7,
 													show: true,
+													trim: true,
 													style: {
-														fontSize: categories.length > 90 ? '9px' : categories.length > 30 ? '10px' : '12px',
+														fontSize:
+															categories.length > 90
+																? '9px'
+																: categories.length > 30
+																	? '10px'
+																	: '12px',
 													},
 												},
-											}, 
-											stroke: { width: 3 },
-											tooltip: {
-												enabled: true,
 											},
+
+											tooltip: { enabled: true },
+
 											chart: {
 												zoom: {
 													enabled: categories.length > 30,
 													type: 'x',
 												},
+												toolbar: { show: false }, // igual que antes
 											},
-											dataLabels: {
-												enabled: false,
+
+											grid: {
+												borderColor: '#E5E7EB33',
+												strokeDashArray: 4,
 											},
+
+											legend: {
+												position: 'top',
+												horizontalAlign: 'left',
+												markers: { width: 10, height: 10 },
+											},
+
+											dataLabels: { enabled: false },
 										}}
 									/>
 								</div>
