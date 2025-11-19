@@ -424,6 +424,22 @@ export const privatePages = {
 				roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'after-sales'],
 				requireAll: false,
 			},
+			clientesVentas:{
+				id: 'clientesVentas',
+				to: '/comercial/clientes-ventas',
+				text: 'Clientes Ventas',
+				icon: 'HeroUsers',
+				authority: ['view-sale'],
+				roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'cashier', 'manager'],
+			},
+			clientesVentasDetalle:{
+				id: 'clientesVentasDetalle',
+				to: '/comercial/clientes-ventas/:clienteId',
+				text: 'Detalle Clientes Ventas',
+				icon: 'HeroUsers',
+				authority: ['view-sale'],
+				roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'cashier', 'manager'],
+			},
 		},
 	},
 

@@ -424,7 +424,21 @@ const DefaultAsideTemplate = () => {
 								onClick={() => navigate(Pages.commercial.subPages.warranties.to)}
 							/>
 						</AuthorityCheckNav>
+						<AuthorityCheckNav
+							authority={Pages.commercial.subPages.clientesVentas.authority}
+							userAuthority={userPermissionsAndRoles}>
+							<NavItem
+								text={Pages.commercial.subPages.clientesVentas.text}
+								to={Pages.commercial.subPages.clientesVentas.to}
+								icon={Pages.commercial.subPages.clientesVentas.icon}
+								id={Pages.commercial.subPages.clientesVentas.id}
+								onClick={() => navigate(Pages.commercial.subPages.clientesVentas.to)}
+							/>
+						</AuthorityCheckNav>
+					
 					</NavCollapse>
+
+
 					<NavTitle>Gerencia</NavTitle>
 					{/* Reportes - Mostrar sólo listado por subsidiaria (List + Results) */}
 					<AuthorityCheckNav
@@ -748,9 +762,9 @@ const DefaultAsideTemplate = () => {
 						<AuthorityCheckNav authority={Pages.listaFabricantes.authority} userAuthority={listaGrupos?.grupos}>
 							<NavItem text="Lista Fabricantes" to={Pages.listaFabricantes.to} />
 						</AuthorityCheckNav>
-					</NavCollapse>
-					<AuthorityCheckNav authority={Pages.listaClientes.authority} userAuthority={listaGrupos?.grupos}>
-						<NavItem text={Pages.listaClientes.text} to={Pages.listaClientes.to} icon={Pages.listaClientes.icon} id={Pages.listaClientes.id}></NavItem>
+					</NavCollapse>*/}
+					{/* <AuthorityCheckNav authority={Pages.listaClientes.authority} userAuthority={listaGrupos?.grupos}>
+					 	<NavItem text={Pages.listaClientes.text} to={Pages.listaClientes.to} icon={Pages.listaClientes.icon} id={Pages.listaClientes.id}></NavItem>
 					</AuthorityCheckNav> */}
 					{/* =================================================
 					SECCIONES DE LA TEMPLATE ORIGINAL - COMENTADAS

@@ -66,6 +66,8 @@ const TransferenciasInventario = lazy(
 const TransferenciasComercial = lazy(
 	() => import('@/pages/comercial/transferencias/TransferenciasAdmin'),
 );
+const ClientesVentas = lazy(() => import('@/pages/comercial/clientesVentas/ClientesVentas'));
+const ClientesVentasDetalle = lazy(() => import('@/pages/comercial/clientesVentas/ClientesVentasDetalle'));
 
 // Páginas de Catálogos
 const ProductosPage = lazy(() => import('@/pages/catalogos/productos/Productos'));
@@ -230,6 +232,17 @@ const contentRoutes: IRoutePersonalizada[] = [
 		element: <GarantiaDetailsPage />,
 		authority: cfg.commercial.subPages.warrantyDetail.authority,
 	},
+	{
+		path: cfg.commercial.subPages.clientesVentas.to,
+		element: <ClientesVentas />,
+		authority: cfg.commercial.subPages.clientesVentas.authority,
+	},
+	{
+		path: cfg.commercial.subPages.clientesVentasDetalle.to,
+		element: <ClientesVentasDetalle />,
+		authority: cfg.commercial.subPages.clientesVentasDetalle.authority,
+	},
+
 
 	// Reportes
 	// Rutas RESTful del módulo de reportes por subsidiaria
