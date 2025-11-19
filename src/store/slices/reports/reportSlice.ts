@@ -1,10 +1,10 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { exportReport, fetchReportResults, fetchReportTypes } from "./reportsThunks";
-import { IReportType } from "@/interface/reports.interface";
+import { IReportType, IReportResult } from "@/interface/reports.interface";
 
 export interface ReportsState {
     types: IReportType[];
-    results: unknown[] | null;
+    results: IReportResult<any> | null;
     loading: boolean;
     exporting: boolean;
     error: string | null;
@@ -26,11 +26,13 @@ export const reportsSlice = createSlice({
         // ------- LISTA -------
         builder.addCase(fetchReportTypes.pending, (state) => {
             state.loading = true;
+            state.error = null;
         });
 
         builder.addCase(fetchReportTypes.fulfilled, (state, action) => {
             state.types = action.payload as IReportType[];
             state.loading = false;
+            state.error = null;
         });
 
         builder.addCase(fetchReportTypes.rejected, (state, action) => {
@@ -41,11 +43,23 @@ export const reportsSlice = createSlice({
         // ------- RESULTADOS -------
         builder.addCase(fetchReportResults.pending, (state) => {
             state.loading = true;
+            state.error = null;
         });
 
         builder.addCase(fetchReportResults.fulfilled, (state, action) => {
-            state.results = action.payload as unknown[];
+            // action.payload is expected to be IReportResult
+            console.log('[reportSlice] fetchReportResults.fulfilled - action.payload:', action.payload);
+            console.log('[reportSlice] fetchReportResults.fulfilled - action.payload type:', typeof action.payload);
+            console.log('[reportSlice] fetchReportResults.fulfilled - action.payload es array:', Array.isArray(action.payload));
+            if (action.payload && typeof action.payload === 'object' && !Array.isArray(action.payload)) {
+                console.log('[reportSlice] fetchReportResults.fulfilled - action.payload keys:', Object.keys(action.payload));
+                console.log('[reportSlice] fetchReportResults.fulfilled - action.payload.data:', (action.payload as any)?.data);
+                console.log('[reportSlice] fetchReportResults.fulfilled - action.payload.data length:', Array.isArray((action.payload as any)?.data) ? (action.payload as any).data.length : 'N/A');
+            }
+            state.results = action.payload as IReportResult<any>;
+            console.log('[reportSlice] fetchReportResults.fulfilled - state.results después de asignar:', state.results);
             state.loading = false;
+            state.error = null;
         });
 
         builder.addCase(fetchReportResults.rejected, (state, action) => {

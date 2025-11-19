@@ -2,13 +2,19 @@ import React from 'react';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
 import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import pagesConfig from '@/config/pages.config';
+import { useAppSelector } from '@/store';
+import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 
 const cfg = pagesConfig as any;
 
 const ReportsHome: React.FC = () => {
   const navigate = useNavigate();
+  const { subsidiaryId } = useParams<{ subsidiaryId: string }>();
+  const effectiveSubsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
+
+  const sid = subsidiaryId || effectiveSubsidiaryId;
 
   return (
     <div className="space-y-6">
@@ -28,19 +34,19 @@ const ReportsHome: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="rounded-lg border border-zinc-200 bg-white dark:bg-zinc-900 p-4">
               <div className="flex items-center gap-2 text-zinc-700"><Icon icon="HeroReceiptPercent" className="h-5 w-5" /> Dashboard de Ventas</div>
-              <Button className="mt-3" variant="outline" color="violet" onClick={() => navigate(cfg.reports.subPages.salesDashboard.to)}>
+              <Button className="mt-3" variant="outline" color="violet" onClick={() => navigate(`/subsidiaries/${sid}/reports/sales`)}>
                 Abrir
               </Button>
             </div>
             <div className="rounded-lg border border-zinc-200 bg-white dark:bg-zinc-900 p-4">
               <div className="flex items-center gap-2 text-zinc-700"><Icon icon="HeroCubeTransparent" className="h-5 w-5" /> Reportes de Inventario</div>
-              <Button className="mt-3" variant="outline" color="violet" onClick={() => navigate(cfg.reports.subPages.inventoryReports.to)}>
+              <Button className="mt-3" variant="outline" color="violet" onClick={() => navigate(`/subsidiaries/${sid}/reports/inventory`)}>
                 Abrir
               </Button>
             </div>
             <div className="rounded-lg border border-zinc-200 bg-white dark:bg-zinc-900 p-4">
               <div className="flex items-center gap-2 text-zinc-700"><Icon icon="HeroBanknotes" className="h-5 w-5" /> Reportes Financieros</div>
-              <Button className="mt-3" variant="outline" color="violet" onClick={() => navigate(cfg.reports.subPages.financialReports.to)}>
+              <Button className="mt-3" variant="outline" color="violet" onClick={() => navigate(`/subsidiaries/${sid}/reports/financial`)}>
                 Abrir
               </Button>
             </div>

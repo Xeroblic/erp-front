@@ -8,6 +8,7 @@ import Nav, {
 	NavTitle,
 } from '@/components/layouts/Navigation/Nav';
 import { useAppSelector } from '@/store';
+import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import AsideHeadPart from './_parts/AsideHead.part';
 import AsideFooterPart from './_parts/AsideFooter.part';
 import Pages from '@/config/pages.config';
@@ -102,6 +103,7 @@ function checkNavContextualAccess(
 const DefaultAsideTemplate = () => {
 	const userAuthority = useAppSelector((s) => s.auth.permisos);
 	const user = useAppSelector((s) => s.auth.user);
+	const effectiveSubsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
 	const navigate = useNavigate();
 
 	const [collapseStates, setCollapseStates] = useState<Record<string, boolean>>({
@@ -111,7 +113,7 @@ const DefaultAsideTemplate = () => {
 		servicio: false,
 		comercial: false, // COMENTADO: Módulo aún no operativo
 		integraciones: false, // Módulo de Integraciones WooCommerce
-		// reportes: false,     // COMENTADO: Módulo aún no operativo
+		reportes: false,
 	});
 
 	const toggleCollapse = (key: string) => {
@@ -412,8 +414,8 @@ const DefaultAsideTemplate = () => {
 						</AuthorityCheckNav>
 					</NavCollapse>
 
-					{/* Reportes - PENDIENTE: Módulo aún no operativo */}
-					{/* <AuthorityCheckNav
+					{/* Reportes - Mostrar sólo listado por subsidiaria (List + Results) */}
+					<AuthorityCheckNav
 						authority={Pages.reports.authority}
 						userAuthority={userPermissionsAndRoles}>
 						<NavCollapse
@@ -424,34 +426,47 @@ const DefaultAsideTemplate = () => {
 							isOpen={collapseStates.reportes}
 							onToggle={() => toggleCollapse('reportes')}>
 							<AuthorityCheckNav
-								authority={Pages.reports.subPages.salesDashboard.authority}
+								authority={Pages.reports.authority}
 								userAuthority={userPermissionsAndRoles}>
 								<NavItem
-									text={Pages.reports.subPages.salesDashboard.text}
-									to={Pages.reports.subPages.salesDashboard.to}
-									icon={Pages.reports.subPages.salesDashboard.icon}
-									id={Pages.reports.subPages.salesDashboard.id}
-									onClick={() =>
-										navigate(Pages.reports.subPages.salesDashboard.to)
-									}
+									text={'Dashboard de Ventas'}
+									to={''}
+									icon={'HeroReceiptPercent'}
+									id={'sales-dashboard'}
+									onClick={() => {
+										const sid = Number(
+											effectiveSubsidiaryId ?? user?.subsidiary?.id ?? 0,
+										);
+										if (sid) navigate(`/subsidiaries/${sid}/reports/sales`);
+									}}
 								/>
-							</AuthorityCheckNav>
-
-							<AuthorityCheckNav
-								authority={Pages.reports.subPages.inventoryReports.authority}
-								userAuthority={userPermissionsAndRoles}>
 								<NavItem
-									text={Pages.reports.subPages.inventoryReports.text}
-									to={Pages.reports.subPages.inventoryReports.to}
-									icon={Pages.reports.subPages.inventoryReports.icon}
-									id={Pages.reports.subPages.inventoryReports.id}
-									onClick={() =>
-										navigate(Pages.reports.subPages.inventoryReports.to)
-									}
+									text={'Reportes de Inventario'}
+									to={''}
+									icon={'HeroCubeTransparent'}
+									id={'inventory-reports'}
+									onClick={() => {
+										const sid = Number(
+											effectiveSubsidiaryId ?? user?.subsidiary?.id ?? 0,
+										);
+										if (sid) navigate(`/subsidiaries/${sid}/reports/inventory`);
+									}}
+								/>
+								<NavItem
+									text={'Reportes Financieros'}
+									to={''}
+									icon={'HeroBanknotes'}
+									id={'financial-reports'}
+									onClick={() => {
+										const sid = Number(
+											effectiveSubsidiaryId ?? user?.subsidiary?.id ?? 0,
+										);
+										if (sid) navigate(`/subsidiaries/${sid}/reports/financial`);
+									}}
 								/>
 							</AuthorityCheckNav>
 						</NavCollapse>
-					</AuthorityCheckNav> */}
+					</AuthorityCheckNav>
 
 					{/* =================================================
 					INTEGRACIONES - SOLO SUPER ADMIN
@@ -685,30 +700,30 @@ const DefaultAsideTemplate = () => {
 						/>
 					</AuthorityCheckNav> */}
 
-						<AuthorityCheckNav
-							authority={Pages.catalogs.subPages.documents.authority}
-							userAuthority={userPermissionsAndRoles}
-							requireAll={Pages.catalogs.subPages.documents.requireAll}>
-							<NavItem
-								text={Pages.catalogs.subPages.documents.text}
-								to={Pages.catalogs.subPages.documents.to}
-								icon={Pages.catalogs.subPages.documents.icon}
-								id={Pages.catalogs.subPages.documents.id}
-								onClick={() => navigate(Pages.catalogs.subPages.documents.to)}
-							/>
-						</AuthorityCheckNav>
-						<AuthorityCheckNav
-							authority={Pages.catalogs.subPages.warranties.authority}
-							userAuthority={userPermissionsAndRoles}
-							requireAll={Pages.catalogs.subPages.warranties.requireAll}>
-							<NavItem
-								text={Pages.catalogs.subPages.warranties.text}
-								to={Pages.catalogs.subPages.warranties.to}
-								icon={Pages.catalogs.subPages.warranties.icon}
-								id={Pages.catalogs.subPages.warranties.id}
-								onClick={() => navigate(Pages.catalogs.subPages.warranties.to)}
-							/>
-						</AuthorityCheckNav>
+					<AuthorityCheckNav
+						authority={Pages.catalogs.subPages.documents.authority}
+						userAuthority={userPermissionsAndRoles}
+						requireAll={Pages.catalogs.subPages.documents.requireAll}>
+						<NavItem
+							text={Pages.catalogs.subPages.documents.text}
+							to={Pages.catalogs.subPages.documents.to}
+							icon={Pages.catalogs.subPages.documents.icon}
+							id={Pages.catalogs.subPages.documents.id}
+							onClick={() => navigate(Pages.catalogs.subPages.documents.to)}
+						/>
+					</AuthorityCheckNav>
+					<AuthorityCheckNav
+						authority={Pages.catalogs.subPages.warranties.authority}
+						userAuthority={userPermissionsAndRoles}
+						requireAll={Pages.catalogs.subPages.warranties.requireAll}>
+						<NavItem
+							text={Pages.catalogs.subPages.warranties.text}
+							to={Pages.catalogs.subPages.warranties.to}
+							icon={Pages.catalogs.subPages.warranties.icon}
+							id={Pages.catalogs.subPages.warranties.id}
+							onClick={() => navigate(Pages.catalogs.subPages.warranties.to)}
+						/>
+					</AuthorityCheckNav>
 
 					{/* <AuthorityCheckNav authority={Pages.listaItem.authority} userAuthority={listaGrupos?.grupos}>
 						<NavItem text={Pages.listaItem.text} to={Pages.listaItem.to} icon={Pages.listaItem.icon} id={Pages.listaItem.id}></NavItem>

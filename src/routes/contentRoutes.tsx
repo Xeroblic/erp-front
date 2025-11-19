@@ -33,6 +33,7 @@ const ReportsHome = lazy(() => import('@/pages/reportes/ReportsHome'));
 const SalesDashboard = lazy(() => import('@/pages/reportes/SalesDashboard'));
 const InventoryReports = lazy(() => import('@/pages/reportes/InventoryReports'));
 const FinancialReports = lazy(() => import('@/pages/reportes/FinancialReports'));
+const ReportResults = lazy(() => import('@/pages/reportes/ReportResults.page'));
 
 const Sucursales = lazy(() => import('@/pages/gestionAdmin/sucursales/Sucursales.tsx'));
 const SucursalDetalle = lazy(() => import('@/pages/gestionAdmin/sucursales/SucursalDetalle.tsx'));
@@ -83,14 +84,22 @@ const GarantiaDetailsPage = lazy(() => import('@/pages/garantias/GarantiaDetails
 
 // Páginas de Technical Reviews
 const TechnicalReviewsHub = lazy(() => import('@/pages/technical-reviews/index'));
-const BatchesList = lazy(() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchListPage'));
-const BatchCreate = lazy(() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchCreatePage'));
-const BatchDetail = lazy(() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchDetailPage'));
+const BatchesList = lazy(
+	() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchListPage'),
+);
+const BatchCreate = lazy(
+	() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchCreatePage'),
+);
+const BatchDetail = lazy(
+	() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchDetailPage'),
+);
 const BatchItemReview = lazy(
 	() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchItemReviewPage'),
 );
 const ItemsList = lazy(() => import('@/pages/technical-reviews/modo-b-items/pages/ItemListPage'));
-const ItemReview = lazy(() => import('@/pages/technical-reviews/modo-b-items/pages/ItemReviewPage'));
+const ItemReview = lazy(
+	() => import('@/pages/technical-reviews/modo-b-items/pages/ItemReviewPage'),
+);
 
 const NotificationsAllPage = lazy(() => import('@/pages/notificaciones/NotificationsAll'));
 const NotificationDetailPage = lazy(() => import('@/pages/notificaciones/NotificationDetail'));
@@ -212,26 +221,24 @@ const contentRoutes: IRoutePersonalizada[] = [
 	},
 
 	// Reportes
+	// Rutas RESTful del módulo de reportes por subsidiaria
 	{
-		path: cfg.reports.to,
+		path: '/subsidiaries/:subsidiaryId/reports',
 		element: <ReportsHome />,
 		authority: cfg.reports.authority,
 	},
 	{
-		path: cfg.reports.subPages.salesDashboard.to,
-		element: <SalesDashboard />,
-		authority: cfg.reports.subPages.salesDashboard.authority,
+		path: '/subsidiaries/:subsidiaryId/reports/:type',
+		element: <ReportResults />,
+		authority: cfg.reports.authority,
 	},
-	{
-		path: cfg.reports.subPages.inventoryReports.to,
-		element: <InventoryReports />,
-		authority: cfg.reports.subPages.inventoryReports.authority,
-	},
-	{
-		path: cfg.reports.subPages.financialReports.to,
-		element: <FinancialReports />,
-		authority: cfg.reports.subPages.financialReports.authority,
-	},
+
+	// Se mantienen únicamente las rutas RESTful por subsidiaria:
+	// - /subsidiaries/:subsidiaryId/reports
+	// - /subsidiaries/:subsidiaryId/reports/:type
+	// Las páginas auxiliares (ReportsHome, SalesDashboard, InventoryReports, FinancialReports)
+	// quedan en el repositorio pero no se exponen en las rutas principales para
+	// simplificar la vista a las dos páginas solicitadas.
 
 	// Integraciones (WooCommerce)
 	{

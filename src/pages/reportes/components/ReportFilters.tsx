@@ -1,9 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import Card, { CardBody } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/form/Input';
 import Select from '@/components/form/Select';
 import Icon from '@/components/icon/Icon';
+import { useAppSelector } from '@/store';
+import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
+import { useUserBranches } from '@/pages/catalogos/productos/components/modals/hooks/userBranch';
+import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/personalizacionSlice';
 
 export type ReportFiltersState = {
   dateFrom?: string;
@@ -23,6 +27,33 @@ interface ReportFiltersProps {
 }
 
 const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset }) => {
+  const user = useAppSelector((state) => state.auth.user);
+  const effectiveSubsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
+  const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
+  const userId = user?.id ?? (user as any)?.pk ?? undefined;
+
+  // Obtener branches del usuario
+  const { branches } = useUserBranches(userId, { enabled: Boolean(userId) });
+
+  // Obtener subsidiarias accesibles
+  const accessibleSubsidiaries = useMemo(() => {
+    const subsidiaries = new Set<{ id: number; name: string }>();
+    (user as any)?.access?.subsidiaries?.forEach((sub: any) => {
+      if (sub?.id && sub?.name) {
+        subsidiaries.add({ id: sub.id, name: sub.name });
+      } else if (typeof sub === 'number') {
+        subsidiaries.add({ id: sub, name: `Subsidiaria ${sub}` });
+      }
+    });
+    return Array.from(subsidiaries);
+  }, [user]);
+
+  // Filtrar branches por subsidiaria efectiva
+  const filteredBranches = useMemo(() => {
+    if (!effectiveSubsidiaryId) return branches;
+    return branches.filter((branch) => branch.subsidiaryId === effectiveSubsidiaryId);
+  }, [branches, effectiveSubsidiaryId]);
+
   const [filters, setFilters] = useState<ReportFiltersState>(
     initial ?? {
       dateFrom: '',
@@ -30,11 +61,22 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset
       parameter: '',
       priceMin: '',
       priceMax: '',
-      subsidiary: '',
-      branch: '',
+      subsidiary: effectiveSubsidiaryId ? String(effectiveSubsidiaryId) : '',
+      branch: personalizacionUsuario?.sucursal_principal ? String(personalizacionUsuario.sucursal_principal) : '',
       customer: '',
     },
   );
+
+  // Actualizar branch cuando cambia la subsidiaria
+  useEffect(() => {
+    if (filters.subsidiary && effectiveSubsidiaryId) {
+      const selectedSubsidiaryId = Number(filters.subsidiary);
+      if (selectedSubsidiaryId !== effectiveSubsidiaryId) {
+        // Si cambió la subsidiaria, resetear el branch
+        setFilters((f) => ({ ...f, branch: '' }));
+      }
+    }
+  }, [filters.subsidiary, effectiveSubsidiaryId]);
 
   const validation = useMemo(() => {
     const errors: string[] = [];
@@ -137,12 +179,16 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset
             <label className="text-xs text-zinc-500">Subempresa</label>
             <Select
               name="subsidiary"
-              value={filters.subsidiary}
-              onChange={(e) => setFilters((f) => ({ ...f, subsidiary: e.target.value }))}
+              value={filters.subsidiary || (effectiveSubsidiaryId ? String(effectiveSubsidiaryId) : '')}
+              onChange={(e) => setFilters((f) => ({ ...f, subsidiary: e.target.value, branch: '' }))}
               placeholder="Todas"
             >
-              <option value="sbe-1">Subempresa 1</option>
-              <option value="sbe-2">Subempresa 2</option>
+              <option value="">Todas</option>
+              {accessibleSubsidiaries.map((sub) => (
+                <option key={sub.id} value={String(sub.id)}>
+                  {sub.name}
+                </option>
+              ))}
             </Select>
           </div>
           <div>
@@ -153,8 +199,12 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset
               onChange={(e) => setFilters((f) => ({ ...f, branch: e.target.value }))}
               placeholder="Todas"
             >
-              <option value="br-1">Sucursal Centro</option>
-              <option value="br-2">Sucursal Norte</option>
+              <option value="">Todas</option>
+              {filteredBranches.map((branch) => (
+                <option key={branch.id} value={String(branch.id)}>
+                  {branch.name || `Sucursal ${branch.id}`}
+                </option>
+              ))}
             </Select>
           </div>
           <div>
