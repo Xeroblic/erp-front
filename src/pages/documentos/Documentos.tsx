@@ -151,7 +151,7 @@ const Documentos: React.FC = () => {
 			<Subheader>
 				<SubheaderLeft>
 					<div className='flex items-center space-x-3'>
-						<div className='flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-600'>
+						<div className='flex h-10 w-10 items-center justify-center rounded-lg  text-blue-600'>
 							<Icon icon='HeroDocumentText' className='h-6 w-6' />
 						</div>
 						<div>

@@ -61,12 +61,12 @@ const DocumentsTable: React.FC<DocumentsTableProps> = ({
 							<Th>Acciones</Th>
 						</Tr>
 					</THead>
-					<TBody className='divide-y divide-gray-200 bg-white'>
+					<TBody className=''>
 						{documents.map((document) => (
-							<Tr key={document.id} className='hover:bg-gray-50'>
+							<Tr key={document.id}>
 								<Td>
 									<div className='flex items-center space-x-3'>
-										<div className='flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100'>
+										<div className='flex h-10 w-10 items-center justify-center rounded-lg'>
 											<Icon
 												icon={getFileIcon(document.output_format)}
 												className='h-5 w-5 text-gray-600'
