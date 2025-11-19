@@ -34,7 +34,7 @@ export const fetchCustomersThunk = createAsyncThunk<
     async ({ subsidiary }, { rejectWithValue }) => {
         try {
             const response = await ApiService.fetchData<ICustomerSale[]>({
-                url: `/api/subsidiaries/${subsidiary}/customer-sales`,
+                url: `/subsidiaries/${subsidiary}/customer-sales`,
                 method: "get",
             });
             return response.data;
@@ -54,10 +54,11 @@ export const fetchCustomerDetailThunk = createAsyncThunk<
     async ({ subsidiary, id }, { rejectWithValue }) => {
         try {
             const response = await ApiService.fetchData<ICustomerSale>({
-                url: `/api/subsidiaries/${subsidiary}/customer-sales/${id}`,
+                url: `/subsidiaries/${subsidiary}/customer-sales/${id}`,
                 method: "get",
             });
-            return response.data;
+            // Algunos endpoints devuelven { data: {...} } y otros devuelven directamente el objeto
+            return (response.data as any)?.data ?? response.data;
         } catch (error: any) {
             return rejectWithValue(error.response?.data || "No se pudo obtener el cliente");
         }
@@ -74,7 +75,7 @@ export const createCustomerThunk = createAsyncThunk<
     async ({ subsidiary, payload }, { rejectWithValue }) => {
         try {
             const response = await ApiService.fetchData<ICustomerSale>({
-                url: `/api/subsidiaries/${subsidiary}/customer-sales`,
+                url: `/subsidiaries/${subsidiary}/customer-sales`,
                 method: "post",
                 data: payload,
             });
@@ -95,7 +96,7 @@ export const updateCustomerThunk = createAsyncThunk<
     async ({ subsidiary, id, payload }, { rejectWithValue }) => {
         try {
             const response = await ApiService.fetchData<ICustomerSale>({
-                url: `/api/subsidiaries/${subsidiary}/customer-sales/${id}`,
+                url: `/subsidiaries/${subsidiary}/customer-sales/${id}`,
                 method: "patch",
                 data: payload,
             });
@@ -116,7 +117,7 @@ export const deleteCustomerThunk = createAsyncThunk<
     async ({ subsidiary, id }, { rejectWithValue }) => {
         try {
             const response = await ApiService.fetchData<{ message: string }>({
-                url: `/api/subsidiaries/${subsidiary}/customer-sales/${id}`,
+                url: `/subsidiaries/${subsidiary}/customer-sales/${id}`,
                 method: "delete",
             });
             return response.data;
@@ -136,11 +137,14 @@ export const fetchCustomersOverviewThunk = createAsyncThunk<
     async ({ subsidiary, params }, { rejectWithValue }) => {
         try {
             const response = await ApiService.fetchData<ICustomerSaleOverview[]>({
-                url: `/api/subsidiaries/${subsidiary}/customer-sales/overview`,
+                url: `/subsidiaries/${subsidiary}/customer-sales/overview`,
                 method: "get",
                 params,
             });
-            return response.data;
+            // El backend devuelve paginación: { data: [...], meta, ... }
+            // Normalizamos para devolver siempre el array de overview
+            const payload = (response.data as any)?.data ?? response.data;
+            return payload as ICustomerSaleOverview[];
         } catch (error: any) {
             return rejectWithValue(error.response?.data || "Error al cargar overview");
         }
@@ -214,7 +218,7 @@ export const customerSalesSlice = createSlice({
             .addCase(deleteCustomerThunk.pending, (state) => {
                 state.loading = true;
             })
-            .addCase(deleteCustomerThunk.fulfilled, (state, action) => {
+            .addCase(deleteCustomerThunk.fulfilled, (state) => {
                 state.loading = false;
             })
             .addCase(deleteCustomerThunk.rejected, (state, action) => {

@@ -153,13 +153,13 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 						onClick={() => onEdit?.(info.row.original)}
 						className='p-1'
 					/>
-					<Button
+					{/* <Button
 						variant='outline'
 						size='sm'
 						icon='HeroDocumentDuplicate'
 						onClick={() => onDuplicate?.(info.row.original.id)}
 						className='p-1'
-					/>
+					/> */}
 					{normalizeQuoteStatusValue(info.row.original.status) === 'approved' &&
 						info.row.original.can_convert && (
 							<Button
