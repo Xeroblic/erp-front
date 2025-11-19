@@ -12,6 +12,7 @@ import RipleyDashboard from './components/ripley/RipleyDashboard';
 import ParisDashboard from './components/paris/ParisDashboard';
 import EcoPCDashboard from './components/ecopc/EcoPCDashboard';
 import EcoTIDashboard from './components/ecoti/EcoTIDashboard';
+import SalesDashboard from '../reportes/SalesDashboard';
 
 const STORAGE_KEY = 'zentria_selected_dashboard';
 
@@ -98,7 +99,9 @@ const DashboardContainer: React.FC = () => {
                         '--dashboard-text': currentConfig.colors.text,
                     } as React.CSSProperties}
                 >
-                    {renderDashboard()}
+                    {/* {renderDashboard()} */}
+                    <SalesDashboard/>
+
                 </div>
             </Container>
         </PageWrapper>
