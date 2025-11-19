@@ -76,6 +76,34 @@ const initialState: ProductsState = {
 	mediaError: null,
 };
 
+const parseProductsResponse = (
+	response: { data?: any; meta?: Partial<ProductListMeta> & Record<string, any> },
+	params?: FetchProductsParams,
+) => {
+	const payload = response?.data ?? response ?? {};
+	const rawItems = Array.isArray(payload.data)
+		? payload.data
+		: Array.isArray(payload)
+			? (payload as any[])
+			: [];
+
+	const items = rawItems.map(normalizeProduct);
+
+	const metaSource = payload.meta ?? {};
+	const meta: ProductListMeta = {
+		total: Number(metaSource.total ?? items.length),
+		current_page: Number(metaSource.current_page ?? params?.page ?? 1),
+		per_page: Number((metaSource.per_page ?? params?.per_page ?? items.length) || 1),
+		last_page: Number(metaSource.last_page ?? 1),
+	};
+
+	return {
+		items,
+		meta,
+		stats: computeProductStats(items),
+	};
+};
+
 export const fetchProducts = createAsyncThunk<
 	{ items: IProduct[]; meta: ProductListMeta; stats: ProductsStateStats },
 	{ branchId: number; params?: FetchProductsParams },
@@ -95,30 +123,41 @@ export const fetchProducts = createAsyncThunk<
 			},
 		});
 
-		const rawItems = Array.isArray(response.data?.data)
-			? response.data?.data
-			: Array.isArray(response.data)
-				? (response.data as any[])
-				: [];
-
-		const items = rawItems.map(normalizeProduct);
-
-		const metaSource = response.data?.meta ?? {};
-		const meta: ProductListMeta = {
-			total: Number(metaSource.total ?? items.length),
-			current_page: Number(metaSource.current_page ?? params?.page ?? 1),
-			per_page: Number((metaSource.per_page ?? params?.per_page ?? items.length) || 1),
-			last_page: Number(metaSource.last_page ?? 1),
-		};
-
-		return {
-			items,
-			meta,
-			stats: computeProductStats(items),
-		};
+		return parseProductsResponse(response, params);
 	} catch (error: any) {
 		return rejectWithValue(
-			error?.response?.data?.message ?? error?.message ?? 'No se pudieron cargar los productos',
+			error?.response?.data?.message ??
+				error?.message ??
+				'No se pudieron cargar los productos',
+		);
+	}
+});
+
+export const fetchSubsidiaryProducts = createAsyncThunk<
+	{ items: IProduct[]; meta: ProductListMeta; stats: ProductsStateStats },
+	{ subsidiaryId: number; params?: FetchProductsParams },
+	{ rejectValue: string }
+>('products/fetchSubsidiaryProducts', async ({ subsidiaryId, params }, { rejectWithValue }) => {
+	try {
+		const response = await ApiService.fetchData<{
+			data?: any[];
+			meta?: Partial<ProductListMeta> & Record<string, any>;
+		}>({
+			url: `/subsidiaries/${subsidiaryId}/products`,
+			method: 'get',
+			params: {
+				page: params?.page ?? 1,
+				per_page: params?.per_page ?? 15,
+				...serializeFilters(params ?? {}),
+			},
+		});
+
+		return parseProductsResponse(response, params);
+	} catch (error: any) {
+		return rejectWithValue(
+			error?.response?.data?.message ??
+				error?.message ??
+				'No se pudieron cargar los productos',
 		);
 	}
 });
@@ -132,136 +171,144 @@ export const fetchBranchInventorySummary = createAsyncThunk<
 	},
 	{ branchId: number; criticalThreshold?: number },
 	{ rejectValue: string }
->('products/fetchBranchInventorySummary', async ({ branchId, criticalThreshold }, { rejectWithValue }) => {
-	try {
-		const response = await ApiService.fetchData<ProductInventorySummaryResponse>({
-			url: `/branches/${branchId}/products/summary`,
-			method: 'get',
-			params:
-				typeof criticalThreshold === 'number'
-					? { critical_threshold: criticalThreshold }
-					: undefined,
-		});
+>(
+	'products/fetchBranchInventorySummary',
+	async ({ branchId, criticalThreshold }, { rejectWithValue }) => {
+		try {
+			const response = await ApiService.fetchData<ProductInventorySummaryResponse>({
+				url: `/branches/${branchId}/products/summary`,
+				method: 'get',
+				params:
+					typeof criticalThreshold === 'number'
+						? { critical_threshold: criticalThreshold }
+						: undefined,
+			});
 
-		const payload = response.data ?? {};
-		const summary = payload.summary ?? {};
-		const params = payload.params ?? {};
+			const payload = response.data ?? {};
+			const summary = payload.summary ?? {};
+			const params = payload.params ?? {};
 
-		const stats: ProductsStateStats = {
-			total: Number(summary.products_total ?? 0),
-			actives: Number(summary.active ?? 0),
-			inactives: Number(summary.inactive ?? 0),
-			with_offer: Number(summary.with_offer ?? 0),
-			serial_tracked: Number(
-				summary.serial_tracking_count ?? summary.with_serial_tracking ?? 0,
-			),
-		};
+			const stats: ProductsStateStats = {
+				total: Number(summary.products_total ?? 0),
+				actives: Number(summary.active ?? 0),
+				inactives: Number(summary.inactive ?? 0),
+				with_offer: Number(summary.with_offer ?? 0),
+				serial_tracked: Number(
+					summary.serial_tracking_count ?? summary.with_serial_tracking ?? 0,
+				),
+			};
 
-		const inventory: ProductInventorySummary = {
-			branchId: Number(payload.branch_id ?? branchId) || branchId,
-			criticalThreshold:
-				typeof params?.critical_threshold === 'number'
-					? Number(params.critical_threshold)
-					: typeof criticalThreshold === 'number'
-						? criticalThreshold
-						: PRODUCT_EMPTY_INVENTORY_SUMMARY.criticalThreshold,
-			stockTotal: Number(summary.stock_total ?? 0),
-			stockAverage: Number(summary.stock_average ?? 0),
-			lowStockCount: Number(summary.low_stock_count ?? 0),
-			outOfStock: Number(summary.out_of_stock ?? 0),
-			withStockAvailable: Number(summary.with_stock_available ?? 0),
-			syncedProducts: Number(summary.synced_products ?? summary.products_total ?? 0),
-			serialTrackingCount: Number(
-				summary.serial_tracking_count ?? summary.with_serial_tracking ?? 0,
-			),
-		};
+			const inventory: ProductInventorySummary = {
+				branchId: Number(payload.branch_id ?? branchId) || branchId,
+				criticalThreshold:
+					typeof params?.critical_threshold === 'number'
+						? Number(params.critical_threshold)
+						: typeof criticalThreshold === 'number'
+							? criticalThreshold
+							: PRODUCT_EMPTY_INVENTORY_SUMMARY.criticalThreshold,
+				stockTotal: Number(summary.stock_total ?? 0),
+				stockAverage: Number(summary.stock_average ?? 0),
+				lowStockCount: Number(summary.low_stock_count ?? 0),
+				outOfStock: Number(summary.out_of_stock ?? 0),
+				withStockAvailable: Number(summary.with_stock_available ?? 0),
+				syncedProducts: Number(summary.synced_products ?? summary.products_total ?? 0),
+				serialTrackingCount: Number(
+					summary.serial_tracking_count ?? summary.with_serial_tracking ?? 0,
+				),
+			};
 
-		const criticalProducts: ProductInventoryCriticalProduct[] = Array.isArray(
-			payload.critical_products,
-		)
-			? payload.critical_products
-					.map((item) => ({
-						id: Number(item?.id ?? 0),
-						name: String(item?.name ?? ''),
-						sku: String(item?.sku ?? ''),
-						brand_name:
-							item?.brand_name !== undefined && item?.brand_name !== null
-								? String(item.brand_name)
-								: null,
-						stock:
-							item && typeof item === 'object' && 'stock' in item
-								? Number((item as any).stock ?? 0)
-								: null,
-					}))
-					.filter((item) => Number.isFinite(item.id) && item.id > 0)
-			: [];
+			const criticalProducts: ProductInventoryCriticalProduct[] = Array.isArray(
+				payload.critical_products,
+			)
+				? payload.critical_products
+						.map((item) => ({
+							id: Number(item?.id ?? 0),
+							name: String(item?.name ?? ''),
+							sku: String(item?.sku ?? ''),
+							brand_name:
+								item?.brand_name !== undefined && item?.brand_name !== null
+									? String(item.brand_name)
+									: null,
+							stock:
+								item && typeof item === 'object' && 'stock' in item
+									? Number((item as any).stock ?? 0)
+									: null,
+						}))
+						.filter((item) => Number.isFinite(item.id) && item.id > 0)
+				: [];
 
-		return { stats, inventory, criticalProducts, branchId };
-	} catch (error: any) {
-		return rejectWithValue(
-			error?.response?.data?.message ??
-				error?.message ??
-				'No se pudo cargar el resumen de inventario',
-		);
-	}
-});
+			return { stats, inventory, criticalProducts, branchId };
+		} catch (error: any) {
+			return rejectWithValue(
+				error?.response?.data?.message ??
+					error?.message ??
+					'No se pudo cargar el resumen de inventario',
+			);
+		}
+	},
+);
 
 export const fetchProductsFromMultipleBranches = createAsyncThunk<
 	{ items: IProduct[]; meta: ProductListMeta; stats: ProductsStateStats },
 	{ branchIds: number[]; params?: FetchProductsParams },
 	{ rejectValue: string }
->('products/fetchProductsFromMultipleBranches', async ({ branchIds, params }, { rejectWithValue }) => {
-	try {
-		// Hacer llamadas paralelas a todas las sucursales
-		const promises = branchIds.map(branchId =>
-			ApiService.fetchData<{
-				data?: any[];
-				meta?: Partial<ProductListMeta> & Record<string, any>;
-			}>({
-				url: `/branches/${branchId}/products`,
-				method: 'get',
-				params: {
-					page: params?.page ?? 1,
-					per_page: params?.per_page ?? 15,
-					...serializeFilters(params ?? {}),
-				},
-			})
-		);
+>(
+	'products/fetchProductsFromMultipleBranches',
+	async ({ branchIds, params }, { rejectWithValue }) => {
+		try {
+			// Hacer llamadas paralelas a todas las sucursales
+			const promises = branchIds.map((branchId) =>
+				ApiService.fetchData<{
+					data?: any[];
+					meta?: Partial<ProductListMeta> & Record<string, any>;
+				}>({
+					url: `/branches/${branchId}/products`,
+					method: 'get',
+					params: {
+						page: params?.page ?? 1,
+						per_page: params?.per_page ?? 15,
+						...serializeFilters(params ?? {}),
+					},
+				}),
+			);
 
-		const responses = await Promise.all(promises);
+			const responses = await Promise.all(promises);
 
-		// Combinar todos los productos de todas las sucursales
-		const allRawItems: any[] = [];
-		responses.forEach(response => {
-			const rawItems = Array.isArray(response.data?.data)
-				? response.data?.data
-				: Array.isArray(response.data)
-					? (response.data as any[])
-					: [];
-			allRawItems.push(...rawItems);
-		});
+			// Combinar todos los productos de todas las sucursales
+			const allRawItems: any[] = [];
+			responses.forEach((response) => {
+				const rawItems = Array.isArray(response.data?.data)
+					? response.data?.data
+					: Array.isArray(response.data)
+						? (response.data as any[])
+						: [];
+				allRawItems.push(...rawItems);
+			});
 
-		const items = allRawItems.map(normalizeProduct);
+			const items = allRawItems.map(normalizeProduct);
 
-		// Meta para paginación combinada
-		const meta: ProductListMeta = {
-			total: items.length,
-			current_page: params?.page ?? 1,
-			per_page: params?.per_page ?? 15,
-			last_page: Math.ceil(items.length / (params?.per_page ?? 15)),
-		};
+			// Meta para paginación combinada
+			const meta: ProductListMeta = {
+				total: items.length,
+				current_page: params?.page ?? 1,
+				per_page: params?.per_page ?? 15,
+				last_page: Math.ceil(items.length / (params?.per_page ?? 15)),
+			};
 
-		return {
-			items,
-			meta,
-			stats: computeProductStats(items),
-		};
-	} catch (error: any) {
-		return rejectWithValue(
-			error?.response?.data?.message ?? error?.message ?? 'No se pudieron cargar los productos',
-		);
-	}
-});
+			return {
+				items,
+				meta,
+				stats: computeProductStats(items),
+			};
+		} catch (error: any) {
+			return rejectWithValue(
+				error?.response?.data?.message ??
+					error?.message ??
+					'No se pudieron cargar los productos',
+			);
+		}
+	},
+);
 
 export const fetchProductById = createAsyncThunk<
 	IProduct,
@@ -294,7 +341,9 @@ export const fetchProductAttributes = createAsyncThunk<
 	{ rejectValue: string }
 >('products/fetchProductAttributes', async ({ branchId, productId }, { rejectWithValue }) => {
 	try {
-		const response = await ApiService.fetchData<{ attributes?: Record<string, unknown> | null }>({
+		const response = await ApiService.fetchData<{
+			attributes?: Record<string, unknown> | null;
+		}>({
 			url: `/branches/${branchId}/products/${productId}/attributes`,
 			method: 'get',
 		});
@@ -306,8 +355,8 @@ export const fetchProductAttributes = createAsyncThunk<
 	} catch (error: any) {
 		return rejectWithValue(
 			error?.response?.data?.message ??
-			error?.message ??
-			'No se pudieron cargar los atributos del producto',
+				error?.message ??
+				'No se pudieron cargar los atributos del producto',
 		);
 	}
 });
@@ -336,8 +385,8 @@ export const patchProductAttributes = createAsyncThunk<
 		} catch (error: any) {
 			return rejectWithValue(
 				error?.response?.data?.message ??
-				error?.message ??
-				'No se pudieron actualizar los atributos del producto',
+					error?.message ??
+					'No se pudieron actualizar los atributos del producto',
 			);
 		}
 	},
@@ -361,19 +410,24 @@ export const createProduct = createAsyncThunk<
 		if (data.price !== undefined && data.price !== null) body.price = Number(data.price);
 		assignIfDefined('commercial_sku', data.commercial_sku);
 		assignIfDefined('barcode', data.barcode);
-		if (data.brand_id !== undefined && data.brand_id !== null) body.brand_id = Number(data.brand_id);
-		if (data.branch_id !== undefined && data.branch_id !== null) body.branch_id = Number(data.branch_id);
+		if (data.brand_id !== undefined && data.brand_id !== null)
+			body.brand_id = Number(data.brand_id);
+		if (data.branch_id !== undefined && data.branch_id !== null)
+			body.branch_id = Number(data.branch_id);
 		assignIfDefined('product_type', data.product_type);
-		if (data.serial_tracking !== undefined) body.serial_tracking = Boolean(data.serial_tracking);
+		if (data.serial_tracking !== undefined)
+			body.serial_tracking = Boolean(data.serial_tracking);
 		assignIfDefined('condition_policy', data.condition_policy);
 		assignIfDefined('uom', data.uom);
 		if (data.warranty_months !== undefined) body.warranty_months = Number(data.warranty_months);
 		if (data.cost !== undefined) body.cost = Number(data.cost);
 		if (data.offer_price !== undefined) body.offer_price = Number(data.offer_price);
-		if (data.attributes_json !== undefined && data.attributes_json !== null) body.attributes_json = data.attributes_json;
+		if (data.attributes_json !== undefined && data.attributes_json !== null)
+			body.attributes_json = data.attributes_json;
 		if (data.is_active !== undefined) body.is_active = Boolean(data.is_active);
 		if (data.product_status !== undefined) body.product_status = data.product_status;
-		if (data.snippet_description !== undefined) body.snippet_description = data.snippet_description;
+		if (data.snippet_description !== undefined)
+			body.snippet_description = data.snippet_description;
 		if (data.short_description !== undefined) body.short_description = data.short_description;
 		if (data.long_description !== undefined) body.long_description = data.long_description;
 		if (data.stock !== undefined) body.stock = Number(data.stock);
@@ -390,7 +444,9 @@ export const createProduct = createAsyncThunk<
 		return normalizeProduct(raw ?? body);
 	} catch (error: any) {
 		// Forward the server response body when possible so callers can map validation errors
-		const payload = error?.response?.data ?? { message: error?.message ?? 'No se pudo crear el producto' };
+		const payload = error?.response?.data ?? {
+			message: error?.message ?? 'No se pudo crear el producto',
+		};
 		return rejectWithValue(payload);
 	}
 });
@@ -415,7 +471,9 @@ export const updateProduct = createAsyncThunk<
 			return normalizeProduct(raw ?? { ...data, id: productId });
 		} catch (error: any) {
 			return rejectWithValue(
-				error?.response?.data?.message ?? error?.message ?? 'No se pudo actualizar el producto',
+				error?.response?.data?.message ??
+					error?.message ??
+					'No se pudo actualizar el producto',
 			);
 		}
 	},
@@ -445,50 +503,74 @@ export const uploadProductMedia = createAsyncThunk<
 	string | null,
 	{ branchId: number; productId: number; file: File; meta?: string },
 	{ rejectValue: string }
->('products/uploadProductMedia', async ({ branchId, productId, file, meta }, { rejectWithValue }) => {
-	try {
-		const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/svg+xml'];
-		const v = validateFile(file, { maxKB: 8192, allowedMimes: allowed });
-		if (!v.ok) return null;
+>(
+	'products/uploadProductMedia',
+	async ({ branchId, productId, file, meta }, { rejectWithValue }) => {
+		try {
+			const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/svg+xml'];
+			const v = validateFile(file, { maxKB: 8192, allowedMimes: allowed });
+			if (!v.ok) return null;
 
-		const processed = await convertFileToWebP(file);
-		if (!processed) return null;
+			const processed = await convertFileToWebP(file);
+			if (!processed) return null;
 
-		const formData = new FormData();
-		formData.append('files[]', processed, processed.name);
-		if (meta) formData.append('meta', meta);
+			const formData = new FormData();
+			formData.append('files[]', processed, processed.name);
+			if (meta) formData.append('meta', meta);
 
-		const response = await ApiService.fetchData<{ data?: any }, FormData>({
-			url: `/branches/${branchId}/products/${productId}/media/upload-multiple`,
-			method: 'post',
-			data: formData,
-		});
+			const response = await ApiService.fetchData<{ data?: any }, FormData>({
+				url: `/branches/${branchId}/products/${productId}/media/upload-multiple`,
+				method: 'post',
+				data: formData,
+			});
 
-		const payload = response.data?.data ?? response.data;
-		const url = extractMediaUrl(payload);
-		return url;
-	} catch (error: any) {
-		return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'Error uploading media');
-	}
-});
+			const payload = response.data?.data ?? response.data;
+			const url = extractMediaUrl(payload);
+			return url;
+		} catch (error: any) {
+			return rejectWithValue(
+				error?.response?.data?.message ?? error?.message ?? 'Error uploading media',
+			);
+		}
+	},
+);
 
 // Attach existing library media to a product
 export const attachProductMediaFromLibrary = createAsyncThunk<
 	{ id?: number; url?: string; thumb_url?: string } | null,
-	{ branchId: number; productId: number; payload: { library_media_id: number; collection?: string; sort_order?: number; alt_text?: string } },
+	{
+		branchId: number;
+		productId: number;
+		payload: {
+			library_media_id: number;
+			collection?: string;
+			sort_order?: number;
+			alt_text?: string;
+		};
+	},
 	{ rejectValue: string }
->('products/attachProductMediaFromLibrary', async ({ branchId, productId, payload }, { rejectWithValue }) => {
-	try {
-		const response = await ApiService.fetchData<{ status?: string; id?: number; url?: string; thumb_url?: string }, any>({
-			url: `/branches/${branchId}/products/${productId}/media/attach-from-library`,
-			method: 'post',
-			data: payload,
-		});
-		return response.data ?? null;
-	} catch (error: any) {
-		return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'Error attaching media from library');
-	}
-});
+>(
+	'products/attachProductMediaFromLibrary',
+	async ({ branchId, productId, payload }, { rejectWithValue }) => {
+		try {
+			const response = await ApiService.fetchData<
+				{ status?: string; id?: number; url?: string; thumb_url?: string },
+				any
+			>({
+				url: `/branches/${branchId}/products/${productId}/media/attach-from-library`,
+				method: 'post',
+				data: payload,
+			});
+			return response.data ?? null;
+		} catch (error: any) {
+			return rejectWithValue(
+				error?.response?.data?.message ??
+					error?.message ??
+					'Error attaching media from library',
+			);
+		}
+	},
+);
 
 // Fetch branch library media (simple wrapper)
 export const fetchBranchLibraryMedia = createAsyncThunk<
@@ -502,10 +584,16 @@ export const fetchBranchLibraryMedia = createAsyncThunk<
 			method: 'get',
 			params,
 		});
-		const dataArr = Array.isArray(response.data?.data) ? response.data?.data : Array.isArray(response.data) ? response.data : [];
+		const dataArr = Array.isArray(response.data?.data)
+			? response.data?.data
+			: Array.isArray(response.data)
+				? response.data
+				: [];
 		return { data: dataArr ?? [], meta: response.data?.meta };
 	} catch (error: any) {
-		return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'Error fetching library media');
+		return rejectWithValue(
+			error?.response?.data?.message ?? error?.message ?? 'Error fetching library media',
+		);
 	}
 });
 
@@ -514,22 +602,27 @@ export const deleteProductAttributes = createAsyncThunk<
 	boolean,
 	{ branchId: number; productId: number; paths?: string[]; path?: string },
 	{ rejectValue: string }
->('products/deleteProductAttributes', async ({ branchId, productId, paths, path }, { rejectWithValue }) => {
-	try {
-		const params: Record<string, any> = {};
-		if (path) params.path = path;
-		if (paths) params['paths[]'] = paths;
+>(
+	'products/deleteProductAttributes',
+	async ({ branchId, productId, paths, path }, { rejectWithValue }) => {
+		try {
+			const params: Record<string, any> = {};
+			if (path) params.path = path;
+			if (paths) params['paths[]'] = paths;
 
-		await ApiService.fetchData({
-			url: `/branches/${branchId}/products/${productId}/attributes`,
-			method: 'delete',
-			params,
-		});
-		return true;
-	} catch (error: any) {
-		return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'Error deleting attributes');
-	}
-});
+			await ApiService.fetchData({
+				url: `/branches/${branchId}/products/${productId}/attributes`,
+				method: 'delete',
+				params,
+			});
+			return true;
+		} catch (error: any) {
+			return rejectWithValue(
+				error?.response?.data?.message ?? error?.message ?? 'Error deleting attributes',
+			);
+		}
+	},
+);
 
 // Delete product media/image
 export const deleteProductMedia = createAsyncThunk<
@@ -544,7 +637,9 @@ export const deleteProductMedia = createAsyncThunk<
 		});
 		return true;
 	} catch (error: any) {
-		return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'Error al eliminar la imagen');
+		return rejectWithValue(
+			error?.response?.data?.message ?? error?.message ?? 'Error al eliminar la imagen',
+		);
 	}
 });
 
@@ -563,7 +658,9 @@ export const setProductMainImage = createAsyncThunk<
 			url: `/branches/${branchId}/products/${productId}`,
 			method: 'get',
 		});
-		const currentProduct = normalizeProduct(currentProductResponse.data?.data ?? currentProductResponse.data);
+		const currentProduct = normalizeProduct(
+			currentProductResponse.data?.data ?? currentProductResponse.data,
+		);
 
 		// Paso 2: Buscar la imagen en la gallery por su ID
 		const galleryImage = currentProduct.gallery?.find((img) => img.id === mediaId);
@@ -583,7 +680,7 @@ export const setProductMainImage = createAsyncThunk<
 			const response = await fetch(galleryImage.url, {
 				credentials: 'include', // Incluye cookies de autenticación
 				headers: {
-					'Accept': 'image/*',
+					Accept: 'image/*',
 				},
 			});
 
@@ -641,7 +738,11 @@ export const setProductMainImage = createAsyncThunk<
 
 		return normalizeProduct(finalProductResponse.data?.data ?? finalProductResponse.data);
 	} catch (error: any) {
-		return rejectWithValue(error?.response?.data?.message ?? error?.message ?? 'Error al establecer imagen principal');
+		return rejectWithValue(
+			error?.response?.data?.message ??
+				error?.message ??
+				'Error al establecer imagen principal',
+		);
 	}
 });
 
@@ -666,12 +767,27 @@ const productsSlice = createSlice({
 				state.meta = action.payload.meta;
 				const requestedBranchId = action.meta.arg.branchId;
 				const hasSummaryForBranch =
-					state.inventory.branchId !== null && state.inventory.branchId === requestedBranchId;
+					state.inventory.branchId !== null &&
+					state.inventory.branchId === requestedBranchId;
 				if (!hasSummaryForBranch || state.inventoryLoading) {
 					state.stats = action.payload.stats;
 				}
 			})
 			.addCase(fetchProducts.rejected, (state, action) => {
+				state.loading = false;
+				state.error = action.payload ?? 'No se pudieron cargar los productos';
+			})
+			.addCase(fetchSubsidiaryProducts.pending, (state) => {
+				state.loading = true;
+				state.error = null;
+			})
+			.addCase(fetchSubsidiaryProducts.fulfilled, (state, action) => {
+				state.loading = false;
+				state.items = action.payload.items;
+				state.meta = action.payload.meta;
+				state.stats = action.payload.stats;
+			})
+			.addCase(fetchSubsidiaryProducts.rejected, (state, action) => {
 				state.loading = false;
 				state.error = action.payload ?? 'No se pudieron cargar los productos';
 			})

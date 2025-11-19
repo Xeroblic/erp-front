@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { fetchProducts } from '@/store/slices/products/productsSlice';
+import { fetchProducts, fetchSubsidiaryProducts } from '@/store/slices/products/productsSlice';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import Collapse from '@/components/utils/Collapse';
 import { useWarehouseManagement } from './hooks/useWarehouseManagement';
+import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import WarehouseInfoCard from './detallesComponents/cards/WarehouseInfoCard';
 import AssociatedProductsCard from './detallesComponents/cards/AssociatedProductsCard';
 import AvailableProductsCard from './detallesComponents/cards/AvailableProductsCard';
@@ -24,6 +25,7 @@ const WarehouseDetailPage: React.FC = () => {
 
 	const user = useAppSelector((s) => s.auth.user);
 	const personal = useAppSelector((s) => s.personalizacion);
+	const subsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
 	const branchId =
 		personal?.personalizacionUsuario?.sucursal_principal ||
 		user?.branch?.id ||
@@ -45,11 +47,21 @@ const WarehouseDetailPage: React.FC = () => {
 	useEffect(() => {
 		if (branchId && id) {
 			loadWarehouseDetail(Number(id));
-			if (allProducts.length === 0)
-				dispatch(fetchProducts({ branchId, params: { per_page: 5 } } as any));
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [branchId, id]);
+	}, [branchId, id, loadWarehouseDetail]);
+
+	useEffect(() => {
+		if (!id) return;
+
+		if (subsidiaryId) {
+			dispatch(fetchSubsidiaryProducts({ subsidiaryId, params: { per_page: 50 } }));
+			return;
+		}
+
+		if (branchId) {
+			dispatch(fetchProducts({ branchId, params: { per_page: 50 } }));
+		}
+	}, [dispatch, branchId, subsidiaryId, id]);
 
 	// Filtrar productos disponibles: solo los que NO están asociados a la bodega
 	const availableProducts = useMemo(() => {
@@ -57,10 +69,13 @@ const WarehouseDetailPage: React.FC = () => {
 
 		const associatedProductIds = new Set(warehouse.products.map((wp) => wp.id));
 
-		return allProducts.filter(
-			(product) => product.branch_id === branchId && !associatedProductIds.has(product.id),
-		);
-	}, [allProducts, warehouse?.products, branchId]);
+		const targetBranchId = warehouse?.branch_id ?? branchId ?? null;
+
+		return allProducts.filter((product) => {
+			const matchesBranch = targetBranchId ? product.branch_id === targetBranchId : true;
+			return matchesBranch && !associatedProductIds.has(product.id);
+		});
+	}, [allProducts, warehouse?.products, branchId, warehouse?.branch_id]);
 
 	// Helper: verificar si un producto ya está asociado
 	const isProductAssociated = (productId: number): boolean => {
@@ -71,7 +86,16 @@ const WarehouseDetailPage: React.FC = () => {
 	const handleProductSearch = (val: string) => {
 		if (searchTimerRef.current) window.clearTimeout(searchTimerRef.current);
 		searchTimerRef.current = window.setTimeout(() => {
-			dispatch(fetchProducts({ branchId, params: { per_page: 5, search: val } } as any));
+			if (subsidiaryId) {
+				dispatch(
+					fetchSubsidiaryProducts({
+						subsidiaryId,
+						params: { per_page: 50, search: val },
+					}),
+				);
+			} else if (branchId) {
+				dispatch(fetchProducts({ branchId, params: { per_page: 50, search: val } }));
+			}
 		}, 300) as unknown as number;
 	};
 

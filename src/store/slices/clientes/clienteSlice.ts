@@ -21,7 +21,7 @@ export const listaClientesThunk = createAsyncThunk<ICliente[], undefined, {rejec
     'clientes/listaClientes',
     async (_, {rejectWithValue}) =>{
         try {
-            const response = await ApiService.fetchData<ICliente[]>({url: '/api/clientes/', method: 'get'})
+            const response = await ApiService.fetchData<ICliente[]>({url: '/cliente/', method: 'get'})
             return response.data
         } catch (error: any) {
             return rejectWithValue(error.response.data)

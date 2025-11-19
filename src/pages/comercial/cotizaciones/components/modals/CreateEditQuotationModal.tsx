@@ -4,7 +4,7 @@
  * ACTUALIZADO: Usa componentes UI Card, SelectReact y estructura consistente
  */
 import React, { useEffect } from 'react';
-import { Formik, Form, Field, ErrorMessage, FieldArray } from 'formik';
+import { Formik, Form, FieldArray } from 'formik';
 import * as Yup from 'yup';
 import { IQuote, QuoteStatus, IQuoteItem } from '../../../../../interface';
 import Modal, {
@@ -25,6 +25,8 @@ import SelectReact from '../../../../../components/form/SelectReact';
 import Textarea from '../../../../../components/form/Textarea';
 import type { TSelectOption, TSelectOptions } from '../../../../../components/form/SelectReact';
 import { quoteStatusOptions, normalizeQuoteStatusValue } from '../../constants/quoteStatuses';
+import { selectPersonalizacionUsuario, useAppSelector } from '@/store';
+import ApiService from '@/services/ApiService';
 
 interface CreateEditQuotationModalProps {
 	isOpen: boolean;
@@ -57,10 +59,9 @@ const quotationSchema = Yup.object().shape({
 	discount_percentage: Yup.number()
 		.min(0, 'El descuento no puede ser negativo')
 		.max(100, 'El descuento no puede ser mayor a 100%'),
-	fixed_discount: Yup.number().min(0, 'El descuento fijo no puede ser negativo'),
 	tax_percentage: Yup.number()
-		.min(0, 'El impuesto no puede ser negativo')
-		.max(100, 'El impuesto no puede ser mayor a 100%'),
+		.oneOf([0, 19], 'Seleccione si desea aplicar IVA (19%)')
+		.default(19),
 	notes: Yup.string().max(500, 'Las notas no pueden exceder 500 caracteres'),
 	items: Yup.array()
 		.of(
@@ -71,16 +72,48 @@ const quotationSchema = Yup.object().shape({
 				quantity: Yup.number()
 					.required('La cantidad es requerida')
 					.min(1, 'La cantidad debe ser mayor a 0'),
-				unit_price: Yup.number()
-					.required('El precio unitario es requerido')
-					.min(0, 'El precio no puede ser negativo'),
-				discount_percentage: Yup.number()
-					.min(0, 'El descuento no puede ser negativo')
-					.max(100, 'El descuento no puede ser mayor a 100%'),
 			}),
 		)
 		.min(1, 'Debe agregar al menos un item'),
 });
+
+const IVA_RATE = 19;
+
+const EMPTY_ITEM: IQuoteItem = {
+	id: 0,
+	quote_id: 0,
+	product_id: 0,
+	quantity: 1,
+	unit_price: 0,
+	created_at: '',
+	updated_at: '',
+};
+
+const sanitizeItemsForSubmit = (items: IQuoteItem[]) =>
+	(items || [])
+		.filter((item) => item && item.product_id)
+		.map((item) => ({
+			product_id: Number(item.product_id),
+			quantity: Number(item.quantity) || 1,
+		}));
+
+interface SaleableProduct {
+	id: number;
+	sku: string;
+	name: string;
+	stock: number;
+	unit_price_gross: number;
+	unit_price_net: number;
+}
+
+const formatCurrency = (value?: number | null) => {
+	const amount = Number(value ?? 0);
+	return new Intl.NumberFormat('es-CL', {
+		style: 'currency',
+		currency: 'CLP',
+		maximumFractionDigits: 0,
+	}).format(Number.isFinite(amount) ? amount : 0);
+};
 
 const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 	isOpen,
@@ -89,15 +122,82 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 	quotation,
 	loading = false,
 }) => {
-	// Opciones para los selects
-	const customerOptions: TSelectOptions = [
-		{ value: '1', label: 'Empresa ABC S.A.S.' },
-		{ value: '2', label: 'Tech Solutions Ltda.' },
-		{ value: '3', label: 'Constructora XYZ' },
-		{ value: '4', label: 'Retail Store S.A.' },
-		{ value: '5', label: 'Educación Digital' },
-	];
+	const personalizacion = useAppSelector(selectPersonalizacionUsuario);
+	const user = useAppSelector((state) => state.auth.user);
+	const subsidiaryId = personalizacion?.subsidiary_id || 1;
+	const branchId =
+		personalizacion?.sucursal_principal ||
+		user?.branch?.id ||
+		user?.personalizacion?.sucursal_principal ||
+		0;
 
+	const [customerOptions, setCustomerOptions] = React.useState<TSelectOptions>([]);
+	const [productOptions, setProductOptions] = React.useState<TSelectOptions>([]);
+	const [saleableProductsMap, setSaleableProductsMap] = React.useState<
+		Record<number, SaleableProduct>
+	>({});
+
+	useEffect(() => {
+		const fetchClientes = async () => {
+			try {
+				const clientes = await ApiService.fetchNormalized({
+					url: `/subsidiaries/${subsidiaryId}/customer-sales/overview?per_page=200`,
+					method: 'GET',
+				});
+
+				setCustomerOptions(
+					(clientes || []).map((c: any) => ({
+						value: String(c.id),
+						label:
+							c.name || c.contact.name || 'Cliente sin nombre',
+					})),
+				);
+			} catch (error) {
+				console.error('Error cargando clientes:', error);
+			}
+		};
+
+		if (isOpen) fetchClientes();
+	}, [subsidiaryId, isOpen]);
+
+	useEffect(() => {
+		const fetchProductos = async () => {
+			if (!branchId) return;
+			try {
+				const response = await ApiService.fetchNormalized({
+					url: `/branches/${branchId}/products/saleables`,
+					method: 'GET',
+				});
+
+				const saleables: SaleableProduct[] = Array.isArray(response)
+					? response
+					: Array.isArray(response?.data)
+						? response.data
+						: [];
+
+				const mapped: Record<number, SaleableProduct> = {};
+				saleables.forEach((product) => {
+					if (product?.id) {
+						mapped[product.id] = product;
+					}
+				});
+
+				setSaleableProductsMap(mapped);
+				setProductOptions(
+					saleables.map((p) => ({
+						value: String(p.id),
+						label: `${p.name} · Stock ${p.stock ?? 0}`,
+					})),
+				);
+			} catch (error) {
+				console.error('Error cargando productos:', error);
+			}
+		};
+
+		if (isOpen && branchId) fetchProductos();
+	}, [branchId, isOpen]);
+
+	// Opciones estáticas
 	const paymentMethodOptions: TSelectOptions = [
 		{ value: 'cash', label: 'Efectivo' },
 		{ value: 'transfer', label: 'Transferencia' },
@@ -105,7 +205,6 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 		{ value: 'check', label: 'Cheque' },
 		{ value: 'credit_30', label: 'Crédito 30 días' },
 	];
-
 	const paymentTermsOptions: TSelectOptions = [
 		{ value: '0', label: 'Inmediato' },
 		{ value: '15', label: '15 días' },
@@ -113,22 +212,10 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 		{ value: '45', label: '45 días' },
 		{ value: '60', label: '60 días' },
 	];
-
 	const statusOptions: TSelectOptions = quoteStatusOptions.map((option) => ({
 		value: option.value,
 		label: option.label,
 	}));
-
-	const productOptions: TSelectOptions = [
-		{ value: '1', label: 'Laptop Dell Inspiron 15' },
-		{ value: '2', label: 'Monitor Samsung 24"' },
-		{ value: '3', label: 'Teclado Mecánico RGB' },
-		{ value: '4', label: 'Mouse Inalámbrico Logitech' },
-		{ value: '5', label: 'Webcam HD 1080p' },
-		{ value: '6', label: 'Impresora HP LaserJet' },
-		{ value: '7', label: 'Router WiFi 6' },
-		{ value: '8', label: 'Disco SSD 1TB' },
-	];
 
 	// Valores iniciales del formulario
 	const getInitialValues = (): Omit<IQuote, 'id' | 'created_at' | 'updated_at'> => {
@@ -144,7 +231,7 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 				tax_rate: quotation.tax_rate ?? Number(quotation.tax_percentage ?? 0),
 				discount_amount: quotation.discount_amount ?? 0,
 				discount_percentage: quotation.discount_percentage ?? 0,
-				tax_percentage: quotation.tax_percentage ?? 0,
+				tax_percentage: Number(quotation.tax_percentage ?? IVA_RATE) > 0 ? IVA_RATE : 0,
 				total_amount: quotation.total_amount ?? 0,
 				notes: quotation.notes ?? '',
 				created_by: quotation.created_by ?? undefined,
@@ -183,56 +270,11 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 			discount_amount: 0,
 			discount_percentage: 0,
 			fixed_discount: 0,
-			tax_percentage: 19,
+			tax_percentage: IVA_RATE,
 			total_amount: 0,
 			notes: '',
 			created_by: 1,
-			items: [
-				{
-					id: 0,
-					quote_id: 0,
-					product_id: 0,
-					quantity: 1,
-					unit_price: 0,
-					discount_percentage: 0,
-					// omit unknown 'total' property (not in QuoteItem interface)
-					created_at: '',
-					updated_at: '',
-				},
-			],
-		};
-	};
-
-	// Calcular totales de un item
-	const calculateItemTotals = (item: any) => {
-		const subtotal = item.quantity * item.unit_price;
-		const discountAmount = (subtotal * item.discount_percentage) / 100;
-		const total = subtotal - discountAmount;
-		return { subtotal, discountAmount, total };
-	};
-
-	// Calcular totales de la cotización
-	const calculateQuotationTotals = (
-		items: any[],
-		globalDiscountPercentage: number,
-		fixedDiscount: number,
-		taxPercentage: number,
-	) => {
-		const itemsTotal = items.reduce((sum, item) => {
-			const { total } = calculateItemTotals(item);
-			return sum + total;
-		}, 0);
-
-		const globalDiscountAmount = (itemsTotal * globalDiscountPercentage) / 100;
-		const totalAfterPercentageDiscount = itemsTotal - globalDiscountAmount;
-		const subtotal = totalAfterPercentageDiscount - fixedDiscount;
-		const taxAmount = (subtotal * taxPercentage) / 100;
-		const totalAmount = subtotal + taxAmount;
-
-		return {
-			subtotal: itemsTotal,
-			discount_amount: globalDiscountAmount + fixedDiscount,
-			total_amount: totalAmount,
+			items: [{ ...EMPTY_ITEM }],
 		};
 	};
 
@@ -258,7 +300,13 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 					initialValues={getInitialValues()}
 					validationSchema={quotationSchema}
 					onSubmit={(values, { setSubmitting }) => {
-						onSubmit(values);
+						const sanitizedItems = sanitizeItemsForSubmit(values.items || []);
+						const payload = {
+							...values,
+							items: sanitizedItems as any,
+							tax_percentage: values.tax_percentage === IVA_RATE ? IVA_RATE : 0,
+						};
+						onSubmit(payload);
 						setSubmitting(false);
 					}}
 					enableReinitialize>
@@ -273,7 +321,7 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 								</CardHeader>
 								<CardBody>
 									<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-										<div>
+										{/* <div>
 											<label className='mb-2 block text-sm font-medium text-gray-700'>
 												Número de Cotización *
 											</label>
@@ -288,7 +336,7 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 												isTouched={touched.quote_number}
 												invalidFeedback={errors.quote_number}
 											/>
-										</div>
+										</div> */}
 
 										<div>
 											<label className='mb-2 block text-sm font-medium text-gray-700'>
@@ -493,158 +541,196 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 
 							{/* Items de la Cotización */}
 							<Card>
-								<CardHeader>
-									<CardHeaderChild>
-										<CardTitle>Items de la Cotización</CardTitle>
-									</CardHeaderChild>
-									<CardHeaderChild>
-										<Button size='sm' variant='outline' icon='plus'>
-											Agregar Item
-										</Button>
-									</CardHeaderChild>
-								</CardHeader>
-								<CardBody>
-									<FieldArray name='items'>
-										{({ push, remove }) => (
-											<div className='space-y-4'>
-												{(values.items || []).map((item, index) => (
-													<div
-														key={index}
-														className='rounded-md border border-gray-200 p-4'>
-														<div className='grid grid-cols-1 gap-4 md:grid-cols-5'>
-															<div>
-																<label className='mb-1 block text-xs font-medium text-gray-500'>
-																	Producto *
-																</label>
-																<SelectReact
-																	name={`items.${index}.product_id`}
-																	options={productOptions}
-																	placeholder='Seleccionar...'
-																	value={productOptions.find(
-																		(opt) =>
-																			opt.value ===
-																			String(item.product_id),
-																	)}
-																	onChange={(option) => {
-																		const selectedOption =
-																			option as TSelectOption;
-																		if (
-																			selectedOption &&
-																			!Array.isArray(
-																				selectedOption,
-																			)
-																		) {
-																			setFieldValue(
-																				`items.${index}.product_id`,
-																				Number(
-																					selectedOption.value,
-																				) || 0,
-																			);
-																		}
-																	}}
-																	dimension='sm'
-																/>
-															</div>
+								<FieldArray name='items'>
+									{({ push, remove }) => (
+										<>
+											<CardHeader>
+												<CardHeaderChild>
+													<CardTitle>Items de la Cotización</CardTitle>
+												</CardHeaderChild>
+												<CardHeaderChild>
+													<Button
+														size='sm'
+														variant='outline'
+														icon='plus'
+														type='button'
+														onClick={() => push({ ...EMPTY_ITEM })}>
+														Agregar Item
+													</Button>
+												</CardHeaderChild>
+											</CardHeader>
+											<CardBody>
+												<div className='space-y-4'>
+													{(values.items || []).map((item, index) => {
+														const productInfo = item.product_id
+															? saleableProductsMap[item.product_id]
+															: undefined;
+														const maxQuantity =
+															productInfo?.stock ?? undefined;
 
-															<div>
-																<label className='mb-1 block text-xs font-medium text-gray-500'>
-																	Cantidad *
-																</label>
-																<Input
-																	name={`items.${index}.quantity`}
-																	type='number'
-																	placeholder='1'
-																	value={item.quantity ?? 0}
-																	onChange={(e) =>
-																		setFieldValue(
-																			`items.${index}.quantity`,
-																			Number(e.target.value),
-																		)
-																	}
-																	dimension='sm'
-																/>
-															</div>
+														return (
+															<div
+																key={index}
+																className='rounded-md border border-gray-200 p-4'>
+																<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
+																	<div>
+																		<label className='mb-1 block text-xs font-medium text-gray-500'>
+																			Producto *
+																		</label>
+																		<SelectReact
+																			name={`items.${index}.product_id`}
+																			options={productOptions}
+																			placeholder='Seleccionar...'
+																			value={productOptions.find(
+																				(opt) =>
+																					opt.value ===
+																					String(
+																						item.product_id,
+																					),
+																			)}
+																			onChange={(option) => {
+																				const selectedOption =
+																					option as TSelectOption;
+																				if (
+																					selectedOption &&
+																					!Array.isArray(
+																						selectedOption,
+																					)
+																				) {
+																					const nextProductId =
+																						Number(
+																							selectedOption.value,
+																						) || 0;
+																					setFieldValue(
+																						`items.${index}.product_id`,
+																						nextProductId,
+																					);
+																					const stock =
+																						saleableProductsMap[
+																							nextProductId
+																						]?.stock;
+																					const currentQuantity =
+																						values
+																							.items?.[
+																							index
+																						]
+																							?.quantity ??
+																						1;
+																					if (
+																						stock &&
+																						currentQuantity >
+																							stock
+																					) {
+																						setFieldValue(
+																							`items.${index}.quantity`,
+																							stock,
+																						);
+																					}
+																				}
+																			}}
+																			dimension='sm'
+																		/>
+																		{productInfo && (
+																			<p className='mt-1 text-xs text-gray-500'>
+																				Stock disponible:{' '}
+																				<strong>
+																					{
+																						productInfo.stock
+																					}
+																				</strong>{' '}
+																				· Precio neto:{' '}
+																				{formatCurrency(
+																					productInfo.unit_price_net,
+																				)}{' '}
+																				· Precio bruto:{' '}
+																				{formatCurrency(
+																					productInfo.unit_price_gross,
+																				)}
+																			</p>
+																		)}
+																	</div>
 
-															<div>
-																<label className='mb-1 block text-xs font-medium text-gray-500'>
-																	Precio Unit. *
-																</label>
-																<Input
-																	name={`items.${index}.unit_price`}
-																	type='number'
-																	placeholder='0'
-																	value={item.unit_price ?? 0}
-																	onChange={(e) =>
-																		setFieldValue(
-																			`items.${index}.unit_price`,
-																			Number(e.target.value),
-																		)
-																	}
-																	dimension='sm'
-																/>
-															</div>
+																	<div>
+																		<label className='mb-1 block text-xs font-medium text-gray-500'>
+																			Cantidad *
+																		</label>
+																		<Input
+																			name={`items.${index}.quantity`}
+																			type='number'
+																			min={1}
+																			max={maxQuantity}
+																			placeholder='1'
+																			value={
+																				item.quantity ?? 1
+																			}
+																			onChange={(e) =>
+																				setFieldValue(
+																					`items.${index}.quantity`,
+																					(() => {
+																						const rawValue =
+																							Number(
+																								e
+																									.target
+																									.value,
+																							);
+																						const normalizedValue =
+																							Number.isFinite(
+																								rawValue,
+																							) &&
+																							rawValue >
+																								0
+																								? rawValue
+																								: 1;
+																						if (
+																							maxQuantity &&
+																							normalizedValue >
+																								maxQuantity
+																						) {
+																							return maxQuantity;
+																						}
+																						return normalizedValue;
+																					})(),
+																				)
+																			}
+																			dimension='sm'
+																		/>
+																	</div>
 
-															<div>
-																<label className='mb-1 block text-xs font-medium text-gray-500'>
-																	Desc. %
-																</label>
-																<Input
-																	name={`items.${index}.discount_percentage`}
-																	type='number'
-																	placeholder='0'
-																	value={
-																		item.discount_percentage ??
-																		0
-																	}
-																	onChange={(e) =>
-																		setFieldValue(
-																			`items.${index}.discount_percentage`,
-																			Number(e.target.value),
-																		)
-																	}
-																	dimension='sm'
-																/>
+																	<div className='flex items-end'>
+																		<Button
+																			variant='outline'
+																			color='red'
+																			size='sm'
+																			icon='trash'
+																			type='button'
+																			onClick={() =>
+																				remove(index)
+																			}
+																			isDisable={
+																				(values.items
+																					?.length ||
+																					0) === 1
+																			}>
+																			Eliminar
+																		</Button>
+																	</div>
+																</div>
 															</div>
+														);
+													})}
 
-															<div className='flex items-end'>
-																<Button
-																	variant='outline'
-																	color='red'
-																	size='sm'
-																	icon='trash'
-																	onClick={() => remove(index)}
-																	isDisable={
-																		(values.items?.length ||
-																			0) === 1
-																	}>
-																	Eliminar
-																</Button>
-															</div>
-														</div>
-													</div>
-												))}
-
-												<Button
-													variant='outline'
-													onClick={() =>
-														push({
-															id: 0,
-															quote_id: 0,
-															product_id: 0,
-															quantity: 1,
-															unit_price: 0,
-															discount_percentage: 0,
-															created_at: '',
-															updated_at: '',
-														} as any)
-													}
-													icon='plus'>
-													Agregar Ítem
-												</Button>
-											</div>
-										)}
-									</FieldArray>
-								</CardBody>
+													<Button
+														variant='outline'
+														type='button'
+														onClick={() => push({ ...EMPTY_ITEM })}
+														icon='plus'>
+														Agregar Ítem
+													</Button>
+												</div>
+											</CardBody>
+										</>
+									)}
+								</FieldArray>
 							</Card>
 
 							{/* Resumen Financiero */}
@@ -655,25 +741,7 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 									</CardHeaderChild>
 								</CardHeader>
 								<CardBody>
-									<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
-										<div>
-											<label className='mb-2 block text-sm font-medium text-gray-700'>
-												Descuento Fijo ($)
-											</label>
-											<Input
-												name='fixed_discount'
-												type='number'
-												placeholder='0'
-												value={values.fixed_discount ?? 0}
-												onChange={(e) =>
-													setFieldValue(
-														'fixed_discount',
-														Number(e.target.value),
-													)
-												}
-											/>
-										</div>
-
+									<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
 										<div>
 											<label className='mb-2 block text-sm font-medium text-gray-700'>
 												Descuento Global %
@@ -692,53 +760,33 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 											/>
 										</div>
 
-										<div>
-											<label className='mb-2 block text-sm font-medium text-gray-700'>
-												Impuesto %
+										<div className='rounded border border-dashed border-gray-200 p-4'>
+											<label className='flex items-center gap-2 text-sm font-medium text-gray-700'>
+												<input
+													type='checkbox'
+													className='h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500'
+													checked={values.tax_percentage === IVA_RATE}
+													onChange={(e) =>
+														setFieldValue(
+															'tax_percentage',
+															e.target.checked ? IVA_RATE : 0,
+														)
+													}
+												/>
+												Aplicar IVA (19%)
 											</label>
-											<Input
-												name='tax_percentage'
-												type='number'
-												placeholder='19'
-												value={values.tax_percentage ?? 0}
-												onChange={(e) =>
-													setFieldValue(
-														'tax_percentage',
-														Number(e.target.value),
-													)
-												}
-											/>
+											<p className='mt-2 text-xs text-gray-500'>
+												Activa esta opción si la cotización debe incluir
+												IVA. Los cálculos finales se realizan en el backend.
+											</p>
 										</div>
 									</div>
 
-									<div className='mt-6 space-y-2 border-t pt-4'>
-										<div className='flex justify-between'>
-											<span className='text-sm font-medium text-gray-600'>
-												Subtotal:
-											</span>
-											<span className='text-sm font-semibold'>$0</span>
-										</div>
-										<div className='flex justify-between'>
-											<span className='text-sm font-medium text-gray-600'>
-												Descuento:
-											</span>
-											<span className='text-sm font-semibold'>-$0</span>
-										</div>
-										<div className='flex justify-between'>
-											<span className='text-sm font-medium text-gray-600'>
-												Impuestos:
-											</span>
-											<span className='text-sm font-semibold'>$0</span>
-										</div>
-										<div className='flex justify-between border-t pt-2'>
-											<span className='text-lg font-bold text-gray-900'>
-												Total:
-											</span>
-											<span className='text-lg font-bold text-gray-900'>
-												$0
-											</span>
-										</div>
-									</div>
+									<p className='mt-6 text-sm text-gray-500'>
+										Los montos se calcularán automáticamente en el backend
+										usando los productos seleccionados. Aquí solo definimos el
+										descuento global y si corresponde aplicar IVA.
+									</p>
 								</CardBody>
 							</Card>
 						</Form>
