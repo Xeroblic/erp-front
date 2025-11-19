@@ -355,62 +355,79 @@ const SalesDashboard: React.FC = () => {
 												: '100%',
 									}}>
 									<Chart
-										type='line'
-										height={320}
-										series={series as any}
-										options={{
-											stroke: { width: 3, curve: 'smooth' },
+  type="line"
+  height={320}
+  series={[
+    {
+      name: "Ventas",
+      data: series[0].data,
+      color: "#4F46E5",
+    },
+    {
+      name: "Devoluciones",
+      data: series[1].data,
+      color: "#E11D48",
+    },
+  ]}
+  options={{
+    stroke: {
+      width: [3, 3], // Ambas visibles
+      curve: "smooth",
+    },
+    markers: {
+      size: [0, 4], // Ventas sin puntos – Devoluciones SIEMPRE con puntos
+      strokeColors: ["#4F46E5", "#E11D48"],
+      hover: {
+        sizeOffset: 3,
+      },
+    },
+    tooltip: {
+      shared: true,
+      intersect: false,
+      theme: "dark",
+      x: { format: "dd/MM/yyyy" },
+    },
+    xaxis: {
+      categories,
+      labels: {
+        rotate: categories.length > 30 ? -45 : categories.length > 7 ? -30 : 0,
+        rotateAlways: categories.length > 7,
+        style: {
+          fontSize:
+            categories.length > 90
+              ? "9px"
+              : categories.length > 30
+              ? "10px"
+              : "12px",
+        },
+        trim: true,
+      },
+    },
+    yaxis: {
+      labels: {
+        formatter: (value) =>
+          `$${value.toLocaleString("es-CL", {
+            minimumFractionDigits: 0,
+          })}`,
+      },
+    },
+    chart: {
+      zoom: { enabled: true, type: "x" },
+      toolbar: { show: false },
+    },
+    dataLabels: { enabled: false },
+    grid: {
+      strokeDashArray: 4,
+      borderColor: "#E5E7EB55",
+    },
+    legend: {
+      position: "top",
+      horizontalAlign: "left",
+      itemMargin: { horizontal: 12 },
+    },
+  }}
+/>
 
-											colors: ['#4F46E5', '#E11D48'], // Ventas + Devoluciones tipo original
-
-											xaxis: {
-												categories,
-												type: 'category',
-												labels: {
-													rotate:
-														categories.length > 30
-															? -45
-															: categories.length > 7
-																? -30
-																: 0,
-													rotateAlways: categories.length > 7,
-													show: true,
-													trim: true,
-													style: {
-														fontSize:
-															categories.length > 90
-																? '9px'
-																: categories.length > 30
-																	? '10px'
-																	: '12px',
-													},
-												},
-											},
-
-											tooltip: { enabled: true },
-
-											chart: {
-												zoom: {
-													enabled: categories.length > 30,
-													type: 'x',
-												},
-												toolbar: { show: false }, // igual que antes
-											},
-
-											grid: {
-												borderColor: '#E5E7EB33',
-												strokeDashArray: 4,
-											},
-
-											legend: {
-												position: 'top',
-												horizontalAlign: 'left',
-												markers: { width: 10, height: 10 },
-											},
-
-											dataLabels: { enabled: false },
-										}}
-									/>
 								</div>
 							</div>
 						) : (
