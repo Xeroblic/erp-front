@@ -71,10 +71,10 @@ export const privatePages = {
 	dashboard: {
 		id: 'dashboard',
 		to: '/dashboard',
-		text: 'Dashboard',
+		text: 'Home',
 		icon: 'HeroChartBarSquare',
-		authority: ['view-dashboard'],
-		roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'manager', 'employee'],
+		// authority: [''],
+		// roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'manager', 'employee', 'technician', 'cashier', 'sales-rep'],
 	},
 
 	manage: {

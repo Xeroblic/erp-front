@@ -67,7 +67,7 @@ const DashboardContainer: React.FC = () => {
                         </Badge>
                     </div>
                 </SubheaderLeft>
-                <SubheaderRight>
+                {/* <SubheaderRight>
                     <div className="flex items-center space-x-3">
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                             Seleccionar Dashboard:
@@ -85,7 +85,7 @@ const DashboardContainer: React.FC = () => {
                             ))}
                         </Select>
                     </div>
-                </SubheaderRight>
+                </SubheaderRight> */}
             </Subheader>
 
             <Container className="flex flex-col w-full h-full">

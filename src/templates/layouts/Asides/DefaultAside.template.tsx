@@ -149,7 +149,7 @@ const DefaultAsideTemplate = () => {
 
 					{/* Dashboard - OPERATIVO */}
 					<AuthorityCheckNav
-						authority={Pages.dashboard.authority}
+						// authority={Pages.dashboard.authority}
 						userAuthority={userPermissionsAndRoles}>
 						<NavItem
 							text={Pages.dashboard.text}
