@@ -194,28 +194,29 @@ export default function EmpresaDetalle() {
 
 	return (
 		<PageWrapper isProtectedRoute title='Gestión de Empresa' name='Empresa Principal'>
-			<Subheader>
+			<Subheader className='justify-center items-center'>
 				<SubheaderLeft>
-					<div className='flex items-center gap-3'>
-						<Icon icon='HeroBuilding' className='text-2xl' />
+					<div className='flex items-center gap-5'>
+						<Icon icon='HeroBuilding' className='text-3xl' />
 						<div>
-							<h1 className='text-2xl font-bold'>
+							<Badge className='text-2xl font-bold mb-1'>
 								{miEmpresa?.company_name || 'Empresa'}
-							</h1>
-							<div className='mt-1 flex items-center gap-2'>
+							</Badge>
+							<p className='text-sm text-zinc-500 mt-1'>
+								Este módulo permite gestionar la información principal y de contacto de la empresa.
+							</p>
+							<div className='mt-2 flex items-center gap-2'>
 								<Badge variant='solid'>{miEmpresa?.company_type}</Badge>
 								<Badge
 									variant='outline'
-									className={
-										miEmpresa?.is_active ? 'text-green-600' : 'text-red-600'
-									}>
+									className={miEmpresa?.is_active ? 'text-green-600' : 'text-red-600'}>
 									{miEmpresa?.is_active ? 'Activa' : 'Inactiva'}
 								</Badge>
 							</div>
 						</div>
 					</div>
 				</SubheaderLeft>
-				<SubheaderRight>
+				<SubheaderRight className='space-x-2'>
 					<Button
 						variant='solid'
 						icon='HeroCloudArrowUp'

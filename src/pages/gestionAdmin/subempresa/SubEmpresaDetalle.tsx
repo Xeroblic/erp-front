@@ -46,7 +46,6 @@ export default function SubEmpresaDetalle() {
 
 	useEffect(() => {
 		if (id) {
-			// Cargar subempresas si no están cargadas
 			if (subempresas.length === 0) {
 				dispatch(fetchMisSubsidiarias());
 			}

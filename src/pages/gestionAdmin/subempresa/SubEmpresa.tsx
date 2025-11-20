@@ -76,9 +76,14 @@ export default function SubEmpresaLista() {
 
 	return (
 		<PageWrapper isProtectedRoute title='Subempresas' name='Subempresas'>
-			<Subheader>
+			<Subheader className='items-center justify-center'>
 				<SubheaderLeft>
-					<Badge className='text-xl'>Subempresas de la Empresa</Badge>
+					<div>
+						<Badge className='text-2xl font-semibold'>Subempresas de la Empresa</Badge>
+						<p className='text-sm text-zinc-400 mt-1'>
+							Administración de las subempresas asociadas a la empresa principal.
+						</p>
+					</div>
 				</SubheaderLeft>
 				<SubheaderRight className='flex items-center gap-2'>
 					<Input
@@ -94,7 +99,7 @@ export default function SubEmpresaLista() {
 				</SubheaderRight>
 			</Subheader>
 
-			<Container className='pt-4'>
+			<Container >
 				<SubempresasTable
 					subempresas={filteredSubempresas}
 					loading={loading}
