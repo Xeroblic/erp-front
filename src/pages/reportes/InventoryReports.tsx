@@ -11,89 +11,79 @@ import { fetchReportResults } from '@/store/slices/reports/reportsThunks';
 import { clearResults } from '@/store/slices/reports/reportSlice';
 import ReportExportButton from './ReportExportButton';
 
-type Row = { sku: string; nombre: string; bodega: string; stock: number; precio: number };
+type Row = {
+	sku: string;
+	nombre: string;
+	bodega: string;
+	stock: number;
+};
 
 const InventoryReports: React.FC = () => {
 	const [filters, setFilters] = useState<ReportFiltersState>({});
 	const dispatch = useAppDispatch();
 	const currentSubsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
+
 	const resultsData = useAppSelector((s) => s.reports.results);
-	// Extraer datos: resultsData puede ser { data: [...], meta: {...} } o directamente un array
+
+	// Normalizar resultados según formato del API
 	const results = (() => {
 		if (!resultsData) return [];
 		if (Array.isArray(resultsData)) return resultsData;
-		// Si es un objeto, intentar extraer data
 		if (resultsData && typeof resultsData === 'object' && 'data' in resultsData) {
 			const extracted = (resultsData as any).data;
 			return Array.isArray(extracted) ? extracted : [];
 		}
 		return [];
 	})();
+
 	const reportsLoading = useAppSelector((s) => s.reports.loading);
 	const reportsError = useAppSelector((s) => s.reports.error);
 
+	// Mapear filtros
 	const mapFilters = (f: ReportFiltersState) => {
-		const out: Record<string, any> = {
-			// No incluir per_page - el thunk obtendrá todas las páginas automáticamente
-		};
+		const out: Record<string, any> = {};
+
 		if (f.dateFrom) out.date_from = f.dateFrom;
 		if (f.dateTo) out.date_to = f.dateTo;
-		if (typeof f.priceMin === 'number') out.price_min = f.priceMin;
-		if (typeof f.priceMax === 'number') out.price_max = f.priceMax;
-		if (f.customer) {
-			const num = Number(String(f.customer).replace(/\D/g, ''));
-			if (!Number.isNaN(num) && num > 0) out.customer_id = num;
-			else out.q = f.customer;
-		}
+
 		if (f.branch) {
 			const num = Number(String(f.branch).replace(/\D/g, ''));
 			if (!Number.isNaN(num) && num > 0) out.branch_id = num;
 		}
+
 		return out;
 	};
 
-	// Limpiar resultados cuando se monta el componente o cambia el subsidiary
+	// Limpiar resultados al montar
 	useEffect(() => {
 		dispatch(clearResults());
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
+	}, [dispatch]);
 
+	// Cargar datos cuando cambien filtros o subsidiaria
 	useEffect(() => {
 		const sid = Number(currentSubsidiaryId ?? 0);
 		if (!sid) return;
-		const mapped = mapFilters(filters);
-		// Usar 'stock' como tipo de API (inventory en URL se mapea a stock en API)
-		dispatch(fetchReportResults({ subsidiaryId: sid, type: 'stock', filters: mapped }) as any);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [currentSubsidiaryId, filters]);
 
+		dispatch(
+			fetchReportResults({
+				subsidiaryId: sid,
+				type: 'stock',
+				filters: mapFilters(filters),
+			}) as any,
+		);
+	}, [currentSubsidiaryId, filters, dispatch]);
+
+	// MAPEO LIMPIO DEL ENDPOINT
 	const rows = useMemo(() => {
-		if (!results) return [] as Row[];
+		return results.map((r: any) => ({
+			sku: r.sku ?? '—',
+			nombre: r.product_name ?? '—',
+			bodega: r.branch_name ?? '—',
+			stock: Number(r.quantity ?? 0),
+		})) as Row[];
+	}, [results]);
 
-		const mapped = results.map((r: any) => {
-			const sku = r?.sku ?? r?.code ?? r?.product_sku ?? '—';
-			const nombre = r?.name ?? r?.product_name ?? r?.descripcion ?? '—';
-			const bodega = r?.warehouse ?? r?.bodega ?? r?.branch ?? '—';
-			const stock = Number(r?.stock ?? r?.qty ?? 0) || 0;
-			const precio = Number(r?.price ?? r?.precio ?? 0) || 0;
-			return { sku, nombre, bodega, stock, precio } as Row;
-		});
-
-		// aplicar filtros de precio / branch si existen
-		return mapped.filter((r: Row) => {
-			const priceMin = filters.priceMin === '' ? 0 : Number(filters.priceMin ?? 0);
-			const priceMax =
-				filters.priceMax === '' ? Infinity : Number(filters.priceMax ?? Infinity);
-			const okPrice = r.precio >= priceMin && r.precio <= priceMax;
-			const okBranch =
-				!filters.branch ||
-				r.bodega.toLowerCase().includes('norte') === (filters.branch === 'br-2') ||
-				r.bodega.toLowerCase().includes('centro') === (filters.branch === 'br-1');
-			return okPrice && okBranch;
-		});
-	}, [results, filters]);
-
-	// Definir columnas para DataTable
+	// COLUMNAS SIN "PRECIO"
 	const columns = useMemo<ColumnDef<Row>[]>(
 		() => [
 			{
@@ -129,23 +119,6 @@ const InventoryReports: React.FC = () => {
 				},
 				enableSorting: true,
 			},
-			{
-				accessorKey: 'precio',
-				header: 'Precio',
-				cell: (info) => {
-					const precio = info.getValue() as number;
-					return (
-						<span className='text-sm'>
-							${' '}
-							{precio.toLocaleString('es-CL', {
-								minimumFractionDigits: 0,
-								maximumFractionDigits: 0,
-							})}
-						</span>
-					);
-				},
-				enableSorting: true,
-			},
 		],
 		[],
 	);
@@ -155,6 +128,7 @@ const InventoryReports: React.FC = () => {
 			{reportsLoading && (
 				<div className='p-4 text-sm text-zinc-500'>Cargando datos de inventario...</div>
 			)}
+
 			{reportsError && (
 				<Card className='border border-rose-200 bg-rose-50 dark:border-rose-800 dark:bg-rose-900/20'>
 					<CardBody>
@@ -186,6 +160,7 @@ const InventoryReports: React.FC = () => {
 					</CardBody>
 				</Card>
 			)}
+
 			<Card className='border border-emerald-200/60 bg-gradient-to-br from-emerald-50 to-emerald-50/60 shadow-sm dark:from-emerald-900/10 dark:to-transparent'>
 				<CardHeader className='rounded-t-md bg-white/60 dark:bg-zinc-900/40'>
 					<div className='flex items-center justify-between'>
@@ -205,15 +180,14 @@ const InventoryReports: React.FC = () => {
 								</p>
 							</div>
 						</div>
-						<div>
-							<ReportExportButton
-								subsidiaryId={Number(currentSubsidiaryId ?? 0)}
-								type='stock'
-								filters={mapFilters(filters)}
-							/>
-						</div>
+						<ReportExportButton
+							subsidiaryId={Number(currentSubsidiaryId ?? 0)}
+							type='stock'
+							filters={mapFilters(filters)}
+						/>
 					</div>
 				</CardHeader>
+
 				<CardBody>
 					<DataTable
 						columns={columns}
@@ -226,6 +200,7 @@ const InventoryReports: React.FC = () => {
 				</CardBody>
 			</Card>
 
+			{/* FILTROS */}
 			<ReportFilters onApply={setFilters} />
 		</div>
 	);

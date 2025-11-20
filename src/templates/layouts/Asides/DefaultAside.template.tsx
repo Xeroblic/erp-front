@@ -478,7 +478,7 @@ const DefaultAsideTemplate = () => {
 										if (sid) navigate(`/subsidiaries/${sid}/reports/inventory`);
 									}}
 								/>
-								<NavItem
+								{/* <NavItem
 									text={'Reportes Financieros'}
 									to={''}
 									icon={'HeroBanknotes'}
@@ -489,7 +489,7 @@ const DefaultAsideTemplate = () => {
 										);
 										if (sid) navigate(`/subsidiaries/${sid}/reports/financial`);
 									}}
-								/>
+								/> */}
 							</AuthorityCheckNav>
 						</NavCollapse>
 					</AuthorityCheckNav>
