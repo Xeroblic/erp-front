@@ -123,15 +123,16 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId }) => {
 		],
 		[detail],
 	);
-
 	const billingAddress = useMemo(
-		() => formatAddress(detail?.billing_address),
-		[detail?.billing_address],
+		() => formatAddress(detail?.billing_snapshot),
+		[detail?.billing_snapshot],
 	);
+
 	const shippingAddress = useMemo(
-		() => formatAddress(detail?.shipping_address),
-		[detail?.shipping_address],
+		() => formatAddress(detail?.shipping_snapshot),
+		[detail?.shipping_snapshot],
 	);
+
 
 	return (
 		<div className='space-y-6'>
