@@ -38,7 +38,7 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 	loading = false,
 	onEdit,
 	onDelete,
-	onDuplicate,
+	// onDuplicate,
 	onView,
 	// onChangeStatus,
 	onConvertToSale,
