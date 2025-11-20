@@ -10,12 +10,12 @@ const DefaultHeaderRightCommon = () => {
 	return (
 		<>
 			{/* <MessagesPartial /> */}
-			<NotificationPartial />
 			<SelectSucursalEmpresa />
-			{/* <CompanySelectorButton /> */}
-			<SettingsPartial />
 			{/* <LanguageSelectorPartial /> */}
 			<SearchPartial />
+			<NotificationPartial />
+			{/* <CompanySelectorButton /> */}
+			<SettingsPartial />
 		</>
 	);
 };
