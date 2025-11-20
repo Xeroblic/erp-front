@@ -344,8 +344,8 @@ const CotizacionesAdmin: React.FC = () => {
 							<Icon icon='HeroDocumentText' className='h-6 w-6 text-blue-600' />
 						</div>
 						<div>
-							<p className='text-sm font-medium text-gray-600'>Total</p>
-							<p className='text-2xl font-bold text-gray-900'>{stats.total}</p>
+							<p className='text-sm font-medium'>Total</p>
+							<p className='text-2xl font-bold '>{stats.total}</p>
 						</div>
 					</div>
 				</CardBody>
@@ -355,11 +355,11 @@ const CotizacionesAdmin: React.FC = () => {
 				<CardBody>
 					<div className='flex items-center'>
 						<div className='mr-4 flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100'>
-							<Icon icon='HeroPencilSquare' className='h-6 w-6 text-gray-600' />
+							<Icon icon='HeroPencilSquare' className='h-6 w-6 ' />
 						</div>
 						<div>
-							<p className='text-sm font-medium text-gray-600'>Borradores</p>
-							<p className='text-2xl font-bold text-gray-900'>
+							<p className='text-sm font-medium '>Borradores</p>
+							<p className='text-2xl font-bold '>
 								{stats.byStatus.draft || 0}
 							</p>
 						</div>
@@ -374,8 +374,8 @@ const CotizacionesAdmin: React.FC = () => {
 							<Icon icon='HeroPaperAirplane' className='h-6 w-6 text-amber-600' />
 						</div>
 						<div>
-							<p className='text-sm font-medium text-gray-600'>Enviadas</p>
-							<p className='text-2xl font-bold text-gray-900'>
+							<p className='text-sm font-medium '>Enviadas</p>
+							<p className='text-2xl font-bold '>
 								{stats.byStatus.sent || 0}
 							</p>
 						</div>
@@ -390,8 +390,8 @@ const CotizacionesAdmin: React.FC = () => {
 							<Icon icon='HeroCheckCircle' className='h-6 w-6 text-green-600' />
 						</div>
 						<div>
-							<p className='text-sm font-medium text-gray-600'>Aprobadas</p>
-							<p className='text-2xl font-bold text-gray-900'>
+							<p className='text-sm font-medium '>Aprobadas</p>
+							<p className='text-2xl font-bold '>
 								{stats.byStatus.approved || 0}
 							</p>
 						</div>
@@ -406,8 +406,8 @@ const CotizacionesAdmin: React.FC = () => {
 							<Icon icon='HeroCurrencyDollar' className='h-6 w-6 text-emerald-600' />
 						</div>
 						<div>
-							<p className='text-sm font-medium text-gray-600'>Valor Total</p>
-							<p className='text-lg font-bold text-gray-900'>
+							<p className='text-sm font-medium '>Valor Total</p>
+							<p className='text-lg font-bold '>
 								{formatCurrency(stats.totalAmount)}
 							</p>
 						</div>
@@ -422,8 +422,8 @@ const CotizacionesAdmin: React.FC = () => {
 			<Subheader className='p-2'>
 				<SubheaderLeft>
 					<div className='start-0'>
-					<Badge className='text-3xl font-semibold text-gray-900'>Cotizaciones</Badge>
-					<p className='text-gray-600'>Gestión completa de cotizaciones comerciales</p>
+					<Badge className='text-3xl font-semibold '>Cotizaciones</Badge>
+					<p className=''>Gestión completa de cotizaciones comerciales</p>
 					</div>
 				</SubheaderLeft>
 				<SubheaderRight className='flex space-x-2'>

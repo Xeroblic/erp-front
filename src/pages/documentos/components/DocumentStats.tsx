@@ -19,8 +19,8 @@ const DocumentStats: React.FC<DocumentStatsProps> = ({ stats }) => {
             <Icon icon='HeroDocumentText' className='h-6 w-6 text-blue-600' />
           </div>
           <div className='ml-4'>
-            <p className='text-sm font-medium text-gray-500'>Total documentos</p>
-            <p className='text-2xl font-semibold text-gray-900'>{stats.total_documents}</p>
+            <p className='text-sm font-medium '>Total documentos</p>
+            <p className='text-2xl font-semibold text-red-500'>{stats.total_documents}</p>
           </div>
         </CardBody>
       </Card>
@@ -31,8 +31,8 @@ const DocumentStats: React.FC<DocumentStatsProps> = ({ stats }) => {
             <Icon icon='HeroCheckCircle' className='h-6 w-6 text-emerald-600' />
           </div>
           <div className='ml-4'>
-            <p className='text-sm font-medium text-gray-500'>Documentos activos</p>
-            <p className='text-2xl font-semibold text-gray-900'>{stats.active_documents}</p>
+            <p className='text-sm font-medium '>Documentos activos</p>
+            <p className='text-2xl font-semibold text-orange-500'>{stats.active_documents}</p>
           </div>
         </CardBody>
       </Card>
@@ -43,8 +43,8 @@ const DocumentStats: React.FC<DocumentStatsProps> = ({ stats }) => {
             <Icon icon='HeroServerStack' className='h-6 w-6 text-violet-600' />
           </div>
           <div className='ml-4'>
-            <p className='text-sm font-medium text-gray-500'>Tamaño total</p>
-            <p className='text-2xl font-semibold text-gray-900'>{formatFileSize(stats.total_size)}</p>
+            <p className='text-sm font-medium '>Tamaño total</p>
+            <p className='text-2xl font-semibold text-violet-500'>{formatFileSize(stats.total_size)}</p>
           </div>
         </CardBody>
       </Card>
@@ -55,8 +55,8 @@ const DocumentStats: React.FC<DocumentStatsProps> = ({ stats }) => {
             <Icon icon='HeroCloudArrowUp' className='h-6 w-6 text-amber-600' />
           </div>
           <div className='ml-4'>
-            <p className='text-sm font-medium text-gray-500'>Subidas recientes</p>
-            <p className='text-2xl font-semibold text-gray-900'>{stats.recent_uploads}</p>
+            <p className='text-sm font-medium '>Subidas recientes</p>
+            <p className='text-2xl font-semibold text-amber-500 '>{stats.recent_uploads}</p>
           </div>
         </CardBody>
       </Card>
