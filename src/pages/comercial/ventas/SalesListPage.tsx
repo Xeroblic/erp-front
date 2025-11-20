@@ -290,7 +290,9 @@ const SalesListPage: React.FC = () => {
 							<Card>
 								<CardHeader>
 									<div className='flex items-center gap-2'>
-										<Icon icon='DuoDollar' size='text-3xl' />
+										<div className='mr-4 flex h-12 w-12 items-center justify-center bg-green-200/20 p-1 rounded-lg border border-green-300'>
+											<Icon icon='DuoDollar' size='text-3xl' color='green'/>
+										</div>
 										<span className='text-sm font-semibold text-zinc-400'>
 											Total página
 										</span>
@@ -309,7 +311,9 @@ const SalesListPage: React.FC = () => {
 							<Card>
 								<CardHeader>
 									<div className='flex items-center gap-2'>
-										<Icon icon='DuoTicket' size='text-3xl' />
+										<div className='mr-4 flex h-12 w-12 items-center justify-center bg-red-200/20 p-1 rounded-lg border border-red-300'>
+											<Icon icon='DuoTicket' size='text-3xl' color='red'/>	
+										</div>
 										<span className='text-sm font-semibold text-zinc-400'>
 											Ticket promedio
 										</span>
@@ -328,7 +332,9 @@ const SalesListPage: React.FC = () => {
 							<Card>
 								<CardHeader>
 									<div className='flex items-center gap-2'>
-										<Icon icon='DuoSale1' size='text-3xl' />
+										<div className='mr-4 flex h-12 w-12 items-center justify-center bg-amber-200/20 p-1 rounded-lg border border-amber-300'>
+											<Icon icon='DuoSale1' size='text-3xl' color='amber' />
+										</div>
 										<span className='text-sm font-semibold text-zinc-400'>
 											Ventas en proceso
 										</span>
@@ -347,7 +353,9 @@ const SalesListPage: React.FC = () => {
 							<Card>
 								<CardHeader>
 									<div className='flex items-center gap-2'>
-										<Icon icon='DuoDoneCircle' size='text-3xl' />
+										<div className='mr-4 flex h-12 w-12 items-center justify-center bg-emerald-200/20 p-1 rounded-lg border border-emerald-400'>
+										<Icon icon='DuoDoneCircle' size='text-3xl' color='emerald' />
+										</div>
 										<span className='text-sm font-semibold text-zinc-400'>
 											Entregadas
 										</span>
@@ -368,7 +376,7 @@ const SalesListPage: React.FC = () => {
 							<CardHeader>
 								<div className='flex items-center gap-2'>
 									<Icon icon='DuoFilter' size='text-xl' />
-									<CardTitle>Filtros de búsqueda</CardTitle>
+									<CardTitle><Badge>Filtros de búsqueda</Badge></CardTitle>
 								</div>
 								<Button
 									variant='outline'
