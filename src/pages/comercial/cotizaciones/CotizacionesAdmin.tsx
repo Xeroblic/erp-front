@@ -27,6 +27,9 @@ import Input from '@/components/form/Input';
 import Select from '@/components/form/Select';
 import Icon from '@/components/icon/Icon';
 import { generateQuotePdf } from './utils/pdf/generateQuotePdf';
+import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import { Page } from '@react-pdf/renderer';
+import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 
 const CotizacionesAdmin: React.FC = () => {
 	// Estados locales
@@ -57,19 +60,19 @@ const CotizacionesAdmin: React.FC = () => {
 		setCurrentPage,
 		itemsPerPage,
 		setItemsPerPage,
-	stats,
-	createQuotation,
-	updateQuotation,
-	deleteQuotation,
-	duplicateQuotation,
-	changeStatus,
-	convertToSale,
-	refreshData,
-	exportQuotations,
-	getQuotationById,
-	resetFilters,
-	loadQuotationDetails,
-} = useQuotationsManager();
+		stats,
+		createQuotation,
+		updateQuotation,
+		deleteQuotation,
+		duplicateQuotation,
+		changeStatus,
+		convertToSale,
+		refreshData,
+		exportQuotations,
+		getQuotationById,
+		resetFilters,
+		loadQuotationDetails,
+	} = useQuotationsManager();
 
 	// Datos paginados
 	const paginatedQuotations = useMemo(() => {
@@ -250,7 +253,9 @@ const CotizacionesAdmin: React.FC = () => {
 						onChange={(e) =>
 							setFilters({
 								...filters,
-								status: e.target.value ? (e.target.value as QuoteStatus) : undefined,
+								status: e.target.value
+									? (e.target.value as QuoteStatus)
+									: undefined,
 							})
 						}>
 						<option value=''>Todos los estados</option>
@@ -413,15 +418,15 @@ const CotizacionesAdmin: React.FC = () => {
 	);
 
 	return (
-		<Container className='flex shrink-0 grow basis-auto flex-col pb-0'>
-			{/* Header */}
-			<div className='flex items-center justify-between py-4'>
-				<div>
-					<h1 className='text-3xl font-semibold text-gray-900'>Cotizaciones</h1>
+		<PageWrapper name='cotizaciones-admin'>
+			<Subheader className='p-2'>
+				<SubheaderLeft>
+					<div className='start-0'>
+					<Badge className='text-3xl font-semibold text-gray-900'>Cotizaciones</Badge>
 					<p className='text-gray-600'>Gestión completa de cotizaciones comerciales</p>
-				</div>
-
-				<div className='flex space-x-2'>
+					</div>
+				</SubheaderLeft>
+				<SubheaderRight className='flex space-x-2'>
 					<Button
 						variant='outline'
 						onClick={exportQuotations}
@@ -441,130 +446,135 @@ const CotizacionesAdmin: React.FC = () => {
 					<Button onClick={handleCreate} icon='HeroPlus'>
 						Nueva Cotización
 					</Button>
-				</div>
-			</div>
+				</SubheaderRight>
+			</Subheader>
+			<Container className='flex shrink-0 grow basis-auto flex-col pb-0'>
+				{/* Header */}
 
-			{/* Estadísticas */}
-			<StatsCards />
+				{/* Estadísticas */}
+				<StatsCards />
 
-			{/* Filtros */}
-			<FiltersSection />
+				{/* Filtros */}
+				<FiltersSection />
 
-			{/* Tabla */}
-			<Card>
-				<CardHeader>
-					<CardHeaderChild>
-						<CardTitle>Lista de Cotizaciones ({totalItems})</CardTitle>
-					</CardHeaderChild>
-				</CardHeader>
-				<CardBody>
-					<QuotationsTable
-						data={paginatedQuotations}
-						loading={loading}
-						onEdit={handleEdit}
-						onDelete={handleDeleteClick}
-						onDuplicate={handleDuplicateClick}
-						onView={handleView}
-						onChangeStatus={handleChangeStatus}
-						onConvertToSale={handleConvertToSale}
-						onDownloadPdf={handleDownloadPdf}
-					/>
+				{/* Tabla */}
+				<Card>
+					<CardHeader>
+						<CardHeaderChild>
+							<CardTitle>Lista de Cotizaciones ({totalItems})</CardTitle>
+						</CardHeaderChild>
+					</CardHeader>
+					<CardBody>
+						<QuotationsTable
+							data={paginatedQuotations}
+							loading={loading}
+							onEdit={handleEdit}
+							onDelete={handleDeleteClick}
+							onDuplicate={handleDuplicateClick}
+							onView={handleView}
+							onChangeStatus={handleChangeStatus}
+							onConvertToSale={handleConvertToSale}
+							onDownloadPdf={handleDownloadPdf}
+						/>
 
-					{totalItems > 0 && (
-						<div className='mt-4 flex items-center justify-between'>
-							<div className='flex items-center space-x-2'>
-								<span className='text-sm text-gray-700'>
-									Mostrando {(currentPage - 1) * itemsPerPage + 1} a{' '}
-									{Math.min(currentPage * itemsPerPage, totalItems)} de{' '}
-									{totalItems} resultados
-								</span>
-							</div>
-
-							<div className='flex items-center space-x-2'>
-								<Button
-									variant='outline'
-									size='sm'
-									onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-									isDisable={currentPage === 1}>
-									Anterior
-								</Button>
-
-								<div className='flex items-center space-x-1'>
-									{Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-										const pageNumber = Math.max(1, currentPage - 2) + i;
-										if (pageNumber > totalPages) return null;
-
-										return (
-											<Button
-												key={pageNumber}
-												variant={
-													pageNumber === currentPage ? 'solid' : 'outline'
-												}
-												size='sm'
-												onClick={() => setCurrentPage(pageNumber)}>
-												{pageNumber}
-											</Button>
-										);
-									})}
+						{totalItems > 0 && (
+							<div className='mt-4 flex items-center justify-between'>
+								<div className='flex items-center space-x-2'>
+									<span className='text-sm text-gray-700'>
+										Mostrando {(currentPage - 1) * itemsPerPage + 1} a{' '}
+										{Math.min(currentPage * itemsPerPage, totalItems)} de{' '}
+										{totalItems} resultados
+									</span>
 								</div>
 
-								<Button
-									variant='outline'
-									size='sm'
-									onClick={() =>
-										setCurrentPage(Math.min(totalPages, currentPage + 1))
-									}
-									isDisable={currentPage === totalPages}>
-									Siguiente
-								</Button>
+								<div className='flex items-center space-x-2'>
+									<Button
+										variant='outline'
+										size='sm'
+										onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+										isDisable={currentPage === 1}>
+										Anterior
+									</Button>
+
+									<div className='flex items-center space-x-1'>
+										{Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+											const pageNumber = Math.max(1, currentPage - 2) + i;
+											if (pageNumber > totalPages) return null;
+
+											return (
+												<Button
+													key={pageNumber}
+													variant={
+														pageNumber === currentPage
+															? 'solid'
+															: 'outline'
+													}
+													size='sm'
+													onClick={() => setCurrentPage(pageNumber)}>
+													{pageNumber}
+												</Button>
+											);
+										})}
+									</div>
+
+									<Button
+										variant='outline'
+										size='sm'
+										onClick={() =>
+											setCurrentPage(Math.min(totalPages, currentPage + 1))
+										}
+										isDisable={currentPage === totalPages}>
+										Siguiente
+									</Button>
+								</div>
 							</div>
-						</div>
-					)}
-				</CardBody>
-			</Card>
+						)}
+					</CardBody>
+				</Card>
 
-			{/* Modal de Crear/Editar */}
-			<CreateEditQuotationModal
-				isOpen={isCreateModalOpen}
-				onClose={() => {
-					setIsCreateModalOpen(false);
-					setEditingQuotation(null);
-				}}
-				onSubmit={handleSubmit}
-				quotation={editingQuotation}
-				loading={loading}
-			/>
+				{/* Modal de Crear/Editar */}
+				<CreateEditQuotationModal
+					isOpen={isCreateModalOpen}
+					onClose={() => {
+						setIsCreateModalOpen(false);
+						setEditingQuotation(null);
+					}}
+					onSubmit={handleSubmit}
+					quotation={editingQuotation}
+					loading={loading}
+				/>
 
-			{/* Modal de Detalles */}
-	<QuotationDetailsModal
-		isOpen={isDetailsModalOpen}
-		onClose={() => {
-			setIsDetailsModalOpen(false);
-			setViewingQuotation(null);
-		}}
-		quotation={viewingQuotation}
-		isLoading={detailsLoading}
-		onDownloadPdf={handleDownloadPdf}
-	/>
+				{/* Modal de Detalles */}
+				<QuotationDetailsModal
+					isOpen={isDetailsModalOpen}
+					onClose={() => {
+						setIsDetailsModalOpen(false);
+						setViewingQuotation(null);
+					}}
+					quotation={viewingQuotation}
+					isLoading={detailsLoading}
+					onDownloadPdf={handleDownloadPdf}
+				/>
 
-			{/* Modal de Confirmación de Duplicación */}
-			<DuplicateQuotationModal
-				isOpen={isDuplicateModalOpen}
-				onClose={handleCloseModals}
-				onConfirm={handleDuplicateConfirm}
-				quotation={duplicatingQuotation}
-				isLoading={isActionLoading}
-			/>
+				{/* Modal de Confirmación de Duplicación */}
+				<DuplicateQuotationModal
+					isOpen={isDuplicateModalOpen}
+					onClose={handleCloseModals}
+					onConfirm={handleDuplicateConfirm}
+					quotation={duplicatingQuotation}
+					isLoading={isActionLoading}
+				/>
 
-			{/* Modal de Confirmación de Eliminación */}
-			<DeleteQuotationModal
-				isOpen={isDeleteModalOpen}
-				onClose={handleCloseModals}
-				onConfirm={handleDeleteConfirm}
-				quotation={deletingQuotation}
-				isLoading={isActionLoading}
-			/>
-		</Container>
+				{/* Modal de Confirmación de Eliminación */}
+				<DeleteQuotationModal
+					isOpen={isDeleteModalOpen}
+					onClose={handleCloseModals}
+					onConfirm={handleDeleteConfirm}
+					quotation={deletingQuotation}
+					isLoading={isActionLoading}
+				/>
+			</Container>
+		</PageWrapper>
 	);
 };
 
