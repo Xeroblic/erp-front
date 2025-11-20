@@ -430,7 +430,8 @@ export const privatePages = {
 				text: 'Clientes Ventas',
 				icon: 'HeroUsers',
 				authority: ['view-sale'],
-				roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'cashier', 'manager'],
+				roles: ['super-admin', 'company-admin', 
+					'subsidiary-admin', 'branch-admin', 'cashier', 'manager'],
 			},
 			clientesVentasDetalle:{
 				id: 'clientesVentasDetalle',
