@@ -11,6 +11,7 @@ import Button from '../../../../../components/ui/Button';
 import { saveAs } from 'file-saver';
 import { toast } from 'react-toastify';
 import { generateQuotePdf } from '../../utils/pdf/generateQuotePdf';
+import ApiService from '@/services/ApiService';
 
 interface QuotationDetailsModalProps {
 	isOpen: boolean;
@@ -75,6 +76,29 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
 		}
 	};
 
+	const [converting, setConverting] = useState(false);
+
+	const handleConvertToSale = async () => {
+		if (!quotation) return;
+		try {
+			setConverting(true);
+
+			const res = await ApiService.fetchNormalized({
+				url: `/subsidiaries/${quotation.subsidiary_id}/quotes/${quotation.id}/convert-to-sale`,
+				method: 'POST',
+			});
+
+			toast.success('Cotización convertida en venta correctamente');
+
+			onClose();
+		} catch (error) {
+			console.error(error);
+			toast.error('No se pudo convertir la cotización');
+		} finally {
+			setConverting(false);
+		}
+	};
+
 	return (
 		<Modal isOpen={isOpen} setIsOpen={onClose} size='2xl'>
 			<ModalHeader>
@@ -115,6 +139,15 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
 						isLoading={downloading}>
 						Descargar PDF
 					</Button>
+					<Button
+						variant='outline'
+						color='green'
+						onClick={handleConvertToSale}
+						isDisable={!quotation}
+						isLoading={converting}>
+						Convertir a Venta
+					</Button>
+
 					<Button color='blue' onClick={handlePrint} isDisable={!quotation}>
 						Imprimir
 					</Button>
