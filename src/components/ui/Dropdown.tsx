@@ -41,7 +41,7 @@ const Dropdown: FC<IDropdownProps> = (props) => {
 		!!(isOpen !== null && !!setIsOpen ? isOpen : false),
 	);
 
-	const dropdownRef = useRef(null);
+	const dropdownRef = useRef<HTMLElement>(null);
 
 	const classes = classNames('inline-flex');
 
@@ -53,7 +53,7 @@ const Dropdown: FC<IDropdownProps> = (props) => {
 			setState(false);
 		}
 	}, [isOpen, setIsOpen]);
-	useOnClickOutside(dropdownRef, closeMenu);
+	useOnClickOutside(dropdownRef as React.RefObject<HTMLElement>, closeMenu);
 
 	return (
 		<Manager>
@@ -62,17 +62,24 @@ const Dropdown: FC<IDropdownProps> = (props) => {
 				data-component-name='Dropdown'
 				ref={dropdownRef}
 				className={classNames(classes, className)}>
-				{children.map((child: ReactElement, index: number) =>
-					// @ts-ignore
-					['DropdownMenu', 'DropdownToggle'].includes(child.type.displayName as string)
-						? cloneElement(child, {
-								isOpen: isOpen !== null && !!setIsOpen ? isOpen : state,
-								setIsOpen: isOpen !== null && !!setIsOpen ? setIsOpen : setState,
-								// eslint-disable-next-line react/no-array-index-key
-								key: index,
-							})
-						: child,
-				)}
+				{children.map((child: ReactElement, index: number) => {
+					let typeName = '';
+					if (typeof child.type === 'function' || typeof child.type === 'object') {
+						typeName =
+							(child.type as any).displayName || (child.type as any).name || '';
+					} else if (typeof child.type === 'string') {
+						typeName = child.type;
+					}
+					if (typeName === 'DropdownMenu' || typeName === 'DropdownToggle') {
+						const extraProps: Record<string, unknown> = {
+							setIsOpen: isOpen !== null && !!setIsOpen ? setIsOpen : setState,
+							key: index,
+							isOpen: isOpen !== null && !!setIsOpen ? isOpen : state,
+						};
+						return cloneElement(child, extraProps);
+					}
+					return child;
+				})}
 			</Tag>
 		</Manager>
 	);

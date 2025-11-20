@@ -343,7 +343,7 @@ const EcoPCDashboard: React.FC = () => {
 								<span className='text-gray-600'>Cargando productos...</span>
 							</div>
 						) : (
-							topProducts.map((product, index) => (
+							topProducts.map((product) => (
 								<div
 									key={product.id}
 									className='border-b border-gray-100 p-4 transition-colors hover:bg-green-50'>

@@ -6,6 +6,7 @@ import React, { useEffect, useMemo } from 'react';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
 import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
+import type { MultiValue, SingleValue } from 'react-select';
 import Textarea from '@/components/form/Textarea';
 import Checkbox from '@/components/form/Checkbox';
 import Icon from '@/components/icon/Icon';
@@ -70,6 +71,10 @@ const portFields: Array<{ name: keyof UpdateItemDetailsPayload; label: string }>
 	{ name: 'usb_c_ports', label: 'USB-C' },
 ];
 
+const isMultiValue = (
+	option: SingleValue<TSelectOption> | MultiValue<TSelectOption> | null,
+): option is MultiValue<TSelectOption> => Array.isArray(option);
+
 const MonitorForm: React.FC<MonitorFormProps> = ({
 	branchId,
 	values,
@@ -77,7 +82,9 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 	readOnly = false,
 }) => {
 	const dispatch = useAppDispatch();
-	const validationLoading = useAppSelector((state) => state.technicalReviews.validationRulesLoading);
+	const validationLoading = useAppSelector(
+		(state) => state.technicalReviews.validationRulesLoading,
+	);
 	const brands = useAppSelector((state) => state.brands.items);
 	const brandsLoading = useAppSelector((state) => state.brands.loading);
 
@@ -120,7 +127,15 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 
 	const handleSelectChange =
 		(name: string) =>
-		(option: TSelectOption | null) => {
+		(newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption> | null) => {
+			if (isMultiValue(newValue)) {
+				onChange(
+					name,
+					newValue.map((option) => option.value),
+				);
+				return;
+			}
+			const option = newValue as TSelectOption | null;
 			onChange(name, option?.value ?? null);
 		};
 
@@ -172,7 +187,9 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 				<CardBody className='p-6'>
 					<div className='flex items-center justify-center py-8'>
 						<Icon icon='HeroArrowPath' className='mr-2 h-5 w-5 animate-spin' />
-						<span className='text-gray-600 dark:text-gray-400'>Cargando formulario…</span>
+						<span className='text-gray-600 dark:text-gray-400'>
+							Cargando formulario…
+						</span>
 					</div>
 				</CardBody>
 			</Card>
@@ -270,7 +287,10 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 							id='includes_power_cable'
 							name='includes_power_cable'
 							checked={includesPowerCable}
-							onChange={handleCheckboxChange('includes_power_cable', handleTogglePowerCable)}
+							onChange={handleCheckboxChange(
+								'includes_power_cable',
+								handleTogglePowerCable,
+							)}
 							disabled={readOnly}
 							label='Incluye cable de alimentación'
 						/>
@@ -295,7 +315,8 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 						</div>
 					) : (
 						<div className='rounded-lg bg-amber-50 p-3 text-sm text-amber-700'>
-							Al marcar “No incluye” se fija automáticamente el estado en “No incluye”.
+							Al marcar “No incluye” se fija automáticamente el estado en “No
+							incluye”.
 						</div>
 					)}
 				</CardBody>
@@ -313,7 +334,9 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 					<div className='grid grid-cols-2 gap-4 md:grid-cols-4'>
 						{portFields.map((field) => (
 							<div key={field.name as string}>
-								<label className='mb-2 block text-sm font-medium'>{field.label}</label>
+								<label className='mb-2 block text-sm font-medium'>
+									{field.label}
+								</label>
 								<Input
 									type='number'
 									name={field.name as string}
@@ -383,7 +406,9 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 							/>
 						</div>
 						<div>
-							<label className='mb-2 block text-sm font-medium'>Condición pantalla</label>
+							<label className='mb-2 block text-sm font-medium'>
+								Condición pantalla
+							</label>
 							<SelectReact
 								name='screen_condition'
 								options={screenConditionOptions}
@@ -400,7 +425,9 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 							/>
 						</div>
 						<div>
-							<label className='mb-2 block text-sm font-medium'>Condición marco</label>
+							<label className='mb-2 block text-sm font-medium'>
+								Condición marco
+							</label>
 							<SelectReact
 								name='frame_condition'
 								options={frameConditionOptions}

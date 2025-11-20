@@ -6,6 +6,7 @@ import React, { useEffect, useMemo } from 'react';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
 import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
+import type { MultiValue, SingleValue } from 'react-select';
 import Textarea from '@/components/form/Textarea';
 import Checkbox from '@/components/form/Checkbox';
 import Icon from '@/components/icon/Icon';
@@ -66,6 +67,10 @@ const portFields: Array<{ name: keyof UpdateItemDetailsPayload; label: string }>
 	{ name: 'rj45_ports', label: 'RJ45' },
 ];
 
+const isMultiValue = (
+	option: SingleValue<TSelectOption> | MultiValue<TSelectOption> | null,
+): option is MultiValue<TSelectOption> => Array.isArray(option);
+
 const DesktopForm: React.FC<DesktopFormProps> = ({
 	branchId,
 	values,
@@ -73,7 +78,9 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 	readOnly = false,
 }) => {
 	const dispatch = useAppDispatch();
-	const validationLoading = useAppSelector((state) => state.technicalReviews.validationRulesLoading);
+	const validationLoading = useAppSelector(
+		(state) => state.technicalReviews.validationRulesLoading,
+	);
 	const brands = useAppSelector((state) => state.brands.items);
 	const brandsLoading = useAppSelector((state) => state.brands.loading);
 
@@ -115,7 +122,15 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 
 	const handleSelectChange =
 		(name: string) =>
-		(option: TSelectOption | null) => {
+		(newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption> | null) => {
+			if (isMultiValue(newValue)) {
+				onChange(
+					name,
+					newValue.map((option) => option.value),
+				);
+				return;
+			}
+			const option = newValue as TSelectOption | null;
 			onChange(name, option?.value ?? null);
 		};
 
@@ -157,7 +172,9 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 				<CardBody className='p-6'>
 					<div className='flex items-center justify-center py-8'>
 						<Icon icon='HeroArrowPath' className='mr-2 h-5 w-5 animate-spin' />
-						<span className='text-gray-600 dark:text-gray-400'>Cargando formulario…</span>
+						<span className='text-gray-600 dark:text-gray-400'>
+							Cargando formulario…
+						</span>
 					</div>
 				</CardBody>
 			</Card>
@@ -269,7 +286,8 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 							options={ramTypeOptions}
 							value={
 								values.ram_type
-									? ramTypeOptions.find((o) => o.value === values.ram_type) || null
+									? ramTypeOptions.find((o) => o.value === values.ram_type) ||
+										null
 									: null
 							}
 							onChange={handleSelectChange('ram_type')}
@@ -291,7 +309,9 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 						/>
 					</div>
 					<div>
-						<label className='mb-2 block text-sm font-medium'>Tecnología almacenamiento</label>
+						<label className='mb-2 block text-sm font-medium'>
+							Tecnología almacenamiento
+						</label>
 						<SelectReact
 							name='storage_technology'
 							options={storageTechOptions}
@@ -322,7 +342,9 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 					<div className='grid grid-cols-2 gap-4 md:grid-cols-3'>
 						{portFields.map((field) => (
 							<div key={field.name as string}>
-								<label className='mb-2 block text-sm font-medium'>{field.label}</label>
+								<label className='mb-2 block text-sm font-medium'>
+									{field.label}
+								</label>
 								<Input
 									type='number'
 									name={field.name as string}
@@ -390,7 +412,9 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 					</div>
 					{includesCharger ? (
 						<div>
-							<label className='mb-2 block text-sm font-medium'>Estado cargador</label>
+							<label className='mb-2 block text-sm font-medium'>
+								Estado cargador
+							</label>
 							<SelectReact
 								name='charger_status'
 								options={chargerStatusOptions}

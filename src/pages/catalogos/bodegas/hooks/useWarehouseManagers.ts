@@ -44,9 +44,10 @@ const extractRoleNames = (manager: any): string[] => {
 };
 
 export const useWarehouseManagers = (branchId?: number | null) => {
+	const safeBranchId = branchId == null ? undefined : branchId;
 	const { managers, loading, error, refetch } = useBranchManagers({
-		branchId,
-		enabled: Boolean(branchId),
+		branchId: safeBranchId,
+		enabled: Boolean(safeBranchId),
 	});
 
 	const filteredManagers = useMemo(
@@ -67,7 +68,7 @@ export const useWarehouseManagers = (branchId?: number | null) => {
 						.join(' ')
 						.trim() || manager.name || `Usuario #${manager.id}`;
 				return {
-					value: manager.id.toString(),
+					value: manager.id != null ? manager.id.toString() : undefined,
 					label: fullName,
 				};
 			}),

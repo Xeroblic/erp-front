@@ -97,7 +97,7 @@ export const MultipleEditorsExample = () => {
 		<div className='space-y-6'>
 			{/* Descripción Corta - Compacta */}
 			<div className='space-y-2'>
-				<Label>
+				<Label htmlFor='snippet_description'>
 					Descripción Corta
 					<span className='ml-2 text-xs text-zinc-500'>(Para listados)</span>
 				</Label>
@@ -113,7 +113,7 @@ export const MultipleEditorsExample = () => {
 
 			{/* Descripción Media */}
 			<div className='space-y-2'>
-				<Label>
+				<Label htmlFor='short_description'>
 					Descripción Resumida
 					<span className='ml-2 text-xs text-zinc-500'>
 						(Características principales)
@@ -130,7 +130,7 @@ export const MultipleEditorsExample = () => {
 
 			{/* Descripción Larga - Completa */}
 			<div className='space-y-2'>
-				<Label>
+				<Label htmlFor='long_description'>
 					Descripción Detallada
 					<span className='ml-2 text-xs text-zinc-500'>(Especificaciones completas)</span>
 				</Label>
@@ -209,7 +209,7 @@ export const AutoSaveExample = ({ productId }: { productId: number }) => {
 	return (
 		<div className='space-y-2'>
 			<div className='flex items-center justify-between'>
-				<Label>Descripción</Label>
+				<Label htmlFor='auto_save_description'>Descripción</Label>
 				<span className='text-xs text-zinc-500'>
 					{isSaving
 						? 'Guardando...'
@@ -236,7 +236,7 @@ export const ExpandableExample = () => {
 	return (
 		<div className='space-y-2'>
 			<div className='flex items-center justify-between'>
-				<Label>Descripción</Label>
+				<Label htmlFor='expandable_description'>Descripción</Label>
 				<Button variant='outline' size='sm' onClick={() => setIsExpanded(!isExpanded)}>
 					{isExpanded ? 'Contraer' : 'Expandir'}
 				</Button>
@@ -267,7 +267,7 @@ export const WordCountExample = () => {
 	return (
 		<div className='space-y-2'>
 			<div className='flex items-center justify-between'>
-				<Label>Descripción</Label>
+				<Label htmlFor='word_count_description'>Descripción</Label>
 				<span className='text-xs text-zinc-500'>{wordCount} palabras</span>
 			</div>
 			<RichTextEditor
@@ -330,13 +330,13 @@ export const PreviewExample = () => {
 		<div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
 			{/* Editor */}
 			<div className='space-y-2'>
-				<Label>Editor</Label>
+				<Label htmlFor='preview_editor'>Editor</Label>
 				<RichTextEditor value={content} onChange={setContent} minHeight='400px' />
 			</div>
 
 			{/* Preview */}
 			<div className='space-y-2'>
-				<Label>Vista Previa</Label>
+				<Label htmlFor='preview_view'>Vista Previa</Label>
 				<div
 					className='prose rounded-lg border p-4 dark:prose-invert'
 					dangerouslySetInnerHTML={{ __html: content }}

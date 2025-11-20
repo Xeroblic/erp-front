@@ -88,9 +88,7 @@ const Tooltip: FC<ITooltipProps> = (props) => {
 						</span>
 					) : (
 						cloneElement(children as ReactElement, {
-							'data-component-name': `${getComponentName(
-								children,
-							)} is cloned with Tooltip`,
+							// 'data-component-name': `${getComponentName(children)} is cloned with Tooltip`,
 							// @ts-ignore
 							ref: (node: HTMLElement) => setReferenceRef(node, ref),
 							// @ts-ignore
@@ -106,7 +104,7 @@ const Tooltip: FC<ITooltipProps> = (props) => {
 					<Popper placement={placement}>
 						{({ ref, style }) => (
 							<div
-								data-component-name='Tooltip/Popper'
+								// data-component-name='Tooltip/Popper'
 								// @ts-ignore
 								ref={(node) => setPopperRef(node, ref)}
 								style={style}

@@ -1,4 +1,3 @@
-// Valida y calcula el DV del RUT chileno (sin puntos, opcional con guion)
 export function validateRut(rut: string): boolean {
     if (!rut) return false;
 

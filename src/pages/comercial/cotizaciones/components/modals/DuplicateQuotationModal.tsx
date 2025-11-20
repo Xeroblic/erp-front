@@ -9,6 +9,7 @@ import Card, { CardHeader, CardBody } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import { IQuote } from '../../../../../interface';
+import { getCustomerDisplayName } from '../../utils/customerDisplay';
 
 interface DuplicateQuotationModalProps {
 	isOpen: boolean;
@@ -26,6 +27,8 @@ const DuplicateQuotationModal: React.FC<DuplicateQuotationModalProps> = ({
 	isLoading = false,
 }) => {
 	if (!quotation) return null;
+
+	const customerDisplayName = getCustomerDisplayName(quotation.customer);
 
 	return (
 		<Modal isOpen={isOpen} setIsOpen={() => onClose()} size='md'>
@@ -66,11 +69,7 @@ const DuplicateQuotationModal: React.FC<DuplicateQuotationModalProps> = ({
 								<div className='flex items-center justify-between'>
 									<span className='font-medium text-gray-700'>Cliente:</span>
 									<span className='text-right text-gray-900'>
-										{quotation.customer?.company_name ||
-											quotation.customer?.first_name +
-												' ' +
-												quotation.customer?.last_name ||
-											'Cliente no disponible'}
+										{customerDisplayName}
 									</span>
 								</div>
 								<div className='flex items-center justify-between border-t pt-3'>

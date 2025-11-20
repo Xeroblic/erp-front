@@ -12,8 +12,16 @@
 // };
 
 // utils/pdf/fonts.ts
-import * as pdfFonts from "pdfmake/build/vfs_fonts";
+import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 
-export const loadPdfFonts = (pdfMake: any) => {
-    pdfMake.vfs = pdfFonts.vfs; // listo
+interface PdfMakeInstance {
+	vfs?: Record<string, string>;
+	[key: string]: unknown;
+}
+
+export const loadPdfFonts = (pdfMake: PdfMakeInstance): void => {
+	if (!pdfFonts?.vfs) {
+		return;
+	}
+	pdfMake.vfs = pdfFonts.vfs;
 };

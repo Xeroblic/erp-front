@@ -26,6 +26,10 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
 }) => {
 	if (!invitation) return null;
 
+	const createdAtLabel = invitation.created_at
+		? new Date(invitation.created_at).toLocaleDateString('es-ES')
+		: 'Fecha no disponible';
+
 	const handleConfirm = () => {
 		onConfirm();
 	};
@@ -72,8 +76,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
 									'Sin nombre'}
 							</p>
 							<p className='mt-1 text-xs text-red-600 dark:text-red-400'>
-								Invitado el{' '}
-								{new Date(invitation.created_at).toLocaleDateString('es-ES')}
+								Invitado el {createdAtLabel}
 							</p>
 						</div>
 					</div>

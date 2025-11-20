@@ -64,9 +64,8 @@ export function useDocumentos(filters: IDocumentFilters) {
 	const user = useAppSelector((state) => state.auth.user);
 	const subsidiaryId =
 		user?.subsidiary?.id ??
-		user?.subsidiary_id ??
 		user?.branch?.subsidiary?.id ??
-		user?.empresa?.subsidiary_id ??
+		user?.personalizacion?.subsidiary_id ??
 		null;
 
 	const [documents, setDocuments] = useState<IDocument[]>([]);
@@ -119,8 +118,7 @@ export function useDocumentos(filters: IDocumentFilters) {
 				await fetchDocuments();
 				return created;
 			} catch (error: any) {
-				const message =
-					error?.response?.data?.message || 'Error al crear el documento';
+				const message = error?.response?.data?.message || 'Error al crear el documento';
 				toast.error(message);
 				throw error;
 			} finally {
@@ -171,8 +169,7 @@ export function useDocumentos(filters: IDocumentFilters) {
 				toast.success('Documento eliminado');
 				await fetchDocuments();
 			} catch (error: any) {
-				const message =
-					error?.response?.data?.message || 'Error al eliminar el documento';
+				const message = error?.response?.data?.message || 'Error al eliminar el documento';
 				toast.error(message);
 				throw error;
 			} finally {
@@ -189,8 +186,7 @@ export function useDocumentos(filters: IDocumentFilters) {
 				const document = await documentsService.getDocument(subsidiaryId, documentId);
 				return document;
 			} catch (error: any) {
-				const message =
-					error?.response?.data?.message || 'No se pudo cargar el documento';
+				const message = error?.response?.data?.message || 'No se pudo cargar el documento';
 				toast.error(message);
 				throw error;
 			}
@@ -210,8 +206,7 @@ export function useDocumentos(filters: IDocumentFilters) {
 				toast.success('Adjuntos cargados correctamente');
 				return attachments;
 			} catch (error: any) {
-				const message =
-					error?.response?.data?.message || 'Error al subir adjuntos';
+				const message = error?.response?.data?.message || 'Error al subir adjuntos';
 				toast.error(message);
 				throw error;
 			}
@@ -226,8 +221,7 @@ export function useDocumentos(filters: IDocumentFilters) {
 				await documentsService.deleteAttachment(subsidiaryId, documentId, attachmentId);
 				toast.success('Adjunto eliminado');
 			} catch (error: any) {
-				const message =
-					error?.response?.data?.message || 'Error al eliminar el adjunto';
+				const message = error?.response?.data?.message || 'Error al eliminar el adjunto';
 				toast.error(message);
 				throw error;
 			}

@@ -6,6 +6,7 @@ import React, { useEffect } from 'react';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
 import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
+import type { MultiValue, SingleValue } from 'react-select';
 import Textarea from '@/components/form/Textarea';
 import Checkbox from '@/components/form/Checkbox';
 import Icon from '@/components/icon/Icon';
@@ -79,20 +80,20 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 		{ value: 'no_battery', label: 'No Battery' },
 	];
 
-const conditionOptions: TSelectOption[] = [
-	{ value: 'ok', label: 'OK' },
-	{ value: 'worn', label: 'Desgastado' },
-	{ value: 'missing_pieces', label: 'Faltan piezas' },
-	// { value: 'scratched', label: 'Rayado' },
-	{ value: 'broken', label: 'Roto' },
-];
+	const conditionOptions: TSelectOption[] = [
+		{ value: 'ok', label: 'OK' },
+		{ value: 'worn', label: 'Desgastado' },
+		{ value: 'missing_pieces', label: 'Faltan piezas' },
+		// { value: 'scratched', label: 'Rayado' },
+		{ value: 'broken', label: 'Roto' },
+	];
 
-const hingeKeyboardOptions: TSelectOption[] = [
-	{ value: 'ok', label: 'OK' },
-	{ value: 'worn', label: 'Desgastado' },
-	{ value: 'missing_pieces', label: 'Faltan piezas' },
-	{ value: 'broken', label: 'Roto' },
-];
+	const hingeKeyboardOptions: TSelectOption[] = [
+		{ value: 'ok', label: 'OK' },
+		{ value: 'worn', label: 'Desgastado' },
+		{ value: 'missing_pieces', label: 'Faltan piezas' },
+		{ value: 'broken', label: 'Roto' },
+	];
 
 	const keyboardLayoutOptions: TSelectOption[] = [
 		{ value: 'es', label: 'Español (ES)' },
@@ -120,9 +121,21 @@ const hingeKeyboardOptions: TSelectOption[] = [
 		onChange(e.target.name, e.target.value);
 	};
 
+	const isMultiValue = (
+		option: SingleValue<TSelectOption> | MultiValue<TSelectOption> | null,
+	): option is MultiValue<TSelectOption> => Array.isArray(option);
+
 	const handleSelectChange =
 		(name: string) =>
-		(option: TSelectOption | null) => {
+		(newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption> | null) => {
+			if (isMultiValue(newValue)) {
+				onChange(
+					name,
+					newValue.map((option) => option.value),
+				);
+				return;
+			}
+			const option = newValue as TSelectOption | null;
 			onChange(name, option?.value ?? null);
 		};
 
@@ -167,7 +180,6 @@ const hingeKeyboardOptions: TSelectOption[] = [
 
 	return (
 		<div className='space-y-6'>
-
 			{/* 1️⃣ Información General */}
 			<Card>
 				<CardHeader>

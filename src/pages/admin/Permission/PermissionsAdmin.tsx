@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { type UserWithDetails } from '@/store/slices/usersAdmin/usersAdminSlice';
 import { TSelectOption } from '@/components/form/SelectReact';
+import type { MultiValue } from 'react-select';
 
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
@@ -27,6 +28,7 @@ import { PermissionsModal } from './components/modals/PermissionsModal';
 import { createUserTableColumns } from './components/tables/UserTableColumns';
 import { usePermissionsManagement } from './hooks/usePermissionsManagement';
 import { formatRoleName, formatPermissionName } from './utils/formatters';
+import { Permission, Role } from '@/store/slices/permissions/permissionsSlice';
 
 export default function PermissionsAdmin() {
 	// Hook personalizado para gestión de permisos
@@ -139,7 +141,7 @@ export default function PermissionsAdmin() {
 
 	const roleOptions = useMemo<TSelectOption[]>(
 		() =>
-			(roles || []).map((r) => ({
+			(roles || []).map((r: Role) => ({
 				value: String(r.id),
 				label: formatRoleName(r.name),
 			})),
@@ -148,7 +150,7 @@ export default function PermissionsAdmin() {
 
 	const permissionOptions = useMemo<TSelectOption[]>(
 		() =>
-			(permissions || []).map((p) => ({
+			(permissions || []).map((p: Permission) => ({
 				value: String(p.id),
 				label: formatPermissionName(p.name || p.code),
 			})),
@@ -156,20 +158,16 @@ export default function PermissionsAdmin() {
 	);
 
 	const handleRoleChange = useCallback(
-		(selected: any) => {
-			const ids = Array.isArray(selected)
-				? selected.map((o: TSelectOption) => parseInt(String(o.value), 10))
-				: [];
+		(selected: MultiValue<TSelectOption>) => {
+			const ids = selected.map((option) => parseInt(String(option.value), 10));
 			setSelectedRoleIds(ids);
 		},
 		[setSelectedRoleIds],
 	);
 
 	const handlePermissionChange = useCallback(
-		(selected: any) => {
-			const ids = Array.isArray(selected)
-				? selected.map((o: TSelectOption) => parseInt(String(o.value), 10))
-				: [];
+		(selected: MultiValue<TSelectOption>) => {
+			const ids = selected.map((option) => parseInt(String(option.value), 10));
 			setSelectedPermissionIds(ids);
 		},
 		[setSelectedPermissionIds],

@@ -15,7 +15,9 @@ import './RichTextEditor.css';
 const rgbToHex = (value: string) => {
 	const match = value
 		.replace(/\s+/g, ' ')
-		.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(\d?\.?\d+))?\s*\)$/i);
+		.match(
+			/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(\d?\.?\d+))?\s*\)$/i,
+		);
 
 	if (!match) return value;
 
@@ -90,20 +92,23 @@ const sanitizeHtmlOutput = (html: string) => {
 	});
 
 	doc.body.querySelectorAll('p').forEach((paragraph) => {
-		const isEmpty = paragraph.textContent?.trim().length === 0 && paragraph.children.length === 0;
+		const isEmpty =
+			paragraph.textContent?.trim().length === 0 && paragraph.children.length === 0;
 		if (isEmpty) {
 			paragraph.remove();
 			return;
 		}
 
 		const align = paragraph.style.textAlign?.toLowerCase() ?? '';
-		const hasOtherStyles = paragraph.getAttribute('style')
-			?.split(';')
-			.some((declaration) => {
-				const [property, value] = declaration.split(':').map((part) => part.trim());
-				if (!property || !value) return false;
-				return property !== 'text-align';
-			}) ?? false;
+		const hasOtherStyles =
+			paragraph
+				.getAttribute('style')
+				?.split(';')
+				.some((declaration) => {
+					const [property, value] = declaration.split(':').map((part) => part.trim());
+					if (!property || !value) return false;
+					return property !== 'text-align';
+				}) ?? false;
 
 		const keepParagraph =
 			hasOtherStyles ||
@@ -154,10 +159,13 @@ const highlightHtml = (value: string) => {
 		});
 
 	return escaped
-		.replace(/(&lt;\/?)([a-zA-Z0-9:-]+)([\s\S]*?)(\/?&gt;)/g, (_match, open, tagName, attrs, close) => {
-			const highlightedAttrs = highlightAttributes(attrs);
-			return `<span style="color:#475569">${open}</span><span style="color:#38bdf8">${tagName}</span>${highlightedAttrs}<span style="color:#475569">${close}</span>`;
-		})
+		.replace(
+			/(&lt;\/?)([a-zA-Z0-9:-]+)([\s\S]*?)(\/?&gt;)/g,
+			(_match, open, tagName, attrs, close) => {
+				const highlightedAttrs = highlightAttributes(attrs);
+				return `<span style="color:#475569">${open}</span><span style="color:#38bdf8">${tagName}</span>${highlightedAttrs}<span style="color:#475569">${close}</span>`;
+			},
+		)
 		.replace(/(&lt;!--[\s\S]*?--&gt;)/g, `<span style="color:#22d3ee">$1</span>`);
 };
 
@@ -221,7 +229,12 @@ interface MenuBarProps {
 	onSelectView: (showCode: boolean) => void;
 }
 
-const MenuBar: React.FC<MenuBarProps> = ({ editor, compact = false, showCodeView, onSelectView }) => {
+const MenuBar: React.FC<MenuBarProps> = ({
+	editor,
+	compact = false,
+	showCodeView,
+	onSelectView,
+}) => {
 	if (!editor) return null;
 
 	const [currentColor, setCurrentColor] = React.useState('#000000');
@@ -244,9 +257,7 @@ const MenuBar: React.FC<MenuBarProps> = ({ editor, compact = false, showCodeView
 	const handleSetLink = () => {
 		const { from, to } = editor.state.selection;
 		const hasSelection = from !== to;
-		const selectedText = hasSelection
-			? editor.state.doc.textBetween(from, to, ' ')
-			: '';
+		const selectedText = hasSelection ? editor.state.doc.textBetween(from, to, ' ') : '';
 
 		const linkTextPrompt = window.prompt('Texto del enlace', selectedText);
 		if (linkTextPrompt === null) return;
@@ -312,7 +323,11 @@ const MenuBar: React.FC<MenuBarProps> = ({ editor, compact = false, showCodeView
 
 	const ToolbarDivider = () => <div className='mx-1 h-6 w-px bg-zinc-300 dark:bg-zinc-600' />;
 
-	const alignmentOptions: Array<{ value: 'left' | 'center' | 'right' | 'justify'; label: string; icon: JSX.Element }> = [
+	const alignmentOptions: Array<{
+		value: 'left' | 'center' | 'right' | 'justify';
+		label: string;
+		icon: React.ReactNode;
+	}> = [
 		{
 			value: 'left',
 			label: 'Alinear a la izquierda',
@@ -519,10 +534,7 @@ const MenuBar: React.FC<MenuBarProps> = ({ editor, compact = false, showCodeView
 						<path d='M6.5 3a3.5 3.5 0 0 1 2.47 5.97l-.97.96-1.06-1.06.97-.96A1.5 1.5 0 1 0 6.5 5H4a2 2 0 1 0 0 4h1v1H4a3 3 0 1 1 0-6h2.5ZM12 4h-1V3h1a3 3 0 1 1 0 6H9.5A3.5 3.5 0 0 1 7.03 3.03l.97.97A1.5 1.5 0 0 0 9.5 7H12a2 2 0 0 0 0-4Z' />
 					</svg>
 				</ToolbarButton>
-				<ToolbarButton
-					onClick={handleUnsetLink}
-					isActive={false}
-					title='Quitar enlace'>
+				<ToolbarButton onClick={handleUnsetLink} isActive={false} title='Quitar enlace'>
 					<svg width='16' height='16' viewBox='0 0 16 16' fill='currentColor'>
 						<path d='M5.5 3a3.5 3.5 0 0 1 2.47 5.97l-.32.32-1.06-1.06.32-.32A1.5 1.5 0 1 0 5.5 5H4a2 2 0 0 0-1.73 3H1.5V7H0v2h4a3 3 0 0 1 0-6h1.5Zm5 2 1.5-1.5 1.06 1.06-8 8-1.06-1.06L6.56 9H6.5A3.5 3.5 0 0 1 4.03 3.03l.97.97A1.5 1.5 0 0 0 6.5 7h1.56l1.44-1.44V5h1Z' />
 					</svg>
@@ -737,7 +749,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 		}
 
 		if (shouldShowCode) {
-			const currentHtml = lastSerializedRef.current ?? sanitizeHtmlOutput(editor ? editor.getHTML() : '');
+			const currentHtml =
+				lastSerializedRef.current ?? sanitizeHtmlOutput(editor ? editor.getHTML() : '');
 			setCodeViewValue(currentHtml);
 			if (highlightPreRef.current) {
 				highlightPreRef.current.style.transform = 'translate(0px, 0px)';
@@ -830,6 +843,3 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 };
 
 export default RichTextEditor;
-
-
-

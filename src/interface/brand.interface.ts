@@ -33,6 +33,7 @@ export interface IBrand {
   branch_id?: number;
   code?: string;
   name: string;
+  slug?: string;
   origin_country?: string | null;
   manufacturer?: string | null;
   description?: string | null;

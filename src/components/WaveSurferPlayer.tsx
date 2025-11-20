@@ -4,7 +4,10 @@ import colors from 'tailwindcss/colors';
 import Button from './ui/Button';
 import themeConfig from '../config/theme.config';
 
-const useWavesurfer = (containerRef: RefObject<HTMLDivElement>, options: WaveSurferOptions) => {
+const useWavesurfer = (
+	containerRef: React.RefObject<HTMLDivElement>,
+	options: WaveSurferOptions,
+) => {
 	const [wavesurfer, setWavesurfer] = useState<WaveSurfer | null>(null);
 
 	// Initialize wavesurfer when the container mounts
@@ -32,7 +35,7 @@ const useWavesurfer = (containerRef: RefObject<HTMLDivElement>, options: WaveSur
 };
 
 const WaveSurferPlayer = (props: WaveSurferOptions) => {
-	const containerRef = useRef<HTMLDivElement>(null);
+	const containerRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
 	const [isPlaying, setIsPlaying] = useState<boolean>(false);
 	const [currentTime, setCurrentTime] = useState<number>(0);
 	const [duration, setDuration] = useState<number>(0);

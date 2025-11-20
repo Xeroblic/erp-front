@@ -62,6 +62,7 @@ export const mockCategories: ICategory[] = [
 export const mockCategoryStats: ICategoryStats = {
   total_categories: mockCategories.length,
   active_categories: mockCategories.filter((c) => c.is_active).length,
+  inactive_categories: mockCategories.filter((c) => !c.is_active).length,
   products_total: mockCategories.reduce((acc, c) => acc + (c.products_count || 0), 0),
 };
 

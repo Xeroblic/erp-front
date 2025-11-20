@@ -5,6 +5,7 @@ import React, { useEffect, useMemo } from 'react';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
 import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
+import type { MultiValue, SingleValue } from 'react-select';
 import Textarea from '@/components/form/Textarea';
 import Checkbox from '@/components/form/Checkbox';
 import Icon from '@/components/icon/Icon';
@@ -53,6 +54,10 @@ const portFields: Array<{ name: keyof UpdateItemDetailsPayload; label: string }>
 	{ name: 'rj45_ports', label: 'RJ45' },
 ];
 
+const isMultiValue = (
+	option: SingleValue<TSelectOption> | MultiValue<TSelectOption> | null,
+): option is MultiValue<TSelectOption> => Array.isArray(option);
+
 const DockingForm: React.FC<DockingFormProps> = ({
 	branchId,
 	values,
@@ -60,7 +65,9 @@ const DockingForm: React.FC<DockingFormProps> = ({
 	readOnly = false,
 }) => {
 	const dispatch = useAppDispatch();
-	const validationLoading = useAppSelector((state) => state.technicalReviews.validationRulesLoading);
+	const validationLoading = useAppSelector(
+		(state) => state.technicalReviews.validationRulesLoading,
+	);
 	const brands = useAppSelector((state) => state.brands.items);
 	const brandsLoading = useAppSelector((state) => state.brands.loading);
 
@@ -103,7 +110,15 @@ const DockingForm: React.FC<DockingFormProps> = ({
 
 	const handleSelectChange =
 		(name: string) =>
-		(option: TSelectOption | null) => {
+		(newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption> | null) => {
+			if (isMultiValue(newValue)) {
+				onChange(
+					name,
+					newValue.map((option) => option.value),
+				);
+				return;
+			}
+			const option = newValue as TSelectOption | null;
 			onChange(name, option?.value ?? null);
 		};
 
@@ -216,14 +231,19 @@ const DockingForm: React.FC<DockingFormProps> = ({
 							id='includes_power_adapter'
 							name='includes_power_adapter'
 							checked={includesPowerAdapter}
-							onChange={handleCheckboxChange('includes_power_adapter', handleTogglePowerAdapter)}
+							onChange={handleCheckboxChange(
+								'includes_power_adapter',
+								handleTogglePowerAdapter,
+							)}
 							disabled={readOnly}
 							label='Incluye cargador'
 						/>
 					</div>
 					{includesPowerAdapter && (
 						<div>
-							<label className='mb-2 block text-sm font-medium'>Estado del cargador</label>
+							<label className='mb-2 block text-sm font-medium'>
+								Estado del cargador
+							</label>
 							<SelectReact
 								name='power_cable_status'
 								options={powerCableStatusOptions}
@@ -254,7 +274,9 @@ const DockingForm: React.FC<DockingFormProps> = ({
 					<div className='grid grid-cols-2 gap-4 md:grid-cols-4'>
 						{portFields.map((field) => (
 							<div key={field.name as string}>
-								<label className='mb-2 block text-sm font-medium'>{field.label}</label>
+								<label className='mb-2 block text-sm font-medium'>
+									{field.label}
+								</label>
 								<Input
 									type='number'
 									name={field.name as string}
@@ -290,7 +312,9 @@ const DockingForm: React.FC<DockingFormProps> = ({
 					</div>
 					{values.all_ports_functional === false && (
 						<div>
-							<label className='mb-2 block text-sm font-medium'>Puertos defectuosos</label>
+							<label className='mb-2 block text-sm font-medium'>
+								Puertos defectuosos
+							</label>
 							<Input
 								type='number'
 								name='defective_ports_count'

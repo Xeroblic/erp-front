@@ -21,8 +21,12 @@ export const usePermissionsManagement = () => {
     const rolesPermisosState = useAppSelector((s) => s.rolesPermisos);
     const permissionsState = useAppSelector((s) => s.permissions);
 
-    const { data: rawUsers, status: usersLoading } = rolesPermisosState;
-    const { permissions, roles, loading: permissionsLoading } = permissionsState;
+    // Ajuste: rolesPermisosState puede no tener data/status, así que se accede con fallback
+    const rawUsers = (rolesPermisosState as any).data;
+    const usersLoading = (rolesPermisosState as any).status;
+    const permissions = (permissionsState as any).permissions;
+    const roles = (permissionsState as any).roles;
+    const permissionsLoading = (permissionsState as any).loading;
 
     // Los datos ya vienen en el formato correcto del backend PHP
     const users = useMemo(() => {
@@ -46,12 +50,12 @@ export const usePermissionsManagement = () => {
     const [toggleUserLoading, setToggleUserLoading] = useState<Set<number>>(new Set());
 
     const permissionNameToId = useMemo(
-        () => new Map((permissions || []).map((p) => [p.name || p.code, p.id])),
+        () => new Map((permissions || []).map((p: { name?: string; code?: string; id: number }) => [p.name || p.code, p.id])),
         [permissions]
     );
 
     const roleNameToId = useMemo(
-        () => new Map((roles || []).map((r) => [r.name, r.id])),
+        () => new Map((roles || []).map((r: { name: string; id: number }) => [r.name, r.id])),
         [roles]
     );
 

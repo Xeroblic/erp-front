@@ -353,6 +353,7 @@ const Inventario: React.FC = () => {
 								{/* Filtros */}
 								<div className='grid grid-cols-1 gap-4 md:grid-cols-4'>
 									<Input
+										name='busqueda'
 										placeholder='Buscar...'
 										value={filtros.busqueda}
 										onChange={(e) =>
@@ -360,6 +361,7 @@ const Inventario: React.FC = () => {
 										}
 									/>
 									<Select
+										name='bodega'
 										value={filtros.bodega}
 										onChange={(e) =>
 											handleFiltroChange('bodega', e.target.value)
@@ -372,6 +374,7 @@ const Inventario: React.FC = () => {
 										))}
 									</Select>
 									<Select
+										name='tipoMovimiento'
 										value={filtros.tipoMovimiento}
 										onChange={(e) =>
 											handleFiltroChange('tipoMovimiento', e.target.value)
@@ -1264,14 +1267,19 @@ const Inventario: React.FC = () => {
 								<label className='mb-2 block text-sm font-medium text-gray-700'>
 									Nuevo Stock
 								</label>
-								<Input type='number' placeholder='Ingrese nueva cantidad' min='0' />
+								<Input
+									name='nuevoStock'
+									type='number'
+									placeholder='Ingrese nueva cantidad'
+									min='0'
+								/>
 							</div>
 
 							<div>
 								<label className='mb-2 block text-sm font-medium text-gray-700'>
 									Motivo del Ajuste
 								</label>
-								<Select>
+								<Select name='motivoAjuste'>
 									<option value=''>Seleccione un motivo</option>
 									<option value='inventory_count'>Conteo físico</option>
 									<option value='damaged'>Producto dañado</option>
@@ -1333,7 +1341,7 @@ const Inventario: React.FC = () => {
 									<label className='mb-2 block text-sm font-medium text-gray-700'>
 										Bodega Origen
 									</label>
-									<Select>
+									<Select name='bodegaOrigen'>
 										<option value=''>Seleccione origen</option>
 										{bodegas.map((b) => (
 											<option key={b.id} value={b.id}>
@@ -1346,7 +1354,7 @@ const Inventario: React.FC = () => {
 									<label className='mb-2 block text-sm font-medium text-gray-700'>
 										Bodega Destino
 									</label>
-									<Select>
+									<Select name='bodegaDestino'>
 										<option value=''>Seleccione destino</option>
 										{bodegas.map((b) => (
 											<option key={b.id} value={b.id}>
@@ -1361,14 +1369,22 @@ const Inventario: React.FC = () => {
 								<label className='mb-2 block text-sm font-medium text-gray-700'>
 									Cantidad a Transferir
 								</label>
-								<Input type='number' placeholder='Ingrese cantidad' min='1' />
+								<Input
+									name='cantidadTransferir'
+									type='number'
+									placeholder='Ingrese cantidad'
+									min='1'
+								/>
 							</div>
 
 							<div>
 								<label className='mb-2 block text-sm font-medium text-gray-700'>
 									Motivo de la Transferencia
 								</label>
-								<Input placeholder='Describa el motivo de la transferencia' />
+								<Input
+									name='motivoTransferencia'
+									placeholder='Describa el motivo de la transferencia'
+								/>
 							</div>
 						</div>
 					</ModalBody>

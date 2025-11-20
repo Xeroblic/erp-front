@@ -54,9 +54,8 @@ const WarehouseCapacityChart: React.FC<WarehouseCapacityChartProps> = ({
 					colors: isDarkTheme ? '#d1d5db' : '#374151',
 				},
 				markers: {
-					width: 12,
-					height: 12,
-					radius: 3,
+					size: 12,
+					shape: 'circle',
 				},
 			},
 			stroke: {

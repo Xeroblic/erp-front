@@ -1,7 +1,7 @@
 import { useEffect } from "react";
-import { useGetFeaturesQuery } from "@/services/RtkQueryService";
+import useGetFeaturesQuery from "@/services/RtkQueryService";
 import { useDispatch, useSelector } from "react-redux";
-import { selectFeaturesStatus } from "@/store/slices/featuresSlice/featuresSlice";
+import { selectFeaturesStatus } from "@/store/slices/featuresSlice";
 import { AppDispatch } from "@/store/storeSetup";
 
 
@@ -18,7 +18,7 @@ export default function useFeatures() {
 
   // useEffect(() => {
   //   if (data) {
-      
+
   //   }
   // }, [data, dispatch]);
 

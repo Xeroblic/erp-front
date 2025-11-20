@@ -42,7 +42,10 @@ const TransfersTable: React.FC<TransfersTableProps> = ({ transfers, isLoading, o
 		return (
 			<div className='space-y-3 p-4'>
 				{Array.from({ length: 5 }).map((_, index) => (
-					<div key={index} className='h-16 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800' />
+					<div
+						key={index}
+						className='h-16 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800'
+					/>
 				))}
 			</div>
 		);
@@ -73,7 +76,7 @@ const TransfersTable: React.FC<TransfersTableProps> = ({ transfers, isLoading, o
 						<Th>Responsable</Th>
 						<Th>Estado</Th>
 						<Th>Notas</Th>
-						<Th></Th>
+						<Th>&nbsp;</Th>
 					</Tr>
 				</THead>
 				<TBody>
@@ -105,19 +108,30 @@ const TransfersTable: React.FC<TransfersTableProps> = ({ transfers, isLoading, o
 												icon='HeroBuildingStorefront'
 												className='h-4 w-4 text-green-500'
 											/>
-											<span>{transfer.from_branch?.name || 'Sucursal origen'}</span>
+											<span>
+												{transfer.from_branch?.name || 'Sucursal origen'}
+											</span>
 										</div>
 										<div className='flex items-center space-x-1 text-gray-500'>
 											<Icon icon='HeroArrowLongRight' className='h-4 w-4' />
-											<span>{transfer.from_warehouse?.name || 'Bodega origen'}</span>
+											<span>
+												{transfer.from_warehouse?.name || 'Bodega origen'}
+											</span>
 										</div>
 										<div className='mt-1 flex items-center space-x-1'>
-											<Icon icon='HeroBuildingOffice' className='h-4 w-4 text-blue-500' />
-											<span>{transfer.to_branch?.name || 'Sucursal destino'}</span>
+											<Icon
+												icon='HeroBuildingOffice'
+												className='h-4 w-4 text-blue-500'
+											/>
+											<span>
+												{transfer.to_branch?.name || 'Sucursal destino'}
+											</span>
 										</div>
 										<div className='flex items-center space-x-1 text-gray-500'>
 											<Icon icon='HeroArrowLongRight' className='h-4 w-4' />
-											<span>{transfer.to_warehouse?.name || 'Bodega destino'}</span>
+											<span>
+												{transfer.to_warehouse?.name || 'Bodega destino'}
+											</span>
 										</div>
 									</div>
 								</Td>
@@ -131,7 +145,9 @@ const TransfersTable: React.FC<TransfersTableProps> = ({ transfers, isLoading, o
 									<p className='text-sm font-medium text-gray-900 dark:text-white'>
 										{transfer.responsible?.name || 'Sin asignar'}
 									</p>
-									<p className='text-xs text-gray-500'>{transfer.responsible?.email}</p>
+									<p className='text-xs text-gray-500'>
+										{transfer.responsible?.email}
+									</p>
 								</Td>
 								<Td>
 									<Badge color={status.color}>{status.label}</Badge>
@@ -140,7 +156,10 @@ const TransfersTable: React.FC<TransfersTableProps> = ({ transfers, isLoading, o
 									{transfer.notes || '—'}
 								</Td>
 								<Td className='text-right'>
-									<Button size='sm' variant='outline' onClick={() => onView(transfer)}>
+									<Button
+										size='sm'
+										variant='outline'
+										onClick={() => onView(transfer)}>
 										Ver detalle
 									</Button>
 								</Td>

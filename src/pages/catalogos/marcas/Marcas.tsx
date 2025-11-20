@@ -15,7 +15,8 @@ import EditarMarca from './components/modals/EditarMarca';
 import DetalleMarca from './components/modals/DetalleMarca';
 import EliminarMarca from './components/modals/EliminarMarca';
 import type { IBrand, IBrandFilters } from '@/interface/brand.interface';
-import { IBranch } from '@/interface';
+import type { TSelectOption } from '@/components/form/SelectReact';
+import type { BranchOption } from './components/hooks/useMarcas';
 
 const Marcas: React.FC = () => {
 	const [filters, setFilters] = useState<IBrandFilters>({ search: '' });
@@ -41,11 +42,11 @@ const Marcas: React.FC = () => {
 		uploadBrandGallery,
 	} = useMarcas(filters);
 
-	const branchOptions = useMemo(
+	const branchOptions = useMemo<TSelectOption[]>(
 		() =>
-			branches.map((branch : IBranch) => ({
+			branches.map((branch: BranchOption) => ({
 				value: String(branch.id),
-				label: branch.branch_name ?? `Sucursal ${branch.id}`,
+				label: branch.name,
 			})),
 		[branches],
 	);
@@ -77,7 +78,7 @@ const Marcas: React.FC = () => {
 		setFilters((prev) => ({ ...prev, branch_id: value ? Number(value) : undefined }));
 	};
 
-  const handleCreateSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+	const handleCreateSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		const formData = new FormData(event.currentTarget);
 
@@ -86,20 +87,26 @@ const Marcas: React.FC = () => {
 			const branchId =
 				branchIdValue && branchIdValue !== 'null' ? Number(branchIdValue) : undefined;
 
-      const created = await createBrand({
-        name: String(formData.get('name') ?? '').trim(),
-        code: formData.get('code')?.toString().trim() || undefined,
-        is_active: formData.get('is_active') === '1',
-        branch_id: branchId ?? filters.branch_id ?? activeBranchId ?? undefined,
-        image: (() => {
-          const file = formData.get('image');
-          return file instanceof File && file.size > 0 ? file : null;
-        })(),
-      });
-      const galleryFiles = (formData.getAll('gallery') as File[]).filter((f) => f && typeof (f as any).size === 'number');
-      if (created?.id && (galleryFiles?.length ?? 0) > 0) {
-        await uploadBrandGallery(created.id, galleryFiles, created.branch_id ?? branchId ?? activeBranchId ?? undefined);
-      }
+			const created = await createBrand({
+				name: String(formData.get('name') ?? '').trim(),
+				code: formData.get('code')?.toString().trim() || undefined,
+				is_active: formData.get('is_active') === '1',
+				branch_id: branchId ?? filters.branch_id ?? activeBranchId ?? undefined,
+				image: (() => {
+					const file = formData.get('image');
+					return file instanceof File && file.size > 0 ? file : null;
+				})(),
+			});
+			const galleryFiles = (formData.getAll('gallery') as File[]).filter(
+				(f) => f && typeof (f as any).size === 'number',
+			);
+			if (created?.id && (galleryFiles?.length ?? 0) > 0) {
+				await uploadBrandGallery(
+					created.id,
+					galleryFiles,
+					created.branch_id ?? branchId ?? activeBranchId ?? undefined,
+				);
+			}
 
 			toast.success('Marca creada correctamente');
 			setCreateOpen(false);
@@ -115,21 +122,27 @@ const Marcas: React.FC = () => {
 		const formData = new FormData(event.currentTarget);
 
 		try {
-      const updated = await updateBrand({
-        id: selected.id,
-        branch_id: selected.branch_id ?? activeBranchId ?? undefined,
-        name: String(formData.get('name') ?? '').trim(),
-        code: formData.get('code')?.toString().trim() || undefined,
-        is_active: formData.get('is_active') === '1',
-        image: (() => {
-          const file = formData.get('image');
-          return file instanceof File && file.size > 0 ? file : null;
-        })(),
-      });
-      const galleryFilesEdit = (formData.getAll('gallery') as File[]).filter((f) => f && typeof (f as any).size === 'number');
-      if (updated?.id && (galleryFilesEdit?.length ?? 0) > 0) {
-        await uploadBrandGallery(updated.id, galleryFilesEdit, updated.branch_id ?? activeBranchId ?? undefined);
-      }
+			const updated = await updateBrand({
+				id: selected.id,
+				branch_id: selected.branch_id ?? activeBranchId ?? undefined,
+				name: String(formData.get('name') ?? '').trim(),
+				code: formData.get('code')?.toString().trim() || undefined,
+				is_active: formData.get('is_active') === '1',
+				image: (() => {
+					const file = formData.get('image');
+					return file instanceof File && file.size > 0 ? file : null;
+				})(),
+			});
+			const galleryFilesEdit = (formData.getAll('gallery') as File[]).filter(
+				(f) => f && typeof (f as any).size === 'number',
+			);
+			if (updated?.id && (galleryFilesEdit?.length ?? 0) > 0) {
+				await uploadBrandGallery(
+					updated.id,
+					galleryFilesEdit,
+					updated.branch_id ?? activeBranchId ?? undefined,
+				);
+			}
 
 			toast.success('Marca actualizada');
 			setEditOpen(false);

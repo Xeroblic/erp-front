@@ -1,4 +1,5 @@
 import type { QuoteStatus } from '@/interface';
+import type { TColors } from '@/types/colors.type';
 
 export const QUOTE_STATUS_VALUES = [
 	'draft',
@@ -11,7 +12,7 @@ export const QUOTE_STATUS_VALUES = [
 
 export type QuoteStatusValue = (typeof QUOTE_STATUS_VALUES)[number];
 
-const STATUS_SET = new Set<QuoteStatusValue>(QUOTE_STATUS_VALUES as QuoteStatusValue[]);
+const STATUS_SET = new Set<QuoteStatusValue>([...QUOTE_STATUS_VALUES]);
 
 const STATUS_LABELS: Record<QuoteStatusValue, string> = {
 	draft: 'Borrador',
@@ -22,10 +23,15 @@ const STATUS_LABELS: Record<QuoteStatusValue, string> = {
 	expired: 'Vencida',
 };
 
-const STATUS_BADGE_CONFIG: Record<
-	QuoteStatusValue,
-	{ color: string; variant: 'solid' | 'outline'; label: string }
-> = {
+type BadgeVariant = 'solid' | 'outline' | 'default';
+
+export interface QuoteStatusBadge {
+	color: TColors;
+	variant: BadgeVariant;
+	label: string;
+}
+
+const STATUS_BADGE_CONFIG: Record<QuoteStatusValue, QuoteStatusBadge> = {
 	draft: { color: 'gray', variant: 'solid', label: STATUS_LABELS.draft },
 	sent: { color: 'blue', variant: 'solid', label: STATUS_LABELS.sent },
 	approved: { color: 'emerald', variant: 'solid', label: STATUS_LABELS.approved },

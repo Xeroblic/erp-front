@@ -10,10 +10,8 @@ import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
 import { IQuote } from '../../../../../interface';
-import {
-	getQuoteStatusBadge,
-	normalizeQuoteStatusValue,
-} from '../../constants/quoteStatuses';
+import { getQuoteStatusBadge, normalizeQuoteStatusValue } from '../../constants/quoteStatuses';
+import { getCustomerDisplayName } from '../../utils/customerDisplay';
 
 interface DeleteQuotationModalProps {
 	isOpen: boolean;
@@ -34,6 +32,7 @@ const DeleteQuotationModal: React.FC<DeleteQuotationModalProps> = ({
 
 	const normalizedStatus = normalizeQuoteStatusValue(quotation.status);
 	const currentStatus = getQuoteStatusBadge(quotation.status);
+	const customerDisplayName = getCustomerDisplayName(quotation.customer);
 	const isConvertedOrApproved =
 		normalizedStatus === 'converted' || normalizedStatus === 'approved';
 	const isConverted = normalizedStatus === 'converted';
@@ -85,11 +84,7 @@ const DeleteQuotationModal: React.FC<DeleteQuotationModalProps> = ({
 								<div className='col-span-2 flex items-center justify-between'>
 									<span className='font-medium text-gray-700'>Cliente:</span>
 									<span className='text-right text-gray-900'>
-										{quotation.customer?.company_name ||
-											quotation.customer?.first_name +
-												' ' +
-												quotation.customer?.last_name ||
-											'Cliente no disponible'}
+										{customerDisplayName}
 									</span>
 								</div>
 								<div className='col-span-2 flex items-center justify-between border-t pt-3'>

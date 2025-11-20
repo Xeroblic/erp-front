@@ -172,9 +172,10 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
 
 					return (
 						<div
-							ref={(el) => (actionRefs.current[idKey] = el)}
-							className='flex items-center justify-end space-x-2'
-						>
+							ref={(el) => {
+								actionRefs.current[idKey] = el;
+							}}
+							className='flex items-center justify-end space-x-2'>
 							{/* <Button
 									size='sm'
 									variant='outline'

@@ -69,12 +69,18 @@ interface INavItemTextProps extends HTMLAttributes<HTMLDivElement> {
 }
 const NavItemText: FC<INavItemTextProps> = (props) => {
 	const { children, className, ...rest } = props;
+	const { themeColor, themeColorShade } = useReactiveThemeConfig();
 
 	return (
 		<div
 			data-component-name='Nav/NavItemText'
-			className={classNames('overflow-hidden truncate whitespace-nowrap', className)}
-			{...rest}>
+			className={classNames(
+				'overflow-hidden truncate whitespace-nowrap text-zinc-600 dark:text-zinc-300',
+				`hover:text-${themeColor}-${themeColorShade} dark:hover:text-${themeColor}-${themeColorShade}`,
+				className,
+			)}
+				{...rest}
+			>
 			{children}
 		</div>
 	);
@@ -434,7 +440,7 @@ export const NavTitle: FC<INavTitleProps> = (props) => {
 			<li
 				data-component-name='Nav/NavTitle'
 				className={classNames(
-					'list-none overflow-hidden truncate whitespace-nowrap px-3 py-1.5 text-sm font-semibold text-zinc-500',
+					'list-none overflow-hidden truncate whitespace-nowrap px-3 py-1.5 text-sm font-semibold uppercase text-zinc-700 dark:text-zinc-100',
 					className,
 				)}
 				{...rest}>
