@@ -25,21 +25,23 @@ const InventoryReports: React.FC = () => {
 
 	const resultsData = useAppSelector((s) => s.reports.results);
 
-	// Normalizar resultados según formato del API
+	// NORMALIZAR DATOS DEL API
 	const results = (() => {
 		if (!resultsData) return [];
 		if (Array.isArray(resultsData)) return resultsData;
+
 		if (resultsData && typeof resultsData === 'object' && 'data' in resultsData) {
 			const extracted = (resultsData as any).data;
 			return Array.isArray(extracted) ? extracted : [];
 		}
+
 		return [];
 	})();
 
 	const reportsLoading = useAppSelector((s) => s.reports.loading);
 	const reportsError = useAppSelector((s) => s.reports.error);
 
-	// Mapear filtros
+	// FILTROS → API
 	const mapFilters = (f: ReportFiltersState) => {
 		const out: Record<string, any> = {};
 
@@ -54,12 +56,12 @@ const InventoryReports: React.FC = () => {
 		return out;
 	};
 
-	// Limpiar resultados al montar
+	// LIMPIAR RESULTADOS
 	useEffect(() => {
 		dispatch(clearResults());
 	}, [dispatch]);
 
-	// Cargar datos cuando cambien filtros o subsidiaria
+	// CARGAR REPORTES
 	useEffect(() => {
 		const sid = Number(currentSubsidiaryId ?? 0);
 		if (!sid) return;
@@ -73,76 +75,73 @@ const InventoryReports: React.FC = () => {
 		);
 	}, [currentSubsidiaryId, filters, dispatch]);
 
-	// MAPEO LIMPIO DEL ENDPOINT
+	// MAPEO REAL DEL API
 	const rows = useMemo(() => {
 		return results.map((r: any) => ({
 			sku: r.sku ?? '—',
 			nombre: r.product_name ?? '—',
-			bodega: r.branch_name ?? '—',
+			bodega: r.warehouse_name ?? r.branch_name ?? '—',
 			stock: Number(r.quantity ?? 0),
 		})) as Row[];
 	}, [results]);
 
-	// COLUMNAS SIN "PRECIO"
-	const columns = useMemo<ColumnDef<Row>[]>(
-		() => [
-			{
-				accessorKey: 'sku',
-				header: 'SKU',
-				cell: (info) => (
-					<span className='font-mono text-sm'>{info.getValue() as string}</span>
-				),
-				enableSorting: true,
+	// **SOLO ESTAS COLUMNAS** (SKU, Producto, Bodega, Stock)
+	const columns = useMemo<ColumnDef<Row>[]>(() => [
+		{
+			accessorKey: 'sku',
+			header: 'SKU',
+			cell: (info) => (
+				<span className="font-mono text-sm">{info.getValue() as string}</span>
+			),
+			enableSorting: true,
+		},
+		{
+			accessorKey: 'nombre',
+			header: 'Producto',
+			cell: (info) => <span className="text-sm">{info.getValue() as string}</span>,
+			enableSorting: true,
+		},
+		{
+			accessorKey: 'bodega',
+			header: 'Bodega',
+			cell: (info) => <span className="text-sm">{info.getValue() as string}</span>,
+			enableSorting: true,
+		},
+		{
+			accessorKey: 'stock',
+			header: 'Stock',
+			cell: (info) => {
+				const stock = info.getValue() as number;
+				return (
+					<span className={stock === 0 ? 'font-semibold text-rose-600' : 'text-sm'}>
+						{stock}
+					</span>
+				);
 			},
-			{
-				accessorKey: 'nombre',
-				header: 'Producto',
-				cell: (info) => <span className='text-sm'>{info.getValue() as string}</span>,
-				enableSorting: true,
-			},
-			{
-				accessorKey: 'bodega',
-				header: 'Bodega',
-				cell: (info) => <span className='text-sm'>{info.getValue() as string}</span>,
-				enableSorting: true,
-			},
-			{
-				accessorKey: 'stock',
-				header: 'Stock',
-				cell: (info) => {
-					const stock = info.getValue() as number;
-					return (
-						<span className={stock === 0 ? 'font-semibold text-rose-600' : 'text-sm'}>
-							{stock}
-						</span>
-					);
-				},
-				enableSorting: true,
-			},
-		],
-		[],
-	);
+			enableSorting: true,
+		},
+	], []);
 
 	return (
-		<div className='space-y-6'>
+		<div className="space-y-6">
 			{reportsLoading && (
-				<div className='p-4 text-sm text-zinc-500'>Cargando datos de inventario...</div>
+				<div className="p-4 text-sm text-zinc-500">Cargando datos de inventario...</div>
 			)}
 
 			{reportsError && (
-				<Card className='border border-rose-200 bg-rose-50 dark:border-rose-800 dark:bg-rose-900/20'>
+				<Card className="border border-rose-200 bg-rose-50 dark:border-rose-800 dark:bg-rose-900/20">
 					<CardBody>
-						<div className='flex items-center justify-between'>
-							<div className='text-rose-700 dark:text-rose-400'>
+						<div className="flex items-center justify-between">
+							<div className="text-rose-700 dark:text-rose-400">
 								<strong>Error cargando inventario:</strong>{' '}
 								{typeof reportsError === 'object' && reportsError !== null
 									? JSON.stringify(reportsError)
 									: String(reportsError)}
 							</div>
 							<Button
-								variant='outline'
-								color='rose'
-								size='sm'
+								variant="outline"
+								color="rose"
+								size="sm"
 								onClick={() => {
 									const sid = Number(currentSubsidiaryId ?? 0);
 									if (!sid) return;
@@ -153,7 +152,8 @@ const InventoryReports: React.FC = () => {
 											filters: mapFilters(filters),
 										}) as any,
 									);
-								}}>
+								}}
+							>
 								Reintentar
 							</Button>
 						</div>
@@ -161,28 +161,25 @@ const InventoryReports: React.FC = () => {
 				</Card>
 			)}
 
-			<Card className='border border-emerald-200/60 bg-gradient-to-br from-emerald-50 to-emerald-50/60 shadow-sm dark:from-emerald-900/10 dark:to-transparent'>
-				<CardHeader className='rounded-t-md bg-white/60 dark:bg-zinc-900/40'>
-					<div className='flex items-center justify-between'>
-						<div className='flex items-center gap-3'>
-							<div className='flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100'>
-								<Icon
-									icon='HeroCubeTransparent'
-									className='h-6 w-6 text-emerald-700'
-								/>
+			<Card className="border border-emerald-200/60 bg-gradient-to-br from-emerald-50 to-emerald-50/60 shadow-sm dark:from-emerald-900/10 dark:to-transparent">
+				<CardHeader className="rounded-t-md bg-white/60 dark:bg-zinc-900/40">
+					<div className="flex items-center justify-between">
+						<div className="flex items-center gap-3">
+							<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
+								<Icon icon="HeroCubeTransparent" className="h-6 w-6 text-emerald-700" />
 							</div>
 							<div>
-								<h2 className='text-lg font-bold text-emerald-900'>
+								<h2 className="text-lg font-bold text-emerald-900">
 									Reportes de Inventario
 								</h2>
-								<p className='text-sm text-emerald-700'>
+								<p className="text-sm text-emerald-700">
 									Existencias, SKUs y valoración
 								</p>
 							</div>
 						</div>
 						<ReportExportButton
 							subsidiaryId={Number(currentSubsidiaryId ?? 0)}
-							type='stock'
+							type="stock"
 							filters={mapFilters(filters)}
 						/>
 					</div>
@@ -193,8 +190,8 @@ const InventoryReports: React.FC = () => {
 						columns={columns}
 						data={rows}
 						loading={reportsLoading}
-						searchPlaceholder='Buscar por SKU, producto o bodega...'
-						emptyMessage='Sin resultados para los criterios seleccionados.'
+						searchPlaceholder="Buscar por SKU, producto o bodega..."
+						emptyMessage="Sin resultados para los criterios seleccionados."
 						pageSize={10}
 					/>
 				</CardBody>

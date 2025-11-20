@@ -4,7 +4,6 @@ import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
 
-
 import { IDocument } from '../../types/documentos.types';
 import {
     formatDateTime,
@@ -39,7 +38,7 @@ const DocumentsTableV2: React.FC<DocumentsTableProps> = ({
                 accessorKey: 'name',
                 header: 'Documento',
                 cell: ({ row }: { row: Row<IDocument> }) => {
-                    const doc = row.original as IDocument;
+                    const doc = row.original;
 
                     return (
                         <div className="flex items-center gap-3">
@@ -87,32 +86,43 @@ const DocumentsTableV2: React.FC<DocumentsTableProps> = ({
             {
                 accessorKey: 'related_module',
                 header: 'Módulo',
-                cell: ({ row }: { row: Row<IDocument> }) => getModuleLabel(row.original.related_module),
+                cell: ({ row }: { row: Row<IDocument> }) =>
+                    getModuleLabel(row.original.related_module),
             },
 
+            // 🔥 NUEVO: Tamaño EN KB (solo texto modificado)
             {
                 accessorKey: 'size',
                 header: 'Tamaño',
-                cell: ({ row }: { row: Row<IDocument> }) =>
-                    formatFileSize(
+                cell: ({ row }: { row: Row<IDocument> }) => {
+                    const totalBytes =
                         row.original.attachments?.reduce(
                             (s, a) => s + (a.size ?? 0),
                             0,
-                        ) || 0,
-                    ),
+                        ) || 0;
+
+                    const kb = totalBytes / 1024;
+                    const formatted = kb < 1 ? `${kb.toFixed(2)} KB` : `${kb.toFixed(1)} KB`;
+
+                    return <span>{formatted}</span>;
+                },
             },
 
+            // 🔥 NUEVO: Subido por desde backend
             {
                 accessorKey: 'uploaded_by',
                 header: 'Subido por',
                 cell: ({ row }: { row: Row<IDocument> }) =>
-                    row.original.metadata?.uploaded_by_name || 'N/A',
+                    row.original?.uploaded_by ||
+                    row.original.metadata?.uploaded_by_name ||
+                    'N/A',
             },
 
             {
                 accessorKey: 'created_at',
                 header: 'Fecha',
-                cell: ({ row }: { row: Row<IDocument> }) => formatDateTime(row.original.created_at),
+                cell: ({ row }: { row: Row<IDocument> }) =>
+                    formatDateTime(row.original.created_at),
                 enableSorting: true,
             },
 

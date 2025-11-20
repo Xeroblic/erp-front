@@ -62,6 +62,11 @@ export interface IDocument {
 	attachments?: IDocumentAttachment[];
 	created_at: string;
 	updated_at: string;
+	uploaded_by?: string | null;
+	subsidiary?: {
+		id: number;
+		name: string;
+	};
 }
 
 export interface IDocumentFilters {
