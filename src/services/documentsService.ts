@@ -55,7 +55,7 @@ const documentsService = {
 		const response = await ApiService.fetchData<{ data?: IDocument }>({
 			url: buildUrl(subsidiaryId),
 			method: 'post',
-			data: payload,
+			data: payload as unknown as Record<string, unknown>,
 		});
 		return (response.data?.data || response.data) as IDocument;
 	},
@@ -64,7 +64,7 @@ const documentsService = {
 		const response = await ApiService.fetchData<{ data?: IDocument }>({
 			url: buildUrl(subsidiaryId, `/${documentId}`),
 			method: 'patch',
-			data: payload,
+			data: payload as unknown as Record<string, unknown>,
 		});
 		return (response.data?.data || response.data) as IDocument;
 	},
@@ -98,7 +98,7 @@ const documentsService = {
 				'Content-Type': 'multipart/form-data',
 			},
 		};
-		const response = await ApiService.fetchData<{ data?: IDocumentAttachment[] }>(config);
+		const response = await ApiService.fetchData<{ data?: IDocumentAttachment[] }>(config as unknown as AxiosRequestConfig<Record<string, unknown>>);
 		return extractCollection<IDocumentAttachment>(response.data);
 	},
 

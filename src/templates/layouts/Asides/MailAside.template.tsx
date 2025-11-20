@@ -2,7 +2,7 @@ import React from 'react';
 import AsideHeadPart from './_parts/AsideHead.part';
 import Aside, { AsideBody } from '../../../components/layouts/Aside/Aside';
 import Nav, { NavItem, NavSeparator } from '../../../components/layouts/Navigation/Nav';
-import { appPages } from '../../../config/pages.config';
+// import { appPages } from '../../../config/pages.config';
 import Badge from '../../../components/ui/Badge';
 import AsideFooterPart from './_parts/AsideFooter.part';
 
@@ -15,7 +15,8 @@ const MailAsideTemplate = () => {
 					<NavItem
 						text='Inbox'
 						icon='HeroInbox'
-						to={appPages.mailAppPages.subPages.inboxPages.to}>
+						// to={appPages.mailAppPages.subPages.inboxPages.to}
+						>
 						<Badge
 							variant='outline'
 							color='emerald'
@@ -23,7 +24,7 @@ const MailAsideTemplate = () => {
 							3
 						</Badge>
 					</NavItem>
-					<NavItem {...appPages.mailAppPages.subPages.draftPages} />
+					{/* <NavItem {...appPages.mailAppPages.subPages.draftPages} />
 					<NavItem {...appPages.mailAppPages.subPages.sendPages} />
 					<NavItem {...appPages.mailAppPages.subPages.junkPages} />
 					<NavItem {...appPages.mailAppPages.subPages.trashPages} />
@@ -33,7 +34,7 @@ const MailAsideTemplate = () => {
 						{...appPages.salesAppPages.subPages.salesDashboardPage}
 						text='Back to Home'
 						icon='HeroArrowLeft'
-					/>
+					/> */}
 				</Nav>
 			</AsideBody>
 			<AsideFooterPart />

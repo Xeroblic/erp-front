@@ -67,6 +67,27 @@ const ItemReviewPage: React.FC = () => {
 		return String(field);
 	};
 
+	if (!branchId) {
+		return (
+			<PageWrapper name='technical-review-batch' title='Revisión Técnica por Lote'>
+				<Container>
+					<Card>
+						<CardHeader>
+							<h2 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
+								Error: No hay sucursal seleccionada
+							</h2>
+						</CardHeader>
+						<CardBody>
+							<p className='text-gray-700 dark:text-gray-300'>
+								Por favor, selecciona una sucursal para continuar.
+							</p>
+						</CardBody>
+					</Card>
+				</Container>
+			</PageWrapper>
+		);
+	}
+
 	// Auto-save hook
 	const {
 		isDirty,

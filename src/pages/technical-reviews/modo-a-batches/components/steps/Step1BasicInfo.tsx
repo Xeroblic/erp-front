@@ -43,7 +43,7 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 	loading,
 	onBack,
 	onSubmit,
-	batchLabel,
+	// batchLabel,
 }) => {
 	const selectedProductOption = productId
 		? productOptions.find((opt) => opt.value === String(productId)) ?? null

@@ -1,9 +1,9 @@
+import { IUser } from '@/interface';
 import { Descendant } from 'slate';
-import { TUser } from '../../mocks/db/users.db';
 
 export type TMail = {
 	id: number;
-	user: TUser;
+	user: IUser;
 	fold: string;
 	dateTime: string;
 	isNew?: boolean;

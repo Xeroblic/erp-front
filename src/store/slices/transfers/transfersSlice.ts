@@ -121,9 +121,14 @@ export const fetchTransfers = createAsyncThunk<
 		const payload: TransferListResponsePayload =
 			Array.isArray(raw)
 				? {
-						data: raw,
-						meta: undefined,
-				  }
+					data: raw,
+					meta: {
+						current_page: overrides.page ?? state.transferencias.pagination.currentPage,
+						last_page: 1,
+						per_page: appliedFilters.per_page,
+						total: raw.length,
+					},
+				}
 				: raw;
 		const serverFilters = payload.filters || {};
 
@@ -204,7 +209,7 @@ export const createTransfer = createAsyncThunk<
 		const response = await ApiService.fetchData<{ data?: ITransfer }>({
 			url: `/branches/${branchId}/transfers`,
 			method: 'post',
-			data: transferData,
+			data: transferData as unknown as Record<string, unknown>,
 		});
 
 		return response.data?.data ?? null;

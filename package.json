@@ -100,6 +100,7 @@
 		"vite": "^5.2.13",
 		"vite-plugin-svgr": "^4.2.0",
 		"vite-tsconfig-paths": "^4.3.2",
+		"vitest": "^4.0.12",
 		"wavesurfer.js": "^7.7.15",
 		"web-vitals": "^4.1.0",
 		"xlsx": "^0.18.5",

@@ -238,6 +238,7 @@ export const createInventoryMovement = createAsyncThunk(
             const response = await ApiService.fetchData<{ data: IInventoryMovement }>({
                 url: '/inventory/movements',
                 method: "post",
+                data: data
             });
             toast.success('Movimiento de inventario creado exitosamente');
             return response.data.data;

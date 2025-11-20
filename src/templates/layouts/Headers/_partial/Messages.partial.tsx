@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import Dropdown, { DropdownMenu, DropdownToggle } from '../../../../components/ui/Dropdown';
 import Button from '../../../../components/ui/Button';
 import Avatar from '../../../../components/Avatar';
-import usersDb from '../../../../mocks/db/users.db';
+// import usersDb from '../../../../mocks/db/users.db';
 
 interface IMessageItemProps {
 	image?: string;
@@ -53,7 +53,7 @@ const MessagesPartial = () => {
 				<DropdownToggle hasIcon={false}>
 					<Button icon='HeroChatBubbleLeftEllipsis' aria-label='Messages' />
 				</DropdownToggle>
-				<DropdownMenu
+				{/* <DropdownMenu
 					placement='bottom-end'
 					className='flex flex-col flex-wrap divide-y divide-dashed divide-zinc-500/50 p-4 [&>*]:py-4'>
 					<MessageItem
@@ -88,7 +88,8 @@ const MessagesPartial = () => {
 						text='You can find the offer file attached. You can find the offer file attached.'
 						time='3h'
 					/>
-				</DropdownMenu>
+				</DropdownMenu> */}
+				<></>
 			</Dropdown>
 			<span className='absolute end-0 top-0 flex h-3 w-3'>
 				<span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75' />

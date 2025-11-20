@@ -127,8 +127,8 @@ export const fetchProducts = createAsyncThunk<
 	} catch (error: any) {
 		return rejectWithValue(
 			error?.response?.data?.message ??
-				error?.message ??
-				'No se pudieron cargar los productos',
+			error?.message ??
+			'No se pudieron cargar los productos',
 		);
 	}
 });
@@ -156,8 +156,8 @@ export const fetchSubsidiaryProducts = createAsyncThunk<
 	} catch (error: any) {
 		return rejectWithValue(
 			error?.response?.data?.message ??
-				error?.message ??
-				'No se pudieron cargar los productos',
+			error?.message ??
+			'No se pudieron cargar los productos',
 		);
 	}
 });
@@ -221,28 +221,28 @@ export const fetchBranchInventorySummary = createAsyncThunk<
 				payload.critical_products,
 			)
 				? payload.critical_products
-						.map((item) => ({
-							id: Number(item?.id ?? 0),
-							name: String(item?.name ?? ''),
-							sku: String(item?.sku ?? ''),
-							brand_name:
-								item?.brand_name !== undefined && item?.brand_name !== null
-									? String(item.brand_name)
-									: null,
-							stock:
-								item && typeof item === 'object' && 'stock' in item
-									? Number((item as any).stock ?? 0)
-									: null,
-						}))
-						.filter((item) => Number.isFinite(item.id) && item.id > 0)
+					.map((item) => ({
+						id: Number(item?.id ?? 0),
+						name: String(item?.name ?? ''),
+						sku: String(item?.sku ?? ''),
+						brand_name:
+							item?.brand_name !== undefined && item?.brand_name !== null
+								? String(item.brand_name)
+								: null,
+						stock:
+							item && typeof item === 'object' && 'stock' in item
+								? Number((item as any).stock ?? 0)
+								: null,
+					}))
+					.filter((item) => Number.isFinite(item.id) && item.id > 0)
 				: [];
 
 			return { stats, inventory, criticalProducts, branchId };
 		} catch (error: any) {
 			return rejectWithValue(
 				error?.response?.data?.message ??
-					error?.message ??
-					'No se pudo cargar el resumen de inventario',
+				error?.message ??
+				'No se pudo cargar el resumen de inventario',
 			);
 		}
 	},
@@ -303,8 +303,8 @@ export const fetchProductsFromMultipleBranches = createAsyncThunk<
 		} catch (error: any) {
 			return rejectWithValue(
 				error?.response?.data?.message ??
-					error?.message ??
-					'No se pudieron cargar los productos',
+				error?.message ??
+				'No se pudieron cargar los productos',
 			);
 		}
 	},
@@ -355,8 +355,8 @@ export const fetchProductAttributes = createAsyncThunk<
 	} catch (error: any) {
 		return rejectWithValue(
 			error?.response?.data?.message ??
-				error?.message ??
-				'No se pudieron cargar los atributos del producto',
+			error?.message ??
+			'No se pudieron cargar los atributos del producto',
 		);
 	}
 });
@@ -385,8 +385,8 @@ export const patchProductAttributes = createAsyncThunk<
 		} catch (error: any) {
 			return rejectWithValue(
 				error?.response?.data?.message ??
-					error?.message ??
-					'No se pudieron actualizar los atributos del producto',
+				error?.message ??
+				'No se pudieron actualizar los atributos del producto',
 			);
 		}
 	},
@@ -472,8 +472,8 @@ export const updateProduct = createAsyncThunk<
 		} catch (error: any) {
 			return rejectWithValue(
 				error?.response?.data?.message ??
-					error?.message ??
-					'No se pudo actualizar el producto',
+				error?.message ??
+				'No se pudo actualizar el producto',
 			);
 		}
 	},
@@ -565,8 +565,8 @@ export const attachProductMediaFromLibrary = createAsyncThunk<
 		} catch (error: any) {
 			return rejectWithValue(
 				error?.response?.data?.message ??
-					error?.message ??
-					'Error attaching media from library',
+				error?.message ??
+				'Error attaching media from library',
 			);
 		}
 	},
@@ -634,6 +634,7 @@ export const deleteProductMedia = createAsyncThunk<
 		await ApiService.fetchData({
 			url: `/branches/${branchId}/media/${mediaId}`,
 			method: 'delete',
+			data: { product_id: productId },
 		});
 		return true;
 	} catch (error: any) {
@@ -740,8 +741,8 @@ export const setProductMainImage = createAsyncThunk<
 	} catch (error: any) {
 		return rejectWithValue(
 			error?.response?.data?.message ??
-				error?.message ??
-				'Error al establecer imagen principal',
+			error?.message ??
+			'Error al establecer imagen principal',
 		);
 	}
 });
@@ -977,8 +978,12 @@ const productsSlice = createSlice({
 				state.mediaUploading = true;
 				state.mediaError = null;
 			})
-			.addCase(deleteProductMedia.fulfilled, (state) => {
+			.addCase(deleteProductMedia.fulfilled, (state, action) => {
 				state.mediaUploading = false;
+				// Actualizar la galería del producto actual si corresponde
+				if (state.current && state.current.gallery && action.meta?.arg?.mediaId) {
+					state.current.gallery = state.current.gallery.filter(img => img.id !== action.meta.arg.mediaId);
+				}
 			})
 			.addCase(deleteProductMedia.rejected, (state, action) => {
 				state.mediaUploading = false;

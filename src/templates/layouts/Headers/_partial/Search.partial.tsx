@@ -6,9 +6,39 @@ import Button from '../../../../components/ui/Button';
 import Input from '../../../../components/form/Input';
 import FieldWrap from '../../../../components/form/FieldWrap';
 import useDomRect from '../../../../hooks/useDomRect';
-import { componentsPages } from '../../../../config/pages.config';
+import pagesConfig from '@/config/pages.config';
 import Badge from '../../../../components/ui/Badge';
 import Modal, { ModalBody, ModalHeader } from '../../../../components/ui/Modal';
+
+
+const flattenPages = (config: Record<string, any>) => {
+    const result: any[] = [];
+
+    Object.values(config).forEach((page: any) => {
+        result.push({
+            id: page.id,
+            to: page.to,
+            text: page.text,
+            icon: page.icon,
+            category: page.text ?? 'General',
+        });
+
+        if (page.subPages) {
+            Object.values(page.subPages).forEach((sub: any) => {
+                result.push({
+                    id: sub.id,
+                    to: sub.to,
+                    text: sub.text,
+                    icon: sub.icon,
+                    category: page.text ?? 'General',
+                });
+            });
+        }
+    });
+
+    return result;
+};
+
 
 const SearchPartial = () => {
 	const ref = useRef<HTMLDivElement>(null);
@@ -43,26 +73,15 @@ const SearchPartial = () => {
 			⌘ K
 		</Button>
 	);
+	
+	const list = flattenPages(pagesConfig);
 
-	const list = [
-		...Object.values(componentsPages.uiPages.subPages).map((i) => ({
-			...i,
-			category: 'Component',
-		})),
-		...Object.values(componentsPages.formPages.subPages).map((i) => ({
-			...i,
-			category: 'Form',
-		})),
-		...Object.values(componentsPages.integratedPages.subPages).map((i) => ({
-			...i,
-			category: 'Other',
-		})),
-	];
 	const result = list.filter(
-		(key) =>
-			key.text.toLowerCase().includes(formik.values.searchField.toLowerCase()) ||
-			key.category.toLowerCase().includes(formik.values.searchField.toLowerCase()),
+		(item) =>
+			item.text.toLowerCase().includes(formik.values.searchField.toLowerCase()) ||
+			item.category.toLowerCase().includes(formik.values.searchField.toLowerCase())
 	);
+
 
 	const inputRef = useRef<HTMLInputElement>(null);
 	const focusInput = () => {
@@ -97,7 +116,7 @@ const SearchPartial = () => {
 				<Input
 					ref={inputRef}
 					name='searchField'
-					placeholder='Search or type a command'
+					placeholder='Busca en el sistema...'
 					className='min-w-[22rem]'
 					value={formik.values.searchField}
 					onChange={formik.handleChange}
@@ -170,7 +189,7 @@ const SearchPartial = () => {
 					<FieldWrap firstSuffix={leftContent} lastSuffix={rightContent} className='z-20'>
 						<Input
 							name='searchField'
-							placeholder='Search or type a command'
+							placeholder='Busca en el sistema...'
 							className='min-w-[22rem]'
 							value={formik.values.searchField}
 							onChange={formik.handleChange}

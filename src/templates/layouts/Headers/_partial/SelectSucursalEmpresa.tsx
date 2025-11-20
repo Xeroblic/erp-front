@@ -15,6 +15,8 @@ import { toast } from 'react-toastify';
 import ApiService from '@/services/ApiService';
 import Icon from '@/components/icon/Icon';
 import { GroupBase } from 'react-select';
+import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
+import Button from '@/components/ui/Button';
 
 type BranchOptionMeta = {
 	branch: UserBranch;
@@ -53,42 +55,27 @@ const SelectSucursalEmpresa = () => {
 		error: branchesError,
 	} = useUserBranches(userId ?? undefined, { enabled: Boolean(userId) });
 
-	// 🔐 Obtener subsidiarias accesibles del usuario
 	const accessibleSubsidiaryIds = useMemo(() => {
 		const subsidiaries = new Set<number>();
-
-		// ✅ USAR SOLO access.subsidiaries - Es la fuente autoritativa del backend
 		(user as any)?.access?.subsidiaries?.forEach((sub: any) => {
 			if (sub?.id) subsidiaries.add(sub.id);
 			else if (typeof sub === 'number') subsidiaries.add(sub);
 		});
-
 		return subsidiaries;
 	}, [user]);
 
-	// ✅ FILTRAR: Solo branches de subsidiarias accesibles
 	const filteredBranches = useMemo(() => {
 		if (!branches.length) return [];
+		if (accessibleSubsidiaryIds.size === 0) return branches;
 
-		// Si no podemos determinar subsidiarias accesibles, mostrar todas
-		if (accessibleSubsidiaryIds.size === 0) {
-			return branches;
-		}
-
-		const filtered = branches.filter((branch) => {
-			// Si la branch no tiene subsidiaryId, permitirla (puede ser legacy)
+		return branches.filter((branch) => {
 			if (!branch.subsidiaryId) return true;
-			// Solo incluir si la subsidiaria está en accesibles
 			return accessibleSubsidiaryIds.has(branch.subsidiaryId);
 		});
-
-		return filtered;
 	}, [branches, accessibleSubsidiaryIds]);
 
 	const preferredBranchId = useMemo(() => {
-		if (personalizacionUsuario?.sucursal_principal) {
-			return personalizacionUsuario.sucursal_principal;
-		}
+		if (personalizacionUsuario?.sucursal_principal) return personalizacionUsuario.sucursal_principal;
 		if (user?.branch?.id) return user.branch.id;
 		if (user?.branch_id) return user.branch_id;
 		return null;
@@ -113,9 +100,7 @@ const SelectSucursalEmpresa = () => {
 				},
 			};
 
-			if (!groups.has(groupLabel)) {
-				groups.set(groupLabel, []);
-			}
+			if (!groups.has(groupLabel)) groups.set(groupLabel, []);
 			groups.get(groupLabel)?.push(option);
 		});
 
@@ -134,27 +119,21 @@ const SelectSucursalEmpresa = () => {
 		}
 
 		if (preferredBranchId == null) {
-			const firstOption = groupedOptions[0]?.options?.[0] as BranchOption | undefined;
-			setSelectedSucursal(firstOption ?? null);
+			const first = groupedOptions[0]?.options?.[0] as BranchOption | undefined;
+			setSelectedSucursal(first ?? null);
 			return;
 		}
 
 		const match = groupedOptions
-			.flatMap((group) => group.options)
-			.find((option) => Number(option.value) === Number(preferredBranchId)) as
-			| BranchOption
-			| undefined;
+			.flatMap((g) => g.options)
+			.find((opt) => Number(opt.value) === Number(preferredBranchId)) as BranchOption | undefined;
 
-		// Si la branch preferida no está en las accesibles, usar la primera disponible
 		if (!match && groupedOptions.length > 0) {
-			console.warn(' Branch preferida no accesible, usando primera disponible');
-			const firstOption = groupedOptions[0]?.options?.[0] as BranchOption | undefined;
-			setSelectedSucursal(firstOption ?? null);
+			const first = groupedOptions[0]?.options?.[0] as BranchOption | undefined;
+			setSelectedSucursal(first ?? null);
 
-			// Actualizar preferencia automáticamente a una branch accesible
-			if (firstOption) {
-				const firstBranchId = Number(firstOption.value);
-				dispatch(actualizarSucursalPrincipalThunk(firstBranchId)).catch(console.error);
+			if (first) {
+				dispatch(actualizarSucursalPrincipalThunk(Number(first.value))).catch(console.error);
 			}
 			return;
 		}
@@ -165,6 +144,7 @@ const SelectSucursalEmpresa = () => {
 	const handleChange = useCallback(
 		async (option: BranchOption | null) => {
 			setSelectedSucursal(option);
+
 			const nextBranchId = option ? Number(option.value) : null;
 			if (nextBranchId === preferredBranchId || nextBranchId === null) return;
 
@@ -172,6 +152,7 @@ const SelectSucursalEmpresa = () => {
 
 			try {
 				await dispatch(actualizarSucursalPrincipalThunk(nextBranchId)).unwrap();
+
 				const companyId = personalizacionUsuario?.company_id ?? user?.company?.id;
 				if (companyId) {
 					try {
@@ -188,14 +169,15 @@ const SelectSucursalEmpresa = () => {
 				window.dispatchEvent(
 					new CustomEvent('user-branch-changed', {
 						detail: { branchId: nextBranchId, subsidiaryId: nextSubsidiaryId },
-					}),
+					})
 				);
+
 				toast.success('Sucursal principal actualizada');
 			} catch (error: any) {
 				toast.error(error?.message ?? 'No se pudo actualizar la sucursal principal');
 			}
 		},
-		[dispatch, personalizacionUsuario?.company_id, preferredBranchId, user?.company?.id],
+		[dispatch, personalizacionUsuario?.company_id, preferredBranchId, user?.company?.id]
 	);
 
 	const formatOptionLabel = useCallback((option: BranchOption) => {
@@ -251,7 +233,7 @@ const SelectSucursalEmpresa = () => {
 				</span>
 			</div>
 		),
-		[],
+		[]
 	);
 
 	const selectPortalTarget = useMemo(() => {
@@ -259,51 +241,84 @@ const SelectSucursalEmpresa = () => {
 		return document.body;
 	}, []);
 
+	const [modalOpen, setModalOpen] = useState(false);
+
+	// props del Select para reutilizarlas en desktop + modal
+	const selectProps = {
+		className: 'branch-selector w-full',
+		noOptionsMessage: () => (branchesError ? 'Error al cargar' : 'Sin Opciones'),
+		placeholder:
+			branchesLoading
+				? 'Cargando sucursales...'
+				: !groupedOptions.length
+					? 'Sin sucursales disponibles'
+					: 'Selecciona una sucursal',
+		dimension: 'sm' as const,
+		name: 'select_empresa',
+		isLoading: branchesLoading,
+		isDisabled: branchesLoading || !!branchesError,
+		isClearable: false,
+		isSearchable: true,
+		value: selectedSucursal as TSelectOption | null,
+		options: groupedOptions,
+		formatOptionLabel: (option: TSelectOption) => formatOptionLabel(option as BranchOption),
+		formatGroupLabel: formatGroupLabel,
+		onChange: (option: any) => {
+			if (Array.isArray(option)) {
+				void handleChange(null);
+				return;
+			}
+			void handleChange((option as BranchOption) ?? null);
+		},
+		menuPortalTarget: selectPortalTarget,
+		styles: {
+			menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
+			menu: (base: any) => ({ ...base, maxWidth: '100vw', width: '100%', left: 0 }),
+			menuList: (base: any) => ({ ...base, maxHeight: '50vh', width: '100%' }),
+		},
+	};
+
 	return (
-		<div className='min-w-[260px] max-w-xs space-y-1'>
-			<SelectReact
-				className='branch-selector w-full'
-				noOptionsMessage={() => (branchesError ? 'Error al cargar' : 'Sin Opciones')}
-				placeholder={
-					branchesLoading
-						? 'Cargando sucursales...'
-						: !groupedOptions.length
-							? 'Sin sucursales disponibles'
-							: 'Selecciona una sucursal'
-				}
-				dimension='sm'
-				name='select_empresa'
-				isLoading={branchesLoading}
-				isDisabled={branchesLoading || !!branchesError}
-				isClearable={false}
-				isSearchable
-				value={selectedSucursal as TSelectOption | null}
-				options={groupedOptions}
-				formatOptionLabel={(option: TSelectOption) =>
-					formatOptionLabel(option as BranchOption)
-				}
-				formatGroupLabel={formatGroupLabel}
-				onChange={(option) => {
-					if (Array.isArray(option)) {
-						void handleChange(null);
-						return;
-					}
-					void handleChange((option as BranchOption) ?? null);
-				}}
-				menuPortalTarget={selectPortalTarget}
-				styles={{
-					menuPortal: (base) => ({
-						...base,
-						zIndex: 1200,
-					}),
-				}}
-			/>
+		<>
+			{/* DESKTOP */}
+			<div className="hidden sm:block w-full sm:min-w-[260px] sm:max-w-xs">
+				<SelectReact {...selectProps} />
+			</div>
+
+			{/* MOBILE BUTTON */}
+			<Button
+				onClick={() => setModalOpen(true)}
+				className="sm:hidden flex items-center gap-2 px-3 py-2 rounded-md border bg-neutral-100 dark:bg-neutral-900 w-full"
+			>
+				<Icon icon="HeroBuildingOffice2" />
+				<span>{selectedSucursal?.label ?? 'Selecciona una sucursal'}</span>
+			</Button>
+
+			{/* MOBILE MODAL */}
+			<Modal isOpen={modalOpen} setIsOpen={setModalOpen}>
+				<ModalHeader>Selecciona una sucursal</ModalHeader>
+				<ModalBody>
+					<SelectReact
+						{...selectProps}
+						onChange={(option: any) => {
+							if (Array.isArray(option)) {
+								void handleChange(null);
+								return;
+							}
+
+							void handleChange((option as BranchOption) ?? null);
+							setModalOpen(false);
+						}}
+					/>
+				</ModalBody>
+			</Modal>
+
 			{branchesError && (
 				<p className='mt-1 text-xs text-red-500' role='alert'>
 					{branchesError}
 				</p>
 			)}
-		</div>
+		</>
 	);
 };
 

@@ -92,19 +92,22 @@ export interface QuotePDFResponse {
 }
 
 export interface QuoteItemDTO {
-	id?: number;
-	product_id?: number | null;
-	customer_name?: string | null;
-	customer_sku?: string | null;
-	description?: string | null;
-	notes?: string | null;
-	quantity: number;
-	unit_price?: number;
-	discount_amount?: number | null;
-	metadata?: Record<string, any>;
+    [key: string]: unknown;
+    id?: number;
+    product_id?: number | null;
+    customer_name?: string | null;
+    customer_sku?: string | null;
+    description?: string | null;
+    notes?: string | null;
+    quantity: number;
+    unit_price?: number;
+    discount_amount?: number | null;
+    metadata?: Record<string, any>;
 }
 
+
 export interface QuoteCreateDTO {
+	[key: string]: unknown;
 	customer_id: number;
 	quote_number?: string | null;
 	quote_date: string;
@@ -121,6 +124,7 @@ export interface QuoteCreateDTO {
 }
 
 export interface QuoteUpdateDTO extends Partial<QuoteCreateDTO> {
+	[key: string]: unknown;
 	status?: QuoteStatus;
 }
 

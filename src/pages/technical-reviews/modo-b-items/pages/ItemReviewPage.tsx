@@ -105,6 +105,28 @@ const ItemReviewStandalonePage: React.FC = () => {
 	const [automaticGrade, setAutomaticGrade] = useState<string | null>(null);
 
 	// Auto-save hook
+
+		if (!branchId) {
+		return (
+			<PageWrapper name='technical-review-batch' title='Revisión Técnica por Lote'>
+				<Container>
+					<Card>
+						<CardHeader>
+							<h2 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
+								Error: No hay sucursal seleccionada
+							</h2>
+						</CardHeader>
+						<CardBody>
+							<p className='text-gray-700 dark:text-gray-300'>
+								Por favor, selecciona una sucursal para continuar.
+							</p>
+						</CardBody>
+					</Card>
+				</Container>
+			</PageWrapper>
+		);
+	}
+
 	const {
 		isDirty,
 		isSaving,
@@ -119,7 +141,6 @@ const ItemReviewStandalonePage: React.FC = () => {
 		reviewStatus: item?.review_status,
 		equipmentType: equipmentType || undefined,
 		onSaveSuccess: (savedItemId) => {
-			// ✅ STANDALONE FLOW: Siempre navegar a /items (nunca a batch)
 			if (itemId === 'create') {
 				navigate(`/technical-reviews/items/${savedItemId}`, { replace: true });
 			}
