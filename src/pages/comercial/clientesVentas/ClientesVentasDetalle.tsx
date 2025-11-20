@@ -1,40 +1,46 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
 import Container from '@/components/layouts/Container/Container';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+
 import Card, { CardBody } from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchCustomerDetailThunk } from '@/store/slices/customerSales/customerSalesSlice';
+import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
+
+import CreateCustomerSaleModal from './components/modals/CreateCustomerSaleModal';
 
 const ClientesVentasDetalle = () => {
-	const { id } = useParams();
+	const { clienteId } = useParams();
 	const navigate = useNavigate();
 	const dispatch = useAppDispatch();
 
 	const { detalle, loading } = useAppSelector((s) => s.customerSales);
+	const effectiveSubsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
+
+	const [isEditOpen, setIsEditOpen] = useState(false);
 
 	useEffect(() => {
-		if (id) {
+		if (clienteId) {
 			dispatch(
 				fetchCustomerDetailThunk({
-					subsidiary: 1, // cambia según corresponda
-					id,
-				})
+					subsidiary: effectiveSubsidiaryId ?? 1,
+					id: clienteId,
+				} as any),
 			);
 		}
-	}, [id, dispatch]);
+	}, [clienteId, dispatch, effectiveSubsidiaryId]);
 
-	// LOADING
 	if (loading || !detalle) {
 		return (
 			<PageWrapper>
 				<Container>
-					<div className='p-10 text-center text-zinc-500'>
+					<div className="p-10 text-center text-zinc-500">
 						Cargando información del cliente...
 					</div>
 				</Container>
@@ -42,10 +48,7 @@ const ClientesVentasDetalle = () => {
 		);
 	}
 
-	// Nombre visible
-	const nombre = detalle.billing_company || detalle.contact_name || 'Cliente sin nombre';
-
-	const contacto = detalle.primary_contact || {
+	const contacto = detalle.primary_contact ?? {
 		name: detalle.contact_name,
 		email: detalle.email,
 		phone: detalle.phone,
@@ -53,105 +56,130 @@ const ClientesVentasDetalle = () => {
 
 	return (
 		<PageWrapper>
-			{/* SUBHEADER */}
+			{/* HEADER SUPERIOR */}
 			<Subheader>
 				<SubheaderLeft>
-					<h2 className='text-2xl font-semibold'>{nombre}</h2>
-					<p className='text-zinc-500 text-sm'>Cliente #{detalle.id}</p>
+					<div className="flex flex-col space-y-1">
+						<h2 className="text-3xl font-bold tracking-tight">
+							{detalle.billing_company || contacto.name}
+						</h2>
+
+						<div className="flex items-center space-x-3">
+							<Badge variant="outline">
+								ID Cliente: {detalle.id}
+							</Badge>
+
+							<Badge color={detalle.is_active ? "green" : "red"} variant="solid">
+								{detalle.is_active ? "Activo" : "Inactivo"}
+							</Badge>
+
+							<Badge variant="outline" color="blue">
+								{detalle.type === "company" ? "Empresa" : "Persona Natural"}
+							</Badge>
+						</div>
+					</div>
 				</SubheaderLeft>
 
 				<SubheaderRight>
-					<Button variant='outline' onClick={() => navigate('/clientes-ventas')}>
+					<Button variant="outline" onClick={() => navigate('/comercial/clientes-ventas')}>
 						Volver
 					</Button>
-					<Button variant='solid'>Editar</Button>
-					<Button variant='danger'>Eliminar</Button>
+
+					<Button variant="solid" onClick={() => setIsEditOpen(true)}>
+						Editar
+					</Button>
+
+					{/* <Button variant="outline" color="red">
+						Eliminar
+					</Button> */}
 				</SubheaderRight>
 			</Subheader>
 
-			{/* CONTENIDO */}
 			<Container>
-				<Card className='border border-zinc-200 dark:border-zinc-700'>
+				<Card className="border border-zinc-300 dark:border-zinc-700 shadow-sm">
 					<CardBody>
-						<div className='space-y-8'>
+						<div className="space-y-10">
 
-							{/* RUT Y ESTADO */}
-							<div className='grid grid-cols-2 gap-6'>
-								<div>
-									<h3 className='text-sm font-semibold text-zinc-500'>RUT</h3>
-									<p className='text-lg'>{detalle.rut}</p>
-								</div>
+							{/* SECCIÓN: Información básica */}
+							<section>
+								<h3 className="text-lg font-semibold text-zinc-700 dark:text-zinc-200 mb-3">
+									Información General
+								</h3>
 
-								<div>
-									<h3 className='text-sm font-semibold text-zinc-500'>Estado</h3>
-									<Badge
-										variant='solid'
-										color={detalle.is_active ? 'green' : 'red'}>
-										{detalle.is_active ? 'Activo' : 'Inactivo'}
-									</Badge>
-								</div>
-							</div>
+								<hr />
 
-							{/* DATOS DE CONTACTO */}
-							<div className='space-y-2'>
-								<h3 className='text-sm font-semibold text-zinc-500'>Datos de contacto</h3>
-								<div className='grid grid-cols-2 gap-6'>
+								<div className="grid grid-cols-2 gap-6 mt-4">
 									<div>
-										<p className='font-medium'>Email</p>
-										<p>{detalle.email}</p>
+										<p className="text-sm font-medium text-zinc-500">RUT</p>
+										<p className="text-lg">{detalle.rut}</p>
 									</div>
 
 									<div>
-										<p className='font-medium'>Teléfono</p>
-										<p>{detalle.phone}</p>
-									</div>
-
-									<div>
-										<p className='font-medium'>Contacto Principal</p>
-										<p>{contacto.name}</p>
-									</div>
-
-									<div>
-										<p className='font-medium'>Correo Contacto</p>
-										<p>{contacto.email}</p>
-									</div>
-
-									<div>
-										<p className='font-medium'>Teléfono Contacto</p>
-										<p>{contacto.phone}</p>
+										<p className="text-sm font-medium text-zinc-500">Fecha creación</p>
+										<p>{new Date(detalle.created_at).toLocaleDateString()}</p>
 									</div>
 								</div>
-							</div>
+							</section>
 
-							{/* DIRECCIÓN (solo si existe algo) */}
-							{(detalle.billing_address_1 ||
-								detalle.billing_city ||
-								detalle.commune?.name) && (
-								<div className='space-y-2'>
-									<h3 className='text-sm font-semibold text-zinc-500'>Dirección</h3>
-									<div className='space-y-1'>
-										{detalle.billing_address_1 && <p>{detalle.billing_address_1}</p>}
-										{detalle.billing_city && (
-											<p className='text-zinc-500'>{detalle.billing_city}</p>
-										)}
-										{detalle.commune && (
-											<p className='text-zinc-500'>{detalle.commune.name}</p>
-										)}
-									</div>
+							{/* SECCIÓN: Contacto */}
+							<section>
+								<h3 className="text-lg font-semibold text-zinc-700 dark:text-zinc-200 mb-3">
+									Contacto
+								</h3>
+
+								<hr />
+
+								<div className="space-y-2 mt-4">
+									<p><span className="font-medium">Nombre: </span>{contacto.name}</p>
+									<p><span className="font-medium">Email: </span>{contacto.email}</p>
+									<p><span className="font-medium">Teléfono: </span>{contacto.phone}</p>
 								</div>
+							</section>
+
+							{/* SECCIÓN: Dirección */}
+							{detalle.billing_address_1 && (
+								<section>
+									<h3 className="text-lg font-semibold text-zinc-700 dark:text-zinc-200 mb-3">
+										Dirección
+									</h3>
+
+									<hr />
+
+									<div className="space-y-1 mt-4">
+										<p>{detalle.billing_address_1}</p>
+										{detalle.billing_city && <p className="text-zinc-500">{detalle.billing_city}</p>}
+										{detalle.commune && <p className="text-zinc-500">{detalle.commune.name}</p>}
+									</div>
+								</section>
 							)}
 
-							{/* NOTAS (solo si hay) */}
+							{/* SECCIÓN: Notas */}
 							{detalle.notes && (
-								<div className='space-y-2'>
-									<h3 className='text-sm font-semibold text-zinc-500'>Notas</h3>
-									<p className='text-zinc-700 dark:text-zinc-300'>{detalle.notes}</p>
-								</div>
+								<section>
+									<h3 className="text-lg font-semibold text-zinc-700 dark:text-zinc-200 mb-3">
+										Notas
+									</h3>
+
+									<hr />
+
+									<p className="mt-4">{detalle.notes}</p>
+								</section>
 							)}
 						</div>
 					</CardBody>
 				</Card>
 			</Container>
+
+			{/* MODAL DE EDICIÓN */}
+			{detalle && (
+				<CreateCustomerSaleModal
+					isOpen={isEditOpen}
+					setIsOpen={setIsEditOpen}
+					subsidiaryId={effectiveSubsidiaryId ?? 1}
+					isEdit={true}
+					initialData={detalle}
+				/>
+			)}
 		</PageWrapper>
 	);
 };

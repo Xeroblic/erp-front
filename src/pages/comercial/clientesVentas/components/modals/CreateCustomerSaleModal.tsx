@@ -5,67 +5,121 @@ import Button from '@/components/ui/Button';
 import Checkbox from '@/components/form/Checkbox';
 
 import { useAppDispatch } from '@/store';
-import { createCustomerThunk } from '@/store/slices/customerSales/customerSalesSlice';
+import {
+	createCustomerThunk,
+	updateCustomerThunk,
+	fetchCustomerDetailThunk,
+	fetchCustomersOverviewThunk,
+} from '@/store/slices/customerSales/customerSalesSlice';
+import { ICustomerSale } from '@/interface/customerSales.interface';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
+import { formatRut, validateRut } from '../utils/validateRut';
 
 const CreateCustomerSaleModal = ({
 	isOpen,
 	setIsOpen,
 	subsidiaryId,
+	isEdit = false,
+	initialData,
 }: {
 	isOpen: boolean;
 	setIsOpen: (v: boolean) => void;
-	subsidiaryId: number | string;
+	subsidiaryId: number | string | null | undefined;
+	isEdit?: boolean;
+	initialData?: Partial<ICustomerSale> | null;
 }) => {
 	const dispatch = useAppDispatch();
 
 	const formik = useFormik({
 		initialValues: {
-			document_number: '',
-			billing_company: '',
-			contact_name: '',
-			email: '',
-			phone: '',
-			is_active: true,
+			document_number: initialData?.document_number ?? initialData?.rut ?? '',
+			billing_company: initialData?.billing_company ?? '',
+			contact_name: initialData?.contact_name ?? initialData?.primary_contact?.name ?? '',
+			email: initialData?.email ?? '',
+			phone: initialData?.phone ?? '',
+			is_active: typeof initialData?.is_active === 'boolean' ? initialData!.is_active : true,
 		},
+		enableReinitialize: true,
 		validationSchema: Yup.object({
-			document_number: Yup.string().required('RUT requerido'),
+			document_number: Yup.string()
+				.required('RUT requerido')
+				.test('rut-valid', 'RUT inválido', (value) => validateRut(value || '')),
 			email: Yup.string().email('Email inválido').required('Email requerido'),
 			billing_company: Yup.string().required('Empresa/Persona requerida'),
 		}),
 		onSubmit: async (values, { setSubmitting }) => {
 			try {
-				const action = await dispatch(
-					createCustomerThunk({
-						subsidiary: subsidiaryId,
-						payload: {
-							document_type: 'rut',
-							rut: values.document_number,
-							billing_company: values.billing_company,
-							contact_name: values.contact_name,
-							email: values.email,
-							phone: values.phone,
-							is_active: values.is_active,
-						},
-					}) as any,
-				);
+				if (!subsidiaryId) {
+					console.error('Subsidiaria no seleccionada');
+					return;
+				}
 
-				if (action && (action as any).meta?.requestStatus === 'fulfilled') {
-					try {
-						const { fetchCustomersOverviewThunk } = await import(
-							'@/store/slices/customerSales/customerSalesSlice'
+				if (isEdit && initialData?.id) {
+					const action = await dispatch(
+						updateCustomerThunk({
+							subsidiary: subsidiaryId,
+							id: initialData.id,
+							payload: {
+								rut: values.document_number,
+								billing_company: values.billing_company,
+								contact_name: values.contact_name,
+								email: values.email,
+								phone: values.phone,
+								is_active: values.is_active,
+							},
+						}) as any,
+					);
+
+					if (action && (action as any).meta?.requestStatus === 'fulfilled') {
+						// refrescar detalle y overview
+						dispatch(
+							fetchCustomerDetailThunk({
+								subsidiary: subsidiaryId,
+								id: initialData.id,
+							} as any) as any,
 						);
 						dispatch(
 							fetchCustomersOverviewThunk({ subsidiary: subsidiaryId } as any) as any,
 						);
-					} catch (e) {
-						console.warn('No se pudo refrescar overview después de crear cliente', e);
+						setIsOpen(false);
+					} else {
+						console.error('Error actualizando cliente', action);
 					}
-					setIsOpen(false);
-					formik.resetForm();
 				} else {
-					console.error('Error creando cliente', action);
+					const action = await dispatch(
+						createCustomerThunk({
+							subsidiary: subsidiaryId,
+							payload: {
+								document_type: 'rut',
+								rut: values.document_number,
+								billing_company: values.billing_company,
+								contact_name: values.contact_name,
+								email: values.email,
+								phone: values.phone,
+								is_active: values.is_active,
+							},
+						}) as any,
+					);
+
+					if (action && (action as any).meta?.requestStatus === 'fulfilled') {
+						try {
+							dispatch(
+								fetchCustomersOverviewThunk({
+									subsidiary: subsidiaryId,
+								} as any) as any,
+							);
+						} catch (e) {
+							console.warn(
+								'No se pudo refrescar overview después de crear cliente',
+								e,
+							);
+						}
+						setIsOpen(false);
+						formik.resetForm();
+					} else {
+						console.error('Error creando cliente', action);
+					}
 				}
 			} finally {
 				setSubmitting(false);
@@ -75,7 +129,7 @@ const CreateCustomerSaleModal = ({
 
 	return (
 		<Modal isOpen={isOpen} setIsOpen={() => setIsOpen(false)} size='md'>
-			<ModalHeader>Crear Cliente</ModalHeader>
+			<ModalHeader>{isEdit ? 'Editar Cliente' : 'Crear Cliente'}</ModalHeader>
 
 			<ModalBody>
 				<form onSubmit={formik.handleSubmit} className='space-y-4'>
@@ -84,7 +138,10 @@ const CreateCustomerSaleModal = ({
 						label='RUT'
 						placeholder='12345678-9'
 						value={formik.values.document_number}
-						onChange={formik.handleChange}
+						onChange={(e) => {
+							const formatted = formatRut(e.target.value);
+							formik.setFieldValue('document_number', formatted);
+						}}
 						onBlur={formik.handleBlur}
 						isTouched={!!formik.touched.document_number}
 						isValid={!formik.errors.document_number}
@@ -168,7 +225,7 @@ const CreateCustomerSaleModal = ({
 					variant='solid'
 					onClick={() => formik.handleSubmit()}
 					disabled={formik.isSubmitting}>
-					Guardar
+					{isEdit ? 'Actualizar' : 'Guardar'}
 				</Button>
 			</ModalFooter>
 		</Modal>
