@@ -58,7 +58,7 @@ const InventarioPage = lazy(() => import('@/pages/inventario/Inventario'));
 const HistorialInventario = lazy(
 	() => import('@/pages/inventario/historial/HistorialInventarioAdmin'),
 );
-const SalesListPage = lazy(() => import('@/pages/ventas/SalesListPage'));
+const SalesListPage = lazy(() => import('@/pages/comercial/ventas/SalesListPage'));
 const CotizacionesPage = lazy(() => import('@/pages/comercial/cotizaciones/CotizacionesAdmin'));
 const TransferenciasInventario = lazy(
 	() => import('@/pages/inventario/transferencias/Transferencias'),

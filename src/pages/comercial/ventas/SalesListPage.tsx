@@ -28,6 +28,8 @@ import Modal, {
 	ModalHeader,
 } from '@/components/ui/Modal';
 import SaleDetailPage from './SaleDetailPage';
+import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import Icon from '@/components/icon/Icon';
 
 // Inyección dinámica del reducer
 injectReducer('salesModule', salesReducer);
@@ -130,8 +132,7 @@ const SalesListPage: React.FC = () => {
 		[handleDetailModalState],
 	);
 
-	const detailModalVisible =
-		detailModalOpen && selectedSaleId !== null && Boolean(subsidiaryId);
+	const detailModalVisible = detailModalOpen && selectedSaleId !== null && Boolean(subsidiaryId);
 
 	const columns = useMemo<ColumnDef<SaleListItem>[]>(
 		() => [
@@ -264,162 +265,202 @@ const SalesListPage: React.FC = () => {
 	return (
 		<>
 			<PageWrapper title='Listado de Ventas'>
+				<Subheader>
+					<SubheaderLeft>
+						<div>
+							<Badge className='text-2xl font-semibold'>Lista de Ventas</Badge>
+							<p>Consulta y administra las ventas registradas en el sistema.</p>
+						</div>
+					</SubheaderLeft>
+				</Subheader>
 				<Container>
-				<div className='space-y-6'>
-					{!subsidiaryId && (
-						<Alert
-							icon='HeroInformationCircle'
-							variant='outline'
-							color='amber'
-							colorIntensity='500'>
-							Selecciona una sucursal o empresa para visualizar las ventas
-							disponibles.
-						</Alert>
-					)}
+					<div className='space-y-6'>
+						{!subsidiaryId && (
+							<Alert
+								icon='HeroInformationCircle'
+								variant='outline'
+								color='amber'
+								colorIntensity='500'>
+								Selecciona una sucursal o empresa para visualizar las ventas
+								disponibles.
+							</Alert>
+						)}
 
-					<div className='grid gap-4 md:grid-cols-2 xl:grid-cols-4'>
+						<div className='grid gap-4 md:grid-cols-2 xl:grid-cols-4'>
+							<Card>
+								<CardHeader>
+									<div className='flex items-center gap-2'>
+										<Icon icon='DuoDollar' size='text-3xl' />
+										<span className='text-sm font-semibold text-zinc-400'>
+											Total página
+										</span>
+									</div>
+								</CardHeader>
+								<CardBody>
+									<div className='text-2xl font-semibold text-zinc-900 dark:text-white'>
+										{formatCLP(summaryStats.totalAmount)}
+									</div>
+									<p className='text-xs text-zinc-500'>
+										Monto total de las ventas listadas
+									</p>
+								</CardBody>
+							</Card>
+
+							<Card>
+								<CardHeader>
+									<div className='flex items-center gap-2'>
+										<Icon icon='DuoTicket' size='text-3xl' />
+										<span className='text-sm font-semibold text-zinc-400'>
+											Ticket promedio
+										</span>
+									</div>
+								</CardHeader>
+								<CardBody>
+									<div className='text-2xl font-semibold text-zinc-900 dark:text-white'>
+										{formatCLP(Math.round(summaryStats.avgTicket))}
+									</div>
+									<p className='text-xs text-zinc-500'>
+										Promedio por venta mostrada
+									</p>
+								</CardBody>
+							</Card>
+
+							<Card>
+								<CardHeader>
+									<div className='flex items-center gap-2'>
+										<Icon icon='DuoSale1' size='text-3xl' />
+										<span className='text-sm font-semibold text-zinc-400'>
+											Ventas en proceso
+										</span>
+									</div>
+								</CardHeader>
+								<CardBody>
+									<div className='text-2xl font-semibold text-blue-600 dark:text-blue-300'>
+										{summaryStats.inProgressCount}
+									</div>
+									<p className='text-xs text-zinc-500'>
+										Draft, procesando o pagadas
+									</p>
+								</CardBody>
+							</Card>
+
+							<Card>
+								<CardHeader>
+									<div className='flex items-center gap-2'>
+										<Icon icon='DuoDoneCircle' size='text-3xl' />
+										<span className='text-sm font-semibold text-zinc-400'>
+											Entregadas
+										</span>
+									</div>
+								</CardHeader>
+								<CardBody>
+									<div className='text-2xl font-semibold text-emerald-600 dark:text-emerald-300'>
+										{summaryStats.deliveredCount}
+									</div>
+									<p className='text-xs text-zinc-500'>
+										Entregadas en esta vista
+									</p>
+								</CardBody>
+							</Card>
+						</div>
+
 						<Card>
-							<CardBody>
-								<p className='text-sm text-zinc-500 dark:text-zinc-400'>
-									Total página
-								</p>
-								<div className='text-2xl font-semibold text-zinc-900 dark:text-white'>
-									{formatCLP(summaryStats.totalAmount)}
+							<CardHeader>
+								<div className='flex items-center gap-2'>
+									<Icon icon='DuoFilter' size='text-xl' />
+									<CardTitle>Filtros de búsqueda</CardTitle>
 								</div>
-								<p className='text-xs text-zinc-500'>
-									Monto total de las ventas listadas
-								</p>
+								<Button
+									variant='outline'
+									size='sm'
+									icon='HeroXMark'
+									onClick={handleResetFilters}
+									isDisable={!subsidiaryId}>
+									Limpiar
+								</Button>
+							</CardHeader>
+							<CardBody>
+								<form onSubmit={handleSubmit} className='space-y-4'>
+									<div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
+										<div>
+											<label className='mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300'>
+												Estado
+											</label>
+											<SelectReact
+												name='status'
+												options={statusOptions}
+												value={statusValue}
+												isClearable
+												placeholder='Todos los estados'
+												onChange={(option) =>
+													setStatus(
+														(option as TSelectOption | null)?.value ??
+															'',
+													)
+												}
+											/>
+										</div>
+
+										<div>
+											<label className='mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300'>
+												Nº Venta / Nº Woo
+											</label>
+											<Input
+												type='text'
+												name='search'
+												placeholder='Buscar por número'
+												value={q}
+												onChange={(ev) => setQ(ev.target.value)}
+											/>
+										</div>
+									</div>
+									<div className='flex flex-wrap items-center gap-2'>
+										<Button
+											icon='HeroMagnifyingGlass'
+											type='submit'
+											isDisable={!subsidiaryId}>
+											Aplicar filtros
+										</Button>
+										<Button
+											variant='outline'
+											size='sm'
+											icon='HeroArrowPath'
+											onClick={handleRefresh}
+											isDisable={!subsidiaryId || loading}>
+											Actualizar
+										</Button>
+									</div>
+								</form>
 							</CardBody>
 						</Card>
+
 						<Card>
-							<CardBody>
-								<p className='text-sm text-zinc-500 dark:text-zinc-400'>
-									Ticket promedio
-								</p>
-								<div className='text-2xl font-semibold text-zinc-900 dark:text-white'>
-									{formatCLP(Math.round(summaryStats.avgTicket))}
+							<CardHeader>
+								<div className='flex items-center gap-3'>
+									<CardTitle>
+										<Badge>Listado de ventas</Badge>
+									</CardTitle>
 								</div>
-								<p className='text-xs text-zinc-500'>Promedio por venta mostrada</p>
-							</CardBody>
-						</Card>
-						<Card>
+								<Button
+									variant='outline'
+									size='sm'
+									icon='HeroArrowPath'
+									onClick={handleRefresh}
+									isDisable={!subsidiaryId || loading}>
+									Refrescar
+								</Button>
+							</CardHeader>
 							<CardBody>
-								<p className='text-sm text-zinc-500 dark:text-zinc-400'>
-									Ventas en proceso
-								</p>
-								<div className='text-2xl font-semibold text-blue-600 dark:text-blue-300'>
-									{summaryStats.inProgressCount}
-								</div>
-								<p className='text-xs text-zinc-500'>Draft, procesando o pagadas</p>
-							</CardBody>
-						</Card>
-						<Card>
-							<CardBody>
-								<p className='text-sm text-zinc-500 dark:text-zinc-400'>
-									Entregadas
-								</p>
-								<div className='text-2xl font-semibold text-emerald-600 dark:text-emerald-300'>
-									{summaryStats.deliveredCount}
-								</div>
-								<p className='text-xs text-zinc-500'>Entregadas en esta vista</p>
+								<DataTable<SaleListItem>
+									columns={columns}
+									data={list}
+									loading={loading}
+									emptyMessage={emptyMessage}
+									pageSize={10}
+								/>
 							</CardBody>
 						</Card>
 					</div>
-
-					<Card>
-						<CardHeader>
-							<CardTitle>Filtros de búsqueda</CardTitle>
-							<Button
-								variant='outline'
-								size='sm'
-								icon='HeroXMark'
-								onClick={handleResetFilters}
-								isDisable={!subsidiaryId}>
-								Limpiar
-							</Button>
-						</CardHeader>
-						<CardBody>
-							<form onSubmit={handleSubmit} className='space-y-4'>
-								<div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
-									<div>
-										<label className='mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300'>
-											Estado
-										</label>
-										<SelectReact
-											name='status'
-											options={statusOptions}
-											value={statusValue}
-											isClearable
-											placeholder='Todos los estados'
-											onChange={(option) =>
-												setStatus(
-													(option as TSelectOption | null)?.value ?? '',
-												)
-											}
-										/>
-									</div>
-									
-									
-									<div>
-										<label className='mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300'>
-											Nº Venta / Nº Woo
-										</label>
-										<Input
-											type='text'
-											name='search'
-											placeholder='Buscar por número'
-											value={q}
-											onChange={(ev) => setQ(ev.target.value)}
-										/>
-									</div>
-								</div>
-								<div className='flex flex-wrap items-center gap-2'>
-									<Button
-										icon='HeroMagnifyingGlass'
-										type='submit'
-										isDisable={!subsidiaryId}>
-										Aplicar filtros
-									</Button>
-									<Button
-										variant='outline'
-										size='sm'
-										icon='HeroArrowPath'
-										onClick={handleRefresh}
-										isDisable={!subsidiaryId || loading}>
-										Actualizar
-									</Button>
-								</div>
-							</form>
-						</CardBody>
-					</Card>
-
-					<Card>
-						<CardHeader>
-							<div className='flex items-center gap-3'>
-								<CardTitle>Listado de ventas</CardTitle>
-								<Badge variant='outline'>{list.length} registros</Badge>
-							</div>
-							<Button
-								variant='outline'
-								size='sm'
-								icon='HeroArrowPath'
-								onClick={handleRefresh}
-								isDisable={!subsidiaryId || loading}>
-								Refrescar
-							</Button>
-						</CardHeader>
-						<CardBody>
-							<DataTable<SaleListItem>
-								columns={columns}
-								data={list}
-								loading={loading}
-								emptyMessage={emptyMessage}
-								pageSize={10}
-
-							/>
-						</CardBody>
-					</Card>
-				</div>
 				</Container>
 			</PageWrapper>
 			{detailModalVisible && selectedSaleId && subsidiaryId && (
@@ -435,9 +476,7 @@ const SalesListPage: React.FC = () => {
 							</span>
 							<span className='text-sm font-normal text-zinc-500 dark:text-zinc-400'>
 								Nº Woo:{' '}
-								{selectedSale?.wc_order_number ||
-									selectedSale?.wc_order_id ||
-									'—'}
+								{selectedSale?.wc_order_number || selectedSale?.wc_order_id || '—'}
 							</span>
 						</div>
 					</ModalHeader>
