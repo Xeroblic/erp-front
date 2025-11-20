@@ -61,7 +61,7 @@ const SalesListPage: React.FC = () => {
 	const personalization = useAppSelector((s: any) => s.personalizacion?.personalizacionUsuario);
 	const subsidiaryId: number | null = useMemo(() => {
 		return (
-			user?.subsidiary?.id ?? personalization?.sucursal_principal ?? user?.company?.id ?? null
+			personalization?.sucursal_principal ?? null
 		);
 	}, [user, personalization]);
 
@@ -75,10 +75,10 @@ const SalesListPage: React.FC = () => {
 	const [detailModalOpen, setDetailModalOpen] = useState(false);
 	const [selectedSaleId, setSelectedSaleId] = useState<number | null>(null);
 
-	useEffect(() => {
-		if (!subsidiaryId) return;
-		dispatch(loadSalesList({ subsidiaryId, filters: { with_customer: 1 as const } }));
-	}, [dispatch, subsidiaryId]);
+useEffect(() => {
+    if (!subsidiaryId) return;
+    dispatch(loadSalesList({ subsidiaryId, filters: { with_customer: 1 } }));
+}, [subsidiaryId, dispatch]);
 
 	const summaryStats = useMemo(() => {
 		const totalAmount = list.reduce<number>((acc, sale) => {

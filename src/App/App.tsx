@@ -12,10 +12,11 @@ import getOS from '../utils/getOS.util';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import useDarkMode from '../hooks/useDarkMode';
-import { useAppDispatch, useAppSelector } from '@/store';
+import { obtenerPersonalizacionThunk, useAppDispatch, useAppSelector } from '@/store';
 import AppInitializer from '../components/AppInitializer';
 // import PersonalizacionDebug from '../components/debug/PersonalizacionDebug';
 import NotificationsStreamProvider from '@/notifications/NotificationsStreamProvider';
+import { useEffect } from 'react';
 // import PersonalizacionTest from '../components/test/PersonalizacionTest';
 // import DarkModeDebug from '../components/debug/DarkModeDebug';
 // import DarkModeStatus from '../components/debug/DarkModeStatus';
@@ -32,6 +33,15 @@ const App = () => {
 	// Redux hooks para verificar autenticación
 	const dispatch = useAppDispatch();
 	const { isAuthenticated, access } = useAppSelector((state) => state.auth);
+
+	useEffect(() => {
+		const handler = () => {
+			dispatch(obtenerPersonalizacionThunk());
+		};
+
+		window.addEventListener('user-branch-changed', handler);
+		return () => window.removeEventListener('user-branch-changed', handler);
+	}, [dispatch]);
 
 	return (
 		<>
