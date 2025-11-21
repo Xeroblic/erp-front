@@ -211,9 +211,7 @@ const Productos: React.FC = () => {
 	};
 
 	const handleViewProduct = (product: IProduct) => {
-		const targetBranchId = branchId ?? activeBranchId ?? product.branch_id ?? null;
-		const search = targetBranchId ? `?branchId=${targetBranchId}` : '';
-		navigate(`/catalogos/productos/${product.id}${search}`);
+		navigate(`/catalogos/productos/${product.id}`);
 	};
 
 	const handleCreateSubmit = async (payload: {

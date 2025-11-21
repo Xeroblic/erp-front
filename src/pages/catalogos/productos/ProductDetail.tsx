@@ -90,9 +90,6 @@ const ProductDetail: React.FC = () => {
 	const parsedProductId = productIdParam ? Number(productIdParam) : NaN;
 	const productId = Number.isFinite(parsedProductId) ? parsedProductId : null;
 
-	const queryBranchId = new URLSearchParams(window.location.search).get('branchId');
-	const initialBranchId = queryBranchId ? Number(queryBranchId) : null;
-
 	const {
 		product,
 		productLoading,
@@ -105,10 +102,10 @@ const ProductDetail: React.FC = () => {
 		categoriesLoading,
 		effectiveBranchId,
 		updateProduct,
-	} = useProductDetail({ productId, branchId: initialBranchId });
+	} = useProductDetail({ productId, branchId: null });
 
 	const { branchId, activeTab, setActiveTab, handleBranchChange } = useProductDetailState(
-		initialBranchId,
+		null,
 		effectiveBranchId,
 	);
 

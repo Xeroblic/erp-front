@@ -6,7 +6,7 @@ import Button from '@/components/ui/Button';
 import { ensureAbsoluteUrl } from '@/components/helper/brand.helper';
 import { IBrand } from '@/interface/brand.interface';
 import Container from '@/components/layouts/Container/Container';
-import { formatCLP } from '@/pages/ventas/utils';
+import { formatCLP } from '@/pages/comercial/ventas/utils';
 
 type BrandsGridProps = {
 	brands: IBrand[];
