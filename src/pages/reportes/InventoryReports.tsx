@@ -232,7 +232,6 @@ const InventoryReports: React.FC = () => {
 						</CardBody>
 					</Card>
 
-					{/* FILTROS */}
 					<ReportFilters onApply={setFilters} />
 				</div>
 			</Container>
