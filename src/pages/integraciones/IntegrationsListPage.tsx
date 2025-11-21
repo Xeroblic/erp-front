@@ -7,7 +7,7 @@ import Badge from '@/components/ui/Badge';
 import Table, { TBody, Td, Th, THead, Tr } from '@/components/ui/Table';
 import Icon from '@/components/icon/Icon';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { fetchIntegrations, setSelectedIntegration } from '@/store/slices/integrations';
+import { fetchIntegrations, setSelectedIntegration } from '@/store/slices/integrations/integrationsSlice';
 import type { Integration } from '@/types/integrations.types';
 import ModalIntegration from './components/ModalIntegration';
 import { toast } from 'react-toastify';
@@ -22,8 +22,6 @@ const IntegrationsListPage: React.FC = () => {
 
 	// Debug: Ver qué hay en el usuario
 	useEffect(() => {
-		console.log('🔍 DEBUG IntegrationsListPage - Current User:', currentUser);
-		console.log('🔍 DEBUG - Subsidiary ID:', subsidiaryId);
 	}, [currentUser, subsidiaryId]);
 
 	// State desde Redux
