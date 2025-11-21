@@ -1,4 +1,4 @@
-import { combineReducers, CombinedState, AnyAction, Reducer } from 'redux';
+import { combineReducers, AnyAction, Reducer } from 'redux';
 import RtkQueryService from '@/services/RtkQueryService';
 
 import auth, { AuthState, logout } from './slices/auth/authSlice';
