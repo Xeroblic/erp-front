@@ -17,26 +17,49 @@ interface ProductStatsProps {
 
 // Mapa de colores para replicar el estilo de la imagen
 // Puedes mover esto a tu archivo de constantes si prefieres
-const STYLE_VARIANTS: Record<string, string> = {
-	emerald: 'bg-emerald-500/15 text-emerald-500',
-	rose: 'bg-rose-500/15 text-rose-500',
-	amber: 'bg-amber-500/15 text-amber-500',
-	teal: 'bg-teal-500/15 text-teal-500',
-	default: 'bg-blue-500/15 text-blue-500',
+const STYLE_VARIANTS: Record<
+	string,
+	{ bg: string; text: string; border: string }
+> = {
+	emerald: {
+		bg: 'bg-emerald-500/15',
+		text: 'text-emerald-500',
+		border: 'border-emerald-400/60',
+	},
+	rose: {
+		bg: 'bg-rose-500/15',
+		text: 'text-rose-500',
+		border: 'border-rose-400/60',
+	},
+	amber: {
+		bg: 'bg-amber-500/15',
+		text: 'text-amber-500',
+		border: 'border-amber-400/60',
+	},
+	teal: {
+		bg: 'bg-teal-500/15',
+		text: 'text-teal-500',
+		border: 'border-teal-400/60',
+	},
+	default: {
+		bg: 'bg-blue-500/15',
+		text: 'text-blue-500',
+		border: 'border-blue-400/60',
+	},
 };
 
 const ProductStats: React.FC<ProductStatsProps> = ({ stats, loading = false }) => {
 	const StatCard = ({ card, index }: { card: any; index: number }) => {
 		const colorKeys = ['emerald', 'rose', 'amber', 'teal'];
 		const selectedColor = card.color || colorKeys[index % colorKeys.length];
-		const variantClass = STYLE_VARIANTS[selectedColor] || STYLE_VARIANTS.default;
+		const variant = STYLE_VARIANTS[selectedColor] || STYLE_VARIANTS.default;
 
 		return (
-			<Card className='h-full w-full border-none bg-[#1E1E2D] shadow-sm'>
+			<Card className={`h-full w-full border ${variant.border} shadow-sm`}>
 				<CardBody className='flex flex-col gap-4'>
 					<div className='flex items-center gap-4'>
 						<div
-							className={`flex h-12 w-12 items-center justify-center rounded-xl ${variantClass}`}>
+							className={`flex h-12 w-12 items-center justify-center rounded-xl ${variant.bg} ${variant.text}`}>
 							<Icon icon={card.icon} className='h-6 w-6' />
 						</div>
 						<span className='text-sm font-medium text-gray-400'>{card.label}</span>
@@ -44,7 +67,7 @@ const ProductStats: React.FC<ProductStatsProps> = ({ stats, loading = false }) =
 
 					<div>
 						{loading ? (
-							<div className='h-8 w-24 animate-pulse rounded bg-gray-700' />
+							<div className='h-8 w-24 animate-pulse rounded bg-gray-400' />
 						) : (
 							<div className='text-2xl font-bold text-white'>
 								{Number(
