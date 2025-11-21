@@ -1,302 +1,347 @@
-[![Netlify Status](https://api.netlify.com/api/v1/badges/42118bfb-c41b-4015-9ae8-cf2c725a6dd2/deploy-status)](https://app.netlify.com/sites/fyr-react/deploys)
+# **Zentria ERP Frontend**
 
-# Fyr | React TypeScript Tailwind Admin & AI Chat Template
+### *Plataforma Web Corporativa para la Gestión Integral de Operaciones Multi-Empresa y Multi-Sucursal*
 
-[![Fyr | React TypeScript Tailwind Admin & AI Chat Template](./src/assets/Cover.png)](https://fyr.omtanke.studio)
+---
 
-# Empezando con Vite
+## **1. Introducción Corporativa**
 
-Este proyecto fue creado con [Vite](https://github.com/vitejs/vite) y [TailwindCSS](https://github.com/tailwindlabs/tailwindcss).
+**Zentria ERP** es un ecosistema tecnológico diseñado para centralizar y automatizar la administración de empresas con estructuras **complejas**, presencia en múltiples unidades de negocio y operaciones que requieren un alto nivel de trazabilidad, seguridad y consistencia.
 
-## Instalar Dependencias
+El **Frontend de Zentria ERP** constituye la interfaz oficial del sistema, proporcionando una experiencia moderna, rápida y unificada para todo el personal de la organización. Está construido sobre tecnologías de última generación, con énfasis en:
 
-### `npm install` o `yarn install`
+* Alta performance (Vite + SWC)
+* Seguridad y manejo robusto de autenticación
+* Escalabilidad modular por negocio
+* Experiencia de usuario coherente y corporativa
+* Arquitectura mantenible para equipos de desarrollo en crecimiento
 
-## Scripts Disponibles
+El frontend consume servicios a través de **API REST** provistas por el backend (Laravel 12 + JWT), integrándose de forma segura en toda la infraestructura.
 
-En el directorio del proyecto, puedes ejecutar:
+---
 
-### `npm run dev` o `yarn dev`
+## **2. Objetivo Estratégico del Proyecto**
 
-Ejecuta la aplicación en modo de desarrollo.\
-Abre [http://localhost:5174](http://localhost:5174) para verlo en el navegador.
+Zentria ERP busca **unificar**, **automatizar** y **estructurar** toda la gestión empresarial de organizaciones como:
 
-La página se recargará si haces ediciones.\
-También verás cualquier error de lint en la consola.
+* Empresas con múltiples divisiones (ej. EcoPC, EcoTI, RentaPC)
+* Empresas con redes de sucursales o franquicias
+* Departamentos corporativos con flujos administrativos diferenciados
+* Organizaciones que requieren separación estricta de datos entre unidades
 
-### `npm run build` o `yarn build`
+El sistema permite consolidar todos los procesos críticos:
 
-Construye la aplicación para producción en la carpeta `build`.\
-Empaqueta correctamente React en modo de producción y optimiza la construcción para el mejor rendimiento.
+* Administración corporativa
+* Gestión de sucursales
+* Usuarios, roles y permisos
+* Inventario y estados técnicos
+* Transferencias y logística
+* Clientes, productos y servicios
+* Integraciones externas (WooCommerce, Marketplace, etc.)
 
-La construcción está minificada y los nombres de archivo incluyen los hashes.\
-¡Tu aplicación está lista para ser desplegada!
+Todo bajo un mismo ecosistema visual y operativo.
 
-### `npm run lint` o `yarn run lint`
+---
 
-Controla el proyecto según las reglas de Eslint.
+## **3. Arquitectura Tecnológica del Frontend**
 
-### `npm run lint:fix` o `yarn run lint:fix`
+### **Framework Principal**
 
-Inspecciona el proyecto según las reglas de Eslint y las corrige según esas reglas.
+* **React 18 + TypeScript 5**
+* Bundler: **Vite 5** (ultra-fast, devServer instantáneo)
+* Estilos: **Tailwind CSS 3** (tema corporativo y dark mode nativo)
 
-### `npm run prettier:fix` o `yarn run prettier:fix`
+### **Estado Global**
 
-Inspecciona el proyecto según las reglas de Prettier y las corrige según esas reglas.
+* **Redux Toolkit + Persistencia**
 
-### `npm run icon` o `yarn run icon`
+  * Autenticación (JWT)
+  * Empresa / Subsidiaria / Sucursales
+  * Usuarios corporativos
+  * Permisos dinámicos
+  * Personalización por usuario
 
-Prepara iconos en formato svg en la carpeta `SvgIcons` para su uso en el proyecto. Nombra el icono en formato `PascalCase`.
+### **UI Corporativa**
 
-## Aprende Más
+Sistema de diseño custom, documentado, escalable y centralizado.
 
-Puedes aprender más en la [documentación de Vite React](https://vitejs.dev/guide/).
+Incluye componentes estratégicos para ERP empresarial:
 
-Para aprender React, consulta la [documentación de React](https://reactjs.org/).
+* Modales corporativos
+* Tablas reactivas (TanStack Table)
+* Formularios con validación avanzada (Formik + Yup)
+* Cards, Badges, Alerts, Tooltips
+* Layouts corporativos: Aside, Header, Footer, Subheader, PageWrapper
+* SelectReact personalizado con validación integrada
+* Sistema de temas y color brandable por empresa
 
-# Estructura del Proyecto
+(*Documentación completa disponible en la “Guía UI – ERP Frontend”*) 
 
-```
-fyr
-├── public
+---
+
+## **4. Estructura del Proyecto (Nivel Enterprise)**
+
+```text
+zentria-erp-front
+├── public                # Recursos estáticos
 ├── src
-│   ├── App
+│   ├── App               # Componente maestro
 │   ├── assets
-│   ├── components
-│   ├── config
-│   │   ├── pages.config.ts
-│   │   └── theme.config.ts
+│   ├── components        # Sistema UI corporativo
+│   │   ├── authorization
+│   │   ├── form
+│   │   ├── layouts
+│   │   ├── router
+│   │   └── ui
+│   ├── config            # Configuración core: páginas, temas, API, permisos
 │   ├── constants
 │   ├── context
 │   ├── hooks
 │   ├── interface
-│   ├── locales
-│   ├── mocks
-│   ├── pages
+│   ├── locales           # Internacionalización
+│   ├── pages             # Módulos empresariales
 │   ├── routes
-│   │   ├── asideRoutes.tsx
-│   │   ├── contentRoutes.tsx
-│   │   ├── footerRoutes.tsx
-│   │   └── headerRoutes.tsx
+│   ├── services          # Integración API REST
+│   ├── store             # Redux Toolkit + Persistencia
 │   ├── styles
 │   ├── templates
 │   ├── types
 │   ├── utils
-│   ├── declaration.d.ts
-│   ├── i18n.ts
 │   ├── index.tsx
-│   ├── react-app-env.d.ts
-│   ├── reportWebVitals.ts
+│   ├── i18n.ts
 │   └── setupTests.ts
-├── SvgIcons
-├── .eslintignore
-├── .eslintrc.json
-├── .gitattributes
-├── .gitignore
-├── .npmrc
-├── .prettierignore
-├── .svgrc
-├── index.html
-├── package.json
-├── postcss.config.js
-├── prettier.config.js
-├── README.md
-├── tailwind.config.js
-├── tsconfig.eslint.json
-├── tsconfig.json
-├── tsconfig.node.json
 └── vite.config.ts
 ```
 
-# Configuración de Tailwind
+La estructura está diseñada para soportar **decenas de módulos** sin generar deuda técnica.
 
-Hay 22 colores definidos en Tailwind, hemos añadido 8 (zinc `#71717a`, rojo `#ef4444`, ámbar `#f59e0b`, lima `#84cc16`, esmeralda `#10b981`, cielo `#0ea5e9`, azul `#3b82f6`, violeta `#8b5cf6`) de ellos para los componentes de Fyr. Si lo deseas, puedes activar otros colores o definir nuevos colores.
+---
 
-Puedes añadir nuevos valores a "TColors" en el archivo [src/types/colors.type.ts](src/types/colors.type.ts) para su uso en el proyecto y no olvides añadirlos a la [safelist](https://tailwindcss.com/docs/content-configuration#safelisting-classes).
+## **5. Core del Sistema (Núcleo de Operación)**
 
-# Configuración del Tema
+### **5.1. Autenticación Empresarial**
 
-Puedes editar la configuración del tema en el archivo [src/config/theme.config.ts](src/config/theme.config.ts).
+* Inicio de sesión con JWT
+* Refresh token automático
+* Manejo completo de expiración de sesión
+* Persistencia de usuario y empresa activa
+* Sincronización entre tabs
 
-# Configuración de Páginas
+### **5.2. Sistema Corporativo de Roles y Permisos**
 
-```tsx
-export const examplePages = {
-	parentPage: {
-		id: 'parentPage',
-		to: '/parent-page',
-		text: 'Parent Page',
-		icon: 'HeroBookOpen',
-		subPages: {
-			childPage1: {
-				id: 'childPage',
-				to: '/parent-page/child-page',
-				text: 'Child Page',
-				icon: 'HeroBookOpen',
-			},
-			childPage2: {
-				id: 'childPage2',
-				to: '/parent-page/child-page-2',
-				text: 'Child Page 2',
-				icon: 'HeroBookOpen',
-			},
-		},
-	},
-};
-```
+* Roles contextualizados por alcance:
 
-Si guardas la información de tu página en el formato anterior en el archivo [src/config/pages.config.ts](src/config/pages.config.ts), puedes usarla fácilmente en los menús.
+  * SuperAdmin
+  * CompanyAdmin
+  * SubsidiaryAdmin
+  * BranchAdmin
+  * Employee
+* Permisos modulares y granulares generados desde backend
+* Validación en frontend por:
 
-# Arquitectura del Proyecto
+  * Guards de ruta
+  * Bloqueo de componentes
+  * Navegación condicional
+  * Menú lateral autorizado con `<AuthorityCheckNav>`
 
-## src/index.tsx
+### **5.3. Multi-Empresa / Multi-Subsidiaria / Multi-Sucursal**
 
-```tsx
-const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
-root.render(
-	<React.StrictMode>
-		<ThemeContextProvider>
-			<BrowserRouter>
-				<AuthProvider>
-					<App />
-				</AuthProvider>
-			</BrowserRouter>
-		</ThemeContextProvider>
-	</React.StrictMode>,
-);
-```
+Soporte completo para organizaciones complejas:
 
-### src/App/App.tsx
+* Rutas dependientes del contexto
+* Peticiones automáticas por empresa activa
+* Listado corporativo consolidado
+* Cambios de sucursal en tiempo real
 
-```tsx
-return (
-	<div data-component-name='App' className='flex grow flex-col'>
-		<AsideRouter />
-		<Wrapper>
-			<HeaderRouter />
-			<ContentRouter />
-			<FooterRouter />
-		</Wrapper>
-	</div>
-);
-```
+### **5.4. Personalización Avanzada**
 
-#### src/components/router/AsideRouter.tsx
+Cada usuario puede configurar:
 
-Si no deseas personalizar el proyecto en este archivo, no necesitas hacer ningún cambio. En este componente, solo el archivo [src/routes/asideRoutes.tsx](src/routes/asideRoutes.tsx) establece qué componente se mostrará en qué ruta.
+* Color institucional
+* Tamaño de fuente
+* Modo oscuro / claro / sistema
+* Preferencias almacenadas en Backend y LocalStorage
 
-```tsx
-const asideRoutes: RouteProps[] = [
-	{ path: authPages.loginPage.to, element: null },
-	{ path: '*', element: <DefaultAsideTemplate /> },
-];
-```
+Cambio de tema **en tiempo real**, sin recargar la aplicación.
 
-Puedes establecer las "Plantillas de Aside" para que se muestren en las rutas que desees. Si no deseas ningún "Aside" en una ruta, puedes establecer el elemento en `null`.
+---
 
-#### src/components/router/HeaderRouter.tsx
+## **6. Sistema UI Corporativo (Design System)**
 
-Si no deseas personalizar el proyecto en este archivo, no necesitas hacer ningún cambio. En este componente, solo el archivo [src/routes/headerRoutes.tsx](src/routes/headerRoutes.tsx) establece qué componente se mostrará en qué ruta.
+Zentria ERP integra un **framework de componentes UI** desarrollado internamente:
 
-```tsx
-const headerRoutes: RouteProps[] = [
-	{ path: authPages.loginPage.to, element: null },
-	{
-		path: `${componentsPages.uiPages.to}/*`,
-		element: <ComponentAndTemplateHeaderTemplate />,
-	},
-	{ path: '', element: null },
-	{ path: '*', element: <DefaultHeaderTemplate /> },
-];
-```
+### **Componentes Clave**
 
-Puedes establecer las "Plantillas de Header" para que se muestren en las rutas que desees. Si no deseas ningún "Header" en una ruta, puedes establecer el elemento en `null`.
+* **Modal System** (header, body, footer, confirmaciones)
+* **Card System** (headers, acciones, contenedores)
+* **SelectReact System** (select avanzado corporativo)
+* **Table System** (tablas accesibles)
+* **Alert / Badge / Button System**
+* **Input System con validación integrada**
+* **Layouts corporativos reutilizables**
 
-Si tendrás datos sobre la página en "Header", especifica que no habrá ningún "Header" en esa ruta con `null` y defínelo dentro de la página. Así no tendrás que preocuparte por mover los datos hacia arriba.
+El sistema UI busca:
 
-#### src/components/router/ContentRouter.tsx
+* Consistencia visual en todo el ERP
+* Mínimo código repetido
+* Flexibilidad para módulos futuros
+* Estándares accesibles AA/AAA
 
-Puedes usar [React Lazy](https://react.dev/reference/react/lazy#lazy) al importar páginas.
+*(Documentación del diseño UI:)*
+👉 
 
-```tsx
-const contentRoutes: RouteProps[] = [
-	{ path: authPages.loginPage.to, element: <LoginPage /> },
-	{ path: authPages.profilePage.to, element: <ProfilePage /> },
-	{ path: examplePages.duotoneIconsPage.to, element: <IconsPage /> },
-	{ path: '*', element: <NotFoundPage /> },
-];
-```
+---
 
-##### Página de Ejemplo
+## **7. Navegación Corporativa**
 
-```tsx
-import React from 'react';
-import PageWrapper from '../components/layouts/PageWrapper/PageWrapper';
-import Subheader, {
-	SubheaderLeft,
-	SubheaderRight,
-} from '../components/layouts/Subheader/Subheader';
-import Container from '../components/layouts/Container/Container';
+Zentria utiliza un sistema de routing por “plantillas”:
 
-const ExamplePage = () => {
-	return (
-		<PageWrapper>
-			<Subheader>
-				<SubheaderLeft>SubheaderLeft</SubheaderLeft>
-				<SubheaderRight>SubheaderRight</SubheaderRight>
-			</Subheader>
-			<Container>Container</Container>
-		</PageWrapper>
-	);
-};
+* **AsideRouter** → menú lateral autorizado
+* **HeaderRouter** → barra superior contextual
+* **ContentRouter** → render principal de páginas
+* **FooterRouter** → pie autónomo por módulo
 
-export default ExamplePage;
-```
+Cada módulo puede:
 
-Puedes usar este método en páginas donde establezcas el valor nulo para "Header" como se describe en la sección [src/routes/headerRoutes.tsx](#srccomponentsrouterheaderroutertsx).
+* Ocultar aside/header/footer
+* Sobrescribir el layout
+* Renderizar encabezados propios
 
-```tsx
-import React from 'react';
-import Header, { HeaderLeft, HeaderRight } from '../components/layouts/Header/Header';
-import PageWrapper from '../components/layouts/PageWrapper/PageWrapper';
-import Subheader, {
-	SubheaderLeft,
-	SubheaderRight,
-} from '../components/layouts/Subheader/Subheader';
-import Container from '../components/layouts/Container/Container';
+---
 
-const ExamplePage = () => {
-	return (
-		<>
-			<Header>
-				<HeaderLeft>HeaderLeft</HeaderLeft>
-				<HeaderRight>HeaderRight</HeaderRight>
-			</Header>
-			<PageWrapper>
-				<Subheader>
-					<SubheaderLeft>SubheaderLeft</SubheaderLeft>
-					<SubheaderRight>SubheaderRight</SubheaderRight>
-				</Subheader>
-				<Container>Container</Container>
-			</PageWrapper>
-		</>
-	);
-};
+## **8. Integración API REST**
 
-export default ExamplePage;
-```
+El front se conecta al backend mediante:
 
-#### src/components/router/FooterRouter.tsx
+* **BaseService** (Axios con interceptores)
+* **ApiService** (response normalizado)
+* **Servicios por módulo**
+* Manejo robusto de:
 
-Si no deseas personalizar el proyecto en este archivo, no necesitas hacer ningún cambio. En este componente, solo el archivo [src/routes/footerRoutes.tsx](src/routes/footerRoutes.tsx) establece qué componente se mostrará en qué ruta.
+  * Tokens vencidos
+  * Errores 401 y 403
+  * Redirección automática
+  * Manejo central de mensajes (Toastify)
+  * API abort signals
 
-```tsx
-const footerRoutes: RouteProps[] = [
-	{ path: authPages.loginPage.to, element: null },
-	{ path: '*', element: <DefaultFooterTemplate /> },
-];
-```
+Toda la lógica está centralizada para facilitar mantenimiento y auditorías.
 
-Puedes establecer las "Plantillas de Footer" para que se muestren en las rutas que desees. Si no deseas ningún "Footer" en una ruta, puedes establecer el elemento en `null`.
+---
 
-Si tendrás datos sobre la página en "Footer", especifica que no habrá ningún "Footer" en esa ruta con `null` y defínelo dentro de la página. Así no tendrás que preocuparte por mover los datos hacia arriba.
+## **9. Módulos Corporativos Implementados**
+
+### **✔ Administración General**
+
+* Datos de empresa
+* Subsidiarias
+* Sucursales (en expansión)
+* Roles y permisos
+* Usuarios corporativos
+* Estado y actividad de cuenta
+
+### **✔ Invitaciones y Onboarding**
+
+* Creación de usuarios no activados
+* Envío automático de correos
+* Activación por token
+* Reenvío y expiración
+* Tabla de estados
+
+### **✔ Dashboard Multi-Empresa**
+
+* Variantes por unidad (EcoPC / EcoTI / Paris / Ripley / Falabella)
+* Conteos, métricas y gráficos
+* Configurable por usuario
+
+### **✔ Perfil y Personalización**
+
+* Información personal
+* Avatar
+* Tema visual y preferencias persistentes
+
+### **✔ Autenticación**
+
+* Login
+* Logout seguro
+* Recuperación de contraseña
+* Cambio credenciales
+
+### **✔ Gestión Organizacional (en desarrollo continuo)**
+
+* Calendario corporativo
+* Tickets internos
+* RRHH (estructura avanzada)
+
+*(Documentación general por módulo:)*
+👉 
+
+---
+
+## **10. Internacionalización**
+
+Zentria ERP soporta:
+
+* Español
+* Inglés
+* Árabe
+
+Con i18next + Dayjs.
+
+esto se debe implementar a futuro ya que wen la V1 
+se dejaron los componentes pero no se implementaron completamente en el sistema
+
+Todos los textos del panel son traducibles y ampliables.
+
+---
+
+## **11. Seguridad y Buenas Prácticas**
+
+* Tokens JWT seguros y refresco automático
+* Limpiado de estado en logout
+* Protección contra overflows de UI
+* Controles de permisos en múltiples niveles
+* Validación profunda de formularios
+* Sanitización en inputs críticos
+* Aislamiento completo entre empresas (multi-tenancy visual)
+
+---
+
+## **12. Testing y Control de Calidad**
+
+* Configuración completa con Jest + RTL
+* En proceso: tests unitarios y de integración
+* Estructura preparada para pipelines CI/CD
+
+---
+
+## **13. Roadmap Estratégico**
+
+### **Próximas expansiones confirmadas**
+
+* Inventario + estados técnicos
+* Transferencias
+* Gestión logística
+* Sincronización WooCommerce API
+* Clientes & Productos
+* RRHH completo
+* Tickets + workflow
+* Reportes corporativos exportables
+
+### **Objetivo final:**
+
+**Un ERP modular, escalable, auditable y administrable a nivel corporativo, con foco en empresas tecnológicas, retail y servicio técnico.**
+
+---
+
+## **14. Conclusión Ejecutiva**
+
+Zentria ERP Frontend representa un **producto empresarial sólido**, diseñado para organizaciones que requieren:
+
+* Control jerárquico complejo
+* Seguridad robusta
+* Altos volúmenes de datos
+* Personalización por usuario y por empresa
+* Experiencia consistente y profesional
+* Integración con múltiples fuentes de información
+
+Es una plataforma moderna, escalable y preparada para crecer hacia cualquier vertical: logística, inventario, RRHH, ventas, soporte técnico, marketplace y más.

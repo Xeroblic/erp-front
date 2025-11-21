@@ -83,7 +83,7 @@ const ProductStats: React.FC<ProductStatsProps> = ({ stats, loading = false }) =
 
 	return (
 		<>
-			<div className='mb-6 md:hidden'>
+			<div className='mb-6 w-full md:hidden overflow-hidden px-3'>
 				<Swiper
 					modules={[FreeMode]}
 					spaceBetween={16}
@@ -91,20 +91,22 @@ const ProductStats: React.FC<ProductStatsProps> = ({ stats, loading = false }) =
 					freeMode={true}
 					className='!overflow-visible'>
 					{PRODUCT_STATS_META.map((card, index) => (
-						<SwiperSlide key={card.key} className='!w-[280px]'>
+						<SwiperSlide key={card.key} className='!w-[260px] sm:!w-[280px]'>
 							<StatCard card={card} index={index} />
 						</SwiperSlide>
 					))}
 				</Swiper>
 			</div>
 
-			<div className='mb-6 hidden gap-4 md:flex md:flex-wrap md:justify-center'>
-     {PRODUCT_STATS_META.map((card, index) => (
-        <div key={card.key} className='w-full md:w-[calc(50%-1rem)] lg:w-[calc(20%-1rem)] min-w-[200px]'>
-            <StatCard card={card} index={index} />
-        </div>
-    ))}
-</div>
+			<div className='mb-6 hidden w-full gap-4 md:flex md:flex-wrap md:justify-center'>
+				{PRODUCT_STATS_META.map((card, index) => (
+					<div
+						key={card.key}
+						className='w-full min-w-[200px] md:w-[calc(50%-1rem)] lg:w-[calc(20%-1rem)]'>
+						<StatCard card={card} index={index} />
+					</div>
+				))}
+			</div>
 		</>
 	);
 };

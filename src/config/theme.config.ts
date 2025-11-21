@@ -63,14 +63,12 @@ const getPersonalizacionActual = () => {
 	}
 };
 
-// Configuración base por defecto
 const baseThemeConfig: TThemeConfigs = {
 	projectTitle: '',
 	projectName: '',
-	language: 'en',
-	theme: DARK_MODE.LIGHT, // Cambiar default a light en lugar de system
+	language: 'es',
+	theme: DARK_MODE.LIGHT,
 
-	// Getters dinámicos para colores y configuración
 	get themeColor(): TColors {
 		const personalizacion = getPersonalizacionActual();
 		return (personalizacion?.tcolor as TColors) || 'amber';
