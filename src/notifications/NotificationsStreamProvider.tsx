@@ -8,232 +8,158 @@ import {
 import type { UserNotificationDTO } from '@/interface/notifications.interface';
 import { tokenManager } from '@/services/auth/tokenManager';
 
+/** Canal compartido entre pestañas */
+const bc = new BroadcastChannel('zentria_notifications');
+const TAB_ID = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+const LOCK_KEY = 'zentria_notifications_leader';
+const leaderPingInterval = 1500;
+const leaderTimeout = 5000;
+
 const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 	const dispatch = useAppDispatch();
-	const { items } = useAppSelector((state) => state.notifications ?? { items: [] });
-	const processingRef = useRef<Set<number>>(new Set());
-	const lastSeenCountRef = useRef<Map<number, number>>(new Map());
+	const { items } = useAppSelector((s) => s.notifications);
+	const [isLeader, setIsLeader] = useState(false);
+	const lastLeaderSeenRef = useRef(Date.now());
 
-	const [useSSE, setUseSSE] = useState(true);
 	const eventSourceRef = useRef<EventSource | null>(null);
-	const connectionOpenedRef = useRef(false);
+	const lockRef = useRef<string | null>(null);
 
-	// Solicitar permiso de notificaciones al montar
+	/** ---------- 1) Elección de líder (pestaña que mantiene la SSE) ---------- */
 	useEffect(() => {
-		if (typeof window !== 'undefined' && 'Notification' in window) {
-			if (Notification.permission === 'default') {
-				Notification.requestPermission();
+		/** Responder a mensajes */
+		bc.onmessage = (ev) => {
+			const msg = ev.data;
+
+			if (msg?.type === 'leader-ping') {
+				lastLeaderSeenRef.current = Date.now();
 			}
-		}
-	}, []);
 
-	// Configurar sistema de notificaciones
-	useEffect(() => {
-		// Carga inicial del inbox
-		dispatch(fetchNotifications({ per_page: 20 }));
+			if (msg?.type === 'notification') {
+				dispatch(upsertMany([msg.data]));
+			}
+		};
 
-		// Intentar SSE, fallback a polling
-		if (useSSE && typeof EventSource !== 'undefined') {
-			setupSSEConnection();
-		} else {
-			return setupPolling();
-		}
+		/** PING periódico + recuperación de liderazgo */
+		let pingTimer = setInterval(() => {
+			const lock = (() => {
+				try {
+					return JSON.parse(localStorage.getItem(LOCK_KEY) || 'null');
+				} catch {
+					return null;
+				}
+			})();
+
+			const now = Date.now();
+			const lockOwner = lock?.id as string | undefined;
+			const lockTs = typeof lock?.ts === 'number' ? lock.ts : 0;
+			const lockExpired = now - lockTs > leaderTimeout;
+
+			if (isLeader) {
+				// Renueva lock mientras somos líderes
+				const payload = JSON.stringify({ id: TAB_ID, ts: now });
+				lockRef.current = payload;
+				localStorage.setItem(LOCK_KEY, payload);
+				bc.postMessage({ type: 'leader-ping' });
+				lastLeaderSeenRef.current = now;
+				return;
+			}
+
+			// No somos líderes, validar si el lock está libre o expiró
+			if (!lockOwner || lockExpired) {
+				const payload = JSON.stringify({ id: TAB_ID, ts: now });
+				localStorage.setItem(LOCK_KEY, payload);
+				lockRef.current = payload;
+				setIsLeader(true);
+				return;
+			}
+
+			// Lock activo por otro tab: actualizar último ping para evitar tomas innecesarias
+			lastLeaderSeenRef.current = lockTs;
+		}, leaderPingInterval);
+
+		const handleStorage = (ev: StorageEvent) => {
+			if (ev.key === LOCK_KEY && ev.newValue) {
+				try {
+					const parsed = JSON.parse(ev.newValue);
+					lastLeaderSeenRef.current = parsed?.ts ?? Date.now();
+					if (parsed?.id !== TAB_ID && isLeader) {
+						// Otro tab tomó el lock; liberamos liderazgo y cerramos SSE
+						setIsLeader(false);
+						if (eventSourceRef.current) {
+							eventSourceRef.current.close();
+							eventSourceRef.current = null;
+						}
+					}
+				} catch {
+					// ignore
+				}
+			}
+		};
+		window.addEventListener('storage', handleStorage);
 
 		return () => {
+			clearInterval(pingTimer);
+			window.removeEventListener('storage', handleStorage);
+			if (isLeader) {
+				localStorage.removeItem(LOCK_KEY);
+			}
 			if (eventSourceRef.current) {
 				eventSourceRef.current.close();
 				eventSourceRef.current = null;
 			}
 		};
-	}, [dispatch, useSSE]);
+	}, [dispatch, isLeader]);
 
-	const setupSSEConnection = () => {
+	/** ---------- 2) Crear SSE SOLO si somos líderes ---------- */
+	useEffect(() => {
+		if (!isLeader) return;
+
+		console.log('[ZENTRIA] Esta pestaña es el LEADER de notificaciones.');
+
 		const token = tokenManager.getAccessToken();
-		if (!token || !tokenManager.isTokenValid(token)) {
-			setUseSSE(false);
-			return;
-		}
+		if (!token) return;
 
 		const baseURL = import.meta.env.VITE_API_URL;
-		const lastEventId = getLastEventId();
-		const url = `${baseURL}/me/notifications/stream?access_token=${token}&lastEventId=${lastEventId}&history=1`;
+		const url = `${baseURL}/me/notifications/stream?access_token=${token}&history=1`;
 
-		const eventSource = new EventSource(url);
-		eventSourceRef.current = eventSource;
+		const es = new EventSource(url);
+		eventSourceRef.current = es;
 
-		eventSource.onopen = () => {
-			connectionOpenedRef.current = true;
-		};
-
-		eventSource.addEventListener('notification', (event) => {
+		es.onmessage = (ev) => {
 			try {
-				const notification = JSON.parse(event.data) as UserNotificationDTO;
-				saveLastEventId(notification.id);
-				dispatch(upsertMany([notification]));
+				const data: UserNotificationDTO = JSON.parse(ev.data);
+
+				/** Notificar al Redux local */
+				dispatch(upsertMany([data]));
+
+				/** Distribuir a las otras pestañas */
+				bc.postMessage({ type: 'notification', data });
 			} catch (err) {
-				console.error('[Notificaciones] Error procesando SSE:', err);
+				console.error('[ZENTRIA] Error SSE:', err);
 			}
-		});
-
-		eventSource.onerror = () => {
-			eventSource.close();
-			eventSourceRef.current = null;
-
-			if (!connectionOpenedRef.current) {
-				setUseSSE(false);
-				return;
-			}
-
-			// Timeout normal del servidor (60s), reconectar
-			connectionOpenedRef.current = false;
-			setTimeout(() => {
-				if (useSSE) setupSSEConnection();
-			}, 1000);
-		};
-	};
-
-	const setupPolling = () => {
-		const fetchData = () => {
-			dispatch(fetchNotifications({ per_page: 20 }));
 		};
 
-		const interval = setInterval(fetchData, 60000);
-		const handleFocus = () => fetchData();
-		const handleVisibility = () => {
-			if (!document.hidden) fetchData();
+		es.onerror = () => {
+			console.warn('[ZENTRIA] SSE error. Reintentando...');
+			es.close();
+			setTimeout(() => setIsLeader(true), 1000);
 		};
-
-		window.addEventListener('focus', handleFocus);
-		document.addEventListener('visibilitychange', handleVisibility);
 
 		return () => {
-			clearInterval(interval);
-			window.removeEventListener('focus', handleFocus);
-			window.removeEventListener('visibilitychange', handleVisibility);
+			es.close();
 		};
-	};
+	}, [isLeader, dispatch]);
 
-	const getLastEventId = (): number => {
-		const stored = sessionStorage.getItem('notif_last_event_id');
-		return stored ? parseInt(stored, 10) : 0;
-	};
-
-	const saveLastEventId = (id: number): void => {
-		const current = getLastEventId();
-		if (id > current) {
-			sessionStorage.setItem('notif_last_event_id', id.toString());
-		}
-	};
-
-	// Detectar y mostrar notificaciones nuevas/actualizadas
+	/** ---------- 3) Detectar nuevas notificaciones locales ---------- */
 	useEffect(() => {
 		if (!Array.isArray(items)) return;
 
-		const newItems = items.filter((n) => {
-			if (processingRef.current.has(n.id)) return false;
+		const notDelivered = items.filter((n) => n.delivered_to_user === false);
 
-			const lastCount = lastSeenCountRef.current.get(n.id);
-			const currentCount = n.aggregate_count ?? 1;
-
-			// Caso 1: No entregada
-			if (n.delivered_to_user === false) return true;
-
-			// Caso 2: Ya entregada PERO count cambió (actualización)
-			if (
-				n.delivered_to_user === true &&
-				lastCount !== undefined &&
-				currentCount > lastCount
-			) {
-				return true;
-			}
-
-			return false;
-		});
-
-		if (newItems.length === 0) return;
-
-		newItems.forEach((n) => {
-			processingRef.current.add(n.id);
-			lastSeenCountRef.current.set(n.id, n.aggregate_count ?? 1);
-
-			showNativeNotification(n);
-
-			dispatch(markDelivered({ ids: [n.id] })).finally(() => {
-				setTimeout(() => {
-					processingRef.current.delete(n.id);
-				}, 2000);
-			});
-		});
+		if (notDelivered.length) {
+			dispatch(markDelivered({ ids: notDelivered.map((n) => n.id) }));
+		}
 	}, [items, dispatch]);
-
-	// Mostrar notificación nativa mejorada
-	const showNativeNotification = (n: UserNotificationDTO): void => {
-		if (typeof window === 'undefined' || !('Notification' in window)) return;
-		if (Notification.permission !== 'granted') return;
-
-		// Título descriptivo con módulo
-		const module = n.event?.module_label || n.event?.module || '';
-		const typeLabel = n.event?.type_label || n.event?.type_key || 'Notificación';
-		const title = module ? `${module} · ${typeLabel}` : typeLabel;
-
-		// Body enriquecido
-		let body = n.message || typeLabel;
-
-		// Contador de agregación
-		if (n.aggregate_count && n.aggregate_count > 1) {
-			body = `📊 ${n.aggregate_count} eventos similares\n\n${body}`;
-		}
-
-		// Hora formateada
-		const time = n.created_at
-			? new Date(n.created_at).toLocaleTimeString('es-CL', {
-					hour: '2-digit',
-					minute: '2-digit',
-				})
-			: '';
-		if (time) {
-			body = `${body}\n\n🕐 ${time}`;
-		}
-
-		// Configuración de la notificación
-		const config: NotificationOptions = {
-			body,
-			icon: '/logo192.png?v=zentria1',
-			badge: '/logo192.png?v=zentria1',
-			tag: `notification-${n.id}`,
-			requireInteraction: false,
-			silent: false,
-			...(n.event?.priority === 'P1' && { urgency: 'high' as any }),
-		};
-
-		try {
-			const notification = new Notification(title, config);
-
-			// Auto-cerrar en 5 segundos
-			const autoCloseTimeout = setTimeout(() => {
-				notification.close();
-			}, 5000);
-
-			// Click para enfocar y cerrar
-			notification.onclick = () => {
-				clearTimeout(autoCloseTimeout);
-				window.focus();
-				notification.close();
-			};
-
-			// Limpiar timeout al cerrar
-			notification.onclose = () => {
-				clearTimeout(autoCloseTimeout);
-			};
-
-			notification.onerror = (err) => {
-				console.error('[Notificaciones] Error mostrando popup:', err);
-				clearTimeout(autoCloseTimeout);
-			};
-		} catch (err) {
-			console.error('[Notificaciones] Error creando popup:', err);
-		}
-	};
 
 	return <>{children}</>;
 };
