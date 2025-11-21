@@ -84,6 +84,8 @@ export const fetchNotifications = createAsyncThunk<
       url: '/me/notifications',
       method: 'get',
       params,
+      dedupe: true,
+      cacheTTLms: 15000,
     })
 
     const raw = response.data

@@ -69,7 +69,7 @@ const ProductStats: React.FC<ProductStatsProps> = ({ stats, loading = false }) =
 						{loading ? (
 							<div className='h-8 w-24 animate-pulse rounded bg-gray-400' />
 						) : (
-							<div className='text-2xl font-bold text-white'>
+							<div className='text-2xl font-bold '>
 								{Number(
 									stats[card.key as keyof ProductsStateStats] ?? 0,
 								).toLocaleString('es-CO')}

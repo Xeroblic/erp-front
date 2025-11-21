@@ -6,466 +6,386 @@ import Chart from '@/components/Chart';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import { fetchReportResults } from '@/store/slices/reports/reportsThunks';
+import { clearResults } from '@/store/slices/reports/reportSlice';
 import ReportExportButton from './ReportExportButton';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
 import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subheader';
 import Badge from '@/components/ui/Badge';
+import SalesAnalytics from './components/SalesAnalytics';
 
 const SalesDashboard: React.FC = () => {
-	const [filters, setFilters] = useState<ReportFiltersState>({});
-	const dispatch = useAppDispatch();
-	const currentSubsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
-	const resultsData = useAppSelector((s) => s.reports.results);
-	// Extraer datos: resultsData puede ser { data: [...], meta: {...} } o directamente un array
-	const results = (() => {
-		if (!resultsData) return [];
-		if (Array.isArray(resultsData)) return resultsData;
-		// Si es un objeto, intentar extraer data
-		if (resultsData && typeof resultsData === 'object' && 'data' in resultsData) {
-			const extracted = (resultsData as any).data;
-			return Array.isArray(extracted) ? extracted : [];
-		}
-		return [];
-	})();
-	const reportsLoading = useAppSelector((s) => s.reports.loading);
-	const reportsError = useAppSelector((s) => s.reports.error);
+    const apexToolbarMenuStyles = `
+        .apexcharts-menu {
+            background-color: #0f172a !important;
+            border: 1px solid #334155 !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.35) !important;
+        }
+        .apexcharts-menu-item {
+            color: #e2e8f0 !important;
+        }
+        .apexcharts-menu-item:hover {
+            background: #1f2937 !important;
+        }
+        .apexcharts-menu-item.disabled {
+            color: #64748b !important;
+        }
+    `;
+    const [filters, setFilters] = useState<ReportFiltersState>({});
+    const dispatch = useAppDispatch();
+    const currentSubsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
+    
+    const resultsData = useAppSelector((s) => s.reports.results);
+    const results = useMemo(() => {
+        if (!resultsData) return [];
+        if (Array.isArray(resultsData)) return resultsData;
+        if (typeof resultsData === 'object' && 'data' in resultsData) {
+            const extracted = (resultsData as any).data;
+            return Array.isArray(extracted) ? extracted : [];
+        }
+        return [];
+    }, [resultsData]);
 
-	// Cuando cambian filtros o sucursal, pedir resultados del slice para el reporte 'sales'
-	const mapFilters = (f: ReportFiltersState) => {
-		const out: Record<string, any> = {
-			// No incluir per_page - el thunk obtendrá todas las páginas automáticamente
-		};
-		if (f.dateFrom) out.date_from = f.dateFrom;
-		if (f.dateTo) out.date_to = f.dateTo;
-		if (typeof f.priceMin === 'number') out.price_min = f.priceMin;
-		if (typeof f.priceMax === 'number') out.price_max = f.priceMax;
-		if (f.customer) {
-			const num = Number(String(f.customer).replace(/\D/g, ''));
-			if (!Number.isNaN(num) && num > 0) out.customer_id = num;
-			else out.q = f.customer;
-		}
-		if (f.branch) {
-			const num = Number(String(f.branch).replace(/\D/g, ''));
-			if (!Number.isNaN(num) && num > 0) out.branch_id = num;
-		}
-		return out;
-	};
+    const parseNumeric = (val: unknown) => {
+        if (typeof val === 'number') return Number.isFinite(val) ? val : undefined;
+        if (typeof val === 'string') {
+            const num = Number(val.replace(/[^0-9.-]/g, ''));
+            return Number.isFinite(num) ? num : undefined;
+        }
+        return undefined;
+    };
 
-	useEffect(() => {
-		const sid = Number(currentSubsidiaryId ?? 0);
-		if (!sid) return;
-		const mapped = mapFilters(filters);
-		dispatch(fetchReportResults({ subsidiaryId: sid, type: 'sales', filters: mapped }) as any);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [currentSubsidiaryId, filters]);
+    const normalizeDate = (val?: string) => {
+        if (!val) return undefined;
+        const dashParts = val.split('-');
+        if (dashParts.length === 3) {
+            const [a, b, c] = dashParts.map((p) => p.trim());
+            if (a.length === 4) {
+                const iso = new Date(`${a}-${b}-${c}T00:00:00`);
+                if (!Number.isNaN(iso.getTime())) return iso.toISOString().slice(0, 10);
+            }
+            if (c.length === 4) {
+                const iso = new Date(`${c}-${b}-${a}T00:00:00`);
+                if (!Number.isNaN(iso.getTime())) return iso.toISOString().slice(0, 10);
+            }
+        }
+        const iso = new Date(val);
+        if (!Number.isNaN(iso.getTime())) return iso.toISOString().slice(0, 10);
+        return undefined;
+    };
 
-	// Derivar métricas principales a partir de results (si vienen). Agrupar por fecha.
-	const series = useMemo(() => {
-		// Obtener rango de fechas de los filtros
-		const dateFrom = filters.dateFrom ? new Date(filters.dateFrom) : null;
-		const dateTo = filters.dateTo ? new Date(filters.dateTo) : null;
+    const mapFilters = (f: ReportFiltersState) => {
+        const out: Record<string, any> = {};
+        const from = normalizeDate(f.dateFrom);
+        const to = normalizeDate(f.dateTo);
+        if (from) out.date_from = from;
+        if (to) out.date_to = to;
+        const priceMin = parseNumeric(f.priceMin);
+        const priceMax = parseNumeric(f.priceMax);
+        if (priceMin !== undefined) out.price_min = priceMin;
+        if (priceMax !== undefined) out.price_max = priceMax;
+        if (f.customer) {
+            const num = Number(String(f.customer).replace(/\D/g, ''));
+            out[(!Number.isNaN(num) && num > 0) ? 'customer_id' : 'q'] = (!Number.isNaN(num) && num > 0) ? num : f.customer;
+        }
+        if (f.branch) {
+            const num = Number(String(f.branch).replace(/\D/g, ''));
+            if (!Number.isNaN(num) && num > 0) out.branch_id = num;
+        }
+        return out;
+    };
 
-		// Agrupar ventas por fecha
-		const salesByDate = new Map<string, { total: number; returns: number }>();
+    useEffect(() => {
+        const sid = Number(currentSubsidiaryId ?? 0);
+        if (!sid) return;
+        dispatch(clearResults());
+        dispatch(fetchReportResults({ subsidiaryId: sid, type: 'sales', filters: mapFilters(filters) }) as any);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentSubsidiaryId, filters]);
 
-		if (results && results.length > 0) {
-			results.forEach((r: any, index: number) => {
-				// Obtener fecha de la venta - intentar múltiples campos
-				const saleDate =
-					r?.sale_date || r?.date || r?.created_at || r?.fecha || r?.fecha_venta;
-				if (!saleDate) {
-					if (index < 3) {
-						console.warn(
-							'[SalesDashboard] Registro sin fecha (índice',
-							index,
-							'):',
-							Object.keys(r),
-						);
-					}
-					return;
-				}
+    const filteredResults = useMemo(() => {
+        const priceMin = parseNumeric(filters.priceMin);
+        const priceMax = parseNumeric(filters.priceMax);
+        return results.filter((r: any) => {
+            const rawAmt = r?.total_amount ?? r?.total ?? r?.amount ?? 0;
+            const amount = typeof rawAmt === 'string' ? parseFloat(rawAmt) : Number(rawAmt) || 0;
+            if (priceMin !== undefined && amount < priceMin) return false;
+            if (priceMax !== undefined && amount > priceMax) return false;
+            return true;
+        });
+    }, [results, filters.priceMin, filters.priceMax]);
 
-				let dateKey: string;
-				try {
-					const dateObj = new Date(saleDate);
-					if (isNaN(dateObj.getTime())) {
-						if (index < 3) {
-							console.warn(
-								'[SalesDashboard] Fecha inválida (índice',
-								index,
-								'):',
-								saleDate,
-							);
-						}
-						return;
-					}
-					dateKey = dateObj.toISOString().split('T')[0]; // YYYY-MM-DD
-				} catch (e) {
-					if (index < 3) {
-						console.warn(
-							'[SalesDashboard] Error al parsear fecha (índice',
-							index,
-							'):',
-							saleDate,
-							e,
-						);
-					}
-					return;
-				}
+    const { chartSeries, chartCategories, stats } = useMemo(() => {
+        const dateMap = new Map<string, { total: number; returns: number }>();
+        let totalSales = 0;
+        let totalReturns = 0;
 
-				// Obtener total_amount - priorizar total_amount como solicitado
-				const totalAmountRaw =
-					r?.total_amount ?? r?.total ?? r?.amount ?? r?.monto ?? r?.price ?? 0;
-				const totalAmount =
-					typeof totalAmountRaw === 'string'
-						? parseFloat(totalAmountRaw) || 0
-						: Number(totalAmountRaw) || 0;
+        filteredResults.forEach((r: any) => {
+            const rawAmt = r?.total_amount ?? r?.total ?? r?.amount ?? 0;
+            const amount = typeof rawAmt === 'string' ? parseFloat(rawAmt) : Number(rawAmt) || 0;
+            
+            const rawRet =
+                r?.returns ??
+                r?.devoluciones ??
+                r?.return_amount ??
+                r?.refunded ??
+                r?.refunded_amount ??
+                0;
+            const retVal = typeof rawRet === 'string' ? parseFloat(rawRet) : Number(rawRet) || 0;
 
-				// Obtener devoluciones (si existe)
-				const returnsRaw = r?.returns ?? r?.devoluciones ?? r?.return_amount ?? 0;
-				const returns =
-					typeof returnsRaw === 'string'
-						? parseFloat(returnsRaw) || 0
-						: Number(returnsRaw) || 0;
+            totalSales += amount;
+            totalReturns += retVal;
 
-				if (index < 3) {
-					console.log(
-						`[SalesDashboard] Procesando registro ${index}: fecha=${dateKey}, total_amount=${totalAmount}, returns=${returns}`,
-					);
-				}
+            const rawDate = r?.sale_date || r?.date || r?.created_at;
+            if (!rawDate) return;
+            
+            try {
+                const d = new Date(rawDate);
+                if (!isNaN(d.getTime())) {
+                    const key = d.toISOString().split('T')[0];
+                    if (!dateMap.has(key)) dateMap.set(key, { total: 0, returns: 0 });
+                    const entry = dateMap.get(key)!;
+                    entry.total += amount;
+                    entry.returns += retVal;
+                }
+            } catch {}
+        });
 
-				if (!salesByDate.has(dateKey)) {
-					salesByDate.set(dateKey, { total: 0, returns: 0 });
-				}
+        let keys = Array.from(dateMap.keys()).sort();
+        if (filters.dateFrom && filters.dateTo) {
+            const start = new Date(filters.dateFrom);
+            const end = new Date(filters.dateTo);
+            if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+                const tempKeys = [];
+                for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                    const k = d.toISOString().split('T')[0];
+                    tempKeys.push(k);
+                    if (!dateMap.has(k)) dateMap.set(k, { total: 0, returns: 0 });
+                }
+                keys = tempKeys.sort();
+            }
+        }
 
-				const current = salesByDate.get(dateKey)!;
-				current.total += totalAmount;
-				current.returns += returns;
-			});
-		}
+        const dataSales = keys.map(k => dateMap.get(k)?.total || 0);
+        const dataReturns = keys.map(k => dateMap.get(k)?.returns || 0);
 
-		// Generar todas las fechas en el rango (o usar las fechas de los datos si no hay filtros)
-		let allDates: string[] = [];
+        return {
+            chartSeries: [
+                { name: 'Ventas', data: dataSales, color: '#22c55e' },
+                { name: 'Devoluciones', data: dataReturns, color: '#f97316' }
+            ],
+            chartCategories: keys, 
+            stats: {
+                total: totalSales,
+                returns: totalReturns,
+                refundedTotal: totalReturns,
+                count: results.length,
+                avg: filteredResults.length > 0 ? totalSales / filteredResults.length : 0,
+                retPct: totalSales > 0 ? (totalReturns / totalSales) * 100 : 0
+            }
+        };
+    }, [filteredResults, filters.dateFrom, filters.dateTo]);
 
-		if (dateFrom && dateTo && !isNaN(dateFrom.getTime()) && !isNaN(dateTo.getTime())) {
-			// Generar todas las fechas entre dateFrom y dateTo
-			const current = new Date(dateFrom);
-			current.setHours(0, 0, 0, 0);
-			const end = new Date(dateTo);
-			end.setHours(23, 59, 59, 999);
+    const chartOptions: any = useMemo(() => ({
+        chart: { 
+            type: 'area',
+            zoom: { 
+                enabled: true, 
+                type: 'x', 
+                autoScaleYaxis: true 
+            },
+            toolbar: {
+                show: true,
+                tools: { pan: true, zoom: true, reset: true },
+                autoSelected: 'zoom'
+            },
+            fontFamily: 'inherit',
+            animations: { enabled: false }
+        },
+        stroke: {
+            width: [3, 3],
+            curve: 'smooth',
+            colors: ['#22c55e', '#f97316'],
+        },
+        markers: {
+            size: 0,
+            strokeColors: ['#22c55e', '#f97316'],
+            hover: { size: 5 }
+        },
+        dataLabels: { enabled: false },
+        grid: { 
+            strokeDashArray: 4, 
+            borderColor: '#E5E7EB66',
+            yaxis: { lines: { show: true } },
+            xaxis: { lines: { show: false } }
+        },
+        xaxis: {
+            type: 'datetime',
+            categories: chartCategories,
+            tickAmount: 6,
+            labels: {
+                style: { fontSize: '11px', colors: '#64748B' },
+                datetimeFormatter: {
+                    year: 'yyyy',
+                    month: "MMM 'yy",
+                    day: 'dd MMM',
+                    hour: 'HH:mm'
+                }
+            },
+            tooltip: { enabled: false },
+            axisBorder: { show: false },
+            axisTicks: { show: false }
+        },
+        yaxis: {
+            labels: {
+                style: { colors: '#64748B' },
+                formatter: (val: number) => `$${val.toLocaleString('es-CL', { maximumFractionDigits: 0 })}`
+            }
+        },
+        legend: { position: 'top', horizontalAlign: 'left' },
+        tooltip: {
+            theme: 'dark',
+            shared: true,
+            intersect: false,
+            x: { format: 'dd MMM yyyy' },
+            y: { formatter: (val: number) => `$${val.toLocaleString('es-CL')}` }
+        },
+        fill: {
+            type: 'gradient',
+            gradient: {
+                shadeIntensity: 0.5,
+                opacityFrom: 0.16,
+                opacityTo: 0.01,
+                stops: [0, 100],
+                colorStops: [
+                    { offset: 0, color: '#22c55e', opacity: 0.16 },
+                    { offset: 100, color: '#22c55e', opacity: 0 },
+                ],
+            }
+        }
+    }), [chartCategories]);
 
-			while (current <= end) {
-				const dateKey = current.toISOString().split('T')[0];
-				allDates.push(dateKey);
-				// Inicializar con 0 si no hay datos para esta fecha
-				if (!salesByDate.has(dateKey)) {
-					salesByDate.set(dateKey, { total: 0, returns: 0 });
-				}
-				current.setDate(current.getDate() + 1);
-			}
-		} else {
-			// Si no hay filtros de fecha, usar solo las fechas que tienen datos
-			allDates = Array.from(salesByDate.keys()).sort();
-		}
+    return (
+        <PageWrapper title='Reporte de Ventas'>
+            <style>{apexToolbarMenuStyles}</style>
+            <Subheader>
+                <SubheaderLeft>
+                    <div className='flex gap-2 items-center'>
+                        <Icon icon='HeroReceiptPercent' className='h-6 w-6 text-indigo-600' />
+                        <Badge className='text-2xl font-bold px-0 bg-transparent text-zinc-800 dark:text-zinc-100'>
+                            Dashboard de Ventas
+                        </Badge>
+                    </div>
+                    <p className='text-zinc-500 dark:text-zinc-400 mt-1'>
+                        Análisis financiero y control de devoluciones
+                    </p>
+                </SubheaderLeft>
+            </Subheader>
 
-		// Ordenar todas las fechas
-		const sortedDates = allDates.sort((a, b) => a.localeCompare(b));
+            <Container>
+                <Card className='h-full border-indigo-100 dark:border-indigo-900/20 shadow-md'>
+                    <CardHeader className='border-b border-zinc-100 dark:border-zinc-800 pb-4'>
+                        <div className='flex flex-wrap items-center justify-between gap-4'>
+                            <div>
+                                <h2 className='text-lg font-bold text-zinc-900 dark:text-zinc-100'>Resumen General</h2>
+                                <p className='text-xs text-zinc-500'>Datos actualizados en tiempo real</p>
+                            </div>
+                            <ReportExportButton
+                                subsidiaryId={Number(currentSubsidiaryId ?? 0)}
+                                type='sales'
+                                filters={mapFilters(filters)}
+                            />
+                        </div>
+                    </CardHeader>
+                    
+                    <CardBody className='space-y-6'>
+                        <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
+                            <Card className='rounded-2xl border border-emerald-200/70 bg-emerald-50/60 shadow-sm dark:border-emerald-800/50 dark:bg-emerald-900/10'>
+                                <CardBody className='flex items-start gap-3 p-4'>
+                                    <div className='flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-800/60 dark:text-emerald-200'>
+                                        <Icon icon='HeroCubeTransparent' className='h-5 w-5' />
+                                    </div>
+                                    <div className='space-y-1'>
+                                        <p className='text-xs font-semibold uppercase text-emerald-700 dark:text-emerald-200'>
+                                            Ventas Totales
+                                        </p>
+                                        <p className='text-2xl font-bold text-emerald-900 dark:text-white'>
+                                            ${stats.total.toLocaleString('es-CL', { maximumFractionDigits: 0 })}
+                                        </p>
+                                        <p className='text-xs text-emerald-700/80 dark:text-emerald-200/80'>
+                                            Ingresos acumulados del rango seleccionado
+                                        </p>
+                                    </div>
+                                </CardBody>
+                            </Card>
+                            
+                            <Card className='rounded-2xl border border-indigo-200/70 bg-indigo-50/60 shadow-sm dark:border-indigo-800/50 dark:bg-indigo-900/10'>
+                                <CardBody className='flex items-start gap-3 p-4'>
+                                    <div className='flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700 dark:bg-indigo-800/60 dark:text-indigo-200'>
+                                        <Icon icon='HeroChartBarSquare' className='h-5 w-5' />
+                                    </div>
+                                    <div className='space-y-1'>
+                                        <p className='text-xs font-semibold uppercase text-indigo-700 dark:text-indigo-200'>
+                                            Ticket Promedio
+                                        </p>
+                                        <p className='text-2xl font-bold text-indigo-900 dark:text-white'>
+                                            ${stats.avg.toLocaleString('es-CL', { maximumFractionDigits: 0 })}
+                                        </p>
+                                        <p className='text-xs text-indigo-700/80 dark:text-indigo-200/80'>
+                                            Promedio por orden en el periodo
+                                        </p>
+                                    </div>
+                                </CardBody>
+                            </Card>
 
-		const totals: number[] = sortedDates.map((dateKey) => salesByDate.get(dateKey)?.total || 0);
-		const returns: number[] = sortedDates.map(
-			(dateKey) => salesByDate.get(dateKey)?.returns || 0,
-		);
-		return [
-			{ name: 'Ventas', data: totals },
-			{ name: 'Devoluciones', data: returns },
-		];
-	}, [results, filters.dateFrom, filters.dateTo]);
+                            <Card className='rounded-2xl border border-amber-200/70 bg-amber-50/60 shadow-sm dark:border-amber-800/50 dark:bg-amber-900/10'>
+                                <CardBody className='flex items-start gap-3 p-4'>
+                                    <div className='flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-800/60 dark:text-amber-200'>
+                                        <Icon icon='HeroArrowPathRoundedSquare' className='h-5 w-5' />
+                                    </div>
+                                    <div className='space-y-1'>
+                                        <p className='text-xs font-semibold uppercase text-amber-700 dark:text-amber-200'>
+                                            Reembolsado
+                                        </p>
+                                        <p className='text-2xl font-bold text-amber-800 dark:text-amber-200'>
+                                            ${stats.refundedTotal.toLocaleString('es-CL', { maximumFractionDigits: 0 })}
+                                        </p>
+                                        <p className='text-xs text-amber-700/80 dark:text-amber-200/80'>
+                                            Monto total devuelto en el rango
+                                        </p>
+                                    </div>
+                                </CardBody>
+                            </Card>
+                        </div>
 
-	const categories = useMemo(() => {
-		// Obtener rango de fechas de los filtros
-		const dateFrom = filters.dateFrom ? new Date(filters.dateFrom) : null;
-		const dateTo = filters.dateTo ? new Date(filters.dateTo) : null;
+                        <div className='mt-4 min-h-[350px] w-full relative z-0'>
+                            {results.length > 0 ? (
+                                <Chart
+                                    type='area'
+                                    height={350}
+                                    series={chartSeries}
+                                    options={chartOptions}
+                                />
+                            ) : (
+                                <div className='flex h-64 flex-col items-center justify-center text-zinc-400 border-2 border-dashed border-zinc-200 dark:border-zinc-700 rounded-xl'>
+                                    <Icon icon='HeroChartBar' className='h-12 w-12 mb-2 opacity-50' />
+                                    <p>Sin datos para mostrar</p>
+                                </div>
+                            )}
+                        </div>
+                    </CardBody>
+                </Card>
 
-		// Obtener todas las fechas únicas de los datos
-		const datesSet = new Set<string>();
-		if (results && results.length > 0) {
-			results.forEach((r: any) => {
-				const saleDate = r?.sale_date || r?.date || r?.created_at;
-				if (saleDate) {
-					try {
-						const dateObj = new Date(saleDate);
-						if (!isNaN(dateObj.getTime())) {
-							const dateKey = dateObj.toISOString().split('T')[0];
-							datesSet.add(dateKey);
-						}
-					} catch {
-						// Ignorar fechas inválidas
-					}
-				}
-			});
-		}
+                <div className="mt-6 relative z-0">
+                    {results.length > 0 && <SalesAnalytics data={results} />}
+                </div>
 
-		// Generar todas las fechas en el rango (o usar las fechas de los datos si no hay filtros)
-		let allDates: string[] = [];
-
-		if (dateFrom && dateTo && !isNaN(dateFrom.getTime()) && !isNaN(dateTo.getTime())) {
-			// Generar todas las fechas entre dateFrom y dateTo
-			const current = new Date(dateFrom);
-			current.setHours(0, 0, 0, 0);
-			const end = new Date(dateTo);
-			end.setHours(23, 59, 59, 999);
-
-			while (current <= end) {
-				const dateKey = current.toISOString().split('T')[0];
-				allDates.push(dateKey);
-				current.setDate(current.getDate() + 1);
-			}
-		} else {
-			// Si no hay filtros de fecha, usar solo las fechas que tienen datos
-			allDates = Array.from(datesSet).sort();
-		}
-
-		// Formatear fechas para mostrar en el gráfico
-		// Incluir siempre el año en el formato
-		const formattedDates = allDates.map((dateStr) => {
-			try {
-				const dt = new Date(dateStr);
-				if (isNaN(dt.getTime())) return dateStr;
-
-				const day = String(dt.getDate()).padStart(2, '0');
-				const month = String(dt.getMonth() + 1).padStart(2, '0');
-				const year = dt.getFullYear();
-				const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-
-				// Si hay más de 90 días, mostrar formato compacto DD/MM/YY
-				if (allDates.length > 90) {
-					const shortYear = String(year).slice(-2);
-					return `${day}/${month}/${shortYear}`;
-				}
-				// Si hay más de 30 días, mostrar DD/MM/YYYY
-				if (allDates.length > 30) {
-					return `${day}/${month}/${year}`;
-				}
-				// Si hay más de 7 días, mostrar día de semana + DD/MM/YYYY
-				if (allDates.length > 7) {
-					return `${days[dt.getDay()]} ${day}/${month}/${year}`;
-				}
-				// Si hay 7 o menos días, mostrar día de semana + DD/MM/YYYY
-				return `${days[dt.getDay()]} ${day}/${month}/${year}`;
-			} catch {
-				return dateStr;
-			}
-		});
-
-		return formattedDates;
-	}, [results, filters.dateFrom, filters.dateTo]);
-
-	return (
-		<PageWrapper title='reporte de ventas'>
-			<Subheader>
-				<SubheaderLeft>
-					<div>
-						<div className='flex gap-2 items-center'>
-							<Icon icon='HeroReceiptPercent' className='h-5 w-5' />
-							<Badge className='text-3xl font-semibold'>Dashboard de Ventas</Badge>
-						</div>
-						<p>Tendencia de ventas y devoluciones</p>
-					</div>
-				</SubheaderLeft>
-			</Subheader>
-
-			<Container>
-				<Card className='border border-indigo-200/60 bg-gradient-to-br from-indigo-50 to-indigo-50/60 shadow-sm dark:from-indigo-900/10 dark:to-transparent'>
-					<CardHeader className='rounded-t-md bg-white/60 dark:bg-zinc-900/40'>
-						<div className='flex items-center justify-between'>
-							<div className='flex items-center gap-3'>
-								<div className='flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100'>
-									<Icon
-										icon='HeroReceiptPercent'
-										className='h-6 w-6 text-indigo-700'
-									/>
-								</div>
-								<div>
-									<h2 className='text-lg font-bold text-indigo-900'>
-										Dashboard de Ventas
-									</h2>
-									<p className='text-sm text-indigo-700'>
-										Tendencia de ventas y devoluciones
-									</p>
-								</div>
-							</div>
-							<div>
-								<ReportExportButton
-									subsidiaryId={Number(currentSubsidiaryId ?? 0)}
-									type='sales'
-									filters={mapFilters(filters)}
-								/>
-							</div>
-						</div>
-					</CardHeader>
-					<CardBody>
-						{(() => {
-							// Calcular métricas reales desde los datos - usar total_amount como solicitado
-							const totalSales = results.reduce((sum: number, r: any) => {
-								const amountRaw = r?.total_amount ?? r?.total ?? r?.amount ?? 0;
-								const amount =
-									typeof amountRaw === 'string'
-										? parseFloat(amountRaw) || 0
-										: Number(amountRaw) || 0;
-								return sum + amount;
-							}, 0);
-							const totalReturns = results.reduce((sum: number, r: any) => {
-								const returnsRaw =
-									r?.returns ?? r?.devoluciones ?? r?.return_amount ?? 0;
-								const returns =
-									typeof returnsRaw === 'string'
-										? parseFloat(returnsRaw) || 0
-										: Number(returnsRaw) || 0;
-								return sum + returns;
-							}, 0);
-							const salesCount = results.length;
-							const avgTicket = salesCount > 0 ? totalSales / salesCount : 0;
-							const returnsPercent =
-								totalSales > 0 ? (totalReturns / totalSales) * 100 : 0;
-
-							return (
-								<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
-									<div className='rounded-lg border border-zinc-200 bg-white p-4 dark:bg-zinc-900'>
-										<div className='text-xs text-zinc-500'>Ventas totales</div>
-										<div className='mt-1 text-2xl font-bold text-zinc-900 dark:text-zinc-100'>
-											${' '}
-											{totalSales.toLocaleString('es-CL', {
-												minimumFractionDigits: 0,
-												maximumFractionDigits: 0,
-											})}
-										</div>
-									</div>
-									<div className='rounded-lg border border-zinc-200 bg-white p-4 dark:bg-zinc-900'>
-										<div className='text-xs text-zinc-500'>Ticket promedio</div>
-										<div className='mt-1 text-2xl font-bold text-zinc-900 dark:text-zinc-100'>
-											${' '}
-											{avgTicket.toLocaleString('es-CL', {
-												minimumFractionDigits: 2,
-												maximumFractionDigits: 2,
-											})}
-										</div>
-									</div>
-									<div className='rounded-lg border border-zinc-200 bg-white p-4 dark:bg-zinc-900'>
-										<div className='text-xs text-zinc-500'>
-											Devoluciones (%)
-										</div>
-										<div className='mt-1 text-2xl font-bold text-rose-600'>
-											{returnsPercent.toFixed(1)}%
-										</div>
-									</div>
-								</div>
-							);
-						})()}
-
-						<div className='mt-6'>
-							{series && series.length > 0 && categories && categories.length > 0 ? (
-								<div className='overflow-x-auto'>
-									<div
-										style={{
-											minWidth:
-												categories.length > 30
-													? `${categories.length * 40}px`
-													: '100%',
-										}}>
-										<Chart
-											type='line'
-											height={320}
-											series={[
-												{
-													name: 'Ventas',
-													data: series[0].data,
-													color: '#4F46E5',
-												},
-												{
-													name: 'Devoluciones',
-													data: series[1].data,
-													color: '#E11D48',
-												},
-											]}
-											options={{
-												stroke: {
-													width: [3, 3], // Ambas visibles
-													curve: 'smooth',
-												},
-												markers: {
-													size: [0, 4], // Ventas sin puntos – Devoluciones SIEMPRE con puntos
-													strokeColors: ['#4F46E5', '#E11D48'],
-													hover: {
-														sizeOffset: 3,
-													},
-												},
-												tooltip: {
-													shared: true,
-													intersect: false,
-													theme: 'dark',
-													x: { format: 'dd/MM/yyyy' },
-												},
-												xaxis: {
-													categories,
-													labels: {
-														rotate:
-															categories.length > 30
-																? -45
-																: categories.length > 7
-																	? -30
-																	: 0,
-														rotateAlways: categories.length > 7,
-														style: {
-															fontSize:
-																categories.length > 90
-																	? '9px'
-																	: categories.length > 30
-																		? '10px'
-																		: '12px',
-														},
-														trim: true,
-													},
-												},
-												yaxis: {
-													labels: {
-														formatter: (value) =>
-															`$${value.toLocaleString('es-CL', {
-																minimumFractionDigits: 0,
-															})}`,
-													},
-												},
-												chart: {
-													zoom: { enabled: true, type: 'x' },
-													toolbar: { show: false },
-												},
-												dataLabels: { enabled: false },
-												grid: {
-													strokeDashArray: 4,
-													borderColor: '#E5E7EB55',
-												},
-												legend: {
-													position: 'top',
-													horizontalAlign: 'left',
-													itemMargin: { horizontal: 12 },
-												},
-											}}
-										/>
-									</div>
-								</div>
-							) : (
-								<div className='flex h-80 items-center justify-center text-zinc-500'>
-									No hay datos para mostrar en el gráfico
-								</div>
-							)}
-						</div>
-					</CardBody>
-				</Card>
-
-				<ReportFilters onApply={setFilters} />
-			</Container>
-		</PageWrapper>
-	);
+                <div className='mt-6'>
+                    <ReportFilters onApply={setFilters} />
+                </div>
+            </Container>
+        </PageWrapper>
+    );
 };
 
 export default SalesDashboard;

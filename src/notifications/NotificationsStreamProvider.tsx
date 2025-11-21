@@ -124,6 +124,8 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
 		const es = new EventSource(url);
 		eventSourceRef.current = es;
+		// @ts-ignore
+		if (typeof window !== 'undefined') (window as any).__zentriaSseReady = true;
 
 		es.onmessage = (ev) => {
 			try {
@@ -147,6 +149,8 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
 		return () => {
 			es.close();
+			// @ts-ignore
+			if (typeof window !== 'undefined') (window as any).__zentriaSseReady = false;
 		};
 	}, [isLeader, dispatch]);
 

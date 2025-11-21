@@ -21,6 +21,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import useDeviceScreen from '@/hooks/useDeviceScreen';
 
+const MIN_REFRESH_INTERVAL_MS = 30000;
+
 interface INotificationItemProps {
 	image?: string;
 	name: string;
@@ -85,6 +87,9 @@ const clean = (s?: string | null) =>
 		.replace(/\s+/g, ' ')
 		.trim();
 
+const isSseReady = () =>
+	typeof window !== 'undefined' && (window as any).__zentriaSseReady === true;
+
 const NotificationPartial = () => {
 	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
@@ -100,8 +105,9 @@ const NotificationPartial = () => {
 	const refresh = useCallback(
 		(force = false) => {
 			if (isFetchingRef.current) return;
+			if (!force && isSseReady()) return;
 			const now = Date.now();
-			if (!force && now - lastFetchTsRef.current < 1000) return;
+			if (!force && now - lastFetchTsRef.current < MIN_REFRESH_INTERVAL_MS) return;
 			isFetchingRef.current = true;
 			dispatch(fetchNotifications({ per_page: 20 }))
 				.catch(() => void 0)
