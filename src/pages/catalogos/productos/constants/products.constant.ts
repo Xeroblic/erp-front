@@ -53,31 +53,31 @@ export const PRODUCT_TYPE_FILTER_OPTIONS = [
 ];
 
 export const PRODUCT_STATS_META = [
-	{
-		key: 'total',
-		label: 'Productos totales',
-		icon: 'HeroCube',
-	},
-	{
-		key: 'actives',
-		label: 'Activos',
-		icon: 'HeroBolt',
-	},
-	{
-		key: 'inactives',
-		label: 'Inactivos',
-		icon: 'HeroPower',
-	},
-	{
-		key: 'with_offer',
-		label: 'Con oferta',
-		icon: 'HeroTag',
-	},
-	{
-		key: 'serial_tracked',
-		label: 'Con serie',
-		icon: 'HeroQrCode',
-	},
+    {
+        key: 'total',
+        label: 'Productos totales',
+        icon: 'DuoBox', // Clásico pa' inventario
+    },
+    {
+        key: 'actives',
+        label: 'Activos',
+        icon: 'DuoThunder', // Reemplazo directo del HeroBolt (energía/activo)
+    },
+    {
+        key: 'inactives',
+        label: 'Inactivos',
+        icon: 'DuoShutdown', // Apagao, fuera de línea, rip
+    },
+    {
+        key: 'with_offer',
+        label: 'Con oferta',
+        icon: 'DuoSale1', // Etiqueta de oferta precisa
+    },
+    {
+        key: 'serial_tracked',
+        label: 'Con serie',
+        icon: 'DuoBarcode', // Escaneo de serie, cortita
+    },
 ] as const;
 
 export const PRODUCT_TYPE_META: Record<string, { label: string; icon: string; badgeColor: string }> = {
