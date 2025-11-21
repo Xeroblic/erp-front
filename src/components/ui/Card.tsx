@@ -28,7 +28,7 @@ interface ICardHeaderChildProps extends HTMLAttributes<HTMLDivElement> {
 export const CardHeaderChild: FC<ICardHeaderChildProps> = (props) => {
 	const { children, className, ...rest } = props;
 
-	const classes = classNames('flex flex-wrap items-center gap-4', className);
+	const classes = classNames('flex flex-wrap items-start gap-4', className);
 
 	return (
 		<div data-component-name='Card/CardHeaderChild' className={classes} {...rest}>

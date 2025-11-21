@@ -343,17 +343,17 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 	return (
 		<div className='space-y-6'>
 			<Card className='border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900/70'>
-				<CardHeader>
-					<CardHeaderChild className='flex flex-col gap-1'>
-						<CardTitle className='flex items-center gap-2'>
+				<CardHeader className='gap-1 px-4 pt-3 pb-2 sm:pt-3 sm:pb-1'>
+					<CardHeaderChild className='flex flex-col items-start justify-start gap-1'>
+						<CardTitle className='flex justify-start gap-2'>
 							<Icon icon='HeroCubeTransparent' className='h-5 w-5 text-emerald-600 dark:text-emerald-300' />
 							Gestión de Inventario
 						</CardTitle>
-						<p className='text-sm text-neutral-500'>
+						<p className='mt-0 text-sm text-neutral-500'>
 							Resumen basado en productos sincronizados para la sucursal seleccionada.
 						</p>
 					</CardHeaderChild>
-					<CardHeaderChild className='mt-3 flex justify-start sm:mt-0 sm:justify-end'>
+					<CardHeaderChild className='flex justify-start sm:justify-end'>
 						<Badge variant='outline' color='blue' className='whitespace-nowrap'>
 							{branchLabel}
 						</Badge>
