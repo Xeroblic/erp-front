@@ -151,9 +151,7 @@ const ReportResultsPage: React.FC = () => {
 
 	return (
 		<PageWrapper>
-			<Container>
-				<div className='p-4'>{renderReportContent()}</div>
-			</Container>
+				<div>{renderReportContent()}</div>
 		</PageWrapper>
 	);
 };

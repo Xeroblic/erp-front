@@ -5,11 +5,15 @@ import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import ReportFilters, { ReportFiltersState } from './components/ReportFilters';
 import DataTable from '@/components/ui/DataTable';
+import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
+import Container from '@/components/layouts/Container/Container';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import { fetchReportResults } from '@/store/slices/reports/reportsThunks';
 import { clearResults } from '@/store/slices/reports/reportSlice';
 import ReportExportButton from './ReportExportButton';
+import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import Badge from '@/components/ui/Badge';
 
 type Row = {
 	sku: string;
@@ -56,23 +60,32 @@ const InventoryReports: React.FC = () => {
 		return out;
 	};
 
-	// LIMPIAR RESULTADOS
+	// LIMPIAR RESULTADOS AL DESMONTAR
 	useEffect(() => {
-		dispatch(clearResults());
+		return () => {
+			dispatch(clearResults());
+		};
 	}, [dispatch]);
 
-	// CARGAR REPORTES
+	// CARGAR REPORTES (CON FIX DE DOBLE LLAMADA)
 	useEffect(() => {
 		const sid = Number(currentSubsidiaryId ?? 0);
 		if (!sid) return;
 
-		dispatch(
+		// 1. Guardamos la promesa que devuelve el dispatch
+		const promise = dispatch(
 			fetchReportResults({
 				subsidiaryId: sid,
 				type: 'stock',
 				filters: mapFilters(filters),
 			}) as any,
 		);
+
+		// 2. Función de limpieza: Si el componente se desmonta o los filtros cambian rápido,
+		// cancelamos la petición anterior. Esto detiene el bucle while en el Thunk.
+		return () => {
+			promise.abort();
+		};
 	}, [currentSubsidiaryId, filters, dispatch]);
 
 	// MAPEO REAL DEL API
@@ -86,120 +99,144 @@ const InventoryReports: React.FC = () => {
 	}, [results]);
 
 	// **SOLO ESTAS COLUMNAS** (SKU, Producto, Bodega, Stock)
-	const columns = useMemo<ColumnDef<Row>[]>(() => [
-		{
-			accessorKey: 'sku',
-			header: 'SKU',
-			cell: (info) => (
-				<span className="font-mono text-sm">{info.getValue() as string}</span>
-			),
-			enableSorting: true,
-		},
-		{
-			accessorKey: 'nombre',
-			header: 'Producto',
-			cell: (info) => <span className="text-sm">{info.getValue() as string}</span>,
-			enableSorting: true,
-		},
-		{
-			accessorKey: 'bodega',
-			header: 'Bodega',
-			cell: (info) => <span className="text-sm">{info.getValue() as string}</span>,
-			enableSorting: true,
-		},
-		{
-			accessorKey: 'stock',
-			header: 'Stock',
-			cell: (info) => {
-				const stock = info.getValue() as number;
-				return (
-					<span className={stock === 0 ? 'font-semibold text-rose-600' : 'text-sm'}>
-						{stock}
-					</span>
-				);
+	const columns = useMemo<ColumnDef<Row>[]>(
+		() => [
+			{
+				accessorKey: 'sku',
+				header: 'SKU',
+				cell: (info) => (
+					<span className='font-mono text-sm'>{info.getValue() as string}</span>
+				),
+				enableSorting: true,
 			},
-			enableSorting: true,
-		},
-	], []);
+			{
+				accessorKey: 'nombre',
+				header: 'Producto',
+				cell: (info) => <span className='text-sm'>{info.getValue() as string}</span>,
+				enableSorting: true,
+			},
+			{
+				accessorKey: 'bodega',
+				header: 'Bodega',
+				cell: (info) => <span className='text-sm'>{info.getValue() as string}</span>,
+				enableSorting: true,
+			},
+			{
+				accessorKey: 'stock',
+				header: 'Stock',
+				cell: (info) => {
+					const stock = info.getValue() as number;
+					return (
+						<span className={stock === 0 ? 'font-semibold text-rose-600' : 'text-sm'}>
+							{stock}
+						</span>
+					);
+				},
+				enableSorting: true,
+			},
+		],
+		[],
+	);
 
 	return (
-		<div className="space-y-6">
-			{reportsLoading && (
-				<div className="p-4 text-sm text-zinc-500">Cargando datos de inventario...</div>
-			)}
-
-			{reportsError && (
-				<Card className="border border-rose-200 bg-rose-50 dark:border-rose-800 dark:bg-rose-900/20">
-					<CardBody>
-						<div className="flex items-center justify-between">
-							<div className="text-rose-700 dark:text-rose-400">
-								<strong>Error cargando inventario:</strong>{' '}
-								{typeof reportsError === 'object' && reportsError !== null
-									? JSON.stringify(reportsError)
-									: String(reportsError)}
-							</div>
-							<Button
-								variant="outline"
-								color="rose"
-								size="sm"
-								onClick={() => {
-									const sid = Number(currentSubsidiaryId ?? 0);
-									if (!sid) return;
-									dispatch(
-										fetchReportResults({
-											subsidiaryId: sid,
-											type: 'stock',
-											filters: mapFilters(filters),
-										}) as any,
-									);
-								}}
-							>
-								Reintentar
-							</Button>
+		<PageWrapper title='Reportes de inventario'>
+			<Subheader>
+				<SubheaderLeft>
+					<div>
+						<div className='flex items-center gap-2 text-emerald-800 dark:text-emerald-200'>
+							<Icon icon='HeroCubeTransparent' className='h-5 w-5' />
+							<Badge className='text-3xl font-semibold'>Reportes de inventario</Badge>
 						</div>
-					</CardBody>
-				</Card>
-			)}
-
-			<Card className="border border-emerald-200/60 bg-gradient-to-br from-emerald-50 to-emerald-50/60 shadow-sm dark:from-emerald-900/10 dark:to-transparent">
-				<CardHeader className="rounded-t-md bg-white/60 dark:bg-zinc-900/40">
-					<div className="flex items-center justify-between">
-						<div className="flex items-center gap-3">
-							<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
-								<Icon icon="HeroCubeTransparent" className="h-6 w-6 text-emerald-700" />
-							</div>
-							<div>
-								<h2 className="text-lg font-bold text-emerald-900">
-									Reportes de Inventario
-								</h2>
-								<p className="text-sm text-emerald-700">
-									Existencias, SKUs y valoración
-								</p>
-							</div>
-						</div>
-						<ReportExportButton
-							subsidiaryId={Number(currentSubsidiaryId ?? 0)}
-							type="stock"
-							filters={mapFilters(filters)}
-						/>
+						<p>Existencias, SKUs y valoración</p>
 					</div>
-				</CardHeader>
-
-				<CardBody>
-					<DataTable
-						columns={columns}
-						data={rows}
-						loading={reportsLoading}
-						searchPlaceholder="Buscar por SKU, producto o bodega..."
-						emptyMessage="Sin resultados para los criterios seleccionados."
-						pageSize={10}
+				</SubheaderLeft>
+				<SubheaderRight>
+					<ReportExportButton
+						subsidiaryId={Number(currentSubsidiaryId ?? 0)}
+						type='stock'
+						filters={mapFilters(filters)}
 					/>
-				</CardBody>
-			</Card>
+				</SubheaderRight>
+			</Subheader>
+			<Container>
+				<div className='space-y-6'>
+					{reportsLoading && (
+						<div className='p-4 text-sm text-zinc-500'>
+							Cargando datos de inventario...
+						</div>
+					)}
 
-			{/* FILTROS */}
-			<ReportFilters onApply={setFilters} />
-		</div>
+					{reportsError && (
+						<Card className='border border-rose-200 bg-rose-50 dark:border-rose-800 dark:bg-rose-900/20'>
+							<CardBody>
+								<div className='flex items-center justify-between'>
+									<div className='text-rose-700 dark:text-rose-400'>
+										<strong>Error cargando inventario:</strong>{' '}
+										{typeof reportsError === 'object' && reportsError !== null
+											? JSON.stringify(reportsError)
+											: String(reportsError)}
+									</div>
+									<Button
+										variant='outline'
+										color='rose'
+										size='sm'
+										onClick={() => {
+											const sid = Number(currentSubsidiaryId ?? 0);
+											if (!sid) return;
+											dispatch(
+												fetchReportResults({
+													subsidiaryId: sid,
+													type: 'stock',
+													filters: mapFilters(filters),
+												}) as any,
+											);
+										}}>
+										Reintentar
+									</Button>
+								</div>
+							</CardBody>
+						</Card>
+					)}
+
+					<Card className='border border-emerald-200/60 bg-gradient-to-br from-emerald-50 to-emerald-50/60 shadow-sm dark:from-emerald-900/10 dark:to-transparent'>
+						<CardHeader className='rounded-t-md bg-white/60 dark:bg-zinc-900/40'>
+							<div className='flex items-center justify-between'>
+								<div className='flex items-center gap-3'>
+									<div className='flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100'>
+										<Icon
+											icon='HeroCubeTransparent'
+											className='h-6 w-6 text-emerald-700'
+										/>
+									</div>
+									<div>
+										<h2 className='text-lg font-bold text-emerald-900'>
+											Reportes de Inventario
+										</h2>
+										<p className='text-sm text-emerald-700'>
+											Existencias, SKUs y valoración
+										</p>
+									</div>
+								</div>
+							</div>
+						</CardHeader>
+
+						<CardBody>
+							<DataTable
+								columns={columns}
+								data={rows}
+								loading={reportsLoading}
+								searchPlaceholder='Buscar por SKU, producto o bodega...'
+								emptyMessage='Sin resultados para los criterios seleccionados.'
+								pageSize={10}
+							/>
+						</CardBody>
+					</Card>
+
+					{/* FILTROS */}
+					<ReportFilters onApply={setFilters} />
+				</div>
+			</Container>
+		</PageWrapper>
 	);
 };
 
