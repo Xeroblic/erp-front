@@ -36,22 +36,31 @@ injectReducer('salesModule', salesReducer);
 
 const statusOptions: TSelectOption[] = [
 	{ value: 'draft', label: 'Borrador' },
-	{ value: 'confirmed', label: 'Procesando' },
-	{ value: 'partially_paid', label: 'Parcialmente pagada' },
-	{ value: 'paid', label: 'Pagada' },
-	{ value: 'delivered', label: 'Entregada' },
-	{ value: 'cancelled', label: 'Cancelada' },
-	{ value: 'refunded', label: 'Reembolsada' },
+	{ value: 'pending', label: 'Pendiente' },
+	{ value: 'on-hold', label: 'En espera de pago' },
+	{ value: 'confirmed', label: 'Confirmado (legacy)' },
+	{ value: 'processing', label: 'Procesando (pagado)' },
+	{ value: 'paid', label: 'Pagado' },
+	{ value: 'completed', label: 'Completado' },
+	{ value: 'delivered', label: 'Entregado (legacy)' },
+	{ value: 'cancelled', label: 'Cancelado' },
+	{ value: 'refunded', label: 'Reembolsado' },
+	// legacy no implementado: // { value: 'partially_paid', label: 'Parcialmente pagada (legacy)' },
 ];
 
 const statusBadgeMap: Record<string, { color: TColors; intensity: TColorIntensity }> = {
 	draft: { color: 'zinc', intensity: '500' },
+	pending: { color: 'amber', intensity: '500' },
+	'on-hold': { color: 'amber', intensity: '600' },
 	confirmed: { color: 'blue', intensity: '500' },
-	partially_paid: { color: 'amber', intensity: '500' },
+	processing: { color: 'emerald', intensity: '400' },
 	paid: { color: 'emerald', intensity: '500' },
-	delivered: { color: 'emerald', intensity: '600' },
+	completed: { color: 'emerald', intensity: '600' },
+	delivered: { color: 'emerald', intensity: '700' },
 	cancelled: { color: 'rose', intensity: '500' },
 	refunded: { color: 'purple', intensity: '500' },
+	// legacy no implementado:
+	// partially_paid: { color: 'amber', intensity: '500' },
 };
 
 const SalesListPage: React.FC = () => {
