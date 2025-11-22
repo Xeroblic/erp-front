@@ -1,26 +1,40 @@
-import React, { FC, memo } from 'react';
-import ReactApexChart, { Props } from 'react-apexcharts';
+import React, { FC, memo, useEffect, useMemo, useRef } from 'react';
+import ApexCharts, {
+	ApexOptions,
+	ApexAxisChartSeries,
+	ApexNonAxisChartSeries,
+	ApexChartType,
+} from 'apexcharts';
 import colors from 'tailwindcss/colors';
 import _ from 'lodash';
 
-export interface IChartProps extends Props {
+export interface IChartProps {
+	options?: ApexOptions;
+	series: ApexAxisChartSeries | ApexNonAxisChartSeries;
+	type: ApexChartType;
 	width?: string | number;
 	height?: string | number;
 }
 
 const Chart: FC<IChartProps> = (props) => {
-	const { series, options, type, width = '100%', height = 'auto' } = props;
+	const { series, options = {}, type, width = '100%', height = 'auto' } = props;
+	const chartRef = useRef<HTMLDivElement | null>(null);
+	const chartInstanceRef = useRef<ApexCharts | null>(null);
 
-	const defaultOptions: Props['options'] = {
-		chart: {
-			toolbar: {
-				show: false,
+	const defaultOptions: ApexOptions = useMemo(
+		() => ({
+			chart: {
+				toolbar: {
+					show: false,
+				},
+				animations: {
+					enabled: true,
+				},
 			},
-		},
-		colors: [
-			colors.blue['500'],
-			colors.emerald['500'],
-			colors.amber['500'],
+			colors: [
+				colors.blue['500'],
+				colors.emerald['500'],
+				colors.amber['500'],
 			colors.rose['500'],
 			colors.purple['500'],
 		],
@@ -106,18 +120,46 @@ const Chart: FC<IChartProps> = (props) => {
 					color: colors.zinc['500'],
 				},
 			},
-		},
-	};
-
-	return (
-		<ReactApexChart
-			options={_.merge(defaultOptions, options)}
-			series={series}
-			type={type}
-			height={height}
-			width={width}
-		/>
+		}),
+		[],
 	);
+
+	const buildOptions = useMemo(() => {
+		return _.merge({}, defaultOptions, options, {
+			chart: {
+				...defaultOptions.chart,
+				type,
+				width,
+				height: height === 'auto' ? undefined : height,
+			},
+		});
+	}, [defaultOptions, options, type, width, height]);
+
+	useEffect(() => {
+		if (!chartRef.current) return;
+		const instance = new ApexCharts(chartRef.current, {
+			...buildOptions,
+			series,
+		});
+		chartInstanceRef.current = instance;
+		instance.render();
+
+		return () => {
+			instance.destroy();
+			chartInstanceRef.current = null;
+		};
+	}, []); // mount only
+
+	useEffect(() => {
+		if (!chartInstanceRef.current) return;
+		chartInstanceRef.current.updateOptions(buildOptions, true, true);
+		chartInstanceRef.current.updateSeries(series, true);
+	}, [buildOptions, series]);
+
+	const inlineHeight = height === 'auto' ? undefined : height;
+	const inlineWidth = width;
+
+	return <div ref={chartRef} style={{ width: inlineWidth, height: inlineHeight }} />;
 };
 Chart.displayName = 'Chart';
 
