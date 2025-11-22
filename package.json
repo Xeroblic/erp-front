@@ -67,6 +67,7 @@
 		"lodash": "^4.17.21",
 		"pascalcase": "^2.0.0",
 		"pdfmake": "^0.2.20",
+		"prop-types": "^15.8.1",
 		"react": "^18.3.1",
 		"react-apexcharts": "^1.4.1",
 		"react-date-range": "^2.0.1",
