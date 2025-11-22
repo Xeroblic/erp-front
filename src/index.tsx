@@ -22,6 +22,16 @@ import { PersistGate } from 'redux-persist/integration/react';
 // Inicializar slice de personalización dinámicamente
 import './store/initializePersonalizacion';
 
+// Fallback para entornos que no exponen useSyncExternalStore en React (algunas lib usan el hook)
+import { useSyncExternalStore } from 'use-sync-external-store/shim';
+import { useSyncExternalStoreWithSelector } from 'use-sync-external-store/shim/with-selector';
+if (!(React as any).useSyncExternalStore) {
+	(React as any).useSyncExternalStore = useSyncExternalStore;
+}
+if (!(React as any).useSyncExternalStoreWithSelector) {
+	(React as any).useSyncExternalStoreWithSelector = useSyncExternalStoreWithSelector;
+}
+
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 root.render(
 	// <React.StrictMode>
