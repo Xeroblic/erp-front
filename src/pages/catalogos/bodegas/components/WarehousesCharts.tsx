@@ -79,7 +79,7 @@ const WarehousesCharts: React.FC<WarehousesChartsProps> = ({ warehouses }) => {
 			legend: {
 				show: true,
 				position: 'bottom',
-				fontSize: '13px',
+				fontSize: '14px',
 				fontWeight: 500,
 				labels: {
 					colors: isDarkTheme ? '#d1d5db' : '#374151',
