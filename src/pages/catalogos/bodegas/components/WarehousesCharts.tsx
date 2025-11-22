@@ -102,7 +102,7 @@ const WarehousesCharts: React.FC<WarehousesChartsProps> = ({ warehouses }) => {
 							show: true,
 							name: {
 								show: true,
-								fontSize: '14px',
+								fontSize: '13px',
 								fontWeight: 500,
 								color: isDarkTheme ? '#9ca3af' : '#6b7280',
 								offsetY: -5,
