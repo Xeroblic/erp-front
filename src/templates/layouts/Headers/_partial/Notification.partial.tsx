@@ -315,7 +315,7 @@ const NotificationPartial = () => {
 		<div className='relative'>
 			{isMobile ? (
 				<>
-					<Button icon='HeroBell' aria-label='Notification' onClick={openPanel} />
+					<Button icon='DuoNotifications1' aria-label='Notification' onClick={openPanel} />
 					<Modal
 						isCentered
 						isOpen={isModalOpen}
@@ -341,7 +341,7 @@ const NotificationPartial = () => {
 			) : (
 				<Dropdown>
 					<DropdownToggle hasIcon={false}>
-						<Button icon='HeroBell' aria-label='Notification' onClick={openPanel} />
+						<Button icon='DuoNotifications1' aria-label='Notification' onClick={openPanel} />
 					</DropdownToggle>
 					<DropdownMenu placement='bottom-end' isCloseAfterLeave={false} className='min-w-[24rem] h-full p-0'>
 						<NotificationPanel />

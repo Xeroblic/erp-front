@@ -79,10 +79,10 @@ const DarkModeSwitcherPart = () => {
 	const { t } = useTranslation();
 	return (
 		<div className='flex w-full overflow-hidden rounded-full bg-zinc-100 p-2 text-sm dark:bg-zinc-950'>
-			<StyledButton icon='HeroMoon' status={DARK_MODE.DARK} text={t('theme.dark')} />
-			<StyledButton icon='HeroSun' status={DARK_MODE.LIGHT} text={t('theme.light')} />
+			<StyledButton icon='DuoMoon' status={DARK_MODE.DARK} text={t('theme.dark')} />
+			<StyledButton icon='DuoSun' status={DARK_MODE.LIGHT} text={t('theme.light')} />
 			<StyledButton
-				icon='HeroComputerDesktop'
+				icon='DuoLaptop'
 				status={DARK_MODE.SYSTEM}
 				text={t('theme.system')}
 			/>

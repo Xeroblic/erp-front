@@ -205,7 +205,7 @@ const SettingsPartial = () => {
 		<Dropdown>
 			<DropdownToggle hasIcon={false}>
 				<Button
-					icon='HeroCog8Tooth'
+					icon='DuoSettings'
 					aria-label='Abrir configuración'
 					title='Configuración'
 					isLoading={isAnyUpdating}
@@ -223,7 +223,7 @@ const SettingsPartial = () => {
 
 					<ButtonGroup>
 						<Button
-							icon='HeroMinus'
+							icon='DuoMinus'
 							onClick={() => updateFontSize(fontSize - 1)}
 							isDisable={fontSize <= MIN_FONT || isUpdatingFont}
 							aria-label='Disminuir fuente'
@@ -233,7 +233,7 @@ const SettingsPartial = () => {
 							{fontSize}
 						</Button>
 						<Button
-							icon='HeroPlus'
+							icon='DuoPlus'
 							onClick={() => updateFontSize(fontSize + 1)}
 							isDisable={fontSize >= MAX_FONT || isUpdatingFont}
 							aria-label='Aumentar fuente'
@@ -261,7 +261,7 @@ const SettingsPartial = () => {
 					<div className='text-sm font-medium'>Tema del sistema</div>
 					<ButtonGroup>
 						<Button
-							icon='HeroMoon'
+							icon='DuoMoon'
 							onClick={() => updateTheme(DARK_MODE.DARK)}
 							isActive={isDark}
 							variant={isDark ? 'solid' : 'outline'}
@@ -271,7 +271,7 @@ const SettingsPartial = () => {
 							isDisable={isUpdatingTheme}
 						/>
 						<Button
-							icon='HeroSun'
+							icon='DuoSun'
 							onClick={() => updateTheme(DARK_MODE.LIGHT)}
 							isActive={isLight}
 							variant={isLight ? 'solid' : 'outline'}
@@ -281,7 +281,7 @@ const SettingsPartial = () => {
 							isDisable={isUpdatingTheme}
 						/>
 						<Button
-							icon='HeroComputerDesktop'
+							icon='DuoLaptop'
 							onClick={() => updateTheme(DARK_MODE.SYSTEM)}
 							isActive={isSystem}
 							variant={isSystem ? 'solid' : 'outline'}

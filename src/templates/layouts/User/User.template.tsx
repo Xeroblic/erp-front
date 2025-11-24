@@ -55,7 +55,7 @@ const handleLogout = async () => {
 		<User
 			isLoading={isLoading}
 			name={userName}
-			nameSuffix={<Icon icon='HeroCheckBadge' color='blue' />}
+			nameSuffix={<Icon icon='DuoDoneCircle' color='blue' />}
 			position={userPosition}
 			src={avatarSrc || undefined}
 			suffix={
@@ -71,7 +71,7 @@ const handleLogout = async () => {
 				</Badge>
 				<NavButton icon='HeroPlusCircle' title='New Mail' onClick={() => {}} />
 			</NavItem> */}
-			<NavItem text='Logout' icon='HeroArrowRightOnRectangle' onClick={handleLogout} />
+			<NavItem text='Logout' icon='DuoSignOut' onClick={handleLogout} />
 		</User>
 	);
 };

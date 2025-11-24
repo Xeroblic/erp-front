@@ -10,11 +10,8 @@ export interface PageConfig {
 	text: string;
 	icon: string;
 	authority: string[];
-	/** Roles específicos requeridos */
 	roles?: string[];
-	/** Empresa específica requerida */
 	companyId?: number;
-	/** Requerir todos los permisos (modo AND) */
 	requireAll?: boolean;
 }
 
@@ -27,35 +24,35 @@ export const authPages = {
 		id: 'loginPage',
 		to: '/login',
 		text: 'Login',
-		icon: 'HeroArrowRightOnRectangle',
+		icon: 'DuoLogOut',
 		authority: []
 	},
 	profilePage: {
 		id: 'profilePage',
 		to: '/profile',
 		text: 'Perfil',
-		icon: 'HeroUser',
+		icon: 'DuoUser',
 		authority: []
 	},
 	aceptarInvitacion: {
 		id: 'aceptarInvitacion',
 		to: '/invitar/aceptar/:token',
 		text: 'Aceptar invitación',
-		icon: 'HeroMailOpen',
+		icon: 'DuoMailOpened',
 		authority: []
 	},
 	recuperarPassword: {
 		id: 'recuperarPassword',
 		to: '/recuperar-password',
 		text: 'Recuperar contraseña',
-		icon: 'HeroKey',
+		icon: 'DuoKey',
 		authority: []
 	},
 	confirmarNuevaPass: {
 		id: 'confirmarNuevaPass',
 		to: '/reset-password',
 		text: 'Confirmar nueva contraseña',
-		icon: 'HeroDocument',
+		icon: 'DuoFile',
 		authority: []
 	},
 } satisfies Record<string, PageConfig>;
@@ -65,16 +62,11 @@ export const authPages = {
    ================================================= */
 
 export const privatePages = {
-	/* =================================================
-	   DASHBOARD - OPERATIVO
-	   ================================================= */
 	dashboard: {
 		id: 'dashboard',
 		to: '/dashboard',
 		text: 'Home',
-		icon: 'HeroChartBarSquare',
-		// authority: [''],
-		// roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'manager', 'employee', 'technician', 'cashier', 'sales-rep'],
+		icon: 'DuoChartSquare',
 	},
 
 	manage: {
@@ -143,7 +135,7 @@ export const privatePages = {
 				id: 'manageUsers',
 				to: '/gestion/usuarios',
 				text: 'Usuarios',
-				icon: 'HeroUsers',
+				icon: 'DuoUsers',
 				authority: ['view-user'],
 				roles: ['super-admin', 'company-admin', 'subsidiary-admin'],
 			},
@@ -151,7 +143,7 @@ export const privatePages = {
 				id: 'permissionsAdmin',
 				to: '/admin/permisos',
 				text: 'Administrar Permisos',
-				icon: 'HeroShieldCheck',
+				icon: 'DuoShieldCheck',
 				authority: ['manage-permissions'],
 				roles: ['super-admin'],
 				requireAll: true,
@@ -160,7 +152,7 @@ export const privatePages = {
 				id: 'rolesPermisos',
 				to: '/gestion/roles-permisos',
 				text: 'Gestion de usuarios',
-				icon: 'HeroUserGroup',
+				icon: 'DuoGroup',
 				authority: ['manage-roles', 'view-user'],
 				roles: ['super-admin', 'company-admin'],
 				requireAll: false,
@@ -169,25 +161,19 @@ export const privatePages = {
 				id: 'rolesPermisosDetail',
 				to: '/gestion/roles-permisos/:userId',
 				text: 'Detalle Usuario',
-				icon: 'HeroUser',
+				icon: 'DuoUser',
 				authority: ['manage-roles', 'view-user'],
 				roles: ['super-admin', 'company-admin'],
 				requireAll: false,
 			},
-
-
 		},
 	},
 
-	/* =================================================
-	   INVENTARIO - OPERATIVO
-	   Productos, Transferencias
-	   ================================================= */
 	inventory: {
 		id: 'inventory',
 		to: '/inventario',
 		text: 'Inventario',
-		icon: 'HeroCubeTransparent',
+		icon: 'DuoBox3',
 		authority: [],
 		subPages: {
 			transfers: {
@@ -207,106 +193,97 @@ export const privatePages = {
 		},
 	},
 
-	/* =================================================
-	   CATÁLOGOS - OPERATIVOS
-	   Productos, Bodegas, Categorías, Marcas
-	   ================================================= */
-	catalogs: {
-		id: 'catalogs',
-		to: '/catalogos',
-		text: 'Catálogos',
-		icon: 'HeroArchiveBox',
-		authority: ['view-product', 'view-category', 'view-brand'], // Permisos principales de catálogos
-		roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'warehouse-employee', 'manager'],
-		requireAll: false,
-		subPages: {
-			products: {
-				id: 'products',
-				to: '/catalogos/productos',
-				text: 'Productos',
-				icon: 'HeroQueueList',
-				authority: ['view-product'],
-				roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'warehouse-employee', 'manager'],
-				requireAll: false,
-			},
-			productsDetail: {
-				id: 'productsDetail',
-				to: '/catalogos/productos/:productId',
-				text: 'Detalle de producto',
-				icon: 'HeroCube',
-				authority: ['view-product'],
-				roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'warehouse-employee', 'manager'],
-				requireAll: false,
-			},
-			warehouses: {
-				id: 'warehouses',
-				to: '/catalogos/bodegas',
-				text: 'Bodegas',
-				icon: 'HeroBuildingStorefront',
-				authority: ['view-branch'],
-				roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'warehouse-employee'],
-				requireAll: false,
-			},
-			categories: {
-				id: 'categories',
-				to: '/catalogos/categorias',
-				text: 'Categorías',
-				icon: 'HeroRectangleGroup',
-				authority: ['view-category'],
-				roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'manager'],
-				requireAll: false,
-			},
-			brands: {
-				id: 'brands',
-				to: '/catalogos/marcas',
-				text: 'Marcas',
-				icon: 'HeroTag',
-				authority: ['view-brand'],
-				roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'manager'],
-				requireAll: false,
-			},
-			// PENDIENTES - No operativos aún
-			suppliers: {
-				id: 'suppliers',
-				to: '/catalogos/proveedores',
-				text: 'Proveedores',
-				icon: 'HeroTruck',
-				authority: ['View-Supplier'],
-				roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'purchasing-manager', 'manager'],
-				requireAll: false,
-			},
-			customers: {
-				id: 'customers',
-				to: '/catalogos/clientes',
-				text: 'Clientes-Proveedor',
-				icon: 'HeroUsers',
-				authority: ['View-Customer-Supplier'],
-				roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'sales-manager', 'manager'],
-				requireAll: false,
-			},
-			documents: {
-				id: 'documents',
-				to: '/documentos',
-				text: 'Documentos',
-				icon: 'HeroDocumentArrowUp',
-				authority: ['view-brand'],
-				roles: ['super-admin'],
-				requireAll: false,
-			},
-			
-		},
-	},
+catalogs: {
+    id: 'catalogs',
+    to: '/catalogos',
+    text: 'Catálogos',
+    icon: 'DuoArchive',
+    authority: ['view-product', 'view-category', 'view-brand'],
+    roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'warehouse-employee', 'manager'],
+    requireAll: false,
+    subPages: {
+        products: {
+            id: 'products',
+            to: '/catalogos/productos',
+            text: 'Productos',
+            icon: 'DuoPixels',
+            authority: ['view-product'],
+            roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'warehouse-employee', 'manager'],
+            requireAll: false,
+        },
+        productsDetail: {
+            id: 'productsDetail',
+            to: '/catalogos/productos/:productId',
+            text: 'Detalle de producto',
+            icon: 'DuoBox',
+            authority: ['view-product'],
+            roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'warehouse-employee', 'manager'],
+            requireAll: false,
+        },
+        warehouses: {
+            id: 'warehouses',
+            to: '/catalogos/bodegas',
+            text: 'Bodegas',
+            icon: 'DuoBarcode', // ← reemplazo equivalente al Building pero versión DUO
+            authority: ['view-branch'],
+            roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'warehouse-employee'],
+            requireAll: false,
+        },
+        categories: {
+            id: 'categories',
+            to: '/catalogos/categorias',
+            text: 'Categorías',
+            icon: 'DuoBox2',
+            authority: ['view-category'],
+            roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'manager'],
+            requireAll: false,
+        },
+        brands: {
+            id: 'brands',
+            to: '/catalogos/marcas',
+            text: 'Marcas',
+            icon: 'DuoBox1',
+            authority: ['view-brand'],
+            roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'manager'],
+            requireAll: false,
+        },
+        suppliers: {
+            id: 'suppliers',
+            to: '/catalogos/proveedores',
+            text: 'Proveedores',
+            icon: 'DuoUser',
+            authority: ['View-Supplier'],
+            roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'purchasing-manager', 'manager'],
+            requireAll: false,
+        },
+        customers: {
+            id: 'customers',
+            to: '/catalogos/clientes',
+            text: 'Clientes-Proveedor',
+            icon: 'DuoGroup',
+            authority: ['View-Customer-Supplier'],
+            roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'sales-manager', 'manager'],
+            requireAll: false,
+        },
+        documents: {
+            id: 'documents',
+            to: '/documentos',
+            text: 'Documentos',
+            icon: 'DuoUpload',
+            authority: ['view-brand'],
+            roles: ['super-admin'],
+            requireAll: false,
+        },
+    },
+},
 
-	/* =================================================
-	   RECURSOS HUMANOS - OPERATIVO
-	   Invitaciones
-	   ================================================= */
+
 	humanResources: {
 		id: 'humanResources',
 		to: '/rrhh',
 		text: 'Recursos Humanos',
-		icon: 'HeroUserGroup',
-		authority: ['view-payslips', 'manage-invitations'], // RH incluye nóminas e invitaciones
+		icon: 'DuoGroup',
+		authority: ['view-payslips', 'manage-invitations'],
 		roles: ['super-admin', 'company-admin'],
 		requireAll: false,
 		subPages: {
@@ -314,7 +291,7 @@ export const privatePages = {
 				id: 'invitationsAdmin',
 				to: '/admin/invitaciones',
 				text: 'Gestionar Invitaciones',
-				icon: 'HeroPaperAirplane',
+				icon: 'DuoSend',
 				authority: ['manage-invitations'],
 				roles: ['super-admin', 'company-admin'],
 				requireAll: false,
@@ -322,15 +299,11 @@ export const privatePages = {
 		},
 	},
 
-	/* =================================================
-	   ADMINISTRACIÓN DEL SISTEMA - OPERATIVO
-	   Parámetros del Sistema
-	   ================================================= */
 	systemAdmin: {
 		id: 'systemAdmin',
 		to: '/admin',
 		text: 'Administración',
-		icon: 'HeroCog6Tooth',
+		icon: 'DuoSettings',
 		authority: ['access-admin-panel'],
 		roles: ['super-admin', 'company-admin'],
 		requireAll: false,
@@ -339,7 +312,7 @@ export const privatePages = {
 				id: 'systemParameters',
 				to: '/admin/parametros-sistema',
 				text: 'Parámetros del Sistema',
-				icon: 'HeroAdjustmentsHorizontal',
+				icon: 'DuoSliders',
 				authority: ['access-admin-panel'],
 				roles: ['super-admin', 'company-admin'],
 				requireAll: false,
@@ -348,7 +321,7 @@ export const privatePages = {
 				id: 'systemParametersDetail',
 				to: '/admin/parametros-sistema/:id',
 				text: 'Detalle Parámetro',
-				icon: 'HeroAdjustmentsHorizontal',
+				icon: 'DuoSliders',
 				authority: ['access-admin-panel'],
 				roles: ['super-admin', 'company-admin'],
 				requireAll: false,
@@ -356,28 +329,20 @@ export const privatePages = {
 		},
 	},
 
-	/* =================================================
-	   NOTIFICACIONES - OPERATIVO
-	   ================================================= */
 	notifications: {
 		id: 'notifications',
 		to: '/notificaciones',
 		text: 'Notificaciones',
-		icon: 'HeroBell',
+		icon: 'DuoNotification',
 		authority: [],
 		roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'manager', 'employee', 'technician', 'cashier', 'sales-rep'],
 	},
 
-	/* =================================================
-	   MÓDULOS PENDIENTES - NO OPERATIVOS AÚN
-	   ================================================= */
-
-	// COMERCIAL - PENDIENTE
 	commercial: {
 		id: 'commercial',
 		to: '/comercial',
 		text: 'Comercial',
-		icon: 'HeroShoppingBag',
+		icon: 'DuoBag',
 		authority: ['view-sale'],
 		roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'sales-rep', 'cashier', 'manager'],
 		requireAll: false,
@@ -386,7 +351,7 @@ export const privatePages = {
 				id: 'sales',
 				to: '/comercial/ventas',
 				text: 'Ventas',
-				icon: 'HeroReceiptPercent',
+				icon: 'DuoSale1',
 				authority: ['view-sale'],
 				roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'sales-rep', 'cashier', 'manager', 'after-sales'],
 			},
@@ -394,7 +359,7 @@ export const privatePages = {
 				id: 'quotes',
 				to: '/comercial/cotizaciones',
 				text: 'Cotizaciones',
-				icon: 'HeroDocumentText',
+				icon: 'DuoArticle',
 				authority: ['view-sale'],
 				roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'sales-rep', 'cashier'],
 			},
@@ -410,7 +375,7 @@ export const privatePages = {
 				id: 'warranties',
 				to: '/comercial/warranties',
 				text: 'Garantías',
-				icon: 'HeroShieldCheck',
+				icon: 'DuoShieldCheck',
 				authority: ['view-warranty'],
 				roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'after-sales'],
 				requireAll: false,
@@ -419,7 +384,7 @@ export const privatePages = {
 				id: 'warrantyDetail',
 				to: '/garantias/:warrantyId',
 				text: 'Detalle de garantía',
-				icon: 'HeroShieldCheck',
+				icon: 'DuoShieldCheck',
 				authority: ['view-warranty'],
 				roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'after-sales'],
 				requireAll: false,
@@ -428,7 +393,7 @@ export const privatePages = {
 				id: 'clientesVentas',
 				to: '/comercial/clientes-ventas',
 				text: 'Clientes Ventas',
-				icon: 'HeroUsers',
+				icon: 'DuoUser',
 				authority: ['view-sale'],
 				roles: ['super-admin', 'company-admin', 
 					'subsidiary-admin', 'branch-admin', 'cashier', 'manager'],
@@ -437,27 +402,26 @@ export const privatePages = {
 				id: 'clientesVentasDetalle',
 				to: '/comercial/clientes-ventas/:clienteId',
 				text: 'Detalle Clientes Ventas',
-				icon: 'HeroUsers',
+				icon: 'DuoUsers',
 				authority: ['view-sale'],
 				roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'cashier', 'manager'],
 			},
 		},
 	},
 
-	// REPORTES - PENDIENTE
 	reports: {
 		id: 'reports',
 		to: '/reportes',
 		text: 'Reportes',
-		icon: 'HeroChartBar',
-		authority: ['view-reports'], // Permiso correcto del PHP
+		icon: 'DuoChart',
+		authority: ['view-reports'],
 		roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'manager'],
 		subPages: {
 			salesDashboard: {
 				id: 'salesDashboard',
 				to: '/reportes/ventas',
 				text: 'Dashboard de Ventas',
-				icon: 'HeroReceiptPercent',
+				icon: 'DuoPriceTag',
 				authority: ['view-reports'],
 				roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'manager'],
 			},
@@ -465,7 +429,7 @@ export const privatePages = {
 				id: 'inventoryReports',
 				to: '/reportes/inventario',
 				text: 'Reportes de Inventario',
-				icon: 'HeroCubeTransparent',
+				icon: 'DuoBox3',
 				authority: ['view-reports'],
 				roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'warehouse-employee', 'manager'],
 			},
@@ -473,41 +437,37 @@ export const privatePages = {
 				id: 'financialReports',
 				to: '/reportes/financieros',
 				text: 'Reportes Financieros',
-				icon: 'HeroBanknotes',
-				authority: ['view-reports', 'export-reports'], // Reportes financieros pueden necesitar exportación
+				icon: 'DuoMoney',
+				authority: ['view-reports', 'export-reports'],
 				roles: ['super-admin', 'company-admin', 'manager'],
 			},
 		},
 	},
 
-	// MÓDULO TÉCNICO - OPERATIVO
 	technical: {
 		id: 'technical',
 		to: '/tecnico',
 		text: 'Técnico',
-		icon: 'HeroWrench',
-		authority: ['view-user'], // Permiso temporal hasta definir permisos técnicos
+		icon: 'DuoTools',
+		authority: ['view-user'],
 		roles: ['super-admin', 'company-admin', 'technician'],
 		subPages: {
 			reviews: {
 				id: 'technicalReviews',
 				to: '/technical-reviews',
 				text: 'Revisiones Técnicas',
-				icon: 'HeroWrenchScrewdriver',
-				authority: ['view-user'], // Permiso temporal
+				icon: 'DuoTools',
+				authority: ['view-user'],
 				roles: ['super-admin', 'company-admin', 'technician'],
 			},
 		},
 	},
 
-	/* =================================================
-	   INTEGRACIONES - SOLO SUPER ADMIN
-	   ================================================= */
 	integrations: {
 		id: 'integrations',
 		to: '/integraciones',
 		text: 'Integraciones',
-		icon: 'HeroGlobeAlt',
+		icon: 'DuoGlobe',
 		authority: ['view-user'],
 		roles: ['super-admin'],
 		requireAll: true,
@@ -516,7 +476,7 @@ export const privatePages = {
 				id: 'integrationsList',
 				to: '/integraciones/lista',
 				text: 'Listado',
-				icon: 'HeroListBullet',
+				icon: 'DuoBulletList',
 				authority: ['view-user'],
 				roles: ['super-admin'],
 			},
@@ -524,7 +484,7 @@ export const privatePages = {
 				id: 'unmappedProducts',
 				to: '/integraciones/productos-sin-mapear',
 				text: 'Productos Sin Mapear',
-				icon: 'HeroQuestionMarkCircle',
+				icon: 'DuoQuestionCircle',
 				authority: ['view-user'],
 				roles: ['super-admin'],
 			},
@@ -532,7 +492,7 @@ export const privatePages = {
 				id: 'syncStock',
 				to: '/integraciones/sincronizar-stock',
 				text: 'Sincronizar Stock',
-				icon: 'HeroArrowPath',
+				icon: 'DuoUpdate',
 				authority: ['edit-user'],
 				roles: ['super-admin'],
 			},
@@ -540,17 +500,13 @@ export const privatePages = {
 				id: 'importOrders',
 				to: '/integraciones/importar-ordenes',
 				text: 'Importar Órdenes',
-				icon: 'HeroArrowDownTray',
+				icon: 'DuoDownload',
 				authority: ['edit-user'],
 				roles: ['super-admin'],
 			},
 		},
 	},
 };
-
-/* =================================================
-   CONFIGURACIÓN FINAL DE PÁGINAS
-   ================================================= */
 
 export const pagesConfig = { ...authPages, ...privatePages };
 export default pagesConfig;

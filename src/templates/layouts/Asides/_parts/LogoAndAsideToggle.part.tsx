@@ -21,7 +21,7 @@ const LogoAndAsideTogglePart = () => {
 				onClick={() => setAsideStatus(!asideStatus)}
 				className='flex h-12 w-12 items-center justify-center'>
 				<Icon
-					icon={asideStatus ? 'HeroBars3BottomLeft' : 'HeroBars3'}
+					icon={asideStatus ? 'DuoBack' : 'DuoMenu'}
 					className='text-2xl'
 				/>
 				

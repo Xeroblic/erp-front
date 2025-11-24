@@ -166,7 +166,7 @@ const DefaultAsideTemplate = () => {
 					<NavCollapse
 						key='registro-nav'
 						text='Registro'
-						icon='HeroDocumentText'
+						icon='DuoArticle'
 						to=''
 						isOpen={collapseStates.registro}
 						onToggle={() => toggleCollapse('registro')}>
@@ -373,7 +373,7 @@ const DefaultAsideTemplate = () => {
 					<NavCollapse
 						key='comercial-nav'
 						text='Comercial'
-						icon='HeroShoppingBag'
+						icon='DuoBag1'
 						to=''
 						isOpen={collapseStates.comercial}
 						onToggle={() => toggleCollapse('comercial')}>
@@ -447,7 +447,7 @@ const DefaultAsideTemplate = () => {
 						<NavCollapse
 							key='reportes-nav'
 							text='Reportes'
-							icon='HeroChartBar'
+							icon='DuoChartBar2'
 							to=''
 							isOpen={collapseStates.reportes}
 							onToggle={() => toggleCollapse('reportes')}>
@@ -457,7 +457,7 @@ const DefaultAsideTemplate = () => {
 								<NavItem
 									text={'Dashboard de Ventas'}
 									to={''}
-									icon={'HeroReceiptPercent'}
+									icon={'DuoPrice2'}
 									id={'sales-dashboard'}
 									onClick={() => {
 										const sid = Number(
@@ -469,7 +469,7 @@ const DefaultAsideTemplate = () => {
 								<NavItem
 									text={'Reportes de Inventario'}
 									to={''}
-									icon={'HeroCubeTransparent'}
+									icon={'DuoBox3'}
 									id={'inventory-reports'}
 									onClick={() => {
 										const sid = Number(
