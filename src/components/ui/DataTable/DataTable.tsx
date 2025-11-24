@@ -19,7 +19,7 @@ import Badge from '@/components/ui/Badge';
 import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
 
 interface DataTableProps<TData> {
-	columns: ColumnDef<TData>[];
+	columns: ColumnDef<TData, any>[];
 	data: TData[];
 	searchPlaceholder?: string;
 	searchValue?: string;

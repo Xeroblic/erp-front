@@ -39,10 +39,10 @@ const AppInitializer = () => {
 
 	useEffect(() => {
 		if (isPublic) return;
-		if (!isAuthenticated || !access) {
+		if (!access) {
 			navigate('/login');
 		}
-	}, [isAuthenticated, access, isPublic, navigate]);
+	}, [access, isPublic, navigate]);
 
 	useEffect(() => {
 		if (isPublic) return;
@@ -124,7 +124,7 @@ const AppInitializer = () => {
 			schedule(45_000);
 		};
 
-		schedule(45_000);
+		tick(); // primer intento inmediato para cubrir recargas con token vencido
 
 		return () => {
 			stopped = true;

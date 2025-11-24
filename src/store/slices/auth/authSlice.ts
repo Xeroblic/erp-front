@@ -281,17 +281,6 @@ const authSlice = createSlice({
                     return;
                 }
 
-                // Verificar si el token está expirado
-                if (tokenManager.isAccessTokenExpiring(0)) {
-                    // Token expirado, limpiar estado
-                    state.isAuthenticated = false;
-                    state.access = undefined;
-                    state.user = undefined;
-                    state.permisos = [];
-                    tokenManager.clearTokens();
-                    return;
-                }
-
                 // Token válido, restaurar en estado si no está presente
                 if (!state.access) {
                     state.access = token;

@@ -4,16 +4,9 @@
  * Sigue el mismo patrón de diseño que Sucursales.tsx
  */
 import React, { useMemo } from 'react';
-import {
-	createColumnHelper,
-	flexRender,
-	getCoreRowModel,
-	useReactTable,
-	getSortedRowModel,
-	SortingState,
-} from '@tanstack/react-table';
+import { ColumnDef, createColumnHelper } from '@tanstack/react-table';
 import { IQuote, QuoteStatus } from '../../../../../interface';
-import Table, { Th, THead, Tr, TBody, Td } from '../../../../../components/ui/Table';
+import DataTable from '@/components/ui/DataTable/DataTable';
 import Button from '../../../../../components/ui/Button';
 import Badge from '../../../../../components/ui/Badge';
 import Icon from '../../../../../components/icon/Icon';
@@ -44,8 +37,6 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 	onConvertToSale,
 	onDownloadPdf,
 }) => {
-	const [sorting, setSorting] = React.useState<SortingState>([]);
-
 	// Formatear moneda
 	const formatCurrency = (amount: number) => {
 		return new Intl.NumberFormat('es-CO', {
@@ -68,7 +59,7 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 	};
 
 	// columnas de la tabla
-	const columns = [
+	const columns = useMemo<ColumnDef<IQuote, any>[]>(() => [
 		columnHelper.accessor((row) => row.quote_number || `Q-${row.id}`, {
 			header: 'Número',
 			id: 'quote_number',
@@ -153,13 +144,6 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 						onClick={() => onEdit?.(info.row.original)}
 						className='p-1'
 					/>
-					{/* <Button
-						variant='outline'
-						size='sm'
-						icon='HeroDocumentDuplicate'
-						onClick={() => onDuplicate?.(info.row.original.id)}
-						className='p-1'
-					/> */}
 					{normalizeQuoteStatusValue(info.row.original.status) === 'approved' &&
 						info.row.original.can_convert && (
 							<Button
@@ -182,74 +166,16 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 				</div>
 			),
 		}),
-	];
-
-	const table = useReactTable({
-		data,
-		columns,
-		state: { sorting },
-		onSortingChange: setSorting,
-		getCoreRowModel: getCoreRowModel(),
-		getSortedRowModel: getSortedRowModel(),
-	});
-
-	if (loading) {
-		return (
-			<div className='p-8 text-center'>
-				<div className='flex items-center justify-center gap-3'>
-					<div className='h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent'></div>
-					<span className='text-zinc-600'>Cargando cotizaciones...</span>
-				</div>
-			</div>
-		);
-	}
-
-	if (data.length === 0) {
-		return (
-			<div className='flex flex-col items-center justify-center py-12 text-center'>
-				<div className='mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800'>
-					<Icon icon='HeroDocumentText' className='text-2xl text-zinc-400' />
-				</div>
-				<h3 className='mb-2 font-medium text-zinc-900 dark:text-zinc-100'>
-					No hay cotizaciones
-				</h3>
-				<p className='mb-4 max-w-sm text-sm text-zinc-500'>
-					Comienza creando una nueva cotización para gestionar tus ventas.
-				</p>
-			</div>
-		);
-	}
+	], [onDownloadPdf, onView, onEdit, onConvertToSale, onDelete]);
 
 	return (
-		<Table className='w-full table-fixed'>
-			<THead>
-				{table.getHeaderGroups().map((hg) => (
-					<Tr key={hg.id}>
-						{hg.headers.map((header) => (
-							<Th key={header.id} className='text-left'>
-								{header.isPlaceholder
-									? null
-									: flexRender(
-											header.column.columnDef.header,
-											header.getContext(),
-										)}
-							</Th>
-						))}
-					</Tr>
-				))}
-			</THead>
-			<TBody>
-				{table.getRowModel().rows.map((row) => (
-					<Tr key={row.id}>
-						{row.getVisibleCells().map((cell) => (
-							<Td key={cell.id}>
-								{flexRender(cell.column.columnDef.cell, cell.getContext())}
-							</Td>
-						))}
-					</Tr>
-				))}
-			</TBody>
-		</Table>
+		<DataTable<IQuote>
+			columns={columns}
+			data={data}
+			loading={loading}
+			emptyMessage='No hay cotizaciones'
+			searchPlaceholder='Buscar cotización...'
+		/>
 	);
 };
 

@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-import Table, { TBody, Td, Th, THead, Tr } from '@/components/ui/Table';
 import Icon from '@/components/icon/Icon';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchIntegrations, setSelectedIntegration } from '@/store/slices/integrations/integrationsSlice';
@@ -12,6 +11,8 @@ import type { Integration } from '@/types/integrations.types';
 import ModalIntegration from './components/ModalIntegration';
 import { toast } from 'react-toastify';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
+import DataTable from '@/components/ui/DataTable/DataTable';
+import type { ColumnDef } from '@tanstack/react-table';
 
 const IntegrationsListPage: React.FC = () => {
 	const dispatch = useAppDispatch();
@@ -98,6 +99,107 @@ const IntegrationsListPage: React.FC = () => {
 		};
 		return providers[provider] || provider;
 	};
+
+	const formatDate = (value?: string | null) => {
+		if (!value) return null;
+		const date = new Date(value);
+		if (Number.isNaN(date.getTime())) return null;
+		return date.toLocaleString('es-CL');
+	};
+
+	const columns = useMemo<ColumnDef<Integration, any>[]>(() => [
+		{
+			header: 'Nombre',
+			accessorKey: 'name',
+			cell: ({ row }) => (
+				<div>
+					<div className='font-medium'>{row.original.name}</div>
+					<div className='text-xs text-gray-500'>{row.original.base_url}</div>
+				</div>
+			),
+		},
+		{
+			header: 'Proveedor',
+			accessorKey: 'provider',
+			cell: ({ row }) => getProviderLabel(row.original.provider),
+		},
+		{
+			header: 'Modo',
+			accessorKey: 'mode',
+			cell: ({ row }) => (
+				<Badge
+					variant='outline'
+					color={
+						row.original.mode === 'webhook'
+							? 'blue'
+							: row.original.mode === 'read_write'
+								? 'green'
+								: 'zinc'
+					}>
+					{getModeLabel(row.original.mode)}
+				</Badge>
+			),
+		},
+		{
+			header: 'Estado',
+			accessorKey: 'is_active',
+			cell: ({ row }) =>
+				row.original.is_active ? (
+					<Badge color='green'>Activa</Badge>
+				) : (
+					<Badge color='red'>Inactiva</Badge>
+				),
+		},
+		{
+			header: 'Último Éxito',
+			accessorKey: 'last_success_at',
+			cell: ({ row }) => {
+				const formatted = formatDate(row.original.last_success_at);
+				return formatted ? <span className='text-xs'>{formatted}</span> : <span className='text-gray-400'>-</span>;
+			},
+		},
+		{
+			header: 'Último Error',
+			accessorKey: 'last_error_at',
+			cell: ({ row }) => {
+				const formatted = formatDate(row.original.last_error_at);
+				return formatted ? (
+					<div>
+						<span className='text-xs text-red-600'>{formatted}</span>
+						{row.original.last_error_msg && (
+							<div className='max-w-xs truncate text-xs text-gray-500'>
+								{row.original.last_error_msg}
+							</div>
+						)}
+					</div>
+				) : (
+					<span className='text-gray-400'>-</span>
+				);
+			},
+		},
+		{
+			id: 'acciones',
+			header: 'Acciones',
+			cell: ({ row }) => (
+				<div className='flex gap-2'>
+					<Button
+						size='xs'
+						variant='outline'
+						icon='HeroEye'
+						onClick={() => handleView(row.original)}>
+						Ver
+					</Button>
+					<Button
+						size='xs'
+						variant='outline'
+						icon='HeroPencil'
+						onClick={() => handleEdit(row.original)}>
+						Editar
+					</Button>
+				</div>
+			),
+		},
+	], [getProviderLabel, getModeLabel, handleView, handleEdit]);
 
 	if (!subsidiaryId) {
 		return (
@@ -201,101 +303,13 @@ const IntegrationsListPage: React.FC = () => {
 								</Button>
 							</div>
 						) : (
-							<Table>
-								<THead>
-									<Tr>
-										<Th>Nombre</Th>
-										<Th>Proveedor</Th>
-										<Th>Modo</Th>
-										<Th>Estado</Th>
-										<Th>Último Éxito</Th>
-										<Th>Último Error</Th>
-										<Th>Acciones</Th>
-									</Tr>
-								</THead>
-								<TBody>
-									{integrations.map((integration) => (
-										<Tr key={integration.id}>
-											<Td>
-												<div className='font-medium'>
-													{integration.name}
-												</div>
-												<div className='text-xs text-gray-500'>
-													{integration.base_url}
-												</div>
-											</Td>
-											<Td>{getProviderLabel(integration.provider)}</Td>
-											<Td>
-												<Badge
-													variant='outline'
-													color={
-														integration.mode === 'webhook'
-															? 'blue'
-															: integration.mode === 'read_write'
-																? 'green'
-																: 'zinc'
-													}>
-													{getModeLabel(integration.mode)}
-												</Badge>
-											</Td>
-											<Td>
-												{integration.is_active ? (
-													<Badge color='green'>Activa</Badge>
-												) : (
-													<Badge color='red'>Inactiva</Badge>
-												)}
-											</Td>
-											<Td>
-												{integration.last_success_at ? (
-													<span className='text-xs'>
-														{new Date(
-															integration.last_success_at,
-														).toLocaleString('es-CL')}
-													</span>
-												) : (
-													<span className='text-gray-400'>-</span>
-												)}
-											</Td>
-											<Td>
-												{integration.last_error_at ? (
-													<div>
-														<span className='text-xs text-red-600'>
-															{new Date(
-																integration.last_error_at,
-															).toLocaleString('es-CL')}
-														</span>
-														{integration.last_error_msg && (
-															<div className='max-w-xs truncate text-xs text-gray-500'>
-																{integration.last_error_msg}
-															</div>
-														)}
-													</div>
-												) : (
-													<span className='text-gray-400'>-</span>
-												)}
-											</Td>
-											<Td>
-												<div className='flex gap-2'>
-													<Button
-														size='xs'
-														variant='outline'
-														icon='HeroEye'
-														onClick={() => handleView(integration)}>
-														Ver
-													</Button>
-													<Button
-														size='xs'
-														variant='outline'
-														icon='HeroPencil'
-														onClick={() => handleEdit(integration)}>
-														Editar
-													</Button>
-												</div>
-											</Td>
-										</Tr>
-									))}
-								</TBody>
-							</Table>
+							<DataTable<Integration>
+								columns={columns}
+								data={integrations}
+								loading={loading}
+								emptyMessage='No hay integraciones configuradas'
+								searchPlaceholder='Buscar integración...'
+							/>
 						)}
 					</CardBody>
 				</Card>
