@@ -5,7 +5,7 @@ import { NavItem, NavSeparator } from '../../../components/layouts/Navigation/Na
 import { authPages } from '../../../config/pages.config';
 import User from '../../../components/layouts/User/User';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { logout } from '@/store/slices/auth/authSlice';
+import { logoutThunk } from '@/store/slices/auth/authSlice';
 import { clearPersonalizacionState } from '@/store/slices/personalizacion/personalizacionSlice';
 import { cancelAllRequests } from '../../../services/BaseService';
 import type { IUserMe } from '@/interface/user.interface';
@@ -14,14 +14,14 @@ const UserTemplate = () => {
 	const dispatch = useAppDispatch();
 	const { user: userData, loading: isLoading } = useAppSelector((state) => state.auth);
 
-	const handleLogout = () => {
-		cancelAllRequests();
-		dispatch(logout());
-		dispatch(clearPersonalizacionState());
-		setTimeout(() => {
-			window.location.href = '/login';
-		}, 100);
-	};
+const handleLogout = async () => {
+	cancelAllRequests();
+	await dispatch(logoutThunk());
+	dispatch(clearPersonalizacionState());
+	setTimeout(() => {
+		window.location.href = '/login';
+	}, 100);
+};
 
 	const resolveAvatar = (image: IUserMe['image'] | undefined) => {
 		if (!image) return '';

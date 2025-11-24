@@ -106,11 +106,11 @@ export default function DataTable<TData>({
 			</div>
 
 			{/* Tabla */}
-			<div>
-				<Table>
+			<div className='overflow-x-auto'>
+				<Table className='w-full'>
 					<THead>
 						{table.getHeaderGroups().map((headerGroup) => (
-							<Tr key={headerGroup.id}>
+							<Tr className='overflow-x-auto' key={headerGroup.id}>
 								{headerGroup.headers.map((header) => (
 									<Th
 										key={header.id}

@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { toast } from 'react-toastify';
 import ApiService from '@/services/ApiService';
+import tokenManager from '@/services/auth/tokenManager';
 import { RootState, AppDispatch } from '@/store';
 import { IGruposUsuarios, IUserMe } from '@/interface/user.interface';
 import { obtenerPersonalizacionThunk as obtenerPersonalizacionFromSlice } from '@/store/slices/personalizacion/personalizacionSlice';
@@ -47,12 +48,40 @@ export const loginThunk = createAsyncThunk<
         });
 
         const token = resp.data.token;
-        dispatch(setToken(token));
+        const expiresInSeconds = (resp.data as any)?.expires_in;
+        const accessExpiresAt =
+            typeof expiresInSeconds === 'number' ? Date.now() + expiresInSeconds * 1000 : undefined;
+
+        tokenManager.persistTokens({ accessToken: token, accessExpiresAt });
+        dispatch(setToken({ access: token, markActivity: true }));
         return { access: token };
     } catch (error: any) {
         return rejectWithValue(error.response?.data?.error || 'Error de autenticación');
     }
 });
+
+export const logoutThunk = createAsyncThunk<void, void, { state: RootState; dispatch: AppDispatch }>(
+    'auth/logoutThunk',
+    async (_, { dispatch, getState }) => {
+        const token = getState().auth.access ?? tokenManager.getAccessToken();
+
+        try {
+            await ApiService.fetchData({
+                url: '/logout',
+                method: 'post',
+                headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+                dedupe: true,
+            });
+        } catch (error: any) {
+            const status = error?.response?.status;
+            if (status === 403 || status === 500) {
+                toast.warn('No se pudo invalidar la sesión en el servidor. Cerrando en el cliente.');
+            }
+        } finally {
+            dispatch(logout());
+        }
+    },
+);
 
 export const userMeThunk = createAsyncThunk<
     { user: IUserMe; permisos: string[]; roles?: string[] },

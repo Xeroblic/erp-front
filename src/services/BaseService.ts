@@ -19,7 +19,7 @@ export const cancelAllRequests = () => {
 };
 
 const API_URL = import.meta.env.VITE_API_URL || '';
-const REFRESH_ENDPOINTS = [`${API_URL}/refresh`, `${API_URL}/auth/refresh`];
+const REFRESH_ENDPOINTS = [`${API_URL}/refresh`, `${API_URL}/refresh`];
 
 const BaseService = axios.create({ timeout: 60000, baseURL: API_URL });
 
@@ -45,21 +45,6 @@ const setAuthHeader = (headers: CustomAxiosRequestConfig['headers'] | undefined,
 	(headers as Record<string, string>).Authorization = `Bearer ${token}`;
 };
 
-const parseTokenResponse = (data: any) => {
-	if (!data)
-		return {
-			access: undefined as string | undefined,
-			refresh: undefined as string | undefined,
-		};
-	const access = data.token ?? data.access_token ?? data?.data?.token ?? data?.data?.access_token;
-	const refresh =
-		data.refresh_token ??
-		data.refreshToken ??
-		data?.data?.refresh_token ??
-		data?.data?.refreshToken;
-	return { access, refresh };
-};
-
 let activeRefreshPromise: Promise<string> | null = null;
 const REFRESH_TOKEN_ERROR_TOAST_ID = 'refresh-token-error';
 
@@ -69,67 +54,62 @@ const refreshAccessToken = async (expiredToken?: string) => {
 	activeRefreshPromise = (async () => {
 		if (!API_URL) throw new Error('VITE_API_URL no esta configurado');
 
-		const refreshToken = tokenManager.getRefreshToken();
-		const refreshExpired = tokenManager.isRefreshTokenExpired();
+		const tokenToRefresh = expiredToken ?? tokenManager.getAccessToken();
+		if (!tokenToRefresh) throw new Error('No hay token para refrescar');
 
-		const attemptWithRefreshToken = async () => {
-			if (!refreshToken || refreshExpired) return null;
-			for (const endpoint of REFRESH_ENDPOINTS) {
-				try {
-					return await axios.post(endpoint, { refresh_token: refreshToken });
-				} catch (_err) {
-					// intentar siguiente endpoint
-				}
+		let lastError: any = null;
+
+		for (const endpoint of REFRESH_ENDPOINTS) {
+			try {
+				const refreshResponse = await axios.post(
+					endpoint,
+					{},
+					{ headers: { Authorization: `Bearer ${tokenToRefresh}` } },
+				);
+
+				const data: any = refreshResponse?.data ?? {};
+				const access = data.token ?? data.access ?? data.access_token ?? data?.data?.token;
+				if (!access) throw new Error('El endpoint de refresh no devolvio un token valido');
+
+				const expiresInSeconds =
+					typeof data.expires_in === 'number'
+						? data.expires_in
+						: typeof data?.data?.expires_in === 'number'
+							? data.data.expires_in
+							: undefined;
+
+				const accessExpiresAt = expiresInSeconds ? Date.now() + expiresInSeconds * 1000 : undefined;
+
+				tokenManager.persistTokens({
+					accessToken: access,
+					accessExpiresAt,
+					refreshToken: undefined,
+					refreshExpiresAt: undefined,
+				});
+
+				store.dispatch(
+					setToken({
+						access,
+						markActivity: true,
+					}),
+				);
+
+				return access;
+			} catch (err: any) {
+				lastError = err;
+				// intentar siguiente endpoint
 			}
-			return null;
-		};
-
-		const attemptWithExpiredToken = async () => {
-			if (!expiredToken) return null;
-			for (const endpoint of REFRESH_ENDPOINTS) {
-				try {
-					return await axios.post(
-						endpoint,
-						{},
-						{ headers: { Authorization: `Bearer ${expiredToken}` } },
-					);
-				} catch (_err) {
-					// console.error(`Error al intentar refrescar el token con endpoint ${endpoint}`, _err);
-					toast.error('Error al intentar refrescar el token', {
-						toastId: REFRESH_TOKEN_ERROR_TOAST_ID,
-					});
-				}
-			}
-			return null;
-		};
-
-		let refreshResponse = await attemptWithRefreshToken();
-		if (!refreshResponse) {
-			refreshResponse = await attemptWithExpiredToken();
 		}
 
-		if (!refreshResponse) {
-			if (refreshExpired) throw new Error('Refresh token expirado');
-			throw new Error('No se pudo refrescar el token de acceso');
+		if (lastError?.response?.status === 401) {
+			throw new Error('Refresh no autorizado');
 		}
 
-		const { access, refresh: nextRefresh } = parseTokenResponse(refreshResponse.data);
-		if (!access) throw new Error('El endpoint de refresh no devolvio un token valido');
-
-		tokenManager.persistTokens({
-			accessToken: access,
-			refreshToken: nextRefresh ?? refreshToken ?? undefined,
+		toast.error('Error al intentar refrescar el token', {
+			toastId: REFRESH_TOKEN_ERROR_TOAST_ID,
 		});
 
-		store.dispatch(
-			setToken({
-				access,
-				refresh: nextRefresh ?? refreshToken ?? undefined,
-				markActivity: true,
-			}),
-		);
-
-		return access;
+		throw lastError ?? new Error('No se pudo refrescar el token de acceso');
 	})();
 
 	try {
@@ -157,11 +137,7 @@ BaseService.interceptors.request.use(
 
 			const currentToken = state?.auth?.access ?? tokenManager.getAccessToken();
 
-			if (
-				currentToken &&
-				tokenManager.isAccessTokenExpiring(ACCESS_TOKEN_REFRESH_LEEWAY_MS) &&
-				!tokenManager.isRefreshTokenExpired()
-			) {
+			if (currentToken && tokenManager.isAccessTokenExpiring(ACCESS_TOKEN_REFRESH_LEEWAY_MS)) {
 				try {
 					await refreshAccessToken(currentToken);
 				} catch (err) {
@@ -213,9 +189,11 @@ BaseService.interceptors.response.use(
 
 				tokenManager.clearTokens();
 
-				const errorMessage = refreshError?.message?.includes('expirado')
-					? 'Sesión expirada. Por favor, inicia sesión nuevamente.'
-					: 'Error de autenticación. Por favor, inicia sesión nuevamente.';
+				const status = (refreshError as AxiosError)?.response?.status;
+				const errorMessage =
+					status === 401 || refreshError?.message?.includes('no autorizado')
+						? 'Sesión expirada. Por favor, inicia sesión nuevamente.'
+						: 'Error de autenticación. Por favor, inicia sesión nuevamente.';
 
 				toast.error(errorMessage);
 
