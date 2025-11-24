@@ -81,6 +81,7 @@ interface ISelectReactProps extends TReactSelect, Partial<IValidationBaseProps> 
 	onFocus?: FocusEventHandler<HTMLInputElement>;
 	placeholder?: string;
 	menuPortalTarget?: HTMLElement | null;
+	menuPosition?: 'absolute' | 'fixed';
 	styles?: StylesConfig<TSelectOption, boolean, GroupBase<TSelectOption>> | undefined;
 	isClearable?: boolean;
 	isLoading?: boolean;

@@ -85,8 +85,9 @@ const WarehousesCharts: React.FC<WarehousesChartsProps> = ({ warehouses }) => {
 					colors: isDarkTheme ? '#d1d5db' : '#374151',
 				},
 				markers: {
-					size: 12,
-					shape: 'circle',
+					width: 12,
+					height: 12,
+					radius: 12,
 				},
 			},
 			stroke: {
@@ -101,7 +102,7 @@ const WarehousesCharts: React.FC<WarehousesChartsProps> = ({ warehouses }) => {
 							show: true,
 							name: {
 								show: true,
-								fontSize: '14px',
+								fontSize: '13px',
 								fontWeight: 500,
 								color: isDarkTheme ? '#9ca3af' : '#6b7280',
 								offsetY: -5,
@@ -163,8 +164,9 @@ const WarehousesCharts: React.FC<WarehousesChartsProps> = ({ warehouses }) => {
 					colors: isDarkTheme ? '#d1d5db' : '#374151',
 				},
 				markers: {
-					size: 12,
-					shape: 'circle',
+					width: 12,
+					height: 12,
+					radius: 12,
 				},
 			},
 			stroke: {

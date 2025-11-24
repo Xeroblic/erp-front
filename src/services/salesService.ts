@@ -78,13 +78,40 @@ export const fetchSalesList = async (
   subsidiaryId: number,
   filters: SalesListFilters = {}
 ): Promise<{ data: SaleListItem[]; meta?: any }> => {
-  const params = { with_customer: 1, per_page: 20, ...filters } as Record<string, any>;
-  const resp = await ApiService.fetchData<any>({ url: base(subsidiaryId), method: 'get', params });
-  const payload = (resp.data?.data ?? resp.data) as any;
-  if (Array.isArray(payload)) {
-    return { data: payload as SaleListItem[] };
+  const perPage = 200; // traer lo máximo posible para no paginar de más
+  const params = { with_customer: 1, per_page: perPage, ...filters } as Record<string, any>;
+
+  // Si el filtro trae page explícito, respetamos una sola llamada
+  if (filters.page) {
+    const resp = await ApiService.fetchData<any>({ url: base(subsidiaryId), method: 'get', params });
+    const payload = (resp.data?.data ?? resp.data) as any;
+    if (Array.isArray(payload)) {
+      return { data: payload as SaleListItem[] };
+    }
+    return { data: (payload?.data ?? []) as SaleListItem[], meta: payload?.meta };
   }
-  return { data: (payload?.data ?? []) as SaleListItem[], meta: payload?.meta };
+
+  // Caso general: recorrer todas las páginas para obtener lista completa y que los stats vean todo
+  const aggregated: SaleListItem[] = [];
+  let page = 1;
+  let lastPage = 1;
+  let meta: any = null;
+
+  do {
+    const resp = await ApiService.fetchData<any>({
+      url: base(subsidiaryId),
+      method: 'get',
+      params: { ...params, page },
+    });
+    const payload = resp.data?.data ?? resp.data;
+    const items = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : [];
+    aggregated.push(...(items as SaleListItem[]));
+    meta = payload?.meta ?? resp.data?.meta ?? meta;
+    lastPage = meta?.last_page ?? page;
+    page += 1;
+  } while (page <= lastPage);
+
+  return { data: aggregated, meta };
 };
 
 export const fetchSaleDetail = async (

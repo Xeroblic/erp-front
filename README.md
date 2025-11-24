@@ -341,7 +341,7 @@ Zentria ERP Frontend representa un **producto empresarial sólido**, diseñado p
 * Seguridad robusta
 * Altos volúmenes de datos
 * Personalización por usuario y por empresa
-* Experiencia consistente y profesional
-* Integración con múltiples fuentes de información
+* Experiencia consistente y profesional.
+* Integración con múltiples fuentes de información.
 
 Es una plataforma moderna, escalable y preparada para crecer hacia cualquier vertical: logística, inventario, RRHH, ventas, soporte técnico, marketplace y más.
