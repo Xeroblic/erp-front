@@ -281,7 +281,7 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 	if (!isOpen) return null;
 
 	return (
-		<Modal isOpen={isOpen} setIsOpen={() => onClose()} size='2xl'>
+		<Modal isOpen={isOpen} setIsOpen={() => onClose()} size='full'>
 			<ModalHeader>
 				<div>
 					<h2 className='text-xl font-semibold'>
