@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import Footer, { FooterLeft, FooterRight } from '../../../components/layouts/Footer/Footer';
 import ApiService from '@/services/ApiService';
@@ -6,6 +6,30 @@ import Icon from '@/components/icon/Icon';
 
 const DefaultFooterTemplate = () => {
 	const [version, setVersion] = useState('');
+	const footerMeta = useMemo(() => {
+		const fallback = {
+			brand: 'Zentria',
+			label: 'Desarrollado con',
+			front: { name: 'R4aveen', href: 'https://github.com/R4aveen/' },
+			back: { name: 'Xeroblic', href: 'https://github.com/Xeroblic' },
+		};
+		try {
+			const decoded = JSON.parse(
+				atob(
+					'eyJicmFuZCI6IlplbnRyaWEiLCJsYWJlbCI6IkRlc2Fycm9sbGFkbyBjb24iLCJmcm9udCI6eyJuYW1lIjoiUjRhdmVlbiIsImhyZWYiOiJodHRwczovL2dpdGh1Yi5jb20vUjRhdmVlbi8ifSwiYmFjayI6eyJuYW1lIjoiWGVyb2JsaWMiLCJocmVmIjoiaHR0cHM6Ly9naXRodWIuY29tL1hlcm9ibGljIn19',
+				),
+			);
+			return Object.freeze({
+				...fallback,
+				...decoded,
+				front: { ...fallback.front, ...(decoded as any).front },
+				back: { ...fallback.back, ...(decoded as any).back },
+			});
+		} catch (error) {
+			console.error('No se pudo decodificar footerMeta', error);
+			return Object.freeze(fallback);
+		}
+	}, []);
 
 	useEffect(() => {
 		const fetchVersion = async () => {
@@ -41,12 +65,24 @@ const DefaultFooterTemplate = () => {
 			</FooterLeft>
 			<FooterRight className='text-zinc-500'>
 				<span className='flex items-center gap-2'>
-					<b>Zentria</b>
+					<b>{footerMeta.brand}</b>
 					<span className='flex items-center gap-1'>
-						Desarrollado con <Icon icon='DuoHeart' color='gray' /> por
-						<a href='https://github.com/R4aveen/' target='_blank' rel='noreferrer' className='hover:underline'>R4aveen</a>
+						{footerMeta.label} <Icon icon='DuoHeart' color='gray' /> por
+						<a
+							href={footerMeta.front.href}
+							target='_blank'
+							rel='noreferrer'
+							className='hover:underline'>
+							{footerMeta.front.name}
+						</a>
 						·
-						<a href='https://github.com/Xeroblic' target='_blank' rel='noreferrer' className='hover:underline'>Xeroblic</a>
+						<a
+							href={footerMeta.back.href}
+							target='_blank'
+							rel='noreferrer'
+							className='hover:underline'>
+							{footerMeta.back.name}
+						</a>
 					</span>
 				</span>
 			</FooterRight>
