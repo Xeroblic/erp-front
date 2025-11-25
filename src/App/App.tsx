@@ -45,7 +45,6 @@ const App = () => {
 
 	return (
 		<>
-			<AppInitializer />
 			{/* <DarkModeDebug /> */}
 			{/* <DarkModeStatus /> */}
 			<ToastContainer theme={isDarkTheme ? 'dark' : 'light'} draggable></ToastContainer>
@@ -60,26 +59,27 @@ const App = () => {
 				 --toastify-color-warning: ${colors[themeColor]['500']};
 				 --toastify-color-error: ${colors.red['500']};
 				 --toastify-color-progress-light: linear-gradient(
-					 to right,
-					 ${colors.blue['500']},
-					 ${colors.emerald['500']},
-					 ${colors[themeColor]['500']},
-					 ${colors.red['500']});`}
+					to right,
+					${colors.blue['500']},
+					${colors.emerald['500']},
+					${colors[themeColor]['500']},
+					${colors.red['500']});`}
 			</style>
 			{isAuthenticated && (
-				<NotificationsStreamProvider>
-					<div data-component-name='App' className='flex grow flex-col'>
-						{/* <AuthDebug /> */}
-						{/* <UserDataSimulator /> */}
-						{/* <BackendSimulator /> */}
-						<AsideRouter />
-						<Wrapper>
+				<div data-component-name='App' className='flex grow flex-col'>
+					{/* <AuthDebug /> */}
+					{/* <UserDataSimulator /> */}
+					{/* <BackendSimulator /> */}
+					<AppInitializer />
+					<AsideRouter />
+					<Wrapper>
+						<NotificationsStreamProvider>
 							<HeaderRouter />
 							<ContentRouter />
 							<FooterRouter />
-						</Wrapper>
-					</div>
-				</NotificationsStreamProvider>
+						</NotificationsStreamProvider>
+					</Wrapper>
+				</div>
 			)}
 			{!isAuthenticated && (
 				<div data-component-name='App' className='flex grow flex-col'>
