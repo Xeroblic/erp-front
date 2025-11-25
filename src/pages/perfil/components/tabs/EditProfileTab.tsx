@@ -208,7 +208,7 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 				</div>
 			</section>
 
-			<Modal isOpen={isPreviewOpen} setIsOpen={setIsPreviewOpen} size='2xl' isCentered>
+			<Modal isOpen={isPreviewOpen} setIsOpen={setIsPreviewOpen} size='xl' isCentered>
 				<ModalHeader>
 					<div className='flex items-center gap-2 text-lg font-semibold'>
 						<Icon icon='HeroUserCircle' className='h-5 w-5 text-primary' />
