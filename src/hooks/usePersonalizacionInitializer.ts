@@ -55,7 +55,7 @@ export const usePersonalizacionInitializer = () => {
             // Valores por defecto
             const defaultValues = {
                 tema: 3, // SYSTEM
-                font_size: 13,
+                font_size: 14,
                 tcolor: 'amber' as const,
                 tcolor_int: '500' as const
             };
