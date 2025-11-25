@@ -18,8 +18,8 @@ export const cancelAllRequests = () => {
 const API_URL = import.meta.env.VITE_API_URL || '';
 const REFRESH_ENDPOINTS = [`${API_URL}/refresh`, `${API_URL}/refresh`];
 
-// Timeout de inactividad por defecto: 30 minutos
-const DEFAULT_INACTIVITY_TIMEOUT_MS = 30 * 60_000;
+// Timeout de inactividad por defecto: 60 minutos
+const DEFAULT_INACTIVITY_TIMEOUT_MS = 60 * 60_000;
 
 const BaseService = axios.create({
 	timeout: 60000,
@@ -141,7 +141,7 @@ BaseService.interceptors.request.use(
 
 			// Control básico de inactividad (en memoria)
 			if (tokenManager.isInactive(inactivityTimeout)) {
-				toast.error('Sesión finalizada por inactividad');
+				// Silencio: solo cerrar sesión por inactividad sin toasts
 				store.dispatch(logout());
 				cancelAllRequests();
 				throw new axios.Cancel('Sesión finalizada por inactividad');
@@ -214,9 +214,7 @@ BaseService.interceptors.response.use(
 						? 'Sesión expirada. Por favor, inicia sesión nuevamente.'
 						: 'Error de autenticación. Por favor, inicia sesión nuevamente.';
 
-				if (isAuthenticated) {
-					toast.error(errorMessage);
-				}
+				// Silencio: no mostrar toast al cerrar sesión por refresh fallido
 
 				store.dispatch(logout());
 				cancelAllRequests();

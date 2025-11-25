@@ -30,6 +30,7 @@ import Modal, {
 import SaleDetailPage from './SaleDetailPage';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Icon from '@/components/icon/Icon';
+import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 
 // Inyección dinámica del reducer
 injectReducer('salesModule', salesReducer);
@@ -66,13 +67,7 @@ const statusBadgeMap: Record<string, { color: TColors; intensity: TColorIntensit
 const SalesListPage: React.FC = () => {
 	const dispatch = useAppDispatch();
 
-	const user = useAppSelector((s: any) => s.auth?.user);
-	const personalization = useAppSelector((s: any) => s.personalizacion?.personalizacionUsuario);
-	const subsidiaryId: number | null = useMemo(() => {
-		return (
-			personalization?.sucursal_principal ?? null
-		);
-	}, [user, personalization]);
+	const subsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
 
 	const rawList = useAppSelector(selectSalesList);
 	const list: SaleListItem[] = Array.isArray(rawList) ? rawList : [];

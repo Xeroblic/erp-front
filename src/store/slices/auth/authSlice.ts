@@ -207,7 +207,9 @@ const authSlice = createSlice({
                 s.error = action.payload;
                 s.isAuthenticated = false;
 
-                if (action.error?.name !== 'CanceledError') {
+                const isCanceled = action.error?.name === 'CanceledError';
+                const isTokenInvalid = action.payload === 'Token inválido';
+                if (!isCanceled && !isTokenInvalid) {
                     toast.error(action.payload);
                 }
             });

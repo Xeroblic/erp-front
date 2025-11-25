@@ -53,7 +53,7 @@ const Badge: FC<IBadgeProps> = (props) => {
 
 	const classes = classNames(
 		'inline-flex items-center justify-center',
-		'px-2',
+		
 		[`${borderWidth}`],
 		[`${rounded}`],
 		badgeVariantClasses,

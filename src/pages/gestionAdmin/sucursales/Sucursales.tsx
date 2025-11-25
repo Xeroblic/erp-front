@@ -35,6 +35,7 @@ import {
 } from '@tanstack/react-table';
 import { ISucursal } from '@/interface/empresas.interface';
 import { toast } from 'react-toastify';
+import Tooltip from '@/components/ui/Tooltip';
 
 const columnHelper = createColumnHelper<ISucursal>();
 
@@ -265,19 +266,34 @@ export default function SucursalesLista() {
 		<PageWrapper isProtectedRoute title='Sucursales' name='Sucursales'>
 			<Subheader>
 				<SubheaderLeft>
-					<Badge className='text-xl'>Sucursales de la Empresa</Badge>
+					<div className='item-start gap-5 text-start'>
+						<Badge className='text-start text-2xl font-bold'>
+							Sucursales de la Empresa
+						</Badge>
+						<p>Administra las sucursales asociadas a tu empresa desde este panel.</p>
+					</div>
 				</SubheaderLeft>
-				<SubheaderRight className='flex items-center gap-2'>
-					<Input
-						name='sucursal-busqueda'
-						placeholder='Buscar sucursales...'
-						value={globalFilter}
-						onChange={(e) => setGlobalFilter(e.target.value)}
-						className='w-48 rounded border'
-					/>
-					<Button variant='solid' icon='HeroPlus' onClick={handleCreate}>
-						Nueva Sucursal
-					</Button>
+				<SubheaderRight className='flex items-center gap-4'>
+					<div className='flex items-center gap-3'>
+						<Input
+							name='sucursal-busqueda'
+							placeholder='Buscar sucursales...'
+							value={globalFilter}
+							onChange={(e) => setGlobalFilter(e.target.value)}
+							className='w-48 rounded border'
+						/>
+						<Tooltip
+							text='Crear nueva SUCURSAL'
+							content='Crear Nueva Sucursal'
+							placement='bottom-start'>
+							<Button
+								variant='solid'
+								icon='DuoPlus'
+								size='sm'
+								onClick={handleCreate}
+							/>
+						</Tooltip>
+					</div>
 				</SubheaderRight>
 			</Subheader>
 

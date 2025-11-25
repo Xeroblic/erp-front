@@ -98,41 +98,53 @@ const Subheader: FC<ISubheaderProps> = ({ children, className, ...rest }) => {
                 ref={divRef}
                 className={classNames(
                     'sticky top-[var(--header-height)] z-[9]',
-                    'flex flex-col gap-3',
-                    'border-b border-zinc-300/25 bg-white/75',
-                    'px-4 py-3 sm:px-6 sm:py-4',
+                    'flex flex-col gap-2',
+                    'border-b border-zinc-300/25 bg-white/80',
+                    'px-4 py-2 sm:px-6 sm:py-3',
                     'backdrop-blur-md',
                     'dark:border-zinc-800/50 dark:bg-zinc-900/75 dark:text-white',
                     className
                 )}
                 {...rest}
             >
-                <div className="flex w-full items-center justify-between">
-                    {firstChild}
-
-                    {isMobile && (
-                        <button
-                            onClick={handleToggle}
-                            className="text-zinc-700 dark:text-zinc-200 p-2"
-                        >
-                            <Icon
-                                icon={open ? 'DuoArrowUp' : 'DuoArrowDown'}
-                                className="text-2xl"
-                            />
-                        </button>
-                    )}
-                </div>
-
-                <div
-                    className={classNames(
-                        'transition-all duration-300 overflow-hidden',
-                        isMobile ? (open ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0') : 'opacity-100 max-h-none'
-                    )}
-                >
-                    <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-start gap-3 sm:gap-4">
-                        {restChildren}
+                {!isMobile && (
+                    <div className="flex w-full items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 flex-1 flex-wrap">
+                            {firstChild}
+                        </div>
+                        <div className="flex items-center gap-3 flex-shrink-0 flex-wrap">
+                            {restChildren}
+                        </div>
                     </div>
-                </div>
+                )}
+
+                {isMobile && (
+                    <>
+                        <div className="flex w-full items-center justify-between gap-3">
+                            {firstChild}
+                            <button
+                                onClick={handleToggle}
+                                className="text-zinc-700 dark:text-zinc-200 p-2"
+                            >
+                                <Icon
+                                    icon={open ? 'DuoArrowUp' : 'DuoArrowDown'}
+                                    className="text-2xl"
+                                />
+                            </button>
+                        </div>
+
+                        <div
+                            className={classNames(
+                                'transition-all duration-300 overflow-hidden',
+                                open ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0',
+                            )}
+                        >
+                            <div className="flex flex-col gap-3 sm:flex-col">
+                                {restChildren}
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
         </>
     );
