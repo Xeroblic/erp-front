@@ -14,7 +14,27 @@ import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subhead
 import Badge from '@/components/ui/Badge';
 import SalesAnalytics from './components/SalesAnalytics';
 
-const SalesDashboard: React.FC = () => {
+type SalesDashboardProps = {
+    /**
+     * standalone = true -> incluye PageWrapper + Container (pantalla completa).
+     * standalone = false -> solo el contenido, para incrustar en otro layout.
+     */
+    standalone?: boolean;
+    /**
+     * Oculta el encabezado cuando se incrusta en otro layout.
+     */
+    showHeader?: boolean;
+    /**
+     * Clase extra para el contenedor raíz cuando está embebido.
+     */
+    className?: string;
+};
+
+const SalesDashboard: React.FC<SalesDashboardProps> = ({
+    standalone = true,
+    showHeader = true,
+    className,
+}) => {
     const apexToolbarMenuStyles = `
         .apexcharts-menu {
             background-color: #0f172a !important;
@@ -265,24 +285,14 @@ const SalesDashboard: React.FC = () => {
         }
     }), [chartCategories]);
 
-    return (
-        <PageWrapper title='Reporte de Ventas'>
-            <style>{apexToolbarMenuStyles}</style>
-            <Subheader>
-                <SubheaderLeft>
-                    <div className='flex gap-2 items-center'>
-                        <Icon icon='HeroReceiptPercent' className='h-6 w-6 text-indigo-600' />
-                        <Badge className='text-2xl font-bold px-0 bg-transparent text-zinc-800 dark:text-zinc-100'>
-                            Dashboard de Ventas
-                        </Badge>
-                    </div>
-                    <p className='text-zinc-500 dark:text-zinc-400 mt-1'>
-                        Análisis financiero y control de devoluciones
-                    </p>
-                </SubheaderLeft>
-            </Subheader>
 
-            <Container>
+    const content = (
+        <div className={className}>
+            <style>{apexToolbarMenuStyles}</style>
+
+           
+
+            <div className={standalone ? undefined : 'space-y-6'}>
                 <Card className='h-full border-indigo-100 dark:border-indigo-900/20 shadow-md'>
                     <CardHeader className='border-b border-zinc-100 dark:border-zinc-800 pb-4'>
                         <div className='flex flex-wrap items-center justify-between gap-4'>
@@ -383,7 +393,30 @@ const SalesDashboard: React.FC = () => {
                 <div className='mt-6'>
                     <ReportFilters onApply={setFilters} />
                 </div>
-            </Container>
+            </div>
+        </div>
+    );
+
+    if (!standalone) return content;
+
+    return (
+        <PageWrapper title='Reporte de Ventas'>
+             {showHeader && (
+                <Subheader>
+                    <SubheaderLeft>
+                        <div className='flex gap-2 items-center'>
+                            <Icon icon='HeroReceiptPercent' className='h-6 w-6 text-indigo-600' />
+                            <Badge className='text-2xl font-bold px-0 bg-transparent text-zinc-800 dark:text-zinc-100'>
+                                Dashboard de Ventas
+                            </Badge>
+                        </div>
+                        <p className='text-zinc-500 dark:text-zinc-400 mt-1'>
+                            Análisis financiero y control de devoluciones
+                        </p>
+                    </SubheaderLeft>
+                </Subheader>
+            )}
+            <Container className='py-6'>{content}</Container>
         </PageWrapper>
     );
 };

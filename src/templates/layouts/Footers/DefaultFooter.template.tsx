@@ -33,7 +33,7 @@ const DefaultFooterTemplate = () => {
 
 	useEffect(() => {
 		const fetchVersion = async () => {
-			const versionUrl = process.env.REACT_APP_VERSION ?? 'http://localhost:8000/api/version';
+			const versionUrl = process.env.REACT_APP_VERSION;
 			if (!versionUrl) return;
 			try {
 				const data = await ApiService.fetchNormalized<{ version?: string } | string>({

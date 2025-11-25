@@ -88,7 +88,7 @@ const DashboardContainer: React.FC = () => {
                 </SubheaderRight> */}
             </Subheader>
 
-            <Container className="flex flex-col w-full h-full">
+            <Container className="py-6 p-0">
                 <div
                     className="transition-all duration-300 ease-in-out"
                     style={{
@@ -100,7 +100,7 @@ const DashboardContainer: React.FC = () => {
                     } as React.CSSProperties}
                 >
                     {/* {renderDashboard()} */}
-                    <SalesDashboard/>
+                    <SalesDashboard standalone={false} showHeader={false} />
 
                 </div>
             </Container>
