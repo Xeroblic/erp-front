@@ -127,6 +127,13 @@ BaseService.interceptors.request.use(
 			const state = store.getState();
 			const inactivityTimeout =
 				state?.auth?.inactivityTimeoutMs ?? DEFAULT_INACTIVITY_TIMEOUT_MS;
+			const isAuthenticated = !!state?.auth?.isAuthenticated;
+
+			// Si la app está en estado "no autenticado", evita usar tokens viejos y no dispares refresh/toasts.
+			if (!isAuthenticated) {
+				tokenManager.clearTokens();
+				return config;
+			}
 
 			if (tokenManager.isInactive(inactivityTimeout)) {
 				toast.error('Sesion finalizada por inactividad');
@@ -173,6 +180,9 @@ BaseService.interceptors.response.use(
 		) {
 			originalRequest._retry = true;
 
+			const authState = store.getState().auth;
+			const isAuthenticated = !!authState?.isAuthenticated;
+
 			const headerAuth = extractAuthHeader(originalRequest.headers);
 			const expiredToken = headerAuth?.startsWith('Bearer ')
 				? headerAuth.substring(7)
@@ -195,14 +205,21 @@ BaseService.interceptors.response.use(
 						? 'Sesión expirada. Por favor, inicia sesión nuevamente.'
 						: 'Error de autenticación. Por favor, inicia sesión nuevamente.';
 
-				toast.error(errorMessage);
+				// Si el usuario ya está marcado como no autenticado, evita toasts molestos al cargar /login
+				if (isAuthenticated) {
+					toast.error(errorMessage);
+				}
 
 				store.dispatch(logout());
 				cancelAllRequests();
 
-				setTimeout(() => {
-					window.location.href = '/login';
-				}, 1500);
+				// Evitar recargar la página si ya estamos en estado no autenticado
+				// o si el usuario ya está en /login.
+				if (isAuthenticated && window.location.pathname !== '/login') {
+					setTimeout(() => {
+						window.location.href = '/login';
+					}, 500);
+				}
 
 				return Promise.reject(refreshError);
 			}
