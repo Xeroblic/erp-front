@@ -1,14 +1,26 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { toast } from 'react-toastify';
 import ApiService from '@/services/ApiService';
 import tokenManager from '@/services/auth/tokenManager';
 import { RootState, AppDispatch } from '@/store';
 import { IGruposUsuarios, IUserMe } from '@/interface/user.interface';
-import { obtenerPersonalizacionThunk as obtenerPersonalizacionFromSlice } from '@/store/slices/personalizacion/personalizacionSlice';
+import { toast } from 'react-toastify';
+import { clearAppStorage } from '@/utils/appStorage';
+import { normalizeUserProfile } from '@/utils/normalizeUserProfile';
+import { clearPersonalizacionState } from '@/store/slices/personalizacion/personalizacionSlice';
 
 interface LoginResponse {
     access: string;
 }
+
+type PerfilResponse = {
+    data?: {
+        all_permissions?: string[];
+        direct_permissions?: string[];
+        role_permissions?: string[];
+        global_roles?: string[];
+    } & IUserMe;
+    user?: IUserMe;
+};
 
 export interface AuthState {
     access?: string;
@@ -17,16 +29,16 @@ export interface AuthState {
     isAuthenticated: boolean;
     permisos: string[];
     user?: IUserMe;
-    listaGrupos: IGruposUsuarios | undefined;
-    userLastFetched?: number; // Timestamp del último fetch exitoso
-    inactivityTimeoutMs?: number; // Timeout de inactividad en milisegundos
+    listaGrupos?: IGruposUsuarios;
+    userLastFetched?: number;
+    inactivityTimeoutMs?: number;
 }
 
 const initialState: AuthState = {
-    access: localStorage.getItem('access_token') || undefined,
+    access: undefined,
     loading: false,
     error: undefined,
-    isAuthenticated: false, // Se establecerá a true solo después de validar con el servidor
+    isAuthenticated: false,
     permisos: [],
     user: undefined,
     listaGrupos: undefined,
@@ -34,6 +46,9 @@ const initialState: AuthState = {
     inactivityTimeoutMs: undefined,
 };
 
+/* ---------------------------------------------------
+   LOGIN THUNK
+--------------------------------------------------- */
 export const loginThunk = createAsyncThunk<
     LoginResponse,
     { email: string; password: string },
@@ -48,155 +63,79 @@ export const loginThunk = createAsyncThunk<
         });
 
         const token = resp.data.token;
-        const expiresInSeconds = (resp.data as any)?.expires_in;
-        const accessExpiresAt =
-            typeof expiresInSeconds === 'number' ? Date.now() + expiresInSeconds * 1000 : undefined;
 
-        tokenManager.persistTokens({ accessToken: token, accessExpiresAt });
+        // Guardar SOLO en memoria
+        tokenManager.setAccessToken(token);
+
+        // Guardar en Redux
         dispatch(setToken({ access: token, markActivity: true }));
+
         return { access: token };
     } catch (error: any) {
-        return rejectWithValue(error.response?.data?.error || 'Error de autenticación');
+        return rejectWithValue(error?.response?.data?.error || 'Error de autenticación');
     }
 });
 
-export const logoutThunk = createAsyncThunk<void, void, { state: RootState; dispatch: AppDispatch }>(
-    'auth/logoutThunk',
-    async (_, { dispatch, getState }) => {
-        const token = getState().auth.access ?? tokenManager.getAccessToken();
+/* ---------------------------------------------------
+   LOGOUT THUNK
+--------------------------------------------------- */
+export const logoutThunk = createAsyncThunk<
+    void,
+    void,
+    { state: RootState; dispatch: AppDispatch }
+>('auth/logoutThunk', async (_, { dispatch, getState }) => {
+    const token = getState().auth.access ?? tokenManager.getAccessToken();
 
-        try {
-            await ApiService.fetchData({
-                url: '/logout',
-                method: 'post',
-                headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-                dedupe: true,
-            });
-        } catch (error: any) {
-            const status = error?.response?.status;
-            if (status === 403 || status === 500) {
-                toast.warn('No se pudo invalidar la sesión en el servidor. Cerrando en el cliente.');
-            }
-        } finally {
-            dispatch(logout());
-        }
-    },
-);
+    try {
+        await ApiService.fetchData({
+            url: '/logout',
+            method: 'post',
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+            dedupe: true,
+        });
+    } catch {
+        // da lo mismo si falla
+    } finally {
+        dispatch(logout());
+        dispatch(clearPersonalizacionState());
+        clearAppStorage({ keepTheme: false });
+    }
+});
 
+
+/* ---------------------------------------------------
+   PERFIL DEL USUARIO (userMe)
+--------------------------------------------------- */
 export const userMeThunk = createAsyncThunk<
     { user: IUserMe; permisos: string[]; roles?: string[] },
     void,
     { state: RootState; rejectValue: string }
->(
-    'auth/userMe',
-    async (_, { getState, rejectWithValue, signal }) => {
-        const token = getState().auth.access;
-        if (!token) return rejectWithValue('Token inválido');
+>('auth/userMe', async (_, { getState, rejectWithValue }) => {
+    const token = tokenManager.getAccessToken() ?? getState().auth.access;
+    if (!token) return rejectWithValue('Token inválido');
 
-        try {
-            const resp = await ApiService.fetchData<{
-                success?: boolean;
-                data?: {
-                    id?: number;
-                    email?: string;
-                    first_name?: string;
-                    last_name?: string;
-                    global_roles?: string[];
-                    all_permissions?: string[];
-                    direct_permissions?: string[];
-                    role_permissions?: string[];
-                    branch?: any;
-                    companies?: any[];
-                    [key: string]: any;
-                };
-                user_context?: {
-                    current_user_id: number;
-                    is_super_admin: boolean;
-                    can_manage_users: boolean;
-                    access_level: string;
-                };
-                user?: IUserMe;
-                permisos?: string[];
-                roles?: string[];
-                personalization?: any;
-            }>({
-                url: '/perfil',
-                method: 'get',
-                headers: { Authorization: `Bearer ${token}` },
-                dedupe: true,
-                signal: signal,
-            });
+    try {
+        const resp = await ApiService.fetchData<PerfilResponse>({
+            url: '/perfil',
+            method: 'get',
+            dedupe: true,
+            headers: { Authorization: `Bearer ${token}` },
+        });
 
-            let userData: IUserMe;
-            let permisos: string[];
-            let roles: string[];
+        return normalizeUserProfile(resp.data as string | PerfilResponse);
+    } catch {
+        return rejectWithValue('No se pudo obtener el perfil');
+    }
+});
 
-            if (resp.data.data && resp.data.data.id) {
-                const data = resp.data.data;
-                userData = {
-                    id: data.id!,
-                    email: data.email!,
-                    first_name: data.first_name!,
-                    last_name: data.last_name!,
-                    ...data,
-                } as IUserMe;
-
-                permisos = [
-                    ...(data.all_permissions || []),
-                    ...(data.direct_permissions || []),
-                    ...(data.role_permissions || []),
-                    ...(data.global_roles || []),
-                ];
-
-                roles = data.global_roles || [];
-            } else {
-                // Estructura antigua (compatibilidad)
-                userData = resp.data.user || ({} as IUserMe);
-
-                // ✅ Incluir access y visible si vienen en la respuesta
-                const respData = resp.data as any;
-                if (respData.access) {
-                    (userData as any).access = respData.access;
-                }
-                if (respData.visible) {
-                    (userData as any).visible = respData.visible;
-                }
-                if (respData.branch) {
-                    (userData as any).branch = respData.branch;
-                }
-
-                permisos = resp.data.permisos || [];
-                roles = resp.data.roles || [];
-            }
-
-            return {
-                user: userData,
-                permisos: Array.from(new Set(permisos)), // Eliminar Duplicados
-                roles: Array.from(new Set(roles)),
-            };
-        } catch (error: any) {
-            console.error('Error en userMeThunk:', error);
-            return rejectWithValue('No se pudo obtener el perfil');
-        }
-    },
-    {
-        // Throttle: evita relanzar si se pidió hace < 15s
-        condition: (_, { getState }) => {
-            const s = getState() as RootState;
-            const last = s.auth.userLastFetched;
-            if (!last) return true;
-            const elapsed = Date.now() - last;
-            return elapsed > 15000; // 15s
-        },
-    },
-);
-
+/* ---------------------------------------------------
+   SLICE
+--------------------------------------------------- */
 const authSlice = createSlice({
     name: 'auth',
     initialState,
     reducers: {
         logout: (state) => {
-            // Resetear completamente el estado
             state.access = undefined;
             state.user = undefined;
             state.permisos = [];
@@ -206,126 +145,59 @@ const authSlice = createSlice({
             state.listaGrupos = undefined;
             state.userLastFetched = undefined;
 
-            // --- MEJORA DE SEGURIDAD ---
-            // Limpiamos el caché de ApiService para evitar que otro usuario 
-            // vea datos cacheados (ej: lista de clientes, perfil) en la misma sesión de navegador.
+            tokenManager.clearTokens();
+
             ApiService.clearCache();
 
-            // Limpiar tokenManager si está disponible
-            try {
-                const { tokenManager } = require('@/services/auth/tokenManager');
-                tokenManager.clearTokens();
-            } catch (err) {
-                // tokenManager no disponible, limpiar manualmente
-                localStorage.removeItem('access_token');
-                localStorage.removeItem('refresh_token');
-                localStorage.removeItem('access_token_expires_at');
-                localStorage.removeItem('refresh_token_expires_at');
-                localStorage.removeItem('auth_last_activity');
-            }
-
-            // Limpiar solo datos de autenticación, mantener personalización
-            // localStorage.removeItem('persist:fyr'); // NO limpiar persist para mantener tema
-            // localStorage.removeItem('zentria_themeColor'); // NO limpiar tema
-            // localStorage.removeItem('zentria_themeColorShade'); // NO limpiar tema
-            // localStorage.removeItem('zentria_fontSize'); // NO limpiar fuente
-            // localStorage.removeItem('theme'); // NO limpiar tema
-            // localStorage.removeItem('zentria_language'); // NO limpiar idioma
-            // localStorage.removeItem('zentria_asideStatus'); // NO limpiar estado aside
+            clearAppStorage({ keepTheme: false });
         },
-        clearAuthState: () => ({
-            ...initialState,
-            access: localStorage.getItem('access_token') || undefined,
-        }),
+
         setToken: (
             state,
-            action: PayloadAction<
-                { access: string; refresh?: string; markActivity?: boolean } | string
-            >,
+            action: PayloadAction<{ access: string; markActivity?: boolean }>,
         ) => {
-            if (typeof action.payload === 'string') {
-                // Compatibilidad con código existente
-                state.access = action.payload;
-                localStorage.setItem('access_token', action.payload);
-            } else {
-                // Nuevo formato con objeto
-                state.access = action.payload.access;
-                localStorage.setItem('access_token', action.payload.access);
-
-                if (action.payload.refresh) {
-                    localStorage.setItem('refresh_token', action.payload.refresh);
-                }
-
-                if (action.payload.markActivity) {
-                    // Marcar actividad en tokenManager si está disponible
-                    try {
-                        const { tokenManager } = require('@/services/auth/tokenManager');
-                        tokenManager.markActivity();
-                    } catch (err) {
-                        // tokenManager no disponible, continuar
-                    }
-                }
-            }
+            const { access, markActivity } = action.payload;
+            state.access = access;
+            if (markActivity) tokenManager.markActivity();
         },
-        // Nuevo reducer para validar token al inicio
-        validateSession: (state) => {
-            try {
-                const { tokenManager } = require('@/services/auth/tokenManager');
-                const token = tokenManager.getAccessToken();
 
-                if (!token) {
-                    state.isAuthenticated = false;
-                    state.access = undefined;
-                    state.user = undefined;
-                    state.permisos = [];
-                    return;
-                }
+        clearAuthState: () => ({ ...initialState }),
 
-                // Token válido, restaurar en estado si no está presente
-                if (!state.access) {
-                    state.access = token;
-                    // No marcar como autenticado hasta que se valide con el servidor
-                }
-            } catch (err) {
-                // Fallback a localStorage si tokenManager no está disponible
-                const token = localStorage.getItem('access_token');
-                if (!token && !state.access) {
-                    state.isAuthenticated = false;
-                    state.access = undefined;
-                    state.user = undefined;
-                    state.permisos = [];
-                } else if (token && !state.access) {
-                    state.access = token;
-                }
-            }
-        },
     },
+
     extraReducers: (builder) => {
         builder
-            .addCase(loginThunk.pending, (state) => {
-                state.loading = true;
+            /* LOGIN */
+            .addCase(loginThunk.pending, (s) => {
+                s.loading = true;
+                s.error = undefined;
             })
-            .addCase(loginThunk.fulfilled, (state, action) => {
-                state.loading = false;
-                state.access = action.payload.access;
-                state.isAuthenticated = true;
+            .addCase(loginThunk.fulfilled, (s, { payload }) => {
+                s.loading = false;
+                s.access = payload.access;
+                s.isAuthenticated = true; // pre-authenticated; se consolida con userMe
             })
-            .addCase(loginThunk.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload;
+            .addCase(loginThunk.rejected, (s, action) => {
+                s.loading = false;
+                s.error = action.payload;
+                s.isAuthenticated = false;
             })
+
+            /* USER ME */
             .addCase(userMeThunk.pending, (s) => {
                 s.loading = true;
             })
             .addCase(userMeThunk.fulfilled, (s, { payload }) => {
                 s.loading = false;
 
+                const user = payload.user;
                 const authority = [
                     ...payload.permisos,
-                    ...(payload.user.cargo ? [payload.user.cargo] : []),
+                    ...(payload.roles || []),
+                    ...(user.cargo ? [user.cargo] : []),
                 ];
 
-                s.user = { ...payload.user, authority, roles: payload.roles || [] };
+                s.user = { ...user, authority, roles: payload.roles || [] };
                 s.permisos = authority;
                 s.isAuthenticated = true;
                 s.userLastFetched = Date.now();
@@ -333,20 +205,18 @@ const authSlice = createSlice({
             .addCase(userMeThunk.rejected, (s, action) => {
                 s.loading = false;
                 s.error = action.payload;
-                const isCanceled =
-                    action.error?.name === 'CanceledError' ||
-                    action.error?.code === 'ERR_CANCELED' ||
-                    action.error?.message?.toLowerCase?.().includes('canceled');
-                if (!isCanceled) {
+                s.isAuthenticated = false;
+
+                if (action.error?.name !== 'CanceledError') {
                     toast.error(action.payload);
                 }
             });
     },
 });
 
-export const { logout, clearAuthState, setToken, validateSession } = authSlice.actions;
+export const { logout, clearAuthState, setToken } = authSlice.actions;
 
-// Selectores
 export const selectIsAuthenticated = (state: RootState) => state.auth.isAuthenticated;
 export const selectUserAuthority = (state: RootState) => state.auth.permisos;
+
 export default authSlice.reducer;

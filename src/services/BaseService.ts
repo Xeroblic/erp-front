@@ -1,10 +1,7 @@
 import store, { logout, setToken } from '@/store';
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { toast } from 'react-toastify';
-import tokenManager, {
-	ACCESS_TOKEN_REFRESH_LEEWAY_MS,
-	DEFAULT_INACTIVITY_TIMEOUT_MS,
-} from '@/services/auth/tokenManager';
+import tokenManager from '@/services/auth/tokenManager';
 
 interface CustomAxiosRequestConfig<D = any> extends InternalAxiosRequestConfig<D> {
 	isLoginRequest?: boolean;
@@ -21,9 +18,17 @@ export const cancelAllRequests = () => {
 const API_URL = import.meta.env.VITE_API_URL || '';
 const REFRESH_ENDPOINTS = [`${API_URL}/refresh`, `${API_URL}/refresh`];
 
-const BaseService = axios.create({ timeout: 60000, baseURL: API_URL });
+// Timeout de inactividad por defecto: 30 minutos
+const DEFAULT_INACTIVITY_TIMEOUT_MS = 30 * 60_000;
 
-const extractAuthHeader = (headers?: CustomAxiosRequestConfig['headers']): string | undefined => {
+const BaseService = axios.create({
+	timeout: 60000,
+	baseURL: API_URL,
+});
+
+const extractAuthHeader = (
+	headers?: CustomAxiosRequestConfig['headers'],
+): string | undefined => {
 	if (!headers) return undefined;
 
 	const maybeAxiosHeaders = headers as unknown as { get?: (key: string) => string | undefined };
@@ -35,7 +40,10 @@ const extractAuthHeader = (headers?: CustomAxiosRequestConfig['headers']): strin
 	return normalizedHeaders?.Authorization || normalizedHeaders?.authorization;
 };
 
-const setAuthHeader = (headers: CustomAxiosRequestConfig['headers'] | undefined, token: string) => {
+const setAuthHeader = (
+	headers: CustomAxiosRequestConfig['headers'] | undefined,
+	token: string,
+) => {
 	if (!headers) return;
 	const maybeAxiosHeaders = headers as unknown as { set?: (key: string, value: string) => void };
 	if (typeof maybeAxiosHeaders.set === 'function') {
@@ -48,14 +56,18 @@ const setAuthHeader = (headers: CustomAxiosRequestConfig['headers'] | undefined,
 let activeRefreshPromise: Promise<string> | null = null;
 const REFRESH_TOKEN_ERROR_TOAST_ID = 'refresh-token-error';
 
-const refreshAccessToken = async (expiredToken?: string) => {
+/**
+ * Intenta refrescar el access token usando el endpoint /refresh.
+ * Usa el token actual que tenga el tokenManager / authState.
+ */
+const refreshAccessToken = async () => {
 	if (activeRefreshPromise) return activeRefreshPromise;
 
 	activeRefreshPromise = (async () => {
 		if (!API_URL) throw new Error('VITE_API_URL no esta configurado');
 
-		const tokenToRefresh = expiredToken ?? tokenManager.getAccessToken();
-		if (!tokenToRefresh) throw new Error('No hay token para refrescar');
+		const currentToken = tokenManager.getAccessToken() ?? store.getState().auth.access;
+		if (!currentToken) throw new Error('No hay token para refrescar');
 
 		let lastError: any = null;
 
@@ -64,29 +76,21 @@ const refreshAccessToken = async (expiredToken?: string) => {
 				const refreshResponse = await axios.post(
 					endpoint,
 					{},
-					{ headers: { Authorization: `Bearer ${tokenToRefresh}` } },
+					{
+						headers: { Authorization: `Bearer ${currentToken}` },
+						// cuando migres a refresh por cookie HttpOnly, aquí se deja:
+						// withCredentials: true,
+					},
 				);
 
 				const data: any = refreshResponse?.data ?? {};
 				const access = data.token ?? data.access ?? data.access_token ?? data?.data?.token;
-				if (!access) throw new Error('El endpoint de refresh no devolvio un token valido');
+				if (!access) {
+					throw new Error('El endpoint de refresh no devolvió un token válido');
+				}
 
-				const expiresInSeconds =
-					typeof data.expires_in === 'number'
-						? data.expires_in
-						: typeof data?.data?.expires_in === 'number'
-							? data.data.expires_in
-							: undefined;
-
-				const accessExpiresAt = expiresInSeconds ? Date.now() + expiresInSeconds * 1000 : undefined;
-
-				tokenManager.persistTokens({
-					accessToken: access,
-					accessExpiresAt,
-					refreshToken: undefined,
-					refreshExpiresAt: undefined,
-				});
-
+				// Guardar en memoria + estado de Redux
+				tokenManager.setAccessToken(access);
 				store.dispatch(
 					setToken({
 						access,
@@ -129,30 +133,23 @@ BaseService.interceptors.request.use(
 				state?.auth?.inactivityTimeoutMs ?? DEFAULT_INACTIVITY_TIMEOUT_MS;
 			const isAuthenticated = !!state?.auth?.isAuthenticated;
 
-			// Si la app está en estado "no autenticado", evita usar tokens viejos y no dispares refresh/toasts.
+			// Si la app está marcada como no autenticada, no uses tokens antiguos
 			if (!isAuthenticated) {
 				tokenManager.clearTokens();
 				return config;
 			}
 
+			// Control básico de inactividad (en memoria)
 			if (tokenManager.isInactive(inactivityTimeout)) {
-				toast.error('Sesion finalizada por inactividad');
+				toast.error('Sesión finalizada por inactividad');
 				store.dispatch(logout());
 				cancelAllRequests();
-				throw new axios.Cancel('Sesion finalizada por inactividad');
+				throw new axios.Cancel('Sesión finalizada por inactividad');
 			}
 
-			const currentToken = state?.auth?.access ?? tokenManager.getAccessToken();
+			// Token desde memoria (tokenManager), fallback a estado Redux por compatibilidad
+			const token = tokenManager.getAccessToken() ?? state?.auth?.access;
 
-			if (currentToken && tokenManager.isAccessTokenExpiring(ACCESS_TOKEN_REFRESH_LEEWAY_MS)) {
-				try {
-					await refreshAccessToken(currentToken);
-				} catch (err) {
-					console.warn('Proactive token refresh failed, will retry on 401:', err);
-				}
-			}
-
-			const token = store.getState().auth.access ?? tokenManager.getAccessToken();
 			if (token) {
 				if (!config.headers) {
 					config.headers = {} as any;
@@ -182,9 +179,10 @@ BaseService.interceptors.response.use(
 
 			const authState = store.getState().auth;
 			const isAuthenticated = !!authState?.isAuthenticated;
-			const hasAccess = !!authState?.access || !!tokenManager.getAccessToken();
+			const hasAccess =
+				!!tokenManager.getAccessToken() || !!authState?.access;
 
-			// Si ya no estamos autenticados o no hay token, no intentes refrescar ni mostrar toast
+			// Si ya no estamos autenticados o no hay token, no intentes refrescar
 			if (!isAuthenticated || !hasAccess) {
 				tokenManager.clearTokens();
 				store.dispatch(logout());
@@ -197,16 +195,13 @@ BaseService.interceptors.response.use(
 				return Promise.reject(error);
 			}
 
-			const headerAuth = extractAuthHeader(originalRequest.headers);
-			const expiredToken = headerAuth?.startsWith('Bearer ')
-				? headerAuth.substring(7)
-				: headerAuth || store.getState().auth.access;
-
 			try {
-				const newToken = await refreshAccessToken(expiredToken);
-				if (originalRequest.headers && newToken) {
+				const newToken = await refreshAccessToken();
+
+				if (newToken && originalRequest.headers) {
 					setAuthHeader(originalRequest.headers, newToken);
 				}
+
 				return BaseService(originalRequest);
 			} catch (refreshError: any) {
 				console.error('Error refreshing token:', refreshError);
@@ -219,7 +214,6 @@ BaseService.interceptors.response.use(
 						? 'Sesión expirada. Por favor, inicia sesión nuevamente.'
 						: 'Error de autenticación. Por favor, inicia sesión nuevamente.';
 
-				// Si el usuario ya está marcado como no autenticado, evita toasts molestos al cargar /login
 				if (isAuthenticated) {
 					toast.error(errorMessage);
 				}
@@ -227,8 +221,6 @@ BaseService.interceptors.response.use(
 				store.dispatch(logout());
 				cancelAllRequests();
 
-				// Evitar recargar la página si ya estamos en estado no autenticado
-				// o si el usuario ya está en /login.
 				if (isAuthenticated && window.location.pathname !== '/login') {
 					setTimeout(() => {
 						window.location.href = '/login';

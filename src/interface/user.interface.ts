@@ -84,6 +84,9 @@ export interface IUserMe {
 	roles?: string[];
 	permisos?: string[];
 	personalizacion?: IPersonalizacionUsuario;
+
+	access?: string;
+	visible?: boolean;
 }
 
 
