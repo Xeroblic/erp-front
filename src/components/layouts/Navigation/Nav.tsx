@@ -1,4 +1,4 @@
-import React, { FC, HTMLAttributes, ReactNode, useEffect, useId, useState, useRef } from 'react';
+import React, { FC, HTMLAttributes, ReactNode, useEffect, useId, useState, useRef, ComponentProps } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
@@ -116,19 +116,10 @@ const NavItemText: FC<INavItemTextProps> = (props) => {
 };
 NavItemText.displayName = 'NavItemText';
 
-interface INavItemContentProps
-  extends Omit<
-    HTMLAttributes<HTMLDivElement>,
-    | 'onDrag'
-    | 'onDragStart'
-    | 'onDragEnd'
-    | 'onDragCapture'
-    | 'onDragEnter'
-    | 'onDragLeave'
-    | 'onDragOver'
-    | 'onDragExit'
-    | 'onDrop'
-  > {
+type MotionDivProps = Omit<ComponentProps<typeof motion.div>, 'ref'>;
+type MotionButtonProps = Omit<ComponentProps<typeof motion.button>, 'ref'>;
+
+interface INavItemContentProps extends MotionDivProps {
     children: ReactNode;
     className?: string;
 }
@@ -175,19 +166,7 @@ const NavIcon: FC<INavIconProps> = (props) => {
 };
 NavIcon.displayName = 'NavIcon';
 
-interface INavButtonProps
-  extends Omit<
-    HTMLAttributes<HTMLButtonElement>,
-    | 'onDrag'
-    | 'onDragStart'
-    | 'onDragEnd'
-    | 'onDragCapture'
-    | 'onDragEnter'
-    | 'onDragLeave'
-    | 'onDragOver'
-    | 'onDragExit'
-    | 'onDrop'
-  > {
+interface INavButtonProps extends MotionButtonProps {
     className?: string;
     icon: TIcons;
     iconColor?: TColors;
