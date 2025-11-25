@@ -72,9 +72,6 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
 	// Usar el nuevo hook de dark mode
 	const { darkModeStatus, isDarkTheme, setDarkModeStatus } = useDarkModeManager();
 
-	/**
-	 * Language Effects
-	 */
 	const { i18n } = useTranslation();
 
 	useLayoutEffect(() => {

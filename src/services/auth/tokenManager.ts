@@ -1,162 +1,84 @@
-const ACCESS_KEY = 'access_token';
-const REFRESH_KEY = 'refresh_token';
-const ACCESS_EXP_KEY = 'access_token_expires_at';
-const REFRESH_EXP_KEY = 'refresh_token_expires_at';
-const LAST_ACTIVITY_KEY = 'auth_last_activity';
+// src/services/auth/tokenManager.ts
+let memoryAccessToken: string | null = null;
+let lastActivityAt: number | null = null;
 
-export const ACCESS_TOKEN_REFRESH_LEEWAY_MS = 15_000; // 15 seconds
-export const DEFAULT_INACTIVITY_TIMEOUT_MS = 30 * 60_000; // 30 minutes
-
-type StoredTimestamps = {
-	accessExpiresAt?: number | null;
-	refreshExpiresAt?: number | null;
-	lastActivityAt?: number | null;
-};
-
-const parseStorageNumber = (value: string | null | undefined): number | null => {
-	if (!value) return null;
-	const parsed = Number(value);
-	return Number.isFinite(parsed) ? parsed : null;
-};
-
-const decodeJwtPayload = (token?: string | null): Record<string, unknown> | null => {
-	if (!token) return null;
-	try {
-		const parts = token.split('.');
-		if (parts.length !== 3) return null;
-
-		const [, payload] = parts;
-		if (!payload) return null;
-
-		// Añadir padding si es necesario
-		const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
-		const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
-		const decoded = atob(padded);
-		return JSON.parse(decoded);
-	} catch (err) {
-		console.warn('Error decoding JWT token:', err);
-		return null;
-	}
-};
-
-const computeExpiresAt = (token?: string | null): number | null => {
-	const payload = decodeJwtPayload(token);
-	const exp = typeof payload?.exp === 'number' ? payload.exp : null;
-	return exp ? exp * 1000 : null;
-};
+const REFRESH_TTL_MINUTES = Number(import.meta.env.VITE_JWT_REFRESH_TTL_MINUTES || '0');
 
 export const tokenManager = {
-	getAccessToken(): string | undefined {
-		return localStorage.getItem(ACCESS_KEY) || undefined;
-	},
+  // --- GETTERS ---
+  getAccessToken(): string | null {
+    return memoryAccessToken;
+  },
 
-	getRefreshToken(): string | undefined {
-		return localStorage.getItem(REFRESH_KEY) || undefined;
-	},
+  // --- SETTERS ---
+  setAccessToken(token: string | null) {
+    memoryAccessToken = token;
+    if (token) this.markActivity();
+  },
 
-	getTimestamps(): StoredTimestamps {
-		return {
-			accessExpiresAt: parseStorageNumber(localStorage.getItem(ACCESS_EXP_KEY)),
-			refreshExpiresAt: parseStorageNumber(localStorage.getItem(REFRESH_EXP_KEY)),
-			lastActivityAt: parseStorageNumber(localStorage.getItem(LAST_ACTIVITY_KEY)),
-		};
-	},
+  clearTokens() {
+    memoryAccessToken = null;
+    lastActivityAt = null;
+  },
 
-	persistTokens(params: {
-		accessToken: string;
-		refreshToken?: string;
-		accessExpiresAt?: number | null;
-		refreshExpiresAt?: number | null;
-	}) {
-		const { accessToken, refreshToken } = params;
-		const resolvedAccessExpiresAt =
-			typeof params.accessExpiresAt === 'number'
-				? params.accessExpiresAt
-				: computeExpiresAt(accessToken);
-		const resolvedRefreshExpiresAt =
-			typeof params.refreshExpiresAt === 'number'
-				? params.refreshExpiresAt
-				: computeExpiresAt(refreshToken);
+  // --- ACTIVITY TRACKING ---
+  markActivity(timestamp: number = Date.now()) {
+    lastActivityAt = timestamp;
+  },
 
-		localStorage.setItem(ACCESS_KEY, accessToken);
+  isInactive(timeoutMs: number): boolean {
+    if (!lastActivityAt) return false;
+    return Date.now() - lastActivityAt >= timeoutMs;
+  },
 
-		if (typeof resolvedAccessExpiresAt === 'number') {
-			localStorage.setItem(ACCESS_EXP_KEY, String(resolvedAccessExpiresAt));
-		} else {
-			localStorage.removeItem(ACCESS_EXP_KEY);
-		}
+  // --- DECODING ---
+  decodeJwtPayload(token: string | null): Record<string, any> | null {
+    if (!token) return null;
 
-		if (refreshToken) {
-			localStorage.setItem(REFRESH_KEY, refreshToken);
-		} else {
-			localStorage.removeItem(REFRESH_KEY);
-		}
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) return null;
 
-		if (typeof resolvedRefreshExpiresAt === 'number') {
-			localStorage.setItem(REFRESH_EXP_KEY, String(resolvedRefreshExpiresAt));
-		} else {
-			localStorage.removeItem(REFRESH_EXP_KEY);
-		}
+      const payloadPart = parts[1]
+        .replace(/-/g, '+')
+        .replace(/_/g, '/')
+        .padEnd(parts[1].length + (4 - (parts[1].length % 4)) % 4, '=');
 
-		return {
-			accessExpiresAt: resolvedAccessExpiresAt ?? null,
-			refreshExpiresAt: resolvedRefreshExpiresAt ?? null,
-		};
-	},
+      const decoded = atob(payloadPart);
+      return JSON.parse(decoded);
+    } catch {
+      return null;
+    }
+  },
 
-	clearTokens() {
-		localStorage.removeItem(ACCESS_KEY);
-		localStorage.removeItem(REFRESH_KEY);
-		localStorage.removeItem(ACCESS_EXP_KEY);
-		localStorage.removeItem(REFRESH_EXP_KEY);
-		localStorage.removeItem(LAST_ACTIVITY_KEY);
-	},
+  // --- EXPIRACIÓN NORMAL (exp) ---
+  isTokenValid(token?: string | null): boolean {
+    const payload = this.decodeJwtPayload(token || memoryAccessToken);
+    const exp = typeof payload?.exp === 'number' ? payload.exp : null;
+    if (!exp) return false;
+    return Date.now() < exp * 1000;
+  },
 
-	markActivity(timestamp: number = Date.now()) {
-		localStorage.setItem(LAST_ACTIVITY_KEY, String(timestamp));
-	},
+  getTokenTimeRemaining(token?: string | null): number {
+    const payload = this.decodeJwtPayload(token || memoryAccessToken);
+    const exp = typeof payload?.exp === 'number' ? payload.exp : null;
+    if (!exp) return 0;
+    return Math.max(0, exp * 1000 - Date.now());
+  },
 
-	isAccessTokenExpiring(leewayMs: number = ACCESS_TOKEN_REFRESH_LEEWAY_MS): boolean {
-		const { accessExpiresAt } = this.getTimestamps();
-		if (!accessExpiresAt) return false;
-		return accessExpiresAt - Date.now() <= leewayMs;
-	},
+  // --- VENTANA DE REFRESH BASADA EN iat + refresh_ttl ---
+  getRefreshExpiresAt(token?: string | null): number {
+    const payload = this.decodeJwtPayload(token || memoryAccessToken);
+    const iat = typeof payload?.iat === 'number' ? payload.iat : null;
+    if (!iat || !REFRESH_TTL_MINUTES) return 0;
+    return iat * 1000 + REFRESH_TTL_MINUTES * 60 * 1000;
+  },
 
-	isRefreshTokenExpired(): boolean {
-		const { refreshExpiresAt } = this.getTimestamps();
-		if (!refreshExpiresAt) return false;
-		return Date.now() >= refreshExpiresAt;
-	},
-
-	isInactive(timeoutMs: number = DEFAULT_INACTIVITY_TIMEOUT_MS): boolean {
-		const { lastActivityAt } = this.getTimestamps();
-		if (!lastActivityAt) return false;
-		return Date.now() - lastActivityAt >= timeoutMs;
-	},
-
-	
-	isTokenValid(token?: string | null): boolean {
-		if (!token) return false;
-		const payload = decodeJwtPayload(token);
-		if (!payload) return false;
-
-		const exp = typeof payload.exp === 'number' ? payload.exp : null;
-		if (!exp) return false;
-
-		return Date.now() < exp * 1000;
-	},
-
-	getTokenTimeRemaining(token?: string | null): number {
-		if (!token) return 0;
-		const payload = decodeJwtPayload(token);
-		if (!payload) return 0;
-
-		const exp = typeof payload.exp === 'number' ? payload.exp : null;
-		if (!exp) return 0;
-
-		const remaining = exp * 1000 - Date.now();
-		return Math.max(0, remaining);
-	},
+  canRefresh(token?: string | null): boolean {
+    const refreshExpiresAt = this.getRefreshExpiresAt(token);
+    if (!refreshExpiresAt) return false;
+    return Date.now() < refreshExpiresAt;
+  },
 };
 
 export default tokenManager;

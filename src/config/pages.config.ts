@@ -15,9 +15,6 @@ export interface PageConfig {
 	requireAll?: boolean;
 }
 
-/* =================================================
-   PÁGINAS DE AUTENTICACIÓN - OPERATIVAS
-   ================================================= */
 
 export const authPages = {
 	loginPage: {

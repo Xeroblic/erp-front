@@ -1,141 +1,97 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store';
-import { logout, setToken, validateSession } from '../store/slices/auth/authSlice';
-import { obtenerPersonalizacionThunk } from '../store/slices/personalizacion/personalizacionSlice';
+import { logout, setToken, userMeThunk } from '@/store/slices/auth/authSlice';
+import { obtenerPersonalizacionThunk } from '@/store/slices/personalizacion/personalizacionSlice';
 import { toast } from 'react-toastify';
-import ApiService from '@/services/ApiService';
-import tokenManager, { ACCESS_TOKEN_REFRESH_LEEWAY_MS } from '@/services/auth/tokenManager';
+import tokenManager from '@/services/auth/tokenManager';
 
 const AppInitializer = () => {
-	const dispatch = useAppDispatch();
-	const navigate = useNavigate();
-	const location = useLocation();
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-	const { isAuthenticated, access } = useAppSelector((s) => s.auth);
-	const personalizacion = useAppSelector((s) => s.personalizacion);
-	const hasInitialized = useRef(false);
-	const fetchedPersonalization = useRef(false);
-	const refreshTimerRef = useRef<number | null>(null);
+  const { isAuthenticated, access, user } = useAppSelector((s) => s.auth);
+  const hasInitialized = useRef(false);
+  const fetchedPersonalization = useRef(false);
+  const fetchedProfile = useRef(false);
 
-	const publicRoutes = useMemo(
-		() => [
-			'/login',
-			'/recuperar-password',
-			'/reset-password',
-			'/usuarios/activar',
-			'/invitar/aceptar',
-		],
-		[],
-	);
-	const isPublic = publicRoutes.includes(location.pathname);
+  const publicRoutes = useMemo(
+    () => [
+      '/login',
+      '/recuperar-password',
+      '/reset-password',
+      '/usuarios/activar',
+      '/invitar/aceptar',
+    ],
+    [],
+  );
+  const isPublic = publicRoutes.includes(location.pathname);
 
-	useEffect(() => {
-		if (hasInitialized.current) return;
-		hasInitialized.current = true;
-		if (isPublic) return;
-		dispatch(validateSession());
-	}, [dispatch, isPublic]);
+  // 1) Al montar: si la ruta es privada y no hay token en Redux -> logout + login
+  //    Si hay token en Redux, sincroniza hacia tokenManager.
+  useEffect(() => {
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
 
-	useEffect(() => {
-		if (isPublic) return;
-		if (!access) {
-			navigate('/login');
-		}
-	}, [access, isPublic, navigate]);
+    if (isPublic) return;
 
-	useEffect(() => {
-		if (isPublic) return;
-		if (!isAuthenticated || !access) return;
-		if (fetchedPersonalization.current) return;
+    if (!access) {
+      // no hay token persistido -> sesión inválida
+      dispatch(logout());
+      navigate('/login');
+      return;
+    }
 
-		fetchedPersonalization.current = true;
-		dispatch(obtenerPersonalizacionThunk())
-			.unwrap?.()
-			.catch((err: any) => {
-				console.error('Error al cargar personalización:', err);
-				toast.error('Error al cargar la personalización del usuario');
-				// Si falló, permite reintentar en el futuro:
-				fetchedPersonalization.current = false;
-			});
-	}, [dispatch, isAuthenticated, access, isPublic]);
+    // Hay token persistido: sincronizar hacia tokenManager
+    tokenManager.setAccessToken(access);
+  }, [dispatch, isPublic, navigate, access]);
 
-	useEffect(() => {
-		if (isPublic) return;
-		if (!isAuthenticated || !access) return;
+  // 2) Cargar perfil/permisos una vez por sesión (evita aside vacío)
+  useEffect(() => {
+    if (isPublic) return;
+    if (!isAuthenticated || !access) return;
+    // Si ya tenemos usuario cargado no disparamos de nuevo
+    if (user && fetchedProfile.current) return;
 
-		let stopped = false;
+    fetchedProfile.current = true;
+    dispatch(userMeThunk())
+      // @ts-ignore: unwrap no siempre tipado
+      .unwrap?.()
+      .catch(() => {
+        // Permitir reintento si falló
+        fetchedProfile.current = false;
+      });
+  }, [dispatch, isAuthenticated, access, isPublic, user]);
 
-		const schedule = (delayMs: number) => {
-			refreshTimerRef.current = window.setTimeout(tick, delayMs);
-		};
+  // 2) Si cambia de página a una ruta privada sin estar autenticado, redirigir a /login
+  useEffect(() => {
+    if (isPublic) return;
 
-		const tick = async () => {
-			if (stopped) return;
+    // Aquí puedes usar isAuthenticated o access, según cómo inicializas el estado
+    if (!access) {
+      navigate('/login');
+    }
+  }, [access, isPublic, navigate]);
 
-			const token = tokenManager.getAccessToken();
-			if (!token) {
-				dispatch(logout());
-				navigate('/login');
-				return;
-			}
+  // 3) Cargar personalización una vez que hay sesión activa
+  useEffect(() => {
+    if (isPublic) return;
+    if (!isAuthenticated) return;
+    if (fetchedPersonalization.current) return;
 
-			if (!tokenManager.isAccessTokenExpiring(ACCESS_TOKEN_REFRESH_LEEWAY_MS)) {
-				schedule(45_000);
-				return;
-			}
+    fetchedPersonalization.current = true;
 
-			try {
-				const resp = await ApiService.fetchData<{ token: string; expires_in?: number } | any>({
-					url: '/refresh',
-					method: 'post',
-					headers: { Authorization: `Bearer ${token}` },
-					dedupe: true,
-				});
+    dispatch(obtenerPersonalizacionThunk())
+      // @ts-ignore por si unwrap no está tipado
+      .unwrap?.()
+      .catch(() => {
+        toast.error('Error cargando personalización');
+        fetchedPersonalization.current = false;
+      });
+  }, [dispatch, isAuthenticated, isPublic]);
 
-				const data: any = resp?.data ?? {};
-				const newToken = data.token ?? data.access;
-				if (!newToken) throw new Error('Refresh sin token');
-
-				const expiresInSeconds =
-					typeof data.expires_in === 'number'
-						? data.expires_in
-						: typeof data?.data?.expires_in === 'number'
-							? data.data.expires_in
-							: undefined;
-				const accessExpiresAt = expiresInSeconds ? Date.now() + expiresInSeconds * 1000 : undefined;
-
-				tokenManager.persistTokens({ accessToken: newToken, accessExpiresAt });
-				dispatch(setToken({ access: newToken, markActivity: true }));
-			} catch (err: any) {
-				const status = err?.response?.status;
-				if (status === 401 || status === 403) {
-					dispatch(logout());
-					navigate('/login');
-					return;
-				}
-				console.error('Error en refresh proactivo:', err);
-				toast.error('Sesión expirada. Por favor, inicia sesión nuevamente.');
-				dispatch(logout());
-				navigate('/login');
-				return;
-			}
-
-			schedule(45_000);
-		};
-
-		tick(); // primer intento inmediato para cubrir recargas con token vencido
-
-		return () => {
-			stopped = true;
-			if (refreshTimerRef.current) {
-				clearTimeout(refreshTimerRef.current);
-				refreshTimerRef.current = null;
-			}
-		};
-	}, [isPublic, isAuthenticated, access, dispatch, navigate]);
-
-	return null;
+  return null;
 };
 
 export default AppInitializer;
