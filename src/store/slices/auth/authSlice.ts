@@ -333,7 +333,13 @@ const authSlice = createSlice({
             .addCase(userMeThunk.rejected, (s, action) => {
                 s.loading = false;
                 s.error = action.payload;
-                toast.error(action.payload);
+                const isCanceled =
+                    action.error?.name === 'CanceledError' ||
+                    action.error?.code === 'ERR_CANCELED' ||
+                    action.error?.message?.toLowerCase?.().includes('canceled');
+                if (!isCanceled) {
+                    toast.error(action.payload);
+                }
             });
     },
 });

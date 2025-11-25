@@ -114,7 +114,7 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 	useEffect(() => {
 		if (!isLeader) return;
 
-		console.log('[ZENTRIA] Esta pestaña es el LEADER de notificaciones.');
+		// console.log('[ZENTRIA] Esta pestaña es el LEADER de notificaciones.');
 
 		const token = tokenManager.getAccessToken();
 		if (!token) return;
@@ -137,12 +137,12 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 				/** Distribuir a las otras pestañas */
 				bc.postMessage({ type: 'notification', data });
 			} catch (err) {
-				console.error('[ZENTRIA] Error SSE:', err);
+				// console.error('[ZENTRIA] Error SSE:', err);
 			}
 		};
 
 		es.onerror = () => {
-			console.warn('[ZENTRIA] SSE error. Reintentando...');
+			// console.warn('[ZENTRIA] SSE error. Reintentando...');
 			es.close();
 			setTimeout(() => setIsLeader(true), 1000);
 		};

@@ -29,7 +29,14 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 				customerName = `${r.billing_snapshot.first_name} ${r.billing_snapshot.last_name}`;
 			}
 
-			const dateRaw = r.sale_date || r.date || r.created_at;
+			const dateRaw =
+				r.sale_date ||
+				r.date ||
+				r.created_at ||
+				r.updated_at ||
+				r.createdAt ||
+				r.period ||
+				r.fecha;
 
 			return {
 				...r,
@@ -84,7 +91,7 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 		}[] = [];
 		processedData.forEach((r) => {
 			if (!r._date) return;
-			const d = new Date(r._date);
+			const d = new Date(r._date as any);
 			if (isNaN(d.getTime())) return;
 			const monthNames = [
 				'Ene',

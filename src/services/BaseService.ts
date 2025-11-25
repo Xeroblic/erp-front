@@ -182,6 +182,20 @@ BaseService.interceptors.response.use(
 
 			const authState = store.getState().auth;
 			const isAuthenticated = !!authState?.isAuthenticated;
+			const hasAccess = !!authState?.access || !!tokenManager.getAccessToken();
+
+			// Si ya no estamos autenticados o no hay token, no intentes refrescar ni mostrar toast
+			if (!isAuthenticated || !hasAccess) {
+				tokenManager.clearTokens();
+				store.dispatch(logout());
+				cancelAllRequests();
+				if (window.location.pathname !== '/login') {
+					setTimeout(() => {
+						window.location.href = '/login';
+					}, 300);
+				}
+				return Promise.reject(error);
+			}
 
 			const headerAuth = extractAuthHeader(originalRequest.headers);
 			const expiredToken = headerAuth?.startsWith('Bearer ')

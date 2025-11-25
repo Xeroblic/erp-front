@@ -94,6 +94,22 @@ const SalesDashboard: React.FC<SalesDashboardProps> = ({
         return undefined;
     };
 
+    const parseDateSafe = (val: any): Date | null => {
+        if (!val) return null;
+        if (val instanceof Date && !Number.isNaN(val.getTime())) return val;
+        if (typeof val === 'string') {
+            const iso = new Date(val);
+            if (!Number.isNaN(iso.getTime())) return iso;
+            const m = val.match(/^(\d{2})[/-](\d{2})[/-](\d{4})$/);
+            if (m) {
+                const [, dd, mm, yyyy] = m;
+                const parsed = new Date(`${yyyy}-${mm}-${dd}T00:00:00`);
+                if (!Number.isNaN(parsed.getTime())) return parsed;
+            }
+        }
+        return null;
+    };
+
     const mapFilters = (f: ReportFiltersState) => {
         const out: Record<string, any> = {};
         const from = normalizeDate(f.dateFrom);
@@ -119,21 +135,73 @@ const SalesDashboard: React.FC<SalesDashboardProps> = ({
         const sid = Number(currentSubsidiaryId ?? 0);
         if (!sid) return;
         dispatch(clearResults());
-        dispatch(fetchReportResults({ subsidiaryId: sid, type: 'sales', filters: mapFilters(filters) }) as any);
+        // Carga una sola vez el dataset completo para esta subsidiaria; los filtros se aplican en cliente
+        dispatch(fetchReportResults({ subsidiaryId: sid, type: 'sales', filters: {} }) as any);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentSubsidiaryId, filters]);
+    }, [currentSubsidiaryId]);
 
     const filteredResults = useMemo(() => {
         const priceMin = parseNumeric(filters.priceMin);
         const priceMax = parseNumeric(filters.priceMax);
+
+        const fromDate = parseDateSafe(filters.dateFrom);
+        const toDate = parseDateSafe(filters.dateTo);
+        if (toDate) toDate.setHours(23, 59, 59, 999);
+
+        const branchId =
+            typeof filters.branch === 'string' ? Number(filters.branch) : Number(filters.branch ?? 0);
+        const customerText = (filters.customer || '').toString().trim().toLowerCase();
+        const customerId = Number(customerText) || undefined;
+
         return results.filter((r: any) => {
             const rawAmt = r?.total_amount ?? r?.total ?? r?.amount ?? 0;
             const amount = typeof rawAmt === 'string' ? parseFloat(rawAmt) : Number(rawAmt) || 0;
             if (priceMin !== undefined && amount < priceMin) return false;
             if (priceMax !== undefined && amount > priceMax) return false;
+
+            const rawDate =
+                r?.sale_date ||
+                r?.date ||
+                r?.created_at ||
+                r?.updated_at ||
+                r?.createdAt ||
+                r?.period ||
+                r?.fecha;
+            if (fromDate || toDate) {
+                const d = parseDateSafe(rawDate);
+                if (!d || Number.isNaN(d.getTime())) return false;
+                if (fromDate && d < fromDate) return false;
+                if (toDate && d > toDate) return false;
+            }
+
+            if (branchId && branchId > 0) {
+                const rBranch = r?.branch_id || r?.branch || r?.branchId;
+                const numericBranch = typeof rBranch === 'string' ? Number(rBranch) : Number(rBranch || 0);
+                if (numericBranch !== branchId) return false;
+            }
+
+            if (customerText) {
+                const rCustomerId = r?.customer_id || r?.customerId || r?.cliente_id;
+                const rCustomerName = (r?.customer_name || r?.customer || r?.cliente || '').toString().toLowerCase();
+                if (customerId) {
+                    const numericId = typeof rCustomerId === 'string' ? Number(rCustomerId) : Number(rCustomerId || 0);
+                    if (numericId !== customerId) return false;
+                } else if (!rCustomerName.includes(customerText)) {
+                    return false;
+                }
+            }
+
             return true;
         });
-    }, [results, filters.priceMin, filters.priceMax]);
+    }, [
+        results,
+        filters.priceMin,
+        filters.priceMax,
+        filters.dateFrom,
+        filters.dateTo,
+        filters.branch,
+        filters.customer,
+    ]);
 
     const { chartSeries, chartCategories, stats } = useMemo(() => {
         const dateMap = new Map<string, { total: number; returns: number }>();
@@ -156,26 +224,29 @@ const SalesDashboard: React.FC<SalesDashboardProps> = ({
             totalSales += amount;
             totalReturns += retVal;
 
-            const rawDate = r?.sale_date || r?.date || r?.created_at;
-            if (!rawDate) return;
-            
-            try {
-                const d = new Date(rawDate);
-                if (!isNaN(d.getTime())) {
-                    const key = d.toISOString().split('T')[0];
-                    if (!dateMap.has(key)) dateMap.set(key, { total: 0, returns: 0 });
-                    const entry = dateMap.get(key)!;
-                    entry.total += amount;
-                    entry.returns += retVal;
-                }
-            } catch {}
+            const rawDate =
+                r?.sale_date ||
+                r?.date ||
+                r?.created_at ||
+                r?.updated_at ||
+                r?.createdAt ||
+                r?.period ||
+                r?.fecha;
+            const d = parseDateSafe(rawDate);
+            if (!d) return;
+
+            const key = d.toISOString().split('T')[0];
+            if (!dateMap.has(key)) dateMap.set(key, { total: 0, returns: 0 });
+            const entry = dateMap.get(key)!;
+            entry.total += amount;
+            entry.returns += retVal;
         });
 
         let keys = Array.from(dateMap.keys()).sort();
         if (filters.dateFrom && filters.dateTo) {
-            const start = new Date(filters.dateFrom);
-            const end = new Date(filters.dateTo);
-            if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+            const start = parseDateSafe(filters.dateFrom);
+            const end = parseDateSafe(filters.dateTo);
+            if (start && end) {
                 const tempKeys = [];
                 for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
                     const k = d.toISOString().split('T')[0];
@@ -369,7 +440,7 @@ const SalesDashboard: React.FC<SalesDashboardProps> = ({
                         </div>
 
                         <div className='mt-4 min-h-[350px] w-full relative z-0'>
-                            {results.length > 0 ? (
+                            {filteredResults.length > 0 ? (
                                 <Chart
                                     type='area'
                                     height={350}
@@ -387,12 +458,15 @@ const SalesDashboard: React.FC<SalesDashboardProps> = ({
                 </Card>
 
                 <div className="mt-6 relative z-0">
-                    {results.length > 0 && <SalesAnalytics data={results} />}
+                    <SalesAnalytics data={filteredResults} />
                 </div>
 
-                <div className='mt-6'>
-                    <ReportFilters onApply={setFilters} />
-                </div>
+                {/* <div className='mt-6'>
+                    <ReportFilters
+                        onApply={setFilters}
+                        onReset={() => setFilters({})}
+                    />
+                </div> */}
             </div>
         </div>
     );

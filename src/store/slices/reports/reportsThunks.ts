@@ -32,7 +32,6 @@ export const fetchReportResults = createAsyncThunk(
             let currentPage = 1;
             let keepFetching = true;
 
-            console.log('🚀 [Thunk] Iniciando la extracción "Modo Ciego"...');
 
             while (keepFetching) {
                 const pageFilters = {
@@ -60,25 +59,25 @@ export const fetchReportResults = createAsyncThunk(
 
                 // 3. VALIDACIÓN DE SEGURIDAD
                 if (!Array.isArray(pageData)) {
-                    console.error("❌ [Thunk] Formato desconocido:", rawRes);
+                    // console.error("❌ [Thunk] Formato desconocido:", rawRes);
                     break;
                 }
 
                 if (pageData.length === 0) {
-                    console.log(`⚠️ [Thunk] Página ${currentPage} vacía. Terminamos.`);
+                    // console.log(`⚠️ [Thunk] Página ${currentPage} vacía. Terminamos.`);
                     break;
                 }
 
                 // 4. ACUMULAR
                 allData = [...allData, ...pageData];
-                console.log(`📦 [Thunk] Pag ${currentPage} | Recibidos: ${pageData.length} | Acumulado: ${allData.length}`);
+                // console.log(`📦 [Thunk] Pag ${currentPage} | Recibidos: ${pageData.length} | Acumulado: ${allData.length}`);
 
                 // 5. LÓGICA "A CIEGAS" (Aquí está la magia)
                 // Si pedimos 200 y llegaron menos de 200 (ej: 136), significa que se acabaron los datos.
                 // Si llegaron 200 exactos, asumimos que probablemente hay más y pedimos la siguiente.
                 if (pageData.length < CHUNK_SIZE) {
                     keepFetching = false;
-                    console.log('✅ [Thunk] Última página detectada (llegó incompleta).');
+                    // console.log('✅ [Thunk] Última página detectada (llegó incompleta).');
                 } else {
                     // Si llegaron 200, seguimos.
                     // RIESGO MINIMO: Si justo el total es múltiplo de 200 (ej: 400), pedirá la pag 3, vendrá vacía y el "if (length===0)" de arriba lo parará.
@@ -98,7 +97,7 @@ export const fetchReportResults = createAsyncThunk(
             };
 
         } catch (err: any) {
-            console.error("❌ [Thunk] Error crítico:", err);
+            // console.error("❌ [Thunk] Error crítico:", err);
             return thunkAPI.rejectWithValue(err.response?.data || err.message);
         }
     }
