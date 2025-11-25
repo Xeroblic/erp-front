@@ -85,8 +85,38 @@ export interface IUserMe {
 	permisos?: string[];
 	personalizacion?: IPersonalizacionUsuario;
 
-	access?: string;
-	visible?: boolean;
+	access?:
+		| string
+		| {
+				subsidiaries?: Array<{
+					id: number;
+					name: string;
+					company?: { id: number; name: string };
+					source?: string;
+				}>;
+				branches?: Array<{
+					id: number;
+					name: string;
+					subsidiary?: { id: number; name: string };
+					source?: string;
+					is_primary?: boolean;
+					position?: string | null;
+				}>;
+		  };
+	visible?:
+		| boolean
+		| {
+				subsidiaries?: Array<{
+					id: number;
+					name: string;
+					company?: { id: number; name: string };
+				}>;
+				branches?: Array<{
+					id: number;
+					name: string;
+					subsidiary?: { id: number; name: string };
+				}>;
+		  };
 }
 
 
