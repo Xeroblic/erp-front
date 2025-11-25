@@ -57,9 +57,9 @@ const App = () => {
 	}, [dispatch, hasValidSession, isAuthenticated]);
 
 	const shouldRenderAuthenticatedApp = isAuthenticated && hasValidSession;
-	if (import.meta.env.DEV) {
-	(window as any).tokenManager = tokenManager;
-	}
+	// if (import.meta.env.DEV) {
+	// (window as any).tokenManager = tokenManager;
+	// }
 	return (
 		<>
 			<ToastContainer theme={isDarkTheme ? 'dark' : 'light'} draggable />
