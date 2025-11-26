@@ -107,7 +107,9 @@ const GarantiaDetailsPage: React.FC = () => {
 		const badges = [
 			{
 				id: 'serial',
-				label: detail.serial_number ? `Serie ${detail.serial_number}` : 'Sin serie registrada',
+				label: detail.serial_number
+					? `Serie ${detail.serial_number}`
+					: 'Sin serie registrada',
 			},
 		];
 		if (detail.created_at) {
@@ -196,257 +198,277 @@ const GarantiaDetailsPage: React.FC = () => {
 	}, [formik.values.status]);
 
 	const detailCard = !loading && detail && (
-			<motion.div
-				initial={{ opacity: 0, y: 16 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.35 }}>
-				<Card className='mb-6 border border-zinc-200/60 shadow-xl dark:border-zinc-800/60'>
-					<CardHeader className='pb-2'>
-						<div className='space-y-2'>
-							<CardTitle className='flex items-center gap-2 text-xl text-zinc-900 dark:text-zinc-100'>
-								<Icon icon='DuoShieldCheck' size='text-5xl'/>
-								<span>{`Garantía #${detail.id}`}</span>
-							</CardTitle>
-							<div className='flex flex-wrap gap-2'>
-								{metaBadges.map((badge) => (
-									<Badge
-										key={badge.id}
-										variant='outline'
-										color='zinc'
-										colorIntensity='500'
-										className='px-2 py-0.5 text-xs font-semibold uppercase tracking-wide dark:border-zinc-700'>
-										{badge.label}
-									</Badge>
-								))}
-							</div>
+		<motion.div
+			initial={{ opacity: 0, y: 16 }}
+			animate={{ opacity: 1, y: 0 }}
+			transition={{ duration: 0.35 }}>
+			<Card className='mb-6 border border-zinc-200/60 shadow-xl dark:border-zinc-800/60'>
+				<CardHeader className='pb-2'>
+					<div className='space-y-2'>
+						<CardTitle className='flex items-center gap-2 text-xl text-zinc-900 dark:text-zinc-100'>
+							<Icon icon='DuoShieldCheck' size='text-5xl' />
+							<span>{`Garantía #${detail.id}`}</span>
+						</CardTitle>
+						<div className='flex flex-wrap gap-2'>
+							{metaBadges.map((badge) => (
+								<Badge
+									key={badge.id}
+									variant='outline'
+									color='zinc'
+									colorIntensity='500'
+									className='px-2 py-0.5 text-xs font-semibold uppercase tracking-wide dark:border-zinc-700'>
+									{badge.label}
+								</Badge>
+							))}
 						</div>
-						<div className='flex items-center gap-3'>
-							<div className='text-right'>
-								<p className='text-xs uppercase text-zinc-400'>Días restantes</p>
-								<motion.p
-									key={detail.daysRemaining?.label ?? 'none'}
-									initial={{ opacity: 0, y: 6 }}
-									animate={{ opacity: 1, y: 0 }}
-									className={`text-base font-semibold ${
-										detail.daysRemaining?.isExpired ? 'text-red-600' : 'text-emerald-600'
-									}`}>
-									{detail.daysRemaining?.label ?? '—'}
-								</motion.p>
-							</div>
-							<WarrantyStatusBadge status={detail.status} />
+					</div>
+					<div className='flex items-center gap-3'>
+						<div className='text-right'>
+							<p className='text-xs uppercase text-zinc-400'>Días restantes</p>
+							<motion.p
+								key={detail.daysRemaining?.label ?? 'none'}
+								initial={{ opacity: 0, y: 6 }}
+								animate={{ opacity: 1, y: 0 }}
+								className={`text-base font-semibold ${
+									detail.daysRemaining?.isExpired
+										? 'text-red-600'
+										: 'text-emerald-600'
+								}`}>
+								{detail.daysRemaining?.label ?? '—'}
+							</motion.p>
 						</div>
-					</CardHeader>
-					<CardBody className='space-y-6'>
-						{!isEditable && (
-							<>
-								<motion.div
-									initial={{ opacity: 0, y: 10 }}
-									animate={{ opacity: 1, y: 0 }}
-									transition={{ delay: 0.05 }}>
-									<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
-										{infoBlocks.map((block, index) => (
-											<motion.div
-												key={block.id}
-												initial={{ opacity: 0, y: 12 }}
-												animate={{ opacity: 1, y: 0 }}
-												transition={{ delay: 0.08 * index }}>
-												<p className='text-xs uppercase tracking-wide text-zinc-400'>
-													{block.label}
-												</p>
-												<p className='text-base font-semibold text-zinc-900 dark:text-white'>
-													{block.value}
-												</p>
-												{block.helper && (
-													<p className='text-sm text-zinc-500'>{block.helper}</p>
-												)}
-											</motion.div>
-										))}
-									</div>
-								</motion.div>
-								<motion.div
-									initial={{ opacity: 0, y: 10 }}
-									animate={{ opacity: 1, y: 0 }}
-									transition={{ delay: 0.15 }}>
-									<p className='text-xs uppercase tracking-wide text-zinc-400'>Notas</p>
-									<p className='text-sm text-zinc-600 dark:text-zinc-300'>
-										{detail.notes?.trim() ? detail.notes : 'Sin notas registradas.'}
-									</p>
-								</motion.div>
-							</>
-						)}
-
-						{isEditable && (
+						<WarrantyStatusBadge status={detail.status} />
+					</div>
+				</CardHeader>
+				<CardBody className='space-y-6'>
+					{!isEditable && (
+						<>
 							<motion.div
 								initial={{ opacity: 0, y: 10 }}
 								animate={{ opacity: 1, y: 0 }}
-								className='space-y-4'>
-								<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-									<div>
-										<Label htmlFor='serial_number'>Número de serie (opcional)</Label>
+								transition={{ delay: 0.05 }}>
+								<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+									{infoBlocks.map((block, index) => (
+										<motion.div
+											key={block.id}
+											initial={{ opacity: 0, y: 12 }}
+											animate={{ opacity: 1, y: 0 }}
+											transition={{ delay: 0.08 * index }}>
+											<p className='text-xs uppercase tracking-wide text-zinc-400'>
+												{block.label}
+											</p>
+											<p className='text-base font-semibold text-zinc-900 dark:text-white'>
+												{block.value}
+											</p>
+											{block.helper && (
+												<p className='text-sm text-zinc-500'>
+													{block.helper}
+												</p>
+											)}
+										</motion.div>
+									))}
+								</div>
+							</motion.div>
+							<motion.div
+								initial={{ opacity: 0, y: 10 }}
+								animate={{ opacity: 1, y: 0 }}
+								transition={{ delay: 0.15 }}>
+								<p className='text-xs uppercase tracking-wide text-zinc-400'>
+									Notas
+								</p>
+								<p className='text-sm text-zinc-600 dark:text-zinc-300'>
+									{detail.notes?.trim() ? detail.notes : 'Sin notas registradas.'}
+								</p>
+							</motion.div>
+						</>
+					)}
+
+					{isEditable && (
+						<motion.div
+							initial={{ opacity: 0, y: 10 }}
+							animate={{ opacity: 1, y: 0 }}
+							className='space-y-4'>
+							<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+								<div>
+									<Label htmlFor='serial_number'>
+										Número de serie (opcional)
+									</Label>
+									<Input
+										id='serial_number'
+										name='serial_number'
+										value={formik.values.serial_number}
+										onChange={formik.handleChange}
+										onBlur={formik.handleBlur}
+										placeholder='SN001234'
+									/>
+									<p className='mt-1 text-xs text-zinc-400'>
+										Si proporcionas un número de serie, se autocompletarán los
+										datos.
+									</p>
+								</div>
+								<div>
+									<Label htmlFor='status'>Estado (opcional)</Label>
+									<SelectReact
+										name='status'
+										id='status'
+										isClearable
+										value={statusValue}
+										options={warrantyStatusOptions}
+										onChange={(option) => {
+											const value = option
+												? (option as TSelectOption).value
+												: '';
+											void formik.setFieldValue('status', value);
+										}}
+										onBlur={() => formik.setFieldTouched('status', true)}
+									/>
+								</div>
+							</div>
+
+							<div>
+								<Label htmlFor='product_id'>Producto</Label>
+								<Validation
+									isValid={!formik.errors.product_id}
+									isTouched={formik.touched.product_id}
+									invalidFeedback={formik.errors.product_id}>
+									<SelectReact
+										name='product_id'
+										id='product_id'
+										isClearable
+										value={productValue}
+										options={productOptions}
+										placeholder='Selecciona un producto'
+										onFocus={() => {
+											void loadProducts();
+										}}
+										onChange={(option) =>
+											formik.setFieldValue(
+												'product_id',
+												option
+													? Number((option as TSelectOption).value)
+													: null,
+											)
+										}
+										onBlur={() => formik.setFieldTouched('product_id', true)}
+									/>
+								</Validation>
+							</div>
+
+							<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+								<div>
+									<Label htmlFor='start_date'>Fecha de inicio</Label>
+									<Validation
+										isValid={!formik.errors.start_date}
+										isTouched={formik.touched.start_date}
+										invalidFeedback={formik.errors.start_date}>
 										<Input
-											id='serial_number'
-											name='serial_number'
-											value={formik.values.serial_number}
+											type='date'
+											id='start_date'
+											name='start_date'
+											value={formik.values.start_date}
 											onChange={formik.handleChange}
 											onBlur={formik.handleBlur}
-											placeholder='SN001234'
-										/>
-										<p className='mt-1 text-xs text-zinc-400'>
-											Si proporcionas un número de serie, se autocompletarán los datos.
-										</p>
-									</div>
-									<div>
-										<Label htmlFor='status'>Estado (opcional)</Label>
-										<SelectReact
-											name='status'
-											id='status'
-											isClearable
-											value={statusValue}
-											options={warrantyStatusOptions}
-											onChange={(option) => {
-												const value = option ? (option as TSelectOption).value : '';
-												void formik.setFieldValue('status', value);
-											}}
-											onBlur={() => formik.setFieldTouched('status', true)}
-										/>
-									</div>
-								</div>
-
-								<div>
-									<Label htmlFor='product_id'>Producto</Label>
-									<Validation
-										isValid={!formik.errors.product_id}
-										isTouched={formik.touched.product_id}
-										invalidFeedback={formik.errors.product_id}>
-										<SelectReact
-											name='product_id'
-											id='product_id'
-											isClearable
-											value={productValue}
-											options={productOptions}
-											placeholder='Selecciona un producto'
-											onFocus={() => {
-												void loadProducts();
-											}}
-											onChange={(option) =>
-												formik.setFieldValue(
-													'product_id',
-													option ? Number((option as TSelectOption).value) : null,
-												)
-											}
-											onBlur={() => formik.setFieldTouched('product_id', true)}
 										/>
 									</Validation>
 								</div>
-
-								<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-									<div>
-										<Label htmlFor='start_date'>Fecha de inicio</Label>
-										<Validation
-											isValid={!formik.errors.start_date}
-											isTouched={formik.touched.start_date}
-											invalidFeedback={formik.errors.start_date}>
-											<Input
-												type='date'
-												id='start_date'
-												name='start_date'
-												value={formik.values.start_date}
-												onChange={formik.handleChange}
-												onBlur={formik.handleBlur}
-											/>
-										</Validation>
-									</div>
-									<div>
-										<Label htmlFor='end_date'>Fecha de término</Label>
-										<Validation
-											isValid={!formik.errors.end_date}
-											isTouched={formik.touched.end_date}
-											invalidFeedback={formik.errors.end_date}>
-											<Input
-												type='date'
-												id='end_date'
-												name='end_date'
-												value={formik.values.end_date}
-												onChange={formik.handleChange}
-												onBlur={formik.handleBlur}
-											/>
-										</Validation>
-									</div>
-								</div>
-
-								<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-									<div>
-										<Label htmlFor='sale_id'>Venta asociada</Label>
-										<SelectReact
-											name='sale_id'
-											id='sale_id'
-											isClearable
-											placeholder='Buscar venta'
-											value={saleValue}
-											options={saleOptions}
-											onFocus={() => {
-												if (!saleOptions.length) {
-													void searchSales();
-												}
-											}}
-											onChange={(option) =>
-												formik.setFieldValue(
-													'sale_id',
-													option ? Number((option as TSelectOption).value) : null,
-												)
-											}
-											onInputChange={(term, meta) => {
-												if (meta?.action === 'input-change') {
-													void searchSales(term || '');
-												}
-											}}
-										/>
-									</div>
-									<div>
-										<Label htmlFor='customer_id'>Cliente</Label>
-										<SelectReact
-											name='customer_id'
-											id='customer_id'
-											isClearable
-											value={customerValue}
-											options={customerOptions}
-											placeholder='Buscar cliente'
-											onChange={(option) =>
-												formik.setFieldValue(
-													'customer_id',
-													option ? Number((option as TSelectOption).value) : null,
-												)
-											}
-										/>
-									</div>
-								</div>
-
 								<div>
-									<Label htmlFor='notes'>Notas</Label>
-									<Textarea
-										id='notes'
-										name='notes'
-										rows={3}
-										placeholder='Comentarios adicionales sobre la garantía'
-										value={formik.values.notes}
-										onChange={formik.handleChange}
-										onBlur={formik.handleBlur}
+									<Label htmlFor='end_date'>Fecha de término</Label>
+									<Validation
+										isValid={!formik.errors.end_date}
+										isTouched={formik.touched.end_date}
+										invalidFeedback={formik.errors.end_date}>
+										<Input
+											type='date'
+											id='end_date'
+											name='end_date'
+											value={formik.values.end_date}
+											onChange={formik.handleChange}
+											onBlur={formik.handleBlur}
+										/>
+									</Validation>
+								</div>
+							</div>
+
+							<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+								<div>
+									<Label htmlFor='sale_id'>Venta asociada</Label>
+									<SelectReact
+										name='sale_id'
+										id='sale_id'
+										isClearable
+										placeholder='Buscar venta'
+										value={saleValue}
+										options={saleOptions}
+										onFocus={() => {
+											if (!saleOptions.length) {
+												void searchSales();
+											}
+										}}
+										onChange={(option) =>
+											formik.setFieldValue(
+												'sale_id',
+												option
+													? Number((option as TSelectOption).value)
+													: null,
+											)
+										}
+										onInputChange={(term, meta) => {
+											if (meta?.action === 'input-change') {
+												void searchSales(term || '');
+											}
+										}}
 									/>
 								</div>
-
-								<div className='flex justify-end gap-3 pt-2'>
-									<Button variant='outline' onClick={handleCancelEdit} type='button'>
-										Cancelar
-									</Button>
-									<Button type='submit' color='emerald' isLoading={formik.isSubmitting}>
-										Guardar cambios
-									</Button>
+								<div>
+									<Label htmlFor='customer_id'>Cliente</Label>
+									<SelectReact
+										name='customer_id'
+										id='customer_id'
+										isClearable
+										value={customerValue}
+										options={customerOptions}
+										placeholder='Buscar cliente'
+										onChange={(option) =>
+											formik.setFieldValue(
+												'customer_id',
+												option
+													? Number((option as TSelectOption).value)
+													: null,
+											)
+										}
+									/>
 								</div>
-							</motion.div>
-						)}
-					</CardBody>
-				</Card>
-			</motion.div>
+							</div>
+
+							<div>
+								<Label htmlFor='notes'>Notas</Label>
+								<Textarea
+									id='notes'
+									name='notes'
+									rows={3}
+									placeholder='Comentarios adicionales sobre la garantía'
+									value={formik.values.notes}
+									onChange={formik.handleChange}
+									onBlur={formik.handleBlur}
+								/>
+							</div>
+
+							<div className='flex justify-end gap-3 pt-2'>
+								<Button variant='outline' onClick={handleCancelEdit} type='button'>
+									Cancelar
+								</Button>
+								<Button
+									type='submit'
+									color='emerald'
+									isLoading={formik.isSubmitting}>
+									Guardar cambios
+								</Button>
+							</div>
+						</motion.div>
+					)}
+				</CardBody>
+			</Card>
+		</motion.div>
 	);
 
 	return (
@@ -467,7 +489,7 @@ const GarantiaDetailsPage: React.FC = () => {
 						<Button
 							variant='outline'
 							icon='HeroArrowLeft'
-							onClick={() => navigate('/garantias')}>
+							onClick={() => navigate('/comercial/warranties')}>
 							Volver
 						</Button>
 						<Button
@@ -507,19 +529,15 @@ const GarantiaDetailsPage: React.FC = () => {
 					</Card>
 				)}
 
-					{detailCard &&
-						(isEditable ? (
-							<form onSubmit={handleSubmit}>{detailCard}</form>
-						) : (
-							detailCard
-						))}
+				{detailCard &&
+					(isEditable ? <form onSubmit={handleSubmit}>{detailCard}</form> : detailCard)}
 
-					{!loading && !detail && (
-						<Alert color='amber' variant='outline'>
-							No se encontró la información de la garantía solicitada.
-						</Alert>
-					)}
-				</Container>
+				{!loading && !detail && (
+					<Alert color='amber' variant='outline'>
+						No se encontró la información de la garantía solicitada.
+					</Alert>
+				)}
+			</Container>
 
 			{detail && (
 				<DeleteWarrantyModal
