@@ -20,6 +20,7 @@ import {
 } from './components/TransferModals';
 import { useTransferLookups } from './hooks/useTransferLookups';
 import type { TransferFormState, TransferItem, TransferResult } from './types';
+import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 
 const INITIAL_FORM: TransferFormState = {
 	from_warehouse_id: '',
@@ -33,8 +34,7 @@ const Transferencias: React.FC = () => {
 	const navigate = useNavigate();
 	const user = useAppSelector((state) => state.auth.user);
 	const branchId = user?.branch?.id ?? null;
-	const subsidiaryId =
-		user?.subsidiary?.id ?? user?.personalizacion?.subsidiary_id ?? null;
+	const subsidiaryId = user?.subsidiary?.id ?? user?.personalizacion?.subsidiary_id ?? null;
 
 	const { warehouses, products, responsibles } = useTransferLookups(branchId, subsidiaryId);
 
@@ -51,10 +51,7 @@ const Transferencias: React.FC = () => {
 	const [productToRemove, setProductToRemove] = useState<TransferItem | null>(null);
 	const [transferResult, setTransferResult] = useState<TransferResult | null>(null);
 
-	const totalUnits = useMemo(
-		() => items.reduce((sum, item) => sum + item.quantity, 0),
-		[items],
-	);
+	const totalUnits = useMemo(() => items.reduce((sum, item) => sum + item.quantity, 0), [items]);
 
 	const handleFormChange = (payload: Partial<TransferFormState>) => {
 		setTransferForm((prev) => ({ ...prev, ...payload }));
@@ -160,7 +157,8 @@ const Transferencias: React.FC = () => {
 	const handleProceedWithTransfer = async () => {
 		setShowConfirmModal(false);
 		setIsProcessing(true);
-		const responsibleLabel = getResponsibleName(transferForm.responsible_id) || 'Sin responsable';
+		const responsibleLabel =
+			getResponsibleName(transferForm.responsible_id) || 'Sin responsable';
 		try {
 			for (const item of items) {
 				await dispatch(
@@ -229,95 +227,98 @@ const Transferencias: React.FC = () => {
 	};
 
 	return (
-		<Container>
+		<PageWrapper isProtectedRoute title='Transferencias de Inventario' name='transferencias_inventario'>
 			<TransferHeaderCard
 				onNavigateHistory={handleViewHistory}
 				onNavigateInventory={inventoryUrl ? () => navigate(inventoryUrl) : undefined}
 				inventoryDisabled={!inventoryUrl}
 			/>
+			<Container>
+				{items.length > 0 && (
+					<ProgressCard itemCount={items.length} totalUnits={totalUnits} />
+				)}
 
-			{items.length > 0 && <ProgressCard itemCount={items.length} totalUnits={totalUnits} />}
+				<div className='grid grid-cols-1 gap-6 lg:grid-cols-2'>
+					<TransferFormCard
+						form={transferForm}
+						onChange={handleFormChange}
+						warehouses={warehouses}
+						responsibles={responsibles}
+					/>
+					<ProductSelectorCard
+						products={products}
+						selectedProductId={selectedProduct}
+						quantity={quantity}
+						onProductChange={setSelectedProduct}
+						onQuantityChange={setQuantity}
+						onAddProduct={handleAddProduct}
+					/>
+				</div>
 
-			<div className='grid grid-cols-1 gap-6 lg:grid-cols-2'>
-				<TransferFormCard
-					form={transferForm}
-					onChange={handleFormChange}
-					warehouses={warehouses}
-					responsibles={responsibles}
-				/>
-				<ProductSelectorCard
-					products={products}
-					selectedProductId={selectedProduct}
-					quantity={quantity}
-					onProductChange={setSelectedProduct}
-					onQuantityChange={setQuantity}
-					onAddProduct={handleAddProduct}
-				/>
-			</div>
-
-			{items.length > 0 && (
-				<ItemsTableCard
-					items={items}
-					totalUnits={totalUnits}
-					onRemove={handleRemoveProduct}
-					actionSlot={
-						<>
-							<Button
-								variant='outline'
-								color='gray'
-								icon='HeroTrash'
-								onClick={handleClearList}
-								isDisable={items.length === 0}>
-								Limpiar Lista
-							</Button>
-							<PermissionGuard permissions={[ERP_PERMISSIONS.INVENTORY.TRANSFER]}>
+				{items.length > 0 && (
+					<ItemsTableCard
+						items={items}
+						totalUnits={totalUnits}
+						onRemove={handleRemoveProduct}
+						actionSlot={
+							<>
 								<Button
-									variant='solid'
-									color='emerald'
-									icon='HeroArrowRight'
-									isLoading={isProcessing}
-									onClick={handleConfirmTransfer}>
-									Confirmar Transferencia
+									variant='outline'
+									color='gray'
+									icon='HeroTrash'
+									onClick={handleClearList}
+									isDisable={items.length === 0}>
+									Limpiar Lista
 								</Button>
-							</PermissionGuard>
-						</>
-					}
+								<PermissionGuard permissions={[ERP_PERMISSIONS.INVENTORY.TRANSFER]}>
+									<Button
+										variant='solid'
+										color='emerald'
+										icon='HeroArrowRight'
+										isLoading={isProcessing}
+										onClick={handleConfirmTransfer}>
+										Confirmar Transferencia
+									</Button>
+								</PermissionGuard>
+							</>
+						}
+					/>
+				)}
+
+				<ConfirmTransferModal
+					isOpen={showConfirmModal}
+					onClose={() => setShowConfirmModal(false)}
+					onConfirm={handleProceedWithTransfer}
+					summary={summary}
 				/>
-			)}
 
-			<ConfirmTransferModal
-				isOpen={showConfirmModal}
-				onClose={() => setShowConfirmModal(false)}
-				onConfirm={handleProceedWithTransfer}
-				summary={summary}
-			/>
+				<SuccessTransferModal
+					isOpen={showSuccessModal}
+					setIsOpen={setShowSuccessModal}
+					result={transferResult}
+					onCreateAnother={handleCreateAnother}
+					onViewHistory={handleViewHistory}
+				/>
 
-			<SuccessTransferModal
-				isOpen={showSuccessModal}
-				setIsOpen={setShowSuccessModal}
-				result={transferResult}
-				onCreateAnother={handleCreateAnother}
-				onViewHistory={handleViewHistory}
-			/>
+				<RemoveProductModal
+					isOpen={showRemoveConfirmModal}
+					productName={productToRemove?.product_name}
+					onCancel={() => {
+						setProductToRemove(null);
+						setShowRemoveConfirmModal(false);
+					}}
+					onConfirm={confirmRemoveProduct}
+				/>
 
-			<RemoveProductModal
-				isOpen={showRemoveConfirmModal}
-				productName={productToRemove?.product_name}
-				onCancel={() => {
-					setProductToRemove(null);
-					setShowRemoveConfirmModal(false);
-				}}
-				onConfirm={confirmRemoveProduct}
-			/>
-
-			<ClearListModal
-				isOpen={showClearListModal}
-				onCancel={() => setShowClearListModal(false)}
-				onConfirm={confirmClearList}
-				itemCount={items.length}
-				totalUnits={totalUnits}
-			/>
-		</Container>
+				<ClearListModal
+					isOpen={showClearListModal}
+					onCancel={() => setShowClearListModal(false)}
+					onConfirm={confirmClearList}
+					itemCount={items.length}
+					totalUnits={totalUnits}
+				/>
+			</Container>
+		</PageWrapper>
 	);
 };
 

@@ -12,12 +12,13 @@ import {
 	getSortedRowModel,
 	SortingState,
 } from '@tanstack/react-table';
-import { IInventoryMovement, MovementType } from '../../mocks/movements.mock';
+import { IInventoryMovement } from '@/interface/inventory.interface';
 import Table, { Th, THead, Tr, TBody, Td } from '../../../../../components/ui/Table';
 import Button from '../../../../../components/ui/Button';
 import Badge from '../../../../../components/ui/Badge';
 import Icon from '../../../../../components/icon/Icon';
 import { formatDate } from '../../../../../utils/format.utils';
+import { getMovementTypeMeta, normalizeMovementType } from '../../utils/movementType.utils';
 
 interface MovementsTableProps {
 	data: IInventoryMovement[];
@@ -36,18 +37,8 @@ const MovementsTable: React.FC<MovementsTableProps> = ({
 }) => {
 	const [sorting, setSorting] = React.useState<SortingState>([]);
 
-	// Función para obtener badge del tipo de movimiento
-	const getMovementTypeBadge = (type: MovementType) => {
-		const config = {
-			ENTRY: { color: 'emerald' as const, text: 'Entrada', icon: 'HeroArrowUp' },
-			EXIT: { color: 'red' as const, text: 'Salida', icon: 'HeroArrowDown' },
-			TRANSFER: { color: 'sky' as const, text: 'Transferencia', icon: 'HeroArrowsRightLeft' },
-			ADJUSTMENT: { color: 'amber' as const, text: 'Ajuste', icon: 'HeroCog6Tooth' },
-			SALE: { color: 'violet' as const, text: 'Venta', icon: 'HeroShoppingCart' },
-			PURCHASE: { color: 'emerald' as const, text: 'Compra', icon: 'HeroShoppingBag' },
-		};
-
-		const { color, text, icon } = config[type] || config.ADJUSTMENT;
+	const renderMovementTypeBadge = (type?: IInventoryMovement['movement_type']) => {
+		const { color, text, icon } = getMovementTypeMeta(type);
 		return (
 			<Badge color={color} variant='outline' className='gap-1'>
 				<Icon icon={icon} className='h-3 w-3' />
@@ -59,25 +50,36 @@ const MovementsTable: React.FC<MovementsTableProps> = ({
 	// Definición de columnas
 	const columns = useMemo(
 		() => [
-			columnHelper.accessor('id', {
-				header: 'ID',
-				cell: (info) => <span className='font-mono text-sm'>#{info.getValue()}</span>,
-				size: 80,
-			}),
-			columnHelper.accessor('type', {
-				header: 'Tipo',
-				cell: (info) => getMovementTypeBadge(info.getValue()),
-				size: 140,
-			}),
-			columnHelper.accessor('created_at', {
-				header: 'Fecha',
-				cell: (info) => <span className='text-sm'>{formatDate(info.getValue())}</span>,
+			columnHelper.accessor((row) => row.movement_number || `#${row.id}`, {
+				id: 'movement_number',
+				header: 'Movimiento',
+				cell: (info) => (
+					<span className='font-mono text-sm text-gray-700 dark:text-gray-200'>
+						{info.getValue()}
+					</span>
+				),
 				size: 120,
+			}),
+			columnHelper.accessor('movement_type', {
+				header: 'Tipo',
+				cell: (info) => renderMovementTypeBadge(info.getValue()),
+				size: 150,
+			}),
+			columnHelper.accessor((row) => row.performed_at || row.created_at, {
+				id: 'performed_at',
+				header: 'Fecha',
+				cell: (info) =>
+					info.getValue() ? (
+						<span className='text-sm'>{formatDate(info.getValue() as string)}</span>
+					) : (
+						<span className='text-sm text-gray-500'>N/D</span>
+					),
+				size: 150,
 			}),
 			columnHelper.accessor('product', {
 				header: 'Producto',
 				cell: (info) => {
-					const product = info.getValue();
+					const product = info.getValue() || info.row.original.inventory_item?.product;
 					return (
 						<div>
 							<div className='font-medium'>{product?.name || 'N/A'}</div>
@@ -92,27 +94,43 @@ const MovementsTable: React.FC<MovementsTableProps> = ({
 			columnHelper.accessor('quantity', {
 				header: 'Cantidad',
 				cell: (info) => {
-					const quantity = info.getValue();
+					const quantity = info.getValue() ?? 0;
+					const normalizedType = normalizeMovementType(
+						info.row.original.movement_type,
+					);
+					const isOut = normalizedType === 'OUT';
+					const signedQuantity = isOut ? -Math.abs(quantity) : quantity;
 					return (
 						<span
 							className={`font-semibold ${
-								quantity < 0 ? 'text-red-600' : 'text-emerald-600'
+								signedQuantity < 0 ? 'text-red-600' : 'text-emerald-600'
 							}`}>
-							{quantity < 0 ? '' : '+'}
-							{quantity}
+							{signedQuantity > 0 ? '+' : ''}
+							{signedQuantity}
 						</span>
 					);
 				},
 				size: 100,
 			}),
-			columnHelper.accessor('warehouse', {
+			columnHelper.display({
+				id: 'warehouse',
 				header: 'Almacén',
-				cell: (info) => <span className='text-sm'>{info.getValue()?.name || 'N/A'}</span>,
+				cell: (info) => {
+					const movement = info.row.original;
+					const warehouseName =
+						movement.warehouse?.name ||
+						movement.warehouse_location?.name ||
+						(movement.warehouse_id ? `Almacén #${movement.warehouse_id}` : 'N/A');
+					return <span className='text-sm'>{warehouseName}</span>;
+				},
 				size: 120,
 			}),
-			columnHelper.accessor('performer', {
+			columnHelper.display({
+				id: 'performer',
 				header: 'Responsable',
-				cell: (info) => <span className='text-sm'>{info.getValue()?.name || 'N/A'}</span>,
+				cell: (info) => (
+					<span className='text-sm'>{info.row.original.performer?.name || 'N/A'}</span>
+				),
 				size: 120,
 			}),
 			columnHelper.display({
@@ -120,10 +138,12 @@ const MovementsTable: React.FC<MovementsTableProps> = ({
 				header: 'Stock',
 				cell: (info) => {
 					const movement = info.row.original;
+					const previousStock = movement.previous_stock ?? movement.new_stock ?? null;
+					const currentStock = movement.new_stock ?? movement.previous_stock ?? null;
 					return (
 						<div className='text-xs'>
 							<div className='font-mono'>
-								{movement.previous_stock} → {movement.current_stock}
+								{previousStock ?? '—'} → {currentStock ?? '—'}
 							</div>
 						</div>
 					);

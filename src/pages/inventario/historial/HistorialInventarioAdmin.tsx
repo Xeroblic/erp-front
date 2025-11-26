@@ -8,7 +8,8 @@ import { toast } from 'react-toastify';
 
 // Hooks y servicios
 import useMovementsManager, { MovementFilters } from './hooks/useMovementsManager';
-import { IInventoryMovement, MovementType } from './mocks/movements.mock';
+import { IInventoryMovement } from '@/interface/inventory.interface';
+import { NormalizedMovementType } from './utils/movementType.utils';
 
 // Componentes específicos del módulo
 import MovementsTable from './components/tables/MovementsTable';
@@ -51,7 +52,10 @@ const HistorialInventarioAdmin: React.FC = () => {
 
 	// Cargar filtros desde URL
 	useEffect(() => {
-		const tipo = searchParams.get('tipo') as MovementType;
+		const tipoParam = searchParams.get('tipo');
+		const tipo = tipoParam
+			? (tipoParam.toUpperCase() as NormalizedMovementType)
+			: undefined;
 		const almacen = searchParams.get('almacen');
 
 		if (tipo || almacen) {
@@ -71,10 +75,7 @@ const HistorialInventarioAdmin: React.FC = () => {
 	};
 
 	// Obtener movimientos paginados
-	const paginatedMovements = filteredMovements.slice(
-		(currentPage - 1) * itemsPerPage,
-		currentPage * itemsPerPage,
-	);
+	const paginatedMovements = filteredMovements;
 
 	return (
 		<PageWrapper title='Historial de Inventario' name='historial'>
@@ -190,10 +191,10 @@ const HistorialInventarioAdmin: React.FC = () => {
 								</div>
 								<div>
 									<p className='text-sm text-gray-500 dark:text-gray-400'>
-										Por Cobrar
+										Transferencias
 									</p>
 									<p className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
-										$ 1,00
+										{stats.totalTransfers.toLocaleString()}
 									</p>
 								</div>
 							</div>
@@ -227,7 +228,7 @@ const HistorialInventarioAdmin: React.FC = () => {
 							{/* Tipo de Movimiento */}
 							<div>
 								<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-									Estado
+									Tipo de movimiento
 								</label>
 								<Select
 									name='movementType'
@@ -235,20 +236,22 @@ const HistorialInventarioAdmin: React.FC = () => {
 									onChange={(e) =>
 										setFilters({
 											...filters,
-											type: e.target.value as MovementType | undefined,
+											type: (e.target.value || undefined) as NormalizedMovementType | undefined,
 										})
 									}>
 									<option value=''>Todos los estados</option>
-									<option value='entry'>Completado</option>
-									<option value='exit'>Pendiente</option>
-									<option value='transfer'>Sin pagar</option>
+									<option value='IN'>Entradas</option>
+									<option value='OUT'>Salidas</option>
+									<option value='TRANSFER'>Transferencias</option>
+									<option value='ADJUST'>Ajustes</option>
+									<option value='RETURN'>Retornos</option>
 								</Select>
 							</div>
 
-							{/* Método de Pago */}
+							{/* Almacén */}
 							<div>
 								<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-									Método de Pago
+									Almacén
 								</label>
 								<Select
 									name='warehouse'
@@ -261,10 +264,12 @@ const HistorialInventarioAdmin: React.FC = () => {
 												: undefined,
 										})
 									}>
-									<option value=''>Todos los métodos</option>
-									<option value='1'>Efectivo</option>
-									<option value='2'>Tarjeta</option>
-									<option value='3'>Transferencia</option>
+									<option value=''>Todos los almacenes</option>
+									{warehouses.map((warehouse) => (
+										<option key={warehouse.id} value={warehouse.id}>
+											{warehouse.name}
+										</option>
+									))}
 								</Select>
 							</div>
 

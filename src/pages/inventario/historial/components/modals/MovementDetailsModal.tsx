@@ -3,12 +3,13 @@
  * Incluye toda la información relevante del movimiento
  */
 import React from 'react';
-import { IInventoryMovement, MovementType } from '../../mocks/movements.mock';
+import { IInventoryMovement } from '@/interface/inventory.interface';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '../../../../../components/ui/Modal';
 import Button from '../../../../../components/ui/Button';
 import Badge from '../../../../../components/ui/Badge';
 import Icon from '../../../../../components/icon/Icon';
 import { formatDate } from '../../../../../utils/format.utils';
+import { getMovementTypeMeta, normalizeMovementType } from '../../utils/movementType.utils';
 
 interface MovementDetailsModalProps {
 	isOpen: boolean;
@@ -23,25 +24,18 @@ export const MovementDetailsModal: React.FC<MovementDetailsModalProps> = ({
 }) => {
 	if (!movement) return null;
 
-	// Función para obtener badge del tipo de movimiento
-	const getMovementTypeBadge = (type: MovementType) => {
-		const config = {
-			ENTRY: { color: 'emerald' as const, text: 'Entrada', icon: 'HeroArrowUp' },
-			EXIT: { color: 'red' as const, text: 'Salida', icon: 'HeroArrowDown' },
-			TRANSFER: { color: 'sky' as const, text: 'Transferencia', icon: 'HeroArrowsRightLeft' },
-			ADJUSTMENT: { color: 'amber' as const, text: 'Ajuste', icon: 'HeroCog6Tooth' },
-			SALE: { color: 'violet' as const, text: 'Venta', icon: 'HeroShoppingCart' },
-			PURCHASE: { color: 'emerald' as const, text: 'Compra', icon: 'HeroShoppingBag' },
-		};
-
-		const { color, text, icon } = config[type] || config.ADJUSTMENT;
-		return (
-			<Badge color={color} variant='outline' className='gap-1'>
-				<Icon icon={icon} className='h-3 w-3' />
-				{text}
-			</Badge>
-		);
-	};
+	const { color, text, icon } = getMovementTypeMeta(movement.movement_type);
+	const performedAt = movement.performed_at || movement.created_at;
+	const product = movement.product || movement.inventory_item?.product;
+	const previousStock = movement.previous_stock ?? movement.new_stock ?? null;
+	const currentStock = movement.new_stock ?? movement.previous_stock ?? null;
+	const normalizedType = normalizeMovementType(movement.movement_type);
+	const quantity = movement.quantity ?? 0;
+	const signedQuantity = normalizedType === 'OUT' ? -Math.abs(quantity) : quantity;
+	const warehouseName =
+		movement.warehouse?.name ||
+		movement.warehouse_location?.name ||
+		(movement.warehouse_id ? `Almacén #${movement.warehouse_id}` : 'N/A');
 
 	return (
 		<Modal isOpen={isOpen} setIsOpen={setIsOpen} size='lg'>
@@ -50,7 +44,7 @@ export const MovementDetailsModal: React.FC<MovementDetailsModalProps> = ({
 					<Icon icon='HeroDocumentText' className='h-6 w-6 text-sky-600' />
 					<div>
 						<h3 className='text-lg font-semibold'>
-							Detalles del Movimiento #{movement.id}
+							Detalles del Movimiento {movement.movement_number || `#${movement.id}`}
 						</h3>
 						<p className='text-sm text-gray-600'>
 							Información completa del movimiento de inventario
@@ -68,7 +62,12 @@ export const MovementDetailsModal: React.FC<MovementDetailsModalProps> = ({
 							<label className='mb-2 block text-sm font-medium text-gray-700'>
 								Tipo de Movimiento
 							</label>
-							<div>{getMovementTypeBadge(movement.type)}</div>
+							<div>
+								<Badge color={color} variant='outline' className='gap-1'>
+									<Icon icon={icon} className='h-3 w-3' />
+									{text}
+								</Badge>
+							</div>
 						</div>
 
 						{/* Fecha */}
@@ -78,7 +77,9 @@ export const MovementDetailsModal: React.FC<MovementDetailsModalProps> = ({
 							</label>
 							<div className='flex items-center gap-2'>
 								<Icon icon='HeroCalendarDays' className='h-4 w-4 text-gray-400' />
-								<span className='text-sm'>{formatDate(movement.created_at)}</span>
+								<span className='text-sm'>
+									{performedAt ? formatDate(performedAt) : 'N/D'}
+								</span>
 							</div>
 						</div>
 
@@ -92,13 +93,11 @@ export const MovementDetailsModal: React.FC<MovementDetailsModalProps> = ({
 									<Icon icon='HeroCube' className='h-5 w-5 text-gray-600' />
 								</div>
 								<div className='flex-1'>
-									<div className='font-medium'>
-										{movement.product?.name || 'N/A'}
-									</div>
+									<div className='font-medium'>{product?.name || 'N/A'}</div>
 									<div className='text-sm text-gray-600'>
 										SKU:{' '}
 										<code className='rounded bg-gray-100 px-1 py-0.5 text-xs'>
-											{movement.product?.sku || 'N/A'}
+											{product?.sku || 'N/A'}
 										</code>
 									</div>
 								</div>
@@ -113,7 +112,7 @@ export const MovementDetailsModal: React.FC<MovementDetailsModalProps> = ({
 							{/* Stock Anterior */}
 							<div className='text-center'>
 								<div className='text-2xl font-bold text-gray-600'>
-									{movement.previous_stock}
+									{previousStock ?? '—'}
 								</div>
 								<div className='text-xs text-gray-500'>Stock Anterior</div>
 							</div>
@@ -123,12 +122,12 @@ export const MovementDetailsModal: React.FC<MovementDetailsModalProps> = ({
 								<div className='flex items-center gap-2'>
 									<div
 										className={`rounded-full px-3 py-1 text-sm font-medium ${
-											movement.quantity < 0
+											signedQuantity < 0
 												? 'bg-red-100 text-red-700'
 												: 'bg-emerald-100 text-emerald-700'
 										}`}>
-										{movement.quantity < 0 ? '' : '+'}
-										{movement.quantity}
+										{signedQuantity > 0 ? '+' : ''}
+										{signedQuantity}
 									</div>
 									<Icon icon='HeroArrowRight' className='h-4 w-4 text-gray-400' />
 								</div>
@@ -137,7 +136,7 @@ export const MovementDetailsModal: React.FC<MovementDetailsModalProps> = ({
 							{/* Stock Actual */}
 							<div className='text-center'>
 								<div className='text-2xl font-bold text-sky-600'>
-									{movement.current_stock}
+									{currentStock ?? '—'}
 								</div>
 								<div className='text-xs text-gray-500'>Stock Actual</div>
 							</div>
@@ -156,7 +155,7 @@ export const MovementDetailsModal: React.FC<MovementDetailsModalProps> = ({
 									icon='HeroBuilding-StorefrontIcon'
 									className='h-4 w-4 text-gray-400'
 								/>
-								<span className='text-sm'>{movement.warehouse?.name || 'N/A'}</span>
+								<span className='text-sm'>{warehouseName}</span>
 							</div>
 						</div>
 
