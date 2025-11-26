@@ -38,9 +38,9 @@ interface CreateEditQuotationModalProps {
 
 // Esquema de validación mejorado según CU025
 const quotationSchema = Yup.object().shape({
-	quote_number: Yup.string()
-		.required('El número de cotización es requerido')
-		.min(3, 'Mínimo 3 caracteres'),
+	// quote_number: Yup.string()
+	// 	.required('El número de cotización es requerido')
+	// 	.min(3, 'Mínimo 3 caracteres'),
 	customer_id: Yup.number()
 		.required('Debe seleccionar un cliente')
 		.min(1, 'Debe seleccionar un cliente válido'),
@@ -222,7 +222,7 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 		if (quotation) {
 			return {
 				subsidiary_id: quotation.subsidiary_id,
-				quote_number: quotation.quote_number ?? '',
+				// quote_number: quotation.quote_number ?? '',
 				customer_id: quotation.customer_id ?? 0,
 				quote_date: quotation.quote_date ?? '',
 				expiry_date: quotation.expiry_date ?? quotation.valid_until ?? '',
@@ -257,7 +257,7 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 
 		return {
 			subsidiary_id: 1,
-			quote_number: `COT-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`,
+			// quote_number: `COT-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`,
 			customer_id: 0,
 			quote_date: today,
 			expiry_date: expiryDate,

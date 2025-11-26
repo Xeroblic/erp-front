@@ -341,7 +341,8 @@ const CotizacionesAdmin: React.FC = () => {
             
             // 3. Generamos el PDF
             const blob = await generateQuotePdf(detail);
-            const filename = `cotizacion-${detail.quote_number ?? detail.id}.pdf`;
+            // const filename = `cotizacion-${detail.quote_number ?? detail.id}.pdf`;
+            const filename = `cotizacion-${detail.id}.pdf`;
             saveAs(blob, filename);
             
         } catch (error) {

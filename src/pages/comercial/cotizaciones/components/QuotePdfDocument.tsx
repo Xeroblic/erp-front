@@ -204,7 +204,9 @@ const QuotePdfDocument = ({ quote }: { quote: IQuote }) => {
 
         {/* TÍTULO */}
         <Text style={{ textAlign: "center", marginBottom: 16, fontSize: 12, fontWeight: "bold" }}>
-          COTIZACIÓN N° {quote.quote_number ?? quote.id}
+          {/* COTIZACIÓN N° {quote.quote_number ?? quote.id} */}
+          COTIZACIÓN N° {quote.id}
+
         </Text>
 
         {/* INFORMACIÓN GENERAL */}

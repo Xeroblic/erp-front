@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
+import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector, injectReducer } from '@/store';
 import salesReducer, {
 	loadSalesList,
@@ -9,6 +10,7 @@ import salesReducer, {
 } from '@/store/slices/salesSlice';
 import type { SaleListItem, SalesListFilters } from '@/services/salesService';
 import { formatCLP, translateStatus } from './utils';
+import ApiService from '@/services/ApiService';
 import { formatDate } from '@/utils/format.utils';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -78,11 +80,12 @@ const SalesListPage: React.FC = () => {
 	const [q, setQ] = useState<string>('');
 	const [detailModalOpen, setDetailModalOpen] = useState(false);
 	const [selectedSaleId, setSelectedSaleId] = useState<number | null>(null);
+	const [creatingQuote, setCreatingQuote] = useState(false);
 
-useEffect(() => {
-    if (!subsidiaryId) return;
-    dispatch(loadSalesList({ subsidiaryId, filters: { with_customer: 1 } }));
-}, [subsidiaryId, dispatch]);
+	useEffect(() => {
+		if (!subsidiaryId) return;
+		dispatch(loadSalesList({ subsidiaryId, filters: { with_customer: 1 } }));
+	}, [subsidiaryId, dispatch]);
 
 	const summaryStats = useMemo(() => {
 		const totalAmount = list.reduce<number>((acc, sale) => {
@@ -135,6 +138,26 @@ useEffect(() => {
 		},
 		[handleDetailModalState],
 	);
+
+	const handleCreateQuote = useCallback(async () => {
+		if (!subsidiaryId || !selectedSaleId || creatingQuote) return;
+
+		try {
+			setCreatingQuote(true);
+			const response = await ApiService.fetchData<{ message?: string }>({
+				url: `/subsidiaries/${subsidiaryId}/sales/${selectedSaleId}/create-quote`,
+				method: 'post',
+			});
+			const message = response.data?.message || 'Cotización creada correctamente';
+			toast.success(message);
+		} catch (error) {
+			const err = error as { response?: { data?: { message?: string } } };
+			const message = err?.response?.data?.message || 'No se pudo crear la cotización';
+			toast.error(message);
+		} finally {
+			setCreatingQuote(false);
+		}
+	}, [subsidiaryId, selectedSaleId, creatingQuote]);
 
 	const detailModalVisible = detailModalOpen && selectedSaleId !== null && Boolean(subsidiaryId);
 
@@ -294,8 +317,8 @@ useEffect(() => {
 							<Card>
 								<CardHeader>
 									<div className='flex items-center gap-2'>
-										<div className='mr-4 flex h-12 w-12 items-center justify-center bg-green-200/20 p-1 rounded-lg border border-green-300'>
-											<Icon icon='DuoDollar' size='text-3xl' color='green'/>
+										<div className='mr-4 flex h-12 w-12 items-center justify-center rounded-lg border border-green-300 bg-green-200/20 p-1'>
+											<Icon icon='DuoDollar' size='text-3xl' color='green' />
 										</div>
 										<span className='text-sm font-semibold text-zinc-400'>
 											Total página
@@ -315,8 +338,8 @@ useEffect(() => {
 							<Card>
 								<CardHeader>
 									<div className='flex items-center gap-2'>
-										<div className='mr-4 flex h-12 w-12 items-center justify-center bg-red-200/20 p-1 rounded-lg border border-red-300'>
-											<Icon icon='DuoTicket' size='text-3xl' color='red'/>	
+										<div className='mr-4 flex h-12 w-12 items-center justify-center rounded-lg border border-red-300 bg-red-200/20 p-1'>
+											<Icon icon='DuoTicket' size='text-3xl' color='red' />
 										</div>
 										<span className='text-sm font-semibold text-zinc-400'>
 											Ticket promedio
@@ -336,7 +359,7 @@ useEffect(() => {
 							<Card>
 								<CardHeader>
 									<div className='flex items-center gap-2'>
-										<div className='mr-4 flex h-12 w-12 items-center justify-center bg-amber-200/20 p-1 rounded-lg border border-amber-300'>
+										<div className='mr-4 flex h-12 w-12 items-center justify-center rounded-lg border border-amber-300 bg-amber-200/20 p-1'>
 											<Icon icon='DuoSale1' size='text-3xl' color='amber' />
 										</div>
 										<span className='text-sm font-semibold text-zinc-400'>
@@ -357,8 +380,12 @@ useEffect(() => {
 							<Card>
 								<CardHeader>
 									<div className='flex items-center gap-2'>
-										<div className='mr-4 flex h-12 w-12 items-center justify-center bg-emerald-200/20 p-1 rounded-lg border border-emerald-400'>
-										<Icon icon='DuoDoneCircle' size='text-3xl' color='emerald' />
+										<div className='mr-4 flex h-12 w-12 items-center justify-center rounded-lg border border-emerald-400 bg-emerald-200/20 p-1'>
+											<Icon
+												icon='DuoDoneCircle'
+												size='text-3xl'
+												color='emerald'
+											/>
 										</div>
 										<span className='text-sm font-semibold text-zinc-400'>
 											Entregadas
@@ -380,7 +407,9 @@ useEffect(() => {
 							<CardHeader>
 								<div className='flex items-center gap-2'>
 									<Icon icon='DuoFilter' size='text-xl' />
-									<CardTitle><Badge>Filtros de búsqueda</Badge></CardTitle>
+									<CardTitle>
+										<Badge>Filtros de búsqueda</Badge>
+									</CardTitle>
 								</div>
 								<Button
 									variant='outline'
@@ -497,12 +526,21 @@ useEffect(() => {
 					</ModalBody>
 					<ModalFooter>
 						<ModalFooterChild>
-							<Button
-								variant='outline'
-								icon='HeroXMark'
-								onClick={() => handleDetailModalState(false)}>
-								Cerrar
-							</Button>
+							<div className='flex flex-shrink-0 items-center justify-center gap-2'>
+								<Button
+									variant='outline'
+									icon='HeroXMark'
+									onClick={() => handleDetailModalState(false)}>
+									Cerrar
+								</Button>
+								<Button
+									title='Crear cotización'
+									variant='outline'
+									onClick={handleCreateQuote}
+									isLoading={creatingQuote}>
+									Crear cotización
+								</Button>
+							</div>
 						</ModalFooterChild>
 					</ModalFooter>
 				</Modal>

@@ -434,7 +434,9 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 						<p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>
 							{companyInfo.documentLabel}
 						</p>
-						<p className='text-lg font-bold'>N° {quote.quote_number ?? quote.id}</p>
+						{/* <p className='text-lg font-bold'>N° {quote.quote_number ?? quote.id}</p> */}
+						<p className='text-lg font-bold'>N° { quote.id}</p>
+
 					</div>
 					{companyInfo.branch && (
 						<p className='mt-3 text-xs font-semibold uppercase tracking-wide'>{companyInfo.branch}</p>

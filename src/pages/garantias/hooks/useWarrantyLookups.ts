@@ -20,12 +20,22 @@ export const useWarrantyLookups = (
 	const customers = useAppSelector((state) => state.customerSuppliers.items);
 
 	const [saleOptions, setSaleOptions] = useState<TSelectOption[]>([]);
+	const [productsRequested, setProductsRequested] = useState(false);
+
+	const loadProducts = useCallback(async () => {
+		if (!branchId || productsRequested) return;
+		setProductsRequested(true);
+		try {
+			await dispatch(fetchProducts({ branchId, params: { page: 1, per_page: 200 } }));
+		} catch (error) {
+			setProductsRequested(false);
+			throw error;
+		}
+	}, [branchId, dispatch, productsRequested]);
 
 	useEffect(() => {
-		if (branchId) {
-			dispatch(fetchProducts({ branchId, params: { page: 1, per_page: 200 } }));
-		}
-	}, [branchId, dispatch]);
+		setProductsRequested(false);
+	}, [branchId]);
 
 	useEffect(() => {
 		if (subsidiaryId) {
@@ -57,18 +67,23 @@ export const useWarrantyLookups = (
 
 	const searchSales = useCallback(
 		async (search = ''): Promise<TSelectOption[]> => {
-			if (!subsidiaryId) return [];
+			if (!subsidiaryId) {
+				setSaleOptions([]);
+				return [];
+			}
 			try {
+				const normalized = search.trim();
 				const response = await fetchSalesList(subsidiaryId, {
-					q: search || undefined,
+					q: normalized ? normalized : undefined,
 					per_page: 20,
+					page: 1,
 				});
 				const sales = response.data ?? ([] as SaleLookup[]);
 				const options = sales.map((sale) => ({
 					value: String(sale.id),
 					label: sale.sale_number || `Venta #${sale.id}`,
 				}));
-				if (!search) setSaleOptions(options);
+				setSaleOptions(options);
 				return options;
 			} catch (err: unknown) {
 				const message =
@@ -84,15 +99,14 @@ export const useWarrantyLookups = (
 	useEffect(() => {
 		if (!subsidiaryId) {
 			setSaleOptions([]);
-			return;
 		}
-		void searchSales();
-	}, [subsidiaryId, searchSales]);
+	}, [subsidiaryId]);
 
 	return {
 		productOptions,
 		customerOptions,
 		saleOptions,
 		searchSales,
+		loadProducts,
 	};
 };

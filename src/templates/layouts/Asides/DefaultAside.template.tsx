@@ -363,6 +363,17 @@ const DefaultAsideTemplate = () => {
 								onClick={() => navigate(Pages.catalogs.subPages.warehouses.to)}
 							/>
 						</AuthorityCheckNav>
+						<AuthorityCheckNav
+							authority={Pages.inventory.subPages.transfers.authority}
+							userAuthority={userPermissionsAndRoles}>
+							<NavItem
+								text={Pages.inventory.subPages.transfers.text}
+								to={Pages.inventory.subPages.transfers.to}
+								icon={Pages.inventory.subPages.transfers.icon}
+								id={Pages.inventory.subPages.transfers.id}
+								onClick={() => navigate(Pages.inventory.subPages.transfers.to)}
+							/>
+						</AuthorityCheckNav>
 					</NavCollapse>
 
 					{/* =================================================
@@ -401,17 +412,7 @@ const DefaultAsideTemplate = () => {
 							/>
 						</AuthorityCheckNav>
 
-						<AuthorityCheckNav
-							authority={Pages.commercial.subPages.transfers.authority}
-							userAuthority={userPermissionsAndRoles}>
-							<NavItem
-								text={Pages.commercial.subPages.transfers.text}
-								to={Pages.commercial.subPages.transfers.to}
-								icon={Pages.commercial.subPages.transfers.icon}
-								id={Pages.commercial.subPages.transfers.id}
-								onClick={() => navigate(Pages.commercial.subPages.transfers.to)}
-							/>
-						</AuthorityCheckNav>
+						
 						<AuthorityCheckNav
 							authority={Pages.commercial.subPages.warranties.authority}
 							userAuthority={userPermissionsAndRoles}
@@ -560,6 +561,7 @@ const DefaultAsideTemplate = () => {
 									onClick={() =>
 										navigate(Pages.integrations.subPages.syncStock.to)
 									}
+									
 								/>
 							</AuthorityCheckNav>
 

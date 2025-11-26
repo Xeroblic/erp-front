@@ -23,6 +23,7 @@ type WarrantyFormModalProps = {
 	customerOptions: TSelectOption[];
 	saleOptions: TSelectOption[];
 	onSearchSales: (term?: string) => Promise<TSelectOption[]>;
+	onLoadProducts?: () => void;
 };
 
 const ensureOption = (
@@ -50,6 +51,7 @@ const WarrantyFormModal: React.FC<WarrantyFormModalProps> = ({
 	customerOptions,
 	saleOptions,
 	onSearchSales,
+	onLoadProducts,
 }) => {
 	const { formik, handleSubmit } = useWarrantyForm({
 		subsidiaryId,
@@ -161,6 +163,9 @@ const WarrantyFormModal: React.FC<WarrantyFormModalProps> = ({
 								placeholder='Selecciona un producto'
 								value={productValue}
 								options={productOptions}
+								onFocus={() => {
+									void onLoadProducts?.();
+								}}
 								onChange={(option) =>
 									formik.setFieldValue(
 										'product_id',
@@ -217,14 +222,21 @@ const WarrantyFormModal: React.FC<WarrantyFormModalProps> = ({
 								placeholder='Buscar venta'
 								value={saleValue}
 								options={saleOptions}
+								onFocus={() => {
+									if (!saleOptions.length) {
+										void onSearchSales();
+									}
+								}}
 								onChange={(option) =>
 									formik.setFieldValue(
 										'sale_id',
 										option ? Number((option as TSelectOption).value) : null,
 									)
 								}
-								onInputChange={(term) => {
-									void onSearchSales(term || '');
+								onInputChange={(term, meta) => {
+									if (meta?.action === 'input-change') {
+										void onSearchSales(term || '');
+									}
 								}}
 							/>
 						</div>

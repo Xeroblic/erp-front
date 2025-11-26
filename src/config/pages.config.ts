@@ -173,12 +173,20 @@ export const privatePages = {
 		icon: 'DuoBox3',
 		authority: [],
 		subPages: {
+			// transfers: {
+			// 	id: 'transfers',
+			// 	to: '/inventario/transferencias',
+			// 	text: 'Transferencias',
+			// 	icon: 'HeroTruck',
+			// 	authority: [],
+			// },
 			transfers: {
-				id: 'transfers',
+				id: 'commercialTransfers',
 				to: '/inventario/transferencias',
-				text: 'Transferencias',
+				text: 'Transferencias Comerciales',
 				icon: 'HeroTruck',
-				authority: [],
+				authority: ['view-sale'],
+				roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin'],
 			},
 			movements: {
 				id: 'movements',
@@ -363,10 +371,10 @@ catalogs: {
 			transfers: {
 				id: 'commercialTransfers',
 				to: '/comercial/transferencias',
-				text: 'Transferencias Comerciales',
+				text: 'Transferencias',
 				icon: 'HeroTruck',
 				authority: ['view-sale'],
-				roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'sales-rep'],
+				roles: ['super-admin', 'company-admin', 'subsidiary-admin', 'branch-admin', 'sales-rep', 'cashier', 'manager', 'after-sales'],
 			},
 			warranties: {
 				id: 'warranties',

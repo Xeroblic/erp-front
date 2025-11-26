@@ -133,7 +133,6 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId }) => {
 		[detail?.shipping_snapshot],
 	);
 
-
 	return (
 		<div className='space-y-6'>
 			<Card>
@@ -147,8 +146,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId }) => {
 							Nº Woo: {detail?.wc_order_number || detail?.wc_order_id || '—'}
 						</div>
 						<div className='text-xs text-zinc-500'>
-							Fecha de venta:{' '}
-							{detail?.sale_date ? formatDate(detail.sale_date) : '—'}
+							Fecha de venta: {detail?.sale_date ? formatDate(detail.sale_date) : '—'}
 						</div>
 					</div>
 					<div className='flex flex-col gap-4 text-right sm:flex-row sm:items-center sm:gap-6'>
@@ -158,15 +156,11 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId }) => {
 							</Badge>
 						</div>
 						<div>
-							<p className='text-xs uppercase tracking-wide text-zinc-500'>
-								Total
-							</p>
+							<p className='text-xs uppercase tracking-wide text-zinc-500'>Total</p>
 							<p className='text-2xl font-semibold text-zinc-900 dark:text-zinc-100'>
 								{formatCLP(detail?.total_amount ?? 0)}
 							</p>
-							<p className='text-xs text-zinc-400'>
-								{itemsCount} ítems
-							</p>
+							<p className='text-xs text-zinc-400'>{itemsCount} ítems</p>
 						</div>
 						{canClose && (
 							<Button
@@ -192,7 +186,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId }) => {
 									{field.label}
 								</label>
 								<Input
-                name='informacion_general'
+									name='informacion_general'
 									value={field.value}
 									readOnly
 									className='cursor-text bg-white text-sm dark:bg-zinc-900'
@@ -236,7 +230,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId }) => {
 								Nombre
 							</label>
 							<Input
-                name='cliente_nombre'
+								name='cliente_nombre'
 								value={detail?.customer?.name || '—'}
 								readOnly
 								className='cursor-text bg-white text-sm dark:bg-zinc-900'
@@ -247,7 +241,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId }) => {
 								RUT
 							</label>
 							<Input
-                name='cliente_rut'
+								name='cliente_rut'
 								value={detail?.customer?.rut || '—'}
 								readOnly
 								className='cursor-text bg-white text-sm dark:bg-zinc-900'
@@ -258,7 +252,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId }) => {
 								Email
 							</label>
 							<Input
-                name='cliente_email'
+								name='cliente_email'
 								value={detail?.customer?.email || '—'}
 								readOnly
 								className='cursor-text bg-white text-sm dark:bg-zinc-900'

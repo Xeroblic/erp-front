@@ -49,7 +49,7 @@ export interface Quote {
 	id: number;
 	subsidiary_id: number;
 	customer_id: number;
-	quote_number?: string | null;
+	// quote_number?: string | null;
 	quote_date: string;
 	expiry_date: string;
 	valid_until?: string | null;
@@ -109,7 +109,7 @@ export interface QuoteItemDTO {
 export interface QuoteCreateDTO {
 	[key: string]: unknown;
 	customer_id: number;
-	quote_number?: string | null;
+	// quote_number?: string | null;
 	quote_date: string;
 	expiry_date: string;
 	tax_rate: number;

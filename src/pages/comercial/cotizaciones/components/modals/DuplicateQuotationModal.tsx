@@ -60,12 +60,12 @@ const DuplicateQuotationModal: React.FC<DuplicateQuotationModalProps> = ({
 						</CardHeader>
 						<CardBody>
 							<div className='grid grid-cols-1 gap-3 text-sm'>
-								<div className='flex items-center justify-between'>
+								{/* <div className='flex items-center justify-between'>
 									<span className='font-medium text-gray-700'>Número:</span>
 									<span className='font-mono text-gray-900'>
 										{quotation.quote_number}
 									</span>
-								</div>
+								</div> */}
 								<div className='flex items-center justify-between'>
 									<span className='font-medium text-gray-700'>Cliente:</span>
 									<span className='text-right text-gray-900'>

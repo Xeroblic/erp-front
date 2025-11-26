@@ -42,7 +42,7 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
         printWindow.document.write(`
             <html>
                 <head>
-                    <title>Cotización ${quotation?.quote_number ?? quotation?.id ?? ''}</title>
+                    <title>Cotización ${quotation?.id ?? ''}</title>
                     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" />
                 </head>
                 <body class="bg-gray-100">
@@ -68,7 +68,7 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
 
             // 2. Generamos el PDF
             const blob = await generateQuotePdf(quotation);
-            const filename = `cotizacion-${quotation.quote_number ?? quotation.id}.pdf`;
+            const filename = `cotizacion-${quotation.id}.pdf`;
             
             // 3. Descargamos
             saveAs(blob, filename);
@@ -114,7 +114,7 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
                 <div>
                     <h2 className='text-xl font-semibold'>Detalles de Cotización</h2>
                     <p className='text-sm text-gray-600'>
-                        {quotation?.quote_number ?? `ID #${quotation?.id ?? ''}`}
+                        { `ID #${quotation?.id ?? ''}`}
                     </p>
                 </div>
             </ModalHeader>

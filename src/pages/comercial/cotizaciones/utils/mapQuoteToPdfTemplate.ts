@@ -169,7 +169,7 @@ export function mapQuoteToPdfTemplate(quote: IQuote) {
 			addresses: companyTemplate.addresses,
 			branchSII: companyTemplate.branchSII,
 			documentLabel: "COTIZACION",
-			documentNumber: quote.quote_number ?? quote.id,
+			// documentNumber: quote.quote_number ?? quote.id,
 		},
 
 		titleSeparator: "POR LO SIGUIENTE",

@@ -32,10 +32,8 @@ export const useWarranties = () => {
 	const [perPage, setPerPage] = useState(20);
 	const subsidiaryId = getUserSubsidiaryId(user);
 	const branchId = user?.branch?.id ?? null;
-	const { productOptions, customerOptions, saleOptions, searchSales } = useWarrantyLookups(
-		subsidiaryId,
-		branchId,
-	);
+	const { productOptions, customerOptions, saleOptions, searchSales, loadProducts } =
+		useWarrantyLookups(subsidiaryId, branchId);
 
 	const loadWarranties = useCallback(async () => {
 		if (!subsidiaryId) return;
@@ -98,6 +96,7 @@ export const useWarranties = () => {
 		productOptions,
 		customerOptions,
 		saleOptions,
+		loadProducts,
 		setFilter: updateFilter,
 		clearFilters,
 		handlePageChange,

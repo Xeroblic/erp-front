@@ -156,7 +156,6 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 			const term = filters.search.toLowerCase();
 			data = data.filter(
 				(q) =>
-					q.quote_number?.toLowerCase().includes(term) ||
 					String(q.id).includes(term) ||
 					(q.notes && q.notes.toLowerCase().includes(term))
 			);

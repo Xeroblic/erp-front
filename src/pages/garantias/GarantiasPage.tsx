@@ -51,6 +51,7 @@ const GarantiasPage: React.FC = () => {
 		handlePerPageChange,
 		reload,
 		searchSales,
+		loadProducts,
 	} = useWarranties();
 
 	const [formMode, setFormMode] = useState<WarrantyFormMode>('create');
@@ -200,6 +201,9 @@ const GarantiasPage: React.FC = () => {
 									placeholder='Todos los productos'
 									value={productFilterValue}
 									options={productOptions}
+									onFocus={() => {
+										void loadProducts();
+									}}
 									onChange={(option) =>
 										setFilter(
 											'product_id',
@@ -234,14 +238,21 @@ const GarantiasPage: React.FC = () => {
 									placeholder='Todas las ventas'
 									value={saleFilterValue}
 									options={saleOptions}
+									onFocus={() => {
+										if (!saleOptions.length) {
+											void searchSales();
+										}
+									}}
 									onChange={(option) =>
 										setFilter(
 											'sale_id',
 											option ? Number((option as TSelectOption).value) : null,
 										)
 									}
-									onInputChange={(term) => {
-										void searchSales(term || '');
+									onInputChange={(term, meta) => {
+										if (meta?.action === 'input-change') {
+											void searchSales(term || '');
+										}
 									}}
 								/>
 							</div>
@@ -268,20 +279,21 @@ const GarantiasPage: React.FC = () => {
 				/>
 			</Container>
 
-			{formOpen && (
-				<WarrantyFormModal
-					isOpen={formOpen}
-					onClose={() => setFormOpen(false)}
-					onSuccess={reload}
-					subsidiaryId={subsidiaryId}
-					mode={formMode}
-					warranty={formMode === 'edit' ? selectedWarranty : null}
-					productOptions={productOptions}
-					customerOptions={customerOptions}
-					saleOptions={saleOptions}
-					onSearchSales={searchSales}
-				/>
-			)}
+				{formOpen && (
+					<WarrantyFormModal
+						isOpen={formOpen}
+						onClose={() => setFormOpen(false)}
+						onSuccess={reload}
+						subsidiaryId={subsidiaryId}
+						mode={formMode}
+						warranty={formMode === 'edit' ? selectedWarranty : null}
+						productOptions={productOptions}
+						customerOptions={customerOptions}
+						saleOptions={saleOptions}
+						onSearchSales={searchSales}
+						onLoadProducts={loadProducts}
+					/>
+				)}
 
 			{seriesOpen && (
 				<WarrantySeriesMode

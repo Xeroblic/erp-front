@@ -60,21 +60,6 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 
 	// columnas de la tabla
 	const columns = useMemo<ColumnDef<IQuote, any>[]>(() => [
-		columnHelper.accessor((row) => row.quote_number || `Q-${row.id}`, {
-			header: 'Número',
-			id: 'quote_number',
-			cell: (info) => (
-				<div className='flex items-center gap-3'>
-					<div className='flex h-10 w-10 items-center justify-center rounded-full bg-primary-100'>
-						<Icon icon='HeroDocumentText' className='text-lg text-primary-600' />
-					</div>
-					<div>
-						<div className='font-medium'>{info.getValue()}</div>
-						<div className='text-xs text-zinc-500'>ID: {info.row.original.id}</div>
-					</div>
-				</div>
-			),
-		}),
 		columnHelper.accessor('quote_date', {
 			header: 'Fecha',
 			cell: (info) => <span className='text-sm'>{formatDate(info.getValue())}</span>,

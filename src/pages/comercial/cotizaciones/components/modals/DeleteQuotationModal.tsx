@@ -66,12 +66,12 @@ const DeleteQuotationModal: React.FC<DeleteQuotationModalProps> = ({
 						</CardHeader>
 						<CardBody>
 							<div className='grid grid-cols-2 gap-4 text-sm'>
-								<div className='flex items-center justify-between'>
+								{/* <div className='flex items-center justify-between'>
 									<span className='font-medium text-gray-700'>Número:</span>
 									<span className='font-mono text-gray-900'>
 										{quotation.quote_number}
 									</span>
-								</div>
+								</div> */}
 								<div className='flex items-center justify-between'>
 									<span className='font-medium text-gray-700'>Estado:</span>
 									<Badge
