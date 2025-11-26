@@ -135,23 +135,49 @@ const Chart: FC<IChartProps> = (props) => {
 
 	useEffect(() => {
 		if (!chartRef.current) return;
+		if (chartInstanceRef.current) {
+			try {
+				chartInstanceRef.current.destroy();
+			} catch (error) {
+				console.error('No se pudo limpiar el gráfico previo', error);
+			} finally {
+				chartInstanceRef.current = null;
+			}
+		}
+
 		const instance = new ApexCharts(chartRef.current, {
 			...buildOptions,
 			series,
 		});
+
 		chartInstanceRef.current = instance;
-		instance.render();
+		instance.render().catch((error) => {
+			console.error('No se pudo renderizar el gráfico', error);
+		});
 
 		return () => {
-			instance.destroy();
-			chartInstanceRef.current = null;
+			if (!chartInstanceRef.current) return;
+			try {
+				chartInstanceRef.current.destroy();
+			} catch (error) {
+				console.error('No se pudo destruir el gráfico', error);
+			} finally {
+				chartInstanceRef.current = null;
+			}
 		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []); // mount only
 
 	useEffect(() => {
-		if (!chartInstanceRef.current) return;
-		chartInstanceRef.current.updateOptions(buildOptions, true, true);
-		chartInstanceRef.current.updateSeries(series, true);
+		const instance = chartInstanceRef.current;
+		if (!instance) return;
+		if (!chartRef.current || !chartRef.current.isConnected || !(instance as any).el) return;
+		try {
+			instance.updateOptions(buildOptions, true, true);
+			instance.updateSeries(series, true);
+		} catch (error) {
+			console.error('No se pudo actualizar el gráfico', error);
+		}
 	}, [buildOptions, series]);
 
 	const inlineHeight = height === 'auto' ? undefined : height;

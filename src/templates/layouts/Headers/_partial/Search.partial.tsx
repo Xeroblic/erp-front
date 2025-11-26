@@ -184,7 +184,7 @@ const SearchPartial = () => {
 				onClick={() => setModalStatus(true)}
 			/>
 			<Modal isOpen={modalStatus} setIsOpen={setModalStatus}>
-				<ModalHeader>Search</ModalHeader>
+				<ModalHeader>Buscar</ModalHeader>
 				<ModalBody>
 					<FieldWrap firstSuffix={leftContent} lastSuffix={rightContent} className='z-20'>
 						<Input

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, ElementType } from 'react';
 import DARK_MODE from '../../../../constants/darkMode.constant';
 import useFontSize from '../../../../hooks/useFontSize';
 import useDarkModeManager from '../../../../hooks/useDarkModeManager.ts';
@@ -19,6 +19,7 @@ import Button from '@/components/ui/Button.tsx';
 import ButtonGroup from '@/components/ui/ButtonGroup.tsx';
 import ColorSelector from '@/components/ColorSelector.tsx';
 import Icon from '@/components/icon/Icon.tsx';
+import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal.tsx';
 const MIN_FONT = 12;
 const MAX_FONT = 18;
 
@@ -32,6 +33,8 @@ const SettingsPartial = () => {
 	const { themeColor, setThemeColor, themeColorShade, setThemeColorShade } = useThemeColor();
 
 	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
+	const [isMobile, setIsMobile] = useState(false);
+	const [mobileOpen, setMobileOpen] = useState(false);
 
 	const [isUpdatingFont, setIsUpdatingFont] = useState(false);
 	const [isUpdatingTheme, setIsUpdatingTheme] = useState(false);
@@ -200,22 +203,11 @@ const SettingsPartial = () => {
 	}, [fontSize, updateFontSize, updateTheme, handleReset]);
 
 	const isAnyUpdating = isUpdatingFont || isUpdatingTheme || isUpdatingColor;
-
-	return (
-		<Dropdown>
-			<DropdownToggle hasIcon={false}>
-				<Button
-					icon='DuoSettings'
-					aria-label='Abrir configuración'
-					title='Configuración'
-					isLoading={isAnyUpdating}
-				/>
-			</DropdownToggle>
-
-			<DropdownMenu
-				placement='bottom-end'
-				className='max-h-[70vh] w-[calc(100vw-32px)] min-w-0 max-w-sm overflow-y-auto md:w-auto md:min-w-72'>
-				<DropdownItem className='flex flex-col !items-start gap-2'>
+	const renderContent = useCallback(
+		(Wrapper: ElementType) => (
+			<>
+				<Wrapper
+					className={`flex flex-col gap-2 ${Wrapper === DropdownItem ? '!items-start' : ''}`}>
 					<div className='flex w-full items-center justify-between'>
 						<div className='text-sm font-medium'>Tamaño de fuente</div>
 						<span className='text-xs opacity-70'>Actual: {fontSize}px</span>
@@ -255,9 +247,10 @@ const SettingsPartial = () => {
 							</Button>
 						))}
 					</div>
-				</DropdownItem>
+				</Wrapper>
 
-				<DropdownItem className='flex flex-col !items-start gap-2'>
+				<Wrapper
+					className={`flex flex-col gap-2 ${Wrapper === DropdownItem ? '!items-start' : ''}`}>
 					<div className='text-sm font-medium'>Tema del sistema</div>
 					<ButtonGroup>
 						<Button
@@ -294,9 +287,10 @@ const SettingsPartial = () => {
 					<p className='text-xs opacity-70'>
 						Sugerencia: en “Sistema” tu tema seguirá el modo del SO automáticamente.
 					</p>
-				</DropdownItem>
+				</Wrapper>
 
-				<DropdownItem className='flex flex-col !items-start gap-2'>
+				<Wrapper
+					className={`flex flex-col gap-2 ${Wrapper === DropdownItem ? '!items-start' : ''}`}>
 					<div className='text-sm font-medium'>Color del tema</div>
 					<ColorSelector onColorChange={handleColorChange} />
 					{isUpdatingColor && (
@@ -305,9 +299,9 @@ const SettingsPartial = () => {
 							Guardando color…
 						</div>
 					)}
-				</DropdownItem>
+				</Wrapper>
 
-				<DropdownItem className='flex items-center justify-between'>
+				<Wrapper className='flex items-center justify-between'>
 					<div className='text-sm opacity-80'>Restablecer a mis valores</div>
 					<Button
 						size='sm'
@@ -318,7 +312,87 @@ const SettingsPartial = () => {
 						isDisable={isAnyUpdating}>
 						Reset
 					</Button>
-				</DropdownItem>
+				</Wrapper>
+			</>
+		),
+		[
+			fontSize,
+			updateFontSize,
+			isUpdatingFont,
+			fontPresets,
+			updateTheme,
+			isDark,
+			isUpdatingTheme,
+			isLight,
+			isSystem,
+			handleColorChange,
+			isUpdatingColor,
+			handleReset,
+			isAnyUpdating,
+		],
+	);
+
+	useEffect(() => {
+		if (typeof window === 'undefined') return;
+		const mediaQuery = window.matchMedia('(max-width: 767px)');
+		const handler = (event: MediaQueryListEvent | MediaQueryList) => {
+			setIsMobile(event.matches);
+		};
+		handler(mediaQuery);
+		if (typeof mediaQuery.addEventListener === 'function') {
+			mediaQuery.addEventListener('change', handler);
+			return () => mediaQuery.removeEventListener('change', handler);
+		}
+		mediaQuery.addListener(handler);
+		return () => mediaQuery.removeListener(handler);
+	}, []);
+
+	useEffect(() => {
+		if (!isMobile) {
+			setMobileOpen(false);
+		}
+	}, [isMobile]);
+
+	if (isMobile) {
+		return (
+			<>
+				<Button
+					icon='DuoSettings'
+					aria-label='Abrir configuración'
+					title='Configuración'
+					isLoading={isAnyUpdating}
+					onClick={() => setMobileOpen(true)}
+				/>
+				<Modal isOpen={mobileOpen} setIsOpen={setMobileOpen} size='md'>
+					<ModalHeader>
+						<div className='flex items-center gap-2'>
+							<Icon icon='DuoSettings' />
+							<span className='font-semibold'>Configuración</span>
+						</div>
+					</ModalHeader>
+					<ModalBody className='space-y-4'>
+						<div className='flex flex-col gap-4'>{renderContent('div')}</div>
+					</ModalBody>
+				</Modal>
+			</>
+		);
+	}
+
+	return (
+		<Dropdown>
+			<DropdownToggle hasIcon={false}>
+				<Button
+					icon='DuoSettings'
+					aria-label='Abrir configuración'
+					title='Configuración'
+					isLoading={isAnyUpdating}
+				/>
+			</DropdownToggle>
+
+			<DropdownMenu
+				placement='bottom-end'
+				className='max-h-[70vh] w-[calc(100vw-32px)] min-w-0 max-w-sm overflow-y-auto md:w-auto md:min-w-72'>
+				{renderContent(DropdownItem)}
 			</DropdownMenu>
 		</Dropdown>
 	);

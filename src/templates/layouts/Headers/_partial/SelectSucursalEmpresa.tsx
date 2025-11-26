@@ -75,7 +75,8 @@ const SelectSucursalEmpresa = () => {
 	}, [branches, accessibleSubsidiaryIds]);
 
 	const preferredBranchId = useMemo(() => {
-		if (personalizacionUsuario?.sucursal_principal) return personalizacionUsuario.sucursal_principal;
+		if (personalizacionUsuario?.sucursal_principal)
+			return personalizacionUsuario.sucursal_principal;
 		if (user?.branch?.id) return user.branch.id;
 		if (user?.branch_id) return user.branch_id;
 		return null;
@@ -126,14 +127,18 @@ const SelectSucursalEmpresa = () => {
 
 		const match = groupedOptions
 			.flatMap((g) => g.options)
-			.find((opt) => Number(opt.value) === Number(preferredBranchId)) as BranchOption | undefined;
+			.find((opt) => Number(opt.value) === Number(preferredBranchId)) as
+			| BranchOption
+			| undefined;
 
 		if (!match && groupedOptions.length > 0) {
 			const first = groupedOptions[0]?.options?.[0] as BranchOption | undefined;
 			setSelectedSucursal(first ?? null);
 
 			if (first) {
-				dispatch(actualizarSucursalPrincipalThunk(Number(first.value))).catch(console.error);
+				dispatch(actualizarSucursalPrincipalThunk(Number(first.value))).catch(
+					console.error,
+				);
 			}
 			return;
 		}
@@ -169,7 +174,7 @@ const SelectSucursalEmpresa = () => {
 				window.dispatchEvent(
 					new CustomEvent('user-branch-changed', {
 						detail: { branchId: nextBranchId, subsidiaryId: nextSubsidiaryId },
-					})
+					}),
 				);
 
 				toast.success('Sucursal principal actualizada');
@@ -177,7 +182,7 @@ const SelectSucursalEmpresa = () => {
 				toast.error(error?.message ?? 'No se pudo actualizar la sucursal principal');
 			}
 		},
-		[dispatch, personalizacionUsuario?.company_id, preferredBranchId, user?.company?.id]
+		[dispatch, personalizacionUsuario?.company_id, preferredBranchId, user?.company?.id],
 	);
 
 	const formatOptionLabel = useCallback((option: BranchOption) => {
@@ -233,7 +238,7 @@ const SelectSucursalEmpresa = () => {
 				</span>
 			</div>
 		),
-		[]
+		[],
 	);
 
 	const selectPortalTarget = useMemo(() => {
@@ -247,12 +252,11 @@ const SelectSucursalEmpresa = () => {
 	const selectProps = {
 		className: 'branch-selector w-full',
 		noOptionsMessage: () => (branchesError ? 'Error al cargar' : 'Sin Opciones'),
-		placeholder:
-			branchesLoading
-				? 'Cargando sucursales...'
-				: !groupedOptions.length
-					? 'Sin sucursales disponibles'
-					: 'Selecciona una sucursal',
+		placeholder: branchesLoading
+			? 'Cargando sucursales...'
+			: !groupedOptions.length
+				? 'Sin sucursales disponibles'
+				: 'Selecciona una sucursal',
 		dimension: 'sm' as const,
 		name: 'select_empresa',
 		isLoading: branchesLoading,
@@ -281,21 +285,28 @@ const SelectSucursalEmpresa = () => {
 	return (
 		<>
 			{/* DESKTOP */}
-			<div className="hidden sm:block w-full sm:min-w-[260px] sm:max-w-xs">
+			<div className='hidden w-full sm:block sm:min-w-[260px] sm:max-w-xs'>
 				<SelectReact {...selectProps} />
 			</div>
 
 			{/* MOBILE BUTTON */}
 			<Button
 				onClick={() => setModalOpen(true)}
-				className="sm:hidden flex items-center gap-2 px-3 py-2 rounded-md border bg-neutral-100 dark:bg-neutral-900 w-full"
-			>
-				<Icon icon="HeroBuildingOffice2" />
-				<span>{selectedSucursal?.label ?? 'Selecciona una sucursal'}</span>
+				className='flex w-full items-center gap-2 rounded-lg border bg-white px-3 py-2 dark:bg-neutral-900 sm:hidden'>
+					<span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 shadow-sm">
+						<Icon icon="HeroBuildingOffice2" className="h-4 w-4 " />
+					</span>
+				<span>
+					{selectedSucursal?.label
+						? selectedSucursal.label.length > 7
+							? `${selectedSucursal.label.slice(0, 7)}...`
+							: selectedSucursal.label
+						: 'Selecciona una sucursal'}
+				</span>
 			</Button>
 
 			{/* MOBILE MODAL */}
-			<Modal isOpen={modalOpen} setIsOpen={setModalOpen}>
+			<Modal isOpen={modalOpen} setIsOpen={setModalOpen} isStaticBackdrop={true}>
 				<ModalHeader>Selecciona una sucursal</ModalHeader>
 				<ModalBody>
 					<SelectReact
