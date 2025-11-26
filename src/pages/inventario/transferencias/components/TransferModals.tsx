@@ -146,7 +146,7 @@ export const SuccessTransferModal: React.FC<SuccessTransferModalProps> = ({
 	onCreateAnother,
 	onViewHistory,
 }) => (
-	<Modal isOpen={isOpen} setIsOpen={setIsOpen} size='2xl'>
+	<Modal isOpen={isOpen} setIsOpen={() => setIsOpen(false)} size='2xl'>
 		<ModalHeader>
 			<div className='flex items-center gap-3'>
 				<div className='flex h-10 w-10 items-center justify-center rounded-full bg-green-100'>

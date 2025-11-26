@@ -31,36 +31,56 @@ const DefaultFooterTemplate = () => {
 		}
 	}, []);
 
+	const versionEndpoint = useMemo(() => {
+		const env = import.meta.env as Record<string, string | undefined>;
+		const fromEnv =
+			env.VITE_APP_VERSION ||
+			env.VITE_VERSION_URL ||
+			env.VITE_VERSION_ENDPOINT ||
+			env.REACT_APP_VERSION ||
+			'';
+		if (fromEnv) return fromEnv;
+		const apiUrl = env.VITE_API_URL;
+		return apiUrl ? `${apiUrl.replace(/\/$/, '')}/version` : '';
+	}, []);
+
 	useEffect(() => {
+		let mounted = true;
 		const fetchVersion = async () => {
-			const versionUrl = process.env.REACT_APP_VERSION;
-			if (!versionUrl) return;
+			if (!versionEndpoint) return;
 			try {
 				const data = await ApiService.fetchNormalized<{ version?: string } | string>({
-					url: versionUrl,
+					url: versionEndpoint,
 					method: 'get',
 					cacheTTLms: 60_000,
 					dedupe: true,
 				});
+
 				const next =
 					(data as any)?.version ??
 					(data as any)?.data ??
 					(data as any)?.versionSDE ??
 					data;
-				if (next) setVersion(next.toString().trim());
+
+				if (next && mounted) {
+					setVersion(next.toString().trim());
+				}
 			} catch (error) {
 				console.error('No se pudo obtener la versión SDE', error);
 			}
 		};
-		fetchVersion();
-	}, []);
+		void fetchVersion();
+		return () => {
+			mounted = false;
+		};
+	}, [versionEndpoint]);
 
 	return (
 		<Footer>
 			<FooterLeft className='text-zinc-500'>
 				<div className='flex items-center gap-2'>
 					<span>Copyright © {dayjs().format('YYYY')}</span>
-					{version && <span>• Versión SDE {version}</span>}
+					{version && <span>• Versión {version}</span>}
 				</div>
 			</FooterLeft>
 			<FooterRight className='text-zinc-500'>

@@ -20,6 +20,7 @@ const REFRESH_ENDPOINTS = [`${API_URL}/refresh`, `${API_URL}/refresh`];
 
 // Timeout de inactividad por defecto: 60 minutos
 const DEFAULT_INACTIVITY_TIMEOUT_MS = 60 * 60_000;
+const TOKEN_REFRESH_THRESHOLD_MS = 30_000; // refrescar si faltan 30s o menos
 
 const BaseService = axios.create({
 	timeout: 60000,
@@ -148,14 +149,41 @@ BaseService.interceptors.request.use(
 			}
 
 			// Token desde memoria (tokenManager), fallback a estado Redux por compatibilidad
-			const token = tokenManager.getAccessToken() ?? state?.auth?.access;
+			let token = tokenManager.getAccessToken() ?? state?.auth?.access ?? null;
 
 			if (token) {
-				if (!config.headers) {
-					config.headers = {} as any;
+				const timeRemaining = tokenManager.getTokenTimeRemaining(token);
+				const isValid = tokenManager.isTokenValid(token);
+				const shouldRefresh =
+					(!isValid || timeRemaining <= TOKEN_REFRESH_THRESHOLD_MS) &&
+					tokenManager.canRefresh(token);
+
+				if ((!isValid || timeRemaining <= TOKEN_REFRESH_THRESHOLD_MS) && !tokenManager.canRefresh(token)) {
+					// No se puede refrescar, forzar cierre de sesión
+					tokenManager.clearTokens();
+					store.dispatch(logout());
+					cancelAllRequests();
+					throw new axios.Cancel('Token expirado y no se puede refrescar');
 				}
-				setAuthHeader(config.headers, token);
-				tokenManager.markActivity(Date.now());
+
+				if (shouldRefresh) {
+					try {
+						token = await refreshAccessToken();
+					} catch (refreshErr) {
+						tokenManager.clearTokens();
+						store.dispatch(logout());
+						cancelAllRequests();
+						throw refreshErr;
+					}
+				}
+
+				if (token) {
+					if (!config.headers) {
+						config.headers = {} as any;
+					}
+					setAuthHeader(config.headers, token);
+					tokenManager.markActivity(Date.now());
+				}
 			}
 		}
 
