@@ -6,6 +6,7 @@ import useAsideStatus from '../../../hooks/useAsideStatus';
 import themeConfig from '../../../config/theme.config';
 import getFirstLetter from '../../../utils/getFirstLetter';
 import useReactiveThemeConfig from '@/hooks/useReactiveThemeConfig';
+import useColorIntensity from '@/hooks/useColorIntensity';
 
 interface IUserProps extends HTMLAttributes<HTMLDivElement> {
 	children: ReactNode;
@@ -33,6 +34,8 @@ const User: FC<IUserProps> = (props) => {
 		...rest
 	} = props;
 	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } = useReactiveThemeConfig();
+	const { tintColorIntensity } = useColorIntensity(reactiveThemeColorShade);
+	const pingOuterShade = tintColorIntensity ?? reactiveThemeColorShade;
 
 	const { asideStatus } = useAsideStatus();
 
@@ -70,7 +73,9 @@ const User: FC<IUserProps> = (props) => {
 					) : (
 						<div
 							className={classNames(
-								'flex aspect-square h-12 w-12 items-center justify-center bg-blue-500/20 text-blue-500',
+								'flex aspect-square h-12 w-12 items-center justify-center bg-opacity-20',
+								[`bg-${reactiveThemeColor}-${reactiveThemeColorShade}`],
+								[`text-${reactiveThemeColor}-${reactiveThemeColorShade}`],
 								[`${roundedCustom(-2)}`],
 							)}>
 							{name && getFirstLetter(name)}
@@ -108,8 +113,18 @@ const User: FC<IUserProps> = (props) => {
 				className={classNames('absolute end-0 top-0 -me-1 -mt-1 flex h-3 w-3', {
 					'ltr:translate-x-[0.625rem] rtl:translate-x-[-0.625rem]': !asideStatus,
 				})}>
-				<span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75' />
-				<span className='relative inline-flex h-3 w-3 rounded-full bg-blue-500' />
+				<span
+					className={classNames(
+						'absolute inline-flex h-full w-full animate-ping rounded-full opacity-75',
+						[`bg-${reactiveThemeColor}-${pingOuterShade}`],
+					)}
+				/>
+				<span
+					className={classNames(
+						'relative inline-flex h-3 w-3 rounded-full',
+						[`bg-${reactiveThemeColor}-${reactiveThemeColorShade}`],
+					)}
+				/>
 			</span>
 		</div>
 	);
