@@ -10,6 +10,9 @@ import Badge from '@/components/ui/Badge';
 import { ISubempresa } from '@/interface/empresas.interface';
 import { toast } from 'react-toastify';
 import { CreateSubempresaModal, DeleteSubempresaModal, SubempresasTable } from './components';
+import Icon from '@/components/icon/Icon';
+import { DuoBuilding } from '@/components/icon/duotone';
+import Tooltip from '@/components/ui/Tooltip';
 
 export default function SubEmpresaLista() {
 	const dispatch = useAppDispatch();
@@ -76,30 +79,37 @@ export default function SubEmpresaLista() {
 
 	return (
 		<PageWrapper isProtectedRoute title='Subempresas' name='Subempresas'>
-			<Subheader className='items-center justify-center'>
+			<Subheader>
 				<SubheaderLeft>
-					<div>
-						<Badge className='text-2xl font-semibold'>Subempresas de la Empresa</Badge>
-						<p className='text-sm text-zinc-400 mt-1'>
-							Administración de las subempresas asociadas a la empresa principal.
-						</p>
+					<div >
+						<div className='flex item-center gap-2'>
+							<Icon icon='DuoBuilding' size='text-3xl'/>
+							<Badge className='text-2xl font-bold'>Subempresas de la Empresa</Badge>
+						</div>
+						<div className='flex flex-col gap-2'>
+							<p className='text-sm text-zinc-400 mt-1'>
+								Administración de las subempresas asociadas a la empresa principal.
+							</p>
+						</div>
 					</div>
 				</SubheaderLeft>
-				<SubheaderRight className='flex items-center gap-2'>
-					<Input
-						name='subempresa-busqueda'
-						placeholder='Buscar subempresas...'
-						value={globalFilter}
-						onChange={(e) => setGlobalFilter(e.target.value)}
-						className='w-48 rounded border'
-					/>
-					<Button variant='solid' icon='HeroPlus' onClick={handleCreate}>
-						Nueva Subempresa
-					</Button>
+				<SubheaderRight >
+					<div className='flex items-center gap-2'>
+						<Input
+							name='subempresa-busqueda'
+							placeholder='Buscar subempresas...'
+							value={globalFilter}
+							onChange={(e) => setGlobalFilter(e.target.value)}
+							className='w-48 rounded border'
+						/>
+						<Tooltip text='Crear nueva subempresa' placement='top-start' color='blue'>
+							<Button variant='solid' icon='HeroPlus' onClick={handleCreate}/>
+						</Tooltip>
+					</div>
 				</SubheaderRight>
 			</Subheader>
 
-			<Container >
+			<Container className='py-6'>
 				<SubempresasTable
 					subempresas={filteredSubempresas}
 					loading={loading}

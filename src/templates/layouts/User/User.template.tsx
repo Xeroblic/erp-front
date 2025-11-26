@@ -55,7 +55,7 @@ const handleLogout = async () => {
 		<User
 			isLoading={isLoading}
 			name={userName}
-			nameSuffix={<Icon icon='DuoDoneCircle' color='blue' />}
+			nameSuffix={<Icon icon='DuoDoneCircle' />}
 			position={userPosition}
 			src={avatarSrc || undefined}
 			suffix={

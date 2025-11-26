@@ -8,6 +8,8 @@ import Input from '@/components/form/Input';
 import { fetchUsuariosConRolesPerms } from '@/store/slices/rolesPermisos/rolesPermisosSlice';
 import type { UserWithDetails } from '@/store/slices/usersAdmin/usersAdminSlice';
 import TableUser from './components/TableUser';
+import Badge from '@/components/ui/Badge';
+import Icon from '@/components/icon/Icon';
 
 type UserRow = UserWithDetails & {
 	displayName: string;
@@ -22,8 +24,11 @@ type UserRow = UserWithDetails & {
 const RolesPermisos: React.FC = () => {
 	const dispatch = useAppDispatch();
 	const { data: usuarios, loading, error } = useAppSelector((s) => s.rolesPermisos.users);
-	const listStatus: 'idle' | 'loading' | 'failed' =
-		loading ? 'loading' : error ? 'failed' : 'idle';
+	const listStatus: 'idle' | 'loading' | 'failed' = loading
+		? 'loading'
+		: error
+			? 'failed'
+			: 'idle';
 
 	const [globalFilter, setGlobalFilter] = useState('');
 
@@ -82,16 +87,20 @@ const RolesPermisos: React.FC = () => {
 	}, [usuarios]);
 
 	return (
-		<PageWrapper title='Gestión de Permisos de Usuarios' isProtectedRoute>
+		<PageWrapper title='Gestion de usuarios' name='Gestion de usuarios' isProtectedRoute>
 			<Subheader>
 				<SubheaderLeft>
 					{/* Icono y texto */}
-					<div className='flex items-center gap-3'>
-						{/* Mantengo la estructura original mínima */}
-						<div className='flex items-center'>
-							<h1 className='text-xl font-bold text-amber-500'>
-								Gestión de Permisos de Usuarios
-							</h1>
+					<div>
+						<div className='flex items-center gap-2'>
+							<Icon icon='DuoUser' size='text-3xl' />
+							<Badge className='text-2xl font-bold'>Gestion de usuarios</Badge>
+						</div>
+						<div className='flex flex-col gap-2'>
+							<p className='text-sm text-zinc-500'>
+								Administra los roles y permisos asignados a los usuarios del
+								sistema.
+							</p>
 						</div>
 					</div>
 				</SubheaderLeft>

@@ -55,7 +55,7 @@ const ClientesVentasDetalle = () => {
 	};
 
 	return (
-		<PageWrapper>
+		<PageWrapper title='Detalle cliente' name='Detalle cliente'>
 			{/* HEADER SUPERIOR */}
 			<Subheader>
 				<SubheaderLeft>

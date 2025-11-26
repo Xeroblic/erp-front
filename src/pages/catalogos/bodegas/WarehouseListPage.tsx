@@ -93,21 +93,23 @@ const WarehouseListPage: React.FC = () => {
 		<PageWrapper isProtectedRoute title='Bodegas' name='bodegas'>
 			<Subheader>
 				<SubheaderLeft>
-					<div className='flex items-center gap-3'>
-						<div className='flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-900/20'>
-							<Icon
-								icon='HeroHomeModern'
-								className='size-7 text-blue-600 dark:text-blue-400'
-							/>
+					<div>
+						<div className='flex items-center gap-3'>
+							<div className='flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-900/20'>
+								<Icon icon='HeroHomeModern' className='size-7 text-blue-600 dark:text-blue-400' />
+							</div>
+							<div>
+								<h1 className='text-2xl font-bold text-gray-900 dark:text-white'>Bodegas</h1>
+								<p className='text-sm text-gray-600 dark:text-gray-400 mt-1'>
+									{stats.total} bodega{stats.total !== 1 ? 's' : ''} registrada
+									{stats.total !== 1 ? 's' : ''} • {stats.actives} activa
+									{stats.actives !== 1 ? 's' : ''}
+								</p>
+							</div>
 						</div>
-						<div>
-							<h1 className='text-2xl font-bold text-gray-900 dark:text-white'>
-								Bodegas
-							</h1>
-							<p className='text-sm text-gray-600 dark:text-gray-400'>
-								{stats.total} bodega{stats.total !== 1 ? 's' : ''} registrada
-								{stats.total !== 1 ? 's' : ''} • {stats.actives} activa
-								{stats.actives !== 1 ? 's' : ''}
+						<div className='flex flex-col gap-2'>
+							<p className='text-sm text-gray-600 dark:text-gray-400 mt-1'>
+								Administración de las bodegas asociadas a la sucursal principal.
 							</p>
 						</div>
 					</div>

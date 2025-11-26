@@ -43,7 +43,6 @@ export default function EmpresaDetalle() {
 			} catch (err) {
 				console.error('Error al cargar empresa:', err);
 			}
-
 		};
 
 		loadData();
@@ -194,26 +193,31 @@ export default function EmpresaDetalle() {
 
 	return (
 		<PageWrapper isProtectedRoute title='Gestión de Empresa' name='Empresa Principal'>
-			<Subheader className='justify-center items-center'>
+			<Subheader className='items-center justify-center'>
 				<SubheaderLeft>
-					<div className='flex items-center gap-5'>
-						<Icon icon='HeroBuilding' className='text-3xl' />
-						<div>
-							<Badge className='text-2xl font-bold mb-1'>
+					<div>
+						<div className='flex items-center gap-2'>
+							<Icon icon='DuoBuilding' className='text-3xl' />
+							<Badge className='mb-1 text-2xl font-bold'>
 								{miEmpresa?.company_name || 'Empresa'}
 							</Badge>
-							<p className='text-sm text-zinc-500 mt-1'>
-								Este módulo permite gestionar la información principal y de contacto de la empresa.
-							</p>
-							<div className='mt-2 flex items-center gap-2'>
-								<Badge variant='solid'>{miEmpresa?.company_type}</Badge>
-								<Badge
-									variant='outline'
-									className={miEmpresa?.is_active ? 'text-green-600' : 'text-red-600'}>
+							<Badge
+								variant='solid'
+								className={`ml-4 gap-3 px-2 ${miEmpresa?.is_active ? 'text-green-600' : 'text-red-600'}`}
+							>
+								{miEmpresa?.company_type}
+								<span className=' font-bold text-white'>
 									{miEmpresa?.is_active ? 'Activa' : 'Inactiva'}
-								</Badge>
-							</div>
+								</span>
+							</Badge>
 						</div>
+						<div className='flex flex-col gap-2'>
+							<p className='mt-1 text-sm text-zinc-500'>
+								Este módulo permite gestionar la información principal y de contacto
+								de la empresa.
+							</p>
+						</div>
+						
 					</div>
 				</SubheaderLeft>
 				<SubheaderRight className='space-x-2'>
@@ -306,7 +310,6 @@ export default function EmpresaDetalle() {
 										selectedComunaOption={selectedComunaOption}
 									/>
 								)}
-
 							</form>
 						)}
 					</CardBody>

@@ -130,7 +130,7 @@ const GarantiasPage: React.FC = () => {
 	};
 
 	return (
-		<PageWrapper name='garantias-page'>
+		<PageWrapper title='Garantías' name='Garantías' isProtectedRoute>
 			<Subheader>
 				<SubheaderLeft>
 					<div>

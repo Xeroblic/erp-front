@@ -266,11 +266,16 @@ export default function SucursalesLista() {
 		<PageWrapper isProtectedRoute title='Sucursales' name='Sucursales'>
 			<Subheader>
 				<SubheaderLeft>
-					<div className='item-start gap-5 text-start'>
-						<Badge className='text-start text-2xl font-bold'>
-							Sucursales de la Empresa
-						</Badge>
-						<p>Administra las sucursales asociadas a tu empresa desde este panel.</p>
+					<div>
+						<div className='flex items-center gap-2'>
+							<Icon icon='DuoHome' size='text-3xl' />
+							<Badge className='text-2xl font-bold'>Sucursales de la Empresa</Badge>
+						</div>
+						<div className='flex flex-col gap-2'>
+							<p className='text-sm text-zinc-400 mt-1'>
+								Administra las sucursales asociadas a tu empresa desde este panel.
+							</p>
+						</div>
 					</div>
 				</SubheaderLeft>
 				<SubheaderRight className='flex items-center gap-4'>

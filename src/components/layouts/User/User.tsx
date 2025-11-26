@@ -5,6 +5,7 @@ import useRoundedSize from '../../../hooks/useRoundedSize';
 import useAsideStatus from '../../../hooks/useAsideStatus';
 import themeConfig from '../../../config/theme.config';
 import getFirstLetter from '../../../utils/getFirstLetter';
+import useReactiveThemeConfig from '@/hooks/useReactiveThemeConfig';
 
 interface IUserProps extends HTMLAttributes<HTMLDivElement> {
 	children: ReactNode;
@@ -31,6 +32,7 @@ const User: FC<IUserProps> = (props) => {
 		isLoading = false,
 		...rest
 	} = props;
+	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } = useReactiveThemeConfig();
 
 	const { asideStatus } = useAsideStatus();
 

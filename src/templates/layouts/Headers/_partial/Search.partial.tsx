@@ -70,7 +70,7 @@ const SearchPartial = () => {
 			size='sm'
 			rounded='rounded'
 			className='!px-2 font-bold'>
-			⌘ K
+			Alt + B
 		</Button>
 	);
 	
@@ -91,7 +91,9 @@ const SearchPartial = () => {
 	};
 	useEffect(() => {
 		const handleKeyPress = (event: KeyboardEvent) => {
-			if (event.key === 'k' && event.metaKey) {
+			const key = event.key.toLowerCase();
+			if ((event.metaKey && key === 'k') || (event.altKey && key === 'b')) {
+				event.preventDefault();
 				focusInput();
 			}
 		};

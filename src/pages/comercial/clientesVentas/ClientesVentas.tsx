@@ -36,7 +36,7 @@ const ClientesVentas = () => {
 	}, [dispatch]);
 
 	return (
-		<PageWrapper>
+		<PageWrapper title='Clientes ventas' name='Clientes ventas'>
 			<Subheader>
 				<SubheaderLeft>
 					<h2 className='text-2xl font-semibold'>Clientes Ventas</h2>
