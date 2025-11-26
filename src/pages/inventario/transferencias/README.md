@@ -40,42 +40,6 @@ Formulario simplificado para crear nuevas transferencias de productos entre bode
 
 -   `inventory.transfer` - Para confirmar transferencias
 
-## Datos Mock
-
-### Bodegas (5 registros)
-
-```typescript
-const MOCK_WAREHOUSES = [
-	{ id: 1, name: 'Bodega Central', code: 'BC01' },
-	{ id: 2, name: 'Bodega Norte', code: 'BN02' },
-	{ id: 3, name: 'Bodega Sur', code: 'BS03' },
-	{ id: 4, name: 'Bodega Distribución', code: 'BD04' },
-];
-```
-
-### Productos (5 registros)
-
-```typescript
-const MOCK_PRODUCTS = [
-	{ id: 1, name: 'Laptop Dell Inspiron 15', sku: 'LAP-DELL-15', stock: 25 },
-	{ id: 2, name: 'Monitor Samsung 24"', sku: 'MON-SAM-24', stock: 40 },
-	{ id: 3, name: 'Teclado Mecánico Logitech', sku: 'TEC-LOG-MEC', stock: 15 },
-	{ id: 4, name: 'Mouse Óptico HP', sku: 'MOU-HP-OPT', stock: 60 },
-	{ id: 5, name: 'Impresora HP LaserJet', sku: 'IMP-HP-LASER', stock: 8 },
-];
-```
-
-### Responsables (4 registros)
-
-```typescript
-const MOCK_USERS = [
-	{ id: 1, name: 'Ana García', email: 'ana.garcia@empresa.com' },
-	{ id: 2, name: 'Carlos Rodríguez', email: 'carlos.rodriguez@empresa.com' },
-	{ id: 3, name: 'María López', email: 'maria.lopez@empresa.com' },
-	{ id: 4, name: 'José Martínez', email: 'jose.martinez@empresa.com' },
-];
-```
-
 ## Validaciones
 
 ### Formulario Principal
