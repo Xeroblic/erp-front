@@ -1,268 +1,130 @@
-/**
- * Hook para gestión de movimientos de inventario
- * Maneja el estado y operaciones del historial de inventario
- */
-import { useState, useCallback, useMemo, useEffect } from 'react';
-import { toast } from 'react-toastify';
-import { IInventoryMovement } from '@/interface/inventory.interface';
-import {
-    fetchInventoryMovements,
-    fetchInventoryStatistics,
-    selectInventoryLoading,
-    selectInventoryMovements,
-    selectInventoryPagination,
-    selectInventoryStatistics,
-} from '@/store/slices/inventory/inventorySlice';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hook';
-import { normalizeMovementType, NormalizedMovementType } from '../utils/movementType.utils';
+import {
+	fetchTransfers,
+	selectTransfers,
+	selectTransfersLoading,
+	selectTransfersPagination,
+	selectTransferFilters,
+	setFilters as setTransferFilters,
+	clearFilters as clearTransferFilters,
+} from '@/store/slices/transfers/transfersSlice';
+import type { ITransfer, TransferDirection } from '@/interface/transfers.interface';
 
-export interface MovementFilters {
-    type?: NormalizedMovementType;
-    search?: string;
-    warehouseId?: number;
-    dateFrom?: string;
-    dateTo?: string;
-    minQuantity?: number;
-    maxQuantity?: number;
-}
+export type MovementFilters = {
+	direction?: TransferDirection;
+	search?: string;
+};
 
 export interface UseMovementsManagerReturn {
-    // Estado
-    movements: IInventoryMovement[];
-    filteredMovements: IInventoryMovement[];
-    loading: boolean;
-    error: string | null;
-    stats: {
-        totalMovements: number;
-        totalEntries: number;
-        totalExits: number;
-        totalTransfers: number;
-    };
-
-    // Filtros y paginación
-    filters: MovementFilters;
-    setFilters: (filters: MovementFilters) => void;
-    currentPage: number;
-    setCurrentPage: (page: number) => void;
-    itemsPerPage: number;
-    totalItems: number;
-    totalPages: number;
-
-    // Operaciones
-    refreshMovements: () => Promise<void>;
-    getMovementDetails: (id: number) => IInventoryMovement | undefined;
-    clearFilters: () => void;
-
-    // Utilidades
-    warehouses: Array<{ id: number; name: string }>;
+	transfers: ITransfer[];
+	loading: boolean;
+	error?: string;
+	filters: MovementFilters;
+	pagination: {
+		currentPage: number;
+		totalPages: number;
+		perPage: number;
+		totalTransfers: number;
+	};
+	stats: {
+		total: number;
+		sent: number;
+		received: number;
+		pending: number;
+	};
+	setFilters: (filters: MovementFilters) => void;
+	refreshTransfers: () => Promise<void>;
+	clearFilters: () => void;
 }
 
 const useMovementsManager = (): UseMovementsManagerReturn => {
-    const dispatch = useAppDispatch();
-    const movements = useAppSelector(selectInventoryMovements);
-    const loadingState = useAppSelector(selectInventoryLoading);
-    const pagination = useAppSelector(selectInventoryPagination);
-    const statistics = useAppSelector(selectInventoryStatistics);
+	const dispatch = useAppDispatch();
 
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+	const transfers = useAppSelector(selectTransfers);
+	const loading = useAppSelector(selectTransfersLoading);
+	const pagination = useAppSelector(selectTransfersPagination);
+	const sliceFilters = useAppSelector(selectTransferFilters);
+	const error = useAppSelector((state) => state.transferencias.error);
 
-    // Filtros y paginación
-    const [filters, setFilters] = useState<MovementFilters>({});
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10;
+	const [localLoading, setLocalLoading] = useState(false);
 
-    // Cargar estadísticas generales al montar
-    useEffect(() => {
-        dispatch(fetchInventoryStatistics()).catch(() => null);
-    }, [dispatch]);
+	const currentFilters: MovementFilters = useMemo(
+		() => ({
+			direction: sliceFilters.direction,
+			search: sliceFilters.q,
+		}),
+		[sliceFilters],
+	);
 
-    const requestMovements = useCallback(
-        async (page: number, filtersParam: MovementFilters) => {
-            setLoading(true);
-            setError(null);
+	const requestTransfers = useCallback(
+		async (page?: number, overrides: MovementFilters = {}) => {
+			setLocalLoading(true);
+			try {
+				await dispatch(
+					fetchTransfers({
+						page,
+						direction: overrides.direction ?? currentFilters.direction,
+						q: overrides.search ?? currentFilters.search ?? '',
+					}),
+				).unwrap();
+				return true;
+			} catch {
+				return false;
+			} finally {
+				setLocalLoading(false);
+			}
+		},
+		[dispatch, currentFilters],
+	);
 
-            try {
-                await dispatch(
-                    fetchInventoryMovements({
-                        page,
-                        perPage: itemsPerPage,
-                        filters: {
-                            movement_type: filtersParam.type,
-                            warehouse_id: filtersParam.warehouseId
-                                ? filtersParam.warehouseId.toString()
-                                : undefined,
-                            date_from: filtersParam.dateFrom,
-                            date_to: filtersParam.dateTo,
-                        },
-                    }),
-                ).unwrap();
-                return true;
-            } catch (err) {
-                const errorMessage =
-                    err instanceof Error ? err.message : 'Error al cargar movimientos';
-                setError(errorMessage);
-                toast.error(errorMessage);
-                return false;
-            } finally {
-                setLoading(false);
-            }
-        },
-        [dispatch, itemsPerPage],
-    );
+	useEffect(() => {
+		requestTransfers(pagination.currentPage || 1, currentFilters);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
-    useEffect(() => {
-        requestMovements(currentPage, filters);
-    }, [currentPage, filters, requestMovements]);
+	const setFilters = useCallback(
+		(filters: MovementFilters) => {
+			dispatch(
+				setTransferFilters({
+					direction: filters.direction,
+					q: filters.search ?? '',
+				}),
+			);
+			requestTransfers(1, filters);
+		},
+		[dispatch, requestTransfers],
+	);
 
-    // Aplicar filtros
-    const filteredMovements = useMemo(() => {
-        let filtered = [...movements];
+	const clearFilters = useCallback(() => {
+		dispatch(clearTransferFilters());
+		requestTransfers(1, {});
+	}, [dispatch, requestTransfers]);
 
-        // Filtro por tipo
-        if (filters.type) {
-            filtered = filtered.filter(
-                (movement) => normalizeMovementType(movement.movement_type) === filters.type,
-            );
-        }
+	const refreshTransfers = useCallback(async () => {
+		await requestTransfers(pagination.currentPage || 1, currentFilters);
+	}, [requestTransfers, pagination.currentPage, currentFilters]);
 
-        // Filtro por almacén
-        if (filters.warehouseId) {
-            filtered = filtered.filter(
-                (movement) =>
-                    movement.warehouse_id === filters.warehouseId ||
-                    movement.warehouse?.id === filters.warehouseId ||
-                    movement.warehouse_location?.warehouse_id === filters.warehouseId,
-            );
-        }
+	const stats = useMemo(() => {
+		const total = pagination.totalTransfers || transfers.length;
+		const sent = transfers.filter((t) => t.direction === 'sent' || t.status === 'sent').length;
+		const received = transfers.filter((t) => t.direction === 'received' || t.status === 'received').length;
+		const pending = transfers.filter((t) => t.status === 'pending' || t.status === 'draft').length;
 
-        // Filtro de búsqueda global
-        if (filters.search) {
-            const searchLower = filters.search.toLowerCase();
-            filtered = filtered.filter(movement =>
-                movement.product?.name?.toLowerCase().includes(searchLower) ||
-                movement.inventory_item?.product?.name?.toLowerCase().includes(searchLower) ||
-                movement.product?.sku?.toLowerCase().includes(searchLower) ||
-                movement.inventory_item?.product?.sku?.toLowerCase().includes(searchLower) ||
-                movement.movement_number?.toLowerCase().includes(searchLower) ||
-                movement.warehouse?.name?.toLowerCase().includes(searchLower) ||
-                movement.warehouse_location?.name?.toLowerCase().includes(searchLower) ||
-                movement.performer?.name?.toLowerCase().includes(searchLower) ||
-                movement.notes?.toLowerCase().includes(searchLower)
-            );
-        }
+		return { total, sent, received, pending };
+	}, [pagination.totalTransfers, transfers]);
 
-        // Filtros de fecha
-        if (filters.dateFrom) {
-            filtered = filtered.filter(movement =>
-                new Date(movement.created_at) >= new Date(filters.dateFrom!)
-            );
-        }
-
-        if (filters.dateTo) {
-            filtered = filtered.filter(movement =>
-                new Date(movement.created_at) <= new Date(filters.dateTo! + 'T23:59:59')
-            );
-        }
-
-        return filtered.sort((a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-        );
-    }, [movements, filters]);
-
-    // Paginación (combina paginación API y filtros locales)
-    const totalItems =
-        filters.search || filters.type || filters.warehouseId || filters.dateFrom || filters.dateTo
-            ? filteredMovements.length
-            : pagination.movements.total || filteredMovements.length;
-    const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
-
-    // Warehouses para filtros
-    const warehouses = useMemo(() => {
-        const map = new Map<number, string>();
-        movements.forEach((movement) => {
-            const warehouseId =
-                movement.warehouse_id ||
-                movement.warehouse?.id ||
-                movement.warehouse_location?.warehouse_id;
-            if (warehouseId) {
-                const warehouseName =
-                    movement.warehouse?.name ||
-                    movement.warehouse_location?.name ||
-                    `Almacén #${warehouseId}`;
-                map.set(warehouseId, warehouseName);
-            }
-        });
-        return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
-    }, [movements]);
-
-    // Estadísticas básicas a partir de los datos disponibles
-    const stats = useMemo(() => {
-        const dataset = filteredMovements.length ? filteredMovements : movements;
-        const totalMovements = statistics.totalMovements || totalItems;
-
-        const countByType = (normalizedType: NormalizedMovementType) =>
-            dataset.filter((movement) => normalizeMovementType(movement.movement_type) === normalizedType).length;
-
-        return {
-            totalMovements,
-            totalEntries: countByType('IN') + countByType('RETURN'),
-            totalExits: countByType('OUT'),
-            totalTransfers: countByType('TRANSFER'),
-        };
-    }, [filteredMovements, movements, statistics.totalMovements, totalItems]);
-
-    // Operaciones
-    const refreshMovements = useCallback(async () => {
-        const success = await requestMovements(currentPage, filters);
-        if (success) {
-            toast.success('Movimientos actualizados correctamente');
-        }
-    }, [requestMovements, currentPage, filters]);
-
-    const getMovementDetails = useCallback(
-        (id: number) => {
-            return movements.find((movement) => movement.id === id);
-        },
-        [movements],
-    );
-
-    const clearFilters = useCallback(() => {
-        setFilters({});
-        setCurrentPage(1);
-    }, []);
-
-    // Actualizar filtros con reset de página
-    const handleSetFilters = useCallback((newFilters: MovementFilters) => {
-        setFilters(newFilters);
-        setCurrentPage(1);
-    }, []);
-
-    return {
-        // Estado
-        movements,
-        filteredMovements,
-        loading: loading || loadingState.movements,
-        error,
-        stats,
-
-        // Filtros y paginación
-        filters,
-        setFilters: handleSetFilters,
-        currentPage,
-        setCurrentPage,
-        itemsPerPage,
-        totalItems,
-        totalPages,
-
-        // Operaciones
-        refreshMovements,
-        getMovementDetails,
-        clearFilters,
-
-        // Utilidades
-        warehouses
-    };
+	return {
+		transfers,
+		loading: loading || localLoading,
+		error,
+		filters: currentFilters,
+		pagination,
+		stats,
+		setFilters,
+		refreshTransfers,
+		clearFilters,
+	};
 };
 
 export default useMovementsManager;

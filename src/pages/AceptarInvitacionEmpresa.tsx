@@ -270,7 +270,6 @@ function AceptarInvitacionEmpresa() {
 							<div className='mb-10 flex flex-col items-center justify-center gap-1'>
 								<LogoTemplate className='h-12' />
 								<p className='text-xs tracking-wide text-gray-500'>Zentria ERP</p>
-								<p className='text-xs tracking-wide text-gray-500'>Zentria ERP</p>
 							</div>
 
 							<div className='mb-2 text-center'>

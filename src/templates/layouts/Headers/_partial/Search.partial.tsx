@@ -66,9 +66,8 @@ const SearchPartial = () => {
 	) : (
 		<Button
 			variant='solid'
-			color='blue'
 			size='sm'
-			rounded='rounded'
+			rounded='rounded-3xl'
 			className='!px-2 font-bold'>
 			Alt + B
 		</Button>

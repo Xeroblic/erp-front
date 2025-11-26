@@ -2,18 +2,17 @@
  * Vista principal del módulo de Historial de Inventario
  * Diseño basado en la estructura de Gestión de Ventas
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 // Hooks y servicios
 import useMovementsManager, { MovementFilters } from './hooks/useMovementsManager';
-import { IInventoryMovement } from '@/interface/inventory.interface';
-import { NormalizedMovementType } from './utils/movementType.utils';
+import { TransferDirection } from '@/interface/transfers.interface';
 
 // Componentes específicos del módulo
-import MovementsTable from './components/tables/MovementsTable';
-import MovementDetailsModal from './components/modals/MovementDetailsModal';
+import TransfersTable from '@/pages/comercial/transferencias/components/tables/TransfersTable';
+import TransferDetailModal from '@/pages/comercial/transferencias/components/modals/TransferDetailModal';
 
 // UI Components
 import Card, { CardBody, CardHeader, CardTitle } from '../../../components/ui/Card';
@@ -26,8 +25,9 @@ import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 
 const HistorialInventarioAdmin: React.FC = () => {
 	// Estados locales para modales
-	const [selectedMovement, setSelectedMovement] = useState<IInventoryMovement | null>(null);
+	const [selectedTransfer, setSelectedTransfer] = useState<number | null>(null);
 	const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+	const hasAppliedUrlFilters = useRef(false);
 
 	// Hooks de búsqueda y navegación
 	const [searchParams] = useSearchParams();
@@ -35,50 +35,44 @@ const HistorialInventarioAdmin: React.FC = () => {
 
 	// Hook de gestión principal
 	const {
-		filteredMovements,
+		transfers,
 		loading,
 		error,
 		stats,
 		filters,
 		setFilters,
-		currentPage,
-		setCurrentPage,
-		itemsPerPage,
-		totalItems,
 		totalPages,
 		clearFilters,
-		warehouses,
+		refreshTransfers,
 	} = useMovementsManager();
 
 	// Cargar filtros desde URL
 	useEffect(() => {
-		const tipoParam = searchParams.get('tipo');
-		const tipo = tipoParam
-			? (tipoParam.toUpperCase() as NormalizedMovementType)
-			: undefined;
-		const almacen = searchParams.get('almacen');
-
-		if (tipo || almacen) {
-			const urlFilters: MovementFilters = {};
-			if (tipo) urlFilters.type = tipo;
-			if (almacen) urlFilters.warehouseId = parseInt(almacen);
-
+		if (hasAppliedUrlFilters.current) return;
+		const rawDirection = (searchParams.get('tipo') || '').toLowerCase();
+		const allowedDirections: TransferDirection[] = ['all', 'sent', 'received'];
+		if (rawDirection && allowedDirections.includes(rawDirection as TransferDirection)) {
+			const urlFilters: MovementFilters = { direction: rawDirection as TransferDirection };
 			setFilters({ ...filters, ...urlFilters });
+			hasAppliedUrlFilters.current = true;
 			toast.info(`Filtros aplicados desde la navegación`);
 		}
-	}, [searchParams]);
+	}, [searchParams, filters, setFilters]);
+
+	useEffect(() => {
+		if (error) {
+			toast.error(error);
+		}
+	}, [error]);
 
 	// Handlers para modales
-	const handleViewDetails = (movement: IInventoryMovement) => {
-		setSelectedMovement(movement);
+	const handleViewDetails = (transferId: number) => {
+		setSelectedTransfer(transferId);
 		setIsDetailsModalOpen(true);
 	};
 
-	// Obtener movimientos paginados
-	const paginatedMovements = filteredMovements;
-
 	return (
-		<PageWrapper title='Historial de Inventario' name='historial'>
+		<PageWrapper title='Historial de Transferencias' name='historial'>
 			<Container>
 				{/* Header Principal - Estilo Gestión de Ventas */}
 				<div className='mb-6 flex items-center justify-between'>
@@ -91,10 +85,10 @@ const HistorialInventarioAdmin: React.FC = () => {
 						</div>
 						<div>
 							<h1 className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
-								Historial de Inventario
+								Historial de Transferencias
 							</h1>
 							<p className='text-gray-500 dark:text-gray-400'>
-								Administra y controla todos los movimientos del inventario
+								Consulta las transferencias registradas en la sucursal seleccionada
 							</p>
 						</div>
 					</div>
@@ -103,13 +97,10 @@ const HistorialInventarioAdmin: React.FC = () => {
 							variant='outline'
 							color='gray'
 							icon='HeroArrowDownTray'
-							onClick={() => console.log('Exportar')}>
-							Exportar
+							onClick={() => refreshTransfers()}>
+							Actualizar
 						</Button>
-						<Button
-							color='sky'
-							icon='HeroPlus'
-							onClick={() => navigate('/inventario/transferencias')}>
+						<Button color='sky' icon='HeroPlus' onClick={() => navigate('/inventario/transferencias')}>
 							Nueva Transferencia
 						</Button>
 					</div>
@@ -128,10 +119,10 @@ const HistorialInventarioAdmin: React.FC = () => {
 								</div>
 								<div>
 									<p className='text-sm text-gray-500 dark:text-gray-400'>
-										Movimientos Totales
+										Transferencias Totales
 									</p>
 									<p className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
-										{stats.totalMovements.toLocaleString()}
+										{stats.total.toLocaleString()}
 									</p>
 								</div>
 							</div>
@@ -149,10 +140,10 @@ const HistorialInventarioAdmin: React.FC = () => {
 								</div>
 								<div>
 									<p className='text-sm text-gray-500 dark:text-gray-400'>
-										Entradas
+										Enviadas
 									</p>
 									<p className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
-										{stats.totalEntries.toLocaleString()}
+										{stats.sent.toLocaleString()}
 									</p>
 								</div>
 							</div>
@@ -170,10 +161,10 @@ const HistorialInventarioAdmin: React.FC = () => {
 								</div>
 								<div>
 									<p className='text-sm text-gray-500 dark:text-gray-400'>
-										Salidas
+										Recibidas
 									</p>
 									<p className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
-										{stats.totalExits.toLocaleString()}
+										{stats.received.toLocaleString()}
 									</p>
 								</div>
 							</div>
@@ -191,10 +182,10 @@ const HistorialInventarioAdmin: React.FC = () => {
 								</div>
 								<div>
 									<p className='text-sm text-gray-500 dark:text-gray-400'>
-										Transferencias
+										Pendientes / borrador
 									</p>
 									<p className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
-										{stats.totalTransfers.toLocaleString()}
+										{stats.pending.toLocaleString()}
 									</p>
 								</div>
 							</div>
@@ -217,96 +208,25 @@ const HistorialInventarioAdmin: React.FC = () => {
 								<Input
 									name='search'
 									type='text'
-									placeholder='Número, producto...'
+									placeholder='Número, notas...'
 									value={filters.search || ''}
-									onChange={(e) =>
-										setFilters({ ...filters, search: e.target.value })
-									}
+									onChange={(e) => setFilters({ ...filters, search: e.target.value })}
 								/>
 							</div>
 
-							{/* Tipo de Movimiento */}
+							{/* Dirección */}
 							<div>
 								<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-									Tipo de movimiento
+									Dirección
 								</label>
 								<Select
-									name='movementType'
-									value={filters.type || ''}
-									onChange={(e) =>
-										setFilters({
-											...filters,
-											type: (e.target.value || undefined) as NormalizedMovementType | undefined,
-										})
-									}>
-									<option value=''>Todos los estados</option>
-									<option value='IN'>Entradas</option>
-									<option value='OUT'>Salidas</option>
-									<option value='TRANSFER'>Transferencias</option>
-									<option value='ADJUST'>Ajustes</option>
-									<option value='RETURN'>Retornos</option>
+									name='direction'
+									value={filters.direction || 'all'}
+									onChange={(e) => setFilters({ ...filters, direction: e.target.value as TransferDirection })}>
+									<option value='all'>Todas</option>
+									<option value='sent'>Enviadas</option>
+									<option value='received'>Recibidas</option>
 								</Select>
-							</div>
-
-							{/* Almacén */}
-							<div>
-								<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-									Almacén
-								</label>
-								<Select
-									name='warehouse'
-									value={filters.warehouseId || ''}
-									onChange={(e) =>
-										setFilters({
-											...filters,
-											warehouseId: e.target.value
-												? parseInt(e.target.value)
-												: undefined,
-										})
-									}>
-									<option value=''>Todos los almacenes</option>
-									{warehouses.map((warehouse) => (
-										<option key={warehouse.id} value={warehouse.id}>
-											{warehouse.name}
-										</option>
-									))}
-								</Select>
-							</div>
-
-							{/* Fecha Desde */}
-							<div>
-								<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-									Fecha Desde
-								</label>
-								<Input
-									name='dateFrom'
-									type='date'
-									value={filters.dateFrom || ''}
-									onChange={(e) =>
-										setFilters({
-											...filters,
-											dateFrom: e.target.value || undefined,
-										})
-									}
-								/>
-							</div>
-
-							{/* Fecha Hasta */}
-							<div>
-								<label className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-									Fecha Hasta
-								</label>
-								<Input
-									name='dateTo'
-									type='date'
-									value={filters.dateTo || ''}
-									onChange={(e) =>
-										setFilters({
-											...filters,
-											dateTo: e.target.value || undefined,
-										})
-									}
-								/>
 							</div>
 						</div>
 
@@ -324,27 +244,21 @@ const HistorialInventarioAdmin: React.FC = () => {
 					<CardHeader>
 						<div className='flex w-full items-center justify-between'>
 							<CardTitle>
-								Lista de Movimientos ({filteredMovements.length} registros)
+								Lista de Transferencias ({transfers.length} registros)
 							</CardTitle>
-							<div className='text-sm text-gray-500 dark:text-gray-400'>
-								Página {currentPage} de {totalPages}
-							</div>
+							<div className='text-sm text-gray-500 dark:text-gray-400'>Total páginas {totalPages}</div>
 						</div>
 					</CardHeader>
 					<CardBody className='p-0'>
-						<MovementsTable
-							data={paginatedMovements}
-							loading={loading}
-							onViewDetails={handleViewDetails}
-						/>
+						<TransfersTable transfers={transfers} isLoading={loading} onView={(transfer) => handleViewDetails(transfer.id)} />
 					</CardBody>
 				</Card>
 
 				{/* Modal de detalles */}
-				<MovementDetailsModal
-					movement={selectedMovement}
+				<TransferDetailModal
+					transfer={transfers.find((t) => t.id === selectedTransfer) || null}
 					isOpen={isDetailsModalOpen}
-					setIsOpen={setIsDetailsModalOpen}
+					onClose={() => setIsDetailsModalOpen(false)}
 				/>
 			</Container>
 		</PageWrapper>

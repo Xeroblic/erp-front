@@ -1,555 +1,398 @@
 import React from 'react';
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/store';
 import type { IQuote, IQuoteItem } from '../../../../interface/quotes.interface';
-import store, { type RootState } from '@/store';
-import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
-import type { IBranch, ISubempresa } from '@/interface/empresas.interface';
-
+import type { ISubempresa, IEmpresa } from '@/interface/empresas.interface';
 
 interface QuotePrintableViewProps {
-	quote: IQuote;
+    quote: IQuote;
 }
 
-const formatDate = (value?: string | null) => {
-	if (!value) return '—';
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return '—';
-	return date.toLocaleDateString('es-CL', {
-		year: 'numeric',
-		month: 'long',
-		day: 'numeric',
-	});
-};
+// --- 1. Funciones de Formato y Ayuda ---
 
-const formatTime = (value?: string | null) => {
-	if (!value) return '—';
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return '—';
-	return date.toLocaleTimeString('es-CL', {
-		hour: '2-digit',
-		minute: '2-digit',
-	});
+const formatDate = (value?: string | null) => {
+    if (!value) return '—';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+        ? '—'
+        : date.toLocaleDateString('es-CL', { year: 'numeric', month: '2-digit', day: '2-digit' });
 };
 
 const parseNumber = (value: any): number => {
-	const num = Number(value);
-	return Number.isNaN(num) ? 0 : num;
+    const num = Number(value);
+    return Number.isNaN(num) ? 0 : num;
 };
 
 const formatCurrency = (value: any) =>
-	new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(
-		parseNumber(value),
-	);
+    new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(
+        parseNumber(value)
+    );
 
 const computeItemTotal = (item: IQuoteItem) => {
-	const quantity = parseNumber(item.quantity || 0);
-	const unit = parseNumber(item.unit_price || 0);
-	const discount = parseNumber((item as any).discount_amount ?? 0);
-	return quantity * unit - discount;
+    const quantity = parseNumber(item.quantity || 0);
+    const unit = parseNumber(item.unit_price || 0);
+    const discount = parseNumber((item as any).discount_amount ?? 0);
+    return (quantity * unit) - discount;
 };
-
-const ensureArray = (value?: string | string[] | null): string[] => {
-	if (!value) return [];
-	if (Array.isArray(value)) return value.map((entry) => String(entry)).filter(Boolean);
-	return String(value)
-		.split(/\r?\n/)
-		.map((entry) => entry.trim())
-		.filter(Boolean);
-};
-
-interface CompanyInfo {
-	name: string;
-	tagline?: string;
-	description?: string;
-	rut: string;
-	branch?: string;
-	website?: string;
-	addresses: string[];
-	phoneLines: string[];
-	emails: string[];
-	bankInfo: string[];
-	documentLabel: string;
-	logoUrl?: string;
-}
-
-const fallbackCompanyInfo: CompanyInfo = {
-	name: 'SU EMPRESA LTDA.',
-	tagline: 'Tecnología y soluciones para su negocio',
-	description: 'Importación, distribución y comercialización de equipos, periféricos y software.',
-	rut: '00.000.000-0',
-	branch: 'S.I.I. - CASA MATRIZ',
-	website: 'www.suempresa.cl',
-	addresses: ['Dirección principal 1234, Ciudad'],
-	phoneLines: ['+56 2 2345 6789'],
-	emails: ['contacto@suempresa.cl'],
-	bankInfo: ['Depósitos en cuenta corriente a nombre de SU EMPRESA LTDA.'],
-	documentLabel: 'Cotización',
-	logoUrl: undefined,
-};
-
 
 const normalizeText = (value?: string | null): string | undefined => {
-	if (value === undefined || value === null) return undefined;
-	const normalized = String(value).trim();
-	return normalized.length ? normalized : undefined;
+    if (!value) return undefined;
+    const normalized = String(value).trim();
+    return normalized.length > 0 ? normalized : undefined;
 };
 
-const collect = (target: Set<string>, raw?: string | null) => {
-	const normalized = normalizeText(raw);
-	if (normalized) target.add(normalized);
+// --- 2. Lógica de Extracción de Datos (La parte "Inteligente") ---
+
+interface CompanyInfo {
+    name: string;
+    rut: string;
+    activity: string; // Giro
+    address: string;
+    commune?: string;
+    email: string;
+    phone: string;
+    website?: string;
+    logoUrl?: string;
+    bankInfo: string[];
+}
+
+const fallbackCompany: CompanyInfo = {
+    name: 'SU EMPRESA LTDA.',
+    rut: '77.000.000-0',
+    activity: 'Venta de Artículos Computacionales',
+    address: 'Av. Principal 1234',
+    commune: 'Santiago',
+    email: 'contacto@suempresa.cl',
+    phone: '+56 9 1234 5678',
+    bankInfo: [],
 };
 
-const getStateSnapshot = (): RootState | null => {
-	try {
-		return store.getState();
-	} catch (error) {
-		console.error('No se pudo leer el estado global:', error);
-		return null;
-	}
-};
+// Hook personalizado para extraer la info correcta
+const useQuoteIssuer = (quote: IQuote): CompanyInfo => {
+	// Obtenemos todas las posibles fuentes de datos del Store
+	const subsidiaries = useSelector((state: RootState) => state.subEmpresa?.lista || []);
+	const mainCompany = useSelector((state: RootState) => state.empresa?.miEmpresa);
+    
+    // 1. Intentar encontrar la subsidiaria específica de la cotización
+    const activeSub = subsidiaries.find(s => Number(s.id) === Number(quote.subsidiary_id));
+    
+	// 2. Si no hay subsidiaria, usar la empresa principal
+	const source: ISubempresa | IEmpresa | undefined = activeSub || mainCompany || undefined;
+    
+    // 3. Extraer metadatos guardados en la cotización (si existen, tienen prioridad visual a veces)
+    const meta = (quote.metadata as any)?.company || {};
 
-const normalizeSubsidiary = (input: any): Partial<ISubempresa> | null => {
-	if (!input || typeof input !== 'object') return null;
+    // Helpers de extracción segura
+    const getVal = (...candidates: any[]) => candidates.find(c => normalizeText(c)) || undefined;
 
-	return {
-		id: input.id,
-		name: input.name ?? input.subsidiary_name,
-		rut: input.rut ?? input.subsidiary_rut ?? input.tax_number,
-		website: input.website ?? input.subsidiary_website,
-		phone: input.phone ?? input.subsidiary_phone,
-		address: input.address ?? input.subsidiary_address,
-		email: input.email ?? input.subsidiary_email,
-		sucursales: (input.sucursales ?? input.branches) as IBranch[] | undefined,
-		branches: input.branches,
-		manager_name: input.manager_name ?? input.subsidiary_manager_name,
-		manager_phone: input.manager_phone ?? input.subsidiary_manager_phone,
-		manager_email: input.manager_email ?? input.subsidiary_manager_email,
-		commune: input.commune,
-	} as Partial<ISubempresa>;
-};
+	// Helpers para leer campos según tipo de fuente
+	const asSub = (src: ISubempresa | IEmpresa | undefined): ISubempresa | undefined =>
+		src && 'company_name' in src === false ? src : undefined;
+	const asMain = (src: ISubempresa | IEmpresa | undefined): IEmpresa | undefined =>
+		src && 'company_name' in src ? src : undefined;
 
-const getPrimaryBranch = (subsidiary?: Partial<ISubempresa> | null): IBranch | null => {
-	if (!subsidiary) return null;
-	const candidates = (Array.isArray(subsidiary.sucursales) && subsidiary.sucursales.length
-		? subsidiary.sucursales
-		: subsidiary.branches) as IBranch[] | undefined;
-	if (candidates && candidates.length) return candidates[0];
-	return null;
-};
-
-const extractLogoUrl = (...sources: Array<Record<string, any> | null | undefined>) => {
-	for (const source of sources) {
-		if (!source) continue;
-
-		const direct = normalizeText(
-			source.logo_url ||
-				source.logoUrl ||
-				source.logo_path ||
-				source.logo,
-		);
-		if (direct) return direct;
-
-		const nested = source.logo;
-		if (nested && typeof nested === 'object') {
-			const variants = [
-				nested.url,
-				nested.original_url,
-				nested.medium,
-				nested.full,
-				nested.sm,
-				nested.md,
-				nested.lg,
-			];
-			for (const variant of variants) {
-				const normalized = normalizeText(variant);
-				if (normalized) return normalized;
-			}
-		}
-	}
-	return undefined;
-};
-
-const buildCompanyInfo = (quote: IQuote): CompanyInfo => {
-	const state = getStateSnapshot();
-
-	const metadataCompany =
-		(quote.metadata?.company as Record<string, any>) ??
-		(quote.metadata?.company_info as Record<string, any>) ??
-		(quote.metadata?.subsidiary as Record<string, any>) ??
-		(quote.metadata?.issuer as Record<string, any>) ??
-		null;
-
-	const candidateSubs = [
-		...(state?.subEmpresa?.lista ?? []),
-		...(state?.empresa?.miEmpresaSubsidiarias ?? []),
-	];
-
-	const normalizedCandidates = candidateSubs
-		.map((entry) => normalizeSubsidiary(entry))
-		.filter(Boolean) as Partial<ISubempresa>[];
-
-	const findById = (id?: number | null) => {
-		if (!id) return null;
-		return (
-			normalizedCandidates.find((subs) => Number(subs.id) === Number(id)) ||
-			null
-		);
-	};
-
-	let activeSubsidiary: Partial<ISubempresa> | null = null;
-
-	if (state) {
-		activeSubsidiary = findById(selectEffectiveSubsidiaryId(state));
-	}
-
-	if (!activeSubsidiary && state?.personalizacion?.personalizacionUsuario?.subsidiary_id) {
-		activeSubsidiary = findById(state.personalizacion.personalizacionUsuario.subsidiary_id);
-	}
-
-	if (!activeSubsidiary) {
-		activeSubsidiary =
-			normalizeSubsidiary((state?.auth?.user as any)?.branch?.subsidiary) ||
-			normalizeSubsidiary((state?.auth?.user as any)?.subsidiary) ||
-			normalizedCandidates[0] ||
-			null;
-	}
-
-	const branch = getPrimaryBranch(activeSubsidiary);
-	const companyState = state?.empresa?.miEmpresa;
-
-	const addressSet = new Set<string>();
-	const phoneSet = new Set<string>();
-	const emailSet = new Set<string>();
-	const bankSet = new Set<string>();
-
-	collect(addressSet, activeSubsidiary?.address);
-	collect(addressSet, branch?.branch_address);
-	ensureArray(metadataCompany?.addresses ?? metadataCompany?.address_lines ?? metadataCompany?.address).forEach((addr) =>
-		collect(addressSet, addr),
+	const name = getVal(
+		meta.name,
+		asSub(source)?.name,
+		asSub(source)?.subsidiary_name,
+		asMain(source)?.company_name,
+		asMain(source)?.legal_name,
+		fallbackCompany.name,
 	);
-	collect(addressSet, companyState?.company_address);
-
-	collect(phoneSet, activeSubsidiary?.phone);
-	collect(phoneSet, branch?.branch_phone);
-	collect(phoneSet, metadataCompany?.phone);
-	ensureArray(metadataCompany?.phoneLines ?? metadataCompany?.phones ?? metadataCompany?.telefonos).forEach((phone) =>
-		collect(phoneSet, phone),
+	const rut = getVal(
+		meta.rut,
+		asSub(source)?.rut,
+		asSub(source)?.subsidiary_rut,
+		asMain(source)?.company_rut,
+		fallbackCompany.rut,
 	);
-	collect(phoneSet, companyState?.company_phone);
-
-	collect(emailSet, activeSubsidiary?.email);
-	collect(emailSet, branch?.branch_email);
-	collect(emailSet, metadataCompany?.email);
-	ensureArray(metadataCompany?.emails ?? metadataCompany?.contact_email).forEach((email) =>
-		collect(emailSet, email),
-	);
-	collect(emailSet, companyState?.contact_email);
-
-	ensureArray(
-		metadataCompany?.bankInfo ??
-			metadataCompany?.bank_info ??
-			metadataCompany?.payment_instructions,
-	).forEach((line) => collect(bankSet, line));
-
-	collect(
-		bankSet,
-		companyState?.business_activity ? `Giro: ${companyState.business_activity}` : undefined,
+	const activity = getVal(
+		meta.activity,
+		asSub(source)?.manager_name, // sin campo directo; usamos algo identificable
+		asMain(source)?.business_activity,
+		fallbackCompany.activity,
 	);
 
-	const companyInfo: CompanyInfo = {
-		name:
-			normalizeText(activeSubsidiary?.name) ||
-			normalizeText(metadataCompany?.name ?? metadataCompany?.razon_social) ||
-			normalizeText(companyState?.company_name ?? companyState?.legal_name) ||
-			fallbackCompanyInfo.name,
-		tagline:
-			normalizeText(metadataCompany?.tagline) ||
-			normalizeText(companyState?.company_name) ||
-			fallbackCompanyInfo.tagline,
-		description:
-			normalizeText(metadataCompany?.description) ||
-			normalizeText(companyState?.business_activity) ||
-			fallbackCompanyInfo.description,
-		rut:
-			normalizeText((activeSubsidiary as any)?.rut) ||
-			normalizeText(metadataCompany?.rut ?? metadataCompany?.tax_number) ||
-			normalizeText(companyState?.company_rut) ||
-			fallbackCompanyInfo.rut,
-		branch:
-			normalizeText(metadataCompany?.branch ?? metadataCompany?.office) ||
-			normalizeText(branch?.branch_name) ||
-			normalizeText(
-				branch?.commune?.name ? `S.I.I. - ${branch.commune.name}` : undefined,
-			) ||
-			fallbackCompanyInfo.branch,
-		website:
-			normalizeText(activeSubsidiary?.website) ||
-			normalizeText(companyState?.company_website) ||
-			normalizeText(metadataCompany?.website ?? metadataCompany?.url) ||
-			fallbackCompanyInfo.website,
-		addresses: addressSet.size ? Array.from(addressSet) : fallbackCompanyInfo.addresses,
-		phoneLines: phoneSet.size ? Array.from(phoneSet) : fallbackCompanyInfo.phoneLines,
-		emails: emailSet.size ? Array.from(emailSet) : fallbackCompanyInfo.emails,
-		bankInfo: bankSet.size ? Array.from(bankSet) : fallbackCompanyInfo.bankInfo,
-		documentLabel:
-			normalizeText(metadataCompany?.document_label ?? metadataCompany?.documentLabel) ||
-			fallbackCompanyInfo.documentLabel,
-		logoUrl: extractLogoUrl(
-			metadataCompany,
-			activeSubsidiary as Record<string, any>,
-			companyState as Record<string, any>,
-		),
-	};
-
-	if (!companyInfo.branch && branch?.commune?.name) {
-		companyInfo.branch = `S.I.I. - ${branch.commune.name}`;
+	// Dirección: Intentar construirla completa
+	let address = getVal(
+		meta.address,
+		asSub(source)?.address,
+		asSub(source)?.subsidiary_address,
+		asMain(source)?.company_address,
+		fallbackCompany.address,
+	);
+	const commune = getVal(
+		meta.commune,
+		asSub(source)?.commune_name,
+		asSub(source)?.subsidiary_address, // compatibilidad básica
+		asMain(source)?.company_address,
+	);
+	if (commune && address && !address.includes(commune)) {
+		address = `${address}, ${commune}`;
 	}
 
-	return companyInfo;
+	const email = getVal(
+		meta.email,
+		asSub(source)?.email,
+		asSub(source)?.subsidiary_email,
+		asMain(source)?.contact_email,
+		fallbackCompany.email,
+	);
+	const phone = getVal(
+		meta.phone,
+		asSub(source)?.phone,
+		asSub(source)?.subsidiary_phone,
+		asMain(source)?.company_phone,
+		fallbackCompany.phone,
+	);
+	const website = getVal(
+		meta.website,
+		asSub(source)?.website,
+		asSub(source)?.subsidiary_website,
+		asMain(source)?.company_website,
+	);
+
+	// Logo: Buscar en varios niveles de anidación típicos de Laravel/API
+	const logoUrl = getVal(
+		meta.logo_url,
+		asSub(source)?.logo_url,
+		(asSub(source) as any)?.logo?.url,
+		(asSub(source) as any)?.logo,
+		asMain(source)?.company_logo,
+		(asMain(source) as any)?.logo?.url,
+	);
+
+	// Datos Bancarios (si alguna fuente los trae)
+	const bankData =
+		(meta.bank_info as any) ??
+		(asSub(source) as any)?.bank_info ??
+		(asMain(source) as any)?.bank_info;
+	const bankInfo = Array.isArray(bankData) ? bankData.map(String) : bankData ? [String(bankData)] : [];
+
+	return { name, rut, activity, address, commune, email, phone, website, logoUrl, bankInfo };
 };
 
+
+// --- 3. Componente Visual ---
 
 const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
-	const items = quote.items ?? [];
-	const totalsNetFromItems = items.reduce((sum, item) => sum + computeItemTotal(item), 0);
-	const totalNet = parseNumber(
-		quote.totals?.total_net ?? quote.total_net ?? quote.subtotal ?? totalsNetFromItems,
-	);
-	const discountAmount = parseNumber(quote.discount_amount ?? (quote as any).fixed_discount ?? 0);
-	const taxRateInput = parseNumber(
-		quote.totals?.tax_rate ?? quote.tax_rate ?? quote.tax_percentage ?? 0.19,
-	);
-	const normalizedTaxRate = taxRateInput > 1 && taxRateInput <= 2 ? taxRateInput - 1 : taxRateInput;
-	const taxAmount = parseNumber(
-		quote.totals?.tax_amount ??
-			quote.total_tax ??
-			quote.tax_amount ??
-			(totalNet - discountAmount) * normalizedTaxRate,
-	);
-	const grandTotal = parseNumber(
-		quote.totals?.grand_total ??
-			quote.total_amount ??
-			quote.subtotal ??
-			totalNet - discountAmount + taxAmount,
-	);
+    const company = useQuoteIssuer(quote);
+    
+    // Datos del Cliente
+    const customer = quote.customer as any || {};
+    const customerName = customer.razon_social || customer.billing_company || customer.name || 'Cliente Mostrador';
+    const customerRut = customer.rut || customer.tax_number || '—';
+    const customerGiro = customer.business_activity || customer.giro || '—';
+    const customerAddress = customer.billing_address || customer.address || '—';
+    const customerContact = customer.contact_name || '—';
+    const customerEmail = customer.email || '—';
+    const customerPhone = customer.phone || customer.mobile_phone || '—';
 
-	const customerName =
-		(quote.customer as any)?.billing_company ||
-		(quote.customer as any)?.company_name ||
-		(quote.customer as any)?.name ||
-		(quote.customer as any)?.contact_name ||
-		`Cliente #${quote.customer_id}`;
+    // Totales
+    const items = quote.items ?? [];
+    const totalNeto = parseNumber(quote.total_net ?? quote.subtotal ?? quote.totals?.total_net ?? 0);
+    const descuento = parseNumber(quote.discount_amount ?? 0);
+    const iva = parseNumber(quote.total_tax ?? quote.tax_amount ?? quote.totals?.tax_amount ?? 0);
+    const totalFinal = parseNumber(quote.total_amount ?? quote.totals?.grand_total ?? 0);
 
-	const customerRut = (quote.customer as any)?.rut || (quote.customer as any)?.tax_number || '—';
-	const customerEmail = (quote.customer as any)?.email || '—';
-	const customerPhone = (quote.customer as any)?.phone || (quote.customer as any)?.mobile_phone || '—';
-	const customerAddress =
-		(quote.customer as any)?.address ||
-		(quote.customer as any)?.billing_address ||
-		(quote.customer as any)?.street ||
-		'—';
-	const customerCommune =
-		(quote.customer as any)?.comuna ||
-		(quote.customer as any)?.city ||
-		(quote.customer as any)?.province ||
-		'—';
-	const customerBusiness = (quote.customer as any)?.giro || (quote.customer as any)?.business || '—';
-	const contactName = (quote.customer as any)?.contact_name || customerName;
+    // Condiciones
+    const formaPago = quote.payment_method || 'Transferencia / Contado';
+    const validez = quote.expiry_date ? formatDate(quote.expiry_date) : '7 días';
+    const entrega = (quote.metadata as any)?.delivery_terms || 'A convenir en local';
 
-	const sellerInfo = (quote.metadata as any)?.seller ?? (quote.metadata as any)?.salesperson ?? {};
-	const sellerName =
-		sellerInfo.name ||
-		(quote as any)?.salesperson_name ||
-		(quote.salesperson_id ? `Vendedor #${quote.salesperson_id}` : '—');
-	const sellerPhone = sellerInfo.phone || sellerInfo.mobile || (quote as any)?.salesperson_phone || '—';
-	const sellerEmail = sellerInfo.email || (quote as any)?.salesperson_email || '—';
+    return (
+        <div className="bg-white p-8 mx-auto max-w-[216mm] text-xs font-sans text-gray-800 leading-tight">
+            
+            {/* --- HEADER: Logo & Datos Empresa vs Cuadro RUT --- */}
+            <div className="flex justify-between items-start mb-6 gap-4">
+                {/* IZQUIERDA: Datos de tu Empresa (Subsidiaria) */}
+                <div className="w-3/5">
+                    <div className="mb-3 h-16 flex items-center justify-start">
+                        {company.logoUrl ? (
+                            <img src={company.logoUrl} alt="Logo" className="h-full object-contain max-w-[180px]" />
+                        ) : (
+                            <h1 className="text-2xl font-extrabold uppercase text-gray-800 tracking-tighter">
+                                {company.name}
+                            </h1>
+                        )}
+                    </div>
+                    <div className="space-y-0.5 text-[11px] text-gray-600">
+                        <p className="font-bold text-gray-900 uppercase text-sm">{company.name}</p>
+                        <p><span className="font-semibold">Giro:</span> {company.activity}</p>
+                        <p><span className="font-semibold">Dirección:</span> {company.address}</p>
+                        <p><span className="font-semibold">Email:</span> {company.email}</p>
+                        <p><span className="font-semibold">Fono:</span> {company.phone}</p>
+                        {company.website && <p><span className="font-semibold">Web:</span> {company.website}</p>}
+                    </div>
+                </div>
 
-	const deliveryInfo =
-		quote.metadata?.delivery_method || quote.metadata?.delivery_terms || quote.metadata?.delivery || 'Entrega inmediata';
-	const paymentTermsText = quote.payment_terms ? `${quote.payment_terms} días` : '—';
+                {/* DERECHA: Cuadro RUT (Estilo SII Clásico) */}
+                <div className="w-2/5 flex flex-col items-end">
+                    <div className="border-[3px] border-red-600 w-full max-w-[260px] text-center py-3">
+                        <h2 className="text-xl font-black text-red-600 tracking-wide">R.U.T.: {company.rut}</h2>
+                        <div className="bg-red-50 py-1 my-1">
+                            <h3 className="text-lg font-bold text-red-600 uppercase tracking-widest">Cotización</h3>
+                        </div>
+                        <h4 className="text-xl font-black text-red-600">N° {quote.id}</h4>
+                    </div>
+                    <div className="mt-2 text-right text-sm">
+                        <p className="font-bold text-gray-700">Santiago, {formatDate(quote.quote_date)}</p>
+                    </div>
+                </div>
+            </div>
 
-	const companyInfo = buildCompanyInfo(quote);
+            {/* --- CLIENTE: Franja de Datos --- */}
+            <div className="border border-gray-300 rounded-sm p-3 mb-6 bg-gray-50/30 text-[11px]">
+                <div className="grid grid-cols-[70px_1fr_40px_1fr] gap-y-1 gap-x-2 items-baseline">
+                    <div className="font-bold text-gray-900">Señor(es):</div>
+                    <div className="uppercase font-bold text-gray-800">{customerName}</div>
+                    
+                    <div className="font-bold text-gray-900 text-right">RUT:</div>
+                    <div className="font-medium">{customerRut}</div>
 
+                    <div className="font-bold text-gray-900">Giro:</div>
+                    <div className="col-span-3 text-gray-700">{customerGiro}</div>
 
-	const detailRows = [
-		{ label: 'Fecha emisión', value: formatDate(quote.quote_date) },
-		{ label: 'Hora emisión', value: formatTime(quote.quote_date) },
-		{ label: 'Válida hasta', value: formatDate(quote.expiry_date || (quote as any).valid_until) },
-		{ label: 'Cond. de pago', value: paymentTermsText },
-		{ label: 'Método de pago', value: quote.payment_method ?? 'Transferencia / Depósito' },
-		{ label: 'Señor(es)', value: customerName },
-		{ label: 'R.U.T.', value: customerRut },
-		{ label: 'Contacto', value: contactName },
-		{ label: 'Giro', value: customerBusiness },
-		{ label: 'Dirección', value: customerAddress },
-		{ label: 'Comuna', value: customerCommune },
-		{ label: 'Correo', value: customerEmail },
-		{ label: 'Teléfono', value: customerPhone },
-		{ label: 'Orden de compra', value: quote.purchase_order ?? '—' },
-		{ label: 'Cond. de entrega', value: deliveryInfo },
-		{ label: 'Vendedor', value: sellerName },
-		{ label: 'Contacto vendedor', value: sellerPhone },
-		{ label: 'Email vendedor', value: sellerEmail },
-	];
+                    <div className="font-bold text-gray-900">Dirección:</div>
+                    <div className="col-span-3 text-gray-700">{customerAddress}</div>
 
-	const termsEntries = quote.metadata?.terms ?? quote.terms_conditions ?? {};
-	const observationLines = [
-		quote.notes ? `Notas: ${quote.notes}` : null,
-		quote.internal_notes ? `Notas internas: ${quote.internal_notes}` : null,
-		...Object.entries(termsEntries).map(([key, value]) => `${key}: ${String(value)}`),
-	].filter(Boolean) as string[];
+                    <div className="font-bold text-gray-900">Contacto:</div>
+                    <div className="text-gray-700">{customerContact}</div>
 
-	return (
-		<div className='mx-auto max-w-5xl rounded-xl border border-gray-300 bg-white p-8 text-sm text-gray-900 shadow-sm'>
-			<header className='flex flex-col gap-6 border-b border-gray-300 pb-6 md:flex-row md:justify-between'>
-				<div className='space-y-3'>
-					{companyInfo.logoUrl && (
-						<img src={companyInfo.logoUrl} alt={companyInfo.name} className='h-14 object-contain' />
-					)}
-					<div>
-						<p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>
-							{companyInfo.tagline}
-						</p>
-						<h1 className='text-2xl font-bold uppercase tracking-wide text-gray-900'>{companyInfo.name}</h1>
-					</div>
-					{companyInfo.description && (
-						<p className='max-w-3xl text-[12px] text-gray-600'>{companyInfo.description}</p>
-					)}
-					<div className='text-[12px] text-gray-700'>
-						{companyInfo.addresses.map((line) => (
-							<p key={line}>{line}</p>
-						))}
-						{!!companyInfo.website && <p>{companyInfo.website}</p>}
-						{companyInfo.phoneLines.map((line) => (
-							<p key={line}>{line}</p>
-						))}
-						{companyInfo.emails.map((line) => (
-							<p key={line}>{line}</p>
-						))}
-					</div>
-				</div>
-				<div className='w-full max-w-xs rounded-lg border border-gray-900 p-4 text-center text-gray-900'>
-					<p className='text-xs font-semibold uppercase text-gray-500'>R.U.T.</p>
-					<p className='text-2xl font-bold tracking-wider'>{companyInfo.rut}</p>
-					<div className='mt-4 border-t border-gray-200 pt-4'>
-						<p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>
-							{companyInfo.documentLabel}
-						</p>
-						{/* <p className='text-lg font-bold'>N° {quote.quote_number ?? quote.id}</p> */}
-						<p className='text-lg font-bold'>N° { quote.id}</p>
+                    <div className="font-bold text-gray-900 text-right">Fono:</div>
+                    <div className="text-gray-700">{customerPhone}</div>
+                    
+                    <div className="font-bold text-gray-900">Correo:</div>
+                    <div className="col-span-3 text-gray-700">{customerEmail}</div>
+                </div>
+            </div>
 
-					</div>
-					{companyInfo.branch && (
-						<p className='mt-3 text-xs font-semibold uppercase tracking-wide'>{companyInfo.branch}</p>
-					)}
-				</div>
-			</header>
+            {/* --- TABLA DE ÍTEMS --- */}
+            <div className="mb-6 min-h-[300px]">
+                <table className="w-full border-collapse text-[11px]">
+                    <thead>
+                        <tr className="bg-gray-100 border-t border-b border-gray-300 text-gray-700 uppercase">
+                            <th className="py-2 px-2 text-center w-12 font-bold border-l border-gray-300">Cant.</th>
+                            <th className="py-2 px-2 text-left w-28 font-bold border-l border-gray-300">Código</th>
+                            <th className="py-2 px-2 text-left font-bold border-l border-gray-300">Descripción</th>
+                            <th className="py-2 px-2 text-right w-24 font-bold border-l border-gray-300">P. Unitario</th>
+                            <th className="py-2 px-2 text-right w-24 font-bold border-l border-r border-gray-300">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {items.map((item, idx) => (
+                            <tr key={idx} className="border-b border-gray-200 hover:bg-gray-50">
+                                <td className="py-2 px-2 text-center align-top border-l border-gray-300 font-medium">
+                                    {item.quantity}
+                                </td>
+                                <td className="py-2 px-2 text-left align-top border-l border-gray-300 text-gray-600">
+                                    {item.customer_sku || item.product?.sku || '—'}
+                                </td>
+                                <td className="py-2 px-2 text-left align-top border-l border-gray-300">
+                                    <p className="font-bold text-gray-800 text-xs">
+                                        {item.customer_name || item.product?.name || 'Ítem sin nombre'}
+                                    </p>
+                                    {item.description && (
+                                        <p className="text-[10px] text-gray-500 whitespace-pre-line mt-0.5">
+                                            {item.description}
+                                        </p>
+                                    )}
+                                    {/* Garantía integrada en descripción como subtítulo */}
+                                    {(item.metadata as any)?.warranty && (
+                                        <p className="text-[10px] text-blue-600 italic mt-1">
+                                            Garantía: {(item.metadata as any).warranty}
+                                        </p>
+                                    )}
+                                </td>
+                                <td className="py-2 px-2 text-right align-top border-l border-gray-300 font-medium text-gray-700">
+                                    {formatCurrency(item.unit_price)}
+                                </td>
+                                <td className="py-2 px-2 text-right align-top border-l border-r border-gray-300 font-bold text-gray-900">
+                                    {formatCurrency(item.total_net || computeItemTotal(item))}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
 
-			<section className='mt-6 border border-gray-200'>
-				<div className='grid grid-cols-1 divide-y divide-gray-200 md:grid-cols-2'>
-					{detailRows.map((row) => (
-						<div key={row.label} className='flex min-h-[48px] divide-x divide-gray-200'>
-							<div className='w-1/2 bg-gray-50 px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-gray-500'>
-								{row.label}
-							</div>
-							<div className='w-1/2 px-3 py-2 text-[13px] text-gray-900'>{row.value || '—'}</div>
-						</div>
-					))}
-				</div>
-			</section>
+            {/* --- FOOTER: Condiciones y Totales --- */}
+            <div className="flex gap-8 items-start">
+                
+                {/* Izquierda: Notas, Banco, Condiciones */}
+                <div className="flex-1 space-y-5">
+                    
+                    {/* Condiciones Comerciales */}
+                    <div className="border-l-2 border-gray-300 pl-3">
+                        <h3 className="font-bold text-gray-900 uppercase text-[11px] mb-2">Condiciones Comerciales</h3>
+                        <div className="text-[10px] space-y-1 text-gray-600">
+                            <p><span className="font-semibold text-gray-800">Validez Oferta:</span> {validez}</p>
+                            <p><span className="font-semibold text-gray-800">Forma de Pago:</span> {formaPago}</p>
+                            <p><span className="font-semibold text-gray-800">Entrega:</span> {entrega}</p>
+                        </div>
+                    </div>
 
-			<section className='mt-8'>
-				<div className='overflow-hidden border border-gray-300'>
-					<table className='w-full table-fixed text-xs text-gray-900'>
-						<thead className='bg-gray-50 text-[11px] uppercase tracking-wide text-gray-600'>
-							<tr>
-								<th className='border-b border-r border-gray-200 px-3 py-2 text-left'>Código</th>
-								<th className='border-b border-r border-gray-200 px-3 py-2 text-right'>Cantidad</th>
-								<th className='border-b border-r border-gray-200 px-3 py-2 text-left'>Descripción</th>
-								<th className='border-b border-r border-gray-200 px-3 py-2 text-left'>Garantía</th>
-								<th className='border-b border-gray-200 px-3 py-2 text-right'>Unitario (neto)</th>
-								<th className='border-b border-l border-gray-200 px-3 py-2 text-right'>Total (neto)</th>
-							</tr>
-						</thead>
-						<tbody>
-							{items.length === 0 ? (
-								<tr>
-									<td colSpan={6} className='px-4 py-6 text-center text-sm text-gray-500'>
-										Esta cotización aún no tiene ítems cargados.
-									</td>
-								</tr>
-							) : (
-								items.map((item, index) => (
-									<tr key={item.id ?? index} className='border-t border-gray-200'>
-										<td className='px-3 py-2 align-top text-[13px] font-medium text-gray-800'>
-											{item.customer_sku || item.product?.sku || '—'}
-										</td>
-										<td className='px-3 py-2 text-right text-[13px]'>{item.quantity}</td>
-										<td className='px-3 py-2 text-left text-[13px]'>
-											<p className='font-semibold text-gray-900'>
-												{item.customer_name || item.product?.name || 'Ítem sin nombre'}
-											</p>
-											{item.description && <p className='text-[11px] text-gray-600'>{item.description}</p>}
-										</td>
-										<td className='px-3 py-2 text-[13px] text-gray-800'>
-											{(item.metadata as any)?.warranty || (item as any).warranty || '—'}
-										</td>
-										<td className='px-3 py-2 text-right text-[13px]'>
-											{formatCurrency(item.unit_price)}
-										</td>
-										<td className='px-3 py-2 text-right text-[13px] font-semibold text-gray-900'>
-											{formatCurrency(item.total_net ?? computeItemTotal(item))}
-										</td>
-									</tr>
-								))
-							)}
-						</tbody>
-					</table>
-				</div>
-			</section>
+                    {/* Datos Bancarios y Notas */}
+                    {(company.bankInfo.length > 0 || quote.notes) && (
+                        <div className="bg-gray-50 p-3 rounded border border-gray-200 text-[10px]">
+                            {quote.notes && (
+                                <div className="mb-3">
+                                    <span className="font-bold block mb-1">Observaciones:</span>
+                                    <p className="whitespace-pre-wrap text-gray-600">{quote.notes}</p>
+                                </div>
+                            )}
+                            {company.bankInfo.length > 0 && (
+                                <div>
+                                    <span className="font-bold block mb-1">Datos Bancarios:</span>
+                                    {company.bankInfo.map((info, i) => (
+                                        <p key={i} className="text-gray-700 font-medium">{info}</p>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
 
-			<section className='mt-8 flex flex-col gap-6 md:flex-row'>
-				<div className='flex-1 rounded-lg border border-gray-300 p-4'>
-					<h3 className='text-xs font-semibold uppercase tracking-wide text-gray-500'>Observaciones</h3>
-					<div className='mt-3 space-y-2 text-[13px] text-gray-800'>
-						{observationLines.length === 0 ? (
-							<p>Sin observaciones adicionales.</p>
-						) : (
-							observationLines.map((line) => <p key={line}>{line}</p>)
-						)}
-					</div>
-					{companyInfo.bankInfo.length > 0 && (
-						<div className='mt-4 space-y-1 text-[13px] text-gray-800'>
-							{companyInfo.bankInfo.map((line) => (
-								<p key={line}>{line}</p>
-							))}
-						</div>
-					)}
-				</div>
-				<div className='w-full rounded-lg border border-gray-300 text-sm md:w-80'>
-					<div className='flex justify-between border-b border-gray-200 px-4 py-3'>
-						<span>Subtotal (neto)</span>
-						<span>{formatCurrency(totalNet)}</span>
-					</div>
-					<div className='flex justify-between border-b border-gray-200 px-4 py-3'>
-						<span>Descuentos</span>
-						<span>- {formatCurrency(discountAmount)}</span>
-					</div>
-					<div className='flex justify-between border-b border-gray-200 px-4 py-3'>
-						<span>IVA ({Math.round(normalizedTaxRate * 100)}%)</span>
-						<span>{formatCurrency(taxAmount)}</span>
-					</div>
-					<div className='flex items-center justify-between rounded-b-lg bg-gray-50 px-4 py-4 text-lg font-bold text-gray-900'>
-						<span>Total</span>
-						<span>{formatCurrency(grandTotal)}</span>
-					</div>
-				</div>
-			</section>
+                {/* Derecha: Totales Compactos */}
+                <div className="w-64">
+                    <table className="w-full text-sm">
+                        <tbody>
+                            <tr>
+                                <td className="py-2 pr-4 text-right text-gray-600 font-semibold border-b border-gray-200">Neto</td>
+                                <td className="py-2 pl-4 text-right font-bold text-gray-800 border-b border-gray-200">
+                                    {formatCurrency(totalNeto)}
+                                </td>
+                            </tr>
+                            {descuento > 0 && (
+                                <tr>
+                                    <td className="py-2 pr-4 text-right text-red-500 font-semibold border-b border-gray-200">Descuento</td>
+                                    <td className="py-2 pl-4 text-right font-bold text-red-500 border-b border-gray-200">
+                                        - {formatCurrency(descuento)}
+                                    </td>
+                                </tr>
+                            )}
+                            <tr>
+                                <td className="py-2 pr-4 text-right text-gray-600 font-semibold border-b border-gray-200">I.V.A. (19%)</td>
+                                <td className="py-2 pl-4 text-right font-bold text-gray-800 border-b border-gray-200">
+                                    {formatCurrency(iva)}
+                                </td>
+                            </tr>
+                            <tr className="text-base">
+                                <td className="py-3 pr-4 text-right font-bold text-gray-900 bg-gray-100 rounded-l">Total</td>
+                                <td className="py-3 pl-4 text-right font-extrabold text-gray-900 bg-gray-100 rounded-r">
+                                    {formatCurrency(totalFinal)}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-			<footer className='mt-8 border-t border-gray-200 pt-4 text-center text-xs text-gray-500'>
-				Documento generado automáticamente desde Zentria ERP.
-			</footer>
-		</div>
-	);
+            <div className="mt-12 pt-4 border-t border-gray-200 text-center text-[9px] text-gray-400 uppercase tracking-wider">
+                Documento generado electrónicamente por {company.name} - {new Date().getFullYear()}
+            </div>
+        </div>
+    );
 };
 
 export default QuotePrintableView;

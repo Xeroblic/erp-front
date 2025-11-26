@@ -111,6 +111,11 @@ export interface ISubempresa {
   created_at?: string;
   updated_at?: string;
 
+  commune_name?: string;
+  logo_url?: string | null;
+  logo?: { url?: string | null } | string | null;
+  bank_info?: string[] | string | null;
+
   sucursales?: ISucursal[];
   branches?: IBranch[];
   branches_count?: number;
