@@ -83,6 +83,15 @@ const initialState: SalesState = {
     },
 };
 
+const extractMessage = (error: unknown, fallback: string): string => {
+    if (typeof error === 'string') return error;
+    if (error && typeof error === 'object' && 'response' in error) {
+        const resp = (error as { response?: { data?: { message?: string } } }).response;
+        if (resp?.data?.message) return resp.data.message;
+    }
+    return fallback;
+};
+
 // Async thunks
 export const fetchSales = createAsyncThunk(
     'sales/fetchSales',
@@ -110,8 +119,8 @@ export const fetchSales = createAsyncThunk(
             });
 
             return response.data;
-        } catch (error: any) {
-            toast.error('Error al cargar las ventas');
+        } catch (error: unknown) {
+            toast.error(extractMessage(error, 'Error al cargar las ventas'));
             throw error;
         }
     }
@@ -126,8 +135,8 @@ export const fetchSaleById = createAsyncThunk(
                 method: "get"
             });
             return response.data;
-        } catch (error: any) {
-            toast.error('Error al cargar la venta');
+        } catch (error: unknown) {
+            toast.error(extractMessage(error, 'Error al cargar la venta'));
             throw error;
         }
     }
@@ -140,13 +149,16 @@ export const createSale = createAsyncThunk(
             const response = await ApiService.fetchData<ISaleResponse>({
                 url: '/sales',
                 method: "post",
-                data: data
+                data: data as unknown as Record<string, unknown>,
             });
             toast.success('Venta creada exitosamente');
             return response.data;
-        } catch (error: any) {
-            const message = error.response?.data?.message || 'Error al crear la venta';
-            toast.error(message);
+        } catch (error: unknown) {
+            const message =
+                typeof error === 'object' && error !== null && 'response' in error
+                    ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+                    : null;
+            toast.error(message || 'Error al crear la venta');
             throw error;
         }
     }
@@ -159,13 +171,16 @@ export const updateSale = createAsyncThunk(
             const response = await ApiService.fetchData<ISaleResponse>({
                 url: `/sales/${id}`,
                 method: "put",
-                data: data
+                data: data as unknown as Record<string, unknown>,
             });
             toast.success('Venta actualizada exitosamente');
             return response.data;
-        } catch (error: any) {
-            const message = error.response?.data?.message || 'Error al actualizar la venta';
-            toast.error(message);
+        } catch (error: unknown) {
+            const message =
+                typeof error === 'object' && error !== null && 'response' in error
+                    ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+                    : null;
+            toast.error(message || 'Error al actualizar la venta');
             throw error;
         }
     }
@@ -181,9 +196,8 @@ export const deleteSale = createAsyncThunk(
             });
             toast.success('Venta eliminada exitosamente');
             return id;
-        } catch (error: any) {
-            const message = error.response?.data?.message || 'Error al eliminar la venta';
-            toast.error(message);
+        } catch (error: unknown) {
+            toast.error(extractMessage(error, 'Error al eliminar la venta'));
             throw error;
         }
     }
@@ -199,9 +213,8 @@ export const generateInvoice = createAsyncThunk(
             });
             toast.success('Factura generada exitosamente');
             return response.data;
-        } catch (error: any) {
-            const message = error.response?.data?.message || 'Error al generar la factura';
-            toast.error(message);
+        } catch (error: unknown) {
+            toast.error(extractMessage(error, 'Error al generar la factura'));
             throw error;
         }
     }
@@ -230,9 +243,8 @@ export const recordPayment = createAsyncThunk(
             });
             toast.success('Pago registrado exitosamente');
             return response.data;
-        } catch (error: any) {
-            const message = error.response?.data?.message || 'Error al registrar el pago';
-            toast.error(message);
+        } catch (error: unknown) {
+            toast.error(extractMessage(error, 'Error al registrar el pago'));
             throw error;
         }
     }
@@ -261,9 +273,8 @@ export const shipSale = createAsyncThunk(
             });
             toast.success('Venta marcada como enviada');
             return response.data;
-        } catch (error: any) {
-            const message = error.response?.data?.message || 'Error al enviar la venta';
-            toast.error(message);
+        } catch (error: unknown) {
+            toast.error(extractMessage(error, 'Error al enviar la venta'));
             throw error;
         }
     }
@@ -290,9 +301,8 @@ export const deliverSale = createAsyncThunk(
             });
             toast.success('Venta marcada como entregada');
             return response.data;
-        } catch (error: any) {
-            const message = error.response?.data?.message || 'Error al entregar la venta';
-            toast.error(message);
+        } catch (error: unknown) {
+            toast.error(extractMessage(error, 'Error al entregar la venta'));
             throw error;
         }
     }
@@ -319,9 +329,8 @@ export const cancelSale = createAsyncThunk(
             });
             toast.success('Venta cancelada exitosamente');
             return response.data;
-        } catch (error: any) {
-            const message = error.response?.data?.message || 'Error al cancelar la venta';
-            toast.error(message);
+        } catch (error: unknown) {
+            toast.error(extractMessage(error, 'Error al cancelar la venta'));
             throw error;
         }
     }
@@ -344,8 +353,8 @@ export const fetchSalesStatistics = createAsyncThunk(
                 method: "get"
             });
             return response.data;
-        } catch (error: any) {
-            toast.error('Error al cargar las estadísticas');
+        } catch (error: unknown) {
+            toast.error(extractMessage(error, 'Error al cargar las estadísticas'));
             throw error;
         }
     }

@@ -28,6 +28,16 @@ const initialState: SalesState = {
   error: null,
 };
 
+const getErrorMessage = (err: unknown, fallback: string): string => {
+  if (typeof err === 'string') return err;
+  if (err && typeof err === 'object') {
+    const maybeResponse = (err as { response?: { data?: { message?: string; errors?: string[] } } }).response;
+    const msg = maybeResponse?.data?.message || maybeResponse?.data?.errors?.[0];
+    if (msg) return msg;
+  }
+  return fallback;
+};
+
 export const loadSalesList = createAsyncThunk<
   SaleListItem[],
   { subsidiaryId: number; filters?: SalesListFilters },
@@ -36,8 +46,8 @@ export const loadSalesList = createAsyncThunk<
   try {
     const { data } = await salesService.fetchSalesList(subsidiaryId, filters);
     return data ?? [];
-  } catch (err: any) {
-    return rejectWithValue(err?.response?.data?.message || 'Error al cargar ventas');
+  } catch (err: unknown) {
+    return rejectWithValue(getErrorMessage(err, 'Error al cargar ventas'));
   }
 });
 
@@ -49,8 +59,8 @@ export const loadSaleDetail = createAsyncThunk<
   try {
     const data = await salesService.fetchSaleDetail(subsidiaryId, saleId);
     return data;
-  } catch (err: any) {
-    return rejectWithValue(err?.response?.data?.message || 'Error al cargar detalle de venta');
+  } catch (err: unknown) {
+    return rejectWithValue(getErrorMessage(err, 'Error al cargar detalle de venta'));
   }
 });
 
@@ -62,8 +72,8 @@ export const loadSaleItems = createAsyncThunk<
   try {
     const data = await salesService.fetchSaleItems(subsidiaryId, saleId);
     return data ?? [];
-  } catch (err: any) {
-    return rejectWithValue(err?.response?.data?.message || 'Error al cargar ítems de la venta');
+  } catch (err: unknown) {
+    return rejectWithValue(getErrorMessage(err, 'Error al cargar ítems de la venta'));
   }
 });
 
@@ -75,12 +85,8 @@ export const closeSaleThunk = createAsyncThunk<
   try {
     const data = await salesService.closeSale(subsidiaryId, saleId, { items });
     return data;
-  } catch (err: any) {
-    const message =
-      err?.response?.data?.message ||
-      err?.response?.data?.errors?.[0] ||
-      'Error al cerrar la venta';
-    return rejectWithValue(message);
+  } catch (err: unknown) {
+    return rejectWithValue(getErrorMessage(err, 'Error al cerrar la venta'));
   }
 });
 
@@ -158,11 +164,14 @@ const salesSlice = createSlice({
 export const { clearError, clearDetail } = salesSlice.actions;
 
 // Selectors
-export const selectSalesList = (state: RootState) => (state as any).salesModule?.list ?? [];
-export const selectSaleDetail = (state: RootState) => (state as any).salesModule?.detail ?? null;
-export const selectSaleItems = (state: RootState) => (state as any).salesModule?.items ?? [];
-export const selectSalesLoading = (state: RootState) => Boolean((state as any).salesModule?.loading);
-export const selectSalesError = (state: RootState) => (state as any).salesModule?.error ?? null;
+const selectModule = (state: RootState): SalesState | undefined =>
+  (state as unknown as { salesModule?: SalesState }).salesModule;
+
+export const selectSalesList = (state: RootState) => selectModule(state)?.list ?? [];
+export const selectSaleDetail = (state: RootState) => selectModule(state)?.detail ?? null;
+export const selectSaleItems = (state: RootState) => selectModule(state)?.items ?? [];
+export const selectSalesLoading = (state: RootState) => Boolean(selectModule(state)?.loading);
+export const selectSalesError = (state: RootState) => selectModule(state)?.error ?? null;
 
 export default salesSlice.reducer;
 

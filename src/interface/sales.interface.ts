@@ -10,6 +10,7 @@ export interface ISale {
     
     sale_number: string;
     wc_order_id: number;
+    wc_order_number?: string;
     quote_id?: number;
     
     sale_date: string;
@@ -24,6 +25,7 @@ export interface ISale {
     discount_rate: string;
     tax_amount: string;
     shipping_amount: string;
+    shipping_total?: string;
     total_amount: string;
     paid_amount: string;
     pending_amount: string;
@@ -34,6 +36,8 @@ export interface ISale {
     documents_metadata?: {
         inventory_finalized: boolean;
     };
+    billing_snapshot?: Record<string, unknown> | string | null;
+    shipping_snapshot?: Record<string, unknown> | string | null;
     inventory_delivered: boolean;
 
     customer: ICustomerSale;
