@@ -35,6 +35,7 @@ export interface UseMovementsManagerReturn {
 	};
 	setFilters: (filters: MovementFilters) => void;
 	refreshTransfers: () => Promise<void>;
+	changePage: (page: number) => Promise<void>;
 	clearFilters: () => void;
 }
 
@@ -101,6 +102,14 @@ const useMovementsManager = (): UseMovementsManagerReturn => {
 		requestTransfers(1, {});
 	}, [dispatch, requestTransfers]);
 
+	const changePage = useCallback(
+		async (page: number) => {
+			const targetPage = Math.max(1, page);
+			await requestTransfers(targetPage, currentFilters);
+		},
+		[requestTransfers, currentFilters],
+	);
+
 	const refreshTransfers = useCallback(async () => {
 		await requestTransfers(pagination.currentPage || 1, currentFilters);
 	}, [requestTransfers, pagination.currentPage, currentFilters]);
@@ -123,6 +132,7 @@ const useMovementsManager = (): UseMovementsManagerReturn => {
 		stats,
 		setFilters,
 		refreshTransfers,
+		changePage,
 		clearFilters,
 	};
 };

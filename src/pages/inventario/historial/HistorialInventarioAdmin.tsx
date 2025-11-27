@@ -22,6 +22,7 @@ import Input from '../../../components/form/Input';
 import Select from '../../../components/form/Select';
 import Icon from '../../../components/icon/Icon';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
+import Pagination from '@/components/ui/Pagination';
 
 const HistorialInventarioAdmin: React.FC = () => {
 	// Estados locales para modales
@@ -41,8 +42,9 @@ const HistorialInventarioAdmin: React.FC = () => {
 		stats,
 		filters,
 		setFilters,
-		totalPages,
+		pagination,
 		clearFilters,
+		changePage,
 		refreshTransfers,
 	} = useMovementsManager();
 
@@ -246,12 +248,21 @@ const HistorialInventarioAdmin: React.FC = () => {
 							<CardTitle>
 								Lista de Transferencias ({transfers.length} registros)
 							</CardTitle>
-							<div className='text-sm text-gray-500 dark:text-gray-400'>Total páginas {totalPages}</div>
+							<div className='text-sm text-gray-500 dark:text-gray-400'>Total páginas {pagination.totalPages}</div>
 						</div>
 					</CardHeader>
 					<CardBody className='p-0'>
 						<TransfersTable transfers={transfers} isLoading={loading} onView={(transfer) => handleViewDetails(transfer.id)} />
 					</CardBody>
+					{pagination.totalPages > 1 && (
+						<div className='px-4 pb-4'>
+							<Pagination
+								currentPage={pagination.currentPage}
+								totalPages={pagination.totalPages}
+								onPageChange={(page) => changePage(page)}
+							/>
+						</div>
+					)}
 				</Card>
 
 				{/* Modal de detalles */}

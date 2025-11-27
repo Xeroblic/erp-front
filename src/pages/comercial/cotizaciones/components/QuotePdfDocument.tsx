@@ -8,7 +8,7 @@ import {
   Image,
   Font
 } from "@react-pdf/renderer";
-import { IQuote } from "@/interface";
+import { IEmpresa, IQuote, ISubempresa } from "@/interface";
 import store from "@/store"; // Importamos el store para sacar datos reales
 
 // ======== 1. CONFIGURACIÓN Y ESTILOS ========
@@ -239,27 +239,110 @@ const normalizeText = (val?: any) => (val && String(val).trim().length > 0 ? Str
 // Extraer info de empresa directamente del Store (igual que en la vista web)
 const getCompanyInfo = (quote: IQuote) => {
   const state = store.getState();
-  const subsidiaries = state.subEmpresa?.lista || [];
-  const mainCompany = state.empresa?.miEmpresa;
+  const subsidiaries = (state.subEmpresa?.lista || []) as ISubempresa[];
+  const mainCompany = state.empresa?.miEmpresa as IEmpresa | undefined;
 
   const activeSub = subsidiaries.find((s) => Number(s.id) === Number(quote.subsidiary_id));
-  const source = activeSub || mainCompany;
   const meta = (quote.metadata as any)?.company || {};
 
   // Helper para buscar el primer valor no nulo
   const getVal = (...candidates: any[]) => candidates.find((c) => normalizeText(c)) || undefined;
 
+  const name = getVal(
+    meta.name,
+    activeSub?.name,
+    activeSub?.subsidiary_name,
+    mainCompany?.company_name,
+    mainCompany?.legal_name,
+    "SU EMPRESA LTDA."
+  );
+
+  const rut = getVal(
+    meta.rut,
+    activeSub?.rut,
+    activeSub?.subsidiary_rut,
+    mainCompany?.company_rut,
+    "77.000.000-0"
+  );
+
+  const activity = getVal(
+    meta.activity,
+    activeSub?.manager_name,
+    mainCompany?.business_activity,
+    "Giro Comercial"
+  );
+
+  let address = getVal(
+    meta.address,
+    activeSub?.address,
+    activeSub?.subsidiary_address,
+    mainCompany?.company_address,
+    "Dirección Principal"
+  );
+
+  const commune = getVal(
+    meta.commune,
+    activeSub?.commune_name
+  );
+
+  if (commune && address && !address.includes(commune)) {
+    address = `${address}, ${commune}`;
+  }
+
+  const email = getVal(
+    meta.email,
+    activeSub?.email,
+    activeSub?.subsidiary_email,
+    mainCompany?.contact_email,
+    "contacto@empresa.cl"
+  );
+
+  const phone = getVal(
+    meta.phone,
+    activeSub?.phone,
+    activeSub?.subsidiary_phone,
+    mainCompany?.company_phone,
+    ""
+  );
+
+  const website = getVal(
+    meta.website,
+    activeSub?.website,
+    activeSub?.subsidiary_website,
+    mainCompany?.company_website,
+    ""
+  );
+
+  const logoUrl = getVal(
+    meta.logo_url,
+    activeSub?.logo_url,
+    (activeSub as any)?.logo?.url,
+    (activeSub as any)?.logo,
+    mainCompany?.company_logo,
+    (mainCompany as any)?.logo?.url
+  );
+
+  const bankData =
+    (meta as any)?.bank_info ??
+    (activeSub as any)?.bank_info ??
+    (mainCompany as any)?.bank_info;
+  const bankInfo = Array.isArray(bankData)
+    ? bankData.map(String)
+    : bankData
+    ? [String(bankData)]
+    : [];
+
   return {
-    name: getVal(meta.name, source?.name, source?.business_name, "SU EMPRESA LTDA."),
-    rut: getVal(meta.rut, source?.rut, source?.tax_number, "77.000.000-0"),
-    activity: getVal(meta.activity, source?.activity, source?.business_activity, "Giro Comercial"),
-    address: getVal(meta.address, source?.address, source?.company_address, "Dirección Principal"),
-    city: getVal(meta.commune, source?.commune, source?.city, ""),
-    email: getVal(meta.email, source?.email, source?.contact_email, "contacto@empresa.cl"),
-    phone: getVal(meta.phone, source?.phone, source?.company_phone, ""),
-    website: getVal(meta.website, source?.website, source?.company_website, ""),
-    logoUrl: getVal(meta.logo_url, source?.logo_url, source?.logo?.url, source?.logo),
-    bankInfo: source?.bank_info || meta.bank_info || []
+    name,
+    rut,
+    activity,
+    address,
+    city: commune,
+    email,
+    phone,
+    website,
+    logoUrl,
+    bankInfo
   };
 };
 
