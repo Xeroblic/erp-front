@@ -2,13 +2,15 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { toast } from 'react-toastify';
 import type { RootState } from '@/store/rootReducer';
 import salesService, {
-  type SaleListItem,
-  type SaleDetail,
-  type SaleItem,
   type SalesListFilters,
-  type CloseSalePayloadItem,
   type CloseSaleResponse,
 } from '@/services/salesService';
+import type { ISale, ISaleItem, ICloseSaleRequest } from '@/interface/sales.interface';
+
+type CloseSalePayloadItem = ICloseSaleRequest['items'][number];
+type SaleDetail = ISale;
+type SaleListItem = ISale;
+type SaleItem = ISaleItem;
 
 export interface SalesState {
   list: SaleListItem[];

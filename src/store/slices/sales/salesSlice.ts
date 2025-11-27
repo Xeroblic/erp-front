@@ -4,8 +4,7 @@ import type { RootState } from '@/store';
 import type {
     ISale,
     ISaleItem,
-    ISaleRequest,
-    ISaleUpdateRequest,
+    ICreateSaleRequest,
     ISaleResponse,
     ISalesResponse,
     SaleStatus
@@ -136,7 +135,7 @@ export const fetchSaleById = createAsyncThunk(
 
 export const createSale = createAsyncThunk(
     'sales/createSale',
-    async (data: ISaleRequest) => {
+    async (data: ICreateSaleRequest) => {
         try {
             const response = await ApiService.fetchData<ISaleResponse>({
                 url: '/sales',
@@ -155,7 +154,7 @@ export const createSale = createAsyncThunk(
 
 export const updateSale = createAsyncThunk(
     'sales/updateSale',
-    async ({ id, data }: { id: number; data: ISaleUpdateRequest }) => {
+    async ({ id, data }: { id: number; data: Partial<ICreateSaleRequest> }) => {
         try {
             const response = await ApiService.fetchData<ISaleResponse>({
                 url: `/sales/${id}`,
@@ -377,9 +376,11 @@ const ventasSlice = createSlice({
                 if (itemIndex !== -1) {
                     sale.items[itemIndex] = item;
                     // Recalcular total
-                    sale.total_amount = sale.items.reduce(
-                        (total, item) => total + (item.unit_price * item.quantity), 0
+                    const newTotal = sale.items.reduce(
+                        (total, saleItem) => total + Number(saleItem.price ?? 0) * Number(saleItem.quantity ?? 0),
+                        0
                     );
+                    sale.total_amount = String(newTotal);
                 }
             }
 
@@ -387,9 +388,11 @@ const ventasSlice = createSlice({
                 const itemIndex = state.currentSale.items.findIndex(i => i.id === item.id);
                 if (itemIndex !== -1) {
                     state.currentSale.items[itemIndex] = item;
-                    state.currentSale.total_amount = state.currentSale.items.reduce(
-                        (total, item) => total + (item.unit_price * item.quantity), 0
+                    const newTotal = state.currentSale.items.reduce(
+                        (total, saleItem) => total + Number(saleItem.price ?? 0) * Number(saleItem.quantity ?? 0),
+                        0
                     );
+                    state.currentSale.total_amount = String(newTotal);
                 }
             }
         },
@@ -404,10 +407,10 @@ const ventasSlice = createSlice({
                 state.loading.fetch = false;
                 state.sales = action.payload.data;
                 state.pagination = {
-                    currentPage: action.payload.current_page,
-                    totalPages: action.payload.last_page,
-                    totalSales: action.payload.total,
-                    perPage: action.payload.per_page,
+                    currentPage: action.payload.current_page ?? action.payload.meta?.current_page ?? 1,
+                    totalPages: action.payload.last_page ?? action.payload.meta?.last_page ?? 1,
+                    totalSales: action.payload.total ?? action.payload.meta?.total ?? action.payload.data?.length ?? 0,
+                    perPage: action.payload.per_page ?? action.payload.meta?.per_page ?? state.pagination.perPage,
                 };
             })
             .addCase(fetchSales.rejected, (state) => {
