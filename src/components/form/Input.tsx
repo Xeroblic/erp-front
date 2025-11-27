@@ -61,7 +61,7 @@ const Input = forwardRef<HTMLInputElement, IInputProps>((props, ref) => {
 			general: classNames(
 				// Default
 				[`${borderWidth} border-zinc-100 dark:border-zinc-800`],
-				'bg-zinc-100 dark:bg-zinc-800',
+				'bg-zinc-300 dark:bg-zinc-600',
 				// Hover
 				[`hover:border-${color}-${colorIntensity}`],
 				[`dark:hover:border-${color}-${colorIntensity}`],

@@ -191,15 +191,6 @@ const SalesListPage: React.FC = () => {
                 ),
             },
             {
-                accessorKey: 'wc_order_number',
-                header: 'Woo ID',
-                cell: ({ row }) => (
-                    <div className='text-sm text-zinc-500'>
-                        {row.original.wc_order_id || '—'}
-                    </div>
-                ),
-            },
-            {
                 accessorKey: 'customer',
                 header: 'Cliente',
                 cell: ({ row }) => {
@@ -270,16 +261,23 @@ const SalesListPage: React.FC = () => {
             },
             {
                 id: 'actions',
-                header: () => <div className='text-right'>Acciones</div>,
+                header: 'Acciones',
                 cell: ({ row }) => (
-                    <div className='flex justify-end'>
+                    <div className='flex justify-center gap-2'>
                         <Button
                             variant='outline'
                             size='xs'
-                            icon='HeroEye'
                             onClick={() => handleViewDetail(row.original.id)}
                             isDisable={!subsidiaryId}>
-                            Ver
+								<Icon icon="HeroEye" size='text-xl'></Icon>
+                        </Button>
+						<Button
+                            variant='outline'
+                            size='xs'
+							color='red'
+                            onClick={() => handleViewDetail(row.original.id)}
+                            isDisable={!subsidiaryId}>
+                            <Icon icon="HeroTrash" color='red' size='text-xl'></Icon>
                         </Button>
                     </div>
                 ),
