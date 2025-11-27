@@ -1,14 +1,22 @@
 import React, { useMemo, useState } from 'react';
+import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
+import Button from '@/components/ui/Button';
+import Alert from '@/components/ui/Alert';
+import Textarea from '@/components/form/Textarea';
+import Badge from '@/components/ui/Badge';
+import Icon from '@/components/icon/Icon';
 import { useAppDispatch } from '@/store';
-import type { SaleItem } from '@/services/salesService';
 import { closeSaleThunk } from '@/store/slices/salesSlice';
+import { ICloseSaleRequest, ISaleItem } from '@/interface';
+
+type CloseSalePayloadItem = ICloseSaleRequest['items'][number];
 
 interface Props {
   open: boolean;
   onClose: () => void;
   subsidiaryId: number;
   saleId: number;
-  items: SaleItem[];
+  items: ISaleItem[];
   onSuccess?: () => void;
 }
 
@@ -17,8 +25,9 @@ const CloseSaleModal: React.FC<Props> = ({ open, onClose, subsidiaryId, saleId, 
 
   const [serialInputs, setSerialInputs] = useState<Record<number, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const parsedPayload = useMemo(() => {
+  const parsedPayload = useMemo<CloseSalePayloadItem[]>(() => {
     return items.map((it) => {
       const raw = serialInputs[it.id] || '';
       const serials = raw
@@ -44,79 +53,121 @@ const CloseSaleModal: React.FC<Props> = ({ open, onClose, subsidiaryId, saleId, 
     return true;
   };
 
+  const handleClose = () => {
+    setError(null);
+    setIsSubmitting(false);
+    onClose();
+  };
+
   const handleConfirm = async () => {
     if (!validate()) return;
+    setIsSubmitting(true);
     const res = await dispatch(
       closeSaleThunk({ subsidiaryId, saleId, items: parsedPayload })
     );
+    setIsSubmitting(false);
     if ((res as any).meta.requestStatus === 'fulfilled') {
       onSuccess?.();
-      onClose();
+      handleClose();
     }
   };
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-3xl rounded-lg bg-white p-4 shadow-xl dark:bg-zinc-900">
-        <div className="mb-3">
-          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Cerrar venta</h3>
-          <p className="text-sm text-zinc-600 dark:text-zinc-300">
-            Ingresa las series por ítem. La cantidad de series debe coincidir con la cantidad del ítem.
-          </p>
-        </div>
-
-        {error && (
-          <div className="mb-3 rounded-md border border-rose-300 bg-rose-50 p-2 text-sm text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-300">
-            {error}
+    <Modal isOpen={open} setIsOpen={handleClose} size="xl" isScrollable isStaticBackdrop isStaticBackdropAnimation isAnimation={false}>
+      <ModalHeader>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+            <Icon icon="HeroClipboardDocumentCheck" className="h-6 w-6 text-emerald-700 dark:text-emerald-300" />
           </div>
+          <div>
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Cerrar venta</h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              Ingresa las series solicitadas para cada ítem antes de confirmar el cierre.
+            </p>
+          </div>
+        </div>
+      </ModalHeader>
+
+      <ModalBody className="space-y-4">
+        {error && (
+          <Alert
+            color="red"
+            colorIntensity="500"
+            variant="outline"
+            icon="HeroExclamationTriangle"
+            className="text-sm"
+          >
+            {error}
+          </Alert>
         )}
 
-        <div className="max-h-[60vh] space-y-3 overflow-y-auto pr-1">
-          {items.map((it) => (
-            <div key={it.id} className="rounded-md border border-zinc-200 p-3 dark:border-zinc-700">
-              <div className="mb-2 flex items-center justify-between gap-4">
-                <div>
-                  <div className="text-sm font-medium text-zinc-800 dark:text-zinc-100">
-                    {it.sku || it.product?.sku} — {it.name || it.product?.name}
+        <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+          {items.map((it) => {
+            const sku = it.sku || it.product?.sku || 'S/N';
+            const name = it.product_name || it.product?.name || 'Producto sin nombre';
+
+            return (
+              <div
+                key={it.id}
+                className="rounded-lg border border-zinc-200 bg-white/80 p-3 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/60"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                      {sku} — {name}
+                    </p>
+                    {it.attributes_description && (
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                        {it.attributes_description}
+                      </p>
+                    )}
+                    <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                      Cantidad requerida:{' '}
+                      <span className="font-semibold text-zinc-800 dark:text-zinc-100">{it.quantity}</span>
+                    </p>
                   </div>
-                  <div className="text-xs text-zinc-600 dark:text-zinc-400">Cantidad: {it.quantity}</div>
+                  <Badge variant="outline" color="gray" className="px-2 py-1 text-[11px]">
+                    Ítem #{it.id}
+                  </Badge>
                 </div>
-                <div className="text-xs text-zinc-500">Ítem #{it.id}</div>
+
+                <Textarea
+                  rows={4}
+                  className="mt-3"
+                  placeholder="Una serie por línea (o separadas por coma / punto y coma)"
+                  value={serialInputs[it.id] || ''}
+                  onChange={(e) => setSerialInputs((s) => ({ ...s, [it.id]: e.target.value }))}
+                />
               </div>
-              <textarea
-                className="h-24 w-full rounded-md border border-zinc-300 bg-white p-2 text-sm text-zinc-900 outline-none focus:border-blue-500 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100"
-                placeholder="Una serie por línea (o separadas por coma/punto y coma)"
-                value={serialInputs[it.id] || ''}
-                onChange={(e) => setSerialInputs((s) => ({ ...s, [it.id]: e.target.value }))}
-              />
-            </div>
-          ))}
-          {(!items || items.length === 0) && (
-            <div className="rounded-md border border-zinc-200 p-3 text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">
+            );
+          })}
+
+          {items.length === 0 && (
+            <div className="rounded-md border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/40 dark:text-zinc-300">
               No hay ítems para cerrar.
             </div>
           )}
         </div>
+      </ModalBody>
 
-        <div className="mt-4 flex items-center justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-800"
-          >
+      <ModalFooter>
+        <div className="flex w-full justify-end gap-3">
+          <Button variant="outline" onClick={handleClose} isDisable={isSubmitting} icon="HeroXMark">
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
+            color="emerald"
+            variant="solid"
             onClick={handleConfirm}
-            className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            isLoading={isSubmitting}
+            isDisable={isSubmitting || items.length === 0}
+            icon={isSubmitting ? 'DuoLoading' : 'HeroCheckCircle'}
           >
             Confirmar cierre
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+      </ModalFooter>
+    </Modal>
   );
 };
 

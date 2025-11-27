@@ -34,7 +34,7 @@ interface INotificationItemProps {
 	time: string;
 }
 
-	const NotificationItem: FC<INotificationItemProps> = ({
+const NotificationItem: FC<INotificationItemProps> = ({
 	image,
 	name,
 	icon,
@@ -44,12 +44,12 @@ interface INotificationItemProps {
 	isUnread,
 	time,
 }) => {
-		return (
-			<Card
-				className={`w-full border border-zinc-700/30 bg-transparent shadow-sm transition-all duration-200 hover:shadow-lg ${
-					isUnread ? 'ring-1 ring-emerald-400/40 dark:ring-emerald-300/40' : ''
-				}`}>
-				<CardBody className='px-4 py-4'>
+	return (
+		<Card
+			className={`w-full border border-zinc-700/30 bg-transparent shadow-sm transition-all duration-200 hover:shadow-lg ${
+				isUnread ? 'ring-1 ring-emerald-400/40 dark:ring-emerald-300/40' : ''
+			}`}>
+			<CardBody className='px-4 py-4'>
 				<div className='flex gap-3'>
 					<div className='flex-shrink-0'>
 						<Avatar src={image} name={name} />
@@ -69,7 +69,9 @@ interface INotificationItemProps {
 								)}
 							</div>
 							<div className='flex items-center gap-2 text-xs font-medium uppercase tracking-wide opacity-70'>
-								{isUnread && <span className='h-2 w-2 rounded-full bg-emerald-400' />}
+								{isUnread && (
+									<span className='h-2 w-2 rounded-full bg-emerald-400' />
+								)}
 								<span>{time}</span>
 							</div>
 						</div>
@@ -145,7 +147,10 @@ const NotificationPartial = () => {
 		}
 	}, [dispatch, isMobile]);
 
-	const isRead = useCallback((n: any) => (n.status === 'read' || !!n.read_at) && n.status !== 'ack', []);
+	const isRead = useCallback(
+		(n: any) => (n.status === 'read' || !!n.read_at) && n.status !== 'ack',
+		[],
+	);
 	const isUnread = useCallback((n: any) => !isRead(n) && n.status !== 'ack', [isRead]);
 
 	const timeAgo = useCallback((iso?: string | null) => {
@@ -191,11 +196,11 @@ const NotificationPartial = () => {
 				);
 			}
 			return (
-				<div className='flex flex-col gap-3 max-h-80 overflow-y-auto px-0 py-0'>
+				<div className='flex max-h-80 flex-col gap-3 overflow-y-auto px-0 py-0'>
 					{recentNotifications.map((n) => (
 						<div
 							key={n.id}
-							className='cursor-pointer w-full'
+							className='w-full cursor-pointer'
 							onClick={() => handleItemClick(n.id)}>
 							<NotificationItem
 								name={clean(
@@ -290,12 +295,11 @@ const NotificationPartial = () => {
 	);
 
 	const NotificationPanel = () => (
-		<Card
-			className='overflow-hidden border border-zinc-200/70 shadow-lg dark:border-zinc-800/70'>
-			<CardHeader className='flex-col gap-3 '>
+		<Card className='overflow-hidden border border-zinc-200/70 shadow-lg dark:border-zinc-800/70'>
+			<CardHeader className='flex-col gap-3'>
 				<NotificationPanelHeader />
 			</CardHeader>
-			<CardBody >
+			<CardBody>
 				<div className='px-3 pb-3 pt-0'>
 					<NotificationTabs />
 				</div>
@@ -314,8 +318,19 @@ const NotificationPartial = () => {
 	return (
 		<div className='relative'>
 			{isMobile ? (
-				<>
-					<Button icon='DuoNotifications1' aria-label='Notification' onClick={openPanel} />
+				<div className='relative inline-block'>
+					<Button
+						icon='DuoNotifications1'
+						aria-label='Notification'
+						onClick={openPanel}
+						className='h-10 w-10 !rounded-full border border-white/60 bg-white !p-0 text-sky-500 shadow-md shadow-sky-200/50 dark:border-white/10 dark:bg-zinc-800 dark:text-sky-300 dark:shadow-[0_4px_18px_rgba(0,0,0,0.55)]'
+					/>
+					{(unreadCount > 0 || hasUnread) && (
+						<span className='pointer-events-none absolute end-0 top-0 flex h-3 w-3'>
+							<span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75' />
+							<span className='relative inline-flex h-3 w-3 rounded-full bg-red-500' />
+						</span>
+					)}
 					<Modal
 						isCentered
 						isOpen={isModalOpen}
@@ -326,38 +341,46 @@ const NotificationPartial = () => {
 							<NotificationPanelHeader />
 						</ModalHeader>
 						<ModalBody isScrollable className='px-3 pb-3 pt-0'>
-							<NotificationTabs className='px-0' contentClassName='mt-0 px-0 pb-3 pt-0' />
+							<NotificationTabs
+								className='px-0'
+								contentClassName='mt-0 px-0 pb-3 pt-0'
+							/>
 						</ModalBody>
-						<ModalFooter className='border-t border-zinc-200/70 dark:border-zinc-800/70 justify-center'>
+						<ModalFooter className='justify-center border-t border-zinc-200/70 dark:border-zinc-800/70'>
 							<DropdownNavLinkItem
-								className='justify-center text-sm w-full'
+								className='w-full justify-center text-sm'
 								icon='HeroInbox'
 								to='/notificaciones'>
 								Ver todas
 							</DropdownNavLinkItem>
 						</ModalFooter>
 					</Modal>
-				</>
+				</div>
 			) : (
 				<Dropdown>
 					<DropdownToggle hasIcon={false}>
-						<Button
-							icon='DuoNotifications1'
-							aria-label='Notification'
-							onClick={openPanel}
-							className='h-10 w-10 !rounded-full !p-0 border border-white/60 bg-white text-sky-500 shadow-md shadow-sky-200/50 dark:border-white/10 dark:bg-zinc-800 dark:text-sky-300 dark:shadow-[0_4px_18px_rgba(0,0,0,0.55)]'
-						/>
+						<div className='relative inline-block'>
+							<Button
+								icon='DuoNotifications1'
+								aria-label='Notification'
+								onClick={openPanel}
+								className='h-10 w-10 !rounded-full border border-white/60 bg-white !p-0 text-sky-500 shadow-md shadow-sky-200/50 dark:border-white/10 dark:bg-zinc-800 dark:text-sky-300 dark:shadow-[0_4px_18px_rgba(0,0,0,0.55)]'
+							/>
+							{(unreadCount > 0 || hasUnread) && (
+								<span className='pointer-events-none absolute end-0 top-0 flex h-3 w-3'>
+									<span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75' />
+									<span className='relative inline-flex h-3 w-3 rounded-full bg-red-500' />
+								</span>
+							)}
+						</div>
 					</DropdownToggle>
-					<DropdownMenu placement='bottom-end' isCloseAfterLeave={false} className='min-w-[24rem] h-full p-0'>
+					<DropdownMenu
+						placement='bottom-end'
+						isCloseAfterLeave={false}
+						className='h-full min-w-[24rem] p-0'>
 						<NotificationPanel />
 					</DropdownMenu>
 				</Dropdown>
-			)}
-			{(unreadCount > 0 || hasUnread) && (
-				<span className='absolute end-0 top-0 flex h-3 w-3'>
-					<span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75' />
-					<span className='relative inline-flex h-3 w-3 rounded-full bg-red-500' />
-				</span>
 			)}
 		</div>
 	);

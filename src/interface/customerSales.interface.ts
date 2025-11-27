@@ -2,7 +2,7 @@ export interface ICustomerSale {
     id: number;
     subsidiary_id: number;
     customer_code?: string | null;
-
+    name: string;
     document_type: string;
     document_number: string;
     type: string;
