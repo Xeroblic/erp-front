@@ -8,7 +8,7 @@ import SearchPartial from '../_partial/Search.partial';
 
 const DefaultHeaderRightCommon = () => {
 	return (
-		<>
+		<div className='flex items-center gap-8'>
 			{/* <MessagesPartial /> */}
 			<SelectSucursalEmpresa />
 			{/* <LanguageSelectorPartial /> */}
@@ -16,7 +16,7 @@ const DefaultHeaderRightCommon = () => {
 			<NotificationPartial />
 			{/* <CompanySelectorButton /> */}
 			<SettingsPartial />
-		</>
+		</div>
 	);
 };
 

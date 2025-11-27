@@ -298,8 +298,8 @@ const SelectSucursalEmpresa = () => {
 					</span>
 				<span>
 					{selectedSucursal?.label
-						? selectedSucursal.label.length > 7
-							? `${selectedSucursal.label.slice(0, 7)}...`
+						? selectedSucursal.label.length > 6
+							? `${selectedSucursal.label.slice(0, 6)}...`
 							: selectedSucursal.label
 						: 'Selecciona una sucursal'}
 				</span>

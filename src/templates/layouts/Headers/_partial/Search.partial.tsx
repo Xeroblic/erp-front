@@ -181,7 +181,7 @@ const SearchPartial = () => {
 			{/* For Mobile :: BEGIN */}
 			<Button
 				icon='HeroMagnifyingGlass'
-				className='sm:hidden'
+				className='sm:hidden h-10 w-10 !rounded-full !p-0 border border-white/60 bg-white text-sky-500 shadow-md shadow-sky-200/50 dark:border-white/10 dark:bg-zinc-800 dark:text-sky-300 dark:shadow-[0_4px_18px_rgba(0,0,0,0.55)] flex items-center justify-center'
 				onClick={() => setModalStatus(true)}
 			/>
 			<Modal isOpen={modalStatus} setIsOpen={setModalStatus}>

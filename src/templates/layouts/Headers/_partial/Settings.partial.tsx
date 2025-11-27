@@ -354,19 +354,20 @@ const SettingsPartial = () => {
 	}, [isMobile]);
 
 	if (isMobile) {
-		return (
-			<>
-				<Button
-					icon='DuoSettings'
-					aria-label='Abrir configuración'
-					title='Configuración'
-					isLoading={isAnyUpdating}
-					onClick={() => setMobileOpen(true)}
-				/>
-				<Modal isOpen={mobileOpen} setIsOpen={setMobileOpen} size='md'>
-					<ModalHeader>
-						<div className='flex items-center gap-2'>
-							<Icon icon='DuoSettings' />
+			return (
+				<>
+					<Button
+						icon='DuoSettings'
+						aria-label='Abrir configuración'
+						title='Configuración'
+						isLoading={isAnyUpdating}
+						onClick={() => setMobileOpen(true)}
+						className='!h-10 !w-10 !min-h-10 !min-w-10 !rounded-full !p-0 !leading-none flex items-center justify-center border border-white/60 bg-white text-sky-500 shadow-md shadow-sky-200/50 dark:border-white/10 dark:bg-zinc-800 dark:text-sky-300 dark:shadow-[0_4px_18px_rgba(0,0,0,0.55)]'
+					/>
+					<Modal isOpen={mobileOpen} setIsOpen={setMobileOpen} size='md'>
+						<ModalHeader>
+							<div className='flex items-center gap-2'>
+								<Icon icon='DuoSettings' />
 							<span className='font-semibold'>Configuración</span>
 						</div>
 					</ModalHeader>
@@ -386,6 +387,7 @@ const SettingsPartial = () => {
 					aria-label='Abrir configuración'
 					title='Configuración'
 					isLoading={isAnyUpdating}
+					className='!h-10 !w-10 !min-h-10 !min-w-10 !rounded-full !p-0 !leading-none flex items-center justify-center border border-white/60 bg-white text-sky-500 shadow-md shadow-sky-200/50 dark:border-white/10 dark:bg-zinc-800 dark:text-sky-300 dark:shadow-[0_4px_18px_rgba(0,0,0,0.55)]'
 				/>
 			</DropdownToggle>
 

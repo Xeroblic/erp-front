@@ -341,7 +341,12 @@ const NotificationPartial = () => {
 			) : (
 				<Dropdown>
 					<DropdownToggle hasIcon={false}>
-						<Button icon='DuoNotifications1' aria-label='Notification' onClick={openPanel} />
+						<Button
+							icon='DuoNotifications1'
+							aria-label='Notification'
+							onClick={openPanel}
+							className='h-10 w-10 !rounded-full !p-0 border border-white/60 bg-white text-sky-500 shadow-md shadow-sky-200/50 dark:border-white/10 dark:bg-zinc-800 dark:text-sky-300 dark:shadow-[0_4px_18px_rgba(0,0,0,0.55)]'
+						/>
 					</DropdownToggle>
 					<DropdownMenu placement='bottom-end' isCloseAfterLeave={false} className='min-w-[24rem] h-full p-0'>
 						<NotificationPanel />
