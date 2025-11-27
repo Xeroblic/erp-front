@@ -153,15 +153,18 @@ const NavIcon: FC<INavIconProps> = (props) => {
     const { asideStatus } = useAsideStatus();
 
     return (
-        <Icon
-            data-component-name='Nav/NavIcon'
-            icon={icon}
+        <span
             className={classNames(
-                'w-6 flex-none text-2xl md:group-hover/aside:me-3 transition-all duration-300',
+                'flex h-7 w-7 flex-none items-center justify-center rounded-full border transition-all duration-300 md:group-hover/aside:me-3',
+                'bg-gray-200  dark:bg-zinc-800 dark:border-none',
                 { 'me-3': asideStatus },
-                className,
-            )}
-        />
+            )}>
+            <Icon
+                data-component-name='Nav/NavIcon'
+                icon={icon}
+                className={classNames('text-2xl', className)}
+            />
+        </span>
     );
 };
 NavIcon.displayName = 'NavIcon';
