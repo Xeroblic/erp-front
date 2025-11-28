@@ -353,7 +353,11 @@ export default function SubEmpresaDetalle() {
 					<div className='grid grid-cols-1 gap-6 lg:grid-cols-2'>
 						<Card>
 							<CardHeader>
-								<CardTitle>Información Básica</CardTitle>
+								<CardTitle>
+									<Badge className='font-bold'>
+										Información Básica
+									</Badge>
+								</CardTitle>
 							</CardHeader>
 							<CardBody className='space-y-4'>
 								<div>
@@ -566,7 +570,10 @@ export default function SubEmpresaDetalle() {
 
 						<Card>
 							<CardHeader>
-								<CardTitle>Estadísticas</CardTitle>
+								<CardTitle>
+									
+									<Badge className='font-bold'>Estadísticas</Badge>
+								</CardTitle>
 							</CardHeader>
 							<CardBody className='space-y-6'>
 								<div className='flex items-center justify-between rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800'>
