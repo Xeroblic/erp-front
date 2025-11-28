@@ -839,7 +839,7 @@ export default function SubEmpresaDetalle() {
 										<div className='flex flex-wrap gap-2'>
 											{(subempresa.subsidiary_allowed_payment_methods || []).length ? (
 												subempresa.subsidiary_allowed_payment_methods?.map((m) => (
-													<Badge key={m} variant='outline' className='bg-zinc-50'>
+													<Badge key={m} variant='outline' className='bg-zinc-50 px-2'>
 														{m}
 													</Badge>
 												))
