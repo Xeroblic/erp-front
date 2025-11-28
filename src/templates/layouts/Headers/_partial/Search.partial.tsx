@@ -119,6 +119,7 @@ const SearchPartial = () => {
 					name='searchField'
 					placeholder='Busca en el sistema...'
 					className='min-w-[22rem]'
+					color='red'
 					value={formik.values.searchField}
 					onChange={formik.handleChange}
 					autoComplete='off'

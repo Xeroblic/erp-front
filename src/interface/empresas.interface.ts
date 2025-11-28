@@ -84,6 +84,8 @@ export interface ISubempresa {
     phone?: string | null;
     phone_number?: string | null;
   };
+
+  // Campos originales del backend
   subsidiary_name?: string;
   subsidiary_rut?: string;
   subsidiary_website?: string;
@@ -96,6 +98,24 @@ export interface ISubempresa {
   subsidiary_status?: string | number | boolean;
   subsidiary_created_at?: string;
   subsidiary_updated_at?: string;
+  subsidiary_documents_email?: string | null;
+  subsidiary_sales_email?: string | null;
+  subsidiary_delivery_term?: string | null;
+  subsidiary_bank_details?: string | null;
+  subsidiary_allowed_payment_methods?: string[] | null;
+  subsidiary_quote_validity_text?: string | null;
+  subsidiary_quote_validity_days?: number | null;
+  subsidiary_giro?: string | null;
+  subsidiary_commercial_terms?: string | null;
+  subsidiary_default_payment_method?: string | null;
+  commune_id?: number | null;
+  commune?: {
+    id: number;
+    name: string;
+    province_id?: number;
+  };
+  created_at?: string;
+  updated_at?: string;
 
   // Campos normalizados para el frontend (mapeo de los anteriores)
   name: string;
@@ -108,9 +128,6 @@ export interface ISubempresa {
   manager_phone?: string;
   manager_email?: string;
   status?: string | number | boolean;
-  created_at?: string;
-  updated_at?: string;
-
   commune_name?: string;
   logo_url?: string | null;
   logo?: { url?: string | null } | string | null;

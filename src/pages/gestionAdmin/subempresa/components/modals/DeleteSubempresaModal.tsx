@@ -6,21 +6,51 @@ import Modal, {
 } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
+import { deleteSubsidiaria } from '@/store/slices/subempresa/subEmpresaSlice';
+import { toast } from 'react-toastify';
+import { useAppDispatch } from '@/store';
+import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 
 interface DeleteSubempresaModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onConfirm: () => void;
+    subempresaId: number;
+    subsiName: string;
+    isNavigate?: boolean;
 }
 
 export default function DeleteSubempresaModal({
 	isOpen,
 	onClose,
-	onConfirm,
-}: DeleteSubempresaModalProps) {
+	subempresaId,
+	subsiName,
+    isNavigate,
+}: DeleteSubempresaModalProps & { subempresaId: number, subsiName: string }) {
+
+	const dispatch = useAppDispatch();
+	const navigate = useNavigate();
+
+	const handleDeleteSubsidarie = () => {
+		async function deleteSubsidarie() {
+			try {
+				await dispatch(deleteSubsidiaria(subempresaId)).unwrap();
+				toast.success('Subempresa eliminada correctamente');
+			} catch (error) {
+				toast.error('Error al tratar de eliminar subsidaria')
+			}
+		}
+		deleteSubsidarie();
+		if (isNavigate) {
+		    navigate('/gestion/subempresa');
+		} else {
+            onClose();
+        }
+	}
+
 	return (
 		<Modal isOpen={isOpen} setIsOpen={onClose}>
-			<ModalHeader>Eliminar Subempresa</ModalHeader>
+			<ModalHeader className='text-amber-500 font-bold text-2xl'>Advertencia</ModalHeader>
 			<ModalBody>
 				<div className='mb-4 flex items-center gap-3'>
 					<div className='flex h-12 w-12 items-center justify-center rounded-full bg-red-100'>
@@ -28,7 +58,7 @@ export default function DeleteSubempresaModal({
 					</div>
 					<div>
 						<h3 className='font-medium text-zinc-900 dark:text-zinc-100'>
-							¿Eliminar subempresa?
+							¿Eliminar {subsiName}?
 						</h3>
 						<p className='text-sm text-zinc-500'>Esta acción no se puede deshacer.</p>
 					</div>
@@ -40,12 +70,7 @@ export default function DeleteSubempresaModal({
 			</ModalBody>
 			<ModalFooter>
 				<ModalFooterChild>
-					<Button variant='outline' onClick={onClose}>
-						Cancelar
-					</Button>
-				</ModalFooterChild>
-				<ModalFooterChild>
-					<Button variant='solid' color='red' onClick={onConfirm}>
+					<Button variant='solid' color='red' onClick={() => handleDeleteSubsidarie()}>
 						Eliminar Subempresa
 					</Button>
 				</ModalFooterChild>

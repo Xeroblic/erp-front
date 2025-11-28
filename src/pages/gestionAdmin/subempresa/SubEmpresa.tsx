@@ -11,7 +11,6 @@ import { ISubempresa } from '@/interface/empresas.interface';
 import { toast } from 'react-toastify';
 import { CreateSubempresaModal, DeleteSubempresaModal, SubempresasTable } from './components';
 import Icon from '@/components/icon/Icon';
-import { DuoBuilding } from '@/components/icon/duotone';
 import Tooltip from '@/components/ui/Tooltip';
 
 export default function SubEmpresaLista() {
@@ -130,6 +129,9 @@ export default function SubEmpresaLista() {
 				isOpen={openDelete}
 				onClose={() => setOpenDelete(false)}
 				onConfirm={confirmDelete}
+				subempresaId={toDeleteId || 0}
+				subsiName={toDeleteId ? subempresas.find(s => s.id === toDeleteId)?.name || '' : ''}
+				isNavigate={false}
 			/>
 		</PageWrapper>
 	);
