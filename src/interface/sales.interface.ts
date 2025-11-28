@@ -1,4 +1,3 @@
-import { ICustomer } from './customers.interface';
 import { ICustomerSale } from './customerSales.interface';
 import { IProduct } from './products.interface';
 import { IUser } from './users.interface';
@@ -32,7 +31,6 @@ export interface ISale {
 
     notes?: string;
     items_count?: number;
-    
     documents_metadata?: {
         inventory_finalized: boolean;
     };
