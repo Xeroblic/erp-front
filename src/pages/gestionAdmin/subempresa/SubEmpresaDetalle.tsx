@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
-	fetchMisSubsidiarias,
 	updateSubsidiaria,
+	fetchSubsidiariaDetail,
 } from '@/store/slices/subempresa/subEmpresaSlice';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
@@ -19,6 +19,8 @@ import * as Yup from 'yup';
 import Label from '@/components/form/Label';
 import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
+import ApiService from '@/services/ApiService';
+import { validateFile } from '@/utils/apiHelpers';
 import {
 	listaComunasThunk,
 	listaProvinciasThunk,
@@ -33,32 +35,32 @@ export default function SubEmpresaDetalle() {
 	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
 
-	const subempresas = useAppSelector((s) => s.subEmpresa.lista);
 	const loading = useAppSelector((s) => s.subEmpresa.loading);
+	const detalle = useAppSelector((s) => s.subEmpresa.detalle);
 	const [subempresa, setSubempresa] = useState<ISubempresa | null>(null);
 	const [isEditing, setIsEditing] = useState(false);
 	const [activeTab, setActiveTab] = useState<'basic' | 'commercial'>('basic');
 	const [openDelete, setOpenDelete] = useState(false);
+	const [uploadingLogo, setUploadingLogo] = useState(false);
+	const fileInputRef = useRef<HTMLInputElement | null>(null);
 
 	useEffect(() => {
 		if (id) {
-			if (subempresas.length === 0) {
-				dispatch(fetchMisSubsidiarias());
-			}
+			dispatch(fetchSubsidiariaDetail(Number(id)))
+				.unwrap()
+				.then((data) => setSubempresa(data))
+				.catch(() => {
+					toast.error('Subempresa no encontrada');
+					navigate('/gestion/subempresa');
+				});
 		}
-	}, [dispatch, id, subempresas.length]);
+	}, [dispatch, id, navigate]);
 
 	useEffect(() => {
-		if (id && subempresas.length > 0) {
-			const foundSubempresa = subempresas.find((s) => s.id === parseInt(id));
-			if (foundSubempresa) {
-				setSubempresa(foundSubempresa);
-			} else {
-				toast.error('Subempresa no encontrada');
-				navigate('/gestion/subempresa');
-			}
+		if (detalle && id && Number(detalle.id) === Number(id)) {
+			setSubempresa(detalle);
 		}
-	}, [id, subempresas, navigate]);
+	}, [detalle, id]);
 	
 
 	const allowedPaymentOptions = useMemo(
@@ -171,7 +173,7 @@ export default function SubEmpresaDetalle() {
 
 				toast.success(`${values.nombre} ha sido actualizada correctamente`);
 				setIsEditing(false);
-				dispatch(fetchMisSubsidiarias());
+				dispatch(fetchSubsidiariaDetail(subempresa.id));
 			} catch (err: any) {
 				toast.error('Error al actualizar la subempresa');
 			}
@@ -194,6 +196,46 @@ export default function SubEmpresaDetalle() {
 			dispatch(listaComunasThunk());
 		}
 	}, [isEditing, dispatch]);
+
+	const handleLogoUpload = async (file?: File | null) => {
+		if (!subempresa || !file) return;
+		const validation = validateFile(file, {
+			maxKB: 8192,
+			allowedMimes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/svg+xml'],
+		});
+		if (!validation.ok) {
+			toast.error('Logo no válido. Usa JPG, PNG, WEBP o SVG (máx 8 MB).');
+			return;
+		}
+
+		const formData = new FormData();
+		formData.append('logo', file);
+		setUploadingLogo(true);
+		try {
+			const resp = await ApiService.fetchData<{ data?: any }, FormData>({
+				url: `/subsidiaries/${subempresa.id}/logo`,
+				method: 'post',
+				data: formData,
+			});
+
+			const payload = (resp.data as any)?.data ?? resp.data;
+			const updatedLogo =
+				payload?.logo_url || payload?.logo || payload?.data?.logo_url || payload?.data?.logo;
+
+			if (updatedLogo) {
+				setSubempresa((prev) =>
+					prev ? { ...prev, logo_url: updatedLogo, logo: updatedLogo } : prev,
+				);
+			}
+			dispatch(fetchSubsidiariaDetail(subempresa.id));
+			toast.success('Logo actualizado');
+		} catch (err) {
+			toast.error('No se pudo subir el logo');
+		} finally {
+			setUploadingLogo(false);
+			if (fileInputRef.current) fileInputRef.current.value = '';
+		}
+	};
 
 	const { listaRegiones, listaProvincias, listaComunas } = useAppSelector((s) => s.core);
 	const { optionsRegion, optionsProvincia, optionsComuna } = useGeoSelector(
@@ -283,6 +325,24 @@ export default function SubEmpresaDetalle() {
 					</div>
 				</SubheaderLeft>
 				<SubheaderRight className='flex items-center gap-2'>
+					<div className='flex items-center gap-2'>
+						<input
+							ref={fileInputRef}
+							type='file'
+							accept='image/*'
+							className='hidden'
+							onChange={(e) => handleLogoUpload(e.target.files?.[0] || null)}
+						/>
+						<Button
+							variant='outline'
+							size='sm'
+							icon='HeroPhoto'
+							isLoading={uploadingLogo}
+							isDisable={uploadingLogo}
+							onClick={() => fileInputRef.current?.click()}>
+							{uploadingLogo ? 'Subiendo...' : 'Subir logo'}
+						</Button>
+					</div>
 					{isEditing ? (
 						<>
 							<Button
@@ -360,6 +420,22 @@ export default function SubEmpresaDetalle() {
 								</CardTitle>
 							</CardHeader>
 							<CardBody className='space-y-4'>
+								<div className='flex items-center gap-4'>
+									<div className='flex h-16 w-16 items-center justify-center rounded-lg border border-dashed border-zinc-200 bg-white'>
+										{subempresa.logo_url ? (
+											<img
+												src={subempresa.logo_url}
+												alt='Logo subempresa'
+												className='max-h-14 max-w-14 object-contain'
+											/>
+										) : (
+											<Icon icon='HeroPhoto' className='text-2xl text-zinc-400' />
+										)}
+									</div>
+									<div className='text-xs text-zinc-500'>
+										Logo actual de la subempresa. Usa "Subir logo" para actualizar.
+									</div>
+								</div>
 								<div>
 									<Label className='text-lg font-semibold' htmlFor='nombre'>Nombre</Label>
 									{isEditing ? (

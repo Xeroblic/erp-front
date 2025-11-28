@@ -1,222 +1,80 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store';
-import type { IQuote, IQuoteItem } from '../../../../interface/quotes.interface';
-import type { ISubempresa, IEmpresa } from '@/interface/empresas.interface';
+import type { IQuote, IQuoteItem, ISubempresa } from '@/interface'; // Ajusta imports según tu estructura
 
 interface QuotePrintableViewProps {
     quote: IQuote;
 }
 
-// --- 1. Funciones de Formato y Ayuda ---
+// --- 1. Helpers ---
+const parseNumber = (val: any) => Number(val) || 0;
+const formatCurrency = (val: any) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(parseNumber(val));
+const formatDate = (val?: string) => val ? new Date(val).toLocaleDateString('es-CL') : '—';
 
-const formatDate = (value?: string | null) => {
-    if (!value) return '—';
-    const date = new Date(value);
-    return Number.isNaN(date.getTime())
-        ? '—'
-        : date.toLocaleDateString('es-CL', { year: 'numeric', month: '2-digit', day: '2-digit' });
-};
+// --- 2. Hook de Datos (Cerebro) ---
+const useQuoteData = (quote: IQuote) => {
+    // Selectores de Redux
+    const subsidiaries = useSelector((state: RootState) => state.subEmpresa?.lista || []);
+    const detail = useSelector((state: RootState) => state.subEmpresa?.detalle);
+    const mainCompany = useSelector((state: RootState) => state.empresa?.miEmpresa);
 
-const parseNumber = (value: any): number => {
-    const num = Number(value);
-    return Number.isNaN(num) ? 0 : num;
-};
-
-const formatCurrency = (value: any) =>
-    new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(
-        parseNumber(value)
-    );
-
-const computeItemTotal = (item: IQuoteItem) => {
-    const quantity = parseNumber(item.quantity || 0);
-    const unit = parseNumber(item.unit_price || 0);
-    const discount = parseNumber((item as any).discount_amount ?? 0);
-    return (quantity * unit) - discount;
-};
-
-const normalizeText = (value?: string | null): string | undefined => {
-    if (!value) return undefined;
-    const normalized = String(value).trim();
-    return normalized.length > 0 ? normalized : undefined;
-};
-
-// --- 2. Lógica de Extracción de Datos (La parte "Inteligente") ---
-
-interface CompanyInfo {
-    name: string;
-    rut: string;
-    activity: string; // Giro
-    address: string;
-    commune?: string;
-    email: string;
-    phone: string;
-    website?: string;
-    logoUrl?: string;
-    bankInfo: string[];
-}
-
-const fallbackCompany: CompanyInfo = {
-    name: 'SU EMPRESA LTDA.',
-    rut: '77.000.000-0',
-    activity: 'Venta de Artículos Computacionales',
-    address: 'Av. Principal 1234',
-    commune: 'Santiago',
-    email: 'contacto@suempresa.cl',
-    phone: '+56 9 1234 5678',
-    bankInfo: [],
-};
-
-// Hook personalizado para extraer la info correcta
-const useQuoteIssuer = (quote: IQuote): CompanyInfo => {
-	// Obtenemos todas las posibles fuentes de datos del Store
-	const subsidiaries = useSelector((state: RootState) => state.subEmpresa?.lista || []);
-	const mainCompany = useSelector((state: RootState) => state.empresa?.miEmpresa);
+    // Encontrar Subsidiaria Activa
+    const activeSub = (detail && Number(detail.id) === Number(quote.subsidiary_id)
+        ? detail
+        : subsidiaries.find(s => Number(s.id) === Number(quote.subsidiary_id))) as ISubempresa | undefined;
     
-    // 1. Intentar encontrar la subsidiaria específica de la cotización
-    const activeSub = subsidiaries.find(s => Number(s.id) === Number(quote.subsidiary_id));
+    // Fallback manual (para que no falle si Redux no ha cargado)
+    const fallbackName = mainCompany?.company_name || 'EcoTI';
     
-	// 2. Si no hay subsidiaria, usar la empresa principal
-	const source: ISubempresa | IEmpresa | undefined = activeSub || mainCompany || undefined;
-    
-    // 3. Extraer metadatos guardados en la cotización (si existen, tienen prioridad visual a veces)
-    const meta = (quote.metadata as any)?.company || {};
+    // Mapeo seguro usando tu estructura JSON nueva
+    const data = {
+        name: activeSub?.subsidiary_name || fallbackName,
+        rut: activeSub?.subsidiary_rut || mainCompany?.company_rut || '',
+        // Giro no venía en tu JSON de subsidiaria, usamos fallback
+        activity: 'Venta de Equipos Computacionales', 
+        
+        // Composición de dirección: Calle + Comuna.name
+        address: activeSub?.subsidiary_address 
+            ? `${activeSub.subsidiary_address}${activeSub.commune?.name ? `, ${activeSub.commune.name}` : ''}`
+            : (mainCompany?.company_address || ''),
+            
+        phone: activeSub?.subsidiary_phone || mainCompany?.company_phone || '',
+        email: activeSub?.subsidiary_email || mainCompany?.contact_email || '',
+        website: activeSub?.subsidiary_website || mainCompany?.company_website || '',
+        // Logo
+        logo: (activeSub as any)?.logo_url || (mainCompany as any)?.company_logo
+    };
 
-    // Helpers de extracción segura
-    const getVal = (...candidates: any[]) => candidates.find(c => normalizeText(c)) || undefined;
-
-	// Helpers para leer campos según tipo de fuente
-	const asSub = (src: ISubempresa | IEmpresa | undefined): ISubempresa | undefined =>
-		src && 'company_name' in src === false ? src : undefined;
-	const asMain = (src: ISubempresa | IEmpresa | undefined): IEmpresa | undefined =>
-		src && 'company_name' in src ? src : undefined;
-
-	const name = getVal(
-		meta.name,
-		asSub(source)?.name,
-		asSub(source)?.subsidiary_name,
-		asMain(source)?.company_name,
-		asMain(source)?.legal_name,
-		fallbackCompany.name,
-	);
-	const rut = getVal(
-		meta.rut,
-		asSub(source)?.rut,
-		asSub(source)?.subsidiary_rut,
-		asMain(source)?.company_rut,
-		fallbackCompany.rut,
-	);
-	const activity = getVal(
-		meta.activity,
-		asSub(source)?.manager_name, // sin campo directo; usamos algo identificable
-		asMain(source)?.business_activity,
-		fallbackCompany.activity,
-	);
-
-	// Dirección: Intentar construirla completa
-	let address = getVal(
-		meta.address,
-		asSub(source)?.address,
-		asSub(source)?.subsidiary_address,
-		asMain(source)?.company_address,
-		fallbackCompany.address,
-	);
-	const commune = getVal(
-		meta.commune,
-		asSub(source)?.commune_name,
-		asSub(source)?.subsidiary_address, // compatibilidad básica
-		asMain(source)?.company_address,
-	);
-	if (commune && address && !address.includes(commune)) {
-		address = `${address}, ${commune}`;
-	}
-
-	const email = getVal(
-		meta.email,
-		asSub(source)?.email,
-		asSub(source)?.subsidiary_email,
-		asMain(source)?.contact_email,
-		fallbackCompany.email,
-	);
-	const phone = getVal(
-		meta.phone,
-		asSub(source)?.phone,
-		asSub(source)?.subsidiary_phone,
-		asMain(source)?.company_phone,
-		fallbackCompany.phone,
-	);
-	const website = getVal(
-		meta.website,
-		asSub(source)?.website,
-		asSub(source)?.subsidiary_website,
-		asMain(source)?.company_website,
-	);
-
-	// Logo: Buscar en varios niveles de anidación típicos de Laravel/API
-	const logoUrl = getVal(
-		meta.logo_url,
-		asSub(source)?.logo_url,
-		(asSub(source) as any)?.logo?.url,
-		(asSub(source) as any)?.logo,
-		asMain(source)?.company_logo,
-		(asMain(source) as any)?.logo?.url,
-	);
-
-	// Datos Bancarios (si alguna fuente los trae)
-	const bankData =
-		(meta.bank_info as any) ??
-		(asSub(source) as any)?.bank_info ??
-		(asMain(source) as any)?.bank_info;
-	const bankInfo = Array.isArray(bankData) ? bankData.map(String) : bankData ? [String(bankData)] : [];
-
-	return { name, rut, activity, address, commune, email, phone, website, logoUrl, bankInfo };
+    return data;
 };
-
 
 // --- 3. Componente Visual ---
-
 const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
-    const company = useQuoteIssuer(quote);
-    
-    // Datos del Cliente
+    const company = useQuoteData(quote);
     const customer = quote.customer as any || {};
-    const customerName = customer.razon_social || customer.billing_company || customer.name || 'Cliente Mostrador';
-    const customerRut = customer.rut || customer.tax_number || '—';
-    const customerGiro = customer.business_activity || customer.giro || '—';
-    const customerAddress = customer.billing_address || customer.address || '—';
-    const customerContact = customer.contact_name || '—';
-    const customerEmail = customer.email || '—';
-    const customerPhone = customer.phone || customer.mobile_phone || '—';
+    const items = quote.items || [];
 
     // Totales
-    const items = quote.items ?? [];
-    const totalNeto = parseNumber(quote.total_net ?? quote.subtotal ?? quote.totals?.total_net ?? 0);
-    const descuento = parseNumber(quote.discount_amount ?? 0);
-    const iva = parseNumber(quote.total_tax ?? quote.tax_amount ?? quote.totals?.tax_amount ?? 0);
-    const totalFinal = parseNumber(quote.total_amount ?? quote.totals?.grand_total ?? 0);
-
-    // Condiciones
-    const formaPago = quote.payment_method || 'Transferencia / Contado';
-    const validez = quote.expiry_date ? formatDate(quote.expiry_date) : '7 días';
-    const entrega = (quote.metadata as any)?.delivery_terms || 'A convenir en local';
+    const netTotal = items.reduce((acc, item) => acc + (parseNumber(item.quantity) * parseNumber(item.unit_price)), 0);
+    const tax = parseNumber(quote.tax_amount || quote.total_tax);
+    const total = parseNumber(quote.total_amount);
 
     return (
-        <div className="bg-white p-8 mx-auto max-w-[216mm] text-xs font-sans text-gray-800 leading-tight">
+        <div className="bg-white p-3 min-h-[229mm] max-w-[201mm] mx-auto text-xs text-gray-800 font-sans shadow-lg">
             
-            {/* --- HEADER: Logo & Datos Empresa vs Cuadro RUT --- */}
-            <div className="flex justify-between items-start mb-6 gap-4">
-                {/* IZQUIERDA: Datos de tu Empresa (Subsidiaria) */}
+            {/* HEADER */}
+            <div className="flex justify-between items-start mb-8">
+                {/* Lado Izquierdo: Info Empresa */}
                 <div className="w-3/5">
-                    <div className="mb-3 h-16 flex items-center justify-start">
-                        {company.logoUrl ? (
-                            <img src={company.logoUrl} alt="Logo" className="h-full object-contain max-w-[180px]" />
+                    <div className="mb-4">
+                        {company.logo ? (
+                            <img src={company.logo} alt="Logo" className="h-12 object-contain" />
                         ) : (
-                            <h1 className="text-2xl font-extrabold uppercase text-gray-800 tracking-tighter">
-                                {company.name}
-                            </h1>
+                            <h1 className="text-2xl font-bold uppercase text-gray-800">{company.name}</h1>
                         )}
                     </div>
-                    <div className="space-y-0.5 text-[11px] text-gray-600">
+                    <div className="text-[11px] leading-tight space-y-1 text-gray-600">
                         <p className="font-bold text-gray-900 uppercase text-sm">{company.name}</p>
                         <p><span className="font-semibold">Giro:</span> {company.activity}</p>
                         <p><span className="font-semibold">Dirección:</span> {company.address}</p>
@@ -226,89 +84,64 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
                     </div>
                 </div>
 
-                {/* DERECHA: Cuadro RUT (Estilo SII Clásico) */}
+                {/* Lado Derecho: Cuadro RUT (Estilo Formato) */}
                 <div className="w-2/5 flex flex-col items-end">
-                    <div className="border-[3px] border-red-600 w-full max-w-[260px] text-center py-3">
-                        <h2 className="text-xl font-black text-red-600 tracking-wide">R.U.T.: {company.rut}</h2>
+                    <div className="border-2 border-red-600 w-64 text-center py-4">
+                        <h2 className="text-lg font-black text-red-600 tracking-wide">R.U.T.: {company.rut}</h2>
                         <div className="bg-red-50 py-1 my-1">
-                            <h3 className="text-lg font-bold text-red-600 uppercase tracking-widest">Cotización</h3>
+                            <h3 className="text-base font-bold text-red-600 uppercase tracking-widest">COTIZACION</h3>
                         </div>
-                        <h4 className="text-xl font-black text-red-600">N° {quote.id}</h4>
+                        <h4 className="text-lg font-black text-red-600">N° {quote.id}</h4>
                     </div>
-                    <div className="mt-2 text-right text-sm">
-                        <p className="font-bold text-gray-700">Santiago, {formatDate(quote.quote_date)}</p>
-                    </div>
+                    <p className="mt-2 text-right font-bold text-gray-800">Santiago, {formatDate(quote.quote_date)}</p>
                 </div>
             </div>
 
-            {/* --- CLIENTE: Franja de Datos --- */}
-            <div className="border border-gray-300 rounded-sm p-3 mb-6 bg-gray-50/30 text-[11px]">
-                <div className="grid grid-cols-[70px_1fr_40px_1fr] gap-y-1 gap-x-2 items-baseline">
-                    <div className="font-bold text-gray-900">Señor(es):</div>
-                    <div className="uppercase font-bold text-gray-800">{customerName}</div>
-                    
-                    <div className="font-bold text-gray-900 text-right">RUT:</div>
-                    <div className="font-medium">{customerRut}</div>
+            {/* INFO CLIENTE */}
+            <div className="border border-gray-300 bg-gray-50 p-3 mb-6 rounded-sm">
+                <div className="grid grid-cols-[60px_1fr_40px_1fr] gap-y-1 gap-x-2 items-baseline">
+                    <div className="font-bold">Señor(es):</div>
+                    <div className="uppercase font-bold">{customer.name || customer.razon_social}</div>
+                    <div className="font-bold text-right">RUT:</div>
+                    <div>{customer.rut}</div>
 
-                    <div className="font-bold text-gray-900">Giro:</div>
-                    <div className="col-span-3 text-gray-700">{customerGiro}</div>
+                    <div className="font-bold">Dirección:</div>
+                    <div className="col-span-3">{customer.address}</div>
 
-                    <div className="font-bold text-gray-900">Dirección:</div>
-                    <div className="col-span-3 text-gray-700">{customerAddress}</div>
+                    <div className="font-bold">Giro:</div>
+                    <div className="col-span-3">{customer.giro}</div>
 
-                    <div className="font-bold text-gray-900">Contacto:</div>
-                    <div className="text-gray-700">{customerContact}</div>
-
-                    <div className="font-bold text-gray-900 text-right">Fono:</div>
-                    <div className="text-gray-700">{customerPhone}</div>
-                    
-                    <div className="font-bold text-gray-900">Correo:</div>
-                    <div className="col-span-3 text-gray-700">{customerEmail}</div>
+                    <div className="font-bold">Contacto:</div>
+                    <div>{customer.contact_name}</div>
+                    <div className="font-bold text-right">Fono:</div>
+                    <div>{customer.phone}</div>
                 </div>
             </div>
 
-            {/* --- TABLA DE ÍTEMS --- */}
-            <div className="mb-6 min-h-[300px]">
-                <table className="w-full border-collapse text-[11px]">
-                    <thead>
-                        <tr className="bg-gray-100 border-t border-b border-gray-300 text-gray-700 uppercase">
-                            <th className="py-2 px-2 text-center w-12 font-bold border-l border-gray-300">Cant.</th>
-                            <th className="py-2 px-2 text-left w-28 font-bold border-l border-gray-300">Código</th>
-                            <th className="py-2 px-2 text-left font-bold border-l border-gray-300">Descripción</th>
-                            <th className="py-2 px-2 text-right w-24 font-bold border-l border-gray-300">P. Unitario</th>
-                            <th className="py-2 px-2 text-right w-24 font-bold border-l border-r border-gray-300">Total</th>
+            {/* TABLA ITEMS */}
+            <div className="mb-8">
+                <table className="w-full border-collapse border border-gray-300">
+                    <thead className="bg-gray-100 text-gray-900 uppercase text-[10px]">
+                        <tr>
+                            <th className="border border-gray-300 py-2 w-12">Cant.</th>
+                            <th className="border border-gray-300 py-2 text-left px-2 w-24">Código</th>
+                            <th className="border border-gray-300 py-2 text-left px-2">Descripción</th>
+                            <th className="border border-gray-300 py-2 text-right px-2 w-24">Precio Neto</th>
+                            <th className="border border-gray-300 py-2 text-right px-2 w-24">Total Neto</th>
                         </tr>
                     </thead>
                     <tbody>
                         {items.map((item, idx) => (
-                            <tr key={idx} className="border-b border-gray-200 hover:bg-gray-50">
-                                <td className="py-2 px-2 text-center align-top border-l border-gray-300 font-medium">
-                                    {item.quantity}
+                            <tr key={idx} className="border-b border-gray-200">
+                                <td className="border-l border-r border-gray-300 py-2 text-center align-top">{item.quantity}</td>
+                                <td className="border-r border-gray-300 py-2 px-2 align-top text-gray-600">{item.product?.sku}</td>
+                                <td className="border-r border-gray-300 py-2 px-2 align-top">
+                                    <p className="font-bold">{item.product?.name}</p>
+                                    {item.description && <p className="text-gray-500 text-[10px] mt-1 whitespace-pre-wrap">{item.description}</p>}
                                 </td>
-                                <td className="py-2 px-2 text-left align-top border-l border-gray-300 text-gray-600">
-                                    {item.customer_sku || item.product?.sku || '—'}
-                                </td>
-                                <td className="py-2 px-2 text-left align-top border-l border-gray-300">
-                                    <p className="font-bold text-gray-800 text-xs">
-                                        {item.customer_name || item.product?.name || 'Ítem sin nombre'}
-                                    </p>
-                                    {item.description && (
-                                        <p className="text-[10px] text-gray-500 whitespace-pre-line mt-0.5">
-                                            {item.description}
-                                        </p>
-                                    )}
-                                    {/* Garantía integrada en descripción como subtítulo */}
-                                    {(item.metadata as any)?.warranty && (
-                                        <p className="text-[10px] text-blue-600 italic mt-1">
-                                            Garantía: {(item.metadata as any).warranty}
-                                        </p>
-                                    )}
-                                </td>
-                                <td className="py-2 px-2 text-right align-top border-l border-gray-300 font-medium text-gray-700">
-                                    {formatCurrency(item.unit_price)}
-                                </td>
-                                <td className="py-2 px-2 text-right align-top border-l border-r border-gray-300 font-bold text-gray-900">
-                                    {formatCurrency(item.total_net || computeItemTotal(item))}
+                                <td className="border-r border-gray-300 py-2 px-2 text-right align-top">{formatCurrency(item.unit_price)}</td>
+                                <td className="border-r border-gray-300 py-2 px-2 text-right align-top font-bold">
+                                    {formatCurrency(parseNumber(item.quantity) * parseNumber(item.unit_price))}
                                 </td>
                             </tr>
                         ))}
@@ -316,80 +149,41 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
                 </table>
             </div>
 
-            {/* --- FOOTER: Condiciones y Totales --- */}
-            <div className="flex gap-8 items-start">
-                
-                {/* Izquierda: Notas, Banco, Condiciones */}
-                <div className="flex-1 space-y-5">
-                    
-                    {/* Condiciones Comerciales */}
-                    <div className="border-l-2 border-gray-300 pl-3">
-                        <h3 className="font-bold text-gray-900 uppercase text-[11px] mb-2">Condiciones Comerciales</h3>
-                        <div className="text-[10px] space-y-1 text-gray-600">
-                            <p><span className="font-semibold text-gray-800">Validez Oferta:</span> {validez}</p>
-                            <p><span className="font-semibold text-gray-800">Forma de Pago:</span> {formaPago}</p>
-                            <p><span className="font-semibold text-gray-800">Entrega:</span> {entrega}</p>
-                        </div>
+            {/* FOOTER */}
+            <div className="flex gap-8">
+                <div className="flex-1 text-[10px] space-y-2">
+                    <div className="border-l-2 border-gray-300 pl-2">
+                        <h3 className="font-bold uppercase mb-1 underline">Condiciones Comerciales Generales</h3>
+                        <p>Validez: 7 días</p>
+                        <p>Forma de Pago: A convenir</p>
+                        <p>Entrega: A convenir</p>
                     </div>
-
-                    {/* Datos Bancarios y Notas */}
-                    {(company.bankInfo.length > 0 || quote.notes) && (
-                        <div className="bg-gray-50 p-3 rounded border border-gray-200 text-[10px]">
-                            {quote.notes && (
-                                <div className="mb-3">
-                                    <span className="font-bold block mb-1">Observaciones:</span>
-                                    <p className="whitespace-pre-wrap text-gray-600">{quote.notes}</p>
-                                </div>
-                            )}
-                            {company.bankInfo.length > 0 && (
-                                <div>
-                                    <span className="font-bold block mb-1">Datos Bancarios:</span>
-                                    {company.bankInfo.map((info, i) => (
-                                        <p key={i} className="text-gray-700 font-medium">{info}</p>
-                                    ))}
-                                </div>
-                            )}
+                    {quote.notes && (
+                        <div className="bg-yellow-50 p-2 border border-yellow-100 rounded">
+                            <span className="font-bold block">Observaciones:</span>
+                            {quote.notes}
                         </div>
                     )}
                 </div>
 
-                {/* Derecha: Totales Compactos */}
                 <div className="w-64">
-                    <table className="w-full text-sm">
+                    <table className="w-full text-right">
                         <tbody>
                             <tr>
-                                <td className="py-2 pr-4 text-right text-gray-600 font-semibold border-b border-gray-200">Neto</td>
-                                <td className="py-2 pl-4 text-right font-bold text-gray-800 border-b border-gray-200">
-                                    {formatCurrency(totalNeto)}
-                                </td>
+                                <td className="font-bold text-gray-600 pr-4 py-1">Total Neto:</td>
+                                <td className="font-bold text-gray-800">{formatCurrency(netTotal)}</td>
                             </tr>
-                            {descuento > 0 && (
-                                <tr>
-                                    <td className="py-2 pr-4 text-right text-red-500 font-semibold border-b border-gray-200">Descuento</td>
-                                    <td className="py-2 pl-4 text-right font-bold text-red-500 border-b border-gray-200">
-                                        - {formatCurrency(descuento)}
-                                    </td>
-                                </tr>
-                            )}
                             <tr>
-                                <td className="py-2 pr-4 text-right text-gray-600 font-semibold border-b border-gray-200">I.V.A. (19%)</td>
-                                <td className="py-2 pl-4 text-right font-bold text-gray-800 border-b border-gray-200">
-                                    {formatCurrency(iva)}
-                                </td>
+                                <td className="font-bold text-gray-600 pr-4 py-1">I.V.A. (19%):</td>
+                                <td className="font-bold text-gray-800">{formatCurrency(tax)}</td>
                             </tr>
-                            <tr className="text-base">
-                                <td className="py-3 pr-4 text-right font-bold text-gray-900 bg-gray-100 rounded-l">Total</td>
-                                <td className="py-3 pl-4 text-right font-extrabold text-gray-900 bg-gray-100 rounded-r">
-                                    {formatCurrency(totalFinal)}
-                                </td>
+                            <tr className="text-sm">
+                                <td className="font-black text-gray-900 pr-4 py-2 border-t border-gray-300">TOTAL:</td>
+                                <td className="font-black text-gray-900 py-2 border-t border-gray-300">{formatCurrency(total)}</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
-            </div>
-
-            <div className="mt-12 pt-4 border-t border-gray-200 text-center text-[9px] text-gray-400 uppercase tracking-wider">
-                Documento generado electrónicamente por {company.name} - {new Date().getFullYear()}
             </div>
         </div>
     );

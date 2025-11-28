@@ -130,7 +130,6 @@ export interface ISubempresa {
   status?: string | number | boolean;
   commune_name?: string;
   logo_url?: string | null;
-  logo?: { url?: string | null } | string | null;
   bank_info?: string[] | string | null;
 
   sucursales?: ISucursal[];
