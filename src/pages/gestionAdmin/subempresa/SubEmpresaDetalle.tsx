@@ -975,7 +975,7 @@ export default function SubEmpresaDetalle() {
 				isOpen={openDelete}
 				onClose={() => setOpenDelete(false)}
 				subempresaId={subempresa.id}
-				subempresaName={subempresa.name}
+				subsiName={subempresa.name}
 				isNavigate={true}
 			/>
 			

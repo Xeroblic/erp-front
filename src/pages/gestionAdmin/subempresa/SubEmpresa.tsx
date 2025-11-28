@@ -128,7 +128,6 @@ export default function SubEmpresaLista() {
 			<DeleteSubempresaModal
 				isOpen={openDelete}
 				onClose={() => setOpenDelete(false)}
-				onConfirm={confirmDelete}
 				subempresaId={toDeleteId || 0}
 				subsiName={toDeleteId ? subempresas.find(s => s.id === toDeleteId)?.name || '' : ''}
 				isNavigate={false}
