@@ -11,6 +11,7 @@ import Card, { CardBody } from '@/components/ui/Card';
 import { Link, useNavigate } from 'react-router-dom';
 import Icon from '@/components/icon/Icon';
 import classNames from 'classnames';
+import { logout } from '@/store';
 
 const validationSchema = Yup.object().shape({
 	email: Yup.string()
@@ -32,7 +33,7 @@ const RecuperarPassword = () => {
 				await axios.post(`${import.meta.env.VITE_API_URL}/auth/forgot-password`, {
 					email: values.email,
 				});
-
+				logout();
 				toast.success('Enlace de restablecimiento de contraseña enviado a tu correo.');
 				setIsFormSubmitted(true);
 			} catch (error) {

@@ -236,9 +236,9 @@ export default function SucursalModal({
 								name='subsidiary_id'
 								placeholder='Seleccione una subsidiaria...'
 								value={
-									subsidiaryOptions.find(
+									(subsidiaryOptions.find(
 										(opt) => opt.value === formik.values.subsidiary_id,
-									) || null
+									) as TSelectOption | undefined) || null
 								}
 								onChange={(selectedOption) => {
 									const option = selectedOption as TSelectOption | null;
@@ -246,7 +246,7 @@ export default function SucursalModal({
 								}}
 								onBlur={() => formik.setFieldTouched('subsidiary_id', true)}
 								isDisabled={formik.isSubmitting}
-								options={subsidiaryOptions}
+								options={subsidiaryOptions as TSelectOption[]}
 							/>
 							{formik.touched.subsidiary_id && formik.errors.subsidiary_id && (
 								<p className='mt-1 text-sm text-red-600'>
@@ -297,9 +297,9 @@ export default function SucursalModal({
 									name='region'
 									placeholder='Seleccione región'
 									value={
-										optionsRegion.find(
+										(optionsRegion.find(
 											(o) => o.value === String(formik.values.region),
-										) || null
+										) as TSelectOption | undefined) || null
 									}
 									onChange={(opt) =>
 										formik.setFieldValue(
@@ -316,9 +316,9 @@ export default function SucursalModal({
 									name='provincia'
 									placeholder='Seleccione provincia'
 									value={
-										optionsProvincia.find(
+										(optionsProvincia.find(
 											(o) => o.value === String(formik.values.provincia),
-										) || null
+										) as TSelectOption | undefined) || null
 									}
 									onChange={(opt) =>
 										formik.setFieldValue(
@@ -326,7 +326,7 @@ export default function SucursalModal({
 											(opt as TSelectOption | null)?.value || '',
 										)
 									}
-									options={optionsProvincia}
+									options={optionsProvincia as TSelectOption[]}
 								/>
 							</div>
 							<div>
@@ -339,10 +339,10 @@ export default function SucursalModal({
 											(o) => o.value === String(formik.values.comuna),
 										) ||
 										(formik.values.comuna
-											? {
+											? ({
 													value: String(formik.values.comuna),
 													label: 'Cargando…',
-												}
+												} as TSelectOption)
 											: null)
 									}
 									onChange={(opt) => {
@@ -353,7 +353,7 @@ export default function SucursalModal({
 											v ? Number(v) : undefined,
 										);
 									}}
-									options={optionsComuna}
+									options={optionsComuna as TSelectOption[]}
 								/>
 							</div>
 						</div>

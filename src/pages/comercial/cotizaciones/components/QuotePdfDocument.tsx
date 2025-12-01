@@ -1,8 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
-import { IQuote, ISubempresa } from '@/interface';
+import { IQuote } from '@/interface';
 import store from '@/store';
-import { ensureAbsoluteUrl } from '@/components/helper/brand.helper';
+import {
+	getCompanyInfo,
+	getCustomerInfo,
+	resolveUnitPrice,
+	resolveLineTotal,
+	getProductSku,
+	getProductName,
+	getProductDetail,
+	formatCurrency,
+	formatDate,
+	getPaymentMethodsLabel,
+} from './quote-data-mapper';
 
 const logoDataCache = new Map<string, string>();
 
@@ -64,7 +75,12 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		paddingVertical: 2,
 	},
-	docTypeTitle: { fontSize: 12, fontWeight: 'bold', color: '#e11d48', textTransform: 'uppercase' },
+	docTypeTitle: {
+		fontSize: 12,
+		fontWeight: 'bold',
+		color: '#e11d48',
+		textTransform: 'uppercase',
+	},
 	docNumber: { fontSize: 14, fontWeight: 'bold', color: '#111827' },
 	dateLine: { marginTop: 5, fontSize: 10, fontWeight: 'bold', color: '#111827' },
 	clientSection: {
@@ -97,7 +113,12 @@ const styles = StyleSheet.create({
 	colDesc: { width: '45%', textAlign: 'left', paddingLeft: 4 },
 	colPrice: { width: '15%', textAlign: 'right', paddingRight: 4 },
 	colTotal: { width: '15%', textAlign: 'right', paddingRight: 4 },
-	totalsSection: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10, marginBottom: 20 },
+	totalsSection: {
+		flexDirection: 'row',
+		justifyContent: 'flex-end',
+		marginTop: 10,
+		marginBottom: 20,
+	},
 	totalsTable: { width: 180 },
 	totalRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
 	grandTotalBox: {
@@ -111,122 +132,21 @@ const styles = StyleSheet.create({
 	footerContent: { borderTopWidth: 1, borderColor: '#e5e7eb', paddingTop: 10 },
 	twoColumnFooter: { flexDirection: 'row', gap: 20 },
 	footerCol: { flex: 1 },
-	sectionTitle: { fontSize: 9, fontWeight: 'bold', marginBottom: 4, textTransform: 'uppercase', textDecoration: 'underline' },
+	sectionTitle: {
+		fontSize: 9,
+		fontWeight: 'bold',
+		marginBottom: 4,
+		textTransform: 'uppercase',
+		textDecoration: 'underline',
+	},
 	noteText: { fontSize: 8, color: '#4b5563', marginBottom: 2 },
 	pageNumber: { marginTop: 10, textAlign: 'center', fontSize: 8, color: '#9ca3af' },
 });
 
-const formatCurrency = (val: unknown) =>
-	new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(Number(val) || 0);
-
-const formatDate = (val?: string | null) => (val ? new Date(val).toLocaleDateString('es-CL') : '—');
-
-const getPersonalizedSubsidiary = (quote: IQuote): ISubempresa | undefined => {
-	const state = store.getState() as any;
-	const personalization = state.personalizacion?.personalizacionUsuario;
-	const personalizationSubId = personalization?.subsidiary_id;
-	const currentCompanySubs = state.personalizacion?.current_company?.subsidiaries;
-
-	if (Array.isArray(currentCompanySubs) && personalizationSubId) {
-		const match = currentCompanySubs.find(
-			(sub: any) => Number(sub.id) === Number(personalizationSubId),
-		);
-		if (match) return match as ISubempresa;
-	}
-
-	const subsidiaries = (state.subEmpresa?.lista || []) as ISubempresa[];
-	return subsidiaries.find((s) => Number(s.id) === Number(personalizationSubId ?? quote.subsidiary_id));
-};
-
-const getCompanyInfo = (quote: IQuote) => {
-	const state = store.getState() as any;
-	const mainCompany = state.empresa?.miEmpresa;
-	const quoteSubsidiary = (quote as any)?.subsidiary as Partial<ISubempresa> | undefined;
-	const activeSub =
-		getPersonalizedSubsidiary(quote) ||
-		(quoteSubsidiary && Number(quoteSubsidiary.id) === Number(quote.subsidiary_id)
-			? quoteSubsidiary
-			: undefined);
-
-	const meta = (quote as any)?.metadata?.company || {};
-
-	const logoRaw =
-		meta.logo_base_64 ||
-		meta.logo_url ||
-		meta.logo ||
-		(activeSub as any)?.logo_base_64 ||
-		(activeSub as any)?.logo_url ||
-		(mainCompany as any)?.company_logo;
-	const logoUrl =
-		logoRaw && String(logoRaw).startsWith('data:')
-			? logoRaw
-			: ensureAbsoluteUrl(logoRaw || undefined) || logoRaw || null;
-
-	const name = meta.name || activeSub?.subsidiary_name || mainCompany?.company_name || 'EcoTI';
-	const rut = meta.rut || activeSub?.subsidiary_rut || mainCompany?.company_rut || '—';
-	const activity =
-		meta.activity || activeSub?.subsidiary_giro || mainCompany?.business_activity || 'Venta de artículos computacionales';
-
-	const addressBase =
-		meta.address || (activeSub as any)?.subsidiary_address || mainCompany?.company_address || '';
-	const communeName =
-		meta.commune ||
-		(activeSub as any)?.commune?.name ||
-		(activeSub as any)?.commune_name ||
-		'';
-	const fullAddress =
-		communeName && addressBase && !addressBase.includes(communeName)
-			? `${addressBase}, ${communeName}`
-			: addressBase || communeName;
-
-	const email = meta.email || activeSub?.subsidiary_email || mainCompany?.contact_email || '';
-	const phone = meta.phone || activeSub?.subsidiary_phone || mainCompany?.company_phone || '';
-	const website = meta.website || activeSub?.subsidiary_website || mainCompany?.company_website || '';
-
-	const bankData =
-		(meta.bank_info as any) ?? (activeSub as any)?.bank_info ?? (mainCompany as any)?.bank_info;
-	const bankInfo = Array.isArray(bankData)
-		? bankData.map(String)
-		: bankData
-			? [String(bankData)]
-			: [];
-	const extraBank = meta.bank_details || (activeSub as any)?.subsidiary_bank_details;
-	if (extraBank) bankInfo.push(String(extraBank));
-
-	const allowedPaymentMethods =
-		meta.allowed_payment_methods ||
-		(activeSub as any)?.subsidiary_allowed_payment_methods ||
-		meta.payment_methods ||
-		[];
-	const deliveryTerm = meta.delivery_term || (activeSub as any)?.subsidiary_delivery_term;
-	const quoteValidityText =
-		meta.quote_validity_text || (activeSub as any)?.subsidiary_quote_validity_text || '';
-	const quoteValidityDays =
-		meta.quote_validity_days || (activeSub as any)?.subsidiary_quote_validity_days || null;
-	const commercialTerms =
-		meta.commercial_terms || (activeSub as any)?.subsidiary_commercial_terms || '';
-
-	return {
-		name,
-		rut,
-		activity,
-		fullAddress,
-		email,
-		phone,
-		website,
-		logoUrl,
-		bankInfo,
-		allowedPaymentMethods,
-		deliveryTerm,
-		quoteValidityText,
-		quoteValidityDays,
-		commercialTerms,
-	};
-};
-
 const QuotePdfDocument = ({ quote }: { quote: IQuote }) => {
-	const company = getCompanyInfo(quote);
-	const [logoSrc, setLogoSrc] = useState<string | null>(company.logoUrl);
+	const state = store.getState() as any;
+	const company = getCompanyInfo(quote, state);
+	const [logoSrc, setLogoSrc] = useState<string | null>(null);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -235,11 +155,21 @@ const QuotePdfDocument = ({ quote }: { quote: IQuote }) => {
 				setLogoSrc(null);
 				return;
 			}
+
+			// Si es base64, usarla directamente
+			if (String(company.logoUrl).startsWith('data:')) {
+				setLogoSrc(company.logoUrl);
+				return;
+			}
+
+			// Verificar caché
 			const existing = logoDataCache.get(company.logoUrl);
 			if (existing) {
 				setLogoSrc(existing);
 				return;
 			}
+
+			// Intentar cargar desde URL
 			const data = await fetchImageAsDataUrl(company.logoUrl);
 			if (!cancelled) {
 				const finalSrc = data || company.logoUrl;
@@ -254,21 +184,13 @@ const QuotePdfDocument = ({ quote }: { quote: IQuote }) => {
 	}, [company.logoUrl]);
 
 	const items = quote.items || [];
-	const customer = (quote as any).customer || {};
+	const customer = getCustomerInfo((quote as any).customer);
 
-	const resolveUnitPrice = (item: any) =>
-		Number(item.unit_price ?? item.price ?? item.unit_price_net ?? 0);
-	const resolveLineTotal = (item: any) =>
-		Number(item.total ?? item.line_total ?? item.subtotal ?? item.line_net ?? 0);
-
-	const netTotal = items.reduce((acc, item) => acc + resolveLineTotal(item), 0);
-	const discount = Number(quote.discount_amount || 0);
-	const tax = Number(quote.tax_amount || (quote as any).total_tax || 0);
-	const total = Number(quote.total_amount || netTotal + tax - discount);
-	const paymentMethodsLabel =
-		Array.isArray(company.allowedPaymentMethods) && company.allowedPaymentMethods.length > 0
-			? (company.allowedPaymentMethods as string[]).join(' / ')
-			: 'Contado / Transferencia / WebPay';
+	const netTotal = Number((quote as any).subtotal || 0);
+	const discount = Number((quote as any).discount_amount || 0);
+	const tax = Number((quote as any).tax_amount || 0);
+	const total = Number((quote as any).total_amount || 0);
+	const paymentMethodsLabel = getPaymentMethodsLabel(company.allowedPaymentMethods as string[]);
 
 	return (
 		<Document>
@@ -292,11 +214,15 @@ const QuotePdfDocument = ({ quote }: { quote: IQuote }) => {
 							</View>
 							{logoSrc && <Text style={styles.companyName}>{company.name}</Text>}
 							<Text style={styles.companyLine}>Giro: {company.activity}</Text>
-							<Text style={styles.companyLine}>Dirección: {company.fullAddress || '—'}</Text>
+							<Text style={styles.companyLine}>
+								Dirección: {company.fullAddress || '—'}
+							</Text>
 							<Text style={styles.companyLine}>
 								Email: {company.email || '—'} • Fono: {company.phone || '—'}
 							</Text>
-							{company.website && <Text style={styles.companyLine}>Web: {company.website}</Text>}
+							{company.website && (
+								<Text style={styles.companyLine}>Web: {company.website}</Text>
+							)}
 						</View>
 
 						<View style={styles.rutBoxContainer}>
@@ -307,10 +233,11 @@ const QuotePdfDocument = ({ quote }: { quote: IQuote }) => {
 								</View>
 								<Text style={styles.docNumber}>N° {quote.id}</Text>
 							</View>
-							<Text style={styles.dateLine}>Fecha: {formatDate(quote.quote_date)}</Text>
+							<Text style={styles.dateLine}>
+								Fecha: {formatDate(quote.quote_date)}
+							</Text>
 						</View>
 					</View>
-
 					<View style={styles.clientSection}>
 						<View style={styles.clientRow}>
 							<Text style={styles.clientLabel}>Señor(es):</Text>
@@ -320,35 +247,34 @@ const QuotePdfDocument = ({ quote }: { quote: IQuote }) => {
 									styles.boldText,
 									{ textTransform: 'uppercase' },
 								]}>
-								{customer.razon_social || customer.name || 'Cliente General'}
+								{customer.name}
 							</Text>
 							<Text style={[styles.clientLabel, { width: 30, textAlign: 'right' }]}>
 								RUT:
 							</Text>
 							<Text style={[styles.clientValue, { flex: 0.4, textAlign: 'right' }]}>
-								{customer.rut || '—'}
+								{customer.rut}
 							</Text>
 						</View>
 						<View style={styles.clientRow}>
 							<Text style={styles.clientLabel}>Dirección:</Text>
-							<Text style={styles.clientValue}>{customer.address || '—'}</Text>
+							<Text style={styles.clientValue}>{customer.address}</Text>
 						</View>
 						<View style={styles.clientRow}>
 							<Text style={styles.clientLabel}>Giro:</Text>
-							<Text style={styles.clientValue}>{customer.giro || '—'}</Text>
+							<Text style={styles.clientValue}>{customer.giro}</Text>
 						</View>
 						<View style={styles.clientRow}>
 							<Text style={styles.clientLabel}>Contacto:</Text>
-							<Text style={styles.clientValue}>{customer.contact_name || '—'}</Text>
+							<Text style={styles.clientValue}>{customer.contactName}</Text>
 							<Text style={[styles.clientLabel, { width: 40, textAlign: 'right' }]}>
 								Fono:
 							</Text>
 							<Text style={[styles.clientValue, { flex: 0.6, textAlign: 'right' }]}>
-								{customer.phone || '—'}
+								{customer.phone}
 							</Text>
 						</View>
 					</View>
-
 					<View style={styles.tableHeader}>
 						<Text style={[styles.colCant, styles.boldText]}>Cant.</Text>
 						<Text style={[styles.colCode, styles.boldText]}>Código</Text>
@@ -356,29 +282,24 @@ const QuotePdfDocument = ({ quote }: { quote: IQuote }) => {
 						<Text style={[styles.colPrice, styles.boldText]}>P. Neto</Text>
 						<Text style={[styles.colTotal, styles.boldText]}>Total</Text>
 					</View>
-
 					{items.map((item, index) => {
-						const sku =
-							(item as any)?.product?.sku ||
-							(item as any)?.customer_sku ||
-							(item as any)?.meta_json?.mapping?.sku ||
-							'—';
-						const name =
-							(item as any)?.product?.name ||
-							(item as any)?.customer_name ||
-							(item as any)?.name ||
-							'Producto sin nombre';
+						const sku = getProductSku(item);
+						const name = getProductName(item);
+						const detail = getProductDetail(item);
+						const quantity = Number((item as any).quantity || 0);
 						const unitPrice = resolveUnitPrice(item);
-						const lineTotal = resolveLineTotal(item) || unitPrice * Number(item.quantity || 0);
+						const lineTotal = resolveLineTotal(item);
 
 						return (
 							<View key={index} style={styles.tableRow}>
-								<Text style={styles.colCant}>{item.quantity}</Text>
+								<Text style={styles.colCant}>{quantity}</Text>
 								<Text style={styles.colCode}>{sku}</Text>
 								<View style={styles.colDesc}>
 									<Text style={styles.boldText}>{name}</Text>
-									{item.description && (
-										<Text style={{ fontSize: 7, color: '#6b7280' }}>{item.description}</Text>
+									{detail && (
+										<Text style={{ fontSize: 7, color: '#9ca3af' }}>
+											{detail}
+										</Text>
 									)}
 								</View>
 								<Text style={styles.colPrice}>{formatCurrency(unitPrice)}</Text>
@@ -387,8 +308,7 @@ const QuotePdfDocument = ({ quote }: { quote: IQuote }) => {
 								</Text>
 							</View>
 						);
-					})}
-
+					})}{' '}
 					<View style={styles.totalsSection}>
 						<View style={styles.totalsTable}>
 							<View style={styles.totalRow}>
@@ -407,7 +327,9 @@ const QuotePdfDocument = ({ quote }: { quote: IQuote }) => {
 							</View>
 							<View style={styles.grandTotalBox}>
 								<Text style={[styles.boldText, { fontSize: 11 }]}>TOTAL:</Text>
-								<Text style={[styles.boldText, { fontSize: 11 }]}>{formatCurrency(total)}</Text>
+								<Text style={[styles.boldText, { fontSize: 11 }]}>
+									{formatCurrency(total)}
+								</Text>
 							</View>
 						</View>
 					</View>
@@ -420,13 +342,16 @@ const QuotePdfDocument = ({ quote }: { quote: IQuote }) => {
 							<Text style={styles.noteText}>
 								• Validez Oferta:{' '}
 								{company.quoteValidityText ||
-									(company.quoteValidityDays ? `${company.quoteValidityDays} días hábiles` : '7 días hábiles')}
+									(company.quoteValidityDays
+										? `${company.quoteValidityDays} días hábiles`
+										: '7 días hábiles')}
 							</Text>
 							<Text style={styles.noteText}>
 								• Forma de Pago: {paymentMethodsLabel}
 							</Text>
 							<Text style={styles.noteText}>
-								• Entrega: {company.deliveryTerm || 'A convenir o retiro en tienda.'}
+								• Entrega:{' '}
+								{company.deliveryTerm || 'A convenir o retiro en tienda.'}
 							</Text>
 							{company.commercialTerms ? (
 								<Text style={styles.noteText}>• {company.commercialTerms}</Text>

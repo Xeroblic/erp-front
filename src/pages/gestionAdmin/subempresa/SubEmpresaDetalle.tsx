@@ -29,8 +29,13 @@ import {
 import { useGeoSelector } from '@/hooks/useGeoSelector';
 import { DeleteSubempresaModal } from './components';
 import ButtonGroup from '@/components/ui/ButtonGroup';
+import BasicParts from './components/parts/BasicParts';
+import ComercialParts from './components/parts/Comercial';
 
 export default function SubEmpresaDetalle() {
+	const getStringValue = (...values: Array<string | null | undefined>) =>
+		values.find((val) => typeof val === 'string' && val.trim() !== '') || '';
+
 	const { id } = useParams<{ id: string }>();
 	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
@@ -77,57 +82,109 @@ export default function SubEmpresaDetalle() {
 
 	const initialValues = useMemo(
 		() => ({
-			nombre: subempresa?.name || '',
-			rut: subempresa?.rut || '',
-			telefono: subempresa?.phone || '',
-			email: subempresa?.email || '',
-			direccion: subempresa?.address || '',
+			nombre: getStringValue(subempresa?.name, subempresa?.subsidiary_name),
+			rut: getStringValue(subempresa?.rut, subempresa?.subsidiary_rut),
+			telefono: getStringValue(
+				subempresa?.phone,
+				subempresa?.subsidiary_phone,
+				subempresa?.manager?.phone_number as string,
+				subempresa?.manager?.phone as string,
+			),
+			email: getStringValue(
+				subempresa?.email,
+				subempresa?.subsidiary_email,
+				subempresa?.manager?.email as string,
+			),
+			direccion: getStringValue(subempresa?.address, subempresa?.subsidiary_address),
 			region: '',
 			provincia: '',
 			comuna: (subempresa as any)?.commune_id
 				? String((subempresa as any).commune_id)
 				: (subempresa as any)?.commune?.id
 					? String((subempresa as any).commune.id)
+					: subempresa?.commune_id
+					? String(subempresa.commune_id)
 					: '',
 			documentsEmail:
-				subempresa?.subsidiary_documents_email ||
-				(subempresa as any)?.documents_email ||
-				'',
+				getStringValue(
+					subempresa?.subsidiary_documents_email,
+					(subempresa as any)?.documents_email,
+				),
 			salesEmail:
-				subempresa?.subsidiary_sales_email ||
-				(subempresa as any)?.sales_email ||
-				'',
+				getStringValue(subempresa?.subsidiary_sales_email, (subempresa as any)?.sales_email),
 			deliveryTerm:
-				subempresa?.subsidiary_delivery_term ||
-				(subempresa as any)?.delivery_term ||
-				'',
+				getStringValue(
+					subempresa?.subsidiary_delivery_term,
+					(subempresa as any)?.delivery_term,
+				),
 			bankDetails:
-				subempresa?.subsidiary_bank_details ||
-				(subempresa as any)?.bank_details ||
-				'',
+				getStringValue(subempresa?.subsidiary_bank_details, (subempresa as any)?.bank_details),
 			allowedPaymentMethods:
 				subempresa?.subsidiary_allowed_payment_methods ||
 				(subempresa as any)?.allowed_payment_methods ||
 				[],
 			quoteValidityText:
-				subempresa?.subsidiary_quote_validity_text ||
-				(subempresa as any)?.quote_validity_text ||
-				'',
+				getStringValue(
+					subempresa?.subsidiary_quote_validity_text,
+					(subempresa as any)?.quote_validity_text,
+				),
 			quoteValidityDays:
 				subempresa?.subsidiary_quote_validity_days ??
 				(subempresa as any)?.quote_validity_days ??
-				'',
-			giro: subempresa?.subsidiary_giro || (subempresa as any)?.giro || '',
+				null,
+			giro: getStringValue(subempresa?.subsidiary_giro, (subempresa as any)?.giro),
 			commercialTerms:
-				subempresa?.subsidiary_commercial_terms ||
-				(subempresa as any)?.commercial_terms ||
-				'',
+				getStringValue(
+					subempresa?.subsidiary_commercial_terms,
+					(subempresa as any)?.commercial_terms,
+				),
 			defaultPaymentMethod:
-				subempresa?.subsidiary_default_payment_method ||
-				(subempresa as any)?.default_payment_method ||
-				'',
+				getStringValue(
+					subempresa?.subsidiary_default_payment_method,
+					(subempresa as any)?.default_payment_method,
+				),
 		}),
 		[subempresa],
+	);
+
+	const viewData = useMemo(
+		() => ({
+			name: getStringValue(subempresa?.name, subempresa?.subsidiary_name, '—'),
+			rut: getStringValue(subempresa?.rut, subempresa?.subsidiary_rut),
+			phone: getStringValue(
+				subempresa?.phone,
+				subempresa?.subsidiary_phone,
+				subempresa?.manager?.phone_number as string,
+				subempresa?.manager?.phone as string,
+			),
+			email: getStringValue(
+				subempresa?.email,
+				subempresa?.subsidiary_email,
+				subempresa?.manager?.email as string,
+			),
+			address: getStringValue(subempresa?.address, subempresa?.subsidiary_address),
+			commune: getStringValue(
+				subempresa?.commune?.name,
+				(subempresa as any)?.commune_name,
+			),
+		}),
+		[subempresa],
+	);
+
+	const commercialView = useMemo(
+		() => ({
+			documentsEmail: initialValues.documentsEmail,
+			salesEmail: initialValues.salesEmail,
+			deliveryTerm: initialValues.deliveryTerm,
+			giro: initialValues.giro,
+			quoteValidityText: initialValues.quoteValidityText,
+			quoteValidityDays: initialValues.quoteValidityDays,
+			commercialTerms: initialValues.commercialTerms,
+			bankDetails: initialValues.bankDetails,
+			allowedPaymentMethods: initialValues.allowedPaymentMethods,
+			defaultPaymentMethod: initialValues.defaultPaymentMethod,
+		}),
+		[initialValues],
 	);
 
 	const formik = useFormik({
@@ -157,11 +214,11 @@ export default function SubEmpresaDetalle() {
 					},
 				),
 		}),
-		onSubmit: async (values) => {
-			if (!subempresa?.id) return;
-			const allowedPaymentMethods = (values.allowedPaymentMethods || []).filter(Boolean);
-			let defaultPaymentMethod = values.defaultPaymentMethod || '';
-			if (defaultPaymentMethod && !allowedPaymentMethods.includes(defaultPaymentMethod)) {
+	onSubmit: async (values) => {
+		if (!subempresa?.id) return;
+		const allowedPaymentMethods = (values.allowedPaymentMethods || []).filter(Boolean);
+		let defaultPaymentMethod = values.defaultPaymentMethod || '';
+		if (defaultPaymentMethod && !allowedPaymentMethods.includes(defaultPaymentMethod)) {
 				defaultPaymentMethod = allowedPaymentMethods[0] || '';
 			}
 			const parsedValidity = Number(values.quoteValidityDays);
@@ -206,6 +263,29 @@ export default function SubEmpresaDetalle() {
 			}
 		},
 	});
+
+	const handleValidateAndSubmit = async () => {
+		const errors = await formik.validateForm();
+		if (Object.keys(errors).length) {
+			formik.setTouched(
+				Object.keys(errors).reduce(
+					(acc, key) => ({ ...acc, [key]: true }),
+					{ ...formik.touched },
+				),
+				false,
+			);
+			const messages = Array.from(
+				new Set(
+					Object.values(errors)
+						.map((message) => (typeof message === 'string' ? message : 'Campo inválido'))
+						.filter(Boolean),
+				),
+			);
+			toast.error(`Falta completar: ${messages.join(' · ')}`);
+			return;
+		}
+		formik.handleSubmit();
+	};
 
 	const handleEdit = () => {
 		setIsEditing(true);
@@ -381,7 +461,7 @@ export default function SubEmpresaDetalle() {
 							<Button
 								variant='solid'
 								icon='HeroCheck'
-								onClick={() => formik.handleSubmit()}
+								onClick={handleValidateAndSubmit}
 								isLoading={formik.isSubmitting}
 								isDisable={formik.isSubmitting}>
 								Guardar
@@ -437,564 +517,24 @@ export default function SubEmpresaDetalle() {
 				</Card>
 
 				{activeTab === 'basic' && (
-					<div className='grid grid-cols-1 gap-6 lg:grid-cols-2'>
-						<Card>
-							<CardHeader>
-								<CardTitle>
-									<Badge className='font-bold'>
-										Información Básica
-									</Badge>
-								</CardTitle>
-							</CardHeader>
-							<CardBody className='space-y-4'>
-								<div className='flex items-center gap-4'>
-									<div className='flex h-16 w-16 items-center justify-center rounded-lg border border-dashed border-zinc-200 bg-white'>
-										{subempresa.logo_url ? (
-											<img
-												src={subempresa.logo_url}
-												alt='Logo subempresa'
-												className='max-h-14 max-w-14 object-contain'
-											/>
-										) : (
-											<Icon icon='HeroPhoto' className='text-2xl text-zinc-400' />
-										)}
-									</div>
-									<div className='text-xs text-zinc-500'>
-										Logo actual de la subempresa. Usa "Subir logo" para actualizar.
-									</div>
-								</div>
-								<div>
-									<Label className='text-lg font-semibold' htmlFor='nombre'>Nombre</Label>
-									{isEditing ? (
-										<Input
-											id='nombre'
-											name='nombre'
-											placeholder='Ej: Subsidiaria Norte'
-											value={formik.values.nombre}
-											onChange={formik.handleChange}
-											onBlur={formik.handleBlur}
-											disabled={formik.isSubmitting}
-										/>
-									) : (
-										<div className='text-base font-medium'>{subempresa.name}</div>
-									)}
-									{formik.touched.nombre && formik.errors.nombre && (
-										<p className='mt-1 text-sm text-red-600'>
-											{formik.errors.nombre}
-										</p>
-									)}
-								</div>
-
-								<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-									<div>
-										<Label className='text-lg font-semibold' htmlFor='rut'>RUT</Label>
-										{isEditing ? (
-											<Input
-												id='rut'
-												name='rut'
-												placeholder='Ej: 12.345.678-9'
-												value={formik.values.rut}
-												onChange={formik.handleChange}
-												onBlur={formik.handleBlur}
-												disabled={formik.isSubmitting}
-											/>
-										) : (
-											<div>
-												{subempresa.rut ? (
-													<span className='font-mono'>{subempresa.rut}</span>
-												) : (
-													<Badge variant='outline' className='text-zinc-400'>
-														Sin RUT
-													</Badge>
-												)}
-											</div>
-										)}
-									</div>
-									<div>
-										<Label className='text-lg font-semibold' htmlFor='telefono'>Teléfono</Label>
-										{isEditing ? (
-											<Input
-												id='telefono'
-												name='telefono'
-												placeholder='Ej: +56 9 8765 4321'
-												value={formik.values.telefono}
-												onChange={formik.handleChange}
-												onBlur={formik.handleBlur}
-												disabled={formik.isSubmitting}
-											/>
-										) : subempresa.phone ? (
-											<div className='flex items-center gap-2'>
-												<Icon icon='HeroPhone' className='text-sm text-zinc-400' />
-												<span>{subempresa.phone}</span>
-											</div>
-										) : (
-											<Badge variant='outline' className='text-zinc-400'>
-												Sin teléfono
-											</Badge>
-										)}
-									</div>
-								</div>
-
-								<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-									<div>
-										<Label className='text-lg font-semibold' htmlFor='email'>Email</Label>
-										{isEditing ? (
-											<Input
-												id='email'
-												name='email'
-												type='email'
-												placeholder='Ej: contacto@subsidiaria.com'
-												value={formik.values.email}
-												onChange={formik.handleChange}
-												onBlur={formik.handleBlur}
-												disabled={formik.isSubmitting}
-											/>
-										) : subempresa.email ? (
-											<div className='flex items-center gap-2'>
-												<Icon icon='HeroEnvelope' className='text-sm text-zinc-400' />
-												<a
-													href={`mailto:${subempresa.email}`}
-													className='text-primary-600 hover:text-primary-800'>
-													{subempresa.email}
-												</a>
-											</div>
-										) : (
-											<Badge variant='outline' className='text-zinc-400'>
-												Sin email
-											</Badge>
-										)}
-									</div>
-									<div>
-										<Label className='text-lg font-semibold' htmlFor='direccion'>Dirección</Label>
-										{isEditing ? (
-											<Input
-												id='direccion'
-												name='direccion'
-												placeholder='Ej: Av. Principal 123, Ciudad'
-												value={formik.values.direccion}
-												onChange={formik.handleChange}
-												onBlur={formik.handleBlur}
-												disabled={formik.isSubmitting}
-											/>
-										) : subempresa.address ? (
-											<div className='flex items-start gap-2'>
-												<Icon icon='HeroMapPin' className='mt-0.5 text-sm text-zinc-400' />
-												<span>{subempresa.address}</span>
-											</div>
-										) : (
-											<Badge variant='outline' className='text-zinc-400'>
-												Sin dirección
-											</Badge>
-										)}
-									</div>
-								</div>
-
-								<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
-									<div>
-										<Label className='text-lg font-semibold' htmlFor='region'>Región</Label>
-										{isEditing ? (
-											<SelectReact
-												name='region'
-												placeholder='Seleccione región'
-												value={
-													optionsRegion.find(
-														(o) => o.value === String(formik.values.region),
-													) || null
-												}
-												onChange={(opt) =>
-													formik.setFieldValue(
-														'region',
-														(opt as TSelectOption | null)?.value || '',
-													)
-												}
-												options={optionsRegion}
-											/>
-										) : (
-											<div className='text-sm text-zinc-700'>No definida</div>
-										)}
-									</div>
-									<div>
-										<Label className='text-lg font-semibold' htmlFor='provincia'>Provincia</Label>
-										{isEditing ? (
-											<SelectReact
-												name='provincia'
-												placeholder='Seleccione provincia'
-												value={
-													optionsProvincia.find(
-														(o) => o.value === String(formik.values.provincia),
-													) || null
-												}
-												onChange={(opt) =>
-													formik.setFieldValue(
-														'provincia',
-														(opt as TSelectOption | null)?.value || '',
-													)
-												}
-												options={optionsProvincia}
-											/>
-										) : (
-											<div className='text-sm text-zinc-700'>No definida</div>
-										)}
-									</div>
-									<div>
-										<Label className='text-lg font-semibold' htmlFor='comuna'>Comuna</Label>
-										{isEditing ? (
-											<SelectReact
-												name='comuna'
-												placeholder='Seleccione comuna'
-												value={
-													optionsComuna.find(
-														(o) => o.value === String(formik.values.comuna),
-													) ||
-													(formik.values.comuna
-														? {
-																value: String(formik.values.comuna),
-																label: 'Cargando…',
-															}
-														: null)
-												}
-												onChange={(opt) =>
-													formik.setFieldValue(
-														'comuna',
-														(opt as TSelectOption | null)?.value || '',
-													)
-												}
-												options={optionsComuna}
-											/>
-										) : (
-											<div className='text-sm text-zinc-700'>
-												{subempresa.commune?.name ? subempresa.commune?.name :'Sin comuna'}
-											</div>
-										)}
-									</div>
-								</div>
-							</CardBody>
-						</Card>
-
-						<Card>
-							<CardHeader>
-								<CardTitle>
-									
-									<Badge className='font-bold'>Estadísticas</Badge>
-								</CardTitle>
-							</CardHeader>
-							<CardBody className='space-y-6'>
-								<div className='flex items-center justify-between rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800'>
-									<div className='flex items-center gap-3'>
-										<div className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-100'>
-											<Icon
-												icon='HeroBuildingOffice'
-												className='text-lg text-blue-600'
-											/>
-										</div>
-										<div>
-											<div className='font-medium'>Sucursales</div>
-											<div className='text-sm text-zinc-500'>
-												Total de sucursales activas
-											</div>
-										</div>
-									</div>
-									<div className='text-2xl font-bold text-blue-600'>
-										{subempresa.branches_count ||
-											(subempresa.sucursales?.length ??
-												subempresa.branches?.length ??
-												0)}
-									</div>
-								</div>
-
-								<div className='space-y-3'>
-									<div className='text-sm font-semibold text-zinc-700 dark:text-zinc-200'>
-										Sucursales registradas
-									</div>
-									<div className='max-h-64 space-y-2 overflow-y-auto pr-1'>
-										{(subempresa.sucursales?.length ||
-										subempresa.branches?.length) ? (
-											(subempresa.sucursales?.length
-												? subempresa.sucursales
-												: subempresa.branches || []
-											)?.map((sucursal) => (
-												<div
-													key={sucursal.id}
-													className='flex items-start justify-between rounded-lg border border-zinc-100 p-3 text-sm dark:border-zinc-700'>
-													<div className='flex items-start gap-3'>
-														<div className='flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100'>
-															<Icon
-																icon='HeroBuildingLibrary'
-																className='text-emerald-600'
-															/>
-														</div>
-														<div>
-															<p className='font-medium text-zinc-900 dark:text-zinc-100'>
-																{sucursal.branch_name}
-															</p>
-															{sucursal.branch_address ? (
-																<p className='text-xs text-zinc-500'>
-																	{sucursal.branch_address}
-																</p>
-															) : null}
-														</div>
-													</div>
-													<div className='text-right text-xs text-zinc-500'>
-														{sucursal.commune?.name
-															? sucursal.commune?.name
-															: 'Sin comuna'}
-													</div>
-												</div>
-											))
-										) : (
-											<div className='rounded-lg border border-dashed border-zinc-200 p-4 text-sm text-zinc-500 dark:border-zinc-700'>
-												No hay sucursales registradas actualmente.
-											</div>
-										)}
-									</div>
-								</div>
-							</CardBody>
-						</Card>
-					</div>
+					<BasicParts
+						subempresa={subempresa}
+						isEditing={isEditing} 
+						formik={formik} 
+						viewData={viewData} 
+						optionsRegion={optionsRegion}
+						optionsProvincia={optionsProvincia}
+						optionsComuna={optionsComuna}
+					/>
 				)}
 
 				{activeTab === 'commercial' && (
-					<div className='grid grid-cols-1 gap-6 lg:grid-cols-2'>
-						<Card className='lg:col-span-1'>
-							<CardHeader>
-								<CardTitle>Datos Comerciales</CardTitle>
-							</CardHeader>
-							<CardBody className='space-y-4'>
-								<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-									<div>
-										<Label className='text-lg font-semibold' htmlFor='documentsEmail'>Email documentos</Label>
-										{isEditing ? (
-											<Input
-												id='documentsEmail'
-												name='documentsEmail'
-												type='email'
-												placeholder='documentos@acme.cl'
-												value={formik.values.documentsEmail}
-												onChange={formik.handleChange}
-												onBlur={formik.handleBlur}
-												disabled={formik.isSubmitting}
-											/>
-										) : (
-											<div className='text-sm text-zinc-700'>
-												{subempresa.subsidiary_documents_email || 'Sin email'}
-											</div>
-										)}
-									</div>
-									<div>
-										<Label className='text-lg font-semibold' htmlFor='salesEmail'>Email ventas</Label>
-										{isEditing ? (
-											<Input
-												id='salesEmail'
-												name='salesEmail'
-												type='email'
-												placeholder='ventas@acme.cl'
-												value={formik.values.salesEmail}
-												onChange={formik.handleChange}
-												onBlur={formik.handleBlur}
-												disabled={formik.isSubmitting}
-											/>
-										) : (
-											<div className='text-sm text-zinc-700'>
-												{subempresa.subsidiary_sales_email || 'Sin email'}
-											</div>
-										)}
-									</div>
-								</div>
-
-								<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-									<div>
-										<Label className='text-lg font-semibold' htmlFor='deliveryTerm'>Término de entrega</Label>
-										{isEditing ? (
-											<Input
-												id='deliveryTerm'
-												name='deliveryTerm'
-												placeholder='Entrega en 5 días hábiles'
-												value={formik.values.deliveryTerm}
-												onChange={formik.handleChange}
-												onBlur={formik.handleBlur}
-												disabled={formik.isSubmitting}
-											/>
-										) : (
-											<div className='text-sm text-zinc-700'>
-												{subempresa.subsidiary_delivery_term || 'Sin información'}
-											</div>
-										)}
-									</div>
-									<div>
-										<Label className='text-lg font-semibold' htmlFor='giro'>Giro</Label>
-										{isEditing ? (
-											<Input
-												id='giro'
-												name='giro'
-												placeholder='Servicios tecnológicos'
-												value={formik.values.giro}
-												onChange={formik.handleChange}
-												onBlur={formik.handleBlur}
-												disabled={formik.isSubmitting}
-											/>
-										) : (
-											<div className='text-sm text-zinc-700'>
-												{subempresa.subsidiary_giro || 'Sin giro'}
-											</div>
-										)}
-									</div>
-								</div>
-
-								<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-									<div>
-										<Label className='text-lg font-semibold' htmlFor='quoteValidityText'>Texto validez cotización</Label>
-										{isEditing ? (
-											<Input
-												id='quoteValidityText'
-												name='quoteValidityText'
-												placeholder='Oferta válida salvo cambios de proveedor'
-												value={formik.values.quoteValidityText}
-												onChange={formik.handleChange}
-												onBlur={formik.handleBlur}
-												disabled={formik.isSubmitting}
-											/>
-										) : (
-											<div className='text-sm text-zinc-700'>
-												{subempresa.subsidiary_quote_validity_text ||
-													'Sin texto definido'}
-											</div>
-										)}
-									</div>
-									<div>
-										<Label className='text-lg font-semibold' htmlFor='quoteValidityDays'>Días de validez</Label>
-										{isEditing ? (
-											<Input
-												id='quoteValidityDays'
-												name='quoteValidityDays'
-												type='number'
-												placeholder='7'
-												value={formik.values.quoteValidityDays}
-												onChange={formik.handleChange}
-												onBlur={formik.handleBlur}
-												disabled={formik.isSubmitting}
-											/>
-										) : (
-											<div className='text-sm text-zinc-700'>
-												{subempresa.subsidiary_quote_validity_days ?? 'No definido'}
-											</div>
-										)}
-									</div>
-								</div>
-
-								<div>
-									<Label className='text-lg font-semibold' htmlFor='commercialTerms'>Términos comerciales</Label>
-									{isEditing ? (
-										<Input
-											id='commercialTerms'
-											name='commercialTerms'
-											placeholder='Condiciones Comerciales Generales...'
-											value={formik.values.commercialTerms}
-											onChange={formik.handleChange}
-											onBlur={formik.handleBlur}
-											disabled={formik.isSubmitting}
-										/>
-									) : (
-										<div className='text-sm text-zinc-700'>
-											{subempresa.subsidiary_commercial_terms || 'Sin términos'}
-										</div>
-									)}
-								</div>
-
-								<div>
-									<Label className='text-lg font-semibold' htmlFor='bankDetails'>Datos bancarios</Label>
-									{isEditing ? (
-										<Input
-											id='bankDetails'
-											name='bankDetails'
-											placeholder='Banco Estado, CTA 1234567...'
-											value={formik.values.bankDetails}
-											onChange={formik.handleChange}
-											onBlur={formik.handleBlur}
-											disabled={formik.isSubmitting}
-										/>
-									) : (
-										<div className='text-sm text-zinc-700'>
-											{subempresa.subsidiary_bank_details || 'Sin datos bancarios'}
-										</div>
-									)}
-								</div>
-							</CardBody>
-						</Card>
-
-						<Card>
-							<CardHeader>
-								<CardTitle>Métodos de pago</CardTitle>
-							</CardHeader>
-							<CardBody className='space-y-4'>
-								<div>
-									<Label className='text-lg font-semibold' htmlFor='allowedPaymentMethods'>Métodos permitidos</Label>
-									{isEditing ? (
-										<SelectReact
-											isMulti
-											name='allowedPaymentMethods'
-											placeholder='Seleccione métodos'
-											value={allowedPaymentOptions.filter((opt) =>
-												(formik.values.allowedPaymentMethods || []).includes(opt.value),
-											)}
-											onChange={(opts) =>
-												formik.setFieldValue(
-													'allowedPaymentMethods',
-													(opts as TSelectOption[] | null)?.map((o) => o.value) || [],
-												)
-											}
-											options={allowedPaymentOptions}
-											isDisabled={formik.isSubmitting}
-										/>
-									) : (
-										<div className='flex flex-wrap gap-2'>
-											{(subempresa.subsidiary_allowed_payment_methods || []).length ? (
-												subempresa.subsidiary_allowed_payment_methods?.map((m) => (
-													<Badge key={m} variant='outline' className='bg-zinc-50 px-2'>
-														{m}
-													</Badge>
-												))
-											) : (
-												<span className='text-sm text-zinc-500'>Sin métodos configurados</span>
-											)}
-										</div>
-									)}
-								</div>
-								<div>
-									<Label className='text-lg font-semibold' htmlFor='defaultPaymentMethod'>Método por defecto</Label>
-									{isEditing ? (
-										<SelectReact
-											name='defaultPaymentMethod'
-											placeholder='Seleccione método por defecto'
-											value={allowedPaymentOptions.find(
-												(o) => o.value === formik.values.defaultPaymentMethod,
-											) || null}
-											onChange={(opt) =>
-												formik.setFieldValue(
-													'defaultPaymentMethod',
-													(opt as TSelectOption | null)?.value || '',
-												)
-											}
-											options={allowedPaymentOptions.filter((opt) =>
-												(formik.values.allowedPaymentMethods || []).includes(opt.value),
-											)}
-											isDisabled={formik.isSubmitting}
-										/>
-									) : (
-										<div className='text-sm text-zinc-700'>
-											{subempresa.subsidiary_default_payment_method ||
-												'Sin método por defecto'}
-										</div>
-									)}
-									{formik.touched.defaultPaymentMethod &&
-										formik.errors.defaultPaymentMethod && (
-											<p className='mt-1 text-sm text-red-600'>
-												{formik.errors.defaultPaymentMethod as string}
-											</p>
-										)}
-								</div>
-							</CardBody>
-						</Card>
-					</div>
+					<ComercialParts
+						isEditing={isEditing} 
+						formik={formik} 
+						commercialView={commercialView} 
+						allowedPaymentOptions={allowedPaymentOptions} 
+					/>
 				)}
 			</Container>
 			
@@ -1002,7 +542,7 @@ export default function SubEmpresaDetalle() {
 				isOpen={openDelete}
 				onClose={() => setOpenDelete(false)}
 				subempresaId={subempresa.id}
-				subsiName={subempresa.name}
+				subsiName={subempresa.name || subempresa.subsidiary_name || ''}
 				isNavigate={true}
 			/>
 			

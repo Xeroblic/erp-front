@@ -74,30 +74,13 @@ export interface ISucursal extends IBranch {
 export interface ISubempresa {
   id: number;
   company_id: number;
-  manager_id?: number;
-  manager?: {
-    id?: number;
-    name?: string;
-    first_name?: string;
-    last_name?: string;
-    email?: string;
-    phone?: string | null;
-    phone_number?: string | null;
-  };
-
-  // Campos originales del backend
-  subsidiary_name?: string;
+  subsidiary_name: string;
   subsidiary_rut?: string;
   subsidiary_website?: string;
   subsidiary_phone?: string;
   subsidiary_address?: string;
   subsidiary_email?: string;
-  subsidiary_manager_name?: string;
-  subsidiary_manager_phone?: string;
-  subsidiary_manager_email?: string;
-  subsidiary_status?: string | number | boolean;
-  subsidiary_created_at?: string;
-  subsidiary_updated_at?: string;
+  subsidiary_status?: boolean | string | number;
   subsidiary_documents_email?: string | null;
   subsidiary_sales_email?: string | null;
   subsidiary_delivery_term?: string | null;
@@ -108,29 +91,33 @@ export interface ISubempresa {
   subsidiary_giro?: string | null;
   subsidiary_commercial_terms?: string | null;
   subsidiary_default_payment_method?: string | null;
+  subsidiary_manager_id?: number | null;
+  manager?: {
+    id?: number;
+    name?: string;
+    email?: string | null;
+    phone?: string | null;
+    phone_number?: string | null;
+  } | null;
   commune_id?: number | null;
   commune?: {
     id: number;
     name: string;
     province_id?: number;
   };
+  logo_url?: string | null;
   created_at?: string;
   updated_at?: string;
 
-  // Campos normalizados para el frontend (mapeo de los anteriores)
-  name: string;
+  // Normalizados (frontend)
+  name?: string;
   rut?: string;
   website?: string;
   phone?: string;
   address?: string;
   email?: string;
-  manager_name?: string;
-  manager_phone?: string;
-  manager_email?: string;
   status?: string | number | boolean;
   commune_name?: string;
-  logo_url?: string | null;
-  bank_info?: string[] | string | null;
 
   sucursales?: ISucursal[];
   branches?: IBranch[];

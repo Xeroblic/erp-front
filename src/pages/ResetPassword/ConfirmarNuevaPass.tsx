@@ -12,6 +12,7 @@ import Card, { CardBody } from '@/components/ui/Card';
 import { Link, useNavigate } from 'react-router-dom';
 import Icon from '@/components/icon/Icon';
 import classNames from 'classnames';
+import { logout } from '@/store';
 
 const validationSchema = Yup.object().shape({
 	new_password: Yup.string()
@@ -59,6 +60,7 @@ const ConfirmarNuevaPass = () => {
 				});
 
 				toast.success('Contraseña restablecida con éxito.');
+				logout();
 				navigate('/login');
 			} catch (error: any) {
 				toast.error(

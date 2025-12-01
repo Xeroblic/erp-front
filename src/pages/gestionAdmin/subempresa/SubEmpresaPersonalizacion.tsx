@@ -445,9 +445,8 @@ export default function SubEmpresaPersonalizacion() {
 		return subempresasConPersonalizacion.filter((subempresa) => {
 			// Filtro por texto
 			if (filtroTexto) {
-				const coincideTexto = subempresa.name
-					.toLowerCase()
-					.includes(filtroTexto.toLowerCase());
+				const nombre = subempresa.name ?? '';
+				const coincideTexto = nombre.toLowerCase().includes(filtroTexto.toLowerCase());
 				if (!coincideTexto) return false;
 			}
 

@@ -108,23 +108,10 @@ export default function SubempresasTable({
 				header: 'Gerente',
 				cell: (info) => {
 					const subempresa = info.row.original;
-					const managerName =
-						subempresa.manager_name ||
-						subempresa.manager?.name ||
-						subempresa.subsidiary_manager_name ||
-						[subempresa.manager?.first_name, subempresa.manager?.last_name]
-							.filter(Boolean)
-							.join(' ')
-							.trim();
-					const managerEmail =
-						subempresa.manager_email ||
-						subempresa.manager?.email ||
-						subempresa.subsidiary_manager_email;
+					const managerName = subempresa.manager?.name || '';
+					const managerEmail = subempresa.manager?.email || '';
 					const managerPhone =
-						subempresa.manager_phone ||
-						subempresa.manager?.phone ||
-						subempresa.manager?.phone_number ||
-						subempresa.subsidiary_manager_phone;
+						subempresa.manager?.phone || subempresa.manager?.phone_number || '';
 
 					if (!managerName) {
 						return (
