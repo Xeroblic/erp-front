@@ -1,14 +1,15 @@
-import React, { Dispatch, SetStateAction, useRef } from 'react';
+import React, { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
-import Select from '@/components/form/Select';
 import Input from '@/components/form/Input';
 import Textarea from '@/components/form/Textarea';
 import Checkbox from '@/components/form/Checkbox';
 import Label from '@/components/form/Label';
 import Icon from '@/components/icon/Icon';
 import type { IDocument, IDocumentPayload } from '../../types/documentos.types';
-import type { TSelectOptions } from '@/components/form/SelectReact';
+import SelectReact, { TSelectOption, TSelectOptions } from '@/components/form/SelectReact';
+import { toast } from 'react-toastify';
+import type { TDocumentModule, TDocumentOutputFormat } from '../../types/documentos.types';
 
 type EditDocumentModalProps = {
 	isOpen: boolean;
@@ -37,19 +38,42 @@ const EditDocumentModal: React.FC<EditDocumentModalProps> = ({
 }) => {
 	const formRef = useRef<HTMLFormElement | null>(null);
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
+	const [selectedDocumentType, setSelectedDocumentType] = useState<TSelectOption | null>(null);
+	const [selectedOutputFormat, setSelectedOutputFormat] = useState<TSelectOption | null>(null);
+	const [selectedModule, setSelectedModule] = useState<TSelectOption | null>(null);
+
+	useEffect(() => {
+		if (!document) {
+			setSelectedDocumentType(null);
+			setSelectedOutputFormat(null);
+			setSelectedModule(null);
+			return;
+		}
+		const docType = documentTypeOptions.find(
+			(option) => option.value === document.document_type_id.toString(),
+		);
+		const output = outputFormatOptions.find(
+			(option) => option.value === document.output_format,
+		);
+		const module = moduleOptions.find((option) => option.value === document.related_module);
+		setSelectedDocumentType(docType || null);
+		setSelectedOutputFormat(output || null);
+		setSelectedModule(module || null);
+	}, [document, documentTypeOptions, moduleOptions, outputFormatOptions]);
 
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		if (!document) return;
+		if (!selectedDocumentType || !selectedOutputFormat || !selectedModule) {
+			toast.error('Selecciona tipo de documento, formato y módulo');
+			return;
+		}
 		const formData = new FormData(event.currentTarget);
 		const payload: Partial<IDocumentPayload> = {
 			name: String(formData.get('name') || '').trim(),
-			document_type_id: Number(formData.get('document_type_id') || document.document_type_id),
-			output_format: String(formData.get('output_format') || document.output_format),
-			related_module: (formData.get('related_module') as any) || document.related_module,
-			related_id: formData.get('related_id')
-				? Number(formData.get('related_id'))
-				: document.related_id,
+			document_type_id: Number(selectedDocumentType.value),
+			output_format: (selectedOutputFormat.value as TDocumentOutputFormat) || document.output_format,
+			related_module: (selectedModule.value as TDocumentModule) || document.related_module,
 			description: String(formData.get('description') || '') || undefined,
 			is_active: formData.get('is_active') === 'on',
 		};
@@ -97,33 +121,29 @@ const EditDocumentModal: React.FC<EditDocumentModalProps> = ({
 								<Label htmlFor='edit-document-type' className='required'>
 									Tipo de documento
 								</Label>
-								<Select
-									id='edit-document-type'
+								<SelectReact
+									inputId='edit-document-type'
 									name='document_type_id'
-									defaultValue={document.document_type_id.toString()}
-									required>
-									{documentTypeOptions.map((option) => (
-										<option key={option.value} value={option.value}>
-											{option.label}
-										</option>
-									))}
-								</Select>
+									options={documentTypeOptions}
+									value={selectedDocumentType}
+									onChange={(option) => setSelectedDocumentType(option as TSelectOption)}
+									placeholder='Selecciona un tipo'
+									isClearable
+								/>
 							</div>
 							<div>
 								<Label htmlFor='edit-output-format' className='required'>
 									Formato de archivo
 								</Label>
-								<Select
-									id='edit-output-format'
+								<SelectReact
+									inputId='edit-output-format'
 									name='output_format'
-									defaultValue={document.output_format}
-									required>
-									{outputFormatOptions.map((option) => (
-										<option key={option.value} value={option.value}>
-											{option.label}
-										</option>
-									))}
-								</Select>
+									options={outputFormatOptions}
+									value={selectedOutputFormat}
+									onChange={(option) => setSelectedOutputFormat(option as TSelectOption)}
+									placeholder='Selecciona formato'
+									isClearable
+								/>
 							</div>
 						</div>
 
@@ -132,26 +152,14 @@ const EditDocumentModal: React.FC<EditDocumentModalProps> = ({
 								<Label htmlFor='edit-related-module' className='required'>
 									Módulo relacionado
 								</Label>
-								<Select
-									id='edit-related-module'
+								<SelectReact
+									inputId='edit-related-module'
 									name='related_module'
-									defaultValue={document.related_module}
-									required>
-									{moduleOptions.map((module) => (
-										<option key={module.value} value={module.value}>
-											{module.label}
-										</option>
-									))}
-								</Select>
-							</div>
-							<div>
-								<Label htmlFor='edit-related-id'>ID relacionado</Label>
-								<Input
-									id='edit-related-id'
-									name='related_id'
-									type='number'
-									min='1'
-									defaultValue={document.related_id ?? undefined}
+									options={moduleOptions}
+									value={selectedModule}
+									onChange={(option) => setSelectedModule(option as TSelectOption)}
+									placeholder='Selecciona módulo'
+									isClearable
 								/>
 							</div>
 						</div>
