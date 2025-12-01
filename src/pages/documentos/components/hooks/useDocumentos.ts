@@ -19,6 +19,11 @@ const STATUS_OPTIONS: TSelectOptions = [
 	{ value: 'false', label: 'Inactivo' },
 ];
 
+const getErrorMessage = (error: unknown, fallback: string): string => {
+	const err = error as { response?: { data?: { message?: string } } };
+	return err?.response?.data?.message || fallback;
+};
+
 const computeStats = (docs: IDocument[]): IDocumentStats => {
 	const total = docs.length;
 	const active = docs.filter((doc) => doc.is_active).length;
@@ -74,6 +79,18 @@ export function useDocumentos(filters: IDocumentFilters) {
 	const [actionLoading, setActionLoading] = useState(false);
 	const [documentTypes, setDocumentTypes] = useState<IDocumentTypeSummary[]>([]);
 
+	const fetchDocumentTypes = useCallback(async () => {
+		try {
+			const types = await documentsService.listDocumentTypes(true);
+			setDocumentTypes(types);
+		} catch (error) {
+			const err = error as { response?: { data?: { message?: string } } };
+			const message =
+				err?.response?.data?.message || 'No se pudieron cargar los tipos de documento';
+			toast.error(message);
+		}
+	}, []);
+
 	const fetchDocuments = useCallback(async () => {
 		if (!subsidiaryId) {
 			setDocuments([]);
@@ -91,11 +108,17 @@ export function useDocumentos(filters: IDocumentFilters) {
 					unique.set(doc.document_type.id, doc.document_type);
 				}
 			});
-			setDocumentTypes(Array.from(unique.values()));
-		} catch (error: any) {
-			const message =
-				error?.response?.data?.message || 'No se pudieron cargar los documentos';
-			toast.error(message);
+			const derivedTypes = Array.from(unique.values());
+			if (derivedTypes.length) {
+				setDocumentTypes((prev) => {
+					const merged = new Map<number, IDocumentTypeSummary>();
+					prev.forEach((type) => merged.set(type.id, type));
+					derivedTypes.forEach((type) => merged.set(type.id, type));
+					return Array.from(merged.values());
+				});
+			}
+		} catch (error: unknown) {
+			toast.error(getErrorMessage(error, 'No se pudieron cargar los documentos'));
 		} finally {
 			setLoading(false);
 		}
@@ -104,6 +127,10 @@ export function useDocumentos(filters: IDocumentFilters) {
 	useEffect(() => {
 		fetchDocuments();
 	}, [fetchDocuments]);
+
+	useEffect(() => {
+		fetchDocumentTypes();
+	}, [fetchDocumentTypes]);
 
 	const createDocument = useCallback(
 		async (payload: IDocumentPayload, files?: File[] | FileList) => {
@@ -117,9 +144,8 @@ export function useDocumentos(filters: IDocumentFilters) {
 				toast.success('Documento creado correctamente');
 				await fetchDocuments();
 				return created;
-			} catch (error: any) {
-				const message = error?.response?.data?.message || 'Error al crear el documento';
-				toast.error(message);
+			} catch (error: unknown) {
+				toast.error(getErrorMessage(error, 'Error al crear el documento'));
 				throw error;
 			} finally {
 				setActionLoading(false);
@@ -148,10 +174,8 @@ export function useDocumentos(filters: IDocumentFilters) {
 				toast.success('Documento actualizado correctamente');
 				await fetchDocuments();
 				return updated;
-			} catch (error: any) {
-				const message =
-					error?.response?.data?.message || 'Error al actualizar el documento';
-				toast.error(message);
+			} catch (error: unknown) {
+				toast.error(getErrorMessage(error, 'Error al actualizar el documento'));
 				throw error;
 			} finally {
 				setActionLoading(false);
@@ -168,9 +192,8 @@ export function useDocumentos(filters: IDocumentFilters) {
 				await documentsService.deleteDocument(subsidiaryId, documentId);
 				toast.success('Documento eliminado');
 				await fetchDocuments();
-			} catch (error: any) {
-				const message = error?.response?.data?.message || 'Error al eliminar el documento';
-				toast.error(message);
+			} catch (error: unknown) {
+				toast.error(getErrorMessage(error, 'Error al eliminar el documento'));
 				throw error;
 			} finally {
 				setActionLoading(false);
@@ -185,9 +208,8 @@ export function useDocumentos(filters: IDocumentFilters) {
 			try {
 				const document = await documentsService.getDocument(subsidiaryId, documentId);
 				return document;
-			} catch (error: any) {
-				const message = error?.response?.data?.message || 'No se pudo cargar el documento';
-				toast.error(message);
+			} catch (error: unknown) {
+				toast.error(getErrorMessage(error, 'No se pudo cargar el documento'));
 				throw error;
 			}
 		},
@@ -205,9 +227,8 @@ export function useDocumentos(filters: IDocumentFilters) {
 				);
 				toast.success('Adjuntos cargados correctamente');
 				return attachments;
-			} catch (error: any) {
-				const message = error?.response?.data?.message || 'Error al subir adjuntos';
-				toast.error(message);
+			} catch (error: unknown) {
+				toast.error(getErrorMessage(error, 'Error al subir adjuntos'));
 				throw error;
 			}
 		},
@@ -220,9 +241,8 @@ export function useDocumentos(filters: IDocumentFilters) {
 			try {
 				await documentsService.deleteAttachment(subsidiaryId, documentId, attachmentId);
 				toast.success('Adjunto eliminado');
-			} catch (error: any) {
-				const message = error?.response?.data?.message || 'Error al eliminar el adjunto';
-				toast.error(message);
+			} catch (error: unknown) {
+				toast.error(getErrorMessage(error, 'Error al eliminar el adjunto'));
 				throw error;
 			}
 		},

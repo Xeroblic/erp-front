@@ -108,6 +108,19 @@ const documentsService = {
 			method: 'delete',
 		});
 	},
+
+	async listDocumentTypes(isActive?: boolean) {
+		const response = await ApiService.fetchData<{ data?: IDocumentTypeSummary[] }>({
+			url: '/document-types',
+			method: 'get',
+			params: {
+				is_active:
+					typeof isActive === 'boolean' ? (isActive ? 1 : 0) : undefined,
+				per_page: 200,
+			},
+		});
+		return extractCollection<IDocumentTypeSummary>(response.data);
+	},
 };
 
 export default documentsService;
