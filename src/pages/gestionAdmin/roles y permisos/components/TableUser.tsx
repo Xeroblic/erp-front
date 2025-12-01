@@ -6,6 +6,8 @@ import Card, { CardBody } from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
+import ApiService from '@/services/ApiService';
+import { toast } from 'react-toastify';
 import {
 	createColumnHelper,
 	flexRender,
@@ -19,6 +21,7 @@ import {
 import type { FilterFn } from '@tanstack/react-table';
 import type { UserWithDetails } from '@/store/slices/usersAdmin/usersAdminSlice';
 import { formatRoleName } from '@/pages/admin/Permission/utils/formatters';
+import { useAppSelector } from '@/store';
 
 type UserRow = UserWithDetails & {
 	displayName: string;
@@ -54,6 +57,14 @@ const TableUser: React.FC<Props> = ({
 }) => {
 	const navigate = useNavigate();
 	const [sorting, setSorting] = useState<SortingState>([]);
+	const currentUser = useAppSelector((s) => s.auth.user);
+	const isSuperAdmin = useMemo(() => {
+		const roles = [
+			...(currentUser?.roles ?? []),
+			...(Array.isArray(currentUser?.authority) ? currentUser.authority : []),
+		].map((r) => (typeof r === 'string' ? r.toLowerCase() : String(r).toLowerCase()));
+		return roles.includes('super-admin') || roles.includes('superadmin');
+	}, [currentUser]);
 
 	const handleManageUser = (userId: number) => {
 		navigate(`/gestion/roles-permisos/${userId}`);
@@ -206,6 +217,27 @@ const TableUser: React.FC<Props> = ({
 							/>
 							{info.row.original.is_active ? 'Desactivar' : 'Activar'}
 						</Button>
+						{isSuperAdmin && (
+							<Button
+								variant='solid'
+								size='sm'
+								color='blue'
+								icon='HeroBuildingOffice'
+								onClick={async () => {
+									try {
+										await ApiService.fetchData({
+											url: `/users/${info.row.original.id}`,
+											method: 'patch',
+											data: { company_id: 1 },
+										});
+										toast.success('Empresa asignada (id 1)');
+									} catch (err: any) {
+										toast.error('No se pudo asignar la empresa');
+									}
+								}}>
+								Asignar empresa 1
+							</Button>
+						)}
 					</div>
 				),
 			}),
