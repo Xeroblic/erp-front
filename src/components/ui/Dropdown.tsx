@@ -122,12 +122,14 @@ export const DropdownToggle: FC<IDropdownToggleProps> = (props) => {
 							setIsOpen(!isOpen);
 						}
 					},
-					rightIcon: hasIcon
-						? // @ts-ignore
-							(children.type.displayName === 'Button' && 'HeroChevronDown') ||
-							'HeroChevronRight'
-						: undefined,
-					isActive: isOpen,
+					...(children.type?.displayName === 'Button'
+						? {
+								rightIcon: hasIcon
+									? 'HeroChevronDown'
+									: undefined,
+								isActive: isOpen,
+						  }
+						: {}),
 					className: classNames(
 						{
 							// Only presentation

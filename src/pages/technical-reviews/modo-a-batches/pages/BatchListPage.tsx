@@ -72,7 +72,6 @@ const BatchesListPage: React.FC = () => {
 				</SubheaderRight>
 			</Subheader>
 			<Container>
-				{/* Header */}
 
 				{/* Error */}
 				{error && (

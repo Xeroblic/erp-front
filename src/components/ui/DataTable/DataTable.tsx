@@ -39,8 +39,18 @@ export default function DataTable<TData>({
 	loading = false,
 	emptyMessage = 'No hay datos disponibles',
 }: DataTableProps<TData>) {
-	// Ordenar por id asc por defecto si la columna existe.
-	const [sorting, setSorting] = React.useState<SortingState>([{ id: 'id', desc: false }]);
+	const initialSorting = React.useMemo<SortingState>(() => {
+		const columnIds = columns
+			.map((col) => {
+				if ('id' in col && col.id) return col.id;
+				// @ts-ignore tanstack ColumnDef uses accessorKey for keys
+				return col.accessorKey as string | undefined;
+			})
+			.filter(Boolean);
+		return columnIds.includes('id') ? [{ id: 'id', desc: false }] : [];
+	}, [columns]);
+
+	const [sorting, setSorting] = React.useState<SortingState>(initialSorting);
 	const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
 	const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
 	const [globalFilter, setGlobalFilter] = React.useState(searchValue);

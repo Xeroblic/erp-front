@@ -18,8 +18,8 @@ export const cancelAllRequests = () => {
 const API_URL = import.meta.env.VITE_API_URL || '';
 const REFRESH_ENDPOINTS = [`${API_URL}/refresh`, `${API_URL}/refresh`];
 
-// Timeout de inactividad por defecto: 60 minutos
-const DEFAULT_INACTIVITY_TIMEOUT_MS = 60 * 60_000;
+// Inactividad deshabilitada: deja que el token siga su ciclo de vida normal
+const DEFAULT_INACTIVITY_TIMEOUT_MS = Infinity;
 const TOKEN_REFRESH_THRESHOLD_MS = 30_000; // refrescar si faltan 30s o menos
 
 const BaseService = axios.create({
@@ -140,12 +140,9 @@ BaseService.interceptors.request.use(
 				return config;
 			}
 
-			// Control básico de inactividad (en memoria)
+			// Control básico de inactividad (deshabilitado)
 			if (tokenManager.isInactive(inactivityTimeout)) {
-				// Silencio: solo cerrar sesión por inactividad sin toasts
-				store.dispatch(logout());
-				cancelAllRequests();
-				throw new axios.Cancel('Sesión finalizada por inactividad');
+				tokenManager.markActivity(Date.now());
 			}
 
 			// Token desde memoria (tokenManager), fallback a estado Redux por compatibilidad
