@@ -26,29 +26,29 @@ const DocumentFilters: React.FC<DocumentFiltersProps> = ({
 	onFilterChange,
 	onClear,
 }) => (
-  <Card className='mb-6'>
-    <CardHeader>
-      <div className='flex items-center justify-between'>
-        <CardTitle>Filtros de búsqueda</CardTitle>
-        <Button variant='outline' size='sm' onClick={onClear}>
+	<Card className='mb-6'>
+		<CardHeader>
+			<div className='flex items-center justify-between'>
+				<CardTitle>Filtros de búsqueda</CardTitle>
+				{/* <Button variant='outline' size='sm' onClick={onClear}>
           <Icon icon='HeroXMark' className='mr-2 h-4 w-4' />
           Limpiar filtros
-        </Button>
-      </div>
-    </CardHeader>
-    <CardBody>
-      <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-6'>
-        <div>
-          <Label htmlFor='filter-search'>Buscar</Label>
-          <Input
-            id='filter-search'
-            name='search'
-            placeholder='Nombre, descripción, usuario...'
-            value={filters.search || ''}
-            onChange={(event) => onFilterChange('search', event.target.value)}
-          />
-        </div>
-        <div>
+        </Button> */}
+			</div>
+		</CardHeader>
+		<CardBody>
+			<div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5'>
+				<div>
+					<Label htmlFor='filter-search'>Buscar</Label>
+					<Input
+						id='filter-search'
+						name='search'
+						placeholder='Nombre, descripción, usuario...'
+						value={filters.search || ''}
+						onChange={(event) => onFilterChange('search', event.target.value)}
+					/>
+				</div>
+				<div>
 					<Label htmlFor='filter-document-type'>Tipo de documento</Label>
 					<SelectReact
 						name='document_type_id'
@@ -66,13 +66,15 @@ const DocumentFilters: React.FC<DocumentFiltersProps> = ({
 						isClearable
 						placeholder='Todos los tipos'
 					/>
-        </div>
-        <div>
+				</div>
+				<div>
 					<Label htmlFor='filter-file-type'>Tipo de archivo</Label>
 					<SelectReact
 						name='output_format'
 						options={outputFormatOptions}
-						value={outputFormatOptions.find((option) => option.value === filters.output_format)}
+						value={outputFormatOptions.find(
+							(option) => option.value === filters.output_format,
+						)}
 						onChange={(option) => {
 							const selected = option as TSelectOption | null;
 							onFilterChange('output_format', selected?.value || undefined);
@@ -80,39 +82,43 @@ const DocumentFilters: React.FC<DocumentFiltersProps> = ({
 						isClearable
 						placeholder='Todos los formatos'
 					/>
-        </div>
-        <div>
-          <Label htmlFor='filter-module'>Módulo relacionado</Label>
-          <SelectReact
-            name='related_module'
-            options={moduleOptions}
-            value={moduleOptions.find((option) => option.value === filters.related_module)}
-            onChange={(option) => {
-              const selected = option as TSelectOption | null;
-              onFilterChange('related_module', selected?.value || undefined);
-            }}
-            isClearable
-            placeholder='Todos los módulos'
-          />
-        </div>
-        <div>
-          <Label htmlFor='filter-status'>Estado</Label>
-          <SelectReact
-            name='is_active'
-            options={statusOptions}
-            value={statusOptions.find((option) => option.value === (filters.is_active ?? '').toString())}
-            onChange={(option) => {
-              const selected = option as TSelectOption | null;
-              if (!selected?.value) {
-                onFilterChange('is_active', undefined);
-                return;
-              }
-              onFilterChange('is_active', selected.value === 'true');
-            }}
-            isClearable
-            placeholder='Todos los estados'
-          />
-        </div>
+				</div>
+				<div>
+					<Label htmlFor='filter-module'>Módulo relacionado</Label>
+					<SelectReact
+						name='related_module'
+						options={moduleOptions}
+						value={moduleOptions.find(
+							(option) => option.value === filters.related_module,
+						)}
+						onChange={(option) => {
+							const selected = option as TSelectOption | null;
+							onFilterChange('related_module', selected?.value || undefined);
+						}}
+						isClearable
+						placeholder='Todos los módulos'
+					/>
+				</div>
+				<div>
+					<Label htmlFor='filter-status'>Estado</Label>
+					<SelectReact
+						name='is_active'
+						options={statusOptions}
+						value={statusOptions.find(
+							(option) => option.value === (filters.is_active ?? '').toString(),
+						)}
+						onChange={(option) => {
+							const selected = option as TSelectOption | null;
+							if (!selected?.value) {
+								onFilterChange('is_active', undefined);
+								return;
+							}
+							onFilterChange('is_active', selected.value === 'true');
+						}}
+						isClearable
+						placeholder='Todos los estados'
+					/>
+				</div>
 				{/* <div>
 					<Label htmlFor='filter-related-id'>ID relacionado</Label>
 					<Input
@@ -130,14 +136,18 @@ const DocumentFilters: React.FC<DocumentFiltersProps> = ({
 						}
 					/>
 				</div> */}
-      </div>
-    </CardBody>
-    <CardFooter className='flex justify-end'>
-      <Button variant='outline' onClick={onClear} icon='HeroArrowPath' className='w-full md:w-auto'>
-        Restablecer filtros
-      </Button>
-    </CardFooter>
-  </Card>
+			</div>
+		</CardBody>
+		<CardFooter className='flex justify-end'>
+			<Button
+				variant='outline'
+				onClick={onClear}
+				icon='HeroArrowPath'
+				className='w-full md:w-auto'>
+				Restablecer filtros
+			</Button>
+		</CardFooter>
+	</Card>
 );
 
 export default DocumentFilters;

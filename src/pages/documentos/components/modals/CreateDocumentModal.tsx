@@ -40,6 +40,15 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 	const [selectedOutputFormat, setSelectedOutputFormat] = useState<TSelectOption | null>(null);
 	const [selectedModule, setSelectedModule] = useState<TSelectOption | null>(null);
 
+	const resetFormState = () => {
+		if (formRef.current) formRef.current.reset();
+		if (fileInputRef.current) fileInputRef.current.value = '';
+		setIsActive(true);
+		setSelectedDocumentType(null);
+		setSelectedOutputFormat(null);
+		setSelectedModule(null);
+	};
+
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		if (!selectedDocumentType || !selectedOutputFormat || !selectedModule) {
@@ -60,17 +69,19 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 			is_active: formData.get('is_active') === '1',
 		};
 
+		let success = false;
 		try {
 			await onSubmit(payload, fileInputRef.current?.files);
-			event.currentTarget.reset();
-			if (fileInputRef.current) fileInputRef.current.value = '';
-			setIsActive(true);
-			setSelectedDocumentType(null);
-			setSelectedOutputFormat(null);
-			setSelectedModule(null);
-			setIsOpen(false);
+			success = true;
 		} catch (error) {
-			console.error('Error al crear documento', error);
+			const err = error as { response?: { data?: { message?: string } } };
+			const message = err?.response?.data?.message || 'Error al crear documento';
+			toast.error(message);
+		} finally {
+			if (success) {
+				resetFormState();
+				setIsOpen(false);
+			}
 		}
 	};
 

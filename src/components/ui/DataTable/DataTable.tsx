@@ -99,7 +99,7 @@ export default function DataTable<TData>({
 					</div>
 				</div>
 				<div className='flex items-center space-x-2'>
-					<Badge variant='outline'>
+					<Badge variant='outline' className='px-2'>
 						{table.getFilteredRowModel().rows.length} resultados
 					</Badge>
 				</div>

@@ -95,18 +95,21 @@ const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 							<Button
 								size='xs'
 								variant='outline'
-								icon='HeroArrowDownTray'
+								color='emerald'
+								className='px-2'
 								onClick={() => window.open(att.url, '_blank', 'noopener')}>
-								Descargar
+									<Icon icon='HeroArrowDownTray' color='emerald' className='h-4 w-4' />
+									Descargar
 							</Button>
 							{onDeleteAttachment && (
 								<Button
 									size='xs'
 									variant='outline'
+									className='px-2'			
 									color='red'
-									icon='HeroTrash'
 									onClick={() => onDeleteAttachment(att.id)}>
-									Eliminar
+										<Icon icon='HeroTrash' color='red' className='ml-1 h-4 w-4' />
+										Eliminar
 								</Button>
 							)}
 						</div>
@@ -155,7 +158,7 @@ const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 									</div>
 									<div className='flex items-center justify-between'>
 										<span className='font-medium '>Tipo de archivo</span>
-										<Badge variant='outline' color='gray'>
+										<Badge className='px-2' variant='outline' color='gray'>
 											{getFileTypeLabel(document.output_format)}
 										</Badge>
 									</div>
@@ -188,7 +191,7 @@ const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 										<span className='font-medium '>Actualizado</span>
 										<span className=''>{formatDateTime(document.updated_at)}</span>
 									</div>
-									<Badge variant='outline' color={document.is_active ? 'emerald' : 'red'}>
+									<Badge className='px-2' variant='outline' color={document.is_active ? 'emerald' : 'red'}>
 										{document.is_active ? 'Activo' : 'Inactivo'}
 									</Badge>
 								</div>
