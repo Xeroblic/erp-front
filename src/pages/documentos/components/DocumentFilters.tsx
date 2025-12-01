@@ -113,7 +113,7 @@ const DocumentFilters: React.FC<DocumentFiltersProps> = ({
             placeholder='Todos los estados'
           />
         </div>
-				<div>
+				{/* <div>
 					<Label htmlFor='filter-related-id'>ID relacionado</Label>
 					<Input
 						id='filter-related-id'
@@ -129,7 +129,7 @@ const DocumentFilters: React.FC<DocumentFiltersProps> = ({
 							)
 						}
 					/>
-				</div>
+				</div> */}
       </div>
     </CardBody>
     <CardFooter className='flex justify-end'>

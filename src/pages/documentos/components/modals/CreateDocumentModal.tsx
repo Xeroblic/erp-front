@@ -1,14 +1,18 @@
 import React, { Dispatch, SetStateAction, useRef, useState } from 'react';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
-import Select from '@/components/form/Select';
 import Input from '@/components/form/Input';
 import Textarea from '@/components/form/Textarea';
 import Checkbox from '@/components/form/Checkbox';
 import Label from '@/components/form/Label';
 import Icon from '@/components/icon/Icon';
-import type { IDocumentPayload } from '../../types/documentos.types';
-import type { TSelectOptions } from '@/components/form/SelectReact';
+import SelectReact, { TSelectOption, TSelectOptions } from '@/components/form/SelectReact';
+import { toast } from 'react-toastify';
+import type {
+	IDocumentPayload,
+	TDocumentModule,
+	TDocumentOutputFormat,
+} from '../../types/documentos.types';
 
 type CreateDocumentModalProps = {
 	isOpen: boolean;
@@ -32,16 +36,26 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 	const formRef = useRef<HTMLFormElement | null>(null);
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const [isActive, setIsActive] = useState(true);
+	const [selectedDocumentType, setSelectedDocumentType] = useState<TSelectOption | null>(null);
+	const [selectedOutputFormat, setSelectedOutputFormat] = useState<TSelectOption | null>(null);
+	const [selectedModule, setSelectedModule] = useState<TSelectOption | null>(null);
 
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
+		if (!selectedDocumentType || !selectedOutputFormat || !selectedModule) {
+			toast.error('Selecciona tipo de documento, formato y módulo');
+			return;
+		}
 		const formData = new FormData(event.currentTarget);
+		const documentTypeId = Number(selectedDocumentType.value);
+		const outputFormat = selectedOutputFormat.value as TDocumentOutputFormat | string;
+		const relatedModule = selectedModule.value as TDocumentModule;
+
 		const payload: IDocumentPayload = {
 			name: String(formData.get('name') || '').trim(),
-			document_type_id: Number(formData.get('document_type_id') || 0),
-			output_format: String(formData.get('output_format') || ''),
-			related_module: formData.get('related_module') as any,
-			related_id: formData.get('related_id') ? Number(formData.get('related_id')) : undefined,
+			document_type_id: documentTypeId,
+			output_format: outputFormat,
+			related_module: relatedModule,
 			description: String(formData.get('description') || '') || undefined,
 			is_active: formData.get('is_active') === '1',
 		};
@@ -51,6 +65,9 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 			event.currentTarget.reset();
 			if (fileInputRef.current) fileInputRef.current.value = '';
 			setIsActive(true);
+			setSelectedDocumentType(null);
+			setSelectedOutputFormat(null);
+			setSelectedModule(null);
 			setIsOpen(false);
 		} catch (error) {
 			console.error('Error al crear documento', error);
@@ -99,39 +116,29 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 							<Label htmlFor='create-document-type' className='required'>
 								Tipo de documento
 							</Label>
-							<Select
-								id='create-document-type'
+							<SelectReact
+								inputId='create-document-type'
 								name='document_type_id'
-								required
-								defaultValue=''>
-								<option value='' disabled>
-									Selecciona un tipo
-								</option>
-								{documentTypeOptions.map((option) => (
-									<option key={option.value} value={option.value}>
-										{option.label}
-									</option>
-								))}
-							</Select>
+								options={documentTypeOptions}
+								value={selectedDocumentType}
+								onChange={(option) => setSelectedDocumentType(option as TSelectOption)}
+								placeholder='Selecciona un tipo'
+								isClearable
+							/>
 						</div>
 						<div>
 							<Label htmlFor='create-file-type' className='required'>
 								Formato de archivo
 							</Label>
-							<Select
-								id='create-file-type'
+							<SelectReact
+								inputId='create-file-type'
 								name='output_format'
-								required
-								defaultValue=''>
-								<option value='' disabled>
-									Selecciona formato
-								</option>
-								{outputFormatOptions.map((option) => (
-									<option key={option.value} value={option.value}>
-										{option.label}
-									</option>
-								))}
-							</Select>
+								options={outputFormatOptions}
+								value={selectedOutputFormat}
+								onChange={(option) => setSelectedOutputFormat(option as TSelectOption)}
+								placeholder='Selecciona formato'
+								isClearable
+							/>
 						</div>
 					</div>
 
@@ -140,29 +147,14 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 							<Label htmlFor='create-related-module' className='required'>
 								Módulo relacionado
 							</Label>
-							<Select
-								id='create-related-module'
+							<SelectReact
+								inputId='create-related-module'
 								name='related_module'
-								required
-								defaultValue=''>
-								<option value='' disabled>
-									Selecciona módulo
-								</option>
-								{moduleOptions.map((module) => (
-									<option key={module.value} value={module.value}>
-										{module.label}
-									</option>
-								))}
-							</Select>
-						</div>
-						<div>
-							<Label htmlFor='create-related-id'>ID relacionado</Label>
-							<Input
-								id='create-related-id'
-								name='related_id'
-								type='number'
-								min='1'
-								placeholder='ID de la entidad'
+								options={moduleOptions}
+								value={selectedModule}
+								onChange={(option) => setSelectedModule(option as TSelectOption)}
+								placeholder='Selecciona módulo'
+								isClearable
 							/>
 						</div>
 					</div>
