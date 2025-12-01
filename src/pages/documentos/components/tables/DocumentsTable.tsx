@@ -182,10 +182,12 @@ const DocumentsTableV2: React.FC<DocumentsTableProps> = ({
         <Card>
             <CardHeader>
                 <div className="flex justify-between items-center w-full">
-                    <CardTitle>Documentos</CardTitle>
-                    <Badge variant="outline">
-                        {documents.length} registros
-                    </Badge>
+                    <CardTitle>
+                        
+                        <Badge className="text-2xl" >
+                            Documentos  
+                        </Badge>
+                    </CardTitle>
                 </div>
             </CardHeader>
 
