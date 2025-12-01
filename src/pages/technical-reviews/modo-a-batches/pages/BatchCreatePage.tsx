@@ -21,13 +21,18 @@ import { fetchWarehouses, createWarehouse } from '@/store/slices/warehouses/ware
 import {
 	fetchCustomerSuppliers,
 	createCustomerSupplier,
+	attachSuppliersToCustomerSupplier,
 } from '@/store/slices/customerSuppliers/customerSuppliersSlice';
 import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/personalizacionSlice';
 import Label from '@/components/form/Label';
 import CreateWarehouseModal from '@/pages/catalogos/bodegas/modals/CreateWarehouseModal';
 import CreateCustomerSupplierModal from '../components/modals/CreateCustomerSupplierModal';
 import type { ICreateWarehouseRequest } from '@/interface/warehouse.interface';
-import type { ICreateCustomerSupplierRequest } from '@/interface/customerSupplier.interface';
+import type {
+	ICreateCustomerSupplierRequest,
+	ICustomerSupplier,
+} from '@/interface/customerSupplier.interface';
+import { fetchSuppliers } from '@/store/slices/suppliers/suppliersSlice';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Badge from '@/components/ui/Badge';
 import Tooltip from '@/components/ui/Tooltip';
@@ -73,12 +78,14 @@ const CreateBatchPage: React.FC = () => {
 	const customerSupplierLoading = useAppSelector(
 		(s) => s.customerSuppliers.loading || s.customerSuppliers.creating,
 	);
+	const suppliers = useAppSelector((s) => s.suppliers.items);
+	const suppliersLoading = useAppSelector(
+		(s) => s.suppliers.loading || s.suppliers.creating,
+	);
 
 	const [selectedSupplierId, setSelectedSupplierId] = useState<number | null>(null);
 	const [warehouseModalOpen, setWarehouseModalOpen] = useState(false);
 	const [customerSupplierModalOpen, setCustomerSupplierModalOpen] = useState(false);
-	const [warehousePrompted, setWarehousePrompted] = useState(false);
-	const [customerPrompted, setCustomerPrompted] = useState(false);
 
 	const subsidiaryId = useMemo(() => {
 		return (
@@ -109,33 +116,14 @@ const CreateBatchPage: React.FC = () => {
 					with_suppliers: true,
 				}),
 			);
+			dispatch(
+				fetchSuppliers({
+					subsidiaryId,
+					with_customers: true,
+				}),
+			);
 		}
 	}, [dispatch, subsidiaryId]);
-
-	// Abrir modal si no hay bodegas o clientes-proveedor cargados
-	useEffect(() => {
-		if (
-			!warehousePrompted &&
-			!warehouseLoading &&
-			branchId &&
-			(!warehouses || warehouses.length === 0)
-		) {
-			setWarehouseModalOpen(true);
-			setWarehousePrompted(true);
-		}
-	}, [branchId, warehouseLoading, warehousePrompted, warehouses]);
-
-	useEffect(() => {
-		if (
-			!customerPrompted &&
-			!customerSupplierLoading &&
-			subsidiaryId &&
-			(!customer_supplier || customer_supplier.length === 0)
-		) {
-			setCustomerSupplierModalOpen(true);
-			setCustomerPrompted(true);
-		}
-	}, [customerPrompted, customerSupplierLoading, subsidiaryId, customer_supplier]);
 
 	const handleCreateWarehouse = useCallback(
 		async (data: ICreateWarehouseRequest): Promise<boolean> => {
@@ -159,23 +147,33 @@ const CreateBatchPage: React.FC = () => {
 	);
 
 	const handleCreateCustomerSupplier = useCallback(
-		async (data: ICreateCustomerSupplierRequest): Promise<boolean> => {
+		async (data: ICreateCustomerSupplierRequest): Promise<ICustomerSupplier | null> => {
 			if (!subsidiaryId) {
 				toast.error('Selecciona una subsidiaria para crear el cliente/proveedor');
-				return false;
+				return null;
 			}
 			try {
-				await dispatch(createCustomerSupplier({ subsidiaryId, data })).unwrap();
+				const created = await dispatch(
+					createCustomerSupplier({ subsidiaryId, data }),
+				).unwrap();
+
+				// refrescar listas
+				dispatch(
+					fetchCustomerSuppliers({
+						subsidiaryId,
+						with_suppliers: true,
+					}),
+				);
 				toast.success('Cliente/Proveedor creado correctamente');
 				setCustomerSupplierModalOpen(false);
-				return true;
+				return created;
 			} catch (error: any) {
 				const message =
 					error?.message ||
 					error?.response?.data?.message ||
 					'No se pudo crear el cliente/proveedor';
 				toast.error(message);
-				return false;
+				return null;
 			}
 		},
 		[dispatch, subsidiaryId],
@@ -243,7 +241,7 @@ const CreateBatchPage: React.FC = () => {
 		return customer_supplier.find((c) => c.id === formik.values.customer_supplier_id) || null;
 	}, [customer_supplier, formik?.values?.customer_supplier_id]);
 
-	const supplierOptions: TSelectOption[] = useMemo(() => {
+	const linkedSupplierOptions: TSelectOption[] = useMemo(() => {
 		if (!selectedCustomer?.suppliers?.length) return [];
 		return selectedCustomer.suppliers.map((supplier) => ({
 			value: String(supplier.id),
@@ -254,11 +252,11 @@ const CreateBatchPage: React.FC = () => {
 	useEffect(() => {
 		if (
 			selectedSupplierId !== null &&
-			!supplierOptions.some((opt) => opt.value === String(selectedSupplierId))
+			!linkedSupplierOptions.some((opt) => opt.value === String(selectedSupplierId))
 		) {
 			setSelectedSupplierId(null);
 		}
-	}, [supplierOptions, selectedSupplierId]);
+	}, [linkedSupplierOptions, selectedSupplierId]);
 
 	const handleCancel = () => navigate('/technical-reviews/batches');
 	const handleCreateBatch = () => formik.handleSubmit();
@@ -266,6 +264,13 @@ const CreateBatchPage: React.FC = () => {
 	const showEmptyWarehouses = !warehouseLoading && (!warehouses || warehouses.length === 0);
 	const showEmptyCustomers =
 		!customerSupplierLoading && (!customer_supplier || customer_supplier.length === 0);
+	const allSupplierOptions: TSelectOption[] = useMemo(() => {
+		if (!suppliers?.length) return [];
+		return suppliers.map((s) => ({
+			value: String(s.id),
+			label: s.name || 'Proveedor sin nombre',
+		}));
+	}, [suppliers]);
 
 	return (
 		<PageWrapper name='create-batch'>
@@ -375,118 +380,189 @@ const CreateBatchPage: React.FC = () => {
 							)}
 							<div className='space-y-6'>
 								{/* Bodega */}
-								<div>
-									<Label
-										htmlFor='warehouse_id'
-										className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-										Bodega <span className='text-red-500'>*</span>
-									</Label>
-									<SelectReact
-										name='warehouse_id'
-										placeholder='Seleccionar bodega'
-										options={warehouseOptions}
-										value={
-											warehouseOptions.find(
-												(opt) =>
-													opt.value ===
-													String(formik.values.warehouse_id),
-											) || null
-										}
-										onChange={(option) => {
-											const selected = normalizeSelectValue(option);
-											formik.setFieldValue(
-												'warehouse_id',
-												selected ? parseInt(selected.value) : 0,
-											);
-										}}
-										isDisabled={!warehouses || warehouses.length === 0}
-										className={
-											formik.touched.warehouse_id &&
-											formik.errors.warehouse_id
-												? 'border-red-500'
-												: ''
-										}
-									/>
-									{formik.touched.warehouse_id && formik.errors.warehouse_id && (
-										<p className='mt-1 text-xs text-red-500'>
-											{formik.errors.warehouse_id}
-										</p>
-									)}
-								</div>
+								{!showEmptyWarehouses && (
+									<div>
+										<Label
+											htmlFor='warehouse_id'
+											className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+											Bodega <span className='text-red-500'>*</span>
+										</Label>
+										<SelectReact
+											name='warehouse_id'
+											placeholder='Seleccionar bodega'
+											options={warehouseOptions}
+											value={
+												warehouseOptions.find(
+													(opt) =>
+														opt.value ===
+														String(formik.values.warehouse_id),
+												) || null
+											}
+											onChange={(option) => {
+												const selected = normalizeSelectValue(option);
+												formik.setFieldValue(
+													'warehouse_id',
+													selected ? parseInt(selected.value) : 0,
+												);
+											}}
+											className={
+												formik.touched.warehouse_id &&
+												formik.errors.warehouse_id
+													? 'border-red-500'
+													: ''
+											}
+										/>
+										{formik.touched.warehouse_id &&
+											formik.errors.warehouse_id && (
+												<p className='mt-1 text-xs text-red-500'>
+													{formik.errors.warehouse_id}
+												</p>
+											)}
+									</div>
+								)}
 
 								{/* Cliente/Proveedor */}
-								<div>
-									<Label
-										htmlFor='customer_supplier_id'
-										className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-										Cliente/Proveedor <span className='text-red-500'>*</span>
-									</Label>
-									<SelectReact
-										name='customer_supplier_id'
-										placeholder='Seleccionar cliente/proveedor'
-										options={customerOptions}
-										value={
-											customerOptions.find(
-												(opt) =>
-													opt.value ===
-													String(formik.values.customer_supplier_id),
-											) || null
-										}
-										onChange={(option) => {
-											const selected = normalizeSelectValue(option);
-											formik.setFieldValue(
-												'customer_supplier_id',
-												selected ? parseInt(selected.value) : 0,
-											);
-											setSelectedSupplierId(null);
-										}}
-										isDisabled={!customer_supplier || customer_supplier.length === 0}
-										className={
-											formik.touched.customer_supplier_id &&
-											formik.errors.customer_supplier_id
-												? 'border-red-500'
-												: ''
-										}
-									/>
-									{supplierOptions.length > 0 && (
-										<div className='mt-4'>
-											<Label
-												htmlFor='proveedor_asociado'
-												className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-												Proveedor asociado
-											</Label>
-											<SelectReact
-												name='supplier_id'
-												placeholder='Seleccionar proveedor'
-												options={supplierOptions}
-												value={
-													selectedSupplierId !== null
-														? supplierOptions.find(
-																(opt) =>
-																	opt.value ===
-																	String(selectedSupplierId),
-															) || null
-														: null
-												}
-												onChange={(option) => {
-													const selectedOption =
-														normalizeSelectValue(option);
-													setSelectedSupplierId(
-														selectedOption
-															? parseInt(selectedOption.value)
-															: null,
-													);
-												}}
-											/>
-										</div>
-									)}
-									{formik.touched.customer_supplier_id &&
-										formik.errors.customer_supplier_id && (
-											<p className='mt-1 text-xs text-red-500'>
-												{formik.errors.customer_supplier_id}
-											</p>
+								{!showEmptyCustomers && (
+									<div>
+										<Label
+											htmlFor='customer_supplier_id'
+											className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+											Cliente/Proveedor <span className='text-red-500'>*</span>
+										</Label>
+										<SelectReact
+											name='customer_supplier_id'
+											placeholder='Seleccionar cliente/proveedor'
+											options={customerOptions}
+											value={
+												customerOptions.find(
+													(opt) =>
+														opt.value ===
+														String(formik.values.customer_supplier_id),
+												) || null
+											}
+											onChange={(option) => {
+												const selected = normalizeSelectValue(option);
+												formik.setFieldValue(
+													'customer_supplier_id',
+													selected ? parseInt(selected.value) : 0,
+												);
+												setSelectedSupplierId(null);
+											}}
+											className={
+												formik.touched.customer_supplier_id &&
+												formik.errors.customer_supplier_id
+													? 'border-red-500'
+													: ''
+											}
+										/>
+										{linkedSupplierOptions.length > 0 && (
+											<div className='mt-4'>
+												<Label
+													htmlFor='proveedor_asociado'
+													className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+													Proveedor asociado
+												</Label>
+												<SelectReact
+													name='supplier_id'
+													placeholder='Seleccionar proveedor'
+													options={linkedSupplierOptions}
+													value={
+														selectedSupplierId !== null
+															? linkedSupplierOptions.find(
+																	(opt) =>
+																		opt.value ===
+																		String(selectedSupplierId),
+																) || null
+															: null
+													}
+													onChange={(option) => {
+														const selectedOption =
+															normalizeSelectValue(option);
+														setSelectedSupplierId(
+															selectedOption
+																? parseInt(selectedOption.value)
+																: null,
+														);
+													}}
+												/>
+											</div>
 										)}
-								</div>
+										{linkedSupplierOptions.length === 0 &&
+											allSupplierOptions.length > 0 && (
+												<div className='mt-4 space-y-2'>
+													<Label
+														htmlFor='attach_supplier'
+														className='block text-sm font-medium text-gray-700 dark:text-gray-300'>
+														Asociar proveedor existente
+													</Label>
+													<div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
+														<SelectReact
+															name='attach_supplier'
+															placeholder='Seleccionar proveedor'
+															options={allSupplierOptions}
+															value={
+																selectedSupplierId !== null
+																	? allSupplierOptions.find(
+																			(opt) =>
+																				opt.value ===
+																				String(selectedSupplierId),
+																		) || null
+																	: null
+															}
+															onChange={(option) => {
+																const opt = normalizeSelectValue(option);
+																setSelectedSupplierId(
+																	opt ? Number(opt.value) : null,
+																);
+															}}
+														/>
+														<Button
+															variant='outline'
+															isDisable={
+																!selectedCustomer || selectedSupplierId === null
+															}
+															onClick={async () => {
+																if (!selectedCustomer || selectedSupplierId === null) return;
+																try {
+																	await dispatch(
+																		attachSuppliersToCustomerSupplier({
+																			subsidiaryId: selectedCustomer.subsidiary_id,
+																			customerSupplierId: selectedCustomer.id,
+																			payload: { supplier_ids: [selectedSupplierId] },
+																		}),
+																	).unwrap();
+																	toast.success('Proveedor asociado');
+																	setSelectedSupplierId(null);
+																	dispatch(
+																		fetchCustomerSuppliers({
+																			subsidiaryId: selectedCustomer.subsidiary_id,
+																			with_suppliers: true,
+																		}),
+																	);
+																} catch (err: any) {
+																	const message =
+																		err?.message ||
+																		err?.response?.data?.message ||
+																		'No se pudo asociar el proveedor';
+																	toast.error(message);
+																}
+															}}>
+															Asociar
+														</Button>
+													</div>
+													<p className='text-xs text-gray-500 dark:text-gray-400'>
+														Primero crea el cliente, luego selecciona un proveedor ya creado y asócialo.
+													</p>
+												</div>
+											)}
+										{formik.touched.customer_supplier_id &&
+											formik.errors.customer_supplier_id && (
+												<p className='mt-1 text-xs text-red-500'>
+													{formik.errors.customer_supplier_id}
+												</p>
+											)}
+									</div>
+								)}
 
 								{/* Fecha de Entrada */}
 								<div>
@@ -643,8 +719,8 @@ const CreateBatchPage: React.FC = () => {
 			<CreateCustomerSupplierModal
 				isOpen={customerSupplierModalOpen}
 				setIsOpen={setCustomerSupplierModalOpen}
-				onSubmit={handleCreateCustomerSupplier}
-				loading={customerSupplierLoading}
+				onCreate={handleCreateCustomerSupplier}
+				loading={customerSupplierLoading || suppliersLoading}
 			/>
 		</PageWrapper>
 	);

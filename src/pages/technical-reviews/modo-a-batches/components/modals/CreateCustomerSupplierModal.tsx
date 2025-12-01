@@ -3,19 +3,22 @@ import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Moda
 import Input from '@/components/form/Input';
 import Label from '@/components/form/Label';
 import Button from '@/components/ui/Button';
-import type { ICreateCustomerSupplierRequest } from '@/interface/customerSupplier.interface';
+import type {
+	ICreateCustomerSupplierRequest,
+	ICustomerSupplier,
+} from '@/interface/customerSupplier.interface';
 
 interface CreateCustomerSupplierModalProps {
 	isOpen: boolean;
 	setIsOpen: (isOpen: boolean) => void;
-	onSubmit: (data: ICreateCustomerSupplierRequest) => Promise<boolean>;
+	onCreate: (data: ICreateCustomerSupplierRequest) => Promise<ICustomerSupplier | null>;
 	loading?: boolean;
 }
 
 const CreateCustomerSupplierModal: React.FC<CreateCustomerSupplierModalProps> = ({
 	isOpen,
 	setIsOpen,
-	onSubmit,
+	onCreate,
 	loading = false,
 }) => {
 	const [name, setName] = useState('');
@@ -37,11 +40,12 @@ const CreateCustomerSupplierModal: React.FC<CreateCustomerSupplierModalProps> = 
 		}
 
 		setSubmitting(true);
-		const success = await onSubmit({ name: trimmed });
+		const created = await onCreate({ name: trimmed });
 		setSubmitting(false);
 
-		if (!success) return;
-		setIsOpen(false);
+		if (created) {
+			setIsOpen(false);
+		}
 	};
 
 	return (
@@ -60,11 +64,14 @@ const CreateCustomerSupplierModal: React.FC<CreateCustomerSupplierModalProps> = 
 					{error && <p className='mt-1 text-xs text-red-500'>{error}</p>}
 				</div>
 				<p className='text-xs text-neutral-500'>
-					Crea un cliente/proveedor básico para poder registrar el lote.
+					Primero crea el cliente. Luego podrás asociarle un proveedor existente desde el formulario.
 				</p>
 			</ModalBody>
 			<ModalFooter>
-				<Button variant='outline' onClick={() => setIsOpen(false)} isDisable={submitting || loading}>
+				<Button
+					variant='outline'
+					onClick={() => setIsOpen(false)}
+					isDisable={submitting || loading}>
 					Cancelar
 				</Button>
 				<Button
