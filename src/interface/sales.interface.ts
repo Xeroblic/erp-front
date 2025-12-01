@@ -53,12 +53,18 @@ export interface ISaleItem {
     
     product_name: string;
     sku: string;
+    name?: string;
     
     attributes_description?: string; 
 
     quantity: number;
     price: number;
     total: number;
+    unit_price?: number | string;
+    unit_price_net?: number | string;
+    subtotal?: number | string;
+    line_total?: number | string;
+    line_net?: number | string;
     
     serial_numbers?: string[];
 

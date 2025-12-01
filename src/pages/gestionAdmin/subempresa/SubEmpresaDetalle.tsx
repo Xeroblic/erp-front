@@ -89,16 +89,43 @@ export default function SubEmpresaDetalle() {
 				: (subempresa as any)?.commune?.id
 					? String((subempresa as any).commune.id)
 					: '',
-			documentsEmail: subempresa?.subsidiary_documents_email || '',
-			salesEmail: subempresa?.subsidiary_sales_email || '',
-			deliveryTerm: subempresa?.subsidiary_delivery_term || '',
-			bankDetails: subempresa?.subsidiary_bank_details || '',
-			allowedPaymentMethods: subempresa?.subsidiary_allowed_payment_methods || [],
-			quoteValidityText: subempresa?.subsidiary_quote_validity_text || '',
-			quoteValidityDays: subempresa?.subsidiary_quote_validity_days || '',
-			giro: subempresa?.subsidiary_giro || '',
-			commercialTerms: subempresa?.subsidiary_commercial_terms || '',
-			defaultPaymentMethod: subempresa?.subsidiary_default_payment_method || '',
+			documentsEmail:
+				subempresa?.subsidiary_documents_email ||
+				(subempresa as any)?.documents_email ||
+				'',
+			salesEmail:
+				subempresa?.subsidiary_sales_email ||
+				(subempresa as any)?.sales_email ||
+				'',
+			deliveryTerm:
+				subempresa?.subsidiary_delivery_term ||
+				(subempresa as any)?.delivery_term ||
+				'',
+			bankDetails:
+				subempresa?.subsidiary_bank_details ||
+				(subempresa as any)?.bank_details ||
+				'',
+			allowedPaymentMethods:
+				subempresa?.subsidiary_allowed_payment_methods ||
+				(subempresa as any)?.allowed_payment_methods ||
+				[],
+			quoteValidityText:
+				subempresa?.subsidiary_quote_validity_text ||
+				(subempresa as any)?.quote_validity_text ||
+				'',
+			quoteValidityDays:
+				subempresa?.subsidiary_quote_validity_days ??
+				(subempresa as any)?.quote_validity_days ??
+				'',
+			giro: subempresa?.subsidiary_giro || (subempresa as any)?.giro || '',
+			commercialTerms:
+				subempresa?.subsidiary_commercial_terms ||
+				(subempresa as any)?.commercial_terms ||
+				'',
+			defaultPaymentMethod:
+				subempresa?.subsidiary_default_payment_method ||
+				(subempresa as any)?.default_payment_method ||
+				'',
 		}),
 		[subempresa],
 	);

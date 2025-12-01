@@ -78,6 +78,25 @@ const normalizeSubsidiaryData = (backendData: any): ISubempresa => {
 
 	return {
 		...backendData,
+		subsidiary_documents_email:
+			backendData.subsidiary_documents_email ?? backendData.documents_email,
+		subsidiary_sales_email:
+			backendData.subsidiary_sales_email ?? backendData.sales_email,
+		subsidiary_delivery_term:
+			backendData.subsidiary_delivery_term ?? backendData.delivery_term,
+		subsidiary_bank_details:
+			backendData.subsidiary_bank_details ?? backendData.bank_details,
+		subsidiary_allowed_payment_methods:
+			backendData.subsidiary_allowed_payment_methods ?? backendData.allowed_payment_methods,
+		subsidiary_quote_validity_text:
+			backendData.subsidiary_quote_validity_text ?? backendData.quote_validity_text,
+		subsidiary_quote_validity_days:
+			backendData.subsidiary_quote_validity_days ?? backendData.quote_validity_days,
+		subsidiary_giro: backendData.subsidiary_giro ?? backendData.giro,
+		subsidiary_commercial_terms:
+			backendData.subsidiary_commercial_terms ?? backendData.commercial_terms,
+		subsidiary_default_payment_method:
+			backendData.subsidiary_default_payment_method ?? backendData.default_payment_method,
 		// Mapear campos del backend al formato del frontend
 		name: backendData.subsidiary_name || backendData.name || '',
 		company_id: backendData.company_id ?? backendData?.company?.id ?? backendData?.empresa_id ?? backendData?.companyId,

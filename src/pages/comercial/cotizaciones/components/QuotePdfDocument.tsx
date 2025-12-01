@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Page, Text, View, Document, StyleSheet, Image } from '@react-pdf/renderer';
-import { IQuote, ISubempresa } from '@/interface'; // Asegúrate de que los imports coincidan con tu proyecto
+import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
+import { IQuote, ISubempresa } from '@/interface';
 import store from '@/store';
 import { ensureAbsoluteUrl } from '@/components/helper/brand.helper';
 
-// Cache simple en memoria para los logos en base64
 const logoDataCache = new Map<string, string>();
 
 const fetchImageAsDataUrl = async (url: string): Promise<string | null> => {
@@ -24,7 +23,6 @@ const fetchImageAsDataUrl = async (url: string): Promise<string | null> => {
 	}
 };
 
-// --- Estilos ---
 const styles = StyleSheet.create({
 	page: {
 		padding: 40,
@@ -34,36 +32,22 @@ const styles = StyleSheet.create({
 		lineHeight: 1.3,
 		flexDirection: 'column',
 	},
-	// Bloque Principal (ocupa todo el espacio disponible)
-	mainContent: {
-		flex: 1,
-	},
-
-	// --- Header ---
+	mainContent: { flex: 1 },
 	headerRow: {
 		flexDirection: 'row',
 		justifyContent: 'space-between',
 		marginBottom: 20,
 	},
 	headerLeft: { width: '60%' },
-
-	// Estilo del logo ajustado para evitar deformaciones
 	logoContainer: {
 		height: 50,
 		marginBottom: 8,
 		alignItems: 'flex-start',
 		justifyContent: 'center',
 	},
-	logo: {
-		height: '100%',
-		objectFit: 'contain',
-		alignSelf: 'flex-start',
-	},
-
+	logo: { height: '100%', objectFit: 'contain', alignSelf: 'flex-start' },
 	companyName: { fontSize: 14, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 2 },
 	companyLine: { fontSize: 9, color: '#374151' },
-
-	// Cuadro Rojo RUT
 	rutBoxContainer: { width: '36%', alignItems: 'center' },
 	rutBox: {
 		borderWidth: 2,
@@ -80,16 +64,9 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		paddingVertical: 2,
 	},
-	docTypeTitle: {
-		fontSize: 12,
-		fontWeight: 'bold',
-		color: '#e11d48',
-		textTransform: 'uppercase',
-	},
+	docTypeTitle: { fontSize: 12, fontWeight: 'bold', color: '#e11d48', textTransform: 'uppercase' },
 	docNumber: { fontSize: 14, fontWeight: 'bold', color: '#111827' },
 	dateLine: { marginTop: 5, fontSize: 10, fontWeight: 'bold', color: '#111827' },
-
-	// Cliente
 	clientSection: {
 		borderWidth: 1,
 		borderColor: '#d1d5db',
@@ -101,8 +78,6 @@ const styles = StyleSheet.create({
 	clientLabel: { width: 60, fontWeight: 'bold', fontSize: 8 },
 	clientValue: { flex: 1, fontSize: 8 },
 	boldText: { fontWeight: 'bold' },
-
-	// Tabla
 	tableHeader: {
 		flexDirection: 'row',
 		backgroundColor: '#f3f4f6',
@@ -122,14 +97,7 @@ const styles = StyleSheet.create({
 	colDesc: { width: '45%', textAlign: 'left', paddingLeft: 4 },
 	colPrice: { width: '15%', textAlign: 'right', paddingRight: 4 },
 	colTotal: { width: '15%', textAlign: 'right', paddingRight: 4 },
-
-	// Totales
-	totalsSection: {
-		flexDirection: 'row',
-		justifyContent: 'flex-end',
-		marginTop: 10,
-		marginBottom: 20,
-	},
+	totalsSection: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10, marginBottom: 20 },
 	totalsTable: { width: 180 },
 	totalRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
 	grandTotalBox: {
@@ -140,89 +108,81 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		justifyContent: 'space-between',
 	},
-
-	// Footer
-	footerContent: {
-		borderTopWidth: 1,
-		borderColor: '#e5e7eb',
-		paddingTop: 10,
-	},
-	twoColumnFooter: {
-		flexDirection: 'row',
-		gap: 20,
-	},
+	footerContent: { borderTopWidth: 1, borderColor: '#e5e7eb', paddingTop: 10 },
+	twoColumnFooter: { flexDirection: 'row', gap: 20 },
 	footerCol: { flex: 1 },
-	sectionTitle: {
-		fontSize: 9,
-		fontWeight: 'bold',
-		marginBottom: 4,
-		textTransform: 'uppercase',
-		textDecoration: 'underline',
-	},
+	sectionTitle: { fontSize: 9, fontWeight: 'bold', marginBottom: 4, textTransform: 'uppercase', textDecoration: 'underline' },
 	noteText: { fontSize: 8, color: '#4b5563', marginBottom: 2 },
-
-	pageNumber: {
-		marginTop: 10,
-		textAlign: 'center',
-		fontSize: 8,
-		color: '#9ca3af',
-	},
+	pageNumber: { marginTop: 10, textAlign: 'center', fontSize: 8, color: '#9ca3af' },
 });
 
-// Helpers
-const formatCurrency = (val: any) =>
+const formatCurrency = (val: unknown) =>
 	new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(Number(val) || 0);
 
 const formatDate = (val?: string | null) => (val ? new Date(val).toLocaleDateString('es-CL') : '—');
 
-// --- Lógica Principal de Datos ---
-const getCompanyInfo = (quote: IQuote) => {
-	const state = store.getState();
+const getPersonalizedSubsidiary = (quote: IQuote): ISubempresa | undefined => {
+	const state = store.getState() as any;
+	const personalization = state.personalizacion?.personalizacionUsuario;
+	const personalizationSubId = personalization?.subsidiary_id;
+	const currentCompanySubs = state.personalizacion?.current_company?.subsidiaries;
+
+	if (Array.isArray(currentCompanySubs) && personalizationSubId) {
+		const match = currentCompanySubs.find(
+			(sub: any) => Number(sub.id) === Number(personalizationSubId),
+		);
+		if (match) return match as ISubempresa;
+	}
+
 	const subsidiaries = (state.subEmpresa?.lista || []) as ISubempresa[];
+	return subsidiaries.find((s) => Number(s.id) === Number(personalizationSubId ?? quote.subsidiary_id));
+};
+
+const getCompanyInfo = (quote: IQuote) => {
+	const state = store.getState() as any;
 	const mainCompany = state.empresa?.miEmpresa;
 	const quoteSubsidiary = (quote as any)?.subsidiary as Partial<ISubempresa> | undefined;
-
-	// 1. Identificar Subsidiaria
 	const activeSub =
+		getPersonalizedSubsidiary(quote) ||
 		(quoteSubsidiary && Number(quoteSubsidiary.id) === Number(quote.subsidiary_id)
 			? quoteSubsidiary
-			: undefined) ||
-		subsidiaries.find((s) => Number(s.id) === Number(quote.subsidiary_id)) ||
-		quoteSubsidiary;
+			: undefined);
 
-	// 2. Obtener Metadata (Snapshot histórico si existe)
-	const meta = (quote.metadata as any)?.company || {};
+	const meta = (quote as any)?.metadata?.company || {};
 
-	// --- EXTRACCIÓN DE DATOS ---
-
-	// Logo: Prioridad -> Metadata > Subsidiaria (logo_url) > Empresa Principal
-	const logoUrlRaw =
+	const logoRaw =
+		meta.logo_base_64 ||
 		meta.logo_url ||
 		meta.logo ||
-		(activeSub as any)?.logo_url || // <--- AQUÍ ES DONDE TOMA EL LOGO DE LA SUBSIDIARIA
+		(activeSub as any)?.logo_base_64 ||
+		(activeSub as any)?.logo_url ||
 		(mainCompany as any)?.company_logo;
-	const logoUrl = ensureAbsoluteUrl(logoUrlRaw || undefined) || logoUrlRaw || null;
+	const logoUrl =
+		logoRaw && String(logoRaw).startsWith('data:')
+			? logoRaw
+			: ensureAbsoluteUrl(logoRaw || undefined) || logoRaw || null;
 
 	const name = meta.name || activeSub?.subsidiary_name || mainCompany?.company_name || 'EcoTI';
-	const rut = meta.rut || activeSub?.subsidiary_rut || mainCompany?.company_rut || '76.543.218-2';
+	const rut = meta.rut || activeSub?.subsidiary_rut || mainCompany?.company_rut || '—';
 	const activity =
-		meta.activity || mainCompany?.business_activity || 'Venta de Artículos Computacionales';
+		meta.activity || activeSub?.subsidiary_giro || mainCompany?.business_activity || 'Venta de artículos computacionales';
 
-	// Dirección Inteligente
-	let addressBase =
-		meta.address || activeSub?.subsidiary_address || mainCompany?.company_address || '';
-	let communeName = meta.commune || (activeSub?.commune as any)?.name || '';
-
+	const addressBase =
+		meta.address || (activeSub as any)?.subsidiary_address || mainCompany?.company_address || '';
+	const communeName =
+		meta.commune ||
+		(activeSub as any)?.commune?.name ||
+		(activeSub as any)?.commune_name ||
+		'';
 	const fullAddress =
-		communeName && !addressBase.includes(communeName)
+		communeName && addressBase && !addressBase.includes(communeName)
 			? `${addressBase}, ${communeName}`
-			: addressBase;
+			: addressBase || communeName;
 
-	const email = meta.email || activeSub?.subsidiary_email || mainCompany?.contact_email;
-	const phone = meta.phone || activeSub?.subsidiary_phone || mainCompany?.company_phone;
-	const website = meta.website || activeSub?.subsidiary_website || mainCompany?.company_website;
+	const email = meta.email || activeSub?.subsidiary_email || mainCompany?.contact_email || '';
+	const phone = meta.phone || activeSub?.subsidiary_phone || mainCompany?.company_phone || '';
+	const website = meta.website || activeSub?.subsidiary_website || mainCompany?.company_website || '';
 
-	// Datos Bancarios
 	const bankData =
 		(meta.bank_info as any) ?? (activeSub as any)?.bank_info ?? (mainCompany as any)?.bank_info;
 	const bankInfo = Array.isArray(bankData)
@@ -230,21 +190,21 @@ const getCompanyInfo = (quote: IQuote) => {
 		: bankData
 			? [String(bankData)]
 			: [];
-	const extraBank = meta.bank_details || activeSub?.subsidiary_bank_details;
+	const extraBank = meta.bank_details || (activeSub as any)?.subsidiary_bank_details;
 	if (extraBank) bankInfo.push(String(extraBank));
 
-	// Otros metadatos
 	const allowedPaymentMethods =
 		meta.allowed_payment_methods ||
-		activeSub?.subsidiary_allowed_payment_methods ||
+		(activeSub as any)?.subsidiary_allowed_payment_methods ||
 		meta.payment_methods ||
 		[];
-	const deliveryTerm = meta.delivery_term || activeSub?.subsidiary_delivery_term;
+	const deliveryTerm = meta.delivery_term || (activeSub as any)?.subsidiary_delivery_term;
 	const quoteValidityText =
-		meta.quote_validity_text || activeSub?.subsidiary_quote_validity_text || '';
+		meta.quote_validity_text || (activeSub as any)?.subsidiary_quote_validity_text || '';
 	const quoteValidityDays =
-		meta.quote_validity_days || activeSub?.subsidiary_quote_validity_days || null;
-	const commercialTerms = meta.commercial_terms || activeSub?.subsidiary_commercial_terms || '';
+		meta.quote_validity_days || (activeSub as any)?.subsidiary_quote_validity_days || null;
+	const commercialTerms =
+		meta.commercial_terms || (activeSub as any)?.subsidiary_commercial_terms || '';
 
 	return {
 		name,
@@ -267,6 +227,7 @@ const getCompanyInfo = (quote: IQuote) => {
 const QuotePdfDocument = ({ quote }: { quote: IQuote }) => {
 	const company = getCompanyInfo(quote);
 	const [logoSrc, setLogoSrc] = useState<string | null>(company.logoUrl);
+
 	useEffect(() => {
 		let cancelled = false;
 		const loadLogo = async () => {
@@ -286,37 +247,39 @@ const QuotePdfDocument = ({ quote }: { quote: IQuote }) => {
 				setLogoSrc(finalSrc);
 			}
 		};
-		loadLogo();
+		void loadLogo();
 		return () => {
 			cancelled = true;
 		};
 	}, [company.logoUrl]);
-	const items = quote.items || [];
-	const customer = (quote.customer as any) || {};
 
-	// Totales
-	const netTotal = items.reduce(
-		(acc, item) => acc + Number(item.quantity) * Number(item.unit_price),
-		0,
-	);
+	const items = quote.items || [];
+	const customer = (quote as any).customer || {};
+
+	const resolveUnitPrice = (item: any) =>
+		Number(item.unit_price ?? item.price ?? item.unit_price_net ?? 0);
+	const resolveLineTotal = (item: any) =>
+		Number(item.total ?? item.line_total ?? item.subtotal ?? item.line_net ?? 0);
+
+	const netTotal = items.reduce((acc, item) => acc + resolveLineTotal(item), 0);
 	const discount = Number(quote.discount_amount || 0);
-	const tax = Number(quote.tax_amount || quote.total_tax || 0);
-	const total = Number(quote.total_amount || 0);
+	const tax = Number(quote.tax_amount || (quote as any).total_tax || 0);
+	const total = Number(quote.total_amount || netTotal + tax - discount);
+	const paymentMethodsLabel =
+		Array.isArray(company.allowedPaymentMethods) && company.allowedPaymentMethods.length > 0
+			? (company.allowedPaymentMethods as string[]).join(' / ')
+			: 'Contado / Transferencia / WebPay';
 
 	return (
 		<Document>
 			<Page size='LETTER' style={styles.page}>
-				{/* === 1. CONTENIDO PRINCIPAL (Se expande) === */}
 				<View style={styles.mainContent}>
-					{/* HEADER */}
 					<View style={styles.headerRow}>
 						<View style={styles.headerLeft}>
-							{/* LOGO LOGIC */}
 							<View style={styles.logoContainer}>
 								{logoSrc ? (
 									<Image style={styles.logo} src={logoSrc} />
 								) : (
-									// Fallback si no hay imagen: Muestra nombre grande
 									<Text
 										style={{
 											fontSize: 18,
@@ -327,18 +290,13 @@ const QuotePdfDocument = ({ quote }: { quote: IQuote }) => {
 									</Text>
 								)}
 							</View>
-
-							{/* Si hay logo, mostramos el nombre abajo, si no, ya lo mostramos arriba */}
 							{logoSrc && <Text style={styles.companyName}>{company.name}</Text>}
-
 							<Text style={styles.companyLine}>Giro: {company.activity}</Text>
-							<Text style={styles.companyLine}>Dirección: {company.fullAddress}</Text>
+							<Text style={styles.companyLine}>Dirección: {company.fullAddress || '—'}</Text>
 							<Text style={styles.companyLine}>
-								Email: {company.email} • Fono: {company.phone}
+								Email: {company.email || '—'} • Fono: {company.phone || '—'}
 							</Text>
-							{company.website && (
-								<Text style={styles.companyLine}>Web: {company.website}</Text>
-							)}
+							{company.website && <Text style={styles.companyLine}>Web: {company.website}</Text>}
 						</View>
 
 						<View style={styles.rutBoxContainer}>
@@ -349,13 +307,10 @@ const QuotePdfDocument = ({ quote }: { quote: IQuote }) => {
 								</View>
 								<Text style={styles.docNumber}>N° {quote.id}</Text>
 							</View>
-							<Text style={styles.dateLine}>
-								Fecha: {formatDate(quote.quote_date)}
-							</Text>
+							<Text style={styles.dateLine}>Fecha: {formatDate(quote.quote_date)}</Text>
 						</View>
 					</View>
 
-					{/* CLIENTE */}
 					<View style={styles.clientSection}>
 						<View style={styles.clientRow}>
 							<Text style={styles.clientLabel}>Señor(es):</Text>
@@ -394,7 +349,6 @@ const QuotePdfDocument = ({ quote }: { quote: IQuote }) => {
 						</View>
 					</View>
 
-					{/* TABLA ITEMS */}
 					<View style={styles.tableHeader}>
 						<Text style={[styles.colCant, styles.boldText]}>Cant.</Text>
 						<Text style={[styles.colCode, styles.boldText]}>Código</Text>
@@ -403,26 +357,38 @@ const QuotePdfDocument = ({ quote }: { quote: IQuote }) => {
 						<Text style={[styles.colTotal, styles.boldText]}>Total</Text>
 					</View>
 
-					{items.map((item, index) => (
-						<View key={index} style={styles.tableRow}>
-							<Text style={styles.colCant}>{item.quantity}</Text>
-							<Text style={styles.colCode}>{item.product?.sku || '—'}</Text>
-							<View style={styles.colDesc}>
-								<Text style={styles.boldText}>{item.product?.name}</Text>
-								{item.description && (
-									<Text style={{ fontSize: 7, color: '#6b7280' }}>
-										{item.description}
-									</Text>
-								)}
-							</View>
-							<Text style={styles.colPrice}>{formatCurrency(item.unit_price)}</Text>
-							<Text style={[styles.colTotal, styles.boldText]}>
-								{formatCurrency(Number(item.quantity) * Number(item.unit_price))}
-							</Text>
-						</View>
-					))}
+					{items.map((item, index) => {
+						const sku =
+							(item as any)?.product?.sku ||
+							(item as any)?.customer_sku ||
+							(item as any)?.meta_json?.mapping?.sku ||
+							'—';
+						const name =
+							(item as any)?.product?.name ||
+							(item as any)?.customer_name ||
+							(item as any)?.name ||
+							'Producto sin nombre';
+						const unitPrice = resolveUnitPrice(item);
+						const lineTotal = resolveLineTotal(item) || unitPrice * Number(item.quantity || 0);
 
-					{/* TOTALES */}
+						return (
+							<View key={index} style={styles.tableRow}>
+								<Text style={styles.colCant}>{item.quantity}</Text>
+								<Text style={styles.colCode}>{sku}</Text>
+								<View style={styles.colDesc}>
+									<Text style={styles.boldText}>{name}</Text>
+									{item.description && (
+										<Text style={{ fontSize: 7, color: '#6b7280' }}>{item.description}</Text>
+									)}
+								</View>
+								<Text style={styles.colPrice}>{formatCurrency(unitPrice)}</Text>
+								<Text style={[styles.colTotal, styles.boldText]}>
+									{formatCurrency(lineTotal)}
+								</Text>
+							</View>
+						);
+					})}
+
 					<View style={styles.totalsSection}>
 						<View style={styles.totalsTable}>
 							<View style={styles.totalRow}>
@@ -436,41 +402,31 @@ const QuotePdfDocument = ({ quote }: { quote: IQuote }) => {
 								</View>
 							)}
 							<View style={styles.totalRow}>
-								<Text style={styles.boldText}>I.V.A. (19%):</Text>
+								<Text style={styles.boldText}>I.V.A.:</Text>
 								<Text>{formatCurrency(tax)}</Text>
 							</View>
 							<View style={styles.grandTotalBox}>
 								<Text style={[styles.boldText, { fontSize: 11 }]}>TOTAL:</Text>
-								<Text style={[styles.boldText, { fontSize: 11 }]}>
-									{formatCurrency(total)}
-								</Text>
+								<Text style={[styles.boldText, { fontSize: 11 }]}>{formatCurrency(total)}</Text>
 							</View>
 						</View>
 					</View>
 				</View>
 
-				{/* === 2. FOOTER (Condiciones, Notas, Banco) === */}
 				<View style={styles.footerContent}>
 					<View style={styles.twoColumnFooter}>
-						{/* Izquierda */}
 						<View style={styles.footerCol}>
 							<Text style={styles.sectionTitle}>Condiciones Comerciales</Text>
 							<Text style={styles.noteText}>
 								• Validez Oferta:{' '}
 								{company.quoteValidityText ||
-									(company.quoteValidityDays
-										? `${company.quoteValidityDays} días hábiles`
-										: '7 días hábiles')}
+									(company.quoteValidityDays ? `${company.quoteValidityDays} días hábiles` : '7 días hábiles')}
 							</Text>
 							<Text style={styles.noteText}>
-								• Forma de Pago:{' '}
-								{(company.allowedPaymentMethods as any)?.length
-									? (company.allowedPaymentMethods as any).join(' / ')
-									: 'Contado / Transferencia / WebPay'}
+								• Forma de Pago: {paymentMethodsLabel}
 							</Text>
 							<Text style={styles.noteText}>
-								• Entrega:{' '}
-								{company.deliveryTerm || 'A convenir o retiro en tienda.'}
+								• Entrega: {company.deliveryTerm || 'A convenir o retiro en tienda.'}
 							</Text>
 							{company.commercialTerms ? (
 								<Text style={styles.noteText}>• {company.commercialTerms}</Text>
@@ -484,13 +440,12 @@ const QuotePdfDocument = ({ quote }: { quote: IQuote }) => {
 							)}
 						</View>
 
-						{/* Derecha */}
 						<View style={styles.footerCol}>
 							{company.bankInfo.length > 0 && (
 								<View>
 									<Text style={styles.sectionTitle}>Datos Bancarios</Text>
-									{company.bankInfo.map((info: string, i: number) => (
-										<Text key={i} style={styles.noteText}>
+									{company.bankInfo.map((info: string, idx: number) => (
+										<Text key={idx} style={styles.noteText}>
 											{info}
 										</Text>
 									))}
