@@ -15,6 +15,7 @@ import {
 } from '../../../../interface';
 import { normalizeQuoteStatusValue } from '../constants/quoteStatuses';
 import { useAppDispatch, useAppSelector } from '@/store';
+import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import {
 	fetchQuotes,
 	fetchQuoteById,
@@ -89,11 +90,9 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 	const listLoading = useAppSelector(selectQuotesLoading);
 	const meta = useAppSelector(selectQuoteMeta);
 	const actionsLoading = useAppSelector(selectQuoteActionsLoading);
-	const user = useAppSelector((state) => state.auth.user);
-	const subsidiaryId =
-		user?.subsidiary?.id ??
-		user?.branch?.subsidiary?.id ??
-		null;
+	// Siempre usamos la sucursal/filial efectiva seleccionada (selector global/personalización).
+	// Si el usuario cambia de sucursal, este valor cambia y el hook recarga datos.
+	const subsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
 
 	const [filters, setFilters] = useState<QuotationsFilters>(initialFilters);
 	const [currentPage, setCurrentPage] = useState(1);

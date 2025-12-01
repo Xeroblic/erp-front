@@ -54,24 +54,25 @@ const BatchesListPage: React.FC = () => {
 
 	return (
 		<PageWrapper name='technical-reviews-batches'>
+			<Subheader className='mb-6 flex items-center justify-between'>
+				<SubheaderLeft>
+					<div>
+						<Badge className='text-2xl font-semibold mb-1'>Lotes de Revisión</Badge>
+						<p className="text-zinc-500 text-sm">Consulta y administra los lotes de revisión registrados.</p>
+					</div>
+				</SubheaderLeft>
+				<SubheaderRight>
+					<Button
+						variant="solid"
+						icon="HeroPlus"
+						onClick={handleCreateBatch}
+					>
+						Nuevo Lote
+					</Button>
+				</SubheaderRight>
+			</Subheader>
 			<Container>
 				{/* Header */}
-				<Subheader className='mb-6 flex items-center justify-between'>
-					<SubheaderLeft>
-						<Badge className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
-							Lotes de Revisión
-						</Badge>
-						<Label htmlFor='subtitulo' className='text-sm text-gray-600 dark:text-gray-400'>
-							Gestiona lotes y sus equipos organizados por tipo
-						</Label>
-					</SubheaderLeft>
-					<SubheaderRight>
-						<Button onClick={handleCreateBatch}>
-							<Icon icon='HeroPlus' className='mr-2 h-4 w-4' />
-							Crear Lote
-						</Button>
-					</SubheaderRight>
-				</Subheader>
 
 				{/* Error */}
 				{error && (

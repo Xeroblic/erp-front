@@ -1,9 +1,4 @@
-/**
- * Technical Reviews - Create Batch
- * Formulario para crear un nuevo lote (Formik + Yup)
- */
-
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -22,10 +17,20 @@ import Textarea from '@/components/form/Textarea';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { createBatch, selectBatchesLoading } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
-import { fetchWarehouses } from '@/store/slices/warehouses/warehouseSlice';
-import { fetchCustomerSuppliers } from '@/store/slices/customerSuppliers/customerSuppliersSlice';
+import { fetchWarehouses, createWarehouse } from '@/store/slices/warehouses/warehouseSlice';
+import {
+	fetchCustomerSuppliers,
+	createCustomerSupplier,
+} from '@/store/slices/customerSuppliers/customerSuppliersSlice';
 import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/personalizacionSlice';
 import Label from '@/components/form/Label';
+import CreateWarehouseModal from '@/pages/catalogos/bodegas/modals/CreateWarehouseModal';
+import CreateCustomerSupplierModal from '../components/modals/CreateCustomerSupplierModal';
+import type { ICreateWarehouseRequest } from '@/interface/warehouse.interface';
+import type { ICreateCustomerSupplierRequest } from '@/interface/customerSupplier.interface';
+import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import Badge from '@/components/ui/Badge';
+import Tooltip from '@/components/ui/Tooltip';
 
 const validationSchema = Yup.object({
 	warehouse_id: Yup.number()
@@ -61,9 +66,19 @@ const CreateBatchPage: React.FC = () => {
 	const currentUser = useAppSelector((s) => s.auth.user);
 	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
 	const warehouses = useAppSelector((s) => s.warehouse.warehouses);
+	const warehouseLoading = useAppSelector(
+		(s) => s.warehouse.loading || s.warehouse.creating,
+	);
 	const customer_supplier = useAppSelector((s) => s.customerSuppliers.items);
+	const customerSupplierLoading = useAppSelector(
+		(s) => s.customerSuppliers.loading || s.customerSuppliers.creating,
+	);
 
 	const [selectedSupplierId, setSelectedSupplierId] = useState<number | null>(null);
+	const [warehouseModalOpen, setWarehouseModalOpen] = useState(false);
+	const [customerSupplierModalOpen, setCustomerSupplierModalOpen] = useState(false);
+	const [warehousePrompted, setWarehousePrompted] = useState(false);
+	const [customerPrompted, setCustomerPrompted] = useState(false);
 
 	const subsidiaryId = useMemo(() => {
 		return (
@@ -96,6 +111,75 @@ const CreateBatchPage: React.FC = () => {
 			);
 		}
 	}, [dispatch, subsidiaryId]);
+
+	// Abrir modal si no hay bodegas o clientes-proveedor cargados
+	useEffect(() => {
+		if (
+			!warehousePrompted &&
+			!warehouseLoading &&
+			branchId &&
+			(!warehouses || warehouses.length === 0)
+		) {
+			setWarehouseModalOpen(true);
+			setWarehousePrompted(true);
+		}
+	}, [branchId, warehouseLoading, warehousePrompted, warehouses]);
+
+	useEffect(() => {
+		if (
+			!customerPrompted &&
+			!customerSupplierLoading &&
+			subsidiaryId &&
+			(!customer_supplier || customer_supplier.length === 0)
+		) {
+			setCustomerSupplierModalOpen(true);
+			setCustomerPrompted(true);
+		}
+	}, [customerPrompted, customerSupplierLoading, subsidiaryId, customer_supplier]);
+
+	const handleCreateWarehouse = useCallback(
+		async (data: ICreateWarehouseRequest): Promise<boolean> => {
+			if (!branchId) {
+				toast.error('No hay sucursal activa seleccionada.');
+				return false;
+			}
+			try {
+				await dispatch(createWarehouse({ branchId, data })).unwrap();
+				toast.success('Bodega creada correctamente');
+				setWarehouseModalOpen(false);
+				return true;
+			} catch (error: any) {
+				const message =
+					error?.message || error?.response?.data?.message || 'No se pudo crear la bodega';
+				toast.error(message);
+				return false;
+			}
+		},
+		[branchId, dispatch],
+	);
+
+	const handleCreateCustomerSupplier = useCallback(
+		async (data: ICreateCustomerSupplierRequest): Promise<boolean> => {
+			if (!subsidiaryId) {
+				toast.error('Selecciona una subsidiaria para crear el cliente/proveedor');
+				return false;
+			}
+			try {
+				await dispatch(createCustomerSupplier({ subsidiaryId, data })).unwrap();
+				toast.success('Cliente/Proveedor creado correctamente');
+				setCustomerSupplierModalOpen(false);
+				return true;
+			} catch (error: any) {
+				const message =
+					error?.message ||
+					error?.response?.data?.message ||
+					'No se pudo crear el cliente/proveedor';
+				toast.error(message);
+				return false;
+			}
+		},
+		[dispatch, subsidiaryId],
+	);
 
 	// Opciones de selects
 	const warehouseOptions: TSelectOption[] = useMemo(() => {
@@ -179,41 +263,55 @@ const CreateBatchPage: React.FC = () => {
 	const handleCancel = () => navigate('/technical-reviews/batches');
 	const handleCreateBatch = () => formik.handleSubmit();
 
+	const showEmptyWarehouses = !warehouseLoading && (!warehouses || warehouses.length === 0);
+	const showEmptyCustomers =
+		!customerSupplierLoading && (!customer_supplier || customer_supplier.length === 0);
+
 	return (
 		<PageWrapper name='create-batch'>
-			<Container>
-				{/* Header */}
-				<div className='mb-6 flex items-center gap-4'>
+			{/* Header */}
+			<Subheader>
+				<SubheaderLeft>
 					<Button variant='outline' onClick={handleCancel}>
 						<Icon icon='HeroArrowLeft' className='h-4 w-4' />
 					</Button>
 					<div>
-						<h1 className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
-							Crear Nuevo Lote
-						</h1>
-						<p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
-							Registra un nuevo lote de equipos para revisión técnica
+						<Badge className='text-2xl font-semibold mb-1'>Lotes</Badge>
+						<p className="text-zinc-500 text-sm">
+							Registra y administra los lotes de equipos para revisión técnica.
 						</p>
 					</div>
-				</div>
+				</SubheaderLeft>
+				<SubheaderRight>
+					<Tooltip text='Nuevo Lote' placement='top-start'>
+						<Button
+							variant="solid"
+							icon="HeroPlus"
+							onClick={handleCreateBatch}
+							isDisable={loading || formik.isSubmitting}
+						>
+							Nuevo Lote
+						</Button>
+					</Tooltip>
+				</SubheaderRight>
+			</Subheader>
+			<Container>
 
-				<div className='mb-8 rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50 via-white to-transparent p-4 shadow-sm dark:border-blue-900 dark:from-blue-900/40 dark:via-slate-900 dark:to-transparent'>
-					<div className='flex items-start gap-4'>
-						<div className='rounded-xl bg-blue-500/10 p-3 text-blue-600 dark:text-blue-300'>
-							<Icon icon='HeroClipboardDocumentCheck' className='h-6 w-6' />
+				<Card className='mb-6 border border-zinc-200/80 bg-white/80 dark:border-zinc-800 dark:bg-zinc-900/60'>
+					<CardBody className='flex items-start gap-4'>
+						<div className='flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200'>
+							<Icon icon='HeroClipboardDocumentCheck' className='h-5 w-5' />
 						</div>
-						<div>
-							<p className='text-base font-semibold text-gray-900 dark:text-gray-100'>
-								Resumen rápido del lote
+						<div className='space-y-1'>
+							<p className='text-base font-semibold text-zinc-900 dark:text-zinc-50'>
+								Resumen del lote
 							</p>
-							<p className='text-sm text-gray-600 dark:text-gray-400'>
-								Completa los campos obligatorios para registrar la bodega destino,
-								proveedor de origen y la cantidad esperada. Puedes dejar notas
-								internas para el equipo técnico.
+							<p className='text-sm text-zinc-500 dark:text-zinc-400'>
+								Completa la bodega destino, el cliente/proveedor y la cantidad esperada. Agrega notas internas si lo necesitas.
 							</p>
 						</div>
-					</div>
-				</div>
+					</CardBody>
+				</Card>
 
 				{/* Formulario */}
 				<form onSubmit={formik.handleSubmit}>
@@ -234,6 +332,47 @@ const CreateBatchPage: React.FC = () => {
 							</div>
 						</CardHeader>
 						<CardBody>
+							{showEmptyWarehouses && (
+								<div className='mb-4 flex items-center justify-between rounded-lg border border-dashed border-amber-400/60 bg-amber-50/40 px-4 py-3 dark:border-amber-400/40 dark:bg-amber-900/10'>
+									<div className='flex items-center gap-3'>
+										<span className='flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-800/40 dark:text-amber-200'>
+											<Icon icon='DuoHome' className='h-6 w-6' />
+										</span>
+										<div>
+											<p className='text-sm font-semibold text-amber-800 dark:text-amber-100'>
+												No tienes ninguna bodega para crear lotes.
+											</p>
+											<p className='text-xs text-amber-700/80 dark:text-amber-200/80'>
+												Crea una bodega para poder registrar el ingreso del lote.
+											</p>
+										</div>
+									</div>
+									<Button variant='outline' onClick={() => setWarehouseModalOpen(true)}>
+										Crear bodega
+									</Button>
+								</div>
+							)}
+
+							{showEmptyCustomers && (
+								<div className='mb-4 flex items-center justify-between rounded-lg border border-dashed border-blue-400/60 bg-blue-50/40 px-4 py-3 dark:border-blue-400/40 dark:bg-blue-900/10'>
+									<div className='flex items-center gap-3'>
+										<span className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-700 dark:bg-blue-800/40 dark:text-blue-200'>
+											<Icon icon='DuoUser' className='h-6 w-6' />
+										</span>
+										<div>
+											<p className='text-sm font-semibold text-blue-800 dark:text-blue-100'>
+												No tienes clientes/proveedores disponibles.
+											</p>
+											<p className='text-xs text-blue-700/80 dark:text-blue-200/80'>
+												Crea uno para asociarlo al nuevo lote.
+											</p>
+										</div>
+									</div>
+									<Button variant='outline' onClick={() => setCustomerSupplierModalOpen(true)}>
+										Crear cliente/proveedor
+									</Button>
+								</div>
+							)}
 							<div className='space-y-6'>
 								{/* Bodega */}
 								<div>
@@ -260,6 +399,7 @@ const CreateBatchPage: React.FC = () => {
 												selected ? parseInt(selected.value) : 0,
 											);
 										}}
+										isDisabled={!warehouses || warehouses.length === 0}
 										className={
 											formik.touched.warehouse_id &&
 											formik.errors.warehouse_id
@@ -300,6 +440,7 @@ const CreateBatchPage: React.FC = () => {
 											);
 											setSelectedSupplierId(null);
 										}}
+										isDisabled={!customer_supplier || customer_supplier.length === 0}
 										className={
 											formik.touched.customer_supplier_id &&
 											formik.errors.customer_supplier_id
@@ -491,6 +632,20 @@ const CreateBatchPage: React.FC = () => {
 					</div>
 				</form>
 			</Container>
+
+			<CreateWarehouseModal
+				isOpen={warehouseModalOpen}
+				setIsOpen={setWarehouseModalOpen}
+				onSubmit={handleCreateWarehouse}
+				branchId={branchId ?? undefined}
+			/>
+
+			<CreateCustomerSupplierModal
+				isOpen={customerSupplierModalOpen}
+				setIsOpen={setCustomerSupplierModalOpen}
+				onSubmit={handleCreateCustomerSupplier}
+				loading={customerSupplierLoading}
+			/>
 		</PageWrapper>
 	);
 };

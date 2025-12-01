@@ -18,6 +18,7 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { listaComunasThunk } from '@/store/slices/core/coreSlice';
 import type { ICreateWarehouseRequest } from '@/interface/warehouse.interface';
 import { useWarehouseManagers } from '../hooks/useWarehouseManagers';
+import Icon from '@/components/icon/Icon';
 
 interface CreateWarehouseModalProps {
 	isOpen: boolean;
@@ -121,7 +122,7 @@ const CreateWarehouseModal: React.FC<CreateWarehouseModalProps> = ({
 			<ModalHeader>
 				<div className='flex items-center gap-3'>
 					<div className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/20'>
-						<span className='text-xl'>🏗️</span>
+						<Icon icon='HeroTruck'></Icon>
 					</div>
 					<div>
 						<h3 className='text-lg font-semibold text-gray-900 dark:text-white'>

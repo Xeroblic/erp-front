@@ -11,11 +11,16 @@ import ClienteVentasTable from './components/tables/ClienteVentasTable';
 import { useNavigate } from 'react-router-dom';
 import DeleteCustomerSaleModal from './components/modals/DeleteCustomerSaleModal';
 import CreateCustomerSaleModal from './components/modals/CreateCustomerSaleModal';
+import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
+import Badge from '@/components/ui/Badge';
+import Tooltip from '@/components/ui/Tooltip';
 
 const ClientesVentas = () => {
 	const dispatch = useAppDispatch();
 
 	const { overview, loading } = useAppSelector((s) => s.customerSales);
+	const subsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
+	const hasSubsidiary = subsidiaryId !== null;
 	const [openCreate, setOpenCreate] = useState(false);
 	const [openDelete, setOpenDelete] = useState(false);
 	const [deleteId, setDeleteId] = useState<number | string | null>(null);
@@ -23,6 +28,7 @@ const ClientesVentas = () => {
 	const navigate = useNavigate();
 
 	const handleDelete = (id: number) => {
+		if (!hasSubsidiary) return;
 		setDeleteId(id);
 		setOpenDelete(true);
 	};
@@ -32,19 +38,29 @@ const ClientesVentas = () => {
 	};
 
 	useEffect(() => {
-		dispatch(fetchCustomersOverviewThunk({ subsidiary: 1 })); // CAMBIAR EL ID
-	}, [dispatch]);
+		if (!subsidiaryId) return;
+		dispatch(fetchCustomersOverviewThunk({ subsidiary: subsidiaryId }));
+	}, [dispatch, subsidiaryId]);
 
 	return (
 		<PageWrapper title='Clientes ventas' name='Clientes ventas'>
 			<Subheader>
 				<SubheaderLeft>
-					<h2 className='text-2xl font-semibold'>Clientes Ventas</h2>
+					<div>
+						<Badge className='text-2xl font-semibold mb-1'>Clientes Ventas</Badge>
+						<p className="text-zinc-500 text-sm">Consulta y administra los clientes de ventas registrados.</p>
+					</div>
 				</SubheaderLeft>
 				<SubheaderRight>
-					<Button variant='outline' onClick={() => setOpenCreate(true)}>
-						Nuevo Cliente
-					</Button>
+					<Tooltip text='Nuevo Cliente' placement='top-start'>
+						<Button
+							variant="solid"
+							icon="HeroPlus"
+							onClick={() => hasSubsidiary && setOpenCreate(true)}
+							isDisable={!hasSubsidiary}
+						>
+						</Button>
+					</Tooltip>
 				</SubheaderRight>
 			</Subheader>
 
@@ -60,18 +76,22 @@ const ClientesVentas = () => {
 					</CardBody>
 				</Card>
 			</Container>
-			<CreateCustomerSaleModal
-				isOpen={openCreate}
-				setIsOpen={setOpenCreate}
-				subsidiaryId={1}
-			/>
+			{hasSubsidiary && (
+				<>
+					<CreateCustomerSaleModal
+						isOpen={openCreate}
+						setIsOpen={setOpenCreate}
+						subsidiaryId={subsidiaryId}
+					/>
 
-			<DeleteCustomerSaleModal
-				isOpen={openDelete}
-				setIsOpen={setOpenDelete}
-				customerId={deleteId}
-				subsidiaryId={1}
-			/>
+					<DeleteCustomerSaleModal
+						isOpen={openDelete}
+						setIsOpen={setOpenDelete}
+						customerId={deleteId}
+						subsidiaryId={subsidiaryId}
+					/>
+				</>
+			)}
 		</PageWrapper>
 	);
 };

@@ -72,7 +72,6 @@ const SalesListPage: React.FC = () => {
     const subsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
     const rawList = useAppSelector(selectSalesList);
     
-    // 👇 CORRECCIÓN DE TIPO: Usamos ISale[]
     const list: ISale[] = Array.isArray(rawList) ? rawList : [];
     const loading = useAppSelector(selectSalesLoading);
 
