@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAppDispatch, useAppSelector, injectReducer } from '@/store';
 import salesReducer, {
 	loadSaleDetail,
@@ -13,8 +13,10 @@ import CloseSaleModal from './CloseSaleModal';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
-import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
+import Modal, { ModalBody, ModalFooter, ModalFooterChild, ModalHeader } from '@/components/ui/Modal';
 import { formatDate } from '@/utils/format.utils';
+import ApiService from '@/services/ApiService';
+import { toast } from 'react-toastify';
 
 interface Props {
 	subsidiaryId: number;
@@ -71,6 +73,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	const loading = useAppSelector(selectSalesLoading);
 
 	const [closeOpen, setCloseOpen] = useState(false);
+	const [creatingQuote, setCreatingQuote] = useState(false);
 
 	useEffect(() => {
 		if (!isOpen) return;
@@ -117,9 +120,30 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 
 	if (!isOpen) return null;
 
+	const handleCreateQuote = useCallback(async () => {
+		if (!subsidiaryId || !saleId || creatingQuote) return;
+
+		try {
+			setCreatingQuote(true);
+			const response = await ApiService.fetchData<{ message?: string }>({
+				url: `/subsidiaries/${subsidiaryId}/sales/${saleId}/create-quote`,
+				method: 'post',
+			});
+			const message = response.data?.message || 'Cotización creada correctamente';
+			toast.success(message);
+		} catch (error) {
+			const err = error as { response?: { data?: { message?: string } } };
+			const message = err?.response?.data?.message || 'No se pudo crear la cotización';
+			toast.error(message);
+		} finally {
+			setCreatingQuote(false);
+		}
+	}, [subsidiaryId, saleId, creatingQuote]);
+
 	return (
-		<Modal isOpen={isOpen} setIsOpen={onClose} size='xl' isScrollable>
-			<ModalHeader>Detalle de Venta #{detail?.id ?? saleId}
+		<Modal isOpen={isOpen} setIsOpen={onClose} size='xl' isScrollable isStaticBackdrop>
+			<ModalHeader>
+				<Badge>Detalle de Venta</Badge> #{detail?.id ?? saleId}
 			</ModalHeader>
 
 			<ModalBody className='space-y-4'>
@@ -250,9 +274,10 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 					</CardBody>
 				</Card>
 
+
 				{closeOpen && (
 					<CloseSaleModal
-						open={closeOpen}
+					open={closeOpen}
 						onClose={() => setCloseOpen(false)}
 						subsidiaryId={subsidiaryId}
 						saleId={saleId}
@@ -269,6 +294,17 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 						Cargando información actualizada...
 					</div>
 				)}
+				<ModalFooter className="flex justify-end rounded-md p-3">
+					<ModalFooterChild className="ml-auto">
+						<Button
+							variant="outline"
+							className="border border-dashed"
+							onClick={handleCreateQuote}
+						>
+							Crear cotización desde venta
+						</Button>
+					</ModalFooterChild>
+				</ModalFooter>
 			</ModalBody>
 		</Modal>
 	);

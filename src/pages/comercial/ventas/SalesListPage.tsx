@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
-import { toast } from 'react-toastify';
+// import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector, injectReducer } from '@/store';
 import salesReducer, {
@@ -11,7 +11,7 @@ import salesReducer, {
 } from '@/store/slices/salesSlice';
 import type { SalesListFilters } from '@/services/salesService';
 import { formatCLP, translateStatus } from './utils';
-import ApiService from '@/services/ApiService';
+// import ApiService from '@/services/ApiService';
 import { formatDate } from '@/utils/format.utils';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -24,10 +24,10 @@ import type { TColors } from '@/types/colors.type';
 import type { TColorIntensity } from '@/types/colorIntensities.type';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
-import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subheader';
 import Icon from '@/components/icon/Icon';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
-import Tooltip from '@/components/ui/Tooltip';
+// import Tooltip from '@/components/ui/Tooltip';
 import type { ISale } from '@/interface/sales.interface';
 import SaleDetailPage from './detail/components/modals/SaleDetailPage';
 
@@ -74,7 +74,7 @@ const SalesListPage: React.FC = () => {
 	const [q, setQ] = useState<string>('');
 	const [detailModalOpen, setDetailModalOpen] = useState(false);
 	const [selectedSaleId, setSelectedSaleId] = useState<number | null>(null);
-	const [creatingQuote, setCreatingQuote] = useState(false);
+	// const [creatingQuote, setCreatingQuote] = useState(false);
 
 	useEffect(() => {
 		if (!subsidiaryId) return;
@@ -106,10 +106,10 @@ const SalesListPage: React.FC = () => {
 		[status],
 	);
 
-	const selectedSale = useMemo(
-		() => list.find((sale) => sale.id === selectedSaleId) ?? null,
-		[list, selectedSaleId],
-	);
+	// const selectedSale = useMemo(
+	// 	() => list.find((sale) => sale.id === selectedSaleId) ?? null,
+	// 	[list, selectedSaleId],
+	// );
 
 	const handleDetailModalState = useCallback(
 		(nextOpen: boolean | ((prev: boolean) => boolean)) => {
@@ -136,33 +136,13 @@ const SalesListPage: React.FC = () => {
 		[handleDetailModalState],
 	);
 
-	const handleCreateQuote = useCallback(async () => {
-		if (!subsidiaryId || !selectedSaleId || creatingQuote) return;
 
-		try {
-			setCreatingQuote(true);
-			const response = await ApiService.fetchData<{ message?: string }>({
-				url: `/subsidiaries/${subsidiaryId}/sales/${selectedSaleId}/create-quote`,
-				method: 'post',
-			});
-			const message = response.data?.message || 'Cotización creada correctamente';
-			toast.success(message);
-		} catch (error) {
-			const err = error as { response?: { data?: { message?: string } } };
-			const message = err?.response?.data?.message || 'No se pudo crear la cotización';
-			toast.error(message);
-		} finally {
-			setCreatingQuote(false);
-		}
-	}, [subsidiaryId, selectedSaleId, creatingQuote]);
-
-	const handleCreateSale = () => {
-		navigate('/comercial/ventas/crear');
-	};
+	// const handleCreateSale = () => {
+	// 	navigate('/comercial/ventas/crear');
+	// };
 
 	const detailModalVisible = detailModalOpen && selectedSaleId !== null && Boolean(subsidiaryId);
 
-	// 👇 CORRECCIÓN DE COLUMNAS: Usando ISale
 	const columns = useMemo<ColumnDef<ISale>[]>(
 		() => [
 			{

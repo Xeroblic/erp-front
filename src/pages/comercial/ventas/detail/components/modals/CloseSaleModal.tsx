@@ -80,7 +80,7 @@ const CloseSaleModal: React.FC<Props> = ({ open, onClose, subsidiaryId, saleId, 
             <Icon icon="HeroClipboardDocumentCheck" className="h-6 w-6 text-emerald-700 dark:text-emerald-300" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Cerrar venta</h3>
+            <Badge className="text-lg font-bold ">Cerrar venta</Badge>
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
               Ingresa las series solicitadas para cada ítem antes de confirmar el cierre.
             </p>
