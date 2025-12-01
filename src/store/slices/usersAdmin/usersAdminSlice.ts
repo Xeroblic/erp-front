@@ -6,8 +6,6 @@ import { IUserMe } from '../../../interface/user.interface';
 export interface UserWithDetails extends Omit<IUserMe, 'roles' | 'companies'> {
     // Campos adicionales del backend
     cargo?: string;
-
-    // Roles estructurados del backend
     global_roles?: string[];
     contextual_roles?: Array<{
         role: string;
@@ -19,28 +17,20 @@ export interface UserWithDetails extends Omit<IUserMe, 'roles' | 'companies'> {
         subsidiary?: string;
         branch?: string;
     }>;
-
-    // Permisos del backend actualizado
     direct_permissions?: string[];
     role_permissions?: string[];
     all_permissions?: string[];
-
-    // Permisos legacy (para compatibilidad)
     permissions?: Array<{
         id: number;
         code: string;
         name: string;
         expires_at?: string;
     }>;
-
-    // Roles legacy (para compatibilidad)
     roles?: Array<{
         id: number;
         name: string;
         level?: number;
     }>;
-
-    // Información de empresa/subsidiaria/sucursal del backend
     companies?: Array<{
         id: number;
         name: string;
@@ -51,70 +41,64 @@ export interface UserWithDetails extends Omit<IUserMe, 'roles' | 'companies'> {
             role?: string;
         };
     }>;
-
-	// Información jerárquica del backend actualizada
-	branch?: {
-		id: number;
-		branch_name: string;
-		is_primary?: number;
+    branch?: {
+        id: number;
+        branch_name: string;
+        is_primary?: number;
         position?: string;
-        name: string; // legacy, now always string
+        name?: string;
         subsidiary?: {
             id: number;
             subsidiary_name: string;
-            name: string; // legacy, now always string
+            name?: string;
             company?: {
                 id: number;
                 company_name: string;
             };
-		};
-	};
-
-	access?: {
-		subsidiaries?: Array<{
-			id: number;
-			name: string;
-			company?: {
-				id: number;
-				name: string;
-			};
-			source?: string;
-		}>;
-		branches?: Array<{
-			id: number;
-			name: string;
-			subsidiary?: {
-				id: number;
-				name: string;
-			};
-			source?: string;
-			is_primary?: boolean;
-			position?: string | null;
-		}>;
-	};
-
-	visible?: {
-		subsidiaries?: Array<{
-			id: number;
-			name: string;
-			company?: {
-				id: number;
-				name: string;
-			};
-		}>;
-		branches?: Array<{
-			id: number;
-			name: string;
-			subsidiary?: {
-				id: number;
-				name: string;
-			};
-		}>;
-	};
-
-	// Campos de control
-	can_edit?: boolean;
-	is_super_admin?: boolean;
+        };
+    };
+    access?: {
+        subsidiaries?: Array<{
+            id: number;
+            name: string;
+            company?: {
+                id: number;
+                name: string;
+            };
+            source?: string;
+        }>;
+        branches?: Array<{
+            id: number;
+            name: string;
+            subsidiary?: {
+                id: number;
+                name: string;
+            };
+            source?: string;
+            is_primary?: boolean;
+            position?: string | null;
+        }>;
+    };
+    visible?: {
+        subsidiaries?: Array<{
+            id: number;
+            name: string;
+            company?: {
+                id: number;
+                name: string;
+            };
+        }>;
+        branches?: Array<{
+            id: number;
+            name: string;
+            subsidiary?: {
+                id: number;
+                name: string;
+            };
+        }>;
+    };
+    can_edit?: boolean;
+    is_super_admin?: boolean;
 }
 
 export interface CreateUserData {
@@ -287,7 +271,7 @@ export const createUser = createAsyncThunk(
             const response = await ApiService.fetchData<{ success: boolean; data: UserWithDetails }>({
                 url: '/users',
                 method: 'post',
-                data: userData as unknown as Record<string, unknown>
+                data: userData
             });
             return (response.data as any)?.data ?? (response.data as any)?.user;
         } catch (error: any) {
@@ -303,7 +287,7 @@ export const updateUser = createAsyncThunk(
             const response = await ApiService.fetchData<{ success: boolean; data: UserWithDetails }>({
                 url: `/users/${id}`,
                 method: 'patch',
-                data: userData as unknown as Record<string, unknown>
+                data: userData
             });
             return (response.data as any)?.data ?? (response.data as any)?.user;
         } catch (error: any) {
@@ -398,7 +382,7 @@ export const sendInvitation = createAsyncThunk(
             const response = await ApiService.fetchData<{ invitation: UserInvitation }>({
                 url: '/invitations',
                 method: 'post',
-                data: invitationData as unknown as Record<string, unknown>
+                data: invitationData
             });
             return response.data.invitation;
         } catch (error: any) {
