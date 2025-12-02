@@ -1,261 +1,449 @@
 import store, { logout, setToken } from '@/store';
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { toast } from 'react-toastify';
 import tokenManager from '@/services/auth/tokenManager';
 
+// --- Tipos ---
 interface CustomAxiosRequestConfig<D = any> extends InternalAxiosRequestConfig<D> {
-	isLoginRequest?: boolean;
-	_retry?: boolean;
+    isLoginRequest?: boolean;
+    _retry?: boolean;
 }
+
+// --- Variables de Control (Semáforo y Cancelación) ---
+let isRefreshing = false;
+let failedQueue: Array<{
+    resolve: (token: string) => void;
+    reject: (error: any) => void;
+}> = [];
 
 let abortController = new AbortController();
 
+/**
+ * Cancela todas las peticiones activas en el momento de la llamada.
+ * Utilizado típicamente en el cierre de sesión para evitar errores 401 en peticiones colgadas.
+ */
 export const cancelAllRequests = () => {
-	abortController.abort();
-	abortController = new AbortController();
+    abortController.abort();
+    abortController = new AbortController();
 };
 
-const API_URL = import.meta.env.VITE_API_URL || '';
-const REFRESH_ENDPOINTS = [`${API_URL}/refresh`, `${API_URL}/refresh`];
 
-// Inactividad deshabilitada: deja que el token siga su ciclo de vida normal
-const DEFAULT_INACTIVITY_TIMEOUT_MS = Infinity;
-const TOKEN_REFRESH_THRESHOLD_MS = 30_000; // refrescar si faltan 30s o menos
+// --- Configuración ---
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 const BaseService = axios.create({
-	timeout: 60000,
-	baseURL: API_URL,
+    timeout: 60000,
+    baseURL: API_URL,
 });
 
-const extractAuthHeader = (
-	headers?: CustomAxiosRequestConfig['headers'],
-): string | undefined => {
-	if (!headers) return undefined;
+// --- Helpers ---
 
-	const maybeAxiosHeaders = headers as unknown as { get?: (key: string) => string | undefined };
-	if (typeof maybeAxiosHeaders.get === 'function') {
-		return maybeAxiosHeaders.get('Authorization') || maybeAxiosHeaders.get('authorization');
-	}
+const processQueue = (error: any, token: string | null = null) => {
+    while (failedQueue.length) {
+        const waiter = failedQueue.shift();
+        if (!waiter) continue;
 
-	const normalizedHeaders = headers as Record<string, string | undefined>;
-	return normalizedHeaders?.Authorization || normalizedHeaders?.authorization;
+        if (error) {
+            waiter.reject(error);
+        } else {
+            waiter.resolve(token as string);
+        }
+    }
 };
 
-const setAuthHeader = (
-	headers: CustomAxiosRequestConfig['headers'] | undefined,
-	token: string,
-) => {
-	if (!headers) return;
-	const maybeAxiosHeaders = headers as unknown as { set?: (key: string, value: string) => void };
-	if (typeof maybeAxiosHeaders.set === 'function') {
-		maybeAxiosHeaders.set('Authorization', `Bearer ${token}`);
-		return;
-	}
-	(headers as Record<string, string>).Authorization = `Bearer ${token}`;
-};
-
-let activeRefreshPromise: Promise<string> | null = null;
-const REFRESH_TOKEN_ERROR_TOAST_ID = 'refresh-token-error';
-
-/**
- * Intenta refrescar el access token usando el endpoint /refresh.
- * Usa el token actual que tenga el tokenManager / authState.
- */
-const refreshAccessToken = async () => {
-	if (activeRefreshPromise) return activeRefreshPromise;
-
-	activeRefreshPromise = (async () => {
-		if (!API_URL) throw new Error('VITE_API_URL no esta configurado');
-
-		const currentToken = tokenManager.getAccessToken() ?? store.getState().auth.access;
-		if (!currentToken) throw new Error('No hay token para refrescar');
-
-		let lastError: any = null;
-
-		for (const endpoint of REFRESH_ENDPOINTS) {
-			try {
-				const refreshResponse = await axios.post(
-					endpoint,
-					{},
-					{
-						headers: { Authorization: `Bearer ${currentToken}` },
-						// cuando migres a refresh por cookie HttpOnly, aquí se deja:
-						// withCredentials: true,
-					},
-				);
-
-				const data: any = refreshResponse?.data ?? {};
-				const access = data.token ?? data.access ?? data.access_token ?? data?.data?.token;
-				if (!access) {
-					throw new Error('El endpoint de refresh no devolvió un token válido');
-				}
-
-				// Guardar en memoria + estado de Redux
-				tokenManager.setAccessToken(access);
-				store.dispatch(
-					setToken({
-						access,
-						markActivity: true,
-					}),
-				);
-
-				return access;
-			} catch (err: any) {
-				lastError = err;
-				// intentar siguiente endpoint
-			}
-		}
-
-		if (lastError?.response?.status === 401) {
-			throw new Error('Refresh no autorizado');
-		}
-
-		toast.error('Error al intentar refrescar el token', {
-			toastId: REFRESH_TOKEN_ERROR_TOAST_ID,
-		});
-
-		throw lastError ?? new Error('No se pudo refrescar el token de acceso');
-	})();
-
-	try {
-		return await activeRefreshPromise;
-	} finally {
-		activeRefreshPromise = null;
-	}
-};
-
+// --- Interceptor de Request ---
 BaseService.interceptors.request.use(
-	async (config: CustomAxiosRequestConfig) => {
-		if (!config.isLoginRequest) {
-			config.signal = abortController.signal;
+    (config: CustomAxiosRequestConfig) => {
+        // No interceptar login o refresh requests para evitar bucles
+        if (config.url?.includes('/login') || config.url?.includes('/refresh')) {
+            return config;
+        }
 
-			const state = store.getState();
-			const inactivityTimeout =
-				state?.auth?.inactivityTimeoutMs ?? DEFAULT_INACTIVITY_TIMEOUT_MS;
-			const isAuthenticated = !!state?.auth?.isAuthenticated;
+        // 💡 Reincorporación: Asignar la señal de cancelación
+        config.signal = abortController.signal; 
 
-			// Si la app está marcada como no autenticada, no uses tokens antiguos
-			if (!isAuthenticated) {
-				tokenManager.clearTokens();
-				return config;
-			}
+        const state = store.getState();
+        // Prioridad: TokenManager (memoria) -> Redux (persistencia)
+        const token = tokenManager.getAccessToken() ?? state.auth.access;
 
-			// Control básico de inactividad (deshabilitado)
-			if (tokenManager.isInactive(inactivityTimeout)) {
-				tokenManager.markActivity(Date.now());
-			}
+        if (token && config.headers) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
 
-			// Token desde memoria (tokenManager), fallback a estado Redux por compatibilidad
-			let token = tokenManager.getAccessToken() ?? state?.auth?.access ?? null;
-
-			if (token) {
-				const timeRemaining = tokenManager.getTokenTimeRemaining(token);
-				const isValid = tokenManager.isTokenValid(token);
-				const shouldRefresh =
-					(!isValid || timeRemaining <= TOKEN_REFRESH_THRESHOLD_MS) &&
-					tokenManager.canRefresh(token);
-
-				if ((!isValid || timeRemaining <= TOKEN_REFRESH_THRESHOLD_MS) && !tokenManager.canRefresh(token)) {
-					// No se puede refrescar, forzar cierre de sesión
-					tokenManager.clearTokens();
-					store.dispatch(logout());
-					cancelAllRequests();
-					throw new axios.Cancel('Token expirado y no se puede refrescar');
-				}
-
-				if (shouldRefresh) {
-					try {
-						token = await refreshAccessToken();
-					} catch (refreshErr) {
-						tokenManager.clearTokens();
-						store.dispatch(logout());
-						cancelAllRequests();
-						throw refreshErr;
-					}
-				}
-
-				if (token) {
-					if (!config.headers) {
-						config.headers = {} as any;
-					}
-					setAuthHeader(config.headers, token);
-					tokenManager.markActivity(Date.now());
-				}
-			}
-		}
-
-		return config;
-	},
-	(error) => Promise.reject(error),
+        return config;
+    },
+    (error) => Promise.reject(error)
 );
 
+// --- Interceptor de Response (Maneja el 401 y la Concurrencia) ---
 BaseService.interceptors.response.use(
-	(response) => response,
-	async (error: AxiosError) => {
-		const originalRequest = error.config as CustomAxiosRequestConfig;
+    (response) => response,
+    async (error: AxiosError) => {
+        const originalRequest = error.config as CustomAxiosRequestConfig;
 
-		if (
-			error.response &&
-			error.response.status === 401 &&
-			!originalRequest._retry &&
-			!originalRequest.isLoginRequest
-		) {
-			originalRequest._retry = true;
+        if (!error.response || !originalRequest) {
+            return Promise.reject(error);
+        }
 
-			const authState = store.getState().auth;
-			const isAuthenticated = !!authState?.isAuthenticated;
-			const hasAccess =
-				!!tokenManager.getAccessToken() || !!authState?.access;
+        // Detectar 401 Unauthorized
+        if (error.response.status === 401 && !originalRequest._retry) {
+            
+            // Caso especial: Si el fallo vino del endpoint de refresh o login, no reintentamos
+            if (originalRequest.url?.includes('/refresh') || originalRequest.url?.includes('/login')) {
+                store.dispatch(logout());
+                tokenManager.clearTokens();
+                // 💡 Aseguramos que el componente que estaba pendiente se detenga
+                cancelAllRequests(); 
+                return Promise.reject(error);
+            }
 
-			// Si ya no estamos autenticados o no hay token, no intentes refrescar
-			if (!isAuthenticated || !hasAccess) {
-				tokenManager.clearTokens();
-				store.dispatch(logout());
-				cancelAllRequests();
-				if (window.location.pathname !== '/login') {
-					setTimeout(() => {
-						window.location.href = '/login';
-					}, 300);
-				}
-				return Promise.reject(error);
-			}
+            // 🚦 SI YA SE ESTÁ REFRESCANDO: Ponemos la petición en cola
+            if (isRefreshing) {
+                return new Promise<string>((resolve, reject) => {
+                    failedQueue.push({ resolve, reject });
+                })
+                    .then((token) => {
+                        // Reintentar la petición original con el nuevo token
+                        if (originalRequest.headers) {
+                            originalRequest.headers.Authorization = `Bearer ${token}`;
+                        }
+                        return BaseService(originalRequest);
+                    })
+                    .catch((err) => Promise.reject(err));
+            }
 
-			try {
-				const newToken = await refreshAccessToken();
+            // 🚩 COMIENZO DEL REFRESH (Bloqueamos el semáforo)
+            originalRequest._retry = true;
+            isRefreshing = true;
 
-				if (newToken && originalRequest.headers) {
-					setAuthHeader(originalRequest.headers, newToken);
-				}
+            try {
+                const currentToken = tokenManager.getAccessToken() ?? store.getState().auth.access;
 
-				return BaseService(originalRequest);
-			} catch (refreshError: any) {
-				console.error('Error refreshing token:', refreshError);
+                // Llamada de Refresh
+                const { data } = await axios.post(`${API_URL}/refresh`, {}, {
+                    headers: { Authorization: `Bearer ${currentToken}` }
+                });
 
-				tokenManager.clearTokens();
+                const newToken = data.access_token || data.token || data.access;
 
-				const status = (refreshError as AxiosError)?.response?.status;
-				const errorMessage =
-					status === 401 || refreshError?.message?.includes('no autorizado')
-						? 'Sesión expirada. Por favor, inicia sesión nuevamente.'
-						: 'Error de autenticación. Por favor, inicia sesión nuevamente.';
+                if (!newToken) {
+                    throw new Error('No se recibió token en el refresh');
+                }
 
-				// Silencio: no mostrar toast al cerrar sesión por refresh fallido
+                // Actualizar Estados
+                tokenManager.setAccessToken(newToken);
+                store.dispatch(setToken({ access: newToken }));
 
-				store.dispatch(logout());
-				cancelAllRequests();
+                BaseService.defaults.headers.common.Authorization = `Bearer ${newToken}`;
+                
+                processQueue(null, newToken);
 
-				if (isAuthenticated && window.location.pathname !== '/login') {
-					setTimeout(() => {
-						window.location.href = '/login';
-					}, 500);
-				}
+                // Reintentar la petición original que falló
+                if (originalRequest.headers) {
+                    originalRequest.headers.Authorization = `Bearer ${newToken}`;
+                }
+                return BaseService(originalRequest);
 
-				return Promise.reject(refreshError);
-			}
-		}
+            } catch (refreshError) {
+                // Si falla el refresh, rechazamos toda la cola y cerramos sesión
+                processQueue(refreshError, null);
+                store.dispatch(logout());
+                tokenManager.clearTokens();
+                // 💡 Aseguramos que el componente que estaba pendiente se detenga
+                cancelAllRequests();
+                return Promise.reject(refreshError);
+            } finally {
+                // Siempre liberamos el semáforo
+                isRefreshing = false;
+            }
+        }
 
-		return Promise.reject(error);
-	},
+        return Promise.reject(error);
+    }
 );
 
 export default BaseService;
+
+
+
+
+// V1 ANTIGUO VOLVER EN CASO DE SER NECESARIO 
+
+// import store, { logout, setToken } from '@/store';
+// import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+// import { toast } from 'react-toastify';
+// import tokenManager from '@/services/auth/tokenManager';
+
+// interface CustomAxiosRequestConfig<D = any> extends InternalAxiosRequestConfig<D> {
+// 	isLoginRequest?: boolean;
+// 	_retry?: boolean;
+// }
+
+// let abortController = new AbortController();
+
+// export const cancelAllRequests = () => {
+// 	abortController.abort();
+// 	abortController = new AbortController();
+// };
+
+// const API_URL = import.meta.env.VITE_API_URL || '';
+// const REFRESH_ENDPOINTS = [`${API_URL}/refresh`, `${API_URL}/refresh`];
+
+// type RefreshQueueItem = {
+// 	resolve: (token: string) => void;
+// 	reject: (error: unknown) => void;
+// };
+
+// const refreshQueue: RefreshQueueItem[] = [];
+// let isRefreshingToken = false;
+
+// const enqueueRefresh = () =>
+// 	new Promise<string>((resolve, reject) => {
+// 		refreshQueue.push({ resolve, reject });
+// 	});
+
+// const flushRefreshQueue = (error: unknown, token?: string) => {
+// 	while (refreshQueue.length) {
+// 		const waiter = refreshQueue.shift();
+// 		if (!waiter) continue;
+// 		if (error) {
+// 			waiter.reject(error);
+// 		} else {
+// 			waiter.resolve(token as string);
+// 		}
+// 	}
+// };
+
+// const DEFAULT_INACTIVITY_TIMEOUT_MS = Infinity;
+// const TOKEN_REFRESH_THRESHOLD_MS = 30_000; 
+
+// const BaseService = axios.create({
+// 	timeout: 60000,
+// 	baseURL: API_URL,
+// });
+
+// const extractAuthHeader = (
+// 	headers?: CustomAxiosRequestConfig['headers'],
+// ): string | undefined => {
+// 	if (!headers) return undefined;
+
+// 	const maybeAxiosHeaders = headers as unknown as { get?: (key: string) => string | undefined };
+// 	if (typeof maybeAxiosHeaders.get === 'function') {
+// 		return maybeAxiosHeaders.get('Authorization') || maybeAxiosHeaders.get('authorization');
+// 	}
+
+// 	const normalizedHeaders = headers as Record<string, string | undefined>;
+// 	return normalizedHeaders?.Authorization || normalizedHeaders?.authorization;
+// };
+
+// const setAuthHeader = (
+// 	headers: CustomAxiosRequestConfig['headers'] | undefined,
+// 	token: string,
+// ) => {
+// 	if (!headers) return;
+// 	const maybeAxiosHeaders = headers as unknown as { set?: (key: string, value: string) => void };
+// 	if (typeof maybeAxiosHeaders.set === 'function') {
+// 		maybeAxiosHeaders.set('Authorization', `Bearer ${token}`);
+// 		return;
+// 	}
+// 	(headers as Record<string, string>).Authorization = `Bearer ${token}`;
+// };
+
+// const REFRESH_TOKEN_ERROR_TOAST_ID = 'refresh-token-error';
+
+// const performTokenRefresh = async (): Promise<string> => {
+// 	if (!API_URL) throw new Error('VITE_API_URL no esta configurado');
+
+// 	const currentToken = tokenManager.getAccessToken() ?? store.getState().auth.access;
+// 	if (!currentToken) throw new Error('No hay token para refrescar');
+
+// 	let lastError: any = null;
+
+// 	for (const endpoint of REFRESH_ENDPOINTS) {
+// 		try {
+// 			const refreshResponse = await axios.post(
+// 				endpoint,
+// 				{},
+// 				{
+// 					headers: { Authorization: `Bearer ${currentToken}` },
+// 				},
+// 			);
+
+// 			const data: any = refreshResponse?.data ?? {};
+// 			const access = data.token ?? data.access ?? data.access_token ?? data?.data?.token;
+// 			if (!access) {
+// 				throw new Error('El endpoint de refresh no devolvió un token válido');
+// 			}
+
+// 			tokenManager.setAccessToken(access);
+// 			store.dispatch(
+// 				setToken({
+// 					access,
+// 					markActivity: true,
+// 				}),
+// 			);
+
+// 			return access;
+// 		} catch (err: any) {
+// 			lastError = err;
+// 		}
+// 	}
+
+// 	if (lastError?.response?.status === 401) {
+// 		throw new Error('Refresh no autorizado');
+// 	}
+
+// 	toast.error('Error al intentar refrescar el token', {
+// 		toastId: REFRESH_TOKEN_ERROR_TOAST_ID,
+// 	});
+
+// 	throw lastError ?? new Error('No se pudo refrescar el token de acceso');
+// };
+
+// const refreshAccessToken = async (): Promise<string> => {
+// 	if (isRefreshingToken) {
+// 		return enqueueRefresh();
+// 	}
+
+// 	isRefreshingToken = true;
+
+// 	try {
+// 		const access = await performTokenRefresh();
+// 		flushRefreshQueue(null, access);
+// 		return access;
+// 	} catch (error) {
+// 		flushRefreshQueue(error);
+// 		throw error;
+// 	} finally {
+// 		isRefreshingToken = false;
+// 	}
+// };
+
+// BaseService.interceptors.request.use(
+// 	async (config: CustomAxiosRequestConfig) => {
+// 		if (!config.isLoginRequest) {
+// 			config.signal = abortController.signal;
+
+// 			const state = store.getState();
+// 			const inactivityTimeout =
+// 				state?.auth?.inactivityTimeoutMs ?? DEFAULT_INACTIVITY_TIMEOUT_MS;
+// 			const isAuthenticated = !!state?.auth?.isAuthenticated;
+
+// 			if (!isAuthenticated) {
+// 				tokenManager.clearTokens();
+// 				return config;
+// 			}
+
+// 			if (tokenManager.isInactive(inactivityTimeout)) {
+// 				tokenManager.markActivity(Date.now());
+// 			}
+
+// 			let token = tokenManager.getAccessToken() ?? state?.auth?.access ?? null;
+
+// 			if (token) {
+// 				const timeRemaining = tokenManager.getTokenTimeRemaining(token);
+// 				const isValid = tokenManager.isTokenValid(token);
+// 				const shouldRefresh =
+// 					(!isValid || timeRemaining <= TOKEN_REFRESH_THRESHOLD_MS) &&
+// 					tokenManager.canRefresh(token);
+
+// 				if ((!isValid || timeRemaining <= TOKEN_REFRESH_THRESHOLD_MS) && !tokenManager.canRefresh(token)) {
+// 					tokenManager.clearTokens();
+// 					store.dispatch(logout());
+// 					cancelAllRequests();
+// 					throw new axios.Cancel('Token expirado y no se puede refrescar');
+// 				}
+
+// 				if (shouldRefresh) {
+// 					try {
+// 						token = await refreshAccessToken();
+// 					} catch (refreshErr) {
+// 						tokenManager.clearTokens();
+// 						store.dispatch(logout());
+// 						cancelAllRequests();
+// 						throw refreshErr;
+// 					}
+// 				}
+
+// 				if (token) {
+// 					if (!config.headers) {
+// 						config.headers = {} as any;
+// 					}
+// 					setAuthHeader(config.headers, token);
+// 					tokenManager.markActivity(Date.now());
+// 				}
+// 			}
+// 		}
+
+// 		return config;
+// 	},
+// 	(error) => Promise.reject(error),
+// );
+
+// BaseService.interceptors.response.use(
+// 	(response) => response,
+// 	async (error: AxiosError) => {
+// 		const originalRequest = error.config as CustomAxiosRequestConfig;
+
+// 		if (
+// 			error.response &&
+// 			error.response.status === 401 &&
+// 			!originalRequest._retry &&
+// 			!originalRequest.isLoginRequest
+// 		) {
+// 			originalRequest._retry = true;
+
+// 			const authState = store.getState().auth;
+// 			const isAuthenticated = !!authState?.isAuthenticated;
+// 			const hasAccess =
+// 				!!tokenManager.getAccessToken() || !!authState?.access;
+
+// 			if (!isAuthenticated || !hasAccess) {
+// 				tokenManager.clearTokens();
+// 				store.dispatch(logout());
+// 				cancelAllRequests();
+// 				if (window.location.pathname !== '/login') {
+// 					setTimeout(() => {
+// 						window.location.href = '/login';
+// 					}, 300);
+// 				}
+// 				return Promise.reject(error);
+// 			}
+
+// 			try {
+// 				const newToken = await refreshAccessToken();
+
+// 				if (newToken && originalRequest.headers) {
+// 					setAuthHeader(originalRequest.headers, newToken);
+// 				}
+
+// 				return BaseService(originalRequest);
+// 			} catch (refreshError: any) {
+// 				console.error('Error refreshing token:', refreshError);
+
+// 				tokenManager.clearTokens();
+
+// 				const status = (refreshError as AxiosError)?.response?.status;
+// 				const errorMessage =
+// 					status === 401 || refreshError?.message?.includes('no autorizado')
+// 						? 'Sesión expirada. Por favor, inicia sesión nuevamente.'
+// 						: 'Error de autenticación. Por favor, inicia sesión nuevamente.';
+
+
+// 				store.dispatch(logout());
+// 				cancelAllRequests();
+
+// 				if (isAuthenticated && window.location.pathname !== '/login') {
+// 					setTimeout(() => {
+// 						window.location.href = '/login';
+// 					}, 500);
+// 				}
+
+// 				return Promise.reject(refreshError);
+// 			}
+// 		}
+
+// 		return Promise.reject(error);
+// 	},
+// );
+
+// export default BaseService;

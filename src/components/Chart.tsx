@@ -16,10 +16,27 @@ export interface IChartProps {
 	height?: string | number;
 }
 
+const isValidDimension = (value: string | number | undefined | null): value is string | number => {
+	if (typeof value === 'number') {
+		return Number.isFinite(value) && value >= 0;
+	}
+	if (typeof value === 'string') {
+		return value.trim().length > 0 && value.trim() !== 'NaN';
+	}
+	return false;
+};
+
+const sanitizeDimension = <T extends string | number>(value: T | undefined, fallback: T): T => {
+	return (isValidDimension(value) ? (value as T) : fallback) as T;
+};
+
 const Chart: FC<IChartProps> = (props) => {
 	const { series, options = {}, type, width = '100%', height = 'auto' } = props;
 	const chartRef = useRef<HTMLDivElement | null>(null);
 	const chartInstanceRef = useRef<ApexCharts | null>(null);
+
+	const sanitizedWidth = sanitizeDimension(width, '100%');
+	const sanitizedHeight = height === 'auto' ? 'auto' : sanitizeDimension(height, 300);
 
 	const defaultOptions: ApexOptions = useMemo(
 		() => ({
@@ -123,15 +140,16 @@ const Chart: FC<IChartProps> = (props) => {
 	);
 
 	const buildOptions = useMemo(() => {
+		const computedHeight = sanitizedHeight === 'auto' ? undefined : sanitizedHeight;
 		return _.merge({}, defaultOptions, options, {
 			chart: {
 				...defaultOptions.chart,
 				type,
-				width,
-				height: height === 'auto' ? undefined : height,
+				width: sanitizedWidth,
+				height: computedHeight,
 			},
 		});
-	}, [defaultOptions, options, type, width, height]);
+	}, [defaultOptions, options, type, sanitizedWidth, sanitizedHeight]);
 
 	useEffect(() => {
 		if (!chartRef.current) return;
@@ -180,8 +198,8 @@ const Chart: FC<IChartProps> = (props) => {
 		}
 	}, [buildOptions, series]);
 
-	const inlineHeight = height === 'auto' ? undefined : height;
-	const inlineWidth = width;
+	const inlineHeight = sanitizedHeight === 'auto' ? undefined : sanitizedHeight;
+	const inlineWidth = sanitizedWidth;
 
 	return <div ref={chartRef} style={{ width: inlineWidth, height: inlineHeight }} />;
 };

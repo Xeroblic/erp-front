@@ -96,6 +96,8 @@ export const DropdownToggle: FC<IDropdownToggleProps> = (props) => {
 	const { children, isOpen = false, setIsOpen, hasIcon = true } = props;
 
 	const dropdownButtonRef = useRef(null);
+	const childComponent = children.type as React.ComponentType & { displayName?: string };
+	const childDisplayName = childComponent?.displayName || childComponent?.name || '';
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const setButtonRef = useCallback((node: null, ref: (arg0: any) => any) => {
@@ -110,7 +112,7 @@ export const DropdownToggle: FC<IDropdownToggleProps> = (props) => {
 				cloneElement(children, {
 					// @ts-ignore
 					// eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-					'data-component-name': `Dropdown/DropdownToggle [${children.type.displayName}]`,
+					'data-component-name': `Dropdown/DropdownToggle [${childDisplayName}]`,
 					// @ts-ignore
 					// eslint-disable-next-line @typescript-eslint/no-unsafe-return
 					ref: (node: null) => setButtonRef(node, ref),
@@ -122,7 +124,7 @@ export const DropdownToggle: FC<IDropdownToggleProps> = (props) => {
 							setIsOpen(!isOpen);
 						}
 					},
-					...(children.type?.displayName === 'Button'
+					...(childDisplayName === 'Button'
 						? {
 								rightIcon: hasIcon
 									? 'HeroChevronDown'
