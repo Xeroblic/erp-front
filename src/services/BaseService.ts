@@ -19,7 +19,7 @@ let abortController = new AbortController();
 
 /**
  * Cancela todas las peticiones activas en el momento de la llamada.
- * Utilizado típicamente en el cierre de sesión para evitar errores 401 en peticiones colgadas.
+ * Utilizado típicamente en el cierre .
  */
 export const cancelAllRequests = () => {
     abortController.abort();

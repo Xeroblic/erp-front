@@ -1,9 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
 import { IQuote } from '@/interface';
-import store from '@/store';
 import {
-	getCompanyInfo,
 	getCustomerInfo,
 	resolveUnitPrice,
 	resolveLineTotal,
@@ -14,25 +12,6 @@ import {
 	formatDate,
 	getPaymentMethodsLabel,
 } from './quote-data-mapper';
-
-const logoDataCache = new Map<string, string>();
-
-const fetchImageAsDataUrl = async (url: string): Promise<string | null> => {
-	try {
-		const response = await fetch(url, { mode: 'cors' });
-		if (!response.ok) return null;
-		const blob = await response.blob();
-		return await new Promise((resolve) => {
-			const reader = new FileReader();
-			reader.onloadend = () => resolve(reader.result as string);
-			reader.onerror = () => resolve(null);
-			reader.readAsDataURL(blob);
-		});
-	} catch (err) {
-		console.warn('[QuotePdfDocument] No se pudo cargar el logo:', err);
-		return null;
-	}
-};
 
 const styles = StyleSheet.create({
 	page: {
@@ -53,10 +32,9 @@ const styles = StyleSheet.create({
 	logoContainer: {
 		height: 50,
 		marginBottom: 8,
-		alignItems: 'flex-start',
 		justifyContent: 'center',
 	},
-	logo: { height: '100%', objectFit: 'contain', alignSelf: 'flex-start' },
+	logo: { width: 150, height: 50, objectFit: 'contain' },
 	companyName: { fontSize: 14, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 2 },
 	companyLine: { fontSize: 9, color: '#374151' },
 	rutBoxContainer: { width: '36%', alignItems: 'center' },
@@ -143,45 +121,43 @@ const styles = StyleSheet.create({
 	pageNumber: { marginTop: 10, textAlign: 'center', fontSize: 8, color: '#9ca3af' },
 });
 
-const QuotePdfDocument = ({ quote }: { quote: IQuote }) => {
-	const state = store.getState() as any;
-	const company = getCompanyInfo(quote, state);
-	const [logoSrc, setLogoSrc] = useState<string | null>(null);
+// Define the shape of the company object returned by getCompanyInfo
+interface CompanyInfo {
+    name: string;
+    rut: string;
+    activity: string;
+    fullAddress: string;
+    email: string;
+    phone: string;
+    website: string;
+    logoUrl: string | null;
+    bankInfo: string[];
+    allowedPaymentMethods: string[];
+    deliveryTerm: string;
+    quoteValidityText: string;
+    quoteValidityDays: number | null;
+    commercialTerms: string;
+}
 
-	useEffect(() => {
-		let cancelled = false;
-		const loadLogo = async () => {
-			if (!company.logoUrl) {
-				setLogoSrc(null);
-				return;
-			}
+interface QuotePdfDocumentProps {
+    quote: IQuote;
+    company: CompanyInfo;
+    logoBase64?: string | null;
+}
 
-			// Si es base64, usarla directamente
-			if (String(company.logoUrl).startsWith('data:')) {
-				setLogoSrc(company.logoUrl);
-				return;
-			}
+const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps) => {
+    // Use the pre-fetched logo if available, otherwise check if the url is already a data url
+	const logoSrc = logoBase64 || null;
 
-			// Verificar caché
-			const existing = logoDataCache.get(company.logoUrl);
-			if (existing) {
-				setLogoSrc(existing);
-				return;
-			}
+	if (logoSrc) {
+		console.log(
+			'[QuotePdfDocument] usando logoSrc (base64, primeros 80):',
+			logoSrc.substring(0, 80)
+		);
+	} else {
+		console.log('[QuotePdfDocument] SIN logoSrc, company.logoUrl:', company.logoUrl);
+	}
 
-			// Intentar cargar desde URL
-			const data = await fetchImageAsDataUrl(company.logoUrl);
-			if (!cancelled) {
-				const finalSrc = data || company.logoUrl;
-				logoDataCache.set(company.logoUrl, finalSrc);
-				setLogoSrc(finalSrc);
-			}
-		};
-		void loadLogo();
-		return () => {
-			cancelled = true;
-		};
-	}, [company.logoUrl]);
 
 	const items = quote.items || [];
 	const customer = getCustomerInfo((quote as any).customer);
@@ -212,7 +188,7 @@ const QuotePdfDocument = ({ quote }: { quote: IQuote }) => {
 									</Text>
 								)}
 							</View>
-							{logoSrc && <Text style={styles.companyName}>{company.name}</Text>}
+							{/* Removed redundant company name text when logo is present */}
 							<Text style={styles.companyLine}>Giro: {company.activity}</Text>
 							<Text style={styles.companyLine}>
 								Dirección: {company.fullAddress || '—'}
@@ -297,7 +273,7 @@ const QuotePdfDocument = ({ quote }: { quote: IQuote }) => {
 								<View style={styles.colDesc}>
 									<Text style={styles.boldText}>{name}</Text>
 									{detail && (
-										<Text style={{ fontSize: 7, color: '#9ca3af' }}>
+										<Text style={{ fontSize: 7, color: '#6b7280' }}>
 											{detail}
 										</Text>
 									)}
@@ -308,7 +284,7 @@ const QuotePdfDocument = ({ quote }: { quote: IQuote }) => {
 								</Text>
 							</View>
 						);
-					})}{' '}
+					})}
 					<View style={styles.totalsSection}>
 						<View style={styles.totalsTable}>
 							<View style={styles.totalRow}>

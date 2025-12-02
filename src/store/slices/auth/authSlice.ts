@@ -12,6 +12,23 @@ interface LoginResponse {
     access: string;
 }
 
+const extractAccessToken = (payload: any): string | undefined => {
+    if (!payload) return undefined;
+
+    const candidates = [
+        payload.token,
+        payload.access,
+        payload.access_token,
+        payload?.data?.token,
+        payload?.data?.access,
+        payload?.data?.access_token,
+    ];
+
+    return candidates.find(
+        (value): value is string => typeof value === 'string' && value.trim().length > 0,
+    );
+};
+
 type PerfilResponse = {
     data?: {
         all_permissions?: string[];
@@ -62,7 +79,10 @@ export const loginThunk = createAsyncThunk<
             isLoginRequest: true,
         });
 
-        const token = resp.data.token;
+        const token = extractAccessToken(resp.data);
+        if (!token) {
+            throw new Error('El inicio de sesión no devolvió un token válido');
+        }
 
         // Guardar SOLO en memoria
         tokenManager.setAccessToken(token);
@@ -72,7 +92,12 @@ export const loginThunk = createAsyncThunk<
 
         return { access: token };
     } catch (error: any) {
-        return rejectWithValue(error?.response?.data?.error || 'Error de autenticación');
+        const apiMessage =
+            error?.response?.data?.error ||
+            error?.response?.data?.message ||
+            error?.message ||
+            'Error de autenticación';
+        return rejectWithValue(apiMessage);
     }
 });
 
@@ -106,26 +131,47 @@ export const logoutThunk = createAsyncThunk<
 /* ---------------------------------------------------
    PERFIL DEL USUARIO (userMe)
 --------------------------------------------------- */
+export interface AuthErrorPayload {
+	message: string;
+	isUnauthorized?: boolean;
+}
+
 export const userMeThunk = createAsyncThunk<
-    { user: IUserMe; permisos: string[]; roles?: string[] },
-    void,
-    { state: RootState; rejectValue: string }
+	{ user: IUserMe; permisos: string[]; roles?: string[] },
+	void,
+	{ state: RootState; rejectValue: AuthErrorPayload }
 >('auth/userMe', async (_, { getState, rejectWithValue }) => {
-    const token = tokenManager.getAccessToken() ?? getState().auth.access;
-    if (!token) return rejectWithValue('Token inválido');
+	const token = tokenManager.getAccessToken() ?? getState().auth.access;
+	if (!token)
+		return rejectWithValue({
+			message: 'Token inválido',
+			isUnauthorized: true,
+		});
 
-    try {
-        const resp = await ApiService.fetchData<PerfilResponse>({
-            url: '/perfil',
-            method: 'get',
-            dedupe: true,
-            headers: { Authorization: `Bearer ${token}` },
-        });
+	try {
+		const resp = await ApiService.fetchData<PerfilResponse>({
+			url: '/perfil',
+			method: 'get',
+			dedupe: true,
+			headers: { Authorization: `Bearer ${token}` },
+		});
 
-        return normalizeUserProfile(resp.data as string | PerfilResponse);
-    } catch {
-        return rejectWithValue('No se pudo obtener el perfil');
-    }
+		return normalizeUserProfile(resp.data as string | PerfilResponse);
+	} catch (error: any) {
+		const status = error?.response?.status;
+		const apiMessage = (error?.response?.data?.message ?? error?.message) as string | undefined;
+		const isUnauthorized =
+			status === 401 ||
+			(typeof apiMessage === 'string' && apiMessage.toLowerCase().includes('no autentic'));
+		const message =
+			apiMessage && typeof apiMessage === 'string'
+				? apiMessage
+				: 'No se pudo obtener el perfil';
+		return rejectWithValue({
+			message,
+			isUnauthorized,
+		});
+	}
 });
 
 /* ---------------------------------------------------
@@ -166,7 +212,7 @@ const authSlice = createSlice({
     },
 
     extraReducers: (builder) => {
-        builder
+		builder
             /* LOGIN */
             .addCase(loginThunk.pending, (s) => {
                 s.loading = true;
@@ -202,18 +248,22 @@ const authSlice = createSlice({
                 s.isAuthenticated = true;
                 s.userLastFetched = Date.now();
             })
-            .addCase(userMeThunk.rejected, (s, action) => {
-                s.loading = false;
-                s.error = action.payload;
-                s.isAuthenticated = false;
+			.addCase(userMeThunk.rejected, (s, action) => {
+				s.loading = false;
+				s.isAuthenticated = false;
 
-                const isCanceled = action.error?.name === 'CanceledError';
-                const isTokenInvalid = action.payload === 'Token inválido';
-                if (!isCanceled && !isTokenInvalid) {
-                    toast.error(action.payload);
-                }
-            });
-    },
+				const payload = action.payload as AuthErrorPayload | undefined;
+				const message = payload?.message ?? 'No se pudo obtener el perfil';
+				s.error = message;
+
+				const isCanceled = action.error?.name === 'CanceledError';
+				const isTokenInvalid = message === 'Token inválido';
+				const isUnauthorized = payload?.isUnauthorized ?? false;
+				if (!isCanceled && !isTokenInvalid && !isUnauthorized) {
+					toast.error(message);
+				}
+			});
+	},
 });
 
 export const { logout, clearAuthState, setToken } = authSlice.actions;

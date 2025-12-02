@@ -83,12 +83,17 @@ const AppInitializer = () => {
     fetchedPersonalization.current = true;
 
     dispatch(obtenerPersonalizacionThunk())
-      // @ts-ignore por si unwrap no está tipado
-      .unwrap?.()
-      .catch(() => {
-        toast.error('Error cargando personalización');
-        fetchedPersonalization.current = false;
-      });
+		// @ts-ignore por si unwrap no está tipado
+		.unwrap?.()
+		.catch((error: any) => {
+			const rawMessage = typeof error === 'string' ? error : error?.message;
+			const shouldSilence =
+				typeof rawMessage === 'string' && rawMessage.toLowerCase().includes('no autentic');
+			if (!shouldSilence) {
+				toast.error('Error cargando personalización');
+			}
+			fetchedPersonalization.current = false;
+		});
   }, [dispatch, isAuthenticated, isPublic]);
 
   return null;
