@@ -55,9 +55,11 @@ const fetchImageAsDataUrl = async (url: string): Promise<string | null> => {
 		let fetchUrl = url;
 
 		// Si la URL contiene /storage/ en cualquier lado, usamos solo la parte relativa
-		const storageMatch = url.match(/\/storage\/.+$/);
-		if (storageMatch) {
-			fetchUrl = storageMatch[0]; // => "/storage/....jpg"
+		if (import.meta.env.DEV) {
+			const storageMatch = url.match(/\/storage\/.+$/);
+			if (storageMatch) {
+				fetchUrl = storageMatch[0]; // "/storage/..."
+			}
 		}
 
 		console.log('[generateQuotePdf] URL procesada:', fetchUrl);
