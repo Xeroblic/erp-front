@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { Formik, Form, type FormikHelpers, useFormikContext } from 'formik';
 import { toast } from 'react-toastify';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
@@ -85,10 +85,21 @@ AutoSaveHandler.displayName = 'AutoSaveHandler';
 
 const ProductDetail: React.FC = () => {
 	const { productId: productIdParam } = useParams<{ productId: string }>();
+	const location = useLocation();
 	const dispatch = useAppDispatch();
 
 	const parsedProductId = productIdParam ? Number(productIdParam) : NaN;
 	const productId = Number.isFinite(parsedProductId) ? parsedProductId : null;
+	const branchIdFromState = (location.state as any)?.branchId;
+	const branchIdFromQuery = useMemo(() => {
+		const params = new URLSearchParams(location.search);
+		const raw = params.get('branchId');
+		const parsed = raw ? Number(raw) : NaN;
+		return Number.isFinite(parsed) ? parsed : null;
+	}, [location.search]);
+	const initialBranchId = Number.isFinite(branchIdFromState)
+		? branchIdFromState
+		: branchIdFromQuery;
 
 	const {
 		product,
@@ -102,10 +113,10 @@ const ProductDetail: React.FC = () => {
 		categoriesLoading,
 		effectiveBranchId,
 		updateProduct,
-	} = useProductDetail({ productId, branchId: null });
+	} = useProductDetail({ productId, branchId: initialBranchId });
 
 	const { branchId, activeTab, setActiveTab, handleBranchChange } = useProductDetailState(
-		null,
+		initialBranchId,
 		effectiveBranchId,
 	);
 
@@ -117,10 +128,10 @@ const ProductDetail: React.FC = () => {
 	const brandOptions = useMemo(() => createBrandOptions(brands), [brands]);
 	const categoryOptions = useMemo(() => createCategoryOptions(categories), [categories]);
 
-	const initialValues = useMemo(
-		() => (product ? mapProductToDetailForm(product) : EMPTY_DETAIL_FORM),
-		[product],
-	);
+	const initialValues = useMemo(() => {
+		if (!product) return EMPTY_DETAIL_FORM;
+		return mapProductToDetailForm(product);
+	}, [product?.id, product?.attributes_json, product?.updated_at]);
 
 	// Manejar eliminaciÃ³n de imagen
 	const handleDeleteImage = async (mediaId: number) => {

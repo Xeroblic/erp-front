@@ -250,12 +250,12 @@ const CreateBatchPage: React.FC = () => {
 	}, [selectedCustomer]);
 
 	useEffect(() => {
-		if (
-			selectedSupplierId !== null &&
-			!linkedSupplierOptions.some((opt) => opt.value === String(selectedSupplierId))
-		) {
-			setSelectedSupplierId(null);
-		}
+		// Solo limpiamos la selección si ya existen proveedores asociados y el elegido desapareció
+		if (!linkedSupplierOptions.length || selectedSupplierId === null) return;
+		const stillExists = linkedSupplierOptions.some(
+			(opt) => opt.value === String(selectedSupplierId),
+		);
+		if (!stillExists) setSelectedSupplierId(null);
 	}, [linkedSupplierOptions, selectedSupplierId]);
 
 	const handleCancel = () => navigate('/technical-reviews/batches');

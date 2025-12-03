@@ -88,7 +88,7 @@
 
 	html,
 	body {
-		@apply flex h-full flex-col scroll-smooth bg-[#c5c5c5] text-zinc-800 dark:bg-[#1e2124] dark:text-zinc-200;
+		@apply flex h-full flex-col scroll-smooth overflow-x-hidden overflow-y-auto bg-[#c5c5c5] text-zinc-800 dark:bg-[#1e2124] dark:text-zinc-200;
 	}
 
 	html.dark {

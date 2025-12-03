@@ -211,7 +211,11 @@ const Productos: React.FC = () => {
 	};
 
 	const handleViewProduct = (product: IProduct) => {
-		navigate(`/catalogos/productos/${product.id}`);
+		const resolvedBranchId = branchId ?? activeBranchId ?? currentBranch?.id ?? null;
+		const search = resolvedBranchId ? `?branchId=${resolvedBranchId}` : '';
+		navigate(`/catalogos/productos/${product.id}${search}`, {
+			state: { branchId: resolvedBranchId },
+		});
 	};
 
 	const handleCreateSubmit = async (payload: {
