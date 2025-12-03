@@ -66,6 +66,7 @@ export const getCompanyInfo = (quote: IQuote, state: any) => {
     // LOGO
     const logoRaw =
         meta.logo_base_64 ||
+        activeSub?.logo_base_64 ||
         meta.logo_url ||
         activeSub?.logo_url;
 

@@ -106,6 +106,7 @@ export interface ISubempresa {
     province_id?: number;
   };
   logo_url?: string | null;
+  logo_base_64?: string | null;
   created_at?: string;
   updated_at?: string;
 

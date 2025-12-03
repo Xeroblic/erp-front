@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { toast } from 'react-toastify';
-// BORRADO: import { saveAs } from 'file-saver';  <-- Lo llamaremos dinámicamente
 import { IQuote, QuoteStatus } from '../../../interface';
 import useQuotationsManager from './hooks/useQuotationsManager';
 import QuotationsTable from './components/tables/QuotationsTable';
@@ -11,204 +10,18 @@ import DeleteQuotationModal from './components/modals/DeleteQuotationModal';
 import {
     getQuoteStatusLabel,
     normalizeQuoteStatusValue,
-    quoteStatusOptions,
 } from './constants/quoteStatuses';
 
-// UI Components
 import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
 import Container from '@/components/layouts/Container/Container';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-import Input from '@/components/form/Input';
-import Select from '@/components/form/Select';
-import Icon from '@/components/icon/Icon';
-// BORRADO: import { generateQuotePdf } from './utils/pdf/generateQuotePdf'; <-- Lo llamaremos dinámicamente
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
-// BORRADO: import { Page } from '@react-pdf/renderer'; <-- BASURA QUE NO USABAS
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
+import { FiltersSection } from './components/FiltersSection';
+import { StatsCards } from './components/StatsCards';
 
-// --- MOVÍ ESTOS COMPONENTES FUERA PARA QUE REACT NO LLORE ---
-const FiltersSection = ({ filters, setFilters, showFilters, setShowFilters, resetFilters }: any) => (
-    <Card className='mb-6'>
-        <CardHeader>
-            <CardHeaderChild>
-                <CardTitle>Filtros</CardTitle>
-            </CardHeaderChild>
-        </CardHeader>
-        <CardBody>
-            <div className='grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4'>
-                <Input
-                    name='search'
-                    placeholder='Buscar por número o notas...'
-                    value={filters.search || ''}
-                    onChange={(e: any) => setFilters({ ...filters, search: e.target.value })}
-                />
 
-                <Select
-                    name='status'
-                    value={filters.status ? normalizeQuoteStatusValue(filters.status) : ''}
-                    onChange={(e: any) =>
-                        setFilters({
-                            ...filters,
-                            status: e.target.value
-                                ? (e.target.value as QuoteStatus)
-                                : undefined,
-                        })
-                    }>
-                    <option value=''>Todos los estados</option>
-                    {quoteStatusOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                            {option.label}
-                        </option>
-                    ))}
-                </Select>
-
-                <Input
-                    name='customer'
-                    placeholder='Cliente...'
-                    value={filters.customerId?.toString() || ''}
-                    onChange={(e: any) =>
-                        setFilters({
-                            ...filters,
-                            customerId: e.target.value ? Number(e.target.value) : undefined,
-                        })
-                    }
-                />
-
-                <div className='flex space-x-2'>
-                    <Button variant='outline' onClick={resetFilters} icon='HeroXMark'>
-                        Limpiar
-                    </Button>
-                    <Button onClick={() => setShowFilters(!showFilters)} icon='HeroFunnel'>
-                        {showFilters ? 'Ocultar' : 'Más filtros'}
-                    </Button>
-                </div>
-            </div>
-
-            {showFilters && (
-                <div className='mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
-                    <Input
-                        name='dateFrom'
-                        type='date'
-                        placeholder='Fecha desde'
-                        value={filters.dateFrom || ''}
-                        onChange={(e: any) => setFilters({ ...filters, dateFrom: e.target.value })}
-                    />
-                    <Input
-                        name='dateTo'
-                        type='date'
-                        placeholder='Fecha hasta'
-                        value={filters.dateTo || ''}
-                        onChange={(e: any) => setFilters({ ...filters, dateTo: e.target.value })}
-                    />
-                    <Input
-                        name='minAmount'
-                        type='number'
-                        placeholder='Monto mínimo'
-                        value={filters.minAmount || ''}
-                        onChange={(e: any) =>
-                            setFilters({
-                                ...filters,
-                                minAmount: e.target.value ? Number(e.target.value) : undefined,
-                            })
-                        }
-                    />
-                    <Input
-                        name='maxAmount'
-                        type='number'
-                        placeholder='Monto máximo'
-                        value={filters.maxAmount || ''}
-                        onChange={(e: any) =>
-                            setFilters({
-                                ...filters,
-                                maxAmount: e.target.value ? Number(e.target.value) : undefined,
-                            })
-                        }
-                    />
-                </div>
-            )}
-        </CardBody>
-    </Card>
-);
-
-const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-    }).format(amount);
-};
-
-const StatsCards = ({ stats }: { stats: any }) => (
-    <div className='mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5'>
-        <Card>
-            <CardBody>
-                <div className='flex items-center'>
-                    <div className='mr-4 flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100'>
-                        <Icon icon='HeroDocumentText' className='h-6 w-6 text-blue-600' />
-                    </div>
-                    <div>
-                        <p className='text-sm font-medium'>Total</p>
-                        <p className='text-2xl font-bold '>{stats.total}</p>
-                    </div>
-                </div>
-            </CardBody>
-        </Card>
-        {/* ... (El resto de las cards iguales, solo asegúrate de pasar props) ... */}
-        {/* AHORRE ESPACIO AQUÍ PERO DEBES PONER LAS OTRAS 4 CARDS IGUAL QUE ANTES */}
-         <Card>
-            <CardBody>
-                <div className='flex items-center'>
-                    <div className='mr-4 flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100'>
-                        <Icon icon='HeroPencilSquare' className='h-6 w-6 ' />
-                    </div>
-                    <div>
-                        <p className='text-sm font-medium '>Borradores</p>
-                        <p className='text-2xl font-bold '>{stats.byStatus.draft || 0}</p>
-                    </div>
-                </div>
-            </CardBody>
-        </Card>
-         <Card>
-            <CardBody>
-                <div className='flex items-center'>
-                    <div className='mr-4 flex h-12 w-12 items-center justify-center rounded-lg bg-amber-100'>
-                        <Icon icon='HeroPaperAirplane' className='h-6 w-6 text-amber-600' />
-                    </div>
-                    <div>
-                        <p className='text-sm font-medium '>Enviadas</p>
-                        <p className='text-2xl font-bold '>{stats.byStatus.sent || 0}</p>
-                    </div>
-                </div>
-            </CardBody>
-        </Card>
-         <Card>
-            <CardBody>
-                <div className='flex items-center'>
-                    <div className='mr-4 flex h-12 w-12 items-center justify-center rounded-lg bg-green-100'>
-                        <Icon icon='HeroCheckCircle' className='h-6 w-6 text-green-600' />
-                    </div>
-                    <div>
-                        <p className='text-sm font-medium '>Aprobadas</p>
-                        <p className='text-2xl font-bold '>{stats.byStatus.approved || 0}</p>
-                    </div>
-                </div>
-            </CardBody>
-        </Card>
-         <Card>
-            <CardBody>
-                <div className='flex items-center'>
-                    <div className='mr-4 flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-100'>
-                        <Icon icon='HeroCurrencyDollar' className='h-6 w-6 text-emerald-600' />
-                    </div>
-                    <div>
-                        <p className='text-sm font-medium '>Valor Total</p>
-                        <p className='text-lg font-bold '>{formatCurrency(stats.totalAmount)}</p>
-                    </div>
-                </div>
-            </CardBody>
-        </Card>
-    </div>
-);
 
 const CotizacionesAdmin: React.FC = () => {
     // Estados locales
@@ -328,7 +141,6 @@ const CotizacionesAdmin: React.FC = () => {
         }
     };
 
-    // --- AQUÍ ESTÁ LA MAGIA DEL LAZY LOAD ---
     const handleDownloadPdf = async (id: number) => {
         setIsActionLoading(true);
         try {
@@ -447,7 +259,7 @@ const CotizacionesAdmin: React.FC = () => {
                 <StatsCards stats={stats} />
 
                 {/* Filtros (Componente Externo) */}
-                <FiltersSection 
+                <FiltersSection
                     filters={filters} 
                     setFilters={setFilters} 
                     showFilters={showFilters} 
@@ -530,7 +342,6 @@ const CotizacionesAdmin: React.FC = () => {
                     </CardBody>
                 </Card>
 
-                {/* Modales... (Sin cambios en la lógica, solo render) */}
                 <CreateEditQuotationModal
                     isOpen={isCreateModalOpen}
                     onClose={() => {
