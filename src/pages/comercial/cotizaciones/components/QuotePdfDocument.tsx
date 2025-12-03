@@ -146,14 +146,14 @@ interface QuotePdfDocumentProps {
 }
 
 const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps) => {
-    // Use the pre-fetched logo if available, otherwise check if the url is already a data url
-	const logoSrc = logoBase64 || null;
+    // Prefetch attempts to return base64, but fallback to company logo url if necessary
+	const logoSrc = logoBase64 || company.logoUrl || null;
 
 	if (logoSrc) {
-		console.log(
-			'[QuotePdfDocument] usando logoSrc (base64, primeros 80):',
-			logoSrc.substring(0, 80)
-		);
+		const preview = String(logoSrc).startsWith('data:')
+			? logoSrc.substring(0, 80)
+			: logoSrc;
+		console.log('[QuotePdfDocument] usando logoSrc:', preview);
 	} else {
 		console.log('[QuotePdfDocument] SIN logoSrc, company.logoUrl:', company.logoUrl);
 	}
