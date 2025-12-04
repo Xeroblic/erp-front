@@ -26,7 +26,7 @@ const DeleteCustomerSaleModal: React.FC<Props> = ({
 			deleteCustomerThunk({
 				subsidiary: subsidiaryId,
 				id: customerId,
-			})
+			}),
 		);
 
 		setIsOpen(false);
@@ -37,12 +37,8 @@ const DeleteCustomerSaleModal: React.FC<Props> = ({
 			<ModalHeader>Eliminar Cliente</ModalHeader>
 
 			<ModalBody>
-				<p className='text-lg'>
-					¿Estás seguro que deseas eliminar este cliente de ventas?
-				</p>
-				<p className='text-sm text-red-500 mt-2'>
-					Esta acción no se puede deshacer.
-				</p>
+				<p className='text-lg'>¿Estás seguro que deseas eliminar este cliente de ventas?</p>
+				<p className='mt-2 text-sm text-red-500'>Esta acción no se puede deshacer.</p>
 			</ModalBody>
 
 			<ModalFooter>

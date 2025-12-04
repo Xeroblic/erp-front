@@ -1,12 +1,12 @@
 import React from 'react';
 import { useFormikContext } from 'formik';
+import { toast } from 'react-toastify';
+import type { MultiValue } from 'react-select';
 import Input from '@/components/form/Input';
 import SelectReact from '@/components/form/SelectReact';
-import { toast } from 'react-toastify';
 import type { ProductDetailForm } from '../../types/products.types';
 import type { ICategory } from '@/interface/category.interface';
 import type { TSelectOption } from '@/components/form/SelectReact';
-import type { MultiValue } from 'react-select';
 
 interface ComercialTabProps {
 	categories: ICategory[];

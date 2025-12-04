@@ -11,12 +11,7 @@ export const CATEGORY_GRADES = ['A', 'B', 'C', 'M'] as const;
 
 export const CPU_BRAND = ['Intel', 'AMD'] as const;
 
-export const CPU_FAMILY_INTEL = [
-	'Celeron',
-	'Pentium',
-	'Core',
-	'Xeon',
-] as const;
+export const CPU_FAMILY_INTEL = ['Celeron', 'Pentium', 'Core', 'Xeon'] as const;
 
 export const CPU_FAMILY_AMD = ['Athlon', 'Ryzen', 'Ryzen PRO', 'EPYC'] as const;
 

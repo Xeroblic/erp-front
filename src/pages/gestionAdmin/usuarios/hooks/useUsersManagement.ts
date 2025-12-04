@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
+import { toast } from 'react-toastify';
 import { useAppSelector } from '@/store';
 import ApiService from '@/services/ApiService';
-import { toast } from 'react-toastify';
 import { IUserMe } from '@/interface/user.interface';
 
 export const useUsersManagement = () => {

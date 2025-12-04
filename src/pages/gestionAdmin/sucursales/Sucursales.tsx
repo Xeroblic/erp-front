@@ -1,5 +1,16 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+	createColumnHelper,
+	flexRender,
+	getCoreRowModel,
+	getFilteredRowModel,
+	getPaginationRowModel,
+	getSortedRowModel,
+	SortingState,
+	useReactTable,
+} from '@tanstack/react-table';
+import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
 	fetchMisSucursales,
@@ -23,18 +34,7 @@ import Modal, {
 	ModalFooterChild,
 } from '@/components/ui/Modal';
 import SucursalModal from './components/SucursalModal';
-import {
-	createColumnHelper,
-	flexRender,
-	getCoreRowModel,
-	getFilteredRowModel,
-	getPaginationRowModel,
-	getSortedRowModel,
-	SortingState,
-	useReactTable,
-} from '@tanstack/react-table';
 import { ISucursal } from '@/interface/empresas.interface';
-import { toast } from 'react-toastify';
 import Tooltip from '@/components/ui/Tooltip';
 
 const columnHelper = createColumnHelper<ISucursal>();
@@ -272,7 +272,7 @@ export default function SucursalesLista() {
 							<Badge className='text-2xl font-bold'>Sucursales de la Empresa</Badge>
 						</div>
 						<div className='flex flex-col gap-2'>
-							<p className='text-sm text-zinc-400 mt-1'>
+							<p className='mt-1 text-sm text-zinc-400'>
 								Administra las sucursales asociadas a tu empresa desde este panel.
 							</p>
 						</div>
@@ -308,7 +308,7 @@ export default function SucursalesLista() {
 						{loading ? (
 							<div className='p-8 text-center'>
 								<div className='flex items-center justify-center gap-3'>
-									<div className='h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent'></div>
+									<div className='h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent' />
 									<span className='text-zinc-600'>Cargando sucursales...</span>
 								</div>
 							</div>

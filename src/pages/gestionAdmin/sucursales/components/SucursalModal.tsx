@@ -1,11 +1,11 @@
 import React, { useEffect } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
+import { toast } from 'react-toastify';
+import { unwrapResult } from '@reduxjs/toolkit';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { createSucursal, updateSucursal } from '@/store/slices/sucursales/sucursalesSlice';
 import { fetchMisSubsidiarias } from '@/store/slices/subempresa/subEmpresaSlice';
-import { toast } from 'react-toastify';
-import { unwrapResult } from '@reduxjs/toolkit';
 import Modal, {
 	ModalBody,
 	ModalFooter,
@@ -297,9 +297,9 @@ export default function SucursalModal({
 									name='region'
 									placeholder='Seleccione región'
 									value={
-										(optionsRegion.find(
+										optionsRegion.find(
 											(o) => o.value === String(formik.values.region),
-										) as TSelectOption | undefined) || null
+										) || null
 									}
 									onChange={(opt) =>
 										formik.setFieldValue(
@@ -316,9 +316,9 @@ export default function SucursalModal({
 									name='provincia'
 									placeholder='Seleccione provincia'
 									value={
-										(optionsProvincia.find(
+										optionsProvincia.find(
 											(o) => o.value === String(formik.values.provincia),
-										) as TSelectOption | undefined) || null
+										) || null
 									}
 									onChange={(opt) =>
 										formik.setFieldValue(
@@ -326,7 +326,7 @@ export default function SucursalModal({
 											(opt as TSelectOption | null)?.value || '',
 										)
 									}
-									options={optionsProvincia as TSelectOption[]}
+									options={optionsProvincia}
 								/>
 							</div>
 							<div>
@@ -353,7 +353,7 @@ export default function SucursalModal({
 											v ? Number(v) : undefined,
 										);
 									}}
-									options={optionsComuna as TSelectOption[]}
+									options={optionsComuna}
 								/>
 							</div>
 						</div>

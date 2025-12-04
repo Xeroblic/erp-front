@@ -99,7 +99,7 @@ const WarehouseListPage: React.FC = () => {
 							<span className='text-2xl font-bold'>Bodegas</span>
 						</div>
 						<div className='flex flex-col gap-2'>
-							<p className='text-sm text-gray-600 dark:text-gray-400 mt-1'>
+							<p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
 								Administración de las bodegas asociadas a la sucursal principal.
 							</p>
 							<p className='text-sm text-gray-600 dark:text-gray-400'>

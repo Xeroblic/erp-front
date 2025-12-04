@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 import { useDynamicAttributesEditor } from './hooks/useDynamicAttributesEditor';
 import BasicConfigurationSection from './sections/BasicConfigurationSection';
 import CpuSection from './sections/CpuSection';
@@ -20,7 +21,6 @@ import REQUIRED_ATTRIBUTES_BY_TYPE from '@/pages/catalogos/productos/constants/r
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
-import { toast } from 'react-toastify';
 import type { IProduct } from '@/interface/product.interface';
 
 const DynamicAttributesEditor: React.FC<{
@@ -46,7 +46,7 @@ const DynamicAttributesEditor: React.FC<{
 		(product?.product_type as string) ?? currentProductKind,
 		attributes,
 		{ requiredPaths: requiredForType, treatEmptyStringAsMissing: true },
-	) as any;
+	);
 
 	// When attributes become complete, set product_status to 'pending' (persist via updateProduct if available)
 	useEffect(() => {

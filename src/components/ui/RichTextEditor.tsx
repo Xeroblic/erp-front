@@ -240,7 +240,7 @@ const MenuBar: React.FC<MenuBarProps> = ({
 	const [currentColor, setCurrentColor] = React.useState('#000000');
 
 	const updateCurrentColor = React.useCallback(() => {
-		const color = editor.getAttributes('textStyle').color;
+		const { color } = editor.getAttributes('textStyle');
 		setCurrentColor(color ?? '#000000');
 	}, [editor]);
 
@@ -779,8 +779,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 		event.preventDefault();
 		const target = event.currentTarget;
 		const { selectionStart, selectionEnd } = target;
-		const updated =
-			codeViewValue.slice(0, selectionStart) + '\t' + codeViewValue.slice(selectionEnd);
+		const updated = `${codeViewValue.slice(0, selectionStart)}\t${codeViewValue.slice(selectionEnd)}`;
 
 		setCodeViewValue(updated);
 		lastSerializedRef.current = updated;

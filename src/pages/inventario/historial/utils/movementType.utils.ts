@@ -28,4 +28,3 @@ export const getMovementTypeMeta = (type?: MovementType) => {
 
 	return { ...meta[normalized], normalized };
 };
-

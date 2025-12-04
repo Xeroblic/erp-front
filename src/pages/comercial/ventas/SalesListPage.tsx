@@ -136,7 +136,6 @@ const SalesListPage: React.FC = () => {
 		[handleDetailModalState],
 	);
 
-
 	// const handleCreateSale = () => {
 	// 	navigate('/comercial/ventas/crear');
 	// };
@@ -167,7 +166,7 @@ const SalesListPage: React.FC = () => {
 				accessorKey: 'customer',
 				header: 'Cliente',
 				cell: ({ row }) => {
-					const customer = row.original.customer;
+					const { customer } = row.original;
 					const name =
 						customer?.name ||
 						customer?.billing_company ||
@@ -235,7 +234,7 @@ const SalesListPage: React.FC = () => {
 							size='xs'
 							onClick={() => handleViewDetail(row.original.id)}
 							isDisable={!subsidiaryId}>
-							<Icon icon='HeroEye' size='text-xl'></Icon>
+							<Icon icon='HeroEye' size='text-xl' />
 						</Button>
 						<Button
 							variant='outline'
@@ -243,7 +242,7 @@ const SalesListPage: React.FC = () => {
 							color='red'
 							onClick={() => handleViewDetail(row.original.id)}
 							isDisable={!subsidiaryId}>
-							<Icon icon='HeroTrash' color='red' size='text-xl'></Icon>
+							<Icon icon='HeroTrash' color='red' size='text-xl' />
 						</Button>
 					</div>
 				),

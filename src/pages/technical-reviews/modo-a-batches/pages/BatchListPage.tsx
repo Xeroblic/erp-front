@@ -43,7 +43,8 @@ const BatchesListPage: React.FC = () => {
 	};
 
 	const handleStatusFilter = (status: string) => {
-		const nextStatus: 'all' | CommercialStatus = status === 'all' ? 'all' : (status as CommercialStatus);
+		const nextStatus: 'all' | CommercialStatus =
+			status === 'all' ? 'all' : (status as CommercialStatus);
 		setStatusFilter(nextStatus);
 		setPage(1);
 	};
@@ -57,22 +58,19 @@ const BatchesListPage: React.FC = () => {
 			<Subheader className='mb-6 flex items-center justify-between'>
 				<SubheaderLeft>
 					<div>
-						<Badge className='text-2xl font-semibold mb-1'>Lotes de Revisión</Badge>
-						<p className="text-zinc-500 text-sm">Consulta y administra los lotes de revisión registrados.</p>
+						<Badge className='mb-1 text-2xl font-semibold'>Lotes de Revisión</Badge>
+						<p className='text-sm text-zinc-500'>
+							Consulta y administra los lotes de revisión registrados.
+						</p>
 					</div>
 				</SubheaderLeft>
 				<SubheaderRight>
-					<Button
-						variant="solid"
-						icon="HeroPlus"
-						onClick={handleCreateBatch}
-					>
+					<Button variant='solid' icon='HeroPlus' onClick={handleCreateBatch}>
 						Nuevo Lote
 					</Button>
 				</SubheaderRight>
 			</Subheader>
 			<Container>
-
 				{/* Error */}
 				{error && (
 					<Card className='mb-4 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950'>

@@ -62,7 +62,9 @@ type UserWithBranches = IUserMe & {
 
 export const useCurrentBranch = (): UseCurrentBranchResult => {
 	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
-	const { user } = useAppSelector((state) => state.auth as { user?: UserWithBranches | undefined });
+	const { user } = useAppSelector(
+		(state) => state.auth as { user?: UserWithBranches | undefined },
+	);
 
 	const branchId = useMemo(() => {
 		// 1. Prioridad: sucursal_principal de personalización

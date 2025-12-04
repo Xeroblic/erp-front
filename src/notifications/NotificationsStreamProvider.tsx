@@ -40,7 +40,7 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 		};
 
 		/** PING periódico + recuperación de liderazgo */
-		let pingTimer = setInterval(() => {
+		const pingTimer = setInterval(() => {
 			const lock = (() => {
 				try {
 					return JSON.parse(localStorage.getItem(LOCK_KEY) || 'null');

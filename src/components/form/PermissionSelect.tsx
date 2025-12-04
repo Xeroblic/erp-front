@@ -1,13 +1,12 @@
 import React, { type ComponentProps, type FC, useMemo } from 'react';
+import type { MultiValue, SingleValue } from 'react-select';
 import SelectReact, { type TSelectOption } from './SelectReact';
 import type { Permission } from '@/store/slices/permissions/permissionsSlice';
 import { formatPermissionName } from '@/pages/admin/Permission/utils/formatters';
-import type { MultiValue, SingleValue } from 'react-select';
 
 type SelectProps = ComponentProps<typeof SelectReact>;
 
-interface PermissionSelectProps
-	extends Omit<SelectProps, 'options' | 'value' | 'onChange'> {
+interface PermissionSelectProps extends Omit<SelectProps, 'options' | 'value' | 'onChange'> {
 	permissions: Permission[];
 	value: string[];
 	onChange: (permissionCodes: string[]) => void;
@@ -42,11 +41,12 @@ const PermissionSelect: FC<PermissionSelectProps> = ({
 
 	const singleSelectedOption = useMemo(() => {
 		const firstValue = value[0];
-		return firstValue ? options.find((option) => option.value === firstValue) ?? null : null;
+		return firstValue ? (options.find((option) => option.value === firstValue) ?? null) : null;
 	}, [options, value]);
 
-	const computedPlaceholder = placeholder
-		?? (isLoading
+	const computedPlaceholder =
+		placeholder ??
+		(isLoading
 			? 'Cargando permisos...'
 			: options.length
 				? isMulti

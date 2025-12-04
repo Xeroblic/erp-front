@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import type { MultiValue, SingleValue } from 'react-select';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
@@ -8,7 +9,6 @@ import Card, { CardBody } from '@/components/ui/Card';
 import Input from '@/components/form/Input';
 import Label from '@/components/form/Label';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
-import type { MultiValue, SingleValue } from 'react-select';
 import Alert from '@/components/ui/Alert';
 import { useAppDispatch } from '@/store';
 import { useWarranties, warrantyStatusOptions } from './hooks/useWarranties';
@@ -279,21 +279,21 @@ const GarantiasPage: React.FC = () => {
 				/>
 			</Container>
 
-				{formOpen && (
-					<WarrantyFormModal
-						isOpen={formOpen}
-						onClose={() => setFormOpen(false)}
-						onSuccess={reload}
-						subsidiaryId={subsidiaryId}
-						mode={formMode}
-						warranty={formMode === 'edit' ? selectedWarranty : null}
-						productOptions={productOptions}
-						customerOptions={customerOptions}
-						saleOptions={saleOptions}
-						onSearchSales={searchSales}
-						onLoadProducts={loadProducts}
-					/>
-				)}
+			{formOpen && (
+				<WarrantyFormModal
+					isOpen={formOpen}
+					onClose={() => setFormOpen(false)}
+					onSuccess={reload}
+					subsidiaryId={subsidiaryId}
+					mode={formMode}
+					warranty={formMode === 'edit' ? selectedWarranty : null}
+					productOptions={productOptions}
+					customerOptions={customerOptions}
+					saleOptions={saleOptions}
+					onSearchSales={searchSales}
+					onLoadProducts={loadProducts}
+				/>
+			)}
 
 			{seriesOpen && (
 				<WarrantySeriesMode

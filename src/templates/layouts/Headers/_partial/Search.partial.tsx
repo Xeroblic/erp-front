@@ -10,35 +10,33 @@ import pagesConfig from '@/config/pages.config';
 import Badge from '../../../../components/ui/Badge';
 import Modal, { ModalBody, ModalHeader } from '../../../../components/ui/Modal';
 
-
 const flattenPages = (config: Record<string, any>) => {
-    const result: any[] = [];
+	const result: any[] = [];
 
-    Object.values(config).forEach((page: any) => {
-        result.push({
-            id: page.id,
-            to: page.to,
-            text: page.text,
-            icon: page.icon,
-            category: page.text ?? 'General',
-        });
+	Object.values(config).forEach((page: any) => {
+		result.push({
+			id: page.id,
+			to: page.to,
+			text: page.text,
+			icon: page.icon,
+			category: page.text ?? 'General',
+		});
 
-        if (page.subPages) {
-            Object.values(page.subPages).forEach((sub: any) => {
-                result.push({
-                    id: sub.id,
-                    to: sub.to,
-                    text: sub.text,
-                    icon: sub.icon,
-                    category: page.text ?? 'General',
-                });
-            });
-        }
-    });
+		if (page.subPages) {
+			Object.values(page.subPages).forEach((sub: any) => {
+				result.push({
+					id: sub.id,
+					to: sub.to,
+					text: sub.text,
+					icon: sub.icon,
+					category: page.text ?? 'General',
+				});
+			});
+		}
+	});
 
-    return result;
+	return result;
 };
-
 
 const SearchPartial = () => {
 	const ref = useRef<HTMLDivElement>(null);
@@ -64,23 +62,18 @@ const SearchPartial = () => {
 			onClick={() => formik.setFieldValue('searchField', '')}
 		/>
 	) : (
-		<Button
-			variant='solid'
-			size='sm'
-			rounded='rounded-3xl'
-			className='!px-2 font-bold'>
+		<Button variant='solid' size='sm' rounded='rounded-3xl' className='!px-2 font-bold'>
 			Alt + B
 		</Button>
 	);
-	
+
 	const list = flattenPages(pagesConfig);
 
 	const result = list.filter(
 		(item) =>
 			item.text.toLowerCase().includes(formik.values.searchField.toLowerCase()) ||
-			item.category.toLowerCase().includes(formik.values.searchField.toLowerCase())
+			item.category.toLowerCase().includes(formik.values.searchField.toLowerCase()),
 	);
-
 
 	const inputRef = useRef<HTMLInputElement>(null);
 	const focusInput = () => {
@@ -182,7 +175,7 @@ const SearchPartial = () => {
 			{/* For Mobile :: BEGIN */}
 			<Button
 				icon='HeroMagnifyingGlass'
-				className='sm:hidden h-10 w-10 !rounded-full !p-0 border border-white/60 bg-white text-sky-500 shadow-md shadow-sky-200/50 dark:border-white/10 dark:bg-zinc-800 dark:text-sky-300 dark:shadow-[0_4px_18px_rgba(0,0,0,0.55)] flex items-center justify-center'
+				className='flex h-10 w-10 items-center justify-center !rounded-full border border-white/60 bg-white !p-0 text-sky-500 shadow-md shadow-sky-200/50 dark:border-white/10 dark:bg-zinc-800 dark:text-sky-300 dark:shadow-[0_4px_18px_rgba(0,0,0,0.55)] sm:hidden'
 				onClick={() => setModalStatus(true)}
 			/>
 			<Modal isOpen={modalStatus} setIsOpen={setModalStatus}>

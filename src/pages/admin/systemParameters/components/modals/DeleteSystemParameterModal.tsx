@@ -94,11 +94,7 @@ const DeleteSystemParameterModal: React.FC<DeleteSystemParameterModalProps> = ({
 							<label className='mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400'>
 								Categoría
 							</label>
-							<Badge
-							
-								className='capitalize'>
-								{parameter.category}
-							</Badge>
+							<Badge className='capitalize'>{parameter.category}</Badge>
 						</div>
 					</div>
 

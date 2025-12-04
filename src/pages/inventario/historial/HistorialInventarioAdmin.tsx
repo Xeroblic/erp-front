@@ -102,7 +102,10 @@ const HistorialInventarioAdmin: React.FC = () => {
 							onClick={() => refreshTransfers()}>
 							Actualizar
 						</Button>
-						<Button color='sky' icon='HeroPlus' onClick={() => navigate('/inventario/transferencias')}>
+						<Button
+							color='sky'
+							icon='HeroPlus'
+							onClick={() => navigate('/inventario/transferencias')}>
 							Nueva Transferencia
 						</Button>
 					</div>
@@ -212,7 +215,9 @@ const HistorialInventarioAdmin: React.FC = () => {
 									type='text'
 									placeholder='Número, notas...'
 									value={filters.search || ''}
-									onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+									onChange={(e) =>
+										setFilters({ ...filters, search: e.target.value })
+									}
 								/>
 							</div>
 
@@ -224,7 +229,12 @@ const HistorialInventarioAdmin: React.FC = () => {
 								<Select
 									name='direction'
 									value={filters.direction || 'all'}
-									onChange={(e) => setFilters({ ...filters, direction: e.target.value as TransferDirection })}>
+									onChange={(e) =>
+										setFilters({
+											...filters,
+											direction: e.target.value as TransferDirection,
+										})
+									}>
 									<option value='all'>Todas</option>
 									<option value='sent'>Enviadas</option>
 									<option value='received'>Recibidas</option>
@@ -248,11 +258,17 @@ const HistorialInventarioAdmin: React.FC = () => {
 							<CardTitle>
 								Lista de Transferencias ({transfers.length} registros)
 							</CardTitle>
-							<div className='text-sm text-gray-500 dark:text-gray-400'>Total páginas {pagination.totalPages}</div>
+							<div className='text-sm text-gray-500 dark:text-gray-400'>
+								Total páginas {pagination.totalPages}
+							</div>
 						</div>
 					</CardHeader>
 					<CardBody className='p-0'>
-						<TransfersTable transfers={transfers} isLoading={loading} onView={(transfer) => handleViewDetails(transfer.id)} />
+						<TransfersTable
+							transfers={transfers}
+							isLoading={loading}
+							onView={(transfer) => handleViewDetails(transfer.id)}
+						/>
 					</CardBody>
 					{pagination.totalPages > 1 && (
 						<div className='px-4 pb-4'>

@@ -160,13 +160,13 @@ const Productos: React.FC = () => {
 	}, [filteredBranches]);
 
 	const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-		const value = event.target.value;
+		const { value } = event.target;
 		setFilters((prev) => ({ ...prev, search: value }));
 		setPage(1);
 	};
 
 	const handleStatusChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-		const value = event.target.value;
+		const { value } = event.target;
 		setFilters((prev) => ({
 			...prev,
 			is_active: value === '' ? undefined : value === 'active',
@@ -175,7 +175,7 @@ const Productos: React.FC = () => {
 	};
 
 	const handleBrandChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-		const value = event.target.value;
+		const { value } = event.target;
 		setFilters((prev) => ({
 			...prev,
 			brand_id: value ? Number(value) : undefined,
@@ -184,7 +184,7 @@ const Productos: React.FC = () => {
 	};
 
 	const handleCategoryChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-		const value = event.target.value;
+		const { value } = event.target;
 		setFilters((prev) => ({
 			...prev,
 			category_id: value ? Number(value) : undefined,
@@ -193,7 +193,7 @@ const Productos: React.FC = () => {
 	};
 
 	const handleTypeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-		const value = event.target.value;
+		const { value } = event.target;
 		setFilters((prev) => ({
 			...prev,
 			product_type: value || undefined,

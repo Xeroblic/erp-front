@@ -3,10 +3,10 @@
  * Reordena secciones (puertos, cargador, estado físico) y normaliza catálogos
  */
 import React, { useEffect, useMemo } from 'react';
+import type { MultiValue, SingleValue } from 'react-select';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
 import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
-import type { MultiValue, SingleValue } from 'react-select';
 import Textarea from '@/components/form/Textarea';
 import Checkbox from '@/components/form/Checkbox';
 import Icon from '@/components/icon/Icon';

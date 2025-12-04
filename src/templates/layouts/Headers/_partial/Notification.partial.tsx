@@ -1,4 +1,5 @@
 import React, { FC, ReactNode, useEffect, useMemo, useState, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Dropdown, {
 	DropdownMenu,
 	DropdownToggle,
@@ -18,7 +19,6 @@ import {
 	markRead,
 	fetchNotifications,
 } from '@/store/slices/notifications/notificationsSlice';
-import { useNavigate } from 'react-router-dom';
 import useDeviceScreen from '@/hooks/useDeviceScreen';
 
 const MIN_REFRESH_INTERVAL_MS = 30000;

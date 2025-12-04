@@ -67,7 +67,10 @@ const Documentos: React.FC = () => {
 		});
 	};
 
-	const handleCreateSubmit = async (payload: IDocumentPayload, files?: FileList | File[] | null) => {
+	const handleCreateSubmit = async (
+		payload: IDocumentPayload,
+		files?: FileList | File[] | null,
+	) => {
 		await createDocument(payload, files || undefined);
 	};
 
@@ -151,11 +154,13 @@ const Documentos: React.FC = () => {
 			<Subheader>
 				<SubheaderLeft>
 					<div className='flex items-center space-x-3'>
-						<div className='flex h-10 w-10 items-center justify-center rounded-lg  text-blue-600'>
+						<div className='flex h-10 w-10 items-center justify-center rounded-lg text-blue-600'>
 							<Icon icon='HeroDocumentText' className='h-6 w-6' />
 						</div>
 						<div>
-							<h1 className='text-2xl font-bold text-gray-900'>Gestión de documentos</h1>
+							<h1 className='text-2xl font-bold text-gray-900'>
+								Gestión de documentos
+							</h1>
 							<p className='text-sm text-gray-600'>
 								Administra documentos asociados a las entidades del sistema
 							</p>

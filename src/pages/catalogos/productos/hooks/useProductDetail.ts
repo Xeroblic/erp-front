@@ -21,7 +21,9 @@ export const useProductDetail = ({ productId, branchId }: UseProductDetailParams
 	const dispatch = useAppDispatch();
 
 	const productsState = useAppSelector((state) => state.products);
-	const { lista: branches, loading: branchesLoading } = useAppSelector((state) => state.sucursales);
+	const { lista: branches, loading: branchesLoading } = useAppSelector(
+		(state) => state.sucursales,
+	);
 	const brandsState = useAppSelector((state) => state.brands);
 	const categoriesState = useAppSelector((state) => state.categories);
 
@@ -52,25 +54,25 @@ export const useProductDetail = ({ productId, branchId }: UseProductDetailParams
 		void dispatch(fetchBrands({ branchId: effectiveBranchId, search: '' }));
 	}, [dispatch, effectiveBranchId]);
 
-useEffect(() => {
-	if (!productId || !effectiveBranchId) return;
-	void dispatch(fetchProductById({ branchId: effectiveBranchId, productId }));
-}, [dispatch, productId, effectiveBranchId]);
+	useEffect(() => {
+		if (!productId || !effectiveBranchId) return;
+		void dispatch(fetchProductById({ branchId: effectiveBranchId, productId }));
+	}, [dispatch, productId, effectiveBranchId]);
 
-useEffect(() => {
-	if (!productId || !effectiveBranchId) return;
-	void dispatch(fetchProductAttributes({ branchId: effectiveBranchId, productId }));
-}, [dispatch, productId, effectiveBranchId]);
+	useEffect(() => {
+		if (!productId || !effectiveBranchId) return;
+		void dispatch(fetchProductAttributes({ branchId: effectiveBranchId, productId }));
+	}, [dispatch, productId, effectiveBranchId]);
 
-const refresh = useCallback(() => {
-	if (!productId || !effectiveBranchId) return;
-	void dispatch(fetchProductById({ branchId: effectiveBranchId, productId }));
-	void dispatch(fetchProductAttributes({ branchId: effectiveBranchId, productId }));
-}, [dispatch, productId, effectiveBranchId]);
+	const refresh = useCallback(() => {
+		if (!productId || !effectiveBranchId) return;
+		void dispatch(fetchProductById({ branchId: effectiveBranchId, productId }));
+		void dispatch(fetchProductAttributes({ branchId: effectiveBranchId, productId }));
+	}, [dispatch, productId, effectiveBranchId]);
 
-const updateProduct = useCallback(
-	async (payload: { data: Partial<IProduct>; categoryIds?: number[] }) => {
-		if (!productId || !effectiveBranchId) {
+	const updateProduct = useCallback(
+		async (payload: { data: Partial<IProduct>; categoryIds?: number[] }) => {
+			if (!productId || !effectiveBranchId) {
 				throw new Error('No se pudo determinar la sucursal del producto');
 			}
 			await dispatch(
@@ -82,35 +84,35 @@ const updateProduct = useCallback(
 				}),
 			).unwrap();
 			refresh();
-	},
-	[dispatch, effectiveBranchId, productId, refresh],
-);
+		},
+		[dispatch, effectiveBranchId, productId, refresh],
+	);
 
-const updateProductAttributes = useCallback(
-	async (payload: ProductAttributesPatchPayload) => {
-		if (!productId || !effectiveBranchId) {
-			throw new Error('No se pudo determinar la sucursal del producto');
-		}
+	const updateProductAttributes = useCallback(
+		async (payload: ProductAttributesPatchPayload) => {
+			if (!productId || !effectiveBranchId) {
+				throw new Error('No se pudo determinar la sucursal del producto');
+			}
 
-		const body: ProductAttributesPatchPayload = {};
-		if (payload.set && Object.keys(payload.set).length) {
-			body.set = payload.set;
-		}
-		if (payload.unset && payload.unset.length) {
-			body.unset = payload.unset;
-		}
-		if (!body.set && !body.unset) return;
+			const body: ProductAttributesPatchPayload = {};
+			if (payload.set && Object.keys(payload.set).length) {
+				body.set = payload.set;
+			}
+			if (payload.unset && payload.unset.length) {
+				body.unset = payload.unset;
+			}
+			if (!body.set && !body.unset) return;
 
-		await dispatch(
-			patchProductAttributes({
-				branchId: effectiveBranchId,
-				productId,
-				payload: body,
-			}),
-		).unwrap();
-	},
-	[dispatch, effectiveBranchId, productId],
-);
+			await dispatch(
+				patchProductAttributes({
+					branchId: effectiveBranchId,
+					productId,
+					payload: body,
+				}),
+			).unwrap();
+		},
+		[dispatch, effectiveBranchId, productId],
+	);
 
 	return {
 		product: productsState.current,

@@ -2,7 +2,7 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import {
 	selectDarkMode,
 	selectIsDarkTheme,
-	setDarkMode
+	setDarkMode,
 } from '@/store/slices/personalizacion/personalizacionSlice';
 import { TDarkMode } from '@/types/darkMode.type';
 
@@ -18,6 +18,6 @@ export default function useDarkMode() {
 	return {
 		isDarkTheme,
 		darkModeStatus,
-		setDarkModeStatus: handleSetDarkModeStatus
+		setDarkModeStatus: handleSetDarkModeStatus,
 	};
 }

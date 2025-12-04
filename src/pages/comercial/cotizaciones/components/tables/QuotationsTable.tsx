@@ -59,99 +59,107 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 	};
 
 	// columnas de la tabla
-	const columns = useMemo<ColumnDef<IQuote, any>[]>(() => [
-		columnHelper.accessor('quote_date', {
-			header: 'Fecha',
-			cell: (info) => <span className='text-sm'>{formatDate(info.getValue())}</span>,
-		}),
-		columnHelper.accessor((row) => row.expiry_date || (row as any).valid_until, {
-			header: 'Válida Hasta',
-			id: 'expiry_date',
-			cell: (info) => <span className='text-sm'>{formatDate(info.getValue())}</span>,
-		}),
-		columnHelper.accessor('customer_id', {
-			header: 'Cliente',
-			cell: (info) => {
-				const customerId = info.getValue();
-				return (
-					<div className='flex items-center gap-1'>
-						<Icon icon='HeroUser' className='text-xs text-zinc-400' />
-						<span className='text-sm'>Cliente #{customerId}</span>
+	const columns = useMemo<ColumnDef<IQuote, any>[]>(
+		() => [
+			columnHelper.accessor('quote_number', {
+				header: 'N° Cotización',
+				cell: (info) => <span className='text-sm'>{info.getValue() || '—'}</span>,
+			}),
+			columnHelper.accessor('customer.name', {
+				header: 'Cliente',
+				cell: (info) => {
+					const customerName = info.getValue();
+					return (
+						<div className='flex items-center gap-1'>
+							<Icon icon='HeroUser' className='text-xs text-zinc-400' />
+							<span className='text-sm'>{customerName}</span>
+						</div>
+					);
+				},
+			}),
+			columnHelper.accessor('quote_date', {
+				header: 'Fecha',
+				cell: (info) => <span className='text-sm'>{formatDate(info.getValue())}</span>,
+			}),
+			columnHelper.accessor((row) => row.expiry_date || (row as any).valid_until, {
+				header: 'Válida Hasta',
+				id: 'expiry_date',
+				cell: (info) => <span className='text-sm'>{formatDate(info.getValue())}</span>,
+			}),
+			columnHelper.accessor('status', {
+				header: 'Estado',
+				cell: (info) => {
+					const badge = getQuoteStatusBadge(info.getValue());
+					return (
+						<Badge variant={badge.variant} className='px-2 text-xs'>
+							{badge.label}
+						</Badge>
+					);
+				},
+			}),
+			columnHelper.accessor('total_amount', {
+				header: 'Total',
+				cell: (info) => {
+					const value = info.getValue();
+					const amount =
+						typeof value === 'number'
+							? Math.floor(value)
+							: Math.floor(Number(value ?? 0));
+					return <span className='font-medium'>{formatCurrency(amount)}</span>;
+				},
+			}),
+			columnHelper.display({
+				id: 'acciones',
+				header: 'Acciones',
+				cell: (info) => (
+					<div className='flex justify-end gap-2'>
+						<Button
+							variant='outline'
+							size='sm'
+							icon='HeroArrowDownTray'
+							onClick={() => onDownloadPdf?.(info.row.original.id)}
+							className='p-1'
+							title='Descargar PDF'
+						/>
+						<Button
+							variant='outline'
+							size='sm'
+							icon='HeroEye'
+							onClick={() => onView?.(info.row.original)}
+							className='p-1'
+						/>
+						<Button
+							variant='outline'
+							size='sm'
+							icon='HeroPencil'
+							onClick={() => onEdit?.(info.row.original)}
+							className='p-1'
+						/>
+						{normalizeQuoteStatusValue(info.row.original.status) === 'approved' &&
+							info.row.original.can_convert && (
+								<Button
+									variant='outline'
+									size='sm'
+									icon='HeroBolt'
+									onClick={() => onConvertToSale?.(info.row.original.id)}
+									className='p-1'
+									title='Convertir a venta'
+								/>
+							)}
+						<Button
+							variant='solid'
+							size='sm'
+							icon='HeroTrash'
+							color='red'
+							onClick={() => onDelete?.(info.row.original.id)}
+							className='p-1'
+						/>
 					</div>
-				);
-			},
-		}),
-		columnHelper.accessor('status', {
-			header: 'Estado',
-			cell: (info) => {
-				const badge = getQuoteStatusBadge(info.getValue());
-				return (
-					<Badge variant={badge.variant} className='text-xs'>
-						{badge.label}
-					</Badge>
-				);
-			},
-		}),
-		columnHelper.accessor('total_amount', {
-			header: 'Total',
-			cell: (info) => {
-				const value = info.getValue();
-
-				const amount = typeof value === 'number' ? value : Number(value ?? 0);
-
-				return <span className='font-medium'>{formatCurrency(amount)}</span>;
-			},
-		}),
-		columnHelper.display({
-			id: 'acciones',
-			header: 'Acciones',
-			cell: (info) => (
-				<div className='flex justify-end gap-2'>
-					<Button
-						variant='outline'
-						size='sm'
-						icon='HeroArrowDownTray'
-						onClick={() => onDownloadPdf?.(info.row.original.id)}
-						className='p-1'
-						title='Descargar PDF'
-					/>
-					<Button
-						variant='outline'
-						size='sm'
-						icon='HeroEye'
-						onClick={() => onView?.(info.row.original)}
-						className='p-1'
-					/>
-					<Button
-						variant='outline'
-						size='sm'
-						icon='HeroPencil'
-						onClick={() => onEdit?.(info.row.original)}
-						className='p-1'
-					/>
-					{normalizeQuoteStatusValue(info.row.original.status) === 'approved' &&
-						info.row.original.can_convert && (
-							<Button
-								variant='outline'
-								size='sm'
-								icon='HeroBolt'
-								onClick={() => onConvertToSale?.(info.row.original.id)}
-								className='p-1'
-								title='Convertir a venta'
-							/>
-						)}
-					<Button
-						variant='solid'
-						size='sm'
-						icon='HeroTrash'
-						color='red'
-						onClick={() => onDelete?.(info.row.original.id)}
-						className='p-1'
-					/>
-				</div>
-			),
-		}),
-	], [onDownloadPdf, onView, onEdit, onConvertToSale, onDelete]);
+				),
+			}),
+		],
+		[onDownloadPdf, onView, onEdit, onConvertToSale, onDelete],
+	);
 
 	return (
 		<DataTable<IQuote>

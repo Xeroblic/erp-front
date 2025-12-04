@@ -27,37 +27,38 @@ const initialState: RolesPermisosState = {
 	},
 };
 
-export const fetchUsuariosConRolesPerms = createAsyncThunk<UserWithDetails[], void, { rejectValue: string }>(
-	'rolesPermisos/fetchAll',
-	async (_, { rejectWithValue }) => {
-		try {
-			const res = await ApiService.fetchData<{
-				success: boolean;
-				data: UserWithDetails[];
-				meta?: Record<string, unknown>;
-			}>({
-				url: '/users',
-				method: 'get',
-				dedupe: true,
-				dedupeKey: 'users-with-roles-permissions',
-			});
+export const fetchUsuariosConRolesPerms = createAsyncThunk<
+	UserWithDetails[],
+	void,
+	{ rejectValue: string }
+>('rolesPermisos/fetchAll', async (_, { rejectWithValue }) => {
+	try {
+		const res = await ApiService.fetchData<{
+			success: boolean;
+			data: UserWithDetails[];
+			meta?: Record<string, unknown>;
+		}>({
+			url: '/users',
+			method: 'get',
+			dedupe: true,
+			dedupeKey: 'users-with-roles-permissions',
+		});
 
-			const payload = Array.isArray(res.data)
-				? res.data
-				: Array.isArray((res.data as any)?.data)
-					? (res.data as any).data
-					: [];
+		const payload = Array.isArray(res.data)
+			? res.data
+			: Array.isArray((res.data as any)?.data)
+				? (res.data as any).data
+				: [];
 
-			return payload;
-		} catch (err: any) {
-			const message =
-				err?.response?.data?.message ??
-				err?.message ??
-				'Error al obtener usuarios con roles y permisos';
-			return rejectWithValue(message);
-		}
+		return payload;
+	} catch (err: any) {
+		const message =
+			err?.response?.data?.message ??
+			err?.message ??
+			'Error al obtener usuarios con roles y permisos';
+		return rejectWithValue(message);
 	}
-);
+});
 
 export const assignUserRoles = createAsyncThunk<
 	void,
@@ -159,7 +160,7 @@ export const removeUserPermissions = createAsyncThunk<
 const normalizeIds = (items: Array<{ id?: number | string }> | undefined | null): number[] => {
 	if (!items) return [];
 	const ids = items
-		.map(item => {
+		.map((item) => {
 			const raw = item?.id as unknown;
 			if (typeof raw === 'number') return raw;
 			if (typeof raw === 'string') {
@@ -173,8 +174,8 @@ const normalizeIds = (items: Array<{ id?: number | string }> | undefined | null)
 };
 
 const diffIds = (nextIds: number[], currentIds: number[]) => {
-	const toAdd = nextIds.filter(id => !currentIds.includes(id));
-	const toRemove = currentIds.filter(id => !nextIds.includes(id));
+	const toAdd = nextIds.filter((id) => !currentIds.includes(id));
+	const toRemove = currentIds.filter((id) => !nextIds.includes(id));
 	return { toAdd, toRemove };
 };
 
@@ -192,20 +193,37 @@ export const updateUsuarioRolesPerms = createAsyncThunk<
 	'rolesPermisos/updateUsuarioRolesPerms',
 	async (
 		{ id, nextRoles, nextPermissions, currentRoles, currentPermissions },
-		{ rejectWithValue, dispatch }
+		{ rejectWithValue, dispatch },
 	) => {
 		try {
 			const computeDiffs = (nextArr: string[], currentArr: string[]) => {
 				const toAdd = Array.from(new Set(nextArr.filter((v) => !currentArr.includes(v))));
-				const toRemove = Array.from(new Set(currentArr.filter((v) => !nextArr.includes(v))));
+				const toRemove = Array.from(
+					new Set(currentArr.filter((v) => !nextArr.includes(v))),
+				);
 				return { toAdd, toRemove };
 			};
 
-			const { toAdd: rolesToAdd, toRemove: rolesToRemove } = computeDiffs(nextRoles, currentRoles);
-			const permissionsToAdd = Array.from(new Set(nextPermissions.filter((perm) => !currentPermissions.includes(perm))));
-			const permissionsToRemove = Array.from(new Set(currentPermissions.filter((perm) => !nextPermissions.includes(perm))));
+			const { toAdd: rolesToAdd, toRemove: rolesToRemove } = computeDiffs(
+				nextRoles,
+				currentRoles,
+			);
+			const permissionsToAdd = Array.from(
+				new Set(nextPermissions.filter((perm) => !currentPermissions.includes(perm))),
+			);
+			const permissionsToRemove = Array.from(
+				new Set(currentPermissions.filter((perm) => !nextPermissions.includes(perm))),
+			);
 
-			console.debug('[rolesPermisos] updateUsuarioRolesPerms diff', { id, currentRoles, nextRoles, rolesToAdd, rolesToRemove, permissionsToAdd, permissionsToRemove });
+			console.debug('[rolesPermisos] updateUsuarioRolesPerms diff', {
+				id,
+				currentRoles,
+				nextRoles,
+				rolesToAdd,
+				rolesToRemove,
+				permissionsToAdd,
+				permissionsToRemove,
+			});
 
 			if (rolesToAdd.length > 0) {
 				await dispatch(assignUserRoles({ id, roles: rolesToAdd })).unwrap();
@@ -217,12 +235,14 @@ export const updateUsuarioRolesPerms = createAsyncThunk<
 			const permissionTasks: Promise<any>[] = [];
 			if (permissionsToAdd.length > 0) {
 				permissionTasks.push(
-					dispatch(assignUserPermissions({ id, permissions: permissionsToAdd })).unwrap()
+					dispatch(assignUserPermissions({ id, permissions: permissionsToAdd })).unwrap(),
 				);
 			}
 			if (permissionsToRemove.length > 0) {
 				permissionTasks.push(
-					dispatch(removeUserPermissions({ id, permissions: permissionsToRemove })).unwrap()
+					dispatch(
+						removeUserPermissions({ id, permissions: permissionsToRemove }),
+					).unwrap(),
 				);
 			}
 			if (permissionTasks.length > 0) {
@@ -232,12 +252,12 @@ export const updateUsuarioRolesPerms = createAsyncThunk<
 			const message =
 				typeof err === 'string'
 					? err
-					: err?.response?.data?.message ??
-				err?.message ??
-				'Error al actualizar roles o permisos';
+					: (err?.response?.data?.message ??
+						err?.message ??
+						'Error al actualizar roles o permisos');
 			return rejectWithValue(message);
 		}
-	}
+	},
 );
 
 export const updateUsuarioAccess = createAsyncThunk<
@@ -254,81 +274,78 @@ export const updateUsuarioAccess = createAsyncThunk<
 		};
 	},
 	{ rejectValue: string }
->(
-	'rolesPermisos/updateUsuarioAccess',
-	async ({ id, current, next }, { rejectWithValue }) => {
-		try {
-			const currentSubsIds = normalizeIds(current.subsidiaries);
-			const nextSubsIds = normalizeIds(next.subsidiaries);
-			const currentBranchIds = normalizeIds(current.branches);
-			const nextBranchIds = normalizeIds(next.branches);
+>('rolesPermisos/updateUsuarioAccess', async ({ id, current, next }, { rejectWithValue }) => {
+	try {
+		const currentSubsIds = normalizeIds(current.subsidiaries);
+		const nextSubsIds = normalizeIds(next.subsidiaries);
+		const currentBranchIds = normalizeIds(current.branches);
+		const nextBranchIds = normalizeIds(next.branches);
 
-			const subsDiff = diffIds(nextSubsIds, currentSubsIds);
-			const branchDiff = diffIds(nextBranchIds, currentBranchIds);
+		const subsDiff = diffIds(nextSubsIds, currentSubsIds);
+		const branchDiff = diffIds(nextBranchIds, currentBranchIds);
 
-			const ops: Array<{
-				url: string;
-				mode: 'add' | 'remove';
-				ids: number[];
-			}> = [];
+		const ops: Array<{
+			url: string;
+			mode: 'add' | 'remove';
+			ids: number[];
+		}> = [];
 
-			if (subsDiff.toAdd.length > 0) {
-				ops.push({
-					url: `/users/${id}/access/subsidiaries`,
-					mode: 'add',
-					ids: subsDiff.toAdd,
-				});
-			}
-			if (subsDiff.toRemove.length > 0) {
-				ops.push({
-					url: `/users/${id}/access/subsidiaries`,
-					mode: 'remove',
-					ids: subsDiff.toRemove,
-				});
-			}
-			if (branchDiff.toAdd.length > 0) {
-				ops.push({
-					url: `/users/${id}/access/branches`,
-					mode: 'add',
-					ids: branchDiff.toAdd,
-				});
-			}
-			if (branchDiff.toRemove.length > 0) {
-				ops.push({
-					url: `/users/${id}/access/branches`,
-					mode: 'remove',
-					ids: branchDiff.toRemove,
-				});
-			}
-
-			if (ops.length === 0) {
-				return;
-			}
-
-			for (const { url, mode, ids } of ops) {
-				await ApiService.fetchData({
-					url,
-					method: 'post',
-					data: { ids, mode },
-				});
-			}
-		} catch (err: any) {
-			const message =
-				err?.response?.data?.message ??
-				err?.message ??
-				'Error al actualizar accesos jerárquicos';
-			return rejectWithValue(message);
+		if (subsDiff.toAdd.length > 0) {
+			ops.push({
+				url: `/users/${id}/access/subsidiaries`,
+				mode: 'add',
+				ids: subsDiff.toAdd,
+			});
 		}
+		if (subsDiff.toRemove.length > 0) {
+			ops.push({
+				url: `/users/${id}/access/subsidiaries`,
+				mode: 'remove',
+				ids: subsDiff.toRemove,
+			});
+		}
+		if (branchDiff.toAdd.length > 0) {
+			ops.push({
+				url: `/users/${id}/access/branches`,
+				mode: 'add',
+				ids: branchDiff.toAdd,
+			});
+		}
+		if (branchDiff.toRemove.length > 0) {
+			ops.push({
+				url: `/users/${id}/access/branches`,
+				mode: 'remove',
+				ids: branchDiff.toRemove,
+			});
+		}
+
+		if (ops.length === 0) {
+			return;
+		}
+
+		for (const { url, mode, ids } of ops) {
+			await ApiService.fetchData({
+				url,
+				method: 'post',
+				data: { ids, mode },
+			});
+		}
+	} catch (err: any) {
+		const message =
+			err?.response?.data?.message ??
+			err?.message ??
+			'Error al actualizar accesos jerárquicos';
+		return rejectWithValue(message);
 	}
-);
+});
 
 const rolesPermisosSlice = createSlice({
 	name: 'rolesPermiso/rolesPermisosSlice',
 	initialState,
 	reducers: {},
-	extraReducers: builder => {
+	extraReducers: (builder) => {
 		builder
-			.addCase(fetchUsuariosConRolesPerms.pending, state => {
+			.addCase(fetchUsuariosConRolesPerms.pending, (state) => {
 				state.users.loading = true;
 				state.users.error = null;
 			})
@@ -340,66 +357,66 @@ const rolesPermisosSlice = createSlice({
 				state.users.loading = false;
 				state.users.error = typeof payload === 'string' ? payload : 'Error desconocido';
 			})
-			.addCase(updateUsuarioRolesPerms.pending, state => {
+			.addCase(updateUsuarioRolesPerms.pending, (state) => {
 				state.update.loading = true;
 				state.update.error = null;
 			})
-			.addCase(updateUsuarioRolesPerms.fulfilled, state => {
+			.addCase(updateUsuarioRolesPerms.fulfilled, (state) => {
 				state.update.loading = false;
 			})
 			.addCase(updateUsuarioRolesPerms.rejected, (state, { payload }) => {
 				state.update.loading = false;
 				state.update.error = typeof payload === 'string' ? payload : 'Error desconocido';
 			})
-			.addCase(assignUserRoles.pending, state => {
+			.addCase(assignUserRoles.pending, (state) => {
 				state.update.loading = true;
 				state.update.error = null;
 			})
-			.addCase(assignUserRoles.fulfilled, state => {
+			.addCase(assignUserRoles.fulfilled, (state) => {
 				state.update.loading = false;
 			})
 			.addCase(assignUserRoles.rejected, (state, { payload }) => {
 				state.update.loading = false;
 				state.update.error = typeof payload === 'string' ? payload : 'Error desconocido';
 			})
-			.addCase(removeUserRoles.pending, state => {
+			.addCase(removeUserRoles.pending, (state) => {
 				state.update.loading = true;
 				state.update.error = null;
 			})
-			.addCase(removeUserRoles.fulfilled, state => {
+			.addCase(removeUserRoles.fulfilled, (state) => {
 				state.update.loading = false;
 			})
 			.addCase(removeUserRoles.rejected, (state, { payload }) => {
 				state.update.loading = false;
 				state.update.error = typeof payload === 'string' ? payload : 'Error desconocido';
 			})
-			.addCase(assignUserPermissions.pending, state => {
+			.addCase(assignUserPermissions.pending, (state) => {
 				state.update.loading = true;
 				state.update.error = null;
 			})
-			.addCase(assignUserPermissions.fulfilled, state => {
+			.addCase(assignUserPermissions.fulfilled, (state) => {
 				state.update.loading = false;
 			})
 			.addCase(assignUserPermissions.rejected, (state, { payload }) => {
 				state.update.loading = false;
 				state.update.error = typeof payload === 'string' ? payload : 'Error desconocido';
 			})
-			.addCase(removeUserPermissions.pending, state => {
+			.addCase(removeUserPermissions.pending, (state) => {
 				state.update.loading = true;
 				state.update.error = null;
 			})
-			.addCase(removeUserPermissions.fulfilled, state => {
+			.addCase(removeUserPermissions.fulfilled, (state) => {
 				state.update.loading = false;
 			})
 			.addCase(removeUserPermissions.rejected, (state, { payload }) => {
 				state.update.loading = false;
 				state.update.error = typeof payload === 'string' ? payload : 'Error desconocido';
 			})
-			.addCase(updateUsuarioAccess.pending, state => {
+			.addCase(updateUsuarioAccess.pending, (state) => {
 				state.update.loading = true;
 				state.update.error = null;
 			})
-			.addCase(updateUsuarioAccess.fulfilled, state => {
+			.addCase(updateUsuarioAccess.fulfilled, (state) => {
 				state.update.loading = false;
 			})
 			.addCase(updateUsuarioAccess.rejected, (state, { payload }) => {

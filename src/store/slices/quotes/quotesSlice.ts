@@ -1,4 +1,9 @@
-import { createAsyncThunk, createSlice, createSelector, type PayloadAction } from '@reduxjs/toolkit';
+import {
+	createAsyncThunk,
+	createSlice,
+	createSelector,
+	type PayloadAction,
+} from '@reduxjs/toolkit';
 import { toast } from 'react-toastify';
 import ApiService from '@/services/ApiService';
 import type {
@@ -106,25 +111,30 @@ export const fetchQuotes = createAsyncThunk<
 	{ quotes: Quote[]; meta: QuoteListMeta },
 	FetchQuotesParams,
 	{ rejectValue: string }
->('quotes/fetchQuotes', async ({ subsidiaryId, page = 1, perPage = 20, status, search }, { rejectWithValue }) => {
-	try {
-		const response = await ApiService.fetchData<{ data?: Quote[]; meta?: QuoteListMeta }>({
-			url: buildQuoteUrl(subsidiaryId),
-			method: 'get',
-			params: {
-				page,
-				per_page: perPage,
-				status: status && status !== 'all' ? status : undefined,
-				q: search?.trim() || undefined,
-				with_customer: 1,
-			},
-		});
+>(
+	'quotes/fetchQuotes',
+	async ({ subsidiaryId, page = 1, perPage = 20, status, search }, { rejectWithValue }) => {
+		try {
+			const response = await ApiService.fetchData<{ data?: Quote[]; meta?: QuoteListMeta }>({
+				url: buildQuoteUrl(subsidiaryId),
+				method: 'get',
+				params: {
+					page,
+					per_page: perPage,
+					status: status && status !== 'all' ? status : undefined,
+					q: search?.trim() || undefined,
+					with_customer: 1,
+				},
+			});
 
-		return normalizeListResponse(response.data);
-	} catch (error: any) {
-		return rejectWithValue(error?.response?.data?.message || 'No se pudieron obtener las cotizaciones');
-	}
-});
+			return normalizeListResponse(response.data);
+		} catch (error: any) {
+			return rejectWithValue(
+				error?.response?.data?.message || 'No se pudieron obtener las cotizaciones',
+			);
+		}
+	},
+);
 
 export const fetchQuoteById = createAsyncThunk<
 	Quote,
@@ -190,7 +200,9 @@ export const updateQuote = createAsyncThunk<
 		});
 		return extractEntity<Quote>(response.data);
 	} catch (error: any) {
-		return rejectWithValue(error?.response?.data?.message || 'No se pudo actualizar la cotización');
+		return rejectWithValue(
+			error?.response?.data?.message || 'No se pudo actualizar la cotización',
+		);
 	}
 });
 
@@ -206,7 +218,9 @@ export const deleteQuote = createAsyncThunk<
 		});
 		return quoteId;
 	} catch (error: any) {
-		return rejectWithValue(error?.response?.data?.message || 'No se pudo eliminar la cotización');
+		return rejectWithValue(
+			error?.response?.data?.message || 'No se pudo eliminar la cotización',
+		);
 	}
 });
 
@@ -228,7 +242,9 @@ export const fetchQuoteItems = createAsyncThunk<
 		}
 		return [];
 	} catch (error: any) {
-		return rejectWithValue(error?.response?.data?.message || 'No se pudieron obtener los ítems');
+		return rejectWithValue(
+			error?.response?.data?.message || 'No se pudieron obtener los ítems',
+		);
 	}
 });
 
@@ -253,18 +269,23 @@ export const updateQuoteItem = createAsyncThunk<
 	QuoteItem,
 	{ subsidiaryId: number; quoteId: number; itemId: number; data: QuoteItemDTO },
 	{ rejectValue: string }
->('quotes/updateQuoteItem', async ({ subsidiaryId, quoteId, itemId, data }, { rejectWithValue }) => {
-	try {
-		const response = await ApiService.fetchData<{ data?: QuoteItem }>({
-			url: buildQuoteUrl(subsidiaryId, `/${quoteId}/items/${itemId}`),
-			method: 'patch',
-			data,
-		});
-		return extractEntity<QuoteItem>(response.data);
-	} catch (error: any) {
-		return rejectWithValue(error?.response?.data?.message || 'No se pudo actualizar el ítem');
-	}
-});
+>(
+	'quotes/updateQuoteItem',
+	async ({ subsidiaryId, quoteId, itemId, data }, { rejectWithValue }) => {
+		try {
+			const response = await ApiService.fetchData<{ data?: QuoteItem }>({
+				url: buildQuoteUrl(subsidiaryId, `/${quoteId}/items/${itemId}`),
+				method: 'patch',
+				data,
+			});
+			return extractEntity<QuoteItem>(response.data);
+		} catch (error: any) {
+			return rejectWithValue(
+				error?.response?.data?.message || 'No se pudo actualizar el ítem',
+			);
+		}
+	},
+);
 
 export const deleteQuoteItem = createAsyncThunk<
 	number,
@@ -294,7 +315,9 @@ export const convertQuoteToSale = createAsyncThunk<
 		});
 		return response.data;
 	} catch (error: any) {
-		return rejectWithValue(error?.response?.data?.message || 'No se pudo convertir la cotización');
+		return rejectWithValue(
+			error?.response?.data?.message || 'No se pudo convertir la cotización',
+		);
 	}
 });
 

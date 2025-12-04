@@ -10,10 +10,10 @@ import {
 	type SortingState,
 	type ColumnFiltersState,
 } from '@tanstack/react-table';
+import { useNavigate } from 'react-router-dom';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
-import { useNavigate } from 'react-router-dom';
 import Input from '@/components/form/Input';
 import type { IWarehouseProduct } from '@/interface/warehouse.interface';
 import type { IProduct } from '@/interface/product.interface';
@@ -134,7 +134,7 @@ const AssociatedProductsTable: React.FC<AssociatedProductsTableProps> = ({
 								variant='outline'
 								color='red'
 								onClick={() => onRemoveProduct(product)}>
-                                <Icon icon='HeroTrash' />
+								<Icon icon='HeroTrash' />
 							</Button>
 						</div>
 					);

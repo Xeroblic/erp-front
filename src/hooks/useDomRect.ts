@@ -4,7 +4,9 @@ import { RefObject, useEffect, useLayoutEffect, useState } from 'react';
  * Hook para obtener el DOMRect de un elemento referenciado.
  * Ahora es genérico y acepta refs con posible valor null (RefObject<T | null>).
  */
-const useDomRect = <T extends HTMLElement = HTMLElement>(ref: RefObject<T | null>): [DOMRect | null] => {
+const useDomRect = <T extends HTMLElement = HTMLElement>(
+	ref: RefObject<T | null>,
+): [DOMRect | null] => {
 	const [domRect, setDomRect] = useState<DOMRect | null>(null);
 
 	useLayoutEffect(() => {

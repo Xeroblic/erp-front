@@ -318,8 +318,7 @@ const UserPermissionsDetail: React.FC = () => {
 					</div>
 					<div className='ml-auto flex items-center gap-3'>
 						{/* status tag */}
-						<span
-							className={`rounded-full px-3 py-1 text-sm ${statusClass}`}>
+						<span className={`rounded-full px-3 py-1 text-sm ${statusClass}`}>
 							{statusLabel}
 						</span>
 						{/* Save button */}
@@ -337,13 +336,18 @@ const UserPermissionsDetail: React.FC = () => {
 			<Container>
 				{!canSubmitChanges && (
 					<div className='mb-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/40 dark:text-zinc-300'>
-						Esta vista se encuentra en modo lectura. Contacta a un administrador si necesitas editar roles, permisos o accesos jerárquicos.
+						Esta vista se encuentra en modo lectura. Contacta a un administrador si
+						necesitas editar roles, permisos o accesos jerárquicos.
 					</div>
 				)}
 				<Card>
 					<CardBody className='p-0'>
 						{/* Tabs Dinámicos */}
-						<DynamicTabs tabs={USER_DETAIL_TABS} activeTab={activeTab} onTabChange={setActiveTab} />
+						<DynamicTabs
+							tabs={USER_DETAIL_TABS}
+							activeTab={activeTab}
+							onTabChange={setActiveTab}
+						/>
 
 						{/* Tab Content */}
 						<div className='p-6'>

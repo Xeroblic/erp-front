@@ -69,7 +69,7 @@ export const useUserBranches = (
 		(s) => s.auth.user?.id ?? (s.auth.user as any)?.pk ?? undefined,
 	);
 	const permisos = useAppSelector((s) => s.auth.permisos ?? []);
-  const authUser = useAppSelector((s) => s.auth.user as any);
+	const authUser = useAppSelector((s) => s.auth.user as any);
 
 	const [state, setState] = useState<UseUserBranchesState>({
 		branches: [],
@@ -106,20 +106,29 @@ export const useUserBranches = (
 						if (b?.id) raw = [{ id: b.id, name: b.name ?? b.branch_name }];
 					}
 					if (Array.isArray(raw) && raw.length) {
-						const normalizedSelf: UserBranch[] = raw.map((b: any) => ({ id: b.id, name: b.name || b.branch_name || `Branch ${b.id}` }));
+						const normalizedSelf: UserBranch[] = raw.map((b: any) => ({
+							id: b.id,
+							name: b.name || b.branch_name || `Branch ${b.id}`,
+						}));
 						setState({ branches: normalizedSelf, loading: false, error: null });
 						return;
 					}
 				}
 				// 2) fallback a /perfil
-				const meResp = await ApiService.fetchData<{ success?: boolean; data?: any }>({ url: '/perfil', method: 'get' });
+				const meResp = await ApiService.fetchData<{ success?: boolean; data?: any }>({
+					url: '/perfil',
+					method: 'get',
+				});
 				const meData = (meResp as any)?.data?.data ?? (meResp as any)?.data ?? ({} as any);
 				let raw = meData?.access?.branches ?? meData?.visible?.branches ?? [];
 				if (!Array.isArray(raw) || raw.length === 0) {
 					const b = meData?.branch;
 					if (b?.id) raw = [{ id: b.id, name: b.name ?? b.branch_name }];
 				}
-				const normalizedSelf: UserBranch[] = raw.map((b: any) => ({ id: b.id, name: b.name || b.branch_name || `Branch ${b.id}` }));
+				const normalizedSelf: UserBranch[] = raw.map((b: any) => ({
+					id: b.id,
+					name: b.name || b.branch_name || `Branch ${b.id}`,
+				}));
 				setState({ branches: normalizedSelf, loading: false, error: null });
 				return;
 			}

@@ -1,4 +1,5 @@
 import React, { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
+import { toast } from 'react-toastify';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Input from '@/components/form/Input';
@@ -6,10 +7,13 @@ import Textarea from '@/components/form/Textarea';
 import Checkbox from '@/components/form/Checkbox';
 import Label from '@/components/form/Label';
 import Icon from '@/components/icon/Icon';
-import type { IDocument, IDocumentPayload } from '../../types/documentos.types';
+import type {
+	IDocument,
+	IDocumentPayload,
+	TDocumentModule,
+	TDocumentOutputFormat,
+} from '../../types/documentos.types';
 import SelectReact, { TSelectOption, TSelectOptions } from '@/components/form/SelectReact';
-import { toast } from 'react-toastify';
-import type { TDocumentModule, TDocumentOutputFormat } from '../../types/documentos.types';
 
 type EditDocumentModalProps = {
 	isOpen: boolean;
@@ -72,7 +76,8 @@ const EditDocumentModal: React.FC<EditDocumentModalProps> = ({
 		const payload: Partial<IDocumentPayload> = {
 			name: String(formData.get('name') || '').trim(),
 			document_type_id: Number(selectedDocumentType.value),
-			output_format: (selectedOutputFormat.value as TDocumentOutputFormat) || document.output_format,
+			output_format:
+				(selectedOutputFormat.value as TDocumentOutputFormat) || document.output_format,
 			related_module: (selectedModule.value as TDocumentModule) || document.related_module,
 			description: String(formData.get('description') || '') || undefined,
 			is_active: formData.get('is_active') === 'on',
@@ -105,14 +110,23 @@ const EditDocumentModal: React.FC<EditDocumentModalProps> = ({
 				</div>
 			</ModalHeader>
 			{document ? (
-				<form ref={formRef} id='editDocumentForm' onSubmit={handleSubmit} className='space-y-4'>
+				<form
+					ref={formRef}
+					id='editDocumentForm'
+					onSubmit={handleSubmit}
+					className='space-y-4'>
 					<ModalBody>
 						<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
 							<div className='md:col-span-2'>
 								<Label htmlFor='edit-name' className='required'>
 									Nombre del documento
 								</Label>
-								<Input id='edit-name' name='name' defaultValue={document.name} required />
+								<Input
+									id='edit-name'
+									name='name'
+									defaultValue={document.name}
+									required
+								/>
 							</div>
 						</div>
 
@@ -126,7 +140,9 @@ const EditDocumentModal: React.FC<EditDocumentModalProps> = ({
 									name='document_type_id'
 									options={documentTypeOptions}
 									value={selectedDocumentType}
-									onChange={(option) => setSelectedDocumentType(option as TSelectOption)}
+									onChange={(option) =>
+										setSelectedDocumentType(option as TSelectOption)
+									}
 									placeholder='Selecciona un tipo'
 									isClearable
 								/>
@@ -140,7 +156,9 @@ const EditDocumentModal: React.FC<EditDocumentModalProps> = ({
 									name='output_format'
 									options={outputFormatOptions}
 									value={selectedOutputFormat}
-									onChange={(option) => setSelectedOutputFormat(option as TSelectOption)}
+									onChange={(option) =>
+										setSelectedOutputFormat(option as TSelectOption)
+									}
 									placeholder='Selecciona formato'
 									isClearable
 								/>
@@ -157,7 +175,9 @@ const EditDocumentModal: React.FC<EditDocumentModalProps> = ({
 									name='related_module'
 									options={moduleOptions}
 									value={selectedModule}
-									onChange={(option) => setSelectedModule(option as TSelectOption)}
+									onChange={(option) =>
+										setSelectedModule(option as TSelectOption)
+									}
 									placeholder='Selecciona módulo'
 									isClearable
 								/>
@@ -176,10 +196,16 @@ const EditDocumentModal: React.FC<EditDocumentModalProps> = ({
 
 						<div className='space-y-2'>
 							<Label htmlFor='edit-files'>Agregar adjuntos</Label>
-							<Input id='edit-files' name='files' type='file' multiple ref={fileInputRef} />
+							<Input
+								id='edit-files'
+								name='files'
+								type='file'
+								multiple
+								ref={fileInputRef}
+							/>
 							<p className='text-xs text-gray-500'>
-								Los archivos nuevos se sumarán al documento. Puedes eliminarlos desde el
-								detalle.
+								Los archivos nuevos se sumarán al documento. Puedes eliminarlos
+								desde el detalle.
 							</p>
 						</div>
 

@@ -70,7 +70,7 @@ const MovementsTable: React.FC<MovementsTableProps> = ({
 				header: 'Fecha',
 				cell: (info) =>
 					info.getValue() ? (
-						<span className='text-sm'>{formatDate(info.getValue() as string)}</span>
+						<span className='text-sm'>{formatDate(info.getValue())}</span>
 					) : (
 						<span className='text-sm text-gray-500'>N/D</span>
 					),
@@ -95,9 +95,7 @@ const MovementsTable: React.FC<MovementsTableProps> = ({
 				header: 'Cantidad',
 				cell: (info) => {
 					const quantity = info.getValue() ?? 0;
-					const normalizedType = normalizeMovementType(
-						info.row.original.movement_type,
-					);
+					const normalizedType = normalizeMovementType(info.row.original.movement_type);
 					const isOut = normalizedType === 'OUT';
 					const signedQuantity = isOut ? -Math.abs(quantity) : quantity;
 					return (
@@ -186,7 +184,7 @@ const MovementsTable: React.FC<MovementsTableProps> = ({
 		return (
 			<div className='flex min-h-[400px] items-center justify-center'>
 				<div className='flex items-center gap-2'>
-					<div className='h-6 w-6 animate-spin rounded-full border-2 border-sky-600 border-t-transparent'></div>
+					<div className='h-6 w-6 animate-spin rounded-full border-2 border-sky-600 border-t-transparent' />
 					<span>Cargando movimientos...</span>
 				</div>
 			</div>

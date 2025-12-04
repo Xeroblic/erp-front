@@ -1,9 +1,9 @@
 import React from 'react';
+import { FormikProps } from 'formik';
 import Label from '@/components/form/Label';
 import Input from '@/components/form/Input';
 import Textarea from '@/components/form/Textarea';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
-import { FormikProps } from 'formik';
 
 interface CompanyContactFieldsProps {
 	formik: FormikProps<any>;
@@ -34,9 +34,13 @@ export default function CompanyContactFields({
 						onBlur={formik.handleBlur}
 						placeholder='+56 9 1234 5678'
 					/>
-					{formik.touched.company_phone && formik.errors.company_phone && typeof formik.errors.company_phone === 'string' && (
-						<p className='mt-1 text-sm text-red-600'>{formik.errors.company_phone}</p>
-					)}
+					{formik.touched.company_phone &&
+						formik.errors.company_phone &&
+						typeof formik.errors.company_phone === 'string' && (
+							<p className='mt-1 text-sm text-red-600'>
+								{formik.errors.company_phone}
+							</p>
+						)}
 				</div>
 
 				<div>
@@ -50,9 +54,13 @@ export default function CompanyContactFields({
 						onBlur={formik.handleBlur}
 						placeholder='contacto@empresa.cl'
 					/>
-					{formik.touched.contact_email && formik.errors.contact_email && typeof formik.errors.contact_email === 'string' && (
-						<p className='mt-1 text-sm text-red-600'>{formik.errors.contact_email}</p>
-					)}
+					{formik.touched.contact_email &&
+						formik.errors.contact_email &&
+						typeof formik.errors.contact_email === 'string' && (
+							<p className='mt-1 text-sm text-red-600'>
+								{formik.errors.contact_email}
+							</p>
+						)}
 				</div>
 			</div>
 
@@ -67,9 +75,11 @@ export default function CompanyContactFields({
 					placeholder='Dirección completa de la empresa'
 					rows={2}
 				/>
-				{formik.touched.company_address && formik.errors.company_address && typeof formik.errors.company_address === 'string' && (
-					<p className='mt-1 text-sm text-red-600'>{formik.errors.company_address}</p>
-				)}
+				{formik.touched.company_address &&
+					formik.errors.company_address &&
+					typeof formik.errors.company_address === 'string' && (
+						<p className='mt-1 text-sm text-red-600'>{formik.errors.company_address}</p>
+					)}
 			</div>
 
 			<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
@@ -139,9 +149,13 @@ export default function CompanyContactFields({
 					onBlur={formik.handleBlur}
 					placeholder='Nombre completo del representante legal'
 				/>
-				{formik.touched.representative_name && formik.errors.representative_name && typeof formik.errors.representative_name === 'string' && (
-					<p className='mt-1 text-sm text-red-600'>{formik.errors.representative_name}</p>
-				)}
+				{formik.touched.representative_name &&
+					formik.errors.representative_name &&
+					typeof formik.errors.representative_name === 'string' && (
+						<p className='mt-1 text-sm text-red-600'>
+							{formik.errors.representative_name}
+						</p>
+					)}
 			</div>
 		</div>
 	);

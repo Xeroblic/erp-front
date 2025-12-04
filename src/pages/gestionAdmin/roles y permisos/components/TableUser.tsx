@@ -1,12 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Table, { Th, THead, Tr, TBody, Td } from '@/components/ui/Table';
-import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
-import Card, { CardBody } from '@/components/ui/Card';
-import Badge from '@/components/ui/Badge';
-import Icon from '@/components/icon/Icon';
-import Button from '@/components/ui/Button';
-import ApiService from '@/services/ApiService';
 import { toast } from 'react-toastify';
 import {
 	createColumnHelper,
@@ -19,6 +12,13 @@ import {
 	useReactTable,
 } from '@tanstack/react-table';
 import type { FilterFn } from '@tanstack/react-table';
+import Table, { Th, THead, Tr, TBody, Td } from '@/components/ui/Table';
+import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
+import Card, { CardBody } from '@/components/ui/Card';
+import Badge from '@/components/ui/Badge';
+import Icon from '@/components/icon/Icon';
+import Button from '@/components/ui/Button';
+import ApiService from '@/services/ApiService';
 import type { UserWithDetails } from '@/store/slices/usersAdmin/usersAdminSlice';
 import { formatRoleName } from '@/pages/admin/Permission/utils/formatters';
 import { useAppSelector } from '@/store';
@@ -79,44 +79,42 @@ const TableUser: React.FC<Props> = ({
 					const user = info.row.original;
 					return (
 						<div className='flex items-center gap-3'>
-							{
-								(() => {
-									const anyUser: any = user as any;
-									const img = anyUser?.image;
-									let avatarUrl: string | null = null;
-									if (typeof img === 'string') avatarUrl = img;
-									else if (img && typeof img === 'object') {
-										avatarUrl =
-											img.md ??
-											img.sm ??
-											img.lg ??
-											img.original_url ??
-											img.url ??
-											null;
-									}
-									if (!avatarUrl) avatarUrl = anyUser?.image_url ?? null;
+							{(() => {
+								const anyUser: any = user as any;
+								const img = anyUser?.image;
+								let avatarUrl: string | null = null;
+								if (typeof img === 'string') avatarUrl = img;
+								else if (img && typeof img === 'object') {
+									avatarUrl =
+										img.md ??
+										img.sm ??
+										img.lg ??
+										img.original_url ??
+										img.url ??
+										null;
+								}
+								if (!avatarUrl) avatarUrl = anyUser?.image_url ?? null;
 
-									if (avatarUrl) {
-										return (
-											<img
-												src={avatarUrl}
-												alt={
-													user.displayName ??
-													`${user.first_name} ${user.last_name}`
-												}
-												className='h-10 w-10 flex-shrink-0 rounded-full object-cover'
-											/>
-										);
-									}
-
-									const initials = `${user.first_name?.charAt(0) ?? '—'}${user.last_name?.charAt(0) ?? ''}`;
+								if (avatarUrl) {
 									return (
-										<div className='flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-zinc-500 font-semibold text-white'>
-											{initials}
-										</div>
+										<img
+											src={avatarUrl}
+											alt={
+												user.displayName ??
+												`${user.first_name} ${user.last_name}`
+											}
+											className='h-10 w-10 flex-shrink-0 rounded-full object-cover'
+										/>
 									);
-								})()
-							}
+								}
+
+								const initials = `${user.first_name?.charAt(0) ?? '—'}${user.last_name?.charAt(0) ?? ''}`;
+								return (
+									<div className='flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-zinc-500 font-semibold text-white'>
+										{initials}
+									</div>
+								);
+							})()}
 							<div>
 								<div className='font-medium'>{user.displayName}</div>
 								<div className='text-sm text-zinc-500'>{user.email}</div>
@@ -318,7 +316,7 @@ const TableUser: React.FC<Props> = ({
 											{table.getRowModel().rows.map((row) => (
 												<Tr
 													key={row.id}
-													className={`border-b transition-colors`}>
+													className='border-b transition-colors'>
 													{row.getVisibleCells().map((cell) => (
 														<Td key={cell.id} className='p-4'>
 															{flexRender(

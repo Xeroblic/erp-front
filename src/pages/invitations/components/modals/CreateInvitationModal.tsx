@@ -1,8 +1,9 @@
-﻿/* eslint-disable import/extensions */
+/* eslint-disable import/extensions */
 import React, { useMemo, useEffect, useState, useCallback, useRef } from 'react';
 import { Formik, Form, type FormikHelpers, type FormikProps } from 'formik';
 import { toast } from 'react-toastify';
 import * as Yup from 'yup';
+import type { SingleValue } from 'react-select';
 import Modal, {
 	ModalHeader,
 	ModalBody,
@@ -21,7 +22,6 @@ import PermissionSelect from '@/components/form/PermissionSelect';
 import { normalizeRoleKey } from '@/pages/admin/Permission/utils/formatters';
 import type { Permission, Role } from '@/store/slices/permissions/permissionsSlice';
 import type { CreateInvitationData } from '@/interface/invitacion.interface';
-import type { SingleValue } from 'react-select';
 import Button from '@/components/ui/Button';
 import ApiService from '@/services/ApiService';
 import { useAppSelector } from '@/store';
@@ -87,7 +87,8 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 		];
 
 		return possibleRoles.some(
-			(role) => normalizeRoleKey(typeof role === 'string' ? role : String(role)) === 'superadmin',
+			(role) =>
+				normalizeRoleKey(typeof role === 'string' ? role : String(role)) === 'superadmin',
 		);
 	}, [currentUser?.roles, currentUser?.authority, currentAuthority]);
 
@@ -141,17 +142,13 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 				const hasCompany = Boolean(formik.values.company_id);
 				if (!hasCompany && currentCompany?.id) {
 					formik.setFieldValue('company_id', currentCompany.id, false);
-				} else if (
-					currentCompany?.id &&
-					formik.values.company_id !== currentCompany.id
-				) {
+				} else if (currentCompany?.id && formik.values.company_id !== currentCompany.id) {
 					formik.setFieldValue('company_id', currentCompany.id, false);
 				}
 
 				const currentBranch = formik.values.branch_id;
 				const branchStillValid =
-					currentBranch &&
-					options.some((option) => option.value === currentBranch);
+					currentBranch && options.some((option) => option.value === currentBranch);
 				if (!branchStillValid) {
 					formik.setFieldValue('branch_id', options[0]?.value ?? '', false);
 				}
@@ -233,10 +230,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 		return trimmed || undefined;
 	};
 
-	const buildPayload = (
-		values: FormValues,
-		selectedRole: Role,
-	): CreateInvitationData => {
+	const buildPayload = (values: FormValues, selectedRole: Role): CreateInvitationData => {
 		const message = values.message.trim();
 		const companyIdentifier = values.company_id ?? undefined;
 		const branchIdentifier = values.branch_id ? Number(values.branch_id) : undefined;
@@ -272,7 +266,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 		err: any,
 		setFieldError: FormikHelpers<FormValues>['setFieldError'],
 	) => {
-		const errorPayload = err?.response?.data    ;
+		const errorPayload = err?.response?.data;
 
 		if (errorPayload?.errors) {
 			Object.entries(errorPayload.errors).forEach(([field, messages]) => {
@@ -302,8 +296,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 			try {
 				payload = buildPayload(values, selectedRole);
 			} catch (buildError: any) {
-				const errorMessage =
-					buildError?.message || 'No se pudo preparar la invitación';
+				const errorMessage = buildError?.message || 'No se pudo preparar la invitación';
 				toast.error(errorMessage);
 				return;
 			}
@@ -324,7 +317,12 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 	};
 
 	return (
-		<Modal isOpen={isOpen} setIsOpen={handleClose} size='md' isStaticBackdrop isStaticBackdropAnimation>
+		<Modal
+			isOpen={isOpen}
+			setIsOpen={handleClose}
+			size='md'
+			isStaticBackdrop
+			isStaticBackdropAnimation>
 			<ModalHeader>
 				<Icon icon='HeroPlusCircle' />
 				<Badge> Nueva Invitacion </Badge>
@@ -352,9 +350,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 								isTouched={touched.email}
 								invalidFeedback={errors.email}>
 								<div>
-									<Label htmlFor='email'>
-										Email *
-									</Label>
+									<Label htmlFor='email'>Email *</Label>
 									<Input
 										name='email'
 										type='email'
@@ -362,7 +358,6 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 										onChange={handleChange}
 										onBlur={handleBlur}
 										placeholder='ejemplo@empresa.com'
-										
 										isValid={!errors.email}
 										isTouched={touched.email}
 										invalidFeedback={errors.email}
@@ -375,9 +370,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 								isTouched={touched.first_name}
 								invalidFeedback={errors.first_name}>
 								<div>
-									<Label htmlFor='first_name'>
-										Nombre *
-									</Label>
+									<Label htmlFor='first_name'>Nombre *</Label>
 									<Input
 										name='first_name'
 										type='text'
@@ -385,7 +378,6 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 										onChange={handleChange}
 										onBlur={handleBlur}
 										placeholder='Juan'
-										
 										isValid={!errors.first_name}
 										isTouched={touched.first_name}
 										invalidFeedback={errors.first_name}
@@ -398,9 +390,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 								isTouched={touched.last_name}
 								invalidFeedback={errors.last_name}>
 								<div>
-									<Label htmlFor='last_name'>
-										Apellido *
-									</Label>
+									<Label htmlFor='last_name'>Apellido *</Label>
 									<Input
 										name='last_name'
 										type='text'
@@ -408,7 +398,6 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 										onChange={handleChange}
 										onBlur={handleBlur}
 										placeholder='Perez'
-										
 										isValid={!errors.last_name}
 										isTouched={touched.last_name}
 										invalidFeedback={errors.last_name}
@@ -416,23 +405,21 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 								</div>
 							</FieldWrap>
 
-			<FieldWrap
-				isValid={!errors.role_id}
-				isTouched={touched.role_id}
-				invalidFeedback={errors.role_id}>
-				<div>
-					<Label htmlFor='role_id'>
-						Rol *
-					</Label>
-					<RoleSelect
-						name='role_id'
-						roles={availableRoles}
-						value={values.role_id}
-						onChange={(roleId) => setFieldValue('role_id', roleId)}
-						isLoading={isLoadingRoles}
-					/>
-				</div>
-			</FieldWrap>
+							<FieldWrap
+								isValid={!errors.role_id}
+								isTouched={touched.role_id}
+								invalidFeedback={errors.role_id}>
+								<div>
+									<Label htmlFor='role_id'>Rol *</Label>
+									<RoleSelect
+										name='role_id'
+										roles={availableRoles}
+										value={values.role_id}
+										onChange={(roleId) => setFieldValue('role_id', roleId)}
+										isLoading={isLoadingRoles}
+									/>
+								</div>
+							</FieldWrap>
 
 							<FieldWrap
 								isValid={!errors.branch_id}
@@ -454,9 +441,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 										}}
 										isLoading={isLoadingBranches}
 										placeholder={branchPlaceholder}
-										isDisabled={
-											isLoadingBranches || branchOptions.length === 0
-										}
+										isDisabled={isLoadingBranches || branchOptions.length === 0}
 									/>
 								</div>
 							</FieldWrap>
@@ -467,9 +452,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 									isTouched={touched.rut}
 									invalidFeedback={errors.rut}>
 									<div>
-										<Label htmlFor='rut'>
-											RUT *
-										</Label>
+										<Label htmlFor='rut'>RUT *</Label>
 										<Input
 											name='rut'
 											type='text'
@@ -477,7 +460,6 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 											onChange={handleChange}
 											onBlur={handleBlur}
 											placeholder='12.345.678-9'
-											
 											isValid={!errors.rut}
 											isTouched={touched.rut}
 											invalidFeedback={errors.rut}
@@ -486,9 +468,7 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 								</FieldWrap>
 								<FieldWrap>
 									<div>
-										<Label htmlFor='position'>
-											Cargo
-										</Label>
+										<Label htmlFor='position'>Cargo</Label>
 										<Input
 											name='position'
 											type='text'
@@ -496,30 +476,29 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 											onChange={handleChange}
 											onBlur={handleBlur}
 											placeholder='Administrador de Recursos Humanos'
-											
 										/>
 									</div>
 								</FieldWrap>
 							</div>
 
-			<FieldWrap>
-				<div>
-					<Label htmlFor='permissions'>
-						Permisos adicionales
-					</Label>
-					<PermissionSelect
-						name='permissions'
-						permissions={permissions}
-						value={values.permissions}
-						onChange={(selected) => setFieldValue('permissions', selected)}
-						isLoading={isLoadingPermissions}
-					/>
-					<p className='mt-2 text-xs text-zinc-500'>
-						Estos permisos se agregaran ademas de los permisos otorgados
-						por el rol seleccionado.
-					</p>
-				</div>
-			</FieldWrap>
+							<FieldWrap>
+								<div>
+									<Label htmlFor='permissions'>Permisos adicionales</Label>
+									<PermissionSelect
+										name='permissions'
+										permissions={permissions}
+										value={values.permissions}
+										onChange={(selected) =>
+											setFieldValue('permissions', selected)
+										}
+										isLoading={isLoadingPermissions}
+									/>
+									<p className='mt-2 text-xs text-zinc-500'>
+										Estos permisos se agregaran ademas de los permisos otorgados
+										por el rol seleccionado.
+									</p>
+								</div>
+							</FieldWrap>
 
 							<FieldWrap>
 								<div>
@@ -533,7 +512,6 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 										onChange={handleChange}
 										onBlur={handleBlur}
 										placeholder='Mensaje adicional para incluir en la invitacion...'
-										
 									/>
 								</div>
 							</FieldWrap>

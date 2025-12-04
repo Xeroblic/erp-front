@@ -9,11 +9,7 @@ import {
 } from '@tanstack/react-table';
 
 import { useInvitationsManagement } from '../../hooks/useInvitationsManagement';
-import {
-	InvitationDetailsModal,
-	DeleteConfirmationModal,
-	ResendInvitationModal,
-} from '../modals';
+import { InvitationDetailsModal, DeleteConfirmationModal, ResendInvitationModal } from '../modals';
 import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
 import { Invitation } from '@/interface/invitacion.interface';
 import Badge from '@/components/ui/Badge';
@@ -432,11 +428,7 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 					<p className='mb-4 text-sm text-zinc-500 dark:text-zinc-400'>
 						No se encontraron invitaciones con los filtros aplicados.
 					</p>
-					<Button
-						variant='outline'
-						color='red'
-						icon='HeroPlus'
-						onClick={openCreateModal}>
+					<Button variant='outline' color='red' icon='HeroPlus' onClick={openCreateModal}>
 						Crear nueva invitación
 					</Button>
 				</CardBody>

@@ -54,9 +54,12 @@ const getPersonalizacionActual = () => {
 			tcolor: localStorage.getItem('zentria_themeColor') || 'amber',
 			tcolor_int: localStorage.getItem('zentria_themeColorShade') || '500',
 			font_size: Number(localStorage.getItem('zentria_fontSize')) || 13,
-			tema: localStorage.getItem('theme') === 'light' ? '1'
-				: localStorage.getItem('theme') === 'dark' ? '2'
-					: '3'
+			tema:
+				localStorage.getItem('theme') === 'light'
+					? '1'
+					: localStorage.getItem('theme') === 'dark'
+						? '2'
+						: '3',
 		};
 	} catch (error) {
 		return null;
@@ -93,13 +96,17 @@ const baseThemeConfig: TThemeConfigs = {
 			...this,
 			...(personalizacionUsuario || {}),
 			themeColor: (personalizacionUsuario?.tcolor as TColors) || this.themeColor,
-			themeColorShade: (personalizacionUsuario?.tcolor_int as TColorIntensity) || this.themeColorShade,
+			themeColorShade:
+				(personalizacionUsuario?.tcolor_int as TColorIntensity) || this.themeColorShade,
 			fontSize: personalizacionUsuario?.font_size || this.fontSize,
-			theme: personalizacionUsuario?.tema === '1' ? DARK_MODE.LIGHT
-				: personalizacionUsuario?.tema === '2' ? DARK_MODE.DARK
-					: (localStorage.getItem('theme') as TDarkMode) || DARK_MODE.LIGHT
+			theme:
+				personalizacionUsuario?.tema === '1'
+					? DARK_MODE.LIGHT
+					: personalizacionUsuario?.tema === '2'
+						? DARK_MODE.DARK
+						: (localStorage.getItem('theme') as TDarkMode) || DARK_MODE.LIGHT,
 		};
-	}
+	},
 };
 
 export default baseThemeConfig;

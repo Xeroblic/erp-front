@@ -113,14 +113,10 @@ const TransferDetailModal: React.FC<TransferDetailModalProps> = ({ isOpen, onClo
 			</ModalHeader>
 			<ModalBody className='space-y-4'>
 				{loadingDetail && (
-					<p className='text-sm text-gray-500'>
-						Cargando detalle de la transferencia...
-					</p>
+					<p className='text-sm text-gray-500'>Cargando detalle de la transferencia...</p>
 				)}
 				{error && (
-					<p className='rounded-md bg-red-50 px-3 py-2 text-sm text-red-700'>
-						{error}
-					</p>
+					<p className='rounded-md bg-red-50 px-3 py-2 text-sm text-red-700'>{error}</p>
 				)}
 				<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
 					<Card>
@@ -129,7 +125,10 @@ const TransferDetailModal: React.FC<TransferDetailModalProps> = ({ isOpen, onClo
 						</CardHeader>
 						<CardBody className='space-y-2 text-sm'>
 							<p className='flex items-center space-x-2'>
-								<Icon icon='HeroBuildingStorefront' className='h-4 w-4 text-green-500' />
+								<Icon
+									icon='HeroBuildingStorefront'
+									className='h-4 w-4 text-green-500'
+								/>
 								<span>{detail.from_branch?.name || 'Sucursal no definida'}</span>
 							</p>
 							<p className='flex items-center space-x-2'>
@@ -214,7 +213,9 @@ const TransferDetailModal: React.FC<TransferDetailModalProps> = ({ isOpen, onClo
 									))
 								) : (
 									<Tr>
-										<Td colSpan={4} className='py-6 text-center text-sm text-gray-500'>
+										<Td
+											colSpan={4}
+											className='py-6 text-center text-sm text-gray-500'>
 											No hay productos asociados en esta vista.
 										</Td>
 									</Tr>

@@ -19,7 +19,8 @@ interface IButtonGroupProps extends HTMLAttributes<HTMLDivElement> {
 	variant?: TButtonVariants;
 }
 const ButtonGroup: FC<IButtonGroupProps> = (props) => {
-	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } = useReactiveThemeConfig();
+	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } =
+		useReactiveThemeConfig();
 
 	const {
 		borderWidth,

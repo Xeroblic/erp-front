@@ -18,10 +18,7 @@ import type {
 } from '../types/products.types';
 import type { AttributesJson } from '../types/attributes.types';
 import { PRODUCT_DRAFT_CATEGORY_SLUG, PRODUCT_TYPE_LABELS } from '../constants/products.constant';
-import {
-	areAttributeRecordsEqual,
-	prepareAttributesForSubmit,
-} from './dynamicAttributes.utils';
+import { areAttributeRecordsEqual, prepareAttributesForSubmit } from './dynamicAttributes.utils';
 
 const toOption = (value: number | string, label: string): ProductOption => ({
 	value: String(value),
@@ -76,10 +73,18 @@ export const buildSubmitPayload = (values: ProductFormValues): ProductFormSubmit
 	if (values.cost !== '' && values.cost !== undefined && values.cost !== null) {
 		data.cost = Number(values.cost);
 	}
-	if (values.offer_price !== '' && values.offer_price !== undefined && values.offer_price !== null) {
+	if (
+		values.offer_price !== '' &&
+		values.offer_price !== undefined &&
+		values.offer_price !== null
+	) {
 		data.offer_price = Number(values.offer_price);
 	}
-	if (values.warranty_months !== '' && values.warranty_months !== undefined && values.warranty_months !== null) {
+	if (
+		values.warranty_months !== '' &&
+		values.warranty_months !== undefined &&
+		values.warranty_months !== null
+	) {
 		data.warranty_months = Number(values.warranty_months);
 	}
 
@@ -132,7 +137,7 @@ export const mapProductToDetailForm = (product: IProduct): ProductDetailForm => 
 		snippet_description: product.snippet_description ?? '',
 		short_description: product.short_description ?? '',
 		long_description: product.long_description ?? '',
-		product_status: (product.product_status as ProductStatus) ?? 'pending',
+		product_status: product.product_status ?? 'pending',
 		attributes_json: (product.attributes_json as ProductAttributesForm) ?? null,
 	};
 };
@@ -153,8 +158,10 @@ export const buildDetailUpdatePayload = (
 		payload.brand_id = Number(form.brand_id);
 	}
 
-	if ((form.product_type ?? 'desktop_pc') !== (product.product_type ?? 'desktop_pc')) payload.product_type = form.product_type;
-	if (form.serial_tracking !== product.serial_tracking) payload.serial_tracking = form.serial_tracking;
+	if ((form.product_type ?? 'desktop_pc') !== (product.product_type ?? 'desktop_pc'))
+		payload.product_type = form.product_type;
+	if (form.serial_tracking !== product.serial_tracking)
+		payload.serial_tracking = form.serial_tracking;
 	if (form.is_active !== product.is_active) payload.is_active = form.is_active;
 
 	const nextPrice = parseNumberOrNull(form.price);
@@ -189,13 +196,22 @@ export const buildDetailUpdatePayload = (
 	}
 
 	if (includeDescriptions) {
-		if (normaliseString(form.snippet_description) !== normaliseString(product.snippet_description ?? '')) {
+		if (
+			normaliseString(form.snippet_description) !==
+			normaliseString(product.snippet_description ?? '')
+		) {
 			payload.snippet_description = normaliseString(form.snippet_description);
 		}
-		if (normaliseString(form.short_description) !== normaliseString(product.short_description ?? '')) {
+		if (
+			normaliseString(form.short_description) !==
+			normaliseString(product.short_description ?? '')
+		) {
 			payload.short_description = normaliseString(form.short_description);
 		}
-		if (normaliseString(form.long_description) !== normaliseString(product.long_description ?? '')) {
+		if (
+			normaliseString(form.long_description) !==
+			normaliseString(product.long_description ?? '')
+		) {
 			payload.long_description = normaliseString(form.long_description);
 		}
 	}
@@ -220,8 +236,13 @@ export const buildDetailUpdatePayload = (
 	return payload;
 };
 
-export const deriveDefaultCategoryId = (categories: ICategory[], draftSlug = PRODUCT_DRAFT_CATEGORY_SLUG): number | null => {
-	const draftCategory = categories.find((category) => category.slug === draftSlug || category.name.toLowerCase() === draftSlug);
+export const deriveDefaultCategoryId = (
+	categories: ICategory[],
+	draftSlug = PRODUCT_DRAFT_CATEGORY_SLUG,
+): number | null => {
+	const draftCategory = categories.find(
+		(category) => category.slug === draftSlug || category.name.toLowerCase() === draftSlug,
+	);
 	return draftCategory ? draftCategory.id : null;
 };
 

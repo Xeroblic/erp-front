@@ -1,10 +1,5 @@
 import React, { useMemo } from 'react';
-import {
-	useReactTable,
-	getCoreRowModel,
-	flexRender,
-	type ColumnDef,
-} from '@tanstack/react-table';
+import { useReactTable, getCoreRowModel, flexRender, type ColumnDef } from '@tanstack/react-table';
 import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
 import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
@@ -52,7 +47,7 @@ type CriticalItemRow = {
 	name: string;
 	sku: string;
 	brand: string;
-	stock?: number | null;
+	stock: number;
 	status: 'low' | 'out';
 	updatedAt?: string | null;
 };
@@ -145,17 +140,16 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 
 	const hasCriticalFromServer = hasServerSummary && criticalProducts.length > 0;
 
-	const criticalItems = useMemo<CriticalItemRow[]>(
-		() => {
+	const criticalItems = useMemo<CriticalItemRow[]>(() => {
 		if (hasCriticalFromServer) {
 			return criticalProducts
 				.map((item) => {
 					const product = productsById.get(item.id) ?? null;
-					const stockSource = product?.stock ?? item.stock ?? null;
+					const stockSource = product?.stock ?? item.stock ?? 0;
 					const numericStock =
-						typeof stockSource === 'number' ? Number(stockSource) : null;
+						typeof stockSource === 'number' ? Number(stockSource) : 0;
 					const status: 'low' | 'out' =
-						numericStock !== null && numericStock <= 0 ? 'out' : 'low';
+						numericStock <= 0 ? 'out' : 'low';
 
 					return {
 						product,
@@ -179,16 +173,19 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 
 		const merged = [...localInventory.lowStockItems, ...localInventory.outOfStockItems];
 		return merged
-			.map((product) => ({
-				product,
-				id: product.id,
-				name: product.name,
-				sku: product.sku,
-				brand: product.brand?.name ?? 'Sin marca',
-				stock: Number(product.stock ?? 0),
-				status: (Number(product.stock ?? 0) <= 0 ? 'out' : 'low') as 'out' | 'low',
-				updatedAt: product.updated_at,
-			}))
+			.map((product) => {
+				const stockValue = Number(product.stock ?? 0);
+				return {
+					product,
+					id: product.id,
+					name: product.name,
+					sku: product.sku,
+					brand: product.brand?.name ?? 'Sin marca',
+					stock: stockValue,
+					status: stockValue <= 0 ? ('out' as const) : ('low' as const),
+					updatedAt: product.updated_at,
+				};
+			})
 			.sort((a, b) => {
 				const stockDiff = (a.stock ?? 0) - (b.stock ?? 0);
 				if (stockDiff !== 0) return stockDiff;
@@ -208,7 +205,9 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 					const item = row.original;
 					return (
 						<div className='space-y-1'>
-							<p className='font-medium text-neutral-800 dark:text-neutral-100'>{item.name}</p>
+							<p className='font-medium text-neutral-800 dark:text-neutral-100'>
+								{item.name}
+							</p>
 							<p className='text-xs text-neutral-500 dark:text-neutral-400'>
 								SKU: {item.sku} - Marca: {item.brand}
 							</p>
@@ -239,25 +238,25 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 				},
 			},
 			{
- 				id: 'actions',
- 				header: 'Acciones',
- 				// size: 160,
- 				cell: ({ row }) => {
- 					const { product } = row.original;
+				id: 'actions',
+				header: 'Acciones',
+				// size: 160,
+				cell: ({ row }) => {
+					const { product } = row.original;
 					const disabled = !onViewProduct || !product;
- 					return (
- 						<Button
- 							size='sm'
- 							variant='outline'
- 							icon='HeroEye'
+					return (
+						<Button
+							size='sm'
+							variant='outline'
+							icon='HeroEye'
 							isDisable={disabled}
- 							onClick={() => {
+							onClick={() => {
 								if (!disabled && onViewProduct && product) onViewProduct(product);
- 							}}>
- 							Ver producto
- 						</Button>
- 					);
- 				},
+							}}>
+							Ver producto
+						</Button>
+					);
+				},
 			},
 		],
 		[onViewProduct],
@@ -292,7 +291,9 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 			label: `Stock bajo (<= ${summaryData.criticalThreshold})`,
 			value: summaryData.lowStockCount,
 			description:
-				summaryData.lowStockCount > 0 ? 'Revisa los productos en alerta' : 'Sin alertas por ahora',
+				summaryData.lowStockCount > 0
+					? 'Revisa los productos en alerta'
+					: 'Sin alertas por ahora',
 			valueClass: 'text-amber-600 dark:text-amber-300',
 		},
 		{
@@ -343,10 +344,13 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 	return (
 		<div className='space-y-6'>
 			<Card className='border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900/70'>
-				<CardHeader className='gap-1 px-4 pt-3 pb-2 sm:pt-3 sm:pb-1'>
+				<CardHeader className='gap-1 px-4 pb-2 pt-3 sm:pb-1 sm:pt-3'>
 					<CardHeaderChild className='flex flex-col items-start justify-start gap-1'>
 						<CardTitle className='flex justify-start gap-2'>
-							<Icon icon='HeroCubeTransparent' className='h-5 w-5 text-emerald-600 dark:text-emerald-300' />
+							<Icon
+								icon='HeroCubeTransparent'
+								className='h-5 w-5 text-emerald-600 dark:text-emerald-300'
+							/>
 							Gestión de Inventario
 						</CardTitle>
 						<p className='mt-0 text-sm text-neutral-500'>
@@ -370,22 +374,31 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 									<CardBody className='flex h-full flex-col justify-between gap-4 !p-5'>
 										<div className='flex items-start justify-between gap-3'>
 											<div>
-												<p className='text-sm text-neutral-500'>{card.label}</p>
+												<p className='text-sm text-neutral-500'>
+													{card.label}
+												</p>
 												{loading ? (
 													<div className='mt-3 h-7 w-24 animate-pulse rounded bg-neutral-200 dark:bg-neutral-800' />
 												) : (
 													<>
-														<p className={`text-2xl font-semibold ${card.valueClass}`}>
+														<p
+															className={`text-2xl font-semibold ${card.valueClass}`}>
 															{formatNumber(card.value)}
 														</p>
 														{card.description && (
-															<p className='mt-1 text-xs text-neutral-500'>{card.description}</p>
+															<p className='mt-1 text-xs text-neutral-500'>
+																{card.description}
+															</p>
 														)}
 													</>
 												)}
 											</div>
-											<div className={`flex h-10 w-10 items-center justify-center rounded-xl ${style.iconBg}`}>
-												<Icon icon={card.icon as any} className={`h-5 w-5 ${style.iconColor}`} />
+											<div
+												className={`flex h-10 w-10 items-center justify-center rounded-xl ${style.iconBg}`}>
+												<Icon
+													icon={card.icon as any}
+													className={`h-5 w-5 ${style.iconColor}`}
+												/>
 											</div>
 										</div>
 									</CardBody>
@@ -396,7 +409,8 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 
 					<div className='mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-neutral-200 pt-4 dark:border-neutral-700'>
 						<p className='text-xs text-neutral-500'>
-							Inventario total: {formatNumber(summaryData.stockTotal)} unidades en {summaryData.syncedProducts} productos.
+							Inventario total: {formatNumber(summaryData.stockTotal)} unidades en{' '}
+							{summaryData.syncedProducts} productos.
 						</p>
 						<div className='flex flex-wrap gap-2'>
 							<Button variant='outline' icon='HeroArrowDownTray' size='sm'>
@@ -411,10 +425,7 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 								variant='outline'
 								icon='HeroExclamationTriangle'
 								onClick={handleLowStockClick}
-								isDisable={
-									!onShowLowStock ||
-									(criticalItems.length === 0)
-								}>
+								isDisable={!onShowLowStock || criticalItems.length === 0}>
 								Ver productos críticos
 							</Button>
 						</div>
@@ -430,7 +441,8 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 					{!loading ? (
 						<CardHeaderChild>
 							<Badge variant='outline' color='red'>
-								{criticalItems.length} producto{criticalItems.length === 1 ? '' : 's'}
+								{criticalItems.length} producto
+								{criticalItems.length === 1 ? '' : 's'}
 							</Badge>
 						</CardHeaderChild>
 					) : null}
@@ -463,7 +475,10 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 													className='px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600 dark:text-neutral-400'>
 													{header.isPlaceholder
 														? null
-														: flexRender(header.column.columnDef.header, header.getContext())}
+														: flexRender(
+																header.column.columnDef.header,
+																header.getContext(),
+															)}
 												</th>
 											))}
 										</tr>
@@ -471,10 +486,17 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 								</thead>
 								<tbody className='divide-y divide-neutral-200 bg-white dark:divide-neutral-800 dark:bg-neutral-950/60'>
 									{table.getRowModel().rows.map((row) => (
-										<tr key={row.id} className='hover:bg-neutral-100 dark:hover:bg-neutral-900/40'>
+										<tr
+											key={row.id}
+											className='hover:bg-neutral-100 dark:hover:bg-neutral-900/40'>
 											{row.getVisibleCells().map((cell) => (
-												<td key={cell.id} className='px-4 py-4 align-top text-sm text-neutral-700 dark:text-neutral-200'>
-													{flexRender(cell.column.columnDef.cell, cell.getContext())}
+												<td
+													key={cell.id}
+													className='px-4 py-4 align-top text-sm text-neutral-700 dark:text-neutral-200'>
+													{flexRender(
+														cell.column.columnDef.cell,
+														cell.getContext(),
+													)}
 												</td>
 											))}
 										</tr>
@@ -490,6 +512,3 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 };
 
 export default InventoryTab;
-
-
-

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 import { useAppSelector, useAppDispatch } from '@/store';
 import { fetchIntegrations } from '@/store/slices/integrations/integrationsSlice';
 import { checkOrImportOrder, importMissingOrders } from '@/services/integrationsService';
@@ -11,7 +12,6 @@ import Select from '@/components/form/Select';
 import Input from '@/components/form/Input';
 import Label from '@/components/form/Label';
 import Badge from '@/components/ui/Badge';
-import { toast } from 'react-toastify';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import Modal, {
 	ModalBody,
@@ -86,9 +86,7 @@ const ImportOrdersPage: React.FC = () => {
 				selectedIntegrationId || undefined,
 			);
 			setBulkResult(result);
-			toast.success(
-				`Importación iniciada`,
-			);
+			toast.success(`Importación iniciada`);
 		} catch (error: any) {
 			toast.error(error?.response?.data?.message || 'Error al importar órdenes faltantes');
 			console.error(error);
@@ -106,7 +104,9 @@ const ImportOrdersPage: React.FC = () => {
 		setIsConfirmationModalOpen(true);
 	};
 
-	const selectedIntegration = integrations.find((integration) => integration.id === selectedIntegrationId);
+	const selectedIntegration = integrations.find(
+		(integration) => integration.id === selectedIntegrationId,
+	);
 	const confirmationIsValid = confirmationText.trim().toLowerCase() === 'confirmar';
 
 	return (
@@ -186,7 +186,9 @@ const ImportOrdersPage: React.FC = () => {
 												? '✅ Orden importada con éxito'
 												: 'ℹ️ La orden ya estaba en ERP'}
 										</p>
-										<p className='mt-1'>Orden WC: #{importResult.woocommerce_order_id}</p>
+										<p className='mt-1'>
+											Orden WC: #{importResult.woocommerce_order_id}
+										</p>
 										{importResult.erp_order_id && (
 											<p>Orden ERP: #{importResult.erp_order_id}</p>
 										)}
@@ -203,23 +205,24 @@ const ImportOrdersPage: React.FC = () => {
 					</Card>
 
 					{/* Importar Órdenes Faltantes */}
-				<Card className='border border-neutral-100/70 bg-white/95 shadow-lg shadow-black/10 dark:border-white/5 dark:bg-neutral-900/80'>
-					<CardHeader>
-						<CardHeaderChild>
-							<CardTitle>Importar Órdenes Faltantes</CardTitle>
-						</CardHeaderChild>
-					</CardHeader>
-					<CardBody>
-						<div className='space-y-5'>
-							<p className='rounded-md border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800 dark:border-yellow-500/40 dark:bg-yellow-950/30 dark:text-yellow-100'>
-								Esta acción intentará importar todas las órdenes pendientes detectadas en WooCommerce
-								para la integración seleccionada. Úsala únicamente cuando estés seguro de que es necesario,
-								pues requiere escribir <strong>CONFIRMAR</strong> para continuar.
-							</p>
-							<div>
-								<Label htmlFor='integration-select-2'>
-									Integración de WooCommerce
-								</Label>
+					<Card className='border border-neutral-100/70 bg-white/95 shadow-lg shadow-black/10 dark:border-white/5 dark:bg-neutral-900/80'>
+						<CardHeader>
+							<CardHeaderChild>
+								<CardTitle>Importar Órdenes Faltantes</CardTitle>
+							</CardHeaderChild>
+						</CardHeader>
+						<CardBody>
+							<div className='space-y-5'>
+								<p className='rounded-md border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800 dark:border-yellow-500/40 dark:bg-yellow-950/30 dark:text-yellow-100'>
+									Esta acción intentará importar todas las órdenes pendientes
+									detectadas en WooCommerce para la integración seleccionada.
+									Úsala únicamente cuando estés seguro de que es necesario, pues
+									requiere escribir <strong>CONFIRMAR</strong> para continuar.
+								</p>
+								<div>
+									<Label htmlFor='integration-select-2'>
+										Integración de WooCommerce
+									</Label>
 									<Select
 										name='integration-select-2'
 										value={selectedIntegrationId || ''}
@@ -239,18 +242,18 @@ const ImportOrdersPage: React.FC = () => {
 									</Select>
 								</div>
 
-				<Button
-					variant='solid'
-					icon='HeroArrowDownTray'
-					onClick={handleOpenConfirmationModal}
-					disabled={importingBulk || !selectedIntegrationId}
-					className='w-full'>
-					{importingBulk ? 'Importando...' : 'Importar Faltantes'}
-				</Button>
-			</div>
-		</CardBody>
-	</Card>
-	</div>
+								<Button
+									variant='solid'
+									icon='HeroArrowDownTray'
+									onClick={handleOpenConfirmationModal}
+									disabled={importingBulk || !selectedIntegrationId}
+									className='w-full'>
+									{importingBulk ? 'Importando...' : 'Importar Faltantes'}
+								</Button>
+							</div>
+						</CardBody>
+					</Card>
+				</div>
 
 				{/* Resultado de Importación Masiva */}
 				{bulkResult && (
@@ -264,19 +267,25 @@ const ImportOrdersPage: React.FC = () => {
 							<div className='space-y-4'>
 								<div className='grid grid-cols-3 gap-4'>
 									<div className='rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-500/30 dark:bg-emerald-950/20'>
-										<div className='text-sm text-emerald-700 dark:text-emerald-200'>Importadas</div>
+										<div className='text-sm text-emerald-700 dark:text-emerald-200'>
+											Importadas
+										</div>
 										<div className='text-2xl font-bold text-emerald-800 dark:text-emerald-100'>
 											{bulkResult.imported?.length || 0}
 										</div>
 									</div>
 									<div className='rounded-lg border border-sky-200 bg-sky-50 p-4 dark:border-sky-500/30 dark:bg-sky-950/20'>
-										<div className='text-sm text-sky-700 dark:text-sky-200'>Ya Existentes</div>
+										<div className='text-sm text-sky-700 dark:text-sky-200'>
+											Ya Existentes
+										</div>
 										<div className='text-2xl font-bold text-sky-800 dark:text-sky-100'>
 											{bulkResult.already_exists?.length || 0}
 										</div>
 									</div>
 									<div className='rounded-lg border border-rose-200 bg-rose-50 p-4 dark:border-rose-500/40 dark:bg-rose-950/30'>
-										<div className='text-sm text-rose-700 dark:text-rose-200'>Errores</div>
+										<div className='text-sm text-rose-700 dark:text-rose-200'>
+											Errores
+										</div>
 										<div className='text-2xl font-bold text-rose-800 dark:text-rose-100'>
 											{bulkResult.errors?.length || 0}
 										</div>
@@ -342,8 +351,8 @@ const ImportOrdersPage: React.FC = () => {
 				</ModalHeader>
 				<ModalBody className='space-y-4'>
 					<p className='text-sm text-zinc-600 dark:text-zinc-300'>
-						Se importarán todas las órdenes faltantes detectadas en WooCommerce
-						para la integración seleccionada. Esta operación puede tardar varios minutos.
+						Se importarán todas las órdenes faltantes detectadas en WooCommerce para la
+						integración seleccionada. Esta operación puede tardar varios minutos.
 					</p>
 					{selectedIntegration && (
 						<div className='rounded-md bg-zinc-100 p-3 text-xs dark:bg-zinc-800'>
@@ -352,9 +361,11 @@ const ImportOrdersPage: React.FC = () => {
 						</div>
 					)}
 					<div>
-						<Label htmlFor='confirm-import-input'>Escribe CONFIRMAR para continuar</Label>
+						<Label htmlFor='confirm-import-input'>
+							Escribe CONFIRMAR para continuar
+						</Label>
 						<Input
-						name='confirm'
+							name='confirm'
 							id='confirm-import-input'
 							value={confirmationText}
 							onChange={(event) => setConfirmationText(event.target.value)}

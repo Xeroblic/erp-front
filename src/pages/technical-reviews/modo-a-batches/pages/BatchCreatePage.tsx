@@ -71,17 +71,13 @@ const CreateBatchPage: React.FC = () => {
 	const currentUser = useAppSelector((s) => s.auth.user);
 	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
 	const warehouses = useAppSelector((s) => s.warehouse.warehouses);
-	const warehouseLoading = useAppSelector(
-		(s) => s.warehouse.loading || s.warehouse.creating,
-	);
+	const warehouseLoading = useAppSelector((s) => s.warehouse.loading || s.warehouse.creating);
 	const customer_supplier = useAppSelector((s) => s.customerSuppliers.items);
 	const customerSupplierLoading = useAppSelector(
 		(s) => s.customerSuppliers.loading || s.customerSuppliers.creating,
 	);
 	const suppliers = useAppSelector((s) => s.suppliers.items);
-	const suppliersLoading = useAppSelector(
-		(s) => s.suppliers.loading || s.suppliers.creating,
-	);
+	const suppliersLoading = useAppSelector((s) => s.suppliers.loading || s.suppliers.creating);
 
 	const [selectedSupplierId, setSelectedSupplierId] = useState<number | null>(null);
 	const [warehouseModalOpen, setWarehouseModalOpen] = useState(false);
@@ -138,7 +134,9 @@ const CreateBatchPage: React.FC = () => {
 				return true;
 			} catch (error: any) {
 				const message =
-					error?.message || error?.response?.data?.message || 'No se pudo crear la bodega';
+					error?.message ||
+					error?.response?.data?.message ||
+					'No se pudo crear la bodega';
 				toast.error(message);
 				return false;
 			}
@@ -281,8 +279,8 @@ const CreateBatchPage: React.FC = () => {
 						<Icon icon='HeroArrowLeft' className='h-4 w-4' />
 					</Button>
 					<div>
-						<Badge className='text-2xl font-semibold mb-1'>Lotes</Badge>
-						<p className="text-zinc-500 text-sm">
+						<Badge className='mb-1 text-2xl font-semibold'>Lotes</Badge>
+						<p className='text-sm text-zinc-500'>
 							Registra y administra los lotes de equipos para revisión técnica.
 						</p>
 					</div>
@@ -290,18 +288,16 @@ const CreateBatchPage: React.FC = () => {
 				<SubheaderRight>
 					<Tooltip text='Nuevo Lote' placement='top-start'>
 						<Button
-							variant="solid"
-							icon="HeroPlus"
+							variant='solid'
+							icon='HeroPlus'
 							onClick={handleCreateBatch}
-							isDisable={loading || formik.isSubmitting}
-						>
+							isDisable={loading || formik.isSubmitting}>
 							Nuevo Lote
 						</Button>
 					</Tooltip>
 				</SubheaderRight>
 			</Subheader>
 			<Container>
-
 				<Card className='mb-6 border border-zinc-200/80 bg-white/80 dark:border-zinc-800 dark:bg-zinc-900/60'>
 					<CardBody className='flex items-start gap-4'>
 						<div className='flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200'>
@@ -312,7 +308,8 @@ const CreateBatchPage: React.FC = () => {
 								Resumen del lote
 							</p>
 							<p className='text-sm text-zinc-500 dark:text-zinc-400'>
-								Completa la bodega destino, el cliente/proveedor y la cantidad esperada. Agrega notas internas si lo necesitas.
+								Completa la bodega destino, el cliente/proveedor y la cantidad
+								esperada. Agrega notas internas si lo necesitas.
 							</p>
 						</div>
 					</CardBody>
@@ -330,7 +327,7 @@ const CreateBatchPage: React.FC = () => {
 									<h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
 										Información del Lote
 									</h3>
-									<p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+									<p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
 										Datos mínimos para clasificar y trazar el ingreso.
 									</p>
 								</div>
@@ -348,11 +345,14 @@ const CreateBatchPage: React.FC = () => {
 												No tienes ninguna bodega para crear lotes.
 											</p>
 											<p className='text-xs text-amber-700/80 dark:text-amber-200/80'>
-												Crea una bodega para poder registrar el ingreso del lote.
+												Crea una bodega para poder registrar el ingreso del
+												lote.
 											</p>
 										</div>
 									</div>
-									<Button variant='outline' onClick={() => setWarehouseModalOpen(true)}>
+									<Button
+										variant='outline'
+										onClick={() => setWarehouseModalOpen(true)}>
 										Crear bodega
 									</Button>
 								</div>
@@ -373,7 +373,9 @@ const CreateBatchPage: React.FC = () => {
 											</p>
 										</div>
 									</div>
-									<Button variant='outline' onClick={() => setCustomerSupplierModalOpen(true)}>
+									<Button
+										variant='outline'
+										onClick={() => setCustomerSupplierModalOpen(true)}>
 										Crear cliente/proveedor
 									</Button>
 								</div>
@@ -427,7 +429,8 @@ const CreateBatchPage: React.FC = () => {
 										<Label
 											htmlFor='customer_supplier_id'
 											className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
-											Cliente/Proveedor <span className='text-red-500'>*</span>
+											Cliente/Proveedor{' '}
+											<span className='text-red-500'>*</span>
 										</Label>
 										<SelectReact
 											name='customer_supplier_id'
@@ -505,12 +508,15 @@ const CreateBatchPage: React.FC = () => {
 																	? allSupplierOptions.find(
 																			(opt) =>
 																				opt.value ===
-																				String(selectedSupplierId),
+																				String(
+																					selectedSupplierId,
+																				),
 																		) || null
 																	: null
 															}
 															onChange={(option) => {
-																const opt = normalizeSelectValue(option);
+																const opt =
+																	normalizeSelectValue(option);
 																setSelectedSupplierId(
 																	opt ? Number(opt.value) : null,
 																);
@@ -519,30 +525,47 @@ const CreateBatchPage: React.FC = () => {
 														<Button
 															variant='outline'
 															isDisable={
-																!selectedCustomer || selectedSupplierId === null
+																!selectedCustomer ||
+																selectedSupplierId === null
 															}
 															onClick={async () => {
-																if (!selectedCustomer || selectedSupplierId === null) return;
+																if (
+																	!selectedCustomer ||
+																	selectedSupplierId === null
+																)
+																	return;
 																try {
 																	await dispatch(
-																		attachSuppliersToCustomerSupplier({
-																			subsidiaryId: selectedCustomer.subsidiary_id,
-																			customerSupplierId: selectedCustomer.id,
-																			payload: { supplier_ids: [selectedSupplierId] },
-																		}),
+																		attachSuppliersToCustomerSupplier(
+																			{
+																				subsidiaryId:
+																					selectedCustomer.subsidiary_id,
+																				customerSupplierId:
+																					selectedCustomer.id,
+																				payload: {
+																					supplier_ids: [
+																						selectedSupplierId,
+																					],
+																				},
+																			},
+																		),
 																	).unwrap();
-																	toast.success('Proveedor asociado');
+																	toast.success(
+																		'Proveedor asociado',
+																	);
 																	setSelectedSupplierId(null);
 																	dispatch(
 																		fetchCustomerSuppliers({
-																			subsidiaryId: selectedCustomer.subsidiary_id,
+																			subsidiaryId:
+																				selectedCustomer.subsidiary_id,
 																			with_suppliers: true,
 																		}),
 																	);
 																} catch (err: any) {
 																	const message =
 																		err?.message ||
-																		err?.response?.data?.message ||
+																		err?.response?.data
+																			?.message ||
 																		'No se pudo asociar el proveedor';
 																	toast.error(message);
 																}
@@ -551,7 +574,8 @@ const CreateBatchPage: React.FC = () => {
 														</Button>
 													</div>
 													<p className='text-xs text-gray-500 dark:text-gray-400'>
-														Primero crea el cliente, luego selecciona un proveedor ya creado y asócialo.
+														Primero crea el cliente, luego selecciona un
+														proveedor ya creado y asócialo.
 													</p>
 												</div>
 											)}

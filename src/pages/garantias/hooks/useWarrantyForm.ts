@@ -80,7 +80,7 @@ export const useWarrantyForm = ({
 				payload.end_date = values.end_date || undefined;
 				payload.sale_id = values.sale_id ?? undefined;
 				payload.customer_id = values.customer_id ?? undefined;
-				payload.status = (values.status || undefined) as WarrantyStatus | undefined;
+				payload.status = values.status || undefined;
 				payload.notes = values.notes?.trim() || undefined;
 			}
 			try {

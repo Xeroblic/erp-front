@@ -63,10 +63,9 @@ export const useWarehouseManagers = (branchId?: number | null) => {
 		() =>
 			filteredManagers.map((manager) => {
 				const fullName =
-					[manager.first_name, manager.last_name]
-						.filter(Boolean)
-						.join(' ')
-						.trim() || manager.name || `Usuario #${manager.id}`;
+					[manager.first_name, manager.last_name].filter(Boolean).join(' ').trim() ||
+					manager.name ||
+					`Usuario #${manager.id}`;
 				return {
 					value: manager.id != null ? manager.id.toString() : undefined,
 					label: fullName,

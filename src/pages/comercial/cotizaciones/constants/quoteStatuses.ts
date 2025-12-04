@@ -32,12 +32,12 @@ export interface QuoteStatusBadge {
 }
 
 const STATUS_BADGE_CONFIG: Record<QuoteStatusValue, QuoteStatusBadge> = {
-	draft: { color: 'gray', variant: 'solid', label: STATUS_LABELS.draft },
-	sent: { color: 'blue', variant: 'solid', label: STATUS_LABELS.sent },
-	approved: { color: 'emerald', variant: 'solid', label: STATUS_LABELS.approved },
-	converted: { color: 'indigo', variant: 'solid', label: STATUS_LABELS.converted },
-	rejected: { color: 'red', variant: 'solid', label: STATUS_LABELS.rejected },
-	expired: { color: 'slate', variant: 'solid', label: STATUS_LABELS.expired },
+	draft: { color: 'gray', variant: 'outline', label: STATUS_LABELS.draft },
+	sent: { color: 'blue', variant: 'outline', label: STATUS_LABELS.sent },
+	approved: { color: 'emerald', variant: 'outline', label: STATUS_LABELS.approved },
+	converted: { color: 'indigo', variant: 'outline', label: STATUS_LABELS.converted },
+	rejected: { color: 'red', variant: 'outline', label: STATUS_LABELS.rejected },
+	expired: { color: 'slate', variant: 'outline', label: STATUS_LABELS.expired },
 };
 
 export const normalizeQuoteStatusValue = (status?: QuoteStatus): QuoteStatusValue => {

@@ -14,14 +14,14 @@ const UserTemplate = () => {
 	const dispatch = useAppDispatch();
 	const { user: userData, loading: isLoading } = useAppSelector((state) => state.auth);
 
-const handleLogout = async () => {
-	cancelAllRequests();
-	await dispatch(logoutThunk());
-	dispatch(clearPersonalizacionState());
-	setTimeout(() => {
-		window.location.href = '/login';
-	}, 100);
-};
+	const handleLogout = async () => {
+		cancelAllRequests();
+		await dispatch(logoutThunk());
+		dispatch(clearPersonalizacionState());
+		setTimeout(() => {
+			window.location.href = '/login';
+		}, 100);
+	};
 
 	const resolveAvatar = (image: IUserMe['image'] | undefined) => {
 		if (!image) return '';

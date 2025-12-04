@@ -141,9 +141,9 @@ const AvailableProductsTable: React.FC<AvailableProductsTableProps> = ({
 			</div>
 
 			{/* Tabla */}
-			<div className='overflow-x-auto rounded-lg 0'>
-				<Table className='min-w-full divide-y '>
-					<THead  className=''>
+			<div className='0 overflow-x-auto rounded-lg'>
+				<Table className='min-w-full divide-y'>
+					<THead className=''>
 						{table.getHeaderGroups().map((headerGroup) => (
 							<Tr key={headerGroup.id}>
 								{headerGroup.headers.map((header) => {

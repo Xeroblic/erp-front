@@ -4,13 +4,6 @@
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Card, { CardBody } from '@/components/ui/Card';
-import Button from '@/components/ui/Button';
-import Icon from '@/components/icon/Icon';
-import Table, { TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
-import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
-import type { IBatch, ListMeta } from '@/interface/technicalReviews.interface';
-import StatusBadge from '../shared/StatusBadge';
 import {
 	createColumnHelper,
 	flexRender,
@@ -19,6 +12,13 @@ import {
 	type PaginationState,
 	type Updater,
 } from '@tanstack/react-table';
+import Card, { CardBody } from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import Icon from '@/components/icon/Icon';
+import Table, { TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
+import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
+import type { IBatch, ListMeta } from '@/interface/technicalReviews.interface';
+import StatusBadge from '../shared/StatusBadge';
 import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import Container from '@/components/layouts/Container/Container';
@@ -167,7 +167,9 @@ const BatchList: React.FC<BatchListProps> = ({
 								{received_quantity}
 							</span>
 							<span className='text-gray-500'> / </span>
-							<span className='text-gray-600 dark:text-gray-400'>{expected_quantity}</span>
+							<span className='text-gray-600 dark:text-gray-400'>
+								{expected_quantity}
+							</span>
 						</div>
 					);
 				},
@@ -241,16 +243,14 @@ const BatchList: React.FC<BatchListProps> = ({
 	}
 
 	const hasBatches = batches.length > 0;
-	const pageStart =
-		meta.total === 0 ? 0 : (meta.current_page - 1) * meta.per_page + 1;
-	const pageEnd =
-		meta.total === 0 ? 0 : Math.min(meta.current_page * meta.per_page, meta.total);
+	const pageStart = meta.total === 0 ? 0 : (meta.current_page - 1) * meta.per_page + 1;
+	const pageEnd = meta.total === 0 ? 0 : Math.min(meta.current_page * meta.per_page, meta.total);
 
 	return (
 		<Container>
 			{/* Filtros y Búsqueda */}
 			<Card>
-				<CardBody >
+				<CardBody>
 					<div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between'>
 						{/* Buscador */}
 						<form onSubmit={handleSearchSubmit} className='flex-1'>
@@ -280,18 +280,24 @@ const BatchList: React.FC<BatchListProps> = ({
 							<span className='text-sm text-gray-600 dark:text-gray-400'>
 								Estado:
 							</span>
-								<div className='w-40'>
-									<SelectReact
-										name='status'
-										options={statusFilterOptions}
-										value={statusFilterOptions.find((o) => o.value === selectedStatus) ?? null}
-										onChange={(newVal) =>
-											handleStatusChange(((newVal as TSelectOption) || { value: 'all' }).value)
-										}
-										dimension='sm'
-										isClearable={false}
-									/>
-								</div>
+							<div className='w-40'>
+								<SelectReact
+									name='status'
+									options={statusFilterOptions}
+									value={
+										statusFilterOptions.find(
+											(o) => o.value === selectedStatus,
+										) ?? null
+									}
+									onChange={(newVal) =>
+										handleStatusChange(
+											((newVal as TSelectOption) || { value: 'all' }).value,
+										)
+									}
+									dimension='sm'
+									isClearable={false}
+								/>
+							</div>
 						</div>
 					</div>
 				</CardBody>
@@ -299,7 +305,7 @@ const BatchList: React.FC<BatchListProps> = ({
 
 			{/* Tabla */}
 			<Card>
-				<CardBody className='p-0 overflow-auto'>
+				<CardBody className='overflow-auto p-0'>
 					{!hasBatches ? (
 						<div className='flex flex-col items-center justify-center py-12 text-center'>
 							<Icon icon='HeroInboxStack' className='mb-2 h-12 w-12 text-gray-400' />
@@ -312,7 +318,9 @@ const BatchList: React.FC<BatchListProps> = ({
 							<Table className='w-full'>
 								<THead>
 									{table.getHeaderGroups().map((headerGroup) => (
-										<Tr key={headerGroup.id} className='border-b bg-gray-50 dark:bg-gray-800'>
+										<Tr
+											key={headerGroup.id}
+											className='border-b bg-gray-50 dark:bg-gray-800'>
 											{headerGroup.headers.map((header) => (
 												<Th
 													key={header.id}
@@ -335,7 +343,10 @@ const BatchList: React.FC<BatchListProps> = ({
 											className='transition-colors hover:bg-gray-50 dark:hover:bg-gray-800'>
 											{row.getVisibleCells().map((cell) => (
 												<Td key={cell.id} className='px-6 py-4'>
-													{flexRender(cell.column.columnDef.cell, cell.getContext())}
+													{flexRender(
+														cell.column.columnDef.cell,
+														cell.getContext(),
+													)}
 												</Td>
 											))}
 										</Tr>
@@ -345,8 +356,7 @@ const BatchList: React.FC<BatchListProps> = ({
 
 							<div className='space-y-3 px-4 py-4'>
 								<div className='text-sm text-gray-600 dark:text-gray-400'>
-									Mostrando{' '}
-									<span className='font-medium'>{pageStart}</span>
+									Mostrando <span className='font-medium'>{pageStart}</span>
 									{' a '}
 									<span className='font-medium'>{pageEnd}</span>
 									{' de '}

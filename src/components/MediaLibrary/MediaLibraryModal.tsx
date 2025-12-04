@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
-import Button from '../../components/ui/Button';
+import Button from '../ui/Button';
 import { useAppDispatch } from '@/store';
 import { fetchBranchLibraryMedia } from '@/store/slices/products/productsSlice';
 import { ensureAbsoluteUrl } from '@/components/helper/brand.helper';

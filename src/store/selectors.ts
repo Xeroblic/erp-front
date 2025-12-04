@@ -4,4 +4,4 @@ import type { RootState } from './rootReducer';
 const EMPTY_AUTHORITY: ReadonlyArray<string> = Object.freeze([]);
 
 export const selectUserAuthority = (state: RootState): ReadonlyArray<string> =>
-  state.auth.user?.authority || EMPTY_AUTHORITY;
+	state.auth.user?.authority || EMPTY_AUTHORITY;

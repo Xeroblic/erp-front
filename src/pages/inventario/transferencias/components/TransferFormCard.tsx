@@ -19,16 +19,22 @@ const TransferFormCard: React.FC<TransferFormCardProps> = ({
 	warehouses,
 	responsibles,
 }) => {
-	const handleChange = (key: keyof TransferFormState) => (event: React.ChangeEvent<HTMLSelectElement | HTMLTextAreaElement>) => {
-		onChange({ [key]: event.target.value });
-	};
+	const handleChange =
+		(key: keyof TransferFormState) =>
+		(event: React.ChangeEvent<HTMLSelectElement | HTMLTextAreaElement>) => {
+			onChange({ [key]: event.target.value });
+		};
 
 	return (
 		<Card>
 			<CardHeader>
 				<CardTitle className='flex items-center gap-3'>
 					<span>
-						<svg className='h-6 w-6' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+						<svg
+							className='h-6 w-6'
+							fill='none'
+							stroke='currentColor'
+							viewBox='0 0 24 24'>
 							<path
 								strokeLinecap='round'
 								strokeLinejoin='round'
@@ -58,7 +64,9 @@ const TransferFormCard: React.FC<TransferFormCardProps> = ({
 						</Select>
 					</div>
 					<div>
-						<label className='mb-2 block text-sm font-medium'>Bodega de Destino *</label>
+						<label className='mb-2 block text-sm font-medium'>
+							Bodega de Destino *
+						</label>
 						<Select
 							name='to_warehouse_id'
 							value={form.to_warehouse_id}
@@ -66,7 +74,10 @@ const TransferFormCard: React.FC<TransferFormCardProps> = ({
 							required>
 							<option value=''>Seleccionar bodega destino</option>
 							{warehouses
-								.filter((warehouse) => warehouse.id.toString() !== form.from_warehouse_id)
+								.filter(
+									(warehouse) =>
+										warehouse.id.toString() !== form.from_warehouse_id,
+								)
 								.map((warehouse) => (
 									<option key={warehouse.id} value={warehouse.id.toString()}>
 										{warehouse.name} ({warehouse.code})

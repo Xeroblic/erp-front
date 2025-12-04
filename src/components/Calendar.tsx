@@ -108,51 +108,50 @@ const Calendar = forwardRef<FullCalendar, ICalendarProps>((props, ref) => {
 Calendar.displayName = 'Calendar';
 
 export const useCalendarView = (ref: RefObject<FullCalendar>) => {
-    const [viewMode, setViewMode] = useState<TViewMode>('dayGridMonth');
-    const [title, setTitle] = useState<string>('');
+	const [viewMode, setViewMode] = useState<TViewMode>('dayGridMonth');
+	const [title, setTitle] = useState<string>('');
 
-    // Funciones para cambiar la vista y navegar
-    const changeViewMode = (newViewMode: TViewMode) => {
-        const calendarApi = ref?.current?.getApi();
-        calendarApi?.changeView(newViewMode);
-        setViewMode(newViewMode);
-        setTitle(calendarApi?.view.title || '');
-    };
+	// Funciones para cambiar la vista y navegar
+	const changeViewMode = (newViewMode: TViewMode) => {
+		const calendarApi = ref?.current?.getApi();
+		calendarApi?.changeView(newViewMode);
+		setViewMode(newViewMode);
+		setTitle(calendarApi?.view.title || '');
+	};
 
-    const next = (isYear = false) => {
-        const calendarApi = ref?.current?.getApi();
-        if (isYear) calendarApi?.nextYear();
-        else calendarApi?.next();
-        setTitle(calendarApi?.view.title || '');
-    };
+	const next = (isYear = false) => {
+		const calendarApi = ref?.current?.getApi();
+		if (isYear) calendarApi?.nextYear();
+		else calendarApi?.next();
+		setTitle(calendarApi?.view.title || '');
+	};
 
-    const prev = (isYear = false) => {
-        const calendarApi = ref?.current?.getApi();
-        if (isYear) calendarApi?.prevYear();
-        else calendarApi?.prev();
-        setTitle(calendarApi?.view.title || '');
-    };
+	const prev = (isYear = false) => {
+		const calendarApi = ref?.current?.getApi();
+		if (isYear) calendarApi?.prevYear();
+		else calendarApi?.prev();
+		setTitle(calendarApi?.view.title || '');
+	};
 
-    const today = () => {
-        const calendarApi = ref?.current?.getApi();
-        calendarApi?.today();
-        setTitle(calendarApi?.view.title || '');
-    };
+	const today = () => {
+		const calendarApi = ref?.current?.getApi();
+		calendarApi?.today();
+		setTitle(calendarApi?.view.title || '');
+	};
 
-    // Manejador para actualizar el título cuando cambia la vista
-    const handleDatesSet = (dateInfo: DatesSetArg) => {
-        setTitle(dateInfo.view.title);
-    };
+	// Manejador para actualizar el título cuando cambia la vista
+	const handleDatesSet = (dateInfo: DatesSetArg) => {
+		setTitle(dateInfo.view.title);
+	};
 
-    useEffect(() => {
-        const calendarApi = ref?.current?.getApi();
-        if (calendarApi) {
-            setTitle(calendarApi.view.title || '');
-        }
-    }, [ref]);
+	useEffect(() => {
+		const calendarApi = ref?.current?.getApi();
+		if (calendarApi) {
+			setTitle(calendarApi.view.title || '');
+		}
+	}, [ref]);
 
-    return { viewMode, changeViewMode, next, prev, today, title, handleDatesSet };
+	return { viewMode, changeViewMode, next, prev, today, title, handleDatesSet };
 };
-
 
 export default Calendar;

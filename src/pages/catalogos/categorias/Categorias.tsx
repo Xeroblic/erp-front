@@ -61,7 +61,7 @@ const Categorias: React.FC = () => {
 	};
 
 	const handleBranchChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-		const value = event.target.value;
+		const { value } = event.target;
 		setFilters((prev) => ({ ...prev, branch_id: value ? Number(value) : undefined }));
 	};
 
@@ -69,30 +69,32 @@ const Categorias: React.FC = () => {
 		event.preventDefault();
 		const formData = new FormData(event.currentTarget);
 
-    try {
-      const image = (formData.get('image') as File | null) || null;
-      const galleryFiles = (formData.getAll('gallery') as File[]).filter((f) => f && typeof (f as any).size === 'number');
-      const created = await createCategory({
-        name: String(formData.get('name') ?? '').trim(),
-        description: formData.get('description')?.toString().trim() || undefined,
-        parent_id: (() => {
-          const parent = formData.get('parent_id');
-          if (!parent) return undefined;
-          const value = Number(parent);
-          return Number.isFinite(value) ? value : undefined;
-        })(),
-        // Sin toggle en el modal: crear siempre activa
-        is_active: true,
-        image,
-      });
+		try {
+			const image = (formData.get('image') as File | null) || null;
+			const galleryFiles = (formData.getAll('gallery') as File[]).filter(
+				(f) => f && typeof (f as any).size === 'number',
+			);
+			const created = await createCategory({
+				name: String(formData.get('name') ?? '').trim(),
+				description: formData.get('description')?.toString().trim() || undefined,
+				parent_id: (() => {
+					const parent = formData.get('parent_id');
+					if (!parent) return undefined;
+					const value = Number(parent);
+					return Number.isFinite(value) ? value : undefined;
+				})(),
+				// Sin toggle en el modal: crear siempre activa
+				is_active: true,
+				image,
+			});
 
-      if (created?.id && galleryFiles.length) {
-        await uploadCategoryGallery(created.id, galleryFiles);
-      }
+			if (created?.id && galleryFiles.length) {
+				await uploadCategoryGallery(created.id, galleryFiles);
+			}
 
-      toast.success('Categoria creada correctamente');
-      setCreateOpen(false);
-    } catch (err: any) {
+			toast.success('Categoria creada correctamente');
+			setCreateOpen(false);
+		} catch (err: any) {
 			toast.error(err?.message ?? 'No se pudo crear la categoria');
 		}
 	};
@@ -103,32 +105,34 @@ const Categorias: React.FC = () => {
 
 		const formData = new FormData(event.currentTarget);
 
-    try {
-      const image = (formData.get('image') as File | null) || null;
-      const galleryFiles = (formData.getAll('gallery') as File[]).filter((f) => f && typeof (f as any).size === 'number');
-      const updated = await updateCategory({
-        id: selected.id,
-        name: String(formData.get('name') ?? '').trim(),
-        description: formData.get('description')?.toString().trim() || undefined,
-        parent_id: (() => {
-          const parent = formData.get('parent_id');
-          if (!parent) return undefined;
-          const value = Number(parent);
-          return Number.isFinite(value) ? value : undefined;
-        })(),
-        // Sin toggle en el modal: conservar estado actual
-        is_active: selected.is_active,
-        image,
-      });
+		try {
+			const image = (formData.get('image') as File | null) || null;
+			const galleryFiles = (formData.getAll('gallery') as File[]).filter(
+				(f) => f && typeof (f as any).size === 'number',
+			);
+			const updated = await updateCategory({
+				id: selected.id,
+				name: String(formData.get('name') ?? '').trim(),
+				description: formData.get('description')?.toString().trim() || undefined,
+				parent_id: (() => {
+					const parent = formData.get('parent_id');
+					if (!parent) return undefined;
+					const value = Number(parent);
+					return Number.isFinite(value) ? value : undefined;
+				})(),
+				// Sin toggle en el modal: conservar estado actual
+				is_active: selected.is_active,
+				image,
+			});
 
-      if (updated?.id && galleryFiles.length) {
-        await uploadCategoryGallery(updated.id, galleryFiles);
-      }
+			if (updated?.id && galleryFiles.length) {
+				await uploadCategoryGallery(updated.id, galleryFiles);
+			}
 
-      toast.success('Categoria actualizada');
-      setEditOpen(false);
-      setSelected(null);
-    } catch (err: any) {
+			toast.success('Categoria actualizada');
+			setEditOpen(false);
+			setSelected(null);
+		} catch (err: any) {
 			toast.error(err?.message ?? 'No se pudo actualizar la categoria');
 		}
 	};

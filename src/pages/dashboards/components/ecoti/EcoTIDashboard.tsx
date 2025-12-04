@@ -431,7 +431,8 @@ const EcoTIDashboard: React.FC = () => {
 											<div className='h-2 w-full rounded-full bg-gray-200'>
 												<div
 													className='h-2 rounded-full bg-blue-600 transition-all'
-													style={{ width: `${service.progress}%` }}></div>
+													style={{ width: `${service.progress}%` }}
+												/>
 											</div>
 										</div>
 

@@ -1,4 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { toast } from 'react-toastify';
+import type { ColumnDef } from '@tanstack/react-table';
+import type { SingleValue } from 'react-select';
 import { useAppSelector, useAppDispatch } from '@/store';
 import {
 	fetchUnmappedProducts,
@@ -17,12 +20,9 @@ import SelectReact, { type TSelectOption } from '@/components/form/SelectReact';
 import Input from '@/components/form/Input';
 import Label from '@/components/form/Label';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
-import { toast } from 'react-toastify';
 import type { UnmappedWooCommerceProduct } from '@/types/integrations.types';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import DataTable from '@/components/ui/DataTable/DataTable';
-import type { ColumnDef } from '@tanstack/react-table';
-import type { SingleValue } from 'react-select';
 
 const UnmappedProductsPage: React.FC = () => {
 	const dispatch = useAppDispatch();
@@ -179,10 +179,8 @@ const UnmappedProductsPage: React.FC = () => {
 				header: 'Producto',
 				cell: ({ row }) => (
 					<div>
-						<p className='font-medium '>{row.original.name}</p>
-						<p className='text-xs '>
-							Venta: {row.original.sale?.sale_number ?? 'N/A'}
-						</p>
+						<p className='font-medium'>{row.original.name}</p>
+						<p className='text-xs'>Venta: {row.original.sale?.sale_number ?? 'N/A'}</p>
 					</div>
 				),
 			},
@@ -191,7 +189,7 @@ const UnmappedProductsPage: React.FC = () => {
 				accessorFn: (row) => row.sku ?? '',
 				header: 'SKU',
 				cell: ({ row }) => (
-					<code className='rounded  px-2 py-1 text-xs'>
+					<code className='rounded px-2 py-1 text-xs'>
 						{row.original.sku || 'Sin SKU'}
 					</code>
 				),
@@ -214,8 +212,7 @@ const UnmappedProductsPage: React.FC = () => {
 				header: 'Estado venta',
 				cell: ({ row }) => {
 					const status = row.original.sale?.status ?? 'N/A';
-					const label =
-						SALE_STATUS_LABELS[status as keyof typeof SALE_STATUS_LABELS] ?? status;
+					const label = SALE_STATUS_LABELS[status] ?? status;
 					const badgeColor =
 						status === 'paid' ? 'green' : status === 'cancelled' ? 'red' : 'gray';
 					return <Badge color={badgeColor}>{label}</Badge>;
@@ -227,12 +224,12 @@ const UnmappedProductsPage: React.FC = () => {
 				cell: ({ row }) => {
 					if (activeTab === 'mapped') {
 						return row.original.mapped_product ? (
-							<div className='text-xs '>
+							<div className='text-xs'>
 								Mapeado con {row.original.mapped_product.name} (
 								{row.original.mapped_product.sku})
 							</div>
 						) : (
-							<span className='text-xs 0'>Sin referencia</span>
+							<span className='0 text-xs'>Sin referencia</span>
 						);
 					}
 

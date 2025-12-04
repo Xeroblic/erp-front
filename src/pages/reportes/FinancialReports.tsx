@@ -93,13 +93,18 @@ const FinancialReports: React.FC = () => {
 			}
 
 			// Obtener ingresos - usar total_amount de ventas como ingresos
-			const incomeRaw = r?.total_amount ?? r?.income ?? r?.ingresos ?? r?.total_income ?? r?.amount ?? 0;
-			const income = typeof incomeRaw === 'string' ? parseFloat(incomeRaw) || 0 : Number(incomeRaw) || 0;
+			const incomeRaw =
+				r?.total_amount ?? r?.income ?? r?.ingresos ?? r?.total_income ?? r?.amount ?? 0;
+			const income =
+				typeof incomeRaw === 'string' ? parseFloat(incomeRaw) || 0 : Number(incomeRaw) || 0;
 
 			// Obtener gastos - para reportes de ventas, los gastos podrían ser 0 o algún campo específico
 			// Por ahora, asumimos que no hay gastos en reportes de ventas
 			const expensesRaw = r?.expenses ?? r?.gastos ?? r?.total_expenses ?? r?.cost ?? 0;
-			const expenses = typeof expensesRaw === 'string' ? parseFloat(expensesRaw) || 0 : Number(expensesRaw) || 0;
+			const expenses =
+				typeof expensesRaw === 'string'
+					? parseFloat(expensesRaw) || 0
+					: Number(expensesRaw) || 0;
 
 			if (!financialByDate.has(dateKey)) {
 				financialByDate.set(dateKey, { income: 0, expenses: 0 });
@@ -185,8 +190,16 @@ const FinancialReports: React.FC = () => {
 		if (resultsData && typeof resultsData === 'object' && !Array.isArray(resultsData)) {
 			console.log('[FinancialReports] resultsDataKeys:', Object.keys(resultsData));
 			console.log('[FinancialReports] resultsData.data:', (resultsData as any)?.data);
-			console.log('[FinancialReports] resultsData.data es array:', Array.isArray((resultsData as any)?.data));
-			console.log('[FinancialReports] resultsData.data.length:', Array.isArray((resultsData as any)?.data) ? (resultsData as any).data.length : 'N/A');
+			console.log(
+				'[FinancialReports] resultsData.data es array:',
+				Array.isArray((resultsData as any)?.data),
+			);
+			console.log(
+				'[FinancialReports] resultsData.data.length:',
+				Array.isArray((resultsData as any)?.data)
+					? (resultsData as any).data.length
+					: 'N/A',
+			);
 			console.log('[FinancialReports] resultsData.meta:', (resultsData as any)?.meta);
 		}
 		console.log('[FinancialReports] results (extraído):', results);
@@ -201,7 +214,10 @@ const FinancialReports: React.FC = () => {
 		} else {
 			console.log('[FinancialReports] ❌ No hay datos disponibles');
 			if (resultsData) {
-				console.log('[FinancialReports] resultsData completo (JSON):', JSON.stringify(resultsData, null, 2));
+				console.log(
+					'[FinancialReports] resultsData completo (JSON):',
+					JSON.stringify(resultsData, null, 2),
+				);
 			}
 		}
 		console.log('[FinancialReports] ====================================');
@@ -216,7 +232,7 @@ const FinancialReports: React.FC = () => {
 	return (
 		<div className='space-y-6'>
 			{reportsError && (
-				<Card className='border border-rose-200 bg-rose-50 dark:bg-rose-900/20 dark:border-rose-800'>
+				<Card className='border border-rose-200 bg-rose-50 dark:border-rose-800 dark:bg-rose-900/20'>
 					<CardBody>
 						<div className='flex items-center justify-between'>
 							<div className='text-rose-700 dark:text-rose-400'>
@@ -226,7 +242,8 @@ const FinancialReports: React.FC = () => {
 									: String(reportsError)}
 								{String(reportsError).includes('400') && (
 									<div className='mt-2 text-sm'>
-										El tipo de reporte "financial" no está disponible en el backend. Se está usando "sales" como fallback.
+										El tipo de reporte "financial" no está disponible en el
+										backend. Se está usando "sales" como fallback.
 									</div>
 								)}
 							</div>
@@ -307,11 +324,11 @@ const FinancialReports: React.FC = () => {
 								type='bar'
 								height={320}
 								series={series as any}
-								options={{ 
-									xaxis: { 
+								options={{
+									xaxis: {
 										categories,
 										type: 'category',
-									}, 
+									},
 									stroke: { width: 3 },
 									tooltip: {
 										enabled: true,
@@ -333,4 +350,3 @@ const FinancialReports: React.FC = () => {
 };
 
 export default FinancialReports;
-

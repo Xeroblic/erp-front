@@ -1,7 +1,7 @@
-import { useAppSelector, useAppDispatch } from '@/store';
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import ApiService from '@/services/ApiService';
 import { toast } from 'react-toastify';
+import { useAppSelector, useAppDispatch } from '@/store';
+import ApiService from '@/services/ApiService';
 import { userMeThunk } from '@/store/slices/auth/authSlice';
 
 interface CompanyInfo {
@@ -130,7 +130,10 @@ const useCompanyManager = (): UseCompanyManager => {
 				const nextSubsidiaryId = selectedCompany?.subsidiary_id ?? subsidiaryId ?? null;
 				window.dispatchEvent(
 					new CustomEvent('user-branch-changed', {
-						detail: { branchId: selectedCompany?.subsidiary_id ?? null, subsidiaryId: nextSubsidiaryId },
+						detail: {
+							branchId: selectedCompany?.subsidiary_id ?? null,
+							subsidiaryId: nextSubsidiaryId,
+						},
 					}),
 				);
 
@@ -184,7 +187,10 @@ const useCompanyManager = (): UseCompanyManager => {
 				if (userSnapshot?.companies?.length) {
 					// ✅ Solo companies accesibles
 					derived = userSnapshot.companies
-						.filter((c: any) => !accessibleSubsidiaryIds.size || accessibleSubsidiaryIds.has(c.id))
+						.filter(
+							(c: any) =>
+								!accessibleSubsidiaryIds.size || accessibleSubsidiaryIds.has(c.id),
+						)
 						.map((c: any) => ({
 							id: c.id,
 							name: c.name || c.company_name,
@@ -207,7 +213,10 @@ const useCompanyManager = (): UseCompanyManager => {
 					derivedName = userSnapshot.subsidiary.name;
 				} else if (personalization?.sucursal_principal) {
 					//  Solo agregar si está en accesibles o no podemos determinar
-					if (!accessibleSubsidiaryIds.size || accessibleSubsidiaryIds.has(personalization.sucursal_principal)) {
+					if (
+						!accessibleSubsidiaryIds.size ||
+						accessibleSubsidiaryIds.has(personalization.sucursal_principal)
+					) {
 						derived = [
 							{
 								id: personalization.sucursal_principal,
@@ -219,7 +228,10 @@ const useCompanyManager = (): UseCompanyManager => {
 							},
 						];
 					} else {
-						console.warn(' sucursal_principal no accesible en derived:', personalization.sucursal_principal);
+						console.warn(
+							' sucursal_principal no accesible en derived:',
+							personalization.sucursal_principal,
+						);
 					}
 				}
 
@@ -277,7 +289,13 @@ const useCompanyManager = (): UseCompanyManager => {
 							branches: Array<{ id: number; branch_name: string }>;
 						}>;
 					} | null;
-				}>({ url: '/user/personalization', method: 'get', signal: controller.signal, dedupe: true, cacheTTLms: 300000 });
+				}>({
+					url: '/user/personalization',
+					method: 'get',
+					signal: controller.signal,
+					dedupe: true,
+					cacheTTLms: 300000,
+				});
 
 				let companies: CompanyInfo[] = [];
 				let prettyName = currentSubsidiaryName;
@@ -297,16 +315,22 @@ const useCompanyManager = (): UseCompanyManager => {
 					accessibleSubsidiaryIds.add(user.company.id);
 				}
 
-				console.log('🔐 useCompanyManager - Subsidiarias accesibles:', Array.from(accessibleSubsidiaryIds));
+				console.log(
+					'🔐 useCompanyManager - Subsidiarias accesibles:',
+					Array.from(accessibleSubsidiaryIds),
+				);
 
 				if (response.data.current_company?.subsidiaries?.length) {
 					// ✅ FILTRAR: Solo mostrar subsidiarias a las que el usuario tiene acceso
 					const allSubsidiaries = response.data.current_company.subsidiaries;
-					const accessibleSubsidiaries = accessibleSubsidiaryIds.size > 0
-						? allSubsidiaries.filter(s => accessibleSubsidiaryIds.has(s.id))
-						: allSubsidiaries; // Si no podemos determinar, mostrar todas (fallback)
+					const accessibleSubsidiaries =
+						accessibleSubsidiaryIds.size > 0
+							? allSubsidiaries.filter((s) => accessibleSubsidiaryIds.has(s.id))
+							: allSubsidiaries; // Si no podemos determinar, mostrar todas (fallback)
 
-					console.log(`🔒 useCompanyManager - Filtrando subsidiarias: ${allSubsidiaries.length} total → ${accessibleSubsidiaries.length} accesibles`);
+					console.log(
+						`🔒 useCompanyManager - Filtrando subsidiarias: ${allSubsidiaries.length} total → ${accessibleSubsidiaries.length} accesibles`,
+					);
 
 					companies = accessibleSubsidiaries.map((s) => ({
 						id: s.id,
@@ -325,7 +349,9 @@ const useCompanyManager = (): UseCompanyManager => {
 							prettyName = current.subsidiary_name;
 						} else {
 							//  sucursal_principal no está en accesibles, usar la primera disponible
-							console.warn(' sucursal_principal no accesible, usando primera disponible');
+							console.warn(
+								' sucursal_principal no accesible, usando primera disponible',
+							);
 							if (accessibleSubsidiaries.length > 0) {
 								prettyName = accessibleSubsidiaries[0].subsidiary_name;
 							}

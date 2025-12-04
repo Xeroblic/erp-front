@@ -35,8 +35,14 @@ export default function AccesoJerarquico({
 		dispatch(fetchMisSucursales());
 	}, [dispatch]);
 
-	const availableBranches = useMemo<AccessBranch[]>(() => access.branches ?? [], [access.branches]);
-	const availableSubs = useMemo<AccessSubsidiary[]>(() => access.subsidiaries ?? [], [access.subsidiaries]);
+	const availableBranches = useMemo<AccessBranch[]>(
+		() => access.branches ?? [],
+		[access.branches],
+	);
+	const availableSubs = useMemo<AccessSubsidiary[]>(
+		() => access.subsidiaries ?? [],
+		[access.subsidiaries],
+	);
 
 	const initialSelection = useMemo<UserAccess>(
 		() => ({
@@ -138,7 +144,8 @@ export default function AccesoJerarquico({
 			<h3 className='mb-4 text-lg font-semibold'>Accesos Jerárquicos</h3>
 			{!editable && (
 				<p className='mb-3 text-sm text-zinc-500'>
-					Solo puedes visualizar los accesos asignados. Los cambios requieren privilegios de administración.
+					Solo puedes visualizar los accesos asignados. Los cambios requieren privilegios
+					de administración.
 				</p>
 			)}
 			{isLoading && <div className='px-3 py-2 text-zinc-500'>Cargando accesos...</div>}
@@ -202,8 +209,10 @@ export default function AccesoJerarquico({
 														className={classNames(
 															'flex items-center justify-between rounded-md p-2 transition-colors',
 															{
-																'bg-blue-50 dark:bg-blue-900/30': checked,
-																'hover:bg-zinc-100 dark:hover:bg-white/5': !checked,
+																'bg-blue-50 dark:bg-blue-900/30':
+																	checked,
+																'hover:bg-zinc-100 dark:hover:bg-white/5':
+																	!checked,
 															},
 														)}>
 														<div className='flex items-center gap-3'>
@@ -218,7 +227,7 @@ export default function AccesoJerarquico({
 																</div>
 																<div className='text-xs text-zinc-500'>
 																	{b.position
-																		? b.position + ' · '
+																		? `${b.position} · `
 																		: ''}
 																	{b.source ? b.source : ''}
 																</div>

@@ -39,7 +39,7 @@ const normalizeCategories = (raw: unknown): IProductCategorySummary[] => {
 		.map((item) => {
 			if (item && typeof item === 'object') {
 				const source = item as Record<string, unknown>;
-				const id = Number((source.id ?? source.category_id) ?? 0);
+				const id = Number(source.id ?? source.category_id ?? 0);
 				if (!Number.isFinite(id)) return null;
 				return {
 					id,
@@ -59,7 +59,7 @@ const normalizeChildren = (raw: unknown): IProductChild[] => {
 	const toChildArray = (source: unknown): unknown[] => {
 		if (Array.isArray(source)) return source;
 		if (source && typeof source === 'object') {
-			const data = (source as any).data;
+			const { data } = source as any;
 			if (Array.isArray(data)) return data;
 		}
 		return [];
@@ -92,8 +92,12 @@ const normalizeChildren = (raw: unknown): IProductChild[] => {
 								? (entry.stock_by_status as Record<string, number>)
 								: null,
 						marketplace_external_ids:
-							entry.marketplace_external_ids && typeof entry.marketplace_external_ids === 'object'
-								? (entry.marketplace_external_ids as Record<string, string | number>)
+							entry.marketplace_external_ids &&
+							typeof entry.marketplace_external_ids === 'object'
+								? (entry.marketplace_external_ids as Record<
+										string,
+										string | number
+									>)
 								: null,
 					};
 				})
@@ -124,10 +128,10 @@ export const normalizeProduct = (raw: any): IProduct => {
 		brand_id: toNullableNumber(safe.brand_id),
 		brand: safe.brand
 			? {
-				id: Number((safe.brand as any).id ?? 0),
-				name: String((safe.brand as any).name ?? ''),
-				slug: ((safe.brand as any).slug ?? null) as string | null | undefined,
-			}
+					id: Number((safe.brand as any).id ?? 0),
+					name: String((safe.brand as any).name ?? ''),
+					slug: ((safe.brand as any).slug ?? null) as string | null | undefined,
+				}
 			: null,
 		product_type: (safe.product_type ?? safe.type ?? null) as string | null,
 		condition_policy: (safe.condition_policy ?? safe.condition ?? null) as string | null,
@@ -159,35 +163,45 @@ export const normalizeProduct = (raw: any): IProduct => {
 		created_at: String(safe.created_at ?? ''),
 		updated_at: String(safe.updated_at ?? ''),
 		// image/gallery normalization: try common keys used by backend
-		image:
-			(() => {
-				const candidate = (safe.image ?? safe.media ?? safe.media_first ?? null) as any;
-				if (!candidate) return undefined;
-				const pickedUrl = extractMediaUrl(candidate);
-				if (!pickedUrl) return undefined;
-				const abs = ensureAbsoluteUrl(pickedUrl);
-				if (!abs) return undefined;
-				const thumbRaw = candidate.thumb ?? candidate.thumbnail_url ?? pickedUrl;
-				const thumbAbs = ensureAbsoluteUrl(thumbRaw) ?? abs;
-				return { id: candidate.id, url: abs, thumb: thumbAbs, alt: candidate.alt ?? null };
-			})(),
-		gallery:
-			(() => {
-				const g = (safe.gallery ?? safe.media ?? safe.images ?? null) as any;
-				if (!g) return undefined;
-				const arr = Array.isArray(g) ? g : Array.isArray(g.data) ? g.data : Array.isArray(g.media) ? g.media : [];
-				return arr
-					.map((item: any) => {
-						const url = extractMediaUrl(item) ?? extractMediaUrl(g);
-						if (!url) return null;
-						const abs = ensureAbsoluteUrl(url);
-						if (!abs) return null;
-						const thumbRaw = item.thumb ?? item.thumbnail_url ?? url;
-						const thumb = ensureAbsoluteUrl(thumbRaw) ?? abs;
-						return { id: item.id, url: abs, thumb, alt: item.alt ?? null, sort: item.sort ?? null };
-					})
-					.filter((x: any) => x !== null) as unknown as any[];
-			})(),
+		image: (() => {
+			const candidate = (safe.image ?? safe.media ?? safe.media_first ?? null) as any;
+			if (!candidate) return undefined;
+			const pickedUrl = extractMediaUrl(candidate);
+			if (!pickedUrl) return undefined;
+			const abs = ensureAbsoluteUrl(pickedUrl);
+			if (!abs) return undefined;
+			const thumbRaw = candidate.thumb ?? candidate.thumbnail_url ?? pickedUrl;
+			const thumbAbs = ensureAbsoluteUrl(thumbRaw) ?? abs;
+			return { id: candidate.id, url: abs, thumb: thumbAbs, alt: candidate.alt ?? null };
+		})(),
+		gallery: (() => {
+			const g = (safe.gallery ?? safe.media ?? safe.images ?? null) as any;
+			if (!g) return undefined;
+			const arr = Array.isArray(g)
+				? g
+				: Array.isArray(g.data)
+					? g.data
+					: Array.isArray(g.media)
+						? g.media
+						: [];
+			return arr
+				.map((item: any) => {
+					const url = extractMediaUrl(item) ?? extractMediaUrl(g);
+					if (!url) return null;
+					const abs = ensureAbsoluteUrl(url);
+					if (!abs) return null;
+					const thumbRaw = item.thumb ?? item.thumbnail_url ?? url;
+					const thumb = ensureAbsoluteUrl(thumbRaw) ?? abs;
+					return {
+						id: item.id,
+						url: abs,
+						thumb,
+						alt: item.alt ?? null,
+						sort: item.sort ?? null,
+					};
+				})
+				.filter((x: any) => x !== null) as unknown as any[];
+		})(),
 	};
 };
 
@@ -275,8 +289,7 @@ export const buildUpdatePayload = (
 		payload.warranty_months = toNullableNumber(data.warranty_months);
 	if (data.cost !== undefined) payload.cost = toNullableNumber(data.cost);
 	if (data.price !== undefined) payload.price = Number(data.price);
-	if (data.offer_price !== undefined)
-		payload.offer_price = toNullableNumber(data.offer_price);
+	if (data.offer_price !== undefined) payload.offer_price = toNullableNumber(data.offer_price);
 	// Stock: enviar como número válido, no como null
 	if (data.stock !== undefined && typeof data.stock === 'number') {
 		payload.stock = data.stock;
@@ -284,7 +297,8 @@ export const buildUpdatePayload = (
 	if (data.attributes_json !== undefined) payload.attributes_json = data.attributes_json;
 	if (data.is_active !== undefined) payload.is_active = Boolean(data.is_active);
 	if (data.product_status !== undefined) payload.product_status = data.product_status;
-	if (data.snippet_description !== undefined) payload.snippet_description = data.snippet_description;
+	if (data.snippet_description !== undefined)
+		payload.snippet_description = data.snippet_description;
 	if (data.short_description !== undefined) payload.short_description = data.short_description;
 	if (data.long_description !== undefined) payload.long_description = data.long_description;
 	if (categoryIds) payload.category_ids = categoryIds;
@@ -299,7 +313,8 @@ export const serializeFilters = (filters: ProductFilters): Record<string, unknow
 	if (filters.category_id) params.category_id = filters.category_id;
 	if (typeof filters.is_active === 'boolean') params.is_active = filters.is_active;
 	if (filters.product_type) params.product_type = filters.product_type;
-	if (typeof filters.serial_tracking === 'boolean') params.serial_tracking = filters.serial_tracking;
+	if (typeof filters.serial_tracking === 'boolean')
+		params.serial_tracking = filters.serial_tracking;
 	if (typeof filters.min_price === 'number') params.min_price = filters.min_price;
 	if (typeof filters.max_price === 'number') params.max_price = filters.max_price;
 	if (filters.order_by) params.order_by = filters.order_by;

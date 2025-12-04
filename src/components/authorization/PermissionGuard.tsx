@@ -61,7 +61,7 @@ const PermissionGuard: React.FC<PermissionGuardProps> = ({
 	// Primero verificar si es super-admin (tiene acceso total)
 	if (user?.authority?.includes('super-admin') || userAuthority?.includes('super-admin')) {
 		return <>{children}</>;
-	}	
+	}
 
 	// Verificación temporal para permisos de desarrollo
 	const hasTemporaryAccess = permissions.some((permission) => hasTemporaryPermission(permission));
@@ -80,8 +80,7 @@ const PermissionGuard: React.FC<PermissionGuardProps> = ({
 				// <div className='rounded-lg bg-red-50 p-4 text-center text-red-600'>
 				// 	{deniedMessage}
 				// </div>
-				<>
-				</>
+				<></>
 			);
 		}
 	}

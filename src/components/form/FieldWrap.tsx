@@ -30,7 +30,7 @@ const FieldWrap = forwardRef<HTMLDivElement, IFieldWrapProps>((props, ref) => {
 		validFeedback,
 		isValidMessage,
 		...domProps
-	} = props as IFieldWrapProps;
+	} = props;
 
 	const sharedClasses = classNames(
 		'absolute top-[2px] bottom-[2px] flex justify-center items-center px-1 rounded',
@@ -66,7 +66,7 @@ const FieldWrap = forwardRef<HTMLDivElement, IFieldWrapProps>((props, ref) => {
 						(lastSuffix && isLTR && (domLastRect?.width as number)),
 				} as React.CSSProperties;
 				// Evitar pasar props desconocidos a elementos DOM nativos
-				const childEl = children as ReactElement<any, any>;
+				const childEl = children;
 				if (isDomElement) {
 					return cloneElement(childEl, { style } as any);
 				}

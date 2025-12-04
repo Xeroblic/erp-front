@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Checkbox from '@/components/form/Checkbox';
 import Input from '@/components/form/Input';
-import { toast } from 'react-toastify';
 import { IWarehouseProduct } from '@/interface/warehouse.interface';
 import { IProduct } from '@/interface/product.interface';
 

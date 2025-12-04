@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'react-toastify';
+import { GroupBase } from 'react-select';
 import SelectReact, { TSelectGroups, TSelectOption } from '@/components/form/SelectReact';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
@@ -11,10 +13,8 @@ import {
 	useUserBranches,
 	type UserBranch,
 } from '@/pages/catalogos/productos/components/modals/hooks/userBranch';
-import { toast } from 'react-toastify';
 import ApiService from '@/services/ApiService';
 import Icon from '@/components/icon/Icon';
-import { GroupBase } from 'react-select';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 
@@ -266,7 +266,7 @@ const SelectSucursalEmpresa = () => {
 		value: selectedSucursal as TSelectOption | null,
 		options: groupedOptions,
 		formatOptionLabel: (option: TSelectOption) => formatOptionLabel(option as BranchOption),
-		formatGroupLabel: formatGroupLabel,
+		formatGroupLabel,
 		onChange: (option: any) => {
 			if (Array.isArray(option)) {
 				void handleChange(null);
@@ -293,9 +293,9 @@ const SelectSucursalEmpresa = () => {
 			<Button
 				onClick={() => setModalOpen(true)}
 				className='flex w-full items-center gap-2 rounded-lg border bg-white px-3 py-2 dark:bg-neutral-900 sm:hidden'>
-					<span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 shadow-sm">
-						<Icon icon="HeroBuildingOffice2" className="h-4 w-4 " />
-					</span>
+				<span className='flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 shadow-sm'>
+					<Icon icon='HeroBuildingOffice2' className='h-4 w-4' />
+				</span>
 				<span>
 					{selectedSucursal?.label
 						? selectedSucursal.label.length > 6
@@ -306,7 +306,7 @@ const SelectSucursalEmpresa = () => {
 			</Button>
 
 			{/* MOBILE MODAL */}
-			<Modal isOpen={modalOpen} setIsOpen={setModalOpen} isStaticBackdrop={true}>
+			<Modal isOpen={modalOpen} setIsOpen={setModalOpen} isStaticBackdrop>
 				<ModalHeader>Selecciona una sucursal</ModalHeader>
 				<ModalBody>
 					<SelectReact

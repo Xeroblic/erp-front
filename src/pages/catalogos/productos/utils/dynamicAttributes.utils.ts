@@ -10,7 +10,10 @@ const applyDefaults = (data: AttributesData): AttributesData => {
 	return { ...data };
 };
 
-export const sanitiseAttributesInput = (value: unknown, applyDefaultsFlag = false): AttributesData => {
+export const sanitiseAttributesInput = (
+	value: unknown,
+	applyDefaultsFlag = false,
+): AttributesData => {
 	if (!value) {
 		return applyDefaultsFlag ? applyDefaults({}) : {};
 	}

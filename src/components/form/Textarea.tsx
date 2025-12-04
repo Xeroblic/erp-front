@@ -26,7 +26,8 @@ interface ITextareaProps
 	variant?: TTextareaVariants;
 }
 const Textarea: FC<ITextareaProps> = (props) => {
-	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } = useReactiveThemeConfig();
+	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } =
+		useReactiveThemeConfig();
 	const {
 		borderWidth = themeConfig.borderWidth,
 		className,

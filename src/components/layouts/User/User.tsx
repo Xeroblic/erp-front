@@ -73,7 +73,7 @@ const User: FC<IUserProps> = (props) => {
 						'ltr:translate-x-[-0.625rem] rtl:translate-x-[0.625rem]': !asideStatus,
 					},
 					themeConfig.transition,
-					)}
+				)}
 				initial={{ opacity: 0, y: 12 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}>
@@ -140,19 +140,17 @@ const User: FC<IUserProps> = (props) => {
 					'ltr:translate-x-[0.625rem] rtl:translate-x-[-0.625rem]': !asideStatus,
 				})}>
 				<motion.span
-					className={classNames(
-						'absolute inline-flex h-full w-full rounded-full',
-						[`bg-${reactiveThemeColor}-${pingOuterShade}`],
-					)}
+					className={classNames('absolute inline-flex h-full w-full rounded-full', [
+						`bg-${reactiveThemeColor}-${pingOuterShade}`,
+					])}
 					initial={{ opacity: 0.7, scale: 1 }}
 					animate={{ opacity: [0.7, 0.2, 0], scale: [1, 1.8, 2.2] }}
 					transition={{ duration: 2, repeat: Infinity, ease: 'easeOut' }}
 				/>
 				<motion.span
-					className={classNames(
-						'relative inline-flex h-3 w-3 rounded-full',
-						[`bg-${reactiveThemeColor}-${reactiveThemeColorShade}`],
-					)}
+					className={classNames('relative inline-flex h-3 w-3 rounded-full', [
+						`bg-${reactiveThemeColor}-${reactiveThemeColorShade}`,
+					])}
 					animate={{ scale: isOpen ? 1.1 : 1 }}
 					transition={{ type: 'spring', stiffness: 260, damping: 20 }}
 				/>

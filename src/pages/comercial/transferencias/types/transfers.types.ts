@@ -23,8 +23,8 @@ export interface ITransferStats {
 }
 
 export interface ITransferItemForm extends ICreateTransferItemRequest {
-    product_name?: string;
-    product_sku?: string;
+	product_name?: string;
+	product_sku?: string;
 }
 
 export interface ICreateTransferForm {

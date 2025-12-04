@@ -25,9 +25,9 @@ export { USER_DETAIL_TABS } from './constants/tabs';
 
 // Types
 export type {
-    TabType,
-    UserRow,
-    TabConfig,
-    DynamicTabsProps,
-    UserPermissionsFormValues,
+	TabType,
+	UserRow,
+	TabConfig,
+	DynamicTabsProps,
+	UserPermissionsFormValues,
 } from './types';

@@ -117,8 +117,12 @@ const useMovementsManager = (): UseMovementsManagerReturn => {
 	const stats = useMemo(() => {
 		const total = pagination.totalTransfers || transfers.length;
 		const sent = transfers.filter((t) => t.direction === 'sent' || t.status === 'sent').length;
-		const received = transfers.filter((t) => t.direction === 'received' || t.status === 'received').length;
-		const pending = transfers.filter((t) => t.status === 'pending' || t.status === 'draft').length;
+		const received = transfers.filter(
+			(t) => t.direction === 'received' || t.status === 'received',
+		).length;
+		const pending = transfers.filter(
+			(t) => t.status === 'pending' || t.status === 'draft',
+		).length;
 
 		return { total, sent, received, pending };
 	}, [pagination.totalTransfers, transfers]);

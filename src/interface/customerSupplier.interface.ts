@@ -1,37 +1,36 @@
 // src/interface/customerSupplier.interface.ts
 
 export interface ISupplierMin {
-  id: number;
-  name: string;
-  subsidiary_id: number;
+	id: number;
+	name: string;
+	subsidiary_id: number;
 }
 
 export interface ISubsidiaryMin {
-  id: number;
-  subsidiary_name: string;
+	id: number;
+	subsidiary_name: string;
 }
 
 export interface ICustomerSupplier {
-  id: number;
-  subsidiary_id: number;
-  name: string;
-  created_at: string;
-  updated_at: string;
-  suppliers_count?: number;
-  suppliers?: ISupplierMin[];
-  subsidiary?: ISubsidiaryMin;
+	id: number;
+	subsidiary_id: number;
+	name: string;
+	created_at: string;
+	updated_at: string;
+	suppliers_count?: number;
+	suppliers?: ISupplierMin[];
+	subsidiary?: ISubsidiaryMin;
 }
 
 export interface ICreateCustomerSupplierRequest {
-  name: string;
+	name: string;
 }
 
 export interface IUpdateCustomerSupplierRequest {
-  id: number;
-  name: string;
+	id: number;
+	name: string;
 }
 
 export interface IAttachSuppliersToCustomerSupplierRequest {
-  supplier_ids: number[];
+	supplier_ids: number[];
 }
-

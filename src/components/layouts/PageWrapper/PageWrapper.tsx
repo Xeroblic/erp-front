@@ -4,57 +4,61 @@ import { Navigate } from 'react-router-dom';
 import { authPages } from '../../../config/pages.config';
 import useDocumentTitle from '../../../hooks/useDocumentTitle';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { listaComunasThunk, listaProvinciasThunk, listaRegionesThunk } from '@/store/slices/core/coreSlice';
+import {
+	listaComunasThunk,
+	listaProvinciasThunk,
+	listaRegionesThunk,
+} from '@/store/slices/core/coreSlice';
 import { userMeThunk } from '@/store/slices/auth/authSlice';
 import useFontSize from '@/hooks/useFontSize';
 import useDarkModeManager from '@/hooks/useDarkModeManager';
 
 interface IPageWrapperProps {
-  children: ReactNode;
-  className?: string;
-  isProtectedRoute?: boolean;
-  title?: string;
-  name?: string;
+	children: ReactNode;
+	className?: string;
+	isProtectedRoute?: boolean;
+	title?: string;
+	name?: string;
 }
 
 const PageWrapper: FC<IPageWrapperProps> = ({
-  children,
-  className,
-  isProtectedRoute = false,
-  title,
-  name,
-  ...rest
+	children,
+	className,
+	isProtectedRoute = false,
+	title,
+	name,
+	...rest
 }) => {
-  const dispatch = useAppDispatch();
-  const { isAuthenticated, access, user } = useAppSelector(s => s.auth);
-  const { listaComunas, listaProvincias, listaRegiones } = useAppSelector(s => s.core);
+	const dispatch = useAppDispatch();
+	const { isAuthenticated, access, user } = useAppSelector((s) => s.auth);
+	const { listaComunas, listaProvincias, listaRegiones } = useAppSelector((s) => s.core);
 
-  const coreLoaded = useRef(false);
-  const profileLoaded = useRef(false);
+	const coreLoaded = useRef(false);
+	const profileLoaded = useRef(false);
 
-  useDocumentTitle({ title, name });
+	useDocumentTitle({ title, name });
 
-  // // 1) Solo una vez: carga regiones/provincias/comunas
-  // useEffect(() => {
-  //   if (!coreLoaded.current && isProtectedRoute && isAuthenticated) {
-  //     dispatch(listaRegionesThunk());
-  //     dispatch(listaProvinciasThunk());
-  //     dispatch(listaComunasThunk());
-  //     coreLoaded.current = true;
-  //   }
-  // }, [dispatch, isProtectedRoute, isAuthenticated]);
+	// // 1) Solo una vez: carga regiones/provincias/comunas
+	// useEffect(() => {
+	//   if (!coreLoaded.current && isProtectedRoute && isAuthenticated) {
+	//     dispatch(listaRegionesThunk());
+	//     dispatch(listaProvinciasThunk());
+	//     dispatch(listaComunasThunk());
+	//     coreLoaded.current = true;
+	//   }
+	// }, [dispatch, isProtectedRoute, isAuthenticated]);
 
-  // 2) Solo una vez: carga perfil (incluye personalización)
-  useEffect(() => {
-    if (!profileLoaded.current && isProtectedRoute && isAuthenticated && access) {
-      dispatch(userMeThunk());
-      profileLoaded.current = true;
-    }
-  }, [dispatch, isProtectedRoute, isAuthenticated, access]);
+	// 2) Solo una vez: carga perfil (incluye personalización)
+	useEffect(() => {
+		if (!profileLoaded.current && isProtectedRoute && isAuthenticated && access) {
+			dispatch(userMeThunk());
+			profileLoaded.current = true;
+		}
+	}, [dispatch, isProtectedRoute, isAuthenticated, access]);
 
-  // 3) Aplica personalización cuando llegue
-  // COMENTADO TEMPORALMENTE - Causaba bucles infinitos al sobrescribir cambios manuales del usuario
-  /*
+	// 3) Aplica personalización cuando llegue
+	// COMENTADO TEMPORALMENTE - Causaba bucles infinitos al sobrescribir cambios manuales del usuario
+	/*
   useEffect(() => {
     const pref = user?.personalizacion;
     if (pref) {
@@ -72,18 +76,18 @@ const PageWrapper: FC<IPageWrapperProps> = ({
   }, [user?.personalizacion, fontSize, setFontSize, setDarkModeStatus]);
   */
 
-  if (isProtectedRoute && !isAuthenticated) {
-    return <Navigate to={authPages.loginPage.to} />;
-  }
+	if (isProtectedRoute && !isAuthenticated) {
+		return <Navigate to={authPages.loginPage.to} />;
+	}
 
-  return (
-    <main
-      data-component-name='PageWrapper'
-      className={classNames('flex shrink-0 grow flex-col', className)}
-      {...rest}>
-      {children}
-    </main>
-  );
+	return (
+		<main
+			data-component-name='PageWrapper'
+			className={classNames('flex shrink-0 grow flex-col', className)}
+			{...rest}>
+			{children}
+		</main>
+	);
 };
 
 export default PageWrapper;

@@ -81,7 +81,7 @@ const SystemParametersTable: React.FC<SystemParametersTableProps> = ({
 			case 'json':
 				try {
 					const parsed = JSON.parse(value);
-					return JSON.stringify(parsed, null, 2).substring(0, 50) + '...';
+					return `${JSON.stringify(parsed, null, 2).substring(0, 50)}...`;
 				} catch {
 					return value;
 				}
@@ -109,19 +109,12 @@ const SystemParametersTable: React.FC<SystemParametersTableProps> = ({
 		}),
 		columnHelper.accessor('category', {
 			header: 'Categoría',
-			cell: (info) => (
-				<Badge  className='capitalize'>
-					{info.getValue()}
-				</Badge>
-			),
+			cell: (info) => <Badge className='capitalize'>{info.getValue()}</Badge>,
 		}),
 		columnHelper.accessor('data_type', {
 			header: 'Tipo',
 			cell: (info) => (
-				<Badge
-					
-					variant='outline'
-					className='font-mono text-xs capitalize'>
+				<Badge variant='outline' className='font-mono text-xs capitalize'>
 					{info.getValue()}
 				</Badge>
 			),
@@ -207,7 +200,7 @@ const SystemParametersTable: React.FC<SystemParametersTableProps> = ({
 							variant='outline'
 							icon='HeroTrash'
 							onClick={() => onDelete(parameter)}
-                            isDisable={isActionLoading || !parameter.is_editable}
+							isDisable={isActionLoading || !parameter.is_editable}
 							className='text-zinc-600 hover:text-red-600 disabled:opacity-50 dark:text-zinc-400'
 						/>
 						{isActionLoading && (
@@ -305,9 +298,7 @@ const SystemParametersTable: React.FC<SystemParametersTableProps> = ({
 					</TBody>
 				</Table>
 			</CardBody>
-			<TableCardFooterTemplateV2
-				table={table}
-			/>
+			<TableCardFooterTemplateV2 table={table} />
 		</Card>
 	);
 };

@@ -1,3 +1,7 @@
+// Helper opcional: escoger esquina según el modo
+import DARK_MODE from '@/constants/darkMode.constant';
+import { TDarkMode } from '@/types/darkMode.type';
+
 export type TWipeCorner = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
 
 /**
@@ -12,7 +16,8 @@ export function runThemeWipe(
 	backgroundColor?: string,
 ) {
 	try {
-		if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+		if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+			return;
 
 		const readBackground = (el?: Element | null) => {
 			if (!el) return '';
@@ -25,10 +30,7 @@ export function runThemeWipe(
 		const fallbackBg = root.classList.contains('dark') ? '#09090b' : '#f4f4f5';
 
 		const prevBg =
-			backgroundColor ||
-			readBackground(document.body) ||
-			readBackground(root) ||
-			fallbackBg;
+			backgroundColor || readBackground(document.body) || readBackground(root) || fallbackBg;
 
 		document.querySelectorAll('.theme-wipe-overlay').forEach((node) => node.remove());
 
@@ -67,10 +69,6 @@ export function runThemeWipe(
 		// no-op
 	}
 }
-
-// Helper opcional: escoger esquina según el modo
-import DARK_MODE from '@/constants/darkMode.constant';
-import { TDarkMode } from '@/types/darkMode.type';
 
 export function cornerForThemeMode(mode: TDarkMode): TWipeCorner {
 	const sysDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;

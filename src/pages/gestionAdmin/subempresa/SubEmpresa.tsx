@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchMisSubsidiarias, deleteSubsidiaria } from '@/store/slices/subempresa/subEmpresaSlice';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
@@ -8,7 +9,6 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/form/Input';
 import Badge from '@/components/ui/Badge';
 import { ISubempresa } from '@/interface/empresas.interface';
-import { toast } from 'react-toastify';
 import { CreateSubempresaModal, DeleteSubempresaModal, SubempresasTable } from './components';
 import Icon from '@/components/icon/Icon';
 import Tooltip from '@/components/ui/Tooltip';
@@ -80,19 +80,19 @@ export default function SubEmpresaLista() {
 		<PageWrapper isProtectedRoute title='Subempresas' name='Subempresas'>
 			<Subheader>
 				<SubheaderLeft>
-					<div >
-						<div className='flex item-center gap-2'>
-							<Icon icon='DuoBuilding' size='text-3xl'/>
+					<div>
+						<div className='item-center flex gap-2'>
+							<Icon icon='DuoBuilding' size='text-3xl' />
 							<Badge className='text-2xl font-bold'>Subempresas de la Empresa</Badge>
 						</div>
 						<div className='flex flex-col gap-2'>
-							<p className='text-sm text-zinc-400 mt-1'>
+							<p className='mt-1 text-sm text-zinc-400'>
 								Administración de las subempresas asociadas a la empresa principal.
 							</p>
 						</div>
 					</div>
 				</SubheaderLeft>
-				<SubheaderRight >
+				<SubheaderRight>
 					<div className='flex items-center gap-2'>
 						<Input
 							name='subempresa-busqueda'
@@ -102,7 +102,7 @@ export default function SubEmpresaLista() {
 							className='w-48 rounded border'
 						/>
 						<Tooltip text='Crear nueva subempresa' placement='top-start' color='blue'>
-							<Button variant='solid' icon='HeroPlus' onClick={handleCreate}/>
+							<Button variant='solid' icon='HeroPlus' onClick={handleCreate} />
 						</Tooltip>
 					</div>
 				</SubheaderRight>
@@ -129,7 +129,9 @@ export default function SubEmpresaLista() {
 				isOpen={openDelete}
 				onClose={() => setOpenDelete(false)}
 				subempresaId={toDeleteId || 0}
-				subsiName={toDeleteId ? subempresas.find(s => s.id === toDeleteId)?.name || '' : ''}
+				subsiName={
+					toDeleteId ? subempresas.find((s) => s.id === toDeleteId)?.name || '' : ''
+				}
 				isNavigate={false}
 			/>
 		</PageWrapper>

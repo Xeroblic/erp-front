@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
+import { ApexOptions } from 'apexcharts';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Chart from '@/components/Chart';
 import Icon from '@/components/icon/Icon';
-import { ApexOptions } from 'apexcharts';
 import useDarkMode from '@/hooks/useDarkMode';
 import { IWarehouse } from '@/interface/warehouse.interface';
 import Collapse from '@/components/utils/Collapse';
@@ -85,9 +85,9 @@ const WarehousesCharts: React.FC<WarehousesChartsProps> = ({ warehouses }) => {
 					colors: isDarkTheme ? '#d1d5db' : '#374151',
 				},
 				markers: {
-					size: 10,             // reemplaza width/height
-					strokeWidth: 0,       // no quieres borde
-					shape: 'circle',      // mantiene tu diseño original
+					size: 10, // reemplaza width/height
+					strokeWidth: 0, // no quieres borde
+					shape: 'circle', // mantiene tu diseño original
 				},
 			},
 			stroke: {
@@ -164,9 +164,9 @@ const WarehousesCharts: React.FC<WarehousesChartsProps> = ({ warehouses }) => {
 					colors: isDarkTheme ? '#d1d5db' : '#374151',
 				},
 				markers: {
-					size: 10,             // reemplaza width/height
-					strokeWidth: 0,       // no quieres borde
-					shape: 'circle',      // mantiene tu diseño original
+					size: 10, // reemplaza width/height
+					strokeWidth: 0, // no quieres borde
+					shape: 'circle', // mantiene tu diseño original
 				},
 			},
 			stroke: {

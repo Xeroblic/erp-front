@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
+import { toast } from 'react-toastify';
 import ApiService from '@/services/ApiService';
 import { userMeThunk } from '@/store/slices/auth/authSlice';
 import { getAvatarUrlFromUser } from '../helpers/profile.helpers';
-import { toast } from 'react-toastify';
 
 export function useProfileAvatar(userData: any, userId: number | null, dispatch: any, maxMb = 5) {
 	const avatarUrl = useMemo(() => getAvatarUrlFromUser(userData), [userData]);
@@ -57,4 +57,3 @@ export function useProfileAvatar(userData: any, userId: number | null, dispatch:
 
 	return { avatarUrl, handleAvatarUpload };
 }
-

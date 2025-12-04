@@ -11,17 +11,17 @@ const BasicParts = ({
 	isEditing,
 	formik,
 	viewData,
-    optionsRegion,
-    optionsProvincia,
-    optionsComuna,
+	optionsRegion,
+	optionsProvincia,
+	optionsComuna,
 }: {
 	subempresa: any;
 	isEditing: boolean;
 	formik: any;
 	viewData: any;
-    optionsRegion: TSelectOption[];
-    optionsProvincia: TSelectOption[];
-    optionsComuna: TSelectOption[];
+	optionsRegion: TSelectOption[];
+	optionsProvincia: TSelectOption[];
+	optionsComuna: TSelectOption[];
 }) => {
 	return (
 		<div className='grid grid-cols-1 gap-6 lg:grid-cols-2'>

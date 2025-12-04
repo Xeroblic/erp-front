@@ -49,7 +49,8 @@ const scheduleThemeTransition = (duration: number) => {
 	clearThemeTransition();
 
 	const htmlElement = document.documentElement;
-	const appliedDuration = Number.isFinite(duration) && duration > 0 ? duration : DEFAULT_TRANSITION_DURATION;
+	const appliedDuration =
+		Number.isFinite(duration) && duration > 0 ? duration : DEFAULT_TRANSITION_DURATION;
 	htmlElement.style.setProperty('--theme-transition-duration', `${appliedDuration}ms`);
 	htmlElement.style.setProperty('--theme-transition-easing', THEME_EASING);
 	htmlElement.classList.add('theme-transition');
@@ -81,7 +82,12 @@ const normalizeOptions = (
 	effect: ThemeTransitionEffect;
 } => {
 	if (typeof value === 'boolean') {
-		return { saveToAPI: value, animate: true, duration: DEFAULT_TRANSITION_DURATION, effect: 'fade' };
+		return {
+			saveToAPI: value,
+			animate: true,
+			duration: DEFAULT_TRANSITION_DURATION,
+			effect: 'fade',
+		};
 	}
 
 	return {
@@ -104,7 +110,10 @@ const runFadeTransition = (duration: number) => {
 	}
 
 	const htmlElement = document.documentElement as HTMLElement & {
-		animate?: (keyframes: Keyframe[] | PropertyIndexedKeyframes, options?: number | KeyframeAnimationOptions) => Animation;
+		animate?: (
+			keyframes: Keyframe[] | PropertyIndexedKeyframes,
+			options?: number | KeyframeAnimationOptions,
+		) => Animation;
 	};
 
 	if (typeof htmlElement.animate !== 'function') return;
@@ -174,7 +183,10 @@ export const useDarkModeManager = () => {
 		}
 	}, [darkModeStatus]);
 
-	const setDarkModeStatus = async (newMode: TDarkMode, options?: boolean | SetDarkModeOptions) => {
+	const setDarkModeStatus = async (
+		newMode: TDarkMode,
+		options?: boolean | SetDarkModeOptions,
+	) => {
 		if (newMode === darkModeStatus) {
 			return;
 		}
@@ -210,7 +222,9 @@ export const useDarkModeManager = () => {
 				const doc = typeof document !== 'undefined' ? document : null;
 				const startViewTransition =
 					doc && typeof (doc as any).startViewTransition === 'function'
-						? ((doc as any).startViewTransition as (callback: () => void | Promise<void>) => { finished?: Promise<void> })
+						? ((doc as any).startViewTransition as (
+								callback: () => void | Promise<void>,
+							) => { finished?: Promise<void> })
 						: null;
 
 				if (startViewTransition) {

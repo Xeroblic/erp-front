@@ -42,7 +42,10 @@ const ProductSelectorCard: React.FC<ProductSelectorCardProps> = ({
 			<div className='space-y-4'>
 				<div>
 					<label className='mb-2 block text-sm font-medium'>Producto</label>
-					<Select name='product_id' value={selectedProductId} onChange={(e) => onProductChange(e.target.value)}>
+					<Select
+						name='product_id'
+						value={selectedProductId}
+						onChange={(e) => onProductChange(e.target.value)}>
 						<option value=''>Seleccionar producto</option>
 						{products.map((product) => (
 							<option key={product.id} value={product.id.toString()}>

@@ -2,9 +2,9 @@ import React from 'react';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import { toast } from 'react-toastify';
-import Badge from '@/components/ui/Badge';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import Badge from '@/components/ui/Badge';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Can from '@/components/auth/Can';
@@ -52,7 +52,10 @@ const validationSchema = Yup.object({
 	second_name: Yup.string()
 		.nullable()
 		.max(50, 'El segundo nombre no puede exceder 50 caracteres')
-		.matches(/^[a-zA-ZáéíóúñÁÉÍÓÚÑ\s]*$/, 'El segundo nombre solo puede contener letras y espacios'),
+		.matches(
+			/^[a-zA-ZáéíóúñÁÉÍÓÚÑ\s]*$/,
+			'El segundo nombre solo puede contener letras y espacios',
+		),
 	last_name: Yup.string()
 		.min(2, 'El apellido debe tener al menos 2 caracteres')
 		.max(50, 'El apellido no puede exceder 50 caracteres')
@@ -61,13 +64,19 @@ const validationSchema = Yup.object({
 	second_last_name: Yup.string()
 		.nullable()
 		.max(50, 'El segundo apellido no puede exceder 50 caracteres')
-		.matches(/^[a-zA-ZáéíóúñÁÉÍÓÚÑ\s]*$/, 'El segundo apellido solo puede contener letras y espacios'),
+		.matches(
+			/^[a-zA-ZáéíóúñÁÉÍÓÚÑ\s]*$/,
+			'El segundo apellido solo puede contener letras y espacios',
+		),
 	email: Yup.string()
 		.email('El formato del correo no es válido')
 		.required('El email es requerido'),
 	rut: Yup.string()
 		.required('El RUT es requerido')
-		.matches(/^\d{1,2}\.\d{3}\.\d{3}-[\dkK]$/, 'El formato del RUT no es válido (ej: 12.345.678-9)'),
+		.matches(
+			/^\d{1,2}\.\d{3}\.\d{3}-[\dkK]$/,
+			'El formato del RUT no es válido (ej: 12.345.678-9)',
+		),
 	phone_number: Yup.string()
 		.required('El teléfono es requerido')
 		.matches(/^(\+569|569|9)[\d]{8}$/, 'El número debe tener formato chileno válido'),
@@ -75,9 +84,7 @@ const validationSchema = Yup.object({
 		.min(2, 'El cargo debe tener al menos 2 caracteres')
 		.max(100, 'El cargo no puede exceder 100 caracteres')
 		.required('El cargo es requerido'),
-	address: Yup.string()
-		.nullable()
-		.max(200, 'La dirección no puede exceder 200 caracteres'),
+	address: Yup.string().nullable().max(200, 'La dirección no puede exceder 200 caracteres'),
 	gender: Yup.string().nullable(),
 });
 
@@ -170,7 +177,11 @@ export default function UserDetailsModal({
 				<ModalHeader>
 					<div className='flex items-center justify-between'>
 						<div className='flex items-center gap-3'>
-							<Avatar src={getUserAvatarUrl(user)} name={`${user.first_name || ''} ${user.last_name || ''}`} className='h-10 w-10' />
+							<Avatar
+								src={getUserAvatarUrl(user)}
+								name={`${user.first_name || ''} ${user.last_name || ''}`}
+								className='h-10 w-10'
+							/>
 							<div>
 								<h3 className='text-lg font-semibold'>Detalles del Usuario</h3>
 								<p className='text-sm text-gray-600 dark:text-gray-400'>
@@ -180,8 +191,7 @@ export default function UserDetailsModal({
 						</div>
 						<Badge
 							color={user.is_active ? 'emerald' : 'red'}
-							variant={user.is_active ? 'solid' : 'outline'}
-						>
+							variant={user.is_active ? 'solid' : 'outline'}>
 							<Icon
 								icon={user.is_active ? 'HeroCheckCircle' : 'HeroXCircle'}
 								className='mr-1 h-3 w-3'
@@ -208,7 +218,8 @@ export default function UserDetailsModal({
 									<Label htmlFor='full_name'>Nombre Completo</Label>
 									<div className='rounded-md bg-gray-50 px-3 py-2 dark:bg-gray-800'>
 										<p className='font-medium text-gray-900 dark:text-white'>
-											{`${user.first_name || ''} ${user.second_name || ''} ${user.last_name || ''} ${user.second_last_name || ''}`.trim() || 'Sin nombre'}
+											{`${user.first_name || ''} ${user.second_name || ''} ${user.last_name || ''} ${user.second_last_name || ''}`.trim() ||
+												'Sin nombre'}
 										</p>
 									</div>
 								</div>
@@ -253,7 +264,8 @@ export default function UserDetailsModal({
 									<Label htmlFor='gender'>Género</Label>
 									<div className='rounded-md bg-gray-50 px-3 py-2 dark:bg-gray-800'>
 										<p className='font-medium text-gray-900 dark:text-white'>
-											{genderOptions.find(g => g.value === user.gender)?.label || '—'}
+											{genderOptions.find((g) => g.value === user.gender)
+												?.label || '—'}
 										</p>
 									</div>
 								</div>
@@ -370,7 +382,8 @@ export default function UserDetailsModal({
 					<div>
 						<h3 className='text-lg font-semibold'>Editar Usuario</h3>
 						<p className='text-sm text-gray-600 dark:text-gray-400'>
-							Modifica los datos del usuario. Los campos marcados con * son obligatorios.
+							Modifica los datos del usuario. Los campos marcados con * son
+							obligatorios.
 						</p>
 					</div>
 				</div>
@@ -380,9 +393,16 @@ export default function UserDetailsModal({
 				initialValues={initialValues}
 				validationSchema={validationSchema}
 				onSubmit={handleSubmit}
-				enableReinitialize
-			>
-				{({ values, errors, touched, handleChange, handleBlur, setFieldValue, isSubmitting }) => (
+				enableReinitialize>
+				{({
+					values,
+					errors,
+					touched,
+					handleChange,
+					handleBlur,
+					setFieldValue,
+					isSubmitting,
+				}) => (
 					<Form>
 						<ModalBody className='space-y-6'>
 							{/* Información Personal */}
@@ -401,8 +421,7 @@ export default function UserDetailsModal({
 											<FieldWrap
 												isValid={!errors.first_name}
 												isTouched={touched.first_name}
-												invalidFeedback={errors.first_name}
-											>
+												invalidFeedback={errors.first_name}>
 												<Input
 													id='first_name'
 													name='first_name'
@@ -420,8 +439,7 @@ export default function UserDetailsModal({
 											<FieldWrap
 												isValid={!errors.second_name}
 												isTouched={touched.second_name}
-												invalidFeedback={errors.second_name}
-											>
+												invalidFeedback={errors.second_name}>
 												<Input
 													id='second_name'
 													name='second_name'
@@ -439,8 +457,7 @@ export default function UserDetailsModal({
 											<FieldWrap
 												isValid={!errors.last_name}
 												isTouched={touched.last_name}
-												invalidFeedback={errors.last_name}
-											>
+												invalidFeedback={errors.last_name}>
 												<Input
 													id='last_name'
 													name='last_name'
@@ -454,12 +471,13 @@ export default function UserDetailsModal({
 
 										{/* Apellido Materno */}
 										<div>
-											<Label htmlFor='second_last_name'>Apellido Materno</Label>
+											<Label htmlFor='second_last_name'>
+												Apellido Materno
+											</Label>
 											<FieldWrap
 												isValid={!errors.second_last_name}
 												isTouched={touched.second_last_name}
-												invalidFeedback={errors.second_last_name}
-											>
+												invalidFeedback={errors.second_last_name}>
 												<Input
 													id='second_last_name'
 													name='second_last_name'
@@ -477,8 +495,7 @@ export default function UserDetailsModal({
 											<FieldWrap
 												isValid={!errors.email}
 												isTouched={touched.email}
-												invalidFeedback={errors.email}
-											>
+												invalidFeedback={errors.email}>
 												<Input
 													id='email'
 													name='email'
@@ -497,8 +514,7 @@ export default function UserDetailsModal({
 											<FieldWrap
 												isValid={!errors.rut}
 												isTouched={touched.rut}
-												invalidFeedback={errors.rut}
-											>
+												invalidFeedback={errors.rut}>
 												<Input
 													id='rut'
 													name='rut'
@@ -516,8 +532,7 @@ export default function UserDetailsModal({
 											<FieldWrap
 												isValid={!errors.phone_number}
 												isTouched={touched.phone_number}
-												invalidFeedback={errors.phone_number}
-											>
+												invalidFeedback={errors.phone_number}>
 												<Input
 													id='phone_number'
 													name='phone_number'
@@ -535,8 +550,14 @@ export default function UserDetailsModal({
 											<SelectReact
 												name='gender'
 												options={genderOptions}
-												value={genderOptions.find(option => option.value === values.gender) || null}
-												onChange={(option: any) => setFieldValue('gender', option?.value || '')}
+												value={
+													genderOptions.find(
+														(option) => option.value === values.gender,
+													) || null
+												}
+												onChange={(option: any) =>
+													setFieldValue('gender', option?.value || '')
+												}
 												placeholder='Seleccionar género...'
 												isClearable
 											/>
@@ -549,8 +570,7 @@ export default function UserDetailsModal({
 										<FieldWrap
 											isValid={!errors.address}
 											isTouched={touched.address}
-											invalidFeedback={errors.address}
-										>
+											invalidFeedback={errors.address}>
 											<Input
 												id='address'
 												name='address'
@@ -580,8 +600,7 @@ export default function UserDetailsModal({
 											<FieldWrap
 												isValid={!errors.position}
 												isTouched={touched.position}
-												invalidFeedback={errors.position}
-											>
+												invalidFeedback={errors.position}>
 												<Input
 													id='position'
 													name='position'
@@ -599,8 +618,19 @@ export default function UserDetailsModal({
 											<SelectReact
 												name='branch_id'
 												options={branchOptions}
-												value={branchOptions.find(option => option.value === String(values.branch_id)) || null}
-												onChange={(option: any) => setFieldValue('branch_id', option?.value ? Number(option.value) : null)}
+												value={
+													branchOptions.find(
+														(option) =>
+															option.value ===
+															String(values.branch_id),
+													) || null
+												}
+												onChange={(option: any) =>
+													setFieldValue(
+														'branch_id',
+														option?.value ? Number(option.value) : null,
+													)
+												}
 												placeholder='Seleccionar sucursal...'
 												isClearable
 											/>
@@ -615,8 +645,7 @@ export default function UserDetailsModal({
 								<Button
 									variant='outline'
 									onClick={() => onModeChange?.('view')}
-									isDisable={isSubmitting}
-								>
+									isDisable={isSubmitting}>
 									<Icon icon='HeroXMark' className='mr-2 h-4 w-4' />
 									Cancelar
 								</Button>
@@ -628,11 +657,13 @@ export default function UserDetailsModal({
 										}
 									}}
 									isDisable={isSubmitting || isActionLoading(user.id)}
-									className='min-w-[140px]'
-								>
+									className='min-w-[140px]'>
 									{isSubmitting || isActionLoading(user.id) ? (
 										<>
-											<Icon icon='HeroArrowPath' className='mr-2 h-4 w-4 animate-spin' />
+											<Icon
+												icon='HeroArrowPath'
+												className='mr-2 h-4 w-4 animate-spin'
+											/>
 											Guardando...
 										</>
 									) : (
@@ -650,5 +681,3 @@ export default function UserDetailsModal({
 		</Modal>
 	);
 }
-
-			

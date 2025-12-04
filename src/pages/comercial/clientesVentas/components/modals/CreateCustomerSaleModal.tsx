@@ -1,4 +1,6 @@
 import React from 'react';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
 import Modal, { ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
 import Input from '@/components/form/Input';
 import Button from '@/components/ui/Button';
@@ -12,8 +14,6 @@ import {
 	fetchCustomersOverviewThunk,
 } from '@/store/slices/customerSales/customerSalesSlice';
 import { ICustomerSale } from '@/interface/customerSales.interface';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
 import { formatRut, validateRut } from '../utils/validateRut';
 
 const CreateCustomerSaleModal = ({
@@ -38,7 +38,7 @@ const CreateCustomerSaleModal = ({
 			contact_name: initialData?.contact_name ?? initialData?.primary_contact?.name ?? '',
 			email: initialData?.email ?? '',
 			phone: initialData?.phone ?? '',
-			is_active: typeof initialData?.is_active === 'boolean' ? initialData!.is_active : true,
+			is_active: typeof initialData?.is_active === 'boolean' ? initialData.is_active : true,
 		},
 		enableReinitialize: true,
 		validationSchema: Yup.object({
@@ -71,7 +71,7 @@ const CreateCustomerSaleModal = ({
 						}) as any,
 					);
 
-					if (action && (action as any).meta?.requestStatus === 'fulfilled') {
+					if (action && action.meta?.requestStatus === 'fulfilled') {
 						// refrescar detalle y overview
 						dispatch(
 							fetchCustomerDetailThunk({
@@ -102,7 +102,7 @@ const CreateCustomerSaleModal = ({
 						}) as any,
 					);
 
-					if (action && (action as any).meta?.requestStatus === 'fulfilled') {
+					if (action && action.meta?.requestStatus === 'fulfilled') {
 						try {
 							dispatch(
 								fetchCustomersOverviewThunk({

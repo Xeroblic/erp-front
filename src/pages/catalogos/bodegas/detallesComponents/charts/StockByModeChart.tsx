@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
+import { ApexOptions } from 'apexcharts';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Chart from '@/components/Chart';
 import Icon from '@/components/icon/Icon';
-import { ApexOptions } from 'apexcharts';
 import useDarkMode from '@/hooks/useDarkMode';
 import { IWarehouseProduct } from '@/interface/warehouse.interface';
 

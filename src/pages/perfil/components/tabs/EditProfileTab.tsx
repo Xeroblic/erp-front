@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import classNames from 'classnames';
+import { toast } from 'react-toastify';
 import Label from '@/components/form/Label';
 import Input from '@/components/form/Input';
 import DateInput from '@/components/form/DateInput';
@@ -11,7 +12,6 @@ import Avatar from '@/components/Avatar';
 import Button from '@/components/ui/Button';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import { ProfileFormik } from '../types';
-import { toast } from 'react-toastify';
 
 type Props = {
 	formik: ProfileFormik;
@@ -115,7 +115,7 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 	return (
 		<div className='space-y-8'>
 			<header className='space-y-1'>
-				<p className='text-sm font-semibold uppercase tracking-[0.2em] text-primary/70'>
+				<p className='text-primary/70 text-sm font-semibold uppercase tracking-[0.2em]'>
 					Perfil
 				</p>
 				<h1 className='text-3xl font-semibold text-neutral-900 dark:text-white'>
@@ -144,12 +144,18 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 									/>
 								</div>
 								<span className='pointer-events-none absolute inset-0 rounded-full bg-black/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100' />
-								<Icon icon='HeroMagnifyingGlassPlus' className='relative text-3xl text-white' />
+								<Icon
+									icon='HeroMagnifyingGlassPlus'
+									className='relative text-3xl text-white'
+								/>
 							</button>
 							<div className='space-y-1'>
-								<p className='text-base font-semibold text-neutral-900 dark:text-white'>{avatarName}</p>
+								<p className='text-base font-semibold text-neutral-900 dark:text-white'>
+									{avatarName}
+								</p>
 								<p className='text-xs text-neutral-500 dark:text-neutral-400'>
-									Mantén una foto nítida para que el resto del equipo te identifique fácilmente.
+									Mantén una foto nítida para que el resto del equipo te
+									identifique fácilmente.
 								</p>
 							</div>
 							<Button
@@ -160,15 +166,14 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 								className='w-full justify-center text-sm font-semibold'>
 								Cambiar imagen
 							</Button>
-							
 						</div>
 					</div>
 
 					<div className='w-full space-y-4'>
-						
 						<p className='text-sm text-neutral-600 dark:text-neutral-300'>
-							Arrastra una imagen o selecciona un archivo desde tu computador. El sistema la comprimirá,
-							convertirá a WebP y ajustará su tamaño para que luzca impecable en toda la plataforma.
+							Arrastra una imagen o selecciona un archivo desde tu computador. El
+							sistema la comprimirá, convertirá a WebP y ajustará su tamaño para que
+							luzca impecable en toda la plataforma.
 						</p>
 						<input
 							ref={fileInputRef}
@@ -211,13 +216,13 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 			<Modal isOpen={isPreviewOpen} setIsOpen={setIsPreviewOpen} size='lg' isCentered>
 				<ModalHeader>
 					<div className='flex items-center gap-2 text-lg font-semibold'>
-						<Icon icon='HeroUserCircle' className='h-5 w-5 text-primary' />
+						<Icon icon='HeroUserCircle' className='text-primary h-5 w-5' />
 						Vista previa del avatar
 					</div>
 				</ModalHeader>
 				<ModalBody>
 					<div className='flex justify-center'>
-						<div className='relative flex h-56 w-56 items-center justify-center rounded-full shadow-inner ring-8 ring-primary/20'>
+						<div className='ring-primary/20 relative flex h-56 w-56 items-center justify-center rounded-full shadow-inner ring-8'>
 							<Avatar
 								src={avatarUrl ?? undefined}
 								name={avatarName}
@@ -237,7 +242,12 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 						}}>
 						Cambiar imagen
 					</Button>
-					<Button variant='solid' size='sm' color='emerald' icon='HeroCheck' onClick={() => setIsPreviewOpen(false)}>
+					<Button
+						variant='solid'
+						size='sm'
+						color='emerald'
+						icon='HeroCheck'
+						onClick={() => setIsPreviewOpen(false)}>
 						Cerrar
 					</Button>
 				</ModalFooter>

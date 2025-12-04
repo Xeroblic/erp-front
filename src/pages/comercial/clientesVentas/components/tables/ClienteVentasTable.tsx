@@ -1,6 +1,6 @@
 import React from 'react';
-import DataTable from '@/components/ui/DataTable';
 import { ColumnDef } from '@tanstack/react-table';
+import DataTable from '@/components/ui/DataTable';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import type { ICustomerSaleOverview } from '@/interface/customerSales.interface';

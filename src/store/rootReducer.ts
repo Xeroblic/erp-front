@@ -37,7 +37,6 @@ import garantiasReducer, { GarantiasState } from './slices/garantias/garantiasSl
 import reports, { ReportsState } from './slices/reports/reportSlice';
 import customerSales, { CustomerSalesState } from './slices/customerSales/customerSalesSlice';
 
-
 export interface RootState {
 	auth: AuthState;
 	core: CoreState;
@@ -70,7 +69,7 @@ export interface RootState {
 	unmappedProducts: ReturnType<typeof unmappedProductsReducer>;
 	garantias: GarantiasState;
 	reports: ReportsState;
-	customerSales: CustomerSalesState; 
+	customerSales: CustomerSalesState;
 	[RtkQueryService.reducerPath]: any;
 }
 

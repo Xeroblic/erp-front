@@ -1,10 +1,10 @@
-import Input from "@/components/form/Input";
-import Select from "@/components/form/Select";
-import Button from "@/components/ui/Button";
-import { CardFooter, CardFooterChild } from "@/components/ui/Card";
-import { ITableProps } from "@/components/ui/Table";
 import { Table as TTableProps } from '@tanstack/react-table';
-import { FC } from "react";
+import { FC } from 'react';
+import Input from '@/components/form/Input';
+import Select from '@/components/form/Select';
+import Button from '@/components/ui/Button';
+import { CardFooter, CardFooterChild } from '@/components/ui/Card';
+import { ITableProps } from '@/components/ui/Table';
 
 interface ITableCardFooterTemplateProps extends Partial<ITableProps> {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -74,4 +74,4 @@ export const TableCardFooterTemplateV2: FC<ITableCardFooterTemplateProps> = ({ t
 	);
 };
 
-export default TableCardFooterTemplateV2
+export default TableCardFooterTemplateV2;

@@ -1,4 +1,17 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
+import { toast } from 'react-toastify';
+import {
+	createColumnHelper,
+	flexRender,
+	getCoreRowModel,
+	getFilteredRowModel,
+	getPaginationRowModel,
+	getSortedRowModel,
+	SortingState,
+	useReactTable,
+} from '@tanstack/react-table';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchMisSubsidiarias } from '@/store/slices/subempresa/subEmpresaSlice';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
@@ -18,21 +31,8 @@ import Modal, {
 	ModalFooterChild,
 } from '@/components/ui/Modal';
 import { ISubempresa } from '@/interface/empresas.interface';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
-import { toast } from 'react-toastify';
 import Label from '@/components/form/Label';
 import SelectReact from '@/components/form/SelectReact';
-import {
-	createColumnHelper,
-	flexRender,
-	getCoreRowModel,
-	getFilteredRowModel,
-	getPaginationRowModel,
-	getSortedRowModel,
-	SortingState,
-	useReactTable,
-} from '@tanstack/react-table';
 
 // CU017 - Interfaces y tipos
 interface ISubempresaPersonalizacion {
@@ -303,7 +303,7 @@ export default function SubEmpresaPersonalizacion() {
 			columnHelper.accessor('name', {
 				header: 'Subempresa',
 				cell: (info) => {
-					const personalizacion = info.row.original.personalizacion;
+					const { personalizacion } = info.row.original;
 					return (
 						<div className='flex items-center'>
 							<div
@@ -354,7 +354,7 @@ export default function SubEmpresaPersonalizacion() {
 				id: 'configuracion',
 				header: 'Configuración',
 				cell: (info) => {
-					const personalizacion = info.row.original.personalizacion;
+					const { personalizacion } = info.row.original;
 					return personalizacion ? (
 						<div className='space-y-1 text-xs text-gray-600 dark:text-gray-400'>
 							<div className='flex items-center gap-2'>
@@ -388,7 +388,7 @@ export default function SubEmpresaPersonalizacion() {
 				header: 'Acciones',
 				cell: (info) => {
 					const subempresa = info.row.original;
-					const personalizacion = subempresa.personalizacion;
+					const { personalizacion } = subempresa;
 					return (
 						<div className='flex justify-end gap-2'>
 							{personalizacion ? (
@@ -617,7 +617,7 @@ export default function SubEmpresaPersonalizacion() {
 						{loading ? (
 							<div className='py-12 text-center'>
 								<div className='flex items-center justify-center gap-3'>
-									<div className='h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent'></div>
+									<div className='h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent' />
 									<span className='text-gray-600 dark:text-gray-400'>
 										Cargando subempresas...
 									</span>

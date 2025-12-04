@@ -1,14 +1,14 @@
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import { type UserWithDetails } from '@/store/slices/usersAdmin/usersAdminSlice';
-import { TSelectOption } from '@/components/form/SelectReact';
+import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
-import SelectReact from '@/components/form/SelectReact';
+
 import { formatRoleName, formatPermissionName } from '../../utils/formatters';
-import { toast } from 'react-toastify';
 import Avatar from '@/components/Avatar';
 import getUserAvatarUrl from '@/utils/getUserAvatarUrl';
 
@@ -276,9 +276,7 @@ export const PermissionsModal: React.FC<PermissionsModalProps> = ({
 			.filter((context) => context.roleId > 0)
 			.map((context) => context.roleId);
 
-		const combinedRoleIds = Array.from(
-			new Set<number>([...globalRoleIds, ...contextRoleIds]),
-		);
+		const combinedRoleIds = Array.from(new Set<number>([...globalRoleIds, ...contextRoleIds]));
 
 		if (!areArraysEqual(combinedRoleIds, selectedRoleIds)) {
 			const selectedOptions = roleOptions.filter((option) =>
@@ -286,15 +284,7 @@ export const PermissionsModal: React.FC<PermissionsModalProps> = ({
 			);
 			onRoleChange(selectedOptions);
 		}
-	}, [
-		areArraysEqual,
-		globalRoleIds,
-		onRoleChange,
-		roleContexts,
-		roleOptions,
-		selectedRoleIds,
-	]);
-
+	}, [areArraysEqual, globalRoleIds, onRoleChange, roleContexts, roleOptions, selectedRoleIds]);
 
 	// Función para mostrar confirmación de eliminación
 	const showDeleteConfirmation = useCallback(
@@ -424,12 +414,12 @@ export const PermissionsModal: React.FC<PermissionsModalProps> = ({
 			<Modal isOpen={isOpen} setIsOpen={onClose} size='lg' isStaticBackdrop>
 				<ModalHeader>
 					<div className='flex w-full items-center justify-between'>
-							<div className='flex items-center gap-3'>
-								<Avatar
-									src={getUserAvatarUrl(selectedUser as any)}
-									name={`${selectedUser.first_name || ''} ${selectedUser.last_name || ''}`.trim()}
-									className='h-10 w-10'
-								/>
+						<div className='flex items-center gap-3'>
+							<Avatar
+								src={getUserAvatarUrl(selectedUser as any)}
+								name={`${selectedUser.first_name || ''} ${selectedUser.last_name || ''}`.trim()}
+								className='h-10 w-10'
+							/>
 							<div>
 								<h3 className='text-lg font-semibold text-gray-900'>
 									Gestionar Permisos y Roles
@@ -563,7 +553,7 @@ export const PermissionsModal: React.FC<PermissionsModalProps> = ({
 								<div className='flex w-full items-center justify-between'>
 									{/* Lado izquierdo - Título e icono */}
 									<div className='flex flex-shrink-0 items-center gap-3'>
-										<div className='flex h-10 w-10 items-center justify-center rounded-lg '>
+										<div className='flex h-10 w-10 items-center justify-center rounded-lg'>
 											<Icon
 												icon='HeroCog6Tooth'
 												className='h-5 w-5 text-gray-600'
@@ -596,10 +586,10 @@ export const PermissionsModal: React.FC<PermissionsModalProps> = ({
 										</div>
 
 										{/* Separador vertical */}
-										<div className='h-10 w-px'></div>
+										<div className='h-10 w-px' />
 
 										{/* Tabs mejorados */}
-										<div className='flex rounded-lg  p-1 shadow-sm'>
+										<div className='flex rounded-lg p-1 shadow-sm'>
 											<button
 												onClick={() => setActiveTab('roles')}
 												className={`rounded-md px-5 py-2.5 text-sm font-medium transition-all duration-200 ${
@@ -1205,4 +1195,3 @@ export const PermissionsModal: React.FC<PermissionsModalProps> = ({
 		</>
 	);
 };
-

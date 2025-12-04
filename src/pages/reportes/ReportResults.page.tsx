@@ -112,8 +112,10 @@ const ReportResultsPage: React.FC = () => {
 						const converted: IReportFilters = {};
 						if (newFilters.dateFrom) converted.date_from = newFilters.dateFrom;
 						if (newFilters.dateTo) converted.date_to = newFilters.dateTo;
-						if (typeof newFilters.priceMin === 'number') converted.price_min = newFilters.priceMin;
-						if (typeof newFilters.priceMax === 'number') converted.price_max = newFilters.priceMax;
+						if (typeof newFilters.priceMin === 'number')
+							converted.price_min = newFilters.priceMin;
+						if (typeof newFilters.priceMax === 'number')
+							converted.price_max = newFilters.priceMax;
 						if (newFilters.customer) {
 							const num = Number(String(newFilters.customer).replace(/\D/g, ''));
 							if (!Number.isNaN(num) && num > 0) converted.customer_id = num;
@@ -151,7 +153,7 @@ const ReportResultsPage: React.FC = () => {
 
 	return (
 		<PageWrapper>
-				<div>{renderReportContent()}</div>
+			<div>{renderReportContent()}</div>
 		</PageWrapper>
 	);
 };

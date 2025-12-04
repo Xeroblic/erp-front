@@ -23,7 +23,7 @@ const TransferHeaderCard: React.FC<TransferHeaderCardProps> = ({
 					<Badge className='text-3xl font-bold'>Nueva Transferencia</Badge>
 				</div>
 				<div className='flex flex-col gap-2'>
-					<p className='text-sm text-zinc-400 mt-1'>
+					<p className='mt-1 text-sm text-zinc-400'>
 						Transferir productos entre bodegas de forma rápida y segura
 					</p>
 				</div>

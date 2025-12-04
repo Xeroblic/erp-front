@@ -1,3 +1,4 @@
+import React from 'react';
 import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -8,7 +9,6 @@ import Modal, {
 	ModalHeader,
 } from '@/components/ui/Modal';
 import { Invitation } from '@/interface/invitacion.interface';
-import React from 'react';
 
 interface InvitationDetailsModalProps {
 	isOpen: boolean;
@@ -170,13 +170,16 @@ const InvitationDetailsModal: React.FC<InvitationDetailsModalProps> = ({
 								Fecha de Invitación
 							</label>
 							<p className='text-sm text-zinc-900 dark:text-zinc-100'>
-								{new Date(invitation?.invited_at ?? '').toLocaleDateString('es-ES', {
-									year: 'numeric',
-									month: 'long',
-									day: 'numeric',
-									hour: '2-digit',
-									minute: '2-digit',
-								})}
+								{new Date(invitation?.invited_at ?? '').toLocaleDateString(
+									'es-ES',
+									{
+										year: 'numeric',
+										month: 'long',
+										day: 'numeric',
+										hour: '2-digit',
+										minute: '2-digit',
+									},
+								)}
 							</p>
 						</div>
 						<div>

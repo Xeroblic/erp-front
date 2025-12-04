@@ -14,6 +14,7 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
@@ -36,7 +37,6 @@ import { fetchProducts } from '@/store/slices/products/productsSlice';
 import { Step1BasicInfo, Step2FullReview, Step3GradeReview } from '../components/steps';
 import type { UpdateItemDetailsPayload } from '@/interface/technicalReviews.interface';
 import { useAutoSaveReview } from '@/hooks/useAutoSaveReview';
-import { toast } from 'react-toastify';
 import ApiService from '@/services/ApiService';
 // Importar constantes compartidas
 import {
@@ -68,8 +68,7 @@ const mapProductTypeToEquipment = (productType?: string | null): EquipmentType =
 	}
 };
 
-const TECHNICAL_REVIEWS_PREFIX =
-	(import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
+const TECHNICAL_REVIEWS_PREFIX = (import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
 const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
 const ep = (branchId: number, path: string) =>
 	join(TECHNICAL_REVIEWS_PREFIX, `/branches/${branchId}/technical-reviews${path}`);
@@ -106,7 +105,7 @@ const ItemReviewStandalonePage: React.FC = () => {
 
 	// Auto-save hook
 
-		if (!branchId) {
+	if (!branchId) {
 		return (
 			<PageWrapper name='technical-review-batch' title='Revisión Técnica por Lote'>
 				<Container>
@@ -158,74 +157,76 @@ const ItemReviewStandalonePage: React.FC = () => {
 	});
 
 	// Cargar productos
-useEffect(() => {
-	if (branchId) {
-		dispatch(fetchProducts({ branchId, params: { page: 1, per_page: 100 } }));
-	}
-}, [dispatch, branchId]);
-
-useEffect(() => {
-	if (!branchId) return;
-	let active = true;
-	const fetchManualBatch = async () => {
-		setManualBatchLoading(true);
-		try {
-			const response = await ApiService.fetchData<{ data?: any[] }>({
-				url: ep(branchId, '/batches'),
-				method: 'get',
-				params: { per_page: 200 },
-			});
-			const rawList = Array.isArray(response.data?.data)
-				? response.data?.data
-				: Array.isArray(response.data)
-					? (response.data as any[])
-					: [];
-			const openBatches = rawList.filter((batch: any) => {
-				const status = (batch?.status || '').toLowerCase();
-				return status !== 'closed' && status !== 'completed' && status !== 'finished';
-			});
-			const manual = openBatches.find((batch: any) => {
-				const base =
-					`${batch?.name ?? ''} ${batch?.code ?? ''} ${batch?.slug ?? ''}`.toLowerCase();
-				return base.includes('manual');
-			});
-			const target = manual ?? openBatches[0];
-			if (!active) return;
-			const options = openBatches.map((batch: any) => ({
-				value: String(batch.id),
-				label: batch.code || batch.name || `Lote #${batch.id}`,
-			}));
-			setBatchOptions(options);
-			if (target?.id) {
-				const opt = options.find((o) => o.value === String(target.id)) ?? null;
-				setSelectedBatchOption(opt);
-				setManualBatchId(Number(target.id));
-				setManualBatchLabel(opt?.label ?? `Lote #${target.id}`);
-				setBatchError(null);
-			} else {
-				setSelectedBatchOption(null);
-				setManualBatchId(null);
-				setManualBatchLabel(null);
-				setBatchError('No hay lotes abiertos disponibles. Crea uno en la sección de Lotes.');
-			}
-		} catch (error) {
-			console.error('Error al obtener lote manual para revisión técnica', error);
-			if (active) {
-				setBatchOptions([]);
-				setSelectedBatchOption(null);
-				setManualBatchId(null);
-				setManualBatchLabel(null);
-				setBatchError('No se pudieron cargar los lotes abiertos.');
-			}
-		} finally {
-			if (active) setManualBatchLoading(false);
+	useEffect(() => {
+		if (branchId) {
+			dispatch(fetchProducts({ branchId, params: { page: 1, per_page: 100 } }));
 		}
-	};
-	fetchManualBatch();
-	return () => {
-		active = false;
-	};
-}, [branchId]);
+	}, [dispatch, branchId]);
+
+	useEffect(() => {
+		if (!branchId) return;
+		let active = true;
+		const fetchManualBatch = async () => {
+			setManualBatchLoading(true);
+			try {
+				const response = await ApiService.fetchData<{ data?: any[] }>({
+					url: ep(branchId, '/batches'),
+					method: 'get',
+					params: { per_page: 200 },
+				});
+				const rawList = Array.isArray(response.data?.data)
+					? response.data?.data
+					: Array.isArray(response.data)
+						? (response.data as any[])
+						: [];
+				const openBatches = rawList.filter((batch: any) => {
+					const status = (batch?.status || '').toLowerCase();
+					return status !== 'closed' && status !== 'completed' && status !== 'finished';
+				});
+				const manual = openBatches.find((batch: any) => {
+					const base =
+						`${batch?.name ?? ''} ${batch?.code ?? ''} ${batch?.slug ?? ''}`.toLowerCase();
+					return base.includes('manual');
+				});
+				const target = manual ?? openBatches[0];
+				if (!active) return;
+				const options = openBatches.map((batch: any) => ({
+					value: String(batch.id),
+					label: batch.code || batch.name || `Lote #${batch.id}`,
+				}));
+				setBatchOptions(options);
+				if (target?.id) {
+					const opt = options.find((o) => o.value === String(target.id)) ?? null;
+					setSelectedBatchOption(opt);
+					setManualBatchId(Number(target.id));
+					setManualBatchLabel(opt?.label ?? `Lote #${target.id}`);
+					setBatchError(null);
+				} else {
+					setSelectedBatchOption(null);
+					setManualBatchId(null);
+					setManualBatchLabel(null);
+					setBatchError(
+						'No hay lotes abiertos disponibles. Crea uno en la sección de Lotes.',
+					);
+				}
+			} catch (error) {
+				console.error('Error al obtener lote manual para revisión técnica', error);
+				if (active) {
+					setBatchOptions([]);
+					setSelectedBatchOption(null);
+					setManualBatchId(null);
+					setManualBatchLabel(null);
+					setBatchError('No se pudieron cargar los lotes abiertos.');
+				}
+			} finally {
+				if (active) setManualBatchLoading(false);
+			}
+		};
+		fetchManualBatch();
+		return () => {
+			active = false;
+		};
+	}, [branchId]);
 
 	// Filtrar solo productos con seguimiento por serie
 	const productsWithSerial = useMemo(
@@ -260,35 +261,36 @@ useEffect(() => {
 		}
 	}, [productId, productsWithSerial, hasUserSelectedType]);
 
-const canContinue = Boolean(serialNumber && productId && equipmentType && manualBatchId);
-const manualBatchDisplayLabel = manualBatchLabel ?? (manualBatchId ? `#${manualBatchId}` : null);
+	const canContinue = Boolean(serialNumber && productId && equipmentType && manualBatchId);
+	const manualBatchDisplayLabel =
+		manualBatchLabel ?? (manualBatchId ? `#${manualBatchId}` : null);
 
-const handleSerialChange = (value: string) => {
-	setSerialNumber(value);
-};
+	const handleSerialChange = (value: string) => {
+		setSerialNumber(value);
+	};
 
-const handleProductSelection = (value: number | null) => {
-	setProductId(value);
-	setHasUserSelectedType(false);
-};
+	const handleProductSelection = (value: number | null) => {
+		setProductId(value);
+		setHasUserSelectedType(false);
+	};
 
-const handleEquipmentSelection = (value: EquipmentType) => {
-	setEquipmentType(value);
-	setHasUserSelectedType(true);
-};
+	const handleEquipmentSelection = (value: EquipmentType) => {
+		setEquipmentType(value);
+		setHasUserSelectedType(true);
+	};
 
-const handleBatchOptionChange = (option: TSelectOption | null) => {
-	setSelectedBatchOption(option);
-	if (option) {
-		setManualBatchId(Number(option.value));
-		setManualBatchLabel(option.label);
-		setBatchError(null);
-	} else {
-		setManualBatchId(null);
-		setManualBatchLabel(null);
-		setBatchError('Debes seleccionar un lote abierto.');
-	}
-};
+	const handleBatchOptionChange = (option: TSelectOption | null) => {
+		setSelectedBatchOption(option);
+		if (option) {
+			setManualBatchId(Number(option.value));
+			setManualBatchLabel(option.label);
+			setBatchError(null);
+		} else {
+			setManualBatchId(null);
+			setManualBatchLabel(null);
+			setBatchError('Debes seleccionar un lote abierto.');
+		}
+	};
 
 	// Inicializar modo create
 	useEffect(() => {
@@ -318,30 +320,30 @@ const handleBatchOptionChange = (option: TSelectOption | null) => {
 			return;
 		}
 
-	setItem(selectedItemStore);
-	setSerialNumber(selectedItemStore.serial_number || '');
-	setProductId(selectedItemStore.product_id ?? selectedItemStore.product?.id ?? null);
-	const normalizedType =
-		typeof selectedItemStore.equipment_type === 'object' &&
+		setItem(selectedItemStore);
+		setSerialNumber(selectedItemStore.serial_number || '');
+		setProductId(selectedItemStore.product_id ?? selectedItemStore.product?.id ?? null);
+		const normalizedType =
+			typeof selectedItemStore.equipment_type === 'object' &&
 			selectedItemStore.equipment_type !== null
 				? (selectedItemStore.equipment_type as any)?.value
 				: selectedItemStore.equipment_type;
-	if (normalizedType) {
-		setEquipmentType(normalizedType as EquipmentType);
-	}
-	setHasUserSelectedType(true);
-	const existingBatchId = selectedItemStore.batch_id ?? selectedItemStore.batch?.id ?? null;
-	if (existingBatchId) {
-		const label =
-			selectedItemStore.batch?.code ||
-			selectedItemStore.batch?.name ||
-			`Lote #${existingBatchId}`;
-		const option = { value: String(existingBatchId), label };
-		setSelectedBatchOption(option);
-		setManualBatchId(existingBatchId);
-		setManualBatchLabel(label);
-		setBatchError(null);
-	}
+		if (normalizedType) {
+			setEquipmentType(normalizedType as EquipmentType);
+		}
+		setHasUserSelectedType(true);
+		const existingBatchId = selectedItemStore.batch_id ?? selectedItemStore.batch?.id ?? null;
+		if (existingBatchId) {
+			const label =
+				selectedItemStore.batch?.code ||
+				selectedItemStore.batch?.name ||
+				`Lote #${existingBatchId}`;
+			const option = { value: String(existingBatchId), label };
+			setSelectedBatchOption(option);
+			setManualBatchId(existingBatchId);
+			setManualBatchLabel(label);
+			setBatchError(null);
+		}
 
 		// Determinar el step correcto basado en el estado del item
 		const reviewStatus =
@@ -676,13 +678,17 @@ const handleBatchOptionChange = (option: TSelectOption | null) => {
 								).unwrap();
 
 								console.log('✅ Grading completo:', grading);
-								setAutomaticGrade(grading?.grade ?? grading?.suggested_grade ?? null);
+								setAutomaticGrade(
+									grading?.grade ?? grading?.suggested_grade ?? null,
+								);
 								setItem((prev: any) => ({
 									...prev,
 									...grading,
 									review_status: grading?.review_status ?? 'reviewed',
 									suggested_grade:
-										grading?.grade ?? grading?.suggested_grade ?? prev?.suggested_grade,
+										grading?.grade ??
+										grading?.suggested_grade ??
+										prev?.suggested_grade,
 								}));
 								setCurrentStep('grading');
 							} catch (error) {
@@ -722,7 +728,9 @@ const handleBatchOptionChange = (option: TSelectOption | null) => {
 								review_status: updated?.review_status ?? prev?.review_status,
 							}));
 							if (updated?.grade || updated?.suggested_grade) {
-								setAutomaticGrade(updated.grade ?? updated.suggested_grade ?? automaticGrade);
+								setAutomaticGrade(
+									updated.grade ?? updated.suggested_grade ?? automaticGrade,
+								);
 							}
 						}}
 					/>

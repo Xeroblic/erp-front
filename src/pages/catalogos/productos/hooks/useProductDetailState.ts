@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 
-export const useProductDetailState = (initialBranchId: number | null, effectiveBranchId: number | null) => {
+export const useProductDetailState = (
+	initialBranchId: number | null,
+	effectiveBranchId: number | null,
+) => {
 	const [branchId, setBranchId] = useState<number | null>(() =>
 		Number.isFinite(initialBranchId ?? NaN) ? initialBranchId : null,
 	);

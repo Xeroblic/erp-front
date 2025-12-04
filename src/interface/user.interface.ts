@@ -32,25 +32,28 @@ export interface IUserMe {
 	direccion?: string | undefined;
 	gender: string | undefined;
 	is_active: boolean;
-	image: string | undefined | {
-		exists?: boolean;
-		original_url?: string;
-		sm?: string;
-		md?: string;
-		lg?: string;
-		url?: string;
-		path?: string;
-		thumb?: string;
-		medium?: string;
-		full?: string;
-		urls?: {
-			sm?: string;
-			md?: string;
-			lg?: string;
-			original?: string;
-		};
-		[key: string]: any;
-	};
+	image:
+		| string
+		| undefined
+		| {
+				exists?: boolean;
+				original_url?: string;
+				sm?: string;
+				md?: string;
+				lg?: string;
+				url?: string;
+				path?: string;
+				thumb?: string;
+				medium?: string;
+				full?: string;
+				urls?: {
+					sm?: string;
+					md?: string;
+					lg?: string;
+					original?: string;
+				};
+				[key: string]: any;
+		  };
 	branch_id: number | undefined;
 	// Nuevos campos para multi-empresa
 	companies?: Array<{
@@ -119,7 +122,6 @@ export interface IUserMe {
 		  };
 }
 
-
 export interface IGruposUsuarios {
-	grupos: string[]
+	grupos: string[];
 }

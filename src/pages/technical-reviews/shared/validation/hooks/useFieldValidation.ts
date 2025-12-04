@@ -72,7 +72,10 @@ export interface UseFieldValidationReturn extends ValidationResult {
 	isValidating: boolean;
 	lastValue: unknown;
 	validate: (value: unknown, options?: ValidateFieldOptions) => Promise<boolean>;
-	validateNow: (value: unknown, options?: Omit<ValidateFieldOptions, 'immediate'>) => Promise<boolean>;
+	validateNow: (
+		value: unknown,
+		options?: Omit<ValidateFieldOptions, 'immediate'>,
+	) => Promise<boolean>;
 	validateOnChange: (
 		valueOrEvent: unknown,
 		options?: Omit<ValidateFieldOptions, 'immediate'>,

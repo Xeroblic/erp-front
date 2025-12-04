@@ -62,9 +62,7 @@ export const fetchWarranties = createAsyncThunk<
 		});
 		return response.data;
 	} catch (error: unknown) {
-		return rejectWithValue(
-			getErrorMessage(error, 'No se pudieron cargar las garantías'),
-		);
+		return rejectWithValue(getErrorMessage(error, 'No se pudieron cargar las garantías'));
 	}
 });
 
@@ -91,10 +89,7 @@ export const createWarranty = createAsyncThunk<
 	{ rejectValue: string }
 >('warranties/create', async ({ subsidiaryId, payload }, { rejectWithValue }) => {
 	try {
-		const response = await ApiService.fetchData<
-			{ data: Warranty },
-			Record<string, unknown>
-		>({
+		const response = await ApiService.fetchData<{ data: Warranty }, Record<string, unknown>>({
 			url: buildUrl(subsidiaryId),
 			method: 'post',
 			data: payload as Record<string, unknown>,
@@ -111,19 +106,14 @@ export const updateWarranty = createAsyncThunk<
 	{ rejectValue: string }
 >('warranties/update', async ({ subsidiaryId, warrantyId, payload }, { rejectWithValue }) => {
 	try {
-		const response = await ApiService.fetchData<
-			{ data: Warranty },
-			Record<string, unknown>
-		>({
+		const response = await ApiService.fetchData<{ data: Warranty }, Record<string, unknown>>({
 			url: buildUrl(subsidiaryId, `/${warrantyId}`),
 			method: 'patch',
 			data: payload as Record<string, unknown>,
 		});
 		return response.data.data;
 	} catch (error: unknown) {
-		return rejectWithValue(
-			getErrorMessage(error, 'No se pudo actualizar la garantía'),
-		);
+		return rejectWithValue(getErrorMessage(error, 'No se pudo actualizar la garantía'));
 	}
 });
 

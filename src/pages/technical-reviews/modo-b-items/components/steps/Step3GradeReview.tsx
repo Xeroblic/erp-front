@@ -52,7 +52,9 @@ const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 	const [error, setError] = useState<string | null>(null);
 	const [isRecalculating, setIsRecalculating] = useState(false); // Estado para recalcular
 	const [isModifying, setIsModifying] = useState(false); // Estado para modificar
-	const [currentReviewStatus, setCurrentReviewStatus] = useState<string | null>(reviewStatus ?? null);
+	const [currentReviewStatus, setCurrentReviewStatus] = useState<string | null>(
+		reviewStatus ?? null,
+	);
 
 	useEffect(() => {
 		setCurrentReviewStatus(reviewStatus ?? null);
@@ -64,7 +66,8 @@ const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 			return String(value);
 		}
 		if (typeof value === 'object') {
-			const candidate = (value as Record<string, any>).label ?? value.value ?? value.description;
+			const candidate =
+				(value as Record<string, any>).label ?? value.value ?? value.description;
 			if (candidate) return String(candidate);
 			try {
 				return JSON.stringify(value);

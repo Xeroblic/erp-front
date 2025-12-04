@@ -4,15 +4,6 @@
  */
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Card, { CardBody } from '@/components/ui/Card';
-import Button from '@/components/ui/Button';
-import Table, { THead, TBody, Tr, Th, Td } from '@/components/ui/Table';
-import Icon from '@/components/icon/Icon';
-import type { IItem, ListMeta } from '@/interface/technicalReviews.interface';
-import StatusBadge from '../shared/StatusBadge';
-import { useAppDispatch } from '@/store';
-import { deleteItem } from '@/store/slices/technicalReviews';
-import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { toast } from 'react-toastify';
 import {
 	createColumnHelper,
@@ -22,10 +13,19 @@ import {
 	PaginationState,
 	useReactTable,
 } from '@tanstack/react-table';
-import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
-import Modal, { ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import Card, { CardBody } from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import Table, { THead, TBody, Tr, Th, Td } from '@/components/ui/Table';
+import Icon from '@/components/icon/Icon';
+import type { IItem, ListMeta } from '@/interface/technicalReviews.interface';
+import StatusBadge from '../shared/StatusBadge';
+import { useAppDispatch } from '@/store';
+import { deleteItem } from '@/store/slices/technicalReviews';
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
+import Modal, { ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
 
 type ExportMode = 'serials' | 'details';
 
@@ -392,15 +392,15 @@ const ItemList: React.FC<ItemListProps> = ({
 		}
 	};
 
-const formatAttributeLabel = (key: string) => {
-	if (!key) return 'Atributo';
-	const normalized = key.toLowerCase();
-	if (FIELD_LABELS_ES[normalized]) {
-		return FIELD_LABELS_ES[normalized];
-	}
-	return key
-		.replace(/_/g, ' ')
-		.replace(/\s+/g, ' ')
+	const formatAttributeLabel = (key: string) => {
+		if (!key) return 'Atributo';
+		const normalized = key.toLowerCase();
+		if (FIELD_LABELS_ES[normalized]) {
+			return FIELD_LABELS_ES[normalized];
+		}
+		return key
+			.replace(/_/g, ' ')
+			.replace(/\s+/g, ' ')
 			.replace(/\b\w/g, (char) => char.toUpperCase())
 			.trim();
 	};
@@ -501,18 +501,17 @@ const formatAttributeLabel = (key: string) => {
 				setColumnWidths(sheet, headers);
 			} else {
 				const detailedItems = sourceItems;
-				const groups = detailedItems.reduce<Record<string, { label: string; list: IItem[] }>>(
-					(acc, item) => {
-						const meta = resolveEquipmentTypeMeta(item.equipment_type);
-						const key = meta.value || 'unknown';
-						if (!acc[key]) {
-							acc[key] = { label: meta.label || 'General', list: [] };
-						}
-						acc[key].list.push(item);
-						return acc;
-					},
-					{},
-				);
+				const groups = detailedItems.reduce<
+					Record<string, { label: string; list: IItem[] }>
+				>((acc, item) => {
+					const meta = resolveEquipmentTypeMeta(item.equipment_type);
+					const key = meta.value || 'unknown';
+					if (!acc[key]) {
+						acc[key] = { label: meta.label || 'General', list: [] };
+					}
+					acc[key].list.push(item);
+					return acc;
+				}, {});
 
 				const finalEntries: Array<[string, { label: string; list: IItem[] }]> = [];
 				Object.keys(DETAIL_FIELDS_TEMPLATE).forEach((typeKey) => {
@@ -529,7 +528,9 @@ const formatAttributeLabel = (key: string) => {
 						]);
 					}
 				});
-				Object.entries(groups).forEach(([key, payload]) => finalEntries.push([key, payload]));
+				Object.entries(groups).forEach(([key, payload]) =>
+					finalEntries.push([key, payload]),
+				);
 				if (!finalEntries.length) {
 					finalEntries.push(['general', { label: 'General', list: items }]);
 				}
@@ -552,9 +553,15 @@ const formatAttributeLabel = (key: string) => {
 					});
 					const orderedKeys = [
 						...templateFields,
-						...Array.from(detailKeySet).filter((field) => !templateFields.includes(field)),
+						...Array.from(detailKeySet).filter(
+							(field) => !templateFields.includes(field),
+						),
 					];
-					const headers = ['N°', 'Serie', ...orderedKeys.map((k) => formatAttributeLabel(k))];
+					const headers = [
+						'N°',
+						'Serie',
+						...orderedKeys.map((k) => formatAttributeLabel(k)),
+					];
 					applyHeader(sheet, headers, `Revisión de Equipos - ${payload.label}`);
 
 					if (!payload.list.length) {
@@ -893,27 +900,27 @@ const formatAttributeLabel = (key: string) => {
 								))}
 							</THead>
 							<TBody>
-				{table.getRowModel().rows.map((row, index) => {
-					const zebraBg =
-						index % 2 === 0
-							? 'bg-white dark:bg-gray-900'
-							: 'bg-gray-50 dark:bg-gray-800/40';
-					return (
-						<Tr
-							key={row.id}
-							className={`cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 ${zebraBg}`}
-							onClick={() => handleItemClick(row.original.id)}>
-							{row.getVisibleCells().map((cell) => (
-								<Td key={cell.id} className='align-middle'>
-									{flexRender(
-										cell.column.columnDef.cell,
-										cell.getContext(),
-									)}
-								</Td>
-							))}
-						</Tr>
-					);
-				})}
+								{table.getRowModel().rows.map((row, index) => {
+									const zebraBg =
+										index % 2 === 0
+											? 'bg-white dark:bg-gray-900'
+											: 'bg-gray-50 dark:bg-gray-800/40';
+									return (
+										<Tr
+											key={row.id}
+											className={`cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 ${zebraBg}`}
+											onClick={() => handleItemClick(row.original.id)}>
+											{row.getVisibleCells().map((cell) => (
+												<Td key={cell.id} className='align-middle'>
+													{flexRender(
+														cell.column.columnDef.cell,
+														cell.getContext(),
+													)}
+												</Td>
+											))}
+										</Tr>
+									);
+								})}
 							</TBody>
 						</Table>
 					</div>

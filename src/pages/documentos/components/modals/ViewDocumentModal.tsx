@@ -46,7 +46,7 @@ const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 
 	const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		if (!document) return;
-		const files = event.target.files;
+		const { files } = event.target;
 		if (files && files.length && onUploadAttachments) {
 			onUploadAttachments(files);
 		}
@@ -62,7 +62,7 @@ const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 					const att = row.original;
 					return (
 						<div className='flex items-center space-x-2'>
-							<Icon icon={getFileIcon(att.mime_type || '')} className='h-4 w-4 ' />
+							<Icon icon={getFileIcon(att.mime_type || '')} className='h-4 w-4' />
 							<a
 								href={att.url}
 								target='_blank'
@@ -98,18 +98,22 @@ const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 								color='emerald'
 								className='px-2'
 								onClick={() => window.open(att.url, '_blank', 'noopener')}>
-									<Icon icon='HeroArrowDownTray' color='emerald' className='h-4 w-4' />
-									Descargar
+								<Icon
+									icon='HeroArrowDownTray'
+									color='emerald'
+									className='h-4 w-4'
+								/>
+								Descargar
 							</Button>
 							{onDeleteAttachment && (
 								<Button
 									size='xs'
 									variant='outline'
-									className='px-2'			
+									className='px-2'
 									color='red'
 									onClick={() => onDeleteAttachment(att.id)}>
-										<Icon icon='HeroTrash' color='red' className='ml-1 h-4 w-4' />
-										Eliminar
+									<Icon icon='HeroTrash' color='red' className='ml-1 h-4 w-4' />
+									Eliminar
 								</Button>
 							)}
 						</div>
@@ -129,7 +133,7 @@ const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 					</div>
 					<div>
 						<Badge className='text-xl font-bold'>Detalles del documento</Badge>
-						<p className='text-sm '>Información completa y adjuntos</p>
+						<p className='text-sm'>Información completa y adjuntos</p>
 					</div>
 				</div>
 			</ModalHeader>
@@ -141,29 +145,29 @@ const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 					</div>
 				) : document ? (
 					<div className='space-y-5'>
-						<Card className='border border-gray-200 border-dashed bg-transparent shadow-sm'>
+						<Card className='border border-dashed border-gray-200 bg-transparent shadow-sm'>
 							<CardHeader className='pb-2'>
-								<CardTitle className='text-lg font-semibold '>
+								<CardTitle className='text-lg font-semibold'>
 									{document.name}
 								</CardTitle>
-								<p className='text-sm '>Resumen</p>
+								<p className='text-sm'>Resumen</p>
 							</CardHeader>
 							<CardBody className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-								<div className='space-y-3 text-sm '>
+								<div className='space-y-3 text-sm'>
 									<div className='flex items-center justify-between'>
-										<span className='font-medium '>Tipo de documento</span>
+										<span className='font-medium'>Tipo de documento</span>
 										<Badge color={getDocumentTypeColor(document) as any}>
 											{getDocumentTypeLabel(document)}
 										</Badge>
 									</div>
 									<div className='flex items-center justify-between'>
-										<span className='font-medium '>Tipo de archivo</span>
+										<span className='font-medium'>Tipo de archivo</span>
 										<Badge className='px-2' variant='outline' color='gray'>
 											{getFileTypeLabel(document.output_format)}
 										</Badge>
 									</div>
 									<div className='flex items-center justify-between'>
-										<span className='font-medium '>Tamaño total adjuntos</span>
+										<span className='font-medium'>Tamaño total adjuntos</span>
 										<span className=''>
 											{formatFileSize(
 												document.attachments?.reduce(
@@ -174,24 +178,33 @@ const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 										</span>
 									</div>
 								</div>
-								<div className='space-y-2 rounded-lg border border-gray-200 p-4 text-sm '>
+								<div className='space-y-2 rounded-lg border border-gray-200 p-4 text-sm'>
 									<div className='flex items-center justify-between'>
-										<span className='font-medium '>Módulo relacionado</span>
-										<span className=''>{getModuleLabel(document.related_module)}</span>
+										<span className='font-medium'>Módulo relacionado</span>
+										<span className=''>
+											{getModuleLabel(document.related_module)}
+										</span>
 									</div>
 									<div className='flex items-center justify-between'>
-										<span className='font-medium '>ID relacionado</span>
+										<span className='font-medium'>ID relacionado</span>
 										<span className=''>{document.related_id ?? '—'}</span>
 									</div>
 									<div className='flex items-center justify-between'>
-										<span className='font-medium '>Creado</span>
-										<span className=''>{formatDateTime(document.created_at)}</span>
+										<span className='font-medium'>Creado</span>
+										<span className=''>
+											{formatDateTime(document.created_at)}
+										</span>
 									</div>
 									<div className='flex items-center justify-between'>
-										<span className='font-medium '>Actualizado</span>
-										<span className=''>{formatDateTime(document.updated_at)}</span>
+										<span className='font-medium'>Actualizado</span>
+										<span className=''>
+											{formatDateTime(document.updated_at)}
+										</span>
 									</div>
-									<Badge className='px-2' variant='outline' color={document.is_active ? 'emerald' : 'red'}>
+									<Badge
+										className='px-2'
+										variant='outline'
+										color={document.is_active ? 'emerald' : 'red'}>
 										{document.is_active ? 'Activo' : 'Inactivo'}
 									</Badge>
 								</div>
@@ -199,20 +212,25 @@ const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 						</Card>
 
 						{document.description && (
-							<Card className='border border-gray-200 border-dashed bg-transparent shadow-sm'>
+							<Card className='border border-dashed border-gray-200 bg-transparent shadow-sm'>
 								<CardHeader className='pb-2'>
-									<CardTitle className='text-sm font-semibold '>Descripción</CardTitle>
+									<CardTitle className='text-sm font-semibold'>
+										Descripción
+									</CardTitle>
 								</CardHeader>
-								<CardBody className='text-sm '>{document.description}</CardBody>
+								<CardBody className='text-sm'>{document.description}</CardBody>
 							</Card>
 						)}
 
-						<Card className='border border-gray-200 border-dashed bg-transparent shadow-sm'>
+						<Card className='border border-dashed border-gray-200 bg-transparent shadow-sm'>
 							<CardHeader className='flex items-center justify-between pb-2'>
 								<div>
-									<CardTitle className='text-sm font-semibold '>Adjuntos</CardTitle>
-									<p className='text-xs '>
-										{document.attachments?.length || 0} archivos vinculados al documento
+									<CardTitle className='text-sm font-semibold'>
+										Adjuntos
+									</CardTitle>
+									<p className='text-xs'>
+										{document.attachments?.length || 0} archivos vinculados al
+										documento
 									</p>
 								</div>
 								<div className='flex items-center space-x-2'>
@@ -246,7 +264,7 @@ const ViewDocumentModal: React.FC<ViewDocumentModalProps> = ({
 						</Card>
 					</div>
 				) : (
-					<div className='py-6 text-center text-sm '>
+					<div className='py-6 text-center text-sm'>
 						Selecciona un documento para ver sus detalles.
 					</div>
 				)}

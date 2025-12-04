@@ -225,7 +225,7 @@ export default function SubempresasTable({
 	return (
 		<Card>
 			<CardBody className='overflow-x-auto'>
-				<Table >
+				<Table>
 					<THead>
 						{table.getHeaderGroups().map((hg) => (
 							<Tr key={hg.id}>

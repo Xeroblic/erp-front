@@ -1,6 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
+import { Provider } from 'react-redux';
+import { PersistGate } from 'redux-persist/integration/react';
+import { useSyncExternalStore } from 'use-sync-external-store/shim';
+import { useSyncExternalStoreWithSelector } from 'use-sync-external-store/shim/with-selector';
 import reportWebVitals from './reportWebVitals';
 
 import { ThemeContextProvider } from './context/themeContext';
@@ -16,15 +20,12 @@ import './styles/vendors.css';
 import './components/customCss/nav-anim.css';
 
 import store, { persistor } from './store';
-import { Provider } from 'react-redux';
-import { PersistGate } from 'redux-persist/integration/react';
 
 // Inicializar slice de personalización dinámicamente
 import './store/initializePersonalizacion';
 
 // Fallback para entornos que no exponen useSyncExternalStore en React (algunas lib usan el hook)
-import { useSyncExternalStore } from 'use-sync-external-store/shim';
-import { useSyncExternalStoreWithSelector } from 'use-sync-external-store/shim/with-selector';
+
 if (!(React as any).useSyncExternalStore) {
 	(React as any).useSyncExternalStore = useSyncExternalStore;
 }
@@ -35,15 +36,15 @@ if (!(React as any).useSyncExternalStoreWithSelector) {
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 root.render(
 	// <React.StrictMode>
-		<Provider store={store}>
-			<PersistGate loading={null} persistor={persistor}>
-				<ThemeContextProvider>
-					<BrowserRouter>
-						<App />
-					</BrowserRouter>
-				</ThemeContextProvider>
-			</PersistGate>
-		</Provider>
+	<Provider store={store}>
+		<PersistGate loading={null} persistor={persistor}>
+			<ThemeContextProvider>
+				<BrowserRouter>
+					<App />
+				</BrowserRouter>
+			</ThemeContextProvider>
+		</PersistGate>
+	</Provider>,
 	// </React.StrictMode>,
 );
 

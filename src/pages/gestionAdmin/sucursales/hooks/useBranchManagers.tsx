@@ -40,8 +40,7 @@ export const useBranchManagers = (
 
 		if (branchId) {
 			params.branch_id = Number(branchId);
-		}
-		else if (subsidiaryId) {
+		} else if (subsidiaryId) {
 			params.subsidiary_id = Number(subsidiaryId);
 		}
 		dispatch(fetchUsers(params));

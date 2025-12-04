@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
+import { ApexOptions } from 'apexcharts';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Chart from '@/components/Chart';
 import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
-import { ApexOptions } from 'apexcharts';
 import useDarkMode from '@/hooks/useDarkMode';
 
 interface WarehouseCapacityChartProps {
@@ -54,9 +54,9 @@ const WarehouseCapacityChart: React.FC<WarehouseCapacityChartProps> = ({
 					colors: isDarkTheme ? '#d1d5db' : '#374151',
 				},
 				markers: {
-					size: 10,             // reemplaza width/height
-					strokeWidth: 0,       // no quieres borde
-					shape: 'circle',      // mantiene tu diseño original
+					size: 10, // reemplaza width/height
+					strokeWidth: 0, // no quieres borde
+					shape: 'circle', // mantiene tu diseño original
 				},
 			},
 			stroke: {

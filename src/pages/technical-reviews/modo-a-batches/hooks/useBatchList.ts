@@ -24,15 +24,18 @@ export const useBatchList = (branchId?: number | null) => {
 	/**
 	 * Fetch batches from API usando el thunk existente
 	 */
-	const loadBatches = useCallback(async (params: FetchBatchesParams = {}) => {
-		if (!branchId) return;
+	const loadBatches = useCallback(
+		async (params: FetchBatchesParams = {}) => {
+			if (!branchId) return;
 
-		try {
-			await dispatch(fetchBatches({ branchId, params })).unwrap();
-		} catch (err: any) {
-			console.error('Error fetching batches:', err);
-		}
-	}, [branchId, dispatch]);
+			try {
+				await dispatch(fetchBatches({ branchId, params })).unwrap();
+			} catch (err: any) {
+				console.error('Error fetching batches:', err);
+			}
+		},
+		[branchId, dispatch],
+	);
 
 	/**
 	 * Refresh current list
@@ -59,4 +62,3 @@ export const useBatchList = (branchId?: number | null) => {
 		refresh,
 	};
 };
-

@@ -7,7 +7,7 @@ const resolveBackendOrigin = (): URL | null => {
 		(typeof import.meta !== 'undefined' &&
 			(import.meta.env?.VITE_API_URL as string | undefined)) ||
 		(typeof process !== 'undefined' && typeof process.env !== 'undefined'
-			? (process.env.VITE_API_URL as string | undefined)
+			? process.env.VITE_API_URL
 			: undefined) ||
 		'';
 
@@ -39,8 +39,8 @@ export const ensureAbsoluteUrl = (value?: string | null): string | null => {
 		url = `${BACKEND_ORIGIN.origin}${path}`;
 	}
 
-    // Mantener la URL exacta que entrega el backend.
-    // Antes se forzaba a 'branch-public', pero ahora se requiere 'branch-{id}'.
+	// Mantener la URL exacta que entrega el backend.
+	// Antes se forzaba a 'branch-public', pero ahora se requiere 'branch-{id}'.
 
 	try {
 		const parsed = new URL(url);
@@ -49,8 +49,7 @@ export const ensureAbsoluteUrl = (value?: string | null): string | null => {
 			parsed.hostname === BACKEND_ORIGIN.hostname &&
 			parsed.protocol === BACKEND_ORIGIN.protocol;
 
-		const backendPort =
-			BACKEND_ORIGIN && BACKEND_ORIGIN.port ? BACKEND_ORIGIN.port : '';
+		const backendPort = BACKEND_ORIGIN && BACKEND_ORIGIN.port ? BACKEND_ORIGIN.port : '';
 
 		if (sameHost && !parsed.port && backendPort) {
 			const origin = `${parsed.protocol}//${parsed.hostname}:${backendPort}`;
@@ -62,7 +61,6 @@ export const ensureAbsoluteUrl = (value?: string | null): string | null => {
 		return url;
 	}
 };
-
 
 export const isBrowser = typeof window !== 'undefined';
 
@@ -118,11 +116,7 @@ export const convertFileToWebP = async (file?: File | null): Promise<File | null
 					if (!context) return resolve(null);
 
 					context.drawImage(img, 0, 0);
-					canvas.toBlob(
-						(result) => resolve(result),
-						'image/webp',
-						0.92,
-					);
+					canvas.toBlob((result) => resolve(result), 'image/webp', 0.92);
 					if (img.src.startsWith('blob:')) {
 						URL.revokeObjectURL(img.src);
 					}
@@ -191,9 +185,7 @@ const normalizeImage = (input: any): IBrandImage | null => {
 	const absoluteUrl = ensureAbsoluteUrl(url);
 	if (!absoluteUrl) return null;
 
-	const absoluteThumb = ensureAbsoluteUrl(
-		typeof thumb === 'string' ? thumb : undefined,
-	);
+	const absoluteThumb = ensureAbsoluteUrl(typeof thumb === 'string' ? thumb : undefined);
 
 	return {
 		id: Number.isFinite(parsedId) ? Number(parsedId) : undefined,
@@ -215,9 +207,7 @@ export const normalizeBrand = (brand: any): IBrand => {
 		brand.gallery ??
 		brand.images ??
 		brand.media ??
-		(brand.image && Array.isArray(brand.image)
-			? brand.image
-			: brand.image?.gallery ?? []);
+		(brand.image && Array.isArray(brand.image) ? brand.image : (brand.image?.gallery ?? []));
 
 	const gallery = Array.isArray(rawGallery)
 		? rawGallery
@@ -233,7 +223,9 @@ export const normalizeBrand = (brand: any): IBrand => {
 		brand.image_url ??
 		null;
 	const absoluteLogo = ensureAbsoluteUrl(logoUrl);
-	const absolutePhoto = ensureAbsoluteUrl(brand.photo_url ?? primaryImage?.url ?? absoluteLogo ?? undefined);
+	const absolutePhoto = ensureAbsoluteUrl(
+		brand.photo_url ?? primaryImage?.url ?? absoluteLogo ?? undefined,
+	);
 
 	return {
 		id: Number(brand.id),

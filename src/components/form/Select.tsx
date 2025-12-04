@@ -27,7 +27,8 @@ interface ISelectProps
 	placeholder?: string;
 }
 const Select: FC<ISelectProps> = (props) => {
-	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } = useReactiveThemeConfig();
+	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } =
+		useReactiveThemeConfig();
 
 	const {
 		borderWidth = themeConfig.borderWidth,

@@ -90,7 +90,7 @@ const ProductDetail: React.FC = () => {
 
 	const parsedProductId = productIdParam ? Number(productIdParam) : NaN;
 	const productId = Number.isFinite(parsedProductId) ? parsedProductId : null;
-	const branchIdFromState = (location.state as any)?.branchId;
+	const branchIdFromState = location.state?.branchId;
 	const branchIdFromQuery = useMemo(() => {
 		const params = new URLSearchParams(location.search);
 		const raw = params.get('branchId');
@@ -222,8 +222,8 @@ const ProductDetail: React.FC = () => {
 				initialValues={initialValues}
 				enableReinitialize
 				validationSchema={productDetailSchema}
-				validateOnBlur={true}
-				validateOnChange={true}
+				validateOnBlur
+				validateOnChange
 				onSubmit={handleSubmit}>
 				{({ isSubmitting, submitForm }) => (
 					<Form>

@@ -36,7 +36,11 @@ export const ConfirmTransferModal: React.FC<ConfirmTransferModalProps> = ({
 					<CardHeader>
 						<CardTitle className='flex items-center gap-3'>
 							<span>
-								<svg className='h-6 w-6' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+								<svg
+									className='h-6 w-6'
+									fill='none'
+									stroke='currentColor'
+									viewBox='0 0 24 24'>
 									<path
 										strokeLinecap='round'
 										strokeLinejoin='round'
@@ -110,9 +114,9 @@ export const ConfirmTransferModal: React.FC<ConfirmTransferModalProps> = ({
 							<div>
 								<h4 className='font-medium text-amber-600'>Importante</h4>
 								<p className='mt-1 text-sm text-gray-500 dark:text-gray-400'>
-									Esta acción creará movimientos de inventario y no podrá ser revertida
-									automáticamente. Asegúrese de que toda la información esté correcta antes de
-									continuar.
+									Esta acción creará movimientos de inventario y no podrá ser
+									revertida automáticamente. Asegúrese de que toda la información
+									esté correcta antes de continuar.
 								</p>
 							</div>
 						</div>
@@ -170,7 +174,10 @@ export const SuccessTransferModal: React.FC<SuccessTransferModalProps> = ({
 						<CardHeader>
 							<CardTitle className='flex items-center gap-3'>
 								<span className='text-green-600'>
-									<svg className='h-6 w-6' fill='currentColor' viewBox='0 0 24 24'>
+									<svg
+										className='h-6 w-6'
+										fill='currentColor'
+										viewBox='0 0 24 24'>
 										<path
 											fillRule='evenodd'
 											d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z'
@@ -220,7 +227,10 @@ export const SuccessTransferModal: React.FC<SuccessTransferModalProps> = ({
 						<CardBody>
 							<div className='flex items-start gap-3'>
 								<span className='text-sky-600'>
-									<svg className='h-6 w-6' fill='currentColor' viewBox='0 0 24 24'>
+									<svg
+										className='h-6 w-6'
+										fill='currentColor'
+										viewBox='0 0 24 24'>
 										<path
 											fillRule='evenodd'
 											d='M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z'
@@ -231,9 +241,16 @@ export const SuccessTransferModal: React.FC<SuccessTransferModalProps> = ({
 								<div>
 									<h4 className='font-medium text-sky-600'>¿Qué sigue?</h4>
 									<ul className='mt-2 space-y-1 text-sm text-gray-500 dark:text-gray-400'>
-										<li>• Los movimientos de inventario han sido registrados</li>
-										<li>• Puede revisar el historial de transferencias para seguimiento</li>
-										<li>• Los reportes de inventario reflejarán estos cambios</li>
+										<li>
+											• Los movimientos de inventario han sido registrados
+										</li>
+										<li>
+											• Puede revisar el historial de transferencias para
+											seguimiento
+										</li>
+										<li>
+											• Los reportes de inventario reflejarán estos cambios
+										</li>
 									</ul>
 								</div>
 							</div>
@@ -291,7 +308,8 @@ export const RemoveProductModal: React.FC<RemoveProductModalProps> = ({
 		<ModalBody>
 			<div className='space-y-4'>
 				<p className='text-gray-500 dark:text-gray-400'>
-					¿Está seguro que desea remover {productName ?? 'este producto'} de la transferencia?
+					¿Está seguro que desea remover {productName ?? 'este producto'} de la
+					transferencia?
 				</p>
 				<Card>
 					<CardBody>
@@ -307,7 +325,8 @@ export const RemoveProductModal: React.FC<RemoveProductModalProps> = ({
 							</span>
 							<div>
 								<p className='text-sm text-gray-500 dark:text-gray-400'>
-									Esta acción no se puede deshacer. El producto será removido de la lista actual.
+									Esta acción no se puede deshacer. El producto será removido de
+									la lista actual.
 								</p>
 							</div>
 						</div>
@@ -361,15 +380,19 @@ export const ClearListModal: React.FC<ClearListModalProps> = ({
 		<ModalBody>
 			<div className='space-y-4'>
 				<p className='text-gray-500 dark:text-gray-400'>
-					¿Está seguro que desea limpiar toda la lista de productos? Esta acción eliminará todos los
-					productos agregados.
+					¿Está seguro que desea limpiar toda la lista de productos? Esta acción eliminará
+					todos los productos agregados.
 				</p>
 				<Card>
 					<CardBody>
 						<div className='flex items-center justify-between'>
 							<div className='flex items-center gap-3'>
 								<span>
-									<svg className='h-5 w-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+									<svg
+										className='h-5 w-5'
+										fill='none'
+										stroke='currentColor'
+										viewBox='0 0 24 24'>
 										<path
 											strokeLinecap='round'
 											strokeLinejoin='round'

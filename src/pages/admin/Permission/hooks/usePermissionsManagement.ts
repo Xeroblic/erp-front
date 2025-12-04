@@ -1,254 +1,256 @@
 import { useState, useCallback, useMemo } from 'react';
+import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchUsuariosConRolesPerms } from '@/store/slices/rolesPermisos/rolesPermisosSlice';
+import { toggleUserStatus, type UserWithDetails } from '@/store/slices/usersAdmin/usersAdminSlice';
 import {
-    toggleUserStatus,
-    type UserWithDetails,
-} from '@/store/slices/usersAdmin/usersAdminSlice';
-import {
-    fetchPermissions,
-    fetchRoles,
-    assignPermissionToUser,
-    revokePermissionFromUser,
-    assignRoleToUser,
-    revokeRoleFromUser,
+	fetchPermissions,
+	fetchRoles,
+	assignPermissionToUser,
+	revokePermissionFromUser,
+	assignRoleToUser,
+	revokeRoleFromUser,
 } from '@/store/slices/permissions/permissionsSlice';
-import { toast } from 'react-toastify';
 
 export const usePermissionsManagement = () => {
-    const dispatch = useAppDispatch();
+	const dispatch = useAppDispatch();
 
-    const rolesPermisosState = useAppSelector((s) => s.rolesPermisos);
-    const permissionsState = useAppSelector((s) => s.permissions);
+	const rolesPermisosState = useAppSelector((s) => s.rolesPermisos);
+	const permissionsState = useAppSelector((s) => s.permissions);
 
-    // Ajuste: rolesPermisosState puede no tener data/status, así que se accede con fallback
-    const rawUsers = (rolesPermisosState as any).data;
-    const usersLoading = (rolesPermisosState as any).status;
-    const permissions = (permissionsState as any).permissions;
-    const roles = (permissionsState as any).roles;
-    const permissionsLoading = (permissionsState as any).loading;
+	// Ajuste: rolesPermisosState puede no tener data/status, así que se accede con fallback
+	const rawUsers = (rolesPermisosState as any).data;
+	const usersLoading = (rolesPermisosState as any).status;
+	const { permissions } = permissionsState as any;
+	const { roles } = permissionsState as any;
+	const permissionsLoading = (permissionsState as any).loading;
 
-    // Los datos ya vienen en el formato correcto del backend PHP
-    const users = useMemo(() => {
-        if (!rawUsers || !Array.isArray(rawUsers)) return [];
+	// Los datos ya vienen en el formato correcto del backend PHP
+	const users = useMemo(() => {
+		if (!rawUsers || !Array.isArray(rawUsers)) return [];
 
+		// Los datos del backend PHP ya vienen en el formato correcto, no necesitan transformación
+		return rawUsers.map((user: any) => {
+			// Retornar los datos tal como vienen del backend
+			return user;
+		});
+	}, [rawUsers]);
 
-        // Los datos del backend PHP ya vienen en el formato correcto, no necesitan transformación
-        return rawUsers.map((user: any) => {
+	// Crear un objeto filters para compatibilidad
+	const filters = useMemo(() => ({ search: '' }), []);
 
-            // Retornar los datos tal como vienen del backend
-            return user;
-        });
-    }, [rawUsers]);
+	const [selectedUserForPermissions, setSelectedUserForPermissions] =
+		useState<UserWithDetails | null>(null);
+	const [selectedPermissionIds, setSelectedPermissionIds] = useState<number[]>([]);
+	const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
+	const [toggleUserLoading, setToggleUserLoading] = useState<Set<number>>(new Set());
 
-    // Crear un objeto filters para compatibilidad
-    const filters = useMemo(() => ({ search: '' }), []);
+	const permissionNameToId = useMemo(
+		() =>
+			new Map(
+				(permissions || []).map((p: { name?: string; code?: string; id: number }) => [
+					p.name || p.code,
+					p.id,
+				]),
+			),
+		[permissions],
+	);
 
-    const [selectedUserForPermissions, setSelectedUserForPermissions] = useState<UserWithDetails | null>(null);
-    const [selectedPermissionIds, setSelectedPermissionIds] = useState<number[]>([]);
-    const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
-    const [toggleUserLoading, setToggleUserLoading] = useState<Set<number>>(new Set());
+	const roleNameToId = useMemo(
+		() => new Map((roles || []).map((r: { name: string; id: number }) => [r.name, r.id])),
+		[roles],
+	);
 
-    const permissionNameToId = useMemo(
-        () => new Map((permissions || []).map((p: { name?: string; code?: string; id: number }) => [p.name || p.code, p.id])),
-        [permissions]
-    );
+	const loadInitialData = useCallback(() => {
+		dispatch(fetchUsuariosConRolesPerms());
+		dispatch(fetchPermissions());
+		dispatch(fetchRoles());
+	}, [dispatch]);
 
-    const roleNameToId = useMemo(
-        () => new Map((roles || []).map((r: { name: string; id: number }) => [r.name, r.id])),
-        [roles]
-    );
+	const openPermissionsModal = useCallback(async (user: UserWithDetails) => {
+		setSelectedUserForPermissions(user);
+		// Ya tenemos toda la información necesaria del usuario
+		// No necesitamos hacer una petición adicional
+	}, []);
 
-    const loadInitialData = useCallback(() => {
-        dispatch(fetchUsuariosConRolesPerms());
-        dispatch(fetchPermissions());
-        dispatch(fetchRoles());
-    }, [dispatch]);
+	const toggleUser = useCallback(
+		async (user: UserWithDetails) => {
+			if (!user || !user.id || typeof user.id !== 'number') {
+				toast.error('Usuario inválido: ID no encontrado');
+				return;
+			}
 
-    const openPermissionsModal = useCallback(
-        async (user: UserWithDetails) => {
-            setSelectedUserForPermissions(user);
-            // Ya tenemos toda la información necesaria del usuario
-            // No necesitamos hacer una petición adicional
-        },
-        []
-    );
+			setToggleUserLoading((prev) => new Set(prev).add(user.id));
 
-    const toggleUser = useCallback(
-        async (user: UserWithDetails) => {
-            if (!user || !user.id || typeof user.id !== 'number') {
-                toast.error('Usuario inválido: ID no encontrado');
-                return;
-            }
+			try {
+				const newStatus = !user.is_active;
+				const statusText = newStatus ? 'activado' : 'desactivado';
 
-            setToggleUserLoading(prev => new Set(prev).add(user.id));
+				const loadingToast = toast.loading(
+					`${newStatus ? 'Activando' : 'Desactivando'} usuario...`,
+				);
 
-            try {
-                const newStatus = !user.is_active;
-                const statusText = newStatus ? 'activado' : 'desactivado';
+				const result = await dispatch(
+					toggleUserStatus({
+						userId: user.id,
+						status: newStatus,
+					}),
+				).unwrap();
 
-                const loadingToast = toast.loading(`${newStatus ? 'Activando' : 'Desactivando'} usuario...`);
+				if (!result || !result.userId || typeof result.is_active !== 'boolean') {
+					throw new Error('Respuesta del servidor inválida');
+				}
 
-                const result = await dispatch(
-                    toggleUserStatus({
-                        userId: user.id,
-                        status: newStatus,
-                    })
-                ).unwrap();
+				toast.update(loadingToast, {
+					render: `Usuario ${statusText} correctamente`,
+					type: 'success',
+					isLoading: false,
+					autoClose: 3000,
+				});
+			} catch (error: any) {
+				console.error('Error en toggleUser:', error);
 
-                if (!result || !result.userId || typeof result.is_active !== 'boolean') {
-                    throw new Error('Respuesta del servidor inválida');
-                }
+				let errorMessage = 'Error desconocido';
+				if (typeof error === 'string') {
+					errorMessage = error;
+				} else if (error?.message) {
+					errorMessage = error.message;
+				} else if (error?.response?.data?.message) {
+					errorMessage = error.response.data.message;
+				}
 
-                toast.update(loadingToast, {
-                    render: `Usuario ${statusText} correctamente`,
-                    type: 'success',
-                    isLoading: false,
-                    autoClose: 3000,
-                });
+				toast.error(`Error al cambiar estado del usuario: ${errorMessage}`);
+			} finally {
+				setToggleUserLoading((prev) => {
+					const newSet = new Set(prev);
+					newSet.delete(user.id);
+					return newSet;
+				});
+			}
+		},
+		[dispatch],
+	);
 
-            } catch (error: any) {
-                console.error('Error en toggleUser:', error);
+	const savePermissions = useCallback(async () => {
+		if (!selectedUserForPermissions) return;
 
-                let errorMessage = 'Error desconocido';
-                if (typeof error === 'string') {
-                    errorMessage = error;
-                } else if (error?.message) {
-                    errorMessage = error.message;
-                } else if (error?.response?.data?.message) {
-                    errorMessage = error.response.data.message;
-                }
+		try {
+			const currentDirectPermIds = (selectedUserForPermissions.direct_permissions || [])
+				.map((name) => permissionNameToId.get(name))
+				.filter((x): x is number => typeof x === 'number');
 
-                toast.error(`Error al cambiar estado del usuario: ${errorMessage}`);
-            } finally {
-                setToggleUserLoading(prev => {
-                    const newSet = new Set(prev);
-                    newSet.delete(user.id);
-                    return newSet;
-                });
-            }
-        },
-        [dispatch]
-    );
+			const currentRoleIdsFromNames = [
+				...(selectedUserForPermissions.global_roles || []),
+				...(selectedUserForPermissions.contextual_roles?.map((cr) => cr.role) || []),
+			]
+				.map((name) => roleNameToId.get(name))
+				.filter((x): x is number => typeof x === 'number');
 
-    const savePermissions = useCallback(async () => {
-        if (!selectedUserForPermissions) return;
+			const currentRoleIds = Array.from(new Set(currentRoleIdsFromNames));
 
-        try {
-            const currentDirectPermIds =
-                (selectedUserForPermissions.direct_permissions || [])
-                    .map((name) => permissionNameToId.get(name))
-                    .filter((x): x is number => typeof x === 'number');
+			const toAddPerms = selectedPermissionIds.filter(
+				(id) => !currentDirectPermIds.includes(id),
+			);
+			const toRemovePerms = currentDirectPermIds.filter(
+				(id) => !selectedPermissionIds.includes(id),
+			);
+			const toAddRoles = selectedRoleIds.filter((id) => !currentRoleIds.includes(id));
+			const toRemoveRoles = currentRoleIds.filter((id) => !selectedRoleIds.includes(id));
 
-            const currentRoleIdsFromNames =
-                [
-                    ...(selectedUserForPermissions.global_roles || []),
-                    ...(selectedUserForPermissions.contextual_roles?.map((cr) => cr.role) || []),
-                ]
-                    .map((name) => roleNameToId.get(name))
-                    .filter((x): x is number => typeof x === 'number');
+			const permissionPromises = [
+				...toAddPerms.map((id) =>
+					dispatch(
+						assignPermissionToUser({
+							userId: selectedUserForPermissions.id,
+							permissionId: id,
+						}),
+					),
+				),
+				...toRemovePerms.map((id) =>
+					dispatch(
+						revokePermissionFromUser({
+							userId: selectedUserForPermissions.id,
+							permissionId: id,
+						}),
+					),
+				),
+			];
 
-            const currentRoleIds = Array.from(new Set(currentRoleIdsFromNames));
+			const rolePromises = [
+				...toAddRoles.map((id) =>
+					dispatch(
+						assignRoleToUser({
+							userId: selectedUserForPermissions.id,
+							roleId: id,
+							companyId: selectedUserForPermissions.company?.id,
+						}),
+					),
+				),
+				...toRemoveRoles.map((id) =>
+					dispatch(
+						revokeRoleFromUser({
+							userId: selectedUserForPermissions.id,
+							roleId: id,
+						}),
+					),
+				),
+			];
 
-            const toAddPerms = selectedPermissionIds.filter((id) => !currentDirectPermIds.includes(id));
-            const toRemovePerms = currentDirectPermIds.filter((id) => !selectedPermissionIds.includes(id));
-            const toAddRoles = selectedRoleIds.filter((id) => !currentRoleIds.includes(id));
-            const toRemoveRoles = currentRoleIds.filter((id) => !selectedRoleIds.includes(id));
+			await Promise.all([...permissionPromises, ...rolePromises]);
 
-            const permissionPromises = [
-                ...toAddPerms.map((id) =>
-                    dispatch(
-                        assignPermissionToUser({
-                            userId: selectedUserForPermissions.id,
-                            permissionId: id,
-                        })
-                    )
-                ),
-                ...toRemovePerms.map((id) =>
-                    dispatch(
-                        revokePermissionFromUser({
-                            userId: selectedUserForPermissions.id,
-                            permissionId: id,
-                        })
-                    )
-                ),
-            ];
+			await Promise.all([
+				dispatch(fetchUsuariosConRolesPerms()),
+				dispatch(fetchRoles()),
+				dispatch(fetchPermissions()),
+			]);
 
-            const rolePromises = [
-                ...toAddRoles.map((id) =>
-                    dispatch(
-                        assignRoleToUser({
-                            userId: selectedUserForPermissions.id,
-                            roleId: id,
-                            companyId: selectedUserForPermissions.company?.id,
-                        })
-                    )
-                ),
-                ...toRemoveRoles.map((id) =>
-                    dispatch(
-                        revokeRoleFromUser({
-                            userId: selectedUserForPermissions.id,
-                            roleId: id,
-                        })
-                    )
-                ),
-            ];
+			// Recargar la lista completa de usuarios para obtener datos actualizados
+			dispatch(fetchUsuariosConRolesPerms());
 
-            await Promise.all([...permissionPromises, ...rolePromises]);
+			toast.success('Permisos actualizados correctamente');
+		} catch (error: any) {
+			toast.error(error);
+		}
+	}, [
+		selectedUserForPermissions,
+		selectedPermissionIds,
+		selectedRoleIds,
+		permissionNameToId,
+		roleNameToId,
+		dispatch,
+	]);
 
-            await Promise.all([
-                dispatch(fetchUsuariosConRolesPerms()),
-                dispatch(fetchRoles()),
-                dispatch(fetchPermissions())
-            ]);
+	const closePermissionsModal = useCallback(() => {
+		setSelectedUserForPermissions(null);
+		setSelectedPermissionIds([]);
+		setSelectedRoleIds([]);
 
-            // Recargar la lista completa de usuarios para obtener datos actualizados
-            dispatch(fetchUsuariosConRolesPerms());
+		dispatch(fetchUsuariosConRolesPerms());
+	}, [dispatch]);
 
-            toast.success('Permisos actualizados correctamente');
-        } catch (error: any) {
-            toast.error(error);
-        }
-    }, [
-        selectedUserForPermissions,
-        selectedPermissionIds,
-        selectedRoleIds,
-        permissionNameToId,
-        roleNameToId,
-        dispatch,
-    ]);
+	return {
+		users,
+		permissions,
+		roles,
+		usersLoading,
+		permissionsLoading,
+		filters,
+		selectedUserForPermissions,
+		selectedPermissionIds,
+		selectedRoleIds,
+		toggleUserLoading,
 
-    const closePermissionsModal = useCallback(() => {
-        setSelectedUserForPermissions(null);
-        setSelectedPermissionIds([]);
-        setSelectedRoleIds([]);
+		permissionNameToId,
+		roleNameToId,
 
-        dispatch(fetchUsuariosConRolesPerms());
-    }, [dispatch]);
+		loadInitialData,
+		openPermissionsModal,
+		closePermissionsModal,
+		toggleUser,
+		savePermissions,
 
-    return {
-        users,
-        permissions,
-        roles,
-        usersLoading,
-        permissionsLoading,
-        filters,
-        selectedUserForPermissions,
-        selectedPermissionIds,
-        selectedRoleIds,
-        toggleUserLoading,
-
-        permissionNameToId,
-        roleNameToId,
-
-        loadInitialData,
-        openPermissionsModal,
-        closePermissionsModal,
-        toggleUser,
-        savePermissions,
-
-        setSelectedUserForPermissions,
-        setSelectedPermissionIds,
-        setSelectedRoleIds,
-    };
+		setSelectedUserForPermissions,
+		setSelectedPermissionIds,
+		setSelectedRoleIds,
+	};
 };

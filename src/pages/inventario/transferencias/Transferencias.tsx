@@ -227,7 +227,10 @@ const Transferencias: React.FC = () => {
 	};
 
 	return (
-		<PageWrapper isProtectedRoute title='Transferencias de Inventario' name='transferencias_inventario'>
+		<PageWrapper
+			isProtectedRoute
+			title='Transferencias de Inventario'
+			name='transferencias_inventario'>
 			<TransferHeaderCard
 				onNavigateHistory={handleViewHistory}
 				onNavigateInventory={inventoryUrl ? () => navigate(inventoryUrl) : undefined}

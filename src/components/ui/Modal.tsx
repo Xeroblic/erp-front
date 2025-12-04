@@ -158,7 +158,7 @@ const BackDrop = () => {
 		<motion.div
 			data-component-name='Modal/BackDrop'
 			{...animationProps}
-			className='fixed left-0 top-0 z-[1050] h-screen w-screen backdrop-blur-lg bg-black/20'
+			className='fixed left-0 top-0 z-[1050] h-screen w-screen bg-black/20 backdrop-blur-lg'
 		/>
 	);
 };

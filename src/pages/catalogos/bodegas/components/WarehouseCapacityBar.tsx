@@ -1,6 +1,6 @@
 import React from 'react';
-import Progress from '@/components/ui/Progress';
 import classNames from 'classnames';
+import Progress from '@/components/ui/Progress';
 
 interface WarehouseCapacityBarProps {
 	current: number;

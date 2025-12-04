@@ -1,7 +1,7 @@
 import React from 'react';
-import Badge from '@/components/ui/Badge';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import Badge from '@/components/ui/Badge';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';

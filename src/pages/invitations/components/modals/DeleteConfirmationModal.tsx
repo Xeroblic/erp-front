@@ -1,3 +1,4 @@
+import React from 'react';
 import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
 import Modal, {
@@ -7,7 +8,6 @@ import Modal, {
 	ModalHeader,
 } from '@/components/ui/Modal';
 import { Invitation } from '@/interface/invitacion.interface';
-import React from 'react';
 
 interface DeleteConfirmationModalProps {
 	isOpen: boolean;

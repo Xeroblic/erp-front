@@ -29,7 +29,6 @@ const EditarCategoria: React.FC<EditarCategoriaProps> = ({
 	parentOptions,
 	isLoading,
 }) => {
-
 	const handleSubmitClick = (event: React.MouseEvent<HTMLButtonElement>) => {
 		event.preventDefault();
 		const form = document.getElementById('editCategoryForm') as HTMLFormElement | null;
@@ -42,15 +41,15 @@ const EditarCategoria: React.FC<EditarCategoriaProps> = ({
 		<Modal isOpen={isOpen} setIsOpen={() => setIsOpen(false)} size='lg'>
 			<ModalHeader>
 				<div className='flex items-center space-x-3'>
-            <div className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/20'>
-              <Icon icon='HeroPencilSquare' className='h-6 w-6 text-blue-600' />
-            </div>
-            <div>
-              <h2 className='text-xl font-bold'>Editar categoria</h2>
-              <p className='text-sm opacity-80'>
-                Actualiza los datos principales de la categoria
-              </p>
-            </div>
+					<div className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/20'>
+						<Icon icon='HeroPencilSquare' className='h-6 w-6 text-blue-600' />
+					</div>
+					<div>
+						<h2 className='text-xl font-bold'>Editar categoria</h2>
+						<p className='text-sm opacity-80'>
+							Actualiza los datos principales de la categoria
+						</p>
+					</div>
 				</div>
 			</ModalHeader>
 			<ModalBody>
@@ -99,8 +98,16 @@ const EditarCategoria: React.FC<EditarCategoriaProps> = ({
 
 					<div>
 						<Label htmlFor='edit-gallery'>Galería</Label>
-						<Input id='edit-gallery' name='gallery' type='file' accept='image/*' multiple />
-						<p className='mt-1 text-xs text-gray-500'>Puedes seleccionar varias imágenes para agregar a la galería.</p>
+						<Input
+							id='edit-gallery'
+							name='gallery'
+							type='file'
+							accept='image/*'
+							multiple
+						/>
+						<p className='mt-1 text-xs text-gray-500'>
+							Puedes seleccionar varias imágenes para agregar a la galería.
+						</p>
 					</div>
 
 					{/* Toggle de activo eliminado por solicitud */}

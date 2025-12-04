@@ -11,6 +11,6 @@ export default function useFontSize() {
 
 	return {
 		fontSize,
-		setFontSize: handleSetFontSize
+		setFontSize: handleSetFontSize,
 	};
 }

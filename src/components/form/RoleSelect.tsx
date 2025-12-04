@@ -1,13 +1,12 @@
 import React, { type ComponentProps, type FC, useMemo } from 'react';
+import type { SingleValue } from 'react-select';
 import SelectReact, { type TSelectOption } from './SelectReact';
 import type { Role } from '@/store/slices/permissions/permissionsSlice';
 import { formatRoleName, normalizeRoleKey } from '@/pages/admin/Permission/utils/formatters';
-import type { SingleValue } from 'react-select';
 
 type SelectProps = ComponentProps<typeof SelectReact>;
 
-interface RoleSelectProps
-	extends Omit<SelectProps, 'options' | 'value' | 'onChange' | 'isMulti'> {
+interface RoleSelectProps extends Omit<SelectProps, 'options' | 'value' | 'onChange' | 'isMulti'> {
 	roles: Role[];
 	value: string;
 	onChange: (roleId: string) => void;
@@ -43,8 +42,9 @@ const RoleSelect: FC<RoleSelectProps> = ({
 		return options.find((option) => option.value === value) ?? null;
 	}, [options, value]);
 
-	const computedPlaceholder = placeholder
-		?? (isLoading
+	const computedPlaceholder =
+		placeholder ??
+		(isLoading
 			? 'Cargando roles...'
 			: options.length
 				? 'Selecciona un rol'

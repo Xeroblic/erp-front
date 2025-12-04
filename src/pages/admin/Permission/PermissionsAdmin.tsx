@@ -1,17 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { useAppDispatch, useAppSelector } from '@/store';
-import { type UserWithDetails } from '@/store/slices/usersAdmin/usersAdminSlice';
-import { TSelectOption } from '@/components/form/SelectReact';
 import type { MultiValue } from 'react-select';
-
-import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
-import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
-import Container from '@/components/layouts/Container/Container';
-import Card, { CardBody, CardHeader } from '@/components/ui/Card';
-import Table, { THead, Tr, Th, TBody, Td } from '@/components/ui/Table';
-import Badge from '@/components/ui/Badge';
-import Input from '@/components/form/Input';
-import Icon from '@/components/icon/Icon';
 import {
 	getCoreRowModel,
 	useReactTable,
@@ -21,6 +9,18 @@ import {
 	flexRender,
 	SortingState,
 } from '@tanstack/react-table';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { type UserWithDetails } from '@/store/slices/usersAdmin/usersAdminSlice';
+import { TSelectOption } from '@/components/form/SelectReact';
+
+import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
+import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import Container from '@/components/layouts/Container/Container';
+import Card, { CardBody, CardHeader } from '@/components/ui/Card';
+import Table, { THead, Tr, Th, TBody, Td } from '@/components/ui/Table';
+import Badge from '@/components/ui/Badge';
+import Input from '@/components/form/Input';
+import Icon from '@/components/icon/Icon';
 import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
 
 // Componentes modulares
@@ -238,7 +238,7 @@ export default function PermissionsAdmin() {
 							<SubheaderRight>
 								<div className='flex items-center gap-3'>
 									<div className='flex items-center gap-2 rounded-full border bg-white px-3 py-1.5 shadow-sm'>
-										<div className='h-2 w-2 animate-pulse rounded-full bg-green-400'></div>
+										<div className='h-2 w-2 animate-pulse rounded-full bg-green-400' />
 										<span className='text-sm font-medium text-gray-700'>
 											{users?.length || 0} usuario
 											{users?.length !== 1 ? 's' : ''} encontrado
@@ -298,7 +298,7 @@ export default function PermissionsAdmin() {
 											{table.getRowModel().rows.map((row) => (
 												<Tr
 													key={row.id}
-													className={`border-b transition-colors`}>
+													className='border-b transition-colors'>
 													{row.getVisibleCells().map((cell) => (
 														<Td key={cell.id} className='p-4'>
 															{flexRender(

@@ -1,3 +1,9 @@
+import classNames from 'classnames';
+import { useFormik } from 'formik';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import * as Yup from 'yup';
 import FieldWrap from '@/components/form/FieldWrap';
 import Input from '@/components/form/Input';
 import Validation from '@/components/form/Validation';
@@ -7,12 +13,6 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import ApiService from '@/services/ApiService';
 import LogoTemplate from '@/templates/layouts/Logo/Logo.template';
-import classNames from 'classnames';
-import { useFormik } from 'formik';
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { toast } from 'react-toastify';
-import * as Yup from 'yup';
 
 type InvitationPreview = {
 	email?: string;
@@ -109,7 +109,7 @@ const renderInvalidState = (
 	</PageWrapper>
 );
 
-function AceptarInvitacionEmpresa() {
+const AceptarInvitacionEmpresa = () => {
 	const { token } = useParams<{ token?: string }>();
 	const navigate = useNavigate();
 	const [passwordShowStatus, setPasswordShowStatus] = useState(false);
@@ -385,19 +385,19 @@ function AceptarInvitacionEmpresa() {
 										)}
 								</div>
 
-							<Button
-								onClick={() => formik.handleSubmit()}
-								variant='solid'
-								color='blue'
-								size='lg'
-								icon={formik.isSubmitting ? 'DuoLoading' : 'HeroCheck'}
-								isLoading={formik.isSubmitting}
-								className='mt-7 w-full'>
-								{formik.isSubmitting ? 'Activando cuenta...' : 'Activar cuenta'}
-							</Button>
+								<Button
+									onClick={() => formik.handleSubmit()}
+									variant='solid'
+									color='blue'
+									size='lg'
+									icon={formik.isSubmitting ? 'DuoLoading' : 'HeroCheck'}
+									isLoading={formik.isSubmitting}
+									className='mt-7 w-full'>
+									{formik.isSubmitting ? 'Activando cuenta...' : 'Activar cuenta'}
+								</Button>
 							</form>
 
-							<div className='mt-8 border-t width border-gray-200 pt-6'>
+							<div className='width mt-8 border-t border-gray-200 pt-6'>
 								<p className='text-center text-xs leading-relaxed text-gray-500'>
 									Al activar tu cuenta, aceptas los términos y condiciones del
 									sistema ERP.
@@ -430,6 +430,6 @@ function AceptarInvitacionEmpresa() {
 			`}</style>
 		</PageWrapper>
 	);
-}
+};
 
 export default AceptarInvitacionEmpresa;

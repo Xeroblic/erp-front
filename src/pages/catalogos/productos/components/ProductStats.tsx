@@ -17,10 +17,7 @@ interface ProductStatsProps {
 
 // Mapa de colores para replicar el estilo de la imagen
 // Puedes mover esto a tu archivo de constantes si prefieres
-const STYLE_VARIANTS: Record<
-	string,
-	{ bg: string; text: string; border: string }
-> = {
+const STYLE_VARIANTS: Record<string, { bg: string; text: string; border: string }> = {
 	emerald: {
 		bg: 'bg-emerald-500/15',
 		text: 'text-emerald-500',
@@ -69,7 +66,7 @@ const ProductStats: React.FC<ProductStatsProps> = ({ stats, loading = false }) =
 						{loading ? (
 							<div className='h-8 w-24 animate-pulse rounded bg-gray-400' />
 						) : (
-							<div className='text-2xl font-bold '>
+							<div className='text-2xl font-bold'>
 								{Number(
 									stats[card.key as keyof ProductsStateStats] ?? 0,
 								).toLocaleString('es-CO')}
@@ -83,12 +80,12 @@ const ProductStats: React.FC<ProductStatsProps> = ({ stats, loading = false }) =
 
 	return (
 		<>
-			<div className='mb-6 w-full md:hidden overflow-hidden px-3'>
+			<div className='mb-6 w-full overflow-hidden px-3 md:hidden'>
 				<Swiper
 					modules={[FreeMode]}
 					spaceBetween={16}
 					slidesPerView='auto'
-					freeMode={true}
+					freeMode
 					className='!overflow-visible'>
 					{PRODUCT_STATS_META.map((card, index) => (
 						<SwiperSlide key={card.key} className='!w-[260px] sm:!w-[280px]'>

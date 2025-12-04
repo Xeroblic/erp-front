@@ -256,7 +256,7 @@ const NotificationDetail: React.FC = () => {
 												</span>
 												{notif.status !== 'read' ? (
 													<span className='inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 ring-2 ring-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-300 dark:ring-emerald-800'>
-														<span className='h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500'></span>
+														<span className='h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500' />
 														No leída
 													</span>
 												) : (
@@ -288,7 +288,7 @@ const NotificationDetail: React.FC = () => {
 												<div
 													key={c.key}
 													className={`group relative overflow-hidden rounded-lg border border-zinc-200 bg-white p-4 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600 ${orderClassFor(c.key)}`}>
-													<div className='absolute left-0 top-0 h-1 w-full scale-x-0 transform bg-gradient-to-r from-blue-400 to-purple-400 transition-transform duration-300 group-hover:scale-x-100'></div>
+													<div className='absolute left-0 top-0 h-1 w-full scale-x-0 transform bg-gradient-to-r from-blue-400 to-purple-400 transition-transform duration-300 group-hover:scale-x-100' />
 													<div className='mb-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400'>
 														{c.label}
 													</div>

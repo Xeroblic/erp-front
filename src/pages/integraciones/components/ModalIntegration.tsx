@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useId } from 'react';
+import { toast } from 'react-toastify';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Label from '@/components/form/Label';
@@ -16,7 +17,6 @@ import type {
 	CreateIntegrationPayload,
 	IntegrationMode,
 } from '@/types/integrations.types';
-import { toast } from 'react-toastify';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';

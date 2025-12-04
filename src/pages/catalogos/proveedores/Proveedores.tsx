@@ -49,11 +49,16 @@ const Proveedores: React.FC = () => {
 	}, [branches]);
 
 	const preferredBranchId = useMemo(() => {
-		if (personalizacionUsuario?.sucursal_principal) return personalizacionUsuario.sucursal_principal;
+		if (personalizacionUsuario?.sucursal_principal)
+			return personalizacionUsuario.sucursal_principal;
 		if (currentUser?.branch?.id) return currentUser.branch.id;
 		if (currentUser?.branch_id) return currentUser.branch_id;
 		return null;
-	}, [personalizacionUsuario?.sucursal_principal, currentUser?.branch?.id, currentUser?.branch_id]);
+	}, [
+		personalizacionUsuario?.sucursal_principal,
+		currentUser?.branch?.id,
+		currentUser?.branch_id,
+	]);
 
 	const defaultSubsidiaryId = useMemo(() => {
 		if (personalizacionUsuario?.subsidiary_id) return personalizacionUsuario.subsidiary_id;
@@ -64,7 +69,9 @@ const Proveedores: React.FC = () => {
 		}
 
 		const branchSubsidiaryId =
-			currentUser?.branch?.subsidiary?.id ?? (currentUser?.branch as any)?.subsidiary_id ?? null;
+			currentUser?.branch?.subsidiary?.id ??
+			(currentUser?.branch as any)?.subsidiary_id ??
+			null;
 		if (branchSubsidiaryId) return branchSubsidiaryId;
 
 		const accessSubs = (currentUser as any)?.access?.subsidiaries;
@@ -77,7 +84,13 @@ const Proveedores: React.FC = () => {
 
 		const firstAvailable = branches.find((branch) => branch.subsidiaryId)?.subsidiaryId ?? null;
 		return firstAvailable ?? null;
-	}, [branchToSubsidiary, branches, currentUser, personalizacionUsuario?.subsidiary_id, preferredBranchId]);
+	}, [
+		branchToSubsidiary,
+		branches,
+		currentUser,
+		personalizacionUsuario?.subsidiary_id,
+		preferredBranchId,
+	]);
 
 	useEffect(() => {
 		if (subsidiaryId === null && defaultSubsidiaryId) {
@@ -112,10 +125,12 @@ const Proveedores: React.FC = () => {
 				branchId: number | null;
 				subsidiaryId?: number | null;
 			}>;
-			const detail = customEvent.detail;
+			const { detail } = customEvent;
 			const nextSubsidiaryId =
 				detail?.subsidiaryId ??
-				(detail?.branchId != null ? branchToSubsidiary.get(detail.branchId) ?? null : null);
+				(detail?.branchId != null
+					? (branchToSubsidiary.get(detail.branchId) ?? null)
+					: null);
 			if (nextSubsidiaryId === null) return;
 			setSubsidiaryId(nextSubsidiaryId);
 		};

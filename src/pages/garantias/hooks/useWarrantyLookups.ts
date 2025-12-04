@@ -11,10 +11,7 @@ type SaleLookup = {
 	sale_number?: string | null;
 };
 
-export const useWarrantyLookups = (
-	subsidiaryId?: number | null,
-	branchId?: number | null,
-) => {
+export const useWarrantyLookups = (subsidiaryId?: number | null, branchId?: number | null) => {
 	const dispatch = useAppDispatch();
 	const products = useAppSelector((state) => state.products.items);
 	const customers = useAppSelector((state) => state.customerSuppliers.items);
@@ -51,7 +48,7 @@ export const useWarrantyLookups = (
 			value: String(product.id),
 			label: product.sku
 				? `${product.name ?? 'Producto'} (${product.sku})`
-				: product.name ?? `Producto #${product.id}`,
+				: (product.name ?? `Producto #${product.id}`),
 		}));
 	}, [products]);
 
@@ -74,7 +71,7 @@ export const useWarrantyLookups = (
 			try {
 				const normalized = search.trim();
 				const response = await fetchSalesList(subsidiaryId, {
-					q: normalized ? normalized : undefined,
+					q: normalized || undefined,
 					per_page: 20,
 					page: 1,
 				});

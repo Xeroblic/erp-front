@@ -70,13 +70,13 @@ const CpuSection: React.FC<CpuSectionProps> = ({
 								updateAttribute('cpu.generation', event.target.value)
 							}>
 							<option value=''>Seleccionar generación</option>
-							{CPU_GENERATIONS[
-								currentCpuBrand as keyof typeof CPU_GENERATIONS
-							]?.map((option) => (
-								<option key={option.value} value={option.value}>
-									{option.label}
-								</option>
-							))}
+							{CPU_GENERATIONS[currentCpuBrand as keyof typeof CPU_GENERATIONS]?.map(
+								(option) => (
+									<option key={option.value} value={option.value}>
+										{option.label}
+									</option>
+								),
+							)}
 						</Select>
 					</div>
 				)}
@@ -132,10 +132,7 @@ const CpuSection: React.FC<CpuSectionProps> = ({
 							placeholder='Ej: 3200'
 							value={attributes.cpu?.base_clock_mhz || ''}
 							onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-								updateAttribute(
-									'cpu.base_clock_mhz',
-									Number(event.target.value),
-								)
+								updateAttribute('cpu.base_clock_mhz', Number(event.target.value))
 							}
 						/>
 					</div>
@@ -150,10 +147,7 @@ const CpuSection: React.FC<CpuSectionProps> = ({
 							placeholder='Ej: 4100'
 							value={attributes.cpu?.boost_clock_mhz || ''}
 							onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-								updateAttribute(
-									'cpu.boost_clock_mhz',
-									Number(event.target.value),
-								)
+								updateAttribute('cpu.boost_clock_mhz', Number(event.target.value))
 							}
 						/>
 					</div>

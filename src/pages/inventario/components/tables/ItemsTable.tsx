@@ -1,11 +1,11 @@
-import Table, { TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
-import Badge from '@/components/ui/Badge';
-import Button from '@/components/ui/Button';
 import {
 	HiOutlineEye,
 	HiOutlineAdjustmentsHorizontal,
 	HiOutlineArrowsRightLeft,
 } from 'react-icons/hi2';
+import Table, { TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
+import Badge from '@/components/ui/Badge';
+import Button from '@/components/ui/Button';
 import { MockInventoryItem } from '../../data/mockData';
 import { TColors } from '@/types/colors.type';
 
@@ -70,28 +70,28 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
 						{Array.from({ length: 5 }).map((_, index) => (
 							<Tr key={index}>
 								<Td>
-									<div className='h-4 w-32 rounded bg-gray-200 dark:bg-gray-700'></div>
+									<div className='h-4 w-32 rounded bg-gray-200 dark:bg-gray-700' />
 								</Td>
 								<Td>
-									<div className='h-4 w-20 rounded bg-gray-200 dark:bg-gray-700'></div>
+									<div className='h-4 w-20 rounded bg-gray-200 dark:bg-gray-700' />
 								</Td>
 								<Td>
-									<div className='h-4 w-12 rounded bg-gray-200 dark:bg-gray-700'></div>
+									<div className='h-4 w-12 rounded bg-gray-200 dark:bg-gray-700' />
 								</Td>
 								<Td>
-									<div className='h-4 w-12 rounded bg-gray-200 dark:bg-gray-700'></div>
+									<div className='h-4 w-12 rounded bg-gray-200 dark:bg-gray-700' />
 								</Td>
 								<Td>
-									<div className='h-4 w-12 rounded bg-gray-200 dark:bg-gray-700'></div>
+									<div className='h-4 w-12 rounded bg-gray-200 dark:bg-gray-700' />
 								</Td>
 								<Td>
-									<div className='h-4 w-16 rounded bg-gray-200 dark:bg-gray-700'></div>
+									<div className='h-4 w-16 rounded bg-gray-200 dark:bg-gray-700' />
 								</Td>
 								<Td>
-									<div className='h-4 w-24 rounded bg-gray-200 dark:bg-gray-700'></div>
+									<div className='h-4 w-24 rounded bg-gray-200 dark:bg-gray-700' />
 								</Td>
 								<Td>
-									<div className='h-4 w-20 rounded bg-gray-200 dark:bg-gray-700'></div>
+									<div className='h-4 w-20 rounded bg-gray-200 dark:bg-gray-700' />
 								</Td>
 							</Tr>
 						))}

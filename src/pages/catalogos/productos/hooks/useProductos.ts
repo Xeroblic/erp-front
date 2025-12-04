@@ -54,7 +54,9 @@ export function useProductos({ branchId, filters, page = 1, perPage = 15 }: UseP
 	const dispatch = useAppDispatch();
 
 	const productsState = useAppSelector((state) => state.products ?? INITIAL_PRODUCTS_STATE);
-	const { lista: branches, loading: branchesLoading } = useAppSelector((state) => state.sucursales);
+	const { lista: branches, loading: branchesLoading } = useAppSelector(
+		(state) => state.sucursales,
+	);
 	const brandsState = useAppSelector((state) => state.brands);
 	const categoriesState = useAppSelector((state) => state.categories);
 

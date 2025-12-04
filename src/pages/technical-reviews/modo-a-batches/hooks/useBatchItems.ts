@@ -30,28 +30,34 @@ export const useBatchItems = (branchId: number, batchId: number | null) => {
 	/**
 	 * Fetch items from batch usando el thunk existente
 	 */
-	const loadBatchItems = useCallback(async (params: FetchBatchItemsParams = {}) => {
-		if (!branchId || !batchId) return;
+	const loadBatchItems = useCallback(
+		async (params: FetchBatchItemsParams = {}) => {
+			if (!branchId || !batchId) return;
 
-		try {
-			await dispatch(fetchBatchItems({ branchId, batchId, params })).unwrap();
-		} catch (err: any) {
-			console.error('Error fetching batch items:', err);
-		}
-	}, [branchId, batchId, dispatch]);
+			try {
+				await dispatch(fetchBatchItems({ branchId, batchId, params })).unwrap();
+			} catch (err: any) {
+				console.error('Error fetching batch items:', err);
+			}
+		},
+		[branchId, batchId, dispatch],
+	);
 
 	/**
 	 * Fetch single item detail usando el thunk existente
 	 */
-	const loadItemDetail = useCallback(async (itemId: number) => {
-		if (!branchId) return;
+	const loadItemDetail = useCallback(
+		async (itemId: number) => {
+			if (!branchId) return;
 
-		try {
-			await dispatch(fetchItemDetail({ branchId, itemId })).unwrap();
-		} catch (err: any) {
-			console.error('Error fetching item detail:', err);
-		}
-	}, [branchId, dispatch]);
+			try {
+				await dispatch(fetchItemDetail({ branchId, itemId })).unwrap();
+			} catch (err: any) {
+				console.error('Error fetching item detail:', err);
+			}
+		},
+		[branchId, dispatch],
+	);
 
 	/**
 	 * Refresh current list
@@ -81,4 +87,3 @@ export const useBatchItems = (branchId: number, batchId: number | null) => {
 		refresh,
 	};
 };
-

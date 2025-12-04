@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Input from '@/components/form/Input';
-import { toast } from 'react-toastify';
 
 interface ManualQuantityModalProps {
 	isOpen: boolean;

@@ -16,5 +16,3 @@ export { default as WarehousesCharts } from './components/WarehousesCharts';
 
 // Exportar hooks
 export { useWarehouseManagement } from './hooks/useWarehouseManagement';
-
-

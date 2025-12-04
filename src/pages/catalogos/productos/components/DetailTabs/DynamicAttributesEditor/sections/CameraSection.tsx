@@ -37,10 +37,7 @@ const CameraSection: React.FC<SectionBaseProps> = ({
 							name='camera_resolution_mp'
 							value={attributes.camera?.resolution_mp || ''}
 							onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
-								updateAttribute(
-									'camera.resolution_mp',
-									Number(event.target.value),
-								)
+								updateAttribute('camera.resolution_mp', Number(event.target.value))
 							}>
 							<option value=''>Seleccionar resolución</option>
 							{CAMERA_RESOLUTIONS.map((option) => (

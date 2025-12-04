@@ -22,8 +22,8 @@ const DefaultFooterTemplate = () => {
 			return Object.freeze({
 				...fallback,
 				...decoded,
-				front: { ...fallback.front, ...(decoded as any).front },
-				back: { ...fallback.back, ...(decoded as any).back },
+				front: { ...fallback.front, ...decoded.front },
+				back: { ...fallback.back, ...decoded.back },
 			});
 		} catch (error) {
 			console.error('No se pudo decodificar footerMeta', error);

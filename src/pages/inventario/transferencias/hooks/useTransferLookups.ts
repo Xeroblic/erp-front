@@ -51,7 +51,10 @@ export const useTransferLookups = (branchId?: number | null, subsidiaryId?: numb
 		[branchId, productsState.items],
 	);
 
-	const responsibles = useMemo<UserWithDetails[]>(() => usersState.users ?? [], [usersState.users]);
+	const responsibles = useMemo<UserWithDetails[]>(
+		() => usersState.users ?? [],
+		[usersState.users],
+	);
 
 	return {
 		warehouses,

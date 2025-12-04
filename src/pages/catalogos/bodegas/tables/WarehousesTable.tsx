@@ -7,13 +7,13 @@ import {
 	useReactTable,
 	type SortingState,
 } from '@tanstack/react-table';
+import { useNavigate } from 'react-router-dom';
 import { Table, TBody, Td, Th, THead, Tr } from '@/components/ui/Table';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import type { IWarehouse } from '@/interface/warehouse.interface';
 import WarehouseCapacityBar from '../components/WarehouseCapacityBar';
-import { useNavigate } from 'react-router-dom';
 
 interface WarehousesTableProps {
 	warehouses: IWarehouse[];
@@ -84,7 +84,7 @@ const WarehousesTable: React.FC<WarehousesTableProps> = ({
 								{info.getValue()}
 							</div>
 						) : (
-							<div className='text-sm text-red-600 dark:text-red-400 font-medium'>
+							<div className='text-sm font-medium text-red-600 dark:text-red-400'>
 								Sin encargado
 							</div>
 						)}

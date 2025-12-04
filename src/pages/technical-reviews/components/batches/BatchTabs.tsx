@@ -21,8 +21,7 @@ import Container from '@/components/layouts/Container/Container';
 import ApiService from '@/services/ApiService';
 import { COMMERCIAL_STATUS_FILTER_OPTIONS } from '@/pages/technical-reviews/constants';
 
-const TECHNICAL_REVIEWS_PREFIX =
-	(import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
+const TECHNICAL_REVIEWS_PREFIX = (import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
 const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
 const buildItemsUrl = (branchId: number, suffix = '') =>
 	join(TECHNICAL_REVIEWS_PREFIX, `/branches/${branchId}/technical-reviews${suffix}`);
@@ -35,18 +34,18 @@ interface BatchTabsProps {
 type TabKey = EquipmentType | 'all';
 
 interface TabConfig {
-    type: TabKey;
-    label: string;
-    icon: string;
+	type: TabKey;
+	label: string;
+	icon: string;
 }
 
 const TABS: TabConfig[] = [
-    { type: 'all', label: 'Todos', icon: 'HeroSquares2X2' },
-    { type: 'notebook', label: 'Notebooks', icon: 'HeroComputerDesktop' },
-    { type: 'desktop', label: 'Desktops', icon: 'HeroServerStack' },
-    { type: 'aio', label: 'All-in-One', icon: 'HeroDeviceTablet' },
-    { type: 'docking', label: 'Dockings', icon: 'HeroCpuChip' },
-    { type: 'monitor', label: 'Monitores', icon: 'HeroTv' },
+	{ type: 'all', label: 'Todos', icon: 'HeroSquares2X2' },
+	{ type: 'notebook', label: 'Notebooks', icon: 'HeroComputerDesktop' },
+	{ type: 'desktop', label: 'Desktops', icon: 'HeroServerStack' },
+	{ type: 'aio', label: 'All-in-One', icon: 'HeroDeviceTablet' },
+	{ type: 'docking', label: 'Dockings', icon: 'HeroCpuChip' },
+	{ type: 'monitor', label: 'Monitores', icon: 'HeroTv' },
 ];
 
 const REVIEW_STATUS_OPTIONS: TSelectOption[] = [
@@ -80,7 +79,7 @@ const BatchTabs: React.FC<BatchTabsProps> = ({ batch, onItemClick }) => {
 	const itemsMeta = useAppSelector(selectItemsMeta);
 	const loadingItems = useAppSelector(selectItemsLoading);
 
-    const [activeTab, setActiveTab] = useState<TabKey>('all');
+	const [activeTab, setActiveTab] = useState<TabKey>('all');
 	const [reviewStatusFilter, setReviewStatusFilter] = useState<string>('all');
 	const [commercialStatusFilter, setCommercialStatusFilter] = useState<string>('all');
 	const [gradeFilter, setGradeFilter] = useState<string>('all');
@@ -92,7 +91,7 @@ const BatchTabs: React.FC<BatchTabsProps> = ({ batch, onItemClick }) => {
 			batch_id: batch.id,
 		};
 		if (activeTab !== 'all') {
-			params.equipment_type = activeTab as EquipmentType;
+			params.equipment_type = activeTab;
 		}
 		if (reviewStatusFilter !== 'all') {
 			params.review_status = reviewStatusFilter;
@@ -106,46 +105,49 @@ const BatchTabs: React.FC<BatchTabsProps> = ({ batch, onItemClick }) => {
 		return params;
 	}, [batch.id, activeTab, reviewStatusFilter, commercialStatusFilter, gradeFilter]);
 
-	const fetchAllForExport = useCallback(async (includeDetails = false): Promise<IItem[]> => {
-		if (!branchId) return [];
-		const params = buildBaseParams();
-		const perPage = 1000;
-		let page = 1;
-		let lastPage = 1;
-		const allItems: IItem[] = [];
-		do {
-			const response = await ApiService.fetchData<{ data?: any[]; meta?: any }>({
-				url: buildItemsUrl(branchId, '/items'),
-				method: 'get',
-				params: {
-					...params,
-					page,
-					per_page: perPage,
-					with_details: includeDetails ? 1 : undefined,
-					with_attributes: includeDetails ? 1 : undefined,
-				},
-			});
-			const list = Array.isArray(response.data?.data)
-				? response.data?.data
-				: Array.isArray(response.data)
-					? (response.data as any[])
-					: [];
-			allItems.push(...list);
-			lastPage = response.data?.meta?.last_page ?? page;
-			page += 1;
-		} while (page <= lastPage);
-		return allItems;
-	}, [branchId, buildBaseParams]);
+	const fetchAllForExport = useCallback(
+		async (includeDetails = false): Promise<IItem[]> => {
+			if (!branchId) return [];
+			const params = buildBaseParams();
+			const perPage = 1000;
+			let page = 1;
+			let lastPage = 1;
+			const allItems: IItem[] = [];
+			do {
+				const response = await ApiService.fetchData<{ data?: any[]; meta?: any }>({
+					url: buildItemsUrl(branchId, '/items'),
+					method: 'get',
+					params: {
+						...params,
+						page,
+						per_page: perPage,
+						with_details: includeDetails ? 1 : undefined,
+						with_attributes: includeDetails ? 1 : undefined,
+					},
+				});
+				const list = Array.isArray(response.data?.data)
+					? response.data?.data
+					: Array.isArray(response.data)
+						? (response.data as any[])
+						: [];
+				allItems.push(...list);
+				lastPage = response.data?.meta?.last_page ?? page;
+				page += 1;
+			} while (page <= lastPage);
+			return allItems;
+		},
+		[branchId, buildBaseParams],
+	);
 
 	// Cargar items cuando cambia el tab o los filtros
 	useEffect(() => {
 		if (!branchId) return;
 
-        const params = {
-            ...buildBaseParams(),
-            page: currentPage,
-            per_page: limitPerPage,
-        };
+		const params = {
+			...buildBaseParams(),
+			page: currentPage,
+			per_page: limitPerPage,
+		};
 
 		dispatch(fetchItems({ branchId, params }));
 	}, [
@@ -162,25 +164,25 @@ const BatchTabs: React.FC<BatchTabsProps> = ({ batch, onItemClick }) => {
 	]);
 
 	// Resetear página cuando cambia el tab
-    const handleTabChange = (type: TabKey) => {
-        setActiveTab(type);
-        setCurrentPage(1);
-    };
+	const handleTabChange = (type: TabKey) => {
+		setActiveTab(type);
+		setCurrentPage(1);
+	};
 
 	// Obtener conteo del tab
-    const getTabCount = (type: TabKey): number => {
-        if (type === 'all') {
-            const byType = batch.items_summary?.by_equipment_type || {} as Record<string, number>;
-            return (
-                (byType['notebook'] || 0) +
-                (byType['desktop'] || 0) +
-                (byType['aio'] || 0) +
-                (byType['docking'] || 0) +
-                (byType['monitor'] || 0)
-            );
-        }
-        return batch.items_summary?.by_equipment_type?.[type] || 0;
-    };
+	const getTabCount = (type: TabKey): number => {
+		if (type === 'all') {
+			const byType = batch.items_summary?.by_equipment_type || ({} as Record<string, number>);
+			return (
+				(byType.notebook || 0) +
+				(byType.desktop || 0) +
+				(byType.aio || 0) +
+				(byType.docking || 0) +
+				(byType.monitor || 0)
+			);
+		}
+		return batch.items_summary?.by_equipment_type?.[type] || 0;
+	};
 
 	return (
 		<Container className='space-y-6'>
@@ -222,7 +224,6 @@ const BatchTabs: React.FC<BatchTabsProps> = ({ batch, onItemClick }) => {
 
 			{/* Filtros */}
 			<Card>
-				
 				<CardBody className='p-4'>
 					<div className='flex flex-wrap items-center gap-4'>
 						<div className='flex items-center gap-2'>
@@ -304,20 +305,20 @@ const BatchTabs: React.FC<BatchTabsProps> = ({ batch, onItemClick }) => {
 						)}
 					</div>
 
-			{/* Tabla de Items */}
-			<ItemList
-				items={items}
-				meta={itemsMeta}
-				loading={loadingItems}
-				onPageChange={(page) => setCurrentPage(page)}
-				onLimitChange={(limit) => {
-					setLimitPerPage(limit);
-					setCurrentPage(1);
-				}}
-				onItemClick={onItemClick}
-				exportFileName={batch.code || batch.name || `lote-${batch.id}`}
-				onExportFetchAll={fetchAllForExport}
-				/>
+					{/* Tabla de Items */}
+					<ItemList
+						items={items}
+						meta={itemsMeta}
+						loading={loadingItems}
+						onPageChange={(page) => setCurrentPage(page)}
+						onLimitChange={(limit) => {
+							setLimitPerPage(limit);
+							setCurrentPage(1);
+						}}
+						onItemClick={onItemClick}
+						exportFileName={batch.code || batch.name || `lote-${batch.id}`}
+						onExportFetchAll={fetchAllForExport}
+					/>
 				</CardBody>
 			</Card>
 		</Container>

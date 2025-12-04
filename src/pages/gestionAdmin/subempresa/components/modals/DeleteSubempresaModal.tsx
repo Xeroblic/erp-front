@@ -1,3 +1,6 @@
+import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import Modal, {
 	ModalHeader,
 	ModalBody,
@@ -7,17 +10,14 @@ import Modal, {
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import { deleteSubsidiaria } from '@/store/slices/subempresa/subEmpresaSlice';
-import { toast } from 'react-toastify';
 import { useAppDispatch } from '@/store';
-import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
 
 interface DeleteSubempresaModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-    subempresaId: number;
-    subsiName: string;
-    isNavigate?: boolean;
+	subempresaId: number;
+	subsiName: string;
+	isNavigate?: boolean;
 }
 
 export default function DeleteSubempresaModal({
@@ -25,9 +25,8 @@ export default function DeleteSubempresaModal({
 	onClose,
 	subempresaId,
 	subsiName,
-    isNavigate,
-}: DeleteSubempresaModalProps & { subempresaId: number, subsiName: string }) {
-
+	isNavigate,
+}: DeleteSubempresaModalProps & { subempresaId: number; subsiName: string }) {
 	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
 
@@ -37,20 +36,20 @@ export default function DeleteSubempresaModal({
 				await dispatch(deleteSubsidiaria(subempresaId)).unwrap();
 				toast.success('Subempresa eliminada correctamente');
 			} catch (error) {
-				toast.error('Error al tratar de eliminar subsidaria')
+				toast.error('Error al tratar de eliminar subsidaria');
 			}
 		}
 		deleteSubsidarie();
 		if (isNavigate) {
-		    navigate('/gestion/subempresa');
+			navigate('/gestion/subempresa');
 		} else {
-            onClose();
-        }
-	}
+			onClose();
+		}
+	};
 
 	return (
 		<Modal isOpen={isOpen} setIsOpen={onClose}>
-			<ModalHeader className='text-amber-500 font-bold text-2xl'>Advertencia</ModalHeader>
+			<ModalHeader className='text-2xl font-bold text-amber-500'>Advertencia</ModalHeader>
 			<ModalBody>
 				<div className='mb-4 flex items-center gap-3'>
 					<div className='flex h-12 w-12 items-center justify-center rounded-full bg-red-100'>

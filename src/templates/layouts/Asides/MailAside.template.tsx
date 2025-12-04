@@ -16,7 +16,7 @@ const MailAsideTemplate = () => {
 						text='Inbox'
 						icon='HeroInbox'
 						// to={appPages.mailAppPages.subPages.inboxPages.to}
-						>
+					>
 						<Badge
 							variant='outline'
 							color='emerald'

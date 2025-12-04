@@ -34,7 +34,8 @@ interface IRadioProps extends InputHTMLAttributes<HTMLInputElement>, Partial<IVa
 	disabled?: boolean;
 }
 const Radio: FC<IRadioProps> = (props) => {
-	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } = useReactiveThemeConfig();
+	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } =
+		useReactiveThemeConfig();
 
 	const {
 		className,

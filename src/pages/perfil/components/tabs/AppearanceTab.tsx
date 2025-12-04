@@ -1,4 +1,4 @@
-﻿import Label from '@/components/form/Label';
+import Label from '@/components/form/Label';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import Radio, { RadioGroup } from '@/components/form/Radio';

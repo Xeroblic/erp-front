@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector, injectReducer } from '@/store';
 import salesReducer, {
 	loadSaleDetail,
@@ -13,10 +14,14 @@ import CloseSaleModal from './CloseSaleModal';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
-import Modal, { ModalBody, ModalFooter, ModalFooterChild, ModalHeader } from '@/components/ui/Modal';
+import Modal, {
+	ModalBody,
+	ModalFooter,
+	ModalFooterChild,
+	ModalHeader,
+} from '@/components/ui/Modal';
 import { formatDate } from '@/utils/format.utils';
 import ApiService from '@/services/ApiService';
-import { toast } from 'react-toastify';
 
 interface Props {
 	subsidiaryId: number;
@@ -147,38 +152,42 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 			</ModalHeader>
 
 			<ModalBody className='space-y-4'>
-				<Card className="bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 mb-2">
-					<CardBody className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-						<div className="flex flex-col gap-1">
-							<span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Venta</span>
-							<span className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+				<Card className='mb-2 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80'>
+					<CardBody className='flex flex-col gap-2 md:flex-row md:items-center md:justify-between'>
+						<div className='flex flex-col gap-1'>
+							<span className='text-xs font-semibold uppercase tracking-wide text-zinc-500'>
+								Venta
+							</span>
+							<span className='text-xl font-bold text-zinc-900 dark:text-zinc-100'>
 								{detail?.sale_number || `#${saleId}`}
 							</span>
-							<div className="text-sm text-zinc-600 dark:text-zinc-300">
+							<div className='text-sm text-zinc-600 dark:text-zinc-300'>
 								N° Woo: {detail?.wc_order_number || detail?.wc_order_id || '-'}
 							</div>
-							<div className="text-xs text-zinc-500">
-								Fecha de venta: {detail?.sale_date ? formatDate(detail.sale_date) : '-'}
+							<div className='text-xs text-zinc-500'>
+								Fecha de venta:{' '}
+								{detail?.sale_date ? formatDate(detail.sale_date) : '-'}
 							</div>
 						</div>
-						<div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
-							<Badge variant="solid" color="blue" className="w-fit">
+						<div className='flex flex-col gap-2 md:flex-row md:items-center md:gap-4'>
+							<Badge variant='solid' color='blue' className='w-fit'>
 								{translateStatus(detail?.status)}
 							</Badge>
-							<div className="text-right">
-								<p className="text-xs uppercase tracking-wide text-zinc-500">Total</p>
-								<p className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+							<div className='text-right'>
+								<p className='text-xs uppercase tracking-wide text-zinc-500'>
+									Total
+								</p>
+								<p className='text-xl font-semibold text-zinc-900 dark:text-zinc-100'>
 									{formatCLP(detail?.total_amount ?? 0)}
 								</p>
-								<p className="text-xs text-zinc-400">{itemsCount} Ítems</p>
+								<p className='text-xs text-zinc-400'>{itemsCount} Ítems</p>
 							</div>
 							{canClose && (
 								<Button
-									color="emerald"
-									icon="HeroCheckCircle"
-									className="mt-2 md:mt-0"
-									onClick={() => setCloseOpen(true)}
-								>
+									color='emerald'
+									icon='HeroCheckCircle'
+									className='mt-2 md:mt-0'
+									onClick={() => setCloseOpen(true)}>
 									Cerrar venta
 								</Button>
 							)}
@@ -274,10 +283,9 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 					</CardBody>
 				</Card>
 
-
 				{closeOpen && (
 					<CloseSaleModal
-					open={closeOpen}
+						open={closeOpen}
 						onClose={() => setCloseOpen(false)}
 						subsidiaryId={subsidiaryId}
 						saleId={saleId}
@@ -294,13 +302,12 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 						Cargando información actualizada...
 					</div>
 				)}
-				<ModalFooter className="flex justify-end rounded-md p-3">
-					<ModalFooterChild className="ml-auto">
+				<ModalFooter className='flex justify-end rounded-md p-3'>
+					<ModalFooterChild className='ml-auto'>
 						<Button
-							variant="outline"
-							className="border border-dashed"
-							onClick={handleCreateQuote}
-						>
+							variant='outline'
+							className='border border-dashed'
+							onClick={handleCreateQuote}>
 							Crear cotización desde venta
 						</Button>
 					</ModalFooterChild>

@@ -1,5 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
 	updateSubsidiaria,
@@ -13,9 +16,6 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import { ISubempresa } from '@/interface/empresas.interface';
-import { toast } from 'react-toastify';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
 import Label from '@/components/form/Label';
 import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
@@ -66,7 +66,6 @@ export default function SubEmpresaDetalle() {
 			setSubempresa(detalle);
 		}
 	}, [detalle, id]);
-	
 
 	const allowedPaymentOptions = useMemo(
 		() => [
@@ -103,46 +102,45 @@ export default function SubEmpresaDetalle() {
 				: (subempresa as any)?.commune?.id
 					? String((subempresa as any).commune.id)
 					: subempresa?.commune_id
-					? String(subempresa.commune_id)
-					: '',
-			documentsEmail:
-				getStringValue(
-					subempresa?.subsidiary_documents_email,
-					(subempresa as any)?.documents_email,
-				),
-			salesEmail:
-				getStringValue(subempresa?.subsidiary_sales_email, (subempresa as any)?.sales_email),
-			deliveryTerm:
-				getStringValue(
-					subempresa?.subsidiary_delivery_term,
-					(subempresa as any)?.delivery_term,
-				),
-			bankDetails:
-				getStringValue(subempresa?.subsidiary_bank_details, (subempresa as any)?.bank_details),
+						? String(subempresa.commune_id)
+						: '',
+			documentsEmail: getStringValue(
+				subempresa?.subsidiary_documents_email,
+				(subempresa as any)?.documents_email,
+			),
+			salesEmail: getStringValue(
+				subempresa?.subsidiary_sales_email,
+				(subempresa as any)?.sales_email,
+			),
+			deliveryTerm: getStringValue(
+				subempresa?.subsidiary_delivery_term,
+				(subempresa as any)?.delivery_term,
+			),
+			bankDetails: getStringValue(
+				subempresa?.subsidiary_bank_details,
+				(subempresa as any)?.bank_details,
+			),
 			allowedPaymentMethods:
 				subempresa?.subsidiary_allowed_payment_methods ||
 				(subempresa as any)?.allowed_payment_methods ||
 				[],
-			quoteValidityText:
-				getStringValue(
-					subempresa?.subsidiary_quote_validity_text,
-					(subempresa as any)?.quote_validity_text,
-				),
+			quoteValidityText: getStringValue(
+				subempresa?.subsidiary_quote_validity_text,
+				(subempresa as any)?.quote_validity_text,
+			),
 			quoteValidityDays:
 				subempresa?.subsidiary_quote_validity_days ??
 				(subempresa as any)?.quote_validity_days ??
 				null,
 			giro: getStringValue(subempresa?.subsidiary_giro, (subempresa as any)?.giro),
-			commercialTerms:
-				getStringValue(
-					subempresa?.subsidiary_commercial_terms,
-					(subempresa as any)?.commercial_terms,
-				),
-			defaultPaymentMethod:
-				getStringValue(
-					subempresa?.subsidiary_default_payment_method,
-					(subempresa as any)?.default_payment_method,
-				),
+			commercialTerms: getStringValue(
+				subempresa?.subsidiary_commercial_terms,
+				(subempresa as any)?.commercial_terms,
+			),
+			defaultPaymentMethod: getStringValue(
+				subempresa?.subsidiary_default_payment_method,
+				(subempresa as any)?.default_payment_method,
+			),
 		}),
 		[subempresa],
 	);
@@ -163,10 +161,7 @@ export default function SubEmpresaDetalle() {
 				subempresa?.manager?.email as string,
 			),
 			address: getStringValue(subempresa?.address, subempresa?.subsidiary_address),
-			commune: getStringValue(
-				subempresa?.commune?.name,
-				(subempresa as any)?.commune_name,
-			),
+			commune: getStringValue(subempresa?.commune?.name, (subempresa as any)?.commune_name),
 		}),
 		[subempresa],
 	);
@@ -214,11 +209,11 @@ export default function SubEmpresaDetalle() {
 					},
 				),
 		}),
-	onSubmit: async (values) => {
-		if (!subempresa?.id) return;
-		const allowedPaymentMethods = (values.allowedPaymentMethods || []).filter(Boolean);
-		let defaultPaymentMethod = values.defaultPaymentMethod || '';
-		if (defaultPaymentMethod && !allowedPaymentMethods.includes(defaultPaymentMethod)) {
+		onSubmit: async (values) => {
+			if (!subempresa?.id) return;
+			const allowedPaymentMethods = (values.allowedPaymentMethods || []).filter(Boolean);
+			let defaultPaymentMethod = values.defaultPaymentMethod || '';
+			if (defaultPaymentMethod && !allowedPaymentMethods.includes(defaultPaymentMethod)) {
 				defaultPaymentMethod = allowedPaymentMethods[0] || '';
 			}
 			const parsedValidity = Number(values.quoteValidityDays);
@@ -268,16 +263,17 @@ export default function SubEmpresaDetalle() {
 		const errors = await formik.validateForm();
 		if (Object.keys(errors).length) {
 			formik.setTouched(
-				Object.keys(errors).reduce(
-					(acc, key) => ({ ...acc, [key]: true }),
-					{ ...formik.touched },
-				),
+				Object.keys(errors).reduce((acc, key) => ({ ...acc, [key]: true }), {
+					...formik.touched,
+				}),
 				false,
 			);
 			const messages = Array.from(
 				new Set(
 					Object.values(errors)
-						.map((message) => (typeof message === 'string' ? message : 'Campo inválido'))
+						.map((message) =>
+							typeof message === 'string' ? message : 'Campo inválido',
+						)
 						.filter(Boolean),
 				),
 			);
@@ -327,7 +323,10 @@ export default function SubEmpresaDetalle() {
 
 			const payload = (resp.data as any)?.data ?? resp.data;
 			const updatedLogo =
-				payload?.logo_url || payload?.logo || payload?.data?.logo_url || payload?.data?.logo;
+				payload?.logo_url ||
+				payload?.logo ||
+				payload?.data?.logo_url ||
+				payload?.data?.logo;
 
 			if (updatedLogo) {
 				setSubempresa((prev) =>
@@ -355,14 +354,13 @@ export default function SubEmpresaDetalle() {
 		{ fieldRegion: 'region', fieldProvincia: 'provincia', fieldComuna: 'comuna' },
 	);
 
-
 	if (loading) {
 		return (
 			<PageWrapper isProtectedRoute title='Cargando...' name='Subempresa'>
 				<Container className='pt-4'>
 					<div className='flex items-center justify-center py-12'>
 						<div className='flex items-center gap-3'>
-							<div className='h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent'></div>
+							<div className='h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent' />
 							<span className='text-zinc-600'>Cargando subempresa...</span>
 						</div>
 					</div>
@@ -391,10 +389,8 @@ export default function SubEmpresaDetalle() {
 						<Button
 							variant='solid'
 							onClick={() => navigate('/gestion/subempresa')}
-							size='sm'
-							>
+							size='sm'>
 							Volver a Subempresas
-
 						</Button>
 					</div>
 				</Container>
@@ -466,13 +462,12 @@ export default function SubEmpresaDetalle() {
 								isDisable={formik.isSubmitting}>
 								Guardar
 							</Button>
-							
+
 							<Button
 								variant='solid'
 								onClick={() => setOpenDelete(true)}
 								icon='HeroTrash'
-								color='red'
-							>
+								color='red'>
 								Eliminar
 							</Button>
 						</>
@@ -485,8 +480,7 @@ export default function SubEmpresaDetalle() {
 								variant='solid'
 								onClick={() => setOpenDelete(true)}
 								icon='HeroTrash'
-								color='red'
-							>
+								color='red'>
 								Eliminar
 							</Button>
 						</>
@@ -501,16 +495,14 @@ export default function SubEmpresaDetalle() {
 							variant='outline'
 							onClick={() => setActiveTab('basic')}
 							icon='DuoInfoCircle'
-							className={`px-3 py-2 text-sm font-medium ${activeTab == 'basic' ? 'border-b-2 border-primary-500 text-primary-600' : 'text-zinc-400'}`}
-						>
+							className={`px-3 py-2 text-sm font-medium ${activeTab == 'basic' ? 'border-b-2 border-primary-500 text-primary-600' : 'text-zinc-400'}`}>
 							Información básica
 						</Button>
 						<Button
 							variant='outline'
 							onClick={() => setActiveTab('commercial')}
 							icon='DuoInfoCircle'
-							className={`px-3 py-2 text-sm font-medium ${activeTab == 'commercial' ? 'border-b-2 border-primary-500 text-primary-600' : 'text-zinc-400'}`}
-						>
+							className={`px-3 py-2 text-sm font-medium ${activeTab == 'commercial' ? 'border-b-2 border-primary-500 text-primary-600' : 'text-zinc-400'}`}>
 							Datos comerciales
 						</Button>
 					</ButtonGroup>
@@ -519,9 +511,9 @@ export default function SubEmpresaDetalle() {
 				{activeTab === 'basic' && (
 					<BasicParts
 						subempresa={subempresa}
-						isEditing={isEditing} 
-						formik={formik} 
-						viewData={viewData} 
+						isEditing={isEditing}
+						formik={formik}
+						viewData={viewData}
 						optionsRegion={optionsRegion}
 						optionsProvincia={optionsProvincia}
 						optionsComuna={optionsComuna}
@@ -530,22 +522,21 @@ export default function SubEmpresaDetalle() {
 
 				{activeTab === 'commercial' && (
 					<ComercialParts
-						isEditing={isEditing} 
-						formik={formik} 
-						commercialView={commercialView} 
-						allowedPaymentOptions={allowedPaymentOptions} 
+						isEditing={isEditing}
+						formik={formik}
+						commercialView={commercialView}
+						allowedPaymentOptions={allowedPaymentOptions}
 					/>
 				)}
 			</Container>
-			
+
 			<DeleteSubempresaModal
 				isOpen={openDelete}
 				onClose={() => setOpenDelete(false)}
 				subempresaId={subempresa.id}
 				subsiName={subempresa.name || subempresa.subsidiary_name || ''}
-				isNavigate={true}
+				isNavigate
 			/>
-			
 		</PageWrapper>
 	);
 }

@@ -1,8 +1,8 @@
+import { useState, ChangeEvent } from 'react';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Input from '@/components/form/Input';
 import Select from '@/components/form/Select';
-import { useState, ChangeEvent } from 'react';
 import { MockInventoryItem, mockWarehouses } from '../../data/mockData';
 
 interface AdjustStockModalProps {

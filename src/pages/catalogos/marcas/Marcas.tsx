@@ -74,7 +74,7 @@ const Marcas: React.FC = () => {
 	};
 
 	const handleBranchChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-		const value = event.target.value;
+		const { value } = event.target;
 		setFilters((prev) => ({ ...prev, branch_id: value ? Number(value) : undefined }));
 	};
 

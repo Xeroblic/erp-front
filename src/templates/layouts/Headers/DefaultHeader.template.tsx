@@ -6,7 +6,7 @@ import { useAppSelector } from '@/store';
 
 const DefaultHeaderTemplate = () => {
 	// const { personalizacionUsuario } = useAppSelector((state) => state.personalizacion);
-	
+
 	return (
 		<Header>
 			<HeaderLeft>

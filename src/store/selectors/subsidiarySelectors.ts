@@ -39,8 +39,7 @@ const resolveSubsidiaryFromBranch = (
 		}
 		if (typeof subsidiarySource === 'object' && subsidiarySource !== null) {
 			return (
-				toNumber(subsidiarySource.id) ??
-				toNumber((subsidiarySource as any).subsidiary_id)
+				toNumber(subsidiarySource.id) ?? toNumber((subsidiarySource as any).subsidiary_id)
 			);
 		}
 		return toNumber(branch.subsidiary_id);
@@ -62,7 +61,7 @@ const resolveSubsidiaryFromBranch = (
 			}
 			continue;
 		}
-		const resolved = inspectBranch(source as BranchLike);
+		const resolved = inspectBranch(source);
 		if (resolved !== null) return resolved;
 	}
 
@@ -74,7 +73,7 @@ const resolveSubsidiaryFromBranch = (
  * que puede entregar auth / personalizacion.
  */
 export const selectEffectiveSubsidiaryId = (state: RootState): number | null => {
-	const user = state.auth.user;
+	const { user } = state.auth;
 	const personalizationSlice = state.personalizacion?.personalizacionUsuario;
 
 	const directCandidates = [

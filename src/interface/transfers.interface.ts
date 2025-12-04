@@ -5,13 +5,7 @@
 
 export type TransferDirection = 'all' | 'sent' | 'received';
 
-export type TransferStatus =
-	| 'pending'
-	| 'sent'
-	| 'received'
-	| 'completed'
-	| 'cancelled'
-	| 'draft';
+export type TransferStatus = 'pending' | 'sent' | 'received' | 'completed' | 'cancelled' | 'draft';
 
 export type TransferPriority = 'alta' | 'media' | 'baja';
 

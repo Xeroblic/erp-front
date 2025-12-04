@@ -9,9 +9,19 @@
 import React, { useState } from 'react';
 import { useFormikContext, Formik, Form } from 'formik';
 import * as Yup from 'yup';
+import { useDebouncedCallback } from 'use-debounce';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import Button from '@/components/ui/Button';
 import Label from '@/components/form/Label';
+
+// ============================================
+// EJEMPLO 5: Con Debounce (Performance)
+// ============================================
+
+// ============================================
+// EJEMPLO 9: Editor en Modal
+// ============================================
+import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 
 // ============================================
 // EJEMPLO 1: Uso Simple con useState
@@ -107,7 +117,7 @@ export const MultipleEditorsExample = () => {
 					placeholder='1-2 líneas breves...'
 					minHeight='120px'
 					maxHeight='200px'
-					compact={true} // Toolbar simplificado
+					compact // Toolbar simplificado
 				/>
 			</div>
 
@@ -154,17 +164,12 @@ export const ReadOnlyExample = ({ htmlContent }: { htmlContent: string }) => {
 		<RichTextEditor
 			value={htmlContent}
 			onChange={() => {}} // No hace nada
-			disabled={true}
+			disabled
 			showToolbar={false} // Sin toolbar
 			minHeight='auto'
 		/>
 	);
 };
-
-// ============================================
-// EJEMPLO 5: Con Debounce (Performance)
-// ============================================
-import { useDebouncedCallback } from 'use-debounce';
 
 export const DebouncedExample = () => {
 	const { setFieldValue } = useFormikContext();
@@ -278,11 +283,6 @@ export const WordCountExample = () => {
 		</div>
 	);
 };
-
-// ============================================
-// EJEMPLO 9: Editor en Modal
-// ============================================
-import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 
 export const ModalExample = () => {
 	const [isOpen, setIsOpen] = useState(false);

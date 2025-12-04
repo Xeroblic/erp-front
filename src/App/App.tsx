@@ -1,6 +1,8 @@
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 import dayjs from 'dayjs';
 import colors from 'tailwindcss/colors';
+import { ToastContainer } from 'react-toastify';
+import { useEffect, useMemo } from 'react';
 import AsideRouter from '../components/router/AsideRouter';
 import Wrapper from '../components/layouts/Wrapper/Wrapper';
 import HeaderRouter from '../components/router/HeaderRouter';
@@ -9,13 +11,11 @@ import FooterRouter from '../components/router/FooterRouter';
 import useFontSize from '../hooks/useFontSize';
 import useThemeColor from '../hooks/useThemeColor';
 import getOS from '../utils/getOS.util';
-import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import useDarkMode from '../hooks/useDarkMode';
 import { logout, obtenerPersonalizacionThunk, useAppDispatch, useAppSelector } from '@/store';
 import AppInitializer from '../components/AppInitializer';
 import NotificationsStreamProvider from '@/notifications/NotificationsStreamProvider';
-import { useEffect, useMemo } from 'react';
 import tokenManager from '@/services/auth/tokenManager';
 
 const App = () => {

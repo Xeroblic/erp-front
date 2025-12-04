@@ -18,7 +18,7 @@ const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, o
 	const formatDate = (value?: string | null) =>
 		value ? new Date(value).toLocaleDateString() : '-';
 	const resolveImageUrl = (value?: string | null) =>
-		value ? ensureAbsoluteUrl(value) ?? value : null;
+		value ? (ensureAbsoluteUrl(value) ?? value) : null;
 
 	const coverImage =
 		resolveImageUrl(brand?.image?.url ?? brand?.logo_url ?? undefined) ?? undefined;
@@ -49,7 +49,7 @@ const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, o
 					label: 'Actualización',
 					value: formatDate(brand.updated_at),
 				},
-		  ]
+			]
 		: [];
 
 	const hasDetails = Boolean(brand?.origin_country || brand?.manufacturer);
@@ -110,7 +110,10 @@ const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, o
 											rel='noopener noreferrer'
 											className='inline-flex items-center text-xs font-medium text-emerald-600 hover:text-emerald-500'>
 											Visitar sitio
-											<Icon icon='HeroArrowUpRight' className='ml-1 h-3.5 w-3.5' />
+											<Icon
+												icon='HeroArrowUpRight'
+												className='ml-1 h-3.5 w-3.5'
+											/>
 										</a>
 									)}
 								</div>
@@ -133,7 +136,8 @@ const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, o
 									<p className='text-[11px] uppercase tracking-wide text-zinc-500'>
 										{stat.label}
 									</p>
-									<p className={`mt-1 text-base font-semibold ${stat.accent ?? ''}`}>
+									<p
+										className={`mt-1 text-base font-semibold ${stat.accent ?? ''}`}>
 										{stat.value}
 									</p>
 								</div>
@@ -167,7 +171,11 @@ const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, o
 												target='_blank'
 												rel='noopener noreferrer'
 												className='flex h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border border-zinc-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:ring-2 hover:ring-emerald-200 dark:border-white/10 dark:bg-zinc-900'>
-												<img src={url} alt={img.alt ?? `${brand.name}-${idx + 1}`} className='h-full w-full object-cover' />
+												<img
+													src={url}
+													alt={img.alt ?? `${brand.name}-${idx + 1}`}
+													className='h-full w-full object-cover'
+												/>
 											</a>
 										);
 									})}

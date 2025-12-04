@@ -7,9 +7,9 @@ import themeConfig from '../config/theme.config';
  * basada en la personalización del usuario
  */
 const useDynamicThemeConfig = () => {
-    const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
+	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
 
-    return themeConfig.getDynamicConfig(personalizacionUsuario);
+	return themeConfig.getDynamicConfig(personalizacionUsuario);
 };
 
 export default useDynamicThemeConfig;

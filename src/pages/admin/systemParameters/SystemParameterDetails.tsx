@@ -173,8 +173,7 @@ const SystemParameterDetails: React.FC = () => {
 											<label className='mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300'>
 												Categoría
 											</label>
-											<Badge
-												className='capitalize'>
+											<Badge className='capitalize'>
 												{parameter.category}
 											</Badge>
 										</div>
@@ -262,17 +261,13 @@ const SystemParameterDetails: React.FC = () => {
 										<span className='text-sm text-zinc-600 dark:text-zinc-400'>
 											Editable
 										</span>
-										<Badge >
-											{parameter.is_editable ? 'Sí' : 'No'}
-										</Badge>
+										<Badge>{parameter.is_editable ? 'Sí' : 'No'}</Badge>
 									</div>
 									<div className='flex items-center justify-between'>
 										<span className='text-sm text-zinc-600 dark:text-zinc-400'>
 											Visible
 										</span>
-										<Badge >
-											{parameter.is_visible ? 'Sí' : 'No'}
-										</Badge>
+										<Badge>{parameter.is_visible ? 'Sí' : 'No'}</Badge>
 									</div>
 								</CardBody>
 							</Card>

@@ -1,4 +1,3 @@
-import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import {
 	HiOutlineArchiveBox,
 	HiOutlineBuildingOffice2,
@@ -7,6 +6,7 @@ import {
 	HiOutlineXCircle,
 	HiOutlineChartBarSquare,
 } from 'react-icons/hi2';
+import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import { MockInventoryStatistics } from '../../data/mockData';
 import { TColors } from '@/types/colors.type';
 
@@ -79,10 +79,10 @@ export const StatisticsCards: React.FC<StatisticsCardsProps> = ({
 					<Card key={index} className='animate-pulse'>
 						<CardBody className='p-4'>
 							<div className='flex items-center space-x-3'>
-								<div className='h-10 w-10 rounded-lg bg-gray-200 dark:bg-gray-700'></div>
+								<div className='h-10 w-10 rounded-lg bg-gray-200 dark:bg-gray-700' />
 								<div className='flex-1'>
-									<div className='mb-2 h-4 w-20 rounded bg-gray-200 dark:bg-gray-700'></div>
-									<div className='h-6 w-16 rounded bg-gray-200 dark:bg-gray-700'></div>
+									<div className='mb-2 h-4 w-20 rounded bg-gray-200 dark:bg-gray-700' />
+									<div className='h-6 w-16 rounded bg-gray-200 dark:bg-gray-700' />
 								</div>
 							</div>
 						</CardBody>

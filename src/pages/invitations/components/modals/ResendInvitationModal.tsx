@@ -1,3 +1,4 @@
+import React from 'react';
 import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -8,7 +9,6 @@ import Modal, {
 	ModalHeader,
 } from '@/components/ui/Modal';
 import { Invitation } from '@/interface/invitacion.interface';
-import React from 'react';
 
 interface ResendInvitationModalProps {
 	isOpen: boolean;
@@ -60,7 +60,8 @@ const ResendInvitationModal: React.FC<ResendInvitationModalProps> = ({
 	};
 
 	const statusDetails = statusConfig[invitation.status] || statusConfig.pending;
-	const originalInviteDate = invitation.invited_at || invitation.created_at || invitation.accepted_at;
+	const originalInviteDate =
+		invitation.invited_at || invitation.created_at || invitation.accepted_at;
 	const formattedOriginalInviteDate = (() => {
 		if (!originalInviteDate) return null;
 		const parsed = new Date(originalInviteDate);

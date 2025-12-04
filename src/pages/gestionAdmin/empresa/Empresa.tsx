@@ -1,6 +1,8 @@
 // src/pages/EmpresaDetalle.tsx
 import React, { useEffect, useState, useRef } from 'react';
 import { useFormik } from 'formik';
+import { toast } from 'react-toastify';
+import { unwrapResult } from '@reduxjs/toolkit';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchMiEmpresa, updateMiEmpresa } from '@/store/slices/empresa/empresaSlice';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
@@ -10,8 +12,6 @@ import Card, { CardBody } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
-import { toast } from 'react-toastify';
-import { unwrapResult } from '@reduxjs/toolkit';
 import Spinner from '@/components/ui/Spinner';
 import {
 	listaComunasThunk,
@@ -85,7 +85,7 @@ export default function EmpresaDetalle() {
 				if (e?.response?.data?.errors) {
 					Object.values(e.response.data.errors).forEach((msg: any) => toast.error(msg));
 				} else {
-					toast.error('Error al actualizar la empresa: ' + (e.message || e));
+					toast.error(`Error al actualizar la empresa: ${e.message || e}`);
 				}
 				console.error('Error al actualizar la empresa:', e);
 			}
@@ -203,10 +203,9 @@ export default function EmpresaDetalle() {
 							</Badge>
 							<Badge
 								variant='solid'
-								className={`ml-4 gap-3 px-2 ${miEmpresa?.is_active ? 'text-green-600' : 'text-red-600'}`}
-							>
+								className={`ml-4 gap-3 px-2 ${miEmpresa?.is_active ? 'text-green-600' : 'text-red-600'}`}>
 								{miEmpresa?.company_type}
-								<span className=' font-bold text-white'>
+								<span className='font-bold text-white'>
 									{miEmpresa?.is_active ? 'Activa' : 'Inactiva'}
 								</span>
 							</Badge>
@@ -217,7 +216,6 @@ export default function EmpresaDetalle() {
 								de la empresa.
 							</p>
 						</div>
-						
 					</div>
 				</SubheaderLeft>
 				<SubheaderRight className='space-x-2'>

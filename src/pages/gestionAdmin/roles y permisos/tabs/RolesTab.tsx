@@ -31,7 +31,7 @@ const RolesTab: React.FC<RolesTabProps> = ({
 				</p>
 				<div className='grid grid-cols-2 gap-2'>
 					{roleOptions.map((opt) => {
-						const checked = formik.values.roles.includes(opt.value as string);
+						const checked = formik.values.roles.includes(opt.value);
 						return (
 							<label key={opt.value} className='flex items-center gap-2'>
 								<Checkbox
@@ -40,15 +40,12 @@ const RolesTab: React.FC<RolesTabProps> = ({
 									onChange={() => {
 										if (!editable) return;
 										const next = new Set(formik.values.roles);
-										if (next.has(opt.value as string))
-											next.delete(opt.value as string);
-										else next.add(opt.value as string);
+										if (next.has(opt.value)) next.delete(opt.value);
+										else next.add(opt.value);
 										formik.setFieldValue('roles', Array.from(next));
 									}}
 								/>
-								<span className='text-sm'>
-									{formatRoleName(opt.label as string)}
-								</span>
+								<span className='text-sm'>{formatRoleName(opt.label)}</span>
 							</label>
 						);
 					})}

@@ -1,4 +1,5 @@
 import React, { Dispatch, SetStateAction, useRef, useState } from 'react';
+import { toast } from 'react-toastify';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Input from '@/components/form/Input';
@@ -7,7 +8,6 @@ import Checkbox from '@/components/form/Checkbox';
 import Label from '@/components/form/Label';
 import Icon from '@/components/icon/Icon';
 import SelectReact, { TSelectOption, TSelectOptions } from '@/components/form/SelectReact';
-import { toast } from 'react-toastify';
 import type {
 	IDocumentPayload,
 	TDocumentModule,
@@ -57,7 +57,7 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 		}
 		const formData = new FormData(event.currentTarget);
 		const documentTypeId = Number(selectedDocumentType.value);
-		const outputFormat = selectedOutputFormat.value as TDocumentOutputFormat | string;
+		const outputFormat = selectedOutputFormat.value;
 		const relatedModule = selectedModule.value as TDocumentModule;
 
 		const payload: IDocumentPayload = {
@@ -132,7 +132,9 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 								name='document_type_id'
 								options={documentTypeOptions}
 								value={selectedDocumentType}
-								onChange={(option) => setSelectedDocumentType(option as TSelectOption)}
+								onChange={(option) =>
+									setSelectedDocumentType(option as TSelectOption)
+								}
 								placeholder='Selecciona un tipo'
 								isClearable
 							/>
@@ -146,7 +148,9 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 								name='output_format'
 								options={outputFormatOptions}
 								value={selectedOutputFormat}
-								onChange={(option) => setSelectedOutputFormat(option as TSelectOption)}
+								onChange={(option) =>
+									setSelectedOutputFormat(option as TSelectOption)
+								}
 								placeholder='Selecciona formato'
 								isClearable
 							/>

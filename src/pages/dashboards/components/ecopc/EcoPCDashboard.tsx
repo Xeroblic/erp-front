@@ -235,11 +235,11 @@ const EcoPCDashboard: React.FC = () => {
 
 		if (diffMins < 60) {
 			return `hace ${diffMins} min`;
-		} else if (diffHours < 24) {
-			return `hace ${diffHours}h`;
-		} else {
-			return date.toLocaleDateString('es-CL');
 		}
+		if (diffHours < 24) {
+			return `hace ${diffHours}h`;
+		}
+		return date.toLocaleDateString('es-CL');
 	};
 
 	return (

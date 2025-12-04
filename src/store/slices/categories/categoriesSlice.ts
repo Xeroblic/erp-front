@@ -18,7 +18,7 @@ import {
 	normalizeCategoryTree,
 } from '@/components/helper/category.helper';
 
-export interface CategoryStatsState extends CategoryStatsShape { }
+export interface CategoryStatsState extends CategoryStatsShape {}
 
 export interface CategoriesState {
 	items: ICategory[];
@@ -116,14 +116,16 @@ const fetchCategoryDetails = async (id: number): Promise<ICategory | null> => {
 };
 
 const uploadCategoryImage = async (
-    categoryId: number,
-    branchId: number | null | undefined,
-    file: File,
+	categoryId: number,
+	branchId: number | null | undefined,
+	file: File,
 ): Promise<string | null> => {
 	if (!branchId) {
 		// La ruta requiere branches/{branch}/...; sin branch no se puede subir
 		if (typeof window !== 'undefined') {
-			console.warn('[categoriesSlice] uploadCategoryImage: branchId es requerido para subir media');
+			console.warn(
+				'[categoriesSlice] uploadCategoryImage: branchId es requerido para subir media',
+			);
 		}
 		return null;
 	}
@@ -162,46 +164,46 @@ const uploadCategoryImage = async (
 };
 
 const uploadCategoryGalleryFiles = async (
-    categoryId: number,
-    branchId: number | null | undefined,
-    files: File[],
+	categoryId: number,
+	branchId: number | null | undefined,
+	files: File[],
 ): Promise<ICategory | null> => {
-    if (!branchId || !files?.length) return null;
+	if (!branchId || !files?.length) return null;
 
-    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/svg+xml'];
-    const validFiles: File[] = [];
-    for (const f of files) {
-        const v = validateFile(f, { maxKB: 8192, allowedMimes: allowed });
-        if (!v.ok) continue;
-        const processed = await convertFileToWebP(f);
-        if (processed) validFiles.push(processed);
-    }
-    if (!validFiles.length) return await fetchCategoryDetails(categoryId);
+	const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/svg+xml'];
+	const validFiles: File[] = [];
+	for (const f of files) {
+		const v = validateFile(f, { maxKB: 8192, allowedMimes: allowed });
+		if (!v.ok) continue;
+		const processed = await convertFileToWebP(f);
+		if (processed) validFiles.push(processed);
+	}
+	if (!validFiles.length) return fetchCategoryDetails(categoryId);
 
-    const formData = new FormData();
-    validFiles.forEach((f) => formData.append('files[]', f, f.name));
-    // Enviar meta similar a productos: una entrada por archivo
-    const meta = validFiles.map((_, idx) => ({
-        index: idx,
-        collection: 'gallery',
-        sort_order: idx,
-        alt_text: 'Galería',
-        primary: false,
-    }));
-    formData.append('meta', JSON.stringify(meta));
+	const formData = new FormData();
+	validFiles.forEach((f) => formData.append('files[]', f, f.name));
+	// Enviar meta similar a productos: una entrada por archivo
+	const meta = validFiles.map((_, idx) => ({
+		index: idx,
+		collection: 'gallery',
+		sort_order: idx,
+		alt_text: 'Galería',
+		primary: false,
+	}));
+	formData.append('meta', JSON.stringify(meta));
 
-    try {
-        await ApiService.fetchData<{ data?: any }, FormData>({
-            url: `/branches/${branchId}/categories/${categoryId}/media/upload-multiple`,
-            method: 'post',
-            data: formData,
-        });
-        const refreshed = await fetchCategoryDetails(categoryId);
-        return refreshed;
-    } catch {
-        const refreshed = await fetchCategoryDetails(categoryId);
-        return refreshed;
-    }
+	try {
+		await ApiService.fetchData<{ data?: any }, FormData>({
+			url: `/branches/${branchId}/categories/${categoryId}/media/upload-multiple`,
+			method: 'post',
+			data: formData,
+		});
+		const refreshed = await fetchCategoryDetails(categoryId);
+		return refreshed;
+	} catch {
+		const refreshed = await fetchCategoryDetails(categoryId);
+		return refreshed;
+	}
 };
 
 export const fetchCategoryTree = createAsyncThunk<
@@ -224,7 +226,9 @@ export const fetchCategoryTree = createAsyncThunk<
 		return normalizeCategoryTree(rawNodes);
 	} catch (error: any) {
 		return rejectWithValue(
-			error?.response?.data?.message ?? error?.message ?? 'Error al cargar arbol de categorias',
+			error?.response?.data?.message ??
+				error?.message ??
+				'Error al cargar arbol de categorias',
 		);
 	}
 });
@@ -252,7 +256,15 @@ export const createCategory = createAsyncThunk<
 			const uploadedUrl = await uploadCategoryImage(normalized.id, branchId, image);
 			if (uploadedUrl) {
 				// merge
-				normalized = { ...normalized, image: { id: normalized.image?.id, url: uploadedUrl, thumb: uploadedUrl, alt: normalized.name } };
+				normalized = {
+					...normalized,
+					image: {
+						id: normalized.image?.id,
+						url: uploadedUrl,
+						thumb: uploadedUrl,
+						alt: normalized.name,
+					},
+				};
 			} else {
 				const refreshed = await fetchCategoryDetails(normalized.id);
 				if (refreshed) normalized = refreshed;
@@ -289,7 +301,15 @@ export const updateCategory = createAsyncThunk<
 		if (image instanceof File) {
 			const uploadedUrl = await uploadCategoryImage(normalized.id, branchId, image);
 			if (uploadedUrl) {
-				normalized = { ...normalized, image: { id: normalized.image?.id, url: uploadedUrl, thumb: uploadedUrl, alt: normalized.name } };
+				normalized = {
+					...normalized,
+					image: {
+						id: normalized.image?.id,
+						url: uploadedUrl,
+						thumb: uploadedUrl,
+						alt: normalized.name,
+					},
+				};
 			} else {
 				const refreshed = await fetchCategoryDetails(normalized.id);
 				if (refreshed) normalized = refreshed;
@@ -305,59 +325,62 @@ export const updateCategory = createAsyncThunk<
 });
 
 export const uploadCategoryGallery = createAsyncThunk<
-    ICategory | null,
-    { categoryId: number; branchId: number; files: File[] },
-    { rejectValue: string }
->('categories/uploadCategoryGallery', async ({ categoryId, branchId, files }, { rejectWithValue }) => {
-    try {
-        const refreshed = await uploadCategoryGalleryFiles(categoryId, branchId, files);
-        return refreshed;
-    } catch (error: any) {
-        return rejectWithValue(
-            error?.response?.data?.message ?? error?.message ?? 'Error al subir galería',
-        );
-    }
-});
-
-export const toggleCategoryStatus = createAsyncThunk<
-	ICategory,
-	ICategory,
+	ICategory | null,
+	{ categoryId: number; branchId: number; files: File[] },
 	{ rejectValue: string }
->('categories/toggleCategoryStatus', async (category, { rejectWithValue }) => {
-	try {
-		const response = await ApiService.fetchData<{ data?: any }>({
-			url: `/categories/${category.id}`,
-			method: 'patch',
-			data: { is_active: !category.is_active },
-			headers: { 'Content-Type': 'application/json' },
-		});
+>(
+	'categories/uploadCategoryGallery',
+	async ({ categoryId, branchId, files }, { rejectWithValue }) => {
+		try {
+			const refreshed = await uploadCategoryGalleryFiles(categoryId, branchId, files);
+			return refreshed;
+		} catch (error: any) {
+			return rejectWithValue(
+				error?.response?.data?.message ?? error?.message ?? 'Error al subir galería',
+			);
+		}
+	},
+);
 
-		const raw = response.data?.data ?? response.data;
-		return normalizeCategory(raw ?? { ...category, is_active: !category.is_active });
-	} catch (error: any) {
-		return rejectWithValue(
-			error?.response?.data?.message ?? error?.message ?? 'No se pudo actualizar estado',
-		);
-	}
-});
+export const toggleCategoryStatus = createAsyncThunk<ICategory, ICategory, { rejectValue: string }>(
+	'categories/toggleCategoryStatus',
+	async (category, { rejectWithValue }) => {
+		try {
+			const response = await ApiService.fetchData<{ data?: any }>({
+				url: `/categories/${category.id}`,
+				method: 'patch',
+				data: { is_active: !category.is_active },
+				headers: { 'Content-Type': 'application/json' },
+			});
 
-export const deleteCategory = createAsyncThunk<
-	number,
-	number,
-	{ rejectValue: string }
->('categories/deleteCategory', async (categoryId, { rejectWithValue }) => {
-	try {
-		await ApiService.fetchData({
-			url: `/categories/${categoryId}`,
-			method: 'delete',
-		});
-		return categoryId;
-	} catch (error: any) {
-		return rejectWithValue(
-			error?.response?.data?.message ?? error?.message ?? 'No se pudo eliminar la categoria',
-		);
-	}
-});
+			const raw = response.data?.data ?? response.data;
+			return normalizeCategory(raw ?? { ...category, is_active: !category.is_active });
+		} catch (error: any) {
+			return rejectWithValue(
+				error?.response?.data?.message ?? error?.message ?? 'No se pudo actualizar estado',
+			);
+		}
+	},
+);
+
+export const deleteCategory = createAsyncThunk<number, number, { rejectValue: string }>(
+	'categories/deleteCategory',
+	async (categoryId, { rejectWithValue }) => {
+		try {
+			await ApiService.fetchData({
+				url: `/categories/${categoryId}`,
+				method: 'delete',
+			});
+			return categoryId;
+		} catch (error: any) {
+			return rejectWithValue(
+				error?.response?.data?.message ??
+					error?.message ??
+					'No se pudo eliminar la categoria',
+			);
+		}
+	},
+);
 
 const categoriesSlice = createSlice({
 	name: 'categories/categoriesSlice',
@@ -416,32 +439,36 @@ const categoriesSlice = createSlice({
 			})
 			.addCase(updateCategory.fulfilled, (state, action) => {
 				state.updating = false;
-				const index = state.items.findIndex((category) => category.id === action.payload.id);
+				const index = state.items.findIndex(
+					(category) => category.id === action.payload.id,
+				);
 				if (index !== -1) {
 					state.items[index] = action.payload;
 					state.stats = computeCategoryStats(state.items);
 				}
 			})
-        .addCase(updateCategory.rejected, (state, action) => {
-            state.updating = false;
-            state.error = action.payload ?? 'Error al actualizar categoria';
-        })
-        // Upload gallery
-        .addCase(uploadCategoryGallery.fulfilled, (state, action) => {
-            const payload = action.payload;
-            if (!payload) return;
-            const index = state.items.findIndex((c) => c.id === payload.id);
-            if (index !== -1) {
-                state.items[index] = payload;
-                state.stats = computeCategoryStats(state.items);
-            }
-        })
-        .addCase(uploadCategoryGallery.rejected, (state, action) => {
-            state.error = action.payload ?? 'No se pudo subir la galería';
-        })
+			.addCase(updateCategory.rejected, (state, action) => {
+				state.updating = false;
+				state.error = action.payload ?? 'Error al actualizar categoria';
+			})
+			// Upload gallery
+			.addCase(uploadCategoryGallery.fulfilled, (state, action) => {
+				const { payload } = action;
+				if (!payload) return;
+				const index = state.items.findIndex((c) => c.id === payload.id);
+				if (index !== -1) {
+					state.items[index] = payload;
+					state.stats = computeCategoryStats(state.items);
+				}
+			})
+			.addCase(uploadCategoryGallery.rejected, (state, action) => {
+				state.error = action.payload ?? 'No se pudo subir la galería';
+			})
 			// Toggle status
 			.addCase(toggleCategoryStatus.fulfilled, (state, action) => {
-				const index = state.items.findIndex((category) => category.id === action.payload.id);
+				const index = state.items.findIndex(
+					(category) => category.id === action.payload.id,
+				);
 				if (index !== -1) {
 					state.items[index] = action.payload;
 					state.stats = computeCategoryStats(state.items);
@@ -470,5 +497,3 @@ const categoriesSlice = createSlice({
 export const { clearCategoriesError } = categoriesSlice.actions;
 
 export default categoriesSlice.reducer;
-
-

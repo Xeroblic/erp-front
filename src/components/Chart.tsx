@@ -27,7 +27,7 @@ const isValidDimension = (value: string | number | undefined | null): value is s
 };
 
 const sanitizeDimension = <T extends string | number>(value: T | undefined, fallback: T): T => {
-	return (isValidDimension(value) ? (value as T) : fallback) as T;
+	return isValidDimension(value) ? value : fallback;
 };
 
 const Chart: FC<IChartProps> = (props) => {

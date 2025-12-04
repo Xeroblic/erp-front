@@ -116,11 +116,7 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 			rightIcon: classNames('ltr:ml-1', 'rtl:mr-1', 'text-[1.125rem]'),
 		},
 		sm: {
-			general: classNames(
-				{ 'px-4': HAS_CHILDREN, 'px-1': !HAS_CHILDREN },
-				'py-1',
-				'text-sm',
-			),
+			general: classNames({ 'px-4': HAS_CHILDREN, 'px-1': !HAS_CHILDREN }, 'py-1', 'text-sm'),
 			icon: classNames({ 'ltr:mr-1 rtl:ml-1': HAS_CHILDREN }, 'text-[1.25rem]'),
 			rightIcon: classNames('ltr:ml-1', 'rtl:mr-1', 'text-[1.25rem]'),
 		},
@@ -134,11 +130,7 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 			rightIcon: classNames('ltr:ml-1.5', 'rtl:mr-1.5', 'text-[1.5rem]'),
 		},
 		lg: {
-			general: classNames(
-				{ 'px-6': HAS_CHILDREN, 'px-2': !HAS_CHILDREN },
-				'py-2',
-				'text-lg',
-			),
+			general: classNames({ 'px-6': HAS_CHILDREN, 'px-2': !HAS_CHILDREN }, 'py-2', 'text-lg'),
 			icon: classNames({ 'ltr:mr-2 rtl:ml-2': HAS_CHILDREN }, 'text-[1.75rem]'),
 			rightIcon: classNames('ltr:ml-2', 'rtl:mr-2', 'text-[1.75rem]'),
 		},
@@ -180,11 +172,9 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 			{(!!icon || isLoading) && (
 				<Icon
 					icon={isLoading ? 'DuoLoading' : (icon as TIcons)}
-					className={classNames(
-						{ 'animate-spin': isLoading },
-						btnIconClasses,
-						{ 'text-white': isSolid },
-					)}
+					className={classNames({ 'animate-spin': isLoading }, btnIconClasses, {
+						'text-white': isSolid,
+					})}
 				/>
 			)}
 			{children}

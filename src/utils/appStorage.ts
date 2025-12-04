@@ -2,34 +2,29 @@
 const APP_PREFIX = 'zentria_';
 
 export function clearAppStorage(options?: { keepTheme?: boolean }) {
-  if (typeof window === 'undefined') return;
-  if (!window.localStorage) return;
+	if (typeof window === 'undefined') return;
+	if (!window.localStorage) return;
 
-  const { keepTheme = false } = options ?? {};
-  const ls = window.localStorage;
+	const { keepTheme = false } = options ?? {};
+	const ls = window.localStorage;
 
-  const keysToDelete: string[] = [];
+	const keysToDelete: string[] = [];
 
-  for (let i = 0; i < ls.length; i++) {
-    const key = ls.key(i);
-    if (!key) continue;
+	for (let i = 0; i < ls.length; i++) {
+		const key = ls.key(i);
+		if (!key) continue;
 
-    const isAppKey =
-      key.startsWith(APP_PREFIX) ||
-      key === 'theme';
+		const isAppKey = key.startsWith(APP_PREFIX) || key === 'theme';
 
-    if (!isAppKey) continue;
+		if (!isAppKey) continue;
 
-    // si queremos mantener tema global
-    if (
-      keepTheme &&
-      (key === 'theme' || key.startsWith('zentria_theme'))
-    ) {
-      continue;
-    }
+		// si queremos mantener tema global
+		if (keepTheme && (key === 'theme' || key.startsWith('zentria_theme'))) {
+			continue;
+		}
 
-    keysToDelete.push(key);
-  }
+		keysToDelete.push(key);
+	}
 
-  keysToDelete.forEach((k) => ls.removeItem(k));
+	keysToDelete.forEach((k) => ls.removeItem(k));
 }

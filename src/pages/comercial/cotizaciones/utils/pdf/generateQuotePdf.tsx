@@ -69,7 +69,7 @@ const fetchImageAsDataUrl = async (url: string): Promise<string | null> => {
 			console.error(
 				'[generateQuotePdf] Error fetching logo:',
 				response.status,
-				response.statusText
+				response.statusText,
 			);
 			return null;
 		}
@@ -79,32 +79,20 @@ const fetchImageAsDataUrl = async (url: string): Promise<string | null> => {
 
 		console.log('[generateQuotePdf] Logo content-type:', mime);
 
-		if (
-			mime === 'image/png' ||
-			mime === 'image/jpeg' ||
-			mime === 'image/jpg'
-		) {
+		if (mime === 'image/png' || mime === 'image/jpeg' || mime === 'image/jpg') {
 			const dataUrl = await blobToDataURL(blob);
-			console.log(
-				'[generateQuotePdf] Logo PNG/JPEG cargado (len):',
-				dataUrl.length
-			);
+			console.log('[generateQuotePdf] Logo PNG/JPEG cargado (len):', dataUrl.length);
 			return dataUrl;
 		}
 
 		const pngDataUrl = await blobToPngDataURLViaCanvas(blob);
-		console.log(
-			'[generateQuotePdf] Logo convertido a PNG (len):',
-			pngDataUrl.length
-		);
+		console.log('[generateQuotePdf] Logo convertido a PNG (len):', pngDataUrl.length);
 		return pngDataUrl;
 	} catch (err) {
 		console.warn('[generateQuotePdf] Excepción al cargar el logo:', err);
 		return null;
 	}
 };
-
-
 
 // --- tu lógica principal se mantiene igual --- //
 
@@ -138,15 +126,17 @@ export const generateQuotePdf = async (quote: IQuote) => {
 			console.log('[generateQuotePdf] usando logo base64 directo (meta/logo_base_64)');
 		} else {
 			logoBase64 = await fetchImageAsDataUrl(company.logoUrl);
-			console.log('[generateQuotePdf] resultado fetchImageAsDataUrl length:', logoBase64?.length);
+			console.log(
+				'[generateQuotePdf] resultado fetchImageAsDataUrl length:',
+				logoBase64?.length,
+			);
 		}
 	}
 
 	// 3. Generar PDF
 	const blob = await pdf(
-		<QuotePdfDocument quote={quote} company={company} logoBase64={logoBase64} />
+		<QuotePdfDocument quote={quote} company={company} logoBase64={logoBase64} />,
 	).toBlob();
 
 	return blob;
 };
-

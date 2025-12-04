@@ -12,9 +12,11 @@ import {
 	getProductSku,
 	getProductName,
 	getProductDetail,
-	formatCurrency,
 	formatDate,
 	getPaymentMethodsLabel,
+	formatCurrency,
+	getDocumentType,
+	getQuoteTotals,
 } from './quote-data-mapper';
 
 interface QuotePrintableViewProps {
@@ -27,7 +29,7 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 
 	// Usar helpers centralizados para obtener datos
 	const company = getCompanyInfo(quote, state);
-	
+
 	// Efecto para cargar datos de la subsidiaria si faltan
 	useEffect(() => {
 		if (quote.subsidiary_id && (!company.name || company.name === 'EcoTI')) {
@@ -37,190 +39,240 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 				dispatch(fetchSubsidiariaDetail(quote.subsidiary_id));
 			}
 		}
-	}, [quote.subsidiary_id, company.name, dispatch, state.subEmpresa.loading, state.subEmpresa.detalle?.id]);
+	}, [
+		quote.subsidiary_id,
+		company.name,
+		dispatch,
+		state.subEmpresa.loading,
+		state.subEmpresa.detalle?.id,
+	]);
 
 	const customer = getCustomerInfo((quote as any).customer);
-	const items = Array.isArray(quote.items) ? (quote.items as IQuoteItem[]) : [];
+	const items = Array.isArray(quote.items) ? quote.items : [];
+	const minRows = 15;
+	const rows = Array.from(
+		{ length: Math.max(items.length, minRows) },
+		(_, idx) => items[idx] ?? null,
+	);
+	const metadata = ((quote as any)?.metadata || {}) as Record<string, any>;
+	const orderInfo = {
+		orderNumber: metadata?.order_number || metadata?.n_orden || '—',
+		contactPhone: customer.phone || metadata?.contact_phone || '—',
+		associatedOt: metadata?.associated_ot || '—',
+		documentType: metadata?.document_type || '—',
+	};
 
-	// Totales desde el endpoint principal (sin recalcular)
-	const netTotal = Number(
-		(quote as any).subtotal ??
-			(quote as any).total_net ??
-			0,
-	);
-	const discount = Number(
-		(quote as any).discount_amount ??
-			(quote as any).fixed_discount ??
-			0,
-	);
-	const tax = Number(
-		(quote as any).tax_amount ??
-			(quote as any).total_tax ??
-			0,
-	);
-	const total = Number((quote as any).total_amount ?? 0);
-	const paymentMethodsLabel = getPaymentMethodsLabel(company.allowedPaymentMethods as string[]);
+	const { netTotal, discount, tax, total } = getQuoteTotals(quote, items);
+	const paymentMethodsLabel = getPaymentMethodsLabel(quote);
+	const documentType = getDocumentType(quote);
 
 	return (
-		<div 
-            className='mx-auto min-h-[229mm] max-w-[216mm] p-10 font-sans text-[9px] leading-snug shadow-lg print:shadow-none'
-            style={{ backgroundColor: '#ffffff', color: '#111827' }}
-        >
+		<div
+			className='mx-auto min-h-[229mm] max-w-[216mm] p-10 font-sans text-[9px] leading-snug shadow-lg print:shadow-none'
+			style={{ backgroundColor: '#ffffff', color: '#111827' }}>
 			{/* Header */}
-			<div className='mb-5 flex items-start justify-between'>
-				<div className='w-[60%]'>
-					<div className='mb-2 flex h-[50px] items-center'>
+			<div className='mb-3 flex items-start justify-between'>
+				<div className='flex w-[60%] gap-3'>
+					<div className='flex h-[70px] w-[70px] items-center justify-center border border-gray-200 p-1'>
 						{company.logoUrl ? (
 							<img
 								src={company.logoUrl}
 								alt='Logo'
-								className='h-full object-contain object-left'
+								className='h-full w-full object-contain'
 								onError={(e) => {
 									e.currentTarget.style.display = 'none';
 								}}
 							/>
 						) : (
-							<h1 className='text-sm font-bold uppercase text-gray-900' style={{ color: '#111827' }}>
-								{company.name}
-							</h1>
+							<span className='text-xs font-bold uppercase'>{company.name}</span>
 						)}
 					</div>
-					{/* {company.logoUrl && (
-						<p className='mb-0.5 text-sm font-bold uppercase text-gray-900' style={{ color: '#111827' }}>
-							{company.name}
-						</p>
-					)} */}
-					<p className='text-[9px] text-gray-700' style={{ color: '#374151' }}>Giro: {company.activity}</p>
-					<p className='text-[9px] text-gray-700' style={{ color: '#374151' }}>
-						Dirección: {company.fullAddress || '—'}
-					</p>
-					<p className='text-[9px] text-gray-700' style={{ color: '#374151' }}>
-						Email: {company.email || '—'} • Fono: {company.phone || '—'}
-					</p>
-					{company.website && (
-						<p className='text-[9px] text-gray-700' style={{ color: '#374151' }}>Web: {company.website}</p>
-					)}
+					<div className='text-[9px]' style={{ color: '#111827' }}>
+						<p className='font-semibold uppercase'>{company.name}</p>
+						<p>Dirección: {company.fullAddress || '—'}</p>
+						<p>Email: {company.email || '—'}</p>
+						<p>Giro: {company.activity || '—'}</p>
+						<p>Servicios Computacionales</p>
+					</div>
 				</div>
-
 				<div className='flex w-[36%] flex-col items-center'>
-					<div className='w-full border-2 border-rose-600 py-2 text-center' style={{ borderColor: '#e11d48' }}>
-						<h2 className='text-xs font-bold text-rose-600' style={{ color: '#e11d48' }}>R.U.T.: {company.rut}</h2>
-						<div className='my-1 w-full bg-rose-50 py-0.5' style={{ backgroundColor: '#fff1f2' }}>
-							<h3 className='text-xs font-bold uppercase text-rose-600' style={{ color: '#e11d48' }}>
+					<div
+						className='w-full border-2 border-rose-600 py-2 text-center'
+						style={{ borderColor: '#e11d48' }}>
+						<h2
+							className='text-xs font-bold text-rose-600'
+							style={{ color: '#e11d48' }}>
+							R.U.T.: {company.rut}
+						</h2>
+						<div
+							className='my-1 w-full bg-rose-50 py-0.5'
+							style={{ backgroundColor: '#fff1f2' }}>
+							<h3
+								className='text-xs font-bold uppercase text-rose-600'
+								style={{ color: '#e11d48' }}>
 								COTIZACIÓN
 							</h3>
 						</div>
-						<h4 className='text-sm font-bold text-gray-900' style={{ color: '#111827' }}>N° {quote.id}</h4>
+						<h4
+							className='text-sm font-bold text-gray-900'
+							style={{ color: '#111827' }}>
+							N° {quote.quote_number || quote.id}
+						</h4>
 					</div>
-					<p className='mt-1.5 text-[10px] font-bold text-gray-900' style={{ color: '#111827' }}>
+					<p
+						className='mt-1.5 text-[10px] font-bold text-gray-900'
+						style={{ color: '#111827' }}>
 						Fecha: {formatDate(quote.quote_date)}
 					</p>
 				</div>
 			</div>
 
-			{/* Cliente */}
-			<div className='mb-5 border border-gray-300 bg-gray-50 p-2 text-gray-900' style={{ borderColor: '#d1d5db', backgroundColor: '#f9fafb', color: '#111827' }}>
-				<div className='mb-0.5 flex items-baseline'>
-					<span className='w-[60px] text-[8px] font-bold'>Señor(es):</span>
-					<span className='flex-1 text-[8px] font-bold uppercase'>{customer.name}</span>
-					<span className='w-[30px] text-right text-[8px] font-bold'>RUT:</span>
-					<span className='w-[120px] text-right text-[8px]'>{customer.rut}</span>
+			<div
+				className='mb-4 grid grid-cols-1 rounded border-2 border-rose-500 text-[9px] text-gray-800 md:grid-cols-2'
+				style={{ color: '#111827' }}>
+				<div className='border-b-2 border-rose-500 bg-rose-50 px-3 py-1 font-semibold uppercase text-rose-800 md:col-span-2'>
+					<div className='flex items-center justify-between'>
+						<span>Empresa</span>
+						<span>
+							N° Orden C:{' '}
+							<span className='font-bold'>{quote.quote_number || quote.id}</span>
+						</span>
+					</div>
 				</div>
-				<div className='mb-0.5 flex items-baseline'>
-					<span className='w-[60px] text-[8px] font-bold'>Dirección:</span>
-					<span className='flex-1 text-[8px]'>{customer.address}</span>
+				<div className='space-y-1 px-3 py-2 text-[8px]'>
+					<p>
+						<span className='font-semibold'>RUT:</span> {customer.rut}
+					</p>
+					<p>
+						<span className='font-semibold'>Giro:</span> {customer.giro}
+					</p>
+					<p>
+						<span className='font-semibold'>Dirección:</span> {customer.address}
+					</p>
+					<p>
+						<span className='font-semibold'>Contacto:</span> {customer.contactName}
+					</p>
+					<p>
+						<span className='font-semibold'>Correo:</span> {customer.email || '—'}
+					</p>
 				</div>
-				<div className='mb-0.5 flex items-baseline'>
-					<span className='w-[60px] text-[8px] font-bold'>Giro:</span>
-					<span className='flex-1 text-[8px]'>{customer.giro}</span>
-				</div>
-				<div className='flex items-baseline'>
-					<span className='w-[60px] text-[8px] font-bold'>Contacto:</span>
-					<span className='flex-1 text-[8px]'>{customer.contactName}</span>
-					<span className='w-[40px] text-right text-[8px] font-bold'>Fono:</span>
-					<span className='w-[150px] text-right text-[8px]'>{customer.phone}</span>
+				<div className='space-y-1 border-t border-gray-200 px-3 py-2 text-[8px] md:border-l'>
+					<p>
+						<span className='font-semibold'>Fecha:</span> {formatDate(quote.quote_date)}
+					</p>
+					<p>
+						<span className='font-semibold'>Teléfono:</span> {orderInfo.contactPhone}
+					</p>
+					<p>
+						<span className='font-semibold'>Método de pago:</span> {paymentMethodsLabel}
+					</p>
+					<p>
+						<span className='font-semibold'>Documento:</span> {documentType}
+					</p>
 				</div>
 			</div>
 
 			{/* Tabla */}
-			<div className='mb-2.5 text-gray-900' style={{ color: '#111827' }}>
-				{/* Header */}
-				<div className='flex border-b border-t border-gray-300 bg-gray-100 py-1.5 text-[9px] font-bold text-gray-900' style={{ borderColor: '#d1d5db', backgroundColor: '#f3f4f6', color: '#111827' }}>
-					<div className='w-[8%] text-center'>Cant.</div>
-					<div className='w-[17%] pl-1'>Código</div>
-					<div className='w-[45%] pl-1'>Descripción</div>
-					<div className='w-[15%] pr-1 text-right'>P. Neto</div>
-					<div className='w-[15%] pr-1 text-right'>Total</div>
+			<div
+				className='mb-2.5 border-2 border-gray-700 text-gray-900'
+				style={{ color: '#111827' }}>
+				<div className='flex border-b-2 border-gray-700 bg-gray-100 py-1.5 text-[9px] font-bold text-gray-900'>
+					<div className='w-[8%] border-gray-700 p-0 text-center'>Cant.</div>
+					<div className='w-[17%] border-l-2 border-gray-700 p-0 px-0 pl-1'>Código</div>
+					<div className='w-[45%] border-l-2 border-gray-700 p-0 pl-1'>Descripción</div>
+					<div className='w-[15%] border-l-2 border-gray-700 p-0 pr-1 text-right'>
+						Precio Neto
+					</div>
+					<div className='w-[15%] border-l-2 border-gray-700 p-0 pr-1 text-right'>
+						Total Neto
+					</div>
 				</div>
 
-				{/* Rows */}
-				{items.length === 0 ? (
-					<div className='border-b border-gray-200 py-6 text-center text-[9px] text-gray-500'>
-						No hay ítems asociados a esta cotización.
-					</div>
-				) : (
-					items.map((item, idx) => {
-						const sku = getProductSku(item);
-						const name = getProductName(item);
-						const detail = getProductDetail(item);
-						const quantity = Number((item as any).quantity || 0);
-						const unitPrice = resolveUnitPrice(item);
-						const lineTotal = resolveLineTotal(item);
-						const itemDiscount = Number(item.discount_amount || 0);
-
+				{rows.map((item, idx) => {
+					if (!item) {
 						return (
-							<div key={idx} className='flex border-b border-gray-200 py-1.5 text-[9px] text-gray-900' style={{ borderColor: '#e5e7eb', color: '#111827' }}>
-								<div className='w-[8%] text-center'>{quantity}</div>
-								<div className='w-[17%] pl-1'>{sku}</div>
-								<div className='w-[45%] pl-1'>
-									<p className='font-bold'>{name}</p>
-									{detail && (
-										<p className='mt-0.5 text-[7px] text-gray-500' style={{ color: '#6b7280' }}>{detail}</p>
-									)}
-									{itemDiscount > 0 && (
-										<p className='mt-0.5 text-[7px] font-semibold text-rose-500'>
-											Descuento: - {formatCurrency(itemDiscount)}
-										</p>
-									)}
-								</div>
-								<div className='w-[15%] pr-1 text-right'>
-									{formatCurrency(unitPrice)}
-								</div>
-								<div className='w-[15%] pr-1 text-right font-bold'>
-									{formatCurrency(lineTotal)}
-								</div>
+							<div
+								key={`empty-${idx}`}
+								className='flex border-b border-dashed border-gray-400 py-2 text-[9px] text-gray-900'
+								style={{ color: '#111827', minHeight: '18px' }}>
+								<div className='w-[8%] text-center'>&nbsp;</div>
+								<div className='w-[17%] pl-1'>&nbsp;</div>
+								<div className='w-[45%] pl-1'>&nbsp;</div>
+								<div className='w-[15%] pr-1 text-right'>&nbsp;</div>
+								<div className='w-[15%] pr-1 text-right'>&nbsp;</div>
 							</div>
 						);
-					})
-				)}
+					}
+
+					const sku = getProductSku(item);
+					const name = getProductName(item);
+					const detail = getProductDetail(item);
+					const quantity = Number((item as any).quantity || 0);
+					const unitPrice = resolveUnitPrice(item);
+					const lineTotal = resolveLineTotal(item);
+					const itemDiscount = Number(item.discount_amount || 0);
+
+					return (
+						<div
+							key={idx}
+							className='flex items-center justify-center border-b border-dashed border-gray-400 py-1.5 text-[9px] text-gray-900'
+							style={{ color: '#111827' }}>
+							<div className='w-[8%] text-center'>{quantity}</div>
+							<div className='w-[17%] pl-1'>{sku}</div>
+							<div className='w-[45%] pl-1'>
+								<p className='font-bold'>{name}</p>
+								{detail && (
+									<p
+										className='mt-0.5 text-[7px] text-gray-500'
+										style={{ color: '#6b7280' }}>
+										{detail}
+									</p>
+								)}
+								{itemDiscount > 0 && (
+									<p className='mt-0.5 text-[7px] font-semibold text-rose-500'>
+										Descuento: - {formatCurrency(itemDiscount)}
+									</p>
+								)}
+							</div>
+							<div className='w-[15%] pr-1 text-right'>
+								{formatCurrency(unitPrice)}
+							</div>
+							<div className='w-[15%] pr-1 text-right font-bold'>
+								{formatCurrency(lineTotal)}
+							</div>
+						</div>
+					);
+				})}
 			</div>
 
 			{/* Totales */}
 			<div className='mb-5 flex justify-end text-gray-900' style={{ color: '#111827' }}>
-				<div className='w-[180px]'>
-					<div className='mb-1 flex justify-between text-[9px]'>
-						<span className='font-bold'>Total Neto:</span>
+				<div className='w-[220px] border-2 border-gray-500'>
+					<div className='flex justify-between border-b border-gray-400 px-2 py-1 text-[9px]'>
+						<span className='font-bold uppercase'>Neto</span>
 						<span>{formatCurrency(netTotal)}</span>
 					</div>
 					{discount > 0 && (
-						<div className='mb-1 flex justify-between text-[9px]'>
-							<span className='font-bold'>Descuento:</span>
+						<div className='flex justify-between border-b border-gray-300 px-2 py-1 text-[9px]'>
+							<span className='font-bold uppercase'>Descuento</span>
 							<span>- {formatCurrency(discount)}</span>
 						</div>
 					)}
-					<div className='mb-1 flex justify-between text-[9px]'>
-						<span className='font-bold'>I.V.A.:</span>
+					<div className='flex justify-between border-b border-gray-300 px-2 py-1 text-[9px]'>
+						<span className='font-bold uppercase'>IVA</span>
 						<span>{formatCurrency(tax)}</span>
 					</div>
-					<div className='mt-1 flex justify-between border-t border-black pt-1' style={{ borderColor: '#000' }}>
-						<span className='text-[11px] font-bold'>TOTAL:</span>
-						<span className='text-[11px] font-bold'>{formatCurrency(total)}</span>
+					<div className='flex justify-between bg-gray-100 px-2 py-1 text-[10px] font-bold'>
+						<span className='uppercase'>Total</span>
+						<span>{formatCurrency(total)}</span>
 					</div>
 				</div>
 			</div>
 
 			{/* Footer */}
-			<div className='border-t border-gray-200 pt-2.5 text-gray-900' style={{ borderColor: '#e5e7eb', color: '#111827' }}>
+			<div
+				className='border-t border-gray-200 pt-2.5 text-gray-900'
+				style={{ borderColor: '#e5e7eb', color: '#111827' }}>
 				<div className='mb-2.5 flex gap-5'>
 					<div className='flex-1'>
 						<h3 className='mb-1 text-[9px] font-bold uppercase underline'>
@@ -240,7 +292,9 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 							• Entrega: {company.deliveryTerm || 'A convenir o retiro en tienda.'}
 						</p>
 						{company.commercialTerms && (
-							<p className='mb-0.5 text-[8px] text-gray-600' style={{ color: '#4b5563' }}>
+							<p
+								className='mb-0.5 text-[8px] text-gray-600'
+								style={{ color: '#4b5563' }}>
 								• {company.commercialTerms}
 							</p>
 						)}
@@ -250,7 +304,11 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 								<h3 className='mb-1 text-[9px] font-bold uppercase underline'>
 									Observaciones
 								</h3>
-								<p className='text-[8px] text-gray-600' style={{ color: '#4b5563' }}>{quote.notes}</p>
+								<p
+									className='text-[8px] text-gray-600'
+									style={{ color: '#4b5563' }}>
+									{quote.notes}
+								</p>
 							</div>
 						)}
 					</div>
@@ -262,7 +320,10 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 									Datos Bancarios
 								</h3>
 								{company.bankInfo.map((info: string, idx: number) => (
-									<p key={idx} className='mb-0.5 text-[8px] text-gray-600' style={{ color: '#4b5563' }}>
+									<p
+										key={idx}
+										className='mb-0.5 text-[8px] text-gray-600'
+										style={{ color: '#4b5563' }}>
 										{info}
 									</p>
 								))}
@@ -271,7 +332,9 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 					</div>
 				</div>
 
-				<p className='mt-2.5 text-center text-[8px] text-gray-400' style={{ color: '#9ca3af' }}>
+				<p
+					className='mt-2.5 text-center text-[8px] text-gray-400'
+					style={{ color: '#9ca3af' }}>
 					Documento generado electrónicamente por {company.name}
 				</p>
 			</div>

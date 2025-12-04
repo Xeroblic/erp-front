@@ -7,6 +7,7 @@
  */
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
@@ -30,7 +31,6 @@ import { fetchProducts } from '@/store/slices/products/productsSlice';
 import Textarea from '@/components/form/Textarea';
 import { Step1BasicInfo, Step2FullReview, Step3GradeReview } from '../components/steps';
 import { useAutoSaveReview } from '@/hooks/useAutoSaveReview';
-import { toast } from 'react-toastify';
 
 type ReviewStep = 'basic' | 'review' | 'grading';
 
@@ -101,7 +101,7 @@ const ItemReviewPage: React.FC = () => {
 		branchId,
 		itemId: itemId && itemId !== 'create' ? parseInt(itemId) : undefined,
 		reviewStatus: item?.review_status?.value || item?.review_status,
-		equipmentType: equipmentType,
+		equipmentType,
 		onSaveSuccess: (savedItemId) => {
 			if (itemId === 'create' && batchId) {
 				navigate(`/technical-reviews/batches/${batchId}/items/${savedItemId}`, {
@@ -311,7 +311,8 @@ const ItemReviewPage: React.FC = () => {
 				...prev,
 				...grading,
 				review_status: grading?.review_status ?? 'reviewed',
-				suggested_grade: grading?.grade ?? grading?.suggested_grade ?? prev?.suggested_grade,
+				suggested_grade:
+					grading?.grade ?? grading?.suggested_grade ?? prev?.suggested_grade,
 			})); // Actualizar item con datos de grading
 			setCurrentStep('grading');
 		} catch (error) {
@@ -544,7 +545,7 @@ const ItemReviewPage: React.FC = () => {
 						onComplete={handleStep2Complete}
 						onItemUpdate={(updatedItem) => {
 							// toast.info(`Item actualizado desde Step2: ${updatedItem}`);
-							setItem(updatedItem); 
+							setItem(updatedItem);
 						}}
 						onFieldChange={undefined} // Desactivar auto-save, solo guardado manual
 						isDirty={isDirty}
@@ -575,7 +576,9 @@ const ItemReviewPage: React.FC = () => {
 								review_status: updated?.review_status ?? prev?.review_status,
 							}));
 							if (updated?.grade || updated?.suggested_grade) {
-								setAutomaticGrade(updated.grade ?? updated.suggested_grade ?? automaticGrade);
+								setAutomaticGrade(
+									updated.grade ?? updated.suggested_grade ?? automaticGrade,
+								);
 							}
 						}}
 					/>

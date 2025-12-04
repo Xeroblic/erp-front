@@ -76,16 +76,19 @@ export default function CreateSubempresaModal({
 		if (!needsFetch) return;
 
 		setIsResolvingCompany(true);
-		ApiService.fetchData<{ current_company?: { id?: number }; personalization?: { company_id?: number } }>(
-			{
-				url: '/user/personalization',
-				method: 'get',
-			},
-		)
+		ApiService.fetchData<{
+			current_company?: { id?: number };
+			personalization?: { company_id?: number };
+		}>({
+			url: '/user/personalization',
+			method: 'get',
+		})
 			.then((response) => {
 				if (!isMounted) return;
 				const fetchedId =
-					response.data?.current_company?.id ?? response.data?.personalization?.company_id ?? null;
+					response.data?.current_company?.id ??
+					response.data?.personalization?.company_id ??
+					null;
 				if (fetchedId) {
 					setResolvedCompanyId(fetchedId);
 				}
@@ -154,18 +157,22 @@ export default function CreateSubempresaModal({
 					return;
 				}
 
-				const data = buildSubempresaPayload(values, Number(effectiveCompanyId), selectedManager);
+				const data = buildSubempresaPayload(
+					values,
+					Number(effectiveCompanyId),
+					selectedManager,
+				);
 
 				if (isEditing && subempresa?.id) {
 					await dispatch(
 						updateSubsidiaria({
 							id: subempresa.id,
-							data: data as any,
+							data,
 						}),
 					).unwrap();
 					toast.success(`"${values.nombre}" actualizada`);
 				} else {
-					await dispatch(createSubsidiaria(data as any)).unwrap();
+					await dispatch(createSubsidiaria(data)).unwrap();
 					toast.success(`"${values.nombre}" creada`);
 				}
 
@@ -249,7 +256,9 @@ export default function CreateSubempresaModal({
 								formik.setFieldValue('managerId', option?.value || '');
 								formik.setFieldTouched('managerId', true);
 							}}
-							isDisabled={formik.isSubmitting || adminUsers.length === 0 || isResolvingCompany}
+							isDisabled={
+								formik.isSubmitting || adminUsers.length === 0 || isResolvingCompany
+							}
 							placeholder='Seleccione un gerente'
 						/>
 						{adminUsers.length === 0 && (

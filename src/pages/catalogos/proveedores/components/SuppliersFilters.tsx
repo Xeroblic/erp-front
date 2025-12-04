@@ -4,7 +4,7 @@ import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import Input from '@/components/form/Input';
 import Label from '@/components/form/Label';
-import { ISupplierFilters } from '../components/types';
+import { ISupplierFilters } from './types';
 
 type SuppliersFiltersProps = {
 	filters: ISupplierFilters;

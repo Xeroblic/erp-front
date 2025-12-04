@@ -29,7 +29,7 @@ const ContentRouter = () => {
 							</div>
 						</HeaderRight>
 					</Header>
-					<PageWrapper isProtectedRoute={true}>
+					<PageWrapper isProtectedRoute>
 						<Subheader>
 							<SubheaderLeft>
 								<div className='h-10 w-40 animate-pulse rounded-full bg-zinc-800/25 dark:bg-zinc-200/25' />

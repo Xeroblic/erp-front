@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';

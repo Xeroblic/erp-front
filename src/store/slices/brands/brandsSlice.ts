@@ -16,7 +16,6 @@ import {
 } from '@/components/helper/brand.helper';
 import { validateFile, extractMediaUrl as extractMediaUrlUtil } from '@/utils/apiHelpers';
 
-
 export interface BrandStatsState {
 	total_brands: number;
 	active_brands: number;
@@ -44,7 +43,6 @@ export const initialState: BrandsState = {
 	deleting: false,
 	error: null,
 };
-
 
 export const fetchBrands = createAsyncThunk<
 	{ items: IBrand[]; stats: BrandStatsState },
@@ -89,7 +87,7 @@ const ensureImageObject = (url: string, base: unknown, fallbackAlt: string): IBr
 	}
 
 	const cast = base as IBrandImage | null | undefined;
-	const thumb = cast?.thumb ? ensureAbsoluteUrl(cast.thumb) ?? url : url;
+	const thumb = cast?.thumb ? (ensureAbsoluteUrl(cast.thumb) ?? url) : url;
 	return {
 		id: cast?.id,
 		url,
@@ -124,9 +122,9 @@ const fetchBrandDetails = async (branchId: number, brandId: number): Promise<IBr
 };
 
 const uploadBrandLogo = async (
-    branchId: number,
-    brandId: number,
-    file: File,
+	branchId: number,
+	brandId: number,
+	file: File,
 ): Promise<string | null> => {
 	// validate original file before heavy processing
 	const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/svg+xml'];
@@ -174,54 +172,62 @@ type BrandRequestShape = {
 
 // Subir múltiples imágenes a la galería de la marca
 const uploadBrandGalleryFiles = async (
-    branchId: number,
-    brandId: number,
-    files: File[],
+	branchId: number,
+	brandId: number,
+	files: File[],
 ): Promise<IBrand | null> => {
-    if (!files?.length) return await fetchBrandDetails(branchId, brandId);
+	if (!files?.length) return fetchBrandDetails(branchId, brandId);
 
-    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/svg+xml'];
-    const valid: File[] = [];
-    for (const f of files) {
-        const v = validateFile(f, { maxKB: 8192, allowedMimes: allowed });
-        if (!v.ok) continue;
-        const processed = await convertFileToWebP(f);
-        if (processed) valid.push(processed);
-    }
-    if (!valid.length) return await fetchBrandDetails(branchId, brandId);
+	const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/svg+xml'];
+	const valid: File[] = [];
+	for (const f of files) {
+		const v = validateFile(f, { maxKB: 8192, allowedMimes: allowed });
+		if (!v.ok) continue;
+		const processed = await convertFileToWebP(f);
+		if (processed) valid.push(processed);
+	}
+	if (!valid.length) return fetchBrandDetails(branchId, brandId);
 
-    const formData = new FormData();
-    valid.forEach((f) => formData.append('files[]', f, f.name));
-    const meta = valid.map((_, idx) => ({ index: idx, collection: 'gallery', sort_order: idx, alt_text: 'Galería', primary: false }));
-    formData.append('meta', JSON.stringify(meta));
+	const formData = new FormData();
+	valid.forEach((f) => formData.append('files[]', f, f.name));
+	const meta = valid.map((_, idx) => ({
+		index: idx,
+		collection: 'gallery',
+		sort_order: idx,
+		alt_text: 'Galería',
+		primary: false,
+	}));
+	formData.append('meta', JSON.stringify(meta));
 
-    try {
-        await ApiService.fetchData<{ data?: any }, FormData>({
-            url: `/branches/${branchId}/brands/${brandId}/media/upload-multiple`,
-            method: 'post',
-            data: formData,
-        });
-        const refreshed = await fetchBrandDetails(branchId, brandId);
-        return refreshed;
-    } catch {
-        const refreshed = await fetchBrandDetails(branchId, brandId);
-        return refreshed;
-    }
+	try {
+		await ApiService.fetchData<{ data?: any }, FormData>({
+			url: `/branches/${branchId}/brands/${brandId}/media/upload-multiple`,
+			method: 'post',
+			data: formData,
+		});
+		const refreshed = await fetchBrandDetails(branchId, brandId);
+		return refreshed;
+	} catch {
+		const refreshed = await fetchBrandDetails(branchId, brandId);
+		return refreshed;
+	}
 };
 
 export const uploadBrandGallery = createAsyncThunk<
-    IBrand | null,
-    { branchId: number; brandId: number; files: File[] },
-    { rejectValue: string }
+	IBrand | null,
+	{ branchId: number; brandId: number; files: File[] },
+	{ rejectValue: string }
 >('brands/uploadBrandGallery', async ({ branchId, brandId, files }, { rejectWithValue }) => {
-    try {
-        const refreshed = await uploadBrandGalleryFiles(branchId, brandId, files);
-        return refreshed;
-    } catch (error: any) {
-        return rejectWithValue(
-            error?.response?.data?.message ?? error?.message ?? 'Error al subir galería de la marca',
-        );
-    }
+	try {
+		const refreshed = await uploadBrandGalleryFiles(branchId, brandId, files);
+		return refreshed;
+	} catch (error: any) {
+		return rejectWithValue(
+			error?.response?.data?.message ??
+				error?.message ??
+				'Error al subir galería de la marca',
+		);
+	}
 });
 
 const makeBrandRequestBody = (payload: BrandRequestShape) => {
@@ -425,7 +431,7 @@ const brandsSlice = createSlice({
 			})
 			// Upload gallery
 			.addCase(uploadBrandGallery.fulfilled, (state, action) => {
-				const payload = action.payload;
+				const { payload } = action;
 				if (!payload) return;
 				const index = state.items.findIndex((b) => b.id === payload.id);
 				if (index !== -1) {

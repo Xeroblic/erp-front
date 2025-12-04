@@ -1,12 +1,4 @@
 import React from 'react';
-import { CategoryTableRow } from '@/components/helper/category.helper';
-import { ICategory } from '../../types';
-import Table, { TBody, Td, Th, THead, Tr } from '@/components/ui/Table';
-import Card, { CardBody } from '@/components/ui/Card';
-import Container from '@/components/layouts/Container/Container';
-import Button from '@/components/ui/Button';
-import Badge from '@/components/ui/Badge';
-import Icon from '@/components/icon/Icon';
 import {
 	ColumnDef,
 	flexRender,
@@ -15,6 +7,14 @@ import {
 	SortingState,
 	useReactTable,
 } from '@tanstack/react-table';
+import { CategoryTableRow } from '@/components/helper/category.helper';
+import { ICategory } from '../../types';
+import Table, { TBody, Td, Th, THead, Tr } from '@/components/ui/Table';
+import Card, { CardBody } from '@/components/ui/Card';
+import Container from '@/components/layouts/Container/Container';
+import Button from '@/components/ui/Button';
+import Badge from '@/components/ui/Badge';
+import Icon from '@/components/icon/Icon';
 import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
 import useDarkMode from '@/hooks/useDarkMode';
 
@@ -128,7 +128,7 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
 				header: 'Padre',
 				enableSorting: false,
 				cell: ({ row }) => {
-					const parentNames = row.original.parentNames;
+					const { parentNames } = row.original;
 					const parentLabel =
 						parentNames.length === 0
 							? 'Principal'

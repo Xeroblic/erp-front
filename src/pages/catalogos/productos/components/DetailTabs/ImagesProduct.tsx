@@ -1,10 +1,10 @@
+import React from 'react';
+import { useFormikContext } from 'formik';
 import Input from '@/components/form/Input';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
-import React from 'react';
-import { useFormikContext } from 'formik';
 import type { ProductDetailForm } from '../../types/products.types';
 import type { IProductImage } from '@/interface/product.interface';
 
@@ -47,7 +47,7 @@ const ImagesProduct: React.FC<ContenidoTabProps> = ({
 		const extension = lastDot > 0 ? name.substring(lastDot) : '';
 
 		const sanitized = nameWithoutExt
-			.normalize('NFD') 
+			.normalize('NFD')
 			.replace(/[\u0300-\u036f]/g, '')
 			.toLowerCase()
 			.replace(/[^a-z0-9]+/g, '-')

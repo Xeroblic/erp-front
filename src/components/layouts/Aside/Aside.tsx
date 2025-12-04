@@ -9,13 +9,12 @@ interface IAsideHeadProps extends HTMLAttributes<HTMLElement> {
 }
 export const AsideHead: FC<IAsideHeadProps> = ({ children, className, ...rest }) => (
 	<div
-		data-component-name="Aside/AsideHead"
+		data-component-name='Aside/AsideHead'
 		className={classNames(
 			'flex items-center justify-between px-6 pb-6 max-md:flex-row-reverse',
 			className,
 		)}
-		{...rest}
-	>
+		{...rest}>
 		{children}
 	</div>
 );
@@ -26,10 +25,9 @@ interface IAsideBodyProps extends HTMLAttributes<HTMLElement> {
 }
 export const AsideBody: FC<IAsideBodyProps> = ({ children, className, ...rest }) => (
 	<div
-		data-component-name="Aside/AsideBody"
-		className={classNames('h-full overflow-x-scroll px-6 no-scrollbar', className)}
-		{...rest}
-	>
+		data-component-name='Aside/AsideBody'
+		className={classNames('no-scrollbar h-full overflow-x-scroll px-6', className)}
+		{...rest}>
 		{children}
 	</div>
 );
@@ -40,10 +38,9 @@ interface IAsideFooterProps extends HTMLAttributes<HTMLElement> {
 }
 export const AsideFooter: FC<IAsideFooterProps> = ({ children, className, ...rest }) => (
 	<div
-		data-component-name="Aside/AsideFooter"
+		data-component-name='Aside/AsideFooter'
 		className={classNames('px-6', className)}
-		{...rest}
-	>
+		{...rest}>
 		{children}
 	</div>
 );
@@ -58,9 +55,9 @@ const Aside: FC<IAsideProps> = ({ children, className, ...rest }) => {
 
 	return (
 		<aside
-			data-component-name="Aside"
+			data-component-name='Aside'
 			className={classNames(
-				'peer group/aside fixed bottom-0 top-0 z-30 md:z-20 flex flex-col border-zinc-600/20 bg-gray-300 py-6 ltr:border-r rtl:border-l dark:border-zinc-800/50 dark:bg-zinc-900 dark:text-white',
+				'group/aside peer fixed bottom-0 top-0 z-30 flex flex-col border-zinc-600/20 bg-gray-300 py-6 dark:border-zinc-800/50 dark:bg-zinc-900 dark:text-white md:z-20 ltr:border-r rtl:border-l',
 				themeConfig.transition,
 				className,
 				// Mobile layout
@@ -71,8 +68,7 @@ const Aside: FC<IAsideProps> = ({ children, className, ...rest }) => {
 					'ltr:max-md:left-0 rtl:max-md:right-0': asideStatus,
 				},
 			)}
-			{...rest}
-		>
+			{...rest}>
 			{children}
 		</aside>
 	);

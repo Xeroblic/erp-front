@@ -48,7 +48,7 @@ const ItemDetail: React.FC<ItemDetailProps> = ({
 	}
 
 	return (
-		<Card className='border-l-4 border-blue-500 space-y-6'>
+		<Card className='space-y-6 border-l-4 border-blue-500'>
 			<CardBody className='p-6'>
 				<div className='space-y-4'>
 					{/* Header con Serial y Estados */}

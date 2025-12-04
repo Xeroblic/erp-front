@@ -45,7 +45,7 @@ const DeleteWarehouseModal: React.FC<DeleteWarehouseModalProps> = ({
 			<ModalHeader>
 				<div className='flex items-center gap-3'>
 					<div className='flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20'>
-						<span className='text-xl'></span>
+						<span className='text-xl' />
 					</div>
 					<div>
 						<h3 className='text-lg font-semibold text-gray-900 dark:text-white'>

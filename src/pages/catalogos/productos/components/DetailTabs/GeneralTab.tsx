@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useFormikContext } from 'formik';
+import { useFormikContext, useFormik } from 'formik';
 import Input from '@/components/form/Input';
 import Select from '@/components/form/Select';
 import type { ProductDetailForm } from '../../types/products.types';
@@ -9,7 +9,6 @@ import Label from '@/components/form/Label';
 import Checkbox from '@/components/form/Checkbox';
 import Modal, { ModalBody, ModalHeader, ModalFooter } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
-import { useFormik } from 'formik';
 
 interface GeneralTabProps {
 	brands: IBrand[];
@@ -151,7 +150,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
 						name='brand_id'
 						value={String(values.brand_id || '')}
 						onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
-							const value = event.target.value;
+							const { value } = event.target;
 							setFieldValue('brand_id', value === '' ? '' : Number(value));
 						}}
 						disabled={brandsLoading}>

@@ -1,10 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
-import Subheader, {
-	SubheaderLeft,
-	SubheaderRight,
-} from '@/components/layouts/Subheader/Subheader';
+import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
@@ -73,12 +70,8 @@ const TransferenciasAdmin: React.FC<TransferenciasAdminProps> = ({
 
 	const stats = useMemo(() => {
 		const sent = transfers.filter((transfer) => transfer.direction === 'sent').length;
-		const received = transfers.filter(
-			(transfer) => transfer.direction === 'received',
-		).length;
-		const completed = transfers.filter(
-			(transfer) => transfer.status === 'completed',
-		).length;
+		const received = transfers.filter((transfer) => transfer.direction === 'received').length;
+		const completed = transfers.filter((transfer) => transfer.status === 'completed').length;
 
 		return {
 			total: pagination.totalTransfers,

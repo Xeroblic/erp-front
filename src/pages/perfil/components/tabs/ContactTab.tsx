@@ -39,25 +39,25 @@ const ContactTab = ({ formik, regionOptions, provinceOptions, comunaOptions }: P
 						isValid={formik.isValid}
 						isTouched={formik.touched.region}
 						invalidFeedback={formik.errors.region}>
-                    <SelectReact
-                        id='region'
-                        name='region'
-                        isMulti={false}
-                        placeholder='Region'
-                        options={regionOptions}
-                        value={(() => {
-                          const v = formik.values.region;
-                          const found = regionOptions.find((o) => o.value === v) || null;
-                          return found || (v ? { value: v, label: String(v) } : null);
-                        })()}
-                        onBlur={formik.handleBlur}
-                        onChange={(option) =>
-                            formik.setFieldValue(
-                                'region',
-                                (option as TSelectOption | null)?.value || '',
-                            )
-                        }
-                    />
+						<SelectReact
+							id='region'
+							name='region'
+							isMulti={false}
+							placeholder='Region'
+							options={regionOptions}
+							value={(() => {
+								const v = formik.values.region;
+								const found = regionOptions.find((o) => o.value === v) || null;
+								return found || (v ? { value: v, label: String(v) } : null);
+							})()}
+							onBlur={formik.handleBlur}
+							onChange={(option) =>
+								formik.setFieldValue(
+									'region',
+									(option as TSelectOption | null)?.value || '',
+								)
+							}
+						/>
 					</Validation>
 				</div>
 			</div>
@@ -68,25 +68,25 @@ const ContactTab = ({ formik, regionOptions, provinceOptions, comunaOptions }: P
 						isValid={formik.isValid}
 						isTouched={formik.touched.provincia}
 						invalidFeedback={formik.errors.provincia}>
-                    <SelectReact
-                        id='provincia'
-                        name='provincia'
-                        isMulti={false}
-                        placeholder='Provincia'
-                        options={provinceOptions}
-                        value={(() => {
-                          const v = formik.values.provincia;
-                          const found = provinceOptions.find((o) => o.value === v) || null;
-                          return found || (v ? { value: v, label: String(v) } : null);
-                        })()}
-                        onBlur={formik.handleBlur}
-                        onChange={(option) =>
-                            formik.setFieldValue(
-                                'provincia',
-                                (option as TSelectOption | null)?.value || '',
-                            )
-                        }
-                    />
+						<SelectReact
+							id='provincia'
+							name='provincia'
+							isMulti={false}
+							placeholder='Provincia'
+							options={provinceOptions}
+							value={(() => {
+								const v = formik.values.provincia;
+								const found = provinceOptions.find((o) => o.value === v) || null;
+								return found || (v ? { value: v, label: String(v) } : null);
+							})()}
+							onBlur={formik.handleBlur}
+							onChange={(option) =>
+								formik.setFieldValue(
+									'provincia',
+									(option as TSelectOption | null)?.value || '',
+								)
+							}
+						/>
 					</Validation>
 				</div>
 			</div>
@@ -97,25 +97,25 @@ const ContactTab = ({ formik, regionOptions, provinceOptions, comunaOptions }: P
 						isValid={formik.isValid}
 						isTouched={formik.touched.comuna}
 						invalidFeedback={formik.errors.comuna}>
-                    <SelectReact
-                        id='comuna'
-                        name='comuna'
-                        isMulti={false}
-                        placeholder='Comuna'
-                        options={comunaOptions}
-                        value={(() => {
-                          const v = formik.values.comuna;
-                          const found = comunaOptions.find((o) => o.value === v) || null;
-                          return found || (v ? { value: v, label: String(v) } : null);
-                        })()}
-                        onBlur={formik.handleBlur}
-                        onChange={(option) =>
-                            formik.setFieldValue(
-                                'comuna',
-                                (option as TSelectOption | null)?.value || '',
-                            )
-                        }
-                    />
+						<SelectReact
+							id='comuna'
+							name='comuna'
+							isMulti={false}
+							placeholder='Comuna'
+							options={comunaOptions}
+							value={(() => {
+								const v = formik.values.comuna;
+								const found = comunaOptions.find((o) => o.value === v) || null;
+								return found || (v ? { value: v, label: String(v) } : null);
+							})()}
+							onBlur={formik.handleBlur}
+							onChange={(option) =>
+								formik.setFieldValue(
+									'comuna',
+									(option as TSelectOption | null)?.value || '',
+								)
+							}
+						/>
 					</Validation>
 				</div>
 			</div>

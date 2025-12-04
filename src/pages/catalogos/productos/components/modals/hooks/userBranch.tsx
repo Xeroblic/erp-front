@@ -77,7 +77,7 @@ export const useUserBranches = (
 
 	// Permisos del usuario autenticado (incluye roles en este proyecto)
 	const permisos = useAppSelector((s) => s.auth.permisos ?? []);
-  const authUser = useAppSelector((s) => s.auth.user as any);
+	const authUser = useAppSelector((s) => s.auth.user as any);
 
 	const [state, setState] = useState<UseUserBranchesState>({
 		branches: [],
@@ -112,31 +112,56 @@ export const useUserBranches = (
 					const acc = meData?.access?.branches ?? [];
 					const vis = meData?.visible?.branches ?? [];
 					const map = new Map<number, any>();
-					[...acc, ...vis].forEach((b: any) => { if (b?.id && !map.has(b.id)) map.set(b.id, b); });
+					[...acc, ...vis].forEach((b: any) => {
+						if (b?.id && !map.has(b.id)) map.set(b.id, b);
+					});
 					let rawBranches: any[] = Array.from(map.values());
 					if (!Array.isArray(rawBranches) || rawBranches.length === 0) {
 						const b = meData?.branch;
 						if (b?.id) {
-							rawBranches = [{
-								id: b.id,
-								name: b.name ?? b.branch_name,
-								subsidiary: b.subsidiary ?? null,
-								company: b.company ?? b?.subsidiary?.company ?? null,
-								city: b.city ?? null,
-							}];
+							rawBranches = [
+								{
+									id: b.id,
+									name: b.name ?? b.branch_name,
+									subsidiary: b.subsidiary ?? null,
+									company: b.company ?? b?.subsidiary?.company ?? null,
+									city: b.city ?? null,
+								},
+							];
 						}
 					}
 
 					if (Array.isArray(rawBranches) && rawBranches.length) {
 						const normalizedSelf: UserBranch[] = rawBranches.map((branch: any) => {
-							const subsidiary = branch?.subsidiary ?? branch?.subsidiary_info ?? branch?.subsidiary_id ?? null;
+							const subsidiary =
+								branch?.subsidiary ??
+								branch?.subsidiary_info ??
+								branch?.subsidiary_id ??
+								null;
 							const company = branch?.company ?? null;
-							const subsidiaryId = typeof subsidiary === 'object' ? (subsidiary?.id ?? null) : (typeof subsidiary === 'number' ? subsidiary : null);
-							const subsidiaryName = typeof subsidiary === 'object'
-								? (subsidiary?.name ?? subsidiary?.subsidiary_name ?? subsidiary?.branch_name ?? null)
-								: branch?.subsidiary_name ?? null;
-							const companyId = typeof company === 'object' ? (company?.id ?? null) : (typeof company === 'number' ? company : null);
-							const companyName = typeof company === 'object' ? (company?.name ?? company?.company_name ?? null) : branch?.company_name ?? null;
+							const subsidiaryId =
+								typeof subsidiary === 'object'
+									? (subsidiary?.id ?? null)
+									: typeof subsidiary === 'number'
+										? subsidiary
+										: null;
+							const subsidiaryName =
+								typeof subsidiary === 'object'
+									? (subsidiary?.name ??
+										subsidiary?.subsidiary_name ??
+										subsidiary?.branch_name ??
+										null)
+									: (branch?.subsidiary_name ?? null);
+							const companyId =
+								typeof company === 'object'
+									? (company?.id ?? null)
+									: typeof company === 'number'
+										? company
+										: null;
+							const companyName =
+								typeof company === 'object'
+									? (company?.name ?? company?.company_name ?? null)
+									: (branch?.company_name ?? null);
 							return {
 								id: branch.id,
 								name: branch.name || branch.branch_name || `Branch ${branch.id}`,
@@ -183,22 +208,39 @@ export const useUserBranches = (
 				}
 
 				const normalizedSelf: UserBranch[] = rawBranches.map((branch: any) => {
-					const subsidiary = branch?.subsidiary ?? branch?.subsidiary_info ?? branch?.subsidiary_id ?? null;
+					const subsidiary =
+						branch?.subsidiary ??
+						branch?.subsidiary_info ??
+						branch?.subsidiary_id ??
+						null;
 					const company = branch?.company ?? null;
 
 					const subsidiaryId =
-						typeof subsidiary === 'object' ? subsidiary?.id ?? null : typeof subsidiary === 'number' ? subsidiary : null;
+						typeof subsidiary === 'object'
+							? (subsidiary?.id ?? null)
+							: typeof subsidiary === 'number'
+								? subsidiary
+								: null;
 
 					const subsidiaryName =
 						typeof subsidiary === 'object'
-							? subsidiary?.name ?? subsidiary?.subsidiary_name ?? subsidiary?.branch_name ?? null
-							: branch?.subsidiary_name ?? null;
+							? (subsidiary?.name ??
+								subsidiary?.subsidiary_name ??
+								subsidiary?.branch_name ??
+								null)
+							: (branch?.subsidiary_name ?? null);
 
 					const companyId =
-						typeof company === 'object' ? company?.id ?? null : typeof company === 'number' ? company : null;
+						typeof company === 'object'
+							? (company?.id ?? null)
+							: typeof company === 'number'
+								? company
+								: null;
 
 					const companyName =
-						typeof company === 'object' ? company?.name ?? company?.company_name ?? null : branch?.company_name ?? null;
+						typeof company === 'object'
+							? (company?.name ?? company?.company_name ?? null)
+							: (branch?.company_name ?? null);
 
 					return {
 						id: branch.id,
@@ -254,38 +296,35 @@ export const useUserBranches = (
 			// Mapear a la estructura simplificada
 			const normalizedBranches: UserBranch[] = rawBranches.map((branch) => {
 				const subsidiary =
-					(branch as any)?.subsidiary ??
-					(branch as any)?.subsidiary_info ??
-					(branch as any)?.subsidiary_id ??
-					null;
-				const company = (branch as any)?.company ?? null;
+					branch?.subsidiary ?? branch?.subsidiary_info ?? branch?.subsidiary_id ?? null;
+				const company = branch?.company ?? null;
 
 				const subsidiaryId =
 					typeof subsidiary === 'object'
-						? subsidiary?.id ?? null
+						? (subsidiary?.id ?? null)
 						: typeof subsidiary === 'number'
 							? subsidiary
 							: null;
 
 				const subsidiaryName =
 					typeof subsidiary === 'object'
-						? subsidiary?.name ??
+						? (subsidiary?.name ??
 							subsidiary?.subsidiary_name ??
 							subsidiary?.branch_name ??
-							null
-						: (branch as any)?.subsidiary_name ?? null;
+							null)
+						: (branch?.subsidiary_name ?? null);
 
 				const companyId =
 					typeof company === 'object'
-						? company?.id ?? null
+						? (company?.id ?? null)
 						: typeof company === 'number'
 							? company
 							: null;
 
 				const companyName =
 					typeof company === 'object'
-						? company?.name ?? company?.company_name ?? null
-						: (branch as any)?.company_name ?? null;
+						? (company?.name ?? company?.company_name ?? null)
+						: (branch?.company_name ?? null);
 
 				return {
 					id: branch.id,
@@ -294,11 +333,7 @@ export const useUserBranches = (
 					subsidiaryName,
 					companyId,
 					companyName,
-					city:
-						(branch as any)?.city ??
-						(branch as any)?.city_name ??
-						(branch as any)?.location ??
-						null,
+					city: branch?.city ?? branch?.city_name ?? branch?.location ?? null,
 				};
 			});
 
@@ -320,7 +355,7 @@ export const useUserBranches = (
 						method: 'get',
 					});
 
-					const meData = meResp.data?.data ?? meResp.data ?? {} as any;
+					const meData = meResp.data?.data ?? meResp.data ?? ({} as any);
 
 					// Intentar varias fuentes: access.branches, visible.branches, o branch único
 					let rawBranches: any[] =
@@ -343,30 +378,38 @@ export const useUserBranches = (
 
 					const normalizedBranches: UserBranch[] = rawBranches.map((branch: any) => {
 						const subsidiary =
-							branch?.subsidiary ?? branch?.subsidiary_info ?? branch?.subsidiary_id ?? null;
+							branch?.subsidiary ??
+							branch?.subsidiary_info ??
+							branch?.subsidiary_id ??
+							null;
 						const company = branch?.company ?? null;
 
 						const subsidiaryId =
 							typeof subsidiary === 'object'
-								? subsidiary?.id ?? null
+								? (subsidiary?.id ?? null)
 								: typeof subsidiary === 'number'
-								? subsidiary
-								: null;
+									? subsidiary
+									: null;
 
 						const subsidiaryName =
 							typeof subsidiary === 'object'
-								? subsidiary?.name ?? subsidiary?.subsidiary_name ?? subsidiary?.branch_name ?? null
-								: branch?.subsidiary_name ?? null;
+								? (subsidiary?.name ??
+									subsidiary?.subsidiary_name ??
+									subsidiary?.branch_name ??
+									null)
+								: (branch?.subsidiary_name ?? null);
 
 						const companyId =
 							typeof company === 'object'
-								? company?.id ?? null
+								? (company?.id ?? null)
 								: typeof company === 'number'
-								? company
-								: null;
+									? company
+									: null;
 
 						const companyName =
-							typeof company === 'object' ? company?.name ?? company?.company_name ?? null : branch?.company_name ?? null;
+							typeof company === 'object'
+								? (company?.name ?? company?.company_name ?? null)
+								: (branch?.company_name ?? null);
 
 						return {
 							id: branch.id,

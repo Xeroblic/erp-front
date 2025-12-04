@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import { unwrapResult } from '@reduxjs/toolkit';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
 	fetchMisSucursales,
@@ -23,8 +25,6 @@ import Modal, {
 } from '@/components/ui/Modal';
 import SucursalModal from './components/SucursalModal';
 import { IBranch, ISucursal } from '@/interface/empresas.interface';
-import { toast } from 'react-toastify';
-import { unwrapResult } from '@reduxjs/toolkit';
 
 export default function SucursalDetalle() {
 	const { id } = useParams<{ id: string }>();
@@ -130,7 +130,7 @@ export default function SucursalDetalle() {
 				<Container className='pt-4'>
 					<div className='flex items-center justify-center py-12'>
 						<div className='flex items-center gap-3'>
-							<div className='h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent'></div>
+							<div className='h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent' />
 							<span className='text-zinc-600'>Cargando sucursal...</span>
 						</div>
 					</div>
@@ -169,7 +169,10 @@ export default function SucursalDetalle() {
 	}
 
 	return (
-		<PageWrapper isProtectedRoute title={`Sucursal: ${sucursal.branch_name}`} name='Detalle Sucursal'>
+		<PageWrapper
+			isProtectedRoute
+			title={`Sucursal: ${sucursal.branch_name}`}
+			name='Detalle Sucursal'>
 			<Subheader>
 				<SubheaderLeft>
 					<div className='flex items-center gap-3'>
@@ -310,7 +313,9 @@ export default function SucursalDetalle() {
 										<label className='mb-1 block text-sm font-medium text-zinc-700'>
 											Nombre
 										</label>
-										<div className='text-base font-medium'>{sucursal.branch_name}</div>
+										<div className='text-base font-medium'>
+											{sucursal.branch_name}
+										</div>
 									</div>
 									<div>
 										<label className='mb-1 block text-sm font-medium text-zinc-700'>
@@ -338,7 +343,9 @@ export default function SucursalDetalle() {
 										</label>
 										<div>
 											{sucursal.branch_rut ? (
-												<span className='font-mono'>{sucursal.branch_rut}</span>
+												<span className='font-mono'>
+													{sucursal.branch_rut}
+												</span>
 											) : (
 												<Badge variant='outline' className='text-zinc-400'>
 													Sin RUT
@@ -412,7 +419,6 @@ export default function SucursalDetalle() {
 					</div>
 
 					{/* Información del encargado */}
-					
 				</div>
 
 				{/* Sección de gráficos y estadísticas adicionales */}
@@ -540,29 +546,39 @@ export default function SucursalDetalle() {
 							<div className='flex items-center justify-between border-b border-zinc-200 pb-3 dark:border-zinc-700'>
 								<span className='text-sm text-zinc-500'>Fecha de creación</span>
 								<span className='text-sm font-medium'>
-									{sucursal.branch_created_at ? new Date(sucursal.branch_created_at).toLocaleDateString('es-CL', {
-										year: 'numeric',
-										month: 'long',
-										day: 'numeric',
-									}) : 'No disponible'}
+									{sucursal.branch_created_at
+										? new Date(sucursal.branch_created_at).toLocaleDateString(
+												'es-CL',
+												{
+													year: 'numeric',
+													month: 'long',
+													day: 'numeric',
+												},
+											)
+										: 'No disponible'}
 								</span>
 							</div>
 
 							<div className='flex items-center justify-between border-b border-zinc-200 pb-3 dark:border-zinc-700'>
 								<span className='text-sm text-zinc-500'>Última actualización</span>
 								<span className='text-sm font-medium'>
-									{sucursal.branch_updated_at ? new Date(sucursal.branch_updated_at).toLocaleDateString('es-CL', {
-										year: 'numeric',
-										month: 'long',
-										day: 'numeric',
-									}) : 'No disponible'}
+									{sucursal.branch_updated_at
+										? new Date(sucursal.branch_updated_at).toLocaleDateString(
+												'es-CL',
+												{
+													year: 'numeric',
+													month: 'long',
+													day: 'numeric',
+												},
+											)
+										: 'No disponible'}
 								</span>
 							</div>
 
 							<div className='flex items-center justify-between'>
 								<span className='text-sm text-zinc-500'>Estado del sistema</span>
 								<div className='flex items-center gap-2'>
-									<div className='h-2 w-2 animate-pulse rounded-full bg-emerald-500'></div>
+									<div className='h-2 w-2 animate-pulse rounded-full bg-emerald-500' />
 									<span className='text-sm font-medium text-emerald-600'>
 										Operativo
 									</span>

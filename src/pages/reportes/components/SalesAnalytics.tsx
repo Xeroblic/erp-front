@@ -13,8 +13,7 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 	const processedData = useMemo(() => {
 		return data.map((r) => {
 			const rawAmt = r.total_amount ?? r.total ?? r.amount ?? r.monto ?? 0;
-			const amount =
-				typeof rawAmt === 'string' ? parseFloat(rawAmt) : Number(rawAmt) || 0;
+			const amount = typeof rawAmt === 'string' ? parseFloat(rawAmt) : Number(rawAmt) || 0;
 
 			let customerName = 'Cliente Anónimo';
 			if (typeof r.customer === 'string') {
@@ -75,7 +74,7 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 			.slice(0, 5);
 		return {
 			categories: sorted.map(([name]) =>
-				name.length > 15 ? name.substring(0, 15) + '...' : name,
+				name.length > 15 ? `${name.substring(0, 15)}...` : name,
 			),
 			data: sorted.map(([, amount]) => amount),
 		};
@@ -91,7 +90,7 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 		}[] = [];
 		processedData.forEach((r) => {
 			if (!r._date) return;
-			const d = new Date(r._date as any);
+			const d = new Date(r._date);
 			if (isNaN(d.getTime())) return;
 			const monthNames = [
 				'Ene',
@@ -235,8 +234,7 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 							tooltip: {
 								theme: 'dark',
 								y: {
-									formatter: (val: number) =>
-										`$${val.toLocaleString('es-CL')}`,
+									formatter: (val: number) => `$${val.toLocaleString('es-CL')}`,
 								},
 							},
 						}}
@@ -296,8 +294,7 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 							tooltip: {
 								theme: 'dark',
 								y: {
-									formatter: (val: number) =>
-										`$${val.toLocaleString('es-CL')}`,
+									formatter: (val: number) => `$${val.toLocaleString('es-CL')}`,
 								},
 							},
 						}}

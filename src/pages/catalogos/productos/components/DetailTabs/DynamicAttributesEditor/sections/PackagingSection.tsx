@@ -22,10 +22,7 @@ const PackagingSection: React.FC<SectionBaseProps> = ({
 							type='checkbox'
 							checked={attributes.packaging?.charger_included || false}
 							onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-								updateAttribute(
-									'packaging.charger_included',
-									event.target.checked,
-								)
+								updateAttribute('packaging.charger_included', event.target.checked)
 							}
 							className='h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500'
 						/>

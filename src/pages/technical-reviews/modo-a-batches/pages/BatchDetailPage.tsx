@@ -4,6 +4,7 @@
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
@@ -26,7 +27,6 @@ import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import type { EquipmentType } from '@/interface/technicalReviews.interface';
 import ApiService from '@/services/ApiService';
-import { toast } from 'react-toastify';
 
 const EQUIPMENT_TYPE_OPTIONS: TSelectOption[] = [
 	{ value: 'notebook', label: 'Notebook' },
@@ -349,8 +349,8 @@ const BatchDetailPage: React.FC = () => {
 							{batch && (
 								<p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
 									{batch.warehouse?.name || `Bodega #${batch.warehouse_id}`} •{' '}
-									Entrada: {batch.entry_date} •{' '}
-									Primera revisión aprobada: {firstReviewDisplay}
+									Entrada: {batch.entry_date} • Primera revisión aprobada:{' '}
+									{firstReviewDisplay}
 								</p>
 							)}
 						</div>
@@ -409,10 +409,13 @@ const BatchDetailPage: React.FC = () => {
 							<BatchTabs batch={batch} onItemClick={handleViewItem} />
 						</>
 					)}
-			</Container>
-		</PageWrapper>
+				</Container>
+			</PageWrapper>
 
-			<Modal isOpen={isQuickEntryOpen} setIsOpen={() => handleQuickEntryModalToggle(false)} isCentered>
+			<Modal
+				isOpen={isQuickEntryOpen}
+				setIsOpen={() => handleQuickEntryModalToggle(false)}
+				isCentered>
 				<ModalHeader>
 					<div className='flex items-center gap-2'>
 						<Icon icon='HeroBolt' className='h-5 w-5 text-blue-500' />

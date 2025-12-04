@@ -27,6 +27,7 @@ import type { TSelectOption, TSelectOptions } from '../../../../../components/fo
 import { quoteStatusOptions, normalizeQuoteStatusValue } from '../../constants/quoteStatuses';
 import { selectPersonalizacionUsuario, useAppSelector } from '@/store';
 import ApiService from '@/services/ApiService';
+import Badge from '@/components/ui/Badge';
 
 interface CreateEditQuotationModalProps {
 	isOpen: boolean;
@@ -39,6 +40,8 @@ interface CreateEditQuotationModalProps {
 type FormQuoteItem = IQuoteItem & { type: 'product' | 'custom' };
 type FormQuotationValues = Omit<IQuote, 'id' | 'created_at' | 'updated_at' | 'items'> & {
 	items: FormQuoteItem[];
+	tax_percentage: number;
+	discount_percentage: number;
 };
 
 const itemSchema = Yup.object().shape({
@@ -141,16 +144,10 @@ const mapItemToFormItem = (item?: IQuoteItem): FormQuoteItem => {
 		...item,
 		product_id: item?.product_id ?? (isProduct ? 0 : null),
 		customer_name:
-			item?.customer_name ??
-			item?.name ??
-			item?.product?.name ??
-			(isProduct ? '' : ''),
+			item?.customer_name ?? item?.name ?? item?.product?.name ?? (isProduct ? '' : ''),
 		customer_sku: item?.customer_sku ?? item?.product?.sku ?? '',
 		unit_price: Number(
-			item?.unit_price ??
-				(item as any)?.unit_price_net ??
-				(item as any)?.unitPrice ??
-				0,
+			item?.unit_price ?? (item as any)?.unit_price_net ?? (item as any)?.unitPrice ?? 0,
 		),
 		discount_amount: item?.discount_amount ?? null,
 		description: item?.description ?? item?.product_detail ?? '',
@@ -172,11 +169,12 @@ const sanitizeItemsForSubmit = (items: FormQuoteItem[]) =>
 			const isCustom = item.type === 'custom' || !item.product_id;
 
 			if (isCustom) {
-				const name =
-					(item.customer_name ||
-						(item as any).name ||
-						item.product?.name ||
-						'').trim();
+				const name = (
+					item.customer_name ||
+					(item as any).name ||
+					item.product?.name ||
+					''
+				).trim();
 				const unitPrice = Number(item.unit_price);
 				if (!name || !Number.isFinite(unitPrice) || unitPrice <= 0) {
 					return null;
@@ -244,6 +242,25 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 		Record<number, SaleableProduct>
 	>({});
 
+	const ensureOptionExists = (
+		options: TSelectOptions,
+		value?: string | number | null,
+		label?: string,
+	): TSelectOptions => {
+		if (!value) return options;
+		const valueStr = String(value);
+		if (options.some((opt) => opt.value === valueStr)) {
+			return options;
+		}
+		return [
+			...options,
+			{
+				value: valueStr,
+				label: label || valueStr,
+			},
+		];
+	};
+
 	useEffect(() => {
 		const fetchClientes = async () => {
 			try {
@@ -252,13 +269,26 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 					method: 'GET',
 				});
 
-				setCustomerOptions(
-					(clientes || []).map((c: any) => ({
-						value: String(c.id),
-						label:
-							c.name || c.contact.name || 'Cliente sin nombre',
-					})),
-				);
+				const payload = Array.isArray(clientes?.data)
+					? clientes.data
+					: Array.isArray(clientes)
+						? clientes
+						: [];
+
+				let nextOptions = payload.map((c: any) => ({
+					value: String(c.id),
+					label: c.name || c.contact?.name || 'Cliente sin nombre',
+				}));
+
+				if (quotation?.customer_id) {
+					nextOptions = ensureOptionExists(
+						nextOptions,
+						quotation.customer_id,
+						(quotation.customer as any)?.name || 'Cliente seleccionado',
+					);
+				}
+
+				setCustomerOptions(nextOptions);
 			} catch (error) {
 				console.error('Error cargando clientes:', error);
 			}
@@ -289,13 +319,35 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 					}
 				});
 
+				let nextOptions = saleables.map((p) => ({
+					value: String(p.id),
+					label: `${p.name} · Stock ${p.stock ?? 0}`,
+				}));
+
+				(quotation?.items || []).forEach((item) => {
+					const pid = item.product_id ? Number(item.product_id) : null;
+					if (!pid) return;
+					if (!mapped[pid]) {
+						mapped[pid] = {
+							id: pid,
+							sku: item.product?.sku || item.customer_sku || '',
+							name: item.product?.name || item.customer_name || `Producto ${pid}`,
+							stock: 0,
+							unit_price_net: Number(item.unit_price) || 0,
+							unit_price_gross: Number(
+								(item as any).unit_price_gross || item.total || 0,
+							),
+						};
+					}
+					nextOptions = ensureOptionExists(
+						nextOptions,
+						pid,
+						mapped[pid].name || `Producto ${pid}`,
+					);
+				});
+
 				setSaleableProductsMap(mapped);
-				setProductOptions(
-					saleables.map((p) => ({
-						value: String(p.id),
-						label: `${p.name} · Stock ${p.stock ?? 0}`,
-					})),
-				);
+				setProductOptions(nextOptions);
 			} catch (error) {
 				console.error('Error cargando productos:', error);
 			}
@@ -305,13 +357,16 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 	}, [branchId, isOpen]);
 
 	// Opciones estáticas
-	const paymentMethodOptions: TSelectOptions = [
-		{ value: 'cash', label: 'Efectivo' },
-		{ value: 'transfer', label: 'Transferencia' },
-		{ value: 'credit_card', label: 'Tarjeta de Crédito' },
-		{ value: 'check', label: 'Cheque' },
-		{ value: 'credit_30', label: 'Crédito 30 días' },
+	const basePaymentMethodOptions: TSelectOptions = [
+		{ value: 'efectivo', label: 'Efectivo' },
+		{ value: 'tarjeta_credito', label: 'Tarjeta de Crédito' },
+		{ value: 'tarjeta_debito', label: 'Tarjeta de Débito' },
+		{ value: 'transferencia', label: 'Transferencia' },
+		{ value: 'cheque', label: 'Cheque' },
+		{ value: 'credito', label: 'Crédito 30 días' },
 	];
+	const paymentMethodOptions = React.useMemo(() => basePaymentMethodOptions, []);
+
 	const paymentTermsOptions: TSelectOptions = [
 		{ value: '0', label: 'Inmediato' },
 		{ value: '15', label: '15 días' },
@@ -332,6 +387,13 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 			.split('T')[0];
 
 		if (quotation) {
+			const numericDiscountPct = Number(
+				quotation.discount_percentage ?? quotation.discount_rate ?? 0,
+			);
+			const numericTaxPct = Number(quotation.tax_percentage ?? quotation.tax_rate ?? 0);
+			const normalizedPaymentMethod = Array.isArray(quotation.payment_method)
+				? (quotation.payment_method[0] ?? null)
+				: (quotation.payment_method ?? null);
 			return {
 				subsidiary_id: quotation.subsidiary_id,
 				// quote_number: quotation.quote_number ?? '',
@@ -339,16 +401,18 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 				quote_date: quotation.quote_date ?? today,
 				expiry_date: quotation.expiry_date ?? quotation.valid_until ?? expiryDate,
 				status: normalizeQuoteStatusValue(quotation.status) as QuoteStatus,
-				subtotal: quotation.subtotal ?? 0,
-				tax_rate: quotation.tax_rate ?? Number(quotation.tax_percentage ?? 0),
-				discount_amount: quotation.discount_amount ?? 0,
-				discount_percentage: quotation.discount_percentage ?? 0,
-				tax_percentage: Number(quotation.tax_percentage ?? IVA_RATE) > 0 ? IVA_RATE : 0,
-				total_amount: quotation.total_amount ?? 0,
+				subtotal: Number(quotation.subtotal ?? 0),
+				tax_rate: Number(quotation.tax_rate ?? numericTaxPct ?? 0),
+				tax_amount: Number(quotation.tax_amount ?? 0),
+				discount_amount: Number(quotation.discount_amount ?? 0),
+				discount_percentage: numericDiscountPct,
+				tax_percentage: numericTaxPct > 0 ? IVA_RATE : 0,
+				total_amount: Number(quotation.total_amount ?? 0),
 				notes: quotation.notes ?? '',
 				created_by: quotation.created_by ?? undefined,
 				approved_by: quotation.approved_by ?? undefined,
-				payment_method: quotation.payment_method ?? '',
+				payment_method: normalizedPaymentMethod,
+				document_type: quotation.document_type ?? '',
 				purchase_order: quotation.purchase_order ?? '',
 				payment_terms: quotation.payment_terms ?? 0,
 				fixed_discount: quotation.fixed_discount ?? 0,
@@ -370,7 +434,8 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 			expiry_date: expiryDate,
 			tax_rate: 0,
 			status: 'draft' as QuoteStatus,
-			payment_method: '',
+			payment_method: null,
+			document_type: 'boleta',
 			purchase_order: '',
 			payment_terms: 0,
 			subtotal: 0,
@@ -381,6 +446,7 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 			total_amount: 0,
 			notes: '',
 			created_by: 1,
+			tax_amount: 0,
 			items: [{ ...EMPTY_PRODUCT_ITEM }],
 		};
 	};
@@ -391,9 +457,9 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 		<Modal isOpen={isOpen} setIsOpen={() => onClose()} size='full'>
 			<ModalHeader>
 				<div>
-					<h2 className='text-xl font-semibold'>
+					<Badge className='text-xl font-semibold'>
 						{quotation ? 'Editar Cotización' : 'Nueva Cotización'}
-					</h2>
+					</Badge>
 					<p className='text-sm text-gray-600'>
 						{quotation
 							? 'Modifica los datos de la cotización'
@@ -408,8 +474,19 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 					validationSchema={quotationSchema}
 					onSubmit={(values, { setSubmitting }) => {
 						const sanitizedItems = sanitizeItemsForSubmit(values.items);
+						const normalizedPayment = Array.isArray(values.payment_method)
+							? (values.payment_method[0] ?? null)
+							: values.payment_method && String(values.payment_method).length > 0
+								? values.payment_method
+								: null;
+						const normalizedDocument =
+							values.document_type && String(values.document_type).length > 0
+								? values.document_type
+								: null;
 						const payload = {
 							...values,
+							payment_method: normalizedPayment,
+							document_type: normalizedDocument,
 							items: sanitizedItems as any,
 							tax_percentage: values.tax_percentage === IVA_RATE ? IVA_RATE : 0,
 						};
@@ -529,9 +606,15 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 												name='payment_method'
 												options={paymentMethodOptions}
 												placeholder='Seleccionar método...'
-												value={paymentMethodOptions.find(
-													(opt) => opt.value === values.payment_method,
-												)}
+												value={
+													values.payment_method
+														? (paymentMethodOptions.find(
+																(opt) =>
+																	opt.value ===
+																	String(values.payment_method),
+															) ?? null)
+														: null
+												}
 												onChange={(option) => {
 													const selectedOption = option as TSelectOption;
 													if (
@@ -540,7 +623,7 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 													) {
 														setFieldValue(
 															'payment_method',
-															selectedOption.value || '',
+															selectedOption.value || null,
 														);
 													}
 												}}
@@ -642,6 +725,50 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 												invalidFeedback={errors.notes}
 											/>
 										</div>
+
+										<div>
+											<label className='mb-2 block text-sm font-medium text-gray-700'>
+												Tipo de Documento
+											</label>
+											<SelectReact
+												name='document_type'
+												options={[
+													{ value: 'factura', label: 'Factura' },
+													{ value: 'boleta', label: 'Boleta' },
+												]}
+												placeholder='Seleccionar documento...'
+												value={
+													values.document_type
+														? ([
+																{
+																	value: 'factura',
+																	label: 'Factura',
+																},
+																{
+																	value: 'boleta',
+																	label: 'Boleta',
+																},
+															].find(
+																(opt) =>
+																	opt.value ===
+																	String(values.document_type),
+															) ?? null)
+														: null
+												}
+												onChange={(option) => {
+													const selectedOption = option as TSelectOption;
+													if (
+														selectedOption &&
+														!Array.isArray(selectedOption)
+													) {
+														setFieldValue(
+															'document_type',
+															selectedOption.value || '',
+														);
+													}
+												}}
+											/>
+										</div>
 									</div>
 								</CardBody>
 							</Card>
@@ -661,7 +788,9 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 														variant='outline'
 														icon='plus'
 														type='button'
-														onClick={() => push({ ...EMPTY_PRODUCT_ITEM })}>
+														onClick={() =>
+															push({ ...EMPTY_PRODUCT_ITEM })
+														}>
 														Agregar producto
 													</Button>
 													<Button
@@ -669,7 +798,9 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 														variant='outline'
 														icon='plus'
 														type='button'
-														onClick={() => push({ ...EMPTY_CUSTOM_ITEM })}>
+														onClick={() =>
+															push({ ...EMPTY_CUSTOM_ITEM })
+														}>
 														Agregar ítem
 													</Button>
 												</CardHeaderChild>
@@ -700,9 +831,12 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 																		size='sm'
 																		icon='trash'
 																		type='button'
-																		onClick={() => remove(index)}
+																		onClick={() =>
+																			remove(index)
+																		}
 																		isDisable={
-																			(values.items?.length || 0) === 1
+																			(values.items?.length ||
+																				0) === 1
 																		}>
 																		Eliminar
 																	</Button>
@@ -717,11 +851,15 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 																			<Input
 																				name={`items.${index}.customer_name`}
 																				placeholder='Ej: Servicio de instalación'
-																				value={item.customer_name ?? ''}
+																				value={
+																					item.customer_name ??
+																					''
+																				}
 																				onChange={(e) =>
 																					setFieldValue(
 																						`items.${index}.customer_name`,
-																						e.target.value,
+																						e.target
+																							.value,
 																					)
 																				}
 																			/>
@@ -733,11 +871,15 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 																			<Input
 																				name={`items.${index}.customer_sku`}
 																				placeholder='Opcional'
-																				value={item.customer_sku ?? ''}
+																				value={
+																					item.customer_sku ??
+																					''
+																				}
 																				onChange={(e) =>
 																					setFieldValue(
 																						`items.${index}.customer_sku`,
-																						e.target.value,
+																						e.target
+																							.value,
 																					)
 																				}
 																			/>
@@ -751,16 +893,25 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 																				type='number'
 																				min={1}
 																				placeholder='1'
-																				value={item.quantity ?? 1}
+																				value={
+																					item.quantity ??
+																					1
+																				}
 																				onChange={(e) =>
 																					setFieldValue(
 																						`items.${index}.quantity`,
 																						(() => {
-																							const rawValue = Number(
-																								e.target.value,
-																							);
-																							return Number.isFinite(rawValue) &&
-																								rawValue > 0
+																							const rawValue =
+																								Number(
+																									e
+																										.target
+																										.value,
+																								);
+																							return Number.isFinite(
+																								rawValue,
+																							) &&
+																								rawValue >
+																									0
 																								? rawValue
 																								: 1;
 																						})(),
@@ -771,7 +922,8 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 																		</div>
 																		<div>
 																			<label className='mb-1 block text-xs font-medium text-gray-500'>
-																				Precio neto unitario *
+																				Precio neto unitario
+																				*
 																			</label>
 																			<Input
 																				name={`items.${index}.unit_price`}
@@ -779,18 +931,28 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 																				min={0}
 																				step='0.01'
 																				placeholder='0'
-																				value={item.unit_price ?? ''}
+																				value={
+																					item.unit_price ??
+																					''
+																				}
 																				onChange={(e) =>
 																					setFieldValue(
 																						`items.${index}.unit_price`,
-																						e.target.value === ''
+																						e.target
+																							.value ===
+																							''
 																							? ''
-																							: Number(e.target.value),
+																							: Number(
+																									e
+																										.target
+																										.value,
+																								),
 																					)
 																				}
 																			/>
 																			<p className='mt-1 text-[11px] text-gray-500'>
-																				Ingresa el valor neto (sin IVA).
+																				Ingresa el valor
+																				neto (sin IVA).
 																			</p>
 																		</div>
 																		<div>
@@ -803,30 +965,44 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 																				min={0}
 																				step='0.01'
 																				placeholder='0'
-																				value={item.discount_amount ?? ''}
+																				value={
+																					item.discount_amount ??
+																					''
+																				}
 																				onChange={(e) =>
 																					setFieldValue(
 																						`items.${index}.discount_amount`,
-																						e.target.value === ''
+																						e.target
+																							.value ===
+																							''
 																							? ''
-																							: Number(e.target.value),
+																							: Number(
+																									e
+																										.target
+																										.value,
+																								),
 																					)
 																				}
 																			/>
 																		</div>
 																		<div className='md:col-span-3'>
 																			<label className='mb-1 block text-xs font-medium text-gray-500'>
-																				Detalle / descripción
+																				Detalle /
+																				descripción
 																			</label>
 																			<Textarea
 																				name={`items.${index}.description`}
 																				rows={2}
 																				placeholder='Información adicional para el ítem'
-																				value={item.description ?? ''}
+																				value={
+																					item.description ??
+																					''
+																				}
 																				onChange={(e) =>
 																					setFieldValue(
 																						`items.${index}.description`,
-																						e.target.value,
+																						e.target
+																							.value,
 																					)
 																				}
 																			/>
@@ -840,22 +1016,32 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 																			</label>
 																			<SelectReact
 																				name={`items.${index}.product_id`}
-																				options={productOptions}
+																				options={
+																					productOptions
+																				}
 																				placeholder='Seleccionar...'
 																				value={productOptions.find(
 																					(opt) =>
 																						opt.value ===
-																						String(item.product_id),
+																						String(
+																							item.product_id,
+																						),
 																				)}
-																				onChange={(option) => {
+																				onChange={(
+																					option,
+																				) => {
 																					const selectedOption =
 																						option as TSelectOption;
 																					if (
 																						selectedOption &&
-																						!Array.isArray(selectedOption)
+																						!Array.isArray(
+																							selectedOption,
+																						)
 																					) {
 																						const nextProductId =
-																							Number(selectedOption.value) || 0;
+																							Number(
+																								selectedOption.value,
+																							) || 0;
 																						setFieldValue(
 																							`items.${index}.product_id`,
 																							nextProductId,
@@ -865,12 +1051,21 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 																							'product',
 																						);
 																						const stock =
-																							saleableProductsMap[nextProductId]?.stock;
+																							saleableProductsMap[
+																								nextProductId
+																							]
+																								?.stock;
 																						const currentQuantity =
-																							values.items?.[index]?.quantity ?? 1;
+																							values
+																								.items?.[
+																								index
+																							]
+																								?.quantity ??
+																							1;
 																						if (
 																							stock &&
-																							currentQuantity > stock
+																							currentQuantity >
+																								stock
 																						) {
 																							setFieldValue(
 																								`items.${index}.quantity`,
@@ -883,9 +1078,12 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 																			/>
 																			{productInfo && (
 																				<p className='mt-1 text-xs text-gray-500'>
-																					Stock disponible:{' '}
+																					Stock
+																					disponible:{' '}
 																					<strong>
-																						{productInfo.stock}
+																						{
+																							productInfo.stock
+																						}
 																					</strong>{' '}
 																					· Precio neto:{' '}
 																					{formatCurrency(
@@ -909,22 +1107,32 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 																				min={1}
 																				max={maxQuantity}
 																				placeholder='1'
-																				value={item.quantity ?? 1}
+																				value={
+																					item.quantity ??
+																					1
+																				}
 																				onChange={(e) =>
 																					setFieldValue(
 																						`items.${index}.quantity`,
 																						(() => {
-																							const rawValue = Number(
-																								e.target.value,
-																							);
+																							const rawValue =
+																								Number(
+																									e
+																										.target
+																										.value,
+																								);
 																							const normalizedValue =
-																								Number.isFinite(rawValue) &&
-																									rawValue > 0
+																								Number.isFinite(
+																									rawValue,
+																								) &&
+																								rawValue >
+																									0
 																									? rawValue
 																									: 1;
 																							if (
 																								maxQuantity &&
-																								normalizedValue > maxQuantity
+																								normalizedValue >
+																									maxQuantity
 																							) {
 																								return maxQuantity;
 																							}
@@ -935,7 +1143,6 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 																				dimension='sm'
 																			/>
 																		</div>
-
 																	</div>
 																)}
 															</div>

@@ -99,19 +99,14 @@ const SystemParameterDetailsModal: React.FC<SystemParameterDetailsModalProps> = 
 							<label className='mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300'>
 								Categoría
 							</label>
-							<Badge
-								className='capitalize'>
-								{parameter.category}
-							</Badge>
+							<Badge className='capitalize'>{parameter.category}</Badge>
 						</div>
 
 						<div>
 							<label className='mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300'>
 								Tipo de Dato
 							</label>
-							<Badge
-								variant='outline'
-								className='font-mono capitalize'>
+							<Badge variant='outline' className='font-mono capitalize'>
 								{parameter.data_type}
 							</Badge>
 						</div>
@@ -123,17 +118,13 @@ const SystemParameterDetailsModal: React.FC<SystemParameterDetailsModalProps> = 
 								<label className='mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300'>
 									Editable
 								</label>
-								<Badge >
-									{parameter.is_editable ? 'Sí' : 'No'}
-								</Badge>
+								<Badge>{parameter.is_editable ? 'Sí' : 'No'}</Badge>
 							</div>
 							<div>
 								<label className='mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300'>
 									Visible
 								</label>
-								<Badge >
-									{parameter.is_visible ? 'Sí' : 'No'}
-								</Badge>
+								<Badge>{parameter.is_visible ? 'Sí' : 'No'}</Badge>
 							</div>
 						</div>
 

@@ -40,7 +40,7 @@ const ClientesVentasDetalle = () => {
 		return (
 			<PageWrapper>
 				<Container>
-					<div className="p-10 text-center text-zinc-500">
+					<div className='p-10 text-center text-zinc-500'>
 						Cargando información del cliente...
 					</div>
 				</Container>
@@ -59,33 +59,33 @@ const ClientesVentasDetalle = () => {
 			{/* HEADER SUPERIOR */}
 			<Subheader>
 				<SubheaderLeft>
-					<div className="flex flex-col space-y-1">
-						<h2 className="text-3xl font-bold tracking-tight">
+					<div className='flex flex-col space-y-1'>
+						<h2 className='text-3xl font-bold tracking-tight'>
 							{detalle.billing_company || contacto.name}
 						</h2>
 
-						<div className="flex items-center space-x-3">
-							<Badge variant="outline">
-								ID Cliente: {detalle.id}
+						<div className='flex items-center space-x-3'>
+							<Badge variant='outline'>ID Cliente: {detalle.id}</Badge>
+
+							<Badge color={detalle.is_active ? 'green' : 'red'} variant='solid'>
+								{detalle.is_active ? 'Activo' : 'Inactivo'}
 							</Badge>
 
-							<Badge color={detalle.is_active ? "green" : "red"} variant="solid">
-								{detalle.is_active ? "Activo" : "Inactivo"}
-							</Badge>
-
-							<Badge variant="outline" color="blue">
-								{detalle.type === "company" ? "Empresa" : "Persona Natural"}
+							<Badge variant='outline' color='blue'>
+								{detalle.type === 'company' ? 'Empresa' : 'Persona Natural'}
 							</Badge>
 						</div>
 					</div>
 				</SubheaderLeft>
 
 				<SubheaderRight>
-					<Button variant="outline" onClick={() => navigate('/comercial/clientes-ventas')}>
+					<Button
+						variant='outline'
+						onClick={() => navigate('/comercial/clientes-ventas')}>
 						Volver
 					</Button>
 
-					<Button variant="solid" onClick={() => setIsEditOpen(true)}>
+					<Button variant='solid' onClick={() => setIsEditOpen(true)}>
 						Editar
 					</Button>
 
@@ -96,26 +96,27 @@ const ClientesVentasDetalle = () => {
 			</Subheader>
 
 			<Container>
-				<Card className="border border-zinc-300 dark:border-zinc-700 shadow-sm">
+				<Card className='border border-zinc-300 shadow-sm dark:border-zinc-700'>
 					<CardBody>
-						<div className="space-y-10">
-
+						<div className='space-y-10'>
 							{/* SECCIÓN: Información básica */}
 							<section>
-								<h3 className="text-lg font-semibold text-zinc-700 dark:text-zinc-200 mb-3">
+								<h3 className='mb-3 text-lg font-semibold text-zinc-700 dark:text-zinc-200'>
 									Información General
 								</h3>
 
 								<hr />
 
-								<div className="grid grid-cols-2 gap-6 mt-4">
+								<div className='mt-4 grid grid-cols-2 gap-6'>
 									<div>
-										<p className="text-sm font-medium text-zinc-500">RUT</p>
-										<p className="text-lg">{detalle.rut}</p>
+										<p className='text-sm font-medium text-zinc-500'>RUT</p>
+										<p className='text-lg'>{detalle.rut}</p>
 									</div>
 
 									<div>
-										<p className="text-sm font-medium text-zinc-500">Fecha creación</p>
+										<p className='text-sm font-medium text-zinc-500'>
+											Fecha creación
+										</p>
 										<p>{new Date(detalle.created_at).toLocaleDateString()}</p>
 									</div>
 								</div>
@@ -123,32 +124,45 @@ const ClientesVentasDetalle = () => {
 
 							{/* SECCIÓN: Contacto */}
 							<section>
-								<h3 className="text-lg font-semibold text-zinc-700 dark:text-zinc-200 mb-3">
+								<h3 className='mb-3 text-lg font-semibold text-zinc-700 dark:text-zinc-200'>
 									Contacto
 								</h3>
 
 								<hr />
 
-								<div className="space-y-2 mt-4">
-									<p><span className="font-medium">Nombre: </span>{contacto.name}</p>
-									<p><span className="font-medium">Email: </span>{contacto.email}</p>
-									<p><span className="font-medium">Teléfono: </span>{contacto.phone}</p>
+								<div className='mt-4 space-y-2'>
+									<p>
+										<span className='font-medium'>Nombre: </span>
+										{contacto.name}
+									</p>
+									<p>
+										<span className='font-medium'>Email: </span>
+										{contacto.email}
+									</p>
+									<p>
+										<span className='font-medium'>Teléfono: </span>
+										{contacto.phone}
+									</p>
 								</div>
 							</section>
 
 							{/* SECCIÓN: Dirección */}
 							{detalle.billing_address_1 && (
 								<section>
-									<h3 className="text-lg font-semibold text-zinc-700 dark:text-zinc-200 mb-3">
+									<h3 className='mb-3 text-lg font-semibold text-zinc-700 dark:text-zinc-200'>
 										Dirección
 									</h3>
 
 									<hr />
 
-									<div className="space-y-1 mt-4">
+									<div className='mt-4 space-y-1'>
 										<p>{detalle.billing_address_1}</p>
-										{detalle.billing_city && <p className="text-zinc-500">{detalle.billing_city}</p>}
-										{detalle.commune && <p className="text-zinc-500">{detalle.commune.name}</p>}
+										{detalle.billing_city && (
+											<p className='text-zinc-500'>{detalle.billing_city}</p>
+										)}
+										{detalle.commune && (
+											<p className='text-zinc-500'>{detalle.commune.name}</p>
+										)}
 									</div>
 								</section>
 							)}
@@ -156,13 +170,13 @@ const ClientesVentasDetalle = () => {
 							{/* SECCIÓN: Notas */}
 							{detalle.notes && (
 								<section>
-									<h3 className="text-lg font-semibold text-zinc-700 dark:text-zinc-200 mb-3">
+									<h3 className='mb-3 text-lg font-semibold text-zinc-700 dark:text-zinc-200'>
 										Notas
 									</h3>
 
 									<hr />
 
-									<p className="mt-4">{detalle.notes}</p>
+									<p className='mt-4'>{detalle.notes}</p>
 								</section>
 							)}
 						</div>
@@ -176,7 +190,7 @@ const ClientesVentasDetalle = () => {
 					isOpen={isEditOpen}
 					setIsOpen={setIsEditOpen}
 					subsidiaryId={effectiveSubsidiaryId ?? 1}
-					isEdit={true}
+					isEdit
 					initialData={detalle}
 				/>
 			)}

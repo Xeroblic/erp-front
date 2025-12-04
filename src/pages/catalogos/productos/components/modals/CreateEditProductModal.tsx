@@ -1,5 +1,6 @@
 import React, { useMemo, useEffect, useRef } from 'react';
 import { Formik, Form, Field, ErrorMessage, FormikHelpers, FieldProps } from 'formik';
+import { toast } from 'react-toastify';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Input from '@/components/form/Input';
@@ -7,7 +8,6 @@ import Checkbox from '@/components/form/Checkbox';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import SelectReact, { TSelectOptions, TSelectOption } from '@/components/form/SelectReact';
-import { toast } from 'react-toastify';
 import type { IProduct } from '@/interface/product.interface';
 import type { IBrand } from '@/interface/brand.interface';
 import type { ICategory } from '@/interface/category.interface';
@@ -180,8 +180,8 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 						if (Array.isArray(val) && val.length) serverErrors[key] = String(val[0]);
 						else if (typeof val === 'string') serverErrors[key] = val;
 					});
-					if (serverErrors['category_ids'] && !serverErrors['categories']) {
-						serverErrors['categories'] = serverErrors['category_ids'];
+					if (serverErrors.category_ids && !serverErrors.categories) {
+						serverErrors.categories = serverErrors.category_ids;
 					}
 				}
 
@@ -579,11 +579,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 													</p>
 												</div>
 												<Checkbox
-													checked={
-														values[
-															toggle.key as ProductToggleKey
-														] as boolean
-													}
+													checked={values[toggle.key as ProductToggleKey]}
 													onChange={(event) =>
 														setFieldValue(
 															toggle.key,

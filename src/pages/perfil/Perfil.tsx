@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFormik } from 'formik';
 // Validación y helpers extraídos
 import { toast } from 'react-toastify';
@@ -42,7 +42,6 @@ const PROFILE_TABS: ProfileTabDefinition[] = [
 	{ key: 'CONTACT', label: 'Contacto', icon: 'HeroGlobeAmericas' },
 	// { key: 'APPEARANCE', label: 'Apariencia', icon: 'HeroSwatch' },
 ];
-
 
 const Perfil = () => {
 	const dispatch = useAppDispatch();
@@ -156,7 +155,7 @@ const Perfil = () => {
 		let mounted = true;
 		async function trySetFromUserOrRefresh() {
 			if (!userData) return;
-			if (formik.values.comuna) return; 
+			if (formik.values.comuna) return;
 
 			const anyUser: any = userData as any;
 			const foundId =
@@ -206,7 +205,7 @@ const Perfil = () => {
 	const fullName = `${userData?.first_name ?? ''} ${userData?.last_name ?? ''}`.trim();
 
 	return (
-		<PageWrapper isProtectedRoute={true} name={formik.values.first_name}>
+		<PageWrapper isProtectedRoute name={formik.values.first_name}>
 			<ProfileHeader
 				fullName={fullName}
 				onSubmit={formik.handleSubmit}

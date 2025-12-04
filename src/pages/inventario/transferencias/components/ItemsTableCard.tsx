@@ -23,7 +23,11 @@ const ItemsTableCard: React.FC<ItemsTableCardProps> = ({
 			<CardTitle className='flex items-center justify-between'>
 				<div className='flex items-center gap-3'>
 					<span>
-						<svg className='h-6 w-6' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+						<svg
+							className='h-6 w-6'
+							fill='none'
+							stroke='currentColor'
+							viewBox='0 0 24 24'>
 							<path
 								strokeLinecap='round'
 								strokeLinejoin='round'

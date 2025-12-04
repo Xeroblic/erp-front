@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { useFormik } from 'formik';
 import classNames from 'classnames';
 import { Link, useNavigate } from 'react-router-dom';
+import { useKeyPressEvent } from 'react-use';
+import * as Yup from 'yup';
+import { toast } from 'react-toastify';
 import PageWrapper from '../components/layouts/PageWrapper/PageWrapper';
 import Button from '../components/ui/Button';
 import Input from '../components/form/Input';
@@ -12,9 +15,6 @@ import Validation from '../components/form/Validation';
 import Card, { CardBody } from '../components/ui/Card';
 import { useAppDispatch } from '@/store';
 import { loginThunk } from '@/store/slices/auth/authSlice';
-import { useKeyPressEvent } from 'react-use';
-import * as Yup from 'yup';
-import { toast } from 'react-toastify';
 import Badge from '@/components/ui/Badge.tsx';
 
 const LoginPage = () => {

@@ -72,7 +72,9 @@ const DetalleProveedorPage: React.FC = () => {
 		}
 
 		const branchSubsidiaryId =
-			currentUser?.branch?.subsidiary?.id ?? (currentUser?.branch as any)?.subsidiary_id ?? null;
+			currentUser?.branch?.subsidiary?.id ??
+			(currentUser?.branch as any)?.subsidiary_id ??
+			null;
 		if (branchSubsidiaryId) return branchSubsidiaryId;
 
 		const accessSubs = (currentUser as any)?.access?.subsidiaries;
@@ -140,7 +142,10 @@ const DetalleProveedorPage: React.FC = () => {
 			if (found) {
 				const normalized = found as ISupplierExtended;
 				setSupplier(normalized);
-				if (normalized.subsidiary_id && normalized.subsidiary_id !== effectiveSubsidiaryId) {
+				if (
+					normalized.subsidiary_id &&
+					normalized.subsidiary_id !== effectiveSubsidiaryId
+				) {
 					setEffectiveSubsidiaryId(normalized.subsidiary_id);
 				}
 			} else if (!loadingSuppliers) {

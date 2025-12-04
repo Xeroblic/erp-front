@@ -1,132 +1,131 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { toast } from 'react-toastify';
 import ApiService from '@/services/ApiService';
 import tokenManager from '@/services/auth/tokenManager';
 import { RootState, AppDispatch } from '@/store';
 import { IGruposUsuarios, IUserMe } from '@/interface/user.interface';
-import { toast } from 'react-toastify';
 import { clearAppStorage } from '@/utils/appStorage';
 import { normalizeUserProfile } from '@/utils/normalizeUserProfile';
 import { clearPersonalizacionState } from '@/store/slices/personalizacion/personalizacionSlice';
 
 interface LoginResponse {
-    access: string;
+	access: string;
 }
 
 const extractAccessToken = (payload: any): string | undefined => {
-    if (!payload) return undefined;
+	if (!payload) return undefined;
 
-    const candidates = [
-        payload.token,
-        payload.access,
-        payload.access_token,
-        payload?.data?.token,
-        payload?.data?.access,
-        payload?.data?.access_token,
-    ];
+	const candidates = [
+		payload.token,
+		payload.access,
+		payload.access_token,
+		payload?.data?.token,
+		payload?.data?.access,
+		payload?.data?.access_token,
+	];
 
-    return candidates.find(
-        (value): value is string => typeof value === 'string' && value.trim().length > 0,
-    );
+	return candidates.find(
+		(value): value is string => typeof value === 'string' && value.trim().length > 0,
+	);
 };
 
 type PerfilResponse = {
-    data?: {
-        all_permissions?: string[];
-        direct_permissions?: string[];
-        role_permissions?: string[];
-        global_roles?: string[];
-    } & IUserMe;
-    user?: IUserMe;
+	data?: {
+		all_permissions?: string[];
+		direct_permissions?: string[];
+		role_permissions?: string[];
+		global_roles?: string[];
+	} & IUserMe;
+	user?: IUserMe;
 };
 
 export interface AuthState {
-    access?: string;
-    loading: boolean;
-    error?: string;
-    isAuthenticated: boolean;
-    permisos: string[];
-    user?: IUserMe;
-    listaGrupos?: IGruposUsuarios;
-    userLastFetched?: number;
-    inactivityTimeoutMs?: number;
+	access?: string;
+	loading: boolean;
+	error?: string;
+	isAuthenticated: boolean;
+	permisos: string[];
+	user?: IUserMe;
+	listaGrupos?: IGruposUsuarios;
+	userLastFetched?: number;
+	inactivityTimeoutMs?: number;
 }
 
 const initialState: AuthState = {
-    access: undefined,
-    loading: false,
-    error: undefined,
-    isAuthenticated: false,
-    permisos: [],
-    user: undefined,
-    listaGrupos: undefined,
-    userLastFetched: undefined,
-    inactivityTimeoutMs: undefined,
+	access: undefined,
+	loading: false,
+	error: undefined,
+	isAuthenticated: false,
+	permisos: [],
+	user: undefined,
+	listaGrupos: undefined,
+	userLastFetched: undefined,
+	inactivityTimeoutMs: undefined,
 };
 
 /* ---------------------------------------------------
    LOGIN THUNK
 --------------------------------------------------- */
 export const loginThunk = createAsyncThunk<
-    LoginResponse,
-    { email: string; password: string },
-    { rejectValue: string; dispatch: AppDispatch }
+	LoginResponse,
+	{ email: string; password: string },
+	{ rejectValue: string; dispatch: AppDispatch }
 >('auth/login', async ({ email, password }, { dispatch, rejectWithValue }) => {
-    try {
-        const resp = await ApiService.fetchData<{ token: string }>({
-            url: '/login',
-            method: 'post',
-            data: { email, password },
-            isLoginRequest: true,
-        });
+	try {
+		const resp = await ApiService.fetchData<{ token: string }>({
+			url: '/login',
+			method: 'post',
+			data: { email, password },
+			isLoginRequest: true,
+		});
 
-        const token = extractAccessToken(resp.data);
-        if (!token) {
-            throw new Error('El inicio de sesión no devolvió un token válido');
-        }
+		const token = extractAccessToken(resp.data);
+		if (!token) {
+			throw new Error('El inicio de sesión no devolvió un token válido');
+		}
 
-        // Guardar SOLO en memoria
-        tokenManager.setAccessToken(token);
+		// Guardar SOLO en memoria
+		tokenManager.setAccessToken(token);
 
-        // Guardar en Redux
-        dispatch(setToken({ access: token, markActivity: true }));
+		// Guardar en Redux
+		dispatch(setToken({ access: token, markActivity: true }));
 
-        return { access: token };
-    } catch (error: any) {
-        const apiMessage =
-            error?.response?.data?.error ||
-            error?.response?.data?.message ||
-            error?.message ||
-            'Error de autenticación';
-        return rejectWithValue(apiMessage);
-    }
+		return { access: token };
+	} catch (error: any) {
+		const apiMessage =
+			error?.response?.data?.error ||
+			error?.response?.data?.message ||
+			error?.message ||
+			'Error de autenticación';
+		return rejectWithValue(apiMessage);
+	}
 });
 
 /* ---------------------------------------------------
    LOGOUT THUNK
 --------------------------------------------------- */
 export const logoutThunk = createAsyncThunk<
-    void,
-    void,
-    { state: RootState; dispatch: AppDispatch }
+	void,
+	void,
+	{ state: RootState; dispatch: AppDispatch }
 >('auth/logoutThunk', async (_, { dispatch, getState }) => {
-    const token = getState().auth.access ?? tokenManager.getAccessToken();
+	const token = getState().auth.access ?? tokenManager.getAccessToken();
 
-    try {
-        await ApiService.fetchData({
-            url: '/logout',
-            method: 'post',
-            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-            dedupe: true,
-        });
-    } catch {
-        // da lo mismo si falla
-    } finally {
-        dispatch(logout());
-        dispatch(clearPersonalizacionState());
-        clearAppStorage({ keepTheme: false });
-    }
+	try {
+		await ApiService.fetchData({
+			url: '/logout',
+			method: 'post',
+			headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+			dedupe: true,
+		});
+	} catch {
+		// da lo mismo si falla
+	} finally {
+		dispatch(logout());
+		dispatch(clearPersonalizacionState());
+		clearAppStorage({ keepTheme: false });
+	}
 });
-
 
 /* ---------------------------------------------------
    PERFIL DEL USUARIO (userMe)
@@ -178,81 +177,77 @@ export const userMeThunk = createAsyncThunk<
    SLICE
 --------------------------------------------------- */
 const authSlice = createSlice({
-    name: 'auth',
-    initialState,
-    reducers: {
-        logout: (state) => {
-            state.access = undefined;
-            state.user = undefined;
-            state.permisos = [];
-            state.isAuthenticated = false;
-            state.loading = false;
-            state.error = undefined;
-            state.listaGrupos = undefined;
-            state.userLastFetched = undefined;
+	name: 'auth',
+	initialState,
+	reducers: {
+		logout: (state) => {
+			state.access = undefined;
+			state.user = undefined;
+			state.permisos = [];
+			state.isAuthenticated = false;
+			state.loading = false;
+			state.error = undefined;
+			state.listaGrupos = undefined;
+			state.userLastFetched = undefined;
 
-            tokenManager.clearTokens();
+			tokenManager.clearTokens();
 
-            ApiService.clearCache();
+			ApiService.clearCache();
 
-            clearAppStorage({ keepTheme: false });
-        },
+			clearAppStorage({ keepTheme: false });
+		},
 
-        setToken: (
-            state,
-            action: PayloadAction<{ access: string; markActivity?: boolean }>,
-        ) => {
-            const { access, markActivity } = action.payload;
-            state.access = access;
-            if (markActivity) tokenManager.markActivity();
-        },
+		setToken: (state, action: PayloadAction<{ access: string; markActivity?: boolean }>) => {
+			const { access, markActivity } = action.payload;
+			state.access = access;
+			if (markActivity) tokenManager.markActivity();
+		},
 
-        clearAuthState: () => ({ ...initialState }),
+		clearAuthState: () => ({ ...initialState }),
+	},
 
-    },
-
-    extraReducers: (builder) => {
+	extraReducers: (builder) => {
 		builder
-            /* LOGIN */
-            .addCase(loginThunk.pending, (s) => {
-                s.loading = true;
-                s.error = undefined;
-            })
-            .addCase(loginThunk.fulfilled, (s, { payload }) => {
-                s.loading = false;
-                s.access = payload.access;
-                s.isAuthenticated = true; // pre-authenticated; se consolida con userMe
-            })
-            .addCase(loginThunk.rejected, (s, action) => {
-                s.loading = false;
-                s.error = action.payload;
-                s.isAuthenticated = false;
-            })
+			/* LOGIN */
+			.addCase(loginThunk.pending, (s) => {
+				s.loading = true;
+				s.error = undefined;
+			})
+			.addCase(loginThunk.fulfilled, (s, { payload }) => {
+				s.loading = false;
+				s.access = payload.access;
+				s.isAuthenticated = true; // pre-authenticated; se consolida con userMe
+			})
+			.addCase(loginThunk.rejected, (s, action) => {
+				s.loading = false;
+				s.error = action.payload;
+				s.isAuthenticated = false;
+			})
 
-            /* USER ME */
-            .addCase(userMeThunk.pending, (s) => {
-                s.loading = true;
-            })
-            .addCase(userMeThunk.fulfilled, (s, { payload }) => {
-                s.loading = false;
+			/* USER ME */
+			.addCase(userMeThunk.pending, (s) => {
+				s.loading = true;
+			})
+			.addCase(userMeThunk.fulfilled, (s, { payload }) => {
+				s.loading = false;
 
-                const user = payload.user;
-                const authority = [
-                    ...payload.permisos,
-                    ...(payload.roles || []),
-                    ...(user.cargo ? [user.cargo] : []),
-                ];
+				const { user } = payload;
+				const authority = [
+					...payload.permisos,
+					...(payload.roles || []),
+					...(user.cargo ? [user.cargo] : []),
+				];
 
-                s.user = { ...user, authority, roles: payload.roles || [] };
-                s.permisos = authority;
-                s.isAuthenticated = true;
-                s.userLastFetched = Date.now();
-            })
+				s.user = { ...user, authority, roles: payload.roles || [] };
+				s.permisos = authority;
+				s.isAuthenticated = true;
+				s.userLastFetched = Date.now();
+			})
 			.addCase(userMeThunk.rejected, (s, action) => {
 				s.loading = false;
 				s.isAuthenticated = false;
 
-				const payload = action.payload as AuthErrorPayload | undefined;
+				const { payload } = action;
 				const message = payload?.message ?? 'No se pudo obtener el perfil';
 				s.error = message;
 

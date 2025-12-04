@@ -1,14 +1,14 @@
 import Container from '@/components/layouts/Container/Container';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 
-function SinPermisos() {
+const SinPermisos = () => {
 	return (
-		<PageWrapper isProtectedRoute={true} title='Sin Permisos'>
+		<PageWrapper isProtectedRoute title='Sin Permisos'>
 			<Container className='flex h-full items-center justify-center'>
 				<div className='text-9xl'>SIN PERMISOS</div>
 			</Container>
 		</PageWrapper>
 	);
-}
+};
 
 export default SinPermisos;

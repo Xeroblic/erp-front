@@ -15,11 +15,16 @@ const Wrapper: FC<IWrapperProps> = (props) => {
 	return (
 		<section
 			data-component-name='Wrapper'
-			className={classNames('flex flex-auto flex-col ltr:peer-hover:md:pl-[20rem] rtl:peer-hover:md:pr-[20rem]', themeConfig.transition, className, {
-				'ltr:peer-[]:md:pl-[20rem] rtl:peer-[]:md:pr-[20rem]': asideStatus,
-				// Mobile Design
-				'ltr:peer-[]:md:pl-[6.225em] rtl:peer-[]:md:pr-[6.225em]': !asideStatus,
-			})}
+			className={classNames(
+				'flex flex-auto flex-col ltr:peer-hover:md:pl-[20rem] rtl:peer-hover:md:pr-[20rem]',
+				themeConfig.transition,
+				className,
+				{
+					'ltr:peer-[]:md:pl-[20rem] rtl:peer-[]:md:pr-[20rem]': asideStatus,
+					// Mobile Design
+					'ltr:peer-[]:md:pl-[6.225em] rtl:peer-[]:md:pr-[6.225em]': !asideStatus,
+				},
+			)}
 			{...rest}>
 			{children}
 		</section>

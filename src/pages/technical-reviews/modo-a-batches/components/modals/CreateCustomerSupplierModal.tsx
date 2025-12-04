@@ -64,7 +64,8 @@ const CreateCustomerSupplierModal: React.FC<CreateCustomerSupplierModalProps> = 
 					{error && <p className='mt-1 text-xs text-red-500'>{error}</p>}
 				</div>
 				<p className='text-xs text-neutral-500'>
-					Primero crea el cliente. Luego podrás asociarle un proveedor existente desde el formulario.
+					Primero crea el cliente. Luego podrás asociarle un proveedor existente desde el
+					formulario.
 				</p>
 			</ModalBody>
 			<ModalFooter>

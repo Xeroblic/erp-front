@@ -126,11 +126,9 @@ export const DropdownToggle: FC<IDropdownToggleProps> = (props) => {
 					},
 					...(childDisplayName === 'Button'
 						? {
-								rightIcon: hasIcon
-									? 'HeroChevronDown'
-									: undefined,
+								rightIcon: hasIcon ? 'HeroChevronDown' : undefined,
 								isActive: isOpen,
-						  }
+							}
 						: {}),
 					className: classNames(
 						{

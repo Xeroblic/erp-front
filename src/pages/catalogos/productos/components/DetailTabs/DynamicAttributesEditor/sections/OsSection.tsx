@@ -7,11 +7,7 @@ import {
 } from '@/pages/catalogos/productos/constants/product-attributes.constants';
 import type { SectionBaseProps } from '../types';
 
-const OsSection: React.FC<SectionBaseProps> = ({
-	attributes,
-	updateAttribute,
-	isFieldVisible,
-}) => {
+const OsSection: React.FC<SectionBaseProps> = ({ attributes, updateAttribute, isFieldVisible }) => {
 	if (!isFieldVisible('os')) {
 		return null;
 	}
@@ -84,10 +80,7 @@ const OsSection: React.FC<SectionBaseProps> = ({
 								type='checkbox'
 								checked={attributes.os?.license?.activated || false}
 								onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-									updateAttribute(
-										'os.license.activated',
-										event.target.checked,
-									)
+									updateAttribute('os.license.activated', event.target.checked)
 								}
 								className='h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500'
 							/>
@@ -102,10 +95,7 @@ const OsSection: React.FC<SectionBaseProps> = ({
 							type='checkbox'
 							checked={attributes.os?.can_upgrade_edition || false}
 							onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-								updateAttribute(
-									'os.can_upgrade_edition',
-									event.target.checked,
-								)
+								updateAttribute('os.can_upgrade_edition', event.target.checked)
 							}
 							className='h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500'
 						/>

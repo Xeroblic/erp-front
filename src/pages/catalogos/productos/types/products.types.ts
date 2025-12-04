@@ -1,8 +1,4 @@
-import type {
-	IProduct,
-	ProductStatus,
-	ProductType,
-} from '@/interface/product.interface';
+import type { IProduct, ProductStatus, ProductType } from '@/interface/product.interface';
 import type { AttributesJson } from './attributes.types';
 
 export type ProductOption = {

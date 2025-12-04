@@ -8,30 +8,39 @@ import ApiService from '@/services/ApiService';
  * - El backend distribuye según roles y acceso.
  */
 interface SendNotificationParams {
-  type_key: string;
-  payload: Record<string, unknown>;
-  company_id?: number;
-  subsidiary_id?: number;
-  branch_id?: number;
+	type_key: string;
+	payload: Record<string, unknown>;
+	company_id?: number;
+	subsidiary_id?: number;
+	branch_id?: number;
 }
 
 export function useSendNotification() {
-  /**
-   * Dispara una notificación
-   */
-  const sendNotification = useCallback(async ({ type_key, payload, company_id = 1, subsidiary_id, branch_id }: SendNotificationParams) => {
-    await ApiService.fetchData({
-      url: '/events/test',
-      method: 'post',
-      data: {
-        type_key,
-        company_id,
-        subsidiary_id: subsidiary_id ?? undefined,
-        branch_id: branch_id ?? undefined,
-        payload: payload ?? {},
-      },
-    });
-  }, []);
+	/**
+	 * Dispara una notificación
+	 */
+	const sendNotification = useCallback(
+		async ({
+			type_key,
+			payload,
+			company_id = 1,
+			subsidiary_id,
+			branch_id,
+		}: SendNotificationParams) => {
+			await ApiService.fetchData({
+				url: '/events/test',
+				method: 'post',
+				data: {
+					type_key,
+					company_id,
+					subsidiary_id: subsidiary_id ?? undefined,
+					branch_id: branch_id ?? undefined,
+					payload: payload ?? {},
+				},
+			});
+		},
+		[],
+	);
 
-  return sendNotification;
+	return sendNotification;
 }

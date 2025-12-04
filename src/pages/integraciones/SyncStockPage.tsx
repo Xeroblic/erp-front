@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchIntegrations } from '@/store/slices/integrations/integrationsSlice';
 import { syncStock } from '@/services/integrationsService';
@@ -13,7 +14,6 @@ import Textarea from '@/components/form/Textarea';
 import Checkbox from '@/components/form/Checkbox';
 import Badge from '@/components/ui/Badge';
 import Alert from '@/components/ui/Alert';
-import { toast } from 'react-toastify';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import type { Integration, SyncStockPayload, SyncStockResponse } from '@/types/integrations.types';
 

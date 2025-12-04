@@ -46,7 +46,7 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 	// batchLabel,
 }) => {
 	const selectedProductOption = productId
-		? productOptions.find((opt) => opt.value === String(productId)) ?? null
+		? (productOptions.find((opt) => opt.value === String(productId)) ?? null)
 		: null;
 
 	return (
@@ -86,7 +86,9 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 								value={selectedProductOption}
 								onChange={(option) => {
 									const selectedOption = option as TSelectOption | null;
-									onProductChange(selectedOption ? Number(selectedOption.value) : null);
+									onProductChange(
+										selectedOption ? Number(selectedOption.value) : null,
+									);
 								}}
 								placeholder='Seleccionar producto con seguimiento por serie'
 								isDisabled={productsLoading}
@@ -103,7 +105,9 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 								<button
 									key={type.value}
 									type='button'
-									onClick={() => onEquipmentTypeChange(type.value as EquipmentType)}
+									onClick={() =>
+										onEquipmentTypeChange(type.value as EquipmentType)
+									}
 									className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
 										equipmentType === type.value
 											? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950'

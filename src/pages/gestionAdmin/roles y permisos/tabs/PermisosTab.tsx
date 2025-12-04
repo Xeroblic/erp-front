@@ -55,7 +55,8 @@ const PermisosTab: React.FC<PermisosTabProps> = ({
 				/>
 				{!editable && (
 					<p className='mt-2 text-xs text-zinc-500'>
-						Visualización solamente. No cuentas con permisos para asignar permisos directos.
+						Visualización solamente. No cuentas con permisos para asignar permisos
+						directos.
 					</p>
 				)}
 			</div>
@@ -101,7 +102,6 @@ const PermisosTab: React.FC<PermisosTabProps> = ({
 					</div>
 				</div>
 			</div>
-
 		</form>
 	);
 };

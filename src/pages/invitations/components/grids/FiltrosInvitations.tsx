@@ -1,9 +1,7 @@
-import React from 'react'
+import React from 'react';
 
 const FiltrosInvitations = () => {
-  return (
-    <div>FiltrosInvitations</div>
-  )
-}
+	return <div>FiltrosInvitations</div>;
+};
 
-export default FiltrosInvitations
+export default FiltrosInvitations;

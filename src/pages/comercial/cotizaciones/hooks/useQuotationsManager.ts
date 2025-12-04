@@ -156,7 +156,7 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 			data = data.filter(
 				(q) =>
 					String(q.id).includes(term) ||
-					(q.notes && q.notes.toLowerCase().includes(term))
+					(q.notes && q.notes.toLowerCase().includes(term)),
 			);
 		}
 		return data;
@@ -164,7 +164,10 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 
 	const stats = useMemo(() => {
 		const total = quotations.length;
-		const totalAmount = quotations.reduce((sum: number, quote: IQuote) => sum + Number(quote.total_amount ?? 0), 0);
+		const totalAmount = quotations.reduce(
+			(sum: number, quote: IQuote) => sum + Number(quote.total_amount ?? 0),
+			0,
+		);
 		const byStatus = quotations.reduce<Record<string, number>>((acc, quote) => {
 			const key = normalizeQuoteStatusValue(quote.status);
 			acc[key] = (acc[key] || 0) + 1;
@@ -187,48 +190,53 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 
 	const normalizeQuoteItems = (items?: IQuoteItem[] | null): QuoteItemPayload[] => {
 		if (!items || items.length === 0) return [];
-		const mapped = items
-			.map((item) => {
-				const hasProduct = Boolean(item.product_id);
-				const baseName = item.customer_name ?? item.product?.name ?? '';
-				const baseSku = item.customer_sku ?? item.product?.sku ?? '';
-				const quantity = Math.max(1, Number(item.quantity) || 1);
-				const rawUnitPrice = Number(
-					item.unit_price ??
+		const mapped = items.map((item) => {
+			const hasProduct = Boolean(item.product_id);
+			const baseName = item.customer_name ?? item.product?.name ?? '';
+			const baseSku = item.customer_sku ?? item.product?.sku ?? '';
+			const quantity = Math.max(1, Number(item.quantity) || 1);
+			const rawUnitPrice = Number(
+				item.unit_price ??
 					(item as any).unit_net ??
 					(item as any).unitPrice ??
 					(item as any).unit ??
 					0,
-				);
-				const unitPrice =
-					hasProduct && rawUnitPrice <= 0 ? undefined : rawUnitPrice > 0 ? rawUnitPrice : undefined;
-				const discountAmount =
-					item.discount_amount !== undefined && item.discount_amount !== null
-						? Number(item.discount_amount)
+			);
+			const unitPrice =
+				hasProduct && rawUnitPrice <= 0
+					? undefined
+					: rawUnitPrice > 0
+						? rawUnitPrice
 						: undefined;
+			const discountAmount =
+				item.discount_amount !== undefined && item.discount_amount !== null
+					? Number(item.discount_amount)
+					: undefined;
 
-				if (!hasProduct && !baseName.trim()) {
-					return null;
-				}
-				if (!hasProduct && (!unitPrice || unitPrice <= 0)) {
-					throw new Error(
-						'Los ítems sin producto asociado deben incluir un nombre y un precio neto mayor a 0.',
-					);
-				}
+			if (!hasProduct && !baseName.trim()) {
+				return null;
+			}
+			if (!hasProduct && (!unitPrice || unitPrice <= 0)) {
+				throw new Error(
+					'Los ítems sin producto asociado deben incluir un nombre y un precio neto mayor a 0.',
+				);
+			}
 
-				return {
-					id: item.id && item.id > 0 ? item.id : undefined,
-					product_id: item.product_id ?? null,
-					customer_name: baseName.trim() || undefined,
-					customer_sku: baseSku.trim() || undefined,
-					description: item.description ?? undefined,
-					notes: item.notes ?? undefined,
-					quantity,
-					unit_price: unitPrice,
-					discount_amount:
-						discountAmount && discountAmount > 0 ? Number(discountAmount.toFixed(2)) : undefined,
-				};
-			});
+			return {
+				id: item.id && item.id > 0 ? item.id : undefined,
+				product_id: item.product_id ?? null,
+				customer_name: baseName.trim() || undefined,
+				customer_sku: baseSku.trim() || undefined,
+				description: item.description ?? undefined,
+				notes: item.notes ?? undefined,
+				quantity,
+				unit_price: unitPrice,
+				discount_amount:
+					discountAmount && discountAmount > 0
+						? Number(discountAmount.toFixed(2))
+						: undefined,
+			};
+		});
 		return mapped.filter(Boolean) as QuoteItemPayload[];
 	};
 
@@ -264,7 +272,8 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 			try {
 				desiredPayload = normalizeQuoteItems(desiredItems);
 			} catch (error: any) {
-				const message = error?.message || 'Uno de los ítems no tiene la información mínima requerida.';
+				const message =
+					error?.message || 'Uno de los ítems no tiene la información mínima requerida.';
 				toast.error(message);
 				throw error;
 			}
@@ -284,8 +293,8 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 				desiredPayload.length === 0
 					? existing
 					: existing.filter(
-						(item) => !toUpdate.some((desiredItem) => desiredItem.id === item.id),
-					);
+							(item) => !toUpdate.some((desiredItem) => desiredItem.id === item.id),
+						);
 
 			if (!toUpdate.length && !toCreate.length && !toDelete.length) {
 				return;
@@ -317,7 +326,7 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 					deleteQuoteItem({
 						subsidiaryId,
 						quoteId,
-						itemId: item.id!,
+						itemId: item.id,
 					}),
 				).unwrap();
 			}
@@ -353,7 +362,7 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 			try {
 				const payload = mapToUpdateDTO(updates);
 				await dispatch(updateQuote({ subsidiaryId, quoteId: id, data: payload })).unwrap();
-				await syncQuoteItems(id, updates.items as IQuoteItem[] | undefined);
+				await syncQuoteItems(id, updates.items);
 				await requestQuotes();
 			} catch (err: any) {
 				const message = err?.message || 'Error al actualizar la cotización';
@@ -385,7 +394,9 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 			try {
 				let baseQuote = quotations.find((q) => q.id === id);
 				if (!baseQuote) {
-					baseQuote = await dispatch(fetchQuoteById({ subsidiaryId, quoteId: id })).unwrap();
+					baseQuote = await dispatch(
+						fetchQuoteById({ subsidiaryId, quoteId: id }),
+					).unwrap();
 				}
 				let baseItems = baseQuote.items ?? [];
 				if (!baseItems.length) {
@@ -406,7 +417,7 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 					createQuote({ subsidiaryId, data: payload }),
 				).unwrap();
 				if (baseItems.length) {
-					await syncQuoteItems(createdQuote.id, baseItems as IQuoteItem[]);
+					await syncQuoteItems(createdQuote.id, baseItems);
 				}
 				toast.success('Cotización duplicada exitosamente');
 				await requestQuotes();
@@ -450,9 +461,7 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 			if (!subsidiaryId) {
 				throw new Error('No hay una filial seleccionada');
 			}
-			const detail = await dispatch(
-				fetchQuoteById({ subsidiaryId, quoteId: id }),
-			).unwrap();
+			const detail = await dispatch(fetchQuoteById({ subsidiaryId, quoteId: id })).unwrap();
 			if (!detail.items || detail.items.length === 0) {
 				try {
 					const items = await dispatch(

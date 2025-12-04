@@ -133,226 +133,235 @@ const EditWarehouseModal: React.FC<EditWarehouseModalProps> = ({
 							<div className='grid gap-4 lg:grid-cols-2'>
 								{/* Información Principal */}
 								<Card className='lg:col-span-2'>
-								<CardHeader>
-									<CardTitle>Información Principal</CardTitle>
-								</CardHeader>
-								<CardBody className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-									<div>
-										<Label htmlFor='name'>
-											Nombre <span className='text-red-500'>*</span>
-										</Label>
-										<Input
-											id='name'
-											name='name'
-											placeholder='Bodega Principal'
-											value={formik.values.name}
-											onChange={formik.handleChange}
-											onBlur={formik.handleBlur}
-										/>
-										{formik.touched.name && formik.errors.name && (
-											<div className='mt-1 text-sm text-red-500'>
-												{formik.errors.name}
-											</div>
-										)}
-									</div>
-
-									<div>
-										<Label htmlFor='code'>
-											Código <span className='text-red-500'>*</span>
-										</Label>
-										<Input
-											id='code'
-											name='code'
-											placeholder='BDP-001'
-											value={formik.values.code}
-											onChange={(e) => {
-												const upperValue = e.target.value.toUpperCase();
-												formik.setFieldValue('code', upperValue);
-											}}
-											onBlur={formik.handleBlur}
-										/>
-										{formik.touched.code && formik.errors.code && (
-											<div className='mt-1 text-sm text-red-500'>
-												{formik.errors.code}
-											</div>
-										)}
-										<div className='mt-1 text-sm text-gray-500'>
-											Solo letras mayúsculas, números y guiones
-										</div>
-									</div>
-
-									<div>
-										<Label htmlFor='warehouse_type'>
-											Tipo de Bodega <span className='text-red-500'>*</span>
-										</Label>
-										<Input
-											id='warehouse_type'
-											name='warehouse_type'
-											placeholder='Principal, Secundaria, Tránsito'
-											value={formik.values.warehouse_type}
-											onChange={formik.handleChange}
-											onBlur={formik.handleBlur}
-										/>
-										{formik.touched.warehouse_type &&
-											formik.errors.warehouse_type && (
+									<CardHeader>
+										<CardTitle>Información Principal</CardTitle>
+									</CardHeader>
+									<CardBody className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+										<div>
+											<Label htmlFor='name'>
+												Nombre <span className='text-red-500'>*</span>
+											</Label>
+											<Input
+												id='name'
+												name='name'
+												placeholder='Bodega Principal'
+												value={formik.values.name}
+												onChange={formik.handleChange}
+												onBlur={formik.handleBlur}
+											/>
+											{formik.touched.name && formik.errors.name && (
 												<div className='mt-1 text-sm text-red-500'>
-													{formik.errors.warehouse_type}
+													{formik.errors.name}
 												</div>
 											)}
-									</div>
-
-									<div className='md:col-span-2'>
-										<Label htmlFor='description'>Descripción</Label>
-										<Textarea
-											id='description'
-											name='description'
-											placeholder='Descripción de la bodega'
-											value={formik.values.description}
-											onChange={formik.handleChange}
-											onBlur={formik.handleBlur}
-											rows={3}
-										/>
-									</div>
-
-									<div className='md:col-span-2'>
-										<Label htmlFor='manager_id'>Encargado de bodega</Label>
-										<SelectReact
-											id='manager_id'
-											name='manager_id'
-											options={managerOptions}
-											value={
-												managerOptions.find(
-													(option) =>
-														Number(option.value) ===
-														Number(formik.values.manager_id ?? Number.NaN),
-												) || null
-											}
-											onChange={(option: any) => {
-												const value = option?.value
-													? Number(option.value)
-													: null;
-												formik.setFieldValue('manager_id', value);
-											}}
-											onBlur={() =>
-												formik.setFieldTouched('manager_id', true)
-											}
-											isClearable
-											isDisabled={managersLoading || managerOptions.length === 0}
-											isLoading={managersLoading}
-											placeholder={
-												managersLoading
-													? 'Cargando encargados...'
-													: managerOptions.length === 0
-														? 'No hay encargados disponibles'
-														: 'Selecciona un encargado'
-											}
-										/>
-										<p className='mt-1 text-sm text-gray-500'>
-											Solo se listan usuarios con rol{' '}
-											<span className='font-semibold'>
-												warehouse-manager
-											</span>
-										</p>
-									</div>
-								</CardBody>
-							</Card>
-
-							{/* Capacidad y Estado */}
-							<Card>
-								<CardHeader>
-									<CardTitle>Capacidad y Estado</CardTitle>
-								</CardHeader>
-								<CardBody className='space-y-4'>
-									<div>
-										<Label htmlFor='maximum_capacity'>Capacidad Máxima</Label>
-										<Input
-											id='maximum_capacity'
-											name='maximum_capacity'
-											type='number'
-											placeholder='1000'
-											value={formik.values.maximum_capacity ?? ''}
-											onChange={formik.handleChange}
-											onBlur={formik.handleBlur}
-										/>
-										<div className='mt-1 text-sm text-gray-500'>
-											Dejar vacío para capacidad ilimitada
 										</div>
-									</div>
 
-									<div className='space-y-2'>
-										<Checkbox
-											id='is_active'
-											name='is_active'
-											label='Bodega activa'
-											checked={formik.values.is_active}
-											onChange={formik.handleChange}
-										/>
-										<Checkbox
-											id='requires_serial_tracking'
-											name='requires_serial_tracking'
-											label='Requiere seguimiento por serie'
-											checked={formik.values.requires_serial_tracking}
-											onChange={formik.handleChange}
-										/>
-									</div>
-								</CardBody>
-							</Card>
-
-							{/* Ubicación */}
-							<Card className='lg:col-span-2'>
-								<CardHeader>
-									<CardTitle>Ubicación</CardTitle>
-								</CardHeader>
-								<CardBody className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-									<div className='md:col-span-2'>
-										<Label htmlFor='address'>Dirección</Label>
-										<Input
-											id='address'
-											name='address'
-											placeholder='Calle Principal 123'
-											value={formik.values.address || ''}
-											onChange={formik.handleChange}
-											onBlur={formik.handleBlur}
-										/>
-									</div>
-
-									<div>
-										<Label htmlFor='commune_id'>Comuna</Label>
-										<SelectReact
-											id='commune_id'
-											name='commune_id'
-											options={comunaOptions}
-											value={comunaOptions.find(
-												(opt) =>
-													opt.value === String(formik.values.commune_id),
+										<div>
+											<Label htmlFor='code'>
+												Código <span className='text-red-500'>*</span>
+											</Label>
+											<Input
+												id='code'
+												name='code'
+												placeholder='BDP-001'
+												value={formik.values.code}
+												onChange={(e) => {
+													const upperValue = e.target.value.toUpperCase();
+													formik.setFieldValue('code', upperValue);
+												}}
+												onBlur={formik.handleBlur}
+											/>
+											{formik.touched.code && formik.errors.code && (
+												<div className='mt-1 text-sm text-red-500'>
+													{formik.errors.code}
+												</div>
 											)}
-											onChange={(option: any) => {
-												const value = option?.value
-													? Number(option.value)
-													: null;
-												formik.setFieldValue('commune_id', value);
-											}}
-											onBlur={() =>
-												formik.setFieldTouched('commune_id', true)
-											}
-											placeholder='Seleccionar comuna'
-											isClearable
-										/>
-									</div>
+											<div className='mt-1 text-sm text-gray-500'>
+												Solo letras mayúsculas, números y guiones
+											</div>
+										</div>
 
-									<div>
-										<Label htmlFor='schedule'>Horario</Label>
-										<Input
-											id='schedule'
-											name='schedule'
-											placeholder='Lunes a Viernes 9:00 - 18:00'
-											value={formik.values.schedule || ''}
-											onChange={formik.handleChange}
-											onBlur={formik.handleBlur}
-										/>
-									</div>
-								</CardBody>
-							</Card>
+										<div>
+											<Label htmlFor='warehouse_type'>
+												Tipo de Bodega{' '}
+												<span className='text-red-500'>*</span>
+											</Label>
+											<Input
+												id='warehouse_type'
+												name='warehouse_type'
+												placeholder='Principal, Secundaria, Tránsito'
+												value={formik.values.warehouse_type}
+												onChange={formik.handleChange}
+												onBlur={formik.handleBlur}
+											/>
+											{formik.touched.warehouse_type &&
+												formik.errors.warehouse_type && (
+													<div className='mt-1 text-sm text-red-500'>
+														{formik.errors.warehouse_type}
+													</div>
+												)}
+										</div>
+
+										<div className='md:col-span-2'>
+											<Label htmlFor='description'>Descripción</Label>
+											<Textarea
+												id='description'
+												name='description'
+												placeholder='Descripción de la bodega'
+												value={formik.values.description}
+												onChange={formik.handleChange}
+												onBlur={formik.handleBlur}
+												rows={3}
+											/>
+										</div>
+
+										<div className='md:col-span-2'>
+											<Label htmlFor='manager_id'>Encargado de bodega</Label>
+											<SelectReact
+												id='manager_id'
+												name='manager_id'
+												options={managerOptions}
+												value={
+													managerOptions.find(
+														(option) =>
+															Number(option.value) ===
+															Number(
+																formik.values.manager_id ??
+																	Number.NaN,
+															),
+													) || null
+												}
+												onChange={(option: any) => {
+													const value = option?.value
+														? Number(option.value)
+														: null;
+													formik.setFieldValue('manager_id', value);
+												}}
+												onBlur={() =>
+													formik.setFieldTouched('manager_id', true)
+												}
+												isClearable
+												isDisabled={
+													managersLoading || managerOptions.length === 0
+												}
+												isLoading={managersLoading}
+												placeholder={
+													managersLoading
+														? 'Cargando encargados...'
+														: managerOptions.length === 0
+															? 'No hay encargados disponibles'
+															: 'Selecciona un encargado'
+												}
+											/>
+											<p className='mt-1 text-sm text-gray-500'>
+												Solo se listan usuarios con rol{' '}
+												<span className='font-semibold'>
+													warehouse-manager
+												</span>
+											</p>
+										</div>
+									</CardBody>
+								</Card>
+
+								{/* Capacidad y Estado */}
+								<Card>
+									<CardHeader>
+										<CardTitle>Capacidad y Estado</CardTitle>
+									</CardHeader>
+									<CardBody className='space-y-4'>
+										<div>
+											<Label htmlFor='maximum_capacity'>
+												Capacidad Máxima
+											</Label>
+											<Input
+												id='maximum_capacity'
+												name='maximum_capacity'
+												type='number'
+												placeholder='1000'
+												value={formik.values.maximum_capacity ?? ''}
+												onChange={formik.handleChange}
+												onBlur={formik.handleBlur}
+											/>
+											<div className='mt-1 text-sm text-gray-500'>
+												Dejar vacío para capacidad ilimitada
+											</div>
+										</div>
+
+										<div className='space-y-2'>
+											<Checkbox
+												id='is_active'
+												name='is_active'
+												label='Bodega activa'
+												checked={formik.values.is_active}
+												onChange={formik.handleChange}
+											/>
+											<Checkbox
+												id='requires_serial_tracking'
+												name='requires_serial_tracking'
+												label='Requiere seguimiento por serie'
+												checked={formik.values.requires_serial_tracking}
+												onChange={formik.handleChange}
+											/>
+										</div>
+									</CardBody>
+								</Card>
+
+								{/* Ubicación */}
+								<Card className='lg:col-span-2'>
+									<CardHeader>
+										<CardTitle>Ubicación</CardTitle>
+									</CardHeader>
+									<CardBody className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+										<div className='md:col-span-2'>
+											<Label htmlFor='address'>Dirección</Label>
+											<Input
+												id='address'
+												name='address'
+												placeholder='Calle Principal 123'
+												value={formik.values.address || ''}
+												onChange={formik.handleChange}
+												onBlur={formik.handleBlur}
+											/>
+										</div>
+
+										<div>
+											<Label htmlFor='commune_id'>Comuna</Label>
+											<SelectReact
+												id='commune_id'
+												name='commune_id'
+												options={comunaOptions}
+												value={comunaOptions.find(
+													(opt) =>
+														opt.value ===
+														String(formik.values.commune_id),
+												)}
+												onChange={(option: any) => {
+													const value = option?.value
+														? Number(option.value)
+														: null;
+													formik.setFieldValue('commune_id', value);
+												}}
+												onBlur={() =>
+													formik.setFieldTouched('commune_id', true)
+												}
+												placeholder='Seleccionar comuna'
+												isClearable
+											/>
+										</div>
+
+										<div>
+											<Label htmlFor='schedule'>Horario</Label>
+											<Input
+												id='schedule'
+												name='schedule'
+												placeholder='Lunes a Viernes 9:00 - 18:00'
+												value={formik.values.schedule || ''}
+												onChange={formik.handleChange}
+												onBlur={formik.handleBlur}
+											/>
+										</div>
+									</CardBody>
+								</Card>
 							</div>
 						</ModalBody>
 

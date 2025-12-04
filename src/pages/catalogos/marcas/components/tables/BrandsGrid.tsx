@@ -16,30 +16,20 @@ type BrandsGridProps = {
 	onDelete: (brand: IBrand) => void;
 };
 
-const BrandsGrid: React.FC<BrandsGridProps> = ({
-	brands,
-	loading,
-	onView,
-	onEdit,
-	onDelete,
-}) => {
+const BrandsGrid: React.FC<BrandsGridProps> = ({ brands, loading, onView, onEdit, onDelete }) => {
 	const renderImage = (brand: IBrand) => {
 		const imageUrlRaw =
-			brand.image?.url ??
-			(brand as any)?.image ??
-			brand.logo_url ??
-			brand.photo_url ??
-			null;
+			brand.image?.url ?? (brand as any)?.image ?? brand.logo_url ?? brand.photo_url ?? null;
 
 		const imageUrl = ensureAbsoluteUrl(imageUrlRaw ?? undefined);
 
 		return (
-			<div className='flex h-14 w-14 items-center justify-center rounded-xl bg-white border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-700'>
+			<div className='flex h-14 w-14 items-center justify-center rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900'>
 				{imageUrl ? (
 					<img
 						src={imageUrl}
 						alt={brand.image?.alt ?? brand.name}
-						className='h-full w-full object-contain p-1 rounded-lg'
+						className='h-full w-full rounded-lg object-contain p-1'
 					/>
 				) : (
 					<Icon icon='HeroTag' className='h-6 w-6 text-violet-500' />
@@ -79,9 +69,8 @@ const BrandsGrid: React.FC<BrandsGridProps> = ({
 				{brands.map((brand) => (
 					<Card
 						key={brand.id}
-						className='border border-zinc-200 dark:border-zinc-700 shadow-sm hover:shadow-md transition-all'>
+						className='border border-zinc-200 shadow-sm transition-all hover:shadow-md dark:border-zinc-700'>
 						<CardBody className='flex flex-col gap-4'>
-
 							{/* Header image + title */}
 							<div className='flex items-start gap-4'>
 								{renderImage(brand)}
@@ -90,7 +79,9 @@ const BrandsGrid: React.FC<BrandsGridProps> = ({
 										{brand.name}
 									</h3>
 									{brand.code && (
-										<p className='text-xs font-mono text-zinc-500'>{brand.code}</p>
+										<p className='font-mono text-xs text-zinc-500'>
+											{brand.code}
+										</p>
 									)}
 								</div>
 								<Badge color={brand.is_active ? 'emerald' : 'red'}>
@@ -101,44 +92,61 @@ const BrandsGrid: React.FC<BrandsGridProps> = ({
 							{/* metrics */}
 							<div className='grid grid-cols-2 gap-3'>
 								<div className='rounded-xl border border-violet-100 bg-violet-50/70 p-3 dark:border-violet-900/40 dark:bg-violet-900/20'>
-									<p className='text-xs text-violet-700 dark:text-violet-200'>Productos</p>
+									<p className='text-xs text-violet-700 dark:text-violet-200'>
+										Productos
+									</p>
 									<p className='mt-1 text-xl font-semibold text-violet-900 dark:text-violet-100'>
 										{brand.products_count ?? 0}
 									</p>
 								</div>
 								<div className='rounded-xl border border-violet-100 bg-violet-50/70 p-3 dark:border-emerald-900/40 dark:bg-emerald-900/20'>
-									<p className='text-xs text-emerald-700 dark:text-violet-200'>Total Ventas</p>
+									<p className='text-xs text-emerald-700 dark:text-violet-200'>
+										Total Ventas
+									</p>
 									<p className='mt-1 text-xl font-semibold text-emerald-900 dark:text-violet-100'>
 										{formatCLP(Number(brand.total_sales ?? 0))}
 									</p>
 								</div>
 							</div>
-							
 
 							{/* additional info */}
 							<div className='flex flex-wrap gap-2 text-xs text-zinc-500'>
 								{brand.updated_at && (
 									<span className='flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-1 dark:bg-zinc-800'>
-										<Icon icon='HeroClock' className='h-3.5 w-3.5 text-zinc-400' />
+										<Icon
+											icon='HeroClock'
+											className='h-3.5 w-3.5 text-zinc-400'
+										/>
 										{new Date(brand.updated_at).toLocaleDateString()}
 									</span>
 								)}
 
 								{brand.branch_id && (
 									<span className='flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-1 dark:bg-zinc-800'>
-										<Icon icon='HeroBuildingLibrary' className='h-3.5 w-3.5 text-zinc-400' />
+										<Icon
+											icon='HeroBuildingLibrary'
+											className='h-3.5 w-3.5 text-zinc-400'
+										/>
 										ID {brand.branch_id}
 									</span>
 								)}
 							</div>
 
 							{/* actions */}
-							<div className='mt-auto flex flex-col gap-2 border-t border-dashed border-zinc-200 dark:border-zinc-800 pt-3'>
+							<div className='mt-auto flex flex-col gap-2 border-t border-dashed border-zinc-200 pt-3 dark:border-zinc-800'>
 								<div className='flex gap-2'>
-									<Button size='sm' variant='outline' icon='HeroEye' onClick={() => onView(brand)}>
+									<Button
+										size='sm'
+										variant='outline'
+										icon='HeroEye'
+										onClick={() => onView(brand)}>
 										Ver
 									</Button>
-									<Button size='sm' variant='outline' icon='HeroPencil' onClick={() => onEdit(brand)}>
+									<Button
+										size='sm'
+										variant='outline'
+										icon='HeroPencil'
+										onClick={() => onEdit(brand)}>
 										Editar
 									</Button>
 								</div>
@@ -161,19 +169,18 @@ const BrandsGrid: React.FC<BrandsGridProps> = ({
 
 	return (
 		<>
-		<Card>
-			<CardHeader>
-				<div className='flex items-center justify-between w-full'>
-					<CardTitle>Marcas visibles</CardTitle>
-					<span className='text-sm text-gray-500 dark:text-gray-400'>
-						{brands.length} registros
-					</span>
-				</div>
-			</CardHeader>
-
-		</Card>
+			<Card>
+				<CardHeader>
+					<div className='flex w-full items-center justify-between'>
+						<CardTitle>Marcas visibles</CardTitle>
+						<span className='text-sm text-gray-500 dark:text-gray-400'>
+							{brands.length} registros
+						</span>
+					</div>
+				</CardHeader>
+			</Card>
 			<div className='p-0'>{renderBody()}</div>
-	</>
+		</>
 	);
 };
 

@@ -449,7 +449,7 @@ const InventarioEstadoTecnico: React.FC = () => {
 			D: { color: 'red' as const, text: 'Deficiente' },
 		};
 
-		const config = gradeConfig[grade as keyof typeof gradeConfig] || gradeConfig['B'];
+		const config = gradeConfig[grade as keyof typeof gradeConfig] || gradeConfig.B;
 		return (
 			<Badge color={config.color} variant='outline'>
 				{grade} - {config.text}
@@ -483,7 +483,7 @@ const InventarioEstadoTecnico: React.FC = () => {
 						<div>
 							<label className='mb-2 block text-sm font-medium'>Bodega</label>
 							<Select
-								name="warehouse"
+								name='warehouse'
 								value={selectedWarehouse}
 								onChange={(e) => setSelectedWarehouse(e.target.value)}>
 								<option value='all'>Todas las bodegas</option>

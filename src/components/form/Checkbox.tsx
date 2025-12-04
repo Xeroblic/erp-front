@@ -22,7 +22,7 @@ export type TCheckboxDimension = 'sm' | 'default' | 'lg' | 'xl';
 
 interface ICheckboxProps
 	extends InputHTMLAttributes<HTMLInputElement>,
-	Partial<IValidationBaseProps> {
+		Partial<IValidationBaseProps> {
 	checked?: boolean;
 	className?: string;
 	color?: TColors;
@@ -38,27 +38,28 @@ interface ICheckboxProps
 }
 
 const Checkbox = forwardRef<HTMLInputElement, ICheckboxProps>((props, ref) => {
-	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } = useReactiveThemeConfig();
+	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } =
+		useReactiveThemeConfig();
 
 	const {
-	checked,
-	className,
-	color = reactiveThemeColor,
-	colorIntensity = reactiveThemeColorShade,
-	id,
-	inputClassName,
-	isInline = false,
-	isValidMessage,
-	label,
-	rounded = themeConfig.rounded,
-	dimension = 'default',
-	variant = 'default',
-	isValid,
-	isTouched,
-	invalidFeedback,
-	onChange,
-	defaultChecked,
-	...rest
+		checked,
+		className,
+		color = reactiveThemeColor,
+		colorIntensity = reactiveThemeColorShade,
+		id,
+		inputClassName,
+		isInline = false,
+		isValidMessage,
+		label,
+		rounded = themeConfig.rounded,
+		dimension = 'default',
+		variant = 'default',
+		isValid,
+		isTouched,
+		invalidFeedback,
+		onChange,
+		defaultChecked,
+		...rest
 	} = props;
 
 	const inputHintId = useId();
@@ -66,77 +67,77 @@ const Checkbox = forwardRef<HTMLInputElement, ICheckboxProps>((props, ref) => {
 
 	// Define color intensities
 	const colorIntensities: TColorIntensity[] = [
-	'50',
-	'100',
-	'200',
-	'300',
-	'400',
-	'500',
-	'600',
-	'700',
-	'800',
-	'900',
+		'50',
+		'100',
+		'200',
+		'300',
+		'400',
+		'500',
+		'600',
+		'700',
+		'800',
+		'900',
 	];
 
 	// Function to get adjacent intensity for hover effect
 	function getAdjacentIntensity(
-	currentIntensity: TColorIntensity,
-	offset: number,
+		currentIntensity: TColorIntensity,
+		offset: number,
 	): TColorIntensity {
-	const index = colorIntensities.indexOf(currentIntensity);
-	if (index === -1) return currentIntensity; // Fallback
-	let newIndex = index + offset;
-	if (newIndex < 0) newIndex = 0;
-	if (newIndex >= colorIntensities.length) newIndex = colorIntensities.length - 1;
-	return colorIntensities[newIndex] as TColorIntensity;
+		const index = colorIntensities.indexOf(currentIntensity);
+		if (index === -1) return currentIntensity; // Fallback
+		let newIndex = index + offset;
+		if (newIndex < 0) newIndex = 0;
+		if (newIndex >= colorIntensities.length) newIndex = colorIntensities.length - 1;
+		return colorIntensities[newIndex];
 	}
 
 	// Compute hover color intensity
 	const hoverColorIntensity = getAdjacentIntensity(colorIntensity, -1); // Lighter shade on hover
 
 	const checkboxVariants: {
-	[key in TCheckboxVariants]: { general: string; validation: string };
+		[key in TCheckboxVariants]: { general: string; validation: string };
 	} = {
-	default: {
-		general: classNames(
-		// Border
-		[`border-${color}-${colorIntensity}`],
-		// Hover border
-		[`hover:border-${color}-${hoverColorIntensity}`],
-		'disabled:!border-zinc-500',
-		// Background
-		'bg-center bg-no-repeat',
-		// Checked background
-		"checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbDpzcGFjZT0icHJlc2VydmUiIHZpZXdCb3g9IjAgMCAyNCAyNCI+PGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj48cGF0aCBkPSJNMCAwaDI0djI0SDB6Ii8+PHBhdGggZmlsbD0iI2ZmZiIgZD0iTTE3LjczOCA2LjM1MmExIDEgMCAxIDEgMS41MjQgMS4yOTZsLTguNSAxMGExIDEgMCAwIDEtMS40MjYuMWwtNC41LTRhMSAxIDAgMSAxIDEuMzI4LTEuNDk1bDMuNzM2IDMuMzIgNy44MzgtOS4yMnoiLz48L2c+PC9zdmc+')]",
-		"indeterminate:bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9Im5vbmUiIHZpZXdCb3g9IjAgMCAyNCAyNCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZT0iI2ZmZmZmZiIgY2xhc3M9InctNiBoLTYiPgogIDxwYXRoIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgZD0iTTE5LjUgMTJoLTE1IiAvPgo8L3N2Zz4K')]",
-		[`checked:bg-${color}-${colorIntensity}`],
-		[`indeterminate:bg-${color}-${colorIntensity}`],
-		rounded,
-		),
-		validation: classNames({
-		'!border-red-500 ring-4 ring-red-500/30': !isValid && isTouched && invalidFeedback,
-		'!border-green-500 focus:ring-4 focus:ring-green-500/30':
-			isValid && isTouched && !invalidFeedback,
-		}),
-	},
-	switch: {
-		general: classNames(
-		'rounded-full',
-		// Border
-		[`border-${color}-${colorIntensity}`],
-		// Hover border
-		[`hover:border-${color}-${hoverColorIntensity}`],
-		'disabled:!border-zinc-500',
-		// Background
-		'bg-left bg-no-repeat',
-		'bg-[url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbDpzcGFjZT0icHJlc2VydmUiIHZpZXdCb3g9IjAgMCA4IDgiPjxjaXJjbGUgY3g9IjQiIGN5PSI0IiByPSIzIiBvcGFjaXR5PSIuMjUiLz48L3N2Zz4=")]',
-		// Checked background
-		[`checked:bg-${color}-${colorIntensity}`],
-		'checked:bg-right',
-		'checked:!bg-[url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbDpzcGFjZT0icHJlc2VydmUiIHZpZXdCb3g9IjAgMCA4IDgiPjxjaXJjbGUgY3g9IjQiIGN5PSI0IiByPSIzIiBmaWxsPSIjZmZmIi8+PC9zdmc+")]',
-		),
-		validation: classNames(),
-	},
+		default: {
+			general: classNames(
+				// Border
+				[`border-${color}-${colorIntensity}`],
+				// Hover border
+				[`hover:border-${color}-${hoverColorIntensity}`],
+				'disabled:!border-zinc-500',
+				// Background
+				'bg-center bg-no-repeat',
+				// Checked background
+				"checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbDpzcGFjZT0icHJlc2VydmUiIHZpZXdCb3g9IjAgMCAyNCAyNCI+PGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj48cGF0aCBkPSJNMCAwaDI0djI0SDB6Ii8+PHBhdGggZmlsbD0iI2ZmZiIgZD0iTTE3LjczOCA2LjM1MmExIDEgMCAxIDEgMS41MjQgMS4yOTZsLTguNSAxMGExIDEgMCAwIDEtMS40MjYuMWwtNC41LTRhMSAxIDAgMSAxIDEuMzI4LTEuNDk1bDMuNzM2IDMuMzIgNy44MzgtOS4yMnoiLz48L2c+PC9zdmc+')]",
+				"indeterminate:bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9Im5vbmUiIHZpZXdCb3g9IjAgMCAyNCAyNCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZT0iI2ZmZmZmZiIgY2xhc3M9InctNiBoLTYiPgogIDxwYXRoIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgZD0iTTE5LjUgMTJoLTE1IiAvPgo8L3N2Zz4K')]",
+				[`checked:bg-${color}-${colorIntensity}`],
+				[`indeterminate:bg-${color}-${colorIntensity}`],
+				rounded,
+			),
+			validation: classNames({
+				'!border-red-500 ring-4 ring-red-500/30': !isValid && isTouched && invalidFeedback,
+				'!border-green-500 focus:ring-4 focus:ring-green-500/30':
+					isValid && isTouched && !invalidFeedback,
+			}),
+		},
+		switch: {
+			general: classNames(
+				'rounded-full',
+				// Border
+				[`border-${color}-${colorIntensity}`],
+				// Hover border
+				[`hover:border-${color}-${hoverColorIntensity}`],
+				'disabled:!border-zinc-500',
+				// Background
+				'bg-left bg-no-repeat',
+				'bg-[url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbDpzcGFjZT0icHJlc2VydmUiIHZpZXdCb3g9IjAgMCA4IDgiPjxjaXJjbGUgY3g9IjQiIGN5PSI0IiByPSIzIiBvcGFjaXR5PSIuMjUiLz48L3N2Zz4=")]',
+				// Checked background
+				[`checked:bg-${color}-${colorIntensity}`],
+				'checked:bg-right',
+				'checked:!bg-[url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbDpzcGFjZT0icHJlc2VydmUiIHZpZXdCb3g9IjAgMCA4IDgiPjxjaXJjbGUgY3g9IjQiIGN5PSI0IiByPSIzIiBmaWxsPSIjZmZmIi8+PC9zdmc+")]',
+			),
+			validation: classNames(),
+		},
 	};
 	const checkboxVariantClasses = checkboxVariants[variant].general;
 	const checkboxValidationsClasses = checkboxVariants[variant].validation;
@@ -145,73 +146,73 @@ const Checkbox = forwardRef<HTMLInputElement, ICheckboxProps>((props, ref) => {
 	 * Width&Height & Margin & Font Size
 	 */
 	const checkboxDimensions: {
-	[key in TCheckboxDimension]: { general: string; label: string };
+		[key in TCheckboxDimension]: { general: string; label: string };
 	} = {
-	sm: {
-		general: classNames({ 'w-5': !isSwitch, 'w-8': isSwitch }, 'h-5', 'me-1'),
-		label: classNames('text-sm'),
-	},
-	default: {
-		general: classNames({ 'w-7': !isSwitch, 'w-12': isSwitch }, 'h-7', 'me-1.5'),
-		label: classNames('text-base'),
-	},
-	lg: {
-		general: classNames({ 'w-9': !isSwitch, 'w-16': isSwitch }, 'h-9', 'me-2'),
-		label: classNames('text-lg'),
-	},
-	xl: {
-		general: classNames({ 'w-10': !isSwitch, 'w-[4.5rem]': isSwitch }, 'h-10', 'me-2.5'),
-		label: classNames('text-xl'),
-	},
+		sm: {
+			general: classNames({ 'w-5': !isSwitch, 'w-8': isSwitch }, 'h-5', 'me-1'),
+			label: classNames('text-sm'),
+		},
+		default: {
+			general: classNames({ 'w-7': !isSwitch, 'w-12': isSwitch }, 'h-7', 'me-1.5'),
+			label: classNames('text-base'),
+		},
+		lg: {
+			general: classNames({ 'w-9': !isSwitch, 'w-16': isSwitch }, 'h-9', 'me-2'),
+			label: classNames('text-lg'),
+		},
+		xl: {
+			general: classNames({ 'w-10': !isSwitch, 'w-[4.5rem]': isSwitch }, 'h-10', 'me-2.5'),
+			label: classNames('text-xl'),
+		},
 	};
 	const checkboxDimensionClasses = checkboxDimensions[dimension].general;
 	const labelDimensionClasses = checkboxDimensions[dimension].label;
 
 	const checkboxClasses = classNames(
-	'cursor-pointer appearance-none',
-	'disabled:!opacity-25',
-	themeConfig.borderWidth,
-	themeConfig.transition,
-	checkboxVariantClasses,
-	checkboxDimensionClasses,
-	checkboxValidationsClasses,
-	inputClassName,
+		'cursor-pointer appearance-none',
+		'disabled:!opacity-25',
+		themeConfig.borderWidth,
+		themeConfig.transition,
+		checkboxVariantClasses,
+		checkboxDimensionClasses,
+		checkboxValidationsClasses,
+		inputClassName,
 	);
 
 	return (
-	<div
-		data-component-name='Checkbox'
-		className={classNames(
-		'items-center py-1.5',
-		{ flex: !isInline, 'inline-flex': isInline, 'me-4': isInline },
-		className,
-		)}>
-		<input
-		ref={ref}
-		id={id || inputHintId}
-		value={id || inputHintId}
-		type='checkbox'
-		className={checkboxClasses}
-		{...(typeof checked !== 'undefined'
-			? { checked, readOnly: typeof onChange !== 'function' }
-			: typeof defaultChecked !== 'undefined'
-				? { defaultChecked }
-				: {})}
-		{...(typeof onChange === 'function' ? { onChange } : {})}
-		{...rest}
-		/>
-		{!!label && (
-		<label
-			htmlFor={id || inputHintId}
+		<div
+			data-component-name='Checkbox'
 			className={classNames(
-			'cursor-pointer text-base',
-			{ '!pointer-events-none': rest?.disabled },
-			labelDimensionClasses,
+				'items-center py-1.5',
+				{ flex: !isInline, 'inline-flex': isInline, 'me-4': isInline },
+				className,
 			)}>
-			{label}
-		</label>
-		)}
-	</div>
+			<input
+				ref={ref}
+				id={id || inputHintId}
+				value={id || inputHintId}
+				type='checkbox'
+				className={checkboxClasses}
+				{...(typeof checked !== 'undefined'
+					? { checked, readOnly: typeof onChange !== 'function' }
+					: typeof defaultChecked !== 'undefined'
+						? { defaultChecked }
+						: {})}
+				{...(typeof onChange === 'function' ? { onChange } : {})}
+				{...rest}
+			/>
+			{!!label && (
+				<label
+					htmlFor={id || inputHintId}
+					className={classNames(
+						'cursor-pointer text-base',
+						{ '!pointer-events-none': rest?.disabled },
+						labelDimensionClasses,
+					)}>
+					{label}
+				</label>
+			)}
+		</div>
 	);
 });
 
@@ -226,29 +227,29 @@ interface ICheckboxGroupProps extends HTMLAttributes<HTMLDivElement> {
 }
 export const CheckboxGroup: FC<ICheckboxGroupProps> = (props) => {
 	const {
-	children,
-	invalidFeedback,
-	isInline = false,
-	isTouched = false,
-	isValid = false,
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	isValidMessage = true,
-	validFeedback,
-	...rest
+		children,
+		invalidFeedback,
+		isInline = false,
+		isTouched = false,
+		isValid = false,
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		isValidMessage = true,
+		validFeedback,
+		...rest
 	} = props;
 	return (
-	<div data-component-name='Checkbox/CheckboxGroup' {...rest}>
-		{Children.map(children, (child) =>
-		cloneElement(child, {
-			isInline: child.props.isInline || isInline,
-			isValid,
-			isTouched,
-			invalidFeedback,
-			validFeedback,
-			isValidMessage: false,
-		}),
-		)}
-	</div>
+		<div data-component-name='Checkbox/CheckboxGroup' {...rest}>
+			{Children.map(children, (child) =>
+				cloneElement(child, {
+					isInline: child.props.isInline || isInline,
+					isValid,
+					isTouched,
+					invalidFeedback,
+					validFeedback,
+					isValidMessage: false,
+				}),
+			)}
+		</div>
 	);
 };
 

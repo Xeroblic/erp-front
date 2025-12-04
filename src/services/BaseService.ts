@@ -1,18 +1,18 @@
-import store, { logout, setToken } from '@/store';
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import store, { logout, setToken } from '@/store';
 import tokenManager from '@/services/auth/tokenManager';
 
 // --- Tipos ---
 interface CustomAxiosRequestConfig<D = any> extends InternalAxiosRequestConfig<D> {
-    isLoginRequest?: boolean;
-    _retry?: boolean;
+	isLoginRequest?: boolean;
+	_retry?: boolean;
 }
 
 // --- Variables de Control (Semáforo y Cancelación) ---
 let isRefreshing = false;
-let failedQueue: Array<{
-    resolve: (token: string) => void;
-    reject: (error: any) => void;
+const failedQueue: Array<{
+	resolve: (token: string) => void;
+	reject: (error: any) => void;
 }> = [];
 
 let abortController = new AbortController();
@@ -22,151 +22,152 @@ let abortController = new AbortController();
  * Utilizado típicamente en el cierre .
  */
 export const cancelAllRequests = () => {
-    abortController.abort();
-    abortController = new AbortController();
+	abortController.abort();
+	abortController = new AbortController();
 };
-
 
 // --- Configuración ---
 const API_URL = import.meta.env.VITE_API_URL || '';
 
 const BaseService = axios.create({
-    timeout: 60000,
-    baseURL: API_URL,
+	timeout: 60000,
+	baseURL: API_URL,
 });
 
 // --- Helpers ---
 
 const processQueue = (error: any, token: string | null = null) => {
-    while (failedQueue.length) {
-        const waiter = failedQueue.shift();
-        if (!waiter) continue;
+	while (failedQueue.length) {
+		const waiter = failedQueue.shift();
+		if (!waiter) continue;
 
-        if (error) {
-            waiter.reject(error);
-        } else {
-            waiter.resolve(token as string);
-        }
-    }
+		if (error) {
+			waiter.reject(error);
+		} else {
+			waiter.resolve(token as string);
+		}
+	}
 };
 
 // --- Interceptor de Request ---
 BaseService.interceptors.request.use(
-    (config: CustomAxiosRequestConfig) => {
-        // No interceptar login o refresh requests para evitar bucles
-        if (config.url?.includes('/login') || config.url?.includes('/refresh')) {
-            return config;
-        }
+	(config: CustomAxiosRequestConfig) => {
+		// No interceptar login o refresh requests para evitar bucles
+		if (config.url?.includes('/login') || config.url?.includes('/refresh')) {
+			return config;
+		}
 
-        // 💡 Reincorporación: Asignar la señal de cancelación
-        config.signal = abortController.signal; 
+		// 💡 Reincorporación: Asignar la señal de cancelación
+		config.signal = abortController.signal;
 
-        const state = store.getState();
-        // Prioridad: TokenManager (memoria) -> Redux (persistencia)
-        const token = tokenManager.getAccessToken() ?? state.auth.access;
+		const state = store.getState();
+		// Prioridad: TokenManager (memoria) -> Redux (persistencia)
+		const token = tokenManager.getAccessToken() ?? state.auth.access;
 
-        if (token && config.headers) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
+		if (token && config.headers) {
+			config.headers.Authorization = `Bearer ${token}`;
+		}
 
-        return config;
-    },
-    (error) => Promise.reject(error)
+		return config;
+	},
+	(error) => Promise.reject(error),
 );
 
 // --- Interceptor de Response (Maneja el 401 y la Concurrencia) ---
 BaseService.interceptors.response.use(
-    (response) => response,
-    async (error: AxiosError) => {
-        const originalRequest = error.config as CustomAxiosRequestConfig;
+	(response) => response,
+	async (error: AxiosError) => {
+		const originalRequest = error.config as CustomAxiosRequestConfig;
 
-        if (!error.response || !originalRequest) {
-            return Promise.reject(error);
-        }
+		if (!error.response || !originalRequest) {
+			return Promise.reject(error);
+		}
 
-        // Detectar 401 Unauthorized
-        if (error.response.status === 401 && !originalRequest._retry) {
-            
-            // Caso especial: Si el fallo vino del endpoint de refresh o login, no reintentamos
-            if (originalRequest.url?.includes('/refresh') || originalRequest.url?.includes('/login')) {
-                store.dispatch(logout());
-                tokenManager.clearTokens();
-                // 💡 Aseguramos que el componente que estaba pendiente se detenga
-                cancelAllRequests(); 
-                return Promise.reject(error);
-            }
+		// Detectar 401 Unauthorized
+		if (error.response.status === 401 && !originalRequest._retry) {
+			// Caso especial: Si el fallo vino del endpoint de refresh o login, no reintentamos
+			if (
+				originalRequest.url?.includes('/refresh') ||
+				originalRequest.url?.includes('/login')
+			) {
+				store.dispatch(logout());
+				tokenManager.clearTokens();
+				// 💡 Aseguramos que el componente que estaba pendiente se detenga
+				cancelAllRequests();
+				return Promise.reject(error);
+			}
 
-            // 🚦 SI YA SE ESTÁ REFRESCANDO: Ponemos la petición en cola
-            if (isRefreshing) {
-                return new Promise<string>((resolve, reject) => {
-                    failedQueue.push({ resolve, reject });
-                })
-                    .then((token) => {
-                        // Reintentar la petición original con el nuevo token
-                        if (originalRequest.headers) {
-                            originalRequest.headers.Authorization = `Bearer ${token}`;
-                        }
-                        return BaseService(originalRequest);
-                    })
-                    .catch((err) => Promise.reject(err));
-            }
+			// 🚦 SI YA SE ESTÁ REFRESCANDO: Ponemos la petición en cola
+			if (isRefreshing) {
+				return new Promise<string>((resolve, reject) => {
+					failedQueue.push({ resolve, reject });
+				})
+					.then((token) => {
+						// Reintentar la petición original con el nuevo token
+						if (originalRequest.headers) {
+							originalRequest.headers.Authorization = `Bearer ${token}`;
+						}
+						return BaseService(originalRequest);
+					})
+					.catch((err) => Promise.reject(err));
+			}
 
-            // 🚩 COMIENZO DEL REFRESH (Bloqueamos el semáforo)
-            originalRequest._retry = true;
-            isRefreshing = true;
+			// 🚩 COMIENZO DEL REFRESH (Bloqueamos el semáforo)
+			originalRequest._retry = true;
+			isRefreshing = true;
 
-            try {
-                const currentToken = tokenManager.getAccessToken() ?? store.getState().auth.access;
+			try {
+				const currentToken = tokenManager.getAccessToken() ?? store.getState().auth.access;
 
-                // Llamada de Refresh
-                const { data } = await axios.post(`${API_URL}/refresh`, {}, {
-                    headers: { Authorization: `Bearer ${currentToken}` }
-                });
+				// Llamada de Refresh
+				const { data } = await axios.post(
+					`${API_URL}/refresh`,
+					{},
+					{
+						headers: { Authorization: `Bearer ${currentToken}` },
+					},
+				);
 
-                const newToken = data.access_token || data.token || data.access;
+				const newToken = data.access_token || data.token || data.access;
 
-                if (!newToken) {
-                    throw new Error('No se recibió token en el refresh');
-                }
+				if (!newToken) {
+					throw new Error('No se recibió token en el refresh');
+				}
 
-                // Actualizar Estados
-                tokenManager.setAccessToken(newToken);
-                store.dispatch(setToken({ access: newToken }));
+				// Actualizar Estados
+				tokenManager.setAccessToken(newToken);
+				store.dispatch(setToken({ access: newToken }));
 
-                BaseService.defaults.headers.common.Authorization = `Bearer ${newToken}`;
-                
-                processQueue(null, newToken);
+				BaseService.defaults.headers.common.Authorization = `Bearer ${newToken}`;
 
-                // Reintentar la petición original que falló
-                if (originalRequest.headers) {
-                    originalRequest.headers.Authorization = `Bearer ${newToken}`;
-                }
-                return BaseService(originalRequest);
+				processQueue(null, newToken);
 
-            } catch (refreshError) {
-                // Si falla el refresh, rechazamos toda la cola y cerramos sesión
-                processQueue(refreshError, null);
-                store.dispatch(logout());
-                tokenManager.clearTokens();
-                // 💡 Aseguramos que el componente que estaba pendiente se detenga
-                cancelAllRequests();
-                return Promise.reject(refreshError);
-            } finally {
-                // Siempre liberamos el semáforo
-                isRefreshing = false;
-            }
-        }
+				// Reintentar la petición original que falló
+				if (originalRequest.headers) {
+					originalRequest.headers.Authorization = `Bearer ${newToken}`;
+				}
+				return BaseService(originalRequest);
+			} catch (refreshError) {
+				// Si falla el refresh, rechazamos toda la cola y cerramos sesión
+				processQueue(refreshError, null);
+				store.dispatch(logout());
+				tokenManager.clearTokens();
+				// 💡 Aseguramos que el componente que estaba pendiente se detenga
+				cancelAllRequests();
+				return Promise.reject(refreshError);
+			} finally {
+				// Siempre liberamos el semáforo
+				isRefreshing = false;
+			}
+		}
 
-        return Promise.reject(error);
-    }
+		return Promise.reject(error);
+	},
 );
 
 export default BaseService;
 
-
-
-
-// V1 ANTIGUO VOLVER EN CASO DE SER NECESARIO 
+// V1 ANTIGUO VOLVER EN CASO DE SER NECESARIO
 
 // import store, { logout, setToken } from '@/store';
 // import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
@@ -214,7 +215,7 @@ export default BaseService;
 // };
 
 // const DEFAULT_INACTIVITY_TIMEOUT_MS = Infinity;
-// const TOKEN_REFRESH_THRESHOLD_MS = 30_000; 
+// const TOKEN_REFRESH_THRESHOLD_MS = 30_000;
 
 // const BaseService = axios.create({
 // 	timeout: 60000,
@@ -427,7 +428,6 @@ export default BaseService;
 // 					status === 401 || refreshError?.message?.includes('no autorizado')
 // 						? 'Sesión expirada. Por favor, inicia sesión nuevamente.'
 // 						: 'Error de autenticación. Por favor, inicia sesión nuevamente.';
-
 
 // 				store.dispatch(logout());
 // 				cancelAllRequests();

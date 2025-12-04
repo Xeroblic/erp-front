@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Container from '@/components/layouts/Container/Container';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
@@ -8,7 +9,6 @@ import Card, { CardBody } from '@/components/ui/Card';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchCustomersOverviewThunk } from '@/store/slices/customerSales/customerSalesSlice';
 import ClienteVentasTable from './components/tables/ClienteVentasTable';
-import { useNavigate } from 'react-router-dom';
 import DeleteCustomerSaleModal from './components/modals/DeleteCustomerSaleModal';
 import CreateCustomerSaleModal from './components/modals/CreateCustomerSaleModal';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
@@ -47,19 +47,20 @@ const ClientesVentas = () => {
 			<Subheader>
 				<SubheaderLeft>
 					<div>
-						<Badge className='text-2xl font-semibold mb-1'>Clientes Ventas</Badge>
-						<p className="text-zinc-500 text-sm">Consulta y administra los clientes de ventas registrados.</p>
+						<Badge className='mb-1 text-2xl font-semibold'>Clientes Ventas</Badge>
+						<p className='text-sm text-zinc-500'>
+							Consulta y administra los clientes de ventas registrados.
+						</p>
 					</div>
 				</SubheaderLeft>
 				<SubheaderRight>
 					<Tooltip text='Nuevo Cliente' placement='top-start'>
 						<Button
-							variant="solid"
-							icon="HeroPlus"
+							variant='solid'
+							icon='HeroPlus'
 							onClick={() => hasSubsidiary && setOpenCreate(true)}
 							isDisable={!hasSubsidiary}
-						>
-						</Button>
+						/>
 					</Tooltip>
 				</SubheaderRight>
 			</Subheader>

@@ -1,13 +1,7 @@
-import React from 'react'
-
-
-
+import React from 'react';
 
 const Administracion = () => {
+	return <div>Administracion</div>;
+};
 
-  return (
-    <div>Administracion</div>
-  )
-}
-
-export default Administracion
+export default Administracion;

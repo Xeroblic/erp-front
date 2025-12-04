@@ -1,4 +1,4 @@
-	import React, { FC, HTMLAttributes, ReactNode } from 'react';
+import React, { FC, HTMLAttributes, ReactNode } from 'react';
 import classNames from 'classnames';
 
 interface IFooterLeftProps extends HTMLAttributes<HTMLDivElement> {

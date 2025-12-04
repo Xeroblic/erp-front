@@ -1,5 +1,5 @@
-import ApiService from './ApiService';
 import type { AxiosRequestConfig } from 'axios';
+import ApiService from './ApiService';
 import type {
 	IDocument,
 	IDocumentFilters,
@@ -60,7 +60,11 @@ const documentsService = {
 		return (response.data?.data || response.data) as IDocument;
 	},
 
-	async updateDocument(subsidiaryId: number, documentId: number, payload: Partial<IDocumentPayload>) {
+	async updateDocument(
+		subsidiaryId: number,
+		documentId: number,
+		payload: Partial<IDocumentPayload>,
+	) {
 		const response = await ApiService.fetchData<{ data?: IDocument }>({
 			url: buildUrl(subsidiaryId, `/${documentId}`),
 			method: 'patch',
@@ -98,7 +102,9 @@ const documentsService = {
 				'Content-Type': 'multipart/form-data',
 			},
 		};
-		const response = await ApiService.fetchData<{ data?: IDocumentAttachment[] }>(config as unknown as AxiosRequestConfig<Record<string, unknown>>);
+		const response = await ApiService.fetchData<{ data?: IDocumentAttachment[] }>(
+			config as unknown as AxiosRequestConfig<Record<string, unknown>>,
+		);
 		return extractCollection<IDocumentAttachment>(response.data);
 	},
 
@@ -114,8 +120,7 @@ const documentsService = {
 			url: '/document-types',
 			method: 'get',
 			params: {
-				is_active:
-					typeof isActive === 'boolean' ? (isActive ? 1 : 0) : undefined,
+				is_active: typeof isActive === 'boolean' ? (isActive ? 1 : 0) : undefined,
 				per_page: 200,
 			},
 		});

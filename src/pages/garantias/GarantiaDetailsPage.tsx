@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
@@ -23,7 +24,6 @@ import { toast } from '@/utils/toast.utils';
 import { getUserSubsidiaryId } from './utils/subsidiary.utils';
 import { deleteWarranty } from '@/store/slices/garantias/thunks';
 import { formatProductDisplay } from './utils/warranty.utils';
-import { motion } from 'framer-motion';
 import { warrantyStatusOptions } from './hooks/useWarranties';
 
 const ensureSelectOption = (

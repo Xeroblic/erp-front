@@ -1,5 +1,5 @@
-import { IUser } from '@/interface';
 import { Descendant } from 'slate';
+import { IUser } from '@/interface';
 
 export type TMail = {
 	id: number;

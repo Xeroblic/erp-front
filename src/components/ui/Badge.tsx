@@ -21,7 +21,8 @@ interface IBadgeProps {
 	variant?: TBadgeVariants;
 }
 const Badge: FC<IBadgeProps> = (props) => {
-	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } = useReactiveThemeConfig();
+	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } =
+		useReactiveThemeConfig();
 
 	const {
 		borderWidth = themeConfig.borderWidth,
@@ -53,7 +54,7 @@ const Badge: FC<IBadgeProps> = (props) => {
 
 	const classes = classNames(
 		'inline-flex items-center justify-center',
-		
+
 		[`${borderWidth}`],
 		[`${rounded}`],
 		badgeVariantClasses,

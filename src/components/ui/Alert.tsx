@@ -28,7 +28,8 @@ interface IAlertProps extends HTMLAttributes<HTMLDivElement> {
 	variant?: TAlertVariants;
 }
 const Alert: FC<IAlertProps> = (props) => {
-	const {themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade} = useReactiveThemeConfig();
+	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } =
+		useReactiveThemeConfig();
 	const {
 		borderWidth = themeConfig.borderWidth,
 		children,

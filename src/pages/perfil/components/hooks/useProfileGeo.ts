@@ -32,7 +32,8 @@ export function useProfileGeo(
 	const derivedGeoRef = useRef(false);
 	useEffect(() => {
 		if (derivedGeoRef.current) return;
-		const needsDerive = (!formik.values.region || !formik.values.provincia) && !!formik.values.comuna;
+		const needsDerive =
+			(!formik.values.region || !formik.values.provincia) && !!formik.values.comuna;
 		if (!needsDerive) return;
 
 		const comunaId = parseInt(formik.values.comuna, 10);
@@ -47,16 +48,15 @@ export function useProfileGeo(
 				});
 				const raw = resp.data?.data ?? resp.data;
 				const provinceId = raw?.province?.id ?? raw?.province_id;
-				const regionId = raw?.province?.region?.id ?? raw?.region_id ?? raw?.province?.region_id;
+				const regionId =
+					raw?.province?.region?.id ?? raw?.region_id ?? raw?.province?.region_id;
 				if (regionId) formik.setFieldValue('region', String(regionId), false);
 				if (provinceId) formik.setFieldValue('provincia', String(provinceId), false);
 				if (!formik.values.comuna || String(formik.values.comuna) !== String(comunaId)) {
 					formik.setFieldValue('comuna', String(comunaId), false);
 				}
 				derivedGeoRef.current = true;
-			} catch {
-
-			}
+			} catch {}
 		})();
 	}, [formik.values.comuna]);
 
@@ -68,8 +68,8 @@ export function useProfileGeo(
 			return;
 		}
 
-		const filtered = (listaProvincias || []).filter((p) =>
-			p?.codigo !== undefined && String(p.codigo_padre) === formik.values.region,
+		const filtered = (listaProvincias || []).filter(
+			(p) => p?.codigo !== undefined && String(p.codigo_padre) === formik.values.region,
 		);
 
 		setOptionsProvincia(filtered.map((p) => ({ value: String(p.codigo), label: p.nombre })));
@@ -94,7 +94,9 @@ export function useProfileGeo(
 
 			const all = listaComunas || [];
 			const found = all.find((c) => String(c.codigo) === currentComuna);
-			const opt = found ? { value: String(found.codigo), label: found.nombre } : { value: currentComuna, label: 'Cargando…' };
+			const opt = found
+				? { value: String(found.codigo), label: found.nombre }
+				: { value: currentComuna, label: 'Cargando…' };
 			setOptionsComuna([opt]);
 			return;
 		}
@@ -103,7 +105,14 @@ export function useProfileGeo(
 		// DEBUG: help trace why comuna selection may not appear
 		try {
 			// eslint-disable-next-line no-console
-			console.debug('[useProfileGeo] provincia=', formik.values.provincia, 'comuna=', formik.values.comuna, 'listaComunas.length=', (all || []).length);
+			console.debug(
+				'[useProfileGeo] provincia=',
+				formik.values.provincia,
+				'comuna=',
+				formik.values.comuna,
+				'listaComunas.length=',
+				(all || []).length,
+			);
 		} catch (e) {
 			/* ignore */
 		}
@@ -130,7 +139,12 @@ export function useProfileGeo(
 		}
 		try {
 			// eslint-disable-next-line no-console
-			console.debug('[useProfileGeo] comuna options prepared, opts.length=', opts.length, 'opts[0]=', opts[0]);
+			console.debug(
+				'[useProfileGeo] comuna options prepared, opts.length=',
+				opts.length,
+				'opts[0]=',
+				opts[0],
+			);
 		} catch (e) {
 			/* ignore */
 		}

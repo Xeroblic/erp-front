@@ -11,6 +11,7 @@ import {
 } from 'react-icons/hi2';
 
 // Components
+import { toast } from 'react-toastify';
 import Card, { CardBody } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
@@ -21,8 +22,6 @@ import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Moda
 import Container from '@/components/layouts/Container/Container';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
-
-import { toast } from 'react-toastify';
 
 // Hooks y datos
 import { useInventoryData } from './hooks/useInventarioConsolidado';

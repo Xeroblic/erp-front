@@ -84,10 +84,7 @@ const DisplaySection: React.FC<SectionBaseProps> = ({
 							name='display_refresh'
 							value={attributes.display?.refresh_hz || ''}
 							onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
-								updateAttribute(
-									'display.refresh_hz',
-									Number(event.target.value),
-								)
+								updateAttribute('display.refresh_hz', Number(event.target.value))
 							}>
 							<option value=''>Seleccionar frecuencia</option>
 							{DISPLAY_REFRESH_RATES.map((option) => (

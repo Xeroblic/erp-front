@@ -87,7 +87,8 @@ const ensureBranch = (state: RootState): number | null => {
 
 export const fetchTransfers = createAsyncThunk<
 	{ data: ITransfer[]; meta: TransferMeta; filters: TransferFiltersState },
-	Partial<{ page: number; direction: TransferDirection; q: string; per_page: number }> | undefined,
+	| Partial<{ page: number; direction: TransferDirection; q: string; per_page: number }>
+	| undefined,
 	{ rejectValue: string; state: RootState }
 >('transfers/fetchTransfers', async (params, { getState, rejectWithValue }) => {
 	const state = getState();
@@ -118,9 +119,8 @@ export const fetchTransfers = createAsyncThunk<
 
 		const raw = response.data;
 
-		const payload: TransferListResponsePayload =
-			Array.isArray(raw)
-				? {
+		const payload: TransferListResponsePayload = Array.isArray(raw)
+			? {
 					data: raw,
 					meta: {
 						current_page: overrides.page ?? state.transferencias.pagination.currentPage,
@@ -129,7 +129,7 @@ export const fetchTransfers = createAsyncThunk<
 						total: raw.length,
 					},
 				}
-				: raw;
+			: raw;
 		const serverFilters = payload.filters || {};
 
 		const meta = payload.meta ?? {
@@ -149,9 +149,7 @@ export const fetchTransfers = createAsyncThunk<
 			},
 		};
 	} catch (error: any) {
-		return rejectWithValue(
-			error.response?.data?.message || 'Error al obtener transferencias',
-		);
+		return rejectWithValue(error.response?.data?.message || 'Error al obtener transferencias');
 	}
 });
 
@@ -298,8 +296,7 @@ export const { setFilters, clearFilters, clearCurrentTransfer, clearError } =
 	transfersSlice.actions;
 
 export const selectTransfers = (state: RootState) => state.transferencias.transfers;
-export const selectCurrentTransfer = (state: RootState) =>
-	state.transferencias.currentTransfer;
+export const selectCurrentTransfer = (state: RootState) => state.transferencias.currentTransfer;
 export const selectTransfersLoading = (state: RootState) => state.transferencias.loading;
 const selectTransfersSlice = (state: RootState) => state.transferencias;
 
@@ -307,13 +304,9 @@ export const selectTransfersPagination = createSelector(
 	selectTransfersSlice,
 	(slice) => slice.pagination,
 );
-export const selectTransferFilters = createSelector(
-	selectTransfersSlice,
-	(slice) => slice.filters,
-);
-export const selectTransferActionLoading = createSelector(
-	selectTransfersSlice,
-	(slice) => ({ create: slice.createLoading }),
-);
+export const selectTransferFilters = createSelector(selectTransfersSlice, (slice) => slice.filters);
+export const selectTransferActionLoading = createSelector(selectTransfersSlice, (slice) => ({
+	create: slice.createLoading,
+}));
 
 export default transfersSlice.reducer;

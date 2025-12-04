@@ -425,25 +425,25 @@ export default function CreateUserModal({ isOpen, onClose, onUserCreated }: Crea
 									<Icon icon='HeroXMark' className='mr-2 h-4 w-4' />
 									Cancelar
 								</Button>
-                                <Button
-                                    onClick={() => document.querySelector('form')?.requestSubmit()}
-                                    isDisable={isSubmitting}
-                                    className='min-w-[120px]'>
-                                    {isSubmitting ? (
-                                        <>
-                                            <Icon
-                                                icon='HeroArrowPath'
-                                                className='mr-2 h-4 w-4 animate-spin'
-                                            />
-                                            Creando...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Icon icon='HeroCheck' className='mr-2 h-4 w-4' />
-                                            Crear Usuario
-                                        </>
-                                    )}
-                                </Button>
+								<Button
+									onClick={() => document.querySelector('form')?.requestSubmit()}
+									isDisable={isSubmitting}
+									className='min-w-[120px]'>
+									{isSubmitting ? (
+										<>
+											<Icon
+												icon='HeroArrowPath'
+												className='mr-2 h-4 w-4 animate-spin'
+											/>
+											Creando...
+										</>
+									) : (
+										<>
+											<Icon icon='HeroCheck' className='mr-2 h-4 w-4' />
+											Crear Usuario
+										</>
+									)}
+								</Button>
 							</div>
 						</ModalFooter>
 					</Form>

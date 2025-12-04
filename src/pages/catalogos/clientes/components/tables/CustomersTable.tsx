@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
+import type { ColumnDef } from '@tanstack/react-table';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import type { ICustomerSupplier } from '@/interface/customerSupplier.interface';
 import DataTable from '@/components/ui/DataTable/DataTable';
-import type { ColumnDef } from '@tanstack/react-table';
 
 interface CustomersTableProps {
 	customers: ICustomerSupplier[];
@@ -14,53 +14,56 @@ interface CustomersTableProps {
 }
 
 const CustomersTable: React.FC<CustomersTableProps> = ({ customers, onView, onDelete }) => {
-	const columns = useMemo<ColumnDef<ICustomerSupplier, any>[]>(() => [
-		{
-			header: 'Cliente',
-			accessorKey: 'name',
-			cell: ({ row }) => (
-				<div>
-					<div className='text-sm font-medium text-gray-900 dark:text-white'>
-						{row.original.name}
+	const columns = useMemo<ColumnDef<ICustomerSupplier, any>[]>(
+		() => [
+			{
+				header: 'Cliente',
+				accessorKey: 'name',
+				cell: ({ row }) => (
+					<div>
+						<div className='text-sm font-medium text-gray-900 dark:text-white'>
+							{row.original.name}
+						</div>
+						<div className='text-xs text-gray-500'>ID: {row.original.id}</div>
 					</div>
-					<div className='text-xs text-gray-500'>ID: {row.original.id}</div>
-				</div>
-			),
-		},
-		{
-			header: 'Creado',
-			accessorKey: 'created_at',
-			cell: ({ row }) => (
-				<div className='text-xs text-gray-500'>
-					{row.original.created_at
-						? new Date(String(row.original.created_at)).toLocaleDateString('es-CO')
-						: '-'}
-				</div>
-			),
-		},
-		{
-			id: 'acciones',
-			header: 'Acciones',
-			cell: ({ row }) => (
-				<div className='flex space-x-2'>
-					<Button
-						size='sm'
-						variant='outline'
-						onClick={() => onView(row.original)}
-						className='text-blue-600 hover:text-blue-900'>
-						<Icon icon='HeroEye' className='h-4 w-4' />
-					</Button>
-					<Button
-						size='sm'
-						variant='outline'
-						onClick={() => onDelete(row.original)}
-						className='text-red-600 hover:text-red-900'>
-						<Icon icon='HeroTrash' className='h-4 w-4' />
-					</Button>
-				</div>
-			),
-		},
-	], [onView, onDelete]);
+				),
+			},
+			{
+				header: 'Creado',
+				accessorKey: 'created_at',
+				cell: ({ row }) => (
+					<div className='text-xs text-gray-500'>
+						{row.original.created_at
+							? new Date(String(row.original.created_at)).toLocaleDateString('es-CO')
+							: '-'}
+					</div>
+				),
+			},
+			{
+				id: 'acciones',
+				header: 'Acciones',
+				cell: ({ row }) => (
+					<div className='flex space-x-2'>
+						<Button
+							size='sm'
+							variant='outline'
+							onClick={() => onView(row.original)}
+							className='text-blue-600 hover:text-blue-900'>
+							<Icon icon='HeroEye' className='h-4 w-4' />
+						</Button>
+						<Button
+							size='sm'
+							variant='outline'
+							onClick={() => onDelete(row.original)}
+							className='text-red-600 hover:text-red-900'>
+							<Icon icon='HeroTrash' className='h-4 w-4' />
+						</Button>
+					</div>
+				),
+			},
+		],
+		[onView, onDelete],
+	);
 
 	return (
 		<Card>

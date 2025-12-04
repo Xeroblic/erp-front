@@ -203,52 +203,52 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, onUserUpdated
 				return (
 					<div className='flex min-w-[200px] items-center space-x-1'>
 						<Can any={['view-user']}>
-						<Button
-							variant='outline'
-							size='sm'
-							onClick={() => openModal('details', user, 'view')}
-							className='flex items-center gap-1 px-2 py-1 text-xs'
-							title='Gestionar usuario'>
-							<Icon icon='HeroShieldCheck' className='h-3 w-3' />
-							Gestionar
-						</Button>
+							<Button
+								variant='outline'
+								size='sm'
+								onClick={() => openModal('details', user, 'view')}
+								className='flex items-center gap-1 px-2 py-1 text-xs'
+								title='Gestionar usuario'>
+								<Icon icon='HeroShieldCheck' className='h-3 w-3' />
+								Gestionar
+							</Button>
 						</Can>
 
 						<Can any={['edit-user']}>
-						<Button
-							variant='outline'
-							size='sm'
-							color={user.is_active ? 'red' : 'emerald'}
-							onClick={() => handleToggleStatus(user)}
-							isDisable={isLoading}
-							className='flex items-center gap-1 px-2 py-1 text-xs'
-							title={user.is_active ? 'Desactivar usuario' : 'Activar usuario'}>
-							<Icon
-								icon={
-									isLoading
-										? 'HeroArrowPath'
-										: user.is_active
-											? 'HeroXMark'
-											: 'HeroCheck'
-								}
-								className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`}
-							/>
-							{user.is_active ? 'Desactivar' : 'Activar'}
-						</Button>
+							<Button
+								variant='outline'
+								size='sm'
+								color={user.is_active ? 'red' : 'emerald'}
+								onClick={() => handleToggleStatus(user)}
+								isDisable={isLoading}
+								className='flex items-center gap-1 px-2 py-1 text-xs'
+								title={user.is_active ? 'Desactivar usuario' : 'Activar usuario'}>
+								<Icon
+									icon={
+										isLoading
+											? 'HeroArrowPath'
+											: user.is_active
+												? 'HeroXMark'
+												: 'HeroCheck'
+									}
+									className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`}
+								/>
+								{user.is_active ? 'Desactivar' : 'Activar'}
+							</Button>
 						</Can>
 
 						<Can any={['delete-user']}>
-						<Button
-							variant='outline'
-							size='sm'
-							color='red'
-							onClick={() => openModal('delete', user)}
-							isDisable={isLoading}
-							className='flex items-center gap-1 px-2 py-1 text-xs'
-							title='Eliminar usuario'>
-							<Icon icon='HeroTrash' className='h-3 w-3' />
-							Eliminar
-						</Button>
+							<Button
+								variant='outline'
+								size='sm'
+								color='red'
+								onClick={() => openModal('delete', user)}
+								isDisable={isLoading}
+								className='flex items-center gap-1 px-2 py-1 text-xs'
+								title='Eliminar usuario'>
+								<Icon icon='HeroTrash' className='h-3 w-3' />
+								Eliminar
+							</Button>
 						</Can>
 					</div>
 				);

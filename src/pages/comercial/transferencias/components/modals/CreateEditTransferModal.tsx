@@ -53,7 +53,7 @@ const formatPayload = (values: ICreateTransferForm): ICreateTransferRequest => (
 	to_warehouse_id: values.to_warehouse_id ? Number(values.to_warehouse_id) : undefined,
 	auto_create_destination_product: values.auto_create_destination_product,
 	expected_date: values.expected_date || undefined,
-	priority: values.priority as TransferPriority | undefined,
+	priority: values.priority,
 	notes: values.notes?.trim() || undefined,
 	items: values.items.map((item) => ({
 		product_id: Number(item.product_id),
@@ -167,17 +167,24 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 				items: Yup.array()
 					.of(
 						Yup.object().shape({
-							product_id: Yup.number().min(1, 'Producto requerido').required('Producto requerido'),
+							product_id: Yup.number()
+								.min(1, 'Producto requerido')
+								.required('Producto requerido'),
 							quantity: Yup.number()
 								.min(1, 'Cantidad mínima 1')
 								.required('Cantidad requerida')
-								.test('max-stock', 'La cantidad supera el stock disponible', function (value) {
-									const productId = this.parent.product_id;
-									if (!productId) return true;
-									const stock = productStockMap.get(Number(productId))?.stock ?? 0;
-									if (!stock) return true;
-									return !value || value <= stock;
-								}),
+								.test(
+									'max-stock',
+									'La cantidad supera el stock disponible',
+									function (value) {
+										const productId = this.parent.product_id;
+										if (!productId) return true;
+										const stock =
+											productStockMap.get(Number(productId))?.stock ?? 0;
+										if (!stock) return true;
+										return !value || value <= stock;
+									},
+								),
 						}),
 					)
 					.min(1, 'Debe agregar al menos un producto')
@@ -319,7 +326,9 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 					try {
 						helpers.setStatus(undefined);
 						await onSubmit(formatPayload(values));
-						helpers.resetForm({ values: { ...INITIAL_VALUES, items: [createEmptyItem()] } });
+						helpers.resetForm({
+							values: { ...INITIAL_VALUES, items: [createEmptyItem()] },
+						});
 					} catch (error: any) {
 						const apiError = (error ?? {}) as {
 							message?: string;
@@ -338,7 +347,10 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 									field === 'to_warehouse_id' ||
 									field === 'notes'
 								) {
-									helpers.setFieldError(field as keyof ICreateTransferForm, message);
+									helpers.setFieldError(
+										field as keyof ICreateTransferForm,
+										message,
+									);
 								}
 							});
 						}
@@ -387,9 +399,12 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 										isLoading={branchesLoading}
 										isClearable
 									/>
-									{touched.to_branch_id && typeof errors.to_branch_id === 'string' && (
-										<p className='text-xs text-red-500'>{errors.to_branch_id}</p>
-									)}
+									{touched.to_branch_id &&
+										typeof errors.to_branch_id === 'string' && (
+											<p className='text-xs text-red-500'>
+												{errors.to_branch_id}
+											</p>
+										)}
 								</div>
 								<div className='flex flex-col space-y-1'>
 									<label className='text-sm font-medium text-gray-600 dark:text-gray-300'>
@@ -398,18 +413,27 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 									<SelectReact
 										name='from_warehouse_id'
 										options={originWarehouseOptions}
-										value={findOption(originWarehouseOptions, values.from_warehouse_id)}
+										value={findOption(
+											originWarehouseOptions,
+											values.from_warehouse_id,
+										)}
 										onChange={(option) => {
 											const selected = option as TSelectOption | null;
-											setFieldValue('from_warehouse_id', selected ? Number(selected.value) : '');
+											setFieldValue(
+												'from_warehouse_id',
+												selected ? Number(selected.value) : '',
+											);
 										}}
 										placeholder='Selecciona bodega'
 										isClearable
 										isLoading={originWarehousesLoading}
 									/>
-									{touched.from_warehouse_id && typeof errors.from_warehouse_id === 'string' && (
-										<p className='text-xs text-red-500'>{errors.from_warehouse_id}</p>
-									)}
+									{touched.from_warehouse_id &&
+										typeof errors.from_warehouse_id === 'string' && (
+											<p className='text-xs text-red-500'>
+												{errors.from_warehouse_id}
+											</p>
+										)}
 								</div>
 								<div className='flex flex-col space-y-1'>
 									<label className='text-sm font-medium text-gray-600 dark:text-gray-300'>
@@ -418,19 +442,28 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 									<SelectReact
 										name='to_warehouse_id'
 										options={destinationWarehouseOptions}
-										value={findOption(destinationWarehouseOptions, values.to_warehouse_id)}
+										value={findOption(
+											destinationWarehouseOptions,
+											values.to_warehouse_id,
+										)}
 										onChange={(option) => {
 											const selected = option as TSelectOption | null;
-											setFieldValue('to_warehouse_id', selected ? Number(selected.value) : '');
+											setFieldValue(
+												'to_warehouse_id',
+												selected ? Number(selected.value) : '',
+											);
 										}}
 										placeholder='Selecciona bodega'
 										isClearable
 										isLoading={destinationWarehousesLoading}
 										isDisabled={!values.to_branch_id}
 									/>
-									{touched.to_warehouse_id && typeof errors.to_warehouse_id === 'string' && (
-										<p className='text-xs text-red-500'>{errors.to_warehouse_id}</p>
-									)}
+									{touched.to_warehouse_id &&
+										typeof errors.to_warehouse_id === 'string' && (
+											<p className='text-xs text-red-500'>
+												{errors.to_warehouse_id}
+											</p>
+										)}
 								</div>
 								<div className='flex flex-col space-y-1'>
 									<label className='text-sm font-medium text-gray-600 dark:text-gray-300'>
@@ -502,18 +535,22 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 														.filter((id): id is number => Boolean(id));
 													const optionsForRow = productOptions.filter(
 														(option) =>
-															option.value === String(item.product_id || '') ||
-															!selectedIds.includes(Number(option.value)),
+															option.value ===
+																String(item.product_id || '') ||
+															!selectedIds.includes(
+																Number(option.value),
+															),
 													);
 													const stock = item.product_id
-														? productStockMap.get(Number(item.product_id))?.stock ?? 0
+														? (productStockMap.get(
+																Number(item.product_id),
+															)?.stock ?? 0)
 														: 0;
 
 													return (
 														<div
 															key={index}
-															className='grid grid-cols-1 gap-3 rounded-lg border border-gray-100 p-3 md:grid-cols-12'
-														>
+															className='grid grid-cols-1 gap-3 rounded-lg border border-gray-100 p-3 md:grid-cols-12'>
 															<div className='md:col-span-6'>
 																<label className='text-sm font-medium text-gray-600 dark:text-gray-300'>
 																	Producto
@@ -521,30 +558,59 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 																<SelectReact
 																	name={`items.${index}.product_id`}
 																	options={optionsForRow}
-																	value={findOption(productOptions, item.product_id)}
+																	value={findOption(
+																		productOptions,
+																		item.product_id,
+																	)}
 																	onChange={(option) => {
-																		const selected = option as TSelectOption | null;
+																		const selected =
+																			option as TSelectOption | null;
 																		if (!selected) {
-																			setFieldValue(`items.${index}`, createEmptyItem());
+																			setFieldValue(
+																				`items.${index}`,
+																				createEmptyItem(),
+																			);
 																			return;
 																		}
-																		const productInfo = availableProducts.find(
-																			(product) => String(product.id) === selected.value,
-																		);
-																		if (productInfo?.serial_tracking) {
+																		const productInfo =
+																			availableProducts.find(
+																				(product) =>
+																					String(
+																						product.id,
+																					) ===
+																					selected.value,
+																			);
+																		if (
+																			productInfo?.serial_tracking
+																		) {
 																			setFieldError(
 																				`items.${index}.product_id`,
 																				'Este producto usa tracking por serie. Usa el traslado de equipos.',
 																			);
-																			setFieldValue(`items.${index}.product_id`, '');
+																			setFieldValue(
+																				`items.${index}.product_id`,
+																				'',
+																			);
 																			return;
 																		}
 
-																		setFieldValue(`items.${index}.product_id`, Number(selected.value));
-																		if (values.items[index].quantity > (productInfo?.stock ?? 0)) {
+																		setFieldValue(
+																			`items.${index}.product_id`,
+																			Number(selected.value),
+																		);
+																		if (
+																			values.items[index]
+																				.quantity >
+																			(productInfo?.stock ??
+																				0)
+																		) {
 																			setFieldValue(
 																				`items.${index}.quantity`,
-																				Math.max(1, productInfo?.stock ?? 1),
+																				Math.max(
+																					1,
+																					productInfo?.stock ??
+																						1,
+																				),
 																			);
 																		}
 																	}}
@@ -554,97 +620,125 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 																			: 'Selecciona una sucursal destino primero'
 																	}
 																	isClearable
-																	isDisabled={!values.to_branch_id || !productsLoaded}
+																	isDisabled={
+																		!values.to_branch_id ||
+																		!productsLoaded
+																	}
 																	isLoading={productsLoading}
-															/>
-															{touched.items &&
-																errors.items &&
-																typeof errors.items !== 'string' &&
-																(errors.items[index] as any)?.product_id && (
-																	<p className='mt-1 text-xs text-red-500'>
-																		{(errors.items[index] as any)?.product_id}
+																/>
+																{touched.items &&
+																	errors.items &&
+																	typeof errors.items !==
+																		'string' &&
+																	(errors.items[index] as any)
+																		?.product_id && (
+																		<p className='mt-1 text-xs text-red-500'>
+																			{
+																				(
+																					errors.items[
+																						index
+																					] as any
+																				)?.product_id
+																			}
+																		</p>
+																	)}
+																{!values.to_branch_id && (
+																	<p className='mt-1 text-xs text-gray-500'>
+																		Selecciona la sucursal
+																		destino para habilitar los
+																		productos.
 																	</p>
 																)}
-															{!values.to_branch_id && (
-																<p className='mt-1 text-xs text-gray-500'>
-																	Selecciona la sucursal destino para habilitar los productos.
-																</p>
-															)}
-														</div>
-														<div className='md:col-span-4'>
-															<Input
-																name={`items.${index}.quantity`}
-																label='Cantidad'
-																type='number'
-																min={1}
-																value={item.quantity}
-																onChange={handleChange}
-																onBlur={handleBlur}
-																disabled={!values.to_branch_id || !item.product_id}
-															/>
-															{touched.items &&
-																errors.items &&
-																typeof errors.items !== 'string' &&
-																(errors.items[index] as any)?.quantity && (
-																	<p className='mt-1 text-xs text-red-500'>
-																		{(errors.items[index] as any)?.quantity}
+															</div>
+															<div className='md:col-span-4'>
+																<Input
+																	name={`items.${index}.quantity`}
+																	label='Cantidad'
+																	type='number'
+																	min={1}
+																	value={item.quantity}
+																	onChange={handleChange}
+																	onBlur={handleBlur}
+																	disabled={
+																		!values.to_branch_id ||
+																		!item.product_id
+																	}
+																/>
+																{touched.items &&
+																	errors.items &&
+																	typeof errors.items !==
+																		'string' &&
+																	(errors.items[index] as any)
+																		?.quantity && (
+																		<p className='mt-1 text-xs text-red-500'>
+																			{
+																				(
+																					errors.items[
+																						index
+																					] as any
+																				)?.quantity
+																			}
+																		</p>
+																	)}
+																{item.product_id && (
+																	<p className='mt-1 text-xs text-gray-500'>
+																		Stock disponible: {stock}
 																	</p>
-															)}
-															{item.product_id && (
-																<p className='mt-1 text-xs text-gray-500'>
-																	Stock disponible: {stock}
-																</p>
-															)}
+																)}
+															</div>
+															<div className='flex items-end md:col-span-2'>
+																<Button
+																	type='button'
+																	variant='outline'
+																	color='red'
+																	icon='HeroTrash'
+																	onClick={() => remove(index)}
+																	disabled={
+																		values.items.length === 1
+																	}>
+																	Quitar
+																</Button>
+															</div>
 														</div>
-														<div className='md:col-span-2 flex items-end'>
-															<Button
-																type='button'
-																variant='outline'
-																color='red'
-																icon='HeroTrash'
-																onClick={() => remove(index)}
-																disabled={values.items.length === 1}>
-																Quitar
-															</Button>
-														</div>
-													</div>
-											);
-										})}
+													);
+												})}
 
-										<Button
-											type='button'
-											variant='outline'
-											icon='HeroPlus'
-											onClick={() => push(createEmptyItem())}
-											disabled={!values.to_branch_id || !productsLoaded}>
-											Agregar producto
-										</Button>
-									</>
-								)}
-								</FieldArray>
-								{typeof errors.items === 'string' && (
-									<p className='text-sm text-red-500'>{errors.items}</p>
-								)}
-							</CardBody>
-						</Card>
-					</ModalBody>
-					<ModalFooter>
-						<ModalFooterChild>
-							<Button variant='outline' onClick={onClose}>
-								Cancelar
-							</Button>
-						</ModalFooterChild>
-						<ModalFooterChild>
-							<Button
-								type='submit'
-								variant='solid'
-								icon='HeroPaperAirplane'
-								disabled={isSubmitting || Boolean(isLoading)}>
-								Crear transferencia
-							</Button>
-						</ModalFooterChild>
-					</ModalFooter>
-				</Form>
+												<Button
+													type='button'
+													variant='outline'
+													icon='HeroPlus'
+													onClick={() => push(createEmptyItem())}
+													disabled={
+														!values.to_branch_id || !productsLoaded
+													}>
+													Agregar producto
+												</Button>
+											</>
+										)}
+									</FieldArray>
+									{typeof errors.items === 'string' && (
+										<p className='text-sm text-red-500'>{errors.items}</p>
+									)}
+								</CardBody>
+							</Card>
+						</ModalBody>
+						<ModalFooter>
+							<ModalFooterChild>
+								<Button variant='outline' onClick={onClose}>
+									Cancelar
+								</Button>
+							</ModalFooterChild>
+							<ModalFooterChild>
+								<Button
+									type='submit'
+									variant='solid'
+									icon='HeroPaperAirplane'
+									disabled={isSubmitting || Boolean(isLoading)}>
+									Crear transferencia
+								</Button>
+							</ModalFooterChild>
+						</ModalFooter>
+					</Form>
 				)}
 			</Formik>
 		</Modal>

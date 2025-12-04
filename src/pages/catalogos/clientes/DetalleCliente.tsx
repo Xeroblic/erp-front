@@ -371,13 +371,19 @@ const DetalleClientePage: React.FC = () => {
 										<p className='mt-4 text-sm font-medium text-gray-700 dark:text-gray-300'>
 											Sin proveedores asociados
 										</p>
-										<p className='mt-1  text-gray-500 dark:text-gray-400'>
+										<p className='mt-1 text-gray-500 dark:text-gray-400'>
 											Este cliente no tiene proveedores vinculados aún
 										</p>
 										{isEditable && (
-											<p className='mt-2  text-blue-600 dark:text-blue-400 flex items-center gap-2'>
-												<Icon icon='DuoLamp2' color='amber' className='h-4 w-4' />
-												<span>Activa el modo edición para asociar proveedores</span>
+											<p className='mt-2 flex items-center gap-2 text-blue-600 dark:text-blue-400'>
+												<Icon
+													icon='DuoLamp2'
+													color='amber'
+													className='h-4 w-4'
+												/>
+												<span>
+													Activa el modo edición para asociar proveedores
+												</span>
 											</p>
 										)}
 									</div>
@@ -393,7 +399,7 @@ const DetalleClientePage: React.FC = () => {
 														{headerGroup.headers.map((header) => (
 															<th
 																key={header.id}
-																className='px-6 py-3 text-left  font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300'>
+																className='px-6 py-3 text-left font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300'>
 																{flexRender(
 																	header.column.columnDef.header,
 																	header.getContext(),
@@ -478,7 +484,7 @@ const DetalleClientePage: React.FC = () => {
 											<p className='mt-4 text-sm font-medium text-gray-700 dark:text-gray-300'>
 												¡Todos los proveedores ya están asociados!
 											</p>
-											<p className='mt-1  text-gray-500 dark:text-gray-400'>
+											<p className='mt-1 text-gray-500 dark:text-gray-400'>
 												No hay más proveedores disponibles para vincular
 											</p>
 										</div>
@@ -494,7 +500,7 @@ const DetalleClientePage: React.FC = () => {
 															{headerGroup.headers.map((header) => (
 																<th
 																	key={header.id}
-																	className='px-6 py-3 text-left  font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300'>
+																	className='px-6 py-3 text-left font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300'>
 																	{flexRender(
 																		header.column.columnDef
 																			.header,

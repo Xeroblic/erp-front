@@ -9,7 +9,7 @@ import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Moda
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
-import { formatDate } from '../../components/utils';
+import { formatDate } from '../utils';
 import { useSupplierCustomers } from '../hooks/useSupplierCustomers';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchCustomerSuppliers } from '@/store/slices/customerSuppliers/customerSuppliersSlice';

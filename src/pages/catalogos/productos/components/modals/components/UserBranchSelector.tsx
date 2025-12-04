@@ -17,9 +17,9 @@ interface UserBranchSelectorProps {
 
 /**
  * Componente selector de branches basado en el acceso del usuario
- * 
+ *
  * Solo muestra las branches a las que el usuario tiene acceso
- * 
+ *
  * @param userId - ID del usuario para obtener sus branches
  * @param value - Valor seleccionado (branch_id)
  * @param onChange - Callback cuando cambia la selección, recibe el branch_id o null
@@ -30,7 +30,7 @@ interface UserBranchSelectorProps {
  * @param required - Si el campo es requerido
  * @param className - Clases CSS adicionales
  * @param showError - Si debe mostrar el error
- * 
+ *
  * @example
  * ```tsx
  * <UserBranchSelector

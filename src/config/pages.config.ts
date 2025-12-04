@@ -15,42 +15,41 @@ export interface PageConfig {
 	requireAll?: boolean;
 }
 
-
 export const authPages = {
 	loginPage: {
 		id: 'loginPage',
 		to: '/login',
 		text: 'Login',
 		icon: 'DuoLogOut',
-		authority: []
+		authority: [],
 	},
 	profilePage: {
 		id: 'profilePage',
 		to: '/profile',
 		text: 'Perfil',
 		icon: 'DuoUser',
-		authority: []
+		authority: [],
 	},
 	aceptarInvitacion: {
 		id: 'aceptarInvitacion',
 		to: '/invitar/aceptar/:token',
 		text: 'Aceptar invitación',
 		icon: 'DuoMailOpened',
-		authority: []
+		authority: [],
 	},
 	recuperarPassword: {
 		id: 'recuperarPassword',
 		to: '/recuperar-password',
 		text: 'Recuperar contraseña',
 		icon: 'DuoKey',
-		authority: []
+		authority: [],
 	},
 	confirmarNuevaPass: {
 		id: 'confirmarNuevaPass',
 		to: '/reset-password',
 		text: 'Confirmar nueva contraseña',
 		icon: 'DuoFile',
-		authority: []
+		authority: [],
 	},
 } satisfies Record<string, PageConfig>;
 
@@ -593,7 +592,13 @@ export const privatePages = {
 				text: 'Gestionar Invitaciones',
 				icon: 'DuoSend',
 				authority: ['invite-users'],
-				roles: ['super-admin', 'admin', 'company-admin', 'subsidiary-admin', 'branch-admin'],
+				roles: [
+					'super-admin',
+					'admin',
+					'company-admin',
+					'subsidiary-admin',
+					'branch-admin',
+				],
 				requireAll: false,
 			},
 		},
@@ -890,7 +895,6 @@ export const privatePages = {
 		],
 	},
 };
-
 
 export const pagesConfig = { ...authPages, ...privatePages };
 export default pagesConfig;

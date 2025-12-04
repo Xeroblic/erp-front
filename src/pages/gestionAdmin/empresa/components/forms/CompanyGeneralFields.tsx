@@ -1,8 +1,8 @@
 import React from 'react';
+import { FormikProps } from 'formik';
 import Label from '@/components/form/Label';
 import Input from '@/components/form/Input';
 import Textarea from '@/components/form/Textarea';
-import { FormikProps } from 'formik';
 
 interface CompanyGeneralFieldsProps {
 	formik: FormikProps<any>;
@@ -22,9 +22,13 @@ export default function CompanyGeneralFields({ formik }: CompanyGeneralFieldsPro
 						onBlur={formik.handleBlur}
 						placeholder='Ej: EcoTech SPA'
 					/>
-					{formik.touched.company_name && formik.errors.company_name && typeof formik.errors.company_name === 'string' && (
-						<p className='mt-1 text-sm text-red-600'>{formik.errors.company_name}</p>
-					)}
+					{formik.touched.company_name &&
+						formik.errors.company_name &&
+						typeof formik.errors.company_name === 'string' && (
+							<p className='mt-1 text-sm text-red-600'>
+								{formik.errors.company_name}
+							</p>
+						)}
 				</div>
 
 				<div>
@@ -37,9 +41,11 @@ export default function CompanyGeneralFields({ formik }: CompanyGeneralFieldsPro
 						onBlur={formik.handleBlur}
 						placeholder='Ej: EcoTech Soluciones Tecnológicas SpA'
 					/>
-					{formik.touched.legal_name && formik.errors.legal_name && typeof formik.errors.legal_name === 'string' && (
-						<p className='mt-1 text-sm text-red-600'>{formik.errors.legal_name}</p>
-					)}
+					{formik.touched.legal_name &&
+						formik.errors.legal_name &&
+						typeof formik.errors.legal_name === 'string' && (
+							<p className='mt-1 text-sm text-red-600'>{formik.errors.legal_name}</p>
+						)}
 				</div>
 
 				<div>
@@ -52,9 +58,11 @@ export default function CompanyGeneralFields({ formik }: CompanyGeneralFieldsPro
 						onBlur={formik.handleBlur}
 						placeholder='Ej: 76.795.560-9'
 					/>
-					{formik.touched.company_rut && formik.errors.company_rut && typeof formik.errors.company_rut === 'string' && (
-						<p className='mt-1 text-sm text-red-600'>{formik.errors.company_rut}</p>
-					)}
+					{formik.touched.company_rut &&
+						formik.errors.company_rut &&
+						typeof formik.errors.company_rut === 'string' && (
+							<p className='mt-1 text-sm text-red-600'>{formik.errors.company_rut}</p>
+						)}
 				</div>
 
 				<div>
@@ -67,9 +75,13 @@ export default function CompanyGeneralFields({ formik }: CompanyGeneralFieldsPro
 						onBlur={formik.handleBlur}
 						placeholder='Ej: SPA, LTDA, SA'
 					/>
-					{formik.touched.company_type && formik.errors.company_type && typeof formik.errors.company_type === 'string' && (
-						<p className='mt-1 text-sm text-red-600'>{formik.errors.company_type}</p>
-					)}
+					{formik.touched.company_type &&
+						formik.errors.company_type &&
+						typeof formik.errors.company_type === 'string' && (
+							<p className='mt-1 text-sm text-red-600'>
+								{formik.errors.company_type}
+							</p>
+						)}
 				</div>
 			</div>
 
@@ -84,9 +96,13 @@ export default function CompanyGeneralFields({ formik }: CompanyGeneralFieldsPro
 					placeholder='Describe la actividad principal de la empresa'
 					rows={3}
 				/>
-				{formik.touched.business_activity && formik.errors.business_activity && typeof formik.errors.business_activity === 'string' && (
-					<p className='mt-1 text-sm text-red-600'>{formik.errors.business_activity}</p>
-				)}
+				{formik.touched.business_activity &&
+					formik.errors.business_activity &&
+					typeof formik.errors.business_activity === 'string' && (
+						<p className='mt-1 text-sm text-red-600'>
+							{formik.errors.business_activity}
+						</p>
+					)}
 			</div>
 
 			<div>
@@ -100,9 +116,11 @@ export default function CompanyGeneralFields({ formik }: CompanyGeneralFieldsPro
 					onBlur={formik.handleBlur}
 					placeholder='https://www.ejemplo.cl'
 				/>
-				{formik.touched.company_website && formik.errors.company_website && typeof formik.errors.company_website === 'string' && (
-					<p className='mt-1 text-sm text-red-600'>{formik.errors.company_website}</p>
-				)}
+				{formik.touched.company_website &&
+					formik.errors.company_website &&
+					typeof formik.errors.company_website === 'string' && (
+						<p className='mt-1 text-sm text-red-600'>{formik.errors.company_website}</p>
+					)}
 			</div>
 		</div>
 	);

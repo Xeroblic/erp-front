@@ -17,57 +17,55 @@ import SalesDashboard from '../reportes/SalesDashboard';
 const STORAGE_KEY = 'zentria_selected_dashboard';
 
 const DashboardContainer: React.FC = () => {
-    const { user } = useAppSelector((state) => state.auth);
+	const { user } = useAppSelector((state) => state.auth);
 
-    const [selectedDashboard, setSelectedDashboard] = useState<DashboardType>(() => {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        return (stored as DashboardType) || 'ecopc';
-    });
+	const [selectedDashboard, setSelectedDashboard] = useState<DashboardType>(() => {
+		const stored = localStorage.getItem(STORAGE_KEY);
+		return (stored as DashboardType) || 'ecopc';
+	});
 
-    useEffect(() => {
-        localStorage.setItem(STORAGE_KEY, selectedDashboard);
-    }, [selectedDashboard]);
+	useEffect(() => {
+		localStorage.setItem(STORAGE_KEY, selectedDashboard);
+	}, [selectedDashboard]);
 
-    const currentConfig = DASHBOARD_CONFIGS[selectedDashboard];
+	const currentConfig = DASHBOARD_CONFIGS[selectedDashboard];
 
-    const dashboardOptions = Object.values(DASHBOARD_CONFIGS).map(config => ({
-        value: config.id,
-        label: config.name
-    }));
+	const dashboardOptions = Object.values(DASHBOARD_CONFIGS).map((config) => ({
+		value: config.id,
+		label: config.name,
+	}));
 
-    const renderDashboard = () => {
-        switch (selectedDashboard) {
-            case 'falabella':
-                return <FalabellaDashboard />;
-            case 'ripley':
-                return <RipleyDashboard />;
-            case 'paris':
-                return <ParisDashboard />;
-            case 'ecopc':
-                return <EcoPCDashboard />;
-            case 'ecoti':
-                return <EcoTIDashboard />;
-            default:
-                return <EcoPCDashboard />;
-        }
-    };
+	const renderDashboard = () => {
+		switch (selectedDashboard) {
+			case 'falabella':
+				return <FalabellaDashboard />;
+			case 'ripley':
+				return <RipleyDashboard />;
+			case 'paris':
+				return <ParisDashboard />;
+			case 'ecopc':
+				return <EcoPCDashboard />;
+			case 'ecoti':
+				return <EcoTIDashboard />;
+			default:
+				return <EcoPCDashboard />;
+		}
+	};
 
-    return (
-        <PageWrapper isProtectedRoute={true} title='Dashboard' name={`Dashboard ${currentConfig.name}`}>
-            <Subheader className="border-b border-gray-200 dark:border-gray-700">
-                <SubheaderLeft>
-                    <div className="flex items-center space-x-4">
-                        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-                            ¡Hola {user?.first_name || 'Usuario'}!
-                        </h1>
-                        <Badge
-                            className={`text-white ${currentConfig.colors.background}`}
-                        >
-                            {currentConfig.name}
-                        </Badge>
-                    </div>
-                </SubheaderLeft>
-                {/* <SubheaderRight>
+	return (
+		<PageWrapper isProtectedRoute title='Dashboard' name={`Dashboard ${currentConfig.name}`}>
+			<Subheader className='border-b border-gray-200 dark:border-gray-700'>
+				<SubheaderLeft>
+					<div className='flex items-center space-x-4'>
+						<h1 className='text-2xl font-semibold text-gray-900 dark:text-white'>
+							¡Hola {user?.first_name || 'Usuario'}!
+						</h1>
+						<Badge className={`text-white ${currentConfig.colors.background}`}>
+							{currentConfig.name}
+						</Badge>
+					</div>
+				</SubheaderLeft>
+				{/* <SubheaderRight>
                     <div className="flex items-center space-x-3">
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                             Seleccionar Dashboard:
@@ -86,26 +84,26 @@ const DashboardContainer: React.FC = () => {
                         </Select>
                     </div>
                 </SubheaderRight> */}
-            </Subheader>
+			</Subheader>
 
-            <Container className="py-6 p-0">
-                <div
-                    className="transition-all duration-300 ease-in-out"
-                    style={{
-                        '--dashboard-primary': currentConfig.colors.primary,
-                        '--dashboard-secondary': currentConfig.colors.secondary,
-                        '--dashboard-accent': currentConfig.colors.accent,
-                        '--dashboard-background': currentConfig.colors.background,
-                        '--dashboard-text': currentConfig.colors.text,
-                    } as React.CSSProperties}
-                >
-                    {/* {renderDashboard()} */}
-                    <SalesDashboard standalone={false} showHeader={false} />
-
-                </div>
-            </Container>
-        </PageWrapper>
-    );
+			<Container className='p-0 py-6'>
+				<div
+					className='transition-all duration-300 ease-in-out'
+					style={
+						{
+							'--dashboard-primary': currentConfig.colors.primary,
+							'--dashboard-secondary': currentConfig.colors.secondary,
+							'--dashboard-accent': currentConfig.colors.accent,
+							'--dashboard-background': currentConfig.colors.background,
+							'--dashboard-text': currentConfig.colors.text,
+						} as React.CSSProperties
+					}>
+					{/* {renderDashboard()} */}
+					<SalesDashboard standalone={false} showHeader={false} />
+				</div>
+			</Container>
+		</PageWrapper>
+	);
 };
 
 export default DashboardContainer;
