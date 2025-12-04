@@ -36,6 +36,46 @@ interface CreateEditQuotationModalProps {
 	loading?: boolean;
 }
 
+type FormQuoteItem = IQuoteItem & { type: 'product' | 'custom' };
+type FormQuotationValues = Omit<IQuote, 'id' | 'created_at' | 'updated_at' | 'items'> & {
+	items: FormQuoteItem[];
+};
+
+const itemSchema = Yup.object().shape({
+	type: Yup.mixed<'product' | 'custom'>().oneOf(['product', 'custom']).required(),
+	product_id: Yup.number()
+		.nullable()
+		.when('type', {
+			is: 'product',
+			then: (schema) =>
+				schema
+					.required('Debe seleccionar un producto')
+					.min(1, 'Debe seleccionar un producto válido'),
+			otherwise: (schema) => schema,
+		}),
+	customer_name: Yup.string().when('type', {
+		is: 'custom',
+		then: (schema) =>
+			schema.required('Ingresa un nombre para el ítem').min(3, 'Mínimo 3 caracteres'),
+		otherwise: (schema) => schema,
+	}),
+	customer_sku: Yup.string().nullable(),
+	quantity: Yup.number()
+		.required('La cantidad es requerida')
+		.min(1, 'La cantidad debe ser mayor a 0'),
+	unit_price: Yup.number()
+		.nullable()
+		.when('type', {
+			is: 'custom',
+			then: (schema) =>
+				schema
+					.typeError('Ingresa un precio neto válido')
+					.moreThan(0, 'El precio neto debe ser mayor a 0'),
+			otherwise: (schema) => schema,
+		}),
+	discount_amount: Yup.number().nullable().min(0, 'El descuento no puede ser negativo'),
+});
+
 // Esquema de validación mejorado según CU025
 const quotationSchema = Yup.object().shape({
 	// quote_number: Yup.string()
@@ -63,23 +103,12 @@ const quotationSchema = Yup.object().shape({
 		.oneOf([0, 19], 'Seleccione si desea aplicar IVA (19%)')
 		.default(19),
 	notes: Yup.string().max(500, 'Las notas no pueden exceder 500 caracteres'),
-	items: Yup.array()
-		.of(
-			Yup.object().shape({
-				product_id: Yup.number()
-					.required('Debe seleccionar un producto')
-					.min(1, 'Debe seleccionar un producto válido'),
-				quantity: Yup.number()
-					.required('La cantidad es requerida')
-					.min(1, 'La cantidad debe ser mayor a 0'),
-			}),
-		)
-		.min(1, 'Debe agregar al menos un item'),
+	items: Yup.array().of(itemSchema).min(1, 'Debe agregar al menos un ítem'),
 });
 
 const IVA_RATE = 19;
 
-const EMPTY_ITEM: IQuoteItem = {
+const EMPTY_PRODUCT_ITEM: FormQuoteItem = {
 	id: 0,
 	quote_id: 0,
 	product_id: 0,
@@ -87,15 +116,93 @@ const EMPTY_ITEM: IQuoteItem = {
 	unit_price: 0,
 	created_at: '',
 	updated_at: '',
+	type: 'product',
 };
 
-const sanitizeItemsForSubmit = (items: IQuoteItem[]) =>
+const EMPTY_CUSTOM_ITEM: FormQuoteItem = {
+	id: 0,
+	quote_id: 0,
+	product_id: null,
+	quantity: 1,
+	unit_price: 0,
+	customer_name: '',
+	customer_sku: '',
+	description: '',
+	discount_amount: null,
+	created_at: '',
+	updated_at: '',
+	type: 'custom',
+};
+
+const mapItemToFormItem = (item?: IQuoteItem): FormQuoteItem => {
+	const isProduct = Boolean(item?.product_id);
+	return {
+		...(isProduct ? EMPTY_PRODUCT_ITEM : EMPTY_CUSTOM_ITEM),
+		...item,
+		product_id: item?.product_id ?? (isProduct ? 0 : null),
+		customer_name:
+			item?.customer_name ??
+			item?.name ??
+			item?.product?.name ??
+			(isProduct ? '' : ''),
+		customer_sku: item?.customer_sku ?? item?.product?.sku ?? '',
+		unit_price: Number(
+			item?.unit_price ??
+				(item as any)?.unit_price_net ??
+				(item as any)?.unitPrice ??
+				0,
+		),
+		discount_amount: item?.discount_amount ?? null,
+		description: item?.description ?? item?.product_detail ?? '',
+		type: isProduct ? 'product' : 'custom',
+	};
+};
+
+const ensureFormItems = (items?: IQuoteItem[] | null): FormQuoteItem[] => {
+	if (Array.isArray(items) && items.length > 0) {
+		return items.map(mapItemToFormItem);
+	}
+	return [{ ...EMPTY_PRODUCT_ITEM }];
+};
+
+const sanitizeItemsForSubmit = (items: FormQuoteItem[]) =>
 	(items || [])
-		.filter((item) => item && item.product_id)
-		.map((item) => ({
-			product_id: Number(item.product_id),
-			quantity: Number(item.quantity) || 1,
-		}));
+		.map((item) => {
+			const quantity = Number(item.quantity) > 0 ? Number(item.quantity) : 1;
+			const isCustom = item.type === 'custom' || !item.product_id;
+
+			if (isCustom) {
+				const name =
+					(item.customer_name ||
+						(item as any).name ||
+						item.product?.name ||
+						'').trim();
+				const unitPrice = Number(item.unit_price);
+				if (!name || !Number.isFinite(unitPrice) || unitPrice <= 0) {
+					return null;
+				}
+				const discount = Number(item.discount_amount || 0);
+				return {
+					product_id: null,
+					customer_name: name,
+					customer_sku: (item.customer_sku || '').trim() || undefined,
+					description: item.description?.trim() || undefined,
+					quantity,
+					unit_price: unitPrice,
+					discount_amount: discount > 0 ? discount : undefined,
+				};
+			}
+
+			if (!item.product_id) {
+				return null;
+			}
+
+			return {
+				product_id: Number(item.product_id),
+				quantity,
+			};
+		})
+		.filter(Boolean);
 
 interface SaleableProduct {
 	id: number;
@@ -218,14 +325,19 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 	}));
 
 	// Valores iniciales del formulario
-	const getInitialValues = (): Omit<IQuote, 'id' | 'created_at' | 'updated_at'> => {
+	const getInitialValues = (): FormQuotationValues => {
+		const today = new Date().toISOString().split('T')[0];
+		const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+			.toISOString()
+			.split('T')[0];
+
 		if (quotation) {
 			return {
 				subsidiary_id: quotation.subsidiary_id,
 				// quote_number: quotation.quote_number ?? '',
 				customer_id: quotation.customer_id ?? 0,
-				quote_date: quotation.quote_date ?? '',
-				expiry_date: quotation.expiry_date ?? quotation.valid_until ?? '',
+				quote_date: quotation.quote_date ?? today,
+				expiry_date: quotation.expiry_date ?? quotation.valid_until ?? expiryDate,
 				status: normalizeQuoteStatusValue(quotation.status) as QuoteStatus,
 				subtotal: quotation.subtotal ?? 0,
 				tax_rate: quotation.tax_rate ?? Number(quotation.tax_percentage ?? 0),
@@ -240,7 +352,7 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 				purchase_order: quotation.purchase_order ?? '',
 				payment_terms: quotation.payment_terms ?? 0,
 				fixed_discount: quotation.fixed_discount ?? 0,
-				items: quotation.items || [],
+				items: ensureFormItems(quotation.items),
 				customer: quotation.customer,
 				items_count: quotation.items_count,
 				can_convert: quotation.can_convert,
@@ -250,11 +362,6 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 		}
 
 		// Valores por defecto para nueva cotización según CU025
-		const today = new Date().toISOString().split('T')[0];
-		const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-			.toISOString()
-			.split('T')[0];
-
 		return {
 			subsidiary_id: 1,
 			// quote_number: `COT-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`,
@@ -274,7 +381,7 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 			total_amount: 0,
 			notes: '',
 			created_by: 1,
-			items: [{ ...EMPTY_ITEM }],
+			items: [{ ...EMPTY_PRODUCT_ITEM }],
 		};
 	};
 
@@ -296,11 +403,11 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 			</ModalHeader>
 
 			<ModalBody>
-				<Formik
+				<Formik<FormQuotationValues>
 					initialValues={getInitialValues()}
 					validationSchema={quotationSchema}
 					onSubmit={(values, { setSubmitting }) => {
-						const sanitizedItems = sanitizeItemsForSubmit(values.items || []);
+						const sanitizedItems = sanitizeItemsForSubmit(values.items);
 						const payload = {
 							...values,
 							items: sanitizedItems as any,
@@ -548,14 +655,22 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 												<CardHeaderChild>
 													<CardTitle>Items de la Cotización</CardTitle>
 												</CardHeaderChild>
-												<CardHeaderChild>
+												<CardHeaderChild className='flex flex-wrap gap-2'>
 													<Button
 														size='sm'
 														variant='outline'
 														icon='plus'
 														type='button'
-														onClick={() => push({ ...EMPTY_ITEM })}>
-														Agregar Item
+														onClick={() => push({ ...EMPTY_PRODUCT_ITEM })}>
+														Agregar producto
+													</Button>
+													<Button
+														size='sm'
+														variant='outline'
+														icon='plus'
+														type='button'
+														onClick={() => push({ ...EMPTY_CUSTOM_ITEM })}>
+														Agregar ítem
 													</Button>
 												</CardHeaderChild>
 											</CardHeader>
@@ -567,165 +682,265 @@ const CreateEditQuotationModal: React.FC<CreateEditQuotationModalProps> = ({
 															: undefined;
 														const maxQuantity =
 															productInfo?.stock ?? undefined;
+														const isCustomItem = item.type === 'custom';
 
 														return (
 															<div
 																key={index}
 																className='rounded-md border border-gray-200 p-4'>
-																<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
-																	<div>
-																		<label className='mb-1 block text-xs font-medium text-gray-500'>
-																			Producto *
-																		</label>
-																		<SelectReact
-																			name={`items.${index}.product_id`}
-																			options={productOptions}
-																			placeholder='Seleccionar...'
-																			value={productOptions.find(
-																				(opt) =>
-																					opt.value ===
-																					String(
-																						item.product_id,
-																					),
-																			)}
-																			onChange={(option) => {
-																				const selectedOption =
-																					option as TSelectOption;
-																				if (
-																					selectedOption &&
-																					!Array.isArray(
-																						selectedOption,
-																					)
-																				) {
-																					const nextProductId =
-																						Number(
-																							selectedOption.value,
-																						) || 0;
-																					setFieldValue(
-																						`items.${index}.product_id`,
-																						nextProductId,
-																					);
-																					const stock =
-																						saleableProductsMap[
-																							nextProductId
-																						]?.stock;
-																					const currentQuantity =
-																						values
-																							.items?.[
-																							index
-																						]
-																							?.quantity ??
-																						1;
-																					if (
-																						stock &&
-																						currentQuantity >
-																							stock
-																					) {
-																						setFieldValue(
-																							`items.${index}.quantity`,
-																							stock,
-																						);
-																					}
-																				}
-																			}}
-																			dimension='sm'
-																		/>
-																		{productInfo && (
-																			<p className='mt-1 text-xs text-gray-500'>
-																				Stock disponible:{' '}
-																				<strong>
-																					{
-																						productInfo.stock
-																					}
-																				</strong>{' '}
-																				· Precio neto:{' '}
-																				{formatCurrency(
-																					productInfo.unit_price_net,
-																				)}{' '}
-																				· Precio bruto:{' '}
-																				{formatCurrency(
-																					productInfo.unit_price_gross,
-																				)}
-																			</p>
-																		)}
-																	</div>
+																<div className='mb-3 flex flex-wrap items-center justify-between gap-2'>
+																	<span className='text-xs font-semibold uppercase text-gray-500'>
+																		{isCustomItem
+																			? 'Ítem libre'
+																			: 'Producto del catálogo'}
+																	</span>
+																	<Button
+																		variant='outline'
+																		color='red'
+																		size='sm'
+																		icon='trash'
+																		type='button'
+																		onClick={() => remove(index)}
+																		isDisable={
+																			(values.items?.length || 0) === 1
+																		}>
+																		Eliminar
+																	</Button>
+																</div>
 
-																	<div>
-																		<label className='mb-1 block text-xs font-medium text-gray-500'>
-																			Cantidad *
-																		</label>
-																		<Input
-																			name={`items.${index}.quantity`}
-																			type='number'
-																			min={1}
-																			max={maxQuantity}
-																			placeholder='1'
-																			value={
-																				item.quantity ?? 1
-																			}
-																			onChange={(e) =>
-																				setFieldValue(
-																					`items.${index}.quantity`,
-																					(() => {
-																						const rawValue =
-																							Number(
-																								e
-																									.target
-																									.value,
+																{isCustomItem ? (
+																	<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
+																		<div className='md:col-span-2'>
+																			<label className='mb-1 block text-xs font-medium text-gray-500'>
+																				Nombre del ítem *
+																			</label>
+																			<Input
+																				name={`items.${index}.customer_name`}
+																				placeholder='Ej: Servicio de instalación'
+																				value={item.customer_name ?? ''}
+																				onChange={(e) =>
+																					setFieldValue(
+																						`items.${index}.customer_name`,
+																						e.target.value,
+																					)
+																				}
+																			/>
+																		</div>
+																		<div>
+																			<label className='mb-1 block text-xs font-medium text-gray-500'>
+																				SKU del cliente
+																			</label>
+																			<Input
+																				name={`items.${index}.customer_sku`}
+																				placeholder='Opcional'
+																				value={item.customer_sku ?? ''}
+																				onChange={(e) =>
+																					setFieldValue(
+																						`items.${index}.customer_sku`,
+																						e.target.value,
+																					)
+																				}
+																			/>
+																		</div>
+																		<div>
+																			<label className='mb-1 block text-xs font-medium text-gray-500'>
+																				Cantidad *
+																			</label>
+																			<Input
+																				name={`items.${index}.quantity`}
+																				type='number'
+																				min={1}
+																				placeholder='1'
+																				value={item.quantity ?? 1}
+																				onChange={(e) =>
+																					setFieldValue(
+																						`items.${index}.quantity`,
+																						(() => {
+																							const rawValue = Number(
+																								e.target.value,
 																							);
-																						const normalizedValue =
-																							Number.isFinite(
-																								rawValue,
-																							) &&
-																							rawValue >
-																								0
+																							return Number.isFinite(rawValue) &&
+																								rawValue > 0
 																								? rawValue
 																								: 1;
+																						})(),
+																					)
+																				}
+																				dimension='sm'
+																			/>
+																		</div>
+																		<div>
+																			<label className='mb-1 block text-xs font-medium text-gray-500'>
+																				Precio neto unitario *
+																			</label>
+																			<Input
+																				name={`items.${index}.unit_price`}
+																				type='number'
+																				min={0}
+																				step='0.01'
+																				placeholder='0'
+																				value={item.unit_price ?? ''}
+																				onChange={(e) =>
+																					setFieldValue(
+																						`items.${index}.unit_price`,
+																						e.target.value === ''
+																							? ''
+																							: Number(e.target.value),
+																					)
+																				}
+																			/>
+																			<p className='mt-1 text-[11px] text-gray-500'>
+																				Ingresa el valor neto (sin IVA).
+																			</p>
+																		</div>
+																		<div>
+																			<label className='mb-1 block text-xs font-medium text-gray-500'>
+																				Descuento (neto)
+																			</label>
+																			<Input
+																				name={`items.${index}.discount_amount`}
+																				type='number'
+																				min={0}
+																				step='0.01'
+																				placeholder='0'
+																				value={item.discount_amount ?? ''}
+																				onChange={(e) =>
+																					setFieldValue(
+																						`items.${index}.discount_amount`,
+																						e.target.value === ''
+																							? ''
+																							: Number(e.target.value),
+																					)
+																				}
+																			/>
+																		</div>
+																		<div className='md:col-span-3'>
+																			<label className='mb-1 block text-xs font-medium text-gray-500'>
+																				Detalle / descripción
+																			</label>
+																			<Textarea
+																				name={`items.${index}.description`}
+																				rows={2}
+																				placeholder='Información adicional para el ítem'
+																				value={item.description ?? ''}
+																				onChange={(e) =>
+																					setFieldValue(
+																						`items.${index}.description`,
+																						e.target.value,
+																					)
+																				}
+																			/>
+																		</div>
+																	</div>
+																) : (
+																	<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+																		<div>
+																			<label className='mb-1 block text-xs font-medium text-gray-500'>
+																				Producto *
+																			</label>
+																			<SelectReact
+																				name={`items.${index}.product_id`}
+																				options={productOptions}
+																				placeholder='Seleccionar...'
+																				value={productOptions.find(
+																					(opt) =>
+																						opt.value ===
+																						String(item.product_id),
+																				)}
+																				onChange={(option) => {
+																					const selectedOption =
+																						option as TSelectOption;
+																					if (
+																						selectedOption &&
+																						!Array.isArray(selectedOption)
+																					) {
+																						const nextProductId =
+																							Number(selectedOption.value) || 0;
+																						setFieldValue(
+																							`items.${index}.product_id`,
+																							nextProductId,
+																						);
+																						setFieldValue(
+																							`items.${index}.type`,
+																							'product',
+																						);
+																						const stock =
+																							saleableProductsMap[nextProductId]?.stock;
+																						const currentQuantity =
+																							values.items?.[index]?.quantity ?? 1;
 																						if (
-																							maxQuantity &&
-																							normalizedValue >
-																								maxQuantity
+																							stock &&
+																							currentQuantity > stock
 																						) {
-																							return maxQuantity;
+																							setFieldValue(
+																								`items.${index}.quantity`,
+																								stock,
+																							);
 																						}
-																						return normalizedValue;
-																					})(),
-																				)
-																			}
-																			dimension='sm'
-																		/>
-																	</div>
+																					}
+																				}}
+																				dimension='sm'
+																			/>
+																			{productInfo && (
+																				<p className='mt-1 text-xs text-gray-500'>
+																					Stock disponible:{' '}
+																					<strong>
+																						{productInfo.stock}
+																					</strong>{' '}
+																					· Precio neto:{' '}
+																					{formatCurrency(
+																						productInfo.unit_price_net,
+																					)}{' '}
+																					· Precio bruto:{' '}
+																					{formatCurrency(
+																						productInfo.unit_price_gross,
+																					)}
+																				</p>
+																			)}
+																		</div>
 
-																	<div className='flex items-end'>
-																		<Button
-																			variant='outline'
-																			color='red'
-																			size='sm'
-																			icon='trash'
-																			type='button'
-																			onClick={() =>
-																				remove(index)
-																			}
-																			isDisable={
-																				(values.items
-																					?.length ||
-																					0) === 1
-																			}>
-																			Eliminar
-																		</Button>
+																		<div>
+																			<label className='mb-1 block text-xs font-medium text-gray-500'>
+																				Cantidad *
+																			</label>
+																			<Input
+																				name={`items.${index}.quantity`}
+																				type='number'
+																				min={1}
+																				max={maxQuantity}
+																				placeholder='1'
+																				value={item.quantity ?? 1}
+																				onChange={(e) =>
+																					setFieldValue(
+																						`items.${index}.quantity`,
+																						(() => {
+																							const rawValue = Number(
+																								e.target.value,
+																							);
+																							const normalizedValue =
+																								Number.isFinite(rawValue) &&
+																									rawValue > 0
+																									? rawValue
+																									: 1;
+																							if (
+																								maxQuantity &&
+																								normalizedValue > maxQuantity
+																							) {
+																								return maxQuantity;
+																							}
+																							return normalizedValue;
+																						})(),
+																					)
+																				}
+																				dimension='sm'
+																			/>
+																		</div>
+
 																	</div>
-																</div>
+																)}
 															</div>
 														);
 													})}
-
-													<Button
-														variant='outline'
-														type='button'
-														onClick={() => push({ ...EMPTY_ITEM })}
-														icon='plus'>
-														Agregar Ítem
-													</Button>
 												</div>
 											</CardBody>
 										</>

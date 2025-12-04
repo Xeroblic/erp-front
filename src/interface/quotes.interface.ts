@@ -23,10 +23,13 @@ export interface QuoteItem {
 	product_id?: number | null;
 	quantity: number;
 	unit_price: number; // NETO
+	subtotal?: number | null;
 	total_net?: number;
 	customer_sku?: string | null;
 	customer_name?: string | null;
+	name?: string | null;
 	description?: string | null;
+	product_detail?: string | null;
 	notes?: string | null;
 	discount_amount?: number | null;
 	discount_percentage?: number | null;
@@ -35,6 +38,7 @@ export interface QuoteItem {
 	terms_conditions?: Record<string, any>;
 	created_at?: string;
 	updated_at?: string;
+	type?: string;
 }
 
 export interface QuoteTotals {

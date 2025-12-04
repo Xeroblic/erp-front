@@ -40,13 +40,25 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 	}, [quote.subsidiary_id, company.name, dispatch, state.subEmpresa.loading, state.subEmpresa.detalle?.id]);
 
 	const customer = getCustomerInfo((quote as any).customer);
-	const items = (quote.items as IQuoteItem[]) || [];
+	const items = Array.isArray(quote.items) ? (quote.items as IQuoteItem[]) : [];
 
-	// Totales desde el quote (NO calcular, vienen del backend)
-	const netTotal = Number((quote as any).subtotal || 0);
-	const discount = Number((quote as any).discount_amount || 0);
-	const tax = Number((quote as any).tax_amount || 0);
-	const total = Number((quote as any).total_amount || 0);
+	// Totales desde el endpoint principal (sin recalcular)
+	const netTotal = Number(
+		(quote as any).subtotal ??
+			(quote as any).total_net ??
+			0,
+	);
+	const discount = Number(
+		(quote as any).discount_amount ??
+			(quote as any).fixed_discount ??
+			0,
+	);
+	const tax = Number(
+		(quote as any).tax_amount ??
+			(quote as any).total_tax ??
+			0,
+	);
+	const total = Number((quote as any).total_amount ?? 0);
 	const paymentMethodsLabel = getPaymentMethodsLabel(company.allowedPaymentMethods as string[]);
 
 	return (
@@ -142,33 +154,45 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 				</div>
 
 				{/* Rows */}
-				{items.map((item, idx) => {
-					const sku = getProductSku(item);
-					const name = getProductName(item);
-					const detail = getProductDetail(item);
-					const quantity = Number((item as any).quantity || 0);
-					const unitPrice = resolveUnitPrice(item);
-					const lineTotal = resolveLineTotal(item);
+				{items.length === 0 ? (
+					<div className='border-b border-gray-200 py-6 text-center text-[9px] text-gray-500'>
+						No hay ítems asociados a esta cotización.
+					</div>
+				) : (
+					items.map((item, idx) => {
+						const sku = getProductSku(item);
+						const name = getProductName(item);
+						const detail = getProductDetail(item);
+						const quantity = Number((item as any).quantity || 0);
+						const unitPrice = resolveUnitPrice(item);
+						const lineTotal = resolveLineTotal(item);
+						const itemDiscount = Number(item.discount_amount || 0);
 
-					return (
-						<div key={idx} className='flex border-b border-gray-200 py-1.5 text-[9px] text-gray-900' style={{ borderColor: '#e5e7eb', color: '#111827' }}>
-							<div className='w-[8%] text-center'>{quantity}</div>
-							<div className='w-[17%] pl-1'>{sku}</div>
-							<div className='w-[45%] pl-1'>
-								<p className='font-bold'>{name}</p>
-								{detail && (
-									<p className='mt-0.5 text-[7px] text-gray-500' style={{ color: '#6b7280' }}>{detail}</p>
-								)}
+						return (
+							<div key={idx} className='flex border-b border-gray-200 py-1.5 text-[9px] text-gray-900' style={{ borderColor: '#e5e7eb', color: '#111827' }}>
+								<div className='w-[8%] text-center'>{quantity}</div>
+								<div className='w-[17%] pl-1'>{sku}</div>
+								<div className='w-[45%] pl-1'>
+									<p className='font-bold'>{name}</p>
+									{detail && (
+										<p className='mt-0.5 text-[7px] text-gray-500' style={{ color: '#6b7280' }}>{detail}</p>
+									)}
+									{itemDiscount > 0 && (
+										<p className='mt-0.5 text-[7px] font-semibold text-rose-500'>
+											Descuento: - {formatCurrency(itemDiscount)}
+										</p>
+									)}
+								</div>
+								<div className='w-[15%] pr-1 text-right'>
+									{formatCurrency(unitPrice)}
+								</div>
+								<div className='w-[15%] pr-1 text-right font-bold'>
+									{formatCurrency(lineTotal)}
+								</div>
 							</div>
-							<div className='w-[15%] pr-1 text-right'>
-								{formatCurrency(unitPrice)}
-							</div>
-							<div className='w-[15%] pr-1 text-right font-bold'>
-								{formatCurrency(lineTotal)}
-							</div>
-						</div>
-					);
-				})}
+						);
+					})
+				)}
 			</div>
 
 			{/* Totales */}

@@ -72,6 +72,7 @@ export const getCompanyInfo = (quote: IQuote, state: any) => {
 
     const logoUrl = logoRaw && String(logoRaw).startsWith('data:')
         ? logoRaw
+
         : ensureAbsoluteUrl(logoRaw || undefined) || logoRaw || null;
 
     // DATOS BANCARIOS
@@ -148,11 +149,29 @@ export const getCustomerInfo = (customer: any) => {
     };
 };
 
-export const resolveUnitPrice = (item: any): number => Number(item.unit_price ?? 0);
-export const resolveLineTotal = (item: any): number => Number(item.subtotal ?? 0);
-export const getProductSku = (item: any): string => item?.product?.sku || '—';
-export const getProductName = (item: any): string => item?.product?.name || 'Producto sin nombre';
-export const getProductDetail = (item: any): string | null => item?.product_detail || null;
+export const resolveUnitPrice = (item: any): number => {
+    const raw =
+        item?.unit_price ??
+        item?.unit_price_net ??
+        item?.unitPrice ??
+        item?.product?.unit_price ??
+        0;
+    return Number(raw) || 0;
+};
+export const resolveLineTotal = (item: any): number => {
+    const raw =
+        item?.subtotal ??
+        item?.total_net ??
+        item?.total ??
+        (Number(item?.quantity ?? 0) * resolveUnitPrice(item));
+    return Number(raw) || 0;
+};
+export const getProductSku = (item: any): string =>
+    item?.customer_sku || item?.sku || item?.product?.sku || '—';
+export const getProductName = (item: any): string =>
+    item?.customer_name || item?.name || item?.product?.name || 'Producto sin nombre';
+export const getProductDetail = (item: any): string | null =>
+    item?.product_detail || item?.description || item?.notes || null;
 
 export const formatCurrency = (val: unknown): string => {
     return new Intl.NumberFormat('es-CL', {

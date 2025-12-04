@@ -159,13 +159,25 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 	}
 
 
-	const items = quote.items || [];
+	const items = Array.isArray(quote.items) ? quote.items : [];
 	const customer = getCustomerInfo((quote as any).customer);
 
-	const netTotal = Number((quote as any).subtotal || 0);
-	const discount = Number((quote as any).discount_amount || 0);
-	const tax = Number((quote as any).tax_amount || 0);
-	const total = Number((quote as any).total_amount || 0);
+	const netTotal = Number(
+		(quote as any).subtotal ??
+			(quote as any).total_net ??
+			0,
+	);
+	const discount = Number(
+		(quote as any).discount_amount ??
+			(quote as any).fixed_discount ??
+			0,
+	);
+	const tax = Number(
+		(quote as any).tax_amount ??
+			(quote as any).total_tax ??
+			0,
+	);
+	const total = Number((quote as any).total_amount ?? 0);
 	const paymentMethodsLabel = getPaymentMethodsLabel(company.allowedPaymentMethods as string[]);
 
 	return (
@@ -265,6 +277,7 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 						const quantity = Number((item as any).quantity || 0);
 						const unitPrice = resolveUnitPrice(item);
 						const lineTotal = resolveLineTotal(item);
+						const itemDiscount = Number(item.discount_amount || 0);
 
 						return (
 							<View key={index} style={styles.tableRow}>
@@ -275,6 +288,11 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 									{detail && (
 										<Text style={{ fontSize: 7, color: '#6b7280' }}>
 											{detail}
+										</Text>
+									)}
+									{itemDiscount > 0 && (
+										<Text style={{ fontSize: 7, color: '#e11d48' }}>
+											Descuento: - {formatCurrency(itemDiscount)}
 										</Text>
 									)}
 								</View>
