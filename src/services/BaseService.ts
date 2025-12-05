@@ -9,11 +9,7 @@ interface CustomAxiosRequestConfig<D = any> extends InternalAxiosRequestConfig<D
 }
 
 // --- Variables de Control (Semáforo y Cancelación) ---
-let isRefreshing = false;
-const failedQueue: Array<{
-	resolve: (token: string) => void;
-	reject: (error: any) => void;
-}> = [];
+let refreshPromise: Promise<string> | null = null;
 
 let abortController = new AbortController();
 
@@ -36,18 +32,55 @@ const BaseService = axios.create({
 
 // --- Helpers ---
 
-const processQueue = (error: any, token: string | null = null) => {
-	while (failedQueue.length) {
-		const waiter = failedQueue.shift();
-		if (!waiter) continue;
-
-		if (error) {
-			waiter.reject(error);
-		} else {
-			waiter.resolve(token as string);
-		}
+const performTokenRefresh = (forcedToken?: string | null): Promise<string> => {
+	if (refreshPromise) {
+		return refreshPromise;
 	}
+
+	refreshPromise = (async () => {
+		try {
+			const currentToken =
+				forcedToken ?? tokenManager.getAccessToken() ?? store.getState().auth.access;
+			if (!currentToken || typeof currentToken !== 'string') {
+				throw new Error('No hay token disponible para refrescar');
+			}
+			const sanitizedToken = currentToken.replace(/^Bearer\s+/i, '');
+
+			const { data } = await axios.post(
+				`${API_URL}/refresh`,
+				{},
+				{
+					headers: { Authorization: `Bearer ${sanitizedToken}` },
+				},
+			);
+
+			const newToken = data.access_token || data.token || data.access;
+
+			if (!newToken) {
+				throw new Error('No se recibió token en el refresh');
+			}
+
+			tokenManager.setAccessToken(newToken);
+			store.dispatch(setToken({ access: newToken }));
+
+			BaseService.defaults.headers.common.Authorization = `Bearer ${newToken}`;
+
+			return newToken;
+		} catch (refreshError) {
+			store.dispatch(logout());
+			tokenManager.clearTokens();
+			cancelAllRequests();
+			throw refreshError;
+		} finally {
+			refreshPromise = null;
+		}
+	})();
+
+	return refreshPromise;
 };
+
+export const triggerTokenRefresh = (forcedToken?: string | null) =>
+	performTokenRefresh(forcedToken);
 
 // --- Interceptor de Request ---
 BaseService.interceptors.request.use(
@@ -60,15 +93,23 @@ BaseService.interceptors.request.use(
 		// 💡 Reincorporación: Asignar la señal de cancelación
 		config.signal = abortController.signal;
 
-		const state = store.getState();
-		// Prioridad: TokenManager (memoria) -> Redux (persistencia)
-		const token = tokenManager.getAccessToken() ?? state.auth.access;
+		const applyTokenToConfig = (token?: string | null) => {
+			if (token && config.headers) {
+				config.headers.Authorization = `Bearer ${token}`;
+			}
+			return config;
+		};
 
-		if (token && config.headers) {
-			config.headers.Authorization = `Bearer ${token}`;
+		if (refreshPromise) {
+			return refreshPromise
+				.then((token) => applyTokenToConfig(token))
+				.catch((error) => Promise.reject(error));
 		}
 
-		return config;
+		const state = store.getState();
+		const token = tokenManager.getAccessToken() ?? state.auth.access;
+
+		return applyTokenToConfig(token);
 	},
 	(error) => Promise.reject(error),
 );
@@ -97,50 +138,10 @@ BaseService.interceptors.response.use(
 				return Promise.reject(error);
 			}
 
-			// 🚦 SI YA SE ESTÁ REFRESCANDO: Ponemos la petición en cola
-			if (isRefreshing) {
-				return new Promise<string>((resolve, reject) => {
-					failedQueue.push({ resolve, reject });
-				})
-					.then((token) => {
-						// Reintentar la petición original con el nuevo token
-						if (originalRequest.headers) {
-							originalRequest.headers.Authorization = `Bearer ${token}`;
-						}
-						return BaseService(originalRequest);
-					})
-					.catch((err) => Promise.reject(err));
-			}
-
-			// 🚩 COMIENZO DEL REFRESH (Bloqueamos el semáforo)
 			originalRequest._retry = true;
-			isRefreshing = true;
 
 			try {
-				const currentToken = tokenManager.getAccessToken() ?? store.getState().auth.access;
-
-				// Llamada de Refresh
-				const { data } = await axios.post(
-					`${API_URL}/refresh`,
-					{},
-					{
-						headers: { Authorization: `Bearer ${currentToken}` },
-					},
-				);
-
-				const newToken = data.access_token || data.token || data.access;
-
-				if (!newToken) {
-					throw new Error('No se recibió token en el refresh');
-				}
-
-				// Actualizar Estados
-				tokenManager.setAccessToken(newToken);
-				store.dispatch(setToken({ access: newToken }));
-
-				BaseService.defaults.headers.common.Authorization = `Bearer ${newToken}`;
-
-				processQueue(null, newToken);
+				const newToken = await performTokenRefresh();
 
 				// Reintentar la petición original que falló
 				if (originalRequest.headers) {
@@ -148,16 +149,7 @@ BaseService.interceptors.response.use(
 				}
 				return BaseService(originalRequest);
 			} catch (refreshError) {
-				// Si falla el refresh, rechazamos toda la cola y cerramos sesión
-				processQueue(refreshError, null);
-				store.dispatch(logout());
-				tokenManager.clearTokens();
-				// 💡 Aseguramos que el componente que estaba pendiente se detenga
-				cancelAllRequests();
 				return Promise.reject(refreshError);
-			} finally {
-				// Siempre liberamos el semáforo
-				isRefreshing = false;
 			}
 		}
 

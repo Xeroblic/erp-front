@@ -20,6 +20,7 @@ import {
 	fetchNotifications,
 } from '@/store/slices/notifications/notificationsSlice';
 import useDeviceScreen from '@/hooks/useDeviceScreen';
+import tokenManager from '@/services/auth/tokenManager';
 
 const MIN_REFRESH_INTERVAL_MS = 30000;
 
@@ -98,6 +99,7 @@ const NotificationPartial = () => {
 	const { items, unreadCount } = useAppSelector(
 		(s) => s.notifications ?? { items: [], unreadCount: 0 },
 	);
+	const { isAuthenticated, access } = useAppSelector((s) => s.auth);
 	const { width } = useDeviceScreen();
 	const isMobile = (width ?? 0) < 768;
 	const [isModalOpen, setIsModalOpen] = useState(false);
@@ -106,6 +108,9 @@ const NotificationPartial = () => {
 	const lastFetchTsRef = useRef(0);
 	const refresh = useCallback(
 		(force = false) => {
+			if (!isAuthenticated) return;
+			const currentToken = tokenManager.getAccessToken() ?? access;
+			if (!currentToken) return;
 			if (isFetchingRef.current) return;
 			if (!force && isSseReady()) return;
 			const now = Date.now();
@@ -118,11 +123,12 @@ const NotificationPartial = () => {
 					isFetchingRef.current = false;
 				});
 		},
-		[dispatch],
+		[dispatch, isAuthenticated, access],
 	);
 
 	// Prefetch + polling cada 60s + refresh en focus/visibility para mantener el badge al dia
 	useEffect(() => {
+		if (!isAuthenticated) return;
 		if (!items.length) refresh(true);
 		const iv = window.setInterval(() => refresh(), 60000);
 		const onFocus = () => refresh();
@@ -136,16 +142,17 @@ const NotificationPartial = () => {
 			window.removeEventListener('focus', onFocus);
 			document.removeEventListener('visibilitychange', onVis);
 		};
-	}, [items.length, refresh]);
+	}, [items.length, refresh, isAuthenticated]);
 
 	const [tab, setTab] = useState<'unread' | 'read' | 'all'>('all');
 	const openPanel = useCallback(() => {
+		if (!isAuthenticated) return;
 		setTab('all');
 		dispatch(fetchNotifications({ per_page: 20 }));
 		if (isMobile) {
 			setIsModalOpen(true);
 		}
-	}, [dispatch, isMobile]);
+	}, [dispatch, isMobile, isAuthenticated]);
 
 	const isRead = useCallback(
 		(n: any) => (n.status === 'read' || !!n.read_at) && n.status !== 'ack',

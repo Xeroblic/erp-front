@@ -203,7 +203,7 @@ export const getProductSku = (item: any): string => item?.customer_sku || item?.
 export const getProductName = (item: any): string =>
 	item?.product?.name || item?.name || 'Producto sin nombre';
 export const getProductDetail = (item: any): string | null =>
-	item?.product_detail || item?.notes || 'tes de product detail';
+	item?.product_detail || item?.notes || '';
 
 export const formatCurrency = (val: unknown): string => {
 	const amount = Number(val);
