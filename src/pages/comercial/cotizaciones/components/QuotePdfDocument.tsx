@@ -300,8 +300,8 @@ interface QuotePdfDocumentProps {
 	logoBase64?: string | null;
 }
 
-const ITEMS_PER_PAGE = 3;
-const ROWS_PER_PAGE = 3;
+const ITEMS_PER_PAGE = 15;
+const ROWS_PER_PAGE = 15;
 
 const paginateItems = (items: any[], perPage: number): any[][] => {
 	if (!items || items.length === 0) return [[]];
