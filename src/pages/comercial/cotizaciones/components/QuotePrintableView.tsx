@@ -25,17 +25,23 @@ interface QuotePrintableViewProps {
 
 const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 	const dispatch = useAppDispatch();
-	const state = useSelector((state: RootState) => state);
+	// Optimizamos el selector para evitar re-renders innecesarios por cambios en otras partes del estado
+	const subEmpresa = useSelector((state: RootState) => state.subEmpresa);
+	const personalizacion = useSelector((state: RootState) => state.personalizacion);
+	
+	// Construimos un objeto de estado parcial que satisface lo que necesita getCompanyInfo
+	// getCompanyInfo usa: state.subEmpresa y state.personalizacion
+	const stateForMapper = { subEmpresa, personalizacion };
 
 	// Usar helpers centralizados para obtener datos
-	const company = getCompanyInfo(quote, state);
+	const company = getCompanyInfo(quote, stateForMapper);
 
 	// Efecto para cargar datos de la subsidiaria si faltan
 	useEffect(() => {
 		if (quote.subsidiary_id && (!company.name || company.name === 'EcoTI')) {
 			// Si el nombre es genérico o vacío, intentamos cargar el detalle
 			// Validamos que no estemos ya cargando para evitar loops (aunque el thunk suele manejarlo)
-			if (!state.subEmpresa.loading && state.subEmpresa.detalle?.id !== quote.subsidiary_id) {
+			if (!subEmpresa.loading && subEmpresa.detalle?.id !== quote.subsidiary_id) {
 				dispatch(fetchSubsidiariaDetail(quote.subsidiary_id));
 			}
 		}
@@ -43,8 +49,8 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 		quote.subsidiary_id,
 		company.name,
 		dispatch,
-		state.subEmpresa.loading,
-		state.subEmpresa.detalle?.id,
+		subEmpresa.loading,
+		subEmpresa.detalle?.id,
 	]);
 
 	const customer = getCustomerInfo((quote as any).customer);
@@ -140,6 +146,9 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 					</div>
 				</div>
 				<div className='space-y-1 px-3 py-2 text-[8px]'>
+					<p>
+						<span className='font-semibold'>Nombre Empresa:</span> {customer.name}
+					</p>
 					<p>
 						<span className='font-semibold'>RUT:</span> {customer.rut}
 					</p>

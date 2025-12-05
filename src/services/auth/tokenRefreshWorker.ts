@@ -55,8 +55,19 @@ const backgroundRefresh = async (store: Store<RootState>) => {
 		return;
 	}
 
+	// Si el token ya expiró por completo, no intentamos refrescar en background,
+	// dejamos que el interceptor maneje el 401 o el usuario haga login.
+	if (!tokenManager.isTokenValid(currentToken)) {
+		clearScheduledRefresh();
+		// Opcional: Logout proactivo si sabemos que está expirado
+		// store.dispatch(logout());
+		// tokenManager.clearTokens();
+		return;
+	}
+
 	if (!tokenManager.canRefresh(currentToken)) {
 		clearScheduledRefresh();
+		// Si no se puede refrescar (porque pasó el tiempo de vida del refresh), logout.
 		store.dispatch(logout());
 		tokenManager.clearTokens();
 		return;
@@ -72,6 +83,8 @@ const backgroundRefresh = async (store: Store<RootState>) => {
 			// eslint-disable-next-line no-console
 			console.error('Error en el refresh automático del token', error);
 		}
+		// No hacemos logout aquí automáticamente para ser resilientes a fallos de red transitorios.
+		// El interceptor se encargará si una petición real falla con 401.
 	}
 };
 

@@ -210,7 +210,7 @@ export const formatCurrency = (val: unknown): string => {
 	if (!Number.isFinite(amount)) {
 		return '$0';
 	}
-	const decimals = Number.isInteger(amount) ? 0 : 2;
+	const decimals = Number.isInteger(amount) ? 0 : 0;
 	const formatted = Math.abs(amount).toLocaleString('es-CL', {
 		minimumFractionDigits: decimals,
 		maximumFractionDigits: decimals,

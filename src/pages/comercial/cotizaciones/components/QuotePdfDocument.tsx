@@ -401,6 +401,10 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 							<View style={styles.companyOrderBody}>
 								<View style={styles.companyOrderColLeft}>
 									<View style={styles.infoRow}>
+										<Text style={styles.infoLabel}>Nombre Empresa: </Text>
+										<Text style={styles.infoValue}>{customer.name}</Text>
+									</View>
+									<View style={styles.infoRow}>
 										<Text style={styles.infoLabel}>RUT: </Text>
 										<Text style={styles.infoValue}>{customer.rut}</Text>
 									</View>

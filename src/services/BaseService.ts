@@ -133,7 +133,6 @@ BaseService.interceptors.response.use(
 			) {
 				store.dispatch(logout());
 				tokenManager.clearTokens();
-				// 💡 Aseguramos que el componente que estaba pendiente se detenga
 				cancelAllRequests();
 				return Promise.reject(error);
 			}
@@ -141,14 +140,18 @@ BaseService.interceptors.response.use(
 			originalRequest._retry = true;
 
 			try {
+				// Intentar refrescar el token
 				const newToken = await performTokenRefresh();
 
-				// Reintentar la petición original que falló
+				// Actualizar el header de autorización en la petición original
 				if (originalRequest.headers) {
 					originalRequest.headers.Authorization = `Bearer ${newToken}`;
 				}
+
+				// Reintentar la petición original
 				return BaseService(originalRequest);
 			} catch (refreshError) {
+				// Si el refresh falla, ya se manejó el logout en performTokenRefresh
 				return Promise.reject(refreshError);
 			}
 		}

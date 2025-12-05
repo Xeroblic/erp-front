@@ -307,14 +307,14 @@ const Modal: FC<IModalProps> = (props) => {
 		// @ts-ignore
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 		if (ref.current && !ref.current.contains(event.target) && isStaticBackdrop) {
-			if (isStaticBackdropAnimation) {
+			if (isStaticBackdropAnimation && refModal.current) {
 				// Added condition
 				// @ts-ignore
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
 				refModal.current.classList.add('!scale-105');
 				// @ts-ignore
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-return
-				setTimeout(() => refModal.current.classList.remove('!scale-105'), 300);
+				setTimeout(() => refModal.current?.classList.remove('!scale-105'), 300);
 			}
 		}
 	};

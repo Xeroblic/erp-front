@@ -152,28 +152,36 @@ const Chart: FC<IChartProps> = (props) => {
 	}, [defaultOptions, options, type, sanitizedWidth, sanitizedHeight]);
 
 	useEffect(() => {
-		if (!chartRef.current) return;
-		if (chartInstanceRef.current) {
-			try {
-				chartInstanceRef.current.destroy();
-			} catch (error) {
-				console.error('No se pudo limpiar el gráfico previo', error);
-			} finally {
-				chartInstanceRef.current = null;
+		let animationFrameId: number;
+
+		const initChart = () => {
+			if (!chartRef.current) return;
+			if (chartInstanceRef.current) {
+				try {
+					chartInstanceRef.current.destroy();
+				} catch (error) {
+					console.error('No se pudo limpiar el gráfico previo', error);
+				} finally {
+					chartInstanceRef.current = null;
+				}
 			}
-		}
 
-		const instance = new ApexCharts(chartRef.current, {
-			...buildOptions,
-			series,
-		});
+			const instance = new ApexCharts(chartRef.current, {
+				...buildOptions,
+				series,
+			});
 
-		chartInstanceRef.current = instance;
-		instance.render().catch((error) => {
-			console.error('No se pudo renderizar el gráfico', error);
-		});
+			chartInstanceRef.current = instance;
+			instance.render().catch((error) => {
+				console.error('No se pudo renderizar el gráfico', error);
+			});
+		};
+
+		// Usamos requestAnimationFrame para asegurar que el DOM esté listo y tenga dimensiones
+		animationFrameId = requestAnimationFrame(initChart);
 
 		return () => {
+			cancelAnimationFrame(animationFrameId);
 			if (!chartInstanceRef.current) return;
 			try {
 				chartInstanceRef.current.destroy();

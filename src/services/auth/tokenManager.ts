@@ -2,7 +2,7 @@
 let memoryAccessToken: string | null = null;
 let lastActivityAt: number | null = null;
 
-const REFRESH_TTL_MINUTES = Number(import.meta.env.VITE_JWT_REFRESH_TTL_MINUTES || '0');
+const REFRESH_TTL_MINUTES = Number(import.meta.env.VITE_JWT_REFRESH_TTL_MINUTES || '1440');
 
 export const tokenManager = {
 	// --- GETTERS ---
