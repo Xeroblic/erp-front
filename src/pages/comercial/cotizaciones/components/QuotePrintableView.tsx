@@ -245,30 +245,6 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 				})}
 			</div>
 
-			{/* Totales */}
-			<div className='mb-5 flex justify-end text-gray-900' style={{ color: '#111827' }}>
-				<div className='w-[220px] border-2 border-gray-500'>
-					<div className='flex justify-between border-b border-gray-400 px-2 py-1 text-[9px]'>
-						<span className='font-bold uppercase'>Neto</span>
-						<span>{formatCurrency(netTotal)}</span>
-					</div>
-					{discount > 0 && (
-						<div className='flex justify-between border-b border-gray-300 px-2 py-1 text-[9px]'>
-							<span className='font-bold uppercase'>Descuento</span>
-							<span>- {formatCurrency(discount)}</span>
-						</div>
-					)}
-					<div className='flex justify-between border-b border-gray-300 px-2 py-1 text-[9px]'>
-						<span className='font-bold uppercase'>IVA</span>
-						<span>{formatCurrency(tax)}</span>
-					</div>
-					<div className='flex justify-between bg-gray-100 px-2 py-1 text-[10px] font-bold'>
-						<span className='uppercase'>Total</span>
-						<span>{formatCurrency(total)}</span>
-					</div>
-				</div>
-			</div>
-
 			{/* Footer */}
 			<div
 				className='border-t border-gray-200 pt-2.5 text-gray-900'
@@ -329,6 +305,31 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 								))}
 							</div>
 						)}
+					</div>
+					{/* Totales */}
+					<div
+						className='mb-5 flex justify-end text-gray-900'
+						style={{ color: '#111827' }}>
+						<div className='w-[220px] border-2 border-gray-500'>
+							<div className='flex justify-between border-b border-gray-400 px-2 py-1 text-[9px]'>
+								<span className='font-bold uppercase'>Neto</span>
+								<span>{formatCurrency(netTotal)}</span>
+							</div>
+							{discount > 0 && (
+								<div className='flex justify-between border-b border-gray-300 px-2 py-1 text-[9px]'>
+									<span className='font-bold uppercase'>Descuento</span>
+									<span>- {formatCurrency(discount)}</span>
+								</div>
+							)}
+							<div className='flex justify-between border-b border-gray-300 px-2 py-1 text-[9px]'>
+								<span className='font-bold uppercase'>IVA</span>
+								<span>{formatCurrency(tax)}</span>
+							</div>
+							<div className='flex justify-between bg-gray-100 px-2 py-1 text-[10px] font-bold'>
+								<span className='uppercase'>Total</span>
+								<span>{formatCurrency(total)}</span>
+							</div>
+						</div>
 					</div>
 				</div>
 
