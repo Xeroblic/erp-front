@@ -49,7 +49,7 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 
 	const customer = getCustomerInfo((quote as any).customer);
 	const items = Array.isArray(quote.items) ? quote.items : [];
-	const minRows = 15;
+	const minRows = 8;
 	const rows = Array.from(
 		{ length: Math.max(items.length, minRows) },
 		(_, idx) => items[idx] ?? null,

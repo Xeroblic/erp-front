@@ -15,6 +15,10 @@ import {
 	getPaymentMethodsLabel,
 } from './quote-data-mapper';
 
+const HEADER_HEIGHT = 90;
+const FOOTER_HEIGHT = 150;
+const CONTENT_MARGIN = 8;
+
 const styles = StyleSheet.create({
 	page: {
 		padding: 36,
@@ -24,10 +28,16 @@ const styles = StyleSheet.create({
 		lineHeight: 1.3,
 		flexDirection: 'column',
 	},
+	header: {
+		position: 'absolute',
+		top: 36,
+		left: 36,
+		right: 36,
+	},
 	headerRow: {
 		flexDirection: 'row',
 		justifyContent: 'space-between',
-		marginBottom: 12,
+		marginBottom: 6,
 	},
 	headerLeft: {
 		width: '60%',
@@ -150,8 +160,8 @@ const styles = StyleSheet.create({
 	tableOuter: {
 		borderWidth: 2,
 		borderColor: '#374151',
-		marginBottom: 10,
-		minHeight: 360, // asegura que la tabla tenga altura constante
+		marginBottom: 6,
+		minHeight: 160, // asegura que la tabla tenga altura constante
 	},
 	tableHeader: {
 		flexDirection: 'row',
@@ -182,6 +192,14 @@ const styles = StyleSheet.create({
 	descName: { fontWeight: 'bold', fontSize: 9 },
 	descDetail: { fontSize: 7, color: '#6b7280' },
 	descDiscount: { fontSize: 7, color: '#e11d48', fontWeight: 'bold' },
+
+	content: {
+		marginTop: HEADER_HEIGHT + CONTENT_MARGIN,
+		marginBottom: FOOTER_HEIGHT + CONTENT_MARGIN,
+		paddingTop: CONTENT_MARGIN,
+		paddingBottom: CONTENT_MARGIN,
+		flexGrow: 1,
+	},
 
 	// TOTALES
 	totalsWrapper: {
@@ -224,7 +242,13 @@ const styles = StyleSheet.create({
 	},
 
 	// FOOTER
-	footer: {
+	fixedFooter: {
+		position: 'absolute',
+		left: 36,
+		right: 36,
+		bottom: 36,
+	},
+	footerContent: {
 		borderTopWidth: 1,
 		borderTopColor: '#e5e7eb',
 		paddingTop: 4,
@@ -276,8 +300,8 @@ interface QuotePdfDocumentProps {
 	logoBase64?: string | null;
 }
 
-const ITEMS_PER_PAGE = 12; // cuántos ítems reales caben por página
-const ROWS_PER_PAGE = 12; // cuántas filas quieres ver (incluyendo vacías)
+const ITEMS_PER_PAGE = 3;
+const ROWS_PER_PAGE = 3;
 
 const paginateItems = (items: any[], perPage: number): any[][] => {
 	if (!items || items.length === 0) return [[]];
@@ -322,49 +346,49 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 				return (
 					<Page key={pageIndex} size='LETTER' style={styles.page}>
 						{/* HEADER */}
-						<View style={styles.headerRow}>
-							<View style={styles.headerLeft}>
-								<View style={styles.logoBox}>
-									{logoSrc ? (
-										<Image style={styles.logo} src={logoSrc} />
-									) : (
-										<Text
-											style={{
-												fontSize: 10,
-												fontWeight: 'bold',
-												textAlign: 'center',
-											}}>
-											{company.name}
-										</Text>
-									)}
-								</View>
-								<View style={styles.companyInfo}>
-									<Text style={styles.companyName}>{company.name}</Text>
-									<Text>Dirección: {company.fullAddress || '—'}</Text>
-									<Text>Email: {company.email || '—'}</Text>
-									<Text>Giro: {company.activity || '—'}</Text>
-									<Text>Servicios Computacionales</Text>
-								</View>
-							</View>
-
-							<View style={styles.rutBoxContainer}>
-								<View style={styles.rutBox}>
-									<Text style={styles.rutText}>R.U.T.: {company.rut}</Text>
-									<View style={styles.docTypeBox}>
-										<Text style={styles.docTypeTitle}>COTIZACIÓN</Text>
+						<View style={styles.header} fixed>
+							<View style={styles.headerRow}>
+								<View style={styles.headerLeft}>
+									<View style={styles.logoBox}>
+										{logoSrc ? (
+											<Image style={styles.logo} src={logoSrc} />
+										) : (
+											<Text
+												style={{
+													fontSize: 10,
+													fontWeight: 'bold',
+													textAlign: 'center',
+												}}>
+												{company.name}
+											</Text>
+										)}
 									</View>
-									<Text style={styles.docNumber}>
-										N° {quote.quote_number || quote.id}
-									</Text>
+									<View style={styles.companyInfo}>
+										<Text style={styles.companyName}>{company.name}</Text>
+										<Text>Dirección: {company.fullAddress || '—'}</Text>
+										<Text>Email: {company.email || '—'}</Text>
+										<Text>Giro: {company.activity || '—'}</Text>
+										<Text>Servicios Computacionales</Text>
+									</View>
 								</View>
-								{/* <Text style={styles.dateLine}>
-                  Fecha: {formatDate(quote.quote_date)}
-                </Text> */}
+
+								<View style={styles.rutBoxContainer}>
+									<View style={styles.rutBox}>
+										<Text style={styles.rutText}>R.U.T.: {company.rut}</Text>
+										<View style={styles.docTypeBox}>
+											<Text style={styles.docTypeTitle}>COTIZACIÓN</Text>
+										</View>
+										<Text style={styles.docNumber}>
+											N° {quote.quote_number || quote.id}
+										</Text>
+									</View>
+								</View>
 							</View>
 						</View>
 
-						{/* BLOQUE EMPRESA / ORDEN */}
-						<View style={styles.companyOrderBox}>
+						<View style={styles.content}>
+							{/* BLOQUE EMPRESA / ORDEN */}
+							<View style={styles.companyOrderBox}>
 							<View style={styles.companyOrderHeader}>
 								<Text style={styles.companyOrderHeaderText}>Empresa</Text>
 								<Text style={styles.companyOrderHeaderText}>
@@ -431,104 +455,79 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 							</View>
 						</View>
 
-						{/* TABLA DETALLE */}
-						<View style={styles.tableOuter}>
-							<View style={styles.tableHeader}>
-								<Text style={[styles.tableHeaderCell, styles.colCant]}>Cant.</Text>
-								<Text style={[styles.tableHeaderCell, styles.colCode]}>Código</Text>
-								<Text style={[styles.tableHeaderCell, styles.colDesc]}>
-									Descripción
-								</Text>
-								<Text style={[styles.tableHeaderCell, styles.colPrice]}>
-									Precio Neto
-								</Text>
-								<Text style={[styles.tableHeaderCell, styles.colTotal]}>
-									Total Neto
-								</Text>
-							</View>
-
-							{rows.map((item, index) => {
-								if (!item) {
-									return (
-										<View key={`empty-${index}`} style={styles.tableRow}>
-											<Text style={styles.colCant}> </Text>
-											<Text style={styles.colCode}> </Text>
-											<Text style={styles.colDesc}> </Text>
-											<Text style={styles.colPrice}> </Text>
-											<Text style={styles.colTotal}> </Text>
-										</View>
-									);
-								}
-
-								const sku = getProductSku(item);
-								const name = getProductName(item);
-								const detail = getProductDetail(item);
-								const quantity = Number(item.quantity || 0);
-								const unitPrice = resolveUnitPrice(item);
-								const lineTotal = resolveLineTotal(item);
-								const itemDiscount = Number(item.discount_amount || 0);
-
-								return (
-									<View key={index} style={styles.tableRow}>
-										<Text style={styles.colCant}>{quantity}</Text>
-										<Text style={styles.colCode}>{sku}</Text>
-										<View style={styles.colDesc}>
-											<Text style={styles.descName}>{name}</Text>
-											{detail ? (
-												<Text style={styles.descDetail}>{detail}</Text>
-											) : null}
-											{itemDiscount > 0 && (
-												<Text style={styles.descDiscount}>
-													Descuento: - {formatCurrency(itemDiscount)}
-												</Text>
-											)}
-										</View>
-										<Text style={styles.colPrice}>
-											{formatCurrency(unitPrice)}
-										</Text>
-										<Text style={styles.colTotal}>
-											{formatCurrency(lineTotal)}
-										</Text>
-									</View>
-								);
-							})}
-						</View>
-
-						{/* TOTALES + FOOTER SOLO EN LA ÚLTIMA PÁGINA */}
-						{isLastPage && (
-							<>
-								<View style={styles.totalsWrapper}>
-									<View style={styles.totalsBox}>
-										<View style={styles.totalsRow}>
-											<Text style={styles.totalsRowLabel}>Neto</Text>
-											<Text style={styles.totalsRowValue}>
-												{formatCurrency(netTotal)}
-											</Text>
-										</View>
-										{discount > 0 && (
-											<View style={styles.totalsRow}>
-												<Text style={styles.totalsRowLabel}>Descuento</Text>
-												<Text style={styles.totalsRowValue}>
-													- {formatCurrency(discount)}
-												</Text>
-											</View>
-										)}
-										<View style={styles.totalsRow}>
-											<Text style={styles.totalsRowLabel}>IVA</Text>
-											<Text style={styles.totalsRowValue}>
-												{formatCurrency(tax)}
-											</Text>
-										</View>
-										<View style={styles.totalsRowLast}>
-											<Text style={styles.totalsRowLastText}>Total</Text>
-											<Text style={styles.totalsRowLastText}>
-												{formatCurrency(total)}
-											</Text>
-										</View>
-									</View>
+							{/* TABLA DETALLE */}
+							<View style={styles.tableOuter}>
+								<View style={styles.tableHeader}>
+									<Text style={[styles.tableHeaderCell, styles.colCant]}>
+										Cant.
+									</Text>
+									<Text style={[styles.tableHeaderCell, styles.colCode]}>
+										Código
+									</Text>
+									<Text style={[styles.tableHeaderCell, styles.colDesc]}>
+										Descripción
+									</Text>
+									<Text style={[styles.tableHeaderCell, styles.colPrice]}>
+										Precio Neto
+									</Text>
+									<Text style={[styles.tableHeaderCell, styles.colTotal]}>
+										Total Neto
+									</Text>
 								</View>
 
-								<View style={styles.footer}>
+								{rows.map((item, index) => {
+									if (!item) {
+										return (
+											<View key={`empty-${index}`} style={styles.tableRow}>
+												<Text style={styles.colCant}> </Text>
+												<Text style={styles.colCode}> </Text>
+												<Text style={styles.colDesc}> </Text>
+												<Text style={styles.colPrice}> </Text>
+												<Text style={styles.colTotal}> </Text>
+											</View>
+										);
+									}
+
+									const sku = getProductSku(item);
+									const name = getProductName(item);
+									const detail = getProductDetail(item);
+									const quantity = Number(item.quantity || 0);
+									const unitPrice = resolveUnitPrice(item);
+									const lineTotal = resolveLineTotal(item);
+									const itemDiscount = Number(item.discount_amount || 0);
+
+									return (
+										<View key={index} style={styles.tableRow}>
+											<Text style={styles.colCant}>{quantity}</Text>
+											<Text style={styles.colCode}>{sku}</Text>
+											<View style={styles.colDesc}>
+												<Text style={styles.descName}>{name}</Text>
+												{detail ? (
+													<Text style={styles.descDetail}>{detail}</Text>
+												) : null}
+												{itemDiscount > 0 && (
+													<Text style={styles.descDiscount}>
+														Descuento: - {formatCurrency(itemDiscount)}
+													</Text>
+												)}
+											</View>
+											<Text style={styles.colPrice}>
+												{formatCurrency(unitPrice)}
+											</Text>
+											<Text style={styles.colTotal}>
+												{formatCurrency(lineTotal)}
+											</Text>
+										</View>
+									);
+								})}
+							</View>
+						</View>
+					
+
+						{/* TOTALES + FOOTER SOLO EN LA ÚLTIMA PÁGINA */}
+						<View style={styles.fixedFooter} fixed>
+							{isLastPage ? (
+								<View style={styles.footerContent}>
 									<View style={styles.footerRow}>
 										<View style={styles.footerCol}>
 											<Text style={styles.sectionTitle}>
@@ -583,14 +582,48 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 												</View>
 											)}
 										</View>
+										<View style={styles.totalsWrapper}>
+											<View style={styles.totalsBox}>
+												<View style={styles.totalsRow}>
+													<Text style={styles.totalsRowLabel}>Neto</Text>
+													<Text style={styles.totalsRowValue}>
+														{formatCurrency(netTotal)}
+													</Text>
+												</View>
+												{discount > 0 && (
+													<View style={styles.totalsRow}>
+														<Text style={styles.totalsRowLabel}>
+															Descuento
+														</Text>
+														<Text style={styles.totalsRowValue}>
+															- {formatCurrency(discount)}
+														</Text>
+													</View>
+												)}
+												<View style={styles.totalsRow}>
+													<Text style={styles.totalsRowLabel}>IVA</Text>
+													<Text style={styles.totalsRowValue}>
+														{formatCurrency(tax)}
+													</Text>
+												</View>
+												<View style={styles.totalsRowLast}>
+													<Text style={styles.totalsRowLastText}>
+														Total
+													</Text>
+													<Text style={styles.totalsRowLastText}>
+														{formatCurrency(total)}
+													</Text>
+												</View>
+											</View>
+										</View>
 									</View>
 
 									<Text style={styles.footerNote}>
 										Documento generado electrónicamente por {company.name}
 									</Text>
 								</View>
-							</>
-						)}
+							) : null}
+						</View>
 					</Page>
 				);
 			})}
