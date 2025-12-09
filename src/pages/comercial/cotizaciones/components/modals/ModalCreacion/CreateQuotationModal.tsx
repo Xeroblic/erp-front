@@ -204,7 +204,7 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 		<>
 			<Modal isOpen={isOpen} setIsOpen={onClose} size='2xl' isStaticBackdrop isStaticBackdropAnimation>
 			<ModalHeader>
-				<div>
+				<div>	
 					<Badge className='text-xl font-semibold'>Nueva Cotización</Badge>
 					<p className='text-sm text-gray-600'>
 						Completa la información para crear una nueva cotización.
