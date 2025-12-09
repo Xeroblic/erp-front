@@ -208,7 +208,7 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 			created_by: quotation.created_by ?? user?.id ?? undefined,
 			approved_by: quotation.approved_by ?? undefined,
 			payment_method: normalizedPaymentMethod,
-			document_type: quotation.document_type ?? '',
+			document_type: quotation.document_type ?? 'boleta',
 			purchase_order: quotation.purchase_order ?? '',
 			payment_terms: quotation.payment_terms ?? 0,
 			fixed_discount: quotation.fixed_discount ?? 0,
@@ -228,7 +228,7 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 			<ModalHeader>
 				<div>
 					<Badge className='text-xl font-semibold'>Editar Cotización</Badge>
-					<p className='text-sm text-gray-600'>
+					<p className='text-sm'>
 						Modifica los datos de la cotización seleccionada.
 					</p>
 				</div>
@@ -251,15 +251,20 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 								? values.document_type
 								: null;
 
-						const payload = {
-							...values,
-							payment_method: normalizedPayment,
-							document_type: normalizedDocument,
-							items: sanitizedItems as any,
-							tax_percentage: values.tax_percentage === IVA_RATE ? IVA_RATE : 0,
-						};
+					const payload = {
+						...values,
+						payment_method: normalizedPayment,
+						document_type: normalizedDocument,
+						items: sanitizedItems as any,
+						tax_percentage: values.tax_percentage === IVA_RATE ? IVA_RATE : 0,
+					};
 
-						onSubmit(payload);
+					if (!window.confirm('¿Deseas actualizar esta cotización?')) {
+						setSubmitting(false);
+						return;
+					}
+
+					onSubmit(payload);
 						setSubmitting(false);
 					}}
 					enableReinitialize>

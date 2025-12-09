@@ -174,10 +174,10 @@ const ItemsListCard: React.FC<ItemsListCardProps> = ({
 														dimension='sm'
 													/>
 												</div>
-												<div>
-													<p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>
-														Precio neto unitario *
-													</p>
+								<div>
+									<p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>
+										Precio neto unitario
+									</p>
 													<Input
 														name={`items.${index}.unit_price`}
 														type='number'
@@ -194,9 +194,9 @@ const ItemsListCard: React.FC<ItemsListCardProps> = ({
 															)
 														}
 													/>
-													<p className='mt-1 text-[11px] text-gray-500 dark:text-gray-300'>
-														Ingresa el valor neto (sin IVA).
-													</p>
+									<p className='mt-1 text-[11px] text-gray-500 dark:text-gray-300'>
+										Ingresa el valor neto (sin IVA). Opcional.
+									</p>
 												</div>
 												<div>
 													<p className='mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>

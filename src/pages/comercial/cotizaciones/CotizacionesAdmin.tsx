@@ -269,48 +269,59 @@ const CotizacionesAdmin: React.FC = () => {
 					setShowFilters={setShowFilters}
 					resetFilters={resetFilters}
 				/>
+				<iframe
+					src='https://www.facebook.com/plugins/video.php?height=314&href=https%3A%2F%2Fwww.facebook.com%2Freel%2F1558021368777376%2F&show_text=false&width=560&t=0'
+					width='560'
+					height='314'
+					style={{ border: 'none', overflow: 'hidden' }}
+					frameBorder='0'
+					allowFullScreen={true}
+					allow='autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share'
+					allowFullScreen={true}></iframe>
 
-			{/* Tabla */}
-			<Card>
-				<CardHeader>
-					<CardHeaderChild>
-						<CardTitle>Lista de Cotizaciones</CardTitle>
-					</CardHeaderChild>
-				</CardHeader>
-				<CardBody>
-					<QuotationsTable
-						data={paginatedQuotations}
-						loading={loading}
-						onEdit={handleEdit}
-						onDelete={handleDeleteClick}
-						onDuplicate={handleDuplicateClick}
-						onView={handleView}
-						onChangeStatus={handleChangeStatus}
-						onConvertToSale={handleConvertToSale}
-						onDownloadPdf={handleDownloadPdf}
-					/>
-				</CardBody>
-			</Card>
+				
 
-			<CreateQuotationModal
-				isOpen={isCreateModalOpen}
-				onClose={() => setIsCreateModalOpen(false)}
-				onSubmit={handleCreateSubmit}
-				loading={loading}
-			/>
+				{/* Tabla */}
+				<Card>
+					<CardHeader>
+						<CardHeaderChild>
+							<CardTitle>Lista de Cotizaciones</CardTitle>
+						</CardHeaderChild>
+					</CardHeader>
+					<CardBody>
+						<QuotationsTable
+							data={paginatedQuotations}
+							loading={loading}
+							onEdit={handleEdit}
+							onDelete={handleDeleteClick}
+							onDuplicate={handleDuplicateClick}
+							onView={handleView}
+							onChangeStatus={handleChangeStatus}
+							onConvertToSale={handleConvertToSale}
+							onDownloadPdf={handleDownloadPdf}
+						/>
+					</CardBody>
+				</Card>
 
-			{editingQuotation && (
-				<EditQuotationModal
-					isOpen={isEditModalOpen}
-					onClose={() => {
-						setIsEditModalOpen(false);
-						setEditingQuotation(null);
-					}}
-					onSubmit={handleEditSubmit}
-					quotation={editingQuotation}
+				<CreateQuotationModal
+					isOpen={isCreateModalOpen}
+					onClose={() => setIsCreateModalOpen(false)}
+					onSubmit={handleCreateSubmit}
 					loading={loading}
 				/>
-			)}
+
+				{editingQuotation && (
+					<EditQuotationModal
+						isOpen={isEditModalOpen}
+						onClose={() => {
+							setIsEditModalOpen(false);
+							setEditingQuotation(null);
+						}}
+						onSubmit={handleEditSubmit}
+						quotation={editingQuotation}
+						loading={loading}
+					/>
+				)}
 
 				<QuotationDetailsModal
 					isOpen={isDetailsModalOpen}

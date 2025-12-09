@@ -188,15 +188,20 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 								? values.document_type
 								: null;
 
-						const payload = {
-							...values,
-							payment_method: normalizedPayment,
-							document_type: normalizedDocument,
-							items: sanitizedItems as any,
-							tax_percentage: values.tax_percentage === IVA_RATE ? IVA_RATE : 0,
-						};
+					const payload = {
+						...values,
+						payment_method: normalizedPayment,
+						document_type: normalizedDocument,
+						items: sanitizedItems as any,
+						tax_percentage: values.tax_percentage === IVA_RATE ? IVA_RATE : 0,
+					};
 
-						onSubmit(payload);
+					if (!window.confirm('¿Deseas crear esta cotización?')) {
+						setSubmitting(false);
+						return;
+					}
+
+					onSubmit(payload);
 						setSubmitting(false);
 					}}
 					enableReinitialize>

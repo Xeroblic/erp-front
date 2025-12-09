@@ -49,10 +49,11 @@ export const sanitizeItemsForSubmit = (items: FormQuoteItem[]) =>
                     item.product?.name ||
                     ''
                 ).trim();
-                const unitPrice = Number(item.unit_price);
-                if (!name || !Number.isFinite(unitPrice) || unitPrice <= 0) {
+                if (!name) {
                     return null;
                 }
+                const rawUnitPrice = Number(item.unit_price);
+                const unitPrice = Number.isFinite(rawUnitPrice) && rawUnitPrice >= 0 ? rawUnitPrice : 0;
                 const discount = Number(item.discount_amount || 0);
                 return {
                     product_id: null,

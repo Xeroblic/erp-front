@@ -54,13 +54,17 @@ export const itemSchema = Yup.object().shape({
         .required('La cantidad es requerida')
         .min(1, 'La cantidad debe ser mayor a 0'),
     unit_price: Yup.number()
+        .transform((value, originalValue) => {
+            return originalValue === '' || originalValue === null ? null : value;
+        })
         .nullable()
         .when('type', {
             is: 'custom',
             then: (schema) =>
                 schema
                     .typeError('Ingresa un precio neto válido')
-                    .moreThan(0, 'El precio neto debe ser mayor a 0'),
+                    .min(0, 'El precio neto no puede ser negativo')
+                    .notRequired(),
             otherwise: (schema) => schema,
         }),
     discount_amount: Yup.number().nullable().min(0, 'El descuento no puede ser negativo'),
