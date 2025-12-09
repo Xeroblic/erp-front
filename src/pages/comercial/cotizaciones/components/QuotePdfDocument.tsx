@@ -40,27 +40,30 @@ const styles = StyleSheet.create({
 		marginBottom: 6,
 	},
 	headerLeft: {
-		width: '60%',
+		width: '100%',
 		flexDirection: 'row',
+		alignItems: 'flex-start',
 	},
 	logoBox: {
-		width: 70,
-		height: 70,
+		width: 100,
+		height: 100,
 		borderWidth: 1,
 		borderColor: '#e5e7eb',
-		padding: 4,
+		padding: 6,
 		justifyContent: 'center',
 		alignItems: 'center',
-		marginRight: 8,
+		marginRight: 10,
+		marginTop: -22,
 	},
 	logo: {
-		width: '100%',
-		height: '100%',
+		width: '160%',
+		height: '160%',
 		objectFit: 'contain',
 	},
 	companyInfo: {
 		flex: 1,
 		fontSize: 9,
+		marginLeft: 20,
 	},
 	companyName: {
 		fontSize: 9,
@@ -161,7 +164,7 @@ const styles = StyleSheet.create({
 		borderWidth: 2,
 		borderColor: '#374151',
 		marginBottom: 6,
-		minHeight: 160, // asegura que la tabla tenga altura constante
+		minHeight: 160,
 	},
 	tableHeader: {
 		flexDirection: 'row',
@@ -389,75 +392,79 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 						<View style={styles.content}>
 							{/* BLOQUE EMPRESA / ORDEN */}
 							<View style={styles.companyOrderBox}>
-							<View style={styles.companyOrderHeader}>
-								<Text style={styles.companyOrderHeaderText}>Empresa</Text>
-								<Text style={styles.companyOrderHeaderText}>
-									N° Orden C:{' '}
-									<Text style={{ fontWeight: 'bold' }}>
-										{orderInfo.orderNumber}
+								<View style={styles.companyOrderHeader}>
+									<Text style={styles.companyOrderHeaderText}>Empresa</Text>
+									<Text style={styles.companyOrderHeaderText}>
+										N° Orden C:{' '}
+										<Text style={{ fontWeight: 'bold' }}>
+											{orderInfo.orderNumber}
+										</Text>
 									</Text>
-								</Text>
-							</View>
-							<View style={styles.companyOrderBody}>
-								<View style={styles.companyOrderColLeft}>
-									<View style={styles.infoRow}>
-										<Text style={styles.infoLabel}>Nombre Empresa: </Text>
-										<Text style={styles.infoValue}>{customer.name}</Text>
-									</View>
-									<View style={styles.infoRow}>
-										<Text style={styles.infoLabel}>RUT: </Text>
-										<Text style={styles.infoValue}>{customer.rut}</Text>
-									</View>
-									<View style={styles.infoRow}>
-										<Text style={styles.infoLabel}>Giro: </Text>
-										<Text style={styles.infoValue}>{customer.giro}</Text>
-									</View>
-									<View style={styles.infoRow}>
-										<Text style={styles.infoLabel}>Dirección: </Text>
-										<Text style={styles.infoValue}>{customer.address}</Text>
-									</View>
-									<View style={styles.infoRow}>
-										<Text style={styles.infoLabel}>Contacto: </Text>
-										<Text style={styles.infoValue}>{customer.contactName}</Text>
-									</View>
-									<View style={styles.infoRow}>
-										<Text style={styles.infoLabel}>Correo: </Text>
-										<Text style={styles.infoValue}>
-											{customer.email || '—'}
-										</Text>
-									</View>
 								</View>
+								<View style={styles.companyOrderBody}>
+									<View style={styles.companyOrderColLeft}>
+										<View style={styles.infoRow}>
+											<Text style={styles.infoLabel}>Nombre Empresa: </Text>
+											<Text style={styles.infoValue}>{customer.name}</Text>
+										</View>
+										<View style={styles.infoRow}>
+											<Text style={styles.infoLabel}>RUT: </Text>
+											<Text style={styles.infoValue}>{customer.rut}</Text>
+										</View>
+										<View style={styles.infoRow}>
+											<Text style={styles.infoLabel}>Giro: </Text>
+											<Text style={styles.infoValue}>{customer.giro}</Text>
+										</View>
+										<View style={styles.infoRow}>
+											<Text style={styles.infoLabel}>Dirección: </Text>
+											<Text style={styles.infoValue}>{customer.address}</Text>
+										</View>
+										<View style={styles.infoRow}>
+											<Text style={styles.infoLabel}>Contacto: </Text>
+											<Text style={styles.infoValue}>
+												{customer.contactName}
+											</Text>
+										</View>
+										<View style={styles.infoRow}>
+											<Text style={styles.infoLabel}>Correo: </Text>
+											<Text style={styles.infoValue}>
+												{customer.email || '—'}
+											</Text>
+										</View>
+									</View>
 
-								<View style={styles.companyOrderColRight}>
-									<View style={styles.infoRow}>
-										<Text style={styles.infoLabel}>Fecha: </Text>
-										<Text style={styles.infoValue}>
-											{formatDate(quote.quote_date)}
-										</Text>
-									</View>
-									<View style={styles.infoRow}>
-										<Text style={styles.infoLabel}>Teléfono: </Text>
-										<Text style={styles.infoValue}>
-											{orderInfo.contactPhone}
-										</Text>
-									</View>
-									<View style={styles.infoRow}>
-										{/* <Text style={styles.infoLabel}>OT Asociada: </Text>
+									<View style={styles.companyOrderColRight}>
+										<View style={styles.infoRow}>
+											<Text style={styles.infoLabel}>Fecha: </Text>
+											<Text style={styles.infoValue}>
+												{formatDate(quote.quote_date)}
+											</Text>
+										</View>
+										<View style={styles.infoRow}>
+											<Text style={styles.infoLabel}>Teléfono: </Text>
+											<Text style={styles.infoValue}>
+												{orderInfo.contactPhone}
+											</Text>
+										</View>
+										<View style={styles.infoRow}>
+											{/* <Text style={styles.infoLabel}>OT Asociada: </Text>
 										<Text style={styles.infoValue}>
 											{orderInfo.associatedOt}
 										</Text> */}
-									</View>
-									<View style={styles.infoRow}>
-										<Text style={styles.infoLabel}>Método de pago: </Text>
-										<Text style={styles.infoValue}>{paymentMethodsLabel}</Text>
-									</View>
-									<View style={styles.infoRow}>
-										<Text style={styles.infoLabel}>Documento: </Text>
-										<Text style={styles.infoValue}>{documentType}</Text>
+										</View>
+										<View style={styles.infoRow}>
+											<Text style={styles.infoLabel}>Método de pago: </Text>
+											<Text style={styles.infoValue}>
+												{paymentMethodsLabel}
+											</Text>
+										</View>
+										<View style={styles.infoRow}>
+											<Text style={styles.infoLabel}>Documento: </Text>
+											<Text style={styles.infoValue}>{documentType}</Text>
+										</View>
 									</View>
 								</View>
 							</View>
-						</View>
 
 							{/* TABLA DETALLE */}
 							<View style={styles.tableOuter}>
@@ -526,7 +533,6 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 								})}
 							</View>
 						</View>
-					
 
 						{/* TOTALES + FOOTER SOLO EN LA ÚLTIMA PÁGINA */}
 						<View style={styles.fixedFooter} fixed>

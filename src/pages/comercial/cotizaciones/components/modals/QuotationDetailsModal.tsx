@@ -31,30 +31,48 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
 	onDownloadPdf,
 }) => {
 	const [downloading, setDownloading] = useState(false);
+	const [isPrinting, setIsPrinting] = useState(false);
 
-	const handlePrint = () => {
-		const printContent = document.getElementById(PRINT_CONTAINER_ID)?.innerHTML;
-		if (!printContent) {
-			return;
+	const getPdfBlob = async () => {
+		if (!quotation) return null;
+		const { generateQuotePdf } = await import('../../utils/pdf/generateQuotePdf');
+		return generateQuotePdf(quotation);
+	};
+
+	const handlePrint = async () => {
+		if (!quotation) return;
+		setIsPrinting(true);
+		try {
+			const blob = await getPdfBlob();
+			if (!blob) throw new Error('No se pudo generar el PDF');
+			const blobUrl = URL.createObjectURL(blob);
+			const iframe = document.createElement('iframe');
+			iframe.style.position = 'fixed';
+			iframe.style.right = '0';
+			iframe.style.bottom = '0';
+			iframe.style.width = '0';
+			iframe.style.height = '0';
+			iframe.style.border = '0';
+			const cleanup = () => {
+				if (iframe.parentNode) {
+					iframe.parentNode.removeChild(iframe);
+				}
+				URL.revokeObjectURL(blobUrl);
+				setIsPrinting(false);
+			};
+			iframe.onload = () => {
+				const frameWindow = iframe.contentWindow;
+				frameWindow?.focus();
+				frameWindow?.print();
+				setTimeout(cleanup, 500);
+			};
+			iframe.src = blobUrl;
+			document.body.appendChild(iframe);
+		} catch (error) {
+			console.error(error);
+			toast.error('No se pudo preparar la impresión');
+			setIsPrinting(false);
 		}
-		const printWindow = window.open('', '_blank', 'noopener,noreferrer');
-		if (!printWindow) return;
-		printWindow.document.write(`
-            <html>
-                <head>
-                    <title>Cotización ${quotation?.id ?? ''}</title>
-                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" />
-                </head>
-                <body class="bg-gray-100">
-                    <div class="p-6">
-                        ${printContent}
-                    </div>
-                </body>
-            </html>
-        `);
-		printWindow.document.close();
-		printWindow.focus();
-		printWindow.print();
 	};
 
 	// --- AQUI ESTA LA MAGIA DEL CODE SPLITTING ---
@@ -62,15 +80,10 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
 		if (!quotation) return;
 		setDownloading(true);
 		try {
-			// 1. Importamos las librerías pesadas AL VUELO
 			const { saveAs } = await import('file-saver');
-			const { generateQuotePdf } = await import('../../utils/pdf/generateQuotePdf');
-
-			// 2. Generamos el PDF
-			const blob = await generateQuotePdf(quotation);
+			const blob = await getPdfBlob();
+			if (!blob) throw new Error('No se pudo generar el PDF');
 			const filename = `cotizacion-${quotation.id}.pdf`;
-
-			// 3. Descargamos
 			saveAs(blob, filename);
 		} catch (error) {
 			if (onDownloadPdf) {
@@ -123,7 +136,9 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
 						Cargando detalles de la cotización...
 					</div>
 				) : quotation ? (
-					<div id={PRINT_CONTAINER_ID}>
+					<div
+						id={PRINT_CONTAINER_ID}
+						className='mx-auto w-full max-w-4xl rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-100'>
 						<QuotePrintableView quote={quotation} />
 					</div>
 				) : (
@@ -134,29 +149,37 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
 			</ModalBody>
 
 			<ModalFooter>
-				<ModalFooterChild className='flex flex-wrap justify-end gap-3'>
-					<Button variant='outline' onClick={onClose}>
-						Cerrar
-					</Button>
-					<Button
-						variant='outline'
-						onClick={handleDownload}
-						isDisable={!quotation}
-						isLoading={downloading}>
-						Descargar PDF
-					</Button>
-					<Button
-						variant='outline'
-						color='green'
-						onClick={handleConvertToSale}
-						isDisable={!quotation}
-						isLoading={converting}>
-						Convertir a Venta
-					</Button>
+				<ModalFooterChild className='flex flex-wrap justify-between gap-3 w-full'>
+					<div className='text-xs text-gray-500'>
+						Última actualización:{' '}
+						{quotation?.updated_at
+							? new Date(quotation.updated_at).toLocaleString()
+							: '—'}
+					</div>
+					<div className='flex flex-wrap gap-3'>
+						<Button variant='outline' onClick={onClose}>
+							Cerrar
+						</Button>
+						<Button
+							variant='outline'
+							onClick={handleDownload}
+							isDisable={!quotation}
+							isLoading={downloading}>
+							Descargar PDF
+						</Button>
+						<Button
+							variant='outline'
+							color='green'
+							onClick={handleConvertToSale}
+							isDisable={!quotation}
+							isLoading={converting}>
+							Convertir a Venta
+						</Button>
 
-					<Button color='blue' onClick={handlePrint} isDisable={!quotation}>
-						Imprimir
+					<Button color='blue' onClick={handlePrint} isDisable={!quotation || isPrinting}>
+						{isPrinting ? 'Preparando…' : 'Imprimir'}
 					</Button>
+					</div>
 				</ModalFooterChild>
 			</ModalFooter>
 		</Modal>

@@ -87,6 +87,7 @@ interface ISelectReactProps extends TReactSelect, Partial<IValidationBaseProps> 
 	isLoading?: boolean;
 	isSearchable?: boolean;
 	onInputChange?: (value: string, actionMeta?: any) => void;
+	onCreateOption?: (inputValue: string) => void;
 	formatOptionLabel?: (
 		data: TSelectOption,
 		formatOptionLabelMeta: FormatOptionLabelMeta<TSelectOption>,

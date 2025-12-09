@@ -5,6 +5,7 @@
 import React, { useEffect } from 'react';
 import { Formik, Form } from 'formik';
 import { IQuote, QuoteStatus } from '../../../../../../interface';
+import { toast } from 'react-toastify';
 import Modal, {
 	ModalHeader,
 	ModalBody,
@@ -27,7 +28,11 @@ import {
 	paymentTermsOptions,
 	statusOptions,
 } from '../shared/constants';
-import { sanitizeItemsForSubmit, ensureFormItems } from '../shared/helpers';
+import {
+	sanitizeItemsForSubmit,
+	ensureFormItems,
+	generateCustomerCreationPayload,
+} from '../shared/helpers';
 import GeneralInfoCard from '../shared/components/GeneralInfoCard';
 import PaymentInfoCard from '../shared/components/PaymentInfoCard';
 import ItemsListCard from '../shared/components/ItemsListCard';
@@ -234,6 +239,32 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 
 	if (!isOpen) return null;
 
+	const handleCreateCustomerOption = async (name: string) => {
+		const trimmed = name.trim();
+		if (!trimmed) return null;
+		const { payload } = generateCustomerCreationPayload(trimmed, subsidiaryId);
+		try {
+			const created = await ApiService.fetchNormalized<any>({
+				url: `/subsidiaries/${subsidiaryId}/customer-sales`,
+				method: 'POST',
+				data: payload,
+			});
+			if (!created?.id) {
+				throw new Error('Respuesta inválida del servidor');
+			}
+			const option = {
+				value: String(created.id),
+				label: created.name || trimmed,
+			};
+			setCustomerOptions((prev) => [...prev, option]);
+			return option;
+		} catch (error) {
+			console.error('Error creating customer:', error);
+			toast.error('No se pudo crear el cliente');
+			return null;
+		}
+	};
+
 	return (
 		<>
 			<Modal isOpen={isOpen} setIsOpen={onClose} size='2xl'>
@@ -284,6 +315,7 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 								errors={errors}
 								touched={touched}
 								customerOptions={customerOptions}
+								onCreateCustomer={handleCreateCustomerOption}
 							/>
 
 							<PaymentInfoCard

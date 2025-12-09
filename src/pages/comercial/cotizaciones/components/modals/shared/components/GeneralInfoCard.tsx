@@ -6,13 +6,13 @@ import { FormikErrors, FormikTouched } from 'formik';
 import { FormQuotationValues } from '../types';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
-
 interface GeneralInfoCardProps {
 	values: FormQuotationValues;
 	setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void;
 	errors: FormikErrors<FormQuotationValues>;
 	touched: FormikTouched<FormQuotationValues>;
 	customerOptions: TSelectOptions;
+	onCreateCustomer?: (name: string) => Promise<TSelectOption | null>;
 }
 
 const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
@@ -21,15 +21,16 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 	errors,
 	touched,
 	customerOptions,
+	onCreateCustomer,
 }) => {
 	return (
 		<Card
 			rounded='rounded-2xl'
-			className='border border-white/80 bg-white/80 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-white/5 dark:shadow-lg/10'>
+			className='dark:shadow-lg/10 border border-white/80 bg-white/80 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-white/5'>
 			<CardHeader className='pb-2'>
 				<CardHeaderChild className='w-full items-center justify-between'>
 					<div>
-						<CardTitle className='flex items-center gap-3 text-lg font-semibold dark:text-white text-gray-900'>
+						<CardTitle className='flex items-center gap-3 text-lg font-semibold text-gray-900 dark:text-white'>
 							<span className='flex h-9 w-9 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 text-amber-600 dark:border-amber-400/40 dark:bg-amber-400/10 dark:text-amber-200'>
 								<Icon icon='DuoAddressBook1' className='text-xl' />
 							</span>
@@ -57,6 +58,7 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 							value={customerOptions.find(
 								(opt) => opt.value === String(values.customer_id),
 							)}
+							isClearable={true}
 							onChange={(option) => {
 								const selectedOption = option as TSelectOption;
 								if (selectedOption && !Array.isArray(selectedOption)) {
@@ -66,6 +68,16 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 							isValid={!errors.customer_id}
 							isTouched={touched.customer_id}
 							invalidFeedback={errors.customer_id}
+							isCreatable
+							onCreateOption={async (inputValue) => {
+								const trimmed = inputValue.trim();
+								if (!trimmed || !onCreateCustomer) return;
+								const created = await onCreateCustomer(trimmed);
+								if (created) {
+									setFieldValue('customer_id', Number(created.value) || 0);
+								}
+							}}
+							
 						/>
 					</div>
 
