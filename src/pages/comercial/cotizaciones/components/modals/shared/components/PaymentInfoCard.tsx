@@ -6,7 +6,8 @@ import Textarea from '@/components/form/Textarea';
 import { FormikErrors, FormikTouched } from 'formik';
 import { FormQuotationValues } from '../types';
 import { QuoteStatus } from '@/interface';
-import Label from '@/components/form/Label';
+import Badge from '@/components/ui/Badge';
+import Icon from '@/components/icon/Icon';
 
 interface PaymentInfoCardProps {
 	values: FormQuotationValues;
@@ -28,18 +29,33 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
 	statusOptions,
 }) => {
 	return (
-		<Card>
-			<CardHeader>
-				<CardHeaderChild>
-					<CardTitle>Información de Pago</CardTitle>
+		<Card
+			rounded='rounded-2xl'
+			className='border border-white/80 bg-white/80 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-white/5 dark:shadow-lg/10'>
+			<CardHeader className='pb-2'>
+				<CardHeaderChild className='w-full items-center justify-between'>
+					<div>
+						<CardTitle className='flex items-center gap-3 text-lg font-semibold dark:text-white text-gray-900'>
+							<span className='flex h-9 w-9 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 text-sky-600 dark:border-sky-400/40 dark:bg-sky-400/10 dark:text-sky-200'>
+								<Icon icon='DuoCreditCard' className='text-xl' />
+							</span>
+							<span>Información de Pago</span>
+						</CardTitle>
+						<p className='text-xs text-gray-500 dark:text-gray-300'>
+							Selecciona condiciones comerciales y documento a emitir.
+						</p>
+					</div>
+					<Badge className='rounded-full bg-sky-50 px-4 py-1 text-xs font-semibold text-sky-700 dark:bg-sky-400/20 dark:text-sky-100'>
+						Paso 2
+					</Badge>
 				</CardHeaderChild>
 			</CardHeader>
-			<CardBody>
-				<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
-					<div>
-						<label className='mb-2 block text-sm font-medium text-gray-700'>
+			<CardBody className='space-y-6 pt-2'>
+				<div className='grid grid-cols-1 gap-4 lg:grid-cols-3'>
+					<div className='rounded-2xl border border-zinc-100 bg-zinc-50/60 p-4 shadow-inner dark:border-white/10 dark:bg-white/5 dark:shadow-none'>
+						<p className='mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>
 							Método de Pago *
-						</label>
+						</p>
 						<SelectReact
 							name='payment_method'
 							options={paymentMethodOptions}
@@ -63,10 +79,10 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
 						/>
 					</div>
 
-					<div>
-						<Label htmlFor='OC' className='mb-2 block text-sm font-medium text-gray-700'>
+					<div className='rounded-2xl border border-zinc-100 bg-zinc-50/60 p-4 shadow-inner dark:border-white/10 dark:bg-white/5 dark:shadow-none'>
+						<p className='mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>
 							Orden de Compra (OC)
-						</Label>
+						</p>
 						<Input
 							name='purchase_order'
 							placeholder='OC-2024-001'
@@ -78,10 +94,10 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
 						/>
 					</div>
 
-					<div>
-						<label className='mb-2 block text-sm font-medium text-gray-700'>
+					<div className='rounded-2xl border border-zinc-100 bg-zinc-50/60 p-4 shadow-inner dark:border-white/10 dark:bg-white/5 dark:shadow-none'>
+						<p className='mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>
 							Términos de Pago
-						</label>
+						</p>
 						<SelectReact
 							name='payment_terms'
 							options={paymentTermsOptions}
@@ -105,11 +121,11 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
 					</div>
 				</div>
 
-				<div className='mt-4 grid grid-cols-1 gap-4 md:grid-cols-2'>
-					<div>
-						<label className='mb-2 block text-sm font-medium text-gray-700'>
+				<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
+					<div className='rounded-2xl border border-zinc-100 bg-white/80 p-4 shadow-inner dark:border-white/10 dark:bg-white/5 dark:shadow-none'>
+						<p className='mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>
 							Estado de la Cotización
-						</label>
+						</p>
 						<SelectReact
 							name='status'
 							options={statusOptions}
@@ -124,10 +140,10 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
 						/>
 					</div>
 
-					<div>
-						<label className='mb-2 block text-sm font-medium text-gray-700'>
+					<div className='md:col-span-2 rounded-2xl border border-zinc-100 bg-white/80 p-4 shadow-inner dark:border-white/10 dark:bg-white/5 dark:shadow-none'>
+						<p className='mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>
 							Observaciones
-						</label>
+						</p>
 						<Textarea
 							name='notes'
 							placeholder='Observaciones adicionales...'
@@ -140,10 +156,10 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
 						/>
 					</div>
 
-					<div>
-						<label className='mb-2 block text-sm font-medium text-gray-700'>
+					<div className='rounded-2xl border border-zinc-100 bg-white/80 p-4 shadow-inner dark:border-white/10 dark:bg-white/5 dark:shadow-none'>
+						<p className='mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>
 							Tipo de Documento
-						</label>
+						</p>
 						<SelectReact
 							name='document_type'
 							options={[

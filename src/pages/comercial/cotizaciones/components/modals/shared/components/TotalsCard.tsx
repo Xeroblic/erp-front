@@ -2,6 +2,8 @@ import React from 'react';
 import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
 import Input from '@/components/form/Input';
 import { FormQuotationValues } from '../types';
+import Badge from '@/components/ui/Badge';
+import Icon from '@/components/icon/Icon';
 
 interface TotalsCardProps {
 	values: FormQuotationValues;
@@ -11,18 +13,31 @@ interface TotalsCardProps {
 
 const TotalsCard: React.FC<TotalsCardProps> = ({ values, setFieldValue, IVA_RATE }) => {
 	return (
-		<Card>
-			<CardHeader>
-				<CardHeaderChild>
-					<CardTitle>Resumen</CardTitle>
+		<Card
+			rounded='rounded-2xl'
+			className='border border-white/80 bg-white/80 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-white/5 dark:shadow-lg/10'>
+			<CardHeader className='pb-2'>
+				<CardHeaderChild className='w-full items-center justify-between'>
+					<div>
+						<CardTitle className='flex items-center gap-3 text-lg font-semibold dark:text-white text-gray-900'>
+							<span className='flex h-9 w-9 items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-600 dark:border-indigo-400/40 dark:bg-indigo-400/10 dark:text-indigo-200'>
+								<Icon icon='DuoCalculator' className='text-xl' />
+							</span>
+							<span>Resumen</span>
+						</CardTitle>
+						<p className='text-xs text-gray-500 dark:text-gray-300'>Ajusta descuentos y decide si la cotización llevará IVA.</p>
+					</div>
+					<Badge className='rounded-full bg-indigo-50 px-4 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-400/20 dark:text-indigo-100'>
+						Paso 4
+					</Badge>
 				</CardHeaderChild>
 			</CardHeader>
-			<CardBody>
+			<CardBody className='space-y-5 pt-2'>
 				<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-					<div>
-						<label className='mb-2 block text-sm font-medium text-gray-700'>
+					<div className='rounded-2xl border border-zinc-100 bg-white/80 p-4 shadow-inner dark:border-white/10 dark:bg-white/5 dark:shadow-none'>
+						<p className='mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>
 							Descuento Global %
-						</label>
+						</p>
 						<Input
 							name='discount_percentage'
 							type='number'
@@ -34,11 +49,11 @@ const TotalsCard: React.FC<TotalsCardProps> = ({ values, setFieldValue, IVA_RATE
 						/>
 					</div>
 
-					<div className='rounded border border-dashed border-gray-200 p-4'>
-						<label className='flex items-center gap-2 text-sm font-medium text-gray-700'>
+					<div className='flex flex-col gap-2 rounded-2xl border border-indigo-100/70 bg-indigo-50/40 p-4 shadow-inner dark:border-indigo-400/20 dark:bg-indigo-400/5'>
+						<label className='flex items-center gap-3 text-sm font-semibold text-indigo-900 dark:text-indigo-100'>
 							<input
 								type='checkbox'
-								className='h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500'
+								className='h-4 w-4 rounded border-indigo-200 text-indigo-600 focus:ring-indigo-500'
 								checked={values.tax_percentage === IVA_RATE}
 								onChange={(e) =>
 									setFieldValue(
@@ -49,18 +64,17 @@ const TotalsCard: React.FC<TotalsCardProps> = ({ values, setFieldValue, IVA_RATE
 							/>
 							Aplicar IVA (19%)
 						</label>
-						<p className='mt-2 text-xs text-gray-500'>
-							Activa esta opción si la cotización debe incluir IVA. Los cálculos finales
-							se realizan en el backend.
+						<p className='text-xs text-indigo-900/80 dark:text-indigo-100/80'>
+							Activa esta opción si la cotización debe incluir IVA. Los cálculos finales se
+							realizan automáticamente al guardar la cotización.
 						</p>
 					</div>
 				</div>
 
-				<p className='mt-6 text-sm text-gray-500'>
-					Los montos se calcularán automáticamente en el backend using los productos
-					seleccionados. Aquí solo definimos el descuento global y si corresponde aplicar
-					IVA.
-				</p>
+				<div className='rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/70 p-4 text-sm text-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-300'>
+					Los montos definitivos se recalculan en el backend según los productos
+					seleccionados. Esta sección solo define los ajustes globales.
+				</div>
 			</CardBody>
 		</Card>
 	);

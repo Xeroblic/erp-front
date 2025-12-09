@@ -224,7 +224,7 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 	if (!isOpen) return null;
 
 	return (
-		<Modal isOpen={isOpen} setIsOpen={onClose} size='3xl'>
+		<Modal isOpen={isOpen} setIsOpen={onClose} size='2xl'>
 			<ModalHeader>
 				<div>
 					<Badge className='text-xl font-semibold'>Editar Cotización</Badge>
