@@ -3,7 +3,8 @@ import { toast } from 'react-toastify';
 import { IQuote, QuoteStatus } from '../../../interface';
 import useQuotationsManager from './hooks/useQuotationsManager';
 import QuotationsTable from './components/tables/QuotationsTable';
-import CreateEditQuotationModal from './components/modals/CreateEditQuotationModal';
+import CreateQuotationModal from './components/modals/ModalCreacion/CreateQuotationModal';
+import EditQuotationModal from './components/modals/ModalEditar/EditQuotationModal';
 import { QuotationDetailsModal } from './components/modals/QuotationDetailsModal';
 import DuplicateQuotationModal from './components/modals/DuplicateQuotationModal';
 import DeleteQuotationModal from './components/modals/DeleteQuotationModal';
@@ -21,6 +22,7 @@ import { StatsCards } from './components/StatsCards';
 const CotizacionesAdmin: React.FC = () => {
 	// Estados locales
 	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 	const [editingQuotation, setEditingQuotation] = useState<IQuote | null>(null);
 	const [showFilters, setShowFilters] = useState(false);
 	const [viewingQuotation, setViewingQuotation] = useState<IQuote | null>(null);
@@ -80,7 +82,7 @@ const CotizacionesAdmin: React.FC = () => {
 		try {
 			const detail = await loadQuotationDetails(quotation.id);
 			setEditingQuotation(detail);
-			setIsCreateModalOpen(true);
+			setIsEditModalOpen(true);
 		} catch (error) {
 			toast.error('No se pudo cargar la cotización para editar');
 			console.error('Error al editar cotización:', error);
@@ -89,19 +91,27 @@ const CotizacionesAdmin: React.FC = () => {
 		}
 	};
 
-	const handleSubmit = async (
+	const handleCreateSubmit = async (
 		quotationData: Omit<IQuote, 'id' | 'created_at' | 'updated_at'>,
 	) => {
 		try {
-			if (editingQuotation) {
-				await updateQuotation(editingQuotation.id, quotationData);
-			} else {
-				await createQuotation(quotationData);
-			}
+			await createQuotation(quotationData);
 			setIsCreateModalOpen(false);
+		} catch (error) {
+			console.error('Error al crear cotización:', error);
+		}
+	};
+
+	const handleEditSubmit = async (
+		quotationData: Omit<IQuote, 'id' | 'created_at' | 'updated_at'>,
+	) => {
+		if (!editingQuotation) return;
+		try {
+			await updateQuotation(editingQuotation.id, quotationData);
+			setIsEditModalOpen(false);
 			setEditingQuotation(null);
 		} catch (error) {
-			console.error('Error al procesar cotización:', error);
+			console.error('Error al actualizar cotización:', error);
 		}
 	};
 
@@ -260,38 +270,47 @@ const CotizacionesAdmin: React.FC = () => {
 					resetFilters={resetFilters}
 				/>
 
-				{/* Tabla */}
-				<Card>
-					<CardHeader>
-						<CardHeaderChild>
-							<CardTitle>Lista de Cotizaciones</CardTitle>
-						</CardHeaderChild>
-					</CardHeader>
-					<CardBody>
-						<QuotationsTable
-							data={paginatedQuotations}
-							loading={loading}
-							onEdit={handleEdit}
-							onDelete={handleDeleteClick}
-							onDuplicate={handleDuplicateClick}
-							onView={handleView}
-							onChangeStatus={handleChangeStatus}
-							onConvertToSale={handleConvertToSale}
-							onDownloadPdf={handleDownloadPdf}
-						/>
-					</CardBody>
-				</Card>
+			{/* Tabla */}
+			<Card>
+				<CardHeader>
+					<CardHeaderChild>
+						<CardTitle>Lista de Cotizaciones</CardTitle>
+					</CardHeaderChild>
+				</CardHeader>
+				<CardBody>
+					<QuotationsTable
+						data={paginatedQuotations}
+						loading={loading}
+						onEdit={handleEdit}
+						onDelete={handleDeleteClick}
+						onDuplicate={handleDuplicateClick}
+						onView={handleView}
+						onChangeStatus={handleChangeStatus}
+						onConvertToSale={handleConvertToSale}
+						onDownloadPdf={handleDownloadPdf}
+					/>
+				</CardBody>
+			</Card>
 
-				<CreateEditQuotationModal
-					isOpen={isCreateModalOpen}
+			<CreateQuotationModal
+				isOpen={isCreateModalOpen}
+				onClose={() => setIsCreateModalOpen(false)}
+				onSubmit={handleCreateSubmit}
+				loading={loading}
+			/>
+
+			{editingQuotation && (
+				<EditQuotationModal
+					isOpen={isEditModalOpen}
 					onClose={() => {
-						setIsCreateModalOpen(false);
+						setIsEditModalOpen(false);
 						setEditingQuotation(null);
 					}}
-					onSubmit={handleSubmit}
+					onSubmit={handleEditSubmit}
 					quotation={editingQuotation}
 					loading={loading}
 				/>
+			)}
 
 				<QuotationDetailsModal
 					isOpen={isDetailsModalOpen}

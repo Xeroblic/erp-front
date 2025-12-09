@@ -136,7 +136,7 @@ const SelectReact: FC<ISelectReactProps> = (props) => {
 			control: classNames(
 				// Default
 				[`${borderWidth} border-zinc-100 dark:border-zinc-800`],
-				'bg-zinc-100 dark:bg-zinc-800',
+				'bg-gray-300 dark:bg-zinc-800',
 				'w-full',
 				'text-black dark:text-white',
 				themeConfig.transition,

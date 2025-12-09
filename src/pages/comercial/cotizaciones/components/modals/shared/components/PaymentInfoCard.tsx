@@ -6,6 +6,7 @@ import Textarea from '@/components/form/Textarea';
 import { FormikErrors, FormikTouched } from 'formik';
 import { FormQuotationValues } from '../types';
 import { QuoteStatus } from '@/interface';
+import Label from '@/components/form/Label';
 
 interface PaymentInfoCardProps {
 	values: FormQuotationValues;
@@ -63,9 +64,9 @@ const PaymentInfoCard: React.FC<PaymentInfoCardProps> = ({
 					</div>
 
 					<div>
-						<label className='mb-2 block text-sm font-medium text-gray-700'>
+						<Label htmlFor='OC' className='mb-2 block text-sm font-medium text-gray-700'>
 							Orden de Compra (OC)
-						</label>
+						</Label>
 						<Input
 							name='purchase_order'
 							placeholder='OC-2024-001'

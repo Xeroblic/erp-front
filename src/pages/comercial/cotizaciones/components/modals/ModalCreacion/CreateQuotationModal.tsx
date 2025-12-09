@@ -161,7 +161,7 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 	if (!isOpen) return null;
 
 	return (
-		<Modal isOpen={isOpen} setIsOpen={onClose} size='full'>
+		<Modal isOpen={isOpen} setIsOpen={onClose} size='2xl'>
 			<ModalHeader>
 				<div>
 					<Badge className='text-xl font-semibold'>Nueva Cotización</Badge>
