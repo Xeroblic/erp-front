@@ -48,8 +48,19 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 	quotation,
 	loading = false,
 }) => {
+	const [isConfirmModalOpen, setIsConfirmModalOpen] = React.useState(false);
+	const [pendingPayload, setPendingPayload] = React.useState<
+		Omit<IQuote, 'id' | 'created_at' | 'updated_at'> | null
+	>(null);
 	const personalizacion = useAppSelector(selectPersonalizacionUsuario);
 	const user = useAppSelector((state) => state.auth.user);
+
+	React.useEffect(() => {
+		if (!isOpen) {
+			setIsConfirmModalOpen(false);
+			setPendingPayload(null);
+		}
+	}, [isOpen]);
 
 	const subsidiaryId = personalizacion?.subsidiary_id || quotation.subsidiary_id || 1;
 	const branchId =
@@ -224,7 +235,8 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 	if (!isOpen) return null;
 
 	return (
-		<Modal isOpen={isOpen} setIsOpen={onClose} size='2xl'>
+		<>
+			<Modal isOpen={isOpen} setIsOpen={onClose} size='2xl'>
 			<ModalHeader>
 				<div>
 					<Badge className='text-xl font-semibold'>Editar Cotización</Badge>
@@ -259,15 +271,11 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 						tax_percentage: values.tax_percentage === IVA_RATE ? IVA_RATE : 0,
 					};
 
-					if (!window.confirm('¿Deseas actualizar esta cotización?')) {
-						setSubmitting(false);
-						return;
-					}
-
-					onSubmit(payload);
-						setSubmitting(false);
-					}}
-					enableReinitialize>
+					setPendingPayload(payload);
+					setIsConfirmModalOpen(true);
+					setSubmitting(false);
+				}}
+				enableReinitialize>
 					{({ values, setFieldValue, errors, touched, handleSubmit }) => (
 						<Form id='quotation-form' className='space-y-6' onSubmit={handleSubmit}>
 							<GeneralInfoCard
@@ -325,7 +333,46 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 					</Button>
 				</ModalFooterChild>
 			</ModalFooter>
-		</Modal>
+			</Modal>
+
+			<Modal
+				isOpen={isConfirmModalOpen}
+				setIsOpen={() => setIsConfirmModalOpen(false)}
+				size='sm'
+				isStaticBackdrop
+				isStaticBackdropAnimation
+				>
+				<ModalHeader>
+					<h3 className='text-lg font-semibold'>Confirmar actualización</h3>
+				</ModalHeader>
+				<ModalBody>
+					<p className='text-sm text-gray-600 dark:text-gray-200'>
+						¿Deseas actualizar esta cotización con los cambios realizados?
+					</p>
+				</ModalBody>
+				<ModalFooter>
+					<ModalFooterChild>
+						<Button
+							variant='outline'
+							onClick={() => {
+								setPendingPayload(null);
+								setIsConfirmModalOpen(false);
+							}}>
+							Cancelar
+						</Button>
+						<Button
+							onClick={() => {
+								if (!pendingPayload) return;
+								onSubmit(pendingPayload);
+								setPendingPayload(null);
+								setIsConfirmModalOpen(false);
+							}}>
+							Confirmar
+						</Button>
+					</ModalFooterChild>
+				</ModalFooter>
+			</Modal>
+		</>
 	);
 };
 

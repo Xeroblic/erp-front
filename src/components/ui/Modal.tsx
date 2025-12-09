@@ -10,6 +10,7 @@ import React, {
 	SetStateAction,
 	useId,
 	useRef,
+	CSSProperties,
 } from 'react';
 import { AnimatePresence, motion, MotionProps } from 'framer-motion';
 import classNames from 'classnames';
@@ -288,6 +289,9 @@ const Modal: FC<IModalProps> = (props) => {
 		(['sm', 'md', 'lg', 'xl', '2xl'].includes(size as TModalStableSize) &&
 			modalSizes[size as TModalStableSize]) ||
 		size;
+	const dialogStyle: CSSProperties = {
+		'--theme-modal-width': modalSize as string,
+	};
 
 	// Backdrop close function
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -343,7 +347,6 @@ const Modal: FC<IModalProps> = (props) => {
 			<AnimatePresence>
 				{isOpen && (
 					<>
-						<style>{`:root {--theme-modal-width: ${modalSize as string}}`}</style>
 						<motion.div
 							data-component-name='Modal'
 							ref={refModal}
@@ -364,7 +367,8 @@ const Modal: FC<IModalProps> = (props) => {
 								ref={ref}
 								isCentered={isCentered}
 								fullScreen={fullScreen}
-								isScrollable={isScrollable}>
+								isScrollable={isScrollable}
+								style={dialogStyle}>
 								<Content
 									rounded={rounded}
 									fullScreen={fullScreen}
