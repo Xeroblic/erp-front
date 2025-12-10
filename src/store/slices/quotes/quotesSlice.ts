@@ -312,6 +312,9 @@ export const convertQuoteToSale = createAsyncThunk<
 		const response = await ApiService.fetchData<{ quote: Quote; sale: Record<string, any> }>({
 			url: buildQuoteUrl(subsidiaryId, `/${quoteId}/convert-to-sale`),
 			method: 'post',
+			data: {
+				sale_number: null,
+			},
 		});
 		return response.data;
 	} catch (error: any) {

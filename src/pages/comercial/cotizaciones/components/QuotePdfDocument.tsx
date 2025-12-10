@@ -13,6 +13,8 @@ import {
 	formatCurrency,
 	formatDate,
 	getPaymentMethodsLabel,
+	getQuoteTaxRate,
+	getSaleNumber,
 } from './quote-data-mapper';
 
 const HEADER_HEIGHT = 90;
@@ -322,6 +324,7 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 	const customer = getCustomerInfo((quote as any).customer);
 
 	const metadata = ((quote as any)?.metadata || {}) as Record<string, any>;
+	const saleNumber = quote.is_converted_to_sale ? getSaleNumber(quote) : null;
 	const orderInfo = {
 		orderNumber:
 			metadata?.order_number || metadata?.n_orden || quote.quote_number || quote.id || '—',
@@ -329,11 +332,13 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 		associatedOt: metadata?.associated_ot || '—',
 		documentType: metadata?.document || '—',
 		purchase_order: quote.purchase_order || null,
+		saleNumber,
 	};
 
 	const pagesItems = paginateItems(items, ITEMS_PER_PAGE);
 
 	const { netTotal, discount, tax, total } = getQuoteTotals(quote, items);
+	const taxRate = getQuoteTaxRate(quote);
 	const paymentMethodsLabel = getPaymentMethodsLabel(quote);
 	const documentType = getDocumentType(quote);
 	return (
@@ -459,13 +464,22 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 												{paymentMethodsLabel}
 											</Text>
 										</View>
-										<View style={styles.infoRow}>
-											<Text style={styles.infoLabel}>Documento: </Text>
-											<Text style={styles.infoValue}>{documentType}</Text>
+											<View style={styles.infoRow}>
+												<Text style={styles.infoLabel}>Documento: </Text>
+												<Text style={styles.infoValue}>{documentType}</Text>
+											</View>
+											TODO: mostrar número de venta cuando se habilite el correlativo
+											{orderInfo.saleNumber ? (
+												<View style={styles.infoRow}>
+													<Text style={styles.infoLabel}>Venta: </Text>
+													<Text style={styles.infoValue}>
+														{orderInfo.saleNumber}
+													</Text>
+												</View>
+											) : null}
 										</View>
 									</View>
 								</View>
-							</View>
 
 							{/* TABLA DETALLE */}
 							<View style={styles.tableOuter}>
@@ -504,8 +518,8 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 									const name = getProductName(item);
 									const detail = getProductDetail(item);
 									const quantity = Number(item.quantity || 0);
-									const unitPrice = resolveUnitPrice(item);
-									const lineTotal = resolveLineTotal(item);
+									const unitPrice = resolveUnitPrice(item, taxRate);
+									const lineTotal = resolveLineTotal(item, taxRate);
 									const itemDiscount = Number(item.discount_amount || 0);
 
 									return (

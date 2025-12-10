@@ -24,6 +24,31 @@ const resolvePaymentLabel = (value?: string | null) => {
 	return PAYMENT_METHOD_LABELS[key] || value;
 };
 
+const safeNumber = (val: any) => {
+	const num = Number(val);
+	return Number.isFinite(num) ? num : 0;
+};
+
+const normalizeTaxRateValue = (val?: number | string | null) => {
+	const num = safeNumber(val);
+	if (num <= 0) return 0;
+	return num > 1 ? num / 100 : num;
+};
+
+const roundCurrency = (value: number) => {
+	return Math.round((value + Number.EPSILON) * 100) / 100;
+};
+
+const resolveItemTaxRate = (item: any, fallbackRate?: number) => {
+	if (typeof fallbackRate === 'number') return fallbackRate;
+	return normalizeTaxRateValue(
+		(item as any)?.tax_rate ??
+			(item as any)?.taxRate ??
+			(item as any)?.tax_percentage ??
+			(item as any)?.taxPercentage,
+	);
+};
+
 /**
  * Obtiene la sucursal activa para una cotización
  * Prioridad:
@@ -175,29 +200,64 @@ export const getCustomerInfo = (customer: any) => {
 	};
 };
 
-export const resolveUnitPrice = (item: any): number => {
-	const raw =
+export const resolveUnitPrice = (item: any, taxRateOverride?: number): number => {
+	const directValue =
 		item?.unit_price ??
 		item?.unit_price_net ??
+		(item as any)?.unitPrice ??
+		(item as any)?.unit_price_net ??
+		item?.product?.unit_price;
+	const direct = safeNumber(directValue);
+	if (direct > 0) return direct;
+
+	const subtotal = safeNumber(item?.subtotal ?? (item as any)?.total_net);
+	const quantity = safeNumber(item?.quantity ?? 1);
+	if (subtotal > 0 && quantity > 0) {
+		return subtotal / quantity;
+	}
+
+	const grossUnit = safeNumber(
 		item?.unit_price_gross ??
-		item?.total ??
-		item?.subtotal ??
-		item?.unitPrice ??
-		item?.product?.unit_price ??
-		0;
-	return Number(raw) || 0;
+			(item as any)?.unit_price_gross ??
+			(item as any)?.unitPriceGross ??
+			(item as any)?.unit_price_bruto,
+	);
+	if (grossUnit > 0) {
+		const rate = resolveItemTaxRate(item, taxRateOverride);
+		return rate > 0 ? grossUnit / (1 + rate) : grossUnit;
+	}
+
+	const grossTotal = safeNumber(item?.total ?? (item as any)?.total_amount);
+	if (grossTotal > 0 && quantity > 0) {
+		const rate = resolveItemTaxRate(item, taxRateOverride);
+		const netTotal = rate > 0 ? grossTotal / (1 + rate) : grossTotal;
+		return netTotal / quantity;
+	}
+
+	return 0;
 };
-export const resolveLineTotal = (item: any): number => {
-	const raw =
+export const resolveLineTotal = (item: any, taxRateOverride?: number): number => {
+	const subtotal =
 		item?.subtotal ??
-		item?.total_net ??
-		item?.unit_price ??
-		item?.unit_price_net ??
-		item?.unit_price_gross ??
-		item?.tax_amount ??
-		item?.total ??
-		Number(item?.quantity ?? 0) * resolveUnitPrice(item);
-	return Number(raw) || 0;
+		(item as any)?.total_net ??
+		(item as any)?.net_total ??
+		(item as any)?.subtotal_net;
+	const direct = safeNumber(subtotal);
+	if (direct > 0) return direct;
+
+	const quantity = safeNumber(item?.quantity ?? 1);
+	const unit = resolveUnitPrice(item, taxRateOverride);
+	if (unit > 0 && quantity > 0) {
+		return unit * quantity;
+	}
+
+	const grossLine = safeNumber(item?.total ?? (item as any)?.total_amount);
+	if (grossLine > 0) {
+		const rate = resolveItemTaxRate(item, taxRateOverride);
+		return rate > 0 ? grossLine / (1 + rate) : grossLine;
+	}
+
+	return 0;
 };
 export const getProductSku = (item: any): string => item?.customer_sku || item?.product?.sku || '—';
 export const getProductName = (item: any): string =>
@@ -256,9 +316,27 @@ export const getPaymentMethodsLabel = (quote: IQuote): string => {
 	return 'Contado / Transferencia / WebPay';
 };
 
-const safeNumber = (val: any) => {
-	const num = Number(val);
-	return Number.isFinite(num) ? num : 0;
+export const getQuoteTaxRate = (quote: IQuote): number => {
+	const raw =
+		(quote as any)?.tax_rate ??
+		(quote as any)?.taxRate ??
+		(quote as any)?.tax_percentage ??
+		(quote as any)?.taxPercentage ??
+		0;
+	return normalizeTaxRateValue(raw);
+};
+
+export const getSaleNumber = (quote: IQuote): string | null => {
+	const candidate =
+		(quote as any)?.sale_number ??
+		(quote as any)?.metadata?.sale_number ??
+		(quote as any)?.metadata?.sale?.sale_number ??
+		(quote as any)?.metadata?.saleNumber ??
+		null;
+
+	if (!candidate) return null;
+	const trimmed = String(candidate).trim();
+	return trimmed.length > 0 ? trimmed : null;
 };
 
 export const getQuoteTotals = (quote: IQuote, items: IQuoteItem[] = []) => {
@@ -268,6 +346,7 @@ export const getQuoteTotals = (quote: IQuote, items: IQuoteItem[] = []) => {
 		(quote as any).discount_amount ?? (quote as any).fixed_discount,
 	);
 	const totalFromQuote = safeNumber((quote as any).total_amount);
+	const taxRate = getQuoteTaxRate(quote);
 
 	const fallbackNet = items.reduce(
 		(acc, item) =>
@@ -287,10 +366,21 @@ export const getQuoteTotals = (quote: IQuote, items: IQuoteItem[] = []) => {
 
 	const netTotal = netFromQuote || fallbackNet;
 	const discount = discountFromQuote || fallbackDiscount;
-	const tax = taxFromQuote || fallbackTax;
-	const total = totalFromQuote || (netTotal || discount || tax ? netTotal - discount + tax : 0);
+	const effectiveDiscount = Math.max(discount, 0);
+	const taxBase = Math.max(netTotal - effectiveDiscount, 0);
 
-	return { netTotal, discount, tax, total };
+	const tax =
+		taxFromQuote ||
+		(fallbackTax > 0
+			? fallbackTax
+			: taxRate > 0
+				? roundCurrency(taxBase * taxRate)
+				: 0);
+
+	const total =
+		totalFromQuote || (netTotal || effectiveDiscount || tax ? taxBase + tax : 0);
+
+	return { netTotal, discount: effectiveDiscount, tax, total };
 };
 
 export const getDocumentType = (quote: IQuote): string => {

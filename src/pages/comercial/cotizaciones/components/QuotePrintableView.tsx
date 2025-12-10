@@ -17,6 +17,8 @@ import {
 	formatCurrency,
 	getDocumentType,
 	getQuoteTotals,
+	getQuoteTaxRate,
+	getSaleNumber,
 } from './quote-data-mapper';
 
 interface QuotePrintableViewProps {
@@ -61,14 +63,17 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 		(_, idx) => items[idx] ?? null,
 	);
 	const metadata = ((quote as any)?.metadata || {}) as Record<string, any>;
+	const saleNumber = quote.is_converted_to_sale ? getSaleNumber(quote) : null;
 	const orderInfo = {
 		orderNumber: metadata?.order_number || metadata?.n_orden || '—',
 		contactPhone: customer.phone || metadata?.contact_phone || '—',
 		associatedOt: metadata?.associated_ot || '—',
 		documentType: metadata?.document_type || '—',
+		saleNumber,
 	};
 
 	const { netTotal, discount, tax, total } = getQuoteTotals(quote, items);
+	const taxRate = getQuoteTaxRate(quote);
 	const paymentMethodsLabel = getPaymentMethodsLabel(quote);
 	const documentType = getDocumentType(quote);
 
@@ -136,15 +141,15 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 			<div
 				className='mb-4 grid grid-cols-1 rounded border-2 border-rose-500 text-[9px] text-gray-800 md:grid-cols-2'
 				style={{ color: '#111827' }}>
-				<div className='border-b-2 border-rose-500 bg-rose-50 px-3 py-1 font-semibold uppercase text-rose-800 md:col-span-2'>
-					<div className='flex items-center justify-between'>
-						<span>Empresa</span>
-						<span>
-							N° Orden C:{' '}
-							<span className='font-bold'>{quote.purchase_order || '—'}</span>
-						</span>
+					<div className='border-b-2 border-rose-500 bg-rose-50 px-3 py-1 font-semibold uppercase text-rose-800 md:col-span-2'>
+						<div className='flex items-center justify-between'>
+							<span>Empresa</span>
+							<span>
+								N° Orden C:{' '}
+								<span className='font-bold'>{quote.purchase_order || '—'}</span>
+							</span>
+						</div>
 					</div>
-				</div>
 				<div className='space-y-1 px-3 py-2 text-[8px]'>
 					<p>
 						<span className='font-semibold'>Nombre Empresa:</span> {customer.name}
@@ -178,6 +183,12 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 					<p>
 						<span className='font-semibold'>Documento:</span> {documentType}
 					</p>
+					{/* TODO: mostrar número de venta cuando el backend confirme el correlativo
+					{orderInfo.saleNumber && (
+						<p>
+							<span className='font-semibold'>Venta:</span> {orderInfo.saleNumber}
+						</p>
+					)} */}
 				</div>
 			</div>
 
@@ -217,8 +228,8 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 					const name = getProductName(item);
 					const detail = getProductDetail(item);
 					const quantity = Number((item as any).quantity || 0);
-					const unitPrice = resolveUnitPrice(item);
-					const lineTotal = resolveLineTotal(item);
+					const unitPrice = resolveUnitPrice(item, taxRate);
+					const lineTotal = resolveLineTotal(item, taxRate);
 					const itemDiscount = Number(item.discount_amount || 0);
 
 					return (
