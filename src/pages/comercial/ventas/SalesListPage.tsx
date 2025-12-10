@@ -149,7 +149,10 @@ const SalesListPage: React.FC = () => {
 				header: 'Fecha',
 				cell: ({ row }) => (
 					<div className='font-medium text-zinc-900 dark:text-zinc-100'>
-						{row.original.sale_date ? formatDate(row.original.sale_date) : '—'}
+						{/* Arreglar formatDate */}
+						{/* {row.original.sale_date ? formatDate(row.original.sale_date) : '—'} */}
+						{row.original.sale_date ? row.original.sale_date : '—'}
+
 					</div>
 				),
 			},

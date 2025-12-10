@@ -46,12 +46,11 @@ const ClientesVentasDetalle = () => {
 	}, [clienteId, dispatch, effectiveSubsidiaryId]);
 
 	const contacto = React.useMemo(
-		() =>
-			(detalle?.primary_contact ?? {
-				name: detalle?.contact_name ?? '',
-				email: detalle?.email ?? '',
-				phone: detalle?.phone ?? '',
-			}) || { name: '', email: '', phone: '' },
+		() => ({
+			name: detalle?.contact_name || detalle?.primary_contact?.name || '',
+			email: detalle?.email || detalle?.primary_contact?.email || '',
+			phone: detalle?.phone || detalle?.primary_contact?.phone || '',
+		}),
 		[detalle],
 	);
 
@@ -115,6 +114,17 @@ const ClientesVentasDetalle = () => {
 					...values,
 					rut: values.document_number,
 					document_number: values.document_number,
+					contact_name: values.contact_name,
+					email: values.email,
+					phone: values.phone,
+					primary_contact: {
+						name: values.contact_name || '',
+						email: values.email || '',
+						phone: values.phone || '',
+					},
+					primary_contact_name: values.contact_name,
+					primary_contact_email: values.email,
+					primary_contact_phone: values.phone,
 				};
 
 				await dispatch(

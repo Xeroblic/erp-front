@@ -73,6 +73,14 @@ const CreateCustomerSaleModal = ({
 								email: values.email,
 								phone: values.phone,
 								is_active: values.is_active,
+								primary_contact: {
+									name: values.contact_name || '',
+									email: values.email || '',
+									phone: values.phone || '',
+								},
+								primary_contact_name: values.contact_name,
+								primary_contact_email: values.email,
+								primary_contact_phone: values.phone,
 							},
 						}) as any,
 					);
@@ -104,6 +112,14 @@ const CreateCustomerSaleModal = ({
 								email: values.email,
 								phone: values.phone,
 								is_active: values.is_active,
+								primary_contact: {
+									name: values.contact_name || '',
+									email: values.email || '',
+									phone: values.phone || '',
+								},
+								primary_contact_name: values.contact_name,
+								primary_contact_email: values.email,
+								primary_contact_phone: values.phone,
 							},
 						}) as any,
 					);

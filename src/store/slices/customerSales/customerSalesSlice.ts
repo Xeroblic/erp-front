@@ -12,6 +12,7 @@ export interface CustomerSalesState {
 	lista: ICustomerSale[];
 	overview: ICustomerSaleOverview[];
 	detalle: ICustomerSale | undefined;
+	detalleCliente: ICustomerSaleOverview | undefined;
 }
 
 const initialState: CustomerSalesState = {
@@ -20,6 +21,7 @@ const initialState: CustomerSalesState = {
 	lista: [],
 	overview: [],
 	detalle: undefined,
+	detalleCliente: undefined,
 };
 
 /* ----------------------------- THUNKS CRUD ----------------------------- */

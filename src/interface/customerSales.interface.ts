@@ -70,7 +70,6 @@ export interface ICustomerSale {
 		name: string;
 	};
 }
-
 export interface ICustomerSaleOverview {
 	id: number;
 	name: string;
@@ -85,4 +84,8 @@ export interface ICustomerSaleOverview {
 	is_active: boolean;
 }
 
-export interface ICustomerSalePayload extends Partial<ICustomerSale> {}
+export interface ICustomerSalePayload extends Partial<ICustomerSale>, Record<string, unknown> {
+	primary_contact_name?: string | null;
+	primary_contact_email?: string | null;
+	primary_contact_phone?: string | null;
+}

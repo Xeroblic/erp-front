@@ -23,7 +23,7 @@ export const formatCurrency = (
  */
 export const formatDate = (
 	date: string | Date,
-	locale: string = 'es-ES',
+	locale: string = 'es-CL',
 	options: Intl.DateTimeFormatOptions = {
 		year: 'numeric',
 		month: '2-digit',
