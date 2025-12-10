@@ -138,12 +138,12 @@ const styles = StyleSheet.create({
 		borderTopColor: '#e5e7eb',
 	},
 	companyOrderColLeft: {
-		width: '50%',
+		width: '70%',
 		paddingHorizontal: 10,
 		paddingVertical: 6,
 	},
 	companyOrderColRight: {
-		width: '50%',
+		width: '30%',
 		paddingHorizontal: 10,
 		paddingVertical: 6,
 		borderLeftWidth: 1,
@@ -325,14 +325,31 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 
 	const metadata = ((quote as any)?.metadata || {}) as Record<string, any>;
 	const saleNumber = quote.is_converted_to_sale ? getSaleNumber(quote) : null;
+	const metadataSaleId = Number(
+		metadata?.sale_id ||
+			metadata?.saleId ||
+			metadata?.sale?.id ||
+			(quote as any)?.sale_id ||
+			(quote as any)?.sale?.id ||
+			0,
+	);
+	const saleDigitsFromNumber = saleNumber?.match(/\d+/)?.[0];
+	const derivedSaleId =
+		metadataSaleId > 0
+			? metadataSaleId
+			: saleDigitsFromNumber
+				? Number(saleDigitsFromNumber)
+				: null;
+	const correlatedSaleNumber =
+		derivedSaleId && derivedSaleId > 0 ? String(5000 + derivedSaleId) : saleNumber;
+
 	const orderInfo = {
 		orderNumber:
 			metadata?.order_number || metadata?.n_orden || quote.quote_number || quote.id || '—',
 		contactPhone: customer.phone || metadata?.contact_phone || '—',
-		associatedOt: metadata?.associated_ot || '—',
 		documentType: metadata?.document || '—',
 		purchase_order: quote.purchase_order || null,
-		saleNumber,
+		saleNumber: correlatedSaleNumber,
 	};
 
 	const pagesItems = paginateItems(items, ITEMS_PER_PAGE);
@@ -453,10 +470,10 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 											</Text>
 										</View>
 										<View style={styles.infoRow}>
-											{/* <Text style={styles.infoLabel}>OT Asociada: </Text>
-										<Text style={styles.infoValue}>
-											{orderInfo.associatedOt}
-										</Text> */}
+											<Text style={styles.infoLabel}>N° Venta: </Text>
+											<Text style={styles.infoValue}>
+												{orderInfo.saleNumber || '—'}
+											</Text>
 										</View>
 										<View style={styles.infoRow}>
 											<Text style={styles.infoLabel}>Método de pago: </Text>
@@ -464,22 +481,13 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 												{paymentMethodsLabel}
 											</Text>
 										</View>
-											<View style={styles.infoRow}>
-												<Text style={styles.infoLabel}>Documento: </Text>
-												<Text style={styles.infoValue}>{documentType}</Text>
-											</View>
-											TODO: mostrar número de venta cuando se habilite el correlativo
-											{orderInfo.saleNumber ? (
-												<View style={styles.infoRow}>
-													<Text style={styles.infoLabel}>Venta: </Text>
-													<Text style={styles.infoValue}>
-														{orderInfo.saleNumber}
-													</Text>
-												</View>
-											) : null}
+										<View style={styles.infoRow}>
+											<Text style={styles.infoLabel}>Documento: </Text>
+											<Text style={styles.infoValue}>{documentType}</Text>
 										</View>
 									</View>
 								</View>
+							</View>
 
 							{/* TABLA DETALLE */}
 							<View style={styles.tableOuter}>
