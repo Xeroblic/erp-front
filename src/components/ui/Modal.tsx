@@ -289,7 +289,10 @@ const Modal: FC<IModalProps> = (props) => {
 		(['sm', 'md', 'lg', 'xl', '2xl'].includes(size as TModalStableSize) &&
 			modalSizes[size as TModalStableSize]) ||
 		size;
-	const dialogStyle: CSSProperties = {
+	type ModalDialogStyle = CSSProperties & {
+		'--theme-modal-width'?: string;
+	};
+	const dialogStyle: ModalDialogStyle = {
 		'--theme-modal-width': modalSize as string,
 	};
 
