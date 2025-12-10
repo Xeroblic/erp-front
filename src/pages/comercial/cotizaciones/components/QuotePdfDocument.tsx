@@ -328,6 +328,7 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 		contactPhone: customer.phone || metadata?.contact_phone || '—',
 		associatedOt: metadata?.associated_ot || '—',
 		documentType: metadata?.document || '—',
+		purchase_order: quote.purchase_order || null,
 	};
 
 	const pagesItems = paginateItems(items, ITEMS_PER_PAGE);
@@ -397,7 +398,7 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 									<Text style={styles.companyOrderHeaderText}>
 										N° Orden C:{' '}
 										<Text style={{ fontWeight: 'bold' }}>
-											{orderInfo.orderNumber}
+											{orderInfo.purchase_order || '—'}
 										</Text>
 									</Text>
 								</View>

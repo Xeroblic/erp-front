@@ -141,7 +141,7 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 						<span>Empresa</span>
 						<span>
 							N° Orden C:{' '}
-							<span className='font-bold'>{quote.quote_number || quote.id}</span>
+							<span className='font-bold'>{quote.purchase_order || '—'}</span>
 						</span>
 					</div>
 				</div>
