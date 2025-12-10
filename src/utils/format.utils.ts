@@ -21,6 +21,24 @@ export const formatCurrency = (
 /**
  * Format date values
  */
+const CHILE_TZ = 'America/Santiago';
+const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+const parseToDate = (value: string | Date): Date => {
+	if (value instanceof Date) return value;
+	return new Date(value);
+};
+
+const formatPlainDateString = (
+	value: string,
+	locale: string,
+	options: Intl.DateTimeFormatOptions,
+) => {
+	const [year, month, day] = value.split('-').map((part) => Number(part));
+	const plainDate = new Date(Date.UTC(year, month - 1, day));
+	return new Intl.DateTimeFormat(locale, { ...options, timeZone: 'UTC' }).format(plainDate);
+};
+
 export const formatDate = (
 	date: string | Date,
 	locale: string = 'es-CL',
@@ -30,8 +48,14 @@ export const formatDate = (
 		day: '2-digit',
 	},
 ): string => {
-	const dateObj = typeof date === 'string' ? new Date(date) : date;
-	return new Intl.DateTimeFormat(locale, options).format(dateObj);
+	if (typeof date === 'string') {
+		const trimmed = date.trim();
+		if (DATE_ONLY_REGEX.test(trimmed)) {
+			return formatPlainDateString(trimmed, locale, options);
+		}
+	}
+	const dateObj = parseToDate(date);
+	return new Intl.DateTimeFormat(locale, { timeZone: CHILE_TZ, ...options }).format(dateObj);
 };
 
 /**

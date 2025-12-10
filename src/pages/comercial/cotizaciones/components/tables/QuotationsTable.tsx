@@ -11,6 +11,7 @@ import Button from '../../../../../components/ui/Button';
 import Badge from '../../../../../components/ui/Badge';
 import Icon from '../../../../../components/icon/Icon';
 import { getQuoteStatusBadge, normalizeQuoteStatusValue } from '../../constants/quoteStatuses';
+import { formatDate } from '@/utils/format.utils';
 
 interface QuotationsTableProps {
 	data: IQuote[];
@@ -46,17 +47,6 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 		}).format(amount);
 	};
 
-	// Formatear fecha
-	const formatDate = (value?: string | null) => {
-		if (!value) return '—';
-		const date = new Date(value);
-		if (Number.isNaN(date.getTime())) return '—';
-		return date.toLocaleDateString('es-CL', {
-			year: 'numeric',
-			month: '2-digit',
-			day: '2-digit',
-		});
-	};
 
 	// columnas de la tabla
 	const columns = useMemo<ColumnDef<IQuote, any>[]>(
