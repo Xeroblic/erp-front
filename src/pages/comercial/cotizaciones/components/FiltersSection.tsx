@@ -1,9 +1,14 @@
 import Input from '@/components/form/Input';
-import Select from '@/components/form/Select';
+import SelectReact, { TSelectOptions, TSelectOption } from '@/components/form/SelectReact';
 import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
 import { normalizeQuoteStatusValue, quoteStatusOptions } from '../constants/quoteStatuses';
 import { QuoteStatus } from '@/interface';
 import Button from '@/components/ui/Button';
+
+const statusSelectOptions: TSelectOptions = [
+	{ value: '', label: 'Todos los estados' },
+	...quoteStatusOptions,
+];
 
 export const FiltersSection = ({
 	filters,
@@ -11,7 +16,8 @@ export const FiltersSection = ({
 	showFilters,
 	setShowFilters,
 	resetFilters,
-}: any) => (
+}: any) => {
+	return (
 	<Card className='mb-6'>
 		<CardHeader>
 			<CardHeaderChild>
@@ -27,22 +33,29 @@ export const FiltersSection = ({
 					onChange={(e: any) => setFilters({ ...filters, search: e.target.value })}
 				/>
 
-				<Select
+				<SelectReact
 					name='status'
-					value={filters.status ? normalizeQuoteStatusValue(filters.status) : ''}
-					onChange={(e: any) =>
+					placeholder='Todos los estados'
+					options={statusSelectOptions}
+					value={
+						filters.status
+							? ((statusSelectOptions.find(
+									(option) =>
+										option.value === normalizeQuoteStatusValue(filters.status),
+								) as TSelectOption | undefined) ?? null)
+							: null
+					}
+					isClearable
+					onChange={(option) => {
+						const selected = option as TSelectOption | null;
 						setFilters({
 							...filters,
-							status: e.target.value ? (e.target.value as QuoteStatus) : undefined,
-						})
-					}>
-					<option value=''>Todos los estados</option>
-					{quoteStatusOptions.map((option) => (
-						<option key={option.value} value={option.value}>
-							{option.label}
-						</option>
-					))}
-				</Select>
+							status: selected?.value
+								? (selected.value as QuoteStatus)
+								: undefined,
+						});
+					}}
+				/>
 
 				<Input
 					name='customer'
@@ -111,3 +124,4 @@ export const FiltersSection = ({
 		</CardBody>
 	</Card>
 );
+};

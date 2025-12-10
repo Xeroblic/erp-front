@@ -250,7 +250,7 @@ const SelectSucursalEmpresa = () => {
 
 	// props del Select para reutilizarlas en desktop + modal
 	const selectProps = {
-		className: 'branch-selector w-full',
+		className: 'branch-selector w-full bg-white dark:bg-zinc-600/90',
 		noOptionsMessage: () => (branchesError ? 'Error al cargar' : 'Sin Opciones'),
 		placeholder: branchesLoading
 			? 'Cargando sucursales...'
@@ -285,14 +285,14 @@ const SelectSucursalEmpresa = () => {
 	return (
 		<>
 			{/* DESKTOP */}
-			<div className='hidden w-full sm:block sm:min-w-[260px] sm:max-w-xs'>
+			<div className='hidden w-full sm:block sm:min-w-[260px] sm:max-w-xs '>
 				<SelectReact {...selectProps} />
 			</div>
 
 			{/* MOBILE BUTTON */}
 			<Button
 				onClick={() => setModalOpen(true)}
-				className='flex w-full items-center gap-2 rounded-lg border bg-white px-3 py-2 dark:bg-neutral-900 sm:hidden'>
+				className='flex w-full items-center gap-2 rounded-lg border bg-white px-3 py-2 dark:bg-zinc-600/90 sm:hidden'>
 				<span className='flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 shadow-sm'>
 					<Icon icon='HeroBuildingOffice2' className='h-4 w-4' />
 				</span>
