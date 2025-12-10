@@ -5,6 +5,7 @@ import Modal, { ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Moda
 import Input from '@/components/form/Input';
 import Button from '@/components/ui/Button';
 import Checkbox from '@/components/form/Checkbox';
+import Label from '@/components/form/Label';
 
 import { useAppDispatch } from '@/store';
 import {
@@ -30,6 +31,11 @@ const CreateCustomerSaleModal = ({
 	initialData?: Partial<ICustomerSale> | null;
 }) => {
 	const dispatch = useAppDispatch();
+	const rutId = React.useId();
+	const companyId = React.useId();
+	const contactId = React.useId();
+	const emailId = React.useId();
+	const phoneId = React.useId();
 
 	const formik = useFormik({
 		initialValues: {
@@ -133,73 +139,88 @@ const CreateCustomerSaleModal = ({
 
 			<ModalBody>
 				<form onSubmit={formik.handleSubmit} className='space-y-4'>
-					<Input
-						name='document_number'
-						label='RUT'
-						placeholder='12345678-9'
-						value={formik.values.document_number}
-						onChange={(e) => {
-							const formatted = formatRut(e.target.value);
-							formik.setFieldValue('document_number', formatted);
-						}}
-						onBlur={formik.handleBlur}
-						isTouched={!!formik.touched.document_number}
-						isValid={!formik.errors.document_number}
-						invalidFeedback={
-							formik.touched.document_number
-								? (formik.errors.document_number as any)
-								: undefined
-						}
-					/>
-
-					<div className='grid grid-cols-2 gap-4'>
+					<div className='space-y-1'>
+						<Label htmlFor={rutId}>RUT</Label>
 						<Input
-							name='billing_company'
-							label='Empresa'
-							placeholder='Empresa S.A.'
-							value={formik.values.billing_company}
-							onChange={formik.handleChange}
+							id={rutId}
+							name='document_number'
+							placeholder='12345678-9'
+							value={formik.values.document_number}
+							onChange={(e) => {
+								const formatted = formatRut(e.target.value);
+								formik.setFieldValue('document_number', formatted);
+							}}
 							onBlur={formik.handleBlur}
-							isTouched={!!formik.touched.billing_company}
-							isValid={!formik.errors.billing_company}
+							isTouched={!!formik.touched.document_number}
+							isValid={!formik.errors.document_number}
 							invalidFeedback={
-								formik.touched.billing_company
-									? (formik.errors.billing_company as any)
+								formik.touched.document_number
+									? (formik.errors.document_number as any)
 									: undefined
 							}
 						/>
+					</div>
+
+					<div className='grid grid-cols-2 gap-4'>
+						<div className='space-y-1'>
+							<Label htmlFor={companyId}>Empresa</Label>
+							<Input
+								id={companyId}
+								name='billing_company'
+								placeholder='Empresa S.A.'
+								value={formik.values.billing_company}
+								onChange={formik.handleChange}
+								onBlur={formik.handleBlur}
+								isTouched={!!formik.touched.billing_company}
+								isValid={!formik.errors.billing_company}
+								invalidFeedback={
+									formik.touched.billing_company
+										? (formik.errors.billing_company as any)
+										: undefined
+								}
+							/>
+						</div>
+						<div className='space-y-1'>
+							<Label htmlFor={contactId}>Contacto</Label>
+							<Input
+								id={contactId}
+								name='contact_name'
+								placeholder='Juan Pérez'
+								value={formik.values.contact_name}
+								onChange={formik.handleChange}
+								onBlur={formik.handleBlur}
+							/>
+						</div>
+					</div>
+
+					<div className='space-y-1'>
+						<Label htmlFor={emailId}>Email</Label>
 						<Input
-							name='contact_name'
-							label='Persona'
-							placeholder='Juan Pérez'
-							value={formik.values.contact_name}
+							id={emailId}
+							name='email'
+							placeholder='correo@example.cl'
+							value={formik.values.email}
+							onChange={formik.handleChange}
+							onBlur={formik.handleBlur}
+							isTouched={!!formik.touched.email}
+							isValid={!formik.errors.email}
+							invalidFeedback={
+								formik.touched.email ? (formik.errors.email as any) : undefined
+							}
+						/>
+					</div>
+
+					<div className='space-y-1'>
+						<Label htmlFor={phoneId}>Teléfono</Label>
+						<Input
+							id={phoneId}
+							name='phone'
+							placeholder='+56 9 1234 5678'
+							value={formik.values.phone}
 							onChange={formik.handleChange}
 							onBlur={formik.handleBlur}
 						/>
 					</div>
-
-					<Input
-						name='email'
-						label='Email'
-						placeholder='correo@example.cl'
-						value={formik.values.email}
-						onChange={formik.handleChange}
-						onBlur={formik.handleBlur}
-						isTouched={!!formik.touched.email}
-						isValid={!formik.errors.email}
-						invalidFeedback={
-							formik.touched.email ? (formik.errors.email as any) : undefined
-						}
-					/>
-
-					<Input
-						name='phone'
-						label='Teléfono'
-						placeholder='+56 9 1234 5678'
-						value={formik.values.phone}
-						onChange={formik.handleChange}
-						onBlur={formik.handleBlur}
-					/>
 
 					<div>
 						<Checkbox
