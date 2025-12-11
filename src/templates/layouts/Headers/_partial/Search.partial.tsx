@@ -106,12 +106,12 @@ const SearchPartial = () => {
 				ref={ref}
 				firstSuffix={leftContent}
 				lastSuffix={rightContent}
-				className='z-20 max-sm:hidden'>
+				className='z-20 max-sm:hidden bg-white dark:bg-zinc-900'>
 				<Input
 					ref={inputRef}
 					name='searchField'
 					placeholder='Busca en el sistema...'
-					className='min-w-[22rem]'
+					className='min-w-[22rem] min-h-[2.7rem] bg-white dark:bg-zinc-800/90'
 					color='red'
 					value={formik.values.searchField}
 					onChange={formik.handleChange}

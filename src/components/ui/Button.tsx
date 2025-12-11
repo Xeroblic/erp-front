@@ -9,6 +9,7 @@ import { TIcons } from '../../types/icons.type';
 import Icon from '../icon/Icon';
 import { TBorderWidth } from '../../types/borderWidth.type';
 import useReactiveThemeConfig from '../../hooks/useReactiveThemeConfig';
+import { textColor as getTextColor } from '../../utils/textColor.util';
 
 export type TButtonVariants = 'solid' | 'outline' | 'default';
 export type TButtonSize = 'xs' | 'sm' | 'default' | 'lg' | 'xl';
@@ -59,18 +60,23 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 		...rest
 	} = props;
 
-	const { textColor, shadeColorIntensity } = useColorIntensity(colorIntensity);
+	const { textColor: contrastTextColor, shadeColorIntensity } = useColorIntensity(colorIntensity);
 
 	const isSolid = variant === 'solid';
-	const effectiveTextColor = isSolid ? 'text-white' : textColor;
+	const effectiveTextColor = isSolid ? 'text-white' : contrastTextColor;
 	const HAS_CHILDREN = typeof children !== 'undefined';
+	const accentTextColor = getTextColor(color, colorIntensity);
+	const iconComputedColor =
+		iconColor ?? (isSolid ? 'text-white' : accentTextColor ?? contrastTextColor);
+	const rightIconComputedColor =
+		rightIconColor ?? (isSolid ? 'text-white' : accentTextColor ?? contrastTextColor);
 
 	const btnVariants: { [key in TButtonVariants]: string } = {
 		solid: classNames(
 			{ [`bg-${color}-${colorIntensity}`]: !isActive },
 			[effectiveTextColor],
 			[`${borderWidth} border-${color}-${colorIntensity}`],
-			[`${textColor}`],
+			[`${contrastTextColor}`],
 			[`hover:bg-${color}-${shadeColorIntensity as TColorIntensity}`],
 			[`hover:border-${color}-${shadeColorIntensity as TColorIntensity}`],
 			[`active:bg-${color}-${shadeColorIntensity as TColorIntensity}`],
@@ -180,7 +186,7 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 					className={classNames(
 						{ 'animate-spin': isLoading },
 						btnIconClasses,
-						iconColor ?? (isSolid ? 'text-white' : textColor),
+						iconComputedColor,
 					)}
 				/>
 			)}
@@ -188,7 +194,7 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 			{!!rightIcon && (
 				<Icon
 					icon={rightIcon}
-					className={classNames(btnRightIconClasses, rightIconColor ?? textColor)}
+					className={classNames(btnRightIconClasses, rightIconComputedColor)}
 				/>
 			)}
 		</button>
