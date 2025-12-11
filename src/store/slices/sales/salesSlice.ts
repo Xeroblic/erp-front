@@ -376,11 +376,10 @@ const ventasSlice = createSlice({
 				if (itemIndex !== -1) {
 					sale.items[itemIndex] = item;
 					// Recalcular total
-					const newTotal = sale.items.reduce(
-						(total, saleItem) =>
-							total + Number(saleItem.price ?? 0) * Number(saleItem.quantity ?? 0),
-						0,
-					);
+					const newTotal = sale.items.reduce((total, saleItem) => {
+						const line = Number(saleItem.total ?? saleItem.subtotal ?? 0);
+						return total + (Number.isFinite(line) ? line : 0);
+					}, 0);
 					sale.total_amount = String(newTotal);
 				}
 			}
@@ -389,11 +388,10 @@ const ventasSlice = createSlice({
 				const itemIndex = state.currentSale.items.findIndex((i) => i.id === item.id);
 				if (itemIndex !== -1) {
 					state.currentSale.items[itemIndex] = item;
-					const newTotal = state.currentSale.items.reduce(
-						(total, saleItem) =>
-							total + Number(saleItem.price ?? 0) * Number(saleItem.quantity ?? 0),
-						0,
-					);
+					const newTotal = state.currentSale.items.reduce((total, saleItem) => {
+						const line = Number(saleItem.total ?? saleItem.subtotal ?? 0);
+						return total + (Number.isFinite(line) ? line : 0);
+					}, 0);
 					state.currentSale.total_amount = String(newTotal);
 				}
 			}
