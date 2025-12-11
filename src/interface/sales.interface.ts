@@ -50,24 +50,24 @@ export interface ISaleItem {
 	sale_id: number;
 	product_id: number;
 
-	product_name: string;
-	sku: string;
+	// Identificación y nombres (según payload de /sales/{id}/items)
 	name?: string;
+	sku?: string;
+	product_detail?: string | null;
 
-	attributes_description?: string;
-
+	// Cantidades y montos
 	quantity: number;
-	price: number;
-	total: number;
+	total?: number | string;
 	unit_price?: number | string;
-	unit_price_net?: number | string;
+	unit_price_gross?: number | string;
 	subtotal?: number | string;
-	line_total?: number | string;
-	line_net?: number | string;
+	tax_amount?: number | string;
+	discount_amount?: number | string;
+	tax_rate?: number | string;
+	external_line_id?: number;
 
-	serial_numbers?: string[];
-
-	// Relaciones
+	// Metadata y relaciones
+	meta_json?: Record<string, unknown>;
 	product?: IProduct;
 }
 

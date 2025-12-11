@@ -1,3 +1,44 @@
+# Las notas de cambios de veriones se mantienen en este archivo README.md y se iran ordenando desde las ultimas versiones a las primeras (perdon por no hacerlo antes >.<!!!!!)
+
+# Version 1.0.0 de Zentria ERP Frontend 
+
+### Actualizacion de estilos en componentes de botones 
+
+## Ahora el btn permite cambiarle el color del icono 
+
+```tsx
+
+return (
+		<button
+			ref={ref}
+			data-component-name='Button'
+			type={type}
+			className={classes}
+			disabled={isButtonDisabled}
+			{...rest}>
+			{(!!icon || isLoading) && (
+				<Icon
+					icon={isLoading ? 'DuoLoading' : (icon as TIcons)}
+					className={classNames(
+						{ 'animate-spin': isLoading },
+						btnIconClasses,
+						iconColor ?? (isSolid ? 'text-white' : textColor),
+					)}
+				/>
+			)}
+			{children}
+			{!!rightIcon && (
+				<Icon
+					icon={rightIcon}
+					className={classNames(btnRightIconClasses, rightIconColor ?? textColor)} <========= AQUI EL CAMBIO se AGREGA rightIconColor, QUE VIENE EN LAS PROPS, SI NO VIENE USA textColor
+
+				/>
+			)}
+		</button>
+	);
+```
+
+
 # **Zentria ERP Frontend**
 
 ### *Plataforma Web Corporativa para la Gestión Integral de Operaciones Multi-Empresa y Multi-Sucursal*
@@ -345,3 +386,6 @@ Zentria ERP Frontend representa un **producto empresarial sólido**, diseñado p
 * Integración con múltiples fuentes de información.
 
 Es una plataforma moderna, escalable y preparada para crecer hacia cualquier vertical: logística, inventario, RRHH, ventas, soporte técnico, marketplace y más.
+
+
+

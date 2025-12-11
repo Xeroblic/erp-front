@@ -119,7 +119,7 @@ const CloseSaleModal: React.FC<Props> = ({
 				<div className='max-h-[60vh] space-y-3 overflow-y-auto pr-1'>
 					{items.map((it) => {
 						const sku = it.sku || it.product?.sku || 'S/N';
-						const name = it.product_name || it.product?.name || 'Producto sin nombre';
+						const name = it.product?.name || it.name || 'Producto sin nombre';
 
 						return (
 							<div
@@ -130,11 +130,6 @@ const CloseSaleModal: React.FC<Props> = ({
 										<p className='text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
 											{sku} — {name}
 										</p>
-										{it.attributes_description && (
-											<p className='text-xs text-zinc-500 dark:text-zinc-400'>
-												{it.attributes_description}
-											</p>
-										)}
 										<p className='text-xs text-zinc-600 dark:text-zinc-400'>
 											Cantidad requerida:{' '}
 											<span className='font-semibold text-zinc-800 dark:text-zinc-100'>
@@ -174,10 +169,13 @@ const CloseSaleModal: React.FC<Props> = ({
 			<ModalFooter>
 				<div className='flex w-full justify-end gap-3'>
 					<Button
-						variant='outline'
+						variant='solid'
 						onClick={handleClose}
+						color='red'
 						isDisable={isSubmitting}
-						icon='HeroXMark'>
+						icon='HeroXMark'
+						// className='border border-dashed bg-red-500/20 text-red-700 hover:bg-red-500/20 hover:text-red-900 dark:text-red-300 dark:hover:bg-red-600/20 dark:hover:text-red-100'
+						>
 						Cancelar
 					</Button>
 					<Button

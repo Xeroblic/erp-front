@@ -26,33 +26,13 @@ const SaleItemsTable: React.FC<SaleItemsTableProps> = ({ items }) => {
 				header: 'Producto / Detalles',
 				cell: ({ row }) => {
 					const name =
-						row.original.product_name ||
-						row.original.product?.name ||
-						(row.original as { name?: string })?.name ||
-						'Producto sin nombre';
+						row.original.product?.name || row.original.name || 'Producto sin nombre';
 
 					return (
 						<div className='flex flex-col gap-1'>
 							<span className='text-sm font-medium text-zinc-900 dark:text-zinc-100'>
 								{name}
 							</span>
-							{row.original.attributes_description && (
-								<span className='text-xs leading-tight text-zinc-500 dark:text-zinc-500'>
-									{row.original.attributes_description}
-								</span>
-							)}
-							{row.original.serial_numbers &&
-								row.original.serial_numbers.length > 0 && (
-									<div className='mt-1 flex flex-wrap gap-1'>
-										{row.original.serial_numbers.map((sn) => (
-											<span
-												key={sn}
-												className='rounded border border-zinc-200 bg-zinc-100 px-1.5 py-0.5 text-[10px] text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'>
-												{sn}
-											</span>
-										))}
-									</div>
-								)}
 						</div>
 					);
 				},
@@ -70,50 +50,56 @@ const SaleItemsTable: React.FC<SaleItemsTableProps> = ({ items }) => {
 				size: 80,
 			},
 			{
-				accessorKey: 'price',
-				header: 'Precio Unit.',
+				accessorKey: 'subtotal',
+				header: 'SubTotal',
 				cell: ({ row }) => {
 					const unitPrice = Number(
-						row.original.unit_price ??
-							row.original.unit_price_net ??
-							row.original.price ??
-							0,
+						row.original.subtotal  ?? 0,
 					);
 					return (
 						<span className='text-sm text-zinc-700 dark:text-zinc-300'>
-							{formatCLP(unitPrice)}
+							{unitPrice}
 						</span>
 					);
 				},
 				meta: { align: 'right' },
 				size: 120,
 			},
-			{
-				accessorKey: 'total',
-				header: 'Total',
-				cell: ({ row }) => {
-					const unitPrice = Number(
-						row.original.unit_price ??
-							row.original.unit_price_net ??
-							row.original.price ??
-							0,
-					);
-					const totalLine = Number(
-						row.original.total ??
-							row.original.line_total ??
-							row.original.subtotal ??
-							row.original.line_net ??
-							row.original.quantity * unitPrice,
-					);
-					return (
-						<span className='text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
-							{formatCLP(totalLine)}
-						</span>
-					);
-				},
-				meta: { align: 'right' },
-				size: 120,
-			},
+			// {
+			// 	accessorKey: 'tax_amount',
+			// 	header: 'IVA',
+			// 	cell: ({ row }) => {
+			// 		const taxAmount = Number(
+			// 			row.original.tax_amount ??
+			// 				0,
+			// 		);
+			// 		return (
+			// 			<span className='text-sm text-zinc-700 dark:text-zinc-300'>
+			// 				{formatCLP(taxAmount)}
+			// 			</span>
+			// 		);
+			// 	}
+
+			// },
+			// {
+			// 	accessorKey: 'total',
+			// 	header: 'Total',
+			// 	cell: ({ row }) => {
+			// 		const unitPrice = Number(
+			// 			row.original.unit_price ?? row.original.unit_price_gross ?? 0,
+			// 		);
+			// 		const totalLine = Number(
+			// 			row.original.total ?? row.original.subtotal ?? row.original.quantity * unitPrice,
+			// 		);
+			// 		return (
+			// 			<span className='text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
+			// 				{formatCLP(totalLine)}
+			// 			</span>
+			// 		);
+			// 	},
+			// 	meta: { align: 'right' },
+			// 	size: 120,
+			// },
 		],
 		[],
 	);

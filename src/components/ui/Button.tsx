@@ -25,6 +25,8 @@ export interface IButtonProps
 	isDisable?: boolean;
 	isLoading?: boolean;
 	rightIcon?: TIcons;
+	iconColor?: string;
+	rightIconColor?: string;
 	rounded?: TRounded;
 	size?: TButtonSize;
 	variant?: TButtonVariants;
@@ -47,6 +49,8 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 		isDisable = false,
 		isLoading = false,
 		rightIcon,
+		iconColor,
+		rightIconColor,
 		rounded = themeConfig.rounded,
 		size = 'default',
 		variant = 'default',
@@ -88,6 +92,7 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 			{
 				[`border-${color}-${colorIntensity}`]: isActive,
 			},
+			
 		),
 		default: classNames(
 			'bg-transparent',
@@ -172,13 +177,20 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 			{(!!icon || isLoading) && (
 				<Icon
 					icon={isLoading ? 'DuoLoading' : (icon as TIcons)}
-					className={classNames({ 'animate-spin': isLoading }, btnIconClasses, {
-						'text-white': isSolid,
-					})}
+					className={classNames(
+						{ 'animate-spin': isLoading },
+						btnIconClasses,
+						iconColor ?? (isSolid ? 'text-white' : textColor),
+					)}
 				/>
 			)}
 			{children}
-			{!!rightIcon && <Icon icon={rightIcon} className={classNames(btnRightIconClasses)} />}
+			{!!rightIcon && (
+				<Icon
+					icon={rightIcon}
+					className={classNames(btnRightIconClasses, rightIconColor ?? textColor)}
+				/>
+			)}
 		</button>
 	);
 });

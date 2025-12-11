@@ -69,6 +69,11 @@ const formatAddress = (address: any): string => {
 	return String(address);
 };
 
+const parseAmount = (value: number | string | null | undefined): number => {
+	const n = typeof value === 'string' ? parseFloat(value) : Number(value);
+	return Number.isFinite(n) ? n : 0;
+};
+
 injectReducer('salesModule', salesReducer);
 
 const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose }) => {
@@ -95,14 +100,38 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 
 	const itemsCount = detail?.items_count ?? items.length ?? 0;
 
+	const lineTotals = useMemo(() => {
+		const subtotal = items.reduce(
+			(sum, it) => sum + parseAmount(it.subtotal ?? it.total ?? 0),
+			0,
+		);
+		const tax = items.reduce((sum, it) => sum + parseAmount(it.tax_amount ?? 0), 0);
+		const total = items.reduce(
+			(sum, it) =>
+				sum +
+				parseAmount(
+					it.total ??
+						// fallback si el backend algún día no envía total
+						parseAmount(it.subtotal ?? 0) + parseAmount(it.tax_amount ?? 0),
+				),
+			0,
+		);
+		return { subtotal, tax, total };
+	}, [items]);
+
+	const shippingTotal = useMemo(
+		() => parseAmount(detail?.shipping_total ?? detail?.shipping_amount ?? 0),
+		[detail?.shipping_total, detail?.shipping_amount],
+	);
+
 	const totals = useMemo(
 		() => [
-			{ label: 'Subtotal', value: formatCLP(detail?.subtotal ?? 0) },
-			{ label: 'Impuestos', value: formatCLP(detail?.tax_amount ?? 0) },
-			{ label: 'Envío', value: formatCLP(detail?.shipping_total ?? 0) },
+			{ label: 'Subtotal', value: formatCLP(lineTotals.subtotal) },
+			{ label: 'Impuestos', value: formatCLP(lineTotals.tax) },
+			{ label: 'Envío', value: formatCLP(shippingTotal) },
 			{
 				label: 'Total',
-				value: formatCLP(detail?.total_amount ?? 0),
+				value: formatCLP(lineTotals.total + shippingTotal),
 				highlight: true,
 			},
 			{
@@ -110,7 +139,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 				value: formatCLP(detail?.pending_amount ?? 0),
 			},
 		],
-		[detail],
+		[lineTotals, shippingTotal, detail?.pending_amount],
 	);
 
 	const billingAddress = useMemo(
@@ -148,7 +177,11 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	return (
 		<Modal isOpen={isOpen} setIsOpen={onClose} size='xl' isScrollable isStaticBackdrop>
 			<ModalHeader>
-				<Badge>Detalle de Venta</Badge> #{detail?.id ?? saleId}
+				<Badge>Detalle de Venta</Badge> 
+				{/* #{detail?.id ?? saleId} */}
+				<Badge variant='solid' color='blue' className='w-fit text-sm ml-4'>
+								{translateStatus(detail?.status)}
+							</Badge>
 			</ModalHeader>
 
 			<ModalBody className='space-y-4'>
@@ -161,19 +194,19 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 							<span className='text-xl font-bold text-zinc-900 dark:text-zinc-100'>
 								{detail?.sale_number || `#${saleId}`}
 							</span>
-							<div className='text-sm text-zinc-600 dark:text-zinc-300'>
+							{/* <div className='text-sm text-zinc-600 dark:text-zinc-300'>
 								N° Woo: {detail?.wc_order_number || detail?.wc_order_id || '-'}
-							</div>
+							</div> */}
 							<div className='text-xs text-zinc-500'>
 								Fecha de venta:{' '}
 								{detail?.sale_date ? formatDate(detail.sale_date) : '-'}
 							</div>
 						</div>
 						<div className='flex flex-col gap-2 md:flex-row md:items-center md:gap-4'>
-							<Badge variant='solid' color='blue' className='w-fit'>
+							{/* <Badge variant='solid' color='blue' className='w-fit'>
 								{translateStatus(detail?.status)}
-							</Badge>
-							<div className='text-right'>
+							</Badge> */}
+							{/* <div className='text-right'>
 								<p className='text-xs uppercase tracking-wide text-zinc-500'>
 									Total
 								</p>
@@ -181,12 +214,14 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 									{formatCLP(detail?.total_amount ?? 0)}
 								</p>
 								<p className='text-xs text-zinc-400'>{itemsCount} Ítems</p>
-							</div>
+							</div> */}
 							{canClose && (
 								<Button
+								variant='outline'
 									color='emerald'
 									icon='HeroCheckCircle'
-									className='mt-2 md:mt-0'
+									iconColor='text-emerald-700'
+									className='mt-2 md:mt-0 border border-dashed bg-emerald-400/20 text-emerald-700 hover:bg-emerald-400/20 hover:text-emerald-900 dark:text-emerald-300 dark:hover:bg-emerald-500/20 dark:hover:text-emerald-100'
 									onClick={() => setCloseOpen(true)}>
 									Cerrar venta
 								</Button>
@@ -306,7 +341,8 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 					<ModalFooterChild className='ml-auto'>
 						<Button
 							variant='outline'
-							className='border border-dashed'
+							color='violet'
+							className='border border-dashed bg-violet-400/10 text-violet-700 hover:bg-violet-400/20 hover:text-violet-900 dark:text-violet-300 dark:hover:bg-violet-500/20 dark:hover:text-violet-100'
 							onClick={handleCreateQuote}>
 							Crear cotización desde venta
 						</Button>
