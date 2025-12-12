@@ -27,12 +27,18 @@ const SaleItemsTable: React.FC<SaleItemsTableProps> = ({ items }) => {
 				cell: ({ row }) => {
 					const name =
 						row.original.product?.name || row.original.name || 'Producto sin nombre';
+					const detail = row.original.product_detail?.trim();
 
 					return (
 						<div className='flex flex-col gap-1'>
 							<span className='text-sm font-medium text-zinc-900 dark:text-zinc-100'>
 								{name}
 							</span>
+							{detail ? (
+								<span className='text-xs text-zinc-500 dark:text-zinc-400'>
+									{detail}
+								</span>
+							) : null}
 						</div>
 					);
 				},

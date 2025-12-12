@@ -22,6 +22,9 @@ import Modal, {
 } from '@/components/ui/Modal';
 import { formatDate } from '@/utils/format.utils';
 import ApiService from '@/services/ApiService';
+import { getFirstCapitalize } from '@/utils/getFirstLetter';
+import { useNavigate } from 'react-router-dom';
+import { IQuote } from '@/interface';
 
 interface Props {
 	subsidiaryId: number;
@@ -29,6 +32,28 @@ interface Props {
 	isOpen: boolean;
 	onClose: () => void;
 }
+
+interface CreateQuoteFromSaleResponse {
+	message?: string;
+	quote?: Pick<IQuote, 'id'> | null;
+	id?: number | string | null;
+	sale_id?: number | string | null;
+}
+
+const extractQuoteIdFromResponse = (payload?: CreateQuoteFromSaleResponse | null): number | null => {
+	if (!payload) return null;
+	const rawId =
+		payload.quote?.id ??
+		payload.id;
+	if (typeof rawId === 'number') {
+		return Number.isFinite(rawId) && rawId > 0 ? rawId : null;
+	}
+	if (typeof rawId === 'string') {
+		const parsed = Number(rawId);
+		return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+	}
+	return null;
+};
 
 const formatAddress = (address: any): string => {
 	if (!address) return '-';
@@ -41,29 +66,10 @@ const formatAddress = (address: any): string => {
 	}
 
 	if (typeof address === 'object') {
-		const skipCode = (val?: string): boolean =>
-			!val || /^CL(_?\d+)?$/i.test(val.trim()) || val.trim().toLowerCase() === 'cl';
-
-		const orderedFields = [
-			address?.company,
-			address?.name,
-			address?.address1 ?? address?.address_1,
-			address?.address2 ?? address?.address_2,
-			skipCode(address?.city) ? '' : address?.city,
-			skipCode(address?.state) ? '' : address?.state,
-			skipCode(address?.country) ? '' : address?.country,
-			address?.postcode ?? address?.zip,
-		]
+		const pretty = [address?.address1, address?.address_1]
 			.map((value) => (typeof value === 'string' ? value.trim() : ''))
-			.filter(Boolean);
-
-		if (orderedFields.length) return orderedFields.join(', ');
-
-		const fallback = Object.values(address ?? {})
-			.map((value) => (typeof value === 'string' ? value.trim() : ''))
-			.filter(Boolean);
-
-		return fallback.length ? fallback.join(', ') : JSON.stringify(address);
+			.find((value) => Boolean(value));
+		return pretty || '-';
 	}
 
 	return String(address);
@@ -78,12 +84,14 @@ injectReducer('salesModule', salesReducer);
 
 const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose }) => {
 	const dispatch = useAppDispatch();
+	const navigate = useNavigate();
 	const detail = useAppSelector(selectSaleDetail);
 	const items = useAppSelector(selectSaleItems);
 	const loading = useAppSelector(selectSalesLoading);
 
 	const [closeOpen, setCloseOpen] = useState(false);
 	const [creatingQuote, setCreatingQuote] = useState(false);
+	const [createdQuoteId, setCreatedQuoteId] = useState<number | null>(null);
 
 	useEffect(() => {
 		if (!isOpen) return;
@@ -91,6 +99,16 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 		dispatch(loadSaleDetail({ subsidiaryId, saleId }));
 		dispatch(loadSaleItems({ subsidiaryId, saleId }));
 	}, [dispatch, subsidiaryId, saleId, isOpen]);
+
+	useEffect(() => {
+		setCreatedQuoteId(null);
+	}, [saleId]);
+
+	useEffect(() => {
+		if (!isOpen) {
+			setCreatedQuoteId(null);
+		}
+	}, [isOpen]);
 
 	const canClose = useMemo(() => {
 		const invFinalized = detail?.documents_metadata?.inventory_finalized === true;
@@ -159,29 +177,59 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 
 		try {
 			setCreatingQuote(true);
-			const response = await ApiService.fetchData<{ message?: string }>({
+			const response = await ApiService.fetchData<CreateQuoteFromSaleResponse>({
 				url: `/subsidiaries/${subsidiaryId}/sales/${saleId}/create-quote`,
 				method: 'post',
 			});
 			const message = response.data?.message || 'Cotización creada correctamente';
-			toast.success(message);
+			const resolvedQuoteId = extractQuoteIdFromResponse(response.data);
+			if (resolvedQuoteId) {
+				setCreatedQuoteId(resolvedQuoteId);
+			}
+			const successMessage = resolvedQuoteId
+				? `${message}, número de cotización: ${resolvedQuoteId}`
+				: message;
+			toast.success(successMessage);
 		} catch (error) {
-			const err = error as { response?: { data?: { message?: string } } };
-			const message = err?.response?.data?.message || 'No se pudo crear la cotización';
+			const err = error as { response?: { data?: CreateQuoteFromSaleResponse } };
+			const responseData = err?.response?.data;
+			const message = responseData?.message || 'No se pudo crear la cotización';
+			const existingQuoteId = extractQuoteIdFromResponse(responseData);
+			if (
+				typeof message === 'string' &&
+				message.toLowerCase().includes('ya existe una cotización') &&
+				existingQuoteId
+			) {
+				setCreatedQuoteId(existingQuoteId);
+				toast.info(message);
+				navigate(`/comercial/cotizaciones/${existingQuoteId}`);
+				return;
+			}
 			toast.error(message);
 		} finally {
 			setCreatingQuote(false);
 		}
-	}, [subsidiaryId, saleId, creatingQuote]);
+	}, [subsidiaryId, saleId, creatingQuote, navigate]);
+
+	const quoteButtonLabel = createdQuoteId
+		? 'Ver cotización'
+		: 'Crear cotización desde venta';
+	const quoteButtonHandler = createdQuoteId
+		? () => navigate(`/comercial/cotizaciones/${createdQuoteId}`)
+		: handleCreateQuote;
+	const quoteButtonClass = createdQuoteId
+		? 'border border-solid border-rose-500 bg-rose-50 text-rose-700 hover:bg-rose-100 hover:text-rose-900 dark:text-rose-200 dark:hover:bg-rose-500/20 dark:hover:text-rose-100'
+		: 'border border-dashed bg-violet-400/10 text-violet-700 hover:bg-violet-400/20 hover:text-violet-900 dark:text-violet-300 dark:hover:bg-violet-500/20 dark:hover:text-violet-100';
 
 	return (
 		<Modal isOpen={isOpen} setIsOpen={onClose} size='xl' isScrollable isStaticBackdrop>
 			<ModalHeader>
-				<Badge>Detalle de Venta</Badge> 
+				<Badge>Detalle de Venta - <span className='text-teal-100 ml-2 text-lg'>N° Venta {detail?.id}</span></Badge>
 				{/* #{detail?.id ?? saleId} */}
-				<Badge variant='solid' color='blue' className='w-fit text-sm ml-4'>
-								{translateStatus(detail?.status)}
-							</Badge>
+				<Badge variant='solid' color='blue' className='ml-4 w-fit px-2 text-sm'>
+					{translateStatus(detail?.status)}
+				</Badge>
+
 			</ModalHeader>
 
 			<ModalBody className='space-y-4'>
@@ -203,25 +251,22 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 							</div>
 						</div>
 						<div className='flex flex-col gap-2 md:flex-row md:items-center md:gap-4'>
-							{/* <Badge variant='solid' color='blue' className='w-fit'>
-								{translateStatus(detail?.status)}
-							</Badge> */}
-							{/* <div className='text-right'>
-								<p className='text-xs uppercase tracking-wide text-zinc-500'>
-									Total
+							<div className='flex flex-col items-center justify-center space-y-3 rounded-md border border-dashed p-2'>
+								<Badge variant='solid' color='teal' className='w-fit px-2'>
+									{getFirstCapitalize(translateStatus(detail?.document_type))}
+								</Badge>
+								<p className='text-xs uppercase tracking-wide text-violet-500'>
+									{getFirstCapitalize(detail?.payment_method_title ?? '') || '-'}
 								</p>
-								<p className='text-xl font-semibold text-zinc-900 dark:text-zinc-100'>
-									{formatCLP(detail?.total_amount ?? 0)}
-								</p>
-								<p className='text-xs text-zinc-400'>{itemsCount} Ítems</p>
-							</div> */}
+							</div>
+
 							{canClose && (
 								<Button
-								variant='outline'
+									variant='outline'
 									color='emerald'
 									icon='HeroCheckCircle'
 									iconColor='text-emerald-700'
-									className='mt-2 md:mt-0 border border-dashed bg-emerald-400/20 text-emerald-700 hover:bg-emerald-400/20 hover:text-emerald-900 dark:text-emerald-300 dark:hover:bg-emerald-500/20 dark:hover:text-emerald-100'
+									className='mt-2 border border-dashed bg-emerald-400/20 text-emerald-700 hover:bg-emerald-400/20 hover:text-emerald-900 dark:text-emerald-300 dark:hover:bg-emerald-500/20 dark:hover:text-emerald-100 md:mt-0'
 									onClick={() => setCloseOpen(true)}>
 									Cerrar venta
 								</Button>
@@ -291,7 +336,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 						<CardBody className='space-y-3'>
 							<div>
 								<p className='text-xs font-semibold uppercase tracking-wide text-zinc-500'>
-									Billing
+									Dirección de facturación
 								</p>
 								<div className='rounded-md border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-100'>
 									{billingAddress}
@@ -299,7 +344,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 							</div>
 							<div>
 								<p className='text-xs font-semibold uppercase tracking-wide text-zinc-500'>
-									Shipping
+									Dirección de envío
 								</p>
 								<div className='rounded-md border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-100'>
 									{shippingAddress}
@@ -341,10 +386,11 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 					<ModalFooterChild className='ml-auto'>
 						<Button
 							variant='outline'
-							color='violet'
-							className='border border-dashed bg-violet-400/10 text-violet-700 hover:bg-violet-400/20 hover:text-violet-900 dark:text-violet-300 dark:hover:bg-violet-500/20 dark:hover:text-violet-100'
-							onClick={handleCreateQuote}>
-							Crear cotización desde venta
+							color={createdQuoteId ? 'rose' : 'violet'}
+							className={quoteButtonClass}
+							onClick={quoteButtonHandler}
+							disabled={creatingQuote && !createdQuoteId}>
+							{quoteButtonLabel}
 						</Button>
 					</ModalFooterChild>
 				</ModalFooter>

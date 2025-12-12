@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { IQuote, QuoteStatus } from '../../../interface';
 import useQuotationsManager from './hooks/useQuotationsManager';
@@ -9,6 +9,7 @@ import { QuotationDetailsModal } from './components/modals/QuotationDetailsModal
 import DuplicateQuotationModal from './components/modals/DuplicateQuotationModal';
 import DeleteQuotationModal from './components/modals/DeleteQuotationModal';
 import { getQuoteStatusLabel, normalizeQuoteStatusValue } from './constants/quoteStatuses';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
 import Container from '@/components/layouts/Container/Container';
@@ -19,7 +20,16 @@ import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import { FiltersSection } from './components/FiltersSection';
 import { StatsCards } from './components/StatsCards';
 
+const QUOTES_BASE_PATH = '/comercial/cotizaciones';
+
 const CotizacionesAdmin: React.FC = () => {
+	const navigate = useNavigate();
+	const { quoteId: quoteIdParam } = useParams<{ quoteId?: string }>();
+	const parsedQuoteId = quoteIdParam ? Number(quoteIdParam) : null;
+	const activeQuoteId =
+		typeof parsedQuoteId === 'number' && Number.isFinite(parsedQuoteId) && parsedQuoteId > 0
+			? parsedQuoteId
+			: null;
 	// Estados locales
 	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -62,6 +72,45 @@ const CotizacionesAdmin: React.FC = () => {
 		resetFilters,
 		loadQuotationDetails,
 	} = useQuotationsManager();
+
+	useEffect(() => {
+		if (!activeQuoteId) {
+			setIsDetailsModalOpen(false);
+			setViewingQuotation(null);
+			return;
+		}
+
+		let isCancelled = false;
+		setIsDetailsModalOpen(true);
+		setDetailsLoading(true);
+		setViewingQuotation(null);
+
+		const fetchDetails = async () => {
+			try {
+				const fullQuote = await loadQuotationDetails(activeQuoteId);
+				if (!isCancelled) {
+					setViewingQuotation(fullQuote);
+				}
+			} catch (error) {
+				if (!isCancelled) {
+					toast.error('No se pudieron cargar los detalles de la cotización');
+					console.error('Error al cargar detalles:', error);
+					setIsDetailsModalOpen(false);
+					navigate(QUOTES_BASE_PATH, { replace: true });
+				}
+			} finally {
+				if (!isCancelled) {
+					setDetailsLoading(false);
+				}
+			}
+		};
+
+		fetchDetails();
+
+		return () => {
+			isCancelled = true;
+		};
+	}, [activeQuoteId, loadQuotationDetails, navigate]);
 
 	// Datos paginados
 	const paginatedQuotations = useMemo(() => {
@@ -124,20 +173,11 @@ const CotizacionesAdmin: React.FC = () => {
 		}
 	};
 
-	const handleView = async (quotation: IQuote) => {
+	const handleView = (quotation: IQuote) => {
 		setIsDetailsModalOpen(true);
 		setDetailsLoading(true);
 		setViewingQuotation(null);
-		try {
-			const fullQuote = await loadQuotationDetails(quotation.id);
-			setViewingQuotation(fullQuote);
-		} catch (error) {
-			toast.error('No se pudieron cargar los detalles de la cotización');
-			console.error('Error al cargar detalles:', error);
-			setIsDetailsModalOpen(false);
-		} finally {
-			setDetailsLoading(false);
-		}
+		navigate(`${QUOTES_BASE_PATH}/${quotation.id}`);
 	};
 
 	const handleConvertToSale = async (id: number) => {
@@ -224,6 +264,13 @@ const CotizacionesAdmin: React.FC = () => {
 		setIsDeleteModalOpen(false);
 		setDuplicatingQuotation(null);
 		setDeletingQuotation(null);
+	};
+
+	const handleCloseDetailsModal = () => {
+		setIsDetailsModalOpen(false);
+		setViewingQuotation(null);
+		setDetailsLoading(false);
+		navigate(QUOTES_BASE_PATH, { replace: true });
 	};
 
 	return (
@@ -313,16 +360,13 @@ const CotizacionesAdmin: React.FC = () => {
 					/>
 				)}
 
-				<QuotationDetailsModal
-					isOpen={isDetailsModalOpen}
-					onClose={() => {
-						setIsDetailsModalOpen(false);
-						setViewingQuotation(null);
-					}}
-					quotation={viewingQuotation}
-					isLoading={detailsLoading}
-					onDownloadPdf={handleDownloadPdf}
-				/>
+			<QuotationDetailsModal
+				isOpen={isDetailsModalOpen}
+				onClose={handleCloseDetailsModal}
+				quotation={viewingQuotation}
+				isLoading={detailsLoading}
+				onDownloadPdf={handleDownloadPdf}
+			/>
 
 				<DuplicateQuotationModal
 					isOpen={isDuplicateModalOpen}

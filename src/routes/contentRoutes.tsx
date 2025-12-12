@@ -220,6 +220,11 @@ const contentRoutes: IRoutePersonalizada[] = [
 		authority: cfg.commercial.subPages.quotes.authority,
 	},
 	{
+		path: `${cfg.commercial.subPages.quotes.to}/:quoteId`,
+		element: <CotizacionesPage />,
+		authority: cfg.commercial.subPages.quotes.authority,
+	},
+	{
 		path: cfg.commercial.subPages.transfers.to,
 		element: <TransferenciasComercial />,
 		authority: cfg.commercial.subPages.transfers.authority,

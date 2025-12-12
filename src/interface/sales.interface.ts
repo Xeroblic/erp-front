@@ -27,6 +27,8 @@ export interface ISale {
 	total_amount: string;
 	paid_amount: string;
 	pending_amount: string;
+	document_type?: string;
+	payment_method_title?: string;
 
 	notes?: string;
 	items_count?: number;
