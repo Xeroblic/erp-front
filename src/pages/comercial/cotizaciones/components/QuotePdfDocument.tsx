@@ -16,7 +16,7 @@ import {
 	getSaleNumber,
 } from './quote-data-mapper';
 import { getFirstCapitalize } from '@/utils/getFirstLetter';
-import {priceFormat, priceFormatWhitDecimals} from '@/utils/priceFormat.util';
+import { priceFormat, priceFormatWhitDecimals } from '@/utils/priceFormat.util';
 
 const HEADER_HEIGHT = 90;
 const FOOTER_HEIGHT = 150;
@@ -325,7 +325,6 @@ const paginateItems = (items: any[], perPage: number): any[][] => {
 	return pages;
 };
 
-
 const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps) => {
 	const logoSrc = logoBase64 || company.logoUrl || null;
 
@@ -418,9 +417,7 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 										<View style={styles.docTypeBox}>
 											<Text style={styles.docTypeTitle}>COTIZACIÓN</Text>
 										</View>
-										<Text style={styles.docNumber}>
-											N° {quote.id}
-										</Text>
+										<Text style={styles.docNumber}>N° {quote.id}</Text>
 									</View>
 								</View>
 							</View>
@@ -453,14 +450,17 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 											<Text style={styles.infoValue}>{customer.giro}</Text>
 										</View>
 										<View style={styles.infoRow}>
-											<Text style={styles.infoLabel}>Dirección de envío: </Text>
+											<Text style={styles.infoLabel}>
+												Dirección de envío:{' '}
+											</Text>
 											<Text style={styles.infoValue}>
 												{customer.shippingAddress}
 											</Text>
 										</View>
 										{customer.billingAddress &&
 											customer.billingAddress !== '—' &&
-											customer.billingAddress !== customer.shippingAddress && (
+											customer.billingAddress !==
+												customer.shippingAddress && (
 												<View style={styles.infoRow}>
 													<Text style={styles.infoLabel}>
 														Dirección de facturación:{' '}
@@ -511,7 +511,9 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 										</View>
 										<View style={styles.infoRow}>
 											<Text style={styles.infoLabel}>Documento: </Text>
-											<Text style={styles.infoValue}>{getFirstCapitalize(documentType)}</Text>
+											<Text style={styles.infoValue}>
+												{getFirstCapitalize(documentType)}
+											</Text>
 										</View>
 									</View>
 								</View>
@@ -686,7 +688,7 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 							) : null}
 							{showPageNumber ? (
 								<Text style={styles.pageNumberText}>
-									{`${pageIndex + 1}/${totalPages} PAGINA`}
+									{`Pagina de cotizacion N°${quote.id} - ${pageIndex + 1}/${totalPages}`}
 								</Text>
 							) : null}
 						</View>
