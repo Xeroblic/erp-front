@@ -282,6 +282,12 @@ const styles = StyleSheet.create({
 		fontSize: 8,
 		color: '#9ca3af',
 	},
+	pageNumberText: {
+		fontSize: 8,
+		textAlign: 'right',
+		color: '#6b7280',
+		marginTop: 4,
+	},
 });
 
 interface CompanyInfo {
@@ -318,6 +324,7 @@ const paginateItems = (items: any[], perPage: number): any[][] => {
 	}
 	return pages;
 };
+
 
 const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps) => {
 	const logoSrc = logoBase64 || company.logoUrl || null;
@@ -358,6 +365,8 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 	};
 
 	const pagesItems = paginateItems(items, ITEMS_PER_PAGE);
+	const totalPages = pagesItems.length;
+	const showPageNumber = totalPages > 1;
 
 	const { netTotal, discount, tax, total } = getQuoteTotals(quote, items);
 	const taxRate = getQuoteTaxRate(quote);
@@ -674,6 +683,11 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 										Documento generado electrónicamente por {company.name}
 									</Text>
 								</View>
+							) : null}
+							{showPageNumber ? (
+								<Text style={styles.pageNumberText}>
+									{`${pageIndex + 1}/${totalPages} PAGINA`}
+								</Text>
 							) : null}
 						</View>
 					</Page>
