@@ -12,6 +12,7 @@ import Button from '../../../../../components/ui/Button';
 // BORRADO: import { saveAs } from 'file-saver';  <-- SE FUE
 // BORRADO: import { generateQuotePdf } from '../../utils/pdf/generateQuotePdf'; <-- SE FUE
 import ApiService from '@/services/ApiService';
+import Badge from '@/components/ui/Badge';
 
 interface QuotationDetailsModalProps {
 	isOpen: boolean;
@@ -39,35 +40,57 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
 		return generateQuotePdf(quotation);
 	};
 
-	const handlePrint = async () => {
+	const handlePrint = () => {
 		if (!quotation) return;
+		const container = document.getElementById(PRINT_CONTAINER_ID);
+		if (!container) {
+			toast.error('No se encontró el contenido para imprimir');
+			return;
+		}
 		setIsPrinting(true);
 		try {
-			const blob = await getPdfBlob();
-			if (!blob) throw new Error('No se pudo generar el PDF');
-			const blobUrl = URL.createObjectURL(blob);
-			const iframe = document.createElement('iframe');
-			iframe.style.position = 'fixed';
-			iframe.style.right = '0';
-			iframe.style.bottom = '0';
-			iframe.style.width = '0';
-			iframe.style.height = '0';
-			iframe.style.border = '0';
-			const cleanup = () => {
-				if (iframe.parentNode) {
-					iframe.parentNode.removeChild(iframe);
-				}
-				URL.revokeObjectURL(blobUrl);
+			const printWindow = window.open('', '_blank', 'width=900,height=1200');
+			if (!printWindow) {
+				throw new Error('Pop-up bloqueado');
+			}
+			const printStyles = `
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 24px; font-family: 'Helvetica', sans-serif; background: #f3f4f6; color: #111827; }
+        .print-wrapper { max-width: 216mm; margin: 0 auto; background: #ffffff; padding: 12px; }
+        @page { margin: 12mm; }
+        @media print {
+          body { background: #ffffff; }
+          .print-wrapper { box-shadow: none; }
+        }
+      `;
+			printWindow.document.open();
+			printWindow.document.write(`
+        <html>
+          <head>
+            <title>Cotización ${quotation.id}</title>
+            <style>${printStyles}</style>
+          </head>
+          <body>
+            <div class="print-wrapper">${container.innerHTML}</div>
+          </body>
+        </html>
+      `);
+			printWindow.document.close();
+			printWindow.focus();
+			printWindow.onload = () => {
+				printWindow.focus();
+				printWindow.print();
+				printWindow.close();
 				setIsPrinting(false);
 			};
-			iframe.onload = () => {
-				const frameWindow = iframe.contentWindow;
-				frameWindow?.focus();
-				frameWindow?.print();
-				setTimeout(cleanup, 500);
-			};
-			iframe.src = blobUrl;
-			document.body.appendChild(iframe);
+			setTimeout(() => {
+				if (!printWindow.closed) {
+					printWindow.focus();
+					printWindow.print();
+					printWindow.close();
+					setIsPrinting(false);
+				}
+			}, 800);
 		} catch (error) {
 			console.error(error);
 			toast.error('No se pudo preparar la impresión');
@@ -121,15 +144,15 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
 	};
 
 	return (
-		<Modal isOpen={isOpen} setIsOpen={onClose} size='2xl'>
+		<Modal isOpen={isOpen} setIsOpen={onClose} size='xl'>
 			<ModalHeader>
 				<div>
-					<h2 className='text-xl font-semibold'>Detalles de Cotización</h2>
-					<p className='text-sm text-gray-600'>{`ID #${quotation?.id ?? ''}`}</p>
+					<Badge className='text-xl font-semibold'>Detalles de Cotización</Badge>
+					<p className='text-sm text-gray-600 dark:text-white'>{`ID #${quotation?.id ?? ''}`}</p>
 				</div>
 			</ModalHeader>
 
-			<ModalBody className='bg-gray-100'>
+			<ModalBody className='bg-gray-100 max-h-[80vh] overflow-y-auto p-6'>
 				{isLoading ? (
 					<div className='flex items-center justify-center py-16 text-gray-600'>
 						<div className='mr-3 h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent' />
@@ -138,7 +161,7 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
 				) : quotation ? (
 					<div
 						id={PRINT_CONTAINER_ID}
-						className='mx-auto w-full max-w-4xl rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-100'>
+						className='mx-auto w-full max-w-4xl  rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-100'>
 						<QuotePrintableView quote={quotation} />
 					</div>
 				) : (
@@ -149,7 +172,7 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
 			</ModalBody>
 
 			<ModalFooter>
-				<ModalFooterChild className='flex flex-wrap justify-between gap-3 w-full'>
+				<ModalFooterChild className='flex flex-wrap justify-between gap-3 w-full mt-8'>
 					<div className='text-xs text-gray-500'>
 						Última actualización:{' '}
 						{quotation?.updated_at

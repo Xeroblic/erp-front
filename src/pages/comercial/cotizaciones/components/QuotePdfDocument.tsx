@@ -457,19 +457,17 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 												{customer.shippingAddress}
 											</Text>
 										</View>
-										{customer.billingAddress &&
-											customer.billingAddress !== '—' &&
-											customer.billingAddress !==
-												customer.shippingAddress && (
-												<View style={styles.infoRow}>
-													<Text style={styles.infoLabel}>
-														Dirección de facturación:{' '}
-													</Text>
-													<Text style={styles.infoValue}>
-														{customer.billingAddress}
-													</Text>
-												</View>
-											)}
+										<View style={styles.infoRow}>
+											<Text style={styles.infoLabel}>
+												Dirección de facturación:{' '}
+											</Text>
+											<Text style={styles.infoValue}>
+												{customer.billingAddress &&
+												customer.billingAddress.trim() !== ''
+													? customer.billingAddress
+													: '—'}
+											</Text>
+										</View>
 										<View style={styles.infoRow}>
 											<Text style={styles.infoLabel}>Contacto: </Text>
 											<Text style={styles.infoValue}>
