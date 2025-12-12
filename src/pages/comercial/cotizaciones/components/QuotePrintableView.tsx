@@ -13,7 +13,6 @@ import {
 	getProductSku,
 	getProductName,
 	getProductDetail,
-	formatDate,
 	getPaymentMethodsLabel,
 	formatCurrency,
 	getDocumentType,
@@ -21,6 +20,7 @@ import {
 	getQuoteTaxRate,
 	getSaleNumber,
 } from './quote-data-mapper';
+import { formatDate } from '@/utils/format.utils';
 
 interface QuotePrintableViewProps {
 	quote: IQuote;

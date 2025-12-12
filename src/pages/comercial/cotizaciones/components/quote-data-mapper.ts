@@ -323,10 +323,10 @@ export const formatCurrency = (val: unknown): string => {
 	return `${sign}$${formatted}`;
 };
 
-export const formatDate = (val?: string | null): string => {
-	if (!val) return '—';
-	return new Date(val).toLocaleDateString('es-CL');
-};
+// export const formatDate = (val?: string | null): string => {
+// 	if (!val) return '—';
+// 	return new Date(val).toLocaleDateString('es-CL');
+// };
 
 export const getPaymentMethodsLabel = (quote: IQuote): string => {
 	const paymentArray = Array.isArray((quote as any)?.payment_methods)

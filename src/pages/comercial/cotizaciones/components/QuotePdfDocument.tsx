@@ -10,13 +10,13 @@ import {
 	getProductSku,
 	getProductName,
 	getProductDetail,
-	formatDate,
 	getPaymentMethodsLabel,
 	getQuoteTaxRate,
 	getSaleNumber,
 } from './quote-data-mapper';
 import { getFirstCapitalize } from '@/utils/getFirstLetter';
 import { priceFormat, priceFormatWhitDecimals } from '@/utils/priceFormat.util';
+import { formatDate } from '@/utils/format.utils';
 
 const HEADER_HEIGHT = 90;
 const FOOTER_HEIGHT = 150;
