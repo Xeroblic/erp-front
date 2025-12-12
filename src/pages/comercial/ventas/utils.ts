@@ -4,13 +4,12 @@
  */
 export const formatCLP = (amount: number | string): string => {
 	const n = typeof amount === 'string' ? parseFloat(amount) : amount;
-	if (!Number.isFinite(n)) return '$ 0,00';
+	if (!Number.isFinite(n)) return '$ 0';
 
-	// Mantén 2 decimales para evitar diferencias por redondeo
-	const fixed = n.toFixed(2);
-	const [intPart, decimalPart] = fixed.split('.');
-	const withThousands = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-	return `$ ${withThousands},${decimalPart}`;
+	// Redondea al peso más cercano y muestra sin decimales
+	const rounded = Math.round(n);
+	const withThousands = rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+	return `$ ${withThousands}`;
 };
 
 export const translateStatus = (status?: string | null): string => {

@@ -4,6 +4,7 @@ import type { RootState } from '@/store';
 import { useAppDispatch } from '@/store';
 import { fetchSubsidiariaDetail } from '@/store/slices/subempresa/subEmpresaSlice';
 import type { IQuote, IQuoteItem } from '@/interface';
+import { getFirstCapitalize } from '../../../../utils/getFirstLetter';
 import {
 	getCompanyInfo,
 	getCustomerInfo,
@@ -127,7 +128,7 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 						<h4
 							className='text-sm font-bold text-gray-900'
 							style={{ color: '#111827' }}>
-							N° {quote.quote_number || quote.id}
+							N° {quote.id}
 						</h4>
 					</div>
 					<p
@@ -178,10 +179,10 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 						<span className='font-semibold'>Teléfono:</span> {orderInfo.contactPhone}
 					</p>
 					<p>
-						<span className='font-semibold'>Método de pago:</span> {paymentMethodsLabel}
+						<span className='font-semibold'>Método de pago:</span> {getFirstCapitalize(paymentMethodsLabel)}
 					</p>
 					<p>
-						<span className='font-semibold'>Documento:</span> {documentType}
+						<span className='font-semibold'>Documento:</span> {getFirstCapitalize(documentType)}
 					</p>
 					{/* TODO: mostrar número de venta cuando el backend confirme el correlativo
 					{orderInfo.saleNumber && (

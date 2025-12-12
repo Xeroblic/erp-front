@@ -16,6 +16,7 @@ import {
 	getQuoteTaxRate,
 	getSaleNumber,
 } from './quote-data-mapper';
+import { getFirstCapitalize } from '@/utils/getFirstLetter';
 
 const HEADER_HEIGHT = 90;
 const FOOTER_HEIGHT = 150;
@@ -405,7 +406,7 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 											<Text style={styles.docTypeTitle}>COTIZACIÓN</Text>
 										</View>
 										<Text style={styles.docNumber}>
-											N° {quote.quote_number || quote.id}
+											N° {quote.id}
 										</Text>
 									</View>
 								</View>
@@ -478,12 +479,12 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 										<View style={styles.infoRow}>
 											<Text style={styles.infoLabel}>Método de pago: </Text>
 											<Text style={styles.infoValue}>
-												{paymentMethodsLabel}
+												{getFirstCapitalize(paymentMethodsLabel)}
 											</Text>
 										</View>
 										<View style={styles.infoRow}>
 											<Text style={styles.infoLabel}>Documento: </Text>
-											<Text style={styles.infoValue}>{documentType}</Text>
+											<Text style={styles.infoValue}>{getFirstCapitalize(documentType)}</Text>
 										</View>
 									</View>
 								</View>
