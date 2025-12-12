@@ -153,7 +153,6 @@ export interface QuoteListMeta {
 	last_page: number;
 }
 
-// Aliases para compatibilidad con código existente
 export type IQuote = Quote;
 export type IQuoteItem = QuoteItem;
 export type ICreateQuoteRequest = QuoteCreateDTO;

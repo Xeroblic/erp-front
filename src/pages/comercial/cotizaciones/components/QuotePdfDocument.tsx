@@ -127,11 +127,30 @@ const styles = StyleSheet.create({
 		paddingVertical: 4,
 		flexDirection: 'row',
 		justifyContent: 'space-between',
+		alignItems: 'flex-start',
+		flexWrap: 'wrap',
+	},
+	companyOrderHeaderMeta: {
+		flexDirection: 'row',
+		flexWrap: 'wrap',
+		alignItems: 'flex-start',
+		flex: 1,
+	},
+	companyOrderHeaderItem: {
+		flexDirection: 'column',
+		marginRight: 12,
+		marginBottom: 4,
+		minWidth: 120,
+	},
+	companyOrderHeaderOrder: {
+		minWidth: 120,
+		marginTop: 4,
+		alignItems: 'flex-end',
 	},
 	companyOrderHeaderText: {
-		fontSize: 9,
-		fontWeight: 'bold',
-		color: '#9f1239',
+		fontSize: 7,
+		fontWeight: '',
+		color: '#000000',
 	},
 	companyOrderBody: {
 		flexDirection: 'row',
@@ -309,6 +328,7 @@ interface CompanyInfo {
 
 interface QuotePdfDocumentProps {
 	quote: IQuote;
+	
 	company: CompanyInfo;
 	logoBase64?: string | null;
 }
@@ -425,16 +445,50 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 
 						<View style={styles.content}>
 							{/* BLOQUE EMPRESA / ORDEN */}
-							<View style={styles.companyOrderBox}>
-								<View style={styles.companyOrderHeader}>
-									<Text style={styles.companyOrderHeaderText}>Empresa</Text>
+							<View style={styles.companyOrderHeader}>
+								<View style={styles.companyOrderHeaderMeta}>
+									<View style={styles.companyOrderHeaderItem}>
+										<Text style={styles.companyOrderHeaderText}>
+											Fecha creación doc:{' '}
+											<Text style={{ fontWeight: 'bold', color: '#111827' }}>
+												{quote.created_at
+													? formatDate(quote.created_at)
+													: '—'}
+											</Text>
+										</Text>
+									</View>
+									<View style={styles.companyOrderHeaderItem}>
+										<Text style={styles.companyOrderHeaderText}>
+											Fecha de emisión:{' '}
+											<Text style={{ fontWeight: 'bold', color: '#111827' }}>
+												{formatDate(quote.quote_date)}
+											</Text>
+										</Text>
+									</View>
+									<View style={styles.companyOrderHeaderItem}>
+										<Text style={styles.companyOrderHeaderText}>
+											Hora de emisión:{' '}
+											<Text style={{ fontWeight: 'bold', color: '#111827' }}>
+												{quote.quote_date
+													? new Date(quote.quote_date).toLocaleTimeString(
+															'es-CL',
+															{ hour: '2-digit', minute: '2-digit' },
+														)
+													: '—'}
+											</Text>
+										</Text>
+									</View>
+								</View>
+								<View style={styles.companyOrderHeaderOrder}>
 									<Text style={styles.companyOrderHeaderText}>
 										N° Orden C:{' '}
-										<Text style={{ fontWeight: 'bold' }}>
+										<Text style={{ fontWeight: 'bold', color: '#111827' }}>
 											{orderInfo.purchase_order || '—'}
 										</Text>
 									</Text>
 								</View>
+							</View>
+							<View style={styles.companyOrderBox}>
 								<View style={styles.companyOrderBody}>
 									<View style={styles.companyOrderColLeft}>
 										<View style={styles.infoRow}>
