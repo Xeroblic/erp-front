@@ -93,6 +93,8 @@ export interface Quote {
 	updated_at?: string;
 	created_by?: number | null;
 	approved_by?: number | null;
+	billing_snapshot?: Record<string, unknown> | string | null;
+	shipping_snapshot?: Record<string, unknown> | string | null;
 	customer?: QuoteCustomerSummary | ICustomer | null;
 	totals?: QuoteTotals;
 	items?: QuoteItem[];

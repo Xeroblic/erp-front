@@ -10,13 +10,13 @@ import {
 	getProductSku,
 	getProductName,
 	getProductDetail,
-	formatCurrency,
 	formatDate,
 	getPaymentMethodsLabel,
 	getQuoteTaxRate,
 	getSaleNumber,
 } from './quote-data-mapper';
 import { getFirstCapitalize } from '@/utils/getFirstLetter';
+import {priceFormat, priceFormatWhitDecimals} from '@/utils/priceFormat.util';
 
 const HEADER_HEIGHT = 90;
 const FOOTER_HEIGHT = 150;
@@ -50,12 +50,12 @@ const styles = StyleSheet.create({
 	logoBox: {
 		width: 100,
 		height: 100,
-		borderWidth: 1,
-		borderColor: '#e5e7eb',
+		// borderWidth: 1,
+		// borderColor: '#e5e7eb',
 		padding: 6,
 		justifyContent: 'center',
 		alignItems: 'center',
-		marginRight: 10,
+		marginRight: 30,
 		marginTop: -22,
 	},
 	logo: {
@@ -212,9 +212,10 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		justifyContent: 'flex-end',
 		marginBottom: 10,
+		marginLeft: 10,
 	},
 	totalsBox: {
-		width: 220,
+		width: 180,
 		borderWidth: 2,
 		borderColor: '#6b7280',
 	},
@@ -322,7 +323,10 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 	const logoSrc = logoBase64 || company.logoUrl || null;
 
 	const items = Array.isArray(quote.items) ? quote.items : [];
-	const customer = getCustomerInfo((quote as any).customer);
+	const customer = getCustomerInfo((quote as any).customer, {
+		billingSnapshot: (quote as any).billing_snapshot,
+		shippingSnapshot: (quote as any).shipping_snapshot,
+	});
 
 	const metadata = ((quote as any)?.metadata || {}) as Record<string, any>;
 	const saleNumber = quote.is_converted_to_sale ? getSaleNumber(quote) : null;
@@ -440,9 +444,23 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 											<Text style={styles.infoValue}>{customer.giro}</Text>
 										</View>
 										<View style={styles.infoRow}>
-											<Text style={styles.infoLabel}>Dirección: </Text>
-											<Text style={styles.infoValue}>{customer.address}</Text>
+											<Text style={styles.infoLabel}>Dirección de envío: </Text>
+											<Text style={styles.infoValue}>
+												{customer.shippingAddress}
+											</Text>
 										</View>
+										{customer.billingAddress &&
+											customer.billingAddress !== '—' &&
+											customer.billingAddress !== customer.shippingAddress && (
+												<View style={styles.infoRow}>
+													<Text style={styles.infoLabel}>
+														Dirección de facturación:{' '}
+													</Text>
+													<Text style={styles.infoValue}>
+														{customer.billingAddress}
+													</Text>
+												</View>
+											)}
 										<View style={styles.infoRow}>
 											<Text style={styles.infoLabel}>Contacto: </Text>
 											<Text style={styles.infoValue}>
@@ -542,15 +560,15 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 												) : null}
 												{itemDiscount > 0 && (
 													<Text style={styles.descDiscount}>
-														Descuento: - {formatCurrency(itemDiscount)}
+														Descuento: - {priceFormat(itemDiscount)}
 													</Text>
 												)}
 											</View>
 											<Text style={styles.colPrice}>
-												{formatCurrency(unitPrice)}
+												{priceFormatWhitDecimals(unitPrice)}
 											</Text>
 											<Text style={styles.colTotal}>
-												{formatCurrency(lineTotal)}
+												{priceFormatWhitDecimals(lineTotal)}
 											</Text>
 										</View>
 									);
@@ -621,7 +639,7 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 												<View style={styles.totalsRow}>
 													<Text style={styles.totalsRowLabel}>Neto</Text>
 													<Text style={styles.totalsRowValue}>
-														{formatCurrency(netTotal)}
+														{priceFormat(netTotal)}
 													</Text>
 												</View>
 												{discount > 0 && (
@@ -630,14 +648,14 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 															Descuento
 														</Text>
 														<Text style={styles.totalsRowValue}>
-															- {formatCurrency(discount)}
+															- {priceFormat(discount)}
 														</Text>
 													</View>
 												)}
 												<View style={styles.totalsRow}>
 													<Text style={styles.totalsRowLabel}>IVA</Text>
 													<Text style={styles.totalsRowValue}>
-														{formatCurrency(tax)}
+														{priceFormat(tax)}
 													</Text>
 												</View>
 												<View style={styles.totalsRowLast}>
@@ -645,7 +663,7 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 														Total
 													</Text>
 													<Text style={styles.totalsRowLastText}>
-														{formatCurrency(total)}
+														{priceFormat(total)}
 													</Text>
 												</View>
 											</View>

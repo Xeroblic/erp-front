@@ -1,8 +1,15 @@
-const priceFormat = (price: number): string => {
-	return price.toLocaleString('en-US', {
+export const priceFormat = (price: number): string => {
+	return price.toLocaleString('es-CL', {
 		style: 'currency',
-		currency: 'USD',
+		currency: 'CLP',
 	});
 };
 
-export default priceFormat;
+export const priceFormatWhitDecimals = (price:number):string => {
+	return price.toLocaleString('es-CL', {
+		style: 'currency',
+		currency: 'CLP',
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 2,
+	});
+};

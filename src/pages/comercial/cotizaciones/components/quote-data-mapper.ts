@@ -171,32 +171,76 @@ export const getCompanyInfo = (quote: IQuote, state: any) => {
 /**
  * Mapea los datos del cliente
  */
-export const getCustomerInfo = (customer: any) => {
-	if (!customer)
-		return {
-			name: 'Cliente General',
-			rut: '—',
-			address: '—',
-			giro: '—',
-			contactName: '—',
-			phone: '—',
-			email: '—',
-			comuna: '',
-		};
+const extractSnapshotAddress = (snapshot: any): string | null => {
+	if (!snapshot) return null;
+	if (typeof snapshot === 'string') {
+		const trimmed = snapshot.trim();
+		return trimmed || null;
+	}
+
+	if (typeof snapshot === 'object') {
+		const direct = snapshot.full_address ?? snapshot.fullAddress ?? snapshot.address;
+		if (typeof direct === 'string' && direct.trim()) return direct.trim();
+
+		const parts = [
+			snapshot.company,
+			snapshot.name,
+			snapshot.address1 ?? snapshot.address_1,
+			snapshot.address2 ?? snapshot.address_2,
+			snapshot.comuna ?? snapshot.commune ?? snapshot.city,
+			snapshot.state,
+			snapshot.country,
+			snapshot.zip ?? snapshot.postcode ?? snapshot.postal_code,
+		]
+			.map((part) => (typeof part === 'string' ? part.trim() : ''))
+			.filter(Boolean);
+
+		if (parts.length) return parts.join(', ');
+	}
+
+	return null;
+};
+
+export const getCustomerInfo = (
+	customer: any,
+	options?: { billingSnapshot?: any; shippingSnapshot?: any },
+) => {
+	const empty = {
+		name: 'Cliente General',
+		rut: '—',
+		address: '—',
+		giro: '—',
+		contactName: '—',
+		phone: '—',
+		email: '—',
+		comuna: '',
+		billingAddress: '—',
+		shippingAddress: '—',
+	};
+
+	if (!customer) return empty;
 
 	const companyName =
 		customer.razon_social || customer.name || customer.contact_name || 'Cliente General';
 	const contactName = customer.contact_name || customer.contacto || customer.name || '—';
 
+	const billingAddress = extractSnapshotAddress(options?.billingSnapshot);
+	const shippingAddress = extractSnapshotAddress(options?.shippingSnapshot);
+	const fallbackAddress = customer.direccion || customer.address || '—';
+	const resolvedShipping = shippingAddress || fallbackAddress || '—';
+	const resolvedBilling = billingAddress || fallbackAddress || '—';
+
 	return {
 		name: companyName,
 		rut: customer.rut || '—',
-		address: customer.direccion || customer.address || '—',
+		address: resolvedShipping,
 		giro: customer.giro || '—',
 		contactName,
 		phone: customer.telefono || customer.phone || '—',
 		email: customer.email || '—',
 		comuna: customer.comuna || '',
+		billingAddress: resolvedBilling,
+		shippingAddress: resolvedShipping,
 	};
 };
 

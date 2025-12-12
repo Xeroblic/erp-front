@@ -1,6 +1,6 @@
 import React, { FC } from 'react';
 import classNames from 'classnames';
-import getFirstLetter from '../utils/getFirstLetter';
+import {getFirstLetter} from '../utils/getFirstLetter';
 import { TRounded } from '../types/rounded.type';
 import themeConfig from '../config/theme.config';
 

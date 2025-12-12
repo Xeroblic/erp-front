@@ -56,7 +56,10 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 		subEmpresa.detalle?.id,
 	]);
 
-	const customer = getCustomerInfo((quote as any).customer);
+	const customer = getCustomerInfo((quote as any).customer, {
+		billingSnapshot: (quote as any).billing_snapshot,
+		shippingSnapshot: (quote as any).shipping_snapshot,
+	});
 	const items = Array.isArray(quote.items) ? quote.items : [];
 	const minRows = 8;
 	const rows = Array.from(
@@ -162,8 +165,16 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 						<span className='font-semibold'>Giro:</span> {customer.giro}
 					</p>
 					<p>
-						<span className='font-semibold'>Dirección:</span> {customer.address}
+						<span className='font-semibold'>Dirección de envío:</span> {customer.shippingAddress}
 					</p>
+					{customer.billingAddress &&
+						customer.billingAddress !== '—' &&
+						customer.billingAddress !== customer.shippingAddress && (
+							<p>
+								<span className='font-semibold'>Dirección de facturación:</span>{' '}
+								{customer.billingAddress}
+							</p>
+						)}
 					<p>
 						<span className='font-semibold'>Contacto:</span> {customer.contactName}
 					</p>
