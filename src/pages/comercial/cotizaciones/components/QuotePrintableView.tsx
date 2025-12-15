@@ -40,22 +40,15 @@ const paginateItems = (items: any[], perPage: number): any[][] => {
 
 const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 	const dispatch = useAppDispatch();
-	// Optimizamos el selector para evitar re-renders innecesarios por cambios en otras partes del estado
 	const subEmpresa = useSelector((state: RootState) => state.subEmpresa);
 	const personalizacion = useSelector((state: RootState) => state.personalizacion);
 
-	// Construimos un objeto de estado parcial que satisface lo que necesita getCompanyInfo
-	// getCompanyInfo usa: state.subEmpresa y state.personalizacion
 	const stateForMapper = { subEmpresa, personalizacion };
 
-	// Usar helpers centralizados para obtener datos
 	const company = getCompanyInfo(quote, stateForMapper);
 
-	// Efecto para cargar datos de la subsidiaria si faltan
 	useEffect(() => {
 		if (quote.subsidiary_id && (!company.name || company.name === 'EcoTI')) {
-			// Si el nombre es genérico o vacío, intentamos cargar el detalle
-			// Validamos que no estemos ya cargando para evitar loops (aunque el thunk suele manejarlo)
 			if (!subEmpresa.loading && subEmpresa.detalle?.id !== quote.subsidiary_id) {
 				dispatch(fetchSubsidiariaDetail(quote.subsidiary_id));
 			}
@@ -146,11 +139,9 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 									)}
 								</div>
 								<div className='flex flex-col gap-0.5 text-[9px]'>
-									{/* <p className='font-semibold uppercase'>{company.name}</p> */}
 									<p>Giro: {company.activity || '—'}</p>
 									<p>Dirección: {company.fullAddress || '—'}</p>
 									<p>Email: {company.email || '—'}</p>
-									{/* <p>Servicios Computacionales</p> */}
 								</div>
 							</div>
 							<div className='flex w-[35%] flex-col items-center'>
@@ -173,26 +164,32 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 							</div>
 						</div>
 
-					<div className='flex items-center justify-between bg-rose-50 px-3 py-2 text-[9px]  uppercase text-zinc-900'>
-						<span className='flex flex-col gap-3 normal-case md:flex-row md:items-center md:gap-2 '>
-							<span>
-								Fecha creación doc:{' '}
-								<span className='font-bold text-slate-900'>{documentCreationLabel}</span>
+						<div className='flex items-center justify-between bg-rose-50 px-3 py-2 text-[9px] uppercase text-zinc-900'>
+							<span className='flex flex-col gap-3 normal-case md:flex-row md:items-center md:gap-2'>
+								<span>
+									Fecha creación doc:{' '}
+									<span className='font-bold text-slate-900'>
+										{documentCreationLabel}
+									</span>
+								</span>
+								<span>
+									Fecha de emisión:{' '}
+									<span className='font-bold text-slate-900'>
+										{emissionDateLabel}
+									</span>
+								</span>
+								<span>
+									Hora de emisión:{' '}
+									<span className='font-bold text-slate-900'>
+										{emissionTimeLabel}
+									</span>
+								</span>
 							</span>
 							<span>
-								Fecha de emisión:{' '}
-								<span className='font-bold text-slate-900'>{emissionDateLabel}</span>
-							</span>
-							<span>
-								Hora de emisión:{' '}
-								<span className='font-bold text-slate-900'>{emissionTimeLabel}</span>
-							</span>
-						</span>
-						<span>
-							N° Orden C:{' '}
-							<span className='font-bold text-slate-900'>
-								{orderInfo.purchase_order || '—'}
-							</span>
+								N° Orden C:{' '}
+								<span className='font-bold text-slate-900'>
+									{orderInfo.purchase_order || '—'}
+								</span>
 							</span>
 						</div>
 						<div className='mb-4 border-2 border-rose-600'>
