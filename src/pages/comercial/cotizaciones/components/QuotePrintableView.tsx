@@ -137,7 +137,7 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 											{company.name}
 										</span>
 									)}
-								</div>
+								</div>0
 								<div className='flex flex-col gap-0.5 text-[9px]'>
 									<p>Giro: {company.activity || '—'}</p>
 									<p>Dirección: {company.fullAddress || '—'}</p>
