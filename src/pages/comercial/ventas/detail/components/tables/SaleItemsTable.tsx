@@ -72,22 +72,22 @@ const SaleItemsTable: React.FC<SaleItemsTableProps> = ({ items }) => {
 				meta: { align: 'right' },
 				size: 120,
 			},
-			{
-				accessorKey: 'tax_amount',
-				header: 'IVA',
-				cell: ({ row }) => {
-					const taxAmount = Number(
-						row.original.tax_amount ??
-							0,
-					);
-					return (
-						<span className='text-sm text-zinc-700 dark:text-zinc-300'>
-							{priceFormatWhitDecimals(taxAmount)}
-						</span>
-					);
-				}
+			// {
+			// 	accessorKey: 'tax_amount',
+			// 	header: 'IVA',
+			// 	cell: ({ row }) => {
+			// 		const taxAmount = Number(
+			// 			row.original.tax_amount ??
+			// 				0,
+			// 		);
+			// 		return (
+			// 			<span className='text-sm text-zinc-700 dark:text-zinc-300'>
+			// 				{priceFormatWhitDecimals(taxAmount)}
+			// 			</span>
+			// 		);
+			// 	}
 
-			},
+			// },
 			{
 				accessorKey: 'total',
 				header: 'Total',
