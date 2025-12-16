@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect, useState, WheelEvent } from 'react';
+import React, { ReactNode, useEffect, useRef, useState } from 'react';
 import Modal, { ModalBody, ModalHeader } from './ui/Modal';
 
 const mergeClasses = (...classes: Array<string | undefined | false>) =>
@@ -71,13 +71,6 @@ const ImageZoomComponent = ({
 		return Number(value.toFixed(2));
 	};
 
-	const handleWheel = (event: WheelEvent<HTMLDivElement>) => {
-		event.preventDefault();
-		event.stopPropagation();
-		const delta = event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
-		setScale((prev) => clampScale(prev + delta));
-	};
-
 	const handleToggleZoom = () => {
 		setScale((prev) => (prev === MIN_SCALE ? clampScale(2) : MIN_SCALE));
 	};
@@ -89,14 +82,34 @@ const ImageZoomComponent = ({
 		setIsOpen(true);
 	};
 
+	const viewerRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		const element = viewerRef.current;
+		if (!element) return;
+
+		const handleWheel = (event: Event) => {
+			const wheelEvent = event as globalThis.WheelEvent;
+			wheelEvent.preventDefault();
+			wheelEvent.stopPropagation();
+			const delta = wheelEvent.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
+			setScale((prev) => clampScale(prev + delta));
+		};
+
+		element.addEventListener('wheel', handleWheel, { passive: false });
+		return () => {
+			element.removeEventListener('wheel', handleWheel);
+		};
+	}, []);
+
 	const viewer = (
 		<div
+			ref={viewerRef}
 			className={mergeClasses(
 				'flex max-h-[80vh] min-h-[320px] w-full items-center justify-center overflow-auto rounded-xl bg-black/70 p-4',
 				viewerClassName,
 			)}
 			onClick={handleToggleZoom}
-			onWheel={handleWheel}
 			role='presentation'>
 			<img
 				src={imageUrl}

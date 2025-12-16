@@ -10,7 +10,7 @@ import Validation from '@/components/form/Validation';
 import Radio, { RadioGroup } from '@/components/form/Radio';
 import Avatar from '@/components/Avatar';
 import Button from '@/components/ui/Button';
-import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
+import { ImageZoom } from '@/components/ImageZoom';
 import { ProfileFormik } from '../types';
 
 type Props = {
@@ -24,7 +24,6 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 		[formik.values.first_name, formik.values.last_name].filter(Boolean).join(' ') || 'Usuario';
 
 	const [isDraggingFile, setIsDraggingFile] = useState(false);
-	const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 
 	const compressAndUpload = useCallback(
@@ -131,24 +130,44 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 				<div className='grid gap-8 lg:grid-cols-[320px,1fr] lg:items-center'>
 					<div className='rounded-2xl border border-neutral-200/60 bg-gradient-to-b from-white to-neutral-50 p-5 text-center shadow-sm dark:border-neutral-800 dark:from-neutral-900 dark:to-neutral-900/70'>
 						<div className='flex flex-col items-center gap-4'>
-							<button
-								type='button'
-								aria-label='Ver avatar ampliado'
-								onClick={() => setIsPreviewOpen(true)}
-								className='group relative flex h-32 w-32 items-center justify-center rounded-full shadow-xl ring-4 ring-neutral-50 transition hover:-translate-y-1 dark:ring-neutral-800'>
-								<div className='absolute inset-0 overflow-hidden rounded-full border border-white/70 dark:border-neutral-800'>
+							{avatarUrl ? (
+								<ImageZoom
+									imageUrl={avatarUrl}
+									alt={`Avatar de ${avatarName}`}
+									thumbnailUrl={avatarUrl}
+									modalTitle='Vista previa del avatar'
+									modalSubtitle='Haz clic o usa la rueda del ratón para hacer zoom'
+									previewLabel='Ver ampliado'
+									renderTrigger={(open) => (
+										<button
+											type='button'
+											aria-label='Ver avatar ampliado'
+											onClick={open}
+											className='group relative flex h-32 w-32 items-center justify-center rounded-full shadow-xl ring-4 ring-neutral-50 transition hover:-translate-y-1 dark:ring-neutral-800'>
+											<div className='absolute inset-0 overflow-hidden rounded-full border border-white/70 dark:border-neutral-800'>
+												<img
+													src={avatarUrl}
+													alt={avatarName}
+													className='h-full w-full rounded-full border border-transparent object-cover'
+												/>
+											</div>
+											<span className='pointer-events-none absolute inset-0 rounded-full bg-black/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100' />
+											<Icon
+												icon='HeroMagnifyingGlassPlus'
+												className='relative text-3xl text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100'
+											/>
+										</button>
+									)}
+								/>
+							) : (
+								<div className='flex h-32 w-32 items-center justify-center rounded-full shadow-xl ring-4 ring-neutral-50 dark:ring-neutral-800'>
 									<Avatar
-										src={avatarUrl ?? undefined}
+										src={undefined}
 										name={avatarName}
 										className='h-full w-full rounded-full border border-transparent object-cover'
 									/>
 								</div>
-								<span className='pointer-events-none absolute inset-0 rounded-full bg-black/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100' />
-								<Icon
-									icon='HeroMagnifyingGlassPlus'
-									className='relative text-3xl text-white'
-								/>
-							</button>
+							)}
 							<div className='space-y-1'>
 								<p className='text-base font-semibold text-neutral-900 dark:text-white'>
 									{avatarName}
@@ -169,89 +188,55 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 						</div>
 					</div>
 
-					<div className='w-full space-y-4'>
-						<p className='text-sm text-neutral-600 dark:text-neutral-300'>
-							Arrastra una imagen o selecciona un archivo desde tu computador. El
-							sistema la comprimirá, convertirá a WebP y ajustará su tamaño para que
-							luzca impecable en toda la plataforma.
-						</p>
-						<input
-							ref={fileInputRef}
-							id='fileUpload'
-							name='fileUpload'
-							type='file'
-							accept='image/*'
-							onChange={handleFileUpload}
-							className='sr-only'
-						/>
-						<div
-							role='button'
-							tabIndex={0}
-							onClick={openFilePicker}
-							onKeyDown={(event) => {
-								if (event.key === 'Enter' || event.key === ' ') {
-									event.preventDefault();
-									openFilePicker();
-								}
-							}}
-							onDragEnter={handleDragEnter}
-							onDragOver={handleDragOver}
-							onDragLeave={handleDragLeave}
-							onDrop={handleDrop}
-							className={dropZoneClassName}>
-							<Icon icon='HeroArrowUpTray' className='mb-3 h-10 w-10 text-current' />
-							<span className='text-sm font-semibold'>Suelta tu imagen aquí</span>
-							<span className='text-xs text-neutral-500 dark:text-neutral-400'>
-								o haz clic para explorar tus archivos
-							</span>
-							<div className='mt-4 space-y-1 text-xs text-neutral-400 dark:text-neutral-500'>
-								<p>Formatos sugeridos: JPG, PNG, WEBP.</p>
-								<p>Peso máximo permitido: 2&nbsp;MB.</p>
+					{isDraggingFile && (
+						<div className='relative w-full space-y-4'>
+							<div className='absolute inset-0 z-10 rounded-2xl bg-white/30 backdrop-blur-[2px] dark:bg-black/30' />
+							<p className='text-sm text-neutral-600 dark:text-neutral-300'>
+								Arrastra una imagen o selecciona un archivo desde tu computador. El
+								sistema la comprimirá, convertirá a WebP y ajustará su tamaño para
+								que luzca impecable en toda la plataforma.
+							</p>
+							<input
+								ref={fileInputRef}
+								id='fileUpload'
+								name='fileUpload'
+								type='file'
+								accept='image/*'
+								onChange={handleFileUpload}
+								className='sr-only'
+							/>
+							<div
+								role='button'
+								tabIndex={0}
+								onClick={openFilePicker}
+								onKeyDown={(event) => {
+									if (event.key === 'Enter' || event.key === ' ') {
+										event.preventDefault();
+										openFilePicker();
+									}
+								}}
+								onDragEnter={handleDragEnter}
+								onDragOver={handleDragOver}
+								onDragLeave={handleDragLeave}
+								onDrop={handleDrop}
+								className={dropZoneClassName}>
+								<Icon
+									icon='HeroArrowUpTray'
+									className='mb-3 h-10 w-10 text-current'
+								/>
+								<span className='text-sm font-semibold'>Suelta tu imagen aquí</span>
+								<span className='text-xs text-neutral-500 dark:text-neutral-400'>
+									o haz clic para explorar tus archivos
+								</span>
+								<div className='mt-4 space-y-1 text-xs text-neutral-400 dark:text-neutral-500'>
+									<p>Formatos sugeridos: JPG, PNG, WEBP.</p>
+									<p>Peso máximo permitido: 2&nbsp;MB.</p>
+								</div>
 							</div>
 						</div>
-					</div>
+					)}
 				</div>
 			</section>
-
-			<Modal isOpen={isPreviewOpen} setIsOpen={setIsPreviewOpen} size='lg' isCentered>
-				<ModalHeader>
-					<div className='flex items-center gap-2 text-lg font-semibold'>
-						<Icon icon='HeroUserCircle' className='text-primary h-5 w-5' />
-						Vista previa del avatar
-					</div>
-				</ModalHeader>
-				<ModalBody>
-					<div className='flex justify-center'>
-						<div className='ring-primary/20 relative flex h-56 w-56 items-center justify-center rounded-full shadow-inner ring-8'>
-							<Avatar
-								src={avatarUrl ?? undefined}
-								name={avatarName}
-								className='h-52 w-52 rounded-full border-4 border-white object-cover dark:border-neutral-900'
-							/>
-						</div>
-					</div>
-				</ModalBody>
-				<ModalFooter>
-					<Button
-						variant='outline'
-						size='sm'
-						icon='HeroCamera'
-						onClick={() => {
-							setIsPreviewOpen(false);
-							openFilePicker();
-						}}>
-						Cambiar imagen
-					</Button>
-					<Button
-						variant='solid'
-						size='sm'
-						color='emerald'
-						icon='HeroCheck'
-						onClick={() => setIsPreviewOpen(false)}>
-						Cerrar
-					</Button>
-				</ModalFooter>
-			</Modal>
 
 			<div className='grid grid-cols-12 gap-4'>
 				<div className='col-span-12 lg:col-span-6'>
