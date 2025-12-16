@@ -25,7 +25,7 @@ import ApiService from '@/services/ApiService';
 import { getFirstCapitalize } from '@/utils/getFirstLetter';
 import { useNavigate } from 'react-router-dom';
 import { IQuote } from '@/interface';
-
+import { AxiosError } from 'axios';
 interface Props {
 	subsidiaryId: number;
 	saleId: number;
@@ -40,11 +40,12 @@ interface CreateQuoteFromSaleResponse {
 	sale_id?: number | string | null;
 }
 
-const extractQuoteIdFromResponse = (payload?: CreateQuoteFromSaleResponse | null): number | null => {
+const extractQuoteIdFromResponse = (
+	payload?: CreateQuoteFromSaleResponse | null,
+): number | null => {
 	if (!payload) return null;
-	const rawId =
-		payload.quote?.id ??
-		payload.id;
+	// Intentar obtener el ID desde diferentes campos posibles
+	const rawId = payload.quote?.id ?? payload.id ?? payload.sale_id;
 	if (typeof rawId === 'number') {
 		return Number.isFinite(rawId) && rawId > 0 ? rawId : null;
 	}
@@ -110,13 +111,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 		}
 	}, [isOpen]);
 
-	const canClose = useMemo(() => {
-		const invFinalized = detail?.documents_metadata?.inventory_finalized === true;
-		const invDelivered = detail?.inventory_delivered === true;
-		return !invFinalized && !invDelivered;
-	}, [detail]);
-
-	const itemsCount = detail?.items_count ?? items.length ?? 0;
+	// const itemsCount = detail?.items_count ?? items.length ?? 0;
 
 	const lineTotals = useMemo(() => {
 		const subtotal = items.reduce(
@@ -191,29 +186,26 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 				: message;
 			toast.success(successMessage);
 		} catch (error) {
-			const err = error as { response?: { data?: CreateQuoteFromSaleResponse } };
-			const responseData = err?.response?.data;
-			const message = responseData?.message || 'No se pudo crear la cotización';
+			const axiosError = error as AxiosError<CreateQuoteFromSaleResponse>;
+			const status = axiosError.response?.status;
+			const responseData = axiosError.response?.data;
 			const existingQuoteId = extractQuoteIdFromResponse(responseData);
-			if (
-				typeof message === 'string' &&
-				message.toLowerCase().includes('ya existe una cotización') &&
-				existingQuoteId
-			) {
+			if (status === 409 && existingQuoteId) {
 				setCreatedQuoteId(existingQuoteId);
-				toast.info(message);
+				toast.info(
+					`Ya existe una cotización para esta venta, con el número: ${existingQuoteId}`,
+				);
 				navigate(`/comercial/cotizaciones/${existingQuoteId}`);
 				return;
 			}
+			const message = responseData?.message || 'No se pudo crear la cotización';
 			toast.error(message);
 		} finally {
 			setCreatingQuote(false);
 		}
 	}, [subsidiaryId, saleId, creatingQuote, navigate]);
 
-	const quoteButtonLabel = createdQuoteId
-		? 'Ver cotización'
-		: 'Crear cotización desde venta';
+	const quoteButtonLabel = createdQuoteId ? 'Ver cotización' : 'Crear cotización desde venta';
 	const quoteButtonHandler = createdQuoteId
 		? () => navigate(`/comercial/cotizaciones/${createdQuoteId}`)
 		: handleCreateQuote;
@@ -224,12 +216,16 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	return (
 		<Modal isOpen={isOpen} setIsOpen={onClose} size='xl' isScrollable isStaticBackdrop>
 			<ModalHeader>
-				<Badge>Detalle de Venta - <span className='text-teal-600 dark:text-teal-100 ml-2 text-lg'>N° Venta {detail?.id}</span></Badge>
+				<Badge>
+					Detalle de Venta -{' '}
+					<span className='ml-2 text-lg text-teal-600 dark:text-teal-100'>
+						N° Venta {detail?.id}
+					</span>
+				</Badge>
 				{/* #{detail?.id ?? saleId} */}
 				<Badge variant='solid' color='blue' className='ml-4 w-fit px-2 text-sm'>
 					{translateStatus(detail?.status)}
 				</Badge>
-
 			</ModalHeader>
 
 			<ModalBody className='space-y-4'>
@@ -260,7 +256,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 								</p>
 							</div>
 
-							{canClose && (
+							{!detail?.complete_at && detail?.complete_at !== undefined ? (
 								<Button
 									variant='outline'
 									color='emerald'
@@ -270,6 +266,11 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 									onClick={() => setCloseOpen(true)}>
 									Cerrar venta
 								</Button>
+							) : (
+								<Badge variant='solid' color='green' className='px-2 py-1 text-sm'>
+									Venta cerrada{' '}
+									{detail?.complete_at ? `el ${formatDate(detail.complete_at)}` : ''}
+								</Badge>
 							)}
 						</div>
 					</CardBody>

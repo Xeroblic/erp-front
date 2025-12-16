@@ -45,6 +45,8 @@ export interface ISale {
 
 	salesperson_id?: number;
 	invoice_number?: string;
+
+	complete_at?: string | null;
 }
 
 export interface ISaleItem {
