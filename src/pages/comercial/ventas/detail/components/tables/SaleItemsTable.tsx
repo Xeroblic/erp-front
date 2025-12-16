@@ -57,11 +57,11 @@ const SaleItemsTable: React.FC<SaleItemsTableProps> = ({ items }) => {
 				size: 80,
 			},
 			{
-				accessorKey: 'subtotal',
+				accessorKey: 'unit_price',
 				header: 'SubTotal',
 				cell: ({ row }) => {
 					const unitPrice = Number(
-						row.original.subtotal  ?? 0,
+						row.original.unit_price  ?? 0,
 					);
 					return (
 						<span className='text-sm text-zinc-700 dark:text-zinc-300'>
@@ -89,14 +89,11 @@ const SaleItemsTable: React.FC<SaleItemsTableProps> = ({ items }) => {
 
 			// },
 			{
-				accessorKey: 'total',
+				accessorKey: 'subtotal',
 				header: 'Total',
 				cell: ({ row }) => {
-					const unitPrice = Number(
-						row.original.unit_price ?? row.original.unit_price_gross ?? 0,
-					);
 					const totalLine = Number(
-						row.original.total ?? row.original.subtotal ?? row.original.quantity * unitPrice,
+						row.original.subtotal,
 					);
 					return (
 						<span className='text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
