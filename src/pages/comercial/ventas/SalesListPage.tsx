@@ -381,14 +381,17 @@ const SalesListPage: React.FC = () => {
 						<Button
 							variant='outline'
 							size='xs'
+							color='violet'
+							className='bg-violet-500/20'
 							onClick={() => handleViewDetail(row.original.id)}
 							isDisable={!subsidiaryId}>
-							<Icon icon='HeroEye' size='text-xl' />
+							<Icon icon='HeroEye' color='violet' size='text-xl' />
 						</Button>
 						<Button
 							variant='outline'
 							size='xs'
 							color='red'
+							className='bg-red-500/20'
 							onClick={() => handleViewDetail(row.original.id)}
 							isDisable={!subsidiaryId}>
 							<Icon icon='HeroTrash' color='red' size='text-xl' />

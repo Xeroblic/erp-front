@@ -47,12 +47,13 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 		}).format(amount);
 	};
 
-
 	// columnas de la tabla
 	const columns = useMemo<ColumnDef<IQuote, any>[]>(
 		() => [
-			columnHelper.accessor('quote_number', {
-				header: 'N° Cotización',
+			columnHelper.accessor('id', {
+				enableSorting: true,
+				sortDescFirst: true,
+				header: 'N° de Cotización',
 				cell: (info) => <span className='text-sm'>{info.getValue() || '—'}</span>,
 			}),
 			columnHelper.accessor('customer.name', {
