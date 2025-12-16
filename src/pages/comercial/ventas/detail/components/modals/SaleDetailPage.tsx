@@ -224,7 +224,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	return (
 		<Modal isOpen={isOpen} setIsOpen={onClose} size='xl' isScrollable isStaticBackdrop>
 			<ModalHeader>
-				<Badge>Detalle de Venta - <span className='text-teal-100 ml-2 text-lg'>N° Venta {detail?.id}</span></Badge>
+				<Badge>Detalle de Venta - <span className='text-teal-600 dark:text-teal-100 ml-2 text-lg'>N° Venta {detail?.id}</span></Badge>
 				{/* #{detail?.id ?? saleId} */}
 				<Badge variant='solid' color='blue' className='ml-4 w-fit px-2 text-sm'>
 					{translateStatus(detail?.status)}
