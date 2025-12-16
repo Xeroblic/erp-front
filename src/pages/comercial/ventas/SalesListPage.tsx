@@ -21,6 +21,7 @@ import Badge from '@/components/ui/Badge';
 import Alert from '@/components/ui/Alert';
 import type { TColors } from '@/types/colors.type';
 import type { TColorIntensity } from '@/types/colorIntensities.type';
+import type { TIcons } from '@/types/icons.type';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
 import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subheader';
@@ -61,6 +62,17 @@ const statusBadgeMap: Record<string, { color: TColors; intensity: TColorIntensit
 const STATUS_FILTER_ID = 'sales-filter-status';
 const SEARCH_FILTER_ID = 'sales-filter-search';
 const WOO_FILTER_ID = 'sales-filter-woo';
+
+type SummaryCardConfig = {
+	key: string;
+	title: string;
+	description: string;
+	value: string | number;
+	icon: TIcons;
+	iconColor: TColors;
+	iconAccentClass: string;
+	valueClass?: string;
+};
 
 const SalesListPage: React.FC = () => {
 	const dispatch = useAppDispatch();
@@ -111,8 +123,9 @@ const SalesListPage: React.FC = () => {
 	);
 
 	const activeFilterCount = useMemo(() => {
-		return [status, wcOrderId, searchTerm]
-			.filter((value) => (value ?? '').toString().trim() !== '').length;
+		return [status, wcOrderId, searchTerm].filter(
+			(value) => (value ?? '').toString().trim() !== '',
+		).length;
 	}, [searchTerm, status, wcOrderId]);
 	const filtersSummary = activeFilterCount
 		? `${activeFilterCount} filtro${activeFilterCount > 1 ? 's' : ''} activos`
@@ -138,9 +151,7 @@ const SalesListPage: React.FC = () => {
 		const matchesNumeric = (value?: string | number | null) => {
 			if (!numericSearchTerm) return false;
 			if (value === null || typeof value === 'undefined') return false;
-			const digitsOnly = value
-				.toString()
-				.replace(/[^\d]/g, '');
+			const digitsOnly = value.toString().replace(/[^\d]/g, '');
 			if (!digitsOnly) return false;
 			return digitsOnly.includes(numericSearchTerm);
 		};
@@ -195,6 +206,52 @@ const SalesListPage: React.FC = () => {
 		const avgTicket = visibleSales.length ? totalAmount / visibleSales.length : 0;
 		return { totalAmount, deliveredCount, inProgressCount, avgTicket };
 	}, [visibleSales]);
+
+	const summaryCards = useMemo<SummaryCardConfig[]>(
+		() => [
+			{
+				key: 'page-total',
+				title: 'Total página',
+				description: 'Monto total visible',
+				value: formatCLP(summaryStats.totalAmount),
+				icon: 'DuoDollar',
+				iconColor: 'emerald',
+				iconAccentClass: 'border-emerald-200/70 bg-emerald-50 text-emerald-600',
+				valueClass: 'text-emerald-700 dark:text-emerald-200',
+			},
+			{
+				key: 'avg-ticket',
+				title: 'Ticket promedio',
+				description: 'Promedio por venta',
+				value: formatCLP(Math.round(summaryStats.avgTicket)),
+				icon: 'DuoTicket',
+				iconColor: 'rose',
+				iconAccentClass: 'border-rose-200/70 bg-rose-50 text-rose-500',
+				valueClass: 'text-rose-600 dark:text-rose-200',
+			},
+			{
+				key: 'in-progress',
+				title: 'En Proceso',
+				description: 'Pendientes de cierre/entrega',
+				value: summaryStats.inProgressCount,
+				icon: 'DuoSale1',
+				iconColor: 'amber',
+				iconAccentClass: 'border-amber-200/70 bg-amber-50 text-amber-500',
+				valueClass: 'text-amber-600 dark:text-amber-200',
+			},
+			{
+				key: 'delivered',
+				title: 'Finalizadas',
+				description: 'Completadas y Entregadas',
+				value: summaryStats.deliveredCount,
+				icon: 'DuoDoneCircle',
+				iconColor: 'emerald',
+				iconAccentClass: 'border-emerald-200/70 bg-emerald-50 text-emerald-500',
+				valueClass: 'text-emerald-600 dark:text-emerald-200',
+			},
+		],
+		[summaryStats],
+	);
 
 	// const selectedSale = useMemo(
 	// 	() => list.find((sale) => sale.id === selectedSaleId) ?? null,
@@ -345,9 +402,10 @@ const SalesListPage: React.FC = () => {
 		[handleViewDetail, subsidiaryId],
 	);
 
-	const buildFilters = useCallback((): SalesListFilters => ({ ...serverFilters }), [
-		serverFilters,
-	]);
+	const buildFilters = useCallback(
+		(): SalesListFilters => ({ ...serverFilters }),
+		[serverFilters],
+	);
 
 	const handleStatusChange = useCallback((option: TSelectOption | null) => {
 		setStatus(option?.value ?? '');
@@ -458,89 +516,45 @@ const SalesListPage: React.FC = () => {
 						)}
 
 						<div className='grid gap-4 md:grid-cols-2 xl:grid-cols-4'>
-							<Card>
-								<CardHeader>
-									<div className='flex items-center gap-2'>
-										<div className='mr-4 flex h-12 w-12 items-center justify-center rounded-lg border border-green-300 bg-green-200/20 p-1'>
-											<Icon icon='DuoDollar' size='text-3xl' color='green' />
-										</div>
-										<span className='text-sm font-semibold text-zinc-400'>
-											Total página
-										</span>
-									</div>
-								</CardHeader>
-								<CardBody>
-									<div className='text-2xl font-semibold text-zinc-900 dark:text-white'>
-										{formatCLP(summaryStats.totalAmount)}
-									</div>
-									<p className='text-xs text-zinc-500'>Monto total visible</p>
-								</CardBody>
-							</Card>
-
-							<Card>
-								<CardHeader>
-									<div className='flex items-center gap-2'>
-										<div className='mr-4 flex h-12 w-12 items-center justify-center rounded-lg border border-red-300 bg-red-200/20 p-1'>
-											<Icon icon='DuoTicket' size='text-3xl' color='red' />
-										</div>
-										<span className='text-sm font-semibold text-zinc-400'>
-											Ticket promedio
-										</span>
-									</div>
-								</CardHeader>
-								<CardBody>
-									<div className='text-2xl font-semibold text-zinc-900 dark:text-white'>
-										{formatCLP(Math.round(summaryStats.avgTicket))}
-									</div>
-									<p className='text-xs text-zinc-500'>Promedio por venta</p>
-								</CardBody>
-							</Card>
-
-							<Card>
-								<CardHeader>
-									<div className='flex items-center gap-2'>
-										<div className='mr-4 flex h-12 w-12 items-center justify-center rounded-lg border border-amber-300 bg-amber-200/20 p-1'>
-											<Icon icon='DuoSale1' size='text-3xl' color='amber' />
-										</div>
-										<span className='text-sm font-semibold text-zinc-400'>
-											En Proceso
-										</span>
-									</div>
-								</CardHeader>
-								<CardBody>
-									<div className='text-2xl font-semibold text-blue-600 dark:text-blue-300'>
-										{summaryStats.inProgressCount}
-									</div>
-									<p className='text-xs text-zinc-500'>
-										Pendientes de cierre/entrega
-									</p>
-								</CardBody>
-							</Card>
-
-							<Card>
-								<CardHeader>
-									<div className='flex items-center gap-2'>
-										<div className='mr-4 flex h-12 w-12 items-center justify-center rounded-lg border border-emerald-400 bg-emerald-200/20 p-1'>
-											<Icon
-												icon='DuoDoneCircle'
-												size='text-3xl'
-												color='emerald'
-											/>
-										</div>
-										<span className='text-sm font-semibold text-zinc-400'>
-											Finalizadas
-										</span>
-									</div>
-								</CardHeader>
-								<CardBody>
-									<div className='text-2xl font-semibold text-emerald-600 dark:text-emerald-300'>
-										{summaryStats.deliveredCount}
-									</div>
-									<p className='text-xs text-zinc-500'>
-										Completadas y Entregadas
-									</p>
-								</CardBody>
-							</Card>
+							{summaryCards.map(
+								({
+									key,
+									title,
+									description,
+									value,
+									icon,
+									iconColor,
+									iconAccentClass,
+									valueClass,
+								}) => (
+									<Card
+										key={key}
+										className='h-full border border-zinc-200/80 bg-white/95 shadow-sm dark:border-zinc-800/80 dark:bg-zinc-900'>
+										<CardBody className='flex items-center gap-4'>
+											<div
+												className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-xl ${iconAccentClass}`}>
+												<Icon
+													icon={icon}
+													size='text-2xl'
+													color={iconColor}
+												/>
+											</div>
+											<div className='flex flex-col'>
+												<span className='text-sm font-semibold text-zinc-500 dark:text-zinc-300'>
+													{title}
+												</span>
+												<span
+													className={`text-2xl font-semibold text-zinc-900 dark:text-white ${valueClass ?? ''}`}>
+													{value}
+												</span>
+												<p className='text-xs text-zinc-500 dark:text-zinc-400'>
+													{description}
+												</p>
+											</div>
+										</CardBody>
+									</Card>
+								),
+							)}
 						</div>
 
 						<Card>
@@ -587,7 +601,9 @@ const SalesListPage: React.FC = () => {
 												isClearable
 												placeholder='Todos'
 												onChange={(option) =>
-													handleStatusChange(option as TSelectOption | null)
+													handleStatusChange(
+														option as TSelectOption | null,
+													)
 												}
 											/>
 										</div>
@@ -607,8 +623,8 @@ const SalesListPage: React.FC = () => {
 												onChange={handleSearchChange}
 											/>
 											<p className='mt-1 text-xs text-zinc-500 dark:text-zinc-400'>
-												Filtra por cliente, notas internas, montos o número de
-												venta.
+												Filtra por cliente, notas internas, montos o número
+												de venta.
 											</p>
 										</div>
 
