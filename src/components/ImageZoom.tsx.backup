@@ -41,7 +41,7 @@ const ImageZoomComponent = ({
 	viewerClassName,
 	imageClassName,
 	modalTitle = 'Imagen ampliada',
-	modalSubtitle = 'Click derecho: zoom in. Click izquierdo: zoom out. Rueda del mouse: zoom. Arrastra para mover.',
+	modalSubtitle = 'Click derecho: zoom in. Click izquierdo: zoom out. Ctrl + rueda: zoom. Space + drag: mover.',
 	previewLabel = 'Ver imagen',
 	renderTrigger,
 }: ImageZoomProps) => {
@@ -163,6 +163,7 @@ const ImageZoomComponent = ({
 	};
 
 	const onWheel = (e: React.WheelEvent) => {
+		if (!e.ctrlKey) return;
 		e.preventDefault();
 		e.stopPropagation();
 		const delta = e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
@@ -170,7 +171,7 @@ const ImageZoomComponent = ({
 	};
 
 	const onPointerDownPan = (e: React.PointerEvent) => {
-		if (!isZoomed) return;
+		if (!isZoomed || !spaceDown) return;
 		e.preventDefault();
 		(e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
 		setIsPanning(true);
@@ -194,8 +195,8 @@ const ImageZoomComponent = ({
 
 	const viewer = (
 		<div className='relative'>
-			{/* Toolbar mejorado */}
-			{/* <div className='absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-zinc-700/50 bg-gradient-to-b from-zinc-800/95 to-zinc-900/95 px-4 py-3 shadow-2xl backdrop-blur-xl'>
+			{/* Toolbar flotante */}
+			<div className='absolute right-3 top-3 z-10 flex items-center gap-2 rounded-xl border border-white/10 bg-black/50 p-2 shadow-lg backdrop-blur'>
 				<Button
 					variant='outline'
 					size='sm'
@@ -204,21 +205,13 @@ const ImageZoomComponent = ({
 						zoomOut();
 					}}
 					disabled={scale <= MIN_SCALE}
-					className='group h-10 w-10 justify-center border-zinc-600/50 bg-zinc-800/50 px-0 text-white hover:border-zinc-500 hover:bg-zinc-700/80 disabled:opacity-30'
+					className='h-9 w-9 justify-center px-0'
 					aria-label='Alejar'>
-					<Icon
-						icon='HeroMagnifyingGlassMinus'
-						className='text-xl transition-transform group-hover:scale-110'
-					/>
+					<Icon icon='HeroMinus' className='text-lg' />
 				</Button>
 
-				<div className='flex min-w-[80px] flex-col items-center gap-0.5'>
-					<span className='text-base font-bold text-white'>
-						{Math.round(scale * 100)}%
-					</span>
-					<span className='text-[10px] font-medium uppercase tracking-wider text-zinc-400'>
-						zoom
-					</span>
+				<div className='min-w-[56px] text-center text-xs font-semibold text-white/90'>
+					{Math.round(scale * 100)}%
 				</div>
 
 				<Button
@@ -229,118 +222,60 @@ const ImageZoomComponent = ({
 						zoomIn();
 					}}
 					disabled={scale >= MAX_SCALE}
-					className='group h-10 w-10 justify-center border-zinc-600/50 bg-zinc-800/50 px-0 text-white hover:border-zinc-500 hover:bg-zinc-700/80 disabled:opacity-30'
+					className='h-9 w-9 justify-center px-0'
 					aria-label='Acercar'>
-					<Icon
-						icon='HeroMagnifyingGlassPlus'
-						className='text-xl transition-transform group-hover:scale-110'
-					/>
+					<Icon icon='HeroPlus' className='text-lg' />
 				</Button>
-
-				<div className='mx-1 h-8 w-px bg-zinc-700/50' />
 
 				<Button
 					variant='outline'
 					size='sm'
 					onClick={(e) => {
 						e.stopPropagation();
-						resetView();
+						reset();
 					}}
-					className='group h-10 border-zinc-600/50 bg-zinc-800/50 px-4 text-sm font-semibold text-white hover:border-zinc-500 hover:bg-zinc-700/80'
-					aria-label='Restablecer vista'>
-					<Icon
-						icon='HeroArrowPath'
-						className='mr-1.5 text-base transition-transform group-hover:rotate-180'
-					/>
+					className='h-9 px-3 text-xs font-semibold'
+					aria-label='Restablecer'>
 					Reset
 				</Button>
-			</div> */}
+			</div>
 
-			{/* Indicador de ayuda flotante cuando no hay zoom */}
-			{!isZoomed && (
-				<div className='pointer-events-none absolute inset-x-0 bottom-8 z-10 flex justify-center'>
-					<div className='flex flex-col items-center gap-3 rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-600/20 to-purple-600/20 px-6 py-4 backdrop-blur-sm'>
-						<div className='flex items-center gap-4 text-sm font-medium text-white'>
-							<div className='flex items-center gap-2'>
-								<kbd className='rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 text-xs font-bold shadow-lg'>
-									Click Derecho
-								</kbd>
-								<span className='text-blue-200'>→ Acercar</span>
-							</div>
-							<div className='h-4 w-px bg-white/20' />
-							<div className='flex items-center gap-2'>
-								<kbd className='rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 text-xs font-bold shadow-lg'>
-									Rueda
-								</kbd>
-								<span className='text-blue-200'>→ Zoom</span>
-							</div>
-						</div>
-					</div>
-				</div>
-			)}
-
-			{/* Indicador de pan cuando está ampliado */}
-			{isZoomed && (
-				<div className='pointer-events-none absolute bottom-4 left-4 z-10 flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-600/20 to-teal-600/20 px-4 py-2.5 backdrop-blur-sm'>
-					<div
-						className={mergeClasses(
-							'flex items-center gap-2 text-sm font-semibold transition-all',
-							isPanning ? 'text-emerald-300' : 'text-white/70',
-						)}>
-						<Icon
-							icon='HeroHandRaised'
-							className={mergeClasses('text-base', isPanning && 'animate-pulse')}
-						/>
-						<span className='ml-1'>
-							{isPanning ? '¡Arrastrando!' : 'Arrastra para mover'}
-						</span>
-					</div>
-				</div>
-			)}
-
-			{/* Contenedor del viewer */}
+			{/* Viewer */}
 			<div
 				ref={viewerRef}
+				onDoubleClick={handleDoubleClick}
 				className={mergeClasses(
-					'relative flex h-[70vh] min-h-[420px] w-full overflow-hidden rounded-2xl border shadow-2xl px-0',
-					isZoomed
-						? isPanning
-							? 'cursor-grabbing border-emerald-500/50 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900'
-							: 'cursor-grab border-blue-500/30 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900'
-						: 'cursor-zoom-in border-zinc-700/50 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900',
+					// sin padding para no “comerse” espacio
+					'relative flex h-[calc(80vh-96px)] min-h-[420px] w-full items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-b from-black/60 to-black/80',
+					// cuando hay zoom: permitir pan/scroll
+					isZoomed ? 'overflow-auto cursor-grab active:cursor-grabbing' : 'overflow-hidden cursor-zoom-in',
 					viewerClassName,
 				)}
-				onContextMenu={onContextMenu}
-				onMouseDown={onClickLeft}
-				onWheel={onWheel}
-				onPointerDown={onPointerDownPan}
-				onPointerMove={onPointerMovePan}
-				onPointerUp={onPointerUpPan}
-				onPointerCancel={onPointerUpPan}
-				role='presentation'>
+				role='presentation'
+			>
 				<img
-					ref={imgRef}
 					src={imageUrl}
 					alt={alt}
 					draggable={false}
-					className={mergeClasses('select-none', imageClassName)}
+					className={mergeClasses(
+						'select-none',
+						// CLAVE: fit perfecto en 1x, zoom via transform sin romper layout
+						// "contain" se logra con max constraints y sin overflow-auto
+						scale === 1 ? 'max-h-full max-w-full' : 'max-h-none max-w-none',
+						imageClassName,
+					)}
 					style={{
-						width: '100%',
-						height: '100%',
-						objectFit: 'contain',
-						transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+						transform: `scale(${scale})`,
 						transformOrigin: 'center',
-						transition: isPanning ? 'none' : 'transform 120ms ease',
+						transition: 'transform 120ms ease',
 					}}
 				/>
+			</div>
 
-				{/* Overlay sutil en las esquinas para indicar que es interactivo */}
-				<div className='pointer-events-none absolute inset-0'>
-					<div className='absolute left-0 top-0 h-32 w-32 bg-gradient-to-br from-blue-500/5 to-transparent' />
-					<div className='absolute right-0 top-0 h-32 w-32 bg-gradient-to-bl from-purple-500/5 to-transparent' />
-					<div className='absolute bottom-0 left-0 h-32 w-32 bg-gradient-to-tr from-blue-500/5 to-transparent' />
-					<div className='absolute bottom-0 right-0 h-32 w-32 bg-gradient-to-tl from-purple-500/5 to-transparent' />
-				</div>
+			{/* Hint abajo */}
+			<div className='mt-3 flex items-center justify-between text-xs text-white/60'>
+				<span>Doble click: {scale === 1 ? '2x' : '1x'}</span>
+				<span>{isZoomed ? 'Arrastra / scroll para mover' : 'Rueda del mouse para zoom'}</span>
 			</div>
 		</div>
 	);
@@ -350,13 +285,14 @@ const ImageZoomComponent = ({
 	}
 
 	const defaultTrigger = (
-		<Button
+		<button
 			type='button'
 			className={mergeClasses(
 				'group relative inline-flex cursor-zoom-in overflow-hidden rounded-lg border border-slate-200 bg-white transition hover:shadow-lg dark:border-white/10 dark:bg-neutral-900',
 				thumbnailClassName,
 			)}
-			onClick={openModal}>
+			onClick={openModal}
+		>
 			<img
 				src={thumbnailUrl ?? imageUrl}
 				alt={thumbnailAlt ?? alt}
@@ -365,14 +301,14 @@ const ImageZoomComponent = ({
 			<span className='pointer-events-none absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 text-center text-xs font-medium uppercase tracking-wide text-white transition group-hover:bg-black/80'>
 				{previewLabel}
 			</span>
-		</Button>
+		</button>
 	);
 
 	return (
 		<div className={mergeClasses('flex flex-col gap-4', containerClassName)}>
 			{renderTrigger ? renderTrigger(openModal) : defaultTrigger}
 
-			<Modal isOpen={isOpen} setIsOpen={setIsOpen} size='sm'>
+			<Modal isOpen={isOpen} setIsOpen={setIsOpen} size='xl' isCentered>
 				<ModalHeader>
 					<div className='flex flex-col'>
 						<span className='text-base'>{modalTitle}</span>
@@ -381,8 +317,8 @@ const ImageZoomComponent = ({
 				</ModalHeader>
 
 				{/* sin padding para maximizar viewport */}
-				<ModalBody className='bg-transparent p-0 [&:first-child]:pt-0'>
-					{viewer}
+				<ModalBody className='bg-neutral-950/70 p-0'>
+					<div className='p-4'>{viewer}</div>
 				</ModalBody>
 			</Modal>
 		</div>

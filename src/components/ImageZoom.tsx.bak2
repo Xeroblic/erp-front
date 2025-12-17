@@ -41,7 +41,7 @@ const ImageZoomComponent = ({
 	viewerClassName,
 	imageClassName,
 	modalTitle = 'Imagen ampliada',
-	modalSubtitle = 'Click derecho: zoom in. Click izquierdo: zoom out. Rueda del mouse: zoom. Arrastra para mover.',
+	modalSubtitle = 'Click derecho: zoom in. Click izquierdo: zoom out. Rueda del mouse: zoom. Space + drag: mover.',
 	previewLabel = 'Ver imagen',
 	renderTrigger,
 }: ImageZoomProps) => {
@@ -170,7 +170,7 @@ const ImageZoomComponent = ({
 	};
 
 	const onPointerDownPan = (e: React.PointerEvent) => {
-		if (!isZoomed) return;
+		if (!isZoomed || !spaceDown) return;
 		e.preventDefault();
 		(e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
 		setIsPanning(true);
@@ -195,7 +195,7 @@ const ImageZoomComponent = ({
 	const viewer = (
 		<div className='relative'>
 			{/* Toolbar mejorado */}
-			{/* <div className='absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-zinc-700/50 bg-gradient-to-b from-zinc-800/95 to-zinc-900/95 px-4 py-3 shadow-2xl backdrop-blur-xl'>
+			<div className='absolute left-1/2 mt-7 z-10 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-zinc-700/50 bg-gradient-to-b from-zinc-800/95 to-zinc-900/95 px-4 py-3 shadow-2xl backdrop-blur-xl'>
 				<Button
 					variant='outline'
 					size='sm'
@@ -254,26 +254,31 @@ const ImageZoomComponent = ({
 					/>
 					Reset
 				</Button>
-			</div> */}
+			</div>
 
 			{/* Indicador de ayuda flotante cuando no hay zoom */}
 			{!isZoomed && (
-				<div className='pointer-events-none absolute inset-x-0 bottom-8 z-10 flex justify-center'>
-					<div className='flex flex-col items-center gap-3 rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-600/20 to-purple-600/20 px-6 py-4 backdrop-blur-sm'>
-						<div className='flex items-center gap-4 text-sm font-medium text-white'>
-							<div className='flex items-center gap-2'>
-								<kbd className='rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 text-xs font-bold shadow-lg'>
-									Click Derecho
-								</kbd>
-								<span className='text-blue-200'>→ Acercar</span>
-							</div>
-							<div className='h-4 w-px bg-white/20' />
-							<div className='flex items-center gap-2'>
-								<kbd className='rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 text-xs font-bold shadow-lg'>
-									Rueda
-								</kbd>
-								<span className='text-blue-200'>→ Zoom</span>
-							</div>
+				<div className='pointer-events-none absolute inset-x-0 bottom-6 z-10 flex justify-center'>
+					<div className='flex items-center gap-6 rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-600/20 to-purple-600/20 px-8 py-3.5 backdrop-blur-sm'>
+						<div className='flex items-center gap-2.5'>
+							<kbd className='rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-xs font-bold shadow-lg'>
+								Click Derecho
+							</kbd>
+							<span className='text-sm font-medium text-blue-200'>Acercar</span>
+						</div>
+						<div className='h-6 w-px bg-white/30' />
+						<div className='flex items-center gap-2.5'>
+							<kbd className='rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-xs font-bold shadow-lg'>
+								Rueda
+							</kbd>
+							<span className='text-sm font-medium text-blue-200'>Zoom</span>
+						</div>
+						<div className='h-6 w-px bg-white/30' />
+						<div className='flex items-center gap-2.5'>
+							<kbd className='rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-xs font-bold shadow-lg'>
+								Click Izq
+							</kbd>
+							<span className='text-sm font-medium text-blue-200'>Alejar</span>
 						</div>
 					</div>
 				</div>
@@ -281,32 +286,34 @@ const ImageZoomComponent = ({
 
 			{/* Indicador de pan cuando está ampliado */}
 			{isZoomed && (
-				<div className='pointer-events-none absolute bottom-4 left-4 z-10 flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-600/20 to-teal-600/20 px-4 py-2.5 backdrop-blur-sm'>
-					<div
-						className={mergeClasses(
-							'flex items-center gap-2 text-sm font-semibold transition-all',
-							isPanning ? 'text-emerald-300' : 'text-white/70',
-						)}>
-						<Icon
-							icon='HeroHandRaised'
-							className={mergeClasses('text-base', isPanning && 'animate-pulse')}
-						/>
-						<span className='ml-1'>
-							{isPanning ? '¡Arrastrando!' : 'Arrastra para mover'}
-						</span>
-					</div>
+			<div className='pointer-events-none absolute bottom-6 left-6 z-10 flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-600/20 to-teal-600/20 px-5 py-3 backdrop-blur-sm'>
+				<div
+					className={mergeClasses(
+						'flex items-center gap-2.5 text-sm font-semibold transition-all',
+						spaceDown ? 'text-emerald-300' : 'text-white/70',
+					)}>
+					<kbd className='rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 text-xs font-bold shadow-lg'>
+						Space
+					</kbd>
+					<span className='text-white/50'>+</span>
+					<Icon
+						icon='HeroHandRaised'
+						className={mergeClasses('text-lg', spaceDown && 'animate-pulse')}
+					/>
+					<span className='ml-1'>
+						{spaceDown ? '¡Arrastra ahora!' : 'Arrastrar'}
+					</span>
 				</div>
-			)}
 
-			{/* Contenedor del viewer */}
+			{/* Viewer con gradiente mejorado */}
 			<div
 				ref={viewerRef}
 				className={mergeClasses(
-					'relative flex h-[70vh] min-h-[420px] w-full overflow-hidden rounded-2xl border shadow-2xl px-0',
+					'relative flex h-[70vh] min-h-[420px] w-full items-center justify-center overflow-hidden rounded-2xl border shadow-2xl',
 					isZoomed
-						? isPanning
-							? 'cursor-grabbing border-emerald-500/50 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900'
-							: 'cursor-grab border-blue-500/30 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900'
+						? spaceDown
+							? 'cursor-grab border-emerald-500/50 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 active:cursor-grabbing'
+							: 'cursor-default border-blue-500/30 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900'
 						: 'cursor-zoom-in border-zinc-700/50 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900',
 					viewerClassName,
 				)}
@@ -350,7 +357,7 @@ const ImageZoomComponent = ({
 	}
 
 	const defaultTrigger = (
-		<Button
+		<button
 			type='button'
 			className={mergeClasses(
 				'group relative inline-flex cursor-zoom-in overflow-hidden rounded-lg border border-slate-200 bg-white transition hover:shadow-lg dark:border-white/10 dark:bg-neutral-900',
@@ -365,14 +372,14 @@ const ImageZoomComponent = ({
 			<span className='pointer-events-none absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 text-center text-xs font-medium uppercase tracking-wide text-white transition group-hover:bg-black/80'>
 				{previewLabel}
 			</span>
-		</Button>
+		</button>
 	);
 
 	return (
 		<div className={mergeClasses('flex flex-col gap-4', containerClassName)}>
 			{renderTrigger ? renderTrigger(openModal) : defaultTrigger}
 
-			<Modal isOpen={isOpen} setIsOpen={setIsOpen} size='sm'>
+			<Modal isOpen={isOpen} setIsOpen={setIsOpen} size='sm' >
 				<ModalHeader>
 					<div className='flex flex-col'>
 						<span className='text-base'>{modalTitle}</span>
@@ -381,8 +388,8 @@ const ImageZoomComponent = ({
 				</ModalHeader>
 
 				{/* sin padding para maximizar viewport */}
-				<ModalBody className='bg-transparent p-0 [&:first-child]:pt-0'>
-					{viewer}
+				<ModalBody className='bg-neutral-950/70 p-0'>
+					<div className='p-4'>{viewer}</div>
 				</ModalBody>
 			</Modal>
 		</div>

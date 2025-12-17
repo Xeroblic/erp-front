@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import classNames from 'classnames';
 import { toast } from 'react-toastify';
 import Label from '@/components/form/Label';
@@ -25,6 +25,59 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 
 	const [isDraggingFile, setIsDraggingFile] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
+	const dragDepthRef = useRef(0);
+	const dropZoneGradientId = useId();
+
+	useEffect(() => {
+		if (typeof window === 'undefined') return;
+
+		const hasFiles = (event: DragEvent) =>
+			Array.from(event.dataTransfer?.types ?? []).includes('Files');
+
+		const onDragEnter = (event: DragEvent) => {
+			if (!hasFiles(event)) return;
+			event.preventDefault();
+			dragDepthRef.current += 1;
+			setIsDraggingFile(true);
+		};
+
+		const onDragOver = (event: DragEvent) => {
+			if (!hasFiles(event)) return;
+			event.preventDefault();
+			if (event.dataTransfer) {
+				event.dataTransfer.dropEffect = 'copy';
+			}
+			setIsDraggingFile(true);
+		};
+
+		const onDragLeave = (event: DragEvent) => {
+			if (!hasFiles(event)) return;
+			event.preventDefault();
+			dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+			if (dragDepthRef.current === 0) {
+				setIsDraggingFile(false);
+			}
+		};
+
+		const onDropWindow = (event: DragEvent) => {
+			if (!hasFiles(event)) return;
+			event.preventDefault();
+			dragDepthRef.current = 0;
+			setIsDraggingFile(false);
+		};
+
+		window.addEventListener('dragenter', onDragEnter);
+		window.addEventListener('dragover', onDragOver);
+		window.addEventListener('dragleave', onDragLeave);
+		window.addEventListener('drop', onDropWindow);
+
+		return () => {
+			window.removeEventListener('dragenter', onDragEnter);
+			window.removeEventListener('dragover', onDragOver);
+			window.removeEventListener('dragleave', onDragLeave);
+			window.removeEventListener('drop', onDropWindow);
+		};
+	}, []);
 
 	const compressAndUpload = useCallback(
 		async (file: File) => {
@@ -73,6 +126,7 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 	const handleDrop = useCallback(
 		async (event: React.DragEvent<HTMLDivElement>) => {
 			event.preventDefault();
+			dragDepthRef.current = 0;
 			setIsDraggingFile(false);
 
 			const file = event.dataTransfer.files?.[0];
@@ -83,33 +137,19 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 		[compressAndUpload],
 	);
 
-	const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
-		event.preventDefault();
-		event.dataTransfer.dropEffect = 'copy';
-		setIsDraggingFile(true);
-	}, []);
-
-	const handleDragLeave = useCallback((event: React.DragEvent<HTMLDivElement>) => {
-		event.preventDefault();
-
-		const related = event.relatedTarget as Node | null;
-		if (related && event.currentTarget.contains(related)) return;
-
-		setIsDraggingFile(false);
-	}, []);
-
-	const handleDragEnter = useCallback((event: React.DragEvent<HTMLDivElement>) => {
-		event.preventDefault();
-		setIsDraggingFile(true);
-	}, []);
-
 	const dropZoneClassName = classNames(
-		'flex w-full max-w-2xl flex-col items-center justify-center rounded-2xl border-2 border-dashed px-8 py-8 text-center transition-all cursor-pointer',
-		'focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 dark:focus:ring-offset-neutral-900',
+		'group relative flex w-full flex-col items-center justify-center gap-4 overflow-hidden rounded-3xl border-2 border-dashed px-10 py-12 text-center text-base transition-all',
+		'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900',
 		isDraggingFile
-			? 'border-primary bg-primary/10 text-primary'
-			: 'border-neutral-300 bg-white text-neutral-600 hover:border-primary hover:bg-primary/5 dark:border-neutral-700 dark:bg-neutral-900/60 dark:text-neutral-300',
+			? 'border-primary/80 bg-primary/5 text-primary dark:border-primary/60 dark:bg-primary/15 dark:text-white'
+			: 'border-neutral-200 bg-white/95 text-neutral-600 hover:border-primary/60 hover:bg-primary/5 hover:text-primary dark:border-neutral-700 dark:bg-neutral-900/70 dark:text-neutral-200',
 	);
+
+	const dropOverlayChecklist = [
+		{ icon: 'HeroSparkles', text: 'Comprimimos y convertimos a WebP automáticamente.' },
+		{ icon: 'HeroShieldCheck', text: 'Validamos el peso máximo de 2 MB antes de subir.' },
+		{ icon: 'HeroCheckCircle', text: 'Ajustamos la imagen a 400 px para que luzca nítida.' },
+	] as const;
 
 	return (
 		<div className='space-y-8'>
@@ -126,116 +166,187 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 				</p>
 			</header>
 
-			<section className='rounded-3xl border border-neutral-100/70 bg-white/95 p-6 shadow-lg shadow-neutral-900/5 backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/80'>
-				<div className='grid gap-8 lg:grid-cols-[320px,1fr] lg:items-center'>
-					<div className='rounded-2xl border border-neutral-200/60 bg-gradient-to-b from-white to-neutral-50 p-5 text-center shadow-sm dark:border-neutral-800 dark:from-neutral-900 dark:to-neutral-900/70'>
-						<div className='flex flex-col items-center gap-4'>
-							{avatarUrl ? (
-								<ImageZoom
-									imageUrl={avatarUrl}
-									alt={`Avatar de ${avatarName}`}
-									thumbnailUrl={avatarUrl}
-									modalTitle='Vista previa del avatar'
-									modalSubtitle='Haz clic o usa la rueda del ratón para hacer zoom'
-									previewLabel='Ver ampliado'
-									renderTrigger={(open) => (
-										<button
-											type='button'
-											aria-label='Ver avatar ampliado'
-											onClick={open}
-											className='group relative flex h-32 w-32 items-center justify-center rounded-full shadow-xl ring-4 ring-neutral-50 transition hover:-translate-y-1 dark:ring-neutral-800'>
-											<div className='absolute inset-0 overflow-hidden rounded-full border border-white/70 dark:border-neutral-800'>
-												<img
-													src={avatarUrl}
-													alt={avatarName}
+			<section className='relative rounded-3xl border border-neutral-100/70 bg-white/95 p-6 shadow-lg shadow-neutral-900/5 backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/80'>
+				<input
+					ref={fileInputRef}
+					id='fileUpload'
+					name='fileUpload'
+					type='file'
+					accept='image/*'
+					onChange={handleFileUpload}
+					className='sr-only'
+				/>
+
+				<div className='grid gap-8 lg:grid-cols-1'>
+					<div className='mx-auto w-full max-w-2xl'>
+						<div className='relative overflow-hidden rounded-[32px] border border-neutral-200/70 bg-gradient-to-br from-white via-white to-neutral-50 p-[1px] shadow-[0_25px_60px_rgba(15,23,42,0.12)] dark:border-white/10 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-950'>
+							<div className='relative rounded-[30px] bg-white/95 p-8 text-center dark:bg-neutral-950/85'>
+								<div className='pointer-events-none absolute inset-0'>
+									<div
+										className='bg-primary/20 dark:bg-primary/40 absolute -right-14 top-0 h-40 w-40 rounded-full blur-3xl'
+										aria-hidden
+									/>
+									<div
+										className='absolute -left-12 bottom-0 h-36 w-36 rounded-full bg-amber-200/60 blur-3xl dark:bg-amber-500/20'
+										aria-hidden
+									/>
+								</div>
+								<div className='relative flex flex-col items-center gap-6'>
+									<div className='border-primary/20 bg-primary/10 text-primary/80 dark:border-primary/30 dark:bg-primary/20 inline-flex items-center gap-2 rounded-full border px-4 py-1 text-xs font-semibold uppercase tracking-[0.25em] dark:text-white/80'>
+										<Icon icon='HeroSparkles' className='h-4 w-4' />
+										Avatar
+									</div>
+
+									<div className='flex flex-col items-center gap-3'>
+										<span className='text-[0.65rem] font-semibold uppercase tracking-[0.35em] text-neutral-400 dark:text-neutral-500'>
+											Vista previa
+										</span>
+										{avatarUrl ? (
+											<ImageZoom
+												imageUrl={avatarUrl}
+												alt={`Avatar de ${avatarName}`}
+												thumbnailUrl={avatarUrl}
+												modalTitle='Vista previa del avatar'
+												modalSubtitle='Haz clic o usa la rueda del ratón para hacer zoom'
+												previewLabel='Ver ampliado'
+												renderTrigger={(open) => (
+													<button
+														type='button'
+														aria-label='Ver avatar ampliado'
+														onClick={open}
+														className='group relative inline-flex h-36 w-36 items-center justify-center overflow-hidden rounded-full border border-white/70 bg-neutral-100 shadow-[0_20px_45px_rgba(15,23,42,0.18)] ring-8 ring-white/80 transition hover:-translate-y-1 dark:border-neutral-700 dark:bg-neutral-900 dark:ring-neutral-800'>
+														<img
+															src={avatarUrl}
+															alt={avatarName}
+															className='h-full w-full rounded-full object-cover'
+														/>
+														<span className='pointer-events-none absolute inset-0 rounded-full bg-black/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100' />
+														<Icon
+															icon='HeroMagnifyingGlassPlus'
+															className='relative text-3xl text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100'
+														/>
+													</button>
+												)}
+											/>
+										) : (
+											<div className='relative inline-flex h-36 w-36 items-center justify-center overflow-hidden rounded-full border border-white/70 bg-neutral-100 shadow-[0_20px_45px_rgba(15,23,42,0.18)] ring-8 ring-white/80 dark:border-neutral-700 dark:bg-neutral-900 dark:ring-neutral-800'>
+												<Avatar
+													src={undefined}
+													name={avatarName}
 													className='h-full w-full rounded-full border border-transparent object-cover'
 												/>
 											</div>
-											<span className='pointer-events-none absolute inset-0 rounded-full bg-black/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100' />
+										)}
+									</div>
+
+									<div className='space-y-2'>
+										<p className='text-2xl font-semibold text-neutral-900 dark:text-white'>
+											{avatarName}
+										</p>
+										<p className='text-sm text-neutral-500 dark:text-neutral-300'>
+											Mantén una foto luminosa y centrada; ayuda al resto del
+											equipo a reconocerte fácilmente en toda la plataforma.
+										</p>
+									</div>
+
+									<div className='flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-xs font-semibold text-neutral-400 dark:text-neutral-400'>
+										<span className='flex items-center gap-2'>
 											<Icon
-												icon='HeroMagnifyingGlassPlus'
-												className='relative text-3xl text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100'
+												icon='HeroPhoto'
+												className='text-primary/60 h-4 w-4'
 											/>
-										</button>
-									)}
-								/>
-							) : (
-								<div className='flex h-32 w-32 items-center justify-center rounded-full shadow-xl ring-4 ring-neutral-50 dark:ring-neutral-800'>
-									<Avatar
-										src={undefined}
-										name={avatarName}
-										className='h-full w-full rounded-full border border-transparent object-cover'
-									/>
+											JPG, PNG o WebP
+										</span>
+										<span className='flex items-center gap-2'>
+											<Icon
+												icon='HeroArrowUpTray'
+												className='h-4 w-4 text-amber-500'
+											/>
+											≤ 2&nbsp;MB
+										</span>
+										<span className='flex items-center gap-2'>
+											<Icon
+												icon='HeroSparkles'
+												className='h-4 w-4 text-emerald-500'
+											/>
+											400&nbsp;px recomendado
+										</span>
+									</div>
+
+									<Button
+										variant='outline'
+										size='lg'
+										icon='HeroCamera'
+										onClick={openFilePicker}
+										className='border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 dark:border-primary/30 dark:bg-primary/20 w-full max-w-xs justify-center rounded-full border text-sm font-semibold transition dark:text-white'>
+										Cambiar imagen
+									</Button>
 								</div>
-							)}
-							<div className='space-y-1'>
-								<p className='text-base font-semibold text-neutral-900 dark:text-white'>
-									{avatarName}
-								</p>
-								<p className='text-xs text-neutral-500 dark:text-neutral-400'>
-									Mantén una foto nítida para que el resto del equipo te
-									identifique fácilmente.
-								</p>
 							</div>
-							<Button
-								variant='outline'
-								size='sm'
-								icon='HeroCamera'
-								onClick={openFilePicker}
-								className='w-full justify-center text-sm font-semibold'>
-								Cambiar imagen
-							</Button>
 						</div>
 					</div>
+				</div>
 
-					{isDraggingFile && (
-						<div className='relative w-full space-y-4'>
-							<div className='absolute inset-0 z-10 rounded-2xl bg-white/30 backdrop-blur-[2px] dark:bg-black/30' />
-							<p className='text-sm text-neutral-600 dark:text-neutral-300'>
-								Arrastra una imagen o selecciona un archivo desde tu computador. El
-								sistema la comprimirá, convertirá a WebP y ajustará su tamaño para
-								que luzca impecable en toda la plataforma.
-							</p>
-							<input
-								ref={fileInputRef}
-								id='fileUpload'
-								name='fileUpload'
-								type='file'
-								accept='image/*'
-								onChange={handleFileUpload}
-								className='sr-only'
-							/>
-							<div
-								role='button'
-								tabIndex={0}
-								onClick={openFilePicker}
-								onKeyDown={(event) => {
-									if (event.key === 'Enter' || event.key === ' ') {
+				{isDraggingFile && (
+					<div className='pointer-events-none absolute inset-0 z-20 flex items-center justify-center p-6'>
+						<div className='pointer-events-auto relative w-full max-w-2xl space-y-4'>
+							<div className='absolute inset-0 rounded-2xl bg-white/40 backdrop-blur-[2px] dark:bg-black/40' />
+
+							<div className='relative rounded-2xl border border-2 border-dashed border-emerald-600 bg-emerald-300/30 p-5 shadow-lg dark:border-neutral-800 dark:bg-neutral-900/80'>
+								<p className='text-sm text-neutral-600 dark:text-neutral-300'>
+									Arrastra una imagen o selecciona un archivo desde tu computador.
+									El sistema la comprimirá, convertirá a WebP y ajustará su tamaño
+									para que luzca impecable en toda la plataforma.
+								</p>
+
+								<div
+									role='button'
+									tabIndex={0}
+									onClick={openFilePicker}
+									onKeyDown={(event) => {
+										if (event.key === 'Enter' || event.key === ' ') {
+											event.preventDefault();
+											openFilePicker();
+										}
+									}}
+									onDragEnter={(event) => event.preventDefault()}
+									onDragOver={(event) => {
 										event.preventDefault();
-										openFilePicker();
-									}
-								}}
-								onDragEnter={handleDragEnter}
-								onDragOver={handleDragOver}
-								onDragLeave={handleDragLeave}
-								onDrop={handleDrop}
-								className={dropZoneClassName}>
-								<Icon
-									icon='HeroArrowUpTray'
-									className='mb-3 h-10 w-10 text-current'
-								/>
-								<span className='text-sm font-semibold'>Suelta tu imagen aquí</span>
-								<span className='text-xs text-neutral-500 dark:text-neutral-400'>
-									o haz clic para explorar tus archivos
-								</span>
-								<div className='mt-4 space-y-1 text-xs text-neutral-400 dark:text-neutral-500'>
-									<p>Formatos sugeridos: JPG, PNG, WEBP.</p>
-									<p>Peso máximo permitido: 2&nbsp;MB.</p>
+										event.dataTransfer.dropEffect = 'copy';
+									}}
+									onDrop={handleDrop}
+									className={dropZoneClassName}>
+									<Icon
+										icon='HeroArrowUpTray'
+										className='mb-3 h-10 w-10 text-current'
+									/>
+									<span className='text-sm font-semibold'>
+										Suelta tu imagen aquí
+									</span>
+									<span className='text-xs text-neutral-500 dark:text-neutral-400'>
+										o haz clic para explorar tus archivos
+									</span>
+									<div className='mt-4 space-y-1 text-xs text-neutral-400 dark:text-neutral-500'>
+										<p>Formatos sugeridos: JPG, PNG, WEBP.</p>
+										<p>Peso máximo permitido: 2&nbsp;MB.</p>
+									</div>
+								</div>
+
+								<div className='mt-4 flex justify-end'>
+									<Button
+										variant='outline'
+										size='sm'
+										onClick={() => {
+											dragDepthRef.current = 0;
+											setIsDraggingFile(false);
+										}}>
+										Cerrar
+									</Button>
 								</div>
 							</div>
 						</div>
-					)}
-				</div>
+					</div>
+				)}
 			</section>
 
 			<div className='grid grid-cols-12 gap-4'>
