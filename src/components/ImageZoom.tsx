@@ -259,7 +259,7 @@ const ImageZoomComponent = ({
 			{/* Indicador de ayuda flotante cuando no hay zoom */}
 			{!isZoomed && (
 				<div className='pointer-events-none absolute inset-x-0 bottom-8 z-10 flex justify-center'>
-					<div className='flex flex-col items-center gap-3 rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-600/20 to-purple-600/20 px-6 py-4 backdrop-blur-sm'>
+					<div className='flex flex-col items-center gap-3 rounded-2xl border border-blue-500/40 bg-gradient-to-br from-emerald-800/60 to-emerald-600/60 px-6 py-4 backdrop-blur-sm'>
 						<div className='flex items-center gap-4 text-sm font-medium text-white'>
 							<div className='flex items-center gap-2'>
 								<kbd className='rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 text-xs font-bold shadow-lg'>
@@ -281,7 +281,7 @@ const ImageZoomComponent = ({
 
 			{/* Indicador de pan cuando está ampliado */}
 			{isZoomed && (
-				<div className='pointer-events-none absolute bottom-4 left-4 z-10 flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-600/20 to-teal-600/20 px-4 py-2.5 backdrop-blur-sm'>
+				<div className='pointer-events-none absolute bottom-4 left-4 z-10 flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-600/40 to-teal-600/40 px-4 py-2.5 backdrop-blur-sm'>
 					<div
 						className={mergeClasses(
 							'flex items-center gap-2 text-sm font-semibold transition-all',

@@ -243,10 +243,10 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 										<p className='text-2xl font-semibold text-neutral-900 dark:text-white'>
 											{avatarName}
 										</p>
-										<p className='text-sm text-neutral-500 dark:text-neutral-300'>
+										{/* <p className='text-sm text-neutral-500 dark:text-neutral-300'>
 											Mantén una foto luminosa y centrada; ayuda al resto del
 											equipo a reconocerte fácilmente en toda la plataforma.
-										</p>
+										</p> */}
 									</div>
 
 									<div className='flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-xs font-semibold text-neutral-400 dark:text-neutral-400'>
@@ -279,7 +279,7 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 										icon='HeroCamera'
 										onClick={openFilePicker}
 										className='border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 dark:border-primary/30 dark:bg-primary/20 w-full max-w-xs justify-center rounded-full border text-sm font-semibold transition dark:text-white'>
-										Cambiar imagen
+										Click para cambiar avatar o arrastra una imagen
 									</Button>
 								</div>
 							</div>
@@ -292,7 +292,7 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 						<div className='pointer-events-auto relative w-full max-w-2xl space-y-4'>
 							<div className='absolute inset-0 rounded-2xl bg-white/40 backdrop-blur-[2px] dark:bg-black/40' />
 
-							<div className='relative rounded-2xl border border-2 border-dashed border-emerald-600 bg-emerald-300/30 p-5 shadow-lg dark:border-neutral-800 dark:bg-neutral-900/80'>
+							<div className='relative rounded-2xl  border-2 border-dashed border-emerald-600 bg-emerald-300/30 p-5 shadow-lg '>
 								<p className='text-sm text-neutral-600 dark:text-neutral-300'>
 									Arrastra una imagen o selecciona un archivo desde tu computador.
 									El sistema la comprimirá, convertirá a WebP y ajustará su tamaño
@@ -332,17 +332,6 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 									</div>
 								</div>
 
-								<div className='mt-4 flex justify-end'>
-									<Button
-										variant='outline'
-										size='sm'
-										onClick={() => {
-											dragDepthRef.current = 0;
-											setIsDraggingFile(false);
-										}}>
-										Cerrar
-									</Button>
-								</div>
 							</div>
 						</div>
 					</div>
