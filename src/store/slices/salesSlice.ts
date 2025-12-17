@@ -4,6 +4,9 @@ import type { RootState } from '@/store/rootReducer';
 import salesService, {
 	type SalesListFilters,
 	type CloseSaleResponse,
+	type PaginatedResponse,
+	type PaginationMeta,
+	type PaginationLinks,
 } from '@/services/salesService';
 import type { ISale, ISaleItem, ICloseSaleRequest } from '@/interface/sales.interface';
 
@@ -14,6 +17,8 @@ type SaleItem = ISaleItem;
 
 export interface SalesState {
 	list: SaleListItem[];
+	meta: PaginationMeta | null;
+	links: PaginationLinks | null;
 	detail: SaleDetail | null;
 	items: SaleItem[];
 	loading: boolean;
@@ -22,6 +27,8 @@ export interface SalesState {
 
 const initialState: SalesState = {
 	list: [],
+	meta: null,
+	links: null,
 	detail: null,
 	items: [],
 	loading: false,
@@ -41,13 +48,14 @@ const getErrorMessage = (err: unknown, fallback: string): string => {
 };
 
 export const loadSalesList = createAsyncThunk<
-	SaleListItem[],
+	PaginatedResponse<SaleListItem>,
 	{ subsidiaryId: number; filters?: SalesListFilters },
 	{ rejectValue: string }
 >('salesModule/loadSalesList', async ({ subsidiaryId, filters = {} }, { rejectWithValue }) => {
 	try {
-		const { data } = await salesService.fetchSalesList(subsidiaryId, filters);
-		return data ?? [];
+		// Usar fetchSalesPage para server-side pagination
+		const result = await salesService.fetchSalesPage(subsidiaryId, filters);
+		return result;
 	} catch (err: unknown) {
 		return rejectWithValue(getErrorMessage(err, 'Error al cargar ventas'));
 	}
@@ -111,9 +119,11 @@ const salesSlice = createSlice({
 				state.loading = true;
 				state.error = null;
 			})
-			.addCase(loadSalesList.fulfilled, (state, action: PayloadAction<SaleListItem[]>) => {
+			.addCase(loadSalesList.fulfilled, (state, action: PayloadAction<PaginatedResponse<SaleListItem>>) => {
 				state.loading = false;
-				state.list = action.payload;
+				state.list = action.payload.data;
+				state.meta = action.payload.meta;
+				state.links = action.payload.links;
 			})
 			.addCase(loadSalesList.rejected, (state, action) => {
 				state.loading = false;
@@ -173,6 +183,8 @@ const selectModule = (state: RootState): SalesState | undefined =>
 	(state as unknown as { salesModule?: SalesState }).salesModule;
 
 export const selectSalesList = (state: RootState) => selectModule(state)?.list ?? [];
+export const selectSalesMeta = (state: RootState) => selectModule(state)?.meta ?? null;
+export const selectSalesLinks = (state: RootState) => selectModule(state)?.links ?? null;
 export const selectSaleDetail = (state: RootState) => selectModule(state)?.detail ?? null;
 export const selectSaleItems = (state: RootState) => selectModule(state)?.items ?? [];
 export const selectSalesLoading = (state: RootState) => Boolean(selectModule(state)?.loading);

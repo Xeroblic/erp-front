@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ColumnDef } from '@tanstack/react-table';
+import { ColumnDef, PaginationState } from '@tanstack/react-table';
 import { toast } from 'react-toastify';
 import { useDebounce } from 'use-debounce';
 import { useAppDispatch, useAppSelector, injectReducer } from '@/store';
@@ -7,6 +7,7 @@ import salesReducer, {
 	loadSalesList,
 	clearDetail,
 	selectSalesList,
+	selectSalesMeta,
 	selectSalesLoading,
 } from '@/store/slices/salesSlice';
 import type { SalesListFilters } from '@/services/salesService';
@@ -79,6 +80,7 @@ const SalesListPage: React.FC = () => {
 
 	const subsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
 	const rawList = useAppSelector(selectSalesList);
+	const meta = useAppSelector(selectSalesMeta);
 
 	const list: ISale[] = Array.isArray(rawList) ? rawList : [];
 	const loading = useAppSelector(selectSalesLoading);
@@ -89,6 +91,10 @@ const SalesListPage: React.FC = () => {
 	const [detailModalOpen, setDetailModalOpen] = useState(false);
 	const [selectedSaleId, setSelectedSaleId] = useState<number | null>(null);
 	const [isFiltering, setIsFiltering] = useState(false);
+	const [pagination, setPagination] = useState<PaginationState>({
+		pageIndex: 0,
+		pageSize: 5,
+	});
 	const skipNextAutoFetchRef = useRef(false);
 	const [debouncedWcOrderId] = useDebounce(wcOrderId, 400);
 	const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
@@ -110,16 +116,21 @@ const SalesListPage: React.FC = () => {
 		() => ({
 			...baseFilters,
 			wc_order_id: wcOrderId || undefined,
+			page: pagination.pageIndex + 1,
+			per_page: pagination.pageSize,
 		}),
-		[baseFilters, wcOrderId],
+		[baseFilters, wcOrderId, pagination],
 	);
 
 	const debouncedServerFilters = useMemo<SalesListFilters>(
 		() => ({
 			...baseFilters,
 			wc_order_id: debouncedWcOrderId || undefined,
+			q: debouncedSearchTerm || undefined,
+			page: pagination.pageIndex + 1,
+			per_page: pagination.pageSize,
 		}),
-		[baseFilters, debouncedWcOrderId],
+		[baseFilters, debouncedWcOrderId, debouncedSearchTerm, pagination],
 	);
 
 	const activeFilterCount = useMemo(() => {
@@ -131,61 +142,8 @@ const SalesListPage: React.FC = () => {
 		? `${activeFilterCount} filtro${activeFilterCount > 1 ? 's' : ''} activos`
 		: 'Sin filtros activos';
 
-	const normalizedSearchTerm = useMemo(
-		() => debouncedSearchTerm.trim().toLowerCase(),
-		[debouncedSearchTerm],
-	);
-	const numericSearchTerm = useMemo(
-		() => normalizedSearchTerm.replace(/[^\d]/g, ''),
-		[normalizedSearchTerm],
-	);
-
-	const visibleSales = useMemo(() => {
-		if (!normalizedSearchTerm) return list;
-
-		const matchesText = (value?: string | number | null) => {
-			if (value === null || typeof value === 'undefined') return false;
-			return value.toString().toLowerCase().includes(normalizedSearchTerm);
-		};
-
-		const matchesNumeric = (value?: string | number | null) => {
-			if (!numericSearchTerm) return false;
-			if (value === null || typeof value === 'undefined') return false;
-			const digitsOnly = value.toString().replace(/[^\d]/g, '');
-			if (!digitsOnly) return false;
-			return digitsOnly.includes(numericSearchTerm);
-		};
-
-		return list.filter((sale) => {
-			const { customer } = sale;
-			const textualCandidates: Array<string | number | null | undefined> = [
-				sale.sale_number,
-				sale.notes,
-				customer?.name,
-				customer?.billing_company,
-				customer?.primary_contact?.name,
-				customer?.primary_contact?.email,
-				customer?.rut,
-				customer?.email,
-				sale.wc_order_number,
-				sale.wc_order_id ? sale.wc_order_id.toString() : undefined,
-			];
-
-			if (textualCandidates.some((candidate) => matchesText(candidate))) {
-				return true;
-			}
-
-			const numericCandidates: Array<string | number | null | undefined> = [
-				sale.total_amount,
-				sale.pending_amount,
-				sale.paid_amount,
-				sale.sale_number,
-				sale.wc_order_id,
-			];
-
-			return numericCandidates.some((candidate) => matchesNumeric(candidate));
-		});
-	}, [list, normalizedSearchTerm, numericSearchTerm]);
+	// Server-side pagination: el backend hace la búsqueda, no filtramos client-side
+	const visibleSales = list;
 
 	const summaryStats = useMemo(() => {
 		const totalAmount = visibleSales.reduce<number>((acc, sale) => {
@@ -385,7 +343,12 @@ const SalesListPage: React.FC = () => {
 							className='bg-violet-500/20'
 							onClick={() => handleViewDetail(row.original.id)}
 							isDisable={!subsidiaryId}>
-							<Icon icon='HeroEye' color='violet' className='hover:text-violet-600 hover:text-bold' size='text-xl' />
+							<Icon
+								icon='HeroEye'
+								color='violet'
+								className='hover:text-bold hover:text-violet-600'
+								size='text-xl'
+							/>
 						</Button>
 						<Button
 							variant='outline'
@@ -394,7 +357,12 @@ const SalesListPage: React.FC = () => {
 							className='bg-red-200/30'
 							onClick={() => handleViewDetail(row.original.id)}
 							isDisable={!subsidiaryId}>
-							<Icon icon='HeroTrash' color='red' className='hover:text-red-600 hover:text-bold' size='text-xl' />
+							<Icon
+								icon='HeroTrash'
+								color='red'
+								className='hover:text-bold hover:text-red-600'
+								size='text-xl'
+							/>
 						</Button>
 					</div>
 				),
@@ -410,17 +378,32 @@ const SalesListPage: React.FC = () => {
 		[serverFilters],
 	);
 
-	const handleStatusChange = useCallback((option: TSelectOption | null) => {
-		setStatus(option?.value ?? '');
-	}, []);
+	const handleStatusChange = useCallback(
+		(option: TSelectOption | null) => {
+			setStatus(option?.value ?? '');
+			// Resetear a página 1 cuando cambia el status
+			setPagination({ pageIndex: 0, pageSize: pagination.pageSize });
+		},
+		[pagination.pageSize],
+	);
 
-	const handleSearchChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-		setSearchTerm(event.target.value);
-	}, []);
+	const handleSearchChange = useCallback(
+		(event: React.ChangeEvent<HTMLInputElement>) => {
+			setSearchTerm(event.target.value);
+			// Resetear a página 1 cuando cambia la búsqueda
+			setPagination({ pageIndex: 0, pageSize: pagination.pageSize });
+		},
+		[pagination.pageSize],
+	);
 
-	const handleWooOrderChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-		setWcOrderId(event.target.value);
-	}, []);
+	const handleWooOrderChange = useCallback(
+		(event: React.ChangeEvent<HTMLInputElement>) => {
+			setWcOrderId(event.target.value);
+			// Resetear a página 1 cuando cambia el filtro de WooCommerce
+			setPagination({ pageIndex: 0, pageSize: pagination.pageSize });
+		},
+		[pagination.pageSize],
+	);
 
 	const applyFilters = useCallback(
 		async (filters: SalesListFilters) => {
@@ -455,8 +438,22 @@ const SalesListPage: React.FC = () => {
 		setStatus('');
 		setWcOrderId('');
 		setSearchTerm('');
-		await applyFilters({ with_customer: 1 as const });
-	}, [applyFilters]);
+		// Resetear a página 1
+		setPagination({ pageIndex: 0, pageSize: pagination.pageSize });
+		await applyFilters({
+			with_customer: 1 as const,
+			page: 1,
+			per_page: pagination.pageSize,
+		});
+	}, [applyFilters, pagination.pageSize]);
+
+	// Handler para cambios de paginación (cuando el usuario cambia de página)
+	const handlePaginationChange = useCallback(
+		(updater: PaginationState | ((old: PaginationState) => PaginationState)) => {
+			setPagination(updater);
+		},
+		[],
+	);
 
 	// const handleRefresh = () => {
 	//     if (!subsidiaryId) return;
@@ -476,9 +473,9 @@ const SalesListPage: React.FC = () => {
 	const filtersBusy = loading || isFiltering;
 
 	const emptyMessage = subsidiaryId
-		? normalizedSearchTerm
-			? 'No encontramos ventas que coincidan con la búsqueda aplicada'
-			: 'No encontramos ventas con los filtros aplicados'
+		? searchTerm || status || wcOrderId
+			? 'No encontramos ventas que coincidan con los filtros aplicados'
+			: 'No hay ventas registradas'
 		: 'Selecciona una empresa para cargar ventas';
 
 	return (
@@ -671,7 +668,10 @@ const SalesListPage: React.FC = () => {
 									data={visibleSales}
 									loading={loading}
 									emptyMessage={emptyMessage}
-									pageSize={15}
+									manualPagination
+									pageCount={meta?.last_page ?? 1}
+									paginationState={pagination}
+									onPaginationChange={handlePaginationChange}
 								/>
 							</CardBody>
 						</Card>

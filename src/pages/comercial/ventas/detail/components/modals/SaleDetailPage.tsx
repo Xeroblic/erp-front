@@ -250,13 +250,16 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 							</div>
 						</div>
 						<div className='flex flex-col gap-2 md:flex-row md:items-center md:gap-4'>
-							<div className='flex flex-col items-center justify-center space-y-3 rounded-md border border-dashed p-2'>
-								<Badge variant='solid' color='teal' className='w-fit px-2'>
-									{getFirstCapitalize(translateStatus(detail?.document_type))}
-								</Badge>
-								<p className='text-xs uppercase tracking-wide text-violet-500'>
-									{getFirstCapitalize(detail?.payment_method_title ?? '') || '-'}
-								</p>
+							<div className='flex flex-col items-center justify-center space-y-3'>
+								<p className=''>Detalle de Pago</p>
+								<div className='flex flex-col gap-2 items-center justify-center space-y-2 rounded-md border-2 border-dashed border-yellow-500 px-4 dark:border-white p-2'>
+									<Badge variant='solid' color='teal' className='w-fit px-2'>
+										{getFirstCapitalize(translateStatus(detail?.document_type))}
+									</Badge>
+									<p className='text-xs uppercase tracking-wide text-violet-500'>
+										{getFirstCapitalize(detail?.payment_method_title ?? '') || '-'}
+									</p>
+								</div>
 							</div>
 
 							{!detail?.complete_at && detail?.complete_at !== undefined ? (

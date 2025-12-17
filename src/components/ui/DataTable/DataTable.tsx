@@ -11,6 +11,8 @@ import {
 	VisibilityState,
 	ColumnFiltersState,
 	GlobalFilterTableState,
+	PaginationState,
+	OnChangeFn,
 } from '@tanstack/react-table';
 import Table, { THead, Tr, Th, TBody, Td } from '@/components/ui/Table';
 import Input from '@/components/form/Input';
@@ -27,6 +29,12 @@ interface DataTableProps<TData> {
 	pageSize?: number;
 	loading?: boolean;
 	emptyMessage?: string;
+
+	// Server-side pagination (opcional)
+	manualPagination?: boolean;
+	pageCount?: number;
+	paginationState?: PaginationState;
+	onPaginationChange?: OnChangeFn<PaginationState>;
 }
 
 export default function DataTable<TData>({
@@ -38,6 +46,11 @@ export default function DataTable<TData>({
 	pageSize = 10,
 	loading = false,
 	emptyMessage = 'No hay datos disponibles',
+	// Server-side pagination
+	manualPagination = false,
+	pageCount,
+	paginationState,
+	onPaginationChange,
 }: DataTableProps<TData>) {
 	const initialSorting = React.useMemo<SortingState>(() => {
 		const columnIds = columns
@@ -55,11 +68,18 @@ export default function DataTable<TData>({
 	const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
 	const [globalFilter, setGlobalFilter] = React.useState(searchValue);
 
+	// Paginación local (client-side) o controlada externamente (server-side)
+	const [internalPagination, setInternalPagination] = React.useState<PaginationState>({
+		pageIndex: 0,
+		pageSize,
+	});
+
 	const table = useReactTable({
 		data,
 		columns,
 		getCoreRowModel: getCoreRowModel(),
-		getPaginationRowModel: getPaginationRowModel(),
+		// Solo usar getPaginationRowModel si NO es server-side
+		...(manualPagination ? {} : { getPaginationRowModel: getPaginationRowModel() }),
 		getSortedRowModel: getSortedRowModel(),
 		getFilteredRowModel: getFilteredRowModel(),
 		onSortingChange: setSorting,
@@ -67,11 +87,18 @@ export default function DataTable<TData>({
 		onColumnVisibilityChange: setColumnVisibility,
 		onGlobalFilterChange: setGlobalFilter,
 		globalFilterFn: 'includesString',
+		// Server-side pagination
+		manualPagination,
+		pageCount: manualPagination ? pageCount : undefined,
+		onPaginationChange: manualPagination ? onPaginationChange : setInternalPagination,
 		state: {
 			sorting,
 			columnFilters,
 			columnVisibility,
 			globalFilter,
+			pagination: manualPagination
+				? (paginationState ?? internalPagination)
+				: internalPagination,
 		},
 		initialState: {
 			pagination: {
@@ -216,8 +243,16 @@ export default function DataTable<TData>({
 			{/* Información de selección */}
 			<div className='text-muted-foreground flex items-center justify-between text-sm'>
 				<div>
-					Mostrando {table.getRowModel().rows.length} de{' '}
-					{table.getFilteredRowModel().rows.length} resultados
+					{manualPagination ? (
+						// Server-side: mostrar info desde la página actual
+						<>Mostrando {data.length} resultados de la página actual</>
+					) : (
+						// Client-side: mostrar filtrados vs totales
+						<>
+							Mostrando {table.getRowModel().rows.length} de{' '}
+							{table.getFilteredRowModel().rows.length} resultados
+						</>
+					)}
 				</div>
 			</div>
 		</div>

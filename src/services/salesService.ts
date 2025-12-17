@@ -23,44 +23,92 @@ export interface CloseSaleResponse {
 	sale_id: number;
 }
 
+/**
+ * Metadata de paginación de Laravel
+ */
+export interface PaginationMeta {
+	current_page: number;
+	from: number | null;
+	last_page: number;
+	per_page: number;
+	to: number | null;
+	total: number;
+}
+
+/**
+ * Links de paginación de Laravel
+ */
+export interface PaginationLinks {
+	first: string | null;
+	last: string | null;
+	prev: string | null;
+	next: string | null;
+}
+
+/**
+ * Respuesta paginada completa de Laravel
+ */
+export interface PaginatedResponse<T> {
+	data: T[];
+	meta: PaginationMeta;
+	links: PaginationLinks;
+}
+
 const base = (subsidiaryId: number) => `/subsidiaries/${subsidiaryId}/sales`;
 
 /**
- * Obtiene el listado de ventas.
- * Soporta paginación automática (traer todo) o paginada por backend.
+ * Obtiene UNA PÁGINA de ventas (recomendado para tablas con server-side pagination).
+ * Retorna la estructura completa con data, meta y links.
  */
-export const fetchSalesList = async (
+export const fetchSalesPage = async (
 	subsidiaryId: number,
 	filters: SalesListFilters = {},
-): Promise<{ data: ISale[]; meta?: any }> => {
-	// Configuración por defecto
+): Promise<PaginatedResponse<ISale>> => {
+	const params = { with_customer: 1, per_page: 5, ...filters } as Record<string, any>;
+
+	const resp = await ApiService.fetchData<any>({
+		url: base(subsidiaryId),
+		method: 'get',
+		params,
+	});
+
+	// Laravel retorna { data: [...], meta: {...}, links: {...} }
+	const rootData = resp.data;
+
+	return {
+		data: (rootData?.data ?? []) as ISale[],
+		meta: rootData?.meta ?? {
+			current_page: 1,
+			from: null,
+			last_page: 1,
+			per_page: 5,
+			to: null,
+			total: 0,
+		},
+		links: rootData?.links ?? {
+			first: null,
+			last: null,
+			prev: null,
+			next: null,
+		},
+	};
+};
+
+/**
+ * LEGACY: Agrega TODAS las páginas de ventas (útil para exportación/estadísticas).
+ * ⚠️ NO usar en tablas UI. Puede ser muy lento con muchas ventas.
+ * Retorna solo el array de ventas.
+ */
+export const fetchSalesAggregated = async (
+	subsidiaryId: number,
+	filters: Omit<SalesListFilters, 'page'> = {},
+): Promise<ISale[]> => {
 	const perPage = filters.per_page || 50;
 	const params = { with_customer: 1, per_page: perPage, ...filters } as Record<string, any>;
 
-	// CASO 1: Paginación controlada por Backend (Recomendado para tablas grandes)
-	// Si el componente pide una página específica, solo devolvemos esa.
-	if (filters.page) {
-		const resp = await ApiService.fetchData<any>({
-			url: base(subsidiaryId),
-			method: 'get',
-			params,
-		});
-		// Normalización de respuesta (algunos backends devuelven {data: []} y otros [])
-		const payload = resp.data?.data ?? resp.data;
-
-		if (Array.isArray(payload)) {
-			return { data: payload as ISale[] };
-		}
-		return { data: (payload?.data ?? []) as ISale[], meta: payload?.meta };
-	}
-
-	// CASO 2: Agregación (Legacy/Stats)
-	// Recorre todas las páginas. Útil si necesitas calcular totales en el frontend.
-	// ⚠️ Advertencia: Puede ser lento si hay miles de ventas.
 	const aggregated: ISale[] = [];
 	let page = 1;
 	let lastPage = 1;
-	let meta: any = null;
 
 	do {
 		const resp = await ApiService.fetchData<any>({
@@ -69,22 +117,36 @@ export const fetchSalesList = async (
 			params: { ...params, page },
 		});
 
-		const rootData = resp.data; // Ajustar según estructura real (resp.data o resp)
-		const payload = rootData?.data ?? rootData;
-
-		// Determinar si es array directo o paginado
-		const items = Array.isArray(payload) ? payload : payload?.data || [];
-
-		aggregated.push(...(items as ISale[]));
+		const rootData = resp.data;
+		const items = (rootData?.data ?? []) as ISale[];
+		aggregated.push(...items);
 
 		// Actualizar meta para el bucle
-		meta = payload?.meta ?? rootData?.meta ?? meta;
-		lastPage = meta?.last_page ?? (items.length < perPage ? page : page + 1); // Fallback simple
-
+		const meta = rootData?.meta;
+		lastPage = meta?.last_page ?? (items.length < perPage ? page : page + 1);
 		page += 1;
 	} while (page <= lastPage);
 
-	return { data: aggregated, meta };
+	return aggregated;
+};
+
+/**
+ * DEPRECATED: Mantener solo por compatibilidad con código legacy.
+ * Usar fetchSalesPage para nuevas implementaciones.
+ */
+export const fetchSalesList = async (
+	subsidiaryId: number,
+	filters: SalesListFilters = {},
+): Promise<{ data: ISale[]; meta?: any }> => {
+	// Si viene page, devolver UNA página
+	if (filters.page !== undefined) {
+		const result = await fetchSalesPage(subsidiaryId, filters);
+		return { data: result.data, meta: result.meta };
+	}
+
+	// Si no viene page, agregar todo (legacy)
+	const data = await fetchSalesAggregated(subsidiaryId, filters);
+	return { data };
 };
 
 /**
@@ -146,7 +208,9 @@ export const createSale = async (
 };
 
 export const salesService = {
-	fetchSalesList,
+	fetchSalesPage,
+	fetchSalesAggregated,
+	fetchSalesList, // deprecated
 	fetchSaleDetail,
 	fetchSaleItems,
 	closeSale,
