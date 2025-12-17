@@ -59,7 +59,7 @@ const UserTemplate = () => {
 			position={userPosition}
 			src={avatarSrc || undefined}
 			suffix={
-				<Badge color='amber' variant='outline' className='text-xs font-bold'>
+				<Badge color='amber' variant='outline' className='text-xs px-1 font-bold'>
 					{userData?.cargo ?? 'Usuario'}
 				</Badge>
 			}>
