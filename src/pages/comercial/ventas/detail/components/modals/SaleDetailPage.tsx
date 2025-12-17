@@ -37,6 +37,8 @@ interface CreateQuoteFromSaleResponse {
 	message?: string;
 	quote?: Pick<IQuote, 'id'> | null;
 	id?: number | string | null;
+	quote_id?: number | string | null;
+	quoteId?: number | string | null;
 	sale_id?: number | string | null;
 }
 
@@ -45,7 +47,8 @@ const extractQuoteIdFromResponse = (
 ): number | null => {
 	if (!payload) return null;
 	// Intentar obtener el ID desde diferentes campos posibles
-	const rawId = payload.quote?.id ?? payload.id ?? payload.sale_id;
+	const rawId =
+		payload.quote?.id ?? payload.quote_id ?? payload.quoteId ?? payload.id;
 	if (typeof rawId === 'number') {
 		return Number.isFinite(rawId) && rawId > 0 ? rawId : null;
 	}
