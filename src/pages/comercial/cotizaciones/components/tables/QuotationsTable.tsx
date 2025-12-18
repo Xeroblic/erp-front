@@ -146,7 +146,7 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 										color='emerald'
 										onClick={() => onConvertToSale?.(info.row.original.id)}
 										className='bg-emerald-400/20 p-1'
-										/>
+									/>
 								</Tooltip>
 							)}
 						<Tooltip text='Eliminar' placement='top-end'>

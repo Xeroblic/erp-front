@@ -176,8 +176,12 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 			value: String(customerId),
 			label: customerName,
 		};
-		setCustomerOptions((prev) => [...prev, newOption]);
-		// El setFieldValue se hará desde el modal GeneralInfoCard
+		setCustomerOptions((prev) => {
+			// Verificar si ya existe para evitar duplicados
+			const exists = prev.find(opt => opt.value === String(customerId));
+			if (exists) return prev;
+			return [...prev, newOption];
+		});
 	};
 
 	if (!isOpen) return null;

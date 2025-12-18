@@ -15,7 +15,7 @@ import {
 	fetchCustomersOverviewThunk,
 } from '@/store/slices/customerSales/customerSalesSlice';
 import { ICustomerSale } from '@/interface/customerSales.interface';
-import { formatRut, validateRut } from '../utils/validateRut';
+import { formatRut, validateRut } from '../../../../../utils/validateRut';
 
 const CreateCustomerSaleModal = ({
 	isOpen,

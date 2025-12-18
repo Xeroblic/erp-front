@@ -7,7 +7,7 @@ export const StatsCards = ({ stats }: { stats: any }) => (
 		<Card>
 			<CardBody>
 				<div className='flex items-center'>
-					<div className='mr-4 flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100'>
+					<div className='mr-4 flex h-12 w-12 items-center justify-center rounded-lg bg-blue-400/20'>
 						<Icon icon='HeroDocumentText' className='h-6 w-6 text-blue-600' />
 					</div>
 					<div>
@@ -22,7 +22,7 @@ export const StatsCards = ({ stats }: { stats: any }) => (
 		<Card>
 			<CardBody>
 				<div className='flex items-center'>
-					<div className='mr-4 flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100'>
+					<div className='mr-4 flex h-12 w-12 items-center justify-center rounded-lg bg-gray-400/20'>
 						<Icon icon='HeroPencilSquare' className='h-6 w-6' />
 					</div>
 					<div>
@@ -35,7 +35,7 @@ export const StatsCards = ({ stats }: { stats: any }) => (
 		<Card>
 			<CardBody>
 				<div className='flex items-center'>
-					<div className='mr-4 flex h-12 w-12 items-center justify-center rounded-lg bg-amber-100'>
+					<div className='mr-4 flex h-12 w-12 items-center justify-center rounded-lg bg-amber-400/20'>
 						<Icon icon='HeroPaperAirplane' className='h-6 w-6 text-amber-600' />
 					</div>
 					<div>
@@ -48,7 +48,7 @@ export const StatsCards = ({ stats }: { stats: any }) => (
 		<Card>
 			<CardBody>
 				<div className='flex items-center'>
-					<div className='mr-4 flex h-12 w-12 items-center justify-center rounded-lg bg-green-100'>
+					<div className='mr-4 flex h-12 w-12 items-center justify-center rounded-lg bg-green-400/20'>
 						<Icon icon='HeroCheckCircle' className='h-6 w-6 text-green-600' />
 					</div>
 					<div>

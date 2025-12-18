@@ -21,7 +21,7 @@ import ClientDetailHeader from './components/parts/ClientDetailHeader';
 import DetailSection from './components/parts/DetailSection';
 import EditableField from './components/parts/EditableField';
 import EditableSelect from './components/parts/EditableSelect';
-import { formatRut, validateRut } from './components/utils/validateRut';
+import { formatRut, validateRut } from '../../../utils/validateRut';
 import { TSelectOptions } from '@/components/form/SelectReact';
 
 const ClientesVentasDetalle = () => {
@@ -198,20 +198,31 @@ const ClientesVentasDetalle = () => {
 											<div className='flex items-center gap-2'>
 												{isEditable ? (
 													<Checkbox
-													checked={formik.values.is_active}
-													label='Cliente activo'
-													onChange={(e) =>
-														formik.setFieldValue('is_active', e.target.checked)
-													}
+														checked={formik.values.is_active}
+														label='Cliente activo'
+														onChange={(e) =>
+															formik.setFieldValue(
+																'is_active',
+																e.target.checked,
+															)
+														}
 													/>
 												) : (
 													<>
-														<p className='text-sm font-medium mt-2 text-zinc-500'>Estado</p>
+														<p className='mt-2 text-sm font-medium text-zinc-500'>
+															Estado
+														</p>
 														<Badge
 															variant='solid'
 															className='px-2 text-sm'
-															color={formik.values.is_active ? 'green' : 'red'}>
-															{formik.values.is_active ? 'Activo' : 'Inactivo'}
+															color={
+																formik.values.is_active
+																	? 'green'
+																	: 'red'
+															}>
+															{formik.values.is_active
+																? 'Activo'
+																: 'Inactivo'}
 														</Badge>
 													</>
 												)}
