@@ -76,9 +76,9 @@ const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
 				toast.success('Cliente creado exitosamente');
 
 				// Usar el nombre que enviamos, ya que es el más confiable
-				const customerName = 
-					createdCustomer.name || 
-					createdCustomer.contact_name || 
+				const customerName =
+					createdCustomer.name ||
+					createdCustomer.contact_name ||
 					createdCustomer.contact?.name ||
 					values.name.trim();
 
