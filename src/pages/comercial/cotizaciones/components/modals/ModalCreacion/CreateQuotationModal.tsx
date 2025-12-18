@@ -48,9 +48,10 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 	loading = false,
 }) => {
 	const [isConfirmModalOpen, setIsConfirmModalOpen] = React.useState(false);
-	const [pendingPayload, setPendingPayload] = React.useState<
-		Omit<IQuote, 'id' | 'created_at' | 'updated_at'> | null
-	>(null);
+	const [pendingPayload, setPendingPayload] = React.useState<Omit<
+		IQuote,
+		'id' | 'created_at' | 'updated_at'
+	> | null>(null);
 	const personalizacion = useAppSelector(selectPersonalizacionUsuario);
 	const user = useAppSelector((state) => state.auth.user);
 
@@ -78,7 +79,7 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 		const fetchClientes = async () => {
 			try {
 				const clientes = await ApiService.fetchNormalized({
-					url: `/subsidiaries/${subsidiaryId}/customer-sales/overview?per_page=200`,
+					url: `/subsidiaries/${subsidiaryId}/customer-sales/overview?per_page=1000`,
 					method: 'GET',
 				});
 
@@ -101,8 +102,6 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 
 		if (isOpen) fetchClientes();
 	}, [subsidiaryId, isOpen]);
-
-
 
 	useEffect(() => {
 		const fetchProductos = async () => {
@@ -172,134 +171,134 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 		};
 	};
 
-	const handleCreateCustomerOption = async (name: string) => {
-		const trimmed = name.trim();
-		if (!trimmed) return null;
-		const { payload } = generateCustomerCreationPayload(trimmed, subsidiaryId);
-		try {
-			const created = await ApiService.fetchNormalized<any>({
-				url: `/subsidiaries/${subsidiaryId}/customer-sales`,
-				method: 'POST',
-				data: payload,
-			});
-			if (!created?.id) {
-				throw new Error('Respuesta inválida del servidor');
-			}
-			const option = {
-				value: String(created.id),
-				label: created.name || trimmed,
-			};
-			setCustomerOptions((prev) => [...prev, option]);
-			return option;
-		} catch (error) {
-			console.error('Error creating customer:', error);
-			toast.error('No se pudo crear el cliente');
-			return null;
-		}
+	const handleCustomerCreated = (customerId: number, customerName: string) => {
+		const newOption = {
+			value: String(customerId),
+			label: customerName,
+		};
+		setCustomerOptions((prev) => [...prev, newOption]);
+		// El setFieldValue se hará desde el modal GeneralInfoCard
 	};
 
 	if (!isOpen) return null;
 
 	return (
 		<>
-			<Modal isOpen={isOpen} setIsOpen={onClose} size='2xl' isStaticBackdrop isStaticBackdropAnimation>
-			<ModalHeader>
-				<div>	
-					<Badge className='text-xl font-semibold'>Nueva Cotización</Badge>
-					<p className='text-sm text-gray-600'>
-						Completa la información para crear una nueva cotización.
-					</p>
-				</div>
-			</ModalHeader>
+			<Modal
+				isOpen={isOpen}
+				setIsOpen={onClose}
+				size='2xl'
+				isStaticBackdrop
+				isStaticBackdropAnimation>
+				<ModalHeader>
+					<div>
+						<Badge className='text-xl font-semibold'>Nueva Cotización</Badge>
+						<p className='text-sm text-gray-600'>
+							Completa la información para crear una nueva cotización.
+						</p>
+					</div>
+				</ModalHeader>
 
-			<ModalBody>
-				<Formik<FormQuotationValues>
-					initialValues={getInitialValues()}
-					validationSchema={quotationSchema}
-					onSubmit={(values, { setSubmitting }) => {
-						const sanitizedItems = sanitizeItemsForSubmit(values.items);
-						const normalizedPayment = Array.isArray(values.payment_method)
-							? (values.payment_method[0] ?? null)
-							: values.payment_method && String(values.payment_method).length > 0
-								? values.payment_method
-								: null;
+				<ModalBody>
+					<Formik<FormQuotationValues>
+						initialValues={getInitialValues()}
+						validationSchema={quotationSchema}
+						onSubmit={(values, { setSubmitting }) => {
+							const sanitizedItems = sanitizeItemsForSubmit(values.items);
+							const normalizedPayment = Array.isArray(values.payment_method)
+								? (values.payment_method[0] ?? null)
+								: values.payment_method && String(values.payment_method).length > 0
+									? values.payment_method
+									: null;
 
-						const normalizedDocument =
-							values.document_type && String(values.document_type).length > 0
-								? values.document_type
-								: null;
+							const normalizedDocument =
+								values.document_type && String(values.document_type).length > 0
+									? values.document_type
+									: null;
 
-					const payload = {
-						...values,
-						payment_method: normalizedPayment,
-						document_type: normalizedDocument,
-						items: sanitizedItems as any,
-						tax_percentage: values.tax_percentage === IVA_RATE ? IVA_RATE : 0,
-					};
+							const payload = {
+								...values,
+								payment_method: normalizedPayment,
+								document_type: normalizedDocument,
+								items: sanitizedItems as any,
+								tax_percentage: values.tax_percentage === IVA_RATE ? IVA_RATE : 0,
+							};
 
-					setPendingPayload(payload);
-					setIsConfirmModalOpen(true);
-					setSubmitting(false);
-				}}
-				enableReinitialize>
-					{({ values, setFieldValue, errors, touched, handleSubmit }) => (
-						<Form id='quotation-form' className='space-y-6' onSubmit={handleSubmit}>
-							<GeneralInfoCard
-								values={values}
-								setFieldValue={setFieldValue}
-								errors={errors}
-								touched={touched}
-								customerOptions={customerOptions}
-								onCreateCustomer={handleCreateCustomerOption}
-							/>
+							setPendingPayload(payload);
+							setIsConfirmModalOpen(true);
+							setSubmitting(false);
+						}}
+						enableReinitialize>
+						{({ values, setFieldValue, errors, touched, handleSubmit }) => (
+							<Form id='quotation-form' className='space-y-6' onSubmit={handleSubmit}>
+								<GeneralInfoCard
+									values={values}
+									setFieldValue={setFieldValue}
+									errors={errors}
+									touched={touched}
+									customerOptions={customerOptions}
+									subsidiaryId={subsidiaryId}
+									onCustomerCreated={(customerId, customerName) => {
+										handleCustomerCreated(customerId, customerName);
+										setFieldValue('customer_id', customerId);
+									}}
+								/>
 
-							<PaymentInfoCard
-								values={values}
-								setFieldValue={setFieldValue}
-								errors={errors}
-								touched={touched}
-								paymentMethodOptions={paymentMethodOptions}
-								paymentTermsOptions={paymentTermsOptions}
-								statusOptions={statusOptions}
-							/>
+								<PaymentInfoCard
+									values={values}
+									setFieldValue={setFieldValue}
+									errors={errors}
+									touched={touched}
+									paymentMethodOptions={paymentMethodOptions}
+									paymentTermsOptions={paymentTermsOptions}
+									statusOptions={statusOptions}
+								/>
 
-							<ItemsListCard
-								values={values}
-								setFieldValue={setFieldValue}
-								errors={errors}
-								touched={touched}
-								productOptions={productOptions}
-								saleableProductsMap={saleableProductsMap}
-							/>
+								<ItemsListCard
+									values={values}
+									setFieldValue={setFieldValue}
+									errors={errors}
+									touched={touched}
+									productOptions={productOptions}
+									saleableProductsMap={saleableProductsMap}
+								/>
 
-							<TotalsCard
-								values={values}
-								setFieldValue={setFieldValue}
-								IVA_RATE={IVA_RATE}
-							/>
-						</Form>
-					)}
-				</Formik>
-			</ModalBody>
+								<TotalsCard
+									values={values}
+									setFieldValue={setFieldValue}
+									IVA_RATE={IVA_RATE}
+								/>
+							</Form>
+						)}
+					</Formik>
+				</ModalBody>
 
-			<ModalFooter>
-				<ModalFooterChild>
-					<Button variant='outline' onClick={onClose} isDisable={loading}>
-						Cancelar
-					</Button>
-					<Button
-						onClick={() =>
-							document
-								.getElementById('quotation-form')
-								?.dispatchEvent(
-									new Event('submit', { bubbles: true, cancelable: true }),
-								)
-						}
-						isLoading={loading}>
-						Crear Cotización
-					</Button>
-				</ModalFooterChild>
-			</ModalFooter>
+				<ModalFooter>
+					<ModalFooterChild>
+						<Button
+							variant='outline'
+							color='red'
+							className='bg-red-400/20'
+							onClick={onClose}
+							isDisable={loading}>
+							Cancelar
+						</Button>
+						<Button
+							variant='outline'
+							color='emerald'
+							className='bg-emerald-400/30'
+							onClick={() =>
+								document
+									.getElementById('quotation-form')
+									?.dispatchEvent(
+										new Event('submit', { bubbles: true, cancelable: true }),
+									)
+							}
+							isLoading={loading}>
+							Crear Cotización
+						</Button>
+					</ModalFooterChild>
+				</ModalFooter>
 			</Modal>
 
 			<Modal
@@ -307,37 +306,41 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 				setIsOpen={() => setIsConfirmModalOpen(false)}
 				size='sm'
 				isStaticBackdrop
-				isStaticBackdropAnimation
-				>
-			<ModalHeader>
-				<h3 className='text-lg font-semibold'>Confirmar creación</h3>
-			</ModalHeader>
-			<ModalBody>
-				<p className='text-sm text-gray-600 dark:text-gray-200'>
-					¿Deseas crear esta cotización con los datos ingresados?
-				</p>
-			</ModalBody>
-			<ModalFooter>
-				<ModalFooterChild>
-					<Button
-						variant='outline'
-						onClick={() => {
-							setPendingPayload(null);
-							setIsConfirmModalOpen(false);
-						}}>
-						Cancelar
-					</Button>
-					<Button
-						onClick={() => {
-							if (!pendingPayload) return;
-							onSubmit(pendingPayload);
-							setPendingPayload(null);
-							setIsConfirmModalOpen(false);
-						}}>
-						Confirmar
-					</Button>
-				</ModalFooterChild>
-			</ModalFooter>
+				isStaticBackdropAnimation>
+				<ModalHeader>
+					<h3 className='text-lg font-semibold'>Confirmar creación</h3>
+				</ModalHeader>
+				<ModalBody>
+					<p className='text-sm text-gray-600 dark:text-gray-200'>
+						¿Deseas crear esta cotización con los datos ingresados?
+					</p>
+				</ModalBody>
+				<ModalFooter>
+					<ModalFooterChild>
+						<Button
+							variant='outline'
+							color='red'
+							className='bg-red-400/20'
+							onClick={() => {
+								setPendingPayload(null);
+								setIsConfirmModalOpen(false);
+							}}>
+							Cancelar
+						</Button>
+						<Button
+							variant='outline'
+							color='green'
+							className='bg-green-400/20'
+							onClick={() => {
+								if (!pendingPayload) return;
+								onSubmit(pendingPayload);
+								setPendingPayload(null);
+								setIsConfirmModalOpen(false);
+							}}>
+							Confirmar
+						</Button>
+					</ModalFooterChild>
+				</ModalFooter>
 			</Modal>
 		</>
 	);

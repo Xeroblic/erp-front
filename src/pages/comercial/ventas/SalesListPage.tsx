@@ -194,7 +194,7 @@ const SalesListPage: React.FC = () => {
 				value: summaryStats.inProgressCount,
 				icon: 'DuoSale1',
 				iconColor: 'amber',
-				iconAccentClass: 'border-amber-200/70 bg-amber-50 text-amber-500',
+				iconAccentClass: 'border-amber-200/70 bg-rose-50 text-amber-500',
 				valueClass: 'text-amber-600 dark:text-amber-200',
 			},
 			{

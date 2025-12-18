@@ -5,6 +5,11 @@ import {
 	ICustomerSaleOverview,
 	ICustomerSalePayload,
 } from '@/interface/customerSales.interface';
+import type {
+	PaginationMeta,
+	PaginationLinks,
+	PaginatedResponse,
+} from '@/services/salesService';
 
 export interface CustomerSalesState {
 	loading: boolean;
@@ -13,6 +18,8 @@ export interface CustomerSalesState {
 	overview: ICustomerSaleOverview[];
 	detalle: ICustomerSale | undefined;
 	detalleCliente: ICustomerSaleOverview | undefined;
+	meta: PaginationMeta | null;
+	links: PaginationLinks | null;
 }
 
 const initialState: CustomerSalesState = {
@@ -22,6 +29,8 @@ const initialState: CustomerSalesState = {
 	overview: [],
 	detalle: undefined,
 	detalleCliente: undefined,
+	meta: null,
+	links: null,
 };
 
 /* ----------------------------- THUNKS CRUD ----------------------------- */
@@ -116,20 +125,38 @@ export const deleteCustomerThunk = createAsyncThunk<
 
 // GET overview
 export const fetchCustomersOverviewThunk = createAsyncThunk<
-	ICustomerSaleOverview[],
-	{ subsidiary: number | string; params?: any },
+	PaginatedResponse<ICustomerSaleOverview>,
+	{ subsidiary: number | string; page?: number; per_page?: number; params?: any },
 	{ rejectValue: string }
->('customerSales/fetchOverview', async ({ subsidiary, params }, { rejectWithValue }) => {
+>('customerSales/fetchOverview', async ({ subsidiary, page = 1, per_page = 5, params }, { rejectWithValue }) => {
 	try {
-		const response = await ApiService.fetchData<ICustomerSaleOverview[]>({
+		const response = await ApiService.fetchData<any>({
 			url: `/subsidiaries/${subsidiary}/customer-sales/overview`,
 			method: 'get',
-			params,
+			params: { page, per_page, sort: 'id', order: 'desc', ...params },
 		});
-		// El backend devuelve paginación: { data: [...], meta, ... }
-		// Normalizamos para devolver siempre el array de overview
-		const payload = (response.data as any)?.data ?? response.data;
-		return payload as ICustomerSaleOverview[];
+
+		// Laravel retorna en formato plano: { data, current_page, last_page, ... }
+		// Necesitamos transformarlo a { data, meta, links }
+		const rootData = response.data;
+
+		return {
+			data: (rootData?.data ?? []) as ICustomerSaleOverview[],
+			meta: {
+				current_page: rootData?.current_page ?? 1,
+				from: rootData?.from ?? null,
+				last_page: rootData?.last_page ?? 1,
+				per_page: rootData?.per_page ?? 5,
+				to: rootData?.to ?? null,
+				total: rootData?.total ?? 0,
+			},
+			links: {
+				first: rootData?.first_page_url ?? null,
+				last: rootData?.last_page_url ?? null,
+				prev: rootData?.prev_page_url ?? null,
+				next: rootData?.next_page_url ?? null,
+			},
+		};
 	} catch (error: any) {
 		return rejectWithValue(error.response?.data || 'Error al cargar overview');
 	}
@@ -216,13 +243,23 @@ export const customerSalesSlice = createSlice({
 			})
 			.addCase(fetchCustomersOverviewThunk.fulfilled, (state, action) => {
 				state.loading = false;
-				state.overview = action.payload;
+				state.overview = action.payload.data;
+				state.meta = action.payload.meta;
+				state.links = action.payload.links;
 			})
 			.addCase(fetchCustomersOverviewThunk.rejected, (state, action) => {
 				state.loading = false;
 				state.error = action.payload;
+				state.meta = null;
+				state.links = null;
 			});
 	},
 });
+
+// Selectores
+export const selectCustomerSalesMeta = (state: { customerSales: CustomerSalesState }) =>
+	state.customerSales.meta;
+export const selectCustomerSalesLinks = (state: { customerSales: CustomerSalesState }) =>
+	state.customerSales.links;
 
 export default customerSalesSlice.reducer;

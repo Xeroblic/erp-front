@@ -12,6 +12,7 @@ import Badge from '../../../../../components/ui/Badge';
 import Icon from '../../../../../components/icon/Icon';
 import { getQuoteStatusBadge, normalizeQuoteStatusValue } from '../../constants/quoteStatuses';
 import { formatDate } from '@/utils/format.utils';
+import Tooltip from '@/components/ui/Tooltip';
 
 interface QuotationsTableProps {
 	data: IQuote[];
@@ -104,47 +105,60 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 				header: 'Acciones',
 				cell: (info) => (
 					<div className='flex justify-end gap-2'>
-						<Button
-							variant='outline'
-							size='sm'
-							icon='HeroArrowDownTray'
-							onClick={() => onDownloadPdf?.(info.row.original.id)}
-							className='p-1'
-							title='Descargar PDF'
-						/>
-						<Button
-							variant='outline'
-							size='sm'
-							icon='HeroEye'
-							onClick={() => onView?.(info.row.original)}
-							className='p-1'
-						/>
-						<Button
-							variant='outline'
-							size='sm'
-							icon='HeroPencil'
-							onClick={() => onEdit?.(info.row.original)}
-							className='p-1'
-						/>
+						<Tooltip text='Descargar PDF' placement='top-end'>
+							<Button
+								variant='outline'
+								size='sm'
+								icon='HeroArrowDownTray'
+								onClick={() => onDownloadPdf?.(info.row.original.id)}
+								className='bg-sky-400/20 p-1'
+								color='sky'
+								// title='Descargar PDF'
+							/>
+						</Tooltip>
+						<Tooltip text='Ver Cotización' placement='top-end'>
+							<Button
+								variant='outline'
+								size='sm'
+								icon='HeroEye'
+								color='violet'
+								onClick={() => onView?.(info.row.original)}
+								className='bg-violet-400/20 p-1'
+							/>
+						</Tooltip>
+						<Tooltip text='Editar' placement='top-end'>
+							<Button
+								variant='outline'
+								size='sm'
+								icon='HeroPencil'
+								color='zinc'
+								onClick={() => onEdit?.(info.row.original)}
+								className='bg-zinc-400/20 p-1'
+							/>
+						</Tooltip>
 						{normalizeQuoteStatusValue(info.row.original.status) === 'approved' &&
 							info.row.original.can_convert && (
-								<Button
-									variant='outline'
-									size='sm'
-									icon='HeroBolt'
-									onClick={() => onConvertToSale?.(info.row.original.id)}
-									className='p-1'
-									title='Convertir a venta'
-								/>
+								<Tooltip text='Convertir a venta' placement='top-end'>
+									<Button
+										variant='outline'
+										size='sm'
+										icon='HeroBolt'
+										color='emerald'
+										onClick={() => onConvertToSale?.(info.row.original.id)}
+										className='bg-emerald-400/20 p-1'
+										/>
+								</Tooltip>
 							)}
-						<Button
-							variant='solid'
-							size='sm'
-							icon='HeroTrash'
-							color='red'
-							onClick={() => onDelete?.(info.row.original.id)}
-							className='p-1'
-						/>
+						<Tooltip text='Eliminar' placement='top-end'>
+							<Button
+								variant='outline'
+								size='sm'
+								icon='HeroTrash'
+								color='red'
+								onClick={() => onDelete?.(info.row.original.id)}
+								className='bg-red-400/20 p-1'
+							/>
+						</Tooltip>
 					</div>
 				),
 			}),

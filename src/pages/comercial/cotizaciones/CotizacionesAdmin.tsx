@@ -285,6 +285,8 @@ const CotizacionesAdmin: React.FC = () => {
 				<SubheaderRight className='flex space-x-2'>
 					<Button
 						variant='outline'
+						className='bg-purple-400/20'
+						color='purple'
 						onClick={exportQuotations}
 						icon='HeroArrowDown'
 						isDisable={loading}>
@@ -293,14 +295,22 @@ const CotizacionesAdmin: React.FC = () => {
 
 					<Button
 						variant='outline'
+						className='bg-sky-400/20'
 						onClick={refreshData}
+						color='sky'
 						icon='HeroArrowPath'
 						isDisable={loading}>
-						Actualizar
+							Actualizar
 					</Button>
 
-					<Button onClick={handleCreate} icon='HeroPlus'>
-						Nueva Cotización
+					<Button
+						variant='outline'
+						className='bg-emerald-400/30'
+						onClick={handleCreate}
+						icon='HeroPlus'
+						color='emerald'
+					>
+							Nueva Cotización
 					</Button>
 				</SubheaderRight>
 			</Subheader>

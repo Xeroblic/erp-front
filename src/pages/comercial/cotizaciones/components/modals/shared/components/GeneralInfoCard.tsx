@@ -2,17 +2,21 @@ import React from 'react';
 import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
 import SelectReact, { TSelectOption, TSelectOptions } from '@/components/form/SelectReact';
 import Input from '@/components/form/Input';
+import Button from '@/components/ui/Button';
 import { FormikErrors, FormikTouched } from 'formik';
 import { FormQuotationValues } from '../types';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
+import CreateCustomerModal from './CreateCustomerModal';
+
 interface GeneralInfoCardProps {
 	values: FormQuotationValues;
 	setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void;
 	errors: FormikErrors<FormQuotationValues>;
 	touched: FormikTouched<FormQuotationValues>;
 	customerOptions: TSelectOptions;
-	onCreateCustomer?: (name: string) => Promise<TSelectOption | null>;
+	subsidiaryId: number;
+	onCustomerCreated: (customerId: number, customerName: string) => void;
 }
 
 const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
@@ -21,8 +25,11 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 	errors,
 	touched,
 	customerOptions,
-	onCreateCustomer,
+	subsidiaryId,
+	onCustomerCreated,
 }) => {
+	const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
+
 	return (
 		<Card
 			rounded='rounded-2xl'
@@ -51,34 +58,42 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 						<p className='mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>
 							Cliente *
 						</p>
-						<SelectReact
-							name='customer_id'
-							options={customerOptions}
-							placeholder='Seleccionar cliente...'
-							value={customerOptions.find(
-								(opt) => opt.value === String(values.customer_id),
-							)}
-							isClearable={true}
-							onChange={(option) => {
-								const selectedOption = option as TSelectOption;
-								if (selectedOption && !Array.isArray(selectedOption)) {
-									setFieldValue('customer_id', Number(selectedOption.value) || 0);
-								}
-							}}
-							isValid={!errors.customer_id}
-							isTouched={touched.customer_id}
-							invalidFeedback={errors.customer_id}
-							isCreatable
-							onCreateOption={async (inputValue) => {
-								const trimmed = inputValue.trim();
-								if (!trimmed || !onCreateCustomer) return;
-								const created = await onCreateCustomer(trimmed);
-								if (created) {
-									setFieldValue('customer_id', Number(created.value) || 0);
-								}
-							}}
-							
-						/>
+						<div className='flex gap-2'>
+							<div className='relative z-50 flex-1'>
+								<SelectReact
+									name='customer_id'
+									options={customerOptions}
+									placeholder='Seleccionar cliente...'
+									value={customerOptions.find(
+										(opt) => opt.value === String(values.customer_id),
+									)}
+									isClearable={true}
+									onChange={(option) => {
+										const selectedOption = option as TSelectOption;
+										if (selectedOption && !Array.isArray(selectedOption)) {
+											setFieldValue(
+												'customer_id',
+												Number(selectedOption.value) || 0,
+											);
+										}
+									}}
+									isValid={!errors.customer_id}
+									isTouched={touched.customer_id}
+									invalidFeedback={errors.customer_id}
+									menuPortalTarget={document.body}
+									styles={{
+										menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+									}}
+								/>
+							</div>
+							<Button
+								variant='solid'
+								color='blue'
+								icon='HeroPlus'
+								onClick={() => setIsCreateModalOpen(true)}
+								className='shrink-0'
+							/>
+						</div>
 					</div>
 
 					<div className='rounded-2xl border border-zinc-100 bg-zinc-50/60 p-4 shadow-inner dark:border-white/10 dark:bg-white/5 dark:shadow-none'>
@@ -112,6 +127,13 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 					</div>
 				</div>
 			</CardBody>
+
+			<CreateCustomerModal
+				isOpen={isCreateModalOpen}
+				onClose={() => setIsCreateModalOpen(false)}
+				subsidiaryId={subsidiaryId}
+				onCustomerCreated={onCustomerCreated}
+			/>
 		</Card>
 	);
 };

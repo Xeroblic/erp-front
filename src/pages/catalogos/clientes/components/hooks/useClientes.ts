@@ -21,11 +21,9 @@ export function useClientes({ subsidiaryId, filters, page = 1, per_page = 5 }: U
 	const meta = useAppSelector(selectCustomerSuppliersMeta);
 	const currentUser = useAppSelector((state) => state.auth.user);
 
-	// Obtener lista de subsidiarias accesibles del usuario
 	const accessibleSubsidiaryIds = useMemo(() => {
 		const subsidiaries = new Set<number>();
 
-		// ✅ USAR SOLO access.subsidiaries - Es la fuente autoritativa del backend
 		(currentUser as any)?.access?.subsidiaries?.forEach((sub: any) => {
 			if (sub?.id) subsidiaries.add(sub.id);
 			else if (typeof sub === 'number') subsidiaries.add(sub);
@@ -39,21 +37,16 @@ export function useClientes({ subsidiaryId, filters, page = 1, per_page = 5 }: U
 		if (subsidiaryId === null || subsidiaryId === undefined || subsidiaryId === 0) {
 			return null;
 		}
-
-		// ✅ VALIDAR ACCESO: Solo validar si tenemos lista de subsidiarias accesibles Y currentUser está cargado
 		if (currentUser && accessibleSubsidiaryIds.size > 0) {
 			if (!accessibleSubsidiaryIds.has(subsidiaryId)) {
-				// NO hacer fetch si sabemos que no tiene acceso
 				return null;
 			}
 		} else if (!currentUser) {
 			return null;
 		}
-
 		return subsidiaryId;
 	}, [subsidiaryId, accessibleSubsidiaryIds, currentUser]);
 
-	// Fetch clientes cuando cambia el subsidiaryId o el filtro
 	useEffect(() => {
 		if (!activeSubsidiaryId || activeSubsidiaryId === 0) {
 			return;

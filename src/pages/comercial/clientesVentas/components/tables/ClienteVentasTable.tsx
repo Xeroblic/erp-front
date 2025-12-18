@@ -1,18 +1,31 @@
 import React from 'react';
-import { ColumnDef } from '@tanstack/react-table';
+import { ColumnDef, PaginationState, OnChangeFn } from '@tanstack/react-table';
 import DataTable from '@/components/ui/DataTable';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import type { ICustomerSaleOverview } from '@/interface/customerSales.interface';
+import type { PaginationMeta } from '@/services/salesService';
+import Icon from '@/components/icon/Icon';
 
 interface Props {
 	data: ICustomerSaleOverview[];
 	loading?: boolean;
+	meta?: PaginationMeta | null;
+	pagination?: PaginationState;
+	onPaginationChange?: OnChangeFn<PaginationState>;
 	onDelete?: (id: number) => void;
 	onView?: (id: number) => void;
 }
 
-const ClienteVentasTable: React.FC<Props> = ({ data, loading, onDelete, onView }) => {
+const ClienteVentasTable: React.FC<Props> = ({
+	data,
+	loading = false,
+	meta = null,
+	pagination = { pageIndex: 0, pageSize: 5 },
+	onPaginationChange,
+	onDelete,
+	onView,
+}) => {
 	const columns: ColumnDef<ICustomerSaleOverview>[] = [
 		{
 			accessorKey: 'name',
@@ -79,6 +92,8 @@ const ClienteVentasTable: React.FC<Props> = ({ data, loading, onDelete, onView }
 						size='sm'
 						variant='outline'
 						icon='HeroEye'
+						color='violet'
+						className='bg-violet-400/20'
 						onClick={() => onView?.(row.original.id)}>
 						Ver
 					</Button>
@@ -86,6 +101,8 @@ const ClienteVentasTable: React.FC<Props> = ({ data, loading, onDelete, onView }
 						size='sm'
 						variant='outline'
 						icon='HeroTrash'
+						color='red'
+						className='bg-red-400/20'
 						onClick={() => onDelete?.(row.original.id)}>
 						Eliminar
 					</Button>
@@ -101,7 +118,10 @@ const ClienteVentasTable: React.FC<Props> = ({ data, loading, onDelete, onView }
 			loading={loading}
 			searchPlaceholder='Buscar cliente, RUT o contacto...'
 			emptyMessage='No hay clientes registrados'
-			pageSize={10}
+			manualPagination={!!meta}
+			pageCount={meta?.last_page ?? 1}
+			paginationState={pagination}
+			onPaginationChange={onPaginationChange}
 		/>
 	);
 };
