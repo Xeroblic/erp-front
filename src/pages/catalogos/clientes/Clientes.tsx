@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { PaginationState } from '@tanstack/react-table';
 import PageWrapper from '../../../components/layouts/PageWrapper/PageWrapper';
 import Subheader, {
 	SubheaderLeft,
@@ -100,12 +101,28 @@ const Clientes: React.FC = () => {
 	}, [defaultSubsidiaryId, subsidiaryId]);
 
 	const [filters] = useState<ICustomerSupplierFilters>({ search: '' });
+	const [pagination, setPagination] = useState<PaginationState>({
+		pageIndex: 0,
+		pageSize: 5,
+	});
 	const [createOpen, setCreateOpen] = useState(false);
 	const [editOpen, setEditOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [selected, setSelected] = useState<ICustomerSupplier | null>(null);
 
-	const { customers, loading, activeSubsidiaryId } = useClientes({ subsidiaryId, filters });
+	const handlePaginationChange = useCallback(
+		(updater: PaginationState | ((old: PaginationState) => PaginationState)) => {
+			setPagination(updater);
+		},
+		[],
+	);
+
+	const { customers, loading, activeSubsidiaryId, meta } = useClientes({
+		subsidiaryId,
+		filters,
+		page: pagination.pageIndex + 1,
+		per_page: pagination.pageSize,
+	});
 	const dispatch = useAppDispatch();
 
 	// Escuchar cambios externos de subsidiary (cuando cambia en el selector)
@@ -213,10 +230,13 @@ const Clientes: React.FC = () => {
 						onView={onView}
 						onEdit={onEdit}
 						onDelete={onDelete}
+						loading={loading}
+						meta={meta}
+						pagination={pagination}
+						onPaginationChange={handlePaginationChange}
 					/>
 				)}
 			</Container>
-
 			<CrearCliente
 				isOpen={createOpen}
 				setIsOpen={setCreateOpen}

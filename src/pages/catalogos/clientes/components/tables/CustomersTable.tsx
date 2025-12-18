@@ -1,19 +1,32 @@
 import React, { useMemo } from 'react';
-import type { ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef, PaginationState, OnChangeFn } from '@tanstack/react-table';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import type { ICustomerSupplier } from '@/interface/customerSupplier.interface';
 import DataTable from '@/components/ui/DataTable/DataTable';
+import type { PaginationMeta } from '@/services/salesService';
 
 interface CustomersTableProps {
 	customers: ICustomerSupplier[];
 	onView: (c: ICustomerSupplier) => void;
 	onEdit: (c: ICustomerSupplier) => void;
 	onDelete: (c: ICustomerSupplier) => void;
+	loading?: boolean;
+	meta?: PaginationMeta | null;
+	pagination?: PaginationState;
+	onPaginationChange?: OnChangeFn<PaginationState>;
 }
 
-const CustomersTable: React.FC<CustomersTableProps> = ({ customers, onView, onDelete }) => {
+const CustomersTable: React.FC<CustomersTableProps> = ({
+	customers,
+	onView,
+	onDelete,
+	loading = false,
+	meta = null,
+	pagination,
+	onPaginationChange,
+}) => {
 	const columns = useMemo<ColumnDef<ICustomerSupplier, any>[]>(
 		() => [
 			{
@@ -70,16 +83,22 @@ const CustomersTable: React.FC<CustomersTableProps> = ({ customers, onView, onDe
 			<CardHeader>
 				<div className='flex items-center justify-between'>
 					<CardTitle>Lista de Clientes-Proveedor</CardTitle>
-					<span className='text-sm text-gray-500'>{customers.length} clientes</span>
+					<span className='text-sm text-gray-500'>
+						{meta?.total ?? customers.length} clientes
+					</span>
 				</div>
 			</CardHeader>
 			<CardBody className='p-0'>
 				<DataTable<ICustomerSupplier>
 					columns={columns}
 					data={customers}
-					loading={false}
+					loading={loading}
 					emptyMessage='No hay clientes'
 					searchPlaceholder='Buscar cliente...'
+					manualPagination={!!meta}
+					pageCount={meta?.last_page ?? 1}
+					paginationState={pagination}
+					onPaginationChange={onPaginationChange}
 				/>
 			</CardBody>
 		</Card>

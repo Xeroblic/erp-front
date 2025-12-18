@@ -1,17 +1,24 @@
 import { useEffect, useMemo } from 'react';
 import { ICustomerSupplierFilters } from '../types';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { fetchCustomerSuppliers } from '@/store/slices/customerSuppliers/customerSuppliersSlice';
+import {
+	fetchCustomerSuppliers,
+	selectCustomerSuppliersMeta,
+} from '@/store/slices/customerSuppliers/customerSuppliersSlice';
 import type { ICustomerSupplier } from '@/interface/customerSupplier.interface';
 
 interface UseClientesParams {
 	subsidiaryId?: number | null;
 	filters: ICustomerSupplierFilters;
+	page?: number;
+	per_page?: number;
 }
 
-export function useClientes({ subsidiaryId, filters }: UseClientesParams) {
+
+export function useClientes({ subsidiaryId, filters, page = 1, per_page = 5 }: UseClientesParams) {
 	const dispatch = useAppDispatch();
 	const { items, loading } = useAppSelector((s) => s.customerSuppliers);
+	const meta = useAppSelector(selectCustomerSuppliersMeta);
 	const currentUser = useAppSelector((state) => state.auth.user);
 
 	// Obtener lista de subsidiarias accesibles del usuario
@@ -57,9 +64,11 @@ export function useClientes({ subsidiaryId, filters }: UseClientesParams) {
 				subsidiaryId: activeSubsidiaryId,
 				search: filters.search || undefined,
 				with_suppliers: true,
+				page,
+				per_page,
 			}),
 		);
-	}, [dispatch, activeSubsidiaryId, filters.search]); // Mapear items del store (ya vienen filtrados por el subsidiaryId que pedimos)
+	}, [dispatch, activeSubsidiaryId, filters.search, page, per_page]); // Mapear items del store (ya vienen filtrados por el subsidiaryId que pedimos)
 	const customers = useMemo<ICustomerSupplier[]>(() => {
 		return (items || []).map((c: any) => ({
 			id: c.id,
@@ -92,5 +101,6 @@ export function useClientes({ subsidiaryId, filters }: UseClientesParams) {
 		stats,
 		loading,
 		activeSubsidiaryId,
+		meta,
 	};
 }

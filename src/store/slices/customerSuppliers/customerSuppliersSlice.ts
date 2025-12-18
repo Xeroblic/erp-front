@@ -7,9 +7,16 @@ import type {
 	IAttachSuppliersToCustomerSupplierRequest,
 } from '@/interface/customerSupplier.interface';
 import type { ISupplier } from '@/interface/supplier.interface';
+import type {
+	PaginationMeta,
+	PaginationLinks,
+	PaginatedResponse,
+} from '@/services/salesService';
 
 export interface CustomerSuppliersState {
 	items: ICustomerSupplier[];
+	meta: PaginationMeta | null;
+	links: PaginationLinks | null;
 	loading: boolean;
 	creating: boolean;
 	updating: boolean;
@@ -24,6 +31,8 @@ export interface CustomerSuppliersState {
 
 const initialState: CustomerSuppliersState = {
 	items: [],
+	meta: null,
+	links: null,
 	loading: false,
 	creating: false,
 	updating: false,
@@ -34,7 +43,7 @@ const initialState: CustomerSuppliersState = {
 	suppliersLoading: false,
 	attaching: false,
 	detaching: false,
-};
+}
 
 const normalizeArray = (payload: any): any[] => {
 	const raw = payload?.data ?? payload;
@@ -48,36 +57,65 @@ const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
 const ep = (p: string) => join(CUSTOMER_SUPPLIERS_PREFIX, p);
 
 export const fetchCustomerSuppliers = createAsyncThunk<
-	ICustomerSupplier[],
-	{ subsidiaryId: number; search?: string; with_suppliers?: boolean },
+	PaginatedResponse<ICustomerSupplier>,
+	{ subsidiaryId: number; search?: string; with_suppliers?: boolean; page?: number; per_page?: number },
 	{ rejectValue: string }
 >(
 	'customerSuppliers/fetchList',
-	async ({ subsidiaryId, search, with_suppliers }, { rejectWithValue }) => {
+	async ({ subsidiaryId, search, with_suppliers, page = 1, per_page = 5 }, { rejectWithValue }) => {
 		try {
-			const resp = await ApiService.fetchData<{ data?: any[] }>({
+			const resp = await ApiService.fetchData<any>({
 				url: ep(`/subsidiaries/${subsidiaryId}/customer-suppliers/`),
 				method: 'get',
 				params: {
 					q: search || undefined,
 					with_suppliers: with_suppliers ? 1 : undefined,
-					per_page: 200,
+					page,
+					per_page,
 				},
 				dedupe: true,
 				cacheTTLms: 10_000,
 			});
-			return normalizeArray(resp.data) as ICustomerSupplier[];
+			const rootData = resp.data;
+			return {
+				data: normalizeArray(rootData) as ICustomerSupplier[],
+				meta: rootData?.meta ?? {
+					current_page: 1,
+					from: null,
+					last_page: 1,
+					per_page,
+					to: null,
+					total: 0,
+				},
+				links: rootData?.links ?? {
+					first: null,
+					last: null,
+					prev: null,
+					next: null,
+				},
+			};
 		} catch (error: any) {
 			if (
 				error?.response?.status === 404 &&
 				error?.response?.data?.message?.includes('No query results for model')
 			) {
-				return [] as ICustomerSupplier[];
+				return {
+					data: [] as ICustomerSupplier[],
+					meta: {
+						current_page: 1,
+						from: null,
+						last_page: 1,
+						per_page,
+						to: null,
+						total: 0,
+					},
+					links: { first: null, last: null, prev: null, next: null },
+				};
 			}
 			return rejectWithValue(
 				error?.response?.data?.message ??
-					error?.message ??
-					'No se pudieron cargar los clientes-proveedor',
+				error?.message ??
+				'No se pudieron cargar los clientes-proveedor',
 			);
 		}
 	},
@@ -99,8 +137,8 @@ export const fetchCustomerSupplierById = createAsyncThunk<
 	} catch (error: any) {
 		return rejectWithValue(
 			error?.response?.data?.message ??
-				error?.message ??
-				'No se pudo cargar el cliente-proveedor',
+			error?.message ??
+			'No se pudo cargar el cliente-proveedor',
 		);
 	}
 });
@@ -121,8 +159,8 @@ export const createCustomerSupplier = createAsyncThunk<
 	} catch (error: any) {
 		return rejectWithValue(
 			error?.response?.data?.message ??
-				error?.message ??
-				'No se pudo crear el cliente-proveedor',
+			error?.message ??
+			'No se pudo crear el cliente-proveedor',
 		);
 	}
 });
@@ -144,8 +182,8 @@ export const updateCustomerSupplier = createAsyncThunk<
 	} catch (error: any) {
 		return rejectWithValue(
 			error?.response?.data?.message ??
-				error?.message ??
-				'No se pudo actualizar el cliente-proveedor',
+			error?.message ??
+			'No se pudo actualizar el cliente-proveedor',
 		);
 	}
 });
@@ -164,8 +202,8 @@ export const deleteCustomerSupplier = createAsyncThunk<
 	} catch (error: any) {
 		return rejectWithValue(
 			error?.response?.data?.message ??
-				error?.message ??
-				'No se pudo eliminar el cliente-proveedor',
+			error?.message ??
+			'No se pudo eliminar el cliente-proveedor',
 		);
 	}
 });
@@ -191,8 +229,8 @@ export const fetchSuppliersOfCustomerSupplier = createAsyncThunk<
 		} catch (error: any) {
 			return rejectWithValue(
 				error?.response?.data?.message ??
-					error?.message ??
-					'No se pudieron cargar los proveedores del cliente-proveedor',
+				error?.message ??
+				'No se pudieron cargar los proveedores del cliente-proveedor',
 			);
 		}
 	},
@@ -225,8 +263,8 @@ export const attachSuppliersToCustomerSupplier = createAsyncThunk<
 		} catch (error: any) {
 			return rejectWithValue(
 				error?.response?.data?.message ??
-					error?.message ??
-					'No se pudo asociar proveedores',
+				error?.message ??
+				'No se pudo asociar proveedores',
 			);
 		}
 	},
@@ -259,8 +297,8 @@ export const detachSuppliersFromCustomerSupplier = createAsyncThunk<
 		} catch (error: any) {
 			return rejectWithValue(
 				error?.response?.data?.message ??
-					error?.message ??
-					'No se pudo desasociar proveedores',
+				error?.message ??
+				'No se pudo desasociar proveedores',
 			);
 		}
 	},
@@ -285,13 +323,17 @@ const customerSuppliersSlice = createSlice({
 			})
 			.addCase(fetchCustomerSuppliers.fulfilled, (state, action) => {
 				state.loading = false;
-				state.items = action.payload;
+				state.items = action.payload.data;
+				state.meta = action.payload.meta;
+				state.links = action.payload.links;
 			})
 			.addCase(fetchCustomerSuppliers.rejected, (state, action) => {
 				state.loading = false;
 				state.error = action.payload ?? 'Error al cargar clientes-proveedor';
 				// Limpiar items cuando hay error (ej: subsidiaria sin acceso)
 				state.items = [];
+				state.meta = null;
+				state.links = null;
 			})
 			// Detail
 			.addCase(fetchCustomerSupplierById.fulfilled, (state, action) => {
@@ -377,4 +419,9 @@ const customerSuppliersSlice = createSlice({
 });
 
 export const { clearCustomerSuppliersError } = customerSuppliersSlice.actions;
+
+// Selectores para paginación
+export const selectCustomerSuppliersMeta = (state: any) => state.customerSuppliers.meta;
+export const selectCustomerSuppliersLinks = (state: any) => state.customerSuppliers.links;
+
 export default customerSuppliersSlice.reducer;
