@@ -17,6 +17,7 @@ import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
 import Card, { CardBody } from '@/components/ui/Card';
 import Table, { TBody, THead, Td, Th, Tr } from '@/components/ui/Table';
+import { TColors } from '@/types/colors.type';
 
 interface InvitationsTableProps {
 	invitations: Invitation[];
@@ -31,6 +32,13 @@ interface InvitationsTableProps {
 	onPageSizeChange: (pageSize: number) => void;
 	openCreateModal: () => void;
 }
+const QUOTE_STATUS_OPTIONS: Record<string, { label: string; color: TColors; icon: string }> = {
+	pending: { label: 'Pendiente', color: 'amber', icon: 'HeroClock' },
+	sent: { label: 'Enviada', color: 'blue', icon: 'HeroPaperAirplane' },
+	accepted: { label: 'Aceptada', color: 'emerald', icon: 'HeroCheckCircle' },
+	expired: { label: 'Expirada', color: 'red', icon: 'HeroXCircle' },
+	cancelled: { label: 'Cancelada', color: 'zinc', icon: 'HeroXMark' },
+};
 
 const columnHelper = createColumnHelper<Invitation>();
 
@@ -135,7 +143,7 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 				}
 
 				return (
-					<Badge color={config.color} variant={config.variant} className='text-xs'>
+					<Badge color={config.color} variant={config.variant} className='px-2 text-xs'>
 						{label}
 					</Badge>
 				);
@@ -144,56 +152,19 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 		columnHelper.accessor('status', {
 			header: 'Estado',
 			cell: (info) => {
-				const status = info.getValue();
-				const statusConfig: Record<
-					string,
-					{ label: string; color: any; variant: any; icon: string }
-				> = {
-					pending: {
-						label: 'Pendiente',
-						color: 'amber',
-						variant: 'solid',
-						icon: 'HeroClock',
-					},
-					sent: {
-						label: 'Enviada',
-						color: 'blue',
-						variant: 'solid',
-						icon: 'HeroPaperAirplane',
-					},
-					accepted: {
-						label: 'Aceptada',
-						color: 'emerald',
-						variant: 'solid',
-						icon: 'HeroCheckCircle',
-					},
-					expired: {
-						label: 'Expirada',
-						color: 'red',
-						variant: 'solid',
-						icon: 'HeroXCircle',
-					},
-					cancelled: {
-						label: 'Cancelada',
-						color: 'zinc',
-						variant: 'outline',
-						icon: 'HeroXMark',
-					},
-				};
-
-				const config = statusConfig[status] || {
-					label: status,
+				const val = info.getValue();
+				const config = QUOTE_STATUS_OPTIONS[val as keyof typeof QUOTE_STATUS_OPTIONS] || {
+					label: val,
 					color: 'zinc',
-					variant: 'outline',
 					icon: 'HeroQuestionMarkCircle',
 				};
 
 				return (
 					<Badge
 						color={config.color}
-						variant={config.variant}
-						className='inline-flex items-center text-xs font-medium'>
-						<Icon icon={config.icon} className='me-1.5 h-4 w-4' />
+						variant='outline' // 'light' es el que mejor queda en tablas ERP para no cansar la vista
+						className='flex w-fit items-center rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-tight'>
+						<Icon icon={config.icon} className='mr-1.5 h-3.5 w-3.5' />
 						{config.label}
 					</Badge>
 				);
@@ -314,7 +285,7 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 							onClick={() => openModal('details', invitation)}
 							className='flex items-center justify-center p-0 transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/20'
 							title='Ver detalles'>
-							<Icon icon='HeroEye' />
+							<Icon icon='HeroEye' color='blue'/>
 						</Button>
 
 						{/* Reenviar */}
@@ -330,7 +301,7 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 								{isLoading ? (
 									<Icon icon='HeroArrowPath' className='animate-spin' />
 								) : (
-									<Icon icon='HeroPaperAirplane' />
+									<Icon icon='HeroPaperAirplane' color='emerald'/>
 								)}
 							</Button>
 						)}
@@ -350,9 +321,9 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 										: 'Eliminar invitación'
 								}>
 								{isLoading ? (
-									<Icon icon='HeroArrowPath' className='animate-spin' />
+									<Icon icon='HeroArrowPath' className='animate-spin' color='sky' />
 								) : (
-									<Icon icon='HeroTrash' />
+									<Icon icon='HeroTrash' color='red'/>
 								)}
 							</Button>
 						)}

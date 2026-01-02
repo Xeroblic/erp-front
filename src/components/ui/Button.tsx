@@ -27,12 +27,15 @@ export interface IButtonProps
 	isLoading?: boolean;
 	rightIcon?: TIcons;
 	iconColor?: string;
+	iconClassName?: string;
 	rightIconColor?: string;
 	rounded?: TRounded;
 	size?: TButtonSize;
 	variant?: TButtonVariants;
 	type?: 'button' | 'submit' | 'reset';
 	disabled?: boolean;
+	inMouseEnter?: () => void;
+	inMouseLeave?: () => void;
 }
 
 const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
@@ -51,6 +54,7 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 		isLoading = false,
 		rightIcon,
 		iconColor,
+		iconClassName,
 		rightIconColor,
 		rounded = themeConfig.rounded,
 		size = 'default',
@@ -123,12 +127,12 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 				'py-0.5',
 				'text-xs',
 			),
-			icon: classNames({ 'ltr:mr-1 rtl:ml-1': HAS_CHILDREN }, 'text-[1.125rem]'),
+			icon: classNames({ 'ltr:mr-1 rtl:ml-1': HAS_CHILDREN }, 'text-[1.125rem]' , iconClassName),
 			rightIcon: classNames('ltr:ml-1', 'rtl:mr-1', 'text-[1.125rem]'),
 		},
 		sm: {
 			general: classNames({ 'px-4': HAS_CHILDREN, 'px-1': !HAS_CHILDREN }, 'py-1', 'text-sm'),
-			icon: classNames({ 'ltr:mr-1 rtl:ml-1': HAS_CHILDREN }, 'text-[1.25rem]'),
+			icon: classNames({ 'ltr:mr-1 rtl:ml-1': HAS_CHILDREN }, 'text-[1.25rem]' , iconClassName),
 			rightIcon: classNames('ltr:ml-1', 'rtl:mr-1', 'text-[1.25rem]'),
 		},
 		default: {
@@ -137,12 +141,12 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 				'py-1.5',
 				'text-base',
 			),
-			icon: classNames({ 'ltr:mr-1.5 rtl:ml-1.5': HAS_CHILDREN }, 'text-[1.5rem]'),
+			icon: classNames({ 'ltr:mr-1.5 rtl:ml-1.5': HAS_CHILDREN }, 'text-[1.5rem]' , iconClassName),
 			rightIcon: classNames('ltr:ml-1.5', 'rtl:mr-1.5', 'text-[1.5rem]'),
 		},
 		lg: {
 			general: classNames({ 'px-6': HAS_CHILDREN, 'px-2': !HAS_CHILDREN }, 'py-2', 'text-lg'),
-			icon: classNames({ 'ltr:mr-2 rtl:ml-2': HAS_CHILDREN }, 'text-[1.75rem]'),
+			icon: classNames({ 'ltr:mr-2 rtl:ml-2': HAS_CHILDREN }, 'text-[1.75rem]' , iconClassName),
 			rightIcon: classNames('ltr:ml-2', 'rtl:mr-2', 'text-[1.75rem]'),
 		},
 		xl: {
@@ -151,7 +155,7 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 				'py-2.5',
 				'text-xl',
 			),
-			icon: classNames({ 'ltr:mr-2.5 rtl:ml-2.5': HAS_CHILDREN }, 'text-[1.75rem]'),
+			icon: classNames({ 'ltr:mr-2.5 rtl:ml-2.5': HAS_CHILDREN }, 'text-[1.75rem]' , iconClassName),
 			rightIcon: classNames('ltr:ml-2.5', 'rtl:mr-2.5'),
 		},
 	};

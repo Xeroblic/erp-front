@@ -34,6 +34,8 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
 		onConfirm();
 	};
 
+	const [isHover, setIsHover] = React.useState(false);
+
 	return (
 		<Modal isOpen={isOpen} setIsOpen={onClose} size='md'>
 			<ModalHeader>
@@ -98,26 +100,37 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
 
 			<ModalFooter>
 				<ModalFooterChild>
-					<Button variant='outline' color='zinc' onClick={onClose} isDisable={isDeleting}>
-						<Icon icon='HeroXMark' className='mr-2 h-4 w-4' />
-						Cancelar
+					<Button
+						variant={isHover ? 'outline' : 'solid'}
+						color='red'
+						onClick={onClose}
+						disabled={isDeleting}
+						className='bg-red-300/30'
+						icon='HeroXMark'
+						iconClassName='text-lg'
+						>
+							Cancelar
 					</Button>
 				</ModalFooterChild>
 				<ModalFooterChild>
 					<Button
-						variant='solid'
+						variant={isHover ? 'outline' : 'solid'}
 						color='red'
 						onClick={handleConfirm}
 						isDisable={isDeleting}
-						className='min-w-[120px]'>
+						className='min-w-[120px]'
+						iconClassName='text-lg'>
 						{isDeleting ? (
 							<>
-								<Icon icon='HeroArrowPath' className='mr-2 h-4 w-4 animate-spin' />
+								<Icon
+									icon='HeroArrowPath'
+									className='mr-2 h-4 w-4 animate-spin text-white'
+								/>
 								Eliminando...
 							</>
 						) : (
 							<>
-								<Icon icon='HeroTrash' className='mr-2 h-4 w-4' />
+								<Icon icon='HeroTrash' className='mr-2 h-4 w-4 text-white' />
 								Eliminar
 							</>
 						)}
