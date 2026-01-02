@@ -79,7 +79,7 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 		const fetchClientes = async () => {
 			try {
 				const clientes = await ApiService.fetchNormalized({
-					url: `/subsidiaries/${subsidiaryId}/customer-sales/overview?per_page=1000`,
+					url: `/subsidiaries/${subsidiaryId}/customer-sales/overview?per_page=200`,
 					method: 'GET',
 				});
 
@@ -171,17 +171,30 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 		};
 	};
 
-	const handleCustomerCreated = (customerId: number, customerName: string) => {
-		const newOption = {
-			value: String(customerId),
-			label: customerName,
-		};
-		setCustomerOptions((prev) => {
-			// Verificar si ya existe para evitar duplicados
-			const exists = prev.find((opt) => opt.value === String(customerId));
-			if (exists) return prev;
-			return [...prev, newOption];
-		});
+	const handleCreateCustomerOption = async (name: string) => {
+		const trimmed = name.trim();
+		if (!trimmed) return null;
+		const { payload } = generateCustomerCreationPayload(trimmed, subsidiaryId);
+		try {
+			const created = await ApiService.fetchNormalized<any>({
+				url: `/subsidiaries/${subsidiaryId}/customer-sales`,
+				method: 'POST',
+				data: payload,
+			});
+			if (!created?.id) {
+				throw new Error('Respuesta inválida del servidor');
+			}
+			const option = {
+				value: String(created.id),
+				label: created.name || trimmed,
+			};
+			setCustomerOptions((prev) => [...prev, option]);
+			return option;
+		} catch (error) {
+			console.error('Error creating customer:', error);
+			toast.error('No se pudo crear el cliente');
+			return null;
+		}
 	};
 
 	if (!isOpen) return null;
@@ -241,11 +254,7 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 									errors={errors}
 									touched={touched}
 									customerOptions={customerOptions}
-									subsidiaryId={subsidiaryId}
-									onCustomerCreated={(customerId, customerName) => {
-										handleCustomerCreated(customerId, customerName);
-										setFieldValue('customer_id', customerId);
-									}}
+									onCreateCustomer={handleCreateCustomerOption}
 								/>
 
 								<PaymentInfoCard
@@ -279,17 +288,18 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 
 				<ModalFooter>
 					<ModalFooterChild>
-						<Button
-							variant='outline'
+						<Button 
+							variant='outline' 
 							color='red'
 							className='bg-red-400/20'
-							onClick={onClose}
-							isDisable={loading}>
+							onClick={onClose} 
+							isDisable={loading}
+						>
 							Cancelar
 						</Button>
 						<Button
 							variant='outline'
-							color='emerald'
+							color='bg-emerald-400'
 							className='bg-emerald-400/30'
 							onClick={() =>
 								document
