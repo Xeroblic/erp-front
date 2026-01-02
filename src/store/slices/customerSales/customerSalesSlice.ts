@@ -135,9 +135,6 @@ export const fetchCustomersOverviewThunk = createAsyncThunk<
 			method: 'get',
 			params: { page, per_page, sort: 'id', order: 'desc', ...params },
 		});
-
-		// Laravel retorna en formato plano: { data, current_page, last_page, ... }
-		// Necesitamos transformarlo a { data, meta, links }
 		const rootData = response.data;
 
 		return {

@@ -55,27 +55,18 @@ const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
 					contact_name: values.name.trim(),
 					is_active: true,
 				};
-
 				const response = await ApiService.fetchData({
 					url: `/subsidiaries/${subsidiaryId}/customer-sales`,
 					method: 'POST',
 					data: payload,
 				});
-
 				const createdCustomer = response.data as any;
-
-				// Refrescar la lista de clientes ventas
 				await dispatch(
 					fetchCustomersOverviewThunk({
 						subsidiary: subsidiaryId,
-						page: 1,
-						per_page: 5,
 					}),
-				);
-
+				).unwrap();
 				toast.success('Cliente creado exitosamente');
-
-				// Usar el nombre que enviamos, ya que es el más confiable
 				const customerName =
 					createdCustomer.name ||
 					createdCustomer.contact_name ||

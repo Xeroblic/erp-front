@@ -8,6 +8,7 @@ import { FormQuotationValues } from '../types';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import CreateCustomerModal from './CreateCustomerModal';
+import { useAppSelector } from '@/store';
 
 interface GeneralInfoCardProps {
 	values: FormQuotationValues;
@@ -26,10 +27,11 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 	touched,
 	customerOptions,
 	subsidiaryId,
-	onCustomerCreated,	
+	onCustomerCreated,
 }) => {
 	const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
 
+	
 	return (
 		<Card
 			rounded='rounded-2xl'

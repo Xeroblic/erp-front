@@ -171,32 +171,6 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 		};
 	};
 
-	const handleCreateCustomerOption = async (name: string) => {
-		const trimmed = name.trim();
-		if (!trimmed) return null;
-		const { payload } = generateCustomerCreationPayload(trimmed, subsidiaryId);
-		try {
-			const created = await ApiService.fetchNormalized<any>({
-				url: `/subsidiaries/${subsidiaryId}/customer-sales`,
-				method: 'POST',
-				data: payload,
-			});
-			if (!created?.id) {
-				throw new Error('Respuesta inválida del servidor');
-			}
-			const option = {
-				value: String(created.id),
-				label: created.name || trimmed,
-			};
-			setCustomerOptions((prev) => [...prev, option]);
-			return option;
-		} catch (error) {
-			console.error('Error creating customer:', error);
-			toast.error('No se pudo crear el cliente');
-			return null;
-		}
-	};
-
 	if (!isOpen) return null;
 
 	return (
@@ -246,56 +220,75 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 							setSubmitting(false);
 						}}
 						enableReinitialize>
-						{({ values, setFieldValue, errors, touched, handleSubmit }) => (
-							<Form id='quotation-form' className='space-y-6' onSubmit={handleSubmit}>
-								<GeneralInfoCard
-									values={values}
-									setFieldValue={setFieldValue}
-									errors={errors}
-									touched={touched}
-									customerOptions={customerOptions}
-									onCustomerCreated={()=> (handleCreateCustomerOption)}
-									subsidiaryId={subsidiaryId}
-								/>
+						{({ values, setFieldValue, errors, touched, handleSubmit }) => {
+							const handleCustomerCreated = (
+								customerId: number,
+								customerName: string,
+							) => {
+								const newOption = {
+									value: String(customerId),
+									label: customerName,
+								};
+								setCustomerOptions((prev) => [...prev, newOption]);
 
-								<PaymentInfoCard
-									values={values}
-									setFieldValue={setFieldValue}
-									errors={errors}
-									touched={touched}
-									paymentMethodOptions={paymentMethodOptions}
-									paymentTermsOptions={paymentTermsOptions}
-									statusOptions={statusOptions}
-								/>
+								setFieldValue('customer_id', customerId);
 
-								<ItemsListCard
-									values={values}
-									setFieldValue={setFieldValue}
-									errors={errors}
-									touched={touched}
-									productOptions={productOptions}
-									saleableProductsMap={saleableProductsMap}
-								/>
+								// toast.success('Cliente agregado y seleccionado');
+							};
 
-								<TotalsCard
-									values={values}
-									setFieldValue={setFieldValue}
-									IVA_RATE={IVA_RATE}
-								/>
-							</Form>
-						)}
+							return (
+								<Form
+									id='quotation-form'
+									className='space-y-6'
+									onSubmit={handleSubmit}>
+									<GeneralInfoCard
+										values={values}
+										setFieldValue={setFieldValue}
+										errors={errors}
+										touched={touched}
+										customerOptions={customerOptions}
+										onCustomerCreated={handleCustomerCreated}
+										subsidiaryId={subsidiaryId}
+									/>
+
+									<PaymentInfoCard
+										values={values}
+										setFieldValue={setFieldValue}
+										errors={errors}
+										touched={touched}
+										paymentMethodOptions={paymentMethodOptions}
+										paymentTermsOptions={paymentTermsOptions}
+										statusOptions={statusOptions}
+									/>
+
+									<ItemsListCard
+										values={values}
+										setFieldValue={setFieldValue}
+										errors={errors}
+										touched={touched}
+										productOptions={productOptions}
+										saleableProductsMap={saleableProductsMap}
+									/>
+
+									<TotalsCard
+										values={values}
+										setFieldValue={setFieldValue}
+										IVA_RATE={IVA_RATE}
+									/>
+								</Form>
+							);
+						}}
 					</Formik>
 				</ModalBody>
 
 				<ModalFooter>
 					<ModalFooterChild>
-						<Button 
-							variant='outline' 
+						<Button
+							variant='outline'
 							color='red'
 							className='bg-red-400/20'
-							onClick={onClose} 
-							isDisable={loading}
-						>
+							onClick={onClose}
+							isDisable={loading}>
 							Cancelar
 						</Button>
 						<Button
