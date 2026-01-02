@@ -254,7 +254,8 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 									errors={errors}
 									touched={touched}
 									customerOptions={customerOptions}
-									onCreateCustomer={handleCreateCustomerOption}
+									onCustomerCreated={()=> (handleCreateCustomerOption)}
+									subsidiaryId={subsidiaryId}
 								/>
 
 								<PaymentInfoCard
@@ -299,7 +300,7 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 						</Button>
 						<Button
 							variant='outline'
-							color='bg-emerald-400'
+							color='emerald'
 							className='bg-emerald-400/30'
 							onClick={() =>
 								document

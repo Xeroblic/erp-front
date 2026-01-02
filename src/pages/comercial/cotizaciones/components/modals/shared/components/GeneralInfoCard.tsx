@@ -26,7 +26,7 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 	touched,
 	customerOptions,
 	subsidiaryId,
-	onCustomerCreated,
+	onCustomerCreated,	
 }) => {
 	const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
 
