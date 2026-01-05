@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useId } from 'react';
+import React, { useState, useEffect, useId, memo } from 'react';
 import { toast } from 'react-toastify';
-import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
+import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Label from '@/components/form/Label';
 import Input from '@/components/form/Input';
@@ -20,6 +20,7 @@ import type {
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
+import classNames from 'classnames';
 
 interface ModalIntegrationProps {
 	isOpen: boolean;
@@ -142,30 +143,79 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 		}
 	};
 
-	const handleDelete = async () => {
-		if (!subsidiaryId || !integration) return;
-		if (!confirm('¿Estás seguro de eliminar esta integración?')) return;
+	const [ModalDeleteisOpen, setModalDeleteIsOpen] = useState(false);
 
+	const openModalDelete = () => {
+		if (!subsidiaryId || !integration?.id) return;
+		setModalDeleteIsOpen(true);
+	};
+
+	const handleDelete = async () => {
+		setModalDeleteIsOpen(false);
+		if (!subsidiaryId || !integration?.id) return;
 		try {
 			const resultAction = await dispatch(
 				deleteIntegration({
 					subsidiaryId,
-					integrationId: integration.id,
+					integrationId: integration?.id,
 				}),
 			);
-
 			if (deleteIntegration.fulfilled.match(resultAction)) {
-				toast.success('Integración eliminada correctamente');
-				await dispatch(fetchIntegrations({ subsidiaryId }));
+				toast.success('Integracion eliminada correctamente');
+				await dispatch(
+					fetchIntegrations({
+						subsidiaryId: subsidiaryId ?? 0,
+					}),
+				);
 				onSuccess();
+				onClose();
 			} else {
-				toast.error('Error al eliminar la integración');
+				toast.error(`Error al eliminar la integracion`);
 			}
-		} catch (error: any) {
-			toast.error(error?.message || 'Error al eliminar');
-			console.error(error);
+		} catch (error: string | any) {
+			toast.error(error?.mensage || 'Error al eliminar la integración');
 		}
 	};
+
+	const ModalDelete = memo(function ModalDelete({
+		isOpen,
+		onClose,
+		onConfirm,
+	}: {
+		isOpen: boolean;
+		onClose: () => void;
+		onConfirm: () => void;
+	}) {
+		return (
+			<Modal
+				isOpen={isOpen}
+				setIsOpen={onClose}
+				size='md'
+				>
+				<ModalHeader>
+					<Badge>Eliminar Integración</Badge>
+				</ModalHeader>
+				<ModalBody>
+					<p>
+						¿Estás seguro de que deseas eliminar esta integración? Esta acción no se
+						puede deshacer.
+					</p>
+				</ModalBody>
+				<ModalFooter>
+					<Button variant='outline' color='blue' onClick={onClose} icon='HeroX' title='Cancelar'
+					 className='bg-blue-600/70 text-white'
+					 >Cancelar</Button>
+					<Button
+						variant='solid'
+						onClick={onConfirm}
+						icon='HeroTrash'
+						color='red'
+						title='Eliminar esta integracion de la existencia de todo centria y del todo universo posible profafor no apretar en caso de no querer borarr la integracion por que se puede eliminar el integracion y si no quieres eliminar la integracion te recomiendo no clickear este btn'
+					>Eliminar</Button>
+				</ModalFooter>
+			</Modal>
+		);
+	});
 
 	const handleRotateKey = async (type: 'api_key' | 'webhook_secret') => {
 		if (!subsidiaryId || !integration) return;
@@ -224,10 +274,14 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 		return modes[m] || m;
 	};
 
-	// Pantalla de secretos (solo una vez)
 	if (showSecrets) {
 		return (
-			<Modal isOpen={isOpen} setIsOpen={onClose} size='xl'>
+			<Modal
+				isOpen={isOpen}
+				setIsOpen={onClose}
+				size='xl'
+				isStaticBackdrop
+				isStaticBackdropAnimation>
 				<ModalHeader>
 					<Icon icon='HeroExclamationTriangle' className='mr-2 text-yellow-500' />
 					Credenciales de Integración (Solo se mostrarán una vez)
@@ -324,253 +378,266 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 
 	// Vista normal
 	return (
-		<Modal isOpen={isOpen} setIsOpen={onClose} size='xl'>
-			<ModalHeader>
-				{mode === 'create' && 'Nueva Integración'}
-				{mode === 'edit' && 'Editar Integración'}
-				{mode === 'view' && 'Detalle de Integración'}
-			</ModalHeader>
-			<ModalBody>
-				<form onSubmit={handleSubmit} className='space-y-4'>
-					{/* Nombre */}
-					<div>
-						<Label htmlFor='name'>Nombre de la Integración</Label>
-						<Input
-							id='name'
-							name='name'
-							type='text'
-							value={formData.name}
-							onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-							disabled={mode === 'view'}
-							required
-						/>
-					</div>
-
-					{/* Proveedor */}
-					<div>
-						<Label htmlFor='provider'>Proveedor</Label>
-						<Select
-							id='provider'
-							name='provider'
-							value={formData.provider}
-							onChange={(e) =>
-								setFormData({
-									...formData,
-									provider: e.target.value as 'woocommerce',
-								})
-							}
-							disabled={mode !== 'create'}
-							required>
-							<option value='woocommerce'>WooCommerce</option>
-						</Select>
-					</div>
-
-					{/* Base URL */}
-					<div>
-						<Label htmlFor='base_url'>URL Base</Label>
-						<Input
-							id='base_url'
-							name='base_url'
-							type='url'
-							value={formData.base_url}
-							onChange={(e) => setFormData({ ...formData, base_url: e.target.value })}
-							disabled={mode !== 'create'}
-							placeholder='https://mitienda.cl'
-							required
-						/>
-					</div>
-
-					{/* Modo */}
-					<div>
-						<Label htmlFor='mode'>Modo de Conexión</Label>
-						<Select
-							id='mode'
-							name='mode'
-							value={formData.mode}
-							onChange={(e) =>
-								setFormData({
-									...formData,
-									mode: e.target.value as IntegrationMode,
-								})
-							}
-							disabled={mode !== 'create'}
-							required>
-							<option value='webhook'>Webhook (Solo recibir órdenes)</option>
-							<option value='read'>API REST - Solo Lectura</option>
-							<option value='read_write'>API REST - Lectura/Escritura</option>
-						</Select>
-						<p className='mt-1 text-xs text-gray-500'>
-							{formData.mode === 'webhook' &&
-								'Webhook: WooCommerce enviará las órdenes automáticamente'}
-							{formData.mode === 'read' &&
-								'Solo Lectura: Consultar órdenes de WooCommerce'}
-							{formData.mode === 'read_write' &&
-								'Lectura/Escritura: Consultar y sincronizar stock'}
-						</p>
-					</div>
-
-					<div className='grid gap-4 md:grid-cols-2'>
+		<>
+			<Modal isOpen={isOpen} setIsOpen={onClose} size='xl' isStaticBackdrop isStaticBackdropAnimation>
+				<ModalHeader>
+					{mode === 'create' && 'Nueva Integración'}
+					{mode === 'edit' && 'Editar Integración'}
+					{mode === 'view' && 'Detalle de Integración'}
+				</ModalHeader>
+				<ModalBody>
+					<form onSubmit={handleSubmit} className='space-y-4'>
+						{/* Nombre */}
 						<div>
-							<Label htmlFor='consumer_key'>Consumer Key</Label>
+							<Label htmlFor='name'>Nombre de la Integración</Label>
 							<Input
-								id='consumer_key'
-								name='consumer_key'
+								id='name'
+								name='name'
 								type='text'
-								value={formData.consumer_key}
-								onChange={(e) =>
-									setFormData({ ...formData, consumer_key: e.target.value })
-								}
-								placeholder={
-									formData.mode === 'webhook'
-										? 'Se generará automáticamente'
-										: 'ck_...'
-								}
-								disabled={formData.mode === 'webhook'}
-								required={formData.mode !== 'webhook'}
+								value={formData.name}
+								onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+								disabled={mode === 'view'}
+								required
 							/>
-							{formData.mode === 'webhook' && (
-								<p className='mt-1 text-xs text-gray-500'>
-									Esta integración es solo webhook, la clave se generará y se
-									mostrará una vez al guardar.
-								</p>
-							)}
 						</div>
+
+						{/* Proveedor */}
 						<div>
-							<Label htmlFor='consumer_secret'>Consumer Secret</Label>
-							<Input
-								id='consumer_secret'
-								name='consumer_secret'
-								type='password'
-								value={formData.consumer_secret}
+							<Label htmlFor='provider'>Proveedor</Label>
+							<Select
+								id='provider'
+								name='provider'
+								value={formData.provider}
 								onChange={(e) =>
 									setFormData({
 										...formData,
-										consumer_secret: e.target.value,
+										provider: e.target.value as 'woocommerce',
 									})
 								}
-								placeholder={
-									formData.mode === 'webhook'
-										? 'Se generará automáticamente'
-										: 'cs_...'
-								}
-								disabled={formData.mode === 'webhook'}
-								required={formData.mode !== 'webhook'}
-							/>
-							{formData.mode === 'webhook' && (
-								<p className='mt-1 text-xs text-gray-500'>
-									El secret también se mostrará al finalizar la creación.
-								</p>
-							)}
+								disabled={mode !== 'create'}
+								required>
+								<option value='woocommerce'>WooCommerce</option>
+							</Select>
 						</div>
-					</div>
 
-					{/* Estado */}
-					<div className='flex items-center gap-2'>
-						<input
-							id='is_active'
-							type='checkbox'
-							checked={formData.is_active}
-							onChange={(e) =>
-								setFormData({ ...formData, is_active: e.target.checked })
-							}
-							disabled={mode === 'view'}
-							className='h-4 w-4'
-						/>
-						<Label htmlFor='is_active' className='mb-0'>
-							Integración Activa
-						</Label>
-					</div>
+						{/* Base URL */}
+						<div>
+							<Label htmlFor='base_url'>URL Base</Label>
+							<Input
+								id='base_url'
+								name='base_url'
+								type='url'
+								value={formData.base_url}
+								onChange={(e) =>
+									setFormData({ ...formData, base_url: e.target.value })
+								}
+								disabled={mode !== 'create'}
+								placeholder='https://mitienda.cl'
+								required
+							/>
+						</div>
 
-					{/* Información adicional en modo ver/editar */}
-					{integration && mode !== 'create' && (
-						<div className='space-y-3 border-t pt-4'>
-							<h3 className='text-sm font-semibold'>Información de Seguridad</h3>
-							<div className='grid grid-cols-2 gap-3 text-sm'>
-								<div>
-									<span className='text-gray-600'>API Key Prefix:</span>
-									<code className='ml-2 rounded bg-gray-100 px-2 py-1'>
-										{integration.api_key_prefix}
-									</code>
-								</div>
-								<div>
-									<span className='text-gray-600'>Tiene API Key:</span>
-									<Badge
-										color={integration.has_api_key ? 'green' : 'red'}
-										className='ml-2'>
-										{integration.has_api_key ? 'Sí' : 'No'}
-									</Badge>
-								</div>
-								<div>
-									<span className='text-gray-600'>Tiene Webhook Secret:</span>
-									<Badge
-										color={integration.has_webhook_secret ? 'green' : 'red'}
-										className='ml-2'>
-										{integration.has_webhook_secret ? 'Sí' : 'No'}
-									</Badge>
-								</div>
-								<div>
-									<span className='text-gray-600'>Tiene Consumer Secret:</span>
-									<Badge
-										color={integration.has_consumer_secret ? 'green' : 'red'}
-										className='ml-2'>
-										{integration.has_consumer_secret ? 'Sí' : 'No'}
-									</Badge>
-								</div>
+						{/* Modo */}
+						<div>
+							<Label htmlFor='mode'>Modo de Conexión</Label>
+							<Select
+								id='mode'
+								name='mode'
+								value={formData.mode}
+								onChange={(e) =>
+									setFormData({
+										...formData,
+										mode: e.target.value as IntegrationMode,
+									})
+								}
+								disabled={mode !== 'create'}
+								required>
+								<option value='webhook'>Webhook (Solo recibir órdenes)</option>
+								<option value='read'>API REST - Solo Lectura</option>
+								<option value='read_write'>API REST - Lectura/Escritura</option>
+							</Select>
+							<p className='mt-1 text-xs text-gray-500'>
+								{formData.mode === 'webhook' &&
+									'Webhook: WooCommerce enviará las órdenes automáticamente'}
+								{formData.mode === 'read' &&
+									'Solo Lectura: Consultar órdenes de WooCommerce'}
+								{formData.mode === 'read_write' &&
+									'Lectura/Escritura: Consultar y sincronizar stock'}
+							</p>
+						</div>
+
+						<div className='grid gap-4 md:grid-cols-2'>
+							<div>
+								<Label htmlFor='consumer_key'>Consumer Key</Label>
+								<Input
+									id='consumer_key'
+									name='consumer_key'
+									type='text'
+									value={formData.consumer_key}
+									onChange={(e) =>
+										setFormData({ ...formData, consumer_key: e.target.value })
+									}
+									placeholder={
+										formData.mode === 'webhook'
+											? 'Se generará automáticamente'
+											: 'ck_...'
+									}
+									disabled={formData.mode === 'webhook'}
+									required={formData.mode !== 'webhook'}
+								/>
+								{formData.mode === 'webhook' && (
+									<p className='mt-1 text-xs text-gray-500'>
+										Esta integración es solo webhook, la clave se generará y se
+										mostrará una vez al guardar.
+									</p>
+								)}
 							</div>
+							<div>
+								<Label htmlFor='consumer_secret'>Consumer Secret</Label>
+								<Input
+									id='consumer_secret'
+									name='consumer_secret'
+									type='password'
+									value={formData.consumer_secret}
+									onChange={(e) =>
+										setFormData({
+											...formData,
+											consumer_secret: e.target.value,
+										})
+									}
+									placeholder={
+										formData.mode === 'webhook'
+											? 'Se generará automáticamente'
+											: 'cs_...'
+									}
+									disabled={formData.mode === 'webhook'}
+									required={formData.mode !== 'webhook'}
+								/>
+								{formData.mode === 'webhook' && (
+									<p className='mt-1 text-xs text-gray-500'>
+										El secret también se mostrará al finalizar la creación.
+									</p>
+								)}
+							</div>
+						</div>
 
-							{mode === 'edit' && (
-								<div className='flex gap-2 pt-2'>
-									<Button
-										type='button'
-										size='sm'
-										variant='outline'
-										onClick={() => handleRotateKey('api_key')}
-										disabled={loading}>
-										Rotar API Key
-									</Button>
-									{integration.mode === 'webhook' && (
+						{/* Estado */}
+						<div className='flex items-center gap-2'>
+							<input
+								id='is_active'
+								type='checkbox'
+								checked={formData.is_active}
+								onChange={(e) =>
+									setFormData({ ...formData, is_active: e.target.checked })
+								}
+								disabled={mode === 'view'}
+								className='h-4 w-4'
+							/>
+							<Label htmlFor='is_active' className='mb-0'>
+								Integración Activa
+							</Label>
+						</div>
+
+						{/* Información adicional en modo ver/editar */}
+						{integration && mode !== 'create' && (
+							<div className='space-y-3 border-t pt-4'>
+								<h3 className='text-sm font-semibold'>Información de Seguridad</h3>
+								<div className='grid grid-cols-2 gap-3 text-sm'>
+									<div>
+										<span className='text-gray-600'>API Key Prefix:</span>
+										<code className='ml-2 rounded bg-gray-100 px-2 py-1'>
+											{integration.api_key_prefix}
+										</code>
+									</div>
+									<div>
+										<span className='text-gray-600'>Tiene API Key:</span>
+										<Badge
+											color={integration.has_api_key ? 'green' : 'red'}
+											className='ml-2'>
+											{integration.has_api_key ? 'Sí' : 'No'}
+										</Badge>
+									</div>
+									<div>
+										<span className='text-gray-600'>Tiene Webhook Secret:</span>
+										<Badge
+											color={integration.has_webhook_secret ? 'green' : 'red'}
+											className='ml-2'>
+											{integration.has_webhook_secret ? 'Sí' : 'No'}
+										</Badge>
+									</div>
+									<div>
+										<span className='text-gray-600'>
+											Tiene Consumer Secret:
+										</span>
+										<Badge
+											color={
+												integration.has_consumer_secret ? 'green' : 'red'
+											}
+											className='ml-2'>
+											{integration.has_consumer_secret ? 'Sí' : 'No'}
+										</Badge>
+									</div>
+								</div>
+
+								{mode === 'edit' && (
+									<div className='flex gap-2 pt-2'>
 										<Button
 											type='button'
 											size='sm'
 											variant='outline'
-											onClick={() => handleRotateKey('webhook_secret')}
+											onClick={() => handleRotateKey('api_key')}
 											disabled={loading}>
-											Rotar Webhook Secret
+											Rotar API Key
 										</Button>
-									)}
-								</div>
-							)}
-						</div>
-					)}
+										{integration.mode === 'webhook' && (
+											<Button
+												type='button'
+												size='sm'
+												variant='outline'
+												onClick={() => handleRotateKey('webhook_secret')}
+												disabled={loading}>
+												Rotar Webhook Secret
+											</Button>
+										)}
+									</div>
+								)}
+							</div>
+						)}
 
-					{/* Botones */}
-					<div className='flex justify-between border-t pt-4'>
-						<div>
-							{mode === 'edit' && (
-								<Button
-									type='button'
-									variant='solid'
-									color='red'
-									onClick={handleDelete}
-									disabled={loading}>
-									Eliminar
+						{/* Botones */}
+						<div className='flex justify-between border-t pt-4'>
+							<div>
+								{mode === 'edit' && (
+									<Button
+										type='button'
+										variant='solid'
+										color='red'
+										onClick={() => openModalDelete()}
+										disabled={loading}>
+										Eliminar
+									</Button>
+								)}
+							</div>
+							<div className='flex gap-2'>
+								<Button type='button' variant='outline' onClick={onClose}>
+									{mode === 'view' ? 'Cerrar' : 'Cancelar'}
 								</Button>
-							)}
+								{mode !== 'view' && (
+									<Button type='submit' variant='solid' disabled={loading}>
+										{loading ? 'Guardando...' : 'Guardar'}
+									</Button>
+								)}
+							</div>
 						</div>
-						<div className='flex gap-2'>
-							<Button type='button' variant='outline' onClick={onClose}>
-								{mode === 'view' ? 'Cerrar' : 'Cancelar'}
-							</Button>
-							{mode !== 'view' && (
-								<Button type='submit' variant='solid' disabled={loading}>
-									{loading ? 'Guardando...' : 'Guardar'}
-								</Button>
-							)}
-						</div>
-					</div>
-				</form>
-			</ModalBody>
-		</Modal>
+					</form>
+				</ModalBody>
+			</Modal>
+			<ModalDelete
+				isOpen={ModalDeleteisOpen}
+				onClose={() => setModalDeleteIsOpen(false)}
+				onConfirm={handleDelete}
+			/>
+		</>
 	);
 };
 

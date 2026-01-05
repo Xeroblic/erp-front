@@ -71,7 +71,7 @@ export interface IUserMe {
 	subsidiary?: {
 		id: number;
 		name: string;
-	} | null;
+	} | undefined;
 	branch?: {
 		id: number;
 		name: string;

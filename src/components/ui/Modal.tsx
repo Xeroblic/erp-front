@@ -173,6 +173,7 @@ interface IContentProps extends HTMLAttributes<HTMLDivElement> {
 	fullScreen?: TScreens | boolean;
 	isScrollable?: boolean;
 	rounded?: TRounded;
+	className?:string;
 }
 const Content: FC<IContentProps> = (props) => {
 	const {
@@ -180,11 +181,13 @@ const Content: FC<IContentProps> = (props) => {
 		fullScreen = defaultProps.fullScreen,
 		isScrollable = defaultProps.isScrollable,
 		rounded = defaultProps.rounded,
+		className,
 		...rest
 	} = props;
-
+	const hasBgOverride = className?.includes('bg-');
 	const classes = classNames(
-		'pointer-events-auto relative flex w-full flex-col bg-white dark:bg-zinc-950',
+		 'pointer-events-auto relative flex w-full flex-col',
+		!hasBgOverride && 'bg-white dark:bg-zinc-950',
 		'shadow-2xl',
 		[`${rounded}`],
 		{
@@ -197,6 +200,7 @@ const Content: FC<IContentProps> = (props) => {
 			'max-md:rounded-none': fullScreen === 'md',
 			'max-sm:rounded-none': fullScreen === 'sm',
 		},
+		className,
 	);
 	return (
 		<div data-component-name='Modal/Content' className={classes} {...rest}>
@@ -214,6 +218,7 @@ interface IDialogProps extends HTMLAttributes<HTMLDivElement> {
 	fullScreen?: TScreens | boolean;
 	isCentered?: boolean;
 	isScrollable?: boolean;
+	className?:string;
 }
 const Dialog = forwardRef<HTMLDivElement, IDialogProps>((props, ref) => {
 	const {
@@ -221,6 +226,7 @@ const Dialog = forwardRef<HTMLDivElement, IDialogProps>((props, ref) => {
 		fullScreen = defaultProps.fullScreen,
 		isCentered = defaultProps.isCentered,
 		isScrollable = defaultProps.isScrollable,
+		className,
 		...rest
 	} = props;
 
@@ -236,6 +242,7 @@ const Dialog = forwardRef<HTMLDivElement, IDialogProps>((props, ref) => {
 			'max-md:m-0 max-md:h-full max-md:!max-w-full': fullScreen === 'md',
 			'max-sm:m-0 max-sm:h-full max-sm:!max-w-full': fullScreen === 'sm',
 		},
+		className,
 	);
 
 	return (
@@ -260,6 +267,7 @@ export interface IModalProps extends MotionProps {
 	rounded?: TRounded;
 	setIsOpen: Dispatch<SetStateAction<boolean>>;
 	size?: TModalSize;
+	className?: string;
 }
 const Modal: FC<IModalProps> = (props) => {
 	const {
@@ -274,6 +282,7 @@ const Modal: FC<IModalProps> = (props) => {
 		fullScreen = defaultProps.fullScreen,
 		isAnimation = true,
 		rounded = defaultProps.rounded,
+		className,
 		...rest
 	} = props;
 	const refModal = useRef(null);
@@ -375,7 +384,9 @@ const Modal: FC<IModalProps> = (props) => {
 								<Content
 									rounded={rounded}
 									fullScreen={fullScreen}
-									isScrollable={isScrollable}>
+									isScrollable={isScrollable}
+									className={className}
+									>
 									{Children.map(
 										children,
 										(child) =>
