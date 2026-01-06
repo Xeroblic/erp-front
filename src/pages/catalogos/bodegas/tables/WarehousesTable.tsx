@@ -53,7 +53,7 @@ const WarehousesTable: React.FC<WarehousesTableProps> = ({
 				id: 'warehouse_type',
 				header: 'Tipo',
 				cell: (info) => (
-					<Badge variant='outline' color='blue'>
+					<Badge variant='outline' color='blue' className='px-2'>
 						{info.getValue()}
 					</Badge>
 				),
@@ -95,15 +95,15 @@ const WarehousesTable: React.FC<WarehousesTableProps> = ({
 				id: 'status',
 				header: 'Estado',
 				cell: (info) => (
-					<Badge variant='solid' color={info.getValue() ? 'emerald' : 'gray'}>
+					<Badge variant='outline' color={info.getValue() ? 'emerald' : 'gray'} className='px-2'>
 						{info.getValue() ? (
 							<>
-								<Icon icon='HeroCheckCircle' className='mr-1 size-4' />
+								<Icon icon='HeroCheckCircle' color='emerald' className='mr-1 size-4' />
 								Activa
 							</>
 						) : (
 							<>
-								<Icon icon='HeroXCircle' className='mr-1 size-4' />
+								<Icon icon='HeroXCircle' color='gray' className='mr-1 size-4' />
 								Inactiva
 							</>
 						)}
@@ -117,7 +117,7 @@ const WarehousesTable: React.FC<WarehousesTableProps> = ({
 					<div className='flex items-center gap-2'>
 						<Button
 							icon='HeroEye'
-							color='zinc'
+							color='violet'
 							variant='outline'
 							size='sm'
 							onClick={() => navigate(`/catalogos/bodegas/${info.row.original.id}`)}

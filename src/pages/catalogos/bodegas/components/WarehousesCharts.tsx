@@ -312,7 +312,6 @@ const WarehousesCharts: React.FC<WarehousesChartsProps> = ({ warehouses }) => {
 			<Collapse isOpen={isOpen}>
 				<CardBody>
 					<div className='grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3'>
-						{/* Chart 1: Distribución por tipo */}
 						<Card>
 							<CardHeader>
 								<div className='flex items-center gap-2'>
