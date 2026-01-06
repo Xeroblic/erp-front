@@ -1,14 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useFormik } from 'formik';
 import { Link } from 'react-router-dom';
-import Icon from '../../../../components/icon/Icon';
-import Button from '../../../../components/ui/Button';
-import Input from '../../../../components/form/Input';
-import FieldWrap from '../../../../components/form/FieldWrap';
-import useDomRect from '../../../../hooks/useDomRect';
+import Icon from '@/components/icon/Icon';
+import Button from '@/components/ui/Button';
+import Input from '@/components/form/Input';
+import FieldWrap from '@/components/form/FieldWrap';
+import useDomRect from '@/hooks/useDomRect';
 import pagesConfig from '@/config/pages.config';
-import Badge from '../../../../components/ui/Badge';
-import Modal, { ModalBody, ModalHeader } from '../../../../components/ui/Modal';
+import Badge from '@/components/ui/Badge';
+import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 
 const flattenPages = (config: Record<string, any>) => {
 	const result: any[] = [];
@@ -58,7 +58,7 @@ const SearchPartial = () => {
 			color='red'
 			size='sm'
 			rounded='rounded'
-			className=''
+			className='rounded-sm'
 			onClick={() => formik.setFieldValue('searchField', '')}
 		/>
 	) : (
@@ -101,12 +101,11 @@ const SearchPartial = () => {
 
 	return (
 		<div className='relative'>
-			{/* For Desktop :: BEGIN */}
 			<FieldWrap
 				ref={ref}
 				firstSuffix={leftContent}
 				lastSuffix={rightContent}
-				className='z-20 max-sm:hidden bg-white dark:bg-zinc-900'>
+				className='z-20 max-sm:hidden bg-white dark:bg-zinc-900 rounded-xl'>
 				<Input
 					ref={inputRef}
 					name='searchField'
@@ -122,7 +121,7 @@ const SearchPartial = () => {
 				<div
 					className='absolute top-0 z-10 h-auto w-full rounded-lg bg-white shadow-2xl outline outline-8 outline-white ring-2 ring-gray-100 ring-offset-8 dark:bg-zinc-950 dark:outline-zinc-950 dark:ring-zinc-800/50 max-sm:hidden'
 					style={{ paddingTop: domRect?.height }}>
-					<div className='max-h-96 divide-y divide-dashed divide-zinc-500/50 overflow-auto bg-white px-4 dark:bg-zinc-950 [&>*]:py-4'>
+					<div className='rounded-smmax-h-96 divide-y divide-dashed divide-zinc-500/50 overflow-auto bg-white px-4 dark:bg-zinc-950 [&>*]:py-4'>
 						{result.length ? (
 							result.map((i) => (
 								<Link
@@ -170,9 +169,7 @@ const SearchPartial = () => {
 					</div>
 				</div>
 			)}
-			{/* For Desktop :: END */}
 
-			{/* For Mobile :: BEGIN */}
 			<Button
 				icon='HeroMagnifyingGlass'
 				className='flex h-10 w-10 items-center justify-center !rounded-full border border-white/60 bg-white !p-0 text-sky-500 shadow-md shadow-sky-200/50 dark:border-white/10 dark:bg-zinc-800 dark:text-sky-300 dark:shadow-[0_4px_18px_rgba(0,0,0,0.55)] sm:hidden'
@@ -203,7 +200,6 @@ const SearchPartial = () => {
 											<div className='grow'>
 												<Button className='!p-0' icon={i.icon}>
 													<span
-														// eslint-disable-next-line react/no-danger
 														dangerouslySetInnerHTML={{
 															__html: i.text.replace(
 																new RegExp(
@@ -222,7 +218,6 @@ const SearchPartial = () => {
 														variant='outline'
 														className='border-transparent text-xs'>
 														<span
-															// eslint-disable-next-line react/no-danger
 															dangerouslySetInnerHTML={{
 																__html: i.category.replace(
 																	new RegExp(
@@ -246,7 +241,6 @@ const SearchPartial = () => {
 					)}
 				</ModalBody>
 			</Modal>
-			{/* For Mobile :: END */}
 		</div>
 	);
 };

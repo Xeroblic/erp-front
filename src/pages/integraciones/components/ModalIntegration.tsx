@@ -274,6 +274,8 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 		return modes[m] || m;
 	};
 
+	
+
 	if (showSecrets) {
 		return (
 			<Modal

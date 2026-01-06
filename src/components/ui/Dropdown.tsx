@@ -9,6 +9,7 @@ import React, {
 	ReactNode,
 	SetStateAction,
 	useCallback,
+	useEffect,
 	useRef,
 	useState,
 } from 'react';
@@ -40,6 +41,12 @@ const Dropdown: FC<IDropdownProps> = (props) => {
 	const [state, setState] = useState<boolean>(
 		!!(isOpen !== null && !!setIsOpen ? isOpen : false),
 	);
+
+	useEffect (() => {
+		if (isOpen !== null ){
+			setState(isOpen);
+		}
+	}, [isOpen])
 
 	const dropdownRef = useRef<HTMLElement>(null);
 
@@ -278,13 +285,24 @@ interface IDropdownNavLinkItemProps extends IDropdownItemProps {
 	to: string;
 }
 export const DropdownNavLinkItem: FC<IDropdownNavLinkItemProps> = (props) => {
-	const { to, children, ...rest } = props;
+	const { to, children, onClick, ...rest } = props;
 
 	const navigate = useNavigate();
 	const match = useMatch({ path: to });
 
+	const handleClick = (e: React.MouseEvent<HTMLLIElement>) => {
+		if (onClick) {
+			onClick(e);
+		}
+		navigate(to);
+	}
+
 	return (
-		<DropdownItem {...rest} onClick={() => navigate(to)} isActive={!!match}>
+		<DropdownItem 
+			{...rest} 
+			onClick={handleClick}
+			isActive={!!match}
+			>
 			{children}
 		</DropdownItem>
 	);

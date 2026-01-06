@@ -4,15 +4,15 @@ import Dropdown, {
 	DropdownMenu,
 	DropdownToggle,
 	DropdownNavLinkItem,
-} from '../../../../components/ui/Dropdown';
-import Button from '../../../../components/ui/Button';
-import Avatar from '../../../../components/Avatar';
-import Icon from '../../../../components/icon/Icon';
-import Card, { CardBody, CardFooter, CardHeader } from '../../../../components/ui/Card';
-import Badge from '../../../../components/ui/Badge';
-import Tabs, { Tab } from '../../../../components/ui/Tabs';
-import Modal, { ModalBody, ModalFooter, ModalHeader } from '../../../../components/ui/Modal';
-import { TIcons } from '../../../../types/icons.type';
+} from '@/components/ui/Dropdown';
+import Button from '@/components/ui/Button';
+import Avatar from '@/components/Avatar';
+import Icon from '@/components/icon/Icon';
+import Card, { CardBody, CardFooter, CardHeader } from '@/components/ui/Card';
+import Badge from '@/components/ui/Badge';
+import Tabs, { Tab } from '@/components/ui/Tabs';
+import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
+import { TIcons } from '@/types/icons.type';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
 	markAllRead,
@@ -21,6 +21,8 @@ import {
 } from '@/store/slices/notifications/notificationsSlice';
 import useDeviceScreen from '@/hooks/useDeviceScreen';
 import tokenManager from '@/services/auth/tokenManager';
+import { boolean } from 'yup';
+import { toast } from 'react-toastify';
 
 const MIN_REFRESH_INTERVAL_MS = 30000;
 
@@ -203,7 +205,7 @@ const NotificationPartial = () => {
 				);
 			}
 			return (
-				<div className='flex max-h-80 flex-col gap-3 overflow-y-auto px-0 py-0'>
+				<div className='flex row-span-12 max-h-80 flex-col gap-3 overflow-y-auto py-0'>
 					{recentNotifications.map((n) => (
 						<div
 							key={n.id}
@@ -250,7 +252,7 @@ const NotificationPartial = () => {
 
 	const NotificationTabs: FC<NotificationTabsProps> = ({
 		className = 'px-0',
-		contentClassName = 'mt-0 px-0 pb-3 pt-0',
+		contentClassName = 'mt-0 px-0  pt-0',
 	}) => (
 		<Tabs
 			activeTab={tab}
@@ -268,7 +270,7 @@ const NotificationPartial = () => {
 			</Tab>
 		</Tabs>
 	);
-
+	
 	const NotificationPanelHeader = () => (
 		<>
 			<div className='flex flex-wrap items-center gap-3'>
@@ -300,26 +302,39 @@ const NotificationPartial = () => {
 			</div> */}
 		</>
 	);
-
+	
+	const [IsOpen, setIsOpen] = useState(false)
+	
+	const handleNavigation = () => {
+		try {
+			navigate('/notificaciones')
+			setIsOpen(false);
+		} catch (error) {
+			toast.error('No se puedo navegar hacia las Notificaciones')
+		}
+	}
 	const NotificationPanel = () => (
-		<Card className='overflow-hidden border border-zinc-200/70 shadow-lg dark:border-zinc-800/70'>
-			<CardHeader className='flex-col gap-3'>
+		
+		<div className='bg-gray-300 dark:bg-zinc-950 px-2 pt-2 overflow-hidden border border-zinc-200/70 shadow-lg dark:border-zinc-800/70'>
+			<div className='flex-col gap-3'>
 				<NotificationPanelHeader />
-			</CardHeader>
-			<CardBody>
-				<div className='px-3 pb-3 pt-0'>
+			</div>
+			<div className='px-0'>
+				<div className=''>
 					<NotificationTabs />
 				</div>
-			</CardBody>
-			<CardFooter className='border-t border-zinc-200/70 px-4 pb-3 pt-3 dark:border-zinc-800/70'>
+			</div>
+			<div className='border-t border-zinc-200/70 px-4 pb-3 pt-3 dark:border-zinc-800/70'>
 				<DropdownNavLinkItem
 					className='justify-center text-sm'
 					icon='HeroInbox'
-					to='/notificaciones'>
+					to='/notificaciones'
+					onClick={handleNavigation}
+					>
 					Ver todas
 				</DropdownNavLinkItem>
-			</CardFooter>
-		</Card>
+			</div>
+		</div>
 	);
 
 	return (
@@ -364,7 +379,7 @@ const NotificationPartial = () => {
 					</Modal>
 				</div>
 			) : (
-				<Dropdown>
+				<Dropdown isOpen={IsOpen} setIsOpen={setIsOpen}>
 					<DropdownToggle hasIcon={false}>
 						<div className='relative inline-block'>
 							<Button
@@ -384,7 +399,9 @@ const NotificationPartial = () => {
 					<DropdownMenu
 						placement='bottom-end'
 						isCloseAfterLeave={false}
-						className='h-full min-w-[24rem] p-0'>
+						className='min-w-[24rem] p-0 pt-0 pb-0 border-dashed border-black/40'
+						setIsOpen={setIsOpen}
+						>
 						<NotificationPanel />
 					</DropdownMenu>
 				</Dropdown>
