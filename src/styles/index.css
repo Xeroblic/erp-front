@@ -11,7 +11,9 @@
 		--theme-transition-duration: 420ms;
 		--theme-transition-easing: cubic-bezier(0.22, 0.61, 0.36, 1);
 
-		transition-property: background-color, color, border-color, box-shadow, fill, stroke, outline-color, background-image;
+		transition-property:
+			background-color, color, border-color, box-shadow, fill, stroke, outline-color,
+			background-image;
 		transition-duration: var(--theme-transition-duration);
 		transition-timing-function: var(--theme-transition-easing);
 	}
@@ -32,39 +34,39 @@
 	}
 }
 
-
-
 @media (prefers-reduced-motion: no-preference) {
-  .theme-wipe-overlay {
+	.theme-wipe-overlay {
 		--wipe-duration: var(--theme-transition-duration, 420ms);
 		--wipe-easing: var(--theme-transition-easing, cubic-bezier(0.22, 0.61, 0.36, 1));
 		--wipe-radius: 220vmax;
 
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    pointer-events: none;
-    background: var(--theme-wipe-bg, #fff);
-    /* Toma coordenadas desde variables para elegir esquina */
-    --wipe-x: 100%; /* default: top-right */
-    --wipe-y: 0%;
-    clip-path: circle(var(--wipe-radius) at var(--wipe-x) var(--wipe-y));
-    opacity: 1;
-    will-change: clip-path, opacity;
-    contain: paint;
-    backface-visibility: hidden;
-    transform: translateZ(0); /* forza layer */
-    transition:
-      clip-path var(--wipe-duration) var(--wipe-easing),
-      opacity var(--wipe-duration) var(--wipe-easing);
-  }
-  .theme-wipe-overlay.animate {
-    clip-path: circle(0 at var(--wipe-x) var(--wipe-y));
-    opacity: 0;
-  }
+		position: fixed;
+		inset: 0;
+		z-index: 9999;
+		pointer-events: none;
+		background: var(--theme-wipe-bg, #fff);
+		/* Toma coordenadas desde variables para elegir esquina */
+		--wipe-x: 100%; /* default: top-right */
+		--wipe-y: 0%;
+		clip-path: circle(var(--wipe-radius) at var(--wipe-x) var(--wipe-y));
+		opacity: 1;
+		will-change: clip-path, opacity;
+		contain: paint;
+		backface-visibility: hidden;
+		transform: translateZ(0); /* forza layer */
+		transition:
+			clip-path var(--wipe-duration) var(--wipe-easing),
+			opacity var(--wipe-duration) var(--wipe-easing);
+	}
+	.theme-wipe-overlay.animate {
+		clip-path: circle(0 at var(--wipe-x) var(--wipe-y));
+		opacity: 0;
+	}
 }
 @media (prefers-reduced-motion: reduce) {
-  .theme-wipe-overlay { display: none !important; }
+	.theme-wipe-overlay {
+		display: none !important;
+	}
 }
 
 @layer base {
@@ -88,7 +90,7 @@
 
 	html,
 	body {
-		@apply flex h-full flex-col scroll-smooth overflow-x-hidden overflow-y-auto bg-[#c5c5c5] text-zinc-800 dark:bg-[#1e2124] dark:text-zinc-200;
+		@apply flex h-full flex-col overflow-y-auto overflow-x-hidden scroll-smooth bg-[#c5c5c5] text-zinc-800 dark:bg-[#1e2124] dark:text-zinc-200;
 	}
 
 	html.dark {
@@ -158,12 +160,59 @@
 	code {
 		@apply break-words font-mono text-pink-500;
 	}
+
+	* {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(156, 163, 175, 0.4) transparent;
+    }
+
+    *::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+
+    *::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    *::-webkit-scrollbar-thumb {
+        background-color: rgba(156, 163, 175, 0.4);
+        border-radius: 10px;
+        border: 3px solid transparent;
+        background-clip: content-box;
+        transition: background-color 0.2s ease;
+    }
+
+    *::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(156, 163, 175, 0.8);
+    }
+
 }
 
 @layer components {
 	.svg-icon {
 		@apply h-[1em] w-[1em];
 	}
+
+	.notification-hover-effect {
+        @apply transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.01] hover:shadow-lg active:scale-[0.98];
+    }
+
+    /* Animación de entrada en cascada */
+    .animate-notification-in {
+        animation: notificationFadeIn 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+    }
+
+    @keyframes notificationFadeIn {
+        0% {
+            opacity: 0;
+            transform: translateY(12px) scale(0.95);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
 }
 
 @layer utilities {
@@ -214,4 +263,19 @@
 			scrollbar-width: none; /* Firefox */
 		}
 	}
+	.delay-1 { animation-delay: 60ms; }
+    .delay-2 { animation-delay: 120ms; }
+    .delay-3 { animation-delay: 180ms; }
+    .delay-4 { animation-delay: 240ms; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .theme-transition, .theme-transition * {
+        --theme-transition-duration: 420ms;
+        --theme-transition-easing: cubic-bezier(0.22, 0.61, 0.36, 1);
+        transition-property: background-color, color, border-color, box-shadow, background-image;
+        transition-duration: var(--theme-transition-duration);
+        transition-timing-function: var(--theme-transition-easing);
+    }
+    /* ... resto de tu themeFadeIn y wipe overlay ... */
 }

@@ -35,6 +35,7 @@ html.dark .rdrDefinedRangesWrapper {
 .rdrNextPrevButton:hover { background: var(--date-hover); }
 html.dark .rdrNextPrevButton:hover { background: var(--date-hover-dark); }
 
+
 /* Algunos builds usan .rdrPprevButton; otros .rdrPrevButton, cubrimos ambos */
 .rdrPprevButton i, .rdrPrevButton i {
   @apply border-t-transparent border-b-transparent;

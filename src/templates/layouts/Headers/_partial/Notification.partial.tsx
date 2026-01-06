@@ -52,7 +52,7 @@ const NotificationItem: FC<INotificationItemProps> = ({
 			className={`w-full border border-zinc-700/30 bg-transparent shadow-sm transition-all duration-200 hover:shadow-lg ${
 				isUnread ? 'ring-1 ring-emerald-400/40 dark:ring-emerald-300/40' : ''
 			}`}>
-			<CardBody className='px-4 py-4'>
+			<CardBody className='px-4 py-4 '>
 				<div className='flex gap-3'>
 					<div className='flex-shrink-0'>
 						<Avatar src={image} name={name} />
@@ -65,7 +65,7 @@ const NotificationItem: FC<INotificationItemProps> = ({
 									<Badge
 										variant='outline'
 										color='violet'
-										className='flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide'>
+										className='flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide px-3'>
 										{icon && <Icon icon={icon} className='h-3 w-3' />}
 										<span>{moduleLabel}</span>
 									</Badge>
@@ -205,11 +205,11 @@ const NotificationPartial = () => {
 				);
 			}
 			return (
-				<div className='flex row-span-12 max-h-80 flex-col gap-3 overflow-y-auto py-0'>
-					{recentNotifications.map((n) => (
+				<div className='flex row-span-12 max-h-80 flex-col gap-3 overflow-y-auto py-0 pr-2 min-w-[400px] min-h-[23rem] '>
+					{recentNotifications.map((n, index) => (
 						<div
 							key={n.id}
-							className='w-full cursor-pointer'
+							className={`space-y-0 w-full cursor-pointer notification-hover-effect animate-notification-in delay-${Math.min(index + 1, 4)}`}
 							onClick={() => handleItemClick(n.id)}>
 							<NotificationItem
 								name={clean(
@@ -273,22 +273,23 @@ const NotificationPartial = () => {
 	
 	const NotificationPanelHeader = () => (
 		<>
-			<div className='flex flex-wrap items-center gap-3'>
+			<div className='flex flex-wrap items-center gap-3 pb-3'>
 				<div className='flex items-center gap-2 text-base font-semibold tracking-wide'>
 					<span>Notificaciones</span>
 					{hasUnread && (
 						<Badge
 							variant='solid'
 							color='emerald'
-							className='text-[10px] font-semibold uppercase tracking-wide'>
+							className='text-[10px] font-semibold uppercase tracking-wide px-2'>
 							{unreadCount ? `${unreadCount} nuevas` : 'Sin leer'}
 						</Badge>
 					)}
 				</div>
 				<Button
 					size='sm'
-					variant='default'
+					variant='outline'
 					color='violet'
+					className='border border-dashed border-violet-400 bg-violet-400/30'
 					onClick={handleMarkAll}
 					isDisable={unreadCount === 0}>
 					Marcar leidas
@@ -316,7 +317,7 @@ const NotificationPartial = () => {
 	const NotificationPanel = () => (
 		
 		<div className='bg-gray-300 dark:bg-zinc-950 px-2 pt-2 overflow-hidden border border-zinc-200/70 shadow-lg dark:border-zinc-800/70'>
-			<div className='flex-col gap-3'>
+			<div className='flex flex-col gap-3 justify-center item-center pl-3'>
 				<NotificationPanelHeader />
 			</div>
 			<div className='px-0'>
@@ -399,7 +400,7 @@ const NotificationPartial = () => {
 					<DropdownMenu
 						placement='bottom-end'
 						isCloseAfterLeave={false}
-						className='min-w-[24rem] p-0 pt-0 pb-0 border-dashed border-black/40'
+						className='min-w-[24rem] p-0 pb-0 pt-0 border border-dashed border-zinc-400 dark:border-zinc-800 shadow-2xl overflow-hidden'
 						setIsOpen={setIsOpen}
 						>
 						<NotificationPanel />
