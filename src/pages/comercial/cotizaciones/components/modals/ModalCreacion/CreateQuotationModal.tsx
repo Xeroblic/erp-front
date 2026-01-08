@@ -240,7 +240,7 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 								return;
 							}
 
-							if (values.total_amount <= 0) {
+							if (Number(values.total_amount) <= 0) {
 								toast.error(
 									'VALIDACION: El total de la cotizacion debe ser mayor a 0',
 								);
