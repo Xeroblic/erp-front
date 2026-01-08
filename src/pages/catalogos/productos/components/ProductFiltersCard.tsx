@@ -50,7 +50,7 @@ const ProductFiltersCard: React.FC<ProductFiltersCardProps> = ({
 	onStatusChange,
 	onBrandChange,
 	onCategoryChange,
-	onTypeChange,
+	// onTypeChange,
 	onResetFilters,
 	brands,
 	categories,
