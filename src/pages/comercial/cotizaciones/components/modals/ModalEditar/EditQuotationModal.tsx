@@ -244,7 +244,7 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 
 	if (!isOpen) return null;
 
-	const handleCustomerCreated = (customerId: number, customerName: string) => {
+	const handleCustomerCreated = async (customerId: number, customerName: string) => {
 		const newOption = {
 			value: String(customerId),
 			label: customerName,
@@ -255,6 +255,9 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 			if (exists) return prev;
 			return [...prev, newOption];
 		});
+		
+		// Mostrar mensaje de éxito
+		toast.success(`Cliente "${customerName}" creado y disponible`);
 	};
 
 	return (
@@ -313,7 +316,10 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 									subsidiaryId={subsidiaryId}
 									onCustomerCreated={(customerId, customerName) => {
 										handleCustomerCreated(customerId, customerName);
-										setFieldValue('customer_id', customerId);
+										// Usar setTimeout para asegurar que el DOM se actualice
+										setTimeout(() => {
+											setFieldValue('customer_id', customerId);
+										}, 100);
 									}}
 								/>
 

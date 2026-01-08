@@ -221,7 +221,7 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 						}}
 						enableReinitialize>
 						{({ values, setFieldValue, errors, touched, handleSubmit }) => {
-							const handleCustomerCreated = (
+							const handleCustomerCreated = async (
 								customerId: number,
 								customerName: string,
 							) => {
@@ -229,11 +229,15 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 									value: String(customerId),
 									label: customerName,
 								};
+								
+								// Primero actualizar las opciones
 								setCustomerOptions((prev) => [...prev, newOption]);
 
-								setFieldValue('customer_id', customerId);
-
-								// toast.success('Cliente agregado y seleccionado');
+								// Usar setTimeout para asegurar que el DOM se actualice
+								setTimeout(() => {
+									setFieldValue('customer_id', customerId);
+									toast.success(`Cliente "${customerName}" creado y seleccionado`);
+								}, 100);
 							};
 
 							return (
