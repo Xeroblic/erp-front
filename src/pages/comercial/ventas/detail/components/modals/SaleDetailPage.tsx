@@ -39,16 +39,15 @@ interface CreateQuoteFromSaleResponse {
 	id?: number | string | null;
 	quote_id?: number | string | null;
 	quoteId?: number | string | null;
-	sale_id?: number | string | null;
+	// sale_id se ignora intencionalmente - no se usa para navegación
 }
 
 const extractQuoteIdFromResponse = (
 	payload?: CreateQuoteFromSaleResponse | null,
 ): number | null => {
 	if (!payload) return null;
-	// Intentar obtener el ID desde diferentes campos posibles
-	const rawId =
-		payload.quote?.id ?? payload.quote_id ?? payload.quoteId ?? payload.id;
+	// Extraer SOLO el quote_id, ignorando sale_id para evitar búsquedas incorrectas
+	const rawId = payload.quote?.id ?? payload.quote_id ?? payload.quoteId ?? payload.id;
 	if (typeof rawId === 'number') {
 		return Number.isFinite(rawId) && rawId > 0 ? rawId : null;
 	}
@@ -252,12 +251,13 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 						<div className='flex flex-col gap-2 md:flex-row md:items-center md:gap-4'>
 							<div className='flex flex-col items-center justify-center space-y-3'>
 								<p className=''>Detalle de Pago</p>
-								<div className='flex flex-col gap-2 items-center justify-center space-y-2 rounded-md border-2 border-dashed border-yellow-500 px-4 dark:border-white p-2'>
+								<div className='flex flex-col items-center justify-center gap-2 space-y-2 rounded-md border-2 border-dashed border-yellow-500 p-2 px-4 dark:border-white'>
 									<Badge variant='solid' color='teal' className='w-fit px-2'>
 										{getFirstCapitalize(translateStatus(detail?.document_type))}
 									</Badge>
 									<p className='text-xs uppercase tracking-wide text-violet-500'>
-										{getFirstCapitalize(detail?.payment_method_title ?? '') || '-'}
+										{getFirstCapitalize(detail?.payment_method_title ?? '') ||
+											'-'}
 									</p>
 								</div>
 							</div>
@@ -275,7 +275,9 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 							) : (
 								<Badge variant='solid' color='green' className='px-2 py-1 text-sm'>
 									Venta cerrada{' '}
-									{detail?.complete_at ? `el ${formatDate(detail.complete_at)}` : ''}
+									{detail?.complete_at
+										? `el ${formatDate(detail.complete_at)}`
+										: ''}
 								</Badge>
 							)}
 						</div>
