@@ -38,6 +38,7 @@ export const ProductDetailSidebar: React.FC<ProductDetailSidebarProps> = ({
 					<div className='flex items-center justify-between'>
 						<span className='text-neutral-500'>Serie</span>
 						<Badge
+						className='px-2'
 							variant='outline'
 							color={product.serial_tracking ? 'emerald' : 'zinc'}>
 							{product.serial_tracking ? 'Con serie' : 'Sin serie'}
@@ -53,7 +54,7 @@ export const ProductDetailSidebar: React.FC<ProductDetailSidebarProps> = ({
 						<p className='text-xs uppercase text-neutral-400'>Categorías</p>
 						<div className='flex flex-wrap gap-1'>
 							{product.categories?.map((category: any) => (
-								<Badge key={category.id} variant='outline' color='blue'>
+								<Badge className='px-2' key={category.id} variant='outline' color='blue'>
 									{category.name}
 								</Badge>
 							)) ?? <span className='text-xs text-neutral-400'>Sin categorías</span>}

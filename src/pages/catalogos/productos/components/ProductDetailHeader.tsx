@@ -55,11 +55,11 @@ export const ProductDetailHeader: React.FC<ProductDetailHeaderProps> = ({
 						<div className='flex flex-wrap items-center gap-2 text-sm text-neutral-500'>
 							<span>SKU: {product.sku}</span>
 							<span>•</span>
-							<Badge variant='outline' color={product.is_active ? 'emerald' : 'zinc'}>
+							<Badge className='px-2' variant='outline' color={product.is_active ? 'emerald' : 'zinc'}>
 								{product.is_active ? 'Activo' : 'Inactivo'}
 							</Badge>
 							<span>•</span>
-							<Badge variant='outline' color='violet'>
+							<Badge className='px-2' variant='outline' color='violet'>
 								{formatProductStatus(product.product_status)}
 							</Badge>
 						</div>

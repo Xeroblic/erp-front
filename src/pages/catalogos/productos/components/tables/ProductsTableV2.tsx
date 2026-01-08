@@ -171,7 +171,7 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 									<Badge
 										variant='outline'
 										color={typeMeta.badgeColor as TColors}
-										className='px-2 flex-shrink-0'>
+										className='flex-shrink-0 px-2'>
 										{typeMeta.label}
 									</Badge>
 								</div>
@@ -287,10 +287,24 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 						treatEmptyStringAsMissing: true,
 					});
 
-					const isPublished = product.product_status === 'validated';
-					const isRejected = product.product_status === 'rejected';
+					const status = product.product_status;
 
-					if (isRejected) {
+					// Archivado - prioridad máxima
+					if (status === 'archived') {
+						return (
+							<div className='flex flex-col gap-1.5'>
+								<div>
+									<Badge color='zinc'>Archivado</Badge>
+									<div className='mt-1 text-xs text-neutral-500'>
+										Producto archivado
+									</div>
+								</div>
+							</div>
+						);
+					}
+
+					// Rechazado
+					if (status === 'rejected') {
 						return (
 							<div className='flex flex-col gap-1.5'>
 								<div>
@@ -309,6 +323,38 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 						);
 					}
 
+					// Validado/Publicado
+					if (status === 'validated') {
+						return (
+							<div className='flex flex-col gap-1.5'>
+								{!attributesComplete ? (
+									<div>
+										<Badge color='amber'>En revisión</Badge>
+										<div className='mt-1 text-xs text-neutral-500'>
+											{missingCount} atributos incompletos
+											{Array.isArray(missingLabels) &&
+												missingLabels.length > 0 && (
+													<div
+														className='mt-1 text-xs text-neutral-400'
+														title={missingLabels.join(', ')}>
+														Ver campos faltantes
+													</div>
+												)}
+										</div>
+									</div>
+								) : (
+									<div>
+										<Badge color='emerald'>Publicado</Badge>
+										<div className='text-xs text-neutral-500'>
+											Atributos completos
+										</div>
+									</div>
+								)}
+							</div>
+						);
+					}
+
+					// Pendiente o cualquier otro estado
 					return (
 						<div className='flex flex-col gap-1.5'>
 							{!attributesComplete ? (
@@ -324,13 +370,6 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 													Ver campos faltantes
 												</div>
 											)}
-									</div>
-								</div>
-							) : isPublished ? (
-								<div>
-									<Badge color='emerald'>Publicado</Badge>
-									<div className='text-xs text-neutral-500'>
-										Atributos completos
 									</div>
 								</div>
 							) : (
@@ -358,7 +397,7 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 										key={category.id}
 										variant='outline'
 										color='blue'
-										className='px-2 truncate text-xs'>
+										className='truncate px-2 text-xs'>
 										{category.name}
 									</Badge>
 								))}

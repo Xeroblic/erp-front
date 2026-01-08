@@ -12,11 +12,12 @@ export const PRODUCT_TYPES = [
 ] as const;
 
 export const PRODUCT_STATUS_LABELS: Record<string, string> = {
-	pending: 'Pendiente',
+	true: 'Pendiente',
 	validated: 'Validado',
 	rejected: 'Rechazado',
 	archived: 'Archivado',
 };
+
 
 export const PRODUCT_TYPE_LABELS: Record<string, string> = {
 	general: 'General',
@@ -38,10 +39,8 @@ export const PRODUCT_DEFAULT_FILTERS: ProductFilters = {
 
 export const PRODUCT_STATUS_FILTER_OPTIONS = [
 	{ value: '', label: 'Todos los estados' },
-	...PRODUCT_STATUS.map((status) => ({
-		value: status,
-		label: PRODUCT_STATUS_LABELS[status] ?? status,
-	})),
+	{ value: 'active', label: 'Activos' },
+	{ value: 'inactive', label: 'Inactivos' },
 ];
 
 export const PRODUCT_TYPE_FILTER_OPTIONS = [

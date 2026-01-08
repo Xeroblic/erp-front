@@ -93,11 +93,11 @@ const normalizeChildren = (raw: unknown): IProductChild[] => {
 								: null,
 						marketplace_external_ids:
 							entry.marketplace_external_ids &&
-							typeof entry.marketplace_external_ids === 'object'
+								typeof entry.marketplace_external_ids === 'object'
 								? (entry.marketplace_external_ids as Record<
-										string,
-										string | number
-									>)
+									string,
+									string | number
+								>)
 								: null,
 					};
 				})
@@ -128,10 +128,10 @@ export const normalizeProduct = (raw: any): IProduct => {
 		brand_id: toNullableNumber(safe.brand_id),
 		brand: safe.brand
 			? {
-					id: Number((safe.brand as any).id ?? 0),
-					name: String((safe.brand as any).name ?? ''),
-					slug: ((safe.brand as any).slug ?? null) as string | null | undefined,
-				}
+				id: Number((safe.brand as any).id ?? 0),
+				name: String((safe.brand as any).name ?? ''),
+				slug: ((safe.brand as any).slug ?? null) as string | null | undefined,
+			}
 			: null,
 		product_type: (safe.product_type ?? safe.type ?? null) as string | null,
 		condition_policy: (safe.condition_policy ?? safe.condition ?? null) as string | null,
@@ -312,15 +312,15 @@ export const serializeFilters = (filters: ProductFilters): Record<string, unknow
 	if (filters.brand_id) params.brand_id = filters.brand_id;
 	if (filters.category_id) params.category_id = filters.category_id;
 	if (typeof filters.is_active === 'boolean') params.is_active = filters.is_active;
+	// if (filters.is_active) params.is_active = filters.is_active;
 	if (filters.product_type) params.product_type = filters.product_type;
 	if (typeof filters.serial_tracking === 'boolean')
 		params.serial_tracking = filters.serial_tracking;
-	if (typeof filters.min_price === 'number') params.min_price = filters.min_price;
-	if (typeof filters.max_price === 'number') params.max_price = filters.max_price;
+	if (filters.min_price) params.min_price = filters.min_price;
+	if (filters.max_price) params.max_price = filters.max_price;
 	if (filters.order_by) params.order_by = filters.order_by;
 	if (filters.order_dir) params.order_dir = filters.order_dir;
 
-	// attribute based filters (optional)
 	if (filters.attributes && typeof filters.attributes === 'object') {
 		Object.entries(filters.attributes).forEach(([key, value]) => {
 			params[`attr[${key}]`] = value;

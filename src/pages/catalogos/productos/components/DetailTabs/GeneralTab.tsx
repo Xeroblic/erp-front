@@ -6,7 +6,7 @@ import type { ProductDetailForm } from '../../types/products.types';
 import type { IBrand } from '@/interface/brand.interface';
 import { PRODUCT_STATUS_LABELS, PRODUCT_TYPE_LABELS } from '../../constants/products.constant';
 import Label from '@/components/form/Label';
-import Checkbox from '@/components/form/Checkbox';
+import Checkbox, { CheckboxGroup } from '@/components/form/Checkbox';
 import Modal, { ModalBody, ModalHeader, ModalFooter } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 
@@ -24,6 +24,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
 	const { values, errors, touched, setFieldValue, submitForm } =
 		useFormikContext<ProductDetailForm>();
 	const [showConfirm, setShowConfirm] = React.useState(false);
+	const [showConfirmStatus, setShowConfirmStatus] = React.useState(false);
 	const [blockMessage, setBlockMessage] = React.useState<string | null>(null);
 
 	const confirmFormik = useFormik<{ confirmText: string }>({
@@ -281,6 +282,89 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
 										});
 									}}>
 									Sí, quitar seguimiento
+								</Button>
+							</div>
+						</ModalFooter>
+					</Modal>
+				</div>
+				<div className='space-y-1'>
+					<Label htmlFor='is_active_checkbox' className='flex items-center gap-2'>
+						<Checkbox
+							id='is_active_checkbox'
+							checked={values.is_active}
+							onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+								const next = event.target.checked;
+
+								if (!next && values.is_active) {
+									setShowConfirmStatus(true);
+									return;
+								}
+
+								setFieldValue('is_active', next);
+							}}
+							className='rounded border-gray-300 text-blue-600 focus:ring-blue-500'
+						/>
+						<span className='text-sm font-medium'>Producto activo</span>
+					</Label>
+					{touched.is_active && errors.is_active && (
+						<p className='text-xs text-red-500'>{errors.is_active}</p>
+					)}
+
+					<Modal isOpen={showConfirmStatus} setIsOpen={setShowConfirmStatus} size='sm' isCentered>
+						<ModalHeader>Confirmar desactivación</ModalHeader>
+						<ModalBody>
+							<p className='mb-4 text-sm text-neutral-700 dark:text-neutral-300'>
+								Para confirmar que deseas desactivar este producto, escribe{' '}
+								<strong>SI</strong> en el campo y confirma.
+							</p>
+							<div className='max-w-sm'>
+								<Input
+									name='confirmText'
+									placeholder='Escribe SI para confirmar'
+									value={confirmFormik.values.confirmText}
+									onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+										confirmFormik.setFieldValue('confirmText', e.target.value)
+									}
+									onBlur={() =>
+										confirmFormik.setFieldTouched('confirmText', true)
+									}
+									isValid={!confirmFormik.errors.confirmText}
+									isTouched={Boolean(confirmFormik.touched.confirmText)}
+									invalidFeedback={confirmFormik.errors.confirmText}
+								/>
+								<p className='mt-2 text-xs text-neutral-500'>
+									Escribe explícitamente y en mayúsculas SI
+								</p>
+							</div>
+						</ModalBody>
+						<ModalFooter>
+							<div />
+							<div className='flex items-center gap-2'>
+								<Button
+									variant='outline'
+									onClick={() => {
+										setShowConfirmStatus(false);
+										confirmFormik.resetForm();
+									}}>
+									No
+								</Button>
+								<Button
+									variant='solid'
+									color='red'
+									onClick={() => {
+										const errors = confirmFormik.validateForm();
+										errors.then((errs) => {
+											if (!errs || Object.keys(errs).length === 0) {
+												setFieldValue('is_active', false);
+												void submitForm();
+												setShowConfirmStatus(false);
+												confirmFormik.resetForm();
+											} else {
+												confirmFormik.setFieldTouched('confirmText', true);
+											}
+										});
+									}}>
+									Sí, desactivar producto
 								</Button>
 							</div>
 						</ModalFooter>
