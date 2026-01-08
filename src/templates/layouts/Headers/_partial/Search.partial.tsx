@@ -83,6 +83,9 @@ const SearchPartial = () => {
 	};
 	useEffect(() => {
 		const handleKeyPress = (event: KeyboardEvent) => {
+			// Validación defensiva: asegurar que event.key existe y es string
+			if (!event.key || typeof event.key !== 'string') return;
+
 			const key = event.key.toLowerCase();
 			if ((event.metaKey && key === 'k') || (event.altKey && key === 'b')) {
 				event.preventDefault();
@@ -105,12 +108,12 @@ const SearchPartial = () => {
 				ref={ref}
 				firstSuffix={leftContent}
 				lastSuffix={rightContent}
-				className='z-20 max-sm:hidden bg-white dark:bg-zinc-900 rounded-xl'>
+				className='z-20 rounded-xl bg-white dark:bg-zinc-900 max-sm:hidden'>
 				<Input
 					ref={inputRef}
 					name='searchField'
 					placeholder='Busca en el sistema...'
-					className='min-w-[22rem] min-h-[2.7rem] bg-white dark:bg-zinc-800/90'
+					className='min-h-[2.7rem] min-w-[22rem] bg-white dark:bg-zinc-800/90'
 					color='red'
 					value={formik.values.searchField}
 					onChange={formik.handleChange}

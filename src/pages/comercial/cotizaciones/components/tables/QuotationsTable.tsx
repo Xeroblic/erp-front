@@ -111,7 +111,7 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 								size='sm'
 								icon='HeroArrowDownTray'
 								onClick={() => onDownloadPdf?.(info.row.original.id)}
-								className='bg-sky-400/20 p-1'
+								className='bg-sky-400/30 p-1'
 								color='sky'
 								// title='Descargar PDF'
 							/>

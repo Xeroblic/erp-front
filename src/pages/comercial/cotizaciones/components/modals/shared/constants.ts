@@ -71,51 +71,123 @@ export const itemSchema = Yup.object().shape({
 });
 
 export const quotationSchema = Yup.object().shape({
+    // customer_id: required, integer, exists in customer_sale table
     customer_id: Yup.number()
-        .required('ERROR: Debe seleccionar un cliente')
-        .min(1, 'ERROR: Debe seleccionar un cliente válido')
-        .typeError('ERROR: El cliente seleccionado no es válido'),
-    quote_date: Yup.date()
-        .required('ERROR: La fecha de cotización es obligatoria')
-        .typeError('ERROR: Formato de fecha inválido'),
-    expiry_date: Yup.date()
-        .required('ERROR: La fecha de validez es obligatoria')
-        .min(
-            Yup.ref('quote_date'),
-            'ERROR: La fecha de validez debe ser posterior a la fecha de cotización',
-        )
-        .typeError('ERROR: Formato de fecha inválido'),
-    payment_method: Yup.string()
-        .required('ERROR: Debe seleccionar un método de pago')
+        .required('Debe seleccionar un cliente')
+        .integer('El ID del cliente debe ser un numero entero')
+        .min(1, 'Debe seleccionar un cliente valido')
+        .typeError('El cliente seleccionado no es valido'),
+
+    // quote_number: nullable, string, max 255, unique per subsidiary
+    quote_number: Yup.string()
         .nullable()
-        .test('not-empty', 'ERROR: El método de pago no puede estar vacío', (value) => {
+        .max(255, 'El numero de cotizacion no puede exceder 255 caracteres'),
+
+    // status: must be one of the allowed values
+    status: Yup.string()
+        .oneOf(['draft', 'sent', 'approved', 'converted', 'rejected', 'expired'], 'Estado invalido')
+        .nullable(),
+
+    // salesperson_id: nullable, integer
+    salesperson_id: Yup.number()
+        .nullable()
+        .integer('El ID del vendedor debe ser un numero entero')
+        .typeError('ID de vendedor invalido'),
+
+    // payment_method: must be one of the allowed values
+    payment_method: Yup.string()
+        .required('Debe seleccionar un metodo de pago')
+        .oneOf(
+            ['efectivo', 'tarjeta', 'tarjeta_credito', 'tarjeta_debito', 'transferencia', 'cheque', 'credito'],
+            'Metodo de pago invalido'
+        )
+        .test('not-empty', 'El metodo de pago no puede estar vacio', (value) => {
             return value !== null && value !== undefined && value.trim().length > 0;
         }),
+
+    // document_type: must be boleta or factura
     document_type: Yup.string()
-        .required('ERROR: Debe seleccionar un tipo de documento')
-        .oneOf(['boleta', 'factura'], 'ERROR: Tipo de documento inválido'),
+        .required('Debe seleccionar un tipo de documento')
+        .oneOf(['boleta', 'factura'], 'Tipo de documento invalido'),
+
+    // quote_date: required, date
+    quote_date: Yup.date()
+        .required('La fecha de cotizacion es obligatoria')
+        .typeError('Formato de fecha invalido'),
+
+    // expiry_date: required, date, should be after quote_date
+    expiry_date: Yup.date()
+        .required('La fecha de validez es obligatoria')
+        .min(
+            Yup.ref('quote_date'),
+            'La fecha de validez debe ser posterior a la fecha de cotizacion',
+        )
+        .typeError('Formato de fecha invalido'),
+
+    // subtotal: nullable, numeric
+    subtotal: Yup.number()
+        .nullable()
+        .min(0, 'El subtotal no puede ser negativo')
+        .typeError('Subtotal invalido'),
+
+    // tax_amount: nullable, numeric
+    tax_amount: Yup.number()
+        .nullable()
+        .min(0, 'El monto del impuesto no puede ser negativo')
+        .typeError('Monto de impuesto invalido'),
+
+    // discount_amount: nullable, numeric
+    discount_amount: Yup.number()
+        .nullable()
+        .min(0, 'El descuento no puede ser negativo')
+        .typeError('Monto de descuento invalido'),
+
+    // total_amount: nullable, numeric, should be > 0
+    total_amount: Yup.number()
+        .nullable()
+        .min(1, 'El total debe ser mayor a 0')
+        .typeError('Total invalido'),
+
+    // tax_rate: nullable, numeric
+    tax_rate: Yup.number()
+        .nullable()
+        .min(0, 'La tasa de impuesto no puede ser negativa')
+        .max(100, 'La tasa de impuesto no puede ser mayor a 100%')
+        .typeError('Tasa de impuesto invalida'),
+
+    // discount_rate: nullable, numeric
+    discount_rate: Yup.number()
+        .nullable()
+        .min(0, 'La tasa de descuento no puede ser negativa')
+        .max(100, 'La tasa de descuento no puede ser mayor a 100%')
+        .typeError('Tasa de descuento invalida'),
+
+    // purchase_order: nullable, string, max 20
     purchase_order: Yup.string()
-        .max(100, 'ERROR: La orden de compra no puede exceder 100 caracteres')
-        .nullable(),
-    payment_terms: Yup.number()
-        .min(0, 'ERROR: Los términos de pago no pueden ser negativos')
-        .max(365, 'ERROR: Los términos de pago no pueden exceder 365 días')
-        .typeError('ERROR: Los términos de pago deben ser un número'),
-    discount_percentage: Yup.number()
-        .min(0, 'ERROR: El descuento no puede ser negativo')
-        .max(100, 'ERROR: El descuento no puede ser mayor a 100%')
-        .typeError('ERROR: El descuento debe ser un número'),
-    tax_percentage: Yup.number()
-        .oneOf([0, 19], 'ERROR: Seleccione si desea aplicar IVA (19% o 0%)')
-        .default(19)
-        .typeError('ERROR: Valor de IVA inválido'),
+        .nullable()
+        .max(20, 'La orden de compra no puede exceder 20 caracteres'),
+
+    // terms_conditions: nullable, array
+    terms_conditions: Yup.array()
+        .nullable()
+        .of(Yup.mixed()),
+
+    // notes: nullable, string
     notes: Yup.string()
-        .max(500, 'ERROR: Las notas no pueden exceder 500 caracteres')
-        .nullable(),
+        .nullable()
+        .max(1000, 'Las notas no pueden exceder 1000 caracteres'),
+
+    // internal_notes: nullable, string
+    internal_notes: Yup.string()
+        .nullable()
+        .max(1000, 'Las notas internas no pueden exceder 1000 caracteres'),
+
+    // items: required, array, min 1 item
     items: Yup.array()
         .of(itemSchema)
-        .min(1, 'ERROR: Debe agregar al menos un producto o item')
-        .test('items-valid', 'ERROR: Todos los items deben tener precio y cantidad válidos', (items) => {
+        .min(1, 'Debe agregar al menos un producto o item')
+        .required('Debe agregar items a la cotizacion')
+        .test('items-valid', 'Todos los items deben tener precio y cantidad validos', (items) => {
             if (!items || items.length === 0) return false;
             return items.every((item: any) => {
                 const hasValidQuantity = item.quantity && item.quantity > 0;
@@ -124,16 +196,11 @@ export const quotationSchema = Yup.object().shape({
                 return hasValidQuantity && hasValidProduct && hasValidName;
             });
         }),
-    subtotal: Yup.number()
-        .min(0, 'ERROR: El subtotal no puede ser negativo')
-        .typeError('ERROR: Subtotal inválido'),
-    total_amount: Yup.number()
-        .min(1, 'ERROR: El total debe ser mayor a 0')
-        .typeError('ERROR: Total inválido'),
 });
 
 export const paymentMethodOptions: TSelectOptions = [
     { value: 'efectivo', label: 'Efectivo' },
+    { value: 'tarjeta', label: 'Tarjeta' },
     { value: 'tarjeta_credito', label: 'Tarjeta de Crédito' },
     { value: 'tarjeta_debito', label: 'Tarjeta de Débito' },
     { value: 'transferencia', label: 'Transferencia' },

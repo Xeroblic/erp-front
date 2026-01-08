@@ -31,7 +31,6 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 }) => {
 	const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
 
-	
 	return (
 		<Card
 			rounded='rounded-2xl'
@@ -63,6 +62,7 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 						<div className='flex gap-2'>
 							<div className='relative z-50 flex-1'>
 								<SelectReact
+									key={`customer-select-${values.customer_id}-${customerOptions.length}`}
 									name='customer_id'
 									options={customerOptions}
 									placeholder='Seleccionar cliente...'
@@ -73,10 +73,17 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 									onChange={(option) => {
 										const selectedOption = option as TSelectOption;
 										if (selectedOption && !Array.isArray(selectedOption)) {
+											console.log(
+												'[SELECT CLIENTE] Cliente seleccionado:',
+												selectedOption,
+											);
 											setFieldValue(
 												'customer_id',
 												Number(selectedOption.value) || 0,
 											);
+										} else {
+
+											setFieldValue('customer_id', 0);
 										}
 									}}
 									isValid={!errors.customer_id}

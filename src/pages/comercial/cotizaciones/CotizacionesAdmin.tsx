@@ -143,35 +143,22 @@ const CotizacionesAdmin: React.FC = () => {
 	const handleCreateSubmit = async (
 		quotationData: Omit<IQuote, 'id' | 'created_at' | 'updated_at'>,
 	) => {
-		console.log('[CREATE] Recibiendo datos para crear cotizacion:', quotationData);
-
 		try {
 			// Validacion adicional antes de enviar
 			if (!quotationData.customer_id) {
-				toast.error('BACKEND PREP: No se puede crear sin cliente');
-				console.error('[CREATE] customer_id faltante');
+				toast.error('No se puede crear sin cliente');
 				return;
 			}
 
 			if (!quotationData.items || quotationData.items.length === 0) {
-				toast.error('BACKEND PREP: No se puede crear sin items');
-				console.error('[CREATE] items faltante o vacio');
+				toast.error('No se puede crear sin items');
 				return;
 			}
 
-			console.log('[CREATE] Validaciones pasadas, enviando al backend...');
-			toast.info('BACKEND: Enviando cotizacion al servidor...');
-
 			await createQuotation(quotationData);
-
-			console.log('[CREATE] Cotizacion creada exitosamente');
 			toast.success('Cotizacion creada correctamente');
 			setIsCreateModalOpen(false);
 		} catch (error: any) {
-			console.error('[CREATE ERROR] Error completo:', error);
-			console.error('[CREATE ERROR] Error response:', error?.response);
-			console.error('[CREATE ERROR] Error data:', error?.response?.data);
-
 			const errorMessage =
 				error?.response?.data?.message ||
 				error?.message ||

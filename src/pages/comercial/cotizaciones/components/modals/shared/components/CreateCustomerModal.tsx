@@ -55,29 +55,53 @@ const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
 					contact_name: values.name.trim(),
 					is_active: true,
 				};
-				const response = await ApiService.fetchData({
+
+				const response = await ApiService.fetchData<{
+					data: {
+						id: number;
+						name?: string;
+						contact_name?: string;
+						contact?: { name?: string };
+						[key: string]: any;
+					};
+				}>({
 					url: `/subsidiaries/${subsidiaryId}/customer-sales`,
 					method: 'POST',
 					data: payload,
 				});
-				const createdCustomer = response.data as any;
+
+				// El cliente está en response.data.data, no en response.data
+				const createdCustomer = response.data?.data || (response.data as any);
+
+				// Actualizar Redux store
 				await dispatch(
 					fetchCustomersOverviewThunk({
 						subsidiary: subsidiaryId,
 					}),
 				).unwrap();
-				toast.success('Cliente creado exitosamente');
+
 				const customerName =
 					createdCustomer.name ||
 					createdCustomer.contact_name ||
 					createdCustomer.contact?.name ||
 					values.name.trim();
 
-				onCustomerCreated(createdCustomer.id, customerName);
+				if (!createdCustomer.id) {
+					toast.error('Error: No se pudo obtener el ID del cliente creado');
+					return;
+				}
+
+				toast.success(`Cliente ${customerName} creado exitosamente`);
+
+				// Llamar al callback ANTES de cerrar
+				await onCustomerCreated(createdCustomer.id, customerName);
+
+				// Esperar un poco antes de cerrar
+				await new Promise((resolve) => setTimeout(resolve, 500));
+
 				resetForm();
 				onClose();
 			} catch (error: any) {
-				console.error('Error al crear cliente:', error);
 				toast.error(error.response?.data?.message || 'Error al crear cliente');
 			} finally {
 				setSubmitting(false);

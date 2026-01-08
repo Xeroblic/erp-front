@@ -1,19 +1,15 @@
-/**
- * Modal para CREAR cotizaciones
- * Usa Formik + Yup, componentes UI (Card, SelectReact, etc.)
- */
 import React, { useEffect } from 'react';
 import { Formik, Form } from 'formik';
-import { IQuote, QuoteStatus } from '../../../../../../interface';
+import { IQuote, QuoteStatus } from '@/interface';
 import { toast } from 'react-toastify';
 import Modal, {
 	ModalHeader,
 	ModalBody,
 	ModalFooter,
 	ModalFooterChild,
-} from '../../../../../../components/ui/Modal';
-import Button from '../../../../../../components/ui/Button';
-import { TSelectOptions } from '../../../../../../components/form/SelectReact';
+} from '@/components/ui/Modal';
+import Button from '@/components/ui/Button';
+import { TSelectOptions } from '@/components/form/SelectReact';
 import { selectPersonalizacionUsuario, useAppSelector } from '@/store';
 import ApiService from '@/services/ApiService';
 import Badge from '@/components/ui/Badge';
@@ -28,7 +24,7 @@ import {
 	paymentTermsOptions,
 	statusOptions,
 } from '../shared/constants';
-import { sanitizeItemsForSubmit, generateCustomerCreationPayload } from '../shared/helpers';
+import { sanitizeItemsForSubmit } from '../shared/helpers';
 import GeneralInfoCard from '../shared/components/GeneralInfoCard';
 import PaymentInfoCard from '../shared/components/PaymentInfoCard';
 import ItemsListCard from '../shared/components/ItemsListCard';
@@ -140,7 +136,6 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 		if (isOpen && branchId) fetchProductos();
 	}, [branchId, isOpen]);
 
-	// Valores iniciales para CREAR cotización
 	const getInitialValues = (): FormQuotationValues => {
 		const today = new Date().toISOString().split('T')[0];
 		const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
