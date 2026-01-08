@@ -84,7 +84,7 @@ const ProductFiltersCard: React.FC<ProductFiltersCardProps> = ({
 						</button>
 					</CardTitle>
 					<div className='flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end'>
-						<Badge variant='outline' color='blue'>
+						<Badge variant='outline' color='blue' className='px-2 py-1 text-sm'>
 							{totalRecords.toLocaleString('es-CO')} registros
 						</Badge>
 						<Button
@@ -102,8 +102,8 @@ const ProductFiltersCard: React.FC<ProductFiltersCardProps> = ({
 
 			{/* Siempre visible en desktop, colapsable en mobile */}
 			<div className={`${isExpanded ? 'block' : 'hidden'} md:block`}>
-				<CardBody className='grid gap-4 md:grid-cols-2 xl:grid-cols-4'>
-					<div className='space-y-2 xl:col-span-2'>
+				<CardBody className='grid gap-4 md:grid-cols-4'>
+					<div className='space-y-2'>
 						<label className='flex items-center gap-2 text-sm font-medium'>
 							<Icon icon='HeroMagnifyingGlass' className='h-4 w-4' />
 							Busqueda
@@ -173,7 +173,7 @@ const ProductFiltersCard: React.FC<ProductFiltersCardProps> = ({
 							))}
 						</Select>
 					</div>
-					<div className='space-y-2'>
+					{/* <div className='space-y-2'>
 						<label className='flex items-center gap-2 text-sm font-medium'>
 							<Icon icon='HeroCube' className='h-4 w-4' />
 							Tipo de producto
@@ -188,7 +188,7 @@ const ProductFiltersCard: React.FC<ProductFiltersCardProps> = ({
 								</option>
 							))}
 						</Select>
-					</div>
+					</div> */}
 				</CardBody>
 			</div>
 		</Card>

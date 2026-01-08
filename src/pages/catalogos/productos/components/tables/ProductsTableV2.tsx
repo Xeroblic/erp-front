@@ -171,7 +171,7 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 									<Badge
 										variant='outline'
 										color={typeMeta.badgeColor as TColors}
-										className='flex-shrink-0'>
+										className='px-2 flex-shrink-0'>
 										{typeMeta.label}
 									</Badge>
 								</div>
@@ -358,7 +358,7 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 										key={category.id}
 										variant='outline'
 										color='blue'
-										className='truncate text-xs'>
+										className='px-2 truncate text-xs'>
 										{category.name}
 									</Badge>
 								))}

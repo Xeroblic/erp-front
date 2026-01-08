@@ -208,7 +208,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 	};
 
 	return (
-		<Modal isOpen={isOpen} setIsOpen={onClose} size='md'>
+		<Modal isOpen={isOpen} setIsOpen={onClose} size='md' isStaticBackdrop>
 			<ModalHeader>
 				<div className='flex items-center gap-3'>
 					<Icon
@@ -444,13 +444,6 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 																	!values.brand_id &&
 																	!values.branch_id)
 															}
-															menuPortalTarget={document.body}
-															styles={{
-																menuPortal: (base) => ({
-																	...base,
-																	zIndex: 9999,
-																}),
-															}}
 														/>
 														{touched.brand_id && errors.brand_id && (
 															<p className='text-xs text-red-500'>
@@ -539,13 +532,6 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 																isBusy || !categoryOptions.length
 															}
 															placeholder='Selecciona las categorias'
-															menuPortalTarget={document.body}
-															styles={{
-																menuPortal: (base) => ({
-																	...base,
-																	zIndex: 9999,
-																}),
-															}}
 														/>
 														<ErrorMessage name='categories'>
 															{(msg) => (
