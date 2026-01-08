@@ -107,7 +107,7 @@ const InvitationsAdmin: React.FC = () => {
 	const totalResults = filteredInvitations.length;
 
 	return (
-		<PageWrapper>
+		<PageWrapper name='Invitaciones' title='Invitaciones Usuarios'>
 			<Subheader>
 				<SubheaderLeft>
 					<h2 className='text-2xl font-semibold text-gray-900 dark:text-gray-100'>
