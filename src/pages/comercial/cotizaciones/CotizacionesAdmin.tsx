@@ -144,7 +144,7 @@ const CotizacionesAdmin: React.FC = () => {
 		quotationData: Omit<IQuote, 'id' | 'created_at' | 'updated_at'>,
 	) => {
 		console.log('[CREATE] Recibiendo datos para crear cotizacion:', quotationData);
-		
+
 		try {
 			// Validacion adicional antes de enviar
 			if (!quotationData.customer_id) {
@@ -161,9 +161,9 @@ const CotizacionesAdmin: React.FC = () => {
 
 			console.log('[CREATE] Validaciones pasadas, enviando al backend...');
 			toast.info('BACKEND: Enviando cotizacion al servidor...');
-			
+
 			await createQuotation(quotationData);
-			
+
 			console.log('[CREATE] Cotizacion creada exitosamente');
 			toast.success('Cotizacion creada correctamente');
 			setIsCreateModalOpen(false);
@@ -171,11 +171,12 @@ const CotizacionesAdmin: React.FC = () => {
 			console.error('[CREATE ERROR] Error completo:', error);
 			console.error('[CREATE ERROR] Error response:', error?.response);
 			console.error('[CREATE ERROR] Error data:', error?.response?.data);
-			
-			const errorMessage = error?.response?.data?.message || 
-								error?.message || 
-								'Error desconocido al crear cotizacion';
-			
+
+			const errorMessage =
+				error?.response?.data?.message ||
+				error?.message ||
+				'Error desconocido al crear cotizacion';
+
 			toast.error(`BACKEND ERROR: ${errorMessage}`);
 		}
 	};
@@ -329,7 +330,7 @@ const CotizacionesAdmin: React.FC = () => {
 						color='sky'
 						icon='HeroArrowPath'
 						isDisable={loading}>
-							Actualizar
+						Actualizar
 					</Button>
 
 					<Button
@@ -337,9 +338,8 @@ const CotizacionesAdmin: React.FC = () => {
 						className='bg-emerald-400/30'
 						onClick={handleCreate}
 						icon='HeroPlus'
-						color='emerald'
-					>
-							Nueva Cotización
+						color='emerald'>
+						Nueva Cotización
 					</Button>
 				</SubheaderRight>
 			</Subheader>
@@ -355,7 +355,6 @@ const CotizacionesAdmin: React.FC = () => {
 					setShowFilters={setShowFilters}
 					resetFilters={resetFilters}
 				/>
-				
 
 				{/* Tabla */}
 				<Card>
@@ -399,13 +398,13 @@ const CotizacionesAdmin: React.FC = () => {
 					/>
 				)}
 
-			<QuotationDetailsModal
-				isOpen={isDetailsModalOpen}
-				onClose={handleCloseDetailsModal}
-				quotation={viewingQuotation}
-				isLoading={detailsLoading}
-				onDownloadPdf={handleDownloadPdf}
-			/>
+				<QuotationDetailsModal
+					isOpen={isDetailsModalOpen}
+					onClose={handleCloseDetailsModal}
+					quotation={viewingQuotation}
+					isLoading={detailsLoading}
+					onDownloadPdf={handleDownloadPdf}
+				/>
 
 				<DuplicateQuotationModal
 					isOpen={isDuplicateModalOpen}

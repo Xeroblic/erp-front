@@ -196,10 +196,12 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 						validationSchema={quotationSchema}
 						onSubmit={(values, { setSubmitting }) => {
 							console.log('Iniciando validacion de cotizacion...', values);
-							
+
 							// Validacion manual adicional
 							if (!values.customer_id || values.customer_id === 0) {
-								toast.error('VALIDACION: Debe seleccionar un cliente antes de continuar');
+								toast.error(
+									'VALIDACION: Debe seleccionar un cliente antes de continuar',
+								);
 								setSubmitting(false);
 								return;
 							}
@@ -231,22 +233,26 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 							});
 
 							if (invalidItems.length > 0) {
-								toast.error('VALIDACION: Todos los items deben tener un producto o nombre valido');
+								toast.error(
+									'VALIDACION: Todos los items deben tener un producto o nombre valido',
+								);
 								setSubmitting(false);
 								return;
 							}
 
 							if (values.total_amount <= 0) {
-								toast.error('VALIDACION: El total de la cotizacion debe ser mayor a 0');
+								toast.error(
+									'VALIDACION: El total de la cotizacion debe ser mayor a 0',
+								);
 								setSubmitting(false);
 								return;
 							}
 
 							console.log('Validaciones manuales pasadas, sanitizando items...');
-							
+
 							const sanitizedItems = sanitizeItemsForSubmit(values.items);
 							console.log('Items sanitizados:', sanitizedItems);
-							
+
 							const normalizedPayment = Array.isArray(values.payment_method)
 								? (values.payment_method[0] ?? null)
 								: values.payment_method && String(values.payment_method).length > 0
@@ -265,7 +271,9 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 									: null;
 
 							if (!normalizedDocument) {
-								toast.error('NORMALIZACION: Error al procesar el tipo de documento');
+								toast.error(
+									'NORMALIZACION: Error al procesar el tipo de documento',
+								);
 								setSubmitting(false);
 								return;
 							}
@@ -279,8 +287,10 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 							};
 
 							console.log('Payload preparado para envio:', payload);
-							toast.info('VALIDACION: Todos los campos son validos. Confirmando creacion...');
-							
+							toast.info(
+								'VALIDACION: Todos los campos son validos. Confirmando creacion...',
+							);
+
 							setPendingPayload(payload);
 							setIsConfirmModalOpen(true);
 							setSubmitting(false);
