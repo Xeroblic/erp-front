@@ -26,6 +26,7 @@ import { deleteItem } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
 import Modal, { ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
+import PrintLabel from './PrintLabel';
 
 type ExportMode = 'serials' | 'details';
 
@@ -272,6 +273,10 @@ const ItemList: React.FC<ItemListProps> = ({
 	const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 	const [exportMode, setExportMode] = useState<ExportMode>('serials');
 	const [isExporting, setIsExporting] = useState(false);
+
+	// Estados para impresión de etiquetas
+	const [isPrintLabelOpen, setIsPrintLabelOpen] = useState(false);
+	const [itemToPrint, setItemToPrint] = useState<IItem | null>(null);
 
 	// Helper para extraer valor de objetos {value, label, description} o devolver el valor directamente
 	const extractValue = (value: any): string | null => {
@@ -764,8 +769,21 @@ const ItemList: React.FC<ItemListProps> = ({
 								onClick={(e) => {
 									e.stopPropagation();
 									handleItemClick(item.id);
-								}}>
+								}}
+								title='Ver detalle'>
 								<Icon icon='HeroEye' className='h-4 w-4' />
+							</Button>
+							<Button
+								variant='outline'
+								size='sm'
+								color='blue'
+								onClick={(e) => {
+									e.stopPropagation();
+									setItemToPrint(item);
+									setIsPrintLabelOpen(true);
+								}}
+								title='Imprimir etiqueta'>
+								<Icon icon='HeroPrinter' className='h-4 w-4' />
 							</Button>
 							<Button
 								variant='outline'
@@ -1057,6 +1075,16 @@ const ItemList: React.FC<ItemListProps> = ({
 					</Button>
 				</ModalFooter>
 			</Modal>
+
+			{/* Modal de impresión de etiquetas */}
+			<PrintLabel
+				item={itemToPrint}
+				isOpen={isPrintLabelOpen}
+				onClose={() => {
+					setIsPrintLabelOpen(false);
+					setItemToPrint(null);
+				}}
+			/>
 		</div>
 	);
 };
