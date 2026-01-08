@@ -9,6 +9,7 @@ import Modal, {
 	ModalHeader,
 } from '@/components/ui/Modal';
 import { Invitation } from '@/interface/invitacion.interface';
+import { INVITATION_STATUS_MAP, normalizeInvitationStatus } from '@/constants/invitations.constant';
 
 interface InvitationDetailsModalProps {
 	isOpen: boolean;
@@ -23,40 +24,6 @@ const InvitationDetailsModal: React.FC<InvitationDetailsModalProps> = ({
 }) => {
 	if (!invitation) return null;
 
-	const statusConfig: Record<string, { label: string; color: any; variant: any; icon: string }> =
-		{
-			pending: {
-				label: 'Pendiente',
-				color: 'amber',
-				variant: 'solid',
-				icon: 'HeroClock',
-			},
-			sent: {
-				label: 'Enviada',
-				color: 'blue',
-				variant: 'solid',
-				icon: 'HeroPaperAirplane',
-			},
-			accepted: {
-				label: 'Aceptada',
-				color: 'emerald',
-				variant: 'solid',
-				icon: 'HeroCheckCircle',
-			},
-			expired: {
-				label: 'Expirada',
-				color: 'red',
-				variant: 'solid',
-				icon: 'HeroXCircle',
-			},
-			cancelled: {
-				label: 'Cancelada',
-				color: 'zinc',
-				variant: 'outline',
-				icon: 'HeroXMark',
-			},
-		};
-
 	const roleLabels: Record<string, string> = {
 		admin: 'Administrador',
 		hr: 'Recursos Humanos',
@@ -65,7 +32,9 @@ const InvitationDetailsModal: React.FC<InvitationDetailsModalProps> = ({
 		supervisor: 'Supervisor',
 	};
 
-	const statusDetails = statusConfig[invitation.status] || statusConfig.pending;
+	// Normalizar el estado y obtener la configuración
+	const normalizedStatus = normalizeInvitationStatus(invitation.status);
+	const statusDetails = INVITATION_STATUS_MAP[normalizedStatus] || INVITATION_STATUS_MAP.pending;
 	const roleLabel =
 		roleLabels[invitation.role || invitation.role_name] ||
 		invitation.role ||

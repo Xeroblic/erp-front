@@ -18,6 +18,7 @@ import Button from '@/components/ui/Button';
 import Card, { CardBody } from '@/components/ui/Card';
 import Table, { TBody, THead, Td, Th, Tr } from '@/components/ui/Table';
 import { TColors } from '@/types/colors.type';
+import { INVITATION_STATUS_MAP, normalizeInvitationStatus } from '@/constants/invitations.constant';
 
 interface InvitationsTableProps {
 	invitations: Invitation[];
@@ -32,13 +33,6 @@ interface InvitationsTableProps {
 	onPageSizeChange: (pageSize: number) => void;
 	openCreateModal: () => void;
 }
-const QUOTE_STATUS_OPTIONS: Record<string, { label: string; color: TColors; icon: string }> = {
-	pending: { label: 'Pendiente', color: 'amber', icon: 'HeroClock' },
-	sent: { label: 'Enviada', color: 'blue', icon: 'HeroPaperAirplane' },
-	accepted: { label: 'Aceptada', color: 'emerald', icon: 'HeroCheckCircle' },
-	expired: { label: 'Expirada', color: 'red', icon: 'HeroXCircle' },
-	cancelled: { label: 'Cancelada', color: 'zinc', icon: 'HeroXMark' },
-};
 
 const columnHelper = createColumnHelper<Invitation>();
 
@@ -152,10 +146,12 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 		columnHelper.accessor('status', {
 			header: 'Estado',
 			cell: (info) => {
-				const val = info.getValue();
-				const config = QUOTE_STATUS_OPTIONS[val as keyof typeof QUOTE_STATUS_OPTIONS] || {
-					label: val,
-					color: 'zinc',
+				const rawStatus = info.getValue();
+				// Normalizar el estado a minúsculas para el mapeo
+				const normalizedStatus = normalizeInvitationStatus(rawStatus);
+				const config = INVITATION_STATUS_MAP[normalizedStatus] || {
+					label: rawStatus,
+					color: 'zinc' as TColors,
 					icon: 'HeroQuestionMarkCircle',
 				};
 
@@ -285,7 +281,7 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 							onClick={() => openModal('details', invitation)}
 							className='flex items-center justify-center p-0 transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/20'
 							title='Ver detalles'>
-							<Icon icon='HeroEye' color='blue'/>
+							<Icon icon='HeroEye' color='blue' />
 						</Button>
 
 						{/* Reenviar */}
@@ -301,7 +297,7 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 								{isLoading ? (
 									<Icon icon='HeroArrowPath' className='animate-spin' />
 								) : (
-									<Icon icon='HeroPaperAirplane' color='emerald'/>
+									<Icon icon='HeroPaperAirplane' color='emerald' />
 								)}
 							</Button>
 						)}
@@ -321,9 +317,13 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 										: 'Eliminar invitación'
 								}>
 								{isLoading ? (
-									<Icon icon='HeroArrowPath' className='animate-spin' color='sky' />
+									<Icon
+										icon='HeroArrowPath'
+										className='animate-spin'
+										color='sky'
+									/>
 								) : (
-									<Icon icon='HeroTrash' color='red'/>
+									<Icon icon='HeroTrash' color='red' />
 								)}
 							</Button>
 						)}

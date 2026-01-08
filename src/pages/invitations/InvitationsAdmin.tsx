@@ -16,22 +16,11 @@ import { useInvitationsManagement } from './hooks/useInvitationsManagement';
 import { Invitation, InvitationStats } from '@/interface/invitacion.interface';
 import EstadisticasInvitations from './components/grids/EstadisticasInvitations';
 import { formatRoleName } from '@/pages/admin/Permission/utils/formatters';
-
-const STATUS_LABELS: Record<Invitation['status'], string> = {
-	pending: 'Pendientes',
-	sent: 'Enviadas',
-	accepted: 'Aceptadas',
-	expired: 'Expiradas',
-	cancelled: 'Canceladas',
-};
-
-const STATUS_ORDER: Invitation['status'][] = [
-	'pending',
-	'sent',
-	'accepted',
-	'expired',
-	'cancelled',
-];
+import {
+	INVITATION_STATUS_LABELS,
+	INVITATION_STATUS_ORDER,
+	normalizeInvitationStatus,
+} from '@/constants/invitations.constant';
 
 const formatStatusLabel = (status: string) =>
 	status
@@ -75,16 +64,17 @@ const InvitationsAdmin: React.FC = () => {
 	const currentStats = useMemo<InvitationStats>(() => stats, [stats]);
 
 	const statusOptions = useMemo(() => {
-		const collected = new Set<Invitation['status']>(STATUS_ORDER);
+		const collected = new Set<string>(INVITATION_STATUS_ORDER);
 		filteredInvitations.forEach((invitation) => {
 			if (invitation?.status) {
-				collected.add(invitation.status);
+				const normalizedStatus = normalizeInvitationStatus(invitation.status);
+				collected.add(normalizedStatus);
 			}
 		});
 
 		return Array.from(collected).map((status) => ({
 			value: status,
-			label: STATUS_LABELS[status] ?? formatStatusLabel(status),
+			label: INVITATION_STATUS_LABELS[status] ?? formatStatusLabel(status),
 		}));
 	}, [filteredInvitations]);
 
