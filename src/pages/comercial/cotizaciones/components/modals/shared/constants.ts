@@ -72,28 +72,64 @@ export const itemSchema = Yup.object().shape({
 
 export const quotationSchema = Yup.object().shape({
     customer_id: Yup.number()
-        .required('Debe seleccionar un cliente')
-        .min(1, 'Debe seleccionar un cliente válido'),
-    quote_date: Yup.date().required('La fecha de cotización es requerida'),
+        .required('ERROR: Debe seleccionar un cliente')
+        .min(1, 'ERROR: Debe seleccionar un cliente válido')
+        .typeError('ERROR: El cliente seleccionado no es válido'),
+    quote_date: Yup.date()
+        .required('ERROR: La fecha de cotización es obligatoria')
+        .typeError('ERROR: Formato de fecha inválido'),
     expiry_date: Yup.date()
-        .required('La fecha de validez es requerida')
+        .required('ERROR: La fecha de validez es obligatoria')
         .min(
             Yup.ref('quote_date'),
-            'La fecha de validez debe ser posterior a la fecha de cotización',
-        ),
-    payment_method: Yup.string().required('Debe seleccionar un método de pago'),
-    purchase_order: Yup.string().max(100, 'La orden de compra no puede exceder 100 caracteres'),
+            'ERROR: La fecha de validez debe ser posterior a la fecha de cotización',
+        )
+        .typeError('ERROR: Formato de fecha inválido'),
+    payment_method: Yup.string()
+        .required('ERROR: Debe seleccionar un método de pago')
+        .nullable()
+        .test('not-empty', 'ERROR: El método de pago no puede estar vacío', (value) => {
+            return value !== null && value !== undefined && value.trim().length > 0;
+        }),
+    document_type: Yup.string()
+        .required('ERROR: Debe seleccionar un tipo de documento')
+        .oneOf(['boleta', 'factura'], 'ERROR: Tipo de documento inválido'),
+    purchase_order: Yup.string()
+        .max(100, 'ERROR: La orden de compra no puede exceder 100 caracteres')
+        .nullable(),
     payment_terms: Yup.number()
-        .min(0, 'Los términos de pago no pueden ser negativos')
-        .max(365, 'Los términos de pago no pueden exceder 365 días'),
+        .min(0, 'ERROR: Los términos de pago no pueden ser negativos')
+        .max(365, 'ERROR: Los términos de pago no pueden exceder 365 días')
+        .typeError('ERROR: Los términos de pago deben ser un número'),
     discount_percentage: Yup.number()
-        .min(0, 'El descuento no puede ser negativo')
-        .max(100, 'El descuento no puede ser mayor a 100%'),
+        .min(0, 'ERROR: El descuento no puede ser negativo')
+        .max(100, 'ERROR: El descuento no puede ser mayor a 100%')
+        .typeError('ERROR: El descuento debe ser un número'),
     tax_percentage: Yup.number()
-        .oneOf([0, 19], 'Seleccione si desea aplicar IVA (19%)')
-        .default(19),
-    notes: Yup.string().max(500, 'Las notas no pueden exceder 500 caracteres'),
-    items: Yup.array().of(itemSchema).min(1, 'Debe agregar al menos un ítem'),
+        .oneOf([0, 19], 'ERROR: Seleccione si desea aplicar IVA (19% o 0%)')
+        .default(19)
+        .typeError('ERROR: Valor de IVA inválido'),
+    notes: Yup.string()
+        .max(500, 'ERROR: Las notas no pueden exceder 500 caracteres')
+        .nullable(),
+    items: Yup.array()
+        .of(itemSchema)
+        .min(1, 'ERROR: Debe agregar al menos un producto o item')
+        .test('items-valid', 'ERROR: Todos los items deben tener precio y cantidad válidos', (items) => {
+            if (!items || items.length === 0) return false;
+            return items.every((item: any) => {
+                const hasValidQuantity = item.quantity && item.quantity > 0;
+                const hasValidProduct = item.type === 'product' ? item.product_id > 0 : true;
+                const hasValidName = item.type === 'custom' ? item.customer_name?.trim().length > 0 : true;
+                return hasValidQuantity && hasValidProduct && hasValidName;
+            });
+        }),
+    subtotal: Yup.number()
+        .min(0, 'ERROR: El subtotal no puede ser negativo')
+        .typeError('ERROR: Subtotal inválido'),
+    total_amount: Yup.number()
+        .min(1, 'ERROR: El total debe ser mayor a 0')
+        .typeError('ERROR: Total inválido'),
 });
 
 export const paymentMethodOptions: TSelectOptions = [

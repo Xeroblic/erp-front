@@ -255,7 +255,7 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 			if (exists) return prev;
 			return [...prev, newOption];
 		});
-		
+
 		// Mostrar mensaje de éxito
 		toast.success(`Cliente "${customerName}" creado y disponible`);
 	};

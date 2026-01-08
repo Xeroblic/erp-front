@@ -195,17 +195,80 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 						initialValues={getInitialValues()}
 						validationSchema={quotationSchema}
 						onSubmit={(values, { setSubmitting }) => {
+							console.log('Iniciando validacion de cotizacion...', values);
+							
+							// Validacion manual adicional
+							if (!values.customer_id || values.customer_id === 0) {
+								toast.error('VALIDACION: Debe seleccionar un cliente antes de continuar');
+								setSubmitting(false);
+								return;
+							}
+
+							if (!values.payment_method) {
+								toast.error('VALIDACION: Debe seleccionar un metodo de pago');
+								setSubmitting(false);
+								return;
+							}
+
+							if (!values.document_type) {
+								toast.error('VALIDACION: Debe seleccionar un tipo de documento');
+								setSubmitting(false);
+								return;
+							}
+
+							if (!values.items || values.items.length === 0) {
+								toast.error('VALIDACION: Debe agregar al menos un producto');
+								setSubmitting(false);
+								return;
+							}
+
+							// Validar que todos los items tengan producto o nombre
+							const invalidItems = values.items.filter((item: any) => {
+								if (item.type === 'product') {
+									return !item.product_id || item.product_id === 0;
+								}
+								return !item.customer_name || item.customer_name.trim() === '';
+							});
+
+							if (invalidItems.length > 0) {
+								toast.error('VALIDACION: Todos los items deben tener un producto o nombre valido');
+								setSubmitting(false);
+								return;
+							}
+
+							if (values.total_amount <= 0) {
+								toast.error('VALIDACION: El total de la cotizacion debe ser mayor a 0');
+								setSubmitting(false);
+								return;
+							}
+
+							console.log('Validaciones manuales pasadas, sanitizando items...');
+							
 							const sanitizedItems = sanitizeItemsForSubmit(values.items);
+							console.log('Items sanitizados:', sanitizedItems);
+							
 							const normalizedPayment = Array.isArray(values.payment_method)
 								? (values.payment_method[0] ?? null)
 								: values.payment_method && String(values.payment_method).length > 0
 									? values.payment_method
 									: null;
 
+							if (!normalizedPayment) {
+								toast.error('NORMALIZACION: Error al procesar el metodo de pago');
+								setSubmitting(false);
+								return;
+							}
+
 							const normalizedDocument =
 								values.document_type && String(values.document_type).length > 0
 									? values.document_type
 									: null;
+
+							if (!normalizedDocument) {
+								toast.error('NORMALIZACION: Error al procesar el tipo de documento');
+								setSubmitting(false);
+								return;
+							}
 
 							const payload = {
 								...values,
@@ -215,6 +278,9 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 								tax_percentage: values.tax_percentage === IVA_RATE ? IVA_RATE : 0,
 							};
 
+							console.log('Payload preparado para envio:', payload);
+							toast.info('VALIDACION: Todos los campos son validos. Confirmando creacion...');
+							
 							setPendingPayload(payload);
 							setIsConfirmModalOpen(true);
 							setSubmitting(false);
@@ -229,14 +295,16 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 									value: String(customerId),
 									label: customerName,
 								};
-								
+
 								// Primero actualizar las opciones
 								setCustomerOptions((prev) => [...prev, newOption]);
 
 								// Usar setTimeout para asegurar que el DOM se actualice
 								setTimeout(() => {
 									setFieldValue('customer_id', customerId);
-									toast.success(`Cliente "${customerName}" creado y seleccionado`);
+									toast.success(
+										`Cliente "${customerName}" creado y seleccionado`,
+									);
 								}, 100);
 							};
 
@@ -344,7 +412,13 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 							color='green'
 							className='bg-green-400/20'
 							onClick={() => {
-								if (!pendingPayload) return;
+								if (!pendingPayload) {
+									toast.error('ERROR: No hay datos para crear la cotización');
+									console.error('pendingPayload is null');
+									return;
+								}
+								console.log('Enviando cotización al backend...', pendingPayload);
+								toast.info('ENVIANDO: Creando cotización en el servidor...');
 								onSubmit(pendingPayload);
 								setPendingPayload(null);
 								setIsConfirmModalOpen(false);
