@@ -56,6 +56,9 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 		setFormValues(initialValues);
 	}, [initialValues]);
 
+
+
+
 	const handleFieldChange = (field: string, value: any) => {
 		const newValues = {
 			...formValues,

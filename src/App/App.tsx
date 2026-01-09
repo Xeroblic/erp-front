@@ -27,21 +27,20 @@ const App = () => {
 	const { isDarkTheme } = useDarkMode();
 
 	const dispatch = useAppDispatch();
-	const { isAuthenticated, access } = useAppSelector((state) => state.auth);
+	const { isAuthenticated } = useAppSelector((state) => state.auth);
 
-	useEffect(() => {
-		if (access) {
-			tokenManager.setAccessToken(access);
-		} else {
-			tokenManager.clearTokens();
-		}
-	}, [access]);
-	// nueva validación
+	// nueva validación: solo verificamos en memoria si es válido, sin re-renderizar por cambios en Redux
+	// El tokenManager ya está sincronizado por los servicios y el Initializer.
 	const hasValidSession = useMemo(() => {
-		const token = access ?? tokenManager.getAccessToken();
+		const token = tokenManager.getAccessToken();
 		if (!token) return false;
 		return tokenManager.isTokenValid(token) || tokenManager.canRefresh(token);
-	}, [access]);
+	}, []); // Empty dependency array: check only on mount/unmount or when component re-renders for other reasons.
+    // Actually, we want this to be stable. If we rely on isAuthenticated, we assume valid session.
+	
+    // Eliminamos el useEffect redundante de sync access->tokenManager
+    // Ya lo hace AppInitializer y el servicio de refresh.
+
 
 	useEffect(() => {
 		const handler = () => dispatch(obtenerPersonalizacionThunk());
@@ -51,12 +50,16 @@ const App = () => {
 
 	useEffect(() => {
 		if (!isAuthenticated) return;
-		if (!hasValidSession) {
+        // Check validity directly from manager to avoid subscribing to state
+        const token = tokenManager.getAccessToken();
+		const isValid = token && (tokenManager.isTokenValid(token) || tokenManager.canRefresh(token));
+		
+		if (!isValid) {
 			dispatch(logout());
 		}
-	}, [dispatch, hasValidSession, isAuthenticated]);
+	}, [dispatch, isAuthenticated]);
 
-	const shouldRenderAuthenticatedApp = isAuthenticated && hasValidSession;
+	const shouldRenderAuthenticatedApp = isAuthenticated; // && hasValidSession is redundant if we trust isAuthenticated + interceptor
 	// if (import.meta.env.DEV) {
 	// (window as any).tokenManager = tokenManager;
 	// }
