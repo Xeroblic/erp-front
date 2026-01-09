@@ -147,20 +147,28 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
                 <html>
                 <head>
                     <style>
+                        /* Forzar tamaño de hoja al exacto de la etiqueta y QUITAR márgenes del navegador */
+                        /* Al poner margin: 0, la mayoría de navegadores ocultan auto. headers y footers */
                         @page { 
                             size: 80mm 60mm; 
                             margin: 0; 
                         }
-                        body { 
-                            margin: 0; 
-                            padding: 0; 
+                        
+                        html, body { 
+                            margin: 0 !important; 
+                            padding: 0 !important; 
                             width: 80mm;
                             height: 60mm;
-                            overflow: hidden;
+                            overflow: hidden; /* Cortar cualquier cosa que se salga */
+                            background-color: white;
                         }
-                        /* Ocultar headers/footers por si acaso (aunque margin 0 suele bastar) */
+                        
+                        /* Asegurar contraste correcto para impresión */
                         @media print { 
-                            body { -webkit-print-color-adjust: exact; } 
+                            body { 
+                                -webkit-print-color-adjust: exact; 
+                                print-color-adjust: exact;
+                            } 
                         }
                     </style>
                 </head>
