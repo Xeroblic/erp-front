@@ -27,6 +27,7 @@ import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import type { EquipmentType } from '@/interface/technicalReviews.interface';
 import ApiService from '@/services/ApiService';
+import PrintLabel from '@/pages/technical-reviews/components/items/PrintLabel';
 
 const EQUIPMENT_TYPE_OPTIONS: TSelectOption[] = [
 	{ value: 'notebook', label: 'Notebook' },
@@ -59,11 +60,20 @@ const BatchDetailPage: React.FC = () => {
 	const [isMissingSerialModalOpen, setIsMissingSerialModalOpen] = useState(false);
 	const [firstReviewDate, setFirstReviewDate] = useState<string | null>(null);
 	const [firstReviewLoading, setFirstReviewLoading] = useState(false);
+	
+	const [operationMode, setOperationMode] = useState<'entry' | 'print'>('entry');
+	// Referencia para el modal de impresión que creamos antes
+	const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+	const [selectedItemForPrint, setSelectedItemForPrint] = useState<any>(null);
+	
 	const isTypeSelectorFocusedRef = useRef(false);
 	const quickEntryInputRef = useRef<HTMLInputElement | null>(null);
 	const scannerBufferRef = useRef('');
 	const scannerTimeoutRef = useRef<number | null>(null);
 	const batchNumericId = batch?.id;
+
+
+
 
 	const resetQuickEntryForm = useCallback(() => {
 		setQuickEntrySerial('');
@@ -228,36 +238,44 @@ const BatchDetailPage: React.FC = () => {
 		async (serial: string) => {
 			if (!batch || !branchId) return;
 			const normalizedSerial = serial.trim();
-			if (!normalizedSerial) return;
+			
 			try {
 				const response = await ApiService.fetchData<{ data?: any[] }>({
 					url: ep(branchId, '/items'),
 					method: 'get',
-					params: {
-						batch_id: batch.id,
-						search: normalizedSerial,
-						per_page: 1,
-					},
+					params: { batch_id: batch.id, search: normalizedSerial, per_page: 1 },
 				});
-				const results = Array.isArray(response.data?.data)
-					? response.data?.data
-					: Array.isArray(response.data)
-						? (response.data as any[])
-						: [];
+				const results = response.data?.data || [];
+				const foundItem = results[0];
 
-				if (results.length > 0 && results[0]?.id) {
-					handleViewItem(results[0].id);
-					return;
+				if (operationMode === 'print') {
+					// MODO IMPRESIÓN
+					if (foundItem && foundItem.serial_number === normalizedSerial) {
+						setSelectedItemForPrint(foundItem);
+						setIsPrintModalOpen(true);
+						// Opcional: window.print() inmediato si el modal tiene useEffect de auto-print
+					} else {
+						toast.error(`La serie "${normalizedSerial}" no existe en este lote.`);
+					}
+				} else {
+					// MODO INGRESO (Lógica actual)
+					if (foundItem && foundItem.id) {
+						handleViewItem(foundItem.id);
+					} else {
+						setMissingSerial(normalizedSerial);
+						setIsMissingSerialModalOpen(true);
+					}
 				}
-
-				setMissingSerial(normalizedSerial);
-				setIsMissingSerialModalOpen(true);
 			} catch (error) {
-				console.error('Error al buscar la serie escaneada', error);
+				console.error('Error en escaneo:', error);
 			}
 		},
-		[batch, branchId, handleViewItem, resetQuickEntryForm],
+		[batch, branchId, operationMode, handleViewItem]
 	);
+
+	const handleClosePrintModal = useCallback(() => {
+		setIsPrintModalOpen(false);
+	}, []);
 
 	useEffect(() => {
 		const handleKeydown = (event: KeyboardEvent) => {
@@ -334,6 +352,8 @@ const BatchDetailPage: React.FC = () => {
 		setIsMissingSerialModalOpen(false);
 	};
 
+	
+
 	return (
 		<>
 			<PageWrapper name='batch-detail'>
@@ -357,7 +377,7 @@ const BatchDetailPage: React.FC = () => {
 					</SubheaderLeft>
 
 					<SubheaderRight>
-						<Button
+						{/* <Button
 							variant='outline'
 							onClick={() => {
 								resetQuickEntryForm();
@@ -365,7 +385,24 @@ const BatchDetailPage: React.FC = () => {
 							}}>
 							<Icon icon='HeroBolt' className='mr-2 h-4 w-4' />
 							Ingreso rápido
-						</Button>
+						</Button> */}
+
+						<div className='flex items-center bg-gray-300/90 dark:bg-gray-800 p-1 rounded-lg border border-gray-200 dark:border-gray-700'>
+							<Button
+								size='sm'
+								variant={operationMode === 'entry' ? 'solid' : 'default'}
+								color={operationMode === 'entry' ? 'blue' : 'gray'}
+								onClick={() => setOperationMode('entry')}>
+								<Icon icon='HeroBolt' className='mr-1 h-4 w-4' /> Ingreso
+							</Button>
+							<Button
+								size='sm'
+								variant={operationMode === 'print' ? 'solid' : 'default'}
+								color={operationMode === 'print' ? 'orange' : 'gray'}
+								onClick={() => setOperationMode('print')}>
+								<Icon icon='HeroPrinter' className='mr-1 h-4 w-4' /> Impresión
+							</Button>
+						</div>
 						{/* Botón para registrar serie dentro del lote (ruta semántica REST) */}
 						<Button
 							color='green'
@@ -538,6 +575,13 @@ const BatchDetailPage: React.FC = () => {
 					</Button>
 				</ModalFooter>
 			</Modal>
+
+			<PrintLabel
+				item={selectedItemForPrint}
+				isOpen={isPrintModalOpen}
+				onClose={handleClosePrintModal}
+				autoPrint={true}
+			/>
 		</>
 	);
 };

@@ -1,246 +1,259 @@
-/**
- * PrintLabel - Componente para imprimir etiquetas HORIZONTALES de 8x6cm con QR
- * Se usa en las acciones de la tabla de revisiones técnicas
- */
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import type { IItem } from '@/interface/technicalReviews.interface';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 
 interface PrintLabelProps {
-	item: IItem | null;
-	isOpen: boolean;
-	onClose: () => void;
+    item: any | null;
+    isOpen: boolean;
+    onClose: () => void;
+    autoPrint?: boolean;
 }
 
-const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose }) => {
-	if (!item) return null;
+const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrint = false }) => {
+    if (!item) return null;
 
-	const qrContent = `${window.location.origin}/technical-reviews/items/${item.id}`;
+    const qrContent = item.serial_number || 'SIN-SERIE';
 
-	const equipmentType =
-		typeof item.equipment_type === 'object'
-			? (item.equipment_type as any)?.label ||
-				(item.equipment_type as any)?.value ||
-				'Desconocido'
-			: item.equipment_type || 'Desconocido';
+    const extractValue = (val: any): string => {
+        if (val == null) return '';
+        if (typeof val === 'object') return String(val.label || val.value || val.name || '');
+        return String(val);
+    };
 
-	const serialNumber = item.serial_number || 'SIN SERIE';
+    const details = item.details || {};
+    const grade = extractValue(item.grade) || 'C';
+    const clientName = item.customer_supplier?.name || 'SIN CLIENTE';
 
-	// Helper para extraer valores de objetos {value, label, description}
-	const extractValue = (val: any): string => {
-		if (val == null) return '';
-		if (typeof val === 'object' && 'value' in val) return String(val.value || '');
-		if (typeof val === 'object' && 'label' in val) return String(val.label || '');
-		return String(val);
-	};
+    const brand = extractValue(details.brand);
+    const model = extractValue(details.model);
+    const productName = `${brand} ${model}`.trim().toUpperCase() || 'PRODUCTO SIN ESPECIFICAR';
 
-	const grade = extractValue(item.grade) || 'C';
+    // ---- Contenido Visual de la Etiqueta (LAYOUT PYTHON/WORD) ----
+    const LabelContent = () => (
+        <div
+            id='label-print-area'
+            style={{
+                width: '80mm',
+                height: '60mm',
+                padding: '2mm',
+                boxSizing: 'border-box',
+                fontFamily: 'Arial, sans-serif',
+                backgroundColor: '#fff',
+                display: 'flex',
+                flexDirection: 'column',
+                position: 'relative',
+                fontSize: '9pt',
+                overflow: 'hidden', // Evitar desbordes
+            }}>
+            
+            {/* Fila 1: Logo/Nombre (Izq) + QR Ecopc (Der) */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '16mm', marginBottom: '1mm' }}>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                    <img 
+                        src="/logo_etiqueta.png" 
+                        alt="ECOPC" 
+                        style={{ 
+                            maxHeight: '14mm', 
+                            maxWidth: '100%', 
+                            objectFit: 'contain' 
+                        }} 
+                    />
+                </div>
+                <div style={{ width: '16mm', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                    <QRCodeSVG value="https://www.ecopc.cl" size={55} level='M' />
+                </div>
+            </div>
 
-	const attrs = item.attributes_json || {};
-	const details = item.details || {};
-	const combined = { ...attrs, ...details };
+            {/* Fila 2: QR Serie (Izq) + Detalles (Der) */}
+            <div style={{ display: 'flex', height: '18mm', marginBottom: '1mm' }}>
+                <div style={{ width: '18mm', marginRight: '2mm', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <QRCodeSVG value={qrContent} size={60} level='M' />
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', lineHeight: '1.2' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '10px', height: '2.4em', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {brand} {model}
+                    </div>
+                    <div style={{ fontSize: '10px', fontWeight: 'bold', marginTop: '1px' }}>
+                        Categoría {grade}
+                    </div>
+                    <div style={{ fontSize: '10px', fontWeight: 'bold' }}>
+                        N° Serie: {item.serial_number}
+                    </div>
+                </div>
+            </div>
 
-	const brand = extractValue(combined.brand);
-	const model = extractValue(combined.model);
+            {/* Fila 3: Especificaciones Completas */}
+            <div style={{
+                fontSize: '8px',
+                lineHeight: '1.15',
+                textAlign: 'justify',
+                overflow: 'hidden',
+                flex: 1
+            }}>
+               <span style={{ fontWeight: 'bold' }}>OBSERVACIÓN: </span>{extractValue(details.observations) || 'SIN OBSERVACIÓN'} {' '}
+               <span style={{ fontWeight: 'bold' }}>PROCESADOR: </span>{extractValue(details.processor) || '0'} {' '}
+               <span style={{ fontWeight: 'bold' }}>RAM: </span>{extractValue(details.ram_size)}GB {details.ram_slots ? `(${details.ram_slots})` : ''} {' '}
+               <span style={{ fontWeight: 'bold' }}>DISCO: </span>{extractValue(details.storage_size)} {extractValue(details.storage_technology)} {' '}
+               <span style={{ fontWeight: 'bold' }}>SO: </span>{extractValue(details.operating_system) || '0'} {' '}
+               <span style={{ fontWeight: 'bold' }}>PANTALLA: </span>{extractValue(details.screen_inches)}" {' '}
+               {details.battery_health && <><span style={{ fontWeight: 'bold' }}>BATERÍA: </span>{details.battery_health} </>}
+               <span style={{ fontWeight: 'bold' }}>TECLADO: </span>{extractValue(details.keyboard_layout)} {details.has_backlit_keyboard ? '(RETRO)' : ''} {' '}
+               <span style={{ fontWeight: 'bold' }}>CLIENTE: </span>{clientName}
+            </div>
+        </div>
+    );
 
-	const buildSpecs = (): string => {
-		const parts: string[] = [];
+    // ---- Estado para controlar la impresión manual via Iframe ----
+    const [isPrinting, setIsPrinting] = useState(false);
 
-		if (combined.observations) {
-			return extractValue(combined.observations).toUpperCase();
-		}
+    // Si es autoPrint, iniciamos la impresión en cuanto se abre
+    useEffect(() => {
+        if (autoPrint && isOpen) {
+            setIsPrinting(true);
+        }
+    }, [autoPrint, isOpen]);
 
-		if (combined.processor) parts.push(`Procesador: ${extractValue(combined.processor)}`);
-		if (combined.ram_size) parts.push(`RAM: ${extractValue(combined.ram_size)}`);
-		if (combined.storage_size && combined.storage_technology) {
-			parts.push(
-				`Disco: ${extractValue(combined.storage_size)} ${extractValue(combined.storage_technology)}`,
-			);
-		} else if (combined.storage_size) {
-			parts.push(`Disco: ${extractValue(combined.storage_size)}`);
-		}
-		if (combined.screen_inches)
-			parts.push(`Pantalla: ${extractValue(combined.screen_inches)}"`);
-		if (combined.battery_status)
-			parts.push(`Batería: ${extractValue(combined.battery_status)}`);
-		if (combined.keyboard_layout)
-			parts.push(`Teclado: ${extractValue(combined.keyboard_layout)}`);
-		if (combined.has_backlit_keyboard) parts.push(`Retroiluminado: SI`);
-		if (combined.general_condition)
-			parts.push(`Estado: ${extractValue(combined.general_condition)}`);
+    const handleManualPrint = () => {
+        setIsPrinting(true);
+    };
 
-		return parts.join(' ').toUpperCase();
-	};
+    const handleAfterPrint = () => {
+        setIsPrinting(false);
+        // Si era auto-print, cerramos el modal completo al terminar
+        // Si era manual, también es buena UX cerrar el modal, o se puede dejar abierto.
+        // Asumiremos cerrar para consistencia con el flujo rápido.
+        onClose();
+    };
 
-	const specs = buildSpecs();
-	const productName = `${brand} ${model}`.trim().toUpperCase() || 'PRODUCTO SIN ESPECIFICAR';
+    // ---- Componente de Impresión Off-screen (Iframe) ----
+    const PrintFrame = () => {
+        const [mountNode, setMountNode] = useState<HTMLElement | null>(null);
+        const iframeRef = useRef<HTMLIFrameElement>(null);
 
-	const handlePrint = () => {
-		window.print();
-	};
+        useEffect(() => {
+            const iframe = iframeRef.current;
+            if (!iframe) return;
+            const doc = iframe.contentWindow?.document;
+            if (!doc) return;
 
-	return (
-		<>
-			<Modal isOpen={isOpen} setIsOpen={onClose} size='xl' isStaticBackdrop>
-				<ModalHeader>Imprimir Etiqueta</ModalHeader>
-				<ModalBody>
-					<div className='flex flex-col gap-4'>
-						<div className='flex justify-center border-2 border-dashed border-gray-300 bg-gray-50 p-6'>
-							<div
-								id='label-print-area'
-								className='label-container'
-								style={{
-									width: '80mm',
-									height: '60mm',
-									border: '1px solid #000',
-									padding: '3mm',
-									boxSizing: 'border-box',
-									fontFamily: 'Arial, sans-serif',
-									fontSize: '9px',
-									backgroundColor: '#fff',
-									color: '#000',
-									display: 'flex',
-									flexDirection: 'column',
-									position: 'relative',
-								}}>
-								<div
-									style={{
-										display: 'flex',
-										justifyContent: 'space-between',
-										alignItems: 'flex-start',
-										marginBottom: '2mm',
-										height: '28mm',
-									}}>
-									<div style={{ flex: 1 }}>
-										<div
-											style={{
-												fontSize: '18px',
-												fontWeight: 'bold',
-												marginBottom: '1mm',
-											}}>
-											ecopc
-										</div>
-										<div
-											style={{
-												fontSize: '9px',
-												textDecoration: 'underline',
-											}}>
-											www.ecopc.cl
-										</div>
-									</div>
+            // Escribimos el esqueleto del documento
+            // IMPORTANTE: CSS estricto para limpiar márgenes y headers
+            doc.open();
+            doc.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <style>
+                        @page { 
+                            size: 80mm 60mm; 
+                            margin: 0; 
+                        }
+                        body { 
+                            margin: 0; 
+                            padding: 0; 
+                            width: 80mm;
+                            height: 60mm;
+                            overflow: hidden;
+                        }
+                        /* Ocultar headers/footers por si acaso (aunque margin 0 suele bastar) */
+                        @media print { 
+                            body { -webkit-print-color-adjust: exact; } 
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div id="print-root"></div>
+                </body>
+                </html>
+            `);
+            doc.close();
+            
+            setMountNode(doc.getElementById('print-root'));
+        }, []);
 
-									<div
-										style={{
-											display: 'flex',
-											alignItems: 'center',
-											justifyContent: 'center',
-										}}>
-										<QRCodeSVG value={qrContent} size={70} level='M' />
-									</div>
-								</div>
+        useEffect(() => {
+            if (mountNode) {
+                // Esperar un momento a que React renderice el portal y se carguen recursos (QRs)
+                const timer = setTimeout(() => {
+                    if (iframeRef.current?.contentWindow) {
+                        iframeRef.current.contentWindow.focus();
+                        iframeRef.current.contentWindow.print();
+                    }
+                }, 500);
 
-								<div
-									style={{
-										display: 'flex',
-										gap: '3mm',
-										alignItems: 'flex-start',
-										marginBottom: '2mm',
-									}}>
-									<div
-										style={{
-											flexShrink: 0,
-										}}>
-										<QRCodeSVG value={qrContent} size={45} level='M' />
-									</div>
+                // Detectar cierre del diálogo
+                const iframeWin = iframeRef.current?.contentWindow;
+                const afterPrintHandler = () => {
+                    handleAfterPrint();
+                };
+                
+                iframeWin?.addEventListener('afterprint', afterPrintHandler);
+                
+                return () => {
+                    clearTimeout(timer);
+                    iframeWin?.removeEventListener('afterprint', afterPrintHandler);
+                };
+            }
+        }, [mountNode]);
 
-									<div style={{ flex: 1, fontSize: '10px' }}>
-										<div
-											style={{
-												fontWeight: 'bold',
-												fontSize: '11px',
-												marginBottom: '1mm',
-												lineHeight: '1.2',
-											}}>
-											{productName}
-										</div>
-										<div style={{ marginBottom: '0.5mm' }}>
-											<span style={{ fontWeight: 'bold' }}>
-												Categoría {grade}
-											</span>
-										</div>
-										<div style={{ fontWeight: 'bold' }}>
-											N° Serie: {serialNumber}
-										</div>
-									</div>
-								</div>
+        if (!mountNode) return <iframe ref={iframeRef} style={{ display: 'none' }} />;
 
-								<div
-									style={{
-										fontSize: '7px',
-										lineHeight: '1.2',
-										wordBreak: 'break-word',
-										borderTop: '1px solid #000',
-										paddingTop: '1mm',
-									}}>
-									<strong>Observación:</strong> {specs || 'Sin observaciones'}
-								</div>
-							</div>
-						</div>
+        // Renderizamos el contenido en el iframe
+        return (
+            <>
+                <iframe 
+                    ref={iframeRef} 
+                    style={{ position: 'fixed', top: '-10000px', left: '-10000px', width: '10px', height: '10px', visibility: 'hidden' }} 
+                    title="Print Frame"
+                />
+                {createPortal(<LabelContent />, mountNode)}
+            </>
+        );
+    };
 
-						<div className='flex justify-end gap-2'>
-							<Button variant='outline' onClick={onClose}>
-								<Icon icon='HeroXMark' className='mr-2' />
-								Cancelar
-							</Button>
-							<Button variant='solid' color='blue' onClick={handlePrint}>
-								<Icon icon='HeroPrinter' className='mr-2' />
-								Imprimir
-							</Button>
-						</div>
-					</div>
-				</ModalBody>
-			</Modal>
+    // ---- Render Principal ----
+    
+    // Si estamos imprimiendo (Auto o Manual activado), renderizamos el Iframe
+    // Nota: Mantenemos el modal visible si es manual, pero el iframe hace el trabajo sucio
+    
+    return (
+        <>
+            {/* Si está en modo impresión, montamos el frame oculto */}
+            {isPrinting && <PrintFrame />}
 
-			<style>{`
-				@media print {
-					body * {
-						visibility: hidden !important;
-					}
-					
-					#label-print-area,
-					#label-print-area * {
-						visibility: visible !important;
-					}
-					
-					#label-print-area {
-						position: absolute !important;
-						left: 0 !important;
-						top: 0 !important;
-						width: 80mm !important;
-						height: 60mm !important;
-						padding: 3mm !important;
-						margin: 0 !important;
-						box-sizing: border-box !important;
-						font-family: Arial, sans-serif !important;
-						font-size: 9px !important;
-						background-color: #fff !important;
-						color: #000 !important;
-						border: 1px solid #000 !important;
-						display: flex !important;
-						flex-direction: column !important;
-					}
-					
-					@page {
-						size: 80mm 60mm;
-						margin: 0;
-					}
-				}
-			`}</style>
-		</>
-	);
+            {/* Si NO es autoPrint (o estamos en manual), mostramos el modal visual */}
+            {(!autoPrint || !isPrinting) && (
+                <Modal isOpen={isOpen} setIsOpen={onClose} size='xl' isStaticBackdrop>
+                    <ModalHeader>Imprimir Etiqueta Técnica</ModalHeader>
+                    <ModalBody>
+                        <div className='flex flex-col gap-4'>
+                            {/* Vista previa en pantalla */}
+                            <div className='flex justify-center border-2 border-dashed border-gray-300 bg-gray-50 p-6 overflow-hidden'>
+                                {/* Contenedor visual con borde para referencia */}
+                                <div style={{ border: '1px solid #ddd', padding: 0 }}>
+                                    <LabelContent />
+                                </div>
+                            </div>
+
+                            <div className='flex justify-end gap-2'>
+                                <Button variant='outline' onClick={onClose}>
+                                    <Icon icon='HeroXMark' className='mr-2' /> Cancelar
+                                </Button>
+                                {/* Botón Imprimir activa el estado isPrinting que monta el iframe */}
+                                <Button variant='solid' color='blue' onClick={handleManualPrint} disabled={isPrinting}>
+                                    <Icon icon='HeroPrinter' className='mr-2' /> 
+                                    {isPrinting ? 'Imprimiendo...' : 'Imprimir'}
+                                </Button>
+                            </div>
+                        </div>
+                    </ModalBody>
+                </Modal>
+            )}
+        </>
+    );
 };
 
 export default PrintLabel;
