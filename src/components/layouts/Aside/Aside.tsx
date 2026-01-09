@@ -36,6 +36,7 @@ interface IAsideFooterProps extends HTMLAttributes<HTMLElement> {
 	children: ReactNode;
 	className?: string;
 }
+
 export const AsideFooter: FC<IAsideFooterProps> = ({ children, className, ...rest }) => (
 	<div
 		data-component-name='Aside/AsideFooter'
