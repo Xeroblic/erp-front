@@ -35,7 +35,7 @@ const ClientesVentas = () => {
 		pageIndex: 0,
 		pageSize: 5,
 	});
-	const [isInitialLoad, setIsInitialLoad] = useState(true);
+	// const [isInitialLoad, setIsInitialLoad] = useState(true);
 
 	const navigate = useNavigate();
 
@@ -43,16 +43,16 @@ const ClientesVentas = () => {
 		setPagination((old) => (typeof updater === 'function' ? updater(old) : updater));
 	}, []);
 
-	// Navegar a la última página en la carga inicial
-	useEffect(() => {
-		if (isInitialLoad && meta?.last_page) {
-			setPagination((prev) => ({
-				...prev,
-				pageIndex: meta.last_page - 1,
-			}));
-			setIsInitialLoad(false);
-		}
-	}, [meta?.last_page, isInitialLoad]);
+	// Publicar la última página en la carga inicial (ELIMINADO para ordenar por fecha DESC)
+	// useEffect(() => {
+	// 	if (isInitialLoad && meta?.last_page) {
+	// 		setPagination((prev) => ({
+	// 			...prev,
+	// 			pageIndex: meta.last_page - 1,
+	// 		}));
+	// 		setIsInitialLoad(false);
+	// 	}
+	// }, [meta?.last_page, isInitialLoad]);
 
 	const handleDelete = (id: number) => {
 		if (!hasSubsidiary) return;
