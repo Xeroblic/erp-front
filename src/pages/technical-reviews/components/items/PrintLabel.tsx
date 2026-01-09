@@ -45,7 +45,7 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
                 display: 'flex',
                 flexDirection: 'column',
                 position: 'relative',
-                fontSize: '9pt',
+                fontSize: '10pt',
                 overflow: 'hidden', // Evitar desbordes
             }}>
             
@@ -87,7 +87,7 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 
             {/* Fila 3: Especificaciones Completas */}
             <div style={{
-                fontSize: '8px',
+                fontSize: '10px',
                 lineHeight: '1.15',
                 textAlign: 'justify',
                 overflow: 'hidden',
