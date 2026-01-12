@@ -27,6 +27,8 @@ import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
 import Modal, { ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
 import PrintLabel from './PrintLabel';
+import { DETAIL_FIELDS_TEMPLATE } from '../../constants';
+import { extractValue, formatDateTime, resolveEquipmentTypeMeta } from '../utils/utilsItems';
 
 type ExportMode = 'serials' | 'details';
 
@@ -55,26 +57,36 @@ const EQUIPMENT_TYPE_LABELS: Record<string, string> = {
 };
 
 const FIELD_LABELS_ES: Record<string, string> = {
+	// Información básica
 	brand: 'Marca',
 	model: 'Modelo',
 	line: 'Línea',
 	processor: 'Procesador',
+	
+	// Memoria y almacenamiento
 	ram_size: 'RAM',
 	ram_slots: 'Slots RAM',
 	ram_type: 'Tipo RAM',
 	storage_size: 'Capacidad Almacenamiento',
 	storage_technology: 'Tecnología Almacenamiento',
+	
+	// Cargador y energía
 	includes_charger: 'Incluye Cargador',
 	includes_power_adapter: 'Incluye Cargador',
 	charger_watts: 'Watts Cargador',
 	charger_status: 'Estado Cargador',
 	power_cable_status: 'Estado Cargador',
-	other_includes: 'Incluye Otros',
+	includes_power_cable: 'Incluye Cable Poder',
+	includes_charger_docking: 'Incluye Fuente',
+	
+	// Batería
 	battery_status: 'Estado Batería',
 	battery_health: 'Salud Batería',
 	battery_percentage: '% Batería',
 	battery_holds_charge: 'Mantiene Carga',
 	battery_condition: 'Condición Batería',
+	
+	// Puertos
 	vga_ports: 'Puertos VGA',
 	dvi_ports: 'Puertos DVI',
 	hdmi_ports: 'Puertos HDMI',
@@ -84,175 +96,138 @@ const FIELD_LABELS_ES: Record<string, string> = {
 	lector_de_tarjetas_sd: 'Lectores SD',
 	sd_readers: 'Lectores SD',
 	rj45_ports: 'Puertos RJ-45',
-	has_wifi: 'Wi-Fi',
-	has_bluetooth: 'Bluetooth',
 	all_ports_functional: 'Puertos Funcionan',
 	defective_ports_count: 'Puertos Defectuosos',
 	critical_defective_ports_count: 'Puertos Críticos Defectuosos',
+	
+	// Conectividad
+	has_wifi: 'Wi-Fi',
+	has_bluetooth: 'Bluetooth',
+	
+	// Pantalla
 	screen_inches: 'Pulgadas Pantalla',
 	screen_resolution: 'Resolución Pantalla',
 	screen_condition: 'Condición Pantalla',
 	is_touchscreen: 'Pantalla Táctil',
+	resolution: 'Resolución',
+	
+	// Teclado
 	keyboard_condition: 'Condición Teclado',
 	keyboard_layout: 'Layout Teclado',
 	has_numeric_keypad: 'Teclado Numérico',
 	has_backlit_keyboard: 'Teclado Iluminado',
+	
+	// Touchpad
 	touchpad_condition: 'Condición Touchpad',
+	
+	// Condiciones físicas
 	general_condition: 'Condición General',
 	cover_condition: 'Condición Tapa',
 	frame_condition: 'Condición Marco',
 	hinge_condition: 'Bisagras',
 	bottom_condition: 'Base',
+	bottom_cover_condition: 'Cubierta Inferior',
 	stand_condition: 'Base/Soporte',
+	
+	// Sistema y unidades
 	operating_system: 'Sistema Operativo',
 	has_cd_drive: 'Unidad CD/DVD',
-	includes_power_cable: 'Incluye Cable Poder',
+	
+	// Accesorios y extras
+	other_includes: 'Incluye Otros',
 	includes_video_cable: 'Incluye Cable Video',
 	includes_stand: 'Incluye Base',
 	other_includes_monitor: 'Otros (Monitor)',
 	has_usb_hub: 'USB Hub',
 	usb_hub_ports: 'Puertos Hub USB',
-	resolution: 'Resolución',
+	
+	// Observaciones
 	obervations: 'Observaciones',
 	observations: 'Observaciones',
-	includes_charger_docking: 'Incluye Fuente',
-	bottom_cover_condition: 'Cubierta Inferior',
 };
 
-const DETAIL_FIELDS_TEMPLATE: Record<string, string[]> = {
-	notebook: [
-		'brand',
-		'model',
-		'line',
-		'processor',
-		'ram_size',
-		'ram_slots',
-		'ram_type',
-		'storage_size',
-		'storage_technology',
-		'includes_charger',
-		'charger_watts',
-		'charger_status',
-		'other_includes',
-		'battery_status',
-		'battery_health',
-		'battery_percentage',
-		'battery_holds_charge',
-		'battery_condition',
-		'vga_ports',
-		'hdmi_ports',
-		'displayport_ports',
-		'usb_a_ports',
-		'usb_c_ports',
-		'lector_de_tarjetas_sd',
-		'rj45_ports',
-		'has_wifi',
-		'has_bluetooth',
-		'all_ports_functional',
-		'defective_ports_count',
-		'screen_inches',
-		'screen_condition',
-		'is_touchscreen',
-		'keyboard_condition',
-		'keyboard_layout',
-		'has_numeric_keypad',
-		'has_backlit_keyboard',
-		'touchpad_condition',
-		'general_condition',
-		'cover_condition',
-		'hinge_condition',
-		'bottom_condition',
-		'operating_system',
-		'observations',
-	],
-	desktop: [
-		'brand',
-		'model',
-		'line',
-		'general_condition',
-		'processor',
-		'ram_size',
-		'ram_slots',
-		'ram_type',
-		'storage_size',
-		'storage_technology',
-		'operating_system',
-		'has_cd_drive',
-		'cover_condition',
-		'has_wifi',
-		'has_bluetooth',
-		'observations',
-	],
-	aio: [
-		'brand',
-		'model',
-		'line',
-		'general_condition',
-		'processor',
-		'ram_size',
-		'ram_slots',
-		'ram_type',
-		'storage_size',
-		'storage_technology',
-		'operating_system',
-		'has_cd_drive',
-		'screen_inches',
-		'screen_condition',
-		'is_touchscreen',
-		'cover_condition',
-		'stand_condition',
-		'includes_charger',
-		'charger_status',
-		'has_wifi',
-		'has_bluetooth',
-		'observations',
-	],
-	monitor: [
-		'brand',
-		'model',
-		'line',
-		'general_condition',
-		'screen_inches',
-		'screen_resolution',
-		'screen_condition',
-		'is_touchscreen',
-		'frame_condition',
-		'stand_condition',
-		'vga_ports',
-		'dvi_ports',
-		'hdmi_ports',
-		'displayport_ports',
-		'usb_a_ports',
-		'usb_c_ports',
-		'all_ports_functional',
-		'critical_defective_ports_count',
-		'observations',
-	],
-	docking: [
-		'brand',
-		'model',
-		'line',
-		'general_condition',
-		'includes_power_adapter',
-		'includes_charger',
-		'power_cable_status',
-		'charger_status',
-		'cover_condition',
-		'vga_ports',
-		'hdmi_ports',
-		'displayport_ports',
-		'usb_a_ports',
-		'usb_c_ports',
-		'sd_readers',
-		'lector_de_tarjetas_sd',
-		'rj45_ports',
-		'has_wifi',
-		'has_bluetooth',
-		'all_ports_functional',
-		'defective_ports_count',
-		'observations',
-	],
+// Traducciones para valores de condición
+const CONDITION_VALUES_ES: Record<string, string> = {
+	// Estados de condición general
+	like_new: 'Como Nuevo',
+	good_shape: 'Buen Estado',
+	visible_wear: 'Desgaste Visible',
+	noticeable_wear: 'Desgaste Notable',
+	worn: 'Desgastado',
+	missing_pieces: 'Piezas Faltantes',
+	excellent: 'Excelente',
+	good: 'Bueno',
+	fair: 'Regular',
+	poor: 'Malo',
+	damaged: 'Dañado',
+	needs_repair: 'Necesita Reparación',
+	broken: 'Roto',
+	scratches: 'Rayones',
+	dents: 'Abolladuras',
+	cracks: 'Grietas',
+	
+	// Condiciones de pantalla
+	dead_pixels: 'Píxeles Muertos',
+	screen_burn: 'Quemadura de Pantalla',
+	flickering: 'Parpadeo',
+	
+	// Estados funcionales
+	working: 'Funcionando',
+	not_working: 'No Funciona',
+	partially_working: 'Funciona Parcialmente',
+	functional: 'Funcional',
+	non_functional: 'No Funcional',
+	
+	// Estados de cargador/batería
+	ok: 'OK',
+	es: 'SI',
+	original: 'Original',
+	generic: 'Genérico',
+	missing: 'Faltante',
+	
+	// Estados de review
+	pending: 'Pendiente',
+	in_progress: 'En Progreso',
+	in_review: 'En Revisión',
+	reviewed: 'Revisado',
+	completed: 'Completado',
+	approved: 'Aprobado',
+	rejected: 'Rechazado',
+	
+	// Estados comerciales/trazabilidad
+	received: 'Ingresado',
+	available_for_sale: 'Disponible para Venta',
+	in_quotation: 'En Cotización',
+	reserved: 'Reservado',
+	sold: 'Vendido',
+	in_repair: 'En Reparación',
+	scrapped: 'Dado de Baja',
+	returned: 'Devuelto',
+	
+	// Layouts de teclado
+	spanish: 'Español',
+	english: 'Inglés',
+	latin_american: 'Latinoamericano',
+	us: 'Estados Unidos',
+	international: 'Internacional',
+	
+	// Grados
+	a: 'A',
+	b: 'B',
+	c: 'C',
+	m: 'M',
+	
+	// Otros valores comunes
+	yes: 'SI',
+	no: 'NO',
+	na: 'N/A',
+	none: 'Ninguno',
+	unknown: 'Desconocido',
+	new: 'Nuevo',
+	used: 'Usado',
+	refurbished: 'Reacondicionado',
 };
+
 
 const ItemList: React.FC<ItemListProps> = ({
 	items,
@@ -279,82 +254,7 @@ const ItemList: React.FC<ItemListProps> = ({
 	const [itemToPrint, setItemToPrint] = useState<IItem | null>(null);
 
 	// Helper para extraer valor de objetos {value, label, description} o devolver el valor directamente
-	const extractValue = (value: any): string | null => {
-		if (value == null) return null;
-		if (typeof value === 'string' || typeof value === 'number') return String(value);
-		if (typeof value === 'object' && 'value' in value) return String(value.value);
-		return String(value);
-	};
 
-	const resolveEquipmentTypeMeta = (
-		equipmentType: any,
-	): { value: string; label: string; icon: string } => {
-		const value = (
-			typeof equipmentType === 'object' && equipmentType !== null && 'value' in equipmentType
-				? equipmentType.value
-				: equipmentType
-		) as string | null;
-
-		const normalizedValue = value ?? 'unknown';
-
-		if (
-			typeof equipmentType === 'object' &&
-			equipmentType !== null &&
-			'label' in equipmentType &&
-			equipmentType.label
-		) {
-			return {
-				value: normalizedValue,
-				label: String(equipmentType.label),
-				icon:
-					normalizedValue === 'notebook'
-						? 'HeroComputerDesktop'
-						: normalizedValue === 'desktop'
-							? 'HeroServerStack'
-							: normalizedValue === 'aio'
-								? 'HeroDeviceTablet'
-								: normalizedValue === 'docking'
-									? 'HeroCpuChip'
-									: 'HeroTv',
-			};
-		}
-
-		const label =
-			normalizedValue === 'notebook'
-				? 'Notebook'
-				: normalizedValue === 'desktop'
-					? 'Desktop'
-					: normalizedValue === 'aio'
-						? 'AIO'
-						: normalizedValue === 'docking'
-							? 'Docking'
-							: normalizedValue === 'monitor'
-								? 'Monitor'
-								: 'Desconocido';
-
-		const icon =
-			normalizedValue === 'notebook'
-				? 'HeroComputerDesktop'
-				: normalizedValue === 'desktop'
-					? 'HeroServerStack'
-					: normalizedValue === 'aio'
-						? 'HeroDeviceTablet'
-						: normalizedValue === 'docking'
-							? 'HeroCpuChip'
-							: 'HeroTv';
-
-		return { value: normalizedValue, label, icon };
-	};
-
-	const formatDateTime = (value?: string | null, fallbackDash = true): string => {
-		if (!value) return fallbackDash ? '—' : '';
-		const date = new Date(value);
-		if (Number.isNaN(date.getTime())) return fallbackDash ? '—' : '';
-		return date.toLocaleString('es-CL', {
-			dateStyle: 'short',
-			timeStyle: 'short',
-		});
-	};
 
 	const formatDateForExport = (value?: string | null): string => {
 		if (!value) return '';
@@ -422,7 +322,14 @@ const ItemList: React.FC<ItemListProps> = ({
 		if (value === null || typeof value === 'undefined') return '';
 		if (typeof value === 'boolean') return formatBoolean(value);
 		if (typeof value === 'number') return String(value);
-		if (typeof value === 'string') return value;
+		if (typeof value === 'string') {
+			// Intentar traducir valores comunes
+			const normalized = value.toLowerCase().trim();
+			if (CONDITION_VALUES_ES[normalized]) {
+				return CONDITION_VALUES_ES[normalized];
+			}
+			return value;
+		}
 		return JSON.stringify(value);
 	};
 

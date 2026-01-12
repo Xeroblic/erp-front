@@ -268,7 +268,7 @@ const InvitationsTable: React.FC<InvitationsTableProps> = ({
 				const canResend =
 					invitation.status === 'pending' || invitation.status === 'expired';
 				const canDelete =
-					invitation.status === 'pending' || invitation.status === 'cancelled';
+					invitation.status === 'pending' || invitation.status === 'cancelled' || invitation.status === 'expired';
 				const isLoading = isActionLoading(invitation.id);
 
 				return (
