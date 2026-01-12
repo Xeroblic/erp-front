@@ -415,6 +415,8 @@ const ItemReviewPage: React.FC = () => {
 	const isApproved =
 		item?.review_status === 'approved' || item?.review_status?.value === 'approved';
 
+    const step2InitialValues = useMemo(() => item?.details || item?.attributes_json || {}, [item]);
+
 	// Handler para navegar entre pasos haciendo click
 	const handleStepClick = (stepId: ReviewStep) => {
 		// No permitir navegación si está aprobado
@@ -540,7 +542,7 @@ const ItemReviewPage: React.FC = () => {
 						branchId={branchId}
 						itemId={item.id}
 						equipmentType={equipmentType}
-						initialValues={item?.details || item?.attributes_json || {}}
+						initialValues={step2InitialValues}
 						onBack={() => setCurrentStep('basic')}
 						onComplete={handleStep2Complete}
 						onItemUpdate={(updatedItem) => {

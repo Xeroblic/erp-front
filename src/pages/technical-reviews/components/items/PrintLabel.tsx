@@ -45,7 +45,7 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
                 display: 'flex',
                 flexDirection: 'column',
                 position: 'relative',
-                fontSize: '10pt',
+                fontSize: '9pt',
                 overflow: 'hidden', // Evitar desbordes
             }}>
             
@@ -87,7 +87,7 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 
             {/* Fila 3: Especificaciones Completas */}
             <div style={{
-                fontSize: '10px',
+                fontSize: '8px',
                 lineHeight: '1.15',
                 textAlign: 'justify',
                 overflow: 'hidden',
@@ -147,28 +147,20 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
                 <html>
                 <head>
                     <style>
-                        /* Forzar tamaño de hoja al exacto de la etiqueta y QUITAR márgenes del navegador */
-                        /* Al poner margin: 0, la mayoría de navegadores ocultan auto. headers y footers */
                         @page { 
                             size: 80mm 60mm; 
                             margin: 0; 
                         }
-                        
-                        html, body { 
-                            margin: 0 !important; 
-                            padding: 0 !important; 
+                        body { 
+                            margin: 0; 
+                            padding: 0; 
                             width: 80mm;
                             height: 60mm;
-                            overflow: hidden; /* Cortar cualquier cosa que se salga */
-                            background-color: white;
+                            overflow: hidden;
                         }
-                        
-                        /* Asegurar contraste correcto para impresión */
+                        /* Ocultar headers/footers por si acaso (aunque margin 0 suele bastar) */
                         @media print { 
-                            body { 
-                                -webkit-print-color-adjust: exact; 
-                                print-color-adjust: exact;
-                            } 
+                            body { -webkit-print-color-adjust: exact; } 
                         }
                     </style>
                 </head>

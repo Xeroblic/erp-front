@@ -33,9 +33,6 @@ const initialState: CustomerSalesState = {
 	links: null,
 };
 
-/* ----------------------------- THUNKS CRUD ----------------------------- */
-
-// GET lista clientes
 export const fetchCustomersThunk = createAsyncThunk<
 	ICustomerSale[],
 	{ subsidiary: number | string },
@@ -52,7 +49,6 @@ export const fetchCustomersThunk = createAsyncThunk<
 	}
 });
 
-// GET detalle
 export const fetchCustomerDetailThunk = createAsyncThunk<
 	ICustomerSale,
 	{ subsidiary: number | string; id: number | string },
@@ -70,7 +66,6 @@ export const fetchCustomerDetailThunk = createAsyncThunk<
 	}
 });
 
-// POST crear
 export const createCustomerThunk = createAsyncThunk<
 	ICustomerSale,
 	{ subsidiary: number | string; payload: ICustomerSalePayload },
@@ -88,7 +83,6 @@ export const createCustomerThunk = createAsyncThunk<
 	}
 });
 
-// PATCH editar
 export const updateCustomerThunk = createAsyncThunk<
 	ICustomerSale,
 	{ subsidiary: number | string; id: number | string; payload: ICustomerSalePayload },
@@ -106,7 +100,6 @@ export const updateCustomerThunk = createAsyncThunk<
 	}
 });
 
-// DELETE eliminar
 export const deleteCustomerThunk = createAsyncThunk<
 	{ message: string },
 	{ subsidiary: number | string; id: number | string },
@@ -123,7 +116,6 @@ export const deleteCustomerThunk = createAsyncThunk<
 	}
 });
 
-// GET overview
 export const fetchCustomersOverviewThunk = createAsyncThunk<
 	PaginatedResponse<ICustomerSaleOverview>,
 	{ subsidiary: number | string; page?: number; per_page?: number; params?: any },
@@ -133,7 +125,7 @@ export const fetchCustomersOverviewThunk = createAsyncThunk<
 		const response = await ApiService.fetchData<any>({
 			url: `/subsidiaries/${subsidiary}/customer-sales/overview`,
 			method: 'get',
-			params: { page, per_page, sort: 'id', order: 'desc', ...params },
+			params: { page, per_page, sort: 'created_at', order: 'desc', ...params },
 		});
 		const rootData = response.data;
 
@@ -159,7 +151,6 @@ export const fetchCustomersOverviewThunk = createAsyncThunk<
 	}
 });
 
-/* ----------------------------- SLICE ----------------------------- */
 
 export const customerSalesSlice = createSlice({
 	name: 'customerSales',

@@ -26,7 +26,7 @@ interface IAsideBodyProps extends HTMLAttributes<HTMLElement> {
 export const AsideBody: FC<IAsideBodyProps> = ({ children, className, ...rest }) => (
 	<div
 		data-component-name='Aside/AsideBody'
-		className={classNames('no-scrollbar h-full overflow-x-scroll px-6', className)}
+		className={classNames('no-scrollbar h-full overflow-x-scroll px-4', className)}
 		{...rest}>
 		{children}
 	</div>
@@ -36,6 +36,7 @@ interface IAsideFooterProps extends HTMLAttributes<HTMLElement> {
 	children: ReactNode;
 	className?: string;
 }
+
 export const AsideFooter: FC<IAsideFooterProps> = ({ children, className, ...rest }) => (
 	<div
 		data-component-name='Aside/AsideFooter'

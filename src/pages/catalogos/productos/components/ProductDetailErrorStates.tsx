@@ -28,7 +28,7 @@ const ErrorState: React.FC<ErrorStateProps> = ({ title, description, actions }) 
 			</Card>
 		</Container>
 	</PageWrapper>
-);
+);	
 
 export const InvalidProductError: React.FC = () => {
 	const navigate = useNavigate();
