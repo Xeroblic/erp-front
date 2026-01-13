@@ -327,11 +327,12 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 					</Button>
 
 					<Button
-						color='blue'
+						variant='solid'
+						color={updating ? 'blue' : 'emerald'}
 						onClick={handleFinalize}
 						isDisable={updating || !isFormValid()}>
 						{updating ? 'Procesando...' : 'Finalizar Revisión'}
-						<Icon icon='HeroArrowRight' className='ml-2 h-4 w-4' />
+						<Icon icon='HeroArrowRight' className='ml-2 h-4 w-4 text-white' />
 					</Button>
 				</div>
 			</div>

@@ -488,14 +488,19 @@ const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 				<div className='flex gap-3'>
 					{showManualOverride ? (
 						<Button
-							color='blue'
+							variant='solid'
+							color={approving ? 'blue' : 'emerald'}
 							onClick={handleManualApprove}
 							isDisable={approving || !manualGrade || !overrideReason.trim()}>
 							<Icon icon='HeroCheck' className='mr-2 h-4 w-4' />
 							{approving ? 'Aprobando...' : 'Aprobar con Grado Manual'}
 						</Button>
 					) : (
-						<Button color='blue' onClick={handleAcceptSuggestion} isDisable={approving}>
+						<Button
+							variant='solid'
+							color={approving ? 'blue' : 'emerald'}
+							onClick={handleAcceptSuggestion}
+							isDisable={approving}>
 							<Icon icon='HeroCheck' className='mr-2 h-4 w-4' />
 							{approving ? 'Aprobando...' : 'Aceptar y Aprobar'}
 						</Button>
