@@ -14,6 +14,7 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchValidationRulesByType } from '@/store/slices/technicalReviews';
 import { fetchBrands } from '@/store/slices/brands/brandsSlice';
 import type { UpdateItemDetailsPayload } from '@/interface/technicalReviews.interface';
+import { ProcessorSelector } from '../components/ProcessorSelector';
 
 interface AioFormProps {
 	branchId: number;
@@ -259,12 +260,10 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 						<label className='mb-2 block text-sm font-medium'>
 							Procesador <span className='text-red-500'>*</span>
 						</label>
-						<Input
-							type='text'
-							name='processor'
+						<ProcessorSelector
+							deviceType='AIO'
 							value={values.processor || ''}
-							onChange={handleInputChange}
-							placeholder='Ej: i5 8500 @3,0'
+							onChange={(processorText) => onChange('processor', processorText)}
 							disabled={readOnly}
 						/>
 					</div>

@@ -14,6 +14,7 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchValidationRulesByType } from '@/store/slices/technicalReviews';
 import { fetchBrands } from '@/store/slices/brands/brandsSlice';
 import type { UpdateItemDetailsPayload } from '@/interface/technicalReviews.interface';
+import { ProcessorSelector } from '../components/ProcessorSelector';
 
 interface DesktopFormProps {
 	branchId: number;
@@ -246,12 +247,10 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 						<label className='mb-2 block text-sm font-medium'>
 							Procesador <span className='text-red-500'>*</span>
 						</label>
-						<Input
-							type='text'
-							name='processor'
+						<ProcessorSelector
+							deviceType='Desktop'
 							value={values.processor || ''}
-							onChange={handleInputChange}
-							placeholder='Ej: I7-10700 2.90GHz'
+							onChange={(processorText) => onChange('processor', processorText)}
 							disabled={readOnly}
 						/>
 					</div>
