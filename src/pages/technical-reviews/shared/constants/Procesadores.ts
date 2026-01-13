@@ -724,7 +724,8 @@ export const PROCESADORES_DATA: DispositivoData[] = [
                                 nombre: '12ª Gen',
                                 año: 2022,
                                 modelos: [
-                                    { id: 'i7-12700k', nombre: 'i7-12700K' }
+                                    { id: 'i7-12700k', nombre: 'i7-12700K' },
+                                    { id: 'i7-12500', nombre: 'i7-12500' },
                                 ]
                             },
                             {
@@ -830,7 +831,9 @@ export const PROCESADORES_DATA: DispositivoData[] = [
                                 año: 2022,
                                 modelos: [
                                     { id: 'i5-12600k', nombre: 'i5-12600K' },
-                                    { id: 'i5-12400f', nombre: 'i5-12400F' }
+                                    { id: 'i5-12500t', nombre: 'i5-12500T' },
+                                    { id: 'i5-12500', nombre: 'i5-12500' },
+                                    { id: 'i5-12400f', nombre: 'i5-12400F' },
                                 ]
                             },
                             {
