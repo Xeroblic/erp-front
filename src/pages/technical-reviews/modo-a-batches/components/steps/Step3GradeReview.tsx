@@ -482,7 +482,7 @@ const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 					isDisable={approving || isModifying}
 					isLoading={isModifying}>
 					<Icon icon='HeroArrowLeft' className='mr-2 h-4 w-4' />
-					{isModifying ? 'Volviendo...' : 'Modificar Revisión'}
+					{isModifying ? 'Volviendo...' : 'Modificañr Revisión'}
 				</Button>
 
 				<div className='flex gap-3'>
