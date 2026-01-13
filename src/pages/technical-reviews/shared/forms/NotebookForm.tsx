@@ -14,6 +14,7 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchValidationRulesByType } from '@/store/slices/technicalReviews';
 import { fetchBrands } from '@/store/slices/brands/brandsSlice';
 import type { UpdateItemDetailsPayload } from '@/interface/technicalReviews.interface';
+import { ProcessorSelector } from '../components/ProcessorSelector';
 
 interface NotebookFormProps {
 	branchId: number;
@@ -238,7 +239,6 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 				</CardBody>
 			</Card>
 
-			{/* 2️⃣ Especificaciones Técnicas */}
 			<Card>
 				<CardHeader>
 					<div className='flex items-center gap-2'>
@@ -252,12 +252,10 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 							<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
 								Procesador <span className='text-red-500'>*</span>
 							</label>
-							<Input
-								type='text'
-								name='processor'
+							<ProcessorSelector
+								deviceType='Notebook'
 								value={values.processor || ''}
-								onChange={handleInputChange}
-								placeholder='Ej: I7-1165G7 2.80GHz'
+								onChange={(processorText) => onChange('processor', processorText)}
 								disabled={readOnly}
 							/>
 						</div>
