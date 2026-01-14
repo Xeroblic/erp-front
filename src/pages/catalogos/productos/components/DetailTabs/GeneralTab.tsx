@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useFormikContext, useFormik } from 'formik';
 import Input from '@/components/form/Input';
-import Select from '@/components/form/Select';
+import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import type { ProductDetailForm } from '../../types/products.types';
 import type { IBrand } from '@/interface/brand.interface';
 import { PRODUCT_STATUS_LABELS, PRODUCT_TYPE_LABELS } from '../../constants/products.constant';
@@ -80,24 +80,38 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
 		}
 	}, [values.product_type, setFieldValue]);
 
+    const productTypeOptions = Object.entries(PRODUCT_TYPE_LABELS).map(([key, label]) => ({
+        value: key,
+        label,
+    }));
+
+    const brandOptions = brands.map((brand) => ({
+        value: String(brand.id),
+        label: brand.name
+    }));
+
+    const statusOptions = [
+        { value: 'pending', label: 'Pendiente' },
+        { value: 'validated', label: 'Validado (Publicado)' },
+        { value: 'rejected', label: 'Rechazado' },
+        { value: 'archived', label: 'Archivado' }
+    ];
+
 	return (
 		<>
 			<div className='mb-6 block'>
 				<Label htmlFor='product_type' className='text-sm font-medium'>
 					Tipo de producto
 				</Label>
-				<Select
+				<SelectReact
 					name='product_type'
-					value={values.product_type}
-					onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
-						setFieldValue('product_type', event.target.value)
-					}>
-					{Object.entries(PRODUCT_TYPE_LABELS).map(([key, label]) => (
-						<option key={key} value={key}>
-							{label}
-						</option>
-					))}
-				</Select>
+					value={productTypeOptions.find(opt => opt.value === values.product_type)}
+					options={productTypeOptions}
+                    onChange={(option) => {
+                         const selected = option as TSelectOption;
+                         if (selected) setFieldValue('product_type', selected.value);
+                    }}
+				/>
 				{touched.product_type && errors.product_type && (
 					<p className='text-xs text-red-500'>{errors.product_type}</p>
 				)}
@@ -147,44 +161,37 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
 					<Label htmlFor='brand_id' className='text-sm font-medium'>
 						Marca {brandsLoading ? '(Cargando...)' : `(${brands.length} disponibles)`}
 					</Label>
-					<Select
+					<SelectReact
 						name='brand_id'
-						value={String(values.brand_id || '')}
-						onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
-							const { value } = event.target;
-							setFieldValue('brand_id', value === '' ? '' : Number(value));
+						value={brandOptions.find(opt => opt.value === String(values.brand_id))}
+                        options={brandOptions}
+						onChange={(option) => {
+                            const selected = option as TSelectOption;
+							setFieldValue('brand_id', selected ? Number(selected.value) : '');
 						}}
-						disabled={brandsLoading}>
-						<option value=''>Seleccionar marca</option>
-						{brands.map((brand) => (
-							<option key={brand.id} value={String(brand.id)}>
-								{brand.name}
-							</option>
-						))}
-					</Select>
+						isDisabled={brandsLoading}
+                        placeholder='Seleccionar marca'
+                    />
 					{touched.brand_id && errors.brand_id && (
 						<p className='text-xs text-red-500'>{errors.brand_id}</p>
 					)}
 				</div>
 
 				<div className='space-y-1'>
-					<Label htmlFor='is_active' className='text-sm font-medium'>
-						Estado
+					<Label htmlFor='product_status' className='text-sm font-medium'>
+						Estado de publicación
 					</Label>
-					<Select
-						name='is_active'
-						value={values.is_active ? 'true' : 'false'}
-						onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
-							setFieldValue('is_active', event.target.value === 'true')
-						}>
-						{Object.entries(PRODUCT_STATUS_LABELS).map(([key, label]) => (
-							<option key={key} value={key}>
-								{label}
-							</option>
-						))}
-					</Select>
-					{touched.is_active && errors.is_active && (
-						<p className='text-xs text-red-500'>{errors.is_active}</p>
+					<SelectReact
+						name='product_status'
+						value={statusOptions.find(opt => opt.value === (values.product_status || 'pending'))}
+                        options={statusOptions}
+						onChange={(option) => {
+                            const selected = option as TSelectOption;
+							if (selected) setFieldValue('product_status', selected.value);
+						}}
+                    />
+					{touched.product_status && errors.product_status && (
+						<p className='text-xs text-red-500'>{errors.product_status}</p>
 					)}
 				</div>
 

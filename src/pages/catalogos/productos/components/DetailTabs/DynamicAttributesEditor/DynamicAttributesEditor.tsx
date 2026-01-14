@@ -125,13 +125,9 @@ const DynamicAttributesEditor: React.FC<{
 						variant='solid'
 						color='emerald'
 						size='sm'
-						isDisable={!attributesComplete}
 						onClick={async () => {
 							if (!product || !updateProduct) return;
-							if (!attributesComplete) {
-								toast.error('Completa todos los atributos antes de publicar');
-								return;
-							}
+							// Removed strict attribute validation block
 							try {
 								await updateProduct({ data: { product_status: 'validated' } });
 								toast.success('Producto publicado');
