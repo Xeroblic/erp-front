@@ -1,9 +1,8 @@
-import React, { useMemo, useEffect, useState } from 'react';
-import Chart from 'react-apexcharts';
+import React, { useMemo, useState, Suspense } from 'react';
+const Chart = React.lazy(() => import('react-apexcharts'));
 import Card, { CardBody, CardHeader, CardHeaderChild } from '@/components/ui/Card';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
-import { fetchReportResults } from '@/store/slices/reports/reportsThunks';
 import useDarkMode from '@/hooks/useDarkMode';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
@@ -237,7 +236,11 @@ const WeeklySalesChart: React.FC = () => {
                         ${totalAmount.toLocaleString('es-CL', { maximumFractionDigits: 0 })}
                     </span>
                 </div>
-                <Chart options={chartOptions} series={chartSeries} type='area' height={280} />
+                <Suspense fallback={<div className="h-[280px] w-full animate-pulse bg-gray-100/50 rounded-lg"></div>}>
+                    {typeof window !== 'undefined' && (
+                        <Chart options={chartOptions} series={chartSeries} type='area' height={280} />
+                    )}
+                </Suspense>
             </CardBody>
         </Card>
     );

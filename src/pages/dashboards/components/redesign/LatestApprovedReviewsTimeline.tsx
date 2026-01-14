@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
 import Timeline, { TimelineItem } from '@/components/Timeline';
@@ -7,8 +7,8 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchItems } from '@/store/slices/technicalReviews/thunks/itemsThunks';
-// Use the existing PrintLabel component if possible, or mock the action
-import PrintLabel from '@/pages/technical-reviews/components/items/PrintLabel'; 
+// Use React.lazy for the modal to avoid heavy bundle load / context issues
+const PrintLabel = React.lazy(() => import('@/pages/technical-reviews/components/items/PrintLabel'));
 import { IItem } from '@/interface/technicalReviews.interface';
 
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
@@ -221,15 +221,19 @@ const LatestApprovedReviewsTimeline: React.FC<Props> = () => {
             </CardBody>
 
             {/* Print Modal */}
-            <PrintLabel 
-                isOpen={isPrintOpen} 
-                onClose={() => {
-                    setIsPrintOpen(false);
-                    setItemToPrint(null);
-                }} 
-                item={itemToPrint} 
-                autoPrint={true} // Auto trigger print dialog
-            />
+            <Suspense fallback={null}>
+                {isPrintOpen && (
+                    <PrintLabel 
+                        isOpen={isPrintOpen} 
+                        onClose={() => {
+                            setIsPrintOpen(false);
+                            setItemToPrint(null);
+                        }} 
+                        item={itemToPrint} 
+                        autoPrint={true} // Auto trigger print dialog
+                    />
+                )}
+            </Suspense>
         </Card>
     );
 };

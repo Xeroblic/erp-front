@@ -1,5 +1,5 @@
-import React from 'react';
-import Chart from 'react-apexcharts';
+import React, { Suspense } from 'react';
+const Chart = React.lazy(() => import('react-apexcharts'));
 import Card, { CardBody, CardHeader, CardHeaderChild } from '@/components/ui/Card';
 import useDarkMode from '@/hooks/useDarkMode';
 
@@ -66,10 +66,15 @@ const ReviewsChart: React.FC = () => {
                 </CardHeaderChild>
             </CardHeader>
             <CardBody>
-                <Chart options={chartOptions} series={series} type='bar' height={250} />
+                <Suspense fallback={<div className="h-[250px] w-full animate-pulse bg-gray-100/50 rounded-lg"></div>}>
+                    {typeof window !== 'undefined' && (
+                        <Chart options={chartOptions} series={series} type='bar' height={250} />
+                    )}
+                </Suspense>
             </CardBody>
         </Card>
     );
 };
 
 export default ReviewsChart;
+
