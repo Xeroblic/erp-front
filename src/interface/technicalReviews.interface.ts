@@ -332,4 +332,14 @@ export interface TechnicalReviewsState {
 	batchesError: string | null;
 	itemsError: string | null;
 	validationError: string | null;
+
+	// Dashboard Stats
+	dashboardStats: {
+		total: number;
+		pending: number;
+		approved: number;
+		rejected: number;
+		loading: boolean;
+		error: string | null;
+	};
 }

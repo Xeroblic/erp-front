@@ -41,6 +41,7 @@ interface SalesState {
 		salesperson_id?: string;
 		min_amount?: number;
 		max_amount?: number;
+		with_customer?: string | number; // Added to support sales timeline
 	};
 	statistics: {
 		totalSalesAmount: number;
@@ -97,13 +98,14 @@ export const fetchSales = createAsyncThunk(
 	'sales/fetchSales',
 	async (
 		params: {
+			subsidiaryId: number;
 			page?: number;
 			perPage?: number;
 			filters?: SalesState['filters'];
-		} = {},
+		},
 	) => {
 		try {
-			const { page = 1, perPage = 20, filters = {} } = params;
+			const { subsidiaryId, page = 1, perPage = 20, filters = {} } = params;
 
 			const queryParams = new URLSearchParams({
 				page: page.toString(),
@@ -116,7 +118,7 @@ export const fetchSales = createAsyncThunk(
 			});
 
 			const response = await ApiService.fetchData<ISalesResponse>({
-				url: `/sales?${queryParams.toString()}`,
+				url: `/subsidiaries/${subsidiaryId}/sales?${queryParams.toString()}`,
 				method: 'get',
 			});
 
@@ -128,10 +130,10 @@ export const fetchSales = createAsyncThunk(
 	},
 );
 
-export const fetchSaleById = createAsyncThunk('sales/fetchSaleById', async (id: number) => {
+export const fetchSaleById = createAsyncThunk('sales/fetchSaleById', async ({ subsidiaryId, id }: { subsidiaryId: number; id: number }) => {
 	try {
 		const response = await ApiService.fetchData<ISaleResponse>({
-			url: `/sales/${id}`,
+			url: `/subsidiaries/${subsidiaryId}/sales/${id}`,
 			method: 'get',
 		});
 		return response.data;
@@ -141,10 +143,10 @@ export const fetchSaleById = createAsyncThunk('sales/fetchSaleById', async (id: 
 	}
 });
 
-export const createSale = createAsyncThunk('sales/createSale', async (data: ICreateSaleRequest) => {
+export const createSale = createAsyncThunk('sales/createSale', async ({ subsidiaryId, data }: { subsidiaryId: number; data: ICreateSaleRequest }) => {
 	try {
 		const response = await ApiService.fetchData<ISaleResponse>({
-			url: '/sales',
+			url: `/subsidiaries/${subsidiaryId}/sales`,
 			method: 'post',
 			data: data as unknown as Record<string, unknown>,
 		});
@@ -162,10 +164,10 @@ export const createSale = createAsyncThunk('sales/createSale', async (data: ICre
 
 export const updateSale = createAsyncThunk(
 	'sales/updateSale',
-	async ({ id, data }: { id: number; data: Partial<ICreateSaleRequest> }) => {
+	async ({ subsidiaryId, id, data }: { subsidiaryId: number; id: number; data: Partial<ICreateSaleRequest> }) => {
 		try {
 			const response = await ApiService.fetchData<ISaleResponse>({
-				url: `/sales/${id}`,
+				url: `/subsidiaries/${subsidiaryId}/sales/${id}`,
 				method: 'put',
 				data: data as unknown as Record<string, unknown>,
 			});
@@ -175,7 +177,7 @@ export const updateSale = createAsyncThunk(
 			const message =
 				typeof error === 'object' && error !== null && 'response' in error
 					? (error as { response?: { data?: { message?: string } } }).response?.data
-							?.message
+						?.message
 					: null;
 			toast.error(message || 'Error al actualizar la venta');
 			throw error;
@@ -183,10 +185,10 @@ export const updateSale = createAsyncThunk(
 	},
 );
 
-export const deleteSale = createAsyncThunk('sales/deleteSale', async (id: number) => {
+export const deleteSale = createAsyncThunk('sales/deleteSale', async ({ subsidiaryId, id }: { subsidiaryId: number; id: number }) => {
 	try {
 		await ApiService.fetchData({
-			url: `/sales/${id}`,
+			url: `/subsidiaries/${subsidiaryId}/sales/${id}`,
 			method: 'delete',
 		});
 		toast.success('Venta eliminada exitosamente');
@@ -197,10 +199,10 @@ export const deleteSale = createAsyncThunk('sales/deleteSale', async (id: number
 	}
 });
 
-export const generateInvoice = createAsyncThunk('sales/generateInvoice', async (id: number) => {
+export const generateInvoice = createAsyncThunk('sales/generateInvoice', async ({ subsidiaryId, id }: { subsidiaryId: number; id: number }) => {
 	try {
 		const response = await ApiService.fetchData<ISaleResponse>({
-			url: `/sales/${id}/invoice`,
+			url: `/subsidiaries/${subsidiaryId}/sales/${id}/invoice`,
 			method: 'post',
 		});
 		toast.success('Factura generada exitosamente');
@@ -214,9 +216,11 @@ export const generateInvoice = createAsyncThunk('sales/generateInvoice', async (
 export const recordPayment = createAsyncThunk(
 	'sales/recordPayment',
 	async ({
+		subsidiaryId,
 		id,
 		data,
 	}: {
+		subsidiaryId: number;
 		id: number;
 		data: {
 			amount: number;
@@ -228,7 +232,7 @@ export const recordPayment = createAsyncThunk(
 	}) => {
 		try {
 			const response = await ApiService.fetchData<ISaleResponse>({
-				url: `/sales/${id}/payments`,
+				url: `/subsidiaries/${subsidiaryId}/sales/${id}/payments`,
 				method: 'post',
 				data,
 			});
@@ -244,9 +248,11 @@ export const recordPayment = createAsyncThunk(
 export const shipSale = createAsyncThunk(
 	'sales/shipSale',
 	async ({
+		subsidiaryId,
 		id,
 		data,
 	}: {
+		subsidiaryId: number;
 		id: number;
 		data: {
 			tracking_number?: string;
@@ -258,7 +264,7 @@ export const shipSale = createAsyncThunk(
 	}) => {
 		try {
 			const response = await ApiService.fetchData<ISaleResponse>({
-				url: `/sales/${id}/ship`,
+				url: `/subsidiaries/${subsidiaryId}/sales/${id}/ship`,
 				method: 'post',
 				data,
 			});
@@ -274,9 +280,11 @@ export const shipSale = createAsyncThunk(
 export const deliverSale = createAsyncThunk(
 	'sales/deliverSale',
 	async ({
+		subsidiaryId,
 		id,
 		data,
 	}: {
+		subsidiaryId: number;
 		id: number;
 		data: {
 			delivered_date: string;
@@ -286,7 +294,7 @@ export const deliverSale = createAsyncThunk(
 	}) => {
 		try {
 			const response = await ApiService.fetchData<ISaleResponse>({
-				url: `/sales/${id}/deliver`,
+				url: `/subsidiaries/${subsidiaryId}/sales/${id}/deliver`,
 				method: 'post',
 				data,
 			});
@@ -302,9 +310,11 @@ export const deliverSale = createAsyncThunk(
 export const cancelSale = createAsyncThunk(
 	'sales/cancelSale',
 	async ({
+		subsidiaryId,
 		id,
 		data,
 	}: {
+		subsidiaryId: number;
 		id: number;
 		data: {
 			reason: string;
@@ -314,7 +324,7 @@ export const cancelSale = createAsyncThunk(
 	}) => {
 		try {
 			const response = await ApiService.fetchData<ISaleResponse>({
-				url: `/sales/${id}/cancel`,
+				url: `/subsidiaries/${subsidiaryId}/sales/${id}/cancel`,
 				method: 'post',
 				data,
 			});
@@ -329,9 +339,9 @@ export const cancelSale = createAsyncThunk(
 
 export const fetchSalesStatistics = createAsyncThunk(
 	'sales/fetchStatistics',
-	async (params: { period?: 'day' | 'week' | 'month' | 'year' } = {}) => {
+	async (params: { subsidiaryId: number; period?: 'day' | 'week' | 'month' | 'year' }) => {
 		try {
-			const { period = 'month' } = params;
+			const { subsidiaryId, period = 'month' } = params;
 			const response = await ApiService.fetchData<{
 				totalSalesAmount: number;
 				totalSalesCount: number;
@@ -340,7 +350,7 @@ export const fetchSalesStatistics = createAsyncThunk(
 				cancelledSales: number;
 				monthlyGrowth: number;
 			}>({
-				url: `/sales/statistics?period=${period}`,
+				url: `/subsidiaries/${subsidiaryId}/sales/statistics?period=${period}`,
 				method: 'get',
 			});
 			return response.data;
@@ -349,6 +359,37 @@ export const fetchSalesStatistics = createAsyncThunk(
 			throw error;
 		}
 	},
+);
+
+// Download shipping label
+export const downloadShippingLabel = createAsyncThunk(
+	'sales/downloadLabel',
+	async ({ subsidiaryId, id }: { subsidiaryId: number; id: number }) => {
+		try {
+			const response = await ApiService.fetchData<Blob>({
+				url: `/subsidiaries/${subsidiaryId}/sales/${id}/download-label`,
+				method: 'post',
+				responseType: 'blob',
+			});
+
+			// Create blob url and download
+			const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+			const url = window.URL.createObjectURL(blob);
+			const link = document.createElement('a');
+			link.href = url;
+			link.setAttribute('download', `etiqueta_envio_${id}.docx`);
+			document.body.appendChild(link);
+			link.click();
+			link.remove();
+			window.URL.revokeObjectURL(url);
+
+			toast.success('Etiqueta descargada exitosamente');
+			return true;
+		} catch (error: unknown) {
+			toast.error(extractMessage(error, 'Error al descargar la etiqueta'));
+			throw error;
+		}
+	}
 );
 
 // Slice

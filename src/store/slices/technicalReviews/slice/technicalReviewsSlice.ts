@@ -16,6 +16,7 @@ import * as itemsThunks from '../thunks/itemsThunks';
 import * as reviewThunks from '../thunks/reviewThunks';
 import * as traceabilityThunks from '../thunks/traceabilityThunks';
 import * as validationThunks from '../thunks/validationThunks';
+import * as dashboardThunks from '../thunks/dashboardThunks';
 
 const initialState: TechnicalReviewsState = {
 	// Lotes
@@ -63,6 +64,16 @@ const initialState: TechnicalReviewsState = {
 	batchesError: null,
 	itemsError: null,
 	validationError: null,
+
+	// Dashboard Stats
+	dashboardStats: {
+		total: 0,
+		pending: 0,
+		approved: 0,
+		rejected: 0,
+		loading: false,
+		error: null,
+	},
 };
 
 const technicalReviewsSlice = createSlice({
@@ -598,6 +609,24 @@ const technicalReviewsSlice = createSlice({
 			})
 			.addCase(validationThunks.getErrorStatistics.rejected, (state, action) => {
 				state.validationError = action.payload ?? 'Error al cargar estadísticas';
+			});
+
+		// Dashboard Stats
+		builder
+			.addCase(dashboardThunks.fetchDashboardStats.pending, (state) => {
+				state.dashboardStats.loading = true;
+				state.dashboardStats.error = null;
+			})
+			.addCase(dashboardThunks.fetchDashboardStats.fulfilled, (state, action) => {
+				state.dashboardStats.loading = false;
+				state.dashboardStats.total = action.payload.total;
+				state.dashboardStats.pending = action.payload.pending;
+				state.dashboardStats.approved = action.payload.approved;
+				state.dashboardStats.rejected = action.payload.rejected;
+			})
+			.addCase(dashboardThunks.fetchDashboardStats.rejected, (state, action) => {
+				state.dashboardStats.loading = false;
+				state.dashboardStats.error = action.payload ?? 'Error fetching stats';
 			});
 	},
 });

@@ -87,7 +87,7 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 
             {/* Fila 3: Especificaciones Completas */}
             <div style={{
-                fontSize: '8px',
+                fontSize: '10px',
                 lineHeight: '1.15',
                 textAlign: 'justify',
                 overflow: 'hidden',
@@ -98,7 +98,7 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
                <span style={{ fontWeight: 'bold' }}>RAM: </span>{extractValue(details.ram_size)}GB {details.ram_slots ? `(${details.ram_slots})` : ''} {' '}
                <span style={{ fontWeight: 'bold' }}>DISCO: </span>{extractValue(details.storage_size)} {extractValue(details.storage_technology)} {' '}
                <span style={{ fontWeight: 'bold' }}>SO: </span>{extractValue(details.operating_system) || '0'} {' '}
-               <span style={{ fontWeight: 'bold' }}>PANTALLA: </span>{extractValue(details.screen_inches)}" {' '}
+               <span style={{ fontWeight: 'bold' }}>PANTALLA: </span>{extractValue(details.screen_inches)} {' '}
                {details.battery_health && <><span style={{ fontWeight: 'bold' }}>BATERÍA: </span>{details.battery_health} </>}
                <span style={{ fontWeight: 'bold' }}>TECLADO: </span>{extractValue(details.keyboard_layout)} {details.has_backlit_keyboard ? '(RETRO)' : ''} {' '}
                <span style={{ fontWeight: 'bold' }}>CLIENTE: </span>{clientName}
