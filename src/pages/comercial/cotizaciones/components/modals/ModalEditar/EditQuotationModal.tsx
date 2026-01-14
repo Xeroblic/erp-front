@@ -196,6 +196,40 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 		if (isOpen && branchId) fetchProductos();
 	}, [branchId, isOpen, quotation]);
 
+    // Handle automatic surcharge updates
+    const PaymentMethodSurchargeHandler = ({ values, setFieldValue }: { values: FormQuotationValues, setFieldValue: any }) => {
+        useEffect(() => {
+             const method = Array.isArray(values.payment_method) ? values.payment_method[0] : values.payment_method;
+             
+             if (!method) return;
+
+             // Exclude surcharge for 'efectivo' and 'transferencia'
+             const EXEMPT_METHODS = ['efectivo', 'transferencia'];
+             const shouldApplySurcharge = !EXEMPT_METHODS.includes(method.toLowerCase());
+
+             if (shouldApplySurcharge) {
+                 // Set default 3% only if it was 0 or undefined, AND we are not loading an existing non-zero value
+                 // For edit mode, we trust the existing value unless it's 0 and valid for surcharge
+                 if (!values.payment_surcharge_percentage && values.payment_surcharge_percentage !== 0) {
+                     setFieldValue('payment_surcharge_percentage', 3);
+                 }
+                 // If it is 0 but method requires it, maybe we should default to 3? 
+                 // User might have explicitly set 0. Let's respect explicit 0 if possible? 
+                 // Actually prompt says "automatic". Let's set 3 if 0.
+                 if (values.payment_surcharge_percentage === 0) {
+                     setFieldValue('payment_surcharge_percentage', 3);
+                 }
+             } else {
+                 // Reset availability of surcharge if exempt
+                 if (values.payment_surcharge_percentage !== 0) {
+                     setFieldValue('payment_surcharge_percentage', 0);
+                 }
+             }
+        }, [values.payment_method]); // Listen only to payment_method changes
+
+        return null;
+    };
+
 	// Valores iniciales para EDITAR cotización
 	const getInitialValues = (): FormQuotationValues => {
 		const today = new Date().toISOString().split('T')[0];
@@ -212,6 +246,9 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 			? (quotation.payment_method[0] ?? null)
 			: (quotation.payment_method ?? null);
 
+        // Filter out surcharge items to prevent duplication/display in items list
+        const filteredItems = (quotation.items || []).filter(item => item.customer_sku !== 'RECARGO');
+
 		return {
 			subsidiary_id: quotation.subsidiary_id ?? personalizacion?.subsidiary_id ?? 1,
 			customer_id: quotation.customer_id ?? 0,
@@ -225,6 +262,8 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 			discount_percentage: numericDiscountPct,
 			tax_percentage: numericTaxPct > 0 ? IVA_RATE : 0,
 			total_amount: Number(quotation.total_amount ?? 0),
+            payment_surcharge_percentage: Number(quotation.payment_surcharge_percentage ?? 0),
+            payment_surcharge_amount: Number(quotation.payment_surcharge_amount ?? 0),
 			notes: quotation.notes ?? '',
 			created_by: quotation.created_by ?? user?.id ?? undefined,
 			approved_by: quotation.approved_by ?? undefined,
@@ -233,7 +272,7 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 			purchase_order: quotation.purchase_order ?? '',
 			payment_terms: quotation.payment_terms ?? 0,
 			fixed_discount: quotation.fixed_discount ?? 0,
-			items: ensureFormItems(quotation.items),
+			items: ensureFormItems(filteredItems),
 			customer: quotation.customer,
 			items_count: quotation.items_count,
 			can_convert: quotation.can_convert,
@@ -281,6 +320,18 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 						validationSchema={quotationSchema}
 						onSubmit={(values, { setSubmitting }) => {
 							const sanitizedItems = sanitizeItemsForSubmit(values.items);
+
+                            if (Number(values.payment_surcharge_amount) > 0) {
+                                sanitizedItems.push({
+                                    product_id: null,
+                                    customer_name: 'Reajuste valor normal sin descuento transferencia',
+                                    quantity: 1,
+                                    unit_price: Number(values.payment_surcharge_amount),
+                                    description: 'Reajuste por medio de pago seleccionado',
+                                    customer_sku: 'RECARGO',
+                                } as any);
+                            }
+
 							const normalizedPayment = Array.isArray(values.payment_method)
 								? (values.payment_method[0] ?? null)
 								: values.payment_method && String(values.payment_method).length > 0
@@ -298,6 +349,8 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 								document_type: normalizedDocument,
 								items: sanitizedItems as any,
 								tax_percentage: values.tax_percentage === IVA_RATE ? IVA_RATE : 0,
+                                payment_surcharge_percentage: values.payment_surcharge_percentage,
+                                payment_surcharge_amount: values.payment_surcharge_amount,
 							};
 
 							setPendingPayload(payload);
@@ -307,6 +360,7 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 						enableReinitialize>
 						{({ values, setFieldValue, errors, touched, handleSubmit }) => (
 							<Form id='quotation-form' className='space-y-6' onSubmit={handleSubmit}>
+                                <PaymentMethodSurchargeHandler values={values} setFieldValue={setFieldValue} />
 								<GeneralInfoCard
 									values={values}
 									setFieldValue={setFieldValue}

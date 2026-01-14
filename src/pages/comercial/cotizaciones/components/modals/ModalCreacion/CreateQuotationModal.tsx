@@ -134,7 +134,35 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 		};
 
 		if (isOpen && branchId) fetchProductos();
+		if (isOpen && branchId) fetchProductos();
 	}, [branchId, isOpen]);
+
+    // Handle automatic surcharge updates
+    const PaymentMethodSurchargeHandler = ({ values, setFieldValue }: { values: FormQuotationValues, setFieldValue: any }) => {
+        useEffect(() => {
+             const method = Array.isArray(values.payment_method) ? values.payment_method[0] : values.payment_method;
+             
+             if (!method) return;
+
+             // Exclude surcharge for 'efectivo' and 'transferencia'
+             const EXEMPT_METHODS = ['efectivo', 'transferencia'];
+             const shouldApplySurcharge = !EXEMPT_METHODS.includes(method.toLowerCase());
+
+             if (shouldApplySurcharge) {
+                 // Set default 3% if currently 0 (or undefined)
+                 if (!values.payment_surcharge_percentage) {
+                     setFieldValue('payment_surcharge_percentage', 3);
+                 }
+             } else {
+                 // Reset availability of surcharge if exempt
+                 if (values.payment_surcharge_percentage !== 0) {
+                     setFieldValue('payment_surcharge_percentage', 0);
+                 }
+             }
+        }, [values.payment_method]); // Listen only to payment_method changes to avoid loops
+
+        return null;
+    };
 
 	const getInitialValues = (): FormQuotationValues => {
 		const today = new Date().toISOString().split('T')[0];
@@ -162,6 +190,8 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 			notes: '',
 			created_by: user?.id ?? 1,
 			tax_amount: 0,
+            payment_surcharge_percentage: 0,
+            payment_surcharge_amount: 0,
 			items: [{ ...EMPTY_PRODUCT_ITEM }],
 		};
 	};
@@ -246,6 +276,18 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 							console.log('Validaciones manuales pasadas, sanitizando items...');
 
 							const sanitizedItems = sanitizeItemsForSubmit(values.items);
+
+                            if (Number(values.payment_surcharge_amount) > 0) {
+                                sanitizedItems.push({
+                                    product_id: null,
+                                    customer_name: 'Reajuste valor normal sin descuento transferencia',
+                                    quantity: 1,
+                                    unit_price: Number(values.payment_surcharge_amount),
+                                    description: 'Reajuste por medio de pago seleccionado',
+                                    customer_sku: 'RECARGO',
+                                } as any);
+                            }
+
 							console.log('Items sanitizados:', sanitizedItems);
 
 							const normalizedPayment = Array.isArray(values.payment_method)
@@ -279,6 +321,8 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 								document_type: normalizedDocument,
 								items: sanitizedItems as any,
 								tax_percentage: values.tax_percentage === IVA_RATE ? IVA_RATE : 0,
+                                payment_surcharge_percentage: values.payment_surcharge_percentage,
+                                payment_surcharge_amount: values.payment_surcharge_amount,
 							};
 
 							console.log('Payload preparado para envio:', payload);
@@ -318,6 +362,7 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 									id='quotation-form'
 									className='space-y-6'
 									onSubmit={handleSubmit}>
+                                    <PaymentMethodSurchargeHandler values={values} setFieldValue={setFieldValue} />
 									<GeneralInfoCard
 										values={values}
 										setFieldValue={setFieldValue}

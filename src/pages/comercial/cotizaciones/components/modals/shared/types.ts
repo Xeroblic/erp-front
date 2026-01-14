@@ -6,6 +6,8 @@ export type FormQuotationValues = Omit<IQuote, 'id' | 'created_at' | 'updated_at
     items: FormQuoteItem[];
     tax_percentage: number;
     discount_percentage: number;
+    payment_surcharge_percentage: number;
+    payment_surcharge_amount: number;
 };
 
 export interface SaleableProduct {

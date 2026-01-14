@@ -75,19 +75,21 @@ export interface Quote {
 	internal_notes?: string | null;
 	terms_conditions?: Record<string, any> | null;
 	payment_method?:
-		| 'efectivo'
-		| 'tarjeta_credito'
-		| 'tarjeta_debito'
-		| 'transferencia'
-		| 'cheque'
-		| 'credito'
-		| string
-		| string[]
-		| null;
+	| 'efectivo'
+	| 'tarjeta_credito'
+	| 'tarjeta_debito'
+	| 'transferencia'
+	| 'cheque'
+	| 'credito'
+	| string
+	| string[]
+	| null;
 	purchase_order?: string | null;
 	payment_terms?: number | null;
 	fixed_discount?: number | null;
 	document_type?: string | null;
+	payment_surcharge_percentage?: number | null;
+	payment_surcharge_amount?: number | null;
 	metadata?: Record<string, any>;
 	created_at?: string;
 	updated_at?: string;
@@ -138,6 +140,8 @@ export interface QuoteCreateDTO {
 	payment_terms?: number | null;
 	fixed_discount?: number | null;
 	discount_percentage?: number | null;
+	payment_surcharge_percentage?: number | null;
+	payment_surcharge_amount?: number | null;
 	status?: QuoteStatus;
 }
 

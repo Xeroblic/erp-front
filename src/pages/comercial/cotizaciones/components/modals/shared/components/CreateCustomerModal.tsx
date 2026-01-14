@@ -70,10 +70,8 @@ const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
 					data: payload,
 				});
 
-				// El cliente está en response.data.data, no en response.data
 				const createdCustomer = response.data?.data || (response.data as any);
 
-				// Actualizar Redux store
 				await dispatch(
 					fetchCustomersOverviewThunk({
 						subsidiary: subsidiaryId,
@@ -93,10 +91,8 @@ const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
 
 				toast.success(`Cliente ${customerName} creado exitosamente`);
 
-				// Llamar al callback ANTES de cerrar
 				await onCustomerCreated(createdCustomer.id, customerName);
 
-				// Esperar un poco antes de cerrar
 				await new Promise((resolve) => setTimeout(resolve, 500));
 
 				resetForm();

@@ -30,19 +30,27 @@ const TotalsCard: React.FC<TotalsCardProps> = ({ values, setFieldValue, IVA_RATE
 		// Calcular base imponible (subtotal - descuento)
 		const taxableAmount = subtotal - discountAmount;
 
-		// Calcular impuesto
+        // Calcular Recargo (Sobre el Neto)
+        const surchargePercentage = Number(values.payment_surcharge_percentage) || 0;
+        const surchargeAmount = (taxableAmount * surchargePercentage) / 100;
+
+        // Base imponible final (incluyendo recargo para cálculo de IVA)
+        const finalTaxableAmount = taxableAmount + surchargeAmount;
+
+		// Calcular impuesto (Sobre base final)
 		const taxPercentage = Number(values.tax_percentage) || 0;
-		const taxAmount = (taxableAmount * taxPercentage) / 100;
+		const taxAmount = (finalTaxableAmount * taxPercentage) / 100;
 
 		// Calcular total
-		const total = taxableAmount + taxAmount;
+		const total = finalTaxableAmount + taxAmount;
 
 		// Actualizar valores en el formulario
 		setFieldValue('subtotal_amount', subtotal, false);
 		setFieldValue('discount_amount', discountAmount, false);
 		setFieldValue('tax_amount', taxAmount, false);
+        setFieldValue('payment_surcharge_amount', surchargeAmount, false);
 		setFieldValue('total_amount', total, false);
-	}, [values.items, values.discount_percentage, values.tax_percentage, setFieldValue]);
+	}, [values.items, values.discount_percentage, values.tax_percentage, values.payment_surcharge_percentage, setFieldValue]);
 
 	return (
 		<Card
@@ -100,6 +108,30 @@ const TotalsCard: React.FC<TotalsCardProps> = ({ values, setFieldValue, IVA_RATE
 							finales se realizan automáticamente al guardar la cotización.
 						</p>
 					</div>
+
+                    {/* Surcharge Input - Only visible if applicable */}
+                    {values.payment_surcharge_percentage > 0 && (
+                        <div className='col-span-1 md:col-span-2 rounded-2xl border border-orange-100 bg-orange-50/70 p-4 shadow-inner dark:border-orange-400/20 dark:bg-orange-400/5'>
+    						<p className='mb-2 text-[11px] font-semibold uppercase tracking-wide text-orange-600 dark:text-orange-300'>
+    							Recargo por Método de Pago %
+    						</p>
+                            <div className="flex gap-4 items-center">
+        						<Input
+        							name='payment_surcharge_percentage'
+        							type='number'
+        							placeholder='0'
+        							value={values.payment_surcharge_percentage ?? 0}
+        							onChange={(e) =>
+        								setFieldValue('payment_surcharge_percentage', Number(e.target.value))
+        							}
+                                    className="w-32"
+        						/>
+                                <div className="text-sm text-orange-700 dark:text-orange-200">
+                                    Monto recargo: <strong>${Math.round(values.payment_surcharge_amount).toLocaleString()}</strong>
+                                </div>
+                            </div>
+    					</div>
+                    )}
 				</div>
 
 				<div className='rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/70 p-4 text-sm text-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-300'>
