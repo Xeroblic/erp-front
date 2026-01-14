@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
 import LatestApprovedReviewsTimeline from './LatestApprovedReviewsTimeline';
 import LatestSalesTimeline from './LatestSalesTimeline';
 import Icon from '@/components/icon/Icon';
@@ -27,31 +26,13 @@ const TimelineWidget: React.FC = () => {
                 </button>
             </div>
 
-            <AnimatePresence mode="wait" initial={false}>
+            <div className="h-full">
                 {mode === 'reviews' ? (
-                    <motion.div
-                        key="reviews"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                        transition={{ duration: 0.2 }}
-                        className="h-full"
-                    >
-                        <LatestApprovedReviewsTimeline />
-                    </motion.div>
+                    <LatestApprovedReviewsTimeline />
                 ) : (
-                    <motion.div
-                        key="sales"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.2 }}
-                        className="h-full"
-                    >
-                        <LatestSalesTimeline />
-                    </motion.div>
+                    <LatestSalesTimeline />
                 )}
-            </AnimatePresence>
+            </div>
         </div>
     );
 };
