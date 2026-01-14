@@ -15,6 +15,7 @@ import { fetchValidationRulesByType } from '@/store/slices/technicalReviews';
 import { fetchBrands } from '@/store/slices/brands/brandsSlice';
 import type { UpdateItemDetailsPayload } from '@/interface/technicalReviews.interface';
 import { ProcessorSelector } from '../components/ProcessorSelector';
+import { SoSelector } from '../components/SoSelector';
 
 interface NotebookFormProps {
 	branchId: number;
@@ -447,14 +448,25 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 								/>
 							) : (
 								<Input
-									type='text'
+									type='number'
 									name='battery_status'
-									value={values.battery_status || ''}
-									onChange={handleInputChange}
+									value={values.battery_status?.replace('%', '') || ''}
+									onChange={(e) => {
+											if (!e.target.value) {
+												onChange('battery_status', '');
+												return;
+											}
+											const num = Number(e.target.value);
+											const limitedVal = Math.min(100, Math.max(0, num));
+											onChange('battery_status', `${limitedVal}%`);
+										}
+									}
 									placeholder={
-										doesNotTurnOn ? 'No se puede verificar' : 'Ej: 83%, 80'
+										doesNotTurnOn ? 'No se puede verificar' : 'Ej: 83'
 									}
 									disabled={readOnly || doesNotTurnOn}
+									min='0'
+									max='100'
 								/>
 							)}
 							<p className='mt-1 text-xs text-gray-500'>
@@ -897,12 +909,9 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 						<label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
 							Sistema Operativo
 						</label>
-						<Input
-							type='text'
-							name='operating_system'
+						<SoSelector
 							value={values.operating_system || ''}
-							onChange={handleInputChange}
-							placeholder='Ej: Windows 11 Pro, Windows 10 Home'
+							onChange={(val) => onChange('operating_system', val)}
 							disabled={readOnly}
 						/>
 					</div>
