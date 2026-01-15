@@ -52,8 +52,6 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 		value: familia.id,
 		label: familia.descripcion ? `${familia.nombre} - ${familia.descripcion}` : familia.nombre,
 	}));
-
-	// Construir opciones de generación
 	const generacionesData =
 		selectedBrand && selectedFamilyId
 			? getGeneracionesPorFamilia(deviceType, selectedBrand, selectedFamilyId)
@@ -63,7 +61,6 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 		label: gen.año ? `${gen.nombre} (${gen.año})` : gen.nombre,
 	}));
 
-	// Construir opciones de modelo (OPCIONAL - solo si hay más de 1 modelo)
 	const modelosData =
 		selectedBrand && selectedFamilyId && selectedGenerationId
 			? getModelosPorGeneracion(deviceType, selectedBrand, selectedFamilyId, selectedGenerationId)
@@ -73,22 +70,18 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 		label: modelo.descripcion ? `${modelo.nombre} - ${modelo.descripcion}` : modelo.nombre,
 	}));
 
-	// Si solo hay 1 modelo, auto-seleccionarlo y no mostrar el select
 	const shouldShowModelSelect = modelosData.length > 1;
 
-	// Construir texto final del procesador
 	useEffect(() => {
 		if (!selectedBrand || !selectedFamilyId || !selectedGenerationId) {
 			return;
 		}
 
-		// Encontrar datos seleccionados
 		const familia = familiasData.find((f) => f.id === selectedFamilyId);
 		const generacion = generacionesData.find((g) => g.id === selectedGenerationId);
 
 		if (!familia || !generacion) return;
 
-		// Si hay un solo modelo, auto-seleccionarlo
 		if (modelosData.length === 1) {
 			const modelo = modelosData[0];
 			const processorText = `${modelo.nombre}`;
