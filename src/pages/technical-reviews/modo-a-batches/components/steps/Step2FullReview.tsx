@@ -264,10 +264,6 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 					branchId={branchId}
 					values={formValues}
 					onChange={handleFieldChange}
-					onFinalize={handleFinalize}
-					onBack={onBack}
-					isUpdating={updating}
-					isFormValid={isFormValid()}
 				/>
 				);
 
@@ -277,10 +273,6 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 					branchId={branchId}
 					values={formValues}
 					onChange={handleFieldChange}
-					onFinalize={handleFinalize}
-					onBack={onBack}
-					isUpdating={updating}
-					isFormValid={isFormValid()}
 				/>
 				);
 
@@ -290,10 +282,6 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 					branchId={branchId}
 					values={formValues}
 					onChange={handleFieldChange}
-					onFinalize={handleFinalize}
-					onBack={onBack}
-					isUpdating={updating}
-					isFormValid={isFormValid()}
 				/>
 				);
 
@@ -303,10 +291,6 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 					branchId={branchId}
 					values={formValues}
 					onChange={handleFieldChange}
-					onFinalize={handleFinalize}
-					onBack={onBack}
-					isUpdating={updating}
-					isFormValid={isFormValid()}
 				/>
 				);
 

@@ -299,14 +299,10 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 			case 'aio':
 				return (
 					<AioForm
-				branchId={branchId}
-				values={formValues}
-				onChange={handleFieldChange}
-				onFinalize={handleFinalize}
-				onBack={onBack}
-				isUpdating={updating}
-				isFormValid={isFormValid()}
-			/>
+					branchId={branchId}
+					values={formValues}
+					onChange={handleFieldChange}
+				/>
 				);
 
 			case 'docking':

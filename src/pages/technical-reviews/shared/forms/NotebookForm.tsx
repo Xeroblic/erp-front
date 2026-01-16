@@ -157,7 +157,6 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 	onChange,
 	readOnly = false,
 	onFinalize,
-	onBack,
 	isUpdating = false,
 	isFormValid = true,
 }) => {
