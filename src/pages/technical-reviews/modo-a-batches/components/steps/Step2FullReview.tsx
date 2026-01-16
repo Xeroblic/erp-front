@@ -18,6 +18,80 @@ import AioForm from '@/pages/technical-reviews/shared/forms/AioForm';
 import DockingForm from '@/pages/technical-reviews/shared/forms/DockingForm';
 import MonitorForm from '@/pages/technical-reviews/shared/forms/MonitorForm';
 
+const COMMON_FIELDS: Array<keyof UpdateItemDetailsPayload> = [
+	'brand',
+	'model',
+	'line',
+	'processor',
+	'ram_size',
+	'ram_slots',
+	'ram_type',
+	'storage_size',
+	'storage_technology',
+	'operating_system',
+	'general_condition',
+	'cover_condition',
+	'observations',
+	'has_wifi',
+	'has_bluetooth',
+];
+
+const COMPUTER_ALLOWED_FIELDS: Array<keyof UpdateItemDetailsPayload> = [
+	...COMMON_FIELDS,
+	'form_factor',
+	'has_dedicated_gpu',
+	'gpu_model',
+	'includes_charger',
+	'charger_status',
+	'charger_watts',
+	'battery_health',
+	'screen_size',
+	'screen_resolution',
+	'screen_type',
+	'screen_condition',
+	'keyboard_layout',
+	'keyboard_condition',
+	'touchpad_condition',
+	'has_webcam',
+	'has_microphone',
+	'has_fingerprint_reader',
+	'has_cd_drive',
+	// Ports
+	'usb_a_ports',
+	'usb_c_ports',
+	'hdmi_ports',
+	'displayport_ports',
+	'vga_ports',
+	'rj45_ports',
+	'sd_readers',
+	'all_ports_functional',
+	'defective_ports_count',
+];
+
+const ALLOWED_FIELDS_BY_TYPE: Partial<
+	Record<EquipmentType, Array<keyof UpdateItemDetailsPayload>>
+> = {
+	notebook: COMPUTER_ALLOWED_FIELDS,
+	desktop: COMPUTER_ALLOWED_FIELDS,
+	aio: COMPUTER_ALLOWED_FIELDS,
+};
+
+const sanitizeByEquipmentType = (
+	values: Partial<UpdateItemDetailsPayload>,
+	equipmentType?: EquipmentType,
+): Partial<UpdateItemDetailsPayload> => {
+	if (!equipmentType) return values;
+	const allowedFields = ALLOWED_FIELDS_BY_TYPE[equipmentType];
+	if (!allowedFields) return values;
+	const sanitized: Partial<UpdateItemDetailsPayload> = {};
+	allowedFields.forEach((field) => {
+		if (values[field] !== undefined) {
+			sanitized[field] = values[field];
+		}
+	});
+	return sanitized;
+};
+
 interface Step2FullReviewProps {
 	branchId: number;
 	itemId: number;
@@ -59,17 +133,24 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 
 
 
-	const handleFieldChange = (field: string, value: any) => {
-		const newValues = {
-			...formValues,
-			[field]: value,
-		};
-		setFormValues(newValues);
-		setSaveError(null);
+	const isFirstRender = React.useRef(true);
 
-		if (onFieldChange) {
-			onFieldChange(newValues as UpdateItemDetailsPayload);
+	useEffect(() => {
+		if (isFirstRender.current) {
+			isFirstRender.current = false;
+			return;
 		}
+		if (onFieldChange) {
+			onFieldChange(formValues as UpdateItemDetailsPayload);
+		}
+	}, [formValues]);
+
+	const handleFieldChange = (field: string, value: any) => {
+		setFormValues((prev) => ({
+			...prev,
+			[field]: value,
+		}));
+		setSaveError(null);
 	};
 
 	// Guardar cambios manualmente
@@ -170,39 +251,63 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 						branchId={branchId}
 						values={formValues}
 						onChange={handleFieldChange}
+						onFinalize={handleFinalize}
+						onBack={onBack}
+						isUpdating={updating}
+						isFormValid={isFormValid()}
 					/>
 				);
 
 			case 'desktop':
 				return (
 					<DesktopForm
-						branchId={branchId}
-						values={formValues}
-						onChange={handleFieldChange}
-					/>
+					branchId={branchId}
+					values={formValues}
+					onChange={handleFieldChange}
+					onFinalize={handleFinalize}
+					onBack={onBack}
+					isUpdating={updating}
+					isFormValid={isFormValid()}
+				/>
 				);
 
 			case 'aio':
 				return (
-					<AioForm branchId={branchId} values={formValues} onChange={handleFieldChange} />
+					<AioForm
+					branchId={branchId}
+					values={formValues}
+					onChange={handleFieldChange}
+					onFinalize={handleFinalize}
+					onBack={onBack}
+					isUpdating={updating}
+					isFormValid={isFormValid()}
+				/>
 				);
 
 			case 'docking':
 				return (
 					<DockingForm
-						branchId={branchId}
-						values={formValues}
-						onChange={handleFieldChange}
-					/>
+					branchId={branchId}
+					values={formValues}
+					onChange={handleFieldChange}
+					onFinalize={handleFinalize}
+					onBack={onBack}
+					isUpdating={updating}
+					isFormValid={isFormValid()}
+				/>
 				);
 
 			case 'monitor':
 				return (
 					<MonitorForm
-						branchId={branchId}
-						values={formValues}
-						onChange={handleFieldChange}
-					/>
+					branchId={branchId}
+					values={formValues}
+					onChange={handleFieldChange}
+					onFinalize={handleFinalize}
+					onBack={onBack}
+					isUpdating={updating}
+					isFormValid={isFormValid()}
+				/>
 				);
 
 			default:
@@ -313,31 +418,31 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 				</Card>
 			)}
 
-			{/* Botones de acción */}
-			<div className='flex justify-between gap-3'>
-				<Button variant='outline' onClick={onBack} isDisable={updating}>
-					<Icon icon='HeroArrowLeft' className='mr-2 h-4 w-4' />
-					Volver
+		{/* Botones de acción */}
+		<div className='flex justify-between gap-3 mt-6'>
+			<Button variant='outline' onClick={onBack} isDisable={updating}>
+				<Icon icon='HeroArrowLeft' className='mr-2 h-4 w-4' />
+				Volver
+			</Button>
+
+			<div className='flex gap-3'>
+				<Button variant='outline' onClick={handleSave} isDisable={updating}>
+					<Icon icon='HeroDocumentArrowDown' className='mr-2 h-4 w-4' />
+					{updating ? 'Guardando...' : 'Guardar'}
 				</Button>
 
-				<div className='flex gap-3'>
-					<Button variant='outline' onClick={handleSave} isDisable={updating}>
-						<Icon icon='HeroDocumentArrowDown' className='mr-2 h-4 w-4' />
-						{updating ? 'Guardando...' : 'Guardar'}
-					</Button>
-
-					<Button
-						variant='solid'
-						color={updating ? 'blue' : 'emerald'}
-						onClick={handleFinalize}
-						isDisable={updating || !isFormValid()}>
-						{updating ? 'Procesando...' : 'Finalizar Revisión'}
-						<Icon icon='HeroArrowRight' className='ml-2 h-4 w-4 text-white' />
-					</Button>
-				</div>
+				<Button
+					variant='solid'
+					color={updating ? 'blue' : 'emerald'}
+					onClick={handleFinalize}
+					isDisable={updating || !isFormValid()}>
+					{updating ? 'Procesando...' : 'Finalizar Revisión'}
+					<Icon icon='HeroArrowRight' className='ml-2 h-4 w-4 text-white' />
+				</Button>
 			</div>
 		</div>
-	);
+	</div>
+);
 };
 
 export default Step2FullReview;

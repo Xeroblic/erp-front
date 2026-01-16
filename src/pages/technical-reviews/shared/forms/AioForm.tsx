@@ -1,20 +1,144 @@
-/**
- * AioForm - Formulario de revisión técnica para All-in-One
- * Reestructura secciones según lineamientos de validación (marcas como lista, cargador, pantalla y estado general)
- */
-import React, { useEffect, useMemo } from 'react';
-import type { MultiValue, SingleValue } from 'react-select';
-import Card, { CardBody, CardHeader } from '@/components/ui/Card';
+import React, { useEffect, useState } from 'react';
+import Card, { CardBody } from '@/components/ui/Card';
 import Input from '@/components/form/Input';
-import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import Textarea from '@/components/form/Textarea';
-import Checkbox from '@/components/form/Checkbox';
 import Icon from '@/components/icon/Icon';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { fetchValidationRulesByType } from '@/store/slices/technicalReviews';
 import { fetchBrands } from '@/store/slices/brands/brandsSlice';
 import type { UpdateItemDetailsPayload } from '@/interface/technicalReviews.interface';
+import Button from '@/components/ui/Button';
+import { motion, AnimatePresence } from 'framer-motion';
+import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
+import { MultiValue, SingleValue } from 'react-select';
 import { ProcessorSelector } from '../components/ProcessorSelector';
+import { SoSelector } from '../components/SoSelector';
+
+// --- HELPER COMPONENTS ---
+
+interface SelectionCardProps {
+	label: string;
+	value: string;
+	isSelected: boolean;
+	onClick: () => void;
+	color?: 'green' | 'red' | 'yellow' | 'gray';
+	icon?: string;
+	className?: string;
+}
+
+const SelectionCard: React.FC<SelectionCardProps> = ({
+	label,
+	value,
+	isSelected,
+	onClick,
+	color = 'gray',
+	icon,
+	className = '',
+}) => {
+	const colorStyles = {
+		green: isSelected
+			? 'bg-green-100 border-green-500 text-green-800 shadow-md ring-1 ring-green-500 ring-offset-1 dark:bg-green-900/60 dark:border-green-400 dark:text-green-100'
+			: 'bg-green-50/50 border-green-200 text-green-700 hover:bg-green-100 dark:bg-green-900/10 dark:border-green-900/30 dark:text-green-400',
+		red: isSelected
+			? 'bg-red-100 border-red-500 text-red-800 shadow-md ring-1 ring-red-500 ring-offset-1 dark:bg-red-900/60 dark:border-red-400 dark:text-red-100'
+			: 'bg-red-50/50 border-red-200 text-red-700 hover:bg-red-100 dark:bg-red-900/10 dark:border-red-900/30 dark:text-red-400',
+		yellow: isSelected
+			? 'bg-yellow-100 border-yellow-500 text-yellow-800 shadow-md ring-1 ring-yellow-500 ring-offset-1 dark:bg-yellow-900/60 dark:border-yellow-400 dark:text-yellow-100'
+			: 'bg-yellow-50/50 border-yellow-200 text-yellow-700 hover:bg-yellow-100 dark:bg-yellow-900/10 dark:border-yellow-900/30 dark:text-yellow-400',
+		gray: isSelected
+			? 'bg-blue-100 border-blue-500 text-blue-800 shadow-md ring-1 ring-blue-500 ring-offset-1 dark:bg-blue-900/60 dark:border-blue-400 dark:text-blue-100'
+			: 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400',
+	};
+
+	return (
+		<div
+			data-value={value}
+			onClick={onClick}
+			className={`cursor-pointer rounded-xl border-2 p-3 text-center transition-all duration-200 ${
+				isSelected ? 'scale-105 z-10' : 'scale-100'
+			} ${colorStyles[color]} flex flex-col items-center justify-center gap-2 min-h-[70px] ${className}`}
+		>
+			{icon && <Icon icon={icon} className={`h-6 w-6 ${isSelected ? '' : 'opacity-80'}`} />}
+			<span className={`text-sm font-semibold ${isSelected ? 'font-bold' : ''}`}>{label}</span>
+		</div>
+	);
+};
+
+interface YesNoSelectorProps {
+	label: string;
+	value: boolean | undefined | null;
+	onChange: (val: boolean) => void;
+}
+
+const YesNoSelector: React.FC<YesNoSelectorProps> = ({ label, value, onChange }) => {
+	return (
+		<div className='flex flex-col gap-2'>
+			<label className='block text-sm font-bold text-center dark:text-gray-300'>{label}</label>
+			<div className='grid grid-cols-2 gap-4'>
+				<SelectionCard
+					label='Sí'
+					value='yes'
+					isSelected={value === true}
+					onClick={() => onChange(true)}
+					color='green'
+					icon='HeroCheck'
+					className='h-16 min-h-[60px]'
+				/>
+				<SelectionCard
+					label='No'
+					value='no'
+					isSelected={value === false}
+					onClick={() => onChange(false)}
+					color='red'
+					icon='HeroXMark'
+					className='h-16 min-h-[60px]'
+				/>
+			</div>
+		</div>
+	);
+};
+
+interface StepperInputProps {
+	value: number;
+	onChange: (val: number) => void;
+	min?: number;
+	max?: number;
+}
+
+const StepperInput: React.FC<StepperInputProps> = ({ value, onChange, min = 0, max = 99 }) => {
+	const handleDecrement = () => {
+		if (value > min) onChange(value - 1);
+	};
+
+	const handleIncrement = () => {
+		if (value < max) onChange(value + 1);
+	};
+
+	return (
+		<div className='flex items-center gap-2'>
+			<button
+				type='button'
+				onClick={handleDecrement}
+				disabled={value <= min}
+				className='h-10 w-10 rounded-lg bg-red-500 text-white font-bold text-xl hover:bg-red-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95'
+			>
+				-
+			</button>
+			<div className='h-10 w-14 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700 font-bold text-lg'>
+				{value}
+			</div>
+			<button
+				type='button'
+				onClick={handleIncrement}
+				disabled={value >= max}
+				className='h-10 w-10 rounded-lg bg-blue-500 text-white font-bold text-xl hover:bg-blue-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95'
+			>
+				+
+			</button>
+		</div>
+	);
+};
+
+// --- MAIN FORM ---
 
 interface AioFormProps {
 	branchId: number;
@@ -23,613 +147,612 @@ interface AioFormProps {
 	readOnly?: boolean;
 }
 
-const generalConditionOptions: TSelectOption[] = [
-	{ value: 'like_new', label: 'Como nuevo' },
-	{ value: 'good_shape', label: 'Buen estado' },
-	{ value: 'visible_wear', label: 'Desgaste visible' },
-	{ value: 'needs_repair', label: 'Requiere reparación' },
-	{ value: 'scrap', label: 'Solo repuestos' },
-];
-
-const chargerStatusOptions: TSelectOption[] = [
-	{ value: 'good_condition', label: 'Buen estado' },
-	{ value: 'damaged_cable', label: 'Cable dañado' },
-	{ value: 'not_matching_equipment', label: 'No corresponde al equipo' },
-	{ value: 'not_included', label: 'No incluye' },
-];
-
-const screenConditionOptions: TSelectOption[] = [
-	{ value: 'ok', label: 'OK' },
-	{ value: 'minor_wear', label: 'Desgaste leve' },
-	{ value: 'worn', label: 'Desgastado' },
-	{ value: 'missing_pieces', label: 'Faltan piezas' },
-	{ value: 'dead_pixels', label: 'Pixeles muertos' },
-	{ value: 'broken', label: 'Roto' },
-];
-
-const coverConditionOptions: TSelectOption[] = [
-	{ value: 'ok', label: 'OK' },
-	{ value: 'worn', label: 'Desgastado' },
-	{ value: 'missing_pieces', label: 'Faltan piezas' },
-	{ value: 'scratched', label: 'Rayado' },
-	{ value: 'broken', label: 'Roto' },
-];
-
-const standConditionOptions: TSelectOption[] = [
-	{ value: 'ok', label: 'OK' },
-	{ value: 'worn', label: 'Desgastado' },
-	{ value: 'missing_pieces', label: 'Faltan piezas' },
-	{ value: 'scratched', label: 'Rayado' },
-	{ value: 'broken', label: 'Roto' },
-	{ value: 'no_stand', label: 'Sin base' },
-];
-
-const ramTypeOptions: TSelectOption[] = [
-	{ value: 'DDR3', label: 'DDR3' },
-	{ value: 'DDR4', label: 'DDR4' },
-	{ value: 'DDR5', label: 'DDR5' },
-];
-
-const storageTechOptions: TSelectOption[] = [
-	{ value: 'HDD', label: 'HDD' },
-	{ value: 'SSD', label: 'SSD' },
-	{ value: 'M.2', label: 'M.2' },
-];
-
-const portFields: Array<{ name: keyof UpdateItemDetailsPayload; label: string }> = [
-	{ name: 'vga_ports', label: 'VGA' },
-	{ name: 'hdmi_ports', label: 'HDMI' },
-	{ name: 'displayport_ports', label: 'DisplayPort' },
-	{ name: 'usb_a_ports', label: 'USB-A' },
-	{ name: 'usb_c_ports', label: 'USB-C' },
-	{ name: 'sd_readers', label: 'Lectores SD' },
-	{ name: 'rj45_ports', label: 'RJ45' },
-];
-
-const isMultiValue = (
-	option: SingleValue<TSelectOption> | MultiValue<TSelectOption> | null,
-): option is MultiValue<TSelectOption> => Array.isArray(option);
-
 const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly = false }) => {
 	const dispatch = useAppDispatch();
-	const validationLoading = useAppSelector(
-		(state) => state.technicalReviews.validationRulesLoading,
-	);
-	const brands = useAppSelector((state) => state.brands.items);
-	const brandsLoading = useAppSelector((state) => state.brands.loading);
+	const [step, setStep] = useState(0);
+	const MAX_STEPS = 7;
 
 	useEffect(() => {
-		if (!branchId) return;
-		dispatch(fetchValidationRulesByType({ branchId, equipmentType: 'aio' }));
-		dispatch(fetchBrands({ branchId }));
+		if (branchId) {
+			dispatch(fetchBrands({ branchId }));
+		}
 	}, [dispatch, branchId]);
 
-	const brandOptions = useMemo(() => {
-		const unique = new Map<string, TSelectOption>();
-		brands
-			.filter((brand) => Boolean(brand?.name))
-			.forEach((brand) => {
-				const name = String(brand.name);
-				if (!unique.has(name)) {
-					unique.set(name, { value: name, label: name });
-				}
-			});
-		if (values.brand && !unique.has(values.brand)) {
-			unique.set(values.brand, { value: values.brand, label: values.brand });
-		}
-		return Array.from(unique.values());
-	}, [brands, values.brand]);
+	const brands = useAppSelector((s) => s.brands.items);
+	const brandsLoading = useAppSelector((s) => s.brands.loading);
 
-	const brandSelectValue = useMemo(() => {
-		if (!values.brand) return null;
-		return (
-			brandOptions.find((option) => option.value === values.brand) ?? {
-				value: values.brand,
-				label: values.brand,
-			}
-		);
-	}, [brandOptions, values.brand]);
+	const brandOptions: TSelectOption[] = brands.map((brand) => ({
+		value: brand.name,
+		label: brand.name,
+	}));
 
-	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
 		onChange(e.target.name, e.target.value);
 	};
 
 	const handleSelectChange =
 		(name: string) =>
 		(newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption> | null) => {
-			if (isMultiValue(newValue)) {
+			if (Array.isArray(newValue)) {
 				onChange(
 					name,
 					newValue.map((option) => option.value),
 				);
-				return;
+			} else {
+				const option = newValue as TSelectOption | null;
+				onChange(name, option?.value ?? null);
 			}
-			const option = newValue as TSelectOption | null;
-			onChange(name, option?.value ?? null);
 		};
 
-	const handleCheckboxChange =
-		(name: string, extra?: (checked: boolean) => void) =>
-		(e: React.ChangeEvent<HTMLInputElement>) => {
-			onChange(name, e.target.checked);
-			extra?.(e.target.checked);
-		};
-
-	const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-		onChange(e.target.name, e.target.value);
+	const handleNextStep = () => {
+		if (step < MAX_STEPS - 1) setStep(step + 1);
 	};
 
-	const handleNumberChange = (name: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
-		const val = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
-		onChange(name, Number.isNaN(val) ? 0 : val);
+	const handlePreviousStep = () => {
+		if (step > 0) setStep(step - 1);
 	};
 
-	const getNumericValue = (fieldName: keyof UpdateItemDetailsPayload): number => {
-		const value = values[fieldName];
-		return typeof value === 'number' ? value : 0;
+	const getNumericValue = (field: string): number => {
+		const val = values[field as keyof UpdateItemDetailsPayload];
+		return typeof val === 'number' ? val : 0;
 	};
 
-	const includesPowerAdapter = values.includes_power_adapter ?? true;
+	const generalConditionOptions = [
+		{ value: 'like_new', label: 'Como nuevo', color: 'green' },
+		{ value: 'good_shape', label: 'Buen estado', color: 'green' },
+		{ value: 'visible_wear', label: 'Desgaste visible', color: 'yellow' },
+		{ value: 'needs_repair', label: 'Requiere reparación', color: 'red' },
+		{ value: 'scrap', label: 'Solo repuestos', color: 'red' },
+	];
 
-	const handlePowerAdapterToggle = (checked: boolean) => {
-		onChange('includes_power_adapter', checked);
-		if (!checked) {
-			onChange('charger_status', 'not_included');
-		} else if (values.charger_status === 'not_included') {
-			onChange('charger_status', null);
-		}
-	};
+	const storageTechOptions = [
+		{ value: 'HDD', label: 'HDD', color: 'gray' },
+		{ value: 'SSD', label: 'SSD', color: 'gray' },
+		{ value: 'M2', label: 'M.2', color: 'gray' },
+		{ value: 'NVME', label: 'NVMe', color: 'gray' },
+		{ value: 'HYBRID', label: 'Híbrido', color: 'gray' },
+	];
 
-	if (validationLoading || (brandsLoading && !brandOptions.length)) {
+	const ramTypeOptions = [
+		{ value: 'DDR3', label: 'DDR3', color: 'gray' },
+		{ value: 'DDR4', label: 'DDR4', color: 'gray' },
+		{ value: 'DDR5', label: 'DDR5', color: 'gray' },
+	];
+
+	const chargerStatusOptions = [
+		{ value: 'good_condition', label: 'Buen estado', color: 'green' },
+		{ value: 'damaged_cable', label: 'Cable dañado', color: 'yellow' },
+		{ value: 'not_matching_equipment', label: 'No corresponde', color: 'red' },
+		{ value: 'not_included', label: 'No incluye', color: 'red' },
+	];
+
+	const screenConditionOptions = [
+		{ value: 'ok', label: 'OK', color: 'green' },
+		{ value: 'minor_wear', label: 'Desgaste menor', color: 'yellow' },
+		{ value: 'worn', label: 'Desgastado', color: 'yellow' },
+		{ value: 'missing_pieces', label: 'Piezas faltantes', color: 'red' },
+		{ value: 'dead_pixels', label: 'Píxeles muertos', color: 'red' },
+		{ value: 'broken', label: 'Roto', color: 'red' },
+	];
+
+	const standConditionOptions = [
+		{ value: 'ok', label: 'OK', color: 'green' },
+		{ value: 'worn', label: 'Desgastado', color: 'yellow' },
+		{ value: 'missing_pieces', label: 'Piezas faltantes', color: 'red' },
+		{ value: 'scratched', label: 'Rayado', color: 'yellow' },
+		{ value: 'broken', label: 'Roto', color: 'red' },
+		{ value: 'no_stand', label: 'Sin base', color: 'red' },
+	];
+
+	const coverConditionOptions = [
+		{ value: 'ok', label: 'OK', color: 'green' },
+		{ value: 'worn', label: 'Desgastado', color: 'yellow' },
+		{ value: 'missing_pieces', label: 'Piezas faltantes', color: 'red' },
+		{ value: 'scratched', label: 'Rayado', color: 'yellow' },
+		{ value: 'broken', label: 'Roto', color: 'red' },
+	];
+
+	if (brandsLoading) {
 		return (
-			<Card>
-				<CardBody className='p-6'>
-					<div className='flex items-center justify-center py-8'>
-						<Icon icon='HeroArrowPath' className='mr-2 h-5 w-5 animate-spin' />
-						<span className='text-gray-600 dark:text-gray-400'>
-							Cargando formulario…
-						</span>
-					</div>
+			<Card className='h-full'>
+				<CardBody className='flex h-full items-center justify-center p-6'>
+					<Icon icon='HeroArrowPath' className='h-10 w-10 animate-spin text-blue-500' />
 				</CardBody>
 			</Card>
 		);
 	}
 
-	return (
-		<div className='space-y-6'>
-			{/* Identificación */}
-			<Card>
-				<CardHeader>
-					<div className='flex items-center gap-2'>
-						<Icon icon='HeroInformationCircle' className='h-5 w-5 text-blue-600' />
-						<h3 className='text-lg font-semibold'>Información general</h3>
-					</div>
-				</CardHeader>
-				<CardBody className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-					<div>
-						<label className='mb-2 block text-sm font-medium'>
-							Marca <span className='text-red-500'>*</span>
-						</label>
-						<SelectReact
-							name='brand'
-							options={brandOptions}
-							value={brandSelectValue}
-							onChange={handleSelectChange('brand')}
-							placeholder='Seleccionar marca'
-							isDisabled={readOnly}
-							isCreatable
-						/>
-					</div>
-					<div>
-						<label className='mb-2 block text-sm font-medium'>
-							Modelo <span className='text-red-500'>*</span>
-						</label>
-						<Input
-							type='text'
-							name='model'
-							value={values.model || ''}
-							onChange={handleInputChange}
-							placeholder='Ej: Optiplex 5270'
-							disabled={readOnly}
-						/>
-					</div>
-					<div>
-						<label className='mb-2 block text-sm font-medium'>Línea</label>
-						<Input
-							type='text'
-							name='line'
-							value={values.line || ''}
-							onChange={handleInputChange}
-							placeholder='Ej: AIO'
-							disabled={readOnly}
-						/>
-					</div>
-				</CardBody>
-			</Card>
+	const renderStepContent = () => {
+		switch (step) {
+			case 0: // Info Básica
+				return (
+					<motion.div
+						key='step0'
+						initial={{ opacity: 0, x: 20 }}
+						animate={{ opacity: 1, x: 0 }}
+						exit={{ opacity: 0, x: -20 }}
+						transition={{ duration: 0.3 }}
+					>
+						<div className='space-y-6'>
+							<h3 className='text-lg font-bold mb-4 text-center'>Información Básica</h3>
 
-			{/* Especificaciones técnicas */}
-			<Card>
-				<CardHeader>
-					<div className='flex items-center gap-2'>
-						<Icon icon='HeroCpuChip' className='h-5 w-5 text-purple-600' />
-						<h3 className='text-lg font-semibold'>Especificaciones técnicas</h3>
-					</div>
-				</CardHeader>
-				<CardBody className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-					<div>
-						<label className='mb-2 block text-sm font-medium'>
-							Procesador <span className='text-red-500'>*</span>
-						</label>
-						<ProcessorSelector
-							deviceType='AIO'
-							value={values.processor || ''}
-							onChange={(processorText) => onChange('processor', processorText)}
-							disabled={readOnly}
-						/>
-					</div>
-					<div>
-						<label className='mb-2 block text-sm font-medium'>
-							Tamaño RAM <span className='text-red-500'>*</span>
-						</label>
-						<Input
-							type='text'
-							name='ram_size'
-							value={values.ram_size || ''}
-							onChange={handleInputChange}
-							placeholder='Ej: 8 GB'
-							disabled={readOnly}
-						/>
-					</div>
-					<div>
-						<label className='mb-2 block text-sm font-medium'>Slots RAM</label>
-						<Input
-							type='text'
-							name='ram_slots'
-							value={values.ram_slots || ''}
-							onChange={handleInputChange}
-							placeholder='Ej: 8X2'
-							disabled={readOnly}
-						/>
-					</div>
-					<div>
-						<label className='mb-2 block text-sm font-medium'>Tipo RAM</label>
-						<SelectReact
-							name='ram_type'
-							options={ramTypeOptions}
-							value={
-								values.ram_type
-									? ramTypeOptions.find((o) => o.value === values.ram_type) ||
-										null
-									: null
-							}
-							onChange={handleSelectChange('ram_type')}
-							placeholder='Seleccionar'
-							isDisabled={readOnly}
-						/>
-					</div>
-					<div>
-						<label className='mb-2 block text-sm font-medium'>
-							Tamaño almacenamiento <span className='text-red-500'>*</span>
-						</label>
-						<Input
-							type='text'
-							name='storage_size'
-							value={values.storage_size || ''}
-							onChange={handleInputChange}
-							placeholder='Ej: 512 GB'
-							disabled={readOnly}
-						/>
-					</div>
-					<div>
-						<label className='mb-2 block text-sm font-medium'>
-							Tecnología almacenamiento
-						</label>
-						<SelectReact
-							name='storage_technology'
-							options={storageTechOptions}
-							value={
-								values.storage_technology
-									? storageTechOptions.find(
-											(o) => o.value === values.storage_technology,
-										) || null
-									: null
-							}
-							onChange={handleSelectChange('storage_technology')}
-							placeholder='Seleccionar'
-							isDisabled={readOnly}
-						/>
-					</div>
-				</CardBody>
-			</Card>
+							<div className='rounded-xl border p-4 bg-blue-50/50 dark:bg-blue-900/10'>
+								<label className='block text-sm font-bold mb-3 text-blue-800 dark:text-blue-200'>
+									Marca
+								</label>
+								<SelectReact
+									name='brand'
+									options={brandOptions}
+									value={brandOptions.find((o) => o.value === values.brand) || null}
+									onChange={handleSelectChange('brand')}
+									placeholder='Seleccionar marca'
+									isDisabled={readOnly}
+									isCreatable
+								/>
+							</div>
 
-			{/* Alimentación */}
-			<Card>
-				<CardHeader>
-					<div className='flex items-center gap-2'>
-						<Icon icon='HeroBolt' className='h-5 w-5 text-yellow-600' />
-						<h3 className='text-lg font-semibold'>Cargador / Alimentación</h3>
-					</div>
-				</CardHeader>
-				<CardBody className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-					<div className='flex items-center'>
-						<Checkbox
-							id='includes_power_adapter'
-							name='includes_power_adapter'
-							checked={includesPowerAdapter}
-							onChange={handleCheckboxChange(
-								'includes_power_adapter',
-								handlePowerAdapterToggle,
-							)}
-							disabled={readOnly}
-							label='Incluye cargador'
-						/>
-					</div>
-					{includesPowerAdapter ? (
-						<div>
-							<label className='mb-2 block text-sm font-medium'>
-								Estado del cargador
-							</label>
-							<SelectReact
-								name='charger_status'
-								options={chargerStatusOptions}
-								value={
-									values.charger_status
-										? chargerStatusOptions.find(
-												(o) => o.value === values.charger_status,
-											) || null
-										: null
-								}
-								onChange={handleSelectChange('charger_status')}
-								placeholder='Seleccionar'
-								isDisabled={readOnly}
-							/>
-						</div>
-					) : (
-						<div className='rounded-lg bg-amber-50 p-3 text-sm text-amber-700'>
-							Al marcar “No incluye” se asigna automáticamente el estado “No incluye”.
-						</div>
-					)}
-				</CardBody>
-			</Card>
-
-			{/* Conectividad y puertos */}
-			<Card>
-				<CardHeader>
-					<div className='flex items-center gap-2'>
-						<Icon icon='HeroSignal' className='h-5 w-5 text-blue-600' />
-						<h3 className='text-lg font-semibold'>Conectividad y puertos</h3>
-					</div>
-				</CardHeader>
-				<CardBody className='space-y-4'>
-					<div className='grid grid-cols-2 gap-4 md:grid-cols-3'>
-						{portFields.map((field) => (
-							<div key={field.name as string}>
-								<label className='mb-2 block text-sm font-medium'>
-									{field.label}
+							<div className='rounded-xl border p-4 bg-purple-50/50 dark:bg-purple-900/10'>
+								<label className='block text-sm font-bold mb-3 text-purple-800 dark:text-purple-200'>
+									Modelo
 								</label>
 								<Input
-									type='number'
-									name={field.name as string}
-									value={getNumericValue(field.name)}
-									onChange={handleNumberChange(field.name as string)}
-									min='0'
+									type='text'
+									name='model'
+									value={values.model || ''}
+									onChange={handleInputChange}
+									placeholder='Ej: OptiPlex 7470'
 									disabled={readOnly}
 								/>
 							</div>
+
+							<div className='rounded-xl border p-4 bg-green-50/50 dark:bg-green-900/10'>
+								<label className='block text-sm font-bold mb-3 text-green-800 dark:text-green-200'>
+									Procesador
+								</label>
+								<ProcessorSelector
+									deviceType='AIO'
+									value={values.processor || ''}
+									onChange={(processorText) => onChange('processor', processorText)}
+									disabled={readOnly}
+								/>
+							</div>
+
+							<div className='rounded-xl border p-4 bg-orange-50/50 dark:bg-orange-900/10'>
+								<label className='block text-sm font-bold mb-3 text-orange-800 dark:text-orange-200'>
+									Pulgadas Pantalla
+								</label>
+								<Input
+									type='text'
+									name='screen_inches'
+									value={values.screen_inches || ''}
+									onChange={handleInputChange}
+									placeholder='Ej: 24"'
+									disabled={readOnly}
+								/>
+							</div>
+						</div>
+					</motion.div>
+				);
+
+			case 1: // RAM
+				return (
+					<motion.div
+						key='step1'
+						initial={{ opacity: 0, x: 20 }}
+						animate={{ opacity: 1, x: 0 }}
+						exit={{ opacity: 0, x: -20 }}
+						transition={{ duration: 0.3 }}
+					>
+						<div className='space-y-6'>
+							<h3 className='text-lg font-bold mb-4 text-center'>Memoria RAM</h3>
+
+							<div className='rounded-xl border p-4 bg-green-50/50 dark:bg-green-900/10'>
+								<label className='block text-sm font-bold mb-3 text-green-800 dark:text-green-200'>
+									Tamaño
+								</label>
+								<Input
+									type='text'
+									name='ram_size'
+									value={values.ram_size || ''}
+									onChange={handleInputChange}
+									placeholder='Ej: 16'
+									disabled={readOnly}
+								/>
+							</div>
+
+							<div className='rounded-xl border p-4 bg-blue-50/50 dark:bg-blue-900/10'>
+								<label className='block text-sm font-bold mb-3 text-blue-800 dark:text-blue-200'>
+									Slots
+								</label>
+								<Input
+									type='text'
+									name='ram_slots'
+									value={values.ram_slots || ''}
+									onChange={handleInputChange}
+									placeholder='Ej: 8x2'
+									disabled={readOnly}
+								/>
+							</div>
+
+							<div className='rounded-xl border p-4 bg-purple-50/50 dark:bg-purple-900/10'>
+								<label className='block text-sm font-bold mb-3 text-purple-800 dark:text-purple-200 text-center'>
+									Tipo
+								</label>
+								<div className='grid grid-cols-3 gap-2'>
+									{ramTypeOptions.map((opt) => (
+										<SelectionCard
+											key={opt.value}
+											label={opt.label}
+											value={opt.value}
+											isSelected={values.ram_type === opt.value}
+											onClick={() => onChange('ram_type', opt.value)}
+										/>
+									))}
+								</div>
+							</div>
+						</div>
+					</motion.div>
+				);
+
+			case 2: // Storage
+				return (
+					<motion.div
+						key='step2'
+						initial={{ opacity: 0, x: 20 }}
+						animate={{ opacity: 1, x: 0 }}
+						exit={{ opacity: 0, x: -20 }}
+						transition={{ duration: 0.3 }}
+					>
+						<div className='space-y-6'>
+							<h3 className='text-lg font-bold mb-4 text-center'>Almacenamiento</h3>
+
+							<div className='rounded-xl border p-4 bg-purple-50/50 dark:bg-purple-900/10'>
+								<label className='block text-sm font-bold mb-3 text-purple-800 dark:text-purple-200'>
+									Capacidad
+								</label>
+								<Input
+									type='text'
+									name='storage_size'
+									value={values.storage_size || ''}
+									onChange={handleInputChange}
+									placeholder='Ej: 512 GB'
+									disabled={readOnly}
+								/>
+							</div>
+
+							<div className='rounded-xl border p-4 bg-orange-50/50 dark:bg-orange-900/10'>
+								<label className='block text-sm font-bold mb-3 text-orange-800 dark:text-orange-200 text-center'>
+									Tecnología
+								</label>
+								<div className='grid grid-cols-2 md:grid-cols-3 gap-2'>
+									{storageTechOptions.map((opt) => (
+										<SelectionCard
+											key={opt.value}
+											label={opt.label}
+											value={opt.value}
+											isSelected={values.storage_technology === opt.value}
+											onClick={() => onChange('storage_technology', opt.value)}
+										/>
+									))}
+								</div>
+							</div>
+						</div>
+					</motion.div>
+				);
+
+			case 3: // Pantalla
+				return (
+					<motion.div
+						key='step3'
+						initial={{ opacity: 0, x: 20 }}
+						animate={{ opacity: 1, x: 0 }}
+						exit={{ opacity: 0, x: -20 }}
+						transition={{ duration: 0.3 }}
+					>
+						<div className='space-y-6'>
+							<h3 className='text-lg font-bold mb-4 text-center'>Pantalla y Base</h3>
+
+							<div className='rounded-xl border p-4 bg-purple-50/50 dark:bg-purple-900/10'>
+								<label className='block text-sm font-bold mb-3 text-purple-800 dark:text-purple-200 text-center'>
+									Condición Pantalla
+								</label>
+								<div className='grid grid-cols-2 md:grid-cols-3 gap-2'>
+									{screenConditionOptions.map((opt) => (
+										<SelectionCard
+											key={opt.value}
+											label={opt.label}
+											value={opt.value}
+											isSelected={values.screen_condition === opt.value}
+											onClick={() => onChange('screen_condition', opt.value)}
+											color={opt.color as 'green' | 'red' | 'yellow'}
+										/>
+									))}
+								</div>
+							</div>
+
+							<div className='rounded-xl border p-4 bg-blue-50/50 dark:bg-blue-900/10'>
+								<label className='block text-sm font-bold mb-3 text-blue-800 dark:text-blue-200 text-center'>
+									Condición Base/Soporte
+								</label>
+								<div className='grid grid-cols-2 md:grid-cols-3 gap-2'>
+									{standConditionOptions.map((opt) => (
+										<SelectionCard
+											key={opt.value}
+											label={opt.label}
+											value={opt.value}
+											isSelected={values.stand_condition === opt.value}
+											onClick={() => onChange('stand_condition', opt.value)}
+											color={opt.color as 'green' | 'red' | 'yellow'}
+										/>
+									))}
+								</div>
+							</div>
+
+							<YesNoSelector
+								label='¿Es Táctil?'
+								value={values.is_touchscreen}
+								onChange={(val) => onChange('is_touchscreen', val)}
+							/>
+						</div>
+					</motion.div>
+				);
+
+			case 4: // Puertos
+				const ports = [
+					{ label: 'USB-A', name: 'usb_a_ports' },
+					{ label: 'USB-C', name: 'usb_c_ports' },
+					{ label: 'HDMI', name: 'hdmi_ports' },
+					{ label: 'DisplayPort', name: 'displayport_ports' },
+					{ label: 'VGA', name: 'vga_ports' },
+					{ label: 'RJ45', name: 'rj45_ports' },
+					{ label: 'L. SD', name: 'sd_readers' },
+				];
+				return (
+					<motion.div
+						key='step4'
+						initial={{ opacity: 0, x: 20 }}
+						animate={{ opacity: 1, x: 0 }}
+						exit={{ opacity: 0, x: -20 }}
+						transition={{ duration: 0.3 }}
+					>
+						<div className='space-y-6'>
+							<h3 className='text-lg font-bold mb-4 text-center'>Puertos</h3>
+							<div className='grid grid-cols-3 md:grid-cols-4 gap-3'>
+								{ports.map((port) => (
+									<div key={port.name} className='flex flex-col items-center gap-1'>
+										<label className='text-[10px] font-bold text-gray-500 uppercase'>{port.label}</label>
+										<StepperInput
+											value={getNumericValue(port.name)}
+											onChange={(val) => onChange(port.name, val)}
+											max={12}
+										/>
+									</div>
+								))}
+							</div>
+
+							<div className='rounded-xl border border-gray-200 p-4 bg-gray-50/50 dark:bg-gray-900/10'>
+								<YesNoSelector
+									label='¿Todos los Puertos OK?'
+									value={values.all_ports_functional}
+									onChange={(val) => {
+										onChange('all_ports_functional', val);
+										if (val === true) {
+											onChange('defective_ports_count', 0);
+										}
+									}}
+								/>
+
+								{values.all_ports_functional === false && (
+									<div className='mt-4 p-3 bg-red-50 rounded-xl border border-red-200 flex flex-col items-center animate-in zoom-in'>
+										<label className='text-red-800 font-bold mb-1 text-sm'>Puertos Defectuosos</label>
+										<StepperInput
+											value={getNumericValue('defective_ports_count')}
+											onChange={(val) => onChange('defective_ports_count', val)}
+										/>
+										<p className='text-xs text-red-700 text-center mt-2'>
+											⚠️ Más de 1 puerto = Grado M automático
+										</p>
+									</div>
+								)}
+							</div>
+						</div>
+					</motion.div>
+				);
+
+			case 5: // Conectividad & Alimentación
+				return (
+					<motion.div
+						key='step5'
+						initial={{ opacity: 0, x: 20 }}
+						animate={{ opacity: 1, x: 0 }}
+						exit={{ opacity: 0, x: -20 }}
+						transition={{ duration: 0.3 }}
+					>
+						<div className='space-y-6'>
+							<h3 className='text-lg font-bold mb-4 text-center'>Conectividad y Alimentación</h3>
+
+							<div className='grid grid-cols-2 gap-4'>
+								<YesNoSelector
+									label='¿Tiene WiFi?'
+									value={values.has_wifi}
+									onChange={(val) => onChange('has_wifi', val)}
+								/>
+
+								<YesNoSelector
+									label='¿Tiene Bluetooth?'
+									value={values.has_bluetooth}
+									onChange={(val) => onChange('has_bluetooth', val)}
+								/>
+							</div>
+
+							<YesNoSelector
+								label='¿Tiene Unidad Óptica (CD/DVD)?'
+								value={values.has_cd_drive}
+								onChange={(val) => onChange('has_cd_drive', val)}
+							/>
+
+							<div className='rounded-xl border p-4 bg-yellow-50/50 dark:bg-yellow-900/10'>
+								<YesNoSelector
+									label='¿Incluye Cargador/Adaptador?'
+									value={values.includes_charger || values.includes_power_adapter}
+									onChange={(val) => {
+										onChange('includes_charger', val);
+										onChange('includes_power_adapter', val);
+										if (!val) {
+											onChange('charger_status', 'not_included');
+										}
+									}}
+								/>
+
+								{(values.includes_charger || values.includes_power_adapter) && (
+									<div className='mt-4 animate-in fade-in zoom-in'>
+										<label className='block text-sm font-bold mb-2 text-center dark:text-gray-300'>
+											Estado del Cargador
+										</label>
+										<div className='grid grid-cols-2 gap-2'>
+											{chargerStatusOptions
+												.filter((opt) => opt.value !== 'not_included')
+												.map((opt) => (
+													<SelectionCard
+														key={opt.value}
+														label={opt.label}
+														value={opt.value}
+														isSelected={values.charger_status === opt.value}
+														onClick={() => onChange('charger_status', opt.value)}
+														color={opt.color as 'green' | 'red' | 'yellow'}
+													/>
+												))}
+										</div>
+									</div>
+								)}
+							</div>
+						</div>
+					</motion.div>
+				);
+
+			case 6: // Condición & OS
+				return (
+					<motion.div
+						key='step6'
+						initial={{ opacity: 0, x: 20 }}
+						animate={{ opacity: 1, x: 0 }}
+						exit={{ opacity: 0, x: -20 }}
+						transition={{ duration: 0.3 }}
+					>
+						<div className='space-y-6'>
+							<h3 className='text-lg font-bold mb-4 text-center'>Condición y Sistema</h3>
+
+							<div className='rounded-xl border p-4 bg-green-50/50 dark:bg-green-900/10'>
+								<label className='block text-sm font-bold mb-3 text-green-800 dark:text-green-200 text-center'>
+									Condición General
+								</label>
+								<div className='grid grid-cols-2 md:grid-cols-3 gap-2'>
+									{generalConditionOptions.map((opt) => (
+										<SelectionCard
+											key={opt.value}
+											label={opt.label}
+											value={opt.value}
+											isSelected={values.general_condition === opt.value}
+											onClick={() => onChange('general_condition', opt.value)}
+											color={opt.color as 'green' | 'red' | 'yellow'}
+										/>
+									))}
+								</div>
+							</div>
+
+							<div className='rounded-xl border p-4 bg-orange-50/50 dark:bg-orange-900/10'>
+								<label className='block text-sm font-bold mb-3 text-orange-800 dark:text-orange-200 text-center'>
+									Condición Carcasa
+								</label>
+								<div className='grid grid-cols-2 md:grid-cols-3 gap-2'>
+									{coverConditionOptions.map((opt) => (
+										<SelectionCard
+											key={opt.value}
+											label={opt.label}
+											value={opt.value}
+											isSelected={values.cover_condition === opt.value}
+											onClick={() => onChange('cover_condition', opt.value)}
+											color={opt.color as 'green' | 'red' | 'yellow'}
+										/>
+									))}
+								</div>
+							</div>
+
+							<div className='rounded-xl border p-4 bg-blue-50/50 dark:bg-blue-900/10'>
+								<label className='block text-sm font-bold mb-3 text-blue-800 dark:text-blue-200'>
+									Sistema Operativo
+								</label>
+								<SoSelector
+									value={values.operating_system || ''}
+									onChange={(os) => onChange('operating_system', os)}
+									disabled={readOnly}
+								/>
+							</div>
+
+							<div className='rounded-xl border p-4 bg-gray-50/50 dark:bg-gray-900/10'>
+								<label className='block text-sm font-bold mb-3 dark:text-gray-300'>
+									Observaciones
+								</label>
+								<Textarea
+									name='observations'
+									value={values.observations || ''}
+									onChange={handleInputChange}
+									placeholder='Ej: Base con pequeño rayón en la parte trasera...'
+									rows={4}
+									disabled={readOnly}
+								/>
+							</div>
+						</div>
+					</motion.div>
+				);
+
+			default:
+				return null;
+		}
+	};
+
+	return (
+		<Card>
+			<CardBody>
+				<AnimatePresence mode='wait'>{renderStepContent()}</AnimatePresence>
+
+				{/* Navigation */}
+				<div className='flex items-center justify-between rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800 mt-6'>
+					<Button
+						variant='outline'
+						onClick={handlePreviousStep}
+						isDisable={step === 0}
+						icon='HeroArrowLeft'
+					>
+						Anterior
+					</Button>
+
+					<div className='flex gap-2'>
+						{Array.from({ length: MAX_STEPS }).map((_, i) => (
+							<div
+								key={i}
+								className={`h-2.5 w-2.5 rounded-full transition-all duration-300 ${
+									i === step
+										? 'bg-blue-600 w-8'
+										: i < step
+											? 'bg-blue-400'
+											: 'bg-gray-300 dark:bg-gray-600'
+								}`}
+							/>
 						))}
 					</div>
-					<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-						<div className='flex items-center'>
-							<Checkbox
-								id='has_wifi'
-								name='has_wifi'
-								checked={values.has_wifi || false}
-								onChange={handleCheckboxChange('has_wifi')}
-								disabled={readOnly}
-								label='Tiene Wi-Fi'
-							/>
-						</div>
-						<div className='flex items-center'>
-							<Checkbox
-								id='has_bluetooth'
-								name='has_bluetooth'
-								checked={values.has_bluetooth || false}
-								onChange={handleCheckboxChange('has_bluetooth')}
-								disabled={readOnly}
-								label='Tiene Bluetooth'
-							/>
-						</div>
-					</div>
-					<div className='flex items-center'>
-						<Checkbox
-							id='all_ports_functional'
-							name='all_ports_functional'
-							checked={values.all_ports_functional || false}
-							onChange={handleCheckboxChange('all_ports_functional')}
-							disabled={readOnly}
-							label='Todos los puertos funcionan'
-						/>
-					</div>
-					{values.all_ports_functional === false && (
-						<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-							<div>
-								<label className='mb-2 block text-sm font-medium'>
-									Puertos defectuosos
-								</label>
-								<Input
-									type='number'
-									name='defective_ports_count'
-									value={values.defective_ports_count || 0}
-									onChange={handleNumberChange('defective_ports_count')}
-									min='0'
-									disabled={readOnly}
-								/>
-							</div>
-						</div>
-					)}
-				</CardBody>
-			</Card>
 
-			{/* Pantalla */}
-			<Card>
-				<CardHeader>
-					<div className='flex items-center gap-2'>
-						<Icon icon='HeroComputerDesktop' className='h-5 w-5 text-green-600' />
-						<h3 className='text-lg font-semibold'>Pantalla</h3>
-					</div>
-				</CardHeader>
-				<CardBody className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-					<div>
-						<label className='mb-2 block text-sm font-medium'>
-							Pulgadas <span className='text-red-500'>*</span>
-						</label>
-						<Input
-							type='text'
-							name='screen_inches'
-							value={values.screen_inches || ''}
-							onChange={handleInputChange}
-							placeholder='Ej: 22" FHD'
-							disabled={readOnly}
-						/>
-					</div>
-					<div>
-						<label className='mb-2 block text-sm font-medium'>Condición pantalla</label>
-						<SelectReact
-							name='screen_condition'
-							options={screenConditionOptions}
-							value={
-								values.screen_condition
-									? screenConditionOptions.find(
-											(o) => o.value === values.screen_condition,
-										) || null
-									: null
-							}
-							onChange={handleSelectChange('screen_condition')}
-							placeholder='Seleccionar'
-							isDisabled={readOnly}
-						/>
-					</div>
-				</CardBody>
-			</Card>
-
-			{/* Estado general */}
-			<Card>
-				<CardHeader>
-					<div className='flex items-center gap-2'>
-						<Icon icon='HeroSparkles' className='h-5 w-5 text-pink-600' />
-						<h3 className='text-lg font-semibold'>Estado general</h3>
-					</div>
-				</CardHeader>
-				<CardBody className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-					<div>
-						<label className='mb-2 block text-sm font-medium'>
-							Condición general <span className='text-red-500'>*</span>
-						</label>
-						<SelectReact
-							name='general_condition'
-							options={generalConditionOptions}
-							value={
-								values.general_condition
-									? generalConditionOptions.find(
-											(o) => o.value === values.general_condition,
-										) || null
-									: null
-							}
-							onChange={handleSelectChange('general_condition')}
-							placeholder='Seleccionar'
-							isDisabled={readOnly}
-						/>
-					</div>
-					<div>
-						<label className='mb-2 block text-sm font-medium'>Condición cubierta</label>
-						<SelectReact
-							name='cover_condition'
-							options={coverConditionOptions}
-							value={
-								values.cover_condition
-									? coverConditionOptions.find(
-											(o) => o.value === values.cover_condition,
-										) || null
-									: null
-							}
-							onChange={handleSelectChange('cover_condition')}
-							placeholder='Seleccionar'
-							isDisabled={readOnly}
-						/>
-					</div>
-					<div>
-						<label className='mb-2 block text-sm font-medium'>
-							Condición soporte/base
-						</label>
-						<SelectReact
-							name='stand_condition'
-							options={standConditionOptions}
-							value={
-								values.stand_condition
-									? standConditionOptions.find(
-											(o) => o.value === values.stand_condition,
-										) || null
-									: null
-							}
-							onChange={handleSelectChange('stand_condition')}
-							placeholder='Seleccionar'
-							isDisabled={readOnly}
-						/>
-					</div>
-					<div className='flex items-center'>
-						<Checkbox
-							id='is_touchscreen'
-							name='is_touchscreen'
-							checked={values.is_touchscreen || false}
-							onChange={handleCheckboxChange('is_touchscreen')}
-							disabled={readOnly}
-							label='Pantalla táctil'
-						/>
-					</div>
-					<div className='flex items-center'>
-						<Checkbox
-							id='has_cd_drive'
-							name='has_cd_drive'
-							checked={values.has_cd_drive || false}
-							onChange={handleCheckboxChange('has_cd_drive')}
-							disabled={readOnly}
-							label='Tiene unidad CD/DVD'
-						/>
-					</div>
-				</CardBody>
-			</Card>
-
-			{/* Sistema operativo y observaciones */}
-			<Card>
-				<CardHeader>
-					<div className='flex items-center gap-2'>
-						<Icon icon='HeroDocumentText' className='h-5 w-5 text-gray-600' />
-						<h3 className='text-lg font-semibold'>Sistema operativo y notas</h3>
-					</div>
-				</CardHeader>
-				<CardBody className='space-y-4'>
-					<div>
-						<label className='mb-2 block text-sm font-medium'>Sistema operativo</label>
-						<Input
-							type='text'
-							name='operating_system'
-							value={values.operating_system || ''}
-							onChange={handleInputChange}
-							placeholder='Ej: Windows 11 Pro'
-							disabled={readOnly}
-						/>
-					</div>
-					<Textarea
-						name='observations'
-						value={values.observations || ''}
-						onChange={handleTextareaChange}
-						rows={4}
-						placeholder='Notas adicionales…'
-						disabled={readOnly}
-					/>
-				</CardBody>
-			</Card>
-		</div>
+					<Button
+						color='green'
+						onClick={handleNextStep}
+						isDisable={false}
+						icon={step === MAX_STEPS - 1 ? 'HeroCheckCircle' : 'HeroArrowRight'}
+					>
+						{step === MAX_STEPS - 1 ? 'Finalizar Revisión' : 'Siguiente'}
+					</Button>
+				</div>
+			</CardBody>
+		</Card>
 	);
 };
 

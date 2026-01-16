@@ -62,7 +62,7 @@ const PORT_FIELDS = [
 
 /**
  * Filtra campos según el tipo de equipo para evitar errores de SQL
- * AIO y Desktop no tienen columnas de puertos en sus tablas
+ * NOTA: Desktop y AIO ahora SÍ tienen columnas de puertos en sus tablas
  */
 const filterFieldsByEquipmentType = (
 	data: UpdateItemDetailsPayload,
@@ -75,12 +75,12 @@ const filterFieldsByEquipmentType = (
 
 	const filteredData = { ...data };
 
-	// AIO y Desktop no tienen columnas de puertos
-	if (equipmentType === 'aio' || equipmentType === 'desktop') {
-		PORT_FIELDS.forEach((field) => {
-			delete filteredData[field];
-		});
-	}
+	// DESACTIVADO: Desktop y AIO ahora SÍ aceptan campos de puertos
+	// if (equipmentType === 'aio' || equipmentType === 'desktop') {
+	// 	PORT_FIELDS.forEach((field) => {
+	// 		delete filteredData[field];
+	// 	});
+	// }
 
 	return filteredData;
 };
@@ -112,8 +112,8 @@ export const updateItemDetails = createAsyncThunk<
 		} catch (error: any) {
 			return rejectWithValue(
 				error?.response?.data?.message ??
-					error?.message ??
-					'No se pudieron actualizar los detalles',
+				error?.message ??
+				'No se pudieron actualizar los detalles',
 			);
 		}
 	},
@@ -193,8 +193,8 @@ export const getSuggestedGrade = createAsyncThunk<
 	} catch (error: any) {
 		return rejectWithValue(
 			error?.response?.data?.message ??
-				error?.message ??
-				'No se pudo calcular el grado sugerido',
+			error?.message ??
+			'No se pudo calcular el grado sugerido',
 		);
 	}
 });
