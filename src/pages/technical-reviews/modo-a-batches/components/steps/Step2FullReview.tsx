@@ -114,10 +114,7 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 	onBack,
 	onComplete,
 	onFieldChange, // Nuevo: callback para auto-save
-	onItemUpdate, // Nuevo: callback para actualizar item del padre
-	isDirty = false,
-	isSaving = false,
-	lastSaved = null,
+	onItemUpdate, 
 }) => {
 	const dispatch = useAppDispatch();
 	const updating = useAppSelector((s) => s.technicalReviews.updating);
@@ -302,57 +299,7 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 	return (
 		<div className='space-y-6'>
 			{/* Header con info */}
-			<Card className='border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950'>
-				<CardBody className='p-4'>
-					<div className='flex items-start justify-between'>
-						<div className='flex gap-3'>
-							<Icon
-								icon='HeroClipboardDocumentCheck'
-								className='mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400'
-							/>
-							<div>
-								<h4 className='font-semibold text-blue-900 dark:text-blue-100'>
-									Revisión Técnica Completa batches
-								</h4>
-								<p className='mt-1 text-sm text-blue-800 dark:text-blue-200'>
-									Completa todos los campos técnicos del equipo. Usa el botón
-									"Guardar" para persistir los cambios.
-								</p>
-							</div>
-						</div>
-
-						{/* Indicador de estado (solo si auto-save está activado) */}
-						{onFieldChange && (
-							<div className='text-right text-xs'>
-								{isSaving && (
-									<div className='text-blue-600 dark:text-blue-400'>
-										<Icon
-											icon='HeroArrowPath'
-											className='mr-1 inline h-4 w-4 animate-spin'
-										/>
-										Guardando...
-									</div>
-								)}
-								{!isSaving && isDirty && (
-									<div className='text-yellow-600 dark:text-yellow-400'>
-										<Icon icon='HeroClock' className='mr-1 inline h-4 w-4' />
-										Cambios sin guardar
-									</div>
-								)}
-								{!isSaving && !isDirty && lastSaved && (
-									<div className='text-green-600 dark:text-green-400'>
-										<Icon
-											icon='HeroCheckCircle'
-											className='mr-1 inline h-4 w-4'
-										/>
-										Guardado {lastSaved.toLocaleTimeString()}
-									</div>
-								)}
-							</div>
-						)}
-					</div>
-				</CardBody>
-			</Card>
+		
 
 			{/* Error */}
 			{saveError && (

@@ -12,131 +12,21 @@ import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import { MultiValue, SingleValue } from 'react-select';
 import { ProcessorSelector } from '../components/ProcessorSelector';
 import { SoSelector } from '../components/SoSelector';
+import { StepperInput } from '../components/StepperInput';
+import { SelectionCard } from '../components/SelectionCard';
+import { YesNoSelector } from '../components/YesNoSelector';
+import { 
+	GENERAL_CONDITION_OPTIONS,
+	RAM_TYPE_OPTIONS,
+	STORAGE_TECH_OPTIONS,
+	CHARGER_STATUS_OPTIONS,
+	COVER_CONDITION_OPTIONS,
+	SCREEN_CONDITION_OPTIONS,
+	STAND_CONDITION_OPTIONS 
+} from '../constants/formOptions';
 
 // --- HELPER COMPONENTS ---
 
-interface SelectionCardProps {
-	label: string;
-	value: string;
-	isSelected: boolean;
-	onClick: () => void;
-	color?: 'green' | 'red' | 'yellow' | 'gray';
-	icon?: string;
-	className?: string;
-}
-
-const SelectionCard: React.FC<SelectionCardProps> = ({
-	label,
-	value,
-	isSelected,
-	onClick,
-	color = 'gray',
-	icon,
-	className = '',
-}) => {
-	const colorStyles = {
-		green: isSelected
-			? 'bg-green-100 border-green-500 text-green-800 shadow-md ring-1 ring-green-500 ring-offset-1 dark:bg-green-900/60 dark:border-green-400 dark:text-green-100'
-			: 'bg-green-50/50 border-green-200 text-green-700 hover:bg-green-100 dark:bg-green-900/10 dark:border-green-900/30 dark:text-green-400',
-		red: isSelected
-			? 'bg-red-100 border-red-500 text-red-800 shadow-md ring-1 ring-red-500 ring-offset-1 dark:bg-red-900/60 dark:border-red-400 dark:text-red-100'
-			: 'bg-red-50/50 border-red-200 text-red-700 hover:bg-red-100 dark:bg-red-900/10 dark:border-red-900/30 dark:text-red-400',
-		yellow: isSelected
-			? 'bg-yellow-100 border-yellow-500 text-yellow-800 shadow-md ring-1 ring-yellow-500 ring-offset-1 dark:bg-yellow-900/60 dark:border-yellow-400 dark:text-yellow-100'
-			: 'bg-yellow-50/50 border-yellow-200 text-yellow-700 hover:bg-yellow-100 dark:bg-yellow-900/10 dark:border-yellow-900/30 dark:text-yellow-400',
-		gray: isSelected
-			? 'bg-blue-100 border-blue-500 text-blue-800 shadow-md ring-1 ring-blue-500 ring-offset-1 dark:bg-blue-900/60 dark:border-blue-400 dark:text-blue-100'
-			: 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400',
-	};
-
-	return (
-		<div
-			data-value={value}
-			onClick={onClick}
-			className={`cursor-pointer rounded-xl border-2 p-3 text-center transition-all duration-200 ${
-				isSelected ? 'scale-105 z-10' : 'scale-100'
-			} ${colorStyles[color]} flex flex-col items-center justify-center gap-2 min-h-[70px] ${className}`}
-		>
-			{icon && <Icon icon={icon} className={`h-6 w-6 ${isSelected ? '' : 'opacity-80'}`} />}
-			<span className={`text-sm font-semibold ${isSelected ? 'font-bold' : ''}`}>{label}</span>
-		</div>
-	);
-};
-
-interface YesNoSelectorProps {
-	label: string;
-	value: boolean | undefined | null;
-	onChange: (val: boolean) => void;
-}
-
-const YesNoSelector: React.FC<YesNoSelectorProps> = ({ label, value, onChange }) => {
-	return (
-		<div className='flex flex-col gap-2'>
-			<label className='block text-sm font-bold text-center dark:text-gray-300'>{label}</label>
-			<div className='grid grid-cols-2 gap-4'>
-				<SelectionCard
-					label='Sí'
-					value='yes'
-					isSelected={value === true}
-					onClick={() => onChange(true)}
-					color='green'
-					icon='HeroCheck'
-					className='h-16 min-h-[60px]'
-				/>
-				<SelectionCard
-					label='No'
-					value='no'
-					isSelected={value === false}
-					onClick={() => onChange(false)}
-					color='red'
-					icon='HeroXMark'
-					className='h-16 min-h-[60px]'
-				/>
-			</div>
-		</div>
-	);
-};
-
-interface StepperInputProps {
-	value: number;
-	onChange: (val: number) => void;
-	min?: number;
-	max?: number;
-}
-
-const StepperInput: React.FC<StepperInputProps> = ({ value, onChange, min = 0, max = 99 }) => {
-	const handleDecrement = () => {
-		if (value > min) onChange(value - 1);
-	};
-
-	const handleIncrement = () => {
-		if (value < max) onChange(value + 1);
-	};
-
-	return (
-		<div className='flex items-center gap-2'>
-			<button
-				type='button'
-				onClick={handleDecrement}
-				disabled={value <= min}
-				className='h-10 w-10 rounded-lg bg-red-500 text-white font-bold text-xl hover:bg-red-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95'
-			>
-				-
-			</button>
-			<div className='h-10 w-14 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700 font-bold text-lg'>
-				{value}
-			</div>
-			<button
-				type='button'
-				onClick={handleIncrement}
-				disabled={value >= max}
-				className='h-10 w-10 rounded-lg bg-blue-500 text-white font-bold text-xl hover:bg-blue-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95'
-			>
-				+
-			</button>
-		</div>
-	);
-};
 
 // --- MAIN FORM ---
 
@@ -197,60 +87,14 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 		return typeof val === 'number' ? val : 0;
 	};
 
-	const generalConditionOptions = [
-		{ value: 'like_new', label: 'Como nuevo', color: 'green' },
-		{ value: 'good_shape', label: 'Buen estado', color: 'green' },
-		{ value: 'visible_wear', label: 'Desgaste visible', color: 'yellow' },
-		{ value: 'needs_repair', label: 'Requiere reparación', color: 'red' },
-		{ value: 'scrap', label: 'Solo repuestos', color: 'red' },
-	];
-
-	const storageTechOptions = [
-		{ value: 'HDD', label: 'HDD', color: 'gray' },
-		{ value: 'SSD', label: 'SSD', color: 'gray' },
-		{ value: 'M2', label: 'M.2', color: 'gray' },
-		{ value: 'NVME', label: 'NVMe', color: 'gray' },
-		{ value: 'HYBRID', label: 'Híbrido', color: 'gray' },
-	];
-
-	const ramTypeOptions = [
-		{ value: 'DDR3', label: 'DDR3', color: 'gray' },
-		{ value: 'DDR4', label: 'DDR4', color: 'gray' },
-		{ value: 'DDR5', label: 'DDR5', color: 'gray' },
-	];
-
-	const chargerStatusOptions = [
-		{ value: 'good_condition', label: 'Buen estado', color: 'green' },
-		{ value: 'damaged_cable', label: 'Cable dañado', color: 'yellow' },
-		{ value: 'not_matching_equipment', label: 'No corresponde', color: 'red' },
-		{ value: 'not_included', label: 'No incluye', color: 'red' },
-	];
-
-	const screenConditionOptions = [
-		{ value: 'ok', label: 'OK', color: 'green' },
-		{ value: 'minor_wear', label: 'Desgaste menor', color: 'yellow' },
-		{ value: 'worn', label: 'Desgastado', color: 'yellow' },
-		{ value: 'missing_pieces', label: 'Piezas faltantes', color: 'red' },
-		{ value: 'dead_pixels', label: 'Píxeles muertos', color: 'red' },
-		{ value: 'broken', label: 'Roto', color: 'red' },
-	];
-
-	const standConditionOptions = [
-		{ value: 'ok', label: 'OK', color: 'green' },
-		{ value: 'worn', label: 'Desgastado', color: 'yellow' },
-		{ value: 'missing_pieces', label: 'Piezas faltantes', color: 'red' },
-		{ value: 'scratched', label: 'Rayado', color: 'yellow' },
-		{ value: 'broken', label: 'Roto', color: 'red' },
-		{ value: 'no_stand', label: 'Sin base', color: 'red' },
-	];
-
-	const coverConditionOptions = [
-		{ value: 'ok', label: 'OK', color: 'green' },
-		{ value: 'worn', label: 'Desgastado', color: 'yellow' },
-		{ value: 'missing_pieces', label: 'Piezas faltantes', color: 'red' },
-		{ value: 'scratched', label: 'Rayado', color: 'yellow' },
-		{ value: 'broken', label: 'Roto', color: 'red' },
-	];
+	// Using shared constants from formOptions
+	const generalConditionOptions = GENERAL_CONDITION_OPTIONS;
+	const storageTechOptions = STORAGE_TECH_OPTIONS;
+	const ramTypeOptions = RAM_TYPE_OPTIONS;
+	const chargerStatusOptions = CHARGER_STATUS_OPTIONS;
+	const screenConditionOptions = SCREEN_CONDITION_OPTIONS;
+	const standConditionOptions = STAND_CONDITION_OPTIONS;
+	const coverConditionOptions = COVER_CONDITION_OPTIONS;
 
 	if (brandsLoading) {
 		return (

@@ -15,128 +15,18 @@ import { SoSelector } from '../components/SoSelector';
 import { toast } from 'react-toastify';
 import Button from '@/components/ui/Button';
 import { motion, AnimatePresence } from 'framer-motion';
+import { RangeSlider } from '../components/RangerSlider';
+import { StepperInput } from '../components/StepperInput';
+import { 
+	GENERAL_CONDITION_OPTIONS,
+	RAM_TYPE_OPTIONS,
+	STORAGE_TECH_OPTIONS,
+	CHARGER_STATUS_OPTIONS 
+} from '../constants/formOptions';
+import { SelectionCard } from '../components/SelectionCard';
+import { YesNoSelector } from '../components/YesNoSelector';
 
-// --- HELPER COMPONENTS ---
 
-interface SelectionCardProps {
-	label: string;
-	value: string;
-	isSelected: boolean;
-	onClick: () => void;
-	color?: 'green' | 'red' | 'yellow' | 'gray';
-	icon?: string;
-	className?: string; // Add className prop
-}
-
-const SelectionCard: React.FC<SelectionCardProps> = ({
-	label,
-	value,
-	isSelected,
-	onClick,
-	color = 'gray',
-	icon,
-	className = '',
-}) => {
-	const colorStyles = {
-		green: isSelected
-			? 'bg-green-100 border-green-500 text-green-800 shadow-md ring-2 ring-green-500 ring-offset-1 dark:bg-green-900/60 dark:border-green-400 dark:text-green-100 dark:ring-offset-gray-900'
-			: 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100 hover:border-green-300 dark:bg-green-900/10 dark:border-green-900/50 dark:text-green-400 dark:hover:bg-green-900/30',
-		red: isSelected
-			? 'bg-red-100 border-red-500 text-red-800 shadow-md ring-2 ring-red-500 ring-offset-1 dark:bg-red-900/60 dark:border-red-400 dark:text-red-100 dark:ring-offset-gray-900'
-			: 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100 hover:border-red-300 dark:bg-red-900/10 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-900/30',
-		yellow: isSelected
-			? 'bg-yellow-100 border-yellow-500 text-yellow-800 shadow-md ring-2 ring-yellow-500 ring-offset-1 dark:bg-yellow-900/60 dark:border-yellow-400 dark:text-yellow-100 dark:ring-offset-gray-900'
-			: 'bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100 hover:border-yellow-300 dark:bg-yellow-900/10 dark:border-yellow-900/50 dark:text-yellow-400 dark:hover:bg-yellow-900/30',
-		gray: isSelected
-			? 'bg-blue-100 border-blue-500 text-blue-800 shadow-md ring-2 ring-blue-500 ring-offset-1 dark:bg-blue-900/60 dark:border-blue-400 dark:text-blue-100 dark:ring-offset-gray-900'
-			: 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700',
-	};
-
-	return (
-		<div
-			data-value={value}
-			onClick={onClick}
-			className={`cursor-pointer rounded-xl border-2 p-4 text-center transition-all duration-200 ${
-				isSelected ? 'scale-105 z-10' : 'scale-100'
-			} ${colorStyles[color]} flex flex-col items-center justify-center gap-2 h-full min-h-[80px] ${className}`}
-		>
-			{icon && <Icon icon={icon} className={`h-8 w-8 ${isSelected ? '' : 'opacity-80'}`} />}
-			<span className={`font-semibold ${isSelected ? 'font-bold' : ''}`}>{label}</span>
-		</div>
-	);
-};
-
-interface YesNoSelectorProps {
-	label: string;
-	value: boolean | undefined | null;
-	onChange: (val: boolean) => void;
-}
-
-const YesNoSelector: React.FC<YesNoSelectorProps> = ({ label, value, onChange }) => {
-	return (
-		<div className='flex flex-col gap-2'>
-			<label className='block text-sm font-bold text-center dark:text-gray-300'>{label}</label>
-			<div className='grid grid-cols-2 gap-4'>
-				<SelectionCard
-					label='Sí'
-					value='yes'
-					isSelected={value === true}
-					onClick={() => onChange(true)}
-					color='green'
-					icon='HeroCheck'
-					className='h-16 min-h-[60px]'
-				/>
-				<SelectionCard
-					label='No'
-					value='no'
-					isSelected={value === false}
-					onClick={() => onChange(false)}
-					color='red'
-					icon='HeroXMark'
-					className='h-16 min-h-[60px]'
-				/>
-			</div>
-		</div>
-	);
-};
-
-interface StepperInputProps {
-	value: number;
-	onChange: (val: number) => void;
-	min?: number;
-	max?: number;
-}
-
-const StepperInput: React.FC<StepperInputProps> = ({ value, onChange, min = 0, max = 99 }) => {
-	const handleDecrement = () => {
-		if (value > min) onChange(value - 1);
-	};
-	const handleIncrement = () => {
-		if (value < max) onChange(value + 1);
-	};
-
-	return (
-		<div className='flex items-center justify-center gap-4 rounded-xl border border-gray-200 bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-900'>
-			<button
-				onClick={handleDecrement}
-				disabled={value <= min}
-				className='flex h-10 w-10 items-center justify-center rounded-full bg-white text-xl font-bold text-gray-700 shadow-sm transition hover:bg-gray-100 disabled:opacity-50 dark:bg-gray-800 dark:text-gray-200'
-				type='button'
-			>
-				-
-			</button>
-			<span className='w-12 text-center text-2xl font-bold dark:text-white'>{value}</span>
-			<button
-				onClick={handleIncrement}
-				disabled={value >= max}
-				className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-xl font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-50'
-				type='button'
-			>
-				+
-			</button>
-		</div>
-	);
-};
 
 // --- MAIN COMPONENT ---
 
@@ -184,21 +74,13 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 		label: brand.name,
 	}));
 
-	const generalConditionOptions = [
-		{ value: 'like_new', label: 'Como nuevo', color: 'green', icon: 'HeroSparkles' },
-		{ value: 'good_shape', label: 'Buen estado', color: 'green', icon: 'HeroHandThumbUp' },
-		{ value: 'visible_wear', label: 'Desgaste visible', color: 'yellow', icon: 'HeroEye' },
-		{ value: 'needs_repair', label: 'Requiere reparación', color: 'red', icon: 'HeroWrench' },
-		{ value: 'scrap', label: 'Solo repuestos', color: 'red', icon: 'HeroTrash' },
-	];
+	// Using shared constants from formOptions
+	const generalConditionOptions = GENERAL_CONDITION_OPTIONS;
+	const ramTypeOptions = RAM_TYPE_OPTIONS;
+	const storageTechOptions = STORAGE_TECH_OPTIONS;
+	const chargerStatusOptions = CHARGER_STATUS_OPTIONS;
 
-	const chargerStatusOptions = [
-		{ value: 'buen_estado', label: 'Buen estado', color: 'green' },
-		{ value: 'cable_en_mal_estado', label: 'Cable dañado', color: 'red' },
-		{ value: 'no_corresponde_a_equipo', label: 'No original', color: 'yellow' },
-		{ value: 'no_incluye', label: 'No incluye', color: 'gray' },
-	];
-
+	// NotebookForm-specific constants
 	const batteryStatusDellOptions = [
 		{ value: 'excellent', label: 'Excellent', color: 'green' },
 		{ value: 'good', label: 'Good', color: 'green' },
@@ -217,20 +99,6 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 	const keyboardLayoutOptions = [
 		{ value: 'es', label: 'Español (ES)', icon: 'HeroLanguage' },
 		{ value: 'us', label: 'Inglés (US)', icon: 'HeroGlobeAmericas' },
-	];
-
-	const ramTypeOptions = [
-		{ value: 'DDR3', label: 'DDR3' },
-		{ value: 'DDR4', label: 'DDR4' },
-		{ value: 'DDR5', label: 'DDR5' },
-		{ value: 'no_ram', label: 'Sin RAM' },
-	];
-
-	const storageTechOptions = [
-		{ value: 'SSD', label: 'SSD' },
-		{ value: 'M2', label: 'M.2' },
-		{ value: 'HDD', label: 'HDD' },
-		{ value: 'no_storage', label: 'Sin disco' },
 	];
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -281,6 +149,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 			</Card>
 		);
 	}
+
 
 	const renderStepContent = () => {
 		switch (step) {
@@ -403,79 +272,98 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 				);
 			case 2: // Power
 				return (
-					<div className='space-y-8'>
-						<h3 className='text-xl font-bold mb-4 text-center dark:text-gray-100'>Energía</h3>
-						
-						{/* Charger */}
-						<div className='space-y-6'>
-							<YesNoSelector
-								label='¿Incluye Cargador Original?'
-								value={values.includes_charger}
-								onChange={(val) => onChange('includes_charger', val)}
-							/>
+						<div className='max-w-6xl mx-auto space-y-4 p-2'>
+							<h3 className='text-lg font-bold text-center dark:text-gray-100 uppercase tracking-wider'>Energía</h3>
 
-							{values.includes_charger && (
-								<div className='p-4 border rounded-xl bg-gray-50 dark:bg-gray-800/50 dark:border-gray-700 space-y-4 animate-in slide-in-from-top-2 fade-in duration-300'>
-									<Input
-										type='text'
-										name='charger_watts'
-										value={values.charger_watts || ''}
-										onChange={handleInputChange}
-										placeholder='Potencia (Watts)'
-									/>
-									<div className='grid grid-cols-2 gap-3'>
-										{chargerStatusOptions.map((opt) => (
-											<SelectionCard
-												key={opt.value}
-												label={opt.label}
-												value={opt.value}
-												isSelected={values.charger_status === opt.value}
-												onClick={() => onChange('charger_status', opt.value)}
-												color={opt.color as any}
-											/>
-										))}
+							<div className='grid grid-cols-1 lg:grid-cols-12 gap-6 items-start'>
+							
+							{/* Columna Izquierda: Cargador (7/12 del ancho) */}
+							<section className='lg:col-span-7 space-y-4'>
+								<div className='bg-gray-800/20 p-4 rounded-2xl border border-gray-700/50'>
+								<YesNoSelector
+									className='w-full'
+									label='¿Incluye Cargador Original?'
+									value={values.includes_charger}
+									onChange={(val) => onChange('includes_charger', val)}
+								/>
+
+								{values.includes_charger && (
+									<div className='mt-4 space-y-4 animate-in fade-in zoom-in-95 duration-300'>
+									{/* Slider Compacto */}
+									<div className='px-4 py-2 border rounded-xl bg-white/5 dark:bg-gray-800/50'>
+										<RangeSlider
+										label='Potencia (Watts)'
+										value={values.charger_watts || '0'}
+										onChange={(val) => onChange('charger_watts', val)}
+										max={300}
+										/>
 									</div>
-								</div>
-							)}
-						</div>
 
-						{/* Battery */}
-						<div className='pt-6 border-t dark:border-gray-700'>
-							<label className='block text-lg font-bold mb-4 dark:text-gray-200'>Estado Batería {isDell && '(BIOS)'}</label>
-							{isDell ? (
-								<div className='grid grid-cols-2 md:grid-cols-3 gap-3'>
-									{batteryStatusDellOptions.map((opt) => (
+									{/* Grid de estados pequeño */}
+									<div className='grid grid-cols-2 gap-2'>
+										{chargerStatusOptions.map((opt) => (
 										<SelectionCard
 											key={opt.value}
 											label={opt.label}
 											value={opt.value}
-											isSelected={values.battery_status === opt.value}
-											onClick={() => onChange('battery_status', opt.value)}
+											isSelected={values.charger_status === opt.value}
+											onClick={() => onChange('charger_status', opt.value)}
 											color={opt.color as any}
+											className='py-2 text-sm' // Hacemos las tarjetas más bajas
+										/>
+										))}
+									</div>
+									</div>
+								)}
+								</div>
+							</section>
+
+							{/* Columna Derecha: Batería (5/12 del ancho) */}
+							<section className='lg:col-span-5 h-full'>
+								<div className='bg-gray-800/20 p-4 rounded-2xl border border-gray-700/50 h-full flex flex-col justify-center'>
+								<label className='block text-sm font-semibold mb-4 text-center text-gray-400 uppercase'>
+									Estado Batería {isDell && '(BIOS)'}
+								</label>
+								
+								{isDell ? (
+									<div className='grid grid-cols-2 gap-2'>
+									{batteryStatusDellOptions.map((opt) => (
+										<SelectionCard
+										key={opt.value}
+										label={opt.label}
+										value={opt.value}
+										isSelected={values.battery_status === opt.value}
+										onClick={() => onChange('battery_status', opt.value)}
+										color={opt.color as any}
+										className='py-3'
 										/>
 									))}
-								</div>
-							) : (
-								<div className='flex items-center gap-4 py-4'>
-									<div className='w-full max-w-xs'>
+									</div>
+								) : (
+									<div className='flex items-center justify-center gap-4'>
+									<div className='relative w-32'>
 										<Input
 										name='status_batery'
-											type='number'
-											value={values.battery_status?.replace('%', '') || ''}
-											onChange={(e) => {
-												const val = Math.min(100, Math.max(0, Number(e.target.value)));
-												onChange('battery_status', val ? `${val}%` : '');
-											}}
-											placeholder='Vida útil'
-											className='text-center text-3xl h-20 rounded-xl font-bold'
+										type='number'
+										value={values.battery_status?.replace('%', '') || ''}
+										onChange={(e) => {
+											const val = Math.min(100, Math.max(0, Number(e.target.value)));
+											onChange('battery_status', val ? `${val}%` : '');
+										}}
+										className='text-center text-4xl h-20 rounded-xl font-bold bg-transparent border-2 border-primary/30'
 										/>
+										<span className='absolute -right-8 top-1/2 -translate-y-1/2 text-3xl font-bold text-gray-500'>%</span>
 									</div>
-									<span className='text-4xl font-bold text-gray-400'>%</span>
+									</div>
+								)}
+								<p className='text-[10px] text-center mt-4 text-gray-500 italic'>Información de salud del componente</p>
 								</div>
-							)}
+							</section>
+
+							</div>
 						</div>
-					</div>
-				);
+					);
+
 			case 3: // Ports
 				const ports = [
 					{ label: 'USB-A', name: 'usb_a_ports' },

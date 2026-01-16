@@ -452,7 +452,7 @@ const ItemReviewPage: React.FC = () => {
 					</Button>
 					<div className='flex-1'>
 						<h1 className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
-							{item ? `Revisión #${item.id}` : 'Nueva Revisión'}
+							{item ? `Revisión #${item.serial_number}` : 'Nueva Revisión'}
 						</h1>
 						<p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
 							{batchId ? `Lote #${batchId}` : 'Revisión global (sin lote)'}

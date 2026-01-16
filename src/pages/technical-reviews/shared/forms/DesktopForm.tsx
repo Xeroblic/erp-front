@@ -15,159 +15,21 @@ import { SoSelector } from '../components/SoSelector';
 import { toast } from 'react-toastify';
 import Button from '@/components/ui/Button';
 import { motion, AnimatePresence } from 'framer-motion';
+import { RangeSlider } from '../components/RangerSlider';
+import { StepperInput } from '../components/StepperInput';
+import { SelectionCard } from '../components/SelectionCard';
+import { YesNoSelector } from '../components/YesNoSelector';
+import { 
+	GENERAL_CONDITION_OPTIONS,
+	RAM_TYPE_OPTIONS,
+	STORAGE_TECH_OPTIONS,
+	CHARGER_STATUS_OPTIONS,
+	COVER_CONDITION_OPTIONS 
+} from '../constants/formOptions';
 
-// --- HELPER COMPONENTS (With reduced sizes) ---
 
-interface SelectionCardProps {
-	label: string;
-	value: string;
-	isSelected: boolean;
-	onClick: () => void;
-	color?: 'green' | 'red' | 'yellow' | 'gray';
-	icon?: string;
-	className?: string;
-}
 
-const SelectionCard: React.FC<SelectionCardProps> = ({
-	label,
-	value,
-	isSelected,
-	onClick,
-	color = 'gray',
-	icon,
-	className = '',
-}) => {
-	const colorStyles = {
-		green: isSelected
-			? 'bg-green-100 border-green-500 text-green-800 shadow-md ring-1 ring-green-500 ring-offset-1 dark:bg-green-900/60 dark:border-green-400 dark:text-green-100'
-			: 'bg-green-50/50 border-green-200 text-green-700 hover:bg-green-100 dark:bg-green-900/10 dark:border-green-900/30 dark:text-green-400',
-		red: isSelected
-			? 'bg-red-100 border-red-500 text-red-800 shadow-md ring-1 ring-red-500 ring-offset-1 dark:bg-red-900/60 dark:border-red-400 dark:text-red-100'
-			: 'bg-red-50/50 border-red-200 text-red-700 hover:bg-red-100 dark:bg-red-900/10 dark:border-red-900/30 dark:text-red-400',
-		yellow: isSelected
-			? 'bg-yellow-100 border-yellow-500 text-yellow-800 shadow-md ring-1 ring-yellow-500 ring-offset-1 dark:bg-yellow-900/60 dark:border-yellow-400 dark:text-yellow-100'
-			: 'bg-yellow-50/50 border-yellow-200 text-yellow-700 hover:bg-yellow-100 dark:bg-yellow-900/10 dark:border-yellow-900/30 dark:text-yellow-400',
-		gray: isSelected
-			? 'bg-blue-100 border-blue-500 text-blue-800 shadow-md ring-1 ring-blue-500 ring-offset-1 dark:bg-blue-900/60 dark:border-blue-400 dark:text-blue-100'
-			: 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400',
-	};
 
-	return (
-		<div
-			data-value={value}
-			onClick={onClick}
-			className={`cursor-pointer rounded-xl border-2 p-3 text-center transition-all duration-200 ${
-				isSelected ? 'scale-105 z-10' : 'scale-100'
-			} ${colorStyles[color]} flex flex-col items-center justify-center gap-2 min-h-[70px] ${className}`}
-		>
-			{icon && <Icon icon={icon} className={`h-6 w-6 ${isSelected ? '' : 'opacity-80'}`} />}
-			<span className={`text-sm font-semibold ${isSelected ? 'font-bold' : ''}`}>{label}</span>
-		</div>
-	);
-};
-
-interface YesNoSelectorProps {
-	label: string;
-	value: boolean | undefined | null;
-	onChange: (val: boolean) => void;
-}
-
-const YesNoSelector: React.FC<YesNoSelectorProps> = ({ label, value, onChange }) => {
-	return (
-		<div className='flex flex-col gap-1.5'>
-			<label className='block text-xs font-bold text-center dark:text-gray-300'>{label}</label>
-			<div className='grid grid-cols-2 gap-2'>
-				<SelectionCard
-					label='Sí'
-					value='yes'
-					isSelected={value === true}
-					onClick={() => onChange(true)}
-					color='green'
-					icon='HeroCheck'
-					className='h-10'
-				/>
-				<SelectionCard
-					label='No'
-					value='no'
-					isSelected={value === false}
-					onClick={() => onChange(false)}
-					color='red'
-					icon='HeroXMark'
-					className='h-10'
-				/>
-			</div>
-		</div>
-	);
-};
-
-interface StepperInputProps {
-	value: number;
-	onChange: (val: number) => void;
-	min?: number;
-	max?: number;
-}
-
-const StepperInput: React.FC<StepperInputProps> = ({ value, onChange, min = 0, max = 99 }) => {
-	const handleDecrement = () => {
-		if (value > min) onChange(value - 1);
-	};
-	const handleIncrement = () => {
-		if (value < max) onChange(value + 1);
-	};
-
-	return (
-		<div className='flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-gray-50 p-1 dark:border-gray-700 dark:bg-gray-900'>
-			<button
-				onClick={handleDecrement}
-				disabled={value <= min}
-				className='flex h-8 w-8 items-center justify-center rounded-full bg-white text-lg font-bold text-gray-700 shadow-sm transition hover:bg-gray-100 disabled:opacity-50 dark:bg-gray-800 dark:text-gray-200'
-				type='button'
-			>
-				-
-			</button>
-			<span className='w-8 text-center text-lg font-bold dark:text-white'>{value}</span>
-			<button
-				onClick={handleIncrement}
-				disabled={value >= max}
-				className='flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-lg font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-50'
-				type='button'
-			>
-				+
-			</button>
-		</div>
-	);
-};
-
-interface RangeSliderProps {
-	value: number;
-	onChange: (val: number) => void;
-	label: string;
-	max?: number;
-}
-
-const RangeSlider: React.FC<RangeSliderProps> = ({ value, onChange, label, max = 1000 }) => {
-	return (
-		<div className='w-full'>
-			<div className='flex justify-between mb-2'>
-				<label className='text-sm font-bold dark:text-gray-200'>{label}</label>
-				<span className='text-sm font-bold text-blue-600 dark:text-blue-400'>{value} W</span>
-			</div>
-			<input
-				type='range'
-				min='0'
-				max={max}
-				step='10'
-				value={value || 0}
-				onChange={(e) => onChange(Number(e.target.value))}
-				className='w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600'
-			/>
-			<div className='flex justify-between mt-1 text-xs text-gray-500'>
-				<span>0W</span>
-				<span>{max}W</span>
-			</div>
-		</div>
-	);
-};
 
 // --- MAIN COMPONENT ---
 
@@ -222,49 +84,20 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 	};
 
 	// --- OPTIONS ALIGNED WITH RULES ---
-	const generalConditionOptions = [
-		{ value: 'like_new', label: 'Como nuevo', color: 'green', icon: 'HeroSparkles' },
-		{ value: 'good_shape', label: 'Buen estado', color: 'green', icon: 'HeroHandThumbUp' },
-		{ value: 'visible_wear', label: 'Desgaste visible', color: 'yellow', icon: 'HeroEye' },
-		{ value: 'needs_repair', label: 'Requiere reparación', color: 'red', icon: 'HeroWrench' },
-		{ value: 'scrap', label: 'Solo repuestos', color: 'red', icon: 'HeroTrash' },
-	];
+	// Using shared constants from formOptions
+	const generalConditionOptions = GENERAL_CONDITION_OPTIONS;
+	const coverConditionOptions = COVER_CONDITION_OPTIONS;
+	const ramTypeOptions = RAM_TYPE_OPTIONS;
+	const storageTechOptions = STORAGE_TECH_OPTIONS;
+	const chargerStatusOptions = CHARGER_STATUS_OPTIONS;
 
-	const coverConditionOptions = [
-		{ value: 'ok', label: 'OK', color: 'green' },
-		{ value: 'good_condition', label: 'Buen estado', color: 'green' },
-		{ value: 'light_scratches', label: 'Rayas leves', color: 'yellow' },
-		{ value: 'noticeable_wear', label: 'Desgaste visible', color: 'yellow' },
-		{ value: 'broken', label: 'Roto', color: 'red' },
-	];
-
-	// Note: form_factor is not in the rules provided, but usually present. Keeping it.
+	// DesktopForm-specific constants
 	const formFactorOptions = [
 		{ value: 'Tower', label: 'Torre' },
 		{ value: 'SFF', label: 'SFF (Small)' },
 		{ value: 'USFF', label: 'USFF (Ultra)' },
 		{ value: 'Micro', label: 'Micro/Mini' },
 		{ value: 'AIO', label: 'All-in-One' },
-	];
-
-	const ramTypeOptions = [
-		{ value: 'DDR3', label: 'DDR3' },
-		{ value: 'DDR4', label: 'DDR4' },
-		{ value: 'DDR5', label: 'DDR5' },
-	];
-
-	const storageTechOptions = [
-		{ value: 'HDD', label: 'HDD' },
-		{ value: 'SSD', label: 'SSD' },
-		{ value: 'M2', label: 'M.2' },
-		{ value: 'NVMe', label: 'NVMe' },
-	];
-
-	const chargerStatusOptions = [
-		{ value: 'good_condition', label: 'Buen estado', color: 'green' },
-		{ value: 'damaged_cable', label: 'Cable dañado', color: 'red' },
-		{ value: 'not_matching_equipment', label: 'No corresponde', color: 'yellow' },
-		{ value: 'not_included', label: 'No incluye', color: 'gray' },
 	];
 
 	const MAX_STEPS = 7;
@@ -457,12 +290,14 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 						<h3 className='text-lg font-bold mb-4 text-center'>Fuente de Poder</h3>
 						
 						<div className='p-6 border rounded-xl bg-white shadow-sm dark:bg-gray-800'>
-							<RangeSlider
-								label='Potencia Fuente (Watts)'
-								value={Number(values.charger_watts) || 0}
-								onChange={(val) => onChange('charger_watts', val)}
-								max={1000}
-							/>
+							<div className='space-y-2'>
+								<RangeSlider
+									label='Potencia Fuente (Watts)'
+									value={values.charger_watts || '0'}
+									onChange={(val) => onChange('charger_watts', val)}
+									max={300}
+								/>
+							</div>
 						</div>
 
 						<div className='space-y-4'>
