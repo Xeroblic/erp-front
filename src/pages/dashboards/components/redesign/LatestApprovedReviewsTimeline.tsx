@@ -136,15 +136,16 @@ const LatestApprovedReviewsTimeline: React.FC<Props> = () => {
                              return (
                              <div key={item.id} className="group relative flex gap-3 sm:gap-4">
                                 <div 
-                                    className={`absolute left-4 sm:left-5 w-px bg-zinc-300 dark:bg-zinc-700 -translate-x-1/2 z-0
+                                    className={`absolute left-4 sm:left-5 w-px bg-zinc-300 dark:bg-zinc-700 -translate-x-1/2
                                         ${isFirst ? 'top-6 bottom-0' : 
                                           isLast ? 'top-0 h-6' : 
                                           'top-0 bottom-0'}
                                     `}
+                                    style={{ zIndex: -1 }}
                                 ></div>
 
                                 {/* Icon Column */}
-                                <div className="relative z-10 flex flex-col items-center shrink-0">
+                                <div className="relative flex flex-col items-center shrink-0">
                                     <div className={`h-8 w-8 sm:h-10 sm:w-10 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-zinc-950 mt-1 ${
                                         (typeof item.review_status === 'object' ? (item.review_status as any).value : item.review_status) === 'approved' 
                                             ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' 
