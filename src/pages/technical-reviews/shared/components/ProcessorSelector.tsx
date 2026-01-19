@@ -29,7 +29,6 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 	const [selectedGenerationId, setSelectedGenerationId] = useState<string | null>(null);
 	const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
 
-	// Resetear selección cuando cambia el tipo de dispositivo
 	useEffect(() => {
 		setSelectedBrand(null);
 		setSelectedFamilyId(null);
@@ -37,14 +36,12 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 		setSelectedModelId(null);
 	}, [deviceType]);
 
-	// Construir opciones de marca
 	const marcasData = getMarcasPorDispositivo(deviceType);
 	const brandOptions: TSelectOption[] = marcasData.map((marca) => ({
 		value: marca.nombre,
 		label: marca.nombre,
 	}));
 
-	// Construir opciones de familia
 	const familiasData = selectedBrand
 		? getFamiliasPorMarcaYDispositivo(deviceType, selectedBrand)
 		: [];
@@ -89,7 +86,6 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 			return;
 		}
 
-		// Si hay múltiples modelos y se seleccionó uno
 		if (selectedModelId) {
 			const modelo = modelosData.find((m) => m.id === selectedModelId);
 			if (modelo) {
@@ -127,7 +123,6 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 
 	return (
 		<div className='space-y-3'>
-			{/* 1. Marca */}
 			<div>
 				<label className='mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400'>
 					1. Marca
@@ -142,7 +137,6 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 				/>
 			</div>
 
-			{/* 2. Familia */}
 			{selectedBrand && (
 				<div>
 					<label className='mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400'>
@@ -159,7 +153,6 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 				</div>
 			)}
 
-			{/* 3. Generación */}
 			{selectedFamilyId && (
 				<div>
 					<label className='mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400'>
@@ -176,7 +169,6 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 				</div>
 			)}
 
-			{/* 4. Modelo (solo si hay múltiples opciones) */}
 			{selectedGenerationId && shouldShowModelSelect && (
 				<div>
 					<label className='mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400'>
@@ -193,7 +185,6 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 				</div>
 			)}
 
-			{/* Preview del procesador seleccionado */}
 			{value && (
 				<div className='rounded-md bg-blue-50 p-2 dark:bg-blue-900/20'>
 					<p className='text-xs font-medium text-blue-800 dark:text-blue-300'>

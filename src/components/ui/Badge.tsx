@@ -7,6 +7,7 @@ import useColorIntensity from '../../hooks/useColorIntensity';
 import { TBorderWidth } from '../../types/borderWidth.type';
 import { TRounded } from '../../types/rounded.type';
 import useReactiveThemeConfig from '../../hooks/useReactiveThemeConfig';
+import { useTypewriter } from '@/hooks/useTypewriter';
 
 export type TBadgeVariants = 'solid' | 'outline' | 'default';
 // const { themeColor, themeColorShade } = useThemeColor();
@@ -19,7 +20,20 @@ interface IBadgeProps {
 	colorIntensity?: TColorIntensity;
 	rounded?: TRounded;
 	variant?: TBadgeVariants;
+	typewriter?: boolean;
 }
+// Helper to convert ReactNode to string for typewriter
+const reactNodeToString = (node: ReactNode): string => {
+	if (typeof node === 'string') return node;
+	if (typeof node === 'number') return String(node);
+	if (node == null) return '';
+	if (Array.isArray(node)) return node.map(reactNodeToString).join('');
+	if (typeof node === 'object' && 'props' in node) {
+		return reactNodeToString((node as any).props.children);
+	}
+	return '';
+};
+
 const Badge: FC<IBadgeProps> = (props) => {
 	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } =
 		useReactiveThemeConfig();
@@ -32,10 +46,23 @@ const Badge: FC<IBadgeProps> = (props) => {
 		colorIntensity = reactiveThemeColorShade,
 		rounded = themeConfig.rounded,
 		variant = 'default',
+		typewriter = false,
 		...rest
 	} = props;
 
 	const { textColor } = useColorIntensity(colorIntensity);
+
+	const childrenAsString = reactNodeToString(children);
+
+	const typewriterResult = useTypewriter(childrenAsString, { 
+		loop: true, 
+		withDelete: true,
+		typingSpeedMs: 12,
+		deletingSpeedMs: 12,
+		pauseAfterTypedMs: 1500,
+		pauseAfterDeletedMs: 1500,
+		humanize: true,
+	});
 
 	const badgeVariant: { [key in TBadgeVariants]: string } = {
 		solid: classNames(
@@ -63,7 +90,7 @@ const Badge: FC<IBadgeProps> = (props) => {
 
 	return (
 		<span data-component-name='Badge' className={classes} {...rest}>
-			{children}
+			{typewriter ? typewriterResult.text : children}
 		</span>
 	);
 };

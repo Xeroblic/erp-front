@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchSales, selectSales, selectSalesLoading, downloadShippingLabel } from '@/store/slices/sales/salesSlice';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import Spinner from '@/components/ui/Spinner';
 
 interface Props {
     // onToggleMode?: () => void; // Handled by parent
@@ -57,7 +58,7 @@ const LatestSalesTimeline: React.FC<Props> = () => {
                     </div>
                  </div>
 
-                 <div className='flex items-center gap-3 pr-10'> {/* Added padding-right for the floating button */}
+                 <div className='flex items-center gap-3 pr-10'>
                     <span className="hidden sm:inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/20 dark:text-blue-400">
                             Modo A
                     </span>
@@ -66,18 +67,16 @@ const LatestSalesTimeline: React.FC<Props> = () => {
             <CardBody className='p-0 max-h-[500px] overflow-y-auto no-scrollbar'>
                 {loading ? (
                      <div className='flex flex-col items-center justify-center py-12 text-sm text-zinc-500 gap-2'>
-                        <span className="loading loading-spinner loading-sm"></span>
-                        Cargando ventas...
+                        <Spinner nombre='Cargando ventas...'/>
                      </div>
                 ) : sales.length > 0 ? (
                     <div className="flex flex-col p-4">
                         {sales.slice(0, 10).map((sale, index) => {
                             const isFirst = index === 0;
-                            const isLast = index === sales.length - 1 || index === 9; // Limit to 10
+                            const isLast = index === sales.length - 1 || index === 9;
                             
                             return (
                              <div key={sale.id} className="group relative flex gap-4">
-                                {/* Timeline Line */}
                                 <div 
                                     className={`absolute left-5 w-px bg-zinc-600 dark:bg-zinc-700 -translate-x-1/2 z-0
                                         ${isFirst ? 'top-6 bottom-0' : 

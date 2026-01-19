@@ -81,6 +81,7 @@ export interface IProduct {
 	children?: IProductChild[] | null;
 	created_at: string;
 	updated_at: string;
+	brand_name?: string | null;
 }
 
 export interface ProductListMeta {

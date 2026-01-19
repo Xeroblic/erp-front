@@ -19,6 +19,7 @@ import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelecto
 import { fetchReportResults } from '@/store/slices/reports/reportsThunks';
 
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import Badge from '@/components/ui/Badge';
 
 const DashboardContainer: React.FC = () => {
     const dispatch = useAppDispatch();
@@ -93,15 +94,16 @@ const DashboardContainer: React.FC = () => {
             <Subheader className='border-b border-gray-200 dark:border-gray-700'>
                 <SubheaderLeft>
                     <div className='flex items-center space-x-4'>
-                        <h1 className='text-2xl font-semibold text-gray-900 dark:text-white'>
-                            ¡Hola, {user?.first_name || 'Usuario'}!
-                        </h1>
-                        <span className='text-sm text-gray-500 dark:text-gray-400'>
+                        <Icon icon='HeroUserCircle' className='text-2xl text-gray-900 dark:text-white' />
+                        <Badge typewriter className='text-2xl font-semibold text-gray-900 dark:text-white'>
+                            {`¡Hola, ${user?.first_name || 'Usuario'}!`}
+                        </Badge>
+                        <Badge className='text-sm text-gray-500 dark:text-gray-400'>
                             Resumen de Operaciones
-                        </span>
+                        </Badge>
                     </div>
                 </SubheaderLeft>
-                 <SubheaderRight>
+                {/* <SubheaderRight>
                     <div className='flex gap-2'>
                         <Button
                             variant='solid'
@@ -129,7 +131,7 @@ const DashboardContainer: React.FC = () => {
                             </div>
                         </Button>
                     </div>
-                </SubheaderRight>
+                </SubheaderRight> */}
             </Subheader>
 
             <Container className='py-8'>
@@ -169,19 +171,15 @@ const DashboardContainer: React.FC = () => {
                         />
                     </div>
 
-                    {/* Row 2: Charts & Timeline */}
                     <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
-                         {/* Chart takes 2/3 */}
                         <div className='lg:col-span-2'>
                             <WeeklySalesChart />
                         </div>
-                        {/* Timeline takes 1/3 */}
                         <div className='lg:col-span-1'>
                             <TimelineWidget />
                         </div>
                     </div>
 
-                    {/* Row 3: Latest Products */}
                     <div className='w-full'>
                         <LatestProductsTable />
                     </div>
