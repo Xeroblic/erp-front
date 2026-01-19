@@ -94,8 +94,8 @@ const LatestApprovedReviewsTimeline: React.FC<Props> = () => {
     return (
         <Card className='h-full border-zinc-100 shadow-sm dark:border-zinc-800'>
             <CardHeader className='flex flex-col items-start gap-3 border-b border-zinc-100 px-4 sm:px-6 py-4 dark:border-zinc-800'>
-                 <div className='flex items-center justify-between'>
-                    <div className='flex items-center gap-3'>
+                 <div className='flex self-start'>
+                    <div className='flex gap-3'>
                         <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 shrink-0'>
                             <Icon icon='HeroClipboardDocumentCheck' className='text-xl' />
                         </div>
