@@ -103,7 +103,7 @@ const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 		{ value: 'A', label: 'Grado A - Excelente' },
 		{ value: 'B', label: 'Grado B - Muy Bueno' },
 		{ value: 'C', label: 'Grado C - Bueno' },
-		{ value: 'D', label: 'Grado D - Regular' },
+		{ value: 'M', label: 'Grado M - Malo' },
 	];
 
 	// Colores según grado
@@ -115,8 +115,8 @@ const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 				return 'bg-blue-500 text-white';
 			case 'C':
 				return 'bg-yellow-500 text-white';
-			case 'D':
-				return 'bg-orange-500 text-white';
+			case 'M':
+				return 'bg-red-500 text-white';
 			default:
 				return 'bg-gray-500 text-white';
 		}
