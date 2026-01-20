@@ -734,7 +734,7 @@ const ItemReviewPage: React.FC = () => {
 												Confianza
 											</p>
 											<p className='text-xl font-bold text-white'>
-												{Math.round(item.scoring_confidence)}%
+												{item.scoring_confidence}%
 											</p>
 										</div>
 									)}
