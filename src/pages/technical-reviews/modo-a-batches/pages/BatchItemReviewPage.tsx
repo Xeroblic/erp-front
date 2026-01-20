@@ -760,7 +760,7 @@ const ItemReviewPage: React.FC = () => {
 				)}
 			</Container>
 			{/* <FloatingInfo value='pene' color='red' colorText='white'></FloatingInfo>			Hidden Aside Panel */}
-			<HiddenAside className='bg-zinc-800 dark:bg-zinc-900 backdrop-blur-sm rounded-l-xl' color='zinc' asideWidth='w-96'>
+			<HiddenAside className='bg-zinc-500 dark:bg-zinc-900 backdrop-blur-sm rounded-l-xl' color='zinc' asideWidth='w-96'>
 				<div className='space-y-6'>
 					<h2 className='text-2xl font-bold text-white'>Resumen del Equipo</h2>
 					<div className='space-y-4'>
