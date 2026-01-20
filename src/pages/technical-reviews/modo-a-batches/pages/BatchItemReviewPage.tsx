@@ -157,6 +157,17 @@ const ItemReviewPage: React.FC = () => {
 	// Helper: Traducir valor
 	const translateValue = (value: any): string => {
 		if (value === null || value === undefined) return '-';
+		
+		// Si es un objeto, extraer el valor primero
+		if (typeof value === 'object' && value !== null) {
+			const extractedValue = value.value || value.label || value.description;
+			if (extractedValue) {
+				value = extractedValue;
+			} else {
+				return '-';
+			}
+		}
+		
 		const strValue = String(value).toLowerCase();
 		return VALUE_TRANSLATIONS[strValue] || String(value);
 	};
@@ -702,7 +713,7 @@ const ItemReviewPage: React.FC = () => {
 								<div className='flex justify-between border-b border-white/10 pb-1'>
 									<span className='opacity-70'>S/N:</span>
 									<span className='font-mono font-bold'>
-										{serialNumber || item?.serial_number || '-'}
+										{translateValue(serialNumber || item?.serial_number) || '-'}
 									</span>
 								</div>
 								<div className='flex justify-between border-b border-white/10 pb-1'>
@@ -725,7 +736,7 @@ const ItemReviewPage: React.FC = () => {
 									<div>
 										<p className='text-xs uppercase text-white/60'>Grado</p>
 										<p className='text-4xl font-black text-white'>
-											{automaticGrade || item?.grade || item?.suggested_grade}
+											{translateValue(automaticGrade || item?.grade || item?.suggested_grade) || '-'}
 										</p>
 									</div>
 									{item?.scoring_confidence !== undefined && (
@@ -734,7 +745,7 @@ const ItemReviewPage: React.FC = () => {
 												Confianza
 											</p>
 											<p className='text-xl font-bold text-white'>
-												{item.scoring_confidence}%
+												{Math.round(item.scoring_confidence * 100)}%
 											</p>
 										</div>
 									)}
