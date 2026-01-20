@@ -181,6 +181,29 @@ const ItemReviewPage: React.FC = () => {
 		return String(field);
 	};
 
+	// Helper: Calcular duración de la revisión
+	const calculateReviewDuration = (): string | null => {
+		if (!item?.review_started_at || !item?.reviewed_at) return null;
+		
+		const start = new Date(item.review_started_at);
+		const end = new Date(item.reviewed_at);
+		const diffMs = end.getTime() - start.getTime();
+		
+		if (diffMs < 0) return null; // La revisión aún no ha terminado o datos inválidos
+		
+		const hours = Math.floor(diffMs / (1000 * 60 * 60));
+		const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+		const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+		
+		if (hours > 0) {
+			return `${hours}h ${minutes}min`;
+		} else if (minutes > 0) {
+			return `${minutes}min ${seconds}seg`;
+		} else {
+			return `${seconds}seg`;
+		}
+	};
+
 	if (!branchId) {
 		return (
 			<PageWrapper name='technical-review-batch' title='Revisión Técnica por Lote'>
@@ -745,8 +768,51 @@ const ItemReviewPage: React.FC = () => {
 												Confianza
 											</p>
 											<p className='text-xl font-bold text-white'>
-												{Math.round(item.scoring_confidence * 100)}%
+												{Math.round(item.scoring_confidence)}%
 											</p>
+										</div>
+									)}
+								</div>
+							</div>
+						)}
+
+						{/* Información de Revisión */}
+						{(item?.reviewed_by || calculateReviewDuration()) && (
+							<div className='rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm'>
+								<h3 className='mb-2 text-lg font-semibold text-white'>Información de Revisión</h3>
+								<div className='space-y-2 text-sm text-white/80'>
+									{item?.reviewed_by && (
+										<div className='flex justify-between border-b border-white/10 pb-1'>
+											<span className='opacity-70'>Técnico:</span>
+											<span className='font-medium'>{item.reviewed_by.name || item.reviewed_by}</span>
+										</div>
+									)}
+									{calculateReviewDuration() && (
+										<div className='flex justify-between border-b border-white/10 pb-1'>
+											<span className='opacity-70'>Tiempo de Revisión:</span>
+											<span className='font-bold text-green-400'>{calculateReviewDuration()}</span>
+										</div>
+									)}
+									{item?.review_started_at && (
+										<div className='flex justify-between border-b border-white/10 pb-1'>
+											<span className='opacity-70'>Inicio:</span>
+											<span className='font-medium'>
+												{new Date(item.review_started_at).toLocaleTimeString('es-CL', {
+													hour: '2-digit',
+													minute: '2-digit',
+												})}
+											</span>
+										</div>
+									)}
+									{item?.reviewed_at && (
+										<div className='flex justify-between border-b border-white/10 pb-1'>
+											<span className='opacity-70'>Finalización:</span>
+											<span className='font-medium'>
+												{new Date(item.reviewed_at).toLocaleTimeString('es-CL', {
+													hour: '2-digit',
+													minute: '2-digit',
+												})}
+											</span>
 										</div>
 									)}
 								</div>
@@ -784,8 +850,12 @@ const ItemReviewPage: React.FC = () => {
 									`Estado: ${translateValue(normalizedReviewStatus) || 'Pendiente'}`,
 									`Grado: ${automaticGrade || item?.grade || item?.suggested_grade || '-'}`,
 									item?.scoring_confidence !== undefined
-										? `Confianza: ${Math.round(item.scoring_confidence * 100)}%`
+										? `Confianza: ${Math.round(item.scoring_confidence )}%`
 										: null,
+									'',
+									'REVISIÓN:',
+									item?.reviewed_by ? `Técnico: ${item.reviewed_by.name || item.reviewed_by}` : null,
+									calculateReviewDuration() ? `Tiempo: ${calculateReviewDuration()}` : null,
 									'',
 									'DETALLES:',
 									...Object.entries(step2InitialValues).map(
