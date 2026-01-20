@@ -54,7 +54,7 @@ const ItemReviewPage: React.FC = () => {
 	const [productId, setProductId] = useState<number | null>(null);
 	const [equipmentType, setEquipmentType] = useState<EquipmentType>('notebook');
 
-	const  [color, setColor] = useState();
+	const [color, setColor] = useState();
 	// Step 2: Review Details (ejemplo para notebook)
 	const [reviewDetails, setReviewDetails] = useState<any>({});
 
@@ -62,41 +62,41 @@ const ItemReviewPage: React.FC = () => {
 	const [automaticGrade, setAutomaticGrade] = useState<string | null>(null);
 
 	const isDark = useAppSelector((s) => s.personalizacion?.darkMode);
-	
+
 	// Traducciones de campos al español
 	const FIELD_TRANSLATIONS: Record<string, string> = {
 		// Identificadores
 		id: 'ID',
 		review_item_id: 'ID de Revisión',
-		
+
 		// Información básica
 		brand: 'Marca',
 		model: 'Modelo',
 		line: 'Línea',
 		processor: 'Procesador',
-		
+
 		// RAM
 		ram_size: 'Tamaño de RAM',
 		ram_slots: 'Slots de RAM',
 		ram_type: 'Tipo de RAM',
-		
+
 		// Almacenamiento
 		storage_size: 'Tamaño de Almacenamiento',
 		storage_technology: 'Tecnología de Almacenamiento',
-		
+
 		// Cargador
 		includes_charger: 'Incluye Cargador',
 		charger_status: 'Estado del Cargador',
-		
+
 		// Condiciones
 		general_condition: 'Condición General',
 		cover_condition: 'Condición de Tapa',
-		
+
 		// Conectividad
 		has_wifi: 'Tiene WiFi',
 		has_bluetooth: 'Tiene Bluetooth',
 		has_cd_drive: 'Tiene Lector CD',
-		
+
 		// Puertos
 		usb_a_ports: 'Puertos USB-A',
 		usb_c_ports: 'Puertos USB-C',
@@ -107,7 +107,7 @@ const ItemReviewPage: React.FC = () => {
 		rj45_ports: 'Puertos RJ45',
 		all_ports_functional: 'Todos los Puertos Funcionales',
 		defective_ports_count: 'Cantidad de Puertos Defectuosos',
-		
+
 		// Sistema
 		operating_system: 'Sistema Operativo',
 		observations: 'Observaciones',
@@ -122,25 +122,25 @@ const ItemReviewPage: React.FC = () => {
 		ok: 'Aceptable',
 		fair: 'Regular',
 		poor: 'Malo',
-		
+
 		// Estados de revisión
 		pending: 'Pendiente',
 		in_review: 'En Revisión',
 		reviewed: 'Revisado',
 		approved: 'Aprobado',
 		rejected: 'Rechazado',
-		
+
 		// Tipos de equipo
 		notebook: 'Notebook',
 		desktop: 'Desktop',
 		aio: 'All-in-One',
 		docking: 'Docking Station',
-		
+
 		// Booleanos
 		true: 'Sí',
 		false: 'No',
 		null: '-',
-		
+
 		// Tecnologías
 		m2: 'M.2',
 		ssd: 'SSD',
@@ -157,7 +157,7 @@ const ItemReviewPage: React.FC = () => {
 	// Helper: Traducir valor
 	const translateValue = (value: any): string => {
 		if (value === null || value === undefined) return '-';
-		
+
 		// Si es un objeto, extraer el valor primero
 		if (typeof value === 'object' && value !== null) {
 			const extractedValue = value.value || value.label || value.description;
@@ -167,7 +167,7 @@ const ItemReviewPage: React.FC = () => {
 				return '-';
 			}
 		}
-		
+
 		const strValue = String(value).toLowerCase();
 		return VALUE_TRANSLATIONS[strValue] || String(value);
 	};
@@ -184,17 +184,17 @@ const ItemReviewPage: React.FC = () => {
 	// Helper: Calcular duración de la revisión
 	const calculateReviewDuration = (): string | null => {
 		if (!item?.review_started_at || !item?.reviewed_at) return null;
-		
+
 		const start = new Date(item.review_started_at);
 		const end = new Date(item.reviewed_at);
 		const diffMs = end.getTime() - start.getTime();
-		
+
 		if (diffMs < 0) return null; // La revisión aún no ha terminado o datos inválidos
-		
+
 		const hours = Math.floor(diffMs / (1000 * 60 * 60));
 		const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
 		const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
-		
+
 		if (hours > 0) {
 			return `${hours}h ${minutes}min`;
 		} else if (minutes > 0) {
@@ -207,11 +207,11 @@ const ItemReviewPage: React.FC = () => {
 	// Helper: Generar texto de conectividad para observaciones
 	const generateConnectivityText = (): string => {
 		if (!item?.details) return '';
-		
+
 		// Solo generar si "Todos los puertos OK?" está en No (all_ports_functional = false)
 		const allPortsOk = extractValue(item.details.all_ports_functional);
 		if (allPortsOk === 'true' || allPortsOk === 'Sí') return '';
-		
+
 		const portFields = {
 			usb_a_ports: 'USB-A',
 			usb_c_ports: 'USB-C',
@@ -221,20 +221,20 @@ const ItemReviewPage: React.FC = () => {
 			rj45_ports: 'RJ45',
 			sd_readers: 'Lector SD',
 		};
-		
+
 		const activePorts: string[] = [];
-		
+
 		Object.entries(portFields).forEach(([field, label]) => {
 			const value = item.details[field];
 			const numValue = typeof value === 'number' ? value : parseInt(String(value)) || 0;
-			
+
 			if (numValue > 0) {
 				activePorts.push(label);
 			}
 		});
-		
+
 		if (activePorts.length === 0) return '';
-		
+
 		return `Conectividad:\n${activePorts.join('\n')}`;
 	};
 
@@ -586,7 +586,7 @@ const ItemReviewPage: React.FC = () => {
 	const isApproved =
 		item?.review_status === 'approved' || item?.review_status?.value === 'approved';
 
-    const step2InitialValues = useMemo(() => item?.details || item?.attributes_json || {}, [item]);
+	const step2InitialValues = useMemo(() => item?.details || item?.attributes_json || {}, [item]);
 
 	// Handler para navegar entre pasos haciendo click
 	const handleStepClick = (stepId: ReviewStep) => {
@@ -732,9 +732,7 @@ const ItemReviewPage: React.FC = () => {
 					<Step3GradeReview
 						branchId={branchId}
 						itemId={item.id}
-						suggestedGrade={
-							item.approved_at ? item.grade : (item.suggested_grade || 'M')
-						}
+						suggestedGrade={item.approved_at ? item.grade : item.suggested_grade || 'M'}
 						confidence={item.scoring_confidence || 0}
 						breakdown={item.breakdown || {}}
 						serialNumber={serialNumber || item.serial_number}
@@ -760,24 +758,30 @@ const ItemReviewPage: React.FC = () => {
 				)}
 			</Container>
 			{/* <FloatingInfo value='pene' color='red' colorText='white'></FloatingInfo>			Hidden Aside Panel */}
-			<HiddenAside className='bg-zinc-500 dark:bg-zinc-900 backdrop-blur-sm rounded-l-xl' color='zinc' asideWidth='w-96'>
+			<HiddenAside
+				className='rounded-l-xl bg-zinc-500 backdrop-blur-sm dark:bg-zinc-900'
+				asideWidth='w-96 md:w-128'>
 				<div className='space-y-6'>
 					<h2 className='text-2xl font-bold text-white'>Resumen del Equipo</h2>
 					<div className='space-y-4'>
-						<div className='rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm'>
-							<h3 className='mb-2 text-lg font-semibold text-white'>Identificación</h3>
+						<div className='rounded-xl bg-white/10 p-4 backdrop-blur-sm'>
+							<h3 className='mb-2 text-lg font-semibold text-white'>
+								Identificación
+							</h3>
 							<div className='space-y-2 text-sm text-white/80'>
-								<div className='flex justify-between border-b border-white/10 pb-1'>
+								<div className='flex justify-between pb-1'>
 									<span className='opacity-70'>S/N:</span>
 									<span className='font-mono font-bold'>
 										{translateValue(serialNumber || item?.serial_number) || '-'}
 									</span>
 								</div>
-								<div className='flex justify-between border-b border-white/10 pb-1'>
+								<div className='flex justify-between pb-1'>
 									<span className='opacity-70'>Tipo:</span>
-									<span className='capitalize'>{translateValue(equipmentType) || '-'}</span>
+									<span className='capitalize'>
+										{translateValue(equipmentType) || '-'}
+									</span>
 								</div>
-								<div className='flex justify-between border-b border-white/10 pb-1'>
+								<div className='flex justify-between pb-1'>
 									<span className='opacity-70'>Estado:</span>
 									<span className='font-semibold uppercase'>
 										{translateValue(normalizedReviewStatus) || 'Pendiente'}
@@ -793,7 +797,11 @@ const ItemReviewPage: React.FC = () => {
 									<div>
 										<p className='text-xs uppercase text-white/60'>Grado</p>
 										<p className='text-4xl font-black text-white'>
-											{translateValue(automaticGrade || item?.grade || item?.suggested_grade) || '-'}
+											{translateValue(
+												automaticGrade ||
+													item?.grade ||
+													item?.suggested_grade,
+											) || '-'}
 										</p>
 									</div>
 									{item?.scoring_confidence !== undefined && (
@@ -813,25 +821,33 @@ const ItemReviewPage: React.FC = () => {
 						{/* Información de Revisión */}
 						{(item?.reviewed_by || calculateReviewDuration()) && (
 							<div className='rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm'>
-								<h3 className='mb-2 text-lg font-semibold text-white'>Información de Revisión</h3>
+								<h3 className='mb-2 text-lg font-semibold text-white'>
+									Información de Revisión
+								</h3>
 								<div className='space-y-2 text-sm text-white/80'>
 									{item?.reviewed_by && (
-										<div className='flex justify-between border-b border-white/10 pb-1'>
+										<div className='flex justify-between  pb-1'>
 											<span className='opacity-70'>Técnico:</span>
-											<span className='font-medium'>{item.reviewed_by.name || item.reviewed_by}</span>
+											<span className='font-medium'>
+												{item.reviewed_by.name || item.reviewed_by}
+											</span>
 										</div>
 									)}
 									{calculateReviewDuration() && (
-										<div className='flex justify-between border-b border-white/10 pb-1'>
+										<div className='flex justify-between  pb-1'>
 											<span className='opacity-70'>Tiempo de Revisión:</span>
-											<span className='font-bold text-green-400'>{calculateReviewDuration()}</span>
+											<span className='font-bold text-green-400'>
+												{calculateReviewDuration()}
+											</span>
 										</div>
 									)}
 									{item?.review_started_at && (
-										<div className='flex justify-between border-b border-white/10 pb-1'>
+										<div className='flex justify-between  pb-1'>
 											<span className='opacity-70'>Inicio:</span>
 											<span className='font-medium'>
-												{new Date(item.review_started_at).toLocaleTimeString('es-CL', {
+												{new Date(
+													item.review_started_at,
+												).toLocaleTimeString('es-CL', {
 													hour: '2-digit',
 													minute: '2-digit',
 												})}
@@ -839,13 +855,16 @@ const ItemReviewPage: React.FC = () => {
 										</div>
 									)}
 									{item?.reviewed_at && (
-										<div className='flex justify-between border-b border-white/10 pb-1'>
+										<div className='flex justify-between pb-1'>
 											<span className='opacity-70'>Finalización:</span>
 											<span className='font-medium'>
-												{new Date(item.reviewed_at).toLocaleTimeString('es-CL', {
-													hour: '2-digit',
-													minute: '2-digit',
-												})}
+												{new Date(item.reviewed_at).toLocaleTimeString(
+													'es-CL',
+													{
+														hour: '2-digit',
+														minute: '2-digit',
+													},
+												)}
 											</span>
 										</div>
 									)}
@@ -856,11 +875,11 @@ const ItemReviewPage: React.FC = () => {
 						{Object.keys(step2InitialValues).length > 0 && (
 							<div className='rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm'>
 								<h3 className='mb-2 text-lg font-semibold text-white'>Detalles</h3>
-								<div className='max-h-80 overflow-y-auto pr-2 space-y-1 text-xs text-white/80'>
+								<div className='max-h-80 space-y-1 overflow-y-auto pr-2 text-xs text-white/80'>
 									{Object.entries(step2InitialValues).map(([key, value]) => (
 										<div
 											key={key}
-											className='flex justify-between gap-4 border-b border-white/5 py-1'>
+											className='flex justify-between gap-4 py-1'>
 											<span className='capitalize opacity-70'>
 												{translateField(key)}
 											</span>
@@ -884,12 +903,16 @@ const ItemReviewPage: React.FC = () => {
 									`Estado: ${translateValue(normalizedReviewStatus) || 'Pendiente'}`,
 									`Grado: ${automaticGrade || item?.grade || item?.suggested_grade || '-'}`,
 									item?.scoring_confidence !== undefined
-										? `Confianza: ${Math.round(item.scoring_confidence )}%`
+										? `Confianza: ${Math.round(item.scoring_confidence)}%`
 										: null,
 									'',
 									'REVISIÓN:',
-									item?.reviewed_by ? `Técnico: ${item.reviewed_by.name || item.reviewed_by}` : null,
-									calculateReviewDuration() ? `Tiempo: ${calculateReviewDuration()}` : null,
+									item?.reviewed_by
+										? `Técnico: ${item.reviewed_by.name || item.reviewed_by}`
+										: null,
+									calculateReviewDuration()
+										? `Tiempo: ${calculateReviewDuration()}`
+										: null,
 									'',
 									'DETALLES:',
 									...Object.entries(step2InitialValues).map(
@@ -911,10 +934,7 @@ const ItemReviewPage: React.FC = () => {
 					</div>
 				</div>
 			</HiddenAside>
-
-
 		</PageWrapper>
-		
 	);
 };
 

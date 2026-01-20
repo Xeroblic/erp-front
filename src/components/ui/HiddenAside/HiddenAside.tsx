@@ -1,136 +1,208 @@
-import React, { useState, ReactNode } from 'react';
+import React, { useState, ReactNode, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import classNames from 'classnames';
 import Icon from '@/components/icon/Icon';
+import Badge from '../Badge';
+import Button from '../Button';
 
 interface HiddenAsideProps {
-	/**
-	 * Content to display inside the aside panel
-	 */
 	children: ReactNode;
-	/**
-	 * Button icon (default: 'HeroChevronLeft')
-	 */
 	buttonIcon?: string;
-	/**
-	 * Aside width when expanded (default: 'w-80')
-	 */
-	asideWidth?: string;
-	/**
-	 * Background color theme (default: 'blue')
-	 */
-	color?: 'blue' | 'red' | 'green' | 'purple' | 'amber' | 'zinc';
-	/**
-	 * Custom class for the aside content
-	 */
+	asideWidth?: string | number;
+	waveDuration?: number;
 	className?: string;
 }
 
 const HiddenAside: React.FC<HiddenAsideProps> = ({
 	children,
 	buttonIcon = 'HeroChevronLeft',
-	asideWidth = 'w-80',
-	color = 'blue',
+	asideWidth = '100rem', // Default
+	waveDuration = 0.8,
 	className,
 }) => {
 	const [isHovered, setIsHovered] = useState(false);
+	const [isMobile, setIsMobile] = useState(false); // Estado para detectar mobile
+	const asideRef = React.useRef<HTMLElement>(null);
+	const [actualWidth, setActualWidth] = useState(0);
 
-	const colorClasses = {
-		blue: 'from-blue-500/20 to-blue-600/20 border-blue-400/30 shadow-blue-500/20',
-		red: 'from-red-500/20 to-red-600/20 border-red-400/30 shadow-red-500/20',
-		green: 'from-green-500/20 to-green-600/20 border-green-400/30 shadow-green-500/20',
-		purple: 'from-purple-500/20 to-purple-600/20 border-purple-400/30 shadow-purple-500/20',
-		amber: 'from-amber-500/20 to-amber-600/20 border-amber-400/30 shadow-amber-500/20',
-		zinc: 'from-zinc-500/20 to-zinc-600/20 border-zinc-400/30 shadow-zinc-500/20',
+	// Detección de dispositivo móvil
+	useEffect(() => {
+		const checkMobile = () => {
+			setIsMobile(window.innerWidth <= 768);
+		};
+		checkMobile();
+		window.addEventListener('resize', checkMobile);
+		return () => window.removeEventListener('resize', checkMobile);
+	}, []);
+
+	// Determine if asideWidth is a Tailwind class
+	const isTailwindClass =
+		typeof asideWidth === 'string' &&
+		(asideWidth.startsWith('w-') || asideWidth.startsWith('max-w-'));
+
+	const styleWidth = isTailwindClass
+		? undefined
+		: typeof asideWidth === 'number'
+			? `${asideWidth}px`
+			: asideWidth;
+
+	const widthClass = isTailwindClass ? asideWidth : undefined;
+
+	// Measure width with ResizeObserver
+	useEffect(() => {
+		if (!asideRef.current) return;
+
+		const element = asideRef.current;
+		const observer = new ResizeObserver((entries) => {
+			for (const entry of entries) {
+				if (entry.contentBoxSize) {
+					setActualWidth(element.offsetWidth);
+				}
+			}
+		});
+
+		observer.observe(element);
+		setActualWidth(element.offsetWidth);
+
+		return () => {
+			observer.disconnect();
+		};
+	}, [asideWidth]);
+
+	// Lógica para manejar el clic en el botón (especialmente para mobile)
+	const handleButtonClick = () => {
+		if (isMobile) {
+			setIsHovered(!isHovered);
+		}
 	};
 
-	const buttonColorClasses = {
-		blue: 'bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-blue-500/50',
-		red: 'bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-red-500/50',
-		green: 'bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-green-500/50',
-		purple: 'bg-gradient-to-br from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 shadow-purple-500/50',
-		amber: 'bg-gradient-to-br from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 shadow-amber-500/50',
-		zinc: 'bg-gradient-to-br from-zinc-500 to-zinc-600 hover:from-zinc-600 hover:to-zinc-700 shadow-zinc-500/50',
+	// --- LIQUID WAVE VARIANTS CORREGIDAS ---
+	const curveVariants = {
+		closed: {
+			d: [
+				'M100 0 L100 1000 Q20 500 100 0 Z',
+				'M100 0 L100 1000 Q140 500 100 0 Z',
+				'M100 0 L100 1000 Q100 500 100 0 Z',
+			],
+			transition: {
+				duration: 0.6,
+				times: [0, 0.4, 1],
+				ease: 'circOut',
+			},
+		},
+		open: {
+			d: [
+				'M100 0 L100 1000 Q100 500 100 0 Z',
+				'M100 0 L100 1000 Q-80 500 100 0 Z',
+				'M100 0 L100 1000 Q60 500 100 0 Z',
+				'M100 0 L100 1000 Q20 500 100 0 Z',
+			],
+			transition: {
+				duration: waveDuration,
+				times: [0, 0.4, 0.7, 1],
+				ease: [0.33, 1, 0.68, 1],
+			},
+		},
 	};
 
 	return (
-		<div className='fixed right-0 top-0 z-50 flex h-screen items-center'>
-			{/* Trigger Button */}
+		<div className='pointer-events-none fixed inset-0 z-[100] flex justify-end overflow-hidden'>
+			{/* Hover Trap */}
 			<div
-				className='relative'
-				onMouseEnter={() => setIsHovered(true)}
-				onMouseLeave={() => setIsHovered(false)}>
-				{/* Floating Button */}
-				<button
+				className='pointer-events-auto relative flex h-full items-center'
+				onMouseLeave={() => !isMobile && setIsHovered(false)}>
+				{/* --- TRIGGER BUTTON --- */}
+				<motion.div
+					onMouseEnter={() => !isMobile && setIsHovered(true)}
+					animate={{
+						x: isHovered && !isMobile ? -actualWidth + 45 : 0,
+					}}
+					transition={{
+						duration: isHovered && !isMobile ? waveDuration : 0.6,
+						ease: [0.33, 1, 0.68, 1],
+					}}
 					className={classNames(
-						'animate-pulse',
-						'rounded-l-full',
-						'group relative flex h-16 w-8 items-center justify-center transition-all duration-300',
-						'border-l border-y backdrop-blur-xl',
-						buttonColorClasses[color],
-						'shadow-lg hover:w-10 hover:shadow-xl',
-						'transform hover:scale-105',
+						'relative z-[110] flex translate-y-[-50px] transform items-center justify-center',
+						isMobile && 'w-8 h-20',
 					)}>
-					{/* Icon with animation */}
-					<Icon
-						icon={buttonIcon}
-						className={classNames(
-							'transition-all duration-300 text-white',
-							isHovered ? 'rotate-180 scale-110' : '',
-						)}
-						size='text-2xl'
-					/>
-
-					{/* Pulse effect on hover */}
-					<span
-						className={classNames(
-							'absolute inset-0 rounded-l-full transition-opacity duration-300',
-							buttonColorClasses[color],
-							'opacity-0 group-hover:opacity-30 blur-xl',
-						)}
-					/>
-				</button>
-
-				{/* Aside Panel */}
-				<aside
-					className={classNames(
-						'fixed top-0 right-0 h-screen transition-all duration-500 ease-out',
-						asideWidth,
-						isHovered ? 'translate-x-0' : 'translate-x-full',
-						'bg-gradient-to-br backdrop-blur-2xl',
-						colorClasses[color],
-						'border-l border-y shadow-2xl',
-						'overflow-hidden',
-					)}>
-					{/* Decorative gradient overlay */}
-					<div className='absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none' />
-
-					{/* Animated border glow */}
-					<div
-						className={classNames(
-							'absolute inset-0 opacity-0 transition-opacity duration-500',
-							isHovered ? 'opacity-100' : '',
-						)}>
-						<div className='absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/50 to-transparent animate-pulse' />
-					</div>
-
-					{/* Content Container */}
-					<div
-						className={classNames(
-							'relative h-full overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent',
-							className,
-						)}>
-						{/* Fade-in animation for content */}
-						<div
+					{/* El botón se muestra si no hay hover O si es mobile (para poder cerrar con click) */}
+					{(isMobile || !isHovered) && (
+						<Button
+							onClick={handleButtonClick}
 							className={classNames(
-								'transition-all duration-700 transform',
-								isHovered
-									? 'opacity-100 translate-x-0'
-									: 'opacity-0 translate-x-4',
+								'rounded-l-full',
+								'flex h-20 w-6 items-center justify-center rounded-l-2xl',
+								'bg-zinc-300 shadow-xl dark:bg-zinc-900',
+								'group transition-all duration-300 hover:w-14',
 							)}>
-							{children}
-						</div>
+							<motion.div
+								animate={{
+									rotate: isHovered ? 0 : 180,
+									scale: isHovered ? 1.2 : 1,
+								}}
+								className='relative z-10'>
+								<Icon
+									icon={buttonIcon}
+									className='text-2xl text-zinc-700 dark:text-gray-300'
+								/>
+							</motion.div>
+						</Button>
+					)}
+				</motion.div>
+
+				{/* --- ASIDE PANEL --- */}
+				<motion.aside
+					ref={asideRef as any}
+					initial={{ x: '100%', opacity: 0 }}
+					animate={{
+						x: isHovered ? '0%' : '100%',
+						opacity: isHovered ? 1 : 0,
+					}}
+					transition={{
+						duration: isHovered ? waveDuration : 0.5,
+						ease: [0.33, 1, 0.68, 1],
+					}}
+					style={{ width: isMobile ? '85vw' : styleWidth }}
+					className={classNames(
+						'absolute right-0 top-0 flex h-screen bg-zinc-300 shadow-[-20px_0_30px_rgba(0,0,0,0.1)] dark:bg-zinc-900',
+						widthClass,
+					)}>
+					{/* 1. SVG WAVE CURVE */}
+					<svg
+						className='pointer-events-none absolute -left-[99px] top-0 h-full w-[100px]'
+						preserveAspectRatio='none'
+						viewBox='0 0 100 1000'>
+						<motion.path
+							variants={curveVariants}
+							animate={isHovered ? 'open' : 'closed'}
+							className='fill-zinc-500 dark:fill-zinc-900'
+						/>
+					</svg>
+
+					{/* 2. MAIN CONTENT CONTAINER */}
+					<div
+						className={classNames(
+							'relative h-full w-full overflow-hidden transition-colors duration-300',
+							'transparent dark:transparent',
+						)}>
+						<AnimatePresence mode='wait'>
+							{isHovered && (
+								<motion.div
+									initial={{ opacity: 0 }}
+									animate={{ opacity: 1 }}
+									exit={{ opacity: 0 }}
+									className={classNames(
+										'relative flex h-full w-full flex-col',
+										className,
+									)}>
+									<div className='custom-scrollbar flex-1 overflow-y-auto p-6 text-zinc-900 dark:text-gray-200'>
+										{children}
+									</div>
+								</motion.div>
+							)}
+						</AnimatePresence>
 					</div>
-				</aside>
+				</motion.aside>
 			</div>
 		</div>
 	);
