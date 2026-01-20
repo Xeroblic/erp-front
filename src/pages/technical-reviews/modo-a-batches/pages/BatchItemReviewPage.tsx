@@ -33,6 +33,7 @@ import { Step1BasicInfo, Step2FullReview, Step3GradeReview } from '../components
 import { useAutoSaveReview } from '@/hooks/useAutoSaveReview';
 import HiddenAside from '@/components/ui/HiddenAside/HiddenAside';
 import FloatingInfo from '@/components/ui/FloatingInfo/FloatingInfo';
+import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subheader';
 
 type ReviewStep = 'basic' | 'review' | 'grading';
 
@@ -582,20 +583,16 @@ const ItemReviewPage: React.FC = () => {
 	const currentStepIndex = steps.findIndex((s) => s.id === currentStep);
 	const normalizedReviewStatus = extractValue(item?.review_status);
 
-	// Verificar si el item está aprobado (no se puede editar)
 	const isApproved =
 		item?.review_status === 'approved' || item?.review_status?.value === 'approved';
 
 	const step2InitialValues = useMemo(() => item?.details || item?.attributes_json || {}, [item]);
 
-	// Handler para navegar entre pasos haciendo click
 	const handleStepClick = (stepId: ReviewStep) => {
-		// No permitir navegación si está aprobado
 		if (isApproved) {
 			return;
 		}
 
-		// Si es creación (no hay item), solo permitir estar en 'basic'
 		if (!item && stepId !== 'basic') {
 			return;
 		}
@@ -609,15 +606,35 @@ const ItemReviewPage: React.FC = () => {
 			return;
 		}
 
-		// Permitir navegación libre entre los pasos disponibles
 		setCurrentStep(stepId);
 	};
 
+	const [showFloatingSN, setShowFloatingSN] = useState(false);
+
+	useEffect(() => {
+		const handleScroll = (e: Event) => {
+			const target = e.target as any;
+			const scrollTop = target === document ? window.scrollY : target.scrollTop;
+
+			if (scrollTop !== undefined && scrollTop > 50) {
+				setShowFloatingSN(true);
+			} else if (scrollTop !== undefined && scrollTop <= 50) {
+				setShowFloatingSN(false);
+			}
+		};
+
+		window.addEventListener('scroll', handleScroll, true);
+		return () => window.removeEventListener('scroll', handleScroll, true);
+	}, []);
+
 	return (
 		<PageWrapper name='technical-review-batch' title='Revisión Técnica por Lote'>
+
 			<Container>
 				{/* Header */}
-				<div className='mb-6 flex items-center gap-4'>
+				<Subheader className='mb-6 flex items-center gap-4 rounded-xl'>
+					<SubheaderLeft>
+
 					<Button variant='outline' onClick={handleBack}>
 						<Icon icon='HeroArrowLeft' className='h-4 w-4' />
 					</Button>
@@ -629,8 +646,22 @@ const ItemReviewPage: React.FC = () => {
 							{batchId ? `Lote #${batchId}` : 'Revisión global (sin lote)'}
 						</p>
 					</div>
-				</div>
+					</SubheaderLeft>
+				</Subheader>
 
+			<div
+				className={`fixed left-[50%] top-0 z-[9] flex h-48 w-[400px] -translate-x-1/2 transform items-center justify-center rounded-b-full bg-zinc-900/60 shadow-2xl transition-all duration-500 ease-in-out dark:bg-zinc-800 md:left-[60%] md:h-40 md:w-[600px] ${
+					showFloatingSN ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
+				}`}>
+				<div className='flex flex-col place-items-center justify-center pt-28 text-white md:pt-24'>
+					<span className='mb-1 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-300'>
+						N° Serie
+					</span>
+					<span className='text-lg font-bold tracking-wider'>
+						{translateValue(serialNumber || item?.serial_number) || '-'}
+					</span>
+				</div>
+			</div>
 				{/* Progress Steps */}
 				<Card className='mb-6'>
 					<CardBody>
@@ -826,7 +857,7 @@ const ItemReviewPage: React.FC = () => {
 								</h3>
 								<div className='space-y-2 text-sm text-white/80'>
 									{item?.reviewed_by && (
-										<div className='flex justify-between  pb-1'>
+										<div className='flex justify-between pb-1'>
 											<span className='opacity-70'>Técnico:</span>
 											<span className='font-medium'>
 												{item.reviewed_by.name || item.reviewed_by}
@@ -834,7 +865,7 @@ const ItemReviewPage: React.FC = () => {
 										</div>
 									)}
 									{calculateReviewDuration() && (
-										<div className='flex justify-between  pb-1'>
+										<div className='flex justify-between pb-1'>
 											<span className='opacity-70'>Tiempo de Revisión:</span>
 											<span className='font-bold text-green-400'>
 												{calculateReviewDuration()}
@@ -842,7 +873,7 @@ const ItemReviewPage: React.FC = () => {
 										</div>
 									)}
 									{item?.review_started_at && (
-										<div className='flex justify-between  pb-1'>
+										<div className='flex justify-between pb-1'>
 											<span className='opacity-70'>Inicio:</span>
 											<span className='font-medium'>
 												{new Date(
@@ -877,9 +908,7 @@ const ItemReviewPage: React.FC = () => {
 								<h3 className='mb-2 text-lg font-semibold text-white'>Detalles</h3>
 								<div className='max-h-80 space-y-1 overflow-y-auto pr-2 text-xs text-white/80'>
 									{Object.entries(step2InitialValues).map(([key, value]) => (
-										<div
-											key={key}
-											className='flex justify-between gap-4 py-1'>
+										<div key={key} className='flex justify-between gap-4 py-1'>
 											<span className='capitalize opacity-70'>
 												{translateField(key)}
 											</span>
