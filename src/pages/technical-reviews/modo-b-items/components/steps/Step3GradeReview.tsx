@@ -15,7 +15,8 @@ import { approveItem, completeReview } from '@/store/slices/technicalReviews';
 interface Step3GradeReviewProps {
 	branchId: number;
 	itemId: number;
-	suggestedGrade: string;
+	currentGrade?: string | null; // Grado actual del item (después de aprobación)
+	suggestedGrade: string; // Grado sugerido por el sistema
 	confidence?: number;
 	breakdown?: Record<string, any>;
 	serialNumber: string;
@@ -31,6 +32,7 @@ interface Step3GradeReviewProps {
 const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 	branchId,
 	itemId,
+	currentGrade,
 	suggestedGrade,
 	confidence,
 	breakdown,
@@ -88,6 +90,16 @@ const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 		return formatDisplayValue(value, '-');
 	};
 
+	// Determinar qué grado mostrar según el estado
+	const isApproved = reviewStatus === 'approved';
+	
+	// Si está aprobado y tiene grado actual, mostrar ese. Si no, mostrar el sugerido
+	const resolvedCurrentGrade = currentGrade
+		? typeof currentGrade === 'string'
+			? currentGrade
+			: (currentGrade as any)?.value || (currentGrade as any)?.label || null
+		: null;
+	
 	const resolvedSuggestedGrade =
 		typeof suggestedGrade === 'string'
 			? suggestedGrade
@@ -95,6 +107,13 @@ const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 				(suggestedGrade as any)?.label ||
 				(suggestedGrade as any)?.description ||
 				'C';
+	
+	// Grado principal a mostrar
+	const displayGrade = (isApproved && resolvedCurrentGrade
+		? resolvedCurrentGrade
+		: resolvedSuggestedGrade
+	).toUpperCase();
+	
 	const displaySuggestedGrade = formatDisplayValue(resolvedSuggestedGrade, 'N/A').toUpperCase();
 	const displaySerialNumber = formatDisplayValue(serialNumber, 'Sin serie');
 	const displayEquipmentType = formatDisplayValue(equipmentType, 'N/A');
@@ -105,6 +124,9 @@ const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 		{ value: 'C', label: 'Grado C - Bueno' },
 		{ value: 'M', label: 'Grado M - Malo' },
 	];
+	
+	// Determinar si debemos mostrar el grado sugerido entre paréntesis
+	const shouldShowSuggestedInParentheses = isApproved && resolvedCurrentGrade && resolvedCurrentGrade.toUpperCase() !== resolvedSuggestedGrade.toUpperCase();
 
 	// Colores según grado
 	const getGradeColor = (grade: string) => {
@@ -278,10 +300,15 @@ const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 					<div className='mt-6'>
 						<div
 							className={`mx-auto flex h-32 w-32 items-center justify-center rounded-full ${getGradeColor(
-								displaySuggestedGrade,
+								displayGrade,
 							)} shadow-lg`}>
-							<span className='text-6xl font-bold'>{displaySuggestedGrade}</span>
+							<span className='text-6xl font-bold'>{displayGrade}</span>
 						</div>
+						{shouldShowSuggestedInParentheses && (
+							<p className='mt-3 text-sm text-green-700 dark:text-green-300'>
+								Grado sugerido: {displaySuggestedGrade}
+							</p>
+						)}
 						{confidence !== undefined && (
 							<div className='mt-4'>
 								<p className='text-sm text-green-700 dark:text-green-300'>
@@ -348,14 +375,19 @@ const Step3GradeReview: React.FC<Step3GradeReviewProps> = ({
 						</div>
 						<div className='flex justify-between border-b border-gray-200 pb-2 dark:border-gray-700'>
 							<dt className='font-medium text-gray-700 dark:text-gray-300'>
-								Grado Sugerido:
+								{isApproved ? 'Grado Final:' : 'Grado Sugerido:'}
 							</dt>
-							<dd>
+							<dd className='flex items-center gap-2'>
 								<Badge
 									variant='solid'
-									className={`${getGradeColor(displaySuggestedGrade)} px-3 py-1`}>
-									{displaySuggestedGrade}
+									className={`${getGradeColor(displayGrade)} px-3 py-1`}>
+									{displayGrade}
 								</Badge>
+								{shouldShowSuggestedInParentheses && (
+									<span className='text-sm text-gray-500 dark:text-gray-400'>
+										(Sugerido: {displaySuggestedGrade})
+									</span>
+								)}
 							</dd>
 						</div>
 					</dl>

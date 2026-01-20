@@ -696,10 +696,9 @@ const ItemReviewStandalonePage: React.FC = () => {
 							}
 						}}
 						onItemUpdate={(updatedItem) => {
-							console.log('📥 Item actualizado desde Step2:', updatedItem);
-							setItem(updatedItem); // Actualizar el estado local del item
+							setItem(updatedItem);
 						}}
-						onFieldChange={markDetailsChanged} // Auto-save después de 30s de inactividad
+						onFieldChange={markDetailsChanged}
 						isDirty={isDirty}
 						isSaving={isSaving}
 						lastSaved={lastSaved}

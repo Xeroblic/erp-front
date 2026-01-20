@@ -561,7 +561,9 @@ const ItemReviewPage: React.FC = () => {
 					<Step3GradeReview
 						branchId={branchId}
 						itemId={item.id}
-						suggestedGrade={item.suggested_grade || automaticGrade || 'C'}
+						suggestedGrade={
+							item.approved_at ? item.grade : (item.suggested_grade || 'M')
+						}
 						confidence={item.scoring_confidence || 0}
 						breakdown={item.breakdown || {}}
 						serialNumber={serialNumber || item.serial_number}
