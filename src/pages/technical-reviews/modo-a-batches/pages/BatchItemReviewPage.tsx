@@ -645,6 +645,7 @@ const ItemReviewPage: React.FC = () => {
 						<p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
 							{batchId ? `Lote #${batchId}` : 'Revisión global (sin lote)'}
 						</p>
+						
 					</div>
 					</SubheaderLeft>
 				</Subheader>
