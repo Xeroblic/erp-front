@@ -204,6 +204,40 @@ const ItemReviewPage: React.FC = () => {
 		}
 	};
 
+	// Helper: Generar texto de conectividad para observaciones
+	const generateConnectivityText = (): string => {
+		if (!item?.details) return '';
+		
+		// Solo generar si "Todos los puertos OK?" está en No (all_ports_functional = false)
+		const allPortsOk = extractValue(item.details.all_ports_functional);
+		if (allPortsOk === 'true' || allPortsOk === 'Sí') return '';
+		
+		const portFields = {
+			usb_a_ports: 'USB-A',
+			usb_c_ports: 'USB-C',
+			hdmi_ports: 'HDMI',
+			displayport_ports: 'DisplayPort',
+			vga_ports: 'VGA',
+			rj45_ports: 'RJ45',
+			sd_readers: 'Lector SD',
+		};
+		
+		const activePorts: string[] = [];
+		
+		Object.entries(portFields).forEach(([field, label]) => {
+			const value = item.details[field];
+			const numValue = typeof value === 'number' ? value : parseInt(String(value)) || 0;
+			
+			if (numValue > 0) {
+				activePorts.push(label);
+			}
+		});
+		
+		if (activePorts.length === 0) return '';
+		
+		return `Conectividad:\n${activePorts.join('\n')}`;
+	};
+
 	if (!branchId) {
 		return (
 			<PageWrapper name='technical-review-batch' title='Revisión Técnica por Lote'>
@@ -726,7 +760,7 @@ const ItemReviewPage: React.FC = () => {
 				)}
 			</Container>
 			{/* <FloatingInfo value='pene' color='red' colorText='white'></FloatingInfo>			Hidden Aside Panel */}
-			<HiddenAside color='zinc' asideWidth='w-96'>
+			<HiddenAside className='bg-zinc-800 dark:bg-zinc-900 backdrop-blur-sm rounded-l-xl' color='zinc' asideWidth='w-96'>
 				<div className='space-y-6'>
 					<h2 className='text-2xl font-bold text-white'>Resumen del Equipo</h2>
 					<div className='space-y-4'>
@@ -841,7 +875,7 @@ const ItemReviewPage: React.FC = () => {
 
 						<Button
 							variant='solid'
-							color='blue'
+							color='neutral'
 							className='w-full'
 							onClick={() => {
 								const info = [
@@ -862,8 +896,10 @@ const ItemReviewPage: React.FC = () => {
 										([key, value]) =>
 											`${translateField(key)}: ${translateValue(value)}`,
 									),
+									'',
+									generateConnectivityText() || null,
 								]
-									.filter((line) => line !== null)
+									.filter((line) => line !== null && line !== '')
 									.join('\n');
 
 								navigator.clipboard.writeText(info);

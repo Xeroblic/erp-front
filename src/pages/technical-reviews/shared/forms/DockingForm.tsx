@@ -40,6 +40,41 @@ const DockingForm: React.FC<DockingFormProps> = ({ branchId, values, onChange, r
 		}
 	}, [dispatch, branchId]);
 
+	// Auto-fill observations with connectivity text when issues are detected
+	useEffect(() => {
+		const portFields = {
+			usb_a_ports: 'USB-A',
+			usb_c_ports: 'USB-C',
+			hdmi_ports: 'HDMI',
+			displayport_ports: 'DisplayPort',
+			vga_ports: 'VGA',
+			rj45_ports: 'RJ45',
+			sd_readers: 'Lector SD',
+		};
+		
+		const activePorts: string[] = [];
+		
+		Object.entries(portFields).forEach(([field, label]) => {
+			const value = values[field as keyof UpdateItemDetailsPayload];
+			const numValue = typeof value === 'number' ? value : parseInt(String(value)) || 0;
+			
+			if (numValue > 0) {
+				activePorts.push(label);
+			}
+		});
+
+		if (activePorts.length > 0) {
+			const connectivityText = `PUERTOS CON PROBLEMAS:\nPuertos presentes: \n${activePorts.join(', \n')}\n\nIndica a continuación cuántos están dañados y qué fallas tienen:`;
+			const currentObs = values.observations || '';
+			
+			// Solo agregar si no existe ya en observaciones
+			if (!currentObs.includes('PUERTOS CON PROBLEMAS')) {
+				const newObs = currentObs ? `${currentObs}\n\n${connectivityText}` : connectivityText;
+				onChange('observations', newObs);
+			}
+		}
+	}, [values.all_ports_functional, values.defective_ports_count, values.usb_a_ports, values.usb_c_ports, values.hdmi_ports, values.displayport_ports, values.vga_ports, values.rj45_ports, values.sd_readers]);
+
 	const brands = useAppSelector((s) => s.brands.items);
 	const brandsLoading = useAppSelector((s) => s.brands.loading);
 
@@ -197,7 +232,7 @@ const DockingForm: React.FC<DockingFormProps> = ({ branchId, values, onChange, r
 								/>
 
 								{values.all_ports_functional === false && (
-									<div className='mt-4 p-3 bg-red-50 rounded-xl border border-red-200 flex flex-col items-center animate-in zoom-in'>
+									<div className='mt-4 p-3 bg-red-400/50 dark:bg-red-900/50 backdrop-blur-sm rounded-xl border border-red-200 flex flex-col items-center animate-in zoom-in'>
 										<label className='text-red-800 font-bold mb-1 text-sm'>Cant. Puertos Malos</label>
 										<StepperInput
 											value={getNumericValue('defective_ports_count')}
