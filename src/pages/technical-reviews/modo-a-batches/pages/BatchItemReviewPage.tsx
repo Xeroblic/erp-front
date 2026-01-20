@@ -31,6 +31,8 @@ import { fetchProducts } from '@/store/slices/products/productsSlice';
 import Textarea from '@/components/form/Textarea';
 import { Step1BasicInfo, Step2FullReview, Step3GradeReview } from '../components/steps';
 import { useAutoSaveReview } from '@/hooks/useAutoSaveReview';
+import HiddenAside from '@/components/ui/HiddenAside/HiddenAside';
+import FloatingInfo from '@/components/ui/FloatingInfo/FloatingInfo';
 
 type ReviewStep = 'basic' | 'review' | 'grading';
 
@@ -52,11 +54,112 @@ const ItemReviewPage: React.FC = () => {
 	const [productId, setProductId] = useState<number | null>(null);
 	const [equipmentType, setEquipmentType] = useState<EquipmentType>('notebook');
 
+	const  [color, setColor] = useState();
 	// Step 2: Review Details (ejemplo para notebook)
 	const [reviewDetails, setReviewDetails] = useState<any>({});
 
 	// Step 3: Grading
 	const [automaticGrade, setAutomaticGrade] = useState<string | null>(null);
+
+	const isDark = useAppSelector((s) => s.personalizacion?.darkMode);
+	
+	// Traducciones de campos al español
+	const FIELD_TRANSLATIONS: Record<string, string> = {
+		// Identificadores
+		id: 'ID',
+		review_item_id: 'ID de Revisión',
+		
+		// Información básica
+		brand: 'Marca',
+		model: 'Modelo',
+		line: 'Línea',
+		processor: 'Procesador',
+		
+		// RAM
+		ram_size: 'Tamaño de RAM',
+		ram_slots: 'Slots de RAM',
+		ram_type: 'Tipo de RAM',
+		
+		// Almacenamiento
+		storage_size: 'Tamaño de Almacenamiento',
+		storage_technology: 'Tecnología de Almacenamiento',
+		
+		// Cargador
+		includes_charger: 'Incluye Cargador',
+		charger_status: 'Estado del Cargador',
+		
+		// Condiciones
+		general_condition: 'Condición General',
+		cover_condition: 'Condición de Tapa',
+		
+		// Conectividad
+		has_wifi: 'Tiene WiFi',
+		has_bluetooth: 'Tiene Bluetooth',
+		has_cd_drive: 'Tiene Lector CD',
+		
+		// Puertos
+		usb_a_ports: 'Puertos USB-A',
+		usb_c_ports: 'Puertos USB-C',
+		vga_ports: 'Puertos VGA',
+		hdmi_ports: 'Puertos HDMI',
+		displayport_ports: 'Puertos DisplayPort',
+		sd_readers: 'Lectores SD',
+		rj45_ports: 'Puertos RJ45',
+		all_ports_functional: 'Todos los Puertos Funcionales',
+		defective_ports_count: 'Cantidad de Puertos Defectuosos',
+		
+		// Sistema
+		operating_system: 'Sistema Operativo',
+		observations: 'Observaciones',
+	};
+
+	// Traducciones de valores
+	const VALUE_TRANSLATIONS: Record<string, string> = {
+		// Condiciones
+		like_new: 'Como Nuevo',
+		excellent: 'Excelente',
+		good: 'Bueno',
+		ok: 'Aceptable',
+		fair: 'Regular',
+		poor: 'Malo',
+		
+		// Estados de revisión
+		pending: 'Pendiente',
+		in_review: 'En Revisión',
+		reviewed: 'Revisado',
+		approved: 'Aprobado',
+		rejected: 'Rechazado',
+		
+		// Tipos de equipo
+		notebook: 'Notebook',
+		desktop: 'Desktop',
+		aio: 'All-in-One',
+		docking: 'Docking Station',
+		
+		// Booleanos
+		true: 'Sí',
+		false: 'No',
+		null: '-',
+		
+		// Tecnologías
+		m2: 'M.2',
+		ssd: 'SSD',
+		hdd: 'HDD',
+		ddr4: 'DDR4',
+		ddr5: 'DDR5',
+	};
+
+	// Helper: Traducir nombre de campo
+	const translateField = (field: string): string => {
+		return FIELD_TRANSLATIONS[field.toLowerCase()] || field.replace(/_/g, ' ');
+	};
+
+	// Helper: Traducir valor
+	const translateValue = (value: any): string => {
+		if (value === null || value === undefined) return '-';
+		const strValue = String(value).toLowerCase();
+		return VALUE_TRANSLATIONS[strValue] || String(value);
+	};
 
 	// Helper: Extraer valor de objeto o devolver string
 	const extractValue = (field: any): string => {
@@ -588,7 +691,113 @@ const ItemReviewPage: React.FC = () => {
 					/>
 				)}
 			</Container>
+			{/* <FloatingInfo value='pene' color='red' colorText='white'></FloatingInfo>			Hidden Aside Panel */}
+			<HiddenAside color='zinc' asideWidth='w-96'>
+				<div className='space-y-6'>
+					<h2 className='text-2xl font-bold text-white'>Resumen del Equipo</h2>
+					<div className='space-y-4'>
+						<div className='rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm'>
+							<h3 className='mb-2 text-lg font-semibold text-white'>Identificación</h3>
+							<div className='space-y-2 text-sm text-white/80'>
+								<div className='flex justify-between border-b border-white/10 pb-1'>
+									<span className='opacity-70'>S/N:</span>
+									<span className='font-mono font-bold'>
+										{serialNumber || item?.serial_number || '-'}
+									</span>
+								</div>
+								<div className='flex justify-between border-b border-white/10 pb-1'>
+									<span className='opacity-70'>Tipo:</span>
+									<span className='capitalize'>{translateValue(equipmentType) || '-'}</span>
+								</div>
+								<div className='flex justify-between border-b border-white/10 pb-1'>
+									<span className='opacity-70'>Estado:</span>
+									<span className='font-semibold uppercase'>
+										{translateValue(normalizedReviewStatus) || 'Pendiente'}
+									</span>
+								</div>
+							</div>
+						</div>
+
+						{(automaticGrade || item?.grade || item?.suggested_grade) && (
+							<div className='rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm'>
+								<h3 className='mb-2 text-lg font-semibold text-white'>Resultado</h3>
+								<div className='flex items-center justify-between'>
+									<div>
+										<p className='text-xs uppercase text-white/60'>Grado</p>
+										<p className='text-4xl font-black text-white'>
+											{automaticGrade || item?.grade || item?.suggested_grade}
+										</p>
+									</div>
+									{item?.scoring_confidence !== undefined && (
+										<div className='text-right'>
+											<p className='text-xs uppercase text-white/60'>
+												Confianza
+											</p>
+											<p className='text-xl font-bold text-white'>
+												{Math.round(item.scoring_confidence)}%
+											</p>
+										</div>
+									)}
+								</div>
+							</div>
+						)}
+
+						{Object.keys(step2InitialValues).length > 0 && (
+							<div className='rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm'>
+								<h3 className='mb-2 text-lg font-semibold text-white'>Detalles</h3>
+								<div className='max-h-80 overflow-y-auto pr-2 space-y-1 text-xs text-white/80'>
+									{Object.entries(step2InitialValues).map(([key, value]) => (
+										<div
+											key={key}
+											className='flex justify-between gap-4 border-b border-white/5 py-1'>
+											<span className='capitalize opacity-70'>
+												{translateField(key)}
+											</span>
+											<span className='text-right font-medium'>
+												{translateValue(value)}
+											</span>
+										</div>
+									))}
+								</div>
+							</div>
+						)}
+
+						<Button
+							variant='solid'
+							color='blue'
+							className='w-full'
+							onClick={() => {
+								const info = [
+									`S/N: ${serialNumber || item?.serial_number || '-'}`,
+									`Tipo: ${translateValue(equipmentType) || '-'}`,
+									`Estado: ${translateValue(normalizedReviewStatus) || 'Pendiente'}`,
+									`Grado: ${automaticGrade || item?.grade || item?.suggested_grade || '-'}`,
+									item?.scoring_confidence !== undefined
+										? `Confianza: ${Math.round(item.scoring_confidence * 100)}%`
+										: null,
+									'',
+									'DETALLES:',
+									...Object.entries(step2InitialValues).map(
+										([key, value]) =>
+											`${translateField(key)}: ${translateValue(value)}`,
+									),
+								]
+									.filter((line) => line !== null)
+									.join('\n');
+
+								navigator.clipboard.writeText(info);
+								toast.success('Información copiada al portapapeles');
+							}}>
+							<Icon icon='HeroClipboardDocument' className='mr-2 h-4 w-4' />
+							Copiar Información
+						</Button>
+					</div>
+				</div>
+			</HiddenAside>
+
+
 		</PageWrapper>
+		
 	);
 };
 

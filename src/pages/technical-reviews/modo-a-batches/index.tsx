@@ -20,6 +20,7 @@ export const ModoARoutes = () => {
 			<Route path='batches/create' element={<BatchCreatePage />} />
 			<Route path='batches/:batchId' element={<BatchDetailPage />} />
 			<Route path='batches/:batchId/:itemId' element={<BatchItemReviewPage />} />
+			
 		</>
 	);
 };

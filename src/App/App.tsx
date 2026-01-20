@@ -93,6 +93,7 @@ const App = () => {
 							<HeaderRouter />
 							<ContentRouter />
 							<FooterRouter />
+							{/* <FloatingInfo position='top' size='large' color='red' /> */}
 						</NotificationsStreamProvider>
 					</Wrapper>
 				</div>
