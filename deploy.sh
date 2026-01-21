@@ -53,11 +53,11 @@ iiiii::..::..   ...:.....:::iiiii:iiiiiii:iiiiiiiiiiiiiiiii:iiii:ii:iiiii:::
 iii:i:::....:...::::::iiiiiiii:iiiiii:iiiiii:iiiiii:iiiiiiiiiiiiiiiiiiiiiiii
 iiiiii:::::::::::iiiii:iiii::i:::::i:::::i::::::::i::::i::iiiiiiiiiiiiiiiii:
 iiiiiii:iiiiii:iiiii:i:::::::: :: ::: ::: ::::: ::: ::: ::::i:ii:iiii:iii:i:
-iiiiiiiiii:iiiii:i:::::::: ::    ::  ::  :: .. ..   ... ...: :: ::::i:::i::::
+iiiiiiiiii:iiiii:i:::::::: ::    ::  ::  :: .. ..  ... ...: :: ::::i:::i::::
 iiii:iiiiii::i::::i:::: :                                .... :::: :::::::..
 iiiiiii::i::i::::::: :   ..d8"    d8b      ..         .  .    ... ::: :::...
-i:iii:i:::::::::: :   .aT8888".`:. `"'  8    .:....:.   "b. ..    .... ......
-ii:::::i:::::: :   .a88888888::.:::.::..     ..:..:..:.. 88b. ...     ... ,. 
+i:iii:i:::::::::: :  .aT8888".`:. `"'  8    .:....:.   "b. ..    .... ......
+ii:::::i:::::: :  .a88888888::.:::.::..     ..:..:..:.. 88b. ...     ... ,. 
 :::i:::::::::  .aT8888888888:::::i:::;::...::.::.::.::..8888Tb. ...    ...   
 i::::::::::  .dT888888888888b:i:;;i:i::i:::ii::;i;;;:i:d8888TTTb  ...  
 :::::::: :  dTTT8888888888888b;ii;;i;i;iii;;iii;;i;i;:d888TTTTTTb
@@ -81,14 +81,17 @@ iiiii::..::..   ...:.....:::iiiii:iiiiiii:iiiiiiiiiiiiiiiii:iiii:ii:iiiii:::
 iii:i:::....:...::::::iiiiiiii:iiiiii:iiiiii:iiiiii:iiiiiiiiiiiiiiiiiiiiiiii
 iiiiii:::::::::::iiiii:iiii::i:::::i:::::i::::::::i::::i::iiiiiiiiiiiiiiiii:
 iiiiiii:iiiiii:iiiii:i:::::::: :: ::: ::: ::::: ::: ::: ::::i:ii:iiii:iii:i:
-iiiiiiiiii:iiiii:i:::::::: ::    ::  ::  :: .. ..   ... ...: :: ::::i:::i::::
+iiiiiiiiii:iiiii:i:::::::: ::    ::  ::  :: .. ..  ... ...: :: ::::i:::i::::
 iiii:iiiiii::i::::i:::: :                                .... :::: :::::::..
 iiiiiii::i::i::::::: :   ..d8"    d8b      ..         .  .    ... ::: :::...
 i:iii:i:::::::::: :  .aT8888".`:. `"'  8    .:....:.   "b. ..    .... ......
 ii:::::i:::::: :  .a88888888::.:::.::..     ..:..:..:.. 88b. ...     ... ,. 
 :::i:::::::::  .aT8888888888:::::i:::;::...::.::.::.::..8888Tb. ...    ...   
 i::::::::::  .dT888888888888b:i:;;i:i::i:::ii::;i;;;:i:d8888TTTb  ...  
-:::::::: : :::::.. """"""YTTTIIIIIIIIIIIIIIIIIIIIIIIIIIIIITP"""      .:::::: .:: 
+:::::::: :  dTTT8888888888888b;ii;;i;i;iii;;iii;;i;i;:d888TTTTTTb
+::::: : :  dTTTTTTTTTTTTTTTTTTTbiiii;;iiiiiiiiiii;idTTTTTTTIITTTTP          
+:::::: :   "YTTTTTTTTTTTTTTTTTTTTTTIIIIIIIIIIIIIIIIIIIIIIIIIMRK""      . :  
+::: : : :::::.. """"""YTTTIIIIIIIIIIIIIIIIIIIIIIIIIIIIITP"""     .:::::: .:: 
 :::: ::: :: :::::::::::::::::::::::::::::::::::::::::...........::::::::::::
 : ::::::::::i:::::::::::::::::::::::::::::::::::::::::::::::  : ::::::i:::::
 ::::::::i::::ii:i:iii:ii::::::::::::::::::::::::::::::::::::::::ii:ii:i::i::
@@ -106,16 +109,16 @@ iiiii::..::..   ...:.....:::iiiii:iiiiiii:iiiiiiiiiiiiiiiii:iiii:ii:iiiii:::
 iii:i:::....:...::::::iiiiiiii:iiiiii:iiiiii:iiiiii:iiiiiiiiiiiiiiiiiiiiiiii
 iiiiii:::::::::::iiiii:iiii::i:::::i:::::i::::::::i::::i::iiiiiiiiiiiiiiiii:
 iiiiiii:iiiiii:iiiii:i:::::::: :: ::: ::: ::::: ::: ::: ::::i:ii:iiii:iii:i:
-iiiiiiiiii:iiiii:i:::::::: ::    ::  ::  :: .. ..   ... ...: :: ::::i:::i::::
+iiiiiiiiii:iiiii:i:::::::: ::    ::  ::  :: .. ..  ... ...: :: ::::i:::i::::
 iiii:iiiiii::i::::i:::: :                                .... :::: :::::::..
 iiiiiii::i::i::::::: :   ..d8"    d8b      ..         .  .    ... ::: :::...
 i:iii:i:::::::::: :  .aT8888".`:. `"'  8    .:....:.   "b. ..    .... ......
 ii:::::i:::::: :  .a88888888::.:::.::..     ..:..:..:.. 88b. ...     ... ,. 
 :::i:::::::::  .aT8888888888:::::i:::;::...::.::.::.::..8888Tb. ...    ...   
 i::::::::::  .dT888888888888b:i:;;i:i::i:::ii::;i;;;:i:d8888TTTb  ...  
-:::::::: : dTTT8888888888888b;ii;;i;i;iii;;iii;;i;i;:d888TTTTTTb        .:::
-::::: : : dTTTTTTTTTTTTTTTTTTTbiiii;;iiiiiiiiiii;idTTTTTTTIITTTTP    ..:::: 
-:::::: : ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: 
+:::::::: :  dTTT8888888888888b;ii;;i;i;iii;;iii;;i;i;:d888TTTTTTb       .:::
+::::: : :  dTTTTTTTTTTTTTTTTTTTbiiii;;iiiiiiiiiii;idTTTTTTTIITTTTP    ..:::: 
+:::::: : :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  
 ::: : : :::::.iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii.:::::: .:: 
 :::: ::: :: :::::::::::::::::::::::::::::::::::::::::iiiiiiiiiii::::::::::::
 : ::::::::::i:::::::::::::::::::::::::::::::::::::::::::::::iiii::::::i:::::
@@ -132,15 +135,15 @@ iiiiiiiiii:ii::..:.......         :.......:...........:........         ...:
 iiiii:ii::.:....          .....:.....:::::::iii:iiii:ii:::::::::...:.....:..
 iiiii::..::..   ...:.....:::iiiii:iiiiiii:iiiiiiiiiiiiiiiii:iiii:ii:iiiii:::
 iii:i:::....:...::::::iiiiiiii:iiiiii:iiiiii:iiiiii:iiiiiiiiiiiiiiiiiiiiiiii
-iiiiii:::::::::::iiiii:iiii::i:::::i:::::i::::::::i::::i::iiiiiiiiiiiiiiiii:
-iiiiiii:iiiiii:iiiii:i:::::::: :: ::: ::: ::::: ::: ::: ::::i:ii:iiii:iii:i:
-iiiiiiiiii:iiiii:i:::::::: ::    ::  ::  :: .. ..   ... ...: :: ::::i:::i:::
-iiii:iiiiii:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:::::::
+iiiiii:::::::::::iiiii:iiii::i::iiiii::iiiiii:iiii:iii:i::iiiiiiiiiiiiiiiii:
+iiiiiii:iiiiii:iiiii:i::iii:iiii:iiiiii:iiii:ii:::iiiiiii:::i:ii:iiii:iii:i:
+iiiiiiiiii:iiiii:i::::::::i::iiiii:::iiiiiiiiiiiii:iiiiiiii: :: ::::i:::i:::
+iiii:iiiiii:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:...:i:i:i:i:i:i:i:i:i:i:i:i:::::::
 iiiiiii:i:i:i:i:i:i:i:i: ..d8"    d8b      ..         .  .i:i:i:i:i:i:::...
 i:iii:i:::::::::: :   .aT8888".`:. `"'  8    .:....:.   "b. ..    .... .....
 ii:::::i:::::: :   .a88888888::.:::.::..     ..:..:..:.. 88b. ...     ... ,. 
 :::i:::::::::   .aT8888888888:::::i:::;::...::.::.::.::..8888Tb. ...    ...   
-i::::::::::   .dT888888888888b:i:;;i:i::i:::ii::;i;;;:i:d8888TTTb   ...  
+i::::::::::   .dT888888888888b:i:;;i:i::i:::ii::;i;;;:i:d8888TTTb  ...  
 :::::::: : :::::.. """"""YTTTIIIIIIIIIIIIIIIIIIIIIIIIIIIIITP"""      .::::::
 :::: ::: :: :::::::::::::::::::::::::::::::::::::::::...........::::::::::::
 : ::::::::::i:::::::::::::::::::::::::::::::::::::::::::::::  : ::::::i:::::
@@ -161,16 +164,16 @@ iiiiiiiiii:ii::..:.......         :.......:...........:........         ...:
 iiiii:ii::.:....          .....:.....:::::::iii:iiii:ii:::::::::...:.....:..
 iiiii::..::..   ...:.....:::iiiii:iiiiiii:iiiiiiiiiiiiiiiii:iiii:ii:iiiii:::
 iii:i:::....:...::::::iiiiiiii:iiiiii:iiiiii:iiiiii:iiiiiiiiiiiiiiiiiiiiiiii
-iiiiii:::::::::::iiiii:iiii::i:::::i:::::i::::::::i::::i::iiiiiiiiiiiiiiiii:
-iiiiiii:iiiiii:iiiii:i:::::::: :: ::: ::: ::::: ::: ::: ::::i:ii:iiii:iii:i:
-iiiiiiiiii:iiiii:i:::::::: ::    ::  ::  :: .. ..   ... ...: :: ::::i:::i:::
-iiii:iiiiii:i::::: :::: ::::::i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:::::::
+iiiiii:::::::::::iiiii:iiii::iiiiii:iiiiii:iiiiii:iiiiii::iiiiiiiiiiiiiiiii:
+iiiiiii:iiiiii:iiiii:i:::::iiii::iiii:iii:iii:ii:iiiiiiii:::i:ii:iiii:iii:i:
+iiiiiiiiii:iiiii:i:iiiii:ii::iiii::ii::  :: iiiiiiiiiii ...: :: ::::i:::i:::
+iiii:iiiiii:i::::: :::: ::::::i:  i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:::::::
 iiiiiii:i: : :::i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i:i i:i:i:..
 i:iii:i:i:::::i::ii¨   ,T8888".`:. `"'  8    .:....:.   "b.::.i:i:::i:i:i:i..
 ii:::::i:i:i:i:i":: .aT8888888::.:::.::..     ..:..:..:..   :::i:::i:i:i:,.:
 ::::::::iii:::¨¨¨ .,,aT88888888b;ii;;i;i;iii;;iii;;i;i88:      ..:I:iiii:i:i
 ::::: : :  iiiiiiiiiiiiiiiiiiiibiiii;;iiiiiiiiiii;i8888i  :i:iI:i:iii.i:i:i 
-:::::: : ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: 
+:::::: : :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  
 ::: : : :::::.iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii.:::::: .:: 
 :::: ::: :: :::::::::::::::::::::::::::::::::::::::::iiiiiiiiiii::::::::::::
 : ::::::::::i:::::::::::::::::::::::::::::::::::::::::::::::iiii::::::i:::::
@@ -199,8 +202,8 @@ clear
 # Banner de Bienvenida blindado
 echo -e "${B}        _          ${NC}"
 echo -ne "${B}       / \      _-' ${NC}" ; echo -e "${C} ________    _______  _____  ___  ___________  _______    __          __      ${NC}"
-echo -ne "${B}     _/|  \-''- _ / ${NC}" ; echo -e "${C} (\"      \"\\  /\"     \"|(\"   \\|\"  \\(\"      _   \")/\"     \\  |\" \\        /\"\"\\     ${NC}"
-echo -ne "${B}__-' { |          \\ ${NC}" ; echo -e "${C}  \\___/   :)(: ______)|.\\\\   \\   |)__/  \\\\__/|:        | ||  |      /    \\    ${NC}"
+echo -ne "${B}     _/|  \-''- _ / ${NC}" ; echo -e "${C} (\"      \"\\  /\"     \"|(\"   \\|\   \\(\"       _   \")/\"     \\  |\" \\ /\"\"\\     ${NC}"
+echo -ne "${B}__-' { |          \\ ${NC}" ; echo -e "${C}  \\___/   :)(: ______)|.\\\\   \\      |__/  \\\\__/|:        | ||  |      /    \\    ${NC}"
 echo -ne "${B}    /             \\ ${NC}" ; echo -e "${C}    /   ___/  \\/    |  |: \\.   \\\\  |   \\\\_ /   |_____/   ) |:  |     /' /\\  \\   ${NC}"
 echo -ne "${B}    /       \"o.  |o } ${NC}" ; echo -e "${C}  //   \\__   // ___)_ |.  \\   \\  . |   |.  |    //      /  |.  |    //  __'  \\  ${NC}"
 echo -ne "${B}    |            \\ ;  ${NC}" ; echo -e "${C} (:   / \"\\ (:      \"||    \\   \\ |   \\:  |   |:  __   \\  /\\  |\\  /   /  \\\\  \\ ${NC}"
