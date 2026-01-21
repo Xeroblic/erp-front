@@ -392,7 +392,6 @@ const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
 													onChange={(e) => {
 														formik.handleChange(e);
 														handleBillingAddressChange(e);
-														setIsShippingEdited(false);
 													}}
 												/>
 											}
@@ -437,7 +436,6 @@ const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
 													onChange={(e) => {
 														formik.handleChange(e);
 														handleShippingAddressChange(e);
-														setIsShippingEdited(true);
 													}}
 													name='shipping_address_1'
 													value={formik.values.shipping_address_1}
