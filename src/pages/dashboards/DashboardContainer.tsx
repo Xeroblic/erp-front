@@ -180,6 +180,102 @@ const DashboardContainer: React.FC = () => {
                         </div>
                     </div>
 
+                    <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+                        <div className='lg:col-span-2'>
+                            <WeeklySalesChart />
+                        </div>
+                        <div className='lg:col-span-1'>
+                            <TimelineWidget />
+                        </div>
+                    </div>
+
+                    <div className='w-full'>
+                        <LatestProductsTable />
+                    </div>
+                </div>
+            </Container>
+                    </div>
+
+                    <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+                        <div className='lg:col-span-2'>
+                            <WeeklySalesChart />
+                        </div>
+                        <div className='lg:col-span-1'>
+                            <TimelineWidget />
+                        </div>
+                    </div>
+
+                    <div className='w
+                    </div>
+
+                    <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+                        <div className='lg:col-span-2'>
+                            <WeeklySalesChart />
+                        </div>
+                        <div className='lg:col-span-1'>
+                            <TimelineWidget />
+                        </div>
+                    </div>
+
+                    <div className='w-full'>
+                        <LatestProductsTable />
+                    </div>
+                </div>
+            </Container>-full'>
+                        <LatestProductsTable />
+                    </div>
+                </div>
+                    </div>
+
+                    <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+                        <div className='lg:col-span-2'>
+                            <WeeklySalesChart />
+                        </div>
+                        <div className='lg:col-span-1'>
+                            <TimelineWidget />
+                        </div>
+                    </div>
+
+                    <div className='w-full'>
+                        <LatestProductsTable />
+                    </div>
+                </div>
+            </Container>
+            </Container>
+                    </div>
+
+                    <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+                        <div className='lg:col-span-2'>
+                            <WeeklySalesChart />
+                        </div>
+                        <div className='lg:col-span-1'>
+                            <TimelineWidget />
+                        </div>
+                    </div>
+
+                    <div className='w-full'>
+                        <LatestProductsTable />
+                    </div>
+                </div>
+            </Container>
+                    </div>
+
+                    <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+                        <div className='lg:col-span-2'>
+                            <WeeklySalesChart />
+                        </div>
+                        <div className='lg:col-span-1'>
+                            <TimelineWidget />
+                        </div>
+                    </div>
+
+                    <div className='w-full'>
+                        <LatestProductsTable />
+                    </div>
+                </div>
+            </Container>
+                    </div>
+
                     <div className='w-full'>
                         <LatestProductsTable />
                     </div>
