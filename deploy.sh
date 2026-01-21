@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # --- Configuración de colores ---
-G='\033[0;32m' # Verde
-B='\033[0;34m' # Azul
-C='\033[0;36m' # Cian
-W='\033[1;37m' # Blanco
-R='\033[1;31m' # Rojo Brillante
-NC='\033[0m'   # Sin Color
+G='\033[0;32m'
+B='\033[0;34m'
+C='\033[0;36m'
+W='\033[1;37m'
+R='\033[1;31m'
+NC='\033[0m'   
 
 # Función para la calavera de error
 show_skull() {
@@ -182,13 +182,13 @@ EOF
 }
 
 finalizar() {
-    for k in {1..5} # 5 veces como pediste po wn
+    for k in {1..3}
     do
         clear; echo -e "${G}"; f1; sleep 0.1
         clear; echo -e "${G}"; f2; sleep 0.1
         clear; echo -e "${G}"; f3; sleep 0.1
         clear; echo -e "${G}"; f4; sleep 0.1
-        clear; echo -e "${G}"; f5; sleep 0.1 # Se queda un pelín más cerrado
+        clear; echo -e "${G}"; f5; sleep 0.1
         clear; echo -e "${G}"; f4; sleep 0.1
         clear; echo -e "${G}"; f3; sleep 0.1
         clear; echo -e "${G}"; f2; sleep 0.1
@@ -200,7 +200,7 @@ finalizar() {
 
 # --- EL SCRIPT DE DEPLOY ---
 clear
-# Banner de Bienvenida blindado
+# Banner de Bienvenida blindado a lo pana si o si
 echo -e "${B}        _          ${NC}"
 echo -ne "${B}       / \      _-' ${NC}" ; echo -e "${C} ________    _______  _____  ___  ___________  _______    __          __      ${NC}"
 echo -ne "${B}     _/|  \-''- _ / ${NC}" ; echo -e "${C} (\"      \"\\  /\"     \"|(\"   \\|\   \\(\"       _   \")/\"     \\  |\" \\ /\"\"\\     ${NC}"
