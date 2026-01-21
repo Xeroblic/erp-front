@@ -13,6 +13,9 @@ import Button from '../../../../../components/ui/Button';
 // BORRADO: import { generateQuotePdf } from '../../utils/pdf/generateQuotePdf'; <-- SE FUE
 import ApiService from '@/services/ApiService';
 import Badge from '@/components/ui/Badge';
+import EditQuotationModal from './ModalEditar/EditQuotationModal';
+import { useAppDispatch } from '@/store';
+import { updateQuote } from '@/store/slices/quotes/quotesSlice';
 
 interface QuotationDetailsModalProps {
 	isOpen: boolean;
@@ -40,60 +43,18 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
 		return generateQuotePdf(quotation);
 	};
 
-	const handlePrint = () => {
+	const handlePrint = async () => {
 		if (!quotation) return;
-		const container = document.getElementById(PRINT_CONTAINER_ID);
-		if (!container) {
-			toast.error('No se encontró el contenido para imprimir');
-			return;
-		}
 		setIsPrinting(true);
 		try {
-			const printWindow = window.open('', '_blank', 'width=900,height=1200');
-			if (!printWindow) {
-				throw new Error('Pop-up bloqueado');
-			}
-			const printStyles = `
-        * { box-sizing: border-box; }
-        body { margin: 0; padding: 24px; font-family: 'Helvetica', sans-serif; background: #f3f4f6; color: #111827; }
-        .print-wrapper { max-width: 216mm; margin: 0 auto; background: #ffffff; padding: 12px; }
-        @page { margin: 12mm; }
-        @media print {
-          body { background: #ffffff; }
-          .print-wrapper { box-shadow: none; }
-        }
-      `;
-			printWindow.document.open();
-			printWindow.document.write(`
-        <html>
-          <head>
-            <title>Cotización ${quotation.id}</title>
-            <style>${printStyles}</style>
-          </head>
-          <body>
-            <div class="print-wrapper">${container.innerHTML}</div>
-          </body>
-        </html>
-      `);
-			printWindow.document.close();
-			printWindow.focus();
-			printWindow.onload = () => {
-				printWindow.focus();
-				printWindow.print();
-				printWindow.close();
-				setIsPrinting(false);
-			};
-			setTimeout(() => {
-				if (!printWindow.closed) {
-					printWindow.focus();
-					printWindow.print();
-					printWindow.close();
-					setIsPrinting(false);
-				}
-			}, 800);
+			const blob = await getPdfBlob();
+			if (!blob) throw new Error('No se pudo generar el blob del PDF');
+			const url = URL.createObjectURL(blob);
+			window.open(url, '_blank');
 		} catch (error) {
 			console.error(error);
 			toast.error('No se pudo preparar la impresión');
+		} finally {
 			setIsPrinting(false);
 		}
 	};
@@ -143,69 +104,126 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
 		}
 	};
 
+	// State for Edit Modal
+	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+	const dispatch = useAppDispatch();
+	const [isUpdating, setIsUpdating] = useState(false);
+
+	const handleEditSubmit = async (values: any) => {
+		if (!quotation) return;
+		setIsUpdating(true);
+		try {
+			await dispatch(
+				updateQuote({
+					subsidiaryId: quotation.subsidiary_id ?? 1,
+					quoteId: quotation.id,
+					data: values,
+				}),
+			).unwrap();
+			setIsEditModalOpen(false);
+			// Optional: toast handled by slice usually, but we can verify
+		} catch (error) {
+			console.error(error);
+			// Error toast handled by slice
+		} finally {
+			setIsUpdating(false);
+		}
+	};
+
 	return (
-		<Modal isOpen={isOpen} setIsOpen={onClose} size='xl'>
-			<ModalHeader>
-				<div>
-					<Badge className='text-xl font-semibold'>Detalles de Cotización</Badge>
-					<p className='text-sm text-gray-600 dark:text-white'>{`ID #${quotation?.id ?? ''}`}</p>
-				</div>
-			</ModalHeader>
+		<>
+			<Modal
+				isOpen={isOpen}
+				setIsOpen={onClose}
+				size='xl'
+				isStaticBackdrop
+				isStaticBackdropAnimation
+				isAnimation={false}>
+				<ModalHeader>
+					<div>
+						<Badge className='text-xl font-semibold'>Detalles de Cotización</Badge>
+						<p className='text-sm text-gray-600 dark:text-white'>{`ID #${quotation?.id ?? ''}`}</p>
+					</div>
+				</ModalHeader>
 
-			<ModalBody className='bg-gray-100 max-h-[80vh] overflow-y-auto p-6'>
-				{isLoading ? (
-					<div className='flex items-center justify-center py-16 text-gray-600'>
-						<div className='mr-3 h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent' />
-						Cargando detalles de la cotización...
-					</div>
-				) : quotation ? (
-					<div
-						id={PRINT_CONTAINER_ID}
-						className='mx-auto w-full max-w-4xl  rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-100'>
-						<QuotePrintableView quote={quotation} />
-					</div>
-				) : (
-					<p className='py-6 text-center text-sm text-gray-500'>
-						Selecciona una cotización para ver sus detalles.
-					</p>
-				)}
-			</ModalBody>
+				<ModalBody className='max-h-[80vh] overflow-y-auto bg-gray-100 p-6'>
+					{isLoading ? (
+						<div className='flex items-center justify-center py-16 text-gray-600'>
+							<div className='mr-3 h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent' />
+							Cargando detalles de la cotización...
+						</div>
+					) : quotation ? (
+						<div
+							id={PRINT_CONTAINER_ID}
+							className='mx-auto w-full max-w-4xl rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-100'>
+							<QuotePrintableView quote={quotation} />
+						</div>
+					) : (
+						<p className='py-6 text-center text-sm text-gray-500'>
+							Selecciona una cotización para ver sus detalles.
+						</p>
+					)}
+				</ModalBody>
 
-			<ModalFooter>
-				<ModalFooterChild className='flex flex-wrap justify-between gap-3 w-full mt-8'>
-					<div className='text-xs text-gray-500'>
-						Última actualización:{' '}
-						{quotation?.updated_at
-							? new Date(quotation.updated_at).toLocaleString()
-							: '—'}
-					</div>
-					<div className='flex flex-wrap gap-3'>
-						<Button variant='outline' onClick={onClose}>
-							Cerrar
-						</Button>
-						<Button
-							variant='outline'
-							onClick={handleDownload}
-							isDisable={!quotation}
-							isLoading={downloading}>
-							Descargar PDF
-						</Button>
-						<Button
-							variant='outline'
-							color='green'
-							onClick={handleConvertToSale}
-							isDisable={!quotation}
-							isLoading={converting}>
-							Convertir a Venta
-						</Button>
+				<ModalFooter>
+					<ModalFooterChild className='mt-8 flex w-full flex-wrap justify-between gap-3'>
+						<div className='text-xs text-gray-500'>
+							Última actualización:{' '}
+							{quotation?.updated_at
+								? new Date(quotation.updated_at).toLocaleString()
+								: '—'}
+						</div>
+						<div className='flex flex-wrap gap-3'>
+							<Button variant='outline' onClick={onClose}>
+								Cerrar
+							</Button>
 
-					<Button color='blue' onClick={handlePrint} isDisable={!quotation || isPrinting}>
-						{isPrinting ? 'Preparando…' : 'Imprimir'}
-					</Button>
-					</div>
-				</ModalFooterChild>
-			</ModalFooter>
-		</Modal>
+							{/* Edit Button */}
+							<Button
+								variant='outline'
+								color='amber'
+								onClick={() => setIsEditModalOpen(true)}
+								isDisable={!quotation || isLoading}>
+								Editar
+							</Button>
+
+							<Button
+								variant='outline'
+								onClick={handleDownload}
+								isDisable={!quotation}
+								isLoading={downloading}>
+								Descargar PDF
+							</Button>
+							<Button
+								variant='outline'
+								color='green'
+								onClick={handleConvertToSale}
+								isDisable={!quotation}
+								isLoading={converting}>
+								Convertir a Venta
+							</Button>
+
+							<Button
+								color='blue'
+								onClick={handlePrint}
+								isDisable={!quotation || isPrinting}>
+								{isPrinting ? 'Generando PDF…' : 'Imprimir'}
+							</Button>
+						</div>
+					</ModalFooterChild>
+				</ModalFooter>
+			</Modal>
+
+			{quotation && (
+				<EditQuotationModal
+					isOpen={isEditModalOpen}
+					onClose={() => setIsEditModalOpen(false)}
+					onSubmit={handleEditSubmit}
+					quotation={quotation}
+					loading={isUpdating}
+				/>
+			)}
+		</>
 	);
 };
 

@@ -173,7 +173,7 @@ interface IContentProps extends HTMLAttributes<HTMLDivElement> {
 	fullScreen?: TScreens | boolean;
 	isScrollable?: boolean;
 	rounded?: TRounded;
-	className?:string;
+	className?: string;
 }
 const Content: FC<IContentProps> = (props) => {
 	const {
@@ -186,7 +186,7 @@ const Content: FC<IContentProps> = (props) => {
 	} = props;
 	const hasBgOverride = className?.includes('bg-');
 	const classes = classNames(
-		 'pointer-events-auto relative flex w-full flex-col',
+		'pointer-events-auto relative flex w-full flex-col',
 		!hasBgOverride && 'bg-white dark:bg-zinc-950',
 		'shadow-2xl',
 		[`${rounded}`],
@@ -218,7 +218,7 @@ interface IDialogProps extends HTMLAttributes<HTMLDivElement> {
 	fullScreen?: TScreens | boolean;
 	isCentered?: boolean;
 	isScrollable?: boolean;
-	className?:string;
+	className?: string;
 }
 const Dialog = forwardRef<HTMLDivElement, IDialogProps>((props, ref) => {
 	const {
@@ -307,10 +307,19 @@ const Modal: FC<IModalProps> = (props) => {
 
 	// Backdrop close function
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	// Backdrop close function
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const closeModal = (event: { target: any }) => {
 		// @ts-ignore
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 		if (ref.current && !ref.current.contains(event.target) && !isStaticBackdrop) {
+			// @ts-ignore
+			if (
+				event.target.closest &&
+				event.target.closest('[data-component-name="Modal/Dialog"]')
+			) {
+				return;
+			}
 			setIsOpen(false);
 		}
 	};
@@ -323,6 +332,14 @@ const Modal: FC<IModalProps> = (props) => {
 		// @ts-ignore
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 		if (ref.current && !ref.current.contains(event.target) && isStaticBackdrop) {
+			// @ts-ignore
+			if (
+				event.target.closest &&
+				event.target.closest('[data-component-name="Modal/Dialog"]')
+			) {
+				return;
+			}
+
 			if (isStaticBackdropAnimation && refModal.current) {
 				// Added condition
 				// @ts-ignore
@@ -385,8 +402,7 @@ const Modal: FC<IModalProps> = (props) => {
 									rounded={rounded}
 									fullScreen={fullScreen}
 									isScrollable={isScrollable}
-									className={className}
-									>
+									className={className}>
 									{Children.map(
 										children,
 										(child) =>

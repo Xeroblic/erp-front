@@ -253,7 +253,7 @@ const SalesListPage: React.FC = () => {
 				dispatch(downloadShippingLabel({ subsidiaryId: Number(subsidiaryId), id: saleId }));
 				toast.success('La etiqueta de envio a sido descargada satifactoriamente :D')
 			} catch (error) {
-				console.log(error);
+				toast.error('Hubo un error al descargar la etiqueta de envio')
 			}
 		},
 		[subsidiaryId],

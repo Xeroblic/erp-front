@@ -137,7 +137,8 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 											{company.name}
 										</span>
 									)}
-								</div>0
+								</div>
+								0
 								<div className='flex flex-col gap-0.5 text-[9px]'>
 									<p>Giro: {company.activity || '—'}</p>
 									<p>Dirección: {company.fullAddress || '—'}</p>
@@ -256,19 +257,19 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 							</div>
 						</div>
 
-						<div className='mb-4 border-2 border-slate-700'>
-							<div className='flex border-b-2 border-slate-700 bg-slate-100 py-1.5 text-[9px] font-bold text-slate-900'>
+						<div className='mb-4 border-2 border-rose-600'>
+							<div className='flex border-b-2 border-rose-600 bg-rose-50 py-1.5 text-[9px] font-bold text-slate-900'>
 								<div className='w-[8%] text-center'>Cant.</div>
-								<div className='w-[17%] border-l border-slate-700 px-1 text-left'>
+								<div className='w-[17%] border-l border-rose-200 px-1 text-left'>
 									Código
 								</div>
-								<div className='w-[45%] border-l border-slate-700 px-1 text-left'>
+								<div className='w-[45%] border-l border-rose-200 px-1 text-left'>
 									Descripción
 								</div>
-								<div className='w-[15%] border-l border-slate-700 px-1 text-right'>
+								<div className='w-[15%] border-l border-rose-200 px-1 text-right'>
 									Precio Neto
 								</div>
-								<div className='w-[15%] border-l border-slate-700 px-1 text-right'>
+								<div className='w-[15%] border-l border-rose-200 px-1 text-right'>
 									Total Neto
 								</div>
 							</div>
@@ -370,7 +371,7 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 									) : null}
 								</div>
 								<div className='flex flex-1 justify-end'>
-									<div className='w-[200px] border-2 border-slate-500 text-[9px] text-slate-900 dark:text-slate-900'>
+									<div className='w-[200px] border-2 border-rose-600 text-[9px] text-slate-900 dark:text-slate-900'>
 										<div className='flex justify-between border-b border-slate-300 px-2 py-1 font-bold uppercase'>
 											<span>Neto</span>
 											<span>{priceFormat(netTotal)}</span>

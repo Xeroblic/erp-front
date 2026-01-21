@@ -306,7 +306,8 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 				setIsOpen={onClose}
 				size='2xl'
 				isStaticBackdrop
-				isStaticBackdropAnimation>
+				isStaticBackdropAnimation
+				isAnimation={false}>
 				<ModalHeader>
 					<div>
 						<Badge className='text-xl font-semibold'>Editar Cotización</Badge>
