@@ -14,8 +14,9 @@ import Button from '../../../../../components/ui/Button';
 import ApiService from '@/services/ApiService';
 import Badge from '@/components/ui/Badge';
 import EditQuotationModal from './ModalEditar/EditQuotationModal';
-import { useAppDispatch } from '@/store';
+import { useAppDispatch, RootState } from '@/store';
 import { updateQuote } from '@/store/slices/quotes/quotesSlice';
+import { useSelector } from 'react-redux';
 
 interface QuotationDetailsModalProps {
 	isOpen: boolean;
@@ -37,10 +38,12 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
 	const [downloading, setDownloading] = useState(false);
 	const [isPrinting, setIsPrinting] = useState(false);
 
+	const currentUser = useSelector((state: RootState) => state.auth.user);
+
 	const getPdfBlob = async () => {
 		if (!quotation) return null;
 		const { generateQuotePdf } = await import('../../utils/pdf/generateQuotePdf');
-		return generateQuotePdf(quotation);
+		return generateQuotePdf(quotation, currentUser);
 	};
 
 	const handlePrint = async () => {

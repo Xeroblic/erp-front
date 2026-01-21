@@ -42,6 +42,7 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 	const dispatch = useAppDispatch();
 	const subEmpresa = useSelector((state: RootState) => state.subEmpresa);
 	const personalizacion = useSelector((state: RootState) => state.personalizacion);
+	const currentUser = useSelector((state: RootState) => state.auth.user);
 
 	const stateForMapper = { subEmpresa, personalizacion };
 
@@ -170,13 +171,19 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 								<span>
 									Fecha creación doc:{' '}
 									<span className='font-bold text-slate-900'>
-										{documentCreationLabel}
+										{documentCreationLabel}{' '}
+										{quote.created_at
+											? new Date(quote.created_at).toLocaleTimeString(
+													'es-CL',
+													{ hour: '2-digit', minute: '2-digit' },
+												)
+											: ''}
 									</span>
 								</span>
 								<span>
 									Fecha de emisión:{' '}
 									<span className='font-bold text-slate-900'>
-										{emissionDateLabel}
+										{formatDate(new Date())}
 									</span>
 								</span>
 								<span>
@@ -396,6 +403,15 @@ const QuotePrintableView: React.FC<QuotePrintableViewProps> = ({ quote }) => {
 							<p className='mt-3 text-center text-[8px] text-slate-400'>
 								Documento generado electrónicamente por {company.name}
 							</p>
+							<div className='mt-1 flex justify-between text-[7px] text-slate-400'>
+								<span>
+									Emitido por: {currentUser?.first_name} {currentUser?.last_name}
+								</span>
+								<span>
+									Creado por: {(quote as any).user?.first_name}{' '}
+									{(quote as any).user?.last_name}
+								</span>
+							</div>
 							{showPageNumber ? (
 								<p className='mt-2 text-right text-[8px] text-slate-500'>
 									{`Pagina de cotizacion N°${quote.id} - ${pageIndex + 1}/${totalPages}`}

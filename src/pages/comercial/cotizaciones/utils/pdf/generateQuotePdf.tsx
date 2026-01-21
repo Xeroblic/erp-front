@@ -96,7 +96,7 @@ const fetchImageAsDataUrl = async (url: string): Promise<string | null> => {
 
 // --- tu lógica principal se mantiene igual --- //
 
-export const generateQuotePdf = async (quote: IQuote) => {
+export const generateQuotePdf = async (quote: IQuote, issuer?: any) => {
 	// 1. Verificar si necesitamos cargar datos de la subsidiaria
 	let state = store.getState();
 	let company = getCompanyInfo(quote, state);
@@ -135,7 +135,12 @@ export const generateQuotePdf = async (quote: IQuote) => {
 
 	// 3. Generar PDF
 	const blob = await pdf(
-		<QuotePdfDocument quote={quote} company={company} logoBase64={logoBase64} />,
+		<QuotePdfDocument
+			quote={quote}
+			company={company}
+			logoBase64={logoBase64}
+			issuer={issuer}
+		/>,
 	).toBlob();
 
 	return blob;

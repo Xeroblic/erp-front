@@ -328,9 +328,10 @@ interface CompanyInfo {
 
 interface QuotePdfDocumentProps {
 	quote: IQuote;
-	
+
 	company: CompanyInfo;
 	logoBase64?: string | null;
+	issuer?: any;
 }
 
 const ITEMS_PER_PAGE = 15;
@@ -345,7 +346,7 @@ const paginateItems = (items: any[], perPage: number): any[][] => {
 	return pages;
 };
 
-const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps) => {
+const QuotePdfDocument = ({ quote, company, logoBase64, issuer }: QuotePdfDocumentProps) => {
 	const logoSrc = logoBase64 || company.logoUrl || null;
 
 	const items = Array.isArray(quote.items) ? quote.items : [];
@@ -452,7 +453,7 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 											Fecha creación doc:{' '}
 											<Text style={{ fontWeight: 'bold', color: '#111827' }}>
 												{quote.created_at
-													? formatDate(quote.created_at)
+													? `${formatDate(quote.created_at)} ${new Date(quote.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}`
 													: '—'}
 											</Text>
 										</Text>
@@ -461,7 +462,7 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 										<Text style={styles.companyOrderHeaderText}>
 											Fecha de emisión:{' '}
 											<Text style={{ fontWeight: 'bold', color: '#111827' }}>
-												{formatDate(quote.quote_date)}
+												{formatDate(new Date())}
 											</Text>
 										</Text>
 									</View>
@@ -469,12 +470,10 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 										<Text style={styles.companyOrderHeaderText}>
 											Hora de emisión:{' '}
 											<Text style={{ fontWeight: 'bold', color: '#111827' }}>
-												{quote.quote_date
-													? new Date(quote.quote_date).toLocaleTimeString(
-															'es-CL',
-															{ hour: '2-digit', minute: '2-digit' },
-														)
-													: '—'}
+												{new Date().toLocaleTimeString('es-CL', {
+													hour: '2-digit',
+													minute: '2-digit',
+												})}
 											</Text>
 										</Text>
 									</View>
@@ -736,6 +735,20 @@ const QuotePdfDocument = ({ quote, company, logoBase64 }: QuotePdfDocumentProps)
 									<Text style={styles.footerNote}>
 										Documento generado electrónicamente por {company.name}
 									</Text>
+									<View
+										style={{
+											flexDirection: 'row',
+											justifyContent: 'space-between',
+											marginTop: 4,
+										}}>
+										<Text style={{ fontSize: 7, color: '#9ca3af' }}>
+											Emitido por: {issuer?.first_name} {issuer?.last_name}
+										</Text>
+										<Text style={{ fontSize: 7, color: '#9ca3af' }}>
+											Creado por: {(quote as any).user?.first_name}{' '}
+											{(quote as any).user?.last_name}
+										</Text>
+									</View>
 								</View>
 							) : null}
 							{showPageNumber ? (
