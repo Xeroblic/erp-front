@@ -31,6 +31,8 @@ import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelecto
 // import Tooltip from '@/components/ui/Tooltip';
 import type { ISale } from '@/interface/sales.interface';
 import SaleDetailPage from './detail/components/modals/SaleDetailPage';
+import Tooltip from '@/components/ui/Tooltip';
+import { downloadShippingLabel } from '@/store/slices/sales/salesSlice';
 
 injectReducer('salesModule', salesReducer);
 
@@ -245,6 +247,18 @@ const SalesListPage: React.FC = () => {
 	// 	navigate('/comercial/ventas/crear');
 	// };
 
+	const handleDownloadTicket = useCallback(
+		(saleId: number) => {
+			try {
+				dispatch(downloadShippingLabel({ subsidiaryId: Number(subsidiaryId), id: saleId }));
+				toast.success('La etiqueta de envio a sido descargada satifactoriamente :D')
+			} catch (error) {
+				console.log(error);
+			}
+		},
+		[subsidiaryId],
+	);
+	
 	const detailModalVisible = detailModalOpen && selectedSaleId !== null && Boolean(subsidiaryId);
 
 	const columns = useMemo<ColumnDef<ISale>[]>(
@@ -336,6 +350,23 @@ const SalesListPage: React.FC = () => {
 				header: 'Acciones',
 				cell: ({ row }) => (
 					<div className='flex justify-center gap-2'>
+						<Tooltip text='Descargar ticket de envio'>
+
+							<Button
+								variant='outline'
+								size='xs'
+								color='violet'
+								className='bg-violet-500/20'
+								onClick={() => handleDownloadTicket(row.original.id)}
+								isDisable={!subsidiaryId}>
+									<Icon
+										icon='HeroDocumentText'
+										color='violet'
+										className='hover:text-bold hover:text-violet-600'
+										size='text-xl'
+										/>
+							</Button>
+						</Tooltip>
 						<Button
 							variant='outline'
 							size='xs'

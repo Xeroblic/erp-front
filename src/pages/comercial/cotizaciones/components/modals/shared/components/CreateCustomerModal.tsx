@@ -163,7 +163,6 @@ const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
 		formik.handleChange(e);
 	};
 
-
 	return (
 		<Modal isOpen={isOpen} setIsOpen={handleClose} size='lg'>
 			<ModalHeader>Crear Cliente Nuevo</ModalHeader>
