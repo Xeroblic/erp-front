@@ -184,14 +184,15 @@ EOF
 finalizar() {
     for k in {1..5} # 5 veces como pediste po wn
     do
-        clear; echo -e "${G}"; f1; sleep 0.15
+        clear; echo -e "${G}"; f1; sleep 0.1
         clear; echo -e "${G}"; f2; sleep 0.1
         clear; echo -e "${G}"; f3; sleep 0.1
         clear; echo -e "${G}"; f4; sleep 0.1
-        clear; echo -e "${G}"; f5; sleep 0.2 # Se queda un pelín más cerrado
+        clear; echo -e "${G}"; f5; sleep 0.6 # Se queda un pelín más cerrado
         clear; echo -e "${G}"; f4; sleep 0.1
         clear; echo -e "${G}"; f3; sleep 0.1
         clear; echo -e "${G}"; f2; sleep 0.1
+        clear; echo -e "${G}"; f1; sleep 0.1
     done
     clear; echo -e "${G}"; f1
     echo -e "\n${G}>>> PROCESO ZENTRIA FINALIZADO CON ÉXITO <<<${NC}\n"
