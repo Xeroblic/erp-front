@@ -188,7 +188,7 @@ finalizar() {
         clear; echo -e "${G}"; f2; sleep 0.1
         clear; echo -e "${G}"; f3; sleep 0.1
         clear; echo -e "${G}"; f4; sleep 0.1
-        clear; echo -e "${G}"; f5; sleep 0.6 # Se queda un pelín más cerrado
+        clear; echo -e "${G}"; f5; sleep 0.1 # Se queda un pelín más cerrado
         clear; echo -e "${G}"; f4; sleep 0.1
         clear; echo -e "${G}"; f3; sleep 0.1
         clear; echo -e "${G}"; f2; sleep 0.1
