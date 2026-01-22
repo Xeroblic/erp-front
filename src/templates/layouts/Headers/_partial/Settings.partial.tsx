@@ -20,6 +20,8 @@ import ButtonGroup from '@/components/ui/ButtonGroup.tsx';
 import ColorSelector from '@/components/ColorSelector.tsx';
 import Icon from '@/components/icon/Icon.tsx';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal.tsx';
+import { useNavigate } from 'react-router-dom';
+import { runPageTransition } from '@/utils/pageTransition.util';
 
 const MIN_FONT = 12;
 const MAX_FONT = 18;
@@ -40,6 +42,24 @@ const SettingsPartial = () => {
 	const [isUpdatingFont, setIsUpdatingFont] = useState(false);
 	const [isUpdatingTheme, setIsUpdatingTheme] = useState(false);
 	const [isUpdatingColor, setIsUpdatingColor] = useState(false);
+
+	const navigate = useNavigate();
+
+	// TODO: navegar hancia la pagina recisiones por batches http://localhost:5173/technical-reviews/batches con on navigate con atajo rapido tippo alt + q con efecto gasp
+	useEffect(() => {
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.key === 'q' && event.altKey) {
+				event.preventDefault();
+				runPageTransition(() => {
+					navigate('/technical-reviews/batches');
+				});
+			}
+		};
+		window.addEventListener('keydown', handleKeyDown);
+		return () => {
+			window.removeEventListener('keydown', handleKeyDown);
+		};
+	}, [navigate]);
 
 	const fontPresets = useMemo(
 		() => [
@@ -196,10 +216,14 @@ const SettingsPartial = () => {
 				e.preventDefault();
 				handleReset();
 			}
+			if (e.key.toLowerCase() === 'q') {
+				e.preventDefault();
+				navigate('/technical-reviews/batches');
+			}
 		};
 		window.addEventListener('keydown', onKey);
 		return () => window.removeEventListener('keydown', onKey);
-	}, [fontSize, updateFontSize, updateTheme, handleReset]);
+	}, [fontSize, updateFontSize, updateTheme, handleReset, navigate]);
 
 	const isAnyUpdating = isUpdatingFont || isUpdatingTheme || isUpdatingColor;
 	const renderContent = useCallback(
