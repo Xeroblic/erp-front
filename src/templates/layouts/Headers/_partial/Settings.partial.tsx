@@ -22,6 +22,7 @@ import Icon from '@/components/icon/Icon.tsx';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal.tsx';
 import { useNavigate } from 'react-router-dom';
 import { runPageTransition } from '@/utils/pageTransition.util';
+import { getPageTitleFromPath } from '@/utils/getPageTitle.util.ts';
 
 const MIN_FONT = 12;
 const MAX_FONT = 18;
@@ -45,13 +46,24 @@ const SettingsPartial = () => {
 
 	const navigate = useNavigate();
 
-	// TODO: navegar hancia la pagina recisiones por batches http://localhost:5173/technical-reviews/batches con on navigate con atajo rapido tippo alt + q con efecto gasp
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if (event.key === 'q' && event.altKey) {
 				event.preventDefault();
 				runPageTransition(() => {
 					navigate('/technical-reviews/batches');
+				});
+			}
+			if (event.key === 'v' && event.altKey) {
+				event.preventDefault();
+				runPageTransition(() => {
+					navigate('/comercial/ventas');
+				});
+			}
+			if (event.key === 'c' && event.altKey) {
+				event.preventDefault();
+				runPageTransition(() => {
+					navigate('/comercial/cotizaciones');
 				});
 			}
 		};
@@ -218,7 +230,39 @@ const SettingsPartial = () => {
 			}
 			if (e.key.toLowerCase() === 'q') {
 				e.preventDefault();
-				navigate('/technical-reviews/batches');
+				runPageTransition(
+					() => {
+						navigate('/technical-reviews/batches');
+					},
+					getPageTitleFromPath('/technical-reviews/batches').title,
+					getPageTitleFromPath('/technical-reviews/batches').icon,
+					'content-transition-container',
+					'manual',
+				);
+			}
+			if (e.key.toLowerCase() === 'v') {
+				e.preventDefault();
+				runPageTransition(
+					() => {
+						navigate('/comercial/ventas');
+					},
+					getPageTitleFromPath('/comercial/ventas').title,
+					getPageTitleFromPath('/comercial/ventas').icon,
+					'content-transition-container',
+					'manual',
+				);
+			}
+			if (e.key.toLowerCase() === 'c') {
+				e.preventDefault();
+				runPageTransition(
+					() => {
+						navigate('/comercial/cotizaciones');
+					},
+					getPageTitleFromPath('/comercial/cotizaciones').title,
+					getPageTitleFromPath('/comercial/cotizaciones').icon,
+					'content-transition-container',
+					'manual',
+				);
 			}
 		};
 		window.addEventListener('keydown', onKey);

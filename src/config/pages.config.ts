@@ -649,6 +649,27 @@ export const privatePages = {
 					'after-sales',
 				],
 			},
+			batches: {
+				id: 'technicalBatches',
+				to: '/technical-reviews/batches',
+				text: 'Revisiones por lotes',
+				icon: 'DuoClipboard', // Using a clipboard icon
+				authority: ['view-technical-reviews-batches'],
+				roles: [
+					'super-admin',
+					'admin',
+					'company-admin',
+					'subsidiary-admin',
+					'branch-admin',
+					'company-supervisor',
+					'employee',
+					'technician',
+					'warehouse-employee',
+					'warehouse-manager',
+					'salesperson',
+					'after-sales',
+				],
+			},
 		},
 	},
 

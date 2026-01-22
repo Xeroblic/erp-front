@@ -1,5 +1,5 @@
-import React, { Suspense } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import React, { Suspense, useEffect, useRef } from 'react';
+import { Route, Routes, useLocation } from 'react-router-dom';
 import contentRoutes from '../../routes/contentRoutes';
 import PageWrapper from '../layouts/PageWrapper/PageWrapper';
 import Container from '../layouts/Container/Container';
@@ -9,9 +9,12 @@ import Card from '../ui/Card';
 import AuthorityCheck from '../layouts/AuthorityCheck/AuthorityCheck';
 import { useAppSelector } from '@/store';
 import { selectUserAuthority } from '@/store/selectors';
+import { runPageTransition } from '@/utils/pageTransition.util';
+import { getPageTitleFromPath } from '@/utils/getPageTitle.util';
 
 const ContentRouter = () => {
 	const userAuthority = useAppSelector(selectUserAuthority);
+	
 
 	return (
 		<Suspense

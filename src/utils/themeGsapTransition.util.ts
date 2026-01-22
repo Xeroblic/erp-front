@@ -1,15 +1,36 @@
 import gsap from 'gsap';
+import { createRoot } from 'react-dom/client';
+import { createElement } from 'react';
+import classNames from 'classnames';
+import pascalcase from 'pascalcase';
 import { TDarkMode } from '@/types/darkMode.type';
 
-const COLORS = {
-	TO_LIGHT: '#F4E9D7',
-	TO_DARK: '#1E1E1E', 
+// Import icon maps directly
+import * as SvgIcon from '@/components/icon/svg-icons';
+import * as DuoToneIcon from '@/components/icon/duotone';
+import * as HeroIcon from '@/components/icon/heroicons';
+
+const TransitionIcon = ({ icon, className }: { icon: string; className?: string }) => {
+	const IconName = pascalcase(icon);
+	const SvgIconWrapper = (SvgIcon as any)[IconName];
+	const DuoToneWrapper = (DuoToneIcon as any)[IconName];
+	const HeroWrapper = (HeroIcon as any)[IconName];
+
+	if (typeof SvgIconWrapper === 'function') {
+		return createElement(SvgIconWrapper, { className });
+	}
+	if (typeof DuoToneWrapper === 'function') {
+		return createElement(DuoToneWrapper, { className });
+	}
+	if (typeof HeroWrapper === 'function') {
+		return createElement(HeroWrapper, { className });
+	}
+	return null;
 };
 
-
-const ICONS = {
-	SUN: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41-1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`,
-	MOON: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`,
+const COLORS = {
+	TO_LIGHT: '#FDBA74', // Orange-300 (Warm)
+	TO_DARK: '#6366F1', // Indigo-500 (Cool)
 };
 
 export const runGsapThemeTransition = (
@@ -21,7 +42,9 @@ export const runGsapThemeTransition = (
 
 	const isToDark = targetMode === 'dark';
 	const overlayColor = isToDark ? COLORS.TO_DARK : COLORS.TO_LIGHT;
-	const iconSvg = isToDark ? ICONS.MOON : ICONS.SUN;
+	// Use standard icons that likely exist. standard heroicons: 'HeroSun', 'HeroMoon'
+    // Or DuoTone: 'DuoSun', 'DuoMoon'
+	const iconName = isToDark ? 'HeroMoon' : 'HeroSun';
 
 	const overlay = document.createElement('div');
 	overlay.id = 'theme-transition-overlay';
@@ -32,51 +55,67 @@ export const runGsapThemeTransition = (
 		width: '100vw',
 		height: '100vh',
 		zIndex: '9999',
-		backgroundColor: overlayColor,
+		background: overlayColor,
 		display: 'flex',
 		alignItems: 'center',
 		justifyContent: 'center',
-		pointerEvents: 'none',
-		clipPath: 'circle(0% at 0% 0%)',
+		pointerEvents: 'all', // Block clicks
+		clipPath: 'circle(0% at 50% 50%)',
 	});
 
-	const iconContainer = document.createElement('div');
-	iconContainer.innerHTML = iconSvg;
-	Object.assign(iconContainer.style, {
+	const contentContainer = document.createElement('div');
+	Object.assign(contentContainer.style, {
+		display: 'flex',
+		flexDirection: 'column',
+		alignItems: 'center',
+		justifyContent: 'center',
 		opacity: '0',
 		transform: 'scale(0.5)',
 	});
-
-	overlay.appendChild(iconContainer);
+	overlay.appendChild(contentContainer);
 	document.body.appendChild(overlay);
+
+	const root = createRoot(contentContainer);
+	
+	const iconElement = createElement(TransitionIcon, {
+		icon: iconName,
+		className: '!text-white w-32 h-32 drop-shadow-2xl', // Big icon
+	});
+
+	root.render(iconElement);
 
 	const tl = gsap.timeline({
 		onComplete: () => {
+			root.unmount();
 			overlay.remove();
 		},
 	});
 
 	tl.to(overlay, {
-		clipPath: 'circle(150% at 0% 0%)',
-		duration: 0.8,
+		clipPath: 'circle(150% at 50% 50%)',
+		duration: 0.6,
 		ease: 'power2.inOut',
 	})
-		.to(
-			iconContainer,
-			{
-				opacity: 1,
-				scale: 1.5,
-				duration: 0.5,
-				ease: 'back.out(1.7)',
-			},
-			'<0.2',
-		)
-		.call(onSwitchTheme)
-		
-		.to(overlay, {
-			opacity: 0,
-			duration: 0.5,
-			ease: 'power1.out',
-			delay: 0.2,
-		});
+	.to(contentContainer, {
+		opacity: 1,
+		scale: 1,
+		duration: 0.4,
+		ease: 'back.out(1.7)',
+	}, '-=0.4')
+	
+	.call(onSwitchTheme)
+	
+	.to({}, { duration: 0.3 }) // Short hold
+
+	.to(contentContainer, {
+		opacity: 0,
+		scale: 0.5,
+		duration: 0.3,
+		ease: 'power2.in',
+	})
+	.to(overlay, {
+		opacity: 0,
+		duration: 0.4,
+		ease: 'power2.inOut',
+	});
 };
