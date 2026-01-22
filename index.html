@@ -5,15 +5,6 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
-    <!-- <meta http-equiv="Content-Security-Policy" content="
-        default-src 'self'; 
-        script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; 
-        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; 
-        font-src 'self' https://fonts.gstatic.com; 
-        img-src 'self' data: https:; 
-        connect-src 'self' https://api.tudominio.com http://localhost:8000 ws://localhost:*; 
-    " /> -->
-
     <meta name="color-scheme" content="dark light" />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f172a" />
@@ -27,14 +18,16 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+    <!-- GSAP Core for Animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 
     <style id="critical-styles">
-        /* RESET & BASE */
         :root {
-            --bg-color: #0f172a; /* Slate 900 - Oscuro profundo */
-            --primary: #3b82f6;  /* Blue 500 */
-            --secondary: #6366f1; /* Indigo 500 */
+            --bg-dark: #0f172a;
+            --primary: #3b82f6; 
+            --secondary: #6366f1;
         }
 
         html, body {
@@ -42,96 +35,91 @@
             padding: 0;
             width: 100%;
             height: 100%;
-            background-color: var(--bg-color); /* Previene flash blanco */
+            background-color: var(--bg-dark);
             color: #f8fafc;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            overflow: hidden; /* Evita scroll durante la carga */
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
         }
 
-        /* LAYOUT CENTRADO */
-        .splash-screen {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+        /* SPLASH CONTAINER */
+        #splash-screen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 9999;
-            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-dark);
+            /* Subtle radial gradient background */
+            background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
+            will-change: transform;
         }
 
-        .logo-container {
-            width: 120px;
-            height: 120px;
+        .splash-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             position: relative;
-            margin-bottom: 2rem;
-            animation: float 6s ease-in-out infinite;
+            z-index: 2;
+            width: 100%;
+            max-width: 400px;
         }
 
-        .duotone-svg {
+        .logo-wrap {
+            width: 220px;
+            height: 140px;
+            margin-bottom: 3rem;
+            position: relative;
+            opacity: 0; 
+        }
+
+        .zentria-logo-svg {
             width: 100%;
             height: 100%;
-            filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.3));
+            overflow: visible;
         }
 
-        /* Caminos del SVG para animar */
-        .path-primary { fill: var(--primary); opacity: 0.9; }
-        .path-secondary { fill: var(--secondary); opacity: 0.6; }
-
-        /* TEXTO Y BARRA */
-        .loading-text {
-            font-size: 1.5rem;
-            font-weight: 600;
-            letter-spacing: -0.025em;
-            background: linear-gradient(to right, #fff, #94a3b8);
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 1rem;
+        /* Initial states for GSAP to animate from */
+        .logo-path {
             opacity: 0;
-            animation: fadeIn 0.8s ease-out 0.5s forwards;
         }
 
-        .progress-bar-track {
-            width: 200px;
+        .brand-text {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -0.05em;
+            background: linear-gradient(135deg, white 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .loader-line-container {
+            width: 0%; 
             height: 4px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 4px;
-            overflow: hidden;
+            margin-top: 1rem;
             position: relative;
+            overflow: hidden;
         }
-
-        .progress-bar-fill {
+        
+        .loader-line {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
             position: absolute;
             top: 0;
             left: 0;
-            height: 100%;
-            width: 40%;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            border-radius: 4px;
-            animation: loadingMove 1.5s infinite ease-in-out;
+            box-shadow: 0 0 20px var(--primary);
         }
 
-        /* ANIMACIONES */
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-
-        @keyframes loadingMove {
-            0% { left: -40%; width: 40%; }
-            50% { width: 60%; }
-            100% { left: 100%; width: 40%; }
-        }
-
-        @keyframes fadeIn {
-            to { opacity: 1; }
-        }
-
-        /* UTILS */
         .skip-link {
             position: absolute;
             top: -100px;
@@ -139,51 +127,190 @@
             background: var(--primary);
             color: white;
             padding: 10px 15px;
-            z-index: 10000;
+            z-index: 11000;
             text-decoration: none;
             font-weight: 600;
             border-radius: 4px;
         }
         .skip-link:focus { top: 10px; }
     </style>
-
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-    </script>
 </head>
 
 <body>
     <a href="#main-content" class="skip-link">Saltar al contenido</a>
-
     <noscript>
         <div style="padding: 2rem; text-align: center; color: #ef4444; background: #0f172a; height: 100vh;">
-            ⚠ Zentria requiere JavaScript. Por favor actívalo.
+            ⚠ Zentria requiere JavaScript.
         </div>
     </noscript>
 
-    <div id="root">
-        <div class="splash-screen">
-            <div class="logo-container">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="duotone-svg">
-                    <path d="M19 11H5C3.89543 11 3 11.8954 3 13V20C3 21.1046 3.89543 22 5 22H19C20.1046 22 21 21.1046 21 20V13C21 11.8954 20.1046 11 19 11Z" class="path-secondary"/>
-                    <path d="M5 13L12 3L19 13H5Z" class="path-primary"/>
-                    <rect x="7" y="15" width="10" height="4" rx="2" fill="white" fill-opacity="0.2"/>
+    <div id="splash-screen">
+        <div class="splash-content">
+            <div class="logo-wrap" id="splash-logo">
+                <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" class="zentria-logo-svg">
+                    <defs>
+                        <linearGradient id='brandG1' x1='0%' y1='0%' x2='100%' y2='100%'>
+                            <stop offset='0%' stop-color='#1e40af'></stop>
+                            <stop offset='50%' stop-color='#6366f1'></stop> 
+                            <stop offset='100%' stop-color='#7c3aed'></stop>
+                        </linearGradient>
+                        <linearGradient id='brandG2' x1='0%' y1='0%' x2='100%' y2='100%'>
+                            <stop offset='0%' stop-color='#3b82f6'></stop>
+                            <stop offset='100%' stop-color='#8b5cf6'></stop>
+                        </linearGradient>
+                        <linearGradient id='brandG3' x1='0%' y1='0%' x2='100%' y2='100%'>
+                            <stop offset='0%' stop-color='#60a5fa'></stop>
+                            <stop offset='100%' stop-color='#a78bfa'></stop>
+                        </linearGradient>
+                    </defs>
+
+                    <!-- Exact Paths from Logo.template.tsx -->
+                    
+                    <!-- 1. Main Infinity Line -->
+                    <path class="logo-path path-main" 
+                        d='M 30 60 C 30 30, 60 20, 90 40 C 120 60, 140 60, 170 40 C 200 20, 200 30, 170 60 C 140 90, 120 90, 90 70 C 60 50, 30 50, 30 60 Z'
+                        fill='none' stroke='url(#brandG1)' stroke-width='8' stroke-linecap='round' stroke-linejoin='round' />
+
+                    <!-- 2. Wavy Line -->
+                    <path class="logo-path path-wave" 
+                        d='M 35 55 C 35 35, 55 30, 80 45 C 105 60, 125 65, 150 50 C 175 35, 175 40, 165 65 C 155 90, 135 95, 110 80 C 85 65, 65 60, 40 75 C 15 90, 25 85, 35 55 Z'
+                        fill='none' stroke='url(#brandG2)' stroke-width='6' stroke-linecap='round' stroke-linejoin='round' />
+
+                    <!-- 3. Subtle Line -->
+                    <path class="logo-path path-subtle" 
+                        d='M 40 58 C 40 42, 55 38, 75 48 C 95 58, 115 62, 135 52 C 155 42, 155 46, 150 68 C 145 90, 125 94, 105 84 C 85 74, 65 70, 45 80 C 25 90, 35 86, 40 58 Z'
+                        fill='none' stroke='url(#brandG3)' stroke-width='4' stroke-linecap='round' stroke-linejoin='round' />
+                    
+                    <!-- Fibers -->
+                    <path class="logo-path path-fiber" d='M 60 25 C 80 15, 100 20, 110 35' fill='none' stroke='url(#brandG2)' stroke-width='3' stroke-linecap='round' />
+                    <path class="logo-path path-fiber" d='M 130 25 C 150 15, 170 20, 180 35' fill='none' stroke='url(#brandG2)' stroke-width='3' stroke-linecap='round' />
+                    <path class="logo-path path-fiber" d='M 60 95 C 80 105, 100 100, 110 85' fill='none' stroke='url(#brandG2)' stroke-width='3' stroke-linecap='round' />
+                    <path class="logo-path path-fiber" d='M 130 95 C 150 105, 170 100, 180 85' fill='none' stroke='url(#brandG2)' stroke-width='3' stroke-linecap='round' />
+
                 </svg>
             </div>
             
-            <div class="loading-text">Zentria</div>
+            <div class="brand-text" id="splash-text">Zentria</div>
             
-            <div class="progress-bar-track">
-                <div class="progress-bar-fill"></div>
+            <div class="loader-line-container" id="splash-loader">
+                <div class="loader-line"></div>
             </div>
         </div>
     </div>
-    
+
+    <div id="root"></div>
     <div id="portal-root"></div>
     <div id="toast-root"></div>
 
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // --- 1. SETUP ---
+            const minLoadTime = 2500; 
+            const startTime = Date.now();
+            
+            const screen = document.getElementById('splash-screen');
+            const logoPaths = document.querySelectorAll('.logo-path');
+            const text = document.getElementById('splash-text');
+            const loader = document.getElementById('splash-loader');
+            const logoWrap = document.getElementById('splash-logo');
+
+            // Setup strokes for drawing
+            logoPaths.forEach(path => {
+                const len = path.getTotalLength();
+                path.style.strokeDasharray = len;
+                path.style.strokeDashoffset = len;
+                path.style.opacity = 0;
+            });
+            logoWrap.style.opacity = 1;
+
+            // --- 2. ENTRANCE TIMELINE ---
+            const tl = gsap.timeline();
+
+            // Draw lines
+            tl.to(logoPaths, {
+                opacity: 1,
+                strokeDashoffset: 0,
+                duration: 2,
+                stagger: 0.15,
+                ease: 'power2.out'
+            })
+            // Text Entry
+            .to(text, {
+                opacity: 1,
+                y: 0,
+                duration: 1,
+                ease: 'power3.out'
+            }, '-=1.5')
+            
+            // Loader Expand
+            .to(loader, {
+                width: '180px',
+                duration: 1.2,
+                ease: 'expo.out'
+            }, '-=1.2');
+
+            // Continuous "Breathing" Loop
+            const breathingTl = gsap.to(logoWrap, {
+                y: -8,
+                scale: 1.02,
+                duration: 2,
+                repeat: -1,
+                yoyo: true,
+                ease: 'sine.inOut',
+                paused: true 
+            });
+            // Start breathing after entrance
+            tl.add(() => breathingTl.play());
+
+
+            // --- 3. ORGANIC COMPLETION LOGIC ---
+            
+            const finishLoading = () => {
+                const elapsed = Date.now() - startTime;
+                const remaining = Math.max(0, minLoadTime - elapsed);
+
+                setTimeout(() => {
+                    // EXIT SEQUENCE
+                    breathingTl.pause();
+                    
+                    const exitTl = gsap.timeline({
+                        onComplete: () => {
+                            if(screen) screen.remove();
+                        }
+                    });
+
+                    exitTl
+                    // 1. Loader finishes (flash)
+                    .to(loader.querySelector('.loader-line'), {
+                         boxShadow: '0 0 60px white',
+                         background: 'white',
+                         duration: 0.3
+                    })
+                    // 2. Elements explode/fade
+                    .to([loader, text, logoWrap], {
+                        scale: 1.1,
+                        opacity: 0,
+                        duration: 0.4,
+                        stagger: 0.05,
+                        ease: 'power2.in'
+                    })
+                    // 3. Curtain Wipe Up
+                    .to(screen, {
+                        yPercent: -100,
+                        duration: 0.85,
+                        ease: 'power4.inOut'
+                    }, '-=0.2');
+
+                }, remaining);
+            };
+
+            if (document.readyState === 'complete') {
+                finishLoading();
+            } else {
+                window.addEventListener('load', finishLoading);
+            }
+        });
+    </script>
     <script type="module" src="/src/index.tsx"></script>
 </body>
 </html>

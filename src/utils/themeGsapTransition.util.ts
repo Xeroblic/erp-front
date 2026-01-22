@@ -49,7 +49,7 @@ export const runGsapThemeTransition = (
 	const overlay = document.createElement('div');
 	overlay.id = 'theme-transition-overlay';
 	Object.assign(overlay.style, {
-		position: 'fixed',
+		position: 'fixed', // Fixed for full screen theme transition
 		top: '0',
 		left: '0',
 		width: '100vw',
@@ -61,6 +61,8 @@ export const runGsapThemeTransition = (
 		justifyContent: 'center',
 		pointerEvents: 'all', // Block clicks
 		clipPath: 'circle(0% at 50% 50%)',
+		willChange: 'clip-path',
+		transform: 'translateZ(0)',
 	});
 
 	const contentContainer = document.createElement('div');
@@ -71,6 +73,7 @@ export const runGsapThemeTransition = (
 		justifyContent: 'center',
 		opacity: '0',
 		transform: 'scale(0.5)',
+		willChange: 'opacity, transform',
 	});
 	overlay.appendChild(contentContainer);
 	document.body.appendChild(overlay);
@@ -79,7 +82,7 @@ export const runGsapThemeTransition = (
 	
 	const iconElement = createElement(TransitionIcon, {
 		icon: iconName,
-		className: '!text-white w-32 h-32 drop-shadow-2xl', // Big icon
+		className: '!text-white w-32 h-32', // Removed drop-shadow-2xl
 	});
 
 	root.render(iconElement);
@@ -105,7 +108,7 @@ export const runGsapThemeTransition = (
 	
 	.call(onSwitchTheme)
 	
-	.to({}, { duration: 0.3 }) // Short hold
+	.to({}, { duration: 0.3 })
 
 	.to(contentContainer, {
 		opacity: 0,

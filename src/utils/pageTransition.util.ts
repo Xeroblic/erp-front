@@ -93,6 +93,8 @@ export const runPageTransition = (
 		justifyContent: 'center',
 		background: `linear-gradient(135deg, ${colorStart}, ${colorEnd})`,
 		clipPath: 'circle(0% at 50% 50%)',
+		willChange: 'clip-path', // Hint browser to optimize clip-path
+		transform: 'translateZ(0)', // Force GPU layer
 	});
 
 	// Create a content container for React
@@ -107,6 +109,7 @@ export const runPageTransition = (
 		transform: 'scale(0.8)',
 		width: '100%',
 		height: '100%',
+		willChange: 'opacity, transform', // Optimize content animation
 	});
 	overlay.appendChild(contentContainer);
 
@@ -123,7 +126,7 @@ export const runPageTransition = (
 	const iconElement = iconName 
 		? createElement(TransitionIcon, { 
 			icon: iconName, 
-			className: '!text-white text-9xl drop-shadow-xl mb-4',
+			className: '!text-white text-9xl mb-4', // Removed drop-shadow for performance
 		}) 
 		: null;
 
@@ -133,7 +136,8 @@ export const runPageTransition = (
 			fontSize: '2.5rem',
 			fontWeight: 'bold',
 			fontFamily: 'system-ui, sans-serif',
-			textShadow: '0 4px 12px rgba(0,0,0,0.2)',
+			// Text shadow is cheaper than SVG drop-shadow filter
+			textShadow: '0 2px 4px rgba(0,0,0,0.2)', 
 			textAlign: 'center'
 		}
 	}, textContent);
