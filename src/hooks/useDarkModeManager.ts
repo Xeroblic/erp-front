@@ -8,63 +8,13 @@ import {
 } from '../store/slices/personalizacion/personalizacionSlice';
 import { TDarkMode } from '../types/darkMode.type';
 import DARK_MODE from '../constants/darkMode.constant';
-import { runThemeWipe, cornerForThemeMode } from '../utils/themeWipe.util';
-import type { TWipeCorner } from '../utils/themeWipe.util';
+import { runGsapThemeTransition } from '../utils/themeGsapTransition.util';
+import type { TWipeCorner } from '../utils/themeWipe.util'; // Keep type if used in options type definition, though we might want to deprecate it. Let's keep it clean.
 
 const DEFAULT_TRANSITION_DURATION = 420;
-const THEME_EASING = 'cubic-bezier(0.22, 0.61, 0.36, 1)';
-let themeTransitionTimeout: number | undefined;
-let themeTransitionRaf: number | undefined;
+// EASING constants removed as they are now handled by GSAP internally or in the util.
+
 type ThemeTransitionEffect = 'fade' | 'wipe';
-
-let activeFadeAnimation: Animation | null = null;
-
-const clearThemeTransition = () => {
-	if (typeof window === 'undefined' || typeof document === 'undefined') return;
-
-	if (themeTransitionTimeout) {
-		window.clearTimeout(themeTransitionTimeout);
-		themeTransitionTimeout = undefined;
-	}
-
-	if (themeTransitionRaf) {
-		window.cancelAnimationFrame(themeTransitionRaf);
-		themeTransitionRaf = undefined;
-	}
-
-	if (activeFadeAnimation) {
-		activeFadeAnimation.cancel();
-		activeFadeAnimation = null;
-	}
-
-	document.documentElement.classList.remove('theme-transition');
-	document.documentElement.style.removeProperty('--theme-transition-duration');
-	document.documentElement.style.removeProperty('--theme-transition-easing');
-	document.querySelectorAll('.theme-wipe-overlay').forEach((node) => node.remove());
-};
-
-const scheduleThemeTransition = (duration: number) => {
-	if (typeof window === 'undefined' || typeof document === 'undefined') return;
-
-	clearThemeTransition();
-
-	const htmlElement = document.documentElement;
-	const appliedDuration =
-		Number.isFinite(duration) && duration > 0 ? duration : DEFAULT_TRANSITION_DURATION;
-	htmlElement.style.setProperty('--theme-transition-duration', `${appliedDuration}ms`);
-	htmlElement.style.setProperty('--theme-transition-easing', THEME_EASING);
-	htmlElement.classList.add('theme-transition');
-	themeTransitionRaf = window.requestAnimationFrame(() => {
-		void htmlElement.offsetHeight;
-	});
-
-	themeTransitionTimeout = window.setTimeout(() => {
-		htmlElement.classList.remove('theme-transition');
-		htmlElement.style.removeProperty('--theme-transition-duration');
-		htmlElement.style.removeProperty('--theme-transition-easing');
-		themeTransitionTimeout = undefined;
-	}, appliedDuration + 150);
-};
 
 type SetDarkModeOptions = {
 	saveToAPI?: boolean;
@@ -99,49 +49,6 @@ const normalizeOptions = (
 	};
 };
 
-const runFadeTransition = (duration: number) => {
-	if (typeof document === 'undefined') return;
-	if (
-		typeof window !== 'undefined' &&
-		window.matchMedia &&
-		window.matchMedia('(prefers-reduced-motion: reduce)').matches
-	) {
-		return;
-	}
-
-	const htmlElement = document.documentElement as HTMLElement & {
-		animate?: (
-			keyframes: Keyframe[] | PropertyIndexedKeyframes,
-			options?: number | KeyframeAnimationOptions,
-		) => Animation;
-	};
-
-	if (typeof htmlElement.animate !== 'function') return;
-
-	if (activeFadeAnimation) {
-		activeFadeAnimation.cancel();
-		activeFadeAnimation = null;
-	}
-
-	activeFadeAnimation = htmlElement.animate(
-		[
-			{ opacity: 1, filter: 'none' },
-			{ opacity: 0.94, filter: 'brightness(0.96) saturate(0.96)' },
-			{ opacity: 1, filter: 'none' },
-		],
-		{
-			duration,
-			easing: THEME_EASING,
-		},
-	);
-
-	const clearAnimation = () => {
-		activeFadeAnimation = null;
-	};
-
-	activeFadeAnimation.addEventListener('finish', clearAnimation, { once: true });
-	activeFadeAnimation.addEventListener('cancel', clearAnimation, { once: true });
-};
 
 /**
  * Hook profesional para el manejo del Dark Mode
@@ -191,23 +98,10 @@ export const useDarkModeManager = () => {
 			return;
 		}
 
-		const { saveToAPI, animate, duration, corner, effect } = normalizeOptions(options);
-		const transitionDuration =
-			Number.isFinite(duration) && duration > 0 ? duration : DEFAULT_TRANSITION_DURATION;
+		const { saveToAPI, animate } = normalizeOptions(options);
 
 		const applyTheme = () => {
 			dispatch(setDarkMode(newMode));
-		};
-
-		const runAnimatedThemeChange = () => {
-			scheduleThemeTransition(transitionDuration);
-			if (effect === 'wipe') {
-				const wipeCorner = corner ?? cornerForThemeMode(newMode);
-				runThemeWipe(wipeCorner, transitionDuration);
-			} else {
-				runFadeTransition(transitionDuration);
-			}
-			applyTheme();
 		};
 
 		const prefersReducedMotion =
@@ -216,29 +110,16 @@ export const useDarkModeManager = () => {
 
 		try {
 			if (!animate || prefersReducedMotion) {
-				clearThemeTransition();
 				applyTheme();
 			} else {
-				const doc = typeof document !== 'undefined' ? document : null;
-				const startViewTransition =
-					doc && typeof (doc as any).startViewTransition === 'function'
-						? ((doc as any).startViewTransition as (
-								callback: () => void | Promise<void>,
-							) => { finished?: Promise<void> })
-						: null;
-
-				if (startViewTransition) {
-					try {
-						const viewTransition = startViewTransition(() => {
-							runAnimatedThemeChange();
-						});
-						await viewTransition?.finished?.catch(() => {});
-					} catch {
-						runAnimatedThemeChange();
-					}
-				} else {
-					runAnimatedThemeChange();
-				}
+				// Use the new GSAP transition
+				// We don't need to distinguish between wipe/fade anymore as the user requested "Circular Reveal Transition" implies one unified effect.
+				// However, if we wanted to support 'fade' as fallback, we could keep it, but the user was specific about the effect.
+				// We'll trust the GSAP util primarily.
+				
+                // Dynamically import to ensure no SSR issues / circular deps if any, though standard import is fine.
+                // Using standard import since we added it to imports above (wait, I need to add the import).
+                runGsapThemeTransition(newMode, applyTheme);
 			}
 
 			// Guardar en API si se solicita
