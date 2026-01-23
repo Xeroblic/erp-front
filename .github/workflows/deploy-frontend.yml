@@ -25,8 +25,8 @@ jobs:
           node-version: "22.x"
           cache: "npm"
 
-      - name: Install dependencies
-        run: npm install
+      - name: Install dependencies # uses npm ci to respect package-lock.json
+        run: npm ci
 
       - name: Build frontend
         run: npm run build
