@@ -92,25 +92,26 @@ const DashboardContainer: React.FC = () => {
 		return { count, amount };
 	}, [reportsResults]);
 
-const dashboardTutorialSteps: TutorialStep[] = [
-	{
-		title: 'Panel de Control',
-		description: `
+	const dashboardTutorialSteps: TutorialStep[] = [
+		{
+			title: 'Panel de Control',
+			description: `
 			<p>Bienvenido al <strong>Centro de Operaciones</strong> de tu empresa. Desde aquí tendrás una visión completa del estado de tu negocio en tiempo real.</p>
 			<br/>
 			<p>Este panel te permite:</p>
 			<ul style="list-style: disc; margin-left: 20px; margin-top: 8px;">
-				<li>Monitorear indicadores clave de rendimiento</li>
-				<li>Identificar tendencias y oportunidades</li>
-				<li>Acceder rápidamente a las operaciones pendientes</li>
+			<li>Monitorear indicadores clave de rendimiento</li>
+			<li>Identificar tendencias y oportunidades</li>
+			<li>Acceder rápidamente a las operaciones pendientes</li>
 			</ul>
-		`,
-		icon: 'HeroHome',
-		image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=400&fit=crop',
-	},
-	{
-		title: 'Indicadores de Ventas',
-		description: `
+			`,
+			image: '/tutorials/dashboard/bienvenido_dashboard.webp',
+			icon: 'HeroHome',
+			images: [{ src: '/tutorials/dashboard/bienvenido_dashboard.webp', size: 'xl' }],
+		},
+		{
+			title: 'Indicadores de Ventas',
+			description: `
 			<p>En la sección superior encontrarás los <strong>indicadores de ventas semanales</strong>:</p>
 			<br/>
 			<ul style="list-style: disc; margin-left: 20px; margin-top: 8px;">
@@ -120,12 +121,13 @@ const dashboardTutorialSteps: TutorialStep[] = [
 			<br/>
 			<p>Haz clic en "Órdenes" o "Ingresos" para acceder al detalle completo de cada métrica.</p>
 		`,
-		icon: 'HeroShoppingBag',
-		image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=400&fit=crop',
-	},
-	{
-		title: 'Estado de Revisiones Técnicas',
-		description: `
+			icon: 'HeroShoppingBag',
+			image: '/tutorials/dashboard/ventas_stats.webp',
+			images: [{ src: '/tutorials/dashboard/ventas_stats.webp', size: 'lg' }],
+		},
+		{
+			title: 'Estado de Revisiones Técnicas',
+			description: `
 			<p>Mantén el control de las <strong>revisiones técnicas</strong> con estos indicadores:</p>
 			<br/>
 			<ul style="list-style: disc; margin-left: 20px; margin-top: 8px;">
@@ -135,12 +137,13 @@ const dashboardTutorialSteps: TutorialStep[] = [
 			<br/>
 			<p>Accede directamente al módulo de revisiones desde los enlaces rápidos de cada tarjeta.</p>
 		`,
-		icon: 'HeroClipboardDocumentCheck',
-		image: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&h=400&fit=crop',
-	},
-	{
-		title: 'Gráfico de Ventas',
-		description: `
+			icon: 'HeroClipboardDocumentCheck',
+			image: '/tutorials/dashboard/revisiones_stats.webp',
+			images: [{ src: '/tutorials/dashboard/revisiones_stats.webp', size: 'lg' }],
+		},
+		{
+			title: 'Gráfico de Ventas',
+			description: `
 			<p>Visualiza la <strong>evolución de tus ingresos</strong> con el gráfico interactivo de ventas.</p>
 			<br/>
 			<p>Funcionalidades disponibles:</p>
@@ -150,12 +153,13 @@ const dashboardTutorialSteps: TutorialStep[] = [
 				<li><strong>Monto total:</strong> Visualiza el acumulado del período seleccionado</li>
 			</ul>
 		`,
-		icon: 'HeroChartBar',
-		image: 'https://images.unsplash.com/photo-1543286386-713bdd548da4?w=800&h=400&fit=crop',
-	},
-	{
-		title: 'Últimos Ítems en Revisión',
-		description: `
+			icon: 'HeroChartBar',
+			image: '/tutorials/dashboard/grafico_ventas.webp',
+			images: [{ src: '/tutorials/dashboard/grafico_ventas.webp', size: 'xl' }],
+		},
+		{
+			title: 'Últimos Ítems en Revisión',
+			description: `
 			<p>Gestiona las <strong>revisiones técnicas recientes</strong> desde esta sección.</p>
 			<br/>
 			<p>Acciones disponibles:</p>
@@ -165,12 +169,13 @@ const dashboardTutorialSteps: TutorialStep[] = [
 				<li><strong>Filtros:</strong> Visualiza por estado (Todos, Pendientes, Aprobados)</li>
 			</ul>
 		`,
-		icon: 'HeroQueueList',
-		image: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=800&h=400&fit=crop',
-	},
-	{
-		title: 'Ventas Recientes y Productos',
-		description: `
+			icon: 'HeroQueueList',
+			image: '/tutorials/dashboard/ultimos_items.webp',
+			images: [{ src: '/tutorials/dashboard/ultimos_items.webp', size: 'lg' }],
+		},
+		{
+			title: 'Ventas Recientes y Productos',
+			description: `
 			<p>En la parte inferior encontrarás dos secciones adicionales:</p>
 			<br/>
 			<p><strong>Últimas Ventas:</strong></p>
@@ -185,10 +190,14 @@ const dashboardTutorialSteps: TutorialStep[] = [
 				<li>Acceso directo para edición o visualización</li>
 			</ul>
 		`,
-		icon: 'HeroArchiveBox',
-		image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&h=400&fit=crop',
-	},
-];
+			icon: 'HeroArchiveBox',
+			// image: '/tutorials/dashboard/ultimas_ventas.webp',
+			images: [
+				{ src: '/tutorials/dashboard/ultimas_ventas.webp', size: 'lg' },
+				{ src: '/tutorials/dashboard/ultimos_productos.webp', size: 'lg' },
+			],
+		},
+	];
 
 	return (
 		<PageWrapper isProtectedRoute title='Dashboard' name='Dashboard General'>

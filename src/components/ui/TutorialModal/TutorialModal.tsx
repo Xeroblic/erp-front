@@ -333,7 +333,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({
 									value={progressValue}
 									color={themeColor}
 									colorIntensity={adjustShade(themeColorShade, -200)}
-									rounded='rounded-full'	
+									rounded='rounded-full'
 									className='h-2 bg-white/10'
 								/>
 							</div>
@@ -469,6 +469,22 @@ const StepContent: React.FC<StepContentProps> = ({
 		}
 	}, [step]);
 
+	// Image size classes mapping
+	const imageSizeClasses = {
+		xs: 'max-w-[200px] max-h-[120px]',
+		sm: 'max-w-[300px] max-h-[180px]',
+		md: 'max-w-[450px] max-h-[270px]',
+		lg: 'max-w-[600px] max-h-[360px]',
+		xl: 'max-w-[800px] max-h-[480px]',
+		full: 'max-w-full max-h-[500px]',
+	};
+
+	// Combine legacy image with new images array
+	const allImages = [
+		...(step.image ? [{ src: step.image, size: 'md' as const, alt: step.title }] : []),
+		...(step.images || []),
+	];
+
 	return (
 		<div ref={contentRef} className='max-h-[55vh] min-h-[380px] overflow-y-auto py-6'>
 			{/* Step header with icon */}
@@ -500,33 +516,50 @@ const StepContent: React.FC<StepContentProps> = ({
 			</div>
 
 			{/* Media section */}
-			{(step.image || step.videoUrl) && (
-				<div className='mt-6'>
-					{step.image && (
+			{(allImages.length > 0 || step.videoUrl) && (
+				<div className='mt-6 space-y-4'>
+					{/* Images grid/list */}
+					{allImages.length > 0 && (
 						<div
 							className={classNames(
-								'relative overflow-hidden rounded-2xl',
-								`border-2 border-${themeColor}-${themeColorShade}/30`,
-								'group shadow-xl',
+								'flex flex-wrap gap-4',
+								allImages.length === 1 ? 'justify-center' : 'justify-start',
 							)}>
-							{/* Image overlay effect */}
-							<div className='absolute inset-0 z-10 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100' />
-							<img
-								src={step.image}
-								alt={step.title}
-								className='h-auto max-h-[320px] w-full transform object-cover transition-transform duration-500 group-hover:scale-105'
-							/>
-							{/* Corner decoration */}
-							<div
-								className={classNames(
-									'absolute right-3 top-3 rounded-lg px-3 py-1.5',
-									'bg-white/90 backdrop-blur-sm dark:bg-zinc-900/90',
-									'text-xs font-medium',
-									`text-${themeColor}-${themeColorShade}`,
-								)}>
-								<Icon icon='HeroPhoto' className='mr-1 inline' />
-								Imagen
-							</div>
+							{allImages.map((img, idx) => {
+								const size = img.size || 'md';
+								return (
+									<div
+										key={idx}
+										className={classNames(
+											'relative overflow-hidden rounded-2xl',
+											`border-2 border-${themeColor}-${themeColorShade}/30`,
+											'group bg-zinc-900/50 shadow-xl',
+											imageSizeClasses[size],
+										)}>
+										{/* Image overlay effect */}
+										<div className='absolute inset-0 z-10 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100' />
+										<img
+											src={img.src}
+											alt={img.alt || step.title}
+											className='h-full w-full object-contain transition-transform duration-500 group-hover:scale-[1.02]'
+										/>
+										{/* Corner decoration */}
+										<div
+											className={classNames(
+												'absolute right-2 top-2 rounded-lg px-2 py-1',
+												'bg-white/90 backdrop-blur-sm dark:bg-zinc-900/90',
+												'text-xs font-medium',
+												`text-${themeColor}-${themeColorShade}`,
+											)}>
+											<Icon
+												icon='HeroPhoto'
+												className='mr-1 inline text-sm'
+											/>
+											{size.toUpperCase()}
+										</div>
+									</div>
+								);
+							})}
 						</div>
 					)}
 
