@@ -13,24 +13,14 @@ export default defineConfig({
         },
     },
     build: {
-        minify: 'esbuild',
-        chunkSizeWarningLimit: 1500,
+        chunkSizeWarningLimit: 3000,
         rollupOptions: {
             output: {
                 manualChunks(id) {
                     if (id.includes('node_modules')) {
-                        if (id.includes('apexcharts') || id.includes('react-apexcharts')) return 'vendor-charts';
-                        if (id.includes('@react-pdf')) return 'vendor-pdf';
-                        if (id.includes('xlsx') || id.includes('exceljs')) return 'vendor-excel';
-                        if (id.includes('gsap')) return 'vendor-gsap';
-                        if (id.includes('framer-motion')) return 'vendor-motion';
-                        if (id.includes('tiptap') || id.includes('slate')) return 'vendor-editor';
-                        if (id.includes('@fullcalendar')) return 'vendor-calendar';
-                        if (id.includes('pdfmake')) return 'vendor-pdfmake';
-                        if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) return 'vendor-react';
-                        if (id.includes('@reduxjs') || id.includes('redux')) return 'vendor-redux';
-                        if (id.includes('@tanstack')) return 'vendor-tanstack';
-                        return 'vendor-misc';
+                        // Group everything from node_modules into a single vendor chunk
+                        // This ensures shared context for all libraries (React, Redux, ApexCharts, etc.)
+                        return 'vendor';
                     }
 
                     if (id.includes('/src/components/ui/')) {
