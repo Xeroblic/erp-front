@@ -399,7 +399,9 @@ const Perfil = () => {
 							{PROFILE_TABS.map((tab, index) => (
 								<button
 									key={tab.key}
-									ref={(el) => (tabButtonsRef.current[index] = el)}
+									ref={(el) => {
+										tabButtonsRef.current[index] = el;
+									}}
 									type='button'
 									onClick={() => handleTabChange(tab.key)}
 									className={`relative z-10 flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors duration-200 ${

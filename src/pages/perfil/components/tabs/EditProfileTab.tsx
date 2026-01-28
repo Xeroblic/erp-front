@@ -171,6 +171,36 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 
 			{/* Form Fields */}
 			<div className='grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2'>
+				<div className='form-field sm:col-span-2'>
+					<Label htmlFor='fileUpload'>Foto de Perfil</Label>
+					<div className='mt-2 flex items-center gap-x-4'>
+						<div className='relative h-20 w-20 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800'>
+							{avatarUrl ? (
+								<img
+									src={avatarUrl}
+									alt='Avatar'
+									className='h-full w-full object-cover'
+								/>
+							) : (
+								<Icon
+									icon='HeroUser'
+									className='h-full w-full p-4 text-neutral-300 dark:text-neutral-600'
+								/>
+							)}
+						</div>
+						<Button
+							type='button'
+							variant='outline'
+							onClick={openFilePicker}
+							icon='HeroCamera'>
+							Cambiar foto
+						</Button>
+						<p className='text-xs text-neutral-500 dark:text-neutral-400'>
+							JPG, GIF o PNG. Máx 400x400
+						</p>
+					</div>
+				</div>
+
 				<div className='form-field'>
 					<Label htmlFor='email'>Email</Label>
 					<FieldWrap
@@ -338,7 +368,7 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 			{/* Drag Drop Overlay */}
 			{isDraggingFile && (
 				<div
-					className='fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm'
+					className='z-1 fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm'
 					onDragEnter={(event) => event.preventDefault()}
 					onDragOver={(event) => {
 						event.preventDefault();
