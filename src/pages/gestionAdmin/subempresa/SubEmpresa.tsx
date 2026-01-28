@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, lazy, Suspense } from 'react';
 import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchMisSubsidiarias, deleteSubsidiaria } from '@/store/slices/subempresa/subEmpresaSlice';
@@ -9,9 +9,13 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/form/Input';
 import Badge from '@/components/ui/Badge';
 import { ISubempresa } from '@/interface/empresas.interface';
-import { CreateSubempresaModal, DeleteSubempresaModal, SubempresasTable } from './components';
+import { SubempresasTable } from './components';
 import Icon from '@/components/icon/Icon';
 import Tooltip from '@/components/ui/Tooltip';
+
+// Lazy load heavy modals - only loaded when opened
+const CreateSubempresaModal = lazy(() => import('./components/modals/CreateSubempresaModal'));
+const DeleteSubempresaModal = lazy(() => import('./components/modals/DeleteSubempresaModal'));
 
 export default function SubEmpresaLista() {
 	const dispatch = useAppDispatch();
@@ -72,8 +76,13 @@ export default function SubEmpresaLista() {
 		}
 	};
 
-	const filteredSubempresas = subempresas.filter((sub) =>
-		sub.name?.toLowerCase().includes(globalFilter.toLowerCase()),
+	// Memoized filtering - prevents recalculation on every render
+	const filteredSubempresas = useMemo(
+		() =>
+			subempresas.filter((sub) =>
+				sub.name?.toLowerCase().includes(globalFilter.toLowerCase()),
+			),
+		[subempresas, globalFilter],
 	);
 
 	return (
@@ -118,22 +127,33 @@ export default function SubEmpresaLista() {
 				/>
 			</Container>
 
-			<CreateSubempresaModal
-				isOpen={openCreate}
-				onClose={handleCloseModal}
-				subempresa={editingSubempresa}
-				companyId={companyId || 0}
-			/>
+			{/* Conditionally render modals only when needed - reduces DOM size */}
+			{openCreate && (
+				<Suspense fallback={null}>
+					<CreateSubempresaModal
+						isOpen={openCreate}
+						onClose={handleCloseModal}
+						subempresa={editingSubempresa}
+						companyId={companyId || 0}
+					/>
+				</Suspense>
+			)}
 
-			<DeleteSubempresaModal
-				isOpen={openDelete}
-				onClose={() => setOpenDelete(false)}
-				subempresaId={toDeleteId || 0}
-				subsiName={
-					toDeleteId ? subempresas.find((s) => s.id === toDeleteId)?.name || '' : ''
-				}
-				isNavigate={false}
-			/>
+			{openDelete && (
+				<Suspense fallback={null}>
+					<DeleteSubempresaModal
+						isOpen={openDelete}
+						onClose={() => setOpenDelete(false)}
+						subempresaId={toDeleteId || 0}
+						subsiName={
+							toDeleteId
+								? subempresas.find((s) => s.id === toDeleteId)?.name || ''
+								: ''
+						}
+						isNavigate={false}
+					/>
+				</Suspense>
+			)}
 		</PageWrapper>
 	);
 }

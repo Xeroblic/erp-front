@@ -267,6 +267,27 @@
     .delay-2 { animation-delay: 120ms; }
     .delay-3 { animation-delay: 180ms; }
     .delay-4 { animation-delay: 240ms; }
+
+	/* GPU-accelerated animation utilities - ensures compositor-only properties */
+	.gpu-accelerated {
+		transform: translateZ(0);
+		backface-visibility: hidden;
+		will-change: transform, opacity;
+		contain: layout paint;
+	}
+
+	/* Use only compositor properties for smooth 60fps animations */
+	.animate-smooth {
+		transition-property: transform, opacity;
+		will-change: transform, opacity;
+	}
+
+	/* Modal/overlay performance optimization */
+	.modal-gpu {
+		transform: translate3d(0, 0, 0);
+		backface-visibility: hidden;
+		perspective: 1000px;
+	}
 }
 
 @media (prefers-reduced-motion: no-preference) {

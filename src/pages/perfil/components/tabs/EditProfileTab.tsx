@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import classNames from 'classnames';
 import { toast } from 'react-toastify';
+import gsap from 'gsap';
 import Label from '@/components/form/Label';
 import Input from '@/components/form/Input';
 import DateInput from '@/components/form/DateInput';
@@ -8,9 +9,7 @@ import FieldWrap from '@/components/form/FieldWrap';
 import Icon from '@/components/icon/Icon';
 import Validation from '@/components/form/Validation';
 import Radio, { RadioGroup } from '@/components/form/Radio';
-import Avatar from '@/components/Avatar';
 import Button from '@/components/ui/Button';
-import { ImageZoom } from '@/components/ImageZoom';
 import { ProfileFormik } from '../types';
 
 type Props = {
@@ -20,13 +19,34 @@ type Props = {
 };
 
 const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
-	const avatarName =
-		[formik.values.first_name, formik.values.last_name].filter(Boolean).join(' ') || 'Usuario';
-
+	const formRef = useRef<HTMLDivElement>(null);
 	const [isDraggingFile, setIsDraggingFile] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const dragDepthRef = useRef(0);
-	const dropZoneGradientId = useId();
+
+	// Animación stagger de campos del formulario
+	useEffect(() => {
+		if (!formRef.current) return;
+
+		const fields = formRef.current.querySelectorAll('.form-field');
+		if (fields.length === 0) return;
+
+		const ctx = gsap.context(() => {
+			gsap.fromTo(
+				fields,
+				{ opacity: 0, y: 15 },
+				{
+					opacity: 1,
+					y: 0,
+					duration: 0.4,
+					stagger: 0.05,
+					ease: 'power2.out',
+				},
+			);
+		}, formRef);
+
+		return () => ctx.revert();
+	}, []);
 
 	useEffect(() => {
 		if (typeof window === 'undefined') return;
@@ -82,7 +102,6 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 	const compressAndUpload = useCallback(
 		async (file: File) => {
 			try {
-				// Redimensionar en canvas y exportar a WebP sin dependencias externas
 				const bitmap = await createImageBitmap(file);
 				const maxSize = 400;
 				const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height));
@@ -100,7 +119,7 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 				});
 				const webpFile = new File([blob], 'avatar.webp', { type: 'image/webp' });
 				await onAvatarUpload(webpFile);
-				toast.success('Avatar comprimido y subido correctamente');
+				toast.success('Avatar actualizado correctamente');
 			} catch (error) {
 				toast.error('Error al comprimir la imagen');
 			}
@@ -137,221 +156,39 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 		[compressAndUpload],
 	);
 
-	const dropZoneClassName = classNames(
-		'group relative flex w-full flex-col items-center justify-center gap-4 overflow-hidden rounded-3xl border-2 border-dashed px-10 py-12 text-center text-base transition-all',
-		'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900',
-		isDraggingFile
-			? 'border-primary/80 bg-primary/5 text-primary dark:border-primary/60 dark:bg-primary/15 dark:text-white'
-			: 'border-neutral-200 bg-white/95 text-neutral-600 hover:border-primary/60 hover:bg-primary/5 hover:text-primary dark:border-neutral-700 dark:bg-neutral-900/70 dark:text-neutral-200',
-	);
-
-	const dropOverlayChecklist = [
-		{ icon: 'HeroSparkles', text: 'Comprimimos y convertimos a WebP automáticamente.' },
-		{ icon: 'HeroShieldCheck', text: 'Validamos el peso máximo de 2 MB antes de subir.' },
-		{ icon: 'HeroCheckCircle', text: 'Ajustamos la imagen a 400 px para que luzca nítida.' },
-	] as const;
-
 	return (
-		<div className='space-y-8'>
-			<header className='space-y-1'>
-				<p className='text-primary/70 text-sm font-semibold uppercase tracking-[0.2em]'>
-					Perfil
-				</p>
-				<h1 className='text-3xl font-semibold text-neutral-900 dark:text-white'>
-					Editar perfil
-				</h1>
-				<p className='text-sm text-neutral-500 dark:text-neutral-400'>
-					Actualiza tu información básica y mantén una imagen de perfil clara. Optimizar
-					tu foto ayuda al resto del equipo a reconocerte fácilmente.
-				</p>
-			</header>
+		<div ref={formRef} className='space-y-8'>
+			{/* Hidden file input */}
+			<input
+				ref={fileInputRef}
+				id='fileUpload'
+				name='fileUpload'
+				type='file'
+				accept='image/*'
+				onChange={handleFileUpload}
+				className='sr-only'
+			/>
 
-			<section className='relative rounded-3xl border border-neutral-100/70 bg-white/95 p-6 shadow-lg shadow-neutral-900/5 backdrop-blur-sm dark:border-white/10 dark:bg-neutral-900/80'>
-				<input
-					ref={fileInputRef}
-					id='fileUpload'
-					name='fileUpload'
-					type='file'
-					accept='image/*'
-					onChange={handleFileUpload}
-					className='sr-only'
-				/>
-
-				<div className='grid gap-8 lg:grid-cols-1'>
-					<div className='mx-auto w-full max-w-2xl'>
-						<div className='relative overflow-hidden rounded-[32px] border border-neutral-200/70 bg-gradient-to-br from-white via-white to-neutral-50 p-[1px] shadow-[0_25px_60px_rgba(15,23,42,0.12)] dark:border-white/10 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-950'>
-							<div className='relative rounded-[30px] bg-white/95 p-8 text-center dark:bg-neutral-950/85'>
-								<div className='pointer-events-none absolute inset-0'>
-									<div
-										className='bg-primary/20 dark:bg-primary/40 absolute -right-14 top-0 h-40 w-40 rounded-full blur-3xl'
-										aria-hidden
-									/>
-									<div
-										className='absolute -left-12 bottom-0 h-36 w-36 rounded-full bg-amber-200/60 blur-3xl dark:bg-amber-500/20'
-										aria-hidden
-									/>
-								</div>
-								<div className='relative flex flex-col items-center gap-6'>
-									<div className='border-primary/20 bg-primary/10 text-primary/80 dark:border-primary/30 dark:bg-primary/20 inline-flex items-center gap-2 rounded-full border px-4 py-1 text-xs font-semibold uppercase tracking-[0.25em] dark:text-white/80'>
-										<Icon icon='HeroSparkles' className='h-4 w-4' />
-										Avatar
-									</div>
-
-									<div className='flex flex-col items-center gap-3'>
-										<span className='text-[0.65rem] font-semibold uppercase tracking-[0.35em] text-neutral-400 dark:text-neutral-500'>
-											Vista previa
-										</span>
-										{avatarUrl ? (
-											<ImageZoom
-												imageUrl={avatarUrl}
-												alt={`Avatar de ${avatarName}`}
-												thumbnailUrl={avatarUrl}
-												modalTitle='Vista previa del avatar'
-												modalSubtitle='Haz clic o usa la rueda del ratón para hacer zoom'
-												previewLabel='Ver ampliado'
-												renderTrigger={(open) => (
-													<button
-														type='button'
-														aria-label='Ver avatar ampliado'
-														onClick={open}
-														className='group relative inline-flex h-36 w-36 items-center justify-center overflow-hidden rounded-full border border-white/70 bg-neutral-100 shadow-[0_20px_45px_rgba(15,23,42,0.18)] ring-8 ring-white/80 transition hover:-translate-y-1 dark:border-neutral-700 dark:bg-neutral-900 dark:ring-neutral-800'>
-														<img
-															src={avatarUrl}
-															alt={avatarName}
-															className='h-full w-full rounded-full object-cover'
-														/>
-														<span className='pointer-events-none absolute inset-0 rounded-full bg-black/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100' />
-														<Icon
-															icon='HeroMagnifyingGlassPlus'
-															className='relative text-3xl text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100'
-														/>
-													</button>
-												)}
-											/>
-										) : (
-											<div className='relative inline-flex h-36 w-36 items-center justify-center overflow-hidden rounded-full border border-white/70 bg-neutral-100 shadow-[0_20px_45px_rgba(15,23,42,0.18)] ring-8 ring-white/80 dark:border-neutral-700 dark:bg-neutral-900 dark:ring-neutral-800'>
-												<Avatar
-													src={undefined}
-													name={avatarName}
-													className='h-full w-full rounded-full border border-transparent object-cover'
-												/>
-											</div>
-										)}
-									</div>
-
-									<div className='space-y-2'>
-										<p className='text-2xl font-semibold text-neutral-900 dark:text-white'>
-											{avatarName}
-										</p>
-										{/* <p className='text-sm text-neutral-500 dark:text-neutral-300'>
-											Mantén una foto luminosa y centrada; ayuda al resto del
-											equipo a reconocerte fácilmente en toda la plataforma.
-										</p> */}
-									</div>
-
-									<div className='flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-xs font-semibold text-neutral-400 dark:text-neutral-400'>
-										<span className='flex items-center gap-2'>
-											<Icon
-												icon='HeroPhoto'
-												className='text-primary/60 h-4 w-4'
-											/>
-											JPG, PNG o WebP
-										</span>
-										<span className='flex items-center gap-2'>
-											<Icon
-												icon='HeroArrowUpTray'
-												className='h-4 w-4 text-amber-500'
-											/>
-											≤ 2&nbsp;MB
-										</span>
-										<span className='flex items-center gap-2'>
-											<Icon
-												icon='HeroSparkles'
-												className='h-4 w-4 text-emerald-500'
-											/>
-											400&nbsp;px recomendado
-										</span>
-									</div>
-
-									<Button
-										variant='outline'
-										size='lg'
-										icon='HeroCamera'
-										onClick={openFilePicker}
-										className='border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 dark:border-primary/30 dark:bg-primary/20 w-full max-w-xs justify-center rounded-full border text-sm font-semibold transition dark:text-white'>
-										Click para cambiar avatar o arrastra una imagen
-									</Button>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				{isDraggingFile && (
-					<div className='pointer-events-none absolute inset-0 z-20 flex items-center justify-center p-6'>
-						<div className='pointer-events-auto relative w-full max-w-2xl space-y-4'>
-							<div className='absolute inset-0 rounded-2xl bg-white/40 backdrop-blur-[2px] dark:bg-black/40' />
-
-							<div className='relative rounded-2xl  border-2 border-dashed border-emerald-600 bg-emerald-300/30 p-5 shadow-lg '>
-								<p className='text-sm text-neutral-600 dark:text-neutral-300'>
-									Arrastra una imagen o selecciona un archivo desde tu computador.
-									El sistema la comprimirá, convertirá a WebP y ajustará su tamaño
-									para que luzca impecable en toda la plataforma.
-								</p>
-
-								<div
-									role='button'
-									tabIndex={0}
-									onClick={openFilePicker}
-									onKeyDown={(event) => {
-										if (event.key === 'Enter' || event.key === ' ') {
-											event.preventDefault();
-											openFilePicker();
-										}
-									}}
-									onDragEnter={(event) => event.preventDefault()}
-									onDragOver={(event) => {
-										event.preventDefault();
-										event.dataTransfer.dropEffect = 'copy';
-									}}
-									onDrop={handleDrop}
-									className={dropZoneClassName}>
-									<Icon
-										icon='HeroArrowUpTray'
-										className='mb-3 h-10 w-10 text-current'
-									/>
-									<span className='text-sm font-semibold'>
-										Suelta tu imagen aquí
-									</span>
-									<span className='text-xs text-neutral-500 dark:text-neutral-400'>
-										o haz clic para explorar tus archivos
-									</span>
-									<div className='mt-4 space-y-1 text-xs text-neutral-400 dark:text-neutral-500'>
-										<p>Formatos sugeridos: JPG, PNG, WEBP.</p>
-										<p>Peso máximo permitido: 2&nbsp;MB.</p>
-									</div>
-								</div>
-
-							</div>
-						</div>
-					</div>
-				)}
-			</section>
-
-			<div className='grid grid-cols-12 gap-4'>
-				<div className='col-span-12 lg:col-span-6'>
+			{/* Form Fields */}
+			<div className='grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2'>
+				<div className='form-field'>
 					<Label htmlFor='email'>Email</Label>
-					<FieldWrap firstSuffix={<Icon icon='HeroEnvelope' className='mx-2' />}>
+					<FieldWrap
+						firstSuffix={
+							<Icon icon='HeroEnvelope' className='mx-2 text-neutral-400' />
+						}>
 						<Input
 							id='email'
 							name='email'
 							value={formik.values.email || ''}
 							readOnly
 							autoComplete='email'
+							className='bg-neutral-50 dark:bg-neutral-800/50'
 						/>
 					</FieldWrap>
 				</div>
-				<div className='col-span-12 lg:col-span-6'>
+
+				<div className='form-field'>
 					<Label htmlFor='rut'>RUT</Label>
 					<Validation
 						isValid={formik.isValid}
@@ -366,7 +203,8 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 						/>
 					</Validation>
 				</div>
-				<div className='col-span-12 lg:col-span-6'>
+
+				<div className='form-field'>
 					<Label htmlFor='first_name'>Primer nombre</Label>
 					<Validation
 						isValid={formik.isValid}
@@ -381,7 +219,8 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 						/>
 					</Validation>
 				</div>
-				<div className='col-span-12 lg:col-span-6'>
+
+				<div className='form-field'>
 					<Label htmlFor='second_name'>Segundo nombre</Label>
 					<Validation
 						isValid={formik.isValid}
@@ -396,7 +235,8 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 						/>
 					</Validation>
 				</div>
-				<div className='col-span-12 lg:col-span-6'>
+
+				<div className='form-field'>
 					<Label htmlFor='last_name'>Primer apellido</Label>
 					<Validation
 						isValid={formik.isValid}
@@ -411,7 +251,8 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 						/>
 					</Validation>
 				</div>
-				<div className='col-span-12 lg:col-span-6'>
+
+				<div className='form-field'>
 					<Label htmlFor='second_last_name'>Segundo apellido</Label>
 					<Validation
 						isValid={formik.isValid}
@@ -426,22 +267,29 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 						/>
 					</Validation>
 				</div>
-				<div className='col-span-12 lg:col-span-6'>
+
+				<div className='form-field'>
 					<Label htmlFor='phone_number'>Celular</Label>
 					<Validation
 						isValid={formik.isValid}
 						isTouched={formik.touched.phone_number}
 						invalidFeedback={formik.errors.phone_number}>
-						<Input
-							id='phone_number'
-							name='phone_number'
-							value={formik.values.phone_number || ''}
-							onChange={formik.handleChange}
-							onBlur={formik.handleBlur}
-						/>
+						<FieldWrap
+							firstSuffix={
+								<Icon icon='HeroPhone' className='mx-2 text-neutral-400' />
+							}>
+							<Input
+								id='phone_number'
+								name='phone_number'
+								value={formik.values.phone_number || ''}
+								onChange={formik.handleChange}
+								onBlur={formik.handleBlur}
+							/>
+						</FieldWrap>
 					</Validation>
 				</div>
-				<div className='col-span-12 lg:col-span-6'>
+
+				<div className='form-field'>
 					<Label htmlFor='fecha_nacimiento'>Fecha de nacimiento</Label>
 					<Validation
 						isValid={formik.isValid}
@@ -459,26 +307,61 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 						/>
 					</Validation>
 				</div>
-				<div className='col-span-12 lg:col-span-6'>
-					<Label htmlFor='genero'>Genero</Label>
-					<RadioGroup isInline>
-						{[
-							{ value: '0', label: 'No Especificado' },
-							{ value: '1', label: 'Masculino' },
-							{ value: '2', label: 'Femenino' },
-						].map((option) => (
-							<Radio
-								key={option.value}
-								label={option.label}
-								name='genero'
-								value={option.value}
-								selectedValue={formik.values.genero ?? ''}
-								onChange={formik.handleChange}
-							/>
-						))}
-					</RadioGroup>
+
+				<div className='form-field sm:col-span-2'>
+					<Label htmlFor='genero'>Género</Label>
+					<div className='mt-2'>
+						<RadioGroup isInline>
+							{[
+								{
+									value: '0',
+									label: 'No Especificado',
+									icon: 'HeroQuestionMarkCircle',
+								},
+								{ value: '1', label: 'Masculino', icon: 'HeroUser' },
+								{ value: '2', label: 'Femenino', icon: 'HeroUser' },
+							].map((option) => (
+								<Radio
+									key={option.value}
+									label={option.label}
+									name='genero'
+									value={option.value}
+									selectedValue={formik.values.genero ?? ''}
+									onChange={formik.handleChange}
+								/>
+							))}
+						</RadioGroup>
+					</div>
 				</div>
 			</div>
+
+			{/* Drag Drop Overlay */}
+			{isDraggingFile && (
+				<div
+					className='fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm'
+					onDragEnter={(event) => event.preventDefault()}
+					onDragOver={(event) => {
+						event.preventDefault();
+						event.dataTransfer.dropEffect = 'copy';
+					}}
+					onDrop={handleDrop}>
+					<div className='mx-4 max-w-md rounded-3xl border-2 border-dashed border-emerald-400 bg-white/95 p-8 text-center shadow-2xl dark:border-emerald-500 dark:bg-neutral-900/95'>
+						<div className='mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/50'>
+							<Icon
+								icon='HeroArrowUpTray'
+								className='h-8 w-8 text-emerald-600 dark:text-emerald-400'
+							/>
+						</div>
+						<h3 className='mb-2 text-xl font-semibold text-neutral-900 dark:text-white'>
+							Suelta tu imagen aquí
+						</h3>
+						<p className='text-sm text-neutral-500 dark:text-neutral-400'>
+							La imagen será comprimida automáticamente a WebP y redimensionada a
+							400px
+						</p>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 };
