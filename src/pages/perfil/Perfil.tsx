@@ -338,27 +338,40 @@ const Perfil = () => {
 							}}>
 							<div className='flex w-full items-center gap-6 p-6 pr-20 md:p-10 md:pr-24'>
 								<div ref={avatarRef} className='relative flex-shrink-0'>
-									<div className='relative h-20 w-20 overflow-hidden rounded-full border-4 border-white shadow-xl dark:border-neutral-800 sm:h-28 sm:w-28'>
-										{avatarUrl ? (
-											<img
-												src={avatarUrl}
-												alt={fullName}
-												className='h-full w-full object-cover'
-											/>
-										) : (
-											<div className='flex h-full w-full items-center justify-center bg-neutral-200 text-2xl font-bold dark:bg-neutral-700'>
-												{fullName[0]}
+									<ImageZoom
+										imageUrl={avatarUrl || ''}
+										alt={fullName}
+										withModal
+										modalTitle='Foto de perfil'
+										modalSubtitle='Puedes acercar y mover la imagen'
+										renderTrigger={(open) => (
+											<div
+												onClick={avatarUrl ? open : undefined}
+												className={`relative h-20 w-20 overflow-hidden rounded-full border-4 border-white shadow-xl dark:border-neutral-800 sm:h-28 sm:w-28 ${
+													avatarUrl ? 'cursor-pointer' : ''
+												}`}>
+												{avatarUrl ? (
+													<img
+														src={avatarUrl}
+														alt={fullName}
+														className='h-full w-full object-cover transition-transform duration-500 hover:scale-110'
+													/>
+												) : (
+													<div className='flex h-full w-full items-center justify-center bg-neutral-200 text-2xl font-bold dark:bg-neutral-700'>
+														{fullName[0]}
+													</div>
+												)}
 											</div>
 										)}
-									</div>
+									/>
 									{/* Botón Cámara */}
-									<button
+									{/* <button
 										onClick={() =>
 											document.getElementById('avatar-upload')?.click()
 										}
 										className='absolute bottom-1 right-1 flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg transition-transform hover:scale-110'>
 										<Icon icon='HeroCamera' className='h-4 w-4' />
-									</button>
+									</button> */}
 								</div>
 
 								{/* Texto */}
