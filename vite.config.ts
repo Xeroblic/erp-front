@@ -18,8 +18,12 @@ export default defineConfig({
             output: {
                 manualChunks(id) {
                     if (id.includes('node_modules')) {
-                        // Group everything from node_modules into a single vendor chunk
-                        // This ensures shared context for all libraries (React, Redux, ApexCharts, etc.)
+                        // Separate chart libraries to avoid module resolution conflicts
+                        if (id.includes('apexcharts') || id.includes('react-apexcharts')) {
+                            return 'vendor-charts';
+                        }
+                        
+                        // Group other node_modules into vendor chunk
                         return 'vendor';
                     }
 

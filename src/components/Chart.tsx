@@ -3,6 +3,11 @@ import ApexCharts from 'apexcharts';
 import colors from 'tailwindcss/colors';
 import _ from 'lodash';
 
+// Initialize ApexCharts with default locale to prevent localization errors
+if (typeof window !== 'undefined') {
+	ApexCharts.exec = ApexCharts.exec || (() => {});
+}
+
 // Derive the Apex types from the class definition (the bundled d.ts exports only the class)
 type ApexOptions = Parameters<ApexCharts['updateOptions']>[0];
 type ChartSeries = Parameters<ApexCharts['updateSeries']>[0];
