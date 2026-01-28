@@ -304,7 +304,7 @@ const Perfil = () => {
 					<div
 						ref={containerRef}
 						className='group/hero relative mb-8 min-h-[220px] w-full overflow-hidden rounded-3xl bg-neutral-200 shadow-2xl dark:bg-neutral-800'>
-						<div className='absolute inset-0 z-0 overflow-hidden'>
+						<div className='absolute inset-0 z- overflow-hidden'>
 							<div className='absolute right-0 top-0 flex h-full w-[90%] items-center justify-center transition-transform duration-700 ease-out will-change-transform group-hover/hero:scale-105 md:w-[50%]'>
 								{avatarUrl ? (
 									<img
@@ -329,7 +329,7 @@ const Perfil = () => {
 						</div>
 
 						<div
-							className='relative z-10 flex h-full min-h-[220px] w-[65%] items-center bg-white dark:bg-neutral-900'
+							className='relative z-1 flex h-full min-h-[220px] w-[65%] items-center bg-white dark:bg-neutral-900'
 							style={{
 								clipPath:
 									'polygon(0% 0%, 100% 0%, 85% 60%, 95% 60%, 95% 85%, 100% 100%, 0% 100%)',
