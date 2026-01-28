@@ -334,7 +334,7 @@ const Perfil = () => {
 								clipPath:
 									'polygon(0% 0%, 100% 0%, 85% 60%, 95% 60%, 95% 85%, 100% 100%, 0% 100%)',
 								WebkitClipPath:
-									'polygon(0% 0%, 100% 0%, 85% 60%, 95% 60%, 95% 85%, 100% 100%, 0% 100%)',
+									'polygon(0% 0%, 100% 0%, 85% 60%, 95% 60%, 85% 100%, 100% 100%, 0% 100%)',
 							}}>
 							<div className='flex w-full items-center gap-6 p-6 pr-20 md:p-10 md:pr-24'>
 								<div ref={avatarRef} className='relative flex-shrink-0'>
