@@ -17,6 +17,8 @@ import {
 	setLocalStatus,
 } from '@/store/slices/notifications/notificationsSlice';
 import NotificationSwipeItem from './components/NotificationSwipeItem';
+import FloatingInfo from '@/components/ui/FloatingInfo/FloatingInfo';
+import { TutorialStep } from '@/components/types/TutorialModal';
 
 const timeAgo = (iso?: string | null) => {
 	if (!iso) return '';
@@ -28,6 +30,116 @@ const timeAgo = (iso?: string | null) => {
 	const d = Math.floor(h / 24);
 	return `${d}d`;
 };
+
+// Tutorial profesional de 6 pasos para el módulo de notificaciones
+const notificationsTutorialSteps: TutorialStep[] = [
+	{
+		title: 'Centro de Notificaciones',
+		description: `
+			<p>Bienvenido al <strong>Centro de Notificaciones</strong> de Zentria. Aquí recibirás alertas importantes sobre eventos del sistema.</p>
+			<br/>
+			<p>Las notificaciones te informan sobre:</p>
+			<ul style="list-style: disc; margin-left: 20px; margin-top: 8px;">
+				<li><strong>Clientes:</strong> Nuevas asociaciones, cambios de estado</li>
+				<li><strong>Proveedores:</strong> Actualizaciones de relaciones comerciales</li>
+				<li><strong>Ventas:</strong> Órdenes procesadas, eventos pendientes</li>
+				<li><strong>Sistema:</strong> Alertas administrativas importantes</li>
+			</ul>
+		`,
+		icon: 'HeroBellAlert',
+	},
+	{
+		title: 'Filtros de Estado',
+		description: `
+			<p>Organiza tus notificaciones utilizando los <strong>filtros de estado</strong> disponibles:</p>
+			<br/>
+			<ul style="list-style: disc; margin-left: 20px; margin-top: 8px;">
+				<li><strong>Todas:</strong> Vista general sin filtrar (excluye archivadas)</li>
+				<li><strong>Leídas:</strong> Notificaciones que ya has revisado</li>
+				<li><strong>No leídas:</strong> Pendientes por revisar (indicador rojo)</li>
+				<li><strong>Archivadas:</strong> Notificaciones guardadas para referencia</li>
+			</ul>
+			<br/>
+			<p>Combina estos filtros con <strong>Módulo</strong> y <strong>Prioridad</strong> para búsquedas más específicas.</p>
+		`,
+		icon: 'HeroFunnel',
+	},
+	{
+		title: 'Gestos de Deslizamiento',
+		description: `
+			<p>Gestiona tus notificaciones con <strong>gestos táctiles intuitivos</strong>, similares a Gmail:</p>
+			<br/>
+			<p><strong>Deslizar hacia la derecha →</strong></p>
+			<ul style="list-style: disc; margin-left: 20px; margin-top: 8px;">
+				<li>🟢 <strong>Verde:</strong> Marca como leída (si está sin leer)</li>
+				<li>🔴 <strong>Rojo:</strong> Marca como no leída (si ya está leída)</li>
+			</ul>
+			<br/>
+			<p><strong>Deslizar hacia la izquierda ←</strong></p>
+			<ul style="list-style: disc; margin-left: 20px; margin-top: 8px;">
+				<li>🟠 <strong>Ámbar:</strong> Archiva la notificación</li>
+			</ul>
+			<br/>
+			<p><em>Desliza hasta el centro del elemento para confirmar la acción.</em></p>
+		`,
+		icon: 'HeroArrowsRightLeft',
+	},
+	{
+		title: 'Estados Visuales',
+		description: `
+			<p>Identifica rápidamente el estado de cada notificación por sus <strong>indicadores visuales</strong>:</p>
+			<br/>
+			<ul style="list-style: disc; margin-left: 20px; margin-top: 8px;">
+				<li><strong>Fondo rosado + punto rojo:</strong> Notificación no leída</li>
+				<li><strong>Fondo verde claro:</strong> Notificación ya leída</li>
+				<li><strong>Badge "No leída":</strong> Etiqueta verde en notificaciones pendientes</li>
+				<li><strong>Badge "Leída":</strong> Etiqueta gris en notificaciones revisadas</li>
+				<li><strong>Badge "Importante":</strong> Etiqueta roja para prioridad alta</li>
+			</ul>
+			<br/>
+			<p>El contador en el menú muestra cuántas notificaciones tienes sin leer.</p>
+		`,
+		icon: 'HeroEye',
+	},
+	{
+		title: 'Archivar y Organizar',
+		description: `
+			<p>Mantén tu bandeja organizada utilizando la función de <strong>archivo</strong>:</p>
+			<br/>
+			<p><strong>Para archivar:</strong></p>
+			<ul style="list-style: disc; margin-left: 20px; margin-top: 8px;">
+				<li>Desliza hacia la izquierda hasta el centro</li>
+				<li>O usa el enlace "Archivar" en cada notificación</li>
+			</ul>
+			<br/>
+			<p><strong>Para desarchivar:</strong></p>
+			<ul style="list-style: disc; margin-left: 20px; margin-top: 8px;">
+				<li>Ve al filtro "Archivadas"</li>
+				<li>Desliza hacia la izquierda o usa "Desarchivar"</li>
+			</ul>
+			<br/>
+			<p>Las notificaciones archivadas se mantienen para referencia pero no aparecen en la vista principal.</p>
+		`,
+		icon: 'HeroArchiveBox',
+	},
+	{
+		title: 'Acciones Rápidas',
+		description: `
+			<p>Optimiza tu flujo de trabajo con estas <strong>acciones adicionales</strong>:</p>
+			<br/>
+			<ul style="list-style: disc; margin-left: 20px; margin-top: 8px;">
+				<li><strong>Doble toque:</strong> Abre el detalle completo de la notificación</li>
+				<li><strong>Marcar leídas:</strong> Marca todas las no leídas de una vez</li>
+				<li><strong>Refrescar:</strong> Actualiza la lista con nuevas notificaciones</li>
+				<li><strong>Limpiar:</strong> Resetea todos los filtros aplicados</li>
+				<li><strong>Eliminar:</strong> Borra permanentemente una notificación</li>
+			</ul>
+			<br/>
+			<p><em>Tip: Los filtros de módulo y prioridad se actualizan automáticamente según tus notificaciones.</em></p>
+		`,
+		icon: 'HeroBolt',
+	},
+];
 
 const NotificationsAll: React.FC = () => {
 	const dispatch = useAppDispatch();
@@ -241,13 +353,11 @@ const NotificationsAll: React.FC = () => {
 												dispatch(unackNotification({ id }))
 													.unwrap()
 													.then(() => {
-														// Asegurar persistencia en backend: dejar como No leída
 														dispatch(markUnread({ id })).catch(
 															() => void 0,
 														);
 													})
 													.catch(() => {
-														// Revertir si falla
 														dispatch(
 															setLocalStatus({ id, status: 'ack' }),
 														);
@@ -273,6 +383,13 @@ const NotificationsAll: React.FC = () => {
 						</div>
 					</CardBody>
 				</Card>
+
+				<FloatingInfo
+					label='Centro de Notificaciones'
+					value='Aprende a gestionar tus alertas'
+					tutorialSteps={notificationsTutorialSteps}
+					tutorialTitle='Guía de Notificaciones'
+				/>
 			</Container>
 		</PageWrapper>
 	);
