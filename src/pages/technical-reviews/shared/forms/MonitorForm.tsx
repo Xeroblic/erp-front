@@ -14,13 +14,11 @@ import { MultiValue, SingleValue } from 'react-select';
 import { StepperInput } from '../components/StepperInput';
 import { YesNoSelector } from '../components/YesNoSelector';
 import { SelectionCard } from '../components/SelectionCard';
-import { 
+import {
 	GENERAL_CONDITION_OPTIONS,
 	SCREEN_CONDITION_OPTIONS,
-	STAND_CONDITION_OPTIONS 
+	STAND_CONDITION_OPTIONS,
 } from '../constants/formOptions';
-
-
 
 // --- MAIN FORM ---
 
@@ -31,13 +29,18 @@ interface MonitorFormProps {
 	readOnly?: boolean;
 }
 
-const MonitorForm: React.FC<MonitorFormProps> = ({ branchId, values, onChange, readOnly = false }) => {
+const MonitorForm: React.FC<MonitorFormProps> = ({
+	branchId,
+	values,
+	onChange,
+	readOnly = false,
+}) => {
 	const dispatch = useAppDispatch();
 	const [step, setStep] = useState(0);
 	const MAX_STEPS = 5;
 
 	useEffect(() => {
-		dispatch(fetchBrands({ branchId: branchId}));
+		dispatch(fetchBrands({ branchId: branchId }));
 	}, [dispatch, branchId]);
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -62,7 +65,6 @@ const MonitorForm: React.FC<MonitorFormProps> = ({ branchId, values, onChange, r
 	const screenConditionOptions = SCREEN_CONDITION_OPTIONS;
 	const standConditionOptions = STAND_CONDITION_OPTIONS;
 
-
 	const frameConditionOptions = [
 		{ value: 'ok', label: 'OK', color: 'green' },
 		{ value: 'worn', label: 'Desgastado', color: 'yellow' },
@@ -71,12 +73,12 @@ const MonitorForm: React.FC<MonitorFormProps> = ({ branchId, values, onChange, r
 		{ value: 'broken', label: 'Roto', color: 'red' },
 	];
 
-		useEffect(() => {
-			if (branchId) {
-				// dispatch(fetchValidationRulesByType({ branchId, equipmentType: 'monitor' }));
-				dispatch(fetchBrands({ branchId }));
-			}
-		}, [dispatch, branchId]);
+	useEffect(() => {
+		if (branchId) {
+			// dispatch(fetchValidationRulesByType({ branchId, equipmentType: 'monitor' }));
+			dispatch(fetchBrands({ branchId }));
+		}
+	}, [dispatch, branchId]);
 	const brands = useAppSelector((s) => s.brands.items);
 	const brandsLoading = useAppSelector((s) => s.brands.loading);
 	const validationLoading = useAppSelector((s) => s.technicalReviews.validationRulesLoading);
@@ -96,7 +98,6 @@ const MonitorForm: React.FC<MonitorFormProps> = ({ branchId, values, onChange, r
 		);
 	}
 
-
 	const handleSelectChange =
 		(name: string) =>
 		(newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption> | null) => {
@@ -110,7 +111,7 @@ const MonitorForm: React.FC<MonitorFormProps> = ({ branchId, values, onChange, r
 				onChange(name, option?.value ?? null);
 			}
 		};
-		
+
 	const renderStepContent = () => {
 		switch (step) {
 			case 0: // Información Básica
@@ -120,30 +121,34 @@ const MonitorForm: React.FC<MonitorFormProps> = ({ branchId, values, onChange, r
 						initial={{ opacity: 0, x: 20 }}
 						animate={{ opacity: 1, x: 0 }}
 						exit={{ opacity: 0, x: -20 }}
-						transition={{ duration: 0.3 }}
-					>
+						transition={{ duration: 0.3 }}>
 						<div className='space-y-6'>
-							<h3 className='text-lg font-bold mb-4 text-center'>Información Básica</h3>
+							<h3 className='mb-4 text-center text-lg font-bold'>
+								Información Básica
+							</h3>
 
-							<div className='rounded-xl border p-4 bg-blue-50/50 dark:bg-blue-900/10'>
-								<label className='block text-sm font-bold mb-3 text-blue-800 dark:text-blue-200'>
+							<div className='rounded-xl border bg-blue-50 p-4 dark:bg-blue-900/10'>
+								<label className='mb-3 block text-sm font-bold text-blue-800 dark:text-blue-200'>
 									Marca
 								</label>
 								<div className='col-span-full md:col-span-1'>
-								{/* <label className='block text-sm font-bold mb-2 dark:text-gray-300'>Marca *</label> */}
-								<SelectReact
-									name='brand'
-									options={brandOptions}
-									value={brandOptions.find((o) => o.value === values.brand) || null}
-									onChange={handleSelectChange('brand')}
-									placeholder='Seleccionar marca'
-									isDisabled={readOnly}
-								/>
-							</div>
+									{/* <label className='block text-sm font-bold mb-2 dark:text-gray-300'>Marca *</label> */}
+									<SelectReact
+										name='brand'
+										options={brandOptions}
+										value={
+											brandOptions.find((o) => o.value === values.brand) ||
+											null
+										}
+										onChange={handleSelectChange('brand')}
+										placeholder='Seleccionar marca'
+										isDisabled={readOnly}
+									/>
+								</div>
 							</div>
 
-							<div className='rounded-xl border p-4 bg-purple-50/50 dark:bg-purple-900/10'>
-								<label className='block text-sm font-bold mb-3 text-purple-800 dark:text-purple-200'>
+							<div className='rounded-xl border bg-purple-50 p-4 dark:bg-purple-900/10'>
+								<label className='mb-3 block text-sm font-bold text-purple-800 dark:text-purple-200'>
 									Modelo
 								</label>
 								<Input
@@ -155,8 +160,10 @@ const MonitorForm: React.FC<MonitorFormProps> = ({ branchId, values, onChange, r
 								/>
 							</div>
 
-							<div className='rounded-xl border p-4 bg-gray-50/50 dark:bg-gray-900/10'>
-								<label className='block text-sm font-bold mb-3 dark:text-gray-300'>Línea (Opcional)</label>
+							<div className='rounded-xl border bg-gray-50 p-4 dark:bg-gray-900/10'>
+								<label className='mb-3 block text-sm font-bold dark:text-gray-300'>
+									Línea (Opcional)
+								</label>
 								<Input
 									type='text'
 									name='line'
@@ -167,8 +174,8 @@ const MonitorForm: React.FC<MonitorFormProps> = ({ branchId, values, onChange, r
 							</div>
 
 							<div className='grid grid-cols-2 gap-4'>
-								<div className='rounded-xl border p-4 bg-green-50/50 dark:bg-green-900/10'>
-									<label className='block text-sm font-bold mb-3 text-green-800 dark:text-green-200'>
+								<div className='rounded-xl border bg-green-50 p-4 dark:bg-green-900/10'>
+									<label className='mb-3 block text-sm font-bold text-green-800 dark:text-green-200'>
 										Pulgadas
 									</label>
 									<Input
@@ -180,8 +187,8 @@ const MonitorForm: React.FC<MonitorFormProps> = ({ branchId, values, onChange, r
 									/>
 								</div>
 
-								<div className='rounded-xl border p-4 bg-orange-50/50 dark:bg-orange-900/10'>
-									<label className='block text-sm font-bold mb-3 text-orange-800 dark:text-orange-200'>
+								<div className='rounded-xl border bg-orange-50 p-4 dark:bg-orange-900/10'>
+									<label className='mb-3 block text-sm font-bold text-orange-800 dark:text-orange-200'>
 										Resolución
 									</label>
 									<Input
@@ -216,14 +223,17 @@ const MonitorForm: React.FC<MonitorFormProps> = ({ branchId, values, onChange, r
 						initial={{ opacity: 0, x: 20 }}
 						animate={{ opacity: 1, x: 0 }}
 						exit={{ opacity: 0, x: -20 }}
-						transition={{ duration: 0.3 }}
-					>
+						transition={{ duration: 0.3 }}>
 						<div className='space-y-6'>
-							<h3 className='text-lg font-bold mb-4 text-center'>Conectividad</h3>
-							<div className='grid grid-cols-2 md:grid-cols-4 gap-3'>
+							<h3 className='mb-4 text-center text-lg font-bold'>Conectividad</h3>
+							<div className='grid grid-cols-2 gap-3 md:grid-cols-4'>
 								{ports.map((port) => (
-									<div key={port.name} className='flex flex-col items-center gap-1'>
-										<label className='text-[10px] font-bold text-gray-500 uppercase'>{port.label}</label>
+									<div
+										key={port.name}
+										className='flex flex-col items-center gap-1'>
+										<label className='text-[10px] font-bold uppercase text-gray-500'>
+											{port.label}
+										</label>
 										<StepperInput
 											value={getNumericValue(port.name)}
 											onChange={(val) => onChange(port.name, val)}
@@ -233,15 +243,17 @@ const MonitorForm: React.FC<MonitorFormProps> = ({ branchId, values, onChange, r
 								))}
 							</div>
 
-							<div className='rounded-xl border border-blue-200 p-4 bg-blue-50/30 dark:bg-blue-900/10'>
+							<div className='rounded-xl border border-blue-200 bg-blue-50 p-4 dark:bg-blue-900/10'>
 								<YesNoSelector
 									label='¿Tiene Hub USB?'
 									value={values.has_usb_hub}
 									onChange={(val) => onChange('has_usb_hub', val)}
 								/>
 								{values.has_usb_hub && (
-									<div className='mt-4 flex flex-col items-center gap-2 animate-in fade-in zoom-in'>
-										<label className='text-sm font-bold'>Puertos USB en el Hub</label>
+									<div className='animate-in fade-in zoom-in mt-4 flex flex-col items-center gap-2'>
+										<label className='text-sm font-bold'>
+											Puertos USB en el Hub
+										</label>
 										<StepperInput
 											value={getNumericValue('usb_hub_ports')}
 											onChange={(val) => onChange('usb_hub_ports', val)}
@@ -251,7 +263,7 @@ const MonitorForm: React.FC<MonitorFormProps> = ({ branchId, values, onChange, r
 								)}
 							</div>
 
-							<div className='rounded-xl border border-gray-200 p-4 bg-gray-50/50 dark:bg-gray-900/10'>
+							<div className='rounded-xl border border-gray-200 bg-gray-50/50 p-4 dark:bg-gray-900/10'>
 								<YesNoSelector
 									label='¿Todos los Puertos OK?'
 									value={values.all_ports_functional}
@@ -265,28 +277,37 @@ const MonitorForm: React.FC<MonitorFormProps> = ({ branchId, values, onChange, r
 								/>
 
 								{values.all_ports_functional === false && (
-									<div className='mt-4 space-y-4 p-3 bg-red-50 rounded-xl border border-red-200 animate-in zoom-in'>
+									<div className='animate-in zoom-in mt-4 space-y-4 rounded-xl border border-red-200 bg-red-50 p-3'>
 										<div className='flex flex-col items-center gap-2'>
-											<label className='text-red-800 font-bold text-sm'>Puertos Defectuosos</label>
+											<label className='text-sm font-bold text-red-800'>
+												Puertos Defectuosos
+											</label>
 											<StepperInput
 												value={getNumericValue('defective_ports_count')}
-												onChange={(val) => onChange('defective_ports_count', val)}
+												onChange={(val) =>
+													onChange('defective_ports_count', val)
+												}
 											/>
-											<p className='text-xs text-red-700 text-center mt-1'>
+											<p className='mt-1 text-center text-xs text-red-700'>
 												⚠️ Más de 1 puerto = Grado M automático
 											</p>
 										</div>
 
 										<div className='flex flex-col items-center gap-2'>
-											<label className='text-red-900 font-bold text-sm'>
+											<label className='text-sm font-bold text-red-900'>
 												Puertos Críticos Defectuosos
 											</label>
 											<StepperInput
-												value={getNumericValue('defective_ports_critical_count')}
-												onChange={(val) => onChange('defective_ports_critical_count', val)}
+												value={getNumericValue(
+													'defective_ports_critical_count',
+												)}
+												onChange={(val) =>
+													onChange('defective_ports_critical_count', val)
+												}
 											/>
-											<p className='text-xs text-red-800 text-center mt-1'>
-												🔴 1 puerto crítico = Máximo C. Más de 1 = M automático
+											<p className='mt-1 text-center text-xs text-red-800'>
+												🔴 1 puerto crítico = Máximo C. Más de 1 = M
+												automático
 											</p>
 										</div>
 									</div>
@@ -303,34 +324,83 @@ const MonitorForm: React.FC<MonitorFormProps> = ({ branchId, values, onChange, r
 						initial={{ opacity: 0, x: 20 }}
 						animate={{ opacity: 1, x: 0 }}
 						exit={{ opacity: 0, x: -20 }}
-						transition={{ duration: 0.3 }}
-					>
+						transition={{ duration: 0.3 }}>
 						<div className='space-y-6'>
-							<h3 className='text-lg font-bold mb-4 text-center'>Condición</h3>
+							<h3 className='mb-4 text-center text-lg font-bold'>Condición</h3>
 
-							<div className='rounded-xl border p-4 bg-purple-50/50 dark:bg-purple-900/10'>
-								<label className='block text-sm font-bold mb-3 text-purple-800 dark:text-purple-200 text-center'>
+							<div className='rounded-xl border bg-purple-50 p-4 dark:bg-purple-900/10'>
+								<label className='mb-3 block text-center text-sm font-bold text-purple-800 dark:text-purple-200'>
 									Pantalla
 								</label>
-								<div className='grid grid-cols-2 md:grid-cols-3 gap-2'>
+								<div className='grid grid-cols-2 gap-2 md:grid-cols-3'>
 									{screenConditionOptions.map((opt) => (
 										<SelectionCard
 											key={opt.value}
 											label={opt.label}
 											value={opt.value}
 											isSelected={values.screen_condition === opt.value}
-											onClick={() => onChange('screen_condition', opt.value)}
+											onClick={() => {
+												onChange('screen_condition', opt.value);
+												// Limpiar contadores al cambiar
+												if (opt.value !== 'spots')
+													onChange('spots_count', null);
+												if (opt.value !== 'dead_pixels')
+													onChange('dead_pixels_count', null);
+											}}
 											color={opt.color as 'green' | 'red' | 'yellow'}
 										/>
 									))}
 								</div>
+
+								{/* Conditional Inputs */}
+								{values.screen_condition === 'spots' && (
+									<div className='animate-in zoom-in mx-auto mt-4 max-w-xs duration-300'>
+										<div className='rounded-xl border border-yellow-200 bg-yellow-50 p-3 dark:border-yellow-700 dark:bg-yellow-900/20'>
+											<label className='mb-2 block text-center text-sm font-bold text-yellow-800 dark:text-yellow-200'>
+												Cantidad de Manchas
+											</label>
+											<StepperInput
+												value={
+													typeof values.spots_count === 'number'
+														? values.spots_count
+														: 1
+												}
+												onChange={(val) => onChange('spots_count', val)}
+												min={1}
+												max={50}
+											/>
+										</div>
+									</div>
+								)}
+
+								{values.screen_condition === 'dead_pixels' && (
+									<div className='animate-in zoom-in mx-auto mt-4 max-w-xs duration-300'>
+										<div className='rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-700 dark:bg-red-900/20'>
+											<label className='mb-2 block text-center text-sm font-bold text-red-800 dark:text-red-200'>
+												Píxeles Muertos
+											</label>
+											<StepperInput
+												value={
+													typeof values.dead_pixels_count === 'number'
+														? values.dead_pixels_count
+														: 1
+												}
+												onChange={(val) =>
+													onChange('dead_pixels_count', val)
+												}
+												min={1}
+												max={50}
+											/>
+										</div>
+									</div>
+								)}
 							</div>
 
-							<div className='rounded-xl border p-4 bg-blue-50/50 dark:bg-blue-900/10'>
-								<label className='block text-sm font-bold mb-3 text-blue-800 dark:text-blue-200 text-center'>
+							<div className='rounded-xl border bg-blue-50 p-4 dark:bg-blue-900/10'>
+								<label className='mb-3 block text-center text-sm font-bold text-blue-800 dark:text-blue-200'>
 									Base/Soporte
 								</label>
-								<div className='grid grid-cols-2 md:grid-cols-3 gap-2'>
+								<div className='grid grid-cols-2 gap-2 md:grid-cols-3'>
 									{standConditionOptions.map((opt) => (
 										<SelectionCard
 											key={opt.value}
@@ -344,11 +414,11 @@ const MonitorForm: React.FC<MonitorFormProps> = ({ branchId, values, onChange, r
 								</div>
 							</div>
 
-							<div className='rounded-xl border p-4 bg-orange-50/50 dark:bg-orange-900/10'>
-								<label className='block text-sm font-bold mb-3 text-orange-800 dark:text-orange-200 text-center'>
+							<div className='rounded-xl border bg-orange-50 p-4 dark:bg-orange-900/10'>
+								<label className='mb-3 block text-center text-sm font-bold text-orange-800 dark:text-orange-200'>
 									Marco/Carcasa
 								</label>
-								<div className='grid grid-cols-2 md:grid-cols-3 gap-2'>
+								<div className='grid grid-cols-2 gap-2 md:grid-cols-3'>
 									{frameConditionOptions.map((opt) => (
 										<SelectionCard
 											key={opt.value}
@@ -362,11 +432,11 @@ const MonitorForm: React.FC<MonitorFormProps> = ({ branchId, values, onChange, r
 								</div>
 							</div>
 
-							<div className='rounded-xl border p-4 bg-green-50/50 dark:bg-green-900/10'>
-								<label className='block text-sm font-bold mb-3 text-green-800 dark:text-green-200 text-center'>
+							<div className='rounded-xl border bg-green-50 p-4 dark:bg-green-900/10'>
+								<label className='mb-3 block text-center text-sm font-bold text-green-800 dark:text-green-200'>
 									Condición General
 								</label>
-								<div className='grid grid-cols-2 md:grid-cols-3 gap-2'>
+								<div className='grid grid-cols-2 gap-2 md:grid-cols-3'>
 									{generalConditionOptions.map((opt) => (
 										<SelectionCard
 											key={opt.value}
@@ -390,10 +460,9 @@ const MonitorForm: React.FC<MonitorFormProps> = ({ branchId, values, onChange, r
 						initial={{ opacity: 0, x: 20 }}
 						animate={{ opacity: 1, x: 0 }}
 						exit={{ opacity: 0, x: -20 }}
-						transition={{ duration: 0.3 }}
-					>
+						transition={{ duration: 0.3 }}>
 						<div className='space-y-6'>
-							<h3 className='text-lg font-bold mb-4 text-center'>Accesorios</h3>
+							<h3 className='mb-4 text-center text-lg font-bold'>Accesorios</h3>
 
 							<YesNoSelector
 								label='¿Incluye Cable de Poder?'
@@ -423,13 +492,12 @@ const MonitorForm: React.FC<MonitorFormProps> = ({ branchId, values, onChange, r
 						initial={{ opacity: 0, x: 20 }}
 						animate={{ opacity: 1, x: 0 }}
 						exit={{ opacity: 0, x: -20 }}
-						transition={{ duration: 0.3 }}
-					>
+						transition={{ duration: 0.3 }}>
 						<div className='space-y-6'>
-							<h3 className='text-lg font-bold mb-4 text-center'>Observaciones</h3>
+							<h3 className='mb-4 text-center text-lg font-bold'>Observaciones</h3>
 
-							<div className='rounded-xl border p-4 bg-gray-50/50 dark:bg-gray-900/10'>
-								<label className='block text-sm font-bold mb-3 dark:text-gray-300'>
+							<div className='rounded-xl border bg-gray-50 p-4 dark:bg-gray-900/10'>
+								<label className='mb-3 block text-sm font-bold dark:text-gray-300'>
 									Notas Adicionales
 								</label>
 								<Textarea
@@ -455,13 +523,12 @@ const MonitorForm: React.FC<MonitorFormProps> = ({ branchId, values, onChange, r
 				<AnimatePresence mode='wait'>{renderStepContent()}</AnimatePresence>
 
 				{/* Navigation */}
-				<div className='flex items-center justify-between rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800 mt-6'>
+				<div className='mt-6 flex items-center justify-between rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800'>
 					<Button
 						variant='outline'
 						onClick={handlePreviousStep}
 						isDisable={step === 0}
-						icon='HeroArrowLeft'
-					>
+						icon='HeroArrowLeft'>
 						Anterior
 					</Button>
 
@@ -471,7 +538,7 @@ const MonitorForm: React.FC<MonitorFormProps> = ({ branchId, values, onChange, r
 								key={i}
 								className={`h-2.5 w-2.5 rounded-full transition-all duration-300 ${
 									i === step
-										? 'bg-blue-600 w-8'
+										? 'w-8 bg-blue-600'
 										: i < step
 											? 'bg-blue-400'
 											: 'bg-gray-300 dark:bg-gray-600'
@@ -484,8 +551,7 @@ const MonitorForm: React.FC<MonitorFormProps> = ({ branchId, values, onChange, r
 						color='green'
 						onClick={handleNextStep}
 						isDisable={false}
-						icon={step === MAX_STEPS - 1 ? 'HeroCheckCircle' : 'HeroArrowRight'}
-					>
+						icon={step === MAX_STEPS - 1 ? 'HeroCheckCircle' : 'HeroArrowRight'}>
 						{step === MAX_STEPS - 1 ? 'Finalizar Revisión' : 'Siguiente'}
 					</Button>
 				</div>

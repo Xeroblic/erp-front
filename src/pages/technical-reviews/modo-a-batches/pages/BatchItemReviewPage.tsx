@@ -331,7 +331,31 @@ const ItemReviewPage: React.FC = () => {
 					setCurrentStep('grading');
 					setAutomaticGrade(loadedItem.suggested_grade || null);
 				} else if (reviewStatus === 'in_review') {
-					setCurrentStep('review');
+					// FIX: Verificar si hay desincronización con trazabilidad (status comercial = received)
+					const currentStatus =
+						typeof loadedItem.current_status === 'object'
+							? (loadedItem.current_status as any)?.value
+							: loadedItem.current_status;
+
+					if (currentStatus === 'received') {
+						// Intentar resincronizar llamando a startReview nuevamente
+						console.warn(
+							'Detectada desincronización de estados. Intentando resincronizar...',
+						);
+						dispatch(startReview({ branchId, itemId: parsedItemId }))
+							.unwrap()
+							.then((reviewedItem) => {
+								setItem(reviewedItem);
+								setCurrentStep('review');
+							})
+							.catch((error) => {
+								console.error('Error al resincronizar:', error);
+								// Si falla (ej: ya estaba iniciada), procedemos igual
+								setCurrentStep('review');
+							});
+					} else {
+						setCurrentStep('review');
+					}
 				} else if (reviewStatus === 'pending') {
 					dispatch(startReview({ branchId, itemId: parsedItemId }))
 						.unwrap()
@@ -629,40 +653,37 @@ const ItemReviewPage: React.FC = () => {
 
 	return (
 		<PageWrapper name='technical-review-batch' title='Revisión Técnica por Lote'>
-
 			<Container>
 				{/* Header */}
 				<div className='mb-6 flex items-center gap-4 rounded-xl'>
 					<div>
-
-					<Button variant='outline' onClick={handleBack}>
-						<Icon icon='HeroArrowLeft' className='h-4 w-4' />
-					</Button>
-					<div className='flex-1'>
-						<h1 className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
-							{item ? `Revisión #${item.serial_number}` : 'Nueva Revisión'}
-						</h1>
-						<p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
-							{batchId ? `Lote #${batchId}` : 'Revisión global (sin lote)'}
-						</p>
-						
-					</div>
+						<Button variant='outline' onClick={handleBack}>
+							<Icon icon='HeroArrowLeft' className='h-4 w-4' />
+						</Button>
+						<div className='flex-1'>
+							<h1 className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
+								{item ? `Revisión #${item.serial_number}` : 'Nueva Revisión'}
+							</h1>
+							<p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
+								{batchId ? `Lote #${batchId}` : 'Revisión global (sin lote)'}
+							</p>
+						</div>
 					</div>
 				</div>
 
-			<div
-				className={`fixed left-[50%] top-0 z-[9] flex h-48 w-[400px] -translate-x-96 transform items-center justify-center rounded-b-full bg-zinc-900/60 shadow-2xl transition-all duration-500 ease-in-out dark:bg-zinc-800 md:left-[60%] md:h-40 md:w-[600px] ${
-					showFloatingSN ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
-				}`}>
-				<div className='flex flex-col place-items-center justify-center pt-28 text-white md:pt-24'>
-					<span className='mb-1 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-300'>
-						N° Serie
-					</span>
-					<span className='text-lg font-bold tracking-wider'>
-						{translateValue(serialNumber || item?.serial_number) || '-'}
-					</span>
+				<div
+					className={`fixed left-[50%] top-0 z-[9] flex h-48 w-[400px] -translate-x-96 transform items-center justify-center rounded-b-full bg-zinc-900/60 shadow-2xl transition-all duration-500 ease-in-out dark:bg-zinc-800 md:left-[60%] md:h-40 md:w-[600px] ${
+						showFloatingSN ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
+					}`}>
+					<div className='flex flex-col place-items-center justify-center pt-28 text-white md:pt-24'>
+						<span className='mb-1 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-300'>
+							N° Serie
+						</span>
+						<span className='text-lg font-bold tracking-wider'>
+							{translateValue(serialNumber || item?.serial_number) || '-'}
+						</span>
+					</div>
 				</div>
-			</div>
 				{/* Progress Steps */}
 				<Card className='mb-6'>
 					<CardBody>

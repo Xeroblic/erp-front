@@ -67,6 +67,7 @@ export const SCREEN_CONDITION_OPTIONS: TSelectOption[] = [
 		label: 'Con Líneas / Desgaste visible / manchas blancas - máximo 1 mancha (Limita a: Máximo Grado B)',
 	},
 	{ value: 'dead_pixels', label: 'Píxeles muertos' },
+	{ value: 'spots', label: 'Manchas' },
 	{
 		value: 'broken',
 		label: 'Rota/Píxeles Muertos excesivos/Manchas excesivas (Limita a: Grado M - Malo)',
@@ -134,6 +135,8 @@ export const CHARGER_STATUS_OPTIONS: TSelectOption[] = [
 	{ value: 'cable_en_mal_estado', label: 'Cable en mal estado' },
 	{ value: 'no_corresponde_a_equipo', label: 'No corresponde al equipo' },
 	{ value: 'no_incluye', label: 'No incluye' },
+	{ value: 'broken_charger', label: 'Cargador roto' },
+	{ value: 'broken_port', label: 'Entrada rota' },
 ];
 
 /**

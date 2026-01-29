@@ -15,18 +15,17 @@ import { SoSelector } from '../components/SoSelector';
 import { StepperInput } from '../components/StepperInput';
 import { SelectionCard } from '../components/SelectionCard';
 import { YesNoSelector } from '../components/YesNoSelector';
-import { 
+import {
 	GENERAL_CONDITION_OPTIONS,
 	RAM_TYPE_OPTIONS,
 	STORAGE_TECH_OPTIONS,
 	CHARGER_STATUS_OPTIONS,
 	COVER_CONDITION_OPTIONS,
 	SCREEN_CONDITION_OPTIONS,
-	STAND_CONDITION_OPTIONS 
+	STAND_CONDITION_OPTIONS,
 } from '../constants/formOptions';
 
 // --- HELPER COMPONENTS ---
-
 
 // --- MAIN FORM ---
 
@@ -59,13 +58,13 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 			rj45_ports: 'RJ45',
 			sd_readers: 'Lector SD',
 		};
-		
+
 		const activePorts: string[] = [];
-		
+
 		Object.entries(portFields).forEach(([field, label]) => {
 			const value = values[field as keyof UpdateItemDetailsPayload];
-			const numValue = typeof value === 'number' ? value : parseInt(String(value)) ||  0;
-			
+			const numValue = typeof value === 'number' ? value : parseInt(String(value)) || 0;
+
 			if (numValue > 0) {
 				activePorts.push(label);
 			}
@@ -74,13 +73,25 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 		if (activePorts.length > 0) {
 			const connectivityText = `PUERTOS CON PROBLEMAS:\nPuertos presentes: ${activePorts.join(', ')}\n\nIndica a continuación cuántos están dañados y qué fallas tienen:`;
 			const currentObs = values.observations || '';
-			
+
 			if (!currentObs.includes('PUERTOS CON PROBLEMAS')) {
-				const newObs = currentObs ? `\n${currentObs}\n\n${connectivityText}` : connectivityText;
+				const newObs = currentObs
+					? `\n${currentObs}\n\n${connectivityText}`
+					: connectivityText;
 				onChange('observations', newObs);
 			}
 		}
-	}, [values.all_ports_functional, values.defective_ports_count, values.usb_a_ports, values.usb_c_ports, values.hdmi_ports, values.displayport_ports, values.vga_ports, values.rj45_ports, values.sd_readers]);
+	}, [
+		values.all_ports_functional,
+		values.defective_ports_count,
+		values.usb_a_ports,
+		values.usb_c_ports,
+		values.hdmi_ports,
+		values.displayport_ports,
+		values.vga_ports,
+		values.rj45_ports,
+		values.sd_readers,
+	]);
 
 	const brands = useAppSelector((s) => s.brands.items);
 	const brandsLoading = useAppSelector((s) => s.brands.loading);
@@ -149,19 +160,22 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 						initial={{ opacity: 0, x: 20 }}
 						animate={{ opacity: 1, x: 0 }}
 						exit={{ opacity: 0, x: -20 }}
-						transition={{ duration: 0.3 }}
-					>
+						transition={{ duration: 0.3 }}>
 						<div className='space-y-6'>
-							<h3 className='text-lg font-bold mb-4 text-center'>Información Básica</h3>
+							<h3 className='mb-4 text-center text-lg font-bold'>
+								Información Básica
+							</h3>
 
-							<div className='rounded-xl border p-4 bg-blue-50/50 dark:bg-blue-900/10'>
-								<label className='block text-sm font-bold mb-3 text-blue-800 dark:text-blue-200'>
+							<div className='rounded-xl border bg-blue-50 p-4 dark:bg-blue-900/10'>
+								<label className='mb-3 block text-sm font-bold text-blue-800 dark:text-blue-200'>
 									Marca
 								</label>
 								<SelectReact
 									name='brand'
 									options={brandOptions}
-									value={brandOptions.find((o) => o.value === values.brand) || null}
+									value={
+										brandOptions.find((o) => o.value === values.brand) || null
+									}
 									onChange={handleSelectChange('brand')}
 									placeholder='Seleccionar marca'
 									isDisabled={readOnly}
@@ -169,8 +183,8 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 								/>
 							</div>
 
-							<div className='rounded-xl border p-4 bg-purple-50/50 dark:bg-purple-900/10'>
-								<label className='block text-sm font-bold mb-3 text-purple-800 dark:text-purple-200'>
+							<div className='rounded-xl border bg-purple-50 p-4 dark:bg-purple-900/10'>
+								<label className='mb-3 block text-sm font-bold text-purple-800 dark:text-purple-200'>
 									Modelo
 								</label>
 								<Input
@@ -183,20 +197,22 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 								/>
 							</div>
 
-							<div className='rounded-xl border p-4 bg-green-50/50 dark:bg-green-900/10'>
-								<label className='block text-sm font-bold mb-3 text-green-800 dark:text-green-200'>
+							<div className='rounded-xl border bg-green-50 p-4 dark:bg-green-900/10'>
+								<label className='mb-3 block text-sm font-bold text-green-800 dark:text-green-200'>
 									Procesador
 								</label>
 								<ProcessorSelector
 									deviceType='AIO'
 									value={values.processor || ''}
-									onChange={(processorText) => onChange('processor', processorText)}
+									onChange={(processorText) =>
+										onChange('processor', processorText)
+									}
 									disabled={readOnly}
 								/>
 							</div>
 
-							<div className='rounded-xl border p-4 bg-orange-50/50 dark:bg-orange-900/10'>
-								<label className='block text-sm font-bold mb-3 text-orange-800 dark:text-orange-200'>
+							<div className='rounded-xl border bg-orange-50 p-4 dark:bg-orange-900/10'>
+								<label className='mb-3 block text-sm font-bold text-orange-800 dark:text-orange-200'>
 									Pulgadas Pantalla
 								</label>
 								<Input
@@ -219,13 +235,12 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 						initial={{ opacity: 0, x: 20 }}
 						animate={{ opacity: 1, x: 0 }}
 						exit={{ opacity: 0, x: -20 }}
-						transition={{ duration: 0.3 }}
-					>
+						transition={{ duration: 0.3 }}>
 						<div className='space-y-6'>
-							<h3 className='text-lg font-bold mb-4 text-center'>Memoria RAM</h3>
+							<h3 className='mb-4 text-center text-lg font-bold'>Memoria RAM</h3>
 
-							<div className='rounded-xl border p-4 bg-green-50/50 dark:bg-green-900/10'>
-								<label className='block text-sm font-bold mb-3 text-green-800 dark:text-green-200'>
+							<div className='rounded-xl border bg-green-50 p-4 dark:bg-green-900/10'>
+								<label className='mb-3 block text-sm font-bold text-green-800 dark:text-green-200'>
 									Tamaño
 								</label>
 								<Input
@@ -238,8 +253,8 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 								/>
 							</div>
 
-							<div className='rounded-xl border p-4 bg-blue-50/50 dark:bg-blue-900/10'>
-								<label className='block text-sm font-bold mb-3 text-blue-800 dark:text-blue-200'>
+							<div className='rounded-xl border bg-blue-50 p-4 dark:bg-blue-900/10'>
+								<label className='mb-3 block text-sm font-bold text-blue-800 dark:text-blue-200'>
 									Slots
 								</label>
 								<Input
@@ -252,8 +267,8 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 								/>
 							</div>
 
-							<div className='rounded-xl border p-4 bg-purple-50/50 dark:bg-purple-900/10'>
-								<label className='block text-sm font-bold mb-3 text-purple-800 dark:text-purple-200 text-center'>
+							<div className='rounded-xl border bg-purple-50 p-4 dark:bg-purple-900/10'>
+								<label className='mb-3 block text-center text-sm font-bold text-purple-800 dark:text-purple-200'>
 									Tipo
 								</label>
 								<div className='grid grid-cols-3 gap-2'>
@@ -279,13 +294,12 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 						initial={{ opacity: 0, x: 20 }}
 						animate={{ opacity: 1, x: 0 }}
 						exit={{ opacity: 0, x: -20 }}
-						transition={{ duration: 0.3 }}
-					>
+						transition={{ duration: 0.3 }}>
 						<div className='space-y-6'>
-							<h3 className='text-lg font-bold mb-4 text-center'>Almacenamiento</h3>
+							<h3 className='mb-4 text-center text-lg font-bold'>Almacenamiento</h3>
 
-							<div className='rounded-xl border p-4 bg-purple-50/50 dark:bg-purple-900/10'>
-								<label className='block text-sm font-bold mb-3 text-purple-800 dark:text-purple-200'>
+							<div className='rounded-xl border bg-purple-50 p-4 dark:bg-purple-900/10'>
+								<label className='mb-3 block text-sm font-bold text-purple-800 dark:text-purple-200'>
 									Capacidad
 								</label>
 								<Input
@@ -298,18 +312,20 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 								/>
 							</div>
 
-							<div className='rounded-xl border p-4 bg-orange-50/50 dark:bg-orange-900/10'>
-								<label className='block text-sm font-bold mb-3 text-orange-800 dark:text-orange-200 text-center'>
+							<div className='rounded-xl border bg-orange-50 p-4 dark:bg-orange-900/10'>
+								<label className='mb-3 block text-center text-sm font-bold text-orange-800 dark:text-orange-200'>
 									Tecnología
 								</label>
-								<div className='grid grid-cols-2 md:grid-cols-3 gap-2'>
+								<div className='grid grid-cols-2 gap-2 md:grid-cols-3'>
 									{storageTechOptions.map((opt) => (
 										<SelectionCard
 											key={opt.value}
 											label={opt.label}
 											value={opt.value}
 											isSelected={values.storage_technology === opt.value}
-											onClick={() => onChange('storage_technology', opt.value)}
+											onClick={() =>
+												onChange('storage_technology', opt.value)
+											}
 										/>
 									))}
 								</div>
@@ -325,34 +341,83 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 						initial={{ opacity: 0, x: 20 }}
 						animate={{ opacity: 1, x: 0 }}
 						exit={{ opacity: 0, x: -20 }}
-						transition={{ duration: 0.3 }}
-					>
+						transition={{ duration: 0.3 }}>
 						<div className='space-y-6'>
-							<h3 className='text-lg font-bold mb-4 text-center'>Pantalla y Base</h3>
+							<h3 className='mb-4 text-center text-lg font-bold'>Pantalla y Base</h3>
 
-							<div className='rounded-xl border p-4 bg-purple-50/50 dark:bg-purple-900/10'>
-								<label className='block text-sm font-bold mb-3 text-purple-800 dark:text-purple-200 text-center'>
+							<div className='rounded-xl border bg-purple-50 p-4 dark:bg-purple-900/10'>
+								<label className='mb-3 block text-center text-sm font-bold text-purple-800 dark:text-purple-200'>
 									Condición Pantalla
 								</label>
-								<div className='grid grid-cols-2 md:grid-cols-3 gap-2'>
+								<div className='grid grid-cols-2 gap-2 md:grid-cols-3'>
 									{screenConditionOptions.map((opt) => (
 										<SelectionCard
 											key={opt.value}
 											label={opt.label}
 											value={opt.value}
 											isSelected={values.screen_condition === opt.value}
-											onClick={() => onChange('screen_condition', opt.value)}
+											onClick={() => {
+												onChange('screen_condition', opt.value);
+												// Limpiar contadores al cambiar
+												if (opt.value !== 'spots')
+													onChange('spots_count', null);
+												if (opt.value !== 'dead_pixels')
+													onChange('dead_pixels_count', null);
+											}}
 											color={opt.color as 'green' | 'red' | 'yellow'}
 										/>
 									))}
 								</div>
+
+								{/* Conditional Inputs */}
+								{values.screen_condition === 'spots' && (
+									<div className='animate-in zoom-in mx-auto mt-4 max-w-xs duration-300'>
+										<div className='rounded-xl border border-yellow-200 bg-yellow-50 p-3 dark:border-yellow-700 dark:bg-yellow-900/20'>
+											<label className='mb-2 block text-center text-sm font-bold text-yellow-800 dark:text-yellow-200'>
+												Cantidad de Manchas
+											</label>
+											<StepperInput
+												value={
+													typeof values.spots_count === 'number'
+														? values.spots_count
+														: 1
+												}
+												onChange={(val) => onChange('spots_count', val)}
+												min={1}
+												max={50}
+											/>
+										</div>
+									</div>
+								)}
+
+								{values.screen_condition === 'dead_pixels' && (
+									<div className='animate-in zoom-in mx-auto mt-4 max-w-xs duration-300'>
+										<div className='rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-700 dark:bg-red-900/20'>
+											<label className='mb-2 block text-center text-sm font-bold text-red-800 dark:text-red-200'>
+												Píxeles Muertos
+											</label>
+											<StepperInput
+												value={
+													typeof values.dead_pixels_count === 'number'
+														? values.dead_pixels_count
+														: 1
+												}
+												onChange={(val) =>
+													onChange('dead_pixels_count', val)
+												}
+												min={1}
+												max={50}
+											/>
+										</div>
+									</div>
+								)}
 							</div>
 
-							<div className='rounded-xl border p-4 bg-blue-50/50 dark:bg-blue-900/10'>
-								<label className='block text-sm font-bold mb-3 text-blue-800 dark:text-blue-200 text-center'>
+							<div className='rounded-xl border bg-blue-50 p-4 dark:bg-blue-900/10'>
+								<label className='mb-3 block text-center text-sm font-bold text-blue-800 dark:text-blue-200'>
 									Condición Base/Soporte
 								</label>
-								<div className='grid grid-cols-2 md:grid-cols-3 gap-2'>
+								<div className='grid grid-cols-2 gap-2 md:grid-cols-3'>
 									{standConditionOptions.map((opt) => (
 										<SelectionCard
 											key={opt.value}
@@ -391,14 +456,17 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 						initial={{ opacity: 0, x: 20 }}
 						animate={{ opacity: 1, x: 0 }}
 						exit={{ opacity: 0, x: -20 }}
-						transition={{ duration: 0.3 }}
-					>
+						transition={{ duration: 0.3 }}>
 						<div className='space-y-6'>
-							<h3 className='text-lg font-bold mb-4 text-center'>Puertos</h3>
-							<div className='grid grid-cols-3 md:grid-cols-4 gap-3'>
+							<h3 className='mb-4 text-center text-lg font-bold'>Puertos</h3>
+							<div className='grid grid-cols-3 gap-3 md:grid-cols-4'>
 								{ports.map((port) => (
-									<div key={port.name} className='flex flex-col items-center gap-1'>
-										<label className='text-[10px] font-bold text-gray-500 uppercase'>{port.label}</label>
+									<div
+										key={port.name}
+										className='flex flex-col items-center gap-1'>
+										<label className='text-[10px] font-bold uppercase text-gray-500'>
+											{port.label}
+										</label>
 										<StepperInput
 											value={getNumericValue(port.name)}
 											onChange={(val) => onChange(port.name, val)}
@@ -408,7 +476,7 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 								))}
 							</div>
 
-							<div className='rounded-xl border border-gray-200 p-4 bg-gray-50/50 dark:bg-gray-900/10'>
+							<div className='rounded-xl border border-gray-200 bg-gray-50/50 p-4 dark:bg-gray-900/10'>
 								<YesNoSelector
 									label='¿Todos los Puertos OK?'
 									value={values.all_ports_functional}
@@ -421,13 +489,17 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 								/>
 
 								{values.all_ports_functional === false && (
-									<div className='mt-4 p-3 bg-red-50 rounded-xl border border-red-200 flex flex-col items-center animate-in zoom-in'>
-										<label className='text-red-800 font-bold mb-1 text-sm'>Puertos Defectuosos</label>
+									<div className='animate-in zoom-in mt-4 flex flex-col items-center rounded-xl border border-red-200 bg-red-50 p-3'>
+										<label className='mb-1 text-sm font-bold text-red-800'>
+											Puertos Defectuosos
+										</label>
 										<StepperInput
 											value={getNumericValue('defective_ports_count')}
-											onChange={(val) => onChange('defective_ports_count', val)}
+											onChange={(val) =>
+												onChange('defective_ports_count', val)
+											}
 										/>
-										<p className='text-xs text-red-700 text-center mt-2'>
+										<p className='mt-2 text-center text-xs text-red-700'>
 											⚠️ Más de 1 puerto = Grado M automático
 										</p>
 									</div>
@@ -444,10 +516,11 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 						initial={{ opacity: 0, x: 20 }}
 						animate={{ opacity: 1, x: 0 }}
 						exit={{ opacity: 0, x: -20 }}
-						transition={{ duration: 0.3 }}
-					>
+						transition={{ duration: 0.3 }}>
 						<div className='space-y-6'>
-							<h3 className='text-lg font-bold mb-4 text-center'>Conectividad y Alimentación</h3>
+							<h3 className='mb-4 text-center text-lg font-bold'>
+								Conectividad y Alimentación
+							</h3>
 
 							<div className='grid grid-cols-2 gap-4'>
 								<YesNoSelector
@@ -469,7 +542,7 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 								onChange={(val) => onChange('has_cd_drive', val)}
 							/>
 
-							<div className='rounded-xl border p-4 bg-yellow-50/50 dark:bg-yellow-900/10'>
+							<div className='rounded-xl border bg-yellow-50 p-4 dark:bg-yellow-900/10'>
 								<YesNoSelector
 									label='¿Incluye Cargador/Adaptador?'
 									value={values.includes_charger || values.includes_power_adapter}
@@ -483,24 +556,33 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 								/>
 
 								{(values.includes_charger || values.includes_power_adapter) && (
-									<div className='mt-4 animate-in fade-in zoom-in'>
-										<label className='block text-sm font-bold mb-2 text-center dark:text-gray-300'>
+									<div className='animate-in fade-in zoom-in mt-4'>
+										<label className='mb-2 block text-center text-sm font-bold dark:text-gray-300'>
 											Estado del Cargador
 										</label>
 										<div className='grid grid-cols-2 gap-2'>
-											{chargerStatusOptions
-												.filter((opt) => opt.value !== 'not_included')
-												.map((opt) => (
-													<SelectionCard
-														key={opt.value}
-														label={opt.label}
-														value={opt.value}
-														isSelected={values.charger_status === opt.value}
-														onClick={() => onChange('charger_status', opt.value)}
-														color={opt.color as 'green' | 'red' | 'yellow'}
-													/>
-												))}
+											{CHARGER_STATUS_OPTIONS.filter(
+												(opt) => opt.value !== 'not_included',
+											).map((opt) => (
+												<SelectionCard
+													key={opt.value}
+													label={opt.label}
+													value={opt.value}
+													isSelected={values.charger_status === opt.value}
+													onClick={() =>
+														onChange('charger_status', opt.value)
+													}
+													color={opt.color as 'green' | 'red' | 'yellow'}
+												/>
+											))}
 										</div>
+										{/* Critical Alert for Broken Port */}
+										{values.charger_status === 'broken_port' && (
+											<div className='mt-3 animate-pulse rounded-xl border border-red-500 bg-red-100 p-3 text-center text-red-800 dark:bg-red-900/50 dark:text-red-100'>
+												<span className='text-lg font-bold'>CRÍTICO: </span>
+												Entrada de carga dañada causará Grado M (Malo)
+											</div>
+										)}
 									</div>
 								)}
 							</div>
@@ -515,16 +597,17 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 						initial={{ opacity: 0, x: 20 }}
 						animate={{ opacity: 1, x: 0 }}
 						exit={{ opacity: 0, x: -20 }}
-						transition={{ duration: 0.3 }}
-					>
+						transition={{ duration: 0.3 }}>
 						<div className='space-y-6'>
-							<h3 className='text-lg font-bold mb-4 text-center'>Condición y Sistema</h3>
+							<h3 className='mb-4 text-center text-lg font-bold'>
+								Condición y Sistema
+							</h3>
 
-							<div className='rounded-xl border p-4 bg-green-50/50 dark:bg-green-900/10'>
-								<label className='block text-sm font-bold mb-3 text-green-800 dark:text-green-200 text-center'>
+							<div className='rounded-xl border bg-green-50 p-4 dark:bg-green-900/10'>
+								<label className='mb-3 block text-center text-sm font-bold text-green-800 dark:text-green-200'>
 									Condición General
 								</label>
-								<div className='grid grid-cols-2 md:grid-cols-3 gap-2'>
+								<div className='grid grid-cols-2 gap-2 md:grid-cols-3'>
 									{generalConditionOptions.map((opt) => (
 										<SelectionCard
 											key={opt.value}
@@ -538,11 +621,11 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 								</div>
 							</div>
 
-							<div className='rounded-xl border p-4 bg-orange-50/50 dark:bg-orange-900/10'>
-								<label className='block text-sm font-bold mb-3 text-orange-800 dark:text-orange-200 text-center'>
+							<div className='rounded-xl border bg-orange-50 p-4 dark:bg-orange-900/10'>
+								<label className='mb-3 block text-center text-sm font-bold text-orange-800 dark:text-orange-200'>
 									Condición Carcasa
 								</label>
-								<div className='grid grid-cols-2 md:grid-cols-3 gap-2'>
+								<div className='grid grid-cols-2 gap-2 md:grid-cols-3'>
 									{coverConditionOptions.map((opt) => (
 										<SelectionCard
 											key={opt.value}
@@ -556,8 +639,8 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 								</div>
 							</div>
 
-							<div className='rounded-xl border p-4 bg-blue-50/50 dark:bg-blue-900/10'>
-								<label className='block text-sm font-bold mb-3 text-blue-800 dark:text-blue-200'>
+							<div className='rounded-xl border bg-blue-50 p-4 dark:bg-blue-900/10'>
+								<label className='mb-3 block text-sm font-bold text-blue-800 dark:text-blue-200'>
 									Sistema Operativo
 								</label>
 								<SoSelector
@@ -567,8 +650,8 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 								/>
 							</div>
 
-							<div className='rounded-xl border p-4 bg-gray-50/50 dark:bg-gray-900/10'>
-								<label className='block text-sm font-bold mb-3 dark:text-gray-300'>
+							<div className='rounded-xl border bg-gray-50 p-4 dark:bg-gray-900/10'>
+								<label className='mb-3 block text-sm font-bold dark:text-gray-300'>
 									Observaciones
 								</label>
 								<Textarea
@@ -595,13 +678,12 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 				<AnimatePresence mode='wait'>{renderStepContent()}</AnimatePresence>
 
 				{/* Navigation */}
-				<div className='flex items-center justify-between rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800 mt-6'>
+				<div className='mt-6 flex items-center justify-between rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800'>
 					<Button
 						variant='outline'
 						onClick={handlePreviousStep}
 						isDisable={step === 0}
-						icon='HeroArrowLeft'
-					>
+						icon='HeroArrowLeft'>
 						Anterior
 					</Button>
 
@@ -611,7 +693,7 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 								key={i}
 								className={`h-2.5 w-2.5 rounded-full transition-all duration-300 ${
 									i === step
-										? 'bg-blue-600 w-8'
+										? 'w-8 bg-blue-600'
 										: i < step
 											? 'bg-blue-400'
 											: 'bg-gray-300 dark:bg-gray-600'
@@ -624,8 +706,7 @@ const AioForm: React.FC<AioFormProps> = ({ branchId, values, onChange, readOnly 
 						color='green'
 						onClick={handleNextStep}
 						isDisable={false}
-						icon={step === MAX_STEPS - 1 ? 'HeroCheckCircle' : 'HeroArrowRight'}
-					>
+						icon={step === MAX_STEPS - 1 ? 'HeroCheckCircle' : 'HeroArrowRight'}>
 						{step === MAX_STEPS - 1 ? 'Finalizar Revisión' : 'Siguiente'}
 					</Button>
 				</div>

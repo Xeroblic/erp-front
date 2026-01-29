@@ -19,17 +19,13 @@ import { RangeSlider } from '../components/RangerSlider';
 import { StepperInput } from '../components/StepperInput';
 import { SelectionCard } from '../components/SelectionCard';
 import { YesNoSelector } from '../components/YesNoSelector';
-import { 
+import {
 	GENERAL_CONDITION_OPTIONS,
 	RAM_TYPE_OPTIONS,
 	STORAGE_TECH_OPTIONS,
 	CHARGER_STATUS_OPTIONS,
-	COVER_CONDITION_OPTIONS 
+	COVER_CONDITION_OPTIONS,
 } from '../constants/formOptions';
-
-
-
-
 
 // --- MAIN COMPONENT ---
 
@@ -72,7 +68,10 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 		(name: string) =>
 		(newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption> | null) => {
 			if (Array.isArray(newValue)) {
-				onChange(name, newValue.map((option) => option.value));
+				onChange(
+					name,
+					newValue.map((option) => option.value),
+				);
 			} else {
 				const option = newValue as TSelectOption | null;
 				onChange(name, option?.value ?? null);
@@ -128,13 +127,13 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 			rj45_ports: 'RJ45',
 			sd_readers: 'Lector SD',
 		};
-		
+
 		const activePorts: string[] = [];
-		
+
 		Object.entries(portFields).forEach(([field, label]) => {
 			const value = values[field as keyof UpdateItemDetailsPayload];
 			const numValue = typeof value === 'number' ? value : parseInt(String(value)) || 0;
-			
+
 			if (numValue > 0) {
 				activePorts.push(label);
 			}
@@ -143,14 +142,26 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 		if (activePorts.length > 0) {
 			const connectivityText = `PUERTOS CON PROBLEMAS:\nPuertos presentes: \n${activePorts.join(', \n')}\n\nIndica a continuación cuántos están dañados y qué fallas tienen:`;
 			const currentObs = values.observations || '';
-			
+
 			// Solo agregar si no existe ya en observaciones
 			if (!currentObs.includes('PUERTOS CON PROBLEMAS')) {
-				const newObs = currentObs ? `${currentObs}\n\n${connectivityText}` : connectivityText;
+				const newObs = currentObs
+					? `${currentObs}\n\n${connectivityText}`
+					: connectivityText;
 				onChange('observations', newObs);
 			}
 		}
-	}, [values.all_ports_functional, values.defective_ports_count, values.usb_a_ports, values.usb_c_ports, values.hdmi_ports, values.displayport_ports, values.vga_ports, values.rj45_ports, values.sd_readers]);
+	}, [
+		values.all_ports_functional,
+		values.defective_ports_count,
+		values.usb_a_ports,
+		values.usb_c_ports,
+		values.hdmi_ports,
+		values.displayport_ports,
+		values.vga_ports,
+		values.rj45_ports,
+		values.sd_readers,
+	]);
 
 	if (validationLoading || brandsLoading) {
 		return (
@@ -167,21 +178,29 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 			case 0: // Info
 				return (
 					<div className='space-y-6'>
-						<h3 className='text-lg font-bold mb-4 text-center dark:text-gray-100'>Información Básica</h3>
-						<div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+						<h3 className='mb-4 text-center text-lg font-bold dark:text-gray-100'>
+							Información Básica
+						</h3>
+						<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
 							<div>
-								<label className='block text-xs font-bold mb-1 dark:text-gray-300'>Marca *</label>
+								<label className='mb-1 block text-xs font-bold dark:text-gray-300'>
+									Marca *
+								</label>
 								<SelectReact
 									name='brand'
 									options={brandOptions}
-									value={brandOptions.find((o) => o.value === values.brand) || null}
+									value={
+										brandOptions.find((o) => o.value === values.brand) || null
+									}
 									onChange={handleSelectChange('brand')}
 									placeholder='Seleccionar marca'
 									isDisabled={readOnly}
 								/>
 							</div>
 							<div>
-								<label className='block text-xs font-bold mb-1 dark:text-gray-300'>Modelo *</label>
+								<label className='mb-1 block text-xs font-bold dark:text-gray-300'>
+									Modelo *
+								</label>
 								<Input
 									type='text'
 									name='model'
@@ -193,8 +212,10 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 						</div>
 
 						{/* Added Line Input */}
-						<div className='max-w-md mx-auto'>
-							<label className='block text-xs font-bold mb-1 dark:text-gray-300'>Línea (Opcional)</label>
+						<div className='mx-auto max-w-md'>
+							<label className='mb-1 block text-xs font-bold dark:text-gray-300'>
+								Línea (Opcional)
+							</label>
 							<Input
 								type='text'
 								name='line'
@@ -203,10 +224,12 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 								placeholder='Ej: OptiPlex, EliteDesk'
 							/>
 						</div>
-						
+
 						<div>
-							<label className='block text-sm font-bold mb-3 text-center dark:text-gray-300'>Factor de Forma</label>
-							<div className='grid grid-cols-3 md:grid-cols-5 gap-2'>
+							<label className='mb-3 block text-center text-sm font-bold dark:text-gray-300'>
+								Factor de Forma
+							</label>
+							<div className='grid grid-cols-3 gap-2 md:grid-cols-5'>
 								{formFactorOptions.map((opt) => (
 									<SelectionCard
 										key={opt.value}
@@ -223,9 +246,9 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 			case 1: // Specs - Proc/RAM
 				return (
 					<div className='space-y-6'>
-						<h3 className='text-lg font-bold mb-4 text-center'>Procesador y RAM</h3>
+						<h3 className='mb-4 text-center text-lg font-bold'>Procesador y RAM</h3>
 						<div>
-							<label className='block text-xs font-bold mb-1'>Procesador *</label>
+							<label className='mb-1 block text-xs font-bold'>Procesador *</label>
 							<ProcessorSelector
 								deviceType='Desktop'
 								value={values.processor || ''}
@@ -233,10 +256,12 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 								disabled={readOnly}
 							/>
 						</div>
-						
-						<div className='rounded-xl border p-4 bg-blue-50/50 dark:bg-blue-900/10'>
-							<label className='block text-sm font-bold mb-3 text-blue-800 dark:text-blue-200'>Memoria RAM</label>
-							<div className='grid grid-cols-2 gap-3 mb-3'>
+
+						<div className='rounded-xl border bg-blue-50 p-4 dark:bg-blue-900/10'>
+							<label className='mb-3 block text-sm font-bold text-blue-800 dark:text-blue-200'>
+								Memoria RAM
+							</label>
+							<div className='mb-3 grid grid-cols-2 gap-3'>
 								<Input
 									type='text'
 									name='ram_size'
@@ -252,7 +277,9 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 									placeholder='Slots (Ej: 4x4)'
 								/>
 							</div>
-							<label className='block text-xs font-semibold mb-2 text-gray-500'>Tipo</label>
+							<label className='mb-2 block text-xs font-semibold text-gray-500'>
+								Tipo
+							</label>
 							<div className='grid grid-cols-3 gap-2'>
 								{ramTypeOptions.map((opt) => (
 									<SelectionCard
@@ -270,10 +297,14 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 			case 2: // Specs - Storage/GPU
 				return (
 					<div className='space-y-6'>
-						<h3 className='text-lg font-bold mb-4 text-center'>Almacenamiento y Gráficos</h3>
-						
-						<div className='rounded-xl border p-4 bg-purple-50/50 dark:bg-purple-900/10'>
-							<label className='block text-sm font-bold mb-3 text-purple-800 dark:text-purple-200'>Almacenamiento</label>
+						<h3 className='mb-4 text-center text-lg font-bold'>
+							Almacenamiento y Gráficos
+						</h3>
+
+						<div className='rounded-xl border bg-purple-50 p-4 dark:bg-purple-900/10'>
+							<label className='mb-3 block text-sm font-bold text-purple-800 dark:text-purple-200'>
+								Almacenamiento
+							</label>
 							<Input
 								type='text'
 								name='storage_size'
@@ -282,7 +313,7 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 								placeholder='Capacidad (Ej: 1 TB)'
 								className='mb-3'
 							/>
-							<div className='grid grid-cols-2 md:grid-cols-4 gap-2'>
+							<div className='grid grid-cols-2 gap-2 md:grid-cols-4'>
 								{storageTechOptions.map((opt) => (
 									<SelectionCard
 										key={opt.value}
@@ -295,9 +326,11 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 							</div>
 						</div>
 
-						<div className='rounded-xl border p-4 bg-orange-50/50 dark:bg-orange-900/10'>
-							<div className='flex justify-between items-center mb-3'>
-								<label className='text-sm font-bold text-orange-800 dark:text-orange-200'>Tarjeta Gráfica Dedicada</label>
+						<div className='rounded-xl border bg-orange-50 p-4 dark:bg-orange-900/10'>
+							<div className='mb-3 flex items-center justify-between'>
+								<label className='text-sm font-bold text-orange-800 dark:text-orange-200'>
+									Tarjeta Gráfica Dedicada
+								</label>
 								<div className='w-24'>
 									<YesNoSelector
 										label=''
@@ -321,10 +354,10 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 				);
 			case 3: // Power
 				return (
-					<div className='space-y-8 max-w-lg mx-auto'>
-						<h3 className='text-lg font-bold mb-4 text-center'>Fuente de Poder</h3>
-						
-						<div className='p-6 border rounded-xl bg-white shadow-sm dark:bg-gray-800'>
+					<div className='mx-auto max-w-lg space-y-8'>
+						<h3 className='mb-4 text-center text-lg font-bold'>Fuente de Poder</h3>
+
+						<div className='rounded-xl border bg-white p-6 shadow-sm dark:bg-gray-800'>
 							<div className='space-y-2'>
 								<RangeSlider
 									label='Potencia Fuente (Watts)'
@@ -343,21 +376,27 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 									onChange={(val) => onChange('includes_charger', val)}
 								/>
 							</div>
-							
+
 							{values.includes_charger && (
 								<div className='animate-in fade-in zoom-in duration-200'>
-									<label className='block text-xs font-bold text-center mb-2 dark:text-gray-300'>Estado del Cable</label>
+									<label className='mb-2 block text-center text-xs font-bold dark:text-gray-300'>
+										Estado del Cable
+									</label>
 									<div className='grid grid-cols-2 gap-2'>
-										{chargerStatusOptions.filter(o => o.value !== 'not_included').map((opt) => (
-											<SelectionCard
-												key={opt.value}
-												label={opt.label}
-												value={opt.value}
-												isSelected={values.charger_status === opt.value}
-												onClick={() => onChange('charger_status', opt.value)}
-												color={opt.color as any}
-											/>
-										))}
+										{chargerStatusOptions
+											.filter((o) => o.value !== 'not_included')
+											.map((opt) => (
+												<SelectionCard
+													key={opt.value}
+													label={opt.label}
+													value={opt.value}
+													isSelected={values.charger_status === opt.value}
+													onClick={() =>
+														onChange('charger_status', opt.value)
+													}
+													color={opt.color as any}
+												/>
+											))}
 									</div>
 								</div>
 							)}
@@ -376,11 +415,13 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 				];
 				return (
 					<div className='space-y-6'>
-						<h3 className='text-lg font-bold mb-4 text-center'>Conectividad</h3>
-						<div className='grid grid-cols-3 md:grid-cols-4 gap-3'>
+						<h3 className='mb-4 text-center text-lg font-bold'>Conectividad</h3>
+						<div className='grid grid-cols-3 gap-3 md:grid-cols-4'>
 							{ports.map((port) => (
 								<div key={port.name} className='flex flex-col items-center gap-1'>
-									<label className='text-[10px] font-bold text-gray-500 uppercase'>{port.label}</label>
+									<label className='text-[10px] font-bold uppercase text-gray-500'>
+										{port.label}
+									</label>
 									<StepperInput
 										value={getNumericValue(port.name)}
 										onChange={(val) => onChange(port.name, val)}
@@ -423,8 +464,10 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 						</div>
 
 						{values.all_ports_functional === false && (
-							<div className='mt-4 p-3 bg-red-400/50 dark:bg-red-900/50 backdrop-blur-sm rounded-xl border border-red-200 flex flex-col items-center animate-in zoom-in'>
-								<label className='text-red-800 font-bold mb-1 text-sm'>Cant. Puertos Malos</label>
+							<div className='animate-in zoom-in mt-4 flex flex-col items-center rounded-xl border border-red-200 bg-red-400/50 p-3 backdrop-blur-sm dark:bg-red-900/50'>
+								<label className='mb-1 text-sm font-bold text-red-800'>
+									Cant. Puertos Malos
+								</label>
 								<StepperInput
 									value={values.defective_ports_count || 0}
 									onChange={(val) => {
@@ -439,10 +482,10 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 			case 5: // Aesthetics
 				return (
 					<div className='space-y-6'>
-						<h3 className='text-lg font-bold mb-4 text-center'>Estética</h3>
-						
+						<h3 className='mb-4 text-center text-lg font-bold'>Estética</h3>
+
 						{/* General Condition */}
-						<div className='grid grid-cols-2 md:grid-cols-3 gap-3 mb-6'>
+						<div className='mb-6 grid grid-cols-2 gap-3 md:grid-cols-3'>
 							{generalConditionOptions.map((opt) => (
 								<SelectionCard
 									key={opt.value}
@@ -457,9 +500,11 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 						</div>
 
 						{/* Cover Condition */}
-						<div className='p-4 border rounded-xl bg-gray-50/50 dark:bg-gray-800/30'>
-							<label className='block text-sm font-bold mb-3 text-center dark:text-gray-300'>Estado Carcasa (Cover)</label>
-							<div className='grid grid-cols-2 md:grid-cols-3 gap-2'>
+						<div className='rounded-xl border bg-gray-50 p-4 dark:bg-gray-800/30'>
+							<label className='mb-3 block text-center text-sm font-bold dark:text-gray-300'>
+								Estado Carcasa (Cover)
+							</label>
+							<div className='grid grid-cols-2 gap-2 md:grid-cols-3'>
 								{coverConditionOptions.map((opt) => (
 									<SelectionCard
 										key={opt.value}
@@ -476,8 +521,8 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 				);
 			case 6: // OS & Obs
 				return (
-					<div className='space-y-6 h-full flex flex-col'>
-						<h3 className='text-lg font-bold mb-4 text-center'>Sistema y Notas</h3>
+					<div className='flex h-full flex-col space-y-6'>
+						<h3 className='mb-4 text-center text-lg font-bold'>Sistema y Notas</h3>
 						<div className='mb-4 flex justify-center'>
 							<div className='w-full max-w-sm'>
 								<SoSelector
@@ -487,8 +532,8 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 								/>
 							</div>
 						</div>
-						<div className='flex-grow flex flex-col'>
-							<label className='block text-sm font-bold mb-2'>Observaciones</label>
+						<div className='flex flex-grow flex-col'>
+							<label className='mb-2 block text-sm font-bold'>Observaciones</label>
 							<Textarea
 								name='observations'
 								value={values.observations || ''}
@@ -505,8 +550,8 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 	};
 
 	return (
-		<div className='flex flex-col h-[calc(100vh-250px)] min-h-[500px] select-none'>
-			<div className='flex-grow overflow-y-auto overflow-x-hidden rounded-2xl border-2 border-dashed border-gray-200 bg-white/50 p-4 dark:border-gray-700 dark:bg-gray-800/50 relative'>
+		<div className='flex h-[calc(100vh-250px)] min-h-[500px] select-none flex-col'>
+			<div className='relative flex-grow overflow-y-auto overflow-x-hidden rounded-2xl border-2 border-dashed border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800/50'>
 				<AnimatePresence mode='wait'>
 					<motion.div
 						key={step}
@@ -514,8 +559,7 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 						animate={{ opacity: 1, x: 0 }}
 						exit={{ opacity: 0, x: -20 }}
 						transition={{ duration: 0.2 }}
-						className='h-full'
-					>
+						className='h-full'>
 						{renderStepContent()}
 					</motion.div>
 				</AnimatePresence>
@@ -527,8 +571,7 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 					variant='outline'
 					onClick={handlePreviousStep}
 					disabled={step === 0}
-					className='w-24 h-10'
-				>
+					className='h-10 w-24'>
 					Anterior
 				</Button>
 
@@ -546,8 +589,7 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 				<Button
 					color={step === MAX_STEPS - 1 ? 'green' : 'blue'}
 					onClick={handleNextStep}
-					className='w-24 h-10 shadow-md'
-				>
+					className='h-10 w-24 shadow-md'>
 					{step === MAX_STEPS - 1 ? 'Finalizar' : 'Siguiente'}
 				</Button>
 			</div>

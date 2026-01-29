@@ -36,10 +36,12 @@ export const STORAGE_TECH_OPTIONS: OptionType[] = [
 
 // Charger status options - Used by Notebook, Desktop, AIO
 export const CHARGER_STATUS_OPTIONS: OptionType[] = [
-    { value: 'good_condition', label: 'Buen estado', color: 'green' },
-    { value: 'damaged_cable', label: 'Cable dañado', color: 'yellow' },
-    { value: 'not_matching_equipment', label: 'No corresponde', color: 'red' },
-    { value: 'not_included', label: 'No incluye', color: 'red' },
+    { value: 'buen_estado', label: 'Buen estado', color: 'green' },
+    { value: 'cable_en_mal_estado', label: 'Cable dañado', color: 'yellow' },
+    { value: 'no_corresponde_a_equipo', label: 'No corresponde', color: 'red' },
+    { value: 'no_incluye', label: 'No incluye', color: 'red' },
+    { value: 'broken_charger', label: 'Cargador roto', color: 'red' },
+    { value: 'broken_port', label: 'Entrada rota', color: 'red' },
 ];
 
 // Cover condition options - Used by Desktop, AIO, Docking
@@ -56,6 +58,7 @@ export const SCREEN_CONDITION_OPTIONS: OptionType[] = [
     { value: 'ok', label: 'OK', color: 'green' },
     { value: 'minor_wear', label: 'Desgaste menor', color: 'yellow' },
     { value: 'worn', label: 'Desgastado', color: 'yellow' },
+    { value: 'spots', label: 'Manchas', color: 'yellow' },
     { value: 'missing_pieces', label: 'Piezas faltantes', color: 'red' },
     { value: 'dead_pixels', label: 'Píxeles muertos', color: 'red' },
     { value: 'broken', label: 'Roto', color: 'red' },

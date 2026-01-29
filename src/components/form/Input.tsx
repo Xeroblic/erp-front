@@ -60,8 +60,8 @@ const Input = forwardRef<HTMLInputElement, IInputProps>((props, ref) => {
 		solid: {
 			general: classNames(
 				// Default
-				[`${borderWidth} border-zinc-100 dark:border-zinc-800`],
-				'bg-gray-300 dark:bg-zinc-600',
+				[`${borderWidth} border-gray-300 dark:border-zinc-800`],
+				'bg-white dark:bg-zinc-600',
 				// Hover
 				[`hover:border-${color}-${colorIntensity}`],
 				[`dark:hover:border-${color}-${colorIntensity}`],
