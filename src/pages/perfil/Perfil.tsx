@@ -304,7 +304,7 @@ const Perfil = () => {
 					<div
 						ref={containerRef}
 						className='group/hero relative mb-8 min-h-[220px] w-full overflow-hidden rounded-3xl bg-neutral-200 shadow-2xl dark:bg-neutral-800'>
-						<div className='absolute inset-0 z- overflow-hidden'>
+						<div className='z- absolute inset-0 overflow-hidden'>
 							<div className='absolute right-0 top-0 flex h-full w-[90%] items-center justify-center transition-transform duration-700 ease-out will-change-transform group-hover/hero:scale-105 md:w-[50%]'>
 								{avatarUrl ? (
 									<img
@@ -329,12 +329,12 @@ const Perfil = () => {
 						</div>
 
 						<div
-							className='relative z-1 flex h-full min-h-[220px] w-[65%] items-center bg-white dark:bg-neutral-900'
+							className='z-1 relative flex h-[100vh] max-h-[30vh] min-h-[24vh] md:max-h-[24vh] md:h-[28vh]  w-[75%] md:w-[65%] items-center bg-white dark:bg-neutral-900'
 							style={{
 								clipPath:
-									'polygon(0% 0%, 100% 0%, 85% 60%, 95% 60%, 95% 85%, 100% 100%, 0% 100%)',
+									'polygon(0% 0%, 100% 0%, 82% 59.21%, 100% 50.25%, 82% 100%, 0% 100%)',
 								WebkitClipPath:
-									'polygon(0% 0%, 100% 0%, 85% 60%, 95% 60%, 85% 100%, 100% 100%, 0% 100%)',
+									'polygon(0% 0%, 100% 0%, 88.67% 49.35%, 100% 49.35%, 88.67% 100%, 0% 100%)',
 							}}>
 							<div className='flex w-full items-center gap-6 p-6 pr-20 md:p-10 md:pr-24'>
 								<div ref={avatarRef} className='relative flex-shrink-0'>
@@ -401,7 +401,7 @@ const Perfil = () => {
 						ref={tabsRef}
 						className='relative mb-4 mt-4'
 						style={{ willChange: 'transform, opacity' }}>
-						<div className='relative flex gap-2 rounded-2xl bg-neutral-100/80 p-1.5 backdrop-blur-sm dark:bg-neutral-800/60'>
+						<div className='relative flex gap-2 rounded-2xl bg-neutral-300/80 p-1.5 backdrop-blur-sm dark:bg-neutral-800/60'>
 							{/* Sliding indicator */}
 							<div
 								ref={indicatorRef}

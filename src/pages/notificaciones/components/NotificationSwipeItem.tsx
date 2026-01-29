@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { motion, useMotionValue, animate } from 'framer-motion';
+import React, { useRef, useState, useCallback, useEffect, useLayoutEffect } from 'react';
+import gsap from 'gsap';
 import Avatar from '@/components/Avatar';
 import Icon from '@/components/icon/Icon';
 import type { UserNotificationDTO } from '@/interface/notifications.interface';
@@ -12,7 +12,7 @@ type Props = {
 	onDelete?: (id: number) => void;
 	onOpen?: (id: number) => void;
 	onUnarchive?: (id: number) => void;
-	archiveLabel?: string; // "Archivar" | "Desarchivar"
+	archiveLabel?: string;
 };
 
 const sanitize = (s?: string | null) =>
@@ -21,9 +21,9 @@ const sanitize = (s?: string | null) =>
 		.replace(/\s+/g, ' ')
 		.trim();
 
-const THRESHOLD = 80; // px para disparar acciones
-const ACTIVATE_PX = 18; // px para entrar en modo swipe
-const HV_RATIO = 2; // horizontal debe ser 2x vertical
+// Constantes de configuración
+const ACTIVATE_PX = 12;
+const HV_RATIO = 1.5;
 
 const NotificationSwipeItem: React.FC<Props> = ({
 	n,
@@ -34,91 +34,249 @@ const NotificationSwipeItem: React.FC<Props> = ({
 	onOpen,
 	archiveLabel = 'Archivar',
 }) => {
-	const startX = useRef<number | null>(null);
-	const startY = useRef<number | null>(null);
-	const [dx, setDx] = useState(0);
-	const [pointerActive, setPointerActive] = useState(false);
-	const [isSwiping, setIsSwiping] = useState(false);
-	const lastTapRef = useRef<number>(0);
-	const tapHintTimer = useRef<number | null>(null);
+	// === REFS DOM ===
+	const containerRef = useRef<HTMLDivElement>(null);
+	const cardRef = useRef<HTMLDivElement>(null);
+	const bgRef = useRef<HTMLDivElement>(null);
+	const leftIconRef = useRef<HTMLDivElement>(null);
+	const rightIconRef = useRef<HTMLDivElement>(null);
+
+	// === REFS TRACKING (sin re-renders) ===
+	const startX = useRef(0);
+	const startY = useRef(0);
+	const currentX = useRef(0);
+	const isDragging = useRef(false);
+	const isHorizontal = useRef<boolean | null>(null); // null = no decidido, true = horizontal, false = vertical
+	const cardWidth = useRef(300);
+	const rafId = useRef<number>(0);
+	const pointerId = useRef<number | null>(null);
+
+	// === ESTADO REACT (mínimo) ===
+	const [showBg, setShowBg] = useState(false);
+
+	// Tap handling
+	const lastTapRef = useRef(0);
 	const [needSecondTap, setNeedSecondTap] = useState(false);
+	const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	const x = useMotionValue(0);
+	// Threshold dinámico
+	const getThreshold = () => cardWidth.current * 0.45;
 
-	const handlePointerDown = (e: React.PointerEvent) => {
+	// === INICIALIZACIÓN ===
+	useLayoutEffect(() => {
+		if (cardRef.current) {
+			cardWidth.current = cardRef.current.offsetWidth || 300;
+			gsap.set(cardRef.current, { x: 0, force3D: true, willChange: 'transform' });
+		}
+	}, []);
+
+	// === APLICAR VISUALES (llamado en RAF) ===
+	const applyVisuals = useCallback(() => {
+		const x = currentX.current;
+		const threshold = getThreshold();
+		const progress = Math.min(Math.abs(x) / threshold, 1);
+		const direction = x > 0 ? 'right' : x < 0 ? 'left' : null;
+
+		// Mover tarjeta con gsap.set para sync con GPU
+		if (cardRef.current) {
+			gsap.set(cardRef.current, { x: x });
+		}
+
+		// Mostrar/ocultar background según dirección
+		if (bgRef.current) {
+			if (direction === 'right' && n.status !== 'read') {
+				bgRef.current.style.background = `linear-gradient(90deg, rgba(16, 185, 129, ${progress * 0.4}) 0%, transparent 50%)`;
+			} else if (direction === 'left') {
+				bgRef.current.style.background = `linear-gradient(270deg, rgba(245, 158, 11, ${progress * 0.4}) 0%, transparent 50%)`;
+			} else {
+				bgRef.current.style.background = 'transparent';
+			}
+		}
+
+		// Animar iconos
+		if (rightIconRef.current) {
+			const scale = direction === 'right' ? 1 + progress * 0.3 : 1;
+			const opacity = direction === 'right' ? progress : 0;
+			gsap.set(rightIconRef.current, { scale, opacity });
+		}
+		if (leftIconRef.current) {
+			const scale = direction === 'left' ? 1 + progress * 0.3 : 1;
+			const opacity = direction === 'left' ? progress : 0;
+			gsap.set(leftIconRef.current, { scale, opacity });
+		}
+	}, [n.status]);
+
+	// === POINTER HANDLERS ===
+	const handlePointerDown = useCallback((e: React.PointerEvent) => {
+		// Medir ancho actual
+		if (cardRef.current) {
+			cardWidth.current = cardRef.current.offsetWidth || 300;
+		}
+
+		// Capturar pointer
+		e.currentTarget.setPointerCapture(e.pointerId);
+		pointerId.current = e.pointerId;
+
+		// Reset estado
 		startX.current = e.clientX;
 		startY.current = e.clientY;
-		setPointerActive(true);
-		setIsSwiping(false);
-		setDx(0);
-		x.set(0);
-	};
+		currentX.current = 0;
+		isDragging.current = true;
+		isHorizontal.current = null;
 
-	const handlePointerMove = (e: React.PointerEvent) => {
-		if (startX.current == null || startY.current == null || !pointerActive) return;
-		const deltaX = e.clientX - startX.current;
-		const deltaY = e.clientY - startY.current;
-		// Activar swipe solo si el movimiento horizontal domina claramente
-		if (!isSwiping) {
-			const absX = Math.abs(deltaX);
-			const absY = Math.abs(deltaY);
-			if (absX >= ACTIVATE_PX && absX > absY * HV_RATIO) {
-				setIsSwiping(true);
-			} else {
-				// Si el movimiento vertical domina, no mostramos overlay ni arrastre
-				return;
+		// Mostrar background layer
+		setShowBg(true);
+	}, []);
+
+	const handlePointerMove = useCallback(
+		(e: React.PointerEvent) => {
+			if (!isDragging.current) return;
+
+			const dx = e.clientX - startX.current;
+			const dy = e.clientY - startY.current;
+
+			// Decidir dirección si aún no está decidido
+			if (isHorizontal.current === null) {
+				const absX = Math.abs(dx);
+				const absY = Math.abs(dy);
+
+				if (absX > ACTIVATE_PX || absY > ACTIVATE_PX) {
+					isHorizontal.current = absX > absY * HV_RATIO;
+
+					if (!isHorizontal.current) {
+						// Es scroll vertical, cancelar swipe
+						isDragging.current = false;
+						setShowBg(false);
+						return;
+					}
+
+					// Prevenir scroll mientras hacemos swipe
+					if (containerRef.current) {
+						containerRef.current.style.touchAction = 'none';
+					}
+				} else {
+					return; // Aún no hay suficiente movimiento
+				}
 			}
-		}
-		setDx(deltaX);
-		x.set(deltaX);
-	};
 
-	const smoothReset = () => animate(x, 0, { type: 'spring', stiffness: 260, damping: 24 });
+			if (!isHorizontal.current) return;
 
-	const handlePointerUp = () => {
-		if (startX.current == null) return;
-		const delta = x.get();
-		setPointerActive(false);
-		setIsSwiping(false);
-		setDx(0);
-		startX.current = null;
-		startY.current = null;
+			// Aplicar resistencia suave después del threshold
+			const threshold = getThreshold();
+			const maxDrag = cardWidth.current * 0.6;
+			let newX = dx;
 
-		if (delta > THRESHOLD) {
-			// swipe right => Toggle leído/no leído
-			if (n.status !== 'read') {
-				onRead(n.id);
-			} else {
-				onUnread(n.id);
+			if (Math.abs(dx) > threshold) {
+				const excess = Math.abs(dx) - threshold;
+				const resistance = 1 - (excess / maxDrag) * 0.7;
+				newX = Math.sign(dx) * (threshold + excess * Math.max(resistance, 0.2));
 			}
-			smoothReset();
-		} else if (delta < -THRESHOLD) {
-			// swipe left => Archivar/Desarchivar
-			onArchive(n.id);
-			smoothReset();
-		} else {
-			smoothReset();
-		}
-	};
 
-	const handleClick = () => {
-		if (isSwiping || Math.abs(dx) >= 3) return;
+			currentX.current = newX;
+
+			// Usar RAF para actualizar visuales
+			cancelAnimationFrame(rafId.current);
+			rafId.current = requestAnimationFrame(applyVisuals);
+		},
+		[applyVisuals],
+	);
+
+	const handlePointerEnd = useCallback(
+		(e: React.PointerEvent) => {
+			// Liberar pointer
+			try {
+				e.currentTarget.releasePointerCapture(e.pointerId);
+			} catch {
+				// Ignorar
+			}
+
+			if (!isDragging.current) return;
+
+			cancelAnimationFrame(rafId.current);
+			isDragging.current = false;
+
+			// Restaurar touch-action
+			if (containerRef.current) {
+				containerRef.current.style.touchAction = 'pan-y';
+			}
+
+			const x = currentX.current;
+			const threshold = getThreshold();
+			const shouldExecute = Math.abs(x) >= threshold;
+
+			// Ejecutar acción si corresponde
+			if (shouldExecute && isHorizontal.current) {
+				if (x > 0) {
+					// Swipe derecha -> toggle read
+					if (n.status !== 'read') {
+						onRead(n.id);
+					} else {
+						onUnread(n.id);
+					}
+				} else {
+					// Swipe izquierda -> archive
+					onArchive(n.id);
+				}
+			}
+
+			// Animar reset suave
+			if (cardRef.current) {
+				gsap.to(cardRef.current, {
+					x: 0,
+					duration: shouldExecute ? 0.25 : 0.4,
+					ease: shouldExecute ? 'power2.out' : 'elastic.out(1, 0.6)',
+					force3D: true,
+				});
+			}
+
+			// Fade out background e iconos
+			if (bgRef.current) {
+				gsap.to(bgRef.current, {
+					opacity: 0,
+					duration: 0.2,
+					onComplete: () => setShowBg(false),
+				});
+			}
+			if (leftIconRef.current) {
+				gsap.to(leftIconRef.current, { scale: 1, opacity: 0, duration: 0.2 });
+			}
+			if (rightIconRef.current) {
+				gsap.to(rightIconRef.current, { scale: 1, opacity: 0, duration: 0.2 });
+			}
+
+			currentX.current = 0;
+			isHorizontal.current = null;
+			pointerId.current = null;
+		},
+		[n.id, n.status, onRead, onUnread, onArchive],
+	);
+
+	// Double tap to open
+	const handleClick = useCallback(() => {
+		if (isHorizontal.current !== null) return; // Fue un swipe
+
 		const now = Date.now();
-		if (now - (lastTapRef.current || 0) < 350) {
+		if (now - lastTapRef.current < 350) {
 			setNeedSecondTap(false);
-			lastTapRef.current = 0;
-			onOpen && onOpen(n.id);
+			onOpen?.(n.id);
+			if (tapTimer.current) clearTimeout(tapTimer.current);
 			return;
 		}
+
 		lastTapRef.current = now;
 		setNeedSecondTap(true);
-		if (tapHintTimer.current) window.clearTimeout(tapHintTimer.current);
-		tapHintTimer.current = window.setTimeout(
-			() => setNeedSecondTap(false),
-			1200,
-		) as unknown as number;
-	};
+		tapTimer.current = setTimeout(() => setNeedSecondTap(false), 1200);
+	}, [n.id, onOpen]);
 
+	// Cleanup
+	useEffect(() => {
+		return () => {
+			cancelAnimationFrame(rafId.current);
+			if (tapTimer.current) clearTimeout(tapTimer.current);
+		};
+	}, []);
+
+	// === RENDER DATA ===
 	const title = sanitize(n.event?.type_label ?? n.event?.type_key ?? 'Notificación');
 	const moduleLabel = sanitize(
 		n.event?.module_label ??
@@ -127,62 +285,55 @@ const NotificationSwipeItem: React.FC<Props> = ({
 	);
 	const message = sanitize(n.message ?? '');
 
-	const rightAlpha = (n.status !== 'read' ? Math.min(Math.max(dx, 0) / THRESHOLD, 1) : 0) * 0.25; // emerald only if unread
-	const leftAlpha = Math.min(Math.max(-dx, 0) / THRESHOLD, 1) * 0.25; // amber
-
 	return (
 		<div
-			className='relative select-none'
+			ref={containerRef}
+			className='relative select-none overflow-hidden'
+			style={{ touchAction: 'pan-y' }}
 			onPointerDown={handlePointerDown}
 			onPointerMove={handlePointerMove}
-			onPointerUp={handlePointerUp}
-			onPointerCancel={handlePointerUp}
-			style={{ touchAction: 'pan-y' }}>
-			{/* Fondo con feedback de color mientras se arrastra */}
-			{isSwiping && (
+			onPointerUp={handlePointerEnd}
+			onPointerCancel={handlePointerEnd}
+			onPointerLeave={handlePointerEnd}>
+			{/* Background con gradientes */}
+			{showBg && (
 				<div
-					className='absolute inset-0 overflow-hidden'
-					style={{ opacity: Math.abs(dx) > 1 ? 1 : 0 }}>
+					ref={bgRef}
+					className='pointer-events-none absolute inset-0 rounded-md'
+					style={{ opacity: 1 }}>
+					{/* Icono izquierdo (archivar) */}
 					<div
-						className='pointer-events-none absolute inset-y-0 left-0 w-1/2'
-						style={{ backgroundColor: `rgba(16, 185, 129, ${rightAlpha})` }}
-					/>
+						ref={leftIconRef}
+						className='absolute left-4 top-1/2 -translate-y-1/2 text-amber-500'
+						style={{ opacity: 0 }}>
+						<Icon
+							icon={
+								archiveLabel.toLowerCase().includes('des')
+									? 'HeroArchiveBoxXMark'
+									: 'HeroArchiveBox'
+							}
+							className='h-8 w-8'
+						/>
+					</div>
+					{/* Icono derecho (marcar leída) */}
 					<div
-						className='pointer-events-none absolute inset-y-0 right-0 w-1/2'
-						style={{ backgroundColor: `rgba(245, 158, 11, ${leftAlpha})` }}
-					/>
-					<div className='pointer-events-none absolute inset-0 flex items-center justify-between px-4'>
-						<div className='flex items-center gap-2 text-emerald-600'>
-							<Icon icon='HeroCheckCircle' className='h-5 w-5' />
-							<span className='hidden text-sm sm:inline'>
-								{n.status !== 'read' ? 'Marcar leída' : 'Leída'}
-							</span>
-						</div>
-						<div className='flex items-center gap-2 text-amber-600'>
-							<Icon
-								icon={
-									archiveLabel.toLowerCase().includes('des')
-										? 'HeroArchiveBoxXMark'
-										: 'HeroArchiveBox'
-								}
-								className='h-5 w-5'
-							/>
-							<span className='hidden text-sm sm:inline'>{archiveLabel}</span>
-						</div>
+						ref={rightIconRef}
+						className='absolute right-4 top-1/2 -translate-y-1/2 text-emerald-500'
+						style={{ opacity: 0 }}>
+						<Icon icon='HeroCheckCircle' className='h-8 w-8' />
 					</div>
 				</div>
 			)}
 
-			{/* Tarjeta en primer plano con transición suave */}
-			<motion.div
-				style={{ x }}
-				className={`relative rounded-md border p-3 shadow-sm ${
+			{/* Card principal */}
+			<div
+				ref={cardRef}
+				className={`relative cursor-pointer rounded-md border p-3 ${
 					n.status === 'read'
 						? 'border-emerald-200/50 bg-emerald-50/40 dark:border-emerald-900/40 dark:bg-emerald-900/20'
 						: 'border-rose-200/60 bg-rose-50/60 dark:border-rose-900/40 dark:bg-rose-900/20'
 				}`}
-				onClick={handleClick}
-				onDoubleClick={() => onOpen && onOpen(n.id)}>
+				onClick={handleClick}>
 				<div className='grid grid-cols-[auto_1fr_auto] items-start gap-3'>
 					<div className='relative'>
 						<Avatar name={n.event?.type_key ?? 'N'} />
@@ -247,7 +398,7 @@ const NotificationSwipeItem: React.FC<Props> = ({
 						)}
 					</div>
 				</div>
-			</motion.div>
+			</div>
 		</div>
 	);
 };

@@ -195,9 +195,14 @@ const EditProfileTab = ({ formik, onAvatarUpload, avatarUrl }: Props) => {
 							icon='HeroCamera'>
 							Cambiar foto
 						</Button>
-						<p className='text-xs text-neutral-500 dark:text-neutral-400'>
-							JPG, GIF o PNG. Máx 400x400
-						</p>
+						<div className='flex flex-col gap-y-1'>
+							<p className='text-xs text-neutral-500 dark:text-neutral-400'>
+								JPG, GIF o PNG. Máx 400x400
+							</p>
+							<p className='text-xs text-neutral-500 dark:text-neutral-400'>
+								¡¡¡¡¡ Puedes arrastrar tu nueva foto de perfil si lo deseas :D !!!!!!
+							</p>
+						</div>
 					</div>
 				</div>
 
