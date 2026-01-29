@@ -77,34 +77,47 @@ const NotificationSwipeItem: React.FC<Props> = ({
 		const progress = Math.min(Math.abs(x) / threshold, 1);
 		const direction = x > 0 ? 'right' : x < 0 ? 'left' : null;
 
-		// Mover tarjeta con gsap.set para sync con GPU
 		if (cardRef.current) {
 			gsap.set(cardRef.current, { x: x });
+
+			if (direction === 'right') {
+				if (n.status === 'read') {
+					cardRef.current.style.boxShadow = `inset 0 0 ${20 + progress * 30}px rgba(239, 68, 68, ${progress * 0.3})`;
+				} else {
+					cardRef.current.style.boxShadow = `inset 0 0 ${20 + progress * 30}px rgba(16, 185, 129, ${progress * 0.3})`;
+				}
+			} else if (direction === 'left') {
+				cardRef.current.style.boxShadow = `inset 0 0 ${20 + progress * 30}px rgba(245, 158, 11, ${progress * 0.3})`;
+			} else {
+				cardRef.current.style.boxShadow = '';
+			}
 		}
 
-		// Mostrar/ocultar background según dirección
 		if (bgRef.current) {
-			if (direction === 'right' && n.status !== 'read') {
-				bgRef.current.style.background = `linear-gradient(90deg, rgba(16, 185, 129, ${progress * 0.4}) 0%, transparent 50%)`;
+			if (direction === 'right') {
+				if (n.status === 'read') {
+					bgRef.current.style.background = `linear-gradient(90deg, rgba(239, 68, 68, ${progress * 0.5}) 0%, transparent 60%)`;
+				} else {
+					bgRef.current.style.background = `linear-gradient(90deg, rgba(16, 185, 129, ${progress * 0.5}) 0%, transparent 60%)`;
+				}
 			} else if (direction === 'left') {
-				bgRef.current.style.background = `linear-gradient(270deg, rgba(245, 158, 11, ${progress * 0.4}) 0%, transparent 50%)`;
+				bgRef.current.style.background = `linear-gradient(270deg, rgba(245, 158, 11, ${progress * 0.5}) 0%, transparent 60%)`;
 			} else {
 				bgRef.current.style.background = 'transparent';
 			}
 		}
 
-		// Animar iconos
 		if (rightIconRef.current) {
-			const scale = direction === 'right' ? 1 + progress * 0.3 : 1;
+			const scale = direction === 'right' ? 1 + progress * 0.4 : 1;
 			const opacity = direction === 'right' ? progress : 0;
 			gsap.set(rightIconRef.current, { scale, opacity });
 		}
 		if (leftIconRef.current) {
-			const scale = direction === 'left' ? 1 + progress * 0.3 : 1;
+			const scale = direction === 'left' ? 1 + progress * 0.4 : 1;
 			const opacity = direction === 'left' ? progress : 0;
 			gsap.set(leftIconRef.current, { scale, opacity });
 		}
-	}, [n.status]);
+	}, []);
 
 	// === POINTER HANDLERS ===
 	const handlePointerDown = useCallback((e: React.PointerEvent) => {
@@ -219,10 +232,11 @@ const NotificationSwipeItem: React.FC<Props> = ({
 				}
 			}
 
-			// Animar reset suave
+			// Animar reset suave del card incluyendo boxShadow
 			if (cardRef.current) {
 				gsap.to(cardRef.current, {
 					x: 0,
+					boxShadow: 'none',
 					duration: shouldExecute ? 0.25 : 0.4,
 					ease: shouldExecute ? 'power2.out' : 'elastic.out(1, 0.6)',
 					force3D: true,
