@@ -178,19 +178,21 @@ export const markAsSold = createAsyncThunk<
  * GET /api/branches/{branch}/technical-reviews/traceability/history/{serialNumber}
  */
 export const getTraceabilityHistory = createAsyncThunk<
-	any[],
+	any, // ITraceabilityHistoryResponse
 	{ branchId: number; serialNumber: string },
 	{ rejectValue: string }
 >(
 	'technicalReviews/getTraceabilityHistory',
 	async ({ branchId, serialNumber }, { rejectWithValue }) => {
 		try {
-			const response = await ApiService.fetchData<{ data?: any[] }>({
+			const response = await ApiService.fetchData<{ success?: boolean; data?: any }>({
 				url: ep(branchId, `/traceability/history/${serialNumber}`),
 				method: 'get',
 			});
 
-			return normalizeArray(response.data);
+			// La respuesta viene como { success: true, data: { item, traceability, history } }
+			// Usamos normalizeObject para extraer el objeto data interno
+			return normalizeObject(response.data);
 		} catch (error: any) {
 			return rejectWithValue(
 				error?.response?.data?.message ??

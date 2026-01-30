@@ -74,6 +74,10 @@ const initialState: TechnicalReviewsState = {
 		loading: false,
 		error: null,
 	},
+
+	// Traceability
+	traceabilityData: null,
+	traceabilityLoading: false,
 };
 
 const technicalReviewsSlice = createSlice({
@@ -492,17 +496,20 @@ const technicalReviewsSlice = createSlice({
 				state.error = action.payload ?? 'Error al marcar como vendido';
 			});
 
-		// Historial de trazabilidad (no modifica estado)
+		// Historial de trazabilidad
 		builder
 			.addCase(traceabilityThunks.getTraceabilityHistory.pending, (state) => {
-				state.itemsLoading = true;
+				state.traceabilityLoading = true;
+				state.error = null;
 			})
-			.addCase(traceabilityThunks.getTraceabilityHistory.fulfilled, (state) => {
-				state.itemsLoading = false;
+			.addCase(traceabilityThunks.getTraceabilityHistory.fulfilled, (state, action) => {
+				state.traceabilityLoading = false;
+				state.traceabilityData = action.payload;
 			})
 			.addCase(traceabilityThunks.getTraceabilityHistory.rejected, (state, action) => {
-				state.itemsLoading = false;
+				state.traceabilityLoading = false;
 				state.error = action.payload ?? 'Error al cargar historial';
+				state.traceabilityData = null;
 			});
 
 		// Disponibles para venta

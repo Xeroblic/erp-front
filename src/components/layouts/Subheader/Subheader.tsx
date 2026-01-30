@@ -66,9 +66,8 @@ SubheaderSeparator.displayName = 'SubheaderSeparator';
 /* ======================================================
    SUBHEADER ROOT
 ====================================================== */
-interface ISubheaderProps {
+interface ISubheaderProps extends HTMLAttributes<HTMLDivElement> {
 	children: ReactNode;
-	className?: string;
 }
 
 const Subheader: FC<ISubheaderProps> = ({ children, className, ...rest }) => {

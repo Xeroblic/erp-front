@@ -104,6 +104,9 @@ const ItemsList = lazy(() => import('@/pages/technical-reviews/modo-b-items/page
 const ItemReview = lazy(
 	() => import('@/pages/technical-reviews/modo-b-items/pages/ItemReviewPage'),
 );
+const TraceabilityPage = lazy(
+	() => import('@/pages/technical-reviews/traceability/TraceabilityPage'),
+);
 
 const NotificationsAllPage = lazy(() => import('@/pages/notificaciones/NotificationsAll'));
 const NotificationDetailPage = lazy(() => import('@/pages/notificaciones/NotificationDetail'));
@@ -405,6 +408,11 @@ const contentRoutes: IRoutePersonalizada[] = [
 	{
 		path: '/technical-reviews/items/:itemId',
 		element: <ItemReview />,
+		authority: cfg.technical.subPages.reviews.authority,
+	},
+	{
+		path: '/technical-reviews/traceability/:serialNumber',
+		element: <TraceabilityPage />,
 		authority: cfg.technical.subPages.reviews.authority,
 	},
 	{

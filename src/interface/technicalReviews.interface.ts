@@ -342,4 +342,52 @@ export interface TechnicalReviewsState {
 		loading: boolean;
 		error: string | null;
 	};
+
+	// Traceability View
+	traceabilityData: ITraceabilityHistoryResponse | null;
+	traceabilityLoading: boolean;
+}
+
+export interface ITraceabilityHistoryResponse {
+	item: {
+		serial_number: string;
+		equipment_type: string;
+		grade: string;
+		review_status: string;
+		product: {
+			id: number;
+			sku: string;
+			name: string;
+		} | null;
+	};
+	traceability: {
+		id: number;
+		status: { value: string; label: string; color: string };
+		warehouse: { id: number; name: string } | null;
+		customer: any | null;
+		sale_id: any | null;
+		current_responsible: { id: number; name: string } | null;
+		received_at: string | null;
+		reviewed_at: string | null;
+		available_at: string | null;
+		sold_at: string | null;
+	};
+	history: {
+		total: number;
+		items: Array<{
+			id: number;
+			movement_type: { value: string; label: string };
+			status: {
+				from: { value: string; label: string } | null;
+				to: { value: string; label: string };
+			};
+			warehouse: {
+				from: { id: number; name: string } | null;
+				to: { id: number; name: string };
+			};
+			performed_by: { id: number; name: string };
+			reason: string;
+			movement_date: string;
+		}>;
+	};
 }

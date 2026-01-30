@@ -114,6 +114,9 @@ export {
 	selectValidationError,
 	// Errores
 	selectError,
+	// Trazabilidad
+	selectTraceabilityData,
+	selectTraceabilityLoading,
 	// Selectores compuestos
 	selectHasErrors,
 	selectIsLoading,

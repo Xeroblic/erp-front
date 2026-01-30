@@ -1,7 +1,3 @@
-/**
- * Technical Reviews - Items List (Modo B - Global View)
- * Vista global de todos los items sin agrupar por lote
- */
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -23,6 +19,8 @@ import { fetchProducts } from '@/store/slices/products/productsSlice';
 import ApiService from '@/services/ApiService';
 import type { IItem } from '@/interface/technicalReviews.interface';
 import { COMMERCIAL_STATUS_FILTER_OPTIONS } from '@/pages/technical-reviews/constants';
+import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import Badge from '@/components/ui/Badge';
 
 const TECHNICAL_REVIEWS_PREFIX = (import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
 const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
@@ -285,23 +283,34 @@ const ItemsListPage: React.FC = () => {
 	}, [dispatch, branchId, queryParams]);
 
 	return (
-		<PageWrapper name='technical-reviews-items'>
-			<Container>
-				{/* Header */}
-				<div className='mb-6 flex items-center justify-between'>
-					<div>
-						<h1 className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
-							Ítems Globales
-						</h1>
-						<p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
-							Vista global de todos los equipos sin agrupar por lote
-						</p>
+		<PageWrapper name='technical-reviews-items' title='Ítems Globales' isProtectedRoute={true}>
+			<Subheader className='mb-6 flex flex-col items-center justify-between'>
+				<SubheaderLeft>
+					<div className='flex items-center gap-4'>
+						<div>
+							<Icon icon='HeroQrCode' className='h-10 w-10' />
+						</div>
+						<div>
+							<Badge className='text-2xl font-bold'>Ítems Globales</Badge>
+							<p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
+								Vista global de todos los equipos
+							</p>
+						</div>
 					</div>
-					<Button onClick={handleCreateItem}>
-						<Icon icon='HeroPlus' className='mr-2 h-4 w-4' />
+				</SubheaderLeft>
+				<SubheaderRight>
+					<Button
+						variant='solid'
+						color='emerald'
+						className='bg-emerald-500'
+						onClick={handleCreateItem}>
+						<Icon icon='HeroPlus' className='mr-2 text-xl font-bold text-white' />
 						Nueva Revisión
 					</Button>
-				</div>
+				</SubheaderRight>
+			</Subheader>
+			<Container>
+				{/* Header */}
 
 				{/* KPIs */}
 				{itemsMeta && itemsMeta.total > 0 && (

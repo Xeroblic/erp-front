@@ -35,6 +35,10 @@ interface DataTableProps<TData> {
 	pageCount?: number;
 	paginationState?: PaginationState;
 	onPaginationChange?: OnChangeFn<PaginationState>;
+
+	// Customization
+	enableSearch?: boolean;
+	actions?: React.ReactNode;
 }
 
 export default function DataTable<TData>({
@@ -51,6 +55,9 @@ export default function DataTable<TData>({
 	pageCount,
 	paginationState,
 	onPaginationChange,
+	// Customization
+	enableSearch = true,
+	actions,
 }: DataTableProps<TData>) {
 	const initialSorting = React.useMemo<SortingState>(() => {
 		const columnIds = columns
@@ -119,26 +126,31 @@ export default function DataTable<TData>({
 
 	return (
 		<div className='w-full space-y-4'>
-			{/* Barra de búsqueda */}
-			<div className='flex items-center justify-between'>
-				<div className='flex items-center space-x-2'>
-					<div className='relative max-w-sm'>
-						<Icon
-							icon='HeroMagnifyingGlass'
-							className='pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400'
-						/>
-						<Input
-							name='filtro'
-							placeholder={searchPlaceholder}
-							value={globalFilter ?? ''}
-							onChange={(e) => setGlobalFilter(String(e.target.value))}
-							className='w-full pl-9'
-						/>
-					</div>
+			{/* Barra de búsqueda y Acciones */}
+			<div className='flex items-center justify-between gap-4'>
+				<div className='flex flex-1 items-center space-x-2'>
+					{enableSearch && (
+						<div className='relative max-w-sm flex-1'>
+							<Icon
+								icon='HeroMagnifyingGlass'
+								className='pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400'
+							/>
+							<Input
+								name='filtro'
+								placeholder={searchPlaceholder}
+								value={globalFilter ?? ''}
+								onChange={(e) => setGlobalFilter(String(e.target.value))}
+								className='w-full pl-9'
+							/>
+						</div>
+					)}
 				</div>
 				<div className='flex items-center space-x-2'>
+					{actions}
 					<Badge variant='outline' className='px-2'>
-						{table.getFilteredRowModel().rows.length} resultados
+						{manualPagination
+							? `${data.length} resultados`
+							: `${table.getFilteredRowModel().rows.length} resultados`}
 					</Badge>
 				</div>
 			</div>

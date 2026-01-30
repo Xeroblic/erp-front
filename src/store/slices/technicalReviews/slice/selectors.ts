@@ -96,6 +96,18 @@ export const selectValidationError = (state: RootState): string | null =>
 export const selectError = (state: RootState): string | null => state.technicalReviews.error;
 
 // ====================================================================
+// TRAZABILIDAD
+// ====================================================================
+
+export const selectTraceabilityData = (
+	state: RootState,
+): import('../../../../interface/technicalReviews.interface.ts').ITraceabilityHistoryResponse | null =>
+	state.technicalReviews.traceabilityData;
+
+export const selectTraceabilityLoading = (state: RootState): boolean =>
+	state.technicalReviews.traceabilityLoading;
+
+// ====================================================================
 // SELECTORES COMPUESTOS (DERIVED STATE)
 // ====================================================================
 
