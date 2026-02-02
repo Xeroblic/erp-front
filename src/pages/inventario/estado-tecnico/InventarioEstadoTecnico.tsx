@@ -107,7 +107,6 @@ const MOCK_WAREHOUSES: Warehouse[] = [
 	{ id: 5, name: 'Bodega Reparaciones', code: 'BR05' },
 ];
 
-// Datos mock del inventario por estado técnico
 const MOCK_INVENTORY_DATA: InventoryByTechState[] = [
 	{
 		warehouse_id: 1,
@@ -365,13 +364,11 @@ const InventarioEstadoTecnico: React.FC = () => {
 	const [showDetailModal, setShowDetailModal] = useState(false);
 	const [selectedBucket, setSelectedBucket] = useState<InventoryBucketDetail | null>(null);
 
-	// Filtrar datos por bodega seleccionada
 	const filteredData =
 		selectedWarehouse === 'all'
 			? inventoryData
 			: inventoryData.filter((item) => item.warehouse_id.toString() === selectedWarehouse);
 
-	// Calcular totales generales
 	const calculateTotals = () => {
 		const totals = TECHNICAL_STATES.reduce(
 			(acc, state) => {
@@ -411,7 +408,7 @@ const InventarioEstadoTecnico: React.FC = () => {
 		const stateData = warehouse.tech_states[techState.id];
 
 		if (!stateData || stateData.quantity === 0) {
-			return; // No abrir modal si no hay productos
+			return;
 		}
 
 		const bucketDetail: InventoryBucketDetail = {

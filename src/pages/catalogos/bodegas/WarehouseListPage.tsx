@@ -25,7 +25,7 @@ const WarehouseListPage: React.FC = () => {
 	const user = useAppSelector((s) => s.auth.user);
 	const personalizacionState = useAppSelector((s) => s.personalizacion);
 
-	// Obtener branchId del usuario autenticado
+	// Obtener branchId del usuario autenticado	
 	const branchId =
 		personalizacionState?.personalizacionUsuario?.sucursal_principal ||
 		user?.branch?.id ||

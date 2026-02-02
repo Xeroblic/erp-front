@@ -78,7 +78,7 @@ export const privatePages = {
 		roles: [
 			'super-admin',
 			'admin',
-			'company-admin',
+			'company-admin',	
 			'subsidiary-admin',
 			'branch-admin',
 			'company-supervisor',

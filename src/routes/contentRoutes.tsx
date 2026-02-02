@@ -54,7 +54,7 @@ const SystemParameterDetails = lazy(
 );
 
 // Páginas ERP
-const InventarioPage = lazy(() => import('@/pages/inventario/Inventario'));
+// const InventarioPage = lazy(() => import('@/pages/inventario/Inventario'));
 const HistorialInventario = lazy(
 	() => import('@/pages/inventario/historial/HistorialInventarioAdmin'),
 );
@@ -197,11 +197,11 @@ const contentRoutes: IRoutePersonalizada[] = [
 	},
 
 	// Rutas ERP
-	{
-		path: cfg.inventory.to,
-		element: <InventarioPage />,
-		authority: cfg.inventory.authority,
-	},
+	// {
+	// 	path: cfg.inventory.to,
+	// 	element: <InventarioPage />,
+	// 	authority: cfg.inventory.authority,
+	// },
 	{
 		path: cfg.inventory.subPages.transfers.to,
 		element: <TransferenciasInventario />,
