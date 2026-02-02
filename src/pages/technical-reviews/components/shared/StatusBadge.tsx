@@ -102,7 +102,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, type }) => {
 	const badgeLabel = normalized.customLabel?.trim() || config.label;
 
 	return (
-		<Badge color={badgeColor} variant='outline' className='text-xs font-semibold px-2'>
+		<Badge color={badgeColor} variant='outline' className='px-2 text-xs font-semibold px-2'>
 			{badgeLabel}
 		</Badge>
 	);
