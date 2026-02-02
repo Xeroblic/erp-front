@@ -366,7 +366,7 @@ export interface ITraceabilityHistoryResponse {
 		warehouse: { id: number; name: string } | null;
 		customer: any | null;
 		sale_id: any | null;
-		current_responsible: { id: number; name: string } | null;
+		current_responsible: { id: number; name: string; user_image: string } | null;
 		received_at: string | null;
 		reviewed_at: string | null;
 		available_at: string | null;

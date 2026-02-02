@@ -68,7 +68,7 @@ const LatestProductsTable: React.FC = () => {
             cell: ({ row }) => (
                 <Badge 
                     variant='outline' 
-                    className={(row.original.stock || 0) > 0 ? 'text-emerald-600 border-emerald-200' : 'text-red-600 border-red-200'}
+                    className={(row.original.stock || 0) > 0 ? 'px-2 text-emerald-600 border-emerald-200' : 'px-2 text-red-600 border-red-200'}
                 >
                     {row.original.stock || 0} un.
                 </Badge>
@@ -90,7 +90,7 @@ const LatestProductsTable: React.FC = () => {
                 <Badge 
                     color={row.original.is_active ? 'blue' : 'gray'} 
                     variant='solid' 
-                    className={row.original.is_active ? 'bg-blue-500' : 'bg-gray-500'}
+                    className={row.original.is_active ? 'bg-blue-500 px-2' : 'bg-gray-500 px-2'}
                 >
                     {row.original.is_active ? 'Activo' : 'Inactivo'}
                 </Badge>

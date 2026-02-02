@@ -16,6 +16,8 @@ import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import dayjs from 'dayjs';
+import Avatar from '@/components/Avatar';
+import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subheader';
 
 const TraceabilityPage: React.FC = () => {
 	const { serialNumber } = useParams<{ serialNumber: string }>();
@@ -54,22 +56,22 @@ const TraceabilityPage: React.FC = () => {
 	const getMovementIcon = (type: string) => {
 		switch (type) {
 			case 'entry':
-				return 'HeroArrowDownOnSquare';
+				return 'DuoIncomingBox';
 			case 'status_change':
-				return 'HeroArrowsRightLeft';
+				return 'DuoExchange';
 			case 'transfer':
-				return 'HeroTruck';
+				return 'DuoOutgoingBox';
 			case 'sale':
-				return 'HeroCurrencyDollar';
+				return 'DuoDollar';
 			default:
-				return 'HeroDocumentText';
+				return 'DuoFile';
 		}
 	};
 
 	const getMovementColor = (type: string) => {
 		switch (type) {
 			case 'entry':
-				return 'bg-green-500';
+				return 'bg-emerald-500';
 			case 'status_change':
 				return 'bg-blue-500';
 			case 'transfer':
@@ -78,6 +80,34 @@ const TraceabilityPage: React.FC = () => {
 				return 'bg-emerald-500';
 			default:
 				return 'bg-gray-500';
+		}
+	};
+
+	// Mapea el valor del status a colores válidos de Tailwind
+	const getStatusColor = (statusValue: string | undefined): string => {
+		switch (statusValue) {
+			case 'unknown':
+				return 'gray';
+			case 'received':
+				return 'slate';
+			case 'in_review':
+				return 'blue';
+			case 'reviewed':
+				return 'emerald';
+			case 'available_for_sale':
+				return 'cyan';
+			case 'in_quotation':
+				return 'amber';
+			case 'reserved':
+				return 'orange';
+			case 'sold':
+				return 'violet';
+			case 'returned':
+				return 'red';
+			case 'scrapped':
+				return 'zinc';
+			default:
+				return 'gray';
 		}
 	};
 
@@ -152,34 +182,34 @@ const TraceabilityPage: React.FC = () => {
 
 	return (
 		<PageWrapper title={`Trazabilidad - ${serialNumber}`}>
-			<Container>
-				{/* Header */}
-				<div className='mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
-					<div>
-						<div className='mb-2 flex items-center gap-3'>
-							<div className='flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-lg'>
-								<Icon icon='HeroClock' className='h-6 w-6 text-white' />
-							</div>
-							<div>
-								<h1 className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
-									Trazabilidad de Equipo
-								</h1>
-								<p className='text-sm text-gray-500'>
-									Historial completo de movimientos y estados
-								</p>
-							</div>
+			<Subheader className='mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
+				<SubheaderLeft>
+					<div className='mb-2 flex items-center gap-3'>
+						<div className='flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-lg'>
+							<Icon icon='HeroClock' className='h-6 w-6 text-white' />
+						</div>
+						<div>
+							<h1 className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
+								Trazabilidad de Equipo
+							</h1>
+							<p className='text-sm text-gray-500'>
+								Historial completo de movimientos y estados
+							</p>
 						</div>
 					</div>
-					<Button onClick={() => navigate(-1)} variant='outline' icon='HeroArrowLeft'>
-						Volver
-					</Button>
-				</div>
+				</SubheaderLeft>
+				<Button onClick={() => navigate(-1)} variant='outline' icon='HeroArrowLeft'>
+					Volver
+				</Button>
+			</Subheader>
+			<Container>
+				{/* Header */}
 
 				<div className='grid grid-cols-1 gap-6 lg:grid-cols-3'>
 					{/* Columna Izquierda */}
 					<div className='space-y-6 lg:col-span-1'>
 						{/* Hero Card - Número de Serie */}
-						<Card className='overflow-hidden border-0 bg-gradient-to-br from-slate-800 to-slate-900 text-white shadow-xl'>
+						<Card className='overflow-hidden border-0 bg-gradient-to-br from-slate-200 to-slate-500 text-slate-900 shadow-xl dark:from-slate-800 dark:to-slate-900 dark:text-white'>
 							<CardBody className='p-6'>
 								<div className='mb-4 flex items-center justify-between'>
 									<span className='text-xs font-medium uppercase tracking-wider text-slate-400'>
@@ -192,12 +222,12 @@ const TraceabilityPage: React.FC = () => {
 								</p>
 								<div className='flex flex-wrap gap-2'>
 									{item?.equipment_type && (
-										<Badge className='border-0 bg-white/10 text-white backdrop-blur'>
+										<Badge className='border-0 bg-white/10 px-2 text-white backdrop-blur'>
 											{item.equipment_type}
 										</Badge>
 									)}
 									{item?.grade && (
-										<Badge className='border-0 bg-yellow-500/20 text-yellow-300'>
+										<Badge className='border-0 bg-yellow-500/20 px-2 text-yellow-300'>
 											<Icon icon='HeroStar' className='mr-1 h-3 w-3' />
 											{item.grade}
 										</Badge>
@@ -242,7 +272,7 @@ const TraceabilityPage: React.FC = () => {
 											</span>
 											<Badge
 												variant='outline'
-												className='rounded-full border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-300'>
+												className='rounded-full border-green-200 bg-green-50 px-2 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-300'>
 												{item.review_status || 'Pendiente'}
 											</Badge>
 										</div>
@@ -282,7 +312,7 @@ const TraceabilityPage: React.FC = () => {
 											</span>
 											<Badge
 												color={traceability.status?.color as any}
-												className='px-4 py-2 text-base font-semibold'>
+												className='px-2 py-2 text-base font-semibold'>
 												{traceability.status?.label || 'Desconocido'}
 											</Badge>
 										</div>
@@ -309,7 +339,13 @@ const TraceabilityPage: React.FC = () => {
 
 											<div className='flex items-center gap-3'>
 												<div className='flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'>
-													<Icon icon='HeroUser' className='h-5 w-5' />
+													{/* <Icon icon='HeroUser' className='h-5 w-5' /> */}
+													<Avatar
+														name={
+															traceability.current_responsible
+																?.user_image || 'No asignado'
+														}
+													/>
 												</div>
 												<div>
 													<span className='block text-xs text-gray-500'>
@@ -413,7 +449,7 @@ const TraceabilityPage: React.FC = () => {
 									<Badge
 										variant='solid'
 										color='blue'
-										className='px-3 py-1 text-sm font-semibold'>
+										className='px-2 py-1 text-sm font-semibold'>
 										{data?.history?.total || movements.length} Eventos
 									</Badge>
 								</CardHeaderChild>
@@ -469,7 +505,13 @@ const TraceabilityPage: React.FC = () => {
 																	<>
 																		<Badge
 																			variant='outline'
-																			className='text-gray-500 line-through'>
+																			color={
+																				getStatusColor(
+																					movement.status
+																						.from.value,
+																				) as any
+																			}
+																			className='px-2 line-through opacity-60'>
 																			{
 																				movement.status.from
 																					.label
@@ -483,8 +525,13 @@ const TraceabilityPage: React.FC = () => {
 																)}
 																<Badge
 																	variant='solid'
-																	color='blue'
-																	className='font-medium'>
+																	color={
+																		getStatusColor(
+																			movement.status.to
+																				.value,
+																		) as any
+																	}
+																	className='px-2 font-medium'>
 																	{movement.status.to.label}
 																</Badge>
 															</div>
@@ -500,9 +547,16 @@ const TraceabilityPage: React.FC = () => {
 														{/* Footer */}
 														<div className='flex flex-wrap items-center gap-4 border-t border-gray-100 pt-3 text-xs text-gray-500 dark:border-gray-700'>
 															<div className='flex items-center gap-1'>
-																<Icon
+																{/* <Icon
 																	icon='HeroUserCircle'
 																	className='h-4 w-4'
+																/> */}
+																<Avatar
+																	name={
+																		movement.performed_by
+																			?.user_image ||
+																		'Sistema'
+																	}
 																/>
 																<span>
 																	{movement.performed_by?.name ||
