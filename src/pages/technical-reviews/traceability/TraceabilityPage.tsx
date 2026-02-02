@@ -343,6 +343,10 @@ const TraceabilityPage: React.FC = () => {
 													<Avatar
 														name={
 															traceability.current_responsible
+																?.name || 'No asignado'
+														}
+														src={
+															traceability.current_responsible
 																?.user_image || 'No asignado'
 														}
 													/>
@@ -553,6 +557,11 @@ const TraceabilityPage: React.FC = () => {
 																/> */}
 																<Avatar
 																	name={
+																		movement.performed_by
+																			?.name ||
+																		'Sistema'
+																	}
+																	src={
 																		movement.performed_by
 																			?.user_image ||
 																		'Sistema'
