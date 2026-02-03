@@ -1,3 +1,4 @@
+import { DeliveryMan5WithDog } from '@/assets/images';
 import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
 import { motion } from 'framer-motion';
@@ -16,7 +17,7 @@ interface PagConstruccionProps {
 const PagConstruccion = ({
 	titulo = 'Sección en Construcción',
 	descripcion = 'Estamos trabajando para traerte esta funcionalidad lo antes posible.',
-	imageSrc = '/src/assets/humans/delivery_man_1.png',
+	imageSrc = DeliveryMan5WithDog,
 	className = '',
 }: PagConstruccionProps) => {
 	// Variantes para animaciones escalonadas
