@@ -30,9 +30,6 @@ const ImportOrdersPage = lazy(() => import('@/pages/integraciones/ImportOrdersPa
 
 // Reportes
 const ReportsHome = lazy(() => import('@/pages/reportes/ReportsHome'));
-const SalesDashboard = lazy(() => import('@/pages/reportes/SalesDashboard'));
-const InventoryReports = lazy(() => import('@/pages/reportes/InventoryReports'));
-const FinancialReports = lazy(() => import('@/pages/reportes/FinancialReports'));
 const ReportResults = lazy(() => import('@/pages/reportes/ReportResults.page'));
 
 const Sucursales = lazy(() => import('@/pages/gestionAdmin/sucursales/Sucursales.tsx'));
@@ -55,17 +52,17 @@ const SystemParameterDetails = lazy(
 
 // Páginas ERP
 // const InventarioPage = lazy(() => import('@/pages/inventario/Inventario'));
-const HistorialInventario = lazy(
-	() => import('@/pages/inventario/historial/HistorialInventarioAdmin'),
-);
 const SalesListPage = lazy(() => import('@/pages/comercial/ventas/SalesListPage'));
 const CotizacionesPage = lazy(() => import('@/pages/comercial/cotizaciones/CotizacionesAdmin'));
-const TransferenciasInventario = lazy(
-	() => import('@/pages/inventario/transferencias/Transferencias'),
-);
-const TransferenciasComercial = lazy(
-	() => import('@/pages/comercial/transferencias/TransferenciasAdmin'),
-);
+
+// Paginas de Inventario
+const TransferenciasInventario = lazy(() => import('@/pages/inventario/transferencias/Transferencias'));
+const BodegasPage = lazy(() => import('@/pages/catalogos/bodegas/WarehouseListPage'));
+const BodegasDetailPage = lazy(() => import('@/pages/catalogos/bodegas/WarehouseDetailPage'));
+const TransferenciasComercial = lazy(() => import('@/pages/comercial/transferencias/TransferenciasAdmin'));
+const HistorialInventario = lazy(() => import('@/pages/inventario/historial/HistorialInventarioAdmin'));
+const TrazabilidadSubsidiary = lazy(() => import('@/pages/inventario/trazabilidad-sucursal/TrazabilidadSubsidiary'))
+
 const ClientesVentas = lazy(() => import('@/pages/comercial/clientesVentas/ClientesVentas'));
 const ClientesVentasDetalle = lazy(
 	() => import('@/pages/comercial/clientesVentas/ClientesVentasDetalle'),
@@ -74,8 +71,6 @@ const ClientesVentasDetalle = lazy(
 // Páginas de Catálogos
 const ProductosPage = lazy(() => import('@/pages/catalogos/productos/Productos'));
 const ProductDetailPage = lazy(() => import('@/pages/catalogos/productos/ProductDetail'));
-const BodegasPage = lazy(() => import('@/pages/catalogos/bodegas/WarehouseListPage'));
-const BodegasDetailPage = lazy(() => import('@/pages/catalogos/bodegas/WarehouseDetailPage'));
 const CategoriasPage = lazy(() => import('@/pages/catalogos/categorias/Categorias'));
 const MarcasPage = lazy(() => import('@/pages/catalogos/marcas/Marcas'));
 const ProveedoresPage = lazy(() => import('@/pages/catalogos/proveedores/Proveedores'));
@@ -307,6 +302,23 @@ const contentRoutes: IRoutePersonalizada[] = [
 		authority: cfg.notifications.authority,
 	},
 
+	// Rutas para inventario
+	{
+		path: cfg.inventory.subPages.warehouses.to,
+		element: <BodegasPage />,
+		authority: cfg.inventory.subPages.warehouses.authority,
+	},
+	{
+		path: `${cfg.inventory.subPages.warehouses.to}/:id`,
+		element: <BodegasDetailPage />,
+		authority: cfg.inventory.subPages.warehouses.authority,
+	},
+	{
+		path: `${cfg.inventory.subPages.trazabilidadSubsidiary.to}`,
+		element: <TrazabilidadSubsidiary />,
+		authority: cfg.inventory.subPages.trazabilidadSubsidiary.authority,
+	},
+
 	// Rutas de Catálogos
 	{
 		path: cfg.catalogs.subPages.products.to,
@@ -317,16 +329,6 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: cfg.catalogs.subPages.productsDetail.to,
 		element: <ProductDetailPage />,
 		authority: cfg.catalogs.subPages.productsDetail.authority,
-	},
-	{
-		path: cfg.catalogs.subPages.warehouses.to,
-		element: <BodegasPage />,
-		authority: cfg.catalogs.subPages.warehouses.authority,
-	},
-	{
-		path: `${cfg.catalogs.subPages.warehouses.to}/:id`,
-		element: <BodegasDetailPage />,
-		authority: cfg.catalogs.subPages.warehouses.authority,
 	},
 	{
 		path: cfg.catalogs.subPages.categories.to,

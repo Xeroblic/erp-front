@@ -232,16 +232,31 @@ const DefaultAsideTemplate = () => {
 							onToggle={() => toggleCollapse('inventario')}>
 							{/* Bodegas */}
 							<AuthorityCheckNav
-								authority={Pages.catalogs.subPages.warehouses.authority}
-								roles={Pages.catalogs.subPages.warehouses.roles}
+								authority={Pages.inventory.subPages.warehouses.authority}
+								roles={Pages.inventory.subPages.warehouses.roles}
 								userAuthority={userAuthority}
-								requireAll={Pages.catalogs.subPages.warehouses.requireAll}>
+								requireAll={Pages.inventory.subPages.warehouses.requireAll}>
 								<NavItem
-									text={Pages.catalogs.subPages.warehouses.text}
-									to={Pages.catalogs.subPages.warehouses.to}
-									icon={Pages.catalogs.subPages.warehouses.icon}
-									id={Pages.catalogs.subPages.warehouses.id}
-									onClick={() => navigate(Pages.catalogs.subPages.warehouses.to)}
+									text={Pages.inventory.subPages.warehouses.text}
+									to={Pages.inventory.subPages.warehouses.to}
+									icon={Pages.inventory.subPages.warehouses.icon}
+									id={Pages.inventory.subPages.warehouses.id}
+									onClick={() => navigate(Pages.inventory.subPages.warehouses.to)}
+								/>
+							</AuthorityCheckNav>
+
+							{/* Trazabilidad Subsidiary */}
+							<AuthorityCheckNav
+								authority={Pages.inventory.subPages.trazabilidadSubsidiary.authority}
+								roles={Pages.inventory.subPages.trazabilidadSubsidiary.roles}
+								userAuthority={userAuthority}
+								requireAll={Pages.inventory.subPages.trazabilidadSubsidiary.requireAll}>
+								<NavItem
+									text={Pages.inventory.subPages.trazabilidadSubsidiary.text}
+									to={Pages.inventory.subPages.trazabilidadSubsidiary.to}
+									icon={Pages.inventory.subPages.trazabilidadSubsidiary.icon}
+									id={Pages.inventory.subPages.trazabilidadSubsidiary.id}
+									onClick={() => navigate(Pages.inventory.subPages.trazabilidadSubsidiary.to)}
 								/>
 							</AuthorityCheckNav>
 
