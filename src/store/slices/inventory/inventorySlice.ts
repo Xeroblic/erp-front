@@ -24,7 +24,7 @@ export const fetchListaMovimientoSucursalThunk = createAsyncThunk<IInventoryMove
 		try {
 			const response = await ApiService.fetchData<IInventoryMovement[]>(
 				{
-					url: `/inventario/branches/${branch_id}/inventory-movements`,
+					url: `/branches/${branch_id}/inventory-movements`,
 					method: 'get',
 				}
 			)

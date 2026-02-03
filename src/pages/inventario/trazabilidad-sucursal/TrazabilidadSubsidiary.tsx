@@ -5,8 +5,19 @@ import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/S
 import Badge from '@/components/ui/Badge';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import PagConstruccion from '@/components/ui/enConstruccion/PagConstruccion';
+import { TrazabilidadList } from './components/tables/TrazabilidadList';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { useEffect } from 'react';
+import { fetchListaMovimientoSucursalThunk } from '@/store/slices/inventory/inventorySlice';
 
 const TrazabilidadSubsidiary = () => {
+    const dispatch = useAppDispatch();
+    const { listaMovimientoSucursal, loading } = useAppSelector((state) => state.inventario);
+
+    useEffect(() => {
+            dispatch(fetchListaMovimientoSucursalThunk({branch_id: 1}));
+    }, []);
+
 	return (
 		<>
 			<PageWrapper
@@ -43,7 +54,24 @@ const TrazabilidadSubsidiary = () => {
 								</CardTitle>
 							</CardHeader>
 							<CardBody>
-								<PagConstruccion />
+								{/* <PagConstruccion /> */}
+                                {loading ? (
+                                    <TrazabilidadList data={listaMovimientoSucursal} />
+                                ) : (
+                                    <div className='flex flex-col items-center justify-center py-20 text-center bg-zinc-950/20 border border-dashed border-zinc-950/20 rounded-lg min-h-[35vh]'>
+										<Icon
+											icon='DuoBinocular'
+											className='mb-4 h-16 w-16'
+										/>
+										<Badge typewriter className='text-xl font-bold text-gray-600 dark:text-gray-300'>
+											Cargando movimientos...
+										</Badge>
+										<p className='mt-2 text-sm text-gray-500 dark:text-gray-400'>
+											Parece que aún no hay actividad registrada para esta
+											sucursal.
+										</p>
+									</div>
+                                )}
 							</CardBody>
 						</Card>
 					</>

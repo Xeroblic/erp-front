@@ -21,7 +21,7 @@ import type { PersonalizacionState } from './slices/personalizacion/personalizac
 import transferencias, { TransferState } from './slices/transfers/transfersSlice';
 import cotizaciones, { QuoteState } from './slices/quotes/quotesSlice';
 import ventas from './slices/sales/salesSlice';
-// import inventario from './slices/inventory/inventorySlice';
+import inventario from './slices/inventory/inventorySlice';
 import brands from './slices/brands/brandsSlice';
 import categories, { CategoriesState } from './slices/categories/categoriesSlice';
 import products, { ProductsState } from './slices/products/productsSlice';
@@ -56,7 +56,7 @@ export interface RootState {
 	transferencias: TransferState;
 	cotizaciones: QuoteState;
 	ventas: ReturnType<typeof ventas>;
-	// inventario: ReturnType<typeof inventario>;
+	inventario: ReturnType<typeof inventario>;
 	brands: ReturnType<typeof brands>;
 	categories: CategoriesState;
 	products: ProductsState;
@@ -93,7 +93,7 @@ const staticReducers = {
 	transferencias,
 	cotizaciones,
 	ventas,
-	// inventario,
+	inventario,
 	brands,
 	categories,
 	products,
