@@ -120,7 +120,7 @@ const WarehousesTable: React.FC<WarehousesTableProps> = ({
 							color='violet'
 							variant='outline'
 							size='sm'
-							onClick={() => navigate(`/catalogos/bodegas/${info.row.original.id}`)}
+							onClick={() => navigate(`/inventario/bodegas/${info.row.original.id}`)}
 							title='Ver detalle'
 						/>
 						<Button

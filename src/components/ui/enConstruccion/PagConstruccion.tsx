@@ -142,6 +142,9 @@ const PagConstruccion = ({
 					alt='En construcción'
 					className='relative z-10 h-52 drop-shadow-2xl'
 				/>
+                <p>
+                    lore
+                </p>
 			</motion.div>
 
 			{/* Badge con animación de pulso e iconos */}

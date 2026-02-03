@@ -6,7 +6,7 @@ import Button from '@/components/ui/Button';
 import PermissionGuard from '@/components/authorization/PermissionGuard';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { transferInventory } from '@/store/slices/inventory/inventorySlice';
+// import { transferInventory } from '@/store/slices/inventory/inventorySlice';
 import TransferHeaderCard from './components/TransferHeaderCard';
 import ProgressCard from './components/ProgressCard';
 import TransferFormCard from './components/TransferFormCard';
@@ -161,15 +161,15 @@ const Transferencias: React.FC = () => {
 			getResponsibleName(transferForm.responsible_id) || 'Sin responsable';
 		try {
 			for (const item of items) {
-				await dispatch(
-					transferInventory({
-						product_id: item.product_id,
-						from_warehouse_id: Number(transferForm.from_warehouse_id),
-						to_warehouse_id: Number(transferForm.to_warehouse_id),
-						quantity: item.quantity,
-						notes: `Transferencia - Responsable: ${responsibleLabel}. ${transferForm.notes || ''}`,
-					}),
-				).unwrap();
+				// await dispatch(
+				// 	transferInventory({
+				// 		product_id: item.product_id,
+				// 		from_warehouse_id: Number(transferForm.from_warehouse_id),
+				// 		to_warehouse_id: Number(transferForm.to_warehouse_id),
+				// 		quantity: item.quantity,
+				// 		notes: `Transferencia - Responsable: ${responsibleLabel}. ${transferForm.notes || ''}`,
+				// 	}),
+				// ).unwrap();
 			}
 
 			const result: TransferResult = {
