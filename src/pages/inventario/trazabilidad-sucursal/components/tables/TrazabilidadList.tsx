@@ -189,7 +189,7 @@ export function TrazabilidadList() {
 	);
 
 	const handleView = (movement: IInventoryMovement) => {
-		navigate(`/inventario/trazabilidad-sucursal/${movement.id}`);
+		navigate(`/inventario/trazabilidad-subsidiary/${movement.id}`);
 	};
 
 	const columns = useMemo<ColumnDef<IInventoryMovement, unknown>[]>(
@@ -232,7 +232,6 @@ export function TrazabilidadList() {
 		[],
 	);
 
-	// Sin sucursal seleccionada
 	if (!branchId) {
 		return (
 			<div className='flex min-h-[35vh] flex-col items-center justify-center rounded-lg border border-dashed border-amber-300 bg-amber-50/50 py-20 text-center dark:border-amber-700 dark:bg-amber-950/20'>
@@ -247,7 +246,6 @@ export function TrazabilidadList() {
 		);
 	}
 
-	// Estado de carga
 	if (fetchStatus === 'loading' || (loading && !hasFetched)) {
 		return (
 			<div className='flex min-h-[35vh] flex-col items-center justify-center py-20'>
@@ -259,7 +257,6 @@ export function TrazabilidadList() {
 		);
 	}
 
-	// Timeout
 	if (fetchStatus === 'timeout') {
 		return (
 			<div className='flex min-h-[35vh] flex-col items-center justify-center rounded-lg border border-dashed border-red-300 bg-red-50/50 py-20 text-center dark:border-red-700 dark:bg-red-950/20'>
@@ -282,7 +279,6 @@ export function TrazabilidadList() {
 		);
 	}
 
-	// Error del API
 	if (fetchStatus === 'error' || error) {
 		return (
 			<div className='flex min-h-[35vh] flex-col items-center justify-center rounded-lg border border-dashed border-red-300 bg-red-50/50 py-20 text-center dark:border-red-700 dark:bg-red-950/20'>
@@ -305,7 +301,6 @@ export function TrazabilidadList() {
 		);
 	}
 
-	// Sin movimientos (data vacía del API)
 	if (hasFetched && listaMovimientoSucursal.length === 0 && pagination.totalItems === 0) {
 		return (
 			<div className='flex min-h-[35vh] flex-col items-center justify-center rounded-lg border border-dashed border-zinc-300 bg-zinc-50/50 py-20 text-center dark:border-zinc-700 dark:bg-zinc-950/20'>
@@ -330,11 +325,13 @@ export function TrazabilidadList() {
 
 	return (
 		<>
-			{/* Header con info de sucursal y botón actualizar */}
 			<div className='mb-4 flex items-center justify-between'>
 				<div className='flex items-center gap-2'>
 					{currentBranchName && (
-						<Badge color='blue' variant='outline' className='px-2 flex items-center gap-2'>
+						<Badge
+							color='blue'
+							variant='outline'
+							className='flex items-center gap-2 px-2'>
 							<Icon icon='HeroBuildingStorefront' className='h-4 w-4' />
 							{currentBranchName}
 						</Badge>
@@ -353,10 +350,7 @@ export function TrazabilidadList() {
 				</Button>
 			</div>
 
-			{/* Tabla de datos */}
 			<DataTable columns={columns} data={listaMovimientoSucursal} />
-
-			{/* Paginación */}
 			{pagination.totalPages > 1 && (
 				<div className='mt-4 flex items-center justify-between border-t border-zinc-200 pt-4 dark:border-zinc-700'>
 					<div className='px-2 text-sm text-gray-500 dark:text-gray-400'>

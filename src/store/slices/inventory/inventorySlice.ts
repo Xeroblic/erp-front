@@ -32,12 +32,22 @@ export interface IInventoryPagination {
 	hasPrevPage: boolean;
 }
 
+// Interfaz para los filtros de búsqueda
+export interface IInventoryFilters {
+	occurred_from?: string;
+	occurred_to?: string;
+	q?: string;
+	warehouse_id?: number;
+	movement_type?: string;
+}
+
 export interface IInventoryState {
 	loading: boolean;
 	error: string | undefined;
 	listaMovimientoSucursal: IInventoryMovement[];
 	detalleMovimientoSucursal: IInventoryMovement | undefined;
 	pagination: IInventoryPagination;
+	filters: IInventoryFilters;
 }
 
 const initialState: IInventoryState = {
@@ -53,20 +63,41 @@ const initialState: IInventoryState = {
 		hasNextPage: false,
 		hasPrevPage: false,
 	},
+	filters: {},
+}
+
+export interface FetchMovimientosParams {
+	branch_id: number;
+	page?: number;
+	per_page?: number;
+	occurred_from?: string;
+	occurred_to?: string;
+	q?: string;
+	warehouse_id?: number;
+	movement_type?: string;
 }
 
 export const fetchListaMovimientoSucursalThunk = createAsyncThunk<
 	IInventoryMovementsResponse,
-	{ branch_id: number; page?: number; per_page?: number },
+	FetchMovimientosParams & { append?: boolean },
 	{ rejectValue: string }
 >(
 	'inventario/listaMovimientoSucursal',
-	async ({ branch_id, page = 1, per_page = 20 }, { rejectWithValue }) => {
+	async (params, { rejectWithValue }) => {
 		try {
+			const { branch_id, page = 1, per_page = 20, append, ...filters } = params;
+			
 			const queryParams = new URLSearchParams({
 				page: page.toString(),
 				per_page: per_page.toString(),
 			});
+
+			// Agregar filtros opcionales
+			if (filters.occurred_from) queryParams.append('occurred_from', filters.occurred_from);
+			if (filters.occurred_to) queryParams.append('occurred_to', filters.occurred_to);
+			if (filters.q) queryParams.append('q', filters.q);
+			if (filters.warehouse_id) queryParams.append('warehouse_id', filters.warehouse_id.toString());
+			if (filters.movement_type) queryParams.append('movement_type', filters.movement_type);
 
 			const response = await ApiService.fetchData<IInventoryMovementsResponse>(
 				{
@@ -87,7 +118,7 @@ export const fetchDetalleMovimientoSucursalThunk = createAsyncThunk<IInventoryMo
 		try {
 			const response = await ApiService.fetchData<IInventoryMovement>(
 				{
-					url: `/inventario/branches/${branch_id}/inventory-movements/${movement_id}`,
+					url: `/branches/${branch_id}/inventory-movements/${movement_id}`,
 					method: 'get',
 				}
 			)
@@ -113,6 +144,15 @@ const inventorySlice = createSlice({
 		setPage: (state, action) => {
 			state.pagination.currentPage = action.payload;
 		},
+		setFilters: (state, action) => {
+			state.filters = action.payload;
+		},
+		clearFilters: (state) => {
+			state.filters = {};
+		},
+		appendMovimientos: (state, action) => {
+			state.listaMovimientoSucursal = [...state.listaMovimientoSucursal, ...action.payload];
+		},
 	},
 	extraReducers: (builder) => {
 		builder
@@ -122,7 +162,13 @@ const inventorySlice = createSlice({
 			})
 			.addCase(fetchListaMovimientoSucursalThunk.fulfilled, (state, action) => {
 				state.loading = false;
-				state.listaMovimientoSucursal = action.payload.data;
+				// Si es append (cargar más), agregar a la lista existente
+				const isAppend = action.meta.arg.append;
+				if (isAppend) {
+					state.listaMovimientoSucursal = [...state.listaMovimientoSucursal, ...action.payload.data];
+				} else {
+					state.listaMovimientoSucursal = action.payload.data;
+				}
 				state.pagination = {
 					currentPage: action.payload.meta.current_page,
 					totalPages: action.payload.meta.last_page,
@@ -157,6 +203,7 @@ export const selectMovimientosSucursal = (state: RootState) => state.inventario.
 export const selectInventarioPagination = (state: RootState) => state.inventario.pagination;
 export const selectInventarioLoading = (state: RootState) => state.inventario.loading;
 export const selectInventarioError = (state: RootState) => state.inventario.error;
+export const selectInventarioFilters = (state: RootState) => state.inventario.filters;
 
-export const { clearDetalleMovimientoSucursal, clearListaMovimientoSucursal, setPage } = inventorySlice.actions;
+export const { clearDetalleMovimientoSucursal, clearListaMovimientoSucursal, setPage, setFilters, clearFilters } = inventorySlice.actions;
 export default inventorySlice.reducer;

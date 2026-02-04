@@ -56,12 +56,20 @@ const SalesListPage = lazy(() => import('@/pages/comercial/ventas/SalesListPage'
 const CotizacionesPage = lazy(() => import('@/pages/comercial/cotizaciones/CotizacionesAdmin'));
 
 // Paginas de Inventario
-const TransferenciasInventario = lazy(() => import('@/pages/inventario/transferencias/Transferencias'));
+const TransferenciasInventario = lazy(
+	() => import('@/pages/inventario/transferencias/Transferencias'),
+);
 const BodegasPage = lazy(() => import('@/pages/catalogos/bodegas/WarehouseListPage'));
 const BodegasDetailPage = lazy(() => import('@/pages/catalogos/bodegas/WarehouseDetailPage'));
-const TransferenciasComercial = lazy(() => import('@/pages/comercial/transferencias/TransferenciasAdmin'));
-const HistorialInventario = lazy(() => import('@/pages/inventario/historial/HistorialInventarioAdmin'));
-const TrazabilidadSubsidiary = lazy(() => import('@/pages/inventario/trazabilidad-sucursal/TrazabilidadSubsidiary'))
+const TransferenciasComercial = lazy(
+	() => import('@/pages/comercial/transferencias/TransferenciasAdmin'),
+);
+const HistorialInventario = lazy(
+	() => import('@/pages/inventario/historial/HistorialInventarioAdmin'),
+);
+const TrazabilidadSubsidiary = lazy(
+	() => import('@/pages/inventario/trazabilidad-sucursal/TrazabilidadSubsidiary'),
+);
 
 const ClientesVentas = lazy(() => import('@/pages/comercial/clientesVentas/ClientesVentas'));
 const ClientesVentasDetalle = lazy(
