@@ -113,7 +113,7 @@ export function TrazabilidadTimeline({
 	// Estado: Sin movimientos
 	if (hasFetched && movimientos.length === 0) {
 		return (
-			<div className='flex min-h-[35vh] flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50/50 py-16 text-center dark:border-zinc-700 dark:bg-zinc-950/20'>
+			<div className='flex min-h-[35vh] flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-500/20 py-16 text-center dark:border-zinc-700 dark:bg-zinc-950/20'>
 				<Icon icon='DuoBinocular' className='mb-4 h-16 w-16 text-zinc-400' />
 				<Badge className='px-2 text-xl font-bold text-gray-600 dark:text-gray-300'>
 					Sin movimientos registrados

@@ -63,7 +63,6 @@ export function TrazabilidadFilters({
 		};
 	}, []);
 
-	// Auto-aplicar filtros con debounce cuando cambian (solo después de la primera interacción)
 	useEffect(() => {
 		// No ejecutar en el primer render
 		if (!hasInitialized.current) {
@@ -109,7 +108,7 @@ export function TrazabilidadFilters({
 	const hasActiveFilters = Object.values(localFilters).some((v) => v !== undefined && v !== '');
 
 	return (
-		<div className='mb-6 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-900'>
+		<div className='mb-6 rounded-xl border border-zinc-200 bg-gray-300 p-4 shadow-lg dark:border-zinc-700 dark:bg-zinc-900'>
 			{/* Header */}
 			<button
 				type='button'
