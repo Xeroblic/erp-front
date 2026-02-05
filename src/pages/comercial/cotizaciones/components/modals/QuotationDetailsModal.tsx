@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 import QuotePrintableView from '../QuotePrintableView';
 import type { IQuote } from '../../../../../interface/quotes.interface';
 import Modal, {
@@ -37,6 +38,7 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
 }) => {
 	const [downloading, setDownloading] = useState(false);
 	const [isPrinting, setIsPrinting] = useState(false);
+	const navigate = useNavigate();
 
 	const currentUser = useSelector((state: RootState) => state.auth.user);
 
@@ -88,17 +90,44 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
 
 	const handleConvertToSale = async () => {
 		if (!quotation) return;
+
+		// If already converted, redirect to sale
+		if (quotation.is_converted_to_sale) {
+			const saleId = quotation.sale?.id || quotation.sale_id;
+			if (saleId) {
+				onClose();
+				navigate(`/comercial/ventas/${saleId}`);
+			} else {
+				toast.error('No se encontró el ID de la venta asociada');
+			}
+			return;
+		}
+
+		if (
+			!window.confirm('¿Estás seguro de que deseas convertir esta cotización en una venta?')
+		) {
+			return;
+		}
+
 		try {
 			setConverting(true);
 
 			const res = await ApiService.fetchNormalized({
 				url: `/subsidiaries/${quotation.subsidiary_id}/quotes/${quotation.id}/convert-to-sale`,
 				method: 'POST',
+				data: {
+					sale_number: null,
+				},
 			});
 
 			toast.success('Cotización convertida en venta correctamente');
-
 			onClose();
+
+			// Redirect to the new sale
+			const saleId = res?.sale?.id || res?.data?.sale?.id;
+			if (saleId) {
+				navigate(`/comercial/ventas/${saleId}`);
+			}
 		} catch (error) {
 			console.error(error);
 			toast.error('No se pudo convertir la cotización');
@@ -198,12 +227,14 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
 								Descargar PDF
 							</Button>
 							<Button
-								variant='outline'
-								color='green'
+								variant={quotation?.is_converted_to_sale ? 'outline' : 'solid'}
+								color={quotation?.is_converted_to_sale ? 'blue' : 'emerald'}
 								onClick={handleConvertToSale}
 								isDisable={!quotation}
 								isLoading={converting}>
-								Convertir a Venta
+								{quotation?.is_converted_to_sale
+									? 'Ir a Venta Realizada'
+									: 'Generar Venta'}
 							</Button>
 
 							<Button

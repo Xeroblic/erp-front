@@ -105,6 +105,7 @@ export interface ICloseSaleRequest {
 	items: Array<{
 		sale_item_id: number;
 		serial_numbers: string[];
+		product_detail?: string;
 	}>;
 }
 

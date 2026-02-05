@@ -4,6 +4,7 @@ import { useAppDispatch, useAppSelector, injectReducer } from '@/store';
 import salesReducer, {
 	loadSaleDetail,
 	loadSaleItems,
+	closeSaleThunk,
 	selectSaleDetail,
 	selectSaleItems,
 	selectSalesLoading,
@@ -93,6 +94,8 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	const loading = useAppSelector(selectSalesLoading);
 
 	const [closeOpen, setCloseOpen] = useState(false);
+	const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
+	const [isClosing, setIsClosing] = useState(false);
 	const [creatingQuote, setCreatingQuote] = useState(false);
 	const [createdQuoteId, setCreatedQuoteId] = useState<number | null>(null);
 
@@ -207,13 +210,72 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 		}
 	}, [subsidiaryId, saleId, creatingQuote, navigate]);
 
-	const quoteButtonLabel = createdQuoteId ? 'Ver cotización' : 'Crear cotización desde venta';
-	const quoteButtonHandler = createdQuoteId
-		? () => navigate(`/comercial/cotizaciones/${createdQuoteId}`)
-		: handleCreateQuote;
-	const quoteButtonClass = createdQuoteId
-		? 'border border-solid border-rose-500 bg-rose-50 text-rose-700 hover:bg-rose-100 hover:text-rose-900 dark:text-rose-200 dark:hover:bg-rose-500/20 dark:hover:text-rose-100'
-		: 'border border-dashed bg-violet-400/10 text-violet-700 hover:bg-violet-400/20 hover:text-violet-900 dark:text-violet-300 dark:hover:bg-violet-500/20 dark:hover:text-violet-100';
+	// Logic to determine if we show "Create Quote" or "View Quote"
+	// We check 'quote_id' (legacy) OR 'documents_metadata.origin_quote_id' (from JSON dump)
+	// OR if we just created one in this session (createdQuoteId)
+	const existingQuoteId =
+		detail?.quote_id ?? (detail?.documents_metadata as any)?.origin_quote_id;
+	const effectiveQuoteId = createdQuoteId ?? existingQuoteId;
+
+	const handleViewQuote = () => {
+		if (effectiveQuoteId) {
+			navigate(`/comercial/cotizaciones/${effectiveQuoteId}`);
+		}
+	};
+
+	// Helper to detect if an item requires serial numbers
+	// We check standard flags OR inference from reservation metadata (if it lacks 'nonserial' key)
+	const isItemTrackable = (it: any): boolean => {
+		if (it.product?.is_trackable || it.product?.serial_tracking) return true;
+		if (it.meta_json?.reservation) {
+			// If reservation exists and DOES NOT have 'nonserial', it likely assumes serialized tracking
+			return !it.meta_json.reservation.nonserial;
+		}
+		return false;
+	};
+
+	const handleCloseSale = async () => {
+		// Check if any item requires serial numbers
+		const needsSerials = items.some(isItemTrackable);
+
+		if (needsSerials) {
+			setCloseOpen(true);
+			return;
+		}
+
+		// If no serials appear to be needed, confirm and try to close directly
+		setConfirmCloseOpen(true);
+	};
+
+	const handleConfirmClose = async () => {
+		setConfirmCloseOpen(false);
+		setIsClosing(true);
+		try {
+			const res = await dispatch(
+				closeSaleThunk({ subsidiaryId, saleId, items: [] }),
+			).unwrap();
+			// If success, toast is handled by slice (usually).
+			dispatch(loadSaleDetail({ subsidiaryId, saleId }));
+			dispatch(loadSaleItems({ subsidiaryId, saleId }));
+			toast.success('Venta cerrada correctamente');
+		} catch (err) {
+			// If it fails (e.g. backend says we DO need serials), fallback to modal
+			console.error('Direct close failed', err);
+			toast.info('Se requiere ingresar números de serie. Abriendo formulario...');
+			setCloseOpen(true);
+		} finally {
+			setIsClosing(false);
+		}
+	};
+
+	const quoteButtonLabel = effectiveQuoteId
+		? 'Ver cotización asociada'
+		: 'Crear cotización desde venta';
+	const quoteButtonHandler = effectiveQuoteId ? handleViewQuote : handleCreateQuote;
+
+	const quoteButtonClass = effectiveQuoteId
+		? 'border-rose-500 bg-rose-50 text-rose-700 hover:bg-rose-100 hover:text-rose-900 dark:text-rose-200 dark:hover:bg-rose-500/20 dark:hover:text-rose-100'
+		: 'border-violet-500 bg-violet-50 text-violet-700 hover:bg-violet-100 hover:text-violet-900 dark:text-violet-300 dark:hover:bg-violet-500/20 dark:hover:text-violet-100';
 
 	return (
 		<Modal isOpen={isOpen} setIsOpen={onClose} size='xl' isScrollable isStaticBackdrop>
@@ -262,21 +324,22 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 								</div>
 							</div>
 
-							{!detail?.complete_at && detail?.complete_at !== undefined ? (
+							{String(detail?.status) !== 'completed' &&
+							String(detail?.status) !== 'closed' ? (
 								<Button
 									variant='outline'
 									color='emerald'
 									icon='HeroCheckCircle'
 									iconColor='text-emerald-700'
 									className='mt-2 border border-dashed bg-emerald-400/20 text-emerald-700 hover:bg-emerald-400/20 hover:text-emerald-900 dark:text-emerald-300 dark:hover:bg-emerald-500/20 dark:hover:text-emerald-100 md:mt-0'
-									onClick={() => setCloseOpen(true)}>
+									onClick={handleCloseSale}>
 									Cerrar venta
 								</Button>
 							) : (
 								<Badge variant='solid' color='green' className='px-2 py-1 text-sm'>
 									Venta cerrada{' '}
-									{detail?.complete_at
-										? `el ${formatDate(detail.complete_at)}`
+									{(detail as any)?.completed_at
+										? `el ${formatDate((detail as any).completed_at)}`
 										: ''}
 								</Badge>
 							)}
@@ -378,13 +441,43 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 						onClose={() => setCloseOpen(false)}
 						subsidiaryId={subsidiaryId}
 						saleId={saleId}
-						items={items}
+						items={items.filter(isItemTrackable)}
 						onSuccess={() => {
 							dispatch(loadSaleDetail({ subsidiaryId, saleId }));
 							dispatch(loadSaleItems({ subsidiaryId, saleId }));
 						}}
 					/>
 				)}
+
+				<Modal
+					isOpen={confirmCloseOpen}
+					setIsOpen={setConfirmCloseOpen}
+					size='sm'
+					isCentered>
+					<ModalHeader>Confirmar cierre de venta</ModalHeader>
+					<ModalBody>
+						<div className='text-zinc-600 dark:text-zinc-300'>
+							¿Seguro que desea cerrar esta venta? No se requieren números de serie.
+						</div>
+					</ModalBody>
+					<ModalFooter>
+						<ModalFooterChild className='justify-end'>
+							<Button
+								variant='outline'
+								color='red'
+								onClick={() => setConfirmCloseOpen(false)}>
+								Cancelar
+							</Button>
+							<Button
+								variant='solid'
+								color='emerald'
+								onClick={handleConfirmClose}
+								isLoading={isClosing}>
+								Confirmar
+							</Button>
+						</ModalFooterChild>
+					</ModalFooter>
+				</Modal>
 
 				{loading && (
 					<div className='rounded-md border border-dashed border-zinc-300 p-3 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-300'>
@@ -393,12 +486,24 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 				)}
 				<ModalFooter className='flex justify-end rounded-md p-3'>
 					<ModalFooterChild className='ml-auto'>
+						{String(detail?.status) !== 'completed' &&
+							String(detail?.status) !== 'closed' && (
+								<Button
+									variant='solid'
+									color='emerald'
+									className='mr-2'
+									onClick={handleCloseSale}>
+									Cerrar venta
+								</Button>
+							)}
 						<Button
-							variant='outline'
-							color={createdQuoteId ? 'rose' : 'violet'}
+							variant={effectiveQuoteId ? 'solid' : 'outline'}
+							color={effectiveQuoteId ? 'rose' : 'violet'}
 							className={quoteButtonClass}
 							onClick={quoteButtonHandler}
-							disabled={creatingQuote && !createdQuoteId}>
+							isLoading={creatingQuote}
+							disabled={creatingQuote && !effectiveQuoteId}
+							icon={effectiveQuoteId ? 'HeroEye' : 'HeroPlus'}>
 							{quoteButtonLabel}
 						</Button>
 					</ModalFooterChild>

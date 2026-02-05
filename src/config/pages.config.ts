@@ -303,7 +303,7 @@ export const privatePages = {
 			trazabilidadSubsidiary: {
 				id: 'trazabilidadSubsidiary',
 				to: '/inventario/trazabilidad-subsidiary',
-				text: 'Trazabilidad Subsidiary',
+				text: 'Trazabilidad de Sucursal',
 				icon: 'HeroArrowsRightLeft',
 				authority: ['view-transfer'],
 				roles: [

@@ -104,6 +104,8 @@ export interface Quote {
 	items_count?: number;
 	is_converted_to_sale?: boolean;
 	converted_at?: string | null;
+	sale_id?: number | null;
+	sale?: Record<string, any> | null;
 }
 
 export interface QuotePDFResponse {

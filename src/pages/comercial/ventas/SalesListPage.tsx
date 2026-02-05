@@ -33,6 +33,7 @@ import type { ISale } from '@/interface/sales.interface';
 import SaleDetailPage from './detail/components/modals/SaleDetailPage';
 import Tooltip from '@/components/ui/Tooltip';
 import { downloadShippingLabel } from '@/store/slices/sales/salesSlice';
+import { useParams } from 'react-router-dom';
 
 injectReducer('salesModule', salesReducer);
 
@@ -101,6 +102,15 @@ const SalesListPage: React.FC = () => {
 	const [debouncedWcOrderId] = useDebounce(wcOrderId, 400);
 	const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
 	// const [creatingQuote, setCreatingQuote] = useState(false);
+
+	// Logic to handle route-based modal opening
+	const { saleId } = useParams<{ saleId?: string }>();
+	useEffect(() => {
+		if (saleId && !isNaN(Number(saleId))) {
+			setSelectedSaleId(Number(saleId));
+			setDetailModalOpen(true);
+		}
+	}, [saleId]);
 
 	const statusValue = useMemo(
 		() => statusOptions.find((option) => option.value === status) ?? null,
@@ -251,14 +261,14 @@ const SalesListPage: React.FC = () => {
 		(saleId: number) => {
 			try {
 				dispatch(downloadShippingLabel({ subsidiaryId: Number(subsidiaryId), id: saleId }));
-				toast.success('La etiqueta de envio a sido descargada satifactoriamente :D')
+				toast.success('La etiqueta de envio a sido descargada satifactoriamente :D');
 			} catch (error) {
-				toast.error('Hubo un error al descargar la etiqueta de envio')
+				toast.error('Hubo un error al descargar la etiqueta de envio');
 			}
 		},
 		[subsidiaryId],
 	);
-	
+
 	const detailModalVisible = detailModalOpen && selectedSaleId !== null && Boolean(subsidiaryId);
 
 	const columns = useMemo<ColumnDef<ISale>[]>(
@@ -351,7 +361,6 @@ const SalesListPage: React.FC = () => {
 				cell: ({ row }) => (
 					<div className='flex justify-center gap-2'>
 						<Tooltip text='Descargar ticket de envio'>
-
 							<Button
 								variant='outline'
 								size='xs'
@@ -359,12 +368,12 @@ const SalesListPage: React.FC = () => {
 								className='bg-violet-500/20'
 								onClick={() => handleDownloadTicket(row.original.id)}
 								isDisable={!subsidiaryId}>
-									<Icon
-										icon='HeroDocumentText'
-										color='violet'
-										className='hover:text-bold hover:text-violet-600'
-										size='text-xl'
-										/>
+								<Icon
+									icon='HeroDocumentText'
+									color='violet'
+									className='hover:text-bold hover:text-violet-600'
+									size='text-xl'
+								/>
 							</Button>
 						</Tooltip>
 						<Button

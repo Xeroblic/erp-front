@@ -148,6 +148,7 @@ export const fetchQuoteById = createAsyncThunk<
 			params: {
 				with_customer: 1,
 				with_subsidiary: 1,
+				with_sale: 1,
 			},
 		});
 		const quote = extractEntity<Quote>(response.data);
