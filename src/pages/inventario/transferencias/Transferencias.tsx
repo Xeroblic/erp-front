@@ -273,7 +273,7 @@ const Transferencias: React.FC = () => {
 									isDisable={items.length === 0}>
 									Limpiar Lista
 								</Button>
-								<PermissionGuard permissions={[ERP_PERMISSIONS.INVENTORY.TRANSFER]}>
+								<PermissionGuard permission={[ERP_PERMISSIONS.INVENTORY.TRANSFER]}>
 									<Button
 										variant='solid'
 										color='emerald'

@@ -783,7 +783,7 @@ const InventarioEstadoTecnico: React.FC = () => {
 					<Button variant='outline' onClick={() => setShowDetailModal(false)}>
 						Cerrar
 					</Button>
-					<PermissionGuard permissions={[ERP_PERMISSIONS.INVENTORY.VIEW]}>
+					<PermissionGuard permission={[ERP_PERMISSIONS.INVENTORY.VIEW]}>
 						<Button
 							color='blue'
 							onClick={() => {

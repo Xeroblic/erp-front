@@ -1,132 +1,97 @@
+// src/components/authorization/PermissionGuard.tsx
 import React, { PropsWithChildren } from 'react';
-import { useAppSelector } from '@/store';
-import useAuthority from '@/hooks/useAuthority';
-import { hasTemporaryPermission } from '@/constants/temp-permissions.constant';
+import useCan from '@/hooks/useCan';
 
-interface PermissionGuardProps extends PropsWithChildren {
-	/** Permisos requeridos (modo OR - al menos uno debe coincidir) */
-	permissions?: string[];
-	/** Roles requeridos (modo OR - al menos uno debe coincidir) */
-	roles?: string[];
-	/** Modo AND - todos los permisos/roles deben coincidir */
+export interface PermissionGuardProps extends PropsWithChildren {
+	/** Permiso único o array de permisos requeridos */
+	permission?: string | string[];
+	/** Rol único o array de roles requeridos */
+	role?: string | string[];
+	/** Si true, requiere TODOS los permisos/roles. Si false (default), requiere al menos uno */
 	requireAll?: boolean;
-	/** ID de empresa específica (opcional) */
-	companyId?: number;
-	/** ID de subsidiaria específica (opcional) */
-	subsidiaryId?: number;
-	/** ID de sucursal específica (opcional) */
-	branchId?: number;
-	/** Componente a mostrar si no tiene permisos */
+	/** Componente alternativo a mostrar si no tiene permisos */
 	fallback?: React.ReactNode;
-	/** Mensaje personalizado de acceso denegado */
-	deniedMessage?: string;
 }
 
+/**
+ * Wrapper declarativo para control de permisos.
+ * Si el usuario no tiene los permisos/roles requeridos, retorna null (o fallback).
+ * Super-admin SIEMPRE tiene acceso.
+ *
+ * @example
+ * // Permiso único
+ * <PermissionGuard permission="edit-sale">
+ *   <Button>Editar</Button>
+ * </PermissionGuard>
+ *
+ * @example
+ * // Múltiples permisos (OR por defecto)
+ * <PermissionGuard permission={['edit-sale', 'manage-sales']}>
+ *   <Button>Editar</Button>
+ * </PermissionGuard>
+ *
+ * @example
+ * // Múltiples permisos (AND)
+ * <PermissionGuard permission={['edit-sale', 'view-reports']} requireAll>
+ *   <Button>Editar con Reportes</Button>
+ * </PermissionGuard>
+ *
+ * @example
+ * // Por rol
+ * <PermissionGuard role="admin">
+ *   <Button>Solo Admin</Button>
+ * </PermissionGuard>
+ */
 const PermissionGuard: React.FC<PermissionGuardProps> = ({
 	children,
-	permissions = [],
-	roles = [],
+	permission,
+	role,
 	requireAll = false,
-	companyId,
-	subsidiaryId,
-	branchId,
-	fallback,
+	fallback = null,
 }) => {
-	const user = useAppSelector((state) => state.auth.user);
-	const userAuthority = useAppSelector((state) => state.auth.permisos);
-	const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
-	const authLoading = useAppSelector((state) => state.auth.loading);
+	const { has, any, all, hasRole, isSuperAdmin, isLoading } = useCan();
 
-	// Construir array de verificación combinando roles y permisos
-	const requiredAuthorities = [...permissions, ...roles];
-
-	// IMPORTANTE: Todos los hooks deben ejecutarse antes de cualquier return condicional
-	const hasAccess = useAuthority(userAuthority, requiredAuthorities, requireAll);
-
-	// Si no hay usuario autenticado, denegar acceso
-	if (!user && !authLoading) {
-		return fallback ? <>{fallback}</> : null;
+	// Mientras carga, no mostrar nada para evitar parpadeo
+	if (isLoading) {
+		return null;
 	}
 
-	// Si está cargando la autenticación, mostrar contenido (evitar bloqueos innecesarios)
-	if (authLoading || !isAuthenticated) {
+	// Super-admin tiene acceso total
+	if (isSuperAdmin) {
 		return <>{children}</>;
 	}
 
 	// Si no hay requisitos, permitir acceso
-	if (requiredAuthorities.length === 0) {
+	if (!permission && !role) {
 		return <>{children}</>;
 	}
 
-	// Primero verificar si es super-admin (tiene acceso total)
-	if (user?.authority?.includes('super-admin') || userAuthority?.includes('super-admin')) {
-		return <>{children}</>;
+	// Verificar permisos
+	let hasPermission = true;
+	if (permission) {
+		const permList = Array.isArray(permission) ? permission : [permission];
+		hasPermission = requireAll ? all(permList) : any(permList);
 	}
 
-	// Verificación temporal para permisos de desarrollo
-	const hasTemporaryAccess = permissions.some((permission) => hasTemporaryPermission(permission));
-	if (hasTemporaryAccess) {
-		return <>{children}</>;
-	}
-
-	// Verificación adicional por contexto de empresa/subsidiaria/sucursal
-	if (hasAccess && (companyId || subsidiaryId || branchId)) {
-		// Verificar si el usuario tiene acceso al contexto específico
-		const hasContextAccess = checkContextualAccess(user, companyId, subsidiaryId, branchId);
-		if (!hasContextAccess) {
-			return fallback ? (
-				<>{fallback}</>
-			) : (
-				// <div className='rounded-lg bg-red-50 p-4 text-center text-red-600'>
-				// 	{deniedMessage}
-				// </div>
-				<></>
-			);
+	// Verificar roles
+	let hasRequiredRole = true;
+	if (role) {
+		const roleList = Array.isArray(role) ? role : [role];
+		if (requireAll) {
+			hasRequiredRole = roleList.every((r) => hasRole(r));
+		} else {
+			hasRequiredRole = roleList.some((r) => hasRole(r));
 		}
 	}
+
+	// Debe cumplir ambos (si están definidos)
+	const hasAccess = hasPermission && hasRequiredRole;
 
 	if (hasAccess) {
 		return <>{children}</>;
 	}
 
-	return fallback ? (
-		<>{fallback}</>
-	) : (
-		<></>
-		// <div className='rounded-lg bg-red-50 p-4 text-center text-red-600'>{deniedMessage}</div>
-	);
+	return <>{fallback}</>;
 };
-
-// Función auxiliar para verificar acceso contextual
-function checkContextualAccess(
-	user: any,
-	companyId?: number,
-	subsidiaryId?: number,
-	branchId?: number,
-): boolean {
-	// Si es super admin, acceso completo
-	if (user.authority?.includes('super-admin')) {
-		return true;
-	}
-
-	// Verificar acceso por empresa
-	if (companyId && user.company?.id !== companyId) {
-		// Verificar si el usuario tiene acceso a múltiples empresas
-		// (esto requeriría información adicional del backend)
-		return false;
-	}
-
-	// Verificar acceso por subsidiaria
-	if (subsidiaryId && user.subsidiary?.id !== subsidiaryId) {
-		return false;
-	}
-
-	// Verificar acceso por sucursal
-	if (branchId && user.branch?.id !== branchId) {
-		return false;
-	}
-
-	return true;
-}
 
 export default PermissionGuard;

@@ -15,6 +15,7 @@ import { formatCLP, translateStatus } from './utils';
 // import ApiService from '@/services/ApiService';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import ProtectedButton from '@/components/ui/ProtectedButton';
 import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import DataTable from '@/components/ui/DataTable';
@@ -390,7 +391,9 @@ const SalesListPage: React.FC = () => {
 								size='text-xl'
 							/>
 						</Button>
-						<Button
+						<ProtectedButton
+							permission='delete-sale'
+							fallbackMode='hidden'
 							variant='outline'
 							size='xs'
 							color='red'
@@ -403,7 +406,7 @@ const SalesListPage: React.FC = () => {
 								className='hover:text-bold hover:text-red-600'
 								size='text-xl'
 							/>
-						</Button>
+						</ProtectedButton>
 					</div>
 				),
 				enableSorting: false,

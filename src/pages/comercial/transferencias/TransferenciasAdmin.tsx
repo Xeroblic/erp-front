@@ -138,7 +138,7 @@ const TransferenciasAdmin: React.FC<TransferenciasAdminProps> = ({
 						disabled={loading}>
 						Actualizar
 					</Button>
-					<PermissionGuard permissions={[ERP_PERMISSIONS.TRANSFERS.CREATE]}>
+					<PermissionGuard permission={ERP_PERMISSIONS.TRANSFERS.CREATE}>
 						<Button
 							variant='solid'
 							icon='HeroPlus'
