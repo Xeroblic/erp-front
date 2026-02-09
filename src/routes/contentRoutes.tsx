@@ -111,6 +111,12 @@ const TraceabilityPage = lazy(
 	() => import('@/pages/technical-reviews/traceability/TraceabilityPage'),
 );
 
+/// REFACTOR DE TECHNICAL REVIEW
+
+const TechnicalReview = lazy(() => import('@/pages/refactor-technical-review/index'));
+
+
+/// Notificaciones
 const NotificationsAllPage = lazy(() => import('@/pages/notificaciones/NotificationsAll'));
 const NotificationDetailPage = lazy(() => import('@/pages/notificaciones/NotificationDetail'));
 
@@ -434,6 +440,13 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: cfg.technical.subPages.reviews.to,
 		element: <TechnicalReviewsHub />,
 		authority: cfg.technical.subPages.reviews.authority,
+	},
+
+	// refactor
+	{
+		path: cfg.technical.subPages.refactor.to,
+		element: <TechnicalReview />,
+		authority: cfg.technical.subPages.refactor.authority,
 	},
 
 	{ path: '/sin-permisos', element: <SinPermisos />, public: true },

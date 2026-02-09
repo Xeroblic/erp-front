@@ -686,6 +686,27 @@ export const privatePages = {
 					'after-sales',
 				],
 			},
+			refactor: {
+				id: 'technicalRefactor',
+				to: '/technical-reviews/refactor',
+				text: 'Refactor',
+				icon: 'DuoClipboard', // Using a clipboard icon
+				authority: ['view-technical-reviews-batches'],
+				roles: [
+					'super-admin',
+					'admin',
+					'company-admin',
+					'subsidiary-admin',
+					'branch-admin',
+					'company-supervisor',
+					'employee',
+					'technician',
+					'warehouse-employee',
+					'warehouse-manager',
+					'salesperson',
+					'after-sales',
+				],
+			},
 			batches: {
 				id: 'technicalBatches',
 				to: '/technical-reviews/batches',

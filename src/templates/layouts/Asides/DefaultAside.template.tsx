@@ -580,6 +580,20 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
+							{/* refactor */}
+							<AuthorityCheckNav
+								authority={Pages.technical.subPages.refactor.authority}
+								roles={Pages.technical.subPages.refactor.roles}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.technical.subPages.refactor.text}
+									to={Pages.technical.subPages.refactor.to}
+									icon={Pages.technical.subPages.refactor.icon}
+									id={Pages.technical.subPages.refactor.id}
+									onClick={() => navigate(Pages.technical.subPages.refactor.to)}
+								/>
+							</AuthorityCheckNav>
+
 							{/* Proveedores */}
 							<AuthorityCheckNav
 								authority={Pages.catalogs.subPages.suppliers.authority}
