@@ -36,11 +36,10 @@ const App = () => {
 		if (!token) return false;
 		return tokenManager.isTokenValid(token) || tokenManager.canRefresh(token);
 	}, []); // Empty dependency array: check only on mount/unmount or when component re-renders for other reasons.
-    // Actually, we want this to be stable. If we rely on isAuthenticated, we assume valid session.
-	
-    // Eliminamos el useEffect redundante de sync access->tokenManager
-    // Ya lo hace AppInitializer y el servicio de refresh.
+	// Actually, we want this to be stable. If we rely on isAuthenticated, we assume valid session.
 
+	// Eliminamos el useEffect redundante de sync access->tokenManager
+	// Ya lo hace AppInitializer y el servicio de refresh.
 
 	useEffect(() => {
 		const handler = () => dispatch(obtenerPersonalizacionThunk());
@@ -50,11 +49,21 @@ const App = () => {
 
 	useEffect(() => {
 		if (!isAuthenticated) return;
-        // Check validity directly from manager to avoid subscribing to state
-        const token = tokenManager.getAccessToken();
-		const isValid = token && (tokenManager.isTokenValid(token) || tokenManager.canRefresh(token));
-		
-		if (!isValid) {
+		// Check validity directly from manager to avoid subscribing to state
+		const token = tokenManager.getAccessToken();
+		const isValid =
+			token && (tokenManager.isTokenValid(token) || tokenManager.canRefresh(token));
+
+		if (!isValid && token) {
+			// El token no es válido, pero quizás podemos refrescar silenciosamente.
+			// Solo hacemos logout si realmente no hay forma de recuperar.
+			import('@/services/BaseService').then(({ triggerTokenRefresh }) => {
+				triggerTokenRefresh().catch(() => {
+					// Refresh también falló → ahora sí, logout
+					dispatch(logout());
+				});
+			});
+		} else if (!isValid && !token) {
 			dispatch(logout());
 		}
 	}, [dispatch, isAuthenticated]);

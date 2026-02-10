@@ -6,16 +6,19 @@ import tokenManager from '@/services/auth/tokenManager';
 interface CustomAxiosRequestConfig<D = any> extends InternalAxiosRequestConfig<D> {
 	isLoginRequest?: boolean;
 	_retry?: boolean;
+	_retryWithMemoryToken?: boolean;
 }
 
 // --- Variables de Control (Semáforo y Cancelación) ---
+// --- Variables de Control (Semáforo y Cancelación) ---
+let isRefreshing = false;
 let refreshPromise: Promise<string> | null = null;
 
 let abortController = new AbortController();
 
 /**
  * Cancela todas las peticiones activas en el momento de la llamada.
- * Utilizado típicamente en el cierre .
+ * Utilizado típicamente en el cierre de sesión voluntario.
  */
 export const cancelAllRequests = () => {
 	abortController.abort();
@@ -32,55 +35,60 @@ const BaseService = axios.create({
 
 // --- Helpers ---
 
-const performTokenRefresh = (forcedToken?: string | null): Promise<string> => {
-	if (refreshPromise) {
+/**
+ * Ejecuta el refresh del token con patrón semáforo (una sola ejecución concurrente).
+ * IMPORTANTE: No hace logout automático al fallar. Deja que el caller decida.
+ */
+/**
+ * Ejecuta el refresh del token con patrón semáforo (una sola ejecución concurrente).
+ * IMPORTANTE: No hace logout automático al fallar. Deja que el caller decida.
+ */
+const performTokenRefresh = async (): Promise<string> => {
+	// 1. SERIALIZACIÓN: Si ya hay uno en curso, devuélvelo (Singleton Promise)
+	if (isRefreshing && refreshPromise) {
 		return refreshPromise;
 	}
 
-	refreshPromise = (async () => {
-		try {
-			const currentToken =
-				forcedToken ?? tokenManager.getAccessToken() ?? store.getState().auth.access;
-			if (!currentToken || typeof currentToken !== 'string') {
-				throw new Error('No hay token disponible para refrescar');
-			}
-			const sanitizedToken = currentToken.replace(/^Bearer\s+/i, '');
+	isRefreshing = true;
 
-			const { data } = await axios.post(
+	// Crear la promesa que todos van a esperar
+	refreshPromise = new Promise(async (resolve, reject) => {
+		try {
+			const currentToken = tokenManager.getAccessToken() ?? store.getState().auth.access;
+			if (!currentToken) throw new Error('No token to refresh');
+
+			// Limpiamos "Bearer " si existe
+			const cleanToken = currentToken.replace(/^Bearer\s+/i, '');
+
+			const response = await axios.post(
 				`${API_URL}/refresh`,
 				{},
 				{
-					headers: { Authorization: `Bearer ${sanitizedToken}` },
+					headers: { Authorization: `Bearer ${cleanToken}` },
 				},
 			);
 
-			const newToken = data.access_token || data.token || data.access;
+			const newToken =
+				response.data.access_token || response.data.token || response.data.access;
 
-			if (!newToken) {
-				throw new Error('No se recibió token en el refresh');
-			}
-
+			// Actualizar todo el estado
 			tokenManager.setAccessToken(newToken);
 			store.dispatch(setToken({ access: newToken }));
-
 			BaseService.defaults.headers.common.Authorization = `Bearer ${newToken}`;
 
-			return newToken;
-		} catch (refreshError) {
-			store.dispatch(logout());
-			tokenManager.clearTokens();
-			cancelAllRequests();
-			throw refreshError;
+			resolve(newToken);
+		} catch (error) {
+			reject(error);
 		} finally {
+			isRefreshing = false;
 			refreshPromise = null;
 		}
-	})();
+	});
 
 	return refreshPromise;
 };
 
-export const triggerTokenRefresh = (forcedToken?: string | null) =>
-	performTokenRefresh(forcedToken);
+export const triggerTokenRefresh = () => performTokenRefresh();
 
 // --- Interceptor de Request ---
 BaseService.interceptors.request.use(
@@ -90,7 +98,7 @@ BaseService.interceptors.request.use(
 			return config;
 		}
 
-		// 💡 Reincorporación: Asignar la señal de cancelación
+		// Asignar la señal de cancelación
 		config.signal = abortController.signal;
 
 		const applyTokenToConfig = (token?: string | null) => {
@@ -115,6 +123,7 @@ BaseService.interceptors.request.use(
 );
 
 // --- Interceptor de Response (Maneja el 401 y la Concurrencia) ---
+// --- Interceptor de Response (Maneja el 401 y la Concurrencia) ---
 BaseService.interceptors.response.use(
 	(response) => response,
 	async (error: AxiosError) => {
@@ -124,39 +133,61 @@ BaseService.interceptors.response.use(
 			return Promise.reject(error);
 		}
 
-		// Detectar 401 Unauthorized
-		if (error.response.status === 401 && !originalRequest._retry) {
-			// Caso especial: Si el fallo vino del endpoint de refresh o login, no reintentamos
+		// Si no es 401 o ya se reintentó, rechazar (evita bucles infinitos)
+		if (error.response?.status !== 401 || originalRequest._retry) {
+			return Promise.reject(error);
+		}
+
+		// Marcar que ya intentamos recuperar esta petición
+		originalRequest._retry = true;
+
+		try {
+			// Intentamos refrescar (o esperar al que se está ejecutando)
+			const newToken = await performTokenRefresh();
+
+			// Si llegamos aquí, ÉXITO. Reintentamos la petición original.
+			if (originalRequest.headers) {
+				originalRequest.headers.Authorization = `Bearer ${newToken}`;
+			}
+			return BaseService(originalRequest);
+		} catch (refreshError) {
+			// AQUÍ ESTÁ LA MAGIA PARA LA PESTAÑA B
+			// El refresh falló (probablemente porque el token ya estaba en blacklist por la Pestaña A)
+
+			// 1. Verificamos si en memoria ya tenemos un token DIFERENTE al que falló
+			// (Gracias al cross-tab sync o al refresh de otra request paralela)
+			const currentTokenInRam = tokenManager.getAccessToken();
+			const tokenUsedInRequest = originalRequest.headers?.Authorization?.toString().replace(
+				'Bearer ',
+				'',
+			);
+
+			// Si el token en memoria es nuevo y válido, ÚSALO
 			if (
-				originalRequest.url?.includes('/refresh') ||
-				originalRequest.url?.includes('/login')
+				currentTokenInRam &&
+				currentTokenInRam !== tokenUsedInRequest &&
+				tokenManager.isTokenValid(currentTokenInRam)
 			) {
+				// console.log('Recuperando sesión con token actualizado por otra pestaña/proceso');
+				if (originalRequest.headers) {
+					originalRequest.headers.Authorization = `Bearer ${currentTokenInRam}`;
+				}
+				return BaseService(originalRequest);
+			}
+
+			// 2. Si realmente no hay token nuevo, y el refresh falló...
+			// Solo aquí aceptamos la derrota.
+			const isRefreshEndpoint = originalRequest.url?.includes('/refresh');
+			const isLoginEndpoint = originalRequest.url?.includes('/login');
+
+			if (!isRefreshEndpoint && !isLoginEndpoint) {
 				store.dispatch(logout());
 				tokenManager.clearTokens();
 				cancelAllRequests();
-				return Promise.reject(error);
 			}
 
-			originalRequest._retry = true;
-
-			try {
-				// Intentar refrescar el token
-				const newToken = await performTokenRefresh();
-
-				// Actualizar el header de autorización en la petición original
-				if (originalRequest.headers) {
-					originalRequest.headers.Authorization = `Bearer ${newToken}`;
-				}
-
-				// Reintentar la petición original
-				return BaseService(originalRequest);
-			} catch (refreshError) {
-				// Si el refresh falla, ya se manejó el logout en performTokenRefresh
-				return Promise.reject(refreshError);
-			}
+			return Promise.reject(refreshError);
 		}
-
-		return Promise.reject(error);
 	},
 );
 

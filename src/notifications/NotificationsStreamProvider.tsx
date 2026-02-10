@@ -110,14 +110,17 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 		};
 	}, [dispatch, isLeader]);
 
-	/** ---------- 2) Crear SSE SOLO si somos líderes ---------- */
+	// Obtener el token desde Redux para reaccionar a cambios (rotación)
+	const accessToken = useAppSelector((s) => s.auth.access);
+
+	/** ---------- 2) Crear SSE SOLO si somos líderes y hay token ---------- */
 	useEffect(() => {
 		if (!isLeader) return;
 
-		// console.log('[ZENTRIA] Esta pestaña es el LEADER de notificaciones.');
-
-		const token = tokenManager.getAccessToken();
+		const token = tokenManager.getAccessToken() || accessToken;
 		if (!token) return;
+
+		// console.log('[ZENTRIA] Conectando SSE con token actualizado...');
 
 		const baseURL = import.meta.env.VITE_API_URL;
 		const url = `${baseURL}/me/notifications/stream?access_token=${token}&history=1`;
@@ -144,7 +147,20 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 		es.onerror = () => {
 			// console.warn('[ZENTRIA] SSE error. Reintentando...');
 			es.close();
-			setTimeout(() => setIsLeader(true), 1000);
+			// Forzar reconexión: breve delay y desmontar/montar
+			// La forma más limpia es dejar que el componente se encargue o simplemente
+			// cerrar. Si cerramos, el useEffect NO se re-ejecuta solo por cerrar 'es'.
+			// Pero si el error fue por token inválido, el sistema de auth rotará el token,
+			// cambiará 'accessToken', y este effect se re-ejecutará solo.
+			// Si es error de red, podemos intentar reconectar manualmente:
+			eventSourceRef.current = null;
+			setTimeout(() => {
+				// Toggle leader para forzar reinicio si seguimos siendo líderes
+				if (isLeader) {
+					setIsLeader(false);
+					setTimeout(() => setIsLeader(true), 100);
+				}
+			}, 3000);
 		};
 
 		return () => {
@@ -152,7 +168,7 @@ const NotificationsStreamProvider: React.FC<{ children: React.ReactNode }> = ({ 
 			// @ts-ignore
 			if (typeof window !== 'undefined') (window as any).__zentriaSseReady = false;
 		};
-	}, [isLeader, dispatch]);
+	}, [isLeader, dispatch, accessToken]);
 
 	/** ---------- 3) Detectar nuevas notificaciones locales ---------- */
 	useEffect(() => {

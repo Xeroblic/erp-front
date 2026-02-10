@@ -773,7 +773,7 @@ const ItemReviewPage: React.FC = () => {
 							// toast.info(`Item actualizado desde Step2: ${updatedItem}`);
 							setItem(updatedItem);
 						}}
-						onFieldChange={undefined} // Desactivar auto-save, solo guardado manual
+						onFieldChange={markDetailsChanged}
 						isDirty={isDirty}
 						isSaving={isSaving}
 						lastSaved={lastSaved}

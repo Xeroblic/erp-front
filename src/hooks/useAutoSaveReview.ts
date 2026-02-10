@@ -127,10 +127,12 @@ export const useAutoSaveReview = ({
 		[dispatch, branchId, itemId, onSaveSuccess, onSaveError],
 	);
 
+
+
 	/**
-	 * PASO 2: Guardar detalles técnicos (actualiza attributes_json)
-	 * - Marca cambios como pendientes
-	 * - Inicia timer de auto-save
+	 * PASO 2: Marcar cambios como pendientes
+	 * - Solo actualiza el ref de cambios pendientes y setea dirty = true.
+	 * - El intervalo (useEffect arriba) se encargará de guardar.
 	 */
 	const markDetailsChanged = useCallback(
 		(details: UpdateItemDetailsPayload) => {
@@ -143,23 +145,12 @@ export const useAutoSaveReview = ({
 				...details,
 			};
 
-			setIsDirty(true);
-			lastInteractionRef.current = new Date();
-
-			if (autoSaveTimerRef.current) {
-				clearTimeout(autoSaveTimerRef.current);
+			if (!isDirty) {
+				setIsDirty(true);
 			}
-
-			// Iniciar nuevo timer
-			autoSaveTimerRef.current = setTimeout(() => {
-				const timeSinceLastInteraction = Date.now() - lastInteractionRef.current.getTime();
-
-				if (timeSinceLastInteraction >= AUTO_SAVE_DELAY) {
-					saveDetailsPending();
-				}
-			}, AUTO_SAVE_DELAY);
+			lastInteractionRef.current = new Date();
 		},
-		[itemId, reviewStatus],
+		[itemId, reviewStatus, isDirty],
 	);
 
 	/**
@@ -249,6 +240,21 @@ export const useAutoSaveReview = ({
 			clearTimeout(autoSaveTimerRef.current);
 		}
 	}, []);
+
+
+	// --- CAMBIO ESTRATEGIA: Intervalo de 10s (Heartbeat) ---
+	// En lugar de reiniciar el timer con cada tecla (debounce),
+	// guardamos periódicamente si hay cambios pendientes.
+	useEffect(() => {
+		const timer = setInterval(() => {
+			if (isDirty && pendingChangesRef.current && !isSaving) {
+				// console.log('💓 Auto-save heartbeat: Guardando cambios...');
+				saveDetailsPending();
+			}
+		}, 10000); // 10 segundos
+
+		return () => clearInterval(timer);
+	}, [isDirty, isSaving, saveDetailsPending]);
 
 	return {
 		// Estado
