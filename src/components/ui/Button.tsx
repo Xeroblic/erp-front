@@ -1,4 +1,4 @@
-import React, { forwardRef, HTMLAttributes, ReactNode } from 'react';
+import React, { forwardRef, HTMLAttributes, ReactNode, useCallback, useRef, useState } from 'react';
 import classNames from 'classnames';
 import { TColors } from '../../types/colors.type';
 import { TColorIntensity } from '../../types/colorIntensities.type';
@@ -14,6 +14,9 @@ import useCan from '../../hooks/useCan';
 
 export type TButtonVariants = 'solid' | 'outline' | 'default';
 export type TButtonSize = 'xs' | 'sm' | 'default' | 'lg' | 'xl';
+
+/** Tiempo mínimo de bloqueo anti-doble-click (ms) */
+const MIN_CLICK_GUARD_MS = 400;
 
 export interface IButtonProps
 	extends Omit<HTMLAttributes<HTMLButtonElement>, 'disabled' | 'color'> {
@@ -47,6 +50,57 @@ export interface IButtonProps
 	permission?: string | string[];
 }
 
+/**
+ * Hook interno: previene doble-click bloqueando el botón mientras
+ * el onClick anterior está en vuelo (si devuelve una Promise) o
+ * al menos MIN_CLICK_GUARD_MS ms.
+ */
+function useClickGuard(onClick: IButtonProps['onClick']) {
+	const busyRef = useRef(false);
+	const [clickGuardActive, setClickGuardActive] = useState(false);
+
+	const guardedOnClick = useCallback(
+		(e: React.MouseEvent<HTMLButtonElement>) => {
+			if (!onClick) return;
+			if (busyRef.current) return; // ya hay un click en vuelo
+
+			busyRef.current = true;
+			setClickGuardActive(true);
+
+			const minTimer = new Promise<void>((resolve) =>
+				setTimeout(resolve, MIN_CLICK_GUARD_MS),
+			);
+
+			try {
+				const result: unknown = onClick(e);
+
+				// Si el handler devuelve una Promise, esperamos a que termine
+				if (result && typeof (result as any).then === 'function') {
+					Promise.all([result, minTimer]).finally(() => {
+						busyRef.current = false;
+						setClickGuardActive(false);
+					});
+				} else {
+					// Handler síncrono: bloqueamos solo el tiempo mínimo
+					minTimer.then(() => {
+						busyRef.current = false;
+						setClickGuardActive(false);
+					});
+				}
+			} catch {
+				// Si el handler lanza síncronamente, liberar el guard
+				minTimer.then(() => {
+					busyRef.current = false;
+					setClickGuardActive(false);
+				});
+			}
+		},
+		[onClick],
+	);
+
+	return { guardedOnClick: onClick ? guardedOnClick : undefined, clickGuardActive };
+}
+
 const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } =
 		useReactiveThemeConfig();
@@ -72,8 +126,12 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 		type = 'button',
 		disabled = false,
 		permission,
+		onClick,
 		...rest
 	} = props;
+
+	// === ANTI DOBLE-CLICK (se ejecuta siempre, antes de early returns) ===
+	const { guardedOnClick, clickGuardActive } = useClickGuard(onClick);
 
 	// === PERMISSION CHECK (early return antes de cualquier lógica pesada) ===
 	// Si se especifica permission y el usuario NO tiene el permiso, no renderizar
@@ -203,7 +261,7 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 	const btnRightIconClasses = HAS_CHILDREN ? btnSizes[size].rightIcon : undefined;
 
 	const btnDisabledClasses = 'opacity-50 pointer-events-none';
-	const isButtonDisabled = isDisable || isLoading || disabled;
+	const isButtonDisabled = isDisable || isLoading || disabled || clickGuardActive;
 
 	const classes = classNames(
 		'inline-flex items-center justify-center',
@@ -222,6 +280,7 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 			type={type}
 			className={classes}
 			disabled={isButtonDisabled}
+			onClick={guardedOnClick}
 			{...rest}>
 			{(!!icon || isLoading) && (
 				<Icon
