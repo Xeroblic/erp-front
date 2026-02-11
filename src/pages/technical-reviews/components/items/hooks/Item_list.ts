@@ -453,6 +453,7 @@ export const applyHeader = (
     sheetTitle: string,
     groups?: ExcelGroupDef[],
     logoImageId?: number,
+    batchDate?: string,
 ) => {
     // ── Logo (fila 1) ──
     if (logoImageId !== undefined) {
@@ -471,7 +472,9 @@ export const applyHeader = (
     const finalMerge = Math.max(maxMerge, 5);
     sheet.mergeCells(2, 1, 2, finalMerge);
     const today = new Date().toLocaleDateString('es-CL');
-    sheet.getCell('I2').value = `Fecha Recepción: ${today}`;
+    const receptionDate = batchDate ? batchDate.split('-').reverse().join('-') : today;
+    
+    sheet.getCell('I2').value = `Fecha Recepción: ${receptionDate}`;
     sheet.getCell('I2').alignment = { horizontal: 'left' };
     sheet.getCell('I3').value = `Fecha Revisión: ${today}`;
     sheet.getCell('I3').alignment = { horizontal: 'left' };
@@ -553,7 +556,8 @@ export const exportItemsToExcel = async (
     items: IItem[],
     exportMode: 'serials' | 'details',
     exportFileName: string,
-    onExportFetchAll?: (includeDetails?: boolean) => Promise<IItem[]>
+    onExportFetchAll?: (includeDetails?: boolean) => Promise<IItem[]>,
+    batchDate?: string,
 ) => {
     if (!items.length) {
         toast.info('No hay datos para exportar');
@@ -561,7 +565,22 @@ export const exportItemsToExcel = async (
     }
 
     try {
+        // Cargar logo antes de procesar sheets
         const workbook = new ExcelJS.Workbook();
+        let logoImageId: number | undefined;
+        try {
+            const logoResp = await fetch('/logo-ecopc.png');
+            if (logoResp.ok) {
+                const logoBuffer = await logoResp.arrayBuffer();
+                logoImageId = workbook.addImage({
+                    buffer: logoBuffer,
+                    extension: 'png',
+                });
+            }
+        } catch (error) {
+            console.warn('No se pudo cargar el logo para el Excel', error);
+        }
+
         const sourceItems = onExportFetchAll
             ? await onExportFetchAll(exportMode === 'details')
             : items;
@@ -573,7 +592,7 @@ export const exportItemsToExcel = async (
         if (exportMode === 'serials') {
             const sheet = workbook.addWorksheet('Series');
             const headers = ['N°', 'Serie'];
-            applyHeader(sheet, headers, `Listado de Series - ${exportFileName}`);
+            applyHeader(sheet, headers, `Listado de Series - ${exportFileName}`, undefined, logoImageId, batchDate);
             sourceItems.forEach((item, idx) => {
                 const row = sheet.addRow([idx + 1, item.serial_number ?? '']);
                 row.eachCell((cell) => {
@@ -605,8 +624,8 @@ export const exportItemsToExcel = async (
             const typeOrder = ['notebook', 'desktop', 'aio', 'docking', 'monitor'];
             const finalEntries: Array<[string, { label: string; list: IItem[] }]> = [];
             typeOrder.forEach((typeKey) => {
-                if (groups[typeKey]) {
-                    finalEntries.push([typeKey, groups[typeKey]]);
+                if (groups[typeKey] as any) {
+                    finalEntries.push([typeKey, groups[typeKey]!]);
                     delete groups[typeKey];
                 }
             });
@@ -619,20 +638,7 @@ export const exportItemsToExcel = async (
                 finalEntries.push(['general', { label: 'General', list: items }]);
             }
 
-            // ── Cargar Logo antes de iterar ──
-            let logoImageId: number | undefined;
-            try {
-                const logoResp = await fetch('/logo-ecopc.png');
-                if (logoResp.ok) {
-                    const logoBuffer = await logoResp.arrayBuffer();
-                    logoImageId = workbook.addImage({
-                        buffer: logoBuffer,
-                        extension: 'png',
-                    });
-                }
-            } catch (error) {
-                console.warn('No se pudo cargar el logo para el Excel', error);
-            }
+
 
             finalEntries.forEach(([key, payload], index) => {
                 const sheetNameBase = payload.label || EQUIPMENT_TYPE_LABELS[key] || key || 'General';
@@ -648,7 +654,7 @@ export const exportItemsToExcel = async (
                 if (columnDefs) {
                     // ── Tipo con columnas definidas ──
                     const headers = ['Nº', ...columnDefs.map(c => c.header)];
-                    applyHeader(sheet, headers, `Revisión de Equipos - ${sheetNameBase}`, EXCEL_GROUPS[key], logoImageId);
+                    applyHeader(sheet, headers, `Revisión de Equipos - ${sheetNameBase}`, EXCEL_GROUPS[key], logoImageId, batchDate);
 
                     // Detectar índice de la columna barcode (si existe)
                     const barcodeColIdx = columnDefs.findIndex(c => c.key === '__barcode');
