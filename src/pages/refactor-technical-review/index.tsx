@@ -38,7 +38,7 @@ const TechnicalReview = () => {
 					</Card>
 
 					<div className='grid grid-cols-2 gap-4'>
-						<Card className='hover:scale-105 hover:translate-y-1 transition-all duration-300 hover:shadow-lg cursor-pointer'>
+						<Card className='hover:scale-100 hover:translate-y-1 transition-all duration-300 hover:shadow-lg cursor-pointer'>
 							<CardHeader>
 								<Badge className='text-2xl font-bold'>
 									Realizar revisiones técnicas
@@ -70,7 +70,7 @@ const TechnicalReview = () => {
 							</CardBody>
 						</Card>
 
-						<Card className='hover:scale-105 hover:translate-y-1 transition-all duration-300 hover:shadow-lg cursor-pointer'>
+						<Card className='hover:scale-100 hover:translate-y-1 transition-all duration-300 hover:shadow-lg cursor-pointer'>
 							<CardHeader>
 								<div className='flex flex-row items-center gap-2'>
 									<Icon icon='DuoArticle' className='text-4xl' />
