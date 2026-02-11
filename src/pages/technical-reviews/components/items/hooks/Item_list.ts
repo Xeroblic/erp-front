@@ -268,6 +268,64 @@ const EXCEL_COLUMNS: Record<string, ExcelColDef[]> = {
     ],
 };
 
+// ─── Definición de grupos de columnas (header agrupado superior) ──────────
+// Cada grupo: label (texto visible), color (ARGB sin #), span (cuántas columnas abarca)
+// La primera columna "Nº" se considera parte del primer grupo (span +1)
+
+type ExcelGroupDef = { label: string; color: string; span: number };
+
+const EXCEL_GROUPS: Record<string, ExcelGroupDef[]> = {
+    notebook: [
+        { label: 'Nº',                            color: '305496', span: 1 },
+        { label: 'Identificación',                color: '4472C4', span: 4 },
+        { label: 'Hardware',                       color: '548235', span: 6 },
+        { label: 'Cargador',                       color: 'BF8F00', span: 2 },
+        { label: 'Puertos',                        color: '7030A0', span: 10 },
+        { label: 'Pantalla',                       color: 'C65911', span: 3 },
+        { label: 'Teclado',                        color: '00B050', span: 4 },
+        { label: 'Padmouse',                       color: 'FF6600', span: 1 },
+        { label: 'Carcasa - Bisagras - Otros',     color: '4BACC6', span: 3 },
+        { label: 'Batería',                        color: 'FF4444', span: 1 },
+        { label: 'Notas',                          color: '808080', span: 1 },
+        { label: 'Clasificación',                  color: 'C00000', span: 5 },
+    ],
+    aio: [
+        { label: 'Nº',                            color: '305496', span: 1 },
+        { label: 'Identificación',                color: '4472C4', span: 4 },
+        { label: 'Hardware',                       color: '548235', span: 6 },
+        { label: 'Cargador',                       color: 'BF8F00', span: 2 },
+        { label: 'Puertos',                        color: '7030A0', span: 9 },
+        { label: 'Pantalla',                       color: 'C65911', span: 2 },
+        { label: 'Carcasa - Otros',                color: '4BACC6', span: 2 },
+        { label: 'Software / Notas',               color: '808080', span: 2 },
+        { label: 'Clasificación',                  color: 'C00000', span: 4 },
+    ],
+    desktop: [
+        { label: 'Nº',                            color: '305496', span: 1 },
+        { label: 'Identificación',                color: '4472C4', span: 4 },
+        { label: 'Hardware',                       color: '548235', span: 6 },
+        { label: 'Puertos',                        color: '7030A0', span: 9 },
+        { label: 'Otros',                          color: '4BACC6', span: 1 },
+        { label: 'Cargador',                       color: 'BF8F00', span: 2 },
+        { label: 'Software',                       color: '808080', span: 1 },
+        { label: 'Clasificación',                  color: 'C00000', span: 5 },
+    ],
+    docking: [
+        { label: 'Nº',                            color: '305496', span: 1 },
+        { label: 'Identificación',                color: '4472C4', span: 3 },
+        { label: 'Cargador',                       color: 'BF8F00', span: 2 },
+        { label: 'Puertos',                        color: '7030A0', span: 5 },
+    ],
+    monitor: [
+        { label: 'Nº',                            color: '305496', span: 1 },
+        { label: 'Identificación',                color: '4472C4', span: 3 },
+        { label: 'Pantalla',                       color: 'C65911', span: 2 },
+        { label: 'Cable',                          color: 'BF8F00', span: 2 },
+        { label: 'Notas',                          color: '808080', span: 1 },
+        { label: 'Clasificación',                  color: 'C00000', span: 3 },
+    ],
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
 /**
@@ -329,9 +387,16 @@ export const normalizeDetailValue = (value: any): string => {
         if (CONDITION_VALUES_ES[normalized]) {
             return CONDITION_VALUES_ES[normalized];
         }
-        return value;
+        return value
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, (c) => c.toUpperCase())
+            .trim();
     }
-    return JSON.stringify(value);
+    if (typeof value === 'object') {
+        if ('label' in value) return String(value.label);
+        return JSON.stringify(value);
+    }
+    return String(value);
 };
 
 /**
@@ -368,7 +433,12 @@ const resolveColumnValue = (item: IItem, key: string): string => {
 };
 
 
-export const applyHeader = (sheet: ExcelJS.Worksheet, headers: string[], sheetTitle: string) => {
+export const applyHeader = (
+    sheet: ExcelJS.Worksheet,
+    headers: string[],
+    sheetTitle: string,
+    groups?: ExcelGroupDef[],
+) => {
     sheet.addRow([]);
     const titleRow = sheet.addRow([sheetTitle]);
     titleRow.font = { bold: true, size: 16, color: { argb: '1F4E78' } };
@@ -381,6 +451,48 @@ export const applyHeader = (sheet: ExcelJS.Worksheet, headers: string[], sheetTi
     sheet.getCell('I3').value = `Fecha Revisión: ${today}`;
     sheet.getCell('I3').alignment = { horizontal: 'left' };
     sheet.addRow([]);
+
+    // ── Fila de grupos (merged, con colores) ──
+    if (groups && groups.length > 0) {
+        const groupRowNum = sheet.rowCount + 1;
+        const groupRow = sheet.addRow([]);
+        groupRow.height = 20;
+
+        let colOffset = 1;
+        groups.forEach((g) => {
+            const startCol = colOffset;
+            const endCol = colOffset + g.span - 1;
+
+            // Poner el label en la primera celda del grupo
+            const cell = sheet.getCell(groupRowNum, startCol);
+            cell.value = g.label;
+            cell.font = { bold: true, color: { argb: 'FFFFFF' }, size: 10 };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: g.color },
+            };
+
+            // Aplicar color a todas las celdas del grupo y merge
+            if (g.span > 1) {
+                sheet.mergeCells(groupRowNum, startCol, groupRowNum, endCol);
+            }
+            // Asegurar que celdas no-mergeadas tengan el mismo fondo
+            for (let c = startCol; c <= endCol; c++) {
+                const gc = sheet.getCell(groupRowNum, c);
+                gc.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: g.color },
+                };
+            }
+
+            colOffset = endCol + 1;
+        });
+    }
+
+    // ── Fila de headers de columnas ──
     const headerRow = sheet.addRow(headers);
     headerRow.height = 18;
     headerRow.eachCell((cell) => {
@@ -496,7 +608,7 @@ export const exportItemsToExcel = async (
                 if (columnDefs) {
                     // ── Tipo con columnas definidas ──
                     const headers = ['Nº', ...columnDefs.map(c => c.header)];
-                    applyHeader(sheet, headers, `Revisión de Equipos - ${sheetNameBase}`);
+                    applyHeader(sheet, headers, `Revisión de Equipos - ${sheetNameBase}`, EXCEL_GROUPS[key]);
 
                     // Detectar índice de la columna barcode (si existe)
                     const barcodeColIdx = columnDefs.findIndex(c => c.key === '__barcode');
@@ -550,7 +662,7 @@ export const exportItemsToExcel = async (
                         });
                     }
 
-                    sheet.views = [{ state: 'frozen', ySplit: 5 }];
+                    sheet.views = [{ state: 'frozen', ySplit: EXCEL_GROUPS[key] ? 6 : 5 }];
                     setColumnWidths(sheet, headers);
                 } else {
                     // ── Tipo sin columnas definidas: fallback dinámico ──
