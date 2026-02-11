@@ -454,6 +454,7 @@ export const applyHeader = (
     groups?: ExcelGroupDef[],
     logoImageId?: number,
     batchDate?: string,
+    reviewDate?: string,
 ) => {
     // ── Logo (fila 1) ──
     if (logoImageId !== undefined) {
@@ -463,20 +464,22 @@ export const applyHeader = (
         });
     }
     const logoRow = sheet.addRow([]);
-    logoRow.height = 75;
+    logoRow.height = 100;
     const titleRow = sheet.addRow([sheetTitle]);
     titleRow.font = { bold: true, size: 16, color: { argb: '1F4E78' } };
     titleRow.alignment = { horizontal: 'center' };
-    const maxMerge = Math.min(headers.length, 15);
+    const maxMerge = Math.min(headers.length, 4);
     // Asegurar que maxMerge sea al menos 5 para que cubra A-E si hay pocas columnas
-    const finalMerge = Math.max(maxMerge, 5);
+    const finalMerge = Math.max(maxMerge, 4);
+    sheet.mergeCells(3, 1, 3, finalMerge);
     sheet.mergeCells(2, 1, 2, finalMerge);
     const today = new Date().toLocaleDateString('es-CL');
     const receptionDate = batchDate ? batchDate.split('-').reverse().join('-') : today;
     
     sheet.getCell('I2').value = `Fecha Recepción: ${receptionDate}`;
     sheet.getCell('I2').alignment = { horizontal: 'left' };
-    sheet.getCell('I3').value = `Fecha Revisión: ${today}`;
+    const finalReviewDate = reviewDate ? reviewDate.split('-').reverse().join('-') : today;
+    sheet.getCell('I3').value = `Fecha Revisión: ${finalReviewDate}`;
     sheet.getCell('I3').alignment = { horizontal: 'left' };
     sheet.addRow([]);
 
@@ -592,7 +595,14 @@ export const exportItemsToExcel = async (
         if (exportMode === 'serials') {
             const sheet = workbook.addWorksheet('Series');
             const headers = ['N°', 'Serie'];
-            applyHeader(sheet, headers, `Listado de Series - ${exportFileName}`, undefined, logoImageId, batchDate);
+            // Calcular fecha de revisión más antigua
+            const dates = sourceItems
+                .map(i => i.reviewed_at)
+                .filter(d => d)
+                .map(d => new Date(d!).toISOString().split('T')[0]);
+            const minReviewDate = dates.length > 0 ? dates.sort()[0] : undefined;
+
+            applyHeader(sheet, headers, `Listado de Series - ${exportFileName}`, undefined, logoImageId, batchDate, minReviewDate);
             sourceItems.forEach((item, idx) => {
                 const row = sheet.addRow([idx + 1, item.serial_number ?? '']);
                 row.eachCell((cell) => {
@@ -654,7 +664,15 @@ export const exportItemsToExcel = async (
                 if (columnDefs) {
                     // ── Tipo con columnas definidas ──
                     const headers = ['Nº', ...columnDefs.map(c => c.header)];
-                    applyHeader(sheet, headers, `Revisión de Equipos - ${sheetNameBase}`, EXCEL_GROUPS[key], logoImageId, batchDate);
+                    
+                    // Calcular fecha de revisión más antigua para este grupo
+                    const dates = payload.list
+                        .map(i => i.reviewed_at)
+                        .filter(d => d)
+                        .map(d => new Date(d!).toISOString().split('T')[0]);
+                    const minReviewDate = dates.length > 0 ? dates.sort()[0] : undefined;
+
+                    applyHeader(sheet, headers, `Revisión de Equipos - ${sheetNameBase}`, EXCEL_GROUPS[key], logoImageId, batchDate, minReviewDate);
 
                     // Detectar índice de la columna barcode (si existe)
                     const barcodeColIdx = columnDefs.findIndex(c => c.key === '__barcode');
