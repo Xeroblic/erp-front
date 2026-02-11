@@ -467,7 +467,9 @@ export const applyHeader = (
     titleRow.font = { bold: true, size: 16, color: { argb: '1F4E78' } };
     titleRow.alignment = { horizontal: 'center' };
     const maxMerge = Math.min(headers.length, 15);
-    sheet.mergeCells(2, 1, 2, maxMerge);
+    // Asegurar que maxMerge sea al menos 5 para que cubra A-E si hay pocas columnas
+    const finalMerge = Math.max(maxMerge, 5);
+    sheet.mergeCells(2, 1, 2, finalMerge);
     const today = new Date().toLocaleDateString('es-CL');
     sheet.getCell('I2').value = `Fecha Recepción: ${today}`;
     sheet.getCell('I2').alignment = { horizontal: 'left' };
