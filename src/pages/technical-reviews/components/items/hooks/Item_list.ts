@@ -466,7 +466,7 @@ export const applyHeader = (
     const titleRow = sheet.addRow([sheetTitle]);
     titleRow.font = { bold: true, size: 16, color: { argb: '1F4E78' } };
     titleRow.alignment = { horizontal: 'center' };
-    const maxMerge = Math.min(Math.max(headers.length, 2), 8);
+    const maxMerge = Math.min(headers.length, 15);
     sheet.mergeCells(2, 1, 2, maxMerge);
     const today = new Date().toLocaleDateString('es-CL');
     sheet.getCell('I2').value = `Fecha Recepción: ${today}`;
@@ -532,7 +532,7 @@ export const applyHeader = (
 export const setColumnWidths = (sheet: ExcelJS.Worksheet, headers: string[]) => {
     headers.forEach((header, index) => {
         const column = sheet.getColumn(index + 1);
-        let maxLength = header.length + 2;
+        let maxLength = header.length + 3;
         column.eachCell({ includeEmpty: true }, (cell) => {
             const cellValue = cell.value;
             const len =
