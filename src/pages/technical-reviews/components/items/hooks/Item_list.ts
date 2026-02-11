@@ -2,7 +2,6 @@ import { deleteItem } from "@/store/slices/technicalReviews";
 import { toast } from "react-toastify";
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import { DETAIL_FIELDS_TEMPLATE } from '../../../constants';
 import { resolveEquipmentTypeMeta } from '../../utils/utilsItems';
 import { IItem } from '@/interface/technicalReviews.interface';
 
@@ -14,136 +13,81 @@ const EQUIPMENT_TYPE_LABELS: Record<string, string> = {
     monitor: 'Monitor',
 };
 
-
-const FIELD_LABELS_ES: Record<string, string> = {
-    // Información básica
-    brand: 'Marca',
-    model: 'Modelo',
-    line: 'Línea',
-    processor: 'Procesador',
-
-    // Memoria y almacenamiento
-    ram_size: 'RAM',
-    ram_slots: 'Slots RAM',
-    ram_type: 'Tipo RAM',
-    storage_size: 'Capacidad Almacenamiento',
-    storage_technology: 'Tecnología Almacenamiento',
-
-    // Cargador y energía
-    includes_charger: 'Incluye Cargador',
-    includes_power_adapter: 'Incluye Cargador',
-    charger_watts: 'Watts Cargador',
-    charger_status: 'Estado Cargador',
-    power_cable_status: 'Estado Cargador',
-    includes_power_cable: 'Incluye Cable Poder',
-    includes_charger_docking: 'Incluye Fuente',
-
-    // Batería
-    battery_status: 'Estado Batería',
-    battery_health: 'Salud Batería',
-    battery_percentage: '% Batería',
-    battery_holds_charge: 'Mantiene Carga',
-    battery_condition: 'Condición Batería',
-
-    // Puertos
-    vga_ports: 'Puertos VGA',
-    dvi_ports: 'Puertos DVI',
-    hdmi_ports: 'Puertos HDMI',
-    displayport_ports: 'Puertos DisplayPort',
-    usb_a_ports: 'Puertos USB-A',
-    usb_c_ports: 'Puertos USB-C',
-    lector_de_tarjetas_sd: 'Lectores SD',
-    sd_readers: 'Lectores SD',
-    rj45_ports: 'Puertos RJ-45',
-    all_ports_functional: 'Puertos Funcionan',
-    defective_ports_count: 'Puertos Defectuosos',
-    critical_defective_ports_count: 'Puertos Críticos Defectuosos',
-
-    // Conectividad
-    has_wifi: 'Wi-Fi',
-    has_bluetooth: 'Bluetooth',
-
-    // Pantalla
-    screen_inches: 'Pulgadas Pantalla',
-    screen_resolution: 'Resolución Pantalla',
-    screen_condition: 'Condición Pantalla',
-    is_touchscreen: 'Pantalla Táctil',
-    resolution: 'Resolución',
-
-    // Teclado
-    keyboard_condition: 'Condición Teclado',
-    keyboard_layout: 'Layout Teclado',
-    has_numeric_keypad: 'Teclado Numérico',
-    has_backlit_keyboard: 'Teclado Iluminado',
-
-    // Touchpad
-    touchpad_condition: 'Condición Touchpad',
-
-    // Condiciones físicas
-    general_condition: 'Condición General',
-    cover_condition: 'Condición Tapa',
-    frame_condition: 'Condición Marco',
-    hinge_condition: 'Bisagras',
-    bottom_condition: 'Base',
-    bottom_cover_condition: 'Cubierta Inferior',
-    stand_condition: 'Base/Soporte',
-
-    // Sistema y unidades
-    operating_system: 'Sistema Operativo',
-    has_cd_drive: 'Unidad CD/DVD',
-
-    // Accesorios y extras
-    other_includes: 'Incluye Otros',
-    includes_video_cable: 'Incluye Cable Video',
-    includes_stand: 'Incluye Base',
-    other_includes_monitor: 'Otros (Monitor)',
-    has_usb_hub: 'USB Hub',
-    usb_hub_ports: 'Puertos Hub USB',
-
-    // Observaciones
-    obervations: 'Observaciones',
-    observations: 'Observaciones',
-};
-
+// ─── Traducción de valores de condición ───────────────────────────────────
+// Extraídos de las reglas de validación del backend por tipo de equipo
 const CONDITION_VALUES_ES: Record<string, string> = {
-    // Estados de condición general
+    // ── Condición general ──
     like_new: 'Como Nuevo',
+    good_condition: 'Buen Estado',
     good_shape: 'Buen Estado',
     visible_wear: 'Desgaste Visible',
     noticeable_wear: 'Desgaste Notable',
+    needs_repair: 'Requiere Reparación',
+    scrap: 'Solo Repuestos',
+    ok: 'Buen Estado',
+    minor_wear: 'Detalles Leves',
     worn: 'Desgastado',
     missing_pieces: 'Piezas Faltantes',
-    excellent: 'Excelente',
-    good: 'Bueno',
-    fair: 'Regular',
-    poor: 'Malo',
-    damaged: 'Dañado',
-    needs_repair: 'Necesita Reparación',
+    scratched: 'Rayado',
     broken: 'Roto',
-    scratches: 'Rayones',
-    dents: 'Abolladuras',
-    cracks: 'Grietas',
+    damaged: 'Dañado',
 
-    // Condiciones de pantalla
+    // ── Pantalla ──
     dead_pixels: 'Píxeles Muertos',
     screen_burn: 'Quemadura de Pantalla',
     flickering: 'Parpadeo',
+    spots: 'Manchas',
 
-    // Estados funcionales
+    // ── Cargador / energía ──
+    buen_estado: 'Buen Estado',
+    cable_en_mal_estado: 'Cable en Mal Estado',
+    damaged_cable: 'Cable en Mal Estado',
+    no_corresponde_a_equipo: 'No Corresponde al Equipo',
+    not_matching_equipment: 'No Corresponde al Equipo',
+    no_incluye: 'No Incluye',
+    not_included: 'No Incluye',
+    broken_charger: 'Cargador Roto',
+    broken_port: 'Entrada Rota',
+    broken_ports: 'Puertos Rotos',
+
+    // ── Carcasa ──
+    light_scratches: 'Rayas Leves',
+    no_stand: 'Sin Base',
+
+    // ── Batería ──
+    excellent: 'Excelente',
+    good: 'Bueno',
+    fair: 'Aceptable',
+    poor: 'Pobre',
+    no_battery: 'Sin Batería',
+
+    // ── Tecnología almacenamiento ──
+    hdd: 'HDD',
+    ssd: 'SSD',
+    m2: 'M.2',
+    nvme: 'NVMe',
+    hybrid: 'Híbrido',
+
+    // ── Layout teclado ──
+    es: 'ES',
+    us: 'US',
+    latam: 'Latinoamericano',
+    spanish: 'ES',
+    english: 'US',
+    latin_american: 'ES',
+    international: 'US',
+
+    // ── Estados funcionales ──
     working: 'Funcionando',
     not_working: 'No Funciona',
     partially_working: 'Funciona Parcialmente',
     functional: 'Funcional',
     non_functional: 'No Funcional',
-
-    // Estados de cargador/batería
-    ok: 'OK',
-    es: 'SI',
     original: 'Original',
     generic: 'Genérico',
     missing: 'Faltante',
 
-    // Estados de review
+    // ── Estados de review ──
     pending: 'Pendiente',
     in_progress: 'En Progreso',
     in_review: 'En Revisión',
@@ -152,7 +96,7 @@ const CONDITION_VALUES_ES: Record<string, string> = {
     approved: 'Aprobado',
     rejected: 'Rechazado',
 
-    // Estados comerciales/trazabilidad
+    // ── Estados comerciales ──
     received: 'Ingresado',
     available_for_sale: 'Disponible para Venta',
     in_quotation: 'En Cotización',
@@ -162,20 +106,13 @@ const CONDITION_VALUES_ES: Record<string, string> = {
     scrapped: 'Dado de Baja',
     returned: 'Devuelto',
 
-    // Layouts de teclado
-    spanish: 'Español',
-    english: 'Inglés',
-    latin_american: 'Latinoamericano',
-    us: 'Estados Unidos',
-    international: 'Internacional',
-
-    // Grados
+    // ── Grados ──
     a: 'A',
     b: 'B',
     c: 'C',
     m: 'M',
 
-    // Otros valores comunes
+    // ── Booleanos y genéricos ──
     yes: 'SI',
     no: 'NO',
     na: 'N/A',
@@ -184,87 +121,257 @@ const CONDITION_VALUES_ES: Record<string, string> = {
     new: 'Nuevo',
     used: 'Usado',
     refurbished: 'Reacondicionado',
+
+    // ── Otros (se irán agregando con cada tipo de equipo) ──
+    scratches: 'Rayones',
+    dents: 'Abolladuras',
+    cracks: 'Grietas',
+};
+
+// ─── Definición de columnas por tipo de equipo ────────────────────────────
+// Cada columna tiene: header (nombre visible en Excel) y key (campo en details/extra_attributes)
+// Claves especiales con prefijo "__" se resuelven desde el item directamente
+
+type ExcelColDef = { header: string; key: string };
+
+const EXCEL_COLUMNS: Record<string, ExcelColDef[]> = {
+    notebook: [
+        { header: 'Marca',             key: 'brand' },
+        { header: 'Modelo',            key: 'model' },
+        { header: 'Linea',             key: 'line' },
+        { header: 'Serial Number',     key: '__serial' },
+        { header: 'Procesador',        key: 'processor' },
+        { header: 'RAM',               key: 'ram_size' },
+        { header: 'Slot Ram',          key: 'ram_slots' },
+        { header: 'Tipo RAM',          key: 'ram_type' },
+        { header: 'HDD',               key: 'storage_size' },
+        { header: 'Tec. HDD',          key: 'storage_technology' },
+        { header: 'Incluye',           key: 'includes_charger' },
+        { header: 'Estado',            key: 'charger_status' },
+        { header: 'VGA',               key: 'vga_ports' },
+        { header: 'HDMI',              key: 'hdmi_ports' },
+        { header: 'Displayport',       key: 'displayport_ports' },
+        { header: 'USB',               key: 'usb_a_ports' },
+        { header: 'USB Tipo C',        key: 'usb_c_ports' },
+        { header: 'Biometrico',        key: 'has_biometric' },
+        { header: 'SD',                key: 'lector_de_tarjetas_sd' },
+        { header: 'WiFi',              key: 'has_wifi' },
+        { header: 'RJ-45',             key: 'rj45_ports' },
+        { header: 'Bluetooth',         key: 'has_bluetooth' },
+        { header: 'Pulgadas Pant.',    key: 'screen_inches' },
+        { header: 'Estado Pantalla',   key: 'screen_condition' },
+        { header: 'Tactil',            key: 'is_touchscreen' },
+        { header: 'Estado Teclado',    key: 'keyboard_condition' },
+        { header: 'ES/US',             key: 'keyboard_layout' },
+        { header: 'Numerico',          key: 'has_numeric_keypad' },
+        { header: 'Retroluminado',     key: 'has_backlit_keyboard' },
+        { header: 'Estado Padmouse',   key: 'touchpad_condition' },
+        { header: 'Estado Cubierta',   key: 'cover_condition' },
+        { header: 'Estado Bisagras',   key: 'hinge_condition' },
+        { header: 'Estado Inferior',   key: 'bottom_condition' },
+        { header: 'Estado Bateria',    key: 'battery_status' },
+        { header: 'Observaciones',     key: 'observations' },
+        { header: 'CATEGORIA',         key: '__grade' },
+        { header: 'S.O',               key: 'operating_system' },
+        { header: 'CLIENTE',           key: '__customer' },
+        { header: 'PROVEEDOR',         key: '__supplier' },
+        { header: 'Codigo de Barras',  key: '__barcode' },
+    ],
+    aio: [
+        { header: 'Marca',             key: 'brand' },
+        { header: 'Modelo',            key: 'model' },
+        { header: 'Linea',             key: 'line' },
+        { header: 'Serial Number',     key: '__serial' },
+        { header: 'Procesador',        key: 'processor' },
+        { header: 'RAM',               key: 'ram_size' },
+        { header: 'Slot Ram',          key: 'ram_slots' },
+        { header: 'Tipo RAM',          key: 'ram_type' },
+        { header: 'HDD',               key: 'storage_size' },
+        { header: 'Tec. HDD',          key: 'storage_technology' },
+        { header: 'Incluye',           key: 'includes_charger' },
+        { header: 'Estado',            key: 'charger_status' },
+        { header: 'VGA',               key: 'vga_ports' },
+        { header: 'HDMI',              key: 'hdmi_ports' },
+        { header: 'Displayport',       key: 'displayport_ports' },
+        { header: 'USB',               key: 'usb_a_ports' },
+        { header: 'USB Tipo C',        key: 'usb_c_ports' },
+        { header: 'SD',                key: 'lector_de_tarjetas_sd' },
+        { header: 'WiFi',              key: 'has_wifi' },
+        { header: 'RJ-45',             key: 'rj45_ports' },
+        { header: 'Bluetooth',         key: 'has_bluetooth' },
+        { header: 'Pulgadas Pant.',    key: 'screen_inches' },
+        { header: 'Estado Pantalla',   key: 'screen_condition' },
+        { header: 'Estado Cubierta',   key: 'cover_condition' },
+        { header: 'Lector CD',         key: 'has_cd_drive' },
+        { header: 'S.O',               key: 'operating_system' },
+        { header: 'Observaciones',     key: 'observations' },
+        { header: 'Cliente',           key: '__customer' },
+        { header: 'Proveedor',         key: '__supplier' },
+        { header: 'Codigo de Barras',  key: '__barcode' },
+        { header: 'CATEGORIA',         key: '__grade' },
+    ],
+    desktop: [
+        { header: 'Marca',             key: 'brand' },
+        { header: 'Modelo',            key: 'model' },
+        { header: 'Linea',             key: 'line' },
+        { header: 'Serial Number',     key: '__serial' },
+        { header: 'Procesador',        key: 'processor' },
+        { header: 'RAM',               key: 'ram_size' },
+        { header: 'Slot Ram',          key: 'ram_slots' },
+        { header: 'Tipo RAM',          key: 'ram_type' },
+        { header: 'HDD',               key: 'storage_size' },
+        { header: 'Tec. HDD',          key: 'storage_technology' },
+        { header: 'VGA',               key: 'vga_ports' },
+        { header: 'HDMI',              key: 'hdmi_ports' },
+        { header: 'Displayport',       key: 'displayport_ports' },
+        { header: 'USB',               key: 'usb_a_ports' },
+        { header: 'USB Tipo C',        key: 'usb_c_ports' },
+        { header: 'SD',                key: 'lector_de_tarjetas_sd' },
+        { header: 'RJ-45',             key: 'rj45_ports' },
+        { header: 'WiFi',              key: 'has_wifi' },
+        { header: 'Bluetooth',         key: 'has_bluetooth' },
+        { header: 'CD',                key: 'has_cd_drive' },
+        { header: 'Incluye',           key: 'includes_charger' },
+        { header: 'Estado',            key: 'charger_status' },
+        { header: 'S.O',               key: 'operating_system' },
+        { header: 'CATEGORIA',         key: '__grade' },
+        { header: 'Observaciones',     key: 'observations' },
+        { header: 'Cliente',           key: '__customer' },
+        { header: 'Proveedor',         key: '__supplier' },
+        { header: 'Codigo de Barras',  key: '__barcode' },
+    ],
+    docking: [
+        { header: 'Marca',             key: 'brand' },
+        { header: 'Modelo',            key: 'model' },
+        { header: 'Serial Number',     key: '__serial' },
+        { header: 'Incluye',           key: 'includes_charger' },
+        { header: 'Estado',            key: 'charger_status' },
+        { header: 'HDMI',              key: 'hdmi_ports' },
+        { header: 'Displayport',       key: 'displayport_ports' },
+        { header: 'USB',               key: 'usb_a_ports' },
+        { header: 'RJ-45',             key: 'rj45_ports' },
+        { header: 'USB Tipo C',        key: 'usb_c_ports' },
+    ],
+    monitor: [
+        { header: 'Marca',             key: 'brand' },
+        { header: 'Modelo',            key: 'model' },
+        { header: 'Serial Number',     key: '__serial' },
+        { header: 'Pulgadas Pant.',    key: 'screen_inches' },
+        { header: 'Estado Pantalla',   key: 'screen_condition' },
+        { header: 'Alimentación',      key: 'includes_power_cable' },
+        { header: 'Estado del Cable',  key: 'power_cable_status' },
+        { header: 'Observaciones',     key: 'observations' },
+        { header: 'Cliente',           key: '__customer' },
+        { header: 'Proveedor',         key: '__supplier' },
+        { header: 'Codigo de Barras',  key: '__barcode' },
+    ],
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────
+
+export const handleDelete = async (itemId: number, branchId: number, dispatch: any, setIsDeleting: any, setDeleteModalOpen: any, setItemToDelete: any, onPageChange: any, meta: any) => {
+    if (!branchId) {
+        toast.error('No hay sucursal activa para eliminar la revisión');
+        return;
+    }
+    try {
+        setIsDeleting(true);
+        await dispatch(deleteItem({ branchId, itemId })).unwrap();
+        toast.success('Revisión eliminada');
+        onPageChange?.(meta.current_page);
+    } catch (err: any) {
+        toast.error(err?.message || 'No se pudo eliminar la revisión');
+    } finally {
+        setIsDeleting(false);
+        setDeleteModalOpen(false);
+        setItemToDelete(null);
+    }
 };
 
 
-
-export const handleDelete = async (itemId: number, branchId: number, dispatch: any, setIsDeleting: any, setDeleteModalOpen: any, setItemToDelete: any, onPageChange: any, meta: any) => {
-        if (!branchId) {
-            toast.error('No hay sucursal activa para eliminar la revisión');
-            return;
-        }
-        try {
-            setIsDeleting(true);
-            await dispatch(deleteItem({ branchId, itemId })).unwrap();
-            toast.success('Revisión eliminada');
-            onPageChange?.(meta.current_page);
-        } catch (err: any) {
-            toast.error(err?.message || 'No se pudo eliminar la revisión');
-        } finally {
-            setIsDeleting(false);
-            setDeleteModalOpen(false);
-            setItemToDelete(null);
-        }
-    };
-
-
-export 	const formatAttributeLabel = (key: string) => {
-		if (!key) return 'Atributo';
-		const normalized = key.toLowerCase();
-		if (FIELD_LABELS_ES[normalized]) {
-			return FIELD_LABELS_ES[normalized];
-		}
-		return key
-			.replace(/_/g, ' ')
-			.replace(/\s+/g, ' ')
-			.replace(/\b\w/g, (char) => char.toUpperCase())
-			.trim();
-	};
+export const formatAttributeLabel = (key: string) => {
+    if (!key) return 'Atributo';
+    return key
+        .replace(/_/g, ' ')
+        .replace(/\s+/g, ' ')
+        .replace(/\b\w/g, (char) => char.toUpperCase())
+        .trim();
+};
 
 
 export const normalizeDetailValue = (value: any): string => {
-            if (value === null || typeof value === 'undefined') return '';
-            if (typeof value === 'boolean') return value ? 'SI' : 'NO';
-            if (typeof value === 'number') return String(value);
-            if (typeof value === 'string') {
-                // Intentar traducir valores comunes
-                const normalized = value.toLowerCase().trim();
-                if (CONDITION_VALUES_ES[normalized]) {
-                    return CONDITION_VALUES_ES[normalized];
-                }
-                return value;
-            }
-            return JSON.stringify(value);
-        };
-    
+    if (value === null || typeof value === 'undefined') return '';
+    if (typeof value === 'boolean') return value ? 'SI' : 'NO';
+    if (typeof value === 'number') return String(value);
+    if (typeof value === 'string') {
+        const normalized = value.toLowerCase().trim();
+        if (CONDITION_VALUES_ES[normalized]) {
+            return CONDITION_VALUES_ES[normalized];
+        }
+        return value;
+    }
+    return JSON.stringify(value);
+};
 
+/**
+ * Resolver el valor de una columna para un item dado.
+ * Las claves especiales (__serial, __grade, __customer, __supplier, __barcode)
+ * se extraen directamente del item. El resto se busca en details/extra_attributes.
+ */
+const resolveColumnValue = (item: IItem, key: string): string => {
+    // Claves especiales (metadatos del item)
+    switch (key) {
+        case '__serial':
+            return item.serial_number ?? '';
+        case '__grade': {
+            const g = item.grade;
+            if (g && typeof g === 'object' && 'label' in (g as any)) return (g as any).label;
+            return normalizeDetailValue(g);
+        }
+        case '__customer':
+            return (item as any).customer_supplier?.name ?? '';
+        case '__supplier':
+            return (item as any).customer_supplier?.name ?? '';
+        case '__barcode':
+            return item.serial_number ? `*${item.serial_number}*` : '';
+        default:
+            break;
+    }
+
+    // Buscar en details y extra_attributes
+    const detailSource: Record<string, any> = {
+        ...(item.details || {}),
+        ...(item.extra_attributes || {}),
+    };
+    return normalizeDetailValue(detailSource[key]);
+};
 
 
 export const applyHeader = (sheet: ExcelJS.Worksheet, headers: string[], sheetTitle: string) => {
-        sheet.addRow([]);
-        const titleRow = sheet.addRow([sheetTitle]);
-        titleRow.font = { bold: true, size: 16, color: { argb: '1F4E78' } };
-        titleRow.alignment = { horizontal: 'center' };
-        const maxMerge = Math.min(Math.max(headers.length, 2), 8);
-        sheet.mergeCells(2, 1, 2, maxMerge);
-        const today = new Date().toLocaleDateString('es-CL');
-        sheet.getCell('I2').value = `Fecha Recepción: ${today}`;
-        sheet.getCell('I2').alignment = { horizontal: 'left' };
-        sheet.getCell('I3').value = `Fecha Revisión: ${today}`;
-        sheet.getCell('I3').alignment = { horizontal: 'left' };
-        sheet.addRow([]);
-        const headerRow = sheet.addRow(headers);
-        headerRow.height = 18;
-        headerRow.eachCell((cell) => {
-            cell.font = { bold: true, color: { argb: 'FFFFFF' } };
-            cell.fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: '305496' },
-            };
-            cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        });
-    };
+    sheet.addRow([]);
+    const titleRow = sheet.addRow([sheetTitle]);
+    titleRow.font = { bold: true, size: 16, color: { argb: '1F4E78' } };
+    titleRow.alignment = { horizontal: 'center' };
+    const maxMerge = Math.min(Math.max(headers.length, 2), 8);
+    sheet.mergeCells(2, 1, 2, maxMerge);
+    const today = new Date().toLocaleDateString('es-CL');
+    sheet.getCell('I2').value = `Fecha Recepción: ${today}`;
+    sheet.getCell('I2').alignment = { horizontal: 'left' };
+    sheet.getCell('I3').value = `Fecha Revisión: ${today}`;
+    sheet.getCell('I3').alignment = { horizontal: 'left' };
+    sheet.addRow([]);
+    const headerRow = sheet.addRow(headers);
+    headerRow.height = 18;
+    headerRow.eachCell((cell) => {
+        cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+        cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: '305496' },
+        };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    });
+};
 
 export const setColumnWidths = (sheet: ExcelJS.Worksheet, headers: string[]) => {
     headers.forEach((header, index) => {
@@ -323,8 +430,8 @@ export const exportItemsToExcel = async (
             sheet.views = [{ state: 'frozen', ySplit: 5 }];
             setColumnWidths(sheet, headers);
         } else {
-            const detailedItems = sourceItems;
-            const groups = detailedItems.reduce<
+            // ── Listado Detallado: agrupar items por tipo de equipo ──
+            const groups = sourceItems.reduce<
                 Record<string, { label: string; list: IItem[] }>
             >((acc, item) => {
                 const meta = resolveEquipmentTypeMeta(item.equipment_type);
@@ -336,93 +443,128 @@ export const exportItemsToExcel = async (
                 return acc;
             }, {});
 
+            // Ordenar por tipos definidos primero
+            const typeOrder = ['notebook', 'desktop', 'aio', 'docking', 'monitor'];
             const finalEntries: Array<[string, { label: string; list: IItem[] }]> = [];
-            Object.keys(DETAIL_FIELDS_TEMPLATE).forEach((typeKey) => {
+            typeOrder.forEach((typeKey) => {
                 if (groups[typeKey]) {
                     finalEntries.push([typeKey, groups[typeKey]]);
                     delete groups[typeKey];
-                } else {
-                    finalEntries.push([
-                        typeKey,
-                        {
-                            label: EQUIPMENT_TYPE_LABELS[typeKey] || typeKey,
-                            list: [],
-                        },
-                    ]);
                 }
             });
+            // Agregar tipos no definidos al final
             Object.entries(groups).forEach(([key, payload]) =>
                 finalEntries.push([key, payload]),
             );
+
             if (!finalEntries.length) {
                 finalEntries.push(['general', { label: 'General', list: items }]);
             }
 
             finalEntries.forEach(([key, payload], index) => {
-                const sheetNameBase = payload.label || key || 'General';
+                const sheetNameBase = payload.label || EQUIPMENT_TYPE_LABELS[key] || key || 'General';
                 const sheetName =
                     sheetNameBase.length > 28
                         ? `${sheetNameBase.slice(0, 28)}_${index + 1}`
                         : sheetNameBase;
                 const sheet = workbook.addWorksheet(sheetName);
-                const templateFields = DETAIL_FIELDS_TEMPLATE[key as keyof typeof DETAIL_FIELDS_TEMPLATE] ?? [];
-                
-                // Collect all keys from all items in this group
-                const detailKeySet = new Set<string>();
-                // Add template fields first to preserve order
-                templateFields.forEach(field => detailKeySet.add(field));
-                
-                payload.list.forEach((item) => {
-                    const detailSource = {
-                        ...(item.details || {}),
-                        ...(item.extra_attributes || {}),
-                    };
-                    Object.keys(detailSource).forEach((k) => detailKeySet.add(k));
-                });
-                
-                const orderedKeys = Array.from(detailKeySet);
 
-                const headers = [
-                    'N°',
-                    'Serie',
-                    ...orderedKeys.map((k) => formatAttributeLabel(k)),
-                ];
-                applyHeader(sheet, headers, `Revisión de Equipos - ${payload.label}`);
+                // Obtener columnas definidas para este tipo, o generar dinámicamente
+                const columnDefs = EXCEL_COLUMNS[key];
+                
+                if (columnDefs) {
+                    // ── Tipo con columnas definidas ──
+                    const headers = ['Nº', ...columnDefs.map(c => c.header)];
+                    applyHeader(sheet, headers, `Revisión de Equipos - ${sheetNameBase}`);
 
-                if (!payload.list.length) {
-                    const emptyRow = headers.map(() => '');
-                    sheet.addRow(emptyRow);
+                    if (!payload.list.length) {
+                        sheet.addRow(headers.map(() => ''));
+                    } else {
+                        payload.list.forEach((item, idx) => {
+                            const rowValues = [
+                                idx + 1,
+                                ...columnDefs.map(col => resolveColumnValue(item, col.key)),
+                            ];
+                            const excelRow = sheet.addRow(rowValues);
+                            const isEven = idx % 2 === 0;
+                            excelRow.eachCell((cell) => {
+                                cell.fill = {
+                                    type: 'pattern',
+                                    pattern: 'solid',
+                                    fgColor: { argb: isEven ? 'FFFFFFFF' : 'FFF2F2F2' },
+                                };
+                                cell.border = {
+                                    top: { style: 'thin', color: { argb: 'FFD9D9D9' } },
+                                    bottom: { style: 'thin', color: { argb: 'FFD9D9D9' } },
+                                    left: { style: 'thin', color: { argb: 'FFD9D9D9' } },
+                                    right: { style: 'thin', color: { argb: 'FFD9D9D9' } },
+                                };
+                            });
+                        });
+                    }
+
+                    sheet.views = [{ state: 'frozen', ySplit: 5 }];
+                    setColumnWidths(sheet, headers);
                 } else {
-                    payload.list.forEach((item, idx) => {
+                    // ── Tipo sin columnas definidas: fallback dinámico ──
+                    const detailKeySet = new Set<string>();
+                    payload.list.forEach((item) => {
                         const detailSource = {
                             ...(item.details || {}),
                             ...(item.extra_attributes || {}),
                         };
-                        const rowValues = [
-                            idx + 1,
-                            item.serial_number ?? '',
-                            ...orderedKeys.map((k) => normalizeDetailValue(detailSource[k])),
-                        ];
-                        const excelRow = sheet.addRow(rowValues);
-                        const isEven = idx % 2 === 0;
-                        excelRow.eachCell((cell) => {
-                            cell.fill = {
-                                type: 'pattern',
-                                pattern: 'solid',
-                                fgColor: { argb: isEven ? 'FFFFFFFF' : 'FFF2F2F2' },
-                            };
-                            cell.border = {
-                                top: { style: 'thin', color: { argb: 'FFD9D9D9' } },
-                                bottom: { style: 'thin', color: { argb: 'FFD9D9D9' } },
-                                left: { style: 'thin', color: { argb: 'FFD9D9D9' } },
-                                right: { style: 'thin', color: { argb: 'FFD9D9D9' } },
-                            };
-                        });
+                        Object.keys(detailSource).forEach((k) => detailKeySet.add(k));
                     });
-                }
 
-                sheet.views = [{ state: 'frozen', ySplit: 5 }];
-                setColumnWidths(sheet, headers);
+                    // Mover observations al final
+                    const orderedKeys = Array.from(detailKeySet);
+                    const obsIdx = orderedKeys.indexOf('observations');
+                    if (obsIdx > -1) {
+                        orderedKeys.splice(obsIdx, 1);
+                        orderedKeys.push('observations');
+                    }
+
+                    const headers = [
+                        'Nº',
+                        'Serial Number',
+                        ...orderedKeys.map((k) => formatAttributeLabel(k)),
+                    ];
+                    applyHeader(sheet, headers, `Revisión de Equipos - ${sheetNameBase}`);
+
+                    if (!payload.list.length) {
+                        sheet.addRow(headers.map(() => ''));
+                    } else {
+                        payload.list.forEach((item, idx) => {
+                            const detailSource = {
+                                ...(item.details || {}),
+                                ...(item.extra_attributes || {}),
+                            };
+                            const rowValues = [
+                                idx + 1,
+                                item.serial_number ?? '',
+                                ...orderedKeys.map((k) => normalizeDetailValue(detailSource[k])),
+                            ];
+                            const excelRow = sheet.addRow(rowValues);
+                            const isEven = idx % 2 === 0;
+                            excelRow.eachCell((cell) => {
+                                cell.fill = {
+                                    type: 'pattern',
+                                    pattern: 'solid',
+                                    fgColor: { argb: isEven ? 'FFFFFFFF' : 'FFF2F2F2' },
+                                };
+                                cell.border = {
+                                    top: { style: 'thin', color: { argb: 'FFD9D9D9' } },
+                                    bottom: { style: 'thin', color: { argb: 'FFD9D9D9' } },
+                                    left: { style: 'thin', color: { argb: 'FFD9D9D9' } },
+                                    right: { style: 'thin', color: { argb: 'FFD9D9D9' } },
+                                };
+                            });
+                        });
+                    }
+
+                    sheet.views = [{ state: 'frozen', ySplit: 5 }];
+                    setColumnWidths(sheet, headers);
+                }
             });
         }
 
@@ -431,7 +573,7 @@ export const exportItemsToExcel = async (
             new Blob([buffer]),
             `Revision_${exportFileName}_${new Date().toISOString().slice(0, 10)}.xlsx`,
         );
-        toast.success('Archivo Excel exportado con formato compacto');
+        toast.success('Archivo Excel exportado correctamente');
     } catch (error) {
         console.error(error);
         toast.error('No se pudo generar el archivo Excel');
