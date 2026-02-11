@@ -2,12 +2,13 @@ import type { Store } from '@reduxjs/toolkit';
 import type { RootState } from '@/store/rootReducer';
 import tokenManager from './tokenManager';
 import { triggerTokenRefresh } from '@/services/BaseService';
-import { logout } from '@/store/slices/auth/authSlice';
 
 const RAW_MARGIN_SECONDS =
-	Number(import.meta.env.VITE_JWT_REFRESH_MARGIN_SECONDS || '15') || 15;
-const MIN_MARGIN_SECONDS = 5;
+	Number(import.meta.env.VITE_JWT_REFRESH_MARGIN_SECONDS || '120') || 120;
+const MIN_MARGIN_SECONDS = 30;
 const MIN_WAIT_MS = 5_000;
+const MAX_RETRIES = 3;
+const RETRY_DELAYS_MS = [2_000, 5_000, 10_000];
 
 let refreshTimeout: number | null = null;
 let initialized = false;
@@ -42,7 +43,17 @@ const scheduleNextRefresh = (store: Store<RootState>, token: string) => {
 	refreshTimeout = window.setTimeout(() => backgroundRefresh(store), delay);
 };
 
-const backgroundRefresh = async (store: Store<RootState>) => {
+/**
+ * Determina si el token está en la "zona de peligro": le queda menos
+ * tiempo del margen de seguridad configurado.
+ */
+const isInDangerZone = (token: string): boolean => {
+	const remainingMs = tokenManager.getTokenTimeRemaining(token);
+	const marginMs = Math.max(RAW_MARGIN_SECONDS, MIN_MARGIN_SECONDS) * 1000;
+	return remainingMs > 0 && remainingMs <= marginMs;
+};
+
+const backgroundRefresh = async (store: Store<RootState>, retryCount = 0) => {
 	const state = store.getState();
 	if (!state.auth.isAuthenticated) {
 		clearScheduledRefresh();
@@ -55,36 +66,46 @@ const backgroundRefresh = async (store: Store<RootState>) => {
 		return;
 	}
 
-	// Si el token ya expiró por completo, no intentamos refrescar en background,
-	// dejamos que el interceptor maneje el 401 o el usuario haga login.
-	if (!tokenManager.isTokenValid(currentToken)) {
-		clearScheduledRefresh();
-		// Opcional: Logout proactivo si sabemos que está expirado
-		// store.dispatch(logout());
-		// tokenManager.clearTokens();
-		return;
-	}
-
+	// Si el token ya expiró por completo, intentamos refrescar de todas formas
+	// siempre y cuando estemos dentro de la ventana de refresh.
+	// El interceptor se encargará si realmente no se puede.
 	if (!tokenManager.canRefresh(currentToken)) {
 		clearScheduledRefresh();
-		// Si no se puede refrescar (porque pasó el tiempo de vida del refresh), logout.
-		store.dispatch(logout());
-		tokenManager.clearTokens();
+		// NO hacemos logout aquí. Dejamos que el interceptor maneje el 401
+		// cuando el usuario haga una petición real. Así no matamos la sesión
+		// de un usuario que está trabajando en otra pestaña.
 		return;
 	}
 
 	try {
-		const newToken = await triggerTokenRefresh(currentToken);
+		const newToken = await triggerTokenRefresh();
 		tokenManager.setAccessToken(newToken);
 		scheduleNextRefresh(store, newToken);
 	} catch (error) {
-		clearScheduledRefresh();
 		if (process.env.NODE_ENV === 'development') {
 			// eslint-disable-next-line no-console
-			console.error('Error en el refresh automático del token', error);
+			console.warn(
+				`[TokenWorker] Refresh falló (intento ${retryCount + 1}/${MAX_RETRIES})`,
+				error,
+			);
 		}
-		// No hacemos logout aquí automáticamente para ser resilientes a fallos de red transitorios.
-		// El interceptor se encargará si una petición real falla con 401.
+
+		// Retry con backoff si no hemos agotado los intentos
+		if (retryCount < MAX_RETRIES - 1) {
+			const delay = RETRY_DELAYS_MS[retryCount] ?? 10_000;
+			clearScheduledRefresh();
+			refreshTimeout = window.setTimeout(
+				() => backgroundRefresh(store, retryCount + 1),
+				delay,
+			);
+			return;
+		}
+
+		// Agotamos retries: NO hacemos logout.
+		// Dejamos que el interceptor maneje el 401 si el usuario hace una petición.
+		// Programamos un último intento en 30s por si fue un problema de red temporal.
+		clearScheduledRefresh();
+		refreshTimeout = window.setTimeout(() => backgroundRefresh(store, 0), 30_000);
 	}
 };
 
@@ -118,6 +139,35 @@ export const initTokenRefreshWorker = (store: Store<RootState>) => {
 
 	store.subscribe(syncFromStore);
 	syncFromStore();
+
+	// --- VISIBILIDAD: Detectar cuando la pestaña vuelve a primer plano ---
+	// Los navegadores congelan setTimeout en pestañas de fondo. Cuando el usuario
+	// vuelve a esta pestaña, el timer pudo haberse retrasado y el token puede
+	// estar expirado o en zona de peligro. Verificamos y actuamos inmediatamente.
+	const handleVisibilityChange = () => {
+		if (document.visibilityState !== 'visible') return;
+
+		const state = store.getState();
+		if (!state.auth.isAuthenticated) return;
+
+		const token = tokenManager.getAccessToken() ?? state.auth.access;
+		if (!token) return;
+
+		// Si el token ya expiró o está en zona de peligro, refrescar inmediatamente
+		if (!tokenManager.isTokenValid(token) || isInDangerZone(token)) {
+			if (tokenManager.canRefresh(token)) {
+				clearScheduledRefresh();
+				backgroundRefresh(store, 0);
+			}
+			return;
+		}
+
+		// Si el token es válido y no está en peligro, reprogramar el refresh normal
+		// por si el timer se congeló mientras estábamos en background
+		scheduleNextRefresh(store, token);
+	};
+
+	document.addEventListener('visibilitychange', handleVisibilityChange);
 };
 
 export default initTokenRefreshWorker;

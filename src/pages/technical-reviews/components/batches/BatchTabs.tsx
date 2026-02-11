@@ -318,6 +318,8 @@ const BatchTabs: React.FC<BatchTabsProps> = ({ batch, onItemClick }) => {
 						onItemClick={onItemClick}
 						exportFileName={batch.code || batch.name || `lote-${batch.id}`}
 						onExportFetchAll={fetchAllForExport}
+						batchDate={batch.entry_date}
+						customerName={batch.customer_supplier?.name}
 					/>
 				</CardBody>
 			</Card>

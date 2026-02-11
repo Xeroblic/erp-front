@@ -83,9 +83,28 @@ const setupCrossTabAuthSync = () => {
 		const currentToken = tokenManager.getAccessToken() ?? store.getState().auth.access;
 
 		if (!nextAuthState?.access) {
-			if (currentToken) {
+			// Otra pestaña borró el token del storage.
+			// Caso A: Logout voluntario → tokenManager local también estará vacío
+			//         porque logoutThunk hace clearTokens() ANTES de limpiar storage.
+			// Caso B: Pestaña de fondo falló → el token local podría seguir siendo válido.
+
+			if (!currentToken) {
+				// Caso A: Logout real. Propagar.
 				store.dispatch(logout());
+				return;
 			}
+
+			// Caso B: Verificar si nuestro token local sigue siendo válido.
+			if (tokenManager.isTokenValid(currentToken)) {
+				// Nuestro token es válido. No matamos la sesión.
+				// Re-escribimos el token en Redux/persist para "revivir" a las otras pestañas.
+				store.dispatch(setToken({ access: currentToken }));
+				return;
+			}
+
+			// El token local también está expirado. Propagar logout.
+			store.dispatch(logout());
+			tokenManager.clearTokens();
 			return;
 		}
 

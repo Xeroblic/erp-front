@@ -37,6 +37,8 @@ interface ItemListProps {
 	variant?: 'batch' | 'global';
 	exportFileName?: string;
 	onExportFetchAll?: ExportFetcher;
+	batchDate?: string;
+	customerName?: string;
 }
 
 const ItemList: React.FC<ItemListProps> = ({
@@ -51,6 +53,8 @@ const ItemList: React.FC<ItemListProps> = ({
 	variant = 'batch',
 	exportFileName = 'items-export',
 	onExportFetchAll,
+	batchDate,
+	customerName,
 }) => {
 	const navigate = useNavigate();
 	const dispatch = useAppDispatch();
@@ -93,7 +97,14 @@ const ItemList: React.FC<ItemListProps> = ({
 	const handleExport = async () => {
 		setIsExporting(true);
 		try {
-			await exportItemsToExcel(items, exportMode, exportFileName, onExportFetchAll);
+			await exportItemsToExcel(
+				items,
+				exportMode,
+				exportFileName,
+				onExportFetchAll,
+				batchDate,
+				customerName,
+			);
 		} finally {
 			setIsExporting(false);
 		}
@@ -157,7 +168,7 @@ const ItemList: React.FC<ItemListProps> = ({
 					return (
 						<Badge
 							variant='outline'
-							className='px-2 gap-2 rounded-full border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300'>
+							className='gap-2 rounded-full border-blue-200 bg-blue-50 px-2 text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300'>
 							<Icon icon={icon as any} className='h-3 w-3' />
 							{label}
 						</Badge>
@@ -192,7 +203,7 @@ const ItemList: React.FC<ItemListProps> = ({
 					return extractValue(item.grade) ? (
 						<Badge
 							variant='outline'
-							className='px-2 gap-1 rounded-full border-yellow-200 bg-yellow-50 text-yellow-700 dark:border-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'>
+							className='gap-1 rounded-full border-yellow-200 bg-yellow-50 px-2 text-yellow-700 dark:border-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'>
 							<Icon icon='HeroStar' className='h-3 w-3' />
 							{extractValue(item.grade)}
 							{extractValue(item.suggested_grade) &&
@@ -205,7 +216,7 @@ const ItemList: React.FC<ItemListProps> = ({
 					) : extractValue(item.suggested_grade) ? (
 						<Badge
 							variant='outline'
-							className='px-2 gap-1 rounded-full border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300'>
+							className='gap-1 rounded-full border-gray-200 bg-gray-50 px-2 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300'>
 							<Icon icon='HeroSparkles' className='h-3 w-3' />
 							{extractValue(item.suggested_grade)}
 						</Badge>

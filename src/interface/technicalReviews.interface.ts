@@ -96,6 +96,7 @@ export interface IItem {
 	equipment_type: EquipmentType;
 	review_status: ReviewStatus;
 	current_status: CommercialStatus;
+	reviewed_at?: string; // Fecha de revisión
 	grade?: string | null; // A, B, C, D, etc.
 	suggested_grade?: string | null;
 	confidence?: number | null; // 0-100
