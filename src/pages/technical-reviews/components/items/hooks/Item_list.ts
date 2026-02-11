@@ -458,11 +458,11 @@ export const applyHeader = (
     if (logoImageId !== undefined) {
         sheet.addImage(logoImageId, {
             tl: { col: 0, row: 0 },
-            ext: { width: 130, height: 50 },
+            ext: { width: 200, height: 65 },
         });
     }
     const logoRow = sheet.addRow([]);
-    logoRow.height = 60;
+    logoRow.height = 75;
     const titleRow = sheet.addRow([sheetTitle]);
     titleRow.font = { bold: true, size: 16, color: { argb: '1F4E78' } };
     titleRow.alignment = { horizontal: 'center' };
