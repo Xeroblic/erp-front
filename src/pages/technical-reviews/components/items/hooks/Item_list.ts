@@ -177,6 +177,8 @@ const EXCEL_COLUMNS: Record<string, ExcelColDef[]> = {
         { header: 'CLIENTE',           key: '__customer' },
         { header: 'PROVEEDOR',         key: '__supplier' },
         { header: 'Codigo de Barras',  key: '__barcode' },
+        { header: 'Creado por',        key: '__created_by' },
+        { header: 'Revisado por',      key: '__reviewed_by' },
     ],
     aio: [
         { header: 'Marca',             key: 'brand' },
@@ -210,6 +212,8 @@ const EXCEL_COLUMNS: Record<string, ExcelColDef[]> = {
         { header: 'Proveedor',         key: '__supplier' },
         { header: 'Codigo de Barras',  key: '__barcode' },
         { header: 'CATEGORIA',         key: '__grade' },
+        { header: 'Creado por',        key: '__created_by' },
+        { header: 'Revisado por',      key: '__reviewed_by' },
     ],
     desktop: [
         { header: 'Marca',             key: 'brand' },
@@ -240,6 +244,8 @@ const EXCEL_COLUMNS: Record<string, ExcelColDef[]> = {
         { header: 'Cliente',           key: '__customer' },
         { header: 'Proveedor',         key: '__supplier' },
         { header: 'Codigo de Barras',  key: '__barcode' },
+        { header: 'Creado por',        key: '__created_by' },
+        { header: 'Revisado por',      key: '__reviewed_by' },
     ],
     docking: [
         { header: 'Marca',             key: 'brand' },
@@ -252,6 +258,8 @@ const EXCEL_COLUMNS: Record<string, ExcelColDef[]> = {
         { header: 'USB',               key: 'usb_a_ports' },
         { header: 'RJ-45',             key: 'rj45_ports' },
         { header: 'USB Tipo C',        key: 'usb_c_ports' },
+        { header: 'Creado por',        key: '__created_by' },
+        { header: 'Revisado por',      key: '__reviewed_by' },
     ],
     monitor: [
         { header: 'Marca',             key: 'brand' },
@@ -265,6 +273,8 @@ const EXCEL_COLUMNS: Record<string, ExcelColDef[]> = {
         { header: 'Cliente',           key: '__customer' },
         { header: 'Proveedor',         key: '__supplier' },
         { header: 'Codigo de Barras',  key: '__barcode' },
+        { header: 'Creado por',        key: '__created_by' },
+        { header: 'Revisado por',      key: '__reviewed_by' },
     ],
 };
 
@@ -420,6 +430,10 @@ const resolveColumnValue = (item: IItem, key: string): string => {
             return (item as any).customer_supplier?.name ?? '';
         case '__barcode':
             return item.serial_number ? `*${item.serial_number}*` : '';
+        case '__created_by':
+            return (item as any).created_by?.name ?? '';
+        case '__reviewed_by':
+            return (item as any).reviewed_by?.name ?? '';
         default:
             break;
     }
@@ -438,8 +452,17 @@ export const applyHeader = (
     headers: string[],
     sheetTitle: string,
     groups?: ExcelGroupDef[],
+    logoImageId?: number,
 ) => {
-    sheet.addRow([]);
+    // ── Logo (fila 1) ──
+    if (logoImageId !== undefined) {
+        sheet.addImage(logoImageId, {
+            tl: { col: 0, row: 0 },
+            ext: { width: 130, height: 50 },
+        });
+    }
+    const logoRow = sheet.addRow([]);
+    logoRow.height = 60;
     const titleRow = sheet.addRow([sheetTitle]);
     titleRow.font = { bold: true, size: 16, color: { argb: '1F4E78' } };
     titleRow.alignment = { horizontal: 'center' };
@@ -594,6 +617,21 @@ export const exportItemsToExcel = async (
                 finalEntries.push(['general', { label: 'General', list: items }]);
             }
 
+            // ── Cargar Logo antes de iterar ──
+            let logoImageId: number | undefined;
+            try {
+                const logoResp = await fetch('/logo-ecopc.png');
+                if (logoResp.ok) {
+                    const logoBuffer = await logoResp.arrayBuffer();
+                    logoImageId = workbook.addImage({
+                        buffer: logoBuffer,
+                        extension: 'png',
+                    });
+                }
+            } catch (error) {
+                console.warn('No se pudo cargar el logo para el Excel', error);
+            }
+
             finalEntries.forEach(([key, payload], index) => {
                 const sheetNameBase = payload.label || EQUIPMENT_TYPE_LABELS[key] || key || 'General';
                 const sheetName =
@@ -608,7 +646,7 @@ export const exportItemsToExcel = async (
                 if (columnDefs) {
                     // ── Tipo con columnas definidas ──
                     const headers = ['Nº', ...columnDefs.map(c => c.header)];
-                    applyHeader(sheet, headers, `Revisión de Equipos - ${sheetNameBase}`, EXCEL_GROUPS[key]);
+                    applyHeader(sheet, headers, `Revisión de Equipos - ${sheetNameBase}`, EXCEL_GROUPS[key], logoImageId);
 
                     // Detectar índice de la columna barcode (si existe)
                     const barcodeColIdx = columnDefs.findIndex(c => c.key === '__barcode');
