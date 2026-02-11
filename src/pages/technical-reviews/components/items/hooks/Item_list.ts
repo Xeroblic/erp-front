@@ -2,6 +2,7 @@ import { deleteItem } from "@/store/slices/technicalReviews";
 import { toast } from "react-toastify";
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import JsBarcode from 'jsbarcode';
 import { resolveEquipmentTypeMeta } from '../../utils/utilsItems';
 import { IItem } from '@/interface/technicalReviews.interface';
 
@@ -269,6 +270,26 @@ const EXCEL_COLUMNS: Record<string, ExcelColDef[]> = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
+/**
+ * Genera un código de barras Code128 como base64 PNG usando un canvas off-screen.
+ */
+const generateBarcodeBase64 = (text: string): string | null => {
+    try {
+        const canvas = document.createElement('canvas');
+        JsBarcode(canvas, text, {
+            format: 'CODE128',
+            width: 1.5,
+            height: 30,
+            displayValue: false,
+            margin: 2,
+        });
+        // Retornar base64 sin el prefijo data:image/png;base64,
+        return canvas.toDataURL('image/png').split(',')[1];
+    } catch {
+        return null;
+    }
+};
+
 export const handleDelete = async (itemId: number, branchId: number, dispatch: any, setIsDeleting: any, setDeleteModalOpen: any, setItemToDelete: any, onPageChange: any, meta: any) => {
     if (!branchId) {
         toast.error('No hay sucursal activa para eliminar la revisión');
@@ -477,13 +498,20 @@ export const exportItemsToExcel = async (
                     const headers = ['Nº', ...columnDefs.map(c => c.header)];
                     applyHeader(sheet, headers, `Revisión de Equipos - ${sheetNameBase}`);
 
+                    // Detectar índice de la columna barcode (si existe)
+                    const barcodeColIdx = columnDefs.findIndex(c => c.key === '__barcode');
+
                     if (!payload.list.length) {
                         sheet.addRow(headers.map(() => ''));
                     } else {
                         payload.list.forEach((item, idx) => {
                             const rowValues = [
                                 idx + 1,
-                                ...columnDefs.map(col => resolveColumnValue(item, col.key)),
+                                ...columnDefs.map(col => {
+                                    // Para barcode, poner texto vacío (la imagen se inserta aparte)
+                                    if (col.key === '__barcode') return '';
+                                    return resolveColumnValue(item, col.key);
+                                }),
                             ];
                             const excelRow = sheet.addRow(rowValues);
                             const isEven = idx % 2 === 0;
@@ -500,6 +528,25 @@ export const exportItemsToExcel = async (
                                     right: { style: 'thin', color: { argb: 'FFD9D9D9' } },
                                 };
                             });
+
+                            // Insertar imagen de barcode si aplica
+                            if (barcodeColIdx >= 0 && item.serial_number) {
+                                const b64 = generateBarcodeBase64(item.serial_number);
+                                if (b64) {
+                                    const imageId = workbook.addImage({
+                                        base64: b64,
+                                        extension: 'png',
+                                    });
+                                    // col = barcodeColIdx + 1 (por la col Nº) → 0-indexed para addImage
+                                    const col = barcodeColIdx + 1;
+                                    const row = excelRow.number - 1; // 0-indexed
+                                    sheet.addImage(imageId, {
+                                        tl: { col, row },
+                                        ext: { width: 120, height: 25 },
+                                    });
+                                    excelRow.height = 25;
+                                }
+                            }
                         });
                     }
 
