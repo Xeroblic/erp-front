@@ -38,6 +38,7 @@ interface ItemListProps {
 	exportFileName?: string;
 	onExportFetchAll?: ExportFetcher;
 	batchDate?: string;
+	customerName?: string;
 }
 
 const ItemList: React.FC<ItemListProps> = ({
@@ -53,6 +54,7 @@ const ItemList: React.FC<ItemListProps> = ({
 	exportFileName = 'items-export',
 	onExportFetchAll,
 	batchDate,
+	customerName,
 }) => {
 	const navigate = useNavigate();
 	const dispatch = useAppDispatch();
@@ -101,6 +103,7 @@ const ItemList: React.FC<ItemListProps> = ({
 				exportFileName,
 				onExportFetchAll,
 				batchDate,
+				customerName,
 			);
 		} finally {
 			setIsExporting(false);

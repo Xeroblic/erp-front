@@ -455,16 +455,18 @@ export const applyHeader = (
     logoImageId?: number,
     batchDate?: string,
     reviewDate?: string,
+    customerName?: string,
+    revisionName?: string,
 ) => {
     // ── Logo (fila 1) ──
     if (logoImageId !== undefined) {
         sheet.addImage(logoImageId, {
             tl: { col: 0, row: 0 },
-            ext: { width: 200, height: 65 },
+            ext: { width: 200, height: 90 },
         });
     }
     const logoRow = sheet.addRow([]);
-    logoRow.height = 100;
+    logoRow.height = 60;
     const titleRow = sheet.addRow([sheetTitle]);
     titleRow.font = { bold: true, size: 16, color: { argb: '1F4E78' } };
     titleRow.alignment = { horizontal: 'center' };
@@ -472,15 +474,56 @@ export const applyHeader = (
     // Asegurar que maxMerge sea al menos 5 para que cubra A-E si hay pocas columnas
     const finalMerge = Math.max(maxMerge, 4);
     sheet.mergeCells(3, 1, 3, finalMerge);
-    sheet.mergeCells(2, 1, 2, finalMerge);
-    const today = new Date().toLocaleDateString('es-CL');
-    const receptionDate = batchDate ? batchDate.split('-').reverse().join('-') : today;
-    
-    sheet.getCell('I2').value = `Fecha Recepción: ${receptionDate}`;
-    sheet.getCell('I2').alignment = { horizontal: 'left' };
-    const finalReviewDate = reviewDate ? reviewDate.split('-').reverse().join('-') : today;
-    sheet.getCell('I3').value = `Fecha Revisión: ${finalReviewDate}`;
-    sheet.getCell('I3').alignment = { horizontal: 'left' };
+    sheet.mergeCells(2, 1, 2, 2);
+    // Cliente en A2:B2
+    if (customerName) {
+        const clientCell = sheet.getCell('A2');
+        clientCell.value = `Cliente: ${customerName}`;
+        clientCell.font = { name: 'Arial', size: 10, bold: true };
+        clientCell.alignment = { horizontal: 'left', vertical: 'middle' };
+    }
+
+    // C2:F2 para Nombre de Revisión
+    sheet.mergeCells(2, 3, 2, 6);
+    const revisionNameCell = sheet.getCell('C2');
+    // Usar el nombre de revisión pasado explícitamente (exportFileName), o fallback al título
+    const revisionLabel = revisionName || (sheetTitle.includes('Revisión') ? sheetTitle.split('-')[0].trim() : sheetTitle);
+    revisionNameCell.value = revisionLabel; 
+    revisionNameCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: '1F4E78' } };
+    revisionNameCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    const today = new Date();
+    const receptionDate = batchDate ? new Date(batchDate + 'T00:00:00') : today;
+    const finalReviewDate = reviewDate ? new Date(reviewDate + 'T00:00:00') : today;
+
+    // Estilos comunes para fechas
+    const dateLabelStyle = { font: { name: 'Arial', size: 10, bold: true }, alignment: { horizontal: 'left' } };
+    const dateValueStyle = { font: { name: 'Arial', size: 10, bold: false }, alignment: { horizontal: 'left' }, numFmt: 'dd-mm-yyyy' };
+
+    // Fecha Recepción
+    const cellI2 = sheet.getCell('I2');
+    cellI2.value = 'Fecha Recepción:';
+    cellI2.font = dateLabelStyle.font;
+    cellI2.alignment = dateLabelStyle.alignment as any;
+
+    const cellJ2 = sheet.getCell('J2');
+    cellJ2.value = receptionDate;
+    cellJ2.font = dateValueStyle.font;
+    cellJ2.alignment = dateValueStyle.alignment as any;
+    cellJ2.numFmt = dateValueStyle.numFmt;
+
+    // Fecha Revisión
+    const cellI3 = sheet.getCell('I3');
+    cellI3.value = 'Fecha Revisión:';
+    cellI3.font = dateLabelStyle.font;
+    cellI3.alignment = dateLabelStyle.alignment as any;
+
+    const cellJ3 = sheet.getCell('J3');
+    cellJ3.value = finalReviewDate;
+    cellJ3.font = dateValueStyle.font;
+    cellJ3.alignment = dateValueStyle.alignment as any;
+    cellJ3.numFmt = dateValueStyle.numFmt;
+
+
     sheet.addRow([]);
 
     // ── Fila de grupos (merged, con colores) ──
@@ -561,6 +604,7 @@ export const exportItemsToExcel = async (
     exportFileName: string,
     onExportFetchAll?: (includeDetails?: boolean) => Promise<IItem[]>,
     batchDate?: string,
+    customerName?: string,
 ) => {
     if (!items.length) {
         toast.info('No hay datos para exportar');
@@ -602,7 +646,7 @@ export const exportItemsToExcel = async (
                 .map(d => new Date(d!).toISOString().split('T')[0]);
             const minReviewDate = dates.length > 0 ? dates.sort()[0] : undefined;
 
-            applyHeader(sheet, headers, `Listado de Series - ${exportFileName}`, undefined, logoImageId, batchDate, minReviewDate);
+            applyHeader(sheet, headers, `Listado de Series - ${exportFileName}`, undefined, logoImageId, batchDate, minReviewDate, customerName, exportFileName);
             sourceItems.forEach((item, idx) => {
                 const row = sheet.addRow([idx + 1, item.serial_number ?? '']);
                 row.eachCell((cell) => {
@@ -672,7 +716,7 @@ export const exportItemsToExcel = async (
                         .map(d => new Date(d!).toISOString().split('T')[0]);
                     const minReviewDate = dates.length > 0 ? dates.sort()[0] : undefined;
 
-                    applyHeader(sheet, headers, `Revisión de Equipos - ${sheetNameBase}`, EXCEL_GROUPS[key], logoImageId, batchDate, minReviewDate);
+                    applyHeader(sheet, headers, `Revisión de Equipos - ${sheetNameBase}`, EXCEL_GROUPS[key], logoImageId, batchDate, minReviewDate, customerName, exportFileName);
 
                     // Detectar índice de la columna barcode (si existe)
                     const barcodeColIdx = columnDefs.findIndex(c => c.key === '__barcode');
