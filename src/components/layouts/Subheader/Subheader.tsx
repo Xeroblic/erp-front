@@ -14,7 +14,7 @@ export const SubheaderLeft: FC<ISubheaderLeftProps> = ({ children, className, ..
 		<div
 			data-component-name='Subheader/SubheaderLeft'
 			className={classNames(
-				'flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-4',
+				'flex w-full flex-row flex-wrap items-center gap-3 sm:w-auto sm:flex-nowrap sm:gap-4',
 				'md:me-auto',
 				className,
 			)}
