@@ -17,6 +17,7 @@ import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { TColors } from '@/types/colors.type';
 import { BATCH_STATUS_LABELS } from '@/pages/refactor-technical-review/components/constants/technicalReview.constants';
 import Card, { CardBody } from '@/components/ui/Card';
+import Tooltip from '@/components/ui/Tooltip';
 
 export function ListaLotes() {
 	const dispatch = useAppDispatch();
@@ -122,12 +123,25 @@ export function ListaLotes() {
 			id: 'actions',
 			header: 'Acciones',
 			cell: (info) => (
-				<Button
-					variant='solid'
-					color='blue'
-					icon='HeroEye'
-					onClick={() => navigate(`/technical-reviews/batches/${info.row.original.id}`)}
-				/>
+                <>
+                    <Tooltip text='Detalle del lote'>
+                        <Button
+                            variant='solid'
+                            color='violet'
+                            icon='HeroEye'
+                            onClick={() => navigate(`/technical-reviews/batches/${info.row.original.id}`)}
+                            />
+                    </Tooltip>
+
+                    {/* <Tooltip text='Eliminar'>
+                        <Button
+                            variant='solid'
+                            color='red'
+                            icon='DuoTrash'
+                            // onClick={() => navigate(`/technical-reviews/batches/${info.row.original.id}`)}
+                        />
+                    </Tooltip> */}
+                </>
 			),
 		},
 	];

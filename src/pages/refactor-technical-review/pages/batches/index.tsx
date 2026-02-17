@@ -1,6 +1,6 @@
 import Container from '@/components/layouts/Container/Container';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
-import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subheader';
+import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Button from '@/components/ui/Button';
 import { useAppDispatch } from '@/store';
 import { useNavigate } from 'react-router-dom';
@@ -21,6 +21,14 @@ function index() {
 						<Badge className='text-2xl font-semibold'>Lotes</Badge>
 					</div>
 				</SubheaderLeft>
+				<SubheaderRight>
+					<Button
+						variant='solid'
+						icon='HeroPlus'
+						onClick={() => navigate('/technical-reviews/lotes/crear')}>
+						Nuevo Lote
+					</Button>
+				</SubheaderRight>
 			</Subheader>
 			<Container>
 				<ListaLotes />
