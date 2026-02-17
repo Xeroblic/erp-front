@@ -118,6 +118,9 @@ const RefactorBatches = lazy(() => import('@/pages/refactor-technical-review/pag
 const RefactorCrearLote = lazy(
 	() => import('@/pages/refactor-technical-review/pages/batches/pages/CrearLote'),
 );
+const RefactorDetalleLote = lazy(
+	() => import('@/pages/refactor-technical-review/pages/batches/pages/DetalleLote'),
+);
 
 /// Notificaciones
 const NotificationsAllPage = lazy(() => import('@/pages/notificaciones/NotificationsAll'));
@@ -149,6 +152,11 @@ const contentRoutes: IRoutePersonalizada[] = [
 	{
 		path: '/technical-reviews/lotes/crear',
 		element: <RefactorCrearLote />,
+		authority: cfg.technical.subPages.lotes.authority,
+	},
+	{
+		path: '/technical-reviews/lotes/:batchId',
+		element: <RefactorDetalleLote />,
 		authority: cfg.technical.subPages.lotes.authority,
 	},
 	{ path: '/usuarios/activar/:token', element: <AceptarInvitacionEmpresa />, public: true },

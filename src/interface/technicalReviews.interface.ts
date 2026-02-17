@@ -40,6 +40,7 @@ export interface IBatch {
 		name: string;
 	};
 	entry_date: string; // YYYY-MM-DD
+	review_date?: string; // YYYY-MM-DD
 	expected_quantity: number;
 	received_quantity?: number;
 	completed_quantity?: number;
@@ -50,8 +51,8 @@ export interface IBatch {
 	items_summary?: {
 		total: number;
 		by_equipment_type?: Record<EquipmentType, number>;
-		by_review_status?: Array<{ status: ReviewStatus; count: number }>;
-		by_current_status?: Array<{ status: CommercialStatus; count: number }>;
+		by_review_status?: Partial<Record<ReviewStatus, number>>;
+		by_current_status?: Partial<Record<CommercialStatus, number>>;
 		by_grade?: Record<string, number>;
 	};
 	created_by?: {

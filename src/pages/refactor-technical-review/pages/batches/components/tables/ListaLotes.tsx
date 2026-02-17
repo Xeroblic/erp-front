@@ -91,17 +91,17 @@ export function ListaLotes() {
 				let color: TColors = 'zinc';
 
 				switch (status) {
-					case 'PENDING':
+					case 'DRAFT':
 						color = 'blue';
 						break;
-					case 'IN_REVIEW':
+					case 'IN_PROGRESS':
 						color = 'amber';
 						break;
-					case 'REVIEWED':
+					case 'COMPLETED':
 						color = 'emerald';
 						break;
-					case 'APPROVED':
-						color = 'emerald';
+					case 'CANCELLED':
+						color = 'red';
 						break;
 					default:
 						color = 'zinc';
@@ -123,17 +123,19 @@ export function ListaLotes() {
 			id: 'actions',
 			header: 'Acciones',
 			cell: (info) => (
-                <>
-                    <Tooltip text='Detalle del lote'>
-                        <Button
-                            variant='solid'
-                            color='violet'
-                            icon='HeroEye'
-                            onClick={() => navigate(`/technical-reviews/batches/${info.row.original.id}`)}
-                            />
-                    </Tooltip>
+				<>
+					<Tooltip text='Detalle del lote'>
+						<Button
+							variant='solid'
+							color='violet'
+							icon='HeroEye'
+							onClick={() =>
+								navigate(`/technical-reviews/lotes/${info.row.original.id}`)
+							}
+						/>
+					</Tooltip>
 
-                    {/* <Tooltip text='Eliminar'>
+					{/* <Tooltip text='Eliminar'>
                         <Button
                             variant='solid'
                             color='red'
@@ -141,7 +143,7 @@ export function ListaLotes() {
                             // onClick={() => navigate(`/technical-reviews/batches/${info.row.original.id}`)}
                         />
                     </Tooltip> */}
-                </>
+				</>
 			),
 		},
 	];
