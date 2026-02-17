@@ -122,6 +122,8 @@ export interface FetchBatchesParams {
 	search?: string; // Busca por serie dentro de los ítems del lote
 	page?: number;
 	per_page?: number;
+	sort_by?: string;
+	order?: 'asc' | 'desc';
 }
 
 /**

@@ -113,8 +113,8 @@ const TraceabilityPage = lazy(
 
 /// REFACTOR DE TECHNICAL REVIEW
 
-const TechnicalReview = lazy(() => import('@/pages/refactor-technical-review/index'));
-
+const RefactorTechnicalReview = lazy(() => import('@/pages/refactor-technical-review/index'));
+const RefactorBatches = lazy(() => import('@/pages/refactor-technical-review/pages/batches/index'));
 
 /// Notificaciones
 const NotificationsAllPage = lazy(() => import('@/pages/notificaciones/NotificationsAll'));
@@ -132,6 +132,17 @@ const contentRoutes: IRoutePersonalizada[] = [
 	{ path: cfg.loginPage.to, element: <LoginPage />, public: true },
 	{ path: cfg.recuperarPassword.to, element: <RecuperarPassword />, public: true },
 	{ path: cfg.confirmarNuevaPass.to, element: <ConfirmarNuevaPass />, public: true },
+	// refactor
+	{
+		path: cfg.technical.subPages.refactor.to,
+		element: <RefactorTechnicalReview />,
+		authority: cfg.technical.subPages.refactor.authority,
+	},
+	{
+		path: cfg.technical.subPages.lotes.to,
+		element: <RefactorBatches />,
+		authority: cfg.technical.subPages.lotes.authority,
+	},
 	{ path: '/usuarios/activar/:token', element: <AceptarInvitacionEmpresa />, public: true },
 
 	{ path: cfg.profilePage.to, element: <ProfilePage />, authority: cfg.profilePage.authority },
@@ -440,13 +451,6 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: cfg.technical.subPages.reviews.to,
 		element: <TechnicalReviewsHub />,
 		authority: cfg.technical.subPages.reviews.authority,
-	},
-
-	// refactor
-	{
-		path: cfg.technical.subPages.refactor.to,
-		element: <TechnicalReview />,
-		authority: cfg.technical.subPages.refactor.authority,
 	},
 
 	{ path: '/sin-permisos', element: <SinPermisos />, public: true },

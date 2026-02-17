@@ -47,6 +47,8 @@ export const fetchBatches = createAsyncThunk<
 				search: params?.search,
 				page: params?.page ?? 1,
 				per_page: params?.per_page ?? 20,
+				sort_by: params?.sort_by,
+				order: params?.order,
 			},
 		});
 

@@ -5,8 +5,10 @@ import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subhead
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
+import { useNavigate } from 'react-router-dom';
 
 const TechnicalReview = () => {
+	const navigate = useNavigate();
 	return (
 		<PageWrapper name='Home Revisiones Técnicas' title='Home Revisiones Técnicas'>
 			<Subheader>
@@ -38,7 +40,7 @@ const TechnicalReview = () => {
 					</Card>
 
 					<div className='grid grid-cols-2 gap-4'>
-						<Card className='hover:scale-100 hover:translate-y-1 transition-all duration-300 hover:shadow-lg cursor-pointer'>
+						<Card onClick={() => navigate('/technical-reviews/lotes')} className='hover:scale-100 hover:translate-y-1 transition-all duration-300 hover:shadow-lg cursor-pointer'>
 							<CardHeader>
 								<Badge className='text-2xl font-bold'>
 									Realizar revisiones técnicas
