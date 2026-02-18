@@ -18,7 +18,10 @@ import { EquipmentType, IItem } from '@/interface/technicalReviews.interface';
 import PrintLabel from '@/pages/refactor-technical-review/components/PrintLabel';
 import Card, { CardBody } from '@/components/ui/Card';
 import StatusBadge from '@/pages/refactor-technical-review/components/StatusBadge';
-import { extractValue, resolveEquipmentTypeMeta } from '@/pages/refactor-technical-review/components/utils/utilsItems';
+import {
+	extractValue,
+	resolveEquipmentTypeMeta,
+} from '@/pages/refactor-technical-review/components/utils/utilsItems';
 interface ListReviewProps {
 	batchId: number;
 	activeTab: EquipmentType | 'all';
@@ -65,6 +68,7 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 	};
 
 	const handleView = (item: IItem) => {
+		// Navigates to the refactored item review wizard (route now points to Revisiones component)
 		navigate(`/technical-reviews/batches/${batchId}/items/${item.id}`);
 	};
 
@@ -180,26 +184,25 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 
 	return (
 		<Card>
-            <CardBody>
+			<CardBody>
+				<DataTable
+					data={items}
+					columns={columns}
+					loading={loading}
+					paginationState={pagination}
+					pageCount={meta?.last_page || 1}
+					onPaginationChange={setPagination}
+					manualPagination
+				/>
 
-                <DataTable
-                    data={items}
-                    columns={columns}
-                    loading={loading}
-                    paginationState={pagination}
-                    pageCount={meta?.last_page || 1}
-                    onPaginationChange={setPagination}
-                    manualPagination
-                    />
-
-                {isPrintLabelOpen && itemToPrint && (
-                    <PrintLabel
-                    isOpen={isPrintLabelOpen}
-                        onClose={() => setIsPrintLabelOpen(false)}
-                        item={itemToPrint}
-                    />
-                )}
-            </CardBody>
+				{isPrintLabelOpen && itemToPrint && (
+					<PrintLabel
+						isOpen={isPrintLabelOpen}
+						onClose={() => setIsPrintLabelOpen(false)}
+						item={itemToPrint}
+					/>
+				)}
+			</CardBody>
 		</Card>
 	);
 };

@@ -27,21 +27,26 @@ export function ListaLotes() {
 	const loading = useAppSelector(selectBatchesLoading);
 	const meta = useAppSelector(selectBatchesMeta);
 
+	const [pagination, setPagination] = React.useState({
+		pageIndex: 0,
+		pageSize: 10,
+	});
+
 	useEffect(() => {
 		if (branchId) {
 			dispatch(
 				fetchBatches({
 					branchId,
 					params: {
-						page: 1,
-						per_page: 10,
+						page: pagination.pageIndex + 1,
+						per_page: pagination.pageSize,
 						sort_by: 'id',
 						order: 'desc',
 					},
 				}),
 			);
 		}
-	}, [dispatch, branchId]);
+	}, [dispatch, branchId, pagination.pageIndex, pagination.pageSize]);
 
 	const columns: ColumnDef<IBatch>[] = [
 		{
@@ -87,12 +92,12 @@ export function ListaLotes() {
 			accessorKey: 'status',
 			header: 'Estado',
 			cell: (info) => {
-				const status = info.getValue() as string;
+				const statusValue = String(info.getValue() || '').toUpperCase();
 				let color: TColors = 'zinc';
 
-				switch (status) {
+				switch (statusValue) {
 					case 'DRAFT':
-						color = 'blue';
+						color = 'zinc';
 						break;
 					case 'IN_PROGRESS':
 						color = 'amber';
@@ -108,8 +113,9 @@ export function ListaLotes() {
 				}
 
 				return (
-					<Badge variant='solid' color={color} className='px-1 capitalize'>
-						{BATCH_STATUS_LABELS[status as keyof typeof BATCH_STATUS_LABELS] || status}
+					<Badge variant='solid' className='px-1' color={color}>
+						{BATCH_STATUS_LABELS[statusValue as keyof typeof BATCH_STATUS_LABELS] ||
+							statusValue}
 					</Badge>
 				);
 			},
@@ -156,13 +162,10 @@ export function ListaLotes() {
 					data={data}
 					loading={loading}
 					pageCount={meta?.last_page || 1}
-					pageSize={meta?.per_page || 10}
+					paginationState={pagination}
 					initialSortingState={[{ id: 'id', desc: true }]}
 					manualPagination={true}
-					onPaginationChange={(updater) => {
-						// Handle pagination if needed, for now just basic structure
-						console.log('Pagination changed', updater);
-					}}
+					onPaginationChange={setPagination}
 				/>
 			</CardBody>
 		</Card>

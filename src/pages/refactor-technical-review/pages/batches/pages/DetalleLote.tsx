@@ -63,7 +63,7 @@ const DetalleLote: React.FC = () => {
 	}
 
 	return (
-		<PageWrapper name='detalle-lote' title={`Lote ${hookProps.batch.code}`}>
+		<PageWrapper name='detalle-lote' title={`Lote ${hookProps.batch.code}`} isProtectedRoute={true}>
 			<Subheader>
 				<SubheaderLeft>
 					<Button

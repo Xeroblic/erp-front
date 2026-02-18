@@ -752,9 +752,7 @@ export const privatePages = {
 		},
 	},
 
-	// =========================
-	// CATÁLOGOS
-	// =========================
+
 	catalogs: {
 		id: 'catalogs',
 		to: '/catalogos',
