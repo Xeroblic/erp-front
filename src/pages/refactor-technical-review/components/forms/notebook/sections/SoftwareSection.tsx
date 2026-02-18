@@ -11,7 +11,6 @@ const SoftwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	control,
 	readOnly,
 	watch,
-	setValue,
 }) => {
 	const os = watch('operating_system');
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { SingleValue } from 'react-select';
+import type { SingleValue, MultiValue } from 'react-select';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import Input from '@/components/form/Input';
 import { SelectionCard } from '@/pages/refactor-technical-review/components/ui/SelectionCard';
@@ -135,26 +135,38 @@ export const SoSelector: React.FC<SoSelectorProps> = ({ value, onChange, readOnl
 	]);
 
 	// --- Handlers ---
-	const handleBrandChange = (newValue: SingleValue<TSelectOption>) => {
-		setSelectedBrand((newValue?.value as MarcaSistema) || null);
+	const handleBrandChange = (
+		newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption>,
+	) => {
+		const option = newValue as TSelectOption | null;
+		setSelectedBrand((option?.value as MarcaSistema) || null);
 		setSelectedFamilyId(null);
 		setSelectedVersionId(null);
 		setSelectedEditionId(null);
 	};
 
-	const handleFamilyChange = (newValue: SingleValue<TSelectOption>) => {
-		setSelectedFamilyId(newValue?.value || null);
+	const handleFamilyChange = (
+		newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption>,
+	) => {
+		const option = newValue as TSelectOption | null;
+		setSelectedFamilyId(option?.value || null);
 		setSelectedVersionId(null);
 		setSelectedEditionId(null);
 	};
 
-	const handleVersionChange = (newValue: SingleValue<TSelectOption>) => {
-		setSelectedVersionId(newValue?.value || null);
+	const handleVersionChange = (
+		newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption>,
+	) => {
+		const option = newValue as TSelectOption | null;
+		setSelectedVersionId(option?.value || null);
 		setSelectedEditionId(null);
 	};
 
-	const handleEditionChange = (newValue: SingleValue<TSelectOption>) => {
-		setSelectedEditionId(newValue?.value || null);
+	const handleEditionChange = (
+		newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption>,
+	) => {
+		const option = newValue as TSelectOption | null;
+		setSelectedEditionId(option?.value || null);
 	};
 
 	const isQuickSelected = (optValue: string) => value === optValue;

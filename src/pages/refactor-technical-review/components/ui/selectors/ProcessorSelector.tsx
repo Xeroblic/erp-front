@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { SingleValue } from 'react-select';
+import type { SingleValue, MultiValue } from 'react-select';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import { SelectionCard } from '@/pages/refactor-technical-review/components/ui/SelectionCard';
 import {
@@ -116,26 +116,38 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 	]);
 
 	// --- Handlers ---
-	const handleBrandChange = (newValue: SingleValue<TSelectOption>) => {
-		setSelectedBrand((newValue?.value as MarcaProcesador) || null);
+	const handleBrandChange = (
+		newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption>,
+	) => {
+		const option = newValue as TSelectOption | null;
+		setSelectedBrand((option?.value as MarcaProcesador) || null);
 		setSelectedFamilyId(null);
 		setSelectedGenerationId(null);
 		setSelectedModelId(null);
 	};
 
-	const handleFamilyChange = (newValue: SingleValue<TSelectOption>) => {
-		setSelectedFamilyId(newValue?.value || null);
+	const handleFamilyChange = (
+		newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption>,
+	) => {
+		const option = newValue as TSelectOption | null;
+		setSelectedFamilyId(option?.value || null);
 		setSelectedGenerationId(null);
 		setSelectedModelId(null);
 	};
 
-	const handleGenerationChange = (newValue: SingleValue<TSelectOption>) => {
-		setSelectedGenerationId(newValue?.value || null);
+	const handleGenerationChange = (
+		newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption>,
+	) => {
+		const option = newValue as TSelectOption | null;
+		setSelectedGenerationId(option?.value || null);
 		setSelectedModelId(null);
 	};
 
-	const handleModelChange = (newValue: SingleValue<TSelectOption>) => {
-		setSelectedModelId(newValue?.value || null);
+	const handleModelChange = (
+		newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption>,
+	) => {
+		const option = newValue as TSelectOption | null;
+		setSelectedModelId(option?.value || null);
 	};
 
 	// Determine if current value comes from Quick Select (simple matching)
