@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { SingleValue, MultiValue } from 'react-select';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
+import Input from '@/components/form/Input';
 import { SelectionCard } from '@/pages/refactor-technical-review/components/ui/SelectionCard';
 import {
 	PROCESADORES_DATA,
@@ -61,7 +62,7 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 		: [];
 	const familyOptions: TSelectOption[] = familiasData.map((familia) => ({
 		value: familia.id,
-		label: familia.descripcion ? `${familia.nombre} - ${familia.descripcion}` : familia.nombre,
+		label: familia.nombre,
 	}));
 
 	const generacionesData =
@@ -70,7 +71,7 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 			: [];
 	const generationOptions: TSelectOption[] = generacionesData.map((gen) => ({
 		value: gen.id,
-		label: gen.año ? `${gen.nombre} (${gen.año})` : gen.nombre,
+		label: gen.nombre,
 	}));
 
 	const modelosData =
@@ -84,7 +85,7 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 			: [];
 	const modelOptions: TSelectOption[] = modelosData.map((modelo) => ({
 		value: modelo.id,
-		label: modelo.descripcion ? `${modelo.nombre} - ${modelo.descripcion}` : modelo.nombre,
+		label: modelo.nombre,
 	}));
 
 	const shouldShowModelSelect = modelosData.length > 1;
@@ -115,6 +116,9 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 		onChange,
 	]);
 
+	// --- Manual Mode State ---
+	const [isManualMode, setIsManualMode] = useState(false);
+
 	// --- Handlers ---
 	const handleBrandChange = (
 		newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption>,
@@ -124,6 +128,7 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 		setSelectedFamilyId(null);
 		setSelectedGenerationId(null);
 		setSelectedModelId(null);
+		setIsManualMode(false);
 	};
 
 	const handleFamilyChange = (
@@ -153,6 +158,16 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 	// Determine if current value comes from Quick Select (simple matching)
 	const isQuickSelected = (optValue: string) => value === optValue;
 
+	const handleQuickSelect = (val: string) => {
+		onChange(val);
+		setIsManualMode(false);
+		// Reset dropdowns nicely
+		setSelectedBrand(null);
+		setSelectedFamilyId(null);
+		setSelectedGenerationId(null);
+		setSelectedModelId(null);
+	};
+
 	return (
 		<div className='flex flex-col gap-6'>
 			{/* Quick Select Buttons */}
@@ -166,8 +181,8 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 							key={opt.value}
 							label={opt.label}
 							value={opt.value}
-							isSelected={isQuickSelected(opt.value)}
-							onClick={() => !readOnly && onChange(opt.value)}
+							isSelected={!isManualMode && isQuickSelected(opt.value)}
+							onClick={() => !readOnly && handleQuickSelect(opt.value)}
 							variant='compact' // Use minimal variant
 							className='text-xs'
 						/>
@@ -184,76 +199,119 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 				<div className='flex-grow border-t border-zinc-200 dark:border-zinc-700'></div>
 			</div>
 
-			{/* Advanced Select Dropdowns */}
+			{/* Advanced Select Dropdowns or Manual Input */}
 			<div className='rounded-xl border border-zinc-200 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-900/20'>
-				<div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-					{/* 1. Marca */}
+				<div className='mb-4 flex items-center justify-end'>
+					<button
+						type='button'
+						onClick={() => {
+							setIsManualMode(!isManualMode);
+							// Optional: Clear value if switching to manual? No, keep it for editing.
+						}}
+						className='text-xs font-medium text-blue-600 hover:text-blue-500 hover:underline dark:text-blue-400'>
+						{isManualMode
+							? 'Volver a selección por listas'
+							: '¿No está en la lista? Ingresar manualmente'}
+					</button>
+				</div>
+
+				{isManualMode ? (
 					<div>
 						<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
-							1. Marca
+							Nombre del Procesador
 						</label>
-						<SelectReact
-							name='processor-brand'
-							options={brandOptions}
-							value={brandOptions.find((o) => o.value === selectedBrand) || null}
-							onChange={handleBrandChange}
-							placeholder='Intel / AMD'
-							isDisabled={readOnly}
+						<Input
+							name='processor-manual'
+							value={value || ''}
+							onChange={(e) => onChange(e.target.value)}
+							placeholder='Ej: Intel Core 2 Duo E8400, AMD Athlon X4...'
+							disabled={readOnly}
+						// <Input
+						// 	name='processor-manual'
+						// 	value={value || ''}
+						// 	onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+						// 	placeholder='Ej: Intel Core 2 Duo E8400, AMD Athlon X4...'
+						// 	disabled={readOnly}
 						/>
+						<p className='mt-2 text-xs text-zinc-400'>
+							Escriba el nombre completo del procesador tal como debe aparecer en el
+							reporte.
+						</p>
 					</div>
-
-					{/* 2. Familia */}
-					<div>
-						<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
-							2. Familia
-						</label>
-						<SelectReact
-							name='processor-family'
-							options={familyOptions}
-							value={familyOptions.find((o) => o.value === selectedFamilyId) || null}
-							onChange={handleFamilyChange}
-							placeholder='Serie...'
-							isDisabled={readOnly || !selectedBrand}
-						/>
-					</div>
-
-					{/* 3. Generación */}
-					<div>
-						<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
-							3. Generación
-						</label>
-						<SelectReact
-							name='processor-generation'
-							options={generationOptions}
-							value={
-								generationOptions.find((o) => o.value === selectedGenerationId) ||
-								null
-							}
-							onChange={handleGenerationChange}
-							placeholder='Generación...'
-							isDisabled={readOnly || !selectedFamilyId}
-						/>
-					</div>
-
-					{/* 4. Modelo (Condicional) */}
-					{shouldShowModelSelect && (
+				) : (
+					<div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+						{/* 1. Marca */}
 						<div>
 							<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
-								4. Modelo
+								1. Marca
 							</label>
 							<SelectReact
-								name='processor-model'
-								options={modelOptions}
-								value={
-									modelOptions.find((o) => o.value === selectedModelId) || null
-								}
-								onChange={handleModelChange}
-								placeholder='Modelo Exacto...'
-								isDisabled={readOnly || !selectedGenerationId}
+								name='processor-brand'
+								options={brandOptions}
+								value={brandOptions.find((o) => o.value === selectedBrand) || null}
+								onChange={handleBrandChange}
+								placeholder='Intel / AMD'
+								isDisabled={readOnly}
 							/>
 						</div>
-					)}
-				</div>
+
+						{/* 2. Familia */}
+						<div>
+							<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
+								2. Familia
+							</label>
+							<SelectReact
+								name='processor-family'
+								options={familyOptions}
+								value={
+									familyOptions.find((o) => o.value === selectedFamilyId) || null
+								}
+								onChange={handleFamilyChange}
+								placeholder='Serie...'
+								isDisabled={readOnly || !selectedBrand}
+							/>
+						</div>
+
+						{/* 3. Generación */}
+						<div>
+							<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
+								3. Generación
+							</label>
+							<SelectReact
+								name='processor-generation'
+								options={generationOptions}
+								value={
+									generationOptions.find(
+										(o) => o.value === selectedGenerationId,
+									) || null
+								}
+								onChange={handleGenerationChange}
+								placeholder='Generación...'
+								isDisabled={readOnly || !selectedFamilyId}
+							/>
+						</div>
+
+						{/* 4. Modelo (Condicional) */}
+						{shouldShowModelSelect && (
+							<div>
+								<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
+									4. Modelo
+								</label>
+								<SelectReact
+									name='processor-model'
+									options={modelOptions}
+									value={
+										modelOptions.find((o) => o.value === selectedModelId) ||
+										null
+									}
+									onChange={handleModelChange}
+									placeholder='Modelo Exacto...'
+									isDisabled={readOnly || !selectedGenerationId}
+								/>
+							</div>
+						)}
+					</div>
+				)}
 			</div>
 		</div>
 	);
