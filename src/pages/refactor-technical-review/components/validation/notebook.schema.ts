@@ -1,0 +1,241 @@
+/**
+ * notebook.schema.ts
+ * Esquema de validación Yup para el formulario de revisión de Notebook.
+ * Refleja exactamente las reglas del backend con mensajes de error en español.
+ */
+import * as Yup from 'yup';
+import {
+	ALLOWED_GENERAL_CONDITIONS,
+	ALLOWED_STORAGE_TECHNOLOGIES,
+	ALLOWED_CHARGER_STATUSES,
+	ALLOWED_SCREEN_CONDITIONS,
+	ALLOWED_COVER_CONDITIONS,
+	ALLOWED_KEYBOARD_CONDITIONS,
+	ALLOWED_KEYBOARD_LAYOUTS,
+	ALLOWED_HINGE_CONDITIONS,
+	ALLOWED_BATTERY_STATUSES,
+	ALLOWED_TOUCHPAD_CONDITIONS,
+	ALLOWED_BOTTOM_CONDITIONS,
+	BATTERY_PERCENTAGE_MIN,
+	BATTERY_PERCENTAGE_MAX,
+} from './constants/notebook.rules';
+
+// ─── Schema Principal ─────────────────────────────────────────────────────────
+
+export const notebookSchema = Yup.object({
+	// ─── Identificación ──────────────────────────────────────────────────────
+	brand: Yup.string()
+		.trim()
+		.required('La marca es obligatoria')
+		.max(100, 'Máximo 100 caracteres'),
+
+	model: Yup.string()
+		.trim()
+		.required('El modelo es obligatorio')
+		.max(150, 'Máximo 150 caracteres'),
+
+	// ─── Condición General ───────────────────────────────────────────────────
+	general_condition: Yup.string()
+		.oneOf([...ALLOWED_GENERAL_CONDITIONS], 'Condición general no válida')
+		.required('La condición general es obligatoria'),
+
+	// ─── Hardware ────────────────────────────────────────────────────────────
+	processor: Yup.string()
+		.trim()
+		.required('El procesador es obligatorio')
+		.max(200, 'Máximo 200 caracteres'),
+
+	ram_size: Yup.string()
+		.trim()
+		.required('La RAM es obligatoria')
+		.max(50, 'Máximo 50 caracteres'),
+
+	ram_slots: Yup.string().trim().max(20, 'Máximo 20 caracteres').nullable(),
+
+	ram_type: Yup.string().trim().max(20, 'Máximo 20 caracteres').nullable(),
+
+	storage_size: Yup.string()
+		.trim()
+		.required('El almacenamiento es obligatorio')
+		.max(50, 'Máximo 50 caracteres'),
+
+	storage_technology: Yup.string()
+		.oneOf([...ALLOWED_STORAGE_TECHNOLOGIES], 'Tecnología de disco no válida')
+		.required('La tecnología de disco es obligatoria'),
+
+	// ─── Pantalla ────────────────────────────────────────────────────────────
+	screen_inches: Yup.string().trim().max(20, 'Máximo 20 caracteres').nullable(),
+
+	screen_condition: Yup.string()
+		.oneOf([...ALLOWED_SCREEN_CONDITIONS], 'Condición de pantalla no válida')
+		.required('La condición de pantalla es obligatoria'),
+
+	is_touchscreen: Yup.boolean().nullable(),
+
+	// ─── Carcasa ─────────────────────────────────────────────────────────────
+	cover_condition: Yup.string()
+		.oneOf([...ALLOWED_COVER_CONDITIONS], 'Condición de tapa no válida')
+		.required('La condición de la tapa es obligatoria'),
+
+	keyboard_condition: Yup.string()
+		.oneOf([...ALLOWED_KEYBOARD_CONDITIONS], 'Condición de teclado no válida')
+		.required('La condición del teclado es obligatoria'),
+
+	keyboard_layout: Yup.string()
+		.oneOf([...ALLOWED_KEYBOARD_LAYOUTS], 'Distribución de teclado no válida')
+		.nullable(),
+
+	hinge_condition: Yup.string()
+		.oneOf([...ALLOWED_HINGE_CONDITIONS], 'Condición de bisagras no válida')
+		.nullable(),
+
+	touchpad_condition: Yup.string()
+		.oneOf([...ALLOWED_TOUCHPAD_CONDITIONS], 'Condición de touchpad no válida')
+		.nullable(),
+
+	bottom_condition: Yup.string()
+		.oneOf([...ALLOWED_BOTTOM_CONDITIONS], 'Condición de tapa inferior no válida')
+		.nullable(),
+
+	has_numeric_keypad: Yup.boolean().nullable(),
+	has_backlit_keyboard: Yup.boolean().nullable(),
+
+	// ─── Batería ─────────────────────────────────────────────────────────────
+	battery_health: Yup.string().trim().max(100, 'Máximo 100 caracteres').nullable(),
+
+	battery_status: Yup.string()
+		.oneOf([...ALLOWED_BATTERY_STATUSES], 'Estado de batería no válido')
+		.nullable(),
+
+	battery_percentage: Yup.number()
+		.typeError('El porcentaje debe ser un número')
+		.integer('Debe ser un número entero')
+		.min(BATTERY_PERCENTAGE_MIN, `El porcentaje mínimo es ${BATTERY_PERCENTAGE_MIN}`)
+		.max(BATTERY_PERCENTAGE_MAX, `El porcentaje máximo es ${BATTERY_PERCENTAGE_MAX}`)
+		.nullable()
+		// Regla: si battery_status es no_battery, el porcentaje debe ser 0
+		.when('battery_status', {
+			is: 'no_battery',
+			then: (schema) =>
+				schema.max(0, 'Si no hay batería, el porcentaje debe ser 0').nullable(),
+		}),
+
+	// ─── Puertos ─────────────────────────────────────────────────────────────
+	vga_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
+	hdmi_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
+	displayport_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
+	usb_c_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
+	usb_a_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
+	sd_readers: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
+	rj45_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
+
+	all_ports_functional: Yup.boolean()
+		.nullable()
+		// Regla: no puede ser true si hay puertos defectuosos
+		.when('defective_ports_count', {
+			is: (val: number | null | undefined) => val != null && val > 0,
+			then: (schema) =>
+				schema.test(
+					'ports-conflict',
+					'No puede marcar todos los puertos como funcionales si hay puertos defectuosos',
+					(value) => value !== true,
+				),
+		}),
+
+	defective_ports_count: Yup.number()
+		.typeError('Debe ser un número')
+		.integer('Debe ser un número entero')
+		.min(0, 'No puede ser negativo')
+		.nullable(),
+
+	// ─── Accesorios ──────────────────────────────────────────────────────────
+	includes_charger: Yup.boolean().nullable(),
+
+	charger_watts: Yup.string().trim().max(20, 'Máximo 20 caracteres').nullable(),
+
+	charger_status: Yup.string()
+		.oneOf([...ALLOWED_CHARGER_STATUSES], 'Estado de cargador no válido')
+		.nullable()
+		// Regla: si incluye cargador, el estado es recomendado
+		.when('includes_charger', {
+			is: true,
+			then: (schema) =>
+				schema.required('Si incluye cargador, indica su estado'),
+		}),
+
+	// ─── Software ────────────────────────────────────────────────────────────
+	operating_system: Yup.string().trim().max(100, 'Máximo 100 caracteres').nullable(),
+
+	// ─── Otros ───────────────────────────────────────────────────────────────
+	has_biometric: Yup.boolean().nullable(),
+	has_wifi: Yup.boolean().nullable(),
+	has_bluetooth: Yup.boolean().nullable(),
+
+	// ─── Notas ───────────────────────────────────────────────────────────────
+	observations: Yup.string()
+		.trim()
+		.max(1000, 'Máximo 1000 caracteres para observaciones')
+		.nullable(),
+
+	// ─── Extras ──────────────────────────────────────────────────────────────
+	extra_attributes: Yup.mixed().nullable(),
+});
+
+// ─── Tipos derivados ──────────────────────────────────────────────────────────
+
+export type NotebookFormData = Yup.InferType<typeof notebookSchema>;
+
+/**
+ * Schema parcial para validación de campos individuales (útil para validación en tiempo real).
+ * Todos los campos se vuelven opcionales manteniendo sus reglas de formato.
+ */
+export const notebookPartialSchema = notebookSchema.clone().shape({
+	brand: Yup.string().trim().max(100).nullable(),
+	model: Yup.string().trim().max(150).nullable(),
+	general_condition: Yup.string()
+		.oneOf([...ALLOWED_GENERAL_CONDITIONS, ''])
+		.nullable(),
+	processor: Yup.string().trim().max(200).nullable(),
+	ram_size: Yup.string().trim().max(50).nullable(),
+	storage_size: Yup.string().trim().max(50).nullable(),
+	storage_technology: Yup.string()
+		.oneOf([...ALLOWED_STORAGE_TECHNOLOGIES, ''])
+		.nullable(),
+	screen_condition: Yup.string()
+		.oneOf([...ALLOWED_SCREEN_CONDITIONS, ''])
+		.nullable(),
+	cover_condition: Yup.string()
+		.oneOf([...ALLOWED_COVER_CONDITIONS, ''])
+		.nullable(),
+	keyboard_condition: Yup.string()
+		.oneOf([...ALLOWED_KEYBOARD_CONDITIONS, ''])
+		.nullable(),
+});
+
+export type NotebookPartialFormData = Yup.InferType<typeof notebookPartialSchema>;
+
+/**
+ * Valida un formulario de notebook y retorna errores formateados por campo.
+ * Compatible con react-hook-form y manejo manual de errores.
+ */
+export const validateNotebookForm = async (
+	data: unknown,
+): Promise<
+	{ success: true; data: NotebookFormData } | { success: false; errors: Record<string, string> }
+> => {
+	try {
+		const validated = await notebookSchema.validate(data, { abortEarly: false });
+		return { success: true, data: validated };
+	} catch (err) {
+		if (err instanceof Yup.ValidationError) {
+			const errors: Record<string, string> = {};
+			for (const inner of err.inner) {
+				if (inner.path && !errors[inner.path]) {
+					errors[inner.path] = inner.message;
+				}
+			}
+			return { success: false, errors };
+		}
+		throw err;
+	}
+};

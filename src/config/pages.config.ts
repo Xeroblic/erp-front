@@ -732,7 +732,7 @@ export const privatePages = {
 				id: 'technicalBatches',
 				to: '/technical-reviews/batches',
 				text: 'Revisiones por lotes',
-				icon: 'DuoClipboard', // Using a clipboard icon
+				icon: 'DuoClipboard',
 				authority: ['view-technical-reviews-batches'],
 				roles: [
 					'super-admin',

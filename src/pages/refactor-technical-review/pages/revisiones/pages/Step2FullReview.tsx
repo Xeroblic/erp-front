@@ -10,6 +10,7 @@ interface Step2FullReviewProps {
 	onBack: () => void;
 	onComplete: () => Promise<void>;
 	loading?: boolean;
+	readOnly?: boolean;
 }
 
 const EQUIPMENT_LABEL_MAP: Record<string, string> = {
@@ -26,6 +27,7 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 	onBack,
 	onComplete,
 	loading = false,
+	readOnly = false,
 }) => {
 	const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -87,15 +89,22 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 						Atrás
 					</Button>
 
-					<Button
-						variant='solid'
-						color='blue'
-						onClick={handleComplete}
-						isLoading={isSubmitting || loading}
-						disabled={isSubmitting || loading}>
-						Finalizar Revisión
-						<Icon icon='HeroArrowRight' className='ml-2 h-4 w-4' />
-					</Button>
+					{readOnly ? (
+						<span className='flex items-center gap-2 text-sm text-blue-500'>
+							<Icon icon='HeroEye' className='h-4 w-4' />
+							Solo lectura
+						</span>
+					) : (
+						<Button
+							variant='solid'
+							color='blue'
+							onClick={handleComplete}
+							isLoading={isSubmitting || loading}
+							disabled={isSubmitting || loading}>
+							Finalizar Revisión
+							<Icon icon='HeroArrowRight' className='ml-2 h-4 w-4' />
+						</Button>
+					)}
 				</div>
 			</CardBody>
 		</Card>

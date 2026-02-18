@@ -22,6 +22,7 @@ interface Step1BasicInfoProps {
 	loading: boolean;
 	onBack: () => void;
 	onSubmit: () => Promise<void>;
+	readOnly?: boolean;
 }
 
 const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
@@ -37,6 +38,7 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 	loading,
 	onBack,
 	onSubmit,
+	readOnly = false,
 }) => {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [serialError, setSerialError] = useState('');
@@ -89,7 +91,8 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 						onChange={handleSerialChange}
 						placeholder='Ej: SDFSDFSD'
 						className={`font-mono uppercase ${serialError ? 'border-red-500' : ''}`}
-						autoFocus
+						autoFocus={!readOnly}
+						disabled={readOnly}
 					/>
 					{serialError && (
 						<p className='flex items-center gap-1 text-xs text-red-500'>
@@ -116,6 +119,7 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 						onChange={(opt) => onProductChange(opt ? Number((opt as any).value) : null)}
 						placeholder='Seleccionar producto con seguimiento por serie'
 						isLoading={productsLoading}
+						isDisabled={readOnly}
 					/>
 				</div>
 
@@ -128,7 +132,7 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 					<EquipmentTypeSelector
 						value={equipmentType}
 						onChange={onEquipmentTypeChange}
-						disabled={isSubmitting || loading}
+						disabled={isSubmitting || loading || readOnly}
 					/>
 				</div>
 
@@ -138,15 +142,22 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 						Cancelar
 					</Button>
 
-					<Button
-						variant='solid'
-						color='blue'
-						onClick={handleSubmit}
-						isLoading={isSubmitting || loading}
-						disabled={!canContinue || isSubmitting || loading}>
-						Continuar
-						<Icon icon='HeroArrowRight' className='ml-2 h-4 w-4' />
-					</Button>
+					{readOnly ? (
+						<span className='flex items-center gap-2 text-sm text-blue-500'>
+							<Icon icon='HeroEye' className='h-4 w-4' />
+							Solo lectura
+						</span>
+					) : (
+						<Button
+							variant='solid'
+							color='blue'
+							onClick={handleSubmit}
+							isLoading={isSubmitting || loading}
+							disabled={!canContinue || isSubmitting || loading}>
+							Continuar
+							<Icon icon='HeroArrowRight' className='ml-2 h-4 w-4' />
+						</Button>
+					)}
 				</div>
 			</CardBody>
 		</Card>

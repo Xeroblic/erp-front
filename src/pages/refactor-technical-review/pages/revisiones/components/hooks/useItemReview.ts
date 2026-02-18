@@ -57,7 +57,7 @@ export interface UseItemReviewReturn {
 	handleStepClick: (stepId: ReviewStep) => void;
 	handleStep1Submit: () => Promise<void>;
 	handleStep2Complete: () => Promise<void>;
-	handleStep3Submit: () => Promise<void>;
+	handleStep3Submit: (grade: string, overrideSuggestion?: boolean, overrideReason?: string) => Promise<void>;
 	handleRecalculateGrade: () => Promise<void>;
 	handleModifyReview: () => Promise<void>;
 }
@@ -180,7 +180,11 @@ export const useItemReview = (): UseItemReviewReturn => {
 	};
 
 	const handleStepClick = (stepId: ReviewStep) => {
-		if (isApproved) return;
+		// When approved: allow free navigation for read-only browsing
+		if (isApproved) {
+			setCurrentStep(stepId);
+			return;
+		}
 		if (!item && stepId !== 'basic') return;
 		if (
 			stepId === 'grading' &&
@@ -273,7 +277,11 @@ export const useItemReview = (): UseItemReviewReturn => {
 		}
 	};
 
-	const handleStep3Submit = async () => {
+	const handleStep3Submit = async (
+		grade: string,
+		overrideSuggestion?: boolean,
+		overrideReason?: string,
+	) => {
 		if (!branchId || !item) {
 			toast.error('No hay datos disponibles');
 			return;
@@ -284,7 +292,11 @@ export const useItemReview = (): UseItemReviewReturn => {
 				approveItem({
 					branchId,
 					itemId: item.id,
-					data: { grade: automaticGrade ?? 'C' },
+					data: {
+						grade: grade ?? automaticGrade ?? 'C',
+						...(overrideSuggestion !== undefined && { override_suggestion: overrideSuggestion }),
+						...(overrideReason && { override_reason: overrideReason }),
+					},
 				}),
 			).unwrap();
 
@@ -292,6 +304,7 @@ export const useItemReview = (): UseItemReviewReturn => {
 			handleBack();
 		} catch (error) {
 			toast.error(`Error al aprobar item: ${error}`);
+			throw error;
 		}
 	};
 

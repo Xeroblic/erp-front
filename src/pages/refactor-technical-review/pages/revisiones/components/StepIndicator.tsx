@@ -21,7 +21,9 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({
 			{REVIEW_STEPS.map((step, index) => {
 				const isCompleted = index < currentStepIndex;
 				const isActive = index === currentStepIndex;
-				const canNavigate = !isApproved && (hasItem || step.id === 'basic');
+				// When approved: all steps are navigable (read-only view)
+				// When not approved: only navigate if item exists or it's the first step
+				const canNavigate = isApproved || hasItem || step.id === 'basic';
 
 				return (
 					<React.Fragment key={step.id}>

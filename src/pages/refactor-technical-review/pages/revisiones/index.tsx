@@ -32,6 +32,15 @@ const Revisiones: React.FC = () => {
 							{hook.batchDisplayLabel}
 						</p>
 					</div>
+					{hook.isApproved && (
+						<Badge
+							variant='outline'
+							color='blue'
+							className='ml-4 gap-1 rounded-full border-blue-300 px-3 dark:border-blue-700'>
+							<Icon icon='HeroEye' className='h-3 w-3' />
+							Solo Lectura
+						</Badge>
+					)}
 				</SubheaderLeft>
 			</Subheader>
 
@@ -63,6 +72,7 @@ const Revisiones: React.FC = () => {
 						loading={hook.loading || hook.startingReview}
 						onBack={hook.handleBack}
 						onSubmit={hook.handleStep1Submit}
+						readOnly={hook.isApproved}
 					/>
 				)}
 
@@ -77,6 +87,7 @@ const Revisiones: React.FC = () => {
 						onBack={() => hook.handleStepClick('basic')}
 						onComplete={hook.handleStep2Complete}
 						loading={hook.completingReview}
+						readOnly={hook.isApproved}
 					/>
 				)}
 
