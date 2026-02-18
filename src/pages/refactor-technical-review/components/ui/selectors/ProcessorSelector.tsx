@@ -155,6 +155,44 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 		setSelectedModelId(option?.value || null);
 	};
 
+	// --- Brand Color Logic ---
+	const getBrandColor = (text: string) => {
+		const lower = text.toLowerCase();
+		if (lower.includes('intel')) return 'blue';
+		if (lower.includes('amd') || lower.includes('ryzen')) return 'orange';
+		return 'gray'; // Default
+	};
+
+	const brandColor = getBrandColor(value || '');
+
+	// Dynamic classes based on brand
+	const colorClasses = {
+		blue: {
+			border: 'border-blue-200 dark:border-blue-800',
+			bg: 'bg-blue-50 dark:bg-blue-900/10',
+			text: 'text-blue-700 dark:text-blue-300',
+			badge: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200',
+			button: 'bg-blue-600 hover:bg-blue-700 text-white',
+			ring: 'ring-blue-500',
+		},
+		orange: {
+			border: 'border-orange-200 dark:border-orange-800',
+			bg: 'bg-orange-50 dark:bg-orange-900/10',
+			text: 'text-orange-700 dark:text-orange-300',
+			badge: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200',
+			button: 'bg-orange-600 hover:bg-orange-700 text-white',
+			ring: 'ring-orange-500',
+		},
+		gray: {
+			border: 'border-zinc-200 dark:border-zinc-700',
+			bg: 'bg-zinc-50 dark:bg-zinc-800/50',
+			text: 'text-zinc-700 dark:text-zinc-300',
+			badge: 'bg-zinc-100 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-300',
+			button: 'bg-zinc-600 hover:bg-zinc-700 text-white',
+			ring: 'ring-zinc-500',
+		},
+	}[brandColor];
+
 	// Determine if current value comes from Quick Select (simple matching)
 	const isQuickSelected = (optValue: string) => value === optValue;
 
@@ -169,147 +207,185 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 	};
 
 	return (
-		<div className='flex flex-col gap-6'>
-			{/* Quick Select Buttons */}
-			<div>
-				<label className='mb-3 block text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
-					Selección Rápida
-				</label>
-				<div className='grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-6'>
-					{QUICK_OPTIONS.map((opt) => (
-						<SelectionCard
-							key={opt.value}
-							label={opt.label}
-							value={opt.value}
-							isSelected={!isManualMode && isQuickSelected(opt.value)}
-							onClick={() => !readOnly && handleQuickSelect(opt.value)}
-							variant='compact' // Use minimal variant
-							className='text-xs'
-						/>
-					))}
+		<div
+			className={`flex flex-col gap-6 rounded-xl border p-4 transition-all duration-300 ${colorClasses.border} ${colorClasses.bg}`}>
+			{/* 1. Result Preview Banner */}
+			<div
+				className={`flex items-center justify-between rounded-lg border p-4 shadow-sm ${colorClasses.border} bg-white dark:bg-zinc-900`}>
+				<div>
+					<span className='mb-1 block text-xs font-medium uppercase tracking-wider text-zinc-400'>
+						Procesador Seleccionado
+					</span>
+					<div className={`text-lg font-bold ${colorClasses.text}`}>
+						{value || 'Seleccione un procesador...'}
+					</div>
 				</div>
+				{value && (
+					<div
+						className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${colorClasses.badge}`}>
+						{brandColor === 'gray' ? 'Genérico' : brandColor.toUpperCase()}
+					</div>
+				)}
 			</div>
 
-			{/* Divider */}
-			<div className='relative flex items-center py-2'>
-				<div className='flex-grow border-t border-zinc-200 dark:border-zinc-700'></div>
-				<span className='mx-4 flex-shrink-0 text-xs font-semibold text-zinc-400'>
-					O Selección Avanzada
-				</span>
-				<div className='flex-grow border-t border-zinc-200 dark:border-zinc-700'></div>
-			</div>
+			{/* 2. Quick Select Buttons */}
+			<div>
+				<div className='mb-3 flex items-center justify-between'>
+					<label className='text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
+						Selección Rápida
+					</label>
 
-			{/* Advanced Select Dropdowns or Manual Input */}
-			<div className='rounded-xl border border-zinc-200 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-900/20'>
-				<div className='mb-4 flex items-center justify-end'>
+					{/* Toggle Manual Mode Button */}
 					<button
 						type='button'
 						onClick={() => {
 							setIsManualMode(!isManualMode);
-							// Optional: Clear value if switching to manual? No, keep it for editing.
+							// Reset dropdowns if switching to manual to avoid confusion? No, keep context.
 						}}
-						className='text-xs font-medium text-blue-600 hover:text-blue-500 hover:underline dark:text-blue-400'>
-						{isManualMode
-							? 'Volver a selección por listas'
-							: '¿No está en la lista? Ingresar manualmente'}
+						className={`text-xs font-medium underline transition-colors ${
+							isManualMode
+								? 'text-red-500 hover:text-red-400'
+								: 'text-zinc-500 hover:text-zinc-400'
+						}`}>
+						{isManualMode ? 'Cancelar ingreso manual' : '¿No está en la lista?'}
 					</button>
 				</div>
 
+				{!isManualMode && (
+					<div className='grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-6'>
+						{QUICK_OPTIONS.map((opt) => (
+							<SelectionCard
+								key={opt.value}
+								label={opt.label}
+								value={opt.value}
+								isSelected={isQuickSelected(opt.value)}
+								onClick={() => !readOnly && handleQuickSelect(opt.value)}
+								variant='compact'
+								color={
+									isQuickSelected(opt.value)
+										? brandColor === 'orange'
+											? 'orange'
+											: 'blue'
+										: 'gray'
+								}
+								className='text-xs'
+							/>
+						))}
+					</div>
+				)}
+			</div>
+
+			{/* 3. Advanced Selection Area */}
+			<div
+				className={`transition-all duration-300 ${isManualMode ? 'opacity-100' : 'opacity-100'}`}>
 				{isManualMode ? (
-					<div>
-						<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
-							Nombre del Procesador
+					<div className='animate-in fade-in slide-in-from-top-2 duration-300'>
+						<label className='mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300'>
+							Ingreso Manual
 						</label>
 						<Input
 							name='processor-manual'
 							value={value || ''}
-							onChange={(e) => onChange(e.target.value)}
-							placeholder='Ej: Intel Core 2 Duo E8400, AMD Athlon X4...'
+							onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+								onChange(e.target.value)
+							}
+							placeholder='Ej: Intel Core 2 Duo E8400...'
 							disabled={readOnly}
-						// <Input
-						// 	name='processor-manual'
-						// 	value={value || ''}
-						// 	onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
-						// 	placeholder='Ej: Intel Core 2 Duo E8400, AMD Athlon X4...'
-						// 	disabled={readOnly}
+							className={`w-full focus:ring-2 ${colorClasses.ring}`}
+							autoFocus
 						/>
-						<p className='mt-2 text-xs text-zinc-400'>
-							Escriba el nombre completo del procesador tal como debe aparecer en el
-							reporte.
+						<p className='mt-2 text-xs text-zinc-500'>
+							Escriba marca, familia y modelo (ej: <code>Check Point 15600</code> o{' '}
+							<code>Intel Xeon E5-2600</code>).
 						</p>
 					</div>
 				) : (
-					<div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-						{/* 1. Marca */}
-						<div>
-							<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
-								1. Marca
-							</label>
-							<SelectReact
-								name='processor-brand'
-								options={brandOptions}
-								value={brandOptions.find((o) => o.value === selectedBrand) || null}
-								onChange={handleBrandChange}
-								placeholder='Intel / AMD'
-								isDisabled={readOnly}
-							/>
+					<div className='relative'>
+						{/* Divider with Text */}
+						<div className='relative mb-6 flex items-center'>
+							<div className='flex-grow border-t border-zinc-200 dark:border-zinc-700'></div>
+							<span className='mx-4 flex-shrink-0 text-xs font-semibold text-zinc-400'>
+								O Configuración Detallada
+							</span>
+							<div className='flex-grow border-t border-zinc-200 dark:border-zinc-700'></div>
 						</div>
 
-						{/* 2. Familia */}
-						<div>
-							<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
-								2. Familia
-							</label>
-							<SelectReact
-								name='processor-family'
-								options={familyOptions}
-								value={
-									familyOptions.find((o) => o.value === selectedFamilyId) || null
-								}
-								onChange={handleFamilyChange}
-								placeholder='Serie...'
-								isDisabled={readOnly || !selectedBrand}
-							/>
-						</div>
-
-						{/* 3. Generación */}
-						<div>
-							<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
-								3. Generación
-							</label>
-							<SelectReact
-								name='processor-generation'
-								options={generationOptions}
-								value={
-									generationOptions.find(
-										(o) => o.value === selectedGenerationId,
-									) || null
-								}
-								onChange={handleGenerationChange}
-								placeholder='Generación...'
-								isDisabled={readOnly || !selectedFamilyId}
-							/>
-						</div>
-
-						{/* 4. Modelo (Condicional) */}
-						{shouldShowModelSelect && (
+						{/* Dropdowns Grid */}
+						<div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+							{/* 1. Marca */}
 							<div>
 								<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
-									4. Modelo
+									1. Marca
 								</label>
 								<SelectReact
-									name='processor-model'
-									options={modelOptions}
+									name='processor-brand'
+									options={brandOptions}
 									value={
-										modelOptions.find((o) => o.value === selectedModelId) ||
-										null
+										brandOptions.find((o) => o.value === selectedBrand) || null
 									}
-									onChange={handleModelChange}
-									placeholder='Modelo Exacto...'
-									isDisabled={readOnly || !selectedGenerationId}
+									onChange={handleBrandChange}
+									placeholder='Seleccionar...'
+									isDisabled={readOnly}
 								/>
 							</div>
-						)}
+
+							{/* 2. Familia */}
+							<div>
+								<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
+									2. Familia
+								</label>
+								<SelectReact
+									name='processor-family'
+									options={familyOptions}
+									value={
+										familyOptions.find((o) => o.value === selectedFamilyId) ||
+										null
+									}
+									onChange={handleFamilyChange}
+									placeholder='Serie...'
+									isDisabled={readOnly || !selectedBrand}
+								/>
+							</div>
+
+							{/* 3. Generación */}
+							<div>
+								<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
+									3. Generación
+								</label>
+								<SelectReact
+									name='processor-generation'
+									options={generationOptions}
+									value={
+										generationOptions.find(
+											(o) => o.value === selectedGenerationId,
+										) || null
+									}
+									onChange={handleGenerationChange}
+									placeholder='Generación...'
+									isDisabled={readOnly || !selectedFamilyId}
+								/>
+							</div>
+
+							{/* 4. Modelo */}
+							{shouldShowModelSelect && (
+								<div>
+									<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
+										4. Modelo
+									</label>
+									<SelectReact
+										name='processor-model'
+										options={modelOptions}
+										value={
+											modelOptions.find((o) => o.value === selectedModelId) ||
+											null
+										}
+										onChange={handleModelChange}
+										placeholder='Modelo Exacto...'
+										isDisabled={readOnly || !selectedGenerationId}
+									/>
+								</div>
+							)}
+						</div>
 					</div>
 				)}
 			</div>
