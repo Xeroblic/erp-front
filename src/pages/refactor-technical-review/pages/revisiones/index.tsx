@@ -84,6 +84,7 @@ const Revisiones: React.FC = () => {
 								: String(hook.equipmentType)
 						}
 						serialNumber={hook.serialNumber || hook.item?.serial_number || ''}
+						initialData={hook.item}
 						onBack={() => hook.handleStepClick('basic')}
 						onComplete={hook.handleStep2Complete}
 						loading={hook.completingReview}
