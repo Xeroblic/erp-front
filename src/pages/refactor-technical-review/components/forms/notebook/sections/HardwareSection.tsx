@@ -10,6 +10,7 @@ import {
 	STORAGE_TECHNOLOGY_OPTIONS,
 	RAM_TYPE_OPTIONS,
 } from '../../../constants/notebook/notebook.options';
+import { ProcessorSelector } from '../../../ui/selectors/ProcessorSelector';
 
 const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	control,
@@ -24,32 +25,30 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	return (
 		<div className='space-y-6'>
 			{/* Processor */}
-			<div className='hover:cursor-pointer rounded-xl border border-green-200 bg-green-500/20 p-4 transition-colors duration-200 hover:bg-green-500/30 dark:border-green-800 dark:bg-green-900/10 dark:hover:bg-green-900/30'>
-				<label className='mb-3 block text-sm font-bold text-green-800 dark:text-green-200'>
+			<div className='rounded-xl border border-green-200 bg-green-500/10 p-6 transition-colors duration-200 hover:bg-green-500/20 dark:border-green-800 dark:bg-green-900/10 dark:hover:bg-green-900/20'>
+				<label className='mb-4 block text-sm font-bold text-green-800 dark:text-green-200'>
 					{getNotebookLabel('processor')} <span className='text-red-500'>*</span>
 				</label>
 				<Controller
 					name='processor'
 					control={control}
 					render={({ field }) => (
-						<Input
-							{...field}
+						<ProcessorSelector
+							deviceType='Notebook'
 							value={field.value || ''}
-							placeholder={NOTEBOOK_PLACEHOLDERS.processor}
-							disabled={readOnly}
-							className={errors.processor ? 'border-red-500' : ''}
+							onChange={field.onChange}
+							readOnly={readOnly}
 						/>
 					)}
 				/>
 				{errors.processor && (
-					<p className='mt-1 text-xs text-red-500'>{errors.processor.message}</p>
+					<p className='mt-2 text-xs text-red-500'>{errors.processor.message}</p>
 				)}
-				<p className='mt-1 text-xs text-zinc-500'>{NOTEBOOK_HINTS.processor}</p>
 			</div>
 
 			<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
 				{/* Memory RAM Card */}
-				<div className='hover:cursor-pointer rounded-xl border border-blue-200 bg-blue-500/20 p-4 transition-colors duration-200 hover:bg-blue-500/30 dark:border-blue-800 dark:bg-blue-900/10 dark:hover:bg-blue-900/30'>
+				<div className='rounded-xl border border-blue-200 bg-blue-500/20 p-4 transition-colors duration-200 hover:cursor-pointer hover:bg-blue-500/30 dark:border-blue-800 dark:bg-blue-900/10 dark:hover:bg-blue-900/30'>
 					<label className='mb-3 block text-sm font-bold text-blue-800 dark:text-blue-200'>
 						Memoria RAM
 					</label>
@@ -113,7 +112,7 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 				</div>
 
 				{/* Storage Card */}
-				<div className='hover:cursor-pointer rounded-xl border border-purple-200 bg-purple-500/20 p-4 transition-colors duration-200 hover:bg-purple-500/30 dark:border-purple-800 dark:bg-purple-900/10 dark:hover:bg-purple-900/30'>
+				<div className='rounded-xl border border-purple-200 bg-purple-500/20 p-4 transition-colors duration-200 hover:cursor-pointer hover:bg-purple-500/30 dark:border-purple-800 dark:bg-purple-900/10 dark:hover:bg-purple-900/30'>
 					<label className='mb-3 block text-sm font-bold text-purple-800 dark:text-purple-200'>
 						Almacenamiento
 					</label>
