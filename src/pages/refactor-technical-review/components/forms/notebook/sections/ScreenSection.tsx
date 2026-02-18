@@ -9,8 +9,8 @@ import {
 	NOTEBOOK_PLACEHOLDERS,
 	NOTEBOOK_WARNINGS,
 } from '../../../constants/notebook/notebook.hints';
-import { SelectionCard } from '@/pages/technical-reviews/shared/components/SelectionCard';
-import { YesNoSelector } from '@/pages/technical-reviews/shared/components/YesNoSelector';
+import { SelectionCard } from '../../../ui/SelectionCard';
+import { YesNoSelector } from '../../../ui/YesNoSelector';
 import { SCREEN_CONDITION_OPTIONS } from '../../../constants/notebook/notebook.options';
 import Icon from '@/components/icon/Icon';
 
@@ -23,12 +23,14 @@ const ScreenSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 }) => {
 	const screenCondition = watch('screen_condition');
 	const isTouchscreen = watch('is_touchscreen');
+	const showDefectsCount = screenCondition === 'dead_pixels' || screenCondition === 'spots';
 
 	return (
-		<div className='space-y-6'>
+		<div className='space-y-8'>
 			{/* Screen Inches */}
-			<div className='rounded-xl border border-green-200 bg-green-50/50 p-4 dark:border-green-800 dark:bg-green-900/10'>
-				<label className='mb-3 block text-sm font-bold text-green-800 dark:text-green-200'>
+			<div className='hover:cursor-pointerrounded-xl border border-green-200 bg-green-500/20 p-4 transition-colors duration-200 hover:bg-green-500/30 dark:border-green-800 dark:bg-green-900/10 dark:hover:bg-green-900/30'>
+				<label className='mb-3 flex items-center gap-2 text-sm font-bold text-green-800 dark:text-green-200'>
+					<Icon icon='HeroComputerDesktop' className='h-4 w-4' />
 					{getNotebookLabel('screen_inches')}
 				</label>
 				<Controller
@@ -47,8 +49,9 @@ const ScreenSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 			</div>
 
 			{/* Screen Condition */}
-			<div className='rounded-xl border border-purple-200 bg-purple-50/50 p-4 dark:border-purple-800 dark:bg-purple-900/10'>
-				<label className='mb-3 block text-center text-sm font-bold text-purple-800 dark:text-purple-200'>
+			<div className='hover:cursor-pointer rounded-xl border border-purple-200 bg-purple-500/20 p-4 transition-colors duration-200 hover:bg-purple-500/30 dark:border-purple-800 dark:bg-purple-900/10 dark:hover:bg-purple-900/30'>
+				<label className='mb-3 flex items-center justify-center gap-2 text-center text-sm font-bold text-purple-800 dark:text-purple-200'>
+					<Icon icon='HeroSparkles' className='h-4 w-4' />
 					{getNotebookLabel('screen_condition')} <span className='text-red-500'>*</span>
 				</label>
 
@@ -78,6 +81,47 @@ const ScreenSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 					<p className='mt-2 text-center text-xs text-red-500'>
 						{errors.screen_condition.message}
 					</p>
+				)}
+
+				{/* Conditional Defect Count */}
+				{showDefectsCount && (
+					<div className='hover:cursor-pointer animate-in fade-in slide-in-from-top-2 mt-4 duration-300'>
+						<div className='mx-auto max-w-xs'>
+							<label className='mb-2 block text-center text-sm font-bold text-purple-900 dark:text-purple-100'>
+								¿Cuántos {screenCondition === 'dead_pixels' ? 'píxeles' : 'manchas'}
+								?<span className='text-red-500'>*</span>
+							</label>
+							<Controller
+								name='screen_defects_count'
+								control={control}
+								render={({ field }) => (
+									<Input
+										{...field}
+										type='number'
+										min={1}
+										placeholder='Ingresa cantidad'
+										value={field.value ?? ''}
+										onChange={(e) =>
+											field.onChange(
+												e.target.value ? Number(e.target.value) : null,
+											)
+										}
+										disabled={readOnly}
+										className={
+											errors.screen_defects_count
+												? 'border-red-500 text-center'
+												: 'text-center'
+										}
+									/>
+								)}
+							/>
+							{errors.screen_defects_count && (
+								<p className='mt-1 text-center text-xs text-red-500'>
+									{errors.screen_defects_count.message}
+								</p>
+							)}
+						</div>
+					</div>
 				)}
 			</div>
 

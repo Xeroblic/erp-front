@@ -5,7 +5,7 @@ import type { FormSectionProps } from '../../shared/types';
 import type { NotebookFormData } from '../../../validation/notebook.schema';
 import { getNotebookLabel } from '../../../translations/notebook.labels';
 import { NOTEBOOK_HINTS, NOTEBOOK_PLACEHOLDERS } from '../../../constants/notebook/notebook.hints';
-import { SelectionCard } from '@/pages/technical-reviews/shared/components/SelectionCard';
+import { SelectionCard } from '../../../ui/SelectionCard';
 import {
 	STORAGE_TECHNOLOGY_OPTIONS,
 	RAM_TYPE_OPTIONS,
@@ -24,7 +24,7 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	return (
 		<div className='space-y-6'>
 			{/* Processor */}
-			<div className='rounded-xl border border-green-200 bg-green-50/50 p-4 dark:border-green-800 dark:bg-green-900/10'>
+			<div className='hover:cursor-pointer rounded-xl border border-green-200 bg-green-500/20 p-4 transition-colors duration-200 hover:bg-green-500/30 dark:border-green-800 dark:bg-green-900/10 dark:hover:bg-green-900/30'>
 				<label className='mb-3 block text-sm font-bold text-green-800 dark:text-green-200'>
 					{getNotebookLabel('processor')} <span className='text-red-500'>*</span>
 				</label>
@@ -49,7 +49,7 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 
 			<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
 				{/* Memory RAM Card */}
-				<div className='rounded-xl border border-blue-200 bg-blue-50/50 p-4 dark:border-blue-800 dark:bg-blue-900/10'>
+				<div className='hover:cursor-pointer rounded-xl border border-blue-200 bg-blue-500/20 p-4 transition-colors duration-200 hover:bg-blue-500/30 dark:border-blue-800 dark:bg-blue-900/10 dark:hover:bg-blue-900/30'>
 					<label className='mb-3 block text-sm font-bold text-blue-800 dark:text-blue-200'>
 						Memoria RAM
 					</label>
@@ -113,7 +113,7 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 				</div>
 
 				{/* Storage Card */}
-				<div className='rounded-xl border border-purple-200 bg-purple-50/50 p-4 dark:border-purple-800 dark:bg-purple-900/10'>
+				<div className='hover:cursor-pointer rounded-xl border border-purple-200 bg-purple-500/20 p-4 transition-colors duration-200 hover:bg-purple-500/30 dark:border-purple-800 dark:bg-purple-900/10 dark:hover:bg-purple-900/30'>
 					<label className='mb-3 block text-sm font-bold text-purple-800 dark:text-purple-200'>
 						Almacenamiento
 					</label>

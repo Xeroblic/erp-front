@@ -3,8 +3,8 @@ import type { FormSectionProps } from '../../shared/types';
 import type { NotebookFormData } from '../../../validation/notebook.schema';
 import { getNotebookLabel } from '../../../translations/notebook.labels';
 import { NOTEBOOK_HINTS, NOTEBOOK_WARNINGS } from '../../../constants/notebook/notebook.hints';
-import { StepperInput } from '@/pages/technical-reviews/shared/components/StepperInput';
-import { YesNoSelector } from '@/pages/technical-reviews/shared/components/YesNoSelector';
+import { StepperInput } from '../../../ui/StepperInput';
+import { YesNoSelector } from '../../../ui/YesNoSelector';
 import Icon from '@/components/icon/Icon';
 
 const PORTS = [
@@ -36,7 +36,7 @@ const PortsSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 			{/* Port Count Grid */}
 			<div className='grid grid-cols-3 gap-3 md:grid-cols-4 lg:grid-cols-7'>
 				{PORTS.map((port) => (
-					<div key={port.name} className='flex flex-col items-center gap-1'>
+					<div key={port.name} className='hover:cursor-pointer flex flex-col items-center gap-1'>
 						<label className='text-[10px] font-bold uppercase text-zinc-500'>
 							{port.label}
 						</label>
@@ -50,7 +50,7 @@ const PortsSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 			</div>
 
 			{/* All Ports Functional */}
-			<div className='rounded-xl border border-zinc-200 bg-zinc-50/50 p-4 dark:border-zinc-700 dark:bg-zinc-800/30'>
+			<div className='hover:cursor-pointer rounded-xl border border-zinc-200 bg-zinc-500/20 p-4 transition-colors duration-200 hover:bg-zinc-500/30 dark:border-zinc-700 dark:bg-zinc-800/30 dark:hover:bg-zinc-800/50'>
 				<YesNoSelector
 					label='¿Todos los Puertos Funcionan?'
 					value={allPortsFunctional}
@@ -66,7 +66,7 @@ const PortsSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 
 			{/* Defective Ports */}
 			{allPortsFunctional === false && (
-				<div className='animate-in zoom-in flex flex-col items-center gap-3 rounded-xl border border-red-300 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20'>
+				<div className='hover:cursor-pointer animate-in zoom-in flex flex-col items-center gap-3 rounded-xl border border-red-300 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20'>
 					<label className='text-sm font-bold text-red-800 dark:text-red-200'>
 						Puertos Defectuosos
 					</label>

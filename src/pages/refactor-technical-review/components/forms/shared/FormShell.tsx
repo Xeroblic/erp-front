@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { FieldValues } from 'react-hook-form';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import type { SectionConfig, FormSectionProps } from './types';
 
-interface FormShellProps<T extends Record<string, any>> {
+interface FormShellProps<T extends FieldValues> {
 	sections: SectionConfig<T>[];
 	sectionProps: FormSectionProps<T>;
 	onBack: () => void;
@@ -12,7 +13,7 @@ interface FormShellProps<T extends Record<string, any>> {
 	isSubmitting?: boolean;
 }
 
-function FormShell<T extends Record<string, any>>({
+function FormShell<T extends FieldValues>({
 	sections,
 	sectionProps,
 	onBack,
@@ -101,9 +102,15 @@ function FormShell<T extends Record<string, any>>({
 													: 'bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500'
 										}`}>
 										{isCompleted && !isActive ? (
-											<Icon icon='HeroCheck' className='h-4 w-4' />
+											<Icon
+												icon='HeroCheck'
+												className='h-6 w-6 !text-white'
+											/>
 										) : (
-											<Icon icon={section.icon as any} className='h-4 w-4' />
+											<Icon
+												icon={section.icon}
+												className={`h-6 w-6 ${isActive ? '!text-white' : ''}`}
+											/>
 										)}
 									</div>
 
@@ -150,10 +157,7 @@ function FormShell<T extends Record<string, any>>({
 						transition={{ duration: 0.25, ease: 'easeInOut' }}
 						className='p-6'>
 						<h3 className='mb-6 flex items-center gap-2 text-lg font-bold text-zinc-900 dark:text-zinc-100'>
-							<Icon
-								icon={currentSection.icon as any}
-								className='h-5 w-5 text-blue-600'
-							/>
+							<Icon icon={currentSection.icon} className='h-5 w-5 text-blue-600' />
 							{currentSection.label}
 						</h3>
 						<SectionComponent {...sectionProps} />

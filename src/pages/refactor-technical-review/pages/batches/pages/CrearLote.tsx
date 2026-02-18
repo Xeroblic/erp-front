@@ -31,7 +31,7 @@ import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/per
 import { fetchSuppliers, createSupplier } from '@/store/slices/suppliers/suppliersSlice';
 
 import CreateWarehouseModal from '@/pages/catalogos/bodegas/modals/CreateWarehouseModal';
-import CreateCustomerSupplierModal from '@/pages/technical-reviews/modo-a-batches/components/modals/CreateCustomerSupplierModal';
+import CreateCustomerSupplierModal from '../../../components/modals/CreateCustomerSupplierModal';
 import CreateSupplierModal from '../components/modals/CreateSupplierModal';
 
 import type { ICreateWarehouseRequest } from '@/interface/warehouse.interface';

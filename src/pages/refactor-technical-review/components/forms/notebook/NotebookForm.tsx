@@ -7,7 +7,7 @@
  * ✏️ To add a section → create a new component in sections/ and add it here.
  */
 import React, { useMemo } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { toast } from 'react-toastify';
 
@@ -107,7 +107,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 		setValue,
 		formState: { errors },
 	} = useForm<NotebookFormData>({
-		resolver: yupResolver(notebookSchema) as any,
+		resolver: yupResolver(notebookSchema) as unknown as Resolver<NotebookFormData>,
 		defaultValues: defaultValues || {},
 		mode: 'onBlur',
 	});
@@ -130,9 +130,11 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 			async (data) => {
 				try {
 					await onSubmit(data);
-				} catch (error: any) {
+				} catch (error: unknown) {
+					const message =
+						error instanceof Error ? error.message : 'Error al guardar la revisión';
 					console.error('NotebookForm submit error:', error);
-					toast.error(error?.message || 'Error al guardar la revisión');
+					toast.error(message);
 				}
 			},
 			(validationErrors) => {

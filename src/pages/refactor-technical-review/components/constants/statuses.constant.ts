@@ -1,10 +1,19 @@
+/**
+ * statuses.constant.ts
+ * Configuración de estados comerciales para badges y filtros.
+ * Fuente de verdad para labels y colores de estados dentro del módulo refactorizado.
+ */
 import type { CommercialStatus } from '@/interface/technicalReviews.interface';
 import type { TColors } from '@/types/colors.type';
 
-export type CommercialStatusUIConfig = {
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface CommercialStatusUIConfig {
 	label: string;
 	color: TColors;
-};
+}
+
+// ─── Orden de estados (para filtros y selects) ────────────────────────────────
 
 export const COMMERCIAL_STATUS_ORDER: CommercialStatus[] = [
 	'unknown',
@@ -19,6 +28,8 @@ export const COMMERCIAL_STATUS_ORDER: CommercialStatus[] = [
 	'scrapped',
 ];
 
+// ─── Configuración de UI por estado ───────────────────────────────────────────
+
 export const COMMERCIAL_STATUS_CONFIG: Record<CommercialStatus, CommercialStatusUIConfig> = {
 	unknown: { label: 'Desconocido', color: 'gray' },
 	received: { label: 'Ingresado', color: 'sky' },
@@ -31,6 +42,8 @@ export const COMMERCIAL_STATUS_CONFIG: Record<CommercialStatus, CommercialStatus
 	returned: { label: 'Devuelto', color: 'pink' },
 	scrapped: { label: 'Dado de baja', color: 'slate' },
 };
+
+// ─── Derivados ────────────────────────────────────────────────────────────────
 
 export const COMMERCIAL_STATUS_FILTER_OPTIONS = COMMERCIAL_STATUS_ORDER.map((status) => ({
 	value: status,
@@ -46,6 +59,9 @@ export const CHANGEABLE_COMMERCIAL_STATUSES: CommercialStatus[] = [
 	'scrapped',
 ];
 
+/**
+ * Retorna el label legible de un estado comercial, o null si no se encuentra.
+ */
 export const getCommercialStatusLabel = (status?: string | null): string | null => {
 	if (!status) return null;
 	return COMMERCIAL_STATUS_CONFIG[status as CommercialStatus]?.label ?? null;

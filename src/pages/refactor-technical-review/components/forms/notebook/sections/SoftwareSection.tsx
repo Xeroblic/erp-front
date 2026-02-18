@@ -3,11 +3,10 @@ import type { FormSectionProps } from '../../shared/types';
 import type { NotebookFormData } from '../../../validation/notebook.schema';
 import { getNotebookLabel } from '../../../translations/notebook.labels';
 import { NOTEBOOK_HINTS } from '../../../constants/notebook/notebook.hints';
-import { SelectionCard } from '@/pages/technical-reviews/shared/components/SelectionCard';
+import { SelectionCard } from '../../../ui/SelectionCard';
 import { OPERATING_SYSTEM_OPTIONS } from '../../../constants/notebook/notebook.options';
 
 const SoftwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
-	errors,
 	readOnly,
 	watch,
 	setValue,
@@ -16,7 +15,7 @@ const SoftwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 
 	return (
 		<div className='space-y-6'>
-			<div className='mx-auto max-w-lg rounded-xl border border-blue-200 bg-blue-50/50 p-6 dark:border-blue-800 dark:bg-blue-900/10'>
+			<div className='mx-auto max-w-lg rounded-xl border border-blue-200 bg-blue-500/20 p-6 transition-colors duration-200 hover:bg-blue-500/30 dark:border-blue-800 dark:bg-blue-900/10 dark:hover:bg-blue-900/30'>
 				<label className='mb-4 block text-center text-sm font-bold text-blue-800 dark:text-blue-200'>
 					{getNotebookLabel('operating_system')}
 				</label>

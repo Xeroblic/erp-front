@@ -8,8 +8,8 @@ import NotebookForm from './notebook/NotebookForm';
 
 interface EquipmentFormRouterProps {
 	equipmentType: string;
-	defaultValues?: any;
-	onSubmit: (data: any) => Promise<void>;
+	defaultValues?: Record<string, unknown>;
+	onSubmit: (data: Record<string, unknown>) => Promise<void>;
 	onBack: () => void;
 	isSubmitting?: boolean;
 	readOnly?: boolean;

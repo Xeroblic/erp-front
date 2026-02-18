@@ -3,8 +3,8 @@ import type { FormSectionProps } from '../../shared/types';
 import type { NotebookFormData } from '../../../validation/notebook.schema';
 import { getNotebookLabel } from '../../../translations/notebook.labels';
 import { NOTEBOOK_HINTS } from '../../../constants/notebook/notebook.hints';
-import { SelectionCard } from '@/pages/technical-reviews/shared/components/SelectionCard';
-import { YesNoSelector } from '@/pages/technical-reviews/shared/components/YesNoSelector';
+import { SelectionCard } from '../../../ui/SelectionCard';
+import { YesNoSelector } from '../../../ui/YesNoSelector';
 import { GENERAL_CONDITION_OPTIONS } from '../../../constants/notebook/notebook.options';
 
 const AestheticsSection: React.FC<FormSectionProps<NotebookFormData>> = ({
@@ -14,9 +14,9 @@ const AestheticsSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	setValue,
 }) => {
 	return (
-		<div className='space-y-6'>
+		<div className='hover:cursor-pointer space-y-6'>
 			{/* General Condition */}
-			<div className='rounded-xl border border-green-200 bg-green-50/50 p-4 dark:border-green-800 dark:bg-green-900/10'>
+			<div className='hover:cursor-pointer rounded-xl border border-green-200 bg-green-500/20 p-4 transition-colors duration-200 hover:bg-green-500/30 dark:border-green-800 dark:bg-green-900/10 dark:hover:bg-green-900/30'>
 				<label className='mb-3 block text-center text-sm font-bold text-green-800 dark:text-green-200'>
 					{getNotebookLabel('general_condition')} <span className='text-red-500'>*</span>
 				</label>
@@ -42,7 +42,7 @@ const AestheticsSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 			</div>
 
 			{/* Connectivity Booleans */}
-			<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
+			<div className='hover:cursor-pointer grid grid-cols-1 gap-4 md:grid-cols-3'>
 				<YesNoSelector
 					label='¿Tiene WiFi?'
 					value={watch('has_wifi')}

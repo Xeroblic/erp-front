@@ -70,6 +70,17 @@ export const notebookSchema = Yup.object({
 		.oneOf([...ALLOWED_SCREEN_CONDITIONS], 'Condición de pantalla no válida')
 		.required('La condición de pantalla es obligatoria'),
 
+	screen_defects_count: Yup.number()
+		.integer('Debe ser un número entero')
+		.min(1, 'Debe haber al menos 1')
+		.nullable()
+		.when('screen_condition', {
+			is: (val: string) => val === 'dead_pixels' || val === 'spots',
+			then: (schema) =>
+				schema.required('Indica la cantidad de píxeles/manchas').typeError('Debes ingresar un número'),
+			otherwise: (schema) => schema.nullable().strip(),
+		}),
+
 	is_touchscreen: Yup.boolean().nullable(),
 
 	// ─── Carcasa ─────────────────────────────────────────────────────────────
