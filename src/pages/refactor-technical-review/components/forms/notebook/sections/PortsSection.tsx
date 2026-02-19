@@ -33,40 +33,51 @@ const PortsSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 
 	return (
 		<div className='space-y-6'>
-			{/* Port Count Grid */}
-			<div className='grid grid-cols-3 gap-3 md:grid-cols-4 lg:grid-cols-7'>
-				{PORTS.map((port) => (
-					<div key={port.name} className='hover:cursor-pointer flex flex-col items-center gap-1'>
-						<label className='text-[10px] font-bold uppercase text-zinc-500'>
-							{port.label}
-						</label>
-						<StepperInput
-							value={getNumericValue(port.name)}
-							onChange={(val) => !readOnly && setValue(port.name, val)}
-							max={12}
-						/>
+			<div className='flex w-full flex-col items-start gap-8 rounded-2xl border border-zinc-800/50 bg-zinc-900/20 p-6 lg:flex-row'>
+				<div className='w-full flex-[2]'>
+					<div className='grid grid-cols-2 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'>
+						{PORTS.map((port) => (
+							<div key={port.name} className='flex flex-col items-center gap-3 p-2'>
+								<label className='text-[10px] font-bold uppercase tracking-widest text-zinc-500'>
+									{port.label}
+								</label>
+								<div className='w-full max-w-[140px]'>
+									<StepperInput
+										value={getNumericValue(port.name)}
+										onChange={(val) => !readOnly && setValue(port.name, val)}
+										max={12}
+									/>
+								</div>
+							</div>
+						))}
 					</div>
-				))}
-			</div>
+				</div>
 
-			{/* All Ports Functional */}
-			<div className='hover:cursor-pointer rounded-xl border border-zinc-200 bg-zinc-500/20 p-4 transition-colors duration-200 hover:bg-zinc-500/30 dark:border-zinc-700 dark:bg-zinc-800/30 dark:hover:bg-zinc-800/50'>
-				<YesNoSelector
-					label='¿Todos los Puertos Funcionan?'
-					value={allPortsFunctional}
-					onChange={(val) => {
-						if (readOnly) return;
-						setValue('all_ports_functional', val);
-						if (val === true) {
-							setValue('defective_ports_count', 0);
-						}
-					}}
-				/>
+				<div className='hidden h-full min-h-[150px] w-px bg-zinc-800 lg:block' />
+
+				<div className='w-full flex-1 lg:max-w-[300px]'>
+					<div className='flex h-full flex-col justify-center rounded-xl border border-zinc-700/50 bg-zinc-800/30 p-6 shadow-sm'>
+						<YesNoSelector
+							label='¿Todos los Puertos Funcionan?'
+							value={allPortsFunctional}
+							onChange={(val) => {
+								if (readOnly) return;
+								setValue('all_ports_functional', val);
+								if (val === true) {
+									setValue('defective_ports_count', 0);
+								}
+							}}
+						/>
+						<p className='mt-4 text-center text-[11px] italic text-zinc-500'>
+							Marca "No" si detectas pines doblados o puertos sin respuesta.
+						</p>
+					</div>
+				</div>
 			</div>
 
 			{/* Defective Ports */}
 			{allPortsFunctional === false && (
-				<div className='hover:cursor-pointer animate-in zoom-in flex flex-col items-center gap-3 rounded-xl border border-red-300 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20'>
+				<div className='animate-in zoom-in flex flex-col items-center gap-3 rounded-xl border border-red-300 bg-red-50 p-4 hover:cursor-pointer dark:border-red-800 dark:bg-red-900/20'>
 					<label className='text-sm font-bold text-red-800 dark:text-red-200'>
 						Puertos Defectuosos
 					</label>

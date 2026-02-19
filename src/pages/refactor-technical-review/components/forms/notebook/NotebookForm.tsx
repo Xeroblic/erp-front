@@ -6,7 +6,7 @@
  * ✏️ To reorder sections → just reorder NOTEBOOK_SECTIONS below.
  * ✏️ To add a section → create a new component in sections/ and add it here.
  */
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { useForm, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { toast } from 'react-toastify';
@@ -91,6 +91,12 @@ interface NotebookFormProps {
 	onBack: () => void;
 	isSubmitting?: boolean;
 	readOnly?: boolean;
+	/** Called when user navigates between form sections */
+	onStepChange?: (direction: 'next' | 'prev') => void;
+	/** Registers a getter for current form values (used by auto-save) */
+	registerGetFormValues?: (getter: () => Record<string, unknown>) => void;
+	/** Whether auto-save is in progress */
+	isSaving?: boolean;
 }
 
 const NotebookForm: React.FC<NotebookFormProps> = ({
@@ -99,12 +105,16 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 	onBack,
 	isSubmitting = false,
 	readOnly = false,
+	onStepChange,
+	registerGetFormValues,
+	isSaving = false,
 }) => {
 	const {
 		control,
 		handleSubmit,
 		watch,
 		setValue,
+		reset,
 		formState: { errors },
 	} = useForm<NotebookFormData>({
 		resolver: yupResolver(notebookSchema) as unknown as Resolver<NotebookFormData>,
@@ -123,6 +133,20 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 		}),
 		[control, errors, readOnly, watch, setValue],
 	);
+
+	// Expose getFormValues to parent for auto-save
+	useEffect(() => {
+		if (registerGetFormValues) {
+			registerGetFormValues(() => watch() as unknown as Record<string, unknown>);
+		}
+	}, [registerGetFormValues, watch]);
+
+	// Reset form when defaultValues changes (e.g. data loaded asynchronously)
+	useEffect(() => {
+		if (defaultValues) {
+			reset(defaultValues);
+		}
+	}, [defaultValues, reset]);
 
 	// Handle finish
 	const handleFinish = () => {
@@ -160,6 +184,8 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 			onBack={onBack}
 			onFinish={handleFinish}
 			isSubmitting={isSubmitting}
+			onStepChange={onStepChange}
+			isSaving={isSaving}
 		/>
 	);
 };

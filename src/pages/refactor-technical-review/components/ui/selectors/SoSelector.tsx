@@ -1,5 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { SingleValue, MultiValue } from 'react-select';
+// Using react-icons equivalents for requested Lucide icons
+import { LuMonitor, LuTerminal, LuBox,  LuCpu } from 'react-icons/lu';
+import { SiApple } from 'react-icons/si';
+
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import Input from '@/components/form/Input';
 import { SelectionCard } from '@/pages/refactor-technical-review/components/ui/SelectionCard';
@@ -19,46 +23,72 @@ interface SoSelectorProps {
 }
 
 export const SoSelector: React.FC<SoSelectorProps> = ({ value, onChange, readOnly = false }) => {
-	// Dropdown States
 	const [selectedBrand, setSelectedBrand] = useState<MarcaSistema | null>(null);
 	const [selectedFamilyId, setSelectedFamilyId] = useState<string | null>(null);
 	const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
 	const [selectedEditionId, setSelectedEditionId] = useState<string | null>(null);
 	const [customEditionText, setCustomEditionText] = useState<string>('');
 
-	// 1. Marcas
-	const marcasData = getMarcas();
-	const brandOptions: TSelectOption[] = marcasData.map((marca) => ({
-		value: marca.nombre,
-		label: marca.nombre, // 'Microsoft', 'Apple', etc.
-	}));
+	// --- Colores Dinámicos según la Marca ---
+	const brandStyles = useMemo(() => {
+		switch (selectedBrand) {
+			case 'Microsoft':
+				return 'border-blue-500/50 bg-blue-50/30 dark:bg-blue-900/10 text-blue-600';
+			case 'Apple':
+				return 'border-zinc-500/50 bg-zinc-50/30 dark:bg-zinc-900/10 text-zinc-600';
+			case 'Linux':
+				return 'border-orange-500/50 bg-orange-50/30 dark:bg-orange-900/10 text-orange-600';
+			case 'Google':
+				return 'border-red-500/50 bg-red-50/30 dark:bg-red-900/10 text-red-600';
+			default:
+				return 'border-zinc-200 bg-zinc-50/50 dark:border-zinc-800 dark:bg-zinc-900/20';
+		}
+	}, [selectedBrand]);
 
-	// 2. Familias
+	const getBrandIcon = () => {
+		switch (selectedBrand) {
+			case 'Microsoft':
+				return <LuMonitor className='h-5 w-5 text-blue-500' />;
+			case 'Apple':
+				return <SiApple className='h-5 w-5 text-zinc-700 dark:text-zinc-300' />;
+			case 'Linux':
+				return <LuTerminal className='h-5 w-5 text-orange-500' />;
+			case 'Google':
+				return <LuCpu className='h-5 w-5 text-red-500' />;
+			default:
+				return <LuBox className='h-5 w-5 text-zinc-400' />;
+		}
+	};
+
+	// Dropdown Logic
+	const marcasData = getMarcas();
+	const brandOptions: TSelectOption[] = marcasData.map((m) => ({
+		value: m.nombre,
+		label: m.nombre,
+	}));
 	const familiasData = selectedBrand ? getFamiliasPorMarca(selectedBrand) : [];
-	const familyOptions: TSelectOption[] = familiasData.map((familia) => ({
-		value: familia.id,
-		label: familia.descripcion ? `${familia.nombre} - ${familia.descripcion}` : familia.nombre,
+	const familyOptions: TSelectOption[] = familiasData.map((f) => ({
+		value: f.id,
+		label: f.nombre,
 	}));
 	const shouldShowFamilySelect = familiasData.length > 1;
 
-	// Auto-select family if only one (e.g. ChromeOS -> ChromeOS)
+	// Auto-select family if only one
 	useEffect(() => {
 		if (selectedBrand && familiasData.length === 1 && !selectedFamilyId) {
 			setSelectedFamilyId(familiasData[0].id);
 		}
 	}, [selectedBrand, familiasData, selectedFamilyId]);
 
-	// 3. Versiones
 	const versionesData =
 		selectedBrand && selectedFamilyId
 			? getVersionesPorFamilia(selectedBrand, selectedFamilyId)
 			: [];
-	const versionOptions: TSelectOption[] = versionesData.map((ver) => ({
-		value: ver.id,
-		label: ver.año ? `${ver.nombre} (${ver.año})` : ver.nombre,
+	const versionOptions: TSelectOption[] = versionesData.map((v) => ({
+		value: v.id,
+		label: v.año ? `${v.nombre} (${v.año})` : v.nombre,
 	}));
 
-	// 4. Ediciones
 	const edicionesData =
 		selectedBrand && selectedFamilyId && selectedVersionId
 			? getEdicionesPorVersion(selectedBrand, selectedFamilyId, selectedVersionId)
@@ -69,30 +99,25 @@ export const SoSelector: React.FC<SoSelectorProps> = ({ value, onChange, readOnl
 		label: ed.nombre,
 	}));
 
-	// Add "Custom / Other" Option
 	if (edicionesData.length > 0) {
 		editionOptions.push({ value: 'custom_edition', label: 'Otra (Especificar)' });
 	}
 
 	const shouldShowEditionSelect = edicionesData.length > 1 || editionOptions.length > 1;
 
-	// Clear custom text if switching away
 	useEffect(() => {
 		if (selectedEditionId !== 'custom_edition') {
 			setCustomEditionText('');
 		}
 	}, [selectedEditionId]);
 
-	// --- Construction Logic ---
+	// Construction Logic
 	useEffect(() => {
-		if (!selectedBrand || !selectedFamilyId || !selectedVersionId) {
-			return;
-		}
+		if (!selectedBrand || !selectedFamilyId || !selectedVersionId) return;
 
 		const version = versionesData.find((v) => v.id === selectedVersionId);
 		if (!version) return;
 
-		// Helper to invoke onChange with constructed string
 		const setOS = (editionName: string) => {
 			let text = `${version.nombre} ${editionName}`;
 			if (['Standard', 'Base'].includes(editionName)) {
@@ -102,9 +127,6 @@ export const SoSelector: React.FC<SoSelectorProps> = ({ value, onChange, readOnl
 		};
 
 		if (selectedEditionId === 'custom_edition') {
-			// Only update if text is present to avoid clearing user data aggressively?
-			// Actually, standard behavior: update string as user types or selects
-			// If empty, fallback to just version name so field isn't empty?
 			if (customEditionText.trim()) {
 				setOS(customEditionText);
 			} else {
@@ -112,14 +134,10 @@ export const SoSelector: React.FC<SoSelectorProps> = ({ value, onChange, readOnl
 			}
 		} else if (selectedEditionId) {
 			const ed = edicionesData.find((e) => e.id === selectedEditionId);
-			if (ed) {
-				setOS(ed.nombre);
-			}
+			if (ed) setOS(ed.nombre);
 		} else if (edicionesData.length === 1 && !shouldShowEditionSelect) {
-			// Implicit single edition
 			setOS(edicionesData[0].nombre);
 		} else if (!selectedEditionId && edicionesData.length === 0) {
-			// No editions defined (e.g. some generic Linux)
 			onChange(version.nombre);
 		}
 	}, [
@@ -128,121 +146,94 @@ export const SoSelector: React.FC<SoSelectorProps> = ({ value, onChange, readOnl
 		selectedVersionId,
 		selectedEditionId,
 		customEditionText,
-		edicionesData,
 		versionesData,
+		edicionesData,
 		onChange,
 		shouldShowEditionSelect,
 	]);
 
-	// --- Handlers ---
-	const handleBrandChange = (
-		newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption>,
-	) => {
-		const option = newValue as TSelectOption | null;
-		setSelectedBrand((option?.value as MarcaSistema) || null);
-		setSelectedFamilyId(null);
-		setSelectedVersionId(null);
-		setSelectedEditionId(null);
-	};
-
-	const handleFamilyChange = (
-		newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption>,
-	) => {
-		const option = newValue as TSelectOption | null;
-		setSelectedFamilyId(option?.value || null);
-		setSelectedVersionId(null);
-		setSelectedEditionId(null);
-	};
-
-	const handleVersionChange = (
-		newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption>,
-	) => {
-		const option = newValue as TSelectOption | null;
-		setSelectedVersionId(option?.value || null);
-		setSelectedEditionId(null);
-	};
-
-	const handleEditionChange = (
-		newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption>,
-	) => {
-		const option = newValue as TSelectOption | null;
-		setSelectedEditionId(option?.value || null);
-	};
-
-	const isQuickSelected = (optValue: string) => value === optValue;
-
 	return (
 		<div className='flex flex-col gap-6'>
-			{/* Quick Select Buttons */}
+			{/* 1. SELECCIÓN RÁPIDA (Con Iconos) */}
 			<div>
-				<label className='mb-3 block text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
-					Selección Rápida
-				</label>
+				<div className='mb-3 flex items-center gap-2'>
+					{/* <LuCheckCircle2 className='h-4 w-4 text-emerald-500' /> */}
+					<label className='text-sm font-bold text-zinc-700 dark:text-zinc-300'>
+						Configuraciones comunes
+					</label>
+				</div>
 				<div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
 					{OPERATING_SYSTEM_OPTIONS.map((opt) => (
 						<SelectionCard
 							key={opt.value}
 							label={opt.label}
 							value={opt.value}
-							isSelected={isQuickSelected(opt.value)}
+							isSelected={value === opt.value}
 							onClick={() => !readOnly && onChange(opt.value)}
 							variant='compact'
-							className='text-xs'
+							className='text-xs transition-all hover:border-blue-400 active:scale-95'
 						/>
 					))}
 				</div>
 			</div>
 
-			{/* Divider */}
+			{/* DIVIDER MEJORADO */}
 			<div className='relative flex items-center py-2'>
-				<div className='flex-grow border-t border-zinc-200 dark:border-zinc-700'></div>
-				<span className='mx-4 flex-shrink-0 text-xs font-semibold text-zinc-400'>
-					O Selección Avanzada
+				<div className='flex-grow border-t border-zinc-200 dark:border-zinc-800'></div>
+				<span className='mx-4 flex-shrink-0 bg-white px-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:bg-[#09090b]'>
+					O Configuración Manual
 				</span>
-				<div className='flex-grow border-t border-zinc-200 dark:border-zinc-700'></div>
+				<div className='flex-grow border-t border-zinc-200 dark:border-zinc-800'></div>
 			</div>
 
-			{/* Advanced Select Dropdowns */}
-			<div className='rounded-xl border border-zinc-200 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-900/20'>
-				<div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-					{/* 1. Marca */}
+			{/* 2. SELECTOR AVANZADO (Caja dinámica) */}
+			<div className={`rounded-2xl border p-5 transition-all duration-300 ${brandStyles}`}>
+				<div className='mb-5 flex items-center gap-3 border-b border-zinc-200/50 pb-4 dark:border-zinc-700/50'>
+					<div className='rounded-lg bg-white p-2 shadow-sm dark:bg-zinc-800'>
+						{getBrandIcon()}
+					</div>
 					<div>
-						<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
-							1. Sistema
+						<h4 className='text-sm font-bold text-zinc-800 dark:text-zinc-100'>
+							Detalles del Sistema
+						</h4>
+						<p className='text-[10px] font-medium uppercase text-zinc-500'>
+							Define marca, versión y edición
+						</p>
+					</div>
+				</div>
+
+				<div className='grid grid-cols-1 gap-5 sm:grid-cols-2'>
+					{/* Marca */}
+					<div>
+						<label className='mb-1.5 flex items-center gap-1.5 text-xs font-bold text-zinc-500 dark:text-zinc-400'>
+							<span className='flex h-4 w-4 items-center justify-center rounded-full bg-zinc-200 text-[10px] dark:bg-zinc-700'>
+								1
+							</span>
+							Fabricante
 						</label>
 						<SelectReact
 							name='so-brand'
 							options={brandOptions}
 							value={brandOptions.find((o) => o.value === selectedBrand) || null}
-							onChange={handleBrandChange}
-							placeholder='Microsoft / Apple...'
+							onChange={(v) => {
+								const option = v as TSelectOption | null;
+								setSelectedBrand((option?.value as MarcaSistema) || null);
+								setSelectedFamilyId(null);
+								setSelectedVersionId(null);
+								setSelectedEditionId(null);
+							}}
+							placeholder='Ej: Microsoft'
 							isDisabled={readOnly}
 						/>
 					</div>
 
-					{/* 2. Familia (Condicional) */}
-					{shouldShowFamilySelect && (
-						<div>
-							<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
-								2. Familia
-							</label>
-							<SelectReact
-								name='so-family'
-								options={familyOptions}
-								value={
-									familyOptions.find((o) => o.value === selectedFamilyId) || null
-								}
-								onChange={handleFamilyChange}
-								placeholder='Familia...'
-								isDisabled={readOnly || !selectedBrand}
-							/>
-						</div>
-					)}
-
-					{/* 3. Versión */}
+					{/* Versión (Dinámica) */}
 					<div>
-						<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
-							{shouldShowFamilySelect ? '3. Versión' : '2. Versión'}
+						<label className='mb-1.5 flex items-center gap-1.5 text-xs font-bold text-zinc-500 dark:text-zinc-400'>
+							<span className='flex h-4 w-4 items-center justify-center rounded-full bg-zinc-200 text-[10px] dark:bg-zinc-700'>
+								2
+							</span>
+							Versión
 						</label>
 						<SelectReact
 							name='so-version'
@@ -250,17 +241,24 @@ export const SoSelector: React.FC<SoSelectorProps> = ({ value, onChange, readOnl
 							value={
 								versionOptions.find((o) => o.value === selectedVersionId) || null
 							}
-							onChange={handleVersionChange}
-							placeholder='Versión...'
-							isDisabled={readOnly || !selectedBrand} // Relaxed dependency if family auto-selected? Well, strict for now.
+							onChange={(v) => {
+								const option = v as TSelectOption | null;
+								setSelectedVersionId(option?.value || null);
+								setSelectedEditionId(null);
+							}}
+							placeholder='Selecciona...'
+							isDisabled={readOnly || !selectedBrand}
 						/>
 					</div>
 
-					{/* 4. Edición */}
+					{/* Edición / Custom (Full width) */}
 					{shouldShowEditionSelect && (
-						<div className='sm:col-span-full'>
-							<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
-								{shouldShowFamilySelect ? '4. Edición' : '3. Edición'}
+						<div className='pt-2 sm:col-span-full'>
+							<label className='mb-1.5 flex items-center gap-1.5 text-xs font-bold text-zinc-500 dark:text-zinc-400'>
+								<span className='flex h-4 w-4 items-center justify-center rounded-full bg-zinc-200 text-[10px] dark:bg-zinc-700'>
+									3
+								</span>
+								Edición específica
 							</label>
 							<div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
 								<SelectReact
@@ -270,7 +268,10 @@ export const SoSelector: React.FC<SoSelectorProps> = ({ value, onChange, readOnl
 										editionOptions.find((o) => o.value === selectedEditionId) ||
 										null
 									}
-									onChange={handleEditionChange}
+									onChange={(v) => {
+										const option = v as TSelectOption | null;
+										setSelectedEditionId(option?.value || null);
+									}}
 									placeholder='Edición...'
 									isDisabled={readOnly || !selectedVersionId}
 								/>
@@ -279,8 +280,9 @@ export const SoSelector: React.FC<SoSelectorProps> = ({ value, onChange, readOnl
 										name='so-custom-edition'
 										value={customEditionText}
 										onChange={(e) => setCustomEditionText(e.target.value)}
-										placeholder='Especifique...'
+										placeholder='Escribe la edición...'
 										disabled={readOnly}
+										className='animate-in fade-in slide-in-from-left-2 duration-300'
 									/>
 								)}
 							</div>
@@ -288,6 +290,21 @@ export const SoSelector: React.FC<SoSelectorProps> = ({ value, onChange, readOnl
 					)}
 				</div>
 			</div>
+
+			{/* 3. VISUALIZADOR FINAL (El "Donde aparece el SO") */}
+			{value && (
+				<div className='animate-pulse-slow flex items-center justify-between rounded-xl border border-dashed border-zinc-300 bg-zinc-100 p-3 dark:border-zinc-700 dark:bg-white/5'>
+					<span className='ml-2 text-[10px] font-bold uppercase text-zinc-400'>
+						Resultado:
+					</span>
+					<div className='flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-1 shadow-sm dark:border-zinc-700 dark:bg-zinc-900'>
+						<div className='h-2 w-2 rounded-full bg-emerald-500'></div>
+						<span className='font-mono text-sm font-bold text-zinc-700 dark:text-zinc-200'>
+							{value}
+						</span>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 };

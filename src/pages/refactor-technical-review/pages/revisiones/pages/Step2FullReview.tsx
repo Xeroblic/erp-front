@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useCallback, useRef } from 'react';
 import { toast } from 'react-toastify';
 import Badge from '@/components/ui/Badge';
 import { useAppDispatch } from '@/store';
 import { updateItemDetails } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import EquipmentFormRouter from '../../../components/forms';
+import useAutoSave from '../../../hooks/useAutoSave';
+import AutoSaveConfirmModal from '../../../components/modals/AutoSaveConfirmModal';
 
 interface Step2FullReviewProps {
 	equipmentType: string;
@@ -37,7 +39,42 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 	const { branchId } = useCurrentBranch();
 	const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-	// Generic submit handler for all equipment types
+	// ─── Auto-Save Integration ───────────────────────────────────────────────
+	// Ref to hold the getter function registered by the form
+	const getFormValuesRef = useRef<(() => Record<string, unknown>) | null>(null);
+
+	const registerGetFormValues = useCallback((getter: () => Record<string, unknown>) => {
+		getFormValuesRef.current = getter;
+	}, []);
+
+	const getFormData = useCallback((): Record<string, unknown> => {
+		if (getFormValuesRef.current) {
+			return getFormValuesRef.current();
+		}
+		return {};
+	}, []);
+
+	const { saveNow, isSaving, lastSavedAt, showIdleSaveModal, dismissIdleSaveModal } = useAutoSave(
+		{
+			branchId: branchId ?? null,
+			itemId: initialData?.id ?? null,
+			getFormData,
+			enabled: !readOnly && !!initialData?.id && !!branchId,
+			idleTimeoutMs: 20_000,
+			equipmentType,
+		},
+	);
+
+	// ─── Step Change Handler (auto-save on section navigation) ────────────
+	const handleStepChange = useCallback(
+		async (_direction: 'next' | 'prev') => {
+			// Save current form data when navigating between sections
+			await saveNow(true);
+		},
+		[saveNow],
+	);
+
+	// ─── Final Submit (original behavior) ────────────────────────────────────
 	const handleFormSubmit = async (data: any) => {
 		if (!branchId || !initialData?.id) {
 			toast.error('No se pudo identificar el item para guardar');
@@ -76,19 +113,42 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 						Serie: <span className='font-mono font-semibold'>{serialNumber}</span>
 					</p>
 				</div>
-				<Badge variant='outline' color='blue'>
-					{readOnly ? 'Solo Lectura' : 'En Progreso'}
-				</Badge>
+				<div className='flex items-center gap-2'>
+					{/* Auto-save indicator */}
+					{isSaving && (
+						<Badge variant='outline' color='amber' className='animate-pulse'>
+							Guardando...
+						</Badge>
+					)}
+					{!isSaving && lastSavedAt && (
+						<Badge variant='outline' color='emerald'>
+							Guardado ✓
+						</Badge>
+					)}
+					<Badge variant='outline' color='blue'>
+						{readOnly ? 'Solo Lectura' : 'En Progreso'}
+					</Badge>
+				</div>
 			</div>
 
 			{/* Form Router */}
 			<EquipmentFormRouter
 				equipmentType={equipmentType}
-				defaultValues={initialData}
+				defaultValues={initialData?.details || {}}
 				onSubmit={handleFormSubmit}
 				onBack={onBack}
 				isSubmitting={isSubmitting || loading}
 				readOnly={readOnly}
+				onStepChange={handleStepChange}
+				registerGetFormValues={registerGetFormValues}
+				isSaving={isSaving}
+			/>
+
+			{/* Auto-Save Confirmation Modal */}
+			<AutoSaveConfirmModal
+				isOpen={showIdleSaveModal}
+				onClose={dismissIdleSaveModal}
+				savedAt={lastSavedAt}
 			/>
 		</div>
 	);

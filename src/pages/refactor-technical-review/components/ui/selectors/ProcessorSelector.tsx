@@ -32,6 +32,12 @@ const QUICK_OPTIONS = [
 	{ label: 'AMD Ryzen 7', value: 'AMD Ryzen 7' },
 ];
 
+// --- Helper Functions ---
+const cleanLabel = (text: string) => {
+	// Remove content in parentheses, e.g., "12ª Gen (Alder Lake)" -> "12ª Gen"
+	return text.replace(/\s*\(.*?\)\s*/g, '').trim();
+};
+
 export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 	deviceType,
 	value,
@@ -53,6 +59,70 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 	const [customFamily, setCustomFamily] = useState('');
 	const [customGeneration, setCustomGeneration] = useState('');
 	const [customModel, setCustomModel] = useState('');
+
+	// --- Initialization Effect: Parse value to set internal state ---
+	useEffect(() => {
+		// Only run if we have a value but no internal state selected (avoid overwriting user interaction)
+		if (!value || selectedBrand) return;
+
+		const valueLower = value.toLowerCase();
+		const marcas = getMarcasPorDispositivo(deviceType);
+
+		// 1. Find Brand (Intel / AMD)
+		const foundBrandData = marcas.find((m) => valueLower.includes(m.nombre.toLowerCase()));
+		if (!foundBrandData) return;
+
+		// 2. Find Family
+		const families = getFamiliasPorMarcaYDispositivo(deviceType, foundBrandData.nombre);
+		// Sort by length desc to match "Core i7" before "Core i" if overlapping
+		const sortedFamilies = [...families].sort((a, b) => b.nombre.length - a.nombre.length);
+
+		let foundFamilyData: any = null;
+		let foundGenData: any = null;
+		let foundModelData: any = null;
+
+		for (const fam of sortedFamilies) {
+			const cleanFam = cleanLabel(fam.nombre).toLowerCase();
+			if (valueLower.includes(cleanFam)) {
+				foundFamilyData = fam;
+
+				// 3. Find Generation
+				const gens = getGeneracionesPorFamilia(deviceType, foundBrandData.nombre, fam.id);
+				for (const gen of gens) {
+					const cleanGen = cleanLabel(gen.nombre).toLowerCase();
+					// Make generation matching stricter? Or just includes
+					if (valueLower.includes(cleanGen)) {
+						foundGenData = gen;
+
+						// 4. Find Model
+						const models = getModelosPorGeneracion(
+							deviceType,
+							foundBrandData.nombre,
+							fam.id,
+							gen.id,
+						);
+						for (const model of models) {
+							const cleanModel = cleanLabel(model.nombre).toLowerCase();
+							// Models usually at end, simple check
+							if (valueLower.includes(cleanModel)) {
+								foundModelData = model;
+								break;
+							}
+						}
+						if (foundModelData) break;
+					}
+				}
+				if (foundGenData) break;
+			}
+		}
+
+		// Apply found state without triggering change events
+		// We use batch updates or just sequential setters
+		if (foundBrandData) setSelectedBrand(foundBrandData.nombre);
+		if (foundFamilyData) setSelectedFamilyId(foundFamilyData.id);
+		if (foundGenData) setSelectedGenerationId(foundGenData.id);
+		if (foundModelData) setSelectedModelId(foundModelData.id);
+	}, [value, deviceType, selectedBrand]); // Dependency on selectedBrand ensures it runs only on initial mount or full reset
 
 	// Reset dropdowns when device type changes
 	useEffect(() => {
@@ -141,19 +211,12 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 		setCustomModel('');
 	};
 
-	// --- Helpers to get Options even if parent is manual ---
 	const getAllGenerationsForBrand = (brand: MarcaProcesador): Generacion[] => {
 		const families = getFamiliasPorMarcaYDispositivo(deviceType, brand);
 		const allGens = families.flatMap((f) => f.generaciones);
 		const uniqueGens = new Map<string, Generacion>();
 		allGens.forEach((g) => uniqueGens.set(g.id, g));
 		return Array.from(uniqueGens.values());
-	};
-
-	// --- Label Cleaner Helper ---
-	const cleanLabel = (text: string) => {
-		// Remove content in parentheses, e.g., "12ª Gen (Alder Lake)" -> "12ª Gen"
-		return text.replace(/\s*\(.*?\)\s*/g, '').trim();
 	};
 
 	// --- Derived Data for Dropdowns ---

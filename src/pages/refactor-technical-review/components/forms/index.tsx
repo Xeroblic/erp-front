@@ -13,6 +13,12 @@ interface EquipmentFormRouterProps {
 	onBack: () => void;
 	isSubmitting?: boolean;
 	readOnly?: boolean;
+	/** Called when user navigates between form sections */
+	onStepChange?: (direction: 'next' | 'prev') => void;
+	/** Registers a getter for current form values (used by auto-save) */
+	registerGetFormValues?: (getter: () => Record<string, unknown>) => void;
+	/** Whether auto-save is in progress */
+	isSaving?: boolean;
 }
 
 const EquipmentFormRouter: React.FC<EquipmentFormRouterProps> = ({
@@ -22,6 +28,9 @@ const EquipmentFormRouter: React.FC<EquipmentFormRouterProps> = ({
 	onBack,
 	isSubmitting,
 	readOnly,
+	onStepChange,
+	registerGetFormValues,
+	isSaving,
 }) => {
 	const type = equipmentType.toLowerCase();
 
@@ -31,6 +40,9 @@ const EquipmentFormRouter: React.FC<EquipmentFormRouterProps> = ({
 		onBack,
 		isSubmitting,
 		readOnly,
+		onStepChange,
+		registerGetFormValues,
+		isSaving,
 	};
 
 	switch (type) {

@@ -11,6 +11,10 @@ interface FormShellProps<T extends FieldValues> {
 	onBack: () => void;
 	onFinish: () => void;
 	isSubmitting?: boolean;
+	/** Called when user navigates between sections (before transition) */
+	onStepChange?: (direction: 'next' | 'prev') => void;
+	/** Whether auto-save is in progress */
+	isSaving?: boolean;
 }
 
 function FormShell<T extends FieldValues>({
@@ -19,6 +23,8 @@ function FormShell<T extends FieldValues>({
 	onBack,
 	onFinish,
 	isSubmitting = false,
+	onStepChange,
+	isSaving = false,
 }: FormShellProps<T>) {
 	const [step, setStep] = useState(0);
 	const [direction, setDirection] = useState(1); // 1 = forward, -1 = backward
@@ -32,6 +38,7 @@ function FormShell<T extends FieldValues>({
 
 	const handleNext = () => {
 		if (step < MAX_STEPS - 1) {
+			onStepChange?.('next');
 			setDirection(1);
 			setStep((s) => s + 1);
 		}
@@ -39,6 +46,7 @@ function FormShell<T extends FieldValues>({
 
 	const handlePrev = () => {
 		if (step > 0) {
+			onStepChange?.('prev');
 			setDirection(-1);
 			setStep((s) => s - 1);
 		} else {
@@ -74,6 +82,12 @@ function FormShell<T extends FieldValues>({
 			{/* ─── Step Navigation Bar ─────────────────────────────────── */}
 			<div className='overflow-x-auto rounded-t-2xl border border-zinc-200 bg-gradient-to-r from-blue-50/80 via-white to-blue-50/80 dark:border-zinc-700 dark:from-zinc-800/80 dark:via-zinc-900 dark:to-zinc-800/80'>
 				<div className='flex items-center justify-between px-4 py-3'>
+					{isSaving && (
+						<div className='mr-2 flex animate-pulse items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'>
+							<div className='h-1.5 w-1.5 rounded-full bg-amber-500' />
+							Guardando...
+						</div>
+					)}
 					{sections.map((section, index) => {
 						const isActive = index === step;
 						const isCompleted = index < step;
