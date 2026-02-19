@@ -25,7 +25,7 @@ interface ITextareaProps
 	value?: string | number | readonly string[] | undefined;
 	variant?: TTextareaVariants;
 }
-const Textarea: FC<ITextareaProps> = (props) => {
+const Textarea = React.forwardRef<HTMLTextAreaElement, ITextareaProps>((props, ref) => {
 	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } =
 		useReactiveThemeConfig();
 	const {
@@ -101,8 +101,8 @@ const Textarea: FC<ITextareaProps> = (props) => {
 		className,
 	);
 
-	return <textarea data-component-name='Textarea' className={classes} {...rest} />;
-};
+	return <textarea data-component-name='Textarea' className={classes} ref={ref} {...rest} />;
+});
 Textarea.displayName = 'Textarea';
 
 export default Textarea;

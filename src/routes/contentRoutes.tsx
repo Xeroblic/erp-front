@@ -438,17 +438,17 @@ const contentRoutes: IRoutePersonalizada[] = [
 	},
 	{
 		path: '/technical-reviews/batches/:batchId/:itemId',
-		element: <BatchItemReview />,
-		authority: cfg.technical.subPages.reviews.authority,
-	},
-	{
-		path: '/technical-reviews/batches/:batchId/items/create',
-		element: <BatchItemReview />,
+		element: <RefactorRevisiones />,
 		authority: cfg.technical.subPages.reviews.authority,
 	},
 	{
 		path: '/technical-reviews/batches/:batchId/items/:itemId',
 		element: <RefactorRevisiones />,
+		authority: cfg.technical.subPages.reviews.authority,
+	},
+	{
+		path: '/technical-reviews/batches/:batchId/items/create',
+		element: <BatchItemReview />, // Keep this for now if create logic is different, or check if RefactorRevisiones handles create
 		authority: cfg.technical.subPages.reviews.authority,
 	},
 	{
@@ -458,7 +458,7 @@ const contentRoutes: IRoutePersonalizada[] = [
 	},
 	{
 		path: '/technical-reviews/items/:itemId',
-		element: <ItemReview />,
+		element: <RefactorRevisiones />,
 		authority: cfg.technical.subPages.reviews.authority,
 	},
 	{

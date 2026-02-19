@@ -1,7 +1,4 @@
 import { useMemo } from 'react';
-import { NOTEBOOK_FIELDS_METADATA } from '../components/constants/notebook/notebook.fields';
-
-type FieldKey = keyof typeof NOTEBOOK_FIELDS_METADATA;
 
 export interface ValidationStats {
 	completionPercentage: number;
@@ -11,12 +8,15 @@ export interface ValidationStats {
 	completedFields: number;
 }
 
-export const useFormCompleteness = (values: Record<string, any>): ValidationStats => {
+export const useFormCompleteness = (
+	values: Record<string, any>,
+	fieldsMetadata: Record<string, any>,
+): ValidationStats => {
 	const stats = useMemo(() => {
 		let completed = 0;
 		const missing: { key: string; label: string; group: string }[] = [];
-		const fields = Object.entries(NOTEBOOK_FIELDS_METADATA);
-		
+		const fields = Object.entries(fieldsMetadata);
+
 		fields.forEach(([key, meta]) => {
 			const value = values[key];
 			let isFilled = false;
@@ -30,24 +30,22 @@ export const useFormCompleteness = (values: Record<string, any>): ValidationStat
 					isFilled = typeof value === 'number' && !isNaN(value);
 					break;
 				case 'boolean':
-					// Booleans are always "complete" if they exist, but undefined is not.
-					// If default is false, it's considered filled? Usually yes in forms.
-					// Checking for undefined/null mainly.
+					// Booleans are always "complete" if they exist (true/false), but undefined/null is not.
 					isFilled = value !== undefined && value !== null;
 					break;
 				case 'string|integer':
-					isFilled = (typeof value === 'string' && value.trim().length > 0) || (typeof value === 'number' && !isNaN(value));
+					isFilled =
+						(typeof value === 'string' && value.trim().length > 0) ||
+						(typeof value === 'number' && !isNaN(value));
+					break;
+				case 'object':
+					// For extra_attributes or similar, usually optional, but if required:
+					isFilled = value !== undefined && value !== null;
 					break;
 				default:
 					isFilled = !!value;
 			}
 
-            // Exceptions / Business Logic
-            // Example: observations might be optional? 
-            // If the user wants STRICT completeness, everything must be filled.
-            // If observations is optional in schema but listed here, we might flagging it.
-            // Based on the prompt "validate that ALL fields are complete", we enforce strictness.
-            
 			if (isFilled) {
 				completed++;
 			} else {
@@ -69,7 +67,7 @@ export const useFormCompleteness = (values: Record<string, any>): ValidationStat
 			totalFields: total,
 			completedFields: completed,
 		};
-	}, [values]);
+	}, [values, fieldsMetadata]);
 
 	return stats;
 };

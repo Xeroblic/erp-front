@@ -28,6 +28,8 @@ export interface UseAutoSaveOptions {
 	idleTimeoutMs?: number;
 	/** Equipment type for field filtering */
 	equipmentType?: string;
+	/** Optional transformer to clean/format data before saving */
+	transformData?: (data: Record<string, unknown>) => Record<string, unknown>;
 }
 
 export interface UseAutoSaveReturn {
@@ -61,6 +63,7 @@ export const useAutoSave = ({
 	enabled = true,
 	idleTimeoutMs = 20_000,
 	equipmentType,
+	transformData,
 }: UseAutoSaveOptions): UseAutoSaveReturn => {
 	const dispatch = useAppDispatch();
 
@@ -74,6 +77,7 @@ export const useAutoSave = ({
 	const isSavingRef = useRef(false);
 	const enabledRef = useRef(enabled);
 	const getFormDataRef = useRef(getFormData);
+	const transformDataRef = useRef(transformData);
 
 	// Keep refs in sync
 	useEffect(() => {
@@ -84,6 +88,10 @@ export const useAutoSave = ({
 		getFormDataRef.current = getFormData;
 	}, [getFormData]);
 
+	useEffect(() => { 
+		transformDataRef.current = transformData;
+	}, [transformData]);
+
 	// ─── Core save function ──────────────────────────────────────────────────
 
 	const saveNow = useCallback(
@@ -93,7 +101,13 @@ export const useAutoSave = ({
 			if (!enabledRef.current) return false;
 			if (isSavingRef.current) return false;
 
-			const currentData = getFormDataRef.current();
+			let currentData = getFormDataRef.current();
+
+			// Apply transformation if provided
+			if (transformDataRef.current) {
+				currentData = transformDataRef.current(currentData);
+			}
+
 			const currentSnapshot = JSON.stringify(currentData);
 
 			// Skip if no changes since last save

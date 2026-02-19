@@ -5,6 +5,7 @@
  */
 import React from 'react';
 import NotebookForm from './notebook/NotebookForm';
+import DesktopForm from './desktop/DesktopForm';
 
 interface EquipmentFormRouterProps {
 	equipmentType: string;
@@ -49,9 +50,9 @@ const EquipmentFormRouter: React.FC<EquipmentFormRouterProps> = ({
 		case 'notebook':
 			return <NotebookForm {...formProps} />;
 
-		// TODO: Uncomment as each form is implemented
-		// case 'desktop':
-		//   return <DesktopForm {...formProps} />;
+		case 'desktop':
+			return <DesktopForm {...formProps} />;
+
 		// case 'aio':
 		//   return <AioForm {...formProps} />;
 		// case 'monitor':
