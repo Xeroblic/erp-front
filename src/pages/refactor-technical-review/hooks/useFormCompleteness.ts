@@ -26,7 +26,6 @@ export const useFormCompleteness = (values: Record<string, any>): ValidationStat
 				case 'string':
 					isFilled = typeof value === 'string' && value.trim().length > 0;
 					break;
-				case 'number':
 				case 'integer':
 					isFilled = typeof value === 'number' && !isNaN(value);
 					break;
@@ -38,13 +37,6 @@ export const useFormCompleteness = (values: Record<string, any>): ValidationStat
 					break;
 				case 'string|integer':
 					isFilled = (typeof value === 'string' && value.trim().length > 0) || (typeof value === 'number' && !isNaN(value));
-					break;
-				case 'object':
-                    // Objects (like extra_attributes) might be optional or need content check
-                    // For now, assume if it exists it's fine, or skip if optional? 
-                    // extra_attributes usually isn't mandatory unless specified. 
-                    // Let's assume non-null is enough
-					isFilled = value !== undefined && value !== null;
 					break;
 				default:
 					isFilled = !!value;

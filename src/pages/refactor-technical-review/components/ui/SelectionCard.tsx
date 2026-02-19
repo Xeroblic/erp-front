@@ -16,7 +16,7 @@ import type { TIcons } from '@/types/icons.type';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type SelectionCardColor = 'green' | 'red' | 'yellow' | 'gray';
+type SelectionCardColor = 'green' | 'red' | 'yellow' | 'gray' | 'blue' | 'orange';
 
 export interface SelectionCardProps {
 	/** Texto visible dentro de la tarjeta */
@@ -54,6 +54,16 @@ const COLOR_STYLES: Record<SelectionCardColor, { selected: string; idle: string 
 		selected:
 			'bg-yellow-100 border-yellow-500 text-yellow-800 shadow-md ring-1 ring-yellow-500 ring-offset-1 dark:bg-yellow-900/60 dark:border-yellow-400 dark:text-yellow-100',
 		idle: 'bg-yellow-50/50 border-yellow-200 text-yellow-700 hover:bg-yellow-100 dark:bg-yellow-900/10 dark:border-yellow-900/30 dark:text-yellow-400',
+	},
+	blue: {
+		selected:
+			'bg-blue-100 border-blue-500 text-blue-800 shadow-md ring-1 ring-blue-500 ring-offset-1 dark:bg-blue-900/60 dark:border-blue-400 dark:text-blue-100',
+		idle: 'bg-blue-50/50 border-blue-200 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/10 dark:border-blue-900/30 dark:text-blue-400',
+	},
+	orange: {
+		selected:
+			'bg-orange-100 border-orange-500 text-orange-800 shadow-md ring-1 ring-orange-500 ring-offset-1 dark:bg-orange-900/60 dark:border-orange-400 dark:text-orange-100',
+		idle: 'bg-orange-50/50 border-orange-200 text-orange-700 hover:bg-orange-100 dark:bg-orange-900/10 dark:border-orange-900/30 dark:text-orange-400',
 	},
 	gray: {
 		selected:
