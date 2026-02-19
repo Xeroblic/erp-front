@@ -49,7 +49,7 @@ const ScreenSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 			</div>
 
 			{/* Screen Condition */}
-			<div className='hover:cursor-pointer rounded-xl border border-purple-200 bg-purple-500/20 p-4 transition-colors duration-200 hover:bg-purple-500/30 dark:border-purple-800 dark:bg-purple-900/10 dark:hover:bg-purple-900/30'>
+			<div className='rounded-xl border border-purple-200 bg-purple-500/20 p-4 transition-colors duration-200 hover:cursor-pointer hover:bg-purple-500/30 dark:border-purple-800 dark:bg-purple-900/10 dark:hover:bg-purple-900/30'>
 				<label className='mb-3 flex items-center justify-center gap-2 text-center text-sm font-bold text-purple-800 dark:text-purple-200'>
 					<Icon icon='HeroSparkles' className='h-4 w-4' />
 					{getNotebookLabel('screen_condition')} <span className='text-red-500'>*</span>
@@ -83,16 +83,15 @@ const ScreenSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 					</p>
 				)}
 
-				{/* Conditional Defect Count */}
-				{showDefectsCount && (
-					<div className='hover:cursor-pointer animate-in fade-in slide-in-from-top-2 mt-4 duration-300'>
+				{/* Conditional Defect Count: Dead Pixels */}
+				{screenCondition === 'dead_pixels' && (
+					<div className='animate-in fade-in slide-in-from-top-2 mt-4 duration-300 hover:cursor-pointer'>
 						<div className='mx-auto max-w-xs'>
 							<label className='mb-2 block text-center text-sm font-bold text-purple-900 dark:text-purple-100'>
-								¿Cuántos {screenCondition === 'dead_pixels' ? 'píxeles' : 'manchas'}
-								?<span className='text-red-500'>*</span>
+								¿Cuántos píxeles muertos? <span className='text-red-500'>*</span>
 							</label>
 							<Controller
-								name='screen_defects_count'
+								name='dead_pixels_count'
 								control={control}
 								render={({ field }) => (
 									<Input
@@ -108,16 +107,56 @@ const ScreenSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 										}
 										disabled={readOnly}
 										className={
-											errors.screen_defects_count
+											errors.dead_pixels_count
 												? 'border-red-500 text-center'
 												: 'text-center'
 										}
 									/>
 								)}
 							/>
-							{errors.screen_defects_count && (
+							{errors.dead_pixels_count && (
 								<p className='mt-1 text-center text-xs text-red-500'>
-									{errors.screen_defects_count.message}
+									{errors.dead_pixels_count.message}
+								</p>
+							)}
+						</div>
+					</div>
+				)}
+
+				{/* Conditional Defect Count: Spots */}
+				{screenCondition === 'spots' && (
+					<div className='animate-in fade-in slide-in-from-top-2 mt-4 duration-300 hover:cursor-pointer'>
+						<div className='mx-auto max-w-xs'>
+							<label className='mb-2 block text-center text-sm font-bold text-purple-900 dark:text-purple-100'>
+								¿Cuántas manchas? <span className='text-red-500'>*</span>
+							</label>
+							<Controller
+								name='spots_count'
+								control={control}
+								render={({ field }) => (
+									<Input
+										{...field}
+										type='number'
+										min={1}
+										placeholder='Ingresa cantidad'
+										value={field.value ?? ''}
+										onChange={(e) =>
+											field.onChange(
+												e.target.value ? Number(e.target.value) : null,
+											)
+										}
+										disabled={readOnly}
+										className={
+											errors.spots_count
+												? 'border-red-500 text-center'
+												: 'text-center'
+										}
+									/>
+								)}
+							/>
+							{errors.spots_count && (
+								<p className='mt-1 text-center text-xs text-red-500'>
+									{errors.spots_count.message}
 								</p>
 							)}
 						</div>

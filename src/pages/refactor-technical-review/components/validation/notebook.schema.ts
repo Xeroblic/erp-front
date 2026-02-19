@@ -70,15 +70,33 @@ export const notebookSchema = Yup.object({
 		.oneOf([...ALLOWED_SCREEN_CONDITIONS], 'Condición de pantalla no válida')
 		.required('La condición de pantalla es obligatoria'),
 
-	screen_defects_count: Yup.number()
+	screen_defects_count: Yup.number().nullable().strip(), // Deprecated/Internal only if needed, but we should use specific fields now
+	dead_pixels_count: Yup.number()
 		.integer('Debe ser un número entero')
-		.min(1, 'Debe haber al menos 1')
+		.min(0, 'No puede ser negativo')
 		.nullable()
 		.when('screen_condition', {
-			is: (val: string) => val === 'dead_pixels' || val === 'spots',
+			is: 'dead_pixels',
 			then: (schema) =>
-				schema.required('Indica la cantidad de píxeles/manchas').typeError('Debes ingresar un número'),
-			otherwise: (schema) => schema.nullable().strip(),
+				schema
+					.required('Indica la cantidad de píxeles muertos')
+					.min(1, 'Debe ser al menos 1')
+					.typeError('Debes ingresar un número'),
+			otherwise: (schema) => schema.nullable().transform(() => 0), // Default to 0 if not active
+		}),
+
+	spots_count: Yup.number()
+		.integer('Debe ser un número entero')
+		.min(0, 'No puede ser negativo')
+		.nullable()
+		.when('screen_condition', {
+			is: 'spots',
+			then: (schema) =>
+				schema
+					.required('Indica la cantidad de manchas')
+					.min(1, 'Debe ser al menos 1')
+					.typeError('Debes ingresar un número'),
+			otherwise: (schema) => schema.nullable().transform(() => 0), // Default to 0 if not active
 		}),
 
 	is_touchscreen: Yup.boolean().nullable(),
