@@ -25,7 +25,7 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	return (
 		<div className='space-y-6'>
 			{/* Processor */}
-			<div className='rounded-xl border border-green-200 bg-green-500/10 p-6 transition-colors duration-200 hover:bg-green-500/20 dark:border-green-800 dark:bg-green-900/10 dark:hover:bg-green-900/20'>
+			<div className='hover:cursor-pointer rounded-xl border border-green-200 bg-green-500/10 p-6 transition-colors duration-200 hover:bg-green-500/20 dark:border-green-800 dark:bg-green-900/10 dark:hover:bg-green-900/20'>
 				<label className='mb-4 block text-sm font-bold text-green-800 dark:text-green-200'>
 					{getNotebookLabel('processor')} <span className='text-red-500'>*</span>
 				</label>

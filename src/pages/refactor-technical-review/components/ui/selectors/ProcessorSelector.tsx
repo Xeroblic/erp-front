@@ -96,15 +96,33 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 			return;
 		}
 
+		// Helper to construct the full string
+		const constructProcessorString = (modelName: string) => {
+			const familyObj = familiasData.find((f) => f.id === selectedFamilyId);
+			const genObj = generacionesData.find((g) => g.id === selectedGenerationId);
+
+			const familyName = familyObj?.nombre || '';
+			const genName = genObj?.nombre || '';
+
+			return `${selectedBrand} ${familyName} ${genName} ${modelName}`.trim();
+		};
+
 		if (modelosData.length === 1) {
 			// Auto-select if only one model in generation
 			const modelo = modelosData[0];
-			onChange(`${modelo.nombre}`);
+			const fullString = constructProcessorString(modelo.nombre);
+			// Avoid infinite loop if value is already correct
+			if (value !== fullString) {
+				onChange(fullString);
+			}
 		} else if (selectedModelId) {
 			// Select specific model
 			const modelo = modelosData.find((m) => m.id === selectedModelId);
 			if (modelo) {
-				onChange(`${modelo.nombre}`);
+				const fullString = constructProcessorString(modelo.nombre);
+				if (value !== fullString) {
+					onChange(fullString);
+				}
 			}
 		}
 	}, [
@@ -113,7 +131,10 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 		selectedGenerationId,
 		selectedModelId,
 		modelosData,
+		familiasData,
+		generacionesData,
 		onChange,
+		value,
 	]);
 
 	// --- Manual Mode State ---
