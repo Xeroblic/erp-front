@@ -11,6 +11,8 @@ import {
 	getFamiliasPorMarcaYDispositivo,
 	getGeneracionesPorFamilia,
 	getModelosPorGeneracion,
+	Generacion,
+	ModeloProcesador,
 } from '@/pages/refactor-technical-review/components/constants/Procesadores';
 
 interface ProcessorSelectorProps {
@@ -42,103 +44,35 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 	const [selectedGenerationId, setSelectedGenerationId] = useState<string | null>(null);
 	const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
 
+	// --- Granular Manual Mode States ---
+	const [isFamilyManual, setIsFamilyManual] = useState(false);
+	const [isGenerationManual, setIsGenerationManual] = useState(false);
+	const [isModelManual, setIsModelManual] = useState(false);
+
+	// Custom inputs for manual mode
+	const [customFamily, setCustomFamily] = useState('');
+	const [customGeneration, setCustomGeneration] = useState('');
+	const [customModel, setCustomModel] = useState('');
+
 	// Reset dropdowns when device type changes
 	useEffect(() => {
 		setSelectedBrand(null);
+		resetDownstreamFromBrand();
+	}, [deviceType]);
+
+	const resetDownstreamFromBrand = () => {
 		setSelectedFamilyId(null);
 		setSelectedGenerationId(null);
 		setSelectedModelId(null);
-	}, [deviceType]);
 
-	// --- Derived Data for Dropdowns ---
-	const marcasData = getMarcasPorDispositivo(deviceType);
-	const brandOptions: TSelectOption[] = marcasData.map((marca) => ({
-		value: marca.nombre,
-		label: marca.nombre,
-	}));
+		setIsFamilyManual(false);
+		setIsGenerationManual(false);
+		setIsModelManual(false);
 
-	const familiasData = selectedBrand
-		? getFamiliasPorMarcaYDispositivo(deviceType, selectedBrand)
-		: [];
-	const familyOptions: TSelectOption[] = familiasData.map((familia) => ({
-		value: familia.id,
-		label: familia.nombre,
-	}));
-
-	const generacionesData =
-		selectedBrand && selectedFamilyId
-			? getGeneracionesPorFamilia(deviceType, selectedBrand, selectedFamilyId)
-			: [];
-	const generationOptions: TSelectOption[] = generacionesData.map((gen) => ({
-		value: gen.id,
-		label: gen.nombre,
-	}));
-
-	const modelosData =
-		selectedBrand && selectedFamilyId && selectedGenerationId
-			? getModelosPorGeneracion(
-					deviceType,
-					selectedBrand,
-					selectedFamilyId,
-					selectedGenerationId,
-				)
-			: [];
-	const modelOptions: TSelectOption[] = modelosData.map((modelo) => ({
-		value: modelo.id,
-		label: modelo.nombre,
-	}));
-
-	const shouldShowModelSelect = modelosData.length > 1;
-
-	// --- Auto-construct Value Logic ---
-	useEffect(() => {
-		if (!selectedBrand || !selectedFamilyId || !selectedGenerationId) {
-			return;
-		}
-
-		// Helper to construct the full string
-		const constructProcessorString = (modelName: string) => {
-			const familyObj = familiasData.find((f) => f.id === selectedFamilyId);
-			const genObj = generacionesData.find((g) => g.id === selectedGenerationId);
-
-			const familyName = familyObj?.nombre || '';
-			const genName = genObj?.nombre || '';
-
-			return `${selectedBrand} ${familyName} ${genName} ${modelName}`.trim();
-		};
-
-		if (modelosData.length === 1) {
-			// Auto-select if only one model in generation
-			const modelo = modelosData[0];
-			const fullString = constructProcessorString(modelo.nombre);
-			// Avoid infinite loop if value is already correct
-			if (value !== fullString) {
-				onChange(fullString);
-			}
-		} else if (selectedModelId) {
-			// Select specific model
-			const modelo = modelosData.find((m) => m.id === selectedModelId);
-			if (modelo) {
-				const fullString = constructProcessorString(modelo.nombre);
-				if (value !== fullString) {
-					onChange(fullString);
-				}
-			}
-		}
-	}, [
-		selectedBrand,
-		selectedFamilyId,
-		selectedGenerationId,
-		selectedModelId,
-		modelosData,
-		familiasData,
-		generacionesData,
-		onChange,
-		value,
-	]);
-
-	// --- Manual Mode State ---
-	const [isManualMode, setIsManualMode] = useState(false);
+		setCustomFamily('');
+		setCustomGeneration('');
+		setCustomModel('');
+	};
 
 	// --- Handlers ---
 	const handleBrandChange = (
@@ -146,17 +80,27 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 	) => {
 		const option = newValue as TSelectOption | null;
 		setSelectedBrand((option?.value as MarcaProcesador) || null);
-		setSelectedFamilyId(null);
-		setSelectedGenerationId(null);
-		setSelectedModelId(null);
-		setIsManualMode(false);
+		resetDownstreamFromBrand();
 	};
 
 	const handleFamilyChange = (
 		newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption>,
 	) => {
 		const option = newValue as TSelectOption | null;
+
+		if (option?.value === 'MANUAL_ENTRY') {
+			setIsFamilyManual(true);
+			setCustomFamily('');
+			setSelectedFamilyId(null);
+			// Reset downstream
+			setSelectedGenerationId(null);
+			setSelectedModelId(null);
+			return;
+		}
+
 		setSelectedFamilyId(option?.value || null);
+		setIsFamilyManual(false);
+		setCustomFamily('');
 		setSelectedGenerationId(null);
 		setSelectedModelId(null);
 	};
@@ -165,7 +109,18 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 		newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption>,
 	) => {
 		const option = newValue as TSelectOption | null;
+
+		if (option?.value === 'MANUAL_ENTRY') {
+			setIsGenerationManual(true);
+			setCustomGeneration('');
+			setSelectedGenerationId(null);
+			setSelectedModelId(null);
+			return;
+		}
+
 		setSelectedGenerationId(option?.value || null);
+		setIsGenerationManual(false);
+		setCustomGeneration('');
 		setSelectedModelId(null);
 	};
 
@@ -173,8 +128,148 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 		newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption>,
 	) => {
 		const option = newValue as TSelectOption | null;
+
+		if (option?.value === 'MANUAL_ENTRY') {
+			setIsModelManual(true);
+			setCustomModel('');
+			setSelectedModelId(null);
+			return;
+		}
+
 		setSelectedModelId(option?.value || null);
+		setIsModelManual(false);
+		setCustomModel('');
 	};
+
+	// --- Helpers to get Options even if parent is manual ---
+	const getAllGenerationsForBrand = (brand: MarcaProcesador): Generacion[] => {
+		const families = getFamiliasPorMarcaYDispositivo(deviceType, brand);
+		const allGens = families.flatMap((f) => f.generaciones);
+		const uniqueGens = new Map<string, Generacion>();
+		allGens.forEach((g) => uniqueGens.set(g.id, g));
+		return Array.from(uniqueGens.values());
+	};
+
+	// --- Label Cleaner Helper ---
+	const cleanLabel = (text: string) => {
+		// Remove content in parentheses, e.g., "12ª Gen (Alder Lake)" -> "12ª Gen"
+		return text.replace(/\s*\(.*?\)\s*/g, '').trim();
+	};
+
+	// --- Derived Data for Dropdowns ---
+	const marcasData = getMarcasPorDispositivo(deviceType);
+	const brandOptions: TSelectOption[] = marcasData.map((marca) => ({
+		value: marca.nombre,
+		label: marca.nombre,
+	}));
+
+	// Manual Entry Option
+	const manualOption: TSelectOption = {
+		value: 'MANUAL_ENTRY',
+		label: 'Ingresar manualmente / Otro...',
+	};
+
+	const familiasData = selectedBrand
+		? getFamiliasPorMarcaYDispositivo(deviceType, selectedBrand)
+		: [];
+	const familyOptions: TSelectOption[] = [
+		manualOption,
+		...familiasData.map((familia) => ({
+			value: familia.id,
+			label: cleanLabel(familia.nombre),
+		})),
+	];
+
+	// Generations logic
+	let generacionesToShow: { id: string; nombre: string; modelos: ModeloProcesador[] }[] = [];
+	if (selectedBrand) {
+		if (!isFamilyManual && selectedFamilyId) {
+			generacionesToShow = getGeneracionesPorFamilia(
+				deviceType,
+				selectedBrand,
+				selectedFamilyId,
+			);
+		} else if (isFamilyManual || !selectedFamilyId) {
+			// Show all generations for the brand if family is manual
+			generacionesToShow = getAllGenerationsForBrand(selectedBrand);
+		}
+	}
+	const generationOptions: TSelectOption[] = [
+		manualOption,
+		...generacionesToShow.map((gen) => ({
+			value: gen.id,
+			label: cleanLabel(gen.nombre),
+		})),
+	];
+
+	// Models logic
+	let modelosToShow: { id: string; nombre: string }[] = [];
+	if (selectedBrand) {
+		// If we have specific gen selected (regardless of family state), show its models
+		if (selectedGenerationId) {
+			// We need to find the generation object. It might be in the filtered list or global list
+			const genObj = generacionesToShow.find((g) => g.id === selectedGenerationId);
+			if (genObj) {
+				modelosToShow = genObj.modelos;
+			}
+		}
+	}
+	const modelOptions: TSelectOption[] = [
+		manualOption,
+		...modelosToShow.map((modelo) => ({
+			value: modelo.id,
+			label: cleanLabel(modelo.nombre),
+		})),
+	];
+
+	const shouldShowModelSelect = true;
+
+	// --- Auto-construct Value Logic ---
+	useEffect(() => {
+		if (!selectedBrand) return;
+
+		// We construct string from all pieces
+		const brandStr = selectedBrand;
+
+		const familyStr = isFamilyManual
+			? customFamily
+			: familiasData.find((f) => f.id === selectedFamilyId)?.nombre || '';
+
+		const genStr = isGenerationManual
+			? customGeneration
+			: generacionesToShow.find((g) => g.id === selectedGenerationId)?.nombre || '';
+
+		const modelStr = isModelManual
+			? customModel
+			: modelosToShow.find((m) => m.id === selectedModelId)?.nombre || '';
+
+		// Filter out empty strings
+		const parts = [brandStr, familyStr, genStr, modelStr].filter(
+			(p) => p && p.trim().length > 0,
+		);
+		const fullString = parts.join(' ');
+
+		// Avoid infinite updates
+		if (value !== fullString && fullString.trim().length > 0) {
+			onChange(fullString);
+		}
+	}, [
+		selectedBrand,
+		selectedFamilyId,
+		selectedGenerationId,
+		selectedModelId,
+		isFamilyManual,
+		isGenerationManual,
+		isModelManual,
+		customFamily,
+		customGeneration,
+		customModel,
+		familiasData,
+		generacionesToShow,
+		modelosToShow,
+		onChange,
+		value,
+	]);
 
 	// --- Brand Color Logic ---
 	const getBrandColor = (text: string) => {
@@ -218,13 +313,12 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 	const isQuickSelected = (optValue: string) => value === optValue;
 
 	const handleQuickSelect = (val: string) => {
-		onChange(val);
-		setIsManualMode(false);
-		// Reset dropdowns nicely
+		// Reset dropdowns nicely first to prevent useEffect from overwriting
 		setSelectedBrand(null);
-		setSelectedFamilyId(null);
-		setSelectedGenerationId(null);
-		setSelectedModelId(null);
+		resetDownstreamFromBrand();
+
+		// Force update value
+		onChange(val);
 	};
 
 	return (
@@ -255,160 +349,191 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 					<label className='text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
 						Selección Rápida
 					</label>
-
-					{/* Toggle Manual Mode Button */}
-					<button
-						type='button'
-						onClick={() => {
-							setIsManualMode(!isManualMode);
-							// Reset dropdowns if switching to manual to avoid confusion? No, keep context.
-						}}
-						className={`text-xs font-medium underline transition-colors ${
-							isManualMode
-								? 'text-red-500 hover:text-red-400'
-								: 'text-zinc-500 hover:text-zinc-400'
-						}`}>
-						{isManualMode ? 'Cancelar ingreso manual' : '¿No está en la lista?'}
-					</button>
 				</div>
 
-				{!isManualMode && (
-					<div className='grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-6'>
-						{QUICK_OPTIONS.map((opt) => (
-							<SelectionCard
-								key={opt.value}
-								label={opt.label}
-								value={opt.value}
-								isSelected={isQuickSelected(opt.value)}
-								onClick={() => !readOnly && handleQuickSelect(opt.value)}
-								variant='compact'
-								color={
-									isQuickSelected(opt.value)
-										? brandColor === 'orange'
-											? 'orange'
-											: 'blue'
-										: 'gray'
-								}
-								className='text-xs'
-							/>
-						))}
-					</div>
-				)}
+				<div className='grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-6'>
+					{QUICK_OPTIONS.map((opt) => (
+						<SelectionCard
+							key={opt.value}
+							label={opt.label}
+							value={opt.value}
+							isSelected={isQuickSelected(opt.value)}
+							onClick={() => !readOnly && handleQuickSelect(opt.value)}
+							variant='compact'
+							color={
+								isQuickSelected(opt.value)
+									? brandColor === 'orange'
+										? 'orange'
+										: 'blue'
+									: 'gray'
+							}
+							className='text-xs'
+						/>
+					))}
+				</div>
 			</div>
 
 			{/* 3. Advanced Selection Area */}
-			<div
-				className={`transition-all duration-300 ${isManualMode ? 'opacity-100' : 'opacity-100'}`}>
-				{isManualMode ? (
-					<div className='animate-in fade-in slide-in-from-top-2 duration-300'>
-						<label className='mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300'>
-							Ingreso Manual
+			<div className='relative'>
+				{/* Divider with Text */}
+				<div className='relative mb-6 flex items-center'>
+					<div className='flex-grow border-t border-zinc-200 dark:border-zinc-700'></div>
+					<span className='mx-4 flex-shrink-0 text-xs font-semibold text-zinc-400'>
+						O Configuración Detallada
+					</span>
+					<div className='flex-grow border-t border-zinc-200 dark:border-zinc-700'></div>
+				</div>
+
+				{/* Dropdowns Grid */}
+				<div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+					{/* 1. Marca */}
+					<div>
+						<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
+							1. Marca
 						</label>
-						<Input
-							name='processor-manual'
-							value={value || ''}
-							onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-								onChange(e.target.value)
-							}
-							placeholder='Ej: Intel Core 2 Duo E8400...'
-							disabled={readOnly}
-							className={`w-full focus:ring-2 ${colorClasses.ring}`}
-							autoFocus
+						<SelectReact
+							name='processor-brand'
+							options={brandOptions}
+							value={brandOptions.find((o) => o.value === selectedBrand) || null}
+							onChange={handleBrandChange}
+							placeholder='Seleccionar...'
+							isDisabled={readOnly}
 						/>
-						<p className='mt-2 text-xs text-zinc-500'>
-							Escriba marca, familia y modelo (ej: <code>Check Point 15600</code> o{' '}
-							<code>Intel Xeon E5-2600</code>).
-						</p>
 					</div>
-				) : (
-					<div className='relative'>
-						{/* Divider with Text */}
-						<div className='relative mb-6 flex items-center'>
-							<div className='flex-grow border-t border-zinc-200 dark:border-zinc-700'></div>
-							<span className='mx-4 flex-shrink-0 text-xs font-semibold text-zinc-400'>
-								O Configuración Detallada
-							</span>
-							<div className='flex-grow border-t border-zinc-200 dark:border-zinc-700'></div>
-						</div>
 
-						{/* Dropdowns Grid */}
-						<div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-							{/* 1. Marca */}
-							<div>
-								<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
-									1. Marca
-								</label>
-								<SelectReact
-									name='processor-brand'
-									options={brandOptions}
-									value={
-										brandOptions.find((o) => o.value === selectedBrand) || null
-									}
-									onChange={handleBrandChange}
-									placeholder='Seleccionar...'
-									isDisabled={readOnly}
+					{/* 2. Familia */}
+					<div>
+						<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
+							2. Familia
+						</label>
+						{!isFamilyManual ? (
+							<SelectReact
+								name='processor-family'
+								options={familyOptions}
+								value={
+									familyOptions.find((o) => o.value === selectedFamilyId) || null
+								}
+								onChange={handleFamilyChange}
+								placeholder='Serie...'
+								isDisabled={readOnly || !selectedBrand}
+							/>
+						) : (
+							<div className='relative'>
+								<Input
+									name='custom-family'
+									value={customFamily}
+									onChange={(e) => setCustomFamily(e.target.value)}
+									placeholder='Escriba familia...'
+									className='w-full pr-8'
+									autoFocus
 								/>
+								<button
+									type='button'
+									onClick={() => {
+										setIsFamilyManual(false);
+										setCustomFamily('');
+										setSelectedFamilyId(null);
+									}}
+									className='absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-red-500'
+									title='Volver a lista'>
+									✕
+								</button>
 							</div>
+						)}
+					</div>
 
-							{/* 2. Familia */}
-							<div>
-								<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
-									2. Familia
-								</label>
+					{/* 3. Generación */}
+					<div>
+						<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
+							3. Generación
+						</label>
+						{!isGenerationManual ? (
+							<SelectReact
+								name='processor-generation'
+								options={generationOptions}
+								value={
+									generationOptions.find(
+										(o) => o.value === selectedGenerationId,
+									) || null
+								}
+								onChange={handleGenerationChange}
+								placeholder='Generación...'
+								isDisabled={
+									readOnly ||
+									(!selectedFamilyId && !isFamilyManual && !selectedBrand)
+								}
+							/>
+						) : (
+							<div className='relative'>
+								<Input
+									name='custom-generation'
+									value={customGeneration}
+									onChange={(e) => setCustomGeneration(e.target.value)}
+									placeholder='Escriba generación...'
+									className='w-full pr-8'
+									autoFocus
+								/>
+								<button
+									type='button'
+									onClick={() => {
+										setIsGenerationManual(false);
+										setCustomGeneration('');
+										setSelectedGenerationId(null);
+									}}
+									className='absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-red-500'
+									title='Volver a lista'>
+									✕
+								</button>
+							</div>
+						)}
+					</div>
+
+					{/* 4. Modelo */}
+					{shouldShowModelSelect && (
+						<div>
+							<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
+								4. Modelo
+							</label>
+							{!isModelManual ? (
 								<SelectReact
-									name='processor-family'
-									options={familyOptions}
+									name='processor-model'
+									options={modelOptions}
 									value={
-										familyOptions.find((o) => o.value === selectedFamilyId) ||
+										modelOptions.find((o) => o.value === selectedModelId) ||
 										null
 									}
-									onChange={handleFamilyChange}
-									placeholder='Serie...'
-									isDisabled={readOnly || !selectedBrand}
-								/>
-							</div>
-
-							{/* 3. Generación */}
-							<div>
-								<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
-									3. Generación
-								</label>
-								<SelectReact
-									name='processor-generation'
-									options={generationOptions}
-									value={
-										generationOptions.find(
-											(o) => o.value === selectedGenerationId,
-										) || null
+									onChange={handleModelChange}
+									placeholder='Modelo Exacto...'
+									isDisabled={
+										readOnly || (!selectedGenerationId && !isGenerationManual)
 									}
-									onChange={handleGenerationChange}
-									placeholder='Generación...'
-									isDisabled={readOnly || !selectedFamilyId}
 								/>
-							</div>
-
-							{/* 4. Modelo */}
-							{shouldShowModelSelect && (
-								<div>
-									<label className='mb-1.5 block text-xs font-medium text-zinc-500'>
-										4. Modelo
-									</label>
-									<SelectReact
-										name='processor-model'
-										options={modelOptions}
-										value={
-											modelOptions.find((o) => o.value === selectedModelId) ||
-											null
-										}
-										onChange={handleModelChange}
-										placeholder='Modelo Exacto...'
-										isDisabled={readOnly || !selectedGenerationId}
+							) : (
+								<div className='relative'>
+									<Input
+										name='custom-model'
+										value={customModel}
+										onChange={(e) => setCustomModel(e.target.value)}
+										placeholder='Escriba modelo...'
+										className='w-full pr-8'
+										autoFocus
 									/>
+									<button
+										type='button'
+										onClick={() => {
+											setIsModelManual(false);
+											setCustomModel('');
+											setSelectedModelId(null);
+										}}
+										className='absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-red-500'
+										title='Volver a lista'>
+										✕
+									</button>
 								</div>
 							)}
 						</div>
-					</div>
-				)}
+					)}
+				</div>
 			</div>
 		</div>
 	);
