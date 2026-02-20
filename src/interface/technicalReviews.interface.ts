@@ -40,6 +40,7 @@ export interface IBatch {
 		name: string;
 	};
 	entry_date: string; // YYYY-MM-DD
+	review_date?: string; // YYYY-MM-DD
 	expected_quantity: number;
 	received_quantity?: number;
 	completed_quantity?: number;
@@ -50,8 +51,8 @@ export interface IBatch {
 	items_summary?: {
 		total: number;
 		by_equipment_type?: Record<EquipmentType, number>;
-		by_review_status?: Array<{ status: ReviewStatus; count: number }>;
-		by_current_status?: Array<{ status: CommercialStatus; count: number }>;
+		by_review_status?: Partial<Record<ReviewStatus, number>>;
+		by_current_status?: Partial<Record<CommercialStatus, number>>;
 		by_grade?: Record<string, number>;
 	};
 	created_by?: {
@@ -122,6 +123,8 @@ export interface FetchBatchesParams {
 	search?: string; // Busca por serie dentro de los ítems del lote
 	page?: number;
 	per_page?: number;
+	sort_by?: string;
+	order?: 'asc' | 'desc';
 }
 
 /**
@@ -222,7 +225,7 @@ export interface UpdateItemDetailsPayload {
 	defective_ports_critical_count?: number;
 
 	// Atributos extra dinámicos
-	[key: string]: any;
+	[key: string]: unknown;
 }
 
 /**
@@ -265,7 +268,7 @@ export interface IValidationRule {
 	label: string;
 	type: 'string' | 'number' | 'boolean' | 'select' | 'enum';
 	required: boolean;
-	options?: Array<{ value: any; label: string }>;
+	options?: Array<{ value: string | number; label: string }>;
 	min?: number;
 	max?: number;
 	pattern?: string;
@@ -365,8 +368,8 @@ export interface ITraceabilityHistoryResponse {
 		id: number;
 		status: { value: string; label: string; color: string };
 		warehouse: { id: number; name: string } | null;
-		customer: any | null;
-		sale_id: any | null;
+		customer: unknown | null;
+		sale_id: unknown | null;
 		current_responsible: { id: number; name: string; user_image: string } | null;
 		received_at: string | null;
 		reviewed_at: string | null;

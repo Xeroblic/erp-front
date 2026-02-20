@@ -111,6 +111,21 @@ const TraceabilityPage = lazy(
 	() => import('@/pages/technical-reviews/traceability/TraceabilityPage'),
 );
 
+/// REFACTOR DE TECHNICAL REVIEW
+
+const RefactorTechnicalReview = lazy(() => import('@/pages/refactor-technical-review/index'));
+const RefactorBatches = lazy(() => import('@/pages/refactor-technical-review/pages/batches/index'));
+const RefactorCrearLote = lazy(
+	() => import('@/pages/refactor-technical-review/pages/batches/pages/CrearLote'),
+);
+const RefactorDetalleLote = lazy(
+	() => import('@/pages/refactor-technical-review/pages/batches/pages/DetalleLote'),
+);
+const RefactorRevisiones = lazy(
+	() => import('@/pages/refactor-technical-review/pages/revisiones/index'),
+);
+
+/// Notificaciones
 const NotificationsAllPage = lazy(() => import('@/pages/notificaciones/NotificationsAll'));
 const NotificationDetailPage = lazy(() => import('@/pages/notificaciones/NotificationDetail'));
 
@@ -126,6 +141,27 @@ const contentRoutes: IRoutePersonalizada[] = [
 	{ path: cfg.loginPage.to, element: <LoginPage />, public: true },
 	{ path: cfg.recuperarPassword.to, element: <RecuperarPassword />, public: true },
 	{ path: cfg.confirmarNuevaPass.to, element: <ConfirmarNuevaPass />, public: true },
+	// refactor
+	{
+		path: cfg.technical.subPages.refactor.to,
+		element: <RefactorTechnicalReview />,
+		authority: cfg.technical.subPages.refactor.authority,
+	},
+	{
+		path: cfg.technical.subPages.lotes.to,
+		element: <RefactorBatches />,
+		authority: cfg.technical.subPages.lotes.authority,
+	},
+	{
+		path: '/technical-reviews/lotes/crear',
+		element: <RefactorCrearLote />,
+		authority: cfg.technical.subPages.lotes.authority,
+	},
+	{
+		path: '/technical-reviews/lotes/:batchId',
+		element: <RefactorDetalleLote />,
+		authority: cfg.technical.subPages.lotes.authority,
+	},
 	{ path: '/usuarios/activar/:token', element: <AceptarInvitacionEmpresa />, public: true },
 
 	{ path: cfg.profilePage.to, element: <ProfilePage />, authority: cfg.profilePage.authority },
@@ -402,17 +438,17 @@ const contentRoutes: IRoutePersonalizada[] = [
 	},
 	{
 		path: '/technical-reviews/batches/:batchId/:itemId',
-		element: <BatchItemReview />,
-		authority: cfg.technical.subPages.reviews.authority,
-	},
-	{
-		path: '/technical-reviews/batches/:batchId/items/create',
-		element: <BatchItemReview />,
+		element: <RefactorRevisiones />,
 		authority: cfg.technical.subPages.reviews.authority,
 	},
 	{
 		path: '/technical-reviews/batches/:batchId/items/:itemId',
-		element: <BatchItemReview />,
+		element: <RefactorRevisiones />,
+		authority: cfg.technical.subPages.reviews.authority,
+	},
+	{
+		path: '/technical-reviews/batches/:batchId/items/create',
+		element: <RefactorRevisiones />,
 		authority: cfg.technical.subPages.reviews.authority,
 	},
 	{
@@ -422,7 +458,7 @@ const contentRoutes: IRoutePersonalizada[] = [
 	},
 	{
 		path: '/technical-reviews/items/:itemId',
-		element: <ItemReview />,
+		element: <RefactorRevisiones />,
 		authority: cfg.technical.subPages.reviews.authority,
 	},
 	{

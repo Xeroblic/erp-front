@@ -6,7 +6,7 @@ import Badge from '@/components/ui/Badge';
 import type { ReviewStatus, CommercialStatus } from '@/interface/technicalReviews.interface';
 import type { TColors } from '@/types/colors.type';
 import { arrColors } from '@/types/colors.type';
-import { COMMERCIAL_STATUS_CONFIG } from '@/pages/technical-reviews/constants';
+import { COMMERCIAL_STATUS_CONFIG } from '@/pages/refactor-technical-review/components/constants/statuses.constant';
 
 type StatusOption = {
 	value?: ReviewStatus | CommercialStatus | string | null;

@@ -567,7 +567,7 @@ const DefaultAsideTemplate = () => {
 							isOpen={collapseStates.servicio}
 							onToggle={() => toggleCollapse('servicio')}>
 							{/* Revisiones Técnicas */}
-							<AuthorityCheckNav
+							{/* <AuthorityCheckNav
 								authority={Pages.technical.subPages.reviews.authority}
 								roles={Pages.technical.subPages.reviews.roles}
 								userAuthority={userAuthority}>
@@ -577,6 +577,20 @@ const DefaultAsideTemplate = () => {
 									icon={Pages.technical.subPages.reviews.icon}
 									id={Pages.technical.subPages.reviews.id}
 									onClick={() => navigate(Pages.technical.subPages.reviews.to)}
+								/>
+							</AuthorityCheckNav> */}
+
+							{/* refactor */}
+							<AuthorityCheckNav
+								authority={Pages.technical.subPages.refactor.authority}
+								roles={Pages.technical.subPages.refactor.roles}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.technical.subPages.refactor.text}
+									to={Pages.technical.subPages.refactor.to}
+									icon={Pages.technical.subPages.refactor.icon}
+									id={Pages.technical.subPages.refactor.id}
+									onClick={() => navigate(Pages.technical.subPages.refactor.to)}
 								/>
 							</AuthorityCheckNav>
 

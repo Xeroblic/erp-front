@@ -686,11 +686,53 @@ export const privatePages = {
 					'after-sales',
 				],
 			},
+			refactor: {
+				id: 'technicalRefactor',
+				to: '/technical-reviews/refactor',
+				text: 'Revisiones Técnicas',
+				icon: 'DuoClipboard', // Using a clipboard icon
+				authority: ['view-technical-reviews-batches'],
+				roles: [
+					'super-admin',
+					'admin',
+					'company-admin',
+					'subsidiary-admin',
+					'branch-admin',
+					'company-supervisor',
+					'employee',
+					'technician',
+					'warehouse-employee',
+					'warehouse-manager',
+					'salesperson',
+					'after-sales',
+				],
+			},
+			lotes: {
+				id: 'technicalLotes',
+				to: '/technical-reviews/lotes',
+				text: 'Revisiones por lotes',
+				icon: 'DuoClipboard', // Using a clipboard icon
+				authority: ['view-technical-reviews-batches'],
+				roles: [
+					'super-admin',
+					'admin',
+					'company-admin',
+					'subsidiary-admin',
+					'branch-admin',
+					'company-supervisor',
+					'employee',
+					'technician',
+					'warehouse-employee',
+					'warehouse-manager',
+					'salesperson',
+					'after-sales',
+				],
+			},
 			batches: {
 				id: 'technicalBatches',
 				to: '/technical-reviews/batches',
 				text: 'Revisiones por lotes',
-				icon: 'DuoClipboard', // Using a clipboard icon
+				icon: 'DuoClipboard',
 				authority: ['view-technical-reviews-batches'],
 				roles: [
 					'super-admin',
@@ -710,9 +752,7 @@ export const privatePages = {
 		},
 	},
 
-	// =========================
-	// CATÁLOGOS
-	// =========================
+
 	catalogs: {
 		id: 'catalogs',
 		to: '/catalogos',

@@ -39,6 +39,7 @@ interface DataTableProps<TData> {
 	// Customization
 	enableSearch?: boolean;
 	actions?: React.ReactNode;
+	initialSortingState?: SortingState;
 }
 
 export default function DataTable<TData>({
@@ -58,8 +59,11 @@ export default function DataTable<TData>({
 	// Customization
 	enableSearch = true,
 	actions,
+	initialSortingState,
 }: DataTableProps<TData>) {
-	const initialSorting = React.useMemo<SortingState>(() => {
+	const defaultSorting = React.useMemo<SortingState>(() => {
+		if (initialSortingState) return initialSortingState;
+
 		const columnIds = columns
 			.map((col) => {
 				if ('id' in col && col.id) return col.id;
@@ -68,9 +72,9 @@ export default function DataTable<TData>({
 			})
 			.filter(Boolean);
 		return columnIds.includes('id') ? [{ id: 'id', desc: false }] : [];
-	}, [columns]);
+	}, [columns, initialSortingState]);
 
-	const [sorting, setSorting] = React.useState<SortingState>(initialSorting);
+	const [sorting, setSorting] = React.useState<SortingState>(defaultSorting);
 	const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
 	const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
 	const [globalFilter, setGlobalFilter] = React.useState(searchValue);
