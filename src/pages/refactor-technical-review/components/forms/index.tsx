@@ -7,6 +7,7 @@ import React from 'react';
 import NotebookForm from './notebook/NotebookForm';
 import DesktopForm from './desktop/DesktopForm';
 import AioForm from './aio/AioForm';
+import DockingForm from './docking/DockingForm';
 
 interface EquipmentFormRouterProps {
 	equipmentType: string;
@@ -58,10 +59,11 @@ const EquipmentFormRouter: React.FC<EquipmentFormRouterProps> = ({
 		case 'all-in-one':
 			return <AioForm {...formProps} />;
 
+		case 'docking':
+			return <DockingForm {...formProps} />;
+
 		// case 'monitor':
 		//   return <MonitorForm {...formProps} />;
-		// case 'docking':
-		//   return <DockingForm {...formProps} />;
 
 		default:
 			return (
