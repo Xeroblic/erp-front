@@ -112,7 +112,9 @@ const CrearLote: React.FC = () => {
 
 	useEffect(() => {
 		if (subsidiaryId) {
-			dispatch(fetchCustomerSuppliers({ subsidiaryId, with_suppliers: true }));
+			dispatch(
+				fetchCustomerSuppliers({ subsidiaryId, with_suppliers: true, per_page: 1000 }),
+			);
 			dispatch(fetchSuppliers({ subsidiaryId, with_customers: true }));
 		}
 	}, [dispatch, subsidiaryId]);
@@ -147,7 +149,9 @@ const CrearLote: React.FC = () => {
 				const created = await dispatch(
 					createCustomerSupplier({ subsidiaryId, data }),
 				).unwrap();
-				dispatch(fetchCustomerSuppliers({ subsidiaryId, with_suppliers: true }));
+				dispatch(
+					fetchCustomerSuppliers({ subsidiaryId, with_suppliers: true, per_page: 1000 }),
+				);
 				toast.success('Cliente/Proveedor creado correctamente');
 				setCustomerSupplierModalOpen(false);
 				return created;
@@ -588,6 +592,7 @@ const CrearLote: React.FC = () => {
 																			subsidiaryId:
 																				selectedCustomer.subsidiary_id,
 																			with_suppliers: true,
+																			per_page: 1000,
 																		}),
 																	);
 																} catch (err: any) {

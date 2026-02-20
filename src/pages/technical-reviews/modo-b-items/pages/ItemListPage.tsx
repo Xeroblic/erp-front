@@ -178,6 +178,7 @@ const ItemsListPage: React.FC = () => {
 				fetchCustomerSuppliers({
 					subsidiaryId,
 					with_suppliers: true,
+					per_page: 1000,
 				}),
 			);
 		}

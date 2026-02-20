@@ -110,6 +110,7 @@ const CreateBatchPage: React.FC = () => {
 				fetchCustomerSuppliers({
 					subsidiaryId,
 					with_suppliers: true,
+					per_page: 1000,
 				}),
 			);
 			dispatch(
@@ -160,6 +161,7 @@ const CreateBatchPage: React.FC = () => {
 					fetchCustomerSuppliers({
 						subsidiaryId,
 						with_suppliers: true,
+						per_page: 1000,
 					}),
 				);
 				toast.success('Cliente/Proveedor creado correctamente');
