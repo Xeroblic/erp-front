@@ -124,6 +124,7 @@ const RefactorDetalleLote = lazy(
 const RefactorRevisiones = lazy(
 	() => import('@/pages/refactor-technical-review/pages/revisiones/index'),
 );
+const RefactorSeries = lazy(() => import('@/pages/refactor-technical-review/pages/series/index'));
 
 /// Notificaciones
 const NotificationsAllPage = lazy(() => import('@/pages/notificaciones/NotificationsAll'));
@@ -452,8 +453,18 @@ const contentRoutes: IRoutePersonalizada[] = [
 		authority: cfg.technical.subPages.reviews.authority,
 	},
 	{
+		path: '/technical-reviews/series',
+		element: <RefactorSeries />,
+		authority: cfg.technical.subPages.reviews.authority,
+	},
+	{
 		path: '/technical-reviews/items',
 		element: <ItemsList />,
+		authority: cfg.technical.subPages.reviews.authority,
+	},
+	{
+		path: '/technical-reviews/items/create',
+		element: <RefactorRevisiones />,
 		authority: cfg.technical.subPages.reviews.authority,
 	},
 	{

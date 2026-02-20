@@ -28,7 +28,7 @@ const TechnicalReview = () => {
 			</Subheader>
 			<Container className='w-screen'>
 				<div className='flex flex-col gap-3 space-y-6'>
-					<Card >
+					<Card>
 						<CardHeader>
 							<div className='flex flex-row gap-2'>
 								<Icon icon='DuoSun' className='text-4xl' />
@@ -40,7 +40,9 @@ const TechnicalReview = () => {
 					</Card>
 
 					<div className='grid grid-cols-2 gap-4'>
-						<Card onClick={() => navigate('/technical-reviews/lotes')} className='hover:scale-100 hover:translate-y-1 transition-all duration-300 hover:shadow-lg cursor-pointer'>
+						<Card
+							onClick={() => navigate('/technical-reviews/lotes')}
+							className='cursor-pointer transition-all duration-300 hover:translate-y-1 hover:scale-100 hover:shadow-lg'>
 							<CardHeader>
 								<Badge className='text-2xl font-bold'>
 									Realizar revisiones técnicas
@@ -72,10 +74,12 @@ const TechnicalReview = () => {
 							</CardBody>
 						</Card>
 
-						<Card className='hover:scale-100 hover:translate-y-1 transition-all duration-300 hover:shadow-lg cursor-pointer'>
+						<Card
+							onClick={() => navigate('/technical-reviews/series')}
+							className='cursor-pointer transition-all duration-300 hover:translate-y-1 hover:scale-100 hover:shadow-lg'>
 							<CardHeader>
 								<div className='flex flex-row items-center gap-2'>
-									<Icon icon='DuoArticle' className='text-4xl' />
+									<Icon icon='DuoArchive' className='text-4xl' />
 									<Badge className='text-2xl font-bold'>
 										Vista global por series
 									</Badge>
