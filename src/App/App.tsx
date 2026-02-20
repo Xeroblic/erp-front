@@ -98,12 +98,13 @@ const App = () => {
 					<AppInitializer />
 					<AsideRouter />
 					<Wrapper>
-						<NotificationsStreamProvider>
-							<HeaderRouter />
-							<ContentRouter />
-							<FooterRouter />
-							{/* <FloatingInfo position='top' size='large' color='red' /> */}
-						</NotificationsStreamProvider>
+						{/* SSE de notificaciones deshabilitado temporalmente para evitar saturar Redis */}
+						{/* <NotificationsStreamProvider> */}
+						<HeaderRouter />
+						<ContentRouter />
+						<FooterRouter />
+						{/* <FloatingInfo position='top' size='large' color='red' /> */}
+						{/* </NotificationsStreamProvider> */}
 					</Wrapper>
 				</div>
 			)}
