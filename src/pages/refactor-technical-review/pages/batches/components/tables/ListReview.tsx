@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { createColumnHelper, PaginationState, OnChangeFn } from '@tanstack/react-table';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/store';
@@ -14,7 +14,8 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import { EquipmentType, IItem } from '@/interface/technicalReviews.interface';
-
+import ApiService from '@/services/ApiService';
+import ExportExcelModal from '@/pages/refactor-technical-review/components/ExcelExport/ExportExcelModal';
 import PrintLabel from '@/pages/refactor-technical-review/components/PrintLabel';
 import Card, { CardBody } from '@/components/ui/Card';
 import StatusBadge from '@/pages/refactor-technical-review/components/StatusBadge';
@@ -58,7 +59,53 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 		dispatch(fetchItems({ branchId, params }));
 	}, [dispatch, branchId, batchId, pagination.pageIndex, pagination.pageSize, activeTab]);
 
-	// Print State
+	const fetchAllForExport = useCallback(
+		async (includeDetails = false): Promise<IItem[]> => {
+			if (!branchId) return [];
+			const params: any = {
+				batch_id: batchId,
+			};
+			if (activeTab !== 'all') {
+				params.equipment_type = activeTab;
+			}
+			const perPage = 1000;
+			let page = 1;
+			let lastPage = 1;
+			const allItems: IItem[] = [];
+			const baseUrl = (import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
+			const url = `${baseUrl}/branches/${branchId}/technical-reviews/items`.replace(
+				/([^:])\/\/+/g,
+				'$1/',
+			);
+
+			do {
+				const response = await ApiService.fetchData<{ data?: any[]; meta?: any }>({
+					url,
+					method: 'get',
+					params: {
+						...params,
+						page,
+						per_page: perPage,
+						with_details: includeDetails ? 1 : undefined,
+						with_attributes: includeDetails ? 1 : undefined,
+					},
+				});
+				const list = Array.isArray(response.data?.data)
+					? response.data?.data
+					: Array.isArray(response.data)
+						? (response.data as any[])
+						: [];
+				allItems.push(...list);
+				lastPage = response.data?.meta?.last_page ?? page;
+				page += 1;
+			} while (page <= lastPage);
+			return allItems;
+		},
+		[branchId, batchId, activeTab],
+	);
+
+	// Print & Export State
+	const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 	const [isPrintLabelOpen, setIsPrintLabelOpen] = useState(false);
 	const [itemToPrint, setItemToPrint] = useState<IItem | null>(null);
 
@@ -185,6 +232,18 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 	return (
 		<Card>
 			<CardBody>
+				<div className='mb-4 flex flex-wrap items-center justify-between'>
+					<div></div>
+					<Button
+						variant='outline'
+						size='sm'
+						className='flex items-center gap-2'
+						isDisable={!items || items.length === 0}
+						onClick={() => setIsExportModalOpen(true)}>
+						<Icon icon='HeroArrowDownTray' className='h-4 w-4' />
+						Exportar XLSX
+					</Button>
+				</div>
 				<DataTable
 					data={items}
 					columns={columns}
@@ -193,6 +252,14 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 					pageCount={meta?.last_page || 1}
 					onPaginationChange={setPagination}
 					manualPagination
+				/>
+
+				<ExportExcelModal
+					isOpen={isExportModalOpen}
+					setIsOpen={setIsExportModalOpen}
+					items={items}
+					exportFileName={`Lote_${batchId}`}
+					onExportFetchAll={fetchAllForExport}
 				/>
 
 				{isPrintLabelOpen && itemToPrint && (

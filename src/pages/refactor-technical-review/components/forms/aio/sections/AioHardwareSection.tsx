@@ -25,6 +25,7 @@ interface SelectionCardProps {
 const SelectionCard = ({ label, value, isSelected, onClick, hint }: SelectionCardProps) => (
 	<div
 		onClick={onClick}
+		data-value={value}
 		className={`cursor-pointer rounded-lg border-2 p-3 transition-colors duration-200 ${
 			isSelected
 				? 'border-orange-500 bg-orange-500/20 dark:border-orange-500 dark:bg-orange-500/30'
