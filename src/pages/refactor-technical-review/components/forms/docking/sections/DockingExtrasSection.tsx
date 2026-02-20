@@ -75,8 +75,8 @@ const DockingExtrasSection: React.FC<FormSectionProps<DockingFormData>> = ({
 			</div>
 
 			{/* Cover Condition */}
-			<div className='rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50'>
-				<label className='mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400'>
+			<div className='rounded-xl border border-orange-200 bg-orange-500/10 p-6 shadow-sm transition-colors duration-200 hover:bg-orange-500/20 dark:border-orange-800/50 dark:bg-orange-900/10 dark:hover:bg-orange-900/20'>
+				<label className='mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-orange-800 dark:text-orange-200'>
 					<Icon icon='HeroStop' className='h-5 w-5' />
 					{getDockingLabel('cover_condition')}
 				</label>
@@ -88,6 +88,7 @@ const DockingExtrasSection: React.FC<FormSectionProps<DockingFormData>> = ({
 							label={opt.label as string}
 							value={opt.value as string}
 							isSelected={currentCover === opt.value}
+							color='orange'
 							onClick={() => {
 								if (readOnly) return;
 								setValue(
@@ -110,8 +111,8 @@ const DockingExtrasSection: React.FC<FormSectionProps<DockingFormData>> = ({
 			</div>
 
 			{/* Observations */}
-			<div className='rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50'>
-				<label className='mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400'>
+			<div className='rounded-xl border border-zinc-200 bg-white p-6 shadow-sm transition-colors duration-200 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-zinc-700'>
+				<label className='mb-3 flex items-center gap-2 text-sm font-bold text-zinc-700 dark:text-zinc-300'>
 					<Icon icon='HeroDocumentText' className='h-5 w-5' />
 					{getDockingLabel('observations')}
 				</label>

@@ -16,7 +16,15 @@ import type { TIcons } from '@/types/icons.type';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type SelectionCardColor = 'green' | 'red' | 'yellow' | 'gray' | 'blue' | 'orange';
+type SelectionCardColor =
+	| 'green'
+	| 'red'
+	| 'yellow'
+	| 'gray'
+	| 'blue'
+	| 'orange'
+	| 'fuchsia'
+	| 'emerald';
 
 export interface SelectionCardProps {
 	/** Texto visible dentro de la tarjeta */
@@ -69,6 +77,16 @@ const COLOR_STYLES: Record<SelectionCardColor, { selected: string; idle: string 
 		selected:
 			'bg-blue-100 border-blue-500 text-blue-800 shadow-md ring-1 ring-blue-500 ring-offset-1 dark:bg-blue-900/60 dark:border-blue-400 dark:text-blue-100',
 		idle: 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400',
+	},
+	fuchsia: {
+		selected:
+			'bg-fuchsia-100 border-fuchsia-500 text-fuchsia-800 shadow-md ring-1 ring-fuchsia-500 ring-offset-1 dark:bg-fuchsia-900/60 dark:border-fuchsia-400 dark:text-fuchsia-100',
+		idle: 'bg-fuchsia-50/50 border-fuchsia-200 text-fuchsia-700 hover:bg-fuchsia-100 dark:bg-fuchsia-900/10 dark:border-fuchsia-900/30 dark:text-fuchsia-400',
+	},
+	emerald: {
+		selected:
+			'bg-emerald-100 border-emerald-500 text-emerald-800 shadow-md ring-1 ring-emerald-500 ring-offset-1 dark:bg-emerald-900/60 dark:border-emerald-400 dark:text-emerald-100',
+		idle: 'bg-emerald-50/50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/10 dark:border-emerald-900/30 dark:text-emerald-400',
 	},
 };
 

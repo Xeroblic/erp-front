@@ -1,18 +1,19 @@
 import React, { useEffect, useMemo } from 'react';
 import { Controller } from 'react-hook-form';
 import { FormSectionProps } from '../../shared/types';
-import { DockingFormData } from '../../../validation/docking.schema';
+import { MonitorFormData } from '../../../validation/monitor.schema';
 import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import { useAppDispatch, useAppSelector } from '@/store/hook';
 import { fetchBrands } from '@/store/slices/brands/brandsSlice';
 import { SelectionCard } from '../../../ui/SelectionCard';
-import { DOCKING_HINTS, DOCKING_PLACEHOLDERS } from '../../../constants/docking/docking.hints';
-import { GENERAL_CONDITION_OPTIONS } from '../../../constants/docking/docking.options';
-import { getDockingLabel } from '../../../translations/docking.labels';
+import Textarea from '@/components/form/Textarea';
+import { MONITOR_HINTS, MONITOR_PLACEHOLDERS } from '../../../constants/monitor/monitor.hints';
+import { GENERAL_CONDITION_OPTIONS } from '../../../constants/monitor/monitor.options';
+import { getMonitorLabel } from '../../../translations/monitor.labels';
 import Icon from '@/components/icon/Icon';
 
-const DockingBasicInfoSection: React.FC<FormSectionProps<DockingFormData>> = ({
+const MonitorBasicInfoSection: React.FC<FormSectionProps<MonitorFormData>> = ({
 	control,
 	errors,
 	readOnly,
@@ -43,7 +44,7 @@ const DockingBasicInfoSection: React.FC<FormSectionProps<DockingFormData>> = ({
 	return (
 		<div className='space-y-6'>
 			<p className='text-sm text-zinc-500'>
-				Ingresa la información básica de identificación del Docking Station.
+				Ingresa la información básica de identificación del Monitor.
 			</p>
 
 			<div className='grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3'>
@@ -53,7 +54,7 @@ const DockingBasicInfoSection: React.FC<FormSectionProps<DockingFormData>> = ({
 						<span className='flex h-6 w-6 items-center justify-center rounded-md bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-300'>
 							🏷️
 						</span>
-						{getDockingLabel('brand')}
+						{getMonitorLabel('brand')}
 					</label>
 					<Controller
 						name='brand'
@@ -69,14 +70,14 @@ const DockingBasicInfoSection: React.FC<FormSectionProps<DockingFormData>> = ({
 									field.onChange((option as TSelectOption)?.value);
 								}}
 								isLoading={loadingBrands}
-								placeholder={DOCKING_PLACEHOLDERS.brand}
+								placeholder={MONITOR_PLACEHOLDERS.brand}
 								isDisabled={readOnly}
 								isValid={!errors.brand}
 								invalidFeedback={errors.brand?.message}
 							/>
 						)}
 					/>
-					<p className='mt-1 text-xs text-zinc-500'>{DOCKING_HINTS.brand}</p>
+					<p className='mt-1 text-xs text-zinc-500'>{MONITOR_HINTS.brand}</p>
 				</div>
 
 				{/* Model */}
@@ -85,7 +86,7 @@ const DockingBasicInfoSection: React.FC<FormSectionProps<DockingFormData>> = ({
 						<span className='flex h-6 w-6 items-center justify-center rounded-md bg-fuchsia-100 text-fuchsia-600 dark:bg-fuchsia-800 dark:text-fuchsia-300'>
 							⚏
 						</span>
-						{getDockingLabel('model')}
+						{getMonitorLabel('model')}
 					</label>
 					<Controller
 						name='model'
@@ -94,7 +95,7 @@ const DockingBasicInfoSection: React.FC<FormSectionProps<DockingFormData>> = ({
 							<Input
 								{...field}
 								value={field.value ?? ''}
-								placeholder={DOCKING_PLACEHOLDERS.model}
+								placeholder={MONITOR_PLACEHOLDERS.model}
 								disabled={readOnly}
 								className={errors.model ? 'border-red-500' : ''}
 							/>
@@ -103,7 +104,7 @@ const DockingBasicInfoSection: React.FC<FormSectionProps<DockingFormData>> = ({
 					{errors.model && (
 						<p className='mt-1 text-xs text-red-500'>{errors.model.message}</p>
 					)}
-					<p className='mt-1 text-xs text-zinc-500'>{DOCKING_HINTS.model}</p>
+					<p className='mt-1 text-xs text-zinc-500'>{MONITOR_HINTS.model}</p>
 				</div>
 
 				{/* Line */}
@@ -112,7 +113,7 @@ const DockingBasicInfoSection: React.FC<FormSectionProps<DockingFormData>> = ({
 						<span className='flex h-6 w-6 items-center justify-center rounded-md bg-violet-100 text-violet-600 dark:bg-violet-800 dark:text-violet-300'>
 							❖
 						</span>
-						{getDockingLabel('line')}
+						{getMonitorLabel('line')}
 					</label>
 					<Controller
 						name='line'
@@ -121,7 +122,7 @@ const DockingBasicInfoSection: React.FC<FormSectionProps<DockingFormData>> = ({
 							<Input
 								{...field}
 								value={field.value ?? ''}
-								placeholder={DOCKING_PLACEHOLDERS.line}
+								placeholder={MONITOR_PLACEHOLDERS.line}
 								disabled={readOnly}
 								className={errors.line ? 'border-red-500' : ''}
 							/>
@@ -130,7 +131,7 @@ const DockingBasicInfoSection: React.FC<FormSectionProps<DockingFormData>> = ({
 					{errors.line && (
 						<p className='mt-1 text-xs text-red-500'>{errors.line.message}</p>
 					)}
-					<p className='mt-1 text-xs text-zinc-500'>{DOCKING_HINTS.line}</p>
+					<p className='mt-1 text-xs text-zinc-500'>{MONITOR_HINTS.line}</p>
 				</div>
 			</div>
 
@@ -138,10 +139,10 @@ const DockingBasicInfoSection: React.FC<FormSectionProps<DockingFormData>> = ({
 			<div className='rounded-xl border border-emerald-200 bg-emerald-500/10 p-6 shadow-sm transition-colors duration-200 hover:bg-emerald-500/20 dark:border-emerald-800/50 dark:bg-emerald-900/10 dark:hover:bg-emerald-900/20'>
 				<label className='mb-3 flex items-center gap-2 text-sm font-bold text-emerald-800 dark:text-emerald-200'>
 					<Icon icon='HeroSparkles' className='h-5 w-5' />
-					{getDockingLabel('general_condition')}
+					{getMonitorLabel('general_condition')}
 				</label>
 				<p className='mb-4 text-xs text-emerald-700/80 dark:text-emerald-300/80'>
-					{DOCKING_HINTS.general_condition}
+					{MONITOR_HINTS.general_condition}
 				</p>
 
 				<div className='grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5'>
@@ -168,8 +169,36 @@ const DockingBasicInfoSection: React.FC<FormSectionProps<DockingFormData>> = ({
 					</p>
 				)}
 			</div>
+
+			{/* Observations */}
+			<div className='rounded-xl border border-zinc-200 bg-white p-6 shadow-sm transition-colors duration-200 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-zinc-700'>
+				<label className='mb-3 flex items-center gap-2 text-sm font-bold text-zinc-700 dark:text-zinc-300'>
+					<Icon icon='HeroDocumentText' className='h-5 w-5' />
+					{getMonitorLabel('observations')}
+				</label>
+				<p className='mb-4 text-xs text-zinc-500'>{MONITOR_HINTS.observations}</p>
+				<Controller
+					name='observations'
+					control={control}
+					render={({ field }) => (
+						<Textarea
+							{...field}
+							value={field.value ?? ''}
+							placeholder={MONITOR_PLACEHOLDERS.observations}
+							disabled={readOnly}
+							rows={4}
+							className={`w-full ${errors.observations ? 'border-red-500' : ''}`}
+						/>
+					)}
+				/>
+				{errors.observations && (
+					<p className='mt-2 text-xs font-semibold text-red-500'>
+						{errors.observations.message}
+					</p>
+				)}
+			</div>
 		</div>
 	);
 };
 
-export default DockingBasicInfoSection;
+export default MonitorBasicInfoSection;
