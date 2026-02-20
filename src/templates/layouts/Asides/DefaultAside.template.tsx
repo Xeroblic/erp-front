@@ -567,7 +567,7 @@ const DefaultAsideTemplate = () => {
 							isOpen={collapseStates.servicio}
 							onToggle={() => toggleCollapse('servicio')}>
 							{/* Revisiones Técnicas */}
-							<AuthorityCheckNav
+							{/* <AuthorityCheckNav
 								authority={Pages.technical.subPages.reviews.authority}
 								roles={Pages.technical.subPages.reviews.roles}
 								userAuthority={userAuthority}>
@@ -578,7 +578,7 @@ const DefaultAsideTemplate = () => {
 									id={Pages.technical.subPages.reviews.id}
 									onClick={() => navigate(Pages.technical.subPages.reviews.to)}
 								/>
-							</AuthorityCheckNav>
+							</AuthorityCheckNav> */}
 
 							{/* refactor */}
 							<AuthorityCheckNav
