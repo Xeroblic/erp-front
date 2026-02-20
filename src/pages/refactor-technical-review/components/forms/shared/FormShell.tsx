@@ -27,7 +27,7 @@ function FormShell<T extends FieldValues>({
 	isSaving = false,
 }: FormShellProps<T>) {
 	const [step, setStep] = useState(0);
-	const [direction, setDirection] = useState(1); // 1 = forward, -1 = backward
+	const [direction, setDirection] = useState(1); 
 
 	const MAX_STEPS = sections.length;
 

@@ -141,6 +141,27 @@ export const useItemReview = (): UseItemReviewReturn => {
 			});
 	}, [dispatch, itemId, branchId]);
 
+	const handleProductChange = (newProductId: number | null) => {
+		setProductId(newProductId);
+		if (newProductId && products) {
+			const selectedProduct = products.find((p) => Number(p.id) === newProductId);
+			if (selectedProduct?.product_type) {
+				const pType = String(selectedProduct.product_type).toLowerCase();
+				if (pType === 'desktop_pc' || pType === 'desktop') {
+					setEquipmentType('desktop');
+				} else if (pType === 'aio') {
+					setEquipmentType('aio');
+				} else if (pType === 'monitor') {
+					setEquipmentType('monitor');
+				} else if (pType === 'docking') {
+					setEquipmentType('docking');
+				} else {
+					setEquipmentType('notebook');
+				}
+			}
+		}
+	};
+
 	const productOptions: TSelectOption[] = useMemo(() => {
 		if (!products || products.length === 0) {
 			return [{ value: '', label: 'No hay productos disponibles' }];
@@ -364,7 +385,7 @@ export const useItemReview = (): UseItemReviewReturn => {
 		completingReview,
 		approving,
 		setSerialNumber,
-		setProductId,
+		setProductId: handleProductChange,
 		setEquipmentType,
 		canContinue,
 		currentStepIndex,

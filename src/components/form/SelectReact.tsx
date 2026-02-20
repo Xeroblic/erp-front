@@ -142,7 +142,10 @@ const SelectReact: FC<ISelectReactProps> = (props) => {
 				'text-black dark:text-white',
 				themeConfig.transition,
 				[`${rounded}`],
-				{ '!border-zinc-500 !opacity-25': disabled },
+				{
+					'!bg-zinc-100 !text-zinc-600 dark:!bg-zinc-800/50 dark:!text-zinc-400 !border-zinc-200 dark:!border-zinc-700 cursor-not-allowed':
+						disabled,
+				},
 				// Hover
 				[`hover:border-${color}-${colorIntensity}`],
 				[`dark:hover:border-${color}-${colorIntensity}`],

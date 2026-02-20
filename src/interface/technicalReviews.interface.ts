@@ -225,7 +225,7 @@ export interface UpdateItemDetailsPayload {
 	defective_ports_critical_count?: number;
 
 	// Atributos extra dinámicos
-	[key: string]: any;
+	[key: string]: unknown;
 }
 
 /**
@@ -268,7 +268,7 @@ export interface IValidationRule {
 	label: string;
 	type: 'string' | 'number' | 'boolean' | 'select' | 'enum';
 	required: boolean;
-	options?: Array<{ value: any; label: string }>;
+	options?: Array<{ value: string | number; label: string }>;
 	min?: number;
 	max?: number;
 	pattern?: string;
@@ -368,8 +368,8 @@ export interface ITraceabilityHistoryResponse {
 		id: number;
 		status: { value: string; label: string; color: string };
 		warehouse: { id: number; name: string } | null;
-		customer: any | null;
-		sale_id: any | null;
+		customer: unknown | null;
+		sale_id: unknown | null;
 		current_responsible: { id: number; name: string; user_image: string } | null;
 		received_at: string | null;
 		reviewed_at: string | null;

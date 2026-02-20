@@ -105,7 +105,7 @@ const Input = forwardRef<HTMLInputElement, IInputProps>((props, ref) => {
 	const classes = classNames(
 		'w-full appearance-none outline-0',
 		'text-black dark:text-white',
-		'disabled:!opacity-25',
+		'disabled:bg-zinc-100 disabled:text-zinc-600 dark:disabled:bg-zinc-800/50 dark:disabled:text-zinc-400 disabled:border-zinc-200 dark:disabled:border-zinc-700 disabled:cursor-not-allowed',
 		themeConfig.transition,
 		inputVariantClasses,
 		inputDimensionClasses,

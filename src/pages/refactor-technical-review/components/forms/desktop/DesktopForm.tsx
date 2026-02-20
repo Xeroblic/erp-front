@@ -149,10 +149,15 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 
 	// ... inside component ...
 
-	// Reset form when defaultValues changes
+	// Reset form when defaultValues changes deeply
+	const prevDefaultValues = React.useRef<string | null>(null);
 	useEffect(() => {
 		if (defaultValues) {
-			reset(defaultValues);
+			const stringified = JSON.stringify(defaultValues);
+			if (stringified !== prevDefaultValues.current) {
+				reset(defaultValues);
+				prevDefaultValues.current = stringified;
+			}
 		}
 	}, [defaultValues, reset]);
 
@@ -165,14 +170,14 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 		if (currentCover && !ALLOWED_COVER_CONDITIONS.includes(currentCover as any)) {
 			console.warn('[AutoFix] Resetting invalid cover_condition:', currentCover);
 			// Use shouldValidate: true to verify the fix immediately
-			setValue('cover_condition', null, { shouldValidate: true });
+			setValue('cover_condition', undefined as any, { shouldValidate: true });
 		}
 
 		const currentCharger = watch('charger_status');
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		if (currentCharger && !ALLOWED_CHARGER_STATUSES.includes(currentCharger as any)) {
 			console.warn('[AutoFix] Resetting invalid charger_status:', currentCharger);
-			setValue('charger_status', null, { shouldValidate: true });
+			setValue('charger_status', undefined as any, { shouldValidate: true });
 		}
 	}, [watch, setValue]);
 

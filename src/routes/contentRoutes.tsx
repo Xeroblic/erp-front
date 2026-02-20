@@ -448,7 +448,7 @@ const contentRoutes: IRoutePersonalizada[] = [
 	},
 	{
 		path: '/technical-reviews/batches/:batchId/items/create',
-		element: <BatchItemReview />, // Keep this for now if create logic is different, or check if RefactorRevisiones handles create
+		element: <RefactorRevisiones />,
 		authority: cfg.technical.subPages.reviews.authority,
 	},
 	{

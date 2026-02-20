@@ -141,10 +141,15 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 		}
 	}, [registerGetFormValues, watch]);
 
-	// Reset form when defaultValues changes (e.g. data loaded asynchronously)
+	// Reset form when defaultValues changes deeply
+	const prevDefaultValues = React.useRef<string | null>(null);
 	useEffect(() => {
 		if (defaultValues) {
-			reset(defaultValues);
+			const stringified = JSON.stringify(defaultValues);
+			if (stringified !== prevDefaultValues.current) {
+				reset(defaultValues);
+				prevDefaultValues.current = stringified;
+			}
 		}
 	}, [defaultValues, reset]);
 

@@ -108,6 +108,18 @@ export const useAutoSave = ({
 				currentData = transformDataRef.current(currentData);
 			}
 
+			// Force extra_attributes to be an object
+			if (!currentData.extra_attributes) {
+				currentData.extra_attributes = {};
+			} else if (typeof currentData.extra_attributes === 'string') {
+				try {
+					currentData.extra_attributes = JSON.parse(currentData.extra_attributes);
+				} catch (e) {
+					// Fallback if parsing fails
+					currentData.extra_attributes = { raw: currentData.extra_attributes };
+				}
+			}
+
 			const currentSnapshot = JSON.stringify(currentData);
 
 			// Skip if no changes since last save

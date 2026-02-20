@@ -122,6 +122,24 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 		[saveNow],
 	);
 
+	// Prepare default values by merging empty fields with factory attributes
+	const mergedDefaultValues = React.useMemo(() => {
+		const result = { ...(initialData?.details || {}) };
+
+		// Optional: Fallback to attributes_json from item or product to pre-select known specs
+		const baseAttributes =
+			initialData?.attributes_json || initialData?.product?.attributes_json || {};
+
+		// We only want to pre-fill fields that have no value yet
+		for (const key of Object.keys(baseAttributes)) {
+			if (result[key] === undefined || result[key] === null || result[key] === '') {
+				result[key] = baseAttributes[key];
+			}
+		}
+
+		return result;
+	}, [initialData]);
+
 	// ─── Final Submit (original behavior) ────────────────────────────────────
 	const handleFormSubmit = async (data: any) => {
 		if (!branchId || !initialData?.id) {
@@ -136,6 +154,7 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 					branchId,
 					itemId: initialData.id,
 					data,
+					equipmentType, // Provide equipmentType to avoid SQL errors
 				}),
 			).unwrap();
 
@@ -182,7 +201,7 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 			{/* Form Router */}
 			<EquipmentFormRouter
 				equipmentType={equipmentType}
-				defaultValues={initialData?.details || {}}
+				defaultValues={mergedDefaultValues}
 				onSubmit={handleFormSubmit}
 				onBack={onBack}
 				isSubmitting={isSubmitting || loading}
