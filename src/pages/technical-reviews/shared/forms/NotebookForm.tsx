@@ -111,7 +111,8 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 	]);
 
 	const isDell = values.brand?.toLowerCase() === 'dell';
-	const doesNotTurnOn = values.extra_attributes?.does_not_turn_on === true;
+	const doesNotTurnOn =
+		(values.extra_attributes as Record<string, unknown>)?.does_not_turn_on === true;
 
 	const brandOptions: TSelectOption[] = brands.map((brand) => ({
 		value: brand.name,
@@ -361,7 +362,10 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 											<div className='rounded-xl border bg-white/5 px-4 py-2 dark:bg-gray-800/50'>
 												<RangeSlider
 													label='Potencia (Watts)'
-													value={values.charger_watts || '0'}
+													value={
+														(values.charger_watts as string | number) ||
+														'0'
+													}
 													onChange={(val) =>
 														onChange('charger_watts', val)
 													}
@@ -716,7 +720,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 							/>
 							<YesNoSelector
 								label='¿Biométrico?'
-								value={values.has_biometric}
+								value={values.has_biometric as boolean | undefined}
 								onChange={(val) => onChange('has_biometric', val)}
 							/>
 						</div>

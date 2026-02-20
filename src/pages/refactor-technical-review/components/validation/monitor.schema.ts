@@ -54,22 +54,22 @@ export const monitorSchema = Yup.object({
 		.nullable()
 		.min(0, 'No puede ser negativo')
 		.when('all_ports_functional', {
-			is: false,
-			then: (schema: Yup.NumberSchema) =>
+			is: (val: any) => val === false,
+			then: (schema) =>
 				schema
 					.required('Debes indicar cuántos puertos defectuosos hay')
 					.min(1, 'Debe haber al menos 1 puerto defectuoso'),
-			otherwise: (schema: Yup.NumberSchema) =>
+			otherwise: (schema) =>
 				schema.transform(() => 0).default(0),
 		}),
 	defective_ports_critical_count: Yup.number()
 		.nullable()
 		.min(0, 'No puede ser negativo')
 		.when('all_ports_functional', {
-			is: false,
-			then: (schema: Yup.NumberSchema) =>
+			is: (val: any) => val === false,
+			then: (schema) =>
 				schema.required('Debes indicar cuántos puertos críticos defectuosos hay'),
-			otherwise: (schema: Yup.NumberSchema) =>
+			otherwise: (schema) =>
 				schema.transform(() => 0).default(0),
 		}),
 

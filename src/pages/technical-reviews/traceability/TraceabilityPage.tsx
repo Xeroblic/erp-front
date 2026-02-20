@@ -177,8 +177,8 @@ const TraceabilityPage: React.FC = () => {
 		);
 	}
 
-	const item = data?.item;
-	const traceability = data?.traceability;
+	const item = data?.item as any;
+	const traceability = data?.traceability as any;
 
 	return (
 		<PageWrapper title={`Trazabilidad - ${serialNumber}`}>
@@ -218,18 +218,18 @@ const TraceabilityPage: React.FC = () => {
 									<Icon icon='HeroQrCode' className='h-5 w-5 text-slate-400' />
 								</div>
 								<p className='mb-4 font-mono text-3xl font-bold tracking-wide'>
-									{item?.serial_number || serialNumber}
+									{(item?.serial_number as string) || serialNumber}
 								</p>
 								<div className='flex flex-wrap gap-2'>
 									{item?.equipment_type && (
 										<Badge className='border-0 bg-white/10 px-2 text-white backdrop-blur'>
-											{item.equipment_type}
+											{item.equipment_type as string}
 										</Badge>
 									)}
 									{item?.grade && (
 										<Badge className='border-0 bg-yellow-500/20 px-2 text-yellow-300'>
 											<Icon icon='HeroStar' className='mr-1 h-3 w-3' />
-											{item.grade}
+											{item.grade as string}
 										</Badge>
 									)}
 								</div>
@@ -255,14 +255,14 @@ const TraceabilityPage: React.FC = () => {
 										<div className='flex items-center justify-between rounded-lg bg-gray-50 p-3 dark:bg-zinc-800/50'>
 											<span className='text-sm text-gray-500'>Producto</span>
 											<span className='text-right text-sm font-medium text-gray-900 dark:text-gray-100'>
-												{item.product?.name || 'No identificado'}
+												{(item.product as any)?.name || 'No identificado'}
 											</span>
 										</div>
-										{item.product?.sku && (
+										{Boolean((item.product as any)?.sku) && (
 											<div className='flex items-center justify-between rounded-lg bg-gray-50 p-3 dark:bg-zinc-800/50'>
 												<span className='text-sm text-gray-500'>SKU</span>
 												<span className='font-mono text-sm font-medium text-gray-900 dark:text-gray-100'>
-													{item.product.sku}
+													{(item.product as any)?.sku}
 												</span>
 											</div>
 										)}
@@ -273,7 +273,7 @@ const TraceabilityPage: React.FC = () => {
 											<Badge
 												variant='outline'
 												className='rounded-full border-green-200 bg-green-50 px-2 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-300'>
-												{item.review_status || 'Pendiente'}
+												{(item.review_status as string) || 'Pendiente'}
 											</Badge>
 										</div>
 									</div>
@@ -413,14 +413,14 @@ const TraceabilityPage: React.FC = () => {
 										<div className='flex justify-between'>
 											<span className='text-gray-500'>Cliente:</span>
 											<span className='font-medium'>
-												{traceability.customer?.name}
+												{(traceability.customer as any)?.name}
 											</span>
 										</div>
-										{traceability.sale_id && (
+										{Boolean(traceability.sale_id) && (
 											<div className='flex justify-between'>
 												<span className='text-gray-500'>ID Venta:</span>
 												<span className='font-mono'>
-													{traceability.sale_id}
+													{traceability.sale_id as string | number}
 												</span>
 											</div>
 										)}
@@ -558,8 +558,7 @@ const TraceabilityPage: React.FC = () => {
 																<Avatar
 																	name={
 																		movement.performed_by
-																			?.name ||
-																		'Sistema'
+																			?.name || 'Sistema'
 																	}
 																	src={
 																		movement.performed_by

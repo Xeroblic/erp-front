@@ -334,16 +334,16 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 								<div className='w-24'>
 									<YesNoSelector
 										label=''
-										value={values.has_dedicated_gpu}
+										value={values.has_dedicated_gpu as boolean | undefined}
 										onChange={(val) => onChange('has_dedicated_gpu', val)}
 									/>
 								</div>
 							</div>
-							{values.has_dedicated_gpu && (
+							{Boolean(values.has_dedicated_gpu) && (
 								<Input
 									type='text'
 									name='gpu_model'
-									value={values.gpu_model || ''}
+									value={(values.gpu_model as string) || ''}
 									onChange={handleInputChange}
 									placeholder='Modelo (Ej: NVIDIA GTX 1050)'
 									className='animate-in fade-in slide-in-from-top-2'
@@ -361,7 +361,7 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 							<div className='space-y-2'>
 								<RangeSlider
 									label='Potencia Fuente (Watts)'
-									value={values.charger_watts || '0'}
+									value={(values.charger_watts as string | number) || '0'}
 									onChange={(val) => onChange('charger_watts', val)}
 									max={300}
 								/>

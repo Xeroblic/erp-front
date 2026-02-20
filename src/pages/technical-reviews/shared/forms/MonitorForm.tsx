@@ -194,7 +194,7 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 									<Input
 										type='text'
 										name='screen_resolution'
-										value={values.screen_resolution || ''}
+										value={(values.screen_resolution as string) || ''}
 										onChange={handleInputChange}
 										placeholder='Ej: 1920x1080'
 									/>
