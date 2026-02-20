@@ -78,6 +78,28 @@ const resolveColumnValue = (item: IItem, key: string): string => {
 			return (item as any).created_by?.name ?? '';
 		case '__reviewed_by':
 			return (item as any).reviewed_by?.name ?? '';
+		case '__battery_status': {
+			const details = item.details || {};
+			const extra = item.extra_attributes || {};
+			const st = details.battery_status || extra.battery_status;
+			const pt = details.battery_percentage ?? extra.battery_percentage;
+
+			const brandStr = String((item as any).brand || details.brand || extra.brand || '').toLowerCase();
+			const isDell = brandStr.includes('dell');
+
+			if (isDell) {
+				const parts = [];
+				if (st && st !== 'no_battery') parts.push(normalizeDetailValue(st));
+				else if (st === 'no_battery') return 'Sin Batería';
+
+				if (pt !== undefined && pt !== null) parts.push(`(${pt}%)`);
+				return parts.length > 0 ? parts.join(' ') : '';
+			} else {
+				if (pt !== undefined && pt !== null) return `${pt}%`;
+				if (st) return normalizeDetailValue(st);
+			}
+			return '';
+		}
 		default:
 			break;
 	}
