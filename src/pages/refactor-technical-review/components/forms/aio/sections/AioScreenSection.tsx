@@ -10,6 +10,7 @@ import { AIO_HINTS, AIO_PLACEHOLDERS } from '../../../constants/aio/aio.hints';
 import {
 	SCREEN_CONDITION_OPTIONS,
 	STAND_CONDITION_OPTIONS,
+	COVER_CONDITION_OPTIONS,
 } from '../../../constants/aio/aio.options';
 import Icon from '@/components/icon/Icon';
 
@@ -150,9 +151,7 @@ export const AioScreenSection: React.FC<FormSectionProps<AioFormData>> = ({
 							{getAioLabel('cover_condition')} <span className='text-red-500'>*</span>
 						</label>
 						<div className='grid grid-cols-2 gap-2 md:grid-cols-3'>
-							{SCREEN_CONDITION_OPTIONS.filter((o) =>
-								['ok', 'worn', 'missing_pieces', 'broken'].includes(o.value),
-							).map((opt) => (
+							{COVER_CONDITION_OPTIONS.map((opt) => (
 								<SelectionCard
 									key={opt.value}
 									label={opt.label}

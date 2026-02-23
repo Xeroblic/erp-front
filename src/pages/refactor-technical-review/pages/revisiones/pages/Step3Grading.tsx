@@ -412,7 +412,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 								variant='solid'
 								color='emerald'
 								className='gap-1 rounded-full px-3'>
-								<Icon icon='HeroCheckBadge' className='h-3 w-3' />
+								<Icon icon='HeroCheckBadge' className='text-xl font-extrabold text-white' />
 								Aprobado
 							</Badge>
 						)}
@@ -444,7 +444,7 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 								isLoading={isReopening}
 								disabled={isReopening}
 								className='flex-shrink-0'>
-								<Icon icon='HeroArrowPath' className='mr-2 h-4 w-4' />
+								<Icon icon='HeroArrowPath' className='mr-2 h-4 w-4 text-white font-bold' />
 								Reabrir
 							</Button>
 						</div>

@@ -15,13 +15,7 @@ export const AIO_FIELDS_METADATA = {
 		type: 'string',
 		label: 'Modelo',
 		group: 'Identificación',
-		hint: 'Modelo exacto del equipo para referencia',
-	},
-	line: {
-		type: 'string',
-		label: 'Línea',
-		group: 'Identificación',
-		hint: 'Serie o línea comercial (ej. OptiPlex, iMac)',
+		hint: 'Modelo exacto del equipo para referencia y compatibilidad',
 	},
 	general_condition: {
 		type: 'string',
@@ -75,12 +69,18 @@ export const AIO_FIELDS_METADATA = {
 	},
 	includes_power_adapter: {
 		type: 'boolean',
-		label: 'Incluye adaptador',
+		label: 'Incluye adaptador de poder',
 		group: 'Accesorios',
+	},
+	includes_charger: {
+		type: 'boolean',
+		label: 'Incluye cargador',
+		group: 'Accesorios',
+		hint: 'Alias de adaptador de poder',
 	},
 	charger_status: {
 		type: 'string',
-		label: 'Estado adaptador',
+		label: 'Estado cargador',
 		group: 'Accesorios',
 		allowed_values: [
 			'good_condition',
@@ -107,13 +107,12 @@ export const AIO_FIELDS_METADATA = {
 			'missing_pieces',
 			'dead_pixels',
 			'broken',
-			'spots',
 		],
 	},
 	stand_condition: {
 		type: 'string',
 		label: 'Condición de base',
-		group: 'Pantalla',
+		group: 'Base',
 		allowed_values: ['ok', 'worn', 'missing_pieces', 'scratched', 'broken', 'no_stand'],
 	},
 	is_touchscreen: {
@@ -123,11 +122,10 @@ export const AIO_FIELDS_METADATA = {
 	},
 	cover_condition: {
 		type: 'string',
-		label: 'Carcasa / Tapa trasera',
+		label: 'Carcasa',
 		group: 'Carcasa',
 		allowed_values: [
 			'ok',
-			'minor_wear',
 			'worn',
 			'missing_pieces',
 			'scratched',
@@ -206,5 +204,18 @@ export const AIO_FIELDS_METADATA = {
 		type: 'string',
 		label: 'Sistema operativo',
 		group: 'Software',
+		hint: 'SO instalado o recomendado',
+		suggested_values: [
+			'Windows 10 Home',
+			'Windows 10 Pro',
+			'Windows 11 Home',
+			'Windows 11 Pro',
+		],
+	},
+	extra_attributes: {
+		type: 'object',
+		label: 'Atributos extra',
+		group: 'Extras',
+		hint: 'Contenedor para atributos específicos no estandarizados',
 	},
 } as const;
