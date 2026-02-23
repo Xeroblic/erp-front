@@ -44,7 +44,7 @@ export const CHARGER_STATUS_OPTIONS: OptionType[] = [
     { value: 'broken_port', label: 'Entrada rota', color: 'red' },
 ];
 
-// Cover condition options - Used by Desktop, AIO, Docking
+// Cover condition options - Notebook specific (shared legacy)
 export const COVER_CONDITION_OPTIONS: OptionType[] = [
     { value: 'ok', label: 'OK', color: 'green' },
     { value: 'worn', label: 'Desgastado', color: 'yellow' },

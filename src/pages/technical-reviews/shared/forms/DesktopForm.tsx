@@ -23,9 +23,26 @@ import {
 	GENERAL_CONDITION_OPTIONS,
 	RAM_TYPE_OPTIONS,
 	STORAGE_TECH_OPTIONS,
-	CHARGER_STATUS_OPTIONS,
-	COVER_CONDITION_OPTIONS,
+	type OptionType,
 } from '../constants/formOptions';
+
+// Desktop-specific options — backend allowed values differ per equipment type
+const DESKTOP_COVER_CONDITION_OPTIONS: OptionType[] = [
+	{ value: 'ok', label: 'OK', color: 'green' },
+	{ value: 'good_condition', label: 'Buen estado', color: 'green' },
+	{ value: 'light_scratches', label: 'Rayas leves', color: 'yellow' },
+	{ value: 'noticeable_wear', label: 'Desgaste notorio', color: 'yellow' },
+	{ value: 'broken', label: 'Roto', color: 'red' },
+];
+
+const DESKTOP_CHARGER_STATUS_OPTIONS: OptionType[] = [
+	{ value: 'good_condition', label: 'Buen estado', color: 'green' },
+	{ value: 'damaged_cable', label: 'Cable en mal estado', color: 'yellow' },
+	{ value: 'not_matching_equipment', label: 'No corresponde al equipo', color: 'red' },
+	{ value: 'not_included', label: 'No incluye', color: 'red' },
+	{ value: 'broken_charger', label: 'Cargador roto', color: 'red' },
+	{ value: 'broken_port', label: 'Entrada rota', color: 'red' },
+];
 
 // --- MAIN COMPONENT ---
 
@@ -85,10 +102,10 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 	// --- OPTIONS ALIGNED WITH RULES ---
 	// Using shared constants from formOptions
 	const generalConditionOptions = GENERAL_CONDITION_OPTIONS;
-	const coverConditionOptions = COVER_CONDITION_OPTIONS;
+	const coverConditionOptions = DESKTOP_COVER_CONDITION_OPTIONS;
 	const ramTypeOptions = RAM_TYPE_OPTIONS;
 	const storageTechOptions = STORAGE_TECH_OPTIONS;
-	const chargerStatusOptions = CHARGER_STATUS_OPTIONS;
+	const chargerStatusOptions = DESKTOP_CHARGER_STATUS_OPTIONS;
 
 	// DesktopForm-specific constants
 	const formFactorOptions = [

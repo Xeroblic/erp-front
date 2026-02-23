@@ -108,6 +108,14 @@ export const useAutoSave = ({
 				currentData = transformDataRef.current(currentData);
 			}
 
+			// Strip null, undefined, and empty string values — backend rejects nulls
+			// for fields with allowed_values constraints (e.g. cover_condition)
+			currentData = Object.fromEntries(
+				Object.entries(currentData).filter(
+					([, v]) => v !== null && v !== undefined && v !== '',
+				),
+			);
+
 			// Force extra_attributes to be an object
 			if (!currentData.extra_attributes) {
 				currentData.extra_attributes = {};
