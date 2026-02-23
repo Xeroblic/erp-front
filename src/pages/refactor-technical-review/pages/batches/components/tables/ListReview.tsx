@@ -23,6 +23,7 @@ import {
 import ApiService from '@/services/ApiService';
 import ExportExcelModal from '@/pages/refactor-technical-review/components/ExcelExport/ExportExcelModal';
 import PrintLabel from '@/pages/refactor-technical-review/components/PrintLabel';
+import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import Card, { CardBody } from '@/components/ui/Card';
 import StatusBadge from '@/pages/refactor-technical-review/components/StatusBadge';
 import {
@@ -150,9 +151,25 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 		setIsPrintLabelOpen(true);
 	};
 
+	// View choice modal state
+	const [isViewChoiceOpen, setIsViewChoiceOpen] = useState(false);
+	const [itemToView, setItemToView] = useState<IItem | null>(null);
+
 	const handleView = (item: IItem) => {
-		// Navigates to the refactored item review wizard (route now points to Revisiones component)
-		navigate(`/technical-reviews/batches/${batchId}/items/${item.id}`);
+		setItemToView(item);
+		setIsViewChoiceOpen(true);
+	};
+
+	const handleNavigateReview = () => {
+		if (!itemToView) return;
+		setIsViewChoiceOpen(false);
+		navigate(`/technical-reviews/batches/${batchId}/items/${itemToView.id}`);
+	};
+
+	const handleNavigateTraceability = () => {
+		if (!itemToView) return;
+		setIsViewChoiceOpen(false);
+		navigate(`/technical-reviews/traceability/${itemToView.serial_number}`);
 	};
 
 	// Columns
@@ -338,6 +355,67 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 						item={itemToPrint}
 					/>
 				)}
+
+				{/* View choice modal */}
+				<Modal
+					isOpen={isViewChoiceOpen}
+					setIsOpen={setIsViewChoiceOpen}
+					isCentered
+					size='sm'>
+					<ModalHeader>
+						<div className='flex items-center gap-2'>
+							<Icon icon='HeroEye' className='h-5 w-5 text-blue-500' />
+							<span className='text-lg'>Ver detalle</span>
+						</div>
+					</ModalHeader>
+					<ModalBody>
+						{itemToView && (
+							<p className='mb-4 text-sm text-zinc-500'>
+								Serie{' '}
+								<span className='font-mono font-semibold text-zinc-800 dark:text-zinc-200'>
+									{itemToView.serial_number}
+								</span>
+							</p>
+						)}
+						<div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+							{/* Revisión Técnica */}
+							<button
+								type='button'
+								onClick={handleNavigateReview}
+								className='group flex flex-col items-center gap-3 rounded-xl border-2 border-zinc-200 bg-zinc-50 p-5 transition-all hover:border-blue-400 hover:bg-blue-50 hover:shadow-md dark:border-zinc-700 dark:bg-zinc-800/50 dark:hover:border-blue-500 dark:hover:bg-blue-900/20'>
+								<div className='flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600 transition-transform group-hover:scale-110 dark:bg-blue-900/40 dark:text-blue-300'>
+									<Icon icon='HeroClipboardDocumentCheck' className='h-6 w-6' />
+								</div>
+								<div className='text-center'>
+									<p className='text-sm font-semibold text-zinc-800 dark:text-zinc-100'>
+										Revisión Técnica
+									</p>
+									<p className='mt-1 text-xs text-zinc-500'>
+										Ver y editar la revisión del equipo
+									</p>
+								</div>
+							</button>
+
+							{/* Trazabilidad */}
+							<button
+								type='button'
+								onClick={handleNavigateTraceability}
+								className='group flex flex-col items-center gap-3 rounded-xl border-2 border-zinc-200 bg-zinc-50 p-5 transition-all hover:border-purple-400 hover:bg-purple-50 hover:shadow-md dark:border-zinc-700 dark:bg-zinc-800/50 dark:hover:border-purple-500 dark:hover:bg-purple-900/20'>
+								<div className='flex h-12 w-12 items-center justify-center rounded-full bg-purple-100 text-purple-600 transition-transform group-hover:scale-110 dark:bg-purple-900/40 dark:text-purple-300'>
+									<Icon icon='HeroArrowPath' className='h-6 w-6' />
+								</div>
+								<div className='text-center'>
+									<p className='text-sm font-semibold text-zinc-800 dark:text-zinc-100'>
+										Trazabilidad
+									</p>
+									<p className='mt-1 text-xs text-zinc-500'>
+										Historial de movimientos y estados
+									</p>
+								</div>
+							</button>
+						</div>
+					</ModalBody>
+				</Modal>
 			</CardBody>
 		</Card>
 	);
