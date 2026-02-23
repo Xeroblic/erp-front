@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { createColumnHelper, PaginationState, OnChangeFn } from '@tanstack/react-table';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/store';
@@ -13,7 +13,13 @@ import DataTable from '@/components/ui/DataTable/DataTable';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
-import { EquipmentType, IItem } from '@/interface/technicalReviews.interface';
+import {
+	EquipmentType,
+	FetchItemsParams,
+	IItem,
+	ListMeta,
+	ReviewStatus,
+} from '@/interface/technicalReviews.interface';
 import ApiService from '@/services/ApiService';
 import ExportExcelModal from '@/pages/refactor-technical-review/components/ExcelExport/ExportExcelModal';
 import PrintLabel from '@/pages/refactor-technical-review/components/PrintLabel';
@@ -42,44 +48,73 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 		pageSize: 10,
 	});
 
+	// Review status filter
+	const [reviewStatusFilter, setReviewStatusFilter] = useState<ReviewStatus | 'all'>('all');
+
+	// Debounced search for server-side filtering
+	const [debouncedSearch, setDebouncedSearch] = useState('');
+	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	const onSearchChange = useCallback((value: string) => {
+		setSearchValue(value);
+		if (debounceRef.current) clearTimeout(debounceRef.current);
+		debounceRef.current = setTimeout(() => {
+			setDebouncedSearch(value.trim());
+			setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+		}, 400);
+	}, []);
+
+	useEffect(() => {
+		return () => {
+			if (debounceRef.current) clearTimeout(debounceRef.current);
+		};
+	}, []);
+
 	// Fetch items effect
 	useEffect(() => {
 		if (!branchId || !batchId) return;
 
-		const params: any = {
+		const params: FetchItemsParams = {
 			batch_id: batchId,
 			page: pagination.pageIndex + 1,
 			per_page: pagination.pageSize,
+			...(activeTab !== 'all' && { equipment_type: activeTab }),
+			...(debouncedSearch && { search: debouncedSearch }),
+			...(reviewStatusFilter !== 'all' && { review_status: reviewStatusFilter }),
 		};
 
-		if (activeTab !== 'all') {
-			params.equipment_type = activeTab;
-		}
-
 		dispatch(fetchItems({ branchId, params }));
-	}, [dispatch, branchId, batchId, pagination.pageIndex, pagination.pageSize, activeTab]);
+	}, [
+		dispatch,
+		branchId,
+		batchId,
+		pagination.pageIndex,
+		pagination.pageSize,
+		activeTab,
+		debouncedSearch,
+		reviewStatusFilter,
+	]);
 
 	const fetchAllForExport = useCallback(
 		async (includeDetails = false): Promise<IItem[]> => {
 			if (!branchId) return [];
-			const params: any = {
+			const params: FetchItemsParams = {
 				batch_id: batchId,
+				...(activeTab !== 'all' && { equipment_type: activeTab }),
 			};
-			if (activeTab !== 'all') {
-				params.equipment_type = activeTab;
-			}
 			const perPage = 1000;
 			let page = 1;
 			let lastPage = 1;
 			const allItems: IItem[] = [];
-			const baseUrl = (import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
+			const baseUrl =
+				(import.meta.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX as string | undefined) ?? '';
 			const url = `${baseUrl}/branches/${branchId}/technical-reviews/items`.replace(
 				/([^:])\/\/+/g,
 				'$1/',
 			);
 
 			do {
-				const response = await ApiService.fetchData<{ data?: any[]; meta?: any }>({
+				const response = await ApiService.fetchData<{ data?: IItem[]; meta?: ListMeta }>({
 					url,
 					method: 'get',
 					params: {
@@ -90,13 +125,14 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 						with_attributes: includeDetails ? 1 : undefined,
 					},
 				});
-				const list = Array.isArray(response.data?.data)
-					? response.data?.data
+				const nested = response.data as { data?: IItem[]; meta?: ListMeta } | undefined;
+				const list: IItem[] = Array.isArray(nested?.data)
+					? nested.data
 					: Array.isArray(response.data)
-						? (response.data as any[])
+						? (response.data as IItem[])
 						: [];
 				allItems.push(...list);
-				lastPage = response.data?.meta?.last_page ?? page;
+				lastPage = nested?.meta?.last_page ?? page;
 				page += 1;
 			} while (page <= lastPage);
 			return allItems;
@@ -146,7 +182,7 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 						<Badge
 							variant='outline'
 							className='gap-2 rounded-full border-blue-200 bg-blue-50 px-2 text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300'>
-							<Icon icon={icon as any} className='h-3 w-3' />
+							<Icon icon={icon} className='h-3 w-3' />
 							{label}
 						</Badge>
 					);
@@ -229,21 +265,11 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 		[columnHelper, batchId],
 	);
 
+	const [searchValue, setSearchValue] = useState('');
+
 	return (
 		<Card>
 			<CardBody>
-				<div className='mb-4 flex flex-wrap items-center justify-between'>
-					<div></div>
-					<Button
-						variant='outline'
-						size='sm'
-						className='flex items-center gap-2'
-						isDisable={!items || items.length === 0}
-						onClick={() => setIsExportModalOpen(true)}>
-						<Icon icon='HeroArrowDownTray' className='h-4 w-4' />
-						Exportar XLSX
-					</Button>
-				</div>
 				<DataTable
 					data={items}
 					columns={columns}
@@ -252,6 +278,49 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 					pageCount={meta?.last_page || 1}
 					onPaginationChange={setPagination}
 					manualPagination
+					actions={
+						<div className='flex flex-wrap items-center gap-3'>
+							{/* Status filter pills */}
+							<div className='flex items-center gap-1 rounded-lg border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-700 dark:bg-zinc-800/50'>
+								{(
+									[
+										{ value: 'all' as const, label: 'Todas' },
+										{ value: 'pending' as const, label: 'Pendiente' },
+										{ value: 'in_review' as const, label: 'En Revisión' },
+										{ value: 'reviewed' as const, label: 'Revisado' },
+										{ value: 'approved' as const, label: 'Aprobado' },
+									] as const
+								).map((opt) => (
+									<button
+										key={opt.value}
+										type='button'
+										onClick={() => {
+											setReviewStatusFilter(opt.value);
+											setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+										}}
+										className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+											reviewStatusFilter === opt.value
+												? 'bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-700 dark:text-zinc-100 dark:ring-zinc-600'
+												: 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
+										}`}>
+										{opt.label}
+									</button>
+								))}
+							</div>
+							<Button
+								variant='outline'
+								size='sm'
+								className='flex items-center gap-2'
+								isDisable={!items || items.length === 0}
+								onClick={() => setIsExportModalOpen(true)}>
+								<Icon icon='HeroArrowDownTray' className='h-4 w-4' />
+								Exportar XLSX
+							</Button>
+						</div>
+					}
+					searchPlaceholder='Buscar por serie'
+					searchValue={searchValue}
+					onSearchChange={onSearchChange}
 				/>
 
 				<ExportExcelModal

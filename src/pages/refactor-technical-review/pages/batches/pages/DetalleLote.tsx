@@ -169,7 +169,7 @@ const DetalleLote: React.FC = () => {
 							className='mr-2 h-5 w-5 font-bold'
 							color={{
 								base: 'emerald',
-								hover: 'group-hover:text-emerald-600 ease-in-out duration-300',
+								hover: 'group-focus:animate-spin group-hover:text-emerald-600 ease-in-out duration-300',
 							}}
 						/>
 						Registrar Serie
@@ -185,7 +185,7 @@ const DetalleLote: React.FC = () => {
 			) : (
 				<>
 					<DetalleLoteVisual {...hookProps} />
-					<Container className='mt-6'>
+					<Container className='mt-6 w-11/12'>
 						<ListReview batchId={hookProps.batch!.id} activeTab={hookProps.activeTab} />
 					</Container>
 				</>
