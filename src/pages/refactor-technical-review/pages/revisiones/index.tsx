@@ -11,6 +11,7 @@ import Step1BasicInfo from './pages/Step1BasicInfo';
 import Step2FullReview from './pages/Step2FullReview';
 import Step3Grading from './pages/Step3Grading';
 import { useItemReview } from './components/hooks/useItemReview';
+import ReviewSummaryAside from './components/ReviewSummaryAside';
 
 const Revisiones: React.FC = () => {
 	const hook = useItemReview();
@@ -114,6 +115,13 @@ const Revisiones: React.FC = () => {
 					/>
 				)}
 			</Container>
+			<ReviewSummaryAside
+				item={hook.item}
+				serialNumber={hook.serialNumber}
+				equipmentType={String(hook.equipmentType)}
+				normalizedReviewStatus={hook.normalizedReviewStatus}
+				automaticGrade={hook.automaticGrade}
+			/>
 		</PageWrapper>
 	);
 };
