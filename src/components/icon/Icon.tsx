@@ -29,23 +29,41 @@ const RefWrapper = forwardRef<HTMLSpanElement, IRefWrapperProps>(({ children }, 
 });
 RefWrapper.displayName = 'RefWrapper';
 
-export interface IIconProps extends HTMLAttributes<HTMLSpanElement> {
+type TColorObject = {
+	base: TColors;
+	hover?: string;
+};
+
+export interface IIconProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'color'> {
 	icon: TIcons;
 	className?: string;
-	color?: TColors;
+	color?: TColors | TColorObject;
 	colorIntensity?: TColorIntensity;
 	size?: TFontSizes;
 }
+
 const Icon = forwardRef<HTMLSpanElement, IIconProps>((props, ref) => {
-	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } = useReactiveThemeConfig();
-	const { icon,
-		 className,
-		  color = reactiveThemeColor,
-			colorIntensity = reactiveThemeColorShade,
-		    size,
-			 ...rest
-			 } = props;
+	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } =
+		useReactiveThemeConfig();
+
+	const {
+		icon,
+		className,
+		color = reactiveThemeColor,
+		colorIntensity = reactiveThemeColorShade,
+		size,
+		...rest
+	} = props;
 	const IconName = pascalcase(icon);
+	// logica para soportar 2 colores
+	const isColorObject = typeof color === 'object' && color !== null;
+
+	const baseColorArg = isColorObject ? (color as TColorObject).base : (color as TColors);
+
+	// En tu Icon.tsx, cambia la lógica del hoverClass a esto:
+	const hoverClass = (isColorObject && (color as TColorObject).hover)
+		? (color as TColorObject).hover // <-- Pasamos el string crudo
+		: '';
 
 	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 	// @ts-ignore
@@ -63,7 +81,8 @@ const Icon = forwardRef<HTMLSpanElement, IIconProps>((props, ref) => {
 	const CLASS_NAMES = classNames(
 		'svg-icon',
 		{ [`${size as TFontSizes}`]: typeof size !== 'undefined' },
-		textColor(color, colorIntensity),
+		textColor(baseColorArg, colorIntensity),
+		hoverClass,
 		className,
 	);
 

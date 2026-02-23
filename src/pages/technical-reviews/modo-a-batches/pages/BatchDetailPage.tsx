@@ -409,7 +409,7 @@ const BatchDetailPage: React.FC = () => {
 							onClick={() =>
 								navigate(`/technical-reviews/batches/${batch?.id}/items/create`)
 							}>
-							<Icon icon='HeroPlus' className='mr-2 h-4 w-4' />
+							<Icon icon='HeroPlus' className='mr-2 h-4 w-4'  />
 							Registrar Serie
 						</Button>
 					</SubheaderRight>

@@ -63,7 +63,10 @@ const DetalleLote: React.FC = () => {
 	}
 
 	return (
-		<PageWrapper name='detalle-lote' title={`Lote ${hookProps.batch.code}`} isProtectedRoute={true}>
+		<PageWrapper
+			name='detalle-lote'
+			title={`Lote ${hookProps.batch.code}`}
+			isProtectedRoute={true}>
 			<Subheader>
 				<SubheaderLeft>
 					<Button
@@ -155,12 +158,20 @@ const DetalleLote: React.FC = () => {
 					<Button
 						variant='outline'
 						color='emerald'
+						className='group'
 						onClick={() =>
 							hookProps.navigate(
 								`/technical-reviews/batches/${hookProps.batch?.id}/items/create`,
 							)
 						}>
-						<Icon icon='HeroPlus' className='mr-2 h-4 w-4 text-white' />
+						<Icon
+							icon='HeroPlus'
+							className='mr-2 h-5 w-5 font-bold'
+							color={{
+								base: 'emerald',
+								hover: 'group-hover:text-emerald-600 ease-in-out duration-300',
+							}}
+						/>
 						Registrar Serie
 					</Button>
 				</SubheaderRight>
