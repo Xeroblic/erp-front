@@ -102,10 +102,19 @@ export const updateItemDetails = createAsyncThunk<
 			// Filtrar campos según el tipo de equipo
 			const filteredData = filterFieldsByEquipmentType(data, equipmentType);
 
+			// Strip null, undefined and empty-string values.
+			// The backend rejects nulls for fields with allowed_values constraints
+			// (e.g. cover_condition, charger_status).
+			const cleanData = Object.fromEntries(
+				Object.entries(filteredData).filter(
+					([, v]) => v !== null && v !== undefined && v !== '',
+				),
+			);
+
 			const response = await ApiService.fetchData<{ data?: any }>({
 				url: ep(branchId, `/items/${itemId}/details`),
 				method: 'patch',
-				data: filteredData,
+				data: cleanData,
 			});
 
 			return normalizeObject(response.data) as IItem;

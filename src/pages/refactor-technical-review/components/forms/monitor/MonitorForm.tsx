@@ -6,6 +6,12 @@ import { toast } from 'react-toastify';
 import { monitorSchema, type MonitorFormData } from '../../validation/monitor.schema';
 import FormShell from '../shared/FormShell';
 import type { SectionConfig, FormSectionProps } from '../shared/types';
+import {
+	ALLOWED_GENERAL_CONDITIONS,
+	ALLOWED_SCREEN_CONDITIONS,
+	ALLOWED_STAND_CONDITIONS,
+	ALLOWED_FRAME_CONDITIONS,
+} from '../../constants/monitor/monitor.rules';
 
 // ─── Section Components ──────────────────────────────────────────────────────
 import MonitorBasicInfoSection from './sections/MonitorBasicInfoSection';

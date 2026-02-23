@@ -24,7 +24,6 @@ import DesktopBasicInfoSection from './sections/DesktopBasicInfoSection';
 // ... (rest of imports are fine, just ensuring this is at the top)
 
 // ...
-
 import DesktopHardwareSection from './sections/DesktopHardwareSection';
 import DesktopPortsSection from './sections/DesktopPortsSection';
 import DesktopAestheticsSection from './sections/DesktopAestheticsSection';

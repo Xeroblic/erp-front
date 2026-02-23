@@ -9,7 +9,7 @@ import Icon from '@/components/icon/Icon';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchItems, selectItemsLoading, selectItemsError } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
-import ItemList from '@/pages/technical-reviews/components/items/ItemList';
+import ItemList from '../../components/ItemList/ItemList';
 import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import { fetchWarehouses } from '@/store/slices/warehouses/warehouseSlice';
@@ -18,7 +18,7 @@ import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/per
 import { fetchProducts } from '@/store/slices/products/productsSlice';
 import ApiService from '@/services/ApiService';
 import type { IItem } from '@/interface/technicalReviews.interface';
-import { COMMERCIAL_STATUS_FILTER_OPTIONS } from '@/pages/technical-reviews/constants';
+import { COMMERCIAL_STATUS_FILTER_OPTIONS } from '../../components/constants/statuses.constant';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Badge from '@/components/ui/Badge';
 

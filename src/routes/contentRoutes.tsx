@@ -125,6 +125,9 @@ const RefactorRevisiones = lazy(
 	() => import('@/pages/refactor-technical-review/pages/revisiones/index'),
 );
 const RefactorSeries = lazy(() => import('@/pages/refactor-technical-review/pages/series/index'));
+const RefactorTraceability = lazy(
+	() => import('@/pages/refactor-technical-review/pages/traceability'),
+);
 
 /// Notificaciones
 const NotificationsAllPage = lazy(() => import('@/pages/notificaciones/NotificationsAll'));
@@ -474,7 +477,7 @@ const contentRoutes: IRoutePersonalizada[] = [
 	},
 	{
 		path: '/technical-reviews/traceability/:serialNumber',
-		element: <TraceabilityPage />,
+		element: <RefactorTraceability />,
 		authority: cfg.technical.subPages.reviews.authority,
 	},
 	{

@@ -7,10 +7,7 @@ import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import EquipmentFormRouter from '../../../components/forms';
 import useAutoSave from '../../../hooks/useAutoSave';
 import AutoSaveConfirmModal from '../../../components/modals/AutoSaveConfirmModal';
-import {
-	ALLOWED_COVER_CONDITIONS,
-	ALLOWED_CHARGER_STATUSES,
-} from '@/pages/refactor-technical-review/components/validation/constants/desktop.rules';
+import { sanitizeByAllowedValues } from '../../../components/validation/constants/allowedValuesMap';
 
 interface Step2FullReviewProps {
 	equipmentType: string;
@@ -51,10 +48,6 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 		getFormValuesRef.current = getter;
 	}, []);
 
-	// ... (existing imports)
-
-	// ...
-
 	const getFormData = useCallback((): Record<string, unknown> => {
 		if (getFormValuesRef.current) {
 			return getFormValuesRef.current();
@@ -62,41 +55,12 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 		return {};
 	}, []);
 
-	// Transformer to sanitize data before saving (fix for dynamic fields/stale state)
+	// Dynamic transformer: strips any constrained field value that is not
+	// in the backend's allowed_values list for the current equipment type.
+	// Works for ALL equipment types (notebook, desktop, aio, docking, monitor).
 	const transformData = useCallback(
 		(data: Record<string, unknown>) => {
-			const result = { ...data };
-
-			// Dynamic sanitization for Desktop
-			if (equipmentType.toLowerCase() === 'desktop') {
-				// Sanitize cover_condition
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				if (
-					result.cover_condition &&
-					!ALLOWED_COVER_CONDITIONS.includes(result.cover_condition as any)
-				) {
-					console.warn(
-						'[AutoSave] Stripping invalid cover_condition:',
-						result.cover_condition,
-					);
-					delete result.cover_condition;
-				}
-
-				// Sanitize charger_status
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				if (
-					result.charger_status &&
-					!ALLOWED_CHARGER_STATUSES.includes(result.charger_status as any)
-				) {
-					console.warn(
-						'[AutoSave] Stripping invalid charger_status:',
-						result.charger_status,
-					);
-					delete result.charger_status;
-				}
-			}
-
-			return result;
+			return sanitizeByAllowedValues(data, equipmentType);
 		},
 		[equipmentType],
 	);
