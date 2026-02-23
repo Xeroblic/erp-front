@@ -8,18 +8,33 @@ import { toast } from 'react-toastify';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import HiddenAside from '@/components/ui/HiddenAside/HiddenAside';
+import type { EquipmentType, ReviewStatus } from '@/interface/technicalReviews.interface';
 import {
 	translateField,
 	translateValue,
 	calculateReviewDuration,
 	generateConnectivityText,
+	getFieldsForType,
 } from './utils/reviewTranslations';
 
+/** Datos del item necesarios para el panel lateral */
+interface ReviewItemSummary {
+	serial_number?: string;
+	grade?: string | null;
+	suggested_grade?: string | null;
+	scoring_confidence?: number | null;
+	reviewed_by?: { name: string } | string | null;
+	review_started_at?: string;
+	reviewed_at?: string;
+	details?: Record<string, unknown> | null;
+	attributes_json?: Record<string, unknown>;
+}
+
 interface ReviewSummaryAsideProps {
-	item: any;
+	item: ReviewItemSummary | null;
 	serialNumber: string;
-	equipmentType: string;
-	normalizedReviewStatus: string;
+	equipmentType: EquipmentType;
+	normalizedReviewStatus: ReviewStatus | string;
 	automaticGrade: string | null;
 }
 
@@ -32,16 +47,31 @@ const ReviewSummaryAside: React.FC<ReviewSummaryAsideProps> = ({
 }) => {
 	const reviewDuration = useMemo(() => calculateReviewDuration(item), [item]);
 
-	const detailValues: Record<string, any> = useMemo(
+	const detailValues = useMemo<Record<string, unknown>>(
 		() => item?.details || item?.attributes_json || {},
 		[item],
 	);
 
-	const detailEntries = useMemo(() => Object.entries(detailValues), [detailValues]);
+	// Filtra solo los campos válidos para el tipo de equipo actual
+	const detailEntries = useMemo(() => {
+		const allEntries = Object.entries(detailValues);
+		const validFields = getFieldsForType(equipmentType);
+		if (!validFields) return allEntries;
+		return allEntries.filter(([key]) => validFields.has(key));
+	}, [detailValues, equipmentType]);
 	const hasDetails = detailEntries.length > 0;
 
 	const displayGrade = automaticGrade || item?.grade || item?.suggested_grade;
 	const hasGrade = Boolean(displayGrade);
+
+	/** Extrae nombre del revisor (puede ser string u objeto) */
+	const reviewerName = useMemo((): string | null => {
+		if (!item?.reviewed_by) return null;
+		if (typeof item.reviewed_by === 'object') return item.reviewed_by.name;
+		return String(item.reviewed_by);
+	}, [item?.reviewed_by]);
+
+	const confidence = item?.scoring_confidence ?? null;
 
 	const handleCopyInfo = () => {
 		const info = [
@@ -49,12 +79,10 @@ const ReviewSummaryAside: React.FC<ReviewSummaryAsideProps> = ({
 			`Tipo: ${translateValue(equipmentType) || '-'}`,
 			`Estado: ${translateValue(normalizedReviewStatus) || 'Pendiente'}`,
 			`Grado: ${displayGrade || '-'}`,
-			item?.scoring_confidence !== undefined
-				? `Confianza: ${Math.round(item.scoring_confidence)}%`
-				: null,
+			confidence !== null ? `Confianza: ${Math.round(confidence)}%` : null,
 			'',
 			'REVISIÓN:',
-			item?.reviewed_by ? `Técnico: ${item.reviewed_by.name || item.reviewed_by}` : null,
+			reviewerName ? `Técnico: ${reviewerName}` : null,
 			reviewDuration ? `Tiempo: ${reviewDuration}` : null,
 			'',
 			'DETALLES:',
@@ -114,11 +142,11 @@ const ReviewSummaryAside: React.FC<ReviewSummaryAsideProps> = ({
 										{translateValue(displayGrade) || '-'}
 									</p>
 								</div>
-								{item?.scoring_confidence !== undefined && (
+								{confidence !== null && (
 									<div className='text-right'>
 										<p className='text-xs uppercase text-white/60'>Confianza</p>
 										<p className='text-xl font-bold text-white'>
-											{Math.round(item.scoring_confidence)}%
+											{Math.round(confidence)}%
 										</p>
 									</div>
 								)}
@@ -127,18 +155,16 @@ const ReviewSummaryAside: React.FC<ReviewSummaryAsideProps> = ({
 					)}
 
 					{/* Información de Revisión */}
-					{(item?.reviewed_by || reviewDuration) && (
+					{(reviewerName || reviewDuration) && (
 						<div className='rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm'>
 							<h3 className='mb-2 text-lg font-semibold text-white'>
 								Información de Revisión
 							</h3>
 							<div className='space-y-2 text-sm text-white/80'>
-								{item?.reviewed_by && (
+								{reviewerName && (
 									<div className='flex justify-between pb-1'>
 										<span className='opacity-70'>Técnico:</span>
-										<span className='font-medium'>
-											{item.reviewed_by.name || item.reviewed_by}
-										</span>
+										<span className='font-medium'>{reviewerName}</span>
 									</div>
 								)}
 								{reviewDuration && (

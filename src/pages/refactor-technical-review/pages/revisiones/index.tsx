@@ -12,14 +12,43 @@ import Step2FullReview from './pages/Step2FullReview';
 import Step3Grading from './pages/Step3Grading';
 import { useItemReview } from './components/hooks/useItemReview';
 import ReviewSummaryAside from './components/ReviewSummaryAside';
+// import { translateValue } from './components/utils/reviewTranslations';
 
 const Revisiones: React.FC = () => {
 	const hook = useItemReview();
 
 	const pageTitle = hook.item ? `Revisión #${hook.item.serial_number}` : 'Nueva Revisión';
+	// const [showFloatingSN, setShowFloatingSN] = useState(false);
+	// useEffect(() => {
+	// 	const handleScroll = (e: Event) => {
+	// 		const target = e.target as any;
+	// 		const scrollTop = target === document ? window.scrollY : target.scrollTop;
 
+	// 		if (scrollTop !== undefined && scrollTop > 50) {
+	// 			setShowFloatingSN(true);
+	// 		} else if (scrollTop !== undefined && scrollTop <= 50) {
+	// 			setShowFloatingSN(false);
+	// 		}
+	// 	};
+
+	// 	window.addEventListener('scroll', handleScroll, true);
+	// 	return () => window.removeEventListener('scroll', handleScroll, true);
+	// }, []);
 	return (
 		<PageWrapper name='item-review' title={pageTitle} isProtectedRoute={true}>
+			{/* <div
+				className={`fixed left-[50%] top-0 z-[9] flex h-48 w-[400px] -translate-x-96 transform items-center justify-center rounded-b-full bg-zinc-900/60 shadow-2xl transition-all duration-500 ease-in-out dark:bg-zinc-800 md:left-[60%] md:h-40 md:w-[600px] ${
+					showFloatingSN ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
+				}`}>
+				<div className='flex flex-col place-items-center justify-center pt-28 text-white md:pt-24'>
+					<span className='mb-1 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-300'>
+						N° Serie
+					</span>
+					<span className='text-lg font-bold tracking-wider'>
+						{translateValue(hook.serialNumber || hook.item?.serial_number) || '-'}
+					</span>
+				</div>
+			</div> */}
 			<Subheader>
 				<SubheaderLeft>
 					<Button variant='outline' color='red' onClick={hook.handleBack}>
@@ -118,7 +147,7 @@ const Revisiones: React.FC = () => {
 			<ReviewSummaryAside
 				item={hook.item}
 				serialNumber={hook.serialNumber}
-				equipmentType={String(hook.equipmentType)}
+				equipmentType={hook.equipmentType}
 				normalizedReviewStatus={hook.normalizedReviewStatus}
 				automaticGrade={hook.automaticGrade}
 			/>

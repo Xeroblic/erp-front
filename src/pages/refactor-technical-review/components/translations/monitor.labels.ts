@@ -1,4 +1,4 @@
-const MONITOR_LABELS: Record<string, string> = {
+export const MONITOR_LABELS: Record<string, string> = {
 	brand: 'Marca',
 	model: 'Modelo',
 	line: 'Línea',

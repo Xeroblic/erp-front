@@ -1,4 +1,4 @@
-const DOCKING_LABELS: Record<string, string> = {
+export const DOCKING_LABELS: Record<string, string> = {
 	brand: 'Marca',
 	model: 'Modelo',
 	line: 'Línea',
