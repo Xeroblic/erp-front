@@ -69,6 +69,22 @@ const extractReturns = (r: SaleRecord): number => {
 	return typeof raw === 'string' ? parseFloat(raw) || 0 : Number(raw) || 0;
 };
 
+const extractCustomerName = (r: SaleRecord): string => {
+	if (typeof r.customer === 'string') return r.customer;
+	if (r.customer && typeof r.customer === 'object') {
+		return (
+			r.customer.billing_company ||
+			r.customer.contact_name ||
+			r.customer.name ||
+			'Cliente Anónimo'
+		);
+	}
+	if (r.billing_snapshot) {
+		return `${r.billing_snapshot.first_name ?? ''} ${r.billing_snapshot.last_name ?? ''}`.trim();
+	}
+	return r.customer_name || 'Cliente Anónimo';
+};
+
 // ─── Hook ────────────────────────────────────────────────────────────────────
 
 export function useSalesDashboard() {
@@ -252,6 +268,19 @@ export function useSalesDashboard() {
 		};
 	}, [filteredResults, filters.dateFrom, filters.dateTo, results.length]);
 
+	const topCustomers = useMemo(() => {
+		const customerMap = new Map<string, number>();
+		filteredResults.forEach((r) => {
+			if (r.status === 'cancelled' || r.status === 'canceled') return;
+			const name = extractCustomerName(r).trim() || 'Desconocido';
+			customerMap.set(name, (customerMap.get(name) || 0) + extractAmount(r));
+		});
+		return Array.from(customerMap.entries())
+			.sort((a, b) => b[1] - a[1])
+			.slice(0, 5)
+			.map(([name, total]) => ({ name, total }));
+	}, [filteredResults]);
+
 	const currentMonthRange = useMemo(() => {
 		const now = new Date();
 		const endDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).getTime(); // Hoy al final del día
@@ -272,6 +301,7 @@ export function useSalesDashboard() {
 		chartSeries,
 		chartCategories,
 		stats,
+		topCustomers,
 		reportsLoading,
 		currentSubsidiaryId,
 		mapFilters,

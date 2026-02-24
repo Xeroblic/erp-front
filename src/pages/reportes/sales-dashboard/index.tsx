@@ -10,6 +10,7 @@ import SalesAnalytics from '../components/SalesAnalytics';
 import { useSalesDashboard } from './hooks/useSalesDashboard';
 import type { ApexOptions } from 'apexcharts';
 import ReportExportButton from '../components/ReportExportButton';
+import DashboardExportButton from './components/DashboardExportButton';
 import ReportFilters from '../components/ReportFilters';
 import gsap from 'gsap';
 import useDarkMode from '@/hooks/useDarkMode';
@@ -83,6 +84,7 @@ const SalesDashboard: React.FC = () => {
 		chartSeries,
 		chartCategories,
 		stats,
+		topCustomers,
 		currentSubsidiaryId,
 		filters,
 		setFilters,
@@ -255,7 +257,7 @@ const SalesDashboard: React.FC = () => {
 						className='grid grid-cols-1 gap-4 md:grid-cols-3 xl:grid-cols-5'>
 						{/* KPI: Ventas Totales */}
 						<div className='group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 p-5 text-white shadow-lg shadow-emerald-500/20 transition-transform duration-300 hover:-translate-y-1 hover:shadow-emerald-500/40 dark:from-emerald-600 dark:to-teal-700'>
-							<div className='relative  flex items-center gap-3'>
+							<div className='relative flex items-center gap-3'>
 								<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-white/20'>
 									<Icon
 										icon='HeroCube'
@@ -267,7 +269,7 @@ const SalesDashboard: React.FC = () => {
 									Ventas Totales
 								</p>
 							</div>
-							<div className='relative  mt-4'>
+							<div className='relative mt-4'>
 								<h3 className='text-3xl font-extrabold tracking-tight text-white drop-shadow-sm'>
 									{'$'}
 									<AnimatedNumber value={stats.total} />
@@ -280,7 +282,7 @@ const SalesDashboard: React.FC = () => {
 
 						{/* KPI: Ticket Promedio */}
 						<div className='group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 p-5 text-white shadow-lg shadow-indigo-500/20 transition-transform duration-300 hover:-translate-y-1 hover:shadow-indigo-500/40 dark:from-indigo-600 dark:to-violet-700'>
-							<div className='relative  flex items-center gap-3'>
+							<div className='relative flex items-center gap-3'>
 								<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-white/20'>
 									<Icon
 										icon='HeroReceiptPercent'
@@ -292,7 +294,7 @@ const SalesDashboard: React.FC = () => {
 									Ticket Promedio
 								</p>
 							</div>
-							<div className='relative  mt-4'>
+							<div className='relative mt-4'>
 								<h3 className='text-3xl font-extrabold tracking-tight text-white drop-shadow-sm'>
 									{'$'}
 									<AnimatedNumber value={stats.avg} />
@@ -305,7 +307,7 @@ const SalesDashboard: React.FC = () => {
 
 						{/* KPI: Reembolsado */}
 						<div className='group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 p-5 text-white shadow-lg shadow-orange-500/20 transition-transform duration-300 hover:-translate-y-1 hover:shadow-orange-500/40 dark:from-orange-600 dark:to-amber-700'>
-							<div className='relative  flex items-center gap-3'>
+							<div className='relative flex items-center gap-3'>
 								<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-white/20'>
 									<Icon
 										icon='HeroArrowPathRoundedSquare'
@@ -317,7 +319,7 @@ const SalesDashboard: React.FC = () => {
 									Reembolsado
 								</p>
 							</div>
-							<div className='relative  mt-4'>
+							<div className='relative mt-4'>
 								<h3 className='text-3xl font-extrabold tracking-tight text-white drop-shadow-sm'>
 									{'$'}
 									<AnimatedNumber value={stats.refundedTotal} />
@@ -330,7 +332,7 @@ const SalesDashboard: React.FC = () => {
 
 						{/* KPI: Promedio Mensual */}
 						<div className='group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-pink-500 to-rose-600 p-5 text-white shadow-lg shadow-pink-500/20 transition-transform duration-300 hover:-translate-y-1 hover:shadow-pink-500/40 dark:from-pink-600 dark:to-rose-700'>
-							<div className='relative  flex items-center gap-3'>
+							<div className='relative flex items-center gap-3'>
 								<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-white/20'>
 									<Icon
 										icon='HeroCalculator'
@@ -342,7 +344,7 @@ const SalesDashboard: React.FC = () => {
 									Promedio Mes
 								</p>
 							</div>
-							<div className='relative  mt-4'>
+							<div className='relative mt-4'>
 								<h3 className='text-3xl font-extrabold tracking-tight text-white drop-shadow-sm'>
 									{'$'}
 									<AnimatedNumber value={stats.monthlyAvg} />
@@ -355,7 +357,7 @@ const SalesDashboard: React.FC = () => {
 
 						{/* KPI: Proyección a 30 Días */}
 						<div className='group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-600 p-5 text-white shadow-lg shadow-blue-500/20 transition-transform duration-300 hover:-translate-y-1 hover:shadow-blue-500/40 dark:from-blue-600 dark:to-cyan-700'>
-							<div className='relative  flex items-center gap-3'>
+							<div className='relative flex items-center gap-3'>
 								<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-white/20'>
 									<Icon
 										icon='HeroSparkles'
@@ -367,7 +369,7 @@ const SalesDashboard: React.FC = () => {
 									Proyección
 								</p>
 							</div>
-							<div className='relative  mt-4'>
+							<div className='relative mt-4'>
 								<h3 className='text-3xl font-extrabold tracking-tight text-white drop-shadow-sm'>
 									{'$'}
 									<AnimatedNumber value={stats.projectedTotal} />
@@ -399,6 +401,12 @@ const SalesDashboard: React.FC = () => {
 								</div>
 								<div className='shrink-0'>
 									<div className='flex items-center gap-3'>
+										<DashboardExportButton
+											stats={stats}
+											filteredResults={filteredResults}
+											topCustomers={topCustomers}
+											filters={filters}
+										/>
 										<ReportExportButton
 											subsidiaryId={Number(currentSubsidiaryId ?? 0)}
 											type='sales'
@@ -409,7 +417,7 @@ const SalesDashboard: React.FC = () => {
 							</div>
 						</CardHeader>
 
-						<CardBody className='relative  p-4 sm:p-8'>
+						<CardBody className='relative p-4 sm:p-8'>
 							<div className='min-h-[400px] w-full'>
 								{filteredResults.length > 0 ? (
 									<Chart
