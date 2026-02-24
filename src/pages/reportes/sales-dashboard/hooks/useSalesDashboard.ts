@@ -284,7 +284,7 @@ export function useSalesDashboard() {
 		const endDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).getTime(); // Hoy al final del día
 		
 		const startDayDate = new Date();
-		startDayDate.setDate(now.getDate() - 30); // 30 días atrás
+		startDayDate.setDate(now.getDate() - 30); 
 		startDayDate.setHours(0, 0, 0, 0); // Inicio del día
 		
 		const startDay = startDayDate.getTime();
