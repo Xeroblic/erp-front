@@ -10,8 +10,7 @@ import type {
 	SalesDashboardStats,
 	MappedFilters,
 } from '../../types';
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+import { calculateLinearRegressionProjection } from '@/utils/predictions';
 
 const parseNumeric = (val: unknown): number | undefined => {
 	if (typeof val === 'number') return Number.isFinite(val) ? val : undefined;
@@ -200,63 +199,37 @@ export function useSalesDashboard() {
 			entry.returns += retVal;
 		});
 
+		// --- FIX: Crear un arreglo CONTINUO de fechas ---
 		let keys = Array.from(dateMap.keys()).sort();
-		if (filters.dateFrom && filters.dateTo) {
-			const start = parseDateSafe(filters.dateFrom);
-			const end = parseDateSafe(filters.dateTo);
-			if (start && end) {
-				const tempKeys: string[] = [];
-				for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-					const k = d.toISOString().split('T')[0];
-					tempKeys.push(k);
-					if (!dateMap.has(k)) dateMap.set(k, { total: 0, returns: 0 });
-				}
-				keys = tempKeys.sort();
+		
+		if (keys.length > 0) {
+			// Rellenar días intermedios donde no hubo ventas
+			const firstD = new Date(`${keys[0]}T12:00:00`);
+			const lastD = new Date(`${keys[keys.length - 1]}T12:00:00`);
+			const tempKeys: string[] = [];
+			
+			for (let d = new Date(firstD); d <= lastD; d.setDate(d.getDate() + 1)) {
+				const k = d.toISOString().split('T')[0];
+				tempKeys.push(k);
+				// Si la fecha no estaba en el mapa, la inicializamos en 0
+				if (!dateMap.has(k)) dateMap.set(k, { total: 0, returns: 0 });
 			}
+			keys = tempKeys;
 		}
 
 		const dataSales = keys.map((k) => dateMap.get(k)?.total || 0);
 		const dataReturns = keys.map((k) => dateMap.get(k)?.returns || 0);
 
-		// Calcular span de días para las proyecciones y promedios
-		let daysSpan = 1;
-		if (keys.length > 0) {
-			const firstD = new Date(keys[0]);
-			const lastD = new Date(keys[keys.length - 1]);
-			daysSpan = Math.max(1, Math.ceil((lastD.getTime() - firstD.getTime()) / (1000 * 3600 * 24)) + 1);
-		}
-		
+		// Calcular span de días para las promedios
+		const daysSpan = Math.max(1, keys.length);
 		const monthsSpan = Math.max(1, daysSpan / 30.4);
 		const computedMonthlyAvg = totalSales / monthsSpan;
-		// --- MACHINE LEARNING: Regresión Lineal Simple para Proyección ---
-		let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
-		const n = dataSales.length;
 
-		// Asignamos x=0 al primer día, x=1 al segundo... para estabilizar el tamaño de los números
-		for (let i = 0; i < n; i++) {
-			sumX += i;
-			sumY += dataSales[i];
-			sumXY += i * dataSales[i];
-			sumX2 += i * i;
-		}
-
-		let computedProjection = 0;
-		if (n > 1) {
-			const denominator = (n * sumX2) - (sumX * sumX);
-			if (denominator !== 0) {
-				const slope = ((n * sumXY) - (sumX * sumY)) / denominator; // 'm'
-				const intercept = (sumY - slope * sumX) / n; // 'b'
-
-				// Integrar la proyección para los n+1 hasta n+30 (los próximos 30 días)
-				for (let futureDay = n; futureDay < n + 30; futureDay++) {
-					const predictedValue = (slope * futureDay) + intercept;
-					// Si la caída es muy abrupta no permitimos proyecciones en negativo
-					computedProjection += Math.max(0, predictedValue);
-				}
-			}
-		} else if (n === 1) {
-			computedProjection = dataSales[0] * 30; // Fallback
-		}
+		// --- MACHINE LEARNING (Frontend) ---
+		// Tomamos solo los últimos 90 días para que la proyección refleje
+		// la realidad reciente del negocio y no la historia de hace 3 años.
+		const recentDataForPrediction = dataSales.slice(-90);
+		const computedProjection = calculateLinearRegressionProjection(recentDataForPrediction, 30);
 
 		const computedStats: SalesDashboardStats = {
 			total: totalSales,
@@ -271,8 +244,8 @@ export function useSalesDashboard() {
 
 		return {
 			chartSeries: [
-				{ name: 'Ventas', data: dataSales, color: '#22c55e'},
-				{ name: 'Devoluciones', data: dataReturns, color: '#f97316' },
+				{ name: 'Ventas', data: dataSales, color: '#2dd4bf' },
+				{ name: 'Devoluciones', data: dataReturns, color: '#fb7185' },
 			],
 			chartCategories: keys,
 			stats: computedStats,
