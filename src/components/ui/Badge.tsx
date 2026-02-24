@@ -8,6 +8,8 @@ import { TBorderWidth } from '../../types/borderWidth.type';
 import { TRounded } from '../../types/rounded.type';
 import useReactiveThemeConfig from '../../hooks/useReactiveThemeConfig';
 import { useTypewriter } from '@/hooks/useTypewriter';
+import { useRef, useEffect } from 'react';
+import gsap from 'gsap';
 
 export type TBadgeVariants = 'solid' | 'outline' | 'default';
 // const { themeColor, themeColorShade } = useThemeColor();
@@ -50,12 +52,24 @@ const Badge: FC<IBadgeProps> = (props) => {
 		...rest
 	} = props;
 
+	const badgeRef = useRef<HTMLSpanElement>(null);
+
+	useEffect(() => {
+		if (badgeRef.current) {
+			gsap.fromTo(
+				badgeRef.current,
+				{ scale: 0.8, opacity: 0 },
+				{ scale: 1, opacity: 1, duration: 0.4, ease: 'back.out(1.5)' },
+			);
+		}
+	}, []);
+
 	const { textColor } = useColorIntensity(colorIntensity);
 
 	const childrenAsString = reactNodeToString(children);
 
-	const typewriterResult = useTypewriter(childrenAsString, { 
-		loop: true, 
+	const typewriterResult = useTypewriter(childrenAsString, {
+		loop: true,
 		withDelete: true,
 		typingSpeedMs: 12,
 		deletingSpeedMs: 12,
@@ -80,7 +94,7 @@ const Badge: FC<IBadgeProps> = (props) => {
 	const badgeVariantClasses = badgeVariant[variant];
 
 	const classes = classNames(
-		'inline-flex items-center justify-center',
+		'inline-flex items-center justify-center px-2',
 
 		[`${borderWidth}`],
 		[`${rounded}`],
@@ -89,7 +103,7 @@ const Badge: FC<IBadgeProps> = (props) => {
 	);
 
 	return (
-		<span data-component-name='Badge' className={classes} {...rest}>
+		<span ref={badgeRef} data-component-name='Badge' className={classes} {...rest}>
 			{typewriter ? typewriterResult.text : children}
 		</span>
 	);

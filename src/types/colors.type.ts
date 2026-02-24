@@ -5,6 +5,11 @@ export type TColorFlat = 'inherit' | 'current' | 'transparent' | 'black' | 'whit
 
 // paletas Tailwind completas
 export type TColors =
+	| 'inherit'
+	| 'current'
+	| 'transparent'
+	| 'black'
+	| 'white'
 	| 'slate'
 	| 'gray'
 	| 'zinc'

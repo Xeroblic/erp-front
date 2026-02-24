@@ -1,8 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import Chart from '@/components/Chart';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
 import Icon from '@/components/icon/Icon';
-import Badge from '@/components/ui/Badge';
+import gsap from 'gsap';
 import type { SaleRecord } from '../types';
 
 interface Props {
@@ -12,7 +12,7 @@ interface Props {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const extractAmount = (r: SaleRecord): number => {
-	const raw = r.total_amount ?? (r as any).total ?? 0;
+	const raw = r.total_amount ?? (r as unknown as { total?: string | number }).total ?? 0;
 	return typeof raw === 'string' ? parseFloat(raw) || 0 : Number(raw) || 0;
 };
 
@@ -116,34 +116,59 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 		};
 	}, [processedData]);
 
+	const containerRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (containerRef.current) {
+			gsap.fromTo(
+				containerRef.current.children,
+				{ y: 50, opacity: 0 },
+				{
+					y: 0,
+					opacity: 1,
+					stagger: 0.15,
+					duration: 0.8,
+					ease: 'power3.out',
+					delay: 0.3,
+					onComplete: () => {
+						// Forzar re-render de las métricas de ApexCharts que dependen del BoundingClientRect visual
+						window.dispatchEvent(new Event('resize'));
+					},
+				},
+			);
+		}
+	}, []);
+
 	return (
-		<div className='grid grid-cols-1 gap-6 lg:grid-cols-3'>
+		<div ref={containerRef} className='grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3'>
 			{/* 1. ESTADO DE ÓRDENES */}
-			<Card className='h-full border border-emerald-100 shadow-sm dark:border-emerald-900/30'>
-				<CardHeader className='border-b border-emerald-100 pb-3 dark:border-emerald-900/30'>
+			<Card className='h-full overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-[#121214]'>
+				<CardHeader className='border-b border-zinc-100 bg-transparent px-6 py-5 dark:border-zinc-800'>
 					<div className='flex items-center justify-between'>
 						<div className='flex items-center gap-3'>
-							<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'>
+							<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400'>
 								<Icon icon='DuoChartPie' className='h-6 w-6' />
 							</div>
-							<Badge
-								variant='outline'
-								className='border-emerald-200 text-base font-bold text-emerald-800 dark:border-emerald-800 dark:text-emerald-100'>
+							<h3 className='text-base font-bold text-zinc-900 dark:text-white'>
 								Estado de Órdenes
-							</Badge>
+							</h3>
 						</div>
 					</div>
 				</CardHeader>
-				<CardBody>
+				<CardBody className='p-6'>
 					<Chart
 						type='donut'
-						height={300}
+						height={320}
 						series={statusData.series}
 						options={{
 							labels: statusData.labels,
-							colors: ['#10B981', '#F59E0B', '#EF4444', '#6366F1', '#8B5CF6'],
-							legend: { position: 'bottom', fontSize: '11px' },
-							plotOptions: { pie: { donut: { size: '65%' } } },
+							colors: ['#2dd4bf', '#fbbf24', '#f43f5e', '#818cf8', '#a78bfa'],
+							legend: {
+								position: 'bottom',
+								fontSize: '12px',
+								labels: { colors: '#9ca3af' },
+							},
+							plotOptions: { pie: { donut: { size: '70%' }, expandOnClick: false } },
 							dataLabels: { enabled: false },
 							stroke: { show: false },
 							tooltip: {
@@ -156,25 +181,23 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 			</Card>
 
 			{/* 2. TOP CLIENTES */}
-			<Card className='h-full border border-violet-100 shadow-sm dark:border-violet-900/30'>
-				<CardHeader className='border-b border-violet-100 pb-3 dark:border-violet-900/30'>
+			<Card className='h-full overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-[#121214]'>
+				<CardHeader className='border-b border-zinc-100 bg-transparent px-6 py-5 dark:border-zinc-800'>
 					<div className='flex items-center justify-between'>
 						<div className='flex items-center gap-3'>
-							<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/20 text-violet-600 dark:text-violet-400'>
+							<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'>
 								<Icon icon='DuoCrown' className='h-6 w-6' />
 							</div>
-							<Badge
-								variant='outline'
-								className='border-violet-200 text-base font-bold text-violet-800 dark:border-violet-800 dark:text-violet-100'>
+							<h3 className='text-base font-bold text-zinc-900 dark:text-white'>
 								Top 5 Clientes
-							</Badge>
+							</h3>
 						</div>
 					</div>
 				</CardHeader>
-				<CardBody>
+				<CardBody className='p-6'>
 					<Chart
 						type='bar'
-						height={300}
+						height={320}
 						series={[{ name: 'Total', data: topCustomers.data }]}
 						options={{
 							plotOptions: {
@@ -221,25 +244,23 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 			</Card>
 
 			{/* 3. HISTORIAL MENSUAL */}
-			<Card className='h-full border border-blue-100 shadow-sm dark:border-blue-900/30'>
-				<CardHeader className='border-b border-blue-100 pb-3 dark:border-blue-900/30'>
+			<Card className='h-full overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-[#121214] md:col-span-2 xl:col-span-1'>
+				<CardHeader className='border-b border-zinc-100 bg-transparent px-6 py-5 dark:border-zinc-800'>
 					<div className='flex items-center justify-between'>
 						<div className='flex items-center gap-3'>
-							<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/20 text-blue-600 dark:text-blue-400'>
+							<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400'>
 								<Icon icon='DuoTimeSchedule' className='h-6 w-6' />
 							</div>
-							<Badge
-								variant='outline'
-								className='border-blue-200 text-base font-bold text-blue-800 dark:border-blue-800 dark:text-blue-100'>
+							<h3 className='text-base font-bold text-zinc-900 dark:text-white'>
 								Historial Mensual
-							</Badge>
+							</h3>
 						</div>
 					</div>
 				</CardHeader>
-				<CardBody>
+				<CardBody className='p-6'>
 					<Chart
 						type='bar'
-						height={300}
+						height={320}
 						series={[{ name: 'Ventas', data: monthlyData.data }]}
 						options={{
 							plotOptions: { bar: { borderRadius: 2, columnWidth: '60%' } },

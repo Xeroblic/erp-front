@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ReportsService } from '@/services/reports/reports.service';
 import type { IReportExportParams, ReportFormat } from '@/interface/reports.interface';
+import Button from '@/components/ui/Button';
 
 interface Props {
 	subsidiaryId: number;
@@ -33,18 +34,22 @@ const ReportExportButton: React.FC<Props> = ({ subsidiaryId, type, filters }) =>
 
 	return (
 		<div className='flex items-center gap-2'>
-			<button
-				disabled={loading}
-				onClick={() => doExport('pdf')}
-				className='rounded border px-3 py-1'>
+			<Button
+				variant='outline'
+				color='zinc'
+				icon='HeroDocumentText'
+				isDisable={loading}
+				onClick={() => doExport('pdf')}>
 				PDF
-			</button>
-			<button
-				disabled={loading}
-				onClick={() => doExport('xlsx')}
-				className='rounded border px-3 py-1'>
+			</Button>
+			<Button
+				variant='outline'
+				color='zinc'
+				icon='HeroTableCells'
+				isDisable={loading}
+				onClick={() => doExport('xlsx')}>
 				XLSX
-			</button>
+			</Button>
 		</div>
 	);
 };

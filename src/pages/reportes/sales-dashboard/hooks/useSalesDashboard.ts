@@ -99,8 +99,11 @@ export function useSalesDashboard() {
 		if (priceMax !== undefined) out.price_max = priceMax;
 		if (f.customer) {
 			const num = Number(String(f.customer).replace(/\D/g, ''));
-			out[!Number.isNaN(num) && num > 0 ? 'customer_id' : 'q'] =
-				!Number.isNaN(num) && num > 0 ? num : f.customer;
+			if (!Number.isNaN(num) && num > 0) {
+				out.customer_id = num;
+			} else {
+				out.q = f.customer;
+			}
 		}
 		if (f.branch) {
 			const num = Number(String(f.branch).replace(/\D/g, ''));
@@ -215,6 +218,46 @@ export function useSalesDashboard() {
 		const dataSales = keys.map((k) => dateMap.get(k)?.total || 0);
 		const dataReturns = keys.map((k) => dateMap.get(k)?.returns || 0);
 
+		// Calcular span de días para las proyecciones y promedios
+		let daysSpan = 1;
+		if (keys.length > 0) {
+			const firstD = new Date(keys[0]);
+			const lastD = new Date(keys[keys.length - 1]);
+			daysSpan = Math.max(1, Math.ceil((lastD.getTime() - firstD.getTime()) / (1000 * 3600 * 24)) + 1);
+		}
+		
+		const monthsSpan = Math.max(1, daysSpan / 30.4);
+		const computedMonthlyAvg = totalSales / monthsSpan;
+		// --- MACHINE LEARNING: Regresión Lineal Simple para Proyección ---
+		let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+		const n = dataSales.length;
+
+		// Asignamos x=0 al primer día, x=1 al segundo... para estabilizar el tamaño de los números
+		for (let i = 0; i < n; i++) {
+			sumX += i;
+			sumY += dataSales[i];
+			sumXY += i * dataSales[i];
+			sumX2 += i * i;
+		}
+
+		let computedProjection = 0;
+		if (n > 1) {
+			const denominator = (n * sumX2) - (sumX * sumX);
+			if (denominator !== 0) {
+				const slope = ((n * sumXY) - (sumX * sumY)) / denominator; // 'm'
+				const intercept = (sumY - slope * sumX) / n; // 'b'
+
+				// Integrar la proyección para los n+1 hasta n+30 (los próximos 30 días)
+				for (let futureDay = n; futureDay < n + 30; futureDay++) {
+					const predictedValue = (slope * futureDay) + intercept;
+					// Si la caída es muy abrupta no permitimos proyecciones en negativo
+					computedProjection += Math.max(0, predictedValue);
+				}
+			}
+		} else if (n === 1) {
+			computedProjection = dataSales[0] * 30; // Fallback
+		}
+
 		const computedStats: SalesDashboardStats = {
 			total: totalSales,
 			returns: totalReturns,
@@ -222,17 +265,32 @@ export function useSalesDashboard() {
 			count: results.length,
 			avg: filteredResults.length > 0 ? totalSales / filteredResults.length : 0,
 			retPct: totalSales > 0 ? (totalReturns / totalSales) * 100 : 0,
+			monthlyAvg: computedMonthlyAvg,
+			projectedTotal: computedProjection,
 		};
 
 		return {
 			chartSeries: [
-				{ name: 'Ventas', data: dataSales, color: '#22c55e' },
+				{ name: 'Ventas', data: dataSales, color: '#22c55e'},
 				{ name: 'Devoluciones', data: dataReturns, color: '#f97316' },
 			],
 			chartCategories: keys,
 			stats: computedStats,
 		};
 	}, [filteredResults, filters.dateFrom, filters.dateTo, results.length]);
+
+	const currentMonthRange = useMemo(() => {
+		const now = new Date();
+		const endDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).getTime(); // Hoy al final del día
+		
+		const startDayDate = new Date();
+		startDayDate.setDate(now.getDate() - 30); // 30 días atrás
+		startDayDate.setHours(0, 0, 0, 0); // Inicio del día
+		
+		const startDay = startDayDate.getTime();
+		
+		return { start: startDay, end: endDay };
+	}, []);
 
 	return {
 		filters,
@@ -244,5 +302,6 @@ export function useSalesDashboard() {
 		reportsLoading,
 		currentSubsidiaryId,
 		mapFilters,
+		currentMonthRange,
 	};
 }

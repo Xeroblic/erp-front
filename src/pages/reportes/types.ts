@@ -73,6 +73,8 @@ export interface SalesDashboardStats {
 	count: number;
 	avg: number;
 	retPct: number;
+	monthlyAvg: number;
+	projectedTotal: number;
 }
 
 /** Filtros mapeados para enviar al API (alias estricto de IReportFilters) */

@@ -31,7 +31,7 @@ const DashboardContainer: React.FC = () => {
 	const { dashboardStats } = useAppSelector((state) => state.technicalReviews);
 	// const salesStats = useAppSelector(selectSalesStatistics);
 	const subsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
-	const reportsResults = useAppSelector((state) => state.reports.results);
+	const reportsResults = useAppSelector((state) => state.reports.aggregatedResults);
 
 	useEffect(() => {
 		if (branchId) {

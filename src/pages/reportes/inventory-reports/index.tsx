@@ -92,7 +92,7 @@ const InventoryReports: React.FC = () => {
 
 					<Card className='border border-emerald-200/60 bg-gradient-to-br from-emerald-50 to-emerald-50/60 shadow-sm dark:from-emerald-900/10 dark:to-transparent'>
 						<CardHeader className='rounded-t-md bg-white/60 dark:bg-zinc-900/40'>
-							<div className='flex items-center justify-between'>
+							<div className='flex flex-wrap items-center justify-between gap-4'>
 								<div className='flex items-center gap-3'>
 									<div className='flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100'>
 										<Icon
@@ -109,6 +109,13 @@ const InventoryReports: React.FC = () => {
 										</p>
 									</div>
 								</div>
+
+								{/* Export Buttons */}
+								<ReportExportButton
+									subsidiaryId={Number(currentSubsidiaryId ?? 0)}
+									type='stock'
+									filters={mapFilters(filters)}
+								/>
 							</div>
 						</CardHeader>
 
