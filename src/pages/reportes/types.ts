@@ -75,5 +75,5 @@ export interface SalesDashboardStats {
 	retPct: number;
 }
 
-/** Filtros mapeados para enviar al API */
-export type MappedFilters = Record<string, string | number>;
+/** Filtros mapeados para enviar al API (alias estricto de IReportFilters) */
+export type { IReportFilters as MappedFilters } from '@/interface/reports.interface';

@@ -20,10 +20,13 @@ export function useInventoryReports() {
 
 	const resultsData = useAppSelector((s) => s.reports.paginatedResults);
 
-	// Normalizar datos del API
+	// Normalizar datos del API (sin cast inseguro)
 	const results: StockRecord[] = useMemo(() => {
-		if (!resultsData || !resultsData.data) return [];
-		return resultsData.data as StockRecord[];
+		if (!resultsData || !Array.isArray(resultsData.data)) return [];
+		return (resultsData.data as unknown[]).filter(
+			(item): item is StockRecord =>
+				typeof item === 'object' && item !== null && 'sku' in item,
+		);
 	}, [resultsData]);
 
 	// Extract meta for pagination
@@ -46,7 +49,7 @@ export function useInventoryReports() {
 		}
 		if (pag) {
 			out.page = pag.pageIndex + 1;
-			out.per_page = pag.pageSize;
+			out.per_page = pag.pageSize ?? 200;
 		}
 		return out;
 	};
