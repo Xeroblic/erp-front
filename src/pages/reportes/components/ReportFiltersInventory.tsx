@@ -11,6 +11,7 @@ import {
 	selectBranchesBySubsidiary,
 } from '@/store/selectors/subsidiarySelectors';
 import type { ReportFiltersState } from '../types';
+import type { IBranch } from '@/interface/empresas.interface';
 
 interface ReportFiltersInventoryProps {
 	initial?: ReportFiltersState;
@@ -80,6 +81,9 @@ const ReportFiltersInventory: React.FC<ReportFiltersInventoryProps> = ({
 							onChange={formik.handleChange}
 							onBlur={formik.handleBlur}
 							className='w-full'
+							invalidFeedback={formik.errors.parameter as string}
+							isValid={formik.touched.parameter && !formik.errors.parameter}
+							isTouched={formik.touched.parameter}
 						/>
 					</div>
 
@@ -90,11 +94,14 @@ const ReportFiltersInventory: React.FC<ReportFiltersInventoryProps> = ({
 							value={formik.values.branch || ''}
 							onChange={formik.handleChange}
 							onBlur={formik.handleBlur}
-							className='w-full'>
+							className='w-full'
+							invalidFeedback={formik.errors.branch as string}
+							isValid={formik.touched.branch && !formik.errors.branch}
+							isTouched={formik.touched.branch}>
 							<option value=''>Todas las bodegas</option>
-							{branches?.map((branch: any) => (
+							{branches?.map((branch: IBranch) => (
 								<option key={branch.id} value={branch.id}>
-									{branch.name}
+									{branch.branch_name}
 								</option>
 							))}
 						</Select>
