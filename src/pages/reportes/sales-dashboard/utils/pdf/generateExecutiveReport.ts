@@ -5,7 +5,7 @@ import { loadPdfFonts } from '../../../../comercial/cotizaciones/utils/pdf/fonts
 
 import type { SalesDashboardStats, SaleRecord, ReportFiltersState } from '../../../types';
 import { generateSmartInsights } from '../smartInsights';
-import { buildHeader, buildExecutiveSummary, buildSmartKPIs, buildTopPerformersTable, type PdfContent } from './reportBuilder';
+import { buildCoverPage, buildExecutiveSummary, buildSmartKPIs, buildTopPerformersTable, buildDetailedTransactionsTable, buildMethodology, type PdfContent } from './reportBuilder';
 import { format } from 'date-fns';
 
 export interface ExecutiveReportData {
@@ -23,12 +23,14 @@ export const generateExecutiveReport = async (data: ExecutiveReportData): Promis
 	// 2. Extraer insights automáticos
 	const insights = generateSmartInsights(data.stats, data.previousStats);
 
-	// 3. Documentación base
+	// 3. Ensamblaje Multipágina (Cover -> Dashboard -> Transactions -> Methodology)
 	const content: PdfContent[] = [
-		buildHeader(data.filters.dateFrom, data.filters.dateTo),
+		buildCoverPage(data.filters.dateFrom, data.filters.dateTo),
 		buildExecutiveSummary(insights),
 		buildSmartKPIs(data.stats),
 		buildTopPerformersTable(data.topCustomers),
+		buildDetailedTransactionsTable(data.filteredResults),
+		buildMethodology()
 	];
 
 	const docDefinition: TDocumentDefinitions = {

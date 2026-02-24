@@ -2,7 +2,7 @@
 export type PdfContent = Record<string, unknown> | string | PdfContent[];
 export type PdfTableCell = Record<string, unknown> | string | PdfContent[];
 
-import type { SalesDashboardStats } from '../../../types';
+import type { SalesDashboardStats, SaleRecord } from '../../../types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
