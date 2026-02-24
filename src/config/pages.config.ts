@@ -553,14 +553,6 @@ export const privatePages = {
 					'manager',
 				],
 			},
-			financialReports: {
-				id: 'financialReports',
-				to: '/reportes/financieros',
-				text: 'Reportes Financieros',
-				icon: 'DuoMoney',
-				authority: ['view-reports', 'export-reports'],
-				roles: ['super-admin', 'company-admin', 'manager'],
-			},
 		},
 	},
 

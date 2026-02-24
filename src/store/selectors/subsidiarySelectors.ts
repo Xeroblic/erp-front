@@ -105,3 +105,18 @@ export const selectEffectiveSubsidiaryId = (state: RootState): number | null => 
 
 	return null;
 };
+
+/**
+ * Filtra y devuelve la lista de sucursales que pertenecen a la subsidiaria actual
+ */
+export const selectBranchesBySubsidiary = (state: RootState, subsidiaryId: number | null) => {
+	if (!subsidiaryId) return [];
+
+	const persState = state.personalizacion as any;
+	const branches = persState?.userBrandsBranches?.flatMap(
+		(brand: any) => brand.branches
+	) || [];
+
+	// Si no hay ramas en personalización, devolver lista vacía o intentar sacar de auth (depende de la app)
+	return branches.filter((b: any) => b.subsidiary_id === subsidiaryId) as any[];
+};

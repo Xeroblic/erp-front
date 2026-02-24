@@ -247,16 +247,22 @@ const DefaultAsideTemplate = () => {
 
 							{/* Trazabilidad Subsidiary */}
 							<AuthorityCheckNav
-								authority={Pages.inventory.subPages.trazabilidadSubsidiary.authority}
+								authority={
+									Pages.inventory.subPages.trazabilidadSubsidiary.authority
+								}
 								roles={Pages.inventory.subPages.trazabilidadSubsidiary.roles}
 								userAuthority={userAuthority}
-								requireAll={Pages.inventory.subPages.trazabilidadSubsidiary.requireAll}>
+								requireAll={
+									Pages.inventory.subPages.trazabilidadSubsidiary.requireAll
+								}>
 								<NavItem
 									text={Pages.inventory.subPages.trazabilidadSubsidiary.text}
 									to={Pages.inventory.subPages.trazabilidadSubsidiary.to}
 									icon={Pages.inventory.subPages.trazabilidadSubsidiary.icon}
 									id={Pages.inventory.subPages.trazabilidadSubsidiary.id}
-									onClick={() => navigate(Pages.inventory.subPages.trazabilidadSubsidiary.to)}
+									onClick={() =>
+										navigate(Pages.inventory.subPages.trazabilidadSubsidiary.to)
+									}
 								/>
 							</AuthorityCheckNav>
 
@@ -374,32 +380,36 @@ const DefaultAsideTemplate = () => {
 							isOpen={collapseStates.reportes}
 							onToggle={() => toggleCollapse('reportes')}>
 							{/* Dashboard de Ventas */}
-							<NavItem
-								text='Dashboard de Ventas'
-								to=''
-								icon='DuoPrice2'
-								id='sales-dashboard'
-								onClick={() => {
-									const sid = Number(
-										effectiveSubsidiaryId ?? user?.subsidiary?.id ?? 0,
-									);
-									if (sid) navigate(`/subsidiaries/${sid}/reports/sales`);
-								}}
-							/>
+							<AuthorityCheckNav
+								authority={Pages.reports.subPages.salesDashboard.authority}
+								roles={Pages.reports.subPages.salesDashboard.roles}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.reports.subPages.salesDashboard.text}
+									to={Pages.reports.subPages.salesDashboard.to}
+									icon={Pages.reports.subPages.salesDashboard.icon}
+									id={Pages.reports.subPages.salesDashboard.id}
+									onClick={() =>
+										navigate(Pages.reports.subPages.salesDashboard.to)
+									}
+								/>
+							</AuthorityCheckNav>
 
 							{/* Reportes de Inventario */}
-							<NavItem
-								text='Reportes de Inventario'
-								to=''
-								icon='DuoBox3'
-								id='inventory-reports'
-								onClick={() => {
-									const sid = Number(
-										effectiveSubsidiaryId ?? user?.subsidiary?.id ?? 0,
-									);
-									if (sid) navigate(`/subsidiaries/${sid}/reports/inventory`);
-								}}
-							/>
+							<AuthorityCheckNav
+								authority={Pages.reports.subPages.inventoryReports.authority}
+								roles={Pages.reports.subPages.inventoryReports.roles}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.reports.subPages.inventoryReports.text}
+									to={Pages.reports.subPages.inventoryReports.to}
+									icon={Pages.reports.subPages.inventoryReports.icon}
+									id={Pages.reports.subPages.inventoryReports.id}
+									onClick={() =>
+										navigate(Pages.reports.subPages.inventoryReports.to)
+									}
+								/>
+							</AuthorityCheckNav>
 						</NavCollapse>
 					</AuthorityCheckNav>
 

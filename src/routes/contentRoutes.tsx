@@ -29,8 +29,8 @@ const SyncStockPage = lazy(() => import('@/pages/integraciones/SyncStockPage'));
 const ImportOrdersPage = lazy(() => import('@/pages/integraciones/ImportOrdersPage'));
 
 // Reportes
-const ReportsHome = lazy(() => import('@/pages/reportes/ReportsHome'));
-const ReportResults = lazy(() => import('@/pages/reportes/ReportResults.page'));
+const SalesDashboard = lazy(() => import('@/pages/reportes/sales-dashboard'));
+const InventoryReports = lazy(() => import('@/pages/reportes/inventory-reports'));
 
 const Sucursales = lazy(() => import('@/pages/gestionAdmin/sucursales/Sucursales.tsx'));
 const SucursalDetalle = lazy(() => import('@/pages/gestionAdmin/sucursales/SucursalDetalle.tsx'));
@@ -301,25 +301,17 @@ const contentRoutes: IRoutePersonalizada[] = [
 		authority: cfg.commercial.subPages.clientesVentasDetalle.authority,
 	},
 
-	// Reportes
-	// Rutas RESTful del módulo de reportes por subsidiaria
+	// Reportes — rutas directas
 	{
-		path: '/subsidiaries/:subsidiaryId/reports',
-		element: <ReportsHome />,
-		authority: cfg.reports.authority,
+		path: cfg.reports.subPages.salesDashboard.to,
+		element: <SalesDashboard />,
+		authority: cfg.reports.subPages.salesDashboard.authority,
 	},
 	{
-		path: '/subsidiaries/:subsidiaryId/reports/:type',
-		element: <ReportResults />,
-		authority: cfg.reports.authority,
+		path: cfg.reports.subPages.inventoryReports.to,
+		element: <InventoryReports />,
+		authority: cfg.reports.subPages.inventoryReports.authority,
 	},
-
-	// Se mantienen únicamente las rutas RESTful por subsidiaria:
-	// - /subsidiaries/:subsidiaryId/reports
-	// - /subsidiaries/:subsidiaryId/reports/:type
-	// Las páginas auxiliares (ReportsHome, SalesDashboard, InventoryReports, FinancialReports)
-	// quedan en el repositorio pero no se exponen en las rutas principales para
-	// simplificar la vista a las dos páginas solicitadas.
 
 	// Integraciones (WooCommerce)
 	{

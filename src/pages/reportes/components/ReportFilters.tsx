@@ -2,23 +2,9 @@ import React, { useMemo, useState, useEffect } from 'react';
 import Card, { CardBody } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/form/Input';
-import Select from '@/components/form/Select';
-import Icon from '@/components/icon/Icon';
 import { useAppSelector } from '@/store';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
-import { useUserBranches } from '@/pages/catalogos/productos/components/modals/hooks/userBranch';
-import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/personalizacionSlice';
-
-export type ReportFiltersState = {
-	dateFrom?: string;
-	dateTo?: string;
-	parameter?: string;
-	priceMin?: number | '';
-	priceMax?: number | '';
-	subsidiary?: string;
-	branch?: string;
-	customer?: string;
-};
+import type { ReportFiltersState } from '../types';
 
 interface ReportFiltersProps {
 	initial?: ReportFiltersState;
@@ -27,32 +13,7 @@ interface ReportFiltersProps {
 }
 
 const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset }) => {
-	const user = useAppSelector((state) => state.auth.user);
 	const effectiveSubsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
-	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
-	const userId = user?.id ?? (user as any)?.pk ?? undefined;
-
-	// Obtener branches del usuario
-	const { branches } = useUserBranches(userId, { enabled: Boolean(userId) });
-
-	// Obtener subsidiarias accesibles
-	const accessibleSubsidiaries = useMemo(() => {
-		const subsidiaries = new Set<{ id: number; name: string }>();
-		(user as any)?.access?.subsidiaries?.forEach((sub: any) => {
-			if (sub?.id && sub?.name) {
-				subsidiaries.add({ id: sub.id, name: sub.name });
-			} else if (typeof sub === 'number') {
-				subsidiaries.add({ id: sub, name: `Subsidiaria ${sub}` });
-			}
-		});
-		return Array.from(subsidiaries);
-	}, [user]);
-
-	// Filtrar branches por subsidiaria efectiva
-	const filteredBranches = useMemo(() => {
-		if (!effectiveSubsidiaryId) return branches;
-		return branches.filter((branch) => branch.subsidiaryId === effectiveSubsidiaryId);
-	}, [branches, effectiveSubsidiaryId]);
 
 	const [filters, setFilters] = useState<ReportFiltersState>(
 		initial ?? {
@@ -62,19 +23,16 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset
 			priceMin: '',
 			priceMax: '',
 			subsidiary: effectiveSubsidiaryId ? String(effectiveSubsidiaryId) : '',
-			branch: personalizacionUsuario?.sucursal_principal
-				? String(personalizacionUsuario.sucursal_principal)
-				: '',
+			branch: '',
 			customer: '',
 		},
 	);
 
-	// Actualizar branch cuando cambia la subsidiaria
+	// Resetear branch cuando cambia la subsidiaria
 	useEffect(() => {
 		if (filters.subsidiary && effectiveSubsidiaryId) {
 			const selectedSubsidiaryId = Number(filters.subsidiary);
 			if (selectedSubsidiaryId !== effectiveSubsidiaryId) {
-				// Si cambió la subsidiaria, resetear el branch
 				setFilters((f) => ({ ...f, branch: '' }));
 			}
 		}
@@ -139,20 +97,6 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset
 							onChange={(e) => setFilters((f) => ({ ...f, dateTo: e.target.value }))}
 						/>
 					</div>
-					{/* <div>
-            <label className="text-xs text-zinc-500">Parámetro</label>
-            <Select
-              name="parameter"
-              value={filters.parameter}
-              onChange={(e) => setFilters((f) => ({ ...f, parameter: e.target.value }))}
-              placeholder="Selecciona un parámetro"
-            >
-              <option value="ventas">Ventas</option>
-              <option value="stock">Stock</option>
-              <option value="usuarios">Usuarios</option>
-              <option value="movimientos">Movimientos</option>
-            </Select>
-          </div> */}
 					<div className='grid grid-cols-2 gap-3'>
 						<div>
 							<label className='text-xs text-zinc-500'>Precio mín.</label>
@@ -187,50 +131,6 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset
 							/>
 						</div>
 					</div>
-					{/* <div>
-            <label className="text-xs text-zinc-500">Subempresa</label>
-            <Select
-              name="subsidiary"
-              value={filters.subsidiary || (effectiveSubsidiaryId ? String(effectiveSubsidiaryId) : '')}
-              onChange={(e) => setFilters((f) => ({ ...f, subsidiary: e.target.value, branch: '' }))}
-              placeholder="Todas"
-            >
-              <option value="">Todas</option>
-              {accessibleSubsidiaries.map((sub) => (
-                <option key={sub.id} value={String(sub.id)}>
-                  {sub.name}
-                </option>
-              ))}
-            </Select>
-          </div> */}
-					{/* <div>
-            <label className="text-xs text-zinc-500">Sucursal</label>
-            <Select
-              name="branch"
-              value={filters.branch}
-              onChange={(e) => setFilters((f) => ({ ...f, branch: e.target.value }))}
-              placeholder="Todas"
-            >
-              <option value="">Todas</option>
-              {filteredBranches.map((branch) => (
-                <option key={branch.id} value={String(branch.id)}>
-                  {branch.name || `Sucursal ${branch.id}`}
-                </option>
-              ))}
-            </Select>
-          </div> */}
-					{/* <div>
-            <label className="text-xs text-zinc-500">Cliente</label>
-            <Select
-              name="customer"
-              value={filters.customer}
-              onChange={(e) => setFilters((f) => ({ ...f, customer: e.target.value }))}
-              placeholder="Todos"
-            >
-              <option value="c-1">Cliente A</option>
-              <option value="c-2">Cliente B</option>
-            </Select>
-          </div> */}
 				</div>
 
 				{!validation.isValid && (
@@ -265,4 +165,5 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset
 	);
 };
 
+export { type ReportFiltersState };
 export default ReportFilters;

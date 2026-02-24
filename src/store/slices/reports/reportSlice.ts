@@ -1,10 +1,11 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { exportReport, fetchReportResults, fetchReportTypes } from './reportsThunks';
+import { exportReport, fetchReportResults, fetchPaginatedReportResults, fetchReportTypes } from './reportsThunks';
 import { IReportType, IReportResult } from '@/interface/reports.interface';
 
 export interface ReportsState {
 	types: IReportType[];
-	results: IReportResult<any> | null;
+	paginatedResults: IReportResult<unknown> | null;
+	aggregatedResults: unknown[] | null;
 	loading: boolean;
 	exporting: boolean;
 	error: string | null;
@@ -12,7 +13,8 @@ export interface ReportsState {
 
 const initialState: ReportsState = {
 	types: [],
-	results: null,
+	paginatedResults: null,
+	aggregatedResults: null,
 	loading: false,
 	exporting: false,
 	error: null,
@@ -23,7 +25,8 @@ export const reportsSlice = createSlice({
 	initialState,
 	reducers: {
 		clearResults: (state) => {
-			state.results = null;
+			state.paginatedResults = null;
+			state.aggregatedResults = null;
 			state.error = null;
 		},
 	},
@@ -35,7 +38,7 @@ export const reportsSlice = createSlice({
 		});
 
 		builder.addCase(fetchReportTypes.fulfilled, (state, action) => {
-			state.types = action.payload as IReportType[];
+			state.types = action.payload as unknown as IReportType[];
 			state.loading = false;
 			state.error = null;
 		});
@@ -45,19 +48,36 @@ export const reportsSlice = createSlice({
 			state.error = action.payload as string;
 		});
 
-		// ------- RESULTADOS -------
+		// ------- RESULTADOS AGREGADOS -------
 		builder.addCase(fetchReportResults.pending, (state) => {
 			state.loading = true;
 			state.error = null;
 		});
 
 		builder.addCase(fetchReportResults.fulfilled, (state, action) => {
-			state.results = action.payload as IReportResult<any>;
+			state.aggregatedResults = action.payload.data as unknown[];
 			state.loading = false;
 			state.error = null;
 		});
 
 		builder.addCase(fetchReportResults.rejected, (state, action) => {
+			state.loading = false;
+			state.error = action.payload as string;
+		});
+
+		// ------- RESULTADOS PAGINADOS -------
+		builder.addCase(fetchPaginatedReportResults.pending, (state) => {
+			state.loading = true;
+			state.error = null;
+		});
+
+		builder.addCase(fetchPaginatedReportResults.fulfilled, (state, action) => {
+			state.paginatedResults = action.payload as IReportResult<unknown>;
+			state.loading = false;
+			state.error = null;
+		});
+
+		builder.addCase(fetchPaginatedReportResults.rejected, (state, action) => {
 			state.loading = false;
 			state.error = action.payload as string;
 		});

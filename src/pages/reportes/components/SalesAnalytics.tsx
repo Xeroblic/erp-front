@@ -3,47 +3,45 @@ import Chart from '@/components/Chart';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
 import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
+import type { SaleRecord } from '../types';
 
 interface Props {
-	data: any[];
+	data: SaleRecord[];
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const extractAmount = (r: SaleRecord): number => {
+	const raw = r.total_amount ?? (r as any).total ?? 0;
+	return typeof raw === 'string' ? parseFloat(raw) || 0 : Number(raw) || 0;
+};
+
+const extractCustomerName = (r: SaleRecord): string => {
+	if (typeof r.customer === 'string') return r.customer;
+	if (r.customer && typeof r.customer === 'object') {
+		return (
+			r.customer.billing_company ||
+			r.customer.contact_name ||
+			r.customer.name ||
+			'Cliente Anónimo'
+		);
+	}
+	if (r.billing_snapshot) {
+		return `${r.billing_snapshot.first_name ?? ''} ${r.billing_snapshot.last_name ?? ''}`.trim();
+	}
+	return r.customer_name || 'Cliente Anónimo';
+};
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
 const SalesAnalytics: React.FC<Props> = ({ data }) => {
-	// 🔥 LÓGICA DE EXTRACCIÓN BLINDADA
 	const processedData = useMemo(() => {
-		return data.map((r) => {
-			const rawAmt = r.total_amount ?? r.total ?? r.amount ?? r.monto ?? 0;
-			const amount = typeof rawAmt === 'string' ? parseFloat(rawAmt) : Number(rawAmt) || 0;
-
-			let customerName = 'Cliente Anónimo';
-			if (typeof r.customer === 'string') {
-				customerName = r.customer;
-			} else if (r.customer && typeof r.customer === 'object') {
-				customerName =
-					r.customer.billing_company ||
-					r.customer.contact_name ||
-					r.customer.name ||
-					'Cliente Anónimo';
-			} else if (r.billing_snapshot) {
-				customerName = `${r.billing_snapshot.first_name} ${r.billing_snapshot.last_name}`;
-			}
-
-			const dateRaw =
-				r.sale_date ||
-				r.date ||
-				r.created_at ||
-				r.updated_at ||
-				r.createdAt ||
-				r.period ||
-				r.fecha;
-
-			return {
-				...r,
-				_amount: amount,
-				_customerName: customerName,
-				_date: dateRaw,
-			};
-		});
+		return data.map((r) => ({
+			...r,
+			_amount: extractAmount(r),
+			_customerName: extractCustomerName(r),
+			_date: r.sale_date || r.date || r.created_at || r.updated_at || null,
+		}));
 	}, [data]);
 
 	// 1. STATUS DATA
@@ -82,30 +80,26 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 
 	// 3. MENSUAL
 	const monthlyData = useMemo(() => {
-		const timeData: {
-			key: string;
-			label: string;
-			amount: number;
-			time: number;
-		}[] = [];
+		const monthNames = [
+			'Ene',
+			'Feb',
+			'Mar',
+			'Abr',
+			'May',
+			'Jun',
+			'Jul',
+			'Ago',
+			'Sep',
+			'Oct',
+			'Nov',
+			'Dic',
+		];
+		const timeData: { key: string; label: string; amount: number; time: number }[] = [];
+
 		processedData.forEach((r) => {
 			if (!r._date) return;
 			const d = new Date(r._date);
 			if (isNaN(d.getTime())) return;
-			const monthNames = [
-				'Ene',
-				'Feb',
-				'Mar',
-				'Abr',
-				'May',
-				'Jun',
-				'Jul',
-				'Ago',
-				'Sep',
-				'Oct',
-				'Nov',
-				'Dic',
-			];
 			const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 			const label = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
 			const existing = timeData.find((t) => t.key === key);
@@ -124,7 +118,7 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 
 	return (
 		<div className='grid grid-cols-1 gap-6 lg:grid-cols-3'>
-			{/* 1. ESTADO DE ÓRDENES (Tema: Emerald/Green) */}
+			{/* 1. ESTADO DE ÓRDENES */}
 			<Card className='h-full border border-emerald-100 shadow-sm dark:border-emerald-900/30'>
 				<CardHeader className='border-b border-emerald-100 pb-3 dark:border-emerald-900/30'>
 					<div className='flex items-center justify-between'>
@@ -147,13 +141,7 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 						series={statusData.series}
 						options={{
 							labels: statusData.labels,
-							colors: [
-								'#10B981', // Emerald
-								'#F59E0B', // Amber
-								'#EF4444', // Red
-								'#6366F1', // Indigo
-								'#8B5CF6', // Violet
-							],
+							colors: ['#10B981', '#F59E0B', '#EF4444', '#6366F1', '#8B5CF6'],
 							legend: { position: 'bottom', fontSize: '11px' },
 							plotOptions: { pie: { donut: { size: '65%' } } },
 							dataLabels: { enabled: false },
@@ -167,7 +155,7 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 				</CardBody>
 			</Card>
 
-			{/* 2. TOP CLIENTES (Tema: Violet/Purple) */}
+			{/* 2. TOP CLIENTES */}
 			<Card className='h-full border border-violet-100 shadow-sm dark:border-violet-900/30'>
 				<CardHeader className='border-b border-violet-100 pb-3 dark:border-violet-900/30'>
 					<div className='flex items-center justify-between'>
@@ -197,18 +185,12 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 									distributed: true,
 								},
 							},
-							colors: [
-								'#4338ca', // Indigo 700
-								'#4f46e5', // Indigo 600
-								'#6366f1', // Indigo 500
-								'#818cf8', // Indigo 400
-								'#a5b4fc', // Indigo 300
-							],
+							colors: ['#4338ca', '#4f46e5', '#6366f1', '#818cf8', '#a5b4fc'],
 							xaxis: {
 								categories: topCustomers.categories,
 								labels: {
 									style: { colors: '#64748B', fontSize: '10px' },
-									formatter: (val: number | string): string => {
+									formatter: (val: string | number): string => {
 										const numVal = Number(val);
 										if (isNaN(numVal)) return String(val);
 										if (numVal >= 1000000)
@@ -221,11 +203,7 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 							},
 							yaxis: {
 								labels: {
-									style: {
-										colors: '#64748B',
-										fontSize: '11px',
-										fontWeight: 600,
-									},
+									style: { colors: '#64748B', fontSize: '11px', fontWeight: 600 },
 									maxWidth: 120,
 								},
 							},
@@ -242,7 +220,7 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 				</CardBody>
 			</Card>
 
-			{/* 3. HISTORIAL MENSUAL (Tema: Blue/Sky) */}
+			{/* 3. HISTORIAL MENSUAL */}
 			<Card className='h-full border border-blue-100 shadow-sm dark:border-blue-900/30'>
 				<CardHeader className='border-b border-blue-100 pb-3 dark:border-blue-900/30'>
 					<div className='flex items-center justify-between'>
@@ -264,13 +242,8 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 						height={300}
 						series={[{ name: 'Ventas', data: monthlyData.data }]}
 						options={{
-							plotOptions: {
-								bar: {
-									borderRadius: 2,
-									columnWidth: '60%',
-								},
-							},
-							colors: ['#3B82F6'], // Blue 500
+							plotOptions: { bar: { borderRadius: 2, columnWidth: '60%' } },
+							colors: ['#3B82F6'],
 							xaxis: {
 								categories: monthlyData.categories,
 								labels: {
@@ -282,7 +255,6 @@ const SalesAnalytics: React.FC<Props> = ({ data }) => {
 							yaxis: {
 								labels: {
 									style: { colors: '#64748B', fontSize: '10px' },
-									// FIX: Formatter con tipo correcto
 									formatter: (val: number) => {
 										if (val >= 1000000)
 											return `$${(val / 1000000).toFixed(0)}M`;

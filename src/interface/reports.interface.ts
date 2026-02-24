@@ -28,9 +28,9 @@ export interface IReportFilters {
 // ----------------------------
 // Resultados URL /reports/{type}
 // ----------------------------
-export interface IReportResult<T = any> {
+export interface IReportResult<T = unknown> {
 	data: T[];
-	links: any;
+	links: Record<string, string | null>;
 	meta: {
 		total: number;
 		per_page: number;

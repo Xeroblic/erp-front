@@ -1,15 +1,83 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { ReportsService } from '@/services/reports/reports.service';
-import { IReportExportParams, IReportFilters } from '@/interface/reports.interface';
+import { IReportExportParams, IReportFilters, IReportResult } from '@/interface/reports.interface';
 
 export const fetchReportTypes = createAsyncThunk(
 	'reports/fetchReportTypes',
 	async (subsidiaryId: number, thunkAPI) => {
 		try {
 			const res = await ReportsService.getTypes(subsidiaryId);
-			return res as any;
-		} catch (err: any) {
-			return thunkAPI.rejectWithValue(err.response?.data || err.message);
+			return res;
+		} catch (err: unknown) {
+			const error = err as { response?: { data?: unknown }; message?: string };
+			return thunkAPI.rejectWithValue(error.response?.data || error.message);
+		}
+	},
+);
+
+export const fetchPaginatedReportResults = createAsyncThunk(
+	'reports/fetchPaginatedReportResults',
+	async (
+		params: {
+			subsidiaryId: number;
+			type: string;
+			filters: IReportFilters;
+		},
+		thunkAPI,
+	) => {
+		try {
+			const resData = await ReportsService.getResults(
+				params.subsidiaryId,
+				params.type,
+				params.filters,
+			);
+
+			// Check if standard paginated response { data, meta, links }
+			if (resData?.meta) {
+				return resData as IReportResult<unknown>;
+			}
+
+			// If it's a raw Laravel paginator, it has current_page at the root
+			if (typeof resData?.current_page === 'number') {
+				return {
+					data: Array.isArray(resData.data) ? resData.data : [],
+					meta: {
+						current_page: resData.current_page,
+						from: resData.from || null,
+						last_page: resData.last_page || 1,
+						per_page: resData.per_page || 15,
+						to: resData.to || null,
+						total: resData.total || 0,
+					},
+					links: {
+						first: resData.first_page_url || null,
+						last: resData.last_page_url || null,
+						prev: resData.prev_page_url || null,
+						next: resData.next_page_url || null,
+					}
+				} as IReportResult<unknown>;
+			}
+
+			// Fallback if we just got a raw array or something else
+			const pageData = Array.isArray(resData) 
+				? resData 
+				: Array.isArray(resData?.data) ? resData.data : [];
+				
+			return {
+				data: pageData,
+				meta: {
+					current_page: 1,
+					from: 1,
+					last_page: 1,
+					per_page: pageData.length || 15,
+					to: pageData.length,
+					total: pageData.length,
+				},
+				links: {}
+			} as unknown as IReportResult<unknown>;
+		} catch (err: unknown) {
+			const error = err as { response?: { data?: unknown }; message?: string };
+			return thunkAPI.rejectWithValue(error.response?.data || error.message);
 		}
 	},
 );
@@ -28,7 +96,7 @@ export const fetchReportResults = createAsyncThunk(
 			const { per_page, ...filtersWithoutPagination } = params.filters;
 			const CHUNK_SIZE = 200; // Máximo permitido por tu backend
 
-			let allData: any[] = [];
+			let allData: Record<string, unknown>[] = [];
 			let currentPage = 1;
 			let keepFetching = true;
 
@@ -40,28 +108,25 @@ export const fetchReportResults = createAsyncThunk(
 				};
 
 				// 1. Petición
-				const rawRes: any = await ReportsService.getResults(
+				const rawRes = await ReportsService.getResults(
 					params.subsidiaryId,
 					params.type,
 					pageFilters,
-				);
+				) as unknown as Record<string, unknown>;
 
 				// 2. EXTRACCIÓN DE DATA (A prueba de interceptores ladrones)
 				// Intentamos sacar .data si es Axios, o usamos rawRes si ya viene limpio.
 				const possibleData =
 					rawRes && rawRes.data && !Array.isArray(rawRes) ? rawRes.data : rawRes;
 
-				// Si el servicio ya devolvió el array dentro de 'data' (paginación de Laravel), lo sacamos.
-				// Si el servicio devolvió el array directo (interceptor), lo usamos.
-				const pageData = Array.isArray(possibleData)
-					? possibleData
-					: Array.isArray(possibleData?.data)
-						? possibleData.data
+				const possibleObj = possibleData as Record<string, unknown>;
+				const pageData: Record<string, unknown>[] = Array.isArray(possibleData)
+					? (possibleData as Record<string, unknown>[])
+					: Array.isArray(possibleObj?.data)
+						? (possibleObj.data as Record<string, unknown>[])
 						: [];
 
-				// 3. VALIDACIÓN DE SEGURIDAD
 				if (!Array.isArray(pageData)) {
-					// console.error("❌ [Thunk] Formato desconocido:", rawRes);
 					break;
 				}
 
@@ -97,9 +162,9 @@ export const fetchReportResults = createAsyncThunk(
 					last_page: 1,
 				},
 			};
-		} catch (err: any) {
-			// console.error("❌ [Thunk] Error crítico:", err);
-			return thunkAPI.rejectWithValue(err.response?.data || err.message);
+		} catch (err: unknown) {
+			const error = err as { response?: { data?: unknown }; message?: string };
+			return thunkAPI.rejectWithValue(error.response?.data || error.message);
 		}
 	},
 );
@@ -121,8 +186,9 @@ export const exportReport = createAsyncThunk(
 				params.exportParams,
 			);
 			return res;
-		} catch (err: any) {
-			return thunkAPI.rejectWithValue(err.response?.data || err.message);
+		} catch (err: unknown) {
+			const error = err as { response?: { data?: unknown }; message?: string };
+			return thunkAPI.rejectWithValue(error.response?.data || error.message);
 		}
 	},
 );
