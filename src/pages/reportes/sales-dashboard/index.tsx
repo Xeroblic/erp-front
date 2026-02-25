@@ -239,7 +239,7 @@ const SalesDashboard: React.FC = () => {
 			<Container className='pb-10'>
 				<div className='flex flex-col gap-8'>
 					{/* Controles de Filtrado */}
-					<div className='rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-[#121214]'>
+					<div className='order-1 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-[#121214]'>
 						<ReportFilters
 							initial={filters}
 							onApply={(f) => setFilters(f)}
@@ -250,7 +250,7 @@ const SalesDashboard: React.FC = () => {
 					{/* Fila de KPIs (Métricas Principales) */}
 					<div
 						ref={kpiContainerRef}
-						className='grid grid-cols-1 gap-4 md:grid-cols-3 xl:grid-cols-5'>
+						className='order-3 grid grid-cols-1 gap-4 md:order-2 md:grid-cols-3 xl:grid-cols-5'>
 						{/* KPI: Ventas Totales */}
 						<div className='group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 p-5 text-white shadow-lg shadow-emerald-500/20 transition-transform duration-300 hover:-translate-y-1 hover:shadow-emerald-500/40 dark:from-emerald-600 dark:to-teal-700'>
 							<div className='relative flex items-center gap-3'>
@@ -378,7 +378,7 @@ const SalesDashboard: React.FC = () => {
 					</div>
 
 					{/* Sección Principal del Gráfico */}
-					<Card className='relative overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-[#121214]'>
+					<Card className='relative order-2 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-[#121214] md:order-3'>
 						<CardHeader className='border-b border-zinc-100 bg-transparent px-6 py-6 dark:border-zinc-800 sm:px-8'>
 							<div className='flex flex-wrap items-center justify-between gap-6'>
 								<div className='flex flex-col gap-1'>
@@ -446,7 +446,7 @@ const SalesDashboard: React.FC = () => {
 					</Card>
 
 					{/* Sección Analítica Secundaria */}
-					<div className='mt-6'>
+					<div className='order-4 mt-6'>
 						<SalesAnalytics data={filteredResults} />
 					</div>
 				</div>
