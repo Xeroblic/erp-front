@@ -93,8 +93,11 @@ const SalesDashboard: React.FC = () => {
 	} = useSalesDashboard();
 	const { isDarkTheme } = useDarkMode();
 
+	const chartColors = useMemo(() => chartSeries.map((s) => s.color || '#000000'), [chartSeries]);
+
 	const chartOptions: ApexOptions = useMemo(
 		() => ({
+			colors: chartColors,
 			chart: {
 				type: 'area',
 				zoom: { enabled: true, type: 'x', autoScaleYaxis: true },
@@ -112,13 +115,11 @@ const SalesDashboard: React.FC = () => {
 				parentHeightOffset: 0,
 			},
 			stroke: {
-				width: [3, 3],
+				width: 3,
 				curve: 'smooth',
-				colors: ['#2dd4bf', '#fb7185'],
 			},
 			markers: {
 				size: 0,
-				strokeColors: ['#2dd4bf', '#fb7185'],
 				strokeWidth: 3,
 				colors: ['#fff'],
 				hover: { size: 6 },
@@ -173,29 +174,24 @@ const SalesDashboard: React.FC = () => {
 				intersect: false,
 				style: { fontSize: '13px' },
 				x: { format: 'dd MMM yyyy' },
-				y: { formatter: (val: number) => `$${val.toLocaleString('es-CL')}` },
+				y: {
+					formatter: (val?: number) => {
+						if (typeof val !== 'number') return '$0';
+						return `$${val.toLocaleString('es-CL')}`;
+					},
+				},
 			},
 			fill: {
 				type: 'gradient',
 				gradient: {
 					shadeIntensity: 1,
-					opacityFrom: 0.45, // Más fuerte arriba
-					opacityTo: 0.05, // Casi transparente abajo
+					opacityFrom: 0.45,
+					opacityTo: 0.05,
 					stops: [0, 90, 100],
-					colorStops: [
-						[
-							{ offset: 0, color: '#2dd4bf', opacity: 0.4 },
-							{ offset: 100, color: '#2dd4bf', opacity: 0 },
-						],
-						[
-							{ offset: 0, color: '#fb7185', opacity: 0.4 },
-							{ offset: 100, color: '#fb7185', opacity: 0 },
-						],
-					],
 				},
 			},
 		}),
-		[chartCategories, currentMonthRange, isDarkTheme],
+		[chartCategories, currentMonthRange, isDarkTheme, chartColors],
 	);
 
 	const kpiContainerRef = useRef<HTMLDivElement>(null);

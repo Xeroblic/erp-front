@@ -218,25 +218,46 @@ export function useSalesDashboard() {
 
 	// Chart series + stats
 	const { chartSeries, chartCategories, stats } = useMemo(() => {
-		const dateMap = new Map<string, { total: number; returns: number }>();
-		let totalSales = 0;
+		const dateMap = new Map<string, { total: number; returns: number; confirmed: number; process: number; cancelled: number }>();
+		let totalConfirmedSales = 0;
 		let totalReturns = 0;
+		let confirmedCount = 0;
 
 		filteredResults.forEach((r) => {
-			const amount = extractAmount(r);
+			const rawAmount = extractAmount(r);
+			const amount = Math.max(0, rawAmount); // Solo sumamos positivos para las barras
 			const retVal = extractReturns(r);
-			totalSales += amount;
-			totalReturns += retVal;
+			
+			let statusRaw = String(r.status || (r as any).estado || '').toLowerCase().trim();
+			if (statusRaw.startsWith('wc-')) statusRaw = statusRaw.substring(3);
+			if (statusRaw.startsWith('order-')) statusRaw = statusRaw.substring(6);
 
 			const rawDate = extractDate(r);
 			const d = parseDateSafe(rawDate);
 			if (!d) return;
 
 			const key = d.toISOString().split('T')[0];
-			if (!dateMap.has(key)) dateMap.set(key, { total: 0, returns: 0 });
+			if (!dateMap.has(key)) dateMap.set(key, { total: 0, returns: 0, confirmed: 0, process: 0, cancelled: 0 });
 			const entry = dateMap.get(key)!;
+			
+			const isCancelled = ['refunded', 'returned', 'anulado', 'cancelled', 'canceled', 'cancelado', 'failed', 'devuelto', 'reembolsado', 'rechazado'].includes(statusRaw) || rawAmount < 0 || retVal > 0;
+			const isProcess = ['processing', 'on-hold', 'pending', 'procesando', 'espera', 'pendiente'].includes(statusRaw);
+			
+			let actualReturn = 0;
+			if (isCancelled) {
+				actualReturn = Math.abs(rawAmount) > 0 ? Math.abs(rawAmount) : retVal;
+				entry.cancelled += actualReturn;
+				totalReturns += actualReturn;
+			} else if (isProcess) {
+				entry.process += amount;
+			} else {
+				entry.confirmed += amount; // completed, confirmed, etc. 
+				totalConfirmedSales += amount;
+				confirmedCount++;
+			}
+
 			entry.total += amount;
-			entry.returns += retVal;
+			entry.returns += actualReturn;
 		});
 
 		// --- FIX: Crear un arreglo CONTINUO de fechas ---
@@ -252,40 +273,45 @@ export function useSalesDashboard() {
 				const k = d.toISOString().split('T')[0];
 				tempKeys.push(k);
 				// Si la fecha no estaba en el mapa, la inicializamos en 0
-				if (!dateMap.has(k)) dateMap.set(k, { total: 0, returns: 0 });
+				if (!dateMap.has(k)) dateMap.set(k, { total: 0, returns: 0, confirmed: 0, process: 0, cancelled: 0 });
 			}
 			keys = tempKeys;
 		}
 
 		const dataSales = keys.map((k) => dateMap.get(k)?.total || 0);
 		const dataReturns = keys.map((k) => dateMap.get(k)?.returns || 0);
+		
+		const dataConfirmed = keys.map((k) => dateMap.get(k)?.confirmed || 0);
+		const dataProcess = keys.map((k) => dateMap.get(k)?.process || 0);
+		const dataCancelled = keys.map((k) => dateMap.get(k)?.cancelled || 0);
 
 		// Calcular span de días para las promedios
 		const daysSpan = Math.max(1, keys.length);
 		const monthsSpan = Math.max(1, daysSpan / 30.4);
-		const computedMonthlyAvg = totalSales / monthsSpan;
+		const computedMonthlyAvg = totalConfirmedSales / monthsSpan;
 
 		// --- MACHINE LEARNING (Frontend) ---
 		// Tomamos solo los últimos 90 días para que la proyección refleje
 		// la realidad reciente del negocio y no la historia de hace 3 años.
-		const recentDataForPrediction = dataSales.slice(-90);
+		const recentDataForPrediction = dataConfirmed.slice(-90);
 		const computedProjection = calculateLinearRegressionProjection(recentDataForPrediction, 30);
 
 		const computedStats: SalesDashboardStats = {
-			total: totalSales,
+			total: totalConfirmedSales,
 			returns: totalReturns,
 			refundedTotal: totalReturns,
-			count: results.length,
-			avg: filteredResults.length > 0 ? totalSales / filteredResults.length : 0,
-			retPct: totalSales > 0 ? (totalReturns / totalSales) * 100 : 0,
+			count: confirmedCount,
+			avg: confirmedCount > 0 ? totalConfirmedSales / confirmedCount : 0,
+			retPct: totalConfirmedSales > 0 ? (totalReturns / totalConfirmedSales) * 100 : 0,
 			monthlyAvg: computedMonthlyAvg,
 			projectedTotal: computedProjection,
 		};
 
 		return {
 			chartSeries: [
-				{ name: 'Ventas', data: dataSales, color: '#2dd4bf' },
-				{ name: 'Devoluciones', data: dataReturns, color: '#fb7185' },
+				{ name: 'Confirmadas', data: dataConfirmed, color: '#10b981' }, // Emerald 500
+				{ name: 'En Proceso', data: dataProcess, color: '#3b82f6' }, // Blue 500
+				{ name: 'Devueltas / Canc.', data: dataCancelled, color: '#f43f5e' }, // Rose 500
 			],
 			chartCategories: keys,
 			stats: computedStats,
