@@ -5,7 +5,7 @@ import { loadPdfFonts } from '../../../../comercial/cotizaciones/utils/pdf/fonts
 
 import type { SalesDashboardStats, SaleRecord, ReportFiltersState } from '../../../types';
 import { generateSmartInsights } from '../smartInsights';
-import { buildCoverPage, buildExecutiveSummary, buildSmartKPIs, buildTopPerformersTable, buildTimeAnalytics, buildRiskAnalytics, buildMethodology, type PdfContent } from './reportBuilder';
+import { buildCoverPage, buildExecutiveSummary, buildSmartKPIs, buildTopPerformersTable, buildYearlyAnalytics, buildSemesterDeepDive, buildRiskAnalytics, buildMethodology, type PdfContent } from './reportBuilder';
 import { format } from 'date-fns';
 
 export interface ExecutiveReportData {
@@ -29,7 +29,8 @@ export const generateExecutiveReport = async (data: ExecutiveReportData): Promis
 		buildExecutiveSummary(insights),
 		buildSmartKPIs(data.stats),
 		buildTopPerformersTable(data.topCustomers),
-		buildTimeAnalytics(data.filteredResults),
+		buildYearlyAnalytics(data.filteredResults),
+		...(buildSemesterDeepDive(data.filteredResults) as PdfContent[]),
 		buildRiskAnalytics(data.filteredResults),
 		buildMethodology()
 	];
