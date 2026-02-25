@@ -176,7 +176,7 @@ export const buildTopPerformersTable = (customerData: { name: string; total: num
 					],
 				},
 				layout: {
-					hLineWidth: (i: number) => (i === 1 ? 2 : 0), // Base bottom header thick border only
+					hLineWidth: (i: number) => (i === 1 ? 2 : 0),
 					hLineColor: () => '#e2e8f0',
 					vLineWidth: () => 0,
 					paddingLeft: () => 4,
@@ -245,61 +245,222 @@ const extractAmount = (r: SaleRecord): number => {
 	return typeof raw === 'string' ? parseFloat(raw) || 0 : Number(raw) || 0;
 };
 
-export const buildDetailedTransactionsTable = (filteredResults: SaleRecord[]): PdfContent => {
+export const buildTimeAnalytics = (filteredResults: SaleRecord[]): PdfContent => {
 	if (filteredResults.length === 0) return { text: '', pageBreak: 'before' } as PdfContent;
+
+	const groups: Record<string, { count: number; total: number }> = {};
+	
+	const sorted = [...filteredResults].sort((a, b) => {
+		const dA = new Date(a.sale_date || a.date || a.created_at || 0).getTime();
+		const dB = new Date(b.sale_date || b.date || b.created_at || 0).getTime();
+		return dA - dB;
+	});
+
+	sorted.forEach(r => {
+		const dateRaw = r.sale_date || r.date || r.created_at || '';
+		if (!dateRaw) return;
+		const d = new Date(dateRaw);
+		const period = format(d, "MMM yyyy - 'Sem.' w", { locale: es }).toUpperCase();
+		
+		if (!groups[period]) groups[period] = { count: 0, total: 0 };
+		groups[period].count += 1;
+		groups[period].total += extractAmount(r);
+	});
+
+	const periods = Object.keys(groups);
+	const maxTotal = Math.max(...periods.map(p => groups[p].total), 1);
+
+	const chartStack = periods.map(p => {
+		const group = groups[p];
+		const barWidth = Math.max((group.total / maxTotal) * 100, 1);
+		return {
+			columns: [
+				{ text: p, width: 120, fontSize: 9, color: '#475569', alignment: 'right', margin: [0, 4, 8, 0] },
+				{
+					stack: [
+						{
+							canvas: [
+								{ type: 'rect', x: 0, y: 0, w: (barWidth / 100) * 280, h: 16, r: 4, color: '#0ea5e9' }
+							]
+						}
+					],
+					width: 280,
+					margin: [0, 2, 0, 8]
+				},
+				{ text: currencyFormatter.format(group.total), width: '*', fontSize: 9, bold: true, color: '#0f172a', margin: [8, 4, 0, 0] }
+			]
+		};
+	});
 
 	return {
 		stack: [
-			{ text: 'ANEXO A: REGISTRO DETALLADO DE OPERACIONES', fontSize: 16, bold: true, color: '#0f172a', margin: [0, 0, 0, 16] },
+			{ text: 'ANÁLISIS DE RENDIMIENTO TEMPORAL', fontSize: 16, bold: true, color: '#0f172a', margin: [0, 0, 0, 16] },
 			{
 				table: {
-					headerRows: 1, // Repeat headers across pages
-					widths: ['auto', 'auto', '*', 'auto', 'auto'],
+					headerRows: 1,
+					widths: ['*', 'auto', 'auto', 'auto'],
 					body: [
-						// Headings
 						[
-							{ text: 'N° ORDEN', fontSize: 9, bold: true, color: '#ffffff', fillColor: '#0f172a', border: [false, false, false, false], margin: [4, 6, 4, 6] },
-							{ text: 'FECHA', fontSize: 9, bold: true, color: '#ffffff', fillColor: '#0f172a', border: [false, false, false, false], margin: [4, 6, 4, 6] },
-							{ text: 'CLIENTE', fontSize: 9, bold: true, color: '#ffffff', fillColor: '#0f172a', border: [false, false, false, false], margin: [4, 6, 4, 6] },
-							{ text: 'ESTADO', fontSize: 9, bold: true, color: '#ffffff', fillColor: '#0f172a', border: [false, false, false, false], margin: [4, 6, 4, 6] },
-							{ text: 'MONTO', fontSize: 9, bold: true, color: '#ffffff', fillColor: '#0f172a', alignment: 'right', border: [false, false, false, false], margin: [4, 6, 4, 6] },
+							{ text: 'PERIODO', fontSize: 9, bold: true, color: '#ffffff', fillColor: '#0f172a', margin: [4, 6, 4, 6] },
+							{ text: 'N° ÓRDENES', fontSize: 9, bold: true, color: '#ffffff', fillColor: '#0f172a', alignment: 'center', margin: [4, 6, 4, 6] },
+							{ text: 'VENTAS TOTALES', fontSize: 9, bold: true, color: '#ffffff', fillColor: '#0f172a', alignment: 'right', margin: [4, 6, 4, 6] },
+							{ text: 'TICKET PROMEDIO', fontSize: 9, bold: true, color: '#ffffff', fillColor: '#0f172a', alignment: 'right', margin: [4, 6, 4, 6] },
 						],
-						// Transformed Rows (Reverse chronological logic if needed, currently direct map)
-						...filteredResults.map((r, idx) => {
+						...periods.map((p, idx) => {
+							const group = groups[p];
 							const isEven = idx % 2 === 0;
 							const fillColor = isEven ? '#f8fafc' : '#ffffff';
-							const customerName = extractCustomerName(r);
-							const amount = extractAmount(r);
-							const dateRaw = r.sale_date || r.date || r.created_at || '';
-							const formattedDate = dateRaw ? format(new Date(dateRaw), 'dd/MM/yyyy HH:mm') : '-';
-							
-							const statusColors: Record<string, string> = {
-								completed: '#10b981', returned: '#ef4444', refunded: '#f59e0b', processing: '#3b82f6', pending: '#64748b'
-							};
-							const sColor = statusColors[r.status?.toLowerCase()] || '#64748b';
-
+							const avg = group.count > 0 ? group.total / group.count : 0;
 							return [
-								{ text: r.sale_number || r.wc_order_number || `#${r.id}`, fontSize: 9, color: '#475569', fillColor, border: [false, false, false, false], margin: [4, 6, 4, 6] },
-								{ text: formattedDate, fontSize: 9, color: '#64748b', fillColor, border: [false, false, false, false], margin: [4, 6, 4, 6] },
-								{ text: customerName, fontSize: 9, bold: true, color: '#334155', fillColor, border: [false, false, false, false], margin: [4, 6, 4, 6] },
-								{ text: String(r.status).toUpperCase(), fontSize: 8, bold: true, color: sColor, fillColor, border: [false, false, false, false], margin: [4, 6, 4, 6] },
-								{ text: currencyFormatter.format(amount), fontSize: 10, bold: true, color: sColor, alignment: 'right', fillColor, border: [false, false, false, false], margin: [4, 6, 4, 6] },
+								{ text: p, fontSize: 10, color: '#334155', bold: true, fillColor, margin: [4, 6, 4, 6], border: [false, false, false, false] },
+								{ text: String(group.count), fontSize: 10, color: '#475569', alignment: 'center', fillColor, margin: [4, 6, 4, 6], border: [false, false, false, false] },
+								{ text: currencyFormatter.format(group.total), fontSize: 10, bold: true, color: '#10b981', alignment: 'right', fillColor, margin: [4, 6, 4, 6], border: [false, false, false, false] },
+								{ text: currencyFormatter.format(avg), fontSize: 10, color: '#6366f1', alignment: 'right', fillColor, margin: [4, 6, 4, 6], border: [false, false, false, false] },
 							];
-						}),
+						})
 					]
 				},
 				layout: {
-					hLineWidth: (i: number, node: { table: { body: unknown[] } }) => (i === 1 || i === node.table.body.length ? 1 : 0),
+					hLineWidth: (i: number, node: any) => (i === 1 || i === node.table.body.length ? 1 : 0),
 					hLineColor: () => '#cbd5e1',
 					vLineWidth: () => 0,
 					paddingLeft: () => 4,
 					paddingRight: () => 4,
 				},
+				margin: [0, 0, 0, 30]
+			},
+			{ text: 'DISTRIBUCIÓN DE VENTAS POR PERIODO', fontSize: 12, bold: true, color: '#0f172a', margin: [0, 0, 0, 16] },
+			{
+				stack: chartStack
 			}
 		],
-		pageBreak: 'before' // Forces standalone Annex pages
+		pageBreak: 'before'
 	} as PdfContent;
 };
+
+export const buildRiskAnalytics = (filteredResults: SaleRecord[]): PdfContent => {
+	let totalSales = 0;
+	let totalRefunded = 0;
+	const refundsByCustomer: Record<string, { count: number, total: number }> = {};
+
+	filteredResults.forEach(r => {
+		const amount = extractAmount(r);
+		const status = String(r.status || '').toLowerCase();
+		
+		if (status === 'refunded' || status === 'returned') {
+			totalRefunded += amount;
+			const customerName = extractCustomerName(r);
+			if (!refundsByCustomer[customerName]) {
+				refundsByCustomer[customerName] = { count: 0, total: 0 };
+			}
+			refundsByCustomer[customerName].count += 1;
+			refundsByCustomer[customerName].total += amount;
+		} else if (status === 'completed' || status === 'processing' || status === 'paid') {
+			totalSales += amount;
+		}
+	});
+
+	if (totalRefunded === 0) {
+		return {
+			stack: [
+				{ text: 'ANÁLISIS DE DEVOLUCIONES Y RIESGO', fontSize: 16, bold: true, color: '#0f172a', margin: [0, 0, 0, 16] },
+				{
+					stack: [
+						{ text: 'Cero Riesgo: Excelente Salud Operativa', fontSize: 18, bold: true, color: '#10b981', alignment: 'center', margin: [0, 20, 0, 10] },
+						{ text: 'No se han registrado devoluciones ni reembolsos en el periodo evaluado.', fontSize: 12, color: '#64748b', alignment: 'center' }
+					],
+					margin: [0, 40, 0, 0]
+				}
+			],
+			pageBreak: 'before'
+		} as PdfContent;
+	}
+
+	const totalVolume = totalSales + totalRefunded;
+	const salesPct = totalVolume > 0 ? (totalSales / totalVolume) * 100 : 0;
+	const refundPct = totalVolume > 0 ? (totalRefunded / totalVolume) * 100 : 0;
+
+	const topRefundCustomers = Object.entries(refundsByCustomer)
+		.map(([name, data]) => ({ name, ...data }))
+		.sort((a, b) => b.total - a.total)
+		.slice(0, 5);
+
+	return {
+		stack: [
+			{ text: 'ANÁLISIS DE DEVOLUCIONES Y RIESGO', fontSize: 16, bold: true, color: '#0f172a', margin: [0, 0, 0, 20] },
+			{
+				columns: [
+					// Tarjeta 1
+					{
+						table: {
+							widths: ['*'],
+							body: [
+								[{ text: 'IMPACTO DE DEVOLUCIONES', fontSize: 11, bold: true, color: '#ffffff', fillColor: '#ef4444', margin: [10, 8, 10, 8], border: [false, false, false, false] }],
+								[{
+									stack: [
+										{ text: 'Ventas Totales', fontSize: 10, color: '#64748b', margin: [0, 10, 0, 4] },
+										{ text: currencyFormatter.format(totalSales), fontSize: 14, bold: true, color: '#10b981', margin: [0, 0, 0, 10] },
+										{
+											canvas: [
+												{ type: 'rect', x: 0, y: 0, w: 200, h: 10, r: 2, color: '#f1f5f9' },
+												{ type: 'rect', x: 0, y: 0, w: Math.max((salesPct / 100) * 200, 2), h: 10, r: 2, color: '#10b981' }
+											],
+											margin: [0, 0, 0, 15]
+										},
+										{ text: 'Total Devuelto', fontSize: 10, color: '#64748b', margin: [0, 0, 0, 4] },
+										{ text: currencyFormatter.format(totalRefunded), fontSize: 14, bold: true, color: '#ef4444', margin: [0, 0, 0, 10] },
+										{
+											canvas: [
+												{ type: 'rect', x: 0, y: 0, w: 200, h: 10, r: 2, color: '#f1f5f9' },
+												{ type: 'rect', x: 0, y: 0, w: Math.max((refundPct / 100) * 200, 2), h: 10, r: 2, color: '#ef4444' }
+											]
+										}
+									],
+									margin: [15, 10, 15, 20],
+									border: [false, false, false, false]
+								}]
+							]
+						},
+						layout: { defaultBorder: false },
+						width: '48%',
+						margin: [0, 0, 10, 0]
+					},
+					// Tarjeta 2
+					{
+						table: {
+							widths: ['*'],
+							body: [
+								[{ text: 'TOP CLIENTES REEMBOLSOS', fontSize: 11, bold: true, color: '#ffffff', fillColor: '#f59e0b', margin: [10, 8, 10, 8], border: [false, false, false, false] }],
+								[{
+									table: {
+										widths: ['*', 'auto'],
+										body: [
+											...topRefundCustomers.map((c) => [
+												{ text: c.name, fontSize: 9, bold: true, color: '#334155', border: [false, false, false, true], margin: [4, 8, 4, 8] },
+												{ text: currencyFormatter.format(c.total), fontSize: 9, bold: true, color: '#ef4444', alignment: 'right', border: [false, false, false, true], margin: [4, 8, 4, 8] }
+											])
+										]
+									},
+									layout: {
+										hLineWidth: (i: number, node: any) => (i === node.table.body.length ? 0 : 1),
+										hLineColor: () => '#f1f5f9',
+										vLineWidth: () => 0
+									},
+									margin: [10, 10, 10, 10],
+									border: [false, false, false, false]
+								}]
+							]
+						},
+						layout: { defaultBorder: false },
+						width: '48%'
+					}
+				]
+			}
+		],
+		pageBreak: 'before'
+	} as PdfContent;
+};
+
 
 export const buildMethodology = (): PdfContent => {
 	return {
