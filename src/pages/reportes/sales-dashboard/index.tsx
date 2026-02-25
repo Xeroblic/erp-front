@@ -395,7 +395,9 @@ const SalesDashboard: React.FC = () => {
 											<span className='relative inline-flex h-2 w-2 rounded-full bg-emerald-500'></span>
 										</span>
 										<p className='text-xs font-semibold text-zinc-500 dark:text-zinc-400'>
-											Vista inicial predeterminada a los últimos 30 días
+											{filters.dateFrom || filters.dateTo
+												? 'Rango temporal personalizado aplicado'
+												: 'Vista inicial predeterminada a los últimos 30 días'}
 										</p>
 									</div>
 								</div>

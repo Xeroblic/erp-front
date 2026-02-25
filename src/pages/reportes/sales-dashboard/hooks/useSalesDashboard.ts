@@ -15,7 +15,9 @@ import { calculateLinearRegressionProjection } from '@/utils/predictions';
 const parseNumeric = (val: unknown): number | undefined => {
 	if (typeof val === 'number') return Number.isFinite(val) ? val : undefined;
 	if (typeof val === 'string') {
-		const num = Number(val.replace(/[^0-9.-]/g, ''));
+		const cleanString = val.replace(/[^0-9.-]/g, '');
+		if (cleanString === '') return undefined;
+		const num = Number(cleanString);
 		return Number.isFinite(num) ? num : undefined;
 	}
 	return undefined;
@@ -23,19 +25,20 @@ const parseNumeric = (val: unknown): number | undefined => {
 
 const normalizeDate = (val?: string): string | undefined => {
 	if (!val) return undefined;
-	const dashParts = val.split('-');
-	if (dashParts.length === 3) {
-		const [a, b, c] = dashParts.map((p) => p.trim());
-		if (a.length === 4) {
-			const iso = new Date(`${a}-${b}-${c}T00:00:00`);
-			if (!Number.isNaN(iso.getTime())) return iso.toISOString().slice(0, 10);
-		}
-		if (c.length === 4) {
-			const iso = new Date(`${c}-${b}-${a}T00:00:00`);
-			if (!Number.isNaN(iso.getTime())) return iso.toISOString().slice(0, 10);
-		}
+	const trimmed = val.trim();
+	const datePart = trimmed.split(' ')[0].split('T')[0];
+	
+	// YYYY-MM-DD
+	if (/^\d{4}[/-]\d{2}[/-]\d{2}$/.test(datePart)) {
+		return datePart.replace(/\//g, '-');
 	}
-	const iso = new Date(val);
+	// DD-MM-YYYY
+	if (/^\d{2}[/-]\d{2}[/-]\d{4}$/.test(datePart)) {
+		const [d, m, y] = datePart.split(/[/-]/);
+		return `${y}-${m}-${d}`;
+	}
+	
+	const iso = new Date(trimmed);
 	if (!Number.isNaN(iso.getTime())) return iso.toISOString().slice(0, 10);
 	return undefined;
 };
@@ -44,14 +47,25 @@ const parseDateSafe = (val: unknown): Date | null => {
 	if (!val) return null;
 	if (val instanceof Date && !Number.isNaN(val.getTime())) return val;
 	if (typeof val === 'string') {
-		const iso = new Date(val);
-		if (!Number.isNaN(iso.getTime())) return iso;
-		const m = val.match(/^(\d{2})[/-](\d{2})[/-](\d{4})$/);
-		if (m) {
-			const [, dd, mm, yyyy] = m;
-			const parsed = new Date(`${yyyy}-${mm}-${dd}T00:00:00`);
+		const trimmed = val.trim();
+		const datePart = trimmed.split(' ')[0].split('T')[0];
+		
+		// YYYY-MM-DD
+		if (/^\d{4}[/-]\d{2}[/-]\d{2}$/.test(datePart)) {
+			const [y, m, d] = datePart.split(/[/-]/);
+			const parsed = new Date(Number(y), Number(m) - 1, Number(d), 0, 0, 0);
 			if (!Number.isNaN(parsed.getTime())) return parsed;
 		}
+		// DD-MM-YYYY
+		if (/^\d{2}[/-]\d{2}[/-]\d{4}$/.test(datePart)) {
+			const [d, m, y] = datePart.split(/[/-]/);
+			const parsed = new Date(Number(y), Number(m) - 1, Number(d), 0, 0, 0);
+			if (!Number.isNaN(parsed.getTime())) return parsed;
+		}
+		
+		// Fallback normal
+		const iso = new Date(trimmed);
+		if (!Number.isNaN(iso.getTime())) return iso;
 	}
 	return null;
 };
@@ -103,7 +117,7 @@ export function useSalesDashboard() {
 
 	// Mapear filtros al formato API
 	const mapFilters = (f: ReportFiltersState): MappedFilters => {
-		const out: MappedFilters = {};
+		const out: MappedFilters = { all: 1, raw: 1 }; // Forzamos todo el histórico + estados verdaderos (para detectar wc-refunded)
 		const from = normalizeDate(f.dateFrom);
 		const to = normalizeDate(f.dateTo);
 		if (from) out.date_from = from;
@@ -165,8 +179,18 @@ export function useSalesDashboard() {
 			if (fromDate || toDate) {
 				const d = parseDateSafe(rawDate);
 				if (!d || Number.isNaN(d.getTime())) return false;
-				if (fromDate && d < fromDate) return false;
-				if (toDate && d > toDate) return false;
+				
+				// Normalizar fechas a tiempos locales a medianoche (start of day) para comparar justamente
+				const compareTime = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+				
+				if (fromDate) {
+					const fromTime = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate()).getTime();
+					if (compareTime < fromTime) return false;
+				}
+				if (toDate) {
+					const toTime = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate(), 23, 59, 59, 999).getTime();
+					if (d.getTime() > toTime) return false;
+				}
 			}
 
 			if (branchId && branchId > 0) {
@@ -282,6 +306,26 @@ export function useSalesDashboard() {
 	}, [filteredResults]);
 
 	const currentMonthRange = useMemo(() => {
+		if (filters.dateFrom || filters.dateTo) {
+			const start = filters.dateFrom ? parseDateSafe(filters.dateFrom)?.getTime() : undefined;
+			let end = filters.dateTo ? parseDateSafe(filters.dateTo)?.getTime() : undefined;
+			if (end) {
+				const endDate = new Date(end);
+				endDate.setHours(23, 59, 59, 999);
+				end = endDate.getTime();
+			} else if (start) {
+				const endDate = new Date(start);
+				endDate.setMonth(endDate.getMonth() + 1);
+				end = Math.min(endDate.getTime(), new Date().getTime());
+			} else if (end && !start) {
+				const startDate = new Date(end);
+				startDate.setMonth(startDate.getMonth() - 1);
+				return { start: startDate.getTime(), end };
+			}
+			return { start, end };
+		}
+
+		// Rango predeterminado (últimos 30 días)
 		const now = new Date();
 		const endDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).getTime(); // Hoy al final del día
 		
@@ -292,7 +336,7 @@ export function useSalesDashboard() {
 		const startDay = startDayDate.getTime();
 		
 		return { start: startDay, end: endDay };
-	}, []);
+	}, [filters.dateFrom, filters.dateTo]);
 
 	return {
 		filters,

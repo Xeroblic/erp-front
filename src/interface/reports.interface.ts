@@ -23,6 +23,8 @@ export interface IReportFilters {
 	branch_id?: number;
 	per_page?: number;
 	page?: number;
+	all?: number;
+	raw?: number;
 }
 
 // ----------------------------

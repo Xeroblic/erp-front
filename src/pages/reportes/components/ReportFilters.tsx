@@ -56,18 +56,30 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	const [filters, setFilters] = useState<ReportFiltersState>(
-		initial ?? {
-			dateFrom: '',
-			dateTo: '',
+	// Default a los últimos 30 días
+	const getDefaultDates = () => {
+		const end = new Date();
+		const start = new Date();
+		start.setDate(end.getDate() - 30);
+		return {
+			dateFrom: toLocalISODate(start),
+			dateTo: toLocalISODate(end),
+		};
+	};
+
+	const [filters, setFilters] = useState<ReportFiltersState>(() => {
+		if (initial) return initial;
+		const defaults = getDefaultDates();
+		return {
+			...defaults,
 			parameter: '',
 			priceMin: '',
 			priceMax: '',
 			subsidiary: effectiveSubsidiaryId ? String(effectiveSubsidiaryId) : '',
 			branch: '',
 			customer: '',
-		},
-	);
+		};
+	});
 
 	// ── Cerrar por click fuera ──
 	useEffect(() => {
@@ -163,18 +175,24 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset
 
 	const handleClearDates = (e: React.MouseEvent) => {
 		e.stopPropagation();
-		setFilters((f) => ({ ...f, dateFrom: '', dateTo: '' }));
+		const defaults = getDefaultDates();
+		setFilters((f) => ({ ...f, ...defaults }));
 	};
 
-	const handleApply = () => {
+	// Auto-Apply Asíncrono
+	useEffect(() => {
 		if (!validation.isValid) return;
-		onApply(filters);
-	};
+		const timer = setTimeout(() => {
+			onApply(filters);
+		}, 800);
+		return () => clearTimeout(timer);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [filters, validation.isValid]);
 
 	const handleReset = () => {
+		const defaults = getDefaultDates();
 		const empty: ReportFiltersState = {
-			dateFrom: '',
-			dateTo: '',
+			...defaults,
 			parameter: '',
 			priceMin: '',
 			priceMax: '',
@@ -183,6 +201,7 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset
 			customer: '',
 		};
 		setFilters(empty);
+		onApply(empty);
 		onReset?.();
 	};
 
@@ -267,8 +286,8 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset
 									value={calendarValue.length > 0 ? calendarValue : undefined}
 									selectionMode='range'
 									variant='pro'
-									themeColor={themeColor as any}
-									themeColorShade={themeColorShade as any}
+									themeColor={themeColor as 'violet'}
+									themeColorShade={500}
 									rounded='rounded-2xl'
 									onChange={handleCalendarChange}
 								/>
@@ -321,18 +340,19 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset
 					</div>
 				)}
 
-				<div className='mt-4 flex items-center gap-3'>
-					<Button
-						color={themeColor}
-						variant='solid'
-						icon='HeroFunnel'
-						onClick={handleApply}
-						isDisable={!validation.isValid}>
-						Aplicar filtros
-					</Button>
+				<div className='mt-4 flex items-center justify-end gap-3'>
+					{!validation.isValid ? (
+						<span className='text-xs font-medium text-zinc-500'>
+							Corrige los errores para aplicar...
+						</span>
+					) : (
+						<span className='mr-auto text-xs font-medium text-emerald-600 dark:text-emerald-400'>
+							Filtros aplicados automáticamente
+						</span>
+					)}
 					<Button
 						variant='outline'
-						color={themeColor}
+						color={themeColor as 'violet'}
 						rightIcon='HeroArrowPath'
 						onClick={handleReset}>
 						Limpiar
