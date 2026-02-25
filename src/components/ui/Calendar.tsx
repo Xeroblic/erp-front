@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { formatDateInput, parseFormattedDate } from '@/utils/formatDateInput';
 
 // ==========================================
 // TYPES & INTERFACES
@@ -193,6 +194,9 @@ const Calendar: React.FC<CalendarProps> = ({
 	const [isDragging, setIsDragging] = useState(false);
 	const [dragStart, setDragStart] = useState<Date | null>(null);
 
+	const [inputStart, setInputStart] = useState<string>('');
+	const [inputEnd, setInputEnd] = useState<string>('');
+
 	const viewContainerRef = useRef<HTMLDivElement>(null);
 	const daysGridRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -232,6 +236,37 @@ const Calendar: React.FC<CalendarProps> = ({
 			if (normalized.length > 0) setCurrentDate(normalized[0]);
 		}
 	}, [value]);
+
+	// Sync local inputs when selectedDates changes externally
+	useEffect(() => {
+		if (selectionMode === 'range') {
+			if (selectedDates.length > 0) {
+				const d1 = selectedDates[0];
+				setInputStart(
+					[
+						String(d1.getDate()).padStart(2, '0'),
+						String(d1.getMonth() + 1).padStart(2, '0'),
+						d1.getFullYear(),
+					].join('/'),
+				);
+			} else {
+				setInputStart('');
+			}
+
+			if (selectedDates.length > 1) {
+				const d2 = selectedDates[1];
+				setInputEnd(
+					[
+						String(d2.getDate()).padStart(2, '0'),
+						String(d2.getMonth() + 1).padStart(2, '0'),
+						d2.getFullYear(),
+					].join('/'),
+				);
+			} else {
+				setInputEnd('');
+			}
+		}
+	}, [selectedDates, selectionMode]);
 
 	const currentMonth = currentDate.getMonth();
 	const currentYear = currentDate.getFullYear();
@@ -709,14 +744,37 @@ const Calendar: React.FC<CalendarProps> = ({
 						{/* INPUTS SUPERIORES (SOLO PRO + RANGO) */}
 						{isPro && selectionMode === 'range' && (
 							<div className='mb-8 flex flex-wrap gap-4'>
-								<div className='min-w-[140px] flex-1 rounded-2xl border border-gray-200/80 bg-gray-50/80 px-5 py-3 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-800/40'>
+								<div
+									className={`min-w-[140px] flex-1 rounded-2xl border border-gray-200/80 bg-gray-50/80 px-5 py-3 shadow-sm backdrop-blur-sm transition-all focus-within:ring-2 focus-within:ring-${themeColor}-${themeColorShade}/40 dark:border-zinc-800 dark:bg-zinc-800/40`}>
 									<div className='mb-1 text-[11px] font-bold uppercase tracking-wider text-gray-400'>
 										Inicio
 									</div>
-									<div
-										className={`font-bold text-gray-800 dark:text-gray-100 ${s.text}`}>
-										{formatDateLocal(selectedDates[0])}
-									</div>
+									<input
+										type='text'
+										className={`w-full bg-transparent font-bold text-gray-800 outline-none placeholder:font-normal placeholder:text-gray-400 dark:text-gray-100 dark:placeholder:text-zinc-500 ${s.text}`}
+										placeholder='DD/MM/YYYY'
+										value={inputStart}
+										onChange={(e) => {
+											const val = formatDateInput(e.target.value);
+											setInputStart(val);
+											const d = parseFormattedDate(val);
+											if (d && isValidDate(d)) {
+												let newRange = [d];
+												if (selectedDates.length > 1) {
+													newRange = [d, selectedDates[1]].sort(
+														(a, b) => a.getTime() - b.getTime(),
+													);
+												} else if (selectedDates.length === 1) {
+													newRange = [d, selectedDates[0]].sort(
+														(a, b) => a.getTime() - b.getTime(),
+													);
+												}
+												setSelectedDates(newRange);
+												setCurrentDate(newRange[0]);
+												emitChange(newRange);
+											}
+										}}
+									/>
 								</div>
 								<div className='flex items-center text-gray-300 dark:text-zinc-600'>
 									<svg
@@ -732,14 +790,33 @@ const Calendar: React.FC<CalendarProps> = ({
 										/>
 									</svg>
 								</div>
-								<div className='min-w-[140px] flex-1 rounded-2xl border border-gray-200/80 bg-gray-50/80 px-5 py-3 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-800/40'>
+								<div
+									className={`min-w-[140px] flex-1 rounded-2xl border border-gray-200/80 bg-gray-50/80 px-5 py-3 shadow-sm backdrop-blur-sm transition-all focus-within:ring-2 focus-within:ring-${themeColor}-${themeColorShade}/40 dark:border-zinc-800 dark:bg-zinc-800/40`}>
 									<div className='mb-1 text-[11px] font-bold uppercase tracking-wider text-gray-400'>
 										Fin
 									</div>
-									<div
-										className={`font-bold text-gray-800 dark:text-gray-100 ${s.text}`}>
-										{formatDateLocal(selectedDates[1] || selectedDates[0])}
-									</div>
+									<input
+										type='text'
+										className={`w-full bg-transparent font-bold text-gray-800 outline-none placeholder:font-normal placeholder:text-gray-400 dark:text-gray-100 dark:placeholder:text-zinc-500 ${s.text}`}
+										placeholder='DD/MM/YYYY'
+										value={inputEnd}
+										onChange={(e) => {
+											const val = formatDateInput(e.target.value);
+											setInputEnd(val);
+											const d = parseFormattedDate(val);
+											if (d && isValidDate(d)) {
+												let newRange = [d];
+												if (selectedDates.length > 0) {
+													newRange = [selectedDates[0], d].sort(
+														(a, b) => a.getTime() - b.getTime(),
+													);
+												}
+												setSelectedDates(newRange);
+												setCurrentDate(newRange[1] || newRange[0]);
+												emitChange(newRange);
+											}
+										}}
+									/>
 								</div>
 							</div>
 						)}
