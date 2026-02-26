@@ -21,8 +21,9 @@ const WarehouseCapacityChart: React.FC<WarehouseCapacityChartProps> = ({
 }) => {
 	const { isDarkTheme } = useDarkMode();
 
-	const availableCapacity = maximumCapacity - currentCapacity;
-	const usagePercentage = ((currentCapacity / maximumCapacity) * 100).toFixed(1);
+	const availableCapacity = maximumCapacity > 0 ? maximumCapacity - currentCapacity : 0;
+	const usagePercentage =
+		maximumCapacity > 0 ? ((currentCapacity / maximumCapacity) * 100).toFixed(1) : '0';
 
 	const chartOptions: ApexOptions = useMemo(
 		() => ({

@@ -123,7 +123,7 @@ const HiddenAside: React.FC<HiddenAsideProps> = ({
 					}}
 					className={classNames(
 						'relative z-[110] flex translate-y-[-50px] transform items-center justify-center',
-						isMobile && 'w-8 h-20',
+						isMobile && 'h-20 w-8',
 					)}>
 					{/* El botón se muestra si no hay hover O si es mobile (para poder cerrar con click) */}
 					{(isMobile || !isHovered) && (
@@ -173,6 +173,7 @@ const HiddenAside: React.FC<HiddenAsideProps> = ({
 						preserveAspectRatio='none'
 						viewBox='0 0 100 1000'>
 						<motion.path
+							initial='closed'
 							variants={curveVariants}
 							animate={isHovered ? 'open' : 'closed'}
 							className='fill-zinc-500 dark:fill-zinc-900'

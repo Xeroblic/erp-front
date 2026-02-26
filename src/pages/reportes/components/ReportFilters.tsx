@@ -290,6 +290,7 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({ initial, onApply, onReset
 									themeColorShade={500}
 									rounded='rounded-2xl'
 									onChange={handleCalendarChange}
+									maxDate={new Date()}
 								/>
 							</div>
 						)}

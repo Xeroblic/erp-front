@@ -216,6 +216,39 @@ export function useSalesDashboard() {
 		});
 	}, [results, filters.priceMin, filters.priceMax, filters.dateFrom, filters.dateTo, filters.branch, filters.customer]);
 
+	const currentMonthRange = useMemo(() => {
+		if (filters.dateFrom || filters.dateTo) {
+			const start = filters.dateFrom ? parseDateSafe(filters.dateFrom)?.getTime() : undefined;
+			let end = filters.dateTo ? parseDateSafe(filters.dateTo)?.getTime() : undefined;
+			if (end) {
+				const endDate = new Date(end);
+				endDate.setHours(23, 59, 59, 999);
+				end = endDate.getTime();
+			} else if (start) {
+				const endDate = new Date(start);
+				endDate.setMonth(endDate.getMonth() + 1);
+				end = Math.min(endDate.getTime(), new Date().getTime());
+			} else if (end && !start) {
+				const startDate = new Date(end);
+				startDate.setMonth(startDate.getMonth() - 1);
+				return { start: startDate.getTime(), end };
+			}
+			return { start, end };
+		}
+
+		// Rango predeterminado (últimos 30 días)
+		const now = new Date();
+		const endDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).getTime(); // Hoy al final del día
+		
+		const startDayDate = new Date();
+		startDayDate.setDate(now.getDate() - 30); 
+		startDayDate.setHours(0, 0, 0, 0); // Inicio del día
+		
+		const startDay = startDayDate.getTime();
+		
+		return { start: startDay, end: endDay };
+	}, [filters.dateFrom, filters.dateTo]);
+
 	// Chart series + stats
 	const { chartSeries, chartCategories, stats } = useMemo(() => {
 		const dateMap = new Map<string, { total: number; returns: number; confirmed: number; process: number; cancelled: number }>();
@@ -260,19 +293,32 @@ export function useSalesDashboard() {
 			entry.returns += actualReturn;
 		});
 
-		// --- FIX: Crear un arreglo CONTINUO de fechas ---
+		// --- FIX: Crear un arreglo CONTINUO de fechas que cubra todo el rango temporal ---
 		let keys = Array.from(dateMap.keys()).sort();
 		
+		let startRange = currentMonthRange.start;
+		let endRange = currentMonthRange.end;
+
+		// Si por alguna razón hay fechas fuera del rango visual (ej. error en filtros), forzamos su inclusión para que no se pierdan
 		if (keys.length > 0) {
-			// Rellenar días intermedios donde no hubo ventas
-			const firstD = new Date(`${keys[0]}T12:00:00`);
-			const lastD = new Date(`${keys[keys.length - 1]}T12:00:00`);
-			const tempKeys: string[] = [];
+			const firstDataTime = new Date(`${keys[0]}T12:00:00`).getTime();
+			const lastDataTime = new Date(`${keys[keys.length - 1]}T12:00:00`).getTime();
+			if (!startRange || firstDataTime < startRange) startRange = firstDataTime;
+			if (!endRange || lastDataTime > endRange) endRange = lastDataTime;
+		}
+
+		if (startRange && endRange) {
+			// Usamos 12:00:00 para iterar libre de problemas de huso horario
+			const firstD = new Date(startRange);
+			const lastD = new Date(endRange);
+			firstD.setHours(12, 0, 0, 0);
+			lastD.setHours(12, 0, 0, 0);
 			
+			const tempKeys: string[] = [];
 			for (let d = new Date(firstD); d <= lastD; d.setDate(d.getDate() + 1)) {
 				const k = d.toISOString().split('T')[0];
 				tempKeys.push(k);
-				// Si la fecha no estaba en el mapa, la inicializamos en 0
+				// Rellenar días intermedios con 0 si no hubo ventas
 				if (!dateMap.has(k)) dateMap.set(k, { total: 0, returns: 0, confirmed: 0, process: 0, cancelled: 0 });
 			}
 			keys = tempKeys;
@@ -316,7 +362,7 @@ export function useSalesDashboard() {
 			chartCategories: keys,
 			stats: computedStats,
 		};
-	}, [filteredResults, filters.dateFrom, filters.dateTo, results.length]);
+	}, [filteredResults, filters.dateFrom, filters.dateTo, results.length, currentMonthRange]);
 
 	const topCustomers = useMemo(() => {
 		const customerMap = new Map<string, number>();
@@ -331,38 +377,6 @@ export function useSalesDashboard() {
 			.map(([name, total]) => ({ name, total }));
 	}, [filteredResults]);
 
-	const currentMonthRange = useMemo(() => {
-		if (filters.dateFrom || filters.dateTo) {
-			const start = filters.dateFrom ? parseDateSafe(filters.dateFrom)?.getTime() : undefined;
-			let end = filters.dateTo ? parseDateSafe(filters.dateTo)?.getTime() : undefined;
-			if (end) {
-				const endDate = new Date(end);
-				endDate.setHours(23, 59, 59, 999);
-				end = endDate.getTime();
-			} else if (start) {
-				const endDate = new Date(start);
-				endDate.setMonth(endDate.getMonth() + 1);
-				end = Math.min(endDate.getTime(), new Date().getTime());
-			} else if (end && !start) {
-				const startDate = new Date(end);
-				startDate.setMonth(startDate.getMonth() - 1);
-				return { start: startDate.getTime(), end };
-			}
-			return { start, end };
-		}
-
-		// Rango predeterminado (últimos 30 días)
-		const now = new Date();
-		const endDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).getTime(); // Hoy al final del día
-		
-		const startDayDate = new Date();
-		startDayDate.setDate(now.getDate() - 30); 
-		startDayDate.setHours(0, 0, 0, 0); // Inicio del día
-		
-		const startDay = startDayDate.getTime();
-		
-		return { start: startDay, end: endDay };
-	}, [filters.dateFrom, filters.dateTo]);
 
 	return {
 		filters,

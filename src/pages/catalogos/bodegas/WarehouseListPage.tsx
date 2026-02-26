@@ -9,12 +9,15 @@ import Input from '@/components/form/Input';
 import Icon from '@/components/icon/Icon';
 import { useWarehouseManagement } from './hooks/useWarehouseManagement';
 import WarehousesTable from './tables/WarehousesTable';
-import CreateWarehouseModal from './modals/CreateWarehouseModal';
-import EditWarehouseModal from './modals/EditWarehouseModal';
-import DeleteWarehouseModal from './modals/DeleteWarehouseModal';
-import WarehousesCharts from './components/WarehousesCharts';
 import type { IWarehouse } from '@/interface/warehouse.interface';
 import Card, { CardBody } from '@/components/ui/Card';
+import WarehouseStats from './components/WarehouseStats';
+
+// Importaciones Lazy
+const WarehousesCharts = React.lazy(() => import('./components/WarehousesCharts'));
+const CreateWarehouseModal = React.lazy(() => import('./modals/CreateWarehouseModal'));
+const EditWarehouseModal = React.lazy(() => import('./modals/EditWarehouseModal'));
+const DeleteWarehouseModal = React.lazy(() => import('./modals/DeleteWarehouseModal'));
 
 /**
  * Página principal de listado de bodegas
@@ -25,7 +28,7 @@ const WarehouseListPage: React.FC = () => {
 	const user = useAppSelector((s) => s.auth.user);
 	const personalizacionState = useAppSelector((s) => s.personalizacion);
 
-	// Obtener branchId del usuario autenticado	
+	// Obtener branchId del usuario autenticado
 	const branchId =
 		personalizacionState?.personalizacionUsuario?.sucursal_principal ||
 		user?.branch?.id ||
@@ -71,7 +74,7 @@ const WarehouseListPage: React.FC = () => {
 
 	const handleViewDetail = (warehouse: IWarehouse) => {
 		// Navegar a la página de detalle
-		navigate(`/catalogos/bodegas/${warehouse.id}`);
+		navigate(`/inventario/bodegas/${warehouse.id}`);
 	};
 
 	const handleDelete = (warehouse: IWarehouse) => {
@@ -140,72 +143,25 @@ const WarehouseListPage: React.FC = () => {
 			</Subheader>
 
 			<Container className='pt-4'>
-				{/* Estadísticas rápidas */}
+				{/* Estadísticas rápidas - Componente Extrído */}
 				{!loading && warehouses.length > 0 && (
-					<div className='mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
-						<Card className='rounded-lg p-4'>
-							<CardBody className='flex items-center justify-between'>
-								<div>
-									<p className='text-sm font-medium text-gray-600 dark:text-gray-400'>
-										Total
-									</p>
-									<p className='mt-1 text-2xl font-semibold text-gray-900 dark:text-white'>
-										{stats.total}
-									</p>
-								</div>
-								<Icon icon='HeroHomeModern' className='size-8 text-blue-600' />
-							</CardBody>
-						</Card>
-
-						<Card className='rounded-lg p-4'>
-							<div className='flex items-center justify-between'>
-								<div>
-									<p className='text-sm font-medium text-gray-600 dark:text-gray-400'>
-										Activas
-									</p>
-									<p className='mt-1 text-2xl font-semibold text-emerald-600 dark:text-emerald-400'>
-										{stats.actives}
-									</p>
-								</div>
-								<Icon icon='HeroCheckCircle' className='size-8 text-emerald-600' />
-							</div>
-						</Card>
-
-						<Card className='rounded-lg p-4'>
-							<CardBody className='flex items-center justify-between'>
-								<div>
-									<p className='text-sm font-medium text-gray-600 dark:text-gray-400'>
-										Con productos
-									</p>
-									<p className='mt-1 text-2xl font-semibold text-blue-600 dark:text-blue-400'>
-										{stats.with_products}
-									</p>
-								</div>
-								<Icon icon='HeroArchiveBox' className='size-8 text-blue-600' />
-							</CardBody>
-						</Card>
-
-						<Card className='rounded-lg p-4'>
-							<CardBody className='flex items-center justify-between'>
-								<div>
-									<p className='text-sm font-medium text-gray-600 dark:text-gray-400'>
-										Cerca capacidad
-									</p>
-									<p className='mt-1 text-2xl font-semibold text-amber-600 dark:text-amber-400'>
-										{stats.near_capacity}
-									</p>
-								</div>
-								<Icon
-									icon='HeroExclamationTriangle'
-									className='size-8 text-amber-600'
-								/>
-							</CardBody>
-						</Card>
-					</div>
+					<WarehouseStats
+						total={stats.total}
+						actives={stats.actives}
+						withProducts={stats.with_products}
+						nearCapacity={stats.near_capacity}
+					/>
 				)}
 
 				{/* Charts de análisis */}
-				{!loading && warehouses.length > 0 && <WarehousesCharts warehouses={warehouses} />}
+				{!loading && warehouses.length > 0 && (
+					<React.Suspense
+						fallback={
+							<div className='h-64 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800'></div>
+						}>
+						<WarehousesCharts warehouses={warehouses} />
+					</React.Suspense>
+				)}
 
 				{/* Tabla de bodegas */}
 				<WarehousesTable
@@ -216,28 +172,36 @@ const WarehouseListPage: React.FC = () => {
 				/>
 			</Container>
 
-			{/* Modales */}
-			<CreateWarehouseModal
-				isOpen={createModalOpen}
-				setIsOpen={setCreateModalOpen}
-				onSubmit={handleCreateWarehouse}
-				branchId={branchId}
-			/>
+			{/* Modales con Lazy Loading */}
+			<React.Suspense fallback={null}>
+				{createModalOpen && (
+					<CreateWarehouseModal
+						isOpen={createModalOpen}
+						setIsOpen={setCreateModalOpen}
+						onSubmit={handleCreateWarehouse}
+						branchId={branchId}
+					/>
+				)}
 
-			<EditWarehouseModal
-				isOpen={editModalOpen}
-				setIsOpen={setEditModalOpen}
-				warehouse={selectedWarehouse}
-				onSubmit={handleUpdateWarehouse}
-				branchId={branchId}
-			/>
+				{editModalOpen && (
+					<EditWarehouseModal
+						isOpen={editModalOpen}
+						setIsOpen={setEditModalOpen}
+						warehouse={selectedWarehouse}
+						onSubmit={handleUpdateWarehouse}
+						branchId={branchId}
+					/>
+				)}
 
-			<DeleteWarehouseModal
-				isOpen={deleteModalOpen}
-				setIsOpen={setDeleteModalOpen}
-				warehouse={selectedWarehouse}
-				onConfirm={confirmDelete}
-			/>
+				{deleteModalOpen && (
+					<DeleteWarehouseModal
+						isOpen={deleteModalOpen}
+						setIsOpen={setDeleteModalOpen}
+						warehouse={selectedWarehouse}
+						onConfirm={confirmDelete}
+					/>
+				)}
+			</React.Suspense>
 		</PageWrapper>
 	);
 };

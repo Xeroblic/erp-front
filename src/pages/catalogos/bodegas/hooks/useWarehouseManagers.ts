@@ -5,7 +5,29 @@ import { useBranchManagers } from '@/pages/gestionAdmin/sucursales/hooks/useBran
 
 const WAREHOUSE_ROLE = SYSTEM_ROLES.WAREHOUSE_MANAGER.toLowerCase();
 
-const extractRoleNames = (manager: any): string[] => {
+// Interfaces explícitas para evitar el uso de 'any'
+export interface IManagerRoleObj {
+	name?: string;
+	role?: string;
+}
+
+export interface IManagerContextualRole {
+	role?: string;
+}
+
+export interface IManagerCandidate {
+	id?: number;
+	name?: string;
+	first_name?: string;
+	last_name?: string;
+	roles?: (string | IManagerRoleObj)[];
+	global_roles?: string[];
+	role_names?: string[];
+	contextual_roles?: IManagerContextualRole[];
+	authority?: string[];
+}
+
+const extractRoleNames = (manager: IManagerCandidate): string[] => {
 	const names: string[] = [];
 
 	const pushValue = (value?: string | null) => {
@@ -14,7 +36,7 @@ const extractRoleNames = (manager: any): string[] => {
 	};
 
 	if (Array.isArray(manager.roles)) {
-		manager.roles.forEach((role: any) => {
+		manager.roles.forEach((role) => {
 			if (typeof role === 'string') {
 				pushValue(role);
 			} else if (role && typeof role === 'object') {
@@ -25,19 +47,19 @@ const extractRoleNames = (manager: any): string[] => {
 	}
 
 	if (Array.isArray(manager.global_roles)) {
-		manager.global_roles.forEach((role: any) => pushValue(role));
+		manager.global_roles.forEach(pushValue);
 	}
 
 	if (Array.isArray(manager.role_names)) {
-		manager.role_names.forEach((role: any) => pushValue(role));
+		manager.role_names.forEach(pushValue);
 	}
 
 	if (Array.isArray(manager.contextual_roles)) {
-		manager.contextual_roles.forEach((context: any) => pushValue(context?.role));
+		manager.contextual_roles.forEach((context) => pushValue(context?.role));
 	}
 
 	if (Array.isArray(manager.authority)) {
-		manager.authority.forEach((role: any) => pushValue(role));
+		manager.authority.forEach(pushValue);
 	}
 
 	return names;
@@ -52,8 +74,8 @@ export const useWarehouseManagers = (branchId?: number | null) => {
 
 	const filteredManagers = useMemo(
 		() =>
-			managers.filter((manager) => {
-				const roles = extractRoleNames(manager);
+			managers.filter((manager: unknown) => {
+				const roles = extractRoleNames(manager as IManagerCandidate);
 				return roles.includes(WAREHOUSE_ROLE);
 			}),
 		[managers],
@@ -61,13 +83,14 @@ export const useWarehouseManagers = (branchId?: number | null) => {
 
 	const managerOptions: TSelectOption[] = useMemo(
 		() =>
-			filteredManagers.map((manager) => {
+			filteredManagers.map((managerRaw: unknown) => {
+				const manager = managerRaw as IManagerCandidate;
 				const fullName =
 					[manager.first_name, manager.last_name].filter(Boolean).join(' ').trim() ||
 					manager.name ||
 					`Usuario #${manager.id}`;
 				return {
-					value: manager.id != null ? manager.id.toString() : undefined,
+					value: manager.id != null ? manager.id.toString() : '',
 					label: fullName,
 				};
 			}),
