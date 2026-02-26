@@ -1,9 +1,8 @@
-name: Deploy Frontend
+name: Deploy Frontend (Production)
 
 on:
   push:
     branches: [ main ]
-    # or drop this block; if you keep it, align with real paths
     paths:
       - "src/**"
       - "package.json"
@@ -11,65 +10,59 @@ on:
       - "vite.config.ts"
       - "tsconfig*.json"
 
+# Concurrency evita que dos despliegues se ejecuten al mismo tiempo si haces varios pushes rápidos.
+# Cancela el anterior y prioriza el más reciente para evitar corrupción de archivos.
+concurrency:
+  group: production-frontend
+  cancel-in-progress: true
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15 # Límite de seguridad para evitar que el job se quede colgado consumiendo minutos
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js ecosystem
         uses: actions/setup-node@v4
         with:
           node-version: "22.x"
           cache: "npm"
 
-      - name: Install dependencies # uses npm ci to respect package-lock.json
+      - name: Install dependencies (Strict)
         run: npm ci
 
-      - name: Build frontend
+      # Verificación de código: Crítico en entornos profesionales antes del build.
+      # Si falla el linter o hay errores de TypeScript, el pipeline se detiene aquí y no sube código roto.
+      - name: Verify Types & Linting
+        run: |
+          npm run lint --if-present
+          npm run tsc --if-present
+
+      - name: Build frontend distribution
         run: npm run build
 
-      # 1) ACTIVAR MAINTENANCE EN EL VPS (NGINX)
-      - name: Enable maintenance (Nginx)
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Configure SSH Agent
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          port: ${{ secrets.SSH_PORT }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            set -e
-            cd /opt/zentria/backend
-            echo ">>> Front: activando maintenance global"
-            touch nginx/maintenance/maintenance.on
-            docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload || true
+          ssh-private-key: ${{ secrets.SSH_KEY }}
 
-      # 2) DEPLOY DEL BUILD VIA RSYNC
-      - name: Deploy via rsync
-        uses: burnett01/rsync-deployments@7.1.0
-        with:
-          switches: -avz --delete
-          path: dist/
-          remote_path: ${{ secrets.SSH_PATH }}       # ej: /opt/zentria/frontend
-          remote_host: ${{ secrets.SSH_HOST }}
-          remote_user: ${{ secrets.SSH_USER }}
-          remote_key: ${{ secrets.SSH_KEY }}
-          remote_port: ${{ secrets.SSH_PORT || '22' }}
+      - name: Secure Known Hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p ${{ secrets.SSH_PORT || '22' }} -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      # 3) DESACTIVAR MAINTENANCE (PASE LO QUE PASE)
-      - name: Disable maintenance (Nginx)
-        if: always()   # se ejecuta aunque falle el rsync
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          port: ${{ secrets.SSH_PORT }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            set -e
-            cd /opt/zentria/backend
-            echo ">>> Front: desactivando maintenance global"
-            rm -f nginx/maintenance/maintenance.on
-            docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload || true
+      # Despliegue seguro e inteligente
+      # Se omiten permisos de propietario para no generar conflictos con el usuario www-data de Nginx
+      - name: Deploy via Rsync (Zero-Downtime)
+        run: |
+          rsync -avz --no-perms --no-owner --no-group -e "ssh -p ${{ secrets.SSH_PORT || '22' }}" ./dist/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.SSH_PATH }}
+
+      # Limpieza automatizada (Garbage Collection)
+      # Busca en la carpeta de assets generada por Vite y elimina archivos JS/CSS estáticos de versiones 
+      # anteriores que tengan más de 7 días de antigüedad. Mantiene el servidor limpio sin romper sesiones activas.
+      - name: Cleanup obsolete Vite assets
+        run: |
+          ssh -p ${{ secrets.SSH_PORT || '22' }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "find ${{ secrets.SSH_PATH }}/assets -type f -mtime +7 \( -name '*.js' -o -name '*.css' \) -exec rm {} \;"
