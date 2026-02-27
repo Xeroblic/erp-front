@@ -25,6 +25,7 @@ import {
 import { useGeoSelector } from '@/hooks/useGeoSelector';
 import { useBranchManagers } from '../hooks/useBranchManagers';
 import Icon from '@/components/icon/Icon';
+import { SelectComune } from '@/components/utils/selects/SelectComune';
 
 interface SucursalModalProps {
 	isOpen: boolean;
@@ -290,8 +291,7 @@ export default function SucursalModal({
 						</div>
 
 						{/* Región / Provincia / Comuna */}
-						<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
-							<div>
+						{/* <div>
 								<Label htmlFor='region'>Región</Label>
 								<SelectReact
 									name='region'
@@ -355,8 +355,28 @@ export default function SucursalModal({
 									}}
 									options={optionsComuna}
 								/>
-							</div>
-						</div>
+							</div> */}
+
+						<SelectComune
+							name='comuna'
+							label='Comuna'
+							placeholder='Seleccione comuna'
+							isRequired
+							value={formik.values.comuna || formik.values.commune_id?.toString()}
+							error={formik.touched.comuna ? formik.errors.comuna : undefined}
+							disabled={formik.isSubmitting}
+							onChange={(val, data) => {
+								formik.setFieldValue('comuna', val);
+								formik.setFieldValue('commune_id', val ? Number(val) : undefined);
+								if (data) {
+									formik.setFieldValue('provincia', data.province_id);
+									formik.setFieldValue('region', data.region_id);
+								} else {
+									formik.setFieldValue('provincia', '');
+									formik.setFieldValue('region', '');
+								}
+							}}
+						/>
 					</div>
 
 					{/* Información de Contacto */}

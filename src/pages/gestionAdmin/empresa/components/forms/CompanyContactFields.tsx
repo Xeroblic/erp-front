@@ -3,23 +3,13 @@ import { FormikProps } from 'formik';
 import Label from '@/components/form/Label';
 import Input from '@/components/form/Input';
 import Textarea from '@/components/form/Textarea';
-import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
+import { SelectComune } from '@/components/utils/selects/SelectComune';
 
 interface CompanyContactFieldsProps {
 	formik: FormikProps<any>;
-	optionsRegion: TSelectOption[];
-	optionsProvincia: TSelectOption[];
-	optionsComuna: TSelectOption[];
-	selectedComunaOption: TSelectOption | null;
 }
 
-export default function CompanyContactFields({
-	formik,
-	optionsRegion,
-	optionsProvincia,
-	optionsComuna,
-	selectedComunaOption,
-}: CompanyContactFieldsProps) {
+export default function CompanyContactFields({ formik }: CompanyContactFieldsProps) {
 	return (
 		<div className='space-y-6'>
 			<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
@@ -82,62 +72,30 @@ export default function CompanyContactFields({
 					)}
 			</div>
 
-			<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
-				<div>
-					<Label htmlFor='region'>Región</Label>
-					<SelectReact
-						name='region'
-						placeholder='Seleccione región'
-						value={
-							optionsRegion.find((o) => o.value === String(formik.values.region)) ||
-							null
-						}
-						onChange={(opt) =>
-							formik.setFieldValue(
-								'region',
-								(opt as TSelectOption | null)?.value || '',
-							)
-						}
-						options={optionsRegion}
-					/>
-				</div>
-
-				<div>
-					<Label htmlFor='provincia'>Provincia</Label>
-					<SelectReact
-						name='provincia'
-						placeholder='Seleccione provincia'
-						value={
-							optionsProvincia.find(
-								(o) => o.value === String(formik.values.provincia),
-							) || null
-						}
-						onChange={(opt) =>
-							formik.setFieldValue(
-								'provincia',
-								(opt as TSelectOption | null)?.value || '',
-							)
-						}
-						options={optionsProvincia}
-					/>
-				</div>
-
-				<div>
-					<Label htmlFor='comuna'>Comuna</Label>
-					<SelectReact
-						name='comuna'
-						placeholder='Seleccione comuna'
-						value={selectedComunaOption}
-						onChange={(opt) =>
-							formik.setFieldValue(
-								'comuna',
-								(opt as TSelectOption | null)?.value || '',
-							)
-						}
-						options={optionsComuna}
-					/>
-				</div>
-			</div>
+			<SelectComune
+				name='comuna'
+				label='Comuna'
+				placeholder='Seleccione comuna'
+				isRequired
+				value={formik.values.comuna || formik.values.commune_id?.toString()}
+				error={
+					formik.touched.comuna && typeof formik.errors.comuna === 'string'
+						? formik.errors.comuna
+						: undefined
+				}
+				disabled={formik.isSubmitting}
+				onChange={(val, data) => {
+					formik.setFieldValue('comuna', val);
+					formik.setFieldValue('commune_id', val ? Number(val) : undefined);
+					if (data) {
+						formik.setFieldValue('provincia', data.province_id);
+						formik.setFieldValue('region', data.region_id);
+					} else {
+						formik.setFieldValue('provincia', '');
+						formik.setFieldValue('region', '');
+					}
+				}}
+			/>
 
 			<div>
 				<Label htmlFor='representative_name'>Representante Legal *</Label>

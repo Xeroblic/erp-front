@@ -18,8 +18,6 @@ import {
 	listaProvinciasThunk,
 	listaRegionesThunk,
 } from '@/store/slices/core/coreSlice';
-import { useGeoSelector } from '@/hooks/useGeoSelector';
-import { TSelectOption } from '@/components/form/SelectReact';
 import { companyValidationSchema } from './helpers/companyValidation';
 import { CompanyGeneralFields, CompanyContactFields } from './components';
 
@@ -71,6 +69,7 @@ export default function EmpresaDetalle() {
 		},
 		validationSchema: companyValidationSchema,
 		onSubmit: async (values) => {
+			console.log('Submitting Empresa:', values);
 			try {
 				const action = await dispatch(
 					updateMiEmpresa({
@@ -82,6 +81,7 @@ export default function EmpresaDetalle() {
 				toast.success('Empresa actualizada correctamente');
 				dispatch(fetchMiEmpresa());
 			} catch (e: any) {
+				console.log('Error submitting Empresa:', e);
 				if (e?.response?.data?.errors) {
 					Object.values(e.response.data.errors).forEach((msg: any) => toast.error(msg));
 				} else {
@@ -99,47 +99,9 @@ export default function EmpresaDetalle() {
 	}, [dispatch]);
 
 	const { listaRegiones, listaProvincias, listaComunas } = useAppSelector((s) => s.core);
-	const { optionsRegion, optionsProvincia, optionsComuna } = useGeoSelector(
-		formik as any,
-		{
-			regiones: listaRegiones as any,
-			provincias: listaProvincias as any,
-			comunas: listaComunas as any,
-		},
-		{ fieldRegion: 'region', fieldProvincia: 'provincia', fieldComuna: 'comuna' },
-	);
-
-	const selectedComunaValue = formik.values.comuna ? String(formik.values.comuna) : '';
-	const selectedComunaOption: TSelectOption | null =
-		optionsComuna.find((o) => o.value === selectedComunaValue) ||
-		(selectedComunaValue
-			? listaComunas?.find((c: any) => String(c.codigo) === selectedComunaValue)
-				? {
-						value: selectedComunaValue,
-						label: listaComunas.find(
-							(c: any) => String(c.codigo) === selectedComunaValue,
-						)!.nombre,
-					}
-				: { value: selectedComunaValue, label: 'Cargando…' }
-			: null);
-
-	const effectiveOptionsComuna: TSelectOption[] = React.useMemo(() => {
-		if (!selectedComunaOption) return optionsComuna;
-		const exists = optionsComuna.some((o) => o.value === selectedComunaOption.value);
-		return exists ? optionsComuna : [selectedComunaOption, ...optionsComuna];
-	}, [optionsComuna, selectedComunaOption]);
 
 	useEffect(() => {
 		try {
-			// debug logs removed
-			// console.log('DBG comuna state:', {
-			// 	miCompanyCommuneId:
-			// 		(miEmpresa as any)?.commune_id ?? (miEmpresa as any)?.commune?.id,
-			// 	formikComuna: formik.values.comuna,
-			// 	selectedComunaOption,
-			// 	optionsComunaLen: optionsComuna.length,
-			// 	listaComunasLen: listaComunas?.length,
-			// });
 			if (listaComunas?.length) {
 				const targetId =
 					(miEmpresa as any)?.commune_id ??
@@ -150,8 +112,6 @@ export default function EmpresaDetalle() {
 						(c: any) => String(c.codigo) === String(targetId),
 					);
 					if (found && String(formik.values.comuna) !== String(found.codigo)) {
-						// debug log removed
-						// console.log('DBG syncing comuna from listaComunas ->', found);
 						formik.setFieldValue('comuna', String(found.codigo), false);
 					}
 				}
@@ -159,7 +119,7 @@ export default function EmpresaDetalle() {
 		} catch (e) {
 			console.warn('Error syncing comuna field:', e);
 		}
-	}, [listaComunas, optionsComuna, miEmpresa, formik.values.comuna]);
+	}, [listaComunas, miEmpresa, formik.values.comuna]);
 
 	useEffect(() => {
 		if (!miEmpresa) return;
@@ -300,13 +260,7 @@ export default function EmpresaDetalle() {
 								)}
 
 								{activeTab === 'contact' && (
-									<CompanyContactFields
-										formik={formik}
-										optionsRegion={optionsRegion}
-										optionsProvincia={optionsProvincia}
-										optionsComuna={effectiveOptionsComuna}
-										selectedComunaOption={selectedComunaOption}
-									/>
+									<CompanyContactFields formik={formik} />
 								)}
 							</form>
 						)}
