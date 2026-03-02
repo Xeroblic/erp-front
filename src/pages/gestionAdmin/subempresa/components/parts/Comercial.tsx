@@ -3,6 +3,8 @@ import Label from '@/components/form/Label';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import Badge from '@/components/ui/Badge';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
+import { FormikProps } from 'formik';
+import { ISubempresaFormValues, ISubempresaCommercialView } from '@/interface/empresas.interface';
 
 const ComercialParts = ({
 	isEditing,
@@ -11,9 +13,9 @@ const ComercialParts = ({
 	allowedPaymentOptions,
 }: {
 	isEditing: boolean;
-	formik: any;
-	commercialView: any;
-	allowedPaymentOptions: any[];
+	formik: FormikProps<ISubempresaFormValues>;
+	commercialView: ISubempresaCommercialView;
+	allowedPaymentOptions: TSelectOption[];
 }) => {
 	return (
 		<div className='grid grid-cols-1 gap-6 lg:grid-cols-2'>
@@ -141,7 +143,7 @@ const ComercialParts = ({
 									name='quoteValidityDays'
 									type='number'
 									placeholder='7'
-									value={formik.values.quoteValidityDays}
+									value={formik.values.quoteValidityDays ?? ''}
 									onChange={formik.handleChange}
 									onBlur={formik.handleBlur}
 									disabled={formik.isSubmitting}

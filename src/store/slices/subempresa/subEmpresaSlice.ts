@@ -175,12 +175,13 @@ export const fetchSubsidiariaDetail = createAsyncThunk<
 	{ rejectValue: string }
 >('subempresa/fetchSubsidiariaDetail', async (subsidiariaId, { rejectWithValue }) => {
 	try {
-		const subsidiary = await ApiService.fetchNormalized<ISubempresa>({
+		const response = await ApiService.fetchData<any>({
 			url: `/subsidiaries/${subsidiariaId}`,
 			method: 'get',
 			params: { with: 'commune,manager,branches,branches.manager,branches.commune' },
 		});
-		return subsidiary;
+		const raw = response.data?.data ?? response.data?.subsidiary ?? response.data;
+		return normalizeSubsidiaryData(raw);
 	} catch (err: any) {
 		return rejectWithValue(
 			err.response?.data?.message || 'Error al cargar detalle de subsidiaria',
@@ -218,12 +219,13 @@ export const updateSubsidiaria = createAsyncThunk<
 		const finalCompanyId = typeof company_id === 'number' && company_id > 0 ? company_id : 1;
 		const payload = { ...payloadBase, company_id: finalCompanyId };
 
-		const subsidiary = await ApiService.fetchNormalized<ISubempresa>({
+		const response = await ApiService.fetchData<any>({
 			url: `/subsidiaries/${id}`,
 			method: 'patch',
 			data: payload,
 		});
-		return subsidiary;
+		const raw = response.data?.data ?? response.data?.subsidiary ?? response.data;
+		return normalizeSubsidiaryData(raw);
 	} catch (err: any) {
 		return rejectWithValue(err.response?.data?.message || 'Error al actualizar subsidiaria');
 	}

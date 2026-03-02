@@ -24,7 +24,7 @@ import Modal, {
 	ModalFooterChild,
 } from '@/components/ui/Modal';
 import SucursalModal from './components/SucursalModal';
-import { IBranch, ISucursal } from '@/interface/empresas.interface';
+import { IBranch } from '@/interface/empresas.interface';
 
 export default function SucursalDetalle() {
 	const { id } = useParams<{ id: string }>();
