@@ -4,21 +4,25 @@ import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
+import { SelectComune } from '@/components/utils/selects/SelectComune';
 import { IBranch } from '@/interface';
+import { FormikProps } from 'formik';
+import {
+	ISubempresa,
+	ISubempresaFormValues,
+	ISubempresaViewData,
+} from '@/interface/empresas.interface';
 
 const BasicParts = ({
 	subempresa,
 	isEditing,
 	formik,
 	viewData,
-	optionsRegion,
-	optionsProvincia,
-	optionsComuna,
 }: {
-	subempresa: any;
+	subempresa: ISubempresa;
 	isEditing: boolean;
-	formik: any;
-	viewData: any;
+	formik: FormikProps<ISubempresaFormValues>;
+	viewData: ISubempresaViewData;
 	optionsRegion: TSelectOption[];
 	optionsProvincia: TSelectOption[];
 	optionsComuna: TSelectOption[];
@@ -184,7 +188,7 @@ const BasicParts = ({
 							)}
 						</div>
 					</div>
-
+					{/* 
 					<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
 						<div>
 							<Label className='text-lg font-semibold' htmlFor='region'>
@@ -269,6 +273,53 @@ const BasicParts = ({
 								</div>
 							)}
 						</div>
+					</div> */}
+
+					<div className='mt-4'>
+						{isEditing ? (
+							<SelectComune
+								name='comuna'
+								label='Comuna'
+								placeholder='Seleccione comuna'
+								isRequired
+								value={formik.values.comuna || formik.values.commune_id?.toString()}
+								error={
+									formik.touched.comuna &&
+									typeof formik.errors.comuna === 'string'
+										? formik.errors.comuna
+										: undefined
+								}
+								disabled={formik.isSubmitting}
+								onChange={(val, data) => {
+									formik.setFieldValue('comuna', val);
+									formik.setFieldValue(
+										'commune_id',
+										val ? Number(val) : undefined,
+									);
+									if (data) {
+										formik.setFieldValue('provincia', data.province_id);
+										formik.setFieldValue('region', data.region_id);
+									} else {
+										formik.setFieldValue('provincia', '');
+										formik.setFieldValue('region', '');
+									}
+								}}
+							/>
+						) : (
+							<div>
+								<Label htmlFor='comuna' className='text-lg font-semibold'>
+									Ubicación
+								</Label>
+								<div className='mt-2 flex items-start gap-2'>
+									<Icon icon='HeroMap' className='mt-0.5 text-sm text-zinc-400' />
+									<span className='text-sm text-zinc-700'>
+										{[viewData.commune, viewData.province, viewData.region]
+											.filter(Boolean)
+											.join(', ') || 'Sin ubicación definida'}
+									</span>
+								</div>
+							</div>
+						)}
 					</div>
 				</CardBody>
 			</Card>

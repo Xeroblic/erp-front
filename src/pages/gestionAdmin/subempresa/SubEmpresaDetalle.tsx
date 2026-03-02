@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useFormik } from 'formik';
@@ -11,14 +11,15 @@ import {
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
-import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
+import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
-import { ISubempresa } from '@/interface/empresas.interface';
-import Label from '@/components/form/Label';
-import Input from '@/components/form/Input';
-import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
+import {
+	ISubempresa,
+	ISubempresaFormValues,
+	ISubempresaViewData,
+	ISubempresaCommercialView,
+} from '@/interface/empresas.interface';
 import ApiService from '@/services/ApiService';
 import { validateFile } from '@/utils/apiHelpers';
 import {
@@ -79,7 +80,7 @@ export default function SubEmpresaDetalle() {
 		[],
 	);
 
-	const initialValues = useMemo(
+	const initialValues: ISubempresaFormValues = useMemo(
 		() => ({
 			nombre: getStringValue(subempresa?.name, subempresa?.subsidiary_name),
 			rut: getStringValue(subempresa?.rut, subempresa?.subsidiary_rut),
@@ -104,6 +105,7 @@ export default function SubEmpresaDetalle() {
 					: subempresa?.commune_id
 						? String(subempresa.commune_id)
 						: '',
+			commune_id: subempresa?.commune_id ?? undefined,
 			documentsEmail: getStringValue(
 				subempresa?.subsidiary_documents_email,
 				(subempresa as any)?.documents_email,
@@ -145,7 +147,7 @@ export default function SubEmpresaDetalle() {
 		[subempresa],
 	);
 
-	const viewData = useMemo(
+	const viewData: ISubempresaViewData = useMemo(
 		() => ({
 			name: getStringValue(subempresa?.name, subempresa?.subsidiary_name, '—'),
 			rut: getStringValue(subempresa?.rut, subempresa?.subsidiary_rut),
@@ -162,11 +164,13 @@ export default function SubEmpresaDetalle() {
 			),
 			address: getStringValue(subempresa?.address, subempresa?.subsidiary_address),
 			commune: getStringValue(subempresa?.commune?.name, (subempresa as any)?.commune_name),
+			province: '',
+			region: '',
 		}),
 		[subempresa],
 	);
 
-	const commercialView = useMemo(
+	const commercialView: ISubempresaCommercialView = useMemo(
 		() => ({
 			documentsEmail: initialValues.documentsEmail,
 			salesEmail: initialValues.salesEmail,
@@ -182,7 +186,7 @@ export default function SubEmpresaDetalle() {
 		[initialValues],
 	);
 
-	const formik = useFormik({
+	const formik = useFormik<ISubempresaFormValues>({
 		enableReinitialize: true,
 		initialValues,
 		validationSchema: Yup.object({
@@ -345,11 +349,26 @@ export default function SubEmpresaDetalle() {
 
 	const { listaRegiones, listaProvincias, listaComunas } = useAppSelector((s) => s.core);
 	const { optionsRegion, optionsProvincia, optionsComuna } = useGeoSelector(
-		formik as any,
 		{
-			regiones: listaRegiones as any,
-			provincias: listaProvincias as any,
-			comunas: listaComunas as any,
+			values: formik.values as unknown as Record<string, unknown>,
+			setFieldValue: formik.setFieldValue,
+		},
+		{
+			regiones: listaRegiones as unknown as {
+				codigo: string;
+				nombre: string;
+				codigo_padre?: string;
+			}[],
+			provincias: listaProvincias as unknown as {
+				codigo: string;
+				nombre: string;
+				codigo_padre?: string;
+			}[],
+			comunas: listaComunas as unknown as {
+				codigo: string;
+				nombre: string;
+				codigo_padre?: string;
+			}[],
 		},
 		{ fieldRegion: 'region', fieldProvincia: 'provincia', fieldComuna: 'comuna' },
 	);
@@ -489,7 +508,7 @@ export default function SubEmpresaDetalle() {
 			</Subheader>
 
 			<Container className='pt-4'>
-				<Card className='mb-4 flex gap-2 border-b border-zinc-200'>
+				<Card className='mb-4'>
 					<ButtonGroup>
 						<Button
 							variant='outline'

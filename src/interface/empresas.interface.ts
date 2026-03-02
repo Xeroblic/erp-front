@@ -174,3 +174,50 @@ export interface IEmpresaFormValues {
 	comuna: string;
 	commune_id?: number;
 }
+
+export interface ISubempresaFormValues {
+	nombre: string;
+	rut: string;
+	telefono: string;
+	email: string;
+	direccion: string;
+	region: string;
+	provincia: string;
+	comuna: string;
+	commune_id?: number;
+	documentsEmail: string;
+	salesEmail: string;
+	deliveryTerm: string;
+	bankDetails: string;
+	allowedPaymentMethods: string[];
+	quoteValidityText: string;
+	quoteValidityDays: number | null | string;
+	giro: string;
+	commercialTerms: string;
+	defaultPaymentMethod: string;
+}
+
+export interface ISubempresaViewData {
+	name: string;
+	rut: string;
+	phone: string;
+	email: string;
+	address: string;
+	commune: string;
+	province?: string;
+	region?: string;
+}
+
+export interface ISubempresaCommercialView {
+	documentsEmail: string;
+	salesEmail: string;
+	deliveryTerm: string;
+	giro: string;
+	quoteValidityText: string;
+	quoteValidityDays: number | string | null;
+	commercialTerms: string;
+	bankDetails: string;
+	allowedPaymentMethods: string[];
+	defaultPaymentMethod: string;
+}
+
