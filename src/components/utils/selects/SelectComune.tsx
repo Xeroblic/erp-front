@@ -13,6 +13,13 @@ import {
 	listaRegionesThunk,
 } from '@/store/slices/core/coreSlice';
 import { selectComunasSearchOptions } from '@/store/selectors/directionsSelector'; // Ajusta la ruta si es necesario
+import { IComuna } from '@/interface/core.interface';
+
+export interface IComunaOptionData {
+	comuna_id: string | number;
+	province_id: string | number | null;
+	region_id: string | number | null;
+}
 
 interface SelectComuneProps {
 	name?: string;
@@ -24,7 +31,7 @@ interface SelectComuneProps {
 	};
 	isRequired?: boolean;
 	value?: string | number | null;
-	onChange?: (value: string | null, data?: any) => void;
+	onChange?: (value: string | null, data?: IComunaOptionData) => void;
 	error?: string | boolean;
 	disabled?: boolean;
 }
@@ -71,15 +78,20 @@ export const SelectComune: React.FC<SelectComuneProps> = ({
 
 	const dynamicPlaceholder = loading ? 'Cargando direcciones de Chile...' : placeholder;
 
-	const renderSelect = (currentValue: any, handleCurrentChange: any, currentError: any) => {
+	const renderSelect = (
+		currentValue: string | number | null | undefined,
+		handleCurrentChange: (val: string | null, data?: IComunaOptionData) => void,
+		currentError?: string | boolean,
+	) => {
 		let selectedOption = null;
 		if (currentValue) {
 			selectedOption =
-				options.find((opt: any) => String(opt.value) === String(currentValue)) || null;
+				options.find((opt: TSelectOption) => String(opt.value) === String(currentValue)) ||
+				null;
 
 			if (!selectedOption) {
 				const comunaName = listaComunas.find(
-					(c: any) => String(c.codigo) === String(currentValue),
+					(c: IComuna) => String(c.codigo) === String(currentValue),
 				)?.nombre;
 				selectedOption = {
 					value: currentValue,
@@ -100,8 +112,9 @@ export const SelectComune: React.FC<SelectComuneProps> = ({
 					isLoading={loading}
 					isDisabled={loading || manualDisabled}
 					className={`transition-all duration-300 ${currentError ? 'rounded-lg border-red-500 ring-1 ring-red-500' : ''} `}
-					onChange={(selected: any) => {
-						handleCurrentChange(selected?.value || null, selected?.data);
+					onChange={(selected: unknown) => {
+						const sel = selected as TSelectOption & { data?: IComunaOptionData };
+						handleCurrentChange(sel?.value || null, sel?.data);
 					}}
 				/>
 
@@ -127,7 +140,10 @@ export const SelectComune: React.FC<SelectComuneProps> = ({
 						name={name}
 						control={methods.control}
 						render={({ field: { onChange, value }, fieldState: { error } }) => {
-							const internalOnChange = (val: string | null, data: any) => {
+							const internalOnChange = (
+								val: string | null,
+								data?: IComunaOptionData,
+							) => {
 								onChange(val);
 								if (populateSiblings && data) {
 									if (populateSiblings.provincia)
@@ -153,8 +169,8 @@ export const SelectComune: React.FC<SelectComuneProps> = ({
 					/>
 				) : (
 					renderSelect(
-						manualValue,
-						(val: string | null, data: any) => {
+						manualValue as string | number | null | undefined,
+						(val: string | null, data?: IComunaOptionData) => {
 							if (manualOnChange) {
 								manualOnChange(val, data);
 							}

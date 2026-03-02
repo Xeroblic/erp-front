@@ -18,6 +18,7 @@ import {
 	listaProvinciasThunk,
 	listaRegionesThunk,
 } from '@/store/slices/core/coreSlice';
+import { IEmpresaFormValues } from '@/interface/empresas.interface';
 import { companyValidationSchema } from './helpers/companyValidation';
 import { CompanyGeneralFields, CompanyContactFields } from './components';
 
@@ -46,7 +47,7 @@ export default function EmpresaDetalle() {
 		loadData();
 	}, [dispatch, user]);
 
-	const formik = useFormik({
+	const formik = useFormik<IEmpresaFormValues>({
 		enableReinitialize: true,
 		initialValues: {
 			company_name: miEmpresa?.company_name || '',
@@ -61,10 +62,10 @@ export default function EmpresaDetalle() {
 			contact_email: miEmpresa?.contact_email || '',
 			region: '',
 			provincia: '',
-			comuna: (miEmpresa as any)?.commune_id
-				? String((miEmpresa as any).commune_id)
-				: (miEmpresa as any)?.commune?.id
-					? String((miEmpresa as any).commune.id)
+			comuna: miEmpresa?.commune_id
+				? String(miEmpresa.commune_id)
+				: miEmpresa?.commune?.id
+					? String(miEmpresa.commune.id)
 					: '',
 		},
 		validationSchema: companyValidationSchema,
@@ -75,7 +76,7 @@ export default function EmpresaDetalle() {
 					updateMiEmpresa({
 						...values,
 						commune_id: values.comuna ? Number(values.comuna) : undefined,
-					} as any),
+					}),
 				);
 				unwrapResult(action);
 				toast.success('Empresa actualizada correctamente');
@@ -101,37 +102,18 @@ export default function EmpresaDetalle() {
 	const { listaRegiones, listaProvincias, listaComunas } = useAppSelector((s) => s.core);
 
 	useEffect(() => {
-		try {
-			if (listaComunas?.length) {
-				const targetId =
-					(miEmpresa as any)?.commune_id ??
-					(miEmpresa as any)?.commune?.id ??
-					formik.values.comuna;
-				if (targetId) {
-					const found = listaComunas.find(
-						(c: any) => String(c.codigo) === String(targetId),
-					);
-					if (found && String(formik.values.comuna) !== String(found.codigo)) {
-						formik.setFieldValue('comuna', String(found.codigo), false);
-					}
-				}
-			}
-		} catch (e) {
-			console.warn('Error syncing comuna field:', e);
-		}
-	}, [listaComunas, miEmpresa, formik.values.comuna]);
+		if (!miEmpresa || !listaComunas?.length || !listaProvincias?.length) return;
+		if (formik.values.region && formik.values.provincia) return; // Already set locally or by user
 
-	useEffect(() => {
-		if (!miEmpresa) return;
-		const communeId = (miEmpresa as any)?.commune_id ?? (miEmpresa as any)?.commune?.id;
+		const communeId = miEmpresa.commune_id ?? miEmpresa.commune?.id;
 		if (!communeId) return;
-		if (!listaComunas?.length || !listaProvincias?.length) return;
 
-		const comunaObj = listaComunas.find((c: any) => String(c.codigo) === String(communeId));
+		const comunaObj = listaComunas.find((c) => String(c.codigo) === String(communeId));
 		if (!comunaObj) return;
+
 		const provinciaCode = comunaObj.codigo_padre;
 		const provinciaObj = listaProvincias.find(
-			(p: any) => String(p.codigo) === String(provinciaCode),
+			(p) => String(p.codigo) === String(provinciaCode),
 		);
 		const regionCode = provinciaObj ? provinciaObj.codigo_padre : '';
 
@@ -141,10 +123,14 @@ export default function EmpresaDetalle() {
 		if (provinciaCode && String(formik.values.provincia) !== String(provinciaCode)) {
 			formik.setFieldValue('provincia', String(provinciaCode), false);
 		}
-		if (String(formik.values.comuna) !== String(comunaObj.codigo)) {
-			formik.setFieldValue('comuna', String(comunaObj.codigo), false);
-		}
-	}, [miEmpresa, listaComunas, listaProvincias]);
+	}, [
+		miEmpresa,
+		listaComunas,
+		listaProvincias,
+		formik.values.region,
+		formik.values.provincia,
+		formik,
+	]);
 
 	const tabs = [
 		{ id: 'general', label: 'Información General', icon: 'HeroBuilding' },

@@ -1,11 +1,12 @@
 import React from 'react';
 import { FormikProps } from 'formik';
+import { IEmpresaFormValues } from '@/interface/empresas.interface';
 import Label from '@/components/form/Label';
 import Input from '@/components/form/Input';
 import Textarea from '@/components/form/Textarea';
 
 interface CompanyGeneralFieldsProps {
-	formik: FormikProps<any>;
+	formik: FormikProps<IEmpresaFormValues>;
 }
 
 export default function CompanyGeneralFields({ formik }: CompanyGeneralFieldsProps) {

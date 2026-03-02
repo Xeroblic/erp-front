@@ -139,6 +139,12 @@ export interface IEmpresa {
 	company_logo?: string | null;
 	is_active: boolean;
 	company_type?: string;
+	commune_id?: number | null;
+	commune?: {
+		id: number;
+		name: string;
+		province_id?: number;
+	};
 	created_at: string;
 	updated_at: string;
 	subsidiaries: ISubempresa[];
@@ -150,4 +156,21 @@ export interface IEmpresa {
 		empresa_id: number;
 		usuario_id: number;
 	};
+}
+
+export interface IEmpresaFormValues {
+	company_name: string;
+	legal_name: string;
+	company_rut: string;
+	company_type: string;
+	business_activity: string;
+	company_website: string;
+	company_phone: string;
+	company_address: string;
+	representative_name: string;
+	contact_email: string;
+	region: string;
+	provincia: string;
+	comuna: string;
+	commune_id?: number;
 }
