@@ -34,7 +34,7 @@ export const ConfirmSaleModal = ({ open, onClose, onConfirm, quotationId, quotat
 			if (!val) return true;
 			const clean = val.trim().toUpperCase();
 			return clean === '' || clean === '—' || clean === '-' || clean === 'N/A';
-		};
+		};  
 
 		if (isMissing(customerInfo.rut)) missingFields.push('RUT');
 		if (isMissing(customerInfo.phone)) missingFields.push('Teléfono');
