@@ -19,6 +19,7 @@ import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/S
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import { FiltersSection } from './components/FiltersSection';
 import { StatsCards } from './components/StatsCards';
+import { ConfirmSaleModal } from './components/modals/ConfirmSale';
 
 const QUOTES_BASE_PATH = '/comercial/cotizaciones';
 
@@ -197,9 +198,13 @@ const CotizacionesAdmin: React.FC = () => {
 		navigate(`${QUOTES_BASE_PATH}/${quotation.id}`);
 	};
 
+	const [confirmSaleModalOpen, setConfirmSaleModalOpen] = useState(false);
+	const [confirmSaleQuotation, setConfirmSaleQuotation] = useState<IQuote | null>(null);
 	const handleConvertToSale = async (id: number) => {
-		if (window.confirm('¿Desea convertir esta cotización en una venta?')) {
-			await convertToSale(id);
+		const quotation = quotations.find((q) => q.id === id);
+		if (quotation) {
+			setConfirmSaleQuotation(quotation);
+			setConfirmSaleModalOpen(true);
 		}
 	};
 
@@ -408,6 +413,19 @@ const CotizacionesAdmin: React.FC = () => {
 					quotation={deletingQuotation}
 					isLoading={isActionLoading}
 				/>
+
+				{confirmSaleQuotation && (
+					<ConfirmSaleModal
+						open={confirmSaleModalOpen}
+						onClose={() => {
+							setConfirmSaleModalOpen(false);
+							setConfirmSaleQuotation(null);
+						}}
+						onConfirm={handleConvertToSale}
+						quotationId={confirmSaleQuotation.id}
+						quotation={confirmSaleQuotation}
+					/>
+				)}
 			</Container>
 		</PageWrapper>
 	);
