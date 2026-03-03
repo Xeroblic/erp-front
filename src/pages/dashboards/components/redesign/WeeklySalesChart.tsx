@@ -1,93 +1,29 @@
-import React, { useMemo, useState, Suspense } from 'react';
+import React, { Suspense } from 'react';
 const Chart = React.lazy(() => import('react-apexcharts'));
 import Card, { CardBody, CardHeader, CardHeaderChild } from '@/components/ui/Card';
-import { useAppDispatch, useAppSelector } from '@/store';
-import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import useDarkMode from '@/hooks/useDarkMode';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import { toast } from 'react-toastify';
 
-const WeeklySalesChart: React.FC = () => {
-	const dispatch = useAppDispatch();
+interface WeeklySalesChartProps {
+	dateRange: '7d' | '30d';
+	setDateRange: (range: '7d' | '30d') => void;
+	chartSeries: any[];
+	chartCategories: string[];
+	totalAmount: number;
+	results: any[];
+}
+
+const WeeklySalesChart: React.FC<WeeklySalesChartProps> = ({
+	dateRange,
+	setDateRange,
+	chartSeries,
+	chartCategories,
+	totalAmount,
+	results,
+}) => {
 	const { isDarkTheme } = useDarkMode();
-	const currentSubsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
-	const resultsData = useAppSelector((s) => s.reports.aggregatedResults);
-
-	// State for toggle
-	const [dateRange, setDateRange] = useState<'7d' | '30d'>('7d');
-
-	// Normalize data
-	const results = useMemo(() => {
-		if (!resultsData) return [];
-		if (Array.isArray(resultsData)) return resultsData;
-		if (typeof resultsData === 'object' && 'data' in resultsData) {
-			const extracted = (resultsData as any).data;
-			return Array.isArray(extracted) ? extracted : [];
-		}
-		return [];
-	}, [resultsData]);
-
-	// Fetching is handled by DashboardContainer now to share data with StatsCards
-	// useEffect(() => { ... });
-
-	// Filter Data & Prepare Chart
-	const { chartSeries, chartCategories, totalAmount } = useMemo(() => {
-		const dateMap = new Map<string, number>();
-		const today = new Date();
-		const days = dateRange === '7d' ? 7 : 30;
-		const categories: string[] = [];
-
-		// Generate date keys
-		for (let i = days - 1; i >= 0; i--) {
-			const d = new Date(today);
-			d.setDate(d.getDate() - i);
-			const key = d.toISOString().split('T')[0];
-			categories.push(key);
-			dateMap.set(key, 0);
-		}
-
-		let total = 0;
-
-		results.forEach((r: any) => {
-			const rawAmt = r?.total_amount ?? r?.total ?? r?.amount ?? 0;
-			const amount = typeof rawAmt === 'string' ? parseFloat(rawAmt) : Number(rawAmt) || 0;
-
-			const rawDate =
-				r?.sale_date ||
-				r?.date ||
-				r?.created_at ||
-				r?.updated_at ||
-				r?.createdAt ||
-				r?.period ||
-				r?.fecha;
-			if (!rawDate) return;
-
-			// Parse date
-			let d: Date | null = null;
-			if (rawDate instanceof Date) d = rawDate;
-			else {
-				const parsed = new Date(rawDate);
-				if (!Number.isNaN(parsed.getTime())) d = parsed;
-			}
-
-			if (d) {
-				const key = d.toISOString().split('T')[0];
-				if (dateMap.has(key)) {
-					dateMap.set(key, (dateMap.get(key) || 0) + amount);
-					total += amount;
-				}
-			}
-		});
-
-		const dataSales = categories.map((key) => dateMap.get(key) || 0);
-
-		return {
-			chartSeries: [{ name: 'Ventas', data: dataSales }],
-			chartCategories: categories,
-			totalAmount: total,
-		};
-	}, [results, dateRange]);
 
 	const handleDownloadXml = () => {
 		try {

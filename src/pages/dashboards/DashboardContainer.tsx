@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
@@ -32,6 +32,8 @@ const DashboardContainer: React.FC = () => {
 	// const salesStats = useAppSelector(selectSalesStatistics);
 	const subsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
 	const reportsResults = useAppSelector((state) => state.reports.aggregatedResults);
+
+	const [dateRange, setDateRange] = useState<'7d' | '30d'>('7d');
 
 	useEffect(() => {
 		if (branchId) {
@@ -91,6 +93,75 @@ const DashboardContainer: React.FC = () => {
 
 		return { count, amount };
 	}, [reportsResults]);
+
+	// Normalize data for the chart
+	const chartResults = useMemo(() => {
+		if (!reportsResults) return [];
+		if (Array.isArray(reportsResults)) return reportsResults;
+		if (typeof reportsResults === 'object' && 'data' in reportsResults) {
+			const extracted = (reportsResults as any).data;
+			return Array.isArray(extracted) ? extracted : [];
+		}
+		return [];
+	}, [reportsResults]);
+
+	// Filter Data & Prepare Chart
+	const { chartSeries, chartCategories, totalAmount } = useMemo(() => {
+		const dateMap = new Map<string, number>();
+		const today = new Date();
+		const days = dateRange === '7d' ? 7 : 30;
+		const categories: string[] = [];
+
+		// Generate date keys
+		for (let i = days - 1; i >= 0; i--) {
+			const d = new Date(today);
+			d.setDate(d.getDate() - i);
+			const key = d.toISOString().split('T')[0];
+			categories.push(key);
+			dateMap.set(key, 0);
+		}
+
+		let total = 0;
+
+		chartResults.forEach((r: any) => {
+			const rawAmt = r?.total_amount ?? r?.total ?? r?.amount ?? 0;
+			const amount = typeof rawAmt === 'string' ? parseFloat(rawAmt) : Number(rawAmt) || 0;
+
+			const rawDate =
+				r?.sale_date ||
+				r?.date ||
+				r?.created_at ||
+				r?.updated_at ||
+				r?.createdAt ||
+				r?.period ||
+				r?.fecha;
+			if (!rawDate) return;
+
+			// Parse date
+			let d: Date | null = null;
+			if (rawDate instanceof Date) d = rawDate;
+			else {
+				const parsed = new Date(rawDate);
+				if (!Number.isNaN(parsed.getTime())) d = parsed;
+			}
+
+			if (d) {
+				const key = d.toISOString().split('T')[0];
+				if (dateMap.has(key)) {
+					dateMap.set(key, (dateMap.get(key) || 0) + amount);
+					total += amount;
+				}
+			}
+		});
+
+		const dataSales = categories.map((key) => dateMap.get(key) || 0);
+
+		return {
+			chartSeries: [{ name: 'Ventas', data: dataSales }],
+			chartCategories: categories,
+			totalAmount: total,
+		};
+	}, [chartResults, dateRange]);
 
 	const dashboardTutorialSteps: TutorialStep[] = [
 		{
@@ -263,7 +334,7 @@ const DashboardContainer: React.FC = () => {
 						/>
 						<StatsCard
 							title='Monto Semana'
-							value={weeklyStats.amount}
+							value={totalAmount }
 							icon='HeroCurrencyDollar'
 							colorClass='bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400'
 							subtitle='Ingresos'
@@ -288,7 +359,14 @@ const DashboardContainer: React.FC = () => {
 
 					<div className='grid grid-cols-1 gap-6 lg:grid-cols-3'>
 						<div className='lg:col-span-2'>
-							<WeeklySalesChart />
+							<WeeklySalesChart
+								dateRange={dateRange}
+								setDateRange={setDateRange}
+								chartSeries={chartSeries}
+								chartCategories={chartCategories}
+								totalAmount={totalAmount}
+								results={chartResults}
+							/>
 						</div>
 						<div className='lg:col-span-1'>
 							<TimelineWidget />

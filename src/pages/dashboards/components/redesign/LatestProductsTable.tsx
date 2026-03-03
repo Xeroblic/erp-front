@@ -50,7 +50,7 @@ const LatestProductsTable: React.FC = () => {
                     </div>
                     <div>
                         <div className="font-medium text-zinc-900 dark:text-zinc-100">{row.original.name}</div>
-                        <div className='text-[10px] text-zinc-400'>{row.original?.brand_name || 'Generico'}</div>
+                        <div className='text-[10px] text-zinc-400'>{row.original?.brand?.name || 'Generico'}</div>
                     </div>
                 </div>
             ),
