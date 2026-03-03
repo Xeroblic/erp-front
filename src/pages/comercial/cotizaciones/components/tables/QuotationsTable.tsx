@@ -83,7 +83,7 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 				cell: (info) => {
 					const badge = getQuoteStatusBadge(info.getValue());
 					return (
-						<Badge variant={badge.variant} className='px-2 text-xs'>
+						<Badge variant={'outline'} color={badge.color} className='px-2 text-md'>
 							{badge.label}
 						</Badge>
 					);
@@ -113,7 +113,6 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 								onClick={() => onDownloadPdf?.(info.row.original.id)}
 								className='bg-sky-400/30 p-1'
 								color='sky'
-								// title='Descargar PDF'
 							/>
 						</Tooltip>
 						<Tooltip text='Ver Cotización' placement='top-end'>
@@ -126,39 +125,47 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 								className='bg-violet-400/20 p-1'
 							/>
 						</Tooltip>
-						<Tooltip text='Editar' placement='top-end'>
-							<Button
-								variant='outline'
-								size='sm'
-								icon='HeroPencil'
-								color='zinc'
-								onClick={() => onEdit?.(info.row.original)}
-								className='bg-zinc-400/20 p-1'
-							/>
-						</Tooltip>
-						{normalizeQuoteStatusValue(info.row.original.status) === 'approved' &&
-							info.row.original.can_convert && (
+						{['approved', 'sent'].includes(
+							normalizeQuoteStatusValue(info.row.original.status)
+						) && (
 								<Tooltip text='Convertir a venta' placement='top-end'>
 									<Button
 										variant='outline'
 										size='sm'
-										icon='HeroBolt'
 										color='emerald'
 										onClick={() => onConvertToSale?.(info.row.original.id)}
-										className='bg-emerald-400/20 p-1'
-									/>
+										className='bg-emerald-300/20 p-1'
+									>
+										<Icon icon='HeroBolt' color={'emerald'} className='text-lg' />
+									</Button>
 								</Tooltip>
 							)}
-						<Tooltip text='Eliminar' placement='top-end'>
-							<Button
-								variant='outline'
-								size='sm'
-								icon='HeroTrash'
-								color='red'
-								onClick={() => onDelete?.(info.row.original.id)}
-								className='bg-red-400/20 p-1'
-							/>
-						</Tooltip>
+						{['draft', 'expired', 'rejected'].includes(
+							normalizeQuoteStatusValue(info.row.original.status),
+						) && (
+							<>
+								<Tooltip text='Editar' placement='top-end'>
+									<Button
+										variant='outline'
+										size='sm'
+										icon='HeroPencil'
+										color='zinc'
+										onClick={() => onEdit?.(info.row.original)}
+										className='bg-zinc-400/20 p-1'
+										/>
+								</Tooltip>
+								<Tooltip text='Eliminar' placement='top-end'>
+									<Button
+										variant='outline'
+										size='sm'
+										color='red'
+										onClick={() => onDelete?.(info.row.original.id)}
+										className='bg-red-400/30 p-0'>
+										<Icon icon='HeroTrash' color={'red'} className='text-lg' />
+									</Button>
+								</Tooltip>
+							</>
+						)}
 					</div>
 				),
 			}),

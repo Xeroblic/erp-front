@@ -184,7 +184,7 @@ const WeeklySalesChart: React.FC<WeeklySalesChartProps> = ({
 							options={chartOptions}
 							series={chartSeries}
 							type='area'
-							height={280}
+							height={380}
 						/>
 					)}
 				</Suspense>
