@@ -4,32 +4,8 @@ import Footer, { FooterLeft, FooterRight } from '../../../components/layouts/Foo
 import ApiService from '@/services/ApiService';
 import Icon from '@/components/icon/Icon';
 
-const DefaultFooterTemplate = () => {
+export function useVersion() {
 	const [version, setVersion] = useState('');
-	const footerMeta = useMemo(() => {
-		const fallback = {
-			brand: 'Zentria',
-			label: 'Desarrollado con',
-			front: { name: 'R4aveen', href: 'https://github.com/R4aveen/' },
-			back: { name: 'Xeroblic', href: 'https://github.com/Xeroblic' },
-		};
-		try {
-			const decoded = JSON.parse(
-				atob(
-					'eyJicmFuZCI6IlplbnRyaWEiLCJsYWJlbCI6IkRlc2Fycm9sbGFkbyBjb24iLCJmcm9udCI6eyJuYW1lIjoiUjRhdmVlbiIsImhyZWYiOiJodHRwczovL2dpdGh1Yi5jb20vUjRhdmVlbi8ifSwiYmFjayI6eyJuYW1lIjoiWGVyb2JsaWMiLCJocmVmIjoiaHR0cHM6Ly9naXRodWIuY29tL1hlcm9ibGljIn19',
-				),
-			);
-			return Object.freeze({
-				...fallback,
-				...decoded,
-				front: { ...fallback.front, ...decoded.front },
-				back: { ...fallback.back, ...decoded.back },
-			});
-		} catch (error) {
-			console.error('No se pudo decodificar footerMeta', error);
-			return Object.freeze(fallback);
-		}
-	}, []);
 
 	const versionEndpoint = useMemo(() => {
 		const env = import.meta.env as Record<string, string | undefined>;
@@ -74,6 +50,36 @@ const DefaultFooterTemplate = () => {
 			mounted = false;
 		};
 	}, [versionEndpoint]);
+
+	return version;
+}
+
+const DefaultFooterTemplate = () => {
+	const footerMeta = useMemo(() => {
+		const fallback = {
+			brand: 'Zentria',
+			label: 'Desarrollado con',
+			front: { name: 'R4aveen', href: 'https://github.com/R4aveen/' },
+			back: { name: 'Xeroblic', href: 'https://github.com/Xeroblic' },
+		};
+		try {
+			const decoded = JSON.parse(
+				atob(
+					'eyJicmFuZCI6IlplbnRyaWEiLCJsYWJlbCI6IkRlc2Fycm9sbGFkbyBjb24iLCJmcm9udCI6eyJuYW1lIjoiUjRhdmVlbiIsImhyZWYiOiJodHRwczovL2dpdGh1Yi5jb20vUjRhdmVlbi8ifSwiYmFjayI6eyJuYW1lIjoiWGVyb2JsaWMiLCJocmVmIjoiaHR0cHM6Ly9naXRodWIuY29tL1hlcm9ibGljIn19',
+				),
+			);
+			return Object.freeze({
+				...fallback,
+				...decoded,
+				front: { ...fallback.front, ...decoded.front },
+				back: { ...fallback.back, ...decoded.back },
+			});
+		} catch (error) {
+			console.error('No se pudo decodificar footerMeta', error);
+			return Object.freeze(fallback);
+		}
+	}, []);
+	const version = useVersion();
 
 	return (
 		<Footer>
