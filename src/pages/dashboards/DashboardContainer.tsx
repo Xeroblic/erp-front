@@ -20,8 +20,7 @@ import { fetchReportResults } from '@/store/slices/reports/reportsThunks';
 
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import Badge from '@/components/ui/Badge';
-import FloatingInfo from '@/components/ui/FloatingInfo/FloatingInfo';
-import { TutorialStep } from '@/components/types/TutorialModal';
+import useDashboardTour from '@/hooks/useDashboardTour';
 
 const DashboardContainer: React.FC = () => {
 	const dispatch = useAppDispatch();
@@ -32,6 +31,7 @@ const DashboardContainer: React.FC = () => {
 	// const salesStats = useAppSelector(selectSalesStatistics);
 	const subsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
 	const reportsResults = useAppSelector((state) => state.reports.aggregatedResults);
+	const { startTour } = useDashboardTour();
 
 	const [dateRange, setDateRange] = useState<'7d' | '30d'>('7d');
 
@@ -163,116 +163,11 @@ const DashboardContainer: React.FC = () => {
 		};
 	}, [chartResults, dateRange]);
 
-	const dashboardTutorialSteps: TutorialStep[] = [
-		{
-			title: 'Panel de Control',
-			description: `
-			<p>Bienvenido al <strong>Centro de Operaciones</strong> de tu empresa. Desde aquí tendrás una visión completa del estado de tu negocio en tiempo real.</p>
-			<br/>
-			<p>Este panel te permite:</p>
-			<ul style="list-style: disc; margin-left: 20px; margin-top: 8px;">
-			<li>Monitorear indicadores clave de rendimiento</li>
-			<li>Identificar tendencias y oportunidades</li>
-			<li>Acceder rápidamente a las operaciones pendientes</li>
-			</ul>
-			`,
-			image: '/tutorials/dashboard/bienvenido_dashboard.webp',
-			icon: 'HeroHome',
-			images: [{ src: '/tutorials/dashboard/bienvenido_dashboard.webp', size: 'xl' }],
-		},
-		{
-			title: 'Indicadores de Ventas',
-			description: `
-			<p>En la sección superior encontrarás los <strong>indicadores de ventas semanales</strong>:</p>
-			<br/>
-			<ul style="list-style: disc; margin-left: 20px; margin-top: 8px;">
-				<li><strong>Ventas Semana:</strong> Cantidad de órdenes procesadas en los últimos 7 días</li>
-				<li><strong>Monto Semana:</strong> Ingresos totales generados en el período</li>
-			</ul>
-			<br/>
-			<p>Haz clic en "Órdenes" o "Ingresos" para acceder al detalle completo de cada métrica.</p>
-		`,
-			icon: 'HeroShoppingBag',
-			image: '/tutorials/dashboard/ventas_stats.webp',
-			images: [{ src: '/tutorials/dashboard/ventas_stats.webp', size: 'lg' }],
-		},
-		{
-			title: 'Estado de Revisiones Técnicas',
-			description: `
-			<p>Mantén el control de las <strong>revisiones técnicas</strong> con estos indicadores:</p>
-			<br/>
-			<ul style="list-style: disc; margin-left: 20px; margin-top: 8px;">
-				<li><strong>Pendientes:</strong> Equipos que requieren revisión inmediata</li>
-				<li><strong>Aprobados:</strong> Total histórico de revisiones completadas exitosamente</li>
-			</ul>
-			<br/>
-			<p>Accede directamente al módulo de revisiones desde los enlaces rápidos de cada tarjeta.</p>
-		`,
-			icon: 'HeroClipboardDocumentCheck',
-			image: '/tutorials/dashboard/revisiones_stats.webp',
-			images: [{ src: '/tutorials/dashboard/revisiones_stats.webp', size: 'lg' }],
-		},
-		{
-			title: 'Gráfico de Ventas',
-			description: `
-			<p>Visualiza la <strong>evolución de tus ingresos</strong> con el gráfico interactivo de ventas.</p>
-			<br/>
-			<p>Funcionalidades disponibles:</p>
-			<ul style="list-style: disc; margin-left: 20px; margin-top: 8px;">
-				<li><strong>7D / 30D:</strong> Alterna entre vista semanal y mensual</li>
-				<li><strong>Exportar:</strong> Descarga los datos en formato de archivo para análisis externo</li>
-				<li><strong>Monto total:</strong> Visualiza el acumulado del período seleccionado</li>
-			</ul>
-		`,
-			icon: 'HeroChartBar',
-			image: '/tutorials/dashboard/grafico_ventas.webp',
-			images: [{ src: '/tutorials/dashboard/grafico_ventas.webp', size: 'xl' }],
-		},
-		{
-			title: 'Últimos Ítems en Revisión',
-			description: `
-			<p>Gestiona las <strong>revisiones técnicas recientes</strong> desde esta sección.</p>
-			<br/>
-			<p>Acciones disponibles:</p>
-			<ul style="list-style: disc; margin-left: 20px; margin-top: 8px;">
-				<li><strong>Revisar:</strong> Continúa con revisiones pendientes o en proceso</li>
-				<li><strong>Etiqueta:</strong> Descarga e imprime etiquetas de identificación para equipos aprobados</li>
-				<li><strong>Filtros:</strong> Visualiza por estado (Todos, Pendientes, Aprobados)</li>
-			</ul>
-		`,
-			icon: 'HeroQueueList',
-			image: '/tutorials/dashboard/ultimos_items.webp',
-			images: [{ src: '/tutorials/dashboard/ultimos_items.webp', size: 'lg' }],
-		},
-		{
-			title: 'Ventas Recientes y Productos',
-			description: `
-			<p>En la parte inferior encontrarás dos secciones adicionales:</p>
-			<br/>
-			<p><strong>Últimas Ventas:</strong></p>
-			<ul style="list-style: disc; margin-left: 20px; margin-top: 8px;">
-				<li>Historial de ventas recientes con acceso rápido</li>
-				<li>Descarga de etiquetas de envío para despacho</li>
-			</ul>
-			<br/>
-			<p><strong>Productos Recientes:</strong></p>
-			<ul style="list-style: disc; margin-left: 20px; margin-top: 8px;">
-				<li>Últimos productos agregados al inventario</li>
-				<li>Acceso directo para edición o visualización</li>
-			</ul>
-		`,
-			icon: 'HeroArchiveBox',
-			// image: '/tutorials/dashboard/ultimas_ventas.webp',
-			images: [
-				{ src: '/tutorials/dashboard/ultimas_ventas.webp', size: 'lg' },
-				{ src: '/tutorials/dashboard/ultimos_productos.webp', size: 'lg' },
-			],
-		},
-	];
-
 	return (
 		<PageWrapper isProtectedRoute title='Dashboard' name='Dashboard General'>
-			<Subheader className='border-b border-gray-200 dark:border-gray-700'>
+			<Subheader
+				id='dashboard-header'
+				className='border-b border-gray-200 dark:border-gray-700'>
 				<SubheaderLeft>
 					<div className='flex items-center space-x-4'>
 						<Icon
@@ -323,7 +218,9 @@ const DashboardContainer: React.FC = () => {
 			<Container className='py-8'>
 				<div className='flex flex-col gap-8'>
 					{/* Row 1: Stats Cards (2 Sales, 2 Reviews) */}
-					<div className='grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4'>
+					<div
+						id='dashboard-stats'
+						className='grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4'>
 						{/* Sales Stats - Week */}
 						<StatsCard
 							title='Ventas Semana'
@@ -334,7 +231,7 @@ const DashboardContainer: React.FC = () => {
 						/>
 						<StatsCard
 							title='Monto Semana'
-							value={totalAmount }
+							value={totalAmount}
 							icon='HeroCurrencyDollar'
 							colorClass='bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400'
 							subtitle='Ingresos'
@@ -358,7 +255,7 @@ const DashboardContainer: React.FC = () => {
 					</div>
 
 					<div className='grid grid-cols-1 gap-6 lg:grid-cols-3'>
-						<div className='lg:col-span-2'>
+						<div id='dashboard-chart' className='lg:col-span-2'>
 							<WeeklySalesChart
 								dateRange={dateRange}
 								setDateRange={setDateRange}
@@ -368,24 +265,33 @@ const DashboardContainer: React.FC = () => {
 								results={chartResults}
 							/>
 						</div>
-						<div className='lg:col-span-1'>
+						<div id='dashboard-timeline' className='lg:col-span-1'>
 							<TimelineWidget />
 						</div>
 					</div>
 
-					<div className='w-full'>
+					<div id='dashboard-products' className='w-full'>
 						<LatestProductsTable />
 					</div>
 				</div>
 			</Container>
 
-			{/* Tutorial FloatingInfo */}
-			<FloatingInfo
-				label='Dashboard General'
-				value='Aprende a usar el sistema'
-				tutorialSteps={dashboardTutorialSteps}
-				tutorialTitle='Guía del Dashboard'
-			/>
+			{/* Driver.js Tour Trigger */}
+			<div className='fixed bottom-[50vh] right-6 z-50'>
+				<button
+					type='button'
+					onClick={startTour}
+					className='group relative flex h-14 w-14 items-center justify-center rounded-full border-2 border-emerald-400/30 bg-emerald-500/15 text-emerald-400 shadow-lg backdrop-blur-sm transition-all duration-300 hover:scale-110 hover:border-emerald-400/60 hover:shadow-emerald-500/25'
+					title='Iniciar tour guiado'>
+					<div className='absolute inset-2 animate-ping rounded-full bg-emerald-500 opacity-20' />
+					<Icon icon='HeroQuestionMarkCircle' className='relative z-10 text-xl' />
+					<span
+						className='absolute -right-1 -top-1 flex h-5 w-5 animate-bounce items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white shadow-lg'
+						style={{ animationDuration: '2s' }}>
+						?
+					</span>
+				</button>
+			</div>
 		</PageWrapper>
 	);
 };

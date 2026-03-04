@@ -58,6 +58,7 @@
 		"classnames": "^2.5.1",
 		"date-fns": "^4.1.0",
 		"dayjs": "^1.11.11",
+		"driver.js": "^1.4.0",
 		"exceljs": "^4.4.0",
 		"file-saver": "^2.0.5",
 		"formik": "^2.4.6",
