@@ -3,8 +3,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
-import { useAppDispatch, useAppSelector } from '@/store';
-import { addHoliday, removeHoliday } from '@/store/slices/recursosHumanos/rhSlice';
 
 interface QRScannerProps {
 	onScan: (code: string) => void;
@@ -17,7 +15,6 @@ interface QRScannerProps {
  * Usa html5-qrcode si está disponible, sino provee un input manual.
  */
 const QRScanner: React.FC<QRScannerProps> = ({ onScan, onCancel, isActive }) => {
-	const dispatch = useAppDispatch();
 	const scannerRef = useRef<HTMLDivElement>(null);
 	const html5QrCodeRef = useRef<unknown>(null);
 	const [manualCode, setManualCode] = useState('');
