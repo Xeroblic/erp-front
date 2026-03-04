@@ -35,3 +35,6 @@ export * from './systemParameters.interface';
 
 // Interfaces de reportes (si existe)
 // export * from './reports.interface';
+
+// Interfaces de Recursos Humanos
+export * from './rh.interface';

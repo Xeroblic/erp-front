@@ -63,6 +63,7 @@
 		"formik": "^2.4.6",
 		"framer-motion": "^11.15.0",
 		"gsap": "^3.14.2",
+		"html5-qrcode": "^2.3.8",
 		"i18next": "^23.11.5",
 		"is-hotkey": "^0.2.0",
 		"jsbarcode": "^3.12.3",

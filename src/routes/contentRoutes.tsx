@@ -133,6 +133,12 @@ const RefactorTraceability = lazy(
 const NotificationsAllPage = lazy(() => import('@/pages/notificaciones/NotificationsAll'));
 const NotificationDetailPage = lazy(() => import('@/pages/notificaciones/NotificationDetail'));
 
+/// Recursos Humanos
+const RelojControlPage = lazy(
+	() => import('@/pages/recursosHumanos/relojControl/RelojControlPage'),
+);
+const ConfiguracionRH = lazy(() => import('@/pages/recursosHumanos/configuracion/ConfiguracionRH'));
+
 export interface IRoutePersonalizada extends PathRouteProps {
 	authority?: string[];
 	feature?: string;
@@ -225,6 +231,19 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: cfg.humanResources.subPages.invitationsAdmin.to,
 		element: <InvitationsAdmin />,
 		authority: cfg.humanResources.subPages.invitationsAdmin.authority,
+	},
+
+	// Recursos Humanos — Reloj Control
+	{
+		path: cfg.humanResources.subPages.relojControl.to,
+		element: <RelojControlPage />,
+		authority: cfg.humanResources.subPages.relojControl.authority,
+	},
+	// Recursos Humanos — Configuración
+	{
+		path: cfg.humanResources.subPages.configuracionRH.to,
+		element: <ConfiguracionRH />,
+		authority: cfg.humanResources.subPages.configuracionRH.authority,
 	},
 
 	// Rutas de Administración del Sistema

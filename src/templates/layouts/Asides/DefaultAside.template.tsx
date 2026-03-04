@@ -100,6 +100,7 @@ const DefaultAsideTemplate = () => {
 		integraciones: false,
 		servicio: false,
 		catalogos: false,
+		rrhh: false,
 	});
 
 	const toggleCollapse = (key: string) => {
@@ -521,25 +522,78 @@ const DefaultAsideTemplate = () => {
 					 * RECURSOS HUMANOS
 					 * ====================== */}
 					<AuthorityCheckNav
-						authority={Pages.humanResources.subPages.invitationsAdmin.authority}
-						roles={Pages.humanResources.subPages.invitationsAdmin.roles}
+						authority={Pages.humanResources.authority}
+						roles={Pages.humanResources.roles}
 						userAuthority={userAuthority}>
 						<NavTitle>Recursos Humanos</NavTitle>
 					</AuthorityCheckNav>
 					<AuthorityCheckNav
-						authority={Pages.humanResources.subPages.invitationsAdmin.authority}
-						roles={Pages.humanResources.subPages.invitationsAdmin.roles}
+						authority={Pages.humanResources.authority}
+						roles={Pages.humanResources.roles}
 						userAuthority={userAuthority}
-						requireAll={Pages.humanResources.subPages.invitationsAdmin.requireAll}>
-						<NavItem
-							text={Pages.humanResources.subPages.invitationsAdmin.text}
-							to={Pages.humanResources.subPages.invitationsAdmin.to}
-							icon={Pages.humanResources.subPages.invitationsAdmin.icon}
-							id={Pages.humanResources.subPages.invitationsAdmin.id}
-							onClick={() =>
-								navigate(Pages.humanResources.subPages.invitationsAdmin.to)
-							}
-						/>
+						requireAll={Pages.humanResources.requireAll}>
+						<NavCollapse
+							key='rrhh-nav'
+							text={Pages.humanResources.text}
+							icon={Pages.humanResources.icon}
+							to=''
+							isOpen={collapseStates.rrhh}
+							onToggle={() => toggleCollapse('rrhh')}>
+							{/* Invitaciones */}
+							<AuthorityCheckNav
+								authority={Pages.humanResources.subPages.invitationsAdmin.authority}
+								roles={Pages.humanResources.subPages.invitationsAdmin.roles}
+								userAuthority={userAuthority}
+								requireAll={
+									Pages.humanResources.subPages.invitationsAdmin.requireAll
+								}>
+								<NavItem
+									text={Pages.humanResources.subPages.invitationsAdmin.text}
+									to={Pages.humanResources.subPages.invitationsAdmin.to}
+									icon={Pages.humanResources.subPages.invitationsAdmin.icon}
+									id={Pages.humanResources.subPages.invitationsAdmin.id}
+									onClick={() =>
+										navigate(Pages.humanResources.subPages.invitationsAdmin.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
+							{/* Reloj Control */}
+							<AuthorityCheckNav
+								authority={Pages.humanResources.subPages.relojControl.authority}
+								roles={Pages.humanResources.subPages.relojControl.roles}
+								userAuthority={userAuthority}
+								requireAll={Pages.humanResources.subPages.relojControl.requireAll}>
+								<NavItem
+									text={Pages.humanResources.subPages.relojControl.text}
+									to={Pages.humanResources.subPages.relojControl.to}
+									icon={Pages.humanResources.subPages.relojControl.icon}
+									id={Pages.humanResources.subPages.relojControl.id}
+									onClick={() =>
+										navigate(Pages.humanResources.subPages.relojControl.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
+							{/* Configuración RH */}
+							<AuthorityCheckNav
+								authority={Pages.humanResources.subPages.configuracionRH.authority}
+								roles={Pages.humanResources.subPages.configuracionRH.roles}
+								userAuthority={userAuthority}
+								requireAll={
+									Pages.humanResources.subPages.configuracionRH.requireAll
+								}>
+								<NavItem
+									text={Pages.humanResources.subPages.configuracionRH.text}
+									to={Pages.humanResources.subPages.configuracionRH.to}
+									icon={Pages.humanResources.subPages.configuracionRH.icon}
+									id={Pages.humanResources.subPages.configuracionRH.id}
+									onClick={() =>
+										navigate(Pages.humanResources.subPages.configuracionRH.to)
+									}
+								/>
+							</AuthorityCheckNav>
+						</NavCollapse>
 					</AuthorityCheckNav>
 
 					<AuthorityCheckNav

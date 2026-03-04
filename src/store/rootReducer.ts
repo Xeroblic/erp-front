@@ -36,6 +36,7 @@ import { integrationsReducer, unmappedProductsReducer } from './slices/integrati
 import garantiasReducer, { GarantiasState } from './slices/garantias/garantiasSlice';
 import reports, { ReportsState } from './slices/reports/reportSlice';
 import customerSales, { CustomerSalesState } from './slices/customerSales/customerSalesSlice';
+import recursosHumanos, { IRHState } from './slices/recursosHumanos/rhSlice';
 
 export interface RootState {
 	auth: AuthState;
@@ -70,6 +71,7 @@ export interface RootState {
 	garantias: GarantiasState;
 	reports: ReportsState;
 	customerSales: CustomerSalesState;
+	recursosHumanos: IRHState;
 	[RtkQueryService.reducerPath]: any;
 }
 
@@ -107,6 +109,7 @@ const staticReducers = {
 	garantias: garantiasReducer,
 	reports,
 	customerSales,
+	recursosHumanos,
 	// personalizacion, // Comentado temporalmente
 	[RtkQueryService.reducerPath]: RtkQueryService.reducer,
 };
