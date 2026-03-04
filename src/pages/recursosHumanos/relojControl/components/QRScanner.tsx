@@ -1,5 +1,5 @@
 // src/pages/recursosHumanos/relojControl/components/QRScanner.tsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
@@ -10,20 +10,69 @@ interface QRScannerProps {
 	isActive: boolean;
 }
 
-/**
- * Escáner QR usando la cámara del dispositivo.
- * Usa html5-qrcode si está disponible, sino provee un input manual.
- */
 const QRScanner: React.FC<QRScannerProps> = ({ onScan, onCancel, isActive }) => {
 	const scannerRef = useRef<HTMLDivElement>(null);
 	const html5QrCodeRef = useRef<unknown>(null);
+	const scannerRunningRef = useRef(false);
+	const hasScannedRef = useRef(false);
 	const [manualCode, setManualCode] = useState('');
 	const [scannerAvailable, setScannerAvailable] = useState<boolean | null>(null);
 	const [cameraError, setCameraError] = useState<string | null>(null);
 
+	// ── Stop scanner safely ──────────────────────────
+	const stopScanner = useCallback(async () => {
+		const scanner = html5QrCodeRef.current as {
+			stop?: () => Promise<void>;
+			clear?: () => void;
+			getState?: () => number;
+		} | null;
+
+		if (!scanner) return;
+
+		try {
+			// html5-qrcode states: NOT_STARTED=1, SCANNING=2, PAUSED=3
+			const state = scanner.getState?.();
+			if (state === 2 || state === 3) {
+				await scanner.stop?.();
+			}
+		} catch {
+			// Ignore "not running" errors
+		}
+
+		try {
+			scanner.clear?.();
+		} catch {
+			// Ignore clear errors
+		}
+
+		scannerRunningRef.current = false;
+		html5QrCodeRef.current = null;
+	}, []);
+
+	// ── Handle successful scan ───────────────────────
+	const handleScanSuccess = useCallback(
+		async (decodedText: string) => {
+			if (hasScannedRef.current) return; // Prevent double-scan
+			hasScannedRef.current = true;
+
+			// Stop scanner FIRST, then callback
+			await stopScanner();
+			onScan(decodedText);
+		},
+		[onScan, stopScanner],
+	);
+
+	// ── Handle cancel ────────────────────────────────
+	const handleCancel = useCallback(async () => {
+		await stopScanner();
+		onCancel();
+	}, [onCancel, stopScanner]);
+
+	// ── Init scanner ─────────────────────────────────
 	useEffect(() => {
 		if (!isActive) return;
 
+		hasScannedRef.current = false;
 		let mounted = true;
 
 		const initScanner = async () => {
@@ -45,15 +94,17 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScan, onCancel, isActive }) => 
 						aspectRatio: 1,
 					},
 					(decodedText: string) => {
-						scanner.stop().catch(() => {});
-						onScan(decodedText);
+						void handleScanSuccess(decodedText);
 					},
 					() => {
-						// Ignore QR scan errors (no QR found in frame)
+						// No QR found in frame — ignore
 					},
 				);
 
-				if (mounted) setScannerAvailable(true);
+				if (mounted) {
+					scannerRunningRef.current = true;
+					setScannerAvailable(true);
+				}
 			} catch (err) {
 				if (!mounted) return;
 				setScannerAvailable(false);
@@ -75,18 +126,9 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScan, onCancel, isActive }) => 
 
 		return () => {
 			mounted = false;
-			const scanner = html5QrCodeRef.current as {
-				stop?: () => Promise<void>;
-				clear?: () => void;
-			} | null;
-			if (scanner?.stop) {
-				scanner.stop().catch(() => {});
-			}
-			if (scanner?.clear) {
-				scanner.clear();
-			}
+			void stopScanner();
 		};
-	}, [isActive, onScan]);
+	}, [isActive, handleScanSuccess, stopScanner]);
 
 	if (!isActive) return null;
 
@@ -102,21 +144,19 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScan, onCancel, isActive }) => 
 					</CardTitle>
 				</CardHeaderChild>
 				<CardHeaderChild>
-					<Button variant='outline' color='zinc' size='sm' onClick={onCancel}>
+					<Button variant='outline' color='zinc' size='sm' onClick={handleCancel}>
 						Cancelar
 					</Button>
 				</CardHeaderChild>
 			</CardHeader>
 			<CardBody>
 				<div className='flex flex-col items-center gap-4'>
-					{/* Scanner viewport */}
 					<div
 						ref={scannerRef}
 						className='w-full max-w-sm overflow-hidden rounded-xl border-2 border-dashed border-blue-500/30'
 						style={{ minHeight: scannerAvailable === false ? '0' : '300px' }}
 					/>
 
-					{/* Loading */}
 					{scannerAvailable === null && (
 						<div className='flex items-center gap-2 text-sm text-amber-400'>
 							<Icon icon='HeroArrowPath' size='text-lg' className='animate-spin' />
@@ -124,7 +164,6 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScan, onCancel, isActive }) => 
 						</div>
 					)}
 
-					{/* Camera error - show manual input */}
 					{scannerAvailable === false && (
 						<div className='w-full max-w-sm'>
 							{cameraError && (
@@ -132,7 +171,6 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScan, onCancel, isActive }) => 
 									<p className='text-sm text-amber-400'>{cameraError}</p>
 								</div>
 							)}
-
 							<p className='mb-2 text-sm text-zinc-400'>
 								Ingresa el código QR manualmente:
 							</p>
@@ -149,7 +187,10 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScan, onCancel, isActive }) => 
 									color='blue'
 									size='sm'
 									onClick={() => {
-										if (manualCode.trim()) onScan(manualCode.trim());
+										if (manualCode.trim()) {
+											hasScannedRef.current = true;
+											onScan(manualCode.trim());
+										}
 									}}
 									isDisable={!manualCode.trim()}>
 									Verificar

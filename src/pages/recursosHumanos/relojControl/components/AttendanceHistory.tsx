@@ -8,6 +8,19 @@ interface AttendanceHistoryProps {
 	records: IRHAttendanceRecord[];
 }
 
+const punctualityLabel = (p: string): { text: string; color: string } => {
+	switch (p) {
+		case 'on_time':
+			return { text: 'Puntual', color: 'text-emerald-400' };
+		case 'late':
+			return { text: 'Atraso', color: 'text-amber-400' };
+		case 'early_exit':
+			return { text: 'Salida anticipada', color: 'text-amber-400' };
+		default:
+			return { text: '—', color: 'text-zinc-500' };
+	}
+};
+
 const AttendanceHistory: React.FC<AttendanceHistoryProps> = ({ records }) => {
 	if (records.length === 0) {
 		return (
@@ -44,78 +57,86 @@ const AttendanceHistory: React.FC<AttendanceHistoryProps> = ({ records }) => {
 				</CardHeaderChild>
 			</CardHeader>
 			<CardBody>
-				<div className='overflow-x-auto'>
-					<table className='w-full text-left text-sm'>
-						<thead>
-							<tr className='border-b border-zinc-700 text-zinc-400'>
-								<th className='px-3 py-2'>Hora</th>
-								<th className='px-3 py-2'>Tipo</th>
-								<th className='px-3 py-2'>Ubicación</th>
-								<th className='px-3 py-2'>IP</th>
-								<th className='px-3 py-2'>Estado</th>
-							</tr>
-						</thead>
-						<tbody>
-							{records.map((record) => {
-								const time = new Date(record.timestamp).toLocaleTimeString(
-									'es-CL',
-									{
-										hour: '2-digit',
-										minute: '2-digit',
-										second: '2-digit',
-										hour12: false,
-									},
-								);
+				<div className='space-y-3'>
+					{records.map((record) => {
+						const time = new Date(record.timestamp).toLocaleTimeString('es-CL', {
+							hour: '2-digit',
+							minute: '2-digit',
+							second: '2-digit',
+							hour12: false,
+						});
+						const punct = punctualityLabel(record.punctuality);
 
-								return (
-									<tr key={record.id} className='border-b border-zinc-700/50'>
-										<td className='px-3 py-2 font-mono text-zinc-200'>
+						return (
+							<div
+								key={record.id}
+								className='flex items-center gap-3 rounded-lg border border-zinc-700/50 bg-zinc-800/40 px-4 py-3'>
+								{/* Icono tipo */}
+								<div
+									className={`flex h-10 w-10 items-center justify-center rounded-full ${
+										record.type === 'entry'
+											? 'bg-emerald-500/20'
+											: 'bg-orange-500/20'
+									}`}>
+									<Icon
+										icon={
+											record.type === 'entry'
+												? 'HeroArrowRightOnRectangle'
+												: 'HeroArrowLeftOnRectangle'
+										}
+										size='text-lg'
+										className={
+											record.type === 'entry'
+												? 'text-emerald-400'
+												: 'text-orange-400'
+										}
+									/>
+								</div>
+
+								{/* Info */}
+								<div className='flex-1'>
+									<div className='flex items-center gap-2'>
+										<span className='font-mono text-sm font-medium text-zinc-200'>
 											{time}
-										</td>
-										<td className='px-3 py-2'>
-											<span
-												className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
-													record.type === 'entry'
-														? 'bg-emerald-500/20 text-emerald-400'
-														: 'bg-orange-500/20 text-orange-400'
-												}`}>
-												<Icon
-													icon={
-														record.type === 'entry'
-															? 'HeroArrowRightOnRectangle'
-															: 'HeroArrowLeftOnRectangle'
-													}
-													size='text-xs'
-												/>
-												{record.type === 'entry' ? 'Entrada' : 'Salida'}
-											</span>
-										</td>
-										<td className='px-3 py-2 text-xs text-zinc-400'>
+										</span>
+										<span
+											className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+												record.type === 'entry'
+													? 'bg-emerald-500/20 text-emerald-400'
+													: 'bg-orange-500/20 text-orange-400'
+											}`}>
+											{record.type === 'entry' ? 'Entrada' : 'Salida'}
+										</span>
+										<span className={`text-xs ${punct.color}`}>
+											{punct.text}
+										</span>
+									</div>
+									<div className='mt-0.5 flex items-center gap-3 text-xs text-zinc-500'>
+										<span>{record.userName}</span>
+										<span>
 											{record.validations.geolocation?.distanceMeters ?? '—'}m
-										</td>
-										<td className='px-3 py-2 font-mono text-xs text-zinc-400'>
-											{record.publicIP || '—'}
-										</td>
-										<td className='px-3 py-2'>
-											{record.validations.allPassed ? (
-												<Icon
-													icon='HeroCheckCircle'
-													size='text-lg'
-													className='text-emerald-400'
-												/>
-											) : (
-												<Icon
-													icon='HeroExclamationCircle'
-													size='text-lg'
-													className='text-amber-400'
-												/>
-											)}
-										</td>
-									</tr>
-								);
-							})}
-						</tbody>
-					</table>
+										</span>
+										<span className='font-mono'>{record.publicIP || '—'}</span>
+									</div>
+								</div>
+
+								{/* Status */}
+								{record.validations.allPassed ? (
+									<Icon
+										icon='HeroCheckCircle'
+										size='text-lg'
+										className='text-emerald-400'
+									/>
+								) : (
+									<Icon
+										icon='HeroExclamationCircle'
+										size='text-lg'
+										className='text-amber-400'
+									/>
+								)}
+							</div>
+						);
+					})}
 				</div>
 			</CardBody>
 		</Card>

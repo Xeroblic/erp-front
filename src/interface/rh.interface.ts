@@ -100,6 +100,7 @@ export interface IRHValidationResult {
    ====================================================== */
 
 export type TRHPunchType = 'entry' | 'exit';
+export type TRHPunctuality = 'on_time' | 'late' | 'early_exit';
 
 export interface IRHAttendanceRecord {
 	/** ID único del registro */
@@ -122,6 +123,8 @@ export interface IRHAttendanceRecord {
 	qrCodeScanned: string;
 	/** Resultado de validaciones al momento */
 	validations: IRHValidationResult;
+	/** Puntualidad: a tiempo, atrasado o salida anticipada */
+	punctuality: TRHPunctuality;
 }
 
 /* ======================================================

@@ -41,6 +41,10 @@ function isHolidayToday(holidays: { date: string; recurring: boolean }[]): strin
 	return null;
 }
 
+/**
+ * Determina si está dentro del horario laboral.
+ * Permite marcar desde 30 min antes de la entrada hasta 60 min después de la salida.
+ */
 function isWithinSchedule(entryTime: string, exitTime: string): IRHScheduleValidation {
 	const now = new Date();
 	const [eH, eM] = entryTime.split(':').map(Number);
@@ -49,7 +53,6 @@ function isWithinSchedule(entryTime: string, exitTime: string): IRHScheduleValid
 	const entryMinutes = eH * 60 + eM;
 	const exitMinutes = xH * 60 + xM;
 
-	// Permitir 30 minutos antes de la entrada y 60 minutos después de la salida
 	const toleranceBefore = 30;
 	const toleranceAfter = 60;
 
@@ -66,34 +69,54 @@ function isWithinSchedule(entryTime: string, exitTime: string): IRHScheduleValid
 	};
 }
 
+/**
+ * Determina si la marcación es a tiempo o con atraso.
+ * Gracia: entrada + 1 minuto → puntual. Después → atrasado.
+ */
+function getPunctualityStatus(
+	punchType: TRHPunchType,
+	entryTime: string,
+	exitTime: string,
+): 'on_time' | 'late' | 'early_exit' {
+	const now = new Date();
+	const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+	if (punchType === 'entry') {
+		const [eH, eM] = entryTime.split(':').map(Number);
+		const entryMinutes = eH * 60 + eM;
+		const graceMinutes = entryMinutes + 1; // 1 minuto de gracia
+
+		return currentMinutes <= graceMinutes ? 'on_time' : 'late';
+	} else {
+		const [xH, xM] = exitTime.split(':').map(Number);
+		const exitMinutes = xH * 60 + xM;
+
+		return currentMinutes < exitMinutes ? 'early_exit' : 'on_time';
+	}
+}
+
 /* ======================================================
    HOOK PRINCIPAL
    ====================================================== */
 
 interface UseRelojControlReturn {
-	/** Siguiente tipo de marcación basado en último registro */
 	nextPunchType: TRHPunchType;
-	/** Si pasaron geo + red + horario (precondiciones para QR) */
 	preValidationsPassed: boolean;
-	/** Resultado de validaciones */
 	validations: IRHValidationResult | null;
-	/** Si está en proceso de validación */
 	isValidating: boolean;
-	/** Si está escaneando QR */
 	isScanning: boolean;
-	/** Error general */
 	error: string | null;
-	/** Último registro del día */
 	lastRecord: IRHAttendanceRecord | null;
-	/** Registros del día actual */
 	todayRecords: IRHAttendanceRecord[];
-	/** Paso 1: Ejecutar validaciones de geo + red + horario */
+	/** Si ya se marcó entrada hoy */
+	alreadyPunchedEntry: boolean;
+	/** Si ya se marcó salida hoy */
+	alreadyPunchedExit: boolean;
+	/** Si la marcación acaba de ser exitosa */
+	justPunched: boolean;
 	runPreValidations: () => Promise<boolean>;
-	/** Paso 2: Procesar resultado del QR escaneado */
 	handleQRScanned: (scannedCode: string) => void;
-	/** Cancelar escaneo */
 	cancelScan: () => void;
-	/** Limpiar validaciones */
 	resetValidations: () => void;
 }
 
@@ -110,18 +133,40 @@ export function useRelojControl(): UseRelojControlReturn {
 
 	const [validations, setValidations] = useState<IRHValidationResult | null>(null);
 	const [preValidationsPassed, setPreValidationsPassed] = useState(false);
+	const [justPunched, setJustPunched] = useState(false);
 
-	// Filtrar registros del día
+	// ── Filtrar registros del día ─────────────────────
 	const todayRecords = useMemo(() => {
 		const todayStr = new Date().toISOString().split('T')[0];
 		return records.filter((r) => r.timestamp.startsWith(todayStr));
 	}, [records]);
 
 	const lastRecord = todayRecords.length > 0 ? todayRecords[0] : null;
-	const nextPunchType: TRHPunchType = lastRecord?.type === 'entry' ? 'exit' : 'entry';
 
-	// ── Paso 1: Pre-validaciones (geo + red + horario) ─────
+	// ── Verificar si ya marcó hoy ────────────────────
+	const alreadyPunchedEntry = todayRecords.some((r) => r.type === 'entry');
+	const alreadyPunchedExit = todayRecords.some((r) => r.type === 'exit');
+
+	// El siguiente tipo depende de lo que falta
+	const nextPunchType: TRHPunchType = (() => {
+		if (!alreadyPunchedEntry) return 'entry';
+		if (!alreadyPunchedExit) return 'exit';
+		// Ya marcó ambos — no debería poder marcar más
+		return 'exit';
+	})();
+
+	// ── Si ya marcó ambos, bloquear ──────────────────
+	const allPunchesComplete = alreadyPunchedEntry && alreadyPunchedExit;
+
+	// ── Paso 1: Pre-validaciones ─────────────────────
 	const runPreValidations = useCallback(async (): Promise<boolean> => {
+		// Bloquear si ya marcó ambos
+		if (allPunchesComplete) {
+			dispatch(setError('Ya has registrado entrada y salida hoy.'));
+			return false;
+		}
+
+		setJustPunched(false);
 		dispatch(setIsValidating(true));
 		dispatch(setError(null));
 
@@ -166,11 +211,11 @@ export function useRelojControl(): UseRelojControlReturn {
 			);
 			validationResult.geolocation = geoResult;
 
-			// Validar red
+			// Validar red (IP pública)
 			const netResult = await networkValidation.validate(config.authorizedPublicIP);
 			validationResult.network = netResult;
 
-			// Evaluar resultado total de pre-validaciones
+			// Evaluar resultado
 			const allPrePassed = geoResult.passed && netResult.passed && scheduleResult.passed;
 			validationResult.allPassed = allPrePassed;
 
@@ -191,9 +236,9 @@ export function useRelojControl(): UseRelojControlReturn {
 			setPreValidationsPassed(false);
 			return false;
 		}
-	}, [config, holidays, geoValidation, networkValidation, dispatch]);
+	}, [config, holidays, geoValidation, networkValidation, dispatch, allPunchesComplete]);
 
-	// ── Paso 2: Manejar QR escaneado ───────────────────────
+	// ── Paso 2: Manejar QR escaneado ─────────────────
 	const handleQRScanned = useCallback(
 		(scannedCode: string) => {
 			const qrResult: IRHQRValidation = {
@@ -225,11 +270,19 @@ export function useRelojControl(): UseRelojControlReturn {
 			dispatch(setIsScanning(false));
 
 			if (qrResult.passed) {
-				// ¡Registrar marcación!
+				// Determinar puntualidad
+				const punctuality = getPunctualityStatus(
+					nextPunchType,
+					config.entryTime,
+					config.exitTime,
+				);
+
 				const record: IRHAttendanceRecord = {
 					id: generateId(),
 					userId: user?.id ?? 0,
-					userName: user?.first_name ?? 'Usuario',
+					userName: user?.first_name
+						? `${user.first_name} ${user?.last_name ?? ''}`.trim()
+						: 'Usuario',
 					type: nextPunchType,
 					timestamp: new Date().toISOString(),
 					latitude: validations?.geolocation?.detectedLat ?? 0,
@@ -237,8 +290,11 @@ export function useRelojControl(): UseRelojControlReturn {
 					publicIP: validations?.network?.detectedIP ?? '',
 					qrCodeScanned: scannedCode,
 					validations: updatedValidations,
+					punctuality,
 				};
 				dispatch(addRecord(record));
+				setJustPunched(true);
+				setPreValidationsPassed(false);
 			} else {
 				dispatch(setError(qrResult.message));
 			}
@@ -254,6 +310,7 @@ export function useRelojControl(): UseRelojControlReturn {
 	const resetValidations = useCallback(() => {
 		setValidations(null);
 		setPreValidationsPassed(false);
+		setJustPunched(false);
 		dispatch(setLastValidation(null));
 		dispatch(setIsScanning(false));
 		dispatch(setError(null));
@@ -268,6 +325,9 @@ export function useRelojControl(): UseRelojControlReturn {
 		error: ui.error,
 		lastRecord,
 		todayRecords,
+		alreadyPunchedEntry,
+		alreadyPunchedExit,
+		justPunched,
 		runPreValidations,
 		handleQRScanned,
 		cancelScan,
