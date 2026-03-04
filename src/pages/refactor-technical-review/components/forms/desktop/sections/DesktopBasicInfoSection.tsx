@@ -11,6 +11,7 @@ import { DESKTOP_HINTS, DESKTOP_PLACEHOLDERS } from '../../../constants/desktop/
 import { useAppDispatch, useAppSelector } from '@/store/hook';
 import { fetchBrands } from '@/store/slices/brands/brandsSlice';
 
+
 const DesktopBasicInfoSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 	control,
 	errors,
@@ -113,6 +114,8 @@ const DesktopBasicInfoSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 			</div>
 		</div>
 	);
+
+	
 };
 
 export default DesktopBasicInfoSection;
