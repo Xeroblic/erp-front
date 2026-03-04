@@ -17,7 +17,7 @@ const DefaultHeaderTemplate = () => {
 				<>
 					{version === 'dev' && (
 						<div className='bg-yellow-500 rounded-xl'>
-							<Badge className='rounded border border-red-600 px-2 py-1 text-8xl font-bold text-red-600'>
+							<Badge className='rounded border border-red-600 px-2 py-1 text-2xl font-bold text-red-600'>
 							MODO DESARROLLO
 						</Badge>
 						</div>
