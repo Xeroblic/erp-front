@@ -166,7 +166,7 @@ const uploadBrandLogo = async (
 
 type BrandRequestShape = {
 	name: string;
-	is_active: boolean;
+	is_active?: boolean;
 	code?: string;
 };
 
@@ -233,8 +233,10 @@ export const uploadBrandGallery = createAsyncThunk<
 const makeBrandRequestBody = (payload: BrandRequestShape) => {
 	const body: Record<string, unknown> = {
 		name: payload.name,
-		is_active: payload.is_active,
 	};
+	if (payload.is_active !== undefined) {
+		body.is_active = payload.is_active;
+	}
 
 	if (payload.code) body.code = payload.code;
 	// Campos removidos del formulario (no entregados por backend): origin_country, manufacturer

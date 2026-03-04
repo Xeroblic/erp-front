@@ -3,7 +3,7 @@ export type CreateBrandPayload = {
 	code?: string;
 	origin_country?: string;
 	manufacturer?: string;
-	is_active: boolean;
+	is_active?: boolean;
 	image?: File | null;
 };
 
@@ -26,7 +26,7 @@ export interface IBrandImage {
 
 export interface IBrand {
 	id: number;
-	company_id: number;
+	company_id?: number;
 	branch_id?: number;
 	code?: string;
 	name: string;
@@ -66,7 +66,7 @@ export interface CreateBrandInput {
 	code?: string;
 	origin_country?: string;
 	manufacturer?: string;
-	is_active: boolean;
+	is_active?: boolean;
 	branch_id?: number;
 	image?: File | null;
 }

@@ -17,6 +17,7 @@ import type {
 	UpdateBrandInput,
 } from '@/interface/brand.interface';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import { computeStats } from '@/components/helper/brand.helper';
 
 export interface BranchOption {
 	id: number;
@@ -33,31 +34,6 @@ interface BranchCandidate {
 	alias?: string | null;
 }
 
-const computeStats = (items: IBrand[]): IBrandStats => {
-	if (!items.length) {
-		return {
-			total_brands: 0,
-			active_brands: 0,
-			inactive_brands: 0,
-			total_products: 0,
-			total_sales: 0,
-		};
-	}
-
-	const total_brands = items.length;
-	const active_brands = items.filter((brand) => brand.is_active).length;
-	const inactive_brands = total_brands - active_brands;
-	const total_products = items.reduce((sum, brand) => sum + (brand.products_count || 0), 0);
-	const total_sales = items.reduce((sum, brand) => sum + (brand.total_sales || 0), 0);
-
-	return {
-		total_brands,
-		active_brands,
-		inactive_brands,
-		total_products,
-		total_sales,
-	};
-};
 
 const applyLocalFilters = (items: IBrand[], filters: IBrandFilters): IBrand[] => {
 	let result = [...items];

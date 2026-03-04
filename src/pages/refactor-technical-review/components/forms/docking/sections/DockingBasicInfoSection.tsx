@@ -4,8 +4,7 @@ import { FormSectionProps } from '../../shared/types';
 import { DockingFormData } from '../../../validation/docking.schema';
 import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
-import { useAppDispatch, useAppSelector } from '@/store/hook';
-import { fetchBrands } from '@/store/slices/brands/brandsSlice';
+import { useMarcas } from '@/pages/catalogos/marcas/components/hooks/useMarcas';
 import { SelectionCard } from '../../../ui/SelectionCard';
 import { DOCKING_HINTS, DOCKING_PLACEHOLDERS } from '../../../constants/docking/docking.hints';
 import { GENERAL_CONDITION_OPTIONS } from '../../../constants/docking/docking.options';
@@ -20,16 +19,7 @@ const DockingBasicInfoSection: React.FC<FormSectionProps<DockingFormData>> = ({
 	setValue,
 }) => {
 	const currentCondition = watch('general_condition');
-	const dispatch = useAppDispatch();
-	const { items: brands, loading: loadingBrands } = useAppSelector((state) => state.brands);
-	const { user } = useAppSelector((state) => state.auth);
-	const activeBranchId = user?.branch_id || user?.branch?.id;
-
-	useEffect(() => {
-		if (activeBranchId) {
-			dispatch(fetchBrands({ branchId: activeBranchId }));
-		}
-	}, [dispatch, activeBranchId]);
+	const { brands, loading: loadingBrands } = useMarcas({ search: '', is_active: true });
 
 	const brandOptions: TSelectOption[] = useMemo(() => {
 		return brands

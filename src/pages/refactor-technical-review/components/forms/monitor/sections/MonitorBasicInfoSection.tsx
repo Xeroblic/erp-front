@@ -4,8 +4,7 @@ import { FormSectionProps } from '../../shared/types';
 import { MonitorFormData } from '../../../validation/monitor.schema';
 import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
-import { useAppDispatch, useAppSelector } from '@/store/hook';
-import { fetchBrands } from '@/store/slices/brands/brandsSlice';
+import { useMarcas } from '@/pages/catalogos/marcas/components/hooks/useMarcas';
 import { SelectionCard } from '../../../ui/SelectionCard';
 import Textarea from '@/components/form/Textarea';
 import { MONITOR_HINTS, MONITOR_PLACEHOLDERS } from '../../../constants/monitor/monitor.hints';
@@ -21,16 +20,7 @@ const MonitorBasicInfoSection: React.FC<FormSectionProps<MonitorFormData>> = ({
 	setValue,
 }) => {
 	const currentCondition = watch('general_condition');
-	const dispatch = useAppDispatch();
-	const { items: brands, loading: loadingBrands } = useAppSelector((state) => state.brands);
-	const { user } = useAppSelector((state) => state.auth);
-	const activeBranchId = user?.branch_id || user?.branch?.id;
-
-	useEffect(() => {
-		if (activeBranchId) {
-			dispatch(fetchBrands({ branchId: activeBranchId }));
-		}
-	}, [dispatch, activeBranchId]);
+	const { brands, loading: loadingBrands } = useMarcas({ search: '', is_active: true });
 
 	const brandOptions: TSelectOption[] = useMemo(() => {
 		return brands

@@ -4,8 +4,7 @@ import { FormSectionProps } from '../../shared/types';
 import { AioFormData } from '../../../validation/aio.schema';
 import Input from '@/components/form/Input';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
-import { useAppDispatch, useAppSelector } from '@/store/hook';
-import { fetchBrands } from '@/store/slices/brands/brandsSlice';
+import { useMarcas } from '@/pages/catalogos/marcas/components/hooks/useMarcas';
 import { AIO_HINTS, AIO_PLACEHOLDERS } from '../../../constants/aio/aio.hints';
 import { getAioLabel } from '../../../translations/aio.labels';
 import { GENERAL_CONDITION_OPTIONS } from '../../../constants/aio/aio.options';
@@ -19,16 +18,7 @@ const AioBasicInfoSection: React.FC<FormSectionProps<AioFormData>> = ({
 	setValue,
 }) => {
 	const generalCondition = watch('general_condition');
-	const dispatch = useAppDispatch();
-	const { items: brands, loading: loadingBrands } = useAppSelector((state) => state.brands);
-	const { user } = useAppSelector((state) => state.auth);
-	const activeBranchId = user?.branch_id || user?.branch?.id;
-
-	useEffect(() => {
-		if (activeBranchId) {
-			dispatch(fetchBrands({ branchId: activeBranchId }));
-		}
-	}, [dispatch, activeBranchId]);
+	const { brands, loading: loadingBrands } = useMarcas({ search: '', is_active: true });
 
 	const brandOptions: TSelectOption[] = useMemo(() => {
 		return brands

@@ -7,26 +7,15 @@ import type { FormSectionProps } from '../../shared/types';
 import type { DesktopFormData } from '../../../validation/desktop.schema';
 import { getDesktopLabel } from '../../../translations/desktop.labels';
 import { DESKTOP_HINTS, DESKTOP_PLACEHOLDERS } from '../../../constants/desktop/desktop.hints';
-// Redux for brands
-import { useAppDispatch, useAppSelector } from '@/store/hook';
-import { fetchBrands } from '@/store/slices/brands/brandsSlice';
-
+// Hook for brands
+import { useMarcas } from '@/pages/catalogos/marcas/components/hooks/useMarcas';
 
 const DesktopBasicInfoSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 	control,
 	errors,
 	readOnly,
 }) => {
-	const dispatch = useAppDispatch();
-	const { items: brands, loading: loadingBrands } = useAppSelector((state) => state.brands);
-	const { user } = useAppSelector((state) => state.auth);
-	const activeBranchId = user?.branch_id || user?.branch?.id;
-
-	useEffect(() => {
-		if (activeBranchId) {
-			dispatch(fetchBrands({ branchId: activeBranchId }));
-		}
-	}, [dispatch, activeBranchId]);
+	const { brands, loading: loadingBrands } = useMarcas({ search: '', is_active: true });
 
 	const brandOptions: TSelectOption[] = useMemo(() => {
 		return brands
@@ -114,8 +103,6 @@ const DesktopBasicInfoSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 			</div>
 		</div>
 	);
-
-	
 };
 
 export default DesktopBasicInfoSection;
