@@ -53,8 +53,15 @@ export const authPages = {
 	},
 	portalPedidos: {
 		id: 'portalPedidos',
-		to: '/portal-pedidos/:userId',
+		to: '/portal-pedidos/:hash',
 		text: 'Portal Pedidos',
+		icon: 'DuoBox3',
+		authority: [],
+	},
+	portalPedidosMock: {
+		id: 'portalPedidosMock',
+		to: '/portal-pedidos/mock/:id',
+		text: 'Portal Pedidos (Demo)',
 		icon: 'DuoBox3',
 		authority: [],
 	},
@@ -404,12 +411,28 @@ export const privatePages = {
 					'after-sales',
 				],
 			},
-			solicitudes: {
-				id: 'solicitudes',
-				to: '/comercial/solicitudes-ventas',
-				text: 'Solicitud de ventas',
-				icon: 'DuoClipboardList',
+			enlacesPublicos: {
+				id: 'enlacesPublicos',
+				to: '/comercial/enlaces',
+				text: 'Enlaces Públicos',
+				icon: 'DuoShare',
 				authority: ['view-sale'], // Mismos permisos que ventas
+				roles: [
+					'super-admin',
+					'admin',
+					'company-admin',
+					'subsidiary-admin',
+					'branch-admin',
+					'manager',
+					'salesperson',
+				],
+			},
+			solicitudes: {
+				id: 'solicitudesBandeja',
+				to: '/comercial/enlaces/:hash/solicitudes',
+				text: 'Bandeja de Solicitudes',
+				icon: 'DuoClipboardList',
+				authority: ['view-sale'],
 				roles: [
 					'super-admin',
 					'admin',

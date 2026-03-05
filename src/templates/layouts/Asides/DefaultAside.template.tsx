@@ -311,6 +311,22 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
+							{/* Enlaces Públicos */}
+							<AuthorityCheckNav
+								authority={Pages.commercial.subPages.enlacesPublicos.authority}
+								roles={Pages.commercial.subPages.enlacesPublicos.roles}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.commercial.subPages.enlacesPublicos.text}
+									to={Pages.commercial.subPages.enlacesPublicos.to}
+									icon={Pages.commercial.subPages.enlacesPublicos.icon}
+									id={Pages.commercial.subPages.enlacesPublicos.id}
+									onClick={() =>
+										navigate(Pages.commercial.subPages.enlacesPublicos.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
 							{/* Cotizaciones */}
 							<AuthorityCheckNav
 								authority={Pages.commercial.subPages.quotes.authority}

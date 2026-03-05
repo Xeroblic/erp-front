@@ -26,7 +26,8 @@ const AppInitializer = () => {
 		],
 		[],
 	);
-	const isPublic = publicRoutes.includes(location.pathname);
+	const isPublic =
+		publicRoutes.includes(location.pathname) || location.pathname.startsWith('/portal-pedidos');
 
 	// 1) Al montar: si la ruta es privada y no hay token en Redux -> logout + login
 	//    Si hay token en Redux, sincroniza hacia tokenManager.

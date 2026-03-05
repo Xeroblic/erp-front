@@ -63,7 +63,8 @@ const completadosMock: PedidoMock[] = [
 
 export default function PortalPedidosPage() {
 	const [activeTab, setActiveTab] = useState<string>('nuevo');
-	const { userId } = useParams<{ userId: string }>();
+	const { hash, id } = useParams<{ hash?: string; id?: string }>();
+	const identifier = hash || id || '';
 
 	return (
 		<PageWrapper isProtectedRoute={false} name='Portal Pedidos'>
@@ -79,7 +80,7 @@ export default function PortalPedidosPage() {
 								<h1 className='text-xl font-bold text-zinc-900 dark:text-white'>
 									Portal Pedidos{' '}
 									<span className='font-normal text-zinc-400'>
-										| Zentria {userId ? `(Agente: ${userId})` : ''}
+										| Zentria {identifier ? `(Agente: ${identifier})` : ''}
 									</span>
 								</h1>
 							</div>

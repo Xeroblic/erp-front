@@ -9,6 +9,7 @@ const headerRoutes: RouteProps[] = [
 	{ path: authPages.recuperarPassword.to, element: null },
 	{ path: authPages.confirmarNuevaPass.to, element: null },
 	{ path: authPages.portalPedidos.to, element: null },
+	{ path: authPages.portalPedidosMock.to, element: null },
 	{ path: '*', element: <DefaultHeaderTemplate /> },
 ];
 

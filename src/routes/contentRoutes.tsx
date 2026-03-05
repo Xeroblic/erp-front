@@ -59,6 +59,7 @@ const SystemParameterDetails = lazy(
 const SalesListPage = lazy(() => import('../pages/comercial/ventas/SalesListPage'));
 const CotizacionesPage = lazy(() => import('../pages/comercial/cotizaciones/CotizacionesAdmin'));
 const SolicitudesVentasPage = lazy(() => import('../pages/comercial/SolicitudesVentasPage'));
+const EnlacesPublicosPage = lazy(() => import('@/pages/comercial/EnlacesPublicosPage'));
 
 // Paginas de Inventario
 const TransferenciasInventario = lazy(
@@ -154,6 +155,7 @@ const contentRoutes: IRoutePersonalizada[] = [
 	{ path: cfg.loginPage.to, element: <LoginPage />, public: true },
 	{ path: cfg.recuperarPassword.to, element: <RecuperarPassword />, public: true },
 	{ path: cfg.confirmarNuevaPass.to, element: <ConfirmarNuevaPass />, public: true },
+	{ path: cfg.portalPedidosMock.to, element: <PortalPedidosPage />, public: true },
 	{ path: cfg.portalPedidos.to, element: <PortalPedidosPage />, public: true },
 	// refactor
 	{
@@ -292,6 +294,11 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: cfg.commercial.subPages.quotes.to,
 		element: <CotizacionesPage />,
 		authority: cfg.commercial.subPages.quotes.authority,
+	},
+	{
+		path: cfg.commercial.subPages.enlacesPublicos.to,
+		element: <EnlacesPublicosPage />,
+		authority: cfg.commercial.subPages.enlacesPublicos.authority,
 	},
 	{
 		path: cfg.commercial.subPages.solicitudes.to,
