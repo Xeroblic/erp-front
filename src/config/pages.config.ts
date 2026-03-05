@@ -419,12 +419,12 @@ export const privatePages = {
 				authority: ['view-sale'], // Mismos permisos que ventas
 				roles: [
 					'super-admin',
-					'admin',
-					'company-admin',
-					'subsidiary-admin',
-					'branch-admin',
-					'manager',
-					'salesperson',
+					// 'admin',
+					// 'company-admin',
+					// 'subsidiary-admin',
+					// 'branch-admin',
+					// 'manager',
+					// 'salesperson',
 				],
 			},
 			solicitudes: {
