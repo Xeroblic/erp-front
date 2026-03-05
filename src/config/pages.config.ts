@@ -51,6 +51,13 @@ export const authPages = {
 		icon: 'DuoFile',
 		authority: [],
 	},
+	portalPedidos: {
+		id: 'portalPedidos',
+		to: '/portal-pedidos/:userId',
+		text: 'Portal Pedidos',
+		icon: 'DuoBox3',
+		authority: [],
+	},
 } satisfies Record<string, PageConfig>;
 
 /* =================================================
@@ -395,6 +402,22 @@ export const privatePages = {
 					'warehouse-manager',
 					'salesperson',
 					'after-sales',
+				],
+			},
+			solicitudes: {
+				id: 'solicitudes',
+				to: '/comercial/solicitudes-ventas',
+				text: 'Solicitud de ventas',
+				icon: 'DuoClipboardList',
+				authority: ['view-sale'], // Mismos permisos que ventas
+				roles: [
+					'super-admin',
+					'admin',
+					'company-admin',
+					'subsidiary-admin',
+					'branch-admin',
+					'manager',
+					'salesperson',
 				],
 			},
 			transfers: {

@@ -12,7 +12,7 @@ import NotFoundPage from '@/pages/NotFound.page';
 
 const ProfilePage = lazy(() => import('@/pages/perfil/Perfil'));
 const Dashboard = lazy(() => import('@/pages/MainDashboard'));
-// const ProductosPage = lazy(() => import("@/pages/Productos"));
+// const ProductosPage = lazy(() => import("@/pages/Usuarios"));
 // const UsuariosPage  = lazy(() => import("@/pages/Usuarios"));
 // const Cotizaciones  = lazy(() => import("@/pages/Cotizaciones"));
 const EmpresaPage = lazy(() => import('@/pages/gestionAdmin/empresa/Empresa'));
@@ -22,7 +22,11 @@ const SubEmpresaPersonalizacion = lazy(
 	() => import('@/pages/gestionAdmin/subempresa/SubEmpresaPersonalizacion'),
 );
 
-// Páginas de Integraciones (nuevo módulo)
+const ResetPasswordPage = lazy(() => import('@/pages/ResetPassword/ConfirmarNuevaPass'));
+const RecoverPasswordPage = lazy(() => import('@/pages/ResetPassword/RecuperarPassword'));
+const PortalPedidosPage = lazy(() => import('@/pages/portal-pedidos/PortalPedidosPage'));
+
+// Paginas de Configuracion Sistemas (nuevo módulo)
 const IntegrationsListPage = lazy(() => import('@/pages/integraciones/IntegrationsListPage'));
 const UnmappedProductsPage = lazy(() => import('@/pages/integraciones/UnmappedProductsPage'));
 const SyncStockPage = lazy(() => import('@/pages/integraciones/SyncStockPage'));
@@ -50,10 +54,11 @@ const SystemParameterDetails = lazy(
 	() => import('@/pages/admin/systemParameters/SystemParameterDetails'),
 );
 
-// Páginas ERP
-// const InventarioPage = lazy(() => import('@/pages/inventario/Inventario'));
-const SalesListPage = lazy(() => import('@/pages/comercial/ventas/SalesListPage'));
-const CotizacionesPage = lazy(() => import('@/pages/comercial/cotizaciones/CotizacionesAdmin'));
+// Paginas de Comercial
+// const InventarioPage = lazy(() => import('../pages/inventario/Inventario'));
+const SalesListPage = lazy(() => import('../pages/comercial/ventas/SalesListPage'));
+const CotizacionesPage = lazy(() => import('../pages/comercial/cotizaciones/CotizacionesAdmin'));
+const SolicitudesVentasPage = lazy(() => import('../pages/comercial/SolicitudesVentasPage'));
 
 // Paginas de Inventario
 const TransferenciasInventario = lazy(
@@ -88,8 +93,6 @@ const DetalleClientePage = lazy(() => import('@/pages/catalogos/clientes/Detalle
 const DocumentosPage = lazy(() => import('@/pages/documentos/Documentos'));
 const GarantiasPage = lazy(() => import('@/pages/garantias/GarantiasPage'));
 const GarantiaDetailsPage = lazy(() => import('@/pages/garantias/GarantiaDetailsPage'));
-
-// Páginas de Technical Reviews
 const TechnicalReviewsHub = lazy(() => import('@/pages/technical-reviews/index'));
 const BatchesList = lazy(
 	() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchListPage'),
@@ -151,6 +154,7 @@ const contentRoutes: IRoutePersonalizada[] = [
 	{ path: cfg.loginPage.to, element: <LoginPage />, public: true },
 	{ path: cfg.recuperarPassword.to, element: <RecuperarPassword />, public: true },
 	{ path: cfg.confirmarNuevaPass.to, element: <ConfirmarNuevaPass />, public: true },
+	{ path: cfg.portalPedidos.to, element: <PortalPedidosPage />, public: true },
 	// refactor
 	{
 		path: cfg.technical.subPages.refactor.to,
@@ -288,6 +292,11 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: cfg.commercial.subPages.quotes.to,
 		element: <CotizacionesPage />,
 		authority: cfg.commercial.subPages.quotes.authority,
+	},
+	{
+		path: cfg.commercial.subPages.solicitudes.to,
+		element: <SolicitudesVentasPage />,
+		authority: cfg.commercial.subPages.solicitudes.authority,
 	},
 	{
 		path: `${cfg.commercial.subPages.quotes.to}/:quoteId`,

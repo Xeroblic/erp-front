@@ -8,6 +8,7 @@ const headerRoutes: RouteProps[] = [
 	{ path: '/usuarios/activar/:token', element: null },
 	{ path: authPages.recuperarPassword.to, element: null },
 	{ path: authPages.confirmarNuevaPass.to, element: null },
+	{ path: authPages.portalPedidos.to, element: null },
 	{ path: '*', element: <DefaultHeaderTemplate /> },
 ];
 
