@@ -122,7 +122,7 @@ export default function EnlacesPublicosPage() {
 	];
 
 	return (
-		<PageWrapper title='Enlaces Públicos (Ventas)' name='Enlaces Públicos'>
+		<PageWrapper isProtectedRoute={true} title='Enlaces Públicos (Ventas)' name='Enlaces Públicos'>
 			<Subheader>
 				<SubheaderLeft>
 					<div className='flex items-center gap-3'>
