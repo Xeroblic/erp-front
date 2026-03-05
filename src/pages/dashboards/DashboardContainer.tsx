@@ -20,7 +20,7 @@ import { fetchReportResults } from '@/store/slices/reports/reportsThunks';
 
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import Badge from '@/components/ui/Badge';
-import useDashboardTour from '@/hooks/useDashboardTour';
+import useDashboardTour from '@/hooks/tour/home/useDashboardTour';
 
 const DashboardContainer: React.FC = () => {
 	const dispatch = useAppDispatch();
@@ -229,18 +229,18 @@ const DashboardContainer: React.FC = () => {
 								icon='HeroShoppingBag'
 								colorClass='bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
 								subtitle='Órdenes'
-								/>
+							/>
 						</div>
-							<div id='dashboard-stats-sales-weekend'>
-								<StatsCard
-									title='Monto Semana'
-									value={totalAmount}
-									icon='HeroCurrencyDollar'
-									colorClass='bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400'
-									subtitle='Ingresos'
-									trend='up'
-								/>
-							</div>
+						<div id='dashboard-stats-sales-weekend'>
+							<StatsCard
+								title='Monto Semana'
+								value={totalAmount}
+								icon='HeroCurrencyDollar'
+								colorClass='bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400'
+								subtitle='Ingresos'
+								trend='up'
+							/>
+						</div>
 						{/* Review Stats */}
 						<div id='dashboard-stats-pending'>
 							<StatsCard
@@ -248,17 +248,16 @@ const DashboardContainer: React.FC = () => {
 								value={dashboardStats.pending}
 								icon='HeroClock'
 								colorClass='bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400'
-							subtitle='Por revisar'
-						/>
+								subtitle='Por revisar'
+							/>
 						</div>
 						<div id='dashboard-stats-reviews-aproved'>
-
-						<StatsCard
-							title='Aprobados'
-							value={dashboardStats.approved}
-							icon='HeroCheckBadge'
-							colorClass='bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
-							subtitle='Total Histórico'
+							<StatsCard
+								title='Aprobados'
+								value={dashboardStats.approved}
+								icon='HeroCheckBadge'
+								colorClass='bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
+								subtitle='Total Histórico'
 							/>
 						</div>
 					</div>

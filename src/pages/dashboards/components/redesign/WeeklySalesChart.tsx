@@ -5,7 +5,7 @@ import useDarkMode from '@/hooks/useDarkMode';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import { toast } from 'react-toastify';
-import useDashboardTour from '@/hooks/useDashboardTour';
+import useDashboardTour from '@/hooks/tour/home/useDashboardTour';
 
 interface WeeklySalesChartProps {
 	dateRange: '7d' | '30d';
@@ -126,90 +126,89 @@ const WeeklySalesChart: React.FC<WeeklySalesChartProps> = ({
 	};
 
 	return (
-					<>
-
-		<Card className='h-full border-none shadow-sm'>
-			<CardHeader className='flex flex-wrap items-center justify-between gap-4'>
-				<CardHeaderChild>
-					<div>
-						<h3 className='text-lg font-bold text-gray-900 dark:text-gray-100'>
-							Ventas
-						</h3>
-						<p className='text-xs text-gray-500'>
-							{dateRange === '7d' ? 'Últimos 7 días' : 'Últimos 30 días'}
-						</p>
-					</div>
-				</CardHeaderChild>
-				<CardHeaderChild>
-					<div className='flex items-center gap-2' id='weekly-sales-header'>
-						<div className='flex rounded-md bg-gray-100 p-1 dark:bg-gray-800'>
-							<button
-								onClick={() => setDateRange('7d')}
-								className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
-									dateRange === '7d'
-										? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
-										: 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
-								}`}>
-								7D
-							</button>
-							<button
-								onClick={() => setDateRange('30d')}
-								className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
-									dateRange === '30d'
-										? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
-										: 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
-								}`}>
-								30D
-							</button>
+		<>
+			<Card className='h-full border-none shadow-sm'>
+				<CardHeader className='flex flex-wrap items-center justify-between gap-4'>
+					<CardHeaderChild>
+						<div>
+							<h3 className='text-lg font-bold text-gray-900 dark:text-gray-100'>
+								Ventas
+							</h3>
+							<p className='text-xs text-gray-500'>
+								{dateRange === '7d' ? 'Últimos 7 días' : 'Últimos 30 días'}
+							</p>
 						</div>
-						<Button
-							variant='outline'
-							size='sm'
-							onClick={handleDownloadXml}
-							title='Descargar XML'
-							className='dark:border-gray-700 dark:text-gray-300'>
-							<Icon icon='HeroDocumentArrowDown' className='h-4 w-4' />
-						</Button>
+					</CardHeaderChild>
+					<CardHeaderChild>
+						<div className='flex items-center gap-2' id='weekly-sales-header'>
+							<div className='flex rounded-md bg-gray-100 p-1 dark:bg-gray-800'>
+								<button
+									onClick={() => setDateRange('7d')}
+									className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
+										dateRange === '7d'
+											? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
+											: 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
+									}`}>
+									7D
+								</button>
+								<button
+									onClick={() => setDateRange('30d')}
+									className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
+										dateRange === '30d'
+											? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
+											: 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
+									}`}>
+									30D
+								</button>
+							</div>
+							<Button
+								variant='outline'
+								size='sm'
+								onClick={handleDownloadXml}
+								title='Descargar XML'
+								className='dark:border-gray-700 dark:text-gray-300'>
+								<Icon icon='HeroDocumentArrowDown' className='h-4 w-4' />
+							</Button>
+						</div>
+					</CardHeaderChild>
+				</CardHeader>
+				<CardBody>
+					<div className='mb-4'>
+						<span className='text-2xl font-bold text-emerald-600 dark:text-emerald-400'>
+							${totalAmount.toLocaleString('es-CL', { maximumFractionDigits: 0 })}
+						</span>
 					</div>
-				</CardHeaderChild>
-			</CardHeader>
-			<CardBody>
-				<div className='mb-4'>
-					<span className='text-2xl font-bold text-emerald-600 dark:text-emerald-400'>
-						${totalAmount.toLocaleString('es-CL', { maximumFractionDigits: 0 })}
+					<Suspense
+						fallback={
+							<div className='h-[280px] w-full animate-pulse rounded-lg bg-gray-100/50'></div>
+						}>
+						{typeof window !== 'undefined' && (
+							<Chart
+								options={chartOptions}
+								series={chartSeries}
+								type='area'
+								height={380}
+							/>
+						)}
+					</Suspense>
+				</CardBody>
+			</Card>
+			<div className='fixed bottom-[50vh] right-6 z-50'>
+				<button
+					type='button'
+					onClick={startTour}
+					className='group relative flex h-14 w-14 items-center justify-center rounded-full border-2 border-emerald-400/30 bg-emerald-500/15 text-emerald-400 shadow-lg backdrop-blur-sm transition-all duration-300 hover:scale-110 hover:border-emerald-400/60 hover:shadow-emerald-500/25'
+					title='Iniciar tour guiado'>
+					<div className='absolute inset-2 animate-ping rounded-full bg-emerald-500 opacity-20' />
+					<Icon icon='HeroQuestionMarkCircle' className='relative z-10 text-xl' />
+					<span
+						className='absolute -right-1 -top-1 flex h-5 w-5 animate-bounce items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white shadow-lg'
+						style={{ animationDuration: '2s' }}>
+						?
 					</span>
-				</div>
-				<Suspense
-					fallback={
-						<div className='h-[280px] w-full animate-pulse rounded-lg bg-gray-100/50'></div>
-					}>
-					{typeof window !== 'undefined' && (
-						<Chart
-							options={chartOptions}
-							series={chartSeries}
-							type='area'
-							height={380}
-						/>
-					)}
-				</Suspense>
-			</CardBody>
-		</Card>
-		<div className='fixed bottom-[50vh] right-6 z-50'>
-						<button
-							type='button'
-							onClick={startTour}
-							className='group relative flex h-14 w-14 items-center justify-center rounded-full border-2 border-emerald-400/30 bg-emerald-500/15 text-emerald-400 shadow-lg backdrop-blur-sm transition-all duration-300 hover:scale-110 hover:border-emerald-400/60 hover:shadow-emerald-500/25'
-							title='Iniciar tour guiado'>
-							<div className='absolute inset-2 animate-ping rounded-full bg-emerald-500 opacity-20' />
-							<Icon icon='HeroQuestionMarkCircle' className='relative z-10 text-xl' />
-							<span
-								className='absolute -right-1 -top-1 flex h-5 w-5 animate-bounce items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white shadow-lg'
-								style={{ animationDuration: '2s' }}>
-								?
-							</span>
-						</button>
-					</div>
-					</>
+				</button>
+			</div>
+		</>
 	);
 };
 
