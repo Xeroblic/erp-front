@@ -343,7 +343,7 @@ export const deleteUser = createAsyncThunk(
 
 export const toggleUserStatus = createAsyncThunk(
 	'usersAdmin/toggleUserStatus',
-	async ({ userId, status }: { userId: number; status: boolean }, { rejectWithValue }) => {
+	async ({ userId, status }: { userId: string; status: boolean }, { rejectWithValue }) => {
 		try {
 			const response = await ApiService.fetchData<any>({
 				url: `/users/${userId}/toggle-status`,
@@ -581,11 +581,12 @@ const usersAdminSlice = createSlice({
 				}
 
 				const { userId, is_active } = action.payload;
-				const index = state.users.findIndex((u) => u.id === userId);
+				const numericUserId = Number(userId);
+				const index = state.users.findIndex((u) => u.id === numericUserId);
 				if (index !== -1) {
 					state.users[index].is_active = is_active;
 				}
-				if (state.selectedUser?.id === userId) {
+				if (state.selectedUser?.id === numericUserId) {
 					state.selectedUser.is_active = is_active;
 				}
 			})
