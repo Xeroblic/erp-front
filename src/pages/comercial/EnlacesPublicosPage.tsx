@@ -143,7 +143,7 @@ export default function EnlacesPublicosPage() {
 			<Container>
 				<Card className='w-full'>
 					<CardBody>
-						<div className='mb-4 flex justify-end'>
+						<div className='mb-4 flex justify-end'>l
 							<Button variant='solid' color='emerald' icon='HeroPlus'>
 								Generar Nuevo Enlace
 							</Button>
