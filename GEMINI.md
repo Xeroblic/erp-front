@@ -101,4 +101,31 @@ Añadir la configuración de `pagesConfig` al array correspondiente para que apa
 7. [ ] Verificar permisos y acceso por rol.
 
 ---
-**Zentria ERP - Excelencia Técnica y Consistencia de Diseño.**
+
+## 🌐 Idioma y Localización
+**Idioma Oficial: Español (Chile).**
+Dado que el sistema es de uso interno y cerrado para Chile, **NO se utilizará internacionalización (i18n)** para nuevas funcionalidades.
+- **Textos:** Se escriben directamente en el código (Views/Hooks) en español.
+- **Consistencia:** Mantener la misma terminología en todo el ERP (ej: "RUT", "Sucursal", "Bodega").
+- **Fechas:** Formato chileno (`DD-MM-YYYY`) usando `dayjs`.
+
+## 🎨 Sistema de Temas y Personalización
+... (resto de la sección igual)
+El ERP permite personalizar la experiencia visual por usuario y sucursal.
+
+### 1. El Slice de Personalización (`personalizacionSlice.ts`)
+Gestiona:
+- `fontSize` (12px a 18px).
+- `themeColor` (Paleta de colores de Tailwind).
+- `darkMode` (Light, Dark, System).
+- `sucursal_principal`.
+
+### 2. Flujo de Persistencia
+1.  **Redux:** Estado en memoria para reactividad inmediata.
+2.  **LocalStorage:** Sincronización automática vía reducers para evitar "flashes" de estilo antes de que Redux hidrate.
+3.  **API:** Persistencia permanente en la base de datos mediante el endpoint `/user/personalization`.
+
+### 3. Configuración Dinámica (`theme.config.ts`)
+Objeto centralizador que los componentes consultan. Utiliza **Getters** para leer dinámicamente de Redux o LocalStorage, asegurando que la configuración visual esté siempre disponible incluso fuera del contexto de React si fuera necesario.
+
+---
