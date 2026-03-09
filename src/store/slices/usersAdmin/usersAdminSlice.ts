@@ -343,7 +343,7 @@ export const deleteUser = createAsyncThunk(
 
 export const toggleUserStatus = createAsyncThunk(
 	'usersAdmin/toggleUserStatus',
-	async ({ userId, status }: { userId: string; status: boolean }, { rejectWithValue }) => {
+	async ({ userId, status }: { userId: number; status: boolean }, { rejectWithValue }) => {
 		try {
 			const response = await ApiService.fetchData<any>({
 				url: `/users/${userId}/toggle-status`,

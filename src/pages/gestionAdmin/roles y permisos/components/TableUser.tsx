@@ -61,13 +61,13 @@ const TableUser: React.FC<Props> = ({
 	const handleToggleStatus = async (userId: number, currentStatus: boolean) => {
 		try {
 			const response = await dispatch(
-				toggleUserStatus({ userId: userId.toString(), status: currentStatus }),
+				toggleUserStatus({ userId: userId, status: currentStatus }),
 			);
 			if (response.meta.requestStatus === 'fulfilled') {
 				const data = await dispatch(fetchUsuariosConRolesPerms());
 				console.log(data);
 			} else {
-				toast.error(error + ' ' + 'No se a podido obtener los datos de la tabla');
+				toast.error(error + ' ' + 'No se ha podido obtener los datos de la tabla');
 			}
 			toast.success('Estado del usuario cambiado exitosamente');
 		} catch (err) {
