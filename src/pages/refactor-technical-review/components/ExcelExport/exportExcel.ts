@@ -305,7 +305,7 @@ export const exportItemsToExcel = async (
 			const dates = sourceItems
 				.map((i) => i.reviewed_at)
 				.filter((d) => d)
-				.map((d) => new Date(d!).toISOString().split('T')[0]);
+				.map((d) => d!.split('T')[0]);
 			const minReviewDate = dates.length > 0 ? dates.sort()[0] : undefined;
 
 			applyHeader(
@@ -374,7 +374,7 @@ export const exportItemsToExcel = async (
 					const dates = payload.list
 						.map((i) => i.reviewed_at)
 						.filter((d) => d)
-						.map((d) => new Date(d!).toISOString().split('T')[0]);
+						.map((d) => d!.split('T')[0]);
 					const minReviewDate = dates.length > 0 ? dates.sort()[0] : undefined;
 
 					applyHeader(

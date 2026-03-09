@@ -51,7 +51,7 @@ const PORT_FIELDS = [
 	'displayport_ports',
 	'usb_a_ports',
 	'usb_c_ports',
-	'lector_de_tarjetas_sd',
+	'sd_readers',
 	'sd_readers',
 	'rj45_ports',
 	'dvi_ports',

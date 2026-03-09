@@ -7,6 +7,8 @@ import {
 	selectItems,
 	selectItemsMeta,
 	selectItemsLoading,
+	selectBatches,
+	selectSelectedBatch,
 } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import DataTable from '@/components/ui/DataTable/DataTable';
@@ -43,6 +45,7 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 	const items = useAppSelector(selectItems);
 	const meta = useAppSelector(selectItemsMeta);
 	const loading = useAppSelector(selectItemsLoading);
+	const batch = useAppSelector(selectSelectedBatch);
 
 	const [pagination, setPagination] = useState<PaginationState>({
 		pageIndex: 0,
@@ -344,8 +347,10 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 					isOpen={isExportModalOpen}
 					setIsOpen={setIsExportModalOpen}
 					items={items}
-					exportFileName={`Lote_${batchId}`}
+					exportFileName={`Lote_${batch?.code || batchId}`}
 					onExportFetchAll={fetchAllForExport}
+					batchDate={batch?.entry_date}
+					customerName={batch?.customer_supplier?.name}
 				/>
 
 				{isPrintLabelOpen && itemToPrint && (

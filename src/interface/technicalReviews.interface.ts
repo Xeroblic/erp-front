@@ -181,7 +181,7 @@ export interface UpdateItemDetailsPayload {
 	displayport_ports?: number;
 	usb_a_ports?: number;
 	usb_c_ports?: number;
-	lector_de_tarjetas_sd?: number;
+	sd_readers?: number;
 	sd_readers?: number;
 	rj45_ports?: number;
 	has_wifi?: boolean;
