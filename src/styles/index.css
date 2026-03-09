@@ -338,6 +338,22 @@
 		driverGlow 3s ease-in-out 0.5s infinite;
 }
 
+@media (max-width: 640px) {
+	.zentria-driver-popover.driver-popover {
+		padding: 16px 20px !important;
+		max-width: 90vw !important;
+		min-width: 260px !important;
+		width: max-content !important;
+		left: 50% !important;
+		transform: translateX(-50%) !important;
+		margin: 0 !important;
+		animation: none !important; /* disabled pop-in on mobile to prevent transform conflicts */
+		box-shadow:
+			0 0 0 1px rgba(255, 255, 255, 0.06),
+			0 12px 32px rgba(0, 0, 0, 0.8) !important;
+	}
+}
+
 @keyframes driverPopIn {
 	0% {
 		opacity: 0;
@@ -349,7 +365,8 @@
 	}
 }
 @keyframes driverGlow {
-	0%, 100% {
+	0%,
+	100% {
 		box-shadow:
 			0 0 0 1px rgba(255, 255, 255, 0.06),
 			0 0 50px rgba(16, 185, 129, 0.25),
@@ -389,6 +406,14 @@
 	border-bottom: 2px solid var(--_primary);
 }
 
+@media (max-width: 640px) {
+	.zentria-driver-popover .driver-popover-title {
+		font-size: 1.2rem !important;
+		margin-bottom: 12px !important;
+		padding-bottom: 10px;
+	}
+}
+
 /* Description — clear, spacious */
 .zentria-driver-popover .driver-popover-description {
 	font-size: 1rem !important;
@@ -414,6 +439,13 @@
 }
 .zentria-driver-popover .driver-popover-description li::marker {
 	color: var(--_primary);
+}
+
+@media (max-width: 640px) {
+	.zentria-driver-popover .driver-popover-description {
+		font-size: 0.9rem !important;
+		line-height: 1.6 !important;
+	}
 }
 
 /* Progress text — pill badge */
@@ -448,6 +480,9 @@
 	font-size: 0.9rem !important;
 	font-weight: 600 !important;
 	transition: all 0.25s ease !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
 }
 .zentria-driver-popover .driver-popover-prev-btn:hover {
 	background: rgba(255, 255, 255, 0.08) !important;
@@ -470,6 +505,9 @@
 		0 4px 20px rgba(16, 185, 129, 0.4),
 		inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
 	transition: all 0.25s ease !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
 }
 .zentria-driver-popover .driver-popover-next-btn:hover {
 	filter: brightness(1.15);
@@ -498,8 +536,7 @@
 /* Highlighted element — glowing outline */
 .driver-active-element {
 	border-radius: 16px !important;
-	box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.35), 0 0 30px rgba(16, 185, 129, 0.2) !important;
+	box-shadow:
+		0 0 0 5px rgba(16, 185, 129, 0.35),
+		0 0 30px rgba(16, 185, 129, 0.2) !important;
 }
-
-
-

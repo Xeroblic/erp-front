@@ -220,11 +220,26 @@ const useDashboardTour = () => {
 		document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
 
 		const scrollDelay = setTimeout(() => {
+			const isMobile = window.innerWidth <= 640;
+
+			// Override steps configuration for mobile to ensure standard positioning
+			const finalSteps: DriveStep[] = steps.map(step => {
+				if (!isMobile) return step;
+				return {
+					...step,
+					popover: {
+						...step.popover,
+						side: 'bottom' as const,
+						align: 'center' as const
+					}
+				};
+			});
+
 			const driverObj = driver({
 				showProgress: true,
 				progressText: '{{current}} de {{total}}',
-				nextBtnText: 'Siguiente →',
-				prevBtnText: '← Anterior',
+				nextBtnText: isMobile ? '→' : 'Siguiente →',
+				prevBtnText: isMobile ? '←' : '← Anterior',
 				doneBtnText: '✓ Finalizar',
 				animate: true,
 				overlayColor: 'black',
@@ -235,7 +250,7 @@ const useDashboardTour = () => {
 				popoverClass: 'zentria-driver-popover',
 				allowClose: true,
 				disableActiveInteraction: true,
-				steps,
+				steps: finalSteps,
 				onPopoverRender: (popover) => {
 					const wrapper = popover.wrapper as HTMLElement;
 					if (wrapper) {

@@ -86,20 +86,23 @@ const TableUser: React.FC<Props> = ({
 						return (
 							<div className='flex items-center gap-3'>
 								{(() => {
-									const anyUser: any = user as any;
-									const img = anyUser?.image;
+									const typedUser = user as UserRow & {
+										image?: unknown;
+										image_url?: string;
+									};
+									const img = typedUser?.image;
 									let avatarUrl: string | null = null;
 									if (typeof img === 'string') avatarUrl = img;
 									else if (img && typeof img === 'object') {
 										avatarUrl =
-											img.md ??
-											img.sm ??
-											img.lg ??
-											img.original_url ??
-											img.url ??
+											(img as any).md ??
+											(img as any).sm ??
+											(img as any).lg ??
+											(img as any).original_url ??
+											(img as any).url ??
 											null;
 									}
-									if (!avatarUrl) avatarUrl = anyUser?.image_url ?? null;
+									if (!avatarUrl) avatarUrl = typedUser?.image_url ?? null;
 
 									if (avatarUrl) {
 										return (
@@ -204,21 +207,26 @@ const TableUser: React.FC<Props> = ({
 							<div className='flex gap-2'>
 								<PermissionGuard role={'admin'}>
 									<Tooltip text='Gestionar'>
-
 										<Button
 											variant='outline'
 											color='zinc'
 											size='xs'
 											className='bg-gray-300 hover:bg-gray-400'
 											onClick={() => handleManageUser(info.row.original.id)}>
-											<Icon icon='HeroCog6Tooth' className=' text-2xl' color={"zinc"}/>
+											<Icon
+												icon='HeroCog6Tooth'
+												className='text-2xl'
+												color={'zinc'}
+											/>
 										</Button>
 									</Tooltip>
 								</PermissionGuard>
 
 								<PermissionGuard role={'super-admin'}>
-									<Tooltip text={info.row.original.is_active ? 'Inactivar' : 'Activar'}>
-
+									<Tooltip
+										text={
+											info.row.original.is_active ? 'Inactivar' : 'Activar'
+										}>
 										<Button
 											variant='outline'
 											size='sm'
@@ -228,7 +236,11 @@ const TableUser: React.FC<Props> = ({
 													info.row.original.is_active,
 												)
 											}
-											className={info.row.original.is_active ? 'bg-red-500/20 hover:bg-red-500/10' : 'bg-green-500/30 hover:bg-green-500/10'}
+											className={
+												info.row.original.is_active
+													? 'bg-red-500/20 hover:bg-red-500/10'
+													: 'bg-green-500/30 hover:bg-green-500/10'
+											}
 											color={info.row.original.is_active ? 'red' : 'emerald'}>
 											<Icon
 												icon={
@@ -237,7 +249,9 @@ const TableUser: React.FC<Props> = ({
 														: 'DuoDoneCircle'
 												}
 												className='mr-1 text-2xl'
-												color={info.row.original.is_active ? 'red' : 'emerald'}
+												color={
+													info.row.original.is_active ? 'red' : 'emerald'
+												}
 											/>
 											{info.row.original.is_active}
 										</Button>
@@ -255,7 +269,7 @@ const TableUser: React.FC<Props> = ({
 													data: { company_id: 1 },
 												});
 												toast.success('Empresa asignada (id 1)');
-											} catch (err: any) {
+											} catch (err: unknown) {
 												toast.error('No se pudo asignar la empresa');
 											}
 										}}>
@@ -265,7 +279,7 @@ const TableUser: React.FC<Props> = ({
 							</div>
 						),
 					}),
-			].filter(Boolean) as ColumnDef<UserRow, any>[],
+			].filter(Boolean) as ColumnDef<UserRow, unknown>[],
 		[navigate, isAdmin],
 	);
 
