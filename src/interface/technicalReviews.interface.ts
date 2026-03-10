@@ -182,7 +182,6 @@ export interface UpdateItemDetailsPayload {
 	usb_a_ports?: number;
 	usb_c_ports?: number;
 	sd_readers?: number;
-	sd_readers?: number;
 	rj45_ports?: number;
 	has_wifi?: boolean;
 	has_bluetooth?: boolean;
