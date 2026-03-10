@@ -125,7 +125,7 @@ export const applyHeader = (
 	if (logoImageId !== undefined) {
 		sheet.addImage(logoImageId, {
 			tl: { col: 0, row: 0 },
-			ext: { width: 200, height: 90 },
+			ext: { width: 220, height: 120 },
 		});
 	}
 
@@ -142,7 +142,7 @@ export const applyHeader = (
 	sheet.mergeCells(2, 1, 2, 2);
 
 	if (customerName) {
-		const clientCell = sheet.getCell('A2');
+		const clientCell = sheet.getCell('G2');
 		clientCell.value = `Cliente: ${customerName}`;
 		clientCell.font = { name: 'Arial', size: 10, bold: true };
 		clientCell.alignment = { horizontal: 'left', vertical: 'middle' };

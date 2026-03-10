@@ -347,7 +347,7 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 					isOpen={isExportModalOpen}
 					setIsOpen={setIsExportModalOpen}
 					items={items}
-					exportFileName={`Lote_${batch?.code || batchId}`}
+					exportFileName={`${batch?.code || batchId}`}
 					onExportFetchAll={fetchAllForExport}
 					batchDate={batch?.entry_date}
 					customerName={batch?.customer_supplier?.name}

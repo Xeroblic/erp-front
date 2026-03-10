@@ -460,7 +460,7 @@ export const applyHeader = (
     sheet.mergeCells(3, 1, 3, finalMerge);
     sheet.mergeCells(2, 1, 2, 2);
     if (customerName) {
-        const clientCell = sheet.getCell('A2');
+        const clientCell = sheet.getCell('G2');
         clientCell.value = `Cliente: ${customerName}`;
         clientCell.font = { name: 'Arial', size: 10, bold: true };
         clientCell.alignment = { horizontal: 'left', vertical: 'middle' };
