@@ -129,3 +129,16 @@ Gestiona:
 Objeto centralizador que los componentes consultan. Utiliza **Getters** para leer dinámicamente de Redux o LocalStorage, asegurando que la configuración visual esté siempre disponible incluso fuera del contexto de React si fuera necesario.
 
 ---
+
+## 🛡️ Protocolo de Seguridad y Validación (CRÍTICO)
+
+### 1. Validación Pre-Implementación
+Antes de realizar cualquier cambio estructural o de lógica, **DEBES**:
+- **Verificar Compatibilidad:** Analizar cómo el cambio afecta al sistema actual (Rutas, Redux, Contextos).
+- **Pruebas de Concepto:** Si el cambio es mayor, realizar una pequeña prueba o script de validación.
+- **Evitar Regresiones:** Comprobar que no se estén eliminando archivos necesarios para el `HMR` (Vite) o rutas dinámicas sin actualizar sus referencias.
+
+### 2. Comando `/init` y Persistencia
+Este archivo `GEMINI.md` es la fuente de verdad para el comando `/init`. Cualquier regla nueva de arquitectura o flujo debe ser documentada aquí inmediatamente.
+
+---

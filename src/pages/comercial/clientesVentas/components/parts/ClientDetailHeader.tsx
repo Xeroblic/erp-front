@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { gsap } from 'gsap';
 import Subheader, {
 	SubheaderLeft,
 	SubheaderRight,
@@ -7,7 +8,6 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import type { ICustomerSale } from '@/interface/customerSales.interface';
 import classNames from 'classnames';
-import Icon from '@/components/icon/Icon';
 
 interface ClientDetailHeaderProps {
 	client: ICustomerSale;
@@ -30,53 +30,84 @@ const ClientDetailHeader: React.FC<ClientDetailHeaderProps> = ({
 	isEditable,
 	isSubmitting,
 }) => {
+	const scopeRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		const ctx = gsap.context(() => {
+			gsap.from('.header-animate', {
+				x: -30,
+				opacity: 0,
+				duration: 0.8,
+				stagger: 0.1,
+				ease: 'expo.out'
+			});
+
+			gsap.from('.button-animate', {
+				x: 30,
+				opacity: 0,
+				duration: 0.8,
+				stagger: 0.1,
+				ease: 'expo.out',
+				delay: 0.2
+			});
+		}, scopeRef);
+		return () => ctx.revert();
+	}, []);
+
 	return (
-		<Subheader>
-			<SubheaderLeft>
-				<div className='flex flex-col space-y-1'>
-					<Badge  className='text-3xl font-bold tracking-tight'>
-						{client.billing_company || contactName}
-					</Badge>
+		<div ref={scopeRef}>
+			<Subheader>
+				<SubheaderLeft>
+					<div className='flex flex-col space-y-1'>
+						<div className='header-animate'>
+							<Badge className='text-3xl font-bold tracking-tight'>
+								{client.billing_company || contactName}
+							</Badge>
+						</div>
 
-					<div className='flex flex-wrap items-center gap-3 text-sm'>
-						<Badge className='px-2' variant='outline' color='sky'>ID Cliente: {client.id}</Badge>
-
-						{/* <Badge color={client.is_active ? 'green' : 'red'} variant='solid'>
-							{client.is_active ? 'Activo' : 'Inactivo'}
-						</Badge> */}
-
-						<Badge className={classNames('px-2')} variant='outline' color='blue'>
-							{client.type === 'company' ? 'Empresa' : 'Persona Natural'}
-						</Badge>
+						<div className='flex flex-wrap items-center gap-3 text-sm header-animate'>
+							<Badge className='px-2' variant='outline' color='sky'>ID Cliente: {client.id}</Badge>
+							<Badge className={classNames('px-2')} variant='outline' color='blue'>
+								{client.type === 'company' ? 'Empresa' : 'Persona Natural'}
+							</Badge>
+						</div>
 					</div>
-				</div>
-			</SubheaderLeft>
+				</SubheaderLeft>
 
-			<SubheaderRight className='flex flex-wrap gap-3'>
-				<Button variant='outline' onClick={onBack}>
-					Volver
-				</Button>
+				<SubheaderRight className='flex flex-wrap gap-3'>
+					<div className='button-animate'>
+						<Button variant='outline' onClick={onBack}>
+							Volver
+						</Button>
+					</div>
 
-				{isEditable ? (
-					<>
-						<Button variant='outline' onClick={onCancelEdit} disabled={isSubmitting}>
-							Cancelar
-						</Button>
-						<Button
-							variant='solid'
-							type='button'
-							onClick={onSave}
-							isLoading={isSubmitting}>
-							Guardar cambios
-						</Button>
-					</>
-				) : (
-					<Button variant='solid' onClick={onEditToggle}>
-						Editar
-					</Button>
-				)}
-			</SubheaderRight>
-		</Subheader>
+					{isEditable ? (
+						<>
+							<div className='button-animate'>
+								<Button variant='outline' onClick={onCancelEdit} disabled={isSubmitting}>
+									Cancelar
+								</Button>
+							</div>
+							<div className='button-animate'>
+								<Button
+									variant='solid'
+									type='button'
+									onClick={onSave}
+									isLoading={isSubmitting}>
+									Guardar cambios
+								</Button>
+							</div>
+						</>
+					) : (
+						<div className='button-animate'>
+							<Button variant='solid' onClick={onEditToggle}>
+								Editar
+							</Button>
+						</div>
+					)}
+				</SubheaderRight>
+			</Subheader>
+		</div>
 	);
 };
 
