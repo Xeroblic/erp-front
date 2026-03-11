@@ -134,6 +134,13 @@
         }
         .skip-link:focus { top: 10px; }
     </style>
+    
+    <script>
+        // Oculta el splash screen antes del render en modo desarrollo (evitando parpadeos)
+        if (localStorage.getItem('zentria-is-dev-mode') === 'true' || location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+            document.write('<style>#splash-screen { display: none !important; opacity: 0 !important; visibility: hidden !important; }</style>');
+        }
+    </script>
 </head>
 
 <body>
@@ -214,6 +221,7 @@
             const loader = document.getElementById('splash-loader');
             const logoWrap = document.getElementById('splash-logo');
 
+
             // Setup strokes for drawing
             logoPaths.forEach(path => {
                 const len = path.getTotalLength();
@@ -261,6 +269,12 @@
             });
             // Start breathing after entrance
             tl.add(() => breathingTl.play());
+
+            window.removeSplashScreen = () => {
+                if (screen) screen.remove();
+                tl.kill();
+                breathingTl.kill();
+            };
 
 
             // --- 3. ORGANIC COMPLETION LOGIC ---
