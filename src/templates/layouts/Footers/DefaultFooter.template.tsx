@@ -5,10 +5,7 @@ import ApiService from '@/services/ApiService';
 import Icon from '@/components/icon/Icon';
 
 export function useVersion() {
-	const [version, setVersion] = useState(() => {
-		const isDev = import.meta.env && import.meta.env.DEV;
-		return isDev ? 'dev' : '';
-	});
+	const [version, setVersion] = useState('');
 
 	const versionEndpoint = useMemo(() => {
 		const env = import.meta.env as Record<string, string | undefined>;

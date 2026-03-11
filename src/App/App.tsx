@@ -34,15 +34,12 @@ const App = () => {
 
 	useEffect(() => {
 		if (version === 'dev') {
-			localStorage.setItem('zentria-is-dev-mode', 'true');
 			if (typeof (window as any).removeSplashScreen === 'function') {
 				(window as any).removeSplashScreen();
 			} else {
 				const screen = document.getElementById('splash-screen');
 				if (screen) screen.remove();
 			}
-		} else if (version && version !== 'dev') {
-			localStorage.removeItem('zentria-is-dev-mode');
 		}
 	}, [version]);
 
