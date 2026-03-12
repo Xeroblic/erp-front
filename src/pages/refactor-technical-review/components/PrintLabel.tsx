@@ -209,14 +209,14 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 			style={{
 				width: '80mm',
 				height: '60mm',
-				padding: '3mm 4mm', // Reducido levemente para dar más espacio vertical
+				padding: '3.5mm 4.5mm', // Un poco más de margen para evitar que los QR o textos toquen el borde
 				boxSizing: 'border-box',
 				fontFamily: 'Arial, sans-serif',
 				backgroundColor: '#fff',
 				display: 'flex',
 				flexDirection: 'column',
 				position: 'relative',
-				fontSize: '10px',
+				fontSize: '11px',
 				overflow: 'hidden', // Evitar desbordes
 			}}>
 			{/* Fila 1: Logo/Nombre (Izq) + QR Ecopc (Der) */}
@@ -225,7 +225,7 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 					display: 'flex',
 					justifyContent: 'space-between',
 					alignItems: 'center',
-					height: '12mm',
+					height: '13mm', // Aumentado ligeramente para el logo
 					marginBottom: '1mm',
 				}}>
 				<div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
@@ -242,27 +242,27 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 				</div>
 				<div
 					style={{
-						width: '10mm',
+						width: '12mm', // Ajustado a la caja del QR
 						display: 'flex',
 						justifyContent: 'flex-end',
 						alignItems: 'center',
 					}}>
-					<QRCodeSVG value='https://www.ecopc.cl' size={40} level='Q' />
+					<QRCodeSVG value='https://www.ecopc.cl' size={42} level='Q' />
 				</div>
 			</div>
 
 			{/* Fila 2: QR Serie (Izq) + Detalles (Der) */}
-			<div style={{ display: 'flex', height: '12mm', marginBottom: '1.5mm' }}>
+			<div style={{ display: 'flex', height: '13mm', marginBottom: '1.5mm' }}>
 				<div
 					style={{
-						width: '12mm',
+						width: '13mm', // Acompañando al QR
 						marginRight: '2mm',
 						display: 'flex',
 						alignItems: 'center',
 						justifyContent: 'center',
 					}}>
 					{/* QR Achicado para dar espacio vertical */}
-					<QRCodeSVG value={qrContent} size={44} level='Q' />
+					<QRCodeSVG value={qrContent} size={46} level='Q' />
 				</div>
 				<div
 					style={{
@@ -270,22 +270,22 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 						display: 'flex',
 						flexDirection: 'column',
 						justifyContent: 'center',
-						lineHeight: '1.1',
+						lineHeight: '1.15',
 					}}>
 					<div
 						style={{
 							fontWeight: 'bold',
-							fontSize: '10px',
+							fontSize: '11px', // Agrandado a 11px
 							maxHeight: '2.4em',
 							overflow: 'hidden',
 							textOverflow: 'ellipsis',
 						}}>
 						{brand} {model}
 					</div>
-					<div style={{ fontSize: '10px', fontWeight: 'bold', marginTop: '1px' }}>
+					<div style={{ fontSize: '11px', fontWeight: 'bold', marginTop: '1px' }}>
 						Categoría {grade}
 					</div>
-					<div style={{ fontSize: '10px', fontWeight: 'bold' }}>
+					<div style={{ fontSize: '11px', fontWeight: 'bold' }}>
 						N° Serie: {item.serial_number}
 					</div>
 				</div>
@@ -294,7 +294,7 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 			{/* Fila 3: Especificaciones Completas */}
 			<div
 				style={{
-					fontSize: '10px',
+					fontSize: '11px', // Agrandado a 11px
 					lineHeight: '1.2',
 					textAlign: 'justify',
 					overflow: 'hidden',
