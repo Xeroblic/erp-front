@@ -17,6 +17,7 @@ import { logout, obtenerPersonalizacionThunk, useAppDispatch, useAppSelector } f
 import AppInitializer from '../components/AppInitializer';
 import NotificationsStreamProvider from '@/notifications/NotificationsStreamProvider';
 import tokenManager from '@/services/auth/tokenManager';
+import { useVersion } from '../templates/layouts/Footers/DefaultFooter.template';
 
 const App = () => {
 	getOS();
@@ -28,6 +29,19 @@ const App = () => {
 
 	const dispatch = useAppDispatch();
 	const { isAuthenticated } = useAppSelector((state) => state.auth);
+
+	const version = useVersion();
+
+	useEffect(() => {
+		if (version === 'dev') {
+			if (typeof (window as any).removeSplashScreen === 'function') {
+				(window as any).removeSplashScreen();
+			} else {
+				const screen = document.getElementById('splash-screen');
+				if (screen) screen.remove();
+			}
+		}
+	}, [version]);
 
 	// nueva validación: solo verificamos en memoria si es válido, sin re-renderizar por cambios en Redux
 	// El tokenManager ya está sincronizado por los servicios y el Initializer.
