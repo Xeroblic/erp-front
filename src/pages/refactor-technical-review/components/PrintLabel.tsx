@@ -247,7 +247,7 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 						justifyContent: 'flex-end',
 						alignItems: 'center',
 					}}>
-					<QRCodeSVG value='https://www.ecopc.cl' size={42} level='M' />
+					<QRCodeSVG value='https://www.ecopc.cl' size={52} level='M' />
 				</div>
 			</div>
 
