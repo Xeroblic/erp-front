@@ -49,14 +49,10 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 	const renderSpecifications = () => {
 		const observations = extractValue(details.observations) || 'SIN OBSERVACIÓN';
 
-		console.log('Equipment Type:', equipmentType);
-		console.log('Battery Info:', getBatteryInfo());
-		console.log('Details completos:', details);
-
 		// Campos comunes a todos
 		let specs: React.ReactNode[] = [
 			<React.Fragment key='obs'>
-				<span style={{ fontWeight: 'bold' }}>OBSERVACIÓN: </span>
+				<span style={{ fontWeight: 'bold' }}>OBS: </span>
 				{observations}{' '}
 			</React.Fragment>,
 		];
@@ -66,8 +62,8 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 			case 'notebook':
 				specs.push(
 					<React.Fragment key='proc'>
-						<span style={{ fontWeight: 'bold' }}>PROCESADOR: </span>
-						{extractValue(details.processor) || '0'}{' '}
+						<span style={{ fontWeight: 'bold' }}>PROC: </span>
+						{extractValue(details.processor) || 'N/A'}{' '}
 					</React.Fragment>,
 					<React.Fragment key='ram'>
 						<span style={{ fontWeight: 'bold' }}>RAM: </span>
@@ -75,24 +71,24 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 						{details.ram_slots ? `(${details.ram_slots})` : ''}{' '}
 					</React.Fragment>,
 					<React.Fragment key='disk'>
-						<span style={{ fontWeight: 'bold' }}>DISCO: </span>
+						<span style={{ fontWeight: 'bold' }}>ALM: </span>
 						{extractValue(details.storage_size)}{' '}
 						{extractValue(details.storage_technology)}{' '}
 					</React.Fragment>,
 					<React.Fragment key='os'>
-						<span style={{ fontWeight: 'bold' }}>SO: </span>
-						{extractValue(details.operating_system) || '0'}{' '}
+						<span style={{ fontWeight: 'bold' }}>OS: </span>
+						{extractValue(details.operating_system) || 'N/A'}{' '}
 					</React.Fragment>,
 					<React.Fragment key='screen'>
-						<span style={{ fontWeight: 'bold' }}>PANTALLA: </span>
+						<span style={{ fontWeight: 'bold' }}>PANT: </span>
 						{extractValue(details.screen_inches)}{' '}
 					</React.Fragment>,
 					<React.Fragment key='battery'>
-						<span style={{ fontWeight: 'bold' }}>BATERÍA: </span>
+						<span style={{ fontWeight: 'bold' }}>BAT: </span>
 						{getBatteryInfo()}{' '}
 					</React.Fragment>,
 					<React.Fragment key='keyboard'>
-						<span style={{ fontWeight: 'bold' }}>TECLADO: </span>
+						<span style={{ fontWeight: 'bold' }}>TECL: </span>
 						{extractValue(details.keyboard_layout)}{' '}
 						{details.has_backlit_keyboard ? '(RETRO)' : ''}{' '}
 					</React.Fragment>,
@@ -102,8 +98,8 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 			case 'desktop':
 				specs.push(
 					<React.Fragment key='proc'>
-						<span style={{ fontWeight: 'bold' }}>PROCESADOR: </span>
-						{extractValue(details.processor) || '0'}{' '}
+						<span style={{ fontWeight: 'bold' }}>PROC: </span>
+						{extractValue(details.processor) || 'N/A'}{' '}
 					</React.Fragment>,
 					<React.Fragment key='ram'>
 						<span style={{ fontWeight: 'bold' }}>RAM: </span>
@@ -111,13 +107,13 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 						{details.ram_slots ? `(${details.ram_slots})` : ''}{' '}
 					</React.Fragment>,
 					<React.Fragment key='disk'>
-						<span style={{ fontWeight: 'bold' }}>DISCO: </span>
+						<span style={{ fontWeight: 'bold' }}>ALM: </span>
 						{extractValue(details.storage_size)}{' '}
 						{extractValue(details.storage_technology)}{' '}
 					</React.Fragment>,
 					<React.Fragment key='os'>
-						<span style={{ fontWeight: 'bold' }}>SO: </span>
-						{extractValue(details.operating_system) || '0'}{' '}
+						<span style={{ fontWeight: 'bold' }}>OS: </span>
+						{extractValue(details.operating_system) || 'N/A'}{' '}
 					</React.Fragment>,
 				);
 				break;
@@ -125,8 +121,8 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 			case 'aio':
 				specs.push(
 					<React.Fragment key='proc'>
-						<span style={{ fontWeight: 'bold' }}>PROCESADOR: </span>
-						{extractValue(details.processor) || '0'}{' '}
+						<span style={{ fontWeight: 'bold' }}>PROC: </span>
+						{extractValue(details.processor) || 'N/A'}{' '}
 					</React.Fragment>,
 					<React.Fragment key='ram'>
 						<span style={{ fontWeight: 'bold' }}>RAM: </span>
@@ -134,16 +130,16 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 						{details.ram_slots ? `(${details.ram_slots})` : ''}{' '}
 					</React.Fragment>,
 					<React.Fragment key='disk'>
-						<span style={{ fontWeight: 'bold' }}>DISCO: </span>
+						<span style={{ fontWeight: 'bold' }}>ALM: </span>
 						{extractValue(details.storage_size)}{' '}
 						{extractValue(details.storage_technology)}{' '}
 					</React.Fragment>,
 					<React.Fragment key='os'>
-						<span style={{ fontWeight: 'bold' }}>SO: </span>
-						{extractValue(details.operating_system) || '0'}{' '}
+						<span style={{ fontWeight: 'bold' }}>OS: </span>
+						{extractValue(details.operating_system) || 'N/A'}{' '}
 					</React.Fragment>,
 					<React.Fragment key='screen'>
-						<span style={{ fontWeight: 'bold' }}>PANTALLA: </span>
+						<span style={{ fontWeight: 'bold' }}>PANT: </span>
 						{extractValue(details.screen_inches)}{' '}
 					</React.Fragment>,
 				);
@@ -152,11 +148,11 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 			case 'monitor':
 				specs.push(
 					<React.Fragment key='screen'>
-						<span style={{ fontWeight: 'bold' }}>PANTALLA: </span>
+						<span style={{ fontWeight: 'bold' }}>PANT: </span>
 						{extractValue(details.screen_inches)}{' '}
 					</React.Fragment>,
 					<React.Fragment key='resolution'>
-						<span style={{ fontWeight: 'bold' }}>RESOLUCIÓN: </span>
+						<span style={{ fontWeight: 'bold' }}>RES: </span>
 						{extractValue(details.resolution) || 'N/A'}{' '}
 					</React.Fragment>,
 				);
@@ -175,8 +171,8 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 				// Por defecto mostrar todos los campos disponibles
 				specs.push(
 					<React.Fragment key='proc'>
-						<span style={{ fontWeight: 'bold' }}>PROCESADOR: </span>
-						{extractValue(details.processor) || '0'}{' '}
+						<span style={{ fontWeight: 'bold' }}>PROC: </span>
+						{extractValue(details.processor) || 'N/A'}{' '}
 					</React.Fragment>,
 					<React.Fragment key='ram'>
 						<span style={{ fontWeight: 'bold' }}>RAM: </span>
@@ -184,13 +180,13 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 						{details.ram_slots ? `(${details.ram_slots})` : ''}{' '}
 					</React.Fragment>,
 					<React.Fragment key='disk'>
-						<span style={{ fontWeight: 'bold' }}>DISCO: </span>
+						<span style={{ fontWeight: 'bold' }}>ALM: </span>
 						{extractValue(details.storage_size)}{' '}
 						{extractValue(details.storage_technology)}{' '}
 					</React.Fragment>,
 					<React.Fragment key='os'>
-						<span style={{ fontWeight: 'bold' }}>SO: </span>
-						{extractValue(details.operating_system) || '0'}{' '}
+						<span style={{ fontWeight: 'bold' }}>OS: </span>
+						{extractValue(details.operating_system) || 'N/A'}{' '}
 					</React.Fragment>,
 				);
 		}
@@ -198,7 +194,7 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 		// Cliente al final para todos
 		specs.push(
 			<React.Fragment key='client'>
-				<span style={{ fontWeight: 'bold' }}>CLIENTE: </span>
+				<span style={{ fontWeight: 'bold' }}>CLI: </span>
 				{clientName}
 			</React.Fragment>,
 		);
@@ -213,14 +209,14 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 			style={{
 				width: '80mm',
 				height: '60mm',
-				padding: '2mm',
+				padding: '3mm 4mm', // Reducido levemente para dar más espacio vertical
 				boxSizing: 'border-box',
 				fontFamily: 'Arial, sans-serif',
 				backgroundColor: '#fff',
 				display: 'flex',
 				flexDirection: 'column',
 				position: 'relative',
-				fontSize: '9pt',
+				fontSize: '10px',
 				overflow: 'hidden', // Evitar desbordes
 			}}>
 			{/* Fila 1: Logo/Nombre (Izq) + QR Ecopc (Der) */}
@@ -229,7 +225,7 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 					display: 'flex',
 					justifyContent: 'space-between',
 					alignItems: 'center',
-					height: '16mm',
+					height: '12mm',
 					marginBottom: '1mm',
 				}}>
 				<div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
@@ -237,34 +233,36 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 						src='/logo_etiqueta.png'
 						alt='ECOPC'
 						style={{
-							maxHeight: '14mm',
+							maxHeight: '13mm',
 							maxWidth: '100%',
 							objectFit: 'contain',
+							padding: '1px',
 						}}
 					/>
 				</div>
 				<div
 					style={{
-						width: '16mm',
+						width: '10mm',
 						display: 'flex',
 						justifyContent: 'flex-end',
 						alignItems: 'center',
 					}}>
-					<QRCodeSVG value='https://www.ecopc.cl' size={55} level='M' />
+					<QRCodeSVG value='https://www.ecopc.cl' size={40} level='Q' />
 				</div>
 			</div>
 
 			{/* Fila 2: QR Serie (Izq) + Detalles (Der) */}
-			<div style={{ display: 'flex', height: '18mm', marginBottom: '1mm' }}>
+			<div style={{ display: 'flex', height: '12mm', marginBottom: '1.5mm' }}>
 				<div
 					style={{
-						width: '18mm',
+						width: '12mm',
 						marginRight: '2mm',
 						display: 'flex',
 						alignItems: 'center',
 						justifyContent: 'center',
 					}}>
-					<QRCodeSVG value={qrContent} size={60} level='M' />
+					{/* QR Achicado para dar espacio vertical */}
+					<QRCodeSVG value={qrContent} size={44} level='Q' />
 				</div>
 				<div
 					style={{
@@ -272,13 +270,13 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 						display: 'flex',
 						flexDirection: 'column',
 						justifyContent: 'center',
-						lineHeight: '1.2',
+						lineHeight: '1.1',
 					}}>
 					<div
 						style={{
 							fontWeight: 'bold',
 							fontSize: '10px',
-							height: '2.4em',
+							maxHeight: '2.4em',
 							overflow: 'hidden',
 							textOverflow: 'ellipsis',
 						}}>
@@ -297,7 +295,7 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 			<div
 				style={{
 					fontSize: '10px',
-					lineHeight: '1.15',
+					lineHeight: '1.2',
 					textAlign: 'justify',
 					overflow: 'hidden',
 					flex: 1,
