@@ -79,7 +79,7 @@ const TrazabilidadSubsidiary = lazy(
 
 const ClientesVentas = lazy(() => import('@/pages/comercial/clientesVentas/ClientesVentas'));
 const ClientesVentasDetalle = lazy(
-	() => import('@/pages/comercial/clientesVentas/ClientesVentasDetalle'),
+	() => import('@/pages/comercial/clientesVentas/ClientesVentasDetalle/index'),
 );
 
 // Páginas de Catálogos

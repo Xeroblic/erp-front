@@ -134,7 +134,8 @@
         }
         .skip-link:focus { top: 10px; }
     </style>
-</head>
+    
+
 
 <body>
     <a href="#main-content" class="skip-link">Saltar al contenido</a>
@@ -214,6 +215,7 @@
             const loader = document.getElementById('splash-loader');
             const logoWrap = document.getElementById('splash-logo');
 
+
             // Setup strokes for drawing
             logoPaths.forEach(path => {
                 const len = path.getTotalLength();
@@ -261,6 +263,12 @@
             });
             // Start breathing after entrance
             tl.add(() => breathingTl.play());
+
+            window.removeSplashScreen = () => {
+                if (screen) screen.remove();
+                tl.kill();
+                breathingTl.kill();
+            };
 
 
             // --- 3. ORGANIC COMPLETION LOGIC ---

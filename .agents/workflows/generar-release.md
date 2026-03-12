@@ -4,7 +4,11 @@ description: Crear las notas de la versión basándose en los commits usando an�
 
 # 🚀 Workflow: Generar Nuevo Release de Zentria
 
+<<<<<<< HEAD
 **Objetivo:** Este agente tomará el historial de Git desde el último _tag_ (o el último mes/tiempo especificado), agrupará los commits de forma inteligente (Features, Bug Fixes, Refactors, etc.), redactará unas notas de versión sólidas y profesionales, y actualizará la documentación del proyecto sin sobreescribir el historial anterior.
+=======
+**Objetivo:** Este agente tomará el historial de Git desde el último _tag_ (o el último mes/tiempo especificado), agrupará los commits de forma inteligente (Features, Bug Fixes, Refactors, etc.), redactará unas notas de versión sólidas y profesionales, y actualizará la documentación del proyecto sin sobreescribir el historial anterior. NO UTILIZAR EMOJIS
+>>>>>>> 3f6524b1f4ae674227fbd9341f32693ec69bbec3
 
 ---
 
@@ -12,7 +16,11 @@ description: Crear las notas de la versión basándose en los commits usando an�
 
 ### Paso 1: Entender el Contexto y Obtener los Commits
 1. Ejecuta el comando para listar los tags recientes `git tag --sort=-v:refname | head -n 5` para entender qué versión es la actual y cuál fue la anterior.
+<<<<<<< HEAD
 2. Identifica en qué commit te quedaste. Si el usuario te la proporciona (ej: `v1.1.8`), debes comparar desde la última versión conocida (ej: `v1.1.7`).
+=======
+2. Identifica en qué commit te quedaste. Si el usuario te la proporciona (ej: `v1.1.7`), debes comparar desde la última versión conocida (ej: `v1.1.6`).
+>>>>>>> 3f6524b1f4ae674227fbd9341f32693ec69bbec3
 3. Ejecuta `git log <ultima_version>..HEAD --oneline --no-merges` (o simplemente los últimos commits del mes si no hay tags estrictos recientes) para obtener la materia prima.
 
 ### Paso 2: Análisis Semántico y Clasificación
@@ -26,7 +34,11 @@ Analiza los mensajes de los commits obtenidos en el paso anterior y clasifícalo
 
 ### Paso 3: Generar Archivo de Versión Individual
 Crea de manera automática el archivo de la versión actual. 
+<<<<<<< HEAD
 1.  Usa el formato de ruta: `RELEASES/vX.Y.Z.md` (ejemplo `RELEASES/v1.1.7.md`).
+=======
+1.  Usa el formato de ruta: `RELEASES/vX.Y.Z.md` (ejemplo `RELEASES/v1.1.6.md`).
+>>>>>>> 3f6524b1f4ae674227fbd9341f32693ec69bbec3
 2.  El archivo debe tener este formato:
 
 ```markdown
@@ -53,9 +65,17 @@ Crea de manera automática el archivo de la versión actual.
 ### Paso 4: Actualizar `RELEASE_NOTES.md` en la Raíz
 Debes agregar la nueva versión al inicio de `RELEASE_NOTES.md` (sin borrar el historial).
 1. Lee primero el contenido actual de `RELEASE_NOTES.md` usando la herramienta de leer archivo.
+<<<<<<< HEAD
 2. Crea el texto de la nueva versión con un Header de nivel 2 (ej. `## [v1.1.8] - YYYY-MM-DD`).
+=======
+2. Crea el texto de la nueva versión con un Header de nivel 2 (ej. `## [v1.1.7] - YYYY-MM-DD`).
+>>>>>>> 3f6524b1f4ae674227fbd9341f32693ec69bbec3
 3. Pon la lista resumida de cambios más importantes.
 4. Concatena el texto viejo de `RELEASE_NOTES.md` debajo del nuevo y guárdalo usando la herramienta de `write_to_file` con `Overwrite: true` (reemplazo completo con el nuevo texto).
 
 ### Paso 5: Finalizar
+<<<<<<< HEAD
 Usa la herramienta `notify_user` para avisarle que la Release está generada correctamente informando de los archivos actualizados y resumiendo brevemente lo que descubriste en los commits.
+=======
+Usa la herramienta `notify_user` para avisarle que la Release está generada correctamente informando de los archivos actualizados y resumiendo brevemente lo que descubriste en los commits.
+>>>>>>> 3f6524b1f4ae674227fbd9341f32693ec69bbec3

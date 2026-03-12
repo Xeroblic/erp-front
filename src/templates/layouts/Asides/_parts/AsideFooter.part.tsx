@@ -1,48 +1,51 @@
 import React from 'react';
 import Nav, {
 	NavButton,
-	NavCollapse,
 	NavItem,
 	NavSeparator,
-	NavTitle,
 } from '../../../../components/layouts/Navigation/Nav';
 import Badge from '../../../../components/ui/Badge';
 import UserTemplate from '../../User/User.template';
 import DarkModeSwitcherPart from './DarkModeSwitcher.part';
 import { AsideFooter } from '../../../../components/layouts/Aside/Aside';
+import { useCliVersion } from '../../../../hooks/useCliVersion';
+import { useVersion } from '../../Footers/DefaultFooter.template';
 
 const AsideFooterPart = () => {
+	const {
+		hasNewVersion,
+		handleDownloadCli,
+		isReady,
+		latestVersion,
+	} = useCliVersion();
+
+	const version = useVersion();
+
 	return (
 		<AsideFooter>
-			{/* <Nav>
-				<NavSeparator />
-				<NavCollapse text='Nav Collapse' to='/' icon='HeroQueueList'>
-					<NavItem text='Nav item' icon='HeroPencil' />
-					<NavItem text='With badge'>
-						<Badge variant='solid' className='leading-none'>
-							3
-						</Badge>
+			{isReady && version === 'dev' && (
+				<Nav>
+					<NavSeparator />
+					<NavItem text='Zentria Installers'>
+						{hasNewVersion && (
+							<Badge
+								variant='solid'
+								color='emerald'
+								className='animate-pulse leading-none ml-2 text-[0.65rem]'>
+								Nueva versión
+							</Badge>
+						)}
+						
+						{latestVersion && (
+							<NavButton
+								icon='HeroCloudArrowDown'
+								title={`CLI ${latestVersion}`}
+								onClick={handleDownloadCli}
+							/>
+						)}
 					</NavItem>
-					<NavItem text='With button'>
-						<NavButton icon='HeroRocketLaunch' title='New' />
-					</NavItem>
-					<NavItem text='With badge & button'>
-						<Badge variant='solid' className='leading-none'>
-							3
-						</Badge>
-						<NavButton icon='HeroRocketLaunch' title='New' />
-					</NavItem>
-					<NavTitle>Navigation Title</NavTitle>
-					<NavCollapse text='Nav Level 2' to='/' icon='HeroQueueList'>
-						<NavItem text='Nav Item' />
-						<NavCollapse text='Nav Level 3' to='/' icon='HeroQueueList'>
-							<NavItem text='Nav Item' />
-						</NavCollapse>
-						<NavItem text='Nav Item' />
-					</NavCollapse>
-				</NavCollapse>
-			</Nav> */}
-
+				</Nav>
+			)}
 			<UserTemplate />
 			<DarkModeSwitcherPart />
 		</AsideFooter>
