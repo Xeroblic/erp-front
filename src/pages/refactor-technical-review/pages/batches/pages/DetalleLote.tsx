@@ -62,10 +62,14 @@ const DetalleLote: React.FC = () => {
 		);
 	}
 
+	const formattedBatchCode = hookProps.batch.code
+		? hookProps.batch.code.replace(/(\d{4})-(\d{2})-(\d{2})/g, '$3-$2-$1')
+		: '';
+
 	return (
 		<PageWrapper
 			name='detalle-lote'
-			title={`Lote ${hookProps.batch.code}`}
+			title={`Lote ${formattedBatchCode}`}
 			isProtectedRoute={true}>
 			<Subheader>
 				<SubheaderLeft>
@@ -77,7 +81,7 @@ const DetalleLote: React.FC = () => {
 					<div className='flex flex-col gap-2'>
 						<div className='flex flex-wrap items-center gap-3'>
 							<h1 className='text-xl font-bold leading-tight text-zinc-900 dark:text-zinc-100 md:text-2xl'>
-								Lote {hookProps.batch.code}
+								Lote {formattedBatchCode}
 							</h1>
 							<Badge variant='solid' className='px-1' color={hookProps.statusColor()}>
 								{BATCH_STATUS_LABELS[

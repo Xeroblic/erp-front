@@ -128,19 +128,20 @@ export const applyHeader = (
 			ext: { width: 220, height: 120 },
 		});
 	}
-
+	
 	const logoRow = sheet.addRow([]);
 	logoRow.height = 60;
 
-	const titleRow = sheet.addRow([sheetTitle]);
+	const formattedSheetTitle = sheetTitle.replace(/(\d{4})-(\d{2})-(\d{2})/g, '$3-$2-$1');
+	const titleRow = sheet.addRow([formattedSheetTitle]);
 	titleRow.font = { bold: true, size: 16, color: { argb: '1F4E78' } };
 	titleRow.alignment = { horizontal: 'center' };
-
+	
 	const maxMerge = Math.min(headers.length, 4);
 	const finalMerge = Math.max(maxMerge, 4);
 	sheet.mergeCells(3, 1, 3, finalMerge);
 	sheet.mergeCells(2, 1, 2, 2);
-
+	
 	if (customerName) {
 		const clientCell = sheet.getCell('G2');
 		clientCell.value = `Cliente: ${customerName}`;
@@ -150,16 +151,20 @@ export const applyHeader = (
 
 	sheet.mergeCells(2, 3, 2, 6);
 	const revisionNameCell = sheet.getCell('C2');
-	const revisionLabel =
-		revisionName || (sheetTitle.includes('Revisión') ? sheetTitle.split('-')[0].trim() : sheetTitle);
+	let revisionLabel =
+	revisionName || (sheetTitle.includes('Revisión') ? sheetTitle.split('-')[0].trim() : sheetTitle);
+	
+	// Format YYYY-MM-DD dates to DD-MM-YYYY anywhere in the string
+	revisionLabel = revisionLabel.replace(/(\d{4})-(\d{2})-(\d{2})/g, '$3-$2-$1');
+	
 	revisionNameCell.value = revisionLabel;
 	revisionNameCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: '1F4E78' } };
 	revisionNameCell.alignment = { horizontal: 'center', vertical: 'middle' };
-
+	
 	const today = new Date();
-	const receptionDate = batchDate ? new Date(batchDate + 'T00:00:00') : today;
-	const finalReviewDate = reviewDate ? new Date(reviewDate + 'T00:00:00') : today;
-
+	const rDate = batchDate ? new Date(batchDate + 'T00:00:00') : today;
+	const fDate = reviewDate ? new Date(reviewDate + 'T00:00:00') : today;
+	
 	const dateLabelStyle = {
 		font: { name: 'Arial', size: 10, bold: true },
 		alignment: { horizontal: 'left' },
@@ -167,19 +172,28 @@ export const applyHeader = (
 	const dateValueStyle = {
 		font: { name: 'Arial', size: 10, bold: false },
 		alignment: { horizontal: 'left' },
-		numFmt: 'dd-mm-yyyy',
 	};
-
+	
 	const cellI2 = sheet.getCell('I2');
 	cellI2.value = 'Fecha Recepción:';
 	cellI2.font = dateLabelStyle.font as Partial<ExcelJS.Font>;
 	cellI2.alignment = dateLabelStyle.alignment as Partial<ExcelJS.Alignment>;
 
+
+	const formatDateToDDMMYYYY = (d: Date) => {
+		const dd = String(d.getDate()).padStart(2, '0');
+		const mm = String(d.getMonth() + 1).padStart(2, '0');
+		const yyyy = d.getFullYear();
+		return `${dd}-${mm}-${yyyy}`;
+	};
+
+	const receptionDateStr = formatDateToDDMMYYYY(rDate);
+	const finalReviewDateStr = formatDateToDDMMYYYY(fDate);
+
 	const cellJ2 = sheet.getCell('J2');
-	cellJ2.value = receptionDate;
+	cellJ2.value = receptionDateStr;
 	cellJ2.font = dateValueStyle.font as Partial<ExcelJS.Font>;
 	cellJ2.alignment = dateValueStyle.alignment as Partial<ExcelJS.Alignment>;
-	cellJ2.numFmt = dateValueStyle.numFmt;
 
 	const cellI3 = sheet.getCell('I3');
 	cellI3.value = 'Fecha Revisión:';
@@ -187,10 +201,9 @@ export const applyHeader = (
 	cellI3.alignment = dateLabelStyle.alignment as Partial<ExcelJS.Alignment>;
 
 	const cellJ3 = sheet.getCell('J3');
-	cellJ3.value = finalReviewDate;
+	cellJ3.value = finalReviewDateStr;
 	cellJ3.font = dateValueStyle.font as Partial<ExcelJS.Font>;
 	cellJ3.alignment = dateValueStyle.alignment as Partial<ExcelJS.Alignment>;
-	cellJ3.numFmt = dateValueStyle.numFmt;
 
 	sheet.addRow([]);
 
@@ -265,11 +278,14 @@ export const setColumnWidths = (sheet: ExcelJS.Worksheet, headers: string[]) => 
 export const exportItemsToExcel = async (
 	items: IItem[],
 	exportMode: 'serials' | 'details',
-	exportFileName: string,
+	rawExportFileName: string,
 	onExportFetchAll?: (includeDetails?: boolean) => Promise<IItem[]>,
 	batchDate?: string,
 	customerName?: string,
 ) => {
+	// Force YYYY-MM-DD to DD-MM-YYYY format in the filename from the start
+	const exportFileName = rawExportFileName.replace(/(\d{4})-(\d{2})-(\d{2})/g, '$3-$2-$1');
+
 	if (!items.length) {
 		toast.info('No hay datos para exportar');
 		return;

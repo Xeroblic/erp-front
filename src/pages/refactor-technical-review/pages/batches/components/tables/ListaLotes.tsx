@@ -57,7 +57,10 @@ export function ListaLotes() {
 		{
 			accessorKey: 'code',
 			header: 'Nombre de la revision',
-			cell: (info) => info.getValue() || 'N/A',
+			cell: (info) => {
+				const val = info.getValue() as string;
+				return val ? val.replace(/(\d{4})-(\d{2})-(\d{2})/g, '$3-$2-$1') : 'N/A';
+			},
 		},
 		{
 			accessorKey: 'warehouse.name',
