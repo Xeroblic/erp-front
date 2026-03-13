@@ -71,7 +71,7 @@ const resolveColumnValue = (item: IItem, key: string): string => {
 		case '__customer':
 			return (item as any).customer_supplier?.name ?? '';
 		case '__supplier':
-			return (item as any).customer_supplier?.name ?? '';
+			return (item as any).supplier?.name ?? '';
 		case '__barcode':
 			return item.serial_number ? `*${item.serial_number}*` : '';
 		case '__created_by':
