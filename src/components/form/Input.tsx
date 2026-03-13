@@ -45,6 +45,7 @@ const Input = forwardRef<HTMLInputElement, IInputProps>((props, ref) => {
 		invalidFeedback,
 		validFeedback, // props personalizados
 		isValidMessage, // props personalizados
+		children, // Excluir children explícitamente
 		...rest
 	} = props;
 
@@ -55,6 +56,7 @@ const Input = forwardRef<HTMLInputElement, IInputProps>((props, ref) => {
 	delete (inputProps as any).invalidFeedback;
 	delete (inputProps as any).isValid;
 	delete (inputProps as any).isTouched;
+	delete (inputProps as any).children;
 
 	const inputVariants: { [key in TInputVariants]: { general: string; validation: string } } = {
 		solid: {

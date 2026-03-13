@@ -13,6 +13,7 @@ import {
 } from '../../../constants/desktop/desktop.options';
 // Reusing ProcessorSelector
 import { ProcessorSelector } from '../../../ui/selectors/ProcessorSelector';
+import InputUnitSelector from '../../../ui/InputUnitSelector';
 
 const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 	control,
@@ -78,12 +79,12 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 							name='ram_size'
 							control={control}
 							render={({ field }) => (
-								<Input
-									{...field}
+								<InputUnitSelector
 									value={field.value || ''}
+									onChange={field.onChange}
 									placeholder={DESKTOP_PLACEHOLDERS.ram_size}
 									disabled={readOnly}
-									className={errors.ram_size ? 'border-red-500' : ''}
+									isValid={!errors.ram_size}
 								/>
 							)}
 						/>

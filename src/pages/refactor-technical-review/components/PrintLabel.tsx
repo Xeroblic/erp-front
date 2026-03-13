@@ -209,7 +209,7 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 			style={{
 				width: '80mm',
 				height: '60mm',
-				padding: '3.5mm 4.5mm', // Un poco más de margen para evitar que los QR o textos toquen el borde
+				padding: '3mm 4mm',
 				boxSizing: 'border-box',
 				fontFamily: 'Arial, sans-serif',
 				backgroundColor: '#fff',

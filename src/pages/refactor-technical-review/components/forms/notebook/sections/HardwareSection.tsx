@@ -11,6 +11,8 @@ import {
 	RAM_TYPE_OPTIONS,
 } from '../../../constants/notebook/notebook.options';
 import { ProcessorSelector } from '../../../ui/selectors/ProcessorSelector';
+import SelectReact from '@/components/form/SelectReact';
+import InputUnitSelector from '../../../ui/InputUnitSelector';
 
 const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	control,
@@ -76,18 +78,21 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 							name='ram_size'
 							control={control}
 							render={({ field }) => (
-								<Input
-									{...field}
+								<InputUnitSelector
 									value={field.value || ''}
+									onChange={field.onChange}
 									placeholder={NOTEBOOK_PLACEHOLDERS.ram_size}
 									disabled={readOnly}
-									className={errors.ram_size ? 'border-red-500' : ''}
+									isValid={!errors.ram_size}
 								/>
 							)}
 						/>
 						{errors.ram_size && (
 							<p className='mt-1 text-xs text-red-500'>{errors.ram_size.message}</p>
 						)}
+					</div>
+					<div>
+						
 					</div>
 
 					{/* RAM Slots */}

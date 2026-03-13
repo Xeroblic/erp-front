@@ -9,6 +9,7 @@ import { STORAGE_TECHNOLOGY_OPTIONS } from '../../../constants/aio/aio.options';
 
 import { ProcessorSelector } from '../../../ui/selectors/ProcessorSelector';
 import Icon from '@/components/icon/Icon';
+import InputUnitSelector from '../../../ui/InputUnitSelector';
 
 interface SelectionCardProps {
 	label: string;
@@ -101,12 +102,12 @@ const AioHardwareSection: React.FC<FormSectionProps<AioFormData>> = ({
 						name='ram_size'
 						control={control}
 						render={({ field }) => (
-							<Input
-								{...field}
+							<InputUnitSelector
 								value={field.value || ''}
+								onChange={field.onChange}
 								placeholder={AIO_PLACEHOLDERS.ram_size}
 								disabled={readOnly}
-								className={errors.ram_size ? 'border-red-500' : ''}
+								isValid={!errors.ram_size}
 							/>
 						)}
 					/>
