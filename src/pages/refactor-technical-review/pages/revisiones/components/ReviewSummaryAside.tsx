@@ -101,31 +101,40 @@ const ReviewSummaryAside: React.FC<ReviewSummaryAsideProps> = ({
 
 	return (
 		<HiddenAside
-			className='rounded-l-xl bg-zinc-500 backdrop-blur-sm dark:bg-zinc-900'
+			className='rounded-l-2xl bg-zinc-700/70 shadow-2xl backdrop-blur-md dark:bg-zinc-900/95 dark:shadow-black/50'
 			asideWidth='w-96 md:w-128'>
-			<div className='space-y-6'>
-				<h2 className='text-2xl font-bold text-white'>Resumen del Equipo</h2>
-				<div className='space-y-4'>
+			<div className='flex h-full flex-col'>
+				{/* Title */}
+				<div className='flex-shrink-0 px-6 py-6'>
+					<h2 className='text-2xl font-bold tracking-tight text-white drop-shadow-sm'>
+						Resumen del Equipo
+					</h2>
+				</div>
+
+				{/* Cards Container */}
+				<div className='flex-grow overflow-y-auto px-6 pb-2 space-y-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/20 hover:[&::-webkit-scrollbar-thumb]:bg-white/30'>
 					{/* Identificación */}
-					<div className='rounded-xl bg-white/10 p-4 backdrop-blur-sm'>
-						<h3 className='mb-2 text-lg font-semibold text-white'>Identificación</h3>
-						<div className='space-y-2 text-sm text-white/80'>
-							<div className='flex justify-between pb-1'>
-								<span className='opacity-70'>S/N:</span>
-								<span className='font-mono font-bold'>
+					<div className='rounded-xl bg-white/10 p-4 shadow-inner backdrop-blur-sm'>
+						<h3 className='mb-3 text-lg font-bold tracking-wide text-white'>
+							Identificación
+						</h3>
+						<div className='space-y-2'>
+							<div className='flex items-center justify-between gap-4'>
+								<span className='text-sm font-medium text-white/70'>S/N:</span>
+								<span className='font-mono text-sm font-bold uppercase text-white'>
 									{translateValue(serialNumber || item?.serial_number) || '-'}
 								</span>
 							</div>
-							<div className='flex justify-between pb-1'>
-								<span className='opacity-70'>Tipo:</span>
-								<span className='capitalize'>
+							<div className='flex items-center justify-between gap-4'>
+								<span className='text-sm font-medium text-white/70'>Tipo:</span>
+								<span className='text-sm font-bold capitalize text-white'>
 									{translateValue(equipmentType) || '-'}
 								</span>
 							</div>
-							<div className='flex justify-between pb-1'>
-								<span className='opacity-70'>Estado:</span>
-								<span className='font-semibold uppercase'>
-									{translateValue(normalizedReviewStatus) || 'Pendiente'}
+							<div className='flex items-center justify-between gap-4'>
+								<span className='text-sm font-medium text-white/70'>Estado:</span>
+								<span className='text-sm font-extrabold uppercase tracking-wide text-white'>
+									{translateValue(normalizedReviewStatus) || 'EN REVISIÓN'}
 								</span>
 							</div>
 						</div>
@@ -133,19 +142,25 @@ const ReviewSummaryAside: React.FC<ReviewSummaryAsideProps> = ({
 
 					{/* Resultado (grado + confianza) */}
 					{hasGrade && (
-						<div className='rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm'>
-							<h3 className='mb-2 text-lg font-semibold text-white'>Resultado</h3>
+						<div className='rounded-xl bg-white/10 p-4 shadow-inner backdrop-blur-sm'>
+							<h3 className='mb-3 text-lg font-bold tracking-wide text-white'>
+								Resultado
+							</h3>
 							<div className='flex items-center justify-between'>
 								<div>
-									<p className='text-xs uppercase text-white/60'>Grado</p>
-									<p className='text-4xl font-black text-white'>
+									<p className='text-xs font-semibold uppercase tracking-wider text-white/60'>
+										Grado
+									</p>
+									<p className='text-3xl font-black text-white drop-shadow-md'>
 										{translateValue(displayGrade) || '-'}
 									</p>
 								</div>
 								{confidence !== null && (
 									<div className='text-right'>
-										<p className='text-xs uppercase text-white/60'>Confianza</p>
-										<p className='text-xl font-bold text-white'>
+										<p className='text-xs font-semibold uppercase tracking-wider text-white/60'>
+											Confianza
+										</p>
+										<p className='text-xl font-bold text-emerald-400 drop-shadow-sm'>
 											{Math.round(confidence)}%
 										</p>
 									</div>
@@ -156,29 +171,37 @@ const ReviewSummaryAside: React.FC<ReviewSummaryAsideProps> = ({
 
 					{/* Información de Revisión */}
 					{(reviewerName || reviewDuration) && (
-						<div className='rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm'>
-							<h3 className='mb-2 text-lg font-semibold text-white'>
+						<div className='rounded-xl bg-white/10 p-4 shadow-inner backdrop-blur-sm'>
+							<h3 className='mb-3 text-lg font-bold tracking-wide text-white'>
 								Información de Revisión
 							</h3>
-							<div className='space-y-2 text-sm text-white/80'>
+							<div className='space-y-2'>
 								{reviewerName && (
-									<div className='flex justify-between pb-1'>
-										<span className='opacity-70'>Técnico:</span>
-										<span className='font-medium'>{reviewerName}</span>
+									<div className='flex items-center justify-between gap-4'>
+										<span className='text-sm font-medium text-white/70'>
+											Técnico:
+										</span>
+										<span className='text-right text-sm font-bold text-white'>
+											{reviewerName}
+										</span>
 									</div>
 								)}
 								{reviewDuration && (
-									<div className='flex justify-between pb-1'>
-										<span className='opacity-70'>Tiempo de Revisión:</span>
-										<span className='font-bold text-green-400'>
+									<div className='flex items-center justify-between gap-4'>
+										<span className='text-sm font-medium text-white/70'>
+											Tiempo de Revisión:
+										</span>
+										<span className='text-sm font-bold text-green-400'>
 											{reviewDuration}
 										</span>
 									</div>
 								)}
 								{item?.review_started_at && (
-									<div className='flex justify-between pb-1'>
-										<span className='opacity-70'>Inicio:</span>
-										<span className='font-medium'>
+									<div className='flex items-center justify-between gap-4'>
+										<span className='text-sm font-medium text-white/70'>
+											Inicio:
+										</span>
+										<span className='text-sm font-bold lowercase text-white'>
 											{new Date(item.review_started_at).toLocaleTimeString(
 												'es-CL',
 												{
@@ -190,9 +213,11 @@ const ReviewSummaryAside: React.FC<ReviewSummaryAsideProps> = ({
 									</div>
 								)}
 								{item?.reviewed_at && (
-									<div className='flex justify-between pb-1'>
-										<span className='opacity-70'>Finalización:</span>
-										<span className='font-medium'>
+									<div className='flex items-center justify-between gap-4'>
+										<span className='text-sm font-medium text-white/70'>
+											Finalización:
+										</span>
+										<span className='text-sm font-bold lowercase text-white'>
 											{new Date(item.reviewed_at).toLocaleTimeString(
 												'es-CL',
 												{
@@ -209,30 +234,37 @@ const ReviewSummaryAside: React.FC<ReviewSummaryAsideProps> = ({
 
 					{/* Detalles Técnicos */}
 					{hasDetails && (
-						<div className='rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm'>
-							<h3 className='mb-2 text-lg font-semibold text-white'>Detalles</h3>
-							<div className='max-h-80 space-y-1 overflow-y-auto pr-2 text-xs text-white/80'>
+						<div className='flex flex-col rounded-xl bg-white/10 shadow-inner backdrop-blur-sm'>
+							<div className='px-4 pt-4 pb-2'>
+								<h3 className='text-lg font-bold tracking-wide text-white'>
+									Detalles
+								</h3>
+							</div>
+							<div className='max-h-[35vh] overflow-y-auto px-4 pb-4 space-y-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/20 hover:[&::-webkit-scrollbar-thumb]:bg-white/30'>
 								{detailEntries.map(([key, value]) => (
-									<div key={key} className='flex justify-between gap-4 py-1'>
-										<span className='capitalize opacity-70'>
+									<div
+										key={key}
+										className='flex items-start justify-between gap-4 py-0.5'>
+										<span className='text-sm font-medium capitalize text-white/70 shrink-0'>
 											{translateField(key, equipmentType)}
 										</span>
-										<span className='text-right font-medium'>
-											{translateValue(value)}
+										<span className='text-right text-sm font-bold text-white whitespace-normal break-words'>
+											{translateValue(value) || '-'}
 										</span>
 									</div>
 								))}
 							</div>
 						</div>
 					)}
+				</div>
 
-					{/* Botón Copiar */}
+				{/* Copy Button */}
+				<div className='flex-shrink-0 px-6 py-6'>
 					<Button
 						variant='solid'
-						color='neutral'
-						className='w-full'
+						className='w-full justify-center !bg-white/10 hover:!bg-white/20 text-white font-bold py-2.5 text-base shadow-lg transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 border-0 rounded-xl'
 						onClick={handleCopyInfo}>
-						<Icon icon='HeroClipboardDocument' className='mr-2 h-4 w-4' />
+						<Icon icon='HeroClipboardDocument' className='mr-2 h-5 w-5' />
 						Copiar Información
 					</Button>
 				</div>
