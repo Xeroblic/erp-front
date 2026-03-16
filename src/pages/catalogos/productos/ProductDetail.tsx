@@ -126,9 +126,7 @@ const ProductDetail: React.FC = () => {
 		return Number.isFinite(parsed) ? parsed : null;
 	}, [location.search]);
 	const mode: ProductsViewMode =
-		modeFromQuery ??
-		viewModeFromState ??
-		(effectiveSubsidiaryId ? 'subsidiaries' : 'branches');
+		modeFromQuery ?? viewModeFromState ?? (effectiveSubsidiaryId ? 'subsidiaries' : 'branches');
 	const subsidiaryId =
 		subsidiaryIdFromQuery ?? subsidiaryIdFromState ?? effectiveSubsidiaryId ?? null;
 	const initialBranchId = Number.isFinite(branchIdFromState)

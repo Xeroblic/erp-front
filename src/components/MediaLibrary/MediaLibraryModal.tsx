@@ -2,10 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import Button from '../ui/Button';
 import { useAppDispatch } from '@/store';
-import {
-	fetchLibraryMedia,
-	type ProductEntityParam,
-} from '@/store/slices/products/productsSlice';
+import { fetchLibraryMedia, type ProductEntityParam } from '@/store/slices/products/productsSlice';
 import { ensureAbsoluteUrl } from '@/components/helper/brand.helper';
 
 interface Props {
@@ -25,9 +22,7 @@ const MediaLibraryModal: React.FC<Props> = ({ open, entityParam, entityId, onClo
 		if (!open) return;
 		(async () => {
 			try {
-				const res = await dispatch(
-					fetchLibraryMedia({ entityParam, entityId }),
-				).unwrap();
+				const res = await dispatch(fetchLibraryMedia({ entityParam, entityId })).unwrap();
 				setItems(res.data ?? []);
 			} catch (e) {
 				// swallow for now; slice has error state

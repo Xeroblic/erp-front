@@ -56,7 +56,7 @@ const Productos: React.FC = () => {
 		}
 		const candidatePk =
 			typeof currentUser === 'object' && currentUser !== null
-				? ((currentUser as unknown) as Record<string, unknown>).pk
+				? (currentUser as unknown as Record<string, unknown>).pk
 				: null;
 		if (typeof candidatePk === 'number' && Number.isFinite(candidatePk)) {
 			return candidatePk;
@@ -134,7 +134,7 @@ const Productos: React.FC = () => {
 		if (typeof currentBranch.name === 'string' && currentBranch.name.trim().length > 0) {
 			return currentBranch.name;
 		}
-		const branchRecord = (currentBranch as unknown) as Record<string, unknown>;
+		const branchRecord = currentBranch as unknown as Record<string, unknown>;
 		const branchNameSnake = branchRecord.branch_name;
 		if (typeof branchNameSnake === 'string' && branchNameSnake.trim().length > 0) {
 			return branchNameSnake;
@@ -332,7 +332,11 @@ const Productos: React.FC = () => {
 
 	return (
 		<PageWrapper name='catalog-products'>
-			<Modal isOpen={viewModeModalOpen} setIsOpen={() => undefined} isStaticBackdrop isCentered={true}>
+			<Modal
+				isOpen={viewModeModalOpen}
+				setIsOpen={() => undefined}
+				isStaticBackdrop
+				isCentered={true}>
 				<ModalHeader>
 					<div className='flex w-full items-center gap-2 text-xl font-semibold text-zinc-900 dark:text-zinc-100'>
 						<Icon icon='HeroEye' className='size-5 text-blue-500' />
