@@ -2,17 +2,21 @@ import React, { useEffect, useState } from 'react';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import Button from '../ui/Button';
 import { useAppDispatch } from '@/store';
-import { fetchBranchLibraryMedia } from '@/store/slices/products/productsSlice';
+import {
+	fetchLibraryMedia,
+	type ProductEntityParam,
+} from '@/store/slices/products/productsSlice';
 import { ensureAbsoluteUrl } from '@/components/helper/brand.helper';
 
 interface Props {
 	open: boolean;
-	branchId: number;
+	entityParam: ProductEntityParam;
+	entityId: number;
 	onClose: () => void;
 	onSelect: (media: any[]) => void;
 }
 
-const MediaLibraryModal: React.FC<Props> = ({ open, branchId, onClose, onSelect }) => {
+const MediaLibraryModal: React.FC<Props> = ({ open, entityParam, entityId, onClose, onSelect }) => {
 	const dispatch = useAppDispatch();
 	const [items, setItems] = useState<any[]>([]);
 	const [selected, setSelected] = useState<Record<string, boolean>>({});
@@ -21,13 +25,15 @@ const MediaLibraryModal: React.FC<Props> = ({ open, branchId, onClose, onSelect 
 		if (!open) return;
 		(async () => {
 			try {
-				const res = await dispatch(fetchBranchLibraryMedia({ branchId })).unwrap();
+				const res = await dispatch(
+					fetchLibraryMedia({ entityParam, entityId }),
+				).unwrap();
 				setItems(res.data ?? []);
 			} catch (e) {
 				// swallow for now; slice has error state
 			}
 		})();
-	}, [open, branchId, dispatch]);
+	}, [open, entityParam, entityId, dispatch]);
 
 	const toggle = (id: string) => {
 		setSelected((s) => ({ ...s, [id]: !s[id] }));

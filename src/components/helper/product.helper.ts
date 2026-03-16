@@ -1,9 +1,14 @@
 import type {
 	CreateProductPayload,
+	EquipmentGradeLiteral,
 	IProduct,
 	IProductCategorySummary,
 	IProductChild,
+	IProductGalleryImage,
+	IProductImage,
+	IProductParentSummary,
 	ProductFilters,
+	ProductStatus,
 	ProductsStateStats,
 	UpdateProductPayload,
 } from '@/interface/product.interface';
@@ -32,6 +37,17 @@ const toBoolean = (value: unknown, fallback = false): boolean => {
 	return fallback;
 };
 
+type UnknownRecord = Record<string, unknown>;
+
+const asRecord = (value: unknown): UnknownRecord | undefined => {
+	if (value && typeof value === 'object' && !Array.isArray(value)) {
+		return value as UnknownRecord;
+	}
+	return undefined;
+};
+
+const asArray = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
+
 const normalizeCategories = (raw: unknown): IProductCategorySummary[] => {
 	if (!Array.isArray(raw)) return [];
 
@@ -58,15 +74,21 @@ const normalizeCategories = (raw: unknown): IProductCategorySummary[] => {
 const normalizeChildren = (raw: unknown): IProductChild[] => {
 	const toChildArray = (source: unknown): unknown[] => {
 		if (Array.isArray(source)) return source;
-		if (source && typeof source === 'object') {
-			const { data } = source as any;
+		const sourceRecord = asRecord(source);
+		if (sourceRecord) {
+			const data = sourceRecord.data;
 			if (Array.isArray(data)) return data;
 		}
 		return [];
 	};
 
-	const rawAny = raw as any;
-	const sources: unknown[] = [raw, rawAny?.data, rawAny?.children, rawAny?.attributes];
+	const rawRecord = asRecord(raw);
+	const sources: unknown[] = [
+		raw,
+		rawRecord?.data,
+		rawRecord?.children,
+		rawRecord?.attributes,
+	];
 
 	for (const source of sources) {
 		if (!source) continue;
@@ -108,29 +130,35 @@ const normalizeChildren = (raw: unknown): IProductChild[] => {
 	return [];
 };
 
-export const normalizeProduct = (raw: any): IProduct => {
+export const normalizeProduct = (raw: unknown): IProduct => {
 	if (!raw || typeof raw !== 'object') {
 		throw new Error('Invalid product payload');
 	}
 
 	const safe = raw as Record<string, unknown>;
 	const price = toNullableNumber(safe.price) ?? 0;
+	const branchRecord = asRecord(safe.branch);
+	const brandRecord = asRecord(safe.brand);
+	const parentRecord = asRecord(safe.parent);
 
 	return {
 		id: Number(safe.id ?? 0),
 		parent_product_id: toNullableNumber(safe.parent_product_id),
-		product_status: (safe.product_status ?? 'pending') as any,
-		branch_id: Number(safe.branch_id ?? (safe.branch as any)?.id ?? 0),
+		is_parent: toBoolean(safe.is_parent),
+		is_child: toBoolean(safe.is_child),
+		product_status: (safe.product_status ?? 'pending') as ProductStatus,
+		branch_id: Number(safe.branch_id ?? branchRecord?.id ?? 0),
 		sku: String(safe.sku ?? ''),
 		commercial_sku: (safe.commercial_sku ?? null) as string | null,
 		barcode: (safe.barcode ?? null) as string | null,
 		name: String(safe.name ?? ''),
+		grade: toNullableString(safe.grade) as EquipmentGradeLiteral | null,
 		brand_id: toNullableNumber(safe.brand_id),
-		brand: safe.brand
+		brand: brandRecord
 			? {
-				id: Number((safe.brand as any).id ?? 0),
-				name: String((safe.brand as any).name ?? ''),
-				slug: ((safe.brand as any).slug ?? null) as string | null | undefined,
+				id: Number(brandRecord.id ?? 0),
+				name: String(brandRecord.name ?? ''),
+				slug: (brandRecord.slug ?? null) as string | null | undefined,
 			}
 			: null,
 		product_type: (safe.product_type ?? safe.type ?? null) as string | null,
@@ -140,31 +168,49 @@ export const normalizeProduct = (raw: any): IProduct => {
 		warranty_months: toNullableNumber(safe.warranty_months),
 		cost: toNullableNumber(safe.cost),
 		price,
+		price_override: toNullableNumber(safe.price_override),
+		offer_price_override: toNullableNumber(safe.offer_price_override),
+		global_price: toNullableNumber(safe.global_price),
 		offer_price: toNullableNumber(safe.offer_price),
 		stock: toNullableNumber(safe.stock),
+		stock_by_status:
+			safe.stock_by_status && typeof safe.stock_by_status === 'object'
+				? (safe.stock_by_status as Record<string, number>)
+				: null,
 		attributes_json:
 			typeof safe.attributes_json === 'object' && safe.attributes_json !== null
 				? (safe.attributes_json as Record<string, unknown>)
 				: null,
+		marketplace_external_ids:
+			typeof safe.marketplace_external_ids === 'object' &&
+				safe.marketplace_external_ids !== null
+				? (safe.marketplace_external_ids as Record<string, unknown>)
+				: null,
 		is_active: toBoolean(safe.is_active, true),
-		snippet_description: toNullableString(
-			safe.snippet_description ?? (safe as any).snippet ?? null,
-		),
+		snippet_description: toNullableString(safe.snippet_description ?? safe.snippet ?? null),
 		short_description: toNullableString(safe.short_description ?? null),
-		long_description: toNullableString(
-			safe.long_description ?? (safe as any).description ?? null,
-		),
+		long_description: toNullableString(safe.long_description ?? safe.description ?? null),
 		categories: normalizeCategories(
 			safe.categories ?? safe.category_ids ?? safe.product_categories ?? [],
 		),
 		children: normalizeChildren(
 			safe.children ?? safe.children_data ?? safe.variants ?? safe.variations ?? null,
 		),
+		parent: parentRecord
+			? ({
+				id: Number(parentRecord.id ?? 0),
+				sku: String(parentRecord.sku ?? ''),
+				name: String(parentRecord.name ?? ''),
+			} as IProductParentSummary)
+			: undefined,
+		available_serials: Array.isArray(safe.available_serials)
+			? safe.available_serials.filter((v): v is string => typeof v === 'string')
+			: null,
 		created_at: String(safe.created_at ?? ''),
 		updated_at: String(safe.updated_at ?? ''),
 		// image/gallery normalization: try common keys used by backend
 		image: (() => {
-			const candidate = (safe.image ?? safe.media ?? safe.media_first ?? null) as any;
+			const candidate = asRecord(safe.image ?? safe.media ?? safe.media_first ?? null);
 			if (!candidate) return undefined;
 			const pickedUrl = extractMediaUrl(candidate);
 			if (!pickedUrl) return undefined;
@@ -172,35 +218,42 @@ export const normalizeProduct = (raw: any): IProduct => {
 			if (!abs) return undefined;
 			const thumbRaw = candidate.thumb ?? candidate.thumbnail_url ?? pickedUrl;
 			const thumbAbs = ensureAbsoluteUrl(thumbRaw) ?? abs;
-			return { id: candidate.id, url: abs, thumb: thumbAbs, alt: candidate.alt ?? null };
+			return {
+				id: toNullableNumber(candidate.id),
+				url: abs,
+				thumb: thumbAbs,
+				alt: toNullableString(candidate.alt),
+			} as IProductImage;
 		})(),
 		gallery: (() => {
-			const g = (safe.gallery ?? safe.media ?? safe.images ?? null) as any;
+			const g = safe.gallery ?? safe.media ?? safe.images ?? null;
 			if (!g) return undefined;
+			const gRecord = asRecord(g);
 			const arr = Array.isArray(g)
 				? g
-				: Array.isArray(g.data)
-					? g.data
-					: Array.isArray(g.media)
-						? g.media
+				: Array.isArray(gRecord?.data)
+					? asArray(gRecord?.data)
+					: Array.isArray(gRecord?.media)
+						? asArray(gRecord?.media)
 						: [];
 			return arr
-				.map((item: any) => {
+				.map((item): IProductGalleryImage | null => {
+					const itemRecord = asRecord(item);
 					const url = extractMediaUrl(item) ?? extractMediaUrl(g);
 					if (!url) return null;
 					const abs = ensureAbsoluteUrl(url);
 					if (!abs) return null;
-					const thumbRaw = item.thumb ?? item.thumbnail_url ?? url;
+					const thumbRaw = itemRecord?.thumb ?? itemRecord?.thumbnail_url ?? url;
 					const thumb = ensureAbsoluteUrl(thumbRaw) ?? abs;
 					return {
-						id: item.id,
+						id: toNullableNumber(itemRecord?.id),
 						url: abs,
 						thumb,
-						alt: item.alt ?? null,
-						sort: item.sort ?? null,
+						alt: toNullableString(itemRecord?.alt),
+						sort: toNullableNumber(itemRecord?.sort),
 					};
 				})
-				.filter((x: any) => x !== null) as unknown as any[];
+				.filter((x): x is IProductGalleryImage => x !== null);
 		})(),
 	};
 };

@@ -57,12 +57,12 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
 			const newProductKind = productKindMap[values.product_type];
 
 			if (newProductKind) {
-				const currentProductKind =
-					values.attributes_json &&
-					typeof values.attributes_json === 'object' &&
-					'product_kind' in values.attributes_json
-						? (values.attributes_json as any).product_kind
+				const attrs =
+					values.attributes_json && typeof values.attributes_json === 'object'
+						? (values.attributes_json as Record<string, unknown>)
 						: null;
+				const currentProductKind =
+					attrs && 'product_kind' in attrs ? attrs.product_kind : null;
 
 				if (currentProductKind !== newProductKind) {
 					void setFieldValue(
@@ -80,22 +80,22 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
 		}
 	}, [values.product_type, setFieldValue]);
 
-    const productTypeOptions = Object.entries(PRODUCT_TYPE_LABELS).map(([key, label]) => ({
-        value: key,
-        label,
-    }));
+	const productTypeOptions = Object.entries(PRODUCT_TYPE_LABELS).map(([key, label]) => ({
+		value: key,
+		label,
+	}));
 
-    const brandOptions = brands.map((brand) => ({
-        value: String(brand.id),
-        label: brand.name
-    }));
+	const brandOptions = brands.map((brand) => ({
+		value: String(brand.id),
+		label: brand.name,
+	}));
 
-    const statusOptions = [
-        { value: 'pending', label: 'Pendiente' },
-        { value: 'validated', label: 'Validado (Publicado)' },
-        { value: 'rejected', label: 'Rechazado' },
-        { value: 'archived', label: 'Archivado' }
-    ];
+	const statusOptions = [
+		{ value: 'pending', label: 'Pendiente' },
+		{ value: 'validated', label: 'Validado (Publicado)' },
+		{ value: 'rejected', label: 'Rechazado' },
+		{ value: 'archived', label: 'Archivado' },
+	];
 
 	return (
 		<>
@@ -105,12 +105,12 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
 				</Label>
 				<SelectReact
 					name='product_type'
-					value={productTypeOptions.find(opt => opt.value === values.product_type)}
+					value={productTypeOptions.find((opt) => opt.value === values.product_type)}
 					options={productTypeOptions}
-                    onChange={(option) => {
-                         const selected = option as TSelectOption;
-                         if (selected) setFieldValue('product_type', selected.value);
-                    }}
+					onChange={(option) => {
+						const selected = option as TSelectOption;
+						if (selected) setFieldValue('product_type', selected.value);
+					}}
 				/>
 				{touched.product_type && errors.product_type && (
 					<p className='text-xs text-red-500'>{errors.product_type}</p>
@@ -163,15 +163,15 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
 					</Label>
 					<SelectReact
 						name='brand_id'
-						value={brandOptions.find(opt => opt.value === String(values.brand_id))}
-                        options={brandOptions}
+						value={brandOptions.find((opt) => opt.value === String(values.brand_id))}
+						options={brandOptions}
 						onChange={(option) => {
-                            const selected = option as TSelectOption;
+							const selected = option as TSelectOption;
 							setFieldValue('brand_id', selected ? Number(selected.value) : '');
 						}}
 						isDisabled={brandsLoading}
-                        placeholder='Seleccionar marca'
-                    />
+						placeholder='Seleccionar marca'
+					/>
 					{touched.brand_id && errors.brand_id && (
 						<p className='text-xs text-red-500'>{errors.brand_id}</p>
 					)}
@@ -183,13 +183,15 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
 					</Label>
 					<SelectReact
 						name='product_status'
-						value={statusOptions.find(opt => opt.value === (values.product_status || 'pending'))}
-                        options={statusOptions}
+						value={statusOptions.find(
+							(opt) => opt.value === (values.product_status || 'pending'),
+						)}
+						options={statusOptions}
 						onChange={(option) => {
-                            const selected = option as TSelectOption;
+							const selected = option as TSelectOption;
 							if (selected) setFieldValue('product_status', selected.value);
 						}}
-                    />
+					/>
 					{touched.product_status && errors.product_status && (
 						<p className='text-xs text-red-500'>{errors.product_status}</p>
 					)}
@@ -317,7 +319,11 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
 						<p className='text-xs text-red-500'>{errors.is_active}</p>
 					)}
 
-					<Modal isOpen={showConfirmStatus} setIsOpen={setShowConfirmStatus} size='sm' isCentered>
+					<Modal
+						isOpen={showConfirmStatus}
+						setIsOpen={setShowConfirmStatus}
+						size='sm'
+						isCentered>
 						<ModalHeader>Confirmar desactivación</ModalHeader>
 						<ModalBody>
 							<p className='mb-4 text-sm text-neutral-700 dark:text-neutral-300'>

@@ -1,5 +1,13 @@
 import React, { useMemo, useEffect, useRef } from 'react';
-import { Formik, Form, Field, ErrorMessage, FormikHelpers, FieldProps } from 'formik';
+import {
+	Formik,
+	Form,
+	Field,
+	ErrorMessage,
+	FormikHelpers,
+	FieldProps,
+	type FormikErrors,
+} from 'formik';
 import { toast } from 'react-toastify';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -159,7 +167,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 					data.product_type = values.product_type;
 				}
 				if (values.attributes_json) {
-					data.attributes_json = values.attributes_json as any;
+					data.attributes_json = values.attributes_json as Record<string, unknown>;
 				}
 
 				payload = { data, categoryIds };
@@ -171,8 +179,17 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 				resetForm();
 			}
 			onClose();
-		} catch (error: any) {
-			const payload = error?.response?.data ?? error ?? {};
+		} catch (error: unknown) {
+			const errorRecord =
+				error && typeof error === 'object' ? (error as Record<string, unknown>) : undefined;
+			const response =
+				errorRecord?.response && typeof errorRecord.response === 'object'
+					? (errorRecord.response as Record<string, unknown>)
+					: undefined;
+			const payload =
+				response?.data && typeof response.data === 'object'
+					? (response.data as Record<string, unknown>)
+					: (errorRecord ?? {});
 			if (payload && typeof payload === 'object') {
 				const serverErrors: Record<string, string> = {};
 				if (payload.errors && typeof payload.errors === 'object') {
@@ -186,7 +203,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 				}
 
 				if (Object.keys(serverErrors).length) {
-					setErrors(serverErrors as any);
+					setErrors(serverErrors as FormikErrors<ProductFormValues>);
 				}
 
 				const message =
@@ -199,7 +216,9 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 				const message =
 					typeof error === 'string'
 						? error
-						: (error?.message ?? 'No se pudo guardar el producto. Intenta nuevamente.');
+						: error instanceof Error
+							? error.message
+							: 'No se pudo guardar el producto. Intenta nuevamente.';
 				toast.error(message);
 			}
 		} finally {
@@ -272,12 +291,12 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 						const newProductKind = productKindMap[values.product_type];
 
 						if (newProductKind) {
-							const currentProductKind =
-								values.attributes_json &&
-								typeof values.attributes_json === 'object' &&
-								'product_kind' in values.attributes_json
-									? (values.attributes_json as any).product_kind
+							const attrs =
+								values.attributes_json && typeof values.attributes_json === 'object'
+									? (values.attributes_json as Record<string, unknown>)
 									: null;
+							const currentProductKind =
+								attrs && 'product_kind' in attrs ? attrs.product_kind : null;
 
 							// Solo actualizar si es diferente
 							if (currentProductKind !== newProductKind) {

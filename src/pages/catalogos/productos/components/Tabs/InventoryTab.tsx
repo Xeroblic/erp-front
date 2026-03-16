@@ -146,10 +146,8 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 				.map((item) => {
 					const product = productsById.get(item.id) ?? null;
 					const stockSource = product?.stock ?? item.stock ?? 0;
-					const numericStock =
-						typeof stockSource === 'number' ? Number(stockSource) : 0;
-					const status: 'low' | 'out' =
-						numericStock <= 0 ? 'out' : 'low';
+					const numericStock = typeof stockSource === 'number' ? Number(stockSource) : 0;
+					const status: 'low' | 'out' = numericStock <= 0 ? 'out' : 'low';
 
 					return {
 						product,
@@ -396,7 +394,7 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
 											<div
 												className={`flex h-10 w-10 items-center justify-center rounded-xl ${style.iconBg}`}>
 												<Icon
-													icon={card.icon as any}
+													icon={card.icon as string}
 													className={`h-5 w-5 ${style.iconColor}`}
 												/>
 											</div>

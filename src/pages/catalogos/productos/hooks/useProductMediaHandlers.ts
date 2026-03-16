@@ -2,22 +2,27 @@ import { useCallback } from 'react';
 import { useAppDispatch } from '@/store';
 import {
 	uploadProductMedia,
-	fetchBranchLibraryMedia,
 	attachProductMediaFromLibrary,
 	fetchProductById,
+	type ProductEntityParam,
 } from '@/store/slices/products/productsSlice';
 import type { IProduct } from '@/interface/product.interface';
 
+interface LibrarySelectableItem {
+	id: number;
+}
+
 export const useProductMediaHandlers = (
 	product: IProduct | null,
-	effectiveBranchId: number | null,
+	entityId: number | null,
+	entityParam: ProductEntityParam = 'branches',
 ) => {
 	const dispatch = useAppDispatch();
 
 	// Handler para subir imagen principal (siempre a 'main', reemplaza la existente)
 	const handleMainImageUpload = useCallback(
 		async (file?: File | null) => {
-			if (!file || !product || !effectiveBranchId) return;
+			if (!file || !product || !entityId) return;
 			try {
 				const meta = JSON.stringify([
 					{
@@ -30,7 +35,8 @@ export const useProductMediaHandlers = (
 				]);
 				await dispatch(
 					uploadProductMedia({
-						branchId: effectiveBranchId,
+						entityParam,
+						entityId,
 						productId: product.id,
 						file,
 						meta,
@@ -42,19 +48,19 @@ export const useProductMediaHandlers = (
 
 				// Recargar el producto para ver la imagen actualizada
 				await dispatch(
-					fetchProductById({ branchId: effectiveBranchId, productId: product.id }),
+					fetchProductById({ entityParam, entityId, productId: product.id }),
 				).unwrap();
 			} catch (err) {
 				console.error('Main image upload failed', err);
 			}
 		},
-		[dispatch, product, effectiveBranchId],
+		[dispatch, product, entityId, entityParam],
 	);
 
 	// Handler para subir imagen a galería (siempre a 'gallery')
 	const handleGalleryImageUpload = useCallback(
 		async (file?: File | null) => {
-			if (!file || !product || !effectiveBranchId) return;
+			if (!file || !product || !entityId) return;
 			try {
 				const meta = JSON.stringify([
 					{
@@ -67,39 +73,41 @@ export const useProductMediaHandlers = (
 				]);
 				await dispatch(
 					uploadProductMedia({
-						branchId: effectiveBranchId,
+						entityParam,
+						entityId,
 						productId: product.id,
 						file,
 						meta,
 					}),
 				).unwrap();
 
-				// Esperar un poquito para que el backend procese la imagen
 				await new Promise((resolve) => setTimeout(resolve, 500));
 
-				// Recargar el producto para ver la imagen actualizada
 				await dispatch(
-					fetchProductById({ branchId: effectiveBranchId, productId: product.id }),
+					fetchProductById({ entityParam, entityId, productId: product.id }),
 				).unwrap();
 			} catch (err) {
 				console.error('Gallery image upload failed', err);
 			}
 		},
-		[dispatch, product, effectiveBranchId],
+		[dispatch, product, entityId, entityParam],
 	);
 
 	const handleLibrarySelect = useCallback(
-		async (items: any[]) => {
-			if (!items || items.length === 0 || !product || !effectiveBranchId) return;
-			const ids = items.map((i) => i.id);
+		async (items: LibrarySelectableItem[]) => {
+			if (!items || items.length === 0 || !product || !entityId) return;
+			const ids = items
+				.map((i) => i.id)
+				.filter((id) => typeof id === 'number' && Number.isFinite(id));
+			if (!ids.length) return;
 			try {
-				// Si no hay imagen principal, la primera desde biblioteca va a 'main'
 				const hasMainImage = !!product.image;
 				const collection = hasMainImage ? 'gallery' : 'main';
 
 				await dispatch(
 					attachProductMediaFromLibrary({
-						branchId: effectiveBranchId,
+						entityParam,
+						entityId,
 						productId: product.id,
 						payload: {
 							library_media_id: ids[0],
@@ -110,20 +118,17 @@ export const useProductMediaHandlers = (
 					}),
 				).unwrap();
 
-				// Esperar un poquito para que el backend procese
 				await new Promise((resolve) => setTimeout(resolve, 500));
 
-				// Recargar el producto para ver los cambios
 				await dispatch(
-					fetchProductById({ branchId: effectiveBranchId, productId: product.id }),
+					fetchProductById({ entityParam, entityId, productId: product.id }),
 				).unwrap();
 			} catch (e) {
 				console.error('Attach from library failed', e);
 			}
 		},
-		[dispatch, product, effectiveBranchId],
+		[dispatch, product, entityId, entityParam],
 	);
-
 	return {
 		handleMainImageUpload,
 		handleGalleryImageUpload,

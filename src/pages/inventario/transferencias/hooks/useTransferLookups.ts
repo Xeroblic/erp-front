@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchWarehouses } from '@/store/slices/warehouses/warehouseSlice';
-import { fetchProducts } from '@/store/slices/products/productsSlice';
+import { fetchProductsList } from '@/store/slices/products/productsSlice';
 import { fetchUsers } from '@/store/slices/usersAdmin/usersAdminSlice';
 import type { IWarehouse } from '@/interface/warehouse.interface';
 import type { IProduct } from '@/interface/product.interface';
@@ -20,7 +20,7 @@ export const useTransferLookups = (branchId?: number | null, subsidiaryId?: numb
 
 	useEffect(() => {
 		if (!branchId) return;
-		dispatch(fetchProducts({ branchId, params: { per_page: 200 } }));
+		dispatch(fetchProductsList({ entityParam: 'branches', entityId: branchId, params: { per_page: 200 } }));
 	}, [branchId, dispatch]);
 
 	useEffect(() => {

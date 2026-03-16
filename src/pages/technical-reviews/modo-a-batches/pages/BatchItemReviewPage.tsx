@@ -27,7 +27,7 @@ import {
 	type EquipmentType,
 } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
-import { fetchProducts } from '@/store/slices/products/productsSlice';
+import { fetchProductsList } from '@/store/slices/products/productsSlice';
 import Textarea from '@/components/form/Textarea';
 import { Step1BasicInfo, Step2FullReview, Step3GradeReview } from '../components/steps';
 import { useAutoSaveReview } from '@/hooks/useAutoSaveReview';
@@ -297,8 +297,9 @@ const ItemReviewPage: React.FC = () => {
 	useEffect(() => {
 		if (branchId) {
 			dispatch(
-				fetchProducts({
-					branchId,
+				fetchProductsList({
+					entityParam: 'branches',
+					entityId: branchId,
 					params: { page: 1, per_page: 100 },
 				}),
 			);

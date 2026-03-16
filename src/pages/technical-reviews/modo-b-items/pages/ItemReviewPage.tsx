@@ -33,7 +33,7 @@ import {
 } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import type { TSelectOption } from '@/components/form/SelectReact';
-import { fetchProducts } from '@/store/slices/products/productsSlice';
+import { fetchProductsList } from '@/store/slices/products/productsSlice';
 import { Step1BasicInfo, Step2FullReview, Step3GradeReview } from '../components/steps';
 import type { UpdateItemDetailsPayload } from '@/interface/technicalReviews.interface';
 import { useAutoSaveReview } from '@/hooks/useAutoSaveReview';
@@ -159,7 +159,13 @@ const ItemReviewStandalonePage: React.FC = () => {
 	// Cargar productos
 	useEffect(() => {
 		if (branchId) {
-			dispatch(fetchProducts({ branchId, params: { page: 1, per_page: 100 } }));
+			dispatch(
+				fetchProductsList({
+					entityParam: 'branches',
+					entityId: branchId,
+					params: { page: 1, per_page: 100 },
+				}),
+			);
 		}
 	}, [dispatch, branchId]);
 
@@ -710,9 +716,7 @@ const ItemReviewStandalonePage: React.FC = () => {
 					<Step3GradeReview
 						branchId={branchId}
 						itemId={item.id}
-						suggestedGrade={
-							item.approved_at ? item.grade : (item.suggested_grade || 'M')
-						}
+						suggestedGrade={item.approved_at ? item.grade : item.suggested_grade || 'M'}
 						confidence={item.confidence}
 						breakdown={item.breakdown}
 						serialNumber={serialNumber}

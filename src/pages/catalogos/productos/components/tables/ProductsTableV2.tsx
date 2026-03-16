@@ -57,22 +57,31 @@ const getGradeBadgeColor = (grade?: string | null): TColors => {
 
 const extractProductVariants = (product: IProduct): IProductChild[] => {
 	if (!product) return [];
+	const asRecord = (value: unknown): Record<string, unknown> | undefined => {
+		if (value && typeof value === 'object' && !Array.isArray(value)) {
+			return value as Record<string, unknown>;
+		}
+		return undefined;
+	};
+	const productRecord = product as unknown as Record<string, unknown>;
+
 	const tryResolve = (source?: unknown): IProductChild[] => {
 		if (!source) return [];
 		if (Array.isArray(source)) return source as IProductChild[];
-		if (typeof source === 'object' && Array.isArray((source as any).data)) {
-			return (source as any).data as IProductChild[];
+		const record = asRecord(source);
+		if (record && Array.isArray(record.data)) {
+			return record.data as IProductChild[];
 		}
 		return [];
 	};
 
-	const direct = tryResolve((product as any).children);
+	const direct = tryResolve(productRecord.children);
 	if (direct.length) return direct;
 
 	const fallbackSources = [
-		(product as any).children_data,
-		(product as any).variants,
-		(product as any).variations,
+		productRecord.children_data,
+		productRecord.variants,
+		productRecord.variations,
 	];
 
 	for (const source of fallbackSources) {

@@ -2,7 +2,7 @@ import React from 'react';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import { PRODUCT_TYPE_LABELS } from '../constants/products.constant';
-import type { IProduct } from '@/interface/product.interface';
+import type { IProduct, IProductCategorySummary } from '@/interface/product.interface';
 
 interface ProductDetailSidebarProps {
 	product: IProduct;
@@ -38,7 +38,7 @@ export const ProductDetailSidebar: React.FC<ProductDetailSidebarProps> = ({
 					<div className='flex items-center justify-between'>
 						<span className='text-neutral-500'>Serie</span>
 						<Badge
-						className='px-2'
+							className='px-2'
 							variant='outline'
 							color={product.serial_tracking ? 'emerald' : 'zinc'}>
 							{product.serial_tracking ? 'Con serie' : 'Sin serie'}
@@ -53,8 +53,12 @@ export const ProductDetailSidebar: React.FC<ProductDetailSidebarProps> = ({
 					<div className='space-y-1'>
 						<p className='text-xs uppercase text-neutral-400'>Categorías</p>
 						<div className='flex flex-wrap gap-1'>
-							{product.categories?.map((category: any) => (
-								<Badge className='px-2' key={category.id} variant='outline' color='blue'>
+							{product.categories?.map((category: IProductCategorySummary) => (
+								<Badge
+									className='px-2'
+									key={category.id}
+									variant='outline'
+									color='blue'>
 									{category.name}
 								</Badge>
 							)) ?? <span className='text-xs text-neutral-400'>Sin categorías</span>}

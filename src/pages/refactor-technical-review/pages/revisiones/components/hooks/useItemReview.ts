@@ -15,7 +15,7 @@ import {
 	selectApproving,
 	type EquipmentType,
 } from '@/store/slices/technicalReviews';
-import { fetchProducts } from '@/store/slices/products/productsSlice';
+import { fetchProductsList } from '@/store/slices/products/productsSlice';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import type { TSelectOption } from '@/components/form/SelectReact';
 
@@ -97,7 +97,7 @@ export const useItemReview = (): UseItemReviewReturn => {
 	// Load products
 	useEffect(() => {
 		if (branchId) {
-			dispatch(fetchProducts({ branchId, params: { page: 1, per_page: 100 } }));
+			dispatch(fetchProductsList({ entityParam: 'branches', entityId: branchId, params: { page: 1, per_page: 100 } }));
 		}
 	}, [dispatch, branchId]);
 
