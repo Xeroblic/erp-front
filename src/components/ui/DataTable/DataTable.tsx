@@ -40,6 +40,7 @@ interface DataTableProps<TData> {
 	enableSearch?: boolean;
 	actions?: React.ReactNode;
 	initialSortingState?: SortingState;
+	className?: string;
 }
 
 export default function DataTable<TData>({
@@ -60,6 +61,7 @@ export default function DataTable<TData>({
 	enableSearch = true,
 	actions,
 	initialSortingState,
+	className,
 }: DataTableProps<TData>) {
 	const defaultSorting = React.useMemo<SortingState>(() => {
 		if (initialSortingState) return initialSortingState;
@@ -129,7 +131,7 @@ export default function DataTable<TData>({
 	}, [searchValue]);
 
 	return (
-		<div className='w-full space-y-4'>
+		<div className={['w-full space-y-4', className].filter(Boolean).join(' ')}>
 			{/* Barra de búsqueda y Acciones */}
 			<div className='flex items-center justify-between gap-4'>
 				<div className='flex flex-1 items-center space-x-2'>

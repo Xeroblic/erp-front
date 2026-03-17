@@ -82,6 +82,8 @@ const ClientesVentasDetalle = lazy(
 	() => import('@/pages/comercial/clientesVentas/ClientesVentasDetalle/index'),
 );
 
+const IngresoStock = lazy(() => import('@/pages/inventario/ingresoStock'));
+
 // Páginas de Catálogos
 const ProductosPage = lazy(() => import('@/pages/catalogos/productos/Productos'));
 const ProductDetailPage = lazy(() => import('@/pages/catalogos/productos/ProductDetail'));
@@ -397,6 +399,12 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: `${cfg.inventory.subPages.trazabilidadSubsidiary.to}`,
 		element: <TrazabilidadSubsidiary />,
 		authority: cfg.inventory.subPages.trazabilidadSubsidiary.authority,
+	},
+
+	{
+		path: `${cfg.inventory.subPages.ingresoStock.to}`,
+		element: <IngresoStock/>,
+		authority: cfg.inventory.subPages.ingresoStock.authority,
 	},
 
 	// Rutas de Catálogos

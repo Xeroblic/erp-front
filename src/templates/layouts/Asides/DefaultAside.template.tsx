@@ -360,6 +360,20 @@ const DefaultAsideTemplate = () => {
 									onClick={() => navigate(Pages.inventory.subPages.transfers.to)}
 								/>
 							</AuthorityCheckNav>
+
+							{/* Ingreso de Stock */}
+							<AuthorityCheckNav
+								authority={Pages.inventory.subPages.ingresoStock.authority}
+								roles={Pages.inventory.subPages.ingresoStock.roles}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.inventory.subPages.ingresoStock.text}
+									to={Pages.inventory.subPages.ingresoStock.to}
+									icon={Pages.inventory.subPages.ingresoStock.icon}
+									id={Pages.inventory.subPages.ingresoStock.id}
+									onClick={() => navigate(Pages.inventory.subPages.ingresoStock.to)}
+								/>
+							</AuthorityCheckNav>
 						</NavCollapse>
 					</AuthorityCheckNav>
 

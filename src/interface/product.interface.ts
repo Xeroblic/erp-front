@@ -67,6 +67,7 @@ export interface IProductChild {
 export interface IProduct {
 	id: number;
 	branch_id: number;
+	subsidiary_id?: number | null;
 	parent_product_id?: number | null;
 	is_parent?: boolean;
 	is_child?: boolean;
