@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
-import { useProductos } from '@/pages/catalogos/productos/hooks/useProductos';
+import { useStockCatalog } from './useStockCatalog';
 import type { IProduct } from '@/interface/product.interface';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useUserBranches } from '@/hooks/userBrandBranch';
@@ -26,14 +26,13 @@ export const useIngresoStock = () => {
 		return branch?.subsidiaryId ?? null;
 	}, [currentBranchId, branches]);
 
-	// Contexto global (Catálogo)
+	// Contexto local (Catálogo de Stock)
 	const [filters] = useState({});
-	const { products, loading: isLoadingProducts, error: productsError, refresh } = useProductos({
-		mode: 'subsidiaries',
+	const { products, loading: isLoadingProducts, error: productsError, refresh } = useStockCatalog({
 		subsidiaryId: currentSubsidiaryId ?? undefined,
 		filters,
 		page: 1,
-		perPage: 15,
+		perPage: 50,
 	});
 
 	const productRows = useMemo<IProduct[]>(() => {
