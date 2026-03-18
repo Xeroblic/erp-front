@@ -5,11 +5,17 @@ import Badge from '@/components/ui/Badge';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
+import { useAppSelector } from '@/store';
+import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/personalizacionSlice';
 
 import { useProductos } from '@/pages/catalogos/productos/hooks/useProductos';
 import type { IProduct } from '@/interface/product.interface';
+import {
+	useUserBranches,
+	type UserBranch,
+} from '@/pages/catalogos/productos/components/modals/hooks/userBranch';
 
 // Módulo local de componentes y hooks
 import { ProductsTable, WorkspaceTable } from './components';
@@ -19,10 +25,89 @@ import { MovementForm } from './components/MovementForm';
 
 const IngresoStock = () => {
 	const filters = useMemo(() => ({}), []);
+	const { user } = useAppSelector((state) => state.auth);
+	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
+
+	const userId = user?.id ?? (user as { pk?: number } | null)?.pk ?? null;
+	const preferredBranchId =
+		personalizacionUsuario?.sucursal_principal ?? user?.branch?.id ?? user?.branch_id ?? null;
+
+	const { branches: userBranches, loading: branchesLoading } = useUserBranches(
+		userId ?? undefined,
+		{ enabled: Boolean(userId) },
+	);
+
+	const accessibleSubsidiaryIds = useMemo(() => {
+		const subsidiaries = new Set<number>();
+		(
+			user as { access?: { subsidiaries?: Array<{ id?: number } | number> } } | null
+		)?.access?.subsidiaries?.forEach((sub) => {
+			if (typeof sub === 'number') {
+				subsidiaries.add(sub);
+				return;
+			}
+			if (sub?.id) subsidiaries.add(sub.id);
+		});
+		return subsidiaries;
+	}, [user]);
+
+	const visibleBranches = useMemo<UserBranch[]>(() => {
+		if (!userBranches.length) return [];
+		const withSubsidiary = userBranches.filter((branch) => Boolean(branch.subsidiaryId));
+		if (accessibleSubsidiaryIds.size === 0) return withSubsidiary;
+		return withSubsidiary.filter((branch) => {
+			return accessibleSubsidiaryIds.has(Number(branch.subsidiaryId));
+		});
+	}, [userBranches, accessibleSubsidiaryIds]);
+
+	const [branchId, setBranchId] = useState('');
+	const [contextSubsidiaryId, setContextSubsidiaryId] = useState<number | null>(null);
+
+	const branchOptions = useMemo(
+		() =>
+			visibleBranches.map((branch) => ({
+				value: String(branch.id),
+				label: branch.name ?? `Sucursal ${branch.id}`,
+			})),
+		[visibleBranches],
+	);
+
+	useEffect(() => {
+		if (!visibleBranches.length || branchId) return;
+		const initial =
+			visibleBranches.find((branch) => branch.id === preferredBranchId) ?? visibleBranches[0];
+		if (!initial) return;
+		setBranchId(String(initial.id));
+		setContextSubsidiaryId(initial.subsidiaryId ?? null);
+	}, [visibleBranches, preferredBranchId, branchId]);
+
+	useEffect(() => {
+		const handleExternalBranchChange = (event: Event) => {
+			const detail = (event as CustomEvent<{ branchId?: number; subsidiaryId?: number }>)
+				.detail;
+			if (!detail) return;
+			if (detail.branchId) setBranchId(String(detail.branchId));
+			if (typeof detail.subsidiaryId === 'number') {
+				setContextSubsidiaryId(detail.subsidiaryId);
+			}
+		};
+
+		window.addEventListener('user-branch-changed', handleExternalBranchChange);
+		return () => window.removeEventListener('user-branch-changed', handleExternalBranchChange);
+	}, []);
+
+	const handleBranchChange = (nextBranchId: string) => {
+		setBranchId(nextBranchId);
+		const selectedBranch = visibleBranches.find((b) => String(b.id) === nextBranchId);
+		setContextSubsidiaryId(selectedBranch?.subsidiaryId ?? null);
+	};
 
 	// 1. Cargar productos
-	const { products, loading, error, refresh } = useProductos({
-		mode: 'branches',
+	const { products, loading, error, refresh, brands } = useProductos({
+		mode: 'subsidiaries',
+		branchId: branchId ? Number(branchId) : null,
+		subsidiaryId: contextSubsidiaryId,
+		enabled: Boolean(branchId && contextSubsidiaryId),
 		filters,
 		page: 1,
 		perPage: 15,
@@ -44,7 +129,6 @@ const IngresoStock = () => {
 	const [movementType, setMovementType] = useState<'ingreso' | 'egreso'>('ingreso');
 	const [reason, setReason] = useState('');
 	const [notes, setNotes] = useState('');
-	const [subsidiaryId, setSubsidiaryId] = useState('');
 
 	// 4. Lógica de validación y envío
 	const { isSubmitting, submitBatchAdjustment, getSignedQuantity } = useStockAdjustment();
@@ -59,14 +143,14 @@ const IngresoStock = () => {
 
 	// Handler para agregar producto
 	const handleAddProduct = (product: IProduct) => {
-		addToWorkspace(product, subsidiaryId, setSubsidiaryId);
+		addToWorkspace(product, branchId, setBranchId);
 	};
 
 	// Handler para enviar ajuste
 	const handleSubmit = async () => {
-		const success = await submitBatchAdjustment(
+		await submitBatchAdjustment(
 			workItems,
-			subsidiaryId,
+			branchId,
 			reason,
 			notes,
 			selectedSubsidiaryId,
@@ -90,16 +174,34 @@ const IngresoStock = () => {
 	};
 
 	// Handler para crear producto expres y agregarlo automáticamente
-	const handleQuickProductCreate = async (data: { name: string; sku: string; price: string }) => {
-		const parsedSubsidiaryId = Number(subsidiaryId);
-		if (parsedSubsidiaryId <= 0) {
+	const handleQuickProductCreate = async (data: {
+		name: string;
+		sku: string;
+		price: string;
+		brandId?: string;
+	}) => {
+		const parsedSubsidiaryId = Number(contextSubsidiaryId ?? 0);
+		const parsedBranchId = Number(branchId);
+		const selectedBrandId = Number(brands?.[0]?.id ?? 0);
+
+		if (parsedSubsidiaryId <= 0 || parsedBranchId <= 0) {
 			toast.error('Debes seleccionar una sucursal/subsidiaria antes de crear un producto.');
 			return;
 		}
 
-		const newProduct = await createQuickProduct(data, parsedSubsidiaryId);
+		if (selectedBrandId <= 0) {
+			toast.error('No hay marcas disponibles para crear el producto rápido.');
+			return;
+		}
+
+		const newProduct = await createQuickProduct(
+			{ ...data, brandId: data.brandId ?? String(selectedBrandId) },
+			parsedSubsidiaryId,
+			parsedBranchId,
+			selectedBrandId,
+		);
 		if (newProduct) {
-			addToWorkspace(newProduct, undefined, undefined, data.price);
+			addToWorkspace(newProduct, branchId, setBranchId);
 			refresh();
 		}
 	};
@@ -133,11 +235,16 @@ const IngresoStock = () => {
 			<Container>
 				<div className='flex flex-col gap-4 py-8'>
 					{error && <p className='text-center text-red-500'>Error: {error}</p>}
+					{!branchId && (
+						<p className='text-center text-amber-500'>
+							Selecciona una sucursal visible para cargar productos.
+						</p>
+					)}
 
 					<div className='flex flex-col gap-4'>
 						{/* Formulario expresión para crear producto rápido */}
 						<QuickProductForm
-							branchId={subsidiaryId}
+							branchId={branchId}
 							isCreating={isCreating}
 							onSubmit={handleQuickProductCreate}
 						/>
@@ -194,8 +301,10 @@ const IngresoStock = () => {
 									<MovementForm
 										movementType={movementType}
 										onMovementTypeChange={setMovementType}
-										branchId={subsidiaryId}
-										onBranchIdChange={setSubsidiaryId}
+										branchId={branchId}
+										onBranchIdChange={handleBranchChange}
+										branchOptions={branchOptions}
+										isBranchesLoading={branchesLoading}
 										selectedSubsidiaryId={selectedSubsidiaryId}
 										reason={reason}
 										onReasonChange={setReason}

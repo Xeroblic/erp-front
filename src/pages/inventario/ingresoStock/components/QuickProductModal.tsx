@@ -4,6 +4,7 @@ import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Moda
 import Button from '@/components/ui/Button';
 import Input from '@/components/form/Input';
 import Label from '@/components/form/Label';
+import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import type { IQuickProductForm } from '../types';
 
 interface QuickProductModalProps {
@@ -12,6 +13,9 @@ interface QuickProductModalProps {
 	form: FormikProps<IQuickProductForm>;
 	isSubmitting: boolean;
 	branchId: string;
+	brandOptions: TSelectOption[];
+	onBrandChange: (brandId: string) => void;
+	onCreateBrand: (brandName: string) => Promise<void>;
 }
 
 export const QuickProductModal: React.FC<QuickProductModalProps> = ({
@@ -20,6 +24,9 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
 	form,
 	isSubmitting,
 	branchId,
+	brandOptions,
+	onBrandChange,
+	onCreateBrand,
 }) => {
 	// Si el branchId es inválido cuando se abre el modal, podemos mostrar una alerta,
 	// pero eso lo manejamos en el submit o antes de abrir.
@@ -32,8 +39,9 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
 				<div className='flex flex-col gap-4'>
 					{/* Información */}
 					<div className='rounded-md bg-zinc-100 p-3 text-sm text-zinc-600 dark:bg-zinc-800/50 dark:text-zinc-400'>
-						Crea un producto rápidamente sin pasar por el catálogo principal.
-						Se asignará automáticamente a la sucursal seleccionada en el panel principal <strong>(ID: {branchId || 'Ninguna'})</strong>.
+						Crea un producto rápidamente sin pasar por el catálogo principal. Se
+						asignará automáticamente a la sucursal seleccionada en el panel principal{' '}
+						<strong>(ID: {branchId || 'Ninguna'})</strong>.
 					</div>
 
 					<div className='grid grid-cols-1 gap-4'>
@@ -66,6 +74,33 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
 						</div>
 
 						<div className='col-span-1'>
+							<Label htmlFor='brandId'>Marca</Label>
+							<SelectReact
+								name='brandId'
+								placeholder='Seleccionar o crear marca'
+								options={brandOptions}
+								isCreatable
+								isDisabled={isSubmitting}
+								value={
+									brandOptions.find((opt) => opt.value === form.values.brandId) ||
+									null
+								}
+								onChange={(option) => {
+									if (Array.isArray(option)) return;
+									const nextValue =
+										option && 'value' in option ? String(option.value) : '';
+									onBrandChange(nextValue);
+								}}
+								onCreateOption={(inputValue) => {
+									void onCreateBrand(inputValue);
+								}}
+							/>
+							{form.touched.brandId && form.errors.brandId && (
+								<p className='mt-1 text-xs text-red-500'>{form.errors.brandId}</p>
+							)}
+						</div>
+
+						<div className='col-span-1'>
 							<Label htmlFor='price'>Precio</Label>
 							<Input
 								id='price'
@@ -87,7 +122,11 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
 				<Button color='zinc' variant='outline' onClick={onClose} isDisable={isSubmitting}>
 					Cancelar
 				</Button>
-				<Button color='blue' variant='solid' onClick={() => form.handleSubmit()} isDisable={isSubmitting}>
+				<Button
+					color='blue'
+					variant='solid'
+					onClick={() => form.handleSubmit()}
+					isDisable={isSubmitting}>
 					{isSubmitting ? 'Creando...' : 'Crear y Agregar'}
 				</Button>
 			</ModalFooter>

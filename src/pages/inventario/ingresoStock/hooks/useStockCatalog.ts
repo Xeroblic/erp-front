@@ -4,6 +4,7 @@ import { fetchProductsList } from '@/store/slices/products/productsSlice';
 import type { IProduct } from '@/interface/product.interface';
 
 interface UseStockCatalogParams {
+	branchId?: number | null;
 	subsidiaryId?: number | null;
 	filters?: Record<string, any>;
 	page?: number;
@@ -11,6 +12,7 @@ interface UseStockCatalogParams {
 }
 
 export const useStockCatalog = ({
+	branchId,
 	subsidiaryId,
 	filters = {},
 	page = 1,
@@ -20,16 +22,33 @@ export const useStockCatalog = ({
 	const productsState = useAppSelector((state) => state.products);
 
 	const fetchProducts = useCallback(() => {
-		if (!subsidiaryId) return;
+		if (subsidiaryId) {
+			dispatch(
+				fetchProductsList({
+					entityParam: 'subsidiaries',
+					entityId: subsidiaryId,
+					params: {
+						...filters,
+						page,
+						per_page: perPage,
+						...(branchId ? { branchId } : {}),
+					},
+				}),
+			);
+			return;
+		}
 
-		dispatch(
-			fetchProductsList({
-				entityParam: 'subsidiaries',
-				entityId: subsidiaryId,
-				params: { ...filters, page, per_page: perPage },
-			})
-		);
-	}, [dispatch, subsidiaryId, page, perPage, JSON.stringify(filters)]);
+		// Fallback: si no se puede resolver subsidiaria, usar endpoint de branch para no dejar vacío el catálogo
+		if (branchId) {
+			dispatch(
+				fetchProductsList({
+					entityParam: 'branches',
+					entityId: branchId,
+					params: { ...filters, page, per_page: perPage },
+				}),
+			);
+		}
+	}, [dispatch, subsidiaryId, branchId, page, perPage, filters]);
 
 	useEffect(() => {
 		fetchProducts();

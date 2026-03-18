@@ -5,6 +5,7 @@
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Input from '@/components/form/Input';
+import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import Textarea from '@/components/form/Textarea';
 import type { IMovementType } from '../types';
 
@@ -20,6 +21,8 @@ interface MovementFormProps {
 	 */
 	branchId: string;
 	onBranchIdChange: (branchId: string) => void;
+	branchOptions: TSelectOption[];
+	isBranchesLoading?: boolean;
 
 	/**
 	 * ID de subsidiaria detectada desde workspace
@@ -67,6 +70,8 @@ export const MovementForm = ({
 	onMovementTypeChange,
 	branchId,
 	onBranchIdChange,
+	branchOptions,
+	isBranchesLoading = false,
 	selectedSubsidiaryId,
 	reason,
 	onReasonChange,
@@ -98,15 +103,27 @@ export const MovementForm = ({
 				</Badge>
 			</div>
 
-			{/* Sucursal */}
-			<Input
+			{/* Sucursal visible */}
+			<SelectReact
 				name='branch_id'
-				type='number'
-				min={1}
-				placeholder='Sucursal (branch_id)'
-				value={branchId}
-				onChange={(e) => onBranchIdChange(e.target.value)}
-				disabled={isSubmitting}
+				placeholder='Selecciona una sucursal'
+				isLoading={isBranchesLoading}
+				isDisabled={isSubmitting || isBranchesLoading || !branchOptions.length}
+				isMulti={false}
+				isClearable={false}
+				options={branchOptions}
+				value={branchOptions.find((opt) => opt.value === branchId) ?? null}
+				onChange={(option) => {
+					if (Array.isArray(option)) {
+						onBranchIdChange('');
+						return;
+					}
+					if (option && 'value' in option) {
+						onBranchIdChange(option.value);
+						return;
+					}
+					onBranchIdChange('');
+				}}
 			/>
 
 			{/* Razón */}

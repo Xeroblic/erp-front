@@ -56,6 +56,7 @@ export interface IQuickProductForm {
 	name: string;
 	sku: string;
 	price: string;
+	brandId: string;
 }
 
 export const QuickProductSchema = Yup.object().shape({
@@ -67,6 +68,10 @@ export const QuickProductSchema = Yup.object().shape({
 		.typeError('El precio debe ser un número')
 		.min(0, 'El precio no puede ser negativo')
 		.required('El precio es requerido'),
+	brandId: Yup.number()
+		.typeError('Debes seleccionar una marca')
+		.min(1, 'Debes seleccionar una marca')
+		.required('La marca es requerida'),
 });
 
 /** Formulario de Ajuste de Stock (Modal final) */

@@ -6,7 +6,13 @@ import Badge from '@/components/ui/Badge';
 import Card, { CardBody, CardHeader, CardTitle, CardHeaderChild } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
-import { ProductsTable, WorkspaceTable, QuickProductModal, FinalizeAdjustmentModal } from './components';
+import {
+	ProductsTable,
+	WorkspaceTable,
+	QuickProductModal,
+	FinalizeAdjustmentModal,
+	BrandDedupModal,
+} from './components';
 
 // Importamos el retorno del hook pre-procesado por Full_React
 import { useIngresoStock } from './hooks/useIngresoStock';
@@ -16,7 +22,7 @@ interface IngresoStockViewProps {
 }
 
 export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => {
-	const { state, forms, actions } = logic;
+	const { state, forms, actions, brands } = logic;
 	const {
 		isLoadingProducts,
 		productsError,
@@ -25,6 +31,7 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 		isWorkspaceVisible,
 		modals,
 		loaders,
+		brandDedup,
 	} = state;
 
 	return (
@@ -48,15 +55,13 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 						color='blue'
 						variant='solid'
 						icon='HeroPlus'
-						onClick={actions.openQuickProductModal}
-					>
+						onClick={actions.openQuickProductModal}>
 						Crear Producto Exprés
 					</Button>
 					<Button
 						color='zinc'
 						variant='outline'
-						onClick={() => actions.setIsWorkspaceVisible(!isWorkspaceVisible)}
-					>
+						onClick={() => actions.setIsWorkspaceVisible(!isWorkspaceVisible)}>
 						{isWorkspaceVisible ? 'Ocultar zona de ajuste' : 'Mostrar zona de ajuste'}
 					</Button>
 				</SubheaderRight>
@@ -64,11 +69,14 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 
 			<Container>
 				<div className='flex flex-col gap-6 py-8'>
-					{productsError && <p className='text-center text-red-500'>Error: {productsError}</p>}
+					{productsError && (
+						<p className='text-center text-red-500'>Error: {productsError}</p>
+					)}
 
 					<div className='grid grid-cols-1 gap-6 lg:grid-cols-12'>
 						{/* COLUMNA IZQUIERDA: Catálogo de Productos */}
-						<div className={`col-span-1 ${isWorkspaceVisible ? 'lg:col-span-5' : 'lg:col-span-12'}`}>
+						<div
+							className={`col-span-1 ${isWorkspaceVisible ? 'lg:col-span-5' : 'lg:col-span-12'}`}>
 							<Card className='h-full'>
 								<CardHeader>
 									<CardTitle>Catálogo de Productos</CardTitle>
@@ -94,7 +102,8 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 										<CardHeaderChild>
 											<CardTitle>Zona de Trabajo</CardTitle>
 											<Badge variant='outline'>
-												{workItems.length} producto{workItems.length === 1 ? '' : 's'}
+												{workItems.length} producto
+												{workItems.length === 1 ? '' : 's'}
 											</Badge>
 										</CardHeaderChild>
 										<CardHeaderChild>
@@ -103,8 +112,7 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 													color='red'
 													variant='outline'
 													onClick={actions.handleClearWorkspace}
-													className='mr-2'
-												>
+													className='mr-2'>
 													Limpiar
 												</Button>
 											)}
@@ -112,8 +120,7 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 												color='amber'
 												variant='solid'
 												isDisable={workItems.length === 0}
-												onClick={actions.openAdjustmentModal}
-											>
+												onClick={actions.openAdjustmentModal}>
 												Procesar Ajuste
 											</Button>
 										</CardHeaderChild>
@@ -121,15 +128,26 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 									<CardBody>
 										{workItems.length === 0 ? (
 											<div className='flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-zinc-200 p-12 text-center dark:border-zinc-800'>
-												<Icon icon='HeroInbox' className='mb-4 h-12 w-12 text-zinc-300 dark:text-zinc-600' />
-												<p className='text-zinc-500'>No hay productos en la zona de trabajo.</p>
-												<p className='text-sm text-zinc-400'>Selecciona productos del catálogo a la izquierda.</p>
+												<Icon
+													icon='HeroInbox'
+													className='mb-4 h-12 w-12 text-zinc-300 dark:text-zinc-600'
+												/>
+												<p className='text-zinc-500'>
+													No hay productos en la zona de trabajo.
+												</p>
+												<p className='text-sm text-zinc-400'>
+													Selecciona productos del catálogo a la
+													izquierda.
+												</p>
 											</div>
 										) : (
 											<WorkspaceTable
 												items={workItems}
 												getSignedQuantity={(qty) =>
-													actions.getSignedQuantity(qty, forms.adjustment.values.movementType)
+													actions.getSignedQuantity(
+														qty,
+														forms.adjustment.values.movementType,
+													)
 												}
 												onQuantityChange={actions.updateItemQuantity}
 												onRemoveItem={actions.removeFromWorkspace}
@@ -150,6 +168,9 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 				form={forms.quickProduct}
 				isSubmitting={loaders.isCreatingProduct}
 				branchId={forms.adjustment.values.branchId}
+				brandOptions={brands?.options ?? []}
+				onBrandChange={actions.handleBrandChange}
+				onCreateBrand={actions.handleCreateBrand}
 			/>
 
 			<FinalizeAdjustmentModal
@@ -158,6 +179,17 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 				form={forms.adjustment}
 				isSubmitting={loaders.isAdjusting}
 				itemCount={workItems.length}
+			/>
+
+			<BrandDedupModal
+				isOpen={modals.isBrandDedupModalOpen}
+				onClose={actions.handleCloseBrandDedupModal}
+				duplicates={brandDedup.candidates}
+				affectedProductsByBrand={brandDedup.productsByBrand}
+				defaultKeepId={brandDedup.defaultKeepId}
+				isLoadingProducts={loaders.isLoadingBrandDedupProducts}
+				isSubmitting={loaders.isResolvingBrandDedup}
+				onConfirm={actions.handleConfirmBrandDedup}
 			/>
 		</PageWrapper>
 	);

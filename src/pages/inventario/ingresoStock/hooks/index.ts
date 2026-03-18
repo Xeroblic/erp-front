@@ -2,3 +2,4 @@ export { useWorkspaceItems } from './useWorkspaceItems';
 export { useStockAdjustment } from './useStockAdjustment';
 export { useQuickProductCreate } from './useQuickProductCreate';
 export { useStockCatalog } from './useStockCatalog';
+export { useBrandDeduplication } from './useBrandDeduplication';
