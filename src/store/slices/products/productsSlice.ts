@@ -9,6 +9,13 @@ import type {
 	ProductListMeta,
 	ProductsStateStats,
 	UpdateProductPayload,
+	IProductResponse,
+	IProductListResponse,
+	IProductAttributesResponse,
+	IMediaUploadResponse,
+	ILibraryMediaItem,
+	ILibraryMediaResponse,
+	ILibraryMediaAttachResponse,
 } from '@/interface/product.interface';
 import {
 	buildUpdatePayload,
@@ -169,10 +176,7 @@ export const fetchProductsList = createAsyncThunk<
 	{ rejectValue: string }
 >('products/fetchProductsList', async ({ entityParam, entityId, params }, { rejectWithValue }) => {
 	try {
-		const response = await ApiService.fetchData<{
-			data?: unknown[];
-			meta?: Partial<ProductListMeta> & UnknownRecord;
-		}>({
+		const response = await ApiService.fetchData<IProductListResponse>({
 			url: `/${entityParam}/${entityId}/products`,
 			method: 'get',
 			params: {
@@ -281,13 +285,13 @@ export const fetchProductById = createAsyncThunk<
 	{ rejectValue: string }
 >('products/fetchProductById', async ({ entityParam, entityId, productId }, { rejectWithValue }) => {
 	try {
-		const response = await ApiService.fetchData<{ data?: unknown }>({
+		const response = await ApiService.fetchData<IProductResponse>({
 			url: `/${entityParam}/${entityId}/products/${productId}`,
 			method: 'get',
 		});
 
 		const raw = response.data?.data ?? response.data;
-		return normalizeProduct(raw ?? { id: productId, branch_id: entityId });
+		return normalizeProduct((raw as IProduct) ?? { id: productId, branch_id: entityId });
 	} catch (error: unknown) {
 		return rejectWithValue(getErrorMessage(error, 'No se pudo obtener el producto'));
 	}
@@ -304,16 +308,14 @@ export const fetchProductAttributes = createAsyncThunk<
 	{ rejectValue: string }
 >('products/fetchProductAttributes', async ({ entityParam, entityId, productId }, { rejectWithValue }) => {
 	try {
-		const response = await ApiService.fetchData<{
-			attributes?: Record<string, unknown> | null;
-		}>({
+		const response = await ApiService.fetchData<IProductAttributesResponse>({
 			url: `/${entityParam}/${entityId}/products/${productId}/attributes`,
 			method: 'get',
 		});
 
 		return {
 			productId,
-			attributes: (response.data?.attributes as Record<string, unknown> | null) ?? null,
+			attributes: response.data?.attributes ?? null,
 		};
 	} catch (error: unknown) {
 		return rejectWithValue(
@@ -331,7 +333,7 @@ export const patchProductAttributes = createAsyncThunk<
 	async ({ entityParam, entityId, productId, payload }, { rejectWithValue }) => {
 		try {
 			const response = await ApiService.fetchData<
-				{ attributes?: Record<string, unknown> | null },
+				IProductAttributesResponse,
 				ProductAttributesPatchPayload
 			>({
 				url: `/${entityParam}/${entityId}/products/${productId}/attributes`,
@@ -341,7 +343,7 @@ export const patchProductAttributes = createAsyncThunk<
 
 			return {
 				productId,
-				attributes: (response.data?.attributes as Record<string, unknown> | null) ?? null,
+				attributes: response.data?.attributes ?? null,
 			};
 		} catch (error: unknown) {
 			return rejectWithValue(
@@ -392,14 +394,14 @@ export const createProduct = createAsyncThunk<
 
 		if (Array.isArray(categoryIds) && categoryIds.length) body.category_ids = categoryIds;
 
-		const response = await ApiService.fetchData<{ data?: unknown }, Record<string, unknown>>({
+		const response = await ApiService.fetchData<IProductResponse, Record<string, unknown>>({
 			url: `/${entityParam}/${entityId}/products`,
 			method: 'post',
 			data: body,
 		});
 
 		const raw = response.data?.data ?? response.data;
-		return normalizeProduct(raw ?? body);
+		return normalizeProduct((raw as IProduct) ?? body);
 	} catch (error: unknown) {
 		return rejectWithValue(getErrorPayload(error, 'No se pudo crear el producto'));
 	}
@@ -415,14 +417,14 @@ export const updateProduct = createAsyncThunk<
 		try {
 			const body = buildUpdatePayload(productId, data, categoryIds);
 
-			const response = await ApiService.fetchData<{ data?: unknown }, UpdateProductPayload>({
+			const response = await ApiService.fetchData<IProductResponse, UpdateProductPayload>({
 				url: `/${entityParam}/${entityId}/products/${productId}`,
 				method: 'patch',
 				data: body,
 			});
 
 			const raw = response.data?.data ?? response.data;
-			return normalizeProduct(raw ?? { ...data, id: productId });
+			return normalizeProduct((raw as IProduct) ?? { ...data, id: productId });
 		} catch (error: unknown) {
 			return rejectWithValue(getErrorMessage(error, 'No se pudo actualizar el producto'));
 		}
@@ -452,12 +454,12 @@ export const toggleProductStatus = createAsyncThunk<
 	{ rejectValue: string }
 >('products/toggleProductStatus', async ({ entityParam, entityId, productId }, { rejectWithValue }) => {
 	try {
-		const response = await ApiService.fetchData<{ data?: unknown }>({
+		const response = await ApiService.fetchData<IProductResponse>({
 			url: `/${entityParam}/${entityId}/products/${productId}/toggle-status`,
 			method: 'patch',
 		});
 		const raw = response.data?.data ?? response.data;
-		return normalizeProduct(raw ?? { id: productId, branch_id: entityId });
+		return normalizeProduct((raw as IProduct) ?? { id: productId, branch_id: entityId });
 	} catch (error: unknown) {
 		return rejectWithValue(getErrorMessage(error, 'No se pudo cambiar el estado del producto'));
 	}
@@ -469,7 +471,7 @@ export const fetchSaleableProducts = createAsyncThunk<
 	{ rejectValue: string }
 >('products/fetchSaleableProducts', async ({ entityParam, entityId }, { rejectWithValue }) => {
 	try {
-		const response = await ApiService.fetchData<{ data?: unknown[] }>({
+		const response = await ApiService.fetchData<IProductListResponse>({
 			url: `/${entityParam}/${entityId}/products/saleables`,
 			method: 'get',
 		});
@@ -478,7 +480,7 @@ export const fetchSaleableProducts = createAsyncThunk<
 			: Array.isArray(response.data)
 				? response.data
 				: [];
-		return rawItems.map(normalizeProduct);
+		return (rawItems as IProduct[]).map(normalizeProduct);
 	} catch (error: unknown) {
 		return rejectWithValue(
 			getErrorMessage(error, 'No se pudieron cargar los productos vendibles'),
@@ -505,7 +507,7 @@ export const uploadProductMedia = createAsyncThunk<
 			formData.append('files[]', processed, processed.name);
 			if (meta) formData.append('meta', meta);
 
-			const response = await ApiService.fetchData<{ data?: unknown }, FormData>({
+			const response = await ApiService.fetchData<IMediaUploadResponse, FormData>({
 				url: `/${entityParam}/${entityId}/products/${productId}/media/upload-multiple`,
 				method: 'post',
 				data: formData,
@@ -539,7 +541,7 @@ export const attachProductMediaFromLibrary = createAsyncThunk<
 	async ({ entityParam, entityId, productId, payload }, { rejectWithValue }) => {
 		try {
 			const response = await ApiService.fetchData<
-				{ status?: string; id?: number; url?: string; thumb_url?: string },
+				ILibraryMediaAttachResponse,
 				{
 					library_media_id: number;
 					collection?: string;
@@ -559,12 +561,12 @@ export const attachProductMediaFromLibrary = createAsyncThunk<
 );
 
 export const fetchLibraryMedia = createAsyncThunk<
-	{ data: unknown[]; meta?: unknown },
+	{ data: ILibraryMediaItem[]; meta?: unknown },
 	{ entityParam: ProductEntityParam; entityId: number; params?: Record<string, unknown> },
 	{ rejectValue: string }
 >('products/fetchLibraryMedia', async ({ entityParam, entityId, params }, { rejectWithValue }) => {
 	try {
-		const response = await ApiService.fetchData<{ data?: unknown[]; meta?: unknown }>({
+		const response = await ApiService.fetchData<ILibraryMediaResponse>({
 			url: `/${entityParam}/${entityId}/library/media`,
 			method: 'get',
 			params,
@@ -574,7 +576,7 @@ export const fetchLibraryMedia = createAsyncThunk<
 			: Array.isArray(response.data)
 				? response.data
 				: [];
-		return { data: dataArr ?? [], meta: response.data?.meta };
+		return { data: (dataArr as ILibraryMediaItem[]) ?? [], meta: response.data?.meta };
 	} catch (error: unknown) {
 		return rejectWithValue(getErrorMessage(error, 'Error fetching library media'));
 	}

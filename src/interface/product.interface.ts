@@ -311,3 +311,47 @@ export interface ProductInventorySummary {
 	syncedProducts: number;
 	serialTrackingCount: number;
 }
+
+// ---------------------------------------------------------------------------
+// Strict API Responses for Thunks (@Full_TS)
+// ---------------------------------------------------------------------------
+export interface IProductResponse {
+	data: IProduct;
+}
+
+export interface IProductListResponse {
+	data: IProduct[];
+	meta: Partial<ProductListMeta> & Record<string, unknown>;
+}
+
+export interface IProductAttributesResponse {
+	attributes?: Record<string, unknown> | null;
+}
+
+export interface IMediaUploadResponse {
+	data?: {
+		url?: string;
+		[key: string]: unknown;
+	};
+}
+
+export interface ILibraryMediaItem {
+	id: number;
+	url: string;
+	thumb_url?: string;
+	name?: string;
+	[key: string]: unknown;
+}
+
+export interface ILibraryMediaResponse {
+	data?: ILibraryMediaItem[];
+	meta?: unknown;
+}
+
+export interface ILibraryMediaAttachResponse {
+	status?: string;
+	id?: number;
+	url?: string;
+	thumb_url?: string;
+}
+
