@@ -55,13 +55,35 @@ export const useStockAdjustment = () => {
                 return false;
             }
 
+            let hasNegativeStockError = false;
+
             // Construir array de items con quantity_change
             const items = workItems
-                .map((item) => ({
-                    product_id: item.productId,
-                    quantity_change: getSignedQuantity(item.quantity, movementType),
-                }))
+                .map((item) => {
+                    const quantity_change = getSignedQuantity(item.quantity, movementType);
+
+                    // Validación de stock negativo (Solo para egresos)
+                    if (movementType === 'egreso' && quantity_change < 0) {
+                        const absoluteChange = Math.abs(quantity_change);
+                        const currentStock = Number(item.stock ?? 0);
+                        if (absoluteChange > currentStock) {
+                            toast.error(
+                                `No puedes egresar ${absoluteChange} de "${item.name}". Stock actual: ${currentStock}`
+                            );
+                            hasNegativeStockError = true;
+                        }
+                    }
+
+                    return {
+                        product_id: item.productId,
+                        quantity_change,
+                    };
+                })
                 .filter((item) => item.quantity_change !== 0);
+
+            if (hasNegativeStockError) {
+                return false;
+            }
 
             // Validar que NO haya cambios de 0
             if (!items.length || items.length !== workItems.length) {

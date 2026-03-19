@@ -1,44 +1,35 @@
 /**
  * Hook para manejar la lógica del workspace de ajuste
  * Responsabilidad única: CRUD de items en workspace (Single Responsibility)
+ *
+ * Recibe `contextSubsidiaryId` como fuente de verdad de la subsidiaria activa
+ * (derivada de la sucursal seleccionada por el usuario en la página).
  */
 import { useCallback, useState } from 'react';
 import { toast } from 'react-toastify';
 import type { IProduct } from '@/interface/product.interface';
 import type { IWorkItem } from '../types';
 
-export const useWorkspaceItems = () => {
+interface UseWorkspaceItemsParams {
+    /** Subsidiaria activa derivada de la sucursal seleccionada */
+    contextSubsidiaryId: number | null;
+}
+
+export const useWorkspaceItems = ({ contextSubsidiaryId }: UseWorkspaceItemsParams) => {
     const [workItems, setWorkItems] = useState<IWorkItem[]>([]);
     const [isWorkspaceVisible, setIsWorkspaceVisible] = useState(true);
 
-    const selectedSubsidiaryId = workItems[0]?.subsidiaryId ?? 0;
+    // Fuente de verdad: siempre la subsidiaria del contexto de la página
+    const selectedSubsidiaryId = contextSubsidiaryId ?? 0;
 
     /**
      * Agrega un producto al workspace
-     * Valida: no duplicados, misma subsidiaria, subsidiary_id válido
+     * Valida: no duplicados, subsidiaria válida
      */
     const addToWorkspace = useCallback(
-        (product: IProduct, currentBranchId?: string, onBranchIdUpdate?: (branchId: string) => void, initialQuantity?: string) => {
-            // Asignar subsidiary_id: prioridad es producto.subsidiary_id, fallback a primer item o 1
-            let subId = Number(product.subsidiary_id ?? 0);
-            if (!Number.isFinite(subId) || subId === 0) {
-                // Si no tiene subsidiary_id, usar el del primer item o default a 1
-                subId = selectedSubsidiaryId || 1;
-            }
-
-            const productBranchId = Number(product.branch_id ?? 0);
-            if (!Number.isFinite(productBranchId) || productBranchId === 0) {
-                toast.error(
-                    `Producto "${product.name}" no tiene sucursal asignada. Contacta al administrador.`,
-                );
-                return;
-            }
-
-            // Cross-subsidiary guard
-            if (selectedSubsidiaryId && selectedSubsidiaryId !== subId) {
-                toast.error(
-                    'No puedes mezclar productos de distintas subsidiarias en un mismo lote.',
-                );
+        (product: IProduct, initialQuantity?: string) => {
+            if (!selectedSubsidiaryId) {
+                toast.error('Selecciona una sucursal antes de agregar productos.');
                 return;
             }
 
@@ -47,11 +38,6 @@ export const useWorkspaceItems = () => {
                 if (prev.some((item) => item.productId === product.id)) {
                     toast.info('El producto ya está en la zona de ajuste.');
                     return prev;
-                }
-
-                // Auto-set branch del primer producto
-                if (!currentBranchId && productBranchId > 0 && onBranchIdUpdate) {
-                    onBranchIdUpdate(String(productBranchId));
                 }
 
                 return [
@@ -63,8 +49,8 @@ export const useWorkspaceItems = () => {
                         stock: Number(product.stock ?? 0),
                         price: Number(product.price ?? 0),
                         quantity: initialQuantity ?? '1',
-                        branchId: productBranchId,
-                        subsidiaryId: subId,
+                        branchId: Number(product.branch_id ?? 0),
+                        subsidiaryId: selectedSubsidiaryId,
                     },
                 ];
             });

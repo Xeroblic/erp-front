@@ -99,6 +99,7 @@ export const useIngresoStock = () => {
 	}, [selectedBranchId, branches, user, externalBranchContext]);
 
 	// Contexto local (Catálogo de Stock)
+	// Contexto local (Catálogo de Stock)
 	const [filters] = useState({});
 	const { products, loading: isLoadingProducts, error: productsError, refresh } = useStockCatalog({
 		branchId: selectedBranchId ?? undefined,
@@ -112,7 +113,7 @@ export const useIngresoStock = () => {
 		return products.filter((p: IProduct) => !p.serial_tracking);
 	}, [products]);
 
-	// Workspace state
+	// Workspace state — fuente de verdad: currentSubsidiaryId
 	const {
 		workItems,
 		isWorkspaceVisible,
@@ -122,7 +123,7 @@ export const useIngresoStock = () => {
 		removeFromWorkspace,
 		updateItemQuantity,
 		clearWorkspace,
-	} = useWorkspaceItems();
+	} = useWorkspaceItems({ contextSubsidiaryId: currentSubsidiaryId });
 
 	// API Hooks
 	const { isSubmitting: isAdjusting, submitBatchAdjustment, getSignedQuantity } = useStockAdjustment();
@@ -280,10 +281,7 @@ export const useIngresoStock = () => {
 
 	// Handlers simples
 	const handleAddProduct = useCallback((product: IProduct) => {
-		// Lo pasamos indicando que actualice el branch del form final si no estaba setteado
-		addToWorkspace(product, adjustmentForm.values.branchId, (branchId) => {
-			adjustmentForm.setFieldValue('branchId', branchId);
-		});
+		addToWorkspace(product);
 	}, [addToWorkspace]);
 
 	// Formulario de Ajuste (Modal Final)
@@ -301,13 +299,16 @@ export const useIngresoStock = () => {
 				values.branchId,
 				values.reason,
 				values.notes,
-				selectedSubsidiaryId,
+				currentSubsidiaryId ?? 0,
 				values.movementType,
 				() => {
 					clearWorkspace();
 					resetForm();
-					refresh();
 					setIsAdjustmentModalOpen(false);
+					// Retardo porque el backend procesa el ajuste en un Job asíncrono en background
+					setTimeout(() => {
+						refresh();
+					}, 2500);
 				}
 			);
 		},
@@ -336,16 +337,21 @@ export const useIngresoStock = () => {
 				return;
 			}
 
-			const subId = Number(currentSubsidiaryId || selectedSubsidiaryId || 0);
+			const subId = Number(currentSubsidiaryId ?? 0);
 			const brandId = Number(values.brandId || 0);
 			if (!brandId) {
 				toast.error('Debes seleccionar una marca para crear el producto exprés.');
 				return;
 			}
 
+			if (!subId) {
+				toast.error('Selecciona una sucursal antes de crear un producto.');
+				return;
+			}
+
 			const newProduct = await createQuickProduct(
 				values,
-				subId || null,
+				subId,
 				branchId,
 				brandId,
 			);
@@ -353,10 +359,9 @@ export const useIngresoStock = () => {
 				const safeProduct = {
 					...newProduct,
 					branch_id: Number(newProduct.branch_id ?? branchId) || branchId,
-					subsidiary_id:
-						Number(newProduct.subsidiary_id ?? subId ?? 0) || undefined,
+					subsidiary_id: subId,
 				};
-				addToWorkspace(safeProduct, undefined, undefined, values.price);
+				addToWorkspace(safeProduct, values.price);
 				refresh();
 				resetForm();
 				quickProductForm.setFieldValue('brandId', '');
@@ -387,6 +392,7 @@ export const useIngresoStock = () => {
 			workItems,
 			isWorkspaceVisible,
 			selectedSubsidiaryId,
+			currentSubsidiaryId,
 			modals: {
 				isQuickProductModalOpen,
 				isAdjustmentModalOpen,

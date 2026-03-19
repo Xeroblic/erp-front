@@ -123,7 +123,7 @@ const IngresoStock = () => {
 		removeFromWorkspace,
 		updateItemQuantity,
 		clearWorkspace,
-	} = useWorkspaceItems();
+	} = useWorkspaceItems({ contextSubsidiaryId });
 
 	// 3. Estado del movimiento (tipo, sucursal, razón, notas)
 	const [movementType, setMovementType] = useState<'ingreso' | 'egreso'>('ingreso');
@@ -143,7 +143,7 @@ const IngresoStock = () => {
 
 	// Handler para agregar producto
 	const handleAddProduct = (product: IProduct) => {
-		addToWorkspace(product, branchId, setBranchId);
+		addToWorkspace(product);
 	};
 
 	// Handler para enviar ajuste
@@ -153,7 +153,7 @@ const IngresoStock = () => {
 			branchId,
 			reason,
 			notes,
-			selectedSubsidiaryId,
+			contextSubsidiaryId ?? 0,
 			movementType,
 			() => {
 				clearWorkspace();
@@ -201,7 +201,7 @@ const IngresoStock = () => {
 			selectedBrandId,
 		);
 		if (newProduct) {
-			addToWorkspace(newProduct, branchId, setBranchId);
+			addToWorkspace(newProduct);
 			refresh();
 		}
 	};

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { FormikProps } from 'formik';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
@@ -8,6 +8,7 @@ import Label from '@/components/form/Label';
 import Textarea from '@/components/form/Textarea';
 import { useAppSelector } from '@/store';
 import { useUserBranches } from '@/hooks/userBrandBranch';
+import { StockDeltaValidator } from './StockDeltaValidator';
 import { IAdjustmentForm } from '../types';
 
 interface FinalizeAdjustmentModalProps {
@@ -16,6 +17,8 @@ interface FinalizeAdjustmentModalProps {
 	form: FormikProps<IAdjustmentForm>;
 	isSubmitting: boolean;
 	itemCount: number;
+	/** Subsidiaria activa — se usa para filtrar las sucursales del dropdown */
+	subsidiaryId: number | null;
 }
 
 export const FinalizeAdjustmentModal: React.FC<FinalizeAdjustmentModalProps> = ({
@@ -24,12 +27,32 @@ export const FinalizeAdjustmentModal: React.FC<FinalizeAdjustmentModalProps> = (
 	form,
 	isSubmitting,
 	itemCount,
+	subsidiaryId,
 }) => {
 	const { user } = useAppSelector((state) => state.auth);
 	const userId = user?.id ?? (user as { pk?: number } | null)?.pk ?? undefined;
 	const { branches, loading: loadingBranches } = useUserBranches(userId, {
 		enabled: Boolean(userId),
 	});
+
+	// Estado del Validador Delta
+	const [isDeltaValid, setIsDeltaValid] = useState(true);
+
+	// Mock Data for Phase 3 UI Testing as requested
+	const mockTotalStock = 100500;
+	const mockAllocations = useMemo(
+		() => [
+			{ id: 87, name: 'AIO LENOVO M70a', stock: 99989, queriedBranchId: 3 },
+			{ id: 87, name: 'AIO LENOVO M70a', stock: 511, queriedBranchId: 4 },
+		],
+		[]
+	);
+
+	// Filtrar sucursales: solo las de la subsidiary activa
+	const filteredBranches = useMemo(() => {
+		if (!subsidiaryId) return branches;
+		return branches.filter((b) => Number(b.subsidiaryId) === subsidiaryId);
+	}, [branches, subsidiaryId]);
 
 	const handleTypeChange = (type: 'ingreso' | 'egreso') => {
 		form.setFieldValue('movementType', type);
@@ -91,7 +114,7 @@ export const FinalizeAdjustmentModal: React.FC<FinalizeAdjustmentModalProps> = (
 								onBlur={form.handleBlur}
 								disabled={loadingBranches}>
 								<option value=''>Selecciona una sucursal...</option>
-								{branches.map((b) => (
+								{filteredBranches.map((b) => (
 									<option key={b.id} value={b.id}>
 										{b.name}
 									</option>
@@ -130,6 +153,15 @@ export const FinalizeAdjustmentModal: React.FC<FinalizeAdjustmentModalProps> = (
 							/>
 						</div>
 					</div>
+
+					{/* Validador de Consistencia Delta */}
+					<div className='mt-2'>
+						<StockDeltaValidator
+							totalSubsidiaryStock={mockTotalStock}
+							allocations={mockAllocations}
+							onValidationChange={setIsDeltaValid}
+						/>
+					</div>
 				</div>
 			</ModalBody>
 			<ModalFooter>
@@ -140,7 +172,7 @@ export const FinalizeAdjustmentModal: React.FC<FinalizeAdjustmentModalProps> = (
 					color='amber'
 					variant='solid'
 					onClick={() => form.handleSubmit()}
-					isDisable={isSubmitting}>
+					isDisable={isSubmitting || !isDeltaValid}>
 					{isSubmitting ? 'Enviando...' : 'Confirmar Ajuste'}
 				</Button>
 			</ModalFooter>

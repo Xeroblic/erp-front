@@ -95,3 +95,35 @@ export const AdjustmentSchema = Yup.object().shape({
 		.min(5, 'La razón es muy corta'),
 	notes: Yup.string().optional(),
 });
+
+/** 
+ * Data requerida para validar Delta de Stock (Distribución por sucursales)
+ * @Full_TS 
+ */
+import type { IProduct } from '@/interface/product.interface';
+import type { IBranch } from '@/interface/empresas.interface';
+
+// Reutilizamos propiedades de IProduct, pero forzamos el ID de sucursal real de la consulta
+export interface IStockBranchAllocation extends Pick<IProduct, 'id' | 'name' | 'stock'> {
+	queriedBranchId: IBranch['id']; // Este será la fuente de verdad del context, no el que devuelva el DB
+}
+
+/**
+ * Validar que la distribución de stock cierre a CERO
+ */
+export const StockDistributionSchema = Yup.object().shape({
+	totalSubsidiaryStock: Yup.number().required('El stock total es requerido'),
+	allocations: Yup.array().of(
+		Yup.object().shape({
+			queriedBranchId: Yup.number().required(),
+			stock: Yup.number().required().min(0),
+		})
+	),
+	delta: Yup.number()
+		.test(
+			'is-balanced',
+			'La suma del stock por sucursales no coincide con el total.',
+			(value) => value === 0
+		)
+		.required()
+});

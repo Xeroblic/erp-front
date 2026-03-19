@@ -179,6 +179,7 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 				form={forms.adjustment}
 				isSubmitting={loaders.isAdjusting}
 				itemCount={workItems.length}
+				subsidiaryId={state.currentSubsidiaryId ?? null}
 			/>
 
 			<BrandDedupModal
