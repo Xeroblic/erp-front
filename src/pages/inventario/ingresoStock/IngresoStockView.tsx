@@ -34,6 +34,7 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 		selectedProduct,
 		targetBranchId,
 		isWorkspaceOpen,
+		lastBatchId,
 		subsidiaryBranchOptions,
 		currentSubsidiaryId,
 	} = state;
@@ -78,6 +79,20 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 
 			<Container>
 				<div className='flex flex-col gap-6 py-8'>
+					{lastBatchId && (
+						<div className='flex items-center justify-between rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900'>
+							<span>
+								Batch en seguimiento: <strong>{lastBatchId}</strong>
+							</span>
+							<Button
+								color='blue'
+								variant='outline'
+								size='sm'
+								onClick={actions.clearLastBatchId}>
+								Ocultar
+							</Button>
+						</div>
+					)}
 					{productsError && (
 						<p className='text-center text-red-500'>Error: {productsError}</p>
 					)}

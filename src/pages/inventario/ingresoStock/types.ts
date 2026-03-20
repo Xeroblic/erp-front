@@ -92,7 +92,8 @@ export const AdjustmentSchema = Yup.object().shape({
 		.required('La sucursal es requerida'),
 	reason: Yup.string()
 		.required('Debes indicar la razón del ajuste')
-		.min(5, 'La razón es muy corta'),
+		.min(5, 'La razón es muy corta')
+		.max(255, 'La razón no puede superar 255 caracteres'),
 	notes: Yup.string().optional(),
 });
 

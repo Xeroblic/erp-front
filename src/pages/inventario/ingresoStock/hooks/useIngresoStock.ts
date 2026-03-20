@@ -129,7 +129,13 @@ export const useIngresoStock = () => {
 	} = useWorkspaceItems({ contextSubsidiaryId: currentSubsidiaryId });
 
 	// API Hooks
-	const { isSubmitting: isAdjusting, submitBatchAdjustment, getSignedQuantity } = useStockAdjustment();
+	const {
+		isSubmitting: isAdjusting,
+		submitBatchAdjustment,
+		getSignedQuantity,
+		lastBatchId,
+		clearLastBatchId,
+	} = useStockAdjustment();
 	const { isCreating: isCreatingProduct, createQuickProduct } = useQuickProductCreate();
 	const {
 		findPotentialDuplicates,
@@ -368,10 +374,10 @@ export const useIngresoStock = () => {
 		},
 		validationSchema: AdjustmentSchema,
 		onSubmit: async (values, { resetForm }) => {
-			// Usar targetBranchId como destino si el flujo es Progressive Disclosure
-			const destinationBranch = targetBranchId || values.branchId;
+			// Priorizar siempre la sucursal elegida en el modal.
+			const destinationBranch = values.branchId || targetBranchId;
 
-			const success = await submitBatchAdjustment(
+			await submitBatchAdjustment(
 				workItems,
 				destinationBranch,
 				values.reason,
@@ -447,7 +453,7 @@ export const useIngresoStock = () => {
 					branch_id: Number(newProduct.branch_id ?? branchId) || branchId,
 					subsidiary_id: subId,
 				};
-				addToWorkspace(safeProduct, values.price);
+				addToWorkspace(safeProduct);
 				refresh();
 				resetForm();
 				quickProductForm.setFieldValue('brandId', '');
@@ -486,6 +492,7 @@ export const useIngresoStock = () => {
 			selectedProduct,
 			targetBranchId,
 			isWorkspaceOpen,
+			lastBatchId,
 			subsidiaryBranchOptions,
 			modals: {
 				isQuickProductModalOpen,
@@ -532,6 +539,7 @@ export const useIngresoStock = () => {
 			},
 			openAdjustmentModal: handleOpenAdjustmentModal,
 			closeAdjustmentModal: () => setIsAdjustmentModalOpen(false),
+			clearLastBatchId,
 			getSignedQuantity,
 		}
 	};

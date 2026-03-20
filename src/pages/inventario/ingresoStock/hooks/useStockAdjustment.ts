@@ -7,8 +7,50 @@ import { toast } from 'react-toastify';
 import ApiService from '@/services/ApiService';
 import type { IWorkItem, IMovementType, IBatchAdjustmentResponse, IStockAdjustmentPayload } from '../types';
 
+const LAST_BATCH_STORAGE_KEY = 'ingreso-stock:last-batch-id';
+
+type ApiErrorLike = {
+    message?: string;
+    response?: {
+        status?: number;
+        data?: {
+            message?: string;
+            errors?: Record<string, string[] | string>;
+        };
+    };
+};
+
+const persistLastBatchId = (batchId: string) => {
+    if (typeof window === 'undefined') return;
+    window.sessionStorage.setItem(LAST_BATCH_STORAGE_KEY, batchId);
+};
+
+const readLastBatchId = (): string | null => {
+    if (typeof window === 'undefined') return null;
+    return window.sessionStorage.getItem(LAST_BATCH_STORAGE_KEY);
+};
+
+const clearPersistedLastBatchId = () => {
+    if (typeof window === 'undefined') return;
+    window.sessionStorage.removeItem(LAST_BATCH_STORAGE_KEY);
+};
+
+const showValidationErrors = (errors?: Record<string, string[] | string>) => {
+    if (!errors) return;
+    const entries = Object.entries(errors).slice(0, 8);
+    entries.forEach(([field, value]) => {
+        const label = field.replace(/\./g, ' > ');
+        if (Array.isArray(value)) {
+            value.filter(Boolean).slice(0, 2).forEach((msg) => toast.error(`${label}: ${msg}`));
+            return;
+        }
+        if (value) toast.error(`${label}: ${value}`);
+    });
+};
+
 export const useStockAdjustment = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [lastBatchId, setLastBatchId] = useState<string | null>(() => readLastBatchId());
 
     /**
      * Convierte cantidad string a número, validando > 0
@@ -44,9 +86,31 @@ export const useStockAdjustment = () => {
             onSuccess?: () => void,
         ): Promise<boolean> => {
             const parsedBranchId = toPositiveNumber(branchId);
+            const normalizedReason = reason.trim();
+            const normalizedNotes = notes.trim();
 
             if (!workItems.length) {
                 toast.error('Agrega al menos un producto para ajustar.');
+                return false;
+            }
+
+            if (workItems.length > 500) {
+                toast.error('No puedes enviar más de 500 productos por lote.');
+                return false;
+            }
+
+            if (!parsedBranchId) {
+                toast.error('Debes seleccionar una sucursal válida para el ajuste.');
+                return false;
+            }
+
+            if (!normalizedReason) {
+                toast.error('La razón del ajuste es obligatoria.');
+                return false;
+            }
+
+            if (normalizedReason.length > 255) {
+                toast.error('La razón del ajuste no puede superar 255 caracteres.');
                 return false;
             }
 
@@ -94,8 +158,8 @@ export const useStockAdjustment = () => {
             // Armar payload
             const payload: IStockAdjustmentPayload = {
                 branch_id: parsedBranchId,
-                reason: reason.trim(),
-                notes: notes.trim(),
+                reason: normalizedReason,
+                notes: normalizedNotes || undefined,
                 items,
             };
 
@@ -112,6 +176,10 @@ export const useStockAdjustment = () => {
                 }
 
                 const batchId = response.data?.batch_id;
+                if (batchId) {
+                    setLastBatchId(batchId);
+                    persistLastBatchId(batchId);
+                }
                 toast.success(
                     batchId
                         ? `✓ Procesando en segundo plano. Batch: ${batchId}`
@@ -121,8 +189,27 @@ export const useStockAdjustment = () => {
                 onSuccess?.();
                 return true;
             } catch (err) {
+                const apiError = err as ApiErrorLike;
+                const status = apiError?.response?.status;
+                const apiMessage = apiError?.response?.data?.message;
+
+                if (status === 403) {
+                    toast.error('No tienes permisos para ajustar stock en esta subsidiaria (403).');
+                    return false;
+                }
+
+                if (status === 422) {
+                    toast.error(apiMessage || 'Hay errores de validación en el ajuste (422).');
+                    showValidationErrors(apiError?.response?.data?.errors);
+                    return false;
+                }
+
                 const message =
-                    err instanceof Error ? err.message : 'Error al enviar ajuste de stock.';
+                    typeof apiMessage === 'string' && apiMessage.trim()
+                        ? apiMessage
+                        : err instanceof Error
+                            ? err.message
+                            : 'Error al enviar ajuste de stock.';
                 toast.error(`✗ ${message}`);
                 return false;
             } finally {
@@ -132,8 +219,15 @@ export const useStockAdjustment = () => {
         [getSignedQuantity, toPositiveNumber],
     );
 
+    const clearLastBatchId = useCallback(() => {
+        setLastBatchId(null);
+        clearPersistedLastBatchId();
+    }, []);
+
     return {
         isSubmitting,
+        lastBatchId,
+        clearLastBatchId,
         submitBatchAdjustment,
         getSignedQuantity,
         toPositiveNumber,
