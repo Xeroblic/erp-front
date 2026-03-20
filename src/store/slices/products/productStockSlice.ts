@@ -68,6 +68,82 @@ const getApiError = (error: unknown, fallback: string): string => {
 	return fallback;
 };
 
+const toAllocation = (raw: unknown): IBranchAllocation | null => {
+	if (!raw || typeof raw !== 'object') return null;
+
+	const record = raw as Record<string, unknown>;
+	const branchObj =
+		typeof record.branch === 'object' && record.branch !== null
+			? (record.branch as Record<string, unknown>)
+			: null;
+
+	const rawBranchId =
+		record.branch_id ??
+		record.branchId ??
+		record.id ??
+		branchObj?.id;
+	const branch_id = Number(rawBranchId ?? 0);
+	if (!branch_id) return null;
+
+	const branch_name = String(
+		record.branch_name ??
+		record.branchName ??
+		record.name ??
+		branchObj?.name ??
+		`Sucursal ${branch_id}`,
+	);
+
+	const stock = Number(
+		record.stock ??
+		record.quantity ??
+		record.total_stock ??
+		record.totalStock ??
+		0,
+	);
+
+	const is_active =
+		typeof record.is_active === 'boolean'
+			? record.is_active
+			: typeof record.isActive === 'boolean'
+				? record.isActive
+				: stock > 0;
+
+	return {
+		branch_id,
+		branch_name,
+		stock,
+		is_active,
+	};
+};
+
+const extractAllocations = (payload: unknown): IBranchAllocation[] => {
+	if (Array.isArray(payload)) {
+		return payload.map(toAllocation).filter((item): item is IBranchAllocation => Boolean(item));
+	}
+
+	if (!payload || typeof payload !== 'object') return [];
+
+	const record = payload as Record<string, unknown>;
+	const candidates = [
+		record.data,
+		record.allocations,
+		record.items,
+		record.results,
+		(record.data as Record<string, unknown> | undefined)?.allocations,
+		(record.data as Record<string, unknown> | undefined)?.items,
+		(record.data as Record<string, unknown> | undefined)?.results,
+	];
+
+	for (const candidate of candidates) {
+		if (!Array.isArray(candidate)) continue;
+		return candidate
+			.map(toAllocation)
+			.filter((item): item is IBranchAllocation => Boolean(item));
+	}
+
+	return [];
+};
+
 // ---------------------------------------------------------------------------
 // 11 Thunks para Operaciones de Stock & Series
 // Contexto estricto: /subsidiaries/{subsidiaryId}/products/...
@@ -169,7 +245,7 @@ export const fetchProductAllocations = createAsyncThunk<
 			url: `/subsidiaries/${subsidiaryId}/products/${productId}/allocations`,
 			method: 'get',
 		});
-		return res.data?.data ?? [];
+		return extractAllocations(res.data ?? res);
 	} catch (error) {
 		return rejectWithValue(getApiError(error, 'Error al cargar asignaciones de stock'));
 	}
@@ -277,17 +353,17 @@ const productStockSlice = createSlice({
 			.addCase(assignProduct.pending, (state) => { state.isAssigning = true; state.error = null; })
 			.addCase(assignProduct.fulfilled, (state) => { state.isAssigning = false; })
 			.addCase(assignProduct.rejected, (state, action) => { state.isAssigning = false; state.error = action.payload ?? null; })
-			
+
 			// Unassign
 			.addCase(unassignProduct.pending, (state) => { state.isUnassigning = true; state.error = null; })
 			.addCase(unassignProduct.fulfilled, (state) => { state.isUnassigning = false; })
 			.addCase(unassignProduct.rejected, (state, action) => { state.isUnassigning = false; state.error = action.payload ?? null; })
-			
+
 			// Transfer
 			.addCase(transferStock.pending, (state) => { state.isTransferring = true; state.error = null; })
 			.addCase(transferStock.fulfilled, (state) => { state.isTransferring = false; })
 			.addCase(transferStock.rejected, (state, action) => { state.isTransferring = false; state.error = action.payload ?? null; })
-			
+
 			// Adjust 
 			.addCase(adjustProductStock.pending, (state) => { state.isAdjusting = true; state.error = null; })
 			.addCase(adjustProductStock.fulfilled, (state) => { state.isAdjusting = false; })
@@ -297,7 +373,7 @@ const productStockSlice = createSlice({
 			.addCase(batchAdjustStock.pending, (state) => { state.isAdjusting = true; state.error = null; })
 			.addCase(batchAdjustStock.fulfilled, (state) => { state.isAdjusting = false; })
 			.addCase(batchAdjustStock.rejected, (state, action) => { state.isAdjusting = false; state.error = action.payload ?? null; })
-			
+
 			// Allocations
 			.addCase(fetchProductAllocations.pending, (state) => { state.isLoadingAllocations = true; state.error = null; })
 			.addCase(fetchProductAllocations.fulfilled, (state, action) => {
@@ -305,7 +381,7 @@ const productStockSlice = createSlice({
 				state.allocations = action.payload;
 			})
 			.addCase(fetchProductAllocations.rejected, (state, action) => { state.isLoadingAllocations = false; state.error = action.payload ?? null; })
-			
+
 			// Series
 			.addCase(fetchProductSeries.pending, (state) => { state.isLoadingSeries = true; state.error = null; })
 			.addCase(fetchProductSeries.fulfilled, (state, action) => {
@@ -313,17 +389,17 @@ const productStockSlice = createSlice({
 				state.series = action.payload;
 			})
 			.addCase(fetchProductSeries.rejected, (state, action) => { state.isLoadingSeries = false; state.error = action.payload ?? null; })
-			
+
 			// Create Series
 			.addCase(createProductSeries.pending, (state) => { state.isCreatingSeries = true; state.error = null; })
 			.addCase(createProductSeries.fulfilled, (state) => { state.isCreatingSeries = false; })
 			.addCase(createProductSeries.rejected, (state, action) => { state.isCreatingSeries = false; state.error = action.payload ?? null; })
-			
+
 			// Update Serie
 			.addCase(updateSerieStatus.pending, (state) => { state.isUpdatingSerie = true; state.error = null; })
 			.addCase(updateSerieStatus.fulfilled, (state) => { state.isUpdatingSerie = false; })
 			.addCase(updateSerieStatus.rejected, (state, action) => { state.isUpdatingSerie = false; state.error = action.payload ?? null; })
-			
+
 			// Movements
 			.addCase(fetchStockMovements.pending, (state) => { state.isLoadingMovements = true; state.error = null; })
 			.addCase(fetchStockMovements.fulfilled, (state, action) => {
@@ -331,7 +407,7 @@ const productStockSlice = createSlice({
 				state.movements = action.payload;
 			})
 			.addCase(fetchStockMovements.rejected, (state, action) => { state.isLoadingMovements = false; state.error = action.payload ?? null; })
-			
+
 			// Verify
 			.addCase(verifyStockConsistency.pending, (state) => { state.isVerifying = true; state.error = null; })
 			.addCase(verifyStockConsistency.fulfilled, (state) => { state.isVerifying = false; })

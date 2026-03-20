@@ -1,3 +1,14 @@
+/**
+ * IngresoStock.tsx — Progressive Disclosure (4 Fases)
+ * @Architect + @UI_UX + @Full_React
+ *
+ * Fase 0: Solo Catálogo (col-12)
+ * Fase 1: Catálogo (col-7) + Detalle Producto (col-5)
+ * Fase 2: Selección de Sucursal Destino dentro del Detalle
+ * Fase 3: Workspace abierto (full-width, debajo)
+ *
+ * Bypass: si Workspace ya está abierto, click en otro producto lo añade directo.
+ */
 import Container from '@/components/layouts/Container/Container';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
@@ -17,11 +28,11 @@ import {
 	type UserBranch,
 } from '@/pages/catalogos/productos/components/modals/hooks/userBranch';
 
-// Módulo local de componentes y hooks
-import { ProductsTable, WorkspaceTable } from './components';
-import { useWorkspaceItems, useStockAdjustment, useQuickProductCreate } from './hooks';
+// Componentes y hooks locales
+import { ProductsTable, WorkspaceTable, ProductDetailCard } from './components';
 import { QuickProductForm } from './components/QuickProductForm';
 import { MovementForm } from './components/MovementForm';
+import { useWorkspaceItems, useStockAdjustment, useQuickProductCreate } from './hooks';
 
 const IngresoStock = () => {
 	const filters = useMemo(() => ({}), []);
@@ -96,28 +107,28 @@ const IngresoStock = () => {
 		return () => window.removeEventListener('user-branch-changed', handleExternalBranchChange);
 	}, []);
 
-	const handleBranchChange = (nextBranchId: string) => {
-		setBranchId(nextBranchId);
-		const selectedBranch = visibleBranches.find((b) => String(b.id) === nextBranchId);
-		setContextSubsidiaryId(selectedBranch?.subsidiaryId ?? null);
-	};
+	// ─── Progressive Disclosure: Estados de Fase ─────────────────────────
+	const [selectedProduct, setSelectedProduct] = useState<IProduct | null>(null); // Fase 0→1
+	const [targetBranchId, setTargetBranchId] = useState<string>(''); // Fase 1→2
+	const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false); // Fase 2→3
 
-	// 1. Cargar productos
+	// Derivar fases
+	const isDetailVisible = selectedProduct !== null && !isWorkspaceOpen;
+
+	// ─── Productos ───────────────────────────────────────────────────────
 	const { products, loading, error, refresh, brands } = useProductos({
 		mode: 'subsidiaries',
-		branchId: branchId ? Number(branchId) : null,
+		branchId: undefined, // @Architect: Forzamos undefined para que catalogue cargue el stock total global
 		subsidiaryId: contextSubsidiaryId,
-		enabled: Boolean(branchId && contextSubsidiaryId),
+		enabled: Boolean(contextSubsidiaryId),
 		filters,
 		page: 1,
 		perPage: 15,
 	});
 
-	// 2. Estado del workspace (agregar, remover, actualizar items)
+	// Workspace
 	const {
 		workItems,
-		isWorkspaceVisible,
-		setIsWorkspaceVisible,
 		selectedSubsidiaryId,
 		addToWorkspace,
 		removeFromWorkspace,
@@ -125,55 +136,75 @@ const IngresoStock = () => {
 		clearWorkspace,
 	} = useWorkspaceItems({ contextSubsidiaryId });
 
-	// 3. Estado del movimiento (tipo, sucursal, razón, notas)
 	const [movementType, setMovementType] = useState<'ingreso' | 'egreso'>('ingreso');
 	const [reason, setReason] = useState('');
 	const [notes, setNotes] = useState('');
 
-	// 4. Lógica de validación y envío
 	const { isSubmitting, submitBatchAdjustment, getSignedQuantity } = useStockAdjustment();
-
-	// 5. Crear producto expres
 	const { isCreating, createQuickProduct } = useQuickProductCreate();
 
-	// Filtrar productos sin serialización
 	const productRows = useMemo<IProduct[]>(() => {
 		return products.filter((p: IProduct) => !p.serial_tracking);
 	}, [products]);
 
-	// Handler para agregar producto
-	const handleAddProduct = (product: IProduct) => {
-		addToWorkspace(product);
+	// ─── Handlers ────────────────────────────────────────────────────────
+
+	/**
+	 * Click en "Ingresar/Ajustar" de una fila del catálogo.
+	 * Si el Workspace ya está abierto → bypass: se agrega directo.
+	 * Si no → se abre la Card de Detalle (Fase 1).
+	 */
+	const handleSelectProduct = (product: IProduct) => {
+		if (isWorkspaceOpen) {
+			// Bypass: agregar directo al workspace activo
+			addToWorkspace(product);
+			toast.info(`"${product.name}" agregado a la zona de trabajo.`);
+			return;
+		}
+		// Fase 0 → 1: mostrar detalle
+		setSelectedProduct(product);
+		setTargetBranchId('');
 	};
 
-	// Handler para enviar ajuste
+	/** Fase 2 → 3: Abrir Workspace con la sucursal elegida */
+	const handleStartAdjustment = () => {
+		if (!selectedProduct || !targetBranchId) return;
+		addToWorkspace(selectedProduct);
+		setIsWorkspaceOpen(true);
+	};
+
+	/** Cerrar Workspace: vuelve a Fase 0 */
+	const handleCloseWorkspace = () => {
+		clearWorkspace();
+		setSelectedProduct(null);
+		setTargetBranchId('');
+		setIsWorkspaceOpen(false);
+		setReason('');
+		setNotes('');
+	};
+
+	/** Cerrar la Card Detalle: vuelve a Fase 0 */
+	const handleCloseDetail = () => {
+		setSelectedProduct(null);
+		setTargetBranchId('');
+	};
+
 	const handleSubmit = async () => {
+		// Usar targetBranchId (la sucursal elegida en la Fase 2) como destino
 		await submitBatchAdjustment(
 			workItems,
-			branchId,
+			targetBranchId,
 			reason,
 			notes,
 			contextSubsidiaryId ?? 0,
 			movementType,
 			() => {
-				clearWorkspace();
-				setReason('');
-				setNotes('');
+				handleCloseWorkspace();
 				refresh();
 			},
 		);
-
-		// El toast ya se muestra en el hook
 	};
 
-	// Handler para limpiar workspace
-	const handleClear = () => {
-		clearWorkspace();
-		setReason('');
-		setNotes('');
-	};
-
-	// Handler para crear producto expres y agregarlo automáticamente
 	const handleQuickProductCreate = async (data: {
 		name: string;
 		sku: string;
@@ -206,6 +237,7 @@ const IngresoStock = () => {
 		}
 	};
 
+	// ─── Render ──────────────────────────────────────────────────────────
 	return (
 		<PageWrapper title='Ingreso / Egreso de Stock' name='Stock' isProtectedRoute>
 			<Subheader>
@@ -223,12 +255,12 @@ const IngresoStock = () => {
 					</div>
 				</SubheaderLeft>
 				<SubheaderRight>
-					<Button
-						color='zinc'
-						variant='outline'
-						onClick={() => setIsWorkspaceVisible((prev) => !prev)}>
-						{isWorkspaceVisible ? 'Ocultar' : 'Mostrar'} zona de ajuste
-					</Button>
+					{isWorkspaceOpen && (
+						<Button color='red' variant='outline' onClick={handleCloseWorkspace}>
+							<Icon icon='DuoClose' className='mr-1 h-4 w-4' />
+							Cerrar zona de ajuste
+						</Button>
+					)}
 				</SubheaderRight>
 			</Subheader>
 
@@ -241,35 +273,55 @@ const IngresoStock = () => {
 						</p>
 					)}
 
-					<div className='flex flex-col gap-4'>
-						{/* Formulario expresión para crear producto rápido */}
-						<QuickProductForm
-							branchId={branchId}
-							isCreating={isCreating}
-							onSubmit={handleQuickProductCreate}
-						/>
+					{/* Producto Exprés */}
+					<QuickProductForm
+						branchId={branchId}
+						isCreating={isCreating}
+						onSubmit={handleQuickProductCreate}
+					/>
 
-						{/* Tabla de catálogo */}
-						<Card>
+					{/* ─── Grid Principal: Catálogo + Detalle ─── */}
+					<div className='grid grid-cols-1 gap-4 lg:grid-cols-12'>
+						{/* Catálogo de Productos */}
+						<Card
+							className={`transition-all duration-300 ${
+								isDetailVisible ? 'lg:col-span-7' : 'lg:col-span-12'
+							}`}>
 							<CardHeader>
 								<CardTitle>Catálogo de Productos</CardTitle>
 								<p className='text-xs text-zinc-500'>
-									Sin serialización — haz click en "Ingresar/Ajustar" para agregar
-									a la zona de trabajo.
+									{isWorkspaceOpen
+										? 'Click en "Ingresar/Ajustar" para agregar más productos al workspace activo.'
+										: 'Sin serialización — click en "Ingresar/Ajustar" para ver detalle.'}
 								</p>
 							</CardHeader>
 							<CardBody>
 								<ProductsTable
 									products={productRows}
 									loading={loading}
-									onSelectProduct={handleAddProduct}
+									onSelectProduct={handleSelectProduct}
 								/>
 							</CardBody>
 						</Card>
+
+						{/* Fase 1: Card Detalle de Producto */}
+						{isDetailVisible && selectedProduct && (
+							<div className='lg:col-span-5'>
+								<ProductDetailCard
+									product={selectedProduct}
+									branches={branchOptions}
+									targetBranchId={targetBranchId}
+									onTargetBranchChange={setTargetBranchId}
+									onStartAdjustment={handleStartAdjustment}
+									onClose={handleCloseDetail}
+									subsidiaryId={contextSubsidiaryId}
+								/>
+							</div>
+						)}
 					</div>
 
-					{/* Zona de trabajo (workspace) */}
-					{isWorkspaceVisible && (
+					{/* ─── Fase 3: Zona de Trabajo (full-width, debajo) ─── */}
+					{isWorkspaceOpen && (
 						<div className='grid grid-cols-1 gap-4 lg:grid-cols-12'>
 							{/* Tabla de items en workspace */}
 							<Card className='lg:col-span-7'>
@@ -296,13 +348,18 @@ const IngresoStock = () => {
 							<Card className='lg:col-span-5'>
 								<CardHeader>
 									<CardTitle>Datos del Movimiento</CardTitle>
+									<Badge variant='outline' color='amber'>
+										Destino:{' '}
+										{branchOptions.find((b) => b.value === targetBranchId)
+											?.label ?? '—'}
+									</Badge>
 								</CardHeader>
 								<CardBody>
 									<MovementForm
 										movementType={movementType}
 										onMovementTypeChange={setMovementType}
-										branchId={branchId}
-										onBranchIdChange={handleBranchChange}
+										branchId={targetBranchId}
+										onBranchIdChange={() => {}}
 										branchOptions={branchOptions}
 										isBranchesLoading={branchesLoading}
 										selectedSubsidiaryId={selectedSubsidiaryId}
@@ -312,7 +369,11 @@ const IngresoStock = () => {
 										onNotesChange={setNotes}
 										hasItems={workItems.length > 0}
 										isSubmitting={isSubmitting}
-										onClear={handleClear}
+										onClear={() => {
+											clearWorkspace();
+											setReason('');
+											setNotes('');
+										}}
 										onSubmit={handleSubmit}
 									/>
 								</CardBody>

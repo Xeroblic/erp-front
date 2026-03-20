@@ -1,14 +1,16 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FormikProps } from 'formik';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
+import Badge from '@/components/ui/Badge';
 import Input from '@/components/form/Input';
 import Select from '@/components/form/Select';
 import Label from '@/components/form/Label';
 import Textarea from '@/components/form/Textarea';
 import { useAppSelector } from '@/store';
 import { useUserBranches } from '@/hooks/userBrandBranch';
-import { StockDeltaValidator } from './StockDeltaValidator';
+import ApiService from '@/services/ApiService';
+import type { IWorkItem } from '../types';
 import { IAdjustmentForm } from '../types';
 
 interface FinalizeAdjustmentModalProps {
@@ -17,6 +19,7 @@ interface FinalizeAdjustmentModalProps {
 	form: FormikProps<IAdjustmentForm>;
 	isSubmitting: boolean;
 	itemCount: number;
+	workItems: IWorkItem[];
 	/** Subsidiaria activa — se usa para filtrar las sucursales del dropdown */
 	subsidiaryId: number | null;
 }
@@ -27,6 +30,7 @@ export const FinalizeAdjustmentModal: React.FC<FinalizeAdjustmentModalProps> = (
 	form,
 	isSubmitting,
 	itemCount,
+	workItems,
 	subsidiaryId,
 }) => {
 	const { user } = useAppSelector((state) => state.auth);
@@ -34,25 +38,62 @@ export const FinalizeAdjustmentModal: React.FC<FinalizeAdjustmentModalProps> = (
 	const { branches, loading: loadingBranches } = useUserBranches(userId, {
 		enabled: Boolean(userId),
 	});
-
-	// Estado del Validador Delta
-	const [isDeltaValid, setIsDeltaValid] = useState(true);
-
-	// Mock Data for Phase 3 UI Testing as requested
-	const mockTotalStock = 100500;
-	const mockAllocations = useMemo(
-		() => [
-			{ id: 87, name: 'AIO LENOVO M70a', stock: 99989, queriedBranchId: 3 },
-			{ id: 87, name: 'AIO LENOVO M70a', stock: 511, queriedBranchId: 4 },
-		],
-		[]
-	);
+	const [stockByProduct, setStockByProduct] = useState<Map<number, number>>(new Map());
+	const [isLoadingBranchStock, setIsLoadingBranchStock] = useState(false);
 
 	// Filtrar sucursales: solo las de la subsidiary activa
 	const filteredBranches = useMemo(() => {
 		if (!subsidiaryId) return branches;
 		return branches.filter((b) => Number(b.subsidiaryId) === subsidiaryId);
 	}, [branches, subsidiaryId]);
+
+	useEffect(() => {
+		const selectedBranchId = Number(form.values.branchId);
+		if (!isOpen || selectedBranchId <= 0 || !workItems.length) {
+			setStockByProduct(new Map());
+			return;
+		}
+
+		let isCancelled = false;
+		const loadBranchStock = async () => {
+			setIsLoadingBranchStock(true);
+			try {
+				const rows = await Promise.all(
+					workItems.map(async (item) => {
+						try {
+							const response = await ApiService.fetchData({
+								url: `/branches/${selectedBranchId}/products/${item.productId}`,
+								method: 'get',
+							});
+							const payload =
+								(response.data as { data?: Record<string, unknown> } | undefined)
+									?.data ??
+								(response.data as Record<string, unknown> | undefined) ??
+								{};
+							const stock = Number(payload.stock ?? 0);
+							return {
+								productId: item.productId,
+								stock: Number.isFinite(stock) ? stock : 0,
+							};
+						} catch {
+							return { productId: item.productId, stock: 0 };
+						}
+					}),
+				);
+
+				if (isCancelled) return;
+				setStockByProduct(new Map(rows.map((row) => [row.productId, row.stock])));
+			} finally {
+				if (!isCancelled) setIsLoadingBranchStock(false);
+			}
+		};
+
+		void loadBranchStock();
+
+		return () => {
+			isCancelled = true;
+		};
+	}, [form.values.branchId, isOpen, workItems]);
 
 	const handleTypeChange = (type: 'ingreso' | 'egreso') => {
 		form.setFieldValue('movementType', type);
@@ -154,14 +195,50 @@ export const FinalizeAdjustmentModal: React.FC<FinalizeAdjustmentModalProps> = (
 						</div>
 					</div>
 
-					{/* Validador de Consistencia Delta */}
-					<div className='mt-2'>
-						<StockDeltaValidator
-							totalSubsidiaryStock={mockTotalStock}
-							allocations={mockAllocations}
-							onValidationChange={setIsDeltaValid}
-						/>
-					</div>
+					{Number(form.values.branchId) > 0 && (
+						<div className='rounded-md border border-zinc-200 p-3 dark:border-zinc-700'>
+							<p className='mb-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
+								Stock en sucursal seleccionada
+							</p>
+							{isLoadingBranchStock ? (
+								<div className='flex flex-col gap-2'>
+									{[1, 2].map((i) => (
+										<div
+											key={i}
+											className='h-8 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700'
+										/>
+									))}
+								</div>
+							) : (
+								<div className='flex flex-col gap-2'>
+									{workItems.map((item) => {
+										const stock = Number(
+											stockByProduct.get(item.productId) ?? 0,
+										);
+										return (
+											<div
+												key={item.productId}
+												className='flex items-center justify-between rounded border border-zinc-100 px-3 py-2 text-sm dark:border-zinc-700'>
+												<div className='min-w-0'>
+													<p className='truncate font-medium text-zinc-800 dark:text-zinc-100'>
+														{item.name}
+													</p>
+													<p className='text-xs text-zinc-500'>
+														SKU: {item.sku}
+													</p>
+												</div>
+												<Badge
+													variant='outline'
+													color={stock > 0 ? 'emerald' : 'zinc'}>
+													{stock.toLocaleString('es-CL')} uds
+												</Badge>
+											</div>
+										);
+									})}
+								</div>
+							)}
+						</div>
+					)}
 				</div>
 			</ModalBody>
 			<ModalFooter>
@@ -172,7 +249,7 @@ export const FinalizeAdjustmentModal: React.FC<FinalizeAdjustmentModalProps> = (
 					color='amber'
 					variant='solid'
 					onClick={() => form.handleSubmit()}
-					isDisable={isSubmitting || !isDeltaValid}>
+					isDisable={isSubmitting}>
 					{isSubmitting ? 'Enviando...' : 'Confirmar Ajuste'}
 				</Button>
 			</ModalFooter>

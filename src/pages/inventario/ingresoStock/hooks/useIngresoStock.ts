@@ -6,6 +6,7 @@ import { useStockCatalog } from './useStockCatalog';
 import type { IProduct } from '@/interface/product.interface';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useUserBranches } from '@/hooks/userBrandBranch';
+import ApiService from '@/services/ApiService';
 import { createBrand, fetchBrands } from '@/store/slices/brands/brandsSlice';
 import { useWorkspaceItems } from './useWorkspaceItems';
 import { useStockAdjustment } from './useStockAdjustment';
@@ -102,7 +103,9 @@ export const useIngresoStock = () => {
 	// Contexto local (Catálogo de Stock)
 	const [filters] = useState({});
 	const { products, loading: isLoadingProducts, error: productsError, refresh } = useStockCatalog({
-		branchId: selectedBranchId ?? undefined,
+		// @Full_React: Forzamos undefined (Zentria Standard para catálogos globales)
+		// Evita que el backend sobreescriba `product.stock` con el asignado a la sucursal
+		branchId: undefined,
 		subsidiaryId: currentSubsidiaryId ?? undefined,
 		filters,
 		page: 1,
@@ -136,6 +139,11 @@ export const useIngresoStock = () => {
 		purgeDuplicates,
 	} = useBrandDeduplication();
 
+	// ─── Progressive Disclosure (Fases) ─────────────────────────────────
+	const [selectedProduct, setSelectedProduct] = useState<IProduct | null>(null); // Fase 0→1
+	const [targetBranchId, setTargetBranchId] = useState<string>(''); // Fase 1→2
+	const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false); // Fase 2→3
+
 	const brandOptions = useMemo(
 		() =>
 			brands.map((brand) => ({
@@ -144,6 +152,17 @@ export const useIngresoStock = () => {
 			})),
 		[brands],
 	);
+
+	// Sucursales filtradas por la subsidiaria activa para el Detalle
+	const subsidiaryBranchOptions = useMemo(() => {
+		if (!currentSubsidiaryId) return [];
+		return branches
+			.filter((b) => Number(b.subsidiaryId) === Number(currentSubsidiaryId))
+			.map((b) => ({
+				value: String(b.id),
+				label: b.name ?? `Sucursal ${b.id}`,
+			}));
+	}, [branches, currentSubsidiaryId]);
 
 	const handleBrandChange = useCallback(
 		(brandId: string) => {
@@ -279,10 +298,65 @@ export const useIngresoStock = () => {
 		],
 	);
 
-	// Handlers simples
-	const handleAddProduct = useCallback((product: IProduct) => {
-		addToWorkspace(product);
-	}, [addToWorkspace]);
+	// Handlers simplificados de Fase
+	const getBranchScopedProduct = useCallback(
+		async (product: IProduct, destinationBranchId: string): Promise<IProduct> => {
+			const parsedBranchId = Number(destinationBranchId);
+			if (!parsedBranchId || parsedBranchId <= 0) return product;
+
+			try {
+				const response = await ApiService.fetchData({
+					url: `/branches/${parsedBranchId}/products/${product.id}`,
+					method: 'get',
+				});
+
+				const payload =
+					(response.data as { data?: Record<string, unknown> } | undefined)?.data ??
+					(response.data as Record<string, unknown> | undefined) ??
+					{};
+
+				const scopedPrice = Number(payload.price ?? product.price ?? 0);
+				const scopedStock = Number(payload.stock ?? product.stock ?? 0);
+
+				return {
+					...product,
+					branch_id: parsedBranchId,
+					price: Number.isFinite(scopedPrice) ? scopedPrice : Number(product.price ?? 0),
+					stock: Number.isFinite(scopedStock) ? scopedStock : Number(product.stock ?? 0),
+				};
+			} catch {
+				return {
+					...product,
+					branch_id: parsedBranchId,
+				};
+			}
+		},
+		[],
+	);
+
+	const handleAddProduct = useCallback(async (product: IProduct) => {
+		if (isWorkspaceOpen) {
+			const destinationBranch = targetBranchId || (selectedBranchId ? String(selectedBranchId) : '');
+			const scopedProduct = await getBranchScopedProduct(product, destinationBranch);
+			addToWorkspace(scopedProduct);
+			toast.info(`"${product.name}" agregado a la zona de trabajo.`);
+			return;
+		}
+		setSelectedProduct(product);
+		setTargetBranchId('');
+	}, [isWorkspaceOpen, targetBranchId, selectedBranchId, getBranchScopedProduct, addToWorkspace]);
+
+	const handleStartAdjustment = useCallback(async () => {
+		if (!selectedProduct || !targetBranchId) return;
+		const scopedProduct = await getBranchScopedProduct(selectedProduct, targetBranchId);
+		addToWorkspace(scopedProduct);
+		setIsWorkspaceOpen(true);
+	}, [selectedProduct, targetBranchId, getBranchScopedProduct, addToWorkspace]);
+
+	const handleCloseDetail = useCallback(() => {
+		setSelectedProduct(null);
+		setTargetBranchId('');
+	}, []);
 
 	// Formulario de Ajuste (Modal Final)
 	const adjustmentForm = useFormik<IAdjustmentForm>({
@@ -294,9 +368,12 @@ export const useIngresoStock = () => {
 		},
 		validationSchema: AdjustmentSchema,
 		onSubmit: async (values, { resetForm }) => {
+			// Usar targetBranchId como destino si el flujo es Progressive Disclosure
+			const destinationBranch = targetBranchId || values.branchId;
+
 			const success = await submitBatchAdjustment(
 				workItems,
-				values.branchId,
+				destinationBranch,
 				values.reason,
 				values.notes,
 				currentSubsidiaryId ?? 0,
@@ -304,6 +381,9 @@ export const useIngresoStock = () => {
 				() => {
 					clearWorkspace();
 					resetForm();
+					setSelectedProduct(null);
+					setTargetBranchId('');
+					setIsWorkspaceOpen(false);
 					setIsAdjustmentModalOpen(false);
 					// Retardo porque el backend procesa el ajuste en un Job asíncrono en background
 					setTimeout(() => {
@@ -320,6 +400,12 @@ export const useIngresoStock = () => {
 			adjustmentForm.setFieldValue('branchId', String(selectedBranchId));
 		}
 	}, [selectedBranchId]);
+
+	// Sincronizar la sucursal elegida en el detalle con el modal final
+	useEffect(() => {
+		if (!targetBranchId) return;
+		adjustmentForm.setFieldValue('branchId', targetBranchId);
+	}, [targetBranchId]);
 
 	// Formulario de Producto Exprés
 	const quickProductForm = useFormik<IQuickProductForm>({
@@ -381,6 +467,9 @@ export const useIngresoStock = () => {
 
 	const handleClearWorkspace = useCallback(() => {
 		clearWorkspace();
+		setSelectedProduct(null);
+		setTargetBranchId('');
+		setIsWorkspaceOpen(false);
 		adjustmentForm.resetForm();
 	}, [clearWorkspace, adjustmentForm]);
 
@@ -391,8 +480,13 @@ export const useIngresoStock = () => {
 			productRows,
 			workItems,
 			isWorkspaceVisible,
+			setIsWorkspaceVisible,
 			selectedSubsidiaryId,
 			currentSubsidiaryId,
+			selectedProduct,
+			targetBranchId,
+			isWorkspaceOpen,
+			subsidiaryBranchOptions,
 			modals: {
 				isQuickProductModalOpen,
 				isAdjustmentModalOpen,
@@ -421,6 +515,9 @@ export const useIngresoStock = () => {
 		actions: {
 			setIsWorkspaceVisible,
 			handleAddProduct,
+			handleStartAdjustment,
+			handleCloseDetail,
+			setTargetBranchId,
 			handleBrandChange,
 			handleCreateBrand,
 			handleCloseBrandDedupModal,

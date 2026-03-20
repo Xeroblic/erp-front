@@ -54,7 +54,7 @@ export const ProductsTable = ({
 			},
 			{
 				accessorKey: 'stock',
-				header: 'Stock Actual',
+				header: 'Stock Total',
 				cell: ({ row }) => (
 					<Badge variant='outline' className='w-fit'>
 						{Number(row.original.stock ?? 0)}

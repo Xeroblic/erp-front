@@ -12,9 +12,9 @@ import {
 	QuickProductModal,
 	FinalizeAdjustmentModal,
 	BrandDedupModal,
+	ProductDetailCard, // @Full_React: Importamos card de detalle
 } from './components';
 
-// Importamos el retorno del hook pre-procesado por Full_React
 import { useIngresoStock } from './hooks/useIngresoStock';
 
 interface IngresoStockViewProps {
@@ -28,11 +28,17 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 		productsError,
 		productRows,
 		workItems,
-		isWorkspaceVisible,
 		modals,
 		loaders,
 		brandDedup,
+		selectedProduct,
+		targetBranchId,
+		isWorkspaceOpen,
+		subsidiaryBranchOptions,
+		currentSubsidiaryId,
 	} = state;
+
+	const isDetailVisible = selectedProduct !== null && !isWorkspaceOpen;
 
 	return (
 		<PageWrapper>
@@ -58,12 +64,15 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 						onClick={actions.openQuickProductModal}>
 						Crear Producto Exprés
 					</Button>
-					<Button
-						color='zinc'
-						variant='outline'
-						onClick={() => actions.setIsWorkspaceVisible(!isWorkspaceVisible)}>
-						{isWorkspaceVisible ? 'Ocultar zona de ajuste' : 'Mostrar zona de ajuste'}
-					</Button>
+					{isWorkspaceOpen && (
+						<Button
+							color='red'
+							variant='outline'
+							onClick={actions.handleClearWorkspace}>
+							<Icon icon='DuoClose' className='mr-1 h-4 w-4' />
+							Cerrar zona de ajuste
+						</Button>
+					)}
 				</SubheaderRight>
 			</Subheader>
 
@@ -73,16 +82,23 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 						<p className='text-center text-red-500'>Error: {productsError}</p>
 					)}
 
+					{/* ─── Grid Principal: Catálogo + Detalle ─── */}
 					<div className='grid grid-cols-1 gap-6 lg:grid-cols-12'>
 						{/* COLUMNA IZQUIERDA: Catálogo de Productos */}
 						<div
-							className={`col-span-1 ${isWorkspaceVisible ? 'lg:col-span-5' : 'lg:col-span-12'}`}>
+							className={`col-span-1 transition-all duration-300 ${
+								isDetailVisible ? 'lg:col-span-7' : 'lg:col-span-12'
+							}`}>
 							<Card className='h-full'>
 								<CardHeader>
-									<CardTitle>Catálogo de Productos</CardTitle>
-									<p className='text-xs text-zinc-500'>
-										Sin serialización — click en "Ingresar/Ajustar" para agregar
-									</p>
+									<CardHeaderChild>
+										<CardTitle>Catálogo de Productos</CardTitle>
+										<p className='text-xs text-zinc-500'>
+											{isWorkspaceOpen
+												? 'Click en "Ingresar/Ajustar" para añadir al workspace activo.'
+												: 'Sin serialización — click en "Ingresar/Ajustar" para ver detalle.'}
+										</p>
+									</CardHeaderChild>
 								</CardHeader>
 								<CardBody>
 									<ProductsTable
@@ -94,9 +110,26 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 							</Card>
 						</div>
 
-						{/* COLUMNA DERECHA: Zona de Trabajo */}
-						{isWorkspaceVisible && (
-							<div className='col-span-1 lg:col-span-7'>
+						{/* COLUMNA DERECHA: Card Detalle de Producto (Fase 1) */}
+						{isDetailVisible && selectedProduct && (
+							<div className='col-span-1 lg:col-span-5'>
+								<ProductDetailCard
+									product={selectedProduct}
+									branches={subsidiaryBranchOptions}
+									targetBranchId={targetBranchId}
+									onTargetBranchChange={actions.setTargetBranchId}
+									onStartAdjustment={actions.handleStartAdjustment}
+									onClose={actions.handleCloseDetail}
+									subsidiaryId={currentSubsidiaryId ?? null}
+								/>
+							</div>
+						)}
+					</div>
+
+					{/* ─── Zona de Trabajo (Fase 3: full-width, abajo) ─── */}
+					{isWorkspaceOpen && (
+						<div className='grid grid-cols-1 gap-6 lg:grid-cols-12'>
+							<div className='col-span-1 lg:col-span-12'>
 								<Card className='h-full'>
 									<CardHeader>
 										<CardHeaderChild>
@@ -135,10 +168,6 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 												<p className='text-zinc-500'>
 													No hay productos en la zona de trabajo.
 												</p>
-												<p className='text-sm text-zinc-400'>
-													Selecciona productos del catálogo a la
-													izquierda.
-												</p>
 											</div>
 										) : (
 											<WorkspaceTable
@@ -156,8 +185,10 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 									</CardBody>
 								</Card>
 							</div>
-						)}
-					</div>
+
+							{/* Opcional: Podríamos re-utilizar la columna de col-span-5 para formulario de datos aquí si quisiéramos replicar el diseño exacto o simplemente dejarlo flotante. */}
+						</div>
+					)}
 				</div>
 			</Container>
 
@@ -179,7 +210,8 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 				form={forms.adjustment}
 				isSubmitting={loaders.isAdjusting}
 				itemCount={workItems.length}
-				subsidiaryId={state.currentSubsidiaryId ?? null}
+				workItems={workItems}
+				subsidiaryId={currentSubsidiaryId ?? null}
 			/>
 
 			<BrandDedupModal
