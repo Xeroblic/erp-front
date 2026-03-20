@@ -4,6 +4,7 @@ import { fetchMisSucursales } from '@/store/slices/sucursales/sucursalesSlice';
 import { fetchBrands } from '@/store/slices/brands/brandsSlice';
 import { fetchCategories } from '@/store/slices/categories/categoriesSlice';
 import {
+	clearCurrentProduct,
 	fetchProductById,
 	fetchProductAttributes,
 	patchProductAttributes,
@@ -75,8 +76,12 @@ export const useProductDetail = ({
 
 	useEffect(() => {
 		if (!productId || !entityId) return;
+		dispatch(clearCurrentProduct());
 		void dispatch(fetchProductById({ entityParam, entityId, productId }));
 		void dispatch(fetchProductAttributes({ entityParam, entityId, productId }));
+		return () => {
+			dispatch(clearCurrentProduct());
+		};
 	}, [dispatch, productId, entityId, entityParam]);
 
 	const refresh = useCallback(() => {

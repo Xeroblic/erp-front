@@ -26,6 +26,7 @@ import {
 import { PRODUCT_EMPTY_INVENTORY_SUMMARY, PRODUCT_EMPTY_STATS } from '@/constants/product.constant';
 import { validateFile, extractMediaUrl } from '@/utils/apiHelpers';
 import { convertFileToWebP } from '@/components/helper/brand.helper';
+import { toast } from 'react-toastify';
 
 // ---------------------------------------------------------------------------
 // Entity param: determines whether the URL uses /branches or /subsidiaries
@@ -85,6 +86,17 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
 	return fallback;
 };
 
+const getResponseMessage = (error: unknown): string | null => {
+	const errorRecord = asRecord(error);
+	const responseRecord = asRecord(errorRecord?.response);
+	const message = asRecord(responseRecord?.data);
+	const msgFromResponse = message?.message;
+	if (typeof msgFromResponse === 'string' && msgFromResponse.trim()) {
+		return msgFromResponse;
+	}
+	return null;
+};
+
 const getErrorPayload = (error: unknown, fallback: string): ApiValidationError => {
 	const errorRecord = asRecord(error);
 	const responseRecord = asRecord(errorRecord?.response);
@@ -101,6 +113,16 @@ const getErrorPayload = (error: unknown, fallback: string): ApiValidationError =
 		return { message: error.message };
 	}
 	return { message: fallback };
+};
+
+const getErrorStatus = (error: unknown): number | null => {
+	const errorRecord = asRecord(error);
+	const responseRecord = asRecord(errorRecord?.response);
+	const status = responseRecord?.status;
+	if (typeof status === 'number' && Number.isFinite(status)) {
+		return status;
+	}
+	return null;
 };
 
 const initialState: ProductsState = {
@@ -293,6 +315,15 @@ export const fetchProductById = createAsyncThunk<
 		const raw = response.data?.data ?? response.data;
 		return normalizeProduct((raw as IProduct) ?? { id: productId, branch_id: entityId });
 	} catch (error: unknown) {
+		if (getErrorStatus(error) === 404) {
+			const backendMessage = getResponseMessage(error);
+			const message =
+				backendMessage && backendMessage.trim().length > 0
+					? backendMessage
+					: 'El producto no esta asignado a esta sucursal';
+			toast.error(message);
+			return rejectWithValue(message);
+		}
 		return rejectWithValue(getErrorMessage(error, 'No se pudo obtener el producto'));
 	}
 });
@@ -702,6 +733,11 @@ const productsSlice = createSlice({
 			state.error = null;
 			state.currentError = null;
 		},
+		clearCurrentProduct: (state) => {
+			state.current = null;
+			state.currentError = null;
+			state.currentLoading = false;
+		},
 	},
 	extraReducers: (builder) => {
 		builder
@@ -745,6 +781,7 @@ const productsSlice = createSlice({
 			})
 			.addCase(fetchProductById.rejected, (state, action) => {
 				state.currentLoading = false;
+				state.current = null;
 				state.currentError = action.payload ?? 'No se pudo obtener el producto';
 			})
 			.addCase(fetchProductAttributes.pending, (state) => {
@@ -932,5 +969,5 @@ const productsSlice = createSlice({
 	},
 });
 
-export const { clearProductsError } = productsSlice.actions;
+export const { clearProductsError, clearCurrentProduct } = productsSlice.actions;
 export default productsSlice.reducer;

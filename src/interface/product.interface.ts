@@ -66,7 +66,15 @@ export interface IProductChild {
 
 export interface IProduct {
 	id: number;
+	/**
+	 * Sucursal consultada en el endpoint actual (contexto de lectura).
+	 * Ya no representa necesariamente la sucursal creadora.
+	 */
 	branch_id: number;
+	/**
+	 * Sucursal de origen/creacion del producto en backend (si viene en payload).
+	 */
+	origin_branch_id?: number | null;
 	subsidiary_id?: number | null;
 	parent_product_id?: number | null;
 	is_parent?: boolean;
@@ -164,7 +172,14 @@ export interface ProductChildSummary {
 
 export interface ProductResourcePayload {
 	id: number;
+	/**
+	 * Sucursal consultada en la respuesta del endpoint.
+	 */
 	branch_id: number | null;
+	/**
+	 * Sucursal de origen/creacion real del producto.
+	 */
+	origin_branch_id?: number | null;
 	parent_product_id: number | null;
 	is_parent?: boolean;
 	is_child?: boolean;

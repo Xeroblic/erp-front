@@ -97,7 +97,7 @@ export function useProductos({
 				fetchProductsList({
 					entityParam: 'subsidiaries',
 					entityId: subsidiaryId,
-					params: { ...filters, page, per_page: perPage, branchId: activeBranchId ?? undefined },
+					params: { ...filters, page, per_page: perPage },
 				}),
 			);
 			return;
@@ -138,17 +138,15 @@ export function useProductos({
 	const refresh = useCallback(() => {
 		if (!enabled) return;
 		if (!entityId) return;
-		const extraParams =
-			mode === 'subsidiaries' && activeBranchId ? { branchId: activeBranchId } : {};
 		void dispatch(
 			fetchProductsList({
 				entityParam,
 				entityId,
-				params: { ...filters, page, per_page: perPage, ...extraParams },
+				params: { ...filters, page, per_page: perPage },
 			}),
 		);
 		void dispatch(fetchInventorySummary({ entityParam, entityId }));
-	}, [dispatch, enabled, entityParam, entityId, mode, activeBranchId, filters, page, perPage]);
+	}, [dispatch, enabled, entityParam, entityId, filters, page, perPage]);
 
 	const createProduct = useCallback(
 		async (payload: { data: Partial<IProduct>; categoryIds: number[] }) => {

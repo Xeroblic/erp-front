@@ -330,7 +330,11 @@ export const useIngresoStock = () => {
 					price: Number.isFinite(scopedPrice) ? scopedPrice : Number(product.price ?? 0),
 					stock: Number.isFinite(scopedStock) ? scopedStock : Number(product.stock ?? 0),
 				};
-			} catch {
+			} catch (error) {
+				const status = Number((error as { response?: { status?: number } })?.response?.status ?? 0);
+				if (status === 404) {
+					toast.error('El producto no esta asignado a esta sucursal');
+				}
 				return {
 					...product,
 					branch_id: parsedBranchId,

@@ -45,6 +45,7 @@ export const ProductDetailCard = ({
 	const dispatch = useAppDispatch();
 	const { allocations, isLoadingAllocations } = useAppSelector((s) => s.productStock);
 	const [branchStockFallback, setBranchStockFallback] = useState<Map<number, number>>(new Map());
+	const [unassignedBranchIds, setUnassignedBranchIds] = useState<Set<number>>(new Set());
 	const [isLoadingBranchFallback, setIsLoadingBranchFallback] = useState(false);
 
 	const allocationsByBranch = useMemo(() => {
@@ -102,6 +103,7 @@ export const ProductDetailCard = ({
 
 	useEffect(() => {
 		setBranchStockFallback(new Map());
+		setUnassignedBranchIds(new Set());
 	}, [product.id, subsidiaryId]);
 
 	useEffect(() => {
@@ -120,7 +122,7 @@ export const ProductDetailCard = ({
 				const rows = await Promise.all(
 					branches.map(async (branch) => {
 						const branchId = Number(branch.value);
-						if (!branchId) return { branchId: 0, stock: 0 };
+						if (!branchId) return { branchId: 0, stock: 0, isUnassigned: false };
 
 						try {
 							const response = await ApiService.fetchData({
@@ -134,9 +136,17 @@ export const ProductDetailCard = ({
 								(response.data as Record<string, unknown> | undefined) ??
 								{};
 							const stock = Number(payload.stock ?? 0);
-							return { branchId, stock: Number.isFinite(stock) ? stock : 0 };
-						} catch {
-							return { branchId, stock: 0 };
+							return {
+								branchId,
+								stock: Number.isFinite(stock) ? stock : 0,
+								isUnassigned: false,
+							};
+						} catch (error) {
+							const status = Number(
+								(error as { response?: { status?: number } })?.response?.status ??
+									0,
+							);
+							return { branchId, stock: 0, isUnassigned: status === 404 };
 						}
 					}),
 				);
@@ -147,6 +157,13 @@ export const ProductDetailCard = ({
 						rows
 							.filter((row) => row.branchId > 0)
 							.map((row) => [row.branchId, row.stock]),
+					),
+				);
+				setUnassignedBranchIds(
+					new Set(
+						rows
+							.filter((row) => row.isUnassigned && row.branchId > 0)
+							.map((row) => row.branchId),
 					),
 				);
 			} finally {
@@ -214,9 +231,16 @@ export const ProductDetailCard = ({
 								<div
 									key={row.branchId}
 									className='flex items-center justify-between rounded-md border border-zinc-100 px-3 py-2 text-sm dark:border-zinc-700'>
-									<span className='text-zinc-600 dark:text-zinc-400'>
-										{row.branchName}
-									</span>
+									<div className='flex items-center gap-2'>
+										<span className='text-zinc-600 dark:text-zinc-400'>
+											{row.branchName}
+										</span>
+										{unassignedBranchIds.has(row.branchId) && (
+											<Badge variant='outline' color='amber'>
+												Requiere Asignacion Previa
+											</Badge>
+										)}
+									</div>
 									<Badge
 										variant='outline'
 										color={row.stock > 0 ? 'emerald' : 'zinc'}>
@@ -254,9 +278,16 @@ export const ProductDetailCard = ({
 					</Select>
 					{targetBranchId && selectedBranchStock && (
 						<div className='mt-2 flex items-center justify-between rounded-md border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700'>
-							<span className='text-zinc-600 dark:text-zinc-300'>
-								Stock en {selectedBranchStock.branchName}
-							</span>
+							<div className='flex items-center gap-2'>
+								<span className='text-zinc-600 dark:text-zinc-300'>
+									Stock en {selectedBranchStock.branchName}
+								</span>
+								{unassignedBranchIds.has(Number(targetBranchId)) && (
+									<Badge variant='outline' color='amber'>
+										Requiere Asignacion Previa
+									</Badge>
+								)}
+							</div>
 							<Badge
 								variant='outline'
 								color={selectedBranchStock.stock > 0 ? 'emerald' : 'zinc'}>

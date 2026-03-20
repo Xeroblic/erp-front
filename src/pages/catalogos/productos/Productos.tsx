@@ -282,10 +282,6 @@ const Productos: React.FC = () => {
 		const modeToUse: ProductsViewMode = viewMode ?? 'branches';
 		const params = new URLSearchParams();
 		if (resolvedBranchId) params.set('branchId', String(resolvedBranchId));
-		params.set('mode', modeToUse);
-		if (modeToUse === 'subsidiaries' && effectiveSubsidiaryId) {
-			params.set('subsidiaryId', String(effectiveSubsidiaryId));
-		}
 		const query = params.toString();
 		const search = query ? `?${query}` : '';
 		navigate(`/catalogos/productos/${product.id}${search}`, {

@@ -37,6 +37,7 @@ import {
 import { useAppSelector } from '@/store';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import type { ProductsViewMode } from './hooks/useProductos';
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 
 const EMPTY_DETAIL_FORM: ProductDetailForm = {
 	sku: '',
@@ -92,6 +93,7 @@ const ProductDetail: React.FC = () => {
 	const location = useLocation();
 	const dispatch = useAppDispatch();
 	const effectiveSubsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
+	const { branchId: currentBranchId } = useCurrentBranch();
 	const locationState =
 		location.state && typeof location.state === 'object'
 			? (location.state as Record<string, unknown>)
@@ -129,9 +131,10 @@ const ProductDetail: React.FC = () => {
 		modeFromQuery ?? viewModeFromState ?? (effectiveSubsidiaryId ? 'subsidiaries' : 'branches');
 	const subsidiaryId =
 		subsidiaryIdFromQuery ?? subsidiaryIdFromState ?? effectiveSubsidiaryId ?? null;
-	const initialBranchId = Number.isFinite(branchIdFromState)
+	const routeBranchId = Number.isFinite(branchIdFromState)
 		? branchIdFromState
 		: branchIdFromQuery;
+	const initialBranchId = mode === 'branches' ? (currentBranchId ?? routeBranchId) : null;
 
 	const getErrorMessage = (error: unknown, fallback: string) => {
 		if (error instanceof Error && error.message) return error.message;
@@ -285,6 +288,10 @@ const ProductDetail: React.FC = () => {
 	}
 
 	if (productLoading) {
+		return <LoadingState />;
+	}
+
+	if (!product && !productError) {
 		return <LoadingState />;
 	}
 

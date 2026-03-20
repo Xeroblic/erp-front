@@ -148,6 +148,7 @@ export const normalizeProduct = (raw: unknown): IProduct => {
 		is_child: toBoolean(safe.is_child),
 		product_status: (safe.product_status ?? 'pending') as ProductStatus,
 		branch_id: Number(safe.branch_id ?? branchRecord?.id ?? 0),
+		origin_branch_id: toNullableNumber(safe.origin_branch_id),
 		sku: String(safe.sku ?? ''),
 		commercial_sku: (safe.commercial_sku ?? null) as string | null,
 		barcode: (safe.barcode ?? null) as string | null,

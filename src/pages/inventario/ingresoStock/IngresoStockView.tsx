@@ -93,6 +93,7 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 							</Button>
 						</div>
 					)}
+
 					{productsError && (
 						<p className='text-center text-red-500'>Error: {productsError}</p>
 					)}
