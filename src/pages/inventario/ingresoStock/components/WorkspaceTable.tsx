@@ -111,7 +111,6 @@ export const WorkspaceTable = ({
 				id: 'adjustment',
 				header: 'Ajuste',
 				cell: ({ row }) => {
-					// Calculamos el ajuste directamente con el valor real del item
 					const signedQuantity = getSignedQuantity(row.original.quantity);
 					return (
 						<Badge color='blue' variant='solid'>
