@@ -76,8 +76,8 @@ const BulkTransferModal: React.FC<BulkTransferModalProps> = ({
 		} finally {
 			setIsSubmitting(false);
 		}
-	}; 
-    // FKGRMW2 HVQRYW3 2C5WJL3
+	};
+	// FKGRMW2 HVQRYW3 2C5WJL3
 	const serialsCount = parseSerials(serialsInput).length;
 
 	return (
