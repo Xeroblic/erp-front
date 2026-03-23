@@ -102,7 +102,7 @@ const LatestProductsTable: React.FC = () => {
 						color={row.original.is_active ? 'blue' : 'gray'}
 						variant='solid'
 						className={
-							row.original.is_active ? 'bg-blue-500 px-2' : 'bg-gray-500 px-2'
+							row.original.is_active ? 'bg-emerald-500 px-2' : 'bg-gray-500 px-2'
 						}>
 						{row.original.is_active ? 'Activo' : 'Inactivo'}
 					</Badge>
