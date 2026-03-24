@@ -6,6 +6,8 @@ import Badge from '@/components/ui/Badge';
 import type { IProduct } from '@/interface/product.interface';
 import ApiService from '@/services/ApiService';
 import toast from '@/utils/toast.utils';
+import { useAppSelector } from '@/store';
+import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 
 interface StockSeriesModalProps {
     isOpen: boolean;
@@ -19,6 +21,7 @@ interface ISeriesItem {
     grade?: string;
     current_status?: string;
     branch_name?: string;
+    branch_id?: number | null;
 }
 
 const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
@@ -33,6 +36,17 @@ const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const user = useAppSelector(state => state.auth.user);
+    const visibleBranches = (user?.visible as any)?.branches || [];
+    const accessibleBranches = visibleBranches.filter((b: any) => b.subsidiary?.id === subsidiaryId);
+
+    const defaultBranchId = user?.branch?.id || '';
+    const initialBranchId = accessibleBranches.some((b: any) => b.id === defaultBranchId) 
+        ? defaultBranchId 
+        : (accessibleBranches.length > 0 ? accessibleBranches[0].id : '');
+
+    const [selectedBranchId, setSelectedBranchId] = useState<number | ''>(initialBranchId);
+
     useEffect(() => {
         if (!isOpen || !product) {
             setSeries([]);
@@ -41,23 +55,40 @@ const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
         }
 
         const fetchSeries = async () => {
+            // Si estamos devolviendo y aún no se seleccionó sucursal de origen, no hacemos la petición
+            if (activeTab === 'return' && !selectedBranchId) {
+                setSeries([]);
+                setSelectedSeries([]);
+                return;
+            }
+
             setIsLoading(true);
             try {
-                // branch_id: subsidiaryId si es Devolver, '' (null) si es Asignar (Bodega Central)
-                const branchParam = activeTab === 'return' ? subsidiaryId : 'null';
+                // branch_id: selectedBranchId si es Devolver, 'null' si es Asignar (Bodega Central)
+                const branchParam = activeTab === 'return' ? selectedBranchId : 'null';
 
                 const response = await ApiService.fetchData<any>({
                     url: `/subsidiaries/${subsidiaryId}/products/${product.id}/series`,
                     params: {
-                        branch_id: branchParam,
-                        status: 'available',
+                        // El usuario comentó la ruta en backend, por ende se aplicará un filtro manual localmente.
+                        // branch_id: branchParam,
+                        // status: 'available',
                         per_page: 1000,
                     }
                 });
                 
                 // Paginador de laravel usualmente está en data.data o si no se paginate en data.
-                const seriesData = response.data?.data || response.data || [];
-                setSeries(Array.isArray(seriesData) ? seriesData : []);
+                const rawSeries = response.data?.data || response.data || [];
+                const seriesData = Array.isArray(rawSeries) ? rawSeries : [];
+
+                // Validamos localmente frente a lo que responde el back:
+                const filteredSeries = seriesData.filter((s: ISeriesItem) => {
+                    const isAvailable = s.current_status === 'available' || s.current_status === 'available_for_sale';
+                    const sBranchId = s.branch_id === null ? 'null' : s.branch_id;
+                    return isAvailable && (String(sBranchId) === String(branchParam));
+                });
+
+                setSeries(filteredSeries);
                 setSelectedSeries([]);
             } catch (error) {
                 console.error('Error fetching series:', error);
@@ -68,7 +99,7 @@ const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
         };
 
         fetchSeries();
-    }, [isOpen, product, subsidiaryId, activeTab]);
+    }, [isOpen, product, subsidiaryId, activeTab, selectedBranchId]);
 
     const handleToggleSelect = (serial: string) => {
         setSelectedSeries(prev => 
@@ -88,27 +119,55 @@ const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
 
     const handleAssignStock = async () => {
         if (!product || selectedSeries.length === 0) return;
+        if (!selectedBranchId) {
+            toast.error('Debe seleccionar una sucursal de destino para asignar el stock.');
+            return;
+        }
+        
+        // Obtener los grados de las series seleccionadas
+        const selectedItems = series.filter(s => selectedSeries.includes(s.serial_number));
+        const uniqueGrades = Array.from(new Set(selectedItems.map(s => s.grade).filter(Boolean)));
+
+        if (uniqueGrades.length > 1) {
+            toast.error(`Todas las series deben ser del mismo grado. Se detectaron grados mixtos: ${uniqueGrades.join(', ')}.`);
+            return;
+        }
+
+        let childId = product.id;
+        const selectedGrade = uniqueGrades[0];
+        
+        if (product.children && product.children.length > 0 && selectedGrade) {
+            const childProduct = product.children.find(c => c.grade === selectedGrade);
+            if (childProduct) {
+                childId = childProduct.id;
+            } else {
+                toast.error(`Producto hijo no encontrado para el grado ${selectedGrade}.`);
+                return;
+            }
+        }
+
         setIsSubmitting(true);
         try {
             await ApiService.fetchData({
                 method: 'POST',
                 url: `/subsidiaries/${subsidiaryId}/products/${product.id}/assign-stock`,
                 data: {
-                    branch_id: subsidiaryId,
+                    branch_id: selectedBranchId,
                     assignments: [
                         {
-                            child_product_id: product.id,
+                            child_product_id: childId,
                             assign_all: false,
                             serial_numbers: selectedSeries
                         }
                     ]
                 }
             });
-            toast.success('Stock asignado correctamente');
+            const destinationBranch = accessibleBranches.find((b: any) => b.id === selectedBranchId)?.name || 'la sucursal seleccionada';
+            toast.success(`Stock asignado exitosamente desde la Bodega Central hacia ${destinationBranch}.`);
             onClose();
         } catch (error) {
             console.error('Error assigning stock:', error);
-            toast.error('Ocurrió un error al asignar el stock.');
+            toast.error('Ocurrió un error al intentar asignar el stock.');
         } finally {
             setIsSubmitting(false);
         }
@@ -116,23 +175,37 @@ const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
 
     const handleReturnStock = async () => {
         if (!product || selectedSeries.length === 0) return;
+        if (!selectedBranchId) {
+            toast.error('Debe seleccionar la sucursal de origen para devolver el stock.');
+            return;
+        }
+
+        const selectedItems = series.filter(s => selectedSeries.includes(s.serial_number));
+        const uniqueGrades = Array.from(new Set(selectedItems.map(s => s.grade).filter(Boolean)));
+
+        if (uniqueGrades.length > 1) {
+            toast.error(`Todas las series deben ser del mismo grado. Se detectaron grados mixtos: ${uniqueGrades.join(', ')}.`);
+            return;
+        }
+
         setIsSubmitting(true);
         try {
             await ApiService.fetchData({
                 method: 'POST',
                 url: `/subsidiaries/${subsidiaryId}/products/${product.id}/unassign-stock`,
                 data: {
-                    branch_id: subsidiaryId,
+                    branch_id: selectedBranchId,
                     confirm: true,
                     serial_numbers: selectedSeries,
                     notes: "Devolución de stock a la subsidiaria"
                 }
             });
-            toast.success('Stock devuelto correctamente');
+            const branchName = series.find(s => selectedSeries.includes(s.serial_number))?.branch_name || 'la sucursal';
+            toast.success(`Stock devuelto exitosamente desde ${branchName} hacia la Bodega Central.`);
             onClose();
         } catch (error) {
             console.error('Error returning stock:', error);
-            toast.error('Ocurrió un error al devolver el stock.');
+            toast.error('Ocurrió un error al intentar devolver el stock.');
         } finally {
             setIsSubmitting(false);
         }
@@ -157,26 +230,51 @@ const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
                     <div className="flex rounded-md shadow-sm border border-gray-200 dark:border-gray-700 p-1 bg-gray-50 dark:bg-gray-800">
                         <button
                             type="button"
-                            onClick={() => setActiveTab('return')}
+                            onClick={() => {
+                                setActiveTab('return');
+                                setSelectedBranchId(initialBranchId);
+                                setSelectedSeries([]);
+                            }}
                             className={`flex-1 py-1.5 px-3 text-sm font-medium rounded-md transition-colors ${
                                 activeTab === 'return' 
                                     ? 'bg-white shadow text-neutral-900 dark:bg-gray-700 dark:text-white' 
                                     : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
                             }`}
                         >
-                            Devolver Stock (Sucursal)
+                            Devolver a Bodega Central
                         </button>
                         <button
                             type="button"
-                            onClick={() => setActiveTab('assign')}
+                            onClick={() => {
+                                setActiveTab('assign');
+                                setSelectedBranchId(initialBranchId);
+                                setSelectedSeries([]);
+                            }}
                             className={`flex-1 py-1.5 px-3 text-sm font-medium rounded-md transition-colors ${
                                 activeTab === 'assign' 
                                     ? 'bg-white shadow text-neutral-900 dark:bg-gray-700 dark:text-white' 
                                     : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
                             }`}
                         >
-                            Asignar Stock (Pool Subsidiaria)
+                            Asignar a Sucursal
                         </button>
+                    </div>
+
+                    {/* Selector de Sucursal */}
+                    <div className='rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800/50 shadow-sm'>
+                        <label className='mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300'>
+                            {activeTab === 'return' ? 'Seleccionar Sucursal de Origen (Dónde está ahora el stock)' : 'Seleccionar Sucursal de Destino (A dónde enviarlo)'}
+                        </label>
+                        <select
+                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 text-neutral-800 dark:text-neutral-100"
+                            value={selectedBranchId}
+                            onChange={(e) => setSelectedBranchId(Number(e.target.value))}
+                        >
+                            <option value="">-- Seleccione una sucursal --</option>
+                            {accessibleBranches.map((b: any) => (
+                                <option key={b.id} value={b.id}>{b.name}</option>
+                            ))}
+                        </select>
                     </div>
 
                     {/* Tarjeta de Resumen del Producto */}
@@ -215,6 +313,36 @@ const StockSeriesModal: React.FC<StockSeriesModalProps> = ({
                                 </button>
                             )}
                         </div>
+
+                        {series.length > 0 && (
+                            <div className="mb-3">
+                                <SelectReact
+                                    name="series_selector"
+                                    isMulti
+                                    options={series.map(s => ({
+                                        value: s.serial_number,
+                                        label: `${s.serial_number} ${s.grade ? `(Grado ${s.grade})` : ''}`
+                                    }))}
+                                    value={series
+                                        .filter(s => selectedSeries.includes(s.serial_number))
+                                        .map(s => ({
+                                            value: s.serial_number,
+                                            label: `${s.serial_number} ${s.grade ? `(Grado ${s.grade})` : ''}`
+                                        }))
+                                    }
+                                    onChange={(newValue: any) => {
+                                        if (!newValue) {
+                                            setSelectedSeries([]);
+                                            return;
+                                        }
+                                        const selected = (newValue as TSelectOption[]).map(o => o.value);
+                                        setSelectedSeries(selected);
+                                    }}
+                                    placeholder="Buscar o pistolear series..."
+                                />
+                            </div>
+                        )}
+
                         <div className='min-h-[100px] max-h-[40vh] overflow-y-auto rounded-lg border border-gray-200 p-2 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'>
                             {isLoading ? (
                                 <div className='flex h-full min-h-[100px] items-center justify-center'>

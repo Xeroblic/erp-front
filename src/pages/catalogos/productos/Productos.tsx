@@ -485,7 +485,7 @@ const Productos: React.FC = () => {
 						/>
 					</Tab>
 					<Tab id='analytics' text='Administracion de Stock' icon='HeroChartBarSquare'>
-						<StockAdminTab subsidiaryId={activeBranchId ?? 0} />
+						<StockAdminTab subsidiaryId={effectiveSubsidiaryId ?? 0} />
 					</Tab>
 				</Tabs>
 			</Container>
