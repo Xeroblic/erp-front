@@ -4,21 +4,33 @@ import { fetchMisSucursales } from '@/store/slices/sucursales/sucursalesSlice';
 import { fetchBrands } from '@/store/slices/brands/brandsSlice';
 import { fetchCategories } from '@/store/slices/categories/categoriesSlice';
 import {
+	clearCurrentProduct,
 	fetchProductById,
 	fetchProductAttributes,
 	patchProductAttributes,
 	updateProduct as updateProductThunk,
 	type ProductAttributesPatchPayload,
+	type ProductEntityParam,
 } from '@/store/slices/products/productsSlice';
 import type { IProduct } from '@/interface/product.interface';
+import type { ProductsViewMode } from './useProductos';
 
 interface UseProductDetailParams {
 	productId: number | null;
 	branchId?: number | null;
+	subsidiaryId?: number | null;
+	mode?: ProductsViewMode;
 }
 
-export const useProductDetail = ({ productId, branchId }: UseProductDetailParams) => {
+export const useProductDetail = ({
+	productId,
+	branchId,
+	subsidiaryId,
+	mode = 'branches',
+}: UseProductDetailParams) => {
 	const dispatch = useAppDispatch();
+
+	const entityParam: ProductEntityParam = mode === 'subsidiaries' ? 'subsidiaries' : 'branches';
 
 	const productsState = useAppSelector((state) => state.products);
 	const { lista: branches, loading: branchesLoading } = useAppSelector(
@@ -45,9 +57,17 @@ export const useProductDetail = ({ productId, branchId }: UseProductDetailParams
 		return found?.branch_id ?? null;
 	}, [productId, productsState.items]);
 
-	const effectiveBranchId = useMemo(() => {
-		return branchId ?? fallbackBranchId ?? null;
-	}, [branchId, fallbackBranchId]);
+	// effectiveBranchId: siempre apunta a una sucursal real (para cargar brands, etc.)
+	const effectiveBranchId = useMemo(
+		() => branchId ?? fallbackBranchId ?? null,
+		[branchId, fallbackBranchId],
+	);
+
+	// entityId: el ID correcto para la URL según el modo
+	const entityId = useMemo(() => {
+		if (mode === 'subsidiaries') return subsidiaryId ?? null;
+		return effectiveBranchId;
+	}, [mode, subsidiaryId, effectiveBranchId]);
 
 	useEffect(() => {
 		if (!effectiveBranchId) return;
@@ -55,29 +75,30 @@ export const useProductDetail = ({ productId, branchId }: UseProductDetailParams
 	}, [dispatch, effectiveBranchId]);
 
 	useEffect(() => {
-		if (!productId || !effectiveBranchId) return;
-		void dispatch(fetchProductById({ branchId: effectiveBranchId, productId }));
-	}, [dispatch, productId, effectiveBranchId]);
-
-	useEffect(() => {
-		if (!productId || !effectiveBranchId) return;
-		void dispatch(fetchProductAttributes({ branchId: effectiveBranchId, productId }));
-	}, [dispatch, productId, effectiveBranchId]);
+		if (!productId || !entityId) return;
+		dispatch(clearCurrentProduct());
+		void dispatch(fetchProductById({ entityParam, entityId, productId }));
+		void dispatch(fetchProductAttributes({ entityParam, entityId, productId }));
+		return () => {
+			dispatch(clearCurrentProduct());
+		};
+	}, [dispatch, productId, entityId, entityParam]);
 
 	const refresh = useCallback(() => {
-		if (!productId || !effectiveBranchId) return;
-		void dispatch(fetchProductById({ branchId: effectiveBranchId, productId }));
-		void dispatch(fetchProductAttributes({ branchId: effectiveBranchId, productId }));
-	}, [dispatch, productId, effectiveBranchId]);
+		if (!productId || !entityId) return;
+		void dispatch(fetchProductById({ entityParam, entityId, productId }));
+		void dispatch(fetchProductAttributes({ entityParam, entityId, productId }));
+	}, [dispatch, productId, entityId, entityParam]);
 
 	const updateProduct = useCallback(
 		async (payload: { data: Partial<IProduct>; categoryIds?: number[] }) => {
-			if (!productId || !effectiveBranchId) {
-				throw new Error('No se pudo determinar la sucursal del producto');
+			if (!productId || !entityId) {
+				throw new Error('No se pudo determinar la entidad del producto');
 			}
 			await dispatch(
 				updateProductThunk({
-					branchId: effectiveBranchId,
+					entityParam,
+					entityId,
 					productId,
 					data: payload.data,
 					categoryIds: payload.categoryIds,
@@ -85,13 +106,13 @@ export const useProductDetail = ({ productId, branchId }: UseProductDetailParams
 			).unwrap();
 			refresh();
 		},
-		[dispatch, effectiveBranchId, productId, refresh],
+		[dispatch, entityParam, entityId, productId, refresh],
 	);
 
 	const updateProductAttributes = useCallback(
 		async (payload: ProductAttributesPatchPayload) => {
-			if (!productId || !effectiveBranchId) {
-				throw new Error('No se pudo determinar la sucursal del producto');
+			if (!productId || !entityId) {
+				throw new Error('No se pudo determinar la entidad del producto');
 			}
 
 			const body: ProductAttributesPatchPayload = {};
@@ -105,13 +126,14 @@ export const useProductDetail = ({ productId, branchId }: UseProductDetailParams
 
 			await dispatch(
 				patchProductAttributes({
-					branchId: effectiveBranchId,
+					entityParam,
+					entityId,
 					productId,
 					payload: body,
 				}),
 			).unwrap();
 		},
-		[dispatch, effectiveBranchId, productId],
+		[dispatch, entityParam, entityId, productId],
 	);
 
 	return {
@@ -128,6 +150,7 @@ export const useProductDetail = ({ productId, branchId }: UseProductDetailParams
 		categories: categoriesState.items,
 		categoriesLoading: categoriesState.loading,
 		effectiveBranchId,
+		entityId,
 		refresh,
 		updateProduct,
 		updateProductAttributes,

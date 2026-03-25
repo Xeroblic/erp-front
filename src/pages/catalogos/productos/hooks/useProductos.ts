@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
-	fetchProducts,
-	fetchBranchInventorySummary,
+	fetchProductsList,
+	fetchInventorySummary,
 	createProduct as createProductThunk,
 	updateProduct as updateProductThunk,
 	deleteProduct as deleteProductThunk,
-	ProductsState,
+	type ProductsState,
+	type ProductEntityParam,
 } from '@/store/slices/products/productsSlice';
 import { fetchMisSucursales } from '@/store/slices/sucursales/sucursalesSlice';
 import { fetchBrands } from '@/store/slices/brands/brandsSlice';
@@ -14,8 +15,13 @@ import { fetchCategories } from '@/store/slices/categories/categoriesSlice';
 import type { IProduct, ProductFilters } from '@/interface/product.interface';
 import { PRODUCT_EMPTY_INVENTORY_SUMMARY, PRODUCT_EMPTY_STATS } from '@/constants/product.constant';
 
+export type ProductsViewMode = 'branches' | 'subsidiaries';
+
 interface UseProductosParams {
 	branchId?: number | null;
+	subsidiaryId?: number | null;
+	mode?: ProductsViewMode;
+	enabled?: boolean;
 	filters: ProductFilters;
 	page?: number;
 	perPage?: number;
@@ -50,8 +56,19 @@ const INITIAL_PRODUCTS_STATE: ProductsState = {
 	mediaError: null,
 };
 
-export function useProductos({ branchId, filters, page = 1, perPage = 15 }: UseProductosParams) {
+export function useProductos({
+	branchId,
+	subsidiaryId,
+	mode = 'branches',
+	enabled = true,
+	filters,
+	page = 1,
+	perPage = 15,
+}: UseProductosParams) {
 	const dispatch = useAppDispatch();
+
+	const entityParam: ProductEntityParam = mode === 'subsidiaries' ? 'subsidiaries' : 'branches';
+	const entityId = mode === 'subsidiaries' ? (subsidiaryId ?? null) : (branchId ?? null);
 
 	const productsState = useAppSelector((state) => state.products ?? INITIAL_PRODUCTS_STATE);
 	const { lista: branches, loading: branchesLoading } = useAppSelector(
@@ -73,24 +90,44 @@ export function useProductos({ branchId, filters, page = 1, perPage = 15 }: UseP
 	}, [branchId, branches]);
 
 	useEffect(() => {
+		if (!enabled) return;
+		if (mode === 'subsidiaries') {
+			if (!subsidiaryId) return;
+			void dispatch(
+				fetchProductsList({
+					entityParam: 'subsidiaries',
+					entityId: subsidiaryId,
+					params: { ...filters, page, per_page: perPage },
+				}),
+			);
+			return;
+		}
 		if (!activeBranchId) return;
 		void dispatch(
-			fetchProducts({
-				branchId: activeBranchId,
+			fetchProductsList({
+				entityParam: 'branches',
+				entityId: activeBranchId,
 				params: { ...filters, page, per_page: perPage },
 			}),
 		);
-	}, [dispatch, activeBranchId, filters, page, perPage]);
+	}, [dispatch, enabled, mode, subsidiaryId, activeBranchId, filters, page, perPage]);
 
 	useEffect(() => {
+		if (!enabled) return;
+		if (mode === 'subsidiaries') {
+			if (!subsidiaryId) return;
+			void dispatch(fetchInventorySummary({ entityParam: 'subsidiaries', entityId: subsidiaryId }));
+			return;
+		}
 		if (!activeBranchId) return;
-		void dispatch(fetchBranchInventorySummary({ branchId: activeBranchId }));
-	}, [dispatch, activeBranchId]);
+		void dispatch(fetchInventorySummary({ entityParam: 'branches', entityId: activeBranchId }));
+	}, [dispatch, enabled, mode, subsidiaryId, activeBranchId]);
 
 	useEffect(() => {
+		if (!enabled) return;
 		if (!activeBranchId) return;
 		void dispatch(fetchBrands({ branchId: activeBranchId, search: '' }));
-	}, [dispatch, activeBranchId]);
+	}, [dispatch, enabled, activeBranchId]);
 
 	useEffect(() => {
 		if (!categoriesState.items.length && !categoriesState.loading) {
@@ -99,42 +136,41 @@ export function useProductos({ branchId, filters, page = 1, perPage = 15 }: UseP
 	}, [dispatch, categoriesState.items.length, categoriesState.loading]);
 
 	const refresh = useCallback(() => {
-		if (!activeBranchId) return;
+		if (!enabled) return;
+		if (!entityId) return;
 		void dispatch(
-			fetchProducts({
-				branchId: activeBranchId,
+			fetchProductsList({
+				entityParam,
+				entityId,
 				params: { ...filters, page, per_page: perPage },
 			}),
 		);
-		void dispatch(fetchBranchInventorySummary({ branchId: activeBranchId }));
-	}, [dispatch, activeBranchId, filters, page, perPage]);
+		void dispatch(fetchInventorySummary({ entityParam, entityId }));
+	}, [dispatch, enabled, entityParam, entityId, filters, page, perPage]);
 
 	const createProduct = useCallback(
 		async (payload: { data: Partial<IProduct>; categoryIds: number[] }) => {
-			const targetBranchId = payload.data.branch_id || activeBranchId;
-			if (!targetBranchId) throw new Error('Debe seleccionar una sucursal');
-
+			if (!entityId) throw new Error('Debe seleccionar una entidad (sucursal o subempresa)');
 			await dispatch(
 				createProductThunk({
-					branchId: targetBranchId,
+					entityParam,
+					entityId,
 					data: payload.data,
 					categoryIds: payload.categoryIds,
 				}),
 			).unwrap();
-
-			if (targetBranchId === activeBranchId) {
-				refresh();
-			}
+			refresh();
 		},
-		[dispatch, activeBranchId, refresh],
+		[dispatch, entityParam, entityId, refresh],
 	);
 
 	const updateProduct = useCallback(
 		async (productId: number, payload: { data: Partial<IProduct>; categoryIds?: number[] }) => {
-			if (!activeBranchId) throw new Error('Debe seleccionar una sucursal');
+			if (!entityId) throw new Error('Debe seleccionar una entidad (sucursal o subempresa)');
 			await dispatch(
 				updateProductThunk({
-					branchId: activeBranchId,
+					entityParam,
+					entityId,
 					productId,
 					data: payload.data,
 					categoryIds: payload.categoryIds,
@@ -142,16 +178,16 @@ export function useProductos({ branchId, filters, page = 1, perPage = 15 }: UseP
 			).unwrap();
 			refresh();
 		},
-		[dispatch, activeBranchId, refresh],
+		[dispatch, entityParam, entityId, refresh],
 	);
 
 	const deleteProduct = useCallback(
 		async (productId: number) => {
-			if (!activeBranchId) throw new Error('Debe seleccionar una sucursal');
-			await dispatch(deleteProductThunk({ branchId: activeBranchId, productId })).unwrap();
+			if (!entityId) throw new Error('Debe seleccionar una entidad (sucursal o subempresa)');
+			await dispatch(deleteProductThunk({ entityParam, entityId, productId })).unwrap();
 			refresh();
 		},
-		[dispatch, activeBranchId, refresh],
+		[dispatch, entityParam, entityId, refresh],
 	);
 
 	return {

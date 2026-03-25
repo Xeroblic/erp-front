@@ -1,7 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import ApiService from '@/services/ApiService';
 import type {
-	CreateProductPayload,
 	FetchProductsParams,
 	IProduct,
 	ProductInventoryCriticalProduct,
@@ -10,9 +9,15 @@ import type {
 	ProductListMeta,
 	ProductsStateStats,
 	UpdateProductPayload,
+	IProductResponse,
+	IProductListResponse,
+	IProductAttributesResponse,
+	IMediaUploadResponse,
+	ILibraryMediaItem,
+	ILibraryMediaResponse,
+	ILibraryMediaAttachResponse,
 } from '@/interface/product.interface';
 import {
-	buildProductPayload,
 	buildUpdatePayload,
 	computeProductStats,
 	normalizeProduct,
@@ -21,6 +26,12 @@ import {
 import { PRODUCT_EMPTY_INVENTORY_SUMMARY, PRODUCT_EMPTY_STATS } from '@/constants/product.constant';
 import { validateFile, extractMediaUrl } from '@/utils/apiHelpers';
 import { convertFileToWebP } from '@/components/helper/brand.helper';
+import { toast } from 'react-toastify';
+
+// ---------------------------------------------------------------------------
+// Entity param: determines whether the URL uses /branches or /subsidiaries
+// ---------------------------------------------------------------------------
+export type ProductEntityParam = 'branches' | 'subsidiaries';
 
 export interface ProductsState {
 	items: IProduct[];
@@ -46,6 +57,73 @@ export interface ProductsState {
 	libraryLoading: boolean;
 	mediaError: string | null;
 }
+
+interface ApiValidationError {
+	message: string;
+	errors?: Record<string, string[]>;
+}
+
+type UnknownRecord = Record<string, unknown>;
+
+const asRecord = (value: unknown): UnknownRecord | undefined => {
+	if (value && typeof value === 'object' && !Array.isArray(value)) {
+		return value as UnknownRecord;
+	}
+	return undefined;
+};
+
+const getErrorMessage = (error: unknown, fallback: string): string => {
+	const errorRecord = asRecord(error);
+	const responseRecord = asRecord(errorRecord?.response);
+	const message = asRecord(responseRecord?.data);
+	const msgFromResponse = message?.message;
+	if (typeof msgFromResponse === 'string' && msgFromResponse.trim()) {
+		return msgFromResponse;
+	}
+	if (error instanceof Error && error.message.trim()) {
+		return error.message;
+	}
+	return fallback;
+};
+
+const getResponseMessage = (error: unknown): string | null => {
+	const errorRecord = asRecord(error);
+	const responseRecord = asRecord(errorRecord?.response);
+	const message = asRecord(responseRecord?.data);
+	const msgFromResponse = message?.message;
+	if (typeof msgFromResponse === 'string' && msgFromResponse.trim()) {
+		return msgFromResponse;
+	}
+	return null;
+};
+
+const getErrorPayload = (error: unknown, fallback: string): ApiValidationError => {
+	const errorRecord = asRecord(error);
+	const responseRecord = asRecord(errorRecord?.response);
+	const responseData = asRecord(responseRecord?.data);
+	if (responseData) {
+		const message =
+			typeof responseData.message === 'string' && responseData.message.trim()
+				? responseData.message
+				: fallback;
+		const errors = asRecord(responseData.errors) as Record<string, string[]> | undefined;
+		return { message, errors };
+	}
+	if (error instanceof Error && error.message.trim()) {
+		return { message: error.message };
+	}
+	return { message: fallback };
+};
+
+const getErrorStatus = (error: unknown): number | null => {
+	const errorRecord = asRecord(error);
+	const responseRecord = asRecord(errorRecord?.response);
+	const status = responseRecord?.status;
+	if (typeof status === 'number' && Number.isFinite(status)) {
+		return status;
+	}
+	return null;
+};
 
 const initialState: ProductsState = {
 	items: [],
@@ -77,19 +155,21 @@ const initialState: ProductsState = {
 };
 
 const parseProductsResponse = (
-	response: { data?: any; meta?: Partial<ProductListMeta> & Record<string, any> },
+	response: { data?: unknown; meta?: Partial<ProductListMeta> & UnknownRecord },
 	params?: FetchProductsParams,
 ) => {
 	const payload = response?.data ?? response ?? {};
-	const rawItems = Array.isArray(payload.data)
-		? payload.data
+	const payloadRecord = asRecord(payload);
+	const payloadData = payloadRecord?.data;
+	const rawItems = Array.isArray(payloadData)
+		? payloadData
 		: Array.isArray(payload)
 			? payload
 			: [];
 
 	const items = rawItems.map(normalizeProduct);
 
-	const metaSource = payload.meta ?? {};
+	const metaSource = asRecord(payloadRecord?.meta) ?? {};
 	const meta: ProductListMeta = {
 		total: Number(metaSource.total ?? items.length),
 		current_page: Number(metaSource.current_page ?? params?.page ?? 1),
@@ -104,79 +184,52 @@ const parseProductsResponse = (
 	};
 };
 
-export const fetchProducts = createAsyncThunk<
+const getOptionalBranchFilter = (params?: FetchProductsParams): Record<string, number> => {
+	const maybeBranchId = (params as Record<string, unknown> | undefined)?.branchId;
+	if (typeof maybeBranchId === 'number' && Number.isFinite(maybeBranchId)) {
+		return { branchId: maybeBranchId };
+	}
+	return {};
+};
+
+export const fetchProductsList = createAsyncThunk<
 	{ items: IProduct[]; meta: ProductListMeta; stats: ProductsStateStats },
-	{ branchId: number; params?: FetchProductsParams },
+	{ entityParam: ProductEntityParam; entityId: number; params?: FetchProductsParams },
 	{ rejectValue: string }
->('products/fetchProducts', async ({ branchId, params }, { rejectWithValue }) => {
+>('products/fetchProductsList', async ({ entityParam, entityId, params }, { rejectWithValue }) => {
 	try {
-		const response = await ApiService.fetchData<{
-			data?: any[];
-			meta?: Partial<ProductListMeta> & Record<string, any>;
-		}>({
-			url: `/branches/${branchId}/products`,
+		const response = await ApiService.fetchData<IProductListResponse>({
+			url: `/${entityParam}/${entityId}/products`,
 			method: 'get',
 			params: {
 				page: params?.page ?? 1,
 				per_page: params?.per_page ?? 15,
 				...serializeFilters(params ?? {}),
+				...getOptionalBranchFilter(params),
 			},
 		});
 
 		return parseProductsResponse(response, params);
-	} catch (error: any) {
-		return rejectWithValue(
-			error?.response?.data?.message ??
-				error?.message ??
-				'No se pudieron cargar los productos',
-		);
+	} catch (error: unknown) {
+		return rejectWithValue(getErrorMessage(error, 'No se pudieron cargar los productos'));
 	}
 });
 
-export const fetchSubsidiaryProducts = createAsyncThunk<
-	{ items: IProduct[]; meta: ProductListMeta; stats: ProductsStateStats },
-	{ subsidiaryId: number; params?: FetchProductsParams },
-	{ rejectValue: string }
->('products/fetchSubsidiaryProducts', async ({ subsidiaryId, params }, { rejectWithValue }) => {
-	try {
-		const response = await ApiService.fetchData<{
-			data?: any[];
-			meta?: Partial<ProductListMeta> & Record<string, any>;
-		}>({
-			url: `/subsidiaries/${subsidiaryId}/products`,
-			method: 'get',
-			params: {
-				page: params?.page ?? 1,
-				per_page: params?.per_page ?? 15,
-				...serializeFilters(params ?? {}),
-			},
-		});
-
-		return parseProductsResponse(response, params);
-	} catch (error: any) {
-		return rejectWithValue(
-			error?.response?.data?.message ??
-				error?.message ??
-				'No se pudieron cargar los productos',
-		);
-	}
-});
-
-export const fetchBranchInventorySummary = createAsyncThunk<
+export const fetchInventorySummary = createAsyncThunk<
 	{
 		stats: ProductsStateStats;
 		inventory: ProductInventorySummary;
 		criticalProducts: ProductInventoryCriticalProduct[];
-		branchId: number;
+		entityId: number;
 	},
-	{ branchId: number; criticalThreshold?: number },
+	{ entityParam: ProductEntityParam; entityId: number; criticalThreshold?: number },
 	{ rejectValue: string }
 >(
-	'products/fetchBranchInventorySummary',
-	async ({ branchId, criticalThreshold }, { rejectWithValue }) => {
+	'products/fetchInventorySummary',
+	async ({ entityParam, entityId, criticalThreshold }, { rejectWithValue }) => {
 		try {
 			const response = await ApiService.fetchData<ProductInventorySummaryResponse>({
-				url: `/branches/${branchId}/products/summary`,
+				url: `/${entityParam}/${entityId}/products/summary`,
 				method: 'get',
 				params:
 					typeof criticalThreshold === 'number'
@@ -186,7 +239,7 @@ export const fetchBranchInventorySummary = createAsyncThunk<
 
 			const payload = response.data ?? {};
 			const summary = payload.summary ?? {};
-			const params = payload.params ?? {};
+			const reqParams = payload.params ?? {};
 
 			const stats: ProductsStateStats = {
 				total: Number(summary.products_total ?? 0),
@@ -199,10 +252,10 @@ export const fetchBranchInventorySummary = createAsyncThunk<
 			};
 
 			const inventory: ProductInventorySummary = {
-				branchId: Number(payload.branch_id ?? branchId) || branchId,
+				branchId: Number(payload.branch_id ?? entityId) || entityId,
 				criticalThreshold:
-					typeof params?.critical_threshold === 'number'
-						? Number(params.critical_threshold)
+					typeof reqParams?.critical_threshold === 'number'
+						? Number(reqParams.critical_threshold)
 						: typeof criticalThreshold === 'number'
 							? criticalThreshold
 							: PRODUCT_EMPTY_INVENTORY_SUMMARY.criticalThreshold,
@@ -221,90 +274,28 @@ export const fetchBranchInventorySummary = createAsyncThunk<
 				payload.critical_products,
 			)
 				? payload.critical_products
-						.map((item) => ({
-							id: Number(item?.id ?? 0),
-							name: String(item?.name ?? ''),
-							sku: String(item?.sku ?? ''),
-							brand_name:
-								item?.brand_name !== undefined && item?.brand_name !== null
-									? String(item.brand_name)
-									: null,
-							stock:
-								item && typeof item === 'object' && 'stock' in item
-									? Number((item as any).stock ?? 0)
-									: null,
-						}))
-						.filter((item) => Number.isFinite(item.id) && item.id > 0)
+					.map((item) => ({
+						id: Number(item?.id ?? 0),
+						name: String(item?.name ?? ''),
+						sku: String(item?.sku ?? ''),
+						brand_name:
+							item?.brand_name !== undefined && item?.brand_name !== null
+								? String(item.brand_name)
+								: null,
+						stock: (() => {
+							const source = asRecord(item);
+							if (!source || source.stock === undefined || source.stock === null) return null;
+							const num = Number(source.stock);
+							return Number.isFinite(num) ? num : null;
+						})(),
+					}))
+					.filter((item) => Number.isFinite(item.id) && item.id > 0)
 				: [];
 
-			return { stats, inventory, criticalProducts, branchId };
-		} catch (error: any) {
+			return { stats, inventory, criticalProducts, entityId };
+		} catch (error: unknown) {
 			return rejectWithValue(
-				error?.response?.data?.message ??
-					error?.message ??
-					'No se pudo cargar el resumen de inventario',
-			);
-		}
-	},
-);
-
-export const fetchProductsFromMultipleBranches = createAsyncThunk<
-	{ items: IProduct[]; meta: ProductListMeta; stats: ProductsStateStats },
-	{ branchIds: number[]; params?: FetchProductsParams },
-	{ rejectValue: string }
->(
-	'products/fetchProductsFromMultipleBranches',
-	async ({ branchIds, params }, { rejectWithValue }) => {
-		try {
-			// Hacer llamadas paralelas a todas las sucursales
-			const promises = branchIds.map((branchId) =>
-				ApiService.fetchData<{
-					data?: any[];
-					meta?: Partial<ProductListMeta> & Record<string, any>;
-				}>({
-					url: `/branches/${branchId}/products`,
-					method: 'get',
-					params: {
-						page: params?.page ?? 1,
-						per_page: params?.per_page ?? 15,
-						...serializeFilters(params ?? {}),
-					},
-				}),
-			);
-
-			const responses = await Promise.all(promises);
-
-			// Combinar todos los productos de todas las sucursales
-			const allRawItems: any[] = [];
-			responses.forEach((response) => {
-				const rawItems = Array.isArray(response.data?.data)
-					? response.data?.data
-					: Array.isArray(response.data)
-						? (response.data as any[])
-						: [];
-				allRawItems.push(...rawItems);
-			});
-
-			const items = allRawItems.map(normalizeProduct);
-
-			// Meta para paginación combinada
-			const meta: ProductListMeta = {
-				total: items.length,
-				current_page: params?.page ?? 1,
-				per_page: params?.per_page ?? 15,
-				last_page: Math.ceil(items.length / (params?.per_page ?? 15)),
-			};
-
-			return {
-				items,
-				meta,
-				stats: computeProductStats(items),
-			};
-		} catch (error: any) {
-			return rejectWithValue(
-				error?.response?.data?.message ??
-					error?.message ??
-					'No se pudieron cargar los productos',
+				getErrorMessage(error, 'No se pudo cargar el resumen de inventario'),
 			);
 		}
 	},
@@ -312,21 +303,28 @@ export const fetchProductsFromMultipleBranches = createAsyncThunk<
 
 export const fetchProductById = createAsyncThunk<
 	IProduct,
-	{ branchId: number; productId: number },
+	{ entityParam: ProductEntityParam; entityId: number; productId: number },
 	{ rejectValue: string }
->('products/fetchProductById', async ({ branchId, productId }, { rejectWithValue }) => {
+>('products/fetchProductById', async ({ entityParam, entityId, productId }, { rejectWithValue }) => {
 	try {
-		const response = await ApiService.fetchData<{ data?: any }>({
-			url: `/branches/${branchId}/products/${productId}`,
+		const response = await ApiService.fetchData<IProductResponse>({
+			url: `/${entityParam}/${entityId}/products/${productId}`,
 			method: 'get',
 		});
 
 		const raw = response.data?.data ?? response.data;
-		return normalizeProduct(raw ?? { id: productId, branch_id: branchId });
-	} catch (error: any) {
-		return rejectWithValue(
-			error?.response?.data?.message ?? error?.message ?? 'No se pudo obtener el producto',
-		);
+		return normalizeProduct((raw as IProduct) ?? { id: productId, branch_id: entityId });
+	} catch (error: unknown) {
+		if (getErrorStatus(error) === 404) {
+			const backendMessage = getResponseMessage(error);
+			const message =
+				backendMessage && backendMessage.trim().length > 0
+					? backendMessage
+					: 'El producto no esta asignado a esta sucursal';
+			toast.error(message);
+			return rejectWithValue(message);
+		}
+		return rejectWithValue(getErrorMessage(error, 'No se pudo obtener el producto'));
 	}
 });
 
@@ -337,56 +335,50 @@ export interface ProductAttributesPatchPayload {
 
 export const fetchProductAttributes = createAsyncThunk<
 	{ productId: number; attributes: Record<string, unknown> | null },
-	{ branchId: number; productId: number },
+	{ entityParam: ProductEntityParam; entityId: number; productId: number },
 	{ rejectValue: string }
->('products/fetchProductAttributes', async ({ branchId, productId }, { rejectWithValue }) => {
+>('products/fetchProductAttributes', async ({ entityParam, entityId, productId }, { rejectWithValue }) => {
 	try {
-		const response = await ApiService.fetchData<{
-			attributes?: Record<string, unknown> | null;
-		}>({
-			url: `/branches/${branchId}/products/${productId}/attributes`,
+		const response = await ApiService.fetchData<IProductAttributesResponse>({
+			url: `/${entityParam}/${entityId}/products/${productId}/attributes`,
 			method: 'get',
 		});
 
 		return {
 			productId,
-			attributes: (response.data?.attributes as Record<string, unknown> | null) ?? null,
+			attributes: response.data?.attributes ?? null,
 		};
-	} catch (error: any) {
+	} catch (error: unknown) {
 		return rejectWithValue(
-			error?.response?.data?.message ??
-				error?.message ??
-				'No se pudieron cargar los atributos del producto',
+			getErrorMessage(error, 'No se pudieron cargar los atributos del producto'),
 		);
 	}
 });
 
 export const patchProductAttributes = createAsyncThunk<
 	{ productId: number; attributes: Record<string, unknown> | null },
-	{ branchId: number; productId: number; payload: ProductAttributesPatchPayload },
+	{ entityParam: ProductEntityParam; entityId: number; productId: number; payload: ProductAttributesPatchPayload },
 	{ rejectValue: string }
 >(
 	'products/patchProductAttributes',
-	async ({ branchId, productId, payload }, { rejectWithValue }) => {
+	async ({ entityParam, entityId, productId, payload }, { rejectWithValue }) => {
 		try {
 			const response = await ApiService.fetchData<
-				{ attributes?: Record<string, unknown> | null },
+				IProductAttributesResponse,
 				ProductAttributesPatchPayload
 			>({
-				url: `/branches/${branchId}/products/${productId}/attributes`,
+				url: `/${entityParam}/${entityId}/products/${productId}/attributes`,
 				method: 'patch',
 				data: payload,
 			});
 
 			return {
 				productId,
-				attributes: (response.data?.attributes as Record<string, unknown> | null) ?? null,
+				attributes: response.data?.attributes ?? null,
 			};
-		} catch (error: any) {
+		} catch (error: unknown) {
 			return rejectWithValue(
-				error?.response?.data?.message ??
-					error?.message ??
-					'No se pudieron actualizar los atributos del producto',
+				getErrorMessage(error, 'No se pudieron actualizar los atributos del producto'),
 			);
 		}
 	},
@@ -394,14 +386,13 @@ export const patchProductAttributes = createAsyncThunk<
 
 export const createProduct = createAsyncThunk<
 	IProduct,
-	{ branchId: number; data: Partial<IProduct>; categoryIds: number[] },
-	{ rejectValue: any }
->('products/createProduct', async ({ branchId, data, categoryIds }, { rejectWithValue }) => {
+	{ entityParam: ProductEntityParam; entityId: number; data: Partial<IProduct>; categoryIds: number[] },
+	{ rejectValue: ApiValidationError }
+>('products/createProduct', async ({ entityParam, entityId, data, categoryIds }, { rejectWithValue }) => {
 	try {
-		// Build a permissive payload: only send defined, non-null values.
-		const body: Record<string, any> = {};
+		const body: Record<string, unknown> = {};
 
-		const assignIfDefined = (key: string, val: any) => {
+		const assignIfDefined = (key: string, val: unknown) => {
 			if (val !== undefined && val !== null && val !== '') body[key] = val;
 		};
 
@@ -434,78 +425,107 @@ export const createProduct = createAsyncThunk<
 
 		if (Array.isArray(categoryIds) && categoryIds.length) body.category_ids = categoryIds;
 
-		const response = await ApiService.fetchData<{ data?: any }, any>({
-			url: `/branches/${branchId}/products`,
+		const response = await ApiService.fetchData<IProductResponse, Record<string, unknown>>({
+			url: `/${entityParam}/${entityId}/products`,
 			method: 'post',
 			data: body,
 		});
 
 		const raw = response.data?.data ?? response.data;
-		return normalizeProduct(raw ?? body);
-	} catch (error: any) {
-		// Forward the server response body when possible so callers can map validation errors
-		const payload = error?.response?.data ?? {
-			message: error?.message ?? 'No se pudo crear el producto',
-		};
-		return rejectWithValue(payload);
+		return normalizeProduct((raw as IProduct) ?? body);
+	} catch (error: unknown) {
+		return rejectWithValue(getErrorPayload(error, 'No se pudo crear el producto'));
 	}
 });
 
 export const updateProduct = createAsyncThunk<
 	IProduct,
-	{ branchId: number; productId: number; data: Partial<IProduct>; categoryIds?: number[] },
+	{ entityParam: ProductEntityParam; entityId: number; productId: number; data: Partial<IProduct>; categoryIds?: number[] },
 	{ rejectValue: string }
 >(
 	'products/updateProduct',
-	async ({ branchId, productId, data, categoryIds }, { rejectWithValue }) => {
+	async ({ entityParam, entityId, productId, data, categoryIds }, { rejectWithValue }) => {
 		try {
 			const body = buildUpdatePayload(productId, data, categoryIds);
 
-			const response = await ApiService.fetchData<{ data?: any }, UpdateProductPayload>({
-				url: `/branches/${branchId}/products/${productId}`,
+			const response = await ApiService.fetchData<IProductResponse, UpdateProductPayload>({
+				url: `/${entityParam}/${entityId}/products/${productId}`,
 				method: 'patch',
 				data: body,
 			});
 
 			const raw = response.data?.data ?? response.data;
-			return normalizeProduct(raw ?? { ...data, id: productId });
-		} catch (error: any) {
-			return rejectWithValue(
-				error?.response?.data?.message ??
-					error?.message ??
-					'No se pudo actualizar el producto',
-			);
+			return normalizeProduct((raw as IProduct) ?? { ...data, id: productId });
+		} catch (error: unknown) {
+			return rejectWithValue(getErrorMessage(error, 'No se pudo actualizar el producto'));
 		}
 	},
 );
 
 export const deleteProduct = createAsyncThunk<
 	number,
-	{ branchId: number; productId: number },
+	{ entityParam: ProductEntityParam; entityId: number; productId: number },
 	{ rejectValue: string }
->('products/deleteProduct', async ({ branchId, productId }, { rejectWithValue }) => {
+>('products/deleteProduct', async ({ entityParam, entityId, productId }, { rejectWithValue }) => {
 	try {
 		await ApiService.fetchData({
-			url: `/branches/${branchId}/products/${productId}`,
+			url: `/${entityParam}/${entityId}/products/${productId}`,
 			method: 'delete',
 		});
 
 		return productId;
-	} catch (error: any) {
+	} catch (error: unknown) {
+		return rejectWithValue(getErrorMessage(error, 'No se pudo eliminar el producto'));
+	}
+});
+
+export const toggleProductStatus = createAsyncThunk<
+	IProduct,
+	{ entityParam: ProductEntityParam; entityId: number; productId: number },
+	{ rejectValue: string }
+>('products/toggleProductStatus', async ({ entityParam, entityId, productId }, { rejectWithValue }) => {
+	try {
+		const response = await ApiService.fetchData<IProductResponse>({
+			url: `/${entityParam}/${entityId}/products/${productId}/toggle-status`,
+			method: 'patch',
+		});
+		const raw = response.data?.data ?? response.data;
+		return normalizeProduct((raw as IProduct) ?? { id: productId, branch_id: entityId });
+	} catch (error: unknown) {
+		return rejectWithValue(getErrorMessage(error, 'No se pudo cambiar el estado del producto'));
+	}
+});
+
+export const fetchSaleableProducts = createAsyncThunk<
+	IProduct[],
+	{ entityParam: ProductEntityParam; entityId: number },
+	{ rejectValue: string }
+>('products/fetchSaleableProducts', async ({ entityParam, entityId }, { rejectWithValue }) => {
+	try {
+		const response = await ApiService.fetchData<IProductListResponse>({
+			url: `/${entityParam}/${entityId}/products/saleables`,
+			method: 'get',
+		});
+		const rawItems = Array.isArray(response.data?.data)
+			? response.data?.data
+			: Array.isArray(response.data)
+				? response.data
+				: [];
+		return (rawItems as IProduct[]).map(normalizeProduct);
+	} catch (error: unknown) {
 		return rejectWithValue(
-			error?.response?.data?.message ?? error?.message ?? 'No se pudo eliminar el producto',
+			getErrorMessage(error, 'No se pudieron cargar los productos vendibles'),
 		);
 	}
 });
 
-// Upload multiple files directly to a product (FormData files[])
 export const uploadProductMedia = createAsyncThunk<
 	string | null,
-	{ branchId: number; productId: number; file: File; meta?: string },
+	{ entityParam: ProductEntityParam; entityId: number; productId: number; file: File; meta?: string },
 	{ rejectValue: string }
 >(
 	'products/uploadProductMedia',
-	async ({ branchId, productId, file, meta }, { rejectWithValue }) => {
+	async ({ entityParam, entityId, productId, file, meta }, { rejectWithValue }) => {
 		try {
 			const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/svg+xml'];
 			const v = validateFile(file, { maxKB: 8192, allowedMimes: allowed });
@@ -518,8 +538,8 @@ export const uploadProductMedia = createAsyncThunk<
 			formData.append('files[]', processed, processed.name);
 			if (meta) formData.append('meta', meta);
 
-			const response = await ApiService.fetchData<{ data?: any }, FormData>({
-				url: `/branches/${branchId}/products/${productId}/media/upload-multiple`,
+			const response = await ApiService.fetchData<IMediaUploadResponse, FormData>({
+				url: `/${entityParam}/${entityId}/products/${productId}/media/upload-multiple`,
 				method: 'post',
 				data: formData,
 			});
@@ -527,19 +547,17 @@ export const uploadProductMedia = createAsyncThunk<
 			const payload = response.data?.data ?? response.data;
 			const url = extractMediaUrl(payload);
 			return url;
-		} catch (error: any) {
-			return rejectWithValue(
-				error?.response?.data?.message ?? error?.message ?? 'Error uploading media',
-			);
+		} catch (error: unknown) {
+			return rejectWithValue(getErrorMessage(error, 'Error uploading media'));
 		}
 	},
 );
 
-// Attach existing library media to a product
 export const attachProductMediaFromLibrary = createAsyncThunk<
 	{ id?: number; url?: string; thumb_url?: string } | null,
 	{
-		branchId: number;
+		entityParam: ProductEntityParam;
+		entityId: number;
 		productId: number;
 		payload: {
 			library_media_id: number;
@@ -551,36 +569,36 @@ export const attachProductMediaFromLibrary = createAsyncThunk<
 	{ rejectValue: string }
 >(
 	'products/attachProductMediaFromLibrary',
-	async ({ branchId, productId, payload }, { rejectWithValue }) => {
+	async ({ entityParam, entityId, productId, payload }, { rejectWithValue }) => {
 		try {
 			const response = await ApiService.fetchData<
-				{ status?: string; id?: number; url?: string; thumb_url?: string },
-				any
+				ILibraryMediaAttachResponse,
+				{
+					library_media_id: number;
+					collection?: string;
+					sort_order?: number;
+					alt_text?: string;
+				}
 			>({
-				url: `/branches/${branchId}/products/${productId}/media/attach-from-library`,
+				url: `/${entityParam}/${entityId}/products/${productId}/media/attach-from-library`,
 				method: 'post',
 				data: payload,
 			});
 			return response.data ?? null;
-		} catch (error: any) {
-			return rejectWithValue(
-				error?.response?.data?.message ??
-					error?.message ??
-					'Error attaching media from library',
-			);
+		} catch (error: unknown) {
+			return rejectWithValue(getErrorMessage(error, 'Error attaching media from library'));
 		}
 	},
 );
 
-// Fetch branch library media (simple wrapper)
-export const fetchBranchLibraryMedia = createAsyncThunk<
-	{ data: any[]; meta?: any },
-	{ branchId: number; params?: Record<string, any> },
+export const fetchLibraryMedia = createAsyncThunk<
+	{ data: ILibraryMediaItem[]; meta?: unknown },
+	{ entityParam: ProductEntityParam; entityId: number; params?: Record<string, unknown> },
 	{ rejectValue: string }
->('products/fetchBranchLibraryMedia', async ({ branchId, params }, { rejectWithValue }) => {
+>('products/fetchLibraryMedia', async ({ entityParam, entityId, params }, { rejectWithValue }) => {
 	try {
-		const response = await ApiService.fetchData<{ data?: any[]; meta?: any }>({
-			url: `/branches/${branchId}/library/media`,
+		const response = await ApiService.fetchData<ILibraryMediaResponse>({
+			url: `/${entityParam}/${entityId}/library/media`,
 			method: 'get',
 			params,
 		});
@@ -589,238 +607,167 @@ export const fetchBranchLibraryMedia = createAsyncThunk<
 			: Array.isArray(response.data)
 				? response.data
 				: [];
-		return { data: dataArr ?? [], meta: response.data?.meta };
-	} catch (error: any) {
-		return rejectWithValue(
-			error?.response?.data?.message ?? error?.message ?? 'Error fetching library media',
-		);
+		return { data: (dataArr as ILibraryMediaItem[]) ?? [], meta: response.data?.meta };
+	} catch (error: unknown) {
+		return rejectWithValue(getErrorMessage(error, 'Error fetching library media'));
 	}
 });
 
-// Delete attributes via query param or body
 export const deleteProductAttributes = createAsyncThunk<
 	boolean,
-	{ branchId: number; productId: number; paths?: string[]; path?: string },
+	{ entityParam: ProductEntityParam; entityId: number; productId: number; paths?: string[]; path?: string },
 	{ rejectValue: string }
 >(
 	'products/deleteProductAttributes',
-	async ({ branchId, productId, paths, path }, { rejectWithValue }) => {
+	async ({ entityParam, entityId, productId, paths, path }, { rejectWithValue }) => {
 		try {
-			const params: Record<string, any> = {};
+			const params: Record<string, string | string[]> = {};
 			if (path) params.path = path;
 			if (paths) params['paths[]'] = paths;
 
 			await ApiService.fetchData({
-				url: `/branches/${branchId}/products/${productId}/attributes`,
+				url: `/${entityParam}/${entityId}/products/${productId}/attributes`,
 				method: 'delete',
 				params,
 			});
 			return true;
-		} catch (error: any) {
-			return rejectWithValue(
-				error?.response?.data?.message ?? error?.message ?? 'Error deleting attributes',
-			);
+		} catch (error: unknown) {
+			return rejectWithValue(getErrorMessage(error, 'Error deleting attributes'));
 		}
 	},
 );
 
-// Delete product media/image
 export const deleteProductMedia = createAsyncThunk<
 	boolean,
-	{ branchId: number; productId: number; mediaId: number },
+	{ entityParam: ProductEntityParam; entityId: number; productId: number; mediaId: number },
 	{ rejectValue: string }
->('products/deleteProductMedia', async ({ branchId, productId, mediaId }, { rejectWithValue }) => {
+>('products/deleteProductMedia', async ({ entityParam, entityId, productId, mediaId }, { rejectWithValue }) => {
 	try {
 		await ApiService.fetchData({
-			url: `/branches/${branchId}/media/${mediaId}`,
+			url: `/${entityParam}/${entityId}/media/${mediaId}`,
 			method: 'delete',
 			data: { product_id: productId },
 		});
 		return true;
-	} catch (error: any) {
-		return rejectWithValue(
-			error?.response?.data?.message ?? error?.message ?? 'Error al eliminar la imagen',
-		);
+	} catch (error: unknown) {
+		return rejectWithValue(getErrorMessage(error, 'Error al eliminar la imagen'));
 	}
 });
 
-// Set product main image
 export const setProductMainImage = createAsyncThunk<
 	IProduct,
-	{ branchId: number; productId: number; mediaId: number },
+	{ entityParam: ProductEntityParam; entityId: number; productId: number; mediaId: number },
 	{ rejectValue: string }
->('products/setProductMainImage', async ({ branchId, productId, mediaId }, { rejectWithValue }) => {
+>('products/setProductMainImage', async ({ entityParam, entityId, productId, mediaId }, { rejectWithValue }) => {
 	try {
-		// El backend espera que la imagen principal se suba directamente a 'main'
-		// Solución: Descargar la imagen de gallery y re-subirla a 'main'
-
-		// Paso 1: Obtener el producto actual para acceder a la imagen de gallery
-		const currentProductResponse = await ApiService.fetchData<{ data: any }>({
-			url: `/branches/${branchId}/products/${productId}`,
+		const currentProductResponse = await ApiService.fetchData<{ data: unknown }>({
+			url: `/${entityParam}/${entityId}/products/${productId}`,
 			method: 'get',
 		});
 		const currentProduct = normalizeProduct(
 			currentProductResponse.data?.data ?? currentProductResponse.data,
 		);
 
-		// Paso 2: Buscar la imagen en la gallery por su ID
 		const galleryImage = currentProduct.gallery?.find((img) => img.id === mediaId);
-
 		if (!galleryImage) {
 			return rejectWithValue('La imagen no se encuentra en la galería');
 		}
 
-		// Paso 3: Descargar la imagen como blob
-		// Como la URL es /storage/media/... y requiere autenticación,
-		// extraemos la ruta relativa y usamos un endpoint del backend
-		// O, si no hay endpoint, usamos fetch con credentials
 		let imageBlob: Blob;
-
 		try {
-			// Intentar descargar con credentials para incluir cookies de sesión
 			const response = await fetch(galleryImage.url, {
-				credentials: 'include', // Incluye cookies de autenticación
-				headers: {
-					Accept: 'image/*',
-				},
+				credentials: 'include',
+				headers: { Accept: 'image/*' },
 			});
-
-			if (!response.ok) {
-				throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-			}
-
+			if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 			imageBlob = await response.blob();
-		} catch (fetchError) {
-			// Si falla con fetch, intentar con ApiService
-			// Convertir la URL de storage a una relativa
+		} catch {
 			const urlPath = galleryImage.url.replace(/^https?:\/\/[^/]+/, '');
-
 			const imageResponse = await ApiService.fetchData<Blob>({
 				url: urlPath,
 				method: 'get',
 				responseType: 'blob',
 			});
-
 			imageBlob = imageResponse.data as unknown as Blob;
 		}
 
-		// Paso 4: Crear un File desde el blob
 		const fileName = galleryImage.url.split('/').pop()?.split('?')[0] || `image-${mediaId}.jpg`;
 		const imageFile = new File([imageBlob], fileName, { type: imageBlob.type });
 
-		// Paso 5: Subir la imagen a la colección 'main' usando uploadMultipleDirect
 		const formData = new FormData();
 		formData.append('files', imageFile);
 		formData.append('collection', 'main');
 		formData.append('alt_text', galleryImage.alt || 'Imagen principal');
 
 		await ApiService.fetchData({
-			url: `/branches/${branchId}/products/${productId}/media/upload-multiple`,
+			url: `/${entityParam}/${entityId}/products/${productId}/media/upload-multiple`,
 			method: 'post',
 			data: formData,
 		});
 
-		// Paso 6: Eliminar la imagen de gallery
 		try {
 			await ApiService.fetchData({
-				url: `/branches/${branchId}/media/${mediaId}`,
+				url: `/${entityParam}/${entityId}/media/${mediaId}`,
 				method: 'delete',
 			});
 		} catch (deleteError) {
-			// Si falla la eliminación, no es crítico
 			console.warn('No se pudo eliminar la imagen de gallery:', deleteError);
 		}
 
-		// Paso 7: Recargar el producto para obtener el estado actualizado
-		const finalProductResponse = await ApiService.fetchData<{ data: any }>({
-			url: `/branches/${branchId}/products/${productId}`,
+		const finalProductResponse = await ApiService.fetchData<{ data: unknown }>({
+			url: `/${entityParam}/${entityId}/products/${productId}`,
 			method: 'get',
 		});
 
 		return normalizeProduct(finalProductResponse.data?.data ?? finalProductResponse.data);
-	} catch (error: any) {
-		return rejectWithValue(
-			error?.response?.data?.message ??
-				error?.message ??
-				'Error al establecer imagen principal',
-		);
+	} catch (error: unknown) {
+		return rejectWithValue(getErrorMessage(error, 'Error al establecer imagen principal'));
 	}
 });
 
 const productsSlice = createSlice({
-	name: 'products/productsSlice',
+	name: 'products',
 	initialState,
 	reducers: {
 		clearProductsError: (state) => {
 			state.error = null;
 			state.currentError = null;
 		},
+		clearCurrentProduct: (state) => {
+			state.current = null;
+			state.currentError = null;
+			state.currentLoading = false;
+		},
 	},
 	extraReducers: (builder) => {
 		builder
-			.addCase(fetchProducts.pending, (state) => {
+			.addCase(fetchProductsList.pending, (state) => {
 				state.loading = true;
 				state.error = null;
 			})
-			.addCase(fetchProducts.fulfilled, (state, action) => {
-				state.loading = false;
-				state.items = action.payload.items;
-				state.meta = action.payload.meta;
-				const requestedBranchId = action.meta.arg.branchId;
-				const hasSummaryForBranch =
-					state.inventory.branchId !== null &&
-					state.inventory.branchId === requestedBranchId;
-				if (!hasSummaryForBranch || state.inventoryLoading) {
-					state.stats = action.payload.stats;
-				}
-			})
-			.addCase(fetchProducts.rejected, (state, action) => {
-				state.loading = false;
-				state.error = action.payload ?? 'No se pudieron cargar los productos';
-			})
-			.addCase(fetchSubsidiaryProducts.pending, (state) => {
-				state.loading = true;
-				state.error = null;
-			})
-			.addCase(fetchSubsidiaryProducts.fulfilled, (state, action) => {
+			.addCase(fetchProductsList.fulfilled, (state, action) => {
 				state.loading = false;
 				state.items = action.payload.items;
 				state.meta = action.payload.meta;
 				state.stats = action.payload.stats;
 			})
-			.addCase(fetchSubsidiaryProducts.rejected, (state, action) => {
+			.addCase(fetchProductsList.rejected, (state, action) => {
 				state.loading = false;
 				state.error = action.payload ?? 'No se pudieron cargar los productos';
 			})
-			.addCase(fetchBranchInventorySummary.pending, (state) => {
+			.addCase(fetchInventorySummary.pending, (state) => {
 				state.inventoryLoading = true;
 				state.inventoryError = null;
 			})
-			.addCase(fetchBranchInventorySummary.fulfilled, (state, action) => {
+			.addCase(fetchInventorySummary.fulfilled, (state, action) => {
 				state.inventoryLoading = false;
 				state.stats = action.payload.stats;
 				state.inventory = { ...action.payload.inventory };
 				state.criticalProducts = action.payload.criticalProducts;
 			})
-			.addCase(fetchBranchInventorySummary.rejected, (state, action) => {
+			.addCase(fetchInventorySummary.rejected, (state, action) => {
 				state.inventoryLoading = false;
-				state.inventoryError =
-					action.payload ?? 'No se pudo cargar el resumen de inventario';
-			})
-			// Casos para fetchProductsFromMultipleBranches
-			.addCase(fetchProductsFromMultipleBranches.pending, (state) => {
-				state.loading = true;
-				state.error = null;
-			})
-			.addCase(fetchProductsFromMultipleBranches.fulfilled, (state, action) => {
-				state.loading = false;
-				state.items = action.payload.items;
-				state.meta = action.payload.meta;
-				state.stats = action.payload.stats;
-			})
-			.addCase(fetchProductsFromMultipleBranches.rejected, (state, action) => {
-				state.loading = false;
-				state.error = action.payload ?? 'No se pudieron cargar los productos';
+				state.inventoryError = action.payload ?? 'No se pudo cargar el resumen de inventario';
 			})
 			.addCase(fetchProductById.pending, (state) => {
 				state.currentLoading = true;
@@ -829,13 +776,12 @@ const productsSlice = createSlice({
 			.addCase(fetchProductById.fulfilled, (state, action) => {
 				state.currentLoading = false;
 				state.current = action.payload;
-				const index = state.items.findIndex((product) => product.id === action.payload.id);
-				if (index !== -1) {
-					state.items[index] = action.payload;
-				}
+				const index = state.items.findIndex((p) => p.id === action.payload.id);
+				if (index !== -1) state.items[index] = action.payload;
 			})
 			.addCase(fetchProductById.rejected, (state, action) => {
 				state.currentLoading = false;
+				state.current = null;
 				state.currentError = action.payload ?? 'No se pudo obtener el producto';
 			})
 			.addCase(fetchProductAttributes.pending, (state) => {
@@ -892,7 +838,7 @@ const productsSlice = createSlice({
 			})
 			.addCase(createProduct.rejected, (state, action) => {
 				state.creating = false;
-				state.error = action.payload ?? 'No se pudo crear el producto';
+				state.error = action.payload?.message ?? 'No se pudo crear el producto';
 			})
 			.addCase(updateProduct.pending, (state) => {
 				state.updating = true;
@@ -945,13 +891,13 @@ const productsSlice = createSlice({
 				state.mediaUploading = false;
 				state.mediaError = action.payload ?? 'Error al subir media';
 			})
-			.addCase(fetchBranchLibraryMedia.pending, (state) => {
+			.addCase(fetchLibraryMedia.pending, (state) => {
 				state.libraryLoading = true;
 			})
-			.addCase(fetchBranchLibraryMedia.fulfilled, (state) => {
+			.addCase(fetchLibraryMedia.fulfilled, (state) => {
 				state.libraryLoading = false;
 			})
-			.addCase(fetchBranchLibraryMedia.rejected, (state) => {
+			.addCase(fetchLibraryMedia.rejected, (state) => {
 				state.libraryLoading = false;
 			})
 			.addCase(attachProductMediaFromLibrary.pending, (state) => {
@@ -980,7 +926,6 @@ const productsSlice = createSlice({
 			})
 			.addCase(deleteProductMedia.fulfilled, (state, action) => {
 				state.mediaUploading = false;
-				// Actualizar la galería del producto actual si corresponde
 				if (state.current && state.current.gallery && action.meta?.arg?.mediaId) {
 					state.current.gallery = state.current.gallery.filter(
 						(img) => img.id !== action.meta.arg.mediaId,
@@ -1001,9 +946,28 @@ const productsSlice = createSlice({
 			.addCase(setProductMainImage.rejected, (state, action) => {
 				state.updating = false;
 				state.mediaError = action.payload ?? 'Error al establecer imagen principal';
+			})
+			.addCase(toggleProductStatus.pending, (state) => {
+				state.updating = true;
+				state.error = null;
+			})
+			.addCase(toggleProductStatus.fulfilled, (state, action) => {
+				state.updating = false;
+				const index = state.items.findIndex((p) => p.id === action.payload.id);
+				if (index !== -1) {
+					state.items[index] = action.payload;
+					state.stats = computeProductStats(state.items);
+				}
+				if (state.current && state.current.id === action.payload.id) {
+					state.current = action.payload;
+				}
+			})
+			.addCase(toggleProductStatus.rejected, (state, action) => {
+				state.updating = false;
+				state.error = action.payload ?? 'No se pudo cambiar el estado del producto';
 			});
 	},
 });
 
-export const { clearProductsError } = productsSlice.actions;
+export const { clearProductsError, clearCurrentProduct } = productsSlice.actions;
 export default productsSlice.reducer;

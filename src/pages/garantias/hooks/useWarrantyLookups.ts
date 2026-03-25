@@ -3,7 +3,7 @@ import { fetchSalesList } from '@/services/salesService';
 import type { TSelectOption } from '@/components/form/SelectReact';
 import { toast } from '@/utils/toast.utils';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { fetchProducts } from '@/store/slices/products/productsSlice';
+import { fetchProductsList } from '@/store/slices/products/productsSlice';
 import { fetchCustomerSuppliers } from '@/store/slices/customerSuppliers/customerSuppliersSlice';
 
 type SaleLookup = {
@@ -23,7 +23,7 @@ export const useWarrantyLookups = (subsidiaryId?: number | null, branchId?: numb
 		if (!branchId || productsRequested) return;
 		setProductsRequested(true);
 		try {
-			await dispatch(fetchProducts({ branchId, params: { page: 1, per_page: 200 } }));
+			await dispatch(fetchProductsList({ entityParam: 'branches', entityId: branchId, params: { page: 1, per_page: 200 } }));
 		} catch (error) {
 			setProductsRequested(false);
 			throw error;

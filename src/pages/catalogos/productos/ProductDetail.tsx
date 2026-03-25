@@ -32,7 +32,12 @@ import {
 	deleteProductMedia,
 	setProductMainImage,
 	fetchProductById,
+	type ProductEntityParam,
 } from '@/store/slices/products/productsSlice';
+import { useAppSelector } from '@/store';
+import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
+import type { ProductsViewMode } from './hooks/useProductos';
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 
 const EMPTY_DETAIL_FORM: ProductDetailForm = {
 	sku: '',
@@ -87,19 +92,68 @@ const ProductDetail: React.FC = () => {
 	const { productId: productIdParam } = useParams<{ productId: string }>();
 	const location = useLocation();
 	const dispatch = useAppDispatch();
+	const effectiveSubsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
+	const { branchId: currentBranchId } = useCurrentBranch();
+	const locationState =
+		location.state && typeof location.state === 'object'
+			? (location.state as Record<string, unknown>)
+			: null;
 
 	const parsedProductId = productIdParam ? Number(productIdParam) : NaN;
 	const productId = Number.isFinite(parsedProductId) ? parsedProductId : null;
-	const branchIdFromState = location.state?.branchId;
+	const branchIdFromState =
+		typeof locationState?.branchId === 'number' ? locationState.branchId : null;
+	const viewModeFromState: ProductsViewMode | null =
+		locationState?.viewMode === 'subsidiaries' || locationState?.viewMode === 'branches'
+			? (locationState.viewMode as ProductsViewMode)
+			: null;
+	const subsidiaryIdFromState =
+		typeof locationState?.subsidiaryId === 'number' ? locationState.subsidiaryId : null;
 	const branchIdFromQuery = useMemo(() => {
 		const params = new URLSearchParams(location.search);
 		const raw = params.get('branchId');
 		const parsed = raw ? Number(raw) : NaN;
 		return Number.isFinite(parsed) ? parsed : null;
 	}, [location.search]);
-	const initialBranchId = Number.isFinite(branchIdFromState)
+	const modeFromQuery = useMemo<ProductsViewMode | null>(() => {
+		const params = new URLSearchParams(location.search);
+		const raw = params.get('mode');
+		if (raw === 'subsidiaries' || raw === 'branches') return raw;
+		return null;
+	}, [location.search]);
+	const subsidiaryIdFromQuery = useMemo(() => {
+		const params = new URLSearchParams(location.search);
+		const raw = params.get('subsidiaryId');
+		const parsed = raw ? Number(raw) : NaN;
+		return Number.isFinite(parsed) ? parsed : null;
+	}, [location.search]);
+	const mode: ProductsViewMode =
+		modeFromQuery ?? viewModeFromState ?? (effectiveSubsidiaryId ? 'subsidiaries' : 'branches');
+	const subsidiaryId =
+		subsidiaryIdFromQuery ?? subsidiaryIdFromState ?? effectiveSubsidiaryId ?? null;
+	const routeBranchId = Number.isFinite(branchIdFromState)
 		? branchIdFromState
 		: branchIdFromQuery;
+	const initialBranchId = mode === 'branches' ? (currentBranchId ?? routeBranchId) : null;
+
+	const getErrorMessage = (error: unknown, fallback: string) => {
+		if (error instanceof Error && error.message) return error.message;
+		if (error && typeof error === 'object') {
+			const record = error as Record<string, unknown>;
+			const response =
+				record.response && typeof record.response === 'object'
+					? (record.response as Record<string, unknown>)
+					: undefined;
+			const data =
+				response?.data && typeof response.data === 'object'
+					? (response.data as Record<string, unknown>)
+					: undefined;
+			if (typeof data?.message === 'string' && data.message.trim()) {
+				return data.message;
+			}
+		}
+		return fallback;
+	};
 
 	const {
 		product,
@@ -112,8 +166,15 @@ const ProductDetail: React.FC = () => {
 		categories,
 		categoriesLoading,
 		effectiveBranchId,
+		entityId,
 		updateProduct,
-	} = useProductDetail({ productId, branchId: initialBranchId });
+	} = useProductDetail({
+		productId,
+		branchId: initialBranchId,
+		subsidiaryId,
+		mode,
+	});
+	const entityParam: ProductEntityParam = mode === 'subsidiaries' ? 'subsidiaries' : 'branches';
 
 	const { branchId, activeTab, setActiveTab, handleBranchChange } = useProductDetailState(
 		initialBranchId,
@@ -121,7 +182,7 @@ const ProductDetail: React.FC = () => {
 	);
 
 	const { handleMainImageUpload, handleGalleryImageUpload, handleLibrarySelect } =
-		useProductMediaHandlers(product, effectiveBranchId);
+		useProductMediaHandlers(product, entityId, entityParam);
 
 	const [showLibrary, setShowLibrary] = useState(false);
 
@@ -135,11 +196,12 @@ const ProductDetail: React.FC = () => {
 
 	// Manejar eliminaciÃ³n de imagen
 	const handleDeleteImage = async (mediaId: number) => {
-		if (!product || !effectiveBranchId) return;
+		if (!product || !entityId) return;
 		try {
 			await dispatch(
 				deleteProductMedia({
-					branchId: effectiveBranchId,
+					entityParam,
+					entityId,
 					productId: product.id,
 					mediaId,
 				}),
@@ -147,10 +209,10 @@ const ProductDetail: React.FC = () => {
 			toast.success('Imagen eliminada correctamente');
 			// Recargar el producto para ver los cambios
 			await dispatch(
-				fetchProductById({ branchId: effectiveBranchId, productId: product.id }),
+				fetchProductById({ entityParam, entityId, productId: product.id }),
 			).unwrap();
-		} catch (error: any) {
-			toast.error(error?.message ?? 'Error al eliminar la imagen');
+		} catch (error: unknown) {
+			toast.error(getErrorMessage(error, 'Error al eliminar la imagen'));
 		}
 	};
 
@@ -175,29 +237,46 @@ const ProductDetail: React.FC = () => {
 				categoryIds,
 			});
 			toast.success('Producto actualizado correctamente');
-		} catch (error: any) {
-			if (error?.response?.data?.errors) {
-				const backendErrors = error.response.data.errors;
+		} catch (error: unknown) {
+			const errorRecord =
+				error && typeof error === 'object' ? (error as Record<string, unknown>) : undefined;
+			const response =
+				errorRecord?.response && typeof errorRecord.response === 'object'
+					? (errorRecord.response as Record<string, unknown>)
+					: undefined;
+			const data =
+				response?.data && typeof response.data === 'object'
+					? (response.data as Record<string, unknown>)
+					: undefined;
+			const backendErrors =
+				data?.errors && typeof data.errors === 'object'
+					? (data.errors as Record<string, unknown>)
+					: undefined;
+
+			if (backendErrors) {
 				const formikErrors: Record<string, string> = {};
 
 				Object.keys(backendErrors).forEach((key) => {
 					const errorMessages = backendErrors[key];
 					if (Array.isArray(errorMessages) && errorMessages.length > 0) {
-						formikErrors[key] = errorMessages[0];
+						const first = errorMessages.find(
+							(msg): msg is string => typeof msg === 'string',
+						);
+						if (!first) return;
+						formikErrors[key] = first;
 						setFieldTouched(key, true, false);
 					}
 				});
 
 				setErrors(formikErrors);
 
-				const message = error?.response?.data?.message ?? 'Error de validación';
+				const message =
+					typeof data?.message === 'string' && data.message.trim()
+						? data.message
+						: 'Error de validación';
 				toast.error(message);
 			} else {
-				const message =
-					error?.response?.data?.message ??
-					error?.message ??
-					'No se pudo actualizar el producto';
-				toast.error(message);
+				toast.error(getErrorMessage(error, 'No se pudo actualizar el producto'));
 			}
 		} finally {
 			setSubmitting(false);
@@ -209,6 +288,10 @@ const ProductDetail: React.FC = () => {
 	}
 
 	if (productLoading) {
+		return <LoadingState />;
+	}
+
+	if (!product && !productError) {
 		return <LoadingState />;
 	}
 
@@ -273,7 +356,8 @@ const ProductDetail: React.FC = () => {
 
 			<MediaLibraryModal
 				open={showLibrary}
-				branchId={effectiveBranchId ?? 0}
+				entityParam={entityParam}
+				entityId={entityId ?? 0}
 				onClose={() => setShowLibrary(false)}
 				onSelect={handleLibrarySelect}
 			/>

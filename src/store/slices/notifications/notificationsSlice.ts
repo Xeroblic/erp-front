@@ -38,7 +38,55 @@ const initialState: NotificationsState = {
 	unreadCount: 0,
 };
 
+const normalizeErrorNames = (value: unknown): string[] => {
+	if (!Array.isArray(value)) return [];
+	return value
+		.map((entry) => (typeof entry === 'string' ? entry.trim() : ''))
+		.filter((entry) => Boolean(entry));
+};
+
+const deriveNotificationMessage = (n: any): string | null => {
+	const directMessage = n?.message;
+	if (typeof directMessage === 'string' && directMessage.trim()) {
+		return directMessage;
+	}
+
+	const payload = n?.event?.payload ?? n?.payload;
+	if (!payload || typeof payload !== 'object') return null;
+
+	const payloadMessage = (payload as Record<string, unknown>)?.message;
+	if (typeof payloadMessage === 'string' && payloadMessage.trim()) {
+		return payloadMessage;
+	}
+
+	const typeKey = String(n?.event?.type_key ?? n?.type_key ?? '');
+	if (typeKey !== 'inventory.batch-adjustment-failed') {
+		return null;
+	}
+
+	const payloadRecord = payload as Record<string, unknown>;
+	const failedIds = Array.isArray(payloadRecord.failed_item_ids)
+		? payloadRecord.failed_item_ids.length
+		: 0;
+	const branchName =
+		typeof payloadRecord.branch_name === 'string' ? payloadRecord.branch_name.trim() : '';
+	const subsidiaryName =
+		typeof payloadRecord.subsidiary_name === 'string'
+			? payloadRecord.subsidiary_name.trim()
+			: '';
+	const errorNames = normalizeErrorNames(payloadRecord.failed_item_names);
+
+	const locationParts = [branchName, subsidiaryName].filter(Boolean);
+	const locationLabel = locationParts.length ? ` en ${locationParts.join(' / ')}` : '';
+	const details = errorNames.length ? ` Productos: ${errorNames.join(', ')}.` : '';
+
+	return `El ajuste por lote fallo${locationLabel}. Items afectados: ${failedIds}.${details}`;
+};
+
 const normalizeFromApi = (n: any): UserNotificationDTO => {
+	const normalizedMessage = deriveNotificationMessage(n);
+	const eventPayload = n.event?.payload ?? n.payload ?? null;
+	const eventScope = n.event?.scope ?? n.scope ?? null;
 	return {
 		id: Number(n.id),
 		status: (n.status ?? 'unread') as NotificationStatus,
@@ -50,7 +98,7 @@ const normalizeFromApi = (n: any): UserNotificationDTO => {
 		ack_at: n.ack_at ?? null,
 		created_at: n.created_at ?? null,
 		origin: n.origin ?? null,
-		message: n.message ?? null,
+		message: normalizedMessage,
 		delivered_to_user: typeof n.delivered_to_user === 'boolean' ? n.delivered_to_user : false,
 		event: {
 			id: n.event?.id ?? n.event_id ?? n.id ?? null,
@@ -59,8 +107,8 @@ const normalizeFromApi = (n: any): UserNotificationDTO => {
 			module: n.event?.module ?? n.module ?? null,
 			module_label: n.event?.module_label ?? n.module_label ?? null,
 			priority: n.event?.priority ?? n.priority ?? null,
-			payload: n.event?.payload ?? n.payload ?? null,
-			scope: n.event?.scope ?? null,
+			payload: eventPayload,
+			scope: eventScope,
 		},
 	};
 };
@@ -255,8 +303,8 @@ export const markAllDelivered = createAsyncThunk<void, void, { rejectValue: stri
 		} catch (e: any) {
 			return rejectWithValue(
 				e?.response?.data?.message ??
-					e?.message ??
-					'No se pudo marcar todas como entregadas',
+				e?.message ??
+				'No se pudo marcar todas como entregadas',
 			);
 		}
 	},
@@ -286,7 +334,10 @@ const notificationsSlice = createSlice({
 		upsertMany(state, action: PayloadAction<UserNotificationDTO[]>) {
 			const map = new Map<number, UserNotificationDTO>();
 			for (const n of state.items) map.set(n.id, n);
-			for (const n of action.payload) map.set(n.id, n);
+			for (const raw of action.payload) {
+				const n = normalizeFromApi(raw);
+				map.set(n.id, n);
+			}
 			state.items = Array.from(map.values()).sort((a, b) => (b.id || 0) - (a.id || 0));
 			state.unreadCount = recomputeUnread(state.items);
 		},

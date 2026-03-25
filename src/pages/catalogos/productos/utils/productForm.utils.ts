@@ -248,15 +248,18 @@ export const deriveDefaultCategoryId = (
 
 export const collectValidationErrors = (error: unknown): string[] => {
 	if (!error || typeof error !== 'object') return ['Ha ocurrido un error inesperado.'];
-	if ('inner' in error && Array.isArray((error as any).inner)) {
-		const inner = (error as any).inner as Array<{ errors: string[] }>;
+	const errorRecord = error as Record<string, unknown>;
+	if (Array.isArray(errorRecord.inner)) {
+		const inner = errorRecord.inner as Array<{ errors?: unknown }>;
 		return inner.flatMap((item) => item.errors).filter(Boolean);
 	}
-	if ('errors' in error && Array.isArray((error as any).errors)) {
-		return ((error as any).errors as string[]).filter(Boolean);
+	if (Array.isArray(errorRecord.errors)) {
+		return (errorRecord.errors as unknown[]).filter(
+			(msg): msg is string => typeof msg === 'string' && msg.length > 0,
+		);
 	}
-	if ('message' in error && typeof (error as any).message === 'string') {
-		return [(error as any).message as string];
+	if (typeof errorRecord.message === 'string') {
+		return [errorRecord.message];
 	}
 	return ['Ha ocurrido un error inesperado.'];
 };
@@ -266,7 +269,7 @@ export const collectValidationErrors = (error: unknown): string[] => {
  * @param productType - El tipo de dispositivo seleccionado
  * @returns El objeto attributes_json inicial o null si es 'general'
  */
-export const initializeAttributesJson = (productType: string): Record<string, any> | null => {
+export const initializeAttributesJson = (productType: string): Record<string, unknown> | null => {
 	if (!productType || productType === 'general') {
 		return null;
 	}

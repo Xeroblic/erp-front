@@ -33,6 +33,127 @@ interface UseUserBranchesReturn extends UseUserBranchesState {
 	clearError: () => void;
 }
 
+type UnknownRecord = Record<string, unknown>;
+
+const asRecord = (value: unknown): UnknownRecord | undefined => {
+	if (value && typeof value === 'object' && !Array.isArray(value)) {
+		return value as UnknownRecord;
+	}
+	return undefined;
+};
+
+const asRecordArray = (value: unknown): UnknownRecord[] => {
+	if (!Array.isArray(value)) return [];
+	return value
+		.map((item) => asRecord(item))
+		.filter((item): item is UnknownRecord => item !== undefined);
+};
+
+const normalizeUserBranch = (branch: UnknownRecord): UserBranch => {
+	const subsidiarySource =
+		branch.subsidiary ?? branch.subsidiary_info ?? branch.subsidiary_id ?? null;
+	const companySource = branch.company ?? null;
+
+	const subsidiary = asRecord(subsidiarySource);
+	const company = asRecord(companySource);
+
+	const subsidiaryId =
+		subsidiary?.id !== undefined
+			? Number(subsidiary.id)
+			: typeof subsidiarySource === 'number'
+				? subsidiarySource
+				: null;
+
+	const subsidiaryName =
+		typeof subsidiary?.name === 'string'
+			? subsidiary.name
+			: typeof subsidiary?.subsidiary_name === 'string'
+				? subsidiary.subsidiary_name
+				: typeof subsidiary?.branch_name === 'string'
+					? subsidiary.branch_name
+					: typeof branch.subsidiary_name === 'string'
+						? branch.subsidiary_name
+						: null;
+
+	const companyId =
+		company?.id !== undefined
+			? Number(company.id)
+			: typeof companySource === 'number'
+				? companySource
+				: null;
+
+	const companyName =
+		typeof company?.name === 'string'
+			? company.name
+			: typeof company?.company_name === 'string'
+				? company.company_name
+				: typeof branch.company_name === 'string'
+					? branch.company_name
+					: null;
+
+	const id = Number(branch.id ?? 0);
+	const fallbackName = Number.isFinite(id) && id > 0 ? `Branch ${id}` : 'Branch';
+
+	return {
+		id,
+		name:
+			(typeof branch.name === 'string' && branch.name) ||
+			(typeof branch.branch_name === 'string' && branch.branch_name) ||
+			fallbackName,
+		subsidiaryId: Number.isFinite(Number(subsidiaryId)) ? Number(subsidiaryId) : null,
+		subsidiaryName,
+		companyId: Number.isFinite(Number(companyId)) ? Number(companyId) : null,
+		companyName,
+		city:
+			typeof branch.city === 'string'
+				? branch.city
+				: typeof branch.city_name === 'string'
+					? branch.city_name
+					: typeof branch.location === 'string'
+						? branch.location
+						: null,
+	};
+};
+
+const mergeBranchSources = (
+	access: unknown,
+	visible: unknown,
+	primary?: unknown,
+): UnknownRecord[] => {
+	const map = new Map<number, UnknownRecord>();
+	for (const branch of [...asRecordArray(access), ...asRecordArray(visible)]) {
+		const id = Number(branch.id ?? 0);
+		if (Number.isFinite(id) && id > 0 && !map.has(id)) {
+			map.set(id, branch);
+		}
+	}
+
+	const primaryRecord = asRecord(primary);
+	if (primaryRecord) {
+		const id = Number(primaryRecord.id ?? 0);
+		if (Number.isFinite(id) && id > 0 && !map.has(id)) {
+			map.set(id, {
+				id,
+				name: primaryRecord.name ?? primaryRecord.branch_name,
+				subsidiary: primaryRecord.subsidiary ?? null,
+				company:
+					primaryRecord.company ?? asRecord(primaryRecord.subsidiary)?.company ?? null,
+				city: primaryRecord.city ?? null,
+			});
+		}
+	}
+
+	return Array.from(map.values());
+};
+
+const getErrorMessage = (error: unknown): string => {
+	const response = asRecord(asRecord(error)?.response);
+	const data = asRecord(response?.data);
+	if (typeof data?.message === 'string' && data.message.trim()) return data.message;
+	if (error instanceof Error && error.message.trim()) return error.message;
+	return 'Error al obtener las branches del usuario';
+};
+
 /**
  * Hook profesional para obtener las branches a las que un usuario tiene acceso
  *
@@ -71,13 +192,17 @@ export const useUserBranches = (
 	const { fetchOnMount = true, enabled = !!userId } = options;
 
 	// ID del usuario autenticado (para fallback cuando pedimos nuestras propias branches)
-	const currentUserId = useAppSelector(
-		(s) => s.auth.user?.id ?? (s.auth.user as any)?.pk ?? undefined,
-	);
+	const currentUserId = useAppSelector((s) => {
+		const authUser = asRecord(s.auth.user);
+		const id = authUser?.id;
+		if (typeof id === 'number') return id;
+		const pk = authUser?.pk;
+		return typeof pk === 'number' ? pk : undefined;
+	});
 
 	// Permisos del usuario autenticado (incluye roles en este proyecto)
 	const permisos = useAppSelector((s) => s.auth.permisos ?? []);
-	const authUser = useAppSelector((s) => s.auth.user as any);
+	const authUser = useAppSelector((s) => s.auth.user as unknown);
 
 	const [state, setState] = useState<UseUserBranchesState>({
 		branches: [],
@@ -108,150 +233,32 @@ export const useUserBranches = (
 			if (isSelf || !canViewUser) {
 				// 1) Intentar desde el store (userMeThunk ya carga /perfil en PageWrapper)
 				if (authUser) {
-					const meData = authUser;
-					const acc = meData?.access?.branches ?? [];
-					const vis = meData?.visible?.branches ?? [];
-					const map = new Map<number, any>();
-					[...acc, ...vis].forEach((b: any) => {
-						if (b?.id && !map.has(b.id)) map.set(b.id, b);
-					});
-					let rawBranches: any[] = Array.from(map.values());
-					if (!Array.isArray(rawBranches) || rawBranches.length === 0) {
-						const b = meData?.branch;
-						if (b?.id) {
-							rawBranches = [
-								{
-									id: b.id,
-									name: b.name ?? b.branch_name,
-									subsidiary: b.subsidiary ?? null,
-									company: b.company ?? b?.subsidiary?.company ?? null,
-									city: b.city ?? null,
-								},
-							];
-						}
-					}
+					const meData = asRecord(authUser);
+					const rawBranches = mergeBranchSources(
+						asRecord(meData?.access)?.branches,
+						asRecord(meData?.visible)?.branches,
+						meData?.branch,
+					);
 
-					if (Array.isArray(rawBranches) && rawBranches.length) {
-						const normalizedSelf: UserBranch[] = rawBranches.map((branch: any) => {
-							const subsidiary =
-								branch?.subsidiary ??
-								branch?.subsidiary_info ??
-								branch?.subsidiary_id ??
-								null;
-							const company = branch?.company ?? null;
-							const subsidiaryId =
-								typeof subsidiary === 'object'
-									? (subsidiary?.id ?? null)
-									: typeof subsidiary === 'number'
-										? subsidiary
-										: null;
-							const subsidiaryName =
-								typeof subsidiary === 'object'
-									? (subsidiary?.name ??
-										subsidiary?.subsidiary_name ??
-										subsidiary?.branch_name ??
-										null)
-									: (branch?.subsidiary_name ?? null);
-							const companyId =
-								typeof company === 'object'
-									? (company?.id ?? null)
-									: typeof company === 'number'
-										? company
-										: null;
-							const companyName =
-								typeof company === 'object'
-									? (company?.name ?? company?.company_name ?? null)
-									: (branch?.company_name ?? null);
-							return {
-								id: branch.id,
-								name: branch.name || branch.branch_name || `Branch ${branch.id}`,
-								subsidiaryId,
-								subsidiaryName,
-								companyId,
-								companyName,
-								city: branch?.city ?? branch?.city_name ?? branch?.location ?? null,
-							};
-						});
+					if (rawBranches.length) {
+						const normalizedSelf: UserBranch[] = rawBranches.map(normalizeUserBranch);
 						setState({ branches: normalizedSelf, loading: false, error: null });
 						return;
 					}
 				}
 
 				// 2) Fallback a /perfil si el store aún no tiene access/visible
-				const meResp = await ApiService.fetchData<{ success?: boolean; data?: any }>({
+				const meResp = await ApiService.fetchData<{ success?: boolean; data?: unknown }>({
 					url: '/perfil',
 					method: 'get',
 				});
 
-				const meData = (meResp as any)?.data?.data ?? (meResp as any)?.data ?? ({} as any);
-				// Unir access + visible + branch para el propio usuario
-				const acc = meData?.access?.branches ?? [];
-				const vis = meData?.visible?.branches ?? [];
-				const __map = new Map<number, any>();
-				[...acc, ...vis].forEach((b: any) => {
-					if (b?.id && !__map.has(b.id)) __map.set(b.id, b);
-				});
-				let rawBranches: any[] = Array.from(__map.values());
-				if (!Array.isArray(rawBranches) || rawBranches.length === 0) {
-					const b = meData?.branch;
-					if (b?.id) {
-						rawBranches = [
-							{
-								id: b.id,
-								name: b.name ?? b.branch_name,
-								subsidiary: b.subsidiary ?? null,
-								company: b.company ?? b?.subsidiary?.company ?? null,
-								city: b.city ?? null,
-							},
-						];
-					}
-				}
-
-				const normalizedSelf: UserBranch[] = rawBranches.map((branch: any) => {
-					const subsidiary =
-						branch?.subsidiary ??
-						branch?.subsidiary_info ??
-						branch?.subsidiary_id ??
-						null;
-					const company = branch?.company ?? null;
-
-					const subsidiaryId =
-						typeof subsidiary === 'object'
-							? (subsidiary?.id ?? null)
-							: typeof subsidiary === 'number'
-								? subsidiary
-								: null;
-
-					const subsidiaryName =
-						typeof subsidiary === 'object'
-							? (subsidiary?.name ??
-								subsidiary?.subsidiary_name ??
-								subsidiary?.branch_name ??
-								null)
-							: (branch?.subsidiary_name ?? null);
-
-					const companyId =
-						typeof company === 'object'
-							? (company?.id ?? null)
-							: typeof company === 'number'
-								? company
-								: null;
-
-					const companyName =
-						typeof company === 'object'
-							? (company?.name ?? company?.company_name ?? null)
-							: (branch?.company_name ?? null);
-
-					return {
-						id: branch.id,
-						name: branch.name || branch.branch_name || `Branch ${branch.id}`,
-						subsidiaryId,
-						subsidiaryName,
-						companyId,
-						companyName,
-						city: branch?.city ?? branch?.city_name ?? branch?.location ?? null,
-					};
-				});
+				const mePayload = asRecord(meResp.data?.data) ?? asRecord(meResp.data) ?? {};
+				const normalizedSelf: UserBranch[] = mergeBranchSources(
+					asRecord(mePayload.access)?.branches,
+					asRecord(mePayload.visible)?.branches,
+					mePayload.branch,
+				).map(normalizeUserBranch);
 
 				setState({ branches: normalizedSelf, loading: false, error: null });
 				return;
@@ -275,152 +282,40 @@ export const useUserBranches = (
 			});
 
 			// Extraer y normalizar las branches del usuario (unir access + visible + branch)
-			const userData = response.data.data || response.data;
-			const accessBranches = (userData as any)?.access?.branches ?? [];
-			const visibleBranches = (userData as any)?.visible?.branches ?? [];
-			const primaryBranch = (userData as any)?.branch;
-			const _mergedMap = new Map<number, any>();
-			[...accessBranches, ...visibleBranches].forEach((b: any) => {
-				if (b?.id && !_mergedMap.has(b.id)) _mergedMap.set(b.id, b);
-			});
-			if (primaryBranch?.id && !_mergedMap.has(primaryBranch.id)) {
-				_mergedMap.set(primaryBranch.id, {
-					id: primaryBranch.id,
-					name: primaryBranch.name ?? primaryBranch.branch_name,
-					subsidiary: primaryBranch.subsidiary ?? null,
-					company: primaryBranch.company ?? primaryBranch?.subsidiary?.company ?? null,
-				});
-			}
-			const rawBranches = Array.from(_mergedMap.values());
-
-			// Mapear a la estructura simplificada
-			const normalizedBranches: UserBranch[] = rawBranches.map((branch) => {
-				const subsidiary =
-					branch?.subsidiary ?? branch?.subsidiary_info ?? branch?.subsidiary_id ?? null;
-				const company = branch?.company ?? null;
-
-				const subsidiaryId =
-					typeof subsidiary === 'object'
-						? (subsidiary?.id ?? null)
-						: typeof subsidiary === 'number'
-							? subsidiary
-							: null;
-
-				const subsidiaryName =
-					typeof subsidiary === 'object'
-						? (subsidiary?.name ??
-							subsidiary?.subsidiary_name ??
-							subsidiary?.branch_name ??
-							null)
-						: (branch?.subsidiary_name ?? null);
-
-				const companyId =
-					typeof company === 'object'
-						? (company?.id ?? null)
-						: typeof company === 'number'
-							? company
-							: null;
-
-				const companyName =
-					typeof company === 'object'
-						? (company?.name ?? company?.company_name ?? null)
-						: (branch?.company_name ?? null);
-
-				return {
-					id: branch.id,
-					name: branch.name || branch.branch_name || `Branch ${branch.id}`,
-					subsidiaryId,
-					subsidiaryName,
-					companyId,
-					companyName,
-					city: branch?.city ?? branch?.city_name ?? branch?.location ?? null,
-				};
-			});
+			const userData = asRecord(response.data.data) ?? asRecord(response.data) ?? {};
+			const normalizedBranches: UserBranch[] = mergeBranchSources(
+				asRecord(userData.access)?.branches,
+				asRecord(userData.visible)?.branches,
+				userData.branch,
+			).map(normalizeUserBranch);
 
 			setState({
 				branches: normalizedBranches,
 				loading: false,
 				error: null,
 			});
-		} catch (error: any) {
+		} catch (error: unknown) {
 			// Fallback: si 403 en /users/:id y es el propio usuario, usar /perfil
-			const status = error?.response?.status;
+			const status = Number(asRecord(asRecord(error)?.response)?.status);
 			const isForbidden = status === 403;
 			const isSelfRequest = currentUserId && Number(currentUserId) === Number(userId);
 
 			if (isForbidden && isSelfRequest) {
 				try {
-					const meResp = await ApiService.fetchData<{ success?: boolean; data?: any }>({
+					const meResp = await ApiService.fetchData<{
+						success?: boolean;
+						data?: unknown;
+					}>({
 						url: '/perfil',
 						method: 'get',
 					});
 
-					const meData = meResp.data?.data ?? meResp.data ?? ({} as any);
-
-					// Intentar varias fuentes: access.branches, visible.branches, o branch único
-					let rawBranches: any[] =
-						meData?.access?.branches ?? meData?.visible?.branches ?? [];
-
-					if (!Array.isArray(rawBranches) || rawBranches.length === 0) {
-						const b = meData?.branch;
-						if (b?.id) {
-							rawBranches = [
-								{
-									id: b.id,
-									name: b.name ?? b.branch_name,
-									subsidiary: b.subsidiary ?? null,
-									company: b.company ?? b?.subsidiary?.company ?? null,
-									city: b.city ?? null,
-								},
-							];
-						}
-					}
-
-					const normalizedBranches: UserBranch[] = rawBranches.map((branch: any) => {
-						const subsidiary =
-							branch?.subsidiary ??
-							branch?.subsidiary_info ??
-							branch?.subsidiary_id ??
-							null;
-						const company = branch?.company ?? null;
-
-						const subsidiaryId =
-							typeof subsidiary === 'object'
-								? (subsidiary?.id ?? null)
-								: typeof subsidiary === 'number'
-									? subsidiary
-									: null;
-
-						const subsidiaryName =
-							typeof subsidiary === 'object'
-								? (subsidiary?.name ??
-									subsidiary?.subsidiary_name ??
-									subsidiary?.branch_name ??
-									null)
-								: (branch?.subsidiary_name ?? null);
-
-						const companyId =
-							typeof company === 'object'
-								? (company?.id ?? null)
-								: typeof company === 'number'
-									? company
-									: null;
-
-						const companyName =
-							typeof company === 'object'
-								? (company?.name ?? company?.company_name ?? null)
-								: (branch?.company_name ?? null);
-
-						return {
-							id: branch.id,
-							name: branch.name || branch.branch_name || `Branch ${branch.id}`,
-							subsidiaryId,
-							subsidiaryName,
-							companyId,
-							companyName,
-							city: branch?.city ?? branch?.city_name ?? branch?.location ?? null,
-						};
-					});
+					const meData = asRecord(meResp.data?.data) ?? asRecord(meResp.data) ?? {};
+					const normalizedBranches: UserBranch[] = mergeBranchSources(
+						asRecord(meData.access)?.branches,
+						asRecord(meData.visible)?.branches,
+						meData.branch,
+					).map(normalizeUserBranch);
 
 					setState({ branches: normalizedBranches, loading: false, error: null });
 					return;
@@ -429,10 +324,7 @@ export const useUserBranches = (
 				}
 			}
 
-			const errorMessage =
-				error?.response?.data?.message ||
-				error?.message ||
-				'Error al obtener las branches del usuario';
+			const errorMessage = getErrorMessage(error);
 
 			setState({ branches: [], loading: false, error: errorMessage });
 			console.error('[useUserBranches] Error:', errorMessage, error);

@@ -6,7 +6,7 @@ import Container from '@/components/layouts/Container/Container';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
-import { useAppDispatch, useAppSelector } from '@/store';
+import { fetchProductsList, useAppDispatch, useAppSelector } from '@/store';
 import { fetchItems, selectItemsLoading, selectItemsError } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import ItemList from '../../components/ItemList/ItemList';
@@ -15,12 +15,12 @@ import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import { fetchWarehouses } from '@/store/slices/warehouses/warehouseSlice';
 import { fetchCustomerSuppliers } from '@/store/slices/customerSuppliers/customerSuppliersSlice';
 import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/personalizacionSlice';
-import { fetchProducts } from '@/store/slices/products/productsSlice';
 import ApiService from '@/services/ApiService';
 import type { IItem } from '@/interface/technicalReviews.interface';
 import { COMMERCIAL_STATUS_FILTER_OPTIONS } from '../../components/constants/statuses.constant';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Badge from '@/components/ui/Badge';
+import BulkTransferModal from './BulkTransferModal';
 
 const TECHNICAL_REVIEWS_PREFIX = (import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
 const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
@@ -76,6 +76,13 @@ const RefactorSeries: React.FC = () => {
 	const productsLoading = useAppSelector((state) => state.products.loading);
 	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
 	const currentUser = useAppSelector((state) => state.auth.user);
+
+	type ProfileBranch = {
+		id?: number;
+		name?: string;
+		subsidiary?: { id?: number; name?: string };
+		subsidiary_id?: number;
+	};
 
 	const [page, setPage] = useState(1);
 	const [limit, setLimit] = useState(20);
@@ -146,6 +153,80 @@ const RefactorSeries: React.FC = () => {
 		currentUser?.branch?.subsidiary?.id ??
 		null;
 
+	const effectiveSubsidiaryIdForTransfer = useMemo<number | null>(() => {
+		if (!branchId) return subsidiaryId;
+
+		const visibleBranches = ((currentUser as any)?.visible?.branches ?? []) as ProfileBranch[];
+		const accessBranches = ((currentUser as any)?.access?.branches ?? []) as ProfileBranch[];
+		const merged = [...visibleBranches, ...accessBranches];
+
+		const selected = merged.find((b) => Number(b?.id ?? 0) === Number(branchId));
+		const selectedSubsidiaryId = Number(
+			selected?.subsidiary?.id ?? selected?.subsidiary_id ?? 0,
+		);
+
+		if (Number.isFinite(selectedSubsidiaryId) && selectedSubsidiaryId > 0) {
+			return selectedSubsidiaryId;
+		}
+
+		return subsidiaryId;
+	}, [branchId, currentUser, subsidiaryId]);
+
+	const transferDestinationBranches = useMemo<TSelectOption[]>(() => {
+		const accessBranches = ((currentUser as any)?.access?.branches ?? []) as ProfileBranch[];
+		const accessSubsidiaries = ((currentUser as any)?.access?.subsidiaries ?? []) as Array<{
+			id?: number;
+		}>;
+		const visibleBranches = ((currentUser as any)?.visible?.branches ?? []) as ProfileBranch[];
+
+		const accessBranchIds = new Set<number>(
+			accessBranches
+				.map((branch) => Number(branch?.id ?? 0))
+				.filter((id) => Number.isFinite(id) && id > 0),
+		);
+
+		const accessSubsidiaryIds = new Set<number>(
+			accessSubsidiaries
+				.map((subsidiary) => Number(subsidiary?.id ?? 0))
+				.filter((id) => Number.isFinite(id) && id > 0),
+		);
+
+		const visibleById = new Map<number, ProfileBranch>();
+		for (const branch of visibleBranches) {
+			const id = Number(branch?.id ?? 0);
+			if (Number.isFinite(id) && id > 0) {
+				visibleById.set(id, branch);
+			}
+		}
+
+		const filtered = Array.from(visibleById.values())
+			.filter((branch) => {
+				const id = Number(branch?.id ?? 0);
+				const branchSubsidiaryId = Number(
+					branch.subsidiary?.id ?? branch.subsidiary_id ?? 0,
+				);
+
+				if (accessBranchIds.has(id)) return true;
+				if (accessSubsidiaryIds.has(branchSubsidiaryId)) return true;
+				return false;
+			})
+			.filter((branch) => Number(branch.id) !== Number(branchId ?? 0))
+			.filter((branch) => {
+				if (!effectiveSubsidiaryIdForTransfer) return true;
+				const branchSubsidiaryId = Number(
+					branch.subsidiary?.id ?? branch.subsidiary_id ?? 0,
+				);
+				return branchSubsidiaryId === Number(effectiveSubsidiaryIdForTransfer);
+			});
+
+		return filtered
+			.map((branch) => ({
+				value: String(branch.id),
+				label: branch.name ?? `Sucursal ${branch.id}`,
+			}))
+			.sort((a, b) => a.label.localeCompare(b.label, 'es'));
+	}, [currentUser, branchId, effectiveSubsidiaryIdForTransfer]);
+
 	const handleViewItem = (itemId: number) => {
 		navigate(`/technical-reviews/items/${itemId}`);
 	};
@@ -161,7 +242,13 @@ const RefactorSeries: React.FC = () => {
 	// Fetch reference data
 	useEffect(() => {
 		if (branchId) {
-			dispatch(fetchProducts({ branchId, params: { page: 1, per_page: 200 } }));
+			dispatch(
+				fetchProductsList({
+					entityParam: 'branches',
+					entityId: branchId,
+					params: { page: 1, per_page: 200 },
+				}),
+			);
 			dispatch(
 				fetchWarehouses({
 					branchId,
@@ -282,6 +369,46 @@ const RefactorSeries: React.FC = () => {
 		);
 	}, [dispatch, branchId, queryParams]);
 
+	const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+
+	const bulkTransferStock = useCallback(
+		async (serialNumbers: string[], targetBranchId: number) => {
+			try {
+				if (!branchId || !effectiveSubsidiaryIdForTransfer) {
+					toast.error('Información de sucursal/subsidiaria no disponible');
+					return;
+				}
+
+				if (serialNumbers.length === 0) {
+					toast.error('No hay números de serie para transferir');
+					return;
+				}
+
+				const response = await ApiService.fetchData({
+					url: `/subsidiaries/${effectiveSubsidiaryIdForTransfer}/bulk-transfer-stock`,
+					method: 'post',
+					data: {
+						from_branch_id: branchId,
+						to_branch_id: targetBranchId,
+						serial_numbers: serialNumbers,
+					},
+				});
+
+				toast.success('Stock transferido exitosamente');
+				dispatch(
+					fetchItems({
+						branchId,
+						params: queryParams,
+					}),
+				);
+			} catch (error) {
+				toast.error('Error al transferir stock');
+				console.error(error);
+			}
+		},
+		[branchId, effectiveSubsidiaryIdForTransfer, dispatch, queryParams],
+	);
+
 	return (
 		<PageWrapper
 			name='technical-reviews-series'
@@ -304,6 +431,17 @@ const RefactorSeries: React.FC = () => {
 					</div>
 				</SubheaderLeft>
 				<SubheaderRight>
+					<Button
+						variant='solid'
+						color='blue'
+						className='bg-blue-600 shadow-md transition-colors hover:bg-blue-700 hover:shadow-lg'
+						onClick={() => setIsTransferModalOpen(true)}>
+						<Icon
+							icon='HeroArrowsRightLeft'
+							className='mr-2 text-xl font-bold text-white'
+						/>
+						Realizar transferencias S/N
+					</Button>
 					<Button
 						variant='solid'
 						color='emerald'
@@ -718,6 +856,12 @@ const RefactorSeries: React.FC = () => {
 					variant='global'
 					exportFileName='revisiones-globales'
 					onExportFetchAll={fetchAllForExport}
+				/>
+				<BulkTransferModal
+					isOpen={isTransferModalOpen}
+					onClose={() => setIsTransferModalOpen(false)}
+					onTransfer={bulkTransferStock}
+					destinationBranchOptions={transferDestinationBranches}
 				/>
 			</Container>
 		</PageWrapper>

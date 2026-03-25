@@ -18,7 +18,7 @@ import type { IProduct } from '@/interface/product.interface';
 import type { IWarehouse } from '@/interface/warehouse.interface';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchMisSucursales } from '@/store/slices/sucursales/sucursalesSlice';
-import { fetchProducts } from '@/store/slices/products/productsSlice';
+import { fetchProductsList } from '@/store/slices/products/productsSlice';
 import { fetchWarehouses } from '@/store/slices/warehouses/warehouseSlice';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 
@@ -245,7 +245,11 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 		try {
 			setProductsLoading(true);
 			const response = await dispatch(
-				fetchProducts({ branchId: currentBranchId, params: { per_page: 500 } }),
+				fetchProductsList({
+					entityParam: 'branches',
+					entityId: currentBranchId,
+					params: { per_page: 500 },
+				}),
 			).unwrap();
 			const filtered = response.items.filter(
 				(product) => !product.serial_tracking && (product.stock ?? 0) > 0,

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { fetchProducts } from '@/store/slices/products/productsSlice';
+import { fetchProductsList } from '@/store/slices/products/productsSlice';
 import Icon from '@/components/icon/Icon';
 import DataTable from '@/components/ui/DataTable/DataTable';
 import { ColumnDef } from '@tanstack/react-table';
@@ -20,8 +20,9 @@ const LatestProductsTable: React.FC = () => {
 		if (branchId && !hasFetchedRef.current) {
 			hasFetchedRef.current = true;
 			dispatch(
-				fetchProducts({
-					branchId,
+				fetchProductsList({
+					entityParam: 'branches',
+					entityId: branchId,
 					params: {
 						page: 1,
 						per_page: 15,
@@ -101,7 +102,7 @@ const LatestProductsTable: React.FC = () => {
 						color={row.original.is_active ? 'blue' : 'gray'}
 						variant='solid'
 						className={
-							row.original.is_active ? 'bg-blue-500 px-2' : 'bg-gray-500 px-2'
+							row.original.is_active ? 'bg-emerald-500 px-2' : 'bg-gray-500 px-2'
 						}>
 						{row.original.is_active ? 'Activo' : 'Inactivo'}
 					</Badge>

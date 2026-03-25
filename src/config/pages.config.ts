@@ -1,5 +1,7 @@
 // src/config/pages.config.ts
 
+import { id } from "date-fns/locale";
+
 /* =================================================
    ZENTRIA ERP - CONFIGURACIÓN DE PÁGINAS
    ================================================= */
@@ -337,6 +339,19 @@ export const privatePages = {
 				text: 'Movimientos',
 				icon: 'HeroArrowsRightLeft',
 				authority: [],
+			},
+			ingresoStock : {
+				id: 'ingresoStock',
+				to: '/inventario/ingreso-stock',
+				text: 'Ingreso de Stock',
+				icon: 'DuoBox',
+				authority: [],
+				roles: [
+					'super-admin',
+					'admin',
+					'company-admin',
+				],
+				requireAll: false,
 			},
 		},
 	},

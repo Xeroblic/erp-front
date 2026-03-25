@@ -10,6 +10,13 @@ export const useProductDetailState = (
 	const [activeTab, setActiveTab] = useState<string>('general');
 
 	useEffect(() => {
+		if (!Number.isFinite(initialBranchId ?? NaN)) return;
+		if (branchId !== initialBranchId) {
+			setBranchId(initialBranchId as number);
+		}
+	}, [branchId, initialBranchId]);
+
+	useEffect(() => {
 		if (!branchId && effectiveBranchId) {
 			setBranchId(effectiveBranchId);
 		}

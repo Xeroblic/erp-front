@@ -15,7 +15,7 @@ import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import { fetchWarehouses } from '@/store/slices/warehouses/warehouseSlice';
 import { fetchCustomerSuppliers } from '@/store/slices/customerSuppliers/customerSuppliersSlice';
 import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/personalizacionSlice';
-import { fetchProducts } from '@/store/slices/products/productsSlice';
+import { fetchProductsList } from '@/store/slices/products/productsSlice';
 import ApiService from '@/services/ApiService';
 import type { IItem } from '@/interface/technicalReviews.interface';
 import { COMMERCIAL_STATUS_FILTER_OPTIONS } from '@/pages/technical-reviews/constants';
@@ -162,7 +162,13 @@ const ItemsListPage: React.FC = () => {
 	// Fetch reference data
 	useEffect(() => {
 		if (branchId) {
-			dispatch(fetchProducts({ branchId, params: { page: 1, per_page: 200 } }));
+			dispatch(
+				fetchProductsList({
+					entityParam: 'branches',
+					entityId: branchId,
+					params: { page: 1, per_page: 200 },
+				}),
+			);
 			dispatch(
 				fetchWarehouses({
 					branchId,

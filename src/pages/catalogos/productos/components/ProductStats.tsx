@@ -15,6 +15,13 @@ interface ProductStatsProps {
 	loading?: boolean;
 }
 
+type ProductStatCard = {
+	key: keyof ProductsStateStats;
+	label: string;
+	icon: string;
+	color?: keyof typeof STYLE_VARIANTS;
+};
+
 // Mapa de colores para replicar el estilo de la imagen
 // Puedes mover esto a tu archivo de constantes si prefieres
 const STYLE_VARIANTS: Record<string, { bg: string; text: string; border: string }> = {
@@ -46,7 +53,9 @@ const STYLE_VARIANTS: Record<string, { bg: string; text: string; border: string 
 };
 
 const ProductStats: React.FC<ProductStatsProps> = ({ stats, loading = false }) => {
-	const StatCard = ({ card, index }: { card: any; index: number }) => {
+	const cards = PRODUCT_STATS_META as readonly ProductStatCard[];
+
+	const StatCard = ({ card, index }: { card: ProductStatCard; index: number }) => {
 		const colorKeys = ['emerald', 'rose', 'amber', 'teal'];
 		const selectedColor = card.color || colorKeys[index % colorKeys.length];
 		const variant = STYLE_VARIANTS[selectedColor] || STYLE_VARIANTS.default;
@@ -67,9 +76,7 @@ const ProductStats: React.FC<ProductStatsProps> = ({ stats, loading = false }) =
 							<div className='h-8 w-24 animate-pulse rounded bg-gray-400' />
 						) : (
 							<div className='text-2xl font-bold'>
-								{Number(
-									stats[card.key as keyof ProductsStateStats] ?? 0,
-								).toLocaleString('es-CO')}
+								{Number(stats[card.key] ?? 0).toLocaleString('es-CO')}
 							</div>
 						)}
 					</div>
@@ -87,7 +94,7 @@ const ProductStats: React.FC<ProductStatsProps> = ({ stats, loading = false }) =
 					slidesPerView='auto'
 					freeMode
 					className='!overflow-visible'>
-					{PRODUCT_STATS_META.map((card, index) => (
+					{cards.map((card, index) => (
 						<SwiperSlide key={card.key} className='!w-[260px] sm:!w-[280px]'>
 							<StatCard card={card} index={index} />
 						</SwiperSlide>
@@ -96,7 +103,7 @@ const ProductStats: React.FC<ProductStatsProps> = ({ stats, loading = false }) =
 			</div>
 
 			<div className='mb-6 hidden w-full gap-4 md:flex md:flex-wrap md:justify-center'>
-				{PRODUCT_STATS_META.map((card, index) => (
+				{cards.map((card, index) => (
 					<div
 						key={card.key}
 						className='w-full min-w-[200px] md:w-[calc(50%-1rem)] lg:w-[calc(20%-1rem)]'>

@@ -4,14 +4,29 @@ import {
 	prepareAttributesForSubmit,
 } from '../utils/dynamicAttributes.utils';
 
+type UnknownRecord = Record<string, unknown>;
+
+const asRecord = (value: unknown): UnknownRecord | undefined => {
+	if (value && typeof value === 'object' && !Array.isArray(value)) {
+		return value as UnknownRecord;
+	}
+	return undefined;
+};
+
 // helper to resolve dot paths and numeric indices like 'variants.0.sku' or 'items[0].name'
-const getByPath = (obj: any, path: string): any => {
+const getByPath = (obj: unknown, path: string): unknown => {
 	if (!obj || !path) return undefined;
 	const parts = path.replace(/\[(\d+)\]/g, '.$1').split('.');
-	let cur: any = obj;
+	let cur: unknown = obj;
 	for (const p of parts) {
 		if (cur === undefined || cur === null) return undefined;
-		cur = cur[p];
+		if (Array.isArray(cur)) {
+			const index = Number(p);
+			cur = Number.isInteger(index) ? cur[index] : undefined;
+			continue;
+		}
+		const rec = asRecord(cur);
+		cur = rec ? rec[p] : undefined;
 	}
 	return cur;
 };
@@ -35,7 +50,7 @@ export const useAttributesValidator = (
 		const baseRequired = opts?.requiredPaths ?? [];
 
 		// Parse rawAttributes (may be JSON string or object) and apply lightweight normalization.
-		let parsed: any = rawAttributes ?? {};
+		let parsed: unknown = rawAttributes ?? {};
 		if (typeof parsed === 'string') {
 			try {
 				parsed = JSON.parse(parsed);
@@ -43,10 +58,11 @@ export const useAttributesValidator = (
 				parsed = {};
 			}
 		}
+		const parsedRecord = asRecord(parsed) ?? {};
 
 		// Normalization helper: try to map flat/legacy keys to the nested shape the UI expects.
 		// This avoids false negatives when both 'RAM' and 'ram.capacity_gb' or 'CPU' and 'cpu.model' exist.
-		const tryParseNumber = (v: any): number | undefined => {
+		const tryParseNumber = (v: unknown): number | undefined => {
 			if (typeof v === 'number') return v;
 			if (typeof v !== 'string') return undefined;
 			const m = v.match(/(\d+)(?:[.,]?\d*)/);
@@ -54,13 +70,16 @@ export const useAttributesValidator = (
 			return Number(m[1]);
 		};
 
-		const ensure = (obj: any, path: string, value: any) => {
+		const ensure = (obj: UnknownRecord, path: string, value: unknown) => {
 			const parts = path.split('.');
-			let cur = obj;
+			let cur: UnknownRecord = obj;
 			for (let i = 0; i < parts.length - 1; i++) {
 				const p = parts[i];
-				if (!cur[p] || typeof cur[p] !== 'object') cur[p] = {};
-				cur = cur[p];
+				const next = asRecord(cur[p]);
+				if (!next) {
+					cur[p] = {};
+				}
+				cur = asRecord(cur[p]) ?? {};
 			}
 			const last = parts[parts.length - 1];
 			if (cur[last] === undefined || cur[last] === null || cur[last] === '') {
@@ -70,62 +89,65 @@ export const useAttributesValidator = (
 
 		try {
 			// Map common flat keys into nested structure when missing
-			if (parsed && typeof parsed === 'object') {
+			if (Object.keys(parsedRecord).length > 0) {
 				// CPU mapping
-				if (parsed.CPU && !(parsed.cpu && parsed.cpu.model)) {
-					ensure(parsed, 'cpu.model', parsed.CPU);
+				const cpuVal = parsedRecord.CPU;
+				const cpuObj = asRecord(parsedRecord.cpu);
+				if (cpuVal && !(cpuObj && cpuObj.model)) {
+					ensure(parsedRecord, 'cpu.model', cpuVal);
 				}
 				if (
-					parsed.cpu &&
-					typeof parsed.cpu === 'string' &&
-					!(parsed.cpu && parsed.cpu.model)
+					typeof parsedRecord.cpu === 'string' &&
+					!(asRecord(parsedRecord.cpu)?.model)
 				) {
-					ensure(parsed, 'cpu.model', parsed.cpu);
+					ensure(parsedRecord, 'cpu.model', parsedRecord.cpu);
 				}
 
 				// RAM mapping
-				if (parsed.RAM && !(parsed.ram && (parsed.ram.capacity_gb || parsed.ram.gb))) {
-					const n = tryParseNumber(parsed.RAM);
-					ensure(parsed, 'ram.capacity_gb', n !== undefined ? n : parsed.RAM);
+				const ramVal = parsedRecord.RAM;
+				const ramObj = asRecord(parsedRecord.ram);
+				if (ramVal && !(ramObj && (ramObj.capacity_gb || ramObj.gb))) {
+					const n = tryParseNumber(ramVal);
+					ensure(parsedRecord, 'ram.capacity_gb', n !== undefined ? n : ramVal);
 					// also set ram.gb alias when possible
-					if (!parsed.ram) parsed.ram = parsed.ram || {};
+					if (!asRecord(parsedRecord.ram)) parsedRecord.ram = {};
+					const normalizedRam = asRecord(parsedRecord.ram);
 					if (
-						parsed.ram &&
-						parsed.ram.capacity_gb !== undefined &&
-						parsed.ram.gb === undefined
+						normalizedRam &&
+						normalizedRam.capacity_gb !== undefined &&
+						normalizedRam.gb === undefined
 					) {
-						parsed.ram.gb = parsed.ram.capacity_gb;
+						normalizedRam.gb = normalizedRam.capacity_gb;
 					}
 				}
-				if (parsed.ram && parsed.ram.capacity_gb === undefined && parsed.ram.capacity) {
-					const n = tryParseNumber(parsed.ram.capacity);
-					if (n !== undefined) parsed.ram.capacity_gb = n;
+				const nextRam = asRecord(parsedRecord.ram);
+				if (nextRam && nextRam.capacity_gb === undefined && nextRam.capacity) {
+					const n = tryParseNumber(nextRam.capacity);
+					if (n !== undefined) nextRam.capacity_gb = n;
 					if (
-						parsed.ram &&
-						parsed.ram.capacity_gb !== undefined &&
-						parsed.ram.gb === undefined
+						nextRam.capacity_gb !== undefined &&
+						nextRam.gb === undefined
 					) {
-						parsed.ram.gb = parsed.ram.capacity_gb;
+						nextRam.gb = nextRam.capacity_gb;
 					}
 				}
 
 				// grade fallback
-				if (parsed.grade && !(parsed.grade && typeof parsed.grade === 'string')) {
-					ensure(parsed, 'grade', parsed.grade);
+				if (parsedRecord.grade && typeof parsedRecord.grade !== 'string') {
+					ensure(parsedRecord, 'grade', parsedRecord.grade);
 				}
 
 				// gpu flat
-				if (parsed.GPU && !(parsed.gpu && parsed.gpu.model)) {
-					ensure(parsed, 'gpu.model', parsed.GPU);
+				if (parsedRecord.GPU && !(asRecord(parsedRecord.gpu)?.model)) {
+					ensure(parsedRecord, 'gpu.model', parsedRecord.GPU);
 				}
 
 				// storage flat (primary capacity)
 				if (
-					parsed.storage &&
-					typeof parsed.storage === 'number' &&
-					!(parsed.storage && parsed.storage.primary)
+					typeof parsedRecord.storage === 'number' &&
+					!(asRecord(parsedRecord.storage)?.primary)
 				) {
-					ensure(parsed, 'storage.primary.capacity_gb', parsed.storage);
+					ensure(parsedRecord, 'storage.primary.capacity_gb', parsedRecord.storage);
 				}
 			}
 		} catch (e) {
@@ -134,7 +156,7 @@ export const useAttributesValidator = (
 		}
 
 		// sanitise attributes input to get a consistent object after normalization
-		const sanitised = sanitiseAttributesInput(parsed ?? {}, true);
+		const sanitised = sanitiseAttributesInput(parsedRecord, true);
 
 		// Build final required paths with simple conditional rules
 		const dynamicRequired = new Set<string>(baseRequired);
@@ -219,11 +241,11 @@ export const useAttributesValidator = (
 				missingCount: missing.length,
 				missingLabels,
 				readyToPublish: ok,
-			} as any;
+			};
 		}
 
 		// fallback: if prepareAttributesForSubmit returns non-null, we consider attributes present
-		const prepared = prepareAttributesForSubmit(parsed ?? {}, true);
+		const prepared = prepareAttributesForSubmit(parsedRecord, true);
 		const ok = prepared !== null;
 		return {
 			ok,

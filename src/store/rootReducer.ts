@@ -25,6 +25,7 @@ import inventario from './slices/inventory/inventorySlice';
 import brands from './slices/brands/brandsSlice';
 import categories, { CategoriesState } from './slices/categories/categoriesSlice';
 import products, { ProductsState } from './slices/products/productsSlice';
+import productStock, { ProductStockState } from './slices/products/productStockSlice';
 import notifications from './slices/notifications/notificationsSlice';
 import suppliers from './slices/suppliers/suppliersSlice';
 import customerSuppliers from './slices/customerSuppliers/customerSuppliersSlice';
@@ -61,6 +62,7 @@ export interface RootState {
 	brands: ReturnType<typeof brands>;
 	categories: CategoriesState;
 	products: ProductsState;
+	productStock: ProductStockState;
 	notifications: ReturnType<typeof notifications>;
 	suppliers: ReturnType<typeof suppliers>;
 	customerSuppliers: ReturnType<typeof customerSuppliers>;
@@ -99,6 +101,7 @@ const staticReducers = {
 	brands,
 	categories,
 	products,
+	productStock,
 	notifications,
 	suppliers,
 	customerSuppliers,

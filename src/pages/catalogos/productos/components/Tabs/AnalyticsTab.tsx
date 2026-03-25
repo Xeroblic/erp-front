@@ -1,141 +1,174 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
-import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
+import Icon from '@/components/icon/Icon';
+import Badge from '@/components/ui/Badge';
+import { ColumnDef, PaginationState } from '@tanstack/react-table';
+import type { IProduct } from '@/interface/product.interface';
+import StockSeriesModal from '../modals/StockSeriesModal';
+import { useProductos } from '../../hooks/useProductos';
+import DataTable from '@/components/ui/DataTable';
 
-interface AnalyticsTabProps {
-	// Agregar props específicas para el análisis
+interface StockAdminTabProps {
+    subsidiaryId: number;
 }
 
-const AnalyticsTab: React.FC<AnalyticsTabProps> = () => {
-	return (
-		<div className='space-y-6'>
-			<div className='grid gap-6 md:grid-cols-2'>
-				<Card>
-					<CardHeader>
-						<CardTitle className='flex items-center gap-2'>
-							<Icon icon='HeroChartBarSquare' className='h-5 w-5' />
-							Productos Más Vendidos
-						</CardTitle>
-					</CardHeader>
-					<CardBody>
-						<div className='space-y-4'>
-							{[1, 2, 3, 4, 5].map((item) => (
-								<div key={item} className='flex items-center justify-between'>
-									<div className='flex items-center gap-3'>
-										<div className='flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-sm font-medium text-blue-600'>
-											{item}
-										</div>
-										<div>
-											<p className='font-medium'>Producto Ejemplo {item}</p>
-											<p className='text-sm text-gray-500'>
-												SKU: PRD-{item}00{item}
-											</p>
-										</div>
-									</div>
-									<div className='text-right'>
-										<p className='font-semibold'>{100 - item * 15} vendidos</p>
-										<p className='text-sm text-gray-500'>Este mes</p>
-									</div>
-								</div>
-							))}
-						</div>
-					</CardBody>
-				</Card>
+const StockAdminTab: React.FC<StockAdminTabProps> = ({ subsidiaryId }) => {
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
+    const [selectedProduct, setSelectedProduct] = useState<IProduct | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [globalFilter, setGlobalFilter] = useState('');
 
-				<Card>
-					<CardHeader>
-						<CardTitle className='flex items-center gap-2'>
-							<Icon icon='HeroChartPie' className='h-5 w-5' />
-							Distribución por Categoría
-						</CardTitle>
-					</CardHeader>
-					<CardBody>
-						<div className='space-y-4'>
-							{['Electrónicos', 'Hogar', 'Deportes', 'Ropa', 'Otros'].map(
-								(category, index) => (
-									<div
-										key={category}
-										className='flex items-center justify-between'>
-										<div className='flex items-center gap-3'>
-											<div
-												className={`h-4 w-4 rounded-full ${
-													[
-														'bg-blue-500',
-														'bg-green-500',
-														'bg-yellow-500',
-														'bg-purple-500',
-														'bg-gray-500',
-													][index]
-												}`}
-											/>
-											<span className='font-medium'>{category}</span>
-										</div>
-										<span className='text-sm text-gray-600'>
-											{30 - index * 5}%
-										</span>
-									</div>
-								),
-							)}
-						</div>
-					</CardBody>
-				</Card>
-			</div>
+    const [pagination, setPagination] = useState<PaginationState>({
+        pageIndex: 0,
+        pageSize: 100,
+    });
 
-			<Card>
-				<CardHeader>
-					<div className='flex items-center justify-between'>
-						<CardTitle className='flex items-center gap-2'>
-							<Icon icon='HeroDocumentChartBar' className='h-5 w-5' />
-							Reportes y Análisis
-						</CardTitle>
-						<div className='flex gap-2'>
-							<Button variant='outline' size='sm' icon='HeroCalendarDays'>
-								Este mes
-							</Button>
-							<Button variant='outline' size='sm' icon='HeroArrowDownTray'>
-								Exportar
-							</Button>
-						</div>
-					</div>
-				</CardHeader>
-				<CardBody>
-					<div className='grid gap-4 md:grid-cols-4'>
-						<div className='rounded-lg bg-gray-50 p-4 text-center'>
-							<p className='text-2xl font-bold text-blue-600'>$45,230</p>
-							<p className='text-sm text-gray-600'>Valor Total Inventario</p>
-						</div>
-						<div className='rounded-lg bg-gray-50 p-4 text-center'>
-							<p className='text-2xl font-bold text-green-600'>$12,450</p>
-							<p className='text-sm text-gray-600'>Ventas del Mes</p>
-						</div>
-						<div className='rounded-lg bg-gray-50 p-4 text-center'>
-							<p className='text-2xl font-bold text-orange-600'>15.2%</p>
-							<p className='text-sm text-gray-600'>Margen Promedio</p>
-						</div>
-						<div className='rounded-lg bg-gray-50 p-4 text-center'>
-							<p className='text-2xl font-bold text-purple-600'>89</p>
-							<p className='text-sm text-gray-600'>Productos Activos</p>
-						</div>
-					</div>
+    const memoizedFilters = useMemo(() => ({ search: globalFilter }), [globalFilter]);
 
-					<div className='mt-6'>
-						<h4 className='mb-4 font-medium'>Tendencias</h4>
-						<div className='flex h-64 items-center justify-center rounded-lg bg-gray-100'>
-							<div className='text-center text-gray-500'>
-								<Icon
-									icon='HeroChartBarSquare'
-									className='mx-auto mb-2 h-12 w-12'
-								/>
-								<p>Gráfico de tendencias aquí</p>
-								<p className='text-sm'>Implementar con librería de gráficos</p>
-							</div>
-						</div>
-					</div>
-				</CardBody>
-			</Card>
-		</div>
-	);
+    const { products, loading, meta, refresh } = useProductos({
+        subsidiaryId,
+        mode: 'subsidiaries',
+        filters: memoizedFilters, 
+        page: pagination.pageIndex + 1,
+        perPage: pagination.pageSize,
+    });
+
+    const handleOpenModal = (product: IProduct) => {
+        setSelectedProduct(product);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedProduct(null);
+    };
+
+    const columns = useMemo<ColumnDef<IProduct>[]>(() => {
+        const baseColumns: ColumnDef<IProduct>[] = [
+            {
+                accessorKey: 'sku',
+                header: 'SKU',
+                cell: ({ row }) => <span className="font-mono text-xs">{row.original.sku}</span>
+            },
+            {
+                accessorKey: 'name',
+                header: 'Producto',
+                cell: ({ row }) => (
+                    <div>
+                        <p className="font-medium text-neutral-800 dark:text-neutral-100">{row.original.name}</p>
+                        {row.original.serial_tracking && (
+                            <Badge variant="outline" color="emerald" className="mt-1 px-1.5 py-0 text-[10px]">
+                                Serializado
+                            </Badge>
+                        )}
+                    </div>
+                )
+            },
+            {
+                accessorKey: 'stock',
+                header: 'Stock Total',
+                cell: ({ row }) => (
+                    <span className="font-semibold">{row.original.stock}</span>
+                )
+            },
+            {
+                id: 'grades',
+                header: 'Stock por Grado',
+                cell: ({ row }) => {
+                    const children = row.original.children || [];
+                    if (children.length === 0) return <span className="text-gray-400 text-sm">Sin desglose</span>;
+                    
+                    return (
+                        <div className="flex flex-wrap gap-1">
+                            {/* FIX 2: Validación ?? 0 para evitar el error de c.stock nulo/indefinido */}
+                            {children.filter(c => (c.stock ?? 0) > 0).map(child => (
+                                <Badge key={child.id} variant="outline" color="blue" className="px-1.5">
+                                    {child.grade}: {child.stock}
+                                </Badge>
+                            ))}
+                        </div>
+                    );
+                }
+            }
+        ];
+
+        if (isSelectionMode) {
+            baseColumns.unshift({
+                id: 'selection',
+                header: 'Sel.',
+                size: 50,
+                cell: ({ row }) => {
+                    const canSelect = row.original.serial_tracking;
+                    
+                    return canSelect ? (
+                        <input
+                            type="checkbox"
+                            className="h-4 w-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            checked={selectedProduct?.id === row.original.id}
+                            onChange={() => handleOpenModal(row.original)}
+                        />
+                    ) : (
+                        <span className="text-gray-300">-</span>
+                    );
+                },
+            });
+        }
+
+        return baseColumns;
+    }, [isSelectionMode, selectedProduct]);
+
+    return (
+        <div className='space-y-6'>
+            <Card>
+                <CardHeader>
+                    <div className='flex items-center justify-between'>
+                        <CardTitle className='flex items-center gap-2'>
+                            <Icon icon='HeroSquare3Stack3D' className='h-5 w-5 text-blue-500' />
+                            Administración de Stock
+                        </CardTitle>
+                        <div className='flex gap-2'>
+                            <Button 
+                                variant={isSelectionMode ? 'solid' : 'outline'} 
+                                color={isSelectionMode ? 'blue' : 'zinc'}
+                                size='sm' 
+                                icon='HeroListBullet'
+                                onClick={() => setIsSelectionMode(!isSelectionMode)}
+                            >
+                                {isSelectionMode ? 'Ocultar Selección' : 'Gestionar Series'}
+                            </Button>
+                            <Button variant='outline' size='sm' icon='HeroArrowPath' onClick={refresh}>
+                                Recargar
+                            </Button>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardBody>
+                    <DataTable
+                        columns={columns}
+                        data={products}
+                        loading={loading}
+                        searchValue={globalFilter}
+                        onSearchChange={setGlobalFilter}
+                        manualPagination={true}
+                        pageCount={meta.last_page}
+                        paginationState={pagination}
+                        onPaginationChange={setPagination}
+                        emptyMessage="No se encontraron productos para administrar."
+                    />
+                </CardBody>
+            </Card>
+
+            {isModalOpen && selectedProduct && (
+                <StockSeriesModal
+                    isOpen={isModalOpen}
+                    onClose={handleCloseModal}
+                    product={selectedProduct}
+                    subsidiaryId={subsidiaryId}
+                />
+            )}
+        </div>
+    );
 };
 
-export default AnalyticsTab;
+export default StockAdminTab;
