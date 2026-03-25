@@ -56,7 +56,7 @@ const StockAdminTab: React.FC<StockAdminTabProps> = ({ subsidiaryId }) => {
                 accessorKey: 'sku',
                 header: 'SKU',
                 cell: ({ row }) => <span className="font-mono text-xs">{row.original.sku}</span>
-            },
+            },  
             {
                 accessorKey: 'name',
                 header: 'Producto',
