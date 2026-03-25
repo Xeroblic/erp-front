@@ -59,7 +59,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
 			if (newProductKind) {
 				const attrs =
 					values.attributes_json && typeof values.attributes_json === 'object'
-						? (values.attributes_json as Record<string, unknown>)
+						? (values.attributes_json as unknown as Record<string, unknown>)
 						: null;
 				const currentProductKind =
 					attrs && 'product_kind' in attrs ? attrs.product_kind : null;

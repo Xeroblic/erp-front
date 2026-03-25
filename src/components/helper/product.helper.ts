@@ -103,7 +103,7 @@ const normalizeChildren = (raw: unknown): IProductChild[] => {
 
 					return {
 						id,
-						grade: toNullableString(entry.grade),
+						grade: toNullableString(entry.grade) as EquipmentGradeLiteral | null,
 						sku: String(entry.sku ?? ''),
 						name: String(entry.name ?? ''),
 						price: toNullableNumber(entry.price),
@@ -217,7 +217,7 @@ export const normalizeProduct = (raw: unknown): IProduct => {
 			if (!pickedUrl) return undefined;
 			const abs = ensureAbsoluteUrl(pickedUrl);
 			if (!abs) return undefined;
-			const thumbRaw = candidate.thumb ?? candidate.thumbnail_url ?? pickedUrl;
+			const thumbRaw = (candidate.thumb ?? candidate.thumbnail_url ?? pickedUrl) as string;
 			const thumbAbs = ensureAbsoluteUrl(thumbRaw) ?? abs;
 			return {
 				id: toNullableNumber(candidate.id),
@@ -244,7 +244,7 @@ export const normalizeProduct = (raw: unknown): IProduct => {
 					if (!url) return null;
 					const abs = ensureAbsoluteUrl(url);
 					if (!abs) return null;
-					const thumbRaw = itemRecord?.thumb ?? itemRecord?.thumbnail_url ?? url;
+					const thumbRaw = (itemRecord?.thumb ?? itemRecord?.thumbnail_url ?? url) as string;
 					const thumb = ensureAbsoluteUrl(thumbRaw) ?? abs;
 					return {
 						id: toNullableNumber(itemRecord?.id),

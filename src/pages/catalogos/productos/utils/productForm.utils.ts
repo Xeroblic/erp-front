@@ -251,7 +251,7 @@ export const collectValidationErrors = (error: unknown): string[] => {
 	const errorRecord = error as Record<string, unknown>;
 	if (Array.isArray(errorRecord.inner)) {
 		const inner = errorRecord.inner as Array<{ errors?: unknown }>;
-		return inner.flatMap((item) => item.errors).filter(Boolean);
+		return inner.flatMap((item) => (item.errors as string[]) ?? []).filter(Boolean);
 	}
 	if (Array.isArray(errorRecord.errors)) {
 		return (errorRecord.errors as unknown[]).filter(

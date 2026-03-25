@@ -167,7 +167,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 					data.product_type = values.product_type;
 				}
 				if (values.attributes_json) {
-					data.attributes_json = values.attributes_json as Record<string, unknown>;
+					data.attributes_json = values.attributes_json as unknown as Record<string, unknown>;
 				}
 
 				payload = { data, categoryIds };
@@ -211,7 +211,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 						? payload.message
 						: (payload?.message ??
 							'No se pudo guardar el producto. Intenta nuevamente.');
-				toast.error(message);
+				toast.error(message as string);
 			} else {
 				const message =
 					typeof error === 'string'
@@ -293,7 +293,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 						if (newProductKind) {
 							const attrs =
 								values.attributes_json && typeof values.attributes_json === 'object'
-									? (values.attributes_json as Record<string, unknown>)
+									? (values.attributes_json as unknown as Record<string, unknown>)
 									: null;
 							const currentProductKind =
 								attrs && 'product_kind' in attrs ? attrs.product_kind : null;

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { fetchProducts, fetchSubsidiaryProducts } from '@/store/slices/products/productsSlice';
+import { fetchProductsList } from '@/store/slices/products/productsSlice';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
@@ -79,7 +79,7 @@ const WarehouseDetailPage: React.FC = () => {
 	useEffect(() => {
 		if (!id) return;
 		if (branchId) {
-			dispatch(fetchProducts({ branchId, params: { per_page: 50 } }));
+			dispatch(fetchProductsList({ entityParam: 'branches', entityId: branchId, params: { per_page: 50 } }));
 		}
 	}, [dispatch, branchId, id]);
 
