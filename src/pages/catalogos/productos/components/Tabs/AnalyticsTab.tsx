@@ -8,6 +8,7 @@ import type { IProduct } from '@/interface/product.interface';
 import StockSeriesModal from '../modals/StockSeriesModal';
 import { useProductos } from '../../hooks/useProductos';
 import DataTable from '@/components/ui/DataTable';
+import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 
 interface StockAdminTabProps {
     subsidiaryId: number;
@@ -46,6 +47,11 @@ const StockAdminTab: React.FC<StockAdminTabProps> = ({ subsidiaryId }) => {
 
     const columns = useMemo<ColumnDef<IProduct>[]>(() => {
         const baseColumns: ColumnDef<IProduct>[] = [
+            {
+                accessorKey: 'id',
+                header: 'ID.',
+                cell: ({ row }) => <span className="font-mono text-xs">{row.original.id}</span>
+            },
             {
                 accessorKey: 'sku',
                 header: 'SKU',
@@ -122,25 +128,23 @@ const StockAdminTab: React.FC<StockAdminTabProps> = ({ subsidiaryId }) => {
         <div className='space-y-6'>
             <Card>
                 <CardHeader>
-                    <div className='flex items-center justify-between'>
-                        <CardTitle className='flex items-center gap-2'>
-                            <Icon icon='HeroSquare3Stack3D' className='h-5 w-5 text-blue-500' />
-                            Administración de Stock
-                        </CardTitle>
-                        <div className='flex gap-2'>
-                            <Button 
-                                variant={isSelectionMode ? 'solid' : 'outline'} 
-                                color={isSelectionMode ? 'blue' : 'zinc'}
-                                size='sm' 
-                                icon='HeroListBullet'
-                                onClick={() => setIsSelectionMode(!isSelectionMode)}
-                            >
-                                {isSelectionMode ? 'Ocultar Selección' : 'Gestionar Series'}
-                            </Button>
-                            <Button variant='outline' size='sm' icon='HeroArrowPath' onClick={refresh}>
-                                Recargar
-                            </Button>
-                        </div>
+                    <CardTitle className='flex items-center gap-2'>
+                        <Icon icon='HeroSquare3Stack3D' className='h-5 w-5 text-blue-500' />
+                        Administración de Stock
+                    </CardTitle>
+                    <div className='flex items-center gap-3'>
+                        <Button 
+                            variant={isSelectionMode ? 'solid' : 'outline'} 
+                            color={isSelectionMode ? 'blue' : 'zinc'}
+                            size='sm' 
+                            icon='HeroListBullet'
+                            onClick={() => setIsSelectionMode(!isSelectionMode)}
+                        >
+                            {isSelectionMode ? 'Ocultar Selección' : 'Gestionar Series'}
+                        </Button>
+                        <Button variant='outline' size='sm' icon='HeroArrowPath' onClick={refresh}>
+                            Recargar
+                        </Button>
                     </div>
                 </CardHeader>
                 <CardBody>
