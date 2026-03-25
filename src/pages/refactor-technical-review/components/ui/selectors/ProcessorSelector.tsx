@@ -3,6 +3,11 @@ import type { SingleValue, MultiValue } from 'react-select';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import Input from '@/components/form/Input';
 import { SelectionCard } from '@/pages/refactor-technical-review/components/ui/SelectionCard';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { fetchBrands, createBrand } from '@/store/slices/brands/brandsSlice';
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import toast from '@/utils/toast.utils';
+import Button from '@/components/ui/Button';
 import {
 	PROCESADORES_DATA,
 	TipoDispositivo,
@@ -59,6 +64,19 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 	const [customFamily, setCustomFamily] = useState('');
 	const [customGeneration, setCustomGeneration] = useState('');
 	const [customModel, setCustomModel] = useState('');
+
+	// Redux State & Brand Management
+	const dispatch = useAppDispatch();
+	const { branchId } = useCurrentBranch();
+	const { items: globalBrands } = useAppSelector((state) => state.brands);
+	const [isCreatingBrand, setIsCreatingBrand] = useState(false);
+
+	useEffect(() => {
+		if (branchId && globalBrands.length === 0) {
+			dispatch(fetchBrands({ branchId, search: '' }));
+		}
+	}, [branchId, globalBrands.length, dispatch]);
+
 
 	// --- Initialization Effect: Parse value to set internal state ---
 	useEffect(() => {
@@ -149,8 +167,32 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 		newValue: SingleValue<TSelectOption> | MultiValue<TSelectOption>,
 	) => {
 		const option = newValue as TSelectOption | null;
+
 		setSelectedBrand((option?.value as MarcaProcesador) || null);
 		resetDownstreamFromBrand();
+	};
+
+	const handleCreateBrand = async (inputValue: string) => {
+		if (!inputValue.trim() || !branchId) {
+			if (!inputValue.trim()) toast.error('Ingrese un nombre para la marca');
+			return;
+		}
+
+		try {
+			setIsCreatingBrand(true);
+			const result = await dispatch(
+				createBrand({ branchId, data: { name: inputValue.trim(), is_active: true } })
+			).unwrap();
+
+			toast.success('Marca creada exitosamente');
+			
+			setSelectedBrand(result.name as MarcaProcesador);
+			resetDownstreamFromBrand();
+		} catch (error: any) {
+			toast.error(error || 'Error al crear la marca');
+		} finally {
+			setIsCreatingBrand(false);
+		}
 	};
 
 	const handleFamilyChange = (
@@ -221,16 +263,25 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 
 	// --- Derived Data for Dropdowns ---
 	const marcasData = getMarcasPorDispositivo(deviceType);
-	const brandOptions: TSelectOption[] = marcasData.map((marca) => ({
-		value: marca.nombre,
-		label: marca.nombre,
-	}));
 
 	// Manual Entry Option
 	const manualOption: TSelectOption = {
 		value: 'MANUAL_ENTRY',
 		label: 'Ingresar manualmente / Otro...',
 	};
+
+	// Merge local known brands with global API brands
+	const mergedBrandNames = Array.from(
+		new Set([
+			...marcasData.map((m) => m.nombre),
+			...globalBrands.map((b) => b.name)
+		])
+	).sort();
+
+	const brandOptions: TSelectOption[] = mergedBrandNames.map((nombre) => ({
+		value: nombre,
+		label: nombre,
+	}));
 
 	const familiasData = selectedBrand
 		? getFamiliasPorMarcaYDispositivo(deviceType, selectedBrand)
@@ -292,7 +343,7 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 		if (!selectedBrand) return;
 
 		// We construct string from all pieces
-		const brandStr = selectedBrand;
+		const brandStr = selectedBrand || '';
 
 		const familyStr = isFamilyManual
 			? customFamily
@@ -459,8 +510,11 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 							options={brandOptions}
 							value={brandOptions.find((o) => o.value === selectedBrand) || null}
 							onChange={handleBrandChange}
-							placeholder='Seleccionar...'
-							isDisabled={readOnly}
+							placeholder='Seleccionar o crear...'
+							isDisabled={readOnly || isCreatingBrand}
+							isCreatable={true}
+							onCreateOption={handleCreateBrand}
+							isLoading={isCreatingBrand}
 						/>
 					</div>
 
