@@ -294,23 +294,34 @@ export interface ProductInventoryCriticalProduct {
 }
 
 export interface ProductInventorySummaryResponse {
-	branch_id: number;
+	branch_id?: number;
+	subsidiary_id?: number;
 	params?: {
 		critical_threshold?: number;
 	};
 	summary?: {
 		products_total?: number;
+		total_children_products?: number;
+		products_total_all?: number;
 		active?: number;
 		inactive?: number;
 		with_offer?: number;
 		with_serial_tracking?: number;
+		without_serial_tracking?: number;
 		stock_total?: number;
+		stock_without_serials?: number;
 		synced_products?: number;
 		stock_average?: number;
 		serial_tracking_count?: number;
 		low_stock_count?: number;
 		out_of_stock?: number;
 		with_stock_available?: number;
+		serials_available?: number;
+		serials_on_hold?: number;
+		serials_reserved?: number;
+		serials_in_quotation?: number;
+		serials_sold?: number;
+		serials_total_approved?: number;
 	};
 	critical_products?: ProductInventoryCriticalProduct[];
 }
@@ -325,6 +336,18 @@ export interface ProductInventorySummary {
 	withStockAvailable: number;
 	syncedProducts: number;
 	serialTrackingCount: number;
+	// Campos ampliados de la API
+	productsTotal: number;
+	totalChildrenProducts: number;
+	productsTotalAll: number;
+	withoutSerialTracking: number;
+	stockWithoutSerials: number;
+	serialsAvailable: number;
+	serialsOnHold: number;
+	serialsReserved: number;
+	serialsInQuotation: number;
+	serialsSold: number;
+	serialsTotalApproved: number;
 }
 
 // ---------------------------------------------------------------------------

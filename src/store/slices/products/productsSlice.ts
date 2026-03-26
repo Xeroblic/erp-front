@@ -252,7 +252,7 @@ export const fetchInventorySummary = createAsyncThunk<
 			};
 
 			const inventory: ProductInventorySummary = {
-				branchId: Number(payload.branch_id ?? entityId) || entityId,
+				branchId: Number(payload.branch_id ?? payload.subsidiary_id ?? entityId) || entityId,
 				criticalThreshold:
 					typeof reqParams?.critical_threshold === 'number'
 						? Number(reqParams.critical_threshold)
@@ -268,6 +268,18 @@ export const fetchInventorySummary = createAsyncThunk<
 				serialTrackingCount: Number(
 					summary.serial_tracking_count ?? summary.with_serial_tracking ?? 0,
 				),
+				// Campos ampliados
+				productsTotal: Number(summary.products_total ?? 0),
+				totalChildrenProducts: Number(summary.total_children_products ?? 0),
+				productsTotalAll: Number(summary.products_total_all ?? 0),
+				withoutSerialTracking: Number(summary.without_serial_tracking ?? 0),
+				stockWithoutSerials: Number(summary.stock_without_serials ?? 0),
+				serialsAvailable: Number(summary.serials_available ?? 0),
+				serialsOnHold: Number(summary.serials_on_hold ?? 0),
+				serialsReserved: Number(summary.serials_reserved ?? 0),
+				serialsInQuotation: Number(summary.serials_in_quotation ?? 0),
+				serialsSold: Number(summary.serials_sold ?? 0),
+				serialsTotalApproved: Number(summary.serials_total_approved ?? 0),
 			};
 
 			const criticalProducts: ProductInventoryCriticalProduct[] = Array.isArray(

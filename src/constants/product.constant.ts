@@ -18,4 +18,16 @@ export const PRODUCT_EMPTY_INVENTORY_SUMMARY: ProductInventorySummary = {
 	withStockAvailable: 0,
 	syncedProducts: 0,
 	serialTrackingCount: 0,
+	// Campos ampliados
+	productsTotal: 0,
+	totalChildrenProducts: 0,
+	productsTotalAll: 0,
+	withoutSerialTracking: 0,
+	stockWithoutSerials: 0,
+	serialsAvailable: 0,
+	serialsOnHold: 0,
+	serialsReserved: 0,
+	serialsInQuotation: 0,
+	serialsSold: 0,
+	serialsTotalApproved: 0,
 };
