@@ -8,6 +8,7 @@ export const NOTEBOOK_LABELS: Record<string, string> = {
 	// ─── Identificación ────────────────────────────────────────────────────────
 	brand: 'Marca',
 	model: 'Modelo',
+	line: 'Línea',
 
 	// ─── Condición ─────────────────────────────────────────────────────────────
 	general_condition: 'Condición General',

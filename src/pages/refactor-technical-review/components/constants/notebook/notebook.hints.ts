@@ -7,6 +7,7 @@
 export const NOTEBOOK_HINTS: Record<string, string> = {
 	brand: 'Fabricante del equipo (Dell, HP, Lenovo, etc.)',
 	model: 'Modelo exacto del equipo para referencia y compatibilidad',
+	line: 'Línea o sub-línea del producto (ej: Inspiron, ThinkPad, ProBook)',
 	general_condition: 'Estado general del equipo considerando estética y funcionamiento global',
 	observations: 'Notas libres relevantes encontradas durante la revisión',
 	extra_attributes: 'Contenedor para atributos específicos no estandarizados',
@@ -53,6 +54,7 @@ export const NOTEBOOK_HINTS: Record<string, string> = {
 export const NOTEBOOK_PLACEHOLDERS: Record<string, string> = {
 	brand: 'Ej: Dell, HP, Lenovo',
 	model: 'Ej: Latitude 5420, EliteBook 840',
+	line: 'Ej: Inspiron, ThinkPad, ProBook',
 	processor: 'Ej: Intel Core i5-8250U',
 	ram_size: 'Ej: 8GB, 16GB',
 	ram_slots: 'Ej: 8x2, 16x1',

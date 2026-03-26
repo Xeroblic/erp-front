@@ -34,6 +34,11 @@ export const notebookSchema = Yup.object({
 		.required('El modelo es obligatorio')
 		.max(150, 'Máximo 150 caracteres'),
 
+	line: Yup.string()
+		.trim()
+		.max(150, 'Máximo 150 caracteres')
+		.nullable(),
+
 	// ─── Condición General ───────────────────────────────────────────────────
 	general_condition: Yup.string()
 		.oneOf([...ALLOWED_GENERAL_CONDITIONS], 'Condición general no válida')
