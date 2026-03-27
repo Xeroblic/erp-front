@@ -48,23 +48,27 @@ const DeleteProductModal: React.FC<DeleteProductModalProps> = ({
 				<div className='space-y-4 py-4'>
 					{product && (
 						<div
-							className={`rounded-lg border p-4 ${
+							className={`rounded-lg border border-dashed p-4 ${
 								isSerializedProduct
-									? 'border-amber-500 bg-amber-500/15'
-									: 'border-dashed border-red-500 bg-red-500/20'
+									? 'border-amber-500 bg-amber-50 dark:border-amber-500/50 dark:bg-amber-500/15'
+									: 'border-dashed border-red-300 bg-red-50 dark:border-red-500/60 dark:bg-red-500/20'
 							}`}>
-							<p className='text-sm font-bold text-white'>{product.name}</p>
+							<p className='text-sm font-bold text-neutral-900 dark:text-white'>
+								{product.name}
+							</p>
 							{product.sku && (
-								<p className='text-sm text-gray-500'>SKU: {product.sku}</p>
+								<p className='text-sm text-neutral-600 dark:text-neutral-300'>
+									SKU: {product.sku}
+								</p>
 							)}
 							{isSerializedProduct && (
-								<div className='mt-3 flex items-start gap-2 rounded-lg border border-amber-400/40 bg-amber-500/10 p-3 text-amber-100'>
-									<Icon icon='HeroExclamationTriangle' className='mt-0.5 h-4 w-4 flex-shrink-0 text-amber-300' />
+								<div className='mt-3 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-100 p-3 dark:border-amber-400/40 dark:bg-amber-500/10'>
+									<Icon icon='HeroExclamationTriangle' className='mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600 dark:text-amber-300' />
 									<div>
-										<p className='text-sm font-semibold text-amber-200'>
+										<p className='text-sm font-semibold text-amber-900 dark:text-amber-200'>
 											Producto no eliminable
 										</p>
-										<p className='text-sm text-amber-100/90'>
+										<p className='text-sm text-amber-800 dark:text-amber-100/90'>
 											Este producto no se puede eliminar porque está serializado y tiene revisiones asociadas.
 										</p>
 									</div>
