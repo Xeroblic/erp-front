@@ -4,11 +4,17 @@ import Card, { CardBody } from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
+import { toast } from 'react-toastify';
+import PermissionGuard from '@/components/authorization/PermissionGuard';
+import useCan from '@/hooks/useCan';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { toggleProductStatus } from '@/store/slices/products/productsSlice';
 import { useAttributesValidator } from '../../hooks/useAttributesValidator';
 import REQUIRED_ATTRIBUTES_BY_TYPE from '../../constants/requiredAttributesByType';
 import type { TColors } from '@/types/colors.type';
 import type { IProduct, IProductChild, ProductListMeta } from '@/interface/product.interface';
 import { PRODUCT_TYPE_META } from '../../constants/products.constant';
+import Tooltip from '@/components/ui/Tooltip';
 
 interface ProductsTableProps {
 	products: IProduct[];
@@ -16,6 +22,8 @@ interface ProductsTableProps {
 	loading?: boolean;
 	onView?: (product: IProduct) => void;
 	onDelete: (product: IProduct) => void;
+	subsidiaryId?: number | null;
+	onRefresh?: () => Promise<void> | void;
 }
 
 const currencyFormatter = new Intl.NumberFormat('es-CO', {
@@ -123,7 +131,12 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 	loading = false,
 	onView,
 	onDelete,
+	subsidiaryId,
+	onRefresh,
 }) => {
+	const dispatch = useAppDispatch();
+	const { isAdmin } = useCan();
+	const isUpdating = useAppSelector((state) => state.products.updating);
 	const [expandedRows, setExpandedRows] = useState<Record<number, boolean>>({});
 
 	const toggleExpand = useCallback((productId: number) => {
@@ -132,6 +145,38 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 			[productId]: !prev[productId],
 		}));
 	}, []);
+
+	const handleToggleStatus = useCallback(
+		async (product: IProduct) => {
+			if (!subsidiaryId) {
+				toast.error('No se pudo resolver la subsidiaria para cambiar el estado del producto');
+				return;
+			}
+
+			try {
+				await dispatch(
+					toggleProductStatus({
+						entityParam: 'subsidiaries',
+						entityId: subsidiaryId,
+						productId: product.id,
+					}),
+				).unwrap();
+				await onRefresh?.();
+				toast.success(
+					product.is_active
+						? 'Producto desactivado correctamente'
+						: 'Producto activado correctamente',
+				);
+			} catch (error: unknown) {
+				const message =
+					typeof error === 'string' && error.trim().length > 0
+						? error
+						: 'No se pudo cambiar el estado del producto';
+				toast.error(message);
+			}
+		},
+		[dispatch, subsidiaryId, onRefresh],
+	);
 
 	const columns = useMemo<ColumnDef<IProduct>[]>(
 		() => [
@@ -427,37 +472,63 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 				header: () => <div className='text-right'>Acciones</div>,
 				cell: ({ row }) => {
 					const product = row.original;
+					const canQuickToggle = isAdmin && Boolean(subsidiaryId);
 					return (
 						<div className='flex items-center justify-end gap-2'>
+							<PermissionGuard role={['admin', 'company-admin', 'subsidiary-admin', 'branch-admin']}>
+								<Tooltip text={product.is_active ? 'Desactivar' : 'Activar'}>
+									<Button
+										variant='outline'
+										size='sm'
+										color={product.is_active ? 'amber' : 'emerald'}
+										onClick={(event) => {
+											event.stopPropagation();
+											void handleToggleStatus(product);
+										}}
+										isLoading={isUpdating}
+										isDisable={!canQuickToggle}>
+											<Icon 
+												color={product.is_active ? 'amber' : 'emerald'} 
+												icon={product.is_active ? 'HeroPauseCircle' : 'HeroPlayCircle'} 
+												className='text-2xl'/>
+										{/* 9NZ20R3 */}
+									</Button>
+								</Tooltip>
+
+							</PermissionGuard>
 							{onView && (
+								<Tooltip text='Ver detalle'>
+									<Button
+										variant='outline'
+										size='sm'
+										color='violet'
+										onClick={(event) => {
+											event.stopPropagation();
+											onView(product);
+										}}
+										className='inline-flex'>
+											<Icon icon='HeroEye' color={'violet'} className='text-2xl'/>
+									</Button>
+								</Tooltip>
+							)}
+							<Tooltip text='Eliminar'>
 								<Button
 									variant='outline'
+									color='red'
 									size='sm'
 									onClick={(event) => {
 										event.stopPropagation();
-										onView(product);
-									}}
-									icon='HeroArrowTopRightOnSquare'
-									className='inline-flex'>
-									Ver detalle
+										onDelete(product);
+									}}>
+									<Icon icon='HeroTrash' color='red' className='text-2xl'/>
 								</Button>
-							)}
-							<Button
-								variant='outline'
-								color='red'
-								size='sm'
-								onClick={(event) => {
-									event.stopPropagation();
-									onDelete(product);
-								}}
-								icon='HeroTrash'
-							/>
+							</Tooltip>
 						</div>
 					);
 				},
 			},
 		],
-		[onView, onDelete],
+		[onView, onDelete, isAdmin, subsidiaryId, handleToggleStatus, isUpdating],
 	);
 
 	const table = useReactTable({

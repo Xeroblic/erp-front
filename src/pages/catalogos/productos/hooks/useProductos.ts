@@ -76,6 +76,12 @@ export function useProductos({
 	);
 	const brandsState = useAppSelector((state) => state.brands);
 	const categoriesState = useAppSelector((state) => state.categories);
+	const brandsLoadedForBranchId = useAppSelector((state) => {
+		const branchState = state.brands as typeof brandsState & {
+			lastBranchId?: number | null;
+		};
+		return branchState.lastBranchId ?? null;
+	});
 
 	useEffect(() => {
 		if (!branches.length && !branchesLoading) {
@@ -126,8 +132,9 @@ export function useProductos({
 	useEffect(() => {
 		if (!enabled) return;
 		if (!activeBranchId) return;
+		if (brandsLoadedForBranchId === activeBranchId && brandsState.items.length > 0) return;
 		void dispatch(fetchBrands({ branchId: activeBranchId, search: '' }));
-	}, [dispatch, enabled, activeBranchId]);
+	}, [dispatch, enabled, activeBranchId, brandsLoadedForBranchId, brandsState.items.length]);
 
 	useEffect(() => {
 		if (!categoriesState.items.length && !categoriesState.loading) {

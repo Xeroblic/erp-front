@@ -5,16 +5,25 @@ import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
 import { ColumnDef, PaginationState } from '@tanstack/react-table';
 import type { IProduct } from '@/interface/product.interface';
+import type { ProductListMeta } from '@/interface/product.interface';
 import StockSeriesModal from '../modals/StockSeriesModal';
-import { useProductos } from '../../hooks/useProductos';
 import DataTable from '@/components/ui/DataTable';
-import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 
 interface StockAdminTabProps {
     subsidiaryId: number;
+    products: IProduct[];
+    loading: boolean;
+    meta: ProductListMeta;
+    refresh: () => void;
 }
 
-const StockAdminTab: React.FC<StockAdminTabProps> = ({ subsidiaryId }) => {
+const StockAdminTab: React.FC<StockAdminTabProps> = ({
+    subsidiaryId,
+    products,
+    loading,
+    meta,
+    refresh,
+}) => {
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<IProduct | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -23,16 +32,6 @@ const StockAdminTab: React.FC<StockAdminTabProps> = ({ subsidiaryId }) => {
     const [pagination, setPagination] = useState<PaginationState>({
         pageIndex: 0,
         pageSize: 100,
-    });
-
-    const memoizedFilters = useMemo(() => ({ search: globalFilter }), [globalFilter]);
-
-    const { products, loading, meta, refresh } = useProductos({
-        subsidiaryId,
-        mode: 'subsidiaries',
-        filters: memoizedFilters, 
-        page: pagination.pageIndex + 1,
-        perPage: pagination.pageSize,
     });
 
     const handleOpenModal = (product: IProduct) => {

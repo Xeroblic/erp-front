@@ -32,6 +32,7 @@ export interface BrandsState {
 	updating: boolean;
 	deleting: boolean;
 	error: string | null;
+	lastBranchId: number | null;
 }
 
 export const initialState: BrandsState = {
@@ -42,6 +43,7 @@ export const initialState: BrandsState = {
 	updating: false,
 	deleting: false,
 	error: null,
+	lastBranchId: null,
 };
 
 export const fetchBrands = createAsyncThunk<
@@ -170,7 +172,6 @@ type BrandRequestShape = {
 	code?: string;
 };
 
-// Subir múltiples imágenes a la galería de la marca
 const uploadBrandGalleryFiles = async (
 	branchId: number,
 	brandId: number,
@@ -361,7 +362,6 @@ const brandsSlice = createSlice({
 	},
 	extraReducers: (builder) => {
 		builder
-			// Fetch
 			.addCase(fetchBrands.pending, (state) => {
 				state.loading = true;
 				state.error = null;
@@ -370,12 +370,12 @@ const brandsSlice = createSlice({
 				state.loading = false;
 				state.items = action.payload.items;
 				state.stats = action.payload.stats;
+				state.lastBranchId = action.meta.arg.branchId;
 			})
 			.addCase(fetchBrands.rejected, (state, action) => {
 				state.loading = false;
 				state.error = action.payload ?? 'Error al cargar las marcas';
 			})
-			// Create
 			.addCase(createBrand.pending, (state) => {
 				state.creating = true;
 				state.error = null;
@@ -389,7 +389,6 @@ const brandsSlice = createSlice({
 				state.creating = false;
 				state.error = action.payload ?? 'Error al crear la marca';
 			})
-			// Update
 			.addCase(updateBrand.pending, (state) => {
 				state.updating = true;
 				state.error = null;
@@ -406,7 +405,6 @@ const brandsSlice = createSlice({
 				state.updating = false;
 				state.error = action.payload ?? 'Error al actualizar la marca';
 			})
-			// Toggle status
 			.addCase(toggleBrandStatus.fulfilled, (state, action) => {
 				const index = state.items.findIndex((brand) => brand.id === action.payload.id);
 				if (index !== -1) {
@@ -417,7 +415,6 @@ const brandsSlice = createSlice({
 			.addCase(toggleBrandStatus.rejected, (state, action) => {
 				state.error = action.payload ?? 'No se pudo actualizar el estado';
 			})
-			// Delete
 			.addCase(deleteBrand.pending, (state) => {
 				state.deleting = true;
 				state.error = null;
@@ -431,7 +428,6 @@ const brandsSlice = createSlice({
 				state.deleting = false;
 				state.error = action.payload ?? 'No se pudo eliminar la marca';
 			})
-			// Upload gallery
 			.addCase(uploadBrandGallery.fulfilled, (state, action) => {
 				const { payload } = action;
 				if (!payload) return;

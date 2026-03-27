@@ -203,6 +203,7 @@ export const useUserBranches = (
 	// Permisos del usuario autenticado (incluye roles en este proyecto)
 	const permisos = useAppSelector((s) => s.auth.permisos ?? []);
 	const authUser = useAppSelector((s) => s.auth.user as unknown);
+	const authUserRecord = asRecord(authUser);
 
 	const [state, setState] = useState<UseUserBranchesState>({
 		branches: [],
@@ -232,8 +233,8 @@ export const useUserBranches = (
 			const canViewUser = Array.isArray(permisos) && permisos.includes('view-user');
 			if (isSelf || !canViewUser) {
 				// 1) Intentar desde el store (userMeThunk ya carga /perfil en PageWrapper)
-				if (authUser) {
-					const meData = asRecord(authUser);
+				if (authUserRecord) {
+					const meData = authUserRecord;
 					const rawBranches = mergeBranchSources(
 						asRecord(meData?.access)?.branches,
 						asRecord(meData?.visible)?.branches,
@@ -245,6 +246,9 @@ export const useUserBranches = (
 						setState({ branches: normalizedSelf, loading: false, error: null });
 						return;
 					}
+
+					setState({ branches: [], loading: false, error: null });
+					return;
 				}
 
 				// 2) Fallback a /perfil si el store aún no tiene access/visible
@@ -329,7 +333,7 @@ export const useUserBranches = (
 			setState({ branches: [], loading: false, error: errorMessage });
 			console.error('[useUserBranches] Error:', errorMessage, error);
 		}
-	}, [userId, enabled, currentUserId, permisos]);
+	}, [userId, enabled, currentUserId, permisos, authUserRecord]);
 
 	/**
 	 * Función para limpiar el error

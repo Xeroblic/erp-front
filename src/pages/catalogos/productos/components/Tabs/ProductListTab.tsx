@@ -42,6 +42,8 @@ interface ProductListTabProps {
 	onPageChange: (page: number) => void;
 	onView: (product: IProduct) => void;
 	onDelete: (product: IProduct) => void;
+	subsidiaryId?: number | null;
+	onRefresh?: () => Promise<void> | void;
 }
 
 const ProductListTab: React.FC<ProductListTabProps> = ({
@@ -63,6 +65,8 @@ const ProductListTab: React.FC<ProductListTabProps> = ({
 	onPageChange,
 	onView,
 	onDelete,
+	subsidiaryId,
+	onRefresh,
 }) => {
 	const totalPages = Math.max(1, meta.last_page);
 
@@ -92,6 +96,8 @@ const ProductListTab: React.FC<ProductListTabProps> = ({
 				loading={loading}
 				onView={onView}
 				onDelete={onDelete}
+				subsidiaryId={subsidiaryId}
+				onRefresh={onRefresh}
 			/>
 
 			<Pagination

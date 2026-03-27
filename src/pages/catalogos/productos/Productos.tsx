@@ -86,6 +86,7 @@ const Productos: React.FC = () => {
 		createProduct,
 		updateProduct,
 		deleteProduct,
+		refresh,
 	} = useProductos({
 		branchId,
 		subsidiaryId: effectiveSubsidiaryId,
@@ -112,6 +113,18 @@ const Productos: React.FC = () => {
 		currentUser?.branch?.id,
 		currentUser?.branch_id,
 	]);
+
+	const stockAdminProducts = useMemo(() => {
+		const search = filters.search?.trim().toLowerCase() ?? '';
+		if (!search) return products;
+		return products.filter((product) => {
+			const searchable = [product.name, product.sku, product.barcode]
+				.filter((value): value is string => typeof value === 'string' && value.length > 0)
+				.join(' ')
+				.toLowerCase();
+			return searchable.includes(search);
+		});
+	}, [filters.search, products]);
 
 	const filteredBranches = useMemo(() => {
 		if (!accessibleBranches.length) return branches;
@@ -148,40 +161,29 @@ const Productos: React.FC = () => {
 	}, [currentBranch]);
 
 	useEffect(() => {
-		if (!personalizacionInitialized) {
-			dispatch(obtenerPersonalizacionThunk());
-		}
-	}, [dispatch, personalizacionInitialized]);
-
-	useEffect(() => {
-		if (branchInitialized) return;
 		if (!filteredBranches.length) return;
 
-		let fallback: number | null = null;
-
-		if (
+		const preferredBranchId =
 			defaultBranchFromUser !== null &&
 			defaultBranchFromUser !== undefined &&
 			filteredBranches.some((branch) => branch.id === defaultBranchFromUser)
-		) {
-			fallback = defaultBranchFromUser;
-		} else {
-			fallback = filteredBranches[0]?.id ?? null;
-		}
+				? defaultBranchFromUser
+				: filteredBranches[0]?.id ?? null;
 
-		if (fallback !== null && fallback !== branchId) {
-			setBranchId(fallback);
+		if (preferredBranchId === null) return;
+		if (branchId !== preferredBranchId) {
+			setBranchId(preferredBranchId);
+		}
+		if (!branchInitialized) {
 			setBranchInitialized(true);
 		}
 	}, [branchInitialized, filteredBranches, defaultBranchFromUser, branchId]);
 
 	useEffect(() => {
-		if (!branchInitialized) return;
-		if (defaultBranchFromUser === null || defaultBranchFromUser === undefined) return;
-		if (branchId === defaultBranchFromUser) return;
-		if (!filteredBranches.some((branch) => branch.id === defaultBranchFromUser)) return;
-		setBranchId(defaultBranchFromUser);
-	}, [defaultBranchFromUser, branchId, branchInitialized, filteredBranches]);
+		if (!personalizacionInitialized) {
+			dispatch(obtenerPersonalizacionThunk());
+		}
+	}, [dispatch, personalizacionInitialized]);
 
 	useEffect(() => {
 		const handleExternalBranchChange = (event: Event) => {
@@ -471,21 +473,33 @@ const Productos: React.FC = () => {
 							onPageChange={setPage}
 							onView={handleViewProduct}
 							onDelete={handleDeleteProduct}
+							subsidiaryId={effectiveSubsidiaryId}
+							onRefresh={refresh}
 						/>
 					</Tab>
 					<Tab id='inventory' text='Inventario' icon='HeroBuildingStorefront'>
 						<InventoryTab
 							products={products}
+							meta={meta}
 							summary={inventory}
 							criticalProducts={criticalProducts}
 							loading={inventoryLoading || loading}
 							branchName={currentBranchName}
 							onShowLowStock={handleShowCriticalInventory}
 							onViewProduct={handleViewProduct}
+							subsidiaryId={effectiveSubsidiaryId}
+							selectedBranchId={branchId ?? activeBranchId ?? currentBranch?.id ?? null}
+							onRefresh={refresh}
 						/>
 					</Tab>
 					<Tab id='analytics' text='Administracion de Stock' icon='HeroChartBarSquare'>
-						<StockAdminTab subsidiaryId={effectiveSubsidiaryId ?? 0} />
+						<StockAdminTab
+							subsidiaryId={effectiveSubsidiaryId ?? 0}
+							products={stockAdminProducts}
+							loading={loading}
+							meta={meta}
+							refresh={refresh}
+						/>
 					</Tab>
 				</Tabs>
 			</Container>
