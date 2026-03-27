@@ -30,6 +30,7 @@ import { PRODUCT_DEFAULT_FILTERS } from './constants/products.constant';
 import { useUserBranches } from './components/modals/hooks/userBranch';
 import type { ProductsViewMode } from './hooks/useProductos';
 import StockAdminTab from './components/Tabs/AnalyticsTab';
+import StockCatalogTab from './components/Tabs/StockCatalogTab';
 
 const Productos: React.FC = () => {
 	const navigate = useNavigate();
@@ -491,6 +492,9 @@ const Productos: React.FC = () => {
 							selectedBranchId={branchId ?? activeBranchId ?? currentBranch?.id ?? null}
 							onRefresh={refresh}
 						/>
+					</Tab>
+					<Tab id='stock-catalog' text='Catálogo de Stock' icon='HeroTableCells'>
+						<StockCatalogTab subsidiaryId={effectiveSubsidiaryId ?? 0} />
 					</Tab>
 					<Tab id='analytics' text='Administracion de Stock' icon='HeroChartBarSquare'>
 						<StockAdminTab

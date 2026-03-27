@@ -2,6 +2,8 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import ApiService from '@/services/ApiService';
 import type {
 	IAssignProductPayload,
+	IAssignStockPayload,
+	IUnassignStockPayload,
 	IUnassignProductPayload,
 	ITransferStockPayload,
 	IAdjustStockPayload,
@@ -21,6 +23,7 @@ import type {
 // ---------------------------------------------------------------------------
 export interface ProductStockState {
 	allocations: IBranchAllocation[];
+	stockCatalog: Record<string, unknown>[];
 	series: IProductSerie[];
 	movements: IStockMovement[];
 
@@ -30,6 +33,7 @@ export interface ProductStockState {
 	isTransferring: boolean;
 	isAdjusting: boolean;
 	isLoadingAllocations: boolean;
+	isLoadingStockCatalog: boolean;
 	isLoadingSeries: boolean;
 	isCreatingSeries: boolean;
 	isUpdatingSerie: boolean;
@@ -41,6 +45,7 @@ export interface ProductStockState {
 
 const initialState: ProductStockState = {
 	allocations: [],
+	stockCatalog: [],
 	series: [],
 	movements: [],
 
@@ -49,6 +54,7 @@ const initialState: ProductStockState = {
 	isTransferring: false,
 	isAdjusting: false,
 	isLoadingAllocations: false,
+	isLoadingStockCatalog: false,
 	isLoadingSeries: false,
 	isCreatingSeries: false,
 	isUpdatingSerie: false,
@@ -144,6 +150,42 @@ const extractAllocations = (payload: unknown): IBranchAllocation[] => {
 	return [];
 };
 
+const extractStockCatalogItems = (payload: unknown): Record<string, unknown>[] => {
+	if (Array.isArray(payload)) {
+		return payload.filter(
+			(item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object',
+		);
+	}
+
+	if (!payload || typeof payload !== 'object') return [];
+
+	const record = payload as Record<string, unknown>;
+	const nestedData =
+		typeof record.data === 'object' && record.data !== null
+			? (record.data as Record<string, unknown>)
+			: null;
+
+	const candidates = [
+		record.data,
+		record.items,
+		record.results,
+		record.products,
+		nestedData?.data,
+		nestedData?.items,
+		nestedData?.results,
+		nestedData?.products,
+	];
+
+	for (const candidate of candidates) {
+		if (!Array.isArray(candidate)) continue;
+		return candidate.filter(
+			(item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object',
+		);
+	}
+
+	return [];
+};
+
 // ---------------------------------------------------------------------------
 // 11 Thunks para Operaciones de Stock & Series
 // Contexto estricto: /subsidiaries/{subsidiaryId}/products/...
@@ -183,14 +225,58 @@ export const unassignProduct = createAsyncThunk<
 	}
 });
 
-export const transferStock = createAsyncThunk<
+export const assignStockToBranch = createAsyncThunk<
+	unknown,
+	{ subsidiaryId: number; productId: number; payload: IAssignStockPayload },
+	{ rejectValue: string }
+>(
+	'productStock/assignStockToBranch',
+	async ({ subsidiaryId, productId, payload }, { rejectWithValue }) => {
+		try {
+			const res = await ApiService.fetchData<IStockStateResponse<unknown>, IAssignStockPayload>({
+				url: `/subsidiaries/${subsidiaryId}/products/${productId}/assign-stock`,
+				method: 'post',
+				data: payload,
+			});
+			return res.data?.data;
+		} catch (error) {
+			return rejectWithValue(getApiError(error, 'No se pudo asignar el stock a la sucursal'));
+		}
+	},
+);
+
+export const unassignStockFromProduct = createAsyncThunk<
+	unknown,
+	{ subsidiaryId: number; productId: number; payload: IUnassignStockPayload },
+	{ rejectValue: string }
+>(
+	'productStock/unassignStockFromProduct',
+	async ({ subsidiaryId, productId, payload }, { rejectWithValue }) => {
+		try {
+			const res = await ApiService.fetchData<IStockStateResponse<unknown>, IUnassignStockPayload>({
+				url: `/subsidiaries/${subsidiaryId}/products/${productId}/unassign-stock`,
+				method: 'post',
+				data: payload,
+			});
+			return res.data?.data;
+		} catch (error) {
+			return rejectWithValue(
+				getApiError(error, 'No se pudo devolver el stock a la subsidiaria'),
+			);
+		}
+	},
+);
+
+export const transferProductStock = createAsyncThunk<
 	unknown,
 	{ subsidiaryId: number; productId: number; payload: ITransferStockPayload },
 	{ rejectValue: string }
->('productStock/transferStock', async ({ subsidiaryId, productId, payload }, { rejectWithValue }) => {
+>(
+	'productStock/transferProductStock',
+	async ({ subsidiaryId, productId, payload }, { rejectWithValue }) => {
 	try {
 		const res = await ApiService.fetchData<IStockStateResponse<unknown>, ITransferStockPayload>({
-			url: `/subsidiaries/${subsidiaryId}/products/${productId}/transfer`,
+			url: `/subsidiaries/${subsidiaryId}/products/${productId}/transfer-stock`,
 			method: 'post',
 			data: payload,
 		});
@@ -198,7 +284,8 @@ export const transferStock = createAsyncThunk<
 	} catch (error) {
 		return rejectWithValue(getApiError(error, 'No se pudo transferir el stock'));
 	}
-});
+},
+);
 
 export const adjustProductStock = createAsyncThunk<
 	unknown,
@@ -235,21 +322,42 @@ export const batchAdjustStock = createAsyncThunk<
 	}
 });
 
-export const fetchProductAllocations = createAsyncThunk<
+export const fetchAvailableStock = createAsyncThunk<
 	IBranchAllocation[],
 	{ subsidiaryId: number; productId: number },
 	{ rejectValue: string }
->('productStock/fetchProductAllocations', async ({ subsidiaryId, productId }, { rejectWithValue }) => {
+>(
+	'productStock/fetchAvailableStock',
+	async ({ subsidiaryId, productId }, { rejectWithValue }) => {
 	try {
 		const res = await ApiService.fetchData<IStockListResponse<IBranchAllocation>>({
-			url: `/subsidiaries/${subsidiaryId}/products/${productId}/allocations`,
+			url: `/subsidiaries/${subsidiaryId}/products/${productId}/available-stock`,
 			method: 'get',
 		});
 		return extractAllocations(res.data ?? res);
 	} catch (error) {
-		return rejectWithValue(getApiError(error, 'Error al cargar asignaciones de stock'));
+		return rejectWithValue(getApiError(error, 'Error al cargar el stock disponible'));
+	}
+},
+);
+
+export const fetchStockCatalog = createAsyncThunk<
+	Record<string, unknown>[],
+	{ subsidiaryId: number },
+	{ rejectValue: string }
+>('productStock/fetchStockCatalog', async ({ subsidiaryId }, { rejectWithValue }) => {
+	try {
+		const res = await ApiService.fetchData<IStockListResponse<Record<string, unknown>>>({
+			url: `/subsidiaries/${subsidiaryId}/products/stock-catalog`,
+			method: 'get',
+		});
+		return extractStockCatalogItems(res.data ?? res);
+	} catch (error) {
+		return rejectWithValue(getApiError(error, 'Error al cargar el catálogo de stock'));
 	}
 });
+
+export const fetchProductAllocations = fetchAvailableStock;
 
 export const fetchProductSeries = createAsyncThunk<
 	IProductSerie[],
@@ -354,15 +462,25 @@ const productStockSlice = createSlice({
 			.addCase(assignProduct.fulfilled, (state) => { state.isAssigning = false; })
 			.addCase(assignProduct.rejected, (state, action) => { state.isAssigning = false; state.error = action.payload ?? null; })
 
+			// Assign stock
+			.addCase(assignStockToBranch.pending, (state) => { state.isAssigning = true; state.error = null; })
+			.addCase(assignStockToBranch.fulfilled, (state) => { state.isAssigning = false; })
+			.addCase(assignStockToBranch.rejected, (state, action) => { state.isAssigning = false; state.error = action.payload ?? null; })
+
 			// Unassign
 			.addCase(unassignProduct.pending, (state) => { state.isUnassigning = true; state.error = null; })
 			.addCase(unassignProduct.fulfilled, (state) => { state.isUnassigning = false; })
 			.addCase(unassignProduct.rejected, (state, action) => { state.isUnassigning = false; state.error = action.payload ?? null; })
 
+			// Unassign stock
+			.addCase(unassignStockFromProduct.pending, (state) => { state.isUnassigning = true; state.error = null; })
+			.addCase(unassignStockFromProduct.fulfilled, (state) => { state.isUnassigning = false; })
+			.addCase(unassignStockFromProduct.rejected, (state, action) => { state.isUnassigning = false; state.error = action.payload ?? null; })
+
 			// Transfer
-			.addCase(transferStock.pending, (state) => { state.isTransferring = true; state.error = null; })
-			.addCase(transferStock.fulfilled, (state) => { state.isTransferring = false; })
-			.addCase(transferStock.rejected, (state, action) => { state.isTransferring = false; state.error = action.payload ?? null; })
+			.addCase(transferProductStock.pending, (state) => { state.isTransferring = true; state.error = null; })
+			.addCase(transferProductStock.fulfilled, (state) => { state.isTransferring = false; })
+			.addCase(transferProductStock.rejected, (state, action) => { state.isTransferring = false; state.error = action.payload ?? null; })
 
 			// Adjust 
 			.addCase(adjustProductStock.pending, (state) => { state.isAdjusting = true; state.error = null; })
@@ -374,13 +492,21 @@ const productStockSlice = createSlice({
 			.addCase(batchAdjustStock.fulfilled, (state) => { state.isAdjusting = false; })
 			.addCase(batchAdjustStock.rejected, (state, action) => { state.isAdjusting = false; state.error = action.payload ?? null; })
 
-			// Allocations
-			.addCase(fetchProductAllocations.pending, (state) => { state.isLoadingAllocations = true; state.error = null; })
-			.addCase(fetchProductAllocations.fulfilled, (state, action) => {
+			// Available stock
+			.addCase(fetchAvailableStock.pending, (state) => { state.isLoadingAllocations = true; state.error = null; })
+			.addCase(fetchAvailableStock.fulfilled, (state, action) => {
 				state.isLoadingAllocations = false;
 				state.allocations = action.payload;
 			})
-			.addCase(fetchProductAllocations.rejected, (state, action) => { state.isLoadingAllocations = false; state.error = action.payload ?? null; })
+			.addCase(fetchAvailableStock.rejected, (state, action) => { state.isLoadingAllocations = false; state.error = action.payload ?? null; })
+
+			// Stock catalog
+			.addCase(fetchStockCatalog.pending, (state) => { state.isLoadingStockCatalog = true; state.error = null; })
+			.addCase(fetchStockCatalog.fulfilled, (state, action) => {
+				state.isLoadingStockCatalog = false;
+				state.stockCatalog = action.payload;
+			})
+			.addCase(fetchStockCatalog.rejected, (state, action) => { state.isLoadingStockCatalog = false; state.error = action.payload ?? null; })
 
 			// Series
 			.addCase(fetchProductSeries.pending, (state) => { state.isLoadingSeries = true; state.error = null; })

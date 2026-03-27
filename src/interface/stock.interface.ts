@@ -3,23 +3,55 @@
  * Dominio de Stock, Asignaciones y Series en el Zentria Standard
  */
 
+ export interface IStockAssignmentItemPayload {
+	child_product_id: number;
+	assign_all?: boolean;
+	quantity?: number;
+	price_override?: number;
+	serial_numbers?: string[];
+ }
+
 // 1. Asignar Producto
 export interface IAssignProductPayload {
 	branch_ids: number[];
 	is_active: boolean;
+	price_override?: number;
+	offer_price_override?: number;
 	initial_stock?: number;
 }
 
-// 2. Transferir Stock
+// 2. Asignar Stock
+export interface IAssignStockPayload {
+	branch_id: number;
+	notes?: string;
+	assignments: IStockAssignmentItemPayload[];
+}
+
+// 3. Desasignar Stock
+export interface IUnassignStockPayload {
+	branch_id: number;
+	confirm?: boolean;
+	notes?: string;
+	assignments?: Array<{
+		child_product_id: number;
+		quantity: number;
+	}>;
+	serial_numbers?: string[];
+}
+
+// 4. Transferir Stock
 export interface ITransferStockPayload {
-	product_id: number;
 	from_branch_id: number;
 	to_branch_id: number;
-	quantity: number;
+	serial_numbers?: string[];
+	assignments?: Array<{
+		child_product_id: number;
+		quantity: number;
+	}>;
 	notes?: string;
 }
 
-// 3. Ajuste Individual
+// 5. Ajuste Individual
 export interface IAdjustStockPayload {
 	branch_id: number;
 	quantity_change: number; // Positivo (Ingreso) o Negativo (Egreso)
@@ -27,7 +59,7 @@ export interface IAdjustStockPayload {
 	notes?: string;
 }
 
-// 4. Ajuste Masivo (Batch)
+// 6. Ajuste Masivo (Batch)
 export interface IBatchAdjustItem {
 	product_id: number;
 	quantity_change: number;
@@ -39,7 +71,7 @@ export interface IBatchAdjustStockPayload {
 	items: IBatchAdjustItem[];
 }
 
-// 5. Asignaciones (Branch Allocations) return type
+// 7. Asignaciones (Branch Allocations) return type
 export interface IBranchAllocation {
 	branch_id: number;
 	branch_name: string;
@@ -47,7 +79,7 @@ export interface IBranchAllocation {
 	is_active: boolean;
 }
 
-// 6. Series (Fetch) return type
+// 8. Series (Fetch) return type
 export interface IProductSerie {
 	id: number;
 	product_id: number;
@@ -57,19 +89,19 @@ export interface IProductSerie {
 	created_at: string;
 }
 
-// 7. Series (Añadir)
+// 9. Series (Añadir)
 export interface ICreateSeriePayload {
 	branch_id: number;
 	serial_numbers: string[];
 }
 
-// 8. Series (Actualizar Estado)
+// 10. Series (Actualizar Estado)
 export interface IUpdateSerieStatusPayload {
 	status: string;
 	notes?: string;
 }
 
-// 9. Movimientos (Historial)
+// 11. Movimientos (Historial)
 export interface IStockMovement {
 	id: number;
 	product_id: number;
@@ -83,7 +115,7 @@ export interface IStockMovement {
 	created_at: string;
 }
 
-// 10. Movimientos (Filtros de Búsqueda)
+// 12. Movimientos (Filtros de Búsqueda)
 export interface IFetchStockMovementsParams {
 	branch_id?: number;
 	start_date?: string;
@@ -93,7 +125,7 @@ export interface IFetchStockMovementsParams {
 	per_page?: number;
 }
 
-// 11. Unassign Product
+// 13. Unassign Product
 export interface IUnassignProductPayload {
 	branch_ids: number[];
 }
