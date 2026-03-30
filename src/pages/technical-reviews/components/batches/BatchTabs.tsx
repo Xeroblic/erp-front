@@ -23,8 +23,8 @@ import { COMMERCIAL_STATUS_FILTER_OPTIONS } from '@/pages/technical-reviews/cons
 
 const TECHNICAL_REVIEWS_PREFIX = (import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
 const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
-const buildItemsUrl = (branchId: number, suffix = '') =>
-	join(TECHNICAL_REVIEWS_PREFIX, `/branches/${branchId}/technical-reviews${suffix}`);
+const buildItemsUrl = (entityType: 'branches' | 'subsidiaries', entityId: number, suffix = '') =>
+	join(TECHNICAL_REVIEWS_PREFIX, `/${entityType}/${entityId}/technical-reviews${suffix}`);
 
 interface BatchTabsProps {
 	batch: IBatch;
@@ -115,7 +115,7 @@ const BatchTabs: React.FC<BatchTabsProps> = ({ batch, onItemClick }) => {
 			const allItems: IItem[] = [];
 			do {
 				const response = await ApiService.fetchData<{ data?: any[]; meta?: any }>({
-					url: buildItemsUrl(branchId, '/items'),
+					url: buildItemsUrl('branches', branchId, '/items'),
 					method: 'get',
 					params: {
 						...params,

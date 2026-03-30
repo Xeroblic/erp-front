@@ -29,6 +29,9 @@ const initialState: TechnicalReviewsState = {
 	},
 	selectedBatch: null,
 	batchesLoading: false,
+	endpointMode: 'branches',
+	contextBranchId: null,
+	contextSubsidiaryId: null,
 
 	// Series/Ítems
 	items: [],
@@ -84,6 +87,16 @@ const technicalReviewsSlice = createSlice({
 	name: 'technicalReviews',
 	initialState,
 	reducers: {
+		setEndpointMode: (state, action: PayloadAction<'subsidiaries' | 'branches'>) => {
+			state.endpointMode = action.payload;
+		},
+		setTechnicalReviewsContext: (
+			state,
+			action: PayloadAction<{ branchId?: number | null; subsidiaryId?: number | null }>,
+		) => {
+			state.contextBranchId = action.payload.branchId ?? null;
+			state.contextSubsidiaryId = action.payload.subsidiaryId ?? null;
+		},
 		clearSelected: (state) => {
 			state.selectedBatch = null;
 			state.selectedItem = null;
@@ -638,7 +651,14 @@ const technicalReviewsSlice = createSlice({
 	},
 });
 
-export const { clearSelected, clearErrors, setSelectedBatch, setSelectedItem } =
+export const {
+	setEndpointMode,
+	setTechnicalReviewsContext,
+	clearSelected,
+	clearErrors,
+	setSelectedBatch,
+	setSelectedItem,
+} =
 	technicalReviewsSlice.actions;
 
 // Exportar el tipo para usarlo en rootReducer

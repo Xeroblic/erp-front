@@ -482,6 +482,12 @@ const Productos: React.FC = () => {
 						<InventoryTab
 							products={products}
 							meta={meta}
+							entityParam={viewMode === 'subsidiaries' ? 'subsidiaries' : 'branches'}
+							entityId={
+								viewMode === 'subsidiaries'
+									? effectiveSubsidiaryId
+									: branchId ?? activeBranchId ?? currentBranch?.id ?? null
+							}
 							summary={inventory}
 							criticalProducts={criticalProducts}
 							loading={inventoryLoading || loading}

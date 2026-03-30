@@ -4,18 +4,18 @@
  */
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import ApiService from '@/services/ApiService';
+import type { RootState } from '@/store/rootReducer';
 import type {
 	IBatch,
 	FetchBatchesParams,
 	FetchBatchItemsParams,
 	IItem,
 } from '../../../../interface/technicalReviews.interface.ts';
-
-// --- Helpers ---
-const TECHNICAL_REVIEWS_PREFIX = (import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
-const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
-const ep = (branchId: number, path: string) =>
-	join(TECHNICAL_REVIEWS_PREFIX, `/branches/${branchId}/technical-reviews${path}`);
+import {
+	buildTechnicalReviewsEndpoint,
+	resolveTechnicalReviewsContext,
+} from '../technicalReviewsContext';
+import { setTechnicalReviewsContext } from '../slice/technicalReviewsSlice';
 
 const normalizeArray = (payload: any): any[] => {
 	const raw = payload?.data ?? payload;
@@ -30,12 +30,14 @@ const normalizeObject = (payload: any): any => payload?.data ?? payload ?? null;
  */
 export const fetchBatches = createAsyncThunk<
 	{ items: IBatch[]; meta?: any },
-	{ branchId: number; params?: FetchBatchesParams },
-	{ rejectValue: string }
->('technicalReviews/fetchBatches', async ({ branchId, params }, { rejectWithValue }) => {
+	{ branchId?: number | null; subsidiaryId?: number | null; params?: FetchBatchesParams },
+	{ state: RootState; rejectValue: string }
+>('technicalReviews/fetchBatches', async ({ branchId, subsidiaryId, params }, { getState, dispatch, rejectWithValue }) => {
 	try {
+		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+		dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
 		const response = await ApiService.fetchData<{ data?: any[]; meta?: any }>({
-			url: ep(branchId, '/batches'),
+			url: buildTechnicalReviewsEndpoint(context, '/batches'),
 			method: 'get',
 			params: {
 				warehouse_id: params?.warehouse_id,
@@ -69,12 +71,14 @@ export const fetchBatches = createAsyncThunk<
  */
 export const fetchBatchById = createAsyncThunk<
 	IBatch,
-	{ branchId: number; batchId: number },
-	{ rejectValue: string }
->('technicalReviews/fetchBatchById', async ({ branchId, batchId }, { rejectWithValue }) => {
+	{ branchId?: number | null; subsidiaryId?: number | null; batchId: number },
+	{ state: RootState; rejectValue: string }
+>('technicalReviews/fetchBatchById', async ({ branchId, subsidiaryId, batchId }, { getState, dispatch, rejectWithValue }) => {
 	try {
+		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+		dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
 		const response = await ApiService.fetchData<{ data?: any }>({
-			url: ep(branchId, `/batches/${batchId}`),
+			url: buildTechnicalReviewsEndpoint(context, `/batches/${batchId}`),
 			method: 'get',
 		});
 
@@ -92,14 +96,21 @@ export const fetchBatchById = createAsyncThunk<
  */
 export const fetchBatchItems = createAsyncThunk<
 	{ items: IItem[]; meta?: any },
-	{ branchId: number; batchId: number; params?: FetchBatchItemsParams },
-	{ rejectValue: string }
+	{ branchId?: number | null; subsidiaryId?: number | null; batchId: number; params?: FetchBatchItemsParams },
+	{ state: RootState; rejectValue: string }
 >(
 	'technicalReviews/fetchBatchItems',
-	async ({ branchId, batchId, params }, { rejectWithValue }) => {
+	async ({ branchId, subsidiaryId, batchId, params }, { getState, dispatch, rejectWithValue }) => {
 		try {
+			const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+			dispatch(
+				setTechnicalReviewsContext({
+					branchId: context.branchId,
+					subsidiaryId: context.subsidiaryId,
+				}),
+			);
 			const response = await ApiService.fetchData<{ data?: any[]; meta?: any }>({
-				url: ep(branchId, `/batches/${batchId}/items`),
+				url: buildTechnicalReviewsEndpoint(context, `/batches/${batchId}/items`),
 				method: 'get',
 				params: {
 					equipment_type: params?.equipment_type,
@@ -133,7 +144,8 @@ export const fetchBatchItems = createAsyncThunk<
 export const createBatch = createAsyncThunk<
 	IBatch,
 	{
-		branchId: number;
+		branchId?: number | null;
+		subsidiaryId?: number | null;
 		data: {
 			warehouse_id: number;
 			customer_supplier_id: number;
@@ -142,11 +154,13 @@ export const createBatch = createAsyncThunk<
 			notes?: string;
 		};
 	},
-	{ rejectValue: string }
->('technicalReviews/createBatch', async ({ branchId, data }, { rejectWithValue }) => {
+	{ state: RootState; rejectValue: string }
+>('technicalReviews/createBatch', async ({ branchId, subsidiaryId, data }, { getState, dispatch, rejectWithValue }) => {
 	try {
+		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+		dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
 		const response = await ApiService.fetchData<{ data?: any }>({
-			url: ep(branchId, '/batches'),
+			url: buildTechnicalReviewsEndpoint(context, '/batches'),
 			method: 'post',
 			data,
 		});
@@ -166,7 +180,8 @@ export const createBatch = createAsyncThunk<
 export const updateBatch = createAsyncThunk<
 	IBatch,
 	{
-		branchId: number;
+		branchId?: number | null;
+		subsidiaryId?: number | null;
 		batchId: number;
 		data: Partial<{
 			warehouse_id: number;
@@ -177,11 +192,13 @@ export const updateBatch = createAsyncThunk<
 			status: string;
 		}>;
 	},
-	{ rejectValue: string }
->('technicalReviews/updateBatch', async ({ branchId, batchId, data }, { rejectWithValue }) => {
+	{ state: RootState; rejectValue: string }
+>('technicalReviews/updateBatch', async ({ branchId, subsidiaryId, batchId, data }, { getState, dispatch, rejectWithValue }) => {
 	try {
+		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+		dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
 		const response = await ApiService.fetchData<{ data?: any }>({
-			url: ep(branchId, `/batches/${batchId}`),
+			url: buildTechnicalReviewsEndpoint(context, `/batches/${batchId}`),
 			method: 'patch',
 			data,
 		});
@@ -200,12 +217,14 @@ export const updateBatch = createAsyncThunk<
  */
 export const deleteBatch = createAsyncThunk<
 	number,
-	{ branchId: number; batchId: number },
-	{ rejectValue: string }
->('technicalReviews/deleteBatch', async ({ branchId, batchId }, { rejectWithValue }) => {
+	{ branchId?: number | null; subsidiaryId?: number | null; batchId: number },
+	{ state: RootState; rejectValue: string }
+>('technicalReviews/deleteBatch', async ({ branchId, subsidiaryId, batchId }, { getState, dispatch, rejectWithValue }) => {
 	try {
+		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+		dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
 		await ApiService.fetchData({
-			url: ep(branchId, `/batches/${batchId}`),
+			url: buildTechnicalReviewsEndpoint(context, `/batches/${batchId}`),
 			method: 'delete',
 		});
 

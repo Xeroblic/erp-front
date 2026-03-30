@@ -6,6 +6,8 @@
 // ========== SLICE Y ACTIONS ==========
 export { default as technicalReviewsReducer } from './slice/technicalReviewsSlice';
 export {
+	setEndpointMode,
+	setTechnicalReviewsContext,
 	clearSelected,
 	clearErrors,
 	setSelectedBatch,
@@ -91,6 +93,9 @@ export {
 	selectSelectedBatch,
 	selectBatchesLoading,
 	selectBatchesError,
+	selectTechnicalReviewsEndpointMode,
+	selectTechnicalReviewsContextBranchId,
+	selectTechnicalReviewsContextSubsidiaryId,
 	// Series/Items
 	selectItems,
 	selectItemsMeta,

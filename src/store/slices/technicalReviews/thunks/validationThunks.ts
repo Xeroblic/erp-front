@@ -4,17 +4,17 @@
  */
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import ApiService from '@/services/ApiService';
+import type { RootState } from '@/store/rootReducer';
 import type {
 	IValidationRules,
 	IValidationRule,
 	EquipmentType,
 } from '../../../../interface/technicalReviews.interface.ts';
-
-// --- Helpers ---
-const TECHNICAL_REVIEWS_PREFIX = (import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
-const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
-const ep = (branchId: number, path: string) =>
-	join(TECHNICAL_REVIEWS_PREFIX, `/branches/${branchId}/technical-reviews${path}`);
+import {
+	buildTechnicalReviewsEndpoint,
+	resolveTechnicalReviewsContext,
+} from '../technicalReviewsContext';
+import { setTechnicalReviewsContext } from '../slice/technicalReviewsSlice';
 
 const normalizeArray = (payload: any): any[] => {
 	const raw = payload?.data ?? payload;
@@ -29,12 +29,14 @@ const normalizeObject = (payload: any): any => payload?.data ?? payload ?? null;
  */
 export const fetchValidationRules = createAsyncThunk<
 	IValidationRules,
-	{ branchId: number },
-	{ rejectValue: string }
->('technicalReviews/fetchValidationRules', async ({ branchId }, { rejectWithValue }) => {
+	{ branchId?: number | null; subsidiaryId?: number | null },
+	{ state: RootState; rejectValue: string }
+>('technicalReviews/fetchValidationRules', async ({ branchId, subsidiaryId }, { getState, dispatch, rejectWithValue }) => {
 	try {
+		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+		dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
 		const response = await ApiService.fetchData<{ data?: any }>({
-			url: ep(branchId, '/validation/rules'),
+			url: buildTechnicalReviewsEndpoint(context, '/validation/rules'),
 			method: 'get',
 		});
 
@@ -54,14 +56,16 @@ export const fetchValidationRules = createAsyncThunk<
  */
 export const fetchValidationRulesByType = createAsyncThunk<
 	IValidationRule[],
-	{ branchId: number; equipmentType: EquipmentType },
-	{ rejectValue: string }
+	{ branchId?: number | null; subsidiaryId?: number | null; equipmentType: EquipmentType },
+	{ state: RootState; rejectValue: string }
 >(
 	'technicalReviews/fetchValidationRulesByType',
-	async ({ branchId, equipmentType }, { rejectWithValue }) => {
+	async ({ branchId, subsidiaryId, equipmentType }, { getState, dispatch, rejectWithValue }) => {
 		try {
+			const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+			dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
 			const response = await ApiService.fetchData<{ data?: any }>({
-				url: ep(branchId, `/validation/rules/${equipmentType}`),
+				url: buildTechnicalReviewsEndpoint(context, `/validation/rules/${equipmentType}`),
 				method: 'get',
 			});
 
@@ -90,18 +94,21 @@ export const validateField = createAsyncThunk<
 		help_text?: string;
 	},
 	{
-		branchId: number;
+		branchId?: number | null;
+		subsidiaryId?: number | null;
 		data: {
 			equipment_type: EquipmentType;
 			field_name: string;
 			field_value: any;
 		};
 	},
-	{ rejectValue: string }
->('technicalReviews/validateField', async ({ branchId, data }, { rejectWithValue }) => {
+	{ state: RootState; rejectValue: string }
+>('technicalReviews/validateField', async ({ branchId, subsidiaryId, data }, { getState, dispatch, rejectWithValue }) => {
 	try {
+		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+		dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
 		const response = await ApiService.fetchData<{ data?: any }>({
-			url: ep(branchId, '/validation/validate-field'),
+			url: buildTechnicalReviewsEndpoint(context, '/validation/validate-field'),
 			method: 'post',
 			data,
 		});
@@ -136,12 +143,14 @@ export const suggestGrade = createAsyncThunk<
 		is_auto_assignable: boolean;
 		warnings: string[];
 	},
-	{ branchId: number; itemId: number },
-	{ rejectValue: string }
->('technicalReviews/suggestGrade', async ({ branchId, itemId }, { rejectWithValue }) => {
+	{ branchId?: number | null; subsidiaryId?: number | null; itemId: number },
+	{ state: RootState; rejectValue: string }
+>('technicalReviews/suggestGrade', async ({ branchId, subsidiaryId, itemId }, { getState, dispatch, rejectWithValue }) => {
 	try {
+		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+		dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
 		const response = await ApiService.fetchData<{ data?: any }>({
-			url: ep(branchId, '/validation/suggest-grade'),
+			url: buildTechnicalReviewsEndpoint(context, '/validation/suggest-grade'),
 			method: 'post',
 			data: { item_id: itemId },
 		});
@@ -171,12 +180,14 @@ export const suggestGrade = createAsyncThunk<
  */
 export const getMyCommonErrors = createAsyncThunk<
 	any[],
-	{ branchId: number },
-	{ rejectValue: string }
->('technicalReviews/getMyCommonErrors', async ({ branchId }, { rejectWithValue }) => {
+	{ branchId?: number | null; subsidiaryId?: number | null },
+	{ state: RootState; rejectValue: string }
+>('technicalReviews/getMyCommonErrors', async ({ branchId, subsidiaryId }, { getState, dispatch, rejectWithValue }) => {
 	try {
+		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+		dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
 		const response = await ApiService.fetchData<{ data?: any[] }>({
-			url: ep(branchId, '/validation/my-common-errors'),
+			url: buildTechnicalReviewsEndpoint(context, '/validation/my-common-errors'),
 			method: 'get',
 		});
 
@@ -196,12 +207,14 @@ export const getMyCommonErrors = createAsyncThunk<
  */
 export const getErrorStatistics = createAsyncThunk<
 	any,
-	{ branchId: number; params?: { start_date?: string; end_date?: string } },
-	{ rejectValue: string }
->('technicalReviews/getErrorStatistics', async ({ branchId, params }, { rejectWithValue }) => {
+	{ branchId?: number | null; subsidiaryId?: number | null; params?: { start_date?: string; end_date?: string } },
+	{ state: RootState; rejectValue: string }
+>('technicalReviews/getErrorStatistics', async ({ branchId, subsidiaryId, params }, { getState, dispatch, rejectWithValue }) => {
 	try {
+		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+		dispatch(setTechnicalReviewsContext({ branchId: context.branchId, subsidiaryId: context.subsidiaryId }));
 		const response = await ApiService.fetchData<{ data?: any }>({
-			url: ep(branchId, '/validation/error-statistics'),
+			url: buildTechnicalReviewsEndpoint(context, '/validation/error-statistics'),
 			method: 'get',
 			params,
 		});

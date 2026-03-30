@@ -68,6 +68,17 @@ const initialState: ProductStockState = {
 const getApiError = (error: unknown, fallback: string): string => {
 	if (error && typeof error === 'object') {
 		const obj = error as any;
+		const validationErrors = obj.response?.data?.errors;
+		if (validationErrors && typeof validationErrors === 'object') {
+			const messages = Object.values(validationErrors)
+				.flatMap((value) => (Array.isArray(value) ? value : []))
+				.filter((value): value is string => typeof value === 'string' && value.trim().length > 0);
+			const uniqueMessages = Array.from(new Set(messages));
+			if (uniqueMessages.length > 0) {
+				if (uniqueMessages.length === 1) return uniqueMessages[0];
+				return `${uniqueMessages[0]} (y ${uniqueMessages.length - 1} más)`;
+			}
+		}
 		if (obj.response?.data?.message) return obj.response.data.message;
 		if (obj.message) return obj.message;
 	}

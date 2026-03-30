@@ -9,6 +9,7 @@ import {
 	obtenerPersonalizacionThunk,
 	actualizarSucursalPrincipalThunk,
 } from '@/store/slices/personalizacion/personalizacionSlice';
+import { setTechnicalReviewsContext } from '@/store/slices/technicalReviews';
 import {
 	useUserBranches,
 	type UserBranch,
@@ -146,6 +147,17 @@ const SelectSucursalEmpresa = () => {
 		setSelectedSucursal(match ?? null);
 	}, [filteredBranches, groupedOptions, preferredBranchId, dispatch]);
 
+	useEffect(() => {
+		if (!selectedSucursal?.meta?.branch) return;
+
+		dispatch(
+			setTechnicalReviewsContext({
+				branchId: selectedSucursal.meta.branch.id,
+				subsidiaryId: selectedSucursal.meta.branch.subsidiaryId ?? null,
+			}),
+		);
+	}, [dispatch, selectedSucursal]);
+
 	const handleChange = useCallback(
 		async (option: BranchOption | null) => {
 			setSelectedSucursal(option);
@@ -154,6 +166,12 @@ const SelectSucursalEmpresa = () => {
 			if (nextBranchId === preferredBranchId || nextBranchId === null) return;
 
 			const nextSubsidiaryId = option?.meta?.branch?.subsidiaryId ?? null;
+			dispatch(
+				setTechnicalReviewsContext({
+					branchId: nextBranchId,
+					subsidiaryId: nextSubsidiaryId,
+				}),
+			);
 
 			try {
 				await dispatch(actualizarSucursalPrincipalThunk(nextBranchId)).unwrap();

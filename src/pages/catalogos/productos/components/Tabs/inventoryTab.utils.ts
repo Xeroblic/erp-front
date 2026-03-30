@@ -106,6 +106,7 @@ export const downloadInventoryCsv = (rows: VisibleInventoryRow[], branchName?: s
 	const headers = [
 		'product_id',
 		'tipo',
+		'serial_tracking',
 		'parent_or_self_id',
 		'sku',
 		'nombre',
@@ -123,6 +124,7 @@ export const downloadInventoryCsv = (rows: VisibleInventoryRow[], branchName?: s
 		[
 			row.id,
 			row.isParent ? 'parent' : 'child',
+			row.product?.serial_tracking ? 'true' : 'false',
 			row.product?.parent_product_id ?? row.product?.id ?? row.id,
 			row.sku,
 			row.name,

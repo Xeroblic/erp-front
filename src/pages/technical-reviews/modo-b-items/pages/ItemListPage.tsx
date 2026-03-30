@@ -24,8 +24,8 @@ import Badge from '@/components/ui/Badge';
 
 const TECHNICAL_REVIEWS_PREFIX = (import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
 const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
-const buildItemsUrl = (branchId: number, suffix = '') =>
-	join(TECHNICAL_REVIEWS_PREFIX, `/branches/${branchId}/technical-reviews${suffix}`);
+const buildItemsUrl = (entityType: 'branches' | 'subsidiaries', entityId: number, suffix = '') =>
+	join(TECHNICAL_REVIEWS_PREFIX, `/${entityType}/${entityId}/technical-reviews${suffix}`);
 
 const EQUIPMENT_FILTER_OPTIONS: TSelectOption[] = [
 	{ value: 'all', label: 'Todos los tipos' },
@@ -63,7 +63,7 @@ const GRADE_OPTIONS: TSelectOption[] = [
 const ItemsListPage: React.FC = () => {
 	const navigate = useNavigate();
 	const dispatch = useAppDispatch();
-	const { branchId } = useCurrentBranch();
+	const { branchId, subsidiaryId } = useCurrentBranch();
 
 	const loading = useAppSelector(selectItemsLoading);
 	const error = useAppSelector(selectItemsError);
@@ -140,11 +140,16 @@ const ItemsListPage: React.FC = () => {
 		customerSupplierFilterOptions.find((opt) => opt.value === customerSupplierFilter) ||
 		customerSupplierFilterOptions[0];
 
-	const subsidiaryId =
+	const effectiveSubsidiaryId =
+		subsidiaryId ??
 		personalizacionUsuario?.subsidiary_id ??
 		currentUser?.subsidiary?.id ??
 		currentUser?.branch?.subsidiary?.id ??
 		null;
+	const endpointEntityType: 'branches' | 'subsidiaries' = effectiveSubsidiaryId
+		? 'subsidiaries'
+		: 'branches';
+	const endpointEntityId = effectiveSubsidiaryId ?? branchId;
 
 	const handleViewItem = (itemId: number) => {
 		navigate(`/technical-reviews/items/${itemId}`);
@@ -179,16 +184,16 @@ const ItemsListPage: React.FC = () => {
 	}, [branchId, dispatch]);
 
 	useEffect(() => {
-		if (subsidiaryId) {
+		if (effectiveSubsidiaryId) {
 			dispatch(
 				fetchCustomerSuppliers({
-					subsidiaryId,
+					subsidiaryId: effectiveSubsidiaryId,
 					with_suppliers: true,
 					per_page: 1000,
 				}),
 			);
 		}
-	}, [subsidiaryId, dispatch]);
+	}, [effectiveSubsidiaryId, dispatch]);
 
 	// Debounce search
 	const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -230,7 +235,7 @@ const ItemsListPage: React.FC = () => {
 
 	const fetchAllForExport = useCallback(
 		async (includeDetails = false): Promise<IItem[]> => {
-			if (!branchId) return [];
+			if (!endpointEntityId) return [];
 			const baseFilters: Record<string, string | number> = {};
 			if (debouncedSearch) baseFilters.search = debouncedSearch;
 			if (equipmentType !== 'all') baseFilters.equipment_type = equipmentType;
@@ -246,7 +251,7 @@ const ItemsListPage: React.FC = () => {
 			const collected: IItem[] = [];
 			do {
 				const response = await ApiService.fetchData<{ data?: any[]; meta?: any }>({
-					url: buildItemsUrl(branchId, '/items'),
+					url: buildItemsUrl(endpointEntityType, endpointEntityId, '/items'),
 					method: 'get',
 					params: {
 						...baseFilters,
@@ -268,7 +273,8 @@ const ItemsListPage: React.FC = () => {
 			return collected;
 		},
 		[
-			branchId,
+			endpointEntityId,
+			endpointEntityType,
 			debouncedSearch,
 			equipmentType,
 			reviewStatus,
@@ -280,14 +286,15 @@ const ItemsListPage: React.FC = () => {
 	);
 
 	useEffect(() => {
-		if (!branchId) return;
+		if (!branchId && !effectiveSubsidiaryId) return;
 		dispatch(
 			fetchItems({
 				branchId,
+				subsidiaryId: effectiveSubsidiaryId,
 				params: queryParams,
 			}),
 		);
-	}, [dispatch, branchId, queryParams]);
+	}, [dispatch, branchId, effectiveSubsidiaryId, queryParams]);
 
 	return (
 		<PageWrapper name='technical-reviews-items' title='Ítems Globales' isProtectedRoute={true}>

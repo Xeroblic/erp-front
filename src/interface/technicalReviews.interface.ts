@@ -305,6 +305,9 @@ export interface TechnicalReviewsState {
 	batchesMeta: ListMeta;
 	selectedBatch: IBatch | null;
 	batchesLoading: boolean;
+	endpointMode: 'subsidiaries' | 'branches';
+	contextBranchId: number | null;
+	contextSubsidiaryId: number | null;
 
 	// Series/Ítems
 	items: IItem[];

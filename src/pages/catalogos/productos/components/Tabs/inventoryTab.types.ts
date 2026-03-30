@@ -3,6 +3,8 @@ import type { IProduct, ProductInventoryCriticalProduct, ProductInventorySummary
 export interface InventoryTabProps {
 	products: IProduct[];
 	meta: ProductListMeta;
+	entityParam?: 'branches' | 'subsidiaries';
+	entityId?: number | null;
 	summary?: ProductInventorySummary;
 	criticalProducts?: ProductInventoryCriticalProduct[];
 	loading?: boolean;

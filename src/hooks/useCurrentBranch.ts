@@ -5,12 +5,17 @@
 import { useMemo } from 'react';
 import { useAppSelector } from '../store';
 import { selectPersonalizacionUsuario } from '../store/slices/personalizacion/personalizacionSlice';
+import { selectEffectiveSubsidiaryId } from '../store/selectors/subsidiarySelectors';
 import type { IUserMe } from '@/interface/user.interface';
 
 interface BranchLike {
 	id?: number | string | null;
 	branch_id?: number | string | null;
 	sucursal_id?: number | string | null;
+	subsidiary?: { id?: number | string | null; subsidiary_id?: number | string | null } | number | string | null;
+	subsidiary_id?: number | string | null;
+	subsidiaryId?: number | string | null;
+	subsidiary_info?: { id?: number | string | null; subsidiary_id?: number | string | null } | null;
 	name?: string | null;
 	branch_name?: string | null;
 	nombre?: string | null;
@@ -24,9 +29,70 @@ interface VisibleBranch {
 
 interface UseCurrentBranchResult {
 	branchId: number | null;
+	subsidiaryId: number | null;
 	hasValidBranch: boolean;
 	visibleBranches: VisibleBranch[];
 }
+
+const normalizeNullableNumber = (value: unknown): number | null => {
+	if (typeof value === 'number' && Number.isFinite(value)) return value;
+	if (typeof value === 'string' && value.trim() !== '') {
+		const parsed = Number.parseInt(value, 10);
+		return Number.isNaN(parsed) ? null : parsed;
+	}
+	return null;
+};
+
+const resolveSubsidiaryFromBranch = (
+	branchId: number | null,
+	user?: UserWithBranches,
+): number | null => {
+	if (!branchId || !user) return null;
+
+	const inspectBranch = (branch: BranchLike | null | undefined): number | null => {
+		if (!branch) return null;
+		const candidateId =
+			normalizeNullableNumber(branch.id) ??
+			normalizeNullableNumber(branch.branch_id) ??
+			normalizeNullableNumber(branch.sucursal_id);
+		if (candidateId !== branchId) return null;
+
+		const subsidiarySource = branch.subsidiary ?? branch.subsidiary_info ?? branch.subsidiaryId;
+		if (typeof subsidiarySource === 'object' && subsidiarySource !== null) {
+			return (
+				normalizeNullableNumber(subsidiarySource.id) ??
+				normalizeNullableNumber(subsidiarySource.subsidiary_id)
+			);
+		}
+
+		return (
+			normalizeNullableNumber(subsidiarySource) ??
+			normalizeNullableNumber(branch.subsidiary_id)
+		);
+	};
+
+	const collections: Array<BranchLike | BranchLike[] | null | undefined> = [
+		user.branch as BranchLike | null | undefined,
+		user.access?.branches,
+		user.visible?.branches,
+	];
+
+	for (const source of collections) {
+		if (!source) continue;
+		if (Array.isArray(source)) {
+			for (const branch of source) {
+				const resolved = inspectBranch(branch);
+				if (resolved !== null) return resolved;
+			}
+			continue;
+		}
+
+		const resolved = inspectBranch(source);
+		if (resolved !== null) return resolved;
+	}
+
+	return null;
+};
 
 const normalizeBranch = (branch: unknown): VisibleBranch | null => {
 	if (!branch || typeof branch !== 'object') return null;
@@ -62,6 +128,7 @@ type UserWithBranches = IUserMe & {
 
 export const useCurrentBranch = (): UseCurrentBranchResult => {
 	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
+	const effectiveSubsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
 	const { user } = useAppSelector(
 		(state) => state.auth as { user?: UserWithBranches | undefined },
 	);
@@ -86,6 +153,14 @@ export const useCurrentBranch = (): UseCurrentBranchResult => {
 		return null;
 	}, [personalizacionUsuario?.sucursal_principal, user?.branch?.id, user?.branch_id]);
 
+	const subsidiaryId = useMemo(() => {
+		if (effectiveSubsidiaryId) {
+			return effectiveSubsidiaryId;
+		}
+
+		return resolveSubsidiaryFromBranch(branchId, user);
+	}, [branchId, effectiveSubsidiaryId, user]);
+
 	const visibleBranches = useMemo<VisibleBranch[]>(() => {
 		const fromAccess = normalizeBranchList(user?.access?.branches);
 		const fromVisible = normalizeBranchList(user?.visible?.branches);
@@ -106,6 +181,7 @@ export const useCurrentBranch = (): UseCurrentBranchResult => {
 
 	return {
 		branchId,
+		subsidiaryId,
 		hasValidBranch: branchId !== null,
 		visibleBranches,
 	};

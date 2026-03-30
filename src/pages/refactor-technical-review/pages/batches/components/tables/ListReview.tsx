@@ -32,6 +32,13 @@ import {
 	extractValue,
 	resolveEquipmentTypeMeta,
 } from '@/pages/refactor-technical-review/components/utils/utilsItems';
+
+const TECHNICAL_REVIEWS_PREFIX =
+	(import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
+const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
+const buildItemsUrl = (entityType: 'branches' | 'subsidiaries', entityId: number, suffix = '') =>
+	join(TECHNICAL_REVIEWS_PREFIX, `/${entityType}/${entityId}/technical-reviews${suffix}`);
+
 interface ListReviewProps {
 	batchId: number;
 	activeTab: EquipmentType | 'all';
@@ -110,12 +117,7 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 			let page = 1;
 			let lastPage = 1;
 			const allItems: IItem[] = [];
-			const baseUrl =
-				(import.meta.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX as string | undefined) ?? '';
-			const url = `${baseUrl}/branches/${branchId}/technical-reviews/items`.replace(
-				/([^:])\/\/+/g,
-				'$1/',
-			);
+			const url = buildItemsUrl('branches', branchId, '/items');
 
 			do {
 				const response = await ApiService.fetchData<{ data?: IItem[]; meta?: ListMeta }>({

@@ -24,8 +24,8 @@ import BulkTransferModal from './BulkTransferModal';
 
 const TECHNICAL_REVIEWS_PREFIX = (import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
 const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
-const buildItemsUrl = (branchId: number, suffix = '') =>
-	join(TECHNICAL_REVIEWS_PREFIX, `/branches/${branchId}/technical-reviews${suffix}`);
+const buildItemsUrl = (entityType: 'branches' | 'subsidiaries', entityId: number, suffix = '') =>
+	join(TECHNICAL_REVIEWS_PREFIX, `/${entityType}/${entityId}/technical-reviews${suffix}`);
 
 const EQUIPMENT_FILTER_OPTIONS: TSelectOption[] = [
 	{ value: 'all', label: 'Todos los tipos' },
@@ -63,7 +63,7 @@ const GRADE_OPTIONS: TSelectOption[] = [
 const RefactorSeries: React.FC = () => {
 	const navigate = useNavigate();
 	const dispatch = useAppDispatch();
-	const { branchId } = useCurrentBranch();
+	const { branchId, subsidiaryId } = useCurrentBranch();
 
 	const loading = useAppSelector(selectItemsLoading);
 	const error = useAppSelector(selectItemsError);
@@ -147,14 +147,19 @@ const RefactorSeries: React.FC = () => {
 		customerSupplierFilterOptions.find((opt) => opt.value === customerSupplierFilter) ||
 		customerSupplierFilterOptions[0];
 
-	const subsidiaryId =
+	const effectiveSubsidiaryId =
+		subsidiaryId ??
 		personalizacionUsuario?.subsidiary_id ??
 		currentUser?.subsidiary?.id ??
 		currentUser?.branch?.subsidiary?.id ??
 		null;
+	const endpointEntityType: 'branches' | 'subsidiaries' = effectiveSubsidiaryId
+		? 'subsidiaries'
+		: 'branches';
+	const endpointEntityId = effectiveSubsidiaryId ?? branchId;
 
 	const effectiveSubsidiaryIdForTransfer = useMemo<number | null>(() => {
-		if (!branchId) return subsidiaryId;
+		if (!branchId) return effectiveSubsidiaryId;
 
 		const visibleBranches = ((currentUser as any)?.visible?.branches ?? []) as ProfileBranch[];
 		const accessBranches = ((currentUser as any)?.access?.branches ?? []) as ProfileBranch[];
@@ -169,8 +174,8 @@ const RefactorSeries: React.FC = () => {
 			return selectedSubsidiaryId;
 		}
 
-		return subsidiaryId;
-	}, [branchId, currentUser, subsidiaryId]);
+		return effectiveSubsidiaryId;
+	}, [branchId, currentUser, effectiveSubsidiaryId]);
 
 	const transferDestinationBranches = useMemo<TSelectOption[]>(() => {
 		const accessBranches = ((currentUser as any)?.access?.branches ?? []) as ProfileBranch[];
@@ -259,16 +264,16 @@ const RefactorSeries: React.FC = () => {
 	}, [branchId, dispatch]);
 
 	useEffect(() => {
-		if (subsidiaryId) {
+		if (effectiveSubsidiaryId) {
 			dispatch(
 				fetchCustomerSuppliers({
-					subsidiaryId,
+					subsidiaryId: effectiveSubsidiaryId,
 					with_suppliers: true,
 					per_page: 1000,
 				}),
 			);
 		}
-	}, [subsidiaryId, dispatch]);
+	}, [effectiveSubsidiaryId, dispatch]);
 
 	// Debounce search
 	const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -310,7 +315,7 @@ const RefactorSeries: React.FC = () => {
 
 	const fetchAllForExport = useCallback(
 		async (includeDetails = false): Promise<IItem[]> => {
-			if (!branchId) return [];
+			if (!endpointEntityId) return [];
 			const baseFilters: Record<string, string | number> = {};
 			if (debouncedSearch) baseFilters.search = debouncedSearch;
 			if (equipmentType !== 'all') baseFilters.equipment_type = equipmentType;
@@ -326,7 +331,7 @@ const RefactorSeries: React.FC = () => {
 			const collected: IItem[] = [];
 			do {
 				const response = await ApiService.fetchData<{ data?: any[]; meta?: any }>({
-					url: buildItemsUrl(branchId, '/items'),
+					url: buildItemsUrl(endpointEntityType, endpointEntityId, '/items'),
 					method: 'get',
 					params: {
 						...baseFilters,
@@ -348,7 +353,8 @@ const RefactorSeries: React.FC = () => {
 			return collected;
 		},
 		[
-			branchId,
+			endpointEntityId,
+			endpointEntityType,
 			debouncedSearch,
 			equipmentType,
 			reviewStatus,
@@ -360,14 +366,15 @@ const RefactorSeries: React.FC = () => {
 	);
 
 	useEffect(() => {
-		if (!branchId) return;
+		if (!branchId && !effectiveSubsidiaryId) return;
 		dispatch(
 			fetchItems({
 				branchId,
+				subsidiaryId: effectiveSubsidiaryId,
 				params: queryParams,
 			}),
 		);
-	}, [dispatch, branchId, queryParams]);
+	}, [dispatch, branchId, effectiveSubsidiaryId, queryParams]);
 
 	const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
 
@@ -398,6 +405,7 @@ const RefactorSeries: React.FC = () => {
 				dispatch(
 					fetchItems({
 						branchId,
+						subsidiaryId: effectiveSubsidiaryId,
 						params: queryParams,
 					}),
 				);
@@ -406,7 +414,7 @@ const RefactorSeries: React.FC = () => {
 				console.error(error);
 			}
 		},
-		[branchId, effectiveSubsidiaryIdForTransfer, dispatch, queryParams],
+		[branchId, effectiveSubsidiaryId, effectiveSubsidiaryIdForTransfer, dispatch, queryParams],
 	);
 
 	return (

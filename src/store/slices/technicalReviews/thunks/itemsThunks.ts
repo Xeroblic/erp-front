@@ -4,17 +4,17 @@
  */
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import ApiService from '@/services/ApiService';
+import type { RootState } from '@/store/rootReducer';
 import type {
 	IItem,
 	FetchItemsParams,
 	EquipmentType,
 } from '../../../../interface/technicalReviews.interface.ts';
-
-// --- Helpers ---
-const TECHNICAL_REVIEWS_PREFIX = (import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
-const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
-const ep = (branchId: number, path: string) =>
-	join(TECHNICAL_REVIEWS_PREFIX, `/branches/${branchId}/technical-reviews${path}`);
+import {
+	buildTechnicalReviewsEndpoint,
+	resolveTechnicalReviewsContext,
+} from '../technicalReviewsContext';
+import { setTechnicalReviewsContext } from '../slice/technicalReviewsSlice';
 
 const normalizeArray = (payload: any): any[] => {
 	const raw = payload?.data ?? payload;
@@ -23,18 +23,22 @@ const normalizeArray = (payload: any): any[] => {
 
 const normalizeObject = (payload: any): any => payload?.data ?? payload ?? null;
 
-/**
- * Listado de Series (vista global)
- * GET /api/branches/{branch}/technical-reviews/items
- */
+
 export const fetchItems = createAsyncThunk<
 	{ items: IItem[]; meta?: any },
-	{ branchId: number; params?: FetchItemsParams },
-	{ rejectValue: string }
->('technicalReviews/fetchItems', async ({ branchId, params }, { rejectWithValue }) => {
+	{ branchId?: number | null; subsidiaryId?: number | null; params?: FetchItemsParams },
+	{ state: RootState; rejectValue: string }
+>('technicalReviews/fetchItems', async ({ branchId, subsidiaryId, params }, { getState, dispatch, rejectWithValue }) => {
 	try {
+		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+		dispatch(
+			setTechnicalReviewsContext({
+				branchId: context.branchId,
+				subsidiaryId: context.subsidiaryId,
+			}),
+		);
 		const response = await ApiService.fetchData<{ data?: any[]; meta?: any }>({
-			url: ep(branchId, '/items'),
+			url: buildTechnicalReviewsEndpoint(context, '/items'),
 			method: 'get',
 			params: {
 				batch_id: params?.batch_id,
@@ -67,12 +71,19 @@ export const fetchItems = createAsyncThunk<
  */
 export const fetchItemDetail = createAsyncThunk<
 	IItem,
-	{ branchId: number; itemId: number },
-	{ rejectValue: string }
->('technicalReviews/fetchItemDetail', async ({ branchId, itemId }, { rejectWithValue }) => {
+	{ branchId?: number | null; subsidiaryId?: number | null; itemId: number },
+	{ state: RootState; rejectValue: string }
+>('technicalReviews/fetchItemDetail', async ({ branchId, subsidiaryId, itemId }, { getState, dispatch, rejectWithValue }) => {
 	try {
+		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+		dispatch(
+			setTechnicalReviewsContext({
+				branchId: context.branchId,
+				subsidiaryId: context.subsidiaryId,
+			}),
+		);
 		const response = await ApiService.fetchData<{ data?: any }>({
-			url: ep(branchId, `/items/${itemId}`),
+			url: buildTechnicalReviewsEndpoint(context, `/items/${itemId}`),
 			method: 'get',
 		});
 
@@ -94,7 +105,8 @@ export const fetchItemDetail = createAsyncThunk<
 export const createItem = createAsyncThunk<
 	IItem,
 	{
-		branchId: number;
+		branchId?: number | null;
+		subsidiaryId?: number | null;
 		data: {
 			batch_id?: number | null;
 			serial_number: string;
@@ -105,11 +117,18 @@ export const createItem = createAsyncThunk<
 			extra_attributes?: Record<string, any>;
 		};
 	},
-	{ rejectValue: string }
->('technicalReviews/createItem', async ({ branchId, data }, { rejectWithValue }) => {
+	{ state: RootState; rejectValue: string }
+>('technicalReviews/createItem', async ({ branchId, subsidiaryId, data }, { getState, dispatch, rejectWithValue }) => {
 	try {
+		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+		dispatch(
+			setTechnicalReviewsContext({
+				branchId: context.branchId,
+				subsidiaryId: context.subsidiaryId,
+			}),
+		);
 		const response = await ApiService.fetchData<{ data?: any }>({
-			url: ep(branchId, '/items'),
+			url: buildTechnicalReviewsEndpoint(context, '/items'),
 			method: 'post',
 			data,
 		});
@@ -129,7 +148,8 @@ export const createItem = createAsyncThunk<
 export const updateItem = createAsyncThunk<
 	IItem,
 	{
-		branchId: number;
+		branchId?: number | null;
+		subsidiaryId?: number | null;
 		itemId: number;
 		data: Partial<{
 			batch_id: number;
@@ -140,11 +160,18 @@ export const updateItem = createAsyncThunk<
 			customer_supplier_id: number | null;
 		}>;
 	},
-	{ rejectValue: string }
->('technicalReviews/updateItem', async ({ branchId, itemId, data }, { rejectWithValue }) => {
+	{ state: RootState; rejectValue: string }
+>('technicalReviews/updateItem', async ({ branchId, subsidiaryId, itemId, data }, { getState, dispatch, rejectWithValue }) => {
 	try {
+		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+		dispatch(
+			setTechnicalReviewsContext({
+				branchId: context.branchId,
+				subsidiaryId: context.subsidiaryId,
+			}),
+		);
 		const response = await ApiService.fetchData<{ data?: any }>({
-			url: ep(branchId, `/items/${itemId}`),
+			url: buildTechnicalReviewsEndpoint(context, `/items/${itemId}`),
 			method: 'patch',
 			data,
 		});
@@ -157,21 +184,26 @@ export const updateItem = createAsyncThunk<
 	}
 });
 
-/**
- * Eliminar serie
- * DELETE /api/branches/{branch}/technical-reviews/items/{item}
- */
+
 export const deleteItem = createAsyncThunk<
 	number,
-	{ branchId: number; itemId: number },
-	{ rejectValue: string }
->('technicalReviews/deleteItem', async ({ branchId, itemId }, { rejectWithValue }) => {
+	{ branchId?: number | null; subsidiaryId?: number | null; itemId: number },
+	{ state: RootState; rejectValue: string }
+>('technicalReviews/deleteItem', async ({ branchId, subsidiaryId, itemId }, { getState, dispatch, rejectWithValue }) => {
 	try {
+
+		const context = resolveTechnicalReviewsContext(getState(), { branchId, subsidiaryId });
+
+		dispatch(
+			setTechnicalReviewsContext({
+				branchId: context.branchId,
+				subsidiaryId: context.subsidiaryId,
+			}),
+		);
 		await ApiService.fetchData({
-			url: ep(branchId, `/items/${itemId}`),
+			url: buildTechnicalReviewsEndpoint(context, `/items/${itemId}`),
 			method: 'delete',
 		});
-
 		return itemId;
 	} catch (error: any) {
 		return rejectWithValue(
