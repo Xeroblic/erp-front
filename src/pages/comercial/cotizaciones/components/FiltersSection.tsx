@@ -25,6 +25,11 @@ export const FiltersSection = ({
 			</CardHeaderChild>
 		</CardHeader>
 		<CardBody>
+			<div className='mb-3'>
+				<p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>
+					Filtros de carga backend
+				</p>
+			</div>
 			<div className='grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4'>
 				<Input
 					name='search'
@@ -59,14 +64,20 @@ export const FiltersSection = ({
 
 				<Input
 					name='customer'
-					placeholder='Cliente...'
-					value={filters.customerId?.toString() || ''}
-					onChange={(e: any) =>
+					placeholder='Cliente o ID cliente...'
+					value={filters.customer || ''}
+					onChange={(e: any) => {
+						const nextValue = e.target.value ?? '';
+						const numericValue = Number(nextValue);
 						setFilters({
 							...filters,
-							customerId: e.target.value ? Number(e.target.value) : undefined,
-						})
-					}
+							customer: nextValue,
+							customerId:
+								nextValue.trim() && Number.isFinite(numericValue) && numericValue > 0
+									? numericValue
+									: undefined,
+						});
+					}}
 				/>
 
 				<div className='flex space-x-2'>
@@ -80,7 +91,13 @@ export const FiltersSection = ({
 			</div>
 
 			{showFilters && (
-				<div className='mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
+				<>
+					<div className='mt-4 mb-3'>
+						<p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>
+							Filtros locales sobre resultados cargados
+						</p>
+					</div>
+					<div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
 					<Input
 						name='dateFrom'
 						type='date'
@@ -99,27 +116,38 @@ export const FiltersSection = ({
 						name='minAmount'
 						type='number'
 						placeholder='Monto mínimo'
-						value={filters.minAmount || ''}
-						onChange={(e: any) =>
+						value={filters.minAmount ?? ''}
+						onChange={(e: any) => {
+							const nextValue = e.target.value ?? '';
+							const numericValue = Number(nextValue);
 							setFilters({
 								...filters,
-								minAmount: e.target.value ? Number(e.target.value) : undefined,
-							})
-						}
+								minAmount:
+									nextValue !== '' && Number.isFinite(numericValue)
+										? numericValue
+										: undefined,
+							});
+						}}
 					/>
 					<Input
 						name='maxAmount'
 						type='number'
 						placeholder='Monto máximo'
-						value={filters.maxAmount || ''}
-						onChange={(e: any) =>
+						value={filters.maxAmount ?? ''}
+						onChange={(e: any) => {
+							const nextValue = e.target.value ?? '';
+							const numericValue = Number(nextValue);
 							setFilters({
 								...filters,
-								maxAmount: e.target.value ? Number(e.target.value) : undefined,
-							})
-						}
+								maxAmount:
+									nextValue !== '' && Number.isFinite(numericValue)
+										? numericValue
+										: undefined,
+							});
+						}}
 					/>
-				</div>
+					</div>
+				</>
 			)}
 		</CardBody>
 	</Card>
