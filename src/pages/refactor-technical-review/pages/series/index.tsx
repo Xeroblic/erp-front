@@ -21,6 +21,7 @@ import { COMMERCIAL_STATUS_FILTER_OPTIONS } from '../../components/constants/sta
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Badge from '@/components/ui/Badge';
 import BulkTransferModal from './BulkTransferModal';
+import Label from '@/components/form/Label';
 
 const TECHNICAL_REVIEWS_PREFIX = (import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
 const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
@@ -126,10 +127,16 @@ const RefactorSeries: React.FC = () => {
 	}, [warehouses]);
 
 	const customerSupplierOptionsMemo = useMemo<TSelectOption[]>(() => {
-		return customerSuppliers.map((cs) => ({
-			value: String(cs.id),
-			label: cs.name || `Cliente/Proveedor #${cs.id}`,
-		}));
+		return customerSuppliers.map((cs) => {
+			const suppliersNames = cs.suppliers?.length 
+				? ` ${cs.suppliers.map(s => s.name).join(', ')}` 
+				: '';
+				
+			return {
+				value: String(cs.id),
+				label: `${cs.name}`.trim() + (suppliersNames ? ' / ' + suppliersNames : '') || `Cliente/Proveedor #${cs.id}`,
+			};
+		});
 	}, [customerSuppliers]);
 
 	const warehouseFilterOptions = useMemo<TSelectOption[]>(() => {
@@ -815,9 +822,9 @@ const RefactorSeries: React.FC = () => {
 								</div>
 
 								<div>
-									<label className='mb-1 block text-xs font-semibold uppercase text-gray-500'>
+									<Label htmlFor='customer-provedor' className='mb-1 block text-xs font-semibold uppercase text-gray-500'>
 										Recepción Cliente/Prov.
-									</label>
+									</Label>
 									<SelectReact
 										name='customer_supplier_id'
 										placeholder='Todos'

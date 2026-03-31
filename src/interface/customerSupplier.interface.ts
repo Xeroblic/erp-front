@@ -1,9 +1,11 @@
 // src/interface/customerSupplier.interface.ts
 
 export interface ISupplierMin {
+	created_at: string;
 	id: number;
 	name: string;
 	subsidiary_id: number;
+	updated_at: string;
 }
 
 export interface ISubsidiaryMin {
