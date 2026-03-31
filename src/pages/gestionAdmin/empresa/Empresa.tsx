@@ -72,12 +72,14 @@ export default function EmpresaDetalle() {
 		onSubmit: async (values) => {
 			console.log('Submitting Empresa:', values);
 			try {
-				const action = await dispatch(
-					updateMiEmpresa({
-						...values,
-						commune_id: values.comuna ? Number(values.comuna) : undefined,
-					}),
-				);
+				// Enviamos todos los datos completos. El error de guardado de correos 
+				// y representantes radica en el validador del Backend (updateMyCompany).
+				const payloadToBackend: any = {
+					...values,
+					commune_id: values.comuna ? Number(values.comuna) : undefined,
+				};
+
+				const action = await dispatch(updateMiEmpresa(payloadToBackend));
 				unwrapResult(action);
 				toast.success('Empresa actualizada correctamente');
 				dispatch(fetchMiEmpresa());
