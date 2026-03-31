@@ -14,6 +14,7 @@ import {
 	type QuoteItemDTO,
 } from '../../../../interface';
 import { normalizeQuoteStatusValue } from '../constants/quoteStatuses';
+import { getCustomerDisplayName } from '../utils/customerDisplay';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import {
@@ -36,6 +37,7 @@ import {
 export interface QuotationsFilters {
 	status?: QuoteStatus;
 	search?: string;
+	customer?: string;
 	dateFrom?: string;
 	dateTo?: string;
 	customerId?: number;
@@ -77,6 +79,7 @@ export interface UseQuotationsManagerReturn {
 const initialFilters: QuotationsFilters = {
 	status: undefined,
 	search: '',
+	customer: '',
 	dateFrom: '',
 	dateTo: '',
 	customerId: undefined,
@@ -135,12 +138,23 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 
 	const filteredQuotations = useMemo(() => {
 		let data = [...quotations];
+		const customerTerm = (filters.customer ?? '').trim().toLowerCase();
+		const customerNumericId = Number(customerTerm);
 
 		if (filters.dateFrom) {
 			data = data.filter((q) => q.quote_date >= filters.dateFrom!);
 		}
 		if (filters.dateTo) {
 			data = data.filter((q) => q.quote_date <= filters.dateTo!);
+		}
+		if (customerTerm) {
+			data = data.filter((q) => {
+				const customerName = getCustomerDisplayName(q.customer).toLowerCase();
+				const matchesId = Number.isFinite(customerNumericId) && customerNumericId > 0
+					? Number(q.customer_id) === customerNumericId
+					: false;
+				return matchesId || customerName.includes(customerTerm);
+			});
 		}
 		if (filters.customerId) {
 			data = data.filter((q) => q.customer_id === filters.customerId);
