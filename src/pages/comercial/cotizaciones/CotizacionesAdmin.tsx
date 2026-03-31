@@ -353,6 +353,7 @@ const CotizacionesAdmin: React.FC = () => {
 						<QuotationsTable
 							data={filteredQuotations}
 							loading={loading}
+							pageSize={itemsPerPage}
 							onEdit={handleEdit}
 							onDelete={handleDeleteClick}
 							onDuplicate={handleDuplicateClick}

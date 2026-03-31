@@ -17,6 +17,7 @@ import Tooltip from '@/components/ui/Tooltip';
 interface QuotationsTableProps {
 	data: IQuote[];
 	loading?: boolean;
+	pageSize?: number;
 	onEdit?: (quotation: IQuote) => void;
 	onDelete?: (id: number) => void;
 	onDuplicate?: (id: number) => void;
@@ -31,6 +32,7 @@ const columnHelper = createColumnHelper<IQuote>();
 const QuotationsTable: React.FC<QuotationsTableProps> = ({
 	data,
 	loading = false,
+	pageSize,
 	onEdit,
 	onDelete,
 	// onDuplicate,
@@ -177,6 +179,7 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 		<DataTable<IQuote>
 			columns={columns}
 			data={data}
+			pageSize={pageSize}
 			initialSortingState={[{ id: 'id', desc: true }]}
 			loading={loading}
 			emptyMessage='No hay cotizaciones'

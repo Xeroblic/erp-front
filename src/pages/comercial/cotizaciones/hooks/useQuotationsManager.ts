@@ -136,6 +136,12 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 		requestQuotes();
 	}, [requestQuotes]);
 
+	useEffect(() => {
+		if (meta.perPage && meta.perPage > 0) {
+			setItemsPerPage(meta.perPage);
+		}
+	}, [meta.perPage]);
+
 	const filteredQuotations = useMemo(() => {
 		let data = [...quotations];
 		const customerTerm = (filters.customer ?? '').trim().toLowerCase();
