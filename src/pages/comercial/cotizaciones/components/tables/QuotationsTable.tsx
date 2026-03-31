@@ -177,6 +177,7 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 		<DataTable<IQuote>
 			columns={columns}
 			data={data}
+			initialSortingState={[{ id: 'id', desc: true }]}
 			loading={loading}
 			emptyMessage='No hay cotizaciones'
 			searchPlaceholder='Buscar cotización...'

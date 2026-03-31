@@ -16,9 +16,13 @@ import type {
 	QuoteStatus,
 	QuoteUpdateDTO,
 } from '@/interface/quotes.interface';
+import { sortBy } from 'lodash';
 
 const buildQuoteUrl = (subsidiaryId: number, suffix = '') =>
 	`/subsidiaries/${subsidiaryId}/quotes${suffix}`;
+
+const sortQuotesByIdDesc = (quotes: Quote[]) =>
+	sortBy(quotes, [(quote) => -(Number(quote.id) || 0)]);
 
 const normalizeListResponse = (payload: any): { quotes: Quote[]; meta: QuoteListMeta } => {
 	const quotes: Quote[] = Array.isArray(payload?.data)
@@ -34,7 +38,7 @@ const normalizeListResponse = (payload: any): { quotes: Quote[]; meta: QuoteList
 		per_page: payload?.meta?.per_page ?? quotes.length,
 		last_page: payload?.meta?.last_page ?? 1,
 	};
-	return { quotes, meta };
+	return { quotes: sortQuotesByIdDesc(quotes), meta };
 };
 
 const extractEntity = <T>(payload: any): T => {
@@ -361,7 +365,7 @@ const cotizacionesSlice = createSlice({
 			})
 			.addCase(fetchQuotes.fulfilled, (state, action) => {
 				state.loadingList = false;
-				state.list = action.payload.quotes;
+				state.list = sortQuotesByIdDesc(action.payload.quotes);
 				state.meta = {
 					total: action.payload.meta.total,
 					currentPage: action.payload.meta.current_page,
@@ -393,7 +397,7 @@ const cotizacionesSlice = createSlice({
 			})
 			.addCase(createQuote.fulfilled, (state, action) => {
 				state.creating = false;
-				state.list = [action.payload, ...state.list];
+				state.list = sortQuotesByIdDesc([...state.list, action.payload]);
 				state.meta.total += 1;
 				toast.success('Cotización creada correctamente');
 			})
@@ -407,9 +411,9 @@ const cotizacionesSlice = createSlice({
 			})
 			.addCase(updateQuote.fulfilled, (state, action) => {
 				state.updating = false;
-				state.list = state.list.map((quote) =>
+				state.list = sortQuotesByIdDesc(state.list.map((quote) =>
 					quote.id === action.payload.id ? action.payload : quote,
-				);
+				));
 				if (state.currentQuote?.id === action.payload.id) {
 					state.currentQuote = action.payload;
 				}
@@ -495,9 +499,9 @@ const cotizacionesSlice = createSlice({
 			})
 			.addCase(convertQuoteToSale.fulfilled, (state, action) => {
 				state.convertLoading = false;
-				state.list = state.list.map((quote) =>
+				state.list = sortQuotesByIdDesc(state.list.map((quote) =>
 					quote.id === action.payload.quote.id ? action.payload.quote : quote,
-				);
+				));
 				if (state.currentQuote?.id === action.payload.quote.id) {
 					state.currentQuote = action.payload.quote;
 				}

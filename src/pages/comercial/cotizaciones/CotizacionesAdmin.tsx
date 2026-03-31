@@ -113,12 +113,6 @@ const CotizacionesAdmin: React.FC = () => {
 		};
 	}, [activeQuoteId, loadQuotationDetails, navigate]);
 
-	// Datos paginados
-	const paginatedQuotations = useMemo(() => {
-		const startIndex = (currentPage - 1) * itemsPerPage;
-		return filteredQuotations.slice(startIndex, startIndex + itemsPerPage);
-	}, [filteredQuotations, currentPage, itemsPerPage]);
-
 	const totalPages = Math.ceil(totalItems / itemsPerPage);
 
 	// Handlers
@@ -357,7 +351,7 @@ const CotizacionesAdmin: React.FC = () => {
 					</CardHeader>
 					<CardBody>
 						<QuotationsTable
-							data={paginatedQuotations}
+							data={filteredQuotations}
 							loading={loading}
 							onEdit={handleEdit}
 							onDelete={handleDeleteClick}
