@@ -23,6 +23,7 @@ export const mapItemToFormItem = (item?: IQuoteItem): FormQuoteItem => {
         unit_price: Number(
             item?.unit_price ?? (item as any)?.unit_price_net ?? (item as any)?.unitPrice ?? 0,
         ),
+        includes_tax: Boolean(item?.metadata?.includes_tax),
         discount_amount: item?.discount_amount ?? null,
         description: item?.description ?? item?.product_detail ?? '',
         type: isProduct ? 'product' : 'custom',
@@ -41,6 +42,10 @@ export const sanitizeItemsForSubmit = (items: FormQuoteItem[]) =>
         .map((item) => {
             const quantity = Number(item.quantity) > 0 ? Number(item.quantity) : 1;
             const isCustom = item.type === 'custom' || !item.product_id;
+            const metadata = {
+                ...(item.metadata || {}),
+                includes_tax: Boolean(item.includes_tax),
+            };
 
             if (isCustom) {
                 const name = (
@@ -62,6 +67,7 @@ export const sanitizeItemsForSubmit = (items: FormQuoteItem[]) =>
                     description: item.description?.trim() || undefined,
                     quantity,
                     unit_price: unitPrice,
+                    metadata,
                     discount_amount: discount > 0 ? discount : undefined,
                 };
             }
@@ -73,6 +79,8 @@ export const sanitizeItemsForSubmit = (items: FormQuoteItem[]) =>
             return {
                 product_id: Number(item.product_id),
                 quantity,
+                description: item.description?.trim() || undefined,
+                metadata,
             };
         })
         .filter(Boolean);

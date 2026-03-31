@@ -31,7 +31,6 @@ import {
 import {
 	sanitizeItemsForSubmit,
 	ensureFormItems,
-	generateCustomerCreationPayload,
 } from '../shared/helpers';
 import GeneralInfoCard from '../shared/components/GeneralInfoCard';
 import PaymentInfoCard from '../shared/components/PaymentInfoCard';
@@ -76,6 +75,7 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 		0;
 
 	const [customerOptions, setCustomerOptions] = React.useState<TSelectOptions>([]);
+	const [customersData, setCustomersData] = React.useState<any[]>([]);
 	const [productOptions, setProductOptions] = React.useState<TSelectOptions>([]);
 	const [saleableProductsMap, setSaleableProductsMap] = React.useState<
 		Record<number, SaleableProduct>
@@ -127,6 +127,7 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 					);
 				}
 
+				setCustomersData(payload);
 				setCustomerOptions(options);
 			} catch (error) {
 				console.error('Error cargando clientes:', error);
@@ -252,6 +253,26 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 		return {
 			subsidiary_id: quotation.subsidiary_id ?? personalizacion?.subsidiary_id ?? 1,
 			customer_id: quotation.customer_id ?? 0,
+			customer_rut:
+				(quotation.customer as any)?.rut ?? (quotation.customer as any)?.document_number ?? '',
+			customer_giro:
+				(quotation.customer as any)?.giro ?? (quotation.customer as any)?.trade_activity ?? '',
+			customer_shipping_address:
+				(quotation.customer as any)?.shipping_address_1 ??
+				(quotation.customer as any)?.address ??
+				'',
+			customer_billing_address:
+				(quotation.customer as any)?.billing_address_1 ??
+				(quotation.customer as any)?.address ??
+				'',
+			customer_contact_name:
+				(quotation.customer as any)?.contact_name ??
+				(quotation.customer as any)?.name ??
+				'',
+			customer_email:
+				(quotation.customer as any)?.email ??
+				(quotation.customer as any)?.primary_contact?.email ??
+				'',
 			quote_date: quotation.quote_date ?? today,
 			expiry_date: quotation.expiry_date ?? quotation.valid_until ?? expiryDate,
 			status: normalizeQuoteStatusValue(quotation.status) as QuoteStatus,
@@ -283,11 +304,26 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 
 	if (!isOpen) return null;
 
-	const handleCustomerCreated = async (customerId: number, customerName: string) => {
+	const handleCustomerCreated = async (
+		customerId: number,
+		customerName: string,
+		customerData?: any,
+	) => {
 		const newOption = {
 			value: String(customerId),
 			label: customerName,
 		};
+		if (customerData) {
+			setCustomersData((prev) => {
+				const exists = prev.some((customer) => Number(customer.id) === Number(customerId));
+				if (exists) {
+					return prev.map((customer) =>
+						Number(customer.id) === Number(customerId) ? { ...customer, ...customerData } : customer,
+					);
+				}
+				return [...prev, customerData];
+			});
+		}
 		setCustomerOptions((prev) => {
 			// Verificar si ya existe para evitar duplicados
 			const exists = prev.find((opt) => opt.value === String(customerId));
@@ -369,6 +405,19 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 									touched={touched}
 									customerOptions={customerOptions}
 									subsidiaryId={subsidiaryId}
+									customersData={customersData}
+									paymentMethodOptions={paymentMethodOptions}
+									paymentTermsOptions={paymentTermsOptions}
+									statusOptions={statusOptions}
+									onCustomerUpdated={(customerId, customerData) => {
+										setCustomersData((prev) =>
+											prev.map((customer) =>
+												Number(customer.id) === Number(customerId)
+													? { ...customer, ...customerData }
+													: customer,
+											),
+										);
+									}}
 									onCustomerCreated={(customerId, customerName) => {
 										handleCustomerCreated(customerId, customerName);
 										// Usar setTimeout para asegurar que el DOM se actualice
@@ -376,16 +425,6 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 											setFieldValue('customer_id', customerId);
 										}, 100);
 									}}
-								/>
-
-								<PaymentInfoCard
-									values={values}
-									setFieldValue={setFieldValue}
-									errors={errors}
-									touched={touched}
-									paymentMethodOptions={paymentMethodOptions}
-									paymentTermsOptions={paymentTermsOptions}
-									statusOptions={statusOptions}
 								/>
 
 								<ItemsListCard
@@ -397,11 +436,20 @@ const EditQuotationModal: React.FC<EditQuotationModalProps> = ({
 									saleableProductsMap={saleableProductsMap}
 								/>
 
-								<TotalsCard
-									values={values}
-									setFieldValue={setFieldValue}
-									IVA_RATE={IVA_RATE}
-								/>
+								<div className='grid grid-cols-1 gap-6 xl:grid-cols-[0.9fr_1.1fr] xl:items-start'>
+									<PaymentInfoCard
+										values={values}
+										setFieldValue={setFieldValue}
+										errors={errors}
+										touched={touched}
+									/>
+
+									<TotalsCard
+										values={values}
+										setFieldValue={setFieldValue}
+										IVA_RATE={IVA_RATE}
+									/>
+								</div>
 							</Form>
 						)}
 					</Formik>

@@ -231,6 +231,7 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 				notes: item.notes ?? undefined,
 				quantity,
 				unit_price: unitPrice,
+				metadata: item.metadata ?? undefined,
 				discount_amount:
 					discountAmount && discountAmount > 0
 						? Number(discountAmount.toFixed(2))

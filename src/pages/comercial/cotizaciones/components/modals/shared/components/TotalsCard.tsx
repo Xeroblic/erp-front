@@ -1,9 +1,11 @@
 import React, { useEffect } from 'react';
 import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
 import Input from '@/components/form/Input';
+import Checkbox from '@/components/form/Checkbox';
 import { FormQuotationValues } from '../types';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
+import { formatCurrency } from '../helpers';
 
 interface TotalsCardProps {
 	values: FormQuotationValues;
@@ -15,6 +17,7 @@ const TotalsCard: React.FC<TotalsCardProps> = ({ values, setFieldValue, IVA_RATE
 	// Calcular totales automáticamente cuando cambien los items o porcentajes
 	useEffect(() => {
 		const items = values.items || [];
+		const ivaMultiplier = IVA_RATE / 100;
 
 		// Calcular subtotal (suma de precio * cantidad de todos los items)
 		const subtotal = items.reduce((sum, item) => {
@@ -27,30 +30,42 @@ const TotalsCard: React.FC<TotalsCardProps> = ({ values, setFieldValue, IVA_RATE
 		const discountPercentage = Number(values.discount_percentage) || 0;
 		const discountAmount = (subtotal * discountPercentage) / 100;
 
-		// Calcular base imponible (subtotal - descuento)
+		// Calcular base neta global (subtotal - descuento)
 		const taxableAmount = subtotal - discountAmount;
+
+		const taxableItemsSubtotal = items.reduce((sum, item) => {
+			if (!item.includes_tax) return sum;
+			const price = Number(item.unit_price) || 0;
+			const quantity = Number(item.quantity) || 0;
+			return sum + price * quantity;
+		}, 0);
+
+		const discountedTaxableItemsAmount =
+			taxableItemsSubtotal - (taxableItemsSubtotal * discountPercentage) / 100;
 
         // Calcular Recargo (Sobre el Neto)
         const surchargePercentage = Number(values.payment_surcharge_percentage) || 0;
         const surchargeAmount = (taxableAmount * surchargePercentage) / 100;
 
-        // Base imponible final (incluyendo recargo para cálculo de IVA)
-        const finalTaxableAmount = taxableAmount + surchargeAmount;
+		const surchargeTaxableAmount =
+			discountedTaxableItemsAmount > 0
+				? (surchargeAmount * discountedTaxableItemsAmount) / taxableAmount
+				: 0;
 
-		// Calcular impuesto (Sobre base final)
-		const taxPercentage = Number(values.tax_percentage) || 0;
-		const taxAmount = (finalTaxableAmount * taxPercentage) / 100;
+		const taxAmount = discountedTaxableItemsAmount * ivaMultiplier + surchargeTaxableAmount * ivaMultiplier;
+		const hasTaxableItems = items.some((item) => Boolean(item.includes_tax));
 
 		// Calcular total
-		const total = finalTaxableAmount + taxAmount;
+		const total = taxableAmount + surchargeAmount + taxAmount;
 
 		// Actualizar valores en el formulario
-		setFieldValue('subtotal_amount', subtotal, false);
+		setFieldValue('subtotal', subtotal, false);
 		setFieldValue('discount_amount', discountAmount, false);
 		setFieldValue('tax_amount', taxAmount, false);
+        setFieldValue('tax_percentage', hasTaxableItems ? IVA_RATE : 0, false);
         setFieldValue('payment_surcharge_amount', surchargeAmount, false);
 		setFieldValue('total_amount', total, false);
-	}, [values.items, values.discount_percentage, values.tax_percentage, values.payment_surcharge_percentage, setFieldValue]);
+	}, [values.items, values.discount_percentage, values.payment_surcharge_percentage, setFieldValue, IVA_RATE]);
 
 	return (
 		<Card
@@ -65,18 +80,16 @@ const TotalsCard: React.FC<TotalsCardProps> = ({ values, setFieldValue, IVA_RATE
 							</span>
 							<span>Resumen</span>
 						</CardTitle>
-						<p className='text-xs text-gray-500 dark:text-gray-300'>
-							Ajusta descuentos y decide si la cotización llevará IVA.
-						</p>
+						<p className='text-xs text-gray-500 dark:text-gray-300'>Ajustes globales y total estimado.</p>
 					</div>
 					<Badge className='rounded-full bg-indigo-50 px-4 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-400/20 dark:text-indigo-100'>
 						Paso 4
 					</Badge>
 				</CardHeaderChild>
 			</CardHeader>
-			<CardBody className='space-y-5 pt-2'>
-				<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-					<div className='rounded-2xl border border-zinc-100 bg-white/80 p-4 shadow-inner dark:border-white/10 dark:bg-white/5 dark:shadow-none'>
+			<CardBody className='space-y-3 pt-2'>
+				<div className='grid grid-cols-1 gap-4 lg:grid-cols-[260px_minmax(0,1fr)]'>
+					<div className='space-y-3'>
 						<p className='mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300'>
 							Descuento Global %
 						</p>
@@ -89,52 +102,74 @@ const TotalsCard: React.FC<TotalsCardProps> = ({ values, setFieldValue, IVA_RATE
 								setFieldValue('discount_percentage', Number(e.target.value))
 							}
 						/>
-					</div>
-
-					<div className='flex flex-col gap-2 rounded-2xl border border-indigo-100/70 bg-indigo-50/40 p-4 shadow-inner dark:border-indigo-400/20 dark:bg-indigo-400/5'>
-						<label className='flex items-center gap-3 text-sm font-semibold text-indigo-900 dark:text-indigo-100'>
-							<input
-								type='checkbox'
-								className='h-4 w-4 rounded border-indigo-200 text-indigo-600 focus:ring-indigo-500'
+						<div className='rounded-2xl border border-indigo-100/70 bg-indigo-50/40 p-3 dark:border-indigo-400/20 dark:bg-indigo-400/5'>
+							<Checkbox
+								name='tax_percentage_toggle'
 								checked={values.tax_percentage === IVA_RATE}
-								onChange={(e) =>
-									setFieldValue('tax_percentage', e.target.checked ? IVA_RATE : 0)
-								}
+								onChange={() => undefined}
+								label='IVA por ítem (19%)'
+								color='indigo'
+								dimension='sm'
+								disabled
 							/>
-							Aplicar IVA (19%)
-						</label>
-						<p className='text-xs text-indigo-900/80 dark:text-indigo-100/80'>
-							Activa esta opción si la cotización debe incluir IVA. Los cálculos
-							finales se realizan automáticamente al guardar la cotización.
-						</p>
+							<p className='text-[11px] text-indigo-900/80 dark:text-indigo-100/80'>
+								El IVA se calcula solo sobre los ítems marcados con `Con IVA`. El reajuste global se sigue aplicando sobre el neto total.
+							</p>
+						</div>
+
+						{values.payment_surcharge_percentage > 0 && (
+							<div className='rounded-2xl border border-orange-100 bg-orange-50/70 p-3 dark:border-orange-400/20 dark:bg-orange-400/5'>
+								<p className='mb-2 text-[11px] font-semibold uppercase tracking-wide text-orange-600 dark:text-orange-300'>
+									Recargo por Método de Pago %
+								</p>
+								<div className='flex flex-col gap-3 sm:flex-row sm:items-center'>
+									<Input
+										name='payment_surcharge_percentage'
+										type='number'
+										placeholder='0'
+										value={values.payment_surcharge_percentage ?? 0}
+										onChange={(e) =>
+											setFieldValue('payment_surcharge_percentage', Number(e.target.value))
+										}
+										className='sm:w-32'
+									/>
+									<div className='text-sm text-orange-700 dark:text-orange-200'>
+										Monto recargo: <strong>{formatCurrency(values.payment_surcharge_amount)}</strong>
+									</div>
+								</div>
+							</div>
+						)}
 					</div>
 
-                    {/* Surcharge Input - Only visible if applicable */}
-                    {values.payment_surcharge_percentage > 0 && (
-                        <div className='col-span-1 md:col-span-2 rounded-2xl border border-orange-100 bg-orange-50/70 p-4 shadow-inner dark:border-orange-400/20 dark:bg-orange-400/5'>
-    						<p className='mb-2 text-[11px] font-semibold uppercase tracking-wide text-orange-600 dark:text-orange-300'>
-    							Recargo por Método de Pago %
-    						</p>
-                            <div className="flex gap-4 items-center">
-        						<Input
-        							name='payment_surcharge_percentage'
-        							type='number'
-        							placeholder='0'
-        							value={values.payment_surcharge_percentage ?? 0}
-        							onChange={(e) =>
-        								setFieldValue('payment_surcharge_percentage', Number(e.target.value))
-        							}
-                                    className="w-32"
-        						/>
-                                <div className="text-sm text-orange-700 dark:text-orange-200">
-                                    Monto recargo: <strong>${Math.round(values.payment_surcharge_amount).toLocaleString()}</strong>
-                                </div>
-                            </div>
-    					</div>
-                    )}
+					<div className='border-t border-zinc-200 pt-2 dark:border-white/10 lg:border-t-0 lg:border-l lg:pl-6'>
+						<div className='space-y-2'>
+							<div className='flex items-center justify-between gap-4 text-sm text-gray-600 dark:text-gray-300'>
+								<span>Subtotal Neto</span>
+								<strong className='text-gray-900 dark:text-white'>{formatCurrency(Number(values.subtotal ?? 0))}</strong>
+							</div>
+							<div className='flex items-center justify-between gap-4 text-sm text-gray-600 dark:text-gray-300'>
+								<span>Descuento Global</span>
+								<strong className='text-gray-900 dark:text-white'>{formatCurrency(Number(values.discount_amount ?? 0))}</strong>
+							</div>
+							<div className='flex items-center justify-between gap-4 text-sm text-gray-600 dark:text-gray-300'>
+								<span>Recargo</span>
+								<strong className='text-gray-900 dark:text-white'>{formatCurrency(Number(values.payment_surcharge_amount ?? 0))}</strong>
+							</div>
+							<div className='flex items-center justify-between gap-4 text-sm text-gray-600 dark:text-gray-300'>
+								<span>IVA</span>
+								<strong className='text-gray-900 dark:text-white'>{formatCurrency(Number(values.tax_amount ?? 0))}</strong>
+							</div>
+							<div className='border-t border-zinc-200 pt-2 dark:border-white/10'>
+								<div className='flex items-center justify-between gap-4 text-base font-semibold text-gray-900 dark:text-white'>
+									<span>Total</span>
+									<span>{formatCurrency(Number(values.total_amount ?? 0))}</span>
+								</div>
+							</div>
+						</div>
+					</div>
 				</div>
 
-				<div className='rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/70 p-4 text-sm text-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-300'>
+				<div className='border-t border-dashed border-zinc-200 pt-3 text-xs text-gray-500 dark:border-white/10 dark:text-gray-300'>
 					Los montos definitivos se recalculan en el backend según los productos
 					seleccionados. Esta sección solo define los ajustes globales.
 				</div>

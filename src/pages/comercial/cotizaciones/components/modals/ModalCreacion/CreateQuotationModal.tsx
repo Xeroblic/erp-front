@@ -66,6 +66,7 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 		0;
 
 	const [customerOptions, setCustomerOptions] = React.useState<TSelectOptions>([]);
+	const [customersData, setCustomersData] = React.useState<any[]>([]);
 	const [productOptions, setProductOptions] = React.useState<TSelectOptions>([]);
 	const [saleableProductsMap, setSaleableProductsMap] = React.useState<
 		Record<number, SaleableProduct>
@@ -90,6 +91,7 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 					label: c.name || c.contact?.name || 'Cliente sin nombre',
 				}));
 
+                setCustomersData(payload);
 				setCustomerOptions(options);
 			} catch (error) {
 				console.error('Error cargando clientes:', error);
@@ -181,6 +183,12 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 			document_type: 'boleta',
 			purchase_order: '',
 			payment_terms: 0,
+			customer_rut: '',
+			customer_giro: '',
+			customer_shipping_address: '',
+			customer_billing_address: '',
+			customer_contact_name: '',
+			customer_email: '',
 			subtotal: 0,
 			discount_amount: 0,
 			discount_percentage: 0,
@@ -339,6 +347,7 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 							const handleCustomerCreated = async (
 								customerId: number,
 								customerName: string,
+								customerData?: any,
 							) => {
 								const newOption = {
 									value: String(customerId),
@@ -347,6 +356,17 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 
 								// Primero actualizar las opciones
 								setCustomerOptions((prev) => [...prev, newOption]);
+								if (customerData) {
+									setCustomersData((prev) => {
+										const exists = prev.some((customer) => Number(customer.id) === Number(customerId));
+										if (exists) {
+											return prev.map((customer) =>
+												Number(customer.id) === Number(customerId) ? { ...customer, ...customerData } : customer,
+											);
+										}
+										return [...prev, customerData];
+									});
+								}
 
 								// Usar setTimeout para asegurar que el DOM se actualice
 								setTimeout(() => {
@@ -362,7 +382,7 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 									id='quotation-form'
 									className='space-y-6'
 									onSubmit={handleSubmit}>
-                                    <PaymentMethodSurchargeHandler values={values} setFieldValue={setFieldValue} />
+									<PaymentMethodSurchargeHandler values={values} setFieldValue={setFieldValue} />
 									<GeneralInfoCard
 										values={values}
 										setFieldValue={setFieldValue}
@@ -371,16 +391,19 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 										customerOptions={customerOptions}
 										onCustomerCreated={handleCustomerCreated}
 										subsidiaryId={subsidiaryId}
-									/>
-
-									<PaymentInfoCard
-										values={values}
-										setFieldValue={setFieldValue}
-										errors={errors}
-										touched={touched}
+										customersData={customersData}
 										paymentMethodOptions={paymentMethodOptions}
 										paymentTermsOptions={paymentTermsOptions}
 										statusOptions={statusOptions}
+										onCustomerUpdated={(customerId, customerData) => {
+											setCustomersData((prev) =>
+												prev.map((customer) =>
+													Number(customer.id) === Number(customerId)
+														? { ...customer, ...customerData }
+														: customer,
+												),
+											);
+										}}
 									/>
 
 									<ItemsListCard
@@ -392,11 +415,20 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 										saleableProductsMap={saleableProductsMap}
 									/>
 
-									<TotalsCard
-										values={values}
-										setFieldValue={setFieldValue}
-										IVA_RATE={IVA_RATE}
-									/>
+									<div className='grid grid-cols-1 gap-6 xl:grid-cols-[0.9fr_1.1fr] xl:items-start'>
+										<PaymentInfoCard
+											values={values}
+											setFieldValue={setFieldValue}
+											errors={errors}
+											touched={touched}
+										/>
+
+										<TotalsCard
+											values={values}
+											setFieldValue={setFieldValue}
+											IVA_RATE={IVA_RATE}
+										/>
+									</div>
 								</Form>
 							);
 						}}

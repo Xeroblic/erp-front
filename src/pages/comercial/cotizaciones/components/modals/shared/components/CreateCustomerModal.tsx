@@ -24,7 +24,7 @@ interface CreateCustomerModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	subsidiaryId: number;
-	onCustomerCreated: (customerId: number, customerName: string) => void;
+	onCustomerCreated: (customerId: number, customerName: string, customerData?: any) => void;
 }
 
 const validationSchema = Yup.object({
@@ -120,7 +120,7 @@ const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
 
 				toast.success(`Cliente ${customerName} creado exitosamente`);
 
-				await onCustomerCreated(createdCustomer.id, customerName);
+				await onCustomerCreated(createdCustomer.id, customerName, createdCustomer);
 
 				await new Promise((resolve) => setTimeout(resolve, 500));
 
