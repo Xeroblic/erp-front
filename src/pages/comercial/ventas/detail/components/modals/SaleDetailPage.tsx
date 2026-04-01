@@ -254,12 +254,12 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 			const res = await dispatch(
 				closeSaleThunk({ subsidiaryId, saleId, items: [] }),
 			).unwrap();
-			// If success, toast is handled by slice (usually).
+
 			dispatch(loadSaleDetail({ subsidiaryId, saleId }));
 			dispatch(loadSaleItems({ subsidiaryId, saleId }));
 			toast.success('Venta cerrada correctamente');
 		} catch (err) {
-			// If it fails (e.g. backend says we DO need serials), fallback to modal
+
 			console.error('Direct close failed', err);
 			toast.info('Se requiere ingresar números de serie. Abriendo formulario...');
 			setCloseOpen(true);
