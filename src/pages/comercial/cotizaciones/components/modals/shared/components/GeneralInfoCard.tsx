@@ -56,6 +56,16 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 	const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
 	const [isSavingCustomer, setIsSavingCustomer] = React.useState(false);
 	const [isLoadingCustomerDetail, setIsLoadingCustomerDetail] = React.useState(false);
+	const selectMenuProps = React.useMemo(
+		() => ({
+			menuPortalTarget: typeof document !== 'undefined' ? document.body : null,
+			menuPosition: 'fixed' as const,
+			styles: {
+				menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
+			},
+		}),
+		[],
+	);
 
 	const selectedCustomer = customersData?.find((c) => Number(c.id) === Number(values.customer_id));
 	const customerRut = getCustomerField(selectedCustomer, [
@@ -282,10 +292,7 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 											isValid={!errors.customer_id}
 											isTouched={touched.customer_id}
 											invalidFeedback={errors.customer_id}
-											menuPortalTarget={document.body}
-											styles={{
-												menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-											}}
+											{...selectMenuProps}
 										/>
 									</div>
 									<Button
@@ -444,6 +451,7 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 											setFieldValue('payment_method', selectedOption.value || null);
 										}
 									}}
+									{...selectMenuProps}
 									isValid={!errors.payment_method}
 									isTouched={touched.payment_method}
 									invalidFeedback={errors.payment_method}
@@ -465,6 +473,7 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 											setFieldValue('payment_terms', Number(selectedOption.value) || 0);
 										}
 									}}
+									{...selectMenuProps}
 									isValid={!errors.payment_terms}
 									isTouched={touched.payment_terms}
 									invalidFeedback={errors.payment_terms}
@@ -496,6 +505,7 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 											setFieldValue('document_type', selectedOption.value || '');
 										}
 									}}
+									{...selectMenuProps}
 								/>
 							</div>
 
@@ -512,6 +522,7 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 											setFieldValue('status', selectedOption.value as QuoteStatus);
 										}
 									}}
+									{...selectMenuProps}
 								/>
 							</div>
 							<div className='md:col-span-2 rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/70 p-4 text-xs text-zinc-500 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300'>

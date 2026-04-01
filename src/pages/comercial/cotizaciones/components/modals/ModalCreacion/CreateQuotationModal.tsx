@@ -436,9 +436,9 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 				</ModalBody>
 
 				<ModalFooter>
-					<ModalFooterChild>
+					<ModalFooterChild className='flex gap-2'>
 						<Button
-							variant='outline'
+							variant='solid'
 							color='red'
 							className='bg-red-400/20'
 							onClick={onClose}
@@ -446,7 +446,7 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 							Cancelar
 						</Button>
 						<Button
-							variant='outline'
+							variant='solid'
 							color='emerald'
 							className='bg-emerald-400/30'
 							onClick={() =>
