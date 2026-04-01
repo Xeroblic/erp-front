@@ -490,14 +490,14 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 							String(detail?.status) !== 'closed' && (
 								<Button
 									variant='solid'
-									color='emerald'
+									color='red'
 									className='mr-2'
 									onClick={handleCloseSale}>
 									Cerrar venta
 								</Button>
 							)}
 						<Button
-							variant={effectiveQuoteId ? 'solid' : 'outline'}
+							variant={effectiveQuoteId ? 'solid' : 'solid'}
 							color={effectiveQuoteId ? 'rose' : 'violet'}
 							className={quoteButtonClass}
 							onClick={quoteButtonHandler}

@@ -56,6 +56,7 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({
 	const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
 	const [isSavingCustomer, setIsSavingCustomer] = React.useState(false);
 	const [isLoadingCustomerDetail, setIsLoadingCustomerDetail] = React.useState(false);
+	
 	const selectMenuProps = React.useMemo(
 		() => ({
 			menuPortalTarget: typeof document !== 'undefined' ? document.body : null,
