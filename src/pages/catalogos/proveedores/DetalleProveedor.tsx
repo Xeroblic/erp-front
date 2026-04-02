@@ -20,7 +20,7 @@ import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/per
 import { useSupplierCustomers } from './components/hooks/useSupplierCustomers';
 import type { ISupplier } from '@/interface/supplier.interface';
 import { formatDate } from './components/utils';
-import { useUserBranches } from '@/pages/catalogos/productos/components/modals/hooks/userBranch';
+import { useUserBranches } from '@/hooks/permiso/userBranch';
 
 interface ISupplierExtended extends ISupplier {
 	customers_count?: number;

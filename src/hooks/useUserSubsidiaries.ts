@@ -1,6 +1,28 @@
 import { useEffect, useState, useCallback } from 'react';
 import ApiService from '@/services/ApiService';
+import type { IUserMe } from '@/interface/user.interface';
 import { useAppSelector } from '@/store';
+import type { AuthorizationSubsidiaryRef } from '@/types/authorization';
+
+type ApiEnvelope<T> = {
+	data?: T | { data?: T };
+};
+
+type ApiError = {
+	message?: string;
+	response?: {
+		status?: number;
+		data?: {
+			message?: string;
+		};
+	};
+};
+
+type UserWithBranches = IUserMe & {
+	pk?: number;
+	branches?: Array<IUserMe['branch']>;
+	subsidiary_id?: number | null;
+};
 
 export interface UserSubsidiary {
 	id: number;
@@ -20,17 +42,69 @@ interface UseUserSubsidiariesReturn extends UseUserSubsidiariesState {
 	clearError: () => void;
 }
 
+const unwrapApiData = <T,>(response: ApiEnvelope<T> | undefined): T | null => {
+	if (!response?.data) return null;
+	if (typeof response.data === 'object' && response.data !== null && 'data' in response.data) {
+		return (response.data as { data?: T }).data ?? null;
+	}
+	return response.data as T;
+};
+
+const normalizeCompanyData = (subsidiary: AuthorizationSubsidiaryRef | IUserMe['subsidiary']) => {
+	const company =
+		typeof subsidiary === 'object' && subsidiary !== null && 'company' in subsidiary
+			? subsidiary.company ?? null
+			: null;
+
+	return {
+		companyId: company?.id ?? null,
+		companyName: company?.name ?? null,
+	};
+};
+
+const normalizeSubsidiaryList = (
+	subsidiaries: Array<AuthorizationSubsidiaryRef | IUserMe['subsidiary'] | null | undefined>,
+): UserSubsidiary[] => {
+	const map = new Map<number, UserSubsidiary>();
+
+	subsidiaries.forEach((subsidiary) => {
+		if (!subsidiary?.id) return;
+		if (map.has(subsidiary.id)) return;
+
+		const { companyId, companyName } = normalizeCompanyData(subsidiary);
+		map.set(subsidiary.id, {
+			id: subsidiary.id,
+			name: subsidiary.name,
+			companyId,
+			companyName,
+		});
+	});
+
+	return Array.from(map.values());
+};
+
+const getSubsidiariesFromUser = (user: UserWithBranches | null | undefined): UserSubsidiary[] => {
+	if (!user) return [];
+
+	const candidates: Array<AuthorizationSubsidiaryRef | IUserMe['subsidiary'] | null | undefined> = [
+		...(user.access?.subsidiaries ?? []),
+		...(user.visible?.subsidiaries ?? []),
+		user.subsidiary,
+		user.branch?.subsidiary,
+	];
+
+	return normalizeSubsidiaryList(candidates);
+};
+
 export const useUserSubsidiaries = (
 	userId?: number,
 	options: { fetchOnMount?: boolean; enabled?: boolean } = {},
 ): UseUserSubsidiariesReturn => {
 	const { fetchOnMount = true, enabled = !!userId } = options;
 
-	const currentUserId = useAppSelector(
-		(s) => s.auth.user?.id ?? (s.auth.user as any)?.pk ?? undefined,
-	);
-	const permisos = useAppSelector((s) => s.auth.permisos ?? []);
-	const authUser = useAppSelector((s) => s.auth.user as any);
+	const authUser = useAppSelector((s) => s.auth.user as UserWithBranches | undefined);
+	const currentUserId = useAppSelector((s) => s.auth.user?.id ?? authUser?.pk ?? undefined);
+	const permisos = useAppSelector((s) => s.auth.user?.permisos ?? []);
 
 	const [state, setState] = useState<UseUserSubsidiariesState>({
 		subsidiaries: [],
@@ -51,161 +125,47 @@ export const useUserSubsidiaries = (
 			const canViewUser = Array.isArray(permisos) && permisos.includes('view-user');
 
 			if (isSelf || !canViewUser) {
-				if (authUser) {
-					const meData = authUser;
-					const acc = meData?.access?.subsidiaries ?? [];
-					const vis = meData?.visible?.subsidiaries ?? [];
-					const map = new Map<number, any>();
-					[...acc, ...vis].forEach((s: any) => {
-						if (s?.id && !map.has(s.id)) map.set(s.id, s);
-					});
-					let raw: any[] = Array.from(map.values());
-
-					if ((!Array.isArray(raw) || raw.length === 0) && meData?.branch?.subsidiary) {
-						const sb = meData.branch.subsidiary;
-						if (sb?.id) raw = [sb];
-					}
-
-					if (Array.isArray(raw) && raw.length) {
-						const normalized: UserSubsidiary[] = raw.map((s: any) => {
-							const company = s?.company ?? s?.company_info ?? null;
-							const companyId =
-								typeof company === 'object'
-									? (company?.id ?? null)
-									: typeof company === 'number'
-										? company
-										: null;
-							const companyName =
-								typeof company === 'object'
-									? (company?.name ?? company?.company_name ?? null)
-									: (s?.company_name ?? null);
-							return {
-								id: s.id,
-								name: s.name ?? s.subsidiary_name ?? `Subsidiary ${s.id}`,
-								companyId,
-								companyName,
-							};
-						});
-						setState({ subsidiaries: normalized, loading: false, error: null });
-						return;
-					}
+				const normalizedFromAuth = getSubsidiariesFromUser(authUser);
+				if (normalizedFromAuth.length > 0) {
+					setState({ subsidiaries: normalizedFromAuth, loading: false, error: null });
+					return;
 				}
 
 				// Fallback: llamar /perfil
-				const meResp = await ApiService.fetchData({ url: '/perfil', method: 'get' });
-				const meData = (meResp as any)?.data?.data ?? (meResp as any)?.data ?? {};
-				const acc = meData?.access?.subsidiaries ?? [];
-				const vis = meData?.visible?.subsidiaries ?? [];
-				const map = new Map<number, any>();
-				[...acc, ...vis].forEach((s: any) => {
-					if (s?.id && !map.has(s.id)) map.set(s.id, s);
+				const meResp = await ApiService.fetchData<UserWithBranches>({
+					url: '/perfil',
+					method: 'get',
 				});
-				let rawSubs: any[] = Array.from(map.values());
-				if (
-					(!Array.isArray(rawSubs) || rawSubs.length === 0) &&
-					meData?.branch?.subsidiary
-				) {
-					const sb = meData.branch.subsidiary;
-					if (sb?.id) rawSubs = [sb];
-				}
-
-				const normalized = rawSubs.map((s: any) => {
-					const company = s?.company ?? null;
-					const companyId =
-						typeof company === 'object'
-							? (company?.id ?? null)
-							: typeof company === 'number'
-								? company
-								: null;
-					const companyName =
-						typeof company === 'object'
-							? (company?.name ?? company?.company_name ?? null)
-							: (s?.company_name ?? null);
-					return {
-						id: s.id,
-						name: s.name ?? s.subsidiary_name ?? `Subsidiary ${s.id}`,
-						companyId,
-						companyName,
-					};
-				});
+				const meData = unwrapApiData<UserWithBranches>(meResp) ?? undefined;
+				const normalized = getSubsidiariesFromUser(meData);
 
 				setState({ subsidiaries: normalized, loading: false, error: null });
 				return;
 			}
 
 			// Petición al endpoint de usuario con includes
-			const resp = await ApiService.fetchData({
+			const resp = await ApiService.fetchData<UserWithBranches>({
 				url: `/users/${userId}?include=access`,
 				method: 'get',
 			});
-			const userData = (resp as any).data?.data ?? (resp as any).data ?? {};
-			const accessSubs = userData?.access?.subsidiaries ?? [];
-			const visibleSubs = userData?.visible?.subsidiaries ?? [];
-			const primarySub = userData?.subsidiary ?? null;
-
-			const merged = new Map<number, any>();
-			[...accessSubs, ...visibleSubs].forEach((s: any) => {
-				if (s?.id && !merged.has(s.id)) merged.set(s.id, s);
-			});
-			if (primarySub?.id && !merged.has(primarySub.id)) merged.set(primarySub.id, primarySub);
-			const raw = Array.from(merged.values());
-
-			const normalizedSubs: UserSubsidiary[] = raw.map((s: any) => {
-				const company = s?.company ?? null;
-				const companyId =
-					typeof company === 'object'
-						? (company?.id ?? null)
-						: typeof company === 'number'
-							? company
-							: null;
-				const companyName =
-					typeof company === 'object'
-						? (company?.name ?? company?.company_name ?? null)
-						: (s?.company_name ?? null);
-				return {
-					id: s.id,
-					name: s.name ?? s.subsidiary_name ?? `Subsidiary ${s.id}`,
-					companyId,
-					companyName,
-				};
-			});
+			const userData = unwrapApiData<UserWithBranches>(resp) ?? undefined;
+			const normalizedSubs = getSubsidiariesFromUser(userData);
 
 			setState({ subsidiaries: normalizedSubs, loading: false, error: null });
-		} catch (error: any) {
-			const status = error?.response?.status;
+		} catch (error: unknown) {
+			const typedError = error as ApiError;
+			const status = typedError?.response?.status;
 			const isForbidden = status === 403;
 			const isSelfRequest = currentUserId && Number(currentUserId) === Number(userId);
 
 			if (isForbidden && isSelfRequest) {
 				try {
-					const meResp = await ApiService.fetchData({ url: '/perfil', method: 'get' });
-					const meData = (meResp as any)?.data?.data ?? (meResp as any)?.data ?? {};
-					const acc = meData?.access?.subsidiaries ?? [];
-					const vis = meData?.visible?.subsidiaries ?? [];
-					const map = new Map<number, any>();
-					[...acc, ...vis].forEach((s: any) => {
-						if (s?.id && !map.has(s.id)) map.set(s.id, s);
+					const meResp = await ApiService.fetchData<UserWithBranches>({
+						url: '/perfil',
+						method: 'get',
 					});
-					const rawSubs = Array.from(map.values());
-					const normalized = rawSubs.map((s: any) => {
-						const company = s?.company ?? null;
-						const companyId =
-							typeof company === 'object'
-								? (company?.id ?? null)
-								: typeof company === 'number'
-									? company
-									: null;
-						const companyName =
-							typeof company === 'object'
-								? (company?.name ?? company?.company_name ?? null)
-								: (s?.company_name ?? null);
-						return {
-							id: s.id,
-							name: s.name ?? s.subsidiary_name ?? `Subsidiary ${s.id}`,
-							companyId,
-							companyName,
-						};
-					});
+					const meData = unwrapApiData<UserWithBranches>(meResp) ?? undefined;
+					const normalized = getSubsidiariesFromUser(meData);
 					setState({ subsidiaries: normalized, loading: false, error: null });
 					return;
 				} catch (_e) {
@@ -214,11 +174,11 @@ export const useUserSubsidiaries = (
 			}
 
 			const message =
-				error?.response?.data?.message ||
-				error?.message ||
+				typedError?.response?.data?.message ||
+				typedError?.message ||
 				'Error al obtener subsidiarias del usuario';
 			setState({ subsidiaries: [], loading: false, error: message });
-			console.error('[useUserSubsidiaries] Error:', message, error);
+			console.error('[useUserSubsidiaries] Error:', message, typedError);
 		}
 	}, [userId, enabled, currentUserId, permisos, authUser]);
 

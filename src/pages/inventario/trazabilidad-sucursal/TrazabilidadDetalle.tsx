@@ -15,8 +15,7 @@ import {
 } from '@/store/slices/inventory/inventorySlice';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useUserBranches } from '@/hooks/userBrandBranch';
-import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/personalizacionSlice';
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 
 type MovementTypeConfig = {
 	label: string;
@@ -70,49 +69,11 @@ const TrazabilidadDetalle = () => {
 	const detalleMovimiento = useAppSelector((state) => state.inventario.detalleMovimientoSucursal);
 	const loading = useAppSelector(selectInventarioLoading);
 	const error = useAppSelector(selectInventarioError);
-	const currentUser = useAppSelector((state) => state.auth.user);
-	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
+	const { branchId: currentBranchId } = useCurrentBranch();
 
 	const [hasFetched, setHasFetched] = useState(false);
 
-	const userId = currentUser?.id ?? (currentUser as any)?.pk ?? undefined;
-	const { branches } = useUserBranches(userId, { enabled: Boolean(userId) });
-
-	const preferredBranchId = useMemo(() => {
-		if (personalizacionUsuario?.sucursal_principal)
-			return personalizacionUsuario.sucursal_principal;
-		if (currentUser?.branch?.id) return currentUser.branch.id;
-		if (currentUser?.branch_id) return currentUser.branch_id;
-		return null;
-	}, [
-		personalizacionUsuario?.sucursal_principal,
-		currentUser?.branch?.id,
-		currentUser?.branch_id,
-	]);
-
-	const [branchId, setBranchId] = useState<number | null>(preferredBranchId);
-
-	useEffect(() => {
-		if (branchId === null && preferredBranchId) {
-			setBranchId(preferredBranchId);
-		}
-	}, [preferredBranchId, branchId]);
-
-	useEffect(() => {
-		const handleExternalBranchChange = (event: Event) => {
-			const customEvent = event as CustomEvent<{
-				branchId: number | null;
-				subsidiaryId?: number | null;
-			}>;
-			const { detail } = customEvent;
-			const nextBranchId = detail?.branchId ?? null;
-			if (nextBranchId === null) return;
-			setBranchId(nextBranchId);
-		};
-
-		window.addEventListener('user-branch-changed', handleExternalBranchChange);
-		return () => window.removeEventListener('user-branch-changed', handleExternalBranchChange);
-	}, []);
+	const branchId = currentBranchId;
 
 	useEffect(() => {
 		if (branchId && id && !hasFetched) {

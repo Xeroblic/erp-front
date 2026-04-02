@@ -10,8 +10,8 @@ import {
 	IInventoryFilters,
 	FetchMovimientosParams,
 } from '@/store/slices/inventory/inventorySlice';
-import { useUserBranches } from '@/hooks/userBrandBranch';
-import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/personalizacionSlice';
+import { useUserBranches } from '@/hooks/permiso/userBranch';
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 
 type FetchStatus = 'idle' | 'loading' | 'loading-more' | 'success' | 'timeout' | 'error';
 
@@ -33,7 +33,7 @@ export function useTrazabilidadMovimientos(options: UseTrazabilidadMovimientosOp
 	const loading = useAppSelector(selectInventarioLoading);
 	const error = useAppSelector(selectInventarioError);
 	const currentUser = useAppSelector((state) => state.auth.user);
-	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
+	const { branchId } = useCurrentBranch();
 	
 	// Estados locales
 	const [fetchStatus, setFetchStatus] = useState<FetchStatus>('idle');
@@ -49,21 +49,6 @@ export function useTrazabilidadMovimientos(options: UseTrazabilidadMovimientosOp
 	// Obtener userId y branches
 	const userId = currentUser?.id ?? (currentUser as any)?.pk ?? undefined;
 	const { branches, loading: branchesLoading } = useUserBranches(userId, { enabled: Boolean(userId) });
-	
-	// Calcular branchId preferido
-	const preferredBranchId = useMemo(() => {
-		if (personalizacionUsuario?.sucursal_principal)
-			return personalizacionUsuario.sucursal_principal;
-		if (currentUser?.branch?.id) return currentUser.branch.id;
-		if (currentUser?.branch_id) return currentUser.branch_id;
-		return null;
-	}, [
-		personalizacionUsuario?.sucursal_principal,
-		currentUser?.branch?.id,
-		currentUser?.branch_id,
-	]);
-	
-	const [branchId, setBranchId] = useState<number | null>(preferredBranchId);
 	
 	// Nombre de la sucursal actual
 	const currentBranchName = useMemo(() => {
@@ -81,32 +66,10 @@ export function useTrazabilidadMovimientos(options: UseTrazabilidadMovimientosOp
 		};
 	}, [dispatch]);
 	
-	// Actualizar branchId cuando cambie el preferido inicial
 	useEffect(() => {
-		if (branchId === null && preferredBranchId) {
-			setBranchId(preferredBranchId);
-		}
-	}, [preferredBranchId, branchId]);
-	
-	// Escuchar cambios externos de branch
-	useEffect(() => {
-		const handleExternalBranchChange = (event: Event) => {
-			const customEvent = event as CustomEvent<{
-				branchId: number | null;
-				subsidiaryId?: number | null;
-			}>;
-			const { detail } = customEvent;
-			const nextBranchId = detail?.branchId ?? null;
-			if (nextBranchId === null || nextBranchId === branchId) return;
-			
-			fetchedBranchRef.current = null;
-			setFetchStatus('idle');
-			setHasFetched(false);
-			setBranchId(nextBranchId);
-		};
-		
-		window.addEventListener('user-branch-changed', handleExternalBranchChange);
-		return () => window.removeEventListener('user-branch-changed', handleExternalBranchChange);
+		fetchedBranchRef.current = null;
+		setFetchStatus('idle');
+		setHasFetched(false);
 	}, [branchId]);
 	
 	// Función para hacer fetch
@@ -238,7 +201,6 @@ export function useTrazabilidadMovimientos(options: UseTrazabilidadMovimientosOp
 		currentBranchName,
 		branches,
 		branchesLoading,
-		setBranchId,
 		
 		// Status
 		fetchStatus,

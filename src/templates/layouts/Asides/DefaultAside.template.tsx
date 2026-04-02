@@ -8,7 +8,11 @@ import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelecto
 import AsideHeadPart from './_parts/AsideHead.part';
 import AsideFooterPart from './_parts/AsideFooter.part';
 import Pages from '@/config/pages.config';
-import useAuthority from '@/hooks/useAuthority';
+import useAuthorization from '@/hooks/useAuthorization';
+import type { IUserMe } from '@/interface/user.interface';
+
+const EMPTY_ROLES: string[] = [];
+const EMPTY_AUTHORITY: string[] = [];
 
 type AuthorityGuardProps = PropsWithChildren<{
 	userAuthority?: string[];
@@ -23,10 +27,10 @@ type AuthorityGuardProps = PropsWithChildren<{
 
 const AuthorityCheckNav = (props: AuthorityGuardProps) => {
 	const {
-		userAuthority = [],
-		authority = [],
+		userAuthority,
+		authority,
 		requireAll = false,
-		roles = [],
+		roles,
 		requireAllRoles = false,
 		companyId,
 		subsidiaryId,
@@ -35,29 +39,38 @@ const AuthorityCheckNav = (props: AuthorityGuardProps) => {
 	} = props;
 
 	const user = useAppSelector((s) => s.auth.user);
-	const userRoles = useAppSelector((s) => s.auth.user?.roles) || [];
+	const safeUserAuthority = userAuthority ?? EMPTY_AUTHORITY;
+	const safeAuthority = authority ?? EMPTY_AUTHORITY;
+	const safeRoles = roles ?? EMPTY_ROLES;
+	const { isSuperAdmin, authorize, roles: authorizationRoles } = useAuthorization();
 
-	// hooks siempre arriba (no condicionales)
-	const permissionMatched = useAuthority(userAuthority, authority || [], requireAll, true);
-	const roleMatched = useAuthority(userRoles, roles || [], requireAllRoles, true);
+	const permissionMatched =
+		safeAuthority.length === 0
+			? true
+			: authorize({ permissions: safeAuthority, requireAll });
+	const roleMatched =
+		safeRoles.length === 0
+			? true
+			: authorize({ roles: safeRoles, requireAll: requireAllRoles });
 
 	// Super admin siempre pasa
 	if (
-		user?.roles?.includes('super-admin') ||
+		isSuperAdmin ||
+		authorizationRoles.includes('super-admin') ||
 		user?.authority?.includes('super-admin') ||
-		userAuthority?.includes('super-admin')
+		safeUserAuthority.includes('super-admin')
 	) {
 		return <>{children}</>;
 	}
 
 	// Sin autoridad ni roles → público dentro del aside
-	if ((!authority || authority.length === 0) && (!roles || roles.length === 0)) {
+	if (safeAuthority.length === 0 && safeRoles.length === 0) {
 		return <>{children}</>;
 	}
 
 	// Debe cumplir permiso + rol
 	if (!permissionMatched) return null;
-	if (roles.length && !roleMatched) return null;
+	if (safeRoles.length && !roleMatched) return null;
 
 	// Validación con contexto (empresa / subempresa / sucursal)
 	if (companyId || subsidiaryId || branchId) {
@@ -69,7 +82,7 @@ const AuthorityCheckNav = (props: AuthorityGuardProps) => {
 };
 
 function checkNavContextualAccess(
-	user: any,
+	user: IUserMe | null | undefined,
 	companyId?: number,
 	subsidiaryId?: number,
 	branchId?: number,
@@ -86,9 +99,9 @@ function checkNavContextualAccess(
 }
 
 const DefaultAsideTemplate = () => {
-	const userAuthority = useAppSelector((s) => s.auth.permisos);
+	const userAuthority = useAppSelector((s) => s.auth.user?.permisos) ?? EMPTY_AUTHORITY;
 	const user = useAppSelector((s) => s.auth.user);
-	const userRoles = user?.roles || [];
+	const userRoles = user?.roles ?? EMPTY_ROLES;
 	const effectiveSubsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
 	const navigate = useNavigate();
 

@@ -1,6 +1,7 @@
 // src/components/authorization/PermissionGuard.tsx
 import React, { PropsWithChildren } from 'react';
-import useCan from '@/hooks/useCan';
+import useAuthorization from '@/hooks/useAuthorization';
+import type { AuthorizationScopeMode } from '@/types/authorization';
 
 export interface PermissionGuardProps extends PropsWithChildren {
 	/** Permiso único o array de permisos requeridos */
@@ -9,12 +10,20 @@ export interface PermissionGuardProps extends PropsWithChildren {
 	role?: string | string[];
 	/** Si true, requiere TODOS los permisos/roles. Si false (default), requiere al menos uno */
 	requireAll?: boolean;
+	/** ID de la sucursal (branch) a validar en el scope contextual */
+	branchId?: number | null;
+	/** ID de la subsidiaria a validar en el scope contextual */
+	subsidiaryId?: number | null;
+	/** ID de la empresa a validar en el scope contextual */
+	companyId?: number | null;
+	/** Modo de scope: 'none' (sin validación geográfica), 'visible', 'access', 'both' */
+	scope?: AuthorizationScopeMode;
 	/** Componente alternativo a mostrar si no tiene permisos */
 	fallback?: React.ReactNode;
 }
 
 /**
- * Wrapper declarativo para control de permisos.
+ * Wrapper declarativo para control de permisos con soporte de scope contextual.
  * Si el usuario no tiene los permisos/roles requeridos, retorna null (o fallback).
  * Super-admin SIEMPRE tiene acceso.
  *
@@ -25,14 +34,14 @@ export interface PermissionGuardProps extends PropsWithChildren {
  * </PermissionGuard>
  *
  * @example
- * // Múltiples permisos (OR por defecto)
- * <PermissionGuard permission={['edit-sale', 'manage-sales']}>
- *   <Button>Editar</Button>
+ * // Permiso con validación de acceso por sucursal
+ * <PermissionGuard permission="create-product" branchId={currentBranchId} scope="access">
+ *   <Button>Crear Producto</Button>
  * </PermissionGuard>
  *
  * @example
- * // Múltiples permisos (AND)
- * <PermissionGuard permission={['edit-sale', 'view-reports']} requireAll>
+ * // Múltiples permisos (AND) con scope
+ * <PermissionGuard permission={['edit-sale', 'view-reports']} requireAll branchId={5} scope="visible">
  *   <Button>Editar con Reportes</Button>
  * </PermissionGuard>
  *
@@ -47,9 +56,13 @@ const PermissionGuard: React.FC<PermissionGuardProps> = ({
 	permission,
 	role,
 	requireAll = false,
+	branchId,
+	subsidiaryId,
+	companyId,
+	scope = 'none',
 	fallback = null,
 }) => {
-	const { has, any, all, hasRole, isSuperAdmin, isLoading } = useCan();
+	const { authorize, isSuperAdmin, isLoading } = useAuthorization();
 
 	// Mientras carga, no mostrar nada para evitar parpadeo
 	if (isLoading) {
@@ -66,26 +79,15 @@ const PermissionGuard: React.FC<PermissionGuardProps> = ({
 		return <>{children}</>;
 	}
 
-	// Verificar permisos
-	let hasPermission = true;
-	if (permission) {
-		const permList = Array.isArray(permission) ? permission : [permission];
-		hasPermission = requireAll ? all(permList) : any(permList);
-	}
-
-	// Verificar roles
-	let hasRequiredRole = true;
-	if (role) {
-		const roleList = Array.isArray(role) ? role : [role];
-		if (requireAll) {
-			hasRequiredRole = roleList.every((r) => hasRole(r));
-		} else {
-			hasRequiredRole = roleList.some((r) => hasRole(r));
-		}
-	}
-
-	// Debe cumplir ambos (si están definidos)
-	const hasAccess = hasPermission && hasRequiredRole;
+	const hasAccess = authorize({
+		permission,
+		role,
+		requireAll,
+		branchId,
+		subsidiaryId,
+		companyId,
+		scope,
+	});
 
 	if (hasAccess) {
 		return <>{children}</>;

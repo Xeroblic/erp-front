@@ -16,34 +16,27 @@ import DeleteProductModal from './components/modals/DeleteProductModal';
 import { ProductListTab, InventoryTab } from './components/Tabs';
 import Tabs, { Tab } from '@/components/ui/Tabs';
 
+// Hooks centralizados de autorización
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import useAuthorization from '@/hooks/useAuthorization';
+
 // Hooks y tipos
 import { useProductos } from './hooks/useProductos';
-import { useAppDispatch, useAppSelector } from '@/store';
-import {
-	selectPersonalizacionUsuario,
-	selectIsInitialized as selectPersonalizacionInitialized,
-	obtenerPersonalizacionThunk,
-} from '@/store/slices/personalizacion/personalizacionSlice';
-import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import type { IProduct } from '@/interface/product.interface';
 import { PRODUCT_DEFAULT_FILTERS } from './constants/products.constant';
-import { useUserBranches } from './components/modals/hooks/userBranch';
 import type { ProductsViewMode } from './hooks/useProductos';
 import StockAdminTab from './components/Tabs/AnalyticsTab';
 import StockCatalogTab from './components/Tabs/StockCatalogTab';
 
 const Productos: React.FC = () => {
 	const navigate = useNavigate();
-	const dispatch = useAppDispatch();
 
-	const currentUser = useAppSelector((state) => state.auth.user);
-	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
-	const personalizacionInitialized = useAppSelector(selectPersonalizacionInitialized);
-	const effectiveSubsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
+	// ── Autorización centralizada ─────────────────────────────────────────
+	const { branchId: currentBranchId, subsidiaryId, visibleBranches } = useCurrentBranch();
+	const { canAccessBranch } = useAuthorization();
 
+	// ── Estado local de UI ────────────────────────────────────────────────
 	const [filters, setFilters] = useState(PRODUCT_DEFAULT_FILTERS);
-	const [branchId, setBranchId] = useState<number | null>(null);
-	const [branchInitialized, setBranchInitialized] = useState(false);
 	const [page, setPage] = useState(1);
 	const [createOpen, setCreateOpen] = useState(false);
 	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -52,22 +45,7 @@ const Productos: React.FC = () => {
 	const [viewMode, setViewMode] = useState<ProductsViewMode | null>(null);
 	const [viewModeModalOpen, setViewModeModalOpen] = useState(true);
 
-	const userId = useMemo<number | null>(() => {
-		if (typeof currentUser?.id === 'number' && Number.isFinite(currentUser.id)) {
-			return currentUser.id;
-		}
-		const candidatePk =
-			typeof currentUser === 'object' && currentUser !== null
-				? (currentUser as unknown as Record<string, unknown>).pk
-				: null;
-		if (typeof candidatePk === 'number' && Number.isFinite(candidatePk)) {
-			return candidatePk;
-		}
-		return null;
-	}, [currentUser]);
-
-	const userIdForBranches = userId ?? undefined;
-
+	// ── Hook de datos ─────────────────────────────────────────────────────
 	const {
 		products,
 		meta,
@@ -89,8 +67,8 @@ const Productos: React.FC = () => {
 		deleteProduct,
 		refresh,
 	} = useProductos({
-		branchId,
-		subsidiaryId: effectiveSubsidiaryId,
+		branchId: currentBranchId,
+		subsidiaryId,
 		mode: viewMode ?? 'branches',
 		enabled: !!viewMode,
 		filters,
@@ -98,43 +76,16 @@ const Productos: React.FC = () => {
 		perPage: 15,
 	});
 
-	const { branches: accessibleBranches } = useUserBranches(userIdForBranches, {
-		enabled: !!userId,
-	});
-
-	const defaultBranchFromUser = useMemo(() => {
-		if (personalizacionUsuario?.sucursal_principal) {
-			return personalizacionUsuario.sucursal_principal;
-		}
-		if (currentUser?.branch?.id) return currentUser.branch.id;
-		if (currentUser?.branch_id) return currentUser.branch_id;
-		return null;
-	}, [
-		personalizacionUsuario?.sucursal_principal,
-		currentUser?.branch?.id,
-		currentUser?.branch_id,
-	]);
-
-	const stockAdminProducts = useMemo(() => {
-		const search = filters.search?.trim().toLowerCase() ?? '';
-		if (!search) return products;
-		return products.filter((product) => {
-			const searchable = [product.name, product.sku, product.barcode]
-				.filter((value): value is string => typeof value === 'string' && value.length > 0)
-				.join(' ')
-				.toLowerCase();
-			return searchable.includes(search);
-		});
-	}, [filters.search, products]);
-
+	// ── Branches filtradas por visibilidad del usuario ─────────────────────
 	const filteredBranches = useMemo(() => {
-		if (!accessibleBranches.length) return branches;
-		const allowed = new Set(accessibleBranches.map((branch) => branch.id));
+		if (!visibleBranches.length) return branches;
+		const allowed = new Set(visibleBranches.map((branch) => branch.id));
 		return branches.filter((branch) => allowed.has(branch.id));
-	}, [branches, accessibleBranches]);
+	}, [branches, visibleBranches]);
 
+	// ── Branch actual resuelta ────────────────────────────────────────────
 	const currentBranch = useMemo(() => {
-		const targetBranchId = branchId ?? activeBranchId ?? defaultBranchFromUser ?? null;
+		const targetBranchId = currentBranchId ?? activeBranchId ?? null;
 		if (!targetBranchId) return null;
 		const sources = [filteredBranches, branches];
 		for (const source of sources) {
@@ -142,7 +93,7 @@ const Productos: React.FC = () => {
 			if (found) return found;
 		}
 		return null;
-	}, [branchId, activeBranchId, defaultBranchFromUser, filteredBranches, branches]);
+	}, [currentBranchId, activeBranchId, filteredBranches, branches]);
 
 	const currentBranchName = useMemo(() => {
 		if (!currentBranch) return undefined;
@@ -161,48 +112,25 @@ const Productos: React.FC = () => {
 		return undefined;
 	}, [currentBranch]);
 
+	// ── Resetear página al cambiar de sucursal ────────────────────────────
 	useEffect(() => {
-		if (!filteredBranches.length) return;
+		setPage(1);
+	}, [currentBranchId]);
 
-		const preferredBranchId =
-			defaultBranchFromUser !== null &&
-			defaultBranchFromUser !== undefined &&
-			filteredBranches.some((branch) => branch.id === defaultBranchFromUser)
-				? defaultBranchFromUser
-				: filteredBranches[0]?.id ?? null;
+	// ── Filtrado local para stock admin ───────────────────────────────────
+	const stockAdminProducts = useMemo(() => {
+		const search = filters.search?.trim().toLowerCase() ?? '';
+		if (!search) return products;
+		return products.filter((product) => {
+			const searchable = [product.name, product.sku, product.barcode]
+				.filter((value): value is string => typeof value === 'string' && value.length > 0)
+				.join(' ')
+				.toLowerCase();
+			return searchable.includes(search);
+		});
+	}, [filters.search, products]);
 
-		if (preferredBranchId === null) return;
-		if (branchId !== preferredBranchId) {
-			setBranchId(preferredBranchId);
-		}
-		if (!branchInitialized) {
-			setBranchInitialized(true);
-		}
-	}, [branchInitialized, filteredBranches, defaultBranchFromUser, branchId]);
-
-	useEffect(() => {
-		if (!personalizacionInitialized) {
-			dispatch(obtenerPersonalizacionThunk());
-		}
-	}, [dispatch, personalizacionInitialized]);
-
-	useEffect(() => {
-		const handleExternalBranchChange = (event: Event) => {
-			const customEvent = event as CustomEvent<{ branchId: number | null }>;
-			const nextBranchId = customEvent.detail?.branchId ?? null;
-			if (nextBranchId === null) return;
-			if (!filteredBranches.some((branch) => branch.id === nextBranchId)) return;
-			setBranchId(nextBranchId);
-			setBranchInitialized(true);
-			setPage(1);
-		};
-
-		window.addEventListener('user-branch-changed', handleExternalBranchChange);
-		return () => {
-			window.removeEventListener('user-branch-changed', handleExternalBranchChange);
-		};
-	}, [filteredBranches]);
-
+	// ── Handlers ──────────────────────────────────────────────────────────
 	const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const { value } = event.target;
 		setFilters((prev) => ({ ...prev, search: value }));
@@ -282,7 +210,7 @@ const Productos: React.FC = () => {
 	};
 
 	const handleViewProduct = (product: IProduct) => {
-		const resolvedBranchId = branchId ?? activeBranchId ?? currentBranch?.id ?? null;
+		const resolvedBranchId = currentBranchId ?? activeBranchId ?? currentBranch?.id ?? null;
 		const modeToUse: ProductsViewMode = viewMode ?? 'branches';
 		const params = new URLSearchParams();
 		if (resolvedBranchId) params.set('branchId', String(resolvedBranchId));
@@ -292,7 +220,7 @@ const Productos: React.FC = () => {
 			state: {
 				branchId: resolvedBranchId,
 				viewMode: modeToUse,
-				subsidiaryId: modeToUse === 'subsidiaries' ? effectiveSubsidiaryId : null,
+				subsidiaryId: modeToUse === 'subsidiaries' ? subsidiaryId : null,
 			},
 		});
 	};
@@ -329,6 +257,9 @@ const Productos: React.FC = () => {
 			setProductToDelete(null);
 		}
 	};
+
+	// ── Verificación de acceso a la sucursal actual ───────────────────────
+	const hasBranchAccess = canAccessBranch(currentBranchId);
 
 	return (
 		<PageWrapper name='catalog-products'>
@@ -385,6 +316,7 @@ const Productos: React.FC = () => {
 				searchValue={filters.search ?? ''}
 				onSearchChange={handleSearchChange}
 				onCreateClick={() => setCreateOpen(true)}
+				branchId={currentBranchId}
 			/>
 
 			<Container>
@@ -428,11 +360,23 @@ const Productos: React.FC = () => {
 					</CardBody>
 				</Card>
 
-				{viewMode === 'subsidiaries' && !effectiveSubsidiaryId && (
+				{viewMode === 'subsidiaries' && !subsidiaryId && (
 					<Card className='mb-4'>
 						<CardBody className='text-sm text-amber-600'>
 							No se pudo resolver la subempresa actual. Verifica la personalizacion
 							del usuario.
+						</CardBody>
+					</Card>
+				)}
+
+				{!hasBranchAccess && currentBranchId && (
+					<Card className='mb-4'>
+						<CardBody className='flex items-center gap-3 text-sm text-amber-600'>
+							<Icon icon='HeroShieldExclamation' className='size-5' />
+							<span>
+								No tienes acceso de operación a la sucursal seleccionada.
+								Los datos se muestran en modo lectura.
+							</span>
 						</CardBody>
 					</Card>
 				)}
@@ -474,7 +418,7 @@ const Productos: React.FC = () => {
 							onPageChange={setPage}
 							onView={handleViewProduct}
 							onDelete={handleDeleteProduct}
-							subsidiaryId={effectiveSubsidiaryId}
+							subsidiaryId={subsidiaryId}
 							onRefresh={refresh}
 						/>
 					</Tab>
@@ -485,8 +429,8 @@ const Productos: React.FC = () => {
 							entityParam={viewMode === 'subsidiaries' ? 'subsidiaries' : 'branches'}
 							entityId={
 								viewMode === 'subsidiaries'
-									? effectiveSubsidiaryId
-									: branchId ?? activeBranchId ?? currentBranch?.id ?? null
+									? subsidiaryId
+									: currentBranchId ?? activeBranchId ?? currentBranch?.id ?? null
 							}
 							summary={inventory}
 							criticalProducts={criticalProducts}
@@ -494,17 +438,17 @@ const Productos: React.FC = () => {
 							branchName={currentBranchName}
 							onShowLowStock={handleShowCriticalInventory}
 							onViewProduct={handleViewProduct}
-							subsidiaryId={effectiveSubsidiaryId}
-							selectedBranchId={branchId ?? activeBranchId ?? currentBranch?.id ?? null}
+							subsidiaryId={subsidiaryId}
+							selectedBranchId={currentBranchId ?? activeBranchId ?? currentBranch?.id ?? null}
 							onRefresh={refresh}
 						/>
 					</Tab>
 					<Tab id='stock-catalog' text='Catálogo de Stock' icon='HeroTableCells'>
-						<StockCatalogTab subsidiaryId={effectiveSubsidiaryId ?? 0} />
+						<StockCatalogTab subsidiaryId={subsidiaryId ?? 0} />
 					</Tab>
 					<Tab id='analytics' text='Administracion de Stock' icon='HeroChartBarSquare'>
 						<StockAdminTab
-							subsidiaryId={effectiveSubsidiaryId ?? 0}
+							subsidiaryId={subsidiaryId ?? 0}
 							products={stockAdminProducts}
 							loading={loading}
 							meta={meta}
@@ -522,7 +466,7 @@ const Productos: React.FC = () => {
 				categories={categories}
 				isLoading={creating}
 				brandsLoading={brandsLoading}
-				defaultBranchId={branchId ?? defaultBranchFromUser ?? activeBranchId ?? null}
+				defaultBranchId={currentBranchId ?? activeBranchId ?? null}
 			/>
 
 			<DeleteProductModal

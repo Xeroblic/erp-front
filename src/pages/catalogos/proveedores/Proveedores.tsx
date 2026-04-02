@@ -1,10 +1,10 @@
-import React, { useCallback, useState, useEffect, useMemo } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
-import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
+import ProtectedButton from '@/components/ui/ProtectedButton';
 import { ISupplierFilters } from './components/types';
 import type { ISupplier } from '@/interface/supplier.interface';
 import { useProveedores } from './components/hooks/useProveedores';
@@ -14,90 +14,27 @@ import SuppliersTable from './components/tables/SuppliersTable';
 import CrearProveedor from './components/modals/CrearProveedor';
 // import EditarProveedor from './components/modals/EditarProveedor';
 import EliminarProveedor from './components/modals/EliminarProveedor';
-import { useAppDispatch, useAppSelector } from '@/store';
-import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/personalizacionSlice';
+import { useAppDispatch } from '@/store';
 import {
 	createSupplier,
 	updateSupplier,
 	deleteSupplier,
 } from '@/store/slices/suppliers/suppliersSlice';
-import { useUserBranches } from '@/pages/catalogos/productos/components/modals/hooks/userBranch';
+import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
+
+// Hooks centralizados de autorización
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import useAuthorization from '@/hooks/useAuthorization';
 
 const Proveedores: React.FC = () => {
 	const navigate = useNavigate();
-	const currentUser = useAppSelector((state) => state.auth.user);
-	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
+	const dispatch = useAppDispatch();
 
-	const [subsidiaryId, setSubsidiaryId] = useState<number | null>(
-		personalizacionUsuario?.subsidiary_id ??
-			currentUser?.subsidiary?.id ??
-			currentUser?.branch?.subsidiary?.id ??
-			null,
-	);
+	// ── Autorización centralizada ─────────────────────────────────────────
+	const { branchId: currentBranchId, subsidiaryId } = useCurrentBranch();
+	const { canAccessBranch } = useAuthorization();
 
-	const userId = currentUser?.id ?? (currentUser as any)?.pk ?? undefined;
-	const { branches } = useUserBranches(userId, { enabled: Boolean(userId) });
-
-	const branchToSubsidiary = useMemo(() => {
-		const map = new Map<number, number>();
-		branches.forEach((branch) => {
-			if (branch?.id && branch?.subsidiaryId) {
-				map.set(branch.id, branch.subsidiaryId);
-			}
-		});
-		return map;
-	}, [branches]);
-
-	const preferredBranchId = useMemo(() => {
-		if (personalizacionUsuario?.sucursal_principal)
-			return personalizacionUsuario.sucursal_principal;
-		if (currentUser?.branch?.id) return currentUser.branch.id;
-		if (currentUser?.branch_id) return currentUser.branch_id;
-		return null;
-	}, [
-		personalizacionUsuario?.sucursal_principal,
-		currentUser?.branch?.id,
-		currentUser?.branch_id,
-	]);
-
-	const defaultSubsidiaryId = useMemo(() => {
-		if (personalizacionUsuario?.subsidiary_id) return personalizacionUsuario.subsidiary_id;
-		if (currentUser?.subsidiary?.id) return currentUser.subsidiary.id;
-
-		if (preferredBranchId && branchToSubsidiary.has(preferredBranchId)) {
-			return branchToSubsidiary.get(preferredBranchId) ?? null;
-		}
-
-		const branchSubsidiaryId =
-			currentUser?.branch?.subsidiary?.id ??
-			(currentUser?.branch as any)?.subsidiary_id ??
-			null;
-		if (branchSubsidiaryId) return branchSubsidiaryId;
-
-		const accessSubs = (currentUser as any)?.access?.subsidiaries;
-		if (Array.isArray(accessSubs)) {
-			for (const sub of accessSubs) {
-				if (sub && typeof sub === 'object' && sub.id) return sub.id;
-				if (typeof sub === 'number') return sub;
-			}
-		}
-
-		const firstAvailable = branches.find((branch) => branch.subsidiaryId)?.subsidiaryId ?? null;
-		return firstAvailable ?? null;
-	}, [
-		branchToSubsidiary,
-		branches,
-		currentUser,
-		personalizacionUsuario?.subsidiary_id,
-		preferredBranchId,
-	]);
-
-	useEffect(() => {
-		if (subsidiaryId === null && defaultSubsidiaryId) {
-			setSubsidiaryId(defaultSubsidiaryId);
-		}
-	}, [defaultSubsidiaryId, subsidiaryId]);
-
+	// ── Estado local de UI ────────────────────────────────────────────────
 	const [filters, setFilters] = useState<ISupplierFilters>({
 		search: '',
 	});
@@ -106,40 +43,13 @@ const Proveedores: React.FC = () => {
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [selected, setSelected] = useState<ISupplier | null>(null);
 
+	// ── Hook de datos (reactivo al cambio de subsidiaryId) ────────────────
 	const { suppliers, stats, loading, activeSubsidiaryId } = useProveedores({
 		subsidiaryId,
 		filters,
 	});
-	const dispatch = useAppDispatch();
 
-	useEffect(() => {
-		const principal = personalizacionUsuario?.subsidiary_id;
-		if (principal && !subsidiaryId) {
-			setSubsidiaryId(principal);
-		}
-	}, [personalizacionUsuario?.subsidiary_id, subsidiaryId]);
-
-	useEffect(() => {
-		const handleExternalSubsidiaryChange = (event: Event) => {
-			const customEvent = event as CustomEvent<{
-				branchId: number | null;
-				subsidiaryId?: number | null;
-			}>;
-			const { detail } = customEvent;
-			const nextSubsidiaryId =
-				detail?.subsidiaryId ??
-				(detail?.branchId != null
-					? (branchToSubsidiary.get(detail.branchId) ?? null)
-					: null);
-			if (nextSubsidiaryId === null) return;
-			setSubsidiaryId(nextSubsidiaryId);
-		};
-
-		window.addEventListener('user-branch-changed', handleExternalSubsidiaryChange);
-		return () =>
-			window.removeEventListener('user-branch-changed', handleExternalSubsidiaryChange);
-	}, [branchToSubsidiary]);
-
+	// ── Handlers ──────────────────────────────────────────────────────────
 	const handleFilterChange = useCallback((key: keyof ISupplierFilters, value: unknown) => {
 		setFilters((prev) => ({
 			...prev,
@@ -193,6 +103,9 @@ const Proveedores: React.FC = () => {
 		setDeleteOpen(true);
 	};
 
+	// ── Verificación de acceso ────────────────────────────────────────────
+	const hasBranchAccess = canAccessBranch(currentBranchId);
+
 	return (
 		<PageWrapper name='proveedores-admin'>
 			<Subheader>
@@ -215,13 +128,30 @@ const Proveedores: React.FC = () => {
 					</div>
 				</SubheaderLeft>
 				<SubheaderRight>
-					<Button color='amber' onClick={() => setCreateOpen(true)} icon='HeroPlus'>
+					<ProtectedButton
+						permission={ERP_PERMISSIONS.CATALOGS.SUPPLIERS.CREATE}
+						branchId={currentBranchId}
+						scope='access'
+						fallbackMode='hidden'
+						color='amber'
+						onClick={() => setCreateOpen(true)}
+						icon='HeroPlus'>
 						Nuevo Proveedor
-					</Button>
+					</ProtectedButton>
 				</SubheaderRight>
 			</Subheader>
 
 			<Container>
+				{!hasBranchAccess && currentBranchId && (
+					<div className='mb-4 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300'>
+						<Icon icon='HeroShieldExclamation' className='size-5 shrink-0' />
+						<span>
+							No tienes acceso de operación a la sucursal seleccionada.
+							Los datos se muestran en modo lectura.
+						</span>
+					</div>
+				)}
+
 				<SupplierStats items={suppliers as any} />
 				<SuppliersFilters
 					filters={filters}

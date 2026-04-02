@@ -26,7 +26,7 @@ import type { IProduct } from '@/interface/product.interface';
 import {
 	useUserBranches,
 	type UserBranch,
-} from '@/pages/catalogos/productos/components/modals/hooks/userBranch';
+} from '@/hooks/permiso/userBranch';
 
 // Componentes y hooks locales
 import { ProductsTable, WorkspaceTable, ProductDetailCard } from './components';

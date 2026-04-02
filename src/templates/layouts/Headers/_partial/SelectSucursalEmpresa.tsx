@@ -13,7 +13,7 @@ import { setTechnicalReviewsContext } from '@/store/slices/technicalReviews';
 import {
 	useUserBranches,
 	type UserBranch,
-} from '@/pages/catalogos/productos/components/modals/hooks/userBranch';
+} from '@/hooks/permiso/userBranch';
 import ApiService from '@/services/ApiService';
 import Icon from '@/components/icon/Icon';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
@@ -27,6 +27,8 @@ type BranchOptionMeta = {
 type BranchOption = TSelectOption & {
 	meta?: BranchOptionMeta;
 };
+
+const EMPTY_SUBSIDIARY_ACCESS: Array<{ id?: number | null }> = [];
 
 const FALLBACK_GROUP_LABEL = 'Sucursales';
 
@@ -58,12 +60,12 @@ const SelectSucursalEmpresa = () => {
 
 	const accessibleSubsidiaryIds = useMemo(() => {
 		const subsidiaries = new Set<number>();
-		(user as any)?.access?.subsidiaries?.forEach((sub: any) => {
+		const availableSubsidiaries = user?.access?.subsidiaries ?? EMPTY_SUBSIDIARY_ACCESS;
+		availableSubsidiaries.forEach((sub) => {
 			if (sub?.id) subsidiaries.add(sub.id);
-			else if (typeof sub === 'number') subsidiaries.add(sub);
 		});
 		return subsidiaries;
-	}, [user]);
+	}, [user?.access?.subsidiaries]);
 
 	const filteredBranches = useMemo(() => {
 		if (!branches.length) return [];
@@ -116,13 +118,17 @@ const SelectSucursalEmpresa = () => {
 
 	useEffect(() => {
 		if (!filteredBranches.length) {
-			setSelectedSucursal(null);
+			setSelectedSucursal((prev) => (prev === null ? prev : null));
 			return;
 		}
 
 		if (preferredBranchId == null) {
 			const first = groupedOptions[0]?.options?.[0] as BranchOption | undefined;
-			setSelectedSucursal(first ?? null);
+			setSelectedSucursal((prev) => {
+				const next = first ?? null;
+				if (prev?.value === next?.value) return prev;
+				return next;
+			});
 			return;
 		}
 
@@ -134,18 +140,20 @@ const SelectSucursalEmpresa = () => {
 
 		if (!match && groupedOptions.length > 0) {
 			const first = groupedOptions[0]?.options?.[0] as BranchOption | undefined;
-			setSelectedSucursal(first ?? null);
-
-			if (first) {
-				dispatch(actualizarSucursalPrincipalThunk(Number(first.value))).catch(
-					console.error,
-				);
-			}
+			setSelectedSucursal((prev) => {
+				const next = first ?? null;
+				if (prev?.value === next?.value) return prev;
+				return next;
+			});
 			return;
 		}
 
-		setSelectedSucursal(match ?? null);
-	}, [filteredBranches, groupedOptions, preferredBranchId, dispatch]);
+		setSelectedSucursal((prev) => {
+			const next = match ?? null;
+			if (prev?.value === next?.value) return prev;
+			return next;
+		});
+	}, [filteredBranches, groupedOptions, preferredBranchId]);
 
 	useEffect(() => {
 		if (!selectedSucursal?.meta?.branch) return;
@@ -266,39 +274,62 @@ const SelectSucursalEmpresa = () => {
 
 	const [modalOpen, setModalOpen] = useState(false);
 
-	// props del Select para reutilizarlas en desktop + modal
-	const selectProps = {
-		className: 'branch-selector w-full bg-white dark:bg-zinc-600/90',
-		noOptionsMessage: () => (branchesError ? 'Error al cargar' : 'Sin Opciones'),
-		placeholder: branchesLoading
-			? 'Cargando sucursales...'
-			: !groupedOptions.length
-				? 'Sin sucursales disponibles'
-				: 'Selecciona una sucursal',
-		dimension: 'sm' as const,
-		name: 'select_empresa',
-		isLoading: branchesLoading,
-		isDisabled: branchesLoading || !!branchesError,
-		isClearable: false,
-		isSearchable: true,
-		value: selectedSucursal as TSelectOption | null,
-		options: groupedOptions,
-		formatOptionLabel: (option: TSelectOption) => formatOptionLabel(option as BranchOption),
-		formatGroupLabel,
-		onChange: (option: any) => {
+	const handleSelectChange = useCallback(
+		(option: TSelectOption | readonly TSelectOption[] | null) => {
 			if (Array.isArray(option)) {
 				void handleChange(null);
 				return;
 			}
 			void handleChange((option as BranchOption) ?? null);
 		},
-		menuPortalTarget: selectPortalTarget,
-		styles: {
+		[handleChange],
+	);
+
+	const selectStyles = useMemo(
+		() => ({
 			menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
 			menu: (base: any) => ({ ...base, maxWidth: '100vw', width: '100%', left: 0 }),
 			menuList: (base: any) => ({ ...base, maxHeight: '50vh', width: '100%' }),
-		},
-	};
+		}),
+		[],
+	);
+
+	// props del Select para reutilizarlas en desktop + modal
+	const selectProps = useMemo(
+		() => ({
+			className: 'branch-selector w-full bg-white dark:bg-zinc-600/90',
+			noOptionsMessage: () => (branchesError ? 'Error al cargar' : 'Sin Opciones'),
+			placeholder: branchesLoading
+				? 'Cargando sucursales...'
+				: !groupedOptions.length
+					? 'Sin sucursales disponibles'
+					: 'Selecciona una sucursal',
+			dimension: 'sm' as const,
+			name: 'select_empresa',
+			isLoading: branchesLoading,
+			isDisabled: branchesLoading || !!branchesError,
+			isClearable: false,
+			isSearchable: true,
+			value: selectedSucursal as TSelectOption | null,
+			options: groupedOptions,
+			formatOptionLabel: (option: TSelectOption) => formatOptionLabel(option as BranchOption),
+			formatGroupLabel,
+			onChange: handleSelectChange,
+			menuPortalTarget: selectPortalTarget,
+			styles: selectStyles,
+		}),
+		[
+			branchesError,
+			branchesLoading,
+			formatGroupLabel,
+			formatOptionLabel,
+			groupedOptions,
+			handleSelectChange,
+			selectPortalTarget,
+			selectStyles,
+			selectedSucursal,
+		],
+	);
 
 	return (
 		<>

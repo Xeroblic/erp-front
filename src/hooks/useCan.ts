@@ -1,6 +1,6 @@
 // src/hooks/useCan.ts
 import { useMemo } from 'react';
-import { useAppSelector } from '@/store';
+import useAuthorization from '@/hooks/useAuthorization';
 
 export interface CanCheck {
 	/** Verifica si el usuario tiene un permiso específico */
@@ -35,56 +35,49 @@ export interface CanCheck {
  * if (hasRole('admin')) { ... }
  */
 export default function useCan(): CanCheck {
-	const perms = useAppSelector((s) => s.auth.permisos ?? []);
-	const authLoading = useAppSelector((s) => s.auth.loading);
-	const rolesFromUser = useAppSelector((s) => (s.auth.user as any)?.roles ?? []);
-
-	// Super-admin check PRIMERO - máxima eficiencia
-	const isSuperAdmin = useMemo(() => {
-		return perms.includes('super-admin') || rolesFromUser.includes('super-admin');
-	}, [perms, rolesFromUser]);
-
-	// Construir lista de roles única
-	const roles = useMemo(() => {
-		return Array.from(new Set([...rolesFromUser]));
-	}, [rolesFromUser]);
+	const {
+		permissions,
+		roles,
+		isLoading,
+		isSuperAdmin,
+		hasPermission,
+		hasAnyPermission,
+		hasAllPermissions,
+		hasRole: checkRole,
+	} = useAuthorization();
 
 	// has - verifica un permiso único
 	const has = useMemo(
 		() => (perm: string): boolean => {
-			if (isSuperAdmin) return true;
-			return perms.includes(perm);
+			return hasPermission(perm);
 		},
-		[perms, isSuperAdmin],
+		[hasPermission],
 	);
 
 	// any - verifica si tiene al menos uno (OR)
 	const any = useMemo(
 		() => (list: string[]): boolean => {
-			if (isSuperAdmin) return true;
 			if (!Array.isArray(list) || list.length === 0) return true;
-			return list.some((p) => perms.includes(p));
+			return hasAnyPermission(list);
 		},
-		[perms, isSuperAdmin],
+		[hasAnyPermission],
 	);
 
 	// all - verifica si tiene todos (AND)
 	const all = useMemo(
 		() => (list: string[]): boolean => {
-			if (isSuperAdmin) return true;
 			if (!Array.isArray(list) || list.length === 0) return true;
-			return list.every((p) => perms.includes(p));
+			return hasAllPermissions(list);
 		},
-		[perms, isSuperAdmin],
+		[hasAllPermissions],
 	);
 
 	// hasRole - verifica un rol
 	const hasRole = useMemo(
 		() => (role: string): boolean => {
-			if (isSuperAdmin) return true;
-			return roles.includes(role);
+			return checkRole(role);
 		},
-		[roles, isSuperAdmin],
+		[checkRole],
 	);
 
 	// isAdmin - cualquier tipo de admin
@@ -102,11 +95,11 @@ export default function useCan(): CanCheck {
 		has,
 		any,
 		all,
-		hasRole,
+		hasRole: hasRole,
 		isAdmin,
 		isSuperAdmin,
-		isLoading: authLoading,
-		perms,
+		isLoading,
+		perms: permissions,
 		roles,
 	};
 }

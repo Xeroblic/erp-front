@@ -5,7 +5,7 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { useStockCatalog } from './useStockCatalog';
 import type { IProduct } from '@/interface/product.interface';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
-import { useUserBranches } from '@/hooks/userBrandBranch';
+import { useUserBranches } from '@/hooks/permiso/userBranch';
 import ApiService from '@/services/ApiService';
 import { createBrand, fetchBrands } from '@/store/slices/brands/brandsSlice';
 import { useWorkspaceItems } from './useWorkspaceItems';

@@ -29,7 +29,7 @@ import { useUserPermissions } from './hooks/useUserPermissions';
 import { useUserData } from './hooks/useUserData';
 import { USER_DETAIL_TABS } from './constants/tabs';
 import type { TabType, UserPermissionsFormValues } from './types';
-import useAuthority from '@/hooks/useAuthority';
+import useAuthorization from '@/hooks/useAuthorization';
 
 const UserPermissionsDetail: React.FC = () => {
 	const { userId } = useParams<{ userId: string }>();
@@ -80,18 +80,15 @@ const UserPermissionsDetail: React.FC = () => {
 	);
 
 	const [accessPending, setAccessPending] = React.useState<UserAccess | null>(null);
+	const { isSuperAdmin: hasSuperAdminAccess, authorize } = useAuthorization();
 
 	const isSuperAdmin =
-		userRoles.includes('super-admin') || useAuthority(userAuthority, ['super-admin']);
+		hasSuperAdminAccess || userRoles.includes('super-admin');
 	const canManageRoles = isSuperAdmin;
 	const canManagePermissions = isSuperAdmin;
-	const canManageAccess = useAuthority(userAuthority, [
-		'super-admin',
-		'admin',
-		'manage-company-users',
-		'manage-roles',
-		'edit-user',
-	]);
+	const canManageAccess = authorize({
+		permissions: ['super-admin', 'admin', 'manage-company-users', 'manage-roles', 'edit-user'],
+	});
 	const canSubmitChanges = canManageRoles || canManagePermissions || canManageAccess;
 
 	const [dirty, setDirty] = React.useState(false);

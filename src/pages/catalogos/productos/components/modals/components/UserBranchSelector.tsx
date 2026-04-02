@@ -1,6 +1,6 @@
 import React from 'react';
 import Select from '@/components/form/Select';
-import { useUserBranches } from '../hooks/userBranch';
+import { useUserBranches } from '../../../../../../hooks/permiso/userBranch';
 
 interface UserBranchSelectorProps {
 	userId: number;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PaginationState } from '@tanstack/react-table';
 import PageWrapper from '../../../components/layouts/PageWrapper/PageWrapper';
@@ -7,8 +7,8 @@ import Subheader, {
 	SubheaderRight,
 } from '../../../components/layouts/Subheader/Subheader';
 import Container from '../../../components/layouts/Container/Container';
-import Button from '../../../components/ui/Button';
 import Icon from '../../../components/icon/Icon';
+import ProtectedButton from '@/components/ui/ProtectedButton';
 import { ICustomerSupplierFilters } from './components/types';
 import type { ICustomerSupplier } from '@/interface/customerSupplier.interface';
 import { useClientes } from './components/hooks/useClientes';
@@ -16,90 +16,27 @@ import CustomersTable from './components/tables/CustomersTable';
 import CrearCliente from './components/modals/CrearCliente';
 // import EditarCliente from './components/modals/EditarCliente';
 import EliminarCliente from './components/modals/EliminarCliente';
-import { useAppDispatch, useAppSelector } from '@/store';
-import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/personalizacionSlice';
+import { useAppDispatch } from '@/store';
 import {
 	createCustomerSupplier,
 	updateCustomerSupplier,
 	deleteCustomerSupplier,
 } from '@/store/slices/customerSuppliers/customerSuppliersSlice';
-import { useUserBranches } from '@/pages/catalogos/productos/components/modals/hooks/userBranch';
+import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
+
+// Hooks centralizados de autorización
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import useAuthorization from '@/hooks/useAuthorization';
 
 const Clientes: React.FC = () => {
 	const navigate = useNavigate();
-	const currentUser = useAppSelector((state) => state.auth.user);
-	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
+	const dispatch = useAppDispatch();
 
-	const [subsidiaryId, setSubsidiaryId] = useState<number | null>(
-		personalizacionUsuario?.subsidiary_id ??
-			currentUser?.subsidiary?.id ??
-			currentUser?.branch?.subsidiary?.id ??
-			null,
-	);
+	// ── Autorización centralizada ─────────────────────────────────────────
+	const { branchId: currentBranchId, subsidiaryId } = useCurrentBranch();
+	const { canAccessBranch } = useAuthorization();
 
-	const userId = currentUser?.id ?? (currentUser as any)?.pk ?? undefined;
-	const { branches } = useUserBranches(userId, { enabled: Boolean(userId) });
-
-	const branchToSubsidiary = useMemo(() => {
-		const map = new Map<number, number>();
-		branches.forEach((branch) => {
-			if (branch?.id && branch?.subsidiaryId) {
-				map.set(branch.id, branch.subsidiaryId);
-			}
-		});
-		return map;
-	}, [branches]);
-
-	const preferredBranchId = useMemo(() => {
-		if (personalizacionUsuario?.sucursal_principal)
-			return personalizacionUsuario.sucursal_principal;
-		if (currentUser?.branch?.id) return currentUser.branch.id;
-		if (currentUser?.branch_id) return currentUser.branch_id;
-		return null;
-	}, [
-		personalizacionUsuario?.sucursal_principal,
-		currentUser?.branch?.id,
-		currentUser?.branch_id,
-	]);
-
-	const defaultSubsidiaryId = useMemo(() => {
-		if (personalizacionUsuario?.subsidiary_id) return personalizacionUsuario.subsidiary_id;
-		if (currentUser?.subsidiary?.id) return currentUser.subsidiary.id;
-
-		if (preferredBranchId && branchToSubsidiary.has(preferredBranchId)) {
-			return branchToSubsidiary.get(preferredBranchId) ?? null;
-		}
-
-		const branchSubsidiaryId =
-			currentUser?.branch?.subsidiary?.id ??
-			(currentUser?.branch as any)?.subsidiary_id ??
-			null;
-		if (branchSubsidiaryId) return branchSubsidiaryId;
-
-		const accessSubs = (currentUser as any)?.access?.subsidiaries;
-		if (Array.isArray(accessSubs)) {
-			for (const sub of accessSubs) {
-				if (sub && typeof sub === 'object' && sub.id) return sub.id;
-				if (typeof sub === 'number') return sub;
-			}
-		}
-
-		const firstAvailable = branches.find((branch) => branch.subsidiaryId)?.subsidiaryId ?? null;
-		return firstAvailable ?? null;
-	}, [
-		branchToSubsidiary,
-		branches,
-		currentUser,
-		personalizacionUsuario?.subsidiary_id,
-		preferredBranchId,
-	]);
-
-	useEffect(() => {
-		if (subsidiaryId === null && defaultSubsidiaryId) {
-			setSubsidiaryId(defaultSubsidiaryId);
-		}
-	}, [defaultSubsidiaryId, subsidiaryId]);
-
+	// ── Estado local de UI ────────────────────────────────────────────────
 	const [filters] = useState<ICustomerSupplierFilters>({ search: '' });
 	const [pagination, setPagination] = useState<PaginationState>({
 		pageIndex: 0,
@@ -117,39 +54,17 @@ const Clientes: React.FC = () => {
 		[],
 	);
 
+	// ── Hook de datos (reactivo al cambio de subsidiaryId) ────────────────
 	const { customers, loading, activeSubsidiaryId, meta } = useClientes({
 		subsidiaryId,
 		filters,
 		page: pagination.pageIndex + 1,
 		per_page: pagination.pageSize,
 	});
-	const dispatch = useAppDispatch();
 
-	// Escuchar cambios externos de subsidiary (cuando cambia en el selector)
-	useEffect(() => {
-		const handleExternalSubsidiaryChange = (event: Event) => {
-			const customEvent = event as CustomEvent<{
-				branchId: number | null;
-				subsidiaryId?: number | null;
-			}>;
-			const { detail } = customEvent;
-			const nextSubsidiaryId =
-				detail?.subsidiaryId ??
-				(detail?.branchId != null
-					? (branchToSubsidiary.get(detail.branchId) ?? null)
-					: null);
-			if (nextSubsidiaryId === null) return;
-			setSubsidiaryId(nextSubsidiaryId);
-		};
-
-		window.addEventListener('user-branch-changed', handleExternalSubsidiaryChange);
-		return () =>
-			window.removeEventListener('user-branch-changed', handleExternalSubsidiaryChange);
-	}, [branchToSubsidiary]);
-
+	// ── Handlers ──────────────────────────────────────────────────────────
 	const onCreate = () => setCreateOpen(true);
 	const onView = (c: ICustomerSupplier) => {
-		// Navegar a la página de detalle del cliente
 		navigate(`/catalogos/clientes/${c.id}`);
 	};
 	const onEdit = (c: ICustomerSupplier) => {
@@ -191,6 +106,10 @@ const Clientes: React.FC = () => {
 		setDeleteOpen(false);
 		setSelected(null);
 	};
+
+	// ── Verificación de acceso ────────────────────────────────────────────
+	const hasBranchAccess = canAccessBranch(currentBranchId);
+
 	return (
 		<PageWrapper name='clientes-admin'>
 			<Subheader>
@@ -213,13 +132,30 @@ const Clientes: React.FC = () => {
 					</div>
 				</SubheaderLeft>
 				<SubheaderRight>
-					<Button color='blue' onClick={onCreate} icon='HeroPlus'>
+					<ProtectedButton
+						permission={ERP_PERMISSIONS.CATALOGS.CUSTOMERS.CREATE}
+						branchId={currentBranchId}
+						scope='access'
+						fallbackMode='hidden'
+						color='blue'
+						onClick={onCreate}
+						icon='HeroPlus'>
 						Nuevo Cliente
-					</Button>
+					</ProtectedButton>
 				</SubheaderRight>
 			</Subheader>
 
 			<Container>
+				{!hasBranchAccess && currentBranchId && (
+					<div className='mb-4 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300'>
+						<Icon icon='HeroShieldExclamation' className='size-5 shrink-0' />
+						<span>
+							No tienes acceso de operación a la sucursal seleccionada.
+							Los datos se muestran en modo lectura.
+						</span>
+					</div>
+				)}
+
 				{loading ? (
 					<div className='py-10 text-center text-sm text-gray-500'>
 						Cargando clientes...

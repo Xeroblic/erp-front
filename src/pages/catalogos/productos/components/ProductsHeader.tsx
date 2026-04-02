@@ -1,19 +1,23 @@
 import React from 'react';
-import Button from '@/components/ui/Button';
+import ProtectedButton from '@/components/ui/ProtectedButton';
 import Icon from '@/components/icon/Icon';
 import Input from '@/components/form/Input';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 
 interface ProductsHeaderProps {
 	searchValue: string;
 	onSearchChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 	onCreateClick: () => void;
+	/** ID de la sucursal actual para validar permiso contextual */
+	branchId?: number | null;
 }
 
 const ProductsHeader: React.FC<ProductsHeaderProps> = ({
 	searchValue,
 	onSearchChange,
 	onCreateClick,
+	branchId,
 }) => {
 	return (
 		<Subheader>
@@ -39,13 +43,17 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
 						onChange={onSearchChange}
 						className='w-full sm:w-72'
 					/>
-					<Button
+					<ProtectedButton
+						permission={ERP_PERMISSIONS.CATALOGS.PRODUCTS.CREATE}
+						branchId={branchId}
+						scope='access'
+						fallbackMode='hidden'
 						color='blue'
 						icon='HeroPlus'
 						onClick={onCreateClick}
 						className='w-full sm:w-auto'>
 						Nuevo producto
-					</Button>
+					</ProtectedButton>
 				</div>
 			</SubheaderRight>
 		</Subheader>

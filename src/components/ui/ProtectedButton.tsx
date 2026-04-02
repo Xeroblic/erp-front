@@ -2,6 +2,7 @@
 import React, { forwardRef } from 'react';
 import Button, { IButtonProps } from './Button';
 import PermissionGuard from '../authorization/PermissionGuard';
+import type { AuthorizationScopeMode } from '@/types/authorization';
 
 type TFallbackMode = 'hidden' | 'disabled';
 
@@ -14,6 +15,14 @@ export interface IProtectedButtonProps extends IButtonProps {
 	requireAll?: boolean;
 	/** Roles requeridos */
 	roles?: string[];
+	/** ID de la sucursal a validar en el scope contextual */
+	branchId?: number | null;
+	/** ID de la subsidiaria a validar en el scope contextual */
+	subsidiaryId?: number | null;
+	/** ID de la empresa a validar en el scope contextual */
+	companyId?: number | null;
+	/** Modo de scope: 'none', 'visible', 'access', 'both' */
+	scope?: AuthorizationScopeMode;
 	/**
 	 * Comportamiento cuando no tiene permisos:
 	 * - 'hidden' (default): No se muestra el botón
@@ -25,7 +34,7 @@ export interface IProtectedButtonProps extends IButtonProps {
 }
 
 /**
- * Botón con protección de permisos integrada.
+ * Botón con protección de permisos y scope contextual integrada.
  *
  * @example
  * // Ocultar si no tiene permiso
@@ -34,14 +43,15 @@ export interface IProtectedButtonProps extends IButtonProps {
  * </ProtectedButton>
  *
  * @example
- * // Mostrar deshabilitado con tooltip
+ * // Validar permiso + acceso a la sucursal actual
  * <ProtectedButton
- *   permission="delete-sale"
+ *   permission="create-product"
+ *   branchId={currentBranchId}
+ *   scope="access"
  *   fallbackMode="disabled"
- *   disabledTooltip="Necesitas permiso de administrador"
- *   icon="HeroTrash"
+ *   icon="HeroPlus"
  * >
- *   Eliminar
+ *   Nuevo producto
  * </ProtectedButton>
  */
 const ProtectedButton = forwardRef<HTMLButtonElement, IProtectedButtonProps>((props, ref) => {
@@ -50,6 +60,10 @@ const ProtectedButton = forwardRef<HTMLButtonElement, IProtectedButtonProps>((pr
 		permissions,
 		requireAll,
 		roles,
+		branchId,
+		subsidiaryId,
+		companyId,
+		scope,
 		fallbackMode = 'hidden',
 		disabledTooltip,
 		...buttonProps
@@ -65,14 +79,17 @@ const ProtectedButton = forwardRef<HTMLButtonElement, IProtectedButtonProps>((pr
 	}
 
 	// Combinar permission y permissions en una sola prop para PermissionGuard
-	const combinedPermission = permission || permissions;
-	const combinedRole = roles;
+	const combinedPermission = permission ?? permissions;
 
 	return (
 		<PermissionGuard
 			permission={combinedPermission}
-			role={combinedRole}
-			requireAll={requireAll}>
+			role={roles}
+			requireAll={requireAll}
+			branchId={branchId}
+			subsidiaryId={subsidiaryId}
+			companyId={companyId}
+			scope={scope}>
 			<Button ref={ref} {...buttonProps} />
 		</PermissionGuard>
 	);

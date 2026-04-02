@@ -1,6 +1,20 @@
-import { useEffect, useState, useCallback } from 'react';
+/**
+ * @deprecated Este hook será eliminado en futuras versiones.
+ * Usa `useCurrentBranch` de `@/hooks/useCurrentBranch` para obtener
+ * `branchId`, `subsidiaryId` y `visibleBranches` de forma reactiva
+ * sin necesidad de llamadas API adicionales.
+ *
+ * Para validar permisos contextuales, usa `useAuthorization` de
+ * `@/hooks/useAuthorization` con `canAccessBranch(branchId)`.
+ *
+ * @see useCurrentBranch
+ * @see useAuthorization
+ */
+import { useEffect, useState, useCallback, useRef } from 'react';
 import ApiService from '@/services/ApiService';
 import { useAppSelector } from '@/store';
+
+const EMPTY_STRING_ARRAY: string[] = [];
 
 /**
  * Interface para las branches del usuario
@@ -166,8 +180,12 @@ const getErrorMessage = (error: unknown): string => {
  *
  * @example
  * ```tsx
+ * 
+ * // Aqui se llama al hook y a alguns funciones dentro de la vista deseada
  * const { branches, loading, error, refetch } = useUserBranches(userId);
  *
+ * 
+ * // cargamos los datos en un select 
  * if (loading) return <Spinner />;
  * if (error) return <Error message={error} />;
  *
@@ -181,6 +199,8 @@ const getErrorMessage = (error: unknown): string => {
  *   </Select>
  * );
  * ```
+ *
+ * @deprecated Usa `useCurrentBranch` de `@/hooks/useCurrentBranch` en su lugar.
  */
 export const useUserBranches = (
 	userId?: number,
@@ -200,8 +220,9 @@ export const useUserBranches = (
 		return typeof pk === 'number' ? pk : undefined;
 	});
 
-	// Permisos del usuario autenticado (incluye roles en este proyecto)
-	const permisos = useAppSelector((s) => s.auth.permisos ?? []);
+	// Permisos reales normalizados del usuario autenticado
+	const permisos = useAppSelector((s) => s.auth.user?.permisos);
+	const safePermisos = permisos ?? EMPTY_STRING_ARRAY;
 	const authUser = useAppSelector((s) => s.auth.user as unknown);
 	const authUserRecord = asRecord(authUser);
 
@@ -210,27 +231,49 @@ export const useUserBranches = (
 		loading: false,
 		error: null,
 	});
+	const inFlightKeyRef = useRef<string | null>(null);
 
 	/**
 	 * Función para obtener las branches del usuario desde la API
 	 */
 	const fetchUserBranches = useCallback(async (): Promise<void> => {
+		const requestKey = `${userId ?? 'none'}:${enabled ? 'enabled' : 'disabled'}`;
+
 		if (!userId || !enabled) {
-			setState({
-				branches: [],
-				loading: false,
-				error: null,
+			inFlightKeyRef.current = null;
+			setState((prev) => {
+				if (!prev.branches.length && !prev.loading && prev.error === null) {
+					return prev;
+				}
+
+				return {
+					branches: [],
+					loading: false,
+					error: null,
+				};
 			});
 			return;
 		}
 
-		setState((prev) => ({ ...prev, loading: true, error: null }));
+		if (inFlightKeyRef.current === requestKey) {
+			return;
+		}
+
+		inFlightKeyRef.current = requestKey;
+
+		setState((prev) => {
+			if (prev.loading && prev.error === null) {
+				return prev;
+			}
+
+			return { ...prev, loading: true, error: null };
+		});
 
 		try {
 			// Si es el propio usuario o no tiene permiso global para ver usuarios,
 			// intentamos usar el perfil ya cargado en store para evitar llamadas.
 			const isSelf = currentUserId && Number(currentUserId) === Number(userId);
-			const canViewUser = Array.isArray(permisos) && permisos.includes('view-user');
+			const canViewUser = safePermisos.includes('view-user');
 			if (isSelf || !canViewUser) {
 				// 1) Intentar desde el store (userMeThunk ya carga /perfil en PageWrapper)
 				if (authUserRecord) {
@@ -243,12 +286,10 @@ export const useUserBranches = (
 
 					if (rawBranches.length) {
 						const normalizedSelf: UserBranch[] = rawBranches.map(normalizeUserBranch);
+						inFlightKeyRef.current = null;
 						setState({ branches: normalizedSelf, loading: false, error: null });
 						return;
 					}
-
-					setState({ branches: [], loading: false, error: null });
-					return;
 				}
 
 				// 2) Fallback a /perfil si el store aún no tiene access/visible
@@ -264,6 +305,7 @@ export const useUserBranches = (
 					mePayload.branch,
 				).map(normalizeUserBranch);
 
+				inFlightKeyRef.current = null;
 				setState({ branches: normalizedSelf, loading: false, error: null });
 				return;
 			}
@@ -293,6 +335,7 @@ export const useUserBranches = (
 				userData.branch,
 			).map(normalizeUserBranch);
 
+			inFlightKeyRef.current = null;
 			setState({
 				branches: normalizedBranches,
 				loading: false,
@@ -321,6 +364,7 @@ export const useUserBranches = (
 						meData.branch,
 					).map(normalizeUserBranch);
 
+					inFlightKeyRef.current = null;
 					setState({ branches: normalizedBranches, loading: false, error: null });
 					return;
 				} catch (_fallbackErr) {
@@ -330,10 +374,11 @@ export const useUserBranches = (
 
 			const errorMessage = getErrorMessage(error);
 
+			inFlightKeyRef.current = null;
 			setState({ branches: [], loading: false, error: errorMessage });
 			console.error('[useUserBranches] Error:', errorMessage, error);
 		}
-	}, [userId, enabled, currentUserId, permisos, authUserRecord]);
+	}, [userId, enabled, currentUserId, safePermisos, authUserRecord]);
 
 	/**
 	 * Función para limpiar el error
@@ -361,7 +406,11 @@ export const useUserBranches = (
 };
 
 /**
- * Alias para mantener compatibilidad con diferentes convenciones de nombrado
+ * Alias para mantener compatibilidad con diferentes convenciones de nombrado y asi poder disponer de la funcion en otros modulos por eempplo:
+ * 
+ * @deprecated Usa `useCurrentBranch` de `@/hooks/useCurrentBranch` en su lugar. de esta forma se evita el uso de este hook que es mas complejo y no es necesario para la mayoria de los casos.
+ * 
+ * 
  */
 export const useUserBranchAccess = useUserBranches;
 

@@ -1,17 +1,44 @@
+import type {
+  AuthorizationAccessScope,
+  AuthorizationVisibleScope,
+} from '@/types/authorization';
+
+type IUserImageMetadataValue = string | number | boolean | null | undefined;
+
+interface IUserImageData {
+	exists?: boolean;
+	original_url?: string;
+	sm?: string;
+	md?: string;
+	lg?: string;
+	url?: string;
+	path?: string;
+	thumb?: string;
+	medium?: string;
+	full?: string;
+	urls?: {
+		sm?: string;
+		md?: string;
+		lg?: string;
+		original?: string;
+	};
+	[key: string]: IUserImageMetadataValue | Record<string, IUserImageMetadataValue> | undefined;
+}
+
 export interface IPersonalizacionUsuario {
-	id: number;
-	fecha_creacion: string;
-	fecha_modificacion: string;
-	tema: number;
-	font_size: number;
-	tcolor: string;
-	tcolor_int: string;
-	dark_mode: number;
-	usuario: number;
-	sucursal_principal: number | null;
-	subsidiary_id: number | null;
-	empresa: number | null;
-	company_id?: number;
+  id: number;
+  fecha_creacion: string;
+  fecha_modificacion: string;
+  tema: number;
+  font_size: number;
+  tcolor: string;
+  tcolor_int: string;
+  dark_mode: number;
+  usuario: number;
+  sucursal_principal: number | null;
+  subsidiary_id: number | null;
+  empresa: number | null;
+  company_id?: number;
 }
 
 export interface IUserMe {
@@ -35,25 +62,7 @@ export interface IUserMe {
 	image:
 		| string
 		| undefined
-		| {
-				exists?: boolean;
-				original_url?: string;
-				sm?: string;
-				md?: string;
-				lg?: string;
-				url?: string;
-				path?: string;
-				thumb?: string;
-				medium?: string;
-				full?: string;
-				urls?: {
-					sm?: string;
-					md?: string;
-					lg?: string;
-					original?: string;
-				};
-				[key: string]: any;
-		  };
+		| IUserImageData;
 	branch_id: number | undefined;
 	// Nuevos campos para multi-empresa
 	companies?: Array<{
@@ -88,38 +97,8 @@ export interface IUserMe {
 	permisos?: string[];
 	personalizacion?: IPersonalizacionUsuario;
 
-	access?:
-		| string
-		| {
-				subsidiaries?: Array<{
-					id: number;
-					name: string;
-					company?: { id: number; name: string };
-					source?: string;
-				}>;
-				branches?: Array<{
-					id: number;
-					name: string;
-					subsidiary?: { id: number; name: string };
-					source?: string;
-					is_primary?: boolean;
-					position?: string | null;
-				}>;
-		  };
-	visible?:
-		| boolean
-		| {
-				subsidiaries?: Array<{
-					id: number;
-					name: string;
-					company?: { id: number; name: string };
-				}>;
-				branches?: Array<{
-					id: number;
-					name: string;
-					subsidiary?: { id: number; name: string };
-				}>;
-		  };
+	access?: AuthorizationAccessScope | null;
+	visible?: AuthorizationVisibleScope | null;
 }
 
 export interface IGruposUsuarios {

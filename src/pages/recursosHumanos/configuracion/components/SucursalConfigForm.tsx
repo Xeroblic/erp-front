@@ -8,7 +8,7 @@ import { setBranchConfig } from '@/store/slices/recursosHumanos/rhSlice';
 import {
 	useUserBranches,
 	type UserBranch,
-} from '@/pages/catalogos/productos/components/modals/hooks/userBranch';
+} from '@/hooks/permiso/userBranch';
 import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
 import Input from '@/components/form/Input';
 import Button from '@/components/ui/Button';

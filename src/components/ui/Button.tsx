@@ -10,7 +10,7 @@ import Icon from '../icon/Icon';
 import { TBorderWidth } from '../../types/borderWidth.type';
 import useReactiveThemeConfig from '../../hooks/useReactiveThemeConfig';
 import { textColor as getTextColor } from '../../utils/textColor.util';
-import useCan from '../../hooks/useCan';
+import useAuthorization from '@/hooks/useAuthorization';
 
 export type TButtonVariants = 'solid' | 'outline' | 'default';
 export type TButtonSize = 'xs' | 'sm' | 'default' | 'lg' | 'xl';
@@ -104,7 +104,7 @@ function useClickGuard(onClick: IButtonProps['onClick']) {
 const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } =
 		useReactiveThemeConfig();
-	const { any, isSuperAdmin } = useCan();
+	const { hasAnyPermission, isSuperAdmin } = useAuthorization();
 
 	const {
 		borderWidth = themeConfig.borderWidth,
@@ -137,7 +137,7 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 	// Si se especifica permission y el usuario NO tiene el permiso, no renderizar
 	if (permission && !isSuperAdmin) {
 		const permList = Array.isArray(permission) ? permission : [permission];
-		if (!any(permList)) {
+		if (!hasAnyPermission(permList)) {
 			return null;
 		}
 	}

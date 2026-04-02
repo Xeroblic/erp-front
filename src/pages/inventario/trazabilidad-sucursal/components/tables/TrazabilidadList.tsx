@@ -3,7 +3,8 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import DataTable from '@/components/ui/DataTable';
 import Spinner from '@/components/ui/Spinner';
-import { useUserBranches } from '@/hooks/userBrandBranch';
+import { useUserBranches } from '@/hooks/permiso/userBranch';
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { IInventoryMovement } from '@/interface/inventoryMovements.interface';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
@@ -13,7 +14,6 @@ import {
 	selectInventarioLoading,
 	selectInventarioError,
 } from '@/store/slices/inventory/inventorySlice';
-import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/personalizacionSlice';
 import { ColumnDef } from '@tanstack/react-table';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -32,7 +32,7 @@ export function TrazabilidadList() {
 	const error = useAppSelector(selectInventarioError);
 
 	const currentUser = useAppSelector((state) => state.auth.user);
-	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
+	const { branchId } = useCurrentBranch();
 
 	const [fetchStatus, setFetchStatus] = useState<FetchStatus>('idle');
 	const [hasFetched, setHasFetched] = useState(false);
@@ -42,20 +42,6 @@ export function TrazabilidadList() {
 
 	const userId = currentUser?.id ?? (currentUser as any)?.pk ?? undefined;
 	const { branches } = useUserBranches(userId, { enabled: Boolean(userId) });
-
-	const preferredBranchId = useMemo(() => {
-		if (personalizacionUsuario?.sucursal_principal)
-			return personalizacionUsuario.sucursal_principal;
-		if (currentUser?.branch?.id) return currentUser.branch.id;
-		if (currentUser?.branch_id) return currentUser.branch_id;
-		return null;
-	}, [
-		personalizacionUsuario?.sucursal_principal,
-		currentUser?.branch?.id,
-		currentUser?.branch_id,
-	]);
-
-	const [branchId, setBranchId] = useState<number | null>(preferredBranchId);
 
 	const currentBranchName = useMemo(() => {
 		if (!branchId) return null;
@@ -75,33 +61,10 @@ export function TrazabilidadList() {
 		};
 	}, []);
 
-	// Actualizar branchId cuando cambie el preferido inicial (solo una vez)
 	useEffect(() => {
-		if (branchId === null && preferredBranchId) {
-			setBranchId(preferredBranchId);
-		}
-	}, [preferredBranchId, branchId]);
-
-	// Escuchar cambios externos de branch
-	useEffect(() => {
-		const handleExternalBranchChange = (event: Event) => {
-			const customEvent = event as CustomEvent<{
-				branchId: number | null;
-				subsidiaryId?: number | null;
-			}>;
-			const { detail } = customEvent;
-			const nextBranchId = detail?.branchId ?? null;
-			if (nextBranchId === null || nextBranchId === branchId) return;
-
-			// Resetear estado para nueva sucursal
-			fetchedBranchRef.current = null;
-			setFetchStatus('idle');
-			setHasFetched(false);
-			setBranchId(nextBranchId);
-		};
-
-		window.addEventListener('user-branch-changed', handleExternalBranchChange);
-		return () => window.removeEventListener('user-branch-changed', handleExternalBranchChange);
+		fetchedBranchRef.current = null;
+		setFetchStatus('idle');
+		setHasFetched(false);
 	}, [branchId]);
 
 	// Función para hacer fetch

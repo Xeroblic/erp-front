@@ -2,7 +2,7 @@
 import React, { PropsWithChildren } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAppSelector } from '@/store';
-import useAuthority from '@/hooks/useAuthority';
+import useAuthorization from '@/hooks/useAuthorization';
 import { hasTemporaryPermission } from '@/constants/temp-permissions.constant';
 
 export interface ProtectedRouteProps extends PropsWithChildren {
@@ -41,20 +41,19 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 	redirectTo = '/dashboard',
 }) => {
 	const location = useLocation();
-	const user = useAppSelector((state) => state.auth.user);
-	const userAuthority = useAppSelector((state) => state.auth.permisos);
 	const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
-	const authLoading = useAppSelector((state) => state.auth.loading);
+	const { authorize, isLoading, isSuperAdmin } = useAuthorization();
 
 	// Combinar permission singular con array permissions
 	const allPermissions = permission ? [permission, ...permissions] : permissions;
-	const requiredAuthorities = [...allPermissions, ...roles];
-
-	// Verificar acceso
-	const hasAccess = useAuthority(userAuthority, requiredAuthorities, requireAll);
+	const hasAccess = authorize({
+		permissions: allPermissions,
+		roles,
+		requireAll,
+	});
 
 	// Mientras carga la autenticación, no mostrar nada
-	if (authLoading) {
+	if (isLoading) {
 		return null;
 	}
 
@@ -64,12 +63,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 	}
 
 	// Si no hay requisitos, permitir acceso
-	if (requiredAuthorities.length === 0) {
+	if (allPermissions.length === 0 && roles.length === 0) {
 		return <>{children}</>;
 	}
 
 	// Super-admin tiene acceso a todo
-	if (user?.authority?.includes('super-admin') || userAuthority?.includes('super-admin')) {
+	if (isSuperAdmin) {
 		return <>{children}</>;
 	}
 

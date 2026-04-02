@@ -55,10 +55,10 @@ export const ERP_PERMISSIONS = {
 	},
 
 	SALES: {
-		VIEW: 'sales.view',
-		CREATE: 'sales.create',
-		UPDATE: 'sales.update',
-		DELETE: 'sales.delete',
+		VIEW: 'view-sale',
+		CREATE: 'create-sale',
+		UPDATE: 'update-sale',
+		DELETE: 'delete-sale',
 		CONFIRM: 'sales.confirm',
 		DELIVER: 'sales.deliver',
 		CANCEL: 'sales.cancel',
@@ -71,15 +71,55 @@ export const ERP_PERMISSIONS = {
 	},
 
 	QUOTES: {
-		VIEW: 'quotes.view',
-		CREATE: 'quotes.create',
-		UPDATE: 'quotes.update',
-		DELETE: 'quotes.delete',
+		VIEW: 'view-quote',
+		CREATE: 'create-quote',
+		UPDATE: 'update-quote',
+		DELETE: 'delete-quote',
 		SEND: 'quotes.send',
 		APPROVE: 'quotes.approve',
 		CONVERT: 'quotes.convert',
 		GENERATE_PDF: 'quotes.generate_pdf',
 		MANAGE_DISCOUNTS: 'quotes.manage_discounts',
+	},
+
+	CATALOGS: {
+		PRODUCTS: {
+			VIEW: 'view-product',
+			CREATE: 'create-product',
+			UPDATE: 'update-product',
+			DELETE: 'delete-product',
+		},
+		CATEGORIES: {
+			VIEW: 'view-category',
+			CREATE: 'create-category',
+			UPDATE: 'update-category',
+			DELETE: 'delete-category',
+		},
+		BRANDS: {
+			VIEW: 'view-brand',
+			CREATE: 'create-brand',
+			UPDATE: 'update-brand',
+			DELETE: 'delete-brand',
+		},
+		SUPPLIERS: {
+			VIEW: 'view-supplier',
+			CREATE: 'create-supplier',
+			UPDATE: 'update-supplier',
+			DELETE: 'delete-supplier',
+		},
+		CUSTOMERS: {
+			VIEW: 'view-customer-supplier',
+			CREATE: 'create-customer-supplier',
+			UPDATE: 'update-customer-supplier',
+			DELETE: 'delete-customer-supplier',
+		},
+	},
+
+	WAREHOUSES: {
+		VIEW: 'view-warehouse',
+		CREATE: 'create-warehouse',
+		UPDATE: 'update-warehouse',
+		DELETE: 'delete-warehouse',
 	},
 
 	REPORTS: {

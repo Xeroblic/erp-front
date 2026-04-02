@@ -1,4 +1,19 @@
 import { RootState } from '@/store/rootReducer';
+import type { IUserMe } from '@/interface/user.interface';
+
+type UserWithAuthorizationBranches = IUserMe & {
+	branches?: BranchLike[];
+	subsidiary_id?: number | null;
+	branch_id?: number | null;
+};
+
+type PersonalizationBranch = {
+	subsidiary_id?: number | null;
+};
+
+type PersonalizationBrand = {
+	branches?: PersonalizationBranch[];
+};
 
 type BranchLike = {
 	id?: number | null;
@@ -38,18 +53,19 @@ const resolveSubsidiaryFromBranch = (
 			return toNumber(subsidiarySource);
 		}
 		if (typeof subsidiarySource === 'object' && subsidiarySource !== null) {
-			return (
-				toNumber(subsidiarySource.id) ?? toNumber((subsidiarySource as any).subsidiary_id)
-			);
+			const subsidiaryRecord = subsidiarySource as { id?: number | null; subsidiary_id?: number | null };
+			return toNumber(subsidiaryRecord.id) ?? toNumber(subsidiaryRecord.subsidiary_id);
 		}
 		return toNumber(branch.subsidiary_id);
 	};
 
+	const authUser = user as UserWithAuthorizationBranches | null | undefined;
+
 	const collections: Array<BranchLike | BranchLike[] | null | undefined> = [
 		user?.branch as BranchLike | null | undefined,
-		(user as any)?.branches,
-		(user as any)?.access?.branches,
-		(user as any)?.visible?.branches,
+		authUser?.branches,
+		authUser?.access?.branches,
+		authUser?.visible?.branches,
 	];
 
 	for (const source of collections) {
@@ -74,6 +90,7 @@ const resolveSubsidiaryFromBranch = (
  */
 export const selectEffectiveSubsidiaryId = (state: RootState): number | null => {
 	const { user } = state.auth;
+	const authUser = user as UserWithAuthorizationBranches | null | undefined;
 	const personalizationSlice = state.personalizacion?.personalizacionUsuario;
 
 	const directCandidates = [
@@ -81,9 +98,7 @@ export const selectEffectiveSubsidiaryId = (state: RootState): number | null => 
 		personalizationSlice?.subsidiary_id,
 		user?.personalizacion?.subsidiary_id,
 		user?.branch?.subsidiary?.id,
-		typeof (user as any)?.subsidiary_id === 'number'
-			? ((user as any).subsidiary_id as number)
-			: null,
+		authUser?.subsidiary_id ?? null,
 	];
 
 	for (const candidate of directCandidates) {
@@ -97,7 +112,7 @@ export const selectEffectiveSubsidiaryId = (state: RootState): number | null => 
 		personalizationSlice?.sucursal_principal ??
 		user?.personalizacion?.sucursal_principal ??
 		user?.branch?.id ??
-		(user as any)?.branch_id ??
+		authUser?.branch_id ??
 		null;
 
 	const derivedFromBranch = resolveSubsidiaryFromBranch(preferredBranchId, user);
@@ -112,11 +127,12 @@ export const selectEffectiveSubsidiaryId = (state: RootState): number | null => 
 export const selectBranchesBySubsidiary = (state: RootState, subsidiaryId: number | null) => {
 	if (!subsidiaryId) return [];
 
-	const persState = state.personalizacion as any;
-	const branches = persState?.userBrandsBranches?.flatMap(
-		(brand: any) => brand.branches
-	) || [];
+	const persState = state.personalizacion as {
+		userBrandsBranches?: PersonalizationBrand[];
+	} | null | undefined;
+	const branches =
+		persState?.userBrandsBranches?.flatMap((brand) => brand.branches ?? []) ?? [];
 
 	// Si no hay ramas en personalización, devolver lista vacía o intentar sacar de auth (depende de la app)
-	return branches.filter((b: any) => b.subsidiary_id === subsidiaryId) as any[];
+	return branches.filter((branch) => branch.subsidiary_id === subsidiaryId);
 };
