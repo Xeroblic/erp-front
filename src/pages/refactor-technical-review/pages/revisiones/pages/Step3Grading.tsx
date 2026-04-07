@@ -6,6 +6,8 @@ import Badge from '@/components/ui/Badge';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import Textarea from '@/components/form/Textarea';
 import gsap from 'gsap';
+import { serialNumbers } from '@/pages/refactor-technical-review/ESPECIA_CANAL13/list_serialNumber';
+import { useParams } from 'react-router-dom';
 
 /* ═══════════════════════════ Types ═══════════════════════════ */
 
@@ -151,6 +153,9 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 	onRecalculate,
 	onModifyReview,
 }) => {
+	/* ── Route Params ── */
+	const { batchId: routeBatchId } = useParams<{ batchId: string }>();
+
 	/* ── State ── */
 	const [isApproving, setIsApproving] = useState(false);
 	const [isRecalculating, setIsRecalculating] = useState(false);
@@ -167,6 +172,8 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 	const displayEquipmentType = extractStringValue(equipmentType, '');
 	const ringOffset = RING_CIRCUMFERENCE * (1 - confidencePercent / 100);
 	const gradientId = `ring-grad-${grade}`;
+
+	const isSpecialSold = routeBatchId === '17' && serialNumbers.includes(serialNumber);
 
 	/* ── Handlers ── */
 	const handleAcceptSuggestion = useCallback(async () => {
@@ -359,6 +366,31 @@ const Step3Grading: React.FC<Step3GradingProps> = ({
 
 	return (
 		<div ref={scopeRef} className='space-y-6'>
+			{/* ═══ Special Sale Alert (Canal 13) ═══ */}
+			{isSpecialSold && (
+				<div className='relative animate-pulse overflow-hidden rounded-2xl border-2 border-emerald-500 bg-emerald-50 p-6 shadow-lg transition-all dark:bg-emerald-950/30'>
+					<div className='absolute -right-4 -top-4 opacity-10'>
+						<Icon icon='HeroCheckBadge' className='h-32 w-32 text-emerald-600' />
+					</div>
+					<div className='relative z-10 flex flex-col items-center gap-4 sm:flex-row'>
+						<div className='flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-800/40 dark:text-emerald-400'>
+							<Icon icon='HeroCheckBadge' className='h-10 w-10' />
+						</div>
+						<div className='text-center sm:text-left'>
+							<h3 className='text-xl font-black uppercase tracking-tight text-emerald-900 dark:text-emerald-100'>
+								¡EQUIPO VENDIDO!
+							</h3>
+							<p className='mt-1 text-sm font-bold text-emerald-700 dark:text-emerald-300'>
+								Este equipo forma parte de la venta especial de Canal 13. 
+								<span className='block text-lg underline decoration-emerald-500 decoration-double'>
+									SÉPARALO INMEDIATAMENTE y márcalo físicamente.
+								</span>
+							</p>
+						</div>
+					</div>
+				</div>
+			)}
+
 			{/* ═══ Error Banner ═══ */}
 			{error && (
 				<div className='flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-800/50 dark:bg-red-950/40 dark:backdrop-blur-sm'>

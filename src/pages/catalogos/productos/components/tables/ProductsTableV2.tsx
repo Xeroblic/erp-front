@@ -71,6 +71,7 @@ const extractProductVariants = (product: IProduct): IProductChild[] => {
 		}
 		return undefined;
 	};
+
 	const productRecord = product as unknown as Record<string, unknown>;
 
 	const tryResolve = (source?: unknown): IProductChild[] => {
