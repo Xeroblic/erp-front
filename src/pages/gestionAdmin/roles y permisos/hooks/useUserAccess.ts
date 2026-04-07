@@ -2,26 +2,17 @@ import { useEffect, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../../store/rootReducer';
 import type { ISubempresa, ISucursal } from '../../../../interface/empresas.interface';
+import type {
+	AuthorizationAccessScope,
+	AuthorizationBranchRef,
+	AuthorizationSubsidiaryRef,
+} from '../../../../types/authorization';
 
-export type AccessBranch = {
-	id: number;
-	name: string;
-	subsidiary?: { id: number; name: string };
-	source?: string;
-	is_primary?: boolean;
-	position?: string | null;
-};
+export type AccessBranch = AuthorizationBranchRef;
 
-export type AccessSubsidiary = {
-	id: number;
-	name: string;
-	company?: { id: number; name: string } | null;
-};
+export type AccessSubsidiary = AuthorizationSubsidiaryRef;
 
-export type UserAccess = {
-	subsidiaries: AccessSubsidiary[];
-	branches: AccessBranch[];
-};
+export type UserAccess = AuthorizationAccessScope;
 
 /**
  * Hook para obtener y transformar los accesos jerárquicos de un usuario
@@ -45,7 +36,7 @@ export const useUserAccess = (_userId?: number) => {
 						id: sub.company_id,
 						name: '', // El nombre de la empresa vendría del slice de empresa si es necesario
 					}
-				: undefined,
+				: null,
 		}));
 	}, [subsidiariesList]);
 
@@ -60,7 +51,7 @@ export const useUserAccess = (_userId?: number) => {
 							id: (branch.subsidiary_id || branch.subempresa_id)!,
 							name: branch.subsidiary_name || '',
 						}
-					: undefined,
+					: null,
 			source: 'direct', // Esto podría venir de otra fuente de datos
 			is_primary: false, // Esto también podría determinarse de otra forma
 			position: branch.manager_name, // Usar el nombre del manager como posición temporal

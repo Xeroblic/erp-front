@@ -1,5 +1,6 @@
 import { RootState } from '@/store/rootReducer';
 import type { IUserMe } from '@/interface/user.interface';
+import type { IBranch } from '@/interface/empresas.interface';
 
 type UserWithAuthorizationBranches = IUserMe & {
 	branches?: BranchLike[];
@@ -7,7 +8,7 @@ type UserWithAuthorizationBranches = IUserMe & {
 	branch_id?: number | null;
 };
 
-type PersonalizationBranch = {
+type PersonalizationBranch = IBranch & {
 	subsidiary_id?: number | null;
 };
 
@@ -124,15 +125,20 @@ export const selectEffectiveSubsidiaryId = (state: RootState): number | null => 
 /**
  * Filtra y devuelve la lista de sucursales que pertenecen a la subsidiaria actual
  */
-export const selectBranchesBySubsidiary = (state: RootState, subsidiaryId: number | null) => {
+export const selectBranchesBySubsidiary = (
+	state: RootState,
+	subsidiaryId: number | null,
+): IBranch[] => {
 	if (!subsidiaryId) return [];
 
-	const persState = state.personalizacion as {
-		userBrandsBranches?: PersonalizationBrand[];
-	} | null | undefined;
-	const branches =
-		persState?.userBrandsBranches?.flatMap((brand) => brand.branches ?? []) ?? [];
+	const persState = state.personalizacion as
+		| {
+				userBrandsBranches?: PersonalizationBrand[];
+		  }
+		| null
+		| undefined;
+	const branches = persState?.userBrandsBranches?.flatMap((brand) => brand.branches ?? []) ?? [];
 
 	// Si no hay ramas en personalización, devolver lista vacía o intentar sacar de auth (depende de la app)
-	return branches.filter((branch) => branch.subsidiary_id === subsidiaryId);
+	return branches.filter((branch) => branch.subsidiary_id === subsidiaryId) as IBranch[];
 };

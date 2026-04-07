@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import ApiService from '../../../services/ApiService';
 import { IUserMe } from '../../../interface/user.interface';
+import { AuthorizationAccessScope, AuthorizationVisibleScope } from '../../../types/authorization';
 
 // Interfaces adicionales que coinciden con el backend
 export interface UserWithDetails extends Omit<IUserMe, 'roles' | 'companies'> {
@@ -70,47 +71,8 @@ export interface UserWithDetails extends Omit<IUserMe, 'roles' | 'companies'> {
 		};
 	};
 
-	access?: {
-		subsidiaries?: Array<{
-			id: number;
-			name: string;
-			company?: {
-				id: number;
-				name: string;
-			};
-			source?: string;
-		}>;
-		branches?: Array<{
-			id: number;
-			name: string;
-			subsidiary?: {
-				id: number;
-				name: string;
-			};
-			source?: string;
-			is_primary?: boolean;
-			position?: string | null;
-		}>;
-	};
-
-	visible?: {
-		subsidiaries?: Array<{
-			id: number;
-			name: string;
-			company?: {
-				id: number;
-				name: string;
-			};
-		}>;
-		branches?: Array<{
-			id: number;
-			name: string;
-			subsidiary?: {
-				id: number;
-				name: string;
-			};
-		}>;
-	};
+	access?: AuthorizationAccessScope;
+	visible?: AuthorizationVisibleScope;
 
 	// Campos de control
 	can_edit?: boolean;

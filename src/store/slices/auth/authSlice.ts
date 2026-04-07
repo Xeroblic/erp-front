@@ -160,10 +160,11 @@ export const userMeThunk = createAsyncThunk<
 			headers: { Authorization: `Bearer ${token}` },
 		});
 
-		return normalizeUserProfile(resp.data as string | PerfilResponse);
-	} catch (error: any) {
-		const status = error?.response?.status;
-		const apiMessage = (error?.response?.data?.message ?? error?.message) as string | undefined;
+		return normalizeUserProfile(resp.data as Record<string, unknown>);
+	} catch (error: unknown) {
+		const apiError = error as any;
+		const status = apiError?.response?.status;
+		const apiMessage = (apiError?.response?.data?.message ?? apiError?.message) as string | undefined;
 		const isUnauthorized =
 			status === 401 ||
 			(typeof apiMessage === 'string' && apiMessage.toLowerCase().includes('no autentic'));
