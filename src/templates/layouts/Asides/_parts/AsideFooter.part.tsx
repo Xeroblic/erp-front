@@ -23,7 +23,7 @@ const AsideFooterPart = () => {
 
 	return (
 		<AsideFooter>
-			{isReady && version === 'dev' && (
+			{/* {isReady && version === 'dev' && ( */}
 				<Nav>
 					<NavSeparator />
 					<NavItem text='Zentria Installers'>
@@ -45,7 +45,7 @@ const AsideFooterPart = () => {
 						)}
 					</NavItem>
 				</Nav>
-			)}
+			{/* )} */}
 			<UserTemplate />
 			<DarkModeSwitcherPart />
 		</AsideFooter>
