@@ -15,10 +15,10 @@ export type AccessSubsidiary = AuthorizationSubsidiaryRef;
 export type UserAccess = AuthorizationAccessScope;
 
 /**
- * Hook para obtener y transformar los accesos jerárquicos de un usuario
- * Combina datos de subsidiarias y sucursales desde los slices existentes
- * @param _userId - ID del usuario (reservado para futuro filtrado)
- */
+	* Hook para obtener y transformar los accesos jerárquicos de un usuario
+	* Combina datos de subsidiarias y sucursales desde los slices existentes
+	* @param _userId - ID del usuario (reservado para futuro filtrado) 
+*/
 export const useUserAccess = (_userId?: number) => {
 	// Obtener datos de los slices
 	const subsidiariesList = useSelector((state: RootState) => state.subEmpresa.lista);

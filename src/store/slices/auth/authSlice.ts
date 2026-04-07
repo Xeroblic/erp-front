@@ -244,7 +244,7 @@ const authSlice = createSlice({
 					...(user.cargo ? [user.cargo] : []),
 				];
 
-				s.user = { ...user, authority, roles: payload.roles || [] };
+				s.user = { ...user, authority, permisos: payload.permisos, roles: payload.roles || [] };
 				s.permisos = authority;
 				s.isAuthenticated = true;
 				s.userLastFetched = Date.now();

@@ -45,9 +45,7 @@ const AuthorityCheckNav = (props: AuthorityGuardProps) => {
 	const { isSuperAdmin, authorize, roles: authorizationRoles } = useAuthorization();
 
 	const permissionMatched =
-		safeAuthority.length === 0
-			? true
-			: authorize({ permissions: safeAuthority, requireAll });
+		safeAuthority.length === 0 ? true : authorize({ permissions: safeAuthority, requireAll });
 	const roleMatched =
 		safeRoles.length === 0
 			? true
@@ -384,7 +382,9 @@ const DefaultAsideTemplate = () => {
 									to={Pages.inventory.subPages.ingresoStock.to}
 									icon={Pages.inventory.subPages.ingresoStock.icon}
 									id={Pages.inventory.subPages.ingresoStock.id}
-									onClick={() => navigate(Pages.inventory.subPages.ingresoStock.to)}
+									onClick={() =>
+										navigate(Pages.inventory.subPages.ingresoStock.to)
+									}
 								/>
 							</AuthorityCheckNav>
 						</NavCollapse>

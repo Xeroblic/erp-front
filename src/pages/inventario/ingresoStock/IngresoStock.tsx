@@ -23,6 +23,7 @@ import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/per
 
 import { useProductos } from '@/pages/catalogos/productos/hooks/useProductos';
 import type { IProduct } from '@/interface/product.interface';
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import {
 	useUserBranches,
 	type UserBranch,
@@ -36,43 +37,20 @@ import { useWorkspaceItems, useStockAdjustment, useQuickProductCreate } from './
 
 const IngresoStock = () => {
 	const filters = useMemo(() => ({}), []);
-	const { user } = useAppSelector((state) => state.auth);
-	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
+	
+	// ── Contexto centralizado de sucursal/subempresa ─────────────────────
+	const { branchId: currentBranchId, subsidiaryId: contextSubsidiaryId, visibleBranches } = useCurrentBranch();
 
-	const userId = user?.id ?? (user as { pk?: number } | null)?.pk ?? null;
-	const preferredBranchId =
-		personalizacionUsuario?.sucursal_principal ?? user?.branch?.id ?? user?.branch_id ?? null;
+	// ── Progressive Disclosure: Estados de Fase ─────────────────────────
+	// Estado local de branchId solo para la UI del selector, sincronizado con el contexto centralizado
+	const [selectedBranchId, setSelectedBranchId] = useState<string>('');
 
-	const { branches: userBranches, loading: branchesLoading } = useUserBranches(
-		userId ?? undefined,
-		{ enabled: Boolean(userId) },
-	);
-
-	const accessibleSubsidiaryIds = useMemo(() => {
-		const subsidiaries = new Set<number>();
-		(
-			user as { access?: { subsidiaries?: Array<{ id?: number } | number> } } | null
-		)?.access?.subsidiaries?.forEach((sub) => {
-			if (typeof sub === 'number') {
-				subsidiaries.add(sub);
-				return;
-			}
-			if (sub?.id) subsidiaries.add(sub.id);
-		});
-		return subsidiaries;
-	}, [user]);
-
-	const visibleBranches = useMemo<UserBranch[]>(() => {
-		if (!userBranches.length) return [];
-		const withSubsidiary = userBranches.filter((branch) => Boolean(branch.subsidiaryId));
-		if (accessibleSubsidiaryIds.size === 0) return withSubsidiary;
-		return withSubsidiary.filter((branch) => {
-			return accessibleSubsidiaryIds.has(Number(branch.subsidiaryId));
-		});
-	}, [userBranches, accessibleSubsidiaryIds]);
-
-	const [branchId, setBranchId] = useState('');
-	const [contextSubsidiaryId, setContextSubsidiaryId] = useState<number | null>(null);
+	// Sincronizar el seletor local con el contexto cuando cambia el branchId centralizado
+	useEffect(() => {
+		if (currentBranchId) {
+			setSelectedBranchId(String(currentBranchId));
+		}
+	}, [currentBranchId]);
 
 	const branchOptions = useMemo(
 		() =>
@@ -82,30 +60,6 @@ const IngresoStock = () => {
 			})),
 		[visibleBranches],
 	);
-
-	useEffect(() => {
-		if (!visibleBranches.length || branchId) return;
-		const initial =
-			visibleBranches.find((branch) => branch.id === preferredBranchId) ?? visibleBranches[0];
-		if (!initial) return;
-		setBranchId(String(initial.id));
-		setContextSubsidiaryId(initial.subsidiaryId ?? null);
-	}, [visibleBranches, preferredBranchId, branchId]);
-
-	useEffect(() => {
-		const handleExternalBranchChange = (event: Event) => {
-			const detail = (event as CustomEvent<{ branchId?: number; subsidiaryId?: number }>)
-				.detail;
-			if (!detail) return;
-			if (detail.branchId) setBranchId(String(detail.branchId));
-			if (typeof detail.subsidiaryId === 'number') {
-				setContextSubsidiaryId(detail.subsidiaryId);
-			}
-		};
-
-		window.addEventListener('user-branch-changed', handleExternalBranchChange);
-		return () => window.removeEventListener('user-branch-changed', handleExternalBranchChange);
-	}, []);
 
 	// ─── Progressive Disclosure: Estados de Fase ─────────────────────────
 	const [selectedProduct, setSelectedProduct] = useState<IProduct | null>(null); // Fase 0→1
@@ -212,7 +166,7 @@ const IngresoStock = () => {
 		brandId?: string;
 	}) => {
 		const parsedSubsidiaryId = Number(contextSubsidiaryId ?? 0);
-		const parsedBranchId = Number(branchId);
+		const parsedBranchId = Number(selectedBranchId);
 		const selectedBrandId = Number(brands?.[0]?.id ?? 0);
 
 		if (parsedSubsidiaryId <= 0 || parsedBranchId <= 0) {
@@ -267,7 +221,7 @@ const IngresoStock = () => {
 			<Container>
 				<div className='flex flex-col gap-4 py-8'>
 					{error && <p className='text-center text-red-500'>Error: {error}</p>}
-					{!branchId && (
+					{!selectedBranchId && (
 						<p className='text-center text-amber-500'>
 							Selecciona una sucursal visible para cargar productos.
 						</p>
@@ -275,9 +229,9 @@ const IngresoStock = () => {
 
 					{/* Producto Exprés */}
 					<QuickProductForm
-						branchId={branchId}
-						isCreating={isCreating}
-						onSubmit={handleQuickProductCreate}
+					branchId={selectedBranchId}
+					isCreating={isCreating}
+					onSubmit={handleQuickProductCreate}
 					/>
 
 					{/* ─── Grid Principal: Catálogo + Detalle ─── */}
@@ -361,7 +315,7 @@ const IngresoStock = () => {
 										branchId={targetBranchId}
 										onBranchIdChange={() => {}}
 										branchOptions={branchOptions}
-										isBranchesLoading={branchesLoading}
+									isBranchesLoading={false}
 										selectedSubsidiaryId={selectedSubsidiaryId}
 										reason={reason}
 										onReasonChange={setReason}

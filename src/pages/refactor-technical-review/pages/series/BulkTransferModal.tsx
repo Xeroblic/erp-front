@@ -111,6 +111,7 @@ const BulkTransferModal: React.FC<BulkTransferModalProps> = ({
 						</div>
 					</div>
 
+					
 					{/* Lado Derecho: Destino y Resumen */}
 					<div className='flex flex-col gap-6'>
 						<div>
