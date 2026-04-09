@@ -10,6 +10,7 @@ const asideRoutes: RouteProps[] = [
 	{ path: authPages.confirmarNuevaPass.to, element: null },
 	{ path: authPages.portalPedidos.to, element: null },
 	{ path: authPages.portalPedidosMock.to, element: null },
+	{ path: authPages.FormularioLockCare.to, element: null },
 	{ path: '*', element: <DefaultAsideTemplate /> },
 ];
 

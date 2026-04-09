@@ -26,6 +26,8 @@ const ResetPasswordPage = lazy(() => import('@/pages/ResetPassword/ConfirmarNuev
 const RecoverPasswordPage = lazy(() => import('@/pages/ResetPassword/RecuperarPassword'));
 const PortalPedidosPage = lazy(() => import('@/pages/portal-pedidos/PortalPedidosPage'));
 
+const FormLockCare = lazy(() => import('@/pages/Public/formLockCleare/FormLockCare'));
+
 // Paginas de Configuracion Sistemas (nuevo módulo)
 const IntegrationsListPage = lazy(() => import('@/pages/integraciones/IntegrationsListPage'));
 const UnmappedProductsPage = lazy(() => import('@/pages/integraciones/UnmappedProductsPage'));
@@ -159,6 +161,7 @@ const contentRoutes: IRoutePersonalizada[] = [
 	{ path: cfg.confirmarNuevaPass.to, element: <ConfirmarNuevaPass />, public: true },
 	{ path: cfg.portalPedidosMock.to, element: <PortalPedidosPage />, public: true },
 	{ path: cfg.portalPedidos.to, element: <PortalPedidosPage />, public: true },
+	{ path: cfg.FormularioLockCare.to, element: <FormLockCare />, public: true },
 	// refactor
 	{
 		path: cfg.technical.subPages.refactor.to,

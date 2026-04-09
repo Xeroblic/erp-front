@@ -66,6 +66,13 @@ export const authPages = {
 		text: 'Portal Pedidos (Demo)',
 		icon: 'DuoBox3',
 		authority: [],
+	},		
+	FormularioLockCare:{
+		id: 'formularioLockCare',
+		to: '/formulario-lock-care',
+		text: 'Formulario Lock Care',
+		icon: 'DuoForm',
+		authority: [],
 	},
 } satisfies Record<string, PageConfig>;
 

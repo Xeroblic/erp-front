@@ -24,10 +24,7 @@ import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/per
 import { useProductos } from '@/pages/catalogos/productos/hooks/useProductos';
 import type { IProduct } from '@/interface/product.interface';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
-import {
-	useUserBranches,
-	type UserBranch,
-} from '@/hooks/permiso/userBranch';
+import { useUserBranches, type UserBranch } from '@/hooks/permiso/userBranch';
 
 // Componentes y hooks locales
 import { ProductsTable, WorkspaceTable, ProductDetailCard } from './components';
@@ -37,9 +34,13 @@ import { useWorkspaceItems, useStockAdjustment, useQuickProductCreate } from './
 
 const IngresoStock = () => {
 	const filters = useMemo(() => ({}), []);
-	
+
 	// ── Contexto centralizado de sucursal/subempresa ─────────────────────
-	const { branchId: currentBranchId, subsidiaryId: contextSubsidiaryId, visibleBranches } = useCurrentBranch();
+	const {
+		branchId: currentBranchId,
+		subsidiaryId: contextSubsidiaryId,
+		visibleBranches,
+	} = useCurrentBranch();
 
 	// ── Progressive Disclosure: Estados de Fase ─────────────────────────
 	// Estado local de branchId solo para la UI del selector, sincronizado con el contexto centralizado
@@ -229,9 +230,9 @@ const IngresoStock = () => {
 
 					{/* Producto Exprés */}
 					<QuickProductForm
-					branchId={selectedBranchId}
-					isCreating={isCreating}
-					onSubmit={handleQuickProductCreate}
+						branchId={selectedBranchId}
+						isCreating={isCreating}
+						onSubmit={handleQuickProductCreate}
 					/>
 
 					{/* ─── Grid Principal: Catálogo + Detalle ─── */}
@@ -315,7 +316,7 @@ const IngresoStock = () => {
 										branchId={targetBranchId}
 										onBranchIdChange={() => {}}
 										branchOptions={branchOptions}
-									isBranchesLoading={false}
+										isBranchesLoading={false}
 										selectedSubsidiaryId={selectedSubsidiaryId}
 										reason={reason}
 										onReasonChange={setReason}

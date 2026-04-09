@@ -1,33 +1,41 @@
 import gsap from 'gsap';
 import { createRoot } from 'react-dom/client';
 import { createElement } from 'react';
-import pascalcase from 'pascalcase';
-
-// Import icon maps directly to bypass Redux dependency in Icon component
-import * as SvgIcon from '@/components/icon/svg-icons';
-import * as DuoToneIcon from '@/components/icon/duotone';
-import * as HeroIcon from '@/components/icon/heroicons';
 
 let isManualTransitioning = false;
 let currentTl: gsap.core.Timeline | null = null;
-let currentRoot: any = null; 
+let currentRoot: any = null;
+let currentTransitionType: 'manual' | 'auto' | null = null;
 
-// Simplified Icon component that doesn't use Redux hooks
-const TransitionIcon = ({ icon, className }: { icon: string; className?: string }) => {
-	const IconName = pascalcase(icon);
-	const SvgIconWrapper = (SvgIcon as any)[IconName];
-	const DuoToneWrapper = (DuoToneIcon as any)[IconName];
-	const HeroWrapper = (HeroIcon as any)[IconName];
+const TransitionGlyph = ({ name }: { name?: string }) => {
+	if (!name) return null;
 
-	if (typeof SvgIconWrapper === 'function') {
-		return createElement(SvgIconWrapper, { className });
+	if (name === 'HeroTicket') {
+		return createElement(
+			'svg',
+			{ viewBox: '0 0 64 64', width: 92, height: 92, ariaHidden: true, focusable: false },
+			createElement('path', {
+				d: 'M9 24a6 6 0 0 0 6-6h34a6 6 0 0 0 6 6v16a6 6 0 0 0-6 6H15a6 6 0 0 0-6-6V24Zm19 2v12m8-12v12',
+				fill: 'none',
+				stroke: '#fff',
+				strokeWidth: 3,
+				strokeLinecap: 'round',
+				strokeLinejoin: 'round',
+			}),
+		);
 	}
-	if (typeof DuoToneWrapper === 'function') {
-		return createElement(DuoToneWrapper, { className });
+
+	if (name === 'HeroSparkles') {
+		return createElement(
+			'svg',
+			{ viewBox: '0 0 64 64', width: 92, height: 92, ariaHidden: true, focusable: false },
+			createElement('path', {
+				d: 'M32 10l4.5 11.5L48 26l-11.5 4.5L32 42l-4.5-11.5L16 26l11.5-4.5L32 10Zm17 26l2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5ZM15 37l2.2 5.8L23 45l-5.8 2.2L15 53l-2.2-5.8L7 45l5.8-2.2L15 37Z',
+				fill: '#fff',
+			}),
+		);
 	}
-	if (typeof HeroWrapper === 'function') {
-		return createElement(HeroWrapper, { className });
-	}
+
 	return null;
 };
 
@@ -38,6 +46,11 @@ export const runPageTransition = (
 	containerId: string = 'page-transition-overlay',
 	type: 'manual' | 'auto' = 'auto'
 ) => {
+	if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+		onNavigate();
+		return;
+	}
+
 	// Prevent 'auto' transitions (router) from interrupting a 'manual' one (user action)
 	if (type === 'auto' && isManualTransitioning) {
 		return;
@@ -53,6 +66,10 @@ export const runPageTransition = (
 		currentTl.kill();
 		currentTl = null;
 	}
+	if (currentTransitionType === 'manual') {
+		isManualTransitioning = false;
+	}
+	currentTransitionType = type;
 	if (currentRoot) {
 		currentRoot.unmount();
 		currentRoot = null;
@@ -64,7 +81,7 @@ export const runPageTransition = (
 	let container = document.getElementById(containerId);
 	let isScoped = true;
 
-	if (!container && containerId === 'page-transition-overlay') { 
+	if (!container && containerId === 'page-transition-overlay') {
 		container = document.body;
 		isScoped = false;
 	} else if (!container) {
@@ -76,6 +93,7 @@ export const runPageTransition = (
 	const rootStyle = getComputedStyle(document.documentElement);
 	const colorStart = rootStyle.getPropertyValue('--color-primary-400').trim() || '#f97316';
 	const colorEnd = rootStyle.getPropertyValue('--color-primary-600').trim() || '#db2777';
+	const radiusPx = Math.ceil(Math.hypot(container.clientWidth, container.clientHeight) / 2);
 
 	// 3. Create Overlay
 	const overlay = document.createElement('div');
@@ -86,13 +104,13 @@ export const runPageTransition = (
 		left: '0',
 		width: '100%',
 		height: '100%',
-		zIndex: '50', 
+		zIndex: '50',
 		pointerEvents: 'all',
 		display: 'flex',
 		alignItems: 'center',
 		justifyContent: 'center',
 		background: `linear-gradient(135deg, ${colorStart}, ${colorEnd})`,
-		clipPath: 'circle(0% at 50% 50%)',
+		clipPath: 'circle(0px at 50% 50%)',
 		willChange: 'clip-path', // Hint browser to optimize clip-path
 		transform: 'translateZ(0)', // Force GPU layer
 	});
@@ -114,20 +132,17 @@ export const runPageTransition = (
 	overlay.appendChild(contentContainer);
 
 	container.appendChild(overlay);
-    
-    if (isScoped && getComputedStyle(container).position === 'static') {
-        container.style.position = 'relative';
-    }
+
+	if (isScoped && getComputedStyle(container).position === 'static') {
+		container.style.position = 'relative';
+	}
 
 	// 4. Render React Content
 	const root = createRoot(contentContainer);
 	currentRoot = root;
-	
-	const iconElement = iconName 
-		? createElement(TransitionIcon, { 
-			icon: iconName, 
-			className: '!text-white text-9xl mb-4', // Removed drop-shadow for performance
-		}) 
+
+	const iconElement = iconName
+		? createElement(TransitionGlyph, { name: iconName })
 		: null;
 
 	const textElement = createElement('div', {
@@ -137,65 +152,66 @@ export const runPageTransition = (
 			fontWeight: 'bold',
 			fontFamily: 'system-ui, sans-serif',
 			// Text shadow is cheaper than SVG drop-shadow filter
-			textShadow: '0 2px 4px rgba(0,0,0,0.2)', 
+			textShadow: '0 2px 4px rgba(0,0,0,0.2)',
 			textAlign: 'center'
 		}
 	}, textContent);
 
-    // Pulse animation container
-	root.render(createElement('div', { 
-		className: 'flex flex-col items-center justify-center animate-pulse',
-        style: { animationDuration: '2s' }
+	// Static container: avoid endless CSS animation loop
+	root.render(createElement('div', {
+		className: 'flex flex-col items-center justify-center'
 	}, iconElement, textElement));
 
 
 	// 5. Animation Sequence
 	const tl = gsap.timeline({
+		overwrite: 'auto',
 		onComplete: () => {
 			if (currentRoot === root) {
 				root.unmount();
 				currentRoot = null;
 			}
 			overlay.remove();
-			
+
 			// If this was a manual transition, release the lock
 			if (type === 'manual') {
 				isManualTransitioning = false;
 			}
+			currentTransitionType = null;
 			currentTl = null;
 		},
 	});
 	currentTl = tl;
 
-    // Expand Circle to Cover
+	// Expand Circle to Cover
 	tl.to(overlay, {
-		clipPath: 'circle(150% at 50% 50%)',
-		duration: 0.5, 
+		clipPath: `circle(${radiusPx}px at 50% 50%)`,
+		duration: 0.5,
 		ease: 'power2.inOut',
 	})
-    // Show Content
-	.to(contentContainer, {
-		opacity: 1,
-		scale: 1,
-		duration: 0.4,
-		ease: 'back.out(1.5)',
-	}, '-=0.2')
-    
-    // Navigate
-	.call(onNavigate)
-    
-	.to({}, { duration: 0.5 }) 
+		// Show Content
+		.to(contentContainer, {
+			opacity: 1,
+			scale: 1,
+			duration: 0.4,
+			ease: 'back.out(1.5)',
+		}, '-=0.2')
 
-    // Fade Out Content
-	.to(contentContainer, {
-		opacity: 0,
-		y: -20,
-		duration: 0.3,
-	})
-	// Fade Out Overlay
-	.to(overlay, {
-		opacity: 0,
-		duration: 0.4,
-		ease: 'power2.inOut',
-	});
+		// Navigate
+		.call(onNavigate)
+
+		.to({}, { duration: 0.5 })
+
+		// Fade Out Content
+		.to(contentContainer, {
+			opacity: 0,
+			y: -20,
+			duration: 0.3,
+		})
+		// Fade Out Overlay
+		.to(overlay, {
+			opacity: 0,
+			duration: 0.4,
+			ease: 'power2.inOut',
+		});
 };

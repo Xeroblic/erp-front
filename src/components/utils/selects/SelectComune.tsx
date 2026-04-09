@@ -67,13 +67,21 @@ export const SelectComune: React.FC<SelectComuneProps> = ({
 	}, []);
 
 	useEffect(() => {
-		if (containerRef.current) {
+		if (!containerRef.current) return;
+		if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+			return;
+
+		const ctx = gsap.context(() => {
 			gsap.fromTo(
 				containerRef.current,
-				{ opacity: 0, y: 15 },
-				{ opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' },
+				{ opacity: 0, y: 12 },
+				{ opacity: 1, y: 0, duration: 0.35, ease: 'power2.out', overwrite: 'auto' },
 			);
-		}
+		}, containerRef);
+
+		return () => {
+			ctx.revert();
+		};
 	}, []);
 
 	const dynamicPlaceholder = loading ? 'Cargando direcciones de Chile...' : placeholder;
