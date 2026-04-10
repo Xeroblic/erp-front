@@ -4,7 +4,7 @@ import Input from '@/components/form/Input';
 import Label from '@/components/form/Label';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import Validation from '@/components/form/Validation';
-import { chargerOptions } from './FormLockCare.data';
+import { chargerOptions, lockCareTheme } from './FormLockCare.data';
 import { TicketFormValues } from './FormLockCare.types';
 
 interface FormLockCareServiceRepairProps {
@@ -27,7 +27,7 @@ const FormLockCareServiceRepair: React.FC<FormLockCareServiceRepairProps> = ({ f
 					isValid={formik.isValid}
 					isTouched={formik.touched.repairBrand}
 					invalidFeedback={formik.errors.repairBrand}>
-					<Input
+					<Input {...lockCareTheme}
 						id='repairBrand'
 						name='repairBrand'
 						placeholder='Ej. Apple, Samsung, Lenovo'
@@ -45,7 +45,7 @@ const FormLockCareServiceRepair: React.FC<FormLockCareServiceRepairProps> = ({ f
 					isValid={formik.isValid}
 					isTouched={formik.touched.repairModel}
 					invalidFeedback={formik.errors.repairModel}>
-					<Input
+					<Input {...lockCareTheme}
 						id='repairModel'
 						name='repairModel'
 						placeholder='Ej. MacBook Pro 14, Galaxy S23'
@@ -63,7 +63,7 @@ const FormLockCareServiceRepair: React.FC<FormLockCareServiceRepairProps> = ({ f
 					isValid={formik.isValid}
 					isTouched={formik.touched.repairSerialNumber}
 					invalidFeedback={formik.errors.repairSerialNumber}>
-					<Input
+					<Input {...lockCareTheme}
 						id='repairSerialNumber'
 						name='repairSerialNumber'
 						placeholder='Número de serie'
@@ -81,7 +81,7 @@ const FormLockCareServiceRepair: React.FC<FormLockCareServiceRepairProps> = ({ f
 					isValid={formik.isValid}
 					isTouched={formik.touched.repairIncludesCharger}
 					invalidFeedback={formik.errors.repairIncludesCharger}>
-					<SelectReact
+					<SelectReact {...lockCareTheme}
 						id='repairIncludesCharger'
 						name='repairIncludesCharger'
 						options={chargerOptions}

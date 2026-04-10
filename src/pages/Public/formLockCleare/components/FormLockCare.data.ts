@@ -1,5 +1,10 @@
 import { TSelectOption } from '@/components/form/SelectReact';
 
+export const lockCareTheme = {
+	color: 'emerald' as const,
+	colorIntensity: '500' as const,
+};
+
 export const invoiceOptions: TSelectOption[] = [
     { value: 'no', label: 'No, no necesito factura' },
     { value: 'si', label: 'Si, necesito factura' },

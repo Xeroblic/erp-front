@@ -1,4 +1,12 @@
-import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+	import React, {
+	Suspense,
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState,
+} from 'react';
 import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -8,6 +16,7 @@ import FormLockCareFormPanel from './components/FormLockCareFormPanel';
 import FormLockCareGuidePanel from './components/FormLockCareGuidePanel';
 import { FloatingOrnament, TicketFormValues } from './components/FormLockCare.types';
 import { formLockCareValidationSchema } from './components/FormLockCare.validation';
+import { selectIsDarkTheme, useAppSelector } from '@/store';
 
 const TerminoCondiciones = React.lazy(() => import('./TerminoCondiciones'));
 
@@ -44,6 +53,46 @@ const FormLockCare: React.FC = () => {
 	const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 	const [decorationsReady, setDecorationsReady] = useState(false);
 	const [floatingOrnaments, setFloatingOrnaments] = useState<FloatingOrnament[]>([]);
+	const isDarkTheme = useAppSelector(selectIsDarkTheme);
+	const latestThemePreferenceRef = useRef(isDarkTheme);
+
+	useEffect(() => {
+		latestThemePreferenceRef.current = isDarkTheme;
+
+		if (typeof document === 'undefined') {
+			return;
+		}
+
+		const root = document.documentElement;
+		root.classList.remove('dark');
+		root.style.setProperty('color-scheme', 'light');
+	}, [isDarkTheme]);
+
+	useLayoutEffect(() => {
+		if (typeof document === 'undefined') {
+			return undefined;
+		}
+
+		const root = document.documentElement;
+		const previousColorScheme = root.style.getPropertyValue('color-scheme');
+
+		root.classList.remove('dark');
+		root.style.setProperty('color-scheme', 'light');
+
+		return () => {
+			if (latestThemePreferenceRef.current) {
+				root.classList.add('dark');
+			} else {
+				root.classList.remove('dark');
+			}
+
+			if (previousColorScheme) {
+				root.style.setProperty('color-scheme', previousColorScheme);
+			} else {
+				root.style.removeProperty('color-scheme');
+			}
+		};
+	}, []);
 
 	useEffect(() => {
 		if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {

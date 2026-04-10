@@ -9,7 +9,7 @@ import Textarea from '@/components/form/Textarea';
 import Validation from '@/components/form/Validation';
 import Icon from '@/components/icon/Icon';
 import Checkbox from '@/components/form/Checkbox';
-import { invoiceOptions, serviceTypeOptions } from './FormLockCare.data';
+import { invoiceOptions, serviceTypeOptions, lockCareTheme } from './FormLockCare.data';
 import { TicketFormValues } from './FormLockCare.types';
 import FormLockCareServiceRepair from './FormLockCareServiceRepair';
 import FormLockCareServiceUpgrade from './FormLockCareServiceUpgrade';
@@ -139,7 +139,7 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 						isValid={formik.isValid}
 						isTouched={formik.touched.name}
 						invalidFeedback={formik.errors.name}>
-						<Input
+						<Input {...lockCareTheme}
 							id='name'
 							name='name'
 							placeholder='Tu Nombre'
@@ -157,7 +157,7 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 						isValid={formik.isValid}
 						isTouched={formik.touched.email}
 						invalidFeedback={formik.errors.email}>
-						<Input
+						<Input {...lockCareTheme}
 							id='email'
 							name='email'
 							type='email'
@@ -176,7 +176,7 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 						isValid={formik.isValid}
 						isTouched={formik.touched.phone}
 						invalidFeedback={formik.errors.phone}>
-						<Input
+						<Input {...lockCareTheme}
 							id='phone'
 							name='phone'
 							placeholder='Número de telefono'
@@ -194,7 +194,7 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 						isValid={formik.isValid}
 						isTouched={formik.touched.requiresInvoice}
 						invalidFeedback={formik.errors.requiresInvoice}>
-						<SelectReact
+						<SelectReact {...lockCareTheme}
 							id='requiresInvoice'
 							name='requiresInvoice'
 							options={invoiceOptions}
@@ -215,7 +215,7 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 								isValid={formik.isValid}
 								isTouched={formik.touched.invoiceRut}
 								invalidFeedback={formik.errors.invoiceRut}>
-								<Input
+								<Input {...lockCareTheme}
 									id='invoiceRut'
 									name='invoiceRut'
 									placeholder='Ej. 76.123.456-7'
@@ -233,7 +233,7 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 								isValid={formik.isValid}
 								isTouched={formik.touched.invoiceBusinessName}
 								invalidFeedback={formik.errors.invoiceBusinessName}>
-								<Input
+								<Input {...lockCareTheme}
 									id='invoiceBusinessName'
 									name='invoiceBusinessName'
 									placeholder='Giro comercial'
@@ -251,7 +251,7 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 								isValid={formik.isValid}
 								isTouched={formik.touched.invoiceAddress}
 								invalidFeedback={formik.errors.invoiceAddress}>
-								<Input
+								<Input {...lockCareTheme}
 									id='invoiceAddress'
 									name='invoiceAddress'
 									placeholder='Direccion de facturacion'
@@ -277,7 +277,7 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 						isValid={formik.isValid}
 						isTouched={formik.touched.serviceType}
 						invalidFeedback={formik.errors.serviceType}>
-						<SelectReact
+						<SelectReact {...lockCareTheme}
 							id='serviceType'
 							name='serviceType'
 							options={serviceTypeOptions}
@@ -304,7 +304,7 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 						isValid={formik.isValid}
 						isTouched={formik.touched.notes}
 						invalidFeedback={formik.errors.notes}>
-						<Textarea
+						<Textarea {...lockCareTheme}
 							id='notes'
 							name='notes'
 							rows={2}
@@ -329,7 +329,7 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 						isValid={formik.isValid}
 						isTouched={formik.touched.message}
 						invalidFeedback={formik.errors.message}>
-						<Textarea
+						<Textarea {...lockCareTheme}
 							id='message'
 							name='message'
 							rows={3}
@@ -352,7 +352,7 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 							Agregar adjuntos
 						</span>
 					</label>
-					<Input
+					<Input {...lockCareTheme}
 						id='attachments'
 						name='attachments'
 						type='file'
@@ -369,7 +369,7 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 				</div>
 
 				<div className='md:col-span-2'>
-					<Checkbox
+					<Checkbox {...lockCareTheme}
 						id='terms'
 						name='termsAccepted'
 						isInline
@@ -381,6 +381,8 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 							<span className='inline-flex items-center gap-1 whitespace-nowrap text-sm'>
 								Acepto los
 								<Button
+									color={lockCareTheme.color}
+									colorIntensity={lockCareTheme.colorIntensity}
 									type='button'
 									variant='default'
 									size='xs'
@@ -398,9 +400,10 @@ const FormLockCareFormPanel: React.FC<FormLockCareFormPanelProps> = ({ formik, o
 
 				<div className='md:col-span-2'>
 					<Button
+						color={lockCareTheme.color}
+						colorIntensity={lockCareTheme.colorIntensity}
 						type='submit'
 						variant='solid'
-						color='emerald'
 						isDisable={formik.isSubmitting || !formik.values.termsAccepted}
 						isLoading={formik.isSubmitting}
 						icon='HeroArrowRight'
