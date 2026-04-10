@@ -28,7 +28,7 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	const batteryStatus = watch('battery_status');
 	const includesCharger = watch('includes_charger');
 	const brand = watch('brand');
-	const isDell = brand?.toLowerCase().includes('dell');
+	const isDell = brand?.toLowerCase().includes('dell') || brand?.toLowerCase().includes('Dell');
 
 	return (
 		<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
@@ -159,7 +159,7 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 
 				{isDell ? (
 					<>
-						{/* Dell: Buttons + Regular Percentage Input */}
+						{/* Dell: Buttons only (BIOS info already gives health) */}
 						<div className='mb-6 grid grid-cols-2 gap-3'>
 							{BATTERY_STATUS_OPTIONS.map((opt) => (
 								<SelectionCard
@@ -187,45 +187,6 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 									className='py-3 text-xs'
 								/>
 							))}
-						</div>
-
-						<div className='border-t border-emerald-200 pt-4 dark:border-emerald-800'>
-							<label className='mb-2 block text-xs font-semibold text-zinc-500'>
-								{getNotebookLabel('battery_percentage')} (Opcional si aplica)
-							</label>
-							<Controller
-								name='battery_percentage'
-								control={control}
-								render={({ field }) => (
-									<div className='flex items-center gap-2'>
-										<Input
-											{...field}
-											type='number'
-											value={field.value ?? ''}
-											onChange={(e) =>
-												field.onChange(
-													e.target.value === ''
-														? null
-														: Number(e.target.value),
-												)
-											}
-											placeholder={NOTEBOOK_PLACEHOLDERS.battery_percentage}
-											disabled={readOnly || batteryStatus === 'no_battery'}
-											min={0}
-											max={100}
-											className={
-												errors.battery_percentage ? 'border-red-500' : ''
-											}
-										/>
-										<span className='text-sm text-zinc-500'>%</span>
-									</div>
-								)}
-							/>
-							{errors.battery_percentage && (
-								<p className='mt-1 text-xs text-red-500'>
-									{errors.battery_percentage.message}
-								</p>
-							)}
 						</div>
 					</>
 				) : (
