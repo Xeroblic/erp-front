@@ -117,11 +117,11 @@ export const HINGE_CONDITION_OPTIONS: TypedOption<HingeConditionValue>[] = [
 // ─── Estado de Batería ────────────────────────────────────────────────────────
 
 export const BATTERY_STATUS_OPTIONS: TypedOption<BatteryStatusValue>[] = [
-	{ value: 'excellent', label: 'Excelente' },
-	{ value: 'good', label: 'Bueno' },
-	{ value: 'fair', label: 'Aceptable' },
-	{ value: 'poor', label: 'Pobre' },
-	{ value: 'no_battery', label: 'Sin Batería' },
+	{ value: 'excellent', label: 'Excellent' },
+	{ value: 'good', label: 'Good' },
+	{ value: 'fair', label: 'Fair' },
+	{ value: 'poor', label: 'Poor' },
+	{ value: 'no_battery', label: 'No Battery / Unknown' },
 ];
 
 // ─── Condición de Touchpad ────────────────────────────────────────────────────
