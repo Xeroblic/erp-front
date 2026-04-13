@@ -4,7 +4,6 @@
 	useEffect,
 	useLayoutEffect,
 	useMemo,
-	useRef,
 	useState,
 } from 'react';
 import { useFormik } from 'formik';
@@ -16,7 +15,7 @@ import FormLockCareFormPanel from './components/FormLockCareFormPanel';
 import FormLockCareGuidePanel from './components/FormLockCareGuidePanel';
 import { FloatingOrnament, TicketFormValues } from './components/FormLockCare.types';
 import { formLockCareValidationSchema } from './components/FormLockCare.validation';
-import { selectIsDarkTheme, useAppSelector } from '@/store';
+import useForceLightMode from '@/hooks/useForceLightMode';
 
 const TerminoCondiciones = React.lazy(() => import('./TerminoCondiciones'));
 
@@ -53,49 +52,9 @@ const FormLockCare: React.FC = () => {
 	const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 	const [decorationsReady, setDecorationsReady] = useState(false);
 	const [floatingOrnaments, setFloatingOrnaments] = useState<FloatingOrnament[]>([]);
-	const isDarkTheme = useAppSelector(selectIsDarkTheme);
-	const latestThemePreferenceRef = useRef(isDarkTheme);
-
-	useEffect(() => {
-		latestThemePreferenceRef.current = isDarkTheme;
-	}, [isDarkTheme]);
-
-	useLayoutEffect(() => {
-		if (typeof document === 'undefined') return undefined;
-
-		const root = document.documentElement;
-		const previousColorScheme = root.style.getPropertyValue('color-scheme');
-
-		// Remover oscuridad
-		root.classList.remove('dark');
-		root.style.setProperty('color-scheme', 'light');
-
-		// Mutar si algún otro componente intenta forzar el modo dark
-		const observer = new MutationObserver(() => {
-			if (root.classList.contains('dark')) {
-				root.classList.remove('dark');
-			}
-		});
-
-		observer.observe(root, { attributes: true, attributeFilter: ['class'] });
-
-		return () => {
-			observer.disconnect();
-
-			// Restaurar estado
-			if (latestThemePreferenceRef.current) {
-				root.classList.add('dark');
-			} else {
-				root.classList.remove('dark');
-			}
-
-			if (previousColorScheme) {
-				root.style.setProperty('color-scheme', previousColorScheme);
-			} else {
-				root.style.removeProperty('color-scheme');
-			}
-		};
-	}, []);
+	
+	// Fuerza el modo light mediante el nuevo hook
+	useForceLightMode();
 
 	useEffect(() => {
 		if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {

@@ -12,6 +12,7 @@ import Button from '@/components/ui/Button';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Input from '@/components/form/Input';
 import { logout } from '@/store';
+import useForceLightMode from '@/hooks/useForceLightMode';
 
 const validationSchema = Yup.object().shape({
 	email: Yup.string()
@@ -41,6 +42,7 @@ const RecuperarPassword = () => {
 			}
 		},
 	});
+	useForceLightMode();
 
 	return (
 		<PageWrapper isProtectedRoute={false} className='min-h-screen' name='Recuperar Contraseña'>

@@ -16,6 +16,7 @@ import Card, { CardBody } from '../components/ui/Card';
 import { useAppDispatch } from '@/store';
 import { loginThunk } from '@/store/slices/auth/authSlice';
 import Badge from '@/components/ui/Badge.tsx';
+import useForceLightMode from '@/hooks/useForceLightMode.ts';
 
 const LoginPage = () => {
 	const dispatch = useAppDispatch();
@@ -46,6 +47,8 @@ const LoginPage = () => {
 			}
 		},
 	});
+
+	useForceLightMode();
 
 	return (
 		<PageWrapper isProtectedRoute={false} className='min-h-screen' name='Sign In'>

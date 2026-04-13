@@ -13,6 +13,7 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import ApiService from '@/services/ApiService';
 import LogoTemplate from '@/templates/layouts/Logo/Logo.template';
+import useForceLightMode from '@/hooks/useForceLightMode';
 
 type InvitationPreview = {
 	email?: string;
@@ -247,6 +248,8 @@ const AceptarInvitacionEmpresa = () => {
 		return renderInvalidState(navigate, fetchError, 'Invitacion no valida');
 	}
 
+	useForceLightMode();
+	
 	return (
 		<PageWrapper isProtectedRoute={false} title='Aceptar invitacion a empresa'>
 			<div className='relative min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50'>

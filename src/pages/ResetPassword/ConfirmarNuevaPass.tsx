@@ -13,6 +13,7 @@ import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Input from '@/components/form/Input';
 import Card, { CardBody } from '@/components/ui/Card';
 import { logout } from '@/store';
+import useForceLightMode from '@/hooks/useForceLightMode';
 
 const validationSchema = Yup.object().shape({
 	new_password: Yup.string()
@@ -69,6 +70,7 @@ const ConfirmarNuevaPass = () => {
 			}
 		},
 	});
+	useForceLightMode()
 
 	return invalidLink ? (
 		<div className='flex min-h-screen items-center justify-center'>

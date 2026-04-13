@@ -5,6 +5,7 @@ import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import IngresoPedido from './components/IngresoPedido';
 import PedidosTable, { PedidoMock } from './components/PedidosTable';
 import Icon from '@/components/icon/Icon';
+import useForceLightMode from '@/hooks/useForceLightMode';
 
 // Mock data para las tablas
 const pendientesMock: PedidoMock[] = [
@@ -66,6 +67,7 @@ export default function PortalPedidosPage() {
 	const { hash, id } = useParams<{ hash?: string; id?: string }>();
 	const identifier = hash || id || '';
 
+	useForceLightMode();
 	return (
 		<PageWrapper isProtectedRoute={false} name='Portal Pedidos'>
 			<div className='min-h-screen w-full bg-zinc-50 dark:bg-zinc-950'>
