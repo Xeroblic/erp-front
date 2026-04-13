@@ -170,15 +170,22 @@ const styles = StyleSheet.create({
 		borderLeftColor: '#e5e7eb',
 	},
 	infoRow: {
-		marginBottom: 2,
+		paddingBottom: 4,
 		flexDirection: 'row',
 	},
-	infoLabel: {
+	infoLabelLeft: {
 		fontSize: 8,
 		fontWeight: 'bold',
+		width: 115,
+	},
+	infoLabelRight: {
+		fontSize: 8,
+		fontWeight: 'bold',
+		width: 60,
 	},
 	infoValue: {
 		fontSize: 8,
+		flex: 1,
 	},
 
 	// TABLA
@@ -491,30 +498,32 @@ const QuotePdfDocument = ({ quote, company, logoBase64, issuer }: QuotePdfDocume
 								<View style={styles.companyOrderBody}>
 									<View style={styles.companyOrderColLeft}>
 										<View style={styles.infoRow}>
-											<Text style={styles.infoLabel}>Nombre Empresa: </Text>
+											<Text style={styles.infoLabelLeft}>
+												Nombre Empresa:{' '}
+											</Text>
 											<Text style={styles.infoValue}>{customer.name}</Text>
 										</View>
 										<View style={styles.infoRow}>
-											<Text style={styles.infoLabel}>RUT: </Text>
+											<Text style={styles.infoLabelLeft}>RUT: </Text>
 											<Text style={styles.infoValue}>{customer.rut}</Text>
 										</View>
 										<View style={styles.infoRow}>
-											<Text style={styles.infoLabel}>Giro: </Text>
+											<Text style={styles.infoLabelLeft}>Giro: </Text>
 											<Text style={styles.infoValue}>{customer.giro}</Text>
 										</View>
-										<View style={styles.infoRow}>
-											<Text style={styles.infoLabel}>
+										<View style={[styles.infoRow, { paddingBottom: 8 }]}>
+											<Text style={styles.infoLabelLeft}>
 												Dirección de envío:{' '}
 											</Text>
-											<Text style={styles.infoValue}>
+											<Text style={[styles.infoValue, { lineHeight: 1.1 }]}>
 												{customer.shippingAddress}
 											</Text>
 										</View>
-										<View style={styles.infoRow}>
-											<Text style={styles.infoLabel}>
+										<View style={[styles.infoRow, { paddingBottom: 8 }]}>
+											<Text style={styles.infoLabelLeft}>
 												Dirección de facturación:{' '}
 											</Text>
-											<Text style={styles.infoValue}>
+											<Text style={[styles.infoValue, { lineHeight: 1.1 }]}>
 												{customer.billingAddress &&
 												customer.billingAddress.trim() !== ''
 													? customer.billingAddress
@@ -522,13 +531,13 @@ const QuotePdfDocument = ({ quote, company, logoBase64, issuer }: QuotePdfDocume
 											</Text>
 										</View>
 										<View style={styles.infoRow}>
-											<Text style={styles.infoLabel}>Contacto: </Text>
+											<Text style={styles.infoLabelLeft}>Contacto: </Text>
 											<Text style={styles.infoValue}>
 												{customer.contactName}
 											</Text>
 										</View>
 										<View style={styles.infoRow}>
-											<Text style={styles.infoLabel}>Correo: </Text>
+											<Text style={styles.infoLabelLeft}>Correo: </Text>
 											<Text style={styles.infoValue}>
 												{customer.email || '—'}
 											</Text>
@@ -537,31 +546,33 @@ const QuotePdfDocument = ({ quote, company, logoBase64, issuer }: QuotePdfDocume
 
 									<View style={styles.companyOrderColRight}>
 										<View style={styles.infoRow}>
-											<Text style={styles.infoLabel}>Fecha: </Text>
+											<Text style={styles.infoLabelRight}>Fecha: </Text>
 											<Text style={styles.infoValue}>
 												{formatDate(quote.quote_date)}
 											</Text>
 										</View>
 										<View style={styles.infoRow}>
-											<Text style={styles.infoLabel}>Teléfono: </Text>
+											<Text style={styles.infoLabelRight}>Teléfono: </Text>
 											<Text style={styles.infoValue}>
 												{orderInfo.contactPhone}
 											</Text>
 										</View>
 										<View style={styles.infoRow}>
-											<Text style={styles.infoLabel}>N° Venta: </Text>
+											<Text style={styles.infoLabelRight}>N° Venta: </Text>
 											<Text style={styles.infoValue}>
 												{orderInfo.saleNumber || '—'}
 											</Text>
 										</View>
 										<View style={styles.infoRow}>
-											<Text style={styles.infoLabel}>Método de pago: </Text>
+											<Text style={styles.infoLabelRight}>
+												Método de pago:{' '}
+											</Text>
 											<Text style={styles.infoValue}>
 												{getFirstCapitalize(paymentMethodsLabel)}
 											</Text>
 										</View>
 										<View style={styles.infoRow}>
-											<Text style={styles.infoLabel}>Documento: </Text>
+											<Text style={styles.infoLabelRight}>Documento: </Text>
 											<Text style={styles.infoValue}>
 												{getFirstCapitalize(documentType)}
 											</Text>
@@ -612,7 +623,7 @@ const QuotePdfDocument = ({ quote, company, logoBase64, issuer }: QuotePdfDocume
 									const itemDiscount = Number(item.discount_amount || 0);
 
 									return (
-										<View key={index} style={styles.tableRow}>
+										<View key={index} style={[styles.tableRow, { paddingTop: 8, paddingBottom: 6 }]}>
 											<Text style={styles.colCant}>{quantity}</Text>
 											<Text style={styles.colCode}>{sku}</Text>
 											<View style={styles.colDesc}>
