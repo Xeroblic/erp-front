@@ -11,6 +11,8 @@ import { ThemeContextProvider } from './context/themeContext';
 // import { AuthProvider } from './context/authContext';
 
 import App from './App/App';
+import ErrorBoundary from './components/ErrorBoundary';
+import LoadingScreen from './components/LoadingScreen';
 
 import './i18n';
 import './styles/index.css';
@@ -36,19 +38,21 @@ if (!(React as any).useSyncExternalStoreWithSelector) {
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 root.render(
 	// <React.StrictMode>
-	<Provider store={store}>
-		<PersistGate loading={null} persistor={persistor}>
-			<ThemeContextProvider>
-				<BrowserRouter
-					future={{
-						v7_startTransition: true,
-						v7_relativeSplatPath: true,
-					}}>
-					<App />
-				</BrowserRouter>
-			</ThemeContextProvider>
-		</PersistGate>
-	</Provider>,
+	<ErrorBoundary>
+		<Provider store={store}>
+			<PersistGate loading={<LoadingScreen message='Inicializando aplicación...' />} persistor={persistor}>
+				<ThemeContextProvider>
+					<BrowserRouter
+						future={{
+							v7_startTransition: true,
+							v7_relativeSplatPath: true,
+						}}>
+						<App />
+					</BrowserRouter>
+				</ThemeContextProvider>
+			</PersistGate>
+		</Provider>
+	</ErrorBoundary>,
 	// </React.StrictMode>,
 );
 

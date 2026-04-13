@@ -129,7 +129,12 @@ export default function SubEmpresaLista() {
 
 			{/* Conditionally render modals only when needed - reduces DOM size */}
 			{openCreate && (
-				<Suspense fallback={null}>
+				<Suspense
+					fallback={
+						<div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50'>
+							<div className='h-10 w-10 animate-spin rounded-full border-4 border-white border-t-transparent' />
+						</div>
+					}>
 					<CreateSubempresaModal
 						isOpen={openCreate}
 						onClose={handleCloseModal}
@@ -140,7 +145,12 @@ export default function SubEmpresaLista() {
 			)}
 
 			{openDelete && (
-				<Suspense fallback={null}>
+				<Suspense
+					fallback={
+						<div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50'>
+							<div className='h-10 w-10 animate-spin rounded-full border-4 border-white border-t-transparent' />
+						</div>
+					}>
 					<DeleteSubempresaModal
 						isOpen={openDelete}
 						onClose={() => setOpenDelete(false)}

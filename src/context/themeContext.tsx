@@ -80,7 +80,9 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
 				document.documentElement.setAttribute('dir', i18n.dir());
 				document.documentElement.setAttribute('lang', i18n.language);
 			})
-			.catch(() => {});
+			.catch((error) => {
+				console.error('[ThemeContext] Error changing language:', error);
+			});
 
 		dayjs.locale(language);
 	}, [language, i18n]);

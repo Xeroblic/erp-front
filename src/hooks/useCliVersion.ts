@@ -28,7 +28,9 @@ export const useCliVersion = () => {
           const localData = await localResponse.json();
           localCliVersion = localData.cli || '0.0.0';
         }
-      } catch {}
+      } catch (error) {
+        console.warn('[useCliVersion] Failed to fetch local version:', error);
+      }
 
       let githubCliVersion = '0.0.0';
       let githubDownloadUrl = '';
@@ -60,7 +62,9 @@ export const useCliVersion = () => {
             githubCliVersion = '0.0.0';
           }
         }
-      } catch {}
+      } catch (error) {
+        console.warn('[useCliVersion] Failed to fetch GitHub version:', error);
+      }
 
       // cambio importante:
       // local SOLO gana si es MAYOR que github (no mayor o igual)

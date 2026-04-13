@@ -23,8 +23,12 @@ const MdViewer: FC<IMdViewerProps> = (props) => {
 		navigator.clipboard
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-argument,@typescript-eslint/no-unsafe-member-access,react/prop-types
 			.writeText(content.replace(/```[^]*?\n/g, ''))
-			.then(() => {})
-			.catch(() => {});
+			.then(() => {
+				// Clipboard success
+			})
+			.catch((error) => {
+				console.error('[MdViewer] Clipboard write failed:', error);
+			});
 		setCopyOk(true);
 		setTimeout(() => {
 			setCopyOk(false);

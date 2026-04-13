@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import colors from 'tailwindcss/colors';
 import { ToastContainer } from 'react-toastify';
 import { useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AsideRouter from '../components/router/AsideRouter';
 import Wrapper from '../components/layouts/Wrapper/Wrapper';
 import HeaderRouter from '../components/router/HeaderRouter';
@@ -28,6 +29,7 @@ const App = () => {
 	const { isDarkTheme } = useDarkMode();
 
 	const dispatch = useAppDispatch();
+	const navigate = useNavigate();
 	const { isAuthenticated } = useAppSelector((state) => state.auth);
 
 	const version = useVersion();
@@ -72,15 +74,22 @@ const App = () => {
 			// El token no es válido, pero quizás podemos refrescar silenciosamente.
 			// Solo hacemos logout si realmente no hay forma de recuperar.
 			import('@/services/BaseService').then(({ triggerTokenRefresh }) => {
-				triggerTokenRefresh().catch(() => {
-					// Refresh también falló → ahora sí, logout
-					dispatch(logout());
-				});
+				triggerTokenRefresh()
+					.then(() => {
+						// Token refreshed successfully, force re-render
+						dispatch({ type: 'auth/REFRESH_SUCCESS' });
+					})
+					.catch(() => {
+						// Refresh también falló → ahora sí, logout y redirigir
+						dispatch(logout());
+						navigate('/login', { replace: true });
+					});
 			});
 		} else if (!isValid && !token) {
 			dispatch(logout());
+			navigate('/login', { replace: true });
 		}
-	}, [dispatch, isAuthenticated]);
+	}, [dispatch, isAuthenticated, navigate]);
 
 	const shouldRenderAuthenticatedApp = isAuthenticated; // && hasValidSession is redundant if we trust isAuthenticated + interceptor
 	// if (import.meta.env.DEV) {

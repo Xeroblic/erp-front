@@ -56,7 +56,9 @@ export function useProfileGeo(
 					formik.setFieldValue('comuna', String(comunaId), false);
 				}
 				derivedGeoRef.current = true;
-			} catch {}
+			} catch (error) {
+				console.error('[useProfileGeo] Failed to fetch geographic data:', error);
+			}
 		})();
 	}, [formik.values.comuna]);
 

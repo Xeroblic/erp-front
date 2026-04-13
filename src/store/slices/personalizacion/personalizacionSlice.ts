@@ -108,7 +108,8 @@ export const obtenerPersonalizacionThunk = createAsyncThunk<
 
 			const pers = state.personalizacion;
 			if (pers?.loading) return false;
-			if (pers?.isInitialized) return false;
+			// Solo bloquear si está inicializado Y no tiene error (éxito previo)
+			if (pers?.isInitialized && !pers?.error) return false;
 
 			const hasToken = !!tokenManager.getAccessToken() || !!state.auth.access;
 
@@ -317,7 +318,8 @@ const personalizacionSlice = createSlice({
 			.addCase(obtenerPersonalizacionThunk.rejected, (state, action) => {
 				state.loading = false;
 				state.error = action.payload as string | undefined;
-				state.isInitialized = true;
+				// NO marcar como initialized cuando falla, para permitir reintentos
+				// state.isInitialized se mantiene en false
 			})
 			.addCase(actualizarPersonalizacionThunk.pending, (state) => {
 				state.loading = true;

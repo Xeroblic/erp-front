@@ -173,7 +173,12 @@ const WarehouseListPage: React.FC = () => {
 			</Container>
 
 			{/* Modales con Lazy Loading */}
-			<React.Suspense fallback={null}>
+			<React.Suspense
+				fallback={
+					<div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50'>
+						<div className='h-10 w-10 animate-spin rounded-full border-4 border-white border-t-transparent' />
+					</div>
+				}>
 				{createModalOpen && (
 					<CreateWarehouseModal
 						isOpen={createModalOpen}
