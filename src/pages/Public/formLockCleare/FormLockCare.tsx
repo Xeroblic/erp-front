@@ -58,28 +58,31 @@ const FormLockCare: React.FC = () => {
 
 	useEffect(() => {
 		latestThemePreferenceRef.current = isDarkTheme;
-
-		if (typeof document === 'undefined') {
-			return;
-		}
-
-		const root = document.documentElement;
-		root.classList.remove('dark');
-		root.style.setProperty('color-scheme', 'light');
 	}, [isDarkTheme]);
 
 	useLayoutEffect(() => {
-		if (typeof document === 'undefined') {
-			return undefined;
-		}
+		if (typeof document === 'undefined') return undefined;
 
 		const root = document.documentElement;
 		const previousColorScheme = root.style.getPropertyValue('color-scheme');
 
+		// Remover oscuridad
 		root.classList.remove('dark');
 		root.style.setProperty('color-scheme', 'light');
 
+		// Mutar si algún otro componente intenta forzar el modo dark
+		const observer = new MutationObserver(() => {
+			if (root.classList.contains('dark')) {
+				root.classList.remove('dark');
+			}
+		});
+
+		observer.observe(root, { attributes: true, attributeFilter: ['class'] });
+
 		return () => {
+			observer.disconnect();
+
+			// Restaurar estado
 			if (latestThemePreferenceRef.current) {
 				root.classList.add('dark');
 			} else {
