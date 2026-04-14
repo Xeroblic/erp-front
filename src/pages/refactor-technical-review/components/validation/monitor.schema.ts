@@ -40,16 +40,14 @@ export const monitorSchema = Yup.object({
 
 	// Puertos
 	has_usb_hub: Yup.boolean().required('Debes indicar si tiene hub USB').default(false),
-	vga_ports: Yup.number().required('Indica cantidad de puertos VGA').min(0, 'No puede ser negativo'),
-	hdmi_ports: Yup.number().required('Indica cantidad de puertos HDMI').min(0, 'No puede ser negativo'),
-	displayport_ports: Yup.number().required('Indica cantidad de puertos DisplayPort').min(0, 'No puede ser negativo'),
-	dvi_ports: Yup.number().required('Indica cantidad de puertos DVI').min(0, 'No puede ser negativo'),
-	usb_hub_ports: Yup.number().required('Indica cantidad de puertos del hub USB').min(0, 'No puede ser negativo'),
+	vga_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
+	hdmi_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
+	displayport_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
+	dvi_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
+	usb_hub_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
 
 	// Estado funcionales de puertos
-	all_ports_functional: Yup.boolean().required(
-		'Debes especificar si todos los puertos funcionan',
-	),
+	all_ports_functional: Yup.boolean().nullable(),
 	defective_ports_count: Yup.number()
 		.nullable()
 		.min(0, 'No puede ser negativo')

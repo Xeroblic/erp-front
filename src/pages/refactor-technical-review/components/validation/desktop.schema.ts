@@ -65,16 +65,15 @@ export const desktopSchema = Yup.object({
 		.required('La condición de la carcasa es obligatoria'),
 
 	// ─── Puertos ─────────────────────────────────────────────────────────────
-	vga_ports: Yup.number().integer().min(0, 'No puede ser negativo').required('Indica cantidad de puertos VGA'),
-	hdmi_ports: Yup.number().integer().min(0, 'No puede ser negativo').required('Indica cantidad de puertos HDMI'),
-	displayport_ports: Yup.number().integer().min(0, 'No puede ser negativo').required('Indica cantidad de puertos DisplayPort'),
-	usb_c_ports: Yup.number().integer().min(0, 'No puede ser negativo').required('Indica cantidad de puertos USB-C'),
-	usb_a_ports: Yup.number().integer().min(0, 'No puede ser negativo').required('Indica cantidad de puertos USB-A'),
-	sd_readers: Yup.number().integer().min(0, 'No puede ser negativo').required('Indica cantidad de lectores SD'),
-	rj45_ports: Yup.number().integer().min(0, 'No puede ser negativo').required('Indica cantidad de puertos RJ45'),
+	vga_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
+	hdmi_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
+	displayport_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
+	usb_c_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
+	usb_a_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
+	sd_readers: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
+	rj45_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
 
-	all_ports_functional: Yup.boolean()
-		.required('Debes indicar si todos los puertos funcionan'),
+	all_ports_functional: Yup.boolean().nullable(),
 
 	defective_ports_count: Yup.number()
 		.typeError('Debe ser un número')
