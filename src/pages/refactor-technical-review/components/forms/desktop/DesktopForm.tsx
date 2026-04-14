@@ -245,7 +245,9 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 				}
 			},
 			(validationErrors) => {
-				const messages = Object.values(validationErrors)
+				const messages = Object.values(
+					validationErrors as Record<string, { message?: string }>,
+				)
 					.map((e) => e?.message)
 					.filter(Boolean)
 					.slice(0, 5);

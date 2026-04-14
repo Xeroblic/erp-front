@@ -245,7 +245,9 @@ const AioForm: React.FC<AioFormProps> = ({
 				}
 			},
 			(validationErrors) => {
-				const messages = Object.values(validationErrors)
+				const messages = Object.values(
+					validationErrors as Record<string, { message?: string }>,
+				)
 					.map((e) => e?.message)
 					.filter(Boolean)
 					.slice(0, 5);

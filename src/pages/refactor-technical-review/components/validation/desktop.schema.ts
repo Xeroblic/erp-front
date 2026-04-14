@@ -91,9 +91,9 @@ export const desktopSchema = Yup.object({
 		.test(
 			'ports-conflict',
 			'No puede marcar todos los puertos como funcionales si hay puertos defectuosos',
-			function (value) {
-				const { all_ports_functional } = this.parent as DesktopFormData;
-				return !(all_ports_functional === true && Number(value) > 0);
+			function (value): boolean {
+				const parent = this.parent as { all_ports_functional?: boolean | null };
+				return !(parent.all_ports_functional === true && Number(value) > 0);
 			},
 		),
 
