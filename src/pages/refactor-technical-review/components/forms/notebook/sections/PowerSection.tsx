@@ -28,7 +28,7 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	const batteryStatus = watch('battery_status');
 	const includesCharger = watch('includes_charger');
 	const brand = watch('brand');
-	const isDell = brand?.toLowerCase().includes('dell') || brand?.toLowerCase().includes('Dell');
+	const isDell = typeof brand === 'string' && brand.toLowerCase().includes('dell');
 
 	return (
 		<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
@@ -170,6 +170,7 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 									onClick={() => {
 										if (readOnly) return;
 										setValue('battery_status', opt.value);
+										setValue('battery_health', opt.label);
 										if (opt.value === 'no_battery') {
 											setValue('battery_percentage', 0);
 											setValue('battery_health', 'Sin Batería');

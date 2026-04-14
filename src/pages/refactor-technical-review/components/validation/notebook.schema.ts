@@ -20,6 +20,9 @@ import {
 	BATTERY_PERCENTAGE_MAX,
 } from './constants/notebook.rules';
 
+const isDellBrand = (brand: unknown): boolean =>
+	typeof brand === 'string' && brand.toLowerCase().includes('dell');
+
 // ─── Schema Principal ─────────────────────────────────────────────────────────
 
 export const notebookSchema = Yup.object({
@@ -141,18 +144,32 @@ export const notebookSchema = Yup.object({
 	battery_health: Yup.string()
 		.trim()
 		.max(100, 'Máximo 100 caracteres')
-		.required('El estado de salud de batería es obligatorio'),
+		.when('brand', {
+			is: isDellBrand,
+			then: (schema) => schema.required('El estado de salud de batería es obligatorio'),
+			otherwise: (schema) => schema.nullable(),
+		}),
 
 	battery_status: Yup.string()
 		.oneOf([...ALLOWED_BATTERY_STATUSES], 'Estado de batería no válido')
-		.required('El estado de la batería es obligatorio'),
+		.nullable()
+		.when('brand', {
+			is: isDellBrand,
+			then: (schema) => schema.required('El estado de la batería es obligatorio'),
+			otherwise: (schema) => schema.nullable(),
+		}),
 
 	battery_percentage: Yup.number()
 		.typeError('El porcentaje debe ser un número')
 		.integer('Debe ser un número entero')
 		.min(BATTERY_PERCENTAGE_MIN, `El porcentaje mínimo es ${BATTERY_PERCENTAGE_MIN}`)
 		.max(BATTERY_PERCENTAGE_MAX, `El porcentaje máximo es ${BATTERY_PERCENTAGE_MAX}`)
-		.required('El porcentaje de batería es obligatorio')
+		.nullable()
+		.when('brand', {
+			is: (brand: unknown) => !isDellBrand(brand),
+			then: (schema) => schema.required('El porcentaje de batería es obligatorio'),
+			otherwise: (schema) => schema.nullable(),
+		})
 		// Regla: si battery_status es no_battery, el porcentaje debe ser 0
 		.when('battery_status', {
 			is: 'no_battery',
