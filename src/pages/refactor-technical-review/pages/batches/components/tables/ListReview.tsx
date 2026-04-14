@@ -34,8 +34,7 @@ import {
 } from '@/pages/refactor-technical-review/components/utils/utilsItems';
 import { serialNumbers } from '@/pages/refactor-technical-review/ESPECIA_CANAL13/list_serialNumber';
 
-const TECHNICAL_REVIEWS_PREFIX =
-	(import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
+const TECHNICAL_REVIEWS_PREFIX = (import.meta as any)?.env?.VITE_API_TECHNICAL_REVIEWS_PREFIX || '';
 const join = (a: string, b: string) => `${a}${b}`.replace(/([^:])\/\/+/, '$1/');
 const buildItemsUrl = (entityType: 'branches' | 'subsidiaries', entityId: number, suffix = '') =>
 	join(TECHNICAL_REVIEWS_PREFIX, `/${entityType}/${entityId}/technical-reviews${suffix}`);
@@ -61,7 +60,9 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 	});
 
 	// Review status filter
-	const [reviewStatusFilter, setReviewStatusFilter] = useState<ReviewStatus | 'all' | 'sold'>('all');
+	const [reviewStatusFilter, setReviewStatusFilter] = useState<ReviewStatus | 'all' | 'sold'>(
+		'all',
+	);
 
 	// Local filtering for Batch 17 special sale
 	const filteredItems = useMemo(() => {
@@ -74,7 +75,9 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 	// Calculate missing serials from the Canal 13 list
 	const { missingSerials, foundCount, totalCount } = useMemo(() => {
 		const found = items.filter((item) => serialNumbers.includes(item.serial_number));
-		const missing = serialNumbers.filter((sn) => !items.some((item) => item.serial_number === sn));
+		const missing = serialNumbers.filter(
+			(sn) => !items.some((item) => item.serial_number === sn),
+		);
 		return {
 			missingSerials: missing,
 			foundCount: found.length,
@@ -111,7 +114,10 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 			per_page: batchId === 17 && reviewStatusFilter === 'sold' ? 500 : pagination.pageSize,
 			...(activeTab !== 'all' && { equipment_type: activeTab }),
 			...(debouncedSearch && { search: debouncedSearch }),
-			...(reviewStatusFilter !== 'all' && reviewStatusFilter !== 'sold' && { review_status: reviewStatusFilter as ReviewStatus }),
+			...(reviewStatusFilter !== 'all' &&
+				reviewStatusFilter !== 'sold' && {
+					review_status: reviewStatusFilter as ReviewStatus,
+				}),
 			// El filtro 'sold' para el lote 17 es puramente local sobre la lista serialNumbers
 			// ya que los equipos aún no están marcados como sold en el backend.
 		};
@@ -207,7 +213,8 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 				id: 'serial_number',
 				header: 'Serie',
 				cell: (info) => {
-					const isSold = batchId === 17 && serialNumbers.includes(info.row.original.serial_number);
+					const isSold =
+						batchId === 17 && serialNumbers.includes(info.row.original.serial_number);
 					return (
 						<div className='flex items-center gap-2'>
 							<Icon icon='HeroQrCode' className='h-4 w-4 text-gray-400' />
@@ -347,7 +354,8 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 							</div>
 							<div className='flex flex-col items-end'>
 								<span className='text-3xl font-black text-zinc-900 dark:text-white'>
-									{foundCount} <span className='text-lg text-zinc-400'>/ {totalCount}</span>
+									{foundCount}{' '}
+									<span className='text-lg text-zinc-400'>/ {totalCount}</span>
 								</span>
 								<span className='text-xs font-bold uppercase tracking-wider text-emerald-600'>
 									Escaneados
@@ -367,7 +375,10 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 						{missingSerials.length > 0 && (
 							<div className='rounded-xl border border-dashed border-zinc-300 bg-white/50 p-4 dark:border-zinc-600 dark:bg-zinc-900/40'>
 								<h4 className='mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-500'>
-									<Icon icon='HeroExclamationTriangle' className='h-4 w-4 text-amber-500' />
+									<Icon
+										icon='HeroExclamationTriangle'
+										className='h-4 w-4 text-amber-500'
+									/>
 									Equipos que faltan por escanear ({missingSerials.length})
 								</h4>
 								<div className='flex max-h-32 flex-wrap gap-2 overflow-y-auto pr-2'>
@@ -398,9 +409,8 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 						<div className='flex flex-wrap items-center gap-3'>
 							{/* Status filter pills */}
 							<div className='flex items-center gap-1 rounded-lg border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-700 dark:bg-zinc-800/50'>
-								{(
-									batch?.id === 17
-										? [
+								{(batch?.id === 17
+									? [
 											{ value: 'all' as const, label: 'Todas' },
 											{ value: 'sold' as const, label: 'Vendidos' },
 											{ value: 'pending' as const, label: 'Pendiente' },
@@ -408,7 +418,7 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 											{ value: 'reviewed' as const, label: 'Revisado' },
 											{ value: 'approved' as const, label: 'Aprobado' },
 										]
-										: [
+									: [
 											{ value: 'all' as const, label: 'Todas' },
 											{ value: 'pending' as const, label: 'Pendiente' },
 											{ value: 'in_review' as const, label: 'En Revisión' },
@@ -427,8 +437,7 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 											reviewStatusFilter === opt.value
 												? 'bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-700 dark:text-zinc-100 dark:ring-zinc-600'
 												: 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
-										}`}
-									>
+										}`}>
 										{opt.label}
 									</button>
 								))}
@@ -453,7 +462,10 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 					isOpen={isExportModalOpen}
 					setIsOpen={setIsExportModalOpen}
 					items={items}
-					exportFileName={`${batch?.code || batchId}`.replace(/\b(\d{4})-(\d{2})-(\d{2})\b/g, '$3-$2-$1')}
+					exportFileName={`${batch?.code || batchId}`.replace(
+						/\b(\d{4})-(\d{2})-(\d{2})\b/g,
+						'$3-$2-$1',
+					)}
 					onExportFetchAll={fetchAllForExport}
 					batchDate={batch?.entry_date}
 					customerName={batch?.customer_supplier?.name}
