@@ -371,9 +371,9 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 									Equipos que faltan por escanear ({missingSerials.length})
 								</h4>
 								<div className='flex max-h-32 flex-wrap gap-2 overflow-y-auto pr-2'>
-									{missingSerials.map((sn) => (
+									{missingSerials.map((sn, index) => (
 										<Badge
-											key={sn}
+											key={`${sn}-${index}`}
 											variant='outline'
 											color='red'
 											className='font-mono text-[11px] font-medium'>
