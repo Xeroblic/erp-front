@@ -85,7 +85,7 @@ const NOTEBOOK_SECTIONS: SectionConfig<NotebookFormData>[] = [
 ];
 
 const NOTEBOOK_SECTION_FIELDS: Record<string, FieldPath<NotebookFormData>[]> = {
-	'basic-info': ['brand', 'model', 'line', 'general_condition'],
+	'basic-info': ['brand', 'model', 'line'],
 	hardware: [
 		'processor',
 		'ram_size',
@@ -121,7 +121,13 @@ const NOTEBOOK_SECTION_FIELDS: Record<string, FieldPath<NotebookFormData>[]> = {
 		'spots_count',
 	],
 	input: ['keyboard_condition', 'keyboard_layout', 'has_numeric_keypad', 'has_backlit_keyboard'],
-	aesthetics: ['cover_condition', 'hinge_condition', 'touchpad_condition', 'bottom_condition'],
+	aesthetics: [
+		'general_condition',
+		'cover_condition',
+		'hinge_condition',
+		'touchpad_condition',
+		'bottom_condition',
+	],
 	software: ['operating_system', 'has_biometric', 'has_wifi', 'has_bluetooth'],
 	observations: ['observations'],
 };

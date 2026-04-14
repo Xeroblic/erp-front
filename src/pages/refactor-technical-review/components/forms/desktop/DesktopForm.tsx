@@ -85,7 +85,7 @@ const DESKTOP_SECTIONS: SectionConfig<DesktopFormData>[] = [
 ];
 
 const DESKTOP_SECTION_FIELDS: Record<string, FieldPath<DesktopFormData>[]> = {
-	'basic-info': ['brand', 'model', 'line', 'general_condition'],
+	'basic-info': ['brand', 'model', 'line'],
 	hardware: [
 		'processor',
 		'ram_size',
@@ -105,7 +105,7 @@ const DESKTOP_SECTION_FIELDS: Record<string, FieldPath<DesktopFormData>[]> = {
 		'all_ports_functional',
 		'defective_ports_count',
 	],
-	aesthetics: ['cover_condition'],
+	aesthetics: ['general_condition', 'cover_condition'],
 	connectivity: ['has_wifi', 'has_bluetooth', 'has_cd_drive'],
 	accessories: ['includes_charger', 'charger_status'],
 	software: ['operating_system'],
