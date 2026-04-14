@@ -28,7 +28,7 @@ export const desktopSchema = Yup.object({
 	line: Yup.string()
 		.trim()
 		.max(100, 'Máximo 100 caracteres')
-		.nullable(),
+		.required('La línea es obligatoria'),
 
 	// ─── Condición General ───────────────────────────────────────────────────
 	general_condition: Yup.string()
@@ -46,9 +46,9 @@ export const desktopSchema = Yup.object({
 		.required('La RAM es obligatoria')
 		.max(50, 'Máximo 50 caracteres'),
 
-	ram_slots: Yup.string().trim().max(20, 'Máximo 20 caracteres').nullable(),
+	ram_slots: Yup.string().trim().max(20, 'Máximo 20 caracteres').required('Los slots de RAM son obligatorios'),
 
-	ram_type: Yup.string().trim().max(20, 'Máximo 20 caracteres').nullable(),
+	ram_type: Yup.string().trim().max(20, 'Máximo 20 caracteres').required('El tipo de RAM es obligatorio'),
 
 	storage_size: Yup.string()
 		.trim()
@@ -65,35 +65,40 @@ export const desktopSchema = Yup.object({
 		.required('La condición de la carcasa es obligatoria'),
 
 	// ─── Puertos ─────────────────────────────────────────────────────────────
-	vga_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
-	hdmi_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
-	displayport_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
-	usb_c_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
-	usb_a_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
-	sd_readers: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
-	rj45_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
+	vga_ports: Yup.number().integer().min(0, 'No puede ser negativo').required('Indica cantidad de puertos VGA'),
+	hdmi_ports: Yup.number().integer().min(0, 'No puede ser negativo').required('Indica cantidad de puertos HDMI'),
+	displayport_ports: Yup.number().integer().min(0, 'No puede ser negativo').required('Indica cantidad de puertos DisplayPort'),
+	usb_c_ports: Yup.number().integer().min(0, 'No puede ser negativo').required('Indica cantidad de puertos USB-C'),
+	usb_a_ports: Yup.number().integer().min(0, 'No puede ser negativo').required('Indica cantidad de puertos USB-A'),
+	sd_readers: Yup.number().integer().min(0, 'No puede ser negativo').required('Indica cantidad de lectores SD'),
+	rj45_ports: Yup.number().integer().min(0, 'No puede ser negativo').required('Indica cantidad de puertos RJ45'),
 
 	all_ports_functional: Yup.boolean()
-		.nullable()
-		// Regla: no puede ser true si hay puertos defectuosos
-		.when('defective_ports_count', {
-			is: (val: number | null | undefined) => val != null && val > 0,
-			then: (schema) =>
-				schema.test(
-					'ports-conflict',
-					'No puede marcar todos los puertos como funcionales si hay puertos defectuosos',
-					(value) => value !== true,
-				),
-		}),
+		.required('Debes indicar si todos los puertos funcionan'),
 
 	defective_ports_count: Yup.number()
 		.typeError('Debe ser un número')
 		.integer('Debe ser un número entero')
 		.min(0, 'No puede ser negativo')
-		.nullable(),
+		.when('all_ports_functional', {
+			is: false,
+			then: (schema) =>
+				schema
+					.required('Debes indicar cuántos puertos defectuosos hay')
+					.min(1, 'Debe haber al menos 1 puerto defectuoso'),
+			otherwise: (schema) => schema.transform(() => 0).default(0),
+		})
+		.test(
+			'ports-conflict',
+			'No puede marcar todos los puertos como funcionales si hay puertos defectuosos',
+			function (value) {
+				const { all_ports_functional } = this.parent as DesktopFormData;
+				return !(all_ports_functional === true && Number(value) > 0);
+			},
+		),
 
 	// ─── Accesorios ──────────────────────────────────────────────────────────
-	includes_charger: Yup.boolean().nullable(),
+	includes_charger: Yup.boolean().required('Debes indicar si incluye cargador'),
 
 	charger_status: Yup.string()
 		.oneOf([...ALLOWED_CHARGER_STATUSES], 'Estado de cargador no válido')
@@ -105,12 +110,15 @@ export const desktopSchema = Yup.object({
 		}),
 
 	// ─── Software ────────────────────────────────────────────────────────────
-	operating_system: Yup.string().trim().max(100, 'Máximo 100 caracteres').nullable(),
+	operating_system: Yup.string()
+		.trim()
+		.max(100, 'Máximo 100 caracteres')
+		.required('El sistema operativo es obligatorio'),
 
 	// ─── Otros ───────────────────────────────────────────────────────────────
-	has_wifi: Yup.boolean().nullable(),
-	has_bluetooth: Yup.boolean().nullable(),
-	has_cd_drive: Yup.boolean().nullable(),
+	has_wifi: Yup.boolean().required('Debes indicar si tiene Wi-Fi'),
+	has_bluetooth: Yup.boolean().required('Debes indicar si tiene Bluetooth'),
+	has_cd_drive: Yup.boolean().required('Debes indicar si tiene unidad CD/DVD'),
 
 	// ─── Notas ───────────────────────────────────────────────────────────────
 	observations: Yup.string()

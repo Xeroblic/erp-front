@@ -12,7 +12,6 @@ export const dockingSchema = Yup.object({
 	model: Yup.string()
 		.required('El modelo es requerido')
 		.max(50, 'Máximo 50 caracteres'),
-	line: Yup.string().nullable().max(50, 'Máximo 50 caracteres'),
 
 	// Condición
 	general_condition: Yup.string()
@@ -23,13 +22,14 @@ export const dockingSchema = Yup.object({
 		),
 
 	// Puertos
-	vga_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
-	hdmi_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
-	displayport_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
-	usb_c_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
-	sd_readers: Yup.number().nullable().min(0, 'No puede ser negativo'),
-	rj45_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
-	usb_a_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
+	line: Yup.string().required('La línea es requerida').max(50, 'Máximo 50 caracteres'),
+	vga_ports: Yup.number().required('Indica cantidad de puertos VGA').min(0, 'No puede ser negativo'),
+	hdmi_ports: Yup.number().required('Indica cantidad de puertos HDMI').min(0, 'No puede ser negativo'),
+	displayport_ports: Yup.number().required('Indica cantidad de puertos DisplayPort').min(0, 'No puede ser negativo'),
+	usb_c_ports: Yup.number().required('Indica cantidad de puertos USB-C').min(0, 'No puede ser negativo'),
+	sd_readers: Yup.number().required('Indica cantidad de lectores SD').min(0, 'No puede ser negativo'),
+	rj45_ports: Yup.number().required('Indica cantidad de puertos RJ45').min(0, 'No puede ser negativo'),
+	usb_a_ports: Yup.number().required('Indica cantidad de puertos USB-A').min(0, 'No puede ser negativo'),
 
 	// Estado funcionales de puertos
 	all_ports_functional: Yup.boolean().required(
@@ -49,8 +49,8 @@ export const dockingSchema = Yup.object({
 		}),
 
 	// Extras
-	has_wifi: Yup.boolean().default(false),
-	includes_power_adapter: Yup.boolean().default(false),
+	has_wifi: Yup.boolean().required('Debes indicar si tiene Wi-Fi').default(false),
+	includes_power_adapter: Yup.boolean().required('Debes indicar si incluye adaptador de poder').default(false),
 	cover_condition: Yup.string()
 		.required('La condición de carcasa es requerida')
 		.oneOf(

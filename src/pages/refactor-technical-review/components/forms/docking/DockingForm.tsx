@@ -4,7 +4,7 @@
  * Composes sections in the FormShell with Yup validation.
  */
 import React, { useMemo, useEffect } from 'react';
-import { useForm, type Resolver } from 'react-hook-form';
+import { useForm, type FieldPath, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { toast } from 'react-toastify';
 
@@ -39,6 +39,22 @@ const DOCKING_SECTIONS: SectionConfig<DockingFormData>[] = [
 	},
 ];
 
+const DOCKING_SECTION_FIELDS: Record<string, FieldPath<DockingFormData>[]> = {
+	'basic-info': ['brand', 'model', 'line', 'general_condition'],
+	ports: [
+		'vga_ports',
+		'hdmi_ports',
+		'displayport_ports',
+		'usb_c_ports',
+		'sd_readers',
+		'rj45_ports',
+		'usb_a_ports',
+		'all_ports_functional',
+		'defective_ports_count',
+	],
+	extras: ['has_wifi', 'includes_power_adapter', 'cover_condition', 'observations'],
+};
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface DockingFormProps {
 	defaultValues?: Partial<DockingFormData>;
@@ -69,6 +85,8 @@ const DockingForm: React.FC<DockingFormProps> = ({
 		handleSubmit,
 		watch,
 		setValue,
+		trigger,
+		getFieldState,
 		reset,
 		formState: { errors },
 	} = useForm<DockingFormData>({
@@ -120,6 +138,27 @@ const DockingForm: React.FC<DockingFormProps> = ({
 	}, [defaultValues, reset]);
 
 	// Handle finish
+	const validateStep = async (sectionKey: string) => {
+		const stepFields = DOCKING_SECTION_FIELDS[sectionKey] ?? [];
+		const isValid = await trigger(stepFields, { shouldFocus: true });
+
+		if (isValid) {
+			return { isValid: true };
+		}
+
+		const firstError = stepFields
+			.map((field) => getFieldState(field).error?.message)
+			.find(Boolean);
+
+		return {
+			isValid: false,
+			message:
+				typeof firstError === 'string'
+					? firstError
+					: 'Debes completar los campos obligatorios antes de continuar.',
+		};
+	};
+
 	const handleFinish = () => {
 		handleSubmit(
 			async (data) => {
@@ -167,6 +206,7 @@ const DockingForm: React.FC<DockingFormProps> = ({
 			onFinish={handleFinish}
 			isSubmitting={isSubmitting}
 			onStepChange={onStepChange}
+			onValidateStep={validateStep}
 			isSaving={isSaving}
 		/>
 	);

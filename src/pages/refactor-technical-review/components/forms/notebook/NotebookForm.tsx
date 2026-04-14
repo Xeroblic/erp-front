@@ -7,7 +7,7 @@
  * ✏️ To add a section → create a new component in sections/ and add it here.
  */
 import React, { useMemo, useEffect } from 'react';
-import { useForm, type Resolver } from 'react-hook-form';
+import { useForm, type FieldPath, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { toast } from 'react-toastify';
 
@@ -84,6 +84,48 @@ const NOTEBOOK_SECTIONS: SectionConfig<NotebookFormData>[] = [
 	},
 ];
 
+const NOTEBOOK_SECTION_FIELDS: Record<string, FieldPath<NotebookFormData>[]> = {
+	'basic-info': ['brand', 'model', 'line', 'general_condition'],
+	hardware: [
+		'processor',
+		'ram_size',
+		'ram_slots',
+		'ram_type',
+		'storage_size',
+		'storage_technology',
+	],
+	power: [
+		'includes_charger',
+		'charger_watts',
+		'charger_status',
+		'battery_health',
+		'battery_status',
+		'battery_percentage',
+	],
+	ports: [
+		'vga_ports',
+		'hdmi_ports',
+		'displayport_ports',
+		'usb_c_ports',
+		'usb_a_ports',
+		'sd_readers',
+		'rj45_ports',
+		'all_ports_functional',
+		'defective_ports_count',
+	],
+	screen: [
+		'screen_inches',
+		'is_touchscreen',
+		'screen_condition',
+		'dead_pixels_count',
+		'spots_count',
+	],
+	input: ['keyboard_condition', 'keyboard_layout', 'has_numeric_keypad', 'has_backlit_keyboard'],
+	aesthetics: ['cover_condition', 'hinge_condition', 'touchpad_condition', 'bottom_condition'],
+	software: ['operating_system', 'has_biometric', 'has_wifi', 'has_bluetooth'],
+	observations: ['observations'],
+};
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface NotebookFormProps {
 	defaultValues?: Partial<NotebookFormData>;
@@ -114,6 +156,9 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 		handleSubmit,
 		watch,
 		setValue,
+		trigger,
+		getValues,
+		getFieldState,
 		reset,
 		formState: { errors },
 	} = useForm<NotebookFormData>({
@@ -154,6 +199,44 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 	}, [defaultValues, reset]);
 
 	// Handle finish
+	const validateStep = async (sectionKey: string) => {
+		const stepFields = NOTEBOOK_SECTION_FIELDS[sectionKey] ?? [];
+		const currentValues = getValues();
+
+		for (const field of stepFields) {
+			try {
+				await notebookSchema.validateAt(field, currentValues);
+			} catch (error) {
+				await trigger(stepFields, { shouldFocus: true });
+				if (error instanceof Error) {
+					return { isValid: false, message: error.message };
+				}
+				return {
+					isValid: false,
+					message: 'Debes completar los campos obligatorios antes de continuar.',
+				};
+			}
+		}
+
+		const isValid = await trigger(stepFields, { shouldFocus: true });
+
+		if (isValid) {
+			return { isValid: true };
+		}
+
+		const firstError = stepFields
+			.map((field) => getFieldState(field).error?.message)
+			.find(Boolean);
+
+		return {
+			isValid: false,
+			message:
+				typeof firstError === 'string'
+					? firstError
+					: 'Debes completar los campos obligatorios antes de continuar.',
+		};
+	};
+
 	const handleFinish = () => {
 		handleSubmit(
 			async (data) => {
@@ -168,7 +251,9 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 			},
 			(validationErrors) => {
 				// Collect all validation error messages
-				const messages = Object.values(validationErrors)
+				const messages = Object.values(
+					validationErrors as Record<string, { message?: string }>,
+				)
 					.map((e) => e?.message)
 					.filter(Boolean)
 					.slice(0, 5);
@@ -190,6 +275,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 			onFinish={handleFinish}
 			isSubmitting={isSubmitting}
 			onStepChange={onStepChange}
+			onValidateStep={validateStep}
 			isSaving={isSaving}
 		/>
 	);

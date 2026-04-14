@@ -4,7 +4,7 @@
  * Composes sections in the FormShell with Yup validation.
  */
 import React, { useMemo, useEffect } from 'react';
-import { useForm, type Resolver } from 'react-hook-form';
+import { useForm, type FieldPath, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { toast } from 'react-toastify';
 
@@ -84,6 +84,34 @@ const DESKTOP_SECTIONS: SectionConfig<DesktopFormData>[] = [
 	},
 ];
 
+const DESKTOP_SECTION_FIELDS: Record<string, FieldPath<DesktopFormData>[]> = {
+	'basic-info': ['brand', 'model', 'line', 'general_condition'],
+	hardware: [
+		'processor',
+		'ram_size',
+		'ram_slots',
+		'ram_type',
+		'storage_size',
+		'storage_technology',
+	],
+	ports: [
+		'vga_ports',
+		'hdmi_ports',
+		'displayport_ports',
+		'usb_c_ports',
+		'usb_a_ports',
+		'sd_readers',
+		'rj45_ports',
+		'all_ports_functional',
+		'defective_ports_count',
+	],
+	aesthetics: ['cover_condition'],
+	connectivity: ['has_wifi', 'has_bluetooth', 'has_cd_drive'],
+	accessories: ['includes_charger', 'charger_status'],
+	software: ['operating_system'],
+	observations: ['observations'],
+};
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface DesktopFormProps {
 	defaultValues?: Partial<DesktopFormData>;
@@ -111,6 +139,8 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 		handleSubmit,
 		watch,
 		setValue,
+		trigger,
+		getFieldState,
 		reset,
 		formState: { errors },
 	} = useForm<DesktopFormData>({
@@ -181,6 +211,27 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 	}, [watch, setValue]);
 
 	// Handle finish
+	const validateStep = async (sectionKey: string) => {
+		const stepFields = DESKTOP_SECTION_FIELDS[sectionKey] ?? [];
+		const isValid = await trigger(stepFields, { shouldFocus: true });
+
+		if (isValid) {
+			return { isValid: true };
+		}
+
+		const firstError = stepFields
+			.map((field) => getFieldState(field).error?.message)
+			.find(Boolean);
+
+		return {
+			isValid: false,
+			message:
+				typeof firstError === 'string'
+					? firstError
+					: 'Debes completar los campos obligatorios antes de continuar.',
+		};
+	};
+
 	const handleFinish = () => {
 		handleSubmit(
 			async (data) => {
@@ -216,6 +267,7 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 			onFinish={handleFinish}
 			isSubmitting={isSubmitting}
 			onStepChange={onStepChange}
+			onValidateStep={validateStep}
 			isSaving={isSaving}
 		/>
 	);

@@ -14,7 +14,6 @@ export const monitorSchema = Yup.object({
 	model: Yup.string()
 		.required('El modelo es requerido')
 		.max(50, 'Máximo 50 caracteres'),
-	line: Yup.string().nullable().max(50, 'Máximo 50 caracteres'),
 
 	// Condición
 	general_condition: Yup.string()
@@ -25,9 +24,10 @@ export const monitorSchema = Yup.object({
 		),
 
 	// Pantalla & Físico
-	screen_inches: Yup.string().nullable().max(20, 'Máximo 20 caracteres'),
-	screen_resolution: Yup.string().nullable().max(50, 'Máximo 50 caracteres'),
-	is_touchscreen: Yup.boolean().default(false),
+	line: Yup.string().required('La línea es requerida').max(50, 'Máximo 50 caracteres'),
+	screen_inches: Yup.string().required('Las pulgadas son requeridas').max(20, 'Máximo 20 caracteres'),
+	screen_resolution: Yup.string().required('La resolución es requerida').max(50, 'Máximo 50 caracteres'),
+	is_touchscreen: Yup.boolean().required('Debes indicar si es touch').default(false),
 	screen_condition: Yup.string()
 		.required('Condición de pantalla es requerida')
 		.oneOf(ALLOWED_SCREEN_CONDITIONS, 'Condición selecta no válida'),
@@ -39,12 +39,12 @@ export const monitorSchema = Yup.object({
 		.oneOf(ALLOWED_FRAME_CONDITIONS, 'Condición selecta no válida'),
 
 	// Puertos
-	has_usb_hub: Yup.boolean().default(false),
-	vga_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
-	hdmi_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
-	displayport_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
-	dvi_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
-	usb_hub_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
+	has_usb_hub: Yup.boolean().required('Debes indicar si tiene hub USB').default(false),
+	vga_ports: Yup.number().required('Indica cantidad de puertos VGA').min(0, 'No puede ser negativo'),
+	hdmi_ports: Yup.number().required('Indica cantidad de puertos HDMI').min(0, 'No puede ser negativo'),
+	displayport_ports: Yup.number().required('Indica cantidad de puertos DisplayPort').min(0, 'No puede ser negativo'),
+	dvi_ports: Yup.number().required('Indica cantidad de puertos DVI').min(0, 'No puede ser negativo'),
+	usb_hub_ports: Yup.number().required('Indica cantidad de puertos del hub USB').min(0, 'No puede ser negativo'),
 
 	// Estado funcionales de puertos
 	all_ports_functional: Yup.boolean().required(
@@ -74,9 +74,9 @@ export const monitorSchema = Yup.object({
 		}),
 
 	// Accesorios
-	includes_power_cable: Yup.boolean().default(false),
-	includes_video_cable: Yup.boolean().default(false),
-	includes_stand: Yup.boolean().default(false),
+	includes_power_cable: Yup.boolean().required('Debes indicar si incluye cable de poder').default(false),
+	includes_video_cable: Yup.boolean().required('Debes indicar si incluye cable de video').default(false),
+	includes_stand: Yup.boolean().required('Debes indicar si incluye base').default(false),
 
 	// Notas
 	observations: Yup.string().nullable().max(255, 'Máximo 255 caracteres'),

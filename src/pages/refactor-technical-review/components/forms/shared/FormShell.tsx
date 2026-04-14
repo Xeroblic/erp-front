@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { FieldValues } from 'react-hook-form';
+import { toast } from 'react-toastify';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import type { SectionConfig, FormSectionProps } from './types';
@@ -13,6 +14,8 @@ interface FormShellProps<T extends FieldValues> {
 	isSubmitting?: boolean;
 	/** Called when user navigates between sections (before transition) */
 	onStepChange?: (direction: 'next' | 'prev') => void;
+	/** Validate current step before moving forward */
+	onValidateStep?: (sectionKey: string) => Promise<{ isValid: boolean; message?: string }>;
 	/** Whether auto-save is in progress */
 	isSaving?: boolean;
 }
@@ -24,10 +27,11 @@ function FormShell<T extends FieldValues>({
 	onFinish,
 	isSubmitting = false,
 	onStepChange,
+	onValidateStep,
 	isSaving = false,
 }: FormShellProps<T>) {
 	const [step, setStep] = useState(0);
-	const [direction, setDirection] = useState(1); 
+	const [direction, setDirection] = useState(1);
 
 	const MAX_STEPS = sections.length;
 
@@ -36,7 +40,17 @@ function FormShell<T extends FieldValues>({
 		window.scrollTo({ top: 0, behavior: 'smooth' });
 	}, [step]);
 
-	const handleNext = () => {
+	const handleNext = async () => {
+		if (onValidateStep && !sectionProps.readOnly) {
+			const validation = await onValidateStep(sections[step].key);
+			if (!validation.isValid) {
+				toast.error(
+					validation.message || 'Completa los campos obligatorios antes de continuar.',
+				);
+				return;
+			}
+		}
+
 		if (step < MAX_STEPS - 1) {
 			onStepChange?.('next');
 			setDirection(1);
@@ -54,7 +68,7 @@ function FormShell<T extends FieldValues>({
 		}
 	};
 
-	const handleStepClick = (index: number) => {
+	const handleStepClick = async (index: number) => {
 		if (sectionProps.readOnly || index === step) {
 			if (index !== step) {
 				setDirection(index > step ? 1 : -1);
@@ -67,6 +81,16 @@ function FormShell<T extends FieldValues>({
 			setDirection(-1);
 			setStep(index);
 		} else if (index === step + 1) {
+			if (onValidateStep && !sectionProps.readOnly) {
+				const validation = await onValidateStep(sections[step].key);
+				if (!validation.isValid) {
+					toast.error(
+						validation.message ||
+							'Completa los campos obligatorios antes de continuar.',
+					);
+					return;
+				}
+			}
 			setDirection(1);
 			setStep(index);
 		}

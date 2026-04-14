@@ -51,7 +51,7 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 							setValue('includes_charger', val);
 							if (!val) {
 								setValue('charger_status', null);
-								setValue('charger_watts', null);
+								setValue('charger_watts', undefined);
 							}
 						}}
 					/>

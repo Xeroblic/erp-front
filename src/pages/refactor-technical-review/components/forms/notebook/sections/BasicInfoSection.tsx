@@ -85,7 +85,7 @@ const BasicInfoSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 			<div className='rounded-xl border border-teal-200 bg-teal-500/20 p-4 transition-colors duration-200 hover:cursor-pointer hover:bg-teal-500/30 dark:border-teal-800 dark:bg-teal-900/10 dark:hover:bg-teal-900/30'>
 				<label className='mb-3 flex items-center gap-2 text-sm font-bold text-teal-800 dark:text-teal-200'>
 					<Icon icon='HeroListBullet' className='h-4 w-4' />
-					{getNotebookLabel('line')}
+					{getNotebookLabel('line')} <span className='text-red-500'>*</span>
 				</label>
 				<Controller
 					name='line'

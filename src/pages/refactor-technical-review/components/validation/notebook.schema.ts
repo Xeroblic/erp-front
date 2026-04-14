@@ -37,7 +37,7 @@ export const notebookSchema = Yup.object({
 	line: Yup.string()
 		.trim()
 		.max(150, 'Máximo 150 caracteres')
-		.nullable(),
+		.required('La línea es obligatoria'),
 
 	// ─── Condición General ───────────────────────────────────────────────────
 	general_condition: Yup.string()
@@ -55,9 +55,9 @@ export const notebookSchema = Yup.object({
 		.required('La RAM es obligatoria')
 		.max(50, 'Máximo 50 caracteres'),
 
-	ram_slots: Yup.string().trim().max(20, 'Máximo 20 caracteres').nullable(),
+	ram_slots: Yup.string().trim().max(20, 'Máximo 20 caracteres').required('Los slots de RAM son obligatorios'),
 
-	ram_type: Yup.string().trim().max(20, 'Máximo 20 caracteres').nullable(),
+	ram_type: Yup.string().trim().max(20, 'Máximo 20 caracteres').required('El tipo de RAM es obligatorio'),
 
 	storage_size: Yup.string()
 		.trim()
@@ -69,8 +69,6 @@ export const notebookSchema = Yup.object({
 		.required('La tecnología de disco es obligatoria'),
 
 	// ─── Pantalla ────────────────────────────────────────────────────────────
-	screen_inches: Yup.string().trim().max(20, 'Máximo 20 caracteres').nullable(),
-
 	screen_condition: Yup.string()
 		.oneOf([...ALLOWED_SCREEN_CONDITIONS], 'Condición de pantalla no válida')
 		.required('La condición de pantalla es obligatoria'),
@@ -104,7 +102,12 @@ export const notebookSchema = Yup.object({
 			otherwise: (schema) => schema.nullable().transform(() => 0), // Default to 0 if not active
 		}),
 
-	is_touchscreen: Yup.boolean().nullable(),
+	screen_inches: Yup.string()
+		.trim()
+		.max(20, 'Máximo 20 caracteres')
+		.required('Las pulgadas de pantalla son obligatorias'),
+
+	is_touchscreen: Yup.boolean().required('Debes indicar si es touch'),
 
 	// ─── Carcasa ─────────────────────────────────────────────────────────────
 	cover_condition: Yup.string()
@@ -117,75 +120,90 @@ export const notebookSchema = Yup.object({
 
 	keyboard_layout: Yup.string()
 		.oneOf([...ALLOWED_KEYBOARD_LAYOUTS], 'Distribución de teclado no válida')
-		.nullable(),
+		.required('La distribución del teclado es obligatoria'),
 
 	hinge_condition: Yup.string()
 		.oneOf([...ALLOWED_HINGE_CONDITIONS], 'Condición de bisagras no válida')
-		.nullable(),
+		.required('La condición de bisagras es obligatoria'),
 
 	touchpad_condition: Yup.string()
 		.oneOf([...ALLOWED_TOUCHPAD_CONDITIONS], 'Condición de touchpad no válida')
-		.nullable(),
+		.required('La condición del touchpad es obligatoria'),
 
 	bottom_condition: Yup.string()
 		.oneOf([...ALLOWED_BOTTOM_CONDITIONS], 'Condición de tapa inferior no válida')
-		.nullable(),
+		.required('La condición de la tapa inferior es obligatoria'),
 
-	has_numeric_keypad: Yup.boolean().nullable(),
-	has_backlit_keyboard: Yup.boolean().nullable(),
+	has_numeric_keypad: Yup.boolean().required('Debes indicar si tiene teclado numérico'),
+	has_backlit_keyboard: Yup.boolean().required('Debes indicar si tiene teclado retroiluminado'),
 
 	// ─── Batería ─────────────────────────────────────────────────────────────
-	battery_health: Yup.string().trim().max(100, 'Máximo 100 caracteres').nullable(),
+	battery_health: Yup.string()
+		.trim()
+		.max(100, 'Máximo 100 caracteres')
+		.required('El estado de salud de batería es obligatorio'),
 
 	battery_status: Yup.string()
 		.oneOf([...ALLOWED_BATTERY_STATUSES], 'Estado de batería no válido')
-		.nullable(),
+		.required('El estado de la batería es obligatorio'),
 
 	battery_percentage: Yup.number()
 		.typeError('El porcentaje debe ser un número')
 		.integer('Debe ser un número entero')
 		.min(BATTERY_PERCENTAGE_MIN, `El porcentaje mínimo es ${BATTERY_PERCENTAGE_MIN}`)
 		.max(BATTERY_PERCENTAGE_MAX, `El porcentaje máximo es ${BATTERY_PERCENTAGE_MAX}`)
-		.nullable()
+		.required('El porcentaje de batería es obligatorio')
 		// Regla: si battery_status es no_battery, el porcentaje debe ser 0
 		.when('battery_status', {
 			is: 'no_battery',
 			then: (schema) =>
-				schema.max(0, 'Si no hay batería, el porcentaje debe ser 0').nullable(),
+				schema.max(0, 'Si no hay batería, el porcentaje debe ser 0'),
 		}),
 
 	// ─── Puertos ─────────────────────────────────────────────────────────────
-	vga_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
-	hdmi_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
-	displayport_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
-	usb_c_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
-	usb_a_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
-	sd_readers: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
-	rj45_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
+	vga_ports: Yup.number().integer().min(0, 'No puede ser negativo').required('Indica cantidad de puertos VGA'),
+	hdmi_ports: Yup.number().integer().min(0, 'No puede ser negativo').required('Indica cantidad de puertos HDMI'),
+	displayport_ports: Yup.number().integer().min(0, 'No puede ser negativo').required('Indica cantidad de puertos DisplayPort'),
+	usb_c_ports: Yup.number().integer().min(0, 'No puede ser negativo').required('Indica cantidad de puertos USB-C'),
+	usb_a_ports: Yup.number().integer().min(0, 'No puede ser negativo').required('Indica cantidad de puertos USB-A'),
+	sd_readers: Yup.number().integer().min(0, 'No puede ser negativo').required('Indica cantidad de lectores SD'),
+	rj45_ports: Yup.number().integer().min(0, 'No puede ser negativo').required('Indica cantidad de puertos RJ45'),
 
 	all_ports_functional: Yup.boolean()
-		.nullable()
-		// Regla: no puede ser true si hay puertos defectuosos
-		.when('defective_ports_count', {
-			is: (val: number | null | undefined) => val != null && val > 0,
-			then: (schema) =>
-				schema.test(
-					'ports-conflict',
-					'No puede marcar todos los puertos como funcionales si hay puertos defectuosos',
-					(value) => value !== true,
-				),
-		}),
+		.required('Debes indicar si todos los puertos funcionan'),
 
 	defective_ports_count: Yup.number()
 		.typeError('Debe ser un número')
 		.integer('Debe ser un número entero')
 		.min(0, 'No puede ser negativo')
-		.nullable(),
+		.when('all_ports_functional', {
+			is: false,
+			then: (schema) =>
+				schema
+					.required('Debes indicar cuántos puertos defectuosos hay')
+					.min(1, 'Debe haber al menos 1 puerto defectuoso'),
+			otherwise: (schema) => schema.transform(() => 0).default(0),
+		})
+		.test(
+			'ports-conflict',
+			'No puede marcar todos los puertos como funcionales si hay puertos defectuosos',
+			function (value): boolean {
+				const parent = this.parent as { all_ports_functional?: boolean | null };
+				return !(parent.all_ports_functional === true && Number(value) > 0);
+			},
+		),
 
 	// ─── Accesorios ──────────────────────────────────────────────────────────
-	includes_charger: Yup.boolean().nullable(),
+	includes_charger: Yup.boolean().required('Debes indicar si incluye cargador'),
 
-	charger_watts: Yup.string().trim().max(20, 'Máximo 20 caracteres').nullable(),
+	charger_watts: Yup.string()
+		.trim()
+		.max(20, 'Máximo 20 caracteres')
+		.when('includes_charger', {
+			is: true,
+			then: (schema) => schema.required('Si incluye cargador, indica los watts'),
+			otherwise: (schema) => schema.nullable(),
+		}),
 
 	charger_status: Yup.string()
 		.oneOf([...ALLOWED_CHARGER_STATUSES], 'Estado de cargador no válido')
@@ -198,12 +216,15 @@ export const notebookSchema = Yup.object({
 		}),
 
 	// ─── Software ────────────────────────────────────────────────────────────
-	operating_system: Yup.string().trim().max(100, 'Máximo 100 caracteres').nullable(),
+	operating_system: Yup.string()
+		.trim()
+		.max(100, 'Máximo 100 caracteres')
+		.required('El sistema operativo es obligatorio'),
 
 	// ─── Otros ───────────────────────────────────────────────────────────────
-	has_biometric: Yup.boolean().nullable(),
-	has_wifi: Yup.boolean().nullable(),
-	has_bluetooth: Yup.boolean().nullable(),
+	has_biometric: Yup.boolean().required('Debes indicar si tiene biometría'),
+	has_wifi: Yup.boolean().required('Debes indicar si tiene Wi-Fi'),
+	has_bluetooth: Yup.boolean().required('Debes indicar si tiene Bluetooth'),
 
 	// ─── Notas ───────────────────────────────────────────────────────────────
 	observations: Yup.string()

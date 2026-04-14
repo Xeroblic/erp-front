@@ -53,6 +53,7 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 				<div className='rounded-xl border border-blue-200 bg-blue-500/20 p-4 transition-colors duration-200 hover:cursor-pointer hover:bg-blue-500/30 dark:border-blue-800 dark:bg-blue-900/10 dark:hover:bg-blue-900/30'>
 					<label className='mb-3 block text-sm font-bold text-blue-800 dark:text-blue-200'>
 						Memoria RAM
+						<span className='text-red-500'>*</span>
 					</label>
 
 					{/* RAM Type Selection Cards */}
@@ -98,7 +99,7 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 					{/* RAM Slots */}
 					<div>
 						<label className='mb-1 block text-xs font-semibold text-zinc-500'>
-							{getNotebookLabel('ram_slots')}
+							{getNotebookLabel('	ram_slots')} <span className='text-red-500'>*</span>
 						</label>
 						<Controller
 							name='ram_slots'
@@ -125,6 +126,7 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 					{/* Storage Technology Selection Cards */}
 					<label className='mb-2 block text-xs font-semibold text-zinc-500'>
 						Tecnología
+						<span className='text-red-500'>*</span>
 					</label>
 					<div className='mb-3 grid grid-cols-2 gap-2 md:grid-cols-3'>
 						{STORAGE_TECHNOLOGY_OPTIONS.map((opt) => (

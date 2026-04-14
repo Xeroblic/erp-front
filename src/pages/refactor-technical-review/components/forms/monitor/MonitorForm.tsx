@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useRef } from 'react';
-import { useForm, type Resolver } from 'react-hook-form';
+import { useForm, type FieldPath, type Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { toast } from 'react-toastify';
 
@@ -51,6 +51,30 @@ const MONITOR_SECTIONS: SectionConfig<MonitorFormData>[] = [
 	},
 ];
 
+const MONITOR_SECTION_FIELDS: Record<string, FieldPath<MonitorFormData>[]> = {
+	'basic-info': ['brand', 'model', 'line', 'general_condition'],
+	screen: [
+		'screen_inches',
+		'screen_resolution',
+		'is_touchscreen',
+		'screen_condition',
+		'stand_condition',
+		'frame_condition',
+	],
+	ports: [
+		'has_usb_hub',
+		'vga_ports',
+		'hdmi_ports',
+		'displayport_ports',
+		'dvi_ports',
+		'usb_hub_ports',
+		'all_ports_functional',
+		'defective_ports_count',
+		'defective_ports_critical_count',
+	],
+	accessories: ['includes_power_cable', 'includes_video_cable', 'includes_stand'],
+};
+
 export interface MonitorFormProps {
 	defaultValues?: Record<string, unknown>;
 	onSubmit: (data: Record<string, unknown>) => Promise<void>;
@@ -81,6 +105,8 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 		reset,
 		watch,
 		setValue,
+		trigger,
+		getFieldState,
 	} = useForm<MonitorFormData>({
 		resolver: yupResolver(
 			monitorSchema,
@@ -115,6 +141,27 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 		watch,
 		setValue,
 		getValues,
+	};
+
+	const validateStep = async (sectionKey: string) => {
+		const stepFields = MONITOR_SECTION_FIELDS[sectionKey] ?? [];
+		const isValid = await trigger(stepFields, { shouldFocus: true });
+
+		if (isValid) {
+			return { isValid: true };
+		}
+
+		const firstError = stepFields
+			.map((field) => getFieldState(field).error?.message)
+			.find(Boolean);
+
+		return {
+			isValid: false,
+			message:
+				typeof firstError === 'string'
+					? firstError
+					: 'Debes completar los campos obligatorios antes de continuar.',
+		};
 	};
 
 	const handleFinish = () => {
@@ -158,6 +205,7 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 			onFinish={handleFinish}
 			isSubmitting={isSubmitting}
 			onStepChange={onStepChange}
+			onValidateStep={validateStep}
 			isSaving={isSaving}
 		/>
 	);
