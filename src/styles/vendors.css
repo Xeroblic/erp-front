@@ -4,121 +4,132 @@
 .rdrDefinedRangesWrapper,
 .rdrStaticRange,
 .rdrDateDisplayWrapper {
-  @apply bg-transparent;
-  border: 1px solid var(--date-border);
-  border-radius: var(--date-radius);
+	@apply bg-transparent;
+	border: 1px solid var(--date-border);
+	border-radius: var(--date-radius);
 }
 html.dark .rdrCalendarWrapper,
 html.dark .rdrDefinedRangesWrapper,
 html.dark .rdrStaticRange,
 html.dark .rdrDateDisplayWrapper {
-  border-color: var(--date-border-dark);
+	border-color: var(--date-border-dark);
 }
 
 /* Texto días */
-.rdrDayPassive .rdrDayNumber span { @apply text-zinc-500/50; }
-.rdrDayNumber span { @apply text-zinc-800 dark:text-zinc-200; }
+.rdrDayPassive .rdrDayNumber span {
+	@apply text-zinc-500/50;
+}
+.rdrDayNumber span {
+	@apply text-zinc-800 dark:text-zinc-200;
+}
 
 /* Sidebar quick ranges */
 .rdrDefinedRangesWrapper {
-  border-color: var(--date-border);
+	border-color: var(--date-border);
 }
 html.dark .rdrDefinedRangesWrapper {
-  border-color: var(--date-border-dark);
+	border-color: var(--date-border-dark);
 }
 
 /* Nav buttons (prev/next) */
 .rdrNextPrevButton {
-  @apply bg-transparent;
-  transition: background-color var(--date-transition);
+	@apply bg-transparent;
+	transition: background-color var(--date-transition);
 }
-.rdrNextPrevButton:hover { background: var(--date-hover); }
-html.dark .rdrNextPrevButton:hover { background: var(--date-hover-dark); }
-
+.rdrNextPrevButton:hover {
+	background: var(--date-hover);
+}
+html.dark .rdrNextPrevButton:hover {
+	background: var(--date-hover-dark);
+}
 
 /* Algunos builds usan .rdrPprevButton; otros .rdrPrevButton, cubrimos ambos */
-.rdrPprevButton i, .rdrPrevButton i {
-  @apply border-t-transparent border-b-transparent;
-  border-right-color: currentColor;
-  color: theme('colors.zinc.800');
+.rdrPprevButton i,
+.rdrPrevButton i {
+	@apply border-b-transparent border-t-transparent;
+	border-right-color: currentColor;
+	color: theme('colors.zinc.800');
 }
-html.dark .rdrPprevButton i, html.dark .rdrPrevButton i {
-  color: theme('colors.zinc.200');
+html.dark .rdrPprevButton i,
+html.dark .rdrPrevButton i {
+	color: theme('colors.zinc.200');
 }
 .rdrNextButton i {
-  @apply border-t-transparent border-b-transparent;
-  border-left-color: currentColor;
-  color: theme('colors.zinc.800');
+	@apply border-b-transparent border-t-transparent;
+	border-left-color: currentColor;
+	color: theme('colors.zinc.800');
 }
 html.dark .rdrNextButton i {
-  color: theme('colors.zinc.200');
+	color: theme('colors.zinc.200');
 }
 
 /* Month/Year pickers */
 .rdrMonthAndYearPickers select {
-  @apply text-zinc-800 dark:text-zinc-200 bg-no-repeat;
-  background-image: url('/src/assets/required/chevron-down.svg');
-  background-size: 1.2rem;
-  background-position: right .5rem center;
-  border-radius: var(--date-radius-sm);
-  transition: background-color var(--date-transition), border-color var(--date-transition);
+	@apply bg-no-repeat text-zinc-800 dark:text-zinc-200;
+	background-image: url('/src/assets/required/chevron-down.svg');
+	background-size: 1.2rem;
+	background-position: right 0.5rem center;
+	border-radius: var(--date-radius-sm);
+	transition:
+		background-color var(--date-transition),
+		border-color var(--date-transition);
 }
 html.dark .rdrMonthAndYearPickers select {
-  background-image: url('/src/assets/required/dark:chevron-down.svg');
+	background-image: url('/src/assets/required/dark-chevron-down.svg');
 }
 .rdrMonthAndYearPickers select:hover {
-  @apply bg-zinc-100 dark:bg-zinc-950;
+	@apply bg-zinc-100 dark:bg-zinc-950;
 }
 
 /* Hover en quick ranges */
 .rdrStaticRange:hover .rdrStaticRangeLabel,
 .rdrStaticRange:focus .rdrStaticRangeLabel {
-  @apply bg-zinc-100 dark:bg-zinc-950;
-  border-radius: var(--date-radius-sm);
+	@apply bg-zinc-100 dark:bg-zinc-950;
+	border-radius: var(--date-radius-sm);
 }
 
 /* Inputs superiores (desde / hasta) */
 .rdrInputRangeInput {
-  @apply appearance-none rounded-lg border-2 bg-zinc-100 px-1.5 py-1.5 text-base text-black outline-0 transition-all duration-300 ease-in-out hover:border-blue-500 focus:bg-transparent dark:border-zinc-800 dark:bg-zinc-800 dark:text-white dark:hover:border-blue-500 dark:focus:bg-transparent;
+	@apply appearance-none rounded-lg border-2 bg-zinc-100 px-1.5 py-1.5 text-base text-black outline-0 transition-all duration-300 ease-in-out hover:border-blue-500 focus:bg-transparent dark:border-zinc-800 dark:bg-zinc-800 dark:text-white dark:hover:border-blue-500 dark:focus:bg-transparent;
 }
 .rdrDateInput.rdrDateDisplayItem {
-  @apply appearance-none rounded-lg text-base shadow-none outline-0 transition-all duration-300 ease-in-out;
-  background: theme('colors.zinc.100');
-  border: 2px solid theme('colors.zinc.100');
+	@apply appearance-none rounded-lg text-base shadow-none outline-0 transition-all duration-300 ease-in-out;
+	background: theme('colors.zinc.100');
+	border: 2px solid theme('colors.zinc.100');
 }
 .rdrDateInput.rdrDateDisplayItem:focus-within {
-  background: transparent;
-  border-color: var(--date-accent);
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--date-accent) 25%, transparent);
+	background: transparent;
+	border-color: var(--date-accent);
+	box-shadow: 0 0 0 3px color-mix(in oklab, var(--date-accent) 25%, transparent);
 }
 html.dark .rdrDateInput.rdrDateDisplayItem {
-  background: theme('colors.zinc.800');
-  border-color: theme('colors.zinc.800');
+	background: theme('colors.zinc.800');
+	border-color: theme('colors.zinc.800');
 }
 html.dark .rdrDateInput.rdrDateDisplayItem:focus-within {
-  background: transparent;
-  border-color: var(--date-accent-600);
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--date-accent-600) 30%, transparent);
+	background: transparent;
+	border-color: var(--date-accent-600);
+	box-shadow: 0 0 0 3px color-mix(in oklab, var(--date-accent-600) 30%, transparent);
 }
 .rdrDateInput.rdrDateDisplayItem.rdrDateDisplayItemActive {
-  @apply bg-transparent dark:bg-transparent;
+	@apply bg-transparent dark:bg-transparent;
 }
 
 /* ====== Estados de DÍAS (lo rico) ====== */
 
 /* Hover día */
 .rdrDay:not(.rdrDayPassive):hover .rdrDayNumber span {
-  background: var(--date-hover);
-  border-radius: .5rem;
+	background: var(--date-hover);
+	border-radius: 0.5rem;
 }
 html.dark .rdrDay:not(.rdrDayPassive):hover .rdrDayNumber span {
-  background: var(--date-hover-dark);
+	background: var(--date-hover-dark);
 }
 
 /* Today ring */
 .rdrDayToday .rdrDayNumber span {
-  box-shadow: inset 0 0 0 2px var(--date-today-ring);
-  border-radius: .5rem;
+	box-shadow: inset 0 0 0 2px var(--date-today-ring);
+	border-radius: 0.5rem;
 }
 
 /* Seleccionado (single) */
@@ -126,55 +137,57 @@ html.dark .rdrDay:not(.rdrDayPassive):hover .rdrDayNumber span {
 .rdrInRange .rdrDayNumber span,
 .rdrStartEdge .rdrDayNumber span,
 .rdrEndEdge .rdrDayNumber span {
-  color: var(--date-contrast);
+	color: var(--date-contrast);
 }
 
 /* Rango */
 .rdrInRange {
-  background: var(--date-range-bg);
+	background: var(--date-range-bg);
 }
 html.dark .rdrInRange {
-  background: var(--date-range-bg-dark);
+	background: var(--date-range-bg-dark);
 }
 
 /* Bordes del rango (start/end “pill”) */
 .rdrStartEdge .rdrDayNumber span,
 .rdrEndEdge .rdrDayNumber span {
-  background: var(--date-accent);
-  border-radius: .75rem;
+	background: var(--date-accent);
+	border-radius: 0.75rem;
 }
 html.dark .rdrStartEdge .rdrDayNumber span,
 html.dark .rdrEndEdge .rdrDayNumber span {
-  background: var(--date-accent-600);
+	background: var(--date-accent-600);
 }
 
 /* Día seleccionado fuera del edge (single) */
 .rdrDaySelected .rdrDayNumber span {
-  background: var(--date-accent);
-  border-radius: .75rem;
+	background: var(--date-accent);
+	border-radius: 0.75rem;
 }
 html.dark .rdrDaySelected .rdrDayNumber span {
-  background: var(--date-accent-600);
+	background: var(--date-accent-600);
 }
 
 /* Disabled */
 .rdrDayDisabled .rdrDayNumber span {
-  color: var(--date-disabled);
-  opacity: .55;
+	color: var(--date-disabled);
+	opacity: 0.55;
 }
 
 /* Focus visible accesible */
 .rdrDay:focus-visible .rdrDayNumber span,
 .rdrStaticRange:focus-visible .rdrStaticRangeLabel,
 .rdrNextPrevButton:focus-visible {
-  outline: 3px solid color-mix(in oklab, var(--date-accent) 55%, transparent);
-  outline-offset: 2px;
-  border-radius: .75rem;
+	outline: 3px solid color-mix(in oklab, var(--date-accent) 55%, transparent);
+	outline-offset: 2px;
+	border-radius: 0.75rem;
 }
 
 /* Reduce motion si el user lo pide */
 @media (prefers-reduced-motion: reduce) {
-  .rdrNextPrevButton,
-  .rdrDateInput.rdrDateDisplayItem,
-  .rdrInputRangeInput { transition: none; }
+	.rdrNextPrevButton,
+	.rdrDateInput.rdrDateDisplayItem,
+	.rdrInputRangeInput {
+		transition: none;
+	}
 }

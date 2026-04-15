@@ -4,8 +4,6 @@ import { PathRouteProps } from 'react-router-dom';
 import pagesConfig from '@/config/pages.config';
 
 import LoginPage from '@/pages/Login.page';
-import RecuperarPassword from '@/pages/ResetPassword/RecuperarPassword';
-import ConfirmarNuevaPass from '@/pages/ResetPassword/ConfirmarNuevaPass';
 import AceptarInvitacionEmpresa from '@/pages/AceptarInvitacionEmpresa';
 import SinPermisos from '@/pages/SinPermisos';
 import NotFoundPage from '@/pages/NotFound.page';
@@ -157,8 +155,8 @@ const cfg = pagesConfig as any;
 
 const contentRoutes: IRoutePersonalizada[] = [
 	{ path: cfg.loginPage.to, element: <LoginPage />, public: true },
-	{ path: cfg.recuperarPassword.to, element: <RecuperarPassword />, public: true },
-	{ path: cfg.confirmarNuevaPass.to, element: <ConfirmarNuevaPass />, public: true },
+	{ path: cfg.recuperarPassword.to, element: <RecoverPasswordPage />, public: true },
+	{ path: cfg.confirmarNuevaPass.to, element: <ResetPasswordPage />, public: true },
 	{ path: cfg.portalPedidosMock.to, element: <PortalPedidosPage />, public: true },
 	{ path: cfg.portalPedidos.to, element: <PortalPedidosPage />, public: true },
 	{ path: cfg.FormularioLockCare.to, element: <FormLockCare />, public: true },
@@ -406,7 +404,7 @@ const contentRoutes: IRoutePersonalizada[] = [
 
 	{
 		path: `${cfg.inventory.subPages.ingresoStock.to}`,
-		element: <IngresoStock/>,
+		element: <IngresoStock />,
 		authority: cfg.inventory.subPages.ingresoStock.authority,
 	},
 

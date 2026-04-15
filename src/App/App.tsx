@@ -18,7 +18,7 @@ import { logout, obtenerPersonalizacionThunk, useAppDispatch, useAppSelector } f
 import AppInitializer from '../components/AppInitializer';
 import NotificationsStreamProvider from '@/notifications/NotificationsStreamProvider';
 import tokenManager from '@/services/auth/tokenManager';
-import { useVersion } from '../templates/layouts/Footers/DefaultFooter.template';
+import { useVersion } from '@/hooks/useVersion';
 
 const App = () => {
 	getOS();

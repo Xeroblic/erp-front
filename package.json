@@ -143,6 +143,7 @@
 		"postcss": "^8.4.38",
 		"prettier": "3.6.2",
 		"prettier-plugin-tailwindcss": "^0.6.2",
+		"rollup-plugin-visualizer": "^7.0.1",
 		"terser": "^5.46.0",
 		"vite-plugin-environment": "^1.1.3"
 	},
