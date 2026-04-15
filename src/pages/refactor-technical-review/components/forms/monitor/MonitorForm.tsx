@@ -52,7 +52,7 @@ const MONITOR_SECTIONS: SectionConfig<MonitorFormData>[] = [
 	},
 	{
 		key: 'observations',
-		label: 'SO & Obs.',
+		label: 'Obs.',
 		icon: 'HeroDocumentText',
 		component: Observations as unknown as React.FC<
 			FormSectionProps<MonitorFormData>
