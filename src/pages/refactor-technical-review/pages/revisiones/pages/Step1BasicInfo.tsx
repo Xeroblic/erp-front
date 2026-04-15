@@ -1,19 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Card, { CardBody } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/form/Input';
 import SelectReact from '@/components/form/SelectReact';
 import Icon from '@/components/icon/Icon';
-import Badge from '@/components/ui/Badge';
 import EquipmentTypeSelector from '../components/EquipmentTypeSelector';
 import type { TSelectOption } from '@/components/form/SelectReact';
 import type { EquipmentType } from '@/store/slices/technicalReviews';
+import { QuickProductTriggerButton } from '@/components/utils/QuickProductFlow';
 
 interface Step1BasicInfoProps {
 	serialNumber: string;
 	onSerialChange: (v: string) => void;
 	productId: number | null;
 	onProductChange: (id: number | null) => void;
+	onOpenQuickProductModal: () => void;
+	quickProductDisabled?: boolean;
 	productOptions: TSelectOption[];
 	productsLoading: boolean;
 	equipmentType: EquipmentType;
@@ -30,6 +32,8 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 	onSerialChange,
 	productId,
 	onProductChange,
+	onOpenQuickProductModal,
+	quickProductDisabled = false,
 	productOptions,
 	productsLoading,
 	equipmentType,
@@ -108,19 +112,39 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 						Producto
 						<span className='text-red-500'>*</span>
 					</label>
-					<SelectReact
-						name='product_id'
-						options={productOptions}
-						value={
-							productId
-								? productOptions.find((o) => o.value === String(productId)) || null
-								: null
-						}
-						onChange={(opt) => onProductChange(opt ? Number((opt as any).value) : null)}
-						placeholder='Seleccionar producto con seguimiento por serie'
-						isLoading={productsLoading}
-						isDisabled={readOnly}
-					/>
+					<div className='grid grid-cols-1 gap-3 md:grid-cols-12'>
+						<div className='md:col-span-11'>
+							<SelectReact
+								name='product_id'
+								options={productOptions}
+								value={
+									productId
+										? productOptions.find(
+												(o) => o.value === String(productId),
+											) || null
+										: null
+								}
+								onChange={(opt) =>
+									onProductChange(opt ? Number((opt as any).value) : null)
+								}
+								placeholder='Seleccionar producto con seguimiento por serie'
+								isLoading={productsLoading}
+								isDisabled={readOnly}
+							/>
+						</div>
+						<div className='md:col-span-1'>
+							<QuickProductTriggerButton
+								onClick={onOpenQuickProductModal}
+								disabled={	
+									readOnly ||
+									quickProductDisabled ||
+									productsLoading ||
+									isSubmitting ||
+									loading
+								}
+							/>
+						</div>
+					</div>
 				</div>
 
 				{/* Equipment Type */}

@@ -42,6 +42,7 @@ const MONITOR_SECTIONS: SectionConfig<MonitorFormData>[] = [
 		icon: 'HeroServerStack',
 		component: MonitorPortsSection as unknown as React.FC<FormSectionProps<MonitorFormData>>,
 	},
+	
 	{
 		key: 'accessories',
 		label: 'Accesorios',

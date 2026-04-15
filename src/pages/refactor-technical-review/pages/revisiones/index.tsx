@@ -12,6 +12,7 @@ import Step2FullReview from './pages/Step2FullReview';
 import Step3Grading from './pages/Step3Grading';
 import { useItemReview } from './components/hooks/useItemReview';
 import ReviewSummaryAside from './components/ReviewSummaryAside';
+import { QuickProductFlowModal, BrandDedupModal } from '@/components/utils/QuickProductFlow';
 // import { translateValue } from './components/utils/reviewTranslations';
 
 const Revisiones: React.FC = () => {
@@ -73,7 +74,6 @@ const Revisiones: React.FC = () => {
 					)}
 				</SubheaderLeft>
 			</Subheader>
-
 			<Container className='space-y-4 py-4'>
 				{/* Step Indicator */}
 				<Card>
@@ -94,6 +94,8 @@ const Revisiones: React.FC = () => {
 						onSerialChange={hook.setSerialNumber}
 						productId={hook.productId}
 						onProductChange={hook.setProductId}
+						onOpenQuickProductModal={hook.quickProduct.onOpen}
+						quickProductDisabled={hook.quickProduct.isSubmitting}
 						productOptions={hook.productOptions}
 						productsLoading={hook.productsLoading}
 						equipmentType={hook.equipmentType}
@@ -151,6 +153,24 @@ const Revisiones: React.FC = () => {
 				normalizedReviewStatus={hook.normalizedReviewStatus}
 				automaticGrade={hook.automaticGrade}
 			/>
+			<QuickProductFlowModal
+				isOpen={hook.quickProduct.isOpen}
+				onClose={hook.quickProduct.onClose}
+				form={hook.quickProduct.form}
+				isSubmitting={hook.quickProduct.isSubmitting}
+				branchId={String(hook.currentBranchId ?? '')}
+				brandOptions={hook.quickProduct.brands}
+				onBrandChange={hook.quickProduct.onBrandChange}
+				onCreateBrand={hook.quickProduct.onCreateBrand}
+			/>{' '}
+			<BrandDedupModal
+				isOpen={hook.quickProduct.isDedupModalOpen}
+				onClose={hook.quickProduct.onCloseDedupModal}
+				candidates={hook.quickProduct.dedupCandidates}
+				defaultKeepId={hook.quickProduct.dedupDefaultKeepId}
+				isSubmitting={hook.quickProduct.isDedupSubmitting}
+				onResolve={hook.quickProduct.onResolveBrandDedup}
+			/>{' '}
 		</PageWrapper>
 	);
 };

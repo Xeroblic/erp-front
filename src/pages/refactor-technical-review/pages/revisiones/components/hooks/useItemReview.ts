@@ -17,6 +17,7 @@ import {
 } from '@/store/slices/technicalReviews';
 import { fetchProductsList } from '@/store/slices/products/productsSlice';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import { useQuickProduct } from '@/components/utils/QuickProductFlow';
 import type { TSelectOption } from '@/components/form/SelectReact';
 
 export type ReviewStep = 'basic' | 'review' | 'grading';
@@ -30,10 +31,14 @@ export interface UseItemReviewReturn {
 	equipmentType: EquipmentType;
 	automaticGrade: string | null;
 	batchDisplayLabel: string;
+	currentBranchId: number | null;
 
 	// Products
 	productOptions: TSelectOption[];
 	productsLoading: boolean;
+
+	// Quick Product Flow
+	quickProduct: ReturnType<typeof useQuickProduct>;
 
 	// Loading states
 	loading: boolean;
@@ -93,6 +98,31 @@ export const useItemReview = (): UseItemReviewReturn => {
 	const [productId, setProductId] = useState<number | null>(null);
 	const [equipmentType, setEquipmentType] = useState<EquipmentType>('notebook');
 	const [automaticGrade, setAutomaticGrade] = useState<string | null>(null);
+
+	// Quick Product Flow (hook reutilizable escalable)
+	const quickProduct = useQuickProduct({
+		branchId: branchId ?? 0,
+		onProductCreated: async (product) => {
+			// Auto-select the newly created product
+			if (product?.id) {
+				handleProductChange(Number(product.id));
+			}
+			// Reload products list
+			if (branchId) {
+				try {
+					await dispatch(
+						fetchProductsList({
+							entityParam: 'branches',
+							entityId: branchId,
+							params: { page: 1, per_page: 100 },
+						}),
+					).unwrap();
+				} catch {
+					// Silent fail
+				}
+			}
+		},
+	});
 
 	// Load products
 	useEffect(() => {
@@ -378,8 +408,10 @@ export const useItemReview = (): UseItemReviewReturn => {
 		equipmentType,
 		automaticGrade,
 		batchDisplayLabel,
+		currentBranchId: branchId ?? null,
 		productOptions,
 		productsLoading,
+		quickProduct,
 		loading,
 		startingReview,
 		completingReview,
