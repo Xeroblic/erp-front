@@ -161,7 +161,7 @@ const MonitorBasicInfoSection: React.FC<FormSectionProps<MonitorFormData>> = ({
 			</div>
 
 			{/* Observations */}
-			<div className='rounded-xl border border-zinc-200 bg-white p-6 shadow-sm transition-colors duration-200 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-zinc-700'>
+			{/* <div className='rounded-xl border border-zinc-200 bg-white p-6 shadow-sm transition-colors duration-200 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-zinc-700'>
 				<label className='mb-3 flex items-center gap-2 text-sm font-bold text-zinc-700 dark:text-zinc-300'>
 					<Icon icon='HeroDocumentText' className='h-5 w-5' />
 					{getMonitorLabel('observations')}
@@ -186,7 +186,7 @@ const MonitorBasicInfoSection: React.FC<FormSectionProps<MonitorFormData>> = ({
 						{errors.observations.message}
 					</p>
 				)}
-			</div>
+			</div> */}
 		</div>
 	);
 };
