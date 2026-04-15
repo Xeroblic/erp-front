@@ -52,7 +52,7 @@ const NotificationItem: FC<INotificationItemProps> = ({
 			className={`w-full border border-zinc-700/30 bg-transparent shadow-sm transition-all duration-200 hover:shadow-lg ${
 				isUnread ? 'ring-1 ring-emerald-400/40 dark:ring-emerald-300/40' : ''
 			}`}>
-			<CardBody className='px-4 py-4 '>
+			<CardBody className='px-4 py-4'>
 				<div className='flex gap-3'>
 					<div className='flex-shrink-0'>
 						<Avatar src={image} name={name} />
@@ -65,7 +65,7 @@ const NotificationItem: FC<INotificationItemProps> = ({
 									<Badge
 										variant='outline'
 										color='violet'
-										className='flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide px-3'>
+										className='flex items-center gap-1 px-3 text-[10px] font-semibold uppercase tracking-wide'>
 										{icon && <Icon icon={icon} className='h-3 w-3' />}
 										<span>{moduleLabel}</span>
 									</Badge>
@@ -131,7 +131,21 @@ const NotificationPartial = () => {
 	// Prefetch + polling cada 60s + refresh en focus/visibility para mantener el badge al dia
 	useEffect(() => {
 		if (!isAuthenticated) return;
-		if (!items.length) refresh(true);
+
+		let idleId: number | null = null;
+		let timeoutId: number | null = null;
+		if (!items.length && !isSseReady()) {
+			const hasRequestIdleCallback =
+				typeof (window as any).requestIdleCallback === 'function';
+			if (hasRequestIdleCallback) {
+				idleId = (window as any).requestIdleCallback(() => refresh(true), {
+					timeout: 2000,
+				});
+			} else {
+				timeoutId = window.setTimeout(() => refresh(true), 1200);
+			}
+		}
+
 		const iv = window.setInterval(() => refresh(), 60000);
 		const onFocus = () => refresh();
 		const onVis = () => {
@@ -140,6 +154,12 @@ const NotificationPartial = () => {
 		window.addEventListener('focus', onFocus);
 		document.addEventListener('visibilitychange', onVis);
 		return () => {
+			if (idleId !== null && typeof (window as any).cancelIdleCallback === 'function') {
+				(window as any).cancelIdleCallback(idleId);
+			}
+			if (timeoutId !== null) {
+				window.clearTimeout(timeoutId);
+			}
 			window.clearInterval(iv);
 			window.removeEventListener('focus', onFocus);
 			document.removeEventListener('visibilitychange', onVis);
@@ -205,11 +225,11 @@ const NotificationPartial = () => {
 				);
 			}
 			return (
-				<div className='flex row-span-12 max-h-80 flex-col gap-3 overflow-y-auto py-0 pr-2 min-w-[400px] min-h-[23rem] '>
+				<div className='row-span-12 flex max-h-80 min-h-[23rem] min-w-[400px] flex-col gap-3 overflow-y-auto py-0 pr-2'>
 					{recentNotifications.map((n, index) => (
 						<div
 							key={n.id}
-							className={`space-y-0 w-full cursor-pointer notification-hover-effect animate-notification-in delay-${Math.min(index + 1, 4)}`}
+							className={`notification-hover-effect animate-notification-in w-full cursor-pointer space-y-0 delay-${Math.min(index + 1, 4)}`}
 							onClick={() => handleItemClick(n.id)}>
 							<NotificationItem
 								name={clean(
@@ -270,7 +290,7 @@ const NotificationPartial = () => {
 			</Tab>
 		</Tabs>
 	);
-	
+
 	const NotificationPanelHeader = () => (
 		<>
 			<div className='flex flex-wrap items-center gap-3 pb-3'>
@@ -280,7 +300,7 @@ const NotificationPartial = () => {
 						<Badge
 							variant='solid'
 							color='emerald'
-							className='text-[10px] font-semibold uppercase tracking-wide px-2'>
+							className='px-2 text-[10px] font-semibold uppercase tracking-wide'>
 							{unreadCount ? `${unreadCount} nuevas` : 'Sin leer'}
 						</Badge>
 					)}
@@ -303,21 +323,20 @@ const NotificationPartial = () => {
 			</div> */}
 		</>
 	);
-	
-	const [IsOpen, setIsOpen] = useState(false)
-	
+
+	const [IsOpen, setIsOpen] = useState(false);
+
 	const handleNavigation = () => {
 		try {
-			navigate('/notificaciones')
+			navigate('/notificaciones');
 			setIsOpen(false);
 		} catch (error) {
-			toast.error('No se puedo navegar hacia las Notificaciones')
+			toast.error('No se puedo navegar hacia las Notificaciones');
 		}
-	}
+	};
 	const NotificationPanel = () => (
-		
-		<div className='bg-gray-300 dark:bg-zinc-950 px-2 pt-2 overflow-hidden border border-zinc-200/70 shadow-lg dark:border-zinc-800/70'>
-			<div className='flex flex-col gap-3 justify-center item-center pl-3'>
+		<div className='overflow-hidden border border-zinc-200/70 bg-gray-300 px-2 pt-2 shadow-lg dark:border-zinc-800/70 dark:bg-zinc-950'>
+			<div className='item-center flex flex-col justify-center gap-3 pl-3'>
 				<NotificationPanelHeader />
 			</div>
 			<div className='px-0'>
@@ -330,8 +349,7 @@ const NotificationPartial = () => {
 					className='justify-center text-sm'
 					icon='HeroInbox'
 					to='/notificaciones'
-					onClick={handleNavigation}
-					>
+					onClick={handleNavigation}>
 					Ver todas
 				</DropdownNavLinkItem>
 			</div>
@@ -400,9 +418,8 @@ const NotificationPartial = () => {
 					<DropdownMenu
 						placement='bottom-end'
 						isCloseAfterLeave={false}
-						className='min-w-[24rem] p-0 pb-0 pt-0 border border-dashed border-zinc-400 dark:border-zinc-800 shadow-2xl overflow-hidden'
-						setIsOpen={setIsOpen}
-						>
+						className='min-w-[24rem] overflow-hidden border border-dashed border-zinc-400 p-0 pb-0 pt-0 shadow-2xl dark:border-zinc-800'
+						setIsOpen={setIsOpen}>
 						<NotificationPanel />
 					</DropdownMenu>
 				</Dropdown>

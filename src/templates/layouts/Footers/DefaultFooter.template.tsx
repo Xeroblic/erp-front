@@ -4,6 +4,44 @@ import Footer, { FooterLeft, FooterRight } from '../../../components/layouts/Foo
 import ApiService from '@/services/ApiService';
 import Icon from '@/components/icon/Icon';
 
+const VERSION_CACHE_TTL_MS = 5 * 60 * 1000;
+let cachedVersion: { value: string; fetchedAt: number } | null = null;
+let versionPromise: Promise<string> | null = null;
+
+const resolveVersion = async (versionEndpoint: string): Promise<string> => {
+	if (!versionEndpoint) return '';
+
+	if (cachedVersion && Date.now() - cachedVersion.fetchedAt < VERSION_CACHE_TTL_MS) {
+		return cachedVersion.value;
+	}
+
+	if (versionPromise) return versionPromise;
+
+	versionPromise = (async () => {
+		const data = await ApiService.fetchNormalized<{ version?: string } | string>({
+			url: versionEndpoint,
+			method: 'get',
+			cacheTTLms: 60_000,
+			dedupe: true,
+		});
+
+		const next =
+			(data as any)?.version ?? (data as any)?.data ?? (data as any)?.versionSDE ?? data;
+
+		const resolved = next ? next.toString().trim() : '';
+		if (resolved) {
+			cachedVersion = { value: resolved, fetchedAt: Date.now() };
+		}
+		return resolved;
+	})();
+
+	try {
+		return await versionPromise;
+	} finally {
+		versionPromise = null;
+	}
+};
+
 export function useVersion() {
 	const [version, setVersion] = useState('');
 
@@ -21,25 +59,16 @@ export function useVersion() {
 	}, []);
 
 	useEffect(() => {
+		const shouldFetchInDev = import.meta.env.VITE_FETCH_VERSION_IN_DEV === 'true';
+		if (import.meta.env.DEV && !shouldFetchInDev) return;	
+
 		let mounted = true;
 		const fetchVersion = async () => {
 			if (!versionEndpoint) return;
 			try {
-				const data = await ApiService.fetchNormalized<{ version?: string } | string>({
-					url: versionEndpoint,
-					method: 'get',
-					cacheTTLms: 60_000,
-					dedupe: true,
-				});
-
-				const next =
-					(data as any)?.version ??
-					(data as any)?.data ??
-					(data as any)?.versionSDE ??
-					data;
-
+				const next = await resolveVersion(versionEndpoint);
 				if (next && mounted) {
-					setVersion(next.toString().trim());
+					setVersion(next);
 				}
 			} catch (error) {
 				console.error('No se pudo obtener la versión SDE', error);

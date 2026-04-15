@@ -55,14 +55,12 @@ const HiddenAside: React.FC<HiddenAsideProps> = ({
 		const element = asideRef.current;
 		const observer = new ResizeObserver((entries) => {
 			for (const entry of entries) {
-				if (entry.contentBoxSize) {
-					setActualWidth(element.offsetWidth);
-				}
+				setActualWidth(Math.round(entry.contentRect.width));
 			}
 		});
 
 		observer.observe(element);
-		setActualWidth(element.offsetWidth);
+		setActualWidth(Math.round(element.getBoundingClientRect().width));
 
 		return () => {
 			observer.disconnect();

@@ -14,12 +14,62 @@ const compareVersions = (v1: string, v2: string) => {
   return 0;
 };
 
-export const useCliVersion = () => {
-  const [latestVersion, setLatestVersion] = useState<string | null>(null);
-  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
-  const [savedVersion, setSavedVersion] = useState<string | null>(() => localStorage.getItem('zentria_cli_version'));
+const CLI_VERSION_CACHE_KEY = 'zentria_cli_latest_cache';
+const CLI_VERSION_CACHE_TTL_MS = 10 * 60 * 1000;
 
-  const fetchVersions = async () => {
+type CliVersionPayload = {
+  latestVersion: string | null;
+  downloadUrl: string | null;
+  fetchedAt: number;
+};
+
+let inMemoryCache: CliVersionPayload | null = null;
+let inFlightPromise: Promise<CliVersionPayload> | null = null;
+
+const readSessionCache = (): CliVersionPayload | null => {
+  try {
+    const raw = sessionStorage.getItem(CLI_VERSION_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CliVersionPayload;
+    if (!parsed?.fetchedAt) return null;
+    if (Date.now() - parsed.fetchedAt > CLI_VERSION_CACHE_TTL_MS) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+const writeSessionCache = (payload: CliVersionPayload) => {
+  try {
+    sessionStorage.setItem(CLI_VERSION_CACHE_KEY, JSON.stringify(payload));
+  } catch {
+    // ignore cache write failures
+  }
+};
+
+const buildPayload = (latestVersion: string | null, downloadUrl: string | null): CliVersionPayload => ({
+  latestVersion,
+  downloadUrl,
+  fetchedAt: Date.now(),
+});
+
+const resolveVersions = async (): Promise<CliVersionPayload> => {
+  const fromMemory = inMemoryCache && Date.now() - inMemoryCache.fetchedAt <= CLI_VERSION_CACHE_TTL_MS
+    ? inMemoryCache
+    : null;
+  if (fromMemory) return fromMemory;
+
+  const fromSession = readSessionCache();
+  if (fromSession) {
+    inMemoryCache = fromSession;
+    return fromSession;
+  }
+
+  if (inFlightPromise) return inFlightPromise;
+
+  const shouldFetchGithub = !import.meta.env.DEV || import.meta.env.VITE_CLI_VERSION_CHECK_GITHUB === 'true';
+
+  inFlightPromise = (async () => {
     try {
       let localCliVersion = '0.0.0';
       try {
@@ -35,58 +85,85 @@ export const useCliVersion = () => {
       let githubCliVersion = '0.0.0';
       let githubDownloadUrl = '';
 
-      try {
-        const response = await fetch('https://api.github.com/repos/R4aveen/zentria-cli/releases/latest', {
-          cache: 'no-store'
-        });
+      if (shouldFetchGithub) {
+        try {
+          const response = await fetch('https://api.github.com/repos/R4aveen/zentria-cli/releases/latest', {
+            cache: 'no-store'
+          });
 
-        if (response.ok) {
-          const data = await response.json();
-          githubCliVersion = data.tag_name; // ej: v1.2.0
-          const tagLower = String(data.tag_name || '').toLowerCase();
-          const expectedName = `zentria-cli-${tagLower}.zip`;
+          if (response.ok) {
+            const data = await response.json();
+            githubCliVersion = data.tag_name;
+            const tagLower = String(data.tag_name || '').toLowerCase();
+            const expectedName = `zentria-cli-${tagLower}.zip`;
 
-          const assets = Array.isArray(data.assets) ? data.assets : [];
-          const exactAsset = assets.find((a: any) => String(a.name || '').toLowerCase() === expectedName);
+            const assets = Array.isArray(data.assets) ? data.assets : [];
+            const exactAsset = assets.find((a: any) => String(a.name || '').toLowerCase() === expectedName);
 
-          // fallback defensivo si no existe el exacto: elegir el más nuevo por updated_at
-          const fallbackAsset = assets
-            .filter((a: any) => String(a.name || '').toLowerCase().startsWith('zentria-cli-v') && String(a.name || '').toLowerCase().endsWith('.zip'))
-            .sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0];
+            const fallbackAsset = assets
+              .filter((a: any) => String(a.name || '').toLowerCase().startsWith('zentria-cli-v') && String(a.name || '').toLowerCase().endsWith('.zip'))
+              .sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0];
 
-          const selected = exactAsset || fallbackAsset;
+            const selected = exactAsset || fallbackAsset;
 
-          if (selected?.browser_download_url) {
-            githubDownloadUrl = selected.browser_download_url;
-          } else {
-            githubCliVersion = '0.0.0';
+            if (selected?.browser_download_url) {
+              githubDownloadUrl = selected.browser_download_url;
+            } else {
+              githubCliVersion = '0.0.0';
+            }
           }
+        } catch (error) {
+          console.warn('[useCliVersion] Failed to fetch GitHub version:', error);
         }
-      } catch (error) {
-        console.warn('[useCliVersion] Failed to fetch GitHub version:', error);
       }
 
-      // cambio importante:
-      // local SOLO gana si es MAYOR que github (no mayor o igual)
+      let latestVersion: string | null = null;
+      let downloadUrl: string | null = null;
+
       if (localCliVersion !== '0.0.0' && githubCliVersion !== '0.0.0' && compareVersions(localCliVersion, githubCliVersion) > 0) {
         const formattedVersion = localCliVersion.startsWith('v') ? localCliVersion : `v${localCliVersion}`;
-        setLatestVersion(formattedVersion);
-        setDownloadUrl(`/instaladores/Zentria-CLI-${formattedVersion}.zip`);
+        latestVersion = formattedVersion;
+        downloadUrl = `/instaladores/Zentria-CLI-${formattedVersion}.zip`;
       } else if (githubCliVersion !== '0.0.0' && githubDownloadUrl) {
-        setLatestVersion(githubCliVersion);
-        setDownloadUrl(githubDownloadUrl);
+        latestVersion = githubCliVersion;
+        downloadUrl = githubDownloadUrl;
       } else if (localCliVersion !== '0.0.0') {
         const formattedVersion = localCliVersion.startsWith('v') ? localCliVersion : `v${localCliVersion}`;
-        setLatestVersion(formattedVersion);
-        setDownloadUrl(`/instaladores/Zentria-CLI-${formattedVersion}.zip`);
+        latestVersion = formattedVersion;
+        downloadUrl = `/instaladores/Zentria-CLI-${formattedVersion}.zip`;
       }
+
+      const payload = buildPayload(latestVersion, downloadUrl);
+      inMemoryCache = payload;
+      writeSessionCache(payload);
+      return payload;
     } catch (error) {
       console.error('Error in fetchVersions:', error);
+      return buildPayload(null, null);
+    } finally {
+      inFlightPromise = null;
     }
-  };
+  })();
+
+  return inFlightPromise;
+};
+
+export const useCliVersion = () => {
+  const [latestVersion, setLatestVersion] = useState<string | null>(null);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [savedVersion, setSavedVersion] = useState<string | null>(() => localStorage.getItem('zentria_cli_version'));
 
   useEffect(() => {
-    fetchVersions();
+    let mounted = true;
+    void resolveVersions().then((payload) => {
+      if (!mounted) return;
+      setLatestVersion(payload.latestVersion);
+      setDownloadUrl(payload.downloadUrl);
+    });
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const handleDownloadCli = useCallback(() => {

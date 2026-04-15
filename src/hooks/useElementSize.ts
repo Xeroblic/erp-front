@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import useEventListener from './useEventListener';
 
 interface Size {
 	width: number;
@@ -18,26 +17,38 @@ function useElementSize<T extends HTMLElement = HTMLDivElement>(): [
 		width: 0,
 		height: 0,
 	});
-
-	// Prevent too many rendering using useCallback
-	const handleSize = useCallback(() => {
-		setSize({
-			width: ref?.offsetWidth || 0,
-			height: ref?.offsetHeight || 0,
-		});
-
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [ref?.offsetHeight, ref?.offsetWidth]);
-
-	useEventListener('resize', handleSize);
+	const [node, setNode] = useState<T | null>(null);
 
 	useEffect(() => {
-		handleSize();
-		return () => {};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [ref?.offsetHeight, ref?.offsetWidth]);
+		if (!node) return;
 
-	return [setRef, size];
+		const updateSize = () => {
+			const rect = node.getBoundingClientRect();
+			setSize({
+				width: Math.round(rect.width),
+				height: Math.round(rect.height),
+			});
+		};
+
+		updateSize();
+
+		const observer = new ResizeObserver(() => {
+			updateSize();
+		});
+
+		observer.observe(node);
+
+		return () => {
+			observer.disconnect();
+		};
+	}, [node]);
+
+	const handleRef = useCallback((nextNode: T | null) => {
+		setRef(nextNode);
+		setNode(nextNode);
+	}, []);
+
+	return [handleRef, size];
 }
 
 export default useElementSize;
