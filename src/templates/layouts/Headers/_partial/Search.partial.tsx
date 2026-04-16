@@ -10,6 +10,31 @@ import pagesConfig from '@/config/pages.config';
 import Badge from '@/components/ui/Badge';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 
+const escapeRegExp = (string: string) => {
+	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
+const highlightMatch = (text: string, query: string) => {
+	if (!query) return <>{text}</>;
+
+	const escapedQuery = escapeRegExp(query);
+	const parts = text.split(new RegExp(`(${escapedQuery})`, 'gi'));
+
+	return (
+		<>
+			{parts.map((part, index) =>
+				part.toLowerCase() === query.toLowerCase() ? (
+					<span key={index} className='bg-amber-500/50 text-zinc-950'>
+						{part}
+					</span>
+				) : (
+					<React.Fragment key={index}>{part}</React.Fragment>
+				),
+			)}
+		</>
+	);
+};
+
 const flattenPages = (config: Record<string, any>) => {
 	const result: any[] = [];
 
@@ -133,15 +158,7 @@ const SearchPartial = () => {
 									className='flex items-center gap-2'>
 									<div className='grow'>
 										<Button className='!p-0' icon={i.icon}>
-											<span
-												// eslint-disable-next-line react/no-danger
-												dangerouslySetInnerHTML={{
-													__html: i.text.replace(
-														new RegExp(formik.values.searchField, 'gi'),
-														`<span class='bg-amber-500/50 text-zinc-950'>$&</span>`,
-													),
-												}}
-											/>
+											{highlightMatch(i.text, formik.values.searchField)}
 										</Button>
 									</div>
 									{i.category && (
@@ -149,18 +166,7 @@ const SearchPartial = () => {
 											<Badge
 												variant='outline'
 												className='border-transparent text-xs'>
-												<span
-													// eslint-disable-next-line react/no-danger
-													dangerouslySetInnerHTML={{
-														__html: i.category.replace(
-															new RegExp(
-																formik.values.searchField,
-																'gi',
-															),
-															`<span class='bg-amber-500/50 text-zinc-950'>$&</span>`,
-														),
-													}}
-												/>
+												{highlightMatch(i.category, formik.values.searchField)}
 											</Badge>
 										</div>
 									)}
@@ -202,17 +208,7 @@ const SearchPartial = () => {
 											className='flex items-center gap-2'>
 											<div className='grow'>
 												<Button className='!p-0' icon={i.icon}>
-													<span
-														dangerouslySetInnerHTML={{
-															__html: i.text.replace(
-																new RegExp(
-																	formik.values.searchField,
-																	'gi',
-																),
-																`<span class='bg-amber-500/50 text-zinc-950'>$&</span>`,
-															),
-														}}
-													/>
+													{highlightMatch(i.text, formik.values.searchField)}
 												</Button>
 											</div>
 											{i.category && (
@@ -220,17 +216,7 @@ const SearchPartial = () => {
 													<Badge
 														variant='outline'
 														className='border-transparent text-xs'>
-														<span
-															dangerouslySetInnerHTML={{
-																__html: i.category.replace(
-																	new RegExp(
-																		formik.values.searchField,
-																		'gi',
-																	),
-																	`<span class='bg-amber-500/50 text-zinc-950'>$&</span>`,
-																),
-															}}
-														/>
+														{highlightMatch(i.category, formik.values.searchField)}
 													</Badge>
 												</div>
 											)}
