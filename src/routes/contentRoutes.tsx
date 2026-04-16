@@ -96,26 +96,19 @@ const DetalleClientePage = lazy(() => import('@/pages/catalogos/clientes/Detalle
 const DocumentosPage = lazy(() => import('@/pages/documentos/Documentos'));
 const GarantiasPage = lazy(() => import('@/pages/garantias/GarantiasPage'));
 const GarantiaDetailsPage = lazy(() => import('@/pages/garantias/GarantiaDetailsPage'));
-const TechnicalReviewsHub = lazy(() => import('@/pages/technical-reviews/index'));
-const BatchesList = lazy(
-	() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchListPage'),
-);
-const BatchCreate = lazy(
-	() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchCreatePage'),
-);
-const BatchDetail = lazy(
-	() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchDetailPage'),
-);
-const BatchItemReview = lazy(
-	() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchItemReviewPage'),
-);
-const ItemsList = lazy(() => import('@/pages/technical-reviews/modo-b-items/pages/ItemListPage'));
-const ItemReview = lazy(
-	() => import('@/pages/technical-reviews/modo-b-items/pages/ItemReviewPage'),
-);
-const TraceabilityPage = lazy(
-	() => import('@/pages/technical-reviews/traceability/TraceabilityPage'),
-);
+// const TechnicalReviewsHub = lazy(() => import('@/pages/technical-reviews/index'));
+// const BatchesList = lazy(
+// 	() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchListPage'),
+// );
+// const BatchCreate = lazy(
+// 	() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchCreatePage'),
+// );
+// const BatchDetail = lazy(
+// 	() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchDetailPage'),
+// );
+
+// const ItemsList = lazy(() => import('@/pages/technical-reviews/modo-b-items/pages/ItemListPage'));
+
 
 /// REFACTOR DE TECHNICAL REVIEW
 
@@ -456,26 +449,26 @@ const contentRoutes: IRoutePersonalizada[] = [
 	},
 
 	// Technical Reviews Routes
-	{
-		path: '/technical-reviews',
-		element: <TechnicalReviewsHub />,
-		authority: cfg.technical.subPages.reviews.authority,
-	},
-	{
-		path: '/technical-reviews/batches',
-		element: <BatchesList />,
-		authority: cfg.technical.subPages.reviews.authority,
-	},
-	{
-		path: '/technical-reviews/batches/create',
-		element: <BatchCreate />,
-		authority: cfg.technical.subPages.reviews.authority,
-	},
-	{
-		path: '/technical-reviews/batches/:batchId',
-		element: <BatchDetail />,
-		authority: cfg.technical.subPages.reviews.authority,
-	},
+	// {
+	// 	path: '/technical-reviews',
+	// 	element: <TechnicalReviewsHub />,
+	// 	authority: cfg.technical.subPages.reviews.authority,
+	// },
+	// {
+	// 	path: '/technical-reviews/batches',
+	// 	element: <BatchesList />,
+	// 	authority: cfg.technical.subPages.reviews.authority,
+	// },
+	// {
+	// 	path: '/technical-reviews/batches/create',
+	// 	element: <BatchCreate />,
+	// 	authority: cfg.technical.subPages.reviews.authority,
+	// },
+	// {
+	// 	path: '/technical-reviews/batches/:batchId',
+	// 	element: <BatchDetail />,
+	// 	authority: cfg.technical.subPages.reviews.authority,
+	// },
 	{
 		path: '/technical-reviews/batches/:batchId/:itemId',
 		element: <RefactorRevisiones />,
@@ -496,11 +489,11 @@ const contentRoutes: IRoutePersonalizada[] = [
 		element: <RefactorSeries />,
 		authority: cfg.technical.subPages.reviews.authority,
 	},
-	{
-		path: '/technical-reviews/items',
-		element: <ItemsList />,
-		authority: cfg.technical.subPages.reviews.authority,
-	},
+	// {
+	// 	path: '/technical-reviews/items',
+	// 	element: <ItemsList />,
+	// 	authority: cfg.technical.subPages.reviews.authority,
+	// },
 	{
 		path: '/technical-reviews/items/create',
 		element: <RefactorRevisiones />,
@@ -516,11 +509,11 @@ const contentRoutes: IRoutePersonalizada[] = [
 		element: <RefactorTraceability />,
 		authority: cfg.technical.subPages.reviews.authority,
 	},
-	{
-		path: cfg.technical.subPages.reviews.to,
-		element: <TechnicalReviewsHub />,
-		authority: cfg.technical.subPages.reviews.authority,
-	},
+	// {
+	// 	path: cfg.technical.subPages.reviews.to,
+	// 	element: <TechnicalReviewsHub />,
+	// 	authority: cfg.technical.subPages.reviews.authority,
+	// },
 
 	{ path: '/sin-permisos', element: <SinPermisos />, public: true },
 	{ path: '/', element: <Dashboard />, authority: cfg.dashboard.authority },

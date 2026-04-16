@@ -11,6 +11,10 @@ import { TRounded } from '../../types/rounded.type';
 import { TBorderWidth } from '../../types/borderWidth.type';
 import CloseButton from './CloseButton';
 import useReactiveThemeConfig from '@/hooks/useReactiveThemeConfig';
+import {
+	resolveTailwindColor,
+	resolveTailwindColorAlpha,
+} from '@/utils/tailwindColorResolver.util';
 
 export type TAlertVariants = 'solid' | 'outline' | 'default';
 
@@ -42,24 +46,25 @@ const Alert: FC<IAlertProps> = (props) => {
 		rounded = themeConfig.rounded,
 		title,
 		variant = 'default',
+		style,
 		...rest
 	} = props;
 	const [status, setStatus] = useState<boolean>(true);
 
 	const { textColor } = useColorIntensity(colorIntensity);
+	const resolvedTextColor = resolveTailwindColor(color, colorIntensity);
+	const resolvedBgColor = resolveTailwindColor(color, colorIntensity);
+	const resolvedSoftBgColor = resolveTailwindColorAlpha(color, colorIntensity, 0.1);
+	const resolvedBorderColor = resolveTailwindColor(color, colorIntensity);
 
 	const badgeVariants: { [key in TAlertVariants]: string } = {
-		solid: classNames(
-			[`${textColor}`],
-			[`bg-${color}-${colorIntensity}`],
-			'border-transparent',
-		),
+		solid: classNames([`${textColor}`], 'bg-[color:var(--alert-bg)]', 'border-transparent'),
 		outline: classNames(
-			[`border-${color}-${colorIntensity}`],
-			[`bg-${color}-${colorIntensity}/10`],
-			[`text-${color}-${colorIntensity}`],
+			'border-[color:var(--alert-border)]',
+			'bg-[color:var(--alert-bg-soft)]',
+			'text-[color:var(--alert-text)]',
 		),
-		default: classNames([`text-${color}-${colorIntensity}`], 'border-transparent'),
+		default: classNames('text-[color:var(--alert-text)]', 'border-transparent'),
 	};
 	const badgeVariantClasses = badgeVariants[variant];
 
@@ -75,7 +80,19 @@ const Alert: FC<IAlertProps> = (props) => {
 
 	if (status)
 		return (
-			<div data-component-name='Alert' className={classes} {...rest}>
+			<div
+				data-component-name='Alert'
+				className={classes}
+				style={
+					{
+						'--alert-text': resolvedTextColor,
+						'--alert-bg': resolvedBgColor,
+						'--alert-bg-soft': resolvedSoftBgColor,
+						'--alert-border': resolvedBorderColor,
+						...(style as React.CSSProperties),
+					} as React.CSSProperties
+				}
+				{...rest}>
 				{icon && (
 					<Icon
 						icon={icon}

@@ -1,8 +1,6 @@
-import { pdf } from '@react-pdf/renderer';
 import store from '@/store';
 import { fetchSubsidiariaDetail } from '@/store/slices/subempresa/subEmpresaSlice';
 import type { IQuote } from '../../../../../interface/quotes.interface';
-import QuotePdfDocument from '../../components/QuotePdfDocument';
 import { getCompanyInfo } from '../../components/quote-data-mapper';
 
 // --- helpers para manejar blobs -> base64 / PNG --- //
@@ -97,6 +95,11 @@ const fetchImageAsDataUrl = async (url: string): Promise<string | null> => {
 // --- tu lógica principal se mantiene igual --- //
 
 export const generateQuotePdf = async (quote: IQuote, issuer?: any) => {
+	const [{ pdf }, { default: QuotePdfDocument }] = await Promise.all([
+		import('@react-pdf/renderer'),
+		import('../../components/QuotePdfDocument'),
+	]);
+
 	// 1. Verificar si necesitamos cargar datos de la subsidiaria
 	let state = store.getState();
 	let company = getCompanyInfo(quote, state);

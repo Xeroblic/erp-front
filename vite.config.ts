@@ -11,7 +11,7 @@ export default defineConfig({
         EnvironmentPlugin('all', { prefix: 'VITE_' }),
         visualizer({
             filename: 'stats.html',
-            open: false,
+            open: true,
             template: 'treemap',
             gzipSize: true,
             brotliSize: true,
@@ -59,6 +59,51 @@ export default defineConfig({
                             id.includes('swiper')
                         ) {
                             return 'vendor-ui';
+                        }
+
+                        // Aísla el generador de PDFs (3.1 MB)
+                        if (id.includes('node_modules/pdfmake') || id.includes('node_modules/@react-pdf')) {
+                            return 'vendor-pdf';
+                        }
+
+                        // Aísla el escáner de códigos QR/Barras (1.07 MB)
+                        if (id.includes('node_modules/html5-qrcode')) {
+                            return 'vendor-scanner';
+                        }
+
+                        // Editor de texto enriquecido (TipTap + ProseMirror)
+                        if (id.includes('@tiptap') || id.includes('prosemirror')) {
+                            return 'vendor-editor';
+                        }
+
+                        // Utilidades de fecha
+                        if (id.includes('date-fns')) {
+                            return 'vendor-datefns';
+                        }
+
+                        // Excel/spreadsheet
+                        if (id.includes('node_modules/xlsx') || id.includes('exceljs')) {
+                            return 'vendor-excel';
+                        }
+
+                        // Estado global y queries
+                        if (
+                            id.includes('@tanstack/react-query') ||
+                            id.includes('@tanstack/react-table') ||
+                            id.includes('@reduxjs/toolkit') ||
+                            id.includes('react-redux')
+                        ) {
+                            return 'vendor-state';
+                        }
+
+                        // Animaciones
+                        if (id.includes('gsap')) {
+                            return 'vendor-gsap';
+                        }
+
+                        // Utilidades pesadas variadas
+                        if (id.includes('crypto-js') || id.includes('jsbarcode')) {
+                            return 'vendor-misc';
                         }
 
                         // Group other node_modules into vendor chunk

@@ -14,6 +14,7 @@ import { TColors } from '../../types/colors.type';
 import { TColorIntensity } from '../../types/colorIntensities.type';
 import { IValidationBaseProps } from './Validation';
 import useReactiveThemeConfig from '@/hooks/useReactiveThemeConfig';
+import { resolveTailwindColor } from '@/utils/tailwindColorResolver.util';
 
 export type TRadioDimension = 'sm' | 'default' | 'lg' | 'xl';
 
@@ -53,6 +54,7 @@ const Radio: FC<IRadioProps> = (props) => {
 		dimension = 'default',
 		value,
 		disabled = false,
+		style,
 		isValid,
 		isTouched,
 		invalidFeedback,
@@ -60,6 +62,9 @@ const Radio: FC<IRadioProps> = (props) => {
 		validFeedback,
 		...rest
 	} = props;
+
+	const resolvedHoverColor = resolveTailwindColor(color, colorIntensity);
+	const resolvedCheckedColor = resolveTailwindColor(color, colorIntensity);
 
 	const inputHintId = useId();
 
@@ -94,13 +99,13 @@ const Radio: FC<IRadioProps> = (props) => {
 		// border
 		'border-zinc-100 dark:border-zinc-800',
 		// hover:border
-		[`hover:border-${color}-${colorIntensity}`],
-		[`dark:hover:border-${color}-${colorIntensity}`],
+		'hover:border-[color:var(--radio-hover-border)]',
+		'dark:hover:border-[color:var(--radio-hover-border)]',
 		'disabled:!border-zinc-500',
 		// checked:ring
 		'checked:ring-4 checked:ring-inset checked:ring-white dark:checked:ring-zinc-900',
 		// checked:bg
-		[`checked:bg-${color}-${colorIntensity}`],
+		'checked:bg-[color:var(--radio-checked-bg)]',
 		{ 'sr-only': children },
 		themeConfig.borderWidth,
 		themeConfig.transition,
@@ -113,6 +118,13 @@ const Radio: FC<IRadioProps> = (props) => {
 	return (
 		<div
 			data-component-name='Radio'
+			style={
+				{
+					'--radio-hover-border': resolvedHoverColor,
+					'--radio-checked-bg': resolvedCheckedColor,
+					'--radio-checked-border': resolvedCheckedColor,
+				} as React.CSSProperties
+			}
 			className={classNames(
 				'items-center py-1.5',
 				{ flex: !isInline, 'inline-flex': isInline, 'me-4': isInline },
@@ -124,6 +136,7 @@ const Radio: FC<IRadioProps> = (props) => {
 				type='radio'
 				name={name}
 				className={radioClasses}
+				style={style}
 				checked={selectedValue === value}
 				value={value}
 				disabled={disabled}
@@ -144,7 +157,7 @@ const Radio: FC<IRadioProps> = (props) => {
 				<label
 					className={classNames(
 						'cursor-pointer overflow-hidden rounded-md border-4 border-transparent outline outline-4 outline-offset-2 outline-zinc-100 dark:outline-zinc-800',
-						[`peer-checked:border-${color}-${colorIntensity}`],
+						'peer-checked:border-[color:var(--radio-checked-border)]',
 					)}
 					htmlFor={id || inputHintId}>
 					{children}

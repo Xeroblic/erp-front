@@ -8,6 +8,7 @@ import { TColors } from '../../types/colors.type';
 import { TColorIntensity } from '../../types/colorIntensities.type';
 import { IValidationBaseProps } from './Validation';
 import useReactiveThemeConfig from '@/hooks/useReactiveThemeConfig';
+import { resolveTailwindColor } from '@/utils/tailwindColorResolver.util';
 
 export type TInputVariants = 'solid';
 export type TInputDimension = 'xs' | 'sm' | 'default' | 'lg' | 'xl';
@@ -46,8 +47,12 @@ const Input = forwardRef<HTMLInputElement, IInputProps>((props, ref) => {
 		validFeedback, // props personalizados
 		isValidMessage, // props personalizados
 		children, // Excluir children explícitamente
+		style,
 		...rest
 	} = props;
+
+	const resolvedBorderColor = resolveTailwindColor(color, colorIntensity);
+	const resolvedBorderHoverColor = resolveTailwindColor(color, colorIntensity);
 
 	// Eliminar props personalizados del objeto rest
 	const inputProps = { ...rest };
@@ -62,11 +67,11 @@ const Input = forwardRef<HTMLInputElement, IInputProps>((props, ref) => {
 		solid: {
 			general: classNames(
 				// Default
-				[`${borderWidth} border-gray-300 dark:border-zinc-800`],
+				[`${borderWidth} border-[color:var(--input-border)] dark:border-zinc-800`],
 				'bg-white dark:bg-zinc-600',
 				// Hover
-				[`hover:border-${color}-${colorIntensity}`],
-				[`dark:hover:border-${color}-${colorIntensity}`],
+				'hover:border-[color:var(--input-border-hover)]',
+				'dark:hover:border-[color:var(--input-border-hover)]',
 				'disabled:!border-zinc-500',
 				// Focus
 				'focus:border-white dark:focus:border-zinc-800',
@@ -121,6 +126,13 @@ const Input = forwardRef<HTMLInputElement, IInputProps>((props, ref) => {
 			ref={ref}
 			data-component-name='Input'
 			className={classes}
+			style={
+				{
+					'--input-border': resolvedBorderColor,
+					'--input-border-hover': resolvedBorderHoverColor,
+					...(style as React.CSSProperties),
+				} as React.CSSProperties
+			}
 			name={name}
 			{...inputProps}
 		/>

@@ -1,4 +1,12 @@
-import React, { forwardRef, HTMLAttributes, ReactNode, useCallback, useRef, useState } from 'react';
+import React, {
+	CSSProperties,
+	forwardRef,
+	HTMLAttributes,
+	ReactNode,
+	useCallback,
+	useRef,
+	useState,
+} from 'react';
 import classNames from 'classnames';
 import { TColors } from '../../types/colors.type';
 import { TColorIntensity } from '../../types/colorIntensities.type';
@@ -11,6 +19,10 @@ import { TBorderWidth } from '../../types/borderWidth.type';
 import useReactiveThemeConfig from '../../hooks/useReactiveThemeConfig';
 import { textColor as getTextColor } from '../../utils/textColor.util';
 import useAuthorization from '@/hooks/useAuthorization';
+import {
+	resolveTailwindColor,
+	resolveTailwindColorAlpha,
+} from '@/utils/tailwindColorResolver.util';
 
 export type TButtonVariants = 'solid' | 'outline' | 'default';
 export type TButtonSize = 'xs' | 'sm' | 'default' | 'lg' | 'xl';
@@ -127,6 +139,7 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 		disabled = false,
 		permission,
 		onClick,
+		style,
 		...rest
 	} = props;
 
@@ -143,42 +156,68 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 	}
 
 	const { textColor: contrastTextColor, shadeColorIntensity } = useColorIntensity(colorIntensity);
+	const hoverShade = (shadeColorIntensity as TColorIntensity) || colorIntensity;
 
 	const isSolid = variant === 'solid';
 	const effectiveTextColor = isSolid ? 'text-white' : contrastTextColor;
 	const HAS_CHILDREN = typeof children !== 'undefined';
 	const accentTextColor = getTextColor(color, colorIntensity);
+	const resolvedTextColor = resolveTailwindColor(color, colorIntensity);
+	const resolvedBgColor = resolveTailwindColor(color, colorIntensity);
+	const resolvedBorderColor = resolveTailwindColor(color, colorIntensity);
+	const resolvedHoverColor = resolveTailwindColor(color, hoverShade);
+	const resolvedBorderColorHalf = resolveTailwindColorAlpha(color, colorIntensity, 0.5);
+
+	const colorVars: CSSProperties = {
+		'--btn-text': resolvedTextColor,
+		'--btn-bg': resolvedBgColor,
+		'--btn-border': resolvedBorderColor,
+		'--btn-bg-hover': resolvedHoverColor,
+		'--btn-border-hover': resolvedHoverColor,
+		'--btn-border-50': resolvedBorderColorHalf,
+	} as CSSProperties;
+
 	const iconComputedColor =
-		iconColor ?? (isSolid ? 'text-white' : (accentTextColor ?? contrastTextColor));
+		iconColor ??
+		(isSolid
+			? 'text-white'
+			: resolvedTextColor
+				? 'text-[color:var(--btn-text)]'
+				: (accentTextColor ?? contrastTextColor));
 	const rightIconComputedColor =
-		rightIconColor ?? (isSolid ? 'text-white' : (accentTextColor ?? contrastTextColor));
+		rightIconColor ??
+		(isSolid
+			? 'text-white'
+			: resolvedTextColor
+				? 'text-[color:var(--btn-text)]'
+				: (accentTextColor ?? contrastTextColor));
 
 	const btnVariants: { [key in TButtonVariants]: string } = {
 		solid: classNames(
-			{ [`bg-${color}-${colorIntensity}`]: !isActive },
+			{ 'bg-[var(--btn-bg)]': !isActive },
 			[effectiveTextColor],
-			[`${borderWidth} border-${color}-${colorIntensity}`],
+			[`${borderWidth} border-[color:var(--btn-border)]`],
 			[`${contrastTextColor}`],
-			[`hover:bg-${color}-${shadeColorIntensity as TColorIntensity}`],
-			[`hover:border-${color}-${shadeColorIntensity as TColorIntensity}`],
-			[`active:bg-${color}-${shadeColorIntensity as TColorIntensity}`],
-			[`active:border-${color}-${shadeColorIntensity as TColorIntensity}`],
+			'hover:bg-[var(--btn-bg-hover)]',
+			'hover:border-[color:var(--btn-border-hover)]',
+			'active:bg-[var(--btn-bg-hover)]',
+			'active:border-[color:var(--btn-border-hover)]',
 			{
-				[`bg-${color}-${shadeColorIntensity as TColorIntensity}`]: isActive,
-				[`border-${color}-${shadeColorIntensity as TColorIntensity}`]: isActive,
+				'bg-[var(--btn-bg-hover)]': isActive,
+				'border-[color:var(--btn-border-hover)]': isActive,
 			},
 		),
 		outline: classNames(
 			'bg-transparent',
 			[`${borderWidth}`],
 			{
-				[`border-${color}-${colorIntensity}/50`]: !isActive,
+				'border-[color:var(--btn-border-50)]': !isActive,
 			},
 			'text-black dark:text-white',
-			[`hover:border-${color}-${colorIntensity}`],
-			[`active:border-${color}-${colorIntensity}`],
+			'hover:border-[color:var(--btn-border)]',
+			'active:border-[color:var(--btn-border)]',
 			{
-				[`border-${color}-${colorIntensity}`]: isActive,
+				'border-[color:var(--btn-border)]': isActive,
 			},
 		),
 		default: classNames(
@@ -186,10 +225,10 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 			{ 'text-zinc-600 dark:text-zinc-400': !isActive },
 			[`${borderWidth}`],
 			'border-transparent',
-			[`hover:text-${color}-${colorIntensity} dark:hover:text-${color}-${colorIntensity}`],
-			[`active:text-${color}-${colorIntensity}`],
+			'hover:text-[color:var(--btn-text)] dark:hover:text-[color:var(--btn-text)]',
+			'active:text-[color:var(--btn-text)]',
 			{
-				[`text-${color}-${colorIntensity}`]: isActive,
+				'text-[color:var(--btn-text)]': isActive,
 			},
 		),
 	};
@@ -279,6 +318,7 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 			data-component-name='Button'
 			type={type}
 			className={classes}
+			style={{ ...colorVars, ...style }}
 			disabled={isButtonDisabled}
 			onClick={guardedOnClick}
 			{...rest}>

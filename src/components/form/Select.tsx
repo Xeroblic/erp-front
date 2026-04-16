@@ -7,6 +7,7 @@ import { TColors } from '../../types/colors.type';
 import { TColorIntensity } from '../../types/colorIntensities.type';
 import { IValidationBaseProps } from './Validation';
 import useReactiveThemeConfig from '@/hooks/useReactiveThemeConfig';
+import { resolveTailwindColor } from '@/utils/tailwindColorResolver.util';
 
 export type TSelectVariants = 'solid';
 export type TSelectDimension = 'xs' | 'sm' | 'default' | 'lg' | 'xl';
@@ -44,8 +45,12 @@ const Select: FC<ISelectProps> = (props) => {
 		isValid,
 		isTouched,
 		invalidFeedback,
+		style,
 		...rest
 	} = props;
+
+	const resolvedBorderColor = resolveTailwindColor(color, colorIntensity);
+	const resolvedBorderHoverColor = resolveTailwindColor(color, colorIntensity);
 
 	const selectVariants: {
 		[key in TSelectVariants]: { general: string; validation: string };
@@ -53,11 +58,11 @@ const Select: FC<ISelectProps> = (props) => {
 		solid: {
 			general: classNames(
 				// Default
-				[`${borderWidth} border-zinc-100 dark:border-zinc-800`],
+				[`${borderWidth} border-[color:var(--select-border)] dark:border-zinc-800`],
 				'bg-zinc-100 dark:bg-zinc-800',
 				// Hover
-				[`hover:border-${color}-${colorIntensity}`],
-				[`dark:hover:border-${color}-${colorIntensity}`],
+				'hover:border-[color:var(--select-border-hover)]',
+				'dark:hover:border-[color:var(--select-border-hover)]',
 				'disabled:!border-zinc-500',
 				// Focus
 				'focus:border-zinc-300 dark:focus:border-zinc-800',
@@ -108,7 +113,18 @@ const Select: FC<ISelectProps> = (props) => {
 	);
 
 	return (
-		<select data-component-name='select' className={classes} name={name} {...rest}>
+		<select
+			data-component-name='select'
+			className={classes}
+			name={name}
+			style={
+				{
+					'--select-border': resolvedBorderColor,
+					'--select-border-hover': resolvedBorderHoverColor,
+					...(style as React.CSSProperties),
+				} as React.CSSProperties
+			}
+			{...rest}>
 			{placeholder && !rest?.value && (
 				<option value={undefined} hidden>
 					{placeholder}
