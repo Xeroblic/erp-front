@@ -1,43 +1,22 @@
-# Las notas de cambios de veriones se mantienen en este archivo README.md y se iran ordenando desde las ultimas versiones a las primeras (perdon por no hacerlo antes >.<!!!!!)
+# Zentria ERP Frontend
 
-# Version 1.0.0 de Zentria ERP Frontend 
+## Release Actual: v1.1.8 (2026-04-16)
 
-### Actualizacion de estilos en componentes de botones 
+Esta versión consolida una refactorización estructural del frontend enfocada en estabilidad operativa, reducción de deuda técnica y simplificación de módulos legacy.
 
-## Ahora el btn permite cambiarle el color del icono 
+### Cambios relevantes de la refactorización
 
-```tsx
+- Depuración de módulos y vistas legacy que ya no forman parte del flujo activo del ERP.
+- Optimización de estilos y estructura compartida de componentes UI.
+- Simplificación de recursos estáticos y limpieza de activos no utilizados.
+- Ajustes de manejo de versión para una distribución más consistente.
 
-return (
-		<button
-			ref={ref}
-			data-component-name='Button'
-			type={type}
-			className={classes}
-			disabled={isButtonDisabled}
-			{...rest}>
-			{(!!icon || isLoading) && (
-				<Icon
-					icon={isLoading ? 'DuoLoading' : (icon as TIcons)}
-					className={classNames(
-						{ 'animate-spin': isLoading },
-						btnIconClasses,
-						iconColor ?? (isSolid ? 'text-white' : textColor),
-					)}
-				/>
-			)}
-			{children}
-			{!!rightIcon && (
-				<Icon
-					icon={rightIcon}
-					className={classNames(btnRightIconClasses, rightIconColor ?? textColor)} <========= AQUI EL CAMBIO se AGREGA rightIconColor, QUE VIENE EN LAS PROPS, SI NO VIENE USA textColor
+### Referencias de versión
 
-				/>
-			)}
-		</button>
-	);
-```
+- Notas generales: `RELEASE_NOTES.md`
+- Detalle completo de esta versión: `RELEASES/v1.1.8.md`
 
+---
 
 # **Zentria ERP Frontend**
 
