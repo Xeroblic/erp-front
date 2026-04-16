@@ -3,6 +3,7 @@ import { Controller } from 'react-hook-form';
 import { FormSectionProps } from '../../shared/types';
 import { MonitorFormData } from '../../../validation/monitor.schema';
 import Input from '@/components/form/Input';
+import { StepperInput } from '../../../ui/StepperInput';
 import { SelectionCard } from '../../../ui/SelectionCard';
 import Checkbox from '@/components/form/Checkbox';
 import { MONITOR_PLACEHOLDERS } from '../../../constants/monitor/monitor.hints';
@@ -24,6 +25,7 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = ({
 	const currentScreen = watch('screen_condition');
 	const currentStand = watch('stand_condition');
 	const currentFrame = watch('frame_condition');
+	const currentSpotsCount = watch('spots_count');
 
 	return (
 		<div className='space-y-8'>
@@ -129,13 +131,36 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = ({
 										| 'worn'
 										| 'missing_pieces'
 										| 'dead_pixels'
-										| 'broken',
+										| 'broken'
+										| 'spots'
+										| 'scratched'
+										| 'lines',
 									{ shouldValidate: true },
 								);
 							}}
 						/>
 					))}
 				</div>
+				{currentScreen === 'spots' && (
+					<div className='mt-5 w-full max-w-[220px]'>
+						<label className='mb-2 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+							{getMonitorLabel('spots_count')}
+						</label>
+						<StepperInput
+							value={typeof currentSpotsCount === 'number' ? currentSpotsCount : 0}
+							onChange={(val) => {
+								if (readOnly) return;
+								setValue('spots_count', val, { shouldValidate: true });
+							}}
+							max={50}
+						/>
+						{errors.spots_count && (
+							<p className='mt-2 text-xs text-red-500'>
+								{errors.spots_count.message}
+							</p>
+						)}
+					</div>
+				)}
 				{errors.screen_condition && (
 					<p className='mt-3 text-xs text-red-500'>{errors.screen_condition.message}</p>
 				)}
