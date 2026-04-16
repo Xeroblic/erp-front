@@ -8,6 +8,7 @@ import { TRounded } from '../../types/rounded.type';
 import themeConfig from '../../config/theme.config';
 import { TInputVariants } from './Input';
 import useReactiveThemeConfig from '@/hooks/useReactiveThemeConfig';
+import { resolveTailwindColor } from '@/utils/tailwindColorResolver.util';
 
 export type TTextareaVariants = 'solid';
 export type TTextareaDimension = 'xs' | 'sm' | 'default' | 'lg' | 'xl';
@@ -40,18 +41,22 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, ITextareaProps>((props, r
 		isTouched,
 		invalidFeedback,
 		variant = 'solid',
+		style,
 		...rest
 	} = props;
+
+	const resolvedBorderColor = resolveTailwindColor(color, colorIntensity);
+	const resolvedBorderHoverColor = resolveTailwindColor(color, colorIntensity);
 
 	const inputVariants: { [key in TInputVariants]: { general: string; validation: string } } = {
 		solid: {
 			general: classNames(
 				// Default
-				[`${borderWidth} border-zinc-100 dark:border-zinc-800`],
+				[`${borderWidth} border-[color:var(--textarea-border)] dark:border-zinc-800`],
 				'bg-gray-300 dark:bg-zinc-800',
 				// Hover
-				[`hover:border-${color}-${colorIntensity}`],
-				[`dark:hover:border-${color}-${colorIntensity}`],
+				'hover:border-[color:var(--textarea-border-hover)]',
+				'dark:hover:border-[color:var(--textarea-border-hover)]',
 				'disabled:!border-zinc-500',
 				// Focus
 				'focus:border-zinc-300 dark:focus:border-zinc-800',
@@ -101,7 +106,21 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, ITextareaProps>((props, r
 		className,
 	);
 
-	return <textarea data-component-name='Textarea' className={classes} ref={ref} {...rest} />;
+	return (
+		<textarea
+			data-component-name='Textarea'
+			className={classes}
+			ref={ref}
+			style={
+				{
+					'--textarea-border': resolvedBorderColor,
+					'--textarea-border-hover': resolvedBorderHoverColor,
+					...(style as React.CSSProperties),
+				} as React.CSSProperties
+			}
+			{...rest}
+		/>
+	);
 });
 Textarea.displayName = 'Textarea';
 

@@ -2,11 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
-import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
+import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subheader';
 import { useAppDispatch, useAppSelector } from '@/store';
 import Icon from '@/components/icon/Icon';
-import Button from '@/components/ui/Button';
-
 // Redesign Components
 import StatsCard from './components/redesign/StatsCard';
 import WeeklySalesChart from './components/redesign/WeeklySalesChart';
@@ -24,7 +22,6 @@ import useDashboardTour from '@/hooks/tour/home/useDashboardTour';
 
 const DashboardContainer: React.FC = () => {
 	const dispatch = useAppDispatch();
-	const navigate = useNavigate();
 	const { user } = useAppSelector((state) => state.auth);
 	const { branchId } = useCurrentBranch(); // Use hook
 	const { dashboardStats } = useAppSelector((state) => state.technicalReviews);

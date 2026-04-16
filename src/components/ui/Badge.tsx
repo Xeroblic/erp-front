@@ -10,6 +10,10 @@ import useReactiveThemeConfig from '../../hooks/useReactiveThemeConfig';
 import { useTypewriter } from '@/hooks/useTypewriter';
 import { useRef, useEffect } from 'react';
 import gsap from 'gsap';
+import {
+	resolveTailwindColor,
+	resolveTailwindColorAlpha,
+} from '@/utils/tailwindColorResolver.util';
 
 export type TBadgeVariants = 'solid' | 'outline' | 'default';
 // const { themeColor, themeColorShade } = useThemeColor();
@@ -65,6 +69,10 @@ const Badge: FC<IBadgeProps> = (props) => {
 	}, []);
 
 	const { textColor } = useColorIntensity(colorIntensity);
+	const resolvedTextColor = resolveTailwindColor(color, colorIntensity);
+	const resolvedBgColor = resolveTailwindColor(color, colorIntensity);
+	const resolvedSoftBgColor = resolveTailwindColorAlpha(color, colorIntensity, 0.1);
+	const resolvedBorderColor = resolveTailwindColor(color, colorIntensity);
 
 	const childrenAsString = reactNodeToString(children);
 
@@ -79,17 +87,13 @@ const Badge: FC<IBadgeProps> = (props) => {
 	});
 
 	const badgeVariant: { [key in TBadgeVariants]: string } = {
-		solid: classNames(
-			[`${textColor}`],
-			[`bg-${color}-${colorIntensity}`],
-			'border-transparent',
-		),
+		solid: classNames([`${textColor}`], 'bg-[color:var(--badge-bg)]', 'border-transparent'),
 		outline: classNames(
-			[`border-${color}-${colorIntensity}`],
-			[`bg-${color}-${colorIntensity}/10`],
-			[`text-${color}-${colorIntensity}`],
+			'border-[color:var(--badge-border)]',
+			'bg-[color:var(--badge-bg-soft)]',
+			'text-[color:var(--badge-text)]',
 		),
-		default: classNames([`text-${color}-${colorIntensity}`], 'border-transparent'),
+		default: classNames('text-[color:var(--badge-text)]', 'border-transparent'),
 	};
 	const badgeVariantClasses = badgeVariant[variant];
 
@@ -103,7 +107,19 @@ const Badge: FC<IBadgeProps> = (props) => {
 	);
 
 	return (
-		<span ref={badgeRef} data-component-name='Badge' className={classes} {...rest}>
+		<span
+			ref={badgeRef}
+			data-component-name='Badge'
+			className={classes}
+			style={
+				{
+					'--badge-text': resolvedTextColor,
+					'--badge-bg': resolvedBgColor,
+					'--badge-bg-soft': resolvedSoftBgColor,
+					'--badge-border': resolvedBorderColor,
+				} as React.CSSProperties
+			}
+			{...rest}>
 			{typewriter ? typewriterResult.text : children}
 		</span>
 	);

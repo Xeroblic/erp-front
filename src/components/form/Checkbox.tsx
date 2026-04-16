@@ -16,6 +16,7 @@ import { TColors } from '../../types/colors.type';
 import { TColorIntensity } from '../../types/colorIntensities.type';
 import { IValidationBaseProps } from './Validation';
 import useReactiveThemeConfig from '@/hooks/useReactiveThemeConfig';
+import { resolveTailwindColor } from '@/utils/tailwindColorResolver.util';
 
 export type TCheckboxVariants = 'default' | 'switch';
 export type TCheckboxDimension = 'sm' | 'default' | 'lg' | 'xl';
@@ -59,6 +60,7 @@ const Checkbox = forwardRef<HTMLInputElement, ICheckboxProps>((props, ref) => {
 		invalidFeedback,
 		onChange,
 		defaultChecked,
+		style,
 		...rest
 	} = props;
 
@@ -94,6 +96,9 @@ const Checkbox = forwardRef<HTMLInputElement, ICheckboxProps>((props, ref) => {
 
 	// Compute hover color intensity
 	const hoverColorIntensity = getAdjacentIntensity(colorIntensity, -1); // Lighter shade on hover
+	const resolvedBorderColor = resolveTailwindColor(color, colorIntensity);
+	const resolvedBorderHoverColor = resolveTailwindColor(color, hoverColorIntensity);
+	const resolvedBgColor = resolveTailwindColor(color, colorIntensity);
 
 	const checkboxVariants: {
 		[key in TCheckboxVariants]: { general: string; validation: string };
@@ -101,17 +106,17 @@ const Checkbox = forwardRef<HTMLInputElement, ICheckboxProps>((props, ref) => {
 		default: {
 			general: classNames(
 				// Border
-				[`border-${color}-${colorIntensity}`],
+				'border-[color:var(--checkbox-border)]',
 				// Hover border
-				[`hover:border-${color}-${hoverColorIntensity}`],
+				'hover:border-[color:var(--checkbox-border-hover)]',
 				'disabled:!border-zinc-500',
 				// Background
 				'bg-center bg-no-repeat',
 				// Checked background
 				"checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbDpzcGFjZT0icHJlc2VydmUiIHZpZXdCb3g9IjAgMCAyNCAyNCI+PGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj48cGF0aCBkPSJNMCAwaDI0djI0SDB6Ii8+PHBhdGggZmlsbD0iI2ZmZiIgZD0iTTE3LjczOCA2LjM1MmExIDEgMCAxIDEgMS41MjQgMS4yOTZsLTguNSAxMGExIDEgMCAwIDEtMS40MjYuMWwtNC41LTRhMSAxIDAgMSAxIDEuMzI4LTEuNDk1bDMuNzM2IDMuMzIgNy44MzgtOS4yMnoiLz48L2c+PC9zdmc+')]",
 				"indeterminate:bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9Im5vbmUiIHZpZXdCb3g9IjAgMCAyNCAyNCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZT0iI2ZmZmZmZiIgY2xhc3M9InctNiBoLTYiPgogIDxwYXRoIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgZD0iTTE5LjUgMTJoLTE1IiAvPgo8L3N2Zz4K')]",
-				[`checked:bg-${color}-${colorIntensity}`],
-				[`indeterminate:bg-${color}-${colorIntensity}`],
+				'checked:bg-[color:var(--checkbox-bg)]',
+				'indeterminate:bg-[color:var(--checkbox-bg)]',
 				rounded,
 			),
 			validation: classNames({
@@ -124,15 +129,15 @@ const Checkbox = forwardRef<HTMLInputElement, ICheckboxProps>((props, ref) => {
 			general: classNames(
 				'rounded-full',
 				// Border
-				[`border-${color}-${colorIntensity}`],
+				'border-[color:var(--checkbox-border)]',
 				// Hover border
-				[`hover:border-${color}-${hoverColorIntensity}`],
+				'hover:border-[color:var(--checkbox-border-hover)]',
 				'disabled:!border-zinc-500',
 				// Background
 				'bg-left bg-no-repeat',
 				'bg-[url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbDpzcGFjZT0icHJlc2VydmUiIHZpZXdCb3g9IjAgMCA4IDgiPjxjaXJjbGUgY3g9IjQiIGN5PSI0IiByPSIzIiBvcGFjaXR5PSIuMjUiLz48L3N2Zz4=")]',
 				// Checked background
-				[`checked:bg-${color}-${colorIntensity}`],
+				'checked:bg-[color:var(--checkbox-bg)]',
 				'checked:bg-right',
 				'checked:!bg-[url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbDpzcGFjZT0icHJlc2VydmUiIHZpZXdCb3g9IjAgMCA4IDgiPjxjaXJjbGUgY3g9IjQiIGN5PSI0IiByPSIzIiBmaWxsPSIjZmZmIi8+PC9zdmc+")]',
 			),
@@ -193,6 +198,14 @@ const Checkbox = forwardRef<HTMLInputElement, ICheckboxProps>((props, ref) => {
 				value={id || inputHintId}
 				type='checkbox'
 				className={checkboxClasses}
+				style={
+					{
+						'--checkbox-border': resolvedBorderColor,
+						'--checkbox-border-hover': resolvedBorderHoverColor,
+						'--checkbox-bg': resolvedBgColor,
+						...(style as React.CSSProperties),
+					} as React.CSSProperties
+				}
 				{...(typeof checked !== 'undefined'
 					? { checked, readOnly: typeof onChange !== 'function' }
 					: typeof defaultChecked !== 'undefined'

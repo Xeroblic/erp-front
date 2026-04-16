@@ -1,8 +1,4 @@
-// @ts-expect-error El paquete pdfmake/build/pdfmake no expone tipos de TypeScript de forma natural en esta versión
-import pdfMake from 'pdfmake/build/pdfmake';
 import type { TDocumentDefinitions } from 'pdfmake/interfaces';
-import { loadPdfFonts } from '../../../../comercial/cotizaciones/utils/pdf/fonts';
-
 import type { SalesDashboardStats, SaleRecord, ReportFiltersState } from '../../../types';
 import { generateSmartInsights } from '../smartInsights';
 import { buildCoverPage, buildExecutiveSummary, buildSmartKPIs, buildTopPerformersTable, buildYearlyAnalytics, buildSemesterDeepDive, buildRiskAnalytics, buildMethodology, type PdfContent } from './reportBuilder';
@@ -17,7 +13,12 @@ export interface ExecutiveReportData {
 }
 
 export const generateExecutiveReport = async (data: ExecutiveReportData): Promise<void> => {
-	// 1. Cargar las fuentes oficiales
+	// @ts-expect-error El paquete no expone tipos para la ruta de build
+	const pdfMakeModule = await import('pdfmake/build/pdfmake');
+	const pdfMake = pdfMakeModule.default || pdfMakeModule;
+
+	// 1.1 Cargar las fuentes también de forma dinámica
+	const { loadPdfFonts } = await import('../../../../comercial/cotizaciones/utils/pdf/fonts');
 	loadPdfFonts(pdfMake as any);
 
 	// 2. Extraer insights automáticos

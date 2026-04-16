@@ -7,7 +7,7 @@ import Badge from '@/components/ui/Badge';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchItems } from '@/store/slices/technicalReviews/thunks/itemsThunks';
 const PrintLabel = React.lazy(
-	() => import('@/pages/technical-reviews/components/items/PrintLabel'),
+	() => import('@/pages/refactor-technical-review/components/PrintLabel'),
 );
 import { IItem } from '@/interface/technicalReviews.interface';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';

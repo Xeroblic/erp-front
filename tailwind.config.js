@@ -1,8 +1,12 @@
 const defaultTheme = require('tailwindcss/defaultTheme');
 
+const dynamicColorPalette =
+  'slate|gray|zinc|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|primary';
+const dynamicShadeScale = '50|100|200|300|400|500|600|700|800|900|950';
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ['./src/**/*.{js,jsx,ts,tsx}'],
+  content: ['./index.html', './src/**/*.{js,jsx,ts,tsx}'],
   theme: {
     extend: {
       fontFamily: { sans: ['Poppins', ...defaultTheme.fontFamily.sans] },
@@ -31,44 +35,45 @@ module.exports = {
   safelist: [
     // bg-<color>-<shade>
     {
-      pattern: /bg-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|primary)-(50|100|200|300|400|500|600|700|800|900|950)$/,
+      pattern: new RegExp(`bg-(${dynamicColorPalette})-(${dynamicShadeScale})$`),
       variants: ['hover','active','checked','indeterminate'],
     },
-    // bg-<color>-<shade>/<alpha> (ajusta si ocupas más alphas)
+    // bg-<color>-<shade>/<alpha>
     {
-      pattern: /bg-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|primary)-(50|100|200|300|400|500|600|700|800|900|950)\/(10)$/,
+      pattern: new RegExp(`bg-(${dynamicColorPalette})-(${dynamicShadeScale})\/(10|15|20)$`),
+      variants: ['hover','dark:hover'],
     },
 
     // border-<color>-<shade>
     {
-      pattern: /border-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|primary)-(50|100|200|300|400|500|600|700|800|900|950)$/,
+      pattern: new RegExp(`border-(${dynamicColorPalette})-(${dynamicShadeScale})$`),
       variants: ['hover','active','dark:hover','peer-checked'],
     },
     // border-<color>-<shade>/<alpha>
     {
-      pattern: /border-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|primary)-(50|100|200|300|400|500|600|700|800|900|950)\/(50)$/,
-      variants: ['hover','active'],
+      pattern: new RegExp(`border-(${dynamicColorPalette})-(${dynamicShadeScale})\/(30|50)$`),
+      variants: ['hover','active','dark:hover'],
     },
 
     // text-<color>-<shade>
     {
-      pattern: /text-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|primary)-(50|100|200|300|400|500|600|700|800|900|950)$/,
+      pattern: new RegExp(`text-(${dynamicColorPalette})-(${dynamicShadeScale})$`),
       variants: ['hover','active','dark:hover'],
     },
-      {
-    pattern:
-      /^(text|border|bg)-(red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-(100|200|300|400|500|600|700|800|900)$/,
-  },
 
-    // fill-<color>-<shade>
+    // ring-<color>-<shade>/<alpha> (usado en Calendar/TutorialModal)
     {
-      pattern: /fill-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|primary)-(50|100|200|300|400|500|600|700|800|900|950)$/,
-      variants: ['hover','active'],
+      pattern: new RegExp(`ring-(${dynamicColorPalette})-(${dynamicShadeScale})\/(30|40|50)$`),
     },
-    // fill-<color>-<shade>/<alpha>
+
+    // shadow-<color>-<shade>/<alpha> (usado en Calendar)
     {
-      pattern: /fill-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|primary)-(50|100|200|300|400|500|600|700|800|900|950)\/(75|80|90)$/,
-      variants: ['hover','active'],
+      pattern: new RegExp(`shadow-(${dynamicColorPalette})-(${dynamicShadeScale})\/(40)$`),
+    },
+
+    // stroke-<color>-<shade> (usado en FloatingInfo)
+    {
+      pattern: new RegExp(`stroke-(${dynamicColorPalette})-(${dynamicShadeScale})$`),
     },
   ],
   plugins: [require('@tailwindcss/typography')],

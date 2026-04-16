@@ -4,8 +4,6 @@ import { PathRouteProps } from 'react-router-dom';
 import pagesConfig from '@/config/pages.config';
 
 import LoginPage from '@/pages/Login.page';
-import RecuperarPassword from '@/pages/ResetPassword/RecuperarPassword';
-import ConfirmarNuevaPass from '@/pages/ResetPassword/ConfirmarNuevaPass';
 import AceptarInvitacionEmpresa from '@/pages/AceptarInvitacionEmpresa';
 import SinPermisos from '@/pages/SinPermisos';
 import NotFoundPage from '@/pages/NotFound.page';
@@ -98,26 +96,19 @@ const DetalleClientePage = lazy(() => import('@/pages/catalogos/clientes/Detalle
 const DocumentosPage = lazy(() => import('@/pages/documentos/Documentos'));
 const GarantiasPage = lazy(() => import('@/pages/garantias/GarantiasPage'));
 const GarantiaDetailsPage = lazy(() => import('@/pages/garantias/GarantiaDetailsPage'));
-const TechnicalReviewsHub = lazy(() => import('@/pages/technical-reviews/index'));
-const BatchesList = lazy(
-	() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchListPage'),
-);
-const BatchCreate = lazy(
-	() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchCreatePage'),
-);
-const BatchDetail = lazy(
-	() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchDetailPage'),
-);
-const BatchItemReview = lazy(
-	() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchItemReviewPage'),
-);
-const ItemsList = lazy(() => import('@/pages/technical-reviews/modo-b-items/pages/ItemListPage'));
-const ItemReview = lazy(
-	() => import('@/pages/technical-reviews/modo-b-items/pages/ItemReviewPage'),
-);
-const TraceabilityPage = lazy(
-	() => import('@/pages/technical-reviews/traceability/TraceabilityPage'),
-);
+// const TechnicalReviewsHub = lazy(() => import('@/pages/technical-reviews/index'));
+// const BatchesList = lazy(
+// 	() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchListPage'),
+// );
+// const BatchCreate = lazy(
+// 	() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchCreatePage'),
+// );
+// const BatchDetail = lazy(
+// 	() => import('@/pages/technical-reviews/modo-a-batches/pages/BatchDetailPage'),
+// );
+
+// const ItemsList = lazy(() => import('@/pages/technical-reviews/modo-b-items/pages/ItemListPage'));
+
 
 /// REFACTOR DE TECHNICAL REVIEW
 
@@ -157,8 +148,8 @@ const cfg = pagesConfig as any;
 
 const contentRoutes: IRoutePersonalizada[] = [
 	{ path: cfg.loginPage.to, element: <LoginPage />, public: true },
-	{ path: cfg.recuperarPassword.to, element: <RecuperarPassword />, public: true },
-	{ path: cfg.confirmarNuevaPass.to, element: <ConfirmarNuevaPass />, public: true },
+	{ path: cfg.recuperarPassword.to, element: <RecoverPasswordPage />, public: true },
+	{ path: cfg.confirmarNuevaPass.to, element: <ResetPasswordPage />, public: true },
 	{ path: cfg.portalPedidosMock.to, element: <PortalPedidosPage />, public: true },
 	{ path: cfg.portalPedidos.to, element: <PortalPedidosPage />, public: true },
 	{ path: cfg.FormularioLockCare.to, element: <FormLockCare />, public: true },
@@ -406,7 +397,7 @@ const contentRoutes: IRoutePersonalizada[] = [
 
 	{
 		path: `${cfg.inventory.subPages.ingresoStock.to}`,
-		element: <IngresoStock/>,
+		element: <IngresoStock />,
 		authority: cfg.inventory.subPages.ingresoStock.authority,
 	},
 
@@ -458,26 +449,26 @@ const contentRoutes: IRoutePersonalizada[] = [
 	},
 
 	// Technical Reviews Routes
-	{
-		path: '/technical-reviews',
-		element: <TechnicalReviewsHub />,
-		authority: cfg.technical.subPages.reviews.authority,
-	},
-	{
-		path: '/technical-reviews/batches',
-		element: <BatchesList />,
-		authority: cfg.technical.subPages.reviews.authority,
-	},
-	{
-		path: '/technical-reviews/batches/create',
-		element: <BatchCreate />,
-		authority: cfg.technical.subPages.reviews.authority,
-	},
-	{
-		path: '/technical-reviews/batches/:batchId',
-		element: <BatchDetail />,
-		authority: cfg.technical.subPages.reviews.authority,
-	},
+	// {
+	// 	path: '/technical-reviews',
+	// 	element: <TechnicalReviewsHub />,
+	// 	authority: cfg.technical.subPages.reviews.authority,
+	// },
+	// {
+	// 	path: '/technical-reviews/batches',
+	// 	element: <BatchesList />,
+	// 	authority: cfg.technical.subPages.reviews.authority,
+	// },
+	// {
+	// 	path: '/technical-reviews/batches/create',
+	// 	element: <BatchCreate />,
+	// 	authority: cfg.technical.subPages.reviews.authority,
+	// },
+	// {
+	// 	path: '/technical-reviews/batches/:batchId',
+	// 	element: <BatchDetail />,
+	// 	authority: cfg.technical.subPages.reviews.authority,
+	// },
 	{
 		path: '/technical-reviews/batches/:batchId/:itemId',
 		element: <RefactorRevisiones />,
@@ -498,11 +489,11 @@ const contentRoutes: IRoutePersonalizada[] = [
 		element: <RefactorSeries />,
 		authority: cfg.technical.subPages.reviews.authority,
 	},
-	{
-		path: '/technical-reviews/items',
-		element: <ItemsList />,
-		authority: cfg.technical.subPages.reviews.authority,
-	},
+	// {
+	// 	path: '/technical-reviews/items',
+	// 	element: <ItemsList />,
+	// 	authority: cfg.technical.subPages.reviews.authority,
+	// },
 	{
 		path: '/technical-reviews/items/create',
 		element: <RefactorRevisiones />,
@@ -518,11 +509,11 @@ const contentRoutes: IRoutePersonalizada[] = [
 		element: <RefactorTraceability />,
 		authority: cfg.technical.subPages.reviews.authority,
 	},
-	{
-		path: cfg.technical.subPages.reviews.to,
-		element: <TechnicalReviewsHub />,
-		authority: cfg.technical.subPages.reviews.authority,
-	},
+	// {
+	// 	path: cfg.technical.subPages.reviews.to,
+	// 	element: <TechnicalReviewsHub />,
+	// 	authority: cfg.technical.subPages.reviews.authority,
+	// },
 
 	{ path: '/sin-permisos', element: <SinPermisos />, public: true },
 	{ path: '/', element: <Dashboard />, authority: cfg.dashboard.authority },
