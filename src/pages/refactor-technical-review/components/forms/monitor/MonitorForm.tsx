@@ -42,7 +42,7 @@ const MONITOR_SECTIONS: SectionConfig<MonitorFormData>[] = [
 		icon: 'HeroServerStack',
 		component: MonitorPortsSection as unknown as React.FC<FormSectionProps<MonitorFormData>>,
 	},
-	
+
 	{
 		key: 'accessories',
 		label: 'Accesorios',
@@ -55,9 +55,7 @@ const MONITOR_SECTIONS: SectionConfig<MonitorFormData>[] = [
 		key: 'observations',
 		label: 'Obs.',
 		icon: 'HeroDocumentText',
-		component: Observations as unknown as React.FC<
-			FormSectionProps<MonitorFormData>
-		>,
+		component: Observations as unknown as React.FC<FormSectionProps<MonitorFormData>>,
 	},
 ];
 
@@ -68,6 +66,7 @@ const MONITOR_SECTION_FIELDS: Record<string, FieldPath<MonitorFormData>[]> = {
 		'screen_resolution',
 		'is_touchscreen',
 		'screen_condition',
+		'spots_count',
 		'stand_condition',
 		'frame_condition',
 	],
@@ -77,6 +76,8 @@ const MONITOR_SECTION_FIELDS: Record<string, FieldPath<MonitorFormData>[]> = {
 		'hdmi_ports',
 		'displayport_ports',
 		'dvi_ports',
+		'usb_c_ports',
+		'rj45_ports',
 		'usb_hub_ports',
 		'all_ports_functional',
 		'defective_ports_count',
@@ -106,6 +107,17 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 	registerGetFormValues,
 	isSaving,
 }) => {
+	const normalizedDefaultValues = useMemo(() => {
+		if (!defaultValues) return {} as MonitorFormData;
+
+		const values = { ...defaultValues } as Record<string, unknown>;
+		if (values.usb_c_ports == null && values.type_c_ports != null) {
+			values.usb_c_ports = values.type_c_ports;
+		}
+
+		return values as unknown as MonitorFormData;
+	}, [defaultValues]);
+
 	// ─── RHF Setup ─────────────────────────────────────────────────────────
 	const {
 		control,
@@ -121,7 +133,7 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 		resolver: yupResolver(
 			monitorSchema,
 		) as unknown as import('react-hook-form').Resolver<MonitorFormData>,
-		defaultValues: (defaultValues as unknown as MonitorFormData) || {},
+		defaultValues: normalizedDefaultValues,
 		mode: 'onChange',
 	});
 
@@ -135,14 +147,14 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 	// Deep reset handling on external change
 	const prevDefaultValues = useRef<string | null>(null);
 	useEffect(() => {
-		if (defaultValues) {
-			const stringified = JSON.stringify(defaultValues);
+		if (Object.keys(normalizedDefaultValues).length > 0) {
+			const stringified = JSON.stringify(normalizedDefaultValues);
 			if (stringified !== prevDefaultValues.current) {
-				reset(defaultValues as unknown as MonitorFormData);
+				reset(normalizedDefaultValues);
 				prevDefaultValues.current = stringified;
 			}
 		}
-	}, [defaultValues, reset]);
+	}, [normalizedDefaultValues, reset]);
 
 	const sectionProps = {
 		control,
@@ -178,7 +190,10 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 		handleSubmit(
 			async (data) => {
 				try {
-					const finalData = { ...data };
+					const finalData = { ...data } as Record<string, unknown>;
+					if (finalData.type_c_ports == null && finalData.usb_c_ports != null) {
+						finalData.type_c_ports = finalData.usb_c_ports;
+					}
 					if (
 						!finalData.extra_attributes ||
 						Object.keys(finalData.extra_attributes).length === 0

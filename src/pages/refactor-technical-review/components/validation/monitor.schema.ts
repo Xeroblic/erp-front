@@ -31,6 +31,19 @@ export const monitorSchema = Yup.object({
 	screen_condition: Yup.string()
 		.required('Condición de pantalla es requerida')
 		.oneOf(ALLOWED_SCREEN_CONDITIONS, 'Condición selecta no válida'),
+	spots_count: Yup.number()
+		.integer('Debe ser un número entero')
+		.min(0, 'No puede ser negativo')
+		.nullable()
+		.when('screen_condition', {
+			is: 'spots',
+			then: (schema) =>
+				schema
+					.required('Indica la cantidad de manchas')
+					.min(1, 'Debe ser al menos 1')
+					.typeError('Debes ingresar un número'),
+			otherwise: (schema) => schema.nullable().transform(() => 0),
+		}),
 	stand_condition: Yup.string()
 		.required('Condición de base es requerida')
 		.oneOf(ALLOWED_STAND_CONDITIONS, 'Condición selecta no válida'),
@@ -44,6 +57,9 @@ export const monitorSchema = Yup.object({
 	hdmi_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
 	displayport_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
 	dvi_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
+	type_c_ports: Yup.number().integer().nullable().min(0, 'No puede ser negativo'),
+	usb_c_ports: Yup.number().integer().nullable().min(0, 'No puede ser negativo'),
+	rj45_ports: Yup.number().integer().nullable().min(0, 'No puede ser negativo'),
 	usb_hub_ports: Yup.number().nullable().min(0, 'No puede ser negativo'),
 
 	// Estado funcionales de puertos

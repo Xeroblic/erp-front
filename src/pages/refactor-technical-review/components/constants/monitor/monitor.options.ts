@@ -15,6 +15,10 @@ export const SCREEN_CONDITION_OPTIONS: TSelectOption[] = [
 	{ value: 'missing_pieces', label: 'Faltan piezas' },
 	{ value: 'dead_pixels', label: 'Píxeles muertos' },
 	{ value: 'broken', label: 'Quebrada/Trizada' },
+	{ value: 'spots', label: 'Manchas' },
+	{ value: 'scratched', label: 'Rayada' },
+	{ value: 'lines', label: 'Líneas en pantalla' },	
+
 ];
 
 export const STAND_CONDITION_OPTIONS: TSelectOption[] = [

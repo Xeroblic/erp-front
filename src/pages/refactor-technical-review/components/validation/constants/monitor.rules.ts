@@ -19,6 +19,9 @@ export const ALLOWED_SCREEN_CONDITIONS = [
 	'missing_pieces',
 	'dead_pixels',
 	'broken',
+	'spots',
+	'scratched',
+	'lines',
 ] as const;
 
 export const ALLOWED_STAND_CONDITIONS = [

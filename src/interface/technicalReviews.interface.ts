@@ -180,6 +180,7 @@ export interface UpdateItemDetailsPayload {
 	hdmi_ports?: number;
 	displayport_ports?: number;
 	usb_a_ports?: number;
+	type_c_ports?: number;
 	usb_c_ports?: number;
 	sd_readers?: number;
 	rj45_ports?: number;
