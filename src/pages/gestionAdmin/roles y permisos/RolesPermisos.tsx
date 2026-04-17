@@ -4,6 +4,7 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
+import Card, { CardBody } from '@/components/ui/Card';
 import Input from '@/components/form/Input';
 import { fetchUsuariosConRolesPerms } from '@/store/slices/rolesPermisos/rolesPermisosSlice';
 import type { UserWithDetails } from '@/store/slices/usersAdmin/usersAdminSlice';
@@ -119,13 +120,17 @@ const RolesPermisos: React.FC = () => {
 			</Subheader>
 
 			<Container>
-				<TableUser
-					tableData={tableData}
-					status={listStatus}
-					error={error}
-					globalFilter={globalFilter}
-					setGlobalFilter={setGlobalFilter}
-				/>
+				<Card className='h-full'>
+					<CardBody>
+						<TableUser
+							tableData={tableData}
+							status={listStatus}
+							error={error}
+							globalFilter={globalFilter}
+							setGlobalFilter={setGlobalFilter}
+						/>
+					</CardBody>
+				</Card>
 			</Container>
 		</PageWrapper>
 	);

@@ -24,7 +24,7 @@ import {
 	resolveTailwindColorAlpha,
 } from '@/utils/tailwindColorResolver.util';
 
-export type TButtonVariants = 'solid' | 'outline' | 'default';
+export type TButtonVariants = 'solid' | 'outline' | 'default' | 'ghost';
 export type TButtonSize = 'xs' | 'sm' | 'default' | 'lg' | 'xl';
 
 /** Tiempo mínimo de bloqueo anti-doble-click (ms) */
@@ -175,6 +175,8 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 		'--btn-bg-hover': resolvedHoverColor,
 		'--btn-border-hover': resolvedHoverColor,
 		'--btn-border-50': resolvedBorderColorHalf,
+		'--btn-bg-ghost-hover': resolveTailwindColorAlpha(color, colorIntensity, 0.1),
+		'--btn-bg-ghost-active': resolveTailwindColorAlpha(color, colorIntensity, 0.2),
 	} as CSSProperties;
 
 	const iconComputedColor =
@@ -229,6 +231,17 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 			'active:text-[color:var(--btn-text)]',
 			{
 				'text-[color:var(--btn-text)]': isActive,
+			},
+		),
+		ghost: classNames(
+			'bg-transparent',
+			{ 'text-zinc-600 dark:text-zinc-400': color === 'zinc' && !isActive },
+			{ 'text-[color:var(--btn-text)]': color !== 'zinc' && !isActive },
+			'border-transparent',
+			'hover:bg-[var(--btn-bg-ghost-hover)] hover:text-[color:var(--btn-text)]',
+			'active:bg-[var(--btn-bg-ghost-active)]',
+			{
+				'bg-[var(--btn-bg-ghost-active)] text-[color:var(--btn-text)]': isActive,
 			},
 		),
 	};

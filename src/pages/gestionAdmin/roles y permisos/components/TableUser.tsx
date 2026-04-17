@@ -206,17 +206,15 @@ const TableUser: React.FC<Props> = ({
 						cell: (info) => (
 							<div className='flex gap-2'>
 								<PermissionGuard role={'admin'}>
-									<Tooltip text='Gestionar'>
+									<Tooltip text='Gestionar perfil y accesos'>
 										<Button
-											variant='outline'
+											variant='ghost'
 											color='zinc'
-											size='xs'
-											className='bg-gray-300 hover:bg-gray-400'
+											size='sm'
 											onClick={() => handleManageUser(info.row.original.id)}>
 											<Icon
 												icon='HeroCog6Tooth'
-												className='text-2xl'
-												color={'zinc'}
+												className='h-5 w-5'
 											/>
 										</Button>
 									</Tooltip>
@@ -225,21 +223,16 @@ const TableUser: React.FC<Props> = ({
 								<PermissionGuard role={'super-admin'}>
 									<Tooltip
 										text={
-											info.row.original.is_active ? 'Inactivar' : 'Activar'
+											info.row.original.is_active ? 'Inactivar usuario' : 'Activar usuario'
 										}>
 										<Button
-											variant='outline'
+											variant='ghost'
 											size='sm'
 											onClick={() =>
 												handleToggleStatus(
 													info.row.original.id,
 													info.row.original.is_active,
 												)
-											}
-											className={
-												info.row.original.is_active
-													? 'bg-red-500/20 hover:bg-red-500/10'
-													: 'bg-green-500/30 hover:bg-green-500/10'
 											}
 											color={info.row.original.is_active ? 'red' : 'emerald'}>
 											<Icon
@@ -248,33 +241,30 @@ const TableUser: React.FC<Props> = ({
 														? 'DuoErrorCircle'
 														: 'DuoDoneCircle'
 												}
-												className='mr-1 text-2xl'
-												color={
-													info.row.original.is_active ? 'red' : 'emerald'
-												}
+												className='h-5 w-5'
 											/>
-											{info.row.original.is_active}
 										</Button>
 									</Tooltip>
-									<Button
-										variant='solid'
-										size='sm'
-										color='blue'
-										icon='HeroBuildingOffice'
-										onClick={async () => {
-											try {
-												await ApiService.fetchData({
-													url: `/users/${info.row.original.id}`,
-													method: 'patch',
-													data: { company_id: 1 },
-												});
-												toast.success('Empresa asignada (id 1)');
-											} catch (err: unknown) {
-												toast.error('No se pudo asignar la empresa');
-											}
-										}}>
-										Asignar empresa 1
-									</Button>
+									<Tooltip text='Forzar asignación a empresa (dev)'>
+										<Button
+											variant='ghost'
+											size='sm'
+											color='blue'
+											onClick={async () => {
+												try {
+													await ApiService.fetchData({
+														url: `/users/${info.row.original.id}`,
+														method: 'patch',
+														data: { company_id: 1 },
+													});
+													toast.success('Empresa asignada (id 1)');
+												} catch (err: unknown) {
+													toast.error('No se pudo asignar la empresa');
+												}
+											}}>
+											<Icon icon='HeroBuildingOffice' className='h-5 w-5' />
+										</Button>
+									</Tooltip>
 								</PermissionGuard>
 							</div>
 						),
