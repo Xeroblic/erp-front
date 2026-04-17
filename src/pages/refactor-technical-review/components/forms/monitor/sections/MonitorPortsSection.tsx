@@ -13,7 +13,7 @@ const PORTS_CONFIG = [
 	{ key: 'hdmi_ports', icon: 'DeviceTv', color: 'emerald' },
 	{ key: 'displayport_ports', icon: 'MonitorSpeaker', color: 'indigo' },
 	{ key: 'dvi_ports', icon: 'ViewColumns', color: 'zinc' },
-	{ key: 'usb_c_ports', icon: 'UsbSymbol', color: 'sky' },
+	{ key: 'type_c_ports', icon: 'UsbSymbol', color: 'sky' },
 	{ key: 'rj45_ports', icon: 'Squares2X2', color: 'violet' },
 	{ key: 'usb_hub_ports', icon: 'UsbSymbol', color: 'blue' },
 ] as const;

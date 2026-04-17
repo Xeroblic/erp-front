@@ -76,7 +76,7 @@ const MONITOR_SECTION_FIELDS: Record<string, FieldPath<MonitorFormData>[]> = {
 		'hdmi_ports',
 		'displayport_ports',
 		'dvi_ports',
-		'usb_c_ports',
+		'type_c_ports',
 		'rj45_ports',
 		'usb_hub_ports',
 		'all_ports_functional',
@@ -111,8 +111,9 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 		if (!defaultValues) return {} as MonitorFormData;
 
 		const values = { ...defaultValues } as Record<string, unknown>;
-		if (values.usb_c_ports == null && values.type_c_ports != null) {
-			values.usb_c_ports = values.type_c_ports;
+		// Legacy compatibility: some historical records persisted usb_c_ports only.
+		if (values.type_c_ports == null && values.usb_c_ports != null) {
+			values.type_c_ports = values.usb_c_ports;
 		}
 
 		return values as unknown as MonitorFormData;
@@ -191,9 +192,10 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 			async (data) => {
 				try {
 					const finalData = { ...data } as Record<string, unknown>;
-					if (finalData.type_c_ports == null && finalData.usb_c_ports != null) {
-						finalData.type_c_ports = finalData.usb_c_ports;
-					}
+					const resolvedTypeCPorts = finalData.type_c_ports ?? finalData.usb_c_ports;
+					finalData.type_c_ports = resolvedTypeCPorts;
+					// Keep alias synced to prevent divergence in intermediate layers.
+					finalData.usb_c_ports = resolvedTypeCPorts;
 					if (
 						!finalData.extra_attributes ||
 						Object.keys(finalData.extra_attributes).length === 0
