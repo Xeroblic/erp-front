@@ -11,7 +11,7 @@ export default defineConfig({
         EnvironmentPlugin('all', { prefix: 'VITE_' }),
         visualizer({
             filename: 'stats.html',
-            open: true,
+            open: false,
             template: 'treemap',
             gzipSize: true,
             brotliSize: true,
@@ -30,11 +30,12 @@ export default defineConfig({
                 manualChunks(id) {
                     if (id.includes('node_modules')) {
                         if (
-                            /node_modules[\\/](react|react-dom|scheduler)([\\/]|$)/.test(id) ||
+                            /node_modules[\/](react|react-dom|scheduler)([\/]|$)/.test(id) ||
                             id.includes('react/jsx-runtime') ||
                             id.includes('react/jsx-dev-runtime')
-                        ) {
-                            return 'vendor-react';
+                        ) { 
+                            // Keep React in the main vendor chunk to avoid cross-chunk init cycles in production.
+                            return 'vendor';
                         }
 
                         // Separate chart libraries to avoid inflating the main vendor chunk
