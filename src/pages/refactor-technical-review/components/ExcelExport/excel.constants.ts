@@ -18,7 +18,7 @@ export const CONDITION_VALUES_ES: Record<string, string> = {
 	scrap: 'Solo Repuestos',
 	ok: 'Buen Estado',
 	minor_wear: 'Detalles Leves',
-	worn: 'Desgastado',
+	worn: 'Rayas/manchas leves',
 	missing_pieces: 'Piezas Faltantes',
 	scratched: 'Rayado',
 	broken: 'Roto',

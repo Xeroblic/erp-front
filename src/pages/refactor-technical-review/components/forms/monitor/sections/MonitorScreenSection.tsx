@@ -69,7 +69,7 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = ({
 							control={control}
 							render={({ field }) => (
 								// TODO : cAMBAIR A SELECT CON OPCIONES PREDETERMINADAS DE RESOLUCIONES COMUNES,
-								// INGRESAR DATOS EN EL FLUJO SIN ROMPER LOS DATOS ANTERIORES MANTENIENDO EL MONITOR_PLACEHOLDER.SCRREN_RESOLUTION PARA LOS DATOS VIEJOS QUE NO TENGAN RESOLUCIÓN 
+								// INGRESAR DATOS EN EL FLUJO SIN ROMPER LOS DATOS ANTERIORES MANTENIENDO EL MONITOR_PLACEHOLDER.SCRREN_RESOLUTION PARA LOS DATOS VIEJOS QUE NO TENGAN RESOLUCIÓN
 								<Input
 									{...field}
 									value={field.value ?? ''}
@@ -131,7 +131,6 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = ({
 										| 'ok'
 										| 'minor_wear'
 										| 'worn'
-										| 'missing_pieces'
 										| 'dead_pixels'
 										| 'broken'
 										| 'spots'

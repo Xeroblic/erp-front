@@ -10,7 +10,6 @@ export const ALLOWED_SCREEN_CONDITIONS = [
 	'ok',
 	'minor_wear',
 	'worn',
-	'missing_pieces',
 	'dead_pixels',
 	'broken',
 	'spots',

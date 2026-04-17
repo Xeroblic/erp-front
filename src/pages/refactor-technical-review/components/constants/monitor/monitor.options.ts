@@ -11,13 +11,12 @@ export const GENERAL_CONDITION_OPTIONS: TSelectOption[] = [
 export const SCREEN_CONDITION_OPTIONS: TSelectOption[] = [
 	{ value: 'ok', label: 'OK' },
 	{ value: 'minor_wear', label: 'Desgaste Leve' },
-	{ value: 'worn', label: 'Desgastada' },
-	{ value: 'missing_pieces', label: 'Faltan piezas' },
+	{ value: 'worn', label: 'Rayas/manchas leves' },
 	{ value: 'dead_pixels', label: 'Píxeles muertos' },
 	{ value: 'broken', label: 'Quebrada/Trizada' },
 	{ value: 'spots', label: 'Manchas' },
 	{ value: 'scratched', label: 'Rayada' },
-	{ value: 'lines', label: 'Líneas en pantalla' },	
+	{ value: 'lines', label: 'Líneas en pantalla' },
 
 ];
 
