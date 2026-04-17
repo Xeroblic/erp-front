@@ -119,7 +119,7 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 										value={opt.value}
 										isSelected={watch('charger_status') === opt.value}
 										onClick={() =>
-											!readOnly && setValue('charger_status', opt.value)
+											!readOnly && setValue('charger_status', opt.value, { shouldValidate: true, shouldDirty: true })
 										}
 										variant='default'
 										className='text-xs'
@@ -169,11 +169,11 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 									isSelected={batteryStatus === opt.value}
 									onClick={() => {
 										if (readOnly) return;
-										setValue('battery_status', opt.value);
-										setValue('battery_health', opt.label);
+										setValue('battery_status', opt.value, { shouldValidate: true, shouldDirty: true });
+										setValue('battery_health', opt.label, { shouldValidate: true, shouldDirty: true });
 										if (opt.value === 'no_battery') {
-											setValue('battery_percentage', 0);
-											setValue('battery_health', 'Sin Batería');
+											setValue('battery_percentage', 0, { shouldValidate: true, shouldDirty: true });
+											setValue('battery_health', 'Sin Batería', { shouldValidate: true, shouldDirty: true });
 										}
 									}}
 									color={
@@ -209,6 +209,7 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 														? null
 														: Number(e.target.value);
 												field.onChange(val);
+												setValue('battery_percentage', val, { shouldValidate: true, shouldDirty: true });
 											}}
 											placeholder='0'
 											className='h-16 text-center text-3xl font-bold text-zinc-700 dark:text-zinc-200'

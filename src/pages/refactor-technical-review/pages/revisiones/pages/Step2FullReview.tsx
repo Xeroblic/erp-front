@@ -1,12 +1,15 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import Badge from '@/components/ui/Badge';
+import Button from '@/components/ui/Button';
 import { useAppDispatch } from '@/store';
 import { updateItemDetails } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import useAuthorization from '@/hooks/useAuthorization';
 import EquipmentFormRouter from '../../../components/forms';
 import useAutoSave from '../../../hooks/useAutoSave';
 import AutoSaveConfirmModal from '../../../components/modals/AutoSaveConfirmModal';
+import PrefillReviewModal from '../../../components/modals/PrefillReviewModal';
 import { sanitizeByAllowedValues } from '../../../components/validation/constants/allowedValuesMap';
 
 interface Step2FullReviewProps {
@@ -38,7 +41,24 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 }) => {
 	const dispatch = useAppDispatch();
 	const { branchId } = useCurrentBranch();
-	const [isSubmitting, setIsSubmitting] = React.useState(false);
+	const { isSuperAdmin, hasRole } = useAuthorization();
+	const [isSubmitting, setIsSubmitting] = useState(false);
+
+	// ─── Prefill Integration ──────────────────────────────────────────────────
+	const [isPrefillModalOpen, setIsPrefillModalOpen] = useState(false);
+	const [prefillMergeValues, setPrefillMergeValues] = useState<Record<string, any>>({});
+	const [formKey, setFormKey] = useState(0);
+
+	const handlePrefillSelect = useCallback((details: Record<string, any>) => {
+		setPrefillMergeValues(details);
+		setFormKey((prev) => prev + 1);
+		toast.info(
+			'Campos pre-rellenados. Debes guardar o presionar "Siguiente" para conservar estos cambios.',
+		);
+	}, []);
+
+	const isEligibleForPrefill =
+		(isSuperAdmin || hasRole('super-admin')) && !readOnly;
 
 	// ─── Auto-Save Integration ───────────────────────────────────────────────
 	// Ref to hold the getter function registered by the form
@@ -101,8 +121,8 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 			}
 		}
 
-		return result;
-	}, [initialData]);
+		return { ...result, ...prefillMergeValues };
+	}, [initialData, prefillMergeValues]);
 
 	// ─── Final Submit (original behavior) ────────────────────────────────────
 	const handleFormSubmit = async (data: any) => {
@@ -145,6 +165,20 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 					</p>
 				</div>
 				<div className='flex items-center gap-2'>
+					{/* Prefill button */}
+					{isEligibleForPrefill && (
+						<Button
+							variant='outline'
+							color='blue'
+							className='border-blue-300 dark:border-blue-900/50'
+							icon='HeroBolt'
+							onClick={() => setIsPrefillModalOpen(true)}
+							title='Pre-rellenar con equipo similar'
+						>
+							Pre-rellenar
+						</Button>
+					)}
+
 					{/* Auto-save indicator */}
 					{isSaving && (
 						<Badge variant='outline' color='amber' className='animate-pulse'>
@@ -164,6 +198,7 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 
 			{/* Form Router */}
 			<EquipmentFormRouter
+				key={`form-router-${formKey}`}
 				equipmentType={equipmentType}
 				defaultValues={mergedDefaultValues}
 				onSubmit={handleFormSubmit}
@@ -180,6 +215,17 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 				isOpen={showIdleSaveModal}
 				onClose={dismissIdleSaveModal}
 				savedAt={lastSavedAt}
+			/>
+
+			{/* Prefill from same Batch/Product Modal */}
+			<PrefillReviewModal
+				isOpen={isPrefillModalOpen}
+				onClose={() => setIsPrefillModalOpen(false)}
+				batchId={initialData?.batch_id || initialData?.batch?.id}
+				productId={initialData?.product_id}
+				equipmentType={equipmentType}
+				currentItemId={initialData?.id}
+				onSelectSource={handlePrefillSelect}
 			/>
 		</div>
 	);
