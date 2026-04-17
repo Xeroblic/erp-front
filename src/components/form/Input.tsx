@@ -67,15 +67,16 @@ const Input = forwardRef<HTMLInputElement, IInputProps>((props, ref) => {
 		solid: {
 			general: classNames(
 				// Default
-				[`${borderWidth} border-[color:var(--input-border)] dark:border-zinc-800`],
-				'bg-white dark:bg-zinc-600',
+				[`${borderWidth} border-zinc-300 dark:border-zinc-700`],
+				'bg-zinc-50 dark:bg-zinc-900',
 				// Hover
 				'hover:border-[color:var(--input-border-hover)]',
 				'dark:hover:border-[color:var(--input-border-hover)]',
-				'disabled:!border-zinc-500',
+				'disabled:opacity-50 disabled:!border-zinc-300',
 				// Focus
-				'focus:border-white dark:focus:border-zinc-800',
-				'focus:bg-white/70 dark:focus:bg-transparent',
+				'focus:border-[color:var(--input-border-hover)] dark:focus:border-[color:var(--input-border-hover)]',
+				'focus:bg-white dark:focus:bg-zinc-800',
+				'focus:ring-1 focus:ring-[color:var(--input-border-hover)]',
 			),
 			validation: classNames({
 				'!border-red-500 ring-4 ring-red-500/30': !isValid && isTouched && invalidFeedback,
