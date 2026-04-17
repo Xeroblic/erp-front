@@ -3,11 +3,13 @@ import { Controller } from 'react-hook-form';
 import { FormSectionProps } from '../../shared/types';
 import { MonitorFormData } from '../../../validation/monitor.schema';
 import Input from '@/components/form/Input';
+import SelectReact from '@/components/form/SelectReact';
 import { StepperInput } from '../../../ui/StepperInput';
 import { SelectionCard } from '../../../ui/SelectionCard';
 import Checkbox from '@/components/form/Checkbox';
 import { MONITOR_PLACEHOLDERS } from '../../../constants/monitor/monitor.hints';
 import {
+	SCREEN_RESOLUTION_OPTIONS,
 	SCREEN_CONDITION_OPTIONS,
 	STAND_CONDITION_OPTIONS,
 	FRAME_CONDITION_OPTIONS,
@@ -26,6 +28,7 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = ({
 	const currentStand = watch('stand_condition');
 	const currentFrame = watch('frame_condition');
 	const currentSpotsCount = watch('spots_count');
+	const currentScreenResolution = watch('screen_resolution');
 
 	return (
 		<div className='space-y-8'>
@@ -68,14 +71,60 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = ({
 							name='screen_resolution'
 							control={control}
 							render={({ field }) => (
-								// TODO : cAMBAIR A SELECT CON OPCIONES PREDETERMINADAS DE RESOLUCIONES COMUNES,
-								// INGRESAR DATOS EN EL FLUJO SIN ROMPER LOS DATOS ANTERIORES MANTENIENDO EL MONITOR_PLACEHOLDER.SCRREN_RESOLUTION PARA LOS DATOS VIEJOS QUE NO TENGAN RESOLUCIÓN
-								<Input
-									{...field}
-									value={field.value ?? ''}
+								<SelectReact
+									name='screen_resolution'
+									value={(() => {
+										const currentValue = (field.value ?? '').toString().trim();
+										if (!currentValue) return null;
+
+										return (
+											SCREEN_RESOLUTION_OPTIONS.find(
+												(opt) => opt.value === currentValue,
+											) || { value: currentValue, label: currentValue }
+										);
+									})()}
+									options={(() => {
+										const currentValue = (currentScreenResolution ?? '')
+											.toString()
+											.trim();
+										if (
+											!currentValue ||
+											SCREEN_RESOLUTION_OPTIONS.some(
+												(opt) => opt.value === currentValue,
+											)
+										) {
+											return SCREEN_RESOLUTION_OPTIONS;
+										}
+
+										return [
+											{ value: currentValue, label: currentValue },
+											...SCREEN_RESOLUTION_OPTIONS,
+										];
+									})()}
+									onChange={(option) => {
+										if (
+											!option ||
+											Array.isArray(option) ||
+											!('value' in option)
+										) {
+											field.onChange('');
+											return;
+										}
+
+										field.onChange(option.value);
+									}}
+									onCreateOption={(inputValue) => {
+										const nextValue = inputValue.trim();
+										if (!nextValue) return;
+										field.onChange(nextValue);
+									}}
 									placeholder={MONITOR_PLACEHOLDERS.screen_resolution}
-									disabled={readOnly}
-									className={errors.screen_resolution ? 'border-red-500' : ''}
+									isDisabled={readOnly}
+									isClearable
+									isCreatable
+									noOptionsMessage={() =>
+										'Escribe para agregar una resolución manual'
+									}
 								/>
 							)}
 						/>
