@@ -92,6 +92,44 @@ export const useAutoSave = ({
 		transformDataRef.current = transformData;
 	}, [transformData]);
 
+	const buildPayload = useCallback(
+		(
+			rawData: Record<string, unknown>,
+			useTransformFallback = false,
+		): Record<string, unknown> => {
+			let data = rawData;
+
+			// Save raw payload first; only apply transform as fallback on errors.
+			if (useTransformFallback && transformDataRef.current) {
+				data = transformDataRef.current(data);
+			}
+
+			let payload = Object.fromEntries(
+				Object.entries(data).filter(([, v]) => v !== null && v !== undefined && v !== ''),
+			);
+
+			if (!payload.extra_attributes) {
+				payload.extra_attributes = {};
+			} else if (typeof payload.extra_attributes === 'string') {
+				try {
+					payload.extra_attributes = JSON.parse(payload.extra_attributes);
+				} catch (_e) {
+					payload.extra_attributes = { raw: payload.extra_attributes };
+				}
+			}
+
+			return payload;
+		},
+		[],
+	);
+
+	const hasPendingChanges = useCallback((): boolean => {
+		const rawData = getFormDataRef.current();
+		const payload = buildPayload(rawData, false);
+		const snapshot = JSON.stringify(payload);
+		return snapshot !== lastSnapshotRef.current;
+	}, [buildPayload]);
+
 	// ─── Core save function ──────────────────────────────────────────────────
 
 	const saveNow = useCallback(
@@ -101,37 +139,12 @@ export const useAutoSave = ({
 			if (!enabledRef.current) return false;
 			if (isSavingRef.current) return false;
 
-			let currentData = getFormDataRef.current();
-
-			// Apply transformation if provided
-			if (transformDataRef.current) {
-				currentData = transformDataRef.current(currentData);
-			}
-
-			// Strip null, undefined, and empty string values — backend rejects nulls
-			// for fields with allowed_values constraints (e.g. cover_condition)
-			currentData = Object.fromEntries(
-				Object.entries(currentData).filter(
-					([, v]) => v !== null && v !== undefined && v !== '',
-				),
-			);
-
-			// Force extra_attributes to be an object
-			if (!currentData.extra_attributes) {
-				currentData.extra_attributes = {};
-			} else if (typeof currentData.extra_attributes === 'string') {
-				try {
-					currentData.extra_attributes = JSON.parse(currentData.extra_attributes);
-				} catch (e) {
-					// Fallback if parsing fails
-					currentData.extra_attributes = { raw: currentData.extra_attributes };
-				}
-			}
-
-			const currentSnapshot = JSON.stringify(currentData);
+			const rawData = getFormDataRef.current();
+			const rawPayload = buildPayload(rawData, false);
+			const rawSnapshot = JSON.stringify(rawPayload);
 
 			// Skip if no changes since last save
-			if (currentSnapshot === lastSnapshotRef.current) {
+			if (rawSnapshot === lastSnapshotRef.current) {
 				return true; // Consider it "saved" since nothing changed
 			}
 
@@ -143,12 +156,12 @@ export const useAutoSave = ({
 					updateItemDetails({
 						branchId,
 						itemId,
-						data: currentData,
+						data: rawPayload,
 						equipmentType,
 					}),
 				).unwrap();
 
-				lastSnapshotRef.current = currentSnapshot;
+				lastSnapshotRef.current = rawSnapshot;
 				setLastSavedAt(new Date());
 
 				if (!silent) {
@@ -156,16 +169,40 @@ export const useAutoSave = ({
 				}
 
 				return true;
-			} catch (error: unknown) {
-				const msg = error instanceof Error ? error.message : String(error);
-				toast.error(`Error al auto-guardar: ${msg}`);
-				return false;
+			} catch (rawError: unknown) {
+				if (!transformDataRef.current) {
+					const msg = rawError instanceof Error ? rawError.message : String(rawError);
+					toast.error(`Error al auto-guardar: ${msg}`);
+					return false;
+				}
+
+				try {
+					const transformedPayload = buildPayload(rawData, true);
+					const transformedSnapshot = JSON.stringify(transformedPayload);
+
+					await dispatch(
+						updateItemDetails({
+							branchId,
+							itemId,
+							data: transformedPayload,
+							equipmentType,
+						}),
+					).unwrap();
+
+					lastSnapshotRef.current = transformedSnapshot;
+					setLastSavedAt(new Date());
+					return true;
+				} catch (transformedError: unknown) {
+					const msg = transformedError instanceof Error ? transformedError.message : String(transformedError);
+					toast.error(`Error al auto-guardar: ${msg}`);
+					return false;
+				}
 			} finally {
 				isSavingRef.current = false;
 				setIsSaving(false);
 			}
 		},
-		[branchId, itemId, equipmentType, dispatch],
+		[branchId, itemId, equipmentType, dispatch, buildPayload],
 	);
 
 	// ─── Idle Detection ──────────────────────────────────────────────────────
@@ -179,12 +216,13 @@ export const useAutoSave = ({
 
 		idleTimerRef.current = setTimeout(async () => {
 			// User is idle → auto-save
+			const hadPendingChanges = hasPendingChanges();
 			const success = await saveNow(true);
-			if (success) {
+			if (success && hadPendingChanges) {
 				setShowIdleSaveModal(true);
 			}
 		}, idleTimeoutMs);
-	}, [idleTimeoutMs, saveNow]);
+	}, [idleTimeoutMs, saveNow, hasPendingChanges]);
 
 	// Set up activity listeners
 	useEffect(() => {
@@ -216,9 +254,10 @@ export const useAutoSave = ({
 		if (enabled && branchId && itemId) {
 			// Take initial snapshot so we don't immediately save unchanged data
 			const currentData = getFormDataRef.current();
-			lastSnapshotRef.current = JSON.stringify(currentData);
+			const payload = buildPayload(currentData, false);
+			lastSnapshotRef.current = JSON.stringify(payload);
 		}
-	}, [enabled, branchId, itemId]);
+	}, [enabled, branchId, itemId, buildPayload]);
 
 	// ─── Modal dismiss ───────────────────────────────────────────────────────
 
