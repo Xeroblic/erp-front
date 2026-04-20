@@ -5,7 +5,7 @@ import Button from '@/components/ui/Button';
 import { useAppDispatch } from '@/store';
 import { updateItemDetails } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
-import useAuthorization from '@/hooks/useAuthorization';
+// import useAuthorization from '@/hooks/useAuthorization';
 import EquipmentFormRouter from '../../../components/forms';
 import useAutoSave from '../../../hooks/useAutoSave';
 import AutoSaveConfirmModal from '../../../components/modals/AutoSaveConfirmModal';
@@ -42,7 +42,7 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 }) => {
 	const dispatch = useAppDispatch();
 	const { branchId } = useCurrentBranch();
-	const { isSuperAdmin, hasRole } = useAuthorization();
+	// const { isSuperAdmin, hasRole } = useAuthorization();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [showSavingBadge, setShowSavingBadge] = useState(false);
 
@@ -59,8 +59,8 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 		);
 	}, []);
 
-	const isEligibleForPrefill =
-		(isSuperAdmin || hasRole('super-admin')) && !readOnly;
+	// const isEligibleForPrefill =
+	// 	(isSuperAdmin || hasRole('super-admin')) && !readOnly;
 
 	// ─── Auto-Save Integration ───────────────────────────────────────────────
 	// Ref to hold the getter function registered by the form
@@ -182,7 +182,7 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 				</div>
 				<div className='flex items-center gap-2'>
 					{/* Prefill button */}
-					{isEligibleForPrefill && (
+					{/* {isEligibleForPrefill && ( */}
 						<Button
 							variant='outline'
 							color='blue'
@@ -193,7 +193,7 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 						>
 							Pre-rellenar
 						</Button>
-					)}
+					{/* )} */}
 
 					{/* Auto-save indicator */}
 					{showSavingBadge && (

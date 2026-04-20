@@ -102,7 +102,9 @@ export const SelectionCard: React.FC<SelectionCardProps> = ({
 }) => {
 	const tokens = COLOR_STYLES[color];
 	const stateClass = isSelected ? tokens.selected : tokens.idle;
-	const scaleClass = isSelected ? 'z-10 scale-[1.02]' : 'scale-100 hover:scale-[1.01]';
+	const interactionClass = isSelected
+		? 'z-0 scale-100'
+		: 'z-0 scale-100 hover:-translate-y-[1px]';
 
 	// Base styles based on variant
 	const isCompact = variant === 'compact';
@@ -119,7 +121,7 @@ export const SelectionCard: React.FC<SelectionCardProps> = ({
 			aria-checked={isSelected}
 			data-value={value}
 			onClick={onClick}
-			className={`cursor-pointer rounded-xl border-2 text-center transition-all duration-200 ${scaleClass} ${stateClass} flex flex-col items-center justify-center ${paddingClass} ${minHeightClass} ${gapClass} ${className}`}>
+			className={`relative cursor-pointer rounded-xl border-2 text-center transition-all duration-200 ${interactionClass} ${stateClass} flex flex-col items-center justify-center ${paddingClass} ${minHeightClass} ${gapClass} ${className}`}>
 			{icon && (
 				<Icon
 					icon={icon}

@@ -488,7 +488,7 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 			</div>
 
 			{/* 3. Advanced Selection Area */}
-			<div className='relative z-20'>
+			<div className='relative'>
 				{/* Divider with Text */}
 				<div className='relative mb-6 flex items-center'>
 					<div className='flex-grow border-t border-zinc-200 dark:border-zinc-700'></div>

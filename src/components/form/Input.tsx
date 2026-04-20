@@ -51,7 +51,7 @@ const Input = forwardRef<HTMLInputElement, IInputProps>((props, ref) => {
 		...rest
 	} = props;
 
-	const resolvedBorderColor = resolveTailwindColor(color, colorIntensity);
+	const resolvedBorderColor = '#d4d4d8';
 	const resolvedBorderHoverColor = resolveTailwindColor(color, colorIntensity);
 
 	// Eliminar props personalizados del objeto rest

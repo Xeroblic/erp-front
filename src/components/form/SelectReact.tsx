@@ -136,8 +136,8 @@ const SelectReact: FC<ISelectReactProps> = (props) => {
 		solid: {
 			control: classNames(
 				// Default
-				[`${borderWidth} border-zinc-100 dark:border-zinc-800`],
-				'bg-gray-300 dark:bg-zinc-800',
+				[`${borderWidth} border-zinc-300 dark:border-zinc-700`],
+				'bg-white dark:bg-zinc-900',
 				'w-full',
 				'text-black dark:text-white',
 				themeConfig.transition,
