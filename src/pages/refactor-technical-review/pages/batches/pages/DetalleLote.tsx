@@ -83,7 +83,10 @@ const DetalleLote: React.FC = () => {
 							<h1 className='text-xl font-bold leading-tight text-zinc-900 dark:text-zinc-100 md:text-2xl'>
 								Lote {formattedBatchCode}
 							</h1>
-							<Badge variant='solid' className='px-1' color={hookProps.statusColor()}>
+							<Badge
+								variant='solid'
+								className='hidden px-1 sm:inline-flex'
+								color={hookProps.statusColor()}>
 								{BATCH_STATUS_LABELS[
 									String(
 										hookProps.batch.status,
@@ -91,7 +94,7 @@ const DetalleLote: React.FC = () => {
 								] || hookProps.batch.status}
 							</Badge>
 						</div>
-						<div className='flex flex-col gap-1 text-xs text-zinc-500 sm:flex-row sm:gap-4'>
+						<div className='hidden flex-col gap-1 text-xs text-zinc-500 sm:flex sm:flex-row sm:gap-4'>
 							<span className='flex items-center gap-1'>
 								<Icon icon='HeroCalendar' className='h-3 w-3' />
 								Creado el:{' '}
@@ -189,7 +192,7 @@ const DetalleLote: React.FC = () => {
 			) : (
 				<>
 					<DetalleLoteVisual {...hookProps} />
-					<Container className='mt-6 w-11/12'>
+					<Container className='mt-6 w-full px-2 sm:w-11/12 sm:px-0'>
 						<ListReview batchId={hookProps.batch!.id} activeTab={hookProps.activeTab} />
 					</Container>
 				</>

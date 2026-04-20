@@ -30,7 +30,6 @@ import {
 	convertQuoteToSale as convertQuoteToSaleThunk,
 	selectQuotes,
 	selectQuotesLoading,
-	selectQuoteMeta,
 	selectQuoteActionsLoading,
 } from '@/store/slices/quotes/quotesSlice';
 
@@ -91,7 +90,6 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 	const dispatch = useAppDispatch();
 	const quotations = useAppSelector(selectQuotes);
 	const listLoading = useAppSelector(selectQuotesLoading);
-	const meta = useAppSelector(selectQuoteMeta);
 	const actionsLoading = useAppSelector(selectQuoteActionsLoading);
 	// Siempre usamos la sucursal/filial efectiva seleccionada (selector global/personalización).
 	// Si el usuario cambia de sucursal, este valor cambia y el hook recarga datos.
@@ -99,7 +97,7 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 
 	const [filters, setFilters] = useState<QuotationsFilters>(initialFilters);
 	const [currentPage, setCurrentPage] = useState(1);
-	const [itemsPerPage, setItemsPerPage] = useState(meta.perPage || 5);
+	const [itemsPerPage, setItemsPerPage] = useState(5);
 	const [error, setError] = useState<string | null>(null);
 	const API_FETCH_LIMIT = 500;
 
@@ -135,12 +133,6 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 	useEffect(() => {
 		requestQuotes();
 	}, [requestQuotes]);
-
-	useEffect(() => {
-		if (meta.perPage && meta.perPage > 0) {
-			setItemsPerPage(meta.perPage);
-		}
-	}, [meta.perPage]);
 
 	const filteredQuotations = useMemo(() => {
 		let data = [...quotations];
@@ -217,10 +209,10 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 			const quantity = Math.max(1, Number(item.quantity) || 1);
 			const rawUnitPrice = Number(
 				item.unit_price ??
-					(item as any).unit_net ??
-					(item as any).unitPrice ??
-					(item as any).unit ??
-					0,
+				(item as any).unit_net ??
+				(item as any).unitPrice ??
+				(item as any).unit ??
+				0,
 			);
 			const unitPrice =
 				hasProduct && rawUnitPrice <= 0
@@ -314,8 +306,8 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 				desiredPayload.length === 0
 					? existing
 					: existing.filter(
-							(item) => !toUpdate.some((desiredItem) => desiredItem.id === item.id),
-						);
+						(item) => !toUpdate.some((desiredItem) => desiredItem.id === item.id),
+					);
 
 			if (!toUpdate.length && !toCreate.length && !toDelete.length) {
 				return;

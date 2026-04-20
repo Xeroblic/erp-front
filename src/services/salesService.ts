@@ -64,7 +64,7 @@ export const fetchSalesPage = async (
 	subsidiaryId: number,
 	filters: SalesListFilters = {},
 ): Promise<PaginatedResponse<ISale>> => {
-	const params = { with_customer: 1, per_page: 5, ...filters } as Record<string, any>;
+	const params = { with_customer: 1, per_page: 10, ...filters } as Record<string, any>;
 
 	const resp = await ApiService.fetchData<any>({
 		url: base(subsidiaryId),
@@ -81,7 +81,7 @@ export const fetchSalesPage = async (
 			current_page: 1,
 			from: null,
 			last_page: 1,
-			per_page: 5,
+			per_page: 10,
 			to: null,
 			total: 0,
 		},

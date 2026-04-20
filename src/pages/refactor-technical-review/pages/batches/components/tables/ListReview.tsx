@@ -406,46 +406,57 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 					onPaginationChange={setPagination}
 					manualPagination
 					actions={
-						<div className='flex flex-wrap items-center gap-3'>
+						<div className='flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3'>
 							{/* Status filter pills */}
-							<div className='flex items-center gap-1 rounded-lg border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-700 dark:bg-zinc-800/50'>
-								{(batch?.id === 17
-									? [
-											{ value: 'all' as const, label: 'Todas' },
-											{ value: 'sold' as const, label: 'Vendidos' },
-											{ value: 'pending' as const, label: 'Pendiente' },
-											{ value: 'in_review' as const, label: 'En Revisión' },
-											{ value: 'reviewed' as const, label: 'Revisado' },
-											{ value: 'approved' as const, label: 'Aprobado' },
-										]
-									: [
-											{ value: 'all' as const, label: 'Todas' },
-											{ value: 'pending' as const, label: 'Pendiente' },
-											{ value: 'in_review' as const, label: 'En Revisión' },
-											{ value: 'reviewed' as const, label: 'Revisado' },
-											{ value: 'approved' as const, label: 'Aprobado' },
-										]
-								).map((opt) => (
-									<button
-										key={opt.value}
-										type='button'
-										onClick={() => {
-											setReviewStatusFilter(opt.value);
-											setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-										}}
-										className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
-											reviewStatusFilter === opt.value
-												? 'bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-700 dark:text-zinc-100 dark:ring-zinc-600'
-												: 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
-										}`}>
-										{opt.label}
-									</button>
-								))}
+							<div className='w-full overflow-x-auto pb-1 sm:w-auto sm:overflow-visible sm:pb-0'>
+								<div className='inline-flex min-w-max items-center gap-1 rounded-lg border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-700 dark:bg-zinc-800/50'>
+									{(batch?.id === 17
+										? [
+												{ value: 'all' as const, label: 'Todas' },
+												{ value: 'sold' as const, label: 'Vendidos' },
+												{ value: 'pending' as const, label: 'Pendiente' },
+												{
+													value: 'in_review' as const,
+													label: 'En Revisión',
+												},
+												{ value: 'reviewed' as const, label: 'Revisado' },
+												{ value: 'approved' as const, label: 'Aprobado' },
+											]
+										: [
+												{ value: 'all' as const, label: 'Todas' },
+												{ value: 'pending' as const, label: 'Pendiente' },
+												{
+													value: 'in_review' as const,
+													label: 'En Revisión',
+												},
+												{ value: 'reviewed' as const, label: 'Revisado' },
+												{ value: 'approved' as const, label: 'Aprobado' },
+											]
+									).map((opt) => (
+										<button
+											key={opt.value}
+											type='button'
+											onClick={() => {
+												setReviewStatusFilter(opt.value);
+												setPagination((prev) => ({
+													...prev,
+													pageIndex: 0,
+												}));
+											}}
+											className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+												reviewStatusFilter === opt.value
+													? 'bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-700 dark:text-zinc-100 dark:ring-zinc-600'
+													: 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
+											}`}>
+											{opt.label}
+										</button>
+									))}
+								</div>
 							</div>
 							<Button
 								variant='outline'
 								size='sm'
-								className='flex items-center gap-2'
+								className='flex w-full items-center justify-center gap-2 sm:w-auto'
 								isDisable={!items || items.length === 0}
 								onClick={() => setIsExportModalOpen(true)}>
 								<Icon icon='HeroArrowDownTray' className='h-4 w-4' />

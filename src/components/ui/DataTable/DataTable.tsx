@@ -133,10 +133,10 @@ export default function DataTable<TData>({
 	return (
 		<div className={['w-full space-y-4', className].filter(Boolean).join(' ')}>
 			{/* Barra de búsqueda y Acciones */}
-			<div className='flex items-center justify-between gap-4'>
-				<div className='flex flex-1 items-center space-x-2'>
+			<div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+				<div className='flex w-full flex-1 items-center space-x-2 sm:w-auto'>
 					{enableSearch && (
-						<div className='relative max-w-sm flex-1'>
+						<div className='relative w-full flex-1 sm:max-w-sm'>
 							<Icon
 								icon='HeroMagnifyingGlass'
 								className='pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400'
@@ -151,9 +151,9 @@ export default function DataTable<TData>({
 						</div>
 					)}
 				</div>
-				<div className='flex items-center space-x-2'>
+				<div className='flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end sm:gap-0 sm:space-x-2'>
 					{actions}
-					<Badge variant='outline' className='px-2'>
+					<Badge variant='outline' className='self-end px-2'>
 						{manualPagination
 							? `${data.length} resultados`
 							: `${table.getFilteredRowModel().rows.length} resultados`}

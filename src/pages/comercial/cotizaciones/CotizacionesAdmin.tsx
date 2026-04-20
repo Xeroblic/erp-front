@@ -113,7 +113,6 @@ const CotizacionesAdmin: React.FC = () => {
 		};
 	}, [activeQuoteId, loadQuotationDetails, navigate]);
 
-
 	// Handlers
 	const handleCreate = () => {
 		setEditingQuotation(null);
