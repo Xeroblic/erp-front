@@ -86,7 +86,6 @@ const Header: FC<IHeaderProps> = (props) => {
 					className,
 				)}
 				{...rest}>
-					
 				{children}
 			</header>
 		</>
