@@ -10,6 +10,15 @@ import {
 } from './excel.constants';
 import { IItem } from '@/interface/technicalReviews.interface';
 import { resolveEquipmentTypeMeta } from '@/pages/refactor-technical-review/components/utils/utilsItems';
+import { serialNumbers } from '../../ESPECIA_CANAL13/list_serialNumber';
+
+const HIGHLIGHT_ROW_COLOR = '86c723';
+const SERIALS_TO_HIGHLIGHT = new Set(serialNumbers.map((serial) => serial.trim().toUpperCase()));
+
+const shouldHighlightRow = (serialNumber?: string | null): boolean => {
+	if (!serialNumber) return false;
+	return SERIALS_TO_HIGHLIGHT.has(serialNumber.trim().toUpperCase());
+};
 
 const generateBarcodeBase64 = (text: string): string | null => {
 	try {
@@ -337,7 +346,15 @@ export const exportItemsToExcel = async (
 			);
 			sourceItems.forEach((item, idx) => {
 				const row = sheet.addRow([idx + 1, item.serial_number ?? '']);
+				const isHighlighted = shouldHighlightRow(item.serial_number);
 				row.eachCell((cell) => {
+					if (isHighlighted) {
+						cell.fill = {
+							type: 'pattern',
+							pattern: 'solid',
+							fgColor: { argb: HIGHLIGHT_ROW_COLOR },
+						};
+					}
 					cell.border = {
 						top: { style: 'thin', color: { argb: 'FFE1E1E1' } },
 						bottom: { style: 'thin', color: { argb: 'FFE1E1E1' } },
@@ -420,11 +437,17 @@ export const exportItemsToExcel = async (
 							];
 							const excelRow = sheet.addRow(rowValues);
 							const isEven = idx % 2 === 0;
+							const isHighlighted = shouldHighlightRow(item.serial_number);
 							excelRow.eachCell((cell) => {
+								const fillColor = isHighlighted
+									? HIGHLIGHT_ROW_COLOR
+									: isEven
+									? 'FFFFFFFF'
+									: 'FFF2F2F2';
 								cell.fill = {
 									type: 'pattern',
 									pattern: 'solid',
-									fgColor: { argb: isEven ? 'FFFFFFFF' : 'FFF2F2F2' },
+									fgColor: { argb: fillColor },
 								};
 								cell.border = {
 									top: { style: 'thin', color: { argb: 'FFD9D9D9' } },
@@ -490,11 +513,17 @@ export const exportItemsToExcel = async (
 							];
 							const excelRow = sheet.addRow(rowValues);
 							const isEven = idx % 2 === 0;
+							const isHighlighted = shouldHighlightRow(item.serial_number);
 							excelRow.eachCell((cell) => {
+								const fillColor = isHighlighted
+									? HIGHLIGHT_ROW_COLOR
+									: isEven
+									? 'FFFFFFFF'
+									: 'FFF2F2F2';
 								cell.fill = {
 									type: 'pattern',
 									pattern: 'solid',
-									fgColor: { argb: isEven ? 'FFFFFFFF' : 'FFF2F2F2' },
+									fgColor: { argb: fillColor },
 								};
 								cell.border = {
 									top: { style: 'thin', color: { argb: 'FFD9D9D9' } },

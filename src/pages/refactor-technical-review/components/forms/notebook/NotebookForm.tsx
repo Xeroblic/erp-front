@@ -157,6 +157,15 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 	registerGetFormValues,
 	isSaving = false,
 }) => {
+	const normalizedDefaultValues = useMemo<Partial<NotebookFormData>>(
+		() => ({
+			...(defaultValues || {}),
+			has_numeric_keypad: defaultValues?.has_numeric_keypad ?? false,
+			has_backlit_keyboard: defaultValues?.has_backlit_keyboard ?? false,
+		}),
+		[defaultValues],
+	);
+
 	const {
 		control,
 		handleSubmit,
@@ -169,7 +178,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 		formState: { errors },
 	} = useForm<NotebookFormData>({
 		resolver: yupResolver(notebookSchema) as unknown as Resolver<NotebookFormData>,
-		defaultValues: defaultValues || {},
+		defaultValues: normalizedDefaultValues,
 		mode: 'onBlur',
 	});
 
@@ -195,14 +204,14 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 	// Reset form when defaultValues changes deeply
 	const prevDefaultValues = React.useRef<string | null>(null);
 	useEffect(() => {
-		if (defaultValues) {
-			const stringified = JSON.stringify(defaultValues);
+		if (normalizedDefaultValues) {
+			const stringified = JSON.stringify(normalizedDefaultValues);
 			if (stringified !== prevDefaultValues.current) {
-				reset(defaultValues);
+				reset(normalizedDefaultValues);
 				prevDefaultValues.current = stringified;
 			}
 		}
-	}, [defaultValues, reset]);
+	}, [normalizedDefaultValues, reset]);
 
 	// Handle finish
 	const validateStep = async (sectionKey: string) => {

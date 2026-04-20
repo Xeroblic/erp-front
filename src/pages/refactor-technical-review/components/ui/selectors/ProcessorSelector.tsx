@@ -77,7 +77,6 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 		}
 	}, [branchId, globalBrands.length, dispatch]);
 
-
 	// --- Initialization Effect: Parse value to set internal state ---
 	useEffect(() => {
 		// Only run if we have a value but no internal state selected (avoid overwriting user interaction)
@@ -181,11 +180,11 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 		try {
 			setIsCreatingBrand(true);
 			const result = await dispatch(
-				createBrand({ branchId, data: { name: inputValue.trim(), is_active: true } })
+				createBrand({ branchId, data: { name: inputValue.trim(), is_active: true } }),
 			).unwrap();
 
 			toast.success('Marca creada exitosamente');
-			
+
 			setSelectedBrand(result.name as MarcaProcesador);
 			resetDownstreamFromBrand();
 		} catch (error: any) {
@@ -272,10 +271,7 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 
 	// Merge local known brands with global API brands
 	const mergedBrandNames = Array.from(
-		new Set([
-			...marcasData.map((m) => m.nombre),
-			...globalBrands.map((b) => b.name)
-		])
+		new Set([...marcasData.map((m) => m.nombre), ...globalBrands.map((b) => b.name)]),
 	).sort();
 
 	const brandOptions: TSelectOption[] = mergedBrandNames.map((nombre) => ({
@@ -488,7 +484,7 @@ export const ProcessorSelector: React.FC<ProcessorSelectorProps> = ({
 			</div>
 
 			{/* 3. Advanced Selection Area */}
-			<div className='relative z-20'>
+			<div className='relative'>
 				{/* Divider with Text */}
 				<div className='relative mb-6 flex items-center'>
 					<div className='flex-grow border-t border-zinc-200 dark:border-zinc-700'></div>

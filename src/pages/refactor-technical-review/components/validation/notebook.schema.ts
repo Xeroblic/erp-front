@@ -144,11 +144,7 @@ export const notebookSchema = Yup.object({
 	battery_health: Yup.string()
 		.trim()
 		.max(100, 'Máximo 100 caracteres')
-		.when('brand', {
-			is: isDellBrand,
-			then: (schema) => schema.required('El estado de salud de batería es obligatorio'),
-			otherwise: (schema) => schema.nullable(),
-		}),
+		.nullable(),
 
 	battery_status: Yup.string()
 		.oneOf([...ALLOWED_BATTERY_STATUSES], 'Estado de batería no válido')

@@ -1,16 +1,17 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import { useAppDispatch } from '@/store';
 import { updateItemDetails } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
-import useAuthorization from '@/hooks/useAuthorization';
+// import useAuthorization from '@/hooks/useAuthorization';
 import EquipmentFormRouter from '../../../components/forms';
 import useAutoSave from '../../../hooks/useAutoSave';
 import AutoSaveConfirmModal from '../../../components/modals/AutoSaveConfirmModal';
 import PrefillReviewModal from '../../../components/modals/PrefillReviewModal';
 import { sanitizeByAllowedValues } from '../../../components/validation/constants/allowedValuesMap';
+import Icon from '@/components/icon/Icon';
 
 interface Step2FullReviewProps {
 	equipmentType: string;
@@ -41,8 +42,9 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 }) => {
 	const dispatch = useAppDispatch();
 	const { branchId } = useCurrentBranch();
-	const { isSuperAdmin, hasRole } = useAuthorization();
+	// const { isSuperAdmin, hasRole } = useAuthorization();
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [showSavingBadge, setShowSavingBadge] = useState(false);
 
 	// ─── Prefill Integration ──────────────────────────────────────────────────
 	const [isPrefillModalOpen, setIsPrefillModalOpen] = useState(false);
@@ -57,8 +59,8 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 		);
 	}, []);
 
-	const isEligibleForPrefill =
-		(isSuperAdmin || hasRole('super-admin')) && !readOnly;
+	// const isEligibleForPrefill =
+	// 	(isSuperAdmin || hasRole('super-admin')) && !readOnly;
 
 	// ─── Auto-Save Integration ───────────────────────────────────────────────
 	// Ref to hold the getter function registered by the form
@@ -96,6 +98,20 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 			transformData,
 		},
 	);
+
+	useEffect(() => {
+		if (!isSaving) {
+			setShowSavingBadge(false);
+			return;
+		}
+
+		setShowSavingBadge(true);
+		const timeoutId = window.setTimeout(() => {
+			setShowSavingBadge(false);
+		}, 3000);
+
+		return () => window.clearTimeout(timeoutId);
+	}, [isSaving]);
 
 	// ─── Step Change Handler (auto-save on section navigation) ────────────
 	const handleStepChange = useCallback(
@@ -166,31 +182,55 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 				</div>
 				<div className='flex items-center gap-2'>
 					{/* Prefill button */}
-					{isEligibleForPrefill && (
+					{/* {isEligibleForPrefill && ( */}
 						<Button
 							variant='outline'
 							color='blue'
-							className='border-blue-300 dark:border-blue-900/50'
+							className='border-blue-600 dark:border-blue-900/50 bg-blue-300/50 dark:bg-blue-900/10 hover:bg-blue-300 dark:hover:bg-blue-900/20 h-10 px-3'
 							icon='HeroBolt'
 							onClick={() => setIsPrefillModalOpen(true)}
 							title='Pre-rellenar con equipo similar'
 						>
 							Pre-rellenar
 						</Button>
-					)}
+					{/* )} */}
 
 					{/* Auto-save indicator */}
-					{isSaving && (
-						<Badge variant='outline' color='amber' className='animate-pulse'>
-							Guardando...
+					{showSavingBadge && (
+						<Badge
+							variant='outline'
+							color='amber'
+							className='inline-flex h-10 items-center px-3 whitespace-nowrap border-amber-600 bg-amber-300/35 text-amber-700 font-bold animate-pulse dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300'>
+							<span className='inline-flex items-center gap-0.5'>
+								<span>Guardando</span>
+								<span className='inline-flex'>
+									{[0, 150, 300].map((delay, idx) => (
+										<span
+											key={idx}
+											className='inline-block animate-bounce leading-none'
+											style={{ animationDelay: `${delay}ms` }}>
+											.
+										</span>
+									))}
+								</span>
+							</span>
 						</Badge>
 					)}
-					{!isSaving && lastSavedAt && (
-						<Badge variant='outline' color='emerald'>
-							Guardado ✓
+					{!showSavingBadge && lastSavedAt && (
+						<Badge
+							variant='outline'
+							color='emerald'
+							className='inline-flex h-10 items-center px-3 whitespace-nowrap border-emerald-600 bg-emerald-300/35 font-bold text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'>
+							<span className='inline-flex items-center gap-1.5'>
+								<span>Guardado a las {new Date(lastSavedAt).toLocaleTimeString()}</span>
+								<Icon icon='HeroCheck' className='h-4 w-4' />
+							</span>
 						</Badge>
 					)}
-					<Badge variant='outline' color='blue'>
+					<Badge
+						variant='outline'
+						color='blue'
+						className='inline-flex h-10 items-center px-3 whitespace-nowrap border-blue-600 bg-sky-300/40 font-bold text-blue-700 dark:border-blue-700 dark:bg-blue-900/20 dark:text-blue-300'>
 						{readOnly ? 'Solo Lectura' : 'En Progreso'}
 					</Badge>
 				</div>

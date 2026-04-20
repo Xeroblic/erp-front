@@ -77,7 +77,7 @@ const Header: FC<IHeaderProps> = (props) => {
 				ref={divRef}
 				data-component-name='Header'
 				className={classNames(
-					'sticky top-0 z-10',
+					'sticky top-0 z-40',
 					'flex justify-between gap-4',
 					'border-b border-zinc-300/25 bg-gray-300',
 					'p-6',
@@ -86,7 +86,6 @@ const Header: FC<IHeaderProps> = (props) => {
 					className,
 				)}
 				{...rest}>
-					
 				{children}
 			</header>
 		</>
