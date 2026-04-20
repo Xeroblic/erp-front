@@ -1,4 +1,12 @@
-import React, { FC, ReactNode, FocusEventHandler, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+	FC,
+	ReactNode,
+	FocusEventHandler,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from 'react';
 import ReactSelect, {
 	ActionMeta,
 	ClassNamesConfig,
@@ -305,7 +313,6 @@ const SelectReact: FC<ISelectReactProps> = (props) => {
 		: userInputValue;
 
 	const computedIsSearchable = isSearchableProp ?? true;
-
 
 	const mobileComponents = useMemo(() => {
 		if (!isMobileViewport) {
