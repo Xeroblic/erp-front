@@ -113,7 +113,6 @@ const CotizacionesAdmin: React.FC = () => {
 		};
 	}, [activeQuoteId, loadQuotationDetails, navigate]);
 
-	const totalPages = Math.ceil(totalItems / itemsPerPage);
 
 	// Handlers
 	const handleCreate = () => {

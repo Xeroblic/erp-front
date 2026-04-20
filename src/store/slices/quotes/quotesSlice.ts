@@ -98,7 +98,7 @@ const initialState: QuoteState = {
 	meta: {
 		total: 0,
 		currentPage: 1,
-		perPage: 20,
+		perPage: 5,
 		lastPage: 1,
 	},
 };
@@ -117,7 +117,7 @@ export const fetchQuotes = createAsyncThunk<
 	{ rejectValue: string }
 >(
 	'quotes/fetchQuotes',
-	async ({ subsidiaryId, page = 1, perPage = 20, status, search }, { rejectWithValue }) => {
+	async ({ subsidiaryId, page = 1, perPage = 5, status, search }, { rejectWithValue }) => {
 		try {
 			const response = await ApiService.fetchData<{ data?: Quote[]; meta?: QuoteListMeta }>({
 				url: buildQuoteUrl(subsidiaryId),

@@ -99,7 +99,7 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 
 	const [filters, setFilters] = useState<QuotationsFilters>(initialFilters);
 	const [currentPage, setCurrentPage] = useState(1);
-	const [itemsPerPage, setItemsPerPage] = useState(meta.perPage || 20);
+	const [itemsPerPage, setItemsPerPage] = useState(meta.perPage || 5);
 	const [error, setError] = useState<string | null>(null);
 	const API_FETCH_LIMIT = 500;
 
