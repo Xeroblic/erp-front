@@ -343,7 +343,11 @@ const SelectReact: FC<ISelectReactProps> = (props) => {
 								onMouseDown={(event) => event.stopPropagation()}
 								onClick={(event) => {
 									event.stopPropagation();
-									handleInputFocus(); // Solo enfoca cuando el usuario hace click
+									// blur y focus para forzar que el SO vuelva a abrir el teclado
+									mobileInputRef.current?.blur();
+									setTimeout(() => {
+										mobileInputRef.current?.focus();
+									}, 50);
 								}}
 								onTouchStart={(event) => event.stopPropagation()}
 								onTouchEnd={(event) => event.stopPropagation()}
