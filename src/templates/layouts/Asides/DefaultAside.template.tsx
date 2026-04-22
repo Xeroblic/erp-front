@@ -299,6 +299,20 @@ const DefaultAsideTemplate = () => {
 									onClick={() => navigate(Pages.catalogs.subPages.customers.to)}
 								/>
 							</AuthorityCheckNav>
+
+							{/* Casilleros (Lock Care) */}
+							<AuthorityCheckNav
+								authority={Pages.technical.subPages.lockersManagement.authority}
+								roles={Pages.technical.subPages.lockersManagement.roles}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.technical.subPages.lockersManagement.text}
+									to={Pages.technical.subPages.lockersManagement.to}
+									icon={Pages.technical.subPages.lockersManagement.icon}
+									id={Pages.technical.subPages.lockersManagement.id}
+									onClick={() => navigate(Pages.technical.subPages.lockersManagement.to)}
+								/>
+							</AuthorityCheckNav>
 						</NavCollapse>
 					</AuthorityCheckNav>
 

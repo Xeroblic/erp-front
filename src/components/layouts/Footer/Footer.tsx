@@ -53,7 +53,7 @@ const Footer: FC<IFooterProps> = (props) => {
 	return (
 		<footer
 			data-component-name='Footer'
-			className={classNames('flex justify-between gap-4 p-6 text-sm', className)}
+			className={classNames('bg-[#ffffff] dark:bg-[#18181b] flex justify-between gap-4 p-6 text-sm', className)}
 			{...rest}>
 			{children}
 		</footer>
