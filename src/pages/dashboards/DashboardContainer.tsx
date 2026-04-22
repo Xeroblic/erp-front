@@ -164,52 +164,26 @@ const DashboardContainer: React.FC = () => {
 		<PageWrapper isProtectedRoute title='Dashboard' name='Dashboard General'>
 			<Subheader
 				id='dashboard-header'
-				className='border-b border-gray-200 dark:border-gray-700'>
+				className='flex items-center min-h-[60px] justify-center border-b border-gray-200 dark:border-gray-700'>
 				<SubheaderLeft>
 					<div className='flex items-center space-x-4'>
 						<Icon
 							icon='HeroUserCircle'
 							className='text-2xl text-gray-900 dark:text-white'
 						/>
-						<Badge
-							typewriter
-							className='text-2xl font-semibold text-gray-900 dark:text-white'>
-							{`¡Hola, ${user?.first_name || 'Usuario'}!`}
-						</Badge>
+						<div className='min-w-[220px] flex-shrink-0'>
+							<Badge
+								typewriter
+								className='text-2xl font-semibold text-gray-900 dark:text-white'>
+								{user?.first_name ? `¡Hola, ${user.first_name}!` : '¡Hola, Usuario!'}
+							</Badge>
+						</div>
+
 						<Badge className='text-sm text-gray-500 dark:text-gray-400'>
 							Resumen de Operaciones
 						</Badge>
 					</div>
 				</SubheaderLeft>
-				{/* <SubheaderRight>
-                    <div className='flex gap-2'>
-                        <Button
-                            variant='solid'
-                            color='blue'
-                            onClick={() => navigate('/technical-reviews/items')}
-                            className='shadow-lg shadow-blue-500/30'
-                        >
-                            <div className='flex items-center gap-2'>
-                                <Icon icon='HeroClipboardDocumentList' className='text-lg' />
-                                <div className='text-left'>
-                                    <div className='text-xs font-semibold'>Modo B: Items</div>
-                                </div>
-                            </div>
-                        </Button>
-                        <Button
-                            variant='solid'
-                            className='bg-emerald-500 shadow-lg shadow-emerald-500/30 hover:bg-emerald-600 border-none'
-                            onClick={() => navigate('/technical-reviews/batches')}
-                        >
-                            <div className='flex items-center gap-2'>
-                                <Icon icon='HeroQrCode' className='text-lg' />
-                                <div className='text-left'>
-                                    <div className='text-xs font-semibold'>Modo A: Lotes</div>
-                                </div>
-                            </div>
-                        </Button>
-                    </div>
-                </SubheaderRight> */}
 			</Subheader>
 
 			<Container className='py-8'>
