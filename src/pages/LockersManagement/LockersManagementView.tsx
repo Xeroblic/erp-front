@@ -557,11 +557,11 @@ const LockersManagementView: React.FC<ILockersManagementViewProps> = ({
 										<DetailRow label='Número' value={detailLocker.locker_number || String(detailLocker.id)} />
 										<DetailRow label='QR Token' value={detailLocker.qr_token ? `${detailLocker.qr_token.slice(0, 12)}...` : '—'} />
 										<DetailRow label='PIN Actual' value={detailLocker.current_pin || '—'} />
-										<DetailRow label='Ingreso' value={detailLocker.check_in_at ? new Date(detailLocker.check_in_at).toLocaleString('es-CL') : '—'} />
+										<DetailRow label='Ingreso' value={(detailLocker.check_in_at || order?.checked_in_at) ? new Date(detailLocker.check_in_at || order!.checked_in_at!).toLocaleString('es-CL') : '—'} />
 									</div>
 								</div>
 
-								{/* Info del cliente */}
+								{/* Datos del Cliente */}
 								<div className='rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800'>
 									<h4 className='mb-3 text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
 										Datos del Cliente
@@ -569,11 +569,11 @@ const LockersManagementView: React.FC<ILockersManagementViewProps> = ({
 									<div className='grid grid-cols-2 gap-x-6 gap-y-2 text-sm'>
 										<DetailRow label='Nombre' value={detailLocker.customer_name || order?.customer_name || '—'} />
 										<DetailRow label='Email' value={detailLocker.customer_email || order?.customer_email || '—'} />
-										<DetailRow label='Teléfono' value={detailLocker.customer_phone || '—'} />
+										<DetailRow label='Teléfono' value={detailLocker.customer_phone || order?.customer_phone || '—'} />
 									</div>
 								</div>
 
-								{/* Info del equipo */}
+								{/* Datos del Equipo */}
 								<div className='rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800'>
 									<h4 className='mb-3 text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
 										Datos del Equipo
@@ -581,7 +581,7 @@ const LockersManagementView: React.FC<ILockersManagementViewProps> = ({
 									<div className='grid grid-cols-2 gap-x-6 gap-y-2 text-sm'>
 										<DetailRow label='Marca' value={detailLocker.device_brand || order?.device_brand || '—'} />
 										<DetailRow label='Modelo' value={detailLocker.device_model || order?.device_model || '—'} />
-										<DetailRow label='Nº Serie' value={detailLocker.serial_number || '—'} />
+										<DetailRow label='Nº Serie' value={detailLocker.serial_number || order?.serial_number || '—'} />
 										<DetailRow label='Servicio' value={detailLocker.service_type || order?.service_type || '—'} />
 										<DetailRow label='Descripción' value={detailLocker.device_description || order?.device_description || '—'} fullWidth />
 									</div>
@@ -594,7 +594,7 @@ const LockersManagementView: React.FC<ILockersManagementViewProps> = ({
 											Orden de Servicio #{order.id}
 										</h4>
 										<div className='grid grid-cols-2 gap-x-6 gap-y-2 text-sm'>
-											<DetailRow label='Estado' value={order.status || '—'} />
+											<DetailRow label='Estado' value={order.logistics_status_label || order.status || '—'} />
 											<DetailRow label='Creada' value={order.created_at ? new Date(order.created_at).toLocaleString('es-CL') : '—'} />
 										</div>
 									</div>

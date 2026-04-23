@@ -8,6 +8,7 @@ export default function PublicLockCare() {
 		infoError,
 		formik,
 		pinReceived,
+		lockerNumberReceived,
 		isTerminosOpen,
 		handleOpenTerms,
 		handleCloseTerms,
@@ -20,6 +21,7 @@ export default function PublicLockCare() {
 			infoError={infoError}
 			formik={formik}
 			pinReceived={pinReceived}
+			lockerNumberReceived={lockerNumberReceived}
 			isTerminosOpen={isTerminosOpen}
 			handleOpenTerms={handleOpenTerms}
 			handleCloseTerms={handleCloseTerms}

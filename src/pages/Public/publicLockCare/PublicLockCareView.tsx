@@ -12,15 +12,14 @@ import FormLockCareDecorations from '@/pages/Public/formLockCleare/components/Fo
 import FormLockCareFormPanel from '@/pages/Public/formLockCleare/components/FormLockCareFormPanel';
 import FormLockCareGuidePanel from '@/pages/Public/formLockCleare/components/FormLockCareGuidePanel';
 
-const TerminoCondiciones = React.lazy(
-	() => import('@/pages/Public/formLockCleare/TerminoCondiciones'),
-);
+import CheckInSuccessSteps from './components/CheckInSuccessSteps';
 
 interface PublicLockCareViewProps {
 	isLoadingInfo: boolean;
 	infoError: string | null;
 	formik: FormikProps<TicketFormValues>;
 	pinReceived: string | null;
+	lockerNumberReceived: string | null;
 	isTerminosOpen: boolean;
 	handleOpenTerms: () => void;
 	handleCloseTerms: () => void;
@@ -32,6 +31,7 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 	infoError,
 	formik,
 	pinReceived,
+	lockerNumberReceived,
 	isTerminosOpen,
 	handleOpenTerms,
 	handleCloseTerms,
@@ -319,42 +319,13 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 					ornaments={floatingOrnaments}
 					showEnhancedEffects={shouldRenderHeavyDecorations && decorationsReady}
 				/>
-				<Card className='relative z-10 mx-auto max-w-lg border border-emerald-900/10 bg-white/90 shadow-2xl backdrop-blur-xl'>
-					<CardBody className='p-8 text-center'>
-						<div className='mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-emerald-600'>
-							<Icon icon='HeroCheck' className='h-10 w-10' />
-						</div>
-						<h2 className='mt-6 text-3xl font-bold text-zinc-900'>
-							¡Registro Exitoso!
-						</h2>
-						<p className='mt-2 text-lg text-zinc-600'>
-							Tu equipo ha sido registrado correctamente.
-						</p>
-
-						<div className='mt-8 rounded-xl border border-zinc-200 bg-zinc-50 p-6'>
-							<p className='text-sm font-medium uppercase tracking-wider text-zinc-500'>
-								Tu PIN de Acceso
-							</p>
-							<p className='mt-2 font-mono text-5xl font-bold tracking-widest text-emerald-600'>
-								{pinReceived}
-							</p>
-						</div>
-
-						<div className='mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800'>
-							<div className='flex items-start'>
-								<Icon
-									icon='HeroInformationCircle'
-									className='mr-2 mt-0.5 h-5 w-5 flex-shrink-0'
-								/>
-								<p className='text-left'>
-									<strong>Importante:</strong> Ingresa este PIN en el teclado del
-									casillero para abrir la puerta y depositar tu equipo. Asegúrate
-									de cerrar bien la puerta al terminar.
-								</p>
-							</div>
-						</div>
-					</CardBody>
-				</Card>
+				
+				<div className='relative z-10 w-full max-w-5xl animate-in fade-in zoom-in duration-500'>
+					<CheckInSuccessSteps 
+						lockerNumber={lockerNumberReceived || '---'} 
+						pin={pinReceived} 
+					/>
+				</div>
 			</main>
 		);
 	}

@@ -27,7 +27,11 @@ export interface ICheckInResponse {
 	success: boolean;
 	message?: string;
 	locker_pin: string;
-	// Posibles campos extras
+	data?: {
+		locker?: {
+			number: string;
+		};
+	};
 }
 
 export interface ICheckOutRequest {

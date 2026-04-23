@@ -42,6 +42,7 @@ export const usePublicLockCare = () => {
 
 	// Estado post-submit
 	const [pinReceived, setPinReceived] = useState<string | null>(null);
+	const [lockerNumberReceived, setLockerNumberReceived] = useState<string | null>(null);
 
 	// Estado para modal de términos
 	const [isTerminosOpen, setIsTerminosOpen] = useState(false);
@@ -93,6 +94,10 @@ export const usePublicLockCare = () => {
 				const response = await lockersPublicService.checkInLocker(payload);
 				
 				setPinReceived(response.locker_pin);
+				// El número de casillero puede venir en response.data.locker.number
+				// o podemos usar el que ya tenemos en lockerInfo si está disponible
+				setLockerNumberReceived(response.data?.locker?.number || String(lockerInfo?.locker_number || ''));
+				
 				toast.success('Registro completado exitosamente.');
 				helpers.resetForm();
 				setIsTerminosOpen(false);
@@ -130,6 +135,7 @@ export const usePublicLockCare = () => {
 		formik,
 		// PIN
 		pinReceived,
+		lockerNumberReceived,
 		// Términos y condiciones
 		isTerminosOpen,
 		handleOpenTerms,
