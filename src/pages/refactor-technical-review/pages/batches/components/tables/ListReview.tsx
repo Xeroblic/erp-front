@@ -253,6 +253,11 @@ const ListReview: React.FC<ListReviewProps> = ({ batchId, activeTab }) => {
 					);
 				},
 			}),
+			columnHelper.accessor('details.model', {
+				id: 'details.model',
+				header: 'Modelo',
+				cell: (info) => info.getValue(),
+			}),
 			columnHelper.display({
 				id: 'review_status',
 				header: 'Estado Revisión',
