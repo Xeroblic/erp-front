@@ -91,8 +91,8 @@ export const usePublicLockCare = () => {
 			try {
 				const payload = mapFormToCheckInPayload(values, token);
 				const response = await lockersPublicService.checkInLocker(payload);
-
-				setPinReceived(response.current_pin);
+				
+				setPinReceived(response.locker_pin);
 				toast.success('Registro completado exitosamente.');
 				helpers.resetForm();
 				setIsTerminosOpen(false);

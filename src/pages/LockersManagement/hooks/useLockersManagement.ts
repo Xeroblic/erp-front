@@ -121,6 +121,32 @@ export const useLockersManagement = () => {
 		setActionType(null);
 	}, []);
 
+	// --- Escaneo de QR ---
+	const handleScanQR = useCallback(async (token: string) => {
+		try {
+			setIsActionLoading(true);
+			const response = await lockersInternalService.getPrivateInfo(token);
+			const locker = (response as any)?.data ?? response;
+			
+			if (locker) {
+				setSelectedLocker(locker);
+				// Al escanear, si está disponible, asumimos depósito. Si está ocupado, retiro.
+				if (locker.status === 'available' || locker.status === 'Disponible') {
+					setActionType('dropoff');
+				} else {
+					setActionType('withdraw');
+				}
+				return true;
+			}
+			return false;
+		} catch (err: any) {
+			toast.error(err?.response?.data?.message || 'Error al procesar el código QR.');
+			return false;
+		} finally {
+			setIsActionLoading(false);
+		}
+	}, []);
+
 	// --- Fase 2: Técnico retira equipo (Withdraw / Pick Off) ---
 	const handleWithdraw = useCallback(
 		async (serviceOrderId: number) => {
@@ -233,6 +259,7 @@ export const useLockersManagement = () => {
 		successMessage,
 
 		// Acciones
+		setSelectedLocker,
 		setSuccessPin,
 		changeLocation,
 		fetchLockers,
@@ -243,5 +270,6 @@ export const useLockersManagement = () => {
 		handleDropOff,
 		handleReset,
 		handleSetReadyForPickup,
+		handleScanQR,
 	};
 };

@@ -26,7 +26,7 @@ export interface ICheckInRequest {
 export interface ICheckInResponse {
 	success: boolean;
 	message?: string;
-	current_pin: string;
+	locker_pin: string;
 	// Posibles campos extras
 }
 
@@ -49,11 +49,11 @@ export const lockersPublicService = {
 		}),
 
 	checkInLocker: (data: ICheckInRequest) =>
-		ApiService.fetchNormalized<ICheckInResponse>({
+		ApiService.fetchData<ICheckInResponse>({
 			url: `/lockers/check-in`,
 			method: 'POST',
 			data,
-		}),
+		}).then((res) => res.data),
 
 	checkOutLocker: (data: ICheckOutRequest) =>
 		ApiService.fetchNormalized<ICheckOutResponse>({

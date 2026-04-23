@@ -16,6 +16,7 @@ import {
 	IServiceOrder,
 } from '@/services/lockersInternalService';
 import { getStatusConfig, getAvailableActions } from './types';
+import QRScanner from '../recursosHumanos/relojControl/components/QRScanner';
 
 // ─────────────────────────────────────────────────
 // Props
@@ -33,6 +34,7 @@ interface ILockersManagementViewProps {
 	successPin: string | null;
 	successMessage: string | null;
 	// Acciones
+	setSelectedLocker: (locker: ILockerInternal | null) => void;
 	setSuccessPin: (pin: string | null) => void;
 	changeLocation: (locationId: number) => void;
 	fetchLockers: () => void;
@@ -43,6 +45,7 @@ interface ILockersManagementViewProps {
 	handleDropOff: (serviceOrderId: number) => void;
 	handleReset: () => void;
 	handleSetReadyForPickup: (serviceOrderId: number, pinManual: string) => void;
+	handleScanQR: (token: string) => Promise<boolean>;
 }
 
 // ─────────────────────────────────────────────────
@@ -69,11 +72,14 @@ const LockersManagementView: React.FC<ILockersManagementViewProps> = ({
 	handleDropOff,
 	handleReset,
 	handleSetReadyForPickup,
+	handleScanQR,
+	setSelectedLocker,
 }) => {
 	// --- Estado local del modal ---
 	const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
 	const [pinManual, setPinManual] = useState('');
 	const [detailLocker, setDetailLocker] = useState<ILockerInternal | null>(null);
+	const [isScanning, setIsScanning] = useState(false);
 
 	const resetModalState = () => {
 		setSelectedOrderId(null);
@@ -132,13 +138,52 @@ const LockersManagementView: React.FC<ILockersManagementViewProps> = ({
 	}));
 
 	const orderOptions: TSelectOption[] = useMemo(() => {
-		// Mostramos todas las órdenes disponibles para no confundir al usuario,
-		// pero indicamos el estado para que sepa cuál elegir según el error del backend.
-		return serviceOrders.map((order) => ({
-			value: String(order.id),
-			label: `#${order.id} — ${order.customer_name || 'Sin cliente'} [Estado: ${order.status || 'N/A'}]`,
-		}));
-	}, [serviceOrders]);
+		// Filtrar órdenes según la acción
+		let filtered = serviceOrders;
+
+		if (actionType === 'withdraw' && selectedLocker) {
+			filtered = serviceOrders.filter((o) => o.locker_id === selectedLocker.id);
+		} else if (actionType === 'dropoff') {
+			// Por ahora mostramos todas para depurar por qué no aparecen,
+			// pero marcamos las recomendadas (checked_in / in_progress).
+			filtered = serviceOrders;
+		} else if (actionType === 'ready') {
+			filtered = serviceOrders.filter((o) => !!o.locker_id);
+		}
+
+		return filtered.map((order) => {
+			const rawStatus = order.logistics_status || 'SIN ESTADO';
+			const statusLabel = order.logistics_status_label || rawStatus.replace(/_/g, ' ').toUpperCase();
+			
+			const normalizedStatus = rawStatus.toLowerCase();
+			const isRecommended = normalizedStatus === 'checked_in' || normalizedStatus === 'in_progress' || normalizedStatus === 'entregado_tecnico';
+			
+			const icon = isRecommended ? '✅' : '❌';
+			
+			return {
+				value: String(order.id),
+				label: `ORDEN #${order.id} — ${order.customer_name || 'Sin Cliente'} [${icon} ${statusLabel}]`,
+			};
+		});
+	}, [serviceOrders, actionType, selectedLocker]);
+
+	// --- Pre-selección automática de orden ---
+	React.useEffect(() => {
+		if (actionType === 'withdraw' && selectedLocker) {
+			const order = serviceOrders.find((o) => o.locker_id === selectedLocker.id);
+			if (order) setSelectedOrderId(order.id);
+		}
+	}, [actionType, selectedLocker, serviceOrders]);
+
+	const lockerOptions: TSelectOption[] = useMemo(() => {
+		// Para el selector de casillero en el modal (Fase 4)
+		return lockers
+			.filter((l) => l.status === 'available' || l.status === 'maintenance' || l.id === selectedLocker?.id)
+			.map((l) => ({
+				value: String(l.id),
+				label: `Casillero Nº ${l.locker_number || l.id}`,
+			}));
+	}, [lockers, selectedLocker]);
 
 	const canSubmit =
 		actionType === 'reset'
@@ -208,14 +253,23 @@ const LockersManagementView: React.FC<ILockersManagementViewProps> = ({
 										}}
 									/>
 								</div>
-								<Button
-									color='emerald'
-									variant='outline'
-									icon='HeroArrowPath'
-									isLoading={isLoading}
-									onClick={fetchLockers}>
-									Actualizar
-								</Button>
+								<div className='flex gap-2'>
+									<Button
+										color='blue'
+										variant='solid'
+										icon='HeroQrCode'
+										onClick={() => setIsScanning(true)}>
+										Escanear QR
+									</Button>
+									<Button
+										color='emerald'
+										variant='outline'
+										icon='HeroArrowPath'
+										isLoading={isLoading}
+										onClick={fetchLockers}>
+										Actualizar
+									</Button>
+								</div>
 							</div>
 						</CardBody>
 					</Card>
@@ -589,13 +643,33 @@ const LockersManagementView: React.FC<ILockersManagementViewProps> = ({
 						{selectedLocker && (
 							<div className='rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800'>
 								<div className='grid grid-cols-2 gap-3 text-sm'>
-									<DetailRow label='Casillero' value={`Nº ${selectedLocker.locker_number || selectedLocker.id}`} />
-									<div>
-										<span className='font-medium text-zinc-500'>Estado:</span>
-										<div className='mt-0.5'>
-											<StatusBadge status={selectedLocker.status} />
+									{actionType === 'dropoff' ? (
+										<div className='col-span-2'>
+											<Label htmlFor='locker-select'>Casillero de Depósito</Label>
+											<SelectReact
+												id='locker-select'
+												options={lockerOptions}
+												value={lockerOptions.find(o => o.value === String(selectedLocker.id))}
+												onChange={(opt) => {
+													const selected = opt as TSelectOption | null;
+													if (selected) {
+														const newLocker = lockers.find(l => l.id === Number(selected.value));
+														if (newLocker) setSelectedLocker(newLocker);
+													}
+												}}
+											/>
 										</div>
-									</div>
+									) : (
+										<>
+											<DetailRow label='Casillero' value={`Nº ${selectedLocker.locker_number || selectedLocker.id}`} />
+											<div>
+												<span className='font-medium text-zinc-500'>Estado:</span>
+												<div className='mt-0.5'>
+													<StatusBadge status={selectedLocker.status} />
+												</div>
+											</div>
+										</>
+									)}
 								</div>
 							</div>
 						)}
@@ -733,6 +807,26 @@ const LockersManagementView: React.FC<ILockersManagementViewProps> = ({
 						Entendido
 					</Button>
 				</ModalFooter>
+			</Modal>
+
+			{/* Escáner QR */}
+			<Modal isOpen={isScanning} setIsOpen={setIsScanning} size='md'>
+				<ModalHeader>
+					<div className='flex items-center gap-2'>
+						<Icon icon='HeroQrCode' className='h-5 w-5' />
+						Escanear Código QR del Casillero
+					</div>
+				</ModalHeader>
+				<ModalBody>
+					<QRScanner
+						isActive={isScanning}
+						onScan={async (code) => {
+							const success = await handleScanQR(code);
+							if (success) setIsScanning(false);
+						}}
+						onCancel={() => setIsScanning(false)}
+					/>
+				</ModalBody>
 			</Modal>
 		</PageWrapper>
 	);
