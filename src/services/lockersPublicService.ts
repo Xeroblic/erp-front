@@ -3,6 +3,7 @@ import ApiService from './ApiService';
 export interface ILockerPublicInfo {
 	is_available: boolean;
 	message?: string;
+	locker_number?: string | number;
 	// Posibles campos extras que retorne el backend
 }
 
