@@ -13,6 +13,7 @@ import FormLockCareFormPanel from '@/pages/Public/formLockCleare/components/Form
 import FormLockCareGuidePanel from '@/pages/Public/formLockCleare/components/FormLockCareGuidePanel';
 
 import CheckInSuccessSteps from './components/CheckInSuccessSteps';
+import TerminoCondiciones from '../formLockCleare/TerminoCondiciones';
 
 interface PublicLockCareViewProps {
 	isLoadingInfo: boolean;

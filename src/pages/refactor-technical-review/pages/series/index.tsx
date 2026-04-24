@@ -64,7 +64,7 @@ const GRADE_OPTIONS: TSelectOption[] = [
 const RefactorSeries: React.FC = () => {
 	const navigate = useNavigate();
 	const dispatch = useAppDispatch();
-	const { branchId, subsidiaryId } = useCurrentBranch();
+	const { branchId, subsidiaryId, visibleBranches } = useCurrentBranch();
 
 	const loading = useAppSelector(selectItemsLoading);
 	const error = useAppSelector(selectItemsError);
@@ -154,16 +154,22 @@ const RefactorSeries: React.FC = () => {
 		customerSupplierFilterOptions.find((opt) => opt.value === customerSupplierFilter) ||
 		customerSupplierFilterOptions[0];
 
+	// Lógica Inteligente de Contexto:
+	// Si el usuario tiene acceso a más de una sucursal, intentamos usar el modo subsidiaria para la vista global.
+	// Si solo tiene acceso a una, forzamos modo branch para evitar errores 403 (Forbidden) del backend.
+	const isMultiBranchUser = useMemo(() => visibleBranches.length > 1, [visibleBranches]);
+
 	const effectiveSubsidiaryId =
 		subsidiaryId ??
 		personalizacionUsuario?.subsidiary_id ??
 		currentUser?.subsidiary?.id ??
 		currentUser?.branch?.subsidiary?.id ??
 		null;
-	const endpointEntityType: 'branches' | 'subsidiaries' = effectiveSubsidiaryId
-		? 'subsidiaries'
-		: 'branches';
-	const endpointEntityId = effectiveSubsidiaryId ?? branchId;
+
+	const endpointEntityType: 'branches' | 'subsidiaries' =
+		effectiveSubsidiaryId && isMultiBranchUser ? 'subsidiaries' : 'branches';
+
+	const endpointEntityId = endpointEntityType === 'subsidiaries' ? effectiveSubsidiaryId : branchId;
 
 	const effectiveSubsidiaryIdForTransfer = useMemo<number | null>(() => {
 		if (!branchId) return effectiveSubsidiaryId;
@@ -373,15 +379,17 @@ const RefactorSeries: React.FC = () => {
 	);
 
 	useEffect(() => {
-		if (!branchId && !effectiveSubsidiaryId) return;
+		if (!endpointEntityId) return;
+
 		dispatch(
 			fetchItems({
-				branchId,
-				subsidiaryId: effectiveSubsidiaryId,
+				branchId: endpointEntityType === 'branches' ? (endpointEntityId as number) : undefined,
+				subsidiaryId:
+					endpointEntityType === 'subsidiaries' ? (endpointEntityId as number) : undefined,
 				params: queryParams,
 			}),
 		);
-	}, [dispatch, branchId, effectiveSubsidiaryId, queryParams]);
+	}, [dispatch, endpointEntityId, endpointEntityType, queryParams]);
 
 	const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
 
@@ -411,8 +419,10 @@ const RefactorSeries: React.FC = () => {
 				toast.success('Stock transferido exitosamente');
 				dispatch(
 					fetchItems({
-						branchId,
-						subsidiaryId: effectiveSubsidiaryId,
+						branchId:
+							endpointEntityType === 'branches' ? (endpointEntityId as number) : undefined,
+						subsidiaryId:
+							endpointEntityType === 'subsidiaries' ? (endpointEntityId as number) : undefined,
 						params: queryParams,
 					}),
 				);
