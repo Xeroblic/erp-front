@@ -100,8 +100,9 @@ export default function DataTable<TData>({
 		onColumnVisibilityChange: setColumnVisibility,
 		onGlobalFilterChange: setGlobalFilter,
 		globalFilterFn: 'includesString',
-		// Server-side pagination
+		// Server-side pagination & filtering
 		manualPagination,
+		manualFiltering: !!onSearchChange || manualPagination,
 		pageCount: manualPagination ? pageCount : undefined,
 		onPaginationChange: manualPagination ? onPaginationChange : setInternalPagination,
 		state: {
