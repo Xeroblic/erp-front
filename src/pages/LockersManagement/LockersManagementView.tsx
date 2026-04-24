@@ -647,6 +647,7 @@ const LockersManagementView: React.FC<ILockersManagementViewProps> = ({
 										<div className='col-span-2'>
 											<Label htmlFor='locker-select'>Casillero de Depósito</Label>
 											<SelectReact
+												name='seleccion_casillero'
 												id='locker-select'
 												options={lockerOptions}
 												value={lockerOptions.find(o => o.value === String(selectedLocker.id))}

@@ -104,6 +104,7 @@ export const privatePages = {
 		to: '/dashboard',
 		text: 'Home',
 		icon: 'DuoHomeHeart',
+		authority: [],
 	},
 
 	// =========================
@@ -1100,7 +1101,7 @@ export const privatePages = {
 			'sales-rep',
 		],
 	},
-};
+} satisfies Record<string, PageConfig>;
 
 export const pagesConfig = { ...authPages, ...privatePages };
 export default pagesConfig;

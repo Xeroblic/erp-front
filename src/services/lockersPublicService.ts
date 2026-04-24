@@ -53,7 +53,7 @@ export const lockersPublicService = {
 		}),
 
 	checkInLocker: (data: ICheckInRequest) =>
-		ApiService.fetchData<ICheckInResponse>({
+		ApiService.fetchData<ICheckInResponse, ICheckInRequest>({
 			url: `/lockers/check-in`,
 			method: 'POST',
 			data,

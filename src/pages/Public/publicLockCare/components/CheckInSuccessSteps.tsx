@@ -91,7 +91,7 @@ const CheckInSuccessSteps: React.FC<CheckInSuccessStepsProps> = ({ lockerNumber,
 					<div className='relative hidden w-full shrink-0 items-center justify-center bg-gradient-to-br from-zinc-900/5 to-zinc-900/10 p-12 lg:flex lg:w-[400px]'>
 						<div className='relative flex h-full w-full flex-col items-center justify-center gap-8 text-center'>
 							{/* Placeholder para el SVG visual */}
-							<div className='flex h-64 w-64 items-center justify-center rounded-full bg-white/50 shadow-inner outline outline-2 outline-dashed outline-zinc-300'>
+							<div className='flex h-64 w-64 items-center justify-center rounded-full bg-white/50 shadow-inner  outline-2 outline-dashed outline-zinc-300'>
 								<div className='flex flex-col items-center gap-2 text-zinc-400'>
 									<Icon icon='HeroPhoto' className='h-12 w-12' />
 									<span className='text-xs font-medium'>[Espacio para Ilustración SVG]</span>
