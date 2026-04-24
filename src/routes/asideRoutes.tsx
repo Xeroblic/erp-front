@@ -11,6 +11,8 @@ const asideRoutes: RouteProps[] = [
 	{ path: authPages.portalPedidos.to, element: null },
 	{ path: authPages.portalPedidosMock.to, element: null },
 	{ path: authPages.FormularioLockCare.to, element: null },
+	{ path: authPages.FormularioLockCare.subPages.publicLockCare.to, element: null },
+	
 	{ path: '*', element: <DefaultAsideTemplate /> },
 ];
 

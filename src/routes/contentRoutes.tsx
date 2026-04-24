@@ -25,6 +25,9 @@ const RecoverPasswordPage = lazy(() => import('@/pages/ResetPassword/RecuperarPa
 const PortalPedidosPage = lazy(() => import('@/pages/portal-pedidos/PortalPedidosPage'));
 
 const FormLockCare = lazy(() => import('@/pages/Public/formLockCleare/FormLockCare'));
+const PublicLockCare = lazy(() => import('@/pages/Public/publicLockCare'));
+const CheckOutLockCare = lazy(() => import('@/pages/Public/publicLockCareCheckout'));
+const LockersManagement = lazy(() => import('@/pages/LockersManagement'));
 
 // Paginas de Configuracion Sistemas (nuevo módulo)
 const IntegrationsListPage = lazy(() => import('@/pages/integraciones/IntegrationsListPage'));
@@ -153,6 +156,14 @@ const contentRoutes: IRoutePersonalizada[] = [
 	{ path: cfg.portalPedidosMock.to, element: <PortalPedidosPage />, public: true },
 	{ path: cfg.portalPedidos.to, element: <PortalPedidosPage />, public: true },
 	{ path: cfg.FormularioLockCare.to, element: <FormLockCare />, public: true },
+	{ path: cfg.FormularioLockCare.subPages.publicLockCare.to, element: <PublicLockCare />, public: true },
+	{ path: cfg.FormularioLockCare.subPages.checkOutLockCare.to, element: <CheckOutLockCare />, public: true },
+	// Gestión interna de casilleros
+	{
+		path: cfg.technical.subPages.lockersManagement.to,
+		element: <LockersManagement />,
+		authority: cfg.technical.subPages.lockersManagement.authority,
+	},
 	// refactor
 	{
 		path: cfg.technical.subPages.refactor.to,

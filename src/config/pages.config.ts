@@ -15,6 +15,7 @@ export interface PageConfig {
 	roles?: string[];
 	companyId?: number;
 	requireAll?: boolean;
+	subPages?: Record<string, PageConfig>;
 }
 
 export const authPages = {
@@ -66,13 +67,29 @@ export const authPages = {
 		text: 'Portal Pedidos (Demo)',
 		icon: 'DuoBox3',
 		authority: [],
-	},		
-	FormularioLockCare:{
+	},
+	FormularioLockCare: {
 		id: 'formularioLockCare',
 		to: '/formulario-lock-care',
 		text: 'Formulario Lock Care',
 		icon: 'DuoForm',
 		authority: [],
+		subPages: {
+			publicLockCare: {
+				id: 'publicLockCare',
+				to: '/lockers/:token/info',
+				text: 'Ingreso Lock Care',
+				icon: 'DuoForm',
+				authority: [],
+			},
+			checkOutLockCare: {
+				id: 'checkOutLockCare',
+				to: '/lockers/check-out',
+				text: 'Retiro Lock Care',
+				icon: 'DuoUnlock',
+				authority: [],
+			},
+		},
 	},
 } satisfies Record<string, PageConfig>;
 
@@ -87,6 +104,7 @@ export const privatePages = {
 		to: '/dashboard',
 		text: 'Home',
 		icon: 'DuoHomeHeart',
+		authority: [],
 	},
 
 	// =========================
@@ -101,7 +119,7 @@ export const privatePages = {
 		roles: [
 			'super-admin',
 			'admin',
-			'company-admin',	
+			'company-admin',
 			'subsidiary-admin',
 			'branch-admin',
 			'company-supervisor',
@@ -347,7 +365,7 @@ export const privatePages = {
 				icon: 'HeroArrowsRightLeft',
 				authority: [],
 			},
-			ingresoStock : {
+			ingresoStock: {
 				id: 'ingresoStock',
 				to: '/inventario/ingreso-stock',
 				text: 'Ingreso de Stock',
@@ -593,7 +611,7 @@ export const privatePages = {
 				id: 'salesDashboard',
 				to: '/reportes/ventas',
 				text: 'Dashboard de Ventas',
-				icon: 'DuoPriceTag',
+				icon: 'DuoChartBar3',
 				authority: ['view-dashboard'],
 				roles: [
 					'super-admin',
@@ -843,6 +861,23 @@ export const privatePages = {
 					'after-sales',
 				],
 			},
+			lockersManagement: {
+				id: 'lockersManagement',
+				to: '/lockers-management',
+				text: 'Casilleros',
+				icon: 'DuoLockClosed',
+				authority: ['view-technical-reviews-batches'],
+				roles: [
+					'super-admin',
+					'admin',
+					'company-admin',
+					'subsidiary-admin',
+					'branch-admin',
+					'company-supervisor',
+					'employee',
+					'technician',
+				],
+			},
 		},
 	},
 
@@ -1066,7 +1101,7 @@ export const privatePages = {
 			'sales-rep',
 		],
 	},
-};
+} satisfies Record<string, PageConfig>;
 
 export const pagesConfig = { ...authPages, ...privatePages };
 export default pagesConfig;

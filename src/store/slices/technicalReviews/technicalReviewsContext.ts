@@ -85,7 +85,12 @@ export const resolveTechnicalReviewsContext = (
 		toValidNumber(effectiveSubsidiaryId) ??
 		resolveSubsidiaryFromBranch(state, branchId);
 
-	const endpointMode: TechnicalReviewsEndpointMode = input.subsidiaryId ? 'subsidiaries' : 'branches';
+	// Determinamos el modo del endpoint basado en los inputs proporcionados.
+	// Si se proporciona branchId, priorizamos el modo 'branches' para evitar 403 
+	// en usuarios que pertenecen a una subsidiaria pero no tienen acceso global a ella.
+	const endpointMode: TechnicalReviewsEndpointMode = (input.subsidiaryId && !input.branchId) 
+		? 'subsidiaries' 
+		: 'branches';
 
 	const entityId = endpointMode === 'subsidiaries' ? subsidiaryId ?? branchId : branchId;
 	if (!entityId) {

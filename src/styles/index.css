@@ -6,6 +6,7 @@
 
 /* Transición suave al cambiar tema/colores (respeta reduced motion) */
 @media (prefers-reduced-motion: no-preference) {
+
 	.theme-transition,
 	.theme-transition * {
 		--theme-transition-duration: 420ms;
@@ -27,6 +28,7 @@
 			opacity: 0.92;
 			filter: saturate(0.94) brightness(0.96);
 		}
+
 		100% {
 			opacity: 1;
 			filter: none;
@@ -46,23 +48,27 @@
 		pointer-events: none;
 		background: var(--theme-wipe-bg, #fff);
 		/* Toma coordenadas desde variables para elegir esquina */
-		--wipe-x: 100%; /* default: top-right */
+		--wipe-x: 100%;
+		/* default: top-right */
 		--wipe-y: 0%;
 		clip-path: circle(var(--wipe-radius) at var(--wipe-x) var(--wipe-y));
 		opacity: 1;
 		will-change: clip-path, opacity;
 		contain: paint;
 		backface-visibility: hidden;
-		transform: translateZ(0); /* forza layer */
+		transform: translateZ(0);
+		/* forza layer */
 		transition:
 			clip-path var(--wipe-duration) var(--wipe-easing),
 			opacity var(--wipe-duration) var(--wipe-easing);
 	}
+
 	.theme-wipe-overlay.animate {
 		clip-path: circle(0 at var(--wipe-x) var(--wipe-y));
 		opacity: 0;
 	}
 }
+
 @media (prefers-reduced-motion: reduce) {
 	.theme-wipe-overlay {
 		display: none !important;
@@ -90,7 +96,7 @@
 
 	html,
 	body {
-		@apply flex h-full flex-col overflow-y-auto overflow-x-hidden scroll-smooth bg-[#c5c5c5] text-zinc-800 dark:bg-[#1e2124] dark:text-zinc-200;
+		@apply flex h-full flex-col overflow-y-auto overflow-x-hidden scroll-smooth bg-[#dadada] text-zinc-800 dark:bg-[#1e2124] dark:text-zinc-200;
 	}
 
 	html.dark {
@@ -104,21 +110,27 @@
 	h1 {
 		@apply text-4xl text-black dark:text-white;
 	}
+
 	h2 {
 		@apply text-3xl text-black dark:text-white;
 	}
+
 	h3 {
 		@apply text-2xl text-black dark:text-white;
 	}
+
 	h4 {
 		@apply text-xl text-black dark:text-white;
 	}
+
 	h5 {
 		@apply text-lg text-black dark:text-white;
 	}
+
 	h6 {
 		@apply text-base text-black dark:text-white;
 	}
+
 	p {
 		@apply mb-2;
 	}
@@ -207,6 +219,7 @@
 			opacity: 0;
 			transform: translateY(12px) scale(0.95);
 		}
+
 		100% {
 			opacity: 1;
 			transform: translateY(0) scale(1);
@@ -258,19 +271,25 @@
 
 		/* Hide scrollbar for IE, Edge and Firefox */
 		.no-scrollbar {
-			-ms-overflow-style: none; /* IE and Edge */
-			scrollbar-width: none; /* Firefox */
+			-ms-overflow-style: none;
+			/* IE and Edge */
+			scrollbar-width: none;
+			/* Firefox */
 		}
 	}
+
 	.delay-1 {
 		animation-delay: 60ms;
 	}
+
 	.delay-2 {
 		animation-delay: 120ms;
 	}
+
 	.delay-3 {
 		animation-delay: 180ms;
 	}
+
 	.delay-4 {
 		animation-delay: 240ms;
 	}
@@ -298,6 +317,7 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
+
 	.theme-transition,
 	.theme-transition * {
 		--theme-transition-duration: 420ms;
@@ -306,6 +326,7 @@
 		transition-duration: var(--theme-transition-duration);
 		transition-timing-function: var(--theme-transition-easing);
 	}
+
 	/* ... resto de tu themeFadeIn y wipe overlay ... */
 }
 
@@ -347,7 +368,8 @@
 		left: 50% !important;
 		transform: translateX(-50%) !important;
 		margin: 0 !important;
-		animation: none !important; /* disabled pop-in on mobile to prevent transform conflicts */
+		animation: none !important;
+		/* disabled pop-in on mobile to prevent transform conflicts */
 		box-shadow:
 			0 0 0 1px rgba(255, 255, 255, 0.06),
 			0 12px 32px rgba(0, 0, 0, 0.8) !important;
@@ -359,12 +381,15 @@
 		opacity: 0;
 		transform: scale(0.85) translateY(16px);
 	}
+
 	100% {
 		opacity: 1;
 		transform: scale(1) translateY(0);
 	}
 }
+
 @keyframes driverGlow {
+
 	0%,
 	100% {
 		box-shadow:
@@ -373,6 +398,7 @@
 			0 0 100px rgba(16, 185, 129, 0.1),
 			0 24px 64px rgba(0, 0, 0, 0.7);
 	}
+
 	50% {
 		box-shadow:
 			0 0 0 1px rgba(255, 255, 255, 0.1),
@@ -386,6 +412,7 @@
 .zentria-driver-popover .driver-popover-arrow {
 	border-color: var(--_primary) !important;
 }
+
 .zentria-driver-popover.driver-popover-arrow-side-left .driver-popover-arrow,
 .zentria-driver-popover.driver-popover-arrow-side-right .driver-popover-arrow,
 .zentria-driver-popover.driver-popover-arrow-side-top .driver-popover-arrow,
@@ -421,22 +448,27 @@
 	line-height: 1.8 !important;
 	margin-top: 6px !important;
 }
+
 .zentria-driver-popover .driver-popover-description p {
 	margin-bottom: 10px !important;
 }
+
 .zentria-driver-popover .driver-popover-description strong {
 	color: var(--_light) !important;
 	font-weight: 700;
 }
+
 .zentria-driver-popover .driver-popover-description ul {
 	margin-top: 10px;
 	margin-bottom: 10px;
 	padding-left: 6px;
 }
+
 .zentria-driver-popover .driver-popover-description li {
 	margin-bottom: 8px;
 	padding-left: 6px;
 }
+
 .zentria-driver-popover .driver-popover-description li::marker {
 	color: var(--_primary);
 }
@@ -466,6 +498,7 @@
 	padding-top: 18px !important;
 	border-top: 1px solid rgba(255, 255, 255, 0.07) !important;
 }
+
 .zentria-driver-popover .driver-popover-navigation-btns {
 	gap: 12px;
 }
@@ -484,6 +517,7 @@
 	align-items: center !important;
 	justify-content: center !important;
 }
+
 .zentria-driver-popover .driver-popover-prev-btn:hover {
 	background: rgba(255, 255, 255, 0.08) !important;
 	border-color: rgba(255, 255, 255, 0.3) !important;
@@ -509,6 +543,7 @@
 	align-items: center !important;
 	justify-content: center !important;
 }
+
 .zentria-driver-popover .driver-popover-next-btn:hover {
 	filter: brightness(1.15);
 	transform: translateY(-2px);
@@ -516,6 +551,7 @@
 		0 6px 28px rgba(16, 185, 129, 0.5),
 		inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
 }
+
 .zentria-driver-popover .driver-popover-next-btn:active {
 	transform: translateY(0);
 }
@@ -528,6 +564,7 @@
 	top: 18px !important;
 	right: 18px !important;
 }
+
 .zentria-driver-popover .driver-popover-close-btn:hover {
 	color: #fff !important;
 	transform: scale(1.15);
