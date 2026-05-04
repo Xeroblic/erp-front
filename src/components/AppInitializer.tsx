@@ -27,7 +27,10 @@ const AppInitializer = () => {
 		[],
 	);
 	const isPublic =
-		publicRoutes.includes(location.pathname) || location.pathname.startsWith('/portal-pedidos');
+		publicRoutes.includes(location.pathname) ||
+		location.pathname.startsWith('/portal-pedidos') ||
+		location.pathname.startsWith('/lockers') ||
+		location.pathname.startsWith('/formulario-lock-care');
 
 	// Consolidar lógica de inicialización y redirección en un solo useEffect
 	// para evitar condiciones de carrera entre múltiples navegaciones
@@ -71,7 +74,8 @@ const AppInitializer = () => {
 					if (!shouldSilence) {
 						toast.error('Error cargando personalización');
 					}
-					fetchedPersonalization.current = false;
+					// No reiniciamos fetchedPersonalization.current a false para evitar bucles infinitos
+					// fetchedPersonalization.current = false;
 				});
 		}
 	}, [dispatch, isAuthenticated, access, isPublic, navigate, user]);
