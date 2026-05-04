@@ -34,13 +34,31 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 	// equipment_type viene como objeto { value: 'notebook', label: 'Notebook' }
 	const equipmentType = (extractValue(item.equipment_type) || 'notebook').toLowerCase();
 
-	// Para batería, priorizar porcentaje si existe, sino mostrar status
+	// Para batería: notebooks Dell muestran solo estado textual en mayúsculas,
+	// otros equipos muestran porcentaje o estado según disponibilidad
 	const getBatteryInfo = () => {
-		if (details.battery_percentage) {
-			return `${details.battery_percentage}%`;
+		const batteryStatus = details.battery_status;
+		const batteryPercentage = details.battery_percentage;
+		const brandStr = String(details.brand || '').toLowerCase();
+		const isDellNotebook = brandStr.includes('dell') && equipmentType === 'notebook';
+
+		if (isDellNotebook) {
+			const statusVal = extractValue(batteryStatus);
+			if (statusVal && statusVal.toLowerCase() === 'no_battery') {
+				return 'SIN BATERÍA';
+			}
+			if (statusVal) {
+				return statusVal.toUpperCase();
+			}
+			return 'N/A';
 		}
-		if (details.battery_status) {
-			return extractValue(details.battery_status);
+
+		// Para otros fabricantes: priorizar porcentaje
+		if (batteryPercentage !== undefined && batteryPercentage !== null) {
+			return `${batteryPercentage}%`;
+		}
+		if (batteryStatus) {
+			return extractValue(batteryStatus);
 		}
 		return 'N/A';
 	};
