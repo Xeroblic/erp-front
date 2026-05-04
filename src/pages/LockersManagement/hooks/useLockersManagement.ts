@@ -12,7 +12,7 @@ import { toast } from '@/utils/toast.utils';
  */
 const generateUniquePin = (existingLockers: ILockerInternal[]): string => {
 	const existingPins = new Set(
-		existingLockers.map((l) => l.current_pin).filter(Boolean),
+		existingLockers.map((l) => l.locker_pin).filter(Boolean),
 	);
 	let pin: string;
 	do {
@@ -148,17 +148,19 @@ export const useLockersManagement = () => {
 	}, []);
 
 	// --- Fase 2: Técnico retira equipo (Withdraw / Pick Off) ---
+	// El backend captura el PIN antiguo ANTES de resetear y lo devuelve como pin_to_open
 	const handleWithdraw = useCallback(
 		async (serviceOrderId: number) => {
 			if (!selectedLocker) return;
 			setIsActionLoading(true);
 			try {
-				const newPin = generateUniquePin(lockers);
-				await lockersInternalService.techWithdraw({
+				const response = await lockersInternalService.techWithdraw({
 					service_order_id: serviceOrderId,
-					new_locker_pin: newPin,
 				});
-				setSuccessPin(newPin);
+
+				// El backend devuelve pin_to_open con el PIN antiguo para abrir la puerta
+				const pinToOpen = (response as any)?.pin_to_open || null;
+				setSuccessPin(pinToOpen);
 				setSuccessMessage('Equipo retirado. Usa este PIN para abrir el casillero:');
 				closeAction();
 				fetchLockers();
@@ -169,7 +171,7 @@ export const useLockersManagement = () => {
 				setIsActionLoading(false);
 			}
 		},
-		[selectedLocker, lockers, closeAction, fetchLockers, fetchServiceOrders],
+		[selectedLocker, closeAction, fetchLockers, fetchServiceOrders],
 	);
 
 	// --- Fase 3: Técnico deposita equipo reparado (Drop-off) ---

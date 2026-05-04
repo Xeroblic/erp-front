@@ -27,7 +27,7 @@ export interface ICheckInRequest {
 export interface ICheckInResponse {
 	success: boolean;
 	message?: string;
-	locker_pin: string;
+	locker_pin: string | null;
 	data?: {
 		locker?: {
 			number: string;

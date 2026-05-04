@@ -16,9 +16,12 @@ export interface ILockerLocation {
 export interface ILockerInternal {
 	id: number;
 	locker_number: string;
+	/** El backend devuelve el campo como 'number', lo mapeamos también */
+	number?: string;
 	qr_token: string;
-	status: 'available' | 'occupied' | 'maintenance' | 'reserved';
-	current_pin?: string;
+	status: string;
+	status_label?: string;
+	locker_pin?: string | null;
 	customer_name?: string;
 	customer_email?: string;
 	customer_phone?: string;
@@ -35,6 +38,7 @@ export interface ILockerInternal {
 	check_out_at?: string;
 	created_at?: string;
 	updated_at?: string;
+	active_service_order?: IServiceOrder | null;
 	[key: string]: any;
 }
 
@@ -69,7 +73,6 @@ export interface ILockerActionResponse {
 /** POST /lockers/tech/withdraw — Técnico retira equipo del casillero */
 export interface ITechWithdrawRequest {
 	service_order_id: number;
-	new_locker_pin: string;
 }
 
 /** POST /lockers/tech/drop-off — Técnico deposita equipo reparado */
@@ -139,7 +142,8 @@ export const lockersInternalService = {
 	/**
 	 * Fase 2: Técnico retira equipo del casillero (Pick Off / Withdraw)
 	 * POST /lockers/tech/withdraw
-	 * Body: { service_order_id, new_locker_pin }
+	 * Body: { service_order_id }
+	 * Respuesta incluye pin_to_open (PIN antiguo para abrir la puerta)
 	 */
 	techWithdraw: (data: ITechWithdrawRequest) =>
 		ApiService.fetchNormalized<ILockerActionResponse>({

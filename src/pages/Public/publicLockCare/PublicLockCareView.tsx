@@ -13,6 +13,7 @@ import FormLockCareFormPanel from '@/pages/Public/formLockCleare/components/Form
 import FormLockCareGuidePanel from '@/pages/Public/formLockCleare/components/FormLockCareGuidePanel';
 
 import CheckInSuccessSteps from './components/CheckInSuccessSteps';
+import LockerPinModal from './components/LockerPinModal';
 import TerminoCondiciones from '../formLockCleare/TerminoCondiciones';
 
 interface PublicLockCareViewProps {
@@ -22,9 +23,13 @@ interface PublicLockCareViewProps {
 	pinReceived: string | null;
 	lockerNumberReceived: string | null;
 	isTerminosOpen: boolean;
+	isPinModalOpen: boolean;
+	isCheckInComplete: boolean;
 	handleOpenTerms: () => void;
 	handleCloseTerms: () => void;
 	handleAcceptTerms: () => void;
+	handleClosePinModal: () => void;
+	handleOpenPinModal: () => void;
 }
 
 export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
@@ -34,9 +39,13 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 	pinReceived,
 	lockerNumberReceived,
 	isTerminosOpen,
+	isPinModalOpen,
+	isCheckInComplete,
 	handleOpenTerms,
 	handleCloseTerms,
 	handleAcceptTerms,
+	handleClosePinModal,
+	handleOpenPinModal,
 }) => {
 	useForceLightMode();
 
@@ -312,8 +321,10 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 		);
 	}
 
-	// --- Pantalla de éxito (PIN recibido) ---
-	if (pinReceived) {
+	// --- Pantalla de éxito (PIN recibido y modal ya cerrado) ---
+	// Si el PIN fue recibido y el modal está cerrado, mostramos la pantalla
+	// con las instrucciones completas y un botón para volver a ver el PIN
+	if (isCheckInComplete && !isPinModalOpen) {
 		return (
 			<main className='relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-emerald-200 via-emerald-300 to-emerald-500 p-4 sm:p-8'>
 				<FormLockCareDecorations
@@ -324,9 +335,27 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 				<div className='relative z-10 w-full max-w-5xl animate-in fade-in zoom-in duration-500'>
 					<CheckInSuccessSteps 
 						lockerNumber={lockerNumberReceived || '---'} 
-						pin={pinReceived} 
+						pin={pinReceived || '----'} 
 					/>
 				</div>
+
+				{/* Botón flotante para volver a ver el PIN */}
+				<button
+					type='button'
+					onClick={handleOpenPinModal}
+					className='fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-600 to-teal-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/30 transition-all hover:scale-105 hover:shadow-xl hover:shadow-emerald-500/40 active:scale-95'
+					aria-label='Ver PIN de acceso'>
+					<Icon icon='HeroKey' className='h-5 w-5' />
+					Ver mi PIN
+				</button>
+
+				{/* Modal del PIN (se puede reabrir) */}
+				<LockerPinModal
+					isOpen={isPinModalOpen}
+					pin={pinReceived}
+					lockerNumber={lockerNumberReceived || '---'}
+					onClose={handleClosePinModal}
+				/>
 			</main>
 		);
 	}
@@ -390,6 +419,14 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 					/>
 				</Suspense>
 			)}
+
+			{/* Modal del PIN — se muestra inmediatamente después del registro exitoso */}
+			<LockerPinModal
+				isOpen={isPinModalOpen}
+				pin={pinReceived}
+				lockerNumber={lockerNumberReceived || '---'}
+				onClose={handleClosePinModal}
+			/>
 		</main>
 	);
 };

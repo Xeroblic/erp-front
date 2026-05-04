@@ -380,37 +380,38 @@ const LockersManagementView: React.FC<ILockersManagementViewProps> = ({
 												</tr>
 											) : (
 												lockers.map((locker) => {
-													const order = orderByLockerId[locker.id];
+													// Buscar la orden: primero en active_service_order del locker, luego en el mapa por ID
+													const order = locker.active_service_order || orderByLockerId[locker.id];
 													const actions = getAvailableActions(locker.status);
-													// Intentar sacar datos del locker o de la orden asociada
+													// Intentar sacar datos del active_service_order, luego del locker directo
 													const clientName =
-														locker.customer_name ||
 														order?.customer_name ||
+														locker.customer_name ||
 														'—';
 													const clientEmail =
-														locker.customer_email ||
-														order?.customer_email;
+														order?.customer_email ||
+														locker.customer_email;
 													const deviceInfo =
-														locker.device_brand && locker.device_model
-															? `${locker.device_brand} ${locker.device_model}`
-															: order?.device_brand && order?.device_model
-																? `${order.device_brand} ${order.device_model}`
-																: locker.device_description ||
-																	order?.device_description ||
+														order?.device_brand && order?.device_model
+															? `${order.device_brand} ${order.device_model}`
+															: locker.device_brand && locker.device_model
+																? `${locker.device_brand} ${locker.device_model}`
+																: order?.device_description ||
+																	locker.device_description ||
 																	'—';
 													const serviceType =
-														locker.service_type ||
 														order?.service_type ||
+														locker.service_type ||
 														'—';
 													const checkInDate =
-														locker.check_in_at || order?.created_at;
+														order?.checked_in_at || locker.check_in_at || order?.created_at;
 
 													return (
 														<tr
 															key={locker.id}
 															className='transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50'>
 															<td className='px-4 py-3 font-mono font-semibold text-zinc-800 dark:text-zinc-200'>
-																{locker.locker_number || locker.id}
+																{locker.locker_number || locker.number || locker.id}
 															</td>
 															<td className='px-4 py-3'>
 																<StatusBadge
@@ -532,12 +533,14 @@ const LockersManagementView: React.FC<ILockersManagementViewProps> = ({
 				<ModalHeader>
 					<div className='flex items-center gap-2'>
 						<Icon icon='HeroEye' className='h-5 w-5' />
-						Detalle del Casillero Nº {detailLocker?.locker_number || detailLocker?.id}
+						Detalle del Casillero Nº {detailLocker?.locker_number || detailLocker?.number || detailLocker?.id}
 					</div>
 				</ModalHeader>
 				<ModalBody>
 					{detailLocker && (() => {
-						const order = orderByLockerId[detailLocker.id];
+						// La orden viene primero del active_service_order del locker, luego del mapa por ID
+						const order = detailLocker.active_service_order || orderByLockerId[detailLocker.id];
+						const lockerNum = detailLocker.locker_number || detailLocker.number || String(detailLocker.id);
 						return (
 							<div className='space-y-4'>
 								{/* Estado actual */}
@@ -554,10 +557,10 @@ const LockersManagementView: React.FC<ILockersManagementViewProps> = ({
 										Información del Casillero
 									</h4>
 									<div className='grid grid-cols-2 gap-x-6 gap-y-2 text-sm'>
-										<DetailRow label='Número' value={detailLocker.locker_number || String(detailLocker.id)} />
+										<DetailRow label='Número' value={lockerNum} />
 										<DetailRow label='QR Token' value={detailLocker.qr_token ? `${detailLocker.qr_token.slice(0, 12)}...` : '—'} />
-										<DetailRow label='PIN Actual' value={detailLocker.current_pin || '—'} />
-										<DetailRow label='Ingreso' value={(detailLocker.check_in_at || order?.checked_in_at) ? new Date(detailLocker.check_in_at || order!.checked_in_at!).toLocaleString('es-CL') : '—'} />
+										<DetailRow label='PIN Actual' value={detailLocker.locker_pin || '—'} />
+										<DetailRow label='Ingreso' value={(order?.checked_in_at || detailLocker.check_in_at) ? new Date(order?.checked_in_at || detailLocker.check_in_at!).toLocaleString('es-CL') : '—'} />
 									</div>
 								</div>
 
@@ -567,9 +570,9 @@ const LockersManagementView: React.FC<ILockersManagementViewProps> = ({
 										Datos del Cliente
 									</h4>
 									<div className='grid grid-cols-2 gap-x-6 gap-y-2 text-sm'>
-										<DetailRow label='Nombre' value={detailLocker.customer_name || order?.customer_name || '—'} />
-										<DetailRow label='Email' value={detailLocker.customer_email || order?.customer_email || '—'} />
-										<DetailRow label='Teléfono' value={detailLocker.customer_phone || order?.customer_phone || '—'} />
+										<DetailRow label='Nombre' value={order?.customer_name || detailLocker.customer_name || '—'} />
+										<DetailRow label='Email' value={order?.customer_email || detailLocker.customer_email || '—'} />
+										<DetailRow label='Teléfono' value={order?.customer_phone || detailLocker.customer_phone || '—'} />
 									</div>
 								</div>
 
@@ -579,11 +582,11 @@ const LockersManagementView: React.FC<ILockersManagementViewProps> = ({
 										Datos del Equipo
 									</h4>
 									<div className='grid grid-cols-2 gap-x-6 gap-y-2 text-sm'>
-										<DetailRow label='Marca' value={detailLocker.device_brand || order?.device_brand || '—'} />
-										<DetailRow label='Modelo' value={detailLocker.device_model || order?.device_model || '—'} />
+										<DetailRow label='Marca' value={order?.device_brand || detailLocker.device_brand || '—'} />
+										<DetailRow label='Modelo' value={order?.device_model || detailLocker.device_model || '—'} />
 										<DetailRow label='Nº Serie' value={detailLocker.serial_number || order?.serial_number || '—'} />
-										<DetailRow label='Servicio' value={detailLocker.service_type || order?.service_type || '—'} />
-										<DetailRow label='Descripción' value={detailLocker.device_description || order?.device_description || '—'} fullWidth />
+										<DetailRow label='Servicio' value={order?.service_type || detailLocker.service_type || '—'} />
+										<DetailRow label='Descripción' value={order?.device_description || detailLocker.device_description || '—'} fullWidth />
 									</div>
 								</div>
 
@@ -594,7 +597,7 @@ const LockersManagementView: React.FC<ILockersManagementViewProps> = ({
 											Orden de Servicio #{order.id}
 										</h4>
 										<div className='grid grid-cols-2 gap-x-6 gap-y-2 text-sm'>
-											<DetailRow label='Estado' value={order.logistics_status_label || order.status || '—'} />
+											<DetailRow label='Estado' value={order.logistics_status_label || order.logistics_status || order.status || '—'} />
 											<DetailRow label='Creada' value={order.created_at ? new Date(order.created_at).toLocaleString('es-CL') : '—'} />
 										</div>
 									</div>
@@ -662,7 +665,7 @@ const LockersManagementView: React.FC<ILockersManagementViewProps> = ({
 										</div>
 									) : (
 										<>
-											<DetailRow label='Casillero' value={`Nº ${selectedLocker.locker_number || selectedLocker.id}`} />
+											<DetailRow label='Casillero' value={`Nº ${selectedLocker.locker_number || selectedLocker.number || selectedLocker.id}`} />
 											<div>
 												<span className='font-medium text-zinc-500'>Estado:</span>
 												<div className='mt-0.5'>

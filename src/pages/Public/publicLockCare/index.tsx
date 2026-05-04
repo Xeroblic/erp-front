@@ -9,6 +9,10 @@ export default function PublicLockCare() {
 		formik,
 		pinReceived,
 		lockerNumberReceived,
+		isPinModalOpen,
+		isCheckInComplete,
+		handleClosePinModal,
+		handleOpenPinModal,
 		isTerminosOpen,
 		handleOpenTerms,
 		handleCloseTerms,
@@ -22,6 +26,10 @@ export default function PublicLockCare() {
 			formik={formik}
 			pinReceived={pinReceived}
 			lockerNumberReceived={lockerNumberReceived}
+			isPinModalOpen={isPinModalOpen}
+			isCheckInComplete={isCheckInComplete}
+			handleClosePinModal={handleClosePinModal}
+			handleOpenPinModal={handleOpenPinModal}
 			isTerminosOpen={isTerminosOpen}
 			handleOpenTerms={handleOpenTerms}
 			handleCloseTerms={handleCloseTerms}

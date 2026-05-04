@@ -40,9 +40,11 @@ export const usePublicLockCare = () => {
 	const [lockerInfo, setLockerInfo] = useState<ILockerPublicInfo | null>(null);
 	const [infoError, setInfoError] = useState<string | null>(null);
 
-	// Estado post-submit
+	// Estado post-submit y modal de PIN
 	const [pinReceived, setPinReceived] = useState<string | null>(null);
 	const [lockerNumberReceived, setLockerNumberReceived] = useState<string | null>(null);
+	const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+	const [isCheckInComplete, setIsCheckInComplete] = useState(false);
 
 	// Estado para modal de términos
 	const [isTerminosOpen, setIsTerminosOpen] = useState(false);
@@ -93,11 +95,16 @@ export const usePublicLockCare = () => {
 				const payload = mapFormToCheckInPayload(values, token);
 				const response = await lockersPublicService.checkInLocker(payload);
 				
-				setPinReceived(response.locker_pin);
-				// El número de casillero puede venir en response.data.locker.number
-				// o podemos usar el que ya tenemos en lockerInfo si está disponible
-				setLockerNumberReceived(response.data?.locker?.number || String(lockerInfo?.locker_number || ''));
-				
+				const pinFromResponse = response.locker_pin;
+				const lockerNum = response.data?.locker?.number || String(lockerInfo?.locker_number || '');
+
+				setPinReceived(pinFromResponse);
+				setLockerNumberReceived(lockerNum);
+
+				// Marcar check-in como completado y abrir el modal del PIN
+				setIsCheckInComplete(true);
+				setIsPinModalOpen(true);
+
 				toast.success('Registro completado exitosamente.');
 				helpers.resetForm();
 				setIsTerminosOpen(false);
@@ -126,6 +133,14 @@ export const usePublicLockCare = () => {
 		formik.setFieldTouched('termsAccepted', true, true);
 	}, [formik]);
 
+	const handleClosePinModal = useCallback(() => {
+		setIsPinModalOpen(false);
+	}, []);
+
+	const handleOpenPinModal = useCallback(() => {
+		setIsPinModalOpen(true);
+	}, []);
+
 	return {
 		// Estado del casillero
 		isLoadingInfo,
@@ -133,9 +148,13 @@ export const usePublicLockCare = () => {
 		lockerInfo,
 		// Formik
 		formik,
-		// PIN
+		// PIN y modal
 		pinReceived,
 		lockerNumberReceived,
+		isPinModalOpen,
+		isCheckInComplete,
+		handleClosePinModal,
+		handleOpenPinModal,
 		// Términos y condiciones
 		isTerminosOpen,
 		handleOpenTerms,
