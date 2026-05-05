@@ -43,7 +43,7 @@ export interface ICheckOutResponse {
 	success: boolean;
 	message?: string;
 	locker_number?: string;
-	current_pin?: string;
+	locker_pin?: string;
 }
 
 export const lockersPublicService = {

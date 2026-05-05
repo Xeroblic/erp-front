@@ -120,9 +120,15 @@ export const updateItemDetails = createAsyncThunk<
 			// Strip null, undefined and empty-string values.
 			// The backend rejects nulls for fields with allowed_values constraints
 			// (e.g. cover_condition, charger_status).
+			// Algunos campos sí pueden ser null o vacíos explícitamente (ej: borrar observaciones)
+			const NULLABLE_FIELDS = ['observations', 'extra_attributes', 'battery_health'];
+			
 			const cleanData = Object.fromEntries(
 				Object.entries(filteredData).filter(
-					([, v]) => v !== null && v !== undefined && v !== '',
+					([k, v]) => {
+						if (NULLABLE_FIELDS.includes(k)) return v !== undefined;
+						return v !== null && v !== undefined && v !== '';
+					}
 				),
 			);
 

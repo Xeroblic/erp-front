@@ -93,7 +93,7 @@ export const monitorSchema = Yup.object({
 	includes_stand: Yup.boolean().required('Debes indicar si incluye base').default(false),
 
 	// Notas
-	observations: Yup.string().nullable().max(255, 'Máximo 255 caracteres'),
+	observations: Yup.string().transform((v, o) => (o === '' ? null : v)).nullable().max(255, 'Máximo 255 caracteres'),
 
 	// Otros Atributos Extendibles
 	extra_attributes: Yup.object().nullable().default({}),

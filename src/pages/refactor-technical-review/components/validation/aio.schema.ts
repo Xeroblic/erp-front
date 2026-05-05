@@ -132,6 +132,7 @@ export const aioSchema = Yup.object({
 	// ─── Notas ───────────────────────────────────────────────────────────────
 	observations: Yup.string()
 		.trim()
+		.transform((value, originalValue) => (originalValue === '' ? null : value))
 		.max(1000, 'Máximo 1000 caracteres para observaciones')
 		.nullable(),
 

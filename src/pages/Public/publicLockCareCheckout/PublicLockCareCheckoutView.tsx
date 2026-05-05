@@ -161,15 +161,14 @@ export const PublicLockCareCheckoutView: React.FC<PublicLockCareCheckoutViewProp
 									)}
 
 									{/* Intentar sacar el PIN de varias formas posibles */}
-									{(checkoutResult.current_pin || (checkoutResult as any).locker?.current_pin || (checkoutResult as any).pin) && (
+									{(checkoutResult.locker_pin || (checkoutResult as any).locker?.locker_pin || (checkoutResult as any).data?.locker_pin || (checkoutResult as any).pin) && (
 										<div className='relative group'>
 											<div className='absolute -inset-1 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-500 opacity-20 blur group-hover:opacity-30 transition duration-1000'></div>
 											<div className='relative flex flex-col items-center justify-center rounded-2xl bg-blue-50 p-8 border border-blue-100 dark:bg-blue-900/10 dark:border-blue-900/20'>
 												<span className='text-[10px] font-black uppercase tracking-[0.3em] text-blue-400 mb-1'>PIN de Apertura</span>
 												<p className='text-6xl font-mono font-black text-blue-600 tracking-[0.2em] ml-4 dark:text-blue-400'>
-													{checkoutResult.current_pin ||
-														(checkoutResult as any).locker?.current_pin ||
-														(checkoutResult as any).locker_pin ||
+													{checkoutResult.locker_pin ||
+														(checkoutResult as any).locker?.locker_pin ||
 														(checkoutResult as any).data?.locker_pin ||
 														(checkoutResult as any).pin ||
 														(checkoutResult as any).pin_apertura ||
@@ -187,14 +186,15 @@ export const PublicLockCareCheckoutView: React.FC<PublicLockCareCheckoutViewProp
 										</div>
 										<p className='text-left text-xs leading-relaxed opacity-90 font-medium'>
 											Ingresa el código <strong>{
-												checkoutResult.current_pin ||
-												(checkoutResult as any).locker?.current_pin ||
-												(checkoutResult as any).locker_pin ||
+												checkoutResult.locker_pin ||
+												(checkoutResult as any).locker?.locker_pin ||
+												(checkoutResult as any).data?.locker_pin ||
 												(checkoutResult as any).pin ||
 												'—'
 											}</strong> en el teclado del casillero <strong>{
 												checkoutResult.locker_number ||
 												(checkoutResult as any).locker?.number ||
+												(checkoutResult as any).data?.locker?.number ||
 												(checkoutResult as any).number ||
 												'—'
 											}</strong> para abrir la puerta.

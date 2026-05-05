@@ -57,7 +57,7 @@ export const dockingSchema = Yup.object({
 		),
 
 	// Notas
-	observations: Yup.string().nullable().max(255, 'Máximo 255 caracteres'),
+	observations: Yup.string().transform((v, o) => (o === '' ? null : v)).nullable().max(255, 'Máximo 255 caracteres'),
 
 	// Otros Atributos Extendibles
 	extra_attributes: Yup.object().nullable().default({}),
