@@ -67,7 +67,7 @@ export const usePublicLockCare = () => {
 				if (!info.is_available) {
 					setInfoError(
 						info.message ||
-							'Este casillero no se encuentra disponible. Por favor, escanea otro casillero cercano.',
+						`Este casillero se encuentra ocupado prueba con uno de estos:${info.available_lockers}.`,
 					);
 				}
 			} catch (error: any) {
@@ -94,7 +94,7 @@ export const usePublicLockCare = () => {
 			try {
 				const payload = mapFormToCheckInPayload(values, token);
 				const response = await lockersPublicService.checkInLocker(payload);
-				
+
 				const pinFromResponse = response.locker_pin;
 				const lockerNum = response.data?.locker?.number || String(lockerInfo?.locker_number || '');
 
@@ -112,7 +112,7 @@ export const usePublicLockCare = () => {
 				const apiMessage = error?.response?.data?.message;
 				toast.error(
 					apiMessage ||
-						'No se pudo completar el registro. Verifica los datos e intenta de nuevo.',
+					'No se pudo completar el registro. Verifica los datos e intenta de nuevo.',
 				);
 			} finally {
 				helpers.setSubmitting(false);
