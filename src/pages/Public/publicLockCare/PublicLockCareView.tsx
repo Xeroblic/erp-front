@@ -20,6 +20,7 @@ interface PublicLockCareViewProps {
 	isLoadingInfo: boolean;
 	infoError: string | null;
 	formik: FormikProps<TicketFormValues>;
+	suggestedLockers: string[];
 	pinReceived: string | null;
 	lockerNumberReceived: string | null;
 	isTerminosOpen: boolean;
@@ -35,6 +36,7 @@ interface PublicLockCareViewProps {
 export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 	isLoadingInfo,
 	infoError,
+	suggestedLockers,
 	formik,
 	pinReceived,
 	lockerNumberReceived,
@@ -178,7 +180,7 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 						scannerRunningRef.current = false;
 
 						// Detener el escáner
-						scanner.stop().catch(() => {});
+						scanner.stop().catch(() => { });
 						scannerRef.current = null;
 
 						// Navegar a la URL del QR escaneado
@@ -214,7 +216,7 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 			cancelled = true;
 			clearTimeout(timer);
 			if (scannerRef.current && scannerRunningRef.current) {
-				scannerRef.current.stop().catch(() => {});
+				scannerRef.current.stop().catch(() => { });
 				scannerRunningRef.current = false;
 			}
 			scannerRef.current = null;
@@ -223,7 +225,7 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 
 	const handleStopScanner = useCallback(() => {
 		if (scannerRef.current && scannerRunningRef.current) {
-			scannerRef.current.stop().catch(() => {});
+			scannerRef.current.stop().catch(() => { });
 			scannerRunningRef.current = false;
 		}
 		scannerRef.current = null;
@@ -259,7 +261,27 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 									Casillero No Disponible
 								</h2>
 								<p className='mt-3 text-zinc-600'>{infoError}</p>
-								
+								{/* --- SECCIÓN NUEVA: BADGES DE CASILLEROS DISPONIBLES --- */}
+								{suggestedLockers && suggestedLockers.length > 0 && (
+									<div className='mt-5 rounded-xl bg-emerald-50/80 p-4 border border-emerald-100 text-left shadow-sm'>
+										<p className='text-sm text-emerald-800 font-semibold mb-3 flex items-center gap-2'>
+											<Icon icon='HeroCheckCircle' className='h-5 w-5 text-emerald-600' />
+											Prueba con estos casilleros disponibles:
+										</p>
+										<div className='flex flex-wrap gap-2'>
+											{suggestedLockers.map((num, idx) => (
+												<span
+													key={idx}
+													className='inline-flex items-center gap-x-1.5 rounded-lg bg-white px-3 py-1.5 text-sm font-bold text-emerald-700 shadow-sm ring-1 ring-inset ring-emerald-200 hover:bg-emerald-50 transition-colors'
+												>
+													#{num}
+												</span>
+											))}
+										</div>
+									</div>
+								)}
+								{/* --- FIN SECCIÓN NUEVA --- */}
+
 								{/* Detectar si es un caso de retiro pendiente */}
 								{(infoError.toLowerCase().includes('retiro') || infoError.toLowerCase().includes('listo')) && (
 									<div className='mt-6 rounded-xl bg-blue-50 p-4 border border-blue-100 text-left'>
@@ -331,11 +353,11 @@ export const PublicLockCareView: React.FC<PublicLockCareViewProps> = ({
 					ornaments={floatingOrnaments}
 					showEnhancedEffects={shouldRenderHeavyDecorations && decorationsReady}
 				/>
-				
+
 				<div className='relative z-10 w-full max-w-5xl animate-in fade-in zoom-in duration-500'>
-					<CheckInSuccessSteps 
-						lockerNumber={lockerNumberReceived || '---'} 
-						pin={pinReceived || '----'} 
+					<CheckInSuccessSteps
+						lockerNumber={lockerNumberReceived || '---'}
+						pin={pinReceived || '----'}
 					/>
 				</div>
 

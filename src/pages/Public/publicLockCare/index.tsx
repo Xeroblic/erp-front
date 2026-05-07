@@ -6,6 +6,7 @@ export default function PublicLockCare() {
 	const {
 		isLoadingInfo,
 		infoError,
+		suggestedLockers,
 		formik,
 		pinReceived,
 		lockerNumberReceived,
@@ -23,6 +24,7 @@ export default function PublicLockCare() {
 		<PublicLockCareView
 			isLoadingInfo={isLoadingInfo}
 			infoError={infoError}
+			suggestedLockers={suggestedLockers}
 			formik={formik}
 			pinReceived={pinReceived}
 			lockerNumberReceived={lockerNumberReceived}
