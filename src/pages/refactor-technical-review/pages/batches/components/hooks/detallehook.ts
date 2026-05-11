@@ -228,7 +228,10 @@ export const useDetalleLote = () => {
 
 				if (operationMode === 'print') {
 					// MODO IMPRESIÓN
-					if (foundItem && foundItem.serial_number === normalizedSerial) {
+					if (
+						foundItem &&
+						foundItem.serial_number.toLowerCase() === normalizedSerial.toLowerCase()
+					) {
 						setSelectedItemForPrint(foundItem);
 						setIsPrintModalOpen(true);
 					} else {
@@ -236,7 +239,11 @@ export const useDetalleLote = () => {
 					}
 				} else {
 					// MODO INGRESO
-					if (foundItem && foundItem.id) {
+					if (
+						foundItem &&
+						foundItem.id &&
+						foundItem.serial_number.toLowerCase() === normalizedSerial.toLowerCase()
+					) {
 						handleViewItem(foundItem.id);
 					} else {
 						setMissingSerial(normalizedSerial);
