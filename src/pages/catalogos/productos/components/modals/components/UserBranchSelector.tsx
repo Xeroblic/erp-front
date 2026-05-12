@@ -99,6 +99,7 @@ const UserBranchSelector: React.FC<UserBranchSelectorProps> = ({
 				value={value ?? ''}
 				onChange={handleChange}
 				disabled={disabled || loading}
+				
 				required={required}>
 				<option value=''>{loading ? 'Cargando...' : placeholder}</option>
 				{branches.map((branch) => (
