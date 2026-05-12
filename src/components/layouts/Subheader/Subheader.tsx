@@ -99,7 +99,7 @@ const Subheader: FC<ISubheaderProps> = ({ children, className, ...rest }) => {
 				className={classNames(
 					'sticky top-[var(--header-height)] z-[9]',
 					'flex flex-col gap-2',
-					'border-b border-zinc-300/25 bg-white/80',
+					'border-b border-zinc-300/25 bg-[#ffffffa3]',
 					'px-4 py-2 sm:px-6 sm:py-3',
 					'backdrop-blur-md',
 					'dark:border-zinc-800/50 dark:bg-zinc-900/75 dark:text-white',

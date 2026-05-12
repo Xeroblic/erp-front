@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useRef } from 'react';
+import React, { useMemo, useEffect, useRef, useState } from 'react';
 import {
 	Formik,
 	Form,
@@ -9,7 +9,7 @@ import {
 	type FormikErrors,
 } from 'formik';
 import { toast } from 'react-toastify';
-import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
+import OffCanvas, { OffCanvasBody, OffCanvasFooter, OffCanvasHeader } from '@/components/ui/OffCanvas';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Input from '@/components/form/Input';
 import Checkbox from '@/components/form/Checkbox';
@@ -26,6 +26,7 @@ import {
 	createBrandOptions,
 	createCategoryOptions,
 	initializeAttributesJson,
+	generateSmartSKU,
 } from '../../utils/productForm.utils';
 import {
 	productSchema,
@@ -36,8 +37,11 @@ import type { ProductFormValues } from '../../types/products.types';
 import Select from '@/components/form/Select';
 import { PRODUCT_DEVICE_TYPES } from '../../constants/product-attributes.constants';
 import UserBranchSelector from './components/UserBranchSelector';
+import BrandSelectorWithCreate from '../../../../../components/utils/selects/BrandSelectorWithCreate';
+import CategorySelectorWithCreate from '../../../../../components/utils/selects/CategorySelectorWithCreate';
 import { useAppSelector, useAppDispatch } from '@/store';
-import { fetchBrands } from '@/store/slices/brands/brandsSlice';
+import { createBrand, fetchBrands } from '@/store/slices/brands/brandsSlice';
+import Tooltip from '@/components/ui/Tooltip';
 
 interface CreateEditProductModalProps {
 	isOpen: boolean;
@@ -48,6 +52,7 @@ interface CreateEditProductModalProps {
 	categories: ICategory[];
 	isLoading?: boolean;
 	brandsLoading?: boolean;
+	categoriesLoading?: boolean;
 	defaultBranchId?: number | null;
 }
 
@@ -77,6 +82,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 	categories,
 	isLoading = false,
 	brandsLoading = false,
+	categoriesLoading = false,
 	defaultBranchId = null,
 }) => {
 	const currentUser = useAppSelector((state) => state.auth.user);
@@ -105,7 +111,12 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 		[categories],
 	);
 
+	const draftValuesRef = useRef<ProductFormValues | null>(null);
+
 	const initialValues = useMemo<ProductFormValues>(() => {
+		if (!isEditMode && draftValuesRef.current) {
+			return draftValuesRef.current;
+		}
 		const values = buildInitialValues(product);
 		// Prefijar sucursal solo en modo creación
 		if (!isEditMode) {
@@ -114,7 +125,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 			values.branch_id = product.branch_id;
 		}
 		return values;
-	}, [product, isEditMode, defaultBranchId]);
+	}, [product, isEditMode, defaultBranchId, isOpen]);
 
 	// Pre-cargar marcas al abrir el modal según la sucursal relevante
 	useEffect(() => {
@@ -177,6 +188,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 
 			if (!product) {
 				resetForm();
+				draftValuesRef.current = null;
 			}
 			onClose();
 		} catch (error: unknown) {
@@ -227,8 +239,8 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 	};
 
 	return (
-		<Modal isOpen={isOpen} setIsOpen={onClose} size='md' isStaticBackdrop>
-			<ModalHeader>
+		<OffCanvas isOpen={isOpen} setIsOpen={onClose} position='right' dialogClassName='md:!max-w-[65rem] w-full' isStaticBackdrop>
+			<OffCanvasHeader>
 				<div className='flex items-center gap-3'>
 					<Icon
 						icon={product ? 'HeroPencilSquare' : 'HeroSparkles'}
@@ -243,7 +255,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 						</p>
 					</div>
 				</div>
-			</ModalHeader>
+			</OffCanvasHeader>
 			<Formik
 				initialValues={initialValues}
 				validationSchema={product ? productSchema : productSchemaCreate}
@@ -259,6 +271,14 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 					submitForm,
 				}) => {
 					const isBusy = isLoading || isSubmitting;
+
+					// Auto-save draft
+					useEffect(() => {
+						if (!isEditMode) {
+							draftValuesRef.current = values;
+						}
+					}, [values]);
+
 					const selectedBrandOption: TSelectOption | null =
 						brandOptions.find(
 							(option) => String(option.value) === String(values.brand_id),
@@ -319,8 +339,8 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 					}, [values.product_type, values.attributes_json, setFieldValue]);
 
 					return (
-						<Form id='productForm'>
-							<ModalBody className='space-y-5'>
+						<Form id='productForm' className='flex h-full flex-col overflow-hidden'>
+							<OffCanvasBody className='space-y-5'>
 								{PRODUCT_FORM_SECTIONS.map((section) => (
 									<Card key={section.key} className={section.cardClass}>
 										<CardHeader className='pb-2'>
@@ -349,12 +369,34 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 																		? (meta.error as string)
 																		: undefined
 																}>
-																<Input
-																	id='sku'
-																	{...field}
-																	required
-																	disabled={isBusy}
-																/>
+																<div className='flex gap-2'>
+																	<Input
+																		id='sku'
+																		{...field}
+																		required
+																		disabled={isBusy}
+																		className='flex-1'
+																	/>
+																	<Tooltip text='Generar SKU Inteligente'>
+																		<Button
+																			variant='outline'
+																			type='button'
+																			onClick={() => {
+																				if (!values.name) {
+																					toast.warning('Ingresa un nombre de producto primero');
+																					return;
+																				}
+																				const currentBrandOpt = brandOptions.find(o => String(o.value) === String(values.brand_id));
+																				const currentBrand = currentBrandOpt ? String(currentBrandOpt.label) : '';
+																				const newSku = generateSmartSKU(values.name, currentBrand);
+																				void setFieldValue('sku', newSku);
+																			}}
+																			isDisable={isBusy}
+																		>
+																			<Icon icon='HeroSparkles' className='h-5 w-5 text-amber-500' />
+																		</Button>
+																	</Tooltip>
+																</div>
 															</FieldContainer>
 														)}
 													</Field>
@@ -382,6 +424,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 														<div className='space-y-2 md:col-span-2'>
 															<UserBranchSelector
 																userId={userId}
+
 																name='branch_id'
 																value={values.branch_id ?? ''}
 																onChange={(branchId) => {
@@ -412,7 +455,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 																errors.branch_id && (
 																	<p className='text-xs text-red-500'>
 																		{typeof errors.branch_id ===
-																		'string'
+																			'string'
 																			? errors.branch_id
 																			: 'Selecciona una sucursal'}
 																	</p>
@@ -422,46 +465,25 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 
 													<div className='space-y-2 md:col-span-2'>
 														<p className='text-sm font-medium'>Marca</p>
-														<SelectReact
+														<BrandSelectorWithCreate
 															name='brand_id'
-															options={brandOptions}
-															value={selectedBrandOption}
-															onChange={(option) => {
-																if (Array.isArray(option)) {
-																	void setFieldValue(
-																		'brand_id',
-																		'',
-																	);
-																	return;
-																}
-																const singleOption = (option ??
-																	null) as TSelectOption | null;
-																void setFieldValue(
-																	'brand_id',
-																	singleOption?.value ?? '',
-																);
+															branchId={values.branch_id ?? null}
+															brandOptions={brandOptions}
+															value={values.brand_id}
+															onChange={(newBrandId) => {
+																void setFieldValue('brand_id', newBrandId);
 															}}
 															onBlur={() => {
-																void setFieldTouched(
-																	'brand_id',
-																	true,
-																);
+																void setFieldTouched('brand_id', true);
 															}}
+															brandsLoading={brandsLoading}
+															isDisabled={isBusy || (!brandOptions.length && !values.brand_id && !values.branch_id)}
 															placeholder={
 																brandsLoading
 																	? 'Cargando marcas...'
-																	: !brandOptions.length &&
-																		  !values.branch_id
+																	: !brandOptions.length && !values.branch_id
 																		? 'Selecciona la sucursal primero'
 																		: 'Selecciona una marca'
-															}
-															// Disable only while busy or when there are no brands for the selected branch
-															isDisabled={
-																isBusy ||
-																brandsLoading ||
-																(!brandOptions.length &&
-																	!values.brand_id &&
-																	!values.branch_id)
 															}
 														/>
 														{touched.brand_id && errors.brand_id && (
@@ -515,24 +537,17 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 														<p className='text-sm font-medium'>
 															Categorias
 														</p>
-														<SelectReact
+														<CategorySelectorWithCreate
 															name='categories'
-															isMulti
-															options={categoryOptions}
+															branchId={values.branch_id ?? null}
+															categoryOptions={categoryOptions}
 															value={values.categories.map(
 																(option) => ({
-																	value: option.value,
-																	label: option.label,
+																	value: String(option.value),
+																	label: String(option.label),
 																}),
 															)}
-															onChange={(option) => {
-																const nextOptions = Array.isArray(
-																	option,
-																)
-																	? option
-																	: option
-																		? [option]
-																		: [];
+															onChange={(nextOptions) => {
 																void setFieldValue(
 																	'categories',
 																	nextOptions.map((item) => ({
@@ -547,10 +562,15 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 																	true,
 																);
 															}}
-															isDisabled={
-																isBusy || !categoryOptions.length
+															categoriesLoading={categoriesLoading}
+															placeholder={
+																categoriesLoading
+																	? 'Cargando categorías...'
+																	: 'Selecciona las categorías'
 															}
-															placeholder='Selecciona las categorias'
+															isDisabled={
+																isBusy || categoriesLoading
+															}
 														/>
 														<ErrorMessage name='categories'>
 															{(msg) => (
@@ -566,40 +586,42 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 									</Card>
 								))}
 
-								<Card>
-									<CardBody className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-										{PRODUCT_TOGGLES.map((toggle) => (
-											<div
-												key={toggle.key}
-												className='flex items-center gap-4 rounded-lg border p-4'>
-												<span className='flex h-11 w-11 items-center justify-center rounded-lg border'>
-													<Icon icon={toggle.icon} className='h-5 w-5' />
-												</span>
-												<div className='flex-1'>
-													<p className='text-sm font-semibold'>
-														{toggle.title}
-													</p>
-													<p className='text-xs text-neutral-500'>
-														{toggle.description}
-													</p>
+								<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+									{PRODUCT_TOGGLES.map((toggle) => (
+										<Card
+											key={toggle.key}
+											className='border-2 border-dashed hover:border-solid hover:border-neutral-300 transition-all duration-200 ease-in-out cursor-pointer'>
+											<CardBody className='p-0'>
+												<div className='flex w-full items-center gap-4 p-4'>
+													<span className='flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border'>
+														<Icon icon={toggle.icon} className='h-5 w-5' />
+													</span>
+													<div className='flex-1'>
+														<p className='text-sm font-semibold'>
+															{toggle.title}
+														</p>
+														<p className='text-xs text-neutral-500'>
+															{toggle.description}
+														</p>
+													</div>
+													<Checkbox
+														checked={values[toggle.key as ProductToggleKey]}
+														onChange={(event) =>
+															setFieldValue(
+																toggle.key,
+																event.target.checked,
+															)
+														}
+														disabled={isBusy}
+													/>
 												</div>
-												<Checkbox
-													checked={values[toggle.key as ProductToggleKey]}
-													onChange={(event) =>
-														setFieldValue(
-															toggle.key,
-															event.target.checked,
-														)
-													}
-													disabled={isBusy}
-												/>
-											</div>
-										))}
-									</CardBody>
-								</Card>
-							</ModalBody>
+											</CardBody>
+										</Card>
+									))}
+								</div>
+							</OffCanvasBody>
 
-							<ModalFooter>
+							<OffCanvasFooter>
 								<div className='flex w-full justify-end gap-3'>
 									<Button
 										variant='outline'
@@ -620,12 +642,12 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 										{product ? 'Actualizar producto' : 'Crear producto'}
 									</Button>
 								</div>
-							</ModalFooter>
+							</OffCanvasFooter>
 						</Form>
 					);
 				}}
 			</Formik>
-		</Modal>
+		</OffCanvas>
 	);
 };
 

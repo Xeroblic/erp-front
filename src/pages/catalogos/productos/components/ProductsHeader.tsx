@@ -4,6 +4,7 @@ import Icon from '@/components/icon/Icon';
 import Input from '@/components/form/Input';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
+import { white } from 'tailwindcss/colors';
 
 interface ProductsHeaderProps {
 	searchValue: string;
@@ -22,7 +23,7 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
 	return (
 		<Subheader>
 			<SubheaderLeft>
-				<div className='flex flex-col items-start gap-3 sm:flex-row sm:items-center'>
+				<div className='flex items-center gap-3'>
 					<div className='flex h-11 w-11 items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-800'>
 						<Icon icon='HeroCubeTransparent' className='h-5 w-5' />
 					</div>
@@ -36,6 +37,24 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
 			</SubheaderLeft>
 			<SubheaderRight>
 				<div className='flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3'>
+					<ProtectedButton
+						permission={ERP_PERMISSIONS.CATALOGS.PRODUCTS.CREATE}
+						branchId={branchId}
+						scope='access'
+						fallbackMode='hidden'
+						color='emerald'
+						colorIntensity='500'
+						variant='solid'
+						onClick={onCreateClick}
+						className='w-full sm:w-auto btn-product font-bold'>
+							<Icon 
+								icon='HeroPlus' 
+								size='text-2xl' 
+								color='white' 
+								aria-label='Nuevo producto'
+							/>
+							Crear Producto
+					</ProtectedButton>
 					<Input
 						name='search'
 						placeholder='Buscar por nombre, SKU o codigo'
@@ -43,17 +62,6 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
 						onChange={onSearchChange}
 						className='w-full sm:w-72'
 					/>
-					<ProtectedButton
-						permission={ERP_PERMISSIONS.CATALOGS.PRODUCTS.CREATE}
-						branchId={branchId}
-						scope='access'
-						fallbackMode='hidden'
-						color='blue'
-						icon='HeroPlus'
-						onClick={onCreateClick}
-						className='w-full sm:w-auto'>
-						Nuevo producto
-					</ProtectedButton>
 				</div>
 			</SubheaderRight>
 		</Subheader>

@@ -293,3 +293,36 @@ export const initializeAttributesJson = (productType: string): Record<string, un
 		product_kind: productKind,
 	};
 };
+
+/**
+ * Genera un SKU inteligente basado en el nombre del producto y la marca.
+ * Formato: 3 letras de la marca + 3 consonantes del producto + '-' + 3 caracteres aleatorios.
+ */
+export const generateSmartSKU = (productName: string, brandName: string): string => {
+	const safeName = (productName || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+	const safeBrand = (brandName || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+
+	let prefix = '';
+	if (safeBrand.length >= 3) {
+		prefix = safeBrand.substring(0, 3);
+	} else if (safeBrand.length > 0) {
+		prefix = safeBrand.padEnd(3, 'X');
+	} else {
+		prefix = 'GEN';
+	}
+
+	// Extraer consonantes para el código del producto
+	const consonants = safeName.replace(/[AEIOU]/g, '');
+	let productCode = '';
+	if (consonants.length >= 3) {
+		productCode = consonants.substring(0, 3);
+	} else if (safeName.length >= 3) {
+		productCode = safeName.substring(0, 3);
+	} else {
+		productCode = safeName.padEnd(3, '0');
+	}
+
+	const randomSuffix = Math.random().toString(36).substring(2, 5).toUpperCase();
+
+	return `${prefix}${productCode}-${randomSuffix}`;
+};
