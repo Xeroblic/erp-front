@@ -1103,5 +1103,34 @@ export const privatePages = {
 	},
 } satisfies Record<string, PageConfig>;
 
+export type QuickLinkConfig = {
+	section: keyof typeof privatePages;
+	/** Si no se provee, mostrará todas las sub-páginas disponibles. Si se provee, mostrará solo las especificadas en ese orden. */
+	items?: string[];
+};
+
+/**
+ * CONFIGURACIÓN DEL DASHBOARD (ENLACES RÁPIDOS)
+ * Aquí puedes reordenar, eliminar o agregar secciones y sus sub-páginas.
+ * Las páginas con parámetros dinámicos (como :id) se excluyen automáticamente.
+ */
+export const dashboardQuickLinksConfig: QuickLinkConfig[] = [
+	{
+		section: 'technical',
+		items: ['refactor', 'lotes']
+	},
+	{ section: 'catalogs' },
+	{
+		section: 'commercial',
+		// Ejemplo de cómo especificar y ordenar los enlaces dentro de Comercial:
+		items: ['sales', 'quotes', 'clientesVentas']
+	},
+	// { section: 'inventory' },
+	// { section: 'manage' },
+	// { section: 'humanResources' },
+	{ section: 'reports' },
+	// { section: 'integrations' },
+];
+
 export const pagesConfig = { ...authPages, ...privatePages };
 export default pagesConfig;
