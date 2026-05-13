@@ -434,6 +434,9 @@ const RefactorSeries: React.FC = () => {
 		[branchId, effectiveSubsidiaryId, effectiveSubsidiaryIdForTransfer, dispatch, queryParams],
 	);
 
+	const handleBackToDetail = () => {
+		navigate(`/technical-reviews/refactor`);
+	};
 	return (
 		<PageWrapper
 			name='technical-reviews-series'
@@ -442,6 +445,13 @@ const RefactorSeries: React.FC = () => {
 			<Subheader className='mb-6 flex flex-col items-center justify-between'>
 				<SubheaderLeft>
 					<div className='flex items-center gap-4'>
+						<Button
+							onClick={handleBackToDetail}
+							color='red'
+							variant='outline'
+						>
+							<Icon icon='HeroArrowLeft' className='text-xl font-bold ' />
+						</Button>
 						<div>
 							<Icon icon='DuoArchive' className='h-10 w-10 text-blue-500' />
 						</div>

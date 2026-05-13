@@ -23,11 +23,10 @@ import {
     useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import useThemeColor from '@/hooks/useThemeColor';
 
-// Constante para la caché del orden (La de columnas ya la maneja el padre)
 const SESSION_ORDER_KEY = 'dashboard_quicklinks_order';
 
-// --- COMPONENTE TARJETA ARRASTRABLE ---
 const SortableSectionCard = ({ id, section, subPagesToShow }: { id: string, section: PageConfig, subPagesToShow: PageConfig[] }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
@@ -37,6 +36,8 @@ const SortableSectionCard = ({ id, section, subPagesToShow }: { id: string, sect
         opacity: isDragging ? 0.6 : 1,
         zIndex: isDragging ? 50 : 1,
     };
+
+	const { themeColor } = useThemeColor();
 
     return (
         <div ref={setNodeRef} style={style} className={`h-full ${isDragging ? 'relative' : ''}`}>
@@ -48,7 +49,7 @@ const SortableSectionCard = ({ id, section, subPagesToShow }: { id: string, sect
                 >
                     <div className='flex items-center gap-3'>
                         <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-gray-200/50 text-gray-500 dark:bg-gray-700/50 dark:text-gray-400'>
-                            <Icon icon={section.icon} className='text-lg' />
+                            <Icon color={themeColor} icon={section.icon} className='text-lg' />
                         </div>
                         <h3 className='text-base font-bold text-gray-800 dark:text-gray-100'>
                             {section.text}
@@ -69,7 +70,7 @@ const SortableSectionCard = ({ id, section, subPagesToShow }: { id: string, sect
                                     <div className='flex h-full items-center justify-between rounded-xl border border-gray-100 bg-gray-50/80 p-3 transition-all duration-300 hover:border-blue-300 hover:bg-blue-50/50 hover:shadow-sm dark:border-gray-700/50 dark:bg-gray-900/40 dark:hover:border-blue-500/40 dark:hover:bg-gray-800'>
                                         <div className='flex items-center gap-3'>
                                             <div className='flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-white shadow-sm transition-transform duration-300 group-hover:scale-105 dark:bg-gray-800'>
-                                                <Icon icon={subPage.icon} className='text-xl text-red-400 transition-colors duration-300 group-hover:text-blue-600 dark:text-red-400 dark:group-hover:text-blue-400' />
+                                                <Icon color={themeColor} icon={subPage.icon} className='text-xl transition-colors duration-300 group-hover:text-blue-600 dark:text-red-400 dark:group-hover:text-blue-400' />
                                             </div>
                                             <span className='text-sm font-semibold text-gray-600 transition-colors duration-300 group-hover:text-blue-700 dark:text-gray-300 dark:group-hover:text-blue-400'>
                                                 {subPage.text}
@@ -138,7 +139,6 @@ const QuickLinks: React.FC<QuickLinksProps> = ({ columnCount }) => {
         }
     };
 
-    // Helper para generar la clase del grid dependiendo del estado (recibido por prop)
     const getGridColsClass = (cols: number) => {
         switch (cols) {
             case 1: return 'grid-cols-1';
@@ -151,7 +151,6 @@ const QuickLinks: React.FC<QuickLinksProps> = ({ columnCount }) => {
 
     return (
         <div className="w-full">
-            {/* Solo dejamos el Grid de Dashboard y eliminamos la Toolbar que estaba aquí */}
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <div className={`grid w-full items-start gap-6 transition-all duration-500 ${getGridColsClass(columnCount)}`}>
                     <SortableContext items={sections.map(s => s.section)} strategy={rectSortingStrategy}>

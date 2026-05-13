@@ -21,7 +21,7 @@ function BatchesListPage() {
 						<Icon icon='HeroArrowLeft' size={'text-2xl'} color='red' />
 					</Button>
 					<div className='flex flex-col items-center justify-center gap-2'>
-						<Icon icon='DuoAlignJustify' size={'text-3xl'} />
+						<Icon icon='DuoAlignJustify' className='font-bold' />
 					</div>
 					<div className='flex flex-col justify-center'>
 						<div className='flex flex-row gap-2'>
