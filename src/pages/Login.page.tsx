@@ -28,6 +28,7 @@ const LoginPage = () => {
 		formik.handleSubmit();
 	});
 
+
 	const formik = useFormik({
 		initialValues: { email: '', password: '' },
 		validationSchema: Yup.object({

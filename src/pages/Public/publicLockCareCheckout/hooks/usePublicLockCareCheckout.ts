@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useFormik } from 'formik';
 import { checkOutValidationSchema, ICheckOutForm } from '../types';
-import { lockersPublicService, ICheckOutResponse } from '@/services/lockersPublicService';
+import lockersPublicService from '@/services/lockers/lockersPublicService';
+import { ICheckOutResponse } from '@/interface/lockers.interface';
 import { toast } from '@/utils/toast.utils';
 
 const MAX_ATTEMPTS = 3;

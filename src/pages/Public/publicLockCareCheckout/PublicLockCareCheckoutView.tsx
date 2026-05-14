@@ -1,7 +1,8 @@
 import React from 'react';
 import { FormikProps } from 'formik';
 import { ICheckOutForm } from './types';
-import { ICheckOutResponse } from '@/services/lockersPublicService';
+import lockersPublicService from '@/services/lockers/lockersPublicService';
+import { ICheckOutResponse } from '@/interface/lockers.interface';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Icon from '@/components/icon/Icon';
 import Input from '@/components/form/Input';
@@ -103,7 +104,7 @@ export const PublicLockCareCheckoutView: React.FC<PublicLockCareCheckoutViewProp
 												<p className='text-[11px] text-red-500 mt-2 text-center font-medium animate-slide-up'>{formik.errors.withdrawal_keyword}</p>
 											)}
 										</div>
-											
+
 										<Button
 											type='submit'
 											color='emerald'
