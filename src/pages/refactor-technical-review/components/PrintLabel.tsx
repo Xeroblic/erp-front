@@ -100,6 +100,7 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 					<React.Fragment key='screen'>
 						<span style={{ fontWeight: 'bold' }}>PANT: </span>
 						{extractValue(details.screen_inches)}{' '}
+						{details.is_touchscreen ? '(TOUCH) ' : ''}
 					</React.Fragment>,
 					<React.Fragment key='battery'>
 						<span style={{ fontWeight: 'bold' }}>BAT: </span>
@@ -159,6 +160,7 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 					<React.Fragment key='screen'>
 						<span style={{ fontWeight: 'bold' }}>PANT: </span>
 						{extractValue(details.screen_inches)}{' '}
+						{details.is_touchscreen ? '(TOUCH) ' : ''}
 					</React.Fragment>,
 				);
 				break;
@@ -168,6 +170,7 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 					<React.Fragment key='screen'>
 						<span style={{ fontWeight: 'bold' }}>PANT: </span>
 						{extractValue(details.screen_inches)}{' '}
+						{details.is_touchscreen ? '(TOUCH) ' : ''}
 					</React.Fragment>,
 					<React.Fragment key='resolution'>
 						<span style={{ fontWeight: 'bold' }}>RES: </span>
