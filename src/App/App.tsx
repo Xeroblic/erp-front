@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 import dayjs from 'dayjs';
 import colors from 'tailwindcss/colors';
@@ -20,6 +21,16 @@ import NotificationsStreamProvider from '@/notifications/NotificationsStreamProv
 import tokenManager from '@/services/auth/tokenManager';
 import { useVersion } from '@/hooks/useVersion';
 
+
+const queryClient = new QueryClient({
+	defaultOptions: {
+		queries: {
+			refetchOnWindowFocus: false,
+			retry: 1,
+		},
+	},
+});
+
 const App = () => {
 	getOS();
 
@@ -33,6 +44,8 @@ const App = () => {
 	const { isAuthenticated } = useAppSelector((state) => state.auth);
 
 	const version = useVersion();
+
+	
 
 	useEffect(() => {
 		if (version === 'dev') {
@@ -96,7 +109,7 @@ const App = () => {
 	// (window as any).tokenManager = tokenManager;
 	// }
 	return (
-		<>
+		<QueryClientProvider client={queryClient}>
 			<ToastContainer theme={isDarkTheme ? 'dark' : 'light'} draggable />
 
 			<style>
@@ -142,7 +155,7 @@ const App = () => {
 					</Wrapper>
 				</div>
 			)}
-		</>
+		</QueryClientProvider>
 	);
 };
 

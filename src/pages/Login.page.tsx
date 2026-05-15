@@ -22,11 +22,12 @@ const LoginPage = () => {
 	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
 	const [passwordShowStatus, setPasswordShowStatus] = useState(false);
-	const [isNavOpen, setIsNavOpen] = useState(false); // drawer mobile
+	const [isNavOpen, setIsNavOpen] = useState(false);
 
 	useKeyPressEvent('Enter', () => {
 		formik.handleSubmit();
 	});
+
 
 	const formik = useFormik({
 		initialValues: { email: '', password: '' },
@@ -52,16 +53,13 @@ const LoginPage = () => {
 
 	return (
 		<PageWrapper isProtectedRoute={false} className='min-h-screen' name='Sign In'>
-			{/* BG clarito */}
 			<div className='fixed inset-0 -z-10'>
 				<div className='absolute inset-0 bg-gradient-to-br from-emerald-200 via-emerald-300 to-emerald-500' />
 				<div className='absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,_#000_1px,_transparent_1px)] opacity-[0.06] mix-blend-overlay [background-size:18px_18px]' />
 			</div>
 
 			<div className='relative z-0 flex min-h-screen items-center justify-center p-4 sm:p-6 lg:p-10'>
-				{/* CARD CONTENEDORA (nav + contenido adentro en desktop) */}
 				<Card className='w-full max-w-6xl overflow-hidden rounded-3xl border border-emerald-900/10 bg-white/75 shadow-2xl backdrop-blur-xl'>
-					{/* HEADER DENTRO DE LA CARD */}
 					<div className='relative z-10 flex items-center justify-between border-b border-emerald-900/10 bg-white/70 px-4 py-3 sm:px-6'>
 						<div className='flex items-center gap-2'>
 							<LogoTemplate className='h-8 w-10' />
@@ -70,7 +68,6 @@ const LoginPage = () => {
 							</span>
 						</div>
 
-						{/* desktop menu (aparece dentro de la card) */}
 						<div className='hidden items-center gap-3 lg:flex'>
 							<Link
 								to='/landing'
@@ -96,7 +93,6 @@ const LoginPage = () => {
 							</Button>
 						</div>
 
-						{/* mobile hamburger (abre drawer FULL, por encima de todo) */}
 						<div className='lg:hidden'>
 							<button
 								aria-label='Abrir menú'
@@ -107,10 +103,8 @@ const LoginPage = () => {
 						</div>
 					</div>
 
-					{/* CONTENIDO */}
 					<CardBody className='p-0'>
 						<div className='grid grid-cols-1 lg:grid-cols-2'>
-							{/* Lado form */}
 							<div className='flex items-center justify-center p-6 sm:p-8 lg:p-12'>
 								<div className='w-full max-w-sm space-y-6'>
 									<div className='flex justify-center'>
@@ -291,8 +285,6 @@ const LoginPage = () => {
 				</Card>
 			</div>
 
-			{/* DRAWER MOBILE (FULLSCREEN SOBRE TODO) */}
-			{/* overlay */}
 			<div
 				aria-hidden={!isNavOpen}
 				onClick={() => setIsNavOpen(false)}
@@ -301,7 +293,6 @@ const LoginPage = () => {
 					isNavOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0',
 				)}
 			/>
-			{/* panel */}
 			<aside
 				role='dialog'
 				aria-label='Menú de navegación'

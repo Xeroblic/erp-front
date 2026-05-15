@@ -3,7 +3,8 @@ import { useFormik } from 'formik';
 import { useParams } from 'react-router-dom';
 import { TicketFormValues } from '@/pages/Public/formLockCleare/components/FormLockCare.types';
 import { formLockCareValidationSchema } from '@/pages/Public/formLockCleare/components/FormLockCare.validation';
-import { lockersPublicService, ILockerPublicInfo } from '@/services/lockersPublicService';
+import lockersPublicService from '@/services/lockers/lockersPublicService';
+import { ILockerPublicInfo } from '@/interface/lockers.interface';
 import { mapFormToCheckInPayload } from '../types';
 import { toast } from '@/utils/toast.utils';
 
@@ -62,8 +63,8 @@ export const usePublicLockCare = () => {
 
                 if (!info.is_available) {
                     setInfoError(
-                        (info.message && typeof info.message === 'string') 
-                            ? info.message.replace('.', '') 
+                        (info.message && typeof info.message === 'string')
+                            ? info.message.replace('.', '')
                             : 'Este casillero se encuentra ocupado.'
                     );
 
