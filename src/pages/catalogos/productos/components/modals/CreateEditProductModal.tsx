@@ -716,7 +716,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 												{formFieldsMarkup}
 											</div>
 										</Tab>
-										<Tab id='nuevo_formulario' text='Publicación WooCommerce (DEV)' icon='HeroCodeBracketSquare' badge='DEV ONLY'>
+										<Tab id='nuevo_formulario' text='Publicacion Sincronizada WooErp' icon='HeroCodeBracketSquare'>
 											<WooCommerceProductTab
 												setActiveTab={setActiveTab}
 												branchId={values.branch_id ?? null}

@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import ApiService from '@/services/ApiService';
 import { useAppSelector } from '@/store';
+import { Collapse } from '@/components/utils';
 
 interface WooCommerceProductTabProps {
 	setActiveTab: (tab: 'formulario' | 'nuevo_formulario') => void;
@@ -55,12 +56,13 @@ const WooCommerceProductTab: React.FC<WooCommerceProductTabProps> = ({
 	const [skuProduct, setSkuProduct] = useState('');
 	const [wooDescription, setWooDescription] = useState('');
 	const [wooPrice, setWooPrice] = useState('');
+	const [wooPriceOffer, setWooPriceOffer] = useState('');
 	const [wooImageUrl, setWooImageUrl] = useState('');
 	const [associatedProductId, setAssociatedProductId] = useState<string>('');
 
 	const [erpProducts, setErpProducts] = useState<ERPProductSummary[]>([]);
 	const [loadingProducts, setLoadingProducts] = useState(false);
-
+	const [collapseOpen, setCollapseOpen] = useState(false);
 	const fetchERPProducts = useCallback(async (showToast = false) => {
 		setLoadingProducts(true);
 		try {
@@ -76,18 +78,18 @@ const WooCommerceProductTab: React.FC<WooCommerceProductTabProps> = ({
 			const rawData = response.data?.data || response.data || [];
 			const formattedProducts: ERPProductSummary[] = Array.isArray(rawData)
 				? rawData.map((p: any) => ({
-						id: p.id,
-						name: p.name || 'Sin Nombre',
-						sku: p.sku || 'SIN-SKU',
-						price: Number(p.price || 0),
-						stock: Number(p.stock || 0),
-						current_status: p.current_status,
-				  }))
+					id: p.id,
+					name: p.name || 'Sin Nombre',
+					sku: p.sku || 'SIN-SKU',
+					price: Number(p.price || 0),
+					stock: Number(p.stock || 0),
+					current_status: p.current_status,
+				}))
 				: [];
 
 			setErpProducts(formattedProducts);
 			if (showToast) {
-				toast.success('Lista de productos ERP actualizada ✓');
+				toast.success('Lista de productos ERP actualizada ');
 			}
 		} catch (error) {
 			console.error('[WooCommerceTab] Error fetching ERP products:', error);
@@ -146,7 +148,7 @@ const WooCommerceProductTab: React.FC<WooCommerceProductTabProps> = ({
 								</p>
 							</div>
 						</div>
-						
+
 						<div className='flex items-center gap-2 self-end md:self-auto'>
 							<Button
 								variant='outline'
@@ -158,7 +160,7 @@ const WooCommerceProductTab: React.FC<WooCommerceProductTabProps> = ({
 								<Icon icon='HeroPlusCircle' className='mr-1.5 h-4 w-4' />
 								Crear en ERP
 							</Button>
-							
+
 							<Button
 								variant='outline'
 								type='button'
@@ -167,17 +169,17 @@ const WooCommerceProductTab: React.FC<WooCommerceProductTabProps> = ({
 								className='text-xs font-semibold hover:bg-neutral-100'
 								isDisable={loadingProducts || isBusy}
 							>
-								<Icon 
-									icon='HeroArrowPath' 
-									className={`mr-1.5 h-4 w-4 ${loadingProducts ? 'animate-spin text-blue-500' : ''}`} 
+								<Icon
+									icon='HeroArrowPath'
+									className={`mr-1.5 h-4 w-4 ${loadingProducts ? 'animate-spin text-blue-500' : ''}`}
 								/>
 								Recargar
 							</Button>
 						</div>
 					</div>
 				</CardHeader>
-				
-				<CardBody className='p-5 space-y-4'>
+
+				<CardBody className='p-0 space-y-4'>
 					<FieldContainer id='associated_product' label='Buscar Producto en Zentria ERP'>
 						<SelectReact
 							name='associated_product'
@@ -191,35 +193,61 @@ const WooCommerceProductTab: React.FC<WooCommerceProductTabProps> = ({
 							isSearchable
 						/>
 					</FieldContainer>
-
 					{selectedProduct && (
-						<div className='mt-4 p-4 rounded-xl border border-emerald-100 dark:border-emerald-950/30 bg-emerald-50/20 dark:bg-emerald-950/10 transition-all duration-300 ease-in-out'>
-							<div className='flex items-start gap-3'>
-								<div className='p-1.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-lg mt-0.5 animate-pulse'>
-									<Icon icon='HeroCheckCircle' className='h-4 w-4' />
-								</div>
-								<div className='flex-1 space-y-1'>
-									<span className='text-xs font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider'>
-										Sincronización Activa de Inventario ✓
-									</span>
-									<p className='text-xs text-neutral-600 dark:text-neutral-300 leading-relaxed'>
-										Este producto de WooCommerce quedará enlazado al stock de <strong>{selectedProduct.sku}</strong>.
-										Las ventas en WooCommerce deducirán automáticamente del stock disponible para la venta en el ERP.
-									</p>
-									<div className='flex flex-wrap gap-4 mt-3 pt-2 border-t border-emerald-100/50 dark:border-emerald-950/20 text-xs font-medium'>
-										<div className='flex items-center gap-1.5 text-neutral-600 dark:text-neutral-400'>
-											<Icon icon='HeroSquare3Stack3D' className='h-3.5 w-3.5 text-neutral-400' />
-											Stock ERP: <span className='text-neutral-800 dark:text-neutral-200 font-bold'>{selectedProduct.stock} uds</span>
+						<div className='flex items-start space-x-4 w-full-mt-4'>
+
+							<div className='flex-shrink-0 pt-2'>
+								<div className='flex items-center justify-center gap-2'>
+									<Button
+										variant='solid'
+										color={collapseOpen ? 'red' : 'emerald'}
+										onClick={() => setCollapseOpen(!collapseOpen)}
+										icon={collapseOpen ? 'HeroXMark' : 'HeroChevronDown'}
+										rounded='rounded-full'
+										size='sm'
+										/>
+									{collapseOpen === true ? (
+										''
+									) : (
+										<div className='mt-2'>
+											<p
+												className='text-center text-[11px] text-emerald-500 dark:text-emerald-400 font-bold uppercase tracking-wider animate-slide-up'>
+												Información del Producto
+											</p>
 										</div>
-										<div className='flex items-center gap-1.5 text-neutral-600 dark:text-neutral-400'>
-											<Icon icon='HeroTag' className='h-3.5 w-3.5 text-neutral-400' />
-											Estado: <span className='px-2 py-0.5 bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 rounded-md font-bold text-[10px] uppercase'>
-												{selectedProduct.current_status?.label || 'Disponible para Venta'}
+									)}
+								</div>
+							</div>
+
+							<Collapse isOpen={collapseOpen}>
+								<div className='p-4 rounded-xl border border-emerald-100 dark:border-emerald-950/30 bg-emerald-50/20 dark:bg-emerald-950/10 transition-all duration-300 ease-in-out w-full'>									<div className='flex items-start gap-3'>
+										<div className='p-1.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-lg mt-0.5 animate-pulse'>
+											<Icon icon='HeroCheckCircle' className='h-4 w-4' />
+										</div>
+										<div className='flex-1 space-y-1'>
+											<span className='text-xs font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider'>
+												Sincronización Activa de Inventario 
 											</span>
+											<p className='text-xs text-neutral-600 dark:text-neutral-300 leading-relaxed'>
+												Este producto de WooCommerce quedará enlazado al stock de <strong>{selectedProduct.sku}</strong>.
+												Las ventas en WooCommerce deducirán automáticamente del stock disponible para la venta en el ERP.
+											</p>
+											<div className='flex flex-wrap gap-4 mt-3 pt-2 border-t border-emerald-100/50 dark:border-emerald-950/20 text-xs font-medium'>
+												<div className='flex items-center gap-1.5 text-neutral-600 dark:text-neutral-400'>
+													<Icon icon='HeroSquare3Stack3D' className='h-3.5 w-3.5 text-neutral-400' />
+													Stock ERP: <span className='text-neutral-800 dark:text-neutral-200 font-bold'>{selectedProduct.stock} uds</span>
+												</div>
+												<div className='flex items-center gap-1.5 text-neutral-600 dark:text-neutral-400'>
+													<Icon icon='HeroTag' className='h-3.5 w-3.5 text-neutral-400' />
+													Estado: <span className='px-2 py-0.5 bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 rounded-md font-bold text-[10px] uppercase'>
+														{selectedProduct.current_status?.label || 'Disponible para Venta'}
+													</span>
+												</div>
+											</div>
 										</div>
 									</div>
 								</div>
-							</div>
+							</Collapse>
 						</div>
 					)}
 				</CardBody>
@@ -241,9 +269,9 @@ const WooCommerceProductTab: React.FC<WooCommerceProductTabProps> = ({
 						</div>
 					</div>
 				</CardHeader>
-				
+
 				<CardBody className='p-5 space-y-4'>
-					<div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+					<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
 						<div className='md:col-span-2'>
 							<FieldContainer id='woo_name' label='Nombre del Producto en la Tienda'>
 								<Input
@@ -257,21 +285,35 @@ const WooCommerceProductTab: React.FC<WooCommerceProductTabProps> = ({
 								/>
 							</FieldContainer>
 						</div>
-						
-						<div>
-							<FieldContainer id='woo_price' label='Precio WooCommerce ($)'>
-								<Input
-									id='woo_price'
-									name='woo_price'
-									type='number'
-									placeholder='Ej: 450000'
-									value={wooPrice}
-									onChange={(e: React.ChangeEvent<HTMLInputElement>) => setWooPrice(e.target.value)}
-									disabled={isBusy}
-									required
-								/>
-							</FieldContainer>
-						</div>
+
+					</div>
+					<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+						<FieldContainer id='woo_price' label='Precio WooCommerce ($)'>
+							<Input
+								id='woo_price'
+								name='woo_price'
+								type='number'
+								min={0}
+								placeholder='Ej: 450000'
+								value={wooPrice}
+								onChange={(e: React.ChangeEvent<HTMLInputElement>) => setWooPrice(e.target.value)}
+								disabled={isBusy}
+								required
+							/>
+						</FieldContainer>
+							<FieldContainer id='woo_price_offer' label='Precio rebajado WooCommerce ($)'>
+							<Input
+								id='woo_price_offer'
+								name='woo_price_offer'
+								type='number'
+								min={0}
+								placeholder='Ej: 400000'
+								value={wooPriceOffer}
+								onChange={(e: React.ChangeEvent<HTMLInputElement>) => setWooPriceOffer(e.target.value)}
+								disabled={isBusy}
+								required
+							/>
+						</FieldContainer>
 					</div>
 
 					<FieldContainer id='woo_image' label='URL Imagen de Referencia / Portada'>
@@ -286,7 +328,7 @@ const WooCommerceProductTab: React.FC<WooCommerceProductTabProps> = ({
 									disabled={isBusy}
 								/>
 							</div>
-						
+
 							<div className='flex-1'>
 								<Input
 									id='woo_image'
@@ -297,12 +339,12 @@ const WooCommerceProductTab: React.FC<WooCommerceProductTabProps> = ({
 									disabled={isBusy}
 								/>
 							</div>
-							
+
 							{wooImageUrl && (
 								<div className='h-10 w-10 shrink-0 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden bg-neutral-50 dark:bg-neutral-900 flex items-center justify-center'>
-									<img 
-										src={wooImageUrl} 
-										alt='Vista previa' 
+									<img
+										src={wooImageUrl}
+										alt='Vista previa'
 										className='h-full w-full object-cover'
 										onError={(e) => {
 											(e.target as HTMLImageElement).src = 'https://placehold.co/40x40?text=Error';
