@@ -47,7 +47,6 @@ const extractQuoteIdFromResponse = (
 	payload?: CreateQuoteFromSaleResponse | null,
 ): number | null => {
 	if (!payload) return null;
-	// Extraer SOLO el quote_id, ignorando sale_id para evitar búsquedas incorrectas
 	const rawId = payload.quote?.id ?? payload.quote_id ?? payload.quoteId ?? payload.id;
 	if (typeof rawId === 'number') {
 		return Number.isFinite(rawId) && rawId > 0 ? rawId : null;
@@ -99,6 +98,9 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	const [creatingQuote, setCreatingQuote] = useState(false);
 	const [createdQuoteId, setCreatedQuoteId] = useState<number | null>(null);
 
+
+
+
 	useEffect(() => {
 		if (!isOpen) return;
 		if (!subsidiaryId || !saleId) return;
@@ -129,7 +131,6 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 				sum +
 				parseAmount(
 					it.total ??
-						// fallback si el backend algún día no envía total
 						parseAmount(it.subtotal ?? 0) + parseAmount(it.tax_amount ?? 0),
 				),
 			0,
@@ -210,9 +211,6 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 		}
 	}, [subsidiaryId, saleId, creatingQuote, navigate]);
 
-	// Logic to determine if we show "Create Quote" or "View Quote"
-	// We check 'quote_id' (legacy) OR 'documents_metadata.origin_quote_id' (from JSON dump)
-	// OR if we just created one in this session (createdQuoteId)
 	const existingQuoteId =
 		detail?.quote_id ?? (detail?.documents_metadata as any)?.origin_quote_id;
 	const effectiveQuoteId = createdQuoteId ?? existingQuoteId;
@@ -223,27 +221,21 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 		}
 	};
 
-	// Helper to detect if an item requires serial numbers
-	// We check standard flags OR inference from reservation metadata (if it lacks 'nonserial' key)
 	const isItemTrackable = (it: any): boolean => {
 		if (it.product?.is_trackable || it.product?.serial_tracking) return true;
 		if (it.meta_json?.reservation) {
-			// If reservation exists and DOES NOT have 'nonserial', it likely assumes serialized tracking
 			return !it.meta_json.reservation.nonserial;
 		}
 		return false;
 	};
 
 	const handleCloseSale = async () => {
-		// Check if any item requires serial numbers
 		const needsSerials = items.some(isItemTrackable);
 
 		if (needsSerials) {
 			setCloseOpen(true);
 			return;
 		}
-
-		// If no serials appear to be needed, confirm and try to close directly
 		setConfirmCloseOpen(true);
 	};
 
@@ -277,9 +269,22 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 		? 'border-rose-500 bg-rose-50 text-rose-700 hover:bg-rose-100 hover:text-rose-900 dark:text-rose-200 dark:hover:bg-rose-500/20 dark:hover:text-rose-100'
 		: 'border-violet-500 bg-violet-50 text-violet-700 hover:bg-violet-100 hover:text-violet-900 dark:text-violet-300 dark:hover:bg-violet-500/20 dark:hover:text-violet-100';
 
+
+	const statusColorMap: Record<string, string> = {
+		'draft': 'zinc',
+		'pending': 'amber',
+		'on-hold': 'orange',
+		'confirmed': 'sky',
+		'processing': 'indigo',
+		'paid': 'teal',
+		'completed': 'emerald',
+		'delivered': 'violet',
+		'cancelled': 'red',
+		'refunded': 'slate',
+	};
 	return (
 		<Modal isOpen={isOpen} setIsOpen={onClose} size='xl' isScrollable isStaticBackdrop>
-			<ModalHeader>
+			<ModalHeader className='flex items-center justify-between'>
 				<Badge>
 					Detalle de Venta -{' '}
 					<span className='ml-2 text-lg text-teal-600 dark:text-teal-100'>
@@ -287,13 +292,13 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 					</span>
 				</Badge>
 				{/* #{detail?.id ?? saleId} */}
-				<Badge variant='solid' color='blue' className='ml-4 w-fit px-2 text-sm'>
+				<Badge variant='solid' color={`${statusColorMap[detail?.status ?? 'draft']}`} className='ml-4 w-fit px-2 text-sm text-white'>
 					{translateStatus(detail?.status)}
 				</Badge>
 			</ModalHeader>
 
 			<ModalBody className='space-y-4'>
-				<Card className='mb-2 bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80'>
+				<Card className='mb-2 bg-white/90 shadow-sm'>
 					<CardBody className='flex flex-col gap-2 md:flex-row md:items-center md:justify-between'>
 						<div className='flex flex-col gap-1'>
 							<span className='text-xs font-semibold uppercase tracking-wide text-zinc-500'>
@@ -311,8 +316,8 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 							</div>
 						</div>
 						<div className='flex flex-col gap-2 md:flex-row md:items-center md:gap-4'>
-							<div className='flex flex-col items-center justify-center space-y-3'>
-								<p className=''>Detalle de Pago</p>
+							<div className='flex flex-row items-center justify-center space-y-3'>
+								<p className='mr-4 uppercase tracking-wide font-medium'>Detalle de Pago</p>
 								<div className='flex flex-col items-center justify-center gap-2 space-y-2 rounded-md border-2 border-dashed border-yellow-500 p-2 px-4 dark:border-white'>
 									<Badge variant='solid' color='teal' className='w-fit px-2'>
 										{getFirstCapitalize(translateStatus(detail?.document_type))}
@@ -347,7 +352,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 					</CardBody>
 				</Card>
 				<div className='grid gap-4 lg:grid-cols-3'>
-					<Card className='bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80'>
+					<Card className='bg-white/90 shadow-sm'>
 						<CardHeader>
 							<CardTitle>Totales</CardTitle>
 						</CardHeader>
@@ -369,7 +374,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 						</CardBody>
 					</Card>
 
-					<Card className='bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80'>
+					<Card className='bg-white/90 shadow-sm'>
 						<CardHeader>
 							<CardTitle>Cliente</CardTitle>
 						</CardHeader>
@@ -401,7 +406,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 						</CardBody>
 					</Card>
 
-					<Card className='bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80'>
+					<Card className='bg-white/90 shadow-sm'>
 						<CardHeader>
 							<CardTitle>Direcciones</CardTitle>
 						</CardHeader>
@@ -426,7 +431,28 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 					</Card>
 				</div>
 
-				<Card className='bg-white/90 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80'>
+				{detail?.notes ? (
+					<Card className='bg-emerald-500/40 shadow-sm'>
+						<CardHeader>
+							<CardTitle>Notas del Cliente</CardTitle>
+						</CardHeader>
+						<CardBody>
+							<p>
+								{detail?.notes}
+							</p>
+						</CardBody>
+					</Card>
+				) :(
+					<Card className='bg-red-500/40 shadow-sm'>
+						<CardHeader>
+							<CardTitle>Notas del Cliente</CardTitle>
+						</CardHeader>
+						<CardBody>
+							<p>No hay notas del cliente</p>
+						</CardBody>
+					</Card>
+				)}
+				<Card className='bg-white/90 shadow-sm'>
 					<CardHeader className='flex items-center justify-between'>
 						<CardTitle>Ítems de la venta</CardTitle>
 					</CardHeader>

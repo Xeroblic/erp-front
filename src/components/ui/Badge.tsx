@@ -22,7 +22,7 @@ interface IBadgeProps {
 	borderWidth?: TBorderWidth;
 	children: ReactNode;
 	className?: string;
-	color?: TColors;
+	color?: TColors | string;
 	colorIntensity?: TColorIntensity;
 	rounded?: TRounded;
 	variant?: TBadgeVariants;
