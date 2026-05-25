@@ -72,7 +72,11 @@ const Badge: FC<IBadgeProps> = (props) => {
 	const parsedColor = String(color) as TColors;
 
 	const { textColor } = useColorIntensity(parsedIntensity);
-y
+	const resolvedTextColor = resolveTailwindColor(parsedColor, parsedIntensity);
+	const resolvedBgColor = resolveTailwindColor(parsedColor, parsedIntensity);
+	const resolvedSoftBgColor = resolveTailwindColorAlpha(parsedColor, parsedIntensity, 0.1);
+	const resolvedBorderColor = resolveTailwindColor(parsedColor, parsedIntensity);
+
 	const childrenAsString = reactNodeToString(children);
 
 	const typewriterResult = useTypewriter(childrenAsString, {

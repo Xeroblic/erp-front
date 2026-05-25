@@ -10,7 +10,7 @@ const TransitionThemeGlyph = ({ isToDark }: { isToDark: boolean }) =>
 			viewBox: '0 0 64 64',
 			width: 96,
 			height: 96,
-			ariaHidden: true,
+			"aria-hidden": true,
 			focusable: false,
 			style: { display: 'block' },
 		},
@@ -37,7 +37,7 @@ const TransitionThemeGlyph = ({ isToDark }: { isToDark: boolean }) =>
 	);
 
 const COLORS = {
-	TO_LIGHT: '#FDBA74', // Orange-300 (Warm)
+	TO_LIGHT: '#FDBA74',
 	TO_DARK: '#6366F1', // Indigo-500 (Cool)
 };
 

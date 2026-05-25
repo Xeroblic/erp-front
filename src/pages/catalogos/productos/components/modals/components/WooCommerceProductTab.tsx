@@ -178,7 +178,6 @@ const WooCommerceProductTab: React.FC<WooCommerceProductTabProps> = ({
 						</div>
 					</div>
 				</CardHeader>
-
 				<CardBody className='p-0 space-y-4'>
 					<FieldContainer id='associated_product' label='Buscar Producto en Zentria ERP'>
 						<SelectReact

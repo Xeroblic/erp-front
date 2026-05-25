@@ -4,11 +4,9 @@ import { toast } from 'react-toastify';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
 import Card, { CardBody } from '@/components/ui/Card';
-import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
 
-// Componentes modulares
 import ProductsHeader from './components/ProductsHeader';
 import ProductStats from './components/ProductStats';
 import CreateEditProductModal from './components/modals/CreateEditProductModal';
@@ -16,11 +14,9 @@ import DeleteProductModal from './components/modals/DeleteProductModal';
 import { ProductListTab, InventoryTab } from './components/Tabs';
 import Tabs, { Tab } from '@/components/ui/Tabs';
 
-// Hooks centralizados de autorización
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import useAuthorization from '@/hooks/useAuthorization';
 
-// Hooks y tipos
 import { useProductos } from './hooks/useProductos';
 import type { IProduct } from '@/interface/product.interface';
 import { PRODUCT_DEFAULT_FILTERS } from './constants/products.constant';
@@ -31,21 +27,17 @@ import StockCatalogTab from './components/Tabs/StockCatalogTab';
 const Productos: React.FC = () => {
 	const navigate = useNavigate();
 
-	// ── Autorización centralizada ─────────────────────────────────────────
 	const { branchId: currentBranchId, subsidiaryId, visibleBranches } = useCurrentBranch();
 	const { canAccessBranch } = useAuthorization();
 
-	// ── Estado local de UI ────────────────────────────────────────────────
 	const [filters, setFilters] = useState(PRODUCT_DEFAULT_FILTERS);
 	const [page, setPage] = useState(1);
 	const [createOpen, setCreateOpen] = useState(false);
 	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 	const [productToDelete, setProductToDelete] = useState<IProduct | null>(null);
 	const [activeTab, setActiveTab] = useState('products');
-	const [viewMode, setViewMode] = useState<ProductsViewMode | null>(null);
-	const [viewModeModalOpen, setViewModeModalOpen] = useState(true);
+	const [viewMode, setViewMode] = useState<ProductsViewMode>('branches');
 
-	// ── Hook de datos ─────────────────────────────────────────────────────
 	const {
 		products,
 		meta,
@@ -63,27 +55,24 @@ const Productos: React.FC = () => {
 		categoriesLoading,
 		creating,
 		createProduct,
-		updateProduct,
 		deleteProduct,
 		refresh,
 	} = useProductos({
 		branchId: currentBranchId,
 		subsidiaryId,
-		mode: viewMode ?? 'branches',
-		enabled: !!viewMode,
+		mode: viewMode,
+		enabled: true,
 		filters,
 		page,
 		perPage: 15,
 	});
 
-	// ── Branches filtradas por visibilidad del usuario ─────────────────────
 	const filteredBranches = useMemo(() => {
 		if (!visibleBranches.length) return branches;
 		const allowed = new Set(visibleBranches.map((branch) => branch.id));
 		return branches.filter((branch) => allowed.has(branch.id));
 	}, [branches, visibleBranches]);
 
-	// ── Branch actual resuelta ────────────────────────────────────────────
 	const currentBranch = useMemo(() => {
 		const targetBranchId = currentBranchId ?? activeBranchId ?? null;
 		if (!targetBranchId) return null;
@@ -112,12 +101,10 @@ const Productos: React.FC = () => {
 		return undefined;
 	}, [currentBranch]);
 
-	// ── Resetear página al cambiar de sucursal ────────────────────────────
 	useEffect(() => {
 		setPage(1);
 	}, [currentBranchId]);
 
-	// ── Filtrado local para stock admin ───────────────────────────────────
 	const stockAdminProducts = useMemo(() => {
 		const search = filters.search?.trim().toLowerCase() ?? '';
 		if (!search) return products;
@@ -130,7 +117,6 @@ const Productos: React.FC = () => {
 		});
 	}, [filters.search, products]);
 
-	// ── Handlers ──────────────────────────────────────────────────────────
 	const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const { value } = event.target;
 		setFilters((prev) => ({ ...prev, search: value }));
@@ -182,19 +168,8 @@ const Productos: React.FC = () => {
 		setActiveTab('products');
 	};
 
-	const handleSelectViewMode = (mode: ProductsViewMode) => {
-		setViewMode(mode);
-		setViewModeModalOpen(false);
-		setPage(1);
-	};
-
 	const handleToggleViewMode = () => {
-		if (!viewMode) {
-			setViewModeModalOpen(true);
-			return;
-		}
 		setViewMode(viewMode === 'subsidiaries' ? 'branches' : 'subsidiaries');
-		setViewModeModalOpen(false);
 		setPage(1);
 	};
 
@@ -258,60 +233,10 @@ const Productos: React.FC = () => {
 		}
 	};
 
-	// ── Verificación de acceso a la sucursal actual ───────────────────────
 	const hasBranchAccess = canAccessBranch(currentBranchId);
 
 	return (
 		<PageWrapper name='catalog-products'>
-			<Modal
-				isOpen={viewModeModalOpen}
-				setIsOpen={() => undefined}
-				isStaticBackdrop
-				isCentered={true}>
-				<ModalHeader>
-					<div className='flex w-full items-center gap-2 text-xl font-semibold text-zinc-900 dark:text-zinc-100'>
-						<Icon icon='HeroEye' className='size-5 text-blue-500' />
-						<span>Ver detalle</span>
-					</div>
-				</ModalHeader>
-				<ModalBody>
-					<p className='mb-4 text-sm text-zinc-600 dark:text-zinc-300'>
-						Selecciona como quieres consultar el catalogo de productos.
-					</p>
-					<div className='grid grid-cols-1 gap-3 md:grid-cols-2'>
-						<button
-							type='button'
-							onClick={() => handleSelectViewMode('branches')}
-							className='flex flex-col items-center rounded-xl border border-zinc-200 bg-zinc-50 p-6 text-center transition hover:border-blue-400 hover:bg-blue-50 dark:border-zinc-700 dark:bg-zinc-800/60 dark:hover:border-blue-500'>
-							<span className='mb-3 flex size-12 items-center justify-center rounded-full bg-blue-100 text-blue-500 dark:bg-blue-500/20'>
-								<Icon icon='HeroBuildingOffice2' className='size-6' />
-							</span>
-							<span className='text-base font-semibold text-zinc-900 dark:text-zinc-100'>
-								Ver por sucursales
-							</span>
-							<span className='mt-1 text-sm text-zinc-600 dark:text-zinc-300'>
-								Usa el slice y endpoints legacy por sucursal.
-							</span>
-						</button>
-
-						<button
-							type='button'
-							onClick={() => handleSelectViewMode('subsidiaries')}
-							className='flex flex-col items-center rounded-xl border border-zinc-200 bg-zinc-50 p-6 text-center transition hover:border-emerald-400 hover:bg-emerald-50 dark:border-zinc-700 dark:bg-zinc-800/60 dark:hover:border-emerald-500'>
-							<span className='mb-3 flex size-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-500 dark:bg-emerald-500/20'>
-								<Icon icon='HeroBuildingOffice' className='size-6' />
-							</span>
-							<span className='text-base font-semibold text-zinc-900 dark:text-zinc-100'>
-								Ver por subempresas
-							</span>
-							<span className='mt-1 text-sm text-zinc-600 dark:text-zinc-300'>
-								Usa el nuevo slice y endpoints por subsidiaria.
-							</span>
-						</button>
-					</div>
-				</ModalBody>
-			</Modal>
-
 			<ProductsHeader
 				searchValue={filters.search ?? ''}
 				onSearchChange={handleSearchChange}
