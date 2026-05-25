@@ -27,6 +27,8 @@ import {
 	createCategoryOptions,
 	initializeAttributesJson,
 	generateSmartSKU,
+	generateUniqueSmartSKU,
+	type SmartSKUParams,
 } from '../../utils/productForm.utils';
 import {
 	productSchema,
@@ -42,6 +44,8 @@ import CategorySelectorWithCreate from '../../../../../components/utils/selects/
 import { useAppSelector, useAppDispatch } from '@/store';
 import { createBrand, fetchBrands } from '@/store/slices/brands/brandsSlice';
 import Tooltip from '@/components/ui/Tooltip';
+import Tabs, { Tab } from '@/components/ui/Tabs';
+import WooCommerceProductTab from './components/WooCommerceProductTab';
 
 interface CreateEditProductModalProps {
 	isOpen: boolean;
@@ -90,6 +94,9 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 	const isEditMode = !!product;
 
 	const userId = currentUser?.id || currentUser?.pk;
+	const [activeTab, setActiveTab] = useState<'formulario' | 'nuevo_formulario'>('formulario');
+	const [skuChecking, setSkuChecking] = useState<boolean>(false);
+	const [skuManuallyEdited, setSkuManuallyEdited] = useState<boolean>(false);
 
 	const enhancedBrands = useMemo(() => {
 		if (isEditMode && product?.brand) {
@@ -272,12 +279,50 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 				}) => {
 					const isBusy = isLoading || isSubmitting;
 
+					// Determinar si los campos clave para SKU están completos
+					const skuFieldsComplete = !!(values.name?.trim() && values.brand_id && values.product_type);
+
 					// Auto-save draft
 					useEffect(() => {
 						if (!isEditMode) {
 							draftValuesRef.current = values;
 						}
 					}, [values]);
+
+					// Ref para debounce de SKU
+					const skuGenTimerRef = useRef<any>(null);
+
+					// Auto-generar SKU cuando cambian los campos relevantes (solo en modo crear)
+					useEffect(() => {
+						if (isEditMode || skuManuallyEdited) return;
+
+						const currentBrandOpt = brandOptions.find(
+							(o) => String(o.value) === String(values.brand_id),
+						);
+						const currentBrandName = currentBrandOpt ? String(currentBrandOpt.label) : '';
+
+						// Si no hay datos suficientes, limpiar SKU
+						if (!values.name?.trim() || !currentBrandName || !values.product_type) {
+							if (values.sku) void setFieldValue('sku', '', false);
+							return;
+						}
+
+						// Generar SKU con debounce para no saturar
+						if (skuGenTimerRef.current) clearTimeout(skuGenTimerRef.current);
+						skuGenTimerRef.current = setTimeout(() => {
+							const previewSku = generateSmartSKU({
+								name: values.name,
+								brandName: currentBrandName,
+								productType: values.product_type || '',
+							});
+							void setFieldValue('sku', previewSku, false);
+						}, 400);
+
+						return () => {
+							if (skuGenTimerRef.current) clearTimeout(skuGenTimerRef.current);
+						};
+						// eslint-disable-next-line react-hooks/exhaustive-deps
+					}, [values.name, values.brand_id, values.product_type, isEditMode, skuManuallyEdited]);
 
 					const selectedBrandOption: TSelectOption | null =
 						brandOptions.find(
@@ -337,288 +382,351 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 						// Marcar como sincronizado
 						lastSyncedProductType.current = values.product_type;
 					}, [values.product_type, values.attributes_json, setFieldValue]);
+					const formFieldsMarkup = (
+						<>
+							{PRODUCT_FORM_SECTIONS.map((section) => (
+								<Card key={section.key} className={section.cardClass}>
+									<CardHeader className='pb-2'>
+										<div className='flex items-start gap-3'>
+											<Icon icon={section.icon} className='h-5 w-5' />
+											<div>
+												<CardTitle className='text-base font-semibold'>
+													{section.title}
+												</CardTitle>
+												<p className='text-sm text-neutral-500'>
+													{section.description}
+												</p>
+											</div>
+										</div>
+									</CardHeader>
+									<CardBody className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+										{section.key === 'general' && (
+											<>
+												<Field name='sku'>
+													{({ field, meta }: FieldProps) => (
+														<FieldContainer
+															id='sku'
+															label='SKU'
+															error={
+																meta.touched
+																	? (meta.error as string)
+																	: undefined
+															}>
+															<div className='flex gap-2'>
+																<Input
+																	id='sku'
+																	{...field}
+																	onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+																		field.onChange(e);
+																		if (!isEditMode) setSkuManuallyEdited(true);
+																	}}
+																	required
+																	disabled={isBusy || (!isEditMode && !skuFieldsComplete && !skuManuallyEdited)}
+																	className='flex-1'
+																	placeholder={!isEditMode && !skuFieldsComplete ? 'Se genera automáticamente...' : ''}
+																/>
+																<Tooltip text={skuChecking ? 'Verificando unicidad...' : skuManuallyEdited ? 'Volver a auto-generar' : 'Regenerar SKU'}>
+																	<Button
+																		variant='outline'
+																		type='button'
+																		onClick={async () => {
+																			if (!values.name?.trim()) {
+																				toast.warning('Ingresa un nombre de producto primero');
+																				return;
+																			}
+																			const currentBrandOpt = brandOptions.find(o => String(o.value) === String(values.brand_id));
+																			const currentBrand = currentBrandOpt ? String(currentBrandOpt.label) : '';
+																			setSkuChecking(true);
+																			setSkuManuallyEdited(false);
+																			try {
+																				const branchId = values.branch_id || defaultBranchId;
+																				let newSku: string;
+																				if (branchId) {
+																					newSku = await generateUniqueSmartSKU(
+																						{ name: values.name, brandName: currentBrand, productType: values.product_type || '' },
+																						'branches',
+																						Number(branchId),
+																					);
+																				} else {
+																					newSku = generateSmartSKU({ name: values.name, brandName: currentBrand, productType: values.product_type || '' });
+																				}
+																				void setFieldValue('sku', newSku);
+																				toast.success('SKU generado y verificado ✓');
+																			} catch {
+																				const fallback = generateSmartSKU({ name: values.name, brandName: currentBrand, productType: values.product_type || '' });
+																				void setFieldValue('sku', fallback);
+																			} finally {
+																				setSkuChecking(false);
+																			}
+																		}}
+																		isDisable={isBusy || skuChecking}
+																	>
+																		{skuChecking
+																			? <Icon icon='HeroArrowPath' className='h-5 w-5 animate-spin text-blue-500' />
+																			: <Icon icon='HeroSparkles' className='h-5 w-5 text-amber-500' />
+																		}
+																	</Button>
+																</Tooltip>
+															</div>
+															{!isEditMode && !skuFieldsComplete && (
+																<p className='mt-1 text-xs text-amber-500'>
+																	<Icon icon='HeroInformationCircle' className='mr-1 inline h-3 w-3' />
+																	Completa nombre, marca y tipo para habilitar edición
+																</p>
+															)}
+														</FieldContainer>
+													)}
+												</Field>
+
+												<Field name='name'>
+													{({ field, meta }: FieldProps) => (
+														<FieldContainer
+															id='name'
+															label='Nombre'
+															error={
+																meta.touched
+																	? (meta.error as string)
+																	: undefined
+															}>
+															<Input
+																id='name'
+																{...field}
+																required
+																disabled={isBusy}
+															/>
+														</FieldContainer>
+													)}
+												</Field>
+
+												{/* Selector de Branch - Solo en modo CREAR */}
+												{!isEditMode && userId && (
+													<div className='space-y-2 md:col-span-2'>
+														<UserBranchSelector
+															userId={userId}
+															name='branch_id'
+															value={values.branch_id ?? ''}
+															onChange={(branchId) => {
+																setFieldValue('brand_id', '');
+																setFieldValue(
+																	'branch_id',
+																	branchId,
+																);
+																setFieldTouched(
+																	'branch_id',
+																	true,
+																);
+																if (branchId) {
+																	void dispatch(
+																		fetchBrands({
+																			branchId,
+																			search: '',
+																		}),
+																	);
+																}
+															}}
+															label='Sucursal'
+															placeholder='Selecciona la sucursal para este producto'
+															disabled={isBusy}
+															required
+														/>
+														{touched.branch_id &&
+															errors.branch_id && (
+																<p className='text-xs text-red-500'>
+																	{typeof errors.branch_id ===
+																		'string'
+																		? errors.branch_id
+																		: 'Selecciona una sucursal'}
+																</p>
+															)}
+													</div>
+												)}
+
+												<div className='space-y-2 md:col-span-2'>
+													<p className='text-sm font-medium'>Marca</p>
+													<BrandSelectorWithCreate
+														name='brand_id'
+														branchId={values.branch_id ?? null}
+														brandOptions={brandOptions}
+														value={values.brand_id}
+														onChange={(newBrandId) => {
+															void setFieldValue('brand_id', newBrandId);
+														}}
+														onBlur={() => {
+															void setFieldTouched('brand_id', true);
+														}}
+														brandsLoading={brandsLoading}
+														isDisabled={isBusy || (!brandOptions.length && !values.brand_id && !values.branch_id)}
+														placeholder={
+															brandsLoading
+																? 'Cargando marcas...'
+																: !brandOptions.length && !values.branch_id
+																	? 'Selecciona la sucursal primero'
+																	: 'Selecciona una marca'
+														}
+													/>
+													{touched.brand_id && errors.brand_id && (
+														<p className='text-xs text-red-500'>
+															{errors.brand_id}
+														</p>
+													)}
+												</div>
+											</>
+										)}
+
+										{section.key === 'classification' && (
+											<>
+												<div className='space-y-2'>
+													<p className='text-sm font-medium'>
+														Tipo de dispositivo
+													</p>
+													<Select
+														name='product_type'
+														value={
+															PRODUCT_DEVICE_TYPES.some(
+																(opt) =>
+																	opt.value ===
+																	values.product_type,
+															)
+																? values.product_type
+																: ''
+														}
+														onChange={(
+															event: React.ChangeEvent<HTMLSelectElement>,
+														) =>
+															setFieldValue(
+																'product_type',
+																event.target.value,
+															)
+														}
+														disabled={isBusy}>
+														<option value=''>
+															Seleccionar tipo
+														</option>
+														{PRODUCT_DEVICE_TYPES.map((option) => (
+															<option
+																key={option.value}
+																value={option.value}>
+																{option.label}
+															</option>
+														))}
+													</Select>
+												</div>
+
+												<div className='space-y-2 md:col-span-2'>
+													<p className='text-sm font-medium'>
+														Categorias
+													</p>
+													<CategorySelectorWithCreate
+														name='categories'
+														branchId={values.branch_id ?? null}
+														categoryOptions={categoryOptions}
+														value={values.categories.map(
+															(option) => ({
+																value: String(option.value),
+																label: String(option.label),
+															}),
+														)}
+														onChange={(nextOptions) => {
+															void setFieldValue(
+																'categories',
+																nextOptions.map((item) => ({
+																	value: item.value,
+																	label: item.label,
+																})),
+															);
+														}}
+														onBlur={() => {
+															void setFieldTouched(
+																'categories',
+																true,
+															);
+														}}
+														categoriesLoading={categoriesLoading}
+														placeholder={
+															categoriesLoading
+																? 'Cargando categorías...'
+																: 'Selecciona las categorías'
+														}
+														isDisabled={
+															isBusy || categoriesLoading
+														}
+													/>
+													<ErrorMessage name='categories'>
+														{(msg) => (
+															<p className='text-xs text-red-500'>
+																{msg}
+															</p>
+														)}
+													</ErrorMessage>
+												</div>
+											</>
+										)}
+									</CardBody>
+								</Card>
+							))}
+
+							<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+								{PRODUCT_TOGGLES.map((toggle) => (
+									<Card
+										key={toggle.key}
+										className='border-2 border-dashed hover:border-solid hover:border-neutral-300 transition-all duration-200 ease-in-out cursor-pointer'>
+										<CardBody className='p-0'>
+											<div className='flex w-full items-center gap-4 p-4'>
+												<span className='flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border'>
+													<Icon icon={toggle.icon} className='h-5 w-5' />
+												</span>
+												<div className='flex-1'>
+													<p className='text-sm font-semibold'>
+														{toggle.title}
+													</p>
+													<p className='text-xs text-neutral-500'>
+														{toggle.description}
+													</p>
+												</div>
+												<Checkbox
+													checked={values[toggle.key as ProductToggleKey]}
+													onChange={(event) =>
+														setFieldValue(
+															toggle.key,
+															event.target.checked,
+														)
+													}
+													disabled={isBusy}
+												/>
+											</div>
+										</CardBody>
+									</Card>
+								))}
+							</div>
+						</>
+					);
 
 					return (
 						<Form id='productForm' className='flex h-full flex-col overflow-hidden'>
 							<OffCanvasBody className='space-y-5'>
-								{PRODUCT_FORM_SECTIONS.map((section) => (
-									<Card key={section.key} className={section.cardClass}>
-										<CardHeader className='pb-2'>
-											<div className='flex items-start gap-3'>
-												<Icon icon={section.icon} className='h-5 w-5' />
-												<div>
-													<CardTitle className='text-base font-semibold'>
-														{section.title}
-													</CardTitle>
-													<p className='text-sm text-neutral-500'>
-														{section.description}
-													</p>
-												</div>
+								{import.meta.env.DEV ? (
+									<Tabs
+										activeTab={activeTab}
+										onTabChange={(id) => setActiveTab(id as 'formulario' | 'nuevo_formulario')}
+										variant='pills'
+										className='w-full'
+									>
+										<Tab id='formulario' text='Formulario Normal' icon='HeroDocumentText'>
+											<div className='space-y-5 mt-4'>
+												{formFieldsMarkup}
 											</div>
-										</CardHeader>
-										<CardBody className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-											{section.key === 'general' && (
-												<>
-													<Field name='sku'>
-														{({ field, meta }: FieldProps) => (
-															<FieldContainer
-																id='sku'
-																label='SKU'
-																error={
-																	meta.touched
-																		? (meta.error as string)
-																		: undefined
-																}>
-																<div className='flex gap-2'>
-																	<Input
-																		id='sku'
-																		{...field}
-																		required
-																		disabled={isBusy}
-																		className='flex-1'
-																	/>
-																	<Tooltip text='Generar SKU Inteligente'>
-																		<Button
-																			variant='outline'
-																			type='button'
-																			onClick={() => {
-																				if (!values.name) {
-																					toast.warning('Ingresa un nombre de producto primero');
-																					return;
-																				}
-																				const currentBrandOpt = brandOptions.find(o => String(o.value) === String(values.brand_id));
-																				const currentBrand = currentBrandOpt ? String(currentBrandOpt.label) : '';
-																				const newSku = generateSmartSKU(values.name, currentBrand);
-																				void setFieldValue('sku', newSku);
-																			}}
-																			isDisable={isBusy}
-																		>
-																			<Icon icon='HeroSparkles' className='h-5 w-5 text-amber-500' />
-																		</Button>
-																	</Tooltip>
-																</div>
-															</FieldContainer>
-														)}
-													</Field>
-													<Field name='name'>
-														{({ field, meta }: FieldProps) => (
-															<FieldContainer
-																id='name'
-																label='Nombre'
-																error={
-																	meta.touched
-																		? (meta.error as string)
-																		: undefined
-																}>
-																<Input
-																	id='name'
-																	{...field}
-																	required
-																	disabled={isBusy}
-																/>
-															</FieldContainer>
-														)}
-													</Field>
-													{/* Selector de Branch - Solo en modo CREAR */}
-													{!isEditMode && userId && (
-														<div className='space-y-2 md:col-span-2'>
-															<UserBranchSelector
-																userId={userId}
-
-																name='branch_id'
-																value={values.branch_id ?? ''}
-																onChange={(branchId) => {
-																	setFieldValue('brand_id', '');
-																	setFieldValue(
-																		'branch_id',
-																		branchId,
-																	);
-																	setFieldTouched(
-																		'branch_id',
-																		true,
-																	);
-																	if (branchId) {
-																		void dispatch(
-																			fetchBrands({
-																				branchId,
-																				search: '',
-																			}),
-																		);
-																	}
-																}}
-																label='Sucursal'
-																placeholder='Selecciona la sucursal para este producto'
-																disabled={isBusy}
-																required
-															/>
-															{touched.branch_id &&
-																errors.branch_id && (
-																	<p className='text-xs text-red-500'>
-																		{typeof errors.branch_id ===
-																			'string'
-																			? errors.branch_id
-																			: 'Selecciona una sucursal'}
-																	</p>
-																)}
-														</div>
-													)}
-
-													<div className='space-y-2 md:col-span-2'>
-														<p className='text-sm font-medium'>Marca</p>
-														<BrandSelectorWithCreate
-															name='brand_id'
-															branchId={values.branch_id ?? null}
-															brandOptions={brandOptions}
-															value={values.brand_id}
-															onChange={(newBrandId) => {
-																void setFieldValue('brand_id', newBrandId);
-															}}
-															onBlur={() => {
-																void setFieldTouched('brand_id', true);
-															}}
-															brandsLoading={brandsLoading}
-															isDisabled={isBusy || (!brandOptions.length && !values.brand_id && !values.branch_id)}
-															placeholder={
-																brandsLoading
-																	? 'Cargando marcas...'
-																	: !brandOptions.length && !values.branch_id
-																		? 'Selecciona la sucursal primero'
-																		: 'Selecciona una marca'
-															}
-														/>
-														{touched.brand_id && errors.brand_id && (
-															<p className='text-xs text-red-500'>
-																{errors.brand_id}
-															</p>
-														)}
-													</div>
-												</>
-											)}
-
-											{section.key === 'classification' && (
-												<>
-													<div className='space-y-2'>
-														<p className='text-sm font-medium'>
-															Tipo de dispositivo
-														</p>
-														<Select
-															name='product_type'
-															value={
-																PRODUCT_DEVICE_TYPES.some(
-																	(opt) =>
-																		opt.value ===
-																		values.product_type,
-																)
-																	? values.product_type
-																	: ''
-															}
-															onChange={(
-																event: React.ChangeEvent<HTMLSelectElement>,
-															) =>
-																setFieldValue(
-																	'product_type',
-																	event.target.value,
-																)
-															}
-															disabled={isBusy}>
-															<option value=''>
-																Seleccionar tipo
-															</option>
-															{PRODUCT_DEVICE_TYPES.map((option) => (
-																<option
-																	key={option.value}
-																	value={option.value}>
-																	{option.label}
-																</option>
-															))}
-														</Select>
-													</div>
-													<div className='space-y-2 md:col-span-2'>
-														<p className='text-sm font-medium'>
-															Categorias
-														</p>
-														<CategorySelectorWithCreate
-															name='categories'
-															branchId={values.branch_id ?? null}
-															categoryOptions={categoryOptions}
-															value={values.categories.map(
-																(option) => ({
-																	value: String(option.value),
-																	label: String(option.label),
-																}),
-															)}
-															onChange={(nextOptions) => {
-																void setFieldValue(
-																	'categories',
-																	nextOptions.map((item) => ({
-																		value: item.value,
-																		label: item.label,
-																	})),
-																);
-															}}
-															onBlur={() => {
-																void setFieldTouched(
-																	'categories',
-																	true,
-																);
-															}}
-															categoriesLoading={categoriesLoading}
-															placeholder={
-																categoriesLoading
-																	? 'Cargando categorías...'
-																	: 'Selecciona las categorías'
-															}
-															isDisabled={
-																isBusy || categoriesLoading
-															}
-														/>
-														<ErrorMessage name='categories'>
-															{(msg) => (
-																<p className='text-xs text-red-500'>
-																	{msg}
-																</p>
-															)}
-														</ErrorMessage>
-													</div>
-												</>
-											)}
-										</CardBody>
-									</Card>
-								))}
-
-								<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-									{PRODUCT_TOGGLES.map((toggle) => (
-										<Card
-											key={toggle.key}
-											className='border-2 border-dashed hover:border-solid hover:border-neutral-300 transition-all duration-200 ease-in-out cursor-pointer'>
-											<CardBody className='p-0'>
-												<div className='flex w-full items-center gap-4 p-4'>
-													<span className='flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border'>
-														<Icon icon={toggle.icon} className='h-5 w-5' />
-													</span>
-													<div className='flex-1'>
-														<p className='text-sm font-semibold'>
-															{toggle.title}
-														</p>
-														<p className='text-xs text-neutral-500'>
-															{toggle.description}
-														</p>
-													</div>
-													<Checkbox
-														checked={values[toggle.key as ProductToggleKey]}
-														onChange={(event) =>
-															setFieldValue(
-																toggle.key,
-																event.target.checked,
-															)
-														}
-														disabled={isBusy}
-													/>
-												</div>
-											</CardBody>
-										</Card>
-									))}
-								</div>
+										</Tab>
+										<Tab id='nuevo_formulario' text='Publicacion Sincronizada WooErp' icon='HeroCodeBracketSquare'>
+											<WooCommerceProductTab
+												setActiveTab={setActiveTab}
+												branchId={values.branch_id ?? null}
+												isBusy={isBusy}
+											/>
+										</Tab>
+									</Tabs>
+								) : (
+									formFieldsMarkup
+								)}
 							</OffCanvasBody>
 
 							<OffCanvasFooter>

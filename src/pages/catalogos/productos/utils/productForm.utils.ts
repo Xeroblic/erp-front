@@ -1,5 +1,6 @@
 import type { IBrand } from '@/interface/brand.interface';
 import type { ICategory } from '@/interface/category.interface';
+import ApiService from '@/services/ApiService';
 import type {
 	CreateProductPayload,
 	IProduct,
@@ -295,34 +296,237 @@ export const initializeAttributesJson = (productType: string): Record<string, un
 };
 
 /**
- * Genera un SKU inteligente basado en el nombre del producto y la marca.
- * Formato: 3 letras de la marca + 3 consonantes del producto + '-' + 3 caracteres aleatorios.
+ * Parámetros para la generación inteligente de SKU.
+ * Usa todos los campos relevantes del formulario para producir un código único y significativo.
  */
-export const generateSmartSKU = (productName: string, brandName: string): string => {
-	const safeName = (productName || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-	const safeBrand = (brandName || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+export interface SmartSKUParams {
+	name: string;
+	brandName: string;
+	productType: string;
+}
 
-	let prefix = '';
-	if (safeBrand.length >= 3) {
-		prefix = safeBrand.substring(0, 3);
-	} else if (safeBrand.length > 0) {
-		prefix = safeBrand.padEnd(3, 'X');
-	} else {
-		prefix = 'GEN';
-	}
-
-	// Extraer consonantes para el código del producto
-	const consonants = safeName.replace(/[AEIOU]/g, '');
-	let productCode = '';
-	if (consonants.length >= 3) {
-		productCode = consonants.substring(0, 3);
-	} else if (safeName.length >= 3) {
-		productCode = safeName.substring(0, 3);
-	} else {
-		productCode = safeName.padEnd(3, '0');
-	}
-
-	const randomSuffix = Math.random().toString(36).substring(2, 5).toUpperCase();
-
-	return `${prefix}${productCode}-${randomSuffix}`;
+/** Mapa de abreviaciones para tipos de dispositivo */
+const DEVICE_TYPE_CODES: Record<string, string> = {
+	notebook: 'NB',
+	desktop_pc: 'DK',
+	aio: 'AI',
+	monitor: 'MN',
+	docking: 'DC',
+	general: 'GN',
 };
+
+/** Abreviaciones conocidas de marcas comunes para SKUs más legibles */
+const KNOWN_BRAND_CODES: Record<string, string> = {
+	DELL: 'DL',
+	HP: 'HP',
+	LENOVO: 'LN',
+	ASUS: 'AS',
+	ACER: 'AC',
+	APPLE: 'AP',
+	SAMSUNG: 'SM',
+	LG: 'LG',
+	TOSHIBA: 'TB',
+	MSI: 'MS',
+	SONY: 'SN',
+	FUJITSU: 'FJ',
+	HUAWEI: 'HW',
+	MICROSOFT: 'MF',
+	SCORE: 'SC',
+	NC: 'NC',
+};
+
+/**
+ * Genera un sufijo aleatorio alfanumérico de la longitud especificada.
+ * Usa caracteres que no se confunden entre sí (sin I/O/0/1).
+ */
+const randomAlphaNum = (length: number): string => {
+	const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+	let result = '';
+	for (let i = 0; i < length; i++) {
+		result += chars.charAt(Math.floor(Math.random() * chars.length));
+	}
+	return result;
+};
+
+/**
+ * Extrae un código de modelo significativo del nombre del producto.
+ *
+ * Estrategia:
+ * 1. Buscar tokens alfanuméricos que contengan números (ej: "5320", "T480", "I5")
+ * 2. Concatenar los más relevantes (hasta 6 chars)
+ * 3. Si no hay números, tomar la primera palabra significativa
+ *
+ * Ejemplos:
+ *   "Latitude 5320 - I5 1145G7"  → "5320I5"
+ *   "ThinkPad T480"              → "T480"
+ *   "ProDesk 400 G6"             → "400G6"
+ *   "OptiPlex 3080 SFF"          → "3080"
+ *   "Monitor LG 24MK430"         → "24MK43"
+ */
+const extractModelCode = (productName: string): string => {
+	const normalized = (productName || '')
+		.normalize('NFD')
+		.replace(/[\u0300-\u036f]/g, '')
+		.toUpperCase();
+
+	// Separar en tokens por espacios, guiones, barras
+	const tokens = normalized.split(/[\s\-\/,]+/).filter(Boolean);
+
+	// Filtrar tokens que contienen al menos un dígito (son identificadores de modelo)
+	const modelTokens = tokens.filter((t) => /\d/.test(t));
+
+	if (modelTokens.length > 0) {
+		// Concatenar tokens de modelo, limitando a 6 caracteres
+		const joined = modelTokens
+			.map((t) => t.replace(/[^A-Z0-9]/g, ''))
+			.join('');
+		return joined.substring(0, 6);
+	}
+
+	// Sin números: tomar la primera palabra significativa (> 2 chars, no genérica)
+	const skipWords = new Set([
+		'REACONDICIONADO', 'REACOND', 'USADO', 'NUEVO', 'EQUIPO',
+		'COMPUTADOR', 'COMPUTADORA', 'PORTATIL', 'LAPTOP',
+		'DESKTOP', 'NOTEBOOK', 'MONITOR', 'DOCKING', 'ALL', 'ONE',
+	]);
+
+	const meaningfulToken = tokens.find(
+		(t) => t.length > 2 && !skipWords.has(t),
+	);
+
+	if (meaningfulToken) {
+		return meaningfulToken.replace(/[^A-Z0-9]/g, '').substring(0, 6);
+	}
+
+	// Fallback: primeros 4 chars del nombre limpio
+	return normalized.replace(/[^A-Z0-9]/g, '').substring(0, 4) || 'PROD';
+};
+
+/**
+ * Genera un SKU inteligente basado en múltiples campos del producto.
+ *
+ * Formato: [MARCA+TIPO]-[MODELO]-[SUFIJO]
+ * - MARCA+TIPO: 4 chars pegados (ej: DLNB = Dell Notebook)
+ * - MODELO: hasta 4 chars (extraído inteligentemente del nombre)
+ * - SUFIJO: 3 chars alfanuméricos aleatorios (para evitar colisiones)
+ *
+ * Ejemplos reales:
+ *   Dell Notebook "Latitude 5320 - I5 1145G7"  → DLNB-5320-A7K
+ *   HP Desktop "ProDesk 400 G6"                 → HPDK-400G-B3M
+ *   Lenovo Notebook "ThinkPad T480"             → LNNB-T480-C5N
+ *   LG Monitor "24MK430H"                      → LGMN-24MK-D2P
+ */
+export const generateSmartSKU = (
+	nameOrParams: string | SmartSKUParams,
+	brandNameLegacy?: string,
+): string => {
+	let name: string;
+	let brandName: string;
+	let productType: string;
+
+	if (typeof nameOrParams === 'object') {
+		name = nameOrParams.name;
+		brandName = nameOrParams.brandName;
+		productType = nameOrParams.productType;
+	} else {
+		name = nameOrParams;
+		brandName = brandNameLegacy || '';
+		productType = '';
+	}
+
+	const brandUpper = (brandName || '')
+		.normalize('NFD')
+		.replace(/[\u0300-\u036f]/g, '')
+		.replace(/[^a-zA-Z0-9]/g, '')
+		.toUpperCase();
+
+	// 1. Código de marca (2 chars) — usar tabla conocida o primeras 2 letras
+	const brandCode =
+		KNOWN_BRAND_CODES[brandUpper] ??
+		(brandUpper.length >= 2 ? brandUpper.substring(0, 2) : brandUpper.padEnd(2, 'X'));
+
+	// 2. Código de tipo de dispositivo (2 chars)
+	const typeCode = DEVICE_TYPE_CODES[productType] || 'GN';
+
+	// 3. Código de modelo (hasta 4 chars, extraído del nombre)
+	const modelCode = extractModelCode(name).substring(0, 4);
+
+	// 4. Sufijo aleatorio (3 chars para diferenciar productos similares)
+	const suffix = randomAlphaNum(3);
+
+	return `${brandCode}${typeCode}-${modelCode}-${suffix}`;
+};
+
+/**
+ * Verifica si un SKU ya existe en el sistema consultando el endpoint de productos.
+ * Hace un GET liviano con búsqueda por SKU exacto.
+ *
+ * @param sku - El SKU a verificar
+ * @param entityParam - 'branches' o 'subsidiaries'
+ * @param entityId - ID de la entidad
+ * @returns true si el SKU ya existe
+ */
+export const checkSkuExists = async (
+	sku: string,
+	entityParam: string,
+	entityId: number,
+): Promise<boolean> => {
+	try {
+		const response = await ApiService.fetchData<{
+			data: Array<{ sku: string }>;
+			meta?: { total: number };
+		}>({
+			url: `/${entityParam}/${entityId}/products`,
+			method: 'get',
+			params: {
+				search: sku,
+				per_page: 5,
+				fields: 'sku',
+			},
+		});
+
+		const items = Array.isArray(response.data?.data)
+			? response.data.data
+			: Array.isArray(response.data)
+				? (response.data as unknown as Array<{ sku: string }>)
+				: [];
+
+		// Verificar coincidencia exacta (insensible a mayúsculas)
+		return items.some(
+			(item) => item.sku?.toUpperCase().trim() === sku.toUpperCase().trim(),
+		);
+	} catch {
+		// En caso de error de red, retornar false para no bloquear al usuario
+		console.warn('[SKU Check] No se pudo verificar la existencia del SKU:', sku);
+		return false;
+	}
+};
+
+/**
+ * Genera un SKU único verificado contra el sistema.
+ * Reintenta hasta 5 veces si detecta colisión.
+ *
+ * @param params - Parámetros para generar el SKU
+ * @param entityParam - 'branches' o 'subsidiaries'
+ * @param entityId - ID de la entidad
+ * @returns Un SKU único verificado
+ */
+export const generateUniqueSmartSKU = async (
+	params: SmartSKUParams,
+	entityParam: string,
+	entityId: number,
+): Promise<string> => {
+	const MAX_RETRIES = 5;
+
+	for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+		const sku = generateSmartSKU(params);
+		const exists = await checkSkuExists(sku, entityParam, entityId);
+		if (!exists) return sku;
+	}
+
+	// Fallback: agregar timestamp parcial para garantizar unicidad
+	const fallbackSku = generateSmartSKU(params);
+	const timestamp = Date.now().toString(36).slice(-3).toUpperCase();
+	return `${fallbackSku}${timestamp}`;
+};
+

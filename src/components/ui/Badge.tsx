@@ -22,8 +22,8 @@ interface IBadgeProps {
 	borderWidth?: TBorderWidth;
 	children: ReactNode;
 	className?: string;
-	color?: TColors;
-	colorIntensity?: TColorIntensity;
+	color?: TColors | string;
+	colorIntensity?: TColorIntensity | number;
 	rounded?: TRounded;
 	variant?: TBadgeVariants;
 	typewriter?: boolean;
@@ -68,11 +68,14 @@ const Badge: FC<IBadgeProps> = (props) => {
 		}
 	}, []);
 
-	const { textColor } = useColorIntensity(colorIntensity);
-	const resolvedTextColor = resolveTailwindColor(color, colorIntensity);
-	const resolvedBgColor = resolveTailwindColor(color, colorIntensity);
-	const resolvedSoftBgColor = resolveTailwindColorAlpha(color, colorIntensity, 0.1);
-	const resolvedBorderColor = resolveTailwindColor(color, colorIntensity);
+	const parsedIntensity = String(colorIntensity) as TColorIntensity;
+	const parsedColor = String(color) as TColors;
+
+	const { textColor } = useColorIntensity(parsedIntensity);
+	const resolvedTextColor = resolveTailwindColor(parsedColor, parsedIntensity);
+	const resolvedBgColor = resolveTailwindColor(parsedColor, parsedIntensity);
+	const resolvedSoftBgColor = resolveTailwindColorAlpha(parsedColor, parsedIntensity, 0.1);
+	const resolvedBorderColor = resolveTailwindColor(parsedColor, parsedIntensity);
 
 	const childrenAsString = reactNodeToString(children);
 
