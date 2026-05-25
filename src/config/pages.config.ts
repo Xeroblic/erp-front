@@ -779,9 +779,9 @@ export const privatePages = {
 		subPages: {
 			reviews: {
 				id: 'technicalReviews',
-				to: '/technical-reviews',
-				text: 'Revisiones Técnicas',
-				icon: 'DuoTools',
+				to: '/technical-reviews/series',
+				text: 'Busqueda global por series',
+				icon: 'DuoSearch',
 				authority: ['view-technical-reviews-batches'],
 				roles: [
 					'super-admin',
@@ -1105,24 +1105,17 @@ export const privatePages = {
 
 export type QuickLinkConfig = {
 	section: keyof typeof privatePages;
-	/** Si no se provee, mostrará todas las sub-páginas disponibles. Si se provee, mostrará solo las especificadas en ese orden. */
 	items?: string[];
 };
 
-/**
- * CONFIGURACIÓN DEL DASHBOARD (ENLACES RÁPIDOS)
- * Aquí puedes reordenar, eliminar o agregar secciones y sus sub-páginas.
- * Las páginas con parámetros dinámicos (como :id) se excluyen automáticamente.
- */
 export const dashboardQuickLinksConfig: QuickLinkConfig[] = [
 	{
 		section: 'technical',
-		items: ['refactor', 'lotes']
+		items: ['refactor', 'lotes', 'reviews']
 	},
 	{ section: 'catalogs' },
 	{
 		section: 'commercial',
-		// Ejemplo de cómo especificar y ordenar los enlaces dentro de Comercial:
 		items: ['sales', 'quotes', 'clientesVentas']
 	},
 	// { section: 'inventory' },

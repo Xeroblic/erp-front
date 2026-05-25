@@ -5,7 +5,6 @@ import Icon from '@/components/icon/Icon';
 import PermissionGuard from '@/components/authorization/PermissionGuard';
 import Card from '@/components/ui/Card';
 
-// Importaciones para Drag and Drop
 import {
     DndContext,
     closestCenter,
@@ -93,15 +92,12 @@ const SortableSectionCard = ({ id, section, subPagesToShow }: { id: string, sect
     );
 };
 
-// Interface para recibir la cantidad de columnas desde el padre
 interface QuickLinksProps {
     columnCount: number;
 }
 
-// --- COMPONENTE PRINCIPAL ---
 const QuickLinks: React.FC<QuickLinksProps> = ({ columnCount }) => {
     
-    // Estado para el orden guardado en caché
     const [sections, setSections] = useState(() => {
         const savedOrder = sessionStorage.getItem(SESSION_ORDER_KEY);
         if (savedOrder) {
