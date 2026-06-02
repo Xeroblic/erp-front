@@ -11,6 +11,7 @@ export interface IQuickProductForm {
     sku: string;
     price: string;
     brandId: string;
+    tipo: string;
     serialTracking?: string; // '0' | '1' para checkbox
 }
 
@@ -27,6 +28,7 @@ export const QuickProductFormSchema = Yup.object().shape({
         .typeError('Debes seleccionar una marca')
         .min(1, 'Debes seleccionar una marca')
         .required('La marca es requerida'),
+    tipo: Yup.string().required('El tipo de producto es requerido'),
     serialTracking: Yup.string().optional(),
 });
 
