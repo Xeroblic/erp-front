@@ -105,7 +105,22 @@ export const useItemReview = (): UseItemReviewReturn => {
 		onProductCreated: async (product) => {
 			// Auto-select the newly created product
 			if (product?.id) {
-				handleProductChange(Number(product.id));
+				setProductId(Number(product.id));
+				
+				if (product.product_type) {
+					const pType = String(product.product_type).toLowerCase();
+					if (pType === 'desktop_pc' || pType === 'desktop') {
+						setEquipmentType('desktop');
+					} else if (pType === 'aio') {
+						setEquipmentType('aio');
+					} else if (pType === 'monitor') {
+						setEquipmentType('monitor');
+					} else if (pType === 'docking') {
+						setEquipmentType('docking');
+					} else {
+						setEquipmentType('notebook');
+					}
+				}
 			}
 			// Reload products list
 			if (branchId) {
