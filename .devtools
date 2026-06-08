@@ -1,0 +1,6 @@
+# personal-devops-tools -- project configuration
+# Auto-generated on 2026-06-08. Edit as needed.
+
+PROJECT_BASE_BRANCH=develop
+PROJECT_BUILD_CMD=
+PROJECT_SKIP_BUILD=false
