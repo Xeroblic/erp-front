@@ -80,7 +80,6 @@ const ExportExcelModal: React.FC<ExportExcelModalProps> = ({
 						</div>
 					</div>
 
-					{/* Option: Details */}
 					<div
 						className={`cursor-pointer rounded-lg border p-4 transition-all hover:bg-gray-50 dark:hover:bg-zinc-800 ${
 							exportMode === 'details'
