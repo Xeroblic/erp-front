@@ -545,7 +545,6 @@ export const exportItemsToExcel = async (
 			type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 		});
 		
-		// Use dynamically imported file-saver to avoid SSR issues or top-level typing conflicts
 		const FileSaver = await import('file-saver');
 		FileSaver.default.saveAs(blob, `${exportFileName}.xlsx`);
 		
