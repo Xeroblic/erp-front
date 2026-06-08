@@ -1,4 +1,5 @@
 import React from 'react';
+import { toast } from 'react-toastify';
 import { Controller } from 'react-hook-form';
 import Input from '@/components/form/Input';
 import type { FormSectionProps } from '../../shared/types';
@@ -13,6 +14,7 @@ import {
 import { ProcessorSelector } from '../../../ui/selectors/ProcessorSelector';
 import SelectReact from '@/components/form/SelectReact';
 import InputUnitSelector from '../../../ui/InputUnitSelector';
+import { NoEnciendeButton } from '../../shared/NoEnciendeButton';
 
 const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	control,
@@ -20,12 +22,64 @@ const HardwareSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	readOnly,
 	watch,
 	setValue,
+	onDirectSubmit,
 }) => {
 	const ramType = watch('ram_type');
 	const storageTech = watch('storage_technology');
 
 	return (
 		<div className='space-y-6'>
+			{/* No Enciende Quick Action */}
+			{!readOnly && onDirectSubmit && (
+				<div className='mb-6'>
+					<NoEnciendeButton
+						onValidate={() => {
+							const ramSize = watch('ram_size');
+							const storageSize = watch('storage_size');
+							const storageTech = watch('storage_technology');
+
+							if (!ramSize || !storageSize || !storageTech) {
+								toast.warning(
+									'Debes completar la Memoria RAM y el Almacenamiento, ya que pueden ser revisados visualmente.',
+								);
+								return false;
+							}
+							return true;
+						}}
+						onConfirm={() => {
+							onDirectSubmit({
+								processor: watch('processor') || '0',
+								ram_size: watch('ram_size') || '0',
+								ram_slots: watch('ram_slots') || '0',
+								ram_type: watch('ram_type') || '0',
+								storage_size: watch('storage_size') || '0',
+								storage_technology: watch('storage_technology') || 'HDD',
+								general_condition: 'scrap',
+								screen_condition: 'broken',
+								cover_condition: 'broken',
+								keyboard_condition: 'broken',
+								hinge_condition: 'broken',
+								touchpad_condition: 'broken',
+								bottom_condition: 'broken',
+								battery_status: 'no_battery',
+								battery_percentage: 0,
+								includes_charger: false,
+								operating_system: 'Ninguno',
+								has_biometric: false,
+								has_wifi: false,
+								has_bluetooth: false,
+								is_touchscreen: false,
+								screen_inches: watch('screen_inches') || '0',
+								keyboard_layout: 'es',
+								has_numeric_keypad: false,
+								has_backlit_keyboard: false,
+								observations: 'Equipo no enciende',
+							});
+						}}
+					/>
+				</div>
+			)}
+
 			{/* Processor */}
 			<div className='hover:cursor-pointer rounded-xl border border-green-200 bg-green-500/10 p-6 transition-colors duration-200 hover:bg-green-500/20 dark:border-green-800 dark:bg-green-900/10 dark:hover:bg-green-900/20'>
 				<label className='mb-4 block text-sm font-bold text-green-800 dark:text-green-200'>

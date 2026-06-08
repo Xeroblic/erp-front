@@ -1,4 +1,5 @@
 import React from 'react';
+import { toast } from 'react-toastify';
 import { Controller } from 'react-hook-form';
 import { FormSectionProps } from '../../shared/types';
 import { MonitorFormData } from '../../../validation/monitor.schema';
@@ -16,14 +17,10 @@ import {
 } from '../../../constants/monitor/monitor.options';
 import { getMonitorLabel } from '../../../translations/monitor.labels';
 import Icon from '@/components/icon/Icon';
+import { NoEnciendeButton } from '../../shared/NoEnciendeButton';
 
-const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = ({
-	control,
-	errors,
-	readOnly,
-	watch,
-	setValue,
-}) => {
+const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = (sectionProps) => {
+	const { control, errors, readOnly, watch, setValue } = sectionProps;
 	const currentScreen = watch('screen_condition');
 	const currentStand = watch('stand_condition');
 	const currentFrame = watch('frame_condition');
@@ -32,6 +29,55 @@ const MonitorScreenSection: React.FC<FormSectionProps<MonitorFormData>> = ({
 
 	return (
 		<div className='space-y-8'>
+			{/* ═══ Botón de Bypass (No enciende) ═══ */}
+			{!readOnly && sectionProps.onDirectSubmit && (
+				<div className='mb-6'>
+					<NoEnciendeButton
+						onValidate={() => {
+							const inches = watch('screen_inches');
+							const resolution = watch('screen_resolution');
+
+							if (!inches || !resolution) {
+								toast.warning(
+									'Debes completar las Pulgadas y la Resolución, ya que pueden ser revisados visualmente.',
+								);
+								return false;
+							}
+							return true;
+						}}
+						onConfirm={() => {
+							sectionProps.onDirectSubmit?.({
+								line: watch('line') || 'Ninguna',
+								screen_inches: watch('screen_inches') || '0',
+								screen_resolution: watch('screen_resolution') || '0',
+								is_touchscreen: false,
+								screen_condition: 'broken',
+								spots_count: 0,
+								stand_condition: 'broken',
+								frame_condition: 'broken',
+								has_usb_hub: false,
+								vga_ports: 0,
+								hdmi_ports: 0,
+								displayport_ports: 0,
+								dvi_ports: 0,
+								type_c_ports: 0,
+								usb_c_ports: 0,
+								rj45_ports: 0,
+								usb_hub_ports: 0,
+								all_ports_functional: false,
+								defective_ports_count: 5,
+								defective_ports_critical_count: 5,
+								includes_power_cable: false,
+								includes_video_cable: false,
+								includes_stand: false,
+								general_condition: 'scrap',
+								observations: 'Equipo no enciende',
+							});
+						}}
+					/>
+				</div>
+			)}
+
 			{/* Display Specs */}
 			<div className='rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50'>
 				<h3 className='mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400'>

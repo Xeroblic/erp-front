@@ -164,6 +164,11 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 		watch,
 		setValue,
 		getValues,
+		onDirectSubmit: (partialData: Partial<MonitorFormData>) => {
+			const currentData = getValues();
+			const payload = { ...currentData, ...partialData } as MonitorFormData;
+			onSubmit(payload as unknown as Record<string, unknown>);
+		},
 	};
 
 	const validateStep = async (sectionKey: string) => {

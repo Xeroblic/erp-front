@@ -1,4 +1,5 @@
 import React from 'react';
+import { toast } from 'react-toastify';
 import { Controller } from 'react-hook-form';
 import { FormSectionProps } from '../../shared/types';
 import { AioFormData } from '../../../validation/aio.schema';
@@ -10,6 +11,7 @@ import { STORAGE_TECHNOLOGY_OPTIONS } from '../../../constants/aio/aio.options';
 import { ProcessorSelector } from '../../../ui/selectors/ProcessorSelector';
 import Icon from '@/components/icon/Icon';
 import InputUnitSelector from '../../../ui/InputUnitSelector';
+import { NoEnciendeButton } from '../../shared/NoEnciendeButton';
 
 interface SelectionCardProps {
 	label: string;
@@ -62,11 +64,64 @@ const AioHardwareSection: React.FC<FormSectionProps<AioFormData>> = ({
 	readOnly,
 	setValue,
 	watch,
+	onDirectSubmit,
 }) => {
 	const storageTech = watch('storage_technology');
 
 	return (
 		<div className='space-y-6'>
+			{/* No Enciende Quick Action */}
+			{!readOnly && onDirectSubmit && (
+				<div className='mb-6'>
+					<NoEnciendeButton
+						onValidate={() => {
+							const ramSize = watch('ram_size');
+							const storageSize = watch('storage_size');
+							const storageTech = watch('storage_technology');
+
+							if (!ramSize || !storageSize || !storageTech) {
+								toast.warning(
+									'Debes completar la Memoria RAM y el Almacenamiento, ya que pueden ser revisados visualmente.',
+								);
+								return false;
+							}
+							return true;
+						}}
+						onConfirm={() => {
+							onDirectSubmit({
+								processor: watch('processor') || '0',
+								ram_size: watch('ram_size') || '0',
+								ram_slots: watch('ram_slots') || '0',
+								ram_type: watch('ram_type') || '0',
+								storage_size: watch('storage_size') || '0',
+								storage_technology: watch('storage_technology') || 'HDD',
+								general_condition: 'scrap',
+								screen_condition: 'broken',
+								stand_condition: 'broken',
+								cover_condition: 'broken',
+								vga_ports: 0,
+								hdmi_ports: 0,
+								displayport_ports: 0,
+								usb_c_ports: 0,
+								usb_a_ports: 0,
+								sd_readers: 0,
+								rj45_ports: 0,
+								all_ports_functional: false,
+								defective_ports_count: 5,
+								includes_power_adapter: false,
+								operating_system: 'Ninguno',
+								has_cd_drive: false,
+								has_wifi: false,
+								has_bluetooth: false,
+								is_touchscreen: false,
+								screen_inches: watch('screen_inches') || '0',
+								observations: 'Equipo no enciende',
+							});
+						}}
+					/>
+				</div>
+			)}
+
 			{/* Processor */}
 			<div className='rounded-xl border border-indigo-200 bg-indigo-500/10 p-5 transition-colors duration-200 hover:cursor-pointer hover:bg-indigo-500/20 dark:border-indigo-800/50 dark:bg-indigo-900/10 dark:hover:bg-indigo-900/20'>
 				<label className='mb-3 flex items-center gap-2 text-sm font-bold text-indigo-800 dark:text-indigo-200'>
