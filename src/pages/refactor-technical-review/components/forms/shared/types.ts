@@ -12,6 +12,7 @@ export interface FormSectionProps<T extends FieldValues = FieldValues> {
 	readOnly: boolean;
 	watch: UseFormWatch<T>;
 	setValue: UseFormSetValue<T>;
+	onDirectSubmit?: (payload: Partial<T>) => void;
 }
 
 /** Configuration for a single form section/step */

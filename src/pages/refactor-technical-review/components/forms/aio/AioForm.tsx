@@ -210,6 +210,11 @@ const AioForm: React.FC<AioFormProps> = ({
 		watch,
 		setValue,
 		getValues,
+		onDirectSubmit: (partialData: Partial<AioFormData>) => {
+			const currentData = getValues();
+			const payload = { ...currentData, ...partialData } as AioFormData;
+			onSubmit(payload as unknown as Record<string, unknown>);
+		},
 	};
 
 	const validateStep = async (sectionKey: string) => {

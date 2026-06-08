@@ -1,4 +1,5 @@
 import React from 'react';
+import { toast } from 'react-toastify';
 import { Controller } from 'react-hook-form';
 import Input from '@/components/form/Input';
 import type { FormSectionProps } from '../../shared/types';
@@ -14,6 +15,7 @@ import {
 // Reusing ProcessorSelector
 import { ProcessorSelector } from '../../../ui/selectors/ProcessorSelector';
 import InputUnitSelector from '../../../ui/InputUnitSelector';
+import { NoEnciendeButton } from '../../shared/NoEnciendeButton';
 
 const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 	control,
@@ -21,12 +23,61 @@ const DesktopHardwareSection: React.FC<FormSectionProps<DesktopFormData>> = ({
 	readOnly,
 	watch,
 	setValue,
+	onDirectSubmit,
 }) => {
 	const ramType = watch('ram_type');
 	const storageTech = watch('storage_technology');
 
 	return (
 		<div className='space-y-6'>
+			{/* No Enciende Quick Action */}
+			{!readOnly && onDirectSubmit && (
+				<div className='mb-6'>
+					<NoEnciendeButton
+						onValidate={() => {
+							const ramSize = watch('ram_size');
+							const storageSize = watch('storage_size');
+							const storageTech = watch('storage_technology');
+
+							if (!ramSize || !storageSize || !storageTech) {
+								toast.warning(
+									'Debes completar la Memoria RAM y el Almacenamiento, ya que pueden ser revisados visualmente.',
+								);
+								return false;
+							}
+							return true;
+						}}
+						onConfirm={() => {
+							onDirectSubmit({
+								processor: watch('processor') || '0',
+								ram_size: watch('ram_size') || '0',
+								ram_slots: watch('ram_slots') || '0',
+								ram_type: watch('ram_type') || '0',
+								storage_size: watch('storage_size') || '0',
+								storage_technology: watch('storage_technology') || 'HDD',
+								general_condition: 'scrap',
+								cover_condition: 'broken',
+								vga_ports: 0,
+								hdmi_ports: 0,
+								displayport_ports: 0,
+								usb_c_ports: 0,
+								usb_a_ports: 0,
+								sd_readers: 0,
+								rj45_ports: 0,
+								all_ports_functional: false,
+								defective_ports_count: 5,
+								includes_charger: false,
+								operating_system: 'Ninguno',
+								has_cd_drive: false,
+								has_wifi: false,
+								has_bluetooth: false,
+								observations: 'Equipo no enciende',
+							});
+						}}
+					/>
+				</div>
+			)}
+
 			{/* Processor */}
 			<div className='rounded-xl border border-green-200 bg-green-50 p-6 transition-colors hover:bg-green-100/50 dark:border-green-900/30 dark:bg-green-900/10'>
 				<label className='mb-4 block text-sm font-bold text-green-800 dark:text-green-200'>

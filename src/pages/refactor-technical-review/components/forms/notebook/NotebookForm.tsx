@@ -190,8 +190,13 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 			readOnly,
 			watch,
 			setValue,
+			onDirectSubmit: (partialData) => {
+				const currentData = getValues();
+				const payload = { ...currentData, ...partialData } as NotebookFormData;
+				onSubmit(payload);
+			},
 		}),
-		[control, errors, readOnly, watch, setValue],
+		[control, errors, readOnly, watch, setValue, getValues, onSubmit],
 	);
 
 	// Expose getFormValues to parent for auto-save
