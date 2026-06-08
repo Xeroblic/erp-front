@@ -139,6 +139,7 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 		handleSubmit,
 		watch,
 		setValue,
+		getValues,
 		trigger,
 		getFieldState,
 		reset,
@@ -165,8 +166,13 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 			readOnly,
 			watch,
 			setValue,
+			onDirectSubmit: (partialData) => {
+				const currentData = getValues();
+				const payload = { ...currentData, ...partialData } as DesktopFormData;
+				onSubmit(payload);
+			},
 		}),
-		[control, errors, readOnly, watch, setValue],
+		[control, errors, readOnly, watch, setValue, getValues, onSubmit],
 	);
 
 	// Expose getFormValues to parent for auto-save
