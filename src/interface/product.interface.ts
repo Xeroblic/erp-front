@@ -102,6 +102,8 @@ export interface IProduct {
 	offer_price?: number | null;
 	attributes_json?: Record<string, unknown> | null;
 	marketplace_external_ids?: NullableJson;
+	/** Si el stock del producto se sincroniza con WooCommerce. */
+	sync_stock_with_woo?: boolean;
 	is_active: boolean;
 	snippet_description?: string | null;
 	short_description?: string | null;

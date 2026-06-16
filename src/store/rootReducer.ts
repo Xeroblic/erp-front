@@ -33,7 +33,11 @@ import warehouse from './slices/warehouses/warehouseSlice';
 import technicalReviews, {
 	TechnicalReviewsState,
 } from './slices/technicalReviews/slice/technicalReviewsSlice';
-import { integrationsReducer, unmappedProductsReducer } from './slices/integrations';
+import {
+	integrationsReducer,
+	unmappedProductsReducer,
+	woocommerceProductsReducer,
+} from './slices/integrations';
 import garantiasReducer, { GarantiasState } from './slices/garantias/garantiasSlice';
 import reports, { ReportsState } from './slices/reports/reportSlice';
 import customerSales, { CustomerSalesState } from './slices/customerSales/customerSalesSlice';
@@ -70,6 +74,7 @@ export interface RootState {
 	technicalReviews: TechnicalReviewsState;
 	integrations: ReturnType<typeof integrationsReducer>;
 	unmappedProducts: ReturnType<typeof unmappedProductsReducer>;
+	woocommerceProducts: ReturnType<typeof woocommerceProductsReducer>;
 	garantias: GarantiasState;
 	reports: ReportsState;
 	customerSales: CustomerSalesState;
@@ -109,6 +114,7 @@ const staticReducers = {
 	technicalReviews,
 	integrations: integrationsReducer,
 	unmappedProducts: unmappedProductsReducer,
+	woocommerceProducts: woocommerceProductsReducer,
 	garantias: garantiasReducer,
 	reports,
 	customerSales,

@@ -21,3 +21,14 @@ export {
 	setSelectedUnmappedProduct,
 	clearUnmappedProducts,
 } from './unmappedProductsSlice';
+
+export {
+	default as woocommerceProductsReducer,
+	createQuickProductThunk,
+	publishProductThunk,
+	unpublishProductThunk,
+	fetchRemoteState,
+	setSyncingId,
+	clearRemoteState,
+	clearError as clearWooProductsError,
+} from './woocommerceProductsSlice';

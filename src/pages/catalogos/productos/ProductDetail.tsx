@@ -27,14 +27,15 @@ import {
 	mapProductToDetailForm,
 } from './utils/productForm.utils';
 import { productDetailSchema } from './validation/productForm.schema';
-import { useAppDispatch } from '@/store';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { publishProductThunk } from '@/store/slices/integrations/woocommerceProductsSlice';
+import { isWooSynced } from '@/utils/wooProductMeta.util';
 import {
 	deleteProductMedia,
 	setProductMainImage,
 	fetchProductById,
 	type ProductEntityParam,
 } from '@/store/slices/products/productsSlice';
-import { useAppSelector } from '@/store';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import type { ProductsViewMode } from './hooks/useProductos';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
@@ -237,6 +238,26 @@ const ProductDetail: React.FC = () => {
 				categoryIds,
 			});
 			toast.success('Producto actualizado correctamente');
+
+			// Auto-sincronización: si el producto ya está vinculado a WooCommerce,
+			// propaga los cambios publicándolo de nuevo (#5). El push real es un
+			// job en cola; no bloquea ni revierte el guardado si falla.
+			if (subsidiaryId && isWooSynced(product.marketplace_external_ids)) {
+				try {
+					await dispatch(
+						publishProductThunk({
+							subsidiaryId,
+							productId: product.id,
+							payload: { sync_stock_with_woo: product.sync_stock_with_woo ?? true },
+						}),
+					).unwrap();
+					toast.info('Cambios enviados a WooCommerce');
+				} catch {
+					toast.warning(
+						'El producto se guardó, pero no se pudo sincronizar con WooCommerce',
+					);
+				}
+			}
 		} catch (error: unknown) {
 			const errorRecord =
 				error && typeof error === 'object' ? (error as Record<string, unknown>) : undefined;

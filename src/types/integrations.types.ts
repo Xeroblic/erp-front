@@ -252,3 +252,112 @@ export interface SyncedProductsQueryParams {
 	filter_by_integration?: boolean;
 	per_page?: number;
 }
+
+// ==================== WOOCOMMERCE — PRODUCTOS ====================
+
+/**
+ * Bloque `woocommerce` del producto sincronizado (#3 / quick-create).
+ */
+export interface WooProductWooMeta {
+	external_product_id: number | null;
+	external_variation_id: number | null;
+	integration_id: string | null;
+	published_at: string | null;
+	last_synced_at: string | null;
+	last_error_at: string | null;
+	last_error_msg: string | null;
+}
+
+/**
+ * Producto del ERP vinculado / publicado en WooCommerce (#3 Get Synced Products).
+ */
+export interface WooProduct {
+	id: number;
+	name: string;
+	sku: string;
+	commercial_sku?: string | null;
+	grade?: string | null;
+	branch_id?: number;
+	price?: number | string | null;
+	offer_price?: number | string | null;
+	sync_stock_with_woo?: boolean;
+	woocommerce?: WooProductWooMeta | null;
+	updated_at?: string;
+}
+
+/**
+ * Payload para la creación rápida de producto (#4).
+ * Registra el producto en el ERP y lo manda a publicar en Woo.
+ * NOTA: formato de `image` (URL/base64/multipart) a confirmar con backend; el
+ * formulario actual usa URL.
+ */
+export interface QuickProductPayload {
+	name: string;
+	sku: string;
+	price: number;
+	stock: number;
+	/** URL de imagen de internet; el backend la descarga y la deja cargada. */
+	image_url?: string;
+	short_description?: string;
+	long_description?: string;
+	brand_id?: number;
+	category_ids?: number[];
+	branch_id?: number;
+	sync_stock_with_woo?: boolean;
+}
+
+/**
+ * Respuesta de la creación rápida de producto.
+ */
+export interface QuickProductResponse {
+	message: string;
+	data?: WooProduct;
+}
+
+/**
+ * Body opcional compartido por publicar/despublicar/sincronizar (#5,#6,#8,#9,#10).
+ */
+export interface WooSyncStockPayload {
+	sync_stock_with_woo?: boolean;
+}
+
+/**
+ * Respuesta de publicar/despublicar un producto (#5,#6).
+ */
+export interface WooProductActionResponse {
+	message: string;
+	data?: WooProduct;
+}
+
+/**
+ * Lado local (ERP) del diagnóstico (#7).
+ */
+export interface WooRemoteLocalState {
+	external_product_id: number | null;
+	external_variation_id: number | null;
+	integration_id: string | null;
+	sync_stock_with_woo: boolean;
+	price: number | null;
+	stock: number | null;
+}
+
+/**
+ * Lado remoto (WooCommerce) del diagnóstico (#7). Es `null` si el producto
+ * no está vinculado o no se encontró en la tienda.
+ */
+export interface WooRemoteRemoteState {
+	id: number;
+	status: string | null;
+	price: string | number | null;
+	sale_price: string | number | null;
+	stock: number | null;
+}
+
+/**
+ * Estado remoto (#7): contrasta el producto del ERP con el de WooCommerce.
+ * `GET /products/{product}/remote`
+ */
+export interface WooRemoteState {
+	local: WooRemoteLocalState;
+	remote: WooRemoteRemoteState | null;
+}
