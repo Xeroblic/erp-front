@@ -14,6 +14,9 @@ import CrearMarca from './components/modals/CrearMarca';
 import EditarMarca from './components/modals/EditarMarca';
 import DetalleMarca from './components/modals/DetalleMarca';
 import EliminarMarca from './components/modals/EliminarMarca';
+import ProtectedButton from '@/components/ui/ProtectedButton';
+import ImportTermsWizard from '@/components/integrations/importTerms/ImportTermsWizard';
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import type { IBrand, IBrandFilters } from '@/interface/brand.interface';
 import type { TSelectOption } from '@/components/form/SelectReact';
 import type { BranchOption } from './components/hooks/useMarcas';
@@ -24,7 +27,10 @@ const Marcas: React.FC = () => {
 	const [editOpen, setEditOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [viewOpen, setViewOpen] = useState(false);
+	const [importOpen, setImportOpen] = useState(false);
 	const [selected, setSelected] = useState<IBrand | null>(null);
+
+	const { branchId } = useCurrentBranch();
 
 	const {
 		brands,
@@ -40,6 +46,7 @@ const Marcas: React.FC = () => {
 		updateBrand,
 		deleteBrand,
 		uploadBrandGallery,
+		refresh,
 	} = useMarcas(filters);
 
 	const branchOptions = useMemo<TSelectOption[]>(
@@ -221,7 +228,28 @@ const Marcas: React.FC = () => {
 								</span>
 							</p>
 						)} */}
-						<Button color='violet' onClick={() => setCreateOpen(true)} icon='HeroPlus'>
+						<ProtectedButton
+							permission='view-integration'
+							roles={['super-admin']}
+							branchId={branchId}
+							scope='access'
+							fallbackMode='disabled'
+							variant='outline'
+							color='violet'
+							icon='HeroArrowDownTray'
+							onClick={() => setImportOpen(true)}>
+							Importar Marcas desde WC
+						</ProtectedButton>
+						<Button
+							variant='solid'
+							color='emerald'
+							type='button'
+							aria-label='Crear marca'
+							aria-expanded='false'
+							aria-controls='create-brand-modal'
+							onClick={() => setCreateOpen(true)}
+							>
+								<Icon icon='HeroPlus' className='mr-2 h-6 w-6 text-white font-bold' />
 							Nueva marca
 						</Button>
 					</div>
@@ -283,6 +311,12 @@ const Marcas: React.FC = () => {
 					setSelected(brand);
 					setEditOpen(true);
 				}}
+			/>
+			<ImportTermsWizard
+				isOpen={importOpen}
+				setIsOpen={setImportOpen}
+				onCompleted={refresh}
+				defaultTaxonomies={['brands']}
 			/>
 		</PageWrapper>
 	);

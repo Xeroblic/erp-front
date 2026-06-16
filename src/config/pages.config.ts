@@ -686,6 +686,14 @@ export const privatePages = {
 				authority: ['view-integration'],
 				roles: ['super-admin'],
 			},
+			importTerms: {
+				id: 'importTerms',
+				to: '/integraciones/importar-terminos',
+				text: 'Importar Categorías y Marcas',
+				icon: 'DuoCloudDownload',
+				authority: ['view-integration'],
+				roles: ['super-admin'],
+			},
 		},
 	},
 

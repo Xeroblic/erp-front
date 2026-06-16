@@ -14,6 +14,9 @@ import CrearCategoria from './components/modals/CrearCategoria';
 import EditarCategoria from './components/modals/EditarCategoria';
 import EliminarCategoria from './components/modals/EliminarCategoria';
 import DetalleCategoria from './components/modals/DetalleCategoria';
+import ProtectedButton from '@/components/ui/ProtectedButton';
+import ImportTermsWizard from '@/components/integrations/importTerms/ImportTermsWizard';
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useCategorias } from './hooks/useCategorias';
 import type { ICategory, ICategoryFilters } from './types';
 import { buildCategoryTableRows } from '@/components/helper/category.helper';
@@ -24,7 +27,10 @@ const Categorias: React.FC = () => {
 	const [editOpen, setEditOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [viewOpen, setViewOpen] = useState(false);
+	const [importOpen, setImportOpen] = useState(false);
 	const [selected, setSelected] = useState<ICategory | null>(null);
+
+	const { branchId } = useCurrentBranch();
 
 	const {
 		categories,
@@ -43,6 +49,7 @@ const Categorias: React.FC = () => {
 		deleteCategory,
 		uploadCategoryGallery,
 		tree,
+		refresh,
 	} = useCategorias(filters);
 
 	const parentOptionsForSelect = useMemo(() => parentOptions, [parentOptions]);
@@ -192,7 +199,7 @@ const Categorias: React.FC = () => {
 					</div>
 				</SubheaderLeft>
 				<SubheaderRight>
-					<div className='flex flex-col items-stretch gap-2 sm:flex-row sm:items-center'>
+					<div className='flex flex-col items-baseline gap-4 sm:flex-row sm:items-center mr-10'>
 						<Input
 							name='search'
 							placeholder='Buscar por nombre o descripcion'
@@ -218,7 +225,20 @@ const Categorias: React.FC = () => {
 								</option>
 							))}
 						</Select>
-						<Button color='indigo' onClick={handleOpenCreate} icon='HeroPlus'>
+						<ProtectedButton
+							permission='view-integration'
+							roles={['super-admin']}
+							branchId={branchId}
+							scope='access'
+							fallbackMode='disabled'
+							variant='outline'
+							color='indigo'
+							icon='HeroArrowDownTray'
+							onClick={() => setImportOpen(true)}>
+							Importar Categorias desde WC
+						</ProtectedButton>
+						<Button variant='solid' color='emerald' className='font-bold' onClick={handleOpenCreate}>
+							<Icon icon='HeroPlus' className='h-6 w-6 text-white mr-2 font-bold' />
 							Nueva categoria
 						</Button>
 					</div>
@@ -276,6 +296,12 @@ const Categorias: React.FC = () => {
 				setIsOpen={setViewOpen}
 				category={selected}
 				onEdit={handleEdit}
+			/>
+			<ImportTermsWizard
+				isOpen={importOpen}
+				setIsOpen={setImportOpen}
+				onCompleted={refresh}
+				defaultTaxonomies={['categories']}
 			/>
 		</PageWrapper>
 	);

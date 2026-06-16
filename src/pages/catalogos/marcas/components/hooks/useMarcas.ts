@@ -195,5 +195,9 @@ export function useMarcas(filters: IBrandFilters) {
 			},
 			[activeBranchId, dispatch, filters.branch_id, filters.search],
 		),
+		refresh: useCallback(() => {
+			if (!activeBranchId) return;
+			void dispatch(fetchBrands({ branchId: activeBranchId, search: filters.search }));
+		}, [activeBranchId, dispatch, filters.search]),
 	};
 }

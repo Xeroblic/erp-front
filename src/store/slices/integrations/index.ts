@@ -21,3 +21,12 @@ export {
 	setSelectedUnmappedProduct,
 	clearUnmappedProducts,
 } from './unmappedProductsSlice';
+
+export {
+	default as woocommerceProductsReducer,
+	runImportTerms,
+	pollImportTermsStatus,
+	setImportBatchId,
+	clearImportStatus,
+	clearError as clearWooProductsError,
+} from './woocommerceProductsSlice';
