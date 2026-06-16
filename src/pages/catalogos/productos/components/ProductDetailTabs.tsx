@@ -2,6 +2,8 @@ import React from 'react';
 import Icon from '@/components/icon/Icon';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import { GeneralTab, ComercialTab, ContenidoTab, AtributosTab, ImagesProduct } from './DetailTabs';
+import WooCommercePublishPanel from './modals/components/WooCommercePublishPanel';
+import { getWooProductMeta } from '@/utils/wooProductMeta.util';
 import type { IBrand } from '@/interface/brand.interface';
 import type { ICategory } from '@/interface/category.interface';
 import type { TSelectOption } from '@/components/form/SelectReact';
@@ -49,6 +51,11 @@ const TABS_CONFIG = [
 		label: 'Imágenes',
 		icon: 'HeroPhoto' as const,
 	},
+	{
+		id: 'woocommerce',
+		label: 'WooCommerce',
+		icon: 'HeroShoppingBag' as const,
+	},
 ];
 
 export const ProductDetailTabs: React.FC<ProductDetailTabsProps> = ({
@@ -94,13 +101,32 @@ export const ProductDetailTabs: React.FC<ProductDetailTabsProps> = ({
 						onDeleteImage={onDeleteImage}
 					/>
 				);
+			case 'woocommerce': {
+				if (!product?.id) return null;
+				const wooMeta = getWooProductMeta(product.marketplace_external_ids);
+				return (
+					<WooCommercePublishPanel
+						productId={product.id}
+						initialSynced={wooMeta?.externalProductId != null}
+						initialSyncStock={product.sync_stock_with_woo ?? true}
+						externalProductId={wooMeta?.externalProductId ?? null}
+						publishedAt={wooMeta?.publishedAt ?? null}
+						lastErrorMsg={wooMeta?.lastErrorMsg ?? null}
+					/>
+				);
+			}
 			default:
 				return null;
 		}
 	};
 
 	const showAtributos = !!(product && product.product_type && product.product_type !== 'general');
-	const visibleTabs = TABS_CONFIG.filter((t) => (t.id === 'atributos' ? showAtributos : true));
+	const showWoocommerce = !!product?.id;
+	const visibleTabs = TABS_CONFIG.filter((t) => {
+		if (t.id === 'atributos') return showAtributos;
+		if (t.id === 'woocommerce') return showWoocommerce;
+		return true;
+	});
 
 	const effectiveActiveTab = visibleTabs.find((t) => t.id === activeTab)
 		? activeTab
