@@ -24,10 +24,14 @@ export {
 
 export {
 	default as woocommerceProductsReducer,
+	runImportTerms,
+	pollImportTermsStatus,
 	createQuickProductThunk,
 	publishProductThunk,
 	unpublishProductThunk,
 	fetchRemoteState,
+	setImportBatchId,
+	clearImportStatus,
 	setSyncingId,
 	clearRemoteState,
 	clearError as clearWooProductsError,

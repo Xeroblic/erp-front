@@ -253,6 +253,61 @@ export interface SyncedProductsQueryParams {
 	per_page?: number;
 }
 
+// ==================== WOOCOMMERCE — IMPORTACIÓN DE TÉRMINOS ====================
+
+/**
+ * Taxonomías soportadas por la importación de términos del backend.
+ * `categories` → categorías · `brands` → marcas.
+ */
+export type WooTaxonomy = 'categories' | 'brands';
+
+/**
+ * Payload para programar la importación masiva de términos
+ * (categorías/marcas) desde WooCommerce hacia el ERP.
+ * `POST /import-terms`
+ */
+export interface ImportTermsPayload {
+	taxonomies: WooTaxonomy[];
+	branch_id?: number;
+}
+
+/**
+ * Respuesta al programar la importación de términos.
+ * Devuelve el identificador del lote (job en cola) para consultar su estado.
+ * NOTA: nombre exacto del campo del lote a confirmar con backend.
+ */
+export interface ImportTermsResponse {
+	message: string;
+	batch_id?: string;
+}
+
+/**
+ * Estado/progreso de un lote (job batch de Laravel) de importación de términos.
+ * `GET /import-terms/status`
+ */
+export interface ImportTermsStatus {
+	batch_id: string;
+	name?: string;
+	total_jobs: number;
+	pending_jobs: number;
+	processed_jobs: number;
+	failed_jobs: number;
+	/** Progreso 0-100 entregado por el backend. */
+	progress: number;
+	cancelled: boolean;
+	finished: boolean;
+	created_at?: string;
+	finished_at?: string | null;
+	results?: unknown[];
+}
+
+/**
+ * Parámetros de consulta para el estado de importación de términos.
+ */
+export interface ImportTermsStatusQueryParams {
+	batch_id?: string;
+}
+
 // ==================== WOOCOMMERCE — PRODUCTOS ====================
 
 /**

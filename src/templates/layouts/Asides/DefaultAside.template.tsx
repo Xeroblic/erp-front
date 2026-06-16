@@ -814,6 +814,25 @@ const DefaultAsideTemplate = () => {
 									}
 								/>
 							</AuthorityCheckNav>
+
+							{/* Importar Categorías y Marcas */}
+							<AuthorityCheckNav
+								authority={[
+									...(Pages.integrations.subPages.importTerms.authority || []),
+									...(Pages.integrations.subPages.importTerms.roles || []),
+								]}
+								roles={Pages.integrations.subPages.importTerms.roles}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.integrations.subPages.importTerms.text}
+									to={Pages.integrations.subPages.importTerms.to}
+									icon={Pages.integrations.subPages.importTerms.icon}
+									id={Pages.integrations.subPages.importTerms.id}
+									onClick={() =>
+										navigate(Pages.integrations.subPages.importTerms.to)
+									}
+								/>
+							</AuthorityCheckNav>
 						</NavCollapse>
 					</AuthorityCheckNav>
 				</Nav>
