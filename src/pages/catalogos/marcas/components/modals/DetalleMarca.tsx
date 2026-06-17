@@ -5,7 +5,9 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import { IBrand } from '@/interface/brand.interface';
 import { ensureAbsoluteUrl } from '@/components/helper/brand.helper';
+import { ImageZoom } from '@/components/ImageZoom';
 import { formatCurrency } from '../utils';
+import BrandLogo from '../BrandLogo';
 
 type DetalleMarcaProps = {
 	isOpen: boolean;
@@ -19,9 +21,6 @@ const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, o
 		value ? new Date(value).toLocaleDateString() : '-';
 	const resolveImageUrl = (value?: string | null) =>
 		value ? (ensureAbsoluteUrl(value) ?? value) : null;
-
-	const coverImage =
-		resolveImageUrl(brand?.image?.url ?? brand?.logo_url ?? undefined) ?? undefined;
 
 	const galleryImages = brand?.gallery ?? [];
 	const galleryPreview = galleryImages.slice(0, 5);
@@ -74,17 +73,12 @@ const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, o
 					<div className='space-y-5'>
 						<section className='rounded-2xl border border-zinc-100 bg-white/60 p-4 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-zinc-900/60'>
 							<div className='flex items-start gap-4'>
-								<div className='flex h-16 w-16 items-center justify-center rounded-xl bg-white ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-white/10'>
-									{coverImage ? (
-										<img
-											src={coverImage}
-											alt={brand.image?.alt ?? brand.name}
-											className='h-12 w-12 object-contain'
-										/>
-									) : (
-										<Icon icon='HeroTag' className='h-8 w-8 text-zinc-400' />
-									)}
-								</div>
+								<BrandLogo
+									brand={brand}
+									className='h-16 w-16 ring-1 ring-zinc-200 dark:ring-white/10'
+									iconClassName='h-8 w-8'
+									zoomable
+								/>
 								<div className='flex-1 space-y-1'>
 									<div className='flex flex-wrap items-center gap-2'>
 										<h3 className='text-lg font-semibold text-zinc-900 dark:text-white'>
@@ -157,26 +151,36 @@ const DetalleMarca: React.FC<DetalleMarcaProps> = ({ isOpen, setIsOpen, brand, o
 							{galleryImages.length > 0 ? (
 								<div className='mt-3 flex gap-2 overflow-x-auto pb-1'>
 									{galleryPreview.map((img, idx) => {
-										const url =
+										const thumbUrl =
 											resolveImageUrl(img.thumb ?? undefined) ??
 											resolveImageUrl(img.url) ??
 											undefined;
+										const fullUrl =
+											resolveImageUrl(img.url) ?? thumbUrl ?? undefined;
 
-										if (!url) return null;
+										if (!thumbUrl || !fullUrl) return null;
 
 										return (
-											<a
+											<ImageZoom
 												key={`${img.id ?? idx}`}
-												href={url}
-												target='_blank'
-												rel='noopener noreferrer'
-												className='flex h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border border-zinc-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:ring-2 hover:ring-emerald-200 dark:border-white/10 dark:bg-zinc-900'>
-												<img
-													src={url}
-													alt={img.alt ?? `${brand.name}-${idx + 1}`}
-													className='h-full w-full object-cover'
-												/>
-											</a>
+												imageUrl={fullUrl}
+												alt={img.alt ?? `${brand.name}-${idx + 1}`}
+												modalTitle={brand.name}
+												renderTrigger={(open) => (
+													<button
+														type='button'
+														onClick={open}
+														className='flex h-20 w-20 flex-shrink-0 cursor-zoom-in overflow-hidden rounded-xl border border-zinc-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:ring-2 hover:ring-emerald-200 dark:border-white/10 dark:bg-zinc-900'>
+														<img
+															src={thumbUrl}
+															alt={
+																img.alt ?? `${brand.name}-${idx + 1}`
+															}
+															className='h-full w-full object-cover'
+														/>
+													</button>
+												)}
+											/>
 										);
 									})}
 									{galleryOverflow > 0 && (

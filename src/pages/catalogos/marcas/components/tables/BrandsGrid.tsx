@@ -1,12 +1,12 @@
 import React from 'react';
-import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
+import Card, { CardBody } from '@/components/ui/Card';
 import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
-import { ensureAbsoluteUrl } from '@/components/helper/brand.helper';
 import { IBrand } from '@/interface/brand.interface';
-import Container from '@/components/layouts/Container/Container';
 import { formatCLP } from '@/pages/comercial/ventas/utils';
+import BrandLogo from '../BrandLogo';
+import RevealOnScroll from '../RevealOnScroll';
 
 type BrandsGridProps = {
 	brands: IBrand[];
@@ -17,42 +17,19 @@ type BrandsGridProps = {
 };
 
 const BrandsGrid: React.FC<BrandsGridProps> = ({ brands, loading, onView, onEdit, onDelete }) => {
-	const renderImage = (brand: IBrand) => {
-		const imageUrlRaw =
-			brand.image?.url ?? (brand as any)?.image ?? brand.logo_url ?? brand.photo_url ?? null;
-
-		const imageUrl = ensureAbsoluteUrl(imageUrlRaw ?? undefined);
-
+	if (loading) {
 		return (
-			<div className='flex h-14 w-14 items-center justify-center rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900'>
-				{imageUrl ? (
-					<img
-						src={imageUrl}
-						alt={brand.image?.alt ?? brand.name}
-						className='h-full w-full rounded-lg object-contain p-1'
-					/>
-				) : (
-					<Icon icon='HeroTag' className='h-6 w-6 text-violet-500' />
-				)}
+			<div className='flex flex-col items-center justify-center gap-3 py-16'>
+				<Icon icon='HeroArrowPath' className='h-8 w-8 animate-spin text-violet-500' />
+				<p className='text-sm text-zinc-500'>Cargando marcas disponibles...</p>
 			</div>
 		);
-	};
+	}
 
-	const renderBody = () => {
-		if (loading) {
-			return (
-				<div className='flex flex-col items-center justify-center gap-3 py-12'>
-					<Icon icon='HeroArrowPath' className='h-8 w-8 animate-spin text-violet-500' />
-					<p className='text-sm text-gray-600 dark:text-gray-400'>
-						Cargando marcas disponibles...
-					</p>
-				</div>
-			);
-		}
-
-		if (!brands.length) {
-			return (
-				<div className='flex flex-col items-center justify-center gap-3 py-14'>
+	if (!brands.length) {
+		return (
+			<Card>
+				<CardBody className='flex flex-col items-center justify-center gap-3 py-16 text-center'>
 					<div className='rounded-full bg-zinc-100 p-4 dark:bg-zinc-800'>
 						<Icon icon='HeroSparkles' className='h-7 w-7 text-zinc-400' />
 					</div>
@@ -60,22 +37,23 @@ const BrandsGrid: React.FC<BrandsGridProps> = ({ brands, loading, onView, onEdit
 						No se encontraron marcas
 					</p>
 					<p className='text-sm text-zinc-500'>Crea una marca o cambia de sucursal.</p>
-				</div>
-			);
-		}
+				</CardBody>
+			</Card>
+		);
+	}
 
-		return (
-			<div className='grid grid-cols-1 gap-5 p-4 sm:grid-cols-2 xl:grid-cols-3'>
-				{brands.map((brand) => (
+	return (
+		<div className='grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'>
+			{brands.map((brand, index) => (
+				<RevealOnScroll key={brand.id} delay={Math.min(index, 8) * 30}>
 					<Card
-						key={brand.id}
-						className='border border-zinc-200 shadow-sm transition-all hover:shadow-md dark:border-zinc-700'>
-						<CardBody className='flex flex-col gap-4'>
-							{/* Header image + title */}
-							<div className='flex items-start gap-4'>
-								{renderImage(brand)}
-								<div className='flex-1 space-y-1'>
-									<h3 className='text-lg font-semibold text-zinc-900 dark:text-zinc-100'>
+						className='h-full cursor-pointer transition-shadow hover:shadow-md'
+						onClick={() => onView(brand)}>
+						<CardBody className='flex h-full flex-col gap-4'>
+							<div className='flex items-start gap-3'>
+								<BrandLogo brand={brand} className='h-14 w-14' />
+								<div className='min-w-0 flex-1'>
+									<h3 className='truncate text-lg font-semibold text-zinc-900 dark:text-zinc-100'>
 										{brand.name}
 									</h3>
 									{brand.code && (
@@ -84,103 +62,54 @@ const BrandsGrid: React.FC<BrandsGridProps> = ({ brands, loading, onView, onEdit
 										</p>
 									)}
 								</div>
-								<Badge color={brand.is_active ? 'emerald' : 'red'}>
+								<Badge color={brand.is_active ? 'emerald' : 'zinc'}>
 									{brand.is_active ? 'Activa' : 'Inactiva'}
 								</Badge>
 							</div>
 
-							{/* metrics */}
 							<div className='grid grid-cols-2 gap-3'>
-								<div className='rounded-xl border border-violet-100 bg-violet-50/70 p-3 dark:border-violet-900/40 dark:bg-violet-900/20'>
-									<p className='text-xs text-violet-700 dark:text-violet-200'>
-										Productos
-									</p>
-									<p className='mt-1 text-xl font-semibold text-violet-900 dark:text-violet-100'>
+								<div className='rounded-xl border border-zinc-100 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900/40'>
+									<p className='text-xs text-zinc-500'>Productos</p>
+									<p className='mt-1 text-xl font-semibold text-zinc-900 dark:text-white'>
 										{brand.products_count ?? 0}
 									</p>
 								</div>
-								<div className='rounded-xl border border-violet-100 bg-violet-50/70 p-3 dark:border-emerald-900/40 dark:bg-emerald-900/20'>
-									<p className='text-xs text-emerald-700 dark:text-violet-200'>
-										Total Ventas
-									</p>
-									<p className='mt-1 text-xl font-semibold text-emerald-900 dark:text-violet-100'>
+								<div className='rounded-xl border border-zinc-100 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900/40'>
+									<p className='text-xs text-zinc-500'>Ventas</p>
+									<p className='mt-1 text-xl font-semibold text-zinc-900 dark:text-white'>
 										{formatCLP(Number(brand.total_sales ?? 0))}
 									</p>
 								</div>
 							</div>
 
-							{/* additional info */}
-							<div className='flex flex-wrap gap-2 text-xs text-zinc-500'>
-								{brand.updated_at && (
-									<span className='flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-1 dark:bg-zinc-800'>
-										<Icon
-											icon='HeroClock'
-											className='h-3.5 w-3.5 text-zinc-400'
-										/>
-										{new Date(brand.updated_at).toLocaleDateString()}
-									</span>
-								)}
-
-								{brand.branch_id && (
-									<span className='flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-1 dark:bg-zinc-800'>
-										<Icon
-											icon='HeroBuildingLibrary'
-											className='h-3.5 w-3.5 text-zinc-400'
-										/>
-										ID {brand.branch_id}
-									</span>
-								)}
-							</div>
-
-							{/* actions */}
-							<div className='mt-auto flex flex-col gap-2 border-t border-dashed border-zinc-200 pt-3 dark:border-zinc-800'>
-								<div className='flex gap-2'>
-									<Button
-										size='sm'
-										variant='outline'
-										icon='HeroEye'
-										onClick={() => onView(brand)}>
-										Ver
-									</Button>
-									<Button
-										size='sm'
-										variant='outline'
-										icon='HeroPencil'
-										onClick={() => onEdit(brand)}>
-										Editar
-									</Button>
-								</div>
-
+							<div className='mt-auto flex gap-2 border-t border-dashed border-zinc-200 pt-3 dark:border-zinc-800'>
 								<Button
 									size='sm'
-									color='red'
 									variant='outline'
+									icon='HeroPencil'
+									onClick={(e) => {
+										e.stopPropagation();
+										onEdit(brand);
+									}}>
+									Editar
+								</Button>
+								<Button
+									size='sm'
+									variant='outline'
+									color='red'
 									icon='HeroTrash'
-									onClick={() => onDelete(brand)}>
+									onClick={(e) => {
+										e.stopPropagation();
+										onDelete(brand);
+									}}>
 									Eliminar
 								</Button>
 							</div>
 						</CardBody>
 					</Card>
-				))}
-			</div>
-		);
-	};
-
-	return (
-		<>
-			<Card>
-				<CardHeader>
-					<div className='flex w-full items-center justify-between'>
-						<CardTitle>Marcas visibles</CardTitle>
-						<span className='text-sm text-gray-500 dark:text-gray-400'>
-							{brands.length} registros
-						</span>
-					</div>
-				</CardHeader>
-			</Card>
-			<div className='p-0'>{renderBody()}</div>
-		</>
+				</RevealOnScroll>
+			))}
+		</div>
 	);
 };
 
