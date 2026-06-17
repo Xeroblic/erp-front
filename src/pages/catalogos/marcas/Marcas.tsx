@@ -6,10 +6,10 @@ import Container from '@/components/layouts/Container/Container';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import Input from '@/components/form/Input';
-import Select from '@/components/form/Select';
 import { useMarcas } from './components/hooks/useMarcas';
-import BrandStats from './components/BrandStats';
 import BrandsGrid from './components/tables/BrandsGrid';
+import BrandMasterDetail from './components/BrandMasterDetail';
+import type { BrandInlineSavePayload } from './components/BrandDetailPanel';
 import CrearMarca from './components/modals/CrearMarca';
 import EditarMarca from './components/modals/EditarMarca';
 import DetalleMarca from './components/modals/DetalleMarca';
@@ -17,27 +17,30 @@ import EliminarMarca from './components/modals/EliminarMarca';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import ImportTermsWizard from '@/components/integrations/importTerms/ImportTermsWizard';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import useDeviceScreen from '@/hooks/useDeviceScreen';
 import type { IBrand, IBrandFilters } from '@/interface/brand.interface';
-import type { TSelectOption } from '@/components/form/SelectReact';
-import type { BranchOption } from './components/hooks/useMarcas';
+
+type ViewMode = 'list' | 'grid';
 
 const Marcas: React.FC = () => {
 	const [filters, setFilters] = useState<IBrandFilters>({ search: '' });
+	const [viewMode, setViewMode] = useState<ViewMode>('list');
 	const [createOpen, setCreateOpen] = useState(false);
 	const [editOpen, setEditOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [viewOpen, setViewOpen] = useState(false);
 	const [importOpen, setImportOpen] = useState(false);
 	const [selected, setSelected] = useState<IBrand | null>(null);
+	const [detailId, setDetailId] = useState<number | null>(null);
 
 	const { branchId } = useCurrentBranch();
+	const { width } = useDeviceScreen();
+	const isDesktop = (width ?? 1024) >= 1024;
 
 	const {
 		brands,
-		stats,
 		loading,
 		error,
-		branches,
 		activeBranchId,
 		creating,
 		updating,
@@ -49,40 +52,14 @@ const Marcas: React.FC = () => {
 		refresh,
 	} = useMarcas(filters);
 
-	const branchOptions = useMemo<TSelectOption[]>(
-		() =>
-			branches.map((branch: BranchOption) => ({
-				value: String(branch.id),
-				label: branch.name,
-			})),
-		[branches],
+	// Marca mostrada en el panel de detalle (maestro-detalle): la elegida o la primera.
+	const detailBrand = useMemo(
+		() => brands.find((b) => b.id === detailId) ?? brands[0] ?? null,
+		[brands, detailId],
 	);
-
-	const branchLookup = useMemo(() => {
-		const lookup: Record<number, string> = {};
-		branchOptions.forEach((item: any) => {
-			const id = Number(item.value);
-			if (!Number.isNaN(id)) {
-				lookup[id] = item.label;
-			}
-		});
-		return lookup;
-	}, [branchOptions]);
-
-	const selectedBranchValue =
-		filters.branch_id !== undefined && filters.branch_id !== null
-			? String(filters.branch_id)
-			: activeBranchId !== null
-				? String(activeBranchId)
-				: '';
 
 	const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		setFilters((prev) => ({ ...prev, search: event.target.value }));
-	};
-
-	const handleBranchChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-		const { value } = event.target;
-		setFilters((prev) => ({ ...prev, branch_id: value ? Number(value) : undefined }));
 	};
 
 	const handleCreateSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -91,34 +68,34 @@ const Marcas: React.FC = () => {
 
 		try {
 			const branchIdValue = formData.get('branch_id');
-			const branchId =
+			const branchIdForm =
 				branchIdValue && branchIdValue !== 'null' ? Number(branchIdValue) : undefined;
 
 			const created = await createBrand({
 				name: String(formData.get('name') ?? '').trim(),
 				code: formData.get('code')?.toString().trim() || undefined,
 				is_active: formData.get('is_active') === '1',
-				branch_id: branchId ?? filters.branch_id ?? activeBranchId ?? undefined,
+				branch_id: branchIdForm ?? filters.branch_id ?? activeBranchId ?? undefined,
 				image: (() => {
 					const file = formData.get('image');
 					return file instanceof File && file.size > 0 ? file : null;
 				})(),
 			});
 			const galleryFiles = (formData.getAll('gallery') as File[]).filter(
-				(f) => f && typeof (f as any).size === 'number',
+				(f) => f && typeof (f as { size?: number }).size === 'number',
 			);
 			if (created?.id && (galleryFiles?.length ?? 0) > 0) {
 				await uploadBrandGallery(
 					created.id,
 					galleryFiles,
-					created.branch_id ?? branchId ?? activeBranchId ?? undefined,
+					created.branch_id ?? branchIdForm ?? activeBranchId ?? undefined,
 				);
 			}
 
 			toast.success('Marca creada correctamente');
 			setCreateOpen(false);
-		} catch (err: any) {
-			toast.error(err?.message ?? 'No se pudo crear la marca');
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : 'No se pudo crear la marca');
 		}
 	};
 
@@ -141,7 +118,7 @@ const Marcas: React.FC = () => {
 				})(),
 			});
 			const galleryFilesEdit = (formData.getAll('gallery') as File[]).filter(
-				(f) => f && typeof (f as any).size === 'number',
+				(f) => f && typeof (f as { size?: number }).size === 'number',
 			);
 			if (updated?.id && (galleryFilesEdit?.length ?? 0) > 0) {
 				await uploadBrandGallery(
@@ -154,8 +131,8 @@ const Marcas: React.FC = () => {
 			toast.success('Marca actualizada');
 			setEditOpen(false);
 			setSelected(null);
-		} catch (err: any) {
-			toast.error(err?.message ?? 'No se pudo actualizar la marca');
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : 'No se pudo actualizar la marca');
 		}
 	};
 
@@ -167,8 +144,44 @@ const Marcas: React.FC = () => {
 			toast.success('Marca eliminada');
 			setDeleteOpen(false);
 			setSelected(null);
-		} catch (err: any) {
-			toast.error(err?.message ?? 'No se pudo eliminar la marca');
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : 'No se pudo eliminar la marca');
+		}
+	};
+
+	const openEdit = (brand: IBrand) => {
+		setSelected(brand);
+		setEditOpen(true);
+	};
+	const openDelete = (brand: IBrand) => {
+		setSelected(brand);
+		setDeleteOpen(true);
+	};
+	const openView = (brand: IBrand) => {
+		setSelected(brand);
+		setViewOpen(true);
+	};
+
+	const handleInlineSave = async (brand: IBrand, payload: BrandInlineSavePayload) => {
+		try {
+			const updated = await updateBrand({
+				id: brand.id,
+				branch_id: brand.branch_id ?? activeBranchId ?? undefined,
+				name: payload.name,
+				code: payload.code,
+				is_active: payload.is_active,
+				image: payload.image,
+			});
+			if (payload.galleryFiles.length > 0) {
+				await uploadBrandGallery(
+					brand.id,
+					payload.galleryFiles,
+					updated?.branch_id ?? brand.branch_id ?? activeBranchId ?? undefined,
+				);
+			}
+			toast.success('Marca actualizada');
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : 'No se pudo actualizar la marca');
 		}
 	};
 
@@ -188,7 +201,7 @@ const Marcas: React.FC = () => {
 								Marcas
 							</h1>
 							<p className='text-sm text-gray-600 dark:text-gray-400'>
-								Gestiona el catalogo de marcas asociadas a tus sucursales
+								Gestiona el catálogo de marcas asociadas a tus sucursales
 							</p>
 						</div>
 					</div>
@@ -197,37 +210,33 @@ const Marcas: React.FC = () => {
 					<div className='flex flex-col items-stretch gap-2 sm:flex-row sm:items-center'>
 						<Input
 							name='search'
-							placeholder='Buscar por nombre, codigo o fabricante'
+							placeholder='Buscar por nombre o código'
 							value={filters.search}
 							onChange={handleSearchChange}
-							className='w-full sm:w-72'
+							className='w-full sm:w-64'
 						/>
-						{/* <Select
-							name='branch_id'
-							value={selectedBranchValue}
-							onChange={handleBranchChange}
-							className='w-full sm:w-60'>
-							<option value=''>
-								{branchOptions.length > 0
-									? 'Sucursal predeterminada'
-									: 'Sin sucursales visibles'}
-							</option>
-							{branchOptions.map((option) => (
-								<option key={option.value} value={option.value}>
-									{option.label}
-								</option>
-							))}
-						</Select>
-						{(filters.branch_id || activeBranchId) && (
-							<p className='text-xs text-gray-500 sm:w-48'>
-								Mostrando datos de{' '}
-								<span className='font-semibold'>
-									{branchLookup[
-										Number(filters.branch_id ?? activeBranchId ?? NaN)
-									] ?? 'tu sucursal asignada'}
-								</span>
-							</p>
-						)} */}
+
+						<div className='inline-flex shrink-0 gap-0.5 rounded-lg border border-zinc-200 p-0.5 dark:border-zinc-700'>
+							<Button
+								icon='HeroBars3'
+								size='sm'
+								variant={viewMode === 'list' ? 'solid' : 'ghost'}
+								color={viewMode === 'list' ? 'violet' : 'zinc'}
+								aria-label='Vista de lista'
+								aria-pressed={viewMode === 'list'}
+								onClick={() => setViewMode('list')}
+							/>
+							<Button
+								icon='HeroSquares2X2'
+								size='sm'
+								variant={viewMode === 'grid' ? 'solid' : 'ghost'}
+								color={viewMode === 'grid' ? 'violet' : 'zinc'}
+								aria-label='Vista de cuadrícula'
+								aria-pressed={viewMode === 'grid'}
+								onClick={() => setViewMode('grid')}
+							/>
+						</div>
+
 						<ProtectedButton
 							permission='view-integration'
 							roles={['super-admin']}
@@ -244,12 +253,8 @@ const Marcas: React.FC = () => {
 							variant='solid'
 							color='emerald'
 							type='button'
-							aria-label='Crear marca'
-							aria-expanded='false'
-							aria-controls='create-brand-modal'
-							onClick={() => setCreateOpen(true)}
-							>
-								<Icon icon='HeroPlus' className='mr-2 h-6 w-6 text-white font-bold' />
+							icon='HeroPlus'
+							onClick={() => setCreateOpen(true)}>
 							Nueva marca
 						</Button>
 					</div>
@@ -262,24 +267,30 @@ const Marcas: React.FC = () => {
 						{error}
 					</div>
 				)}
-				<BrandStats stats={stats} />
-				<BrandsGrid
-					brands={brands}
-					loading={loading}
-					// branchLookup={branchLookup}
-					onView={(brand) => {
-						setSelected(brand);
-						setViewOpen(true);
-					}}
-					onEdit={(brand) => {
-						setSelected(brand);
-						setEditOpen(true);
-					}}
-					onDelete={(brand) => {
-						setSelected(brand);
-						setDeleteOpen(true);
-					}}
-				/>
+
+				{viewMode === 'list' ? (
+					<BrandMasterDetail
+						brands={brands}
+						loading={loading}
+						selected={detailBrand}
+						onSelect={(brand) => {
+							setDetailId(brand.id);
+							// En mobile no hay panel lateral: abrir el detalle como modal.
+							if (!isDesktop) openView(brand);
+						}}
+						onSave={handleInlineSave}
+						onDelete={openDelete}
+						saving={updating}
+					/>
+				) : (
+					<BrandsGrid
+						brands={brands}
+						loading={loading}
+						onView={openView}
+						onEdit={openEdit}
+						onDelete={openDelete}
+					/>
+				)}
 			</Container>
 
 			<CrearMarca
@@ -307,10 +318,7 @@ const Marcas: React.FC = () => {
 				isOpen={viewOpen}
 				setIsOpen={setViewOpen}
 				brand={selected}
-				onEdit={(brand) => {
-					setSelected(brand);
-					setEditOpen(true);
-				}}
+				onEdit={openEdit}
 			/>
 			<ImportTermsWizard
 				isOpen={importOpen}

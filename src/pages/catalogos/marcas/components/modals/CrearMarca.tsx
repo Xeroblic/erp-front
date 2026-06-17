@@ -57,12 +57,14 @@ const CrearMarca: React.FC<CrearMarcaProps> = ({
 		<Modal isOpen={isOpen} setIsOpen={setIsOpen} size='lg'>
 			<ModalHeader>
 				<div className='flex items-center space-x-3'>
-					<div className='flex h-10 w-10 items-center justify-center rounded-full bg-violet-100'>
-						<Icon icon='HeroPlus' className='h-6 w-6 text-violet-600' />
+					<div className='flex h-10 w-10 items-center justify-center rounded-full bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-300'>
+						<Icon icon='HeroPlus' className='h-6 w-6' />
 					</div>
 					<div>
-						<h2 className='text-xl font-bold text-gray-900'>Nueva marca</h2>
-						<p className='text-sm text-gray-600'>
+						<h2 className='text-xl font-semibold text-zinc-900 dark:text-white'>
+							Nueva marca
+						</h2>
+						<p className='text-sm text-zinc-500 dark:text-zinc-400'>
 							Registra una marca para la sucursal seleccionada
 						</p>
 					</div>
