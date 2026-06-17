@@ -43,11 +43,11 @@ const BrandsGrid: React.FC<BrandsGridProps> = ({ brands, loading, onView, onEdit
 	}
 
 	return (
-		<div className='grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'>
+		<div className='grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 bg-white dark:bg-zinc-800 p-4 rounded-xl'>
 			{brands.map((brand, index) => (
 				<RevealOnScroll key={brand.id} delay={Math.min(index, 8) * 30}>
 					<Card
-						className='h-full cursor-pointer transition-shadow hover:shadow-md'
+						className='h-full cursor-pointer transition-shadow hover:shadow-md hover:bg-zinc-200/20 dark:hover:bg-zinc-700/20'
 						onClick={() => onView(brand)}>
 						<CardBody className='flex h-full flex-col gap-4'>
 							<div className='flex items-start gap-3'>

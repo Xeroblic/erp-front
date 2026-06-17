@@ -162,7 +162,6 @@ const Marcas: React.FC = () => {
 		setViewOpen(true);
 	};
 
-	// Guardado inline desde el panel de detalle (desktop): sin modal.
 	const handleInlineSave = async (brand: IBrand, payload: BrandInlineSavePayload) => {
 		try {
 			const updated = await updateBrand({
