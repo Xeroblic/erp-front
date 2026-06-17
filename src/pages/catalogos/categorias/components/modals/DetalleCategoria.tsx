@@ -6,6 +6,8 @@ import Badge from '@/components/ui/Badge';
 import type { ICategory } from '../../types';
 import ApiService from '@/services/ApiService';
 import { normalizeCategory } from '@/components/helper/category.helper';
+import { ImageZoom } from '@/components/ImageZoom';
+import { ensureAbsoluteUrl } from '@/components/helper/brand.helper';
 
 type DetalleCategoriaProps = {
 	isOpen: boolean;
@@ -69,15 +71,40 @@ const DetalleCategoria: React.FC<DetalleCategoriaProps> = ({
 						{/* Imagen principal y galería */}
 						<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
 							<div className='md:col-span-1'>
-								<div className='aspect-square w-full overflow-hidden rounded-md ring-1 ring-zinc-200 dark:ring-white/10'>
+								<div className='h-full min-h-[240px] w-full overflow-hidden rounded-md bg-zinc-50 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-white/10'>
 									{category.image?.url ? (
-										<img
-											src={category.image.thumb || category.image.url}
-											alt={category.image.alt || category.name}
-											className='h-full w-full object-cover'
+										<ImageZoom
+											key={category.image.id ?? category.image.url}
+											imageUrl={
+												ensureAbsoluteUrl(
+													category.image.url ?? category.image.thumb,
+												) ?? ''
+											}
+											alt={category.image.alt ?? category.name}
+											modalTitle={category.name}
+											renderTrigger={(open) => (
+												<button
+													type='button'
+													onClick={open}
+													aria-label={`Ver imagen de ${category.name}`}
+													title='Ver imagen'
+													className='block h-full w-full cursor-zoom-in overflow-hidden rounded-md p-0 transition hover:ring-2 hover:ring-violet-300'>
+													<img
+														src={
+															ensureAbsoluteUrl(
+																category.image?.thumb ??
+																	category.image?.url,
+															) ?? undefined
+														}
+														alt={category.image?.alt ?? category.name}
+														loading='lazy'
+														className='block h-full w-full object-contain'
+													/>
+												</button>
+											)}
 										/>
 									) : (
-										<div className='flex h-full w-full items-center justify-center text-sm text-zinc-500 dark:text-zinc-400'>
+										<div className='flex h-full min-h-[240px] w-full items-center justify-center text-sm text-zinc-500 dark:text-zinc-400'>
 											Sin imagen
 										</div>
 									)}
@@ -87,19 +114,35 @@ const DetalleCategoria: React.FC<DetalleCategoriaProps> = ({
 								<div className='space-y-2'>
 									<h4 className='font-semibold'>Galería</h4>
 									{category.gallery && category.gallery.length > 0 ? (
-										<div className='grid grid-cols-3 gap-2 sm:grid-cols-4'>
+										<div className='grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4'>
 											{category.gallery.map((img, idx) => (
-												<div
-													key={`${img.id ?? idx}`}
-													className='aspect-square overflow-hidden rounded border border-zinc-200 dark:border-zinc-700'>
-													<img
-														src={img.thumb || img.url}
-														alt={
-															img.alt || `${category.name}-${idx + 1}`
-														}
-														className='h-full w-full object-cover'
-													/>
-												</div>
+												<ImageZoom
+													key={img.id ?? `${idx}`}
+													imageUrl={
+														ensureAbsoluteUrl(img.url ?? img.thumb) ?? ''
+													}
+													alt={img.alt ?? `${category.name}-${idx + 1}`}
+													modalTitle={category.name}
+													renderTrigger={(open) => (
+														<button
+															type='button'
+															onClick={open}
+															aria-label={`Ver imagen ${idx + 1} de ${category.name}`}
+															title='Ver imagen'
+															className='block aspect-square w-full cursor-zoom-in overflow-hidden rounded border border-zinc-200 p-0 transition hover:ring-2 hover:ring-violet-300 dark:border-zinc-700'>
+															<img
+																src={
+																	ensureAbsoluteUrl(
+																		img.thumb ?? img.url,
+																	) ?? undefined
+																}
+																alt={img.alt ?? `${category.name}-${idx + 1}`}
+																loading='lazy'
+																className='block h-full w-full object-cover'
+															/>
+														</button>
+													)}
+												/>
 											))}
 										</div>
 									) : (
@@ -183,12 +226,18 @@ const DetalleCategoria: React.FC<DetalleCategoriaProps> = ({
 			</ModalBody>
 			<ModalFooter>
 				<div className='flex justify-end space-x-3'>
-					<Button variant='outline' onClick={() => setIsOpen(false)}>
+					<Button
+						variant='outline'
+						aria-label='Cerrar detalle de la categoría'
+						title='Cerrar'
+						onClick={() => setIsOpen(false)}>
 						Cerrar
 					</Button>
 					{category && onEdit && (
 						<Button
 							color='blue'
+							aria-label='Editar categoría'
+							title='Editar categoría'
 							onClick={() => {
 								setIsOpen(false);
 								onEdit(category);

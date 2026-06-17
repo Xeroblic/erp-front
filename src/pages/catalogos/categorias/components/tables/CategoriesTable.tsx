@@ -17,6 +17,7 @@ import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
 import useDarkMode from '@/hooks/useDarkMode';
+import Tooltip from '@/components/ui/Tooltip';
 
 interface CategoriesTableProps {
 	rows: CategoryTableRow[];
@@ -184,27 +185,46 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
 									<Icon icon='HeroPower' className='h-4 w-4' />
 								</Button> */}
 							<div className='hidden space-x-2 sm:flex'>
-								<Button
-									size='sm'
-									variant='outline'
-									onClick={() => onView(category)}
-									className='text-blue-600 hover:text-blue-900'>
-									<Icon icon='HeroEye' className='h-4 w-4' />
-								</Button>
-								<Button
-									size='sm'
-									variant='outline'
-									onClick={() => onEdit(category)}
-									className='text-indigo-600 hover:text-indigo-900'>
-									<Icon icon='HeroPencilSquare' className='h-4 w-4' />
-								</Button>
-								<Button
-									size='sm'
-									variant='outline'
-									onClick={() => onDelete(category)}
-									className='text-red-600 hover:text-red-900'>
-									<Icon icon='HeroTrash' className='h-4 w-4' />
-								</Button>
+								<Tooltip text='Ir a detalles'>
+									<Button
+										aria-label='Ver detalles'
+										data-tooltip-target='tooltip-blue'
+										aria-describedby='tooltip-blue'
+										size='sm'
+										variant='outline'
+										color='violet'
+										className='group'
+										onClick={() => onView(category)}>
+										<Icon icon='HeroEye' className='h-4 w-4 text-violet-600 group-hover:text-violet-400' />
+									</Button>
+								</Tooltip>
+								<Tooltip text='Editar categoria'>
+									<Button
+										aria-label='Editar categoria'
+										data-tooltip-target='tooltip-blue'
+										aria-describedby='tooltip-blue'
+										size='sm'
+										variant='outline'
+										color='lime'
+										onClick={() => onEdit(category)}
+										className='group'>
+										<Icon icon='HeroPencilSquare' className='h-4 w-4 text-lime-600 group-hover:text-lime-400'/>
+									</Button>
+								</Tooltip>
+								<Tooltip text='Eliminar categoria'>
+									<Button
+										aria-label='Eliminar categoria'
+										data-tooltip-target='tooltip-red'
+										aria-describedby='tooltip-red'
+										size='sm'
+										variant='outline'
+										color='red'
+										onClick={() => onDelete(category)}
+										className='group'
+										>
+										<Icon icon='HeroTrash' className='h-4 w-4 text-red-600 group-hover:text-red-400' />
+									</Button>
+								</Tooltip>
 							</div>
 
 							<div className='relative sm:hidden'>
