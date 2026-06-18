@@ -69,7 +69,6 @@ const ProtectedButton = forwardRef<HTMLButtonElement, IProtectedButtonProps>((pr
 		...buttonProps
 	} = props;
 
-	// Si no se especifica ningún permiso, renderizar el botón normalmente
 	if (
 		!permission &&
 		(!permissions || permissions.length === 0) &&
@@ -78,7 +77,6 @@ const ProtectedButton = forwardRef<HTMLButtonElement, IProtectedButtonProps>((pr
 		return <Button ref={ref} {...buttonProps} />;
 	}
 
-	// Combinar permission y permissions en una sola prop para PermissionGuard
 	const combinedPermission = permission ?? permissions;
 
 	return (
