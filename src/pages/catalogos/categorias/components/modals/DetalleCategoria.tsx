@@ -25,6 +25,7 @@ const DetalleCategoria: React.FC<DetalleCategoriaProps> = ({
 	const [desc, setDesc] = React.useState<string>('');
 	const [loading, setLoading] = React.useState<boolean>(false);
 
+
 	React.useEffect(() => {
 		setDesc(category?.description ?? '');
 	}, [category]);
@@ -93,7 +94,7 @@ const DetalleCategoria: React.FC<DetalleCategoriaProps> = ({
 														src={
 															ensureAbsoluteUrl(
 																category.image?.thumb ??
-																	category.image?.url,
+																category.image?.url,
 															) ?? undefined
 														}
 														alt={category.image?.alt ?? category.name}
@@ -226,18 +227,12 @@ const DetalleCategoria: React.FC<DetalleCategoriaProps> = ({
 			</ModalBody>
 			<ModalFooter>
 				<div className='flex justify-end space-x-3'>
-					<Button
-						variant='outline'
-						aria-label='Cerrar detalle de la categoría'
-						title='Cerrar'
-						onClick={() => setIsOpen(false)}>
+					<Button variant='outline' onClick={() => setIsOpen(false)}>
 						Cerrar
 					</Button>
 					{category && onEdit && (
 						<Button
 							color='blue'
-							aria-label='Editar categoría'
-							title='Editar categoría'
 							onClick={() => {
 								setIsOpen(false);
 								onEdit(category);
