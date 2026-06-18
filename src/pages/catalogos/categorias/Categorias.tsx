@@ -233,8 +233,10 @@ const Categorias: React.FC = () => {
 							fallbackMode='disabled'
 							variant='outline'
 							color='indigo'
-							icon='HeroArrowDownTray'
-							onClick={() => setImportOpen(true)}>
+							onClick={() => setImportOpen(true)}
+							className='group'
+						>
+							<Icon icon='HeroArrowDownTray' color={'indigo'} colorIntensity='500' className='h-6 w-6 group-hover:text-indigo-400 mr-2 font-bold' />
 							Importar Categorias desde WC
 						</ProtectedButton>
 						<Button variant='solid' color='emerald' className='font-bold' onClick={handleOpenCreate}>

@@ -176,13 +176,36 @@ F2–F5 son paralelizables una vez cerrada F1.
 
 ---
 
-## Checklist
-- [ ] Tipos en `integrations.types.ts`
-- [ ] 10 funciones en `integrationsService.ts`
-- [ ] `woocommerceProductsSlice.ts` + export + registro en `rootReducer`
-- [ ] `WooProductsPage.tsx` + ruta + `pages.config`
-- [ ] `WooCommerceProductTab.tsx` conectado a `quick-products`
-- [ ] Publicar/Despublicar/Diagnóstico en `CreateEditProductModal`
-- [ ] `ImportTermsWizard.tsx` con polling
+## Checklist (actualizado 2026-06-18)
+
+### Infraestructura base
+- [x] Tipos en `integrations.types.ts` — `WooProduct`, `QuickProductPayload`, `ImportTermsPayload`, `WooRemoteState`, etc.
+- [x] `woocommerceProductsSlice.ts` + export en `slices/integrations/index.ts` + registro en `rootReducer.ts`
+- [x] Service dedicado: `woocommerceProductsService.ts` (no en `integrationsService.ts` como se planeó originalmente)
+
+### Endpoints por estado
+
+| # | Endpoint | Service | Thunk | UI | Estado |
+|---|----------|---------|-------|----|--------|
+| 1 | `POST /import-terms` | ✅ `importTerms` | ✅ `runImportTerms` | ✅ `ImportTermsPage.tsx` + wizard | **LISTO** |
+| 2 | `GET /import-terms/status` | ✅ `getImportTermsStatus` | ✅ `pollImportTermsStatus` | ✅ Polling 2s en `useImportTerms` | **LISTO** |
+| 3 | `GET /products` | ❌ | ❌ | ❌ `WooProductsPage.tsx` no existe, sin ruta ni config | **PENDIENTE** |
+| 4 | `POST /quick-products` | ✅ `createQuickProduct` | ✅ `createQuickProductThunk` | ✅ `WooCommerceProductTab.tsx` con dispatch real | **LISTO** |
+| 5 | `POST /products/{product}` | ✅ `publishProduct` | ✅ `publishProductThunk` | ✅ `WooCommercePublishPanel.tsx` (switch toggle) | **LISTO** |
+| 6 | `DELETE /products/{product}` | ✅ `unpublishProduct` | ✅ `unpublishProductThunk` | ✅ `WooCommercePublishPanel.tsx` (switch toggle) | **LISTO** |
+| 7 | `GET /products/{product}/remote` | ✅ `getProductRemoteState` | ✅ `fetchRemoteState` | ✅ Tabla diagnóstico local vs remote | **LISTO** |
+| 8 | `POST /products/{product}/sync-price` | ❌ | ❌ | ❌ | **PENDIENTE** |
+| 9 | `POST /products/{product}/sync-stock` | ❌ (solo existe sync masivo en `integrationsService`) | ❌ | ❌ | **PENDIENTE** |
+| 10 | `POST /products/{product}/publish-children` | ❌ | ❌ | ❌ | **PENDIENTE** |
+
+### Resumen: **7/10 endpoints implementados**
+
+### Pendientes (F2 y F6 del plan)
+- [ ] **#3 — `getWooProducts`**: service + thunk + `WooProductsPage.tsx` + ruta en `contentRoutes.tsx` + entrada en `pages.config.ts`
+- [ ] **#8 — `syncProductPrice`**: service + thunk + UI (botón rápido en grilla o auto al guardar precio)
+- [ ] **#9 — `syncProductStock`**: service + thunk por producto individual (no confundir con el sync masivo existente)
+- [ ] **#10 — `publishProductChildren`**: service + thunk + UI (botón "Sincronizar variaciones" en productos padre)
+
+### QA general
 - [ ] `pnpm lint` + `pnpm build` (tsc) verdes
 - [ ] Verificación manual de los 10 endpoints contra backend
