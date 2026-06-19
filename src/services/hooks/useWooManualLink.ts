@@ -32,10 +32,14 @@ export const useWooCompare = (
 	productId: number,
 	params: WooCompareParams | null,
 ) => {
+	const hasValidParams =
+		params !== null &&
+		(params.external_product_id != null || (params.external_sku != null && params.external_sku !== ''));
+
 	return useQuery({
 		queryKey: [...KEYS.compare(subsidiaryId ?? 0, productId), params],
 		queryFn: () => wooService.compareProduct(subsidiaryId!, productId, params!),
-		enabled: subsidiaryId !== null && params !== null,
+		enabled: subsidiaryId !== null && hasValidParams,
 	});
 };
 
@@ -51,10 +55,12 @@ export const useWooLink = (subsidiaryId: number | null, productId: number) => {
 			});
 		},
 		onError: (error: unknown) => {
-			const msg = extractErrorMessage(error);
-			if (!msg.includes('price_resolution')) {
-				toast.error(msg);
+			const conflict = extractConflictData(error);
+			if (conflict) {
+				toast.warning('Los precios difieren entre ERP y WooCommerce. Selecciona qué precio mantener.');
+				return;
 			}
+			toast.error(extractErrorMessage(error));
 		},
 	});
 };
@@ -85,6 +91,23 @@ const asRecord = (value: unknown): UnknownRecord | undefined => {
 export const extractErrorMessage = (error: unknown): string => {
 	const responseRecord = asRecord(asRecord(error)?.response);
 	const dataRecord = asRecord(responseRecord?.data);
+
+	const errors = asRecord(dataRecord?.errors);
+	if (errors) {
+		const seen = new Set<string>();
+		const msgs: string[] = [];
+		for (const fieldMsgs of Object.values(errors)) {
+			if (!Array.isArray(fieldMsgs)) continue;
+			for (const m of fieldMsgs) {
+				if (typeof m === 'string' && m.trim() && !seen.has(m)) {
+					seen.add(m);
+					msgs.push(m);
+				}
+			}
+		}
+		if (msgs.length > 0) return msgs.join(' · ');
+	}
+
 	const message = dataRecord?.message;
 	if (typeof message === 'string' && message.trim()) return message;
 	if (error instanceof Error && error.message.trim()) return error.message;

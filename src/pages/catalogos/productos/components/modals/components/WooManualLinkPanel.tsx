@@ -1,4 +1,5 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'react-toastify';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
@@ -45,10 +46,12 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 	const [searchEnabled, setSearchEnabled] = useState(false);
 	const [selectedCandidate, setSelectedCandidate] = useState<WooCandidate | null>(null);
 
-	const compareParams = useMemo(
-		() => (selectedCandidate ? { external_product_id: selectedCandidate.id } : null),
-		[selectedCandidate],
-	);
+	const compareParams = useMemo(() => {
+		if (!selectedCandidate) return null;
+		if (selectedCandidate.id != null) return { external_product_id: selectedCandidate.id };
+		if (selectedCandidate.sku) return { external_sku: selectedCandidate.sku };
+		return null;
+	}, [selectedCandidate]);
 
 	const [priceConflict, setPriceConflict] = useState<{
 		erp_price: string | number | null;
@@ -67,6 +70,22 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 	const compareQuery = useWooCompare(subsidiaryId, productId, compareParams);
 	const linkMutation = useWooLink(subsidiaryId, productId);
 	const unlinkMutation = useWooUnlink(subsidiaryId, productId);
+
+	useEffect(() => {
+		if (compareQuery.error) {
+			toast.error(
+				`Error al comparar: ${extractErrorMessage(compareQuery.error)}`,
+			);
+		}
+	}, [compareQuery.error]);
+
+	useEffect(() => {
+		if (candidatesQuery.error) {
+			toast.error(
+				`Error al buscar candidatos: ${extractErrorMessage(candidatesQuery.error)}`,
+			);
+		}
+	}, [candidatesQuery.error]);
 
 	const handleOpenSearch = useCallback(() => {
 		setSearchOpen(true);
@@ -96,9 +115,17 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 	const handleLink = useCallback(
 		async (priceResolution?: WooPriceResolution) => {
 			if (!selectedCandidate) return;
+			if (selectedCandidate.id == null && !selectedCandidate.sku) {
+				toast.warning(
+					'No se pudo identificar el producto de WooCommerce: no tiene ID ni SKU válido.',
+				);
+				return;
+			}
 			try {
 				await linkMutation.mutateAsync({
-					external_product_id: selectedCandidate.id,
+					...(selectedCandidate.id != null
+						? { external_product_id: selectedCandidate.id }
+						: { external_sku: selectedCandidate.sku }),
 					sync_stock_with_woo: syncStock,
 					...(priceResolution ? { price_resolution: priceResolution } : {}),
 				});
@@ -137,10 +164,18 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 	const candidates: WooCandidate[] = useMemo(() => {
 		const raw = candidatesQuery.data;
 		if (!raw) return [];
-		if (Array.isArray(raw)) return raw;
-		const record = raw as Record<string, unknown>;
-		if (Array.isArray(record.data)) return record.data as WooCandidate[];
-		return [];
+		const arr = Array.isArray(raw)
+			? raw
+			: Array.isArray((raw as Record<string, unknown>).data)
+				? ((raw as Record<string, unknown>).data as unknown[])
+				: [];
+		return arr.map((item) => {
+			const r = item as Record<string, unknown>;
+			const id = (r.id ?? r.woo_id ?? r.external_product_id ?? r.product_id) as
+				| number
+				| undefined;
+			return { ...r, id } as WooCandidate;
+		});
 	}, [candidatesQuery.data]);
 
 	const comparison = compareQuery.data;
@@ -232,8 +267,9 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 									Sin vínculo establecido
 								</p>
 								<p className='mt-0.5 text-xs text-neutral-500 dark:text-neutral-400'>
-									Busca un producto en WooCommerce y vincúlalo manualmente para
-									sincronizar datos entre ambos sistemas.
+									Vincula manualmente con un producto que ya exista en
+									WooCommerce. Si el producto aún no existe en la tienda, usa
+									primero &quot;Publicación en tienda&quot; para crearlo.
 								</p>
 							</div>
 						</div>
@@ -444,11 +480,18 @@ const CandidatesList: React.FC<CandidatesListProps> = ({
 					className='mx-auto mb-2 h-10 w-10 text-neutral-300 dark:text-neutral-600'
 				/>
 				<p className='text-sm font-medium text-neutral-500 dark:text-neutral-400'>
-					No se encontraron productos
+					No se encontraron productos en WooCommerce
 				</p>
-				<p className='mt-0.5 text-xs text-neutral-400 dark:text-neutral-500'>
+				<p className='mt-1 text-xs text-neutral-400 dark:text-neutral-500'>
 					Prueba con otro nombre o SKU.
 				</p>
+				<div className='mx-auto mt-3 max-w-sm rounded-md border border-blue-200 bg-blue-50 p-2.5 text-left dark:border-blue-500/30 dark:bg-blue-950/30'>
+					<p className='text-xs font-medium text-blue-700 dark:text-blue-300'>
+						<Icon icon='HeroLightBulb' className='mr-1 inline h-3.5 w-3.5' />
+						Si el producto aún no existe en WooCommerce, usa la sección
+						&quot;Publicación en tienda&quot; para crearlo primero.
+					</p>
+				</div>
 			</div>
 		)}
 
@@ -476,9 +519,9 @@ const CandidatesList: React.FC<CandidatesListProps> = ({
 							</tr>
 						</thead>
 						<tbody>
-							{candidates.map((c) => (
+							{candidates.map((c, idx) => (
 								<tr
-									key={c.id}
+									key={c.id ?? c.sku ?? idx}
 									className='border-t border-neutral-200 transition-colors hover:bg-blue-50/40 dark:border-neutral-700 dark:hover:bg-blue-950/20'>
 									<td className='max-w-[200px] truncate px-3 py-2.5 font-medium text-neutral-800 dark:text-neutral-100'>
 										{c.name}
@@ -530,9 +573,9 @@ const CandidatesList: React.FC<CandidatesListProps> = ({
 
 				{/* Mobile cards */}
 				<div className='space-y-2 md:hidden'>
-					{candidates.map((c) => (
+					{candidates.map((c, idx) => (
 						<div
-							key={c.id}
+							key={c.id ?? c.sku ?? idx}
 							className='rounded-lg border border-neutral-200 bg-white p-3 dark:border-neutral-700 dark:bg-neutral-800/50'>
 							<div className='mb-2 flex items-start justify-between gap-2'>
 								<div className='min-w-0 flex-1'>
@@ -631,6 +674,11 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 		  }
 		| undefined;
 
+	const hasPriceConflict =
+		priceConflict != null || (comp != null && comp.prices_match === false);
+	const conflictErpPrice = priceConflict?.erp_price ?? comp?.erp?.price ?? null;
+	const conflictWooPrice = priceConflict?.woo_price ?? comp?.woo?.price ?? null;
+
 	return (
 		<div className='space-y-4'>
 			<button
@@ -654,9 +702,11 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 					{candidate.name}
 				</p>
 				<div className='mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs'>
-					<span className='text-neutral-600 dark:text-neutral-300'>
-						ID: <span className='font-mono font-bold'>#{candidate.id}</span>
-					</span>
+					{candidate.id != null && (
+						<span className='text-neutral-600 dark:text-neutral-300'>
+							ID: <span className='font-mono font-bold'>#{candidate.id}</span>
+						</span>
+					)}
 					<span className='text-neutral-600 dark:text-neutral-300'>
 						SKU: <span className='font-mono font-bold'>{candidate.sku || '—'}</span>
 					</span>
@@ -778,8 +828,8 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 				</>
 			)}
 
-			{/* Price conflict resolution */}
-			{priceConflict && (
+			{/* Price conflict resolution (from compare or link 409) */}
+			{hasPriceConflict && (
 				<div className='rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-950/30'>
 					<div className='mb-3 flex items-start gap-2.5'>
 						<div className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-amber-500/20 dark:bg-amber-500/25'>
@@ -793,15 +843,26 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 								Conflicto de precios
 							</p>
 							<p className='mt-0.5 text-xs text-amber-700 dark:text-amber-300'>
-								ERP: {formatPrice(priceConflict.erp_price)} vs WooCommerce:{' '}
-								{formatPrice(priceConflict.woo_price)}
+								ERP: {formatPrice(conflictErpPrice)} vs WooCommerce:{' '}
+								{formatPrice(conflictWooPrice)}
 							</p>
 							<p className='mt-1.5 text-xs font-medium text-amber-800 dark:text-amber-200'>
 								Elige qué precio mantener:
 							</p>
 						</div>
 					</div>
-					<div className='flex flex-wrap gap-2'>
+
+					<Checkbox
+						id='woo_link_sync_stock_conflict'
+						name='woo_link_sync_stock_conflict'
+						checked={syncStock}
+						onChange={() => onSyncStockChange(!syncStock)}
+						disabled={isLinking}
+						dimension='sm'
+						label='Sincronizar stock ERP → WooCommerce al vincular'
+					/>
+
+					<div className='mt-3 flex flex-wrap gap-2'>
 						<Tooltip text='Conserva el precio del ERP y actualiza WooCommerce'>
 							<Button
 								variant='solid'
@@ -832,8 +893,8 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 				</div>
 			)}
 
-			{/* Link options & button */}
-			{!priceConflict && (
+			{/* Link options & button (only when prices match) */}
+			{!hasPriceConflict && (
 				<div className='space-y-3 rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-800/50'>
 					<p className='text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400'>
 						Opciones de vinculación
