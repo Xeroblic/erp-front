@@ -1,4 +1,5 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'react-toastify';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
@@ -70,6 +71,22 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 	const linkMutation = useWooLink(subsidiaryId, productId);
 	const unlinkMutation = useWooUnlink(subsidiaryId, productId);
 
+	useEffect(() => {
+		if (compareQuery.error) {
+			toast.error(
+				`Error al comparar: ${extractErrorMessage(compareQuery.error)}`,
+			);
+		}
+	}, [compareQuery.error]);
+
+	useEffect(() => {
+		if (candidatesQuery.error) {
+			toast.error(
+				`Error al buscar candidatos: ${extractErrorMessage(candidatesQuery.error)}`,
+			);
+		}
+	}, [candidatesQuery.error]);
+
 	const handleOpenSearch = useCallback(() => {
 		setSearchOpen(true);
 		setSearchEnabled(true);
@@ -98,6 +115,12 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 	const handleLink = useCallback(
 		async (priceResolution?: WooPriceResolution) => {
 			if (!selectedCandidate) return;
+			if (selectedCandidate.id == null && !selectedCandidate.sku) {
+				toast.warning(
+					'No se pudo identificar el producto de WooCommerce: no tiene ID ni SKU válido.',
+				);
+				return;
+			}
 			try {
 				await linkMutation.mutateAsync({
 					...(selectedCandidate.id != null
@@ -244,8 +267,9 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 									Sin vínculo establecido
 								</p>
 								<p className='mt-0.5 text-xs text-neutral-500 dark:text-neutral-400'>
-									Busca un producto en WooCommerce y vincúlalo manualmente para
-									sincronizar datos entre ambos sistemas.
+									Vincula manualmente con un producto que ya exista en
+									WooCommerce. Si el producto aún no existe en la tienda, usa
+									primero &quot;Publicación en tienda&quot; para crearlo.
 								</p>
 							</div>
 						</div>
@@ -456,11 +480,18 @@ const CandidatesList: React.FC<CandidatesListProps> = ({
 					className='mx-auto mb-2 h-10 w-10 text-neutral-300 dark:text-neutral-600'
 				/>
 				<p className='text-sm font-medium text-neutral-500 dark:text-neutral-400'>
-					No se encontraron productos
+					No se encontraron productos en WooCommerce
 				</p>
-				<p className='mt-0.5 text-xs text-neutral-400 dark:text-neutral-500'>
+				<p className='mt-1 text-xs text-neutral-400 dark:text-neutral-500'>
 					Prueba con otro nombre o SKU.
 				</p>
+				<div className='mx-auto mt-3 max-w-sm rounded-md border border-blue-200 bg-blue-50 p-2.5 text-left dark:border-blue-500/30 dark:bg-blue-950/30'>
+					<p className='text-xs font-medium text-blue-700 dark:text-blue-300'>
+						<Icon icon='HeroLightBulb' className='mr-1 inline h-3.5 w-3.5' />
+						Si el producto aún no existe en WooCommerce, usa la sección
+						&quot;Publicación en tienda&quot; para crearlo primero.
+					</p>
+				</div>
 			</div>
 		)}
 

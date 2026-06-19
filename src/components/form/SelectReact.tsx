@@ -377,7 +377,18 @@ const SelectReact: FC<ISelectReactProps> = (props) => {
 		const customStyles = rest.styles;
 
 		if (!isMobileViewport) {
-			return customStyles;
+			// En desktop renderizamos el menú en un portal a document.body para
+			// evitar que quede recortado/detrás por contenedores con overflow o
+			// stacking contexts (cards, modales, etc.). Necesita z-index alto.
+			return {
+				...customStyles,
+				menuPortal: (base, state) => {
+					const desktopBase = { ...base, zIndex: 9999 };
+					return customStyles?.menuPortal
+						? customStyles.menuPortal(desktopBase, state)
+						: desktopBase;
+				},
+			};
 		}
 
 		return {
@@ -426,7 +437,7 @@ const SelectReact: FC<ISelectReactProps> = (props) => {
 
 	const computedMenuPortalTarget =
 		rest.menuPortalTarget ??
-		(isMobileViewport && typeof document !== 'undefined' ? document.body : undefined);
+		(typeof document !== 'undefined' ? document.body : undefined);
 
 	const computedMenuPosition = rest.menuPosition ?? (isMobileViewport ? 'fixed' : 'absolute');
 	const computedMenuIsOpen = isMobileViewport ? isMobileMenuOpen : undefined;
@@ -457,17 +468,28 @@ const SelectReact: FC<ISelectReactProps> = (props) => {
 					className,
 				),
 			option: (state: OptionPropsExtend): string =>
-				classNames('px-1.5 py-1', themeConfig.transition, {
-					[`bg-${color}-${colorIntensity}`]: state.isFocused,
-					[`${textColor}`]: state.isFocused,
-					'opacity-50': state?.data?.isDisabled,
-				}),
+				classNames(
+					'px-1.5 py-1.5 cursor-pointer',
+					'text-zinc-900 dark:text-zinc-100',
+					themeConfig.transition,
+					{
+						'bg-zinc-200 dark:bg-zinc-700': state.isFocused,
+						'opacity-50 cursor-not-allowed': state?.data?.isDisabled,
+					},
+				),
 			menu: () =>
-				classNames('bg-white dark:bg-black overflow-hidden shadow-lg z-[1000]', [
-					`${rounded}`,
-				]),
+				classNames(
+					'bg-white dark:bg-zinc-900',
+					'border border-zinc-200 dark:border-zinc-700',
+					'overflow-hidden shadow-lg z-[1000]',
+					[`${rounded}`],
+				),
+			menuList: () => classNames('py-1 max-h-60 overflow-y-auto'),
+			noOptionsMessage: () =>
+				classNames('px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400'),
 			group: () => classNames('border-zinc-500/25', '[&:not(:last-child)]:border-b'),
-			groupHeading: () => classNames('font-semibold', 'px-1.5', 'pt-1.5', 'pb-0.5'),
+			groupHeading: () =>
+				classNames('font-semibold', 'px-1.5', 'pt-1.5', 'pb-0.5', 'text-zinc-700 dark:text-zinc-300'),
 			placeholder: () => classNames('text-black/50', 'dark:text-white/50'),
 			indicatorSeparator: () => classNames('rounded', '!bg-zinc-500/50'),
 			multiValue: (state: MultiValuePropsExtends): string =>

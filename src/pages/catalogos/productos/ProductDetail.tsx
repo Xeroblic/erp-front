@@ -244,9 +244,6 @@ const ProductDetail: React.FC = () => {
 			});
 			toast.success('Producto actualizado correctamente');
 
-			// Auto-sincronización: si el producto ya está vinculado a WooCommerce,
-			// propaga los cambios publicándolo de nuevo (#5). El push real es un
-			// job en cola; no bloquea ni revierte el guardado si falla.
 			if (subsidiaryId && isWooSynced(product.marketplace_external_ids)) {
 				try {
 					await dispatch(

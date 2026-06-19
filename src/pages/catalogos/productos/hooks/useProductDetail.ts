@@ -53,9 +53,18 @@ export const useProductDetail = ({
 
 	const fallbackBranchId = useMemo(() => {
 		if (!productId) return null;
+		// 1) Producto ya cargado en el detalle (cubre el deep-link a /productos/:id,
+		//    donde la lista aún no contiene el producto). Usa la sucursal consultada
+		//    o, en su defecto, la sucursal de origen del producto.
+		const current = productsState.current;
+		if (current && current.id === productId) {
+			const fromCurrent = current.branch_id ?? current.origin_branch_id ?? null;
+			if (fromCurrent != null) return fromCurrent;
+		}
+		// 2) Fallback a la lista (navegación desde el listado).
 		const found = productsState.items.find((item) => item.id === productId);
 		return found?.branch_id ?? null;
-	}, [productId, productsState.items]);
+	}, [productId, productsState.current, productsState.items]);
 
 	// effectiveBranchId: siempre apunta a una sucursal real (para cargar brands, etc.)
 	const effectiveBranchId = useMemo(
@@ -74,23 +83,30 @@ export const useProductDetail = ({
 		void dispatch(fetchBrands({ branchId: effectiveBranchId, search: '' }));
 	}, [dispatch, effectiveBranchId]);
 
+	// Carga del producto. No depende de `effectiveBranchId`: en modo subsidiaria el
+	// producto se consulta por `subsidiaryId` (entityId), y `effectiveBranchId` se
+	// resuelve a partir del producto ya cargado. Incluirlo aquí, junto con el
+	// `clearCurrentProduct()`, provocaría un ciclo de recarga infinito.
 	useEffect(() => {
 		if (!productId || !entityId) return;
 		dispatch(clearCurrentProduct());
 		void dispatch(fetchProductById({ entityParam, entityId, productId }));
-		if (effectiveBranchId) {
-			void dispatch(
-				fetchProductAttributes({
-					entityParam: 'branches',
-					entityId: effectiveBranchId,
-					productId,
-				}),
-			);
-		}
 		return () => {
 			dispatch(clearCurrentProduct());
 		};
-	}, [dispatch, productId, entityId, entityParam, effectiveBranchId]);
+	}, [dispatch, productId, entityId, entityParam]);
+
+	// Carga de atributos una vez que se conoce la sucursal efectiva.
+	useEffect(() => {
+		if (!productId || !effectiveBranchId) return;
+		void dispatch(
+			fetchProductAttributes({
+				entityParam: 'branches',
+				entityId: effectiveBranchId,
+				productId,
+			}),
+		);
+	}, [dispatch, productId, effectiveBranchId]);
 
 	const refresh = useCallback(() => {
 		if (!productId || !entityId) return;
