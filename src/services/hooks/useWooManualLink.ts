@@ -32,10 +32,14 @@ export const useWooCompare = (
 	productId: number,
 	params: WooCompareParams | null,
 ) => {
+	const hasValidParams =
+		params !== null &&
+		(params.external_product_id != null || (params.external_sku != null && params.external_sku !== ''));
+
 	return useQuery({
 		queryKey: [...KEYS.compare(subsidiaryId ?? 0, productId), params],
 		queryFn: () => wooService.compareProduct(subsidiaryId!, productId, params!),
-		enabled: subsidiaryId !== null && params !== null,
+		enabled: subsidiaryId !== null && hasValidParams,
 	});
 };
 
