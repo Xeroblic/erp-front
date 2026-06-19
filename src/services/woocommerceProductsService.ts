@@ -16,6 +16,13 @@ import type {
 	WooSyncStockPayload,
 	WooProductActionResponse,
 	WooRemoteState,
+	WooCompareParams,
+	WooCompareResult,
+	WooCandidatesParams,
+	WooCandidate,
+	WooLinkPayload,
+	WooLinkResponse,
+	WooUnlinkResponse,
 } from '../types/integrations.types';
 
 // ==================== IMPORTACIÓN DE TÉRMINOS (CATEGORÍAS / MARCAS) ====================
@@ -108,6 +115,71 @@ export const getProductRemoteState = async (subsidiaryId: number, productId: num
 	const response = await ApiService.fetchData<WooRemoteState>({
 		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/products/${productId}/remote`,
 		method: 'GET',
+	});
+	return response.data;
+};
+
+// ==================== EMPAREJAMIENTO MANUAL ====================
+
+/**
+ * Compara datos ERP vs WooCommerce antes de vincular.
+ * `GET /products/{product}/woo-compare`
+ */
+export const compareProduct = async (
+	subsidiaryId: number,
+	productId: number,
+	params: WooCompareParams,
+) => {
+	const response = await ApiService.fetchData<WooCompareResult>({
+		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/products/${productId}/woo-compare`,
+		method: 'GET',
+		params,
+	});
+	return response.data;
+};
+
+/**
+ * Busca candidatos en WooCommerce para emparejamiento manual.
+ * `GET /products/{product}/woo-candidates`
+ */
+export const searchCandidates = async (
+	subsidiaryId: number,
+	productId: number,
+	params?: WooCandidatesParams,
+) => {
+	const response = await ApiService.fetchData<WooCandidate[]>({
+		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/products/${productId}/woo-candidates`,
+		method: 'GET',
+		params,
+	});
+	return response.data;
+};
+
+/**
+ * Vincula manualmente un producto ERP con uno de WooCommerce.
+ * `POST /products/{product}/link`
+ */
+export const linkProduct = async (
+	subsidiaryId: number,
+	productId: number,
+	payload: WooLinkPayload,
+) => {
+	const response = await ApiService.fetchData<WooLinkResponse, WooLinkPayload>({
+		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/products/${productId}/link`,
+		method: 'POST',
+		data: payload,
+	});
+	return response.data;
+};
+
+/**
+ * Desvincula un producto del emparejamiento manual con WooCommerce.
+ * `DELETE /products/{product}/link`
+ */
+export const unlinkProduct = async (subsidiaryId: number, productId: number) => {
+	const response = await ApiService.fetchData<WooUnlinkResponse>({
+		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/products/${productId}/link`,
+		method: 'DELETE',
 	});
 	return response.data;
 };

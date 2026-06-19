@@ -78,17 +78,33 @@ export const useProductDetail = ({
 		if (!productId || !entityId) return;
 		dispatch(clearCurrentProduct());
 		void dispatch(fetchProductById({ entityParam, entityId, productId }));
-		void dispatch(fetchProductAttributes({ entityParam, entityId, productId }));
+		if (effectiveBranchId) {
+			void dispatch(
+				fetchProductAttributes({
+					entityParam: 'branches',
+					entityId: effectiveBranchId,
+					productId,
+				}),
+			);
+		}
 		return () => {
 			dispatch(clearCurrentProduct());
 		};
-	}, [dispatch, productId, entityId, entityParam]);
+	}, [dispatch, productId, entityId, entityParam, effectiveBranchId]);
 
 	const refresh = useCallback(() => {
 		if (!productId || !entityId) return;
 		void dispatch(fetchProductById({ entityParam, entityId, productId }));
-		void dispatch(fetchProductAttributes({ entityParam, entityId, productId }));
-	}, [dispatch, productId, entityId, entityParam]);
+		if (effectiveBranchId) {
+			void dispatch(
+				fetchProductAttributes({
+					entityParam: 'branches',
+					entityId: effectiveBranchId,
+					productId,
+				}),
+			);
+		}
+	}, [dispatch, productId, entityId, entityParam, effectiveBranchId]);
 
 	const updateProduct = useCallback(
 		async (payload: { data: Partial<IProduct>; categoryIds?: number[] }) => {
@@ -111,7 +127,7 @@ export const useProductDetail = ({
 
 	const updateProductAttributes = useCallback(
 		async (payload: ProductAttributesPatchPayload) => {
-			if (!productId || !entityId) {
+			if (!productId || !effectiveBranchId) {
 				throw new Error('No se pudo determinar la entidad del producto');
 			}
 
@@ -126,14 +142,14 @@ export const useProductDetail = ({
 
 			await dispatch(
 				patchProductAttributes({
-					entityParam,
-					entityId,
+					entityParam: 'branches',
+					entityId: effectiveBranchId,
 					productId,
 					payload: body,
 				}),
 			).unwrap();
 		},
-		[dispatch, entityParam, entityId, productId],
+		[dispatch, effectiveBranchId, productId],
 	);
 
 	return {
