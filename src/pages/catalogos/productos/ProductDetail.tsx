@@ -189,7 +189,7 @@ const ProductDetail: React.FC = () => {
 		useProductMediaHandlers(product, entityId, entityParam);
 
 	const [showLibrary, setShowLibrary] = useState(false);
-	const [sidebarOpen, setSidebarOpen] = useState(true);
+	const [sidebarOpen, setSidebarOpen] = useState(false);
 	const toggleSidebar = useCallback(() => setSidebarOpen((prev) => !prev), []);
 
 	const brandOptions = useMemo(() => createBrandOptions(brands), [brands]);
