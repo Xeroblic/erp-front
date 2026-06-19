@@ -416,3 +416,69 @@ export interface WooRemoteState {
 	local: WooRemoteLocalState;
 	remote: WooRemoteRemoteState | null;
 }
+
+// ==================== WOOCOMMERCE — EMPAREJAMIENTO MANUAL ====================
+
+export type WooPriceResolution = 'keep_erp' | 'keep_woo';
+
+export interface WooCompareParams {
+	external_product_id?: number;
+	external_sku?: string;
+}
+
+export interface WooCompareResult {
+	erp: {
+		name: string;
+		sku: string;
+		price: number | string | null;
+	};
+	woo: {
+		id: number;
+		name: string;
+		sku: string;
+		price: number | string | null;
+	};
+	prices_match: boolean;
+	already_linked: boolean;
+	already_linked_to?: number | null;
+}
+
+export interface WooCandidatesParams {
+	q?: string;
+	per_page?: number;
+}
+
+export interface WooCandidate {
+	id: number;
+	name: string;
+	sku: string;
+	price: string | number | null;
+	status: string | null;
+	stock_quantity: number | null;
+	permalink: string | null;
+	already_linked: boolean;
+}
+
+export interface WooLinkPayload {
+	external_product_id?: number;
+	external_sku?: string;
+	sync_stock_with_woo?: boolean;
+	price_resolution?: WooPriceResolution;
+}
+
+export interface WooLinkResponse {
+	message: string;
+	data?: WooProduct;
+	woo_url?: string;
+}
+
+export interface WooLinkConflictDetail {
+	message: string;
+	erp_price: number | string | null;
+	woo_price: number | string | null;
+}
+
+export interface WooUnlinkResponse {
+	message: string;
+	data?: WooProduct;
+}
