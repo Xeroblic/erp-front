@@ -725,6 +725,9 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 												<WooCommercePublishPanel
 													productId={product.id}
 													isBusy={isBusy}
+													marketplaceExternalIds={
+														product.marketplace_external_ids
+													}
 												/>
 											) : (
 												<WooCommerceProductTab

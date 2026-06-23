@@ -35,6 +35,7 @@ const UnmappedProductsPage = lazy(() => import('@/pages/integraciones/UnmappedPr
 const SyncStockPage = lazy(() => import('@/pages/integraciones/SyncStockPage'));
 const ImportOrdersPage = lazy(() => import('@/pages/integraciones/ImportOrdersPage'));
 const ImportTermsPage = lazy(() => import('@/pages/integraciones/ImportTermsPage'));
+const WooProductsPage = lazy(() => import('@/pages/integraciones/WooProductsPage'));
 
 // Reportes
 const SalesDashboard = lazy(() => import('@/pages/reportes/sales-dashboard'));
@@ -381,6 +382,11 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: cfg.integrations.subPages.importTerms.to,
 		element: <ImportTermsPage />,
 		authority: cfg.integrations.subPages.importTerms.authority,
+	},
+	{
+		path: cfg.integrations.subPages.syncedProducts.to,
+		element: <WooProductsPage />,
+		authority: cfg.integrations.subPages.syncedProducts.authority,
 	},
 
 	// Notificaciones

@@ -694,6 +694,14 @@ export const privatePages = {
 				authority: ['view-integration'],
 				roles: ['super-admin'],
 			},
+			syncedProducts: {
+				id: 'syncedProducts',
+				to: '/integraciones/productos-sincronizados',
+				text: 'Productos Sincronizados',
+				icon: 'DuoPixels',
+				authority: ['view-integration'],
+				roles: ['super-admin'],
+			},
 		},
 	},
 

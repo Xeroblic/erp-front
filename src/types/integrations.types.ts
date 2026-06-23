@@ -337,6 +337,7 @@ export interface WooProduct {
 	offer_price?: number | string | null;
 	sync_stock_with_woo?: boolean;
 	woocommerce?: WooProductWooMeta | null;
+	product_type?: string | null;
 	updated_at?: string;
 }
 
@@ -482,3 +483,11 @@ export interface WooUnlinkResponse {
 	message: string;
 	data?: WooProduct;
 }
+
+export interface WooProductsQueryParams {
+	search?: string;
+	only_errors?: boolean | number | string;
+	per_page?: number;
+	integration_id?: string;
+}
+

@@ -3,7 +3,6 @@ import Icon from '@/components/icon/Icon';
 import Card, { CardBody } from '@/components/ui/Card';
 import { GeneralTab, ComercialTab, ContenidoTab, AtributosTab, ImagesProduct } from './DetailTabs';
 import WooCommercePublishPanel from './modals/components/WooCommercePublishPanel';
-import { getWooProductMeta } from '@/utils/wooProductMeta.util';
 import type { IBrand } from '@/interface/brand.interface';
 import type { ICategory } from '@/interface/category.interface';
 import type { TSelectOption } from '@/components/form/SelectReact';
@@ -92,16 +91,12 @@ export const ProductDetailTabs: React.FC<ProductDetailTabsProps> = ({
 				);
 			case 'woocommerce': {
 				if (!product?.id) return null;
-				const wooMeta = getWooProductMeta(product.marketplace_external_ids);
 				return (
 					<WooCommercePublishPanel
 						productId={product.id}
-						initialSynced={wooMeta?.externalProductId != null}
 						initialSyncStock={product.sync_stock_with_woo ?? true}
-						externalProductId={wooMeta?.externalProductId ?? null}
-						publishedAt={wooMeta?.publishedAt ?? null}
-						lastErrorMsg={wooMeta?.lastErrorMsg ?? null}
 						onProductRefresh={onProductRefresh}
+						marketplaceExternalIds={product.marketplace_external_ids}
 					/>
 				);
 			}

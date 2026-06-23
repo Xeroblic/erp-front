@@ -3,6 +3,8 @@
  *   #1 `runImportTerms`        · #2 `pollImportTermsStatus`
  *   #4 `createQuickProductThunk` · #5 `publishProductThunk`
  *   #6 `unpublishProductThunk`   · #7 `fetchRemoteState`
+ *
+ * Todas las operaciones aceptan `integrationId` opcional para multi-tienda.
  */
 
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
@@ -17,6 +19,7 @@ import type {
 	WooSyncStockPayload,
 	WooProductActionResponse,
 	WooRemoteState,
+	WooProductsQueryParams,
 } from '@/types/integrations.types';
 import * as woocommerceProductsService from '@/services/woocommerceProductsService';
 
@@ -88,11 +91,11 @@ const initialState: WooProductsState = {
  */
 export const runImportTerms = createAsyncThunk<
 	ImportTermsResponse,
-	{ subsidiaryId: number; payload: ImportTermsPayload },
+	{ subsidiaryId: number; payload: ImportTermsPayload; integrationId?: string },
 	{ rejectValue: string }
->('woocommerceProducts/runImportTerms', async ({ subsidiaryId, payload }, { rejectWithValue }) => {
+>('woocommerceProducts/runImportTerms', async ({ subsidiaryId, payload, integrationId }, { rejectWithValue }) => {
 	try {
-		return await woocommerceProductsService.importTerms(subsidiaryId, payload);
+		return await woocommerceProductsService.importTerms(subsidiaryId, payload, integrationId);
 	} catch (error) {
 		return rejectWithValue(getErrorMessage(error, 'Error al programar la importación de términos'));
 	}
@@ -103,13 +106,13 @@ export const runImportTerms = createAsyncThunk<
  */
 export const pollImportTermsStatus = createAsyncThunk<
 	ImportTermsStatus,
-	{ subsidiaryId: number; params?: ImportTermsStatusQueryParams },
+	{ subsidiaryId: number; params?: ImportTermsStatusQueryParams; integrationId?: string },
 	{ rejectValue: string }
 >(
 	'woocommerceProducts/pollImportTermsStatus',
-	async ({ subsidiaryId, params }, { rejectWithValue }) => {
+	async ({ subsidiaryId, params, integrationId }, { rejectWithValue }) => {
 		try {
-			return await woocommerceProductsService.getImportTermsStatus(subsidiaryId, params);
+			return await woocommerceProductsService.getImportTermsStatus(subsidiaryId, params, integrationId);
 		} catch (error) {
 			return rejectWithValue(
 				getErrorMessage(error, 'Error al consultar el estado de la importación'),
@@ -123,13 +126,13 @@ export const pollImportTermsStatus = createAsyncThunk<
  */
 export const createQuickProductThunk = createAsyncThunk<
 	QuickProductResponse,
-	{ subsidiaryId: number; payload: QuickProductPayload },
+	{ subsidiaryId: number; payload: QuickProductPayload; integrationId?: string },
 	{ rejectValue: string }
 >(
 	'woocommerceProducts/createQuickProduct',
-	async ({ subsidiaryId, payload }, { rejectWithValue }) => {
+	async ({ subsidiaryId, payload, integrationId }, { rejectWithValue }) => {
 		try {
-			return await woocommerceProductsService.createQuickProduct(subsidiaryId, payload);
+			return await woocommerceProductsService.createQuickProduct(subsidiaryId, payload, integrationId);
 		} catch (error) {
 			return rejectWithValue(getErrorMessage(error, 'Error al crear el producto rápido'));
 		}
@@ -141,16 +144,17 @@ export const createQuickProductThunk = createAsyncThunk<
  */
 export const publishProductThunk = createAsyncThunk<
 	{ productId: number; response: WooProductActionResponse },
-	{ subsidiaryId: number; productId: number; payload?: WooSyncStockPayload },
+	{ subsidiaryId: number; productId: number; payload?: WooSyncStockPayload; integrationId?: string },
 	{ rejectValue: string }
 >(
 	'woocommerceProducts/publishProduct',
-	async ({ subsidiaryId, productId, payload }, { rejectWithValue }) => {
+	async ({ subsidiaryId, productId, payload, integrationId }, { rejectWithValue }) => {
 		try {
 			const response = await woocommerceProductsService.publishProduct(
 				subsidiaryId,
 				productId,
 				payload,
+				integrationId,
 			);
 			return { productId, response };
 		} catch (error) {
@@ -164,16 +168,17 @@ export const publishProductThunk = createAsyncThunk<
  */
 export const unpublishProductThunk = createAsyncThunk<
 	{ productId: number; response: WooProductActionResponse },
-	{ subsidiaryId: number; productId: number; payload?: WooSyncStockPayload },
+	{ subsidiaryId: number; productId: number; payload?: WooSyncStockPayload; integrationId?: string },
 	{ rejectValue: string }
 >(
 	'woocommerceProducts/unpublishProduct',
-	async ({ subsidiaryId, productId, payload }, { rejectWithValue }) => {
+	async ({ subsidiaryId, productId, payload, integrationId }, { rejectWithValue }) => {
 		try {
 			const response = await woocommerceProductsService.unpublishProduct(
 				subsidiaryId,
 				productId,
 				payload,
+				integrationId,
 			);
 			return { productId, response };
 		} catch (error) {
@@ -187,15 +192,113 @@ export const unpublishProductThunk = createAsyncThunk<
  */
 export const fetchRemoteState = createAsyncThunk<
 	WooRemoteState,
-	{ subsidiaryId: number; productId: number },
+	{ subsidiaryId: number; productId: number; integrationId?: string },
 	{ rejectValue: string }
 >(
 	'woocommerceProducts/fetchRemoteState',
-	async ({ subsidiaryId, productId }, { rejectWithValue }) => {
+	async ({ subsidiaryId, productId, integrationId }, { rejectWithValue }) => {
 		try {
-			return await woocommerceProductsService.getProductRemoteState(subsidiaryId, productId);
+			return await woocommerceProductsService.getProductRemoteState(subsidiaryId, productId, integrationId);
 		} catch (error) {
 			return rejectWithValue(getErrorMessage(error, 'Error al consultar el estado remoto'));
+		}
+	},
+);
+
+/**
+ * #3 · Obtiene los productos vinculados/sincronizados de WooCommerce.
+ */
+export const fetchWooProducts = createAsyncThunk<
+	WooProduct[],
+	{ subsidiaryId: number; params?: WooProductsQueryParams; integrationId?: string },
+	{ rejectValue: string }
+>(
+	'woocommerceProducts/fetchWooProducts',
+	async ({ subsidiaryId, params, integrationId }, { rejectWithValue }) => {
+		try {
+			return await woocommerceProductsService.getWooProducts(subsidiaryId, params, integrationId);
+		} catch (error) {
+			return rejectWithValue(
+				getErrorMessage(error, 'Error al obtener los productos de WooCommerce'),
+			);
+		}
+	},
+);
+
+/**
+ * #8 · Sincroniza el precio de un producto específico en WooCommerce.
+ */
+export const syncProductPriceThunk = createAsyncThunk<
+	{ productId: number; response: WooProductActionResponse },
+	{ subsidiaryId: number; productId: number; payload?: WooSyncStockPayload; integrationId?: string },
+	{ rejectValue: string }
+>(
+	'woocommerceProducts/syncProductPrice',
+	async ({ subsidiaryId, productId, payload, integrationId }, { rejectWithValue }) => {
+		try {
+			const response = await woocommerceProductsService.syncProductPrice(
+				subsidiaryId,
+				productId,
+				payload,
+				integrationId,
+			);
+			return { productId, response };
+		} catch (error) {
+			return rejectWithValue(
+				getErrorMessage(error, 'Error al sincronizar el precio en WooCommerce'),
+			);
+		}
+	},
+);
+
+/**
+ * #9 · Sincroniza el stock de un producto específico en WooCommerce.
+ */
+export const syncProductStockThunk = createAsyncThunk<
+	{ productId: number; response: WooProductActionResponse },
+	{ subsidiaryId: number; productId: number; payload?: WooSyncStockPayload; integrationId?: string },
+	{ rejectValue: string }
+>(
+	'woocommerceProducts/syncProductStock',
+	async ({ subsidiaryId, productId, payload, integrationId }, { rejectWithValue }) => {
+		try {
+			const response = await woocommerceProductsService.syncProductStock(
+				subsidiaryId,
+				productId,
+				payload,
+				integrationId,
+			);
+			return { productId, response };
+		} catch (error) {
+			return rejectWithValue(
+				getErrorMessage(error, 'Error al sincronizar el stock en WooCommerce'),
+			);
+		}
+	},
+);
+
+/**
+ * #10 · Publica o sincroniza las variaciones de un producto padre.
+ */
+export const publishChildrenThunk = createAsyncThunk<
+	{ productId: number; response: WooProductActionResponse },
+	{ subsidiaryId: number; productId: number; payload?: WooSyncStockPayload; integrationId?: string },
+	{ rejectValue: string }
+>(
+	'woocommerceProducts/publishChildren',
+	async ({ subsidiaryId, productId, payload, integrationId }, { rejectWithValue }) => {
+		try {
+			const response = await woocommerceProductsService.publishProductChildren(
+				subsidiaryId,
+				productId,
+				payload,
+				integrationId,
+			);
+			return { productId, response };
+		} catch (error) {
+			return rejectWithValue(
+				getErrorMessage(error, 'Error al publicar variaciones del producto en WooCommerce'),
+			);
 		}
 	},
 );
@@ -323,6 +426,78 @@ const woocommerceProductsSlice = createSlice({
 			.addCase(fetchRemoteState.rejected, (state, action) => {
 				state.remoteLoading = false;
 				state.error = action.payload ?? 'Error al consultar el estado remoto';
+			});
+
+		// #3 · Obtener productos WooCommerce
+		builder
+			.addCase(fetchWooProducts.pending, (state) => {
+				state.loading = true;
+				state.error = null;
+			})
+			.addCase(fetchWooProducts.fulfilled, (state, action) => {
+				state.loading = false;
+				state.products = action.payload;
+			})
+			.addCase(fetchWooProducts.rejected, (state, action) => {
+				state.loading = false;
+				state.error = action.payload ?? 'Error al obtener los productos de WooCommerce';
+			});
+
+		// #8 · Sincronizar precio
+		builder
+			.addCase(syncProductPriceThunk.pending, (state, action) => {
+				state.syncingId = action.meta.arg.productId;
+				state.error = null;
+			})
+			.addCase(syncProductPriceThunk.fulfilled, (state, action) => {
+				state.syncingId = null;
+				const updated = action.payload.response.data;
+				if (updated) {
+					const idx = state.products.findIndex((p) => p.id === action.payload.productId);
+					if (idx !== -1) state.products[idx] = updated;
+				}
+			})
+			.addCase(syncProductPriceThunk.rejected, (state, action) => {
+				state.syncingId = null;
+				state.error = action.payload ?? 'Error al sincronizar el precio';
+			});
+
+		// #9 · Sincronizar stock
+		builder
+			.addCase(syncProductStockThunk.pending, (state, action) => {
+				state.syncingId = action.meta.arg.productId;
+				state.error = null;
+			})
+			.addCase(syncProductStockThunk.fulfilled, (state, action) => {
+				state.syncingId = null;
+				const updated = action.payload.response.data;
+				if (updated) {
+					const idx = state.products.findIndex((p) => p.id === action.payload.productId);
+					if (idx !== -1) state.products[idx] = updated;
+				}
+			})
+			.addCase(syncProductStockThunk.rejected, (state, action) => {
+				state.syncingId = null;
+				state.error = action.payload ?? 'Error al sincronizar el stock';
+			});
+
+		// #10 · Publicar variaciones (hijos)
+		builder
+			.addCase(publishChildrenThunk.pending, (state, action) => {
+				state.syncingId = action.meta.arg.productId;
+				state.error = null;
+			})
+			.addCase(publishChildrenThunk.fulfilled, (state, action) => {
+				state.syncingId = null;
+				const updated = action.payload.response.data;
+				if (updated) {
+					const idx = state.products.findIndex((p) => p.id === action.payload.productId);
+					if (idx !== -1) state.products[idx] = updated;
+				}
+			})
+			.addCase(publishChildrenThunk.rejected, (state, action) => {
+				state.syncingId = null;
+				state.error = action.payload ?? 'Error al publicar las variaciones';
 			});
 	},
 });

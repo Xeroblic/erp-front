@@ -3,12 +3,10 @@
  * Agrupa las acciones por producto:
  *   #5 Publicar · #6 Despublicar · #7 Diagnóstico (estado remoto)
  *
- * El switch maestro "Sincronizar con WooCommerce" publica (#5) o despublica (#6).
- * El estado sincronizado es best-effort hasta que el backend exponga un flag
- * explícito; el Diagnóstico (#7) entrega la verdad en vivo.
+ * Incluye selector de integración para soportar multi-tienda por subsidiaria.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -24,17 +22,19 @@ import {
 	clearRemoteState,
 } from '@/store/slices/integrations/woocommerceProductsSlice';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import { useWooIntegrations } from '@/services/hooks/useWooIntegrations';
+import { useWooProductStatus } from '@/pages/catalogos/productos/hooks/useWooProductStatus';
 import WooManualLinkPanel from './WooManualLinkPanel';
+import WooIntegrationSelector from './WooIntegrationSelector';
+import WooProductStorefronts from './WooProductStorefronts';
 
 interface WooCommercePublishPanelProps {
 	productId: number;
-	initialSynced?: boolean;
 	initialSyncStock?: boolean;
-	externalProductId?: number | null;
-	publishedAt?: string | null;
-	lastErrorMsg?: string | null;
 	isBusy?: boolean;
 	onProductRefresh?: () => void;
+	/** `marketplace_external_ids` del producto, para listar las tiendas donde está. */
+	marketplaceExternalIds?: unknown;
 }
 
 const formatValue = (value: string | number | null | undefined): string => {
@@ -50,42 +50,68 @@ const toNumber = (value: string | number | null | undefined): number | null => {
 
 const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 	productId,
-	initialSynced = false,
 	initialSyncStock = true,
-	externalProductId = null,
-	publishedAt = null,
-	lastErrorMsg = null,
 	isBusy = false,
 	onProductRefresh,
+	marketplaceExternalIds,
 }) => {
 	const dispatch = useAppDispatch();
 	const { subsidiaryId } = useCurrentBranch();
+
+	const {
+		integrations: activeWooIntegrations,
+		allWooIntegrations,
+		selectedIntegrationId,
+		setSelectedIntegrationId,
+		loading: integrationsLoading,
+		getIntegrationName,
+	} = useWooIntegrations(subsidiaryId);
+
+	const { productLinks, publishedHereLink, isPublishedHere, isPublishedElsewhere } = useWooProductStatus(
+		marketplaceExternalIds,
+		selectedIntegrationId,
+	);
+
+	const otherLink = useMemo(() => {
+		return productLinks.find((l) => l.integrationId !== selectedIntegrationId) ?? null;
+	}, [productLinks, selectedIntegrationId]);
+
+	const otherIntegrationName = useMemo(() => {
+		return getIntegrationName(otherLink?.integrationId);
+	}, [otherLink, getIntegrationName]);
+
+	const inactiveIntegrationIds = useMemo(
+		() => new Set(allWooIntegrations.filter((i) => !i.is_active).map((i) => i.id)),
+		[allWooIntegrations],
+	);
 
 	const syncingId = useAppSelector((state) => state.woocommerceProducts.syncingId);
 	const remoteState = useAppSelector((state) => state.woocommerceProducts.remoteState);
 	const remoteLoading = useAppSelector((state) => state.woocommerceProducts.remoteLoading);
 
-	const [synced, setSynced] = useState(initialSynced);
 	const [syncStock, setSyncStock] = useState(initialSyncStock);
 
 	useEffect(() => {
-		setSynced(initialSynced);
 		setSyncStock(initialSyncStock);
+	}, [productId, initialSyncStock]);
+
+	// El diagnóstico es por tienda: límpialo al cambiar de producto o de tienda.
+	useEffect(() => {
 		dispatch(clearRemoteState());
 		return () => {
 			dispatch(clearRemoteState());
 		};
-	}, [dispatch, productId, initialSynced, initialSyncStock]);
+	}, [dispatch, productId, selectedIntegrationId]);
 
 	const busy = isBusy || syncingId === productId;
-	const canAct = subsidiaryId !== null;
+	const canAct = subsidiaryId !== null && selectedIntegrationId !== null;
 
 	const handleToggleSync = async () => {
-		if (!subsidiaryId) {
-			toast.error('No hay una subsidiaria activa');
+		if (!subsidiaryId || !selectedIntegrationId) {
+			toast.error('Selecciona una tienda WooCommerce');
 			return;
 		}
-		const next = !synced;
+		const next = !isPublishedHere;
 		try {
 			if (next) {
 				await dispatch(
@@ -93,6 +119,7 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 						subsidiaryId,
 						productId,
 						payload: { sync_stock_with_woo: syncStock },
+						integrationId: selectedIntegrationId,
 					}),
 				).unwrap();
 				toast.success('Producto enviado a publicar en WooCommerce');
@@ -102,11 +129,13 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 						subsidiaryId,
 						productId,
 						payload: { sync_stock_with_woo: syncStock },
+						integrationId: selectedIntegrationId,
 					}),
 				).unwrap();
 				toast.success('Producto despublicado de WooCommerce');
 			}
-			setSynced(next);
+			// Recargar el producto para reflejar el estado real por tienda.
+			onProductRefresh?.();
 		} catch (error) {
 			toast.error(
 				typeof error === 'string'
@@ -117,8 +146,8 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 	};
 
 	const handleUpdatePublication = async () => {
-		if (!subsidiaryId) {
-			toast.error('No hay una subsidiaria activa');
+		if (!subsidiaryId || !selectedIntegrationId) {
+			toast.error('Selecciona una tienda WooCommerce');
 			return;
 		}
 		try {
@@ -127,6 +156,7 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 					subsidiaryId,
 					productId,
 					payload: { sync_stock_with_woo: syncStock },
+					integrationId: selectedIntegrationId,
 				}),
 			).unwrap();
 			toast.success('Publicación actualizada en WooCommerce');
@@ -136,12 +166,14 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 	};
 
 	const handleDiagnose = async () => {
-		if (!subsidiaryId) {
-			toast.error('No hay una subsidiaria activa');
+		if (!subsidiaryId || !selectedIntegrationId) {
+			toast.error('Selecciona una tienda WooCommerce');
 			return;
 		}
 		try {
-			await dispatch(fetchRemoteState({ subsidiaryId, productId })).unwrap();
+			await dispatch(
+				fetchRemoteState({ subsidiaryId, productId, integrationId: selectedIntegrationId }),
+			).unwrap();
 		} catch (error) {
 			toast.error(
 				typeof error === 'string' ? error : 'No se pudo consultar el estado remoto',
@@ -160,6 +192,22 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 
 	return (
 		<div className='space-y-5'>
+			{/* ═══════════════════════ 0. TIENDA WOOCOMMERCE ACTIVA ═══════════════════════ */}
+			<WooIntegrationSelector
+				integrations={activeWooIntegrations}
+				selectedId={selectedIntegrationId}
+				onSelect={setSelectedIntegrationId}
+				loading={integrationsLoading}
+			/>
+
+			{/* ═══════════════════════ TIENDAS DONDE ESTÁ PUBLICADO ═══════════════════════ */}
+			<WooProductStorefronts
+				links={productLinks}
+				getIntegrationName={getIntegrationName}
+				activeIntegrationId={selectedIntegrationId}
+				inactiveIntegrationIds={inactiveIntegrationIds}
+			/>
+
 			{/* ═══════════════════════ 1. PUBLICACIÓN ═══════════════════════ */}
 			<Card className='overflow-hidden border border-amber-200/60 shadow-sm dark:border-amber-500/20'>
 				<CardHeader className='border-b border-amber-100 bg-amber-50 pb-3 dark:border-amber-500/10 dark:bg-amber-950/30'>
@@ -179,19 +227,19 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 								WooCommerce.
 							</p>
 						</div>
-						{synced ? (
+						{isPublishedHere ? (
 							<Badge color='green' variant='solid'>
-								Activo
+								Publicado aquí
 							</Badge>
 						) : (
 							<Badge color='zinc' variant='outline'>
-								Inactivo
+								No publicado aquí
 							</Badge>
 						)}
 					</div>
 				</CardHeader>
 				<CardBody className='space-y-4'>
-					{!canAct && (
+					{!canAct && subsidiaryId === null && (
 						<div className='rounded-md border border-yellow-300 bg-yellow-50 p-3 text-sm font-medium text-yellow-800 dark:border-yellow-500/40 dark:bg-yellow-950/40 dark:text-yellow-200'>
 							<Icon
 								icon='HeroExclamationTriangle'
@@ -201,51 +249,73 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 						</div>
 					)}
 
+					{isPublishedElsewhere && (
+						<div className='flex items-start gap-2.5 rounded-lg border border-amber-300 bg-amber-50 p-3.5 dark:border-amber-500/30 dark:bg-amber-950/30'>
+							<Icon
+								icon='HeroExclamationTriangle'
+								className='mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600 dark:text-amber-400'
+							/>
+							<p className='text-xs font-medium text-amber-800 dark:text-amber-200'>
+								Este producto ya está publicado en la tienda WooCommerce{' '}
+								<strong>{otherIntegrationName}</strong>. Dado que no se admite
+								multi-tienda simultánea por el momento, debes despublicarlo de la otra
+								tienda antes de poder habilitar la sincronización aquí.
+							</p>
+						</div>
+					)}
+
 					<div className='mt-4 flex items-center justify-between rounded-lg border border-neutral-200 bg-white p-3.5 dark:border-neutral-700 dark:bg-neutral-800/50'>
-						<div className='flex items-center gap-2.5'>
+						<div className='flex flex-col'>
 							<span className='text-sm font-medium text-neutral-800 dark:text-neutral-100'>
 								Sincronizar con WooCommerce
+							</span>
+							<span className='text-xs text-neutral-500 dark:text-neutral-400'>
+								{isPublishedHere
+									? 'Publicado en la tienda seleccionada. Desactiva para despublicarlo.'
+									: 'No está en esta tienda. Actívalo para publicarlo aquí.'}
 							</span>
 						</div>
 						<Checkbox
 							id='woo_sync_master'
 							name='woo_sync_master'
 							variant='switch'
-							checked={synced}
+							checked={isPublishedHere}
 							onChange={() => void handleToggleSync()}
-							disabled={!canAct || busy}
+							disabled={!canAct || busy || isPublishedElsewhere}
 						/>
 					</div>
 
-					{(externalProductId || publishedAt || lastErrorMsg) && (
+					{publishedHereLink && (
 						<div className='space-y-1.5 rounded-lg border border-neutral-200 bg-white p-3 text-xs dark:border-neutral-700 dark:bg-neutral-800/50'>
-							{externalProductId ? (
+							{publishedHereLink.externalProductId != null ? (
 								<div className='flex justify-between'>
 									<span className='text-neutral-500 dark:text-neutral-400'>
 										ID en WooCommerce
 									</span>
 									<span className='font-mono font-semibold text-neutral-800 dark:text-neutral-100'>
-										#{externalProductId}
+										#{publishedHereLink.externalProductId}
 									</span>
 								</div>
 							) : null}
-							{publishedAt ? (
+							{publishedHereLink.publishedAt ? (
 								<div className='flex justify-between'>
 									<span className='text-neutral-500 dark:text-neutral-400'>
 										Publicado
 									</span>
 									<span className='font-medium text-neutral-800 dark:text-neutral-100'>
-										{new Date(publishedAt).toLocaleString('es-CL')}
+										{new Date(publishedHereLink.publishedAt).toLocaleString(
+											'es-CL',
+										)}
 									</span>
 								</div>
 							) : null}
-							{lastErrorMsg ? (
+							{publishedHereLink.lastErrorMsg ? (
 								<div className='flex justify-between gap-3'>
 									<span className='text-neutral-500 dark:text-neutral-400'>
 										Último error
 									</span>
 									<span className='text-right font-medium text-rose-600 dark:text-rose-400'>
-										{lastErrorMsg}
+										{publishedHereLink.lastErrorMsg}
 									</span>
 								</div>
 							) : null}
@@ -262,7 +332,7 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 						label='Incluir stock al sincronizar'
 					/>
 
-					{synced && (
+					{isPublishedHere && (
 						<Tooltip text='Fuerza una actualización completa del producto en WooCommerce'>
 							<Button
 								variant='solid'
@@ -287,9 +357,11 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 			{/* ═══════════════════════ 2. EMPAREJAMIENTO MANUAL ═══════════════════════ */}
 			<WooManualLinkPanel
 				productId={productId}
-				isLinked={synced && externalProductId != null}
-				externalProductId={externalProductId}
+				isLinked={isPublishedHere}
+				isLinkedElsewhere={isPublishedElsewhere}
+				externalProductId={publishedHereLink?.externalProductId ?? null}
 				onLinkChange={handleLinkChange}
+				integrationId={selectedIntegrationId ?? undefined}
 			/>
 
 			{/* ═══════════════════════ 3. DIAGNÓSTICO ═══════════════════════ */}

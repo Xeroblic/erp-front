@@ -11,6 +11,39 @@ import type {
 } from '@/types/integrations.types';
 import * as integrationsService from '@/services/integrationsService';
 
+// ==================== HELPERS (zero-any) ====================
+
+const asRecord = (value: unknown): Record<string, unknown> | undefined =>
+	value && typeof value === 'object' && !Array.isArray(value)
+		? (value as Record<string, unknown>)
+		: undefined;
+
+/**
+ * Extrae el mensaje de error de una respuesta del backend. Concatena todos los
+ * errores de validación por campo (`errors`) si existen; si no, usa `message`.
+ */
+const getApiErrorMessage = (error: unknown, fallback: string): string => {
+	const data = asRecord(asRecord(asRecord(error)?.response)?.data);
+	const errors = asRecord(data?.errors);
+	if (errors) {
+		const seen = new Set<string>();
+		const msgs: string[] = [];
+		for (const fieldMsgs of Object.values(errors)) {
+			if (!Array.isArray(fieldMsgs)) continue;
+			for (const m of fieldMsgs) {
+				if (typeof m === 'string' && m.trim() && !seen.has(m)) {
+					seen.add(m);
+					msgs.push(m);
+				}
+			}
+		}
+		if (msgs.length > 0) return msgs.join(' · ');
+	}
+	const message = data?.message;
+	if (typeof message === 'string' && message.trim()) return message;
+	return fallback;
+};
+
 // ==================== STATE ====================
 
 interface IntegrationsState {
@@ -43,10 +76,8 @@ export const fetchIntegrations = createAsyncThunk(
 		try {
 			const response = await integrationsService.getIntegrations(subsidiaryId, params);
 			return response.data;
-		} catch (error: any) {
-			return rejectWithValue(
-				error.response?.data?.message || 'Error al cargar integraciones',
-			);
+		} catch (error: unknown) {
+			return rejectWithValue(getApiErrorMessage(error, 'Error al cargar integraciones'));
 		}
 	},
 );
@@ -63,8 +94,8 @@ export const fetchIntegration = createAsyncThunk(
 		try {
 			const response = await integrationsService.getIntegration(subsidiaryId, integrationId);
 			return response.data;
-		} catch (error: any) {
-			return rejectWithValue(error.response?.data?.message || 'Error al cargar integración');
+		} catch (error: unknown) {
+			return rejectWithValue(getApiErrorMessage(error, 'Error al cargar integración'));
 		}
 	},
 );
@@ -81,8 +112,8 @@ export const createIntegration = createAsyncThunk(
 		try {
 			const response = await integrationsService.createIntegration(subsidiaryId, payload);
 			return response;
-		} catch (error: any) {
-			return rejectWithValue(error.response?.data?.message || 'Error al crear integración');
+		} catch (error: unknown) {
+			return rejectWithValue(getApiErrorMessage(error, 'Error al crear integración'));
 		}
 	},
 );
@@ -107,9 +138,9 @@ export const updateIntegration = createAsyncThunk(
 				payload,
 			);
 			return response;
-		} catch (error: any) {
+		} catch (error: unknown) {
 			return rejectWithValue(
-				error.response?.data?.message || 'Error al actualizar integración',
+				getApiErrorMessage(error, 'Error al actualizar integración'),
 			);
 		}
 	},
@@ -127,9 +158,9 @@ export const deleteIntegration = createAsyncThunk(
 		try {
 			await integrationsService.deleteIntegration(subsidiaryId, integrationId);
 			return integrationId;
-		} catch (error: any) {
+		} catch (error: unknown) {
 			return rejectWithValue(
-				error.response?.data?.message || 'Error al eliminar integración',
+				getApiErrorMessage(error, 'Error al eliminar integración'),
 			);
 		}
 	},
