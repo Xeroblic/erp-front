@@ -90,6 +90,13 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 			return;
 		}
 
+		// El backend exige HTTPS en la URL base: validar antes de enviar.
+		const baseUrl = formData.base_url?.trim() ?? '';
+		if (mode === 'create' && baseUrl && !/^https:\/\//i.test(baseUrl)) {
+			toast.error('La URL base debe usar HTTPS (https://…)');
+			return;
+		}
+
 		try {
 			if (mode === 'create') {
 				const resultAction = await dispatch(
@@ -115,7 +122,11 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 						onSuccess();
 					}
 				} else {
-					toast.error('Error al crear la integración');
+					// `payload` trae el mensaje real del backend (HTTPS, "ya existe
+					// una integración activa de este tipo", etc.).
+					toast.error(
+						(resultAction.payload as string) || 'Error al crear la integración',
+					);
 				}
 			} else if (mode === 'edit' && integration) {
 				const resultAction = await dispatch(
@@ -134,12 +145,15 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 					await dispatch(fetchIntegrations({ subsidiaryId }));
 					onSuccess();
 				} else {
-					toast.error('Error al actualizar la integración');
+					toast.error(
+						(resultAction.payload as string) || 'Error al actualizar la integración',
+					);
 				}
 			}
-		} catch (error: any) {
-			toast.error(error?.message || 'Error al guardar');
-			console.error(error);
+		} catch (error: unknown) {
+			const message =
+				error instanceof Error ? error.message : 'Error al guardar la integración';
+			toast.error(message);
 		}
 	};
 
@@ -210,7 +224,7 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 						onClick={onConfirm}
 						icon='HeroTrash'
 						color='red'
-						title='Eliminar esta integracion de la existencia de todo centria y del todo universo posible profafor no apretar en caso de no querer borarr la integracion por que se puede eliminar el integracion y si no quieres eliminar la integracion te recomiendo no clickear este btn'
+						title='Eliminar esta integración de forma permanente'
 					>Eliminar</Button>
 				</ModalFooter>
 			</Modal>

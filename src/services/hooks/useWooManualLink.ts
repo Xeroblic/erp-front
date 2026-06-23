@@ -8,10 +8,10 @@ import type {
 } from '@/types/integrations.types';
 
 const KEYS = {
-	candidates: (subsidiaryId: number, productId: number) =>
-		['woo-candidates', subsidiaryId, productId] as const,
-	compare: (subsidiaryId: number, productId: number) =>
-		['woo-compare', subsidiaryId, productId] as const,
+	candidates: (subsidiaryId: number, productId: number, integrationId?: string) =>
+		['woo-candidates', subsidiaryId, productId, integrationId ?? 'default'] as const,
+	compare: (subsidiaryId: number, productId: number, integrationId?: string) =>
+		['woo-compare', subsidiaryId, productId, integrationId ?? 'default'] as const,
 };
 
 export const useWooCandidates = (
@@ -19,10 +19,11 @@ export const useWooCandidates = (
 	productId: number,
 	params?: WooCandidatesParams,
 	enabled = false,
+	integrationId?: string,
 ) => {
 	return useQuery({
-		queryKey: [...KEYS.candidates(subsidiaryId ?? 0, productId), params],
-		queryFn: () => wooService.searchCandidates(subsidiaryId!, productId, params),
+		queryKey: [...KEYS.candidates(subsidiaryId ?? 0, productId, integrationId), params],
+		queryFn: () => wooService.searchCandidates(subsidiaryId!, productId, params, integrationId),
 		enabled: enabled && subsidiaryId !== null,
 	});
 };
@@ -31,27 +32,32 @@ export const useWooCompare = (
 	subsidiaryId: number | null,
 	productId: number,
 	params: WooCompareParams | null,
+	integrationId?: string,
 ) => {
 	const hasValidParams =
 		params !== null &&
 		(params.external_product_id != null || (params.external_sku != null && params.external_sku !== ''));
 
 	return useQuery({
-		queryKey: [...KEYS.compare(subsidiaryId ?? 0, productId), params],
-		queryFn: () => wooService.compareProduct(subsidiaryId!, productId, params!),
+		queryKey: [...KEYS.compare(subsidiaryId ?? 0, productId, integrationId), params],
+		queryFn: () => wooService.compareProduct(subsidiaryId!, productId, params!, integrationId),
 		enabled: subsidiaryId !== null && hasValidParams,
 	});
 };
 
-export const useWooLink = (subsidiaryId: number | null, productId: number) => {
+export const useWooLink = (
+	subsidiaryId: number | null,
+	productId: number,
+	integrationId?: string,
+) => {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: (payload: WooLinkPayload) =>
-			wooService.linkProduct(subsidiaryId!, productId, payload),
+			wooService.linkProduct(subsidiaryId!, productId, payload, integrationId),
 		onSuccess: (data) => {
 			toast.success(data.message || 'Producto vinculado correctamente');
 			queryClient.invalidateQueries({
-				queryKey: KEYS.candidates(subsidiaryId ?? 0, productId),
+				queryKey: KEYS.candidates(subsidiaryId ?? 0, productId, integrationId),
 			});
 		},
 		onError: (error: unknown) => {
@@ -65,14 +71,18 @@ export const useWooLink = (subsidiaryId: number | null, productId: number) => {
 	});
 };
 
-export const useWooUnlink = (subsidiaryId: number | null, productId: number) => {
+export const useWooUnlink = (
+	subsidiaryId: number | null,
+	productId: number,
+	integrationId?: string,
+) => {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: () => wooService.unlinkProduct(subsidiaryId!, productId),
+		mutationFn: () => wooService.unlinkProduct(subsidiaryId!, productId, integrationId),
 		onSuccess: (data) => {
 			toast.success(data.message || 'Producto desvinculado correctamente');
 			queryClient.invalidateQueries({
-				queryKey: KEYS.candidates(subsidiaryId ?? 0, productId),
+				queryKey: KEYS.candidates(subsidiaryId ?? 0, productId, integrationId),
 			});
 		},
 		onError: (error: unknown) => {

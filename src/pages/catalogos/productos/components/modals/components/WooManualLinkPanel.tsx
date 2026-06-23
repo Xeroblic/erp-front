@@ -22,8 +22,10 @@ import type { WooCandidate, WooPriceResolution } from '@/types/integrations.type
 interface WooManualLinkPanelProps {
 	productId: number;
 	isLinked: boolean;
+	isLinkedElsewhere?: boolean;
 	externalProductId?: number | null;
 	onLinkChange?: () => void;
+	integrationId?: string;
 }
 
 const formatPrice = (value: string | number | null | undefined): string => {
@@ -35,8 +37,10 @@ const formatPrice = (value: string | number | null | undefined): string => {
 const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 	productId,
 	isLinked,
+	isLinkedElsewhere = false,
 	externalProductId = null,
 	onLinkChange,
+	integrationId,
 }) => {
 	const { subsidiaryId } = useCurrentBranch();
 	const canAct = subsidiaryId !== null;
@@ -65,17 +69,16 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 		productId,
 		searchTerm ? { q: searchTerm, per_page: 10 } : { per_page: 10 },
 		searchEnabled,
+		integrationId,
 	);
 
-	const compareQuery = useWooCompare(subsidiaryId, productId, compareParams);
-	const linkMutation = useWooLink(subsidiaryId, productId);
-	const unlinkMutation = useWooUnlink(subsidiaryId, productId);
+	const compareQuery = useWooCompare(subsidiaryId, productId, compareParams, integrationId);
+	const linkMutation = useWooLink(subsidiaryId, productId, integrationId);
+	const unlinkMutation = useWooUnlink(subsidiaryId, productId, integrationId);
 
 	useEffect(() => {
 		if (compareQuery.error) {
-			toast.error(
-				`Error al comparar: ${extractErrorMessage(compareQuery.error)}`,
-			);
+			toast.error(`Error al comparar: ${extractErrorMessage(compareQuery.error)}`);
 		}
 	}, [compareQuery.error]);
 
@@ -274,14 +277,31 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 							</div>
 						</div>
 
-						<Tooltip text='Busca productos en WooCommerce para vincular con este producto del ERP'>
+						{isLinkedElsewhere && (
+							<div className='rounded-md border border-amber-300 bg-amber-50 p-3 text-xs font-medium text-amber-800 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-200'>
+								<Icon
+									icon='HeroExclamationTriangle'
+									className='mr-1.5 inline h-4 w-4 text-amber-600 dark:text-amber-400'
+								/>
+								Este producto ya está publicado/vinculado en otra tienda
+								WooCommerce. Desvincúlalo de la otra tienda para poder vincularlo
+								aquí.
+							</div>
+						)}
+
+						<Tooltip
+							text={
+								isLinkedElsewhere
+									? 'Desvincula de la otra tienda primero'
+									: 'Busca productos en WooCommerce para vincular con este producto del ERP'
+							}>
 							<Button
 								variant='solid'
 								color='violet'
 								size='sm'
 								icon='HeroMagnifyingGlass'
 								onClick={handleOpenSearch}
-								isDisable={!canAct}
+								isDisable={!canAct || isLinkedElsewhere}
 								aria-label='Buscar productos en WooCommerce para vincular'>
 								Buscar y vincular
 							</Button>
@@ -674,8 +694,7 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 		  }
 		| undefined;
 
-	const hasPriceConflict =
-		priceConflict != null || (comp != null && comp.prices_match === false);
+	const hasPriceConflict = priceConflict != null || (comp != null && comp.prices_match === false);
 	const conflictErpPrice = priceConflict?.erp_price ?? comp?.erp?.price ?? null;
 	const conflictWooPrice = priceConflict?.woo_price ?? comp?.woo?.price ?? null;
 

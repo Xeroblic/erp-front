@@ -209,3 +209,77 @@ F2–F5 son paralelizables una vez cerrada F1.
 ### QA general
 - [ ] `pnpm lint` + `pnpm build` (tsc) verdes
 - [ ] Verificación manual de los 10 endpoints contra backend
+
+---
+
+## Emparejamiento manual (extra, no estaba en los 10)
+
+Endpoints añadidos después del plan original. Permiten vincular a mano un producto ERP
+con una ficha existente en WooCommerce.
+
+| Endpoint | Service | Hook (React Query) | UI | Estado |
+|----------|---------|--------------------|----|--------|
+| `GET /products/{p}/woo-compare` | ✅ `compareProduct` | ✅ `useWooCompare` | ✅ `WooManualLinkPanel` | **LISTO** |
+| `GET /products/{p}/woo-candidates` | ✅ `searchCandidates` | ✅ `useWooCandidates` | ✅ `WooManualLinkPanel` | **LISTO** |
+| `POST /products/{p}/link` | ✅ `linkProduct` | ✅ `useWooLink` | ✅ `WooManualLinkPanel` | **LISTO** |
+| `DELETE /products/{p}/link` | ✅ `unlinkProduct` | ✅ `useWooUnlink` | ✅ `WooManualLinkPanel` | **LISTO** |
+
+---
+
+## Refactor multi-tienda (agnóstico a la integración)
+
+> **Actualizado:** 2026-06-23 · rama `feature/refactor-woo-multi-integration`
+
+**Problema:** toda la capa Woo (service → hooks → slice → UI) estaba casada con
+*una sola tienda* por subsidiaria — asumía la única integración WooCommerce. El backend
+ya soporta (o soportará) varias, así que el front debía volverse agnóstico.
+
+**Qué se hizo (frontend, listo):**
+- **Service** (`woocommerceProductsService.ts`): todas las funciones aceptan
+  `integrationId?` → se manda como query param `integration_id`.
+- **Hooks RQ** (`useWooManualLink.ts`): los 4 hooks propagan `integrationId`; las query
+  keys lo incluyen para no mezclar caché entre tiendas.
+- **Slice** (`woocommerceProductsSlice.ts`): todos los thunks aceptan `integrationId`.
+- **Hook nuevo** `useWooIntegrations.ts`: carga las integraciones Woo de la subsidiaria
+  (activas + inactivas), auto-selecciona si hay una sola, resuelve nombres por id.
+- **UI nueva**:
+  - `WooIntegrationSelector.tsx` — toggle segmentado (pills) de cambio rápido de tienda
+    (0 → aviso · 1 → badge "Conectada" · 2+ → pills con punto verde/gris activa/inactiva).
+  - `WooProductStorefronts.tsx` — lista "Publicado en N tiendas" cruzando los vínculos
+    de `marketplace_external_ids` con los nombres de integración.
+  - `WooCommercePublishPanel.tsx` — integra selector + storefronts; propaga
+    `integrationId` a publicar/despublicar/diagnóstico/emparejamiento.
+- **Util** `wooProductMeta.util.ts`: reescrito como `getWooProductLinks()` — lector
+  *defensivo multi-tienda* que extrae una lista de vínculos (con su `integration_id`),
+  soportando 4 formatos posibles del backend (legacy single, keyed por id bajo
+  `woocommerce`, keyed en raíz, array). `getWooProductMeta`/`isWooSynced` se mantienen
+  como wrappers legacy.
+
+**Fuente de verdad — `integration_hint`:**
+El backend identifica la integración del vínculo con el campo **`integration_hint`**
+(UUID de la integración) dentro del bloque `woocommerce`:
+```json
+"marketplace_external_ids": {
+  "woocommerce": {
+    "integration_hint": "8156a8dd-...",   // ← integración real del vínculo
+    "external_product_id": 29490,
+    "published_at": "...",
+    "last_seen_at": "..."
+  }
+}
+```
+`getWooProductLinks()` lee `integration_hint` (y `integration_id` por compat futura), así
+que el estado es **por tienda sin adivinar**: el storefront muestra dónde está publicado
+de verdad, el toggle selecciona la tienda de trabajo y el switch refleja si el producto
+está en la tienda seleccionada (`publishedHereLink`). Ya no hay heurística de "atribuir a
+la activa".
+
+**🟡 PENDIENTE DE BACKEND (multi-tienda real, con Nicolás — no urgente):**
+1. Permitir **N integraciones del mismo proveedor activas** por subsidiaria (hoy: una
+   WooCommerce activa; multi-marketplace woo+falabella+ML sí está pensado día 1).
+2. Para publicar el mismo producto en varias tiendas Woo a la vez, `marketplace_external_ids`
+   debería pasar a **lista/keyed por integración** (varios bloques). El lector ya devuelve
+   `WooProductLink[]`, así que el storefront mostraría "Publicado en N tiendas" solo.
+3. Ojo: `integration_hint` parece reflejar la **última integración que vio** el producto
+   (`last_seen_at`), no necesariamente la de publicación original. Confirmar con backend si
+   debe ser autoritativo por tienda cuando haya multi-tienda.
