@@ -192,15 +192,25 @@ export const IntegrationsListContent: React.FC = () => {
 						<Button
 							size='xs'
 							variant='outline'
-							icon='HeroEye'
+							color='violet'
+							className='group'
 							onClick={() => handleView(row.original)}>
+							<Icon
+								icon='HeroEye'
+								className='me-1 text-violet-500 group-hover:text-violet-300'
+							/>
 							Ver
 						</Button>
 						<Button
 							size='xs'
 							variant='outline'
-							icon='HeroPencil'
+							color='sky'
+							className='group'
 							onClick={() => handleEdit(row.original)}>
+							<Icon
+								icon='HeroPencil'
+								className='me-1 text-sky-500 group-hover:text-sky-300'
+							/>
 							Editar
 						</Button>
 					</div>

@@ -127,3 +127,70 @@ M PLAN_IMPLEMENTACION_WOOCOMMERCE_PRODUCTOS.md             (checklist actualizad
   documentados en el plan (N integraciones Woo activas, `marketplace_external_ids` keyed por
   integración, autoridad de `integration_hint`).
 - **Commit**: los cambios están en working tree, sin commitear.
+
+---
+
+# Sesión — UX de botones en Integraciones
+
+> **Fecha:** 2026-06-24 · **Rama:** `style/integraciones-ux` (creada desde `develop`, ya con el hub
+> mergeado en `#35`) · **Estado:** implementado · `tsc` verde · **sin commit**
+
+## 7. Problema
+
+Los botones de integraciones eran un **arcoíris sin semántica**: había verdes y azules que "decían
+lo mismo" y no seguía un patrón de qué apretaría el usuario. Ejemplos:
+- `WooProductsPage`: acciones de fila en `emerald` / `blue` / `amber` (sync precio/stock/variaciones)
+  + "Actualizar" en azul sólido (competía como si fuera la acción principal).
+- Overrides hardcodeados que rompían el color de marca del tema: `indigo` (Importar términos),
+  `yellow` (Importar Faltantes).
+
+**Hallazgo clave:** el color por defecto del `Button` es `reactiveThemeColor` (el color de marca del
+tema). O sea, los `solid` **sin** `color` ya son consistentes; el problema eran los overrides.
+
+## 8. Convención de botones aplicada
+
+| Rol | Estilo | Notas |
+|-----|--------|-------|
+| **Primaria** (crear/importar/sincronizar/confirmar/guardar) | `solid` **sin color** | Hereda el color de marca del tema. Se quitaron overrides `indigo`/`yellow`. |
+| **Secundaria/neutra** (refrescar/limpiar) | `outline` `zinc` | "Actualizar"/refresh dejaron de ser azul sólido. |
+| **Acciones de sync por fila** (precio/stock/variaciones) | `outline` `zinc` | Mismo color; se distinguen por **ícono + tooltip** (fin del arcoíris). |
+| **Ver / Detalle** | `outline` `violet` | + ícono interno (ver §9). |
+| **Editar** | `outline` `sky` | + ícono interno (ver §9). |
+| **Eliminar / Cancelar** | `outline`/`solid` `red` | Cancelar/Cerrar/Eliminar agrupados como acciones "negativas". |
+
+> **Sin tocar:** `Badge` y `Alert` (verde/ámbar/azul/rojo) → son semántica de *estado*, no de acción.
+
+## 9. Patrón de ícono con color propio + hover (Ver / Editar)
+
+El prop `icon=` del `Button` **no heredaba el color** del botón. Solución: mover el ícono **adentro**
+como hijo `<Icon>` con clases explícitas, `className='group'` en el `Button`, y hover vía `group-hover`:
+
+```tsx
+<Button size='xs' variant='outline' color='violet' className='group' onClick={...}>
+  <Icon icon='HeroEye' className='me-1 text-violet-500 group-hover:text-violet-300' />
+  Ver
+</Button>
+```
+
+- `me-1` en el `Icon` reemplaza el margen que antes inyectaba el prop `icon=` (el `Button` es
+  `inline-flex items-center` sin gap).
+- Ver → `text-violet-500 group-hover:text-violet-300`; Editar → `text-sky-500 group-hover:text-sky-300`.
+
+## 10. Archivos modificados (rama style)
+
+```
+M src/pages/integraciones/WooProductsPage.tsx          (sync row -> zinc; "Actualizar" -> outline zinc)
+M src/pages/integraciones/ImportTermsPage.tsx          (quitado color='indigo')
+M src/pages/integraciones/ImportOrdersPage.tsx          (quitado color='yellow'; "Cancelar" -> red)
+M src/pages/integraciones/UnmappedProductsPage.tsx      (refresh -> outline zinc; "Cancelar" -> red)
+M src/pages/integraciones/IntegrationsListPage.tsx      (Ver -> violet, Editar -> sky, ícono interno)
+M src/pages/integraciones/components/ModalIntegration.tsx (Cancelar/Cerrar/Eliminar -> red, limpieza)
+```
+
+## 11. Pendiente / a validar (rama style)
+
+- **Visual**: confirmar en la app el color e hover de Ver/Editar y los rojos de Cancelar/Eliminar.
+- ¿Aplicar el mismo patrón "ícono adentro con `group-hover`" también a los botones rojos
+  (Cancelar/Eliminar) para que el ícono haga el hover de color? — pendiente de decisión.
+- `vite build` completo aún no corrido en esta rama (solo `tsc` verde).
+- **Commit / PR**: cambios en working tree, sin commitear.
