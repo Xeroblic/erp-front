@@ -7,10 +7,13 @@ import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
+import Checkbox from '@/components/form/Checkbox';
+import Tooltip from '@/components/ui/Tooltip';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
 	fetchIntegrations,
 	setSelectedIntegration,
+	updateIntegration,
 } from '@/store/slices/integrations/integrationsSlice';
 import type { Integration } from '@/types/integrations.types';
 import ModalIntegration from './components/ModalIntegration';
@@ -34,6 +37,8 @@ export const IntegrationsListContent: React.FC = () => {
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [modalMode, setModalMode] = useState<'create' | 'edit' | 'view'>('view');
 	const [selectedIntegration, setSelectedIntegrationLocal] = useState<Integration | null>(null);
+	// Integración cuyo estado activo se está cambiando (para feedback en la fila).
+	const [togglingId, setTogglingId] = useState<string | null>(null);
 
 	useEffect(() => {
 		if (subsidiaryId) {
@@ -83,6 +88,70 @@ export const IntegrationsListContent: React.FC = () => {
 		dispatch(setSelectedIntegration(null));
 		if (subsidiaryId) {
 			dispatch(fetchIntegrations({ subsidiaryId }));
+		}
+	};
+
+	/**
+	 * Toggle rápido de activación. Como solo puede haber una integración API REST
+	 * activa por proveedor, al activar una se desactivan automáticamente las otras
+	 * API REST activas del mismo proveedor (en una sola acción).
+	 */
+	const handleToggleActive = async (integration: Integration) => {
+		if (!subsidiaryId || togglingId) return;
+		setTogglingId(integration.id);
+		try {
+			if (integration.is_active) {
+				await dispatch(
+					updateIntegration({
+						subsidiaryId,
+						integrationId: integration.id,
+						payload: { is_active: false },
+					}),
+				).unwrap();
+				toast.success(`"${integration.name}" desactivada`);
+			} else {
+				// 1) Desactivar las otras API REST activas del mismo proveedor.
+				const conflicts = integrations.filter(
+					(i) =>
+						i.id !== integration.id &&
+						i.provider === integration.provider &&
+						i.mode !== 'webhook' &&
+						i.is_active,
+				);
+				for (const conflict of conflicts) {
+					// eslint-disable-next-line no-await-in-loop
+					await dispatch(
+						updateIntegration({
+							subsidiaryId,
+							integrationId: conflict.id,
+							payload: { is_active: false },
+						}),
+					).unwrap();
+				}
+				// 2) Activar la seleccionada.
+				await dispatch(
+					updateIntegration({
+						subsidiaryId,
+						integrationId: integration.id,
+						payload: { is_active: true },
+					}),
+				).unwrap();
+				toast.success(
+					conflicts.length > 0
+						? `"${integration.name}" activada (se desactivó "${conflicts[0].name}")`
+						: `"${integration.name}" activada`,
+				);
+			}
+			// No hace falta recargar toda la lista: cada `updateIntegration.fulfilled`
+			// actualiza el item en el store. Evita el spinner global y el parpadeo.
+		} catch (error) {
+			toast.error(
+				typeof error === 'string'
+					? error
+					: 'No se pudo cambiar el estado de la integración',
+			);
+		} finally {
+			setTogglingId(null);
 		}
 	};
 
@@ -187,37 +256,69 @@ export const IntegrationsListContent: React.FC = () => {
 			{
 				id: 'acciones',
 				header: 'Acciones',
-				cell: ({ row }) => (
-					<div className='flex gap-2'>
-						<Button
-							size='xs'
-							variant='outline'
-							color='violet'
-							className='group'
-							onClick={() => handleView(row.original)}>
-							<Icon
-								icon='HeroEye'
-								className='me-1 text-violet-500 group-hover:text-violet-300'
-							/>
-							Ver
-						</Button>
-						<Button
-							size='xs'
-							variant='outline'
-							color='sky'
-							className='group'
-							onClick={() => handleEdit(row.original)}>
-							<Icon
-								icon='HeroPencil'
-								className='me-1 text-sky-500 group-hover:text-sky-300'
-							/>
-							Editar
-						</Button>
-					</div>
-				),
+				cell: ({ row }) => {
+					const isRest = row.original.mode !== 'webhook';
+					const isToggling = togglingId === row.original.id;
+					return (
+						<div className='flex items-center gap-2'>
+							{isRest && (
+								<Tooltip
+									text={
+										row.original.is_active
+											? 'Desactivar esta tienda'
+											: 'Activar esta tienda (desactiva la otra API REST activa)'
+									}>
+									<span className='flex items-center'>
+										{isToggling ? (
+											<Icon
+												icon='HeroArrowPath'
+												className='h-4 w-4 animate-spin text-neutral-400'
+											/>
+										) : (
+											<Checkbox
+												id={`toggle-active-${row.original.id}`}
+												name={`toggle-active-${row.original.id}`}
+												variant='switch'
+												checked={row.original.is_active}
+												onChange={() =>
+													void handleToggleActive(row.original)
+												}
+												disabled={togglingId !== null}
+											/>
+										)}
+									</span>
+								</Tooltip>
+							)}
+							<Button
+								size='xs'
+								variant='outline'
+								color='violet'
+								className='group'
+								onClick={() => handleView(row.original)}>
+								<Icon
+									icon='HeroEye'
+									className='me-1 text-violet-500 group-hover:text-violet-300'
+								/>
+								Ver
+							</Button>
+							<Button
+								size='xs'
+								variant='outline'
+								color='sky'
+								className='group'
+								onClick={() => handleEdit(row.original)}>
+								<Icon
+									icon='HeroPencil'
+									className='me-1 text-sky-500 group-hover:text-sky-300'
+								/>
+								Editar
+							</Button>
+						</div>
+					);
+				},
 			},
 		],
-		[getProviderLabel, getModeLabel, handleView, handleEdit],
+		[getProviderLabel, getModeLabel, handleView, handleEdit, handleToggleActive, togglingId],
 	);
 
 	if (!subsidiaryId) {
@@ -289,15 +390,35 @@ export const IntegrationsListContent: React.FC = () => {
 	return (
 		<>
 			<Container>
-				<Card>
-					<CardHeader>
-						<CardTitle>Gestión de Integraciones</CardTitle>
-						<Button variant='solid' icon='HeroPlus' onClick={handleCreate}>
+				<Card className='overflow-hidden border border-neutral-200 shadow-sm dark:border-neutral-700/80'>
+					<CardHeader className='flex-col items-start gap-4 border-b border-neutral-200 bg-neutral-50/60 sm:flex-row sm:items-center sm:justify-between dark:border-neutral-700 dark:bg-neutral-800/40'>
+						<div className='flex items-center gap-3'>
+							<div className='flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/15 ring-1 ring-emerald-500/25 dark:bg-emerald-500/20 dark:ring-emerald-400/30'>
+								<Icon
+									icon='HeroGlobeAlt'
+									className='h-5 w-5 text-emerald-600 dark:text-emerald-400'
+								/>
+							</div>
+							<div>
+								<CardTitle className='text-lg font-bold text-neutral-900 dark:text-neutral-50'>
+									Gestión de Integraciones
+								</CardTitle>
+								<p className='mt-0.5 text-xs text-neutral-500 dark:text-neutral-400'>
+									Conecta y administra tus tiendas y marketplaces. Solo una API
+									REST puede estar activa por proveedor.
+								</p>
+							</div>
+						</div>
+						<Button
+							variant='solid'
+							color='emerald'
+							icon='HeroPlus'
+							onClick={handleCreate}>
 							Nueva Integración
 						</Button>
 					</CardHeader>
 					<CardBody>
-						{loading ? (
+						{loading && integrations.length === 0 ? (
 							<div className='flex justify-center py-8'>
 								<Icon
 									icon='HeroArrowPath'
@@ -325,7 +446,7 @@ export const IntegrationsListContent: React.FC = () => {
 							<DataTable<Integration>
 								columns={columns}
 								data={integrations}
-								loading={loading}
+								loading={false}
 								emptyMessage='No hay integraciones configuradas'
 								searchPlaceholder='Buscar integración...'
 							/>
