@@ -1,14 +1,8 @@
-/**
- * Selector / toggle rápido de tienda WooCommerce.
- *   - 0 tiendas → aviso de configuración.
- *   - 1 tienda  → badge con el nombre y estado de conexión.
- *   - 2+ tiendas → control segmentado (pills) para cambiar de tienda al instante.
- */
-
 import React from 'react';
 import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
 import type { Integration } from '@/types/integrations.types';
+import Button from '@/components/ui/Button';
 
 interface WooIntegrationSelectorProps {
 	integrations: Integration[];
@@ -91,7 +85,7 @@ const WooIntegrationSelector: React.FC<WooIntegrationSelectorProps> = ({
 				{integrations.map((i) => {
 					const isSelected = i.id === selectedId;
 					return (
-						<button
+						<Button
 							key={i.id}
 							type='button'
 							role='tab'
@@ -116,7 +110,7 @@ const WooIntegrationSelector: React.FC<WooIntegrationSelectorProps> = ({
 									inactiva
 								</span>
 							)}
-						</button>
+						</Button>
 					);
 				})}
 			</div>

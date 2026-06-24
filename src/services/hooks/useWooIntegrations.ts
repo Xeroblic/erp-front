@@ -32,7 +32,10 @@ export const useWooIntegrations = (subsidiaryId: number | null): UseWooIntegrati
 	}, [dispatch, subsidiaryId]);
 
 	const allWooIntegrations = useMemo(
-		() => allIntegrations.filter((i) => i.provider === 'woocommerce'),
+		() =>
+			allIntegrations.filter(
+				(i) => i.provider === 'woocommerce' && i.mode !== 'webhook',
+			),
 		[allIntegrations],
 	);
 
@@ -41,9 +44,6 @@ export const useWooIntegrations = (subsidiaryId: number | null): UseWooIntegrati
 		[allWooIntegrations],
 	);
 
-	// Modelo: 1 integración WooCommerce ACTIVA por subsidiaria. El contexto de la
-	// tab siempre es una integración activa (las inactivas no son operables). Si no
-	// hay ninguna activa, no hay tienda con la que operar (`null`).
 	useEffect(() => {
 		if (activeIntegrations.length === 0) {
 			if (selectedId !== null) setSelectedId(null);
