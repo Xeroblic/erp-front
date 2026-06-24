@@ -1,13 +1,3 @@
-/**
- * Servicio de API para WooCommerce — Productos / Términos
- *
- * Endpoints bajo `/subsidiaries/{subsidiary}/integrations/woocommerce/...`.
- * `subsidiaryId` siempre es el primer argumento (= ID de la sucursal en la ruta).
- *
- * Todas las funciones aceptan un `integrationId` opcional. Cuando se pasa,
- * se envía como query param `integration_id` para que el backend dirija la
- * petición a la integración correcta (soporta multi-tienda por subsidiaria).
- */
 
 import ApiService from './ApiService';
 import type {
@@ -39,13 +29,6 @@ const withIntegration = (
 	return { ...params, integration_id: integrationId };
 };
 
-// ==================== IMPORTACIÓN DE TÉRMINOS (CATEGORÍAS / MARCAS) ====================
-
-/**
- * #1 · Programa la importación masiva de términos (categorías/marcas) desde
- * la tienda WooCommerce hacia el ERP. Devuelve el lote (job en cola).
- * `POST /import-terms`
- */
 export const importTerms = async (
 	subsidiaryId: number,
 	payload: ImportTermsPayload,
@@ -60,10 +43,6 @@ export const importTerms = async (
 	return response.data;
 };
 
-/**
- * #2 · Consulta el progreso del lote de importación de términos (#1).
- * `GET /import-terms/status`
- */
 export const getImportTermsStatus = async (
 	subsidiaryId: number,
 	params?: ImportTermsStatusQueryParams,
@@ -77,13 +56,6 @@ export const getImportTermsStatus = async (
 	return response.data;
 };
 
-// ==================== PRODUCTOS ====================
-
-/**
- * #4 · Creación rápida de producto: lo registra en el ERP y lo manda a
- * publicar en WooCommerce.
- * `POST /quick-products`
- */
 export const createQuickProduct = async (
 	subsidiaryId: number,
 	payload: QuickProductPayload,
@@ -98,10 +70,6 @@ export const createQuickProduct = async (
 	return response.data;
 };
 
-/**
- * #5 · Publica o actualiza por completo el producto en WooCommerce.
- * `POST /products/{product}`
- */
 export const publishProduct = async (
 	subsidiaryId: number,
 	productId: number,
@@ -117,10 +85,6 @@ export const publishProduct = async (
 	return response.data;
 };
 
-/**
- * #6 · Despublica el producto: lo desvincula / pasa a borrador en Woo.
- * `DELETE /products/{product}`
- */
 export const unpublishProduct = async (
 	subsidiaryId: number,
 	productId: number,
@@ -136,10 +100,6 @@ export const unpublishProduct = async (
 	return response.data;
 };
 
-/**
- * #7 · Estado remoto: consulta en vivo Woo y lo contrasta con el ERP.
- * `GET /products/{product}/remote`
- */
 export const getProductRemoteState = async (
 	subsidiaryId: number,
 	productId: number,
@@ -153,12 +113,6 @@ export const getProductRemoteState = async (
 	return response.data;
 };
 
-// ==================== EMPAREJAMIENTO MANUAL ====================
-
-/**
- * Compara datos ERP vs WooCommerce antes de vincular.
- * `GET /products/{product}/woo-compare`
- */
 export const compareProduct = async (
 	subsidiaryId: number,
 	productId: number,
@@ -173,10 +127,6 @@ export const compareProduct = async (
 	return response.data;
 };
 
-/**
- * Busca candidatos en WooCommerce para emparejamiento manual.
- * `GET /products/{product}/woo-candidates`
- */
 export const searchCandidates = async (
 	subsidiaryId: number,
 	productId: number,
@@ -191,10 +141,6 @@ export const searchCandidates = async (
 	return response.data;
 };
 
-/**
- * Vincula manualmente un producto ERP con uno de WooCommerce.
- * `POST /products/{product}/link`
- */
 export const linkProduct = async (
 	subsidiaryId: number,
 	productId: number,
@@ -210,10 +156,6 @@ export const linkProduct = async (
 	return response.data;
 };
 
-/**
- * Desvincula un producto del emparejamiento manual con WooCommerce.
- * `DELETE /products/{product}/link`
- */
 export const unlinkProduct = async (
 	subsidiaryId: number,
 	productId: number,
@@ -227,12 +169,7 @@ export const unlinkProduct = async (
 	return response.data;
 };
 
-// ==================== ENDPOINTS PENDIENTES WOOCOMMERCE ====================
 
-/**
- * #3 · Listar productos vinculados y con errores de WooCommerce.
- * `GET /products`
- */
 export const getWooProducts = async (
 	subsidiaryId: number,
 	params?: WooProductsQueryParams,
@@ -243,18 +180,16 @@ export const getWooProducts = async (
 		normalizedParams.only_errors = normalizedParams.only_errors ? 1 : 0;
 	}
 
-	const response = await ApiService.fetchData<WooProduct[]>({
+	const response = await ApiService.fetchData<{ data?: WooProduct[] } | WooProduct[]>({
 		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/products`,
 		method: 'GET',
 		params: withIntegration(normalizedParams, integrationId),
 	});
-	return response.data;
+
+	const body = response.data;
+	return Array.isArray(body) ? body : (body.data ?? []);
 };
 
-/**
- * #8 · Sincronizar solo el precio en WooCommerce.
- * `POST /products/{product}/sync-price`
- */
 export const syncProductPrice = async (
 	subsidiaryId: number,
 	productId: number,
@@ -270,10 +205,6 @@ export const syncProductPrice = async (
 	return response.data;
 };
 
-/**
- * #9 · Sincronizar solo el stock en WooCommerce.
- * `POST /products/{product}/sync-stock`
- */
 export const syncProductStock = async (
 	subsidiaryId: number,
 	productId: number,
@@ -289,10 +220,6 @@ export const syncProductStock = async (
 	return response.data;
 };
 
-/**
- * #10 · Publicar o sincronizar variaciones de un producto padre.
- * `POST /products/{product}/publish-children`
- */
 export const publishProductChildren = async (
 	subsidiaryId: number,
 	productId: number,
