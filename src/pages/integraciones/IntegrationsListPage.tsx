@@ -155,13 +155,13 @@ export const IntegrationsListContent: React.FC = () => {
 		}
 	};
 
-	const getModeLabel = (mode: string) => {
-		const modes: Record<string, string> = {
-			webhook: 'Webhook',
-			read: 'Solo Lectura',
-			read_write: 'Lectura/Escritura',
+	const getModeInfo = (mode: string) => {
+		const modes: Record<string, { label: string; icons: string[] }> = {
+			webhook: { label: 'Webhook', icons: ['HeroSignal'] },
+			read: { label: 'Solo Lectura', icons: ['DuoBookOpen'] },
+			read_write: { label: 'Lectura/Escritura', icons: ['DuoBookOpen', 'DuoWrite'] },
 		};
-		return modes[mode] || mode;
+		return modes[mode] || { label: mode, icons: [] };
 	};
 
 	const getProviderLabel = (provider: string) => {
@@ -198,19 +198,31 @@ export const IntegrationsListContent: React.FC = () => {
 			{
 				header: 'Modo',
 				accessorKey: 'mode',
-				cell: ({ row }) => (
-					<Badge
-						variant='outline'
-						color={
-							row.original.mode === 'webhook'
-								? 'blue'
-								: row.original.mode === 'read_write'
-									? 'green'
-									: 'zinc'
-						}>
-						{getModeLabel(row.original.mode)}
-					</Badge>
-				),
+				cell: ({ row }) => {
+					const modeColors: Record<string, string> = {
+						webhook: 'blue',
+						read: 'amber',
+						read_write: 'emerald',
+					};
+					const { label, icons } = getModeInfo(row.original.mode);
+					return (
+						<Tooltip text={label}>
+							<span className='inline-block'>
+								<Badge
+									variant='outline'
+									rounded='rounded-full'
+									color={modeColors[row.original.mode] || 'zinc'}
+									className='py-1 px-1.5 flex items-center justify-center shadow-sm w-fit'>
+									<span className='flex items-center gap-0.5'>
+										{icons.map((ic) => (
+											<Icon key={ic} icon={ic as any} className='text-2xl' />
+										))}
+									</span>
+								</Badge>
+							</span>
+						</Tooltip>
+					);
+				},
 			},
 			{
 				header: 'Estado',
@@ -289,36 +301,38 @@ export const IntegrationsListContent: React.FC = () => {
 									</span>
 								</Tooltip>
 							)}
-							<Button
-								size='xs'
-								variant='outline'
-								color='violet'
-								className='group'
-								onClick={() => handleView(row.original)}>
-								<Icon
-									icon='HeroEye'
-									className='me-1 text-violet-500 group-hover:text-violet-300'
-								/>
-								Ver
-							</Button>
-							<Button
-								size='xs'
-								variant='outline'
-								color='sky'
-								className='group'
-								onClick={() => handleEdit(row.original)}>
-								<Icon
-									icon='HeroPencil'
-									className='me-1 text-sky-500 group-hover:text-sky-300'
-								/>
-								Editar
-							</Button>
+							<Tooltip text='Ver detalles'>
+								<Button
+									size='sm'
+									variant='outline'
+									color='violet'
+									className='group bg-violet-500/20 hover:bg-violet-600/20'
+									onClick={() => handleView(row.original)}>
+									<Icon
+										icon='HeroEye'
+										className='text-2xl me-1 text-violet-500 group-hover:text-violet-300'
+									/>
+								</Button>
+							</Tooltip>
+							<Tooltip text='Editar Integración'>
+								<Button
+									size='sm'
+									variant='outline'
+									color='sky'
+									className='group bg-sky-600 hover:bg-sky-600/20	'
+									onClick={() => handleEdit(row.original)}>
+									<Icon
+										icon='HeroPencil'
+										className='text-2xl me-1 text-sky-500 group-hover:text-sky-300'
+									/>
+								</Button>
+							</Tooltip>
 						</div>
 					);
 				},
 			},
 		],
-		[getProviderLabel, getModeLabel, handleView, handleEdit, handleToggleActive, togglingId],
+		[getProviderLabel, getModeInfo, handleView, handleEdit, handleToggleActive, togglingId],
 	);
 
 	if (!subsidiaryId) {
