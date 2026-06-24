@@ -7,11 +7,11 @@ import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import ImportTermsWizard from '@/components/integrations/importTerms/ImportTermsWizard';
 
-const ImportTermsPage: React.FC = () => {
+export const ImportTermsContent: React.FC = () => {
 	const [wizardOpen, setWizardOpen] = useState(false);
 
 	return (
-		<PageWrapper name='Importar Términos'>
+		<>
 			<Subheader>
 				<SubheaderLeft>
 					<span className='text-2xl font-semibold'>Importar Categorías y Marcas</span>
@@ -51,8 +51,14 @@ const ImportTermsPage: React.FC = () => {
 			</Container>
 
 			<ImportTermsWizard isOpen={wizardOpen} setIsOpen={setWizardOpen} />
-		</PageWrapper>
+		</>
 	);
 };
+
+const ImportTermsPage: React.FC = () => (
+	<PageWrapper name='Importar Términos'>
+		<ImportTermsContent />
+	</PageWrapper>
+);
 
 export default ImportTermsPage;

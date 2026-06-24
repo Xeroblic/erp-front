@@ -36,6 +36,7 @@ const SyncStockPage = lazy(() => import('@/pages/integraciones/SyncStockPage'));
 const ImportOrdersPage = lazy(() => import('@/pages/integraciones/ImportOrdersPage'));
 const ImportTermsPage = lazy(() => import('@/pages/integraciones/ImportTermsPage'));
 const WooProductsPage = lazy(() => import('@/pages/integraciones/WooProductsPage'));
+const IntegrationsHubPage = lazy(() => import('@/pages/integraciones/IntegrationsHubPage'));
 
 // Reportes
 const SalesDashboard = lazy(() => import('@/pages/reportes/sales-dashboard'));
@@ -358,6 +359,12 @@ const contentRoutes: IRoutePersonalizada[] = [
 	},
 
 	// Integraciones (WooCommerce)
+	{
+		// Hub unificado con pestañas (`?tab=...`). Punto de entrada del menú.
+		path: cfg.integrations.to,
+		element: <IntegrationsHubPage />,
+		authority: cfg.integrations.authority,
+	},
 	{
 		path: cfg.integrations.subPages.list.to,
 		element: <IntegrationsListPage />,
