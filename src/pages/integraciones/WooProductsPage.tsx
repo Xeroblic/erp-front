@@ -291,7 +291,7 @@ export const WooProductsContent: React.FC = () => {
 								<Button
 									size='sm'
 									variant='outline'
-									color='emerald'
+									color='zinc'
 									onClick={() => {
 										handleSyncPrice(product).catch(() => {});
 									}}
@@ -312,7 +312,7 @@ export const WooProductsContent: React.FC = () => {
 								<Button
 									size='sm'
 									variant='outline'
-									color='blue'
+									color='zinc'
 									onClick={() => {
 										handleSyncStock(product).catch(() => {});
 									}}
@@ -336,7 +336,7 @@ export const WooProductsContent: React.FC = () => {
 									<Button
 										size='sm'
 										variant='outline'
-										color='amber'
+										color='zinc'
 										onClick={() => {
 											handleSyncChildren(product).catch(() => {});
 										}}
@@ -395,8 +395,8 @@ export const WooProductsContent: React.FC = () => {
 				</SubheaderLeft>
 				<SubheaderRight>
 					<Button
-						variant='solid'
-						color='blue'
+						variant='outline'
+						color='zinc'
 						icon='HeroArrowPath'
 						onClick={loadProducts}
 						isDisable={loading}>

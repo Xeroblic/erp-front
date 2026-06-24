@@ -40,7 +40,6 @@ export const ImportTermsContent: React.FC = () => {
 							</div>
 							<Button
 								variant='solid'
-								color='indigo'
 								icon='HeroArrowDownTray'
 								onClick={() => setWizardOpen(true)}>
 								Importar términos

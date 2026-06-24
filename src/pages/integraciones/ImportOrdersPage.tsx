@@ -377,6 +377,7 @@ export const ImportOrdersContent: React.FC = () => {
 					<ModalFooterChild>
 						<Button
 							variant='outline'
+							color='red'
 							icon='HeroXMark'
 							onClick={() => setIsConfirmationModalOpen(false)}
 							disabled={importingBulk}>
@@ -386,7 +387,6 @@ export const ImportOrdersContent: React.FC = () => {
 					<ModalFooterChild>
 						<Button
 							variant='solid'
-							color='yellow'
 							icon='HeroArrowDownTray'
 							onClick={() => {
 								setIsConfirmationModalOpen(false);

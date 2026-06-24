@@ -274,7 +274,8 @@ export const UnmappedProductsContent: React.FC = () => {
 				</SubheaderLeft>
 				<SubheaderRight>
 					<Button
-						variant='solid'
+						variant='outline'
+						color='zinc'
 						icon='HeroArrowPath'
 						onClick={() => {
 							if (subsidiaryId && selectedIntegrationId) {
@@ -420,6 +421,7 @@ export const UnmappedProductsContent: React.FC = () => {
 							<div className='flex justify-end gap-2 border-t pt-4'>
 								<Button
 									variant='outline'
+									color='red'
 									onClick={() => {
 										setShowMapModal(false);
 										setSelectedProduct(null);

@@ -216,9 +216,14 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 					</p>
 				</ModalBody>
 				<ModalFooter>
-					<Button variant='outline' color='blue' onClick={onClose} icon='HeroX' title='Cancelar'
-					 className='bg-blue-600/70 text-white'
-					 >Cancelar</Button>
+					<Button
+						variant='outline'
+						color='red'
+						onClick={onClose}
+						icon='HeroX'
+						title='Cancelar'>
+						Cancelar
+					</Button>
 					<Button
 						variant='solid'
 						onClick={onConfirm}
@@ -635,7 +640,11 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 								)}
 							</div>
 							<div className='flex gap-2'>
-								<Button type='button' variant='outline' onClick={onClose}>
+								<Button
+									type='button'
+									variant='outline'
+									color='red'
+									onClick={onClose}>
 									{mode === 'view' ? 'Cerrar' : 'Cancelar'}
 								</Button>
 								{mode !== 'view' && (
