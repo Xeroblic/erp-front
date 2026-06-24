@@ -142,7 +142,8 @@ export const IntegrationsListContent: React.FC = () => {
 						: `"${integration.name}" activada`,
 				);
 			}
-			dispatch(fetchIntegrations({ subsidiaryId }));
+			// No hace falta recargar toda la lista: cada `updateIntegration.fulfilled`
+			// actualiza el item en el store. Evita el spinner global y el parpadeo.
 		} catch (error) {
 			toast.error(
 				typeof error === 'string'
@@ -389,15 +390,35 @@ export const IntegrationsListContent: React.FC = () => {
 	return (
 		<>
 			<Container>
-				<Card>
-					<CardHeader>
-						<Badge className='font-bold text-3xl'>Gestión de Integraciones</Badge>
-						<Button variant='solid' icon='HeroPlus' onClick={handleCreate}>
+				<Card className='overflow-hidden border border-neutral-200 shadow-sm dark:border-neutral-700/80'>
+					<CardHeader className='flex-col items-start gap-4 border-b border-neutral-200 bg-neutral-50/60 sm:flex-row sm:items-center sm:justify-between dark:border-neutral-700 dark:bg-neutral-800/40'>
+						<div className='flex items-center gap-3'>
+							<div className='flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/15 ring-1 ring-emerald-500/25 dark:bg-emerald-500/20 dark:ring-emerald-400/30'>
+								<Icon
+									icon='HeroGlobeAlt'
+									className='h-5 w-5 text-emerald-600 dark:text-emerald-400'
+								/>
+							</div>
+							<div>
+								<CardTitle className='text-lg font-bold text-neutral-900 dark:text-neutral-50'>
+									Gestión de Integraciones
+								</CardTitle>
+								<p className='mt-0.5 text-xs text-neutral-500 dark:text-neutral-400'>
+									Conecta y administra tus tiendas y marketplaces. Solo una API
+									REST puede estar activa por proveedor.
+								</p>
+							</div>
+						</div>
+						<Button
+							variant='solid'
+							color='emerald'
+							icon='HeroPlus'
+							onClick={handleCreate}>
 							Nueva Integración
 						</Button>
 					</CardHeader>
 					<CardBody>
-						{loading ? (
+						{loading && integrations.length === 0 ? (
 							<div className='flex justify-center py-8'>
 								<Icon
 									icon='HeroArrowPath'
@@ -425,7 +446,7 @@ export const IntegrationsListContent: React.FC = () => {
 							<DataTable<Integration>
 								columns={columns}
 								data={integrations}
-								loading={loading}
+								loading={false}
 								emptyMessage='No hay integraciones configuradas'
 								searchPlaceholder='Buscar integración...'
 							/>
