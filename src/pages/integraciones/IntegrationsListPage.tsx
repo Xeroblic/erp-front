@@ -17,7 +17,7 @@ import ModalIntegration from './components/ModalIntegration';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import DataTable from '@/components/ui/DataTable/DataTable';
 
-const IntegrationsListPage: React.FC = () => {
+export const IntegrationsListContent: React.FC = () => {
 	const dispatch = useAppDispatch();
 
 	// Obtener subsidiary_id del usuario autenticado
@@ -212,7 +212,7 @@ const IntegrationsListPage: React.FC = () => {
 
 	if (!subsidiaryId) {
 		return (
-			<PageWrapper name='Integraciones'>
+			<>
 				<Container>
 					<Card>
 						<CardBody>
@@ -272,12 +272,12 @@ const IntegrationsListPage: React.FC = () => {
 						</CardBody>
 					</Card>
 				</Container>
-			</PageWrapper>
+			</>
 		);
 	}
 
 	return (
-		<PageWrapper name='Integraciones'>
+		<>
 			<Container>
 				<Card>
 					<CardHeader>
@@ -333,8 +333,14 @@ const IntegrationsListPage: React.FC = () => {
 					mode={modalMode}
 				/>
 			)}
-		</PageWrapper>
+		</>
 	);
 };
+
+const IntegrationsListPage: React.FC = () => (
+	<PageWrapper name='Integraciones'>
+		<IntegrationsListContent />
+	</PageWrapper>
+);
 
 export default IntegrationsListPage;

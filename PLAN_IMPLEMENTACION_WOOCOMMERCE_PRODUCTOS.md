@@ -189,22 +189,35 @@ F2–F5 son paralelizables una vez cerrada F1.
 |---|----------|---------|-------|----|--------|
 | 1 | `POST /import-terms` | ✅ `importTerms` | ✅ `runImportTerms` | ✅ `ImportTermsPage.tsx` + wizard | **LISTO** |
 | 2 | `GET /import-terms/status` | ✅ `getImportTermsStatus` | ✅ `pollImportTermsStatus` | ✅ Polling 2s en `useImportTerms` | **LISTO** |
-| 3 | `GET /products` | ❌ | ❌ | ❌ `WooProductsPage.tsx` no existe, sin ruta ni config | **PENDIENTE** |
+| 3 | `GET /products` | ✅ `getWooProducts` | ✅ `fetchWooProducts` | ✅ `WooProductsPage.tsx` (505 líneas) + ruta `contentRoutes.tsx:387` + config `pages.config.ts:697` (`syncedProducts`) | **LISTO** ⚠️ falta enlace en sidebar |
 | 4 | `POST /quick-products` | ✅ `createQuickProduct` | ✅ `createQuickProductThunk` | ✅ `WooCommerceProductTab.tsx` con dispatch real | **LISTO** |
 | 5 | `POST /products/{product}` | ✅ `publishProduct` | ✅ `publishProductThunk` | ✅ `WooCommercePublishPanel.tsx` (switch toggle) | **LISTO** |
 | 6 | `DELETE /products/{product}` | ✅ `unpublishProduct` | ✅ `unpublishProductThunk` | ✅ `WooCommercePublishPanel.tsx` (switch toggle) | **LISTO** |
 | 7 | `GET /products/{product}/remote` | ✅ `getProductRemoteState` | ✅ `fetchRemoteState` | ✅ Tabla diagnóstico local vs remote | **LISTO** |
-| 8 | `POST /products/{product}/sync-price` | ❌ | ❌ | ❌ | **PENDIENTE** |
-| 9 | `POST /products/{product}/sync-stock` | ❌ (solo existe sync masivo en `integrationsService`) | ❌ | ❌ | **PENDIENTE** |
-| 10 | `POST /products/{product}/publish-children` | ❌ | ❌ | ❌ | **PENDIENTE** |
+| 8 | `POST /products/{product}/sync-price` | ✅ `syncProductPrice` | ✅ `syncProductPriceThunk` | ✅ botón por fila en `WooProductsPage.tsx` (`syncingId`) | **LISTO** |
+| 9 | `POST /products/{product}/sync-stock` | ✅ `syncProductStock` (distinto del sync masivo de `integrationsService`) | ✅ `syncProductStockThunk` | ✅ botón por fila en `WooProductsPage.tsx` | **LISTO** |
+| 10 | `POST /products/{product}/publish-children` | ✅ `publishProductChildren` | ✅ `publishChildrenThunk` | ✅ botón "Sincronizar variaciones" en productos padre (`WooProductsPage.tsx`) | **LISTO** |
 
-### Resumen: **7/10 endpoints implementados**
+### Resumen: **10/10 endpoints implementados**
 
-### Pendientes (F2 y F6 del plan)
-- [ ] **#3 — `getWooProducts`**: service + thunk + `WooProductsPage.tsx` + ruta en `contentRoutes.tsx` + entrada en `pages.config.ts`
-- [ ] **#8 — `syncProductPrice`**: service + thunk + UI (botón rápido en grilla o auto al guardar precio)
-- [ ] **#9 — `syncProductStock`**: service + thunk por producto individual (no confundir con el sync masivo existente)
-- [ ] **#10 — `publishProductChildren`**: service + thunk + UI (botón "Sincronizar variaciones" en productos padre)
+> **Actualizado 2026-06-23:** la revisión de código confirmó que #3, #8, #9 y #10 ya estaban
+> implementados en las 4 capas (service + thunk + extraReducers + UI en `WooProductsPage.tsx`),
+> contradiciendo el estado anterior del checklist. El `fulfilled` de #8/#9/#10 actualiza la fila
+> por `id` y maneja `syncingId`; los handlers de la UI hacen `.unwrap()` + toast + refresco.
+
+### Pendientes reales
+- [x] **Enlace en el sidebar / hub unificado** — resuelto en `feature/woo-synced-products-menu`.
+  En vez de añadir un 6.º item de menú suelto, se creó `IntegrationsHubPage.tsx`: una sola página
+  en `/integraciones` con pestañas deep-linkables (`?tab=...`) que agrupan las 6 secciones (Listado,
+  Productos Sincronizados, Sin Mapear, Sincronizar Stock, Importar Órdenes, Importar Categorías/Marcas).
+  Cada página original se refactorizó para exportar su contenido sin `PageWrapper` (`XContent`),
+  reutilizado por el hub; las rutas standalone se mantienen por compatibilidad. El sidebar pasó de
+  un `NavCollapse` de 5 sub-items a un único `NavItem` → hub. Tabs filtradas por permiso (`useCan`).
+  `tsc` + `vite build` verdes.
+- [ ] **(Verificación backend)** confirmar que `WooProductActionResponse.data` (#5/#6/#8/#9/#10)
+  devuelve la fila actualizada; si el backend responde solo con un job en cola, el `fulfilled` no
+  refresca la fila y solo se ve el toast (coherente con el riesgo "operaciones async" de la sección
+  de riesgos).
 
 ### QA general
 - [ ] `pnpm lint` + `pnpm build` (tsc) verdes

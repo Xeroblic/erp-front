@@ -25,7 +25,7 @@ import DataTable from '@/components/ui/DataTable/DataTable';
 import WooIntegrationSelector from '@/pages/catalogos/productos/components/modals/components/WooIntegrationSelector';
 import type { WooProduct } from '@/types/integrations.types';
 
-const WooProductsPage: React.FC = () => {
+export const WooProductsContent: React.FC = () => {
 	const dispatch = useAppDispatch();
 	const subsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
 
@@ -383,7 +383,7 @@ const WooProductsPage: React.FC = () => {
 	);
 
 	return (
-		<PageWrapper name='Productos Sincronizados WooCommerce'>
+		<>
 			<Subheader>
 				<SubheaderLeft>
 					<span className='text-2xl font-bold text-neutral-900 dark:text-neutral-50'>
@@ -416,7 +416,6 @@ const WooProductsPage: React.FC = () => {
 						</CardHeader>
 						<CardBody>
 							<WooIntegrationSelector
-							
 								integrations={allWooIntegrations}
 								selectedId={selectedIntegrationId}
 								onSelect={setSelectedIntegrationId}
@@ -498,8 +497,14 @@ const WooProductsPage: React.FC = () => {
 					)}
 				</div>
 			</Container>
-		</PageWrapper>
+		</>
 	);
 };
+
+const WooProductsPage: React.FC = () => (
+	<PageWrapper name='Productos Sincronizados WooCommerce'>
+		<WooProductsContent />
+	</PageWrapper>
+);
 
 export default WooProductsPage;

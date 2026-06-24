@@ -24,7 +24,7 @@ import type { UnmappedWooCommerceProduct } from '@/types/integrations.types';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import DataTable from '@/components/ui/DataTable/DataTable';
 
-const UnmappedProductsPage: React.FC = () => {
+export const UnmappedProductsContent: React.FC = () => {
 	const dispatch = useAppDispatch();
 	const subsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
 	const { integrations } = useAppSelector((state) => state.integrations);
@@ -264,7 +264,7 @@ const UnmappedProductsPage: React.FC = () => {
 	);
 
 	return (
-		<PageWrapper name='Productos Sin Mapear'>
+		<>
 			<Subheader>
 				<SubheaderLeft>
 					<span className='text-2xl font-semibold'>Productos de WooCommerce</span>
@@ -441,8 +441,14 @@ const UnmappedProductsPage: React.FC = () => {
 					)}
 				</ModalBody>
 			</Modal>
-		</PageWrapper>
+		</>
 	);
 };
+
+const UnmappedProductsPage: React.FC = () => (
+	<PageWrapper name='Productos Sin Mapear'>
+		<UnmappedProductsContent />
+	</PageWrapper>
+);
 
 export default UnmappedProductsPage;
