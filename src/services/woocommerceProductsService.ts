@@ -243,12 +243,15 @@ export const getWooProducts = async (
 		normalizedParams.only_errors = normalizedParams.only_errors ? 1 : 0;
 	}
 
-	const response = await ApiService.fetchData<WooProduct[]>({
+	const response = await ApiService.fetchData<{ data?: WooProduct[] } | WooProduct[]>({
 		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/products`,
 		method: 'GET',
 		params: withIntegration(normalizedParams, integrationId),
 	});
-	return response.data;
+	// El backend envuelve la lista en `{ data: [...] }` (wrapper de Laravel).
+	// Soporta también respuesta como array directo por robustez.
+	const body = response.data;
+	return Array.isArray(body) ? body : (body.data ?? []);
 };
 
 /**
