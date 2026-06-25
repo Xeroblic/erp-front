@@ -289,3 +289,20 @@ Para una página nueva: añade el `lazy(() => import('@/pages/...'))`, su entrad
 Prompts de roles para diseño asistido: `Architect`, `Full_TS`, `Full_React`, `UI_UX`,
 `Dev_Implementador`, `Tester_QA`. Úsalos como referencia de criterios, **pero ante
 cualquier conflicto manda este CLAUDE.md** (sobre todo: Formik + Yup, no RHF + Zod).
+
+## 13. Bitácora de trabajo (`bitacora_trabajo/`)
+
+Registro cronológico de la actividad del proyecto para luego generar informes que
+justifiquen el trabajo. **No es documentación técnica** (eso vive aquí y en el código);
+es el *qué se hizo, en qué rama y por qué* de cada día.
+
+Reglas (ver `bitacora_trabajo/instrucciones.md` para el detalle completo):
+- **Un archivo por día**, nombrado `dd-mm-yyyy.md` (ej. `24-06-2026.md`).
+- Dentro, una o más **sesiones** ordenadas por hora, cada una indicando la **rama** y
+  los cambios con etiquetas de tipo (`[feat]`, `[fix]`, `[style]`, `[refactor]`,
+  `[docs]`, `[chore]`, `[test]`) — las mismas que en los commits.
+- Anota: qué, en qué rama, por qué, referencia (PR/commit/issue), estado y
+  decisiones/problemas relevantes. Mantén las entradas **resumidas**.
+
+Al cerrar una tarea o sesión relevante, **agrega la entrada** al archivo del día (créalo
+si no existe) antes de dar por terminado el trabajo.
