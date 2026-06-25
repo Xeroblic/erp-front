@@ -17,6 +17,7 @@ import { useAppDispatch } from '@/store';
 import { loginThunk } from '@/store/slices/auth/authSlice';
 import Badge from '@/components/ui/Badge.tsx';
 import useForceLightMode from '@/hooks/useForceLightMode.ts';
+import { getRememberedEmail, rememberEmail } from '@/utils/rememberedAccount';
 
 const LoginPage = () => {
 	const dispatch = useAppDispatch();
@@ -28,9 +29,14 @@ const LoginPage = () => {
 		formik.handleSubmit();
 	});
 
+	const rememberedEmail = getRememberedEmail();
 
 	const formik = useFormik({
-		initialValues: { email: '', password: '' },
+		initialValues: {
+			email: rememberedEmail,
+			password: '',
+			rememberMe: Boolean(rememberedEmail),
+		},
 		validationSchema: Yup.object({
 			email: Yup.string()
 				.email('El correo electrónico no es válido')
@@ -41,7 +47,11 @@ const LoginPage = () => {
 		}),
 		onSubmit: async (values) => {
 			try {
-				await dispatch(loginThunk(values)).unwrap();
+				await dispatch(
+					loginThunk({ email: values.email, password: values.password }),
+				).unwrap();
+				// Recordar (o olvidar) la cuenta SOLO tras un login exitoso.
+				rememberEmail(values.rememberMe ? values.email : '');
 				navigate('/dashboard');
 			} catch (e: any) {
 				toast.error(e);
@@ -201,6 +211,9 @@ const LoginPage = () => {
 											<label className='flex select-none items-center gap-2'>
 												<input
 													type='checkbox'
+													name='rememberMe'
+													checked={formik.values.rememberMe}
+													onChange={formik.handleChange}
 													className='rounded border-emerald-900/25 text-emerald-600 focus:ring-emerald-600'
 												/>
 												<span className='text-emerald-900/80'>
