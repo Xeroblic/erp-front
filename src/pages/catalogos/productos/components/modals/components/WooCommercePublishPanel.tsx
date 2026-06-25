@@ -1,11 +1,3 @@
-/**
- * Panel de WooCommerce para un producto EXISTENTE (detalle / edición).
- * Agrupa las acciones por producto:
- *   #5 Publicar · #6 Despublicar · #7 Diagnóstico (estado remoto)
- *
- * Incluye selector de integración para soportar multi-tienda por subsidiaria.
- */
-
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -33,7 +25,6 @@ interface WooCommercePublishPanelProps {
 	initialSyncStock?: boolean;
 	isBusy?: boolean;
 	onProductRefresh?: () => void;
-	/** `marketplace_external_ids` del producto, para listar las tiendas donde está. */
 	marketplaceExternalIds?: unknown;
 }
 
@@ -95,7 +86,6 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 		setSyncStock(initialSyncStock);
 	}, [productId, initialSyncStock]);
 
-	// El diagnóstico es por tienda: límpialo al cambiar de producto o de tienda.
 	useEffect(() => {
 		dispatch(clearRemoteState());
 		return () => {
@@ -134,7 +124,6 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 				).unwrap();
 				toast.success('Producto despublicado de WooCommerce');
 			}
-			// Recargar el producto para reflejar el estado real por tienda.
 			onProductRefresh?.();
 		} catch (error) {
 			toast.error(

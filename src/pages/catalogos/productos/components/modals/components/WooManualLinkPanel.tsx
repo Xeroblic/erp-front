@@ -18,6 +18,7 @@ import {
 	extractErrorMessage,
 } from '@/services/hooks/useWooManualLink';
 import type { WooCandidate, WooPriceResolution } from '@/types/integrations.types';
+import { pricesMatch } from '@/utils/wooPriceMatch.util';
 
 interface WooManualLinkPanelProps {
 	productId: number;
@@ -694,7 +695,12 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 		  }
 		| undefined;
 
-	const hasPriceConflict = priceConflict != null || (comp != null && comp.prices_match === false);
+	const pricesAreEqual =
+		comp != null
+			? pricesMatch(comp.erp?.price, comp.woo?.price, comp.prices_match ?? false)
+			: true;
+
+	const hasPriceConflict = priceConflict != null || (comp != null && !pricesAreEqual);
 	const conflictErpPrice = priceConflict?.erp_price ?? comp?.erp?.price ?? null;
 	const conflictWooPrice = priceConflict?.woo_price ?? comp?.woo?.price ?? null;
 
@@ -813,9 +819,9 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 											{formatPrice(comp.erp?.price)}
 										</td>
 										<td
-											className={`px-3 py-2.5 ${!comp.prices_match ? 'font-bold text-amber-600 dark:text-amber-400' : 'text-neutral-600 dark:text-neutral-300'}`}>
+											className={`px-3 py-2.5 ${!pricesAreEqual ? 'font-bold text-amber-600 dark:text-amber-400' : 'text-neutral-600 dark:text-neutral-300'}`}>
 											{formatPrice(comp.woo?.price)}
-											{!comp.prices_match && (
+											{!pricesAreEqual && (
 												<Badge
 													color='amber'
 													variant='solid'
