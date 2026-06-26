@@ -1,15 +1,8 @@
-/**
- * Tipos e interfaces para el módulo de Integraciones
- * Basado en la documentación oficial de la API
- */
-
 export type IntegrationProvider = 'woocommerce';
 export type IntegrationMode = 'webhook' | 'read' | 'read_write';
 export type ResolutionStatus = 'pending' | 'mapped' | 'ignored';
 
-/**
- * Integración - Recurso completo
- */
+
 export interface Integration {
 	id: string;
 	subsidiary_id: number;
@@ -33,23 +26,17 @@ export interface Integration {
 	updated_at: string;
 }
 
-/**
- * Payload para crear una integración
- */
 export interface CreateIntegrationPayload {
 	name: string;
 	provider: IntegrationProvider;
 	base_url: string;
 	mode: IntegrationMode;
 	is_active: boolean;
-	consumer_key?: string; // Solo para modo REST
-	consumer_secret?: string; // Solo para modo REST
+	consumer_key?: string;
+	consumer_secret?: string; 
 	[key: string]: any;
 }
 
-/**
- * Payload para editar una integración
- */
 export interface UpdateIntegrationPayload {
 	name?: string;
 	is_active?: boolean;
@@ -58,29 +45,20 @@ export interface UpdateIntegrationPayload {
 	[key: string]: any;
 }
 
-/**
- * Respuesta al crear una integración (incluye secretos one-time)
- */
 export interface CreateIntegrationResponse {
 	message: string;
 	data: Integration;
-	webhook_secret?: string; // Solo una vez
-	api_key?: string; // Solo una vez
+	webhook_secret?: string;
+	api_key?: string;
 }
 
-/**
- * Respuesta al editar con rotación
- */
 export interface UpdateIntegrationResponse {
 	message: string;
 	data: Integration;
-	webhook_secret?: string; // Solo si se rotó
-	api_key?: string; // Solo si se rotó
+	webhook_secret?: string;
+	api_key?: string;
 }
 
-/**
- * Producto no mapeado de WooCommerce
- */
 export interface UnmappedWooCommerceProduct {
 	id: number;
 	integration_id: string;
@@ -88,7 +66,6 @@ export interface UnmappedWooCommerceProduct {
 	external_line_id: string;
 	external_product_id: number;
 	external_variation_id: number | null;
-	// Alias para compatibilidad
 	woocommerce_product_id: number;
 	sku: string;
 	name: string;
@@ -120,18 +97,12 @@ export interface UnmappedWooCommerceProduct {
 	line_item_data: Record<string, any>;
 }
 
-/**
- * Payload para mapear un producto
- */
 export interface MapProductPayload {
 	erp_sku: string;
 	product_id?: number;
 	[key: string]: any;
 }
 
-/**
- * Venta importada desde WooCommerce
- */
 export interface WooCommerceSale {
 	id: number;
 	sale_number: string;
@@ -146,9 +117,6 @@ export interface WooCommerceSale {
 	created_at: string;
 }
 
-/**
- * Respuesta al verificar/importar orden
- */
 export interface CheckOrImportOrderResponse {
 	message: string;
 	exists: boolean;
@@ -156,9 +124,6 @@ export interface CheckOrImportOrderResponse {
 	sale: WooCommerceSale;
 }
 
-/**
- * Respuesta al importar órdenes faltantes
- */
 export interface ImportMissingOrdersResponse {
 	message: string;
 	result: {
@@ -168,9 +133,6 @@ export interface ImportMissingOrdersResponse {
 	};
 }
 
-/**
- * Respuesta al sincronizar stock
- */
 export interface SyncStockResponse {
 	message: string;
 	result: {
@@ -184,17 +146,11 @@ export interface SyncStockResponse {
 	};
 }
 
-/**
- * Payload para sincronizar stock
- */
 export interface SyncStockPayload {
 	skus?: string[];
 	[key: string]: any;
 }
 
-/**
- * Producto sincronizado ERP ↔ WooCommerce
- */
 export interface SyncedProduct {
 	id: number;
 	name: string;
@@ -210,18 +166,12 @@ export interface SyncedProduct {
 	synced_at: string;
 }
 
-/**
- * Parámetros de consulta para listado de integraciones
- */
 export interface IntegrationsQueryParams {
 	provider?: IntegrationProvider;
 	active?: boolean;
 	per_page?: number;
 }
 
-/**
- * Parámetros de consulta para productos no mapeados
- */
 export interface UnmappedProductsQueryParams {
 	status?: ResolutionStatus;
 	search?: string;
@@ -231,9 +181,6 @@ export interface UnmappedProductsQueryParams {
 	per_page?: number;
 }
 
-/**
- * Parámetros de consulta para productos mapeados
- */
 export interface MappedProductsQueryParams {
 	search?: string;
 	mapped_from?: string;
@@ -243,9 +190,6 @@ export interface MappedProductsQueryParams {
 	per_page?: number;
 }
 
-/**
- * Parámetros de consulta para productos sincronizados
- */
 export interface SyncedProductsQueryParams {
 	search?: string;
 	external_product_id?: number;
