@@ -375,7 +375,9 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 			try {
 				const payload = mapToUpdateDTO(updates);
 				await dispatch(updateQuote({ subsidiaryId, quoteId: id, data: payload })).unwrap();
-				await syncQuoteItems(id, updates.items);
+				if (updates.items !== undefined) {
+					await syncQuoteItems(id, updates.items);
+				}
 				await requestQuotes();
 			} catch (err: any) {
 				const message = err?.message || 'Error al actualizar la cotización';
@@ -443,13 +445,6 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 		[dispatch, subsidiaryId, quotations, requestQuotes, syncQuoteItems],
 	);
 
-	const changeStatus = useCallback(
-		async (id: number, status: QuoteStatus) => {
-			await updateQuotationHandler(id, { status });
-		},
-		[updateQuotationHandler],
-	);
-
 	const convertToSale = useCallback(
 		async (id: number) => {
 			if (!subsidiaryId) return;
@@ -488,6 +483,25 @@ const useQuotationsManager = (): UseQuotationsManagerReturn => {
 			return detail;
 		},
 		[dispatch, subsidiaryId],
+	);
+
+	const changeStatus = useCallback(
+		async (id: number, status: QuoteStatus) => {
+			const original = quotations.find((q) => q.id === id);
+			if (original) {
+				await updateQuotationHandler(id, {
+					...original,
+					status,
+				});
+			} else {
+				const fetched = await loadQuotationDetails(id);
+				await updateQuotationHandler(id, {
+					...fetched,
+					status,
+				});
+			}
+		},
+		[quotations, updateQuotationHandler, loadQuotationDetails],
 	);
 
 	const exportQuotations = useCallback(() => {

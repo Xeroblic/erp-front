@@ -20,6 +20,13 @@ import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import { FiltersSection } from './components/FiltersSection';
 import { StatsCards } from './components/StatsCards';
 import { ConfirmSaleModal } from './components/modals/ConfirmSale';
+import Modal, {
+	ModalHeader,
+	ModalBody,
+	ModalFooter,
+	ModalFooterChild,
+} from '@/components/ui/Modal';
+import Icon from '@/components/icon/Icon';
 
 const QUOTES_BASE_PATH = '/comercial/cotizaciones';
 
@@ -174,12 +181,29 @@ const CotizacionesAdmin: React.FC = () => {
 		}
 	};
 
-	const handleChangeStatus = async (id: number, status: QuoteStatus) => {
-		const normalizedStatus = normalizeQuoteStatusValue(status) as QuoteStatus;
-		const text = getQuoteStatusLabel(normalizedStatus);
+	const [confirmStatusModalOpen, setConfirmStatusModalOpen] = useState(false);
+	const [statusToChange, setStatusToChange] = useState<{ id: number; status: QuoteStatus } | null>(null);
 
-		if (window.confirm(`¿Confirma cambiar el estado a "${text}"?`)) {
-			await changeStatus(id, normalizedStatus);
+	const handleChangeStatus = (id: number, status: QuoteStatus) => {
+		setStatusToChange({ id, status });
+		setConfirmStatusModalOpen(true);
+	};
+
+	const handleConfirmStatusChange = async () => {
+		if (statusToChange) {
+			const { id, status } = statusToChange;
+			const normalizedStatus = normalizeQuoteStatusValue(status) as QuoteStatus;
+			setIsActionLoading(true);
+			try {
+				await changeStatus(id, normalizedStatus);
+				toast.success(`Estado cambiado a "${getQuoteStatusLabel(normalizedStatus)}"`);
+			} catch (error) {
+				console.error('Error al cambiar el estado:', error);
+			} finally {
+				setIsActionLoading(false);
+				setConfirmStatusModalOpen(false);
+				setStatusToChange(null);
+			}
 		}
 	};
 
@@ -419,6 +443,62 @@ const CotizacionesAdmin: React.FC = () => {
 						quotation={confirmSaleQuotation}
 					/>
 				)}
+
+				{/* Modal de confirmación de cambio de estado centrado */}
+				<Modal
+					isOpen={confirmStatusModalOpen}
+					setIsOpen={setConfirmStatusModalOpen}
+					size='sm'
+					isCentered>
+					<ModalHeader>
+						<div className='flex items-center space-x-3'>
+							<div className='flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-950'>
+								<Icon icon='HeroQuestionMarkCircle' className='h-6 w-6 text-blue-600 dark:text-blue-400' />
+							</div>
+							<div>
+								<h3 className='text-lg font-semibold text-gray-900 dark:text-gray-50'>
+									Confirmar Cambio de Estado
+								</h3>
+								<p className='text-sm text-gray-500 dark:text-gray-400'>
+									Se actualizará el estado de la cotización
+								</p>
+							</div>
+						</div>
+					</ModalHeader>
+					<ModalBody>
+						{statusToChange && (
+							<div className='py-2 text-sm text-gray-600 dark:text-gray-300'>
+								¿Confirma cambiar el estado de la cotización a{' '}
+								<strong>
+									&quot;{getQuoteStatusLabel(statusToChange.status)}&quot;
+								</strong>
+								?
+							</div>
+						)}
+					</ModalBody>
+					<ModalFooter>
+						<ModalFooterChild>
+							<Button
+								variant='outline'
+								color='gray'
+								onClick={() => {
+									setConfirmStatusModalOpen(false);
+									setStatusToChange(null);
+								}}
+								isDisable={isActionLoading}>
+								<Icon icon='HeroXMark' className='mr-2 h-4 w-4' />
+								Cancelar
+							</Button>
+							<Button
+								color='blue'
+								onClick={() => void handleConfirmStatusChange()}
+								isDisable={isActionLoading}
+								isLoading={isActionLoading}>
+								Confirmar
+							</Button>
+						</ModalFooterChild>
+					</ModalFooter>
+				</Modal>
 			</Container>
 		</PageWrapper>
 	);

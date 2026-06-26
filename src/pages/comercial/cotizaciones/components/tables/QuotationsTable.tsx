@@ -5,11 +5,11 @@
  */
 import React, { useMemo } from 'react';
 import { ColumnDef, createColumnHelper } from '@tanstack/react-table';
-import { IQuote, QuoteStatus } from '../../../../../interface';
+import { IQuote, QuoteStatus } from '@/interface';
 import DataTable from '@/components/ui/DataTable/DataTable';
-import Button from '../../../../../components/ui/Button';
-import Badge from '../../../../../components/ui/Badge';
-import Icon from '../../../../../components/icon/Icon';
+import Button from '@/components/ui/Button';
+import Badge from '@/components/ui/Badge';
+import Icon from '@/components/icon/Icon';
 import { getQuoteStatusBadge, normalizeQuoteStatusValue } from '../../constants/quoteStatuses';
 import { formatDate } from '@/utils/format.utils';
 import Tooltip from '@/components/ui/Tooltip';
@@ -37,7 +37,7 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 	onDelete,
 	// onDuplicate,
 	onView,
-	// onChangeStatus,
+	onChangeStatus,
 	onConvertToSale,
 	onDownloadPdf,
 }) => {
@@ -125,9 +125,23 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 								color='violet'
 								onClick={() => onView?.(info.row.original)}
 								className='bg-violet-400/20 p-1'
-							/>
+								/>
 						</Tooltip>
-						{['approved', 'sent'].includes(
+						{['draft'].includes(
+							normalizeQuoteStatusValue(info.row.original.status)
+						) && (
+							<Tooltip text='Enviar cotizacion'>
+								<Button
+									variant='outline'
+									size='sm'
+									icon='HeroPaperAirplane'
+									color='zinc'
+									onClick={() => onChangeStatus?.(info.row.original.id, 'sent')}
+									className='bg-zinc-400/20 p-1'
+									/>
+							</Tooltip>
+						)}
+						{['approved'].includes(
 							normalizeQuoteStatusValue(info.row.original.status)
 						) && (
 								<Tooltip text='Convertir a venta' placement='top-end'>
@@ -172,7 +186,7 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 				),
 			}),
 		],
-		[onDownloadPdf, onView, onEdit, onConvertToSale, onDelete],
+		[onDownloadPdf, onView, onEdit, onChangeStatus, onConvertToSale, onDelete],
 	);
 
 	return (
