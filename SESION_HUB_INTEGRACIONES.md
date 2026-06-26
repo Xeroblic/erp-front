@@ -1,7 +1,8 @@
 # Sesión — Hub unificado de Integraciones (WooCommerce)
 
-> **Fecha:** 2026-06-24 · **Rama:** `feature/woo-synced-products-menu` (creada desde `develop`)
-> **Estado:** implementado · `tsc` + `vite build` verdes · **sin commit** (working tree)
+> **Fecha:** 2026-06-23 (sesión nocturna, commit/merge en la madrugada del 24 ≈ 00:11) ·
+> **Rama:** `feature/woo-synced-products-menu` (creada desde `develop`)
+> **Estado:** implementado · `tsc` + `vite build` verdes · mergeado en **PR #35**
 
 ---
 
@@ -132,8 +133,9 @@ M PLAN_IMPLEMENTACION_WOOCOMMERCE_PRODUCTOS.md             (checklist actualizad
 
 # Sesión — UX de botones en Integraciones
 
-> **Fecha:** 2026-06-24 · **Rama:** `style/integraciones-ux` (creada desde `develop`, ya con el hub
-> mergeado en `#35`) · **Estado:** implementado · `tsc` verde · **sin commit**
+> **Fecha:** 2026-06-23 (sesión nocturna, commit/merge en la madrugada del 24 ≈ 00:36) ·
+> **Rama:** `style/integraciones-ux` (creada desde `develop`, ya con el hub mergeado en `#35`) ·
+> **Estado:** implementado · `tsc` verde · mergeado en **PR #36**
 
 ## 7. Problema
 
