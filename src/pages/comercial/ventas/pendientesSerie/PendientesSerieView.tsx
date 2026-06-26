@@ -19,6 +19,7 @@ import CloseSaleModal from '@/pages/comercial/ventas/detail/components/modals/Cl
 import SaleDetailPage from '@/pages/comercial/ventas/detail/components/modals/SaleDetailPage';
 import { pendingSerialToSaleItems } from '../utils';
 import { usePendientesSerie } from './hooks/usePendientesSerie';
+import Tooltip from '@/components/ui/Tooltip';
 
 const statusColor: Record<string, TColors> = {
 	pending: 'amber',
@@ -100,20 +101,24 @@ const PendientesSerieView: React.FC = () => {
 				header: '',
 				cell: ({ row }) => (
 					<div className='flex justify-end gap-2'>
-						<Button
-							variant='outline'
-							color='zinc'
-							icon='HeroEye'
-							onClick={() => openDetail(row.original.id)}>
-							Ver detalle
-						</Button>
-						<Button
-							variant='solid'
-							color='blue'
-							icon='HeroQrCode'
-							onClick={() => openAssign(row.original)}>
-							Asignar series
-						</Button>
+						<Tooltip text='Ver detalle'>
+							<Button
+								variant='outline'
+								color='violet'
+								className='group bg-violet-500/10 hover:bg-violet-500/20'
+								onClick={() => openDetail(row.original.id)}>
+								<Icon icon='HeroEye' className='text-violet-500 group-hover:text-violet-400 text-xl' />
+							</Button>
+						</Tooltip>
+						<Tooltip text='Asignar series'>
+							<Button
+								variant='solid'
+								color='lime'
+								icon='HeroQrCode'
+								onClick={() => openAssign(row.original)}>
+								Asignar series
+							</Button>
+						</Tooltip>
 					</div>
 				),
 			},
