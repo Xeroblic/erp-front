@@ -11,7 +11,7 @@ import salesReducer, {
 	selectSalesLoading,
 } from '@/store/slices/salesSlice';
 import type { SalesListFilters } from '@/services/salesService';
-import { formatCLP, translateStatus } from './utils';
+import { formatCLP, translateStatus, pendingSerialToSaleItems } from './utils';
 // import ApiService from '@/services/ApiService';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -32,9 +32,14 @@ import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelecto
 // import Tooltip from '@/components/ui/Tooltip';
 import type { ISale } from '@/interface/sales.interface';
 import SaleDetailPage from './detail/components/modals/SaleDetailPage';
+import CloseSaleModal from './detail/components/modals/CloseSaleModal';
 import Tooltip from '@/components/ui/Tooltip';
 import { downloadShippingLabel } from '@/store/slices/sales/salesSlice';
-import { useParams } from 'react-router-dom';
+import {
+	fetchPendingSerialAssignment,
+	type PendingSerialSale,
+} from '@/services/salesService';
+import { useParams, useNavigate } from 'react-router-dom';
 
 injectReducer('salesModule', salesReducer);
 
@@ -81,6 +86,7 @@ type SummaryCardConfig = {
 
 const SalesListPage: React.FC = () => {
 	const dispatch = useAppDispatch();
+	const navigate = useNavigate();
 
 	const subsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
 	const rawList = useAppSelector(selectSalesList);
@@ -102,6 +108,28 @@ const SalesListPage: React.FC = () => {
 	const skipNextAutoFetchRef = useRef(false);
 	const [debouncedWcOrderId] = useDebounce(wcOrderId, 400);
 	const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
+	// Ventas con series pendientes de asignar (para el aviso/acción inline en la tabla).
+	const [pendingMap, setPendingMap] = useState<Map<number, PendingSerialSale>>(new Map());
+	const [assignSale, setAssignSale] = useState<PendingSerialSale | null>(null);
+
+	const refetchPending = useCallback(async () => {
+		if (!subsidiaryId) {
+			setPendingMap(new Map());
+			return;
+		}
+		try {
+			const resp = await fetchPendingSerialAssignment(Number(subsidiaryId), {
+				per_page: 200,
+			});
+			setPendingMap(new Map(resp.data.map((s) => [s.id, s])));
+		} catch {
+			setPendingMap(new Map());
+		}
+	}, [subsidiaryId]);
+
+	useEffect(() => {
+		refetchPending();
+	}, [refetchPending]);
 	// const [creatingQuote, setCreatingQuote] = useState(false);
 
 	// Logic to handle route-based modal opening
@@ -361,6 +389,20 @@ const SalesListPage: React.FC = () => {
 				header: 'Acciones',
 				cell: ({ row }) => (
 					<div className='flex justify-center gap-2'>
+						{pendingMap.has(row.original.id) && (
+							<Tooltip text='Esta venta tiene series pendientes de asignar'>
+								<Button
+									variant='solid'
+									size='xs'
+									color='amber'
+									icon='HeroQrCode'
+									onClick={() =>
+										setAssignSale(pendingMap.get(row.original.id) ?? null)
+									}>
+									Serie pendiente
+								</Button>
+							</Tooltip>
+						)}
 						<Tooltip text='Descargar ticket de envio'>
 							<Button
 								variant='outline'
@@ -413,7 +455,7 @@ const SalesListPage: React.FC = () => {
 				enableColumnFilter: false,
 			},
 		],
-		[handleViewDetail, subsidiaryId],
+		[handleViewDetail, subsidiaryId, pendingMap],
 	);
 
 	const buildFilters = useCallback(
@@ -556,6 +598,33 @@ const SalesListPage: React.FC = () => {
 								Selecciona una sucursal o empresa para visualizar las ventas
 								disponibles.
 							</Alert>
+						)}
+
+						{pendingMap.size > 0 && (
+							<div className='flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-amber-300/80 bg-gradient-to-r from-amber-50 to-amber-100/60 p-4 shadow-sm dark:border-amber-500/30 dark:from-amber-500/10 dark:to-amber-400/5'>
+								<div className='flex items-center gap-3'>
+									<span className='flex h-11 w-11 flex-none items-center justify-center rounded-full bg-amber-400/25 text-amber-600 dark:text-amber-300'>
+										<Icon icon='HeroExclamationTriangle' className='h-6 w-6' />
+									</span>
+									<div>
+										<p className='font-semibold text-amber-900 dark:text-amber-200'>
+											Tienes {pendingMap.size} venta(s) con series pendientes de
+											asignar
+										</p>
+										<p className='text-sm text-amber-700/80 dark:text-amber-300/70'>
+											Ingresa los números de serie para completarlas.
+										</p>
+									</div>
+								</div>
+								<Button
+									variant='solid'
+									color='amber'
+									size='sm'
+									icon='HeroQrCode'
+									onClick={() => navigate('/comercial/ventas/pendientes-serie')}>
+									Ver pendientes
+								</Button>
+							</div>
 						)}
 
 						<div className='grid gap-4 md:grid-cols-2 xl:grid-cols-4'>
@@ -728,6 +797,21 @@ const SalesListPage: React.FC = () => {
 					saleId={selectedSaleId}
 					isOpen={detailModalVisible}
 					onClose={() => handleDetailModalState(false)}
+				/>
+			)}
+
+			{assignSale && subsidiaryId && (
+				<CloseSaleModal
+					open={Boolean(assignSale)}
+					onClose={() => setAssignSale(null)}
+					subsidiaryId={Number(subsidiaryId)}
+					saleId={assignSale.id}
+					items={pendingSerialToSaleItems(assignSale)}
+					onSuccess={() => {
+						setAssignSale(null);
+						refetchPending();
+						applyFilters(buildFilters());
+					}}
 				/>
 			)}
 		</>

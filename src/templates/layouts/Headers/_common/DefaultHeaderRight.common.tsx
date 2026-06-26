@@ -5,6 +5,7 @@ import MessagesPartial from '../_partial/Messages.partial';
 import CompanySelectorButton from '../_partial/CompanySelectorButton';
 import SelectSucursalEmpresa from '../_partial/SelectSucursalEmpresa';
 import SearchPartial from '../_partial/Search.partial';
+import PendingSerialBadge from '../_partial/PendingSerialBadge.partial';
 
 const DefaultHeaderRightCommon = () => {
 	return (
@@ -13,6 +14,7 @@ const DefaultHeaderRightCommon = () => {
 			<SelectSucursalEmpresa />
 			{/* <LanguageSelectorPartial /> */}
 			<SearchPartial />
+			<PendingSerialBadge />
 			<NotificationPartial />
 			{/* <CompanySelectorButton /> */}
 			<SettingsPartial />

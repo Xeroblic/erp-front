@@ -432,6 +432,22 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
+							{/* Pendientes de serie */}
+							<AuthorityCheckNav
+								authority={Pages.commercial.subPages.pendientesSerie.authority}
+								roles={Pages.commercial.subPages.pendientesSerie.roles}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.commercial.subPages.pendientesSerie.text}
+									to={Pages.commercial.subPages.pendientesSerie.to}
+									icon={Pages.commercial.subPages.pendientesSerie.icon}
+									id={Pages.commercial.subPages.pendientesSerie.id}
+									onClick={() =>
+										navigate(Pages.commercial.subPages.pendientesSerie.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
 							{/* Enlaces Públicos */}
 							<AuthorityCheckNav
 								authority={Pages.commercial.subPages.enlacesPublicos.authority}
