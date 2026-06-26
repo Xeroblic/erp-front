@@ -97,6 +97,9 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	const [isClosing, setIsClosing] = useState(false);
 	const [creatingQuote, setCreatingQuote] = useState(false);
 	const [createdQuoteId, setCreatedQuoteId] = useState<number | null>(null);
+	// IDs de ítems que el backend marca como pendientes de asignar serie.
+	// Fuente de la verdad: endpoint pending-serial-assignment (su serialized_items).
+	const [serialItemIds, setSerialItemIds] = useState<Set<number>>(new Set());
 
 
 
@@ -107,6 +110,40 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 		dispatch(loadSaleDetail({ subsidiaryId, saleId }));
 		dispatch(loadSaleItems({ subsidiaryId, saleId }));
 	}, [dispatch, subsidiaryId, saleId, isOpen]);
+
+	// Averigua qué ítems de esta venta requieren número de serie. El payload de
+	// /sales/{id}/items no distingue serializados de normales (ambos pueden tener
+	// reserva), así que consultamos al backend, que ya calcula esa lista.
+	useEffect(() => {
+		if (!isOpen || !subsidiaryId || !saleId) return;
+		let cancelled = false;
+		setSerialItemIds(new Set());
+		(async () => {
+			try {
+				const resp = await ApiService.fetchData<{
+					data?: Array<{
+						id: number;
+						serialized_items?: Array<{ sale_item_id: number }>;
+					}>;
+				}>({
+					url: `/subsidiaries/${subsidiaryId}/sales/pending-serial-assignment`,
+					method: 'get',
+					params: { per_page: 200 },
+					cacheTTLms: 15_000,
+					dedupe: true,
+				});
+				if (cancelled) return;
+				const sale = resp.data?.data?.find((s) => s.id === saleId);
+				const ids = (sale?.serialized_items ?? []).map((si) => si.sale_item_id);
+				setSerialItemIds(new Set(ids));
+			} catch {
+				if (!cancelled) setSerialItemIds(new Set());
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, [isOpen, subsidiaryId, saleId]);
 
 	useEffect(() => {
 		setCreatedQuoteId(null);
@@ -221,13 +258,10 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 		}
 	};
 
-	const isItemTrackable = (it: any): boolean => {
-		if (it.product?.is_trackable || it.product?.serial_tracking) return true;
-		if (it.meta_json?.reservation) {
-			return !it.meta_json.reservation.nonserial;
-		}
-		return false;
-	};
+	// Un ítem requiere serie sólo si el backend lo lista como pendiente de asignar
+	// serie (serialized_items). Los productos normales no entran: se cierran/marcan
+	// como completados por su propio flujo, sin pedir serie.
+	const isItemTrackable = (it: { id: number }): boolean => serialItemIds.has(it.id);
 
 	const handleCloseSale = async () => {
 		const needsSerials = items.some(isItemTrackable);
