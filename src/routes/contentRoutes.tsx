@@ -63,6 +63,7 @@ const SystemParameterDetails = lazy(
 // Paginas de Comercial
 // const InventarioPage = lazy(() => import('../pages/inventario/Inventario'));
 const SalesListPage = lazy(() => import('../pages/comercial/ventas/SalesListPage'));
+const PendientesSeriePage = lazy(() => import('../pages/comercial/ventas/pendientesSerie'));
 const CotizacionesPage = lazy(() => import('../pages/comercial/cotizaciones/CotizacionesAdmin'));
 const SolicitudesVentasPage = lazy(() => import('../pages/comercial/SolicitudesVentasPage'));
 const EnlacesPublicosPage = lazy(() => import('@/pages/comercial/EnlacesPublicosPage'));
@@ -294,6 +295,11 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: cfg.commercial.subPages.sales.to,
 		element: <SalesListPage />,
 		authority: cfg.commercial.subPages.sales.authority,
+	},
+	{
+		path: cfg.commercial.subPages.pendientesSerie.to,
+		element: <PendientesSeriePage />,
+		authority: cfg.commercial.subPages.pendientesSerie.authority,
 	},
 	{
 		path: `${cfg.commercial.subPages.sales.to}/:saleId`,
