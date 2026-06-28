@@ -6,9 +6,11 @@ import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/compon
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import ImportTermsWizard from '@/components/integrations/importTerms/ImportTermsWizard';
+import UndoImportTermsModal from '@/components/integrations/importTerms/UndoImportTermsModal';
 
 export const ImportTermsContent: React.FC = () => {
 	const [wizardOpen, setWizardOpen] = useState(false);
+	const [undoOpen, setUndoOpen] = useState(false);
 
 	return (
 		<>
@@ -38,18 +40,28 @@ export const ImportTermsContent: React.FC = () => {
 								existentes en lugar de duplicarlos. Evita lanzar varias
 								importaciones a la vez mientras una está en curso.
 							</div>
-							<Button
-								variant='solid'
-								icon='HeroArrowDownTray'
-								onClick={() => setWizardOpen(true)}>
-								Importar términos
-							</Button>
+							<div className='flex flex-wrap gap-2'>
+								<Button
+									variant='solid'
+									icon='HeroArrowDownTray'
+									onClick={() => setWizardOpen(true)}>
+									Importar términos
+								</Button>
+								<Button
+									variant='outline'
+									color='red'
+									icon='HeroArrowUturnLeft'
+									onClick={() => setUndoOpen(true)}>
+									Deshacer importación
+								</Button>
+							</div>
 						</div>
 					</CardBody>
 				</Card>
 			</Container>
 
 			<ImportTermsWizard isOpen={wizardOpen} setIsOpen={setWizardOpen} />
+			<UndoImportTermsModal isOpen={undoOpen} setIsOpen={setUndoOpen} />
 		</>
 	);
 };
