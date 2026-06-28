@@ -18,6 +18,7 @@ import type {
 	WooLinkPayload,
 	WooLinkResponse,
 	WooUnlinkResponse,
+	WooUnlinkAllResponse,
 	WooProductsQueryParams,
 } from '../types/integrations.types';
 
@@ -169,6 +170,20 @@ export const unlinkProduct = async (
 	return response.data;
 };
 
+/**
+ * Desvinculación masiva ERP ↔ WooCommerce de todos los productos sincronizados de la
+ * subsidiaria. Con `dryRun=true` solo informa cuántos hay vinculados (no toca nada);
+ * con `dryRun=false` encola el job de desvinculación (soft-delete reversible, no modifica
+ * las fichas en la tienda). Acción destructiva limitada a super-admin en la UI.
+ */
+export const unlinkAllProducts = async (subsidiaryId: number, dryRun: boolean) => {
+	const response = await ApiService.fetchData<WooUnlinkAllResponse>({
+		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/products/unlink-all`,
+		method: 'POST',
+		data: { dry_run: dryRun },
+	});
+	return response.data;
+};
 
 export const getWooProducts = async (
 	subsidiaryId: number,
