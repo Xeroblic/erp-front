@@ -5,6 +5,8 @@ import type {
 	ImportTermsResponse,
 	ImportTermsStatus,
 	ImportTermsStatusQueryParams,
+	UndoImportTermsPayload,
+	UndoImportTermsResponse,
 	QuickProductPayload,
 	QuickProductResponse,
 	WooProduct,
@@ -52,6 +54,25 @@ export const getImportTermsStatus = async (
 		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/import-terms/status`,
 		method: 'GET',
 		params: withIntegration(params, integrationId),
+	});
+	return response.data;
+};
+
+/**
+ * Deshace una importación de términos: borra solo las marcas/categorías que la
+ * integración creó y que hoy no están en uso, informando cuántas se borraron/omitieron.
+ * Sin `taxonomies` el backend deshace ambas.
+ */
+export const undoImportTerms = async (
+	subsidiaryId: number,
+	payload: UndoImportTermsPayload = {},
+	integrationId?: string,
+) => {
+	const response = await ApiService.fetchData<UndoImportTermsResponse, UndoImportTermsPayload>({
+		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/import-terms/undo`,
+		method: 'POST',
+		data: payload,
+		params: integrationId ? { integration_id: integrationId } : undefined,
 	});
 	return response.data;
 };

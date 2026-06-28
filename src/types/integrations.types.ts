@@ -252,6 +252,41 @@ export interface ImportTermsStatusQueryParams {
 	batch_id?: string;
 }
 
+/**
+ * Payload para deshacer una importación de términos (`POST /import-terms/undo`).
+ * `taxonomies` es opcional; si se omite, el backend deshace ambas.
+ */
+export interface UndoImportTermsPayload {
+	taxonomies?: WooTaxonomy[];
+}
+
+/** Término omitido al deshacer (por estar en uso) con el motivo. */
+export interface UndoImportTermsTermDetail {
+	id: number;
+	name: string;
+	/** `has_products` (tiene productos) · `has_children` (tiene subcategorías). */
+	reason: string;
+}
+
+/**
+ * Respuesta de deshacer importación de términos. Solo borra marcas/categorías que la
+ * integración creó y que hoy no están en uso; informa cuántas se borraron y cuántas se
+ * omitieron, con el detalle por taxonomía. (Forma verificada contra
+ * WooTermImportUndoService::undo.)
+ */
+export interface UndoImportTermsResponse {
+	message: string;
+	deleted: number;
+	skipped_in_use: number;
+	orphan_links_cleaned: number;
+	details: {
+		brands: UndoImportTermsTermDetail[];
+		categories: UndoImportTermsTermDetail[];
+	};
+	/** Presente solo en el 409 (hay una importación en progreso). */
+	batch_id?: string;
+}
+
 // ==================== WOOCOMMERCE — PRODUCTOS ====================
 
 /**
