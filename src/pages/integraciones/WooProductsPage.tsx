@@ -23,7 +23,9 @@ import Icon from '@/components/icon/Icon';
 import Tooltip from '@/components/ui/Tooltip';
 import DataTable from '@/components/ui/DataTable/DataTable';
 import WooIntegrationSelector from '@/pages/catalogos/productos/components/modals/components/WooIntegrationSelector';
+import useCan from '@/hooks/useCan';
 import type { WooProduct } from '@/types/integrations.types';
+import UnlinkAllProductsModal from './components/UnlinkAllProductsModal';
 
 export const WooProductsContent: React.FC = () => {
 	const dispatch = useAppDispatch();
@@ -38,6 +40,11 @@ export const WooProductsContent: React.FC = () => {
 	} = useWooIntegrations(subsidiaryId);
 
 	const { products, loading, syncingId } = useAppSelector((state) => state.woocommerceProducts);
+
+	const { isSuperAdmin } = useCan();
+
+	// Modal de desvinculación masiva (solo super-admin)
+	const [unlinkAllOpen, setUnlinkAllOpen] = useState(false);
 
 	// Filtros locales
 	const [searchTerm, setSearchTerm] = useState('');
@@ -394,6 +401,16 @@ export const WooProductsContent: React.FC = () => {
 					</Badge>
 				</SubheaderLeft>
 				<SubheaderRight>
+					{isSuperAdmin && (
+						<Button
+							variant='outline'
+							color='red'
+							icon='HeroScissors'
+							onClick={() => setUnlinkAllOpen(true)}
+							isDisable={loading || !subsidiaryId}>
+							Desvincular todos
+						</Button>
+					)}
 					<Button
 						variant='outline'
 						color='zinc'
@@ -497,6 +514,13 @@ export const WooProductsContent: React.FC = () => {
 					)}
 				</div>
 			</Container>
+
+			<UnlinkAllProductsModal
+				isOpen={unlinkAllOpen}
+				onClose={() => setUnlinkAllOpen(false)}
+				onSuccess={loadProducts}
+				subsidiaryId={subsidiaryId}
+			/>
 		</>
 	);
 };

@@ -428,6 +428,22 @@ export interface WooUnlinkResponse {
 	data?: WooProduct;
 }
 
+/**
+ * Respuesta de la desvinculación masiva ERP ↔ WooCommerce de una subsidiaria
+ * (`POST .../products/unlink-all`). En `dry_run` informa cuántos productos se
+ * desvincularían (`to_unlink`) sin tocar nada; en ejecución real encola el job y devuelve
+ * cuántos se encolaron (`queued`, 0 si no había nada). El soft-delete es reversible.
+ * (Forma verificada contra WooProductLinkController::destroyAll.)
+ */
+export interface WooUnlinkAllResponse {
+	message?: string;
+	dry_run?: boolean;
+	/** Dry-run: cantidad de productos que se desvincularían. */
+	to_unlink?: number;
+	/** Ejecución real: cantidad de productos encolados para desvincular (0 si nada). */
+	queued?: number;
+}
+
 export interface WooProductsQueryParams {
 	search?: string;
 	only_errors?: boolean | number | string;
