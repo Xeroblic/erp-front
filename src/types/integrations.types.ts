@@ -463,10 +463,76 @@ export interface WooUnlinkResponse {
 	data?: WooProduct;
 }
 
+/**
+ * Respuesta de la desvinculación masiva ERP ↔ WooCommerce de una subsidiaria
+ * (`POST .../products/unlink-all`). En `dry_run` informa cuántos productos se
+ * desvincularían (`to_unlink`) sin tocar nada; en ejecución real encola el job y devuelve
+ * cuántos se encolaron (`queued`, 0 si no había nada). El soft-delete es reversible.
+ * (Forma verificada contra WooProductLinkController::destroyAll.)
+ */
+export interface WooUnlinkAllResponse {
+	message?: string;
+	dry_run?: boolean;
+	/** Dry-run: cantidad de productos que se desvincularían. */
+	to_unlink?: number;
+	/** Ejecución real: cantidad de productos encolados para desvincular (0 si nada). */
+	queued?: number;
+}
+
 export interface WooProductsQueryParams {
 	search?: string;
 	only_errors?: boolean | number | string;
 	per_page?: number;
 	integration_id?: string;
+}
+
+// ==================== CATÁLOGO DE WEBHOOKS ENTRANTES ====================
+// GET /integrations/webhooks/catalog — catálogo dinámico (global, no por subsidiaria)
+// de los webhooks entrantes que el ERP soporta por proveedor. Cada entrada agrupa sus
+// topics/eventos, los efectos sobre inventario/reservas (por estado de pedido o por
+// campo de producto), la autenticación y notas de comportamiento.
+
+/** Endpoint declarado por el catálogo (recepción o health-check). */
+export interface WebhookCatalogEndpoint {
+	method: string;
+	url_template: string;
+	description?: string;
+}
+
+/** Evento/topic concreto que el webhook puede recibir. */
+export interface WebhookCatalogTopic {
+	topic: string; // ej. "order.created", "product.updated"
+	description: string | null;
+}
+
+/** Efecto sobre inventario/venta según el estado del pedido (webhook de órdenes). */
+export interface WebhookCatalogStatusEffect {
+	statuses: string[];
+	effect: string;
+}
+
+/** Efecto de sincronización según el campo del producto (webhook de productos). */
+export interface WebhookCatalogFieldEffect {
+	fields: string[];
+	effect: string;
+}
+
+/** Una entrada del catálogo: un webhook de un proveedor. */
+export interface WebhookCatalogEntry {
+	provider: string; // ej. "woocommerce"
+	provider_label: string; // ej. "WooCommerce"
+	key: string; // ej. "woocommerce.orders"
+	description: string | null;
+	endpoint: WebhookCatalogEndpoint | null;
+	health_check: WebhookCatalogEndpoint | null;
+	auth: string | null;
+	topics: WebhookCatalogTopic[];
+	status_effects: WebhookCatalogStatusEffect[] | null;
+	field_effects: WebhookCatalogFieldEffect[] | null;
+	notes: string[] | null;
+}
+
+export interface WebhookCatalogResponse {
+	data: WebhookCatalogEntry[];
 }
 
