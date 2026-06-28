@@ -21,6 +21,7 @@ import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import classNames from 'classnames';
+import WebhookCatalogPanel from './WebhookCatalogPanel';
 
 interface ModalIntegrationProps {
 	isOpen: boolean;
@@ -486,6 +487,11 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 									'Lectura/Escritura: Consultar y sincronizar stock'}
 							</p>
 						</div>
+
+						{/* Catálogo dinámico de eventos soportados (solo aplica a webhooks) */}
+						{formData.mode === 'webhook' && (
+							<WebhookCatalogPanel provider={formData.provider} />
+						)}
 
 						<div className='grid gap-4 md:grid-cols-2'>
 							<div>

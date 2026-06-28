@@ -435,3 +435,53 @@ export interface WooProductsQueryParams {
 	integration_id?: string;
 }
 
+// ==================== CATÁLOGO DE WEBHOOKS ENTRANTES ====================
+// GET /integrations/webhooks/catalog — catálogo dinámico (global, no por subsidiaria)
+// de los webhooks entrantes que el ERP soporta por proveedor. Cada entrada agrupa sus
+// topics/eventos, los efectos sobre inventario/reservas (por estado de pedido o por
+// campo de producto), la autenticación y notas de comportamiento.
+
+/** Endpoint declarado por el catálogo (recepción o health-check). */
+export interface WebhookCatalogEndpoint {
+	method: string;
+	url_template: string;
+	description?: string;
+}
+
+/** Evento/topic concreto que el webhook puede recibir. */
+export interface WebhookCatalogTopic {
+	topic: string; // ej. "order.created", "product.updated"
+	description: string | null;
+}
+
+/** Efecto sobre inventario/venta según el estado del pedido (webhook de órdenes). */
+export interface WebhookCatalogStatusEffect {
+	statuses: string[];
+	effect: string;
+}
+
+/** Efecto de sincronización según el campo del producto (webhook de productos). */
+export interface WebhookCatalogFieldEffect {
+	fields: string[];
+	effect: string;
+}
+
+/** Una entrada del catálogo: un webhook de un proveedor. */
+export interface WebhookCatalogEntry {
+	provider: string; // ej. "woocommerce"
+	provider_label: string; // ej. "WooCommerce"
+	key: string; // ej. "woocommerce.orders"
+	description: string | null;
+	endpoint: WebhookCatalogEndpoint | null;
+	health_check: WebhookCatalogEndpoint | null;
+	auth: string | null;
+	topics: WebhookCatalogTopic[];
+	status_effects: WebhookCatalogStatusEffect[] | null;
+	field_effects: WebhookCatalogFieldEffect[] | null;
+	notes: string[] | null;
+}
+
+export interface WebhookCatalogResponse {
+	data: WebhookCatalogEntry[];
+}
+
