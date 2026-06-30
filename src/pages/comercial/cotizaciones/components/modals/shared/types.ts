@@ -1,4 +1,5 @@
 import { IQuote, IQuoteItem } from '@/interface';
+import type { IProductSoftHolds } from '@/interface/product.interface';
 
 export type FormQuoteItem = IQuoteItem & {
     type: 'product' | 'custom';
@@ -34,4 +35,10 @@ export interface SaleableProduct {
     }>;
     unit_price_gross: number;
     unit_price_net: number;
+    /**
+     * Unidades apartadas temporalmente por ventas en proceso. Opcional: sólo
+     * presente si el backend lo expone en `/products/saleables`. El `stock` ya
+     * viene descontado por estas retenciones.
+     */
+    soft_holds?: IProductSoftHolds | null;
 }

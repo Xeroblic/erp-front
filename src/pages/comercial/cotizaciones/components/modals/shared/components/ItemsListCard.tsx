@@ -11,6 +11,7 @@ import { EMPTY_CUSTOM_ITEM, EMPTY_PRODUCT_ITEM } from '../constants';
 import { formatCurrency } from '../helpers';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
+import SoftHoldsBadge from '@/components/ui/SoftHoldsBadge';
 
 interface ItemsListCardProps {
 	values: FormQuotationValues;
@@ -310,6 +311,13 @@ const ItemsListCard: React.FC<ItemsListCardProps> = ({
 																Stock: <strong>{maxQuantity ?? 0}</strong> · Neto: {formatCurrency(productInfo.unit_price_net)} · Bruto: {formatCurrency(productInfo.unit_price_gross)}
 															</p>
 														)}
+														{productInfo?.soft_holds &&
+															productInfo.soft_holds.quantity > 0 && (
+																<SoftHoldsBadge
+																	softHolds={productInfo.soft_holds}
+																	availableStock={maxQuantity}
+																/>
+															)}
 													</div>
 												</div>
 												<div>

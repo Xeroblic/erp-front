@@ -1,5 +1,7 @@
 import React from 'react';
 import Badge from '@/components/ui/Badge';
+import Icon from '@/components/icon/Icon';
+import Tooltip from '@/components/ui/Tooltip';
 import Input from '@/components/form/Input'; // Assuming Input component exists, else use standard input
 import { ISaleItem } from '@/interface';
 
@@ -27,13 +29,26 @@ const CloseSaleItemRow = React.memo(
 		return (
 			<div className='rounded-lg border border-zinc-200 bg-white/80 p-3 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/60'>
 				<div className='flex items-start justify-between gap-3'>
-					<div className='space-y-1'>
+					<div className='space-y-1.5'>
 						<p className='text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
 							{sku} — {name}
 						</p>
 						<p className='text-xs text-zinc-600 dark:text-zinc-400'>
 							Cantidad: <span className='font-semibold'>{quantity}</span>
 						</p>
+						<Tooltip
+							text='Unidades reservadas (apartadas) por esta venta. Al asignar la serie se marcan como vendidas y se libera la retención.'
+							placement='top'>
+							<Badge
+								variant='outline'
+								color='amber'
+								className='inline-flex items-center gap-1 px-2 text-[11px]'>
+								<Icon icon='HeroLockClosed' className='h-3 w-3' />
+								<span>
+									{quantity} apartada{quantity === 1 ? '' : 's'} por esta venta
+								</span>
+							</Badge>
+						</Tooltip>
 					</div>
 					<Badge variant='outline' color='gray' className='px-2 py-1 text-[11px]'>
 						Ítem #{item.id}

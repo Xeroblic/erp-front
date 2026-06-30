@@ -4,13 +4,30 @@ import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import Tooltip from '@/components/ui/Tooltip';
 import { PRODUCT_TYPE_LABELS } from '../constants/products.constant';
-import type { IProduct, IProductCategorySummary } from '@/interface/product.interface';
+import type {
+	IProduct,
+	IProductCategorySummary,
+	IProductSoftHold,
+} from '@/interface/product.interface';
+import {
+	summarizeProductSoftHolds,
+	getEffectiveAvailableStock,
+} from '@/components/helper/product.helper';
 import { useNavigate } from 'react-router-dom';
+import SoftHoldsBadge from '@/components/ui/SoftHoldsBadge';
 
 interface ProductDetailSidebarProps {
 	product: IProduct;
 	branches: Array<{ id: number; name?: string }>;
 }
+
+const SOFT_HOLD_CHANNEL_META: Record<string, { label: string; color: string }> = {
+	web: { label: 'Web', color: 'blue' },
+	manual: { label: 'Manual', color: 'zinc' },
+};
+
+const getSoftHoldChannelMeta = (channel: string | null): { label: string; color: string } =>
+	(channel && SOFT_HOLD_CHANNEL_META[channel]) || { label: channel ?? 'Canal', color: 'zinc' };
 
 interface CollapsibleSectionProps {
 	title: string;
@@ -85,6 +102,12 @@ export const ProductDetailSidebar: React.FC<ProductDetailSidebarProps> = ({
 
 	const childrenWithStock =
 		product.children?.filter((child) => child.stock && child.stock > 0) ?? [];
+
+	const softHoldsSummary = summarizeProductSoftHolds(product);
+	const softHoldsList: IProductSoftHold[] = [
+		...(product.soft_holds?.holds ?? []),
+		...(product.children ?? []).flatMap((child) => child.soft_holds?.holds ?? []),
+	];
 
 	return (
 		<div className='space-y-4'>
@@ -249,6 +272,88 @@ export const ProductDetailSidebar: React.FC<ProductDetailSidebarProps> = ({
 					)}
 				</div>
 			</CollapsibleSection>
+
+			{/* ═══════════ UNIDADES APARTADAS (SOFT-HOLDS) ═══════════ */}
+			{softHoldsSummary && (
+				<CollapsibleSection
+					title='Unidades apartadas'
+					icon='HeroLockClosed'
+					iconColor='text-amber-600 dark:text-amber-400'
+					ringColor='ring-amber-500/25 dark:ring-amber-400/30'
+					bgColor='bg-amber-500/15 dark:bg-amber-500/20'>
+					<div className='space-y-3'>
+						<div className='flex items-start justify-between gap-2'>
+							<p className='flex-1 text-xs text-neutral-500 dark:text-neutral-400'>
+								Stock reservado temporalmente por ventas en proceso. El stock
+								disponible ya lo descuenta.
+							</p>
+							<SoftHoldsBadge
+								softHolds={softHoldsSummary}
+								availableStock={getEffectiveAvailableStock(
+									product.serial_tracking,
+									product.stock,
+									softHoldsSummary,
+								)}
+							/>
+						</div>
+
+						{softHoldsList.length > 0 ? (
+							<div className='space-y-1.5'>
+								{softHoldsList.map((hold, index) => {
+									const channelMeta = getSoftHoldChannelMeta(hold.channel);
+									const goToSale = () =>
+										navigate(`/comercial/ventas/${hold.sale_id}`);
+									return (
+										<div
+											key={`${hold.sale_id}-${index}`}
+											className='group flex cursor-pointer items-center gap-2 rounded-lg border border-amber-200 bg-amber-50/50 p-2 transition-colors hover:border-amber-400 hover:bg-amber-100/60 dark:border-amber-500/30 dark:bg-amber-950/20 dark:hover:border-amber-400/60 dark:hover:bg-amber-900/30'
+											onClick={goToSale}
+											role='button'
+											tabIndex={0}
+											onKeyDown={(e) => {
+												if (e.key === 'Enter' || e.key === ' ') {
+													e.preventDefault();
+													goToSale();
+												}
+											}}
+											aria-label={`Ir a la venta ${hold.sale_number ?? hold.sale_id} que aparta este stock`}>
+											<div className='min-w-0 flex-1'>
+												<p className='truncate text-sm font-semibold text-neutral-800 dark:text-neutral-100'>
+													{hold.sale_number ?? `Venta #${hold.sale_id}`}
+												</p>
+												<div className='mt-0.5 flex items-center gap-1.5'>
+													<Badge
+														className='px-1.5'
+														variant='outline'
+														color={channelMeta.color}>
+														{channelMeta.label}
+													</Badge>
+													{hold.wc_order_number && (
+														<span className='text-[11px] text-neutral-400 dark:text-neutral-500'>
+															Pedido #{hold.wc_order_number}
+														</span>
+													)}
+												</div>
+											</div>
+											<span className='flex-shrink-0 text-sm font-bold text-amber-700 dark:text-amber-300'>
+												×{hold.quantity}
+											</span>
+											<Icon
+												icon='HeroArrowTopRightOnSquare'
+												className='h-3.5 w-3.5 flex-shrink-0 text-amber-400 transition-colors group-hover:text-amber-600 dark:text-amber-500 dark:group-hover:text-amber-300'
+											/>
+										</div>
+									);
+								})}
+							</div>
+						) : (
+							<p className='text-xs italic text-neutral-400 dark:text-neutral-500'>
+								El detalle por venta no está disponible en este producto.
+							</p>
+						)}
+					</div>
+				</CollapsibleSection>
+			)}
 		</div>
 	);
 };
