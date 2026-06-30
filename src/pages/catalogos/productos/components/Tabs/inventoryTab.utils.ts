@@ -1,4 +1,8 @@
 import type { IProduct } from '@/interface/product.interface';
+import {
+	summarizeProductSoftHolds,
+	getEffectiveAvailableStock,
+} from '@/components/helper/product.helper';
 import type { VisibleInventoryRow } from './inventoryTab.types';
 
 export const formatNumber = (value: number): string =>
@@ -36,6 +40,7 @@ export const buildProductsById = (products: IProduct[]): Map<number, IProduct> =
 				offer_price: child.offer_price ? Number(child.offer_price) : null,
 				stock: Number(child.stock ?? 0),
 				stock_by_status: child.stock_by_status ?? null,
+				soft_holds: child.soft_holds ?? null,
 				children: null,
 				parent: {
 					id: product.id,
@@ -54,6 +59,7 @@ export const buildVisibleInventoryRows = (
 ): VisibleInventoryRow[] => {
 	return products.flatMap((product) => {
 		const parentStockStatus = product.stock_by_status ?? null;
+		const parentSoftHolds = summarizeProductSoftHolds(product);
 		const parentRow: VisibleInventoryRow = {
 			id: product.id,
 			name: product.name,
@@ -66,6 +72,12 @@ export const buildVisibleInventoryRows = (
 			onHold: Number(parentStockStatus?.on_hold ?? 0),
 			inQuotation: Number(parentStockStatus?.in_quotation ?? 0),
 			sold: Number(parentStockStatus?.sold ?? 0),
+			softHolds: parentSoftHolds,
+			effectiveAvailable: getEffectiveAvailableStock(
+				product.serial_tracking,
+				product.stock,
+				parentSoftHolds,
+			),
 			isParent: true,
 			childrenCount: product.children?.length ?? 0,
 			updatedAt: product.updated_at,
@@ -84,6 +96,12 @@ export const buildVisibleInventoryRows = (
 			onHold: Number(child.stock_by_status?.on_hold ?? 0),
 			inQuotation: Number(child.stock_by_status?.in_quotation ?? 0),
 			sold: Number(child.stock_by_status?.sold ?? 0),
+			softHolds: child.soft_holds ?? null,
+			effectiveAvailable: getEffectiveAvailableStock(
+				true,
+				child.stock,
+				child.soft_holds ?? null,
+			),
 			isParent: false,
 			childrenCount: 0,
 			updatedAt: product.updated_at,

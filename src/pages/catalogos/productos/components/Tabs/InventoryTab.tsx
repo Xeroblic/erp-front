@@ -13,6 +13,7 @@ import type { IProduct, ProductInventorySummary, ProductListMeta } from '@/inter
 import { PRODUCT_EMPTY_INVENTORY_SUMMARY } from '@/constants/product.constant';
 import InventoryCriticalSection from './InventoryCriticalSection';
 import InventoryImportModal from './InventoryImportModal';
+import SoftHoldsBadge from '@/components/ui/SoftHoldsBadge';
 import type { CriticalItemRow, InventoryTabProps, SerialSegment } from './inventoryTab.types';
 import { buildProductsById, buildVisibleInventoryRows, downloadInventoryCsv, formatNumber, getFriendlyDate } from './inventoryTab.utils';
 
@@ -911,6 +912,11 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
                       <td className='px-4 py-4 align-top text-sm text-neutral-700 dark:text-neutral-200'>
                         <p className='font-semibold'>{formatNumber(row.stock)}</p>
                         <p className='text-xs text-neutral-500'>Disponibles: {formatNumber(row.available)}</p>
+                        {row.effectiveAvailable <= 0 && (row.softHolds?.quantity ?? 0) > 0 && (
+                          <div className='mt-1.5'>
+                            <SoftHoldsBadge softHolds={row.softHolds} availableStock={row.effectiveAvailable} />
+                          </div>
+                        )}
                       </td>
                       <td className='px-4 py-4 align-top text-xs text-neutral-500 dark:text-neutral-400'>
                         <div className='space-y-1'>
@@ -918,6 +924,9 @@ const InventoryTab: React.FC<InventoryTabProps> = ({
                           <p>En espera: {formatNumber(row.onHold)}</p>
                           <p>En cotización: {formatNumber(row.inQuotation)}</p>
                           <p>Vendidos: {formatNumber(row.sold)}</p>
+                          <p className={(row.softHolds?.quantity ?? 0) > 0 ? 'font-semibold text-amber-600 dark:text-amber-400' : undefined}>
+                            Apartado: {formatNumber(row.softHolds?.quantity ?? 0)}
+                          </p>
                         </div>
                       </td>
                       <td className='px-4 py-4 align-top text-sm text-neutral-700 dark:text-neutral-200'>

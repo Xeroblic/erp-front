@@ -7,6 +7,8 @@ import type {
 	IProductGalleryImage,
 	IProductImage,
 	IProductParentSummary,
+	IProductSoftHold,
+	IProductSoftHolds,
 	ProductFilters,
 	ProductStatus,
 	ProductsStateStats,
@@ -47,6 +49,42 @@ const asRecord = (value: unknown): UnknownRecord | undefined => {
 };
 
 const asArray = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
+
+const toNumber = (value: unknown, fallback = 0): number => {
+	const num = toNullableNumber(value);
+	return num ?? fallback;
+};
+
+const normalizeSoftHold = (value: unknown): IProductSoftHold | null => {
+	const entry = asRecord(value);
+	if (!entry) return null;
+	return {
+		sale_id: toNumber(entry.sale_id),
+		sale_number: toNullableString(entry.sale_number),
+		wc_order_number: toNullableString(entry.wc_order_number),
+		channel: toNullableString(entry.channel),
+		quantity: toNumber(entry.quantity),
+		status: toNullableString(entry.status),
+		sale_status: toNullableString(entry.sale_status),
+	};
+};
+
+const normalizeSoftHolds = (value: unknown): IProductSoftHolds | null => {
+	const record = asRecord(value);
+	if (!record) return null;
+	const holds = Array.isArray(record.holds)
+		? record.holds
+				.map(normalizeSoftHold)
+				.filter((hold): hold is IProductSoftHold => hold !== null)
+		: undefined;
+	return {
+		quantity: toNumber(record.quantity),
+		pending_sales_count: toNumber(record.pending_sales_count),
+		web: toNumber(record.web),
+		manual: toNumber(record.manual),
+		...(holds ? { holds } : {}),
+	};
+};
 
 const normalizeCategories = (raw: unknown): IProductCategorySummary[] => {
 	if (!Array.isArray(raw)) return [];
@@ -113,6 +151,7 @@ const normalizeChildren = (raw: unknown): IProductChild[] => {
 							entry.stock_by_status && typeof entry.stock_by_status === 'object'
 								? (entry.stock_by_status as Record<string, number>)
 								: null,
+						soft_holds: normalizeSoftHolds(entry.soft_holds),
 						marketplace_external_ids:
 							entry.marketplace_external_ids &&
 								typeof entry.marketplace_external_ids === 'object'
@@ -178,6 +217,7 @@ export const normalizeProduct = (raw: unknown): IProduct => {
 			safe.stock_by_status && typeof safe.stock_by_status === 'object'
 				? (safe.stock_by_status as Record<string, number>)
 				: null,
+		soft_holds: normalizeSoftHolds(safe.soft_holds),
 		attributes_json:
 			typeof safe.attributes_json === 'object' && safe.attributes_json !== null
 				? (safe.attributes_json as Record<string, unknown>)
@@ -257,6 +297,55 @@ export const normalizeProduct = (raw: unknown): IProduct => {
 				.filter((x): x is IProductGalleryImage => x !== null);
 		})(),
 	};
+};
+
+/**
+ * Resumen de unidades apartadas (soft-holds) de un producto. Si el producto
+ * tiene soft-holds propios (productos no serializados) los usa; si no, agrega
+ * los de sus hijos (variantes por grado de un padre serializado). Devuelve
+ * `null` cuando no hay nada apartado, para que la UI no muestre indicador.
+ */
+export const summarizeProductSoftHolds = (
+	product: Pick<IProduct, 'soft_holds' | 'children'>,
+): IProductSoftHolds | null => {
+	const own = product.soft_holds;
+	if (own && own.quantity > 0) return own;
+
+	const children = product.children ?? [];
+	const aggregated = children.reduce<IProductSoftHolds>(
+		(acc, child) => {
+			const holds = child.soft_holds;
+			if (!holds) return acc;
+			acc.quantity += holds.quantity;
+			acc.pending_sales_count += holds.pending_sales_count;
+			acc.web += holds.web;
+			acc.manual += holds.manual;
+			return acc;
+		},
+		{ quantity: 0, pending_sales_count: 0, web: 0, manual: 0 },
+	);
+
+	return aggregated.quantity > 0 ? aggregated : null;
+};
+
+/**
+ * Disponible real neto de apartadas (soft-holds).
+ *
+ * - Serie: el `stock` que entrega el backend ya viene descontado de los holds
+ *   (el accessor resta las reservas activas de los hijos por grado), así que se
+ *   devuelve tal cual.
+ * - Sin serie: el backend expone el `stock` físico (SSOT) sin descontar; el
+ *   balance real solo baja al cerrar la venta. Por eso aquí restamos las
+ *   unidades apartadas para obtener lo que realmente se puede ofrecer.
+ */
+export const getEffectiveAvailableStock = (
+	serialTracking: boolean | undefined,
+	stock: number | null | undefined,
+	softHolds: IProductSoftHolds | null,
+): number => {
+	const base = stock ?? 0;
+	if (serialTracking) return base;
+	return Math.max(0, base - (softHolds?.quantity ?? 0));
 };
 
 export const computeProductStats = (items: IProduct[]): ProductsStateStats => {

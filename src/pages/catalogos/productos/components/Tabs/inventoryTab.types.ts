@@ -1,4 +1,4 @@
-import type { IProduct, ProductInventoryCriticalProduct, ProductInventorySummary, ProductListMeta } from '@/interface/product.interface';
+import type { IProduct, IProductSoftHolds, ProductInventoryCriticalProduct, ProductInventorySummary, ProductListMeta } from '@/interface/product.interface';
 
 export interface InventoryTabProps {
 	products: IProduct[];
@@ -40,6 +40,9 @@ export type VisibleInventoryRow = {
 	onHold: number;
 	inQuotation: number;
 	sold: number;
+	softHolds: IProductSoftHolds | null;
+	/** Disponible real neto de apartadas (para no-serie = stock físico − holds). */
+	effectiveAvailable: number;
 	isParent: boolean;
 	childrenCount: number;
 	updatedAt?: string | null;

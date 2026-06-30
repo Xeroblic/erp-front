@@ -236,7 +236,7 @@ const Productos: React.FC = () => {
 	const hasBranchAccess = canAccessBranch(currentBranchId);
 
 	return (
-		<PageWrapper name='catalog-products'>
+		<PageWrapper name='Productos' title='Catalogos Productos'>
 			<ProductsHeader
 				searchValue={filters.search ?? ''}
 				onSearchChange={handleSearchChange}
@@ -288,8 +288,7 @@ const Productos: React.FC = () => {
 				{viewMode === 'subsidiaries' && !subsidiaryId && (
 					<Card className='mb-4'>
 						<CardBody className='text-sm text-amber-600'>
-							No se pudo resolver la subempresa actual. Verifica la personalizacion
-							del usuario.
+							No se pudo resolver la subempresa actual. Verifica la personalizacion que tengas en tus opciones.
 						</CardBody>
 					</Card>
 				)}
