@@ -5,28 +5,15 @@ import type { IProductSoftHolds } from '@/interface/product.interface';
 
 interface SoftHoldsBadgeProps {
 	softHolds?: IProductSoftHolds | null;
-	/**
-	 * Stock disponible (ya descontado). Si es 0 y hay unidades apartadas, el
-	 * badge pasa a estado rojo "Sin disponible" para diferenciar de un agotado
-	 * real: aquí el stock existe pero está retenido por ventas en proceso.
-	 */
 	availableStock?: number | null;
 	className?: string;
 }
 
-// Estilos explícitos de alto contraste para que NO se confunda con otras badges
-// ámbar del catálogo (p. ej. el tipo de producto "reacondicionado").
 const HELD_STYLE =
 	'border-amber-400 bg-amber-400/20 text-amber-700 dark:border-amber-400/60 dark:bg-amber-400/15 dark:text-amber-200';
 const ALL_HELD_STYLE =
 	'border-red-400 bg-red-500/15 text-red-600 dark:border-red-500/60 dark:bg-red-500/20 dark:text-red-300';
 
-/**
- * Indicador compacto de unidades apartadas temporalmente (soft-holds) por
- * ventas en proceso. El `stock` del producto ya viene descontado por estas
- * retenciones, así que esto es meramente informativo. No renderiza nada si no
- * hay unidades apartadas.
- */
 const SoftHoldsBadge: React.FC<SoftHoldsBadgeProps> = ({
 	softHolds,
 	availableStock,
@@ -50,11 +37,11 @@ const SoftHoldsBadge: React.FC<SoftHoldsBadgeProps> = ({
 
 	const baseText = detalle ? `${quantity} ${unidades} (${detalle})` : `${quantity} ${unidades}`;
 	const tooltipText = allHeld
-		? `Sin disponible: todo el stock está apartado. ${baseText}`
+		? `No disponible: todo el stock está apartado. ${baseText}`
 		: baseText;
 
 	const label = allHeld
-		? `Sin disponible · ${quantity} apartad${quantity === 1 ? 'a' : 'as'}`
+		? `No disponible · ${quantity}/u apartad${quantity === 1 ? 'a' : 'as'}`
 		: `${quantity} apartad${quantity === 1 ? 'a' : 'as'}`;
 
 	return (
