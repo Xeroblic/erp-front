@@ -207,7 +207,7 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 						</div>
 					</div>
 					{isLinked && externalProductId && (
-						<Badge color='green' variant='solid'>
+						<Badge color='emerald' variant='solid'>
 							WC #{externalProductId}
 						</Badge>
 					)}
@@ -223,19 +223,19 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 
 				{isLinked ? (
 					<div className='mt-4 space-y-3'>
-						<div className='rounded-lg border border-green-300 bg-green-50 p-3.5 dark:border-green-500/30 dark:bg-green-950/30'>
+						<div className='rounded-lg border border-emerald-300 bg-emerald-50 p-3.5 dark:border-emerald-500/30 dark:bg-emerald-950/30'>
 							<div className='flex items-center gap-2.5'>
-								<div className='flex h-8 w-8 items-center justify-center rounded-full bg-green-500/20 dark:bg-green-500/25'>
+								<div className='flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/20 dark:bg-emerald-500/25'>
 									<Icon
 										icon='HeroCheckCircle'
-										className='h-5 w-5 text-green-600 dark:text-green-400'
+										className='h-5 w-5 text-emerald-600 dark:text-emerald-400'
 									/>
 								</div>
 								<div className='min-w-0 flex-1'>
-									<p className='text-sm font-semibold text-green-800 dark:text-green-200'>
+									<p className='text-sm font-semibold text-emerald-800 dark:text-emerald-200'>
 										Producto vinculado manualmente
 									</p>
-									<p className='text-xs text-green-700 dark:text-green-400'>
+									<p className='text-xs text-emerald-700 dark:text-emerald-400'>
 										ID en WooCommerce:{' '}
 										<span className='font-mono font-bold'>
 											#{externalProductId}
@@ -938,7 +938,7 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 					<Tooltip text='Establece el vínculo entre este producto del ERP y el seleccionado de WooCommerce'>
 						<Button
 							variant='solid'
-							color='green'
+							color='emerald'
 							size='sm'
 							icon='HeroLink'
 							onClick={() => onLink()}
