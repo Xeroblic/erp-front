@@ -407,6 +407,8 @@ export interface WooRemoteState {
 
 export type WooPriceResolution = 'keep_erp' | 'keep_woo';
 export type WooSkuResolution = 'keep_erp' | 'keep_woo';
+/** Resolución de imagen cuando ambos lados (ERP y Woo) tienen foto. */
+export type WooImageResolution = 'keep_erp' | 'keep_woo';
 
 export interface WooCompareParams {
 	external_product_id?: number;
@@ -430,6 +432,8 @@ export interface WooCompareResult {
 	needs_decision?: boolean;
 	/** El backend indica si el SKU requiere una decisión consciente (difieren). */
 	needs_sku_decision?: boolean;
+	/** Resolución de imagen sugerida por el backend (hay foto en ambos lados). */
+	image_resolution?: WooImageResolution;
 	already_linked: boolean;
 	already_linked_to?: number | null;
 }
@@ -468,6 +472,11 @@ export interface WooLinkPayload {
 	 * conservando el contenido ya trabajado en la tienda sin romperlo.
 	 */
 	override_description_from_woo?: boolean;
+	/**
+	 * Resolución de imagen cuando ambos lados tienen foto. Por defecto `keep_woo`:
+	 * si el ERP no tiene imagen se usa la de Woo.
+	 */
+	image_resolution?: WooImageResolution;
 }
 
 export interface WooLinkResponse {

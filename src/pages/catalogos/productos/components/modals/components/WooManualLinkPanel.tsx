@@ -19,6 +19,7 @@ import {
 } from '@/services/hooks/useWooManualLink';
 import type {
 	WooCandidate,
+	WooImageResolution,
 	WooPriceResolution,
 	WooSkuResolution,
 } from '@/types/integrations.types';
@@ -66,13 +67,16 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 		erp_price: string | number | null;
 		woo_price: string | number | null;
 	} | null>(null);
-	const [syncStock, setSyncStock] = useState(false);
+	const [syncStock, setSyncStock] = useState(true);
 	// Al vincular, importa la descripción de WooCommerce hacia el ERP para no
 	// romper el contenido ya trabajado en la tienda. Activado por defecto: al
 	// vincular un producto existente en Woo, lo habitual es conservar su descripción.
 	const [overrideDescription, setOverrideDescription] = useState(true);
 	// Decisión consciente sobre el SKU cuando ERP y Woo difieren (needs_sku_decision).
 	const [skuResolution, setSkuResolution] = useState<WooSkuResolution | null>(null);
+	// Resolución de imagen cuando ambos lados tienen foto. Por defecto conserva la
+	// de WooCommerce ya que normalmente el ERP no tiene imagen cargada.
+	const [imageResolution, setImageResolution] = useState<WooImageResolution>('keep_woo');
 	const [unlinkConfirmOpen, setUnlinkConfirmOpen] = useState(false);
 
 	const candidatesQuery = useWooCandidates(
@@ -107,6 +111,7 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 		setSelectedCandidate(null);
 		setPriceConflict(null);
 		setSkuResolution(null);
+		setImageResolution('keep_woo');
 		setSearchTerm('');
 	}, []);
 
@@ -116,18 +121,21 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 		setSelectedCandidate(null);
 		setPriceConflict(null);
 		setSkuResolution(null);
+		setImageResolution('keep_woo');
 	}, []);
 
 	const handleSelectCandidate = useCallback((candidate: WooCandidate) => {
 		setSelectedCandidate(candidate);
 		setPriceConflict(null);
 		setSkuResolution(null);
+		setImageResolution('keep_woo');
 	}, []);
 
 	const handleBackToList = useCallback(() => {
 		setSelectedCandidate(null);
 		setPriceConflict(null);
 		setSkuResolution(null);
+		setImageResolution('keep_woo');
 	}, []);
 
 	const handleLink = useCallback(
@@ -148,6 +156,7 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 					...(priceResolution ? { price_resolution: priceResolution } : {}),
 					...(skuResolution ? { sku_resolution: skuResolution } : {}),
 					...(overrideDescription ? { override_description_from_woo: true } : {}),
+					image_resolution: imageResolution,
 				});
 				setPriceConflict(null);
 				handleCloseSearch();
@@ -164,6 +173,7 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 			syncStock,
 			skuResolution,
 			overrideDescription,
+			imageResolution,
 			linkMutation,
 			handleCloseSearch,
 			onLinkChange,
@@ -396,6 +406,8 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 								onSyncStockChange={setSyncStock}
 								overrideDescription={overrideDescription}
 								onOverrideDescriptionChange={setOverrideDescription}
+								imageResolution={imageResolution}
+								onImageResolutionChange={setImageResolution}
 								skuResolution={skuResolution}
 								onSkuResolutionChange={setSkuResolution}
 								isLinking={linkMutation.isPending}
@@ -710,6 +722,8 @@ interface CompareAndLinkProps {
 	onSyncStockChange: (val: boolean) => void;
 	overrideDescription: boolean;
 	onOverrideDescriptionChange: (val: boolean) => void;
+	imageResolution: WooImageResolution;
+	onImageResolutionChange: (val: WooImageResolution) => void;
 	skuResolution: WooSkuResolution | null;
 	onSkuResolutionChange: (val: WooSkuResolution) => void;
 	isLinking: boolean;
@@ -727,6 +741,8 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 	onSyncStockChange,
 	overrideDescription,
 	onOverrideDescriptionChange,
+	imageResolution,
+	onImageResolutionChange,
 	skuResolution,
 	onSkuResolutionChange,
 	isLinking,
@@ -1042,6 +1058,35 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 								romperla.
 							</p>
 						</div>
+
+						<div className='rounded-lg border border-amber-200/70 bg-white/60 p-3 dark:border-amber-500/20 dark:bg-neutral-900/40'>
+							<p className='mb-1.5 text-sm font-medium text-neutral-700 dark:text-neutral-200'>
+								Resolución de imagen
+							</p>
+							<div className='flex gap-2'>
+								<Button
+									variant={imageResolution === 'keep_woo' ? 'solid' : 'outline'}
+									color={imageResolution === 'keep_woo' ? 'violet' : 'zinc'}
+									size='xs'
+									onClick={() => onImageResolutionChange('keep_woo')}
+									isDisable={isLinking}
+									aria-label='Mantener imagen de WooCommerce'>
+									Usar imagen Woo
+								</Button>
+								<Button
+									variant={imageResolution === 'keep_erp' ? 'solid' : 'outline'}
+									color={imageResolution === 'keep_erp' ? 'blue' : 'zinc'}
+									size='xs'
+									onClick={() => onImageResolutionChange('keep_erp')}
+									isDisable={isLinking}
+									aria-label='Mantener imagen del ERP'>
+									Usar imagen ERP
+								</Button>
+							</div>
+							<p className='mt-1 text-xs text-neutral-500 dark:text-neutral-400'>
+								Si ambos tienen imagen, ¿cuál conservar? Por defecto usa la de WooCommerce.
+							</p>
+						</div>
 					</div>
 
 					<div className='mt-4 grid grid-cols-1 gap-3 border-t border-amber-200/60 pt-3 dark:border-amber-500/20 sm:grid-cols-2'>
@@ -1113,6 +1158,35 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 							<p className='mt-1 pl-6 text-xs text-neutral-500 dark:text-neutral-400'>
 								Trae la descripción ya trabajada en la tienda hacia el ERP para no
 								romperla.
+							</p>
+						</div>
+
+						<div className='rounded-lg border border-neutral-100 bg-neutral-50/60 p-3 dark:border-neutral-800 dark:bg-neutral-900/40'>
+							<p className='mb-1.5 text-sm font-medium text-neutral-700 dark:text-neutral-200'>
+								Resolución de imagen
+							</p>
+							<div className='flex gap-2'>
+								<Button
+									variant={imageResolution === 'keep_woo' ? 'solid' : 'outline'}
+									color={imageResolution === 'keep_woo' ? 'violet' : 'zinc'}
+									size='xs'
+									onClick={() => onImageResolutionChange('keep_woo')}
+									isDisable={isLinking}
+									aria-label='Mantener imagen de WooCommerce'>
+									Usar imagen Woo
+								</Button>
+								<Button
+									variant={imageResolution === 'keep_erp' ? 'solid' : 'outline'}
+									color={imageResolution === 'keep_erp' ? 'blue' : 'zinc'}
+									size='xs'
+									onClick={() => onImageResolutionChange('keep_erp')}
+									isDisable={isLinking}
+									aria-label='Mantener imagen del ERP'>
+									Usar imagen ERP
+								</Button>
+							</div>
+							<p className='mt-1 text-xs text-neutral-500 dark:text-neutral-400'>
+								Si ambos tienen imagen, ¿cuál conservar? Por defecto usa la de WooCommerce.
 							</p>
 						</div>
 					</div>
