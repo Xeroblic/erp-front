@@ -64,8 +64,9 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 	} | null>(null);
 	const [syncStock, setSyncStock] = useState(false);
 	// Al vincular, importa la descripción de WooCommerce hacia el ERP para no
-	// romper el contenido ya trabajado en la tienda.
-	const [overrideDescription, setOverrideDescription] = useState(false);
+	// romper el contenido ya trabajado en la tienda. Activado por defecto: al
+	// vincular un producto existente en Woo, lo habitual es conservar su descripción.
+	const [overrideDescription, setOverrideDescription] = useState(true);
 	const [unlinkConfirmOpen, setUnlinkConfirmOpen] = useState(false);
 
 	const candidatesQuery = useWooCandidates(
