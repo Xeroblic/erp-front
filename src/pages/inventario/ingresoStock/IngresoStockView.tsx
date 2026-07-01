@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
@@ -41,6 +41,12 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 	} = state;
 
 	const isDetailVisible = selectedProduct !== null && !isWorkspaceOpen;
+
+	// IDs ya presentes en la zona de trabajo, para deshabilitar su re-selección en el catálogo.
+	const workspaceProductIds = useMemo(
+		() => new Set(workItems.map((item) => item.productId)),
+		[workItems],
+	);
 
 	return (
 		<PageWrapper>
@@ -126,6 +132,7 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 										products={productRows}
 										loading={isLoadingProducts}
 										onSelectProduct={actions.handleAddProduct}
+										selectedProductIds={workspaceProductIds}
 									/>
 								</CardBody>
 							</Card>

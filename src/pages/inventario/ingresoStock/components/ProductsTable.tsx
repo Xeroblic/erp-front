@@ -26,6 +26,12 @@ interface ProductsTableProps {
 	 * Callback cuando usuario hace click en "Ingresar/Ajustar"
 	 */
 	onSelectProduct: (product: IProduct) => void;
+
+	/**
+	 * IDs de productos que ya están en la zona de trabajo. Se usan para
+	 * deshabilitar su acción "Ingresar/Ajustar" y evitar duplicados.
+	 */
+	selectedProductIds?: ReadonlySet<number>;
 }
 
 const clpFormatter = new Intl.NumberFormat('es-CL', {
@@ -48,6 +54,7 @@ export const ProductsTable = ({
 	products,
 	loading = false,
 	onSelectProduct,
+	selectedProductIds,
 }: ProductsTableProps) => {
 	const columns = useMemo<ColumnDef<IProduct>[]>(
 		() => [
@@ -121,23 +128,32 @@ export const ProductsTable = ({
 				id: 'actions',
 				header: 'Acciones',
 				enableSorting: false,
-				cell: ({ row }) => (
-					<div className='flex items-center justify-end'>
-						<Tooltip text='Ingresar o ajustar el stock de este producto'>
-							<Button
-								color='emerald'
-								variant='solid'
-								size='sm'
-								icon='HeroArrowsRightLeft'
-								onClick={() => onSelectProduct(row.original)}>
-								Ingresar / Ajustar
-							</Button>
-						</Tooltip>
-					</div>
-				),
+				cell: ({ row }) => {
+					const alreadyAdded = selectedProductIds?.has(row.original.id) ?? false;
+					return (
+						<div className='flex items-center justify-end'>
+							<Tooltip
+								text={
+									alreadyAdded
+										? 'Este producto ya está en la zona de trabajo'
+										: 'Ingresar o ajustar el stock de este producto'
+								}>
+								<Button
+									color='emerald'
+									variant='solid'
+									size='sm'
+									icon={alreadyAdded ? 'HeroCheck' : 'HeroArrowsRightLeft'}
+									isDisable={alreadyAdded}
+									onClick={() => onSelectProduct(row.original)}>
+									{alreadyAdded ? 'En la zona' : 'Ingresar / Ajustar'}
+								</Button>
+							</Tooltip>
+						</div>
+					);
+				},
 			},
 		],
-		[onSelectProduct],
+		[onSelectProduct, selectedProductIds],
 	);
 
 	return (
