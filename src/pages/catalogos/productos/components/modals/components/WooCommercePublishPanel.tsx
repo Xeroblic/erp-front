@@ -21,6 +21,11 @@ import { useWooProductStatus } from '@/pages/catalogos/productos/hooks/useWooPro
 import WooManualLinkPanel from './WooManualLinkPanel';
 import WooIntegrationSelector from './WooIntegrationSelector';
 import WooProductStorefronts from './WooProductStorefronts';
+import WooSyncGuide from './WooSyncGuide';
+
+// Flag de "ya viste la guía" — se muestra automáticamente la primera vez que se
+// abre el panel de WooCommerce; luego queda disponible desde el botón de ayuda.
+const WOO_GUIDE_SEEN_KEY = 'woo_sync_guide_seen_v1';
 
 interface WooCommercePublishPanelProps {
 	productId: number;
@@ -85,6 +90,27 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 	const [syncStock, setSyncStock] = useState(initialSyncStock);
 	const [showUnpublishConfirm, setShowUnpublishConfirm] = useState(false);
 	const [unpublishing, setUnpublishing] = useState(false);
+	const [showGuide, setShowGuide] = useState(false);
+
+	// Muestra la guía automáticamente la primera vez que se abre el panel.
+	useEffect(() => {
+		try {
+			if (!localStorage.getItem(WOO_GUIDE_SEEN_KEY)) {
+				setShowGuide(true);
+			}
+		} catch {
+			// localStorage no disponible: no bloquea el panel.
+		}
+	}, []);
+
+	const closeGuide = useCallback(() => {
+		setShowGuide(false);
+		try {
+			localStorage.setItem(WOO_GUIDE_SEEN_KEY, '1');
+		} catch {
+			// Ignorar si localStorage no está disponible.
+		}
+	}, []);
 
 	useEffect(() => {
 		setSyncStock(initialSyncStock);
@@ -218,6 +244,12 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 	const remote = remoteState?.remote ?? null;
 	const priceDiff = !!local && !!remote && toNumber(local.price) !== toNumber(remote.price);
 	const stockDiff = !!local && !!remote && toNumber(local.stock) !== toNumber(remote.stock);
+	// Estado del ERP para el diagnóstico: el payload local no trae `status`, pero
+	// sí sabemos si el producto está publicado aquí. Consideramos que coinciden
+	// cuando ambos están "publicados" (ERP publicado ↔ Woo en estado `publish`).
+	const localStatusLabel = isPublishedHere ? 'Publicado' : 'No publicado';
+	const statusDiff =
+		!!remote && (remote.status === 'publish') !== isPublishedHere;
 
 	const handleLinkChange = useCallback(() => {
 		onProductRefresh?.();
@@ -269,6 +301,17 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 								No publicado aquí
 							</Badge>
 						)}
+						<Tooltip text='¿Cómo funciona la sincronización con WooCommerce?'>
+							<Button
+								variant='outline'
+								color='amber'
+								size='sm'
+								icon='HeroQuestionMarkCircle'
+								onClick={() => setShowGuide(true)}
+								aria-label='Ver guía de sincronización con WooCommerce'>
+								Cómo funciona
+							</Button>
+						</Tooltip>
 					</div>
 				</CardHeader>
 				<CardBody className='space-y-4'>
@@ -510,11 +553,18 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 												<td className='px-3 py-2.5 font-medium text-neutral-700 dark:text-neutral-200'>
 													Estado
 												</td>
-												<td className='px-3 py-2.5 text-neutral-600 dark:text-neutral-300'>
-													—
+												<td
+													className={`px-3 py-2.5 ${statusDiff ? 'font-semibold text-rose-600 dark:text-rose-400' : 'text-neutral-600 dark:text-neutral-300'}`}>
+													{localStatusLabel}
 												</td>
-												<td className='px-3 py-2.5 text-neutral-600 dark:text-neutral-300'>
+												<td
+													className={`px-3 py-2.5 ${statusDiff ? 'font-semibold text-rose-600 dark:text-rose-400' : 'text-neutral-600 dark:text-neutral-300'}`}>
 													{formatValue(remote.status)}
+													{statusDiff && (
+														<Badge color='red' variant='solid' className='ml-2'>
+															Difiere
+														</Badge>
+													)}
 												</td>
 											</tr>
 											<tr className='border-t border-neutral-100 dark:border-neutral-700'>
@@ -648,6 +698,9 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 					</div>
 				</ModalFooter>
 			</Modal>
+
+			{/* ═══════════════ GUÍA: CÓMO FUNCIONA LA SINCRONIZACIÓN ═══════════════ */}
+			<WooSyncGuide isOpen={showGuide} onClose={closeGuide} />
 		</div>
 	);
 };
