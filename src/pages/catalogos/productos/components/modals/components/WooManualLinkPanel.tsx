@@ -939,27 +939,29 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 						</div>
 					</div>
 
-					<div className='flex flex-wrap gap-2'>
+					<div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
 						<Tooltip text='Conserva el SKU del ERP (no cambia en el ERP)'>
 							<Button
-								variant={skuResolution === 'keep_erp' ? 'solid' : 'outline'}
+								variant='solid'
 								color='blue'
 								size='sm'
-								icon='HeroCircleStack'
+								icon={skuResolution === 'keep_erp' ? 'HeroCheckCircle' : 'HeroCircleStack'}
 								onClick={() => onSkuResolutionChange('keep_erp')}
 								isDisable={isLinking}
+								className={`w-full ${skuResolution === 'keep_erp' ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-sky-50 dark:ring-offset-sky-950' : 'opacity-90'}`}
 								aria-label='Mantener el SKU del ERP'>
 								Mantener SKU del ERP
 							</Button>
 						</Tooltip>
 						<Tooltip text='Adopta el SKU de WooCommerce en el ERP'>
 							<Button
-								variant={skuResolution === 'keep_woo' ? 'solid' : 'outline'}
+								variant='solid'
 								color='amber'
 								size='sm'
-								icon='HeroShoppingBag'
+								icon={skuResolution === 'keep_woo' ? 'HeroCheckCircle' : 'HeroShoppingBag'}
 								onClick={() => onSkuResolutionChange('keep_woo')}
 								isDisable={isLinking}
+								className={`w-full ${skuResolution === 'keep_woo' ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-sky-50 dark:ring-offset-sky-950' : 'opacity-90'}`}
 								aria-label='Usar el SKU de WooCommerce'>
 								Usar SKU de WooCommerce
 							</Button>
@@ -997,30 +999,40 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 						</div>
 					</div>
 
-					<Checkbox
-						id='woo_link_sync_stock_conflict'
-						name='woo_link_sync_stock_conflict'
-						checked={syncStock}
-						onChange={() => onSyncStockChange(!syncStock)}
-						disabled={isLinking}
-						dimension='sm'
-						label='Sincronizar stock ERP → WooCommerce al vincular'
-					/>
+					<div className='grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-2'>
+						<div className='rounded-lg border border-amber-200/70 bg-white/60 p-3 dark:border-amber-500/20 dark:bg-neutral-900/40'>
+							<Checkbox
+								id='woo_link_sync_stock_conflict'
+								name='woo_link_sync_stock_conflict'
+								checked={syncStock}
+								onChange={() => onSyncStockChange(!syncStock)}
+								disabled={isLinking}
+								dimension='sm'
+								label='Sincronizar stock ERP → WooCommerce al vincular'
+							/>
+							<p className='mt-1 pl-6 text-[11px] text-neutral-500 dark:text-neutral-400'>
+								El stock del ERP se enviará a la tienda al vincular.
+							</p>
+						</div>
 
-					<Checkbox
-						id='woo_link_override_desc_conflict'
-						name='woo_link_override_desc_conflict'
-						checked={overrideDescription}
-						onChange={() => onOverrideDescriptionChange(!overrideDescription)}
-						disabled={isLinking}
-						dimension='sm'
-						label='Importar la descripción de WooCommerce al ERP'
-					/>
-					<p className='-mt-1 pl-6 text-[11px] text-neutral-500 dark:text-neutral-400'>
-						Trae la descripción ya trabajada en la tienda hacia el ERP para no romperla.
-					</p>
+						<div className='rounded-lg border border-amber-200/70 bg-white/60 p-3 dark:border-amber-500/20 dark:bg-neutral-900/40'>
+							<Checkbox
+								id='woo_link_override_desc_conflict'
+								name='woo_link_override_desc_conflict'
+								checked={overrideDescription}
+								onChange={() => onOverrideDescriptionChange(!overrideDescription)}
+								disabled={isLinking}
+								dimension='sm'
+								label='Importar la descripción de WooCommerce al ERP'
+							/>
+							<p className='mt-1 pl-6 text-[11px] text-neutral-500 dark:text-neutral-400'>
+								Trae la descripción ya trabajada en la tienda hacia el ERP para no
+								romperla.
+							</p>
+						</div>
+					</div>
 
-					<div className='mt-3 flex flex-wrap gap-2'>
+					<div className='mt-4 grid grid-cols-1 gap-3 border-t border-amber-200/60 pt-3 dark:border-amber-500/20 sm:grid-cols-2'>
 						<Tooltip text='Conserva el precio del ERP y actualiza WooCommerce'>
 							<Button
 								variant='solid'
@@ -1030,6 +1042,7 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 								onClick={() => onLink('keep_erp')}
 								isDisable={isLinking || skuDecisionPending}
 								isLoading={isLinking}
+								className='w-full'
 								aria-label='Mantener precio del ERP'>
 								Usar precio ERP
 							</Button>
@@ -1043,6 +1056,7 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 								onClick={() => onLink('keep_woo')}
 								isDisable={isLinking || skuDecisionPending}
 								isLoading={isLinking}
+								className='w-full'
 								aria-label='Mantener precio de WooCommerce'>
 								Usar precio WooCommerce
 							</Button>
@@ -1053,47 +1067,59 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 
 			{/* Link options & button (only when prices match) */}
 			{!hasPriceConflict && (
-				<div className='space-y-3 rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-800/50'>
+				<div className='space-y-4 rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-800/50'>
 					<p className='text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400'>
 						Opciones de vinculación
 					</p>
 
-					<Checkbox
-						id='woo_link_sync_stock'
-						name='woo_link_sync_stock'
-						checked={syncStock}
-						onChange={() => onSyncStockChange(!syncStock)}
-						disabled={isLinking}
-						dimension='sm'
-						label='Sincronizar stock ERP → WooCommerce al vincular'
-					/>
+					<div className='grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-2'>
+						<div className='rounded-lg border border-neutral-100 bg-neutral-50/60 p-3 dark:border-neutral-800 dark:bg-neutral-900/40'>
+							<Checkbox
+								id='woo_link_sync_stock'
+								name='woo_link_sync_stock'
+								checked={syncStock}
+								onChange={() => onSyncStockChange(!syncStock)}
+								disabled={isLinking}
+								dimension='sm'
+								label='Sincronizar stock ERP → WooCommerce al vincular'
+							/>
+							<p className='mt-1 pl-6 text-[11px] text-neutral-500 dark:text-neutral-400'>
+								El stock del ERP se enviará a la tienda al vincular.
+							</p>
+						</div>
 
-					<Checkbox
-						id='woo_link_override_desc'
-						name='woo_link_override_desc'
-						checked={overrideDescription}
-						onChange={() => onOverrideDescriptionChange(!overrideDescription)}
-						disabled={isLinking}
-						dimension='sm'
-						label='Importar la descripción de WooCommerce al ERP'
-					/>
-					<p className='-mt-1 pl-6 text-[11px] text-neutral-500 dark:text-neutral-400'>
-						Trae la descripción ya trabajada en la tienda hacia el ERP para no romperla.
-					</p>
+						<div className='rounded-lg border border-neutral-100 bg-neutral-50/60 p-3 dark:border-neutral-800 dark:bg-neutral-900/40'>
+							<Checkbox
+								id='woo_link_override_desc'
+								name='woo_link_override_desc'
+								checked={overrideDescription}
+								onChange={() => onOverrideDescriptionChange(!overrideDescription)}
+								disabled={isLinking}
+								dimension='sm'
+								label='Importar la descripción de WooCommerce al ERP'
+							/>
+							<p className='mt-1 pl-6 text-[11px] text-neutral-500 dark:text-neutral-400'>
+								Trae la descripción ya trabajada en la tienda hacia el ERP para no
+								romperla.
+							</p>
+						</div>
+					</div>
 
-					<Tooltip text='Establece el vínculo entre este producto del ERP y el seleccionado de WooCommerce'>
-						<Button
-							variant='solid'
-							color='emerald'
-							size='sm'
-							icon='HeroLink'
-							onClick={() => onLink()}
-							isDisable={isLinking || isComparing || !!comp?.already_linked}
-							isLoading={isLinking}
-							aria-label='Vincular producto'>
-							Vincular producto
-						</Button>
-					</Tooltip>
+					<div className='flex justify-end border-t border-neutral-100 pt-3 dark:border-neutral-800'>
+						<Tooltip text='Establece el vínculo entre este producto del ERP y el seleccionado de WooCommerce'>
+							<Button
+								variant='solid'
+								color='emerald'
+								size='sm'
+								icon='HeroLink'
+								onClick={() => onLink()}
+								isDisable={isLinking || isComparing || !!comp?.already_linked}
+								isLoading={isLinking}
+								aria-label='Vincular producto'>
+								Vincular producto
+							</Button>
+						</Tooltip>
+					</div>
 				</div>
 			)}
 		</div>
