@@ -58,6 +58,26 @@ const sanitizeStyleAttribute = (style: string) => {
 	return normalized;
 };
 
+/**
+ * Indica si tras `node` hay contenido real (un elemento o texto no vacío) en su
+ * mismo contenedor. Se usa para decidir si un párrafo desenvuelto necesita un
+ * `<br>` separador: el último de su contenedor no debe llevarlo.
+ */
+const hasFollowingContent = (node: Node): boolean => {
+	let sibling = node.nextSibling;
+	while (sibling) {
+		if (sibling.nodeType === Node.ELEMENT_NODE) return true;
+		if (
+			sibling.nodeType === Node.TEXT_NODE &&
+			(sibling.textContent?.trim().length ?? 0) > 0
+		) {
+			return true;
+		}
+		sibling = sibling.nextSibling;
+	}
+	return false;
+};
+
 const sanitizeHtmlOutput = (html: string) => {
 	if (typeof window === 'undefined') return html;
 
@@ -129,8 +149,14 @@ const sanitizeHtmlOutput = (html: string) => {
 			fragment.appendChild(paragraph.firstChild);
 		}
 
-		const breakElement = doc.createElement('br');
-		fragment.appendChild(breakElement);
+		// Solo se agrega un salto de línea si hay contenido DESPUÉS del párrafo.
+		// Sin esta condición, el último párrafo de cada contenedor (típicamente el
+		// <p> que Tiptap coloca dentro de cada <li>) quedaba con un <br> sobrante,
+		// que en WooCommerce se renderiza como un espacio extra y se acumula en cada
+		// round-trip de la descripción.
+		if (hasFollowingContent(paragraph)) {
+			fragment.appendChild(doc.createElement('br'));
+		}
 
 		paragraph.replaceWith(fragment);
 	});
