@@ -968,7 +968,7 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 						</Tooltip>
 					</div>
 					{skuDecisionPending && (
-						<p className='mt-2 text-[11px] font-medium text-sky-700 dark:text-sky-300'>
+						<p className='mt-2 text-xs font-medium text-sky-700 dark:text-sky-300'>
 							Elige una opción de SKU para poder vincular.
 						</p>
 					)}
@@ -1010,7 +1010,7 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 								dimension='sm'
 								label='Sincronizar stock ERP → WooCommerce al vincular'
 							/>
-							<p className='mt-1 pl-6 text-[11px] text-neutral-500 dark:text-neutral-400'>
+							<p className='mt-1 pl-6 text-xs text-neutral-500 dark:text-neutral-400'>
 								El stock del ERP se enviará a la tienda al vincular.
 							</p>
 						</div>
@@ -1025,7 +1025,7 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 								dimension='sm'
 								label='Importar la descripción de WooCommerce al ERP'
 							/>
-							<p className='mt-1 pl-6 text-[11px] text-neutral-500 dark:text-neutral-400'>
+							<p className='mt-1 pl-6 text-xs text-neutral-500 dark:text-neutral-400'>
 								Trae la descripción ya trabajada en la tienda hacia el ERP para no
 								romperla.
 							</p>
@@ -1083,7 +1083,7 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 								dimension='sm'
 								label='Sincronizar stock ERP → WooCommerce al vincular'
 							/>
-							<p className='mt-1 pl-6 text-[11px] text-neutral-500 dark:text-neutral-400'>
+							<p className='mt-1 pl-6 text-xs text-neutral-500 dark:text-neutral-400'>
 								El stock del ERP se enviará a la tienda al vincular.
 							</p>
 						</div>
@@ -1098,7 +1098,7 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 								dimension='sm'
 								label='Importar la descripción de WooCommerce al ERP'
 							/>
-							<p className='mt-1 pl-6 text-[11px] text-neutral-500 dark:text-neutral-400'>
+							<p className='mt-1 pl-6 text-xs text-neutral-500 dark:text-neutral-400'>
 								Trae la descripción ya trabajada en la tienda hacia el ERP para no
 								romperla.
 							</p>
