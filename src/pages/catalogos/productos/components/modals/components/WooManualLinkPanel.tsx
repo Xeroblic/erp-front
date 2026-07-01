@@ -17,7 +17,11 @@ import {
 	extractConflictData,
 	extractErrorMessage,
 } from '@/services/hooks/useWooManualLink';
-import type { WooCandidate, WooPriceResolution } from '@/types/integrations.types';
+import type {
+	WooCandidate,
+	WooPriceResolution,
+	WooSkuResolution,
+} from '@/types/integrations.types';
 import { pricesMatch } from '@/utils/wooPriceMatch.util';
 
 interface WooManualLinkPanelProps {
@@ -67,6 +71,8 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 	// romper el contenido ya trabajado en la tienda. Activado por defecto: al
 	// vincular un producto existente en Woo, lo habitual es conservar su descripción.
 	const [overrideDescription, setOverrideDescription] = useState(true);
+	// Decisión consciente sobre el SKU cuando ERP y Woo difieren (needs_sku_decision).
+	const [skuResolution, setSkuResolution] = useState<WooSkuResolution | null>(null);
 	const [unlinkConfirmOpen, setUnlinkConfirmOpen] = useState(false);
 
 	const candidatesQuery = useWooCandidates(
@@ -100,6 +106,7 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 		setSearchEnabled(true);
 		setSelectedCandidate(null);
 		setPriceConflict(null);
+		setSkuResolution(null);
 		setSearchTerm('');
 	}, []);
 
@@ -108,16 +115,19 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 		setSearchEnabled(false);
 		setSelectedCandidate(null);
 		setPriceConflict(null);
+		setSkuResolution(null);
 	}, []);
 
 	const handleSelectCandidate = useCallback((candidate: WooCandidate) => {
 		setSelectedCandidate(candidate);
 		setPriceConflict(null);
+		setSkuResolution(null);
 	}, []);
 
 	const handleBackToList = useCallback(() => {
 		setSelectedCandidate(null);
 		setPriceConflict(null);
+		setSkuResolution(null);
 	}, []);
 
 	const handleLink = useCallback(
@@ -136,6 +146,7 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 						: { external_sku: selectedCandidate.sku }),
 					sync_stock_with_woo: syncStock,
 					...(priceResolution ? { price_resolution: priceResolution } : {}),
+					...(skuResolution ? { sku_resolution: skuResolution } : {}),
 					...(overrideDescription ? { override_description_from_woo: true } : {}),
 				});
 				setPriceConflict(null);
@@ -151,6 +162,7 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 		[
 			selectedCandidate,
 			syncStock,
+			skuResolution,
 			overrideDescription,
 			linkMutation,
 			handleCloseSearch,
@@ -384,6 +396,8 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 								onSyncStockChange={setSyncStock}
 								overrideDescription={overrideDescription}
 								onOverrideDescriptionChange={setOverrideDescription}
+								skuResolution={skuResolution}
+								onSkuResolutionChange={setSkuResolution}
 								isLinking={linkMutation.isPending}
 								onLink={handleLink}
 								onBack={handleBackToList}
@@ -696,6 +710,8 @@ interface CompareAndLinkProps {
 	onSyncStockChange: (val: boolean) => void;
 	overrideDescription: boolean;
 	onOverrideDescriptionChange: (val: boolean) => void;
+	skuResolution: WooSkuResolution | null;
+	onSkuResolutionChange: (val: WooSkuResolution) => void;
 	isLinking: boolean;
 	onLink: (priceResolution?: 'keep_erp' | 'keep_woo') => void;
 	onBack: () => void;
@@ -711,6 +727,8 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 	onSyncStockChange,
 	overrideDescription,
 	onOverrideDescriptionChange,
+	skuResolution,
+	onSkuResolutionChange,
 	isLinking,
 	onLink,
 	onBack,
@@ -720,6 +738,7 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 				erp?: { name?: string; sku?: string; price?: string | number | null };
 				woo?: { name?: string; sku?: string; price?: string | number | null };
 				prices_match?: boolean;
+				needs_sku_decision?: boolean;
 				already_linked?: boolean;
 		  }
 		| undefined;
@@ -732,6 +751,11 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 	const hasPriceConflict = priceConflict != null || (comp != null && !pricesAreEqual);
 	const conflictErpPrice = priceConflict?.erp_price ?? comp?.erp?.price ?? null;
 	const conflictWooPrice = priceConflict?.woo_price ?? comp?.woo?.price ?? null;
+
+	// El backend indica cuándo el SKU necesita una decisión consciente (difieren).
+	const needsSkuDecision = comp?.needs_sku_decision === true;
+	// Con decisión de SKU pendiente y sin elegir, se bloquea la vinculación.
+	const skuDecisionPending = needsSkuDecision && skuResolution == null;
 
 	return (
 		<div className='space-y-4'>
@@ -836,8 +860,17 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 										<td className='px-3 py-2.5 font-mono text-xs text-neutral-600 dark:text-neutral-300'>
 											{comp.erp?.sku ?? '—'}
 										</td>
-										<td className='px-3 py-2.5 font-mono text-xs text-neutral-600 dark:text-neutral-300'>
+										<td
+											className={`px-3 py-2.5 font-mono text-xs ${needsSkuDecision ? 'font-bold text-amber-600 dark:text-amber-400' : 'text-neutral-600 dark:text-neutral-300'}`}>
 											{comp.woo?.sku ?? '—'}
+											{needsSkuDecision && (
+												<Badge
+													color='amber'
+													variant='solid'
+													className='ml-2 font-sans'>
+													Difiere
+												</Badge>
+											)}
 										</td>
 									</tr>
 									<tr className='border-t border-neutral-200 dark:border-neutral-700'>
@@ -880,6 +913,64 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 						</div>
 					)}
 				</>
+			)}
+
+			{/* SKU decision (conscious) — solo cuando el backend indica que difieren */}
+			{needsSkuDecision && (
+				<div className='rounded-lg border border-sky-300 bg-sky-50 p-4 dark:border-sky-500/30 dark:bg-sky-950/30'>
+					<div className='mb-3 flex items-start gap-2.5'>
+						<div className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-sky-500/20 dark:bg-sky-500/25'>
+							<Icon
+								icon='HeroTag'
+								className='h-4 w-4 text-sky-600 dark:text-sky-400'
+							/>
+						</div>
+						<div>
+							<p className='text-sm font-bold text-sky-800 dark:text-sky-200'>
+								Los SKU no coinciden
+							</p>
+							<p className='mt-0.5 text-xs text-sky-700 dark:text-sky-300'>
+								ERP: <span className='font-mono'>{comp?.erp?.sku ?? '—'}</span> vs
+								WooCommerce: <span className='font-mono'>{comp?.woo?.sku ?? '—'}</span>
+							</p>
+							<p className='mt-1.5 text-xs font-medium text-sky-800 dark:text-sky-200'>
+								Elige qué SKU mantener (para que coincidan y evitar errores lógicos):
+							</p>
+						</div>
+					</div>
+
+					<div className='flex flex-wrap gap-2'>
+						<Tooltip text='Conserva el SKU del ERP (no cambia en el ERP)'>
+							<Button
+								variant={skuResolution === 'keep_erp' ? 'solid' : 'outline'}
+								color='blue'
+								size='sm'
+								icon='HeroCircleStack'
+								onClick={() => onSkuResolutionChange('keep_erp')}
+								isDisable={isLinking}
+								aria-label='Mantener el SKU del ERP'>
+								Mantener SKU del ERP
+							</Button>
+						</Tooltip>
+						<Tooltip text='Adopta el SKU de WooCommerce en el ERP'>
+							<Button
+								variant={skuResolution === 'keep_woo' ? 'solid' : 'outline'}
+								color='amber'
+								size='sm'
+								icon='HeroShoppingBag'
+								onClick={() => onSkuResolutionChange('keep_woo')}
+								isDisable={isLinking}
+								aria-label='Usar el SKU de WooCommerce'>
+								Usar SKU de WooCommerce
+							</Button>
+						</Tooltip>
+					</div>
+					{skuDecisionPending && (
+						<p className='mt-2 text-[11px] font-medium text-sky-700 dark:text-sky-300'>
+							Elige una opción de SKU para poder vincular.
+						</p>
+					)}
+				</div>
 			)}
 
 			{/* Price conflict resolution (from compare or link 409) */}
@@ -937,7 +1028,7 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 								size='sm'
 								icon='HeroArrowUpTray'
 								onClick={() => onLink('keep_erp')}
-								isDisable={isLinking}
+								isDisable={isLinking || skuDecisionPending}
 								isLoading={isLinking}
 								aria-label='Mantener precio del ERP'>
 								Usar precio ERP
@@ -950,7 +1041,7 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 								size='sm'
 								icon='HeroArrowDownTray'
 								onClick={() => onLink('keep_woo')}
-								isDisable={isLinking}
+								isDisable={isLinking || skuDecisionPending}
 								isLoading={isLinking}
 								aria-label='Mantener precio de WooCommerce'>
 								Usar precio WooCommerce
