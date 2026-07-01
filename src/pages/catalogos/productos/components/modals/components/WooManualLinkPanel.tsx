@@ -63,6 +63,9 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 		woo_price: string | number | null;
 	} | null>(null);
 	const [syncStock, setSyncStock] = useState(false);
+	// Al vincular, importa la descripción de WooCommerce hacia el ERP para no
+	// romper el contenido ya trabajado en la tienda.
+	const [overrideDescription, setOverrideDescription] = useState(false);
 	const [unlinkConfirmOpen, setUnlinkConfirmOpen] = useState(false);
 
 	const candidatesQuery = useWooCandidates(
@@ -132,6 +135,7 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 						: { external_sku: selectedCandidate.sku }),
 					sync_stock_with_woo: syncStock,
 					...(priceResolution ? { price_resolution: priceResolution } : {}),
+					...(overrideDescription ? { override_description_from_woo: true } : {}),
 				});
 				setPriceConflict(null);
 				handleCloseSearch();
@@ -143,7 +147,14 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 				}
 			}
 		},
-		[selectedCandidate, syncStock, linkMutation, handleCloseSearch, onLinkChange],
+		[
+			selectedCandidate,
+			syncStock,
+			overrideDescription,
+			linkMutation,
+			handleCloseSearch,
+			onLinkChange,
+		],
 	);
 
 	const handleUnlink = useCallback(async () => {
@@ -359,6 +370,8 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 								priceConflict={priceConflict}
 								syncStock={syncStock}
 								onSyncStockChange={setSyncStock}
+								overrideDescription={overrideDescription}
+								onOverrideDescriptionChange={setOverrideDescription}
 								isLinking={linkMutation.isPending}
 								onLink={handleLink}
 								onBack={handleBackToList}
@@ -669,6 +682,8 @@ interface CompareAndLinkProps {
 	} | null;
 	syncStock: boolean;
 	onSyncStockChange: (val: boolean) => void;
+	overrideDescription: boolean;
+	onOverrideDescriptionChange: (val: boolean) => void;
 	isLinking: boolean;
 	onLink: (priceResolution?: 'keep_erp' | 'keep_woo') => void;
 	onBack: () => void;
@@ -682,6 +697,8 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 	priceConflict,
 	syncStock,
 	onSyncStockChange,
+	overrideDescription,
+	onOverrideDescriptionChange,
 	isLinking,
 	onLink,
 	onBack,
@@ -887,6 +904,19 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 						label='Sincronizar stock ERP → WooCommerce al vincular'
 					/>
 
+					<Checkbox
+						id='woo_link_override_desc_conflict'
+						name='woo_link_override_desc_conflict'
+						checked={overrideDescription}
+						onChange={() => onOverrideDescriptionChange(!overrideDescription)}
+						disabled={isLinking}
+						dimension='sm'
+						label='Importar la descripción de WooCommerce al ERP'
+					/>
+					<p className='-mt-1 pl-6 text-[11px] text-neutral-500 dark:text-neutral-400'>
+						Trae la descripción ya trabajada en la tienda hacia el ERP para no romperla.
+					</p>
+
 					<div className='mt-3 flex flex-wrap gap-2'>
 						<Tooltip text='Conserva el precio del ERP y actualiza WooCommerce'>
 							<Button
@@ -934,6 +964,19 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 						dimension='sm'
 						label='Sincronizar stock ERP → WooCommerce al vincular'
 					/>
+
+					<Checkbox
+						id='woo_link_override_desc'
+						name='woo_link_override_desc'
+						checked={overrideDescription}
+						onChange={() => onOverrideDescriptionChange(!overrideDescription)}
+						disabled={isLinking}
+						dimension='sm'
+						label='Importar la descripción de WooCommerce al ERP'
+					/>
+					<p className='-mt-1 pl-6 text-[11px] text-neutral-500 dark:text-neutral-400'>
+						Trae la descripción ya trabajada en la tienda hacia el ERP para no romperla.
+					</p>
 
 					<Tooltip text='Establece el vínculo entre este producto del ERP y el seleccionado de WooCommerce'>
 						<Button
