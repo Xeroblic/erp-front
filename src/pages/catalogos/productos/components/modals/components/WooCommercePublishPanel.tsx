@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
+import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Checkbox from '@/components/form/Checkbox';
 import Icon from '@/components/icon/Icon';
@@ -14,6 +15,7 @@ import {
 	clearRemoteState,
 } from '@/store/slices/integrations/woocommerceProductsSlice';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import { useWooUnlink } from '@/services/hooks/useWooManualLink';
 import { useWooIntegrations } from '@/services/hooks/useWooIntegrations';
 import { useWooProductStatus } from '@/pages/catalogos/productos/hooks/useWooProductStatus';
 import WooManualLinkPanel from './WooManualLinkPanel';
@@ -81,6 +83,8 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 	const remoteLoading = useAppSelector((state) => state.woocommerceProducts.remoteLoading);
 
 	const [syncStock, setSyncStock] = useState(initialSyncStock);
+	const [showUnpublishConfirm, setShowUnpublishConfirm] = useState(false);
+	const [unpublishing, setUnpublishing] = useState(false);
 
 	useEffect(() => {
 		setSyncStock(initialSyncStock);
@@ -96,41 +100,81 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 	const busy = isBusy || syncingId === productId;
 	const canAct = subsidiaryId !== null && selectedIntegrationId !== null;
 
+	// Desvincular sin borrar (mismo endpoint que el botón de Emparejamiento manual),
+	// accesible directo desde el modal de confirmación para no salir de él.
+	const unlinkMutation = useWooUnlink(
+		subsidiaryId,
+		productId,
+		selectedIntegrationId ?? undefined,
+	);
+
+	const handleUnlinkWithoutDeleting = async () => {
+		if (!subsidiaryId || !selectedIntegrationId) {
+			toast.error('Selecciona una tienda WooCommerce');
+			return;
+		}
+		try {
+			await unlinkMutation.mutateAsync();
+			setShowUnpublishConfirm(false);
+			onProductRefresh?.();
+		} catch {
+			// El hook ya muestra el toast de error.
+		}
+	};
+
 	const handleToggleSync = async () => {
 		if (!subsidiaryId || !selectedIntegrationId) {
 			toast.error('Selecciona una tienda WooCommerce');
 			return;
 		}
-		const next = !isPublishedHere;
+		// Apagar el toggle envía el producto a la papelera de WooCommerce (acción
+		// destructiva). Pedimos confirmación explícita en lugar de despublicar directo.
+		if (isPublishedHere) {
+			setShowUnpublishConfirm(true);
+			return;
+		}
 		try {
-			if (next) {
-				await dispatch(
-					publishProductThunk({
-						subsidiaryId,
-						productId,
-						payload: { sync_stock_with_woo: syncStock },
-						integrationId: selectedIntegrationId,
-					}),
-				).unwrap();
-				toast.success('Producto enviado a publicar en WooCommerce');
-			} else {
-				await dispatch(
-					unpublishProductThunk({
-						subsidiaryId,
-						productId,
-						payload: { sync_stock_with_woo: syncStock },
-						integrationId: selectedIntegrationId,
-					}),
-				).unwrap();
-				toast.success('Producto despublicado de WooCommerce');
-			}
+			await dispatch(
+				publishProductThunk({
+					subsidiaryId,
+					productId,
+					payload: { sync_stock_with_woo: syncStock },
+					integrationId: selectedIntegrationId,
+				}),
+			).unwrap();
+			toast.success('Producto enviado a publicar en WooCommerce');
 			onProductRefresh?.();
 		} catch (error) {
 			toast.error(
-				typeof error === 'string'
-					? error
-					: `No se pudo ${next ? 'publicar' : 'despublicar'} el producto`,
+				typeof error === 'string' ? error : 'No se pudo publicar el producto',
 			);
+		}
+	};
+
+	const confirmUnpublish = async () => {
+		if (!subsidiaryId || !selectedIntegrationId) {
+			toast.error('Selecciona una tienda WooCommerce');
+			return;
+		}
+		setUnpublishing(true);
+		try {
+			await dispatch(
+				unpublishProductThunk({
+					subsidiaryId,
+					productId,
+					payload: { sync_stock_with_woo: syncStock },
+					integrationId: selectedIntegrationId,
+				}),
+			).unwrap();
+			toast.success('Producto eliminado de WooCommerce (enviado a la papelera)');
+			setShowUnpublishConfirm(false);
+			onProductRefresh?.();
+		} catch (error) {
+			toast.error(
+				typeof error === 'string' ? error : 'No se pudo eliminar el producto de WooCommerce',
+			);
+		} finally {
+			setUnpublishing(false);
 		}
 	};
 
@@ -521,6 +565,89 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 					)}
 				</CardBody>
 			</Card>
+
+			{/* CONFIRMACION: DESPUBLICAR = ELIMINAR EN WOO */}
+			<Modal isOpen={showUnpublishConfirm} setIsOpen={setShowUnpublishConfirm} isCentered>
+				<ModalHeader>
+					<div className='flex items-center gap-3'>
+						<span className='flex h-10 w-10 items-center justify-center rounded-full bg-red-500/20 text-red-600 dark:text-red-400'>
+							<Icon icon='HeroTrash' className='h-5 w-5' />
+						</span>
+						<div className='mt-3'>
+							<p className='text-lg font-semibold'>Eliminar de WooCommerce</p>
+							<p className='text-sm text-neutral-500'>
+								Esta acción elimina el producto publicado
+							</p>
+						</div>
+					</div>
+				</ModalHeader>
+				<ModalBody>
+					<div className='space-y-4 py-2'>
+						<div className='flex items-start gap-3 rounded-lg border border-red-300 bg-red-50 p-4 dark:border-red-500/50 dark:bg-red-500/15'>
+							<Icon
+								icon='HeroExclamationTriangle'
+								className='mt-0.5 h-5 w-5 flex-shrink-0 text-red-600 dark:text-red-400'
+							/>
+							<div className='space-y-1'>
+								<p className='text-sm font-bold text-red-900 dark:text-red-200'>
+									Esta acción eliminará el producto publicado en WooCommerce.
+								</p>
+								<p className='text-sm text-red-800 dark:text-red-100/90'>
+									El producto se enviará a la <strong>papelera</strong> de la tienda
+									y dejará de estar visible para los clientes.
+								</p>
+							</div>
+						</div>
+
+						<div className='space-y-2.5 rounded-lg border border-sky-200 bg-sky-50 p-3.5 dark:border-sky-500/30 dark:bg-sky-950/30'>
+							<div className='flex items-start gap-2.5'>
+								<Icon
+									icon='HeroInformationCircle'
+									className='mt-0.5 h-4 w-4 flex-shrink-0 text-sky-600 dark:text-sky-400'
+								/>
+								<p className='text-xs text-sky-800 dark:text-sky-200'>
+									¿Solo quieres desconectar la sincronización{' '}
+									<strong>sin borrar</strong> el producto de la tienda? Esto mantiene
+									el producto vivo en WooCommerce y solo corta la sincronización
+									automática de stock.
+								</p>
+							</div>
+							<Button
+								variant='outline'
+								color='sky'
+								size='sm'
+								icon='HeroNoSymbol'
+								className='w-full'
+								onClick={() => void handleUnlinkWithoutDeleting()}
+								isLoading={unlinkMutation.isPending}
+								isDisable={busy || unpublishing || unlinkMutation.isPending}>
+								{unlinkMutation.isPending
+									? 'Desvinculando…'
+									: 'Desvincular sin borrar'}
+							</Button>
+						</div>
+					</div>
+				</ModalBody>
+				<ModalFooter>
+					<div className='flex w-full justify-end gap-3'>
+						<Button
+							variant='outline'
+							onClick={() => setShowUnpublishConfirm(false)}
+							isDisable={unpublishing || unlinkMutation.isPending}>
+							Cancelar
+						</Button>
+						<Button
+							variant='solid'
+							color='red'
+							icon='HeroTrash'
+							onClick={() => void confirmUnpublish()}
+							isLoading={unpublishing}
+							isDisable={unpublishing || unlinkMutation.isPending}>
+							{unpublishing ? 'Eliminando…' : 'Sí, eliminar de WooCommerce'}
+						</Button>
+					</div>
+				</ModalFooter>
+			</Modal>
 		</div>
 	);
 };
