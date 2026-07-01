@@ -386,12 +386,18 @@ export const useItemReview = (): UseItemReviewReturn => {
 
 			setItem((prevItem: any) => ({
 				...prevItem,
-				suggested_grade: grading?.grade || grading?.suggested_grade,
+				// Al recalcular queremos el grado NUEVO sugerido por el backend, no el
+				// grado actual del equipo. `grade` es el grado vigente (no cambia al
+				// recalcular); `suggested_grade` es la nueva sugerencia.
+				suggested_grade: grading?.suggested_grade || grading?.grade,
 				confidence: grading?.confidence,
 				breakdown: grading?.breakdown,
 				review_status: grading?.review_status ?? prevItem?.review_status,
+				// Recalcular reabre la revisión: deja de estar aprobada, así el display
+				// usa `suggested_grade` (nuevo) en vez de `grade` (aprobado anterior).
+				approved_at: null,
 			}));
-			setAutomaticGrade(grading?.grade ?? null);
+			setAutomaticGrade(grading?.suggested_grade ?? grading?.grade ?? null);
 			toast.success('Grado recalculado');
 		} catch (error) {
 			toast.error(`Error al recalcular grado: ${error}`);

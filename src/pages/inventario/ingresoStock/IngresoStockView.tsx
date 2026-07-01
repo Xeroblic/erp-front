@@ -42,14 +42,13 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 
 	const isDetailVisible = selectedProduct !== null && !isWorkspaceOpen;
 
-	// IDs ya presentes en la zona de trabajo, para deshabilitar su re-selección en el catálogo.
 	const workspaceProductIds = useMemo(
 		() => new Set(workItems.map((item) => item.productId)),
 		[workItems],
 	);
 
 	return (
-		<PageWrapper>
+		<PageWrapper title='Ajuste Stock' name='Admin Stock' isProtectedRoute={true}>
 			<Subheader>
 				<SubheaderLeft>
 					<div className='flex items-center space-x-3'>
