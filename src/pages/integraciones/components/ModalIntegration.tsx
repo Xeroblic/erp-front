@@ -40,16 +40,28 @@ const getWebhookEventMeta = (event?: string | null) =>
 	WEBHOOK_EVENTS.find((entry) => entry.value === event) ?? WEBHOOK_EVENTS[0];
 
 /**
- * Base pública del BACKEND para la URL de entrega del webhook. WooCommerce debe
- * pegarle al backend (donde vive la ruta), no al frontend, por eso se usa
- * `VITE_API_URL` (que ya incluye `/api`) y no `window.location.origin`. En dev el
- * backend suele estar tras un túnel; basta con apuntar `VITE_API_URL` a ese túnel.
+ * Base pública del BACKEND para armar la URL de entrega del webhook, que Woo
+ * (internet) debe alcanzar. NO es necesariamente `VITE_API_URL`: en dev el front
+ * apunta al backend local (`http://127.0.0.1:8000/api`) por velocidad, pero el
+ * webhook necesita la URL pública del backend (normalmente un túnel). Por eso el
+ * default solo usa una URL si es pública (https y no localhost); si no, se deja
+ * vacío para que el usuario pegue su túnel en el campo editable del modal.
  */
-const getWebhookBaseUrl = (): string => {
+const isPublicHttpsUrl = (value: string): boolean =>
+	/^https:\/\//i.test(value) && !/(localhost|127\.0\.0\.1|0\.0\.0\.0)/i.test(value);
+
+const getDefaultWebhookBaseUrl = (): string => {
+	const explicit = (import.meta.env.VITE_WEBHOOK_PUBLIC_URL as string | undefined)?.trim();
+	if (explicit) return explicit.replace(/\/+$/, '');
 	const apiUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
-	if (apiUrl) return apiUrl.replace(/\/+$/, '');
-	// Fallback: mismo origen que el front + /api (solo válido si comparten dominio).
-	return `${window.location.origin}/api`;
+	if (apiUrl && isPublicHttpsUrl(apiUrl)) return apiUrl.replace(/\/+$/, '');
+	return '';
+};
+
+const buildWebhookUrl = (baseUrl: string, apiKey: string, urlSuffix: string): string => {
+	const base = baseUrl.trim().replace(/\/+$/, '');
+	if (!base) return '';
+	return `${base}/integrations/woocommerce/webhooks/${apiKey}/${urlSuffix}`;
 };
 
 interface ModalIntegrationProps {
@@ -78,6 +90,11 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 	}>({});
 	const apiKeyInputId = useId();
 	const webhookInputId = useId();
+	const webhookBaseInputId = useId();
+
+	// Dominio público del backend para la URL del webhook (editable: el usuario
+	// pega su túnel actual sin tocar el .env ni reiniciar Vite).
+	const [webhookBaseUrl, setWebhookBaseUrl] = useState<string>(getDefaultWebhookBaseUrl);
 
 	// Form state
 	const [formData, setFormData] = useState<Partial<CreateIntegrationPayload>>({
@@ -383,33 +400,61 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 								</div>
 								{formData.mode === 'webhook' &&
 									(() => {
-										const webhookUrl = `${getWebhookBaseUrl()}/integrations/woocommerce/webhooks/${secrets.api_key}/${getWebhookEventMeta(formData.event).urlSuffix}`;
+										const webhookUrl = buildWebhookUrl(
+											webhookBaseUrl,
+											secrets.api_key ?? '',
+											getWebhookEventMeta(formData.event).urlSuffix,
+										);
 										return (
-											<div className='mt-2'>
-												<p className='text-xs font-medium text-gray-700 dark:text-gray-200'>
+											<div className='mt-3 space-y-2 rounded-md border border-blue-200 bg-blue-50/60 p-3 dark:border-blue-500/30 dark:bg-blue-950/30'>
+												<Label htmlFor={webhookBaseInputId} className='mb-0'>
+													Dominio público del backend (túnel)
+												</Label>
+												<Input
+													id={webhookBaseInputId}
+													name='webhook_base_url'
+													type='text'
+													value={webhookBaseUrl}
+													onChange={(e) => setWebhookBaseUrl(e.target.value)}
+													placeholder='https://tu-tunel.loca.lt/api'
+													className='font-mono text-sm dark:bg-neutral-900 dark:text-white'
+												/>
+												<p className='text-xs text-gray-500'>
+													La URL pública del backend que WooCommerce debe
+													alcanzar (tu túnel). No es tu <code>VITE_API_URL</code>{' '}
+													si apunta a localhost.
+												</p>
+
+												<p className='pt-1 text-xs font-medium text-gray-700 dark:text-gray-200'>
 													URL de entrega (pégala en WooCommerce):
 												</p>
-												<div className='mt-1 flex gap-2'>
-													<code className='flex-1 overflow-x-auto rounded bg-gray-100 px-2 py-1 text-xs dark:bg-neutral-800'>
-														{webhookUrl}
-													</code>
-													<Button
-														size='sm'
-														icon='HeroClipboard'
-														onClick={() =>
-															handleCopySecret(
-																webhookUrl,
-																'URL del Webhook',
-															)
-														}>
-														Copiar
-													</Button>
-												</div>
-												<p className='mt-1 text-xs text-gray-500'>
+												{webhookUrl ? (
+													<div className='flex gap-2'>
+														<code className='flex-1 overflow-x-auto rounded bg-white px-2 py-1 text-xs dark:bg-neutral-800'>
+															{webhookUrl}
+														</code>
+														<Button
+															size='sm'
+															icon='HeroClipboard'
+															onClick={() =>
+																handleCopySecret(
+																	webhookUrl,
+																	'URL del Webhook',
+																)
+															}>
+															Copiar
+														</Button>
+													</div>
+												) : (
+													<p className='text-xs italic text-amber-600 dark:text-amber-400'>
+														Ingresa el dominio público del backend (túnel) para
+														generar la URL.
+													</p>
+												)}
+												<p className='text-xs text-gray-500'>
 													Solo el <strong>API Key</strong> va en la URL. El{' '}
 													<strong>Webhook Secret</strong> va en el campo
-													&ldquo;Secreto&rdquo; de WooCommerce, no en la
-													URL.
+													&ldquo;Secreto&rdquo; de WooCommerce, no en la URL.
 												</p>
 											</div>
 										);
