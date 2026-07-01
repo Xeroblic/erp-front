@@ -274,26 +274,26 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 			/>
 
 			{/* ═══════════════════════ 1. PUBLICACIÓN ═══════════════════════ */}
-			<Card className='overflow-hidden border border-amber-200/60 shadow-sm dark:border-amber-500/20'>
-				<CardHeader className='border-b border-amber-100 bg-amber-50 pb-3 dark:border-amber-500/10 dark:bg-amber-950/30'>
+			<Card className='overflow-hidden border border-violet-200/60 shadow-sm dark:border-violet-500/20'>
+				<CardHeader className='border-b border-violet-100 bg-violet-50 pb-3 dark:border-violet-500/10 dark:bg-violet-950/30'>
 					<div className='flex items-center gap-3'>
-						<div className='flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/15 ring-1 ring-amber-500/25 dark:bg-amber-500/20 dark:ring-amber-400/30'>
+						<div className='flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500/15 ring-1 ring-violet-500/25 dark:bg-violet-500/20 dark:ring-violet-400/30'>
 							<Icon
 								icon='HeroShoppingBag'
-								className='h-5 w-5 text-amber-600 dark:text-amber-400'
+								className='h-5 w-5 text-violet-600 dark:text-violet-400'
 							/>
 						</div>
 						<div className='flex-1'>
 							<CardTitle className='text-base font-bold text-neutral-900 dark:text-neutral-50'>
 								Publicación en tienda
 							</CardTitle>
-							<p className='mt-0.5 text-xs text-amber-700/70 dark:text-amber-300/70'>
+							<p className='mt-0.5 text-xs text-violet-700/70 dark:text-violet-300/70'>
 								Controla si este producto se publica y mantiene sincronizado en
 								WooCommerce.
 							</p>
 						</div>
 						{isPublishedHere ? (
-							<Badge color='green' variant='solid'>
+							<Badge color='emerald' variant='solid'>
 								Publicado aquí
 							</Badge>
 						) : (
@@ -304,7 +304,7 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 						<Tooltip text='¿Cómo funciona la sincronización con WooCommerce?'>
 							<Button
 								variant='outline'
-								color='amber'
+								color='violet'
 								size='sm'
 								icon='HeroQuestionMarkCircle'
 								onClick={() => setShowGuide(true)}
@@ -412,7 +412,7 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 						<Tooltip text='Fuerza una actualización completa del producto en WooCommerce'>
 							<Button
 								variant='solid'
-								color='amber'
+								color='violet'
 								size='sm'
 								icon='HeroArrowPath'
 								onClick={() => void handleUpdatePublication()}
@@ -508,7 +508,7 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 								</span>
 								{remote ? (
 									<>
-										<Badge color='green' variant='solid'>
+										<Badge color='emerald' variant='solid'>
 											Encontrado
 										</Badge>
 										<span className='text-xs text-neutral-500 dark:text-neutral-400'>

@@ -59,7 +59,7 @@ const WooIntegrationSelector: React.FC<WooIntegrationSelectorProps> = ({
 					{integration.name}
 				</span>
 				{integration.is_active ? (
-					<Badge color='green' variant='solid' className='ml-auto'>
+					<Badge color='emerald' variant='solid' className='ml-auto'>
 						Conectada
 					</Badge>
 				) : (

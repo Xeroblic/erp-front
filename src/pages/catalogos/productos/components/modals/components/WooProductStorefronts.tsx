@@ -73,7 +73,7 @@ const WooProductStorefronts: React.FC<WooProductStorefrontsProps> = ({
 							key={link.integrationId ?? `link-${idx}`}
 							className={`flex items-center gap-2.5 rounded-md border p-2.5 transition-colors ${
 								isActive
-									? 'border-violet-300 bg-violet-50 dark:border-violet-500/40 dark:bg-violet-950/30'
+									? 'border-emerald-400 bg-emerald-100/60 ring-1 ring-emerald-300 dark:border-emerald-500/50 dark:bg-emerald-900/30 dark:ring-emerald-500/30'
 									: 'border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800/50'
 							}`}>
 							<div
@@ -98,7 +98,7 @@ const WooProductStorefronts: React.FC<WooProductStorefrontsProps> = ({
 										{name}
 									</span>
 									{isActive && (
-										<Badge color='violet' variant='solid'>
+										<Badge color='emerald' variant='solid'>
 											Seleccionada
 										</Badge>
 									)}
