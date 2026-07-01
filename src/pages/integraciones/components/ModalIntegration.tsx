@@ -50,12 +50,31 @@ const getWebhookEventMeta = (event?: string | null) =>
 const isPublicHttpsUrl = (value: string): boolean =>
 	/^https:\/\//i.test(value) && !/(localhost|127\.0\.0\.1|0\.0\.0\.0)/i.test(value);
 
+// Recuerda el último dominio de túnel usado, para no re-tipearlo cada vez que se
+// abre el modal (el túnel rota, pero suele ser el mismo dentro de una sesión).
+const WEBHOOK_BASE_STORAGE_KEY = 'woo_webhook_public_base_url';
+
 const getDefaultWebhookBaseUrl = (): string => {
+	try {
+		const stored = localStorage.getItem(WEBHOOK_BASE_STORAGE_KEY)?.trim();
+		if (stored) return stored.replace(/\/+$/, '');
+	} catch {
+		// localStorage no disponible: se ignora.
+	}
 	const explicit = (import.meta.env.VITE_WEBHOOK_PUBLIC_URL as string | undefined)?.trim();
 	if (explicit) return explicit.replace(/\/+$/, '');
 	const apiUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
 	if (apiUrl && isPublicHttpsUrl(apiUrl)) return apiUrl.replace(/\/+$/, '');
 	return '';
+};
+
+const rememberWebhookBaseUrl = (value: string): void => {
+	try {
+		const trimmed = value.trim();
+		if (trimmed) localStorage.setItem(WEBHOOK_BASE_STORAGE_KEY, trimmed);
+	} catch {
+		// localStorage no disponible: se ignora.
+	}
 };
 
 const buildWebhookUrl = (baseUrl: string, apiKey: string, urlSuffix: string): string => {
@@ -415,7 +434,10 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 													name='webhook_base_url'
 													type='text'
 													value={webhookBaseUrl}
-													onChange={(e) => setWebhookBaseUrl(e.target.value)}
+													onChange={(e) => {
+														setWebhookBaseUrl(e.target.value);
+														rememberWebhookBaseUrl(e.target.value);
+													}}
 													placeholder='https://tu-tunel.loca.lt/api'
 													className='font-mono text-sm dark:bg-neutral-900 dark:text-white'
 												/>
