@@ -205,22 +205,35 @@ export const IntegrationsListContent: React.FC = () => {
 						read_write: 'emerald',
 					};
 					const { label, icons } = getModeInfo(row.original.mode);
+					const webhookEvent =
+						row.original.mode === 'webhook' ? row.original.event : null;
 					return (
-						<Tooltip text={label}>
-							<span className='inline-block'>
+						<div className='flex items-center gap-1.5'>
+							<Tooltip text={label}>
+								<span className='inline-block'>
+									<Badge
+										variant='outline'
+										rounded='rounded-full'
+										color={modeColors[row.original.mode] || 'zinc'}
+										className='py-1 px-1.5 flex items-center justify-center shadow-sm w-fit'>
+										<span className='flex items-center gap-0.5'>
+											{icons.map((ic) => (
+												<Icon key={ic} icon={ic as any} className='text-2xl' />
+											))}
+										</span>
+									</Badge>
+								</span>
+							</Tooltip>
+							{webhookEvent && (
 								<Badge
 									variant='outline'
 									rounded='rounded-full'
-									color={modeColors[row.original.mode] || 'zinc'}
-									className='py-1 px-1.5 flex items-center justify-center shadow-sm w-fit'>
-									<span className='flex items-center gap-0.5'>
-										{icons.map((ic) => (
-											<Icon key={ic} icon={ic as any} className='text-2xl' />
-										))}
-									</span>
+									color={webhookEvent.startsWith('product') ? 'violet' : 'blue'}
+									className='w-fit px-2 py-0.5'>
+									{webhookEvent}
 								</Badge>
-							</span>
-						</Tooltip>
+							)}
+						</div>
 					);
 				},
 			},
