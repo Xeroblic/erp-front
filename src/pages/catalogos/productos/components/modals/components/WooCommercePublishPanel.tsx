@@ -21,6 +21,11 @@ import { useWooProductStatus } from '@/pages/catalogos/productos/hooks/useWooPro
 import WooManualLinkPanel from './WooManualLinkPanel';
 import WooIntegrationSelector from './WooIntegrationSelector';
 import WooProductStorefronts from './WooProductStorefronts';
+import WooSyncGuide from './WooSyncGuide';
+
+// Flag de "ya viste la guía" — se muestra automáticamente la primera vez que se
+// abre el panel de WooCommerce; luego queda disponible desde el botón de ayuda.
+const WOO_GUIDE_SEEN_KEY = 'woo_sync_guide_seen_v1';
 
 interface WooCommercePublishPanelProps {
 	productId: number;
@@ -85,6 +90,27 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 	const [syncStock, setSyncStock] = useState(initialSyncStock);
 	const [showUnpublishConfirm, setShowUnpublishConfirm] = useState(false);
 	const [unpublishing, setUnpublishing] = useState(false);
+	const [showGuide, setShowGuide] = useState(false);
+
+	// Muestra la guía automáticamente la primera vez que se abre el panel.
+	useEffect(() => {
+		try {
+			if (!localStorage.getItem(WOO_GUIDE_SEEN_KEY)) {
+				setShowGuide(true);
+			}
+		} catch {
+			// localStorage no disponible: no bloquea el panel.
+		}
+	}, []);
+
+	const closeGuide = useCallback(() => {
+		setShowGuide(false);
+		try {
+			localStorage.setItem(WOO_GUIDE_SEEN_KEY, '1');
+		} catch {
+			// Ignorar si localStorage no está disponible.
+		}
+	}, []);
 
 	useEffect(() => {
 		setSyncStock(initialSyncStock);
@@ -269,6 +295,17 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 								No publicado aquí
 							</Badge>
 						)}
+						<Tooltip text='¿Cómo funciona la sincronización con WooCommerce?'>
+							<Button
+								variant='outline'
+								color='amber'
+								size='sm'
+								icon='HeroQuestionMarkCircle'
+								onClick={() => setShowGuide(true)}
+								aria-label='Ver guía de sincronización con WooCommerce'>
+								Cómo funciona
+							</Button>
+						</Tooltip>
 					</div>
 				</CardHeader>
 				<CardBody className='space-y-4'>
@@ -648,6 +685,9 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 					</div>
 				</ModalFooter>
 			</Modal>
+
+			{/* ═══════════════ GUÍA: CÓMO FUNCIONA LA SINCRONIZACIÓN ═══════════════ */}
+			<WooSyncGuide isOpen={showGuide} onClose={closeGuide} />
 		</div>
 	);
 };
