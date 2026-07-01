@@ -244,6 +244,12 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 	const remote = remoteState?.remote ?? null;
 	const priceDiff = !!local && !!remote && toNumber(local.price) !== toNumber(remote.price);
 	const stockDiff = !!local && !!remote && toNumber(local.stock) !== toNumber(remote.stock);
+	// Estado del ERP para el diagnóstico: el payload local no trae `status`, pero
+	// sí sabemos si el producto está publicado aquí. Consideramos que coinciden
+	// cuando ambos están "publicados" (ERP publicado ↔ Woo en estado `publish`).
+	const localStatusLabel = isPublishedHere ? 'Publicado' : 'No publicado';
+	const statusDiff =
+		!!remote && (remote.status === 'publish') !== isPublishedHere;
 
 	const handleLinkChange = useCallback(() => {
 		onProductRefresh?.();
@@ -547,11 +553,18 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 												<td className='px-3 py-2.5 font-medium text-neutral-700 dark:text-neutral-200'>
 													Estado
 												</td>
-												<td className='px-3 py-2.5 text-neutral-600 dark:text-neutral-300'>
-													—
+												<td
+													className={`px-3 py-2.5 ${statusDiff ? 'font-semibold text-rose-600 dark:text-rose-400' : 'text-neutral-600 dark:text-neutral-300'}`}>
+													{localStatusLabel}
 												</td>
-												<td className='px-3 py-2.5 text-neutral-600 dark:text-neutral-300'>
+												<td
+													className={`px-3 py-2.5 ${statusDiff ? 'font-semibold text-rose-600 dark:text-rose-400' : 'text-neutral-600 dark:text-neutral-300'}`}>
 													{formatValue(remote.status)}
+													{statusDiff && (
+														<Badge color='red' variant='solid' className='ml-2'>
+															Difiere
+														</Badge>
+													)}
 												</td>
 											</tr>
 											<tr className='border-t border-neutral-100 dark:border-neutral-700'>
