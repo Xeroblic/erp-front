@@ -108,9 +108,7 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 						<p className='text-center text-red-500'>Error: {productsError}</p>
 					)}
 
-					{/* ─── Grid Principal: Catálogo + Detalle ─── */}
 					<div className='grid grid-cols-1 gap-6 lg:grid-cols-12'>
-						{/* COLUMNA IZQUIERDA: Catálogo de Productos */}
 						<div
 							className={`col-span-1 transition-all duration-300 ${
 								isDetailVisible ? 'lg:col-span-7' : 'lg:col-span-12'
