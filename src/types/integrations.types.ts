@@ -10,6 +10,8 @@ export interface Integration {
 	provider: IntegrationProvider;
 	base_url: string;
 	mode: IntegrationMode;
+	/** Evento del webhook (p. ej. `order.created`, `product.updated`). */
+	event?: string | null;
 	is_active: boolean;
 	scopes: string[] | null;
 	allowed_ips: string[] | null;
@@ -31,9 +33,13 @@ export interface CreateIntegrationPayload {
 	provider: IntegrationProvider;
 	base_url: string;
 	mode: IntegrationMode;
+	/** Evento del webhook (requerido cuando `mode = webhook`). */
+	event?: string;
+	/** Alcances del webhook (p. ej. `["products"]` o `["orders"]`). */
+	scopes?: string[];
 	is_active: boolean;
 	consumer_key?: string;
-	consumer_secret?: string; 
+	consumer_secret?: string;
 	[key: string]: any;
 }
 

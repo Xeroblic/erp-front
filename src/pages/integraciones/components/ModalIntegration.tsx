@@ -23,6 +23,22 @@ import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelecto
 import classNames from 'classnames';
 import WebhookCatalogPanel from './WebhookCatalogPanel';
 
+/**
+ * Eventos de webhook soportados por el ERP. Cada evento define su scope y el
+ * sufijo de la ruta de entrega que WooCommerce debe llamar (los pedidos usan
+ * `/orders`; los productos usan `/products`).
+ */
+const WEBHOOK_EVENTS = [
+	{ value: 'order.created', label: 'Pedido creado (order.created)', scope: 'orders', urlSuffix: 'orders' },
+	{ value: 'order.updated', label: 'Pedido actualizado (order.updated)', scope: 'orders', urlSuffix: 'orders' },
+	{ value: 'product.updated', label: 'Producto actualizado (product.updated)', scope: 'products', urlSuffix: 'products' },
+] as const;
+
+const DEFAULT_WEBHOOK_EVENT = WEBHOOK_EVENTS[0].value;
+
+const getWebhookEventMeta = (event?: string | null) =>
+	WEBHOOK_EVENTS.find((entry) => entry.value === event) ?? WEBHOOK_EVENTS[0];
+
 interface ModalIntegrationProps {
 	isOpen: boolean;
 	onClose: () => void;
@@ -56,6 +72,7 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 		provider: 'woocommerce',
 		base_url: '',
 		mode: 'webhook',
+		event: DEFAULT_WEBHOOK_EVENT,
 		is_active: true,
 		consumer_key: '',
 		consumer_secret: '',
@@ -68,6 +85,7 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 				provider: integration.provider,
 				base_url: integration.base_url,
 				mode: integration.mode,
+				event: integration.event ?? DEFAULT_WEBHOOK_EVENT,
 				is_active: integration.is_active,
 			});
 		} else if (mode === 'create') {
@@ -77,6 +95,7 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 				provider: 'woocommerce',
 				base_url: '',
 				mode: 'webhook',
+				event: DEFAULT_WEBHOOK_EVENT,
 				is_active: true,
 				consumer_key: '',
 				consumer_secret: '',
@@ -100,10 +119,24 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 
 		try {
 			if (mode === 'create') {
+				// En modo webhook el backend exige `event`; derivamos el `scopes`
+				// desde el evento seleccionado (orders → ["orders"], product → ["products"]).
+				const payload: CreateIntegrationPayload = {
+					...(formData as CreateIntegrationPayload),
+				};
+				if (formData.mode === 'webhook') {
+					const eventMeta = getWebhookEventMeta(formData.event);
+					payload.event = eventMeta.value;
+					payload.scopes = [eventMeta.scope];
+				} else {
+					delete payload.event;
+					delete payload.scopes;
+				}
+
 				const resultAction = await dispatch(
 					createIntegration({
 						subsidiaryId,
-						payload: formData as CreateIntegrationPayload,
+						payload,
 					}),
 				);
 
@@ -340,8 +373,8 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 										URL del Webhook:{' '}
 										<code className='rounded bg-gray-100 px-2 py-1'>
 											{window.location.origin}
-											/api/integrations/woocommerce/webhooks/{secrets.api_key}
-											/orders
+											/api/integrations/woocommerce/webhooks/{secrets.api_key}/
+											{getWebhookEventMeta(formData.event).urlSuffix}
 										</code>
 									</p>
 								)}
@@ -474,19 +507,52 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 								}
 								disabled={mode !== 'create'}
 								required>
-								<option value='webhook'>Webhook (Solo recibir órdenes)</option>
+								<option value='webhook'>Webhook (recibir eventos)</option>
 								<option value='read'>API REST - Solo Lectura</option>
 								<option value='read_write'>API REST - Lectura/Escritura</option>
 							</Select>
 							<p className='mt-1 text-xs text-gray-500'>
 								{formData.mode === 'webhook' &&
-									'Webhook: WooCommerce enviará las órdenes automáticamente'}
+									'Webhook: WooCommerce enviará los eventos automáticamente'}
 								{formData.mode === 'read' &&
 									'Solo Lectura: Consultar órdenes de WooCommerce'}
 								{formData.mode === 'read_write' &&
 									'Lectura/Escritura: Consultar y sincronizar stock'}
 							</p>
 						</div>
+
+						{/* Evento del webhook (define scope y ruta de entrega) */}
+						{formData.mode === 'webhook' && (
+							<div>
+								<Label htmlFor='event'>Evento del Webhook</Label>
+								<Select
+									id='event'
+									name='event'
+									value={formData.event ?? DEFAULT_WEBHOOK_EVENT}
+									onChange={(e) =>
+										setFormData({ ...formData, event: e.target.value })
+									}
+									disabled={mode !== 'create'}
+									required>
+									{WEBHOOK_EVENTS.map((entry) => (
+										<option key={entry.value} value={entry.value}>
+											{entry.label}
+										</option>
+									))}
+								</Select>
+								<p className='mt-1 text-xs text-gray-500'>
+									Alcance:{' '}
+									<code className='rounded bg-gray-100 px-1.5 py-0.5 dark:bg-neutral-800'>
+										{getWebhookEventMeta(formData.event).scope}
+									</code>{' '}
+									· La URL de entrega terminará en{' '}
+									<code className='rounded bg-gray-100 px-1.5 py-0.5 dark:bg-neutral-800'>
+										/{getWebhookEventMeta(formData.event).urlSuffix}
+									</code>
+									.
+								</p>
+							</div>
+						)}
 
 						{/* Catálogo dinámico de eventos soportados (solo aplica a webhooks) */}
 						{formData.mode === 'webhook' && (
