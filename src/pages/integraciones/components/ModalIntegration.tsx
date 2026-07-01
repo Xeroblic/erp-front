@@ -39,6 +39,19 @@ const DEFAULT_WEBHOOK_EVENT = WEBHOOK_EVENTS[0].value;
 const getWebhookEventMeta = (event?: string | null) =>
 	WEBHOOK_EVENTS.find((entry) => entry.value === event) ?? WEBHOOK_EVENTS[0];
 
+/**
+ * Base pública del BACKEND para la URL de entrega del webhook. WooCommerce debe
+ * pegarle al backend (donde vive la ruta), no al frontend, por eso se usa
+ * `VITE_API_URL` (que ya incluye `/api`) y no `window.location.origin`. En dev el
+ * backend suele estar tras un túnel; basta con apuntar `VITE_API_URL` a ese túnel.
+ */
+const getWebhookBaseUrl = (): string => {
+	const apiUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
+	if (apiUrl) return apiUrl.replace(/\/+$/, '');
+	// Fallback: mismo origen que el front + /api (solo válido si comparten dominio).
+	return `${window.location.origin}/api`;
+};
+
 interface ModalIntegrationProps {
 	isOpen: boolean;
 	onClose: () => void;
@@ -368,16 +381,39 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 										Copiar
 									</Button>
 								</div>
-								{formData.mode === 'webhook' && (
-									<p className='mt-2 text-xs text-gray-600 dark:text-gray-300'>
-										URL del Webhook:{' '}
-										<code className='rounded bg-gray-100 px-2 py-1'>
-											{window.location.origin}
-											/api/integrations/woocommerce/webhooks/{secrets.api_key}/
-											{getWebhookEventMeta(formData.event).urlSuffix}
-										</code>
-									</p>
-								)}
+								{formData.mode === 'webhook' &&
+									(() => {
+										const webhookUrl = `${getWebhookBaseUrl()}/integrations/woocommerce/webhooks/${secrets.api_key}/${getWebhookEventMeta(formData.event).urlSuffix}`;
+										return (
+											<div className='mt-2'>
+												<p className='text-xs font-medium text-gray-700 dark:text-gray-200'>
+													URL de entrega (pégala en WooCommerce):
+												</p>
+												<div className='mt-1 flex gap-2'>
+													<code className='flex-1 overflow-x-auto rounded bg-gray-100 px-2 py-1 text-xs dark:bg-neutral-800'>
+														{webhookUrl}
+													</code>
+													<Button
+														size='sm'
+														icon='HeroClipboard'
+														onClick={() =>
+															handleCopySecret(
+																webhookUrl,
+																'URL del Webhook',
+															)
+														}>
+														Copiar
+													</Button>
+												</div>
+												<p className='mt-1 text-xs text-gray-500'>
+													Solo el <strong>API Key</strong> va en la URL. El{' '}
+													<strong>Webhook Secret</strong> va en el campo
+													&ldquo;Secreto&rdquo; de WooCommerce, no en la
+													URL.
+												</p>
+											</div>
+										);
+									})()}
 							</div>
 						)}
 
