@@ -434,8 +434,10 @@ export interface WooCandidate {
 	sku: string;
 	price: string | number | null;
 	status: string | null;
+	/** Stock normalizado (el backend lo expone como `stock`). */
 	stock_quantity: number | null;
 	permalink: string | null;
+	/** Normalizado desde `link_status.is_linked` cuando el backend no lo envía plano. */
 	already_linked: boolean;
 }
 

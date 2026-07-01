@@ -189,7 +189,18 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 			const id = (r.id ?? r.woo_id ?? r.external_product_id ?? r.product_id) as
 				| number
 				| undefined;
-			return { ...r, id } as WooCandidate;
+			// El backend expone el stock como `stock` (no `stock_quantity`).
+			const stockQuantity = (r.stock_quantity ?? r.stock ?? null) as number | null;
+			// `already_linked` puede venir directo o dentro de `link_status.is_linked`
+			// (vinculado a este u otro producto: en ambos casos no es seleccionable).
+			const linkStatus = r.link_status as Record<string, unknown> | undefined;
+			const alreadyLinked = Boolean(r.already_linked ?? linkStatus?.is_linked ?? false);
+			return {
+				...r,
+				id,
+				stock_quantity: stockQuantity,
+				already_linked: alreadyLinked,
+			} as WooCandidate;
 		});
 	}, [candidatesQuery.data]);
 
