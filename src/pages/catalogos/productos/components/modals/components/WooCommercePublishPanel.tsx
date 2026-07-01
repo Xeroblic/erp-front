@@ -15,6 +15,7 @@ import {
 	clearRemoteState,
 } from '@/store/slices/integrations/woocommerceProductsSlice';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import { useWooUnlink } from '@/services/hooks/useWooManualLink';
 import { useWooIntegrations } from '@/services/hooks/useWooIntegrations';
 import { useWooProductStatus } from '@/pages/catalogos/productos/hooks/useWooProductStatus';
 import WooManualLinkPanel from './WooManualLinkPanel';
@@ -98,6 +99,28 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 
 	const busy = isBusy || syncingId === productId;
 	const canAct = subsidiaryId !== null && selectedIntegrationId !== null;
+
+	// Desvincular sin borrar (mismo endpoint que el botón de Emparejamiento manual),
+	// accesible directo desde el modal de confirmación para no salir de él.
+	const unlinkMutation = useWooUnlink(
+		subsidiaryId,
+		productId,
+		selectedIntegrationId ?? undefined,
+	);
+
+	const handleUnlinkWithoutDeleting = async () => {
+		if (!subsidiaryId || !selectedIntegrationId) {
+			toast.error('Selecciona una tienda WooCommerce');
+			return;
+		}
+		try {
+			await unlinkMutation.mutateAsync();
+			setShowUnpublishConfirm(false);
+			onProductRefresh?.();
+		} catch {
+			// El hook ya muestra el toast de error.
+		}
+	};
 
 	const handleToggleSync = async () => {
 		if (!subsidiaryId || !selectedIntegrationId) {
@@ -576,18 +599,32 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 							</div>
 						</div>
 
-						<div className='flex items-start gap-2.5 rounded-lg border border-sky-200 bg-sky-50 p-3.5 dark:border-sky-500/30 dark:bg-sky-950/30'>
-							<Icon
-								icon='HeroInformationCircle'
-								className='mt-0.5 h-4 w-4 flex-shrink-0 text-sky-600 dark:text-sky-400'
-							/>
-							<p className='text-xs text-sky-800 dark:text-sky-200'>
-								¿Solo quieres desconectar la sincronización sin borrar el producto de
-								la tienda? Usa el botón{' '}
-								<strong>&ldquo;Desvincular de WooCommerce&rdquo;</strong> en la sección
-								<strong> Emparejamiento manual</strong>. Eso mantiene el producto vivo
-								en WooCommerce y solo corta la sincronización automática.
-							</p>
+						<div className='space-y-2.5 rounded-lg border border-sky-200 bg-sky-50 p-3.5 dark:border-sky-500/30 dark:bg-sky-950/30'>
+							<div className='flex items-start gap-2.5'>
+								<Icon
+									icon='HeroInformationCircle'
+									className='mt-0.5 h-4 w-4 flex-shrink-0 text-sky-600 dark:text-sky-400'
+								/>
+								<p className='text-xs text-sky-800 dark:text-sky-200'>
+									¿Solo quieres desconectar la sincronización{' '}
+									<strong>sin borrar</strong> el producto de la tienda? Esto mantiene
+									el producto vivo en WooCommerce y solo corta la sincronización
+									automática de stock.
+								</p>
+							</div>
+							<Button
+								variant='outline'
+								color='sky'
+								size='sm'
+								icon='HeroNoSymbol'
+								className='w-full'
+								onClick={() => void handleUnlinkWithoutDeleting()}
+								isLoading={unlinkMutation.isPending}
+								isDisable={busy || unpublishing || unlinkMutation.isPending}>
+								{unlinkMutation.isPending
+									? 'Desvinculando…'
+									: 'Desvincular sin borrar'}
+							</Button>
 						</div>
 					</div>
 				</ModalBody>
@@ -596,7 +633,7 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 						<Button
 							variant='outline'
 							onClick={() => setShowUnpublishConfirm(false)}
-							isDisable={unpublishing}>
+							isDisable={unpublishing || unlinkMutation.isPending}>
 							Cancelar
 						</Button>
 						<Button
@@ -605,7 +642,7 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 							icon='HeroTrash'
 							onClick={() => void confirmUnpublish()}
 							isLoading={unpublishing}
-							isDisable={unpublishing}>
+							isDisable={unpublishing || unlinkMutation.isPending}>
 							{unpublishing ? 'Eliminando…' : 'Sí, eliminar de WooCommerce'}
 						</Button>
 					</div>
