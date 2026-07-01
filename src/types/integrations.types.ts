@@ -400,6 +400,7 @@ export interface WooRemoteState {
 // ==================== WOOCOMMERCE — EMPAREJAMIENTO MANUAL ====================
 
 export type WooPriceResolution = 'keep_erp' | 'keep_woo';
+export type WooSkuResolution = 'keep_erp' | 'keep_woo';
 
 export interface WooCompareParams {
 	external_product_id?: number;
@@ -419,6 +420,10 @@ export interface WooCompareResult {
 		price: number | string | null;
 	};
 	prices_match: boolean;
+	/** El backend indica si el precio requiere una decisión consciente. */
+	needs_decision?: boolean;
+	/** El backend indica si el SKU requiere una decisión consciente (difieren). */
+	needs_sku_decision?: boolean;
 	already_linked: boolean;
 	already_linked_to?: number | null;
 }
@@ -446,6 +451,12 @@ export interface WooLinkPayload {
 	external_sku?: string;
 	sync_stock_with_woo?: boolean;
 	price_resolution?: WooPriceResolution;
+	/**
+	 * Decisión consciente sobre el SKU cuando difieren ERP y Woo. `keep_erp`
+	 * conserva el SKU del ERP; `keep_woo` adopta el de WooCommerce. Si no se
+	 * envía, el backend mantiene el SKU de Woo por defecto.
+	 */
+	sku_resolution?: WooSkuResolution;
 	/**
 	 * Si es true, al vincular importa la descripción de WooCommerce hacia el ERP,
 	 * conservando el contenido ya trabajado en la tienda sin romperlo.
