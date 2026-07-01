@@ -943,27 +943,39 @@ const CompareAndLink: React.FC<CompareAndLinkProps> = ({
 						<Tooltip text='Conserva el SKU del ERP (no cambia en el ERP)'>
 							<Button
 								variant='solid'
-								color='blue'
+								color={skuResolution === 'keep_erp' ? 'blue' : 'zinc'}
 								size='sm'
 								icon={skuResolution === 'keep_erp' ? 'HeroCheckCircle' : 'HeroCircleStack'}
 								onClick={() => onSkuResolutionChange('keep_erp')}
 								isDisable={isLinking}
-								className={`w-full ${skuResolution === 'keep_erp' ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-sky-50 dark:ring-offset-sky-950' : 'opacity-90'}`}
+								className={`w-full transition-all ${
+									skuResolution === 'keep_erp'
+										? 'font-bold shadow-md ring-2 ring-blue-400 ring-offset-2 ring-offset-sky-50 dark:ring-offset-sky-950'
+										: 'opacity-70 hover:opacity-100'
+								}`}
 								aria-label='Mantener el SKU del ERP'>
-								Mantener SKU del ERP
+								{skuResolution === 'keep_erp'
+									? 'SKU del ERP ✓'
+									: 'Mantener SKU del ERP'}
 							</Button>
 						</Tooltip>
 						<Tooltip text='Adopta el SKU de WooCommerce en el ERP'>
 							<Button
 								variant='solid'
-								color='amber'
+								color={skuResolution === 'keep_woo' ? 'amber' : 'zinc'}
 								size='sm'
 								icon={skuResolution === 'keep_woo' ? 'HeroCheckCircle' : 'HeroShoppingBag'}
 								onClick={() => onSkuResolutionChange('keep_woo')}
 								isDisable={isLinking}
-								className={`w-full ${skuResolution === 'keep_woo' ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-sky-50 dark:ring-offset-sky-950' : 'opacity-90'}`}
+								className={`w-full transition-all ${
+									skuResolution === 'keep_woo'
+										? 'font-bold shadow-md ring-2 ring-amber-400 ring-offset-2 ring-offset-sky-50 dark:ring-offset-sky-950'
+										: 'opacity-70 hover:opacity-100'
+								}`}
 								aria-label='Usar el SKU de WooCommerce'>
-								Usar SKU de WooCommerce
+								{skuResolution === 'keep_woo'
+									? 'SKU de WooCommerce ✓'
+									: 'Usar SKU de WooCommerce'}
 							</Button>
 						</Tooltip>
 					</div>
