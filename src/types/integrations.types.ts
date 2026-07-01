@@ -444,6 +444,11 @@ export interface WooLinkPayload {
 	external_sku?: string;
 	sync_stock_with_woo?: boolean;
 	price_resolution?: WooPriceResolution;
+	/**
+	 * Si es true, al vincular importa la descripción de WooCommerce hacia el ERP,
+	 * conservando el contenido ya trabajado en la tienda sin romperlo.
+	 */
+	override_description_from_woo?: boolean;
 }
 
 export interface WooLinkResponse {
