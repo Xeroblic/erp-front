@@ -145,9 +145,11 @@ const StockStatusBreakdown = ({
 	if (active.length === 0) {
 		return (
 			<Tooltip text='Este producto no tiene unidades reservadas, apartadas, en cotización ni vendidas.'>
-				<Badge variant='outline' color='zinc' className='w-fit'>
-					Sin novedades
-				</Badge>
+				<span className='inline-flex w-fit'>
+					<Badge variant='outline' color='zinc' className='w-fit'>
+						Sin novedades
+					</Badge>
+				</span>
 			</Tooltip>
 		);
 	}
@@ -188,7 +190,7 @@ const StockStatusBreakdown = ({
 								{badge}
 							</button>
 						) : (
-							badge
+							<span className='inline-flex'>{badge}</span>
 						)}
 					</Tooltip>
 				);
@@ -309,7 +311,10 @@ const StockCatalogTable = ({ items, loading = false }: StockCatalogTableProps) =
 	const columns = useMemo<ColumnDef<StockCatalogRow>[]>(
 		() => [
 			{
-				accessorKey: 'name',
+				id: 'name',
+				// Incluye la SKU en el valor filtrable para que el buscador (includesString)
+				// también encuentre por SKU, no solo por nombre.
+				accessorFn: (catalogRow) => `${catalogRow.name} ${catalogRow.sku}`,
 				header: 'Producto',
 				cell: ({ row }) => (
 					<div className='space-y-1'>

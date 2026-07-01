@@ -1,10 +1,18 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
+import Icon from '@/components/icon/Icon';
+import Tooltip from '@/components/ui/Tooltip';
 import Input from '@/components/form/Input';
 import DataTable from '@/components/ui/DataTable/DataTable';
 import type { IWorkItem } from '../types';
+
+const clpFormatter = new Intl.NumberFormat('es-CL', {
+	style: 'currency',
+	currency: 'CLP',
+	maximumFractionDigits: 0,
+});
 
 // 1. Creamos un micro-componente para la celda que maneja su propio foco y estado
 const QuantityInputCell = ({
@@ -80,21 +88,36 @@ export const WorkspaceTable = ({
 				id: 'product',
 				header: 'Producto',
 				cell: ({ row }) => (
-					<div>
-						<p className='font-semibold'>{row.original.name}</p>
-						<p className='text-xs text-zinc-500'>SKU: {row.original.sku}</p>
+					<div className='flex items-center gap-3'>
+						<div className='flex h-9 w-9 flex-none items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-500/20 dark:text-emerald-400'>
+							<Icon icon='HeroCube' className='h-4 w-4' />
+						</div>
+						<div className='min-w-0'>
+							<p className='truncate font-semibold'>{row.original.name}</p>
+							<p className='font-mono text-[11px] text-zinc-500'>
+								SKU: {row.original.sku}
+							</p>
+						</div>
 					</div>
 				),
 			},
 			{
 				id: 'stock',
-				header: 'Stock',
-				cell: ({ row }) => row.original.stock,
+				header: 'Stock actual',
+				cell: ({ row }) => (
+					<span className='font-medium text-neutral-700 dark:text-neutral-200'>
+						{row.original.stock} u.
+					</span>
+				),
 			},
 			{
 				id: 'price',
 				header: 'Precio',
-				cell: ({ row }) => `$${row.original.price.toFixed(2)}`,
+				cell: ({ row }) => (
+					<span className='font-semibold text-neutral-800 dark:text-neutral-100'>
+						{clpFormatter.format(Number(row.original.price ?? 0))}
+					</span>
+				),
 			},
 			{
 				id: 'quantity',
@@ -109,27 +132,47 @@ export const WorkspaceTable = ({
 			},
 			{
 				id: 'adjustment',
-				header: 'Ajuste',
+				header: 'Ajuste resultante',
 				cell: ({ row }) => {
 					const signedQuantity = getSignedQuantity(row.original.quantity);
+					const isIngreso = signedQuantity > 0;
 					return (
-						<Badge color='blue' variant='solid'>
-							{signedQuantity > 0 ? `+${signedQuantity}` : signedQuantity}
-						</Badge>
+						<Tooltip
+							text={
+								isIngreso
+									? `Ingreso: suma ${signedQuantity} unidad(es) al stock.`
+									: `Salida/merma: resta ${Math.abs(signedQuantity)} unidad(es) del stock.`
+							}>
+							<span className='inline-flex'>
+								<Badge
+									color={isIngreso ? 'emerald' : 'red'}
+									variant='solid'
+									className='inline-flex items-center gap-1'>
+									<Icon
+										icon={isIngreso ? 'HeroArrowTrendingUp' : 'HeroArrowTrendingDown'}
+										className='h-3 w-3'
+									/>
+									{isIngreso ? `+${signedQuantity}` : signedQuantity}
+								</Badge>
+							</span>
+						</Tooltip>
 					);
 				},
 			},
 			{
 				id: 'action',
-				header: 'Accion',
+				header: 'Acción',
 				cell: ({ row }) => (
-					<Button
-						color='red'
-						variant='outline'
-						size='sm'
-						onClick={() => onRemoveItem(row.original.productId)}>
-						Quitar
-					</Button>
+					<Tooltip text='Quitar este producto de la zona de trabajo'>
+						<Button
+							color='red'
+							variant='solid'
+							size='sm'
+							icon='HeroTrash'
+							onClick={() => onRemoveItem(row.original.productId)}>
+							Quitar
+						</Button>
+					</Tooltip>
 				),
 			},
 		],
