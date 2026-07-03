@@ -3,3 +3,4 @@ export { default as ComercialTab } from './ComercialTab';
 export { default as ContenidoTab } from './ContenidoTab';
 export { default as AtributosTab } from './AtributosTab';
 export { default as ImagesProduct } from './ImagesProduct';
+export { default as ReviewsTab } from './ReviewsTab/ReviewsTab';

@@ -1,7 +1,14 @@
 import React from 'react';
 import Icon from '@/components/icon/Icon';
 import Card, { CardBody } from '@/components/ui/Card';
-import { GeneralTab, ComercialTab, ContenidoTab, AtributosTab, ImagesProduct } from './DetailTabs';
+import {
+	GeneralTab,
+	ComercialTab,
+	ContenidoTab,
+	AtributosTab,
+	ImagesProduct,
+	ReviewsTab,
+} from './DetailTabs';
 import WooCommercePublishPanel from './modals/components/WooCommercePublishPanel';
 import type { IBrand } from '@/interface/brand.interface';
 import type { ICategory } from '@/interface/category.interface';
@@ -31,6 +38,7 @@ const TABS_CONFIG = [
 	{ id: 'contenido', label: 'Contenido', icon: 'HeroDocumentText' as const },
 	{ id: 'atributos', label: 'Atributos', icon: 'HeroListBullet' as const },
 	{ id: 'imagenes', label: 'Imágenes', icon: 'HeroPhoto' as const },
+	{ id: 'revisiones', label: 'Revisiones', icon: 'HeroClipboardDocumentCheck' as const },
 	{ id: 'woocommerce', label: 'WooCommerce', icon: 'HeroShoppingBag' as const },
 ];
 
@@ -52,9 +60,11 @@ export const ProductDetailTabs: React.FC<ProductDetailTabsProps> = ({
 }) => {
 	const showAtributos = !!(product && product.product_type && product.product_type !== 'general');
 	const showWoocommerce = !!product?.id;
+	const showRevisiones = !!(product?.id && product.serial_tracking);
 	const visibleTabs = TABS_CONFIG.filter((t) => {
 		if (t.id === 'atributos') return showAtributos;
 		if (t.id === 'woocommerce') return showWoocommerce;
+		if (t.id === 'revisiones') return showRevisiones;
 		return true;
 	});
 
@@ -89,6 +99,10 @@ export const ProductDetailTabs: React.FC<ProductDetailTabsProps> = ({
 						onDeleteImage={onDeleteImage}
 					/>
 				);
+			case 'revisiones': {
+				if (!product?.id) return null;
+				return <ReviewsTab product={product} />;
+			}
 			case 'woocommerce': {
 				if (!product?.id) return null;
 				return (
