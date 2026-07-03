@@ -97,6 +97,9 @@ export const ProductDetailTabs: React.FC<ProductDetailTabsProps> = ({
 						initialSyncStock={product.sync_stock_with_woo ?? true}
 						onProductRefresh={onProductRefresh}
 						marketplaceExternalIds={product.marketplace_external_ids}
+						channelPrices={product.channel_prices}
+						basePrice={product.price_override ?? product.price ?? null}
+						baseOfferPrice={product.offer_price_override ?? product.offer_price ?? null}
 					/>
 				);
 			}
