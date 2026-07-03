@@ -728,6 +728,15 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 													marketplaceExternalIds={
 														product.marketplace_external_ids
 													}
+													channelPrices={product.channel_prices}
+													basePrice={
+														product.price_override ?? product.price ?? null
+													}
+													baseOfferPrice={
+														product.offer_price_override ??
+														product.offer_price ??
+														null
+													}
 												/>
 											) : (
 												<WooCommerceProductTab

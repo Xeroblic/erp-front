@@ -13,6 +13,26 @@ export type DecimalString = string;
 export type ISODateTimeString = string;
 export type NullableJson = Record<string, unknown> | null;
 
+/** Visibilidad de un producto dentro de un canal/marketplace. */
+export type ChannelVisibility = 'publish' | 'private';
+
+/**
+ * Override de un producto para una integración/canal concreto (WooCommerce,
+ * Falabella, etc.). Cada canal mantiene su propio precio, nombre y visibilidad;
+ * los campos `effective_*` resuelven override → valor base del producto.
+ */
+export interface ProductChannelPrice {
+	integration_id: string;
+	channel: string | null;
+	channel_name: string | null;
+	name_override?: string | null;
+	visibility?: ChannelVisibility | null;
+	price_override: DecimalString | null;
+	offer_price_override: DecimalString | null;
+	effective_price: DecimalString | null;
+	effective_offer_price: DecimalString | null;
+}
+
 export interface IProductBrandSummary {
 	id: number;
 	name: string;
@@ -131,6 +151,8 @@ export interface IProduct {
 	offer_price?: number | null;
 	attributes_json?: Record<string, unknown> | null;
 	marketplace_external_ids?: NullableJson;
+	/** Overrides por canal/marketplace (precio, nombre y visibilidad). */
+	channel_prices?: ProductChannelPrice[] | null;
 	/** Si el stock del producto se sincroniza con WooCommerce. */
 	sync_stock_with_woo?: boolean;
 	is_active: boolean;
@@ -237,6 +259,7 @@ export interface ProductResourcePayload {
 	product_status: string | null;
 	attributes_json: NullableJson;
 	marketplace_external_ids: NullableJson;
+	channel_prices?: ProductChannelPrice[] | null;
 	is_active: boolean;
 	category_ids?: ProductCategorySummary[];
 	image: ProductImage | null;

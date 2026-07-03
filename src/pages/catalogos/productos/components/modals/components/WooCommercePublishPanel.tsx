@@ -18,9 +18,11 @@ import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useWooUnlink } from '@/services/hooks/useWooManualLink';
 import { useWooIntegrations } from '@/services/hooks/useWooIntegrations';
 import { useWooProductStatus } from '@/pages/catalogos/productos/hooks/useWooProductStatus';
+import { getChannelPriceForIntegration } from '@/utils/productChannelMeta.util';
 import WooManualLinkPanel from './WooManualLinkPanel';
 import WooIntegrationSelector from './WooIntegrationSelector';
 import WooProductStorefronts from './WooProductStorefronts';
+import ChannelOverridesCard from './ChannelOverridesCard';
 import WooSyncGuide from './WooSyncGuide';
 
 // Flag de "ya viste la guía" — se muestra automáticamente la primera vez que se
@@ -33,6 +35,9 @@ interface WooCommercePublishPanelProps {
 	isBusy?: boolean;
 	onProductRefresh?: () => void;
 	marketplaceExternalIds?: unknown;
+	channelPrices?: unknown;
+	basePrice?: number | null;
+	baseOfferPrice?: number | null;
 }
 
 const formatValue = (value: string | number | null | undefined): string => {
@@ -52,6 +57,9 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 	isBusy = false,
 	onProductRefresh,
 	marketplaceExternalIds,
+	channelPrices,
+	basePrice = null,
+	baseOfferPrice = null,
 }) => {
 	const dispatch = useAppDispatch();
 	const { subsidiaryId } = useCurrentBranch();
@@ -81,6 +89,11 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 	const inactiveIntegrationIds = useMemo(
 		() => new Set(allWooIntegrations.filter((i) => !i.is_active).map((i) => i.id)),
 		[allWooIntegrations],
+	);
+
+	const channelPrice = useMemo(
+		() => getChannelPriceForIntegration(channelPrices, selectedIntegrationId),
+		[channelPrices, selectedIntegrationId],
 	);
 
 	const syncingId = useAppSelector((state) => state.woocommerceProducts.syncingId);
@@ -430,7 +443,19 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 				</CardBody>
 			</Card>
 
-			{/* ═══════════════════════ 2. EMPAREJAMIENTO MANUAL ═══════════════════════ */}
+			{/* ═══════════════════════ 2. CONFIGURACIÓN DEL CANAL ═══════════════════════ */}
+			<ChannelOverridesCard
+				subsidiaryId={subsidiaryId}
+				productId={productId}
+				integrationId={selectedIntegrationId}
+				integrationName={selectedIntegrationId ? getIntegrationName(selectedIntegrationId) : undefined}
+				channelPrice={channelPrice}
+				basePrice={basePrice}
+				baseOfferPrice={baseOfferPrice}
+				onProductRefresh={onProductRefresh}
+			/>
+
+			{/* ═══════════════════════ 3. EMPAREJAMIENTO MANUAL ═══════════════════════ */}
 			<WooManualLinkPanel
 				productId={productId}
 				isLinked={isPublishedHere}
