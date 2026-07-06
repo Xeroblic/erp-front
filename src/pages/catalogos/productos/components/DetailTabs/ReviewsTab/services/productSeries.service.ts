@@ -18,10 +18,6 @@ const readLastPage = (body: SeriesPage | undefined): number => {
 	return Number.isFinite(raw) && raw > 0 ? raw : 1;
 };
 
-/**
- * Trae todas las series de un producto recorriendo la paginación del backend
- * (el endpoint pagina y sin esto sólo devuelve la primera página).
- */
 export const fetchAllProductSeries = async (
 	subsidiaryId: number,
 	productId: number,

@@ -53,7 +53,6 @@ export const INVENTORY_STATUS_LABEL: Record<string, string> = {
 	scrapped: 'De baja',
 };
 
-/** Convierte un valor crudo (`in_review`, `RECEIVED`) en algo legible cuando no hay label. */
 export const humanizeStatus = (value: string): string => {
 	const normalized = value.replace(/[_-]+/g, ' ').trim().toLowerCase();
 	if (normalized === '') return value;

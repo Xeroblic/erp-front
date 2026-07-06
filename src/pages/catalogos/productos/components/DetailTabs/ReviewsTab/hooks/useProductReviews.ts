@@ -92,18 +92,16 @@ export const useProductReviews = (productIds: number[]): ProductReviewsState => 
 
 				const itemsBySerial = new Map<string, IItem>();
 				if (branchId !== null) {
-					try {
-						const { items } = await dispatch(
-							fetchItems({
-								subsidiaryId,
-								branchId,
-								params: { per_page: ITEMS_PER_PAGE },
-							}),
-						).unwrap();
-						items.forEach((item) => itemsBySerial.set(item.serial_number, item));
-					} catch {
-						/* la revisión es enriquecimiento opcional */
-					}
+					const { items } = await dispatch(
+						fetchItems({
+							subsidiaryId,
+							branchId,
+							params: { per_page: ITEMS_PER_PAGE },
+						}),
+					)
+						.unwrap()
+						.catch(() => ({ items: [] as IItem[] }));
+					items.forEach((item) => itemsBySerial.set(item.serial_number, item));
 				}
 
 				if (!active) return;
