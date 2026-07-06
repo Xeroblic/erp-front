@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAppDispatch } from '@/store';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { fetchItems } from '@/store/slices/technicalReviews';
-import type { IItem, ReviewStatus } from '@/store/slices/technicalReviews';
+import type { IItem } from '@/store/slices/technicalReviews';
 import type { ProductReviewRow, ProductReviewsState } from '../types';
 import { fetchAllProductSeries } from '../services/productSeries.service';
 
@@ -19,7 +19,7 @@ const toStr = (value: unknown): string | null =>
 const toNumberOrNull = (value: unknown): number | null =>
 	typeof value === 'number' && Number.isFinite(value) ? value : null;
 
-const isReviewed = (status: ReviewStatus | null): boolean =>
+const isReviewed = (status: string | null): boolean =>
 	status === 'reviewed' || status === 'approved';
 
 const buildRow = (serie: unknown, item: IItem | undefined): ProductReviewRow | null => {
@@ -35,9 +35,9 @@ const buildRow = (serie: unknown, item: IItem | undefined): ProductReviewRow | n
 		branchId: toNumberOrNull(record.branch_id),
 		branchName: toStr(record.branch_name) ?? (branchRecord ? toStr(branchRecord.name) : null),
 		inventoryStatus: toStr(record.current_status) ?? toStr(record.status),
-		reviewStatus: item?.review_status ?? null,
-		commercialStatus: item?.current_status ?? null,
-		equipmentType: item?.equipment_type ?? null,
+		reviewStatus: toStr(item?.review_status)?.toLowerCase() ?? null,
+		commercialStatus: toStr(item?.current_status)?.toLowerCase() ?? null,
+		equipmentType: toStr(item?.equipment_type)?.toLowerCase() ?? null,
 		reviewedAt: item?.reviewed_at ?? null,
 		itemId: item?.id ?? null,
 	};
@@ -92,18 +92,16 @@ export const useProductReviews = (productIds: number[]): ProductReviewsState => 
 
 				const itemsBySerial = new Map<string, IItem>();
 				if (branchId !== null) {
-					try {
-						const { items } = await dispatch(
-							fetchItems({
-								subsidiaryId,
-								branchId,
-								params: { per_page: ITEMS_PER_PAGE },
-							}),
-						).unwrap();
-						items.forEach((item) => itemsBySerial.set(item.serial_number, item));
-					} catch {
-						/* la revisión es enriquecimiento opcional */
-					}
+					const { items } = await dispatch(
+						fetchItems({
+							subsidiaryId,
+							branchId,
+							params: { per_page: ITEMS_PER_PAGE },
+						}),
+					)
+						.unwrap()
+						.catch(() => ({ items: [] as IItem[] }));
+					items.forEach((item) => itemsBySerial.set(item.serial_number, item));
 				}
 
 				if (!active) return;
