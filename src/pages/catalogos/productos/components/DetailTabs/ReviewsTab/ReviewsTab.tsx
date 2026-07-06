@@ -7,17 +7,22 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import type { TColors } from '@/types/colors.type';
 import type { IProduct } from '@/interface/product.interface';
-import type { ReviewStatus } from '@/store/slices/technicalReviews';
 import { useProductReviews } from './hooks/useProductReviews';
 import type { ProductReviewRow } from './types';
-import { EQUIPMENT_TYPE_LABEL, INVENTORY_STATUS_LABEL, REVIEW_STATUS_LABEL } from './types';
+import {
+	EQUIPMENT_TYPE_LABEL,
+	INVENTORY_STATUS_LABEL,
+	REVIEW_STATUS_LABEL,
+	humanizeStatus,
+} from './types';
 
 interface ReviewsTabProps {
 	product: IProduct;
 }
 
-const REVIEW_STATUS_COLOR: Record<ReviewStatus, TColors> = {
+const REVIEW_STATUS_COLOR: Record<string, TColors> = {
 	pending: 'neutral',
+	received: 'sky',
 	in_review: 'amber',
 	reviewed: 'green',
 	approved: 'emerald',
@@ -74,9 +79,12 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({ product }) => {
 				accessorKey: 'equipmentType',
 				cell: ({ row }) => {
 					const { equipmentType } = row.original;
+					if (!equipmentType) {
+						return <span className='text-neutral-400'>Sin clasificar</span>;
+					}
 					return (
 						<span className='text-neutral-600 dark:text-neutral-300'>
-							{equipmentType ? EQUIPMENT_TYPE_LABEL[equipmentType] : '—'}
+							{EQUIPMENT_TYPE_LABEL[equipmentType] ?? humanizeStatus(equipmentType)}
 						</span>
 					);
 				},
@@ -86,13 +94,16 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({ product }) => {
 				accessorKey: 'reviewStatus',
 				cell: ({ row }) => {
 					const { reviewStatus } = row.original;
-					return reviewStatus ? (
-						<Badge variant='solid' color={REVIEW_STATUS_COLOR[reviewStatus]}>
-							{REVIEW_STATUS_LABEL[reviewStatus]}
-						</Badge>
-					) : (
-						<Badge variant='outline' color='stone'>
-							Sin revisión
+					if (!reviewStatus) {
+						return (
+							<Badge variant='outline' color='stone'>
+								Sin revisión
+							</Badge>
+						);
+					}
+					return (
+						<Badge variant='solid' color={REVIEW_STATUS_COLOR[reviewStatus] ?? 'sky'}>
+							{REVIEW_STATUS_LABEL[reviewStatus] ?? humanizeStatus(reviewStatus)}
 						</Badge>
 					);
 				},

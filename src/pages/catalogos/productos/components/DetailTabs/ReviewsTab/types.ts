@@ -1,18 +1,12 @@
-import type {
-	CommercialStatus,
-	EquipmentType,
-	ReviewStatus,
-} from '@/store/slices/technicalReviews';
-
 export interface ProductReviewRow {
 	serialNumber: string;
 	grade: string | null;
 	branchId: number | null;
 	branchName: string | null;
 	inventoryStatus: string | null;
-	reviewStatus: ReviewStatus | null;
-	commercialStatus: CommercialStatus | null;
-	equipmentType: EquipmentType | null;
+	reviewStatus: string | null;
+	commercialStatus: string | null;
+	equipmentType: string | null;
 	reviewedAt: string | null;
 	itemId: number | null;
 }
@@ -33,14 +27,15 @@ export interface ProductReviewsState {
 	reload: () => void;
 }
 
-export const REVIEW_STATUS_LABEL: Record<ReviewStatus, string> = {
+export const REVIEW_STATUS_LABEL: Record<string, string> = {
 	pending: 'Pendiente',
+	received: 'Ingresado',
 	in_review: 'En revisión',
 	reviewed: 'Revisado',
 	approved: 'Aprobado',
 };
 
-export const EQUIPMENT_TYPE_LABEL: Record<EquipmentType, string> = {
+export const EQUIPMENT_TYPE_LABEL: Record<string, string> = {
 	notebook: 'Notebook',
 	desktop: 'Desktop',
 	docking: 'Docking',
@@ -56,4 +51,11 @@ export const INVENTORY_STATUS_LABEL: Record<string, string> = {
 	defective: 'Defectuosa',
 	returned: 'Devuelta',
 	scrapped: 'De baja',
+};
+
+/** Convierte un valor crudo (`in_review`, `RECEIVED`) en algo legible cuando no hay label. */
+export const humanizeStatus = (value: string): string => {
+	const normalized = value.replace(/[_-]+/g, ' ').trim().toLowerCase();
+	if (normalized === '') return value;
+	return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 };
