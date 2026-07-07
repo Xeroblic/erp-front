@@ -393,28 +393,33 @@ const SalesListPage: React.FC = () => {
 							<Tooltip text='Esta venta tiene series pendientes de asignar'>
 								<Button
 									variant='solid'
-									size='xs'
+									size='sm'
 									color='amber'
-									icon='HeroQrCode'
+									className='bg-amber-500/30'
 									onClick={() =>
 										setAssignSale(pendingMap.get(row.original.id) ?? null)
 									}>
-									Serie pendiente
+									<Icon
+										icon='DuoBarcodeRead'
+										color='white'
+										className=' hover:text-amber-200'
+										size='text-xl'
+									/>
 								</Button>
 							</Tooltip>
 						)}
 						<Tooltip text='Descargar ticket de envio'>
 							<Button
 								variant='outline'
-								size='xs'
-								color='violet'
-								className='bg-violet-500/20'
+								size='sm'
+								color='blue'
+								className='bg-blue-600/30'
 								onClick={() => handleDownloadTicket(row.original.id)}
 								isDisable={!subsidiaryId}>
 								<Icon
-									icon='HeroDocumentText'
-									color='violet'
-									className='hover:text-bold hover:text-violet-600'
+									icon='DuoFile'
+									color='blue'
+									className='hover:text-bold hover:text-blue-600'
 									size='text-xl'
 								/>
 							</Button>
