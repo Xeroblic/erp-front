@@ -53,10 +53,10 @@ const inventoryLabel = (value: string | null): string => {
 const ReviewsTab: React.FC<ReviewsTabProps> = ({ product }) => {
 	const navigate = useNavigate();
 
-	const productIds = useMemo(
-		() => [product.id, ...(product.children?.map((child) => child.id) ?? [])],
-		[product.id, product.children],
-	);
+	// El endpoint de series devuelve TODO el árbol cuando se pide el id del
+	// producto padre (todas las variantes/grados), así que no hace falta pedir
+	// también cada hijo: basta con el id actual y evitamos N peticiones extra.
+	const productIds = useMemo(() => [product.id], [product.id]);
 
 	const { rows, total, reviewedCount, pendingCount, gradeBreakdown, isLoading, error, reload } =
 		useProductReviews(productIds);
