@@ -31,6 +31,9 @@ import { getFirstCapitalize } from '@/utils/getFirstLetter';
 import { useNavigate } from 'react-router-dom';
 import { IQuote } from '@/interface';
 import { AxiosError } from 'axios';
+import Icon from '@/components/icon/Icon';
+import Tooltip from '@/components/ui/Tooltip';
+import Spinner from '@/components/ui/Spinner';
 interface Props {
 	subsidiaryId: number;
 	saleId: number;
@@ -559,18 +562,21 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 					<CardHeader className='flex items-center justify-between'>
 						<CardTitle>Ítems de la venta</CardTitle>
 						{(isSaleClosed || isSaleRefunded) && hasSerialItems && (
-							<ProtectedButton
-								permission='correct-sale-serials'
-								subsidiaryId={subsidiaryId}
-								scope='access'
-								fallbackMode='hidden'
-								variant='outline'
-								color='sky'
-								size='sm'
-								icon='HeroArrowsRightLeft'
-								onClick={() => setCorrectSerialOpen(true)}>
-								Corregir serie
-							</ProtectedButton>
+							<Tooltip text='Corregir serie' placement='left-end'>
+								<ProtectedButton
+									permission='correct-sale-serials'
+									subsidiaryId={subsidiaryId}
+									scope='access'
+									fallbackMode='hidden'
+									variant='solid'
+									color='sky'
+									size='sm'
+									className='font-bold border-2 border-sky-600 hover:bg-sky-700/20'
+									onClick={() => setCorrectSerialOpen(true)}>
+										<Icon color='white' icon='HeroArrowsRightLeft' className="text-xl mr-1 font-bold" />
+										Corregir serie
+								</ProtectedButton>
+							</Tooltip>
 						)}
 					</CardHeader>
 					<CardBody>
@@ -671,61 +677,83 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 				</Modal>
 
 				{loading && (
-					<div className='rounded-md border border-dashed border-zinc-300 p-3 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-300'>
-						Cargando información actualizada...
-					</div>
+					<Spinner nombre='Cargando información actualizada...'/>
 				)}
 				<ModalFooter className='flex flex-wrap justify-end gap-2 rounded-md p-3'>
 					<ModalFooterChild className='ml-auto flex flex-wrap items-center justify-end gap-2'>
-						<Button
-							variant='outline'
-							color='violet'
-							icon='HeroDocumentText'
-							className='bg-violet-500/10'
-							isDisable={!subsidiaryId}
-							onClick={() =>
-								dispatch(
-									downloadShippingLabel({
-										subsidiaryId: Number(subsidiaryId),
-										id: saleId,
-									}),
-								)
-							}>
-							Descargar etiqueta
-						</Button>
-						{canCloseSale && (
+						<Tooltip text='Descargar etiqueta de envío'>
 							<Button
 								variant='solid'
-								color='emerald'
-								icon='HeroCheckCircle'
-								onClick={handleCloseSale}>
-								Cerrar venta
+								color='blue'
+								className='border-2 border-blue-600 hover:bg-blue-700/20 bg-blue-500'
+								isDisable={!subsidiaryId}
+								onClick={async () =>{
+									try{
+										await dispatch(
+											downloadShippingLabel({
+												subsidiaryId: Number(subsidiaryId),
+												id: saleId,
+												
+											})
+										);
+									}catch(e: any){
+										if (e.statusCode === 404) {
+											toast.error('No se encontró la etiqueta de envío.');
+										} else if (e.statusCode === 422) {
+											if (e.message) {
+												toast.error(e.message);
+											} else {
+												toast.error('La venta no cumple los requisitos para generar etiqueta de envío.');
+											}
+										} else {
+											toast.error('Error al descargar etiqueta.');
+										}
+									}
+								}}>
+									<Icon color='white' className="text-2xl mr-1 font-bold" icon='DuoFile' />
+								Descargar etiqueta
 							</Button>
+						</Tooltip>
+						{canCloseSale && (
+							<Tooltip text='Cerrar venta'>
+								<Button
+									variant='solid'
+									color='emerald'
+									icon='HeroCheckCircle'
+									onClick={handleCloseSale}>
+									Cerrar venta
+								</Button>
+							</Tooltip>
 						)}
 						{isSaleRefunded && (
-							<ProtectedButton
-								permission='confirm-sale-return'
-								subsidiaryId={subsidiaryId}
-								scope='access'
-								fallbackMode='hidden'
-								variant='solid'
-								color='amber'
-								icon='HeroInboxArrowDown'
-								isLoading={isConfirmingReturn}
-								onClick={() => setConfirmReturnOpen(true)}>
-								Confirmar recepción de devolución
-							</ProtectedButton>
+							<Tooltip text='Confirmar recepcion de envio'>
+								<ProtectedButton
+									permission='confirm-sale-return'
+									subsidiaryId={subsidiaryId}
+									scope='access'
+									fallbackMode='hidden'
+									variant='solid'
+									color='amber'
+									className='border-2 border-amber-600 hover:bg-amber-700/20'
+									isLoading={isConfirmingReturn}
+									onClick={() => setConfirmReturnOpen(true)}>
+										<Icon color='white' icon='HeroInboxArrowDown'  className='mr-1 font-bold text-2xl'/>
+									Confirmar recepción de devolución
+								</ProtectedButton>
+							</Tooltip>
 						)}
-						<Button
-							variant='solid'
-							color={effectiveQuoteId ? 'rose' : 'violet'}
-							className={quoteButtonClass}
-							onClick={quoteButtonHandler}
-							isLoading={creatingQuote}
-							disabled={creatingQuote && !effectiveQuoteId}
-							icon={effectiveQuoteId ? 'HeroEye' : 'HeroPlus'}>
-							{quoteButtonLabel}
-						</Button>
+						<Tooltip text={effectiveQuoteId ? 'Ver cotización' : 'Crear cotización'}>
+							<Button
+								variant='solid'
+								color={effectiveQuoteId ? 'rose' : 'violet'}
+								className={quoteButtonClass}
+								onClick={quoteButtonHandler}
+								isLoading={creatingQuote}
+								disabled={creatingQuote && !effectiveQuoteId}
+								icon={effectiveQuoteId ? 'HeroEye' : 'HeroPlus'}>
+								{quoteButtonLabel}
+							</Button>
+						</Tooltip>
 					</ModalFooterChild>
 				</ModalFooter>
 			</ModalBody>
