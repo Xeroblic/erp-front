@@ -64,7 +64,11 @@ export const pendingSerialToSaleItems = (sale: PendingSerialSale): ISaleItem[] =
 				product_id: si.product_id,
 				name: si.name,
 				sku: si.sku,
-				quantity: si.hold_quantity || si.quantity,
+				// La cantidad de series a escanear es la cantidad total del ítem
+				// (así lo dimensiona el backend: sugerencias y shortage van por
+				// `quantity`, no por `hold_quantity`, que solo refleja los holds
+				// activos actuales). Usar hold_quantity pedía series de menos.
+				quantity: si.quantity,
 				product: { name: si.name, sku: si.sku },
 			}) as unknown as ISaleItem,
 	);
