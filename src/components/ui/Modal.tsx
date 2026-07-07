@@ -8,8 +8,10 @@ import React, {
 	ReactElement,
 	ReactNode,
 	SetStateAction,
+	useEffect,
 	useId,
 	useRef,
+	useState,
 	CSSProperties,
 } from 'react';
 import { AnimatePresence, motion, MotionProps } from 'framer-motion';
@@ -145,10 +147,19 @@ export const ModalFooter: FC<IModalFooterProps> = (props) => {
 ModalFooter.displayName = 'ModalFooter';
 
 /**
+ * Contador global de modales abiertos. Permite que cada modal apilado reciba
+ * un z-index mayor que el anterior, de modo que su backdrop (blur/oscurecido)
+ * quede por encima del modal inferior y lo difumine correctamente.
+ */
+let openModalCount = 0;
+const MODAL_BASE_Z = 1050;
+const MODAL_STACK_STEP = 20;
+
+/**
  * BackDrop
  * @constructor
  */
-const BackDrop = () => {
+const BackDrop = ({ zIndex }: { zIndex: number }) => {
 	const animationProps = {
 		initial: { opacity: 0 },
 		animate: { opacity: 1 },
@@ -159,7 +170,8 @@ const BackDrop = () => {
 		<motion.div
 			data-component-name='Modal/BackDrop'
 			{...animationProps}
-			className='fixed left-0 top-0 z-[1050] h-screen w-screen bg-black/20 backdrop-blur-lg'
+			style={{ zIndex }}
+			className='fixed left-0 top-0 h-screen w-screen bg-black/20 backdrop-blur-lg'
 		/>
 	);
 };
@@ -290,6 +302,20 @@ const Modal: FC<IModalProps> = (props) => {
 
 	const titleId = useId();
 
+	// Nivel en la pila de modales: cada modal que se abre encima recibe un
+	// z-index mayor, para que su backdrop difumine al modal de abajo.
+	const [stackLevel, setStackLevel] = useState(1);
+	useEffect(() => {
+		if (!isOpen) return undefined;
+		openModalCount += 1;
+		setStackLevel(openModalCount);
+		return () => {
+			openModalCount -= 1;
+		};
+	}, [isOpen]);
+	const backdropZIndex = MODAL_BASE_Z + (stackLevel - 1) * MODAL_STACK_STEP;
+	const modalZIndex = backdropZIndex + 5;
+
 	const modalSizes: {
 		[key in TModalStableSize]: string;
 	} = { sm: '40rem', md: '48rem', lg: '64rem', xl: '80rem', '2xl': '96rem' };
@@ -354,9 +380,10 @@ const Modal: FC<IModalProps> = (props) => {
 	useEventListener('mousedown', modalStatic);
 	useEventListener('touchstart', modalStatic); // Touchscreen
 
-	// Keypress close function
+	// Keypress close function. Solo el modal superior de la pila responde a
+	// Escape, para no cerrar también los modales que quedan debajo.
 	const escFunction = (event: { key: string }) => {
-		if (event.key === 'Escape') {
+		if (event.key === 'Escape' && isOpen && stackLevel === openModalCount) {
 			setIsOpen(false);
 		}
 	};
@@ -380,8 +407,9 @@ const Modal: FC<IModalProps> = (props) => {
 							data-component-name='Modal'
 							ref={refModal}
 							key='modal'
+							style={{ zIndex: modalZIndex }}
 							className={classNames(
-								'fixed left-0 top-0 z-[1055] block h-full w-full overflow-y-auto overflow-x-hidden',
+								'fixed left-0 top-0 block h-full w-full overflow-y-auto overflow-x-hidden',
 								{
 									[`${themeConfig.transition}`]: isStaticBackdrop,
 								},
@@ -422,7 +450,7 @@ const Modal: FC<IModalProps> = (props) => {
 								</Content>
 							</Dialog>
 						</motion.div>
-						<BackDrop />
+						<BackDrop zIndex={backdropZIndex} />
 					</>
 				)}
 			</AnimatePresence>
