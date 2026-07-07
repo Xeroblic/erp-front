@@ -28,6 +28,19 @@ const REVIEW_STATUS_COLOR: Record<string, TColors> = {
 	approved: 'emerald',
 };
 
+const INVENTORY_STATUS_COLOR: Record<string, TColors> = {
+	available: 'emerald',
+	available_for_sale: 'emerald',
+	reserved: 'amber',
+	sold: 'blue',
+	defective: 'red',
+	returned: 'orange',
+	scrapped: 'stone',
+};
+
+const inventoryColor = (value: string | null): TColors =>
+	(value && INVENTORY_STATUS_COLOR[value]) || 'neutral';
+
 const GRADE_COLOR: Record<string, TColors> = {
 	A: 'emerald',
 	B: 'blue',
@@ -53,10 +66,10 @@ const inventoryLabel = (value: string | null): string => {
 const ReviewsTab: React.FC<ReviewsTabProps> = ({ product }) => {
 	const navigate = useNavigate();
 
-	const productIds = useMemo(
-		() => [product.id, ...(product.children?.map((child) => child.id) ?? [])],
-		[product.id, product.children],
-	);
+	// El endpoint de series devuelve TODO el árbol cuando se pide el id del
+	// producto padre (todas las variantes/grados), así que no hace falta pedir
+	// también cada hijo: basta con el id actual y evitamos N peticiones extra.
+	const productIds = useMemo(() => [product.id], [product.id]);
 
 	const { rows, total, reviewedCount, pendingCount, gradeBreakdown, isLoading, error, reload } =
 		useProductReviews(productIds);
@@ -127,11 +140,18 @@ const ReviewsTab: React.FC<ReviewsTabProps> = ({ product }) => {
 				accessorKey: 'inventoryStatus',
 				cell: ({ row }) => {
 					const { inventoryStatus, branchName } = row.original;
+					if (!inventoryStatus) {
+						return <span className='text-neutral-400'>—</span>;
+					}
 					return (
-						<div className='text-neutral-600 dark:text-neutral-300'>
-							<span>{inventoryLabel(inventoryStatus)}</span>
+						<div>
+							<Badge variant='solid' color={inventoryColor(inventoryStatus)}>
+								{inventoryLabel(inventoryStatus)}
+							</Badge>
 							{branchName && (
-								<span className='block text-xs text-neutral-400'>{branchName}</span>
+								<span className='mt-1 block text-xs text-neutral-400'>
+									{branchName}
+								</span>
 							)}
 						</div>
 					);

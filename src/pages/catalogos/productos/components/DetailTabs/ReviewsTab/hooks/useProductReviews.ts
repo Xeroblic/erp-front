@@ -16,6 +16,18 @@ const asRecord = (value: unknown): Record<string, unknown> | null =>
 const toStr = (value: unknown): string | null =>
 	typeof value === 'string' && value.trim() !== '' ? value : null;
 
+/**
+ * Lee el valor de un enum que puede venir como string plano (endpoint /series)
+ * o como objeto `{ value, label }` (TechnicalReviewItemResource del /items).
+ * Devuelve siempre el `value` en minúsculas o null.
+ */
+const readEnumValue = (value: unknown): string | null => {
+	const direct = toStr(value);
+	if (direct) return direct.toLowerCase();
+	const nested = toStr(asRecord(value)?.value);
+	return nested ? nested.toLowerCase() : null;
+};
+
 const toNumberOrNull = (value: unknown): number | null =>
 	typeof value === 'number' && Number.isFinite(value) ? value : null;
 
@@ -34,10 +46,16 @@ const buildRow = (serie: unknown, item: IItem | undefined): ProductReviewRow | n
 		grade: toStr(record.grade) ?? item?.grade ?? null,
 		branchId: toNumberOrNull(record.branch_id),
 		branchName: toStr(record.branch_name) ?? (branchRecord ? toStr(branchRecord.name) : null),
-		inventoryStatus: toStr(record.current_status) ?? toStr(record.status),
-		reviewStatus: toStr(item?.review_status)?.toLowerCase() ?? null,
-		commercialStatus: toStr(item?.current_status)?.toLowerCase() ?? null,
-		equipmentType: toStr(item?.equipment_type)?.toLowerCase() ?? null,
+		// La serie (endpoint /series) ya trae review_status y current_status como
+		// strings; los preferimos. El equipment_type NO viene en /series, solo en
+		// el item de revisión técnica (y ahí llega como objeto { value, label }).
+		inventoryStatus:
+			toStr(record.current_status) ??
+			toStr(record.status) ??
+			readEnumValue(item?.current_status),
+		reviewStatus: readEnumValue(record.review_status) ?? readEnumValue(item?.review_status),
+		commercialStatus: readEnumValue(item?.current_status),
+		equipmentType: readEnumValue(item?.equipment_type),
 		reviewedAt: item?.reviewed_at ?? null,
 		itemId: item?.id ?? null,
 	};
@@ -75,12 +93,35 @@ export const useProductReviews = (productIds: number[]): ProductReviewsState => 
 		const load = async () => {
 			setIsLoading(true);
 			setError(null);
+
+			// Lanzamos ambas peticiones EN PARALELO. Los items de revisión técnica
+			// se piden por sucursal (payload pesado) y no dependen de las series,
+			// así que arrancan de una y no bloquean el primer render.
+			const itemsPromise: Promise<Map<string, IItem>> =
+				branchId === null
+					? Promise.resolve(new Map<string, IItem>())
+					: dispatch(
+							fetchItems({
+								subsidiaryId,
+								branchId,
+								params: { per_page: ITEMS_PER_PAGE },
+							}),
+						)
+							.unwrap()
+							.then(({ items }) => {
+								const map = new Map<string, IItem>();
+								items.forEach((item) => map.set(item.serial_number, item));
+								return map;
+							})
+							.catch(() => new Map<string, IItem>());
+
 			try {
 				const seriesGroups = await Promise.all(
 					ids.map((id) =>
 						fetchAllProductSeries(subsidiaryId, id).catch(() => [] as unknown[]),
 					),
 				);
+				if (!active) return;
 
 				const seriesBySerial = new Map<string, unknown>();
 				seriesGroups.flat().forEach((serie) => {
@@ -90,25 +131,24 @@ export const useProductReviews = (productIds: number[]): ProductReviewsState => 
 					}
 				});
 
-				const itemsBySerial = new Map<string, IItem>();
-				if (branchId !== null) {
-					const { items } = await dispatch(
-						fetchItems({
-							subsidiaryId,
-							branchId,
-							params: { per_page: ITEMS_PER_PAGE },
-						}),
-					)
-						.unwrap()
-						.catch(() => ({ items: [] as IItem[] }));
-					items.forEach((item) => itemsBySerial.set(item.serial_number, item));
-				}
+				// PRIMER RENDER: pintamos las series de inmediato (rápido y liviano).
+				// La tabla ya es usable; el estado de revisión llega enseguida.
+				setRows(
+					Array.from(seriesBySerial.values())
+						.map((serie) => buildRow(serie, undefined))
+						.filter((row): row is ProductReviewRow => row !== null),
+				);
+				setIsLoading(false);
 
+				// ENRIQUECIMIENTO: cuando lleguen los items, mezclamos el estado de
+				// revisión sin volver a bloquear la tabla.
+				const itemsBySerial = await itemsPromise;
 				if (!active) return;
-				const mapped = Array.from(seriesBySerial.entries())
-					.map(([serial, serie]) => buildRow(serie, itemsBySerial.get(serial)))
-					.filter((row): row is ProductReviewRow => row !== null);
-				setRows(mapped);
+				setRows(
+					Array.from(seriesBySerial.entries())
+						.map(([serial, serie]) => buildRow(serie, itemsBySerial.get(serial)))
+						.filter((row): row is ProductReviewRow => row !== null),
+				);
 			} catch (err) {
 				if (!active) return;
 				setRows([]);
@@ -117,8 +157,7 @@ export const useProductReviews = (productIds: number[]): ProductReviewsState => 
 						? err.message
 						: 'No se pudieron cargar las series del producto',
 				);
-			} finally {
-				if (active) setIsLoading(false);
+				setIsLoading(false);
 			}
 		};
 
