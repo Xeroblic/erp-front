@@ -20,10 +20,6 @@ interface SalesState {
 		create: boolean;
 		update: boolean;
 		delete: boolean;
-		invoice: boolean;
-		payment: boolean;
-		ship: boolean;
-		cancel: boolean;
 	};
 	pagination: {
 		currentPage: number;
@@ -41,7 +37,7 @@ interface SalesState {
 		salesperson_id?: string;
 		min_amount?: number;
 		max_amount?: number;
-		with_customer?: string | number; // Added to support sales timeline
+		with_customer?: string | number;
 	};
 	statistics: {
 		totalSalesAmount: number;
@@ -62,10 +58,6 @@ const initialState: SalesState = {
 		create: false,
 		update: false,
 		delete: false,
-		invoice: false,
-		payment: false,
-		ship: false,
-		cancel: false,
 	},
 	pagination: {
 		currentPage: 1,
@@ -198,144 +190,6 @@ export const deleteSale = createAsyncThunk('sales/deleteSale', async ({ subsidia
 		throw error;
 	}
 });
-
-export const generateInvoice = createAsyncThunk('sales/generateInvoice', async ({ subsidiaryId, id }: { subsidiaryId: number; id: number }) => {
-	try {
-		const response = await ApiService.fetchData<ISaleResponse>({
-			url: `/subsidiaries/${subsidiaryId}/sales/${id}/invoice`,
-			method: 'post',
-		});
-		toast.success('Factura generada exitosamente');
-		return response.data;
-	} catch (error: unknown) {
-		toast.error(extractMessage(error, 'Error al generar la factura'));
-		throw error;
-	}
-});
-
-export const recordPayment = createAsyncThunk(
-	'sales/recordPayment',
-	async ({
-		subsidiaryId,
-		id,
-		data,
-	}: {
-		subsidiaryId: number;
-		id: number;
-		data: {
-			amount: number;
-			payment_method: string;
-			payment_date: string;
-			reference?: string;
-			notes?: string;
-		};
-	}) => {
-		try {
-			const response = await ApiService.fetchData<ISaleResponse>({
-				url: `/subsidiaries/${subsidiaryId}/sales/${id}/payments`,
-				method: 'post',
-				data,
-			});
-			toast.success('Pago registrado exitosamente');
-			return response.data;
-		} catch (error: unknown) {
-			toast.error(extractMessage(error, 'Error al registrar el pago'));
-			throw error;
-		}
-	},
-);
-
-export const shipSale = createAsyncThunk(
-	'sales/shipSale',
-	async ({
-		subsidiaryId,
-		id,
-		data,
-	}: {
-		subsidiaryId: number;
-		id: number;
-		data: {
-			tracking_number?: string;
-			carrier?: string;
-			shipped_date: string;
-			expected_delivery_date?: string;
-			notes?: string;
-		};
-	}) => {
-		try {
-			const response = await ApiService.fetchData<ISaleResponse>({
-				url: `/subsidiaries/${subsidiaryId}/sales/${id}/ship`,
-				method: 'post',
-				data,
-			});
-			toast.success('Venta marcada como enviada');
-			return response.data;
-		} catch (error: unknown) {
-			toast.error(extractMessage(error, 'Error al enviar la venta'));
-			throw error;
-		}
-	},
-);
-
-export const deliverSale = createAsyncThunk(
-	'sales/deliverSale',
-	async ({
-		subsidiaryId,
-		id,
-		data,
-	}: {
-		subsidiaryId: number;
-		id: number;
-		data: {
-			delivered_date: string;
-			received_by?: string;
-			notes?: string;
-		};
-	}) => {
-		try {
-			const response = await ApiService.fetchData<ISaleResponse>({
-				url: `/subsidiaries/${subsidiaryId}/sales/${id}/deliver`,
-				method: 'post',
-				data,
-			});
-			toast.success('Venta marcada como entregada');
-			return response.data;
-		} catch (error: unknown) {
-			toast.error(extractMessage(error, 'Error al entregar la venta'));
-			throw error;
-		}
-	},
-);
-
-export const cancelSale = createAsyncThunk(
-	'sales/cancelSale',
-	async ({
-		subsidiaryId,
-		id,
-		data,
-	}: {
-		subsidiaryId: number;
-		id: number;
-		data: {
-			reason: string;
-			refund_amount?: number;
-			notes?: string;
-		};
-	}) => {
-		try {
-			const response = await ApiService.fetchData<ISaleResponse>({
-				url: `/subsidiaries/${subsidiaryId}/sales/${id}/cancel`,
-				method: 'post',
-				data,
-			});
-			toast.success('Venta cancelada exitosamente');
-			return response.data;
-		} catch (error: unknown) {
-			toast.error(extractMessage(error, 'Error al cancelar la venta'));
-			throw error;
-		}
-	},
-);
 
 export const fetchSalesStatistics = createAsyncThunk(
 	'sales/fetchStatistics',
@@ -527,96 +381,6 @@ const ventasSlice = createSlice({
 				state.loading.delete = false;
 			})
 
-			// Generate invoice
-			.addCase(generateInvoice.pending, (state) => {
-				state.loading.invoice = true;
-			})
-			.addCase(generateInvoice.fulfilled, (state, action) => {
-				state.loading.invoice = false;
-				const index = state.sales.findIndex((s) => s.id === action.payload.data.id);
-				if (index !== -1) {
-					state.sales[index] = action.payload.data;
-				}
-				if (state.currentSale?.id === action.payload.data.id) {
-					state.currentSale = action.payload.data;
-				}
-			})
-			.addCase(generateInvoice.rejected, (state) => {
-				state.loading.invoice = false;
-			})
-
-			// Record payment
-			.addCase(recordPayment.pending, (state) => {
-				state.loading.payment = true;
-			})
-			.addCase(recordPayment.fulfilled, (state, action) => {
-				state.loading.payment = false;
-				const index = state.sales.findIndex((s) => s.id === action.payload.data.id);
-				if (index !== -1) {
-					state.sales[index] = action.payload.data;
-				}
-				if (state.currentSale?.id === action.payload.data.id) {
-					state.currentSale = action.payload.data;
-				}
-			})
-			.addCase(recordPayment.rejected, (state) => {
-				state.loading.payment = false;
-			})
-
-			// Ship sale
-			.addCase(shipSale.pending, (state) => {
-				state.loading.ship = true;
-			})
-			.addCase(shipSale.fulfilled, (state, action) => {
-				state.loading.ship = false;
-				const index = state.sales.findIndex((s) => s.id === action.payload.data.id);
-				if (index !== -1) {
-					state.sales[index] = action.payload.data;
-				}
-				if (state.currentSale?.id === action.payload.data.id) {
-					state.currentSale = action.payload.data;
-				}
-			})
-			.addCase(shipSale.rejected, (state) => {
-				state.loading.ship = false;
-			})
-
-			// Deliver sale
-			.addCase(deliverSale.pending, (state) => {
-				state.loading.ship = true;
-			})
-			.addCase(deliverSale.fulfilled, (state, action) => {
-				state.loading.ship = false;
-				const index = state.sales.findIndex((s) => s.id === action.payload.data.id);
-				if (index !== -1) {
-					state.sales[index] = action.payload.data;
-				}
-				if (state.currentSale?.id === action.payload.data.id) {
-					state.currentSale = action.payload.data;
-				}
-			})
-			.addCase(deliverSale.rejected, (state) => {
-				state.loading.ship = false;
-			})
-
-			// Cancel sale
-			.addCase(cancelSale.pending, (state) => {
-				state.loading.cancel = true;
-			})
-			.addCase(cancelSale.fulfilled, (state, action) => {
-				state.loading.cancel = false;
-				const index = state.sales.findIndex((s) => s.id === action.payload.data.id);
-				if (index !== -1) {
-					state.sales[index] = action.payload.data;
-				}
-				if (state.currentSale?.id === action.payload.data.id) {
-					state.currentSale = action.payload.data;
-				}
-			})
-			.addCase(cancelSale.rejected, (state) => {
-				state.loading.cancel = false;
-			})
-
 			// Fetch statistics
 			.addCase(fetchSalesStatistics.fulfilled, (state, action) => {
 				state.statistics = action.payload;
@@ -642,10 +406,6 @@ export const selectSaleActionLoading = (state: RootState) => ({
 	create: state.ventas.loading.create,
 	update: state.ventas.loading.update,
 	delete: state.ventas.loading.delete,
-	invoice: state.ventas.loading.invoice,
-	payment: state.ventas.loading.payment,
-	ship: state.ventas.loading.ship,
-	cancel: state.ventas.loading.cancel,
 });
 
 export default ventasSlice.reducer;
