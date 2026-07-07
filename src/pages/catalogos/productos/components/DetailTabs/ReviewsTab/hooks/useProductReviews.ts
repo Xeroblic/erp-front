@@ -16,6 +16,18 @@ const asRecord = (value: unknown): Record<string, unknown> | null =>
 const toStr = (value: unknown): string | null =>
 	typeof value === 'string' && value.trim() !== '' ? value : null;
 
+/**
+ * Lee el valor de un enum que puede venir como string plano (endpoint /series)
+ * o como objeto `{ value, label }` (TechnicalReviewItemResource del /items).
+ * Devuelve siempre el `value` en minúsculas o null.
+ */
+const readEnumValue = (value: unknown): string | null => {
+	const direct = toStr(value);
+	if (direct) return direct.toLowerCase();
+	const nested = toStr(asRecord(value)?.value);
+	return nested ? nested.toLowerCase() : null;
+};
+
 const toNumberOrNull = (value: unknown): number | null =>
 	typeof value === 'number' && Number.isFinite(value) ? value : null;
 
@@ -34,10 +46,16 @@ const buildRow = (serie: unknown, item: IItem | undefined): ProductReviewRow | n
 		grade: toStr(record.grade) ?? item?.grade ?? null,
 		branchId: toNumberOrNull(record.branch_id),
 		branchName: toStr(record.branch_name) ?? (branchRecord ? toStr(branchRecord.name) : null),
-		inventoryStatus: toStr(record.current_status) ?? toStr(record.status),
-		reviewStatus: toStr(item?.review_status)?.toLowerCase() ?? null,
-		commercialStatus: toStr(item?.current_status)?.toLowerCase() ?? null,
-		equipmentType: toStr(item?.equipment_type)?.toLowerCase() ?? null,
+		// La serie (endpoint /series) ya trae review_status y current_status como
+		// strings; los preferimos. El equipment_type NO viene en /series, solo en
+		// el item de revisión técnica (y ahí llega como objeto { value, label }).
+		inventoryStatus:
+			toStr(record.current_status) ??
+			toStr(record.status) ??
+			readEnumValue(item?.current_status),
+		reviewStatus: readEnumValue(record.review_status) ?? readEnumValue(item?.review_status),
+		commercialStatus: readEnumValue(item?.current_status),
+		equipmentType: readEnumValue(item?.equipment_type),
 		reviewedAt: item?.reviewed_at ?? null,
 		itemId: item?.id ?? null,
 	};
