@@ -22,6 +22,7 @@ import { TRounded } from '../../types/rounded.type';
 import themeConfig from '../../config/theme.config';
 import { TScreens } from '../../types/screens.type';
 import CloseButton from './CloseButton';
+import Icon from '../icon/Icon';
 
 type TModalCustomSize = string | number;
 type TModalStableSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl';
@@ -316,6 +317,48 @@ const Modal: FC<IModalProps> = (props) => {
 	const backdropZIndex = MODAL_BASE_Z + (stackLevel - 1) * MODAL_STACK_STEP;
 	const modalZIndex = backdropZIndex + 5;
 
+	// Indicador de "hay más contenido": cuando el modal (o su cuerpo scrollable)
+	// tiene contenido por debajo del área visible, muestra una flechita al final
+	// que se oculta al llegar al fondo. El scroll vive en el cuerpo cuando
+	// `isScrollable`, o en el wrapper externo cuando el modal completo scrollea.
+	const scrollerRef = useRef<HTMLElement | null>(null);
+	const [showScrollHint, setShowScrollHint] = useState(false);
+	useEffect(() => {
+		if (!isOpen) return undefined;
+		const root = refModal.current as HTMLElement | null;
+		if (!root) return undefined;
+		const scroller: HTMLElement | null = isScrollable
+			? root.querySelector('[data-component-name="Modal/ModalBody"]')
+			: root;
+		if (!scroller) return undefined;
+		scrollerRef.current = scroller;
+
+		const update = () => {
+			const remaining = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight;
+			setShowScrollHint(remaining > 24);
+		};
+		update();
+		scroller.addEventListener('scroll', update, { passive: true });
+		window.addEventListener('resize', update);
+		// El contenido puede crecer al cargar datos async: reobservamos el tamaño.
+		const ro = new ResizeObserver(update);
+		ro.observe(scroller);
+		if (scroller.firstElementChild) ro.observe(scroller.firstElementChild);
+		return () => {
+			scroller.removeEventListener('scroll', update);
+			window.removeEventListener('resize', update);
+			ro.disconnect();
+			scrollerRef.current = null;
+		};
+	}, [isOpen, isScrollable, children]);
+
+	const scrollToBottom = () => {
+		scrollerRef.current?.scrollTo({
+			top: scrollerRef.current.scrollHeight,
+			behavior: 'smooth',
+		});
+	};
+
 	const modalSizes: {
 		[key in TModalStableSize]: string;
 	} = { sm: '40rem', md: '48rem', lg: '64rem', xl: '80rem', '2xl': '96rem' };
@@ -450,6 +493,27 @@ const Modal: FC<IModalProps> = (props) => {
 								</Content>
 							</Dialog>
 						</motion.div>
+						<AnimatePresence>
+							{showScrollHint && (
+								<motion.button
+									type='button'
+									key='modal-scroll-hint'
+									onClick={scrollToBottom}
+									initial={{ opacity: 0, y: 8 }}
+									animate={{ opacity: 1, y: 0 }}
+									exit={{ opacity: 0, y: 8 }}
+									transition={{ duration: 0.2 }}
+									style={{ zIndex: modalZIndex + 1 }}
+									className='fixed bottom-6 left-1/2 flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-black/5 dark:bg-zinc-900 dark:ring-white/10'
+									aria-label='Hay más contenido, desplázate hacia abajo'>
+									<Icon
+										icon='DuoAngleDoubleDown'
+										size='text-xl'
+										className='animate-bounce text-primary-500'
+									/>
+								</motion.button>
+							)}
+						</AnimatePresence>
 						<BackDrop zIndex={backdropZIndex} />
 					</>
 				)}
