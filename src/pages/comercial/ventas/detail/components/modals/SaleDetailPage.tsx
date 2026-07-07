@@ -360,8 +360,8 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	const quoteButtonHandler = effectiveQuoteId ? handleViewQuote : handleCreateQuote;
 
 	const quoteButtonClass = effectiveQuoteId
-		? 'border-rose-500 bg-rose-50 text-rose-700 hover:bg-rose-100 hover:text-rose-900 dark:text-rose-200 dark:hover:bg-rose-500/20 dark:hover:text-rose-100'
-		: 'border-violet-500 bg-violet-50 text-violet-700 hover:bg-violet-100 hover:text-violet-900 dark:text-violet-300 dark:hover:bg-violet-500/20 dark:hover:text-violet-100';
+		? 'border-rose-500 bg-rose-500 text-rose-700 hover:bg-rose-100 hover:text-rose-900 dark:text-rose-200 dark:hover:bg-rose-500/20 dark:hover:text-rose-100'
+		: 'border-violet-500 bg-violet-500 text-violet-700 hover:bg-violet-100 hover:text-violet-900 dark:text-violet-300 dark:hover:bg-violet-500/20 dark:hover:text-violet-100';
 
 
 	const statusColorMap: Record<string, string> = {
