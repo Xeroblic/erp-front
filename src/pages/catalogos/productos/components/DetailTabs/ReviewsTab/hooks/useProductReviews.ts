@@ -75,12 +75,35 @@ export const useProductReviews = (productIds: number[]): ProductReviewsState => 
 		const load = async () => {
 			setIsLoading(true);
 			setError(null);
+
+			// Lanzamos ambas peticiones EN PARALELO. Los items de revisión técnica
+			// se piden por sucursal (payload pesado) y no dependen de las series,
+			// así que arrancan de una y no bloquean el primer render.
+			const itemsPromise: Promise<Map<string, IItem>> =
+				branchId === null
+					? Promise.resolve(new Map<string, IItem>())
+					: dispatch(
+							fetchItems({
+								subsidiaryId,
+								branchId,
+								params: { per_page: ITEMS_PER_PAGE },
+							}),
+						)
+							.unwrap()
+							.then(({ items }) => {
+								const map = new Map<string, IItem>();
+								items.forEach((item) => map.set(item.serial_number, item));
+								return map;
+							})
+							.catch(() => new Map<string, IItem>());
+
 			try {
 				const seriesGroups = await Promise.all(
 					ids.map((id) =>
 						fetchAllProductSeries(subsidiaryId, id).catch(() => [] as unknown[]),
 					),
 				);
+				if (!active) return;
 
 				const seriesBySerial = new Map<string, unknown>();
 				seriesGroups.flat().forEach((serie) => {
@@ -90,25 +113,24 @@ export const useProductReviews = (productIds: number[]): ProductReviewsState => 
 					}
 				});
 
-				const itemsBySerial = new Map<string, IItem>();
-				if (branchId !== null) {
-					const { items } = await dispatch(
-						fetchItems({
-							subsidiaryId,
-							branchId,
-							params: { per_page: ITEMS_PER_PAGE },
-						}),
-					)
-						.unwrap()
-						.catch(() => ({ items: [] as IItem[] }));
-					items.forEach((item) => itemsBySerial.set(item.serial_number, item));
-				}
+				// PRIMER RENDER: pintamos las series de inmediato (rápido y liviano).
+				// La tabla ya es usable; el estado de revisión llega enseguida.
+				setRows(
+					Array.from(seriesBySerial.values())
+						.map((serie) => buildRow(serie, undefined))
+						.filter((row): row is ProductReviewRow => row !== null),
+				);
+				setIsLoading(false);
 
+				// ENRIQUECIMIENTO: cuando lleguen los items, mezclamos el estado de
+				// revisión sin volver a bloquear la tabla.
+				const itemsBySerial = await itemsPromise;
 				if (!active) return;
-				const mapped = Array.from(seriesBySerial.entries())
-					.map(([serial, serie]) => buildRow(serie, itemsBySerial.get(serial)))
-					.filter((row): row is ProductReviewRow => row !== null);
-				setRows(mapped);
+				setRows(
+					Array.from(seriesBySerial.entries())
+						.map(([serial, serie]) => buildRow(serie, itemsBySerial.get(serial)))
+						.filter((row): row is ProductReviewRow => row !== null),
+				);
 			} catch (err) {
 				if (!active) return;
 				setRows([]);
@@ -117,8 +139,7 @@ export const useProductReviews = (productIds: number[]): ProductReviewsState => 
 						? err.message
 						: 'No se pudieron cargar las series del producto',
 				);
-			} finally {
-				if (active) setIsLoading(false);
+				setIsLoading(false);
 			}
 		};
 

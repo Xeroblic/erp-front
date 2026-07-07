@@ -17,6 +17,9 @@ interface SeriesPage {
  */
 const PER_PAGE = 1000;
 
+/** Las series de un producto cambian poco; cacheamos para reabrir la tab al instante. */
+const SERIES_CACHE_TTL = 60_000;
+
 const buildUrl = (subsidiaryId: number, productId: number): string =>
 	`/subsidiaries/${subsidiaryId}/products/${productId}/series`;
 
@@ -36,6 +39,8 @@ export const fetchAllProductSeries = async (
 		url: buildUrl(subsidiaryId, productId),
 		method: 'get',
 		params: { per_page: PER_PAGE, page: 1 },
+		cacheTTLms: SERIES_CACHE_TTL,
+		dedupe: true,
 	});
 
 	const rows = [...readRows(first.data)];
@@ -48,6 +53,8 @@ export const fetchAllProductSeries = async (
 					url: buildUrl(subsidiaryId, productId),
 					method: 'get',
 					params: { per_page: PER_PAGE, page: index + 2 },
+					cacheTTLms: SERIES_CACHE_TTL,
+					dedupe: true,
 				}),
 			),
 		);
