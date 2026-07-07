@@ -192,6 +192,70 @@ export const closeSale = async (
 	return (resp.data?.data ?? resp.data) as CloseSaleResponse;
 };
 
+/** Ítem no serializado reingresado al inventario tras confirmar la devolución. */
+export interface RestockedReturnItem {
+	sale_item_id: number;
+	product_id: number;
+	quantity: number;
+}
+
+/** Respuesta al confirmar la recepción física de una devolución. */
+export interface ConfirmReturnResponse {
+	message: string;
+	sale_id: number;
+	confirmed_serials: string[];
+	restocked_items: RestockedReturnItem[];
+}
+
+/**
+ * Confirma la recepción física en bodega de los productos devueltos de una venta
+ * previamente revertida (refunded). Devuelve al stock las series en estado
+ * RETURNED y reingresa la cantidad pendiente de los ítems no serializados.
+ */
+export const confirmSaleReturn = async (
+	subsidiaryId: number,
+	saleId: number,
+): Promise<ConfirmReturnResponse> => {
+	const resp = await ApiService.fetchData<any>({
+		url: `${base(subsidiaryId)}/${saleId}/confirm-return`,
+		method: 'post',
+	});
+	return (resp.data?.data ?? resp.data) as ConfirmReturnResponse;
+};
+
+/** Una corrección atómica de serie (swap) sobre una línea de venta. */
+export interface SerialCorrectionInput {
+	sale_item_id: number;
+	old_serial: string;
+	new_serial: string;
+	/** Opcional en el backend; el front lo exige obligatorio. */
+	reason?: string;
+}
+
+/** Respuesta al corregir series de una venta. */
+export interface CorrectSerialsResponse {
+	message: string;
+	sale_id: number;
+}
+
+/**
+ * Corrige (swap atómico) una o más series mal asignadas a una venta cerrada o
+ * revertida-en-tránsito. No altera montos/estado; solo intercambia la serie
+ * incorrecta por la correcta. El backend valida producto/grade/estado.
+ */
+export const correctSaleSerials = async (
+	subsidiaryId: number,
+	saleId: number,
+	corrections: SerialCorrectionInput[],
+): Promise<CorrectSerialsResponse> => {
+	const resp = await ApiService.fetchData<any>({
+		url: `${base(subsidiaryId)}/${saleId}/serial-corrections`,
+		method: 'post',
+		data: { corrections },
+	});
+	return (resp.data?.data ?? resp.data) as CorrectSerialsResponse;
+};
+
 /**
  * Crea una nueva venta manual
  */
@@ -296,6 +360,8 @@ export const salesService = {
 	fetchSaleDetail,
 	fetchSaleItems,
 	closeSale,
+	confirmSaleReturn,
+	correctSaleSerials,
 	createSale,
 	fetchPendingSerialAssignment,
 	fetchPendingSerialAssignmentCount,
