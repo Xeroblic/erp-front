@@ -63,6 +63,19 @@ export interface IPersonalizacionUsuario {
 	dark_mode?: number;
 }
 
+/**
+ * Usuario "de la app": base compartida por el usuario de SESIÓN (normalizado de `/perfil`
+ * vía `normalizeUserProfile`) y por el usuario de ADMINISTRACIÓN (`UserWithDetails extends
+ * IUserMe`, del listado de usuarios). Por eso convive:
+ *  - lo que produce `/perfil` (`genero`, `is_staff`, `celular`, `cargo`, `direccion`, …), y
+ *  - lo que aporta el endpoint admin (`is_active`, `position`, `phone_number`, `address`, …).
+ *
+ * El contrato CRUDO de `/perfil` está en `IPerfilResponse`/`IPerfilUser`.
+ *
+ * ⚠️ `id` está tipado requerido pero `normalizeUserProfile` no lo setea desde `/perfil`
+ * (el crudo trae `pk`); en la sesión puede venir `undefined`. Separar sesión vs admin en
+ * dos tipos distintos es el refactor pendiente de mayor alcance.
+ */
 export interface IUserMe {
 	pk: number;
 	id: number;
@@ -126,6 +139,55 @@ export interface IUserMe {
 
 	access?: AuthorizationAccessScope | null;
 	visible?: AuthorizationVisibleScope | null;
+}
+
+/**
+ * Forma CRUDA del usuario dentro de `/perfil`, antes de normalizar. Los nombres son los
+ * reales del backend (sin los alias camel/en que agrega el frontend en `IUserMe`).
+ */
+export interface IPerfilUser {
+	pk: number;
+	email: string;
+	first_name: string;
+	second_name?: string | null;
+	last_name: string;
+	second_last_name?: string | null;
+	rut?: string | null;
+	celular?: string | null;
+	genero?: string | null;
+	fecha_nacimiento?: string | null;
+	is_staff?: boolean;
+	image?: IUserImageData | string | null;
+	image_url?: string | null;
+	fecha_ingreso?: string | null;
+	fecha_contrato?: string | null;
+	cargo?: string | null;
+	direccion?: string | null;
+	comuna_id?: number | null;
+	personalizacion?: IPersonalizacionUsuario;
+}
+
+/**
+ * Sobre completo devuelto por `/perfil`: usuario + permisos/roles + contexto. Incluye la
+ * variante alternativa anidada en `data` (con `all_permissions`, etc.) que también acepta
+ * `normalizeUserProfile`.
+ */
+export interface IPerfilResponse {
+	user?: IPerfilUser;
+	permisos?: string[];
+	roles?: string[];
+	branch?: IUserMe['branch'];
+	access?: AuthorizationAccessScope | null;
+	visible?: AuthorizationVisibleScope | null;
+	data?: IPerfilUser & {
+		all_permissions?: string[];
+		direct_permissions?: string[];
+		role_permissions?: string[];
+		global_roles?: string[];
+		branch?: IUserMe['branch'];
+		access?: AuthorizationAccessScope | null;
+		visible?: AuthorizationVisibleScope | null;
+	};
 }
 
 export interface IGruposUsuarios {
