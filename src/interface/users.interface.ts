@@ -1,7 +1,17 @@
 /**
- * Interfaces para el módulo de Usuarios
- * Basado en los modelos del backend ERP P0
+ * Interfaces del MÓDULO DE USUARIOS: administración de OTROS usuarios (listado, CRUD e
+ * invitaciones).
+ *
+ * NO confundir con `user.interface.ts`:
+ *  - `user.interface.ts`  → `IUserMe`: el usuario logueado ("yo"/sesión), desde `/perfil`,
+ *     con permisos/roles/scope. Es MI identidad y contexto.
+ *  - `users.interface.ts` → `IUser`  : cualquier usuario que administro desde esta pantalla.
  */
+import type {
+	AuthorizationBranchRef,
+	AuthorizationCompanyRef,
+	AuthorizationSubsidiaryRef,
+} from '@/types/authorization';
 
 export interface IUser {
 	id: number;
@@ -21,9 +31,9 @@ export interface IUser {
 	roles?: string[];
 	authority?: string[];
 	permissions?: string[];
-	company?: any;
-	subsidiary?: any;
-	branch?: any;
+	company?: AuthorizationCompanyRef | null;
+	subsidiary?: AuthorizationSubsidiaryRef | null;
+	branch?: AuthorizationBranchRef | null;
 
 	// Campos calculados
 	full_name?: string;
