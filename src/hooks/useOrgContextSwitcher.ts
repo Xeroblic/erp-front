@@ -3,13 +3,14 @@ import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '@/store';
 import ApiService from '@/services/ApiService';
 import { userMeThunk } from '@/store/slices/auth/authSlice';
+import { actualizarSucursalPrincipalThunk } from '@/store/slices/personalizacion/personalizacionSlice';
 
 /**
  * Hook único para ejecutar el cambio de contexto organizacional (empresa / subsidiaria /
- * sucursal). Centraliza lo que antes estaba disperso y con bugs en
- * `useCompanyManager.switchCompany`:
- *  - resuelve el `company_id` REAL (antes estaba hardcodeado en `1`), y
- *  - emite un evento con semántica correcta (la subsidiaria NO se mete dentro de `branchId`).
+ * sucursal). Centraliza el switch:
+ *  - resuelve el `company_id` REAL (antes hardcodeado en `1` en `useCompanyManager`),
+ *  - actualiza la personalización vía thunk (mantiene el slice sincronizado), y
+ *  - emite un evento único y bien tipado (`org-context-changed`).
  */
 
 /** Detalle del evento unificado de cambio de contexto. */
@@ -19,19 +20,20 @@ export interface OrgContextChangeDetail {
 	branchId: number | null;
 }
 
-/** Evento nuevo, bien tipado. Se mantiene `user-branch-changed` por compatibilidad. */
+/** Evento único de cambio de contexto (reemplaza al legacy `user-branch-changed`). */
 export const ORG_CONTEXT_CHANGED_EVENT = 'org-context-changed';
-export const LEGACY_BRANCH_CHANGED_EVENT = 'user-branch-changed';
 
 export interface SwitchContextArgs {
 	/** Valor a guardar en `personalization.sucursal_principal`. */
 	sucursalPrincipal: number;
-	/** Si se indica, se envía como `subsidiary_id` a `/user/switch-company`. */
+	/** Si se indica, se envía como `subsidiary_id` a `/user/switch-company` (cambio de subsidiaria). */
 	subsidiaryId?: number | null;
 	/** `company_id` explícito; si no se pasa, se resuelve desde personalización/usuario. */
 	companyId?: number | null;
-	/** `branchId` real para el evento (null en un cambio de subsidiaria). */
+	/** `branchId` resultante para el evento (null en un cambio de subsidiaria). */
 	eventBranchId?: number | null;
+	/** `subsidiaryId` resultante para el evento (por defecto, el `subsidiaryId` del POST). */
+	eventSubsidiaryId?: number | null;
 	successMessage?: string;
 }
 
@@ -48,6 +50,7 @@ export const useOrgContextSwitcher = () => {
 			subsidiaryId = null,
 			companyId: companyIdArg,
 			eventBranchId = null,
+			eventSubsidiaryId,
 			successMessage = 'Contexto actualizado',
 		}: SwitchContextArgs): Promise<boolean> => {
 			setIsSwitching(true);
@@ -65,18 +68,12 @@ export const useOrgContextSwitcher = () => {
 					},
 				});
 
-				// 2) personalization: sólo si cambió el sucursal_principal.
+				// 2) personalización vía thunk (mantiene el slice sincronizado), sólo si cambió.
 				if (personalizacion?.sucursal_principal !== sucursalPrincipal) {
 					try {
-						await ApiService.fetchData({
-							url: '/user/personalization',
-							method: 'put',
-							data: {
-								tema: personalizacion?.tema,
-								font_size: personalizacion?.font_size,
-								sucursal_principal: sucursalPrincipal,
-							},
-						});
+						await dispatch(
+							actualizarSucursalPrincipalThunk(sucursalPrincipal),
+						).unwrap();
 					} catch (err) {
 						console.warn(
 							'[useOrgContextSwitcher] no se pudo actualizar la personalización:',
@@ -88,18 +85,13 @@ export const useOrgContextSwitcher = () => {
 				// 3) refresca el perfil (trae el nuevo contexto ya aplicado).
 				await dispatch(userMeThunk()).unwrap();
 
-				// 4) evento unificado + legacy con semántica CORRECTA (subsidiaria != branch).
+				// 4) evento unificado (subsidiaria != branch).
 				const detail: OrgContextChangeDetail = {
 					companyId: resolvedCompanyId,
-					subsidiaryId,
+					subsidiaryId: eventSubsidiaryId ?? subsidiaryId,
 					branchId: eventBranchId,
 				};
 				window.dispatchEvent(new CustomEvent(ORG_CONTEXT_CHANGED_EVENT, { detail }));
-				window.dispatchEvent(
-					new CustomEvent(LEGACY_BRANCH_CHANGED_EVENT, {
-						detail: { branchId: eventBranchId, subsidiaryId },
-					}),
-				);
 
 				toast.success(successMessage);
 				return true;
