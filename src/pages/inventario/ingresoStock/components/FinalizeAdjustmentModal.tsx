@@ -8,7 +8,7 @@ import Select from '@/components/form/Select';
 import Label from '@/components/form/Label';
 import Textarea from '@/components/form/Textarea';
 import { useAppSelector } from '@/store';
-import { useUserBranches } from '@/hooks/permiso/userBranch';
+import { selectUserBranches } from '@/store/selectors/userBranchesSelectors';
 import ApiService from '@/services/ApiService';
 import type { IWorkItem } from '../types';
 import { IAdjustmentForm } from '../types';
@@ -33,11 +33,8 @@ export const FinalizeAdjustmentModal: React.FC<FinalizeAdjustmentModalProps> = (
 	workItems,
 	subsidiaryId,
 }) => {
-	const { user } = useAppSelector((state) => state.auth);
-	const userId = user?.id ?? (user as { pk?: number } | null)?.pk ?? undefined;
-	const { branches, loading: loadingBranches } = useUserBranches(userId, {
-		enabled: Boolean(userId),
-	});
+	const branches = useAppSelector(selectUserBranches);
+	const loadingBranches = false;
 	const [stockByProduct, setStockByProduct] = useState<Map<number, number>>(new Map());
 	const [isLoadingBranchStock, setIsLoadingBranchStock] = useState(false);
 

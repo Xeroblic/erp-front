@@ -10,7 +10,7 @@ import {
 	IInventoryFilters,
 	FetchMovimientosParams,
 } from '@/store/slices/inventory/inventorySlice';
-import { useUserBranches } from '@/hooks/permiso/userBranch';
+import { selectUserBranches } from '@/store/selectors/userBranchesSelectors';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 
 type FetchStatus = 'idle' | 'loading' | 'loading-more' | 'success' | 'timeout' | 'error';
@@ -24,39 +24,37 @@ interface UseTrazabilidadMovimientosOptions {
 
 export function useTrazabilidadMovimientos(options: UseTrazabilidadMovimientosOptions = {}) {
 	const { autoFetch = true, perPage = 20 } = options;
-	
+
 	const dispatch = useAppDispatch();
-	
+
 	// Selectores de Redux
 	const movimientos = useAppSelector(selectMovimientosSucursal);
 	const pagination = useAppSelector(selectInventarioPagination);
 	const loading = useAppSelector(selectInventarioLoading);
 	const error = useAppSelector(selectInventarioError);
-	const currentUser = useAppSelector((state) => state.auth.user);
 	const { branchId } = useCurrentBranch();
-	
+
 	// Estados locales
 	const [fetchStatus, setFetchStatus] = useState<FetchStatus>('idle');
 	const [hasFetched, setHasFetched] = useState(false);
 	const [filters, setFilters] = useState<IInventoryFilters>({});
 	const [isLoadingMore, setIsLoadingMore] = useState(false);
-	
+
 	// Refs
 	const fetchedBranchRef = useRef<number | null>(null);
 	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 	const abortControllerRef = useRef<AbortController | null>(null);
-	
-	// Obtener userId y branches
-	const userId = currentUser?.id ?? (currentUser as any)?.pk ?? undefined;
-	const { branches, loading: branchesLoading } = useUserBranches(userId, { enabled: Boolean(userId) });
-	
+
+	const branches = useAppSelector(selectUserBranches);
+	const branchesLoading = false;
+
 	// Nombre de la sucursal actual
 	const currentBranchName = useMemo(() => {
 		if (!branchId) return null;
 		const branch = branches.find((b) => b.id === branchId);
 		return branch?.name ?? null;
 	}, [branchId, branches]);
-	
+
 	// Limpiar timeout y abort controller al desmontar
 	useEffect(() => {
 		return () => {
@@ -65,38 +63,42 @@ export function useTrazabilidadMovimientos(options: UseTrazabilidadMovimientosOp
 			dispatch(clearListaMovimientoSucursal());
 		};
 	}, [dispatch]);
-	
+
 	useEffect(() => {
 		fetchedBranchRef.current = null;
 		setFetchStatus('idle');
 		setHasFetched(false);
 	}, [branchId]);
-	
+
 	// Función para hacer fetch
 	const fetchData = useCallback(
-		async (page: number = 1, currentFilters: IInventoryFilters = filters, append: boolean = false) => {
+		async (
+			page: number = 1,
+			currentFilters: IInventoryFilters = filters,
+			append: boolean = false,
+		) => {
 			if (!branchId) return;
-			
+
 			// Evitar fetch duplicado (solo para carga inicial, no para append)
 			if (!append && fetchedBranchRef.current === branchId && fetchStatus === 'loading') {
 				return;
 			}
-			
+
 			// Cancelar request anterior
 			if (abortControllerRef.current) {
 				abortControllerRef.current.abort();
 			}
 			abortControllerRef.current = new AbortController();
-			
+
 			// Limpiar timeout anterior
 			if (timeoutRef.current) {
 				clearTimeout(timeoutRef.current);
 			}
-			
+
 			fetchedBranchRef.current = branchId;
 			setFetchStatus(append ? 'loading-more' : 'loading');
 			if (append) setIsLoadingMore(true);
-			
+
 			// Configurar timeout
 			timeoutRef.current = setTimeout(() => {
 				setFetchStatus('timeout');
@@ -105,7 +107,7 @@ export function useTrazabilidadMovimientos(options: UseTrazabilidadMovimientosOp
 					abortControllerRef.current.abort();
 				}
 			}, TIMEOUT_MS);
-			
+
 			try {
 				const params: FetchMovimientosParams & { append?: boolean } = {
 					branch_id: branchId,
@@ -114,9 +116,9 @@ export function useTrazabilidadMovimientos(options: UseTrazabilidadMovimientosOp
 					append,
 					...currentFilters,
 				};
-				
+
 				await dispatch(fetchListaMovimientoSucursalThunk(params)).unwrap();
-				
+
 				if (timeoutRef.current) {
 					clearTimeout(timeoutRef.current);
 				}
@@ -136,14 +138,19 @@ export function useTrazabilidadMovimientos(options: UseTrazabilidadMovimientosOp
 		},
 		[branchId, dispatch, fetchStatus, filters, perPage],
 	);
-	
+
 	// Fetch inicial cuando cambia el branchId
 	useEffect(() => {
-		if (autoFetch && branchId && fetchedBranchRef.current !== branchId && fetchStatus !== 'loading') {
+		if (
+			autoFetch &&
+			branchId &&
+			fetchedBranchRef.current !== branchId &&
+			fetchStatus !== 'loading'
+		) {
 			fetchData(1);
 		}
 	}, [autoFetch, branchId, fetchData, fetchStatus]);
-	
+
 	// Handler para recargar
 	const reload = useCallback(() => {
 		fetchedBranchRef.current = null;
@@ -151,15 +158,22 @@ export function useTrazabilidadMovimientos(options: UseTrazabilidadMovimientosOp
 		setHasFetched(false);
 		fetchData(1, filters, false);
 	}, [fetchData, filters]);
-	
+
 	// Handler para cargar más (append)
 	const loadMore = useCallback(() => {
 		if (pagination.hasNextPage && !isLoadingMore && fetchStatus !== 'loading') {
 			const nextPage = pagination.currentPage + 1;
 			fetchData(nextPage, filters, true);
 		}
-	}, [pagination.hasNextPage, pagination.currentPage, isLoadingMore, fetchStatus, fetchData, filters]);
-	
+	}, [
+		pagination.hasNextPage,
+		pagination.currentPage,
+		isLoadingMore,
+		fetchStatus,
+		fetchData,
+		filters,
+	]);
+
 	// Handler para cambiar de página (legacy - por si se necesita)
 	const goToPage = useCallback(
 		(page: number) => {
@@ -167,7 +181,7 @@ export function useTrazabilidadMovimientos(options: UseTrazabilidadMovimientosOp
 		},
 		[fetchData, filters],
 	);
-	
+
 	// Handler para aplicar filtros (resetea la paginación)
 	const applyFilters = useCallback(
 		(newFilters: IInventoryFilters) => {
@@ -179,7 +193,7 @@ export function useTrazabilidadMovimientos(options: UseTrazabilidadMovimientosOp
 		},
 		[fetchData],
 	);
-	
+
 	// Handler para limpiar filtros
 	const clearFilters = useCallback(() => {
 		setFilters({});
@@ -188,31 +202,31 @@ export function useTrazabilidadMovimientos(options: UseTrazabilidadMovimientosOp
 		setHasFetched(false);
 		fetchData(1, {}, false);
 	}, [fetchData]);
-	
+
 	return {
 		// Data
 		movimientos,
 		pagination,
 		loading,
 		error,
-		
+
 		// Branch info
 		branchId,
 		currentBranchName,
 		branches,
 		branchesLoading,
-		
+
 		// Status
 		fetchStatus,
 		hasFetched,
 		isLoadingMore,
-		
+
 		// Filters
 		filters,
 		setFilters,
 		applyFilters,
 		clearFilters,
-		
+
 		// Actions
 		reload,
 		loadMore,
@@ -222,4 +236,3 @@ export function useTrazabilidadMovimientos(options: UseTrazabilidadMovimientosOp
 }
 
 export default useTrazabilidadMovimientos;
-

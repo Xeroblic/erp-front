@@ -10,17 +10,14 @@ import {
 	actualizarSucursalPrincipalThunk,
 } from '@/store/slices/personalizacion/personalizacionSlice';
 import { setTechnicalReviewsContext } from '@/store/slices/technicalReviews';
-import {
-	useUserBranches,
-	type UserBranch,
-} from '@/hooks/permiso/userBranch';
+import { selectUserBranches, type UserBranchInfo } from '@/store/selectors/userBranchesSelectors';
 import ApiService from '@/services/ApiService';
 import Icon from '@/components/icon/Icon';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 
 type BranchOptionMeta = {
-	branch: UserBranch;
+	branch: UserBranchInfo;
 	isPreferred: boolean;
 };
 
@@ -32,7 +29,7 @@ const EMPTY_SUBSIDIARY_ACCESS: Array<{ id?: number | null }> = [];
 
 const FALLBACK_GROUP_LABEL = 'Sucursales';
 
-const buildGroupLabel = (branch: UserBranch): string => {
+const buildGroupLabel = (branch: UserBranchInfo): string => {
 	if (branch.subsidiaryName) return branch.subsidiaryName;
 	if (branch.companyName) return branch.companyName;
 	return FALLBACK_GROUP_LABEL;
@@ -44,19 +41,16 @@ const SelectSucursalEmpresa = () => {
 	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
 	const personalizacionInitialized = useAppSelector(selectPersonalizacionInitialized);
 
-	const userId = user?.id ?? (user as any)?.pk ?? null;
-
 	useEffect(() => {
 		if (!personalizacionInitialized) {
 			void dispatch(obtenerPersonalizacionThunk());
 		}
 	}, [dispatch, personalizacionInitialized]);
 
-	const {
-		branches,
-		loading: branchesLoading,
-		error: branchesError,
-	} = useUserBranches(userId ?? undefined, { enabled: Boolean(userId) });
+	const branches = useAppSelector(selectUserBranches);
+	// Los datos vienen del store (sin fetch): no hay estados de carga/error.
+	const branchesLoading = false;
+	const branchesError: string | null = null;
 
 	const accessibleSubsidiaryIds = useMemo(() => {
 		const subsidiaries = new Set<number>();
@@ -334,7 +328,7 @@ const SelectSucursalEmpresa = () => {
 	return (
 		<>
 			{/* DESKTOP */}
-			<div className='hidden w-full sm:block sm:min-w-[260px] sm:max-w-xs '>
+			<div className='hidden w-full sm:block sm:min-w-[260px] sm:max-w-xs'>
 				<SelectReact {...selectProps} />
 			</div>
 
