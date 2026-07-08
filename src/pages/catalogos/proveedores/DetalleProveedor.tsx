@@ -20,7 +20,7 @@ import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/per
 import { useSupplierCustomers } from './components/hooks/useSupplierCustomers';
 import type { ISupplier } from '@/interface/supplier.interface';
 import { formatDate } from './components/utils';
-import { useUserBranches } from '@/hooks/permiso/userBranch';
+import { selectUserBranches } from '@/store/selectors/userBranchesSelectors';
 
 interface ISupplierExtended extends ISupplier {
 	customers_count?: number;
@@ -45,8 +45,7 @@ const DetalleProveedorPage: React.FC = () => {
 
 	const currentUser = useAppSelector((state) => state.auth.user);
 	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
-	const userId = currentUser?.id ?? (currentUser as any)?.pk ?? undefined;
-	const { branches } = useUserBranches(userId, { enabled: Boolean(userId) });
+	const branches = useAppSelector(selectUserBranches);
 
 	const branchToSubsidiary = useMemo(() => {
 		const map = new Map<number, number>();

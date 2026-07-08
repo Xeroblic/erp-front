@@ -1,9 +1,11 @@
 import React from 'react';
 import Select from '@/components/form/Select';
-import { useUserBranches } from '../../../../../../hooks/permiso/userBranch';
+import { useAppSelector } from '@/store';
+import { selectUserBranches } from '@/store/selectors/userBranchesSelectors';
 
 interface UserBranchSelectorProps {
-	userId: number;
+	/** @deprecated Ya no se usa: las sucursales salen del usuario en sesión (store). */
+	userId?: number;
 	value?: number | string | null;
 	onChange: (branchId: number | null) => void;
 	name?: string;
@@ -43,7 +45,6 @@ interface UserBranchSelectorProps {
  * ```
  */
 const UserBranchSelector: React.FC<UserBranchSelectorProps> = ({
-	userId,
 	value,
 	onChange,
 	name = 'branch_id',
@@ -54,7 +55,10 @@ const UserBranchSelector: React.FC<UserBranchSelectorProps> = ({
 	className,
 	showError = true,
 }) => {
-	const { branches, loading, error } = useUserBranches(userId);
+	const branches = useAppSelector(selectUserBranches);
+	// Los datos vienen del store (sin fetch): no hay estados de carga/error.
+	const loading = false;
+	const error: string | null = null;
 
 	const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
 		const selectedValue = e.target.value;
@@ -99,7 +103,6 @@ const UserBranchSelector: React.FC<UserBranchSelectorProps> = ({
 				value={value ?? ''}
 				onChange={handleChange}
 				disabled={disabled || loading}
-				
 				required={required}>
 				<option value=''>{loading ? 'Cargando...' : placeholder}</option>
 				{branches.map((branch) => (

@@ -24,7 +24,6 @@ import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/per
 import { useProductos } from '@/pages/catalogos/productos/hooks/useProductos';
 import type { IProduct } from '@/interface/product.interface';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
-import { useUserBranches, type UserBranch } from '@/hooks/permiso/userBranch';
 
 // Componentes y hooks locales
 import { ProductsTable, WorkspaceTable, ProductDetailCard } from './components';
