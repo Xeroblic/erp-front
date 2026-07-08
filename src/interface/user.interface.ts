@@ -72,9 +72,8 @@ export interface IPersonalizacionUsuario {
  *
  * El contrato CRUDO de `/perfil` está en `IPerfilResponse`/`IPerfilUser`.
  *
- * ⚠️ `id` está tipado requerido pero `normalizeUserProfile` no lo setea desde `/perfil`
- * (el crudo trae `pk`); en la sesión puede venir `undefined`. Separar sesión vs admin en
- * dos tipos distintos es el refactor pendiente de mayor alcance.
+ * `id`: `/perfil` entrega `pk`; `normalizeUserProfile` lo mapea a `id` para que el tipo no
+ * mienta. Separar sesión vs admin en dos tipos distintos sigue pendiente (refactor mayor).
  */
 export interface IUserMe {
 	pk: number;
