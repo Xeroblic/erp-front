@@ -79,9 +79,15 @@ export interface IUserMe {
 	celular?: string | undefined;
 	address: string | undefined;
 	direccion?: string | undefined;
-	gender: string | undefined;
-	is_active: boolean;
+	genero?: string | undefined;
+	is_staff?: boolean;
+	fecha_nacimiento?: string | undefined;
 	image: string | undefined | IUserImageData;
+	image_url?: string | undefined;
+	fecha_ingreso?: string | null;
+	fecha_contrato?: string | null;
+	comuna_id?: number | undefined;
+	is_active: boolean;
 	branch_id: number | undefined;
 	// Nuevos campos para multi-empresa
 	companies?: Array<{

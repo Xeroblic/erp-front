@@ -147,7 +147,7 @@ const Perfil = () => {
 			phone_number: userData?.celular ?? userData?.phone_number ?? '',
 			direccion: userData?.direccion ?? userData?.address ?? '',
 			...normalizeInitialGeoFromUser(userData as any),
-			genero: toGenderFormValue((userData as any)?.genero ?? userData?.gender),
+			genero: toGenderFormValue(userData?.genero),
 			theme: darkMode === 'light' ? 'light' : darkMode === 'dark' ? 'dark' : 'system',
 			fecha_nacimiento: toInputDate(
 				(userData as any)?.fecha_nacimiento ?? (userData as any)?.date_of_birth ?? '',
