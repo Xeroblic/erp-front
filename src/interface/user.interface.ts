@@ -1,7 +1,13 @@
-import type {
-  AuthorizationAccessScope,
-  AuthorizationVisibleScope,
-} from '@/types/authorization';
+/**
+ * Interfaces del USUARIO DE SESIÓN ("yo"): `IUserMe` es el usuario logueado, resultado de
+ * aplanar/normalizar el sobre de `/perfil` (`{ user, permisos, roles, branch, access,
+ * visible }`) en `utils/normalizeUserProfile`.
+ *
+ * NO confundir con `users.interface.ts` (`IUser`), que modela OTROS usuarios en el módulo
+ * de administración. Aquí = mi identidad + permisos + contexto; allá = la colección que
+ * administro.
+ */
+import type { AuthorizationAccessScope, AuthorizationVisibleScope } from '@/types/authorization';
 
 type IUserImageMetadataValue = string | number | boolean | null | undefined;
 
@@ -25,20 +31,36 @@ interface IUserImageData {
 	[key: string]: IUserImageMetadataValue | Record<string, IUserImageMetadataValue> | undefined;
 }
 
+/**
+ * Personalización del usuario. OJO: el backend la serializa DISTINTO según endpoint,
+ * por eso sólo `id/tema/font_size/sucursal_principal` están garantizados y el resto es
+ * opcional:
+ *  - `/user/personalization` → `user_id, tcolor, tcolor_int, subsidiary_id, company_id, created_at, updated_at`
+ *  - `/perfil`               → `usuario, empresa, fecha_creacion, fecha_modificacion`
+ */
 export interface IPersonalizacionUsuario {
-  id: number;
-  fecha_creacion: string;
-  fecha_modificacion: string;
-  tema: number;
-  font_size: number;
-  tcolor: string;
-  tcolor_int: string;
-  dark_mode: number;
-  usuario: number;
-  sucursal_principal: number | null;
-  subsidiary_id: number | null;
-  empresa: number | null;
-  company_id?: number;
+	id: number;
+	tema: number;
+	font_size: number;
+	sucursal_principal: number | null;
+
+	// Serialización de /user/personalization
+	user_id?: number;
+	tcolor?: string;
+	tcolor_int?: string;
+	subsidiary_id?: number | null;
+	company_id?: number | null;
+	created_at?: string;
+	updated_at?: string;
+
+	// Serialización de /perfil
+	usuario?: number | null;
+	empresa?: number | null;
+	fecha_creacion?: string;
+	fecha_modificacion?: string;
+
+	// Sólo frontend (no viene en el payload del backend)
+	dark_mode?: number;
 }
 
 export interface IUserMe {
@@ -59,10 +81,7 @@ export interface IUserMe {
 	direccion?: string | undefined;
 	gender: string | undefined;
 	is_active: boolean;
-	image:
-		| string
-		| undefined
-		| IUserImageData;
+	image: string | undefined | IUserImageData;
 	branch_id: number | undefined;
 	// Nuevos campos para multi-empresa
 	companies?: Array<{
@@ -77,10 +96,12 @@ export interface IUserMe {
 		name: string;
 		rut?: string;
 	} | null;
-	subsidiary?: {
-		id: number;
-		name: string;
-	} | undefined;
+	subsidiary?:
+		| {
+				id: number;
+				name: string;
+		  }
+		| undefined;
 	branch?: {
 		id: number;
 		name: string;
