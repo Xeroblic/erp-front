@@ -21,7 +21,6 @@ import NotificationsStreamProvider from '@/notifications/NotificationsStreamProv
 import tokenManager from '@/services/auth/tokenManager';
 import { useVersion } from '@/hooks/useVersion';
 
-
 const queryClient = new QueryClient({
 	defaultOptions: {
 		queries: {
@@ -44,8 +43,6 @@ const App = () => {
 	const { isAuthenticated } = useAppSelector((state) => state.auth);
 
 	const version = useVersion();
-
-	
 
 	useEffect(() => {
 		if (version === 'dev') {
@@ -72,8 +69,8 @@ const App = () => {
 
 	useEffect(() => {
 		const handler = () => dispatch(obtenerPersonalizacionThunk());
-		window.addEventListener('user-branch-changed', handler);
-		return () => window.removeEventListener('user-branch-changed', handler);
+		window.addEventListener('org-context-changed', handler);
+		return () => window.removeEventListener('org-context-changed', handler);
 	}, [dispatch]);
 
 	useEffect(() => {

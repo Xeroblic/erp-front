@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { toast } from 'react-toastify';
 import { GroupBase } from 'react-select';
 import SelectReact, { TSelectGroups, TSelectOption } from '@/components/form/SelectReact';
 import { useAppDispatch, useAppSelector } from '@/store';
@@ -7,11 +6,10 @@ import {
 	selectPersonalizacionUsuario,
 	selectIsInitialized as selectPersonalizacionInitialized,
 	obtenerPersonalizacionThunk,
-	actualizarSucursalPrincipalThunk,
 } from '@/store/slices/personalizacion/personalizacionSlice';
 import { setTechnicalReviewsContext } from '@/store/slices/technicalReviews';
 import { selectUserBranches, type UserBranchInfo } from '@/store/selectors/userBranchesSelectors';
-import ApiService from '@/services/ApiService';
+import useOrgContextSwitcher from '@/hooks/useOrgContextSwitcher';
 import Icon from '@/components/icon/Icon';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
@@ -37,6 +35,7 @@ const buildGroupLabel = (branch: UserBranchInfo): string => {
 
 const SelectSucursalEmpresa = () => {
 	const dispatch = useAppDispatch();
+	const { switchContext } = useOrgContextSwitcher();
 	const { user } = useAppSelector((state) => state.auth);
 	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
 	const personalizacionInitialized = useAppSelector(selectPersonalizacionInitialized);
@@ -175,34 +174,15 @@ const SelectSucursalEmpresa = () => {
 				}),
 			);
 
-			try {
-				await dispatch(actualizarSucursalPrincipalThunk(nextBranchId)).unwrap();
-
-				const companyId = personalizacionUsuario?.company_id ?? user?.company?.id;
-				if (companyId) {
-					try {
-						await ApiService.fetchData({
-							url: '/user/switch-company',
-							method: 'post',
-							data: { company_id: companyId },
-						});
-					} catch (err) {
-						console.warn('switch-company fallback failed:', err);
-					}
-				}
-
-				window.dispatchEvent(
-					new CustomEvent('user-branch-changed', {
-						detail: { branchId: nextBranchId, subsidiaryId: nextSubsidiaryId },
-					}),
-				);
-
-				toast.success('Sucursal principal actualizada');
-			} catch (error: any) {
-				toast.error(error?.message ?? 'No se pudo actualizar la sucursal principal');
-			}
+			// Cambio de sucursal centralizado en el switcher (personalización + evento).
+			await switchContext({
+				sucursalPrincipal: nextBranchId,
+				eventBranchId: nextBranchId,
+				eventSubsidiaryId: nextSubsidiaryId,
+				successMessage: 'Sucursal principal actualizada',
+			});
 		},
-		[dispatch, personalizacionUsuario?.company_id, preferredBranchId, user?.company?.id],
+		[dispatch, preferredBranchId, switchContext],
 	);
 
 	const formatOptionLabel = useCallback((option: BranchOption) => {

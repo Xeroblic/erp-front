@@ -111,9 +111,6 @@ export const logoutThunk = createAsyncThunk<
 	} catch {
 		// da lo mismo si falla
 	} finally {
-		// IMPORTANTE: Limpiar memoria PRIMERO, ANTES de despachar logout a Redux.
-		// Esto permite que el cross-tab sync (storeSetup.ts) distinga un logout
-		// voluntario (memoryToken = null) de un fallo de pestaña en background.
 		tokenManager.clearTokens();
 
 		dispatch(logout());

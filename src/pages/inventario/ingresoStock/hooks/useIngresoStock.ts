@@ -70,8 +70,8 @@ export const useIngresoStock = () => {
 			}
 		};
 
-		window.addEventListener('user-branch-changed', handleExternalBranchChange);
-		return () => window.removeEventListener('user-branch-changed', handleExternalBranchChange);
+		window.addEventListener('org-context-changed', handleExternalBranchChange);
+		return () => window.removeEventListener('org-context-changed', handleExternalBranchChange);
 	}, []);
 
 	useEffect(() => {
