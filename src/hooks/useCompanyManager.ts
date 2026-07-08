@@ -1,8 +1,8 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { useAppSelector, useAppDispatch } from '@/store';
+import { useAppSelector } from '@/store';
 import ApiService from '@/services/ApiService';
-import { userMeThunk } from '@/store/slices/auth/authSlice';
+import useOrgContextSwitcher from '@/hooks/useOrgContextSwitcher';
 
 interface CompanyInfo {
 	id: number;
@@ -25,7 +25,7 @@ interface UseCompanyManager {
 }
 
 const useCompanyManager = (): UseCompanyManager => {
-	const dispatch = useAppDispatch();
+	const { switchContext } = useOrgContextSwitcher();
 	const user = useAppSelector((state) => state.auth.user);
 	const personalizationFromStore = useAppSelector(
 		(state) => state.personalizacion?.personalizacionUsuario,
@@ -87,74 +87,34 @@ const useCompanyManager = (): UseCompanyManager => {
 		async (subsidiaryId: number): Promise<boolean> => {
 			setIsLoading(true);
 			try {
-				// 1) Cambia compañía/subsidiaria (usa signal local por si quieres cancelar acá también)
-				const controller = new AbortController();
-				await ApiService.fetchData({
-					url: '/user/switch-company',
-					method: 'post',
-					data: {
-						company_id: 1, // TODO: reemplazar por real si corresponde
-						subsidiary_id: subsidiaryId,
-					},
-					signal: controller.signal,
+				// Delega el cambio en el hook centralizado: resuelve el company_id REAL
+				// (ya no `1` hardcodeado) y emite el evento con semántica correcta
+				// (la subsidiaria NO viaja dentro de `branchId`).
+				const ok = await switchContext({
+					subsidiaryId,
+					sucursalPrincipal: subsidiaryId,
+					eventBranchId: null,
+					successMessage: 'Empresa cambiada exitosamente',
 				});
 
-				// 2) Si la personalización YA tiene ese ID, no hagas PUT inútil
-				const currentPersonalization = user?.personalizacion;
-				if (currentPersonalization?.sucursal_principal !== subsidiaryId) {
-					try {
-						await ApiService.fetchData({
-							url: '/user/personalization',
-							method: 'put',
-							data: {
-								tema: currentPersonalization?.tema,
-								font_size: currentPersonalization?.font_size,
-								sucursal_principal: subsidiaryId,
-							},
-						});
-					} catch (err) {
-						// no bloquear por esto
-						console.warn('Error updating personalization:', err);
-					}
+				if (ok) {
+					// Actualiza el nombre de la subsidiaria actual desde el cache local.
+					const selectedCompany =
+						availableCompanies.find((c) => c.subsidiary_id === subsidiaryId) ??
+						cacheRef.current?.companies.find((c) => c.subsidiary_id === subsidiaryId);
+					if (selectedCompany) setCurrentSubsidiaryName(selectedCompany.name);
+
+					// Invalida cache de empresas (por si cambiaron accesos).
+					cacheRef.current = null;
+					lastLoadedAtRef.current = null;
 				}
 
-				// 3) Refresca el user (idealmente trae la nueva subsidiary)
-				await dispatch(userMeThunk()).unwrap();
-
-				// 4) Actualiza el nombre de la subsidiaria actual usando el cache local
-				const selectedCompany =
-					availableCompanies.find((c) => c.subsidiary_id === subsidiaryId) ??
-					cacheRef.current?.companies.find((c) => c.subsidiary_id === subsidiaryId);
-				if (selectedCompany) setCurrentSubsidiaryName(selectedCompany.name);
-
-				const nextSubsidiaryId = selectedCompany?.subsidiary_id ?? subsidiaryId ?? null;
-				window.dispatchEvent(
-					new CustomEvent('user-branch-changed', {
-						detail: {
-							branchId: selectedCompany?.subsidiary_id ?? null,
-							subsidiaryId: nextSubsidiaryId,
-						},
-					}),
-				);
-
-				// 5) Invalida cache de empresas (por si cambió accesos)
-				cacheRef.current = null;
-				lastLoadedAtRef.current = null;
-
-				toast.success('Empresa cambiada exitosamente');
-				return true;
-			} catch (error: any) {
-				if (error?.name === 'AbortError' || error?.name === 'CanceledError') {
-					// aborto: no tirar toast de error ruidoso
-					return false;
-				}
-				toast.error(error?.response?.data?.message || 'Error al cambiar empresa');
-				return false;
+				return ok;
 			} finally {
 				setIsLoading(false);
 			}
 		},
-		[dispatch, user, availableCompanies],
+		[switchContext, availableCompanies],
 	);
 
 	const refreshCompanies = useCallback(
