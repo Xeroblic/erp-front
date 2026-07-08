@@ -8,6 +8,45 @@ export interface IUsuarioEmpresa {
 	updated_at: string;
 }
 
+/** Referencia mínima a una comuna, tal como la anida el backend en varias entidades. */
+export interface ICommuneRef {
+	id: number;
+	name: string;
+	province_id?: number;
+}
+
+/** Datos de contacto del encargado (manager) anidado por el backend. */
+export interface IManagerRef {
+	id?: number;
+	name?: string;
+	first_name?: string;
+	last_name?: string;
+	email?: string | null;
+	phone?: string | null;
+	phone_number?: string | null;
+	position?: string;
+}
+
+/**
+ * Alias "normalizados" que el frontend agrega sobre entidades del backend (versión
+ * camel/es de campos snake). Compartidos por `ISucursal` e `ISubempresa` para no repetir.
+ */
+export interface INormalizedEntityAliases {
+	name?: string;
+	rut?: string;
+	phone?: string;
+	email?: string;
+	address?: string;
+	status?: string | number | boolean;
+	commune_name?: string;
+}
+
+/** Subsidiaria mínima `{ id, subsidiary_name }`. Fuente única reutilizada por otros módulos. */
+export interface ISubsidiaryMin {
+	id: number;
+	subsidiary_name: string;
+}
+
 export interface IBranch {
 	id: number;
 	subsidiary_id?: number;
@@ -19,16 +58,9 @@ export interface IBranch {
 	branch_email?: string;
 
 	manager_id?: number | null;
-	manager?: {
-		id?: number;
-		name?: string;
-		first_name?: string;
-		last_name?: string;
-		email?: string;
-		phone?: string | null;
-		phone_number?: string | null;
-		position?: string;
-	};
+	manager?: IManagerRef;
+
+	primary_warehouse_id?: number | null;
 
 	branch_status?: string | number | boolean;
 	branch_opening_hours?: string | null;
@@ -37,44 +69,30 @@ export interface IBranch {
 	branch_updated_at?: string;
 
 	commune_id?: number;
-	commune?: {
-		id: number;
-		name: string;
-		province_id?: number;
-	};
+	commune?: ICommuneRef;
 
 	created_at?: string;
 	updated_at?: string;
 }
 
-export interface ISucursal extends IBranch {
-	// Alias normalizados usados en el frontend
+export interface ISucursal extends IBranch, INormalizedEntityAliases {
+	// Alias propios de sucursal (los comunes viven en INormalizedEntityAliases)
 	nombre?: string;
-	name?: string;
-	rut?: string;
-	phone?: string;
-	email?: string;
-	address?: string;
 	direccion?: string;
 
 	manager_name?: string;
 	manager_phone?: string;
 	manager_email?: string;
 
-	status?: string | number | boolean;
 	descripcion?: string;
 	usuarios?: IUsuarioEmpresa[];
 
 	subsidiary_name?: string;
 	subsidiary_rut?: string;
-
-	commune_name?: string;
 }
 
-export interface ISubempresa {
-	id: number;
+export interface ISubempresa extends ISubsidiaryMin, INormalizedEntityAliases {
 	company_id: number;
-	subsidiary_name: string;
 	subsidiary_rut?: string;
 	subsidiary_website?: string;
 	subsidiary_phone?: string;
@@ -92,33 +110,16 @@ export interface ISubempresa {
 	subsidiary_commercial_terms?: string | null;
 	subsidiary_default_payment_method?: string | null;
 	subsidiary_manager_id?: number | null;
-	manager?: {
-		id?: number;
-		name?: string;
-		email?: string | null;
-		phone?: string | null;
-		phone_number?: string | null;
-	} | null;
+	manager?: IManagerRef | null;
 	commune_id?: number | null;
-	commune?: {
-		id: number;
-		name: string;
-		province_id?: number;
-	};
+	commune?: ICommuneRef;
 	logo_url?: string | null;
 	logo_base_64?: string | null;
 	created_at?: string;
 	updated_at?: string;
 
-	// Normalizados (frontend)
-	name?: string;
-	rut?: string;
+	// Alias propio de subempresa (los comunes viven en INormalizedEntityAliases)
 	website?: string;
-	phone?: string;
-	address?: string;
-	email?: string;
-	status?: string | number | boolean;
-	commune_name?: string;
 
 	sucursales?: ISucursal[];
 	branches?: IBranch[];
@@ -140,11 +141,7 @@ export interface IEmpresa {
 	is_active: boolean;
 	company_type?: string;
 	commune_id?: number | null;
-	commune?: {
-		id: number;
-		name: string;
-		province_id?: number;
-	};
+	commune?: ICommuneRef;
 	created_at: string;
 	updated_at: string;
 	subsidiaries: ISubempresa[];
@@ -220,4 +217,3 @@ export interface ISubempresaCommercialView {
 	allowedPaymentMethods: string[];
 	defaultPaymentMethod: string;
 }
-

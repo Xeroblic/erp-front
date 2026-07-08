@@ -1,7 +1,13 @@
-import type {
-  AuthorizationAccessScope,
-  AuthorizationVisibleScope,
-} from '@/types/authorization';
+/**
+ * Interfaces del USUARIO DE SESIÓN ("yo"): `IUserMe` es el usuario logueado, resultado de
+ * aplanar/normalizar el sobre de `/perfil` (`{ user, permisos, roles, branch, access,
+ * visible }`) en `utils/normalizeUserProfile`.
+ *
+ * NO confundir con `users.interface.ts` (`IUser`), que modela OTROS usuarios en el módulo
+ * de administración. Aquí = mi identidad + permisos + contexto; allá = la colección que
+ * administro.
+ */
+import type { AuthorizationAccessScope, AuthorizationVisibleScope } from '@/types/authorization';
 
 type IUserImageMetadataValue = string | number | boolean | null | undefined;
 
@@ -25,22 +31,51 @@ interface IUserImageData {
 	[key: string]: IUserImageMetadataValue | Record<string, IUserImageMetadataValue> | undefined;
 }
 
+/**
+ * Personalización del usuario. OJO: el backend la serializa DISTINTO según endpoint,
+ * por eso sólo `id/tema/font_size/sucursal_principal` están garantizados y el resto es
+ * opcional:
+ *  - `/user/personalization` → `user_id, tcolor, tcolor_int, subsidiary_id, company_id, created_at, updated_at`
+ *  - `/perfil`               → `usuario, empresa, fecha_creacion, fecha_modificacion`
+ */
 export interface IPersonalizacionUsuario {
-  id: number;
-  fecha_creacion: string;
-  fecha_modificacion: string;
-  tema: number;
-  font_size: number;
-  tcolor: string;
-  tcolor_int: string;
-  dark_mode: number;
-  usuario: number;
-  sucursal_principal: number | null;
-  subsidiary_id: number | null;
-  empresa: number | null;
-  company_id?: number;
+	id: number;
+	tema: number;
+	font_size: number;
+	sucursal_principal: number | null;
+
+	// Serialización de /user/personalization
+	user_id?: number;
+	tcolor?: string;
+	tcolor_int?: string;
+	subsidiary_id?: number | null;
+	company_id?: number | null;
+	created_at?: string;
+	updated_at?: string;
+
+	// Serialización de /perfil
+	usuario?: number | null;
+	empresa?: number | null;
+	fecha_creacion?: string;
+	fecha_modificacion?: string;
+
+	// Sólo frontend (no viene en el payload del backend)
+	dark_mode?: number;
 }
 
+/**
+ * Usuario "de la app": base compartida por el usuario de SESIÓN (normalizado de `/perfil`
+ * vía `normalizeUserProfile`) y por el usuario de ADMINISTRACIÓN (`UserWithDetails extends
+ * IUserMe`, del listado de usuarios). Por eso convive:
+ *  - lo que produce `/perfil` (`genero`, `is_staff`, `celular`, `cargo`, `direccion`, …), y
+ *  - lo que aporta el endpoint admin (`is_active`, `position`, `phone_number`, `address`, …).
+ *
+ * El contrato CRUDO de `/perfil` está en `IPerfilResponse`/`IPerfilUser`.
+ *
+ * ⚠️ `id` está tipado requerido pero `normalizeUserProfile` no lo setea desde `/perfil`
+ * (el crudo trae `pk`); en la sesión puede venir `undefined`. Separar sesión vs admin en
+ * dos tipos distintos es el refactor pendiente de mayor alcance.
+ */
 export interface IUserMe {
 	pk: number;
 	id: number;
@@ -57,12 +92,15 @@ export interface IUserMe {
 	celular?: string | undefined;
 	address: string | undefined;
 	direccion?: string | undefined;
-	gender: string | undefined;
+	genero?: string | undefined;
+	is_staff?: boolean;
+	fecha_nacimiento?: string | undefined;
+	image: string | undefined | IUserImageData;
+	image_url?: string | undefined;
+	fecha_ingreso?: string | null;
+	fecha_contrato?: string | null;
+	comuna_id?: number | undefined;
 	is_active: boolean;
-	image:
-		| string
-		| undefined
-		| IUserImageData;
 	branch_id: number | undefined;
 	// Nuevos campos para multi-empresa
 	companies?: Array<{
@@ -77,10 +115,12 @@ export interface IUserMe {
 		name: string;
 		rut?: string;
 	} | null;
-	subsidiary?: {
-		id: number;
-		name: string;
-	} | undefined;
+	subsidiary?:
+		| {
+				id: number;
+				name: string;
+		  }
+		| undefined;
 	branch?: {
 		id: number;
 		name: string;
@@ -99,6 +139,55 @@ export interface IUserMe {
 
 	access?: AuthorizationAccessScope | null;
 	visible?: AuthorizationVisibleScope | null;
+}
+
+/**
+ * Forma CRUDA del usuario dentro de `/perfil`, antes de normalizar. Los nombres son los
+ * reales del backend (sin los alias camel/en que agrega el frontend en `IUserMe`).
+ */
+export interface IPerfilUser {
+	pk: number;
+	email: string;
+	first_name: string;
+	second_name?: string | null;
+	last_name: string;
+	second_last_name?: string | null;
+	rut?: string | null;
+	celular?: string | null;
+	genero?: string | null;
+	fecha_nacimiento?: string | null;
+	is_staff?: boolean;
+	image?: IUserImageData | string | null;
+	image_url?: string | null;
+	fecha_ingreso?: string | null;
+	fecha_contrato?: string | null;
+	cargo?: string | null;
+	direccion?: string | null;
+	comuna_id?: number | null;
+	personalizacion?: IPersonalizacionUsuario;
+}
+
+/**
+ * Sobre completo devuelto por `/perfil`: usuario + permisos/roles + contexto. Incluye la
+ * variante alternativa anidada en `data` (con `all_permissions`, etc.) que también acepta
+ * `normalizeUserProfile`.
+ */
+export interface IPerfilResponse {
+	user?: IPerfilUser;
+	permisos?: string[];
+	roles?: string[];
+	branch?: IUserMe['branch'];
+	access?: AuthorizationAccessScope | null;
+	visible?: AuthorizationVisibleScope | null;
+	data?: IPerfilUser & {
+		all_permissions?: string[];
+		direct_permissions?: string[];
+		role_permissions?: string[];
+		global_roles?: string[];
+		branch?: IUserMe['branch'];
+		access?: AuthorizationAccessScope | null;
+		visible?: AuthorizationVisibleScope | null;
+	};
 }
 
 export interface IGruposUsuarios {
