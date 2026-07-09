@@ -705,53 +705,49 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 					return (
 						<Form id='productForm' className='flex h-full flex-col overflow-hidden'>
 							<OffCanvasBody className='space-y-5'>
-								{import.meta.env.DEV ? (
-									<Tabs
-										activeTab={activeTab}
-										onTabChange={(id) => setActiveTab(id as 'formulario' | 'nuevo_formulario')}
-										variant='pills'
-										className='w-full'
-									>
-										<Tab id='formulario' text='Formulario Normal' icon='HeroDocumentText'>
-											<div className='space-y-5 mt-4'>
-												{formFieldsMarkup}
-											</div>
-										</Tab>
-										<Tab
-											id='nuevo_formulario'
-											text={isEditMode ? 'WooCommerce' : 'Publicacion Sincronizada WooErp'}
-											icon='HeroCodeBracketSquare'>
-											{isEditMode && product ? (
-												<WooCommercePublishPanel
-													productId={product.id}
-													isBusy={isBusy}
-													marketplaceExternalIds={
-														product.marketplace_external_ids
-													}
-													channelPrices={product.channel_prices}
-													basePrice={
-														product.price_override ?? product.price ?? null
-													}
-													baseOfferPrice={
-														product.offer_price_override ??
-														product.offer_price ??
-														null
-													}
-													baseName={product.name}
-												/>
-											) : (
-												<WooCommerceProductTab
-													branchId={values.branch_id ?? null}
-													brands={brands}
-													categories={categories}
-													isBusy={isBusy}
-												/>
-											)}
-										</Tab>
-									</Tabs>
-								) : (
-									formFieldsMarkup
-								)}
+								<Tabs
+									activeTab={activeTab}
+									onTabChange={(id) => setActiveTab(id as 'formulario' | 'nuevo_formulario')}
+									variant='pills'
+									className='w-full'
+								>
+									<Tab id='formulario' text='Formulario Normal' icon='HeroDocumentText'>
+										<div className='space-y-5 mt-4'>
+											{formFieldsMarkup}
+										</div>
+									</Tab>
+									<Tab
+										id='nuevo_formulario'
+										text={isEditMode ? 'WooCommerce' : 'Publicacion Sincronizada WooErp'}
+										icon='HeroCodeBracketSquare'>
+										{isEditMode && product ? (
+											<WooCommercePublishPanel
+												productId={product.id}
+												isBusy={isBusy}
+												marketplaceExternalIds={
+													product.marketplace_external_ids
+												}
+												channelPrices={product.channel_prices}
+												basePrice={
+													product.price_override ?? product.price ?? null
+												}
+												baseOfferPrice={
+													product.offer_price_override ??
+													product.offer_price ??
+													null
+												}
+												baseName={product.name}
+											/>
+										) : (
+											<WooCommerceProductTab
+												branchId={values.branch_id ?? null}
+												brands={brands}
+												categories={categories}
+												isBusy={isBusy}
+											/>
+										)}
+									</Tab>
+								</Tabs>
 							</OffCanvasBody>
 
 							<OffCanvasFooter>
