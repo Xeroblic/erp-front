@@ -24,6 +24,29 @@ import type { ProductsViewMode } from './hooks/useProductos';
 import StockAdminTab from './components/Tabs/AnalyticsTab';
 import StockCatalogTab from './components/Tabs/StockCatalogTab';
 
+// Se cargan todos los productos hasta este tope para poder buscar (incluyendo
+// variantes) y filtrar por Woo en el cliente sin depender del backend. Cubre
+// catálogos de cientos; si algún día crecen a miles habría que mover el filtro al
+// backend (hoy el índice de productos no lo soporta).
+const LIST_LOAD_ALL_PER_PAGE = 500;
+// Tamaño de página de la vista (paginación client-side sobre lo filtrado).
+const LIST_CLIENT_PAGE_SIZE = 12;
+
+// Coincidencia de búsqueda que también mira las variantes (hijos) del producto,
+// no solo el padre: por eso un SKU/nombre de grado ahora sí encuentra al producto.
+const productMatchesSearch = (product: IProduct, term: string): boolean => {
+	if (!term) return true;
+	const haystack = (values: Array<string | null | undefined>) =>
+		values
+			.filter((value): value is string => typeof value === 'string' && value.length > 0)
+			.join(' ')
+			.toLowerCase();
+	if (haystack([product.name, product.sku, product.barcode]).includes(term)) return true;
+	return (product.children ?? []).some((child) =>
+		haystack([child.name, child.sku]).includes(term),
+	);
+};
+
 const Productos: React.FC = () => {
 	const navigate = useNavigate();
 
@@ -32,11 +55,23 @@ const Productos: React.FC = () => {
 
 	const [filters, setFilters] = useState(PRODUCT_DEFAULT_FILTERS);
 	const [page, setPage] = useState(1);
+	const [wooOnly, setWooOnly] = useState(false);
+	// Rango de fechas de actualización (YYYY-MM-DD), filtrado client-side.
+	const [dateFrom, setDateFrom] = useState('');
+	const [dateTo, setDateTo] = useState('');
 	const [createOpen, setCreateOpen] = useState(false);
 	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 	const [productToDelete, setProductToDelete] = useState<IProduct | null>(null);
 	const [activeTab, setActiveTab] = useState('products');
 	const [viewMode, setViewMode] = useState<ProductsViewMode>('branches');
+
+	// La búsqueda se resuelve en el cliente (para poder matchear variantes), así que
+	// NO se manda `search` al backend; el resto de filtros sí van server-side.
+	const serverFilters = useMemo(() => {
+		const clone = { ...filters };
+		delete clone.search;
+		return clone;
+	}, [filters]);
 
 	const {
 		products,
@@ -62,10 +97,77 @@ const Productos: React.FC = () => {
 		subsidiaryId,
 		mode: viewMode,
 		enabled: true,
-		filters,
-		page,
-		perPage: 15,
+		filters: serverFilters,
+		// Se trae todo (hasta el tope) en una sola página; la búsqueda/filtro/
+		// paginación de la lista se hacen en el cliente.
+		page: 1,
+		perPage: LIST_LOAD_ALL_PER_PAGE,
 	});
+
+	// Lista visible: búsqueda (incluye variantes) + "Solo Woo" + rango de fechas de
+	// actualización. Se ordena por fecha de actualización descendente (lo último
+	// actualizado/publicado primero).
+	const visibleProducts = useMemo(() => {
+		const term = filters.search?.trim().toLowerCase() ?? '';
+		const filtered = products.filter((product) => {
+			if (wooOnly && !product.is_synced_with_woo) return false;
+			const updatedDay = (product.updated_at ?? '').slice(0, 10);
+			if (dateFrom && (!updatedDay || updatedDay < dateFrom)) return false;
+			if (dateTo && (!updatedDay || updatedDay > dateTo)) return false;
+			return productMatchesSearch(product, term);
+		});
+		// ISO strings ordenan cronológicamente con localeCompare.
+		return filtered.sort((a, b) =>
+			(b.updated_at ?? '').localeCompare(a.updated_at ?? ''),
+		);
+	}, [products, filters.search, wooOnly, dateFrom, dateTo]);
+
+	// Paginación client-side sobre la lista ya filtrada.
+	const listMeta = useMemo(() => {
+		const total = visibleProducts.length;
+		return {
+			total,
+			current_page: page,
+			per_page: LIST_CLIENT_PAGE_SIZE,
+			last_page: Math.max(1, Math.ceil(total / LIST_CLIENT_PAGE_SIZE)),
+		};
+	}, [visibleProducts.length, page]);
+
+	const listPagedProducts = useMemo(() => {
+		const start = (page - 1) * LIST_CLIENT_PAGE_SIZE;
+		return visibleProducts.slice(start, start + LIST_CLIENT_PAGE_SIZE);
+	}, [visibleProducts, page]);
+
+	// Fecha de actualización más antigua del catálogo: límite inferior del calendario
+	// (no tiene sentido filtrar antes de que exista el primer producto).
+	const oldestProductDate = useMemo(() => {
+		let min = '';
+		for (const product of products) {
+			const day = (product.updated_at ?? '').slice(0, 10);
+			if (day && (!min || day < min)) min = day;
+		}
+		return min ? new Date(`${min}T00:00:00`) : undefined;
+	}, [products]);
+
+	// Si el filtrado deja la página actual fuera de rango, vuelve a la primera.
+	useEffect(() => {
+		if (page > listMeta.last_page) setPage(1);
+	}, [page, listMeta.last_page]);
+
+	const handleToggleWooOnly = () => {
+		setWooOnly((prev) => !prev);
+		setPage(1);
+	};
+
+	const handleDateFromChange = (value: string) => {
+		setDateFrom(value);
+		setPage(1);
+	};
+
+	const handleDateToChange = (value: string) => {
+		setDateTo(value);
+		setPage(1);
+	};
 
 	const filteredBranches = useMemo(() => {
 		if (!visibleBranches.length) return branches;
@@ -149,6 +251,9 @@ const Productos: React.FC = () => {
 
 	const handleResetFilters = () => {
 		setFilters(PRODUCT_DEFAULT_FILTERS);
+		setWooOnly(false);
+		setDateFrom('');
+		setDateTo('');
 		setPage(1);
 	};
 
@@ -311,12 +416,19 @@ const Productos: React.FC = () => {
 						id='products'
 						text='Productos'
 						icon='HeroCubeTransparent'
-						badge={meta.total}>
+						badge={listMeta.total}>
 						<ProductListTab
-							products={products}
-							meta={meta}
+							products={listPagedProducts}
+							meta={listMeta}
 							loading={loading}
 							filters={filters}
+							wooOnly={wooOnly}
+							onToggleWooOnly={handleToggleWooOnly}
+							dateFrom={dateFrom}
+							dateTo={dateTo}
+							minProductDate={oldestProductDate}
+							onDateFromChange={handleDateFromChange}
+							onDateToChange={handleDateToChange}
 							onSearchChange={handleSearchChange}
 							onStatusChange={handleStatusChange}
 							onBrandChange={handleBrandChange}

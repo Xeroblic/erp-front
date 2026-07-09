@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button';
 import { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import { PRODUCT_STATUS_LABELS } from '../constants/products.constant';
 import type { IProduct } from '@/interface/product.interface';
+import { getWooProductLinks } from '@/utils/wooProductMeta.util';
 
 interface ProductDetailHeaderProps {
 	product: IProduct;
@@ -62,6 +63,29 @@ export const ProductDetailHeader: React.FC<ProductDetailHeaderProps> = ({
 							<Badge className='px-2' variant='outline' color='violet'>
 								{formatProductStatus(product.product_status)}
 							</Badge>
+							{(() => {
+								const directStores =
+									product.woo_links_count ??
+									getWooProductLinks(product.marketplace_external_ids).length;
+								const syncedChildren = product.synced_children_count ?? 0;
+								const isSynced =
+									product.is_synced_with_woo ?? directStores + syncedChildren > 0;
+								if (!isSynced) return null;
+								const onlyChildren = directStores === 0 && syncedChildren > 0;
+								return (
+									<>
+										<span>•</span>
+										<Badge className='flex items-center gap-1 px-2' color='indigo'>
+											<Icon icon='HeroShoppingBag' className='h-3 w-3' />
+											{onlyChildren
+												? 'Variantes en Woo'
+												: directStores > 1
+													? `En Woo ×${directStores}`
+													: 'Publicado en Woo'}
+										</Badge>
+									</>
+								);
+							})()}
 						</div>
 					</div>
 				</div>
