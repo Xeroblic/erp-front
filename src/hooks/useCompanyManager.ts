@@ -3,6 +3,8 @@ import { toast } from 'react-toastify';
 import { useAppSelector } from '@/store';
 import ApiService from '@/services/ApiService';
 import useOrgContextSwitcher from '@/hooks/useOrgContextSwitcher';
+import useAuthorization from '@/hooks/useAuthorization';
+import type { IUserMe } from '@/interface/user.interface';
 
 interface CompanyInfo {
 	id: number;
@@ -12,6 +14,27 @@ interface CompanyInfo {
 	is_primary: boolean;
 	subsidiary_id?: number;
 }
+
+/** Forma laxa de un item de `user.companies` (el backend puede usar name o company_name). */
+type UserCompanyLike = {
+	id: number;
+	name?: string;
+	company_name?: string;
+	rut?: string;
+	role?: string;
+	is_primary?: boolean | number;
+};
+
+/** Ids de subsidiarias/empresas accesibles derivadas del usuario, sin `any`. */
+const collectAccessibleSubsidiaryIds = (user: IUserMe | undefined): Set<number> => {
+	const ids = new Set<number>();
+	(user?.companies ?? []).forEach((company) => {
+		if (company?.id) ids.add(company.id);
+	});
+	if (user?.subsidiary?.id) ids.add(user.subsidiary.id);
+	if (user?.company?.id) ids.add(user.company.id);
+	return ids;
+};
 
 interface UseCompanyManager {
 	currentCompany: CompanyInfo | null;
@@ -26,6 +49,8 @@ interface UseCompanyManager {
 
 const useCompanyManager = (): UseCompanyManager => {
 	const { switchContext } = useOrgContextSwitcher();
+	// Autorización por scope: fuente única (antes duplicada con lógica más pobre).
+	const { canAccessCompany, canAccessSubsidiary, canAccessBranch } = useAuthorization();
 	const user = useAppSelector((state) => state.auth.user);
 	const personalizationFromStore = useAppSelector(
 		(state) => state.personalizacion?.personalizacionUsuario,
@@ -129,31 +154,17 @@ const useCompanyManager = (): UseCompanyManager => {
 				let derived: CompanyInfo[] = [];
 				let derivedName = currentSubsidiaryName;
 
-				// 🔐 Obtener subsidiarias accesibles del usuario
-				const accessibleSubsidiaryIds = new Set<number>();
-				// De companies (multi-empresa)
-				(userSnapshot as any)?.companies?.forEach((company: any) => {
-					if (company.id) accessibleSubsidiaryIds.add(company.id);
-				});
-				// De subsidiary actual
-				if (userSnapshot?.subsidiary?.id) {
-					accessibleSubsidiaryIds.add(userSnapshot.subsidiary.id);
-				}
-				// De company actual
-				if (userSnapshot?.company?.id) {
-					accessibleSubsidiaryIds.add(userSnapshot.company.id);
-				}
+				const accessibleSubsidiaryIds = collectAccessibleSubsidiaryIds(userSnapshot);
 
 				if (userSnapshot?.companies?.length) {
 					// ✅ Solo companies accesibles
-					derived = userSnapshot.companies
+					derived = (userSnapshot.companies as UserCompanyLike[])
 						.filter(
-							(c: any) =>
-								!accessibleSubsidiaryIds.size || accessibleSubsidiaryIds.has(c.id),
+							(c) => !accessibleSubsidiaryIds.size || accessibleSubsidiaryIds.has(c.id),
 						)
-						.map((c: any) => ({
+						.map((c) => ({
 							id: c.id,
-							name: c.name || c.company_name,
+							name: c.name || c.company_name || `Empresa ${c.id}`,
 							rut: c.rut || '',
 							role: c.role || userSnapshot.position || 'employee',
 							is_primary: Boolean(c.is_primary),
@@ -171,28 +182,22 @@ const useCompanyManager = (): UseCompanyManager => {
 						},
 					];
 					derivedName = userSnapshot.subsidiary.name;
-				} else if (personalization?.sucursal_principal) {
-					//  Solo agregar si está en accesibles o no podemos determinar
-					if (
-						!accessibleSubsidiaryIds.size ||
-						accessibleSubsidiaryIds.has(personalization.sucursal_principal)
-					) {
-						derived = [
-							{
-								id: personalization.sucursal_principal,
-								name: `Subsidiaria ${personalization.sucursal_principal}`,
-								rut: '',
-								role: userSnapshot?.position || 'employee',
-								is_primary: false,
-								subsidiary_id: personalization.sucursal_principal,
-							},
-						];
-					} else {
-						console.warn(
-							' sucursal_principal no accesible en derived:',
-							personalization.sucursal_principal,
-						);
-					}
+				} else if (
+					personalization?.sucursal_principal &&
+					(!accessibleSubsidiaryIds.size ||
+						accessibleSubsidiaryIds.has(personalization.sucursal_principal))
+				) {
+					// Sólo si está en accesibles (o no podemos determinar).
+					derived = [
+						{
+							id: personalization.sucursal_principal,
+							name: `Subsidiaria ${personalization.sucursal_principal}`,
+							rut: '',
+							role: userSnapshot?.position || 'employee',
+							is_primary: false,
+							subsidiary_id: personalization.sucursal_principal,
+						},
+					];
 				}
 
 				if (derived.length > 0) {
@@ -260,25 +265,7 @@ const useCompanyManager = (): UseCompanyManager => {
 				let companies: CompanyInfo[] = [];
 				let prettyName = currentSubsidiaryName;
 
-				// 🔐 Obtener subsidiarias accesibles del usuario
-				const accessibleSubsidiaryIds = new Set<number>();
-				// De companies (multi-empresa)
-				(user as any)?.companies?.forEach((company: any) => {
-					if (company.id) accessibleSubsidiaryIds.add(company.id);
-				});
-				// De subsidiary actual
-				if (user?.subsidiary?.id) {
-					accessibleSubsidiaryIds.add(user.subsidiary.id);
-				}
-				// De company actual
-				if (user?.company?.id) {
-					accessibleSubsidiaryIds.add(user.company.id);
-				}
-
-				console.log(
-					'🔐 useCompanyManager - Subsidiarias accesibles:',
-					Array.from(accessibleSubsidiaryIds),
-				);
+				const accessibleSubsidiaryIds = collectAccessibleSubsidiaryIds(user);
 
 				if (response.data.current_company?.subsidiaries?.length) {
 					// ✅ FILTRAR: Solo mostrar subsidiarias a las que el usuario tiene acceso
@@ -287,10 +274,6 @@ const useCompanyManager = (): UseCompanyManager => {
 						accessibleSubsidiaryIds.size > 0
 							? allSubsidiaries.filter((s) => accessibleSubsidiaryIds.has(s.id))
 							: allSubsidiaries; // Si no podemos determinar, mostrar todas (fallback)
-
-					console.log(
-						`🔒 useCompanyManager - Filtrando subsidiarias: ${allSubsidiaries.length} total → ${accessibleSubsidiaries.length} accesibles`,
-					);
 
 					companies = accessibleSubsidiaries.map((s) => ({
 						id: s.id,
@@ -307,14 +290,9 @@ const useCompanyManager = (): UseCompanyManager => {
 						);
 						if (current) {
 							prettyName = current.subsidiary_name;
-						} else {
-							//  sucursal_principal no está en accesibles, usar la primera disponible
-							console.warn(
-								' sucursal_principal no accesible, usando primera disponible',
-							);
-							if (accessibleSubsidiaries.length > 0) {
-								prettyName = accessibleSubsidiaries[0].subsidiary_name;
-							}
+						} else if (accessibleSubsidiaries.length > 0) {
+							// sucursal_principal no accesible: usar la primera disponible.
+							prettyName = accessibleSubsidiaries[0].subsidiary_name;
 						}
 					}
 				} else if (response.data.companies?.length) {
@@ -345,11 +323,9 @@ const useCompanyManager = (): UseCompanyManager => {
 				// guarda cache
 				cacheRef.current = { companies, currentName: prettyName };
 				lastLoadedAtRef.current = Date.now();
-			} catch (error: any) {
-				if (error?.name === 'AbortError' || error?.name === 'CanceledError') {
-					// abortado: silencio
-				} else {
-					console.error('Error loading companies:', error);
+			} catch (error: unknown) {
+				const err = error as { name?: string };
+				if (err?.name !== 'AbortError' && err?.name !== 'CanceledError') {
 					toast.error('Error al cargar empresas disponibles');
 					setAvailableCompanies([]);
 					cacheRef.current = null;
@@ -371,39 +347,6 @@ const useCompanyManager = (): UseCompanyManager => {
 			refreshInFlightRef.current?.abort();
 		};
 	}, []);
-
-	const canAccessCompany = useCallback(
-		(companyId: number): boolean => {
-			if (!user) return false;
-			if (user.authority?.includes('super-admin')) return true;
-			return (
-				user.subsidiary?.id === companyId ||
-				availableCompanies.some((c) => c.subsidiary_id === companyId)
-			);
-		},
-		[user, availableCompanies],
-	);
-
-	const canAccessSubsidiary = useCallback(
-		(subsidiaryId: number): boolean => {
-			if (!user) return false;
-			if (user.authority?.includes('super-admin')) return true;
-			if (user.authority?.includes('company-admin')) return true;
-			return user.subsidiary?.id === subsidiaryId;
-		},
-		[user],
-	);
-
-	const canAccessBranch = useCallback(
-		(branchId: number): boolean => {
-			if (!user) return false;
-			if (user.authority?.includes('super-admin')) return true;
-			if (user.authority?.includes('company-admin')) return true;
-			if (user.authority?.includes('subsidiary-admin')) return true;
-			return user.branch?.id === branchId;
-		},
-		[user],
-	);
 
 	return {
 		currentCompany,

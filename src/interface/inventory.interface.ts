@@ -2,6 +2,7 @@
  * Interfaces para el módulo de Inventario
  * Basado en los servicios del backend ERP P0
  */
+import type { IUser } from '@/interface/users.interface';
 
 export interface IInventoryMovement {
 	id: number;
@@ -32,7 +33,7 @@ export interface IInventoryMovement {
 	product?: any; // IProduct
 	inventory_item?: IInventoryItem;
 	warehouse_location?: any; // IWarehouseLocation
-	performer?: any; // IUser
+	performer?: IUser;
 
 	// Campos calculados
 	movement_direction?: 'IN' | 'OUT';
@@ -104,8 +105,8 @@ export interface IReservationBucket {
 	product?: any; // IProduct
 	inventory_item?: IInventoryItem;
 	location?: any; // IWarehouseLocation
-	creator?: any; // IUser
-	releaser?: any; // IUser
+	creator?: IUser;
+	releaser?: IUser;
 
 	// Campos calculados
 	is_expired?: boolean;
