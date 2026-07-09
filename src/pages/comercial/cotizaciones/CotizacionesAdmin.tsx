@@ -224,6 +224,14 @@ const CotizacionesAdmin: React.FC = () => {
 		}
 	};
 
+	// Conversión real al confirmar en el modal. Antes el onConfirm apuntaba a
+	// handleConvertToSale, que solo REABRÍA el modal y nunca convertía.
+	const handleConfirmConvertToSale = async (id: number) => {
+		await convertToSale(id);
+		setConfirmSaleModalOpen(false);
+		setConfirmSaleQuotation(null);
+	};
+
 	const handleDownloadPdf = async (id: number) => {
 		setIsActionLoading(true);
 		try {
@@ -309,6 +317,15 @@ const CotizacionesAdmin: React.FC = () => {
 		setViewingQuotation(null);
 		setDetailsLoading(false);
 		navigate(QUOTES_BASE_PATH, { replace: true });
+	};
+
+	// Aprueba la cotización abierta en el detalle (status → approved) y recarga el
+	// detalle para que los botones reflejen el nuevo estado (habilita "Generar Venta").
+	const handleApproveViewingQuotation = async () => {
+		if (!viewingQuotation) return;
+		await changeStatus(viewingQuotation.id, 'approved');
+		const fresh = await loadQuotationDetails(viewingQuotation.id);
+		setViewingQuotation(fresh);
 	};
 
 	return (
@@ -413,6 +430,7 @@ const CotizacionesAdmin: React.FC = () => {
 					quotation={viewingQuotation}
 					isLoading={detailsLoading}
 					onDownloadPdf={handleDownloadPdf}
+					onApprove={handleApproveViewingQuotation}
 				/>
 
 				<DuplicateQuotationModal
@@ -438,7 +456,7 @@ const CotizacionesAdmin: React.FC = () => {
 							setConfirmSaleModalOpen(false);
 							setConfirmSaleQuotation(null);
 						}}
-						onConfirm={handleConvertToSale}
+						onConfirm={handleConfirmConvertToSale}
 						quotationId={confirmSaleQuotation.id}
 						quotation={confirmSaleQuotation}
 					/>

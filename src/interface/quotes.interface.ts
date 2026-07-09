@@ -5,6 +5,19 @@ type QuoteStatusLower = 'draft' | 'sent' | 'approved' | 'rejected' | 'converted'
 
 export type QuoteStatus = QuoteStatusLower | Uppercase<QuoteStatusLower>;
 
+/**
+ * Venta ligada a una cotización convertida. Solo se exponen los campos que la UI
+ * necesita para decidir acciones (p. ej. no permitir editar si ya está cerrada).
+ */
+export interface QuoteLinkedSale {
+	id?: number;
+	sale_number?: string;
+	status?: string;
+	/** Cierre real del ERP (independiente del estado en Woo). */
+	is_closed?: boolean;
+	[key: string]: unknown;
+}
+
 export interface QuoteCustomerSummary {
 	id: number;
 	name: string;
@@ -105,7 +118,7 @@ export interface Quote {
 	is_converted_to_sale?: boolean;
 	converted_at?: string | null;
 	sale_id?: number | null;
-	sale?: Record<string, any> | null;
+	sale?: QuoteLinkedSale | null;
 }
 
 export interface QuotePDFResponse {
