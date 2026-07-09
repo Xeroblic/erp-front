@@ -38,7 +38,7 @@ const Tabs: React.FC<TabsProps> = ({
 	);
 
 	return (
-		<div className={`w-full max-w-full overflow-hidden ${className}`}>
+		<div className={`w-full max-w-full overflow-x-hidden ${className}`}>
 			<div
 				className={
 					variant === 'pills'
@@ -120,7 +120,7 @@ const Tabs: React.FC<TabsProps> = ({
 				</div>
 			</div>
 
-			<div className={`mt-5 overflow-hidden ${contentClassName}`}>
+			<div className={`mt-5 ${contentClassName}`}>
 				{tabs.map((tab) => {
 					const { id, children: tabContent } = tab.props;
 					const isActive = activeTab === id;

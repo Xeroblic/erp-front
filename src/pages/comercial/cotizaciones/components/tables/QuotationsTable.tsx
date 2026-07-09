@@ -144,6 +144,21 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 								</Button>
 							</Tooltip>
 						)}
+						{['sent'].includes(
+							normalizeQuoteStatusValue(info.row.original.status)
+						) && (
+							<Tooltip text='Aprobar cotización' placement='top-end'>
+								<Button
+									variant='solid'
+									size='sm'
+									color='teal'
+									onClick={() => onChangeStatus?.(info.row.original.id, 'approved')}
+									className='bg-teal-600 hover:bg-teal-700/20 p-1'
+								>
+									<Icon icon='HeroCheckCircle' color='white' className='text-xl' />
+								</Button>
+							</Tooltip>
+						)}
 						{['approved'].includes(
 							normalizeQuoteStatusValue(info.row.original.status)
 						) && (

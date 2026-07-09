@@ -24,6 +24,8 @@ interface QuotationDetailsModalProps {
 	quotation: IQuote | null;
 	isLoading: boolean;
 	onDownloadPdf?: (id: number) => void;
+	/** Aprueba la cotización (status → approved) y refresca el detalle en el padre. */
+	onApprove?: () => Promise<void>;
 }
 
 const PRINT_CONTAINER_ID = 'quote-printable-container';
@@ -34,9 +36,11 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
 	quotation,
 	isLoading,
 	onDownloadPdf,
+	onApprove,
 }) => {
 	const [downloading, setDownloading] = useState(false);
 	const [isPrinting, setIsPrinting] = useState(false);
+	const [approving, setApproving] = useState(false);
 	const navigate = useNavigate();
 
 	const currentUser = useSelector((state: RootState) => state.auth.user);
@@ -161,6 +165,41 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
 		}
 	};
 
+	// Flujo de la cotización: draft/sent → [Aprobar] → approved → [Generar Venta]
+	// → converted → [Ir a Venta Realizada]. Los botones se muestran según el estado.
+	const normalizedStatus = String(quotation?.status ?? '').toLowerCase();
+	const isConverted = !!quotation?.is_converted_to_sale || normalizedStatus === 'converted';
+	const isApproved = normalizedStatus === 'approved';
+	const canApprove =
+		!isConverted && (normalizedStatus === 'draft' || normalizedStatus === 'sent');
+
+	// La venta asociada ya está cerrada/completada: el estado real del ERP (is_closed)
+	// o el status completed/closed lo determinan.
+	const linkedSale = quotation?.sale ?? null;
+	const linkedSaleStatus = String(linkedSale?.status ?? '').toLowerCase();
+	const isLinkedSaleClosed =
+		!!linkedSale?.is_closed ||
+		linkedSaleStatus === 'completed' ||
+		linkedSaleStatus === 'closed';
+
+	// No se puede editar una cotización ya convertida o cuya venta esté cerrada:
+	// editarla descuadraría los datos respecto de la venta ya emitida.
+	const editBlocked = isConverted || isLinkedSaleClosed;
+
+	const handleApprove = async () => {
+		if (!onApprove || approving) return;
+		setApproving(true);
+		try {
+			await onApprove();
+			toast.success('Cotización aprobada');
+		} catch (error) {
+			console.error(error);
+			toast.error('No se pudo aprobar la cotización');
+		} finally {
+			setApproving(false);
+		}
+	};
+
 	return (
 		<>
 			<Modal
@@ -211,17 +250,20 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
 								</Button>
 							</Tooltip>
 
-							{/* Edit Button */}
-							<Tooltip text='editar' placement='top-end'>	
-								<Button
-									variant='solid'
-									color='amber'
-									className='hover:bg-amber-700/20'
-									onClick={() => setIsEditModalOpen(true)}
-									isDisable={!quotation || isLoading}>
-									Editar
-								</Button>
-							</Tooltip>
+							{/* Editar: se oculta cuando la cotización ya está convertida o su
+							    venta está cerrada (editarla descuadraría con la venta). */}
+							{!editBlocked && (
+								<Tooltip text='editar' placement='top-end'>
+									<Button
+										variant='solid'
+										color='amber'
+										className='hover:bg-amber-700/20'
+										onClick={() => setIsEditModalOpen(true)}
+										isDisable={!quotation || isLoading}>
+										Editar
+									</Button>
+								</Tooltip>
+							)}
 
 							<Tooltip text='descargar' placement='top-end'>
 							<Button
@@ -234,19 +276,52 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
 								Descargar PDF
 							</Button>
 							</Tooltip>
-							<Tooltip text='convertir a venta' placement='top-end'>
-								<Button
-									variant={quotation?.is_converted_to_sale ? 'solid' : 'solid'}
-									color={quotation?.is_converted_to_sale ? 'blue' : 'emerald'}
-									onClick={handleConvertToSale}
-									isDisable={!quotation}
-									className={`${quotation?.is_converted_to_sale ? 'text-blue-700' : 'text-emerald-700'} hover:bg-emerald-700/20`}
-									isLoading={converting}>
-									{quotation?.is_converted_to_sale
-										? 'Ir a Venta Realizada'
-										: 'Generar Venta'}
-								</Button>
-							</Tooltip>
+
+							{/* Aprobar: solo en borrador/enviada. Al aprobar se habilita
+							    "Generar Venta". */}
+							{canApprove && (
+								<Tooltip text='aprobar cotización' placement='top-end'>
+									<Button
+										variant='solid'
+										color='teal'
+										className='hover:bg-teal-700/20'
+										onClick={handleApprove}
+										isDisable={!quotation || isLoading || approving}
+										isLoading={approving}>
+										Aprobar
+									</Button>
+								</Tooltip>
+							)}
+
+							{/* Generar Venta: solo cuando está aprobada y aún no convertida. */}
+							{isApproved && !isConverted && (
+								<Tooltip text='convertir a venta' placement='top-end'>
+									<Button
+										variant='solid'
+										color='emerald'
+										onClick={handleConvertToSale}
+										isDisable={!quotation}
+										className='text-emerald-700 hover:bg-emerald-700/20'
+										isLoading={converting}>
+										Generar Venta
+									</Button>
+								</Tooltip>
+							)}
+
+							{/* Ir a la venta ya creada. */}
+							{isConverted && (
+								<Tooltip text='ir a la venta realizada' placement='top-end'>
+									<Button
+										variant='solid'
+										color='blue'
+										onClick={handleConvertToSale}
+										isDisable={!quotation}
+										className='text-blue-700 hover:bg-blue-700/20'
+										isLoading={converting}>
+										Ir a Venta Realizada
+									</Button>
+								</Tooltip>
+							)}
 							<Tooltip text='imprimir' placement='top-end'>
 								<Button
 									variant='solid'

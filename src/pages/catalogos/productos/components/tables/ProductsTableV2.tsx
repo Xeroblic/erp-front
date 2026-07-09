@@ -20,6 +20,7 @@ import {
 import { PRODUCT_TYPE_META } from '../../constants/products.constant';
 import Tooltip from '@/components/ui/Tooltip';
 import SoftHoldsBadge from '@/components/ui/SoftHoldsBadge';
+import { getWooProductLinks } from '@/utils/wooProductMeta.util';
 
 interface ProductsTableProps {
 	products: IProduct[];
@@ -227,7 +228,7 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 									<span className='truncate font-medium'>{product.name}</span>
 								</div>
 
-								<div className='mt-1 flex items-start gap-2'>
+								<div className='mt-1 flex flex-wrap items-start gap-2'>
 									<Badge
 										variant='outline'
 										color={typeMeta.badgeColor as TColors}
@@ -289,6 +290,84 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 									Costo: {currencyFormatter.format(product.cost)}
 								</div>
 							)}
+						</div>
+					);
+				},
+			},
+			{
+				id: 'woo',
+				header: 'Woo',
+				cell: ({ row }) => {
+					const product = row.original;
+					// Fuente única de verdad: el vínculo real en `marketplace_external_ids`
+					// (lo mismo que lee el panel WooCommerce del detalle). NO se usa
+					// `is_synced_with_woo` porque el pivote del backend puede quedar
+					// desincronizado del mirror y mostrar "Publicado" cuando el panel dice
+					// "No vinculado". Cada grado es independiente.
+					const directStores = getWooProductLinks(product.marketplace_external_ids).length;
+					const publishedChildren = (product.children ?? []).filter(
+						(child) => getWooProductLinks(child.marketplace_external_ids).length > 0,
+					);
+					const hasDirectLink = directStores > 0;
+
+					if (!hasDirectLink && publishedChildren.length === 0) {
+						return (
+							<Badge
+								variant='outline'
+								color='zinc'
+								className='w-fit px-2'>
+								No publicado
+							</Badge>
+						);
+					}
+
+					// Producto simple (sin variantes) publicado directamente.
+					if (hasDirectLink && publishedChildren.length === 0) {
+						return (
+							<Tooltip
+								text={
+									directStores > 1
+										? `Publicado en ${directStores} tiendas WooCommerce`
+										: 'Publicado en WooCommerce'
+								}>
+								<Badge
+									variant='solid'
+									color='indigo'
+									className='flex w-fit items-center gap-1 px-2'>
+									<Icon icon='HeroShoppingBag' className='h-3 w-3' />
+									{directStores > 1 ? `Publicado ×${directStores}` : 'Publicado'}
+								</Badge>
+							</Tooltip>
+						);
+					}
+
+					// Con variantes: un pill por cada grado publicado.
+					return (
+						<div className='flex flex-wrap gap-1'>
+							{hasDirectLink && (
+								<Tooltip text='Producto base publicado en WooCommerce'>
+									<Badge
+										variant='solid'
+										color='indigo'
+										className='flex w-fit items-center gap-1 px-2'>
+										<Icon icon='HeroShoppingBag' className='h-3 w-3' />
+										Base
+									</Badge>
+								</Tooltip>
+							)}
+							{publishedChildren.map((child) => (
+								<Tooltip
+									key={child.id}
+									text={`${child.name} publicado en WooCommerce`}>
+									<Badge
+										variant='solid'
+										color='indigo'
+										className='flex w-fit items-center gap-1 px-2'>
+										<Icon icon='HeroShoppingBag' className='h-3 w-3' />
+										{child.grade ? `Grado ${child.grade}` : 'Variante'}
+									</Badge>
+								</Tooltip>
+							))}
 						</div>
 					);
 				},
@@ -739,6 +818,17 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 																													child.sku
 																												}
 																											</div>
+																												{getWooProductLinks(child.marketplace_external_ids).length > 0 && (
+																													<Tooltip text='Publicado en WooCommerce'>
+																														<Badge
+																															variant='solid'
+																															color='indigo'
+																															className='mt-1 flex w-fit items-center gap-1 px-1.5 py-0.5 text-[10px]'>
+																															<Icon icon='HeroShoppingBag' className='h-2.5 w-2.5' />
+																															Woo
+																														</Badge>
+																													</Tooltip>
+																												)}
 																										</td>
 																										<td className='px-3 py-3 align-top text-sm'>
 																											<div className='font-semibold text-zinc-900 dark:text-zinc-100'>
