@@ -38,6 +38,7 @@ interface WooCommercePublishPanelProps {
 	channelPrices?: unknown;
 	basePrice?: number | null;
 	baseOfferPrice?: number | null;
+	baseName?: string | null;
 }
 
 const formatValue = (value: string | number | null | undefined): string => {
@@ -60,6 +61,7 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 	channelPrices,
 	basePrice = null,
 	baseOfferPrice = null,
+	baseName = null,
 }) => {
 	const dispatch = useAppDispatch();
 	const { subsidiaryId } = useCurrentBranch();
@@ -269,377 +271,316 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 	}, [onProductRefresh]);
 
 	return (
-		<div className='space-y-5'>
-			{/* ═══════════════════════ 0. TIENDA WOOCOMMERCE ACTIVA ═══════════════════════ */}
-			<WooIntegrationSelector
-				integrations={activeWooIntegrations}
-				selectedId={selectedIntegrationId}
-				onSelect={setSelectedIntegrationId}
-				loading={integrationsLoading}
-			/>
+		<div className='grid grid-cols-1 gap-5 lg:grid-cols-12'>
+			{/* Columna Izquierda (Conexión y Publicación) */}
+			<div className='space-y-5 lg:col-span-5'>
+				{/* Selector de integración */}
+				<WooIntegrationSelector
+					integrations={activeWooIntegrations}
+					selectedId={selectedIntegrationId}
+					onSelect={setSelectedIntegrationId}
+					loading={integrationsLoading}
+				/>
 
-			{/* ═══════════════════════ TIENDAS DONDE ESTÁ PUBLICADO ═══════════════════════ */}
-			<WooProductStorefronts
-				links={productLinks}
-				getIntegrationName={getIntegrationName}
-				activeIntegrationId={selectedIntegrationId}
-				inactiveIntegrationIds={inactiveIntegrationIds}
-			/>
+				{/* Tiendas vinculadas */}
+				<WooProductStorefronts
+					links={productLinks}
+					getIntegrationName={getIntegrationName}
+					activeIntegrationId={selectedIntegrationId}
+					inactiveIntegrationIds={inactiveIntegrationIds}
+				/>
 
-			{/* ═══════════════════════ 1. PUBLICACIÓN ═══════════════════════ */}
-			<Card className='overflow-hidden border border-violet-200/60 shadow-sm dark:border-violet-500/20'>
-				<CardHeader className='border-b border-violet-100 bg-violet-50 pb-3 dark:border-violet-500/10 dark:bg-violet-950/30'>
-					<div className='flex items-center gap-3'>
-						<div className='flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500/15 ring-1 ring-violet-500/25 dark:bg-violet-500/20 dark:ring-violet-400/30'>
-							<Icon
-								icon='HeroShoppingBag'
-								className='h-5 w-5 text-violet-600 dark:text-violet-400'
-							/>
-						</div>
-						<div className='flex-1'>
-							<CardTitle className='text-base font-bold text-neutral-900 dark:text-neutral-50'>
-								Publicación en tienda
-							</CardTitle>
-							<p className='mt-0.5 text-xs text-violet-700/70 dark:text-violet-300/70'>
-								Controla si este producto se publica y mantiene sincronizado en
-								WooCommerce.
-							</p>
-						</div>
-						{isPublishedHere ? (
-							<Badge color='emerald' variant='solid'>
-								Publicado aquí
-							</Badge>
-						) : (
-							<Badge color='zinc' variant='outline'>
-								No publicado aquí
-							</Badge>
-						)}
-						<Tooltip text='¿Cómo funciona la sincronización con WooCommerce?'>
-							<Button
-								variant='outline'
-								color='violet'
-								size='sm'
-								icon='HeroQuestionMarkCircle'
-								onClick={() => setShowGuide(true)}
-								aria-label='Ver guía de sincronización con WooCommerce'>
-								Cómo funciona
-							</Button>
-						</Tooltip>
-					</div>
-				</CardHeader>
-				<CardBody className='space-y-4'>
-					{!canAct && subsidiaryId === null && (
-						<div className='rounded-md border border-yellow-300 bg-yellow-50 p-3 text-sm font-medium text-yellow-800 dark:border-yellow-500/40 dark:bg-yellow-950/40 dark:text-yellow-200'>
-							<Icon
-								icon='HeroExclamationTriangle'
-								className='mr-1.5 inline h-4 w-4'
-							/>
-							No hay una subsidiaria activa. Selecciona una sucursal para operar.
-						</div>
-					)}
+				{/* Configuración de Sincronización / Publicación */}
+				{selectedIntegrationId && (
+					<Card className='overflow-hidden border border-neutral-200 shadow-sm dark:border-neutral-800'>
+						<CardHeader className='border-b border-neutral-100 bg-neutral-50/50 pb-3 dark:border-neutral-800/60 dark:bg-neutral-900/40'>
+							<div className='flex items-center gap-3'>
+								<div className='flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500/15 ring-1 ring-violet-500/25 dark:bg-violet-500/20 dark:ring-violet-400/30'>
+									<Icon
+										icon='HeroShoppingBag'
+										className='h-5 w-5 text-violet-600 dark:text-violet-400'
+									/>
+								</div>
+								<div className='flex-1'>
+									<CardTitle className='text-base font-bold text-neutral-900 dark:text-neutral-50'>
+										Sincronización
+									</CardTitle>
+								</div>
+								<Tooltip text='Ver guía de sincronización con WooCommerce'>
+									<Button
+										variant='outline'
+										color='violet'
+										size='sm'
+										icon='HeroQuestionMarkCircle'
+										onClick={() => setShowGuide(true)}
+										aria-label='Guía de sincronización'>
+										Guía
+									</Button>
+								</Tooltip>
+							</div>
+						</CardHeader>
+						<CardBody className='space-y-4'>
+							{isPublishedElsewhere && (
+								<div className='flex items-start gap-2.5 rounded-lg border border-amber-300 bg-amber-50 p-3.5 dark:border-amber-500/30 dark:bg-amber-950/30'>
+									<Icon
+										icon='HeroExclamationTriangle'
+										className='mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600 dark:text-amber-400'
+									/>
+									<p className='text-xs font-medium text-amber-800 dark:text-amber-200'>
+										Este producto ya está publicado en <strong>{otherIntegrationName}</strong>. Despublícalo antes de sincronizar aquí.
+									</p>
+								</div>
+							)}
 
-					{isPublishedElsewhere && (
-						<div className='flex items-start gap-2.5 rounded-lg border border-amber-300 bg-amber-50 p-3.5 dark:border-amber-500/30 dark:bg-amber-950/30'>
-							<Icon
-								icon='HeroExclamationTriangle'
-								className='mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600 dark:text-amber-400'
-							/>
-							<p className='text-xs font-medium text-amber-800 dark:text-amber-200'>
-								Este producto ya está publicado en la tienda WooCommerce{' '}
-								<strong>{otherIntegrationName}</strong>. Dado que no se admite
-								multi-tienda simultánea por el momento, debes despublicarlo de la otra
-								tienda antes de poder habilitar la sincronización aquí.
-							</p>
-						</div>
-					)}
-
-					<div className='mt-4 flex items-center justify-between rounded-lg border border-neutral-200 bg-white p-3.5 dark:border-neutral-700 dark:bg-neutral-800/50'>
-						<div className='flex flex-col'>
-							<span className='text-sm font-medium text-neutral-800 dark:text-neutral-100'>
-								Sincronizar con WooCommerce
-							</span>
-							<span className='text-xs text-neutral-500 dark:text-neutral-400'>
-								{isPublishedHere
-									? 'Publicado en la tienda seleccionada. Desactiva para despublicarlo.'
-									: 'No está en esta tienda. Actívalo para publicarlo aquí.'}
-							</span>
-						</div>
-						<Checkbox
-							id='woo_sync_master'
-							name='woo_sync_master'
-							variant='switch'
-							checked={isPublishedHere}
-							onChange={() => void handleToggleSync()}
-							disabled={!canAct || busy || isPublishedElsewhere}
-						/>
-					</div>
-
-					{publishedHereLink && (
-						<div className='space-y-1.5 rounded-lg border border-neutral-200 bg-white p-3 text-xs dark:border-neutral-700 dark:bg-neutral-800/50'>
-							{publishedHereLink.externalProductId != null ? (
-								<div className='flex justify-between'>
-									<span className='text-neutral-500 dark:text-neutral-400'>
-										ID en WooCommerce
+							<div className='flex items-center justify-between rounded-lg border border-neutral-200 bg-white p-3.5 dark:border-neutral-700 dark:bg-neutral-800/50'>
+								<div className='flex flex-col'>
+									<span className='text-sm font-medium text-neutral-800 dark:text-neutral-100'>
+										Sincronizar producto
 									</span>
-									<span className='font-mono font-semibold text-neutral-800 dark:text-neutral-100'>
-										#{publishedHereLink.externalProductId}
+									<span className='text-xs text-neutral-400 dark:text-neutral-500'>
+										{isPublishedHere ? 'Sincronización activa' : 'Sincronización inactiva'}
 									</span>
 								</div>
-							) : null}
-							{publishedHereLink.publishedAt ? (
-								<div className='flex justify-between'>
-									<span className='text-neutral-500 dark:text-neutral-400'>
-										Publicado
-									</span>
-									<span className='font-medium text-neutral-800 dark:text-neutral-100'>
-										{new Date(publishedHereLink.publishedAt).toLocaleString(
-											'es-CL',
-										)}
-									</span>
-								</div>
-							) : null}
-							{publishedHereLink.lastErrorMsg ? (
-								<div className='flex justify-between gap-3'>
-									<span className='text-neutral-500 dark:text-neutral-400'>
-										Último error
-									</span>
-									<span className='text-right font-medium text-rose-600 dark:text-rose-400'>
-										{publishedHereLink.lastErrorMsg}
-									</span>
-								</div>
-							) : null}
-						</div>
-					)}
-
-					<Checkbox
-						id='woo_panel_sync_stock'
-						name='woo_panel_sync_stock'
-						checked={syncStock}
-						onChange={() => setSyncStock((prev) => !prev)}
-						disabled={busy}
-						dimension='sm'
-						label='Incluir stock al sincronizar'
-					/>
-
-					{isPublishedHere && (
-						<Tooltip text='Fuerza una actualización completa del producto en WooCommerce'>
-							<Button
-								variant='solid'
-								color='violet'
-								size='sm'
-								icon='HeroArrowPath'
-								onClick={() => void handleUpdatePublication()}
-								isDisable={!canAct || busy}
-								aria-label='Actualizar publicación en WooCommerce'>
-								{busy ? 'Procesando…' : 'Actualizar publicación'}
-							</Button>
-						</Tooltip>
-					)}
-
-					<p className='text-xs italic text-neutral-400 dark:text-neutral-500'>
-						El estado mostrado es referencial. Usa el diagnóstico para ver el estado
-						real en la tienda.
-					</p>
-				</CardBody>
-			</Card>
-
-			{/* ═══════════════════════ 2. CONFIGURACIÓN DEL CANAL ═══════════════════════ */}
-			<ChannelOverridesCard
-				subsidiaryId={subsidiaryId}
-				productId={productId}
-				integrationId={selectedIntegrationId}
-				integrationName={selectedIntegrationId ? getIntegrationName(selectedIntegrationId) : undefined}
-				channelPrice={channelPrice}
-				basePrice={basePrice}
-				baseOfferPrice={baseOfferPrice}
-				onProductRefresh={onProductRefresh}
-			/>
-
-			{/* ═══════════════════════ 3. EMPAREJAMIENTO MANUAL ═══════════════════════ */}
-			<WooManualLinkPanel
-				productId={productId}
-				isLinked={isPublishedHere}
-				isLinkedElsewhere={isPublishedElsewhere}
-				externalProductId={publishedHereLink?.externalProductId ?? null}
-				onLinkChange={handleLinkChange}
-				integrationId={selectedIntegrationId ?? undefined}
-			/>
-
-			{/* ═══════════════════════ 3. DIAGNÓSTICO ═══════════════════════ */}
-			<Card className='overflow-hidden border border-sky-200/60 shadow-sm dark:border-sky-500/20'>
-				<CardHeader className='border-b border-sky-100 bg-sky-50 pb-3 dark:border-sky-500/10 dark:bg-sky-950/30'>
-					<div className='flex items-center justify-between gap-3'>
-						<div className='flex items-center gap-3'>
-							<div className='flex h-9 w-9 items-center justify-center rounded-lg bg-sky-500/15 ring-1 ring-sky-500/25 dark:bg-sky-500/20 dark:ring-sky-400/30'>
-								<Icon
-									icon='HeroMagnifyingGlass'
-									className='h-5 w-5 text-sky-600 dark:text-sky-400'
+								<Checkbox
+									id='woo_sync_master'
+									name='woo_sync_master'
+									variant='switch'
+									checked={isPublishedHere}
+									onChange={() => void handleToggleSync()}
+									disabled={!canAct || busy || isPublishedElsewhere}
 								/>
 							</div>
-							<div>
-								<CardTitle className='text-base font-bold text-neutral-900 dark:text-neutral-50'>
-									Diagnóstico
-								</CardTitle>
-								<p className='mt-0.5 text-xs text-sky-700/70 dark:text-sky-300/70'>
-									Compara el ERP con el estado real en WooCommerce en tiempo real.
-								</p>
+
+							<div className='flex items-center gap-2'>
+								<Checkbox
+									id='woo_panel_sync_stock'
+									name='woo_panel_sync_stock'
+									checked={syncStock}
+									onChange={() => setSyncStock((prev) => !prev)}
+									disabled={busy}
+									dimension='sm'
+									label='Incluir stock al sincronizar'
+								/>
 							</div>
-						</div>
-						<Tooltip text='Consulta el estado real del producto en la tienda WooCommerce'>
-							<Button
-								variant='solid'
-								color='blue'
-								size='sm'
-								icon='HeroArrowPath'
-								onClick={() => void handleDiagnose()}
-								isDisable={!canAct || remoteLoading}
-								aria-label='Consultar estado remoto del producto'>
-								{remoteLoading ? 'Consultando…' : 'Consultar'}
-							</Button>
-						</Tooltip>
-					</div>
-				</CardHeader>
-				<CardBody>
-					{!remoteState && !remoteLoading && (
-						<div className='mt-4 flex items-center gap-2 rounded-lg border border-dashed border-neutral-300 p-4 dark:border-neutral-600'>
-							<Icon
-								icon='HeroInformationCircle'
-								className='h-5 w-5 flex-shrink-0 text-neutral-400 dark:text-neutral-500'
-							/>
-							<p className='text-sm text-neutral-500 dark:text-neutral-400'>
-								Pulsa <strong>Consultar</strong> para comparar el producto local con
-								WooCommerce.
-							</p>
-						</div>
-					)}
 
-					{remoteLoading && (
-						<div className='flex items-center justify-center py-6'>
-							<Icon
-								icon='HeroArrowPath'
-								className='mr-2 h-5 w-5 animate-spin text-sky-500'
-							/>
-							<span className='text-sm text-neutral-500'>
-								Consultando estado remoto…
-							</span>
-						</div>
-					)}
+							{isPublishedHere && (
+								<Button
+									variant='solid'
+									color='violet'
+									className='w-full'
+									size='sm'
+									icon='HeroArrowPath'
+									onClick={() => void handleUpdatePublication()}
+									isDisable={!canAct || busy}
+									aria-label='Actualizar publicación en WooCommerce'>
+									{busy ? 'Procesando…' : 'Forzar actualización completa'}
+								</Button>
+							)}
+						</CardBody>
+					</Card>
+				)}
+			</div>
 
-					{remoteState && !remoteLoading && (
-						<div className='space-y-3'>
-							<div className='flex flex-wrap items-center gap-2 text-sm mt-4'>
-								<span className='font-medium text-neutral-700 dark:text-neutral-200'>
-									Resultado:
-								</span>
-								{remote ? (
-									<>
-										<Badge color='emerald' variant='solid'>
-											Encontrado
-										</Badge>
-										<span className='text-xs text-neutral-500 dark:text-neutral-400'>
-											ID remoto: #{remote.id}
-											{remote.status ? ` · ${remote.status}` : ''}
-										</span>
-									</>
-								) : local?.external_product_id ? (
-									<Badge color='amber' variant='solid'>
-										Vinculado, sin respuesta de la tienda
-									</Badge>
-								) : (
-									<Badge color='zinc'>No vinculado</Badge>
+			{/* Columna Derecha (Overrides y Diagnóstico) */}
+			<div className='space-y-5 lg:col-span-7'>
+				{selectedIntegrationId && (
+					<>
+						{/* Configuración del canal (Overrides) */}
+						<ChannelOverridesCard
+							subsidiaryId={subsidiaryId}
+							productId={productId}
+							integrationId={selectedIntegrationId}
+							integrationName={selectedIntegrationId ? getIntegrationName(selectedIntegrationId) : undefined}
+							channelPrice={channelPrice}
+							basePrice={basePrice}
+							baseOfferPrice={baseOfferPrice}
+							baseName={baseName}
+							onProductRefresh={onProductRefresh}
+						/>
+
+						{/* Emparejamiento Manual */}
+						<WooManualLinkPanel
+							productId={productId}
+							isLinked={isPublishedHere}
+							isLinkedElsewhere={isPublishedElsewhere}
+							externalProductId={publishedHereLink?.externalProductId ?? null}
+							onLinkChange={handleLinkChange}
+							integrationId={selectedIntegrationId ?? undefined}
+						/>
+
+						{/* Diagnóstico */}
+						<Card className='overflow-hidden border border-neutral-200 shadow-sm dark:border-neutral-800'>
+							<CardHeader className='border-b border-neutral-100 bg-neutral-50/50 pb-3 dark:border-neutral-800/60 dark:bg-neutral-900/40'>
+								<div className='flex items-center justify-between gap-3'>
+									<div className='flex items-center gap-3'>
+										<div className='flex h-9 w-9 items-center justify-center rounded-lg bg-sky-500/15 ring-1 ring-sky-500/25 dark:bg-sky-500/20 dark:ring-sky-400/30'>
+											<Icon
+												icon='HeroMagnifyingGlass'
+												className='h-5 w-5 text-sky-600 dark:text-sky-400'
+											/>
+										</div>
+										<div>
+											<CardTitle className='text-base font-bold text-neutral-900 dark:text-neutral-50'>
+												Diagnóstico en tiempo real
+											</CardTitle>
+										</div>
+									</div>
+									<Tooltip text='Consulta el estado real del producto en la tienda WooCommerce'>
+										<Button
+											variant='solid'
+											color='blue'
+											size='sm'
+											icon='HeroArrowPath'
+											onClick={() => void handleDiagnose()}
+											isDisable={!canAct || remoteLoading}
+											aria-label='Consultar estado remoto'>
+											{remoteLoading ? 'Consultando…' : 'Consultar'}
+										</Button>
+									</Tooltip>
+								</div>
+							</CardHeader>
+							<CardBody>
+								{!remoteState && !remoteLoading && (
+									<div className='flex items-center gap-2 rounded-lg border border-dashed border-neutral-300 p-4 dark:border-neutral-700'>
+										<Icon
+											icon='HeroInformationCircle'
+											className='h-5 w-5 flex-shrink-0 text-neutral-400 dark:text-neutral-500'
+										/>
+										<p className='text-sm text-neutral-500 dark:text-neutral-400'>
+											Pulsa <strong>Consultar</strong> para comparar el producto local con WooCommerce.
+										</p>
+									</div>
 								)}
-							</div>
 
-							{!remote && !local?.external_product_id && (
-								<div className='rounded-lg border border-sky-200 bg-sky-50 p-3 text-xs text-sky-800 dark:border-sky-500/30 dark:bg-sky-950/30 dark:text-sky-200'>
-									<Icon
-										icon='HeroInformationCircle'
-										className='mr-1 inline h-3.5 w-3.5'
-									/>
-									Este producto no está vinculado. Activa el switch de publicación
-									o usa el emparejamiento manual para conectarlo.
-								</div>
-							)}
+								{remoteLoading && (
+									<div className='flex items-center justify-center py-6'>
+										<Icon
+											icon='HeroArrowPath'
+											className='mr-2 h-5 w-5 animate-spin text-sky-500'
+										/>
+										<span className='text-sm text-neutral-500'>
+											Consultando estado remoto…
+										</span>
+									</div>
+								)}
 
-							{remote && (
-								<div className='overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700'>
-									<table className='w-full text-sm'>
-										<thead className='bg-neutral-100 dark:bg-neutral-800'>
-											<tr className='text-left text-xs uppercase tracking-wider text-neutral-600 dark:text-neutral-300'>
-												<th className='px-3 py-2.5'>Campo</th>
-												<th className='px-3 py-2.5'>ERP (local)</th>
-												<th className='px-3 py-2.5'>
-													WooCommerce (remoto)
-												</th>
-											</tr>
-										</thead>
-										<tbody>
-											<tr className='border-t border-neutral-100 dark:border-neutral-700'>
-												<td className='px-3 py-2.5 font-medium text-neutral-700 dark:text-neutral-200'>
-													Estado
-												</td>
-												<td
-													className={`px-3 py-2.5 ${statusDiff ? 'font-semibold text-rose-600 dark:text-rose-400' : 'text-neutral-600 dark:text-neutral-300'}`}>
-													{localStatusLabel}
-												</td>
-												<td
-													className={`px-3 py-2.5 ${statusDiff ? 'font-semibold text-rose-600 dark:text-rose-400' : 'text-neutral-600 dark:text-neutral-300'}`}>
-													{formatValue(remote.status)}
-													{statusDiff && (
-														<Badge color='red' variant='solid' className='ml-2'>
-															Difiere
-														</Badge>
-													)}
-												</td>
-											</tr>
-											<tr className='border-t border-neutral-100 dark:border-neutral-700'>
-												<td className='px-3 py-2.5 font-medium text-neutral-700 dark:text-neutral-200'>
-													Precio
-												</td>
-												<td className='px-3 py-2.5 text-neutral-600 dark:text-neutral-300'>
-													{formatValue(local?.price)}
-												</td>
-												<td
-													className={`px-3 py-2.5 ${priceDiff ? 'font-semibold text-rose-600 dark:text-rose-400' : 'text-neutral-600 dark:text-neutral-300'}`}>
-													{formatValue(remote.price)}
-													{priceDiff && (
-														<Badge
-															color='red'
-															variant='solid'
-															className='ml-2'>
-															Difiere
-														</Badge>
-													)}
-												</td>
-											</tr>
-											<tr className='border-t border-neutral-100 dark:border-neutral-700'>
-												<td className='px-3 py-2.5 font-medium text-neutral-700 dark:text-neutral-200'>
-													Stock
-												</td>
-												<td className='px-3 py-2.5 text-neutral-600 dark:text-neutral-300'>
-													{formatValue(local?.stock)}
-												</td>
-												<td
-													className={`px-3 py-2.5 ${stockDiff ? 'font-semibold text-rose-600 dark:text-rose-400' : 'text-neutral-600 dark:text-neutral-300'}`}>
-													{formatValue(remote.stock)}
-													{stockDiff && (
-														<Badge
-															color='red'
-															variant='solid'
-															className='ml-2'>
-															Difiere
-														</Badge>
-													)}
-												</td>
-											</tr>
-										</tbody>
-									</table>
-								</div>
-							)}
-						</div>
-					)}
-				</CardBody>
-			</Card>
+								{remoteState && !remoteLoading && (
+									<div className='space-y-3'>
+										<div className='flex flex-wrap items-center gap-2 text-sm'>
+											<span className='font-medium text-neutral-700 dark:text-neutral-200'>
+												Resultado:
+											</span>
+											{remote ? (
+												<>
+													<Badge color='emerald' variant='solid'>
+														Encontrado
+													</Badge>
+													<span className='text-xs text-neutral-500 dark:text-neutral-400'>
+														ID remoto: #{remote.id}
+														{remote.status ? ` · ${remote.status}` : ''}
+													</span>
+												</>
+											) : local?.external_product_id ? (
+												<Badge color='amber' variant='solid'>
+													Vinculado, sin respuesta de la tienda
+												</Badge>
+											) : (
+												<Badge color='zinc'>No vinculado</Badge>
+											)}
+										</div>
+
+										{!remote && !local?.external_product_id && (
+											<div className='rounded-lg border border-sky-200 bg-sky-50 p-3 text-xs text-sky-800 dark:border-sky-500/30 dark:bg-sky-950/30 dark:text-sky-200'>
+												<Icon
+													icon='HeroInformationCircle'
+													className='mr-1 inline h-3.5 w-3.5'
+												/>
+												Este producto no está vinculado. Activa el switch de publicación o usa el emparejamiento manual para conectarlo.
+											</div>
+										)}
+
+										{remote && (
+											<div className='overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700'>
+												<table className='w-full text-sm'>
+													<thead className='bg-neutral-100 dark:bg-neutral-800'>
+														<tr className='text-left text-xs uppercase tracking-wider text-neutral-600 dark:text-neutral-300'>
+															<th className='px-3 py-2.5'>Campo</th>
+															<th className='px-3 py-2.5'>ERP (local)</th>
+															<th className='px-3 py-2.5'>
+																WooCommerce (remoto)
+															</th>
+														</tr>
+													</thead>
+													<tbody>
+														<tr className='border-t border-neutral-100 dark:border-neutral-700'>
+															<td className='px-3 py-2.5 font-medium text-neutral-700 dark:text-neutral-200'>
+																Estado
+															</td>
+															<td
+																className={`px-3 py-2.5 ${statusDiff ? 'font-semibold text-rose-600 dark:text-rose-400' : 'text-neutral-600 dark:text-neutral-300'}`}>
+																{localStatusLabel}
+															</td>
+															<td
+																className={`px-3 py-2.5 ${statusDiff ? 'font-semibold text-rose-600 dark:text-rose-400' : 'text-neutral-600 dark:text-neutral-300'}`}>
+																{formatValue(remote.status)}
+																{statusDiff && (
+																	<Badge color='red' variant='solid' className='ml-2'>
+																		Difiere
+																	</Badge>
+																)}
+															</td>
+														</tr>
+														<tr className='border-t border-neutral-100 dark:border-neutral-700'>
+															<td className='px-3 py-2.5 font-medium text-neutral-700 dark:text-neutral-200'>
+																Precio
+															</td>
+															<td className='px-3 py-2.5 text-neutral-600 dark:text-neutral-300'>
+																{formatValue(local?.price)}
+															</td>
+															<td
+																className={`px-3 py-2.5 ${priceDiff ? 'font-semibold text-rose-600 dark:text-rose-400' : 'text-neutral-600 dark:text-neutral-300'}`}>
+																{formatValue(remote.price)}
+																{priceDiff && (
+																	<Badge
+																		color='red'
+																		variant='solid'
+																		className='ml-2'>
+																		Difiere
+																	</Badge>
+																)}
+															</td>
+														</tr>
+														<tr className='border-t border-neutral-100 dark:border-neutral-700'>
+															<td className='px-3 py-2.5 font-medium text-neutral-700 dark:text-neutral-200'>
+																Stock
+															</td>
+															<td className='px-3 py-2.5 text-neutral-600 dark:text-neutral-300'>
+																{formatValue(local?.stock)}
+															</td>
+															<td
+																className={`px-3 py-2.5 ${stockDiff ? 'font-semibold text-rose-600 dark:text-rose-400' : 'text-neutral-600 dark:text-neutral-300'}`}>
+																{formatValue(remote.stock)}
+																{stockDiff && (
+																	<Badge
+																		color='red'
+																		variant='solid'
+																		className='ml-2'>
+																		Difiere
+																	</Badge>
+																)}
+															</td>
+														</tr>
+													</tbody>
+												</table>
+											</div>
+										)}
+									</div>
+								)}
+							</CardBody>
+						</Card>
+					</>
+				)}
+			</div>
 
 			{/* CONFIRMACION: DESPUBLICAR = ELIMINAR EN WOO */}
 			<Modal isOpen={showUnpublishConfirm} setIsOpen={setShowUnpublishConfirm} isCentered>
@@ -681,8 +622,7 @@ const WooCommercePublishPanel: React.FC<WooCommercePublishPanelProps> = ({
 									className='mt-0.5 h-4 w-4 flex-shrink-0 text-sky-600 dark:text-sky-400'
 								/>
 								<p className='text-xs text-sky-800 dark:text-sky-200'>
-									¿Solo quieres desconectar la sincronización{' '}
-									<strong>sin borrar</strong> el producto de la tienda? Esto mantiene
+									¿Solo quieres desconectar la sincronización <strong>sin borrar</strong> el producto de la tienda? Esto mantiene
 									el producto vivo en WooCommerce y solo corta la sincronización
 									automática de stock.
 								</p>

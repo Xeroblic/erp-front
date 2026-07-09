@@ -114,6 +114,7 @@ export const ProductDetailTabs: React.FC<ProductDetailTabsProps> = ({
 						channelPrices={product.channel_prices}
 						basePrice={product.price_override ?? product.price ?? null}
 						baseOfferPrice={product.offer_price_override ?? product.offer_price ?? null}
+						baseName={product.name}
 					/>
 				);
 			}

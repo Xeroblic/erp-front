@@ -306,6 +306,10 @@ export interface WooProductWooMeta {
 	last_synced_at: string | null;
 	last_error_at: string | null;
 	last_error_msg: string | null;
+	name?: string | null;
+	sku?: string | null;
+	price?: number | string | null;
+	offer_price?: number | string | null;
 }
 
 /**
