@@ -44,7 +44,7 @@ export const useUserAccess = (_userId?: number) => {
 	const transformedBranches = useMemo<AccessBranch[]>(() => {
 		return branchesList.map((branch: ISucursal) => ({
 			id: branch.id,
-			name: branch.name || branch.branch_name || '',
+			name: branch.branch_name || '',
 			subsidiary:
 				branch.subsidiary_id || branch.subempresa_id
 					? {

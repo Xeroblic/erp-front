@@ -75,8 +75,14 @@ export interface IBranch {
 	updated_at?: string;
 }
 
-export interface ISucursal extends IBranch, INormalizedEntityAliases {
-	// Alias propios de sucursal (los comunes viven en INormalizedEntityAliases)
+/**
+ * Sucursal. El backend (`GET /branches?with=...`) sólo manda campos `branch_*`
+ * (snake_case) — nunca alias camel (`name`, `rut`, `phone`, `address`, `email`, `status`,
+ * `commune_name`), igual que confirmamos para `ISubempresa`. Por eso NO extiende
+ * `INormalizedEntityAliases`.
+ */
+export interface ISucursal extends IBranch {
+	// Alias propios de sucursal, en español (usados por vistas legacy)
 	nombre?: string;
 	direccion?: string;
 
