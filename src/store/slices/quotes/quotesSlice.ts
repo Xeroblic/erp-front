@@ -11,6 +11,7 @@ import type {
 	QuoteCreateDTO,
 	QuoteItem,
 	QuoteItemDTO,
+	QuoteLinkedSale,
 	QuoteListMeta,
 	QuotePDFResponse,
 	QuoteStatus,
@@ -309,19 +310,20 @@ export const deleteQuoteItem = createAsyncThunk<
 });
 
 export const convertQuoteToSale = createAsyncThunk<
-	{ quote: Quote; sale: Record<string, any> },
+	{ quoteId: number; sale: QuoteLinkedSale },
 	{ subsidiaryId: number; quoteId: number },
 	{ rejectValue: string }
 >('quotes/convertQuoteToSale', async ({ subsidiaryId, quoteId }, { rejectWithValue }) => {
 	try {
-		const response = await ApiService.fetchData<{ quote: Quote; sale: Record<string, any> }>({
+		// El backend responde { message, sale } — NO trae la cotización actualizada.
+		const response = await ApiService.fetchData<{ message?: string; sale?: QuoteLinkedSale }>({
 			url: buildQuoteUrl(subsidiaryId, `/${quoteId}/convert-to-sale`),
 			method: 'post',
 			data: {
 				sale_number: null,
 			},
 		});
-		return response.data;
+		return { quoteId, sale: response.data?.sale ?? {} };
 	} catch (error: any) {
 		return rejectWithValue(
 			error?.response?.data?.message || 'No se pudo convertir la cotización',
@@ -499,11 +501,21 @@ const cotizacionesSlice = createSlice({
 			})
 			.addCase(convertQuoteToSale.fulfilled, (state, action) => {
 				state.convertLoading = false;
-				state.list = sortQuotesByIdDesc(state.list.map((quote) =>
-					quote.id === action.payload.quote.id ? action.payload.quote : quote,
-				));
-				if (state.currentQuote?.id === action.payload.quote.id) {
-					state.currentQuote = action.payload.quote;
+				const { quoteId, sale } = action.payload;
+				// El backend no devuelve la cotización: marcamos la existente como
+				// convertida de forma optimista (la lista se recarga aparte).
+				const markConverted = (quote: Quote): Quote => ({
+					...quote,
+					status: 'converted',
+					is_converted_to_sale: true,
+					sale_id: (sale?.id as number | undefined) ?? quote.sale_id ?? null,
+					sale: sale && Object.keys(sale).length ? sale : (quote.sale ?? null),
+				});
+				state.list = sortQuotesByIdDesc(
+					state.list.map((quote) => (quote.id === quoteId ? markConverted(quote) : quote)),
+				);
+				if (state.currentQuote?.id === quoteId) {
+					state.currentQuote = markConverted(state.currentQuote);
 				}
 				toast.success('Cotización convertida a venta');
 			})

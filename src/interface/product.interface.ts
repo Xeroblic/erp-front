@@ -115,6 +115,8 @@ export interface IProductChild {
 	stock_by_status?: IProductChildStockStatus | null;
 	soft_holds?: IProductSoftHolds | null;
 	marketplace_external_ids?: Record<string, string | number> | null;
+	/** Flag autoritativo: esta variante está publicada/vinculada en WooCommerce. */
+	is_synced_with_woo?: boolean;
 }
 
 export interface IProduct {
@@ -159,6 +161,16 @@ export interface IProduct {
 	channel_prices?: ProductChannelPrice[] | null;
 	/** Si el stock del producto se sincroniza con WooCommerce. */
 	sync_stock_with_woo?: boolean;
+	/**
+	 * Flag autoritativo del backend: el producto está publicado en WooCommerce por
+	 * vínculo directo O por alguna variante (hijo) vinculada. Ver `woo_links_count`
+	 * y `synced_children_count` para el desglose.
+	 */
+	is_synced_with_woo?: boolean;
+	/** Nº de tiendas Woo donde el producto (padre) está vinculado directamente. */
+	woo_links_count?: number;
+	/** Nº de variantes (hijos) del producto vinculadas a alguna tienda Woo. */
+	synced_children_count?: number;
 	is_active: boolean;
 	snippet_description?: string | null;
 	short_description?: string | null;

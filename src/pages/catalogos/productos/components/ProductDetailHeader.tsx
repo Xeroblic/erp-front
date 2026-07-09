@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button';
 import { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import { PRODUCT_STATUS_LABELS } from '../constants/products.constant';
 import type { IProduct } from '@/interface/product.interface';
+import { getWooProductLinks } from '@/utils/wooProductMeta.util';
 
 interface ProductDetailHeaderProps {
 	product: IProduct;
@@ -62,6 +63,32 @@ export const ProductDetailHeader: React.FC<ProductDetailHeaderProps> = ({
 							<Badge className='px-2' variant='outline' color='violet'>
 								{formatProductStatus(product.product_status)}
 							</Badge>
+							{(() => {
+								// Fuente única: vínculo real en marketplace_external_ids (igual
+								// que el panel WooCommerce); no se usa is_synced_with_woo.
+								const directStores = getWooProductLinks(
+									product.marketplace_external_ids,
+								).length;
+								const syncedChildren = (product.children ?? []).filter(
+									(child) =>
+										getWooProductLinks(child.marketplace_external_ids).length > 0,
+								).length;
+								if (directStores === 0 && syncedChildren === 0) return null;
+								const onlyChildren = directStores === 0 && syncedChildren > 0;
+								return (
+									<>
+										<span>•</span>
+										<Badge className='flex items-center gap-1 px-2' color='indigo'>
+											<Icon icon='HeroShoppingBag' className='h-3 w-3' />
+											{onlyChildren
+												? 'Variantes en Woo'
+												: directStores > 1
+													? `En Woo ×${directStores}`
+													: 'Publicado en Woo'}
+										</Badge>
+									</>
+								);
+							})()}
 						</div>
 					</div>
 				</div>

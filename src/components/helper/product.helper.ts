@@ -160,6 +160,7 @@ const normalizeChildren = (raw: unknown): IProductChild[] => {
 									string | number
 								>)
 								: null,
+						is_synced_with_woo: toBoolean(entry.is_synced_with_woo),
 					};
 				})
 				.filter((child): child is IProductChild => child !== null);
@@ -227,6 +228,11 @@ export const normalizeProduct = (raw: unknown): IProduct => {
 				safe.marketplace_external_ids !== null
 				? (safe.marketplace_external_ids as Record<string, unknown>)
 				: null,
+		// Flags de sincronización Woo (autoritativos del backend). Se preservan para
+		// el badge "publicado en Woo" y el filtro/búsqueda en el front.
+		is_synced_with_woo: toBoolean(safe.is_synced_with_woo),
+		woo_links_count: toNullableNumber(safe.woo_links_count) ?? undefined,
+		synced_children_count: toNullableNumber(safe.synced_children_count) ?? undefined,
 		is_active: toBoolean(safe.is_active, true),
 		snippet_description: toNullableString(safe.snippet_description ?? safe.snippet ?? null),
 		short_description: toNullableString(safe.short_description ?? null),
