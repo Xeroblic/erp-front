@@ -32,7 +32,16 @@ export interface ISale {
 
 	notes?: string;
 	items_count?: number;
+	/** La venta ya fue cerrada (cierre real del ERP), independiente del estado en Woo. */
+	is_closed?: boolean;
+	/** El backend permite cerrar la venta; ya contempla is_closed e inventory_finalized. */
 	can_close?: boolean;
+	/**
+	 * El inventario de la venta ya quedó descontado/entregado, aunque is_closed venga
+	 * en false (ventas históricas o entregadas por otra vía). Solo para estado visual:
+	 * si es true, se muestra como "Finalizada" y el inventario queda en solo lectura.
+	 * NO decide el botón de cierre (para eso está can_close).
+	 */
 	inventory_finalized?: boolean;
 	documents_metadata?: {
 		inventory_finalized: boolean;
@@ -49,6 +58,8 @@ export interface ISale {
 	invoice_number?: string;
 
 	complete_at?: string | null;
+	/** Fecha/hora del cierre real de la venta (la usa el badge "Venta cerrada el ..."). */
+	completed_at?: string | null;
 }
 
 export interface ISaleItem {

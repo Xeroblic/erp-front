@@ -383,9 +383,13 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	// Estado de la venta → qué acciones aplican. Nunca coexisten "Cerrar venta"
 	// y "Confirmar recepción de devolución": cerrar solo aplica a ventas abiertas.
 	const saleStatus = String(detail?.status ?? '');
-	const isSaleClosed = saleStatus === 'completed' || saleStatus === 'closed';
+	// Cierre real del ERP (backend), NO el estado de Woo: una venta "completada" en
+	// Woo puede no estar cerrada. Ambos estados se manejan por separado para no pisarse.
+	const isSaleClosed = !!detail?.is_closed;
 	const isSaleRefunded = saleStatus === 'refunded';
 	const isSaleCancelled = saleStatus === 'cancelled';
+	// El botón de cierre depende solo de can_close (el backend ya contempla
+	// is_closed e inventory_finalized). inventory_finalized NO se usa aquí.
 	const canCloseSale = !!detail?.can_close;
 
 	return (
@@ -439,8 +443,8 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 							{isSaleClosed && !detail?.inventory_finalized && (
 								<Badge variant='solid' color='green' className='px-2 py-1 text-sm'>
 									Venta cerrada{' '}
-									{(detail as any)?.completed_at
-										? `el ${formatDate((detail as any).completed_at)}`
+									{detail?.completed_at
+										? `el ${formatDate(detail.completed_at)}`
 										: ''}
 								</Badge>
 							)}
