@@ -2,13 +2,13 @@ import React from 'react';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
-import { IUserMe } from '@/interface/user.interface';
+import { IAdminUser } from '@/interface/users.interface';
 
 interface DeleteConfirmationModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	onConfirm: () => void;
-	user: IUserMe | null;
+	user: IAdminUser | null;
 	isDeleting: boolean;
 }
 
