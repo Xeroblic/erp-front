@@ -36,7 +36,7 @@ export const createUserTableColumns = (
 		header: 'Cargo y Empresa',
 		cell: (info) => {
 			const user = info.row.original;
-			const cargo = user.cargo || user.companies?.[0]?.position || user.position || '—';
+			const cargo = user.cargo || user.companies?.[0]?.position || '—';
 
 			let empresa = '—';
 			if (user.branch?.subsidiary?.company?.company_name) {

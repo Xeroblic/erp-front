@@ -182,7 +182,9 @@ export const usePermissionsManagement = () => {
 						assignRoleToUser({
 							userId: selectedUserForPermissions.id,
 							roleId: id,
-							companyId: selectedUserForPermissions.company?.id,
+							companyId:
+								selectedUserForPermissions.companies?.find((c) => c.is_primary)
+									?.id ?? selectedUserForPermissions.companies?.[0]?.id,
 						}),
 					),
 				),

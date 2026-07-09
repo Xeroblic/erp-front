@@ -459,7 +459,7 @@ export const PermissionsModal: React.FC<PermissionsModalProps> = ({
 											Cargo:
 										</label>
 										<p className='text-sm font-semibold'>
-											{selectedUser.cargo || selectedUser.position || '—'}
+											{selectedUser.cargo || '—'}
 										</p>
 									</div>
 									<div>
