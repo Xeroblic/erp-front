@@ -88,11 +88,11 @@ const useCompanyManager = (): UseCompanyManager => {
 			setIsLoading(true);
 			try {
 				// Delega el cambio en el hook centralizado: resuelve el company_id REAL
-				// (ya no `1` hardcodeado) y emite el evento con semántica correcta
-				// (la subsidiaria NO viaja dentro de `branchId`).
+				// (ya no `1` hardcodeado), persiste subsidiaryId en el campo dedicado
+				// `subsidiary_id` (ya NO se mezcla con `sucursal_principal`, que es un
+				// branch id) y emite el evento con semántica correcta.
 				const ok = await switchContext({
 					subsidiaryId,
-					sucursalPrincipal: subsidiaryId,
 					eventBranchId: null,
 					successMessage: 'Empresa cambiada exitosamente',
 				});
