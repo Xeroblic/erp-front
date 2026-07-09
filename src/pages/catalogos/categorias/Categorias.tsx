@@ -57,7 +57,7 @@ const Categorias: React.FC = () => {
 		() =>
 			(branches ?? []).map((b) => ({
 				value: String(b.id),
-				label: b.name ?? `Sucursal ${b.id}`,
+				label: b.branch_name ?? `Sucursal ${b.id}`,
 			})),
 		[branches],
 	);
@@ -199,7 +199,7 @@ const Categorias: React.FC = () => {
 					</div>
 				</SubheaderLeft>
 				<SubheaderRight>
-					<div className='flex flex-col items-baseline gap-4 sm:flex-row sm:items-center mr-10'>
+					<div className='mr-10 flex flex-col items-baseline gap-4 sm:flex-row sm:items-center'>
 						<Input
 							name='search'
 							placeholder='Buscar por nombre o descripcion'
@@ -234,13 +234,21 @@ const Categorias: React.FC = () => {
 							variant='outline'
 							color='indigo'
 							onClick={() => setImportOpen(true)}
-							className='group'
-						>
-							<Icon icon='HeroArrowDownTray' color={'indigo'} colorIntensity='500' className='h-6 w-6 group-hover:text-indigo-400 mr-2 font-bold' />
+							className='group'>
+							<Icon
+								icon='HeroArrowDownTray'
+								color={'indigo'}
+								colorIntensity='500'
+								className='mr-2 h-6 w-6 font-bold group-hover:text-indigo-400'
+							/>
 							Importar Categorias desde WC
 						</ProtectedButton>
-						<Button variant='solid' color='emerald' className='font-bold' onClick={handleOpenCreate}>
-							<Icon icon='HeroPlus' className='h-6 w-6 text-white mr-2 font-bold' />
+						<Button
+							variant='solid'
+							color='emerald'
+							className='font-bold'
+							onClick={handleOpenCreate}>
+							<Icon icon='HeroPlus' className='mr-2 h-6 w-6 font-bold text-white' />
 							Nueva categoria
 						</Button>
 					</div>

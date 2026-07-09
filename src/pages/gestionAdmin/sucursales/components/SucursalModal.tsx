@@ -150,12 +150,12 @@ export default function SucursalModal({
 		if (isOpen) {
 			if (isEditing && sucursal) {
 				formik.setValues({
-					name: sucursal.name || '',
+					name: sucursal.branch_name || '',
 					subsidiary_id: sucursal.subsidiary_id?.toString() || '',
-					rut: sucursal.rut || '',
-					address: sucursal.address || '',
-					phone: sucursal.phone || '',
-					email: sucursal.email || '',
+					rut: sucursal.branch_rut || '',
+					address: sucursal.branch_address || '',
+					phone: sucursal.branch_phone || '',
+					email: sucursal.branch_email || '',
 					manager_id: (sucursal as any)?.manager_id?.toString() || '',
 					region: '',
 					provincia: '',
