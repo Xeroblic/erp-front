@@ -299,19 +299,18 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 				header: 'Woo',
 				cell: ({ row }) => {
 					const product = row.original;
-					// Cada grado es un producto independiente: puede estar publicado el
-					// B pero no el A/C. Por eso no mostramos "Publicado" en bloque en el
-					// padre; indicamos qué grados están publicados.
-					const directStores =
-						product.woo_links_count ??
-						getWooProductLinks(product.marketplace_external_ids).length;
+					// Fuente única de verdad: el vínculo real en `marketplace_external_ids`
+					// (lo mismo que lee el panel WooCommerce del detalle). NO se usa
+					// `is_synced_with_woo` porque el pivote del backend puede quedar
+					// desincronizado del mirror y mostrar "Publicado" cuando el panel dice
+					// "No vinculado". Cada grado es independiente.
+					const directStores = getWooProductLinks(product.marketplace_external_ids).length;
 					const publishedChildren = (product.children ?? []).filter(
-						(child) => child.is_synced_with_woo,
+						(child) => getWooProductLinks(child.marketplace_external_ids).length > 0,
 					);
 					const hasDirectLink = directStores > 0;
-					const syncedFlag = product.is_synced_with_woo ?? false;
 
-					if (!hasDirectLink && publishedChildren.length === 0 && !syncedFlag) {
+					if (!hasDirectLink && publishedChildren.length === 0) {
 						return (
 							<Badge
 								variant='outline'
@@ -339,20 +338,6 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 									{directStores > 1 ? `Publicado ×${directStores}` : 'Publicado'}
 								</Badge>
 							</Tooltip>
-						);
-					}
-
-					// El backend lo marca sincronizado pero no se pudo resolver el
-					// desglose de variantes: publicado genérico (evita div vacío).
-					if (publishedChildren.length === 0) {
-						return (
-							<Badge
-								variant='solid'
-								color='indigo'
-								className='flex w-fit items-center gap-1 px-2'>
-								<Icon icon='HeroShoppingBag' className='h-3 w-3' />
-								Publicado
-							</Badge>
 						);
 					}
 
@@ -833,8 +818,7 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 																													child.sku
 																												}
 																											</div>
-																												{(child.is_synced_with_woo ||
-																													getWooProductLinks(child.marketplace_external_ids).length > 0) && (
+																												{getWooProductLinks(child.marketplace_external_ids).length > 0 && (
 																													<Tooltip text='Publicado en WooCommerce'>
 																														<Badge
 																															variant='solid'

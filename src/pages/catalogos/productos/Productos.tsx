@@ -23,6 +23,7 @@ import { PRODUCT_DEFAULT_FILTERS } from './constants/products.constant';
 import type { ProductsViewMode } from './hooks/useProductos';
 import StockAdminTab from './components/Tabs/AnalyticsTab';
 import StockCatalogTab from './components/Tabs/StockCatalogTab';
+import { getWooProductLinks } from '@/utils/wooProductMeta.util';
 
 // Se cargan todos los productos hasta este tope para poder buscar (incluyendo
 // variantes) y filtrar por Woo en el cliente sin depender del backend. Cubre
@@ -46,6 +47,14 @@ const productMatchesSearch = (product: IProduct, term: string): boolean => {
 		haystack([child.name, child.sku]).includes(term),
 	);
 };
+
+// Publicado en Woo según el vínculo real (marketplace_external_ids), igual que el
+// panel WooCommerce del detalle: el padre por sí mismo o alguna de sus variantes.
+const isProductWooPublished = (product: IProduct): boolean =>
+	getWooProductLinks(product.marketplace_external_ids).length > 0 ||
+	(product.children ?? []).some(
+		(child) => getWooProductLinks(child.marketplace_external_ids).length > 0,
+	);
 
 const Productos: React.FC = () => {
 	const navigate = useNavigate();
@@ -110,7 +119,7 @@ const Productos: React.FC = () => {
 	const visibleProducts = useMemo(() => {
 		const term = filters.search?.trim().toLowerCase() ?? '';
 		const filtered = products.filter((product) => {
-			if (wooOnly && !product.is_synced_with_woo) return false;
+			if (wooOnly && !isProductWooPublished(product)) return false;
 			const updatedDay = (product.updated_at ?? '').slice(0, 10);
 			if (dateFrom && (!updatedDay || updatedDay < dateFrom)) return false;
 			if (dateTo && (!updatedDay || updatedDay > dateTo)) return false;

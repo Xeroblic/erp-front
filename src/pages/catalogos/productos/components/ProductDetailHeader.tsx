@@ -64,13 +64,16 @@ export const ProductDetailHeader: React.FC<ProductDetailHeaderProps> = ({
 								{formatProductStatus(product.product_status)}
 							</Badge>
 							{(() => {
-								const directStores =
-									product.woo_links_count ??
-									getWooProductLinks(product.marketplace_external_ids).length;
-								const syncedChildren = product.synced_children_count ?? 0;
-								const isSynced =
-									product.is_synced_with_woo ?? directStores + syncedChildren > 0;
-								if (!isSynced) return null;
+								// Fuente única: vínculo real en marketplace_external_ids (igual
+								// que el panel WooCommerce); no se usa is_synced_with_woo.
+								const directStores = getWooProductLinks(
+									product.marketplace_external_ids,
+								).length;
+								const syncedChildren = (product.children ?? []).filter(
+									(child) =>
+										getWooProductLinks(child.marketplace_external_ids).length > 0,
+								).length;
+								if (directStores === 0 && syncedChildren === 0) return null;
 								const onlyChildren = directStores === 0 && syncedChildren > 0;
 								return (
 									<>
