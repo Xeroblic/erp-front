@@ -3,7 +3,10 @@ import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '@/store';
 import ApiService from '@/services/ApiService';
 import { userMeThunk } from '@/store/slices/auth/authSlice';
-import { actualizarSucursalPrincipalThunk } from '@/store/slices/personalizacion/personalizacionSlice';
+import {
+	actualizarSucursalPrincipalThunk,
+	actualizarSubsidiariaPrincipalThunk,
+} from '@/store/slices/personalizacion/personalizacionSlice';
 
 /**
  * Hook único para ejecutar el cambio de contexto organizacional (empresa / subsidiaria /
@@ -24,9 +27,16 @@ export interface OrgContextChangeDetail {
 export const ORG_CONTEXT_CHANGED_EVENT = 'org-context-changed';
 
 export interface SwitchContextArgs {
-	/** Valor a guardar en `personalization.sucursal_principal`. */
-	sucursalPrincipal: number;
-	/** Si se indica, se envía como `subsidiary_id` a `/user/switch-company` (cambio de subsidiaria). */
+	/**
+	 * Branch id a guardar en `personalization.sucursal_principal` (cambio de SUCURSAL).
+	 * No debe usarse para un cambio de subsidiaria/empresa: para eso usa `subsidiaryId`.
+	 */
+	sucursalPrincipal?: number;
+	/**
+	 * Subsidiary id de un cambio de SUBSIDIARIA/EMPRESA. Se envía a `/user/switch-company`
+	 * y se persiste en el campo dedicado `personalization.subsidiary_id` (nunca se mezcla
+	 * con `sucursal_principal`, que es un branch id).
+	 */
 	subsidiaryId?: number | null;
 	/** `company_id` explícito; si no se pasa, se resuelve desde personalización/usuario. */
 	companyId?: number | null;
@@ -69,17 +79,28 @@ export const useOrgContextSwitcher = () => {
 				});
 
 				// 2) personalización vía thunk (mantiene el slice sincronizado), sólo si cambió.
-				if (personalizacion?.sucursal_principal !== sucursalPrincipal) {
-					try {
+				// Un cambio de subsidiaria/empresa actualiza `subsidiary_id`; un cambio de
+				// sucursal actualiza `sucursal_principal`. Nunca se mezclan.
+				try {
+					if (subsidiaryId != null) {
+						if (personalizacion?.subsidiary_id !== subsidiaryId) {
+							await dispatch(
+								actualizarSubsidiariaPrincipalThunk(subsidiaryId),
+							).unwrap();
+						}
+					} else if (
+						sucursalPrincipal != null &&
+						personalizacion?.sucursal_principal !== sucursalPrincipal
+					) {
 						await dispatch(
 							actualizarSucursalPrincipalThunk(sucursalPrincipal),
 						).unwrap();
-					} catch (err) {
-						console.warn(
-							'[useOrgContextSwitcher] no se pudo actualizar la personalización:',
-							err,
-						);
 					}
+				} catch (err) {
+					console.warn(
+						'[useOrgContextSwitcher] no se pudo actualizar la personalización:',
+						err,
+					);
 				}
 
 				// 3) refresca el perfil (trae el nuevo contexto ya aplicado).
