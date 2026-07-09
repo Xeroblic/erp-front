@@ -59,61 +59,15 @@ const normalizeBranchForSubsidiary = (branch: any = {}): any => {
 	};
 };
 
+// Normaliza la respuesta de GET/PATCH /subsidiaries. El backend SÓLO manda campos
+// `subsidiary_*` (verificado contra SubsidiaryResource): ya no se fabrican alias camel
+// (name/rut/phone/...) ni fallbacks a claves sin prefijo que el backend nunca envía.
 const normalizeSubsidiaryData = (backendData: any): ISubempresa => {
 	const managerObj = backendData.manager || backendData.manager_data || null;
-	const normalizedManagerName =
-		backendData.subsidiary_manager_name ||
-		backendData.manager_name ||
-		(managerObj
-			? managerObj.name ||
-				`${managerObj.first_name ?? ''} ${managerObj.last_name ?? ''}`.trim()
-			: undefined);
-	const managerPhone =
-		backendData.subsidiary_manager_phone ||
-		backendData.manager_phone ||
-		managerObj?.phone ||
-		managerObj?.phone_number;
-	const managerEmail =
-		backendData.subsidiary_manager_email || backendData.manager_email || managerObj?.email;
 
 	return {
 		...backendData,
-		subsidiary_documents_email:
-			backendData.subsidiary_documents_email ?? backendData.documents_email,
-		subsidiary_sales_email: backendData.subsidiary_sales_email ?? backendData.sales_email,
-		subsidiary_delivery_term: backendData.subsidiary_delivery_term ?? backendData.delivery_term,
-		subsidiary_bank_details: backendData.subsidiary_bank_details ?? backendData.bank_details,
-		subsidiary_allowed_payment_methods:
-			backendData.subsidiary_allowed_payment_methods ?? backendData.allowed_payment_methods,
-		subsidiary_quote_validity_text:
-			backendData.subsidiary_quote_validity_text ?? backendData.quote_validity_text,
-		subsidiary_quote_validity_days:
-			backendData.subsidiary_quote_validity_days ?? backendData.quote_validity_days,
-		subsidiary_giro: backendData.subsidiary_giro ?? backendData.giro,
-		subsidiary_commercial_terms:
-			backendData.subsidiary_commercial_terms ?? backendData.commercial_terms,
-		subsidiary_default_payment_method:
-			backendData.subsidiary_default_payment_method ?? backendData.default_payment_method,
-		// Mapear campos del backend al formato del frontend
-		name: backendData.subsidiary_name || backendData.name || '',
-		company_id:
-			backendData.company_id ??
-			backendData?.company?.id ??
-			backendData?.empresa_id ??
-			backendData?.companyId,
-		manager_id:
-			backendData.subsidiary_manager_id ??
-			backendData.manager_id ??
-			managerObj?.id ??
-			managerObj?.user_id,
-		rut: backendData.subsidiary_rut || backendData.rut,
-		website: backendData.subsidiary_website || backendData.website,
-		phone: backendData.subsidiary_phone || backendData.phone,
-		address: backendData.subsidiary_address || backendData.address,
-		email: backendData.subsidiary_email || backendData.email,
-		manager_name: normalizedManagerName,
-		manager_phone: managerPhone,
-		manager_email: managerEmail,
+		company_id: backendData.company_id,
 		manager:
 			managerObj && typeof managerObj === 'object'
 				? {
@@ -129,7 +83,6 @@ const normalizeSubsidiaryData = (backendData: any): ISubempresa => {
 						phone_number: managerObj.phone_number,
 					}
 				: undefined,
-		status: backendData.subsidiary_status ?? backendData.status,
 		sucursales: (backendData.sucursales && backendData.sucursales.length
 			? backendData.sucursales
 			: backendData.branches || []

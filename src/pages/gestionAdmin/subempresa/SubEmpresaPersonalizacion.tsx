@@ -300,7 +300,7 @@ export default function SubEmpresaPersonalizacion() {
 	// Definición de columnas
 	const columns = useMemo(
 		() => [
-			columnHelper.accessor('name', {
+			columnHelper.accessor('subsidiary_name', {
 				header: 'Subempresa',
 				cell: (info) => {
 					const { personalizacion } = info.row.original;
@@ -445,7 +445,7 @@ export default function SubEmpresaPersonalizacion() {
 		return subempresasConPersonalizacion.filter((subempresa) => {
 			// Filtro por texto
 			if (filtroTexto) {
-				const nombre = subempresa.name ?? '';
+				const nombre = subempresa.subsidiary_name ?? '';
 				const coincideTexto = nombre.toLowerCase().includes(filtroTexto.toLowerCase());
 				if (!coincideTexto) return false;
 			}
@@ -707,7 +707,7 @@ export default function SubEmpresaPersonalizacion() {
 								{modoEdicion ? 'Editar' : 'Crear'} Personalización
 							</h3>
 							<p className='text-sm text-gray-500'>
-								{selectedSubempresa?.name} - EcoTech Solutions
+								{selectedSubempresa?.subsidiary_name} - EcoTech Solutions
 							</p>
 						</div>
 					</div>
@@ -1017,7 +1017,9 @@ export default function SubEmpresaPersonalizacion() {
 							<h3 className='text-lg font-semibold text-gray-900'>
 								Restablecer Personalización
 							</h3>
-							<p className='text-sm text-gray-500'>{selectedSubempresa?.name}</p>
+							<p className='text-sm text-gray-500'>
+								{selectedSubempresa?.subsidiary_name}
+							</p>
 						</div>
 					</div>
 				</ModalHeader>
@@ -1026,7 +1028,8 @@ export default function SubEmpresaPersonalizacion() {
 					<div className='space-y-4'>
 						<p className='text-gray-700'>
 							¿Está seguro que desea restablecer la personalización de{' '}
-							<strong>{selectedSubempresa?.name}</strong> a los valores por defecto?
+							<strong>{selectedSubempresa?.subsidiary_name}</strong> a los valores por
+							defecto?
 						</p>
 
 						<div className='rounded-lg border-l-4 border-amber-400 bg-amber-50 p-4'>

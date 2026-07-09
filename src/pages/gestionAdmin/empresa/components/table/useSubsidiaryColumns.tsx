@@ -18,7 +18,7 @@ export const useSubsidiaryColumns = (
 				header: 'Nombre',
 				cell: (info) => {
 					const subsidiary = info.row.original;
-					const name = subsidiary.subsidiary_name || subsidiary.name || 'Sin nombre';
+					const name = subsidiary.subsidiary_name || 'Sin nombre';
 
 					return (
 						<div className='flex min-w-[200px] items-center gap-2'>
@@ -41,7 +41,7 @@ export const useSubsidiaryColumns = (
 				header: 'RUT',
 				cell: (info) => {
 					const subsidiary = info.row.original;
-					const rut = subsidiary.subsidiary_rut || subsidiary.rut;
+					const rut = subsidiary.subsidiary_rut;
 
 					return rut ? (
 						<span className='font-mono text-sm'>{rut}</span>
@@ -57,7 +57,7 @@ export const useSubsidiaryColumns = (
 				header: 'Dirección',
 				cell: (info) => {
 					const subsidiary = info.row.original;
-					const address = subsidiary.subsidiary_address || subsidiary.address;
+					const address = subsidiary.subsidiary_address;
 
 					return (
 						<div className='max-w-xs'>
@@ -77,7 +77,7 @@ export const useSubsidiaryColumns = (
 				header: 'Teléfono',
 				cell: (info) => {
 					const subsidiary = info.row.original;
-					const phone = subsidiary.subsidiary_phone || subsidiary.phone;
+					const phone = subsidiary.subsidiary_phone;
 
 					return phone ? (
 						<div className='flex items-center gap-1'>
@@ -96,7 +96,7 @@ export const useSubsidiaryColumns = (
 				header: 'Email',
 				cell: (info) => {
 					const subsidiary = info.row.original;
-					const email = subsidiary.subsidiary_email || subsidiary.email;
+					const email = subsidiary.subsidiary_email;
 
 					return email ? (
 						<div className='flex items-center gap-1'>

@@ -80,7 +80,7 @@ export default function SubEmpresaLista() {
 	const filteredSubempresas = useMemo(
 		() =>
 			subempresas.filter((sub) =>
-				sub.name?.toLowerCase().includes(globalFilter.toLowerCase()),
+				sub.subsidiary_name?.toLowerCase().includes(globalFilter.toLowerCase()),
 			),
 		[subempresas, globalFilter],
 	);
@@ -157,7 +157,8 @@ export default function SubEmpresaLista() {
 						subempresaId={toDeleteId || 0}
 						subsiName={
 							toDeleteId
-								? subempresas.find((s) => s.id === toDeleteId)?.name || ''
+								? subempresas.find((s) => s.id === toDeleteId)?.subsidiary_name ||
+									''
 								: ''
 						}
 						isNavigate={false}

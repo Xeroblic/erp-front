@@ -78,21 +78,11 @@ export const updateMiEmpresa = createAsyncThunk<
 	}
 });
 
-// Función para normalizar datos del backend al formato del frontend
+// Normaliza la respuesta del backend. El backend SÓLO manda campos `subsidiary_*`
+// (verificado contra SubsidiaryResource): ya no se fabrican alias camel (name/rut/...).
 const normalizeSubsidiaryData = (backendData: any): ISubempresa => {
 	return {
 		...backendData,
-		// Mapear campos del backend al formato del frontend
-		name: backendData.subsidiary_name || backendData.name || '',
-		rut: backendData.subsidiary_rut || backendData.rut,
-		website: backendData.subsidiary_website || backendData.website,
-		phone: backendData.subsidiary_phone || backendData.phone,
-		address: backendData.subsidiary_address || backendData.address,
-		email: backendData.subsidiary_email || backendData.email,
-		manager_name: backendData.subsidiary_manager_name || backendData.manager_name,
-		manager_phone: backendData.subsidiary_manager_phone || backendData.manager_phone,
-		manager_email: backendData.subsidiary_manager_email || backendData.manager_email,
-		status: backendData.subsidiary_status ?? backendData.status,
 		sucursales: backendData.sucursales || [],
 		branches_count: backendData.branches?.length || backendData.branches_count || 0,
 		// Comuna (si viene expandida)
