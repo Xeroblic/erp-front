@@ -41,7 +41,7 @@ export default function SubempresasTable({
 
 	const columns = useMemo(
 		() => [
-			columnHelper.accessor('name', {
+			columnHelper.accessor('subsidiary_name', {
 				header: 'Subempresa',
 				cell: (info) => (
 					<div className='flex items-center gap-3'>
@@ -58,7 +58,7 @@ export default function SubempresasTable({
 					</div>
 				),
 			}),
-			columnHelper.accessor('rut', {
+			columnHelper.accessor('subsidiary_rut', {
 				header: 'RUT',
 				cell: (info) => {
 					const value = info.getValue();
@@ -71,7 +71,7 @@ export default function SubempresasTable({
 					);
 				},
 			}),
-			columnHelper.accessor('phone', {
+			columnHelper.accessor('subsidiary_phone', {
 				header: 'Teléfono',
 				cell: (info) => {
 					const value = info.getValue();
@@ -87,7 +87,7 @@ export default function SubempresasTable({
 					);
 				},
 			}),
-			columnHelper.accessor('email', {
+			columnHelper.accessor('subsidiary_email', {
 				header: 'Email',
 				cell: (info) => {
 					const value = info.getValue();

@@ -91,14 +91,24 @@ export interface ISucursal extends IBranch, INormalizedEntityAliases {
 	subsidiary_rut?: string;
 }
 
-export interface ISubempresa extends ISubsidiaryMin, INormalizedEntityAliases {
+/**
+ * Subsidiaria/subempresa. Contrato verificado contra `SubsidiaryResource` (backend) y el
+ * payload real de `GET /subsidiaries?with=commune,manager,branches,branches.manager,
+ * branches.commune`.
+ *
+ * ⚠️ El backend SÓLO manda los campos `subsidiary_*` (snake_case) — nunca alias camel
+ * (`name`, `rut`, `phone`, `address`, `email`, `status`, `website`, `commune_name`). Por
+ * eso NO extiende `INormalizedEntityAliases`: usa siempre los campos reales.
+ */
+export interface ISubempresa extends ISubsidiaryMin {
 	company_id: number;
 	subsidiary_rut?: string;
-	subsidiary_website?: string;
-	subsidiary_phone?: string;
-	subsidiary_address?: string;
-	subsidiary_email?: string;
-	subsidiary_status?: boolean | string | number;
+	subsidiary_website?: string | null;
+	subsidiary_phone?: string | null;
+	subsidiary_address?: string | null;
+	subsidiary_email?: string | null;
+	/** Siempre presente en el payload real (verificado); nunca string/number. */
+	subsidiary_status?: boolean;
 	subsidiary_documents_email?: string | null;
 	subsidiary_sales_email?: string | null;
 	subsidiary_delivery_term?: string | null;
@@ -117,9 +127,6 @@ export interface ISubempresa extends ISubsidiaryMin, INormalizedEntityAliases {
 	logo_base_64?: string | null;
 	created_at?: string;
 	updated_at?: string;
-
-	// Alias propio de subempresa (los comunes viven en INormalizedEntityAliases)
-	website?: string;
 
 	sucursales?: ISucursal[];
 	branches?: IBranch[];

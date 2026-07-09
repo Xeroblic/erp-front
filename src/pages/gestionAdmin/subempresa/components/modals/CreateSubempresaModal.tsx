@@ -118,16 +118,12 @@ export default function CreateSubempresaModal({
 
 	const formik = useFormik({
 		initialValues: {
-			nombre: subempresa?.name || '',
-			managerId:
-				(subempresa as any)?.manager_id ||
-				subempresa?.manager?.id ||
-				(subempresa as any)?.subsidiary_manager_id ||
-				'',
-			rut: subempresa?.rut || '',
-			telefono: subempresa?.phone || '',
-			email: subempresa?.email || '',
-			direccion: subempresa?.address || '',
+			nombre: subempresa?.subsidiary_name || '',
+			managerId: subempresa?.manager?.id || subempresa?.subsidiary_manager_id || '',
+			rut: subempresa?.subsidiary_rut || '',
+			telefono: subempresa?.subsidiary_phone || '',
+			email: subempresa?.subsidiary_email || '',
+			direccion: subempresa?.subsidiary_address || '',
 			region: '',
 			provincia: '',
 			comuna: (subempresa as any)?.commune_id

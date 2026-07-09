@@ -183,7 +183,7 @@ export default function SucursalModal({
 	// Opciones para el selector de subsidiarias
 	const subsidiaryOptions = subsidiaries.map((sub) => ({
 		value: sub.id.toString(),
-		label: sub.name,
+		label: sub.subsidiary_name,
 	}));
 
 	// Hook para obtener managers disponibles (usuarios con acceso a la sucursal)
