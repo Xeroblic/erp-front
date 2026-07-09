@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { useAppSelector } from '@/store';
 import ApiService from '@/services/ApiService';
-import { IUserMe } from '@/interface/user.interface';
+import { IAdminUser } from '@/interface/users.interface';
 
 export const useUsersManagement = () => {
 	const user = useAppSelector((s) => s.auth.user);
@@ -33,7 +33,7 @@ export const useUsersManagement = () => {
 	}, []);
 
 	// Cargar todos los usuarios (super-admin)
-	const fetchAllUsers = useCallback(async (): Promise<IUserMe[]> => {
+	const fetchAllUsers = useCallback(async (): Promise<IAdminUser[]> => {
 		try {
 			const resp = await ApiService.fetchData<any>({
 				url: '/users',
@@ -44,7 +44,7 @@ export const useUsersManagement = () => {
 
 			const body = resp.data;
 			const users: unknown = body?.data ?? body?.users ?? body?.usuarios ?? body;
-			return Array.isArray(users) ? (users as IUserMe[]) : [];
+			return Array.isArray(users) ? (users as IAdminUser[]) : [];
 		} catch (error: any) {
 			toast.error(error?.response?.data?.message || 'Error al cargar usuarios');
 			return [];
@@ -52,7 +52,7 @@ export const useUsersManagement = () => {
 	}, []);
 
 	// Cargar usuarios de la empresa
-	const fetchCompanyUsers = useCallback(async (): Promise<IUserMe[]> => {
+	const fetchCompanyUsers = useCallback(async (): Promise<IAdminUser[]> => {
 		if (!empresaId) {
 			toast.warn('Este usuario no tiene empresa asignada');
 			return [];
@@ -67,7 +67,7 @@ export const useUsersManagement = () => {
 			});
 			const body = resp.data;
 			const users: unknown = body?.usuarios ?? body?.data ?? body?.users ?? body;
-			return Array.isArray(users) ? (users as IUserMe[]) : [];
+			return Array.isArray(users) ? (users as IAdminUser[]) : [];
 		} catch (error: any) {
 			toast.error(error?.response?.data?.message || 'Error al cargar usuarios');
 			return [];

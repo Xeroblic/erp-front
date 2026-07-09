@@ -11,13 +11,13 @@ import { useUsersManagement } from './hooks/useUsersManagement';
 import { UsersTable } from './components/tables';
 import { CreateUserModal } from './components/modals';
 import UsersFilters from './components/filters/UsersFilters';
-import { IUserMe } from '@/interface/user.interface';
+import { IAdminUser } from '@/interface/users.interface';
 import { useAppSelector } from '@/store';
 
 export default function UsuarioLista() {
 	const { user, fetchAllUsers, fetchCompanyUsers } = useUsersManagement();
-	const [usuarios, setUsuarios] = useState<IUserMe[]>([]);
-	const [filteredUsuarios, setFilteredUsuarios] = useState<IUserMe[]>([]);
+	const [usuarios, setUsuarios] = useState<IAdminUser[]>([]);
+	const [filteredUsuarios, setFilteredUsuarios] = useState<IAdminUser[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [filters, setFilters] = useState<any>({});
 	const [showCreateModal, setShowCreateModal] = useState(false);
@@ -29,7 +29,7 @@ export default function UsuarioLista() {
 	const loadUsers = useCallback(async () => {
 		setLoading(true);
 		try {
-			let users: IUserMe[] | undefined = [];
+			let users: IAdminUser[] | undefined = [];
 
 			if (user?.roles?.includes('super-admin')) {
 				users = await fetchAllUsers();

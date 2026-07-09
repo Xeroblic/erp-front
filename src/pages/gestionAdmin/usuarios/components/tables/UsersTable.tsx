@@ -8,7 +8,7 @@ import {
 
 import { useUsersManagement } from '../../hooks/useUsersManagement';
 import { UserDetailsModal, DeleteConfirmationModal } from '../modals';
-import { IUserMe } from '@/interface/user.interface';
+import { IAdminUser } from '@/interface/users.interface';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
@@ -19,7 +19,7 @@ import Avatar from '@/components/Avatar';
 import getUserAvatarUrl from '@/utils/getUserAvatarUrl';
 
 interface UsersTableProps {
-	users: IUserMe[];
+	users: IAdminUser[];
 	isLoading: boolean;
 	pagination: {
 		page: number;
@@ -32,13 +32,13 @@ interface UsersTableProps {
 	onUserUpdated: () => void;
 }
 
-const columnHelper = createColumnHelper<IUserMe>();
+const columnHelper = createColumnHelper<IAdminUser>();
 
 const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, onUserUpdated }) => {
 	const { handleToggleUserStatus, handleDeleteUser, isActionLoading } = useUsersManagement();
 
 	// Estados para los modales
-	const [selectedUser, setSelectedUser] = useState<IUserMe | null>(null);
+	const [selectedUser, setSelectedUser] = useState<IAdminUser | null>(null);
 	const [modals, setModals] = useState({
 		details: false,
 		delete: false,
@@ -48,7 +48,7 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, onUserUpdated
 	// Funciones para manejar modales
 	const openModal = (
 		type: 'details' | 'delete',
-		user: IUserMe,
+		user: IAdminUser,
 		mode: 'view' | 'edit' = 'view',
 	) => {
 		setSelectedUser(user);
@@ -75,7 +75,7 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, onUserUpdated
 		}
 	};
 
-	const handleToggleStatus = async (user: IUserMe) => {
+	const handleToggleStatus = async (user: IAdminUser) => {
 		await handleToggleUserStatus(user.id);
 		onUserUpdated();
 	};
@@ -156,10 +156,7 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, onUserUpdated
 				// Adaptarse a la estructura del API que puede tener branch_name o name
 				const branchData = (user as any).branch;
 				const branchName =
-					branchData?.branch_name ||
-					branchData?.name ||
-					user.branch?.name ||
-					'Sin sucursal';
+					branchData?.branch_name || branchData?.name || 'Sin sucursal';
 				const subsidiaryName =
 					branchData?.subsidiary?.subsidiary_name || user.subsidiary?.name || '';
 
