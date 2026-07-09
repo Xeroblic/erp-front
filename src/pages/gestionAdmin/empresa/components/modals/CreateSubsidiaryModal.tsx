@@ -52,13 +52,13 @@ export default function CreateSubsidiaryModal({
 
 	const formik = useFormik({
 		initialValues: {
-			name: subsidiary?.name || '',
-			managerId: (subsidiary as any)?.manager_id || '',
-			rut: subsidiary?.rut || '',
-			address: subsidiary?.address || '',
-			phone: subsidiary?.phone || '',
-			email: subsidiary?.email || '',
-			website: subsidiary?.website || '',
+			name: subsidiary?.subsidiary_name || '',
+			managerId: subsidiary?.subsidiary_manager_id || '',
+			rut: subsidiary?.subsidiary_rut || '',
+			address: subsidiary?.subsidiary_address || '',
+			phone: subsidiary?.subsidiary_phone || '',
+			email: subsidiary?.subsidiary_email || '',
+			website: subsidiary?.subsidiary_website || '',
 			region: '',
 			provincia: '',
 			comuna: (subsidiary as any)?.commune_id

@@ -35,9 +35,7 @@ const toStringValue = (value: unknown): string | undefined => {
 
 const toStringArray = (value: unknown): string[] => {
 	if (!Array.isArray(value)) return [];
-	return value
-		.map((item) => toStringValue(item))
-		.filter((item): item is string => Boolean(item));
+	return value.map((item) => toStringValue(item)).filter((item): item is string => Boolean(item));
 };
 
 const normalizeCompanyRef = (value: unknown): AuthorizationCompanyRef | null => {
@@ -153,6 +151,8 @@ export function normalizeUserProfile(raw: PerfilPayload): {
 
 	const user: IUserMe = {
 		...(baseUser as IUserMe),
+		// `/perfil` entrega `pk` (no `id`); garantizamos `id` para que el tipo no mienta.
+		id: toNumber(data.id) ?? toNumber(data.pk) ?? 0,
 		branch: (data.branch ?? rawRecord.branch) as IUserMe['branch'],
 		access,
 		visible,

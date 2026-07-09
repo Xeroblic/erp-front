@@ -1,4 +1,8 @@
 // src/interface/customerSupplier.interface.ts
+import type { ISubsidiaryMin } from '@/interface/empresas.interface';
+
+// Fuente única en empresas.interface.ts; se re-exporta para no romper imports existentes.
+export type { ISubsidiaryMin };
 
 export interface ISupplierMin {
 	created_at: string;
@@ -6,11 +10,6 @@ export interface ISupplierMin {
 	name: string;
 	subsidiary_id: number;
 	updated_at: string;
-}
-
-export interface ISubsidiaryMin {
-	id: number;
-	subsidiary_name: string;
 }
 
 export interface ICustomerSupplier {

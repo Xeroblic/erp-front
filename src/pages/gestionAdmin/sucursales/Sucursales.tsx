@@ -73,7 +73,7 @@ export default function SucursalesLista() {
 
 	// columnas de la tabla
 	const columns = [
-		columnHelper.accessor('name', {
+		columnHelper.accessor('branch_name', {
 			header: 'Sucursal',
 			cell: (info) => (
 				<div className='flex items-center gap-3'>
@@ -103,7 +103,7 @@ export default function SucursalesLista() {
 				);
 			},
 		}),
-		columnHelper.accessor('rut', {
+		columnHelper.accessor('branch_rut', {
 			header: 'RUT',
 			cell: (info) => {
 				const value = info.getValue();
@@ -116,7 +116,7 @@ export default function SucursalesLista() {
 				);
 			},
 		}),
-		columnHelper.accessor('address', {
+		columnHelper.accessor('branch_address', {
 			header: 'Dirección',
 			cell: (info) => {
 				const value = info.getValue();
@@ -131,10 +131,11 @@ export default function SucursalesLista() {
 				);
 			},
 		}),
-		columnHelper.accessor('commune_name' as any, {
+		columnHelper.accessor((row) => row.commune?.name, {
+			id: 'commune_name',
 			header: 'Comuna',
 			cell: (info) => {
-				const value = (info.row.original as any).commune_name;
+				const value = info.getValue();
 				return value ? (
 					<div className='flex items-center gap-1'>
 						<Icon icon='HeroMap' className='text-xs text-zinc-400' />
@@ -147,7 +148,7 @@ export default function SucursalesLista() {
 				);
 			},
 		}),
-		columnHelper.accessor('phone', {
+		columnHelper.accessor('branch_phone', {
 			header: 'Teléfono',
 			cell: (info) => {
 				const value = info.getValue();

@@ -32,6 +32,8 @@ export interface ISale {
 
 	notes?: string;
 	items_count?: number;
+	can_close?: boolean;
+	inventory_finalized?: boolean;
 	documents_metadata?: {
 		inventory_finalized: boolean;
 	};

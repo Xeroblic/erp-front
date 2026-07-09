@@ -432,6 +432,22 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
+							{/* Pendientes de serie */}
+							<AuthorityCheckNav
+								authority={Pages.commercial.subPages.pendientesSerie.authority}
+								roles={Pages.commercial.subPages.pendientesSerie.roles}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.commercial.subPages.pendientesSerie.text}
+									to={Pages.commercial.subPages.pendientesSerie.to}
+									icon={Pages.commercial.subPages.pendientesSerie.icon}
+									id={Pages.commercial.subPages.pendientesSerie.id}
+									onClick={() =>
+										navigate(Pages.commercial.subPages.pendientesSerie.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
 							{/* Enlaces Públicos */}
 							<AuthorityCheckNav
 								authority={Pages.commercial.subPages.enlacesPublicos.authority}
@@ -733,107 +749,15 @@ const DefaultAsideTemplate = () => {
 						roles={Pages.integrations.roles}
 						userAuthority={userAuthority}
 						requireAll={Pages.integrations.requireAll}>
-						<NavCollapse
-							key='integraciones-nav'
+						{/* Hub unificado: una sola entrada que abre la página con pestañas.
+						    Las subpáginas siguen existiendo como rutas standalone. */}
+						<NavItem
 							text={Pages.integrations.text}
+							to={Pages.integrations.to}
 							icon={Pages.integrations.icon}
-							to=''
-							isOpen={collapseStates.integraciones}
-							onToggle={() => toggleCollapse('integraciones')}>
-							{/* Listado */}
-							<AuthorityCheckNav
-								authority={[
-									...(Pages.integrations.subPages.list.authority || []),
-									...(Pages.integrations.subPages.list.roles || []),
-								]}
-								roles={Pages.integrations.subPages.list.roles}
-								userAuthority={userAuthority}>
-								<NavItem
-									text={Pages.integrations.subPages.list.text}
-									to={Pages.integrations.subPages.list.to}
-									icon={Pages.integrations.subPages.list.icon}
-									id={Pages.integrations.subPages.list.id}
-									onClick={() => navigate(Pages.integrations.subPages.list.to)}
-								/>
-							</AuthorityCheckNav>
-
-							{/* Productos Sin Mapear */}
-							<AuthorityCheckNav
-								authority={[
-									...(Pages.integrations.subPages.unmappedProducts.authority ||
-										[]),
-									...(Pages.integrations.subPages.unmappedProducts.roles || []),
-								]}
-								roles={Pages.integrations.subPages.unmappedProducts.roles}
-								userAuthority={userAuthority}>
-								<NavItem
-									text={Pages.integrations.subPages.unmappedProducts.text}
-									to={Pages.integrations.subPages.unmappedProducts.to}
-									icon={Pages.integrations.subPages.unmappedProducts.icon}
-									id={Pages.integrations.subPages.unmappedProducts.id}
-									onClick={() =>
-										navigate(Pages.integrations.subPages.unmappedProducts.to)
-									}
-								/>
-							</AuthorityCheckNav>
-
-							{/* Sincronizar Stock */}
-							<AuthorityCheckNav
-								authority={[
-									...(Pages.integrations.subPages.syncStock.authority || []),
-									...(Pages.integrations.subPages.syncStock.roles || []),
-								]}
-								roles={Pages.integrations.subPages.syncStock.roles}
-								userAuthority={userAuthority}>
-								<NavItem
-									text={Pages.integrations.subPages.syncStock.text}
-									to={Pages.integrations.subPages.syncStock.to}
-									icon={Pages.integrations.subPages.syncStock.icon}
-									id={Pages.integrations.subPages.syncStock.id}
-									onClick={() =>
-										navigate(Pages.integrations.subPages.syncStock.to)
-									}
-								/>
-							</AuthorityCheckNav>
-
-							{/* Importar Órdenes */}
-							<AuthorityCheckNav
-								authority={[
-									...(Pages.integrations.subPages.importOrders.authority || []),
-									...(Pages.integrations.subPages.importOrders.roles || []),
-								]}
-								roles={Pages.integrations.subPages.importOrders.roles}
-								userAuthority={userAuthority}>
-								<NavItem
-									text={Pages.integrations.subPages.importOrders.text}
-									to={Pages.integrations.subPages.importOrders.to}
-									icon={Pages.integrations.subPages.importOrders.icon}
-									id={Pages.integrations.subPages.importOrders.id}
-									onClick={() =>
-										navigate(Pages.integrations.subPages.importOrders.to)
-									}
-								/>
-							</AuthorityCheckNav>
-
-							{/* Importar Categorías y Marcas */}
-							<AuthorityCheckNav
-								authority={[
-									...(Pages.integrations.subPages.importTerms.authority || []),
-									...(Pages.integrations.subPages.importTerms.roles || []),
-								]}
-								roles={Pages.integrations.subPages.importTerms.roles}
-								userAuthority={userAuthority}>
-								<NavItem
-									text={Pages.integrations.subPages.importTerms.text}
-									to={Pages.integrations.subPages.importTerms.to}
-									icon={Pages.integrations.subPages.importTerms.icon}
-									id={Pages.integrations.subPages.importTerms.id}
-									onClick={() =>
-										navigate(Pages.integrations.subPages.importTerms.to)
-									}
-								/>
-							</AuthorityCheckNav>
-						</NavCollapse>
+							id='integrationsHub'
+							onClick={() => navigate(Pages.integrations.to)}
+						/>
 					</AuthorityCheckNav>
 				</Nav>
 			</AsideBody>

@@ -10,14 +10,13 @@ import Modal, {
 	ModalFooterChild,
 } from '../../../../../components/ui/Modal';
 import Button from '../../../../../components/ui/Button';
-// BORRADO: import { saveAs } from 'file-saver';  <-- SE FUE
-// BORRADO: import { generateQuotePdf } from '../../utils/pdf/generateQuotePdf'; <-- SE FUE
 import ApiService from '@/services/ApiService';
 import Badge from '@/components/ui/Badge';
 import EditQuotationModal from './ModalEditar/EditQuotationModal';
 import { useAppDispatch, RootState } from '@/store';
 import { updateQuote } from '@/store/slices/quotes/quotesSlice';
 import { useSelector } from 'react-redux';
+import Tooltip from '@/components/ui/Tooltip';
 
 interface QuotationDetailsModalProps {
 	isOpen: boolean;
@@ -206,43 +205,58 @@ const QuotationDetailsModal: React.FC<QuotationDetailsModalProps> = ({
 								: '—'}
 						</div>
 						<div className='flex flex-wrap gap-3'>
-							<Button variant='outline' onClick={onClose}>
-								Cerrar
-							</Button>
+							<Tooltip text='cerrar' placement='top-end'>
+								<Button variant='solid' color='red' className='hover:bg-red-700/20' onClick={onClose}>
+									Cerrar
+								</Button>
+							</Tooltip>
 
 							{/* Edit Button */}
-							<Button
-								variant='outline'
-								color='amber'
-								onClick={() => setIsEditModalOpen(true)}
-								isDisable={!quotation || isLoading}>
-								Editar
-							</Button>
+							<Tooltip text='editar' placement='top-end'>	
+								<Button
+									variant='solid'
+									color='amber'
+									className='hover:bg-amber-700/20'
+									onClick={() => setIsEditModalOpen(true)}
+									isDisable={!quotation || isLoading}>
+									Editar
+								</Button>
+							</Tooltip>
 
+							<Tooltip text='descargar' placement='top-end'>
 							<Button
-								variant='outline'
+								variant='solid'
+								color='sky'
+								className='hover:bg-sky-700/20'
 								onClick={handleDownload}
 								isDisable={!quotation}
 								isLoading={downloading}>
 								Descargar PDF
 							</Button>
-							<Button
-								variant={quotation?.is_converted_to_sale ? 'outline' : 'solid'}
-								color={quotation?.is_converted_to_sale ? 'blue' : 'emerald'}
-								onClick={handleConvertToSale}
-								isDisable={!quotation}
-								isLoading={converting}>
-								{quotation?.is_converted_to_sale
-									? 'Ir a Venta Realizada'
-									: 'Generar Venta'}
-							</Button>
-
-							<Button
-								color='blue'
-								onClick={handlePrint}
-								isDisable={!quotation || isPrinting}>
-								{isPrinting ? 'Generando PDF…' : 'Imprimir'}
-							</Button>
+							</Tooltip>
+							<Tooltip text='convertir a venta' placement='top-end'>
+								<Button
+									variant={quotation?.is_converted_to_sale ? 'solid' : 'solid'}
+									color={quotation?.is_converted_to_sale ? 'blue' : 'emerald'}
+									onClick={handleConvertToSale}
+									isDisable={!quotation}
+									className={`${quotation?.is_converted_to_sale ? 'text-blue-700' : 'text-emerald-700'} hover:bg-emerald-700/20`}
+									isLoading={converting}>
+									{quotation?.is_converted_to_sale
+										? 'Ir a Venta Realizada'
+										: 'Generar Venta'}
+								</Button>
+							</Tooltip>
+							<Tooltip text='imprimir' placement='top-end'>
+								<Button
+									variant='solid'
+									color='blue'
+									className='hover:bg-blue-700/20'
+									onClick={handlePrint}
+									isDisable={!quotation || isPrinting}>
+									{isPrinting ? 'Generando PDF…' : 'Imprimir'}
+								</Button>
+							</Tooltip>
 						</div>
 					</ModalFooterChild>
 				</ModalFooter>

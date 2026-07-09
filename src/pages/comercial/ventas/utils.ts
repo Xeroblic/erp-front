@@ -1,3 +1,6 @@
+import type { ISaleItem } from '@/interface';
+import type { PendingSerialSale } from '@/services/salesService';
+
 /**
  * Formatea un número o string numérico a formato moneda Chilena (CLP)
  * Ej: 10000 -> $ 10.000
@@ -47,3 +50,25 @@ export const isPaidStatus = (status?: string | null) => {
 	const key = String(status || '').toLowerCase();
 	return ['processing', 'paid', 'completed', 'delivered'].includes(key);
 };
+
+/**
+ * Mapea los `serialized_items` de una venta pendiente de serie al shape de
+ * `ISaleItem` que consume `CloseSaleModal` (el modal de asignación de series).
+ */
+export const pendingSerialToSaleItems = (sale: PendingSerialSale): ISaleItem[] =>
+	(sale.serialized_items ?? []).map(
+		(si) =>
+			({
+				id: si.sale_item_id,
+				sale_id: sale.id,
+				product_id: si.product_id,
+				name: si.name,
+				sku: si.sku,
+				// La cantidad de series a escanear es la cantidad total del ítem
+				// (así lo dimensiona el backend: sugerencias y shortage van por
+				// `quantity`, no por `hold_quantity`, que solo refleja los holds
+				// activos actuales). Usar hold_quantity pedía series de menos.
+				quantity: si.quantity,
+				product: { name: si.name, sku: si.sku },
+			}) as unknown as ISaleItem,
+	);

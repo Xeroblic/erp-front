@@ -5,7 +5,7 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { useStockCatalog } from './useStockCatalog';
 import type { IProduct } from '@/interface/product.interface';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
-import { useUserBranches } from '@/hooks/permiso/userBranch';
+import { selectUserBranches } from '@/store/selectors/userBranchesSelectors';
 import ApiService from '@/services/ApiService';
 import { createBrand, fetchBrands } from '@/store/slices/brands/brandsSlice';
 import { useWorkspaceItems } from './useWorkspaceItems';
@@ -20,8 +20,15 @@ export const useIngresoStock = () => {
 	const [isQuickProductModalOpen, setIsQuickProductModalOpen] = useState(false);
 	const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState(false);
 	const [isBrandDedupModalOpen, setIsBrandDedupModalOpen] = useState(false);
-	const [brandDedupCandidates, setBrandDedupCandidates] = useState<Array<{ id: number; name: string }>>([]);
-	const [brandDedupProductsByBrand, setBrandDedupProductsByBrand] = useState<Record<number, Array<{ id: number; name: string; sku: string; brandId: number; brandName: string }>>>({});
+	const [brandDedupCandidates, setBrandDedupCandidates] = useState<
+		Array<{ id: number; name: string }>
+	>([]);
+	const [brandDedupProductsByBrand, setBrandDedupProductsByBrand] = useState<
+		Record<
+			number,
+			Array<{ id: number; name: string; sku: string; brandId: number; brandName: string }>
+		>
+	>({});
 	const [brandDedupBranchId, setBrandDedupBranchId] = useState<number | null>(null);
 	const [brandDedupDefaultKeepId, setBrandDedupDefaultKeepId] = useState<number | null>(null);
 	const [isLoadingBrandDedupProducts, setIsLoadingBrandDedupProducts] = useState(false);
@@ -29,11 +36,9 @@ export const useIngresoStock = () => {
 	const dispatch = useAppDispatch();
 	const user = useAppSelector((s) => s.auth.user as any);
 	const brands = useAppSelector((s) => s.brands.items ?? []);
-	const userId = user?.id ?? user?.pk ?? undefined;
-
 	// Sucursal seleccionada en el header superior global de la app
 	const { branchId: currentBranchId } = useCurrentBranch();
-	const { branches } = useUserBranches(userId, { enabled: Boolean(userId) });
+	const branches = useAppSelector(selectUserBranches);
 	const [selectedBranchId, setSelectedBranchId] = useState<number | null>(currentBranchId);
 	const [externalBranchContext, setExternalBranchContext] = useState<{
 		branchId: number;
@@ -52,7 +57,8 @@ export const useIngresoStock = () => {
 
 	useEffect(() => {
 		const handleExternalBranchChange = (event: Event) => {
-			const detail = (event as CustomEvent<{ branchId?: number; subsidiaryId?: number }>).detail;
+			const detail = (event as CustomEvent<{ branchId?: number; subsidiaryId?: number }>)
+				.detail;
 			if (detail?.branchId) {
 				setSelectedBranchId(Number(detail.branchId));
 				if (typeof detail.subsidiaryId === 'number' && detail.subsidiaryId > 0) {
@@ -64,8 +70,8 @@ export const useIngresoStock = () => {
 			}
 		};
 
-		window.addEventListener('user-branch-changed', handleExternalBranchChange);
-		return () => window.removeEventListener('user-branch-changed', handleExternalBranchChange);
+		window.addEventListener('org-context-changed', handleExternalBranchChange);
+		return () => window.removeEventListener('org-context-changed', handleExternalBranchChange);
 	}, []);
 
 	useEffect(() => {
@@ -102,7 +108,12 @@ export const useIngresoStock = () => {
 	// Contexto local (Catálogo de Stock)
 	// Contexto local (Catálogo de Stock)
 	const [filters] = useState({});
-	const { products, loading: isLoadingProducts, error: productsError, refresh } = useStockCatalog({
+	const {
+		products,
+		loading: isLoadingProducts,
+		error: productsError,
+		refresh,
+	} = useStockCatalog({
 		// @Full_React: Forzamos undefined (Zentria Standard para catálogos globales)
 		// Evita que el backend sobreescriba `product.stock` con el asignado a la sucursal
 		branchId: undefined,
@@ -170,12 +181,9 @@ export const useIngresoStock = () => {
 			}));
 	}, [branches, currentSubsidiaryId]);
 
-	const handleBrandChange = useCallback(
-		(brandId: string) => {
-			quickProductForm.setFieldValue('brandId', brandId);
-		},
-		[],
-	);
+	const handleBrandChange = useCallback((brandId: string) => {
+		quickProductForm.setFieldValue('brandId', brandId);
+	}, []);
 
 	const handleCreateBrand = useCallback(
 		async (brandName: string) => {
@@ -210,11 +218,16 @@ export const useIngresoStock = () => {
 					toast.info('Detectamos marcas similares. Elige cuál conservar.');
 
 					try {
-						const productsByBrand = await getAffectedProductsByBrand(branchId, duplicates);
+						const productsByBrand = await getAffectedProductsByBrand(
+							branchId,
+							duplicates,
+						);
 						setBrandDedupProductsByBrand(productsByBrand);
 					} catch {
 						setBrandDedupProductsByBrand({});
-						toast.error('No se pudieron cargar los productos afectados para validar la deduplicación.');
+						toast.error(
+							'No se pudieron cargar los productos afectados para validar la deduplicación.',
+						);
 					} finally {
 						setIsLoadingBrandDedupProducts(false);
 					}
@@ -225,7 +238,8 @@ export const useIngresoStock = () => {
 				quickProductForm.setFieldValue('brandId', String(created.id));
 				toast.success(`Marca "${brandName}" creada y seleccionada.`);
 			} catch (error) {
-				const message = error instanceof Error ? error.message : 'No se pudo crear la marca.';
+				const message =
+					error instanceof Error ? error.message : 'No se pudo crear la marca.';
 				toast.error(message);
 			}
 		},
@@ -271,11 +285,19 @@ export const useIngresoStock = () => {
 					await reassignProductsToBrand(brandDedupBranchId, requiredProductIds, keepId);
 				}
 
-				const validation = await validateNoProductsInBrands(brandDedupBranchId, brandsToDelete);
+				const validation = await validateNoProductsInBrands(
+					brandDedupBranchId,
+					brandsToDelete,
+				);
 				if (!validation.valid) {
-					const reloadedMap = await getAffectedProductsByBrand(brandDedupBranchId, brandDedupCandidates);
+					const reloadedMap = await getAffectedProductsByBrand(
+						brandDedupBranchId,
+						brandDedupCandidates,
+					);
 					setBrandDedupProductsByBrand(reloadedMap);
-					toast.error('Aún existen productos vinculados a marcas a eliminar. Revisa la lista antes de continuar.');
+					toast.error(
+						'Aún existen productos vinculados a marcas a eliminar. Revisa la lista antes de continuar.',
+					);
 					return;
 				}
 
@@ -285,7 +307,10 @@ export const useIngresoStock = () => {
 				toast.success('Marcas duplicadas resueltas correctamente.');
 				handleCloseBrandDedupModal();
 			} catch (error) {
-				const message = error instanceof Error ? error.message : 'No se pudo resolver la deduplicación de marcas.';
+				const message =
+					error instanceof Error
+						? error.message
+						: 'No se pudo resolver la deduplicación de marcas.';
 				toast.error(message);
 			} finally {
 				setIsResolvingBrandDedup(false);
@@ -331,7 +356,9 @@ export const useIngresoStock = () => {
 					stock: Number.isFinite(scopedStock) ? scopedStock : Number(product.stock ?? 0),
 				};
 			} catch (error) {
-				const status = Number((error as { response?: { status?: number } })?.response?.status ?? 0);
+				const status = Number(
+					(error as { response?: { status?: number } })?.response?.status ?? 0,
+				);
 				if (status === 404) {
 					toast.error('El producto no esta asignado a esta sucursal');
 				}
@@ -344,17 +371,21 @@ export const useIngresoStock = () => {
 		[],
 	);
 
-	const handleAddProduct = useCallback(async (product: IProduct) => {
-		if (isWorkspaceOpen) {
-			const destinationBranch = targetBranchId || (selectedBranchId ? String(selectedBranchId) : '');
-			const scopedProduct = await getBranchScopedProduct(product, destinationBranch);
-			addToWorkspace(scopedProduct);
-			toast.info(`"${product.name}" agregado a la zona de trabajo.`);
-			return;
-		}
-		setSelectedProduct(product);
-		setTargetBranchId('');
-	}, [isWorkspaceOpen, targetBranchId, selectedBranchId, getBranchScopedProduct, addToWorkspace]);
+	const handleAddProduct = useCallback(
+		async (product: IProduct) => {
+			if (isWorkspaceOpen) {
+				const destinationBranch =
+					targetBranchId || (selectedBranchId ? String(selectedBranchId) : '');
+				const scopedProduct = await getBranchScopedProduct(product, destinationBranch);
+				addToWorkspace(scopedProduct);
+				toast.info(`"${product.name}" agregado a la zona de trabajo.`);
+				return;
+			}
+			setSelectedProduct(product);
+			setTargetBranchId('');
+		},
+		[isWorkspaceOpen, targetBranchId, selectedBranchId, getBranchScopedProduct, addToWorkspace],
+	);
 
 	const handleStartAdjustment = useCallback(async () => {
 		if (!selectedProduct || !targetBranchId) return;
@@ -399,7 +430,7 @@ export const useIngresoStock = () => {
 					setTimeout(() => {
 						refresh();
 					}, 2500);
-				}
+				},
 			);
 		},
 	});
@@ -429,7 +460,9 @@ export const useIngresoStock = () => {
 		onSubmit: async (values, { resetForm }) => {
 			const branchId = Number(adjustmentForm.values.branchId);
 			if (!branchId) {
-				toast.error('Debes seleccionar una sucursal en el panel principal antes de crear un producto rápido.');
+				toast.error(
+					'Debes seleccionar una sucursal en el panel principal antes de crear un producto rápido.',
+				);
 				return;
 			}
 
@@ -445,12 +478,7 @@ export const useIngresoStock = () => {
 				return;
 			}
 
-			const newProduct = await createQuickProduct(
-				values,
-				subId,
-				branchId,
-				brandId,
-			);
+			const newProduct = await createQuickProduct(values, subId, branchId, brandId);
 			if (newProduct) {
 				const safeProduct = {
 					...newProduct,
@@ -508,8 +536,7 @@ export const useIngresoStock = () => {
 				isCreatingProduct,
 				isLoadingBrandDedupProducts,
 				isResolvingBrandDedup,
-			}
-			,
+			},
 			brandDedup: {
 				candidates: brandDedupCandidates,
 				productsByBrand: brandDedupProductsByBrand,
@@ -545,6 +572,6 @@ export const useIngresoStock = () => {
 			closeAdjustmentModal: () => setIsAdjustmentModalOpen(false),
 			clearLastBatchId,
 			getSignedQuantity,
-		}
+		},
 	};
 };

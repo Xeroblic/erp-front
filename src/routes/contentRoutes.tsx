@@ -35,6 +35,8 @@ const UnmappedProductsPage = lazy(() => import('@/pages/integraciones/UnmappedPr
 const SyncStockPage = lazy(() => import('@/pages/integraciones/SyncStockPage'));
 const ImportOrdersPage = lazy(() => import('@/pages/integraciones/ImportOrdersPage'));
 const ImportTermsPage = lazy(() => import('@/pages/integraciones/ImportTermsPage'));
+const WooProductsPage = lazy(() => import('@/pages/integraciones/WooProductsPage'));
+const IntegrationsHubPage = lazy(() => import('@/pages/integraciones/IntegrationsHubPage'));
 
 // Reportes
 const SalesDashboard = lazy(() => import('@/pages/reportes/sales-dashboard'));
@@ -46,7 +48,6 @@ const RolesPermisos = lazy(() => import('@/pages/gestionAdmin/roles y permisos/R
 const UserPermissionsDetail = lazy(
 	() => import('@/pages/gestionAdmin/roles y permisos/UserPermissionsDetail.tsx'),
 );
-const GestionUsuarios = lazy(() => import('@/pages/gestionAdmin/usuarios/Usuarios.tsx'));
 
 // Páginas de Administración
 const PermissionsAdmin = lazy(() => import('@/pages/admin/Permission/PermissionsAdmin'));
@@ -61,6 +62,7 @@ const SystemParameterDetails = lazy(
 // Paginas de Comercial
 // const InventarioPage = lazy(() => import('../pages/inventario/Inventario'));
 const SalesListPage = lazy(() => import('../pages/comercial/ventas/SalesListPage'));
+const PendientesSeriePage = lazy(() => import('../pages/comercial/ventas/pendientesSerie'));
 const CotizacionesPage = lazy(() => import('../pages/comercial/cotizaciones/CotizacionesAdmin'));
 const SolicitudesVentasPage = lazy(() => import('../pages/comercial/SolicitudesVentasPage'));
 const EnlacesPublicosPage = lazy(() => import('@/pages/comercial/EnlacesPublicosPage'));
@@ -237,11 +239,6 @@ const contentRoutes: IRoutePersonalizada[] = [
 		authority: cfg.manage.subPages.rolesPermisosDetail.authority,
 	},
 	{
-		path: cfg.manage.subPages.manageUsers.to,
-		element: <GestionUsuarios />,
-		authority: cfg.manage.subPages.manageUsers.authority,
-	},
-	{
 		path: cfg.humanResources.subPages.invitationsAdmin.to,
 		element: <InvitationsAdmin />,
 		authority: cfg.humanResources.subPages.invitationsAdmin.authority,
@@ -292,6 +289,11 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: cfg.commercial.subPages.sales.to,
 		element: <SalesListPage />,
 		authority: cfg.commercial.subPages.sales.authority,
+	},
+	{
+		path: cfg.commercial.subPages.pendientesSerie.to,
+		element: <PendientesSeriePage />,
+		authority: cfg.commercial.subPages.pendientesSerie.authority,
 	},
 	{
 		path: `${cfg.commercial.subPages.sales.to}/:saleId`,
@@ -358,6 +360,12 @@ const contentRoutes: IRoutePersonalizada[] = [
 
 	// Integraciones (WooCommerce)
 	{
+		// Hub unificado con pestañas (`?tab=...`). Punto de entrada del menú.
+		path: cfg.integrations.to,
+		element: <IntegrationsHubPage />,
+		authority: cfg.integrations.authority,
+	},
+	{
 		path: cfg.integrations.subPages.list.to,
 		element: <IntegrationsListPage />,
 		authority: cfg.integrations.subPages.list.authority,
@@ -381,6 +389,11 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: cfg.integrations.subPages.importTerms.to,
 		element: <ImportTermsPage />,
 		authority: cfg.integrations.subPages.importTerms.authority,
+	},
+	{
+		path: cfg.integrations.subPages.syncedProducts.to,
+		element: <WooProductsPage />,
+		authority: cfg.integrations.subPages.syncedProducts.authority,
 	},
 
 	// Notificaciones

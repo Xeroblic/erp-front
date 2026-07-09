@@ -4,10 +4,7 @@ import * as Yup from 'yup';
 import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { setBranchConfig } from '@/store/slices/recursosHumanos/rhSlice';
-import {
-	useUserBranches,
-	type UserBranch,
-} from '@/hooks/permiso/userBranch';
+import { selectUserBranches, type UserBranchInfo } from '@/store/selectors/userBranchesSelectors';
 import Card, { CardBody, CardHeader, CardHeaderChild, CardTitle } from '@/components/ui/Card';
 import Input from '@/components/form/Input';
 import Button from '@/components/ui/Button';
@@ -16,7 +13,6 @@ import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import type { IRHBranchConfigFormValues } from '@/interface/rh.interface';
 import Badge from '@/components/ui/Badge';
 import Label from '@/components/form/Label';
-
 
 const configSchema = Yup.object().shape({
 	latitude: Yup.string()
@@ -53,13 +49,8 @@ const configSchema = Yup.object().shape({
 const SucursalConfigForm: React.FC = () => {
 	const dispatch = useAppDispatch();
 	const config = useAppSelector((s) => s.recursosHumanos.config);
-	const user = useAppSelector((s) => s.auth.user);
-	const userId = user?.id ?? (user as unknown as Record<string, unknown>)?.pk ?? null;
-
-	const { branches, loading: branchesLoading } = useUserBranches(
-		(userId as number) ?? undefined,
-		{ enabled: Boolean(userId) },
-	);
+	const branches = useAppSelector(selectUserBranches);
+	const branchesLoading = false;
 
 	const [selectedBranchId, setSelectedBranchId] = useState<number | null>(
 		config.branchId ?? null,
@@ -67,7 +58,7 @@ const SucursalConfigForm: React.FC = () => {
 
 	const branchOptions: TSelectOption[] = useMemo(
 		() =>
-			branches.map((b: UserBranch) => ({
+			branches.map((b: UserBranchInfo) => ({
 				value: String(b.id),
 				label: b.name ?? `Sucursal ${b.id}`,
 			})),
@@ -102,7 +93,7 @@ const SucursalConfigForm: React.FC = () => {
 				setBranchConfig({
 					branchName:
 						values.branchName ||
-						branches.find((b: UserBranch) => b.id === selectedBranchId)?.name ||
+						branches.find((b: UserBranchInfo) => b.id === selectedBranchId)?.name ||
 						'',
 					branchId: selectedBranchId ?? undefined,
 					latitude: Number(values.latitude),
@@ -158,7 +149,7 @@ const SucursalConfigForm: React.FC = () => {
 			if (!option) return;
 			const branchId = Number(option.value);
 			setSelectedBranchId(branchId);
-			const branch = branches.find((b: UserBranch) => b.id === branchId);
+			const branch = branches.find((b: UserBranchInfo) => b.id === branchId);
 			if (branch) {
 				formik.setFieldValue('branchName', branch.name ?? '');
 			}
@@ -189,12 +180,10 @@ const SucursalConfigForm: React.FC = () => {
 				<form className='mt-4' onSubmit={formik.handleSubmit}>
 					<div className='flex flex-col gap-5'>
 						<Card className='rounded-lg p-4'>
-							<Label htmlFor='branch_select' className='mb-2 flex items-center gap-2 text-sm font-semibold '>
-								<Icon
-									icon='HeroBuildingOffice2'
-									size='text-2xl'
-									color='sky'
-								/>
+							<Label
+								htmlFor='branch_select'
+								className='mb-2 flex items-center gap-2 text-sm font-semibold'>
+								<Icon icon='HeroBuildingOffice2' size='text-2xl' color='sky' />
 								Sucursal
 							</Label>
 							<SelectReact
@@ -214,20 +203,16 @@ const SucursalConfigForm: React.FC = () => {
 								dimension='default'
 							/>
 							{selectedBranchId && (
-								<p className='mt-1 text-xs '>
-									ID de sucursal: {selectedBranchId}
-								</p>
+								<p className='mt-1 text-xs'>ID de sucursal: {selectedBranchId}</p>
 							)}
 						</Card>
 
 						<Card className='rounded-lg p-4'>
 							<div className='mb-3 flex items-center justify-between'>
-								<Label htmlFor='ubicacion_sucursal' className='flex items-center gap-2 text-sm font-semibold'>
-									<Icon
-										icon='HeroMapPin'
-										size='text-2xl'
-										color='emerald'
-									/>
+								<Label
+									htmlFor='ubicacion_sucursal'
+									className='flex items-center gap-2 text-sm font-semibold'>
+									<Icon icon='HeroMapPin' size='text-2xl' color='emerald' />
 									Ubicación de la Sucursal
 								</Label>
 								<Button
@@ -244,9 +229,7 @@ const SucursalConfigForm: React.FC = () => {
 
 							<div className='grid grid-cols-1 gap-3 md:grid-cols-3'>
 								<div>
-									<label className='mb-1 block text-xs '>
-										Latitud
-									</label>
+									<label className='mb-1 block text-xs'>Latitud</label>
 									<Input
 										id='latitude'
 										name='latitude'
@@ -262,9 +245,7 @@ const SucursalConfigForm: React.FC = () => {
 									)}
 								</div>
 								<div>
-									<label className='mb-1 block text-xs '>
-										Longitud
-									</label>
+									<label className='mb-1 block text-xs'>Longitud</label>
 									<Input
 										id='longitude'
 										name='longitude'
@@ -280,7 +261,7 @@ const SucursalConfigForm: React.FC = () => {
 									)}
 								</div>
 								<div>
-									<label className='mb-1 block text-xs '>
+									<label className='mb-1 block text-xs'>
 										Radio de tolerancia (metros)
 									</label>
 									<Input
@@ -302,41 +283,58 @@ const SucursalConfigForm: React.FC = () => {
 
 						{/* ── IP Pública (como contraseña) ── */}
 						<Card className='rounded-lg p-4'>
-							<Label htmlFor='authorizedPublicIP' className='mb-2 flex items-center gap-2 text-sm font-semibold'>
-								<Icon
-									icon='HeroGlobeAlt'
-									size='text-2xl'
-									color='violet'
-								/>
+							<Label
+								htmlFor='authorizedPublicIP'
+								className='mb-2 flex items-center gap-2 text-sm font-semibold'>
+								<Icon icon='HeroGlobeAlt' size='text-2xl' color='violet' />
 								IP Pública Autorizada
 							</Label>
 
 							{ipAlreadySet && !showIP ? (
 								<div className='flex items-center gap-3'>
-									<Badge color='red' className='flex-1 p-3 text-lg border border-red-400'>
-										<Icon icon='HeroGlobeAlt' size='text-2xl' color='red' className='mr-2'/>
-										<span className='font-mono'>{maskedIP(config.authorizedPublicIP)}</span>
+									<Badge
+										color='red'
+										className='flex-1 border border-red-400 p-3 text-lg'>
+										<Icon
+											icon='HeroGlobeAlt'
+											size='text-2xl'
+											color='red'
+											className='mr-2'
+										/>
+										<span className='font-mono'>
+											{maskedIP(config.authorizedPublicIP)}
+										</span>
 									</Badge>
-									<Button	
+									<Button
 										type='button'
 										color='violet'
 										size='sm'
-										className='bg-violet-100/50 border-violet-400 text-violet-600 hover:bg-violet-200/50 hover:text-violet-500'
+										className='border-violet-400 bg-violet-100/50 text-violet-600 hover:bg-violet-200/50 hover:text-violet-500'
 										onClick={() => setShowIP(true)}>
-										<Icon icon='HeroEye' size='text-lg' color='violet' className='mr-2'/>
+										<Icon
+											icon='HeroEye'
+											size='text-lg'
+											color='violet'
+											className='mr-2'
+										/>
 										Mostrar
 									</Button>
 									<Button
 										type='button'
 										color='amber'
 										variant='outline'
-										className='bg-amber-100/50 border-orange-400 text-orange-600 hover:bg-amber-200/50 hover:text-orange-500'
+										className='border-orange-400 bg-amber-100/50 text-orange-600 hover:bg-amber-200/50 hover:text-orange-500'
 										size='sm'
 										onClick={() => {
 											setShowIP(true);
 											formik.setFieldValue('authorizedPublicIP', '');
 										}}>
-										<Icon icon='HeroPencil' size='text-lg' color='orange' className='mr-2'/>
+										<Icon
+											icon='HeroPencil'
+											size='text-lg'
+											color='orange'
+											className='mr-2'
+										/>
 										Cambiar
 									</Button>
 								</div>
@@ -357,7 +355,7 @@ const SucursalConfigForm: React.FC = () => {
 										<Button
 											type='button'
 											variant='outline'
-											className='bg-red-400/30 border-red-400 text-red-400 hover:bg-red-400/20 hover:text-red-300'
+											className='border-red-400 bg-red-400/30 text-red-400 hover:bg-red-400/20 hover:text-red-300'
 											color='red'
 											size='sm'
 											icon='HeroEyeSlash'
@@ -382,7 +380,7 @@ const SucursalConfigForm: React.FC = () => {
 										{formik.errors.authorizedPublicIP}
 									</p>
 								)}
-							<p className='mt-2 text-xs '>
+							<p className='mt-2 text-xs'>
 								<Icon
 									icon='HeroLockClosed'
 									size='text-xs'
@@ -394,17 +392,15 @@ const SucursalConfigForm: React.FC = () => {
 						</Card>
 
 						<Card className='rounded-lg p-4'>
-							<Label htmlFor='horario_laboral' className='mb-3 flex items-center gap-2 text-sm font-semibold'>
-								<Icon
-									icon='HeroClock'
-									size='text-2xl'
-									color={'amber'}
-								/>
+							<Label
+								htmlFor='horario_laboral'
+								className='mb-3 flex items-center gap-2 text-sm font-semibold'>
+								<Icon icon='HeroClock' size='text-2xl' color={'amber'} />
 								Horario Laboral
 							</Label>
 							<div className='grid grid-cols-1 gap-3 md:grid-cols-3'>
 								<div>
-									<Label htmlFor='entryTime' className='mb-1 block text-xs '>
+									<Label htmlFor='entryTime' className='mb-1 block text-xs'>
 										Hora de Entrada
 									</Label>
 									<Input
@@ -417,7 +413,7 @@ const SucursalConfigForm: React.FC = () => {
 									/>
 								</div>
 								<div>
-									<Label htmlFor='exitTime' className='mb-1 block text-xs '>
+									<Label htmlFor='exitTime' className='mb-1 block text-xs'>
 										Hora de Salida
 									</Label>
 									<Input
@@ -430,7 +426,7 @@ const SucursalConfigForm: React.FC = () => {
 									/>
 								</div>
 								<div>
-									<Label htmlFor='timezone' className='mb-1 block text-xs '>
+									<Label htmlFor='timezone' className='mb-1 block text-xs'>
 										Zona Horaria
 									</Label>
 									<Input

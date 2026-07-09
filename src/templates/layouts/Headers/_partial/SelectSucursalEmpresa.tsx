@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { toast } from 'react-toastify';
 import { GroupBase } from 'react-select';
 import SelectReact, { TSelectGroups, TSelectOption } from '@/components/form/SelectReact';
 import { useAppDispatch, useAppSelector } from '@/store';
@@ -7,20 +6,16 @@ import {
 	selectPersonalizacionUsuario,
 	selectIsInitialized as selectPersonalizacionInitialized,
 	obtenerPersonalizacionThunk,
-	actualizarSucursalPrincipalThunk,
 } from '@/store/slices/personalizacion/personalizacionSlice';
 import { setTechnicalReviewsContext } from '@/store/slices/technicalReviews';
-import {
-	useUserBranches,
-	type UserBranch,
-} from '@/hooks/permiso/userBranch';
-import ApiService from '@/services/ApiService';
+import { selectUserBranches, type UserBranchInfo } from '@/store/selectors/userBranchesSelectors';
+import useOrgContextSwitcher from '@/hooks/useOrgContextSwitcher';
 import Icon from '@/components/icon/Icon';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 
 type BranchOptionMeta = {
-	branch: UserBranch;
+	branch: UserBranchInfo;
 	isPreferred: boolean;
 };
 
@@ -32,7 +27,7 @@ const EMPTY_SUBSIDIARY_ACCESS: Array<{ id?: number | null }> = [];
 
 const FALLBACK_GROUP_LABEL = 'Sucursales';
 
-const buildGroupLabel = (branch: UserBranch): string => {
+const buildGroupLabel = (branch: UserBranchInfo): string => {
 	if (branch.subsidiaryName) return branch.subsidiaryName;
 	if (branch.companyName) return branch.companyName;
 	return FALLBACK_GROUP_LABEL;
@@ -40,11 +35,10 @@ const buildGroupLabel = (branch: UserBranch): string => {
 
 const SelectSucursalEmpresa = () => {
 	const dispatch = useAppDispatch();
+	const { switchContext } = useOrgContextSwitcher();
 	const { user } = useAppSelector((state) => state.auth);
 	const personalizacionUsuario = useAppSelector(selectPersonalizacionUsuario);
 	const personalizacionInitialized = useAppSelector(selectPersonalizacionInitialized);
-
-	const userId = user?.id ?? (user as any)?.pk ?? null;
 
 	useEffect(() => {
 		if (!personalizacionInitialized) {
@@ -52,11 +46,10 @@ const SelectSucursalEmpresa = () => {
 		}
 	}, [dispatch, personalizacionInitialized]);
 
-	const {
-		branches,
-		loading: branchesLoading,
-		error: branchesError,
-	} = useUserBranches(userId ?? undefined, { enabled: Boolean(userId) });
+	const branches = useAppSelector(selectUserBranches);
+	// Los datos vienen del store (sin fetch): no hay estados de carga/error.
+	const branchesLoading = false;
+	const branchesError: string | null = null;
 
 	const accessibleSubsidiaryIds = useMemo(() => {
 		const subsidiaries = new Set<number>();
@@ -181,34 +174,15 @@ const SelectSucursalEmpresa = () => {
 				}),
 			);
 
-			try {
-				await dispatch(actualizarSucursalPrincipalThunk(nextBranchId)).unwrap();
-
-				const companyId = personalizacionUsuario?.company_id ?? user?.company?.id;
-				if (companyId) {
-					try {
-						await ApiService.fetchData({
-							url: '/user/switch-company',
-							method: 'post',
-							data: { company_id: companyId },
-						});
-					} catch (err) {
-						console.warn('switch-company fallback failed:', err);
-					}
-				}
-
-				window.dispatchEvent(
-					new CustomEvent('user-branch-changed', {
-						detail: { branchId: nextBranchId, subsidiaryId: nextSubsidiaryId },
-					}),
-				);
-
-				toast.success('Sucursal principal actualizada');
-			} catch (error: any) {
-				toast.error(error?.message ?? 'No se pudo actualizar la sucursal principal');
-			}
+			// Cambio de sucursal centralizado en el switcher (personalización + evento).
+			await switchContext({
+				sucursalPrincipal: nextBranchId,
+				eventBranchId: nextBranchId,
+				eventSubsidiaryId: nextSubsidiaryId,
+				successMessage: 'Sucursal principal actualizada',
+			});
 		},
-		[dispatch, personalizacionUsuario?.company_id, preferredBranchId, user?.company?.id],
+		[dispatch, preferredBranchId, switchContext],
 	);
 
 	const formatOptionLabel = useCallback((option: BranchOption) => {
@@ -334,7 +308,7 @@ const SelectSucursalEmpresa = () => {
 	return (
 		<>
 			{/* DESKTOP */}
-			<div className='hidden w-full sm:block sm:min-w-[260px] sm:max-w-xs '>
+			<div className='hidden w-full sm:block sm:min-w-[260px] sm:max-w-xs'>
 				<SelectReact {...selectProps} />
 			</div>
 

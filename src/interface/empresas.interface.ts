@@ -8,6 +8,45 @@ export interface IUsuarioEmpresa {
 	updated_at: string;
 }
 
+/** Referencia mínima a una comuna, tal como la anida el backend en varias entidades. */
+export interface ICommuneRef {
+	id: number;
+	name: string;
+	province_id?: number;
+}
+
+/** Datos de contacto del encargado (manager) anidado por el backend. */
+export interface IManagerRef {
+	id?: number;
+	name?: string;
+	first_name?: string;
+	last_name?: string;
+	email?: string | null;
+	phone?: string | null;
+	phone_number?: string | null;
+	position?: string;
+}
+
+/**
+ * Alias "normalizados" que el frontend agrega sobre entidades del backend (versión
+ * camel/es de campos snake). Compartidos por `ISucursal` e `ISubempresa` para no repetir.
+ */
+export interface INormalizedEntityAliases {
+	name?: string;
+	rut?: string;
+	phone?: string;
+	email?: string;
+	address?: string;
+	status?: string | number | boolean;
+	commune_name?: string;
+}
+
+/** Subsidiaria mínima `{ id, subsidiary_name }`. Fuente única reutilizada por otros módulos. */
+export interface ISubsidiaryMin {
+	id: number;
+	subsidiary_name: string;
+}
+
 export interface IBranch {
 	id: number;
 	subsidiary_id?: number;
@@ -19,16 +58,9 @@ export interface IBranch {
 	branch_email?: string;
 
 	manager_id?: number | null;
-	manager?: {
-		id?: number;
-		name?: string;
-		first_name?: string;
-		last_name?: string;
-		email?: string;
-		phone?: string | null;
-		phone_number?: string | null;
-		position?: string;
-	};
+	manager?: IManagerRef;
+
+	primary_warehouse_id?: number | null;
 
 	branch_status?: string | number | boolean;
 	branch_opening_hours?: string | null;
@@ -37,50 +69,52 @@ export interface IBranch {
 	branch_updated_at?: string;
 
 	commune_id?: number;
-	commune?: {
-		id: number;
-		name: string;
-		province_id?: number;
-	};
+	commune?: ICommuneRef;
 
 	created_at?: string;
 	updated_at?: string;
 }
 
+/**
+ * Sucursal. El backend (`GET /branches?with=...`) sólo manda campos `branch_*`
+ * (snake_case) — nunca alias camel (`name`, `rut`, `phone`, `address`, `email`, `status`,
+ * `commune_name`), igual que confirmamos para `ISubempresa`. Por eso NO extiende
+ * `INormalizedEntityAliases`.
+ */
 export interface ISucursal extends IBranch {
-	// Alias normalizados usados en el frontend
+	// Alias propios de sucursal, en español (usados por vistas legacy)
 	nombre?: string;
-	name?: string;
-	rut?: string;
-	phone?: string;
-	email?: string;
-	address?: string;
 	direccion?: string;
 
 	manager_name?: string;
 	manager_phone?: string;
 	manager_email?: string;
 
-	status?: string | number | boolean;
 	descripcion?: string;
 	usuarios?: IUsuarioEmpresa[];
 
 	subsidiary_name?: string;
 	subsidiary_rut?: string;
-
-	commune_name?: string;
 }
 
-export interface ISubempresa {
-	id: number;
+/**
+ * Subsidiaria/subempresa. Contrato verificado contra `SubsidiaryResource` (backend) y el
+ * payload real de `GET /subsidiaries?with=commune,manager,branches,branches.manager,
+ * branches.commune`.
+ *
+ * ⚠️ El backend SÓLO manda los campos `subsidiary_*` (snake_case) — nunca alias camel
+ * (`name`, `rut`, `phone`, `address`, `email`, `status`, `website`, `commune_name`). Por
+ * eso NO extiende `INormalizedEntityAliases`: usa siempre los campos reales.
+ */
+export interface ISubempresa extends ISubsidiaryMin {
 	company_id: number;
-	subsidiary_name: string;
 	subsidiary_rut?: string;
-	subsidiary_website?: string;
-	subsidiary_phone?: string;
-	subsidiary_address?: string;
-	subsidiary_email?: string;
-	subsidiary_status?: boolean | string | number;
+	subsidiary_website?: string | null;
+	subsidiary_phone?: string | null;
+	subsidiary_address?: string | null;
+	subsidiary_email?: string | null;
+	/** Siempre presente en el payload real (verificado); nunca string/number. */
+	subsidiary_status?: boolean;
 	subsidiary_documents_email?: string | null;
 	subsidiary_sales_email?: string | null;
 	subsidiary_delivery_term?: string | null;
@@ -92,33 +126,13 @@ export interface ISubempresa {
 	subsidiary_commercial_terms?: string | null;
 	subsidiary_default_payment_method?: string | null;
 	subsidiary_manager_id?: number | null;
-	manager?: {
-		id?: number;
-		name?: string;
-		email?: string | null;
-		phone?: string | null;
-		phone_number?: string | null;
-	} | null;
+	manager?: IManagerRef | null;
 	commune_id?: number | null;
-	commune?: {
-		id: number;
-		name: string;
-		province_id?: number;
-	};
+	commune?: ICommuneRef;
 	logo_url?: string | null;
 	logo_base_64?: string | null;
 	created_at?: string;
 	updated_at?: string;
-
-	// Normalizados (frontend)
-	name?: string;
-	rut?: string;
-	website?: string;
-	phone?: string;
-	address?: string;
-	email?: string;
-	status?: string | number | boolean;
-	commune_name?: string;
 
 	sucursales?: ISucursal[];
 	branches?: IBranch[];
@@ -140,11 +154,7 @@ export interface IEmpresa {
 	is_active: boolean;
 	company_type?: string;
 	commune_id?: number | null;
-	commune?: {
-		id: number;
-		name: string;
-		province_id?: number;
-	};
+	commune?: ICommuneRef;
 	created_at: string;
 	updated_at: string;
 	subsidiaries: ISubempresa[];
@@ -220,4 +230,3 @@ export interface ISubempresaCommercialView {
 	allowedPaymentMethods: string[];
 	defaultPaymentMethod: string;
 }
-

@@ -143,7 +143,7 @@ export const getCompanyInfo = (quote: IQuote, state: any) => {
 		// Dirección compuesta
 		fullAddress: (() => {
 			const addr = getVal('address', 'subsidiary_address', '');
-			const comm = meta.commune || activeSub?.commune?.name || activeSub?.commune_name || '';
+			const comm = meta.commune || activeSub?.commune?.name || '';
 			if (comm && addr && !addr.includes(comm)) return `${addr}, ${comm}`;
 			return addr || comm || '—';
 		})(),
@@ -415,14 +415,9 @@ export const getQuoteTotals = (quote: IQuote, items: IQuoteItem[] = []) => {
 
 	const tax =
 		taxFromQuote ||
-		(fallbackTax > 0
-			? fallbackTax
-			: taxRate > 0
-				? roundCurrency(taxBase * taxRate)
-				: 0);
+		(fallbackTax > 0 ? fallbackTax : taxRate > 0 ? roundCurrency(taxBase * taxRate) : 0);
 
-	const total =
-		totalFromQuote || (netTotal || effectiveDiscount || tax ? taxBase + tax : 0);
+	const total = totalFromQuote || (netTotal || effectiveDiscount || tax ? taxBase + tax : 0);
 
 	return { netTotal, discount: effectiveDiscount, tax, total };
 };

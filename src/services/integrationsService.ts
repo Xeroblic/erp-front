@@ -21,6 +21,8 @@ import type {
 	ImportMissingOrdersResponse,
 	SyncStockResponse,
 	SyncStockPayload,
+	WebhookCatalogEntry,
+	WebhookCatalogResponse,
 } from '../types/integrations.types';
 
 // ==================== GESTIÓN DE INTEGRACIONES ====================
@@ -88,6 +90,25 @@ export const deleteIntegration = async (subsidiaryId: number, integrationId: str
 		method: 'DELETE',
 	});
 	return response.data;
+};
+
+// ==================== CATÁLOGO DE WEBHOOKS ENTRANTES ====================
+
+/**
+ * Obtener el catálogo dinámico de webhooks entrantes que soporta el ERP, agrupado por
+ * proveedor/webhook (cada entrada trae sus topics, efectos y notas).
+ *
+ * Es global (no depende de subsidiaria) y prácticamente estático, por lo que se cachea
+ * unos minutos y se deduplica.
+ */
+export const getWebhookCatalog = async (): Promise<WebhookCatalogEntry[]> => {
+	const response = await ApiService.fetchData<WebhookCatalogResponse>({
+		url: `/integrations/webhooks/catalog`,
+		method: 'GET',
+		cacheTTLms: 300_000,
+		dedupe: true,
+	});
+	return response.data?.data ?? [];
 };
 
 // ==================== PRODUCTOS NO MAPEADOS (POR INTEGRACIÓN) ====================

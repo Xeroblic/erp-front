@@ -85,20 +85,8 @@ const Productos: React.FC = () => {
 	}, [currentBranchId, activeBranchId, filteredBranches, branches]);
 
 	const currentBranchName = useMemo(() => {
-		if (!currentBranch) return undefined;
-		if (typeof currentBranch.name === 'string' && currentBranch.name.trim().length > 0) {
-			return currentBranch.name;
-		}
-		const branchRecord = currentBranch as unknown as Record<string, unknown>;
-		const branchNameSnake = branchRecord.branch_name;
-		if (typeof branchNameSnake === 'string' && branchNameSnake.trim().length > 0) {
-			return branchNameSnake;
-		}
-		const branchNameCamel = branchRecord.branchName;
-		if (typeof branchNameCamel === 'string' && branchNameCamel.trim().length > 0) {
-			return branchNameCamel;
-		}
-		return undefined;
+		if (!currentBranch?.branch_name?.trim()) return undefined;
+		return currentBranch.branch_name;
 	}, [currentBranch]);
 
 	useEffect(() => {
@@ -236,7 +224,7 @@ const Productos: React.FC = () => {
 	const hasBranchAccess = canAccessBranch(currentBranchId);
 
 	return (
-		<PageWrapper name='catalog-products'>
+		<PageWrapper name='Productos' title='Catalogos Productos'>
 			<ProductsHeader
 				searchValue={filters.search ?? ''}
 				onSearchChange={handleSearchChange}
@@ -289,7 +277,7 @@ const Productos: React.FC = () => {
 					<Card className='mb-4'>
 						<CardBody className='text-sm text-amber-600'>
 							No se pudo resolver la subempresa actual. Verifica la personalizacion
-							del usuario.
+							que tengas en tus opciones.
 						</CardBody>
 					</Card>
 				)}
@@ -299,8 +287,8 @@ const Productos: React.FC = () => {
 						<CardBody className='flex items-center gap-3 text-sm text-amber-600'>
 							<Icon icon='HeroShieldExclamation' className='size-5' />
 							<span>
-								No tienes acceso de operación a la sucursal seleccionada.
-								Los datos se muestran en modo lectura.
+								No tienes acceso de operación a la sucursal seleccionada. Los datos
+								se muestran en modo lectura.
 							</span>
 						</CardBody>
 					</Card>
@@ -355,7 +343,10 @@ const Productos: React.FC = () => {
 							entityId={
 								viewMode === 'subsidiaries'
 									? subsidiaryId
-									: currentBranchId ?? activeBranchId ?? currentBranch?.id ?? null
+									: (currentBranchId ??
+										activeBranchId ??
+										currentBranch?.id ??
+										null)
 							}
 							summary={inventory}
 							criticalProducts={criticalProducts}
@@ -364,7 +355,9 @@ const Productos: React.FC = () => {
 							onShowLowStock={handleShowCriticalInventory}
 							onViewProduct={handleViewProduct}
 							subsidiaryId={subsidiaryId}
-							selectedBranchId={currentBranchId ?? activeBranchId ?? currentBranch?.id ?? null}
+							selectedBranchId={
+								currentBranchId ?? activeBranchId ?? currentBranch?.id ?? null
+							}
 							onRefresh={refresh}
 						/>
 					</Tab>

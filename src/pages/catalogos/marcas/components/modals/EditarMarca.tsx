@@ -42,13 +42,15 @@ const EditarMarca: React.FC<EditarMarcaProps> = ({
 		<Modal isOpen={isOpen} setIsOpen={setIsOpen} size='lg'>
 			<ModalHeader>
 				<div className='flex items-center space-x-3'>
-					<div className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-100'>
-						<Icon icon='HeroPencilSquare' className='h-6 w-6 text-blue-600' />
+					<div className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300'>
+						<Icon icon='HeroPencilSquare' className='h-5 w-5' />
 					</div>
 					<div>
-						<h2 className='text-xl font-bold text-gray-900'>Editar marca</h2>
-						<p className='text-sm text-gray-600'>
-							Actualiza la informacion principal de la marca
+						<h2 className='text-xl font-semibold text-zinc-900 dark:text-white'>
+							Editar marca
+						</h2>
+						<p className='text-sm text-zinc-500 dark:text-zinc-400'>
+							Actualiza la información principal de la marca
 						</p>
 					</div>
 				</div>

@@ -13,6 +13,30 @@ export type DecimalString = string;
 export type ISODateTimeString = string;
 export type NullableJson = Record<string, unknown> | null;
 
+/** Visibilidad de un producto dentro de un canal/marketplace. */
+export type ChannelVisibility = 'publish' | 'private';
+
+/**
+ * Override de un producto para una integración/canal concreto (WooCommerce,
+ * Falabella, etc.). Cada canal mantiene su propio precio, nombre y visibilidad;
+ * los campos `effective_*` resuelven override → valor base del producto.
+ */
+export interface ProductChannelPrice {
+	integration_id: string;
+	channel: string | null;
+	channel_name: string | null;
+	name_override?: string | null;
+	/** Nombre resuelto (override → nombre base del producto) que ve el canal. */
+	effective_name?: string | null;
+	visibility?: ChannelVisibility | null;
+	visibility_override?: ChannelVisibility | null;
+	effective_visibility?: ChannelVisibility | null;
+	price_override: DecimalString | null;
+	offer_price_override: DecimalString | null;
+	effective_price: DecimalString | null;
+	effective_offer_price: DecimalString | null;
+}
+
 export interface IProductBrandSummary {
 	id: number;
 	name: string;
@@ -46,6 +70,34 @@ export interface IProductChildStockStatus {
 	[key: string]: number | undefined;
 }
 
+/**
+ * Detalle de una retención temporal (soft-hold) asociada a una venta en proceso.
+ * Sólo viene en el endpoint de detalle (`/products/{id}`).
+ */
+export interface IProductSoftHold {
+	sale_id: number;
+	sale_number: string | null;
+	wc_order_number: string | null;
+	channel: string | null;
+	quantity: number;
+	status: string | null;
+	sale_status: string | null;
+}
+
+/**
+ * Unidades apartadas temporalmente por ventas en proceso. El campo `stock`
+ * del producto ya viene descontado por estas retenciones, así que esto es
+ * meramente informativo. Sólo es relevante para productos no serializados y
+ * para productos hijos (variantes por grado).
+ */
+export interface IProductSoftHolds {
+	quantity: number;
+	pending_sales_count: number;
+	web: number;
+	manual: number;
+	holds?: IProductSoftHold[];
+}
+
 export interface IProductParentSummary {
 	id: number;
 	sku: string;
@@ -61,6 +113,7 @@ export interface IProductChild {
 	offer_price?: number | string | null;
 	stock?: number | null;
 	stock_by_status?: IProductChildStockStatus | null;
+	soft_holds?: IProductSoftHolds | null;
 	marketplace_external_ids?: Record<string, string | number> | null;
 }
 
@@ -102,12 +155,17 @@ export interface IProduct {
 	offer_price?: number | null;
 	attributes_json?: Record<string, unknown> | null;
 	marketplace_external_ids?: NullableJson;
+	/** Overrides por canal/marketplace (precio, nombre y visibilidad). */
+	channel_prices?: ProductChannelPrice[] | null;
+	/** Si el stock del producto se sincroniza con WooCommerce. */
+	sync_stock_with_woo?: boolean;
 	is_active: boolean;
 	snippet_description?: string | null;
 	short_description?: string | null;
 	long_description?: string | null;
 	stock?: number | null;
 	stock_by_status?: IProductChildStockStatus | null;
+	soft_holds?: IProductSoftHolds | null;
 	categories?: IProductCategorySummary[];
 	children?: IProductChild[] | null;
 	parent?: IProductParentSummary;
@@ -205,6 +263,7 @@ export interface ProductResourcePayload {
 	product_status: string | null;
 	attributes_json: NullableJson;
 	marketplace_external_ids: NullableJson;
+	channel_prices?: ProductChannelPrice[] | null;
 	is_active: boolean;
 	category_ids?: ProductCategorySummary[];
 	image: ProductImage | null;

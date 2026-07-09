@@ -50,7 +50,7 @@ export const useBranchManagers = (
 		return managers.map((manager) => ({
 			value: manager.id.toString(),
 			label: `${manager.first_name} ${manager.last_name}${
-				manager.position ? ` - ${manager.position}` : ''
+				manager.cargo ? ` - ${manager.cargo}` : ''
 			}`,
 		}));
 	}, [managers]);

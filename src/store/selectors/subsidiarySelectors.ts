@@ -1,9 +1,13 @@
 import { RootState } from '@/store/rootReducer';
 import type { IUserMe } from '@/interface/user.interface';
 import type { IBranch } from '@/interface/empresas.interface';
+import {
+	resolveSubsidiaryFromBranch,
+	toContextId,
+	type ContextUser,
+} from '@/utils/orgContext.util';
 
 type UserWithAuthorizationBranches = IUserMe & {
-	branches?: BranchLike[];
 	subsidiary_id?: number | null;
 	branch_id?: number | null;
 };
@@ -16,74 +20,7 @@ type PersonalizationBrand = {
 	branches?: PersonalizationBranch[];
 };
 
-type BranchLike = {
-	id?: number | null;
-	branch_id?: number | null;
-	branchId?: number | null;
-	subsidiary?: { id?: number | null; subsidiary_id?: number | null } | number | null;
-	subsidiary_id?: number | null;
-	subsidiaryId?: number | null;
-	subsidiary_info?: { id?: number | null; subsidiary_id?: number | null } | null;
-};
-
-const toNumber = (value: unknown): number | null => {
-	if (typeof value === 'number' && Number.isFinite(value)) return value;
-	if (typeof value === 'string' && value.trim() !== '') {
-		const parsed = Number(value);
-		return Number.isFinite(parsed) ? parsed : null;
-	}
-	return null;
-};
-
-const resolveSubsidiaryFromBranch = (
-	branchId: number | null | undefined,
-	user: RootState['auth']['user'],
-): number | null => {
-	const normalizedBranchId = toNumber(branchId);
-	if (normalizedBranchId === null) return null;
-
-	const inspectBranch = (branch: BranchLike | null | undefined): number | null => {
-		if (!branch) return null;
-		const candidateId =
-			toNumber(branch.id) ?? toNumber(branch.branch_id) ?? toNumber(branch.branchId);
-		if (candidateId !== normalizedBranchId) return null;
-
-		const subsidiarySource =
-			branch.subsidiary ?? branch.subsidiary_info ?? branch.subsidiaryId ?? null;
-		if (typeof subsidiarySource === 'number') {
-			return toNumber(subsidiarySource);
-		}
-		if (typeof subsidiarySource === 'object' && subsidiarySource !== null) {
-			const subsidiaryRecord = subsidiarySource as { id?: number | null; subsidiary_id?: number | null };
-			return toNumber(subsidiaryRecord.id) ?? toNumber(subsidiaryRecord.subsidiary_id);
-		}
-		return toNumber(branch.subsidiary_id);
-	};
-
-	const authUser = user as UserWithAuthorizationBranches | null | undefined;
-
-	const collections: Array<BranchLike | BranchLike[] | null | undefined> = [
-		user?.branch as BranchLike | null | undefined,
-		authUser?.branches,
-		authUser?.access?.branches,
-		authUser?.visible?.branches,
-	];
-
-	for (const source of collections) {
-		if (!source) continue;
-		if (Array.isArray(source)) {
-			for (const branch of source) {
-				const resolved = inspectBranch(branch);
-				if (resolved !== null) return resolved;
-			}
-			continue;
-		}
-		const resolved = inspectBranch(source);
-		if (resolved !== null) return resolved;
-	}
-
-	return null;
-};
+const toNumber = toContextId;
 
 /**
  * Obtiene el subsidiaryId efectivo considerando las diferentes estructuras
@@ -116,7 +53,10 @@ export const selectEffectiveSubsidiaryId = (state: RootState): number | null => 
 		authUser?.branch_id ??
 		null;
 
-	const derivedFromBranch = resolveSubsidiaryFromBranch(preferredBranchId, user);
+	const derivedFromBranch = resolveSubsidiaryFromBranch(
+		preferredBranchId,
+		user as ContextUser | null | undefined,
+	);
 	if (derivedFromBranch !== null) return derivedFromBranch;
 
 	return null;

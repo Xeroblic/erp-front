@@ -82,20 +82,18 @@ export default function SubEmpresaDetalle() {
 
 	const initialValues: ISubempresaFormValues = useMemo(
 		() => ({
-			nombre: getStringValue(subempresa?.name, subempresa?.subsidiary_name),
-			rut: getStringValue(subempresa?.rut, subempresa?.subsidiary_rut),
+			nombre: getStringValue(subempresa?.subsidiary_name),
+			rut: getStringValue(subempresa?.subsidiary_rut),
 			telefono: getStringValue(
-				subempresa?.phone,
 				subempresa?.subsidiary_phone,
 				subempresa?.manager?.phone_number as string,
 				subempresa?.manager?.phone as string,
 			),
 			email: getStringValue(
-				subempresa?.email,
 				subempresa?.subsidiary_email,
 				subempresa?.manager?.email as string,
 			),
-			direccion: getStringValue(subempresa?.address, subempresa?.subsidiary_address),
+			direccion: getStringValue(subempresa?.subsidiary_address),
 			region: '',
 			provincia: '',
 			comuna: (subempresa as any)?.commune_id
@@ -149,21 +147,19 @@ export default function SubEmpresaDetalle() {
 
 	const viewData: ISubempresaViewData = useMemo(
 		() => ({
-			name: getStringValue(subempresa?.name, subempresa?.subsidiary_name, '—'),
-			rut: getStringValue(subempresa?.rut, subempresa?.subsidiary_rut),
+			name: getStringValue(subempresa?.subsidiary_name, '—'),
+			rut: getStringValue(subempresa?.subsidiary_rut),
 			phone: getStringValue(
-				subempresa?.phone,
 				subempresa?.subsidiary_phone,
 				subempresa?.manager?.phone_number as string,
 				subempresa?.manager?.phone as string,
 			),
 			email: getStringValue(
-				subempresa?.email,
 				subempresa?.subsidiary_email,
 				subempresa?.manager?.email as string,
 			),
-			address: getStringValue(subempresa?.address, subempresa?.subsidiary_address),
-			commune: getStringValue(subempresa?.commune?.name, (subempresa as any)?.commune_name),
+			address: getStringValue(subempresa?.subsidiary_address),
+			commune: getStringValue(subempresa?.commune?.name),
 			province: '',
 			region: '',
 		}),
@@ -420,7 +416,7 @@ export default function SubEmpresaDetalle() {
 	return (
 		<PageWrapper
 			isProtectedRoute
-			title={`Subempresa: ${subempresa.name}`}
+			title={`Subempresa: ${subempresa.subsidiary_name}`}
 			name='Detalle Subempresa'>
 			<Subheader>
 				<SubheaderLeft>
@@ -440,7 +436,9 @@ export default function SubEmpresaDetalle() {
 								/>
 							</div>
 							<div>
-								<h1 className='text-lg font-semibold'>{subempresa.name}</h1>
+								<h1 className='text-lg font-semibold'>
+									{subempresa.subsidiary_name}
+								</h1>
 								<p className='text-sm text-zinc-500'>ID: {subempresa.id}</p>
 							</div>
 						</div>
@@ -553,7 +551,7 @@ export default function SubEmpresaDetalle() {
 				isOpen={openDelete}
 				onClose={() => setOpenDelete(false)}
 				subempresaId={subempresa.id}
-				subsiName={subempresa.name || subempresa.subsidiary_name || ''}
+				subsiName={subempresa.subsidiary_name || ''}
 				isNavigate
 			/>
 		</PageWrapper>

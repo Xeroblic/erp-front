@@ -3,7 +3,7 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import DataTable from '@/components/ui/DataTable';
 import Spinner from '@/components/ui/Spinner';
-import { useUserBranches } from '@/hooks/permiso/userBranch';
+import { selectUserBranches } from '@/store/selectors/userBranchesSelectors';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { IInventoryMovement } from '@/interface/inventoryMovements.interface';
 import { useAppDispatch, useAppSelector } from '@/store';
@@ -31,7 +31,6 @@ export function TrazabilidadList() {
 	const loading = useAppSelector(selectInventarioLoading);
 	const error = useAppSelector(selectInventarioError);
 
-	const currentUser = useAppSelector((state) => state.auth.user);
 	const { branchId } = useCurrentBranch();
 
 	const [fetchStatus, setFetchStatus] = useState<FetchStatus>('idle');
@@ -40,8 +39,7 @@ export function TrazabilidadList() {
 	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 	const abortControllerRef = useRef<AbortController | null>(null);
 
-	const userId = currentUser?.id ?? (currentUser as any)?.pk ?? undefined;
-	const { branches } = useUserBranches(userId, { enabled: Boolean(userId) });
+	const branches = useAppSelector(selectUserBranches);
 
 	const currentBranchName = useMemo(() => {
 		if (!branchId) return null;

@@ -46,6 +46,7 @@ import { createBrand, fetchBrands } from '@/store/slices/brands/brandsSlice';
 import Tooltip from '@/components/ui/Tooltip';
 import Tabs, { Tab } from '@/components/ui/Tabs';
 import WooCommerceProductTab from './components/WooCommerceProductTab';
+import WooCommercePublishPanel from './components/WooCommercePublishPanel';
 
 interface CreateEditProductModalProps {
 	isOpen: boolean;
@@ -716,12 +717,36 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 												{formFieldsMarkup}
 											</div>
 										</Tab>
-										<Tab id='nuevo_formulario' text='Publicacion Sincronizada WooErp' icon='HeroCodeBracketSquare'>
-											<WooCommerceProductTab
-												setActiveTab={setActiveTab}
-												branchId={values.branch_id ?? null}
-												isBusy={isBusy}
-											/>
+										<Tab
+											id='nuevo_formulario'
+											text={isEditMode ? 'WooCommerce' : 'Publicacion Sincronizada WooErp'}
+											icon='HeroCodeBracketSquare'>
+											{isEditMode && product ? (
+												<WooCommercePublishPanel
+													productId={product.id}
+													isBusy={isBusy}
+													marketplaceExternalIds={
+														product.marketplace_external_ids
+													}
+													channelPrices={product.channel_prices}
+													basePrice={
+														product.price_override ?? product.price ?? null
+													}
+													baseOfferPrice={
+														product.offer_price_override ??
+														product.offer_price ??
+														null
+													}
+													baseName={product.name}
+												/>
+											) : (
+												<WooCommerceProductTab
+													branchId={values.branch_id ?? null}
+													brands={brands}
+													categories={categories}
+													isBusy={isBusy}
+												/>
+											)}
 										</Tab>
 									</Tabs>
 								) : (

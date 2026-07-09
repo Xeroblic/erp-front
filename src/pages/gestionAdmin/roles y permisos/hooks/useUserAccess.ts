@@ -15,10 +15,10 @@ export type AccessSubsidiary = AuthorizationSubsidiaryRef;
 export type UserAccess = AuthorizationAccessScope;
 
 /**
-	* Hook para obtener y transformar los accesos jerárquicos de un usuario
-	* Combina datos de subsidiarias y sucursales desde los slices existentes
-	* @param _userId - ID del usuario (reservado para futuro filtrado) 
-*/
+ * Hook para obtener y transformar los accesos jerárquicos de un usuario
+ * Combina datos de subsidiarias y sucursales desde los slices existentes
+ * @param _userId - ID del usuario (reservado para futuro filtrado)
+ */
 export const useUserAccess = (_userId?: number) => {
 	// Obtener datos de los slices
 	const subsidiariesList = useSelector((state: RootState) => state.subEmpresa.lista);
@@ -30,7 +30,7 @@ export const useUserAccess = (_userId?: number) => {
 	const transformedSubsidiaries = useMemo<AccessSubsidiary[]>(() => {
 		return subsidiariesList.map((sub: ISubempresa) => ({
 			id: sub.id,
-			name: sub.name || sub.subsidiary_name || '',
+			name: sub.subsidiary_name || '',
 			company: sub.company_id
 				? {
 						id: sub.company_id,
@@ -44,7 +44,7 @@ export const useUserAccess = (_userId?: number) => {
 	const transformedBranches = useMemo<AccessBranch[]>(() => {
 		return branchesList.map((branch: ISucursal) => ({
 			id: branch.id,
-			name: branch.name || branch.branch_name || '',
+			name: branch.branch_name || '',
 			subsidiary:
 				branch.subsidiary_id || branch.subempresa_id
 					? {

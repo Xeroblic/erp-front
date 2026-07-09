@@ -179,6 +179,38 @@ export const actualizarSucursalPrincipalThunk = createAsyncThunk<
 );
 
 /* ---------------------------------------------------
+   ACTUALIZAR SÓLO SUBSIDIARIA PRINCIPAL
+   (campo dedicado `subsidiary_id`; NO confundir con `sucursal_principal`, que es un branch id)
+--------------------------------------------------- */
+export const actualizarSubsidiariaPrincipalThunk = createAsyncThunk<
+	IPersonalizacionUsuario,
+	number | null,
+	{ state: RootState; rejectValue: string }
+>(
+	'personalizacion/actualizarSubsidiariaPrincipal',
+	async (subsidiaryId, { getState, rejectWithValue }) => {
+		const token = tokenManager.getAccessToken() ?? getState().auth.access;
+
+		try {
+			const resp = await ApiService.fetchData<any>({
+				url: '/user/personalization',
+				method: 'put',
+				data: { subsidiary_id: subsidiaryId },
+				headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+			});
+
+			return extractPersonalization(resp.data);
+		} catch (error: any) {
+			return rejectWithValue(
+				error?.response?.data?.message ||
+					error?.message ||
+					'No se pudo actualizar la subsidiaria principal',
+			);
+		}
+	},
+);
+
+/* ---------------------------------------------------
    SLICE
 --------------------------------------------------- */
 const personalizacionSlice = createSlice({

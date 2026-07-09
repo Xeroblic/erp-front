@@ -21,6 +21,23 @@ import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import classNames from 'classnames';
+import WebhookCatalogPanel from './WebhookCatalogPanel';
+
+/**
+ * Eventos de webhook soportados por el ERP. Cada evento define su scope y el
+ * sufijo de la ruta de entrega que WooCommerce debe llamar (los pedidos usan
+ * `/orders`; los productos usan `/products`).
+ */
+const WEBHOOK_EVENTS = [
+	{ value: 'order.created', label: 'Pedido creado (order.created)', scope: 'orders', urlSuffix: 'orders' },
+	{ value: 'order.updated', label: 'Pedido actualizado (order.updated)', scope: 'orders', urlSuffix: 'orders' },
+	{ value: 'product.updated', label: 'Producto actualizado (product.updated)', scope: 'products', urlSuffix: 'products' },
+] as const;
+
+const DEFAULT_WEBHOOK_EVENT = WEBHOOK_EVENTS[0].value;
+
+const getWebhookEventMeta = (event?: string | null) =>
+	WEBHOOK_EVENTS.find((entry) => entry.value === event) ?? WEBHOOK_EVENTS[0];
 
 interface ModalIntegrationProps {
 	isOpen: boolean;
@@ -55,6 +72,7 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 		provider: 'woocommerce',
 		base_url: '',
 		mode: 'webhook',
+		event: DEFAULT_WEBHOOK_EVENT,
 		is_active: true,
 		consumer_key: '',
 		consumer_secret: '',
@@ -67,6 +85,7 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 				provider: integration.provider,
 				base_url: integration.base_url,
 				mode: integration.mode,
+				event: integration.event ?? DEFAULT_WEBHOOK_EVENT,
 				is_active: integration.is_active,
 			});
 		} else if (mode === 'create') {
@@ -76,6 +95,7 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 				provider: 'woocommerce',
 				base_url: '',
 				mode: 'webhook',
+				event: DEFAULT_WEBHOOK_EVENT,
 				is_active: true,
 				consumer_key: '',
 				consumer_secret: '',
@@ -90,12 +110,33 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 			return;
 		}
 
+		// El backend exige HTTPS en la URL base: validar antes de enviar.
+		const baseUrl = formData.base_url?.trim() ?? '';
+		if (mode === 'create' && baseUrl && !/^https:\/\//i.test(baseUrl)) {
+			toast.error('La URL base debe usar HTTPS (https://…)');
+			return;
+		}
+
 		try {
 			if (mode === 'create') {
+				// En modo webhook el backend exige `event`; derivamos el `scopes`
+				// desde el evento seleccionado (orders → ["orders"], product → ["products"]).
+				const payload: CreateIntegrationPayload = {
+					...(formData as CreateIntegrationPayload),
+				};
+				if (formData.mode === 'webhook') {
+					const eventMeta = getWebhookEventMeta(formData.event);
+					payload.event = eventMeta.value;
+					payload.scopes = [eventMeta.scope];
+				} else {
+					delete payload.event;
+					delete payload.scopes;
+				}
+
 				const resultAction = await dispatch(
 					createIntegration({
 						subsidiaryId,
-						payload: formData as CreateIntegrationPayload,
+						payload,
 					}),
 				);
 
@@ -115,7 +156,11 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 						onSuccess();
 					}
 				} else {
-					toast.error('Error al crear la integración');
+					// `payload` trae el mensaje real del backend (HTTPS, "ya existe
+					// una integración activa de este tipo", etc.).
+					toast.error(
+						(resultAction.payload as string) || 'Error al crear la integración',
+					);
 				}
 			} else if (mode === 'edit' && integration) {
 				const resultAction = await dispatch(
@@ -134,12 +179,15 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 					await dispatch(fetchIntegrations({ subsidiaryId }));
 					onSuccess();
 				} else {
-					toast.error('Error al actualizar la integración');
+					toast.error(
+						(resultAction.payload as string) || 'Error al actualizar la integración',
+					);
 				}
 			}
-		} catch (error: any) {
-			toast.error(error?.message || 'Error al guardar');
-			console.error(error);
+		} catch (error: unknown) {
+			const message =
+				error instanceof Error ? error.message : 'Error al guardar la integración';
+			toast.error(message);
 		}
 	};
 
@@ -202,15 +250,20 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 					</p>
 				</ModalBody>
 				<ModalFooter>
-					<Button variant='outline' color='blue' onClick={onClose} icon='HeroX' title='Cancelar'
-					 className='bg-blue-600/70 text-white'
-					 >Cancelar</Button>
+					<Button
+						variant='outline'
+						color='red'
+						onClick={onClose}
+						icon='HeroX'
+						title='Cancelar'>
+						Cancelar
+					</Button>
 					<Button
 						variant='solid'
 						onClick={onConfirm}
 						icon='HeroTrash'
 						color='red'
-						title='Eliminar esta integracion de la existencia de todo centria y del todo universo posible profafor no apretar en caso de no querer borarr la integracion por que se puede eliminar el integracion y si no quieres eliminar la integracion te recomiendo no clickear este btn'
+						title='Eliminar esta integración de forma permanente'
 					>Eliminar</Button>
 				</ModalFooter>
 			</Modal>
@@ -320,8 +373,8 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 										URL del Webhook:{' '}
 										<code className='rounded bg-gray-100 px-2 py-1'>
 											{window.location.origin}
-											/api/integrations/woocommerce/webhooks/{secrets.api_key}
-											/orders
+											/api/integrations/woocommerce/webhooks/{secrets.api_key}/
+											{getWebhookEventMeta(formData.event).urlSuffix}
 										</code>
 									</p>
 								)}
@@ -454,19 +507,57 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 								}
 								disabled={mode !== 'create'}
 								required>
-								<option value='webhook'>Webhook (Solo recibir órdenes)</option>
+								<option value='webhook'>Webhook (recibir eventos)</option>
 								<option value='read'>API REST - Solo Lectura</option>
 								<option value='read_write'>API REST - Lectura/Escritura</option>
 							</Select>
 							<p className='mt-1 text-xs text-gray-500'>
 								{formData.mode === 'webhook' &&
-									'Webhook: WooCommerce enviará las órdenes automáticamente'}
+									'Webhook: WooCommerce enviará los eventos automáticamente'}
 								{formData.mode === 'read' &&
 									'Solo Lectura: Consultar órdenes de WooCommerce'}
 								{formData.mode === 'read_write' &&
 									'Lectura/Escritura: Consultar y sincronizar stock'}
 							</p>
 						</div>
+
+						{/* Evento del webhook (define scope y ruta de entrega) */}
+						{formData.mode === 'webhook' && (
+							<div>
+								<Label htmlFor='event'>Evento del Webhook</Label>
+								<Select
+									id='event'
+									name='event'
+									value={formData.event ?? DEFAULT_WEBHOOK_EVENT}
+									onChange={(e) =>
+										setFormData({ ...formData, event: e.target.value })
+									}
+									disabled={mode !== 'create'}
+									required>
+									{WEBHOOK_EVENTS.map((entry) => (
+										<option key={entry.value} value={entry.value}>
+											{entry.label}
+										</option>
+									))}
+								</Select>
+								<p className='mt-1 text-xs text-gray-500'>
+									Alcance:{' '}
+									<code className='rounded bg-gray-100 px-1.5 py-0.5 dark:bg-neutral-800'>
+										{getWebhookEventMeta(formData.event).scope}
+									</code>{' '}
+									· La URL de entrega terminará en{' '}
+									<code className='rounded bg-gray-100 px-1.5 py-0.5 dark:bg-neutral-800'>
+										/{getWebhookEventMeta(formData.event).urlSuffix}
+									</code>
+									.
+								</p>
+							</div>
+						)}
+
+						{/* Catálogo dinámico de eventos soportados (solo aplica a webhooks) */}
+						{formData.mode === 'webhook' && (
+							<WebhookCatalogPanel provider={formData.provider} />
+						)}
 
 						<div className='grid gap-4 md:grid-cols-2'>
 							<div>
@@ -621,7 +712,11 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 								)}
 							</div>
 							<div className='flex gap-2'>
-								<Button type='button' variant='outline' onClick={onClose}>
+								<Button
+									type='button'
+									variant='outline'
+									color='red'
+									onClick={onClose}>
 									{mode === 'view' ? 'Cerrar' : 'Cancelar'}
 								</Button>
 								{mode !== 'view' && (

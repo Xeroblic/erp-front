@@ -1,0 +1,1215 @@
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'react-toastify';
+import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import Badge from '@/components/ui/Badge';
+import Icon from '@/components/icon/Icon';
+import Tooltip from '@/components/ui/Tooltip';
+import Input from '@/components/form/Input';
+import Checkbox from '@/components/form/Checkbox';
+import Modal, { ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import {
+	useWooCandidates,
+	useWooCompare,
+	useWooLink,
+	useWooUnlink,
+	extractConflictData,
+	extractErrorMessage,
+} from '@/services/hooks/useWooManualLink';
+import type {
+	WooCandidate,
+	WooImageResolution,
+	WooPriceResolution,
+	WooSkuResolution,
+} from '@/types/integrations.types';
+import { pricesMatch } from '@/utils/wooPriceMatch.util';
+
+interface WooManualLinkPanelProps {
+	productId: number;
+	isLinked: boolean;
+	isLinkedElsewhere?: boolean;
+	externalProductId?: number | null;
+	onLinkChange?: () => void;
+	integrationId?: string;
+}
+
+const formatPrice = (value: string | number | null | undefined): string => {
+	if (value === null || value === undefined || value === '') return '—';
+	const n = Number(value);
+	return Number.isFinite(n) ? `$${n.toLocaleString('es-CL')}` : String(value);
+};
+
+const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
+	productId,
+	isLinked,
+	isLinkedElsewhere = false,
+	externalProductId = null,
+	onLinkChange,
+	integrationId,
+}) => {
+	const { subsidiaryId } = useCurrentBranch();
+	const canAct = subsidiaryId !== null;
+
+	const [searchOpen, setSearchOpen] = useState(false);
+	const [searchTerm, setSearchTerm] = useState('');
+	const [searchEnabled, setSearchEnabled] = useState(false);
+	const [selectedCandidate, setSelectedCandidate] = useState<WooCandidate | null>(null);
+
+	const compareParams = useMemo(() => {
+		if (!selectedCandidate) return null;
+		if (selectedCandidate.id != null) return { external_product_id: selectedCandidate.id };
+		if (selectedCandidate.sku) return { external_sku: selectedCandidate.sku };
+		return null;
+	}, [selectedCandidate]);
+
+	const [priceConflict, setPriceConflict] = useState<{
+		erp_price: string | number | null;
+		woo_price: string | number | null;
+	} | null>(null);
+	const [syncStock, setSyncStock] = useState(true);
+	// Al vincular, importa la descripción de WooCommerce hacia el ERP para no
+	// romper el contenido ya trabajado en la tienda. Activado por defecto: al
+	// vincular un producto existente en Woo, lo habitual es conservar su descripción.
+	const [overrideDescription, setOverrideDescription] = useState(true);
+	// Decisión consciente sobre el SKU cuando ERP y Woo difieren (needs_sku_decision).
+	const [skuResolution, setSkuResolution] = useState<WooSkuResolution | null>(null);
+	// Resolución de imagen cuando ambos lados tienen foto. Por defecto conserva la
+	// de WooCommerce ya que normalmente el ERP no tiene imagen cargada.
+	const [imageResolution, setImageResolution] = useState<WooImageResolution>('keep_woo');
+	const [unlinkConfirmOpen, setUnlinkConfirmOpen] = useState(false);
+
+	const candidatesQuery = useWooCandidates(
+		subsidiaryId,
+		productId,
+		searchTerm ? { q: searchTerm, per_page: 10 } : { per_page: 10 },
+		searchEnabled,
+		integrationId,
+	);
+
+	const compareQuery = useWooCompare(subsidiaryId, productId, compareParams, integrationId);
+	const linkMutation = useWooLink(subsidiaryId, productId, integrationId);
+	const unlinkMutation = useWooUnlink(subsidiaryId, productId, integrationId);
+
+	useEffect(() => {
+		if (compareQuery.error) {
+			toast.error(`Error al comparar: ${extractErrorMessage(compareQuery.error)}`);
+		}
+	}, [compareQuery.error]);
+
+	useEffect(() => {
+		if (candidatesQuery.error) {
+			toast.error(
+				`Error al buscar candidatos: ${extractErrorMessage(candidatesQuery.error)}`,
+			);
+		}
+	}, [candidatesQuery.error]);
+
+	const handleOpenSearch = useCallback(() => {
+		setSearchOpen(true);
+		setSearchEnabled(true);
+		setSelectedCandidate(null);
+		setPriceConflict(null);
+		setSkuResolution(null);
+		setImageResolution('keep_woo');
+		setSearchTerm('');
+	}, []);
+
+	const handleCloseSearch = useCallback(() => {
+		setSearchOpen(false);
+		setSearchEnabled(false);
+		setSelectedCandidate(null);
+		setPriceConflict(null);
+		setSkuResolution(null);
+		setImageResolution('keep_woo');
+	}, []);
+
+	const handleSelectCandidate = useCallback((candidate: WooCandidate) => {
+		setSelectedCandidate(candidate);
+		setPriceConflict(null);
+		setSkuResolution(null);
+		setImageResolution('keep_woo');
+	}, []);
+
+	const handleBackToList = useCallback(() => {
+		setSelectedCandidate(null);
+		setPriceConflict(null);
+		setSkuResolution(null);
+		setImageResolution('keep_woo');
+	}, []);
+
+	const handleLink = useCallback(
+		async (priceResolution?: WooPriceResolution) => {
+			if (!selectedCandidate) return;
+			if (selectedCandidate.id == null && !selectedCandidate.sku) {
+				toast.warning(
+					'No se pudo identificar el producto de WooCommerce: no tiene ID ni SKU válido.',
+				);
+				return;
+			}
+			try {
+				await linkMutation.mutateAsync({
+					...(selectedCandidate.id != null
+						? { external_product_id: selectedCandidate.id }
+						: { external_sku: selectedCandidate.sku }),
+					sync_stock_with_woo: syncStock,
+					...(priceResolution ? { price_resolution: priceResolution } : {}),
+					...(skuResolution ? { sku_resolution: skuResolution } : {}),
+					...(overrideDescription ? { override_description_from_woo: true } : {}),
+					image_resolution: imageResolution,
+				});
+				setPriceConflict(null);
+				handleCloseSearch();
+				onLinkChange?.();
+			} catch (error: unknown) {
+				const conflict = extractConflictData(error);
+				if (conflict) {
+					setPriceConflict(conflict);
+				}
+			}
+		},
+		[
+			selectedCandidate,
+			syncStock,
+			skuResolution,
+			overrideDescription,
+			imageResolution,
+			linkMutation,
+			handleCloseSearch,
+			onLinkChange,
+		],
+	);
+
+	const handleUnlink = useCallback(async () => {
+		try {
+			await unlinkMutation.mutateAsync();
+			setUnlinkConfirmOpen(false);
+			onLinkChange?.();
+		} catch {
+			// Toast handled by hook
+		}
+	}, [unlinkMutation, onLinkChange]);
+
+	const handleSearchSubmit = useCallback(
+		(e: React.FormEvent) => {
+			e.preventDefault();
+			setSearchEnabled(true);
+			void candidatesQuery.refetch();
+		},
+		[candidatesQuery],
+	);
+
+	const candidates: WooCandidate[] = useMemo(() => {
+		const raw = candidatesQuery.data;
+		if (!raw) return [];
+		const arr = Array.isArray(raw)
+			? raw
+			: Array.isArray((raw as Record<string, unknown>).data)
+				? ((raw as Record<string, unknown>).data as unknown[])
+				: [];
+		return arr.map((item) => {
+			const r = item as Record<string, unknown>;
+			const id = (r.id ?? r.woo_id ?? r.external_product_id ?? r.product_id) as
+				| number
+				| undefined;
+			// El backend expone el stock como `stock` (no `stock_quantity`).
+			const stockQuantity = (r.stock_quantity ?? r.stock ?? null) as number | null;
+			// `already_linked` puede venir directo o dentro de `link_status.is_linked`
+			// (vinculado a este u otro producto: en ambos casos no es seleccionable).
+			const linkStatus = r.link_status as Record<string, unknown> | undefined;
+			const alreadyLinked = Boolean(r.already_linked ?? linkStatus?.is_linked ?? false);
+			return {
+				...r,
+				id,
+				stock_quantity: stockQuantity,
+				already_linked: alreadyLinked,
+			} as WooCandidate;
+		});
+	}, [candidatesQuery.data]);
+
+	const comparison = compareQuery.data;
+	const comparisonRecord = comparison as Record<string, unknown> | undefined;
+	const comparisonData = comparisonRecord?.data ?? comparison;
+
+	return (
+		<Card className='overflow-hidden border border-neutral-200 shadow-sm dark:border-neutral-800'>
+			<CardHeader className='border-b border-neutral-100 bg-neutral-50/50 pb-3 dark:border-neutral-800/60 dark:bg-neutral-900/40'>
+				<div className='flex items-center justify-between gap-3'>
+					<div className='flex items-center gap-3'>
+						<div className='flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500/15 ring-1 ring-violet-500/25 dark:bg-violet-500/20 dark:ring-violet-400/30'>
+							<Icon
+								icon='HeroLink'
+								className='h-5 w-5 text-violet-600 dark:text-violet-400'
+							/>
+						</div>
+						<div>
+							<CardTitle className='text-base font-bold text-neutral-900 dark:text-neutral-50'>
+								Emparejamiento manual
+							</CardTitle>
+							<p className='mt-0.5 text-xs text-neutral-500 dark:text-neutral-400'>
+								Vincula este producto con una ficha existente en WooCommerce.
+							</p>
+						</div>
+					</div>
+					{isLinked && externalProductId && (
+						<Badge color='emerald' variant='solid'>
+							WC #{externalProductId}
+						</Badge>
+					)}
+				</div>
+			</CardHeader>
+			<CardBody className='space-y-4'>
+				{!canAct && (
+					<div className='rounded-md border border-yellow-300 bg-yellow-50 p-3 text-sm font-medium text-yellow-800 dark:border-yellow-500/40 dark:bg-yellow-950/40 dark:text-yellow-200'>
+						<Icon icon='HeroExclamationTriangle' className='mr-1.5 inline h-4 w-4' />
+						No hay una subsidiaria activa. Selecciona una sucursal para operar.
+					</div>
+				)}
+
+				{isLinked ? (
+					<div className='mt-4 space-y-3'>
+						<div className='rounded-lg border border-emerald-300 bg-emerald-50 p-3.5 dark:border-emerald-500/30 dark:bg-emerald-950/30'>
+							<div className='flex items-center gap-2.5'>
+								<div className='flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/20 dark:bg-emerald-500/25'>
+									<Icon
+										icon='HeroCheckCircle'
+										className='h-5 w-5 text-emerald-600 dark:text-emerald-400'
+									/>
+								</div>
+								<div className='min-w-0 flex-1'>
+									<p className='text-sm font-semibold text-emerald-800 dark:text-emerald-200'>
+										Producto vinculado manualmente
+									</p>
+									<p className='text-xs text-emerald-700 dark:text-emerald-400'>
+										ID en WooCommerce:{' '}
+										<span className='font-mono font-bold'>
+											#{externalProductId}
+										</span>
+									</p>
+								</div>
+							</div>
+						</div>
+
+						<Tooltip text='Rompe el vínculo con WooCommerce sin afectar la ficha remota'>
+							<Button
+								variant='solid'
+								color='red'
+								size='sm'
+								icon='HeroLinkSlash'
+								onClick={() => setUnlinkConfirmOpen(true)}
+								isDisable={!canAct || unlinkMutation.isPending}
+								isLoading={unlinkMutation.isPending}
+								aria-label='Desvincular producto de WooCommerce'>
+								Desvincular de WooCommerce
+							</Button>
+						</Tooltip>
+					</div>
+				) : (
+					<div className='space-y-3'>
+						<div className='flex items-start gap-2.5 rounded-lg border border-dashed border-neutral-300 bg-white p-3.5 dark:border-neutral-600 dark:bg-neutral-800/50'>
+							<Icon
+								icon='HeroInformationCircle'
+								className='mt-0.5 h-5 w-5 flex-shrink-0 text-violet-400 dark:text-violet-500'
+							/>
+							<div>
+								<p className='text-sm font-medium text-neutral-700 dark:text-neutral-200'>
+									Sin vínculo establecido
+								</p>
+								<p className='mt-0.5 text-xs text-neutral-500 dark:text-neutral-400'>
+									Vincula manualmente con un producto que ya exista en
+									WooCommerce. Si el producto aún no existe en la tienda, usa
+									primero &quot;Publicación en tienda&quot; para crearlo.
+								</p>
+							</div>
+						</div>
+
+						{isLinkedElsewhere && (
+							<div className='rounded-md border border-amber-300 bg-amber-50 p-3 text-xs font-medium text-amber-800 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-200'>
+								<Icon
+									icon='HeroExclamationTriangle'
+									className='mr-1.5 inline h-4 w-4 text-amber-600 dark:text-amber-400'
+								/>
+								Este producto ya está publicado/vinculado en otra tienda
+								WooCommerce. Desvincúlalo de la otra tienda para poder vincularlo
+								aquí.
+							</div>
+						)}
+
+						<Tooltip
+							text={
+								isLinkedElsewhere
+									? 'Desvincula de la otra tienda primero'
+									: 'Busca productos en WooCommerce para vincular con este producto del ERP'
+							}>
+							<Button
+								variant='solid'
+								color='violet'
+								size='sm'
+								icon='HeroMagnifyingGlass'
+								onClick={handleOpenSearch}
+								isDisable={!canAct || isLinkedElsewhere}
+								aria-label='Buscar productos en WooCommerce para vincular'>
+								Buscar y vincular
+							</Button>
+						</Tooltip>
+					</div>
+				)}
+
+				{/* ---- Search & Link Modal ---- */}
+				<Modal
+					isOpen={searchOpen}
+					setIsOpen={setSearchOpen}
+					size='xl'
+					isScrollable
+					isCentered>
+					<ModalHeader>
+						<div className='flex items-center gap-2'>
+							<Icon
+								icon={
+									selectedCandidate
+										? 'HeroArrowsRightLeft'
+										: 'HeroMagnifyingGlass'
+								}
+								className='h-5 w-5 text-violet-500'
+							/>
+							{selectedCandidate ? 'Comparar y vincular' : 'Buscar en WooCommerce'}
+						</div>
+					</ModalHeader>
+					<ModalBody>
+						{!selectedCandidate ? (
+							<CandidatesList
+								candidates={candidates}
+								isLoading={candidatesQuery.isFetching}
+								isError={candidatesQuery.isError}
+								errorMessage={
+									candidatesQuery.error
+										? extractErrorMessage(candidatesQuery.error)
+										: undefined
+								}
+								searchTerm={searchTerm}
+								onSearchChange={setSearchTerm}
+								onSearchSubmit={handleSearchSubmit}
+								onSelect={handleSelectCandidate}
+							/>
+						) : (
+							<CompareAndLink
+								candidate={selectedCandidate}
+								comparison={comparisonData as Record<string, unknown> | undefined}
+								isComparing={compareQuery.isFetching}
+								compareError={
+									compareQuery.error
+										? extractErrorMessage(compareQuery.error)
+										: null
+								}
+								priceConflict={priceConflict}
+								syncStock={syncStock}
+								onSyncStockChange={setSyncStock}
+								overrideDescription={overrideDescription}
+								onOverrideDescriptionChange={setOverrideDescription}
+								imageResolution={imageResolution}
+								onImageResolutionChange={setImageResolution}
+								skuResolution={skuResolution}
+								onSkuResolutionChange={setSkuResolution}
+								isLinking={linkMutation.isPending}
+								onLink={handleLink}
+								onBack={handleBackToList}
+							/>
+						)}
+					</ModalBody>
+					<ModalFooter>
+						<Button
+							variant='outline'
+							color='zinc'
+							size='sm'
+							onClick={handleCloseSearch}
+							aria-label='Cerrar'>
+							Cancelar
+						</Button>
+						<div />
+					</ModalFooter>
+				</Modal>
+
+				{/* ---- Unlink confirmation ---- */}
+				<Modal
+					isOpen={unlinkConfirmOpen}
+					setIsOpen={setUnlinkConfirmOpen}
+					size='sm'
+					isCentered>
+					<ModalHeader>
+						<div className='flex items-center gap-2'>
+							<Icon icon='HeroExclamationTriangle' className='h-5 w-5 text-red-500' />
+							Confirmar desvinculación
+						</div>
+					</ModalHeader>
+					<ModalBody>
+						<div className='rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-500/30 dark:bg-red-950/30'>
+							<p className='text-sm font-medium text-red-800 dark:text-red-200'>
+								¿Desvincular este producto de WooCommerce?
+							</p>
+							<p className='mt-1.5 text-sm text-red-700/80 dark:text-red-300/80'>
+								Se romperá la relación con WooCommerce. La ficha en la tienda no se
+								modificará ni eliminará.
+							</p>
+						</div>
+					</ModalBody>
+					<ModalFooter>
+						<Button
+							variant='outline'
+							color='zinc'
+							size='sm'
+							onClick={() => setUnlinkConfirmOpen(false)}
+							aria-label='Cancelar desvinculación'>
+							Cancelar
+						</Button>
+						<Button
+							variant='solid'
+							color='red'
+							size='sm'
+							icon='HeroLinkSlash'
+							onClick={() => void handleUnlink()}
+							isLoading={unlinkMutation.isPending}
+							isDisable={unlinkMutation.isPending}
+							aria-label='Confirmar desvinculación'>
+							Sí, desvincular
+						</Button>
+					</ModalFooter>
+				</Modal>
+			</CardBody>
+		</Card>
+	);
+};
+
+// ============================================================================
+// Sub-component: Candidates list with search
+// ============================================================================
+
+interface CandidatesListProps {
+	candidates: WooCandidate[];
+	isLoading: boolean;
+	isError: boolean;
+	errorMessage?: string;
+	searchTerm: string;
+	onSearchChange: (term: string) => void;
+	onSearchSubmit: (e: React.FormEvent) => void;
+	onSelect: (candidate: WooCandidate) => void;
+}
+
+const CandidatesList: React.FC<CandidatesListProps> = ({
+	candidates,
+	isLoading,
+	isError,
+	errorMessage,
+	searchTerm,
+	onSearchChange,
+	onSearchSubmit,
+	onSelect,
+}) => (
+	<div className='space-y-4'>
+		<form onSubmit={onSearchSubmit} className='flex gap-2'>
+			<div className='flex-1'>
+				<Input
+					id='woo-search'
+					name='woo-search'
+					type='text'
+					placeholder='Buscar por nombre o SKU…'
+					value={searchTerm}
+					onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+						onSearchChange(e.target.value)
+					}
+					aria-label='Buscar productos en WooCommerce'
+				/>
+			</div>
+			<Button
+				type='submit'
+				variant='solid'
+				color='blue'
+				size='default'
+				icon='HeroMagnifyingGlass'
+				isDisable={isLoading}
+				aria-label='Ejecutar búsqueda'>
+				Buscar
+			</Button>
+		</form>
+
+		{isError && (
+			<div className='rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-700 dark:border-red-500/30 dark:bg-red-950/30 dark:text-red-300'>
+				<Icon icon='HeroExclamationCircle' className='mr-1.5 inline h-4 w-4' />
+				{errorMessage || 'Error al buscar candidatos en WooCommerce'}
+			</div>
+		)}
+
+		{isLoading && (
+			<div className='flex items-center justify-center py-8'>
+				<Icon icon='HeroArrowPath' className='mr-2 h-5 w-5 animate-spin text-violet-500' />
+				<span className='text-sm text-neutral-500'>Buscando en WooCommerce…</span>
+			</div>
+		)}
+
+		{!isLoading && !isError && candidates.length === 0 && (
+			<div className='rounded-lg border border-dashed border-neutral-300 p-8 text-center dark:border-neutral-600'>
+				<Icon
+					icon='HeroInbox'
+					className='mx-auto mb-2 h-10 w-10 text-neutral-300 dark:text-neutral-600'
+				/>
+				<p className='text-sm font-medium text-neutral-500 dark:text-neutral-400'>
+					No se encontraron productos en WooCommerce
+				</p>
+				<p className='mt-1 text-xs text-neutral-400 dark:text-neutral-500'>
+					Prueba con otro nombre o SKU.
+				</p>
+				<div className='mx-auto mt-3 max-w-sm rounded-md border border-blue-200 bg-blue-50 p-2.5 text-left dark:border-blue-500/30 dark:bg-blue-950/30'>
+					<p className='text-xs font-medium text-blue-700 dark:text-blue-300'>
+						<Icon icon='HeroLightBulb' className='mr-1 inline h-3.5 w-3.5' />
+						Si el producto aún no existe en WooCommerce, usa la sección
+						&quot;Publicación en tienda&quot; para crearlo primero.
+					</p>
+				</div>
+			</div>
+		)}
+
+		{!isLoading && candidates.length > 0 && (
+			<>
+				<p className='text-xs font-medium text-neutral-500 dark:text-neutral-400'>
+					{candidates.length} resultado{candidates.length !== 1 ? 's' : ''} encontrado
+					{candidates.length !== 1 ? 's' : ''}
+				</p>
+
+				{/* Desktop table */}
+				<div className='hidden overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700 md:block'>
+					<table
+						className='w-full text-sm'
+						role='grid'
+						aria-label='Candidatos de WooCommerce'>
+						<thead className='bg-neutral-100 dark:bg-neutral-800'>
+							<tr className='text-left text-xs uppercase tracking-wider text-neutral-600 dark:text-neutral-300'>
+								<th className='px-3 py-2.5'>Producto</th>
+								<th className='px-3 py-2.5'>SKU</th>
+								<th className='px-3 py-2.5 text-right'>Precio</th>
+								<th className='px-3 py-2.5 text-right'>Stock</th>
+								<th className='px-3 py-2.5 text-center'>Estado</th>
+								<th className='px-3 py-2.5 text-center'>Acción</th>
+							</tr>
+						</thead>
+						<tbody>
+							{candidates.map((c, idx) => (
+								<tr
+									key={c.id ?? c.sku ?? idx}
+									className='border-t border-neutral-200 transition-colors hover:bg-blue-50/40 dark:border-neutral-700 dark:hover:bg-blue-950/20'>
+									<td className='max-w-[200px] truncate px-3 py-2.5 font-medium text-neutral-800 dark:text-neutral-100'>
+										{c.name}
+									</td>
+									<td className='px-3 py-2.5 font-mono text-xs text-neutral-600 dark:text-neutral-400'>
+										{c.sku || '—'}
+									</td>
+									<td className='px-3 py-2.5 text-right text-neutral-700 dark:text-neutral-300'>
+										{formatPrice(c.price)}
+									</td>
+									<td className='px-3 py-2.5 text-right text-neutral-700 dark:text-neutral-300'>
+										{c.stock_quantity ?? '—'}
+									</td>
+									<td className='px-3 py-2.5 text-center'>
+										{c.already_linked ? (
+											<Badge color='amber' variant='solid'>
+												Ocupado
+											</Badge>
+										) : (
+											<Badge color='emerald' variant='solid'>
+												Disponible
+											</Badge>
+										)}
+									</td>
+									<td className='px-3 py-2.5 text-center'>
+										<Tooltip
+											text={
+												c.already_linked
+													? 'Este producto ya está vinculado a otro producto del ERP'
+													: 'Seleccionar para comparar y vincular'
+											}>
+											<Button
+												variant={c.already_linked ? 'outline' : 'solid'}
+												color={c.already_linked ? 'zinc' : 'violet'}
+												size='xs'
+												icon='HeroLink'
+												onClick={() => onSelect(c)}
+												isDisable={c.already_linked}
+												aria-label={`Seleccionar ${c.name}`}>
+												Seleccionar
+											</Button>
+										</Tooltip>
+									</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</div>
+
+				{/* Mobile cards */}
+				<div className='space-y-2 md:hidden'>
+					{candidates.map((c, idx) => (
+						<div
+							key={c.id ?? c.sku ?? idx}
+							className='rounded-lg border border-neutral-200 bg-white p-3 dark:border-neutral-700 dark:bg-neutral-800/50'>
+							<div className='mb-2 flex items-start justify-between gap-2'>
+								<div className='min-w-0 flex-1'>
+									<p className='truncate text-sm font-semibold text-neutral-800 dark:text-neutral-100'>
+										{c.name}
+									</p>
+									<p className='font-mono text-xs text-neutral-500 dark:text-neutral-400'>
+										SKU: {c.sku || '—'}
+									</p>
+								</div>
+								{c.already_linked ? (
+									<Badge color='amber' variant='solid'>
+										Ocupado
+									</Badge>
+								) : (
+									<Badge color='emerald' variant='solid'>
+										Disponible
+									</Badge>
+								)}
+							</div>
+							<div className='mb-3 grid grid-cols-2 gap-2 rounded-md border border-neutral-100 bg-neutral-50 p-2 text-xs dark:border-neutral-700 dark:bg-neutral-800'>
+								<div>
+									<span className='text-neutral-400 dark:text-neutral-500'>
+										Precio
+									</span>
+									<p className='font-medium text-neutral-700 dark:text-neutral-200'>
+										{formatPrice(c.price)}
+									</p>
+								</div>
+								<div>
+									<span className='text-neutral-400 dark:text-neutral-500'>
+										Stock
+									</span>
+									<p className='font-medium text-neutral-700 dark:text-neutral-200'>
+										{c.stock_quantity ?? '—'}
+									</p>
+								</div>
+							</div>
+							<Button
+								variant={c.already_linked ? 'outline' : 'solid'}
+								color={c.already_linked ? 'zinc' : 'violet'}
+								size='xs'
+								icon='HeroLink'
+								className='w-full'
+								onClick={() => onSelect(c)}
+								isDisable={c.already_linked}
+								aria-label={`Seleccionar ${c.name}`}>
+								Seleccionar
+							</Button>
+						</div>
+					))}
+				</div>
+			</>
+		)}
+	</div>
+);
+
+// ============================================================================
+// Sub-component: Compare & Link view
+// ============================================================================
+
+interface CompareAndLinkProps {
+	candidate: WooCandidate;
+	comparison: Record<string, unknown> | undefined;
+	isComparing: boolean;
+	compareError: string | null;
+	priceConflict: {
+		erp_price: string | number | null;
+		woo_price: string | number | null;
+	} | null;
+	syncStock: boolean;
+	onSyncStockChange: (val: boolean) => void;
+	overrideDescription: boolean;
+	onOverrideDescriptionChange: (val: boolean) => void;
+	imageResolution: WooImageResolution;
+	onImageResolutionChange: (val: WooImageResolution) => void;
+	skuResolution: WooSkuResolution | null;
+	onSkuResolutionChange: (val: WooSkuResolution) => void;
+	isLinking: boolean;
+	onLink: (priceResolution?: 'keep_erp' | 'keep_woo') => void;
+	onBack: () => void;
+}
+
+const CompareAndLink: React.FC<CompareAndLinkProps> = ({
+	candidate,
+	comparison,
+	isComparing,
+	compareError,
+	priceConflict,
+	syncStock,
+	onSyncStockChange,
+	overrideDescription,
+	onOverrideDescriptionChange,
+	imageResolution,
+	onImageResolutionChange,
+	skuResolution,
+	onSkuResolutionChange,
+	isLinking,
+	onLink,
+	onBack,
+}) => {
+	const comp = comparison as
+		| {
+				erp?: { name?: string; sku?: string; price?: string | number | null };
+				woo?: { name?: string; sku?: string; price?: string | number | null };
+				prices_match?: boolean;
+				needs_sku_decision?: boolean;
+				already_linked?: boolean;
+		  }
+		| undefined;
+
+	const pricesAreEqual =
+		comp != null
+			? pricesMatch(comp.erp?.price, comp.woo?.price, comp.prices_match ?? false)
+			: true;
+
+	const hasPriceConflict = priceConflict != null || (comp != null && !pricesAreEqual);
+	const conflictErpPrice = priceConflict?.erp_price ?? comp?.erp?.price ?? null;
+	const conflictWooPrice = priceConflict?.woo_price ?? comp?.woo?.price ?? null;
+
+	// El backend indica cuándo el SKU necesita una decisión consciente (difieren).
+	const needsSkuDecision = comp?.needs_sku_decision === true;
+	// Con decisión de SKU pendiente y sin elegir, se bloquea la vinculación.
+	const skuDecisionPending = needsSkuDecision && skuResolution == null;
+
+	return (
+		<div className='space-y-4'>
+			<button
+				type='button'
+				onClick={onBack}
+				className='inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-violet-600 transition-colors hover:bg-violet-50 dark:text-violet-400 dark:hover:bg-violet-950/30'
+				aria-label='Volver a la lista de candidatos'>
+				<Icon icon='HeroArrowLeft' className='h-4 w-4' />
+				Volver a resultados
+			</button>
+
+			{/* Selected candidate summary */}
+			<div className='rounded-lg border border-violet-300 bg-violet-50 p-4 dark:border-violet-500/30 dark:bg-violet-950/30'>
+				<div className='mb-1 flex items-center gap-2'>
+					<Icon icon='HeroShoppingBag' className='h-4 w-4 text-violet-500' />
+					<span className='text-xs font-bold uppercase tracking-wider text-violet-600 dark:text-violet-400'>
+						Producto seleccionado de WooCommerce
+					</span>
+				</div>
+				<p className='mt-1.5 text-sm font-semibold text-neutral-900 dark:text-neutral-50'>
+					{candidate.name}
+				</p>
+				<div className='mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs'>
+					{candidate.id != null && (
+						<span className='text-neutral-600 dark:text-neutral-300'>
+							ID: <span className='font-mono font-bold'>#{candidate.id}</span>
+						</span>
+					)}
+					<span className='text-neutral-600 dark:text-neutral-300'>
+						SKU: <span className='font-mono font-bold'>{candidate.sku || '—'}</span>
+					</span>
+					<span className='text-neutral-600 dark:text-neutral-300'>
+						Precio: <span className='font-bold'>{formatPrice(candidate.price)}</span>
+					</span>
+				</div>
+			</div>
+
+			{/* Comparison loading */}
+			{isComparing && (
+				<div className='flex items-center justify-center py-6'>
+					<Icon
+						icon='HeroArrowPath'
+						className='mr-2 h-5 w-5 animate-spin text-violet-500'
+					/>
+					<span className='text-sm text-neutral-500'>Comparando datos…</span>
+				</div>
+			)}
+
+			{compareError && (
+				<div className='rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-700 dark:border-red-500/30 dark:bg-red-950/30 dark:text-red-300'>
+					<Icon icon='HeroExclamationCircle' className='mr-1.5 inline h-4 w-4' />
+					{compareError}
+				</div>
+			)}
+
+			{comp && !isComparing && (
+				<>
+					{/* Comparison table */}
+					<div>
+						<p className='mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400'>
+							<Icon icon='HeroArrowsRightLeft' className='h-3.5 w-3.5' />
+							Comparación de datos
+						</p>
+						<div className='overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700'>
+							<table
+								className='w-full text-sm'
+								aria-label='Comparación ERP vs WooCommerce'>
+								<thead className='bg-neutral-100 dark:bg-neutral-800'>
+									<tr className='text-left text-xs uppercase tracking-wider text-neutral-600 dark:text-neutral-300'>
+										<th className='px-3 py-2.5'>Campo</th>
+										<th className='px-3 py-2.5'>
+											<span className='inline-flex items-center gap-1'>
+												<span className='inline-block h-2 w-2 rounded-full bg-blue-500' />
+												ERP
+											</span>
+										</th>
+										<th className='px-3 py-2.5'>
+											<span className='inline-flex items-center gap-1'>
+												<span className='inline-block h-2 w-2 rounded-full bg-violet-500' />
+												WooCommerce
+											</span>
+										</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr className='border-t border-neutral-200 dark:border-neutral-700'>
+										<td className='px-3 py-2.5 font-medium text-neutral-700 dark:text-neutral-200'>
+											Nombre
+										</td>
+										<td className='px-3 py-2.5 text-neutral-600 dark:text-neutral-300'>
+											{comp.erp?.name ?? '—'}
+										</td>
+										<td className='px-3 py-2.5 text-neutral-600 dark:text-neutral-300'>
+											{comp.woo?.name ?? '—'}
+										</td>
+									</tr>
+									<tr className='border-t border-neutral-200 dark:border-neutral-700'>
+										<td className='px-3 py-2.5 font-medium text-neutral-700 dark:text-neutral-200'>
+											SKU
+										</td>
+										<td className='px-3 py-2.5 font-mono text-xs text-neutral-600 dark:text-neutral-300'>
+											{comp.erp?.sku ?? '—'}
+										</td>
+										<td
+											className={`px-3 py-2.5 font-mono text-xs ${needsSkuDecision ? 'font-bold text-amber-600 dark:text-amber-400' : 'text-neutral-600 dark:text-neutral-300'}`}>
+											{comp.woo?.sku ?? '—'}
+											{needsSkuDecision && (
+												<Badge
+													color='amber'
+													variant='solid'
+													className='ml-2 font-sans'>
+													Difiere
+												</Badge>
+											)}
+										</td>
+									</tr>
+									<tr className='border-t border-neutral-200 dark:border-neutral-700'>
+										<td className='px-3 py-2.5 font-medium text-neutral-700 dark:text-neutral-200'>
+											Precio
+										</td>
+										<td className='px-3 py-2.5 text-neutral-600 dark:text-neutral-300'>
+											{formatPrice(comp.erp?.price)}
+										</td>
+										<td
+											className={`px-3 py-2.5 ${!pricesAreEqual ? 'font-bold text-amber-600 dark:text-amber-400' : 'text-neutral-600 dark:text-neutral-300'}`}>
+											{formatPrice(comp.woo?.price)}
+											{!pricesAreEqual && (
+												<Badge
+													color='amber'
+													variant='solid'
+													className='ml-2'>
+													Difiere
+												</Badge>
+											)}
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+
+					{comp.already_linked && (
+						<div className='rounded-lg border border-amber-300 bg-amber-50 p-3 dark:border-amber-500/30 dark:bg-amber-950/30'>
+							<div className='flex items-start gap-2'>
+								<Icon
+									icon='HeroExclamationTriangle'
+									className='mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600 dark:text-amber-400'
+								/>
+								<p className='text-sm font-medium text-amber-800 dark:text-amber-200'>
+									Este producto de WooCommerce ya está vinculado a otro producto
+									del ERP.
+								</p>
+							</div>
+						</div>
+					)}
+				</>
+			)}
+
+			{/* SKU decision (conscious) — solo cuando el backend indica que difieren */}
+			{needsSkuDecision && (
+				<div className='rounded-lg border border-sky-300 bg-sky-50 p-4 dark:border-sky-500/30 dark:bg-sky-950/30'>
+					<div className='mb-3 flex items-start gap-2.5'>
+						<div className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-sky-500/20 dark:bg-sky-500/25'>
+							<Icon
+								icon='HeroTag'
+								className='h-4 w-4 text-sky-600 dark:text-sky-400'
+							/>
+						</div>
+						<div>
+							<p className='text-sm font-bold text-sky-800 dark:text-sky-200'>
+								Los SKU no coinciden
+							</p>
+							<p className='mt-0.5 text-xs text-sky-700 dark:text-sky-300'>
+								ERP: <span className='font-mono'>{comp?.erp?.sku ?? '—'}</span> vs
+								WooCommerce: <span className='font-mono'>{comp?.woo?.sku ?? '—'}</span>
+							</p>
+							<p className='mt-1.5 text-xs font-medium text-sky-800 dark:text-sky-200'>
+								Elige qué SKU mantener (para que coincidan y evitar errores lógicos):
+							</p>
+						</div>
+					</div>
+
+					<div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+						<Tooltip text='Conserva el SKU del ERP (no cambia en el ERP)'>
+							<Button
+								variant='solid'
+								color={skuResolution === 'keep_erp' ? 'blue' : 'zinc'}
+								size='sm'
+								icon={skuResolution === 'keep_erp' ? 'HeroCheckCircle' : 'HeroCircleStack'}
+								onClick={() => onSkuResolutionChange('keep_erp')}
+								isDisable={isLinking}
+								className={`w-full transition-all ${
+									skuResolution === 'keep_erp'
+										? 'font-bold shadow-md ring-2 ring-blue-400 ring-offset-2 ring-offset-sky-50 dark:ring-offset-sky-950'
+										: 'opacity-70 hover:opacity-100'
+								}`}
+								aria-label='Mantener el SKU del ERP'>
+								{skuResolution === 'keep_erp'
+									? 'SKU del ERP ✓'
+									: 'Mantener SKU del ERP'}
+							</Button>
+						</Tooltip>
+						<Tooltip text='Adopta el SKU de WooCommerce en el ERP'>
+							<Button
+								variant='solid'
+								color={skuResolution === 'keep_woo' ? 'amber' : 'zinc'}
+								size='sm'
+								icon={skuResolution === 'keep_woo' ? 'HeroCheckCircle' : 'HeroShoppingBag'}
+								onClick={() => onSkuResolutionChange('keep_woo')}
+								isDisable={isLinking}
+								className={`w-full transition-all ${
+									skuResolution === 'keep_woo'
+										? 'font-bold shadow-md ring-2 ring-amber-400 ring-offset-2 ring-offset-sky-50 dark:ring-offset-sky-950'
+										: 'opacity-70 hover:opacity-100'
+								}`}
+								aria-label='Usar el SKU de WooCommerce'>
+								{skuResolution === 'keep_woo'
+									? 'SKU de WooCommerce ✓'
+									: 'Usar SKU de WooCommerce'}
+							</Button>
+						</Tooltip>
+					</div>
+					{skuDecisionPending && (
+						<p className='mt-2 text-xs font-medium text-sky-700 dark:text-sky-300'>
+							Elige una opción de SKU para poder vincular.
+						</p>
+					)}
+				</div>
+			)}
+
+			{/* Price conflict resolution (from compare or link 409) */}
+			{hasPriceConflict && (
+				<div className='rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-950/30'>
+					<div className='mb-3 flex items-start gap-2.5'>
+						<div className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-amber-500/20 dark:bg-amber-500/25'>
+							<Icon
+								icon='HeroExclamationTriangle'
+								className='h-4 w-4 text-amber-600 dark:text-amber-400'
+							/>
+						</div>
+						<div>
+							<p className='text-sm font-bold text-amber-800 dark:text-amber-200'>
+								Conflicto de precios
+							</p>
+							<p className='mt-0.5 text-xs text-amber-700 dark:text-amber-300'>
+								ERP: {formatPrice(conflictErpPrice)} vs WooCommerce:{' '}
+								{formatPrice(conflictWooPrice)}
+							</p>
+							<p className='mt-1.5 text-xs font-medium text-amber-800 dark:text-amber-200'>
+								Elige qué precio mantener:
+							</p>
+						</div>
+					</div>
+
+					<div className='grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-2'>
+						<div className='rounded-lg border border-amber-200/70 bg-white/60 p-3 dark:border-amber-500/20 dark:bg-neutral-900/40'>
+							<Checkbox
+								id='woo_link_sync_stock_conflict'
+								name='woo_link_sync_stock_conflict'
+								checked={syncStock}
+								onChange={() => onSyncStockChange(!syncStock)}
+								disabled={isLinking}
+								dimension='sm'
+								label='Sincronizar stock ERP → WooCommerce al vincular'
+							/>
+							<p className='mt-1 pl-6 text-xs text-neutral-500 dark:text-neutral-400'>
+								El stock del ERP se enviará a la tienda al vincular.
+							</p>
+						</div>
+
+						<div className='rounded-lg border border-amber-200/70 bg-white/60 p-3 dark:border-amber-500/20 dark:bg-neutral-900/40'>
+							<Checkbox
+								id='woo_link_override_desc_conflict'
+								name='woo_link_override_desc_conflict'
+								checked={overrideDescription}
+								onChange={() => onOverrideDescriptionChange(!overrideDescription)}
+								disabled={isLinking}
+								dimension='sm'
+								label='Importar la descripción de WooCommerce al ERP'
+							/>
+							<p className='mt-1 pl-6 text-xs text-neutral-500 dark:text-neutral-400'>
+								Trae la descripción ya trabajada en la tienda hacia el ERP para no
+								romperla.
+							</p>
+						</div>
+
+						<div className='rounded-lg border border-amber-200/70 bg-white/60 p-3 dark:border-amber-500/20 dark:bg-neutral-900/40'>
+							<p className='mb-1.5 text-sm font-medium text-neutral-700 dark:text-neutral-200'>
+								Resolución de imagen
+							</p>
+							<div className='flex gap-2'>
+								<Button
+									variant={imageResolution === 'keep_woo' ? 'solid' : 'outline'}
+									color={imageResolution === 'keep_woo' ? 'violet' : 'zinc'}
+									size='xs'
+									onClick={() => onImageResolutionChange('keep_woo')}
+									isDisable={isLinking}
+									aria-label='Mantener imagen de WooCommerce'>
+									Usar imagen Woo
+								</Button>
+								<Button
+									variant={imageResolution === 'keep_erp' ? 'solid' : 'outline'}
+									color={imageResolution === 'keep_erp' ? 'blue' : 'zinc'}
+									size='xs'
+									onClick={() => onImageResolutionChange('keep_erp')}
+									isDisable={isLinking}
+									aria-label='Mantener imagen del ERP'>
+									Usar imagen ERP
+								</Button>
+							</div>
+							<p className='mt-1 text-xs text-neutral-500 dark:text-neutral-400'>
+								Si ambos tienen imagen, ¿cuál conservar? Por defecto usa la de WooCommerce.
+							</p>
+						</div>
+					</div>
+
+					<div className='mt-4 grid grid-cols-1 gap-3 border-t border-amber-200/60 pt-3 dark:border-amber-500/20 sm:grid-cols-2'>
+						<Tooltip text='Conserva el precio del ERP y actualiza WooCommerce'>
+							<Button
+								variant='solid'
+								color='blue'
+								size='sm'
+								icon='HeroArrowUpTray'
+								onClick={() => onLink('keep_erp')}
+								isDisable={isLinking || skuDecisionPending}
+								isLoading={isLinking}
+								className='w-full'
+								aria-label='Mantener precio del ERP'>
+								Usar precio ERP
+							</Button>
+						</Tooltip>
+						<Tooltip text='Adopta el precio de WooCommerce en el ERP'>
+							<Button
+								variant='solid'
+								color='amber'
+								size='sm'
+								icon='HeroArrowDownTray'
+								onClick={() => onLink('keep_woo')}
+								isDisable={isLinking || skuDecisionPending}
+								isLoading={isLinking}
+								className='w-full'
+								aria-label='Mantener precio de WooCommerce'>
+								Usar precio WooCommerce
+							</Button>
+						</Tooltip>
+					</div>
+				</div>
+			)}
+
+			{/* Link options & button (only when prices match) */}
+			{!hasPriceConflict && (
+				<div className='space-y-4 rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-800/50'>
+					<p className='text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400'>
+						Opciones de vinculación
+					</p>
+
+					<div className='grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-2'>
+						<div className='rounded-lg border border-neutral-100 bg-neutral-50/60 p-3 dark:border-neutral-800 dark:bg-neutral-900/40'>
+							<Checkbox
+								id='woo_link_sync_stock'
+								name='woo_link_sync_stock'
+								checked={syncStock}
+								onChange={() => onSyncStockChange(!syncStock)}
+								disabled={isLinking}
+								dimension='sm'
+								label='Sincronizar stock ERP → WooCommerce al vincular'
+							/>
+							<p className='mt-1 pl-6 text-xs text-neutral-500 dark:text-neutral-400'>
+								El stock del ERP se enviará a la tienda al vincular.
+							</p>
+						</div>
+
+						<div className='rounded-lg border border-neutral-100 bg-neutral-50/60 p-3 dark:border-neutral-800 dark:bg-neutral-900/40'>
+							<Checkbox
+								id='woo_link_override_desc'
+								name='woo_link_override_desc'
+								checked={overrideDescription}
+								onChange={() => onOverrideDescriptionChange(!overrideDescription)}
+								disabled={isLinking}
+								dimension='sm'
+								label='Importar la descripción de WooCommerce al ERP'
+							/>
+							<p className='mt-1 pl-6 text-xs text-neutral-500 dark:text-neutral-400'>
+								Trae la descripción ya trabajada en la tienda hacia el ERP para no
+								romperla.
+							</p>
+						</div>
+
+						<div className='rounded-lg border border-neutral-100 bg-neutral-50/60 p-3 dark:border-neutral-800 dark:bg-neutral-900/40'>
+							<p className='mb-1.5 text-sm font-medium text-neutral-700 dark:text-neutral-200'>
+								Resolución de imagen
+							</p>
+							<div className='flex gap-2'>
+								<Button
+									variant={imageResolution === 'keep_woo' ? 'solid' : 'outline'}
+									color={imageResolution === 'keep_woo' ? 'violet' : 'zinc'}
+									size='xs'
+									onClick={() => onImageResolutionChange('keep_woo')}
+									isDisable={isLinking}
+									aria-label='Mantener imagen de WooCommerce'>
+									Usar imagen Woo
+								</Button>
+								<Button
+									variant={imageResolution === 'keep_erp' ? 'solid' : 'outline'}
+									color={imageResolution === 'keep_erp' ? 'blue' : 'zinc'}
+									size='xs'
+									onClick={() => onImageResolutionChange('keep_erp')}
+									isDisable={isLinking}
+									aria-label='Mantener imagen del ERP'>
+									Usar imagen ERP
+								</Button>
+							</div>
+							<p className='mt-1 text-xs text-neutral-500 dark:text-neutral-400'>
+								Si ambos tienen imagen, ¿cuál conservar? Por defecto usa la de WooCommerce.
+							</p>
+						</div>
+					</div>
+
+					<div className='flex justify-end border-t border-neutral-100 pt-3 dark:border-neutral-800'>
+						<Tooltip text='Establece el vínculo entre este producto del ERP y el seleccionado de WooCommerce'>
+							<Button
+								variant='solid'
+								color='emerald'
+								size='sm'
+								icon='HeroLink'
+								onClick={() => onLink()}
+								isDisable={isLinking || isComparing || !!comp?.already_linked}
+								isLoading={isLinking}
+								aria-label='Vincular producto'>
+								Vincular producto
+							</Button>
+						</Tooltip>
+					</div>
+				</div>
+			)}
+		</div>
+	);
+};
+
+export default WooManualLinkPanel;

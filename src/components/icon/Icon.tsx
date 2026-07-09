@@ -123,35 +123,52 @@ const Icon = forwardRef<HTMLSpanElement, IIconProps>((props, ref) => {
 
 		const iconToLoad = resolveIconLoader(IconName);
 		if (!iconToLoad) {
+			// El nombre no tiene archivo asociado: es un "missing" real y
+			// permanente (sí conviene cachearlo para no reintentar en balde).
 			missingIconCache.add(IconName);
 			setResolvedIcon(null);
 			return;
 		}
 
 		let isMounted = true;
+		let retryTimer: ReturnType<typeof setTimeout> | undefined;
 		setResolvedIcon(null);
 
-		iconToLoad
-			.loader()
-			.then((module) => {
-				if (!isMounted) return;
+		const load = (attempt: number) => {
+			iconToLoad
+				.loader()
+				.then((module) => {
+					if (!isMounted) return;
 
-				const nextIcon = {
-					component: module.default,
-					kind: iconToLoad.kind,
-				};
+					const nextIcon = {
+						component: module.default,
+						kind: iconToLoad.kind,
+					};
 
-				iconCache.set(IconName, nextIcon);
-				setResolvedIcon(nextIcon);
-			})
-			.catch(() => {
-				if (!isMounted) return;
-				missingIconCache.add(IconName);
-				setResolvedIcon(null);
-			});
+					iconCache.set(IconName, nextIcon);
+					setResolvedIcon(nextIcon);
+				})
+				.catch(() => {
+					if (!isMounted) return;
+					// El archivo existe (resolveIconLoader lo encontró), así que un
+					// fallo aquí es transitorio (p.ej. chunk 504 en dev). NO lo
+					// marcamos como inexistente para no ocultarlo el resto de la
+					// sesión; reintentamos con un backoff corto.
+					if (attempt < 2) {
+						retryTimer = setTimeout(() => {
+							if (isMounted) load(attempt + 1);
+						}, 150 * (attempt + 1));
+						return;
+					}
+					setResolvedIcon(null);
+				});
+		};
+
+		load(0);
 
 		return () => {
 			isMounted = false;
+			if (retryTimer) clearTimeout(retryTimer);
 		};
 	}, [IconName]);
 

@@ -21,7 +21,7 @@ import Modal, {
 } from '@/components/ui/Modal';
 import Icon from '@/components/icon/Icon';
 
-const ImportOrdersPage: React.FC = () => {
+export const ImportOrdersContent: React.FC = () => {
 	const dispatch = useAppDispatch();
 	const subsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
 	const { integrations } = useAppSelector((state) => state.integrations);
@@ -110,7 +110,7 @@ const ImportOrdersPage: React.FC = () => {
 	const confirmationIsValid = confirmationText.trim().toLowerCase() === 'confirmar';
 
 	return (
-		<PageWrapper name='Importar Órdenes'>
+		<>
 			<Subheader>
 				<SubheaderLeft>
 					<span className='text-2xl font-semibold'>Importar Órdenes de WooCommerce</span>
@@ -377,6 +377,7 @@ const ImportOrdersPage: React.FC = () => {
 					<ModalFooterChild>
 						<Button
 							variant='outline'
+							color='red'
 							icon='HeroXMark'
 							onClick={() => setIsConfirmationModalOpen(false)}
 							disabled={importingBulk}>
@@ -386,7 +387,6 @@ const ImportOrdersPage: React.FC = () => {
 					<ModalFooterChild>
 						<Button
 							variant='solid'
-							color='yellow'
 							icon='HeroArrowDownTray'
 							onClick={() => {
 								setIsConfirmationModalOpen(false);
@@ -399,8 +399,14 @@ const ImportOrdersPage: React.FC = () => {
 					</ModalFooterChild>
 				</ModalFooter>
 			</Modal>
-		</PageWrapper>
+		</>
 	);
 };
+
+const ImportOrdersPage: React.FC = () => (
+	<PageWrapper name='Importar Órdenes'>
+		<ImportOrdersContent />
+	</PageWrapper>
+);
 
 export default ImportOrdersPage;

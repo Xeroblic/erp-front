@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
@@ -6,6 +6,7 @@ import Badge from '@/components/ui/Badge';
 import Card, { CardBody, CardHeader, CardTitle, CardHeaderChild } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
+import Tooltip from '@/components/ui/Tooltip';
 import {
 	ProductsTable,
 	WorkspaceTable,
@@ -41,8 +42,13 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 
 	const isDetailVisible = selectedProduct !== null && !isWorkspaceOpen;
 
+	const workspaceProductIds = useMemo(
+		() => new Set(workItems.map((item) => item.productId)),
+		[workItems],
+	);
+
 	return (
-		<PageWrapper>
+		<PageWrapper title='Ajuste Stock' name='Admin Stock' isProtectedRoute={true}>
 			<Subheader>
 				<SubheaderLeft>
 					<div className='flex items-center space-x-3'>
@@ -58,21 +64,25 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 					</div>
 				</SubheaderLeft>
 				<SubheaderRight>
-					<Button
-						color='blue'
-						variant='solid'
-						icon='HeroPlus'
-						onClick={actions.openQuickProductModal}>
-						Crear Producto Exprés
-					</Button>
-					{isWorkspaceOpen && (
+					<Tooltip text='Crear un producto nuevo sin salir de esta pantalla'>
 						<Button
-							color='red'
-							variant='outline'
-							onClick={actions.handleClearWorkspace}>
-							<Icon icon='DuoClose' className='mr-1 h-4 w-4' />
-							Cerrar zona de ajuste
+							color='blue'
+							variant='solid'
+							icon='HeroPlus'
+							onClick={actions.openQuickProductModal}>
+							Crear Producto Exprés
 						</Button>
+					</Tooltip>
+					{isWorkspaceOpen && (
+						<Tooltip text='Cerrar la zona de ajuste y descartar los productos en proceso'>
+							<Button
+								color='red'
+								variant='solid'
+								icon='HeroXMark'
+								onClick={actions.handleClearWorkspace}>
+								Cerrar zona de ajuste
+							</Button>
+						</Tooltip>
 					)}
 				</SubheaderRight>
 			</Subheader>
@@ -98,9 +108,7 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 						<p className='text-center text-red-500'>Error: {productsError}</p>
 					)}
 
-					{/* ─── Grid Principal: Catálogo + Detalle ─── */}
 					<div className='grid grid-cols-1 gap-6 lg:grid-cols-12'>
-						{/* COLUMNA IZQUIERDA: Catálogo de Productos */}
 						<div
 							className={`col-span-1 transition-all duration-300 ${
 								isDetailVisible ? 'lg:col-span-7' : 'lg:col-span-12'
@@ -121,6 +129,7 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 										products={productRows}
 										loading={isLoadingProducts}
 										onSelectProduct={actions.handleAddProduct}
+										selectedProductIds={workspaceProductIds}
 									/>
 								</CardBody>
 							</Card>
@@ -149,29 +158,43 @@ export const IngresoStockView: React.FC<IngresoStockViewProps> = ({ logic }) => 
 								<Card className='h-full'>
 									<CardHeader>
 										<CardHeaderChild>
-											<CardTitle>Zona de Trabajo</CardTitle>
-											<Badge variant='outline'>
-												{workItems.length} producto
-												{workItems.length === 1 ? '' : 's'}
-											</Badge>
+											<div>
+												<div className='flex items-center gap-2'>
+													<CardTitle>Zona de Trabajo</CardTitle>
+													<Badge variant='outline'>
+														{workItems.length} producto
+														{workItems.length === 1 ? '' : 's'}
+													</Badge>
+												</div>
+												<p className='mt-1 text-xs text-zinc-500'>
+													Ajusta la cantidad de cada producto y luego confirma con
+													"Procesar Ajuste".
+												</p>
+											</div>
 										</CardHeaderChild>
 										<CardHeaderChild>
 											{workItems.length > 0 && (
-												<Button
-													color='red'
-													variant='outline'
-													onClick={actions.handleClearWorkspace}
-													className='mr-2'>
-													Limpiar
-												</Button>
+												<Tooltip text='Quitar todos los productos de la zona de trabajo'>
+													<Button
+														color='red'
+														variant='solid'
+														icon='HeroTrash'
+														onClick={actions.handleClearWorkspace}
+														className='mr-2'>
+														Limpiar
+													</Button>
+												</Tooltip>
 											)}
-											<Button
-												color='amber'
-												variant='solid'
-												isDisable={workItems.length === 0}
-												onClick={actions.openAdjustmentModal}>
-												Procesar Ajuste
-											</Button>
+											<Tooltip text='Revisar y confirmar el ajuste de stock de los productos en la zona'>
+												<Button
+													color='emerald'
+													variant='solid'
+													icon='HeroCheckCircle'
+													isDisable={workItems.length === 0}
+													onClick={actions.openAdjustmentModal}>
+													Procesar Ajuste
+												</Button>
+											</Tooltip>
 										</CardHeaderChild>
 									</CardHeader>
 									<CardBody>

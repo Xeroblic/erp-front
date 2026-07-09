@@ -1,15 +1,8 @@
-/**
- * Tipos e interfaces para el módulo de Integraciones
- * Basado en la documentación oficial de la API
- */
-
 export type IntegrationProvider = 'woocommerce';
 export type IntegrationMode = 'webhook' | 'read' | 'read_write';
 export type ResolutionStatus = 'pending' | 'mapped' | 'ignored';
 
-/**
- * Integración - Recurso completo
- */
+
 export interface Integration {
 	id: string;
 	subsidiary_id: number;
@@ -17,6 +10,8 @@ export interface Integration {
 	provider: IntegrationProvider;
 	base_url: string;
 	mode: IntegrationMode;
+	/** Evento del webhook (p. ej. `order.created`, `product.updated`). */
+	event?: string | null;
 	is_active: boolean;
 	scopes: string[] | null;
 	allowed_ips: string[] | null;
@@ -33,23 +28,21 @@ export interface Integration {
 	updated_at: string;
 }
 
-/**
- * Payload para crear una integración
- */
 export interface CreateIntegrationPayload {
 	name: string;
 	provider: IntegrationProvider;
 	base_url: string;
 	mode: IntegrationMode;
+	/** Evento del webhook (requerido cuando `mode = webhook`). */
+	event?: string;
+	/** Alcances del webhook (p. ej. `["products"]` o `["orders"]`). */
+	scopes?: string[];
 	is_active: boolean;
-	consumer_key?: string; // Solo para modo REST
-	consumer_secret?: string; // Solo para modo REST
+	consumer_key?: string;
+	consumer_secret?: string;
 	[key: string]: any;
 }
 
-/**
- * Payload para editar una integración
- */
 export interface UpdateIntegrationPayload {
 	name?: string;
 	is_active?: boolean;
@@ -58,29 +51,20 @@ export interface UpdateIntegrationPayload {
 	[key: string]: any;
 }
 
-/**
- * Respuesta al crear una integración (incluye secretos one-time)
- */
 export interface CreateIntegrationResponse {
 	message: string;
 	data: Integration;
-	webhook_secret?: string; // Solo una vez
-	api_key?: string; // Solo una vez
+	webhook_secret?: string;
+	api_key?: string;
 }
 
-/**
- * Respuesta al editar con rotación
- */
 export interface UpdateIntegrationResponse {
 	message: string;
 	data: Integration;
-	webhook_secret?: string; // Solo si se rotó
-	api_key?: string; // Solo si se rotó
+	webhook_secret?: string;
+	api_key?: string;
 }
 
-/**
- * Producto no mapeado de WooCommerce
- */
 export interface UnmappedWooCommerceProduct {
 	id: number;
 	integration_id: string;
@@ -88,7 +72,6 @@ export interface UnmappedWooCommerceProduct {
 	external_line_id: string;
 	external_product_id: number;
 	external_variation_id: number | null;
-	// Alias para compatibilidad
 	woocommerce_product_id: number;
 	sku: string;
 	name: string;
@@ -120,18 +103,12 @@ export interface UnmappedWooCommerceProduct {
 	line_item_data: Record<string, any>;
 }
 
-/**
- * Payload para mapear un producto
- */
 export interface MapProductPayload {
 	erp_sku: string;
 	product_id?: number;
 	[key: string]: any;
 }
 
-/**
- * Venta importada desde WooCommerce
- */
 export interface WooCommerceSale {
 	id: number;
 	sale_number: string;
@@ -146,9 +123,6 @@ export interface WooCommerceSale {
 	created_at: string;
 }
 
-/**
- * Respuesta al verificar/importar orden
- */
 export interface CheckOrImportOrderResponse {
 	message: string;
 	exists: boolean;
@@ -156,9 +130,6 @@ export interface CheckOrImportOrderResponse {
 	sale: WooCommerceSale;
 }
 
-/**
- * Respuesta al importar órdenes faltantes
- */
 export interface ImportMissingOrdersResponse {
 	message: string;
 	result: {
@@ -168,9 +139,6 @@ export interface ImportMissingOrdersResponse {
 	};
 }
 
-/**
- * Respuesta al sincronizar stock
- */
 export interface SyncStockResponse {
 	message: string;
 	result: {
@@ -184,17 +152,11 @@ export interface SyncStockResponse {
 	};
 }
 
-/**
- * Payload para sincronizar stock
- */
 export interface SyncStockPayload {
 	skus?: string[];
 	[key: string]: any;
 }
 
-/**
- * Producto sincronizado ERP ↔ WooCommerce
- */
 export interface SyncedProduct {
 	id: number;
 	name: string;
@@ -210,18 +172,12 @@ export interface SyncedProduct {
 	synced_at: string;
 }
 
-/**
- * Parámetros de consulta para listado de integraciones
- */
 export interface IntegrationsQueryParams {
 	provider?: IntegrationProvider;
 	active?: boolean;
 	per_page?: number;
 }
 
-/**
- * Parámetros de consulta para productos no mapeados
- */
 export interface UnmappedProductsQueryParams {
 	status?: ResolutionStatus;
 	search?: string;
@@ -231,9 +187,6 @@ export interface UnmappedProductsQueryParams {
 	per_page?: number;
 }
 
-/**
- * Parámetros de consulta para productos mapeados
- */
 export interface MappedProductsQueryParams {
 	search?: string;
 	mapped_from?: string;
@@ -243,9 +196,6 @@ export interface MappedProductsQueryParams {
 	per_page?: number;
 }
 
-/**
- * Parámetros de consulta para productos sincronizados
- */
 export interface SyncedProductsQueryParams {
 	search?: string;
 	external_product_id?: number;
@@ -307,3 +257,319 @@ export interface ImportTermsStatus {
 export interface ImportTermsStatusQueryParams {
 	batch_id?: string;
 }
+
+/**
+ * Payload para deshacer una importación de términos (`POST /import-terms/undo`).
+ * `taxonomies` es opcional; si se omite, el backend deshace ambas.
+ */
+export interface UndoImportTermsPayload {
+	taxonomies?: WooTaxonomy[];
+}
+
+/** Término omitido al deshacer (por estar en uso) con el motivo. */
+export interface UndoImportTermsTermDetail {
+	id: number;
+	name: string;
+	/** `has_products` (tiene productos) · `has_children` (tiene subcategorías). */
+	reason: string;
+}
+
+/**
+ * Respuesta de deshacer importación de términos. Solo borra marcas/categorías que la
+ * integración creó y que hoy no están en uso; informa cuántas se borraron y cuántas se
+ * omitieron, con el detalle por taxonomía. (Forma verificada contra
+ * WooTermImportUndoService::undo.)
+ */
+export interface UndoImportTermsResponse {
+	message: string;
+	deleted: number;
+	skipped_in_use: number;
+	orphan_links_cleaned: number;
+	details: {
+		brands: UndoImportTermsTermDetail[];
+		categories: UndoImportTermsTermDetail[];
+	};
+	/** Presente solo en el 409 (hay una importación en progreso). */
+	batch_id?: string;
+}
+
+// ==================== WOOCOMMERCE — PRODUCTOS ====================
+
+/**
+ * Bloque `woocommerce` del producto sincronizado (#3 / quick-create).
+ */
+export interface WooProductWooMeta {
+	external_product_id: number | null;
+	external_variation_id: number | null;
+	integration_id: string | null;
+	published_at: string | null;
+	last_synced_at: string | null;
+	last_error_at: string | null;
+	last_error_msg: string | null;
+	name?: string | null;
+	sku?: string | null;
+	price?: number | string | null;
+	offer_price?: number | string | null;
+}
+
+/**
+ * Producto del ERP vinculado / publicado en WooCommerce (#3 Get Synced Products).
+ */
+export interface WooProduct {
+	id: number;
+	name: string;
+	sku: string;
+	commercial_sku?: string | null;
+	grade?: string | null;
+	branch_id?: number;
+	price?: number | string | null;
+	offer_price?: number | string | null;
+	sync_stock_with_woo?: boolean;
+	woocommerce?: WooProductWooMeta | null;
+	product_type?: string | null;
+	updated_at?: string;
+}
+
+/**
+ * Payload para la creación rápida de producto (#4).
+ * Registra el producto en el ERP y lo manda a publicar en Woo.
+ * NOTA: formato de `image` (URL/base64/multipart) a confirmar con backend; el
+ * formulario actual usa URL.
+ */
+export interface QuickProductPayload {
+	name: string;
+	sku: string;
+	price: number;
+	stock: number;
+	/** URL de imagen de internet; el backend la descarga y la deja cargada. */
+	image_url?: string;
+	short_description?: string;
+	long_description?: string;
+	brand_id?: number;
+	category_ids?: number[];
+	branch_id?: number;
+	sync_stock_with_woo?: boolean;
+}
+
+/**
+ * Respuesta de la creación rápida de producto.
+ */
+export interface QuickProductResponse {
+	message: string;
+	data?: WooProduct;
+}
+
+/**
+ * Body opcional compartido por publicar/despublicar/sincronizar (#5,#6,#8,#9,#10).
+ */
+export interface WooSyncStockPayload {
+	sync_stock_with_woo?: boolean;
+}
+
+/**
+ * Respuesta de publicar/despublicar un producto (#5,#6).
+ */
+export interface WooProductActionResponse {
+	message: string;
+	data?: WooProduct;
+}
+
+/**
+ * Lado local (ERP) del diagnóstico (#7).
+ */
+export interface WooRemoteLocalState {
+	external_product_id: number | null;
+	external_variation_id: number | null;
+	integration_id: string | null;
+	sync_stock_with_woo: boolean;
+	price: number | null;
+	stock: number | null;
+}
+
+/**
+ * Lado remoto (WooCommerce) del diagnóstico (#7). Es `null` si el producto
+ * no está vinculado o no se encontró en la tienda.
+ */
+export interface WooRemoteRemoteState {
+	id: number;
+	status: string | null;
+	price: string | number | null;
+	sale_price: string | number | null;
+	stock: number | null;
+}
+
+/**
+ * Estado remoto (#7): contrasta el producto del ERP con el de WooCommerce.
+ * `GET /products/{product}/remote`
+ */
+export interface WooRemoteState {
+	local: WooRemoteLocalState;
+	remote: WooRemoteRemoteState | null;
+}
+
+// ==================== WOOCOMMERCE — EMPAREJAMIENTO MANUAL ====================
+
+export type WooPriceResolution = 'keep_erp' | 'keep_woo';
+export type WooSkuResolution = 'keep_erp' | 'keep_woo';
+/** Resolución de imagen cuando ambos lados (ERP y Woo) tienen foto. */
+export type WooImageResolution = 'keep_erp' | 'keep_woo';
+
+export interface WooCompareParams {
+	external_product_id?: number;
+	external_sku?: string;
+}
+
+export interface WooCompareResult {
+	erp: {
+		name: string;
+		sku: string;
+		price: number | string | null;
+	};
+	woo: {
+		id: number;
+		name: string;
+		sku: string;
+		price: number | string | null;
+	};
+	prices_match: boolean;
+	/** El backend indica si el precio requiere una decisión consciente. */
+	needs_decision?: boolean;
+	/** El backend indica si el SKU requiere una decisión consciente (difieren). */
+	needs_sku_decision?: boolean;
+	/** Resolución de imagen sugerida por el backend (hay foto en ambos lados). */
+	image_resolution?: WooImageResolution;
+	already_linked: boolean;
+	already_linked_to?: number | null;
+}
+
+export interface WooCandidatesParams {
+	q?: string;
+	per_page?: number;
+}
+
+export interface WooCandidate {
+	id: number;
+	name: string;
+	sku: string;
+	price: string | number | null;
+	status: string | null;
+	/** Stock normalizado (el backend lo expone como `stock`). */
+	stock_quantity: number | null;
+	permalink: string | null;
+	/** Normalizado desde `link_status.is_linked` cuando el backend no lo envía plano. */
+	already_linked: boolean;
+}
+
+export interface WooLinkPayload {
+	external_product_id?: number;
+	external_sku?: string;
+	sync_stock_with_woo?: boolean;
+	price_resolution?: WooPriceResolution;
+	/**
+	 * Decisión consciente sobre el SKU cuando difieren ERP y Woo. `keep_erp`
+	 * conserva el SKU del ERP; `keep_woo` adopta el de WooCommerce. Si no se
+	 * envía, el backend mantiene el SKU de Woo por defecto.
+	 */
+	sku_resolution?: WooSkuResolution;
+	/**
+	 * Si es true, al vincular importa la descripción de WooCommerce hacia el ERP,
+	 * conservando el contenido ya trabajado en la tienda sin romperlo.
+	 */
+	override_description_from_woo?: boolean;
+	/**
+	 * Resolución de imagen cuando ambos lados tienen foto. Por defecto `keep_woo`:
+	 * si el ERP no tiene imagen se usa la de Woo.
+	 */
+	image_resolution?: WooImageResolution;
+}
+
+export interface WooLinkResponse {
+	message: string;
+	data?: WooProduct;
+	woo_url?: string;
+}
+
+export interface WooLinkConflictDetail {
+	message: string;
+	erp_price: number | string | null;
+	woo_price: number | string | null;
+}
+
+export interface WooUnlinkResponse {
+	message: string;
+	data?: WooProduct;
+}
+
+/**
+ * Respuesta de la desvinculación masiva ERP ↔ WooCommerce de una subsidiaria
+ * (`POST .../products/unlink-all`). En `dry_run` informa cuántos productos se
+ * desvincularían (`to_unlink`) sin tocar nada; en ejecución real encola el job y devuelve
+ * cuántos se encolaron (`queued`, 0 si no había nada). El soft-delete es reversible.
+ * (Forma verificada contra WooProductLinkController::destroyAll.)
+ */
+export interface WooUnlinkAllResponse {
+	message?: string;
+	dry_run?: boolean;
+	/** Dry-run: cantidad de productos que se desvincularían. */
+	to_unlink?: number;
+	/** Ejecución real: cantidad de productos encolados para desvincular (0 si nada). */
+	queued?: number;
+}
+
+export interface WooProductsQueryParams {
+	search?: string;
+	only_errors?: boolean | number | string;
+	per_page?: number;
+	integration_id?: string;
+}
+
+// ==================== CATÁLOGO DE WEBHOOKS ENTRANTES ====================
+// GET /integrations/webhooks/catalog — catálogo dinámico (global, no por subsidiaria)
+// de los webhooks entrantes que el ERP soporta por proveedor. Cada entrada agrupa sus
+// topics/eventos, los efectos sobre inventario/reservas (por estado de pedido o por
+// campo de producto), la autenticación y notas de comportamiento.
+
+/** Endpoint declarado por el catálogo (recepción o health-check). */
+export interface WebhookCatalogEndpoint {
+	method: string;
+	url_template: string;
+	description?: string;
+}
+
+/** Evento/topic concreto que el webhook puede recibir. */
+export interface WebhookCatalogTopic {
+	topic: string; // ej. "order.created", "product.updated"
+	description: string | null;
+}
+
+/** Efecto sobre inventario/venta según el estado del pedido (webhook de órdenes). */
+export interface WebhookCatalogStatusEffect {
+	statuses: string[];
+	effect: string;
+}
+
+/** Efecto de sincronización según el campo del producto (webhook de productos). */
+export interface WebhookCatalogFieldEffect {
+	fields: string[];
+	effect: string;
+}
+
+/** Una entrada del catálogo: un webhook de un proveedor. */
+export interface WebhookCatalogEntry {
+	provider: string; // ej. "woocommerce"
+	provider_label: string; // ej. "WooCommerce"
+	key: string; // ej. "woocommerce.orders"
+	description: string | null;
+	endpoint: WebhookCatalogEndpoint | null;
+	health_check: WebhookCatalogEndpoint | null;
+	auth: string | null;
+	topics: WebhookCatalogTopic[];
+	status_effects: WebhookCatalogStatusEffect[] | null;
+	field_effects: WebhookCatalogFieldEffect[] | null;
+	notes: string[] | null;
+}
+
+export interface WebhookCatalogResponse {
+	data: WebhookCatalogEntry[];
+}
+

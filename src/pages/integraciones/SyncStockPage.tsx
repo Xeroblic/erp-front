@@ -17,7 +17,7 @@ import Alert from '@/components/ui/Alert';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import type { Integration, SyncStockPayload, SyncStockResponse } from '@/types/integrations.types';
 
-const SyncStockPage: React.FC = () => {
+export const SyncStockContent: React.FC = () => {
 	const dispatch = useAppDispatch();
 	const subsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
 	const { integrations, loading } = useAppSelector((state) => state.integrations);
@@ -108,7 +108,7 @@ const SyncStockPage: React.FC = () => {
 		(!syncAllProducts && !skuList.trim());
 
 	return (
-		<PageWrapper name='Sincronizar Stock'>
+		<>
 			<Subheader>
 				<SubheaderLeft>
 					<span className='text-2xl font-semibold'>
@@ -323,8 +323,14 @@ const SyncStockPage: React.FC = () => {
 					</Card>
 				)}
 			</Container>
-		</PageWrapper>
+		</>
 	);
 };
+
+const SyncStockPage: React.FC = () => (
+	<PageWrapper name='Sincronizar Stock'>
+		<SyncStockContent />
+	</PageWrapper>
+);
 
 export default SyncStockPage;

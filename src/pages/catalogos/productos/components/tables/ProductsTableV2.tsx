@@ -13,8 +13,13 @@ import { useAttributesValidator } from '../../hooks/useAttributesValidator';
 import REQUIRED_ATTRIBUTES_BY_TYPE from '../../constants/requiredAttributesByType';
 import type { TColors } from '@/types/colors.type';
 import type { IProduct, IProductChild, ProductListMeta } from '@/interface/product.interface';
+import {
+	summarizeProductSoftHolds,
+	getEffectiveAvailableStock,
+} from '@/components/helper/product.helper';
 import { PRODUCT_TYPE_META } from '../../constants/products.constant';
 import Tooltip from '@/components/ui/Tooltip';
+import SoftHoldsBadge from '@/components/ui/SoftHoldsBadge';
 
 interface ProductsTableProps {
 	products: IProduct[];
@@ -239,6 +244,22 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 										</span>
 									)}
 								</div>
+
+								{(() => {
+									const softHolds = summarizeProductSoftHolds(product);
+									return softHolds ? (
+										<div className='mt-1.5'>
+											<SoftHoldsBadge
+												softHolds={softHolds}
+												availableStock={getEffectiveAvailableStock(
+													product.serial_tracking,
+													product.stock,
+													softHolds,
+												)}
+											/>
+										</div>
+									) : null;
+								})()}
 							</div>
 						</div>
 					);
@@ -777,6 +798,29 @@ const ProductsTableV2: React.FC<ProductsTableProps> = ({
 																																0}
 																														</strong>
 																													</span>
+																												</div>
+																											)}
+																											{(child
+																												.soft_holds
+																												?.quantity ??
+																												0) >
+																											0 ? (
+																												<div className='mt-1.5'>
+																													<SoftHoldsBadge
+																														softHolds={
+																															child.soft_holds
+																														}
+																														availableStock={
+																															child.stock
+																														}
+																													/>
+																												</div>
+																											) : (
+																												<div className='mt-1.5 text-[11px] text-zinc-400 dark:text-zinc-500'>
+																													Apart:{' '}
+																													<strong className='text-zinc-500 dark:text-zinc-300'>
+																														0
+																													</strong>
 																												</div>
 																											)}
 																										</td>

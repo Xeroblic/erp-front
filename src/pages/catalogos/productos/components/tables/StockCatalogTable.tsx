@@ -1,6 +1,9 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { ColumnDef } from '@tanstack/react-table';
 import Badge from '@/components/ui/Badge';
+import Tooltip from '@/components/ui/Tooltip';
+import Icon from '@/components/icon/Icon';
 import DataTable from '@/components/ui/DataTable';
 
 interface StockCatalogTableProps {
@@ -91,6 +94,109 @@ const getQuantityTone = (quantity: number): 'emerald' | 'amber' | 'red' | 'blue'
 	if (quantity <= 3) return 'amber';
 	if (quantity >= 10) return 'blue';
 	return 'emerald';
+};
+
+/**
+ * Desglose de estados de stock con etiqueta clara + tooltip. Reemplaza los
+ * códigos crípticos (R/E/C/V) por nombres legibles. El orden refleja el ciclo
+ * de vida de una unidad: reservada → apartada → cotizada → vendida.
+ */
+const STOCK_STATUS_META: Array<{
+	key: 'reservedStock' | 'onHoldStock' | 'inQuotationStock' | 'soldStock';
+	label: string;
+	color: string;
+	help: string;
+}> = [
+	{
+		key: 'reservedStock',
+		label: 'Reservado',
+		color: 'indigo',
+		help: 'Unidades reservadas para una venta confirmada.',
+	},
+	{
+		key: 'onHoldStock',
+		label: 'En espera',
+		color: 'amber',
+		help: 'Unidades apartadas temporalmente por ventas en proceso (soft-hold).',
+	},
+	{
+		key: 'inQuotationStock',
+		label: 'En cotización',
+		color: 'sky',
+		help: 'Unidades comprometidas en una cotización.',
+	},
+	{
+		key: 'soldStock',
+		label: 'Vendido',
+		color: 'emerald',
+		help: 'Unidades ya vendidas.',
+	},
+];
+
+const StockStatusBreakdown = ({
+	row,
+	onOpenDetail,
+}: {
+	row: StockCatalogRow;
+	onOpenDetail?: () => void;
+}) => {
+	const active = STOCK_STATUS_META.filter((meta) => row[meta.key] > 0);
+
+	if (active.length === 0) {
+		return (
+			<Tooltip text='Este producto no tiene unidades reservadas, apartadas, en cotización ni vendidas.'>
+				<span className='inline-flex w-fit'>
+					<Badge variant='outline' color='zinc' className='w-fit'>
+						Sin novedades
+					</Badge>
+				</span>
+			</Tooltip>
+		);
+	}
+
+	return (
+		<div className='flex flex-wrap gap-1.5'>
+			{active.map((meta) => {
+				// "En espera" (apartadas/soft-hold) enlaza al detalle del producto,
+				// donde cada unidad apartada muestra y enlaza a su venta asociada.
+				const isLinkable = meta.key === 'onHoldStock' && Boolean(onOpenDetail);
+				const tooltipText = isLinkable
+					? `${meta.label}: ${row[meta.key]} — ${meta.help} Click para ver el detalle y las ventas que apartan el stock.`
+					: `${meta.label}: ${row[meta.key]} — ${meta.help}`;
+
+				const badge = (
+					<Badge
+						variant='outline'
+						color={meta.color}
+						className={`inline-flex items-center gap-1 whitespace-nowrap ${
+							isLinkable ? 'transition-[filter] hover:brightness-110' : ''
+						}`}>
+						<span className='font-medium'>{meta.label}</span>
+						<strong>{row[meta.key]}</strong>
+						{isLinkable && (
+							<Icon icon='HeroArrowTopRightOnSquare' className='h-3 w-3' />
+						)}
+					</Badge>
+				);
+
+				return (
+					<Tooltip key={meta.key} text={tooltipText} placement='top'>
+						{isLinkable ? (
+							<button
+								type='button'
+								onClick={onOpenDetail}
+								className='cursor-pointer'
+								aria-label={`Ver detalle de ${row.name} y las ventas que apartan stock`}>
+								{badge}
+							</button>
+						) : (
+							<span className='inline-flex'>{badge}</span>
+						)}
+					</Tooltip>
+				);
+			})}
+		</div>
+	);
 };
 
 const normalizeCatalogRow = (item: Record<string, unknown>, index: number): StockCatalogRow => {
@@ -188,21 +294,46 @@ const normalizeCatalogRow = (item: Record<string, unknown>, index: number): Stoc
 };
 
 const StockCatalogTable = ({ items, loading = false }: StockCatalogTableProps) => {
+	const navigate = useNavigate();
+
 	const rows = useMemo(
 		() => items.map(normalizeCatalogRow).filter((row) => row.name.trim().length > 0),
 		[items],
 	);
 
+	const openProductDetail = useCallback(
+		(productId: number | null) => {
+			if (productId) navigate(`/catalogos/productos/${productId}`);
+		},
+		[navigate],
+	);
+
 	const columns = useMemo<ColumnDef<StockCatalogRow>[]>(
 		() => [
 			{
-				accessorKey: 'name',
+				id: 'name',
+				// Incluye la SKU en el valor filtrable para que el buscador (includesString)
+				// también encuentre por SKU, no solo por nombre.
+				accessorFn: (catalogRow) => `${catalogRow.name} ${catalogRow.sku}`,
 				header: 'Producto',
 				cell: ({ row }) => (
 					<div className='space-y-1'>
-						<p className='font-semibold text-neutral-900 dark:text-neutral-100'>
-							{row.original.name}
-						</p>
+						{row.original.productId ? (
+							<button
+								type='button'
+								onClick={() => openProductDetail(row.original.productId)}
+								className='group inline-flex items-center gap-1 text-left font-semibold text-neutral-900 transition-colors hover:text-blue-600 dark:text-neutral-100 dark:hover:text-blue-400'>
+								<span>{row.original.name}</span>
+								<Icon
+									icon='HeroArrowTopRightOnSquare'
+									className='h-3.5 w-3.5 text-neutral-300 transition-colors group-hover:text-blue-500 dark:text-neutral-600'
+								/>
+							</button>
+						) : (
+							<p className='font-semibold text-neutral-900 dark:text-neutral-100'>
+								{row.original.name}
+							</p>
+						)}
 						<div className='flex flex-wrap items-center gap-2 text-[11px] text-neutral-500'>
 							<span>SKU: {row.original.sku}</span>
 							<span>ID: {row.original.productId ?? 'N/D'}</span>
@@ -260,11 +391,13 @@ const StockCatalogTable = ({ items, loading = false }: StockCatalogTableProps) =
 				header: 'Stock total',
 				cell: ({ row }) => (
 					<div className='min-w-[78px]'>
-						<p className='text-base font-semibold text-neutral-900 dark:text-neutral-100'>
-							{row.original.totalStock}
-						</p>
+						<Tooltip text='Stock total = disponible + reservado + en espera + en cotización + vendido. Ver el desglose en la columna Estados.'>
+							<p className='inline-block cursor-help text-base font-semibold text-neutral-900 underline decoration-dotted underline-offset-4 dark:text-neutral-100'>
+								{row.original.totalStock}
+							</p>
+						</Tooltip>
 						<p className='text-[11px] text-neutral-400'>
-							{row.original.statusPreview || 'Sin novedades'}
+							{row.original.availableStock} disponibles
 						</p>
 					</div>
 				),
@@ -284,26 +417,14 @@ const StockCatalogTable = ({ items, loading = false }: StockCatalogTableProps) =
 				id: 'statusBreakdown',
 				header: 'Estados',
 				cell: ({ row }) => (
-					<div>
-						<Badge
-							variant='outline'
-							color={
-								row.original.soldStock > 0
-									? 'red'
-									: row.original.reservedStock > 0 || row.original.onHoldStock > 0
-										? 'amber'
-										: row.original.inQuotationStock > 0
-											? 'blue'
-											: 'zinc'
-							}
-							className='w-fit'>
-							{row.original.statusPreview || 'Sin novedades'}
-						</Badge>
-					</div>
+					<StockStatusBreakdown
+						row={row.original}
+						onOpenDetail={() => openProductDetail(row.original.productId)}
+					/>
 				),
 			},
 		],
-		[],
+		[openProductDetail],
 	);
 
 	return (

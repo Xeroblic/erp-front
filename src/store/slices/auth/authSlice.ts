@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import ApiService from '@/services/ApiService';
 import tokenManager from '@/services/auth/tokenManager';
 import { RootState, AppDispatch } from '@/store';
-import { IGruposUsuarios, IUserMe } from '@/interface/user.interface';
+import { IGruposUsuarios, IUserMe, IPerfilResponse } from '@/interface/user.interface';
 import { clearAppStorage } from '@/utils/appStorage';
 import { normalizeUserProfile } from '@/utils/normalizeUserProfile';
 import { clearPersonalizacionState } from '@/store/slices/personalizacion/personalizacionSlice';
@@ -27,16 +27,6 @@ const extractAccessToken = (payload: any): string | undefined => {
 	return candidates.find(
 		(value): value is string => typeof value === 'string' && value.trim().length > 0,
 	);
-};
-
-type PerfilResponse = {
-	data?: {
-		all_permissions?: string[];
-		direct_permissions?: string[];
-		role_permissions?: string[];
-		global_roles?: string[];
-	} & IUserMe;
-	user?: IUserMe;
 };
 
 export interface AuthState {
@@ -121,9 +111,6 @@ export const logoutThunk = createAsyncThunk<
 	} catch {
 		// da lo mismo si falla
 	} finally {
-		// IMPORTANTE: Limpiar memoria PRIMERO, ANTES de despachar logout a Redux.
-		// Esto permite que el cross-tab sync (storeSetup.ts) distinga un logout
-		// voluntario (memoryToken = null) de un fallo de pestaña en background.
 		tokenManager.clearTokens();
 
 		dispatch(logout());
@@ -153,7 +140,7 @@ export const userMeThunk = createAsyncThunk<
 		});
 
 	try {
-		const resp = await ApiService.fetchData<PerfilResponse>({
+		const resp = await ApiService.fetchData<IPerfilResponse>({
 			url: '/perfil',
 			method: 'get',
 			dedupe: true,
@@ -164,7 +151,9 @@ export const userMeThunk = createAsyncThunk<
 	} catch (error: unknown) {
 		const apiError = error as any;
 		const status = apiError?.response?.status;
-		const apiMessage = (apiError?.response?.data?.message ?? apiError?.message) as string | undefined;
+		const apiMessage = (apiError?.response?.data?.message ?? apiError?.message) as
+			| string
+			| undefined;
 		const isUnauthorized =
 			status === 401 ||
 			(typeof apiMessage === 'string' && apiMessage.toLowerCase().includes('no autentic'));
@@ -244,7 +233,12 @@ const authSlice = createSlice({
 					...(user.cargo ? [user.cargo] : []),
 				];
 
-				s.user = { ...user, authority, permisos: payload.permisos, roles: payload.roles || [] };
+				s.user = {
+					...user,
+					authority,
+					permisos: payload.permisos,
+					roles: payload.roles || [],
+				};
 				s.permisos = authority;
 				s.isAuthenticated = true;
 				s.userLastFetched = Date.now();

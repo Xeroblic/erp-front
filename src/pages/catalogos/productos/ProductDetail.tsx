@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { Formik, Form, type FormikHelpers, useFormikContext } from 'formik';
 import { toast } from 'react-toastify';
@@ -8,6 +8,8 @@ import Container from '@/components/layouts/Container/Container';
 import Subheader from '@/components/layouts/Subheader/Subheader';
 import SavePrompt from '@/components/ui/SavePrompt';
 import { useAutoSave } from '@/hooks/useAutoSave';
+import Icon from '@/components/icon/Icon';
+import Tooltip from '@/components/ui/Tooltip';
 import { useProductDetail } from './hooks/useProductDetail';
 import { useProductDetailState } from './hooks/useProductDetailState';
 import { useProductMediaHandlers } from './hooks/useProductMediaHandlers';
@@ -27,14 +29,15 @@ import {
 	mapProductToDetailForm,
 } from './utils/productForm.utils';
 import { productDetailSchema } from './validation/productForm.schema';
-import { useAppDispatch } from '@/store';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { publishProductThunk } from '@/store/slices/integrations/woocommerceProductsSlice';
+import { isWooSynced } from '@/utils/wooProductMeta.util';
 import {
 	deleteProductMedia,
 	setProductMainImage,
 	fetchProductById,
 	type ProductEntityParam,
 } from '@/store/slices/products/productsSlice';
-import { useAppSelector } from '@/store';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import type { ProductsViewMode } from './hooks/useProductos';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
@@ -168,6 +171,7 @@ const ProductDetail: React.FC = () => {
 		effectiveBranchId,
 		entityId,
 		updateProduct,
+		refresh: refreshProduct,
 	} = useProductDetail({
 		productId,
 		branchId: initialBranchId,
@@ -185,6 +189,8 @@ const ProductDetail: React.FC = () => {
 		useProductMediaHandlers(product, entityId, entityParam);
 
 	const [showLibrary, setShowLibrary] = useState(false);
+	const [sidebarOpen, setSidebarOpen] = useState(false);
+	const toggleSidebar = useCallback(() => setSidebarOpen((prev) => !prev), []);
 
 	const brandOptions = useMemo(() => createBrandOptions(brands), [brands]);
 	const categoryOptions = useMemo(() => createCategoryOptions(categories), [categories]);
@@ -237,6 +243,23 @@ const ProductDetail: React.FC = () => {
 				categoryIds,
 			});
 			toast.success('Producto actualizado correctamente');
+
+			if (subsidiaryId && isWooSynced(product.marketplace_external_ids)) {
+				try {
+					await dispatch(
+						publishProductThunk({
+							subsidiaryId,
+							productId: product.id,
+							payload: { sync_stock_with_woo: product.sync_stock_with_woo ?? true },
+						}),
+					).unwrap();
+					toast.info('Cambios enviados a WooCommerce');
+				} catch {
+					toast.warning(
+						'El producto se guardó, pero no se pudo sincronizar con WooCommerce',
+					);
+				}
+			}
 		} catch (error: unknown) {
 			const errorRecord =
 				error && typeof error === 'object' ? (error as Record<string, unknown>) : undefined;
@@ -342,11 +365,57 @@ const ProductDetail: React.FC = () => {
 										product={product}
 										onDeleteImage={handleDeleteImage}
 										updateProduct={updateProduct}
+										onProductRefresh={refreshProduct}
 									/>
 								</div>
 
-								<div className='order-2 xl:order-2 xl:w-[320px] xl:flex-shrink-0'>
-									<ProductDetailSidebar product={product} branches={branches} />
+								{/* Collapsible sidebar */}
+								<div
+									className={`order-2 flex xl:order-2 xl:flex-shrink-0 ${sidebarOpen ? 'flex-col' : 'xl:flex-row'}`}>
+									{/* Toggle strip — visible only on xl */}
+									<div
+										className={`hidden xl:flex ${sidebarOpen ? 'mb-0 w-full justify-end pb-2' : 'sticky top-4 self-start'}`}>
+										<Tooltip
+											text={
+												sidebarOpen
+													? 'Ocultar panel lateral'
+													: 'Mostrar panel lateral'
+											}
+											placement='left'>
+											<button
+												type='button'
+												onClick={toggleSidebar}
+												aria-label={
+													sidebarOpen
+														? 'Ocultar panel lateral'
+														: 'Mostrar panel lateral'
+												}
+												className={`flex items-center justify-center rounded-lg border border-neutral-200 bg-white shadow-sm transition-all hover:bg-neutral-50 hover:text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:hover:text-neutral-200 ${
+													sidebarOpen
+														? 'h-7 w-7 text-neutral-400 dark:text-neutral-500'
+														: 'h-10 w-10 text-neutral-500 dark:text-neutral-400'
+												}`}>
+												<Icon
+													icon={
+														sidebarOpen
+															? 'HeroChevronRight'
+															: 'HeroChevronLeft'
+													}
+													className={
+														sidebarOpen ? 'h-3.5 w-3.5' : 'h-5 w-5'
+													}
+												/>
+											</button>
+										</Tooltip>
+									</div>
+									{/* Sidebar content */}
+									<div
+										className={`w-full transition-all duration-300 ease-in-out ${sidebarOpen ? 'xl:w-[320px] xl:opacity-100' : 'max-xl:block xl:hidden'}`}>
+										<ProductDetailSidebar
+											product={product}
+											branches={branches}
+										/>
+									</div>
 								</div>
 							</div>
 						</Container>

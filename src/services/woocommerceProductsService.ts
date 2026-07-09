@@ -1,9 +1,3 @@
-/**
- * Servicio de API para WooCommerce — Importación de términos (categorías/marcas)
- *
- * Endpoints bajo `/subsidiaries/{subsidiary}/integrations/woocommerce/...`.
- * `subsidiaryId` siempre es el primer argumento (= ID de la sucursal en la ruta).
- */
 
 import ApiService from './ApiService';
 import type {
@@ -11,36 +5,269 @@ import type {
 	ImportTermsResponse,
 	ImportTermsStatus,
 	ImportTermsStatusQueryParams,
+	UndoImportTermsPayload,
+	UndoImportTermsResponse,
+	QuickProductPayload,
+	QuickProductResponse,
+	WooProduct,
+	WooSyncStockPayload,
+	WooProductActionResponse,
+	WooRemoteState,
+	WooCompareParams,
+	WooCompareResult,
+	WooCandidatesParams,
+	WooCandidate,
+	WooLinkPayload,
+	WooLinkResponse,
+	WooUnlinkResponse,
+	WooUnlinkAllResponse,
+	WooProductsQueryParams,
 } from '../types/integrations.types';
 
-// ==================== IMPORTACIÓN DE TÉRMINOS (CATEGORÍAS / MARCAS) ====================
+const withIntegration = (
+	params: object | undefined,
+	integrationId?: string,
+): Record<string, unknown> | undefined => {
+	if (!integrationId) return params as Record<string, unknown> | undefined;
+	return { ...params, integration_id: integrationId };
+};
 
-/**
- * #1 · Programa la importación masiva de términos (categorías/marcas) desde
- * la tienda WooCommerce hacia el ERP. Devuelve el lote (job en cola).
- * `POST /import-terms`
- */
-export const importTerms = async (subsidiaryId: number, payload: ImportTermsPayload) => {
+export const importTerms = async (
+	subsidiaryId: number,
+	payload: ImportTermsPayload,
+	integrationId?: string,
+) => {
 	const response = await ApiService.fetchData<ImportTermsResponse, ImportTermsPayload>({
 		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/import-terms`,
 		method: 'POST',
 		data: payload,
+		params: integrationId ? { integration_id: integrationId } : undefined,
+	});
+	return response.data;
+};
+
+export const getImportTermsStatus = async (
+	subsidiaryId: number,
+	params?: ImportTermsStatusQueryParams,
+	integrationId?: string,
+) => {
+	const response = await ApiService.fetchData<ImportTermsStatus>({
+		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/import-terms/status`,
+		method: 'GET',
+		params: withIntegration(params, integrationId),
 	});
 	return response.data;
 };
 
 /**
- * #2 · Consulta el progreso del lote de importación de términos (#1).
- * `GET /import-terms/status`
+ * Deshace una importación de términos: borra solo las marcas/categorías que la
+ * integración creó y que hoy no están en uso, informando cuántas se borraron/omitieron.
+ * Sin `taxonomies` el backend deshace ambas.
  */
-export const getImportTermsStatus = async (
+export const undoImportTerms = async (
 	subsidiaryId: number,
-	params?: ImportTermsStatusQueryParams,
+	payload: UndoImportTermsPayload = {},
+	integrationId?: string,
 ) => {
-	const response = await ApiService.fetchData<ImportTermsStatus>({
-		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/import-terms/status`,
-		method: 'GET',
-		params,
+	const response = await ApiService.fetchData<UndoImportTermsResponse, UndoImportTermsPayload>({
+		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/import-terms/undo`,
+		method: 'POST',
+		data: payload,
+		params: integrationId ? { integration_id: integrationId } : undefined,
 	});
 	return response.data;
 };
+
+export const createQuickProduct = async (
+	subsidiaryId: number,
+	payload: QuickProductPayload,
+	integrationId?: string,
+) => {
+	const response = await ApiService.fetchData<QuickProductResponse, QuickProductPayload>({
+		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/quick-products`,
+		method: 'POST',
+		data: payload,
+		params: integrationId ? { integration_id: integrationId } : undefined,
+	});
+	return response.data;
+};
+
+export const publishProduct = async (
+	subsidiaryId: number,
+	productId: number,
+	payload?: WooSyncStockPayload,
+	integrationId?: string,
+) => {
+	const response = await ApiService.fetchData<WooProductActionResponse, WooSyncStockPayload>({
+		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/products/${productId}`,
+		method: 'POST',
+		data: payload ?? {},
+		params: integrationId ? { integration_id: integrationId } : undefined,
+	});
+	return response.data;
+};
+
+export const unpublishProduct = async (
+	subsidiaryId: number,
+	productId: number,
+	payload?: WooSyncStockPayload,
+	integrationId?: string,
+) => {
+	const response = await ApiService.fetchData<WooProductActionResponse, WooSyncStockPayload>({
+		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/products/${productId}`,
+		method: 'DELETE',
+		data: payload ?? {},
+		params: integrationId ? { integration_id: integrationId } : undefined,
+	});
+	return response.data;
+};
+
+export const getProductRemoteState = async (
+	subsidiaryId: number,
+	productId: number,
+	integrationId?: string,
+) => {
+	const response = await ApiService.fetchData<WooRemoteState>({
+		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/products/${productId}/remote`,
+		method: 'GET',
+		params: integrationId ? { integration_id: integrationId } : undefined,
+	});
+	return response.data;
+};
+
+export const compareProduct = async (
+	subsidiaryId: number,
+	productId: number,
+	params: WooCompareParams,
+	integrationId?: string,
+) => {
+	const response = await ApiService.fetchData<WooCompareResult>({
+		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/products/${productId}/woo-compare`,
+		method: 'GET',
+		params: withIntegration(params, integrationId),
+	});
+	return response.data;
+};
+
+export const searchCandidates = async (
+	subsidiaryId: number,
+	productId: number,
+	params?: WooCandidatesParams,
+	integrationId?: string,
+) => {
+	const response = await ApiService.fetchData<WooCandidate[]>({
+		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/products/${productId}/woo-candidates`,
+		method: 'GET',
+		params: withIntegration(params, integrationId),
+	});
+	return response.data;
+};
+
+export const linkProduct = async (
+	subsidiaryId: number,
+	productId: number,
+	payload: WooLinkPayload,
+	integrationId?: string,
+) => {
+	const response = await ApiService.fetchData<WooLinkResponse, WooLinkPayload>({
+		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/products/${productId}/link`,
+		method: 'POST',
+		data: payload,
+		params: integrationId ? { integration_id: integrationId } : undefined,
+	});
+	return response.data;
+};
+
+export const unlinkProduct = async (
+	subsidiaryId: number,
+	productId: number,
+	integrationId?: string,
+) => {
+	const response = await ApiService.fetchData<WooUnlinkResponse>({
+		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/products/${productId}/link`,
+		method: 'DELETE',
+		params: integrationId ? { integration_id: integrationId } : undefined,
+	});
+	return response.data;
+};
+
+/**
+ * Desvinculación masiva ERP ↔ WooCommerce de todos los productos sincronizados de la
+ * subsidiaria. Con `dryRun=true` solo informa cuántos hay vinculados (no toca nada);
+ * con `dryRun=false` encola el job de desvinculación (soft-delete reversible, no modifica
+ * las fichas en la tienda). Acción destructiva limitada a super-admin en la UI.
+ */
+export const unlinkAllProducts = async (subsidiaryId: number, dryRun: boolean) => {
+	const response = await ApiService.fetchData<WooUnlinkAllResponse>({
+		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/products/unlink-all`,
+		method: 'POST',
+		data: { dry_run: dryRun },
+	});
+	return response.data;
+};
+
+export const getWooProducts = async (
+	subsidiaryId: number,
+	params?: WooProductsQueryParams,
+	integrationId?: string,
+) => {
+	const normalizedParams = params ? { ...params } : {};
+	if (typeof normalizedParams.only_errors === 'boolean') {
+		normalizedParams.only_errors = normalizedParams.only_errors ? 1 : 0;
+	}
+
+	const response = await ApiService.fetchData<{ data?: WooProduct[] } | WooProduct[]>({
+		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/products`,
+		method: 'GET',
+		params: withIntegration(normalizedParams, integrationId),
+	});
+
+	const body = response.data;
+	return Array.isArray(body) ? body : (body.data ?? []);
+};
+
+export const syncProductPrice = async (
+	subsidiaryId: number,
+	productId: number,
+	payload?: WooSyncStockPayload,
+	integrationId?: string,
+) => {
+	const response = await ApiService.fetchData<WooProductActionResponse, WooSyncStockPayload>({
+		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/products/${productId}/sync-price`,
+		method: 'POST',
+		data: payload ?? {},
+		params: integrationId ? { integration_id: integrationId } : undefined,
+	});
+	return response.data;
+};
+
+export const syncProductStock = async (
+	subsidiaryId: number,
+	productId: number,
+	payload?: WooSyncStockPayload,
+	integrationId?: string,
+) => {
+	const response = await ApiService.fetchData<WooProductActionResponse, WooSyncStockPayload>({
+		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/products/${productId}/sync-stock`,
+		method: 'POST',
+		data: payload ?? {},
+		params: integrationId ? { integration_id: integrationId } : undefined,
+	});
+	return response.data;
+};
+
+export const publishProductChildren = async (
+	subsidiaryId: number,
+	productId: number,
+	payload?: WooSyncStockPayload,
+	integrationId?: string,
+) => {
+	const response = await ApiService.fetchData<WooProductActionResponse, WooSyncStockPayload>({
+		url: `/subsidiaries/${subsidiaryId}/integrations/woocommerce/products/${productId}/publish-children`,
+		method: 'POST',
+		data: payload ?? {},
+		params: integrationId ? { integration_id: integrationId } : undefined,
+	});
+	return response.data;
+};
+
