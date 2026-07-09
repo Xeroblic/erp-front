@@ -237,22 +237,6 @@ export const privatePages = {
 					'warehouse-manager',
 				],
 			},
-			manageUsers: {
-				id: 'manageUsers',
-				to: '/gestion/usuarios',
-				text: 'Usuarios',
-				icon: 'DuoUsers',
-				authority: ['view-user'],
-				roles: [
-					'super-admin',
-					'admin',
-					'company-admin',
-					'subsidiary-admin',
-					'branch-admin',
-					'company-supervisor',
-					'manager',
-				],
-			},
 			permissionsAdmin: {
 				id: 'permissionsAdmin',
 				to: '/admin/permisos',

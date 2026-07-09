@@ -1,32 +1,19 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import ApiService from '../../../services/ApiService';
-import { IUserMe } from '../../../interface/user.interface';
+import { IAdminUser } from '../../../interface/users.interface';
 import { AuthorizationAccessScope, AuthorizationVisibleScope } from '../../../types/authorization';
 
-// Interfaces adicionales que coinciden con el backend
-export interface UserWithDetails extends Omit<IUserMe, 'roles' | 'companies'> {
-	// Campos adicionales del backend
-	cargo?: string;
-
-	// Roles estructurados del backend
-	global_roles?: string[];
-	contextual_roles?: Array<{
-		role: string;
-		scope_type: string;
-		scope_id: number;
-		scope_name: string;
-		context?: string;
-		company?: string;
-		subsidiary?: string;
-		branch?: string;
-	}>;
-
-	// Permisos del backend actualizado
-	direct_permissions?: string[];
-	role_permissions?: string[];
-	all_permissions?: string[];
-
-	// Permisos legacy (para compatibilidad)
+/**
+ * Usuario de administración del módulo roles-permisos. Extiende `IAdminUser` (contrato de
+ * `/users`) — ya NO acopla con `IUserMe` (sesión) — y añade los shapes propios/legacy de
+ * este endpoint (companies/branch más ricos, permisos y roles estructurados legacy).
+ */
+export interface UserWithDetails
+	extends Omit<
+		IAdminUser,
+		'companies' | 'branch' | 'access' | 'visible' | 'can_edit' | 'is_super_admin'
+	> {
+	// Permisos legacy (para compatibilidad con endpoints de detalle)
 	permissions?: Array<{
 		id: number;
 		code: string;
@@ -34,14 +21,14 @@ export interface UserWithDetails extends Omit<IUserMe, 'roles' | 'companies'> {
 		expires_at?: string;
 	}>;
 
-	// Roles legacy (para compatibilidad)
+	// Roles legacy estructurados (para compatibilidad)
 	roles?: Array<{
 		id: number;
 		name: string;
 		level?: number;
 	}>;
 
-	// Información de empresa/subsidiaria/sucursal del backend
+	// companies/branch con el shape (más rico/legacy) del endpoint de roles-permisos
 	companies?: Array<{
 		id: number;
 		name: string;
@@ -53,7 +40,6 @@ export interface UserWithDetails extends Omit<IUserMe, 'roles' | 'companies'> {
 		};
 	}>;
 
-	// Información jerárquica del backend actualizada
 	branch?: {
 		id: number;
 		branch_name: string;
@@ -74,7 +60,7 @@ export interface UserWithDetails extends Omit<IUserMe, 'roles' | 'companies'> {
 	access?: AuthorizationAccessScope;
 	visible?: AuthorizationVisibleScope;
 
-	// Campos de control
+	// Campos de control (opcionales acá; requeridos en IAdminUser)
 	can_edit?: boolean;
 	is_super_admin?: boolean;
 }

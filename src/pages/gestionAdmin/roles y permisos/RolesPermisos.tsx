@@ -45,11 +45,7 @@ const RolesPermisos: React.FC = () => {
 				[user.first_name, user.last_name].filter(Boolean).join(' ') || user.email || '—';
 
 			const cargoResolved =
-				user.cargo ||
-				user.companies?.[0]?.position ||
-				user.position ||
-				user.branch?.position ||
-				'—';
+				user.cargo || user.companies?.[0]?.position || user.branch?.position || '—';
 
 			const companyResolved =
 				user.branch?.subsidiary?.company?.company_name || user.companies?.[0]?.name || '—';

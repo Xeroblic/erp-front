@@ -48,7 +48,6 @@ const RolesPermisos = lazy(() => import('@/pages/gestionAdmin/roles y permisos/R
 const UserPermissionsDetail = lazy(
 	() => import('@/pages/gestionAdmin/roles y permisos/UserPermissionsDetail.tsx'),
 );
-const GestionUsuarios = lazy(() => import('@/pages/gestionAdmin/usuarios/Usuarios.tsx'));
 
 // Páginas de Administración
 const PermissionsAdmin = lazy(() => import('@/pages/admin/Permission/PermissionsAdmin'));
@@ -238,11 +237,6 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: cfg.manage.subPages.rolesPermisosDetail.to,
 		element: <UserPermissionsDetail />,
 		authority: cfg.manage.subPages.rolesPermisosDetail.authority,
-	},
-	{
-		path: cfg.manage.subPages.manageUsers.to,
-		element: <GestionUsuarios />,
-		authority: cfg.manage.subPages.manageUsers.authority,
 	},
 	{
 		path: cfg.humanResources.subPages.invitationsAdmin.to,
