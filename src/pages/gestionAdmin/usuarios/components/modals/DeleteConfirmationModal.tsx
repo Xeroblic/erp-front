@@ -84,21 +84,26 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
 									{user.email}
 								</span>
 							</div>
-							{user.position && (
+							{user.cargo && (
 								<div className='flex justify-between'>
 									<span className='text-zinc-500 dark:text-zinc-400'>Cargo:</span>
 									<span className='text-zinc-900 dark:text-zinc-100'>
-										{user.position}
+										{user.cargo}
 									</span>
 								</div>
 							)}
-							{user.company && (
+							{(user.companies?.find((c) => c.is_primary) ?? user.companies?.[0]) && (
 								<div className='flex justify-between'>
 									<span className='text-zinc-500 dark:text-zinc-400'>
 										Empresa:
 									</span>
 									<span className='text-zinc-900 dark:text-zinc-100'>
-										{user.company.name}
+										{
+											(
+												user.companies.find((c) => c.is_primary) ??
+												user.companies[0]
+											).name
+										}
 									</span>
 								</div>
 							)}

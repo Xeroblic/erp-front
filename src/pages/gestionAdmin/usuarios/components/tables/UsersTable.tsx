@@ -109,12 +109,11 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, onUserUpdated
 			header: 'Cargo y Empresa',
 			cell: (info) => {
 				const user = info.row.original;
-				// Usar el campo 'position' de la interfaz, pero si el API devuelve 'cargo', también manejarlo
-				const position = (user as any).cargo || user.position || 'Sin cargo';
-				// Obtener la empresa primaria del array companies o usar company
+				const position = user.cargo || 'Sin cargo';
+				// Empresa primaria del array companies
 				const primaryCompany =
 					user.companies?.find((c) => c.is_primary) || user.companies?.[0];
-				const company = primaryCompany?.name || user.company?.name || 'Sin empresa';
+				const company = primaryCompany?.name || 'Sin empresa';
 
 				return (
 					<div className='flex min-w-[150px] flex-col'>
@@ -134,7 +133,7 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, onUserUpdated
 			cell: (info) => {
 				const user = info.row.original;
 				const rut = user.rut || 'Sin RUT';
-				const celular = user.celular || user.phone_number || 'Sin teléfono';
+				const celular = user.celular || 'Sin teléfono';
 
 				return (
 					<div className='flex min-w-[120px] flex-col'>
@@ -155,10 +154,8 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, onUserUpdated
 				const user = info.row.original;
 				// Adaptarse a la estructura del API que puede tener branch_name o name
 				const branchData = (user as any).branch;
-				const branchName =
-					branchData?.branch_name || branchData?.name || 'Sin sucursal';
-				const subsidiaryName =
-					branchData?.subsidiary?.subsidiary_name || user.subsidiary?.name || '';
+				const branchName = branchData?.branch_name || branchData?.name || 'Sin sucursal';
+				const subsidiaryName = branchData?.subsidiary?.subsidiary_name || '';
 
 				return (
 					<div className='flex min-w-[140px] flex-col'>

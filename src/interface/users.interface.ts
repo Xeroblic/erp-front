@@ -86,16 +86,6 @@ export interface IAdminUser {
 	branch: IAdminUserBranch | null;
 	created_at: string;
 	updated_at: string;
-
-	// Legacy: NO vienen en /users (siempre undefined en runtime). Follow-up para mapearlos.
-	/** @deprecated usar `celular` */ phone_number?: string;
-	/** @deprecated no existe en /users */ address?: string;
-	/** @deprecated no existe en /users */ direccion?: string;
-	/** @deprecated no existe en /users */ gender?: string;
-	/** @deprecated usar `cargo` o `companies[].position` */ position?: string;
-	/** @deprecated usar `companies` */ company?: { id: number; name: string } | null;
-	/** @deprecated usar `branch?.id` */ branch_id?: number;
-	/** @deprecated usar `branch?.subsidiary` */ subsidiary?: { id: number; name: string };
 }
 
 export interface IUser {

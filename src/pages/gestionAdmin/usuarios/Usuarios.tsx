@@ -102,7 +102,7 @@ export default function UsuarioLista() {
 			if (filterData.position) {
 				const positionTerm = filterData.position.toLowerCase();
 				filtered = filtered.filter((user) => {
-					const position = (user.position || (user as any).cargo || '').toLowerCase();
+					const position = (user.cargo || '').toLowerCase();
 					return position.includes(positionTerm);
 				});
 			}
