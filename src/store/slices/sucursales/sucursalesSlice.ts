@@ -30,17 +30,12 @@ const initialState: SucursalesState = {
 	deleteError: undefined,
 };
 
+// Normaliza la respuesta de /branches. El backend SÓLO manda campos `branch_*`
+// (verificado: GET /branches y las branches anidadas en /subsidiaries nunca incluyen
+// alias camel `name/rut/phone/address/email/status`).
 const normalizeBranchData = (backendData: any): ISucursal => {
 	return {
 		...backendData,
-		// Mapear campos del backend al formato del frontend
-		name: backendData.branch_name || backendData.name || backendData.nombre || '',
-		// El RUT de la sucursal hereda el de la subsidiaria si no viene uno propio
-		rut: backendData.branch_rut || backendData.rut || backendData.subsidiary_rut,
-		phone: backendData.branch_phone || backendData.phone,
-		address: backendData.branch_address || backendData.address || backendData.direccion,
-		email: backendData.branch_email || backendData.email,
-
 		// ✅ Nuevo: Soportar manager_id y relación manager
 		manager_id: backendData.manager_id,
 		manager: backendData.manager,
@@ -62,7 +57,6 @@ const normalizeBranchData = (backendData: any): ISucursal => {
 			backendData.manager_email ||
 			null,
 
-		status: backendData.branch_status ?? backendData.status,
 		subsidiary_id: backendData.subsidiary_id || backendData.subempresa_id,
 		created_at:
 			backendData.branch_created_at || backendData.created_at || new Date().toISOString(),
@@ -73,7 +67,8 @@ const normalizeBranchData = (backendData: any): ISucursal => {
 		subsidiary_name: backendData.subsidiary_name,
 		subsidiary_rut: backendData.subsidiary_rut,
 		commune_id: backendData.commune_id,
-		commune_name: backendData.commune_name,
+		// El backend nunca manda un `commune_name` plano: se deriva de la relación anidada.
+		commune_name: backendData.commune_name ?? backendData.commune?.name,
 	};
 };
 

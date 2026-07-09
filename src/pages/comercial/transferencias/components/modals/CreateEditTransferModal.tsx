@@ -85,7 +85,7 @@ const CreateEditTransferModal: React.FC<CreateEditTransferModalProps> = ({
 		() =>
 			branches.map((branch) => ({
 				value: String(branch.id),
-				label: branch.name || branch.branch_name || `Sucursal ${branch.id}`,
+				label: branch.branch_name || `Sucursal ${branch.id}`,
 			})),
 		[branches],
 	);
