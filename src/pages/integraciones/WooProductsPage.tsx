@@ -169,14 +169,24 @@ export const WooProductsContent: React.FC = () => {
 	const columns = useMemo<ColumnDef<WooProduct>[]>(
 		() => [
 			{
-				accessorKey: 'woocommerce.external_product_id',
-				header: 'ID WC',
+				id: 'ids',
+				header: 'IDs (ERP / Woo)',
 				cell: ({ row }) => {
-					const wcId = row.original.woocommerce?.external_product_id;
+					const product = row.original;
+					const wcId = product.woocommerce?.external_product_id;
 					return (
-						<span className='font-mono text-xs font-semibold text-neutral-600 dark:text-neutral-300'>
-							{wcId ? `#${wcId}` : '—'}
-						</span>
+						<div className='flex flex-col gap-0.5 text-xs font-mono'>
+							<div className='flex items-center gap-1'>
+								<span className='text-[9px] font-bold text-neutral-400 dark:text-neutral-500 w-7'>ERP:</span>
+								<span className='font-semibold text-neutral-800 dark:text-neutral-200'>#{product.id}</span>
+							</div>
+							<div className='flex items-center gap-1'>
+								<span className='text-[9px] font-bold text-neutral-400 dark:text-neutral-500 w-7'>WC:</span>
+								<span className='font-semibold text-neutral-600 dark:text-neutral-400'>
+									{wcId ? `#${wcId}` : '—'}
+								</span>
+							</div>
+						</div>
 					);
 				},
 			},
@@ -186,11 +196,35 @@ export const WooProductsContent: React.FC = () => {
 				cell: ({ row }) => {
 					const product = row.original;
 					const lastError = product.woocommerce?.last_error_msg;
+					const erpName = product.name;
+					const wooName = product.woocommerce?.name;
+					const namesDiffer = !!(
+						wooName &&
+						erpName.toLowerCase().trim() !== wooName.toLowerCase().trim()
+					);
+
 					return (
-						<div className='max-w-xs'>
-							<p className='truncate font-medium text-neutral-900 dark:text-neutral-100'>
-								{product.name}
-							</p>
+						<div className='max-w-xs flex flex-col gap-0.5'>
+							<div className='flex items-start gap-1'>
+								{namesDiffer && (
+									<span className='mt-1 flex-shrink-0 text-[9px] font-extrabold px-1 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400 leading-none'>
+										ERP
+									</span>
+								)}
+								<p className='truncate font-medium text-neutral-900 dark:text-neutral-100' title={erpName}>
+									{erpName}
+								</p>
+							</div>
+							{wooName && namesDiffer && (
+								<div className='flex items-start gap-1'>
+									<span className='mt-1 flex-shrink-0 text-[9px] font-extrabold px-1 py-0.5 rounded bg-sky-100 text-sky-800 dark:bg-sky-950/40 dark:text-sky-400 leading-none'>
+										Woo
+									</span>
+									<p className='truncate text-xs text-neutral-500 dark:text-neutral-400 italic' title={wooName}>
+										{wooName}
+									</p>
+								</div>
+							)}
 							{product.commercial_sku && (
 								<p className='text-xs text-neutral-400 dark:text-neutral-500'>
 									Comercial: {product.commercial_sku}
@@ -215,41 +249,140 @@ export const WooProductsContent: React.FC = () => {
 			},
 			{
 				accessorKey: 'sku',
-				header: 'SKU',
-				cell: ({ row }) => (
-					<code className='rounded bg-neutral-100 px-2 py-0.5 font-mono text-xs text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200'>
-						{row.original.sku || 'Sin SKU'}
-					</code>
-				),
+				header: 'SKUs (ERP / Woo)',
+				cell: ({ row }) => {
+					const product = row.original;
+					const erpSku = product.sku || 'Sin SKU';
+					const wooSku = product.woocommerce?.sku;
+					const skusDiffer = !!(wooSku && erpSku.trim() !== wooSku.trim());
+
+					return (
+						<div className='flex flex-col gap-1 text-xs'>
+							<div className='flex items-center gap-1.5'>
+								{skusDiffer && (
+									<span className='flex-shrink-0 text-[9px] font-extrabold px-1 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400 w-8 text-center leading-none'>
+										ERP
+									</span>
+								)}
+								<code className='rounded bg-neutral-100 px-2 py-0.5 font-mono text-xs text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200'>
+									{erpSku}
+								</code>
+							</div>
+							{wooSku && (
+								<div className='flex items-center gap-1.5'>
+									{skusDiffer && (
+										<span className='flex-shrink-0 text-[9px] font-extrabold px-1 py-0.5 rounded bg-sky-100 text-sky-800 dark:bg-sky-950/40 dark:text-sky-400 w-8 text-center leading-none'>
+											Woo
+										</span>
+									)}
+									<code
+										className={`rounded px-2 py-0.5 font-mono text-xs ${
+											skusDiffer
+												? 'bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-300 dark:border-rose-800'
+												: 'bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200'
+										}`}>
+										{wooSku}
+									</code>
+									{skusDiffer && (
+										<Tooltip text='El SKU en WooCommerce no coincide con el ERP' placement='top'>
+											<span>
+												<Icon
+													icon='HeroExclamationTriangle'
+													className='h-3.5 w-3.5 text-amber-500 cursor-help'
+												/>
+											</span>
+										</Tooltip>
+									)}
+								</div>
+							)}
+						</div>
+					);
+				},
 			},
 			{
 				accessorKey: 'price',
-				header: 'Precio',
+				header: 'Precios (ERP / Woo)',
 				cell: ({ row }) => {
-					const price = Number(row.original.price ?? 0);
-					const offerPrice = row.original.offer_price
-						? Number(row.original.offer_price)
-						: null;
+					const product = row.original;
+					const erpPriceBase = Number(product.price ?? 0);
+					const erpPriceOffer = product.offer_price ? Number(product.offer_price) : null;
+					const erpPriceFinal = erpPriceOffer && erpPriceOffer < erpPriceBase ? erpPriceOffer : erpPriceBase;
+
+					const wooPriceBase = product.woocommerce?.price ? Number(product.woocommerce.price) : null;
+					const wooPriceOffer = product.woocommerce?.offer_price ? Number(product.woocommerce.offer_price) : null;
+					const wooPriceFinal = wooPriceOffer && wooPriceOffer < (wooPriceBase ?? 0) ? wooPriceOffer : wooPriceBase;
+
+					const pricesDiffer = wooPriceFinal !== null && erpPriceFinal !== wooPriceFinal;
+
 					const formatter = new Intl.NumberFormat('es-CL', {
 						style: 'currency',
 						currency: 'CLP',
 					});
 
 					return (
-						<div className='text-sm'>
-							{offerPrice && offerPrice < price ? (
-								<div className='flex flex-col'>
-									<span className='font-semibold text-emerald-600 dark:text-emerald-400'>
-										{formatter.format(offerPrice)}
-									</span>
-									<span className='text-xs text-neutral-400 line-through dark:text-neutral-500'>
-										{formatter.format(price)}
-									</span>
+						<div className='flex flex-col gap-1 text-xs'>
+							{/* ERP Prices */}
+							<div className='flex items-center gap-1.5'>
+								<span className='text-[9px] font-bold text-neutral-400 dark:text-neutral-500 w-7'>ERP:</span>
+								<div className='flex flex-wrap items-baseline gap-1'>
+									{erpPriceOffer && erpPriceOffer < erpPriceBase ? (
+										<>
+											<span className='font-semibold text-emerald-600 dark:text-emerald-400'>
+												{formatter.format(erpPriceOffer)}
+											</span>
+											<span className='text-[10px] text-neutral-400 line-through dark:text-neutral-500'>
+												{formatter.format(erpPriceBase)}
+											</span>
+										</>
+									) : (
+										<span className='font-medium text-neutral-800 dark:text-neutral-200'>
+											{formatter.format(erpPriceBase)}
+										</span>
+									)}
 								</div>
-							) : (
-								<span className='font-medium text-neutral-800 dark:text-neutral-200'>
-									{formatter.format(price)}
-								</span>
+							</div>
+
+							{/* Woo Prices */}
+							{wooPriceBase !== null && (
+								<div className='flex items-center gap-1.5 border-t border-neutral-100 pt-1 dark:border-neutral-800/60'>
+									<span className='text-[9px] font-bold text-neutral-400 dark:text-neutral-500 w-7'>Woo:</span>
+									<div className='flex flex-wrap items-baseline gap-1'>
+										{wooPriceOffer && wooPriceOffer < wooPriceBase ? (
+											<>
+												<span
+													className={`font-semibold ${
+														pricesDiffer
+															? 'text-rose-600 dark:text-rose-400 font-bold'
+															: 'text-emerald-600 dark:text-emerald-400'
+													}`}>
+													{formatter.format(wooPriceOffer)}
+												</span>
+												<span className='text-[10px] text-neutral-400 line-through dark:text-neutral-500'>
+													{formatter.format(wooPriceBase)}
+												</span>
+											</>
+										) : (
+											<span
+												className={`font-medium ${
+													pricesDiffer
+														? 'text-rose-600 dark:text-rose-400 font-bold'
+														: 'text-neutral-800 dark:text-neutral-200'
+												}`}>
+												{formatter.format(wooPriceBase)}
+											</span>
+										)}
+										{pricesDiffer && (
+											<Tooltip text='El precio final en WooCommerce difiere del ERP' placement='top'>
+												<span>
+													<Icon
+														icon='HeroExclamationTriangle'
+														className='h-3.5 w-3.5 text-amber-500 cursor-help ml-0.5'
+													/>
+												</span>
+											</Tooltip>
+										)}
+									</div>
+								</div>
 							)}
 						</div>
 					);

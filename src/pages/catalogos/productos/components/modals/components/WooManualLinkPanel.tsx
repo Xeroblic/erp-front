@@ -232,8 +232,8 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 	const comparisonData = comparisonRecord?.data ?? comparison;
 
 	return (
-		<Card className='overflow-hidden border border-violet-200/60 shadow-sm dark:border-violet-500/20'>
-			<CardHeader className='border-b border-violet-100 bg-violet-50 pb-3 dark:border-violet-500/10 dark:bg-violet-950/30'>
+		<Card className='overflow-hidden border border-neutral-200 shadow-sm dark:border-neutral-800'>
+			<CardHeader className='border-b border-neutral-100 bg-neutral-50/50 pb-3 dark:border-neutral-800/60 dark:bg-neutral-900/40'>
 				<div className='flex items-center justify-between gap-3'>
 					<div className='flex items-center gap-3'>
 						<div className='flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500/15 ring-1 ring-violet-500/25 dark:bg-violet-500/20 dark:ring-violet-400/30'>
@@ -246,7 +246,7 @@ const WooManualLinkPanel: React.FC<WooManualLinkPanelProps> = ({
 							<CardTitle className='text-base font-bold text-neutral-900 dark:text-neutral-50'>
 								Emparejamiento manual
 							</CardTitle>
-							<p className='mt-0.5 text-xs text-violet-700/70 dark:text-violet-300/70'>
+							<p className='mt-0.5 text-xs text-neutral-500 dark:text-neutral-400'>
 								Vincula este producto con una ficha existente en WooCommerce.
 							</p>
 						</div>

@@ -386,7 +386,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 	const isSaleClosed = saleStatus === 'completed' || saleStatus === 'closed';
 	const isSaleRefunded = saleStatus === 'refunded';
 	const isSaleCancelled = saleStatus === 'cancelled';
-	const canCloseSale = !isSaleClosed && !isSaleRefunded && !isSaleCancelled;
+	const canCloseSale = !!detail?.can_close;
 
 	return (
 		<Modal isOpen={isOpen} setIsOpen={onClose} size='xl' isScrollable isStaticBackdrop>
@@ -436,12 +436,17 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 							</div>
 
 							{/* Header solo informativo: las acciones viven en el footer. */}
-							{isSaleClosed && (
+							{isSaleClosed && !detail?.inventory_finalized && (
 								<Badge variant='solid' color='green' className='px-2 py-1 text-sm'>
 									Venta cerrada{' '}
 									{(detail as any)?.completed_at
 										? `el ${formatDate((detail as any).completed_at)}`
 										: ''}
+								</Badge>
+							)}
+							{detail?.inventory_finalized && (
+								<Badge variant='solid' color='green' className='px-2 py-1 text-sm'>
+									Finalizada
 								</Badge>
 							)}
 							{isSaleRefunded && (
@@ -561,7 +566,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 				<Card className='bg-white/90 shadow-sm'>
 					<CardHeader className='flex items-center justify-between'>
 						<CardTitle>Ítems de la venta</CardTitle>
-						{(isSaleClosed || isSaleRefunded) && hasSerialItems && (
+						{(isSaleClosed || isSaleRefunded) && hasSerialItems && !detail?.inventory_finalized && (
 							<Tooltip text='Corregir serie' placement='left-end'>
 								<ProtectedButton
 									permission='correct-sale-serials'
@@ -725,7 +730,7 @@ const SaleDetailPage: React.FC<Props> = ({ subsidiaryId, saleId, isOpen, onClose
 								</Button>
 							</Tooltip>
 						)}
-						{isSaleRefunded && (
+						{isSaleRefunded && !detail?.inventory_finalized && (
 							<Tooltip text='Confirmar recepcion de envio'>
 								<ProtectedButton
 									permission='confirm-sale-return'

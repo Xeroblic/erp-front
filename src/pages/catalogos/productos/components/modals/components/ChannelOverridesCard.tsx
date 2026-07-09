@@ -23,6 +23,7 @@ interface ChannelOverridesCardProps {
 	channelPrice: ProductChannelPrice | null;
 	basePrice: number | null;
 	baseOfferPrice: number | null;
+	baseName?: string | null;
 	onProductRefresh?: () => void;
 }
 
@@ -52,6 +53,7 @@ const ChannelOverridesCard: React.FC<ChannelOverridesCardProps> = ({
 	channelPrice,
 	basePrice,
 	baseOfferPrice,
+	baseName,
 	onProductRefresh,
 }) => {
 	const canAct = subsidiaryId !== null && integrationId !== null;
@@ -63,6 +65,9 @@ const ChannelOverridesCard: React.FC<ChannelOverridesCardProps> = ({
 		basePrice !== null ? `Base: ${formatMoney(String(basePrice))}` : 'Precio base del producto';
 	const baseOfferPlaceholder =
 		baseOfferPrice !== null ? `Base: ${formatMoney(String(baseOfferPrice))}` : 'Sin oferta';
+
+	const effectiveName = channelPrice?.effective_name ?? channelPrice?.name_override ?? baseName ?? null;
+	const baseNamePlaceholder = baseName ? `Base: ${baseName}` : 'Nombre original del producto';
 
 	const priceMutation = useChannelPriceMutation(subsidiaryId, productId);
 	const nameMutation = useChannelNameMutation(subsidiaryId, productId);
@@ -174,7 +179,12 @@ const ChannelOverridesCard: React.FC<ChannelOverridesCardProps> = ({
 		}
 	};
 
-	const isPublic = channelPrice?.visibility !== 'private';
+	const visibility =
+		channelPrice?.effective_visibility ??
+		channelPrice?.visibility_override ??
+		channelPrice?.visibility ??
+		null;
+	const isPublic = visibility !== 'private';
 
 	const handleToggleVisibility = async () => {
 		if (!canAct || !integrationId) return;
@@ -191,8 +201,8 @@ const ChannelOverridesCard: React.FC<ChannelOverridesCardProps> = ({
 	};
 
 	return (
-		<Card className='overflow-hidden border border-emerald-200/60 shadow-sm dark:border-emerald-500/20'>
-			<CardHeader className='border-b border-emerald-100 bg-emerald-50 pb-3 dark:border-emerald-500/10 dark:bg-emerald-950/30'>
+		<Card className='overflow-hidden border border-neutral-200 shadow-sm dark:border-neutral-800'>
+			<CardHeader className='border-b border-neutral-100 bg-neutral-50/50 pb-3 dark:border-neutral-800/60 dark:bg-neutral-900/40'>
 				<div className='flex items-center gap-3'>
 					<div className='flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/15 ring-1 ring-emerald-500/25 dark:bg-emerald-500/20 dark:ring-emerald-400/30'>
 						<Icon
@@ -204,7 +214,7 @@ const ChannelOverridesCard: React.FC<ChannelOverridesCardProps> = ({
 						<CardTitle className='text-base font-bold text-neutral-900 dark:text-neutral-50'>
 							Configuración del canal
 						</CardTitle>
-						<p className='mt-0.5 text-xs text-emerald-700/70 dark:text-emerald-300/70'>
+						<p className='mt-0.5 text-xs text-neutral-500 dark:text-neutral-400'>
 							Precio, nombre y visibilidad personalizados{' '}
 							{integrationName
 								? `para ${integrationName}`
@@ -337,7 +347,7 @@ const ChannelOverridesCard: React.FC<ChannelOverridesCardProps> = ({
 						<Input
 							id='channel_name_override'
 							name='name_override'
-							placeholder='Nombre original del producto'
+							placeholder={baseNamePlaceholder}
 							value={nameForm.values.name_override}
 							onChange={nameForm.handleChange}
 							onBlur={nameForm.handleBlur}
@@ -348,6 +358,12 @@ const ChannelOverridesCard: React.FC<ChannelOverridesCardProps> = ({
 								{nameForm.errors.name_override}
 							</div>
 						)}
+					</div>
+					<div className='text-xs text-neutral-500 dark:text-neutral-400'>
+						Nombre efectivo en el canal:{' '}
+						<strong className='text-neutral-700 dark:text-neutral-200'>
+							{effectiveName ?? '—'}
+						</strong>
 					</div>
 					<div className='flex flex-wrap gap-2'>
 						<Button

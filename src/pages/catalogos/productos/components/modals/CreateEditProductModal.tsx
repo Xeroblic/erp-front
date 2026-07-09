@@ -737,6 +737,7 @@ const CreateEditProductModal: React.FC<CreateEditProductModalProps> = ({
 														product.offer_price ??
 														null
 													}
+													baseName={product.name}
 												/>
 											) : (
 												<WooCommerceProductTab

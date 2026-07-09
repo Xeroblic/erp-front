@@ -26,7 +26,11 @@ export interface ProductChannelPrice {
 	channel: string | null;
 	channel_name: string | null;
 	name_override?: string | null;
+	/** Nombre resuelto (override → nombre base del producto) que ve el canal. */
+	effective_name?: string | null;
 	visibility?: ChannelVisibility | null;
+	visibility_override?: ChannelVisibility | null;
+	effective_visibility?: ChannelVisibility | null;
 	price_override: DecimalString | null;
 	offer_price_override: DecimalString | null;
 	effective_price: DecimalString | null;
