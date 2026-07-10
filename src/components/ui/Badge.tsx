@@ -1,5 +1,6 @@
-import React, { FC, ReactNode } from 'react';
+import React, { forwardRef, ReactNode, useRef, useEffect } from 'react';
 import classNames from 'classnames';
+import gsap from 'gsap';
 import { TColors } from '../../types/colors.type';
 import { TColorIntensity } from '../../types/colorIntensities.type';
 import themeConfig from '../../config/theme.config';
@@ -8,8 +9,6 @@ import { TBorderWidth } from '../../types/borderWidth.type';
 import { TRounded } from '../../types/rounded.type';
 import useReactiveThemeConfig from '../../hooks/useReactiveThemeConfig';
 import { useTypewriter } from '@/hooks/useTypewriter';
-import { useRef, useEffect } from 'react';
-import gsap from 'gsap';
 import {
 	resolveTailwindColor,
 	resolveTailwindColorAlpha,
@@ -40,17 +39,17 @@ const reactNodeToString = (node: ReactNode): string => {
 	return '';
 };
 
-const Badge: FC<IBadgeProps> = (props) => {
-	const { themeColor: reactiveThemeColor, themeColorShade: reactiveThemeColorShade } =
-		useReactiveThemeConfig();
+const Badge = forwardRef<HTMLSpanElement, IBadgeProps>((props, forwardedRef) => {
+	const { themeColor, themeColorShade } = useReactiveThemeConfig();
+	const { rounded: _rounded } = themeConfig;
 
 	const {
 		borderWidth = themeConfig.borderWidth,
 		children,
 		className,
-		color = reactiveThemeColor,
-		colorIntensity = reactiveThemeColorShade,
-		rounded = themeConfig.rounded,
+		color = themeColor,
+		colorIntensity = themeColorShade,
+		rounded = _rounded,
 		variant = 'default',
 		typewriter = false,
 		...rest
@@ -111,7 +110,14 @@ const Badge: FC<IBadgeProps> = (props) => {
 
 	return (
 		<span
-			ref={badgeRef}
+			ref={(node) => {
+				badgeRef.current = node;
+				if (typeof forwardedRef === 'function') {
+					forwardedRef(node);
+				} else if (forwardedRef) {
+					forwardedRef.current = node;
+				}
+			}}
 			data-component-name='Badge'
 			className={classes}
 			style={
@@ -126,7 +132,7 @@ const Badge: FC<IBadgeProps> = (props) => {
 			{typewriter ? typewriterResult.text : children}
 		</span>
 	);
-};
+});
 Badge.displayName = 'Badge';
 
 export default Badge;
