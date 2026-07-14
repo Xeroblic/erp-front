@@ -255,6 +255,27 @@ const CotizacionesAdmin: React.FC = () => {
 		}
 	};
 
+	const handleDownloadExcel = async (id: number) => {
+		setIsActionLoading(true);
+		try {
+			// 1. Cargamos los datos
+			const detail = await loadQuotationDetails(id);
+
+			// 2. Importamos las librerías pesadas SOLO AHORA
+			const { saveAs } = await import('file-saver');
+			const { generateQuoteExcel } = await import('./utils/excel/generateQuoteExcel');
+
+			// 3. Generamos el Excel
+			const blob = await generateQuoteExcel(detail);
+			saveAs(blob, `cotizacion-${detail.id}.xlsx`);
+		} catch (error) {
+			toast.error('No se pudo generar el Excel');
+			console.error('Error al generar Excel:', error);
+		} finally {
+			setIsActionLoading(false);
+		}
+	};
+
 	const handleDuplicateClick = (id: number) => {
 		const quotation = quotations.find((q) => q.id === id);
 		if (quotation) {
@@ -400,6 +421,7 @@ const CotizacionesAdmin: React.FC = () => {
 							onChangeStatus={handleChangeStatus}
 							onConvertToSale={handleConvertToSale}
 							onDownloadPdf={handleDownloadPdf}
+							onDownloadExcel={handleDownloadExcel}
 						/>
 					</CardBody>
 				</Card>

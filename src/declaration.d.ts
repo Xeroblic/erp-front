@@ -3,6 +3,12 @@ declare module '*.webp';
 declare module '*.md';
 declare module '*.jpg';
 
+// Assets importados como URL (Vite `?url`)
+declare module '*.xlsx?url' {
+	const src: string;
+	export default src;
+}
+
 // Declaración global para el store de Redux
 declare global {
 	interface Window {

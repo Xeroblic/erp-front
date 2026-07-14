@@ -10,6 +10,7 @@ import DataTable from '@/components/ui/DataTable/DataTable';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
+import Dropdown, { DropdownToggle, DropdownMenu, DropdownItem } from '@/components/ui/Dropdown';
 import { getQuoteStatusBadge, normalizeQuoteStatusValue } from '../../constants/quoteStatuses';
 import { formatDate } from '@/utils/format.utils';
 import Tooltip from '@/components/ui/Tooltip';
@@ -25,6 +26,7 @@ interface QuotationsTableProps {
 	onChangeStatus?: (id: number, status: QuoteStatus) => void;
 	onConvertToSale?: (id: number) => void;
 	onDownloadPdf?: (id: number) => void;
+	onDownloadExcel?: (id: number) => void;
 }
 
 const columnHelper = createColumnHelper<IQuote>();
@@ -40,6 +42,7 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 	onChangeStatus,
 	onConvertToSale,
 	onDownloadPdf,
+	onDownloadExcel,
 }) => {
 	// Formatear moneda
 	const formatCurrency = (amount: number) => {
@@ -107,17 +110,37 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 				header: 'Acciones',
 				cell: (info) => (
 					<div className='flex justify-end gap-2'>
-						<Tooltip text='Descargar PDF' placement='top-end'>
-							<Button
-								variant='solid'
-								size='sm'
-								onClick={() => onDownloadPdf?.(info.row.original.id)}
-								className='bg-sky-600 hover:bg-sky-700/20 p-1'
-								color='sky'
-							>
-								<Icon icon='HeroArrowDownTray' color='white' className='text-xl' />
-							</Button>
-						</Tooltip>
+						<Dropdown>
+							<DropdownToggle hasIcon={false}>
+								<Button
+									variant='solid'
+									size='sm'
+									title='Descargar'
+									className='bg-sky-600 hover:bg-sky-700/20 p-1'
+									color='sky'
+								>
+									<Icon
+										icon='HeroArrowDownTray'
+										color='white'
+										className='text-xl'
+									/>
+								</Button>
+							</DropdownToggle>
+							<DropdownMenu placement='bottom-end'>
+								<DropdownItem
+									icon='HeroDocumentText'
+									onClick={() => onDownloadPdf?.(info.row.original.id)}
+								>
+									Descargar PDF
+								</DropdownItem>
+								<DropdownItem
+									icon='HeroTableCells'
+									onClick={() => onDownloadExcel?.(info.row.original.id)}
+								>
+									Descargar Excel
+								</DropdownItem>
+							</DropdownMenu>
+						</Dropdown>
 						<Tooltip text='Ver Cotización' placement='top-end'>
 							<Button
 								variant='outline'
@@ -205,7 +228,7 @@ const QuotationsTable: React.FC<QuotationsTableProps> = ({
 				),
 			}),
 		],
-		[onDownloadPdf, onView, onEdit, onChangeStatus, onConvertToSale, onDelete],
+		[onDownloadPdf, onDownloadExcel, onView, onEdit, onChangeStatus, onConvertToSale, onDelete],
 	);
 
 	return (
