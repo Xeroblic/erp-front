@@ -3,6 +3,7 @@ import gsap from 'gsap';
 import Avatar from '@/components/Avatar';
 import Icon from '@/components/icon/Icon';
 import type { UserNotificationDTO } from '@/interface/notifications.interface';
+import { toast } from 'react-toastify';
 
 type Props = {
 	n: UserNotificationDTO;
@@ -21,7 +22,6 @@ const sanitize = (s?: string | null) =>
 		.replace(/\s+/g, ' ')
 		.trim();
 
-// Constantes de configuración
 const ACTIVATE_PX = 12;
 const HV_RATIO = 1.5;
 
@@ -34,30 +34,25 @@ const NotificationSwipeItem: React.FC<Props> = ({
 	onOpen,
 	archiveLabel = 'Archivar',
 }) => {
-	// === REFS DOM ===
 	const containerRef = useRef<HTMLDivElement>(null);
 	const cardRef = useRef<HTMLDivElement>(null);
 	const bgRef = useRef<HTMLDivElement>(null);
 	const leftIconRef = useRef<HTMLDivElement>(null);
 	const rightIconRef = useRef<HTMLDivElement>(null);
 
-	// === REFS TRACKING (sin re-renders) ===
 	const startX = useRef(0);
 	const startY = useRef(0);
 	const currentX = useRef(0);
 	const isDragging = useRef(false);
-	const isHorizontal = useRef<boolean | null>(null); // null = no decidido, true = horizontal, false = vertical
+	const isHorizontal = useRef<boolean | null>(null);
 	const cardWidth = useRef(300);
 	const rafId = useRef<number>(0);
 	const pointerId = useRef<number | null>(null);
 
-	// === ESTADO REACT (mínimo) ===
 	const [showBg, setShowBg] = useState(false);
 
-	// Threshold dinámico
 	const getThreshold = () => cardWidth.current * 0.45;
 
-	// === INICIALIZACIÓN ===
 	useLayoutEffect(() => {
 		if (cardRef.current) {
 			cardWidth.current = cardRef.current.offsetWidth || 300;
@@ -65,7 +60,6 @@ const NotificationSwipeItem: React.FC<Props> = ({
 		}
 	}, []);
 
-	// === APLICAR VISUALES (llamado en RAF) ===
 	const applyVisuals = useCallback(() => {
 		const x = currentX.current;
 		const threshold = getThreshold();
@@ -114,25 +108,20 @@ const NotificationSwipeItem: React.FC<Props> = ({
 		}
 	}, []);
 
-	// === POINTER HANDLERS ===
 	const handlePointerDown = useCallback((e: React.PointerEvent) => {
-		// Medir ancho actual
 		if (cardRef.current) {
 			cardWidth.current = cardRef.current.offsetWidth || 300;
 		}
 
-		// Capturar pointer
 		e.currentTarget.setPointerCapture(e.pointerId);
 		pointerId.current = e.pointerId;
 
-		// Reset estado
 		startX.current = e.clientX;
 		startY.current = e.clientY;
 		currentX.current = 0;
 		isDragging.current = true;
 		isHorizontal.current = null;
 
-		// Mostrar background layer
 		setShowBg(true);
 	}, []);
 
@@ -143,7 +132,6 @@ const NotificationSwipeItem: React.FC<Props> = ({
 			const dx = e.clientX - startX.current;
 			const dy = e.clientY - startY.current;
 
-			// Decidir dirección si aún no está decidido
 			if (isHorizontal.current === null) {
 				const absX = Math.abs(dx);
 				const absY = Math.abs(dy);
@@ -158,18 +146,16 @@ const NotificationSwipeItem: React.FC<Props> = ({
 						return;
 					}
 
-					// Prevenir scroll mientras hacemos swipe
 					if (containerRef.current) {
 						containerRef.current.style.touchAction = 'none';
 					}
 				} else {
-					return; // Aún no hay suficiente movimiento
+					return;
 				}
 			}
 
 			if (!isHorizontal.current) return;
 
-			// Aplicar resistencia suave después del threshold
 			const threshold = getThreshold();
 			const maxDrag = cardWidth.current * 0.6;
 			let newX = dx;
@@ -182,7 +168,6 @@ const NotificationSwipeItem: React.FC<Props> = ({
 
 			currentX.current = newX;
 
-			// Usar RAF para actualizar visuales
 			cancelAnimationFrame(rafId.current);
 			rafId.current = requestAnimationFrame(applyVisuals);
 		},
@@ -191,11 +176,10 @@ const NotificationSwipeItem: React.FC<Props> = ({
 
 	const handlePointerEnd = useCallback(
 		(e: React.PointerEvent) => {
-			// Liberar pointer
 			try {
 				e.currentTarget.releasePointerCapture(e.pointerId);
 			} catch {
-				// Ignorar
+				return;
 			}
 
 			if (!isDragging.current) return;
@@ -211,26 +195,44 @@ const NotificationSwipeItem: React.FC<Props> = ({
 			const x = currentX.current;
 			const threshold = getThreshold();
 			const shouldExecute = Math.abs(x) >= threshold;
-			
-			// Ejecutar acción si corresponde
+
 			if (shouldExecute && isHorizontal.current) {
 				if (x > 0) {
-					// Swipe derecha -> toggle read
-					if (n.status !== 'read') {
-						onRead(n.id);
-					} else {
-						onUnread(n.id);
+					try {
+						if (n.status !== 'read') {
+							onRead(n.id);
+							e.currentTarget.releasePointerCapture(e.pointerId);
+							toast.success(`La notificación con id: ${n.id} se a marcado como "No Leida" Exitosamente `)
+						} else {
+							onUnread(n.id);
+							e.currentTarget.releasePointerCapture(e.pointerId);
+							toast.success(`La notificación con id: ${n.id} se a marcado como "Leida" exitosamente!`)
+						}
+					} catch {
+						toast.error('hubo un error al marcar como leido/no leido el elemento')
 					}
 				} else {
-					// Swipe izquierda -> archive
-					onArchive(n.id);
+					try {
+						onArchive(n.id);
+						e.currentTarget.releasePointerCapture(e.pointerId);
+						setTimeout(() => {
+							e.currentTarget.releasePointerCapture(e.pointerId);
+						}, 100);
+						toast.success('Se a Archivado correctamente el elemento')
+					} catch {
+						toast.error('hubo un error al archivar el elemento')
+					}
+
 				}
 			} else if (!shouldExecute && isHorizontal.current === null) {
-				// Tap puro sin movimiento -> abrir detalle (single click)
-				onOpen?.(n.id);
+				try {
+					onOpen?.(n.id);
+					e.currentTarget.releasePointerCapture(e.pointerId);
+					toast.success(`Se a abierto correctamente el elemento`, { autoClose: 200 })
+				} catch {
+					toast.error('hubo un error al abrir el elemento', { autoClose: 200 })
+				}
 			}
-
-			// Animar reset suave del card incluyendo boxShadow
 			if (cardRef.current) {
 				gsap.to(cardRef.current, {
 					x: 0,
@@ -241,7 +243,6 @@ const NotificationSwipeItem: React.FC<Props> = ({
 				});
 			}
 
-			// Fade out background e iconos
 			if (bgRef.current) {
 				gsap.to(bgRef.current, {
 					opacity: 0,
@@ -263,19 +264,17 @@ const NotificationSwipeItem: React.FC<Props> = ({
 		[n.id, n.status, onRead, onUnread, onArchive],
 	);
 
-	// Cleanup
 	useEffect(() => {
 		return () => {
 			cancelAnimationFrame(rafId.current);
 		};
 	}, []);
 
-	// === RENDER DATA ===
 	const title = sanitize(n.event?.type_label ?? n.event?.type_key ?? 'Notificación');
 	const moduleLabel = sanitize(
 		n.event?.module_label ??
-			n.event?.module ??
-			((n.delivered_channels ?? []).includes('email') ? 'Correo' : 'Sistema'),
+		n.event?.module ??
+		((n.delivered_channels ?? []).includes('email') ? 'Correo' : 'Sistema'),
 	);
 	const message = sanitize(n.message ?? '');
 
@@ -289,13 +288,11 @@ const NotificationSwipeItem: React.FC<Props> = ({
 			onPointerUp={handlePointerEnd}
 			onPointerCancel={handlePointerEnd}
 			onPointerLeave={handlePointerEnd}>
-			{/* Background con gradientes */}
 			{showBg && (
 				<div
 					ref={bgRef}
 					className='pointer-events-none absolute inset-0 rounded-md'
 					style={{ opacity: 1 }}>
-					{/* Icono izquierdo (archivar) */}
 					<div
 						ref={leftIconRef}
 						className='absolute left-4 top-1/2 -translate-y-1/2 text-amber-500'
@@ -309,7 +306,6 @@ const NotificationSwipeItem: React.FC<Props> = ({
 							className='h-8 w-8'
 						/>
 					</div>
-					{/* Icono derecho (marcar leída) */}
 					<div
 						ref={rightIconRef}
 						className='absolute right-4 top-1/2 -translate-y-1/2 text-emerald-500'
@@ -318,15 +314,12 @@ const NotificationSwipeItem: React.FC<Props> = ({
 					</div>
 				</div>
 			)}
-
-			{/* Card principal */}
 			<div
 				ref={cardRef}
-				className={`relative cursor-pointer rounded-md border p-3 ${
-					n.status === 'read'
+				className={`relative cursor-pointer rounded-md border p-3 ${n.status === 'read'
 						? 'border-emerald-200/50 bg-emerald-50/40 dark:border-emerald-900/40 dark:bg-emerald-900/20'
 						: 'border-rose-200/60 bg-rose-50/60 dark:border-rose-900/40 dark:bg-rose-900/20'
-				}`}>
+					}`}>
 				<div className='grid grid-cols-[auto_1fr_auto] items-start gap-3'>
 					<div className='relative'>
 						<Avatar name={n.event?.type_key ?? 'N'} />
