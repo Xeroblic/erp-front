@@ -111,6 +111,20 @@ export interface IItem {
 }
 
 /**
+ * Foto de la galería de una revisión técnica (asociada a un TechnicalReviewItem).
+ * Normaliza las variantes del backend (`thumb`/`thumb_url`) a una sola forma.
+ */
+export interface ITechnicalReviewPhoto {
+	id: number;
+	url: string;
+	thumb: string | null;
+	alt: string | null;
+	sort: number;
+	source_url?: string | null;
+	file_name?: string | null;
+}
+
+/**
  * Parámetros de filtrado para listado de lotes
  */
 export interface FetchBatchesParams {

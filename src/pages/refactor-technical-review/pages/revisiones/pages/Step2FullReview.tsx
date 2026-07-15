@@ -7,6 +7,7 @@ import { updateItemDetails } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 // import useAuthorization from '@/hooks/useAuthorization';
 import EquipmentFormRouter from '../../../components/forms';
+import { ReviewPhotosProvider } from '../../../components/forms/shared/gallery/ReviewPhotosContext';
 import useAutoSave from '../../../hooks/useAutoSave';
 import AutoSaveConfirmModal from '../../../components/modals/AutoSaveConfirmModal';
 import PrefillReviewModal from '../../../components/modals/PrefillReviewModal';
@@ -41,7 +42,7 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 	readOnly = false,
 }) => {
 	const dispatch = useAppDispatch();
-	const { branchId } = useCurrentBranch();
+	const { branchId, subsidiaryId } = useCurrentBranch();
 	// const { isSuperAdmin, hasRole } = useAuthorization();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [showSavingBadge, setShowSavingBadge] = useState(false);
@@ -236,19 +237,23 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 				</div>
 			</div>
 
-			{/* Form Router */}
-			<EquipmentFormRouter
-				key={`form-router-${formKey}`}
-				equipmentType={equipmentType}
-				defaultValues={mergedDefaultValues}
-				onSubmit={handleFormSubmit}
-				onBack={onBack}
-				isSubmitting={isSubmitting || loading}
-				readOnly={readOnly}
-				onStepChange={handleStepChange}
-				registerGetFormValues={registerGetFormValues}
-				isSaving={isSaving}
-			/>
+			{/* Form Router (envuelto para exponer contexto de fotos a la pestaña Galería) */}
+			<ReviewPhotosProvider
+				subsidiaryId={subsidiaryId ?? null}
+				itemId={initialData?.id ?? null}>
+				<EquipmentFormRouter
+					key={`form-router-${formKey}`}
+					equipmentType={equipmentType}
+					defaultValues={mergedDefaultValues}
+					onSubmit={handleFormSubmit}
+					onBack={onBack}
+					isSubmitting={isSubmitting || loading}
+					readOnly={readOnly}
+					onStepChange={handleStepChange}
+					registerGetFormValues={registerGetFormValues}
+					isSaving={isSaving}
+				/>
+			</ReviewPhotosProvider>
 
 			{/* Auto-Save Confirmation Modal */}
 			<AutoSaveConfirmModal

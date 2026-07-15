@@ -25,6 +25,7 @@ import InputSection from './sections/InputSection';
 import AestheticsSection from './sections/AestheticsSection';
 import SoftwareSection from './sections/SoftwareSection';
 import ObservationsSection from './sections/ObservationsSection';
+import GallerySection from '../shared/gallery/GallerySection';
 
 // ─── Section Order (edit this array to reorder steps) ─────────────────────────
 const NOTEBOOK_SECTIONS: SectionConfig<NotebookFormData>[] = [
@@ -81,6 +82,12 @@ const NOTEBOOK_SECTIONS: SectionConfig<NotebookFormData>[] = [
 		label: 'Observaciones',
 		icon: 'HeroDocumentText',
 		component: ObservationsSection,
+	},
+	{
+		key: 'gallery',
+		label: 'Galería',
+		icon: 'HeroPhoto',
+		component: GallerySection,
 	},
 ];
 

@@ -20,6 +20,7 @@ import AioScreenSection from './sections/AioScreenSection';
 import AioPortsSection from './sections/AioPortsSection';
 import AioAccessoriesSection from './sections/AioAccessoriesSection';
 import AioObservationsSection from './sections/AioObservationsSection';
+import GallerySection from '../shared/gallery/GallerySection';
 
 const AIO_SECTIONS: SectionConfig<AioFormData>[] = [
 	{
@@ -57,6 +58,12 @@ const AIO_SECTIONS: SectionConfig<AioFormData>[] = [
 		label: 'SO & Obs.',
 		icon: 'HeroDocumentText',
 		component: AioObservationsSection as unknown as React.FC<FormSectionProps<AioFormData>>,
+	},
+	{
+		key: 'gallery',
+		label: 'Galería',
+		icon: 'HeroPhoto',
+		component: GallerySection,
 	},
 ];
 

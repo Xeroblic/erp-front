@@ -19,6 +19,7 @@ import MonitorScreenSection from './sections/MonitorScreenSection';
 import MonitorPortsSection from './sections/MonitorPortsSection';
 import MonitorAccessoriesSection from './sections/MonitorAccessoriesSection';
 import Observations from './sections/Observations';
+import GallerySection from '../shared/gallery/GallerySection';
 
 // ─── Section Order ─────────────────────────
 const MONITOR_SECTIONS: SectionConfig<MonitorFormData>[] = [
@@ -56,6 +57,12 @@ const MONITOR_SECTIONS: SectionConfig<MonitorFormData>[] = [
 		label: 'Obs.',
 		icon: 'HeroDocumentText',
 		component: Observations as unknown as React.FC<FormSectionProps<MonitorFormData>>,
+	},
+	{
+		key: 'gallery',
+		label: 'Galería',
+		icon: 'HeroPhoto',
+		component: GallerySection,
 	},
 ];
 
