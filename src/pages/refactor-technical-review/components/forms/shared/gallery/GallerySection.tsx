@@ -12,7 +12,7 @@
  *   - Ver galería:      view-technical-reviews-items
  *   - Subir / eliminar: review-technical-reviews-items
  */
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { FieldValues } from 'react-hook-form';
 import Icon from '@/components/icon/Icon';
 import Button from '@/components/ui/Button';
@@ -27,7 +27,6 @@ import {
 	PHOTO_EDIT_PERMISSION,
 	PHOTO_VIEW_PERMISSION,
 } from './gallery.constants';
-import type { ITechnicalReviewPhoto } from '@/interface/technicalReviews.interface';
 
 function GallerySection<T extends FieldValues>({ readOnly }: FormSectionProps<T>) {
 	const { subsidiaryId, itemId } = useReviewPhotosContext();
@@ -36,15 +35,39 @@ function GallerySection<T extends FieldValues>({ readOnly }: FormSectionProps<T>
 	const canView = has(PHOTO_VIEW_PERMISSION);
 	const canEdit = !readOnly && has(PHOTO_EDIT_PERMISSION);
 
-	const { photos, loading, uploading, deletingId, error, upload, remove } = useReviewPhotos({
-		subsidiaryId,
-		itemId,
-		enabled: canView,
-	});
+	const { photos, loading, uploading, deletingId, error, refresh, upload, remove } =
+		useReviewPhotos({
+			subsidiaryId,
+			itemId,
+			enabled: canView,
+		});
 
 	const inputRef = useRef<HTMLInputElement>(null);
 	const [isDragging, setIsDragging] = useState(false);
-	const [lightbox, setLightbox] = useState<ITechnicalReviewPhoto | null>(null);
+	const [confirmId, setConfirmId] = useState<number | null>(null);
+	const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+	const lightboxPhoto = lightboxIndex !== null ? (photos[lightboxIndex] ?? null) : null;
+
+	const closeLightbox = useCallback(() => setLightboxIndex(null), []);
+	const showPrev = useCallback(() => {
+		setLightboxIndex((i) => (i === null ? i : (i - 1 + photos.length) % photos.length));
+	}, [photos.length]);
+	const showNext = useCallback(() => {
+		setLightboxIndex((i) => (i === null ? i : (i + 1) % photos.length));
+	}, [photos.length]);
+
+	// Navegación por teclado del lightbox (Esc / ← / →)
+	useEffect(() => {
+		if (lightboxIndex === null) return undefined;
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') closeLightbox();
+			else if (e.key === 'ArrowLeft') showPrev();
+			else if (e.key === 'ArrowRight') showNext();
+		};
+		window.addEventListener('keydown', onKey);
+		return () => window.removeEventListener('keydown', onKey);
+	}, [lightboxIndex, closeLightbox, showPrev, showNext]);
 
 	const handleFiles = useCallback(
 		(fileList: FileList | null) => {
@@ -62,6 +85,14 @@ function GallerySection<T extends FieldValues>({ readOnly }: FormSectionProps<T>
 			handleFiles(e.dataTransfer.files);
 		},
 		[canEdit, uploading, handleFiles],
+	);
+
+	const handleConfirmDelete = useCallback(
+		(mediaId: number) => {
+			setConfirmId(null);
+			void remove(mediaId);
+		},
+		[remove],
 	);
 
 	// ─── Sin contexto de item (no debería ocurrir dentro de la revisión) ─────
@@ -88,6 +119,27 @@ function GallerySection<T extends FieldValues>({ readOnly }: FormSectionProps<T>
 
 	return (
 		<div className='space-y-5'>
+			{/* ─── Encabezado: conteo + refrescar ────────────────────────── */}
+			<div className='flex items-center justify-between'>
+				<p className='text-sm font-semibold text-zinc-600 dark:text-zinc-300'>
+					{photos.length === 0
+						? 'Sin fotos'
+						: `${photos.length} ${photos.length === 1 ? 'foto' : 'fotos'}`}
+				</p>
+				<button
+					type='button'
+					onClick={() => void refresh()}
+					disabled={loading}
+					title='Actualizar galería'
+					className='flex items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800'>
+					<Icon
+						icon='HeroArrowPath'
+						className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`}
+					/>
+					Actualizar
+				</button>
+			</div>
+
 			{/* ─── Zona de carga ─────────────────────────────────────────── */}
 			{canEdit && (
 				<div
@@ -135,9 +187,17 @@ function GallerySection<T extends FieldValues>({ readOnly }: FormSectionProps<T>
 
 			{/* ─── Error ─────────────────────────────────────────────────── */}
 			{error && (
-				<div className='flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300'>
-					<Icon icon='HeroExclamationTriangle' className='h-4 w-4' />
-					{error}
+				<div className='flex items-center justify-between gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300'>
+					<span className='flex items-center gap-2'>
+						<Icon icon='HeroExclamationTriangle' className='h-4 w-4 shrink-0' />
+						{error}
+					</span>
+					<button
+						type='button'
+						onClick={() => void refresh()}
+						className='shrink-0 font-semibold underline underline-offset-2 hover:no-underline'>
+						Reintentar
+					</button>
 				</div>
 			)}
 
@@ -158,13 +218,13 @@ function GallerySection<T extends FieldValues>({ readOnly }: FormSectionProps<T>
 				</div>
 			) : (
 				<div className='grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4'>
-					{photos.map((photo) => (
+					{photos.map((photo, index) => (
 						<div
 							key={photo.id}
 							className='group relative aspect-square overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800'>
 							<button
 								type='button'
-								onClick={() => setLightbox(photo)}
+								onClick={() => setLightboxIndex(index)}
 								className='h-full w-full'
 								title={photo.alt ?? 'Ver foto'}>
 								<img
@@ -183,46 +243,106 @@ function GallerySection<T extends FieldValues>({ readOnly }: FormSectionProps<T>
 								/>
 							</div>
 
-							{/* Botón eliminar (solo con permiso de edición) */}
-							{canEdit && (
-								<button
-									type='button'
-									onClick={() => remove(photo.id)}
-									disabled={deletingId === photo.id}
-									title='Eliminar foto'
-									className='absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-red-600/90 text-white shadow-md transition-all hover:bg-red-700 disabled:opacity-60'>
-									<Icon
-										icon={
-											deletingId === photo.id ? 'HeroArrowPath' : 'HeroTrash'
-										}
-										className={`h-4 w-4 ${deletingId === photo.id ? 'animate-spin' : ''}`}
-									/>
-								</button>
-							)}
+							{/* Botón eliminar + confirmación (solo con permiso de edición) */}
+							{canEdit &&
+								(confirmId === photo.id ? (
+									<div className='absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 px-2 text-center'>
+										<p className='text-xs font-semibold text-white'>
+											¿Eliminar foto?
+										</p>
+										<div className='flex gap-2'>
+											<button
+												type='button'
+												onClick={() => handleConfirmDelete(photo.id)}
+												className='rounded-md bg-red-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-red-700'>
+												Sí
+											</button>
+											<button
+												type='button'
+												onClick={() => setConfirmId(null)}
+												className='rounded-md bg-white/20 px-2.5 py-1 text-xs font-bold text-white hover:bg-white/30'>
+												No
+											</button>
+										</div>
+									</div>
+								) : (
+									<button
+										type='button'
+										onClick={() => setConfirmId(photo.id)}
+										disabled={deletingId === photo.id}
+										title='Eliminar foto'
+										className='absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-red-600/90 text-white opacity-0 shadow-md transition-all hover:bg-red-700 focus:opacity-100 disabled:opacity-60 group-hover:opacity-100'>
+										<Icon
+											icon={
+												deletingId === photo.id
+													? 'HeroArrowPath'
+													: 'HeroTrash'
+											}
+											className={`h-4 w-4 ${deletingId === photo.id ? 'animate-spin' : ''}`}
+										/>
+									</button>
+								))}
 						</div>
 					))}
 				</div>
 			)}
 
 			{/* ─── Lightbox ──────────────────────────────────────────────── */}
-			{lightbox && (
+			{lightboxPhoto && (
 				<div
 					role='dialog'
 					aria-modal='true'
-					onClick={() => setLightbox(null)}
+					onClick={closeLightbox}
 					className='fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm'>
+					{/* Cerrar */}
 					<button
 						type='button'
-						onClick={() => setLightbox(null)}
-						title='Cerrar'
+						onClick={closeLightbox}
+						title='Cerrar (Esc)'
 						className='absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20'>
 						<Icon icon='HeroXMark' className='h-6 w-6' />
 					</button>
+
+					{/* Contador */}
+					{photos.length > 1 && (
+						<span className='absolute left-1/2 top-4 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white'>
+							{(lightboxIndex ?? 0) + 1} / {photos.length}
+						</span>
+					)}
+
+					{/* Anterior */}
+					{photos.length > 1 && (
+						<button
+							type='button'
+							onClick={(e) => {
+								e.stopPropagation();
+								showPrev();
+							}}
+							title='Anterior (←)'
+							className='absolute left-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20'>
+							<Icon icon='HeroChevronLeft' className='h-6 w-6' />
+						</button>
+					)}
+
+					{/* Siguiente */}
+					{photos.length > 1 && (
+						<button
+							type='button'
+							onClick={(e) => {
+								e.stopPropagation();
+								showNext();
+							}}
+							title='Siguiente (→)'
+							className='absolute right-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20'>
+							<Icon icon='HeroChevronRight' className='h-6 w-6' />
+						</button>
+					)}
+
 					<img
-						src={lightbox.url}
-						alt={lightbox.alt ?? 'Foto de revisión'}
+						src={lightboxPhoto.url}
+						alt={lightboxPhoto.alt ?? 'Foto de revisión'}
 						onClick={(e) => e.stopPropagation()}
-						className='max-h-[90vh] max-w-[90vw] rounded-lg object-contain shadow-2xl'
+						className='max-h-[90vh] max-w-[85vw] rounded-lg object-contain shadow-2xl'
 					/>
 				</div>
 			)}
