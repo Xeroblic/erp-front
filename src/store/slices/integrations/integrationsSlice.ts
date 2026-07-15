@@ -49,7 +49,10 @@ const getApiErrorMessage = (error: unknown, fallback: string): string => {
 interface IntegrationsState {
 	integrations: Integration[];
 	selectedIntegration: Integration | null;
+	trashedIntegrations: Integration[];
 	loading: boolean;
+	/** Flag separado para el restore (no bloquea la lista principal). */
+	restoring: boolean;
 	error: string | null;
 	lastFetch: number | null;
 }
@@ -57,7 +60,9 @@ interface IntegrationsState {
 const initialState: IntegrationsState = {
 	integrations: [],
 	selectedIntegration: null,
+	trashedIntegrations: [],
 	loading: false,
+	restoring: false,
 	error: null,
 	lastFetch: null,
 };
@@ -166,6 +171,47 @@ export const deleteIntegration = createAsyncThunk(
 	},
 );
 
+/**
+ * Fetch integraciones eliminadas (papelera)
+ */
+export const fetchTrashedIntegrations = createAsyncThunk(
+	'integrations/fetchTrashed',
+	async ({ subsidiaryId }: { subsidiaryId: number }, { rejectWithValue }) => {
+		try {
+			const response = await integrationsService.getTrashedIntegrations(subsidiaryId);
+			return response.data;
+		} catch (error: unknown) {
+			return rejectWithValue(
+				getApiErrorMessage(error, 'Error al cargar papelera de integraciones'),
+			);
+		}
+	},
+);
+
+/**
+ * Restaurar una integración eliminada.
+ * Recupera la integración y todos sus links de producto con overrides.
+ */
+export const restoreIntegration = createAsyncThunk(
+	'integrations/restore',
+	async (
+		{ subsidiaryId, integrationId }: { subsidiaryId: number; integrationId: string },
+		{ rejectWithValue },
+	) => {
+		try {
+			const response = await integrationsService.restoreIntegration(
+				subsidiaryId,
+				integrationId,
+			);
+			return response.data;
+		} catch (error: unknown) {
+			return rejectWithValue(
+				getApiErrorMessage(error, 'Error al restaurar integración'),
+			);
+		}
+	},
+);
+
 // ==================== SLICE ====================
 
 const integrationsSlice = createSlice({
@@ -180,6 +226,7 @@ const integrationsSlice = createSlice({
 		},
 		clearIntegrations: (state) => {
 			state.integrations = [];
+			state.trashedIntegrations = [];
 			state.selectedIntegration = null;
 			state.lastFetch = null;
 		},
@@ -267,6 +314,40 @@ const integrationsSlice = createSlice({
 			})
 			.addCase(deleteIntegration.rejected, (state, action) => {
 				state.loading = false;
+				state.error = action.payload as string;
+			});
+
+		// Fetch Trashed (papelera)
+		builder
+			.addCase(fetchTrashedIntegrations.pending, (state) => {
+				state.loading = true;
+				state.error = null;
+			})
+			.addCase(fetchTrashedIntegrations.fulfilled, (state, action) => {
+				state.loading = false;
+				state.trashedIntegrations = action.payload;
+			})
+			.addCase(fetchTrashedIntegrations.rejected, (state, action) => {
+				state.loading = false;
+				state.error = action.payload as string;
+			});
+
+		// Restore
+		builder
+			.addCase(restoreIntegration.pending, (state) => {
+				state.restoring = true;
+				state.error = null;
+			})
+			.addCase(restoreIntegration.fulfilled, (state, action) => {
+				state.restoring = false;
+				// Mover de papelera a activas
+				state.trashedIntegrations = state.trashedIntegrations.filter(
+					(i) => i.id !== action.payload.id,
+				);
+				state.integrations.push(action.payload);
+			})
+			.addCase(restoreIntegration.rejected, (state, action) => {
+				state.restoring = false;
 				state.error = action.payload as string;
 			});
 	},

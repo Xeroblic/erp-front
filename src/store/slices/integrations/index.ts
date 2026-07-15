@@ -5,6 +5,8 @@ export {
 	createIntegration,
 	updateIntegration,
 	deleteIntegration,
+	fetchTrashedIntegrations,
+	restoreIntegration,
 	setSelectedIntegration,
 	clearError,
 	clearIntegrations,
