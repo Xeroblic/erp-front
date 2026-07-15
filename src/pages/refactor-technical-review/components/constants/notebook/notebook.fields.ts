@@ -168,6 +168,32 @@ export const NOTEBOOK_FIELDS_METADATA = {
 		allowed_values: ['excellent', 'good', 'fair', 'poor', 'no_battery'],
 		hint: 'Porcentaje o categoría',
 	},
+	has_second_battery: {
+		type: 'boolean',
+		label: 'Segunda batería',
+		group: 'Batería',
+		hint: 'Indica si el equipo trae una segunda batería',
+	},
+	second_battery_status: {
+		type: 'string',
+		label: 'Estado 2ª batería',
+		group: 'Batería',
+		allowed_values: ['excellent', 'good', 'fair', 'poor', 'no_battery'],
+		hint: 'Estado de la segunda batería (mismas opciones que la principal)',
+	},
+	second_battery_percentage: {
+		type: 'integer',
+		label: 'Porcentaje 2ª batería',
+		group: 'Batería',
+		min: 0,
+		hint: 'Porcentaje de salud de la segunda batería',
+	},
+	second_battery_condition: {
+		type: 'string',
+		label: 'Condición 2ª batería',
+		group: 'Batería',
+		hint: 'Texto o porcentaje informado de la segunda batería',
+	},
 	vga_ports: {
 		type: 'integer',
 		label: 'Puertos VGA',
