@@ -16,6 +16,7 @@ import type { SectionConfig, FormSectionProps } from '../shared/types';
 import DockingBasicInfoSection from './sections/DockingBasicInfoSection';
 import DockingPortsSection from './sections/DockingPortsSection';
 import DockingExtrasSection from './sections/DockingExtrasSection';
+import GallerySection from '../shared/gallery/GallerySection';
 
 // ─── Section Order ─────────────────────────
 const DOCKING_SECTIONS: SectionConfig<DockingFormData>[] = [
@@ -36,6 +37,12 @@ const DOCKING_SECTIONS: SectionConfig<DockingFormData>[] = [
 		label: 'Extras & Notas',
 		icon: 'HeroSparkles',
 		component: DockingExtrasSection,
+	},
+	{
+		key: 'gallery',
+		label: 'Galería',
+		icon: 'HeroPhoto',
+		component: GallerySection,
 	},
 ];
 
