@@ -54,11 +54,6 @@ const NotificationSwipeItem: React.FC<Props> = ({
 	// === ESTADO REACT (mínimo) ===
 	const [showBg, setShowBg] = useState(false);
 
-	// Tap handling
-	const lastTapRef = useRef(0);
-	const [needSecondTap, setNeedSecondTap] = useState(false);
-	const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
 	// Threshold dinámico
 	const getThreshold = () => cardWidth.current * 0.45;
 
@@ -216,7 +211,7 @@ const NotificationSwipeItem: React.FC<Props> = ({
 			const x = currentX.current;
 			const threshold = getThreshold();
 			const shouldExecute = Math.abs(x) >= threshold;
-
+			
 			// Ejecutar acción si corresponde
 			if (shouldExecute && isHorizontal.current) {
 				if (x > 0) {
@@ -230,6 +225,9 @@ const NotificationSwipeItem: React.FC<Props> = ({
 					// Swipe izquierda -> archive
 					onArchive(n.id);
 				}
+			} else if (!shouldExecute && isHorizontal.current === null) {
+				// Tap puro sin movimiento -> abrir detalle (single click)
+				onOpen?.(n.id);
 			}
 
 			// Animar reset suave del card incluyendo boxShadow
@@ -265,28 +263,10 @@ const NotificationSwipeItem: React.FC<Props> = ({
 		[n.id, n.status, onRead, onUnread, onArchive],
 	);
 
-	// Double tap to open
-	const handleClick = useCallback(() => {
-		if (isHorizontal.current !== null) return; // Fue un swipe
-
-		const now = Date.now();
-		if (now - lastTapRef.current < 350) {
-			setNeedSecondTap(false);
-			onOpen?.(n.id);
-			if (tapTimer.current) clearTimeout(tapTimer.current);
-			return;
-		}
-
-		lastTapRef.current = now;
-		setNeedSecondTap(true);
-		tapTimer.current = setTimeout(() => setNeedSecondTap(false), 1200);
-	}, [n.id, onOpen]);
-
 	// Cleanup
 	useEffect(() => {
 		return () => {
 			cancelAnimationFrame(rafId.current);
-			if (tapTimer.current) clearTimeout(tapTimer.current);
 		};
 	}, []);
 
@@ -346,8 +326,7 @@ const NotificationSwipeItem: React.FC<Props> = ({
 					n.status === 'read'
 						? 'border-emerald-200/50 bg-emerald-50/40 dark:border-emerald-900/40 dark:bg-emerald-900/20'
 						: 'border-rose-200/60 bg-rose-50/60 dark:border-rose-900/40 dark:bg-rose-900/20'
-				}`}
-				onClick={handleClick}>
+				}`}>
 				<div className='grid grid-cols-[auto_1fr_auto] items-start gap-3'>
 					<div className='relative'>
 						<Avatar name={n.event?.type_key ?? 'N'} />
@@ -395,11 +374,6 @@ const NotificationSwipeItem: React.FC<Props> = ({
 									}}>
 									Eliminar
 								</button>
-							)}
-							{needSecondTap && (
-								<span className='text-[11px] text-zinc-500 dark:text-zinc-400'>
-									Toca de nuevo para abrir
-								</span>
 							)}
 						</div>
 					</div>
