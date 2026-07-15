@@ -24,6 +24,11 @@ interface UseReviewPhotosParams {
 
 interface UseReviewPhotosResult {
 	photos: ITechnicalReviewPhoto[];
+	/**
+	 * Previews locales (object URLs) por id de foto recién subida. Permiten
+	 * mostrar la imagen al instante mientras el backend genera el thumbnail.
+	 */
+	previews: Record<number, string>;
 	loading: boolean;
 	uploading: boolean;
 	deletingId: number | null;
@@ -79,6 +84,7 @@ export const useReviewPhotos = ({
 	enabled = true,
 }: UseReviewPhotosParams): UseReviewPhotosResult => {
 	const [photos, setPhotos] = useState<ITechnicalReviewPhoto[]>([]);
+	const [previews, setPreviews] = useState<Record<number, string>>({});
 	const [loading, setLoading] = useState(false);
 	const [uploading, setUploading] = useState(false);
 	const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -92,6 +98,18 @@ export const useReviewPhotos = ({
 			mountedRef.current = false;
 		};
 	}, []);
+
+	// Espejo de los previews para poder revocarlos al desmontar sin re-suscribir
+	const previewsRef = useRef<Record<number, string>>({});
+	useEffect(() => {
+		previewsRef.current = previews;
+	}, [previews]);
+	useEffect(
+		() => () => {
+			Object.values(previewsRef.current).forEach((url) => URL.revokeObjectURL(url));
+		},
+		[],
+	);
 
 	const canOperate = enabled && !!subsidiaryId && !!itemId;
 
@@ -140,6 +158,14 @@ export const useReviewPhotos = ({
 					batch,
 				);
 				if (mountedRef.current && created.length > 0) {
+					// Preview instantáneo: asocia cada foto creada con su archivo
+					// de origen (mismo orden del batch) vía object URL.
+					const newPreviews: Record<number, string> = {};
+					created.forEach((photo, i) => {
+						const file = batch[i];
+						if (file) newPreviews[photo.id] = URL.createObjectURL(file);
+					});
+					setPreviews((prev) => ({ ...prev, ...newPreviews }));
 					setPhotos((prev) =>
 						[...prev, ...created].sort((a, b) => a.sort - b.sort || a.id - b.id),
 					);
@@ -164,6 +190,13 @@ export const useReviewPhotos = ({
 				await technicalReviewPhotosService.remove(subsidiaryId, itemId, mediaId);
 				if (mountedRef.current) {
 					setPhotos((prev) => prev.filter((p) => p.id !== mediaId));
+					setPreviews((prev) => {
+						if (!(mediaId in prev)) return prev;
+						URL.revokeObjectURL(prev[mediaId]);
+						const next = { ...prev };
+						delete next[mediaId];
+						return next;
+					});
 				}
 				toast.success('Foto eliminada.');
 			} catch (err) {
@@ -175,7 +208,7 @@ export const useReviewPhotos = ({
 		[subsidiaryId, itemId],
 	);
 
-	return { photos, loading, uploading, deletingId, error, refresh, upload, remove };
+	return { photos, previews, loading, uploading, deletingId, error, refresh, upload, remove };
 };
 
 export default useReviewPhotos;

@@ -35,7 +35,7 @@ function GallerySection<T extends FieldValues>({ readOnly }: FormSectionProps<T>
 	const canView = has(PHOTO_VIEW_PERMISSION);
 	const canEdit = !readOnly && has(PHOTO_EDIT_PERMISSION);
 
-	const { photos, loading, uploading, deletingId, error, refresh, upload, remove } =
+	const { photos, previews, loading, uploading, deletingId, error, refresh, upload, remove } =
 		useReviewPhotos({
 			subsidiaryId,
 			itemId,
@@ -228,9 +228,17 @@ function GallerySection<T extends FieldValues>({ readOnly }: FormSectionProps<T>
 								className='h-full w-full'
 								title={photo.alt ?? 'Ver foto'}>
 								<img
-									src={photo.thumb ?? photo.url}
+									// Preview local (instantáneo) → thumb del servidor → full
+									src={previews[photo.id] ?? photo.thumb ?? photo.url}
 									alt={photo.alt ?? 'Foto de revisión'}
 									loading='lazy'
+									onError={(e) => {
+										// Si el thumb aún no está listo, cae a la imagen full
+										const img = e.currentTarget;
+										if (photo.url && img.src !== photo.url) {
+											img.src = photo.url;
+										}
+									}}
 									className='h-full w-full object-cover transition-transform duration-200 group-hover:scale-105'
 								/>
 							</button>
@@ -271,14 +279,14 @@ function GallerySection<T extends FieldValues>({ readOnly }: FormSectionProps<T>
 										onClick={() => setConfirmId(photo.id)}
 										disabled={deletingId === photo.id}
 										title='Eliminar foto'
-										className='absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-red-600/90 text-white opacity-0 shadow-md transition-all hover:bg-red-700 focus:opacity-100 disabled:opacity-60 group-hover:opacity-100'>
+										className='absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white shadow-lg ring-2 ring-white/80 transition-all hover:scale-110 hover:bg-red-700 focus:scale-110 focus:outline-none focus:ring-red-300 disabled:opacity-60 dark:ring-zinc-900/70'>
 										<Icon
 											icon={
 												deletingId === photo.id
 													? 'HeroArrowPath'
 													: 'HeroTrash'
 											}
-											className={`h-4 w-4 ${deletingId === photo.id ? 'animate-spin' : ''}`}
+											className={`h-5 w-5 ${deletingId === photo.id ? 'animate-spin' : ''}`}
 										/>
 									</button>
 								))}
