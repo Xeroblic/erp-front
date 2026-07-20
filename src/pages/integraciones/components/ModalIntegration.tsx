@@ -60,7 +60,7 @@ const ModalDelete = memo(function ModalDelete({
 					<p>¿Estás seguro de que deseas eliminar esta integración?</p>
 					<div className='rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-500/30 dark:bg-amber-950/30'>
 						<p className='text-sm text-amber-800 dark:text-amber-200'>
-							<strong>Los productos vinculados se desvincularán</strong> hasta que
+							<strong>Los productos vinculados se desvincularán</strong> hasta
 							restaurar la integración. La eliminación es reversible desde la
 							papelera.
 						</p>
@@ -403,15 +403,15 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 		if (!subsidiaryId || !reactivationSuggestion || !newlyCreatedIntegrationId) return;
 		try {
 			await dispatch(
-				deleteIntegration({
-					subsidiaryId,
-					integrationId: newlyCreatedIntegrationId,
-				}),
-			).unwrap();
-			await dispatch(
 				restoreIntegration({
 					subsidiaryId,
 					integrationId: reactivationSuggestion.integration_id,
+				}),
+			).unwrap();
+			await dispatch(
+				deleteIntegration({
+					subsidiaryId,
+					integrationId: newlyCreatedIntegrationId,
 				}),
 			).unwrap();
 			toast.success('Integración original restaurada correctamente');

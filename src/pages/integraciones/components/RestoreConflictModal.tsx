@@ -9,8 +9,6 @@ interface RestoreConflictModalProps {
 	onClose: () => void;
 	conflictMessage: string;
 	integrationName: string;
-	subsidiaryId: number | null;
-	onResolved: () => void;
 }
 
 const RestoreConflictModal: React.FC<RestoreConflictModalProps> = ({

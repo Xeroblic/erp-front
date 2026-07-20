@@ -105,37 +105,38 @@ export const IntegrationsListContent: React.FC = () => {
 		}
 	};
 
-	const handleRestore = async (integration: Integration) => {
-		if (!subsidiaryId || restoringId) return;
-		setRestoringId(integration.id);
-		try {
-			await dispatch(
-				restoreIntegration({
-					subsidiaryId,
-					integrationId: integration.id,
-				}),
-			).unwrap();
-			toast.success(`"${integration.name}" restaurada correctamente`);
-			if (subsidiaryId) {
+	const handleRestore = useCallback(
+		async (integration: Integration) => {
+			if (!subsidiaryId || restoringId) return;
+			setRestoringId(integration.id);
+			try {
+				await dispatch(
+					restoreIntegration({
+						subsidiaryId,
+						integrationId: integration.id,
+					}),
+				).unwrap();
+				toast.success(`"${integration.name}" restaurada correctamente`);
 				dispatch(fetchTrashedIntegrations({ subsidiaryId }));
+			} catch (err: unknown) {
+				const message = typeof err === 'string' ? err : 'Error al restaurar la integración';
+				if (
+					message.includes('Ya existe una integración') ||
+					message.includes('conflicto')
+				) {
+					setConflictError({
+						message,
+						integrationName: integration.name,
+					});
+				} else {
+					toast.error(message);
+				}
+			} finally {
+				setRestoringId(null);
 			}
-		} catch (err: unknown) {
-			const message = typeof err === 'string' ? err : 'Error al restaurar la integración';
-			if (
-				message.includes('Ya existe una integración') ||
-				message.includes('conflicto')
-			) {
-				setConflictError({
-					message,
-					integrationName: integration.name,
-				});
-			} else {
-				toast.error(message);
-			}
-		} finally {
-			setRestoringId(null);
-		}
-	};
+		},
+		[subsidiaryId, restoringId, dispatch],
+	);
 
 	/**
 	 * Toggle rápido de activación. Como solo puede haber una integración API REST
@@ -689,14 +690,6 @@ export const IntegrationsListContent: React.FC = () => {
 					onClose={() => setConflictError(null)}
 					conflictMessage={conflictError.message}
 					integrationName={conflictError.integrationName}
-					subsidiaryId={subsidiaryId}
-					onResolved={() => {
-						setConflictError(null);
-						if (subsidiaryId) {
-							dispatch(fetchTrashedIntegrations({ subsidiaryId }));
-							dispatch(fetchIntegrations({ subsidiaryId }));
-						}
-					}}
 				/>
 			)}
 		</>

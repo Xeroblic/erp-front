@@ -340,11 +340,13 @@ const integrationsSlice = createSlice({
 			})
 			.addCase(restoreIntegration.fulfilled, (state, action) => {
 				state.restoring = false;
-				// Mover de papelera a activas
+				// Mover de papelera a activas (con dedupe)
 				state.trashedIntegrations = state.trashedIntegrations.filter(
 					(i) => i.id !== action.payload.id,
 				);
-				state.integrations.push(action.payload);
+				if (!state.integrations.some((i) => i.id === action.payload.id)) {
+					state.integrations.push(action.payload);
+				}
 			})
 			.addCase(restoreIntegration.rejected, (state, action) => {
 				state.restoring = false;
