@@ -12,6 +12,33 @@ import type {
 	IDetachProductRequest,
 } from '@/interface/warehouse.interface';
 
+// ==================== Error Helper ====================
+
+type UnknownRecord = Record<string, unknown>;
+
+const asRecord = (value: unknown): UnknownRecord | undefined =>
+	typeof value === 'object' && value !== null ? (value as UnknownRecord) : undefined;
+
+const getErrorMessage = (error: unknown, fallback: string): string => {
+	const errorRecord = asRecord(error);
+	const responseRecord = asRecord(errorRecord?.response);
+	const data = asRecord(responseRecord?.data);
+	const msgFromResponse = data?.message;
+	if (typeof msgFromResponse === 'string' && msgFromResponse.trim()) {
+		return msgFromResponse;
+	}
+	if (error instanceof Error && error.message.trim()) {
+		return error.message;
+	}
+	return fallback;
+};
+
+const getResponsePayload = (error: unknown): UnknownRecord => {
+	const errorRecord = asRecord(error);
+	const responseRecord = asRecord(errorRecord?.response);
+	return asRecord(responseRecord?.data) ?? { message: getErrorMessage(error, 'Error desconocido') };
+};
+
 // ==================== State Interface ====================
 
 export interface WarehouseState {
@@ -113,7 +140,7 @@ export const fetchWarehouses = createAsyncThunk<
 	try {
 		const response = await ApiService.fetchData<{
 			data?: IWarehouse[];
-			meta?: Partial<IWarehouseListMeta> & Record<string, any>;
+			meta?: Partial<IWarehouseListMeta> & UnknownRecord;
 		}>({
 			url: `/branches/${branchId}/warehouses`,
 			method: 'get',
@@ -132,7 +159,7 @@ export const fetchWarehouses = createAsyncThunk<
 				? response.data
 				: [];
 
-		const metaSource = response.data?.meta ?? {};
+		const metaSource = asRecord(response.data?.meta) ?? {};
 		const meta: IWarehouseListMeta = {
 			total: Number(metaSource.total ?? items.length),
 			current_page: Number(metaSource.current_page ?? params?.page ?? 1),
@@ -145,10 +172,8 @@ export const fetchWarehouses = createAsyncThunk<
 			meta,
 			stats: computeWarehouseStats(items),
 		};
-	} catch (error: any) {
-		return rejectWithValue(
-			error?.response?.data?.message ?? error?.message ?? 'No se pudieron cargar las bodegas',
-		);
+	} catch (error: unknown) {
+		return rejectWithValue(getErrorMessage(error, 'No se pudieron cargar las bodegas'));
 	}
 });
 
@@ -165,11 +190,9 @@ export const fetchWarehouseDetail = createAsyncThunk<
 
 		const data = response.data?.data ?? response.data;
 		return data as IWarehouseDetail;
-	} catch (error: any) {
+	} catch (error: unknown) {
 		return rejectWithValue(
-			error?.response?.data?.message ??
-				error?.message ??
-				'No se pudo obtener el detalle de la bodega',
+			getErrorMessage(error, 'No se pudo obtener el detalle de la bodega'),
 		);
 	}
 });
@@ -180,12 +203,12 @@ export const fetchWarehouseDetail = createAsyncThunk<
 export const createWarehouse = createAsyncThunk<
 	IWarehouse,
 	{ branchId: number; data: ICreateWarehouseRequest },
-	{ rejectValue: any }
+	{ rejectValue: string }
 >('warehouses/createWarehouse', async ({ branchId, data }, { rejectWithValue }) => {
 	try {
-		const body: Record<string, any> = {};
+		const body: Record<string, string | number | boolean> = {};
 
-		const assignIfDefined = (key: string, val: any) => {
+		const assignIfDefined = (key: string, val: string | number | boolean | null | undefined) => {
 			if (val !== undefined && val !== null && val !== '') body[key] = val;
 		};
 
@@ -218,7 +241,7 @@ export const createWarehouse = createAsyncThunk<
 			body.requires_serial_tracking = Boolean(data.requires_serial_tracking);
 		}
 
-		const response = await ApiService.fetchData<{ data?: IWarehouse }, any>({
+		const response = await ApiService.fetchData<{ data?: IWarehouse }>({
 			url: `/branches/${branchId}/warehouses`,
 			method: 'post',
 			data: body,
@@ -226,11 +249,8 @@ export const createWarehouse = createAsyncThunk<
 
 		const warehouse = response.data?.data ?? response.data;
 		return warehouse as IWarehouse;
-	} catch (error: any) {
-		const payload = error?.response?.data ?? {
-			message: error?.message ?? 'No se pudo crear la bodega',
-		};
-		return rejectWithValue(payload);
+	} catch (error: unknown) {
+		return rejectWithValue(getErrorMessage(error, 'No se pudo crear la bodega'));
 	}
 });
 
@@ -243,9 +263,9 @@ export const updateWarehouse = createAsyncThunk<
 	{ rejectValue: string }
 >('warehouses/updateWarehouse', async ({ branchId, warehouseId, data }, { rejectWithValue }) => {
 	try {
-		const body: Record<string, any> = {};
+		const body: Record<string, string | number | boolean | null> = {};
 
-		const assignIfDefined = (key: string, val: any) => {
+		const assignIfDefined = (key: string, val: string | number | boolean | null | undefined) => {
 			if (val !== undefined && val !== null && val !== '') body[key] = val;
 		};
 
@@ -279,7 +299,7 @@ export const updateWarehouse = createAsyncThunk<
 			body.requires_serial_tracking = Boolean(data.requires_serial_tracking);
 		}
 
-		const response = await ApiService.fetchData<{ data?: IWarehouse }, any>({
+		const response = await ApiService.fetchData<{ data?: IWarehouse }>({
 			url: `/branches/${branchId}/warehouses/${warehouseId}`,
 			method: 'patch',
 			data: body,
@@ -287,9 +307,9 @@ export const updateWarehouse = createAsyncThunk<
 
 		const warehouse = response.data?.data ?? response.data;
 		return warehouse as IWarehouse;
-	} catch (error: any) {
+	} catch (error: unknown) {
 		return rejectWithValue(
-			error?.response?.data?.message ?? error?.message ?? 'No se pudo actualizar la bodega',
+			getErrorMessage(error, 'No se pudo actualizar la bodega'),
 		);
 	}
 });
@@ -309,9 +329,9 @@ export const deleteWarehouse = createAsyncThunk<
 		});
 
 		return warehouseId;
-	} catch (error: any) {
+	} catch (error: unknown) {
 		return rejectWithValue(
-			error?.response?.data?.message ?? error?.message ?? 'No se pudo eliminar la bodega',
+			getErrorMessage(error, 'No se pudo eliminar la bodega'),
 		);
 	}
 });
@@ -336,11 +356,9 @@ export const attachWarehouseProducts = createAsyncThunk<
 
 		const warehouse = response.data?.data ?? response.data;
 		return warehouse as IWarehouseDetail;
-	} catch (error: any) {
+	} catch (error: unknown) {
 		return rejectWithValue(
-			error?.response?.data?.message ??
-				error?.message ??
-				'No se pudieron agregar los productos a la bodega',
+			getErrorMessage(error, 'No se pudieron agregar los productos a la bodega'),
 		);
 	}
 });
@@ -365,11 +383,9 @@ export const detachWarehouseProduct = createAsyncThunk<
 
 		const warehouse = response.data?.data ?? response.data;
 		return warehouse as IWarehouseDetail;
-	} catch (error: any) {
+	} catch (error: unknown) {
 		return rejectWithValue(
-			error?.response?.data?.message ??
-				error?.message ??
-				'No se pudo quitar el producto de la bodega',
+			getErrorMessage(error, 'No se pudo quitar el producto de la bodega'),
 		);
 	}
 });
