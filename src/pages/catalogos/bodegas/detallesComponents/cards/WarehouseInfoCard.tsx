@@ -2,9 +2,10 @@ import React from 'react';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
+import type { IWarehouseDetail } from '@/interface/warehouse.interface';
 
 interface WarehouseInfoCardProps {
-	warehouse: any;
+	warehouse: IWarehouseDetail;
 }
 
 const WarehouseInfoCard: React.FC<WarehouseInfoCardProps> = ({ warehouse }) => {
