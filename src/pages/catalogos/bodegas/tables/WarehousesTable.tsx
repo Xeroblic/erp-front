@@ -16,6 +16,8 @@ interface WarehousesTableProps {
 	onEdit: (warehouse: IWarehouse) => void;
 	onDelete: (warehouse: IWarehouse) => void;
 	branchId?: number | null;
+	searchValue?: string;
+	onSearchChange?: (value: string) => void;
 }
 
 const WarehousesTable: React.FC<WarehousesTableProps> = ({
@@ -24,6 +26,8 @@ const WarehousesTable: React.FC<WarehousesTableProps> = ({
 	onEdit,
 	onDelete,
 	branchId,
+	searchValue,
+	onSearchChange,
 }) => {
 	const navigate = useNavigate();
 
@@ -179,7 +183,9 @@ const WarehousesTable: React.FC<WarehousesTableProps> = ({
 					data={warehouses}
 					loading={loading}
 					pageSize={10}
-					searchPlaceholder='Buscar en la lista de bodegas...'
+					searchValue={searchValue}
+					onSearchChange={onSearchChange}
+					searchPlaceholder='Buscar por nombre o código...'
 					emptyMessage={
 						warehouses.length === 0 && !loading
 							? 'No hay bodegas registradas. Comienza creando tu primera bodega.'

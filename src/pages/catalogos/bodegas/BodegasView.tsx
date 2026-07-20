@@ -70,6 +70,8 @@ const BodegasView: React.FC = () => {
 					onEdit={actions.handleEdit}
 					onDelete={actions.handleDelete}
 					branchId={state.branchId}
+					searchValue={state.globalFilter}
+					onSearchChange={actions.setGlobalFilter}
 				/>
 			</Container>
 

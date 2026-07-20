@@ -190,8 +190,7 @@ export const useBodegas = () => {
 		return warehouses.filter(
 			(w) =>
 				w.name.toLowerCase().includes(searchLower) ||
-				w.code.toLowerCase().includes(searchLower) ||
-				w.warehouse_type.toLowerCase().includes(searchLower),
+				w.code.toLowerCase().includes(searchLower),
 		);
 	}, [warehouses, globalFilter]);
 
