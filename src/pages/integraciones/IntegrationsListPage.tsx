@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import type { ColumnDef } from '@tanstack/react-table';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Container from '@/components/layouts/Container/Container';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import ProtectedButton from '@/components/ui/ProtectedButton';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import Checkbox from '@/components/form/Checkbox';
@@ -23,19 +24,17 @@ import ModalIntegration from './components/ModalIntegration';
 import RestoreConflictModal from './components/RestoreConflictModal';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import DataTable from '@/components/ui/DataTable/DataTable';
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 
 export const IntegrationsListContent: React.FC = () => {
 	const dispatch = useAppDispatch();
 
-	// Obtener subsidiary_id del usuario autenticado
 	const currentUser = useAppSelector((state) => state.auth.user);
 	const subsidiaryId = useAppSelector(selectEffectiveSubsidiaryId);
-
-	// Debug: Ver qué hay en el usuario
-	useEffect(() => {}, [currentUser, subsidiaryId]);
+	const { branchId } = useCurrentBranch();
 
 	// State desde Redux
-	const { integrations, trashedIntegrations, loading, restoring, error } = useAppSelector(
+	const { integrations, trashedIntegrations, loading, error } = useAppSelector(
 		(state) => state.integrations,
 	);
 
@@ -202,28 +201,28 @@ export const IntegrationsListContent: React.FC = () => {
 		}
 	};
 
-	const getModeInfo = (mode: string) => {
+	const getModeInfo = useCallback((mode: string) => {
 		const modes: Record<string, { label: string; icons: TIcons[] }> = {
 			webhook: { label: 'Webhook', icons: ['HeroSignal'] },
 			read: { label: 'Solo Lectura', icons: ['DuoBookOpen'] },
 			read_write: { label: 'Lectura/Escritura', icons: ['DuoBookOpen', 'DuoWrite'] },
 		};
 		return modes[mode] || { label: mode, icons: [] };
-	};
+	}, []);
 
-	const getProviderLabel = (provider: string) => {
+	const getProviderLabel = useCallback((provider: string) => {
 		const providers: Record<string, string> = {
 			woocommerce: 'WooCommerce',
 		};
 		return providers[provider] || provider;
-	};
+	}, []);
 
-	const formatDate = (value?: string | null) => {
+	const formatDate = useCallback((value?: string | null) => {
 		if (!value) return null;
 		const date = new Date(value);
 		if (Number.isNaN(date.getTime())) return null;
 		return date.toLocaleString('es-CL');
-	};
+	}, []);
 
 	const trashedColumns = useMemo<ColumnDef<Integration, unknown>[]>(
 		() => [
@@ -269,7 +268,10 @@ export const IntegrationsListContent: React.FC = () => {
 					const isRestoring = restoringId === row.original.id;
 					return (
 						<Tooltip text='Restaurar esta integración y sus productos vinculados'>
-							<Button
+							<ProtectedButton
+								permission="delete-integration"
+								branchId={branchId}
+								scope="access"
 								size='sm'
 								variant='outline'
 								color='emerald'
@@ -289,13 +291,13 @@ export const IntegrationsListContent: React.FC = () => {
 										Restaurar
 									</>
 								)}
-							</Button>
+							</ProtectedButton>
 						</Tooltip>
 					);
 				},
 			},
 		],
-		[getProviderLabel, getModeInfo, handleRestore, restoringId],
+		[getProviderLabel, getModeInfo, handleRestore, restoringId, branchId],
 	);
 
 	const columns = useMemo<ColumnDef<Integration, unknown>[]>(
@@ -590,13 +592,16 @@ export const IntegrationsListContent: React.FC = () => {
 								</button>
 							</div>
 							{viewMode === 'active' && (
-								<Button
+								<ProtectedButton
+									permission="create-integration"
+									branchId={branchId}
+									scope="access"
 									variant='solid'
 									color='emerald'
 									icon='HeroPlus'
 									onClick={handleCreate}>
 									Nueva Integración
-								</Button>
+								</ProtectedButton>
 							)}
 						</div>
 					</CardHeader>
