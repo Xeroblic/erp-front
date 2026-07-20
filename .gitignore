@@ -479,3 +479,4 @@ opencode.json
 # Playwright (artefactos de e2e)
 /test-results/
 /playwright-report/
+stats.html
