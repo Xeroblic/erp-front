@@ -18,6 +18,7 @@ import {
 	updateIntegration,
 } from '@/store/slices/integrations/integrationsSlice';
 import type { Integration } from '@/types/integrations.types';
+import type { TIcons } from '@/types/icons.type';
 import ModalIntegration from './components/ModalIntegration';
 import RestoreConflictModal from './components/RestoreConflictModal';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
@@ -58,10 +59,10 @@ export const IntegrationsListContent: React.FC = () => {
 				dispatch(fetchTrashedIntegrations({ subsidiaryId }));
 			}
 		} else {
-			console.error('No subsidiaryId found in user:', currentUser);
+			console.error('No subsidiaryId found');
 			toast.error('No se pudo identificar la subsidiaria actual. Verifica tu sesión.');
 		}
-	}, [dispatch, subsidiaryId, currentUser, viewMode]);
+	}, [dispatch, subsidiaryId, viewMode]);
 
 	useEffect(() => {
 		if (error) {
@@ -202,7 +203,7 @@ export const IntegrationsListContent: React.FC = () => {
 	};
 
 	const getModeInfo = (mode: string) => {
-		const modes: Record<string, { label: string; icons: string[] }> = {
+		const modes: Record<string, { label: string; icons: TIcons[] }> = {
 			webhook: { label: 'Webhook', icons: ['HeroSignal'] },
 			read: { label: 'Solo Lectura', icons: ['DuoBookOpen'] },
 			read_write: { label: 'Lectura/Escritura', icons: ['DuoBookOpen', 'DuoWrite'] },
@@ -337,7 +338,7 @@ export const IntegrationsListContent: React.FC = () => {
 										className='py-1 px-1.5 flex items-center justify-center shadow-sm w-fit'>
 										<span className='flex items-center gap-0.5'>
 											{icons.map((ic) => (
-												<Icon key={ic} icon={ic as any} className='text-2xl' />
+												<Icon key={ic} icon={ic} className='text-2xl' />
 											))}
 										</span>
 									</Badge>

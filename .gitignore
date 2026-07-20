@@ -473,3 +473,8 @@ $RECYCLE.BIN/
 .claudeignore
 .GEMINI.md
 .QWEN.md
+opencode.json
+.opencode/
+# Playwright (artefactos de e2e)
+/test-results/
+/playwright-report/

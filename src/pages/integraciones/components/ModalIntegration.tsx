@@ -41,6 +41,98 @@ const DEFAULT_WEBHOOK_EVENT = WEBHOOK_EVENTS[0].value;
 const getWebhookEventMeta = (event?: string | null) =>
 	WEBHOOK_EVENTS.find((entry) => entry.value === event) ?? WEBHOOK_EVENTS[0];
 
+const ModalDelete = memo(function ModalDelete({
+	isOpen,
+	onClose,
+	onConfirm,
+}: {
+	isOpen: boolean;
+	onClose: () => void;
+	onConfirm: () => void;
+}) {
+	return (
+		<Modal isOpen={isOpen} setIsOpen={onClose} size='md'>
+			<ModalHeader>
+				<Badge color='red'>Eliminar Integración</Badge>
+			</ModalHeader>
+			<ModalBody>
+				<div className='space-y-3'>
+					<p>¿Estás seguro de que deseas eliminar esta integración?</p>
+					<div className='rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-500/30 dark:bg-amber-950/30'>
+						<p className='text-sm text-amber-800 dark:text-amber-200'>
+							<strong>Los productos vinculados se desvincularán</strong> hasta que
+							restaurar la integración. La eliminación es reversible desde la
+							papelera.
+						</p>
+					</div>
+					<p className='text-sm text-neutral-600 dark:text-neutral-400'>
+						<strong>Consejo:</strong> Si solo quieres pausar la integración, puedes
+						desactivarla desde el listado sin perder la conexión con los productos.
+					</p>
+				</div>
+			</ModalBody>
+			<ModalFooter>
+				<Button variant='outline' color='red' onClick={onClose} icon='HeroX' title='Cancelar'>
+					Cancelar
+				</Button>
+				<Button
+					variant='solid'
+					onClick={onConfirm}
+					icon='HeroTrash'
+					color='red'
+					title='Eliminar esta integración'>
+					Eliminar
+				</Button>
+			</ModalFooter>
+		</Modal>
+	);
+});
+
+const ModalRotateKey = memo(function ModalRotateKey({
+	isOpen,
+	onClose,
+	onConfirm,
+	keyType,
+}: {
+	isOpen: boolean;
+	onClose: () => void;
+	onConfirm: () => void;
+	keyType: 'api_key' | 'webhook_secret';
+}) {
+	const label = keyType === 'api_key' ? 'API Key' : 'Webhook Secret';
+	return (
+		<Modal isOpen={isOpen} setIsOpen={onClose} size='md'>
+			<ModalHeader>
+				<Badge color='amber'>Rotar {label}</Badge>
+			</ModalHeader>
+			<ModalBody>
+				<div className='space-y-3'>
+					<p>
+						¿Estás seguro de que deseas rotar el <strong>{label}</strong>?
+					</p>
+					<div className='rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-500/30 dark:bg-red-950/30'>
+						<p className='text-sm text-red-800 dark:text-red-200'>
+							<strong>La clave anterior dejará de funcionar inmediatamente.</strong>
+						</p>
+					</div>
+					<p className='text-sm text-neutral-600 dark:text-neutral-400'>
+						Deberás actualizar la nueva clave en WooCommerce para que la integración
+						siga funcionando.
+					</p>
+				</div>
+			</ModalBody>
+			<ModalFooter>
+				<Button variant='outline' onClick={onClose} icon='HeroX'>
+					Cancelar
+				</Button>
+				<Button variant='solid' color='amber' onClick={onConfirm} icon='HeroArrowPath'>
+					Rotar {label}
+				</Button>
+			</ModalFooter>
+		</Modal>
+	);
+});
+
 interface ModalIntegrationProps {
 	isOpen: boolean;
 	onClose: () => void;
@@ -207,6 +299,10 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 	};
 
 	const [ModalDeleteisOpen, setModalDeleteIsOpen] = useState(false);
+	const [rotateKeyModal, setRotateKeyModal] = useState<{
+		isOpen: boolean;
+		keyType: 'api_key' | 'webhook_secret';
+	}>({ isOpen: false, keyType: 'api_key' });
 
 	const openModalDelete = () => {
 		if (!subsidiaryId || !integration?.id) return;
@@ -244,73 +340,16 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 		}
 	};
 
-	const ModalDelete = memo(function ModalDelete({
-		isOpen,
-		onClose,
-		onConfirm,
-	}: {
-		isOpen: boolean;
-		onClose: () => void;
-		onConfirm: () => void;
-	}) {
-		return (
-			<Modal
-				isOpen={isOpen}
-				setIsOpen={onClose}
-				size='md'
-				>
-				<ModalHeader>
-					<Badge color='red'>Eliminar Integración</Badge>
-				</ModalHeader>
-				<ModalBody>
-					<div className='space-y-3'>
-						<p>
-							¿Estás seguro de que deseas eliminar esta integración?
-						</p>
-						<div className='rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-500/30 dark:bg-amber-950/30'>
-							<p className='text-sm text-amber-800 dark:text-amber-200'>
-								<strong>Los productos vinculados se desvincularán</strong> hasta
-								que restaures la integración. La eliminación es reversible desde
-								la papelera.
-							</p>
-						</div>
-						<p className='text-sm text-neutral-600 dark:text-neutral-400'>
-							<strong>Consejo:</strong> Si solo quieres pausar la integración,
-							puedes desactivarla desde el listado sin perder la conexión con los
-							productos.
-						</p>
-					</div>
-				</ModalBody>
-				<ModalFooter>
-					<Button
-						variant='outline'
-						color='red'
-						onClick={onClose}
-						icon='HeroX'
-						title='Cancelar'>
-						Cancelar
-					</Button>
-					<Button
-						variant='solid'
-						onClick={onConfirm}
-						icon='HeroTrash'
-						color='red'
-						title='Eliminar esta integración'>
-						Eliminar
-					</Button>
-				</ModalFooter>
-			</Modal>
-		);
-	});
-
 	const handleRotateKey = async (type: 'api_key' | 'webhook_secret') => {
 		if (!subsidiaryId || !integration) return;
-		if (
-			!confirm(
-				`¿Estás seguro de rotar el ${type === 'api_key' ? 'API Key' : 'Webhook Secret'}? El anterior dejará de funcionar.`,
-			)
-		)
-			return;
+		setRotateKeyModal({ isOpen: true, keyType: type });
+	};
+
+	const confirmRotateKey = async () => {
+		const type = rotateKeyModal.keyType;
+		setRotateKeyModal({ isOpen: false, keyType: type });
+
+		if (!subsidiaryId || !integration) return;
 
 		try {
 			const payload =
@@ -868,6 +907,12 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 				isOpen={ModalDeleteisOpen}
 				onClose={() => setModalDeleteIsOpen(false)}
 				onConfirm={handleDelete}
+			/>
+			<ModalRotateKey
+				isOpen={rotateKeyModal.isOpen}
+				onClose={() => setRotateKeyModal({ isOpen: false, keyType: 'api_key' })}
+				onConfirm={confirmRotateKey}
+				keyType={rotateKeyModal.keyType}
 			/>
 		</>
 	);
