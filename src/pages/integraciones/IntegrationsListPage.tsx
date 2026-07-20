@@ -12,11 +12,14 @@ import Tooltip from '@/components/ui/Tooltip';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
 	fetchIntegrations,
+	fetchTrashedIntegrations,
+	restoreIntegration,
 	setSelectedIntegration,
 	updateIntegration,
 } from '@/store/slices/integrations/integrationsSlice';
 import type { Integration } from '@/types/integrations.types';
 import ModalIntegration from './components/ModalIntegration';
+import RestoreConflictModal from './components/RestoreConflictModal';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
 import DataTable from '@/components/ui/DataTable/DataTable';
 
@@ -31,23 +34,34 @@ export const IntegrationsListContent: React.FC = () => {
 	useEffect(() => {}, [currentUser, subsidiaryId]);
 
 	// State desde Redux
-	const { integrations, loading, error } = useAppSelector((state) => state.integrations);
+	const { integrations, trashedIntegrations, loading, restoring, error } = useAppSelector(
+		(state) => state.integrations,
+	);
 
 	// State local
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [modalMode, setModalMode] = useState<'create' | 'edit' | 'view'>('view');
 	const [selectedIntegration, setSelectedIntegrationLocal] = useState<Integration | null>(null);
-	// Integración cuyo estado activo se está cambiando (para feedback en la fila).
 	const [togglingId, setTogglingId] = useState<string | null>(null);
+	const [viewMode, setViewMode] = useState<'active' | 'trash'>('active');
+	const [restoringId, setRestoringId] = useState<string | null>(null);
+	const [conflictError, setConflictError] = useState<{
+		message: string;
+		integrationName: string;
+	} | null>(null);
 
 	useEffect(() => {
 		if (subsidiaryId) {
-			dispatch(fetchIntegrations({ subsidiaryId }));
+			if (viewMode === 'active') {
+				dispatch(fetchIntegrations({ subsidiaryId }));
+			} else {
+				dispatch(fetchTrashedIntegrations({ subsidiaryId }));
+			}
 		} else {
 			console.error('No subsidiaryId found in user:', currentUser);
 			toast.error('No se pudo identificar la subsidiaria actual. Verifica tu sesión.');
 		}
-	}, [dispatch, subsidiaryId, currentUser]);
+	}, [dispatch, subsidiaryId, currentUser, viewMode]);
 
 	useEffect(() => {
 		if (error) {
@@ -88,6 +102,38 @@ export const IntegrationsListContent: React.FC = () => {
 		dispatch(setSelectedIntegration(null));
 		if (subsidiaryId) {
 			dispatch(fetchIntegrations({ subsidiaryId }));
+		}
+	};
+
+	const handleRestore = async (integration: Integration) => {
+		if (!subsidiaryId || restoringId) return;
+		setRestoringId(integration.id);
+		try {
+			await dispatch(
+				restoreIntegration({
+					subsidiaryId,
+					integrationId: integration.id,
+				}),
+			).unwrap();
+			toast.success(`"${integration.name}" restaurada correctamente`);
+			if (subsidiaryId) {
+				dispatch(fetchTrashedIntegrations({ subsidiaryId }));
+			}
+		} catch (err: unknown) {
+			const message = typeof err === 'string' ? err : 'Error al restaurar la integración';
+			if (
+				message.includes('Ya existe una integración') ||
+				message.includes('conflicto')
+			) {
+				setConflictError({
+					message,
+					integrationName: integration.name,
+				});
+			} else {
+				toast.error(message);
+			}
+		} finally {
+			setRestoringId(null);
 		}
 	};
 
@@ -178,7 +224,80 @@ export const IntegrationsListContent: React.FC = () => {
 		return date.toLocaleString('es-CL');
 	};
 
-	const columns = useMemo<ColumnDef<Integration, any>[]>(
+	const trashedColumns = useMemo<ColumnDef<Integration, unknown>[]>(
+		() => [
+			{
+				header: 'Nombre',
+				accessorKey: 'name',
+				cell: ({ row }) => (
+					<div>
+						<div className='font-medium'>{row.original.name}</div>
+						<div className='text-xs text-gray-500'>{row.original.base_url}</div>
+					</div>
+				),
+			},
+			{
+				header: 'Proveedor',
+				accessorKey: 'provider',
+				cell: ({ row }) => getProviderLabel(row.original.provider),
+			},
+			{
+				header: 'Modo',
+				accessorKey: 'mode',
+				cell: ({ row }) => {
+					const { label } = getModeInfo(row.original.mode);
+					return <Badge variant='outline'>{label}</Badge>;
+				},
+			},
+			{
+				header: 'Eliminada el',
+				accessorKey: 'deleted_at',
+				cell: ({ row }) => {
+					const formatted = formatDate(row.original.deleted_at);
+					return formatted ? (
+						<span className='text-xs'>{formatted}</span>
+					) : (
+						<span className='text-gray-400'>-</span>
+					);
+				},
+			},
+			{
+				id: 'acciones',
+				header: 'Acciones',
+				cell: ({ row }) => {
+					const isRestoring = restoringId === row.original.id;
+					return (
+						<Tooltip text='Restaurar esta integración y sus productos vinculados'>
+							<Button
+								size='sm'
+								variant='outline'
+								color='emerald'
+								disabled={isRestoring || restoringId !== null}
+								onClick={() => handleRestore(row.original)}>
+								{isRestoring ? (
+									<Icon
+										icon='HeroArrowPath'
+										className='h-4 w-4 animate-spin text-emerald-500'
+									/>
+								) : (
+									<>
+										<Icon
+											icon='HeroArrowUturnUp'
+											className='me-1 text-emerald-500'
+										/>
+										Restaurar
+									</>
+								)}
+							</Button>
+						</Tooltip>
+					);
+				},
+			},
+		],
+		[getProviderLabel, getModeInfo, handleRestore, restoringId],
+	);
+
+	const columns = useMemo<ColumnDef<Integration, unknown>[]>(
 		() => [
 			{
 				header: 'Nombre',
@@ -422,30 +541,100 @@ export const IntegrationsListContent: React.FC = () => {
 						<div className='flex items-center gap-3'>
 							<div className='flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/15 ring-1 ring-emerald-500/25 dark:bg-emerald-500/20 dark:ring-emerald-400/30'>
 								<Icon
-									icon='HeroGlobeAlt'
+									icon={viewMode === 'active' ? 'HeroGlobeAlt' : 'HeroTrash'}
 									className='h-5 w-5 text-emerald-600 dark:text-emerald-400'
 								/>
 							</div>
 							<div>
 								<CardTitle className='text-lg font-bold text-neutral-900 dark:text-neutral-50'>
-									Gestión de Integraciones
+									{viewMode === 'active'
+										? 'Gestión de Integraciones'
+										: 'Papelera de Integraciones'}
 								</CardTitle>
 								<p className='mt-0.5 text-xs text-neutral-500 dark:text-neutral-400'>
-									Conecta y administra tus tiendas y marketplaces. Solo una API
-									REST puede estar activa por proveedor.
+									{viewMode === 'active'
+										? 'Conecta y administra tus tiendas y marketplaces. Solo una API REST puede estar activa por proveedor.'
+										: 'Integraciones eliminadas. Puedes restaurarlas para recuperar todos sus datos y productos vinculados.'}
 								</p>
 							</div>
 						</div>
-						<Button
-							variant='solid'
-							color='emerald'
-							icon='HeroPlus'
-							onClick={handleCreate}>
-							Nueva Integración
-						</Button>
+						<div className='flex items-center gap-2'>
+							<div className='flex rounded-lg border border-neutral-200 bg-white p-0.5 dark:border-neutral-700 dark:bg-neutral-800'>
+								<button
+									type='button'
+									className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+										viewMode === 'active'
+											? 'bg-emerald-500 text-white shadow-sm'
+											: 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100'
+									}`}
+									onClick={() => setViewMode('active')}>
+									Activas
+								</button>
+								<button
+									type='button'
+									className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+										viewMode === 'trash'
+											? 'bg-emerald-500 text-white shadow-sm'
+											: 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100'
+									}`}
+									onClick={() => setViewMode('trash')}>
+									Papelera
+									{trashedIntegrations.length > 0 && (
+										<Badge
+											color='zinc'
+											className='ms-1.5 px-1.5 py-0 text-xs'>
+											{trashedIntegrations.length}
+										</Badge>
+									)}
+								</button>
+							</div>
+							{viewMode === 'active' && (
+								<Button
+									variant='solid'
+									color='emerald'
+									icon='HeroPlus'
+									onClick={handleCreate}>
+									Nueva Integración
+								</Button>
+							)}
+						</div>
 					</CardHeader>
 					<CardBody>
-						{loading && integrations.length === 0 ? (
+						{viewMode === 'active' ? (
+							loading && integrations.length === 0 ? (
+								<div className='flex justify-center py-8'>
+									<Icon
+										icon='HeroArrowPath'
+										className='animate-spin'
+										size='text-4xl'
+									/>
+								</div>
+							) : integrations.length === 0 ? (
+								<div className='py-8 text-center text-gray-500'>
+									<Icon
+										icon='HeroGlobeAlt'
+										size='text-6xl'
+										className='mx-auto mb-4'
+									/>
+									<p className='text-lg'>No hay integraciones configuradas</p>
+									<Button
+										variant='outline'
+										icon='HeroPlus'
+										onClick={handleCreate}
+										className='mt-4'>
+										Crear Primera Integración
+									</Button>
+								</div>
+							) : (
+								<DataTable<Integration>
+									columns={columns}
+									data={integrations}
+									loading={false}
+									emptyMessage='No hay integraciones configuradas'
+									searchPlaceholder='Buscar integración...'
+								/>
+							)
+						) : loading && trashedIntegrations.length === 0 ? (
 							<div className='flex justify-center py-8'>
 								<Icon
 									icon='HeroArrowPath'
@@ -453,29 +642,25 @@ export const IntegrationsListContent: React.FC = () => {
 									size='text-4xl'
 								/>
 							</div>
-						) : integrations.length === 0 ? (
+						) : trashedIntegrations.length === 0 ? (
 							<div className='py-8 text-center text-gray-500'>
 								<Icon
-									icon='HeroGlobeAlt'
+									icon='HeroTrash'
 									size='text-6xl'
 									className='mx-auto mb-4'
 								/>
-								<p className='text-lg'>No hay integraciones configuradas</p>
-								<Button
-									variant='outline'
-									icon='HeroPlus'
-									onClick={handleCreate}
-									className='mt-4'>
-									Crear Primera Integración
-								</Button>
+								<p className='text-lg'>La papelera está vacía</p>
+								<p className='mt-2 text-sm'>
+									Las integraciones eliminadas aparecerán aquí
+								</p>
 							</div>
 						) : (
 							<DataTable<Integration>
-								columns={columns}
-								data={integrations}
+								columns={trashedColumns}
+								data={trashedIntegrations}
 								loading={false}
-								emptyMessage='No hay integraciones configuradas'
-								searchPlaceholder='Buscar integración...'
+								emptyMessage='No hay integraciones eliminadas'
+								searchPlaceholder='Buscar en papelera...'
 							/>
 						)}
 					</CardBody>
@@ -489,6 +674,23 @@ export const IntegrationsListContent: React.FC = () => {
 					onSuccess={handleSuccess}
 					integration={selectedIntegration}
 					mode={modalMode}
+				/>
+			)}
+
+			{conflictError && (
+				<RestoreConflictModal
+					isOpen={!!conflictError}
+					onClose={() => setConflictError(null)}
+					conflictMessage={conflictError.message}
+					integrationName={conflictError.integrationName}
+					subsidiaryId={subsidiaryId}
+					onResolved={() => {
+						setConflictError(null);
+						if (subsidiaryId) {
+							dispatch(fetchTrashedIntegrations({ subsidiaryId }));
+							dispatch(fetchIntegrations({ subsidiaryId }));
+						}
+					}}
 				/>
 			)}
 		</>
