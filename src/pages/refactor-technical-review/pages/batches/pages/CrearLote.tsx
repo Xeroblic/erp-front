@@ -31,6 +31,7 @@ import { selectPersonalizacionUsuario } from '@/store/slices/personalizacion/per
 import { fetchSuppliers, createSupplier } from '@/store/slices/suppliers/suppliersSlice';
 
 import CreateWarehouseModal from '@/pages/catalogos/bodegas/modals/CreateWarehouseModal';
+import { WarehouseSchema, type ICreateWarehouseForm, CREATE_WAREHOUSE_INITIAL_VALUES } from '@/pages/catalogos/bodegas/types';
 import CreateCustomerSupplierModal from '../../../components/modals/CreateCustomerSupplierModal';
 import CreateSupplierModal from '../components/modals/CreateSupplierModal';
 
@@ -119,25 +120,36 @@ const CrearLote: React.FC = () => {
 		}
 	}, [dispatch, subsidiaryId]);
 
-	// ── Modal handlers ─────────────────────────────────────────
-	const handleCreateWarehouse = useCallback(
-		async (data: ICreateWarehouseRequest): Promise<boolean> => {
+	// ── Warehouse Formik ───────────────────────────────────────
+	const warehouseForm = useFormik<ICreateWarehouseForm>({
+		initialValues: CREATE_WAREHOUSE_INITIAL_VALUES,
+		validationSchema: WarehouseSchema,
+		onSubmit: async (values, { setSubmitting, resetForm }) => {
 			if (!branchId) {
 				toast.error('No hay sucursal activa seleccionada.');
-				return false;
+				setSubmitting(false);
+				return;
 			}
+			const cleaned: ICreateWarehouseRequest = { ...values };
+			if (!cleaned.manager_id) delete cleaned.manager_id;
+			if (!cleaned.commune_id) delete cleaned.commune_id;
+			if (!cleaned.maximum_capacity) delete cleaned.maximum_capacity;
+			if (!cleaned.address?.trim()) delete cleaned.address;
+			if (!cleaned.schedule?.trim()) delete cleaned.schedule;
+			if (!cleaned.description?.trim()) delete cleaned.description;
 			try {
-				await dispatch(createWarehouse({ branchId, data })).unwrap();
+				await dispatch(createWarehouse({ branchId, data: cleaned })).unwrap();
 				toast.success('Bodega creada correctamente');
 				setWarehouseModalOpen(false);
-				return true;
-			} catch (error: any) {
-				toast.error(error?.message || 'No se pudo crear la bodega');
-				return false;
+				resetForm();
+			} catch (error: unknown) {
+				const msg = error instanceof Error ? error.message : 'No se pudo crear la bodega';
+				toast.error(msg);
+			} finally {
+				setSubmitting(false);
 			}
 		},
-		[branchId, dispatch],
-	);
+	});
 
 	const handleCreateCustomerSupplier = useCallback(
 		async (data: ICreateCustomerSupplierRequest): Promise<ICustomerSupplier | null> => {
@@ -760,12 +772,14 @@ const CrearLote: React.FC = () => {
 			</Container>
 
 			{/* Modals */}
-			<CreateWarehouseModal
-				isOpen={warehouseModalOpen}
-				setIsOpen={setWarehouseModalOpen}
-				onSubmit={handleCreateWarehouse}
-				branchId={branchId ?? undefined}
-			/>
+			{warehouseModalOpen && (
+				<CreateWarehouseModal
+					isOpen={warehouseModalOpen}
+					setIsOpen={setWarehouseModalOpen}
+					form={warehouseForm}
+					branchId={branchId}
+				/>
+			)}
 
 			<CreateCustomerSupplierModal
 				isOpen={customerSupplierModalOpen}
