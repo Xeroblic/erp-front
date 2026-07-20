@@ -2,8 +2,7 @@ import React from 'react';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
-import Input from '@/components/form/Input';
-import Icon from '@/components/icon/Icon';
+import Badge from '@/components/ui/Badge';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import WarehousesTable from './tables/WarehousesTable';
 import WarehouseStats from './components/WarehouseStats';
@@ -19,51 +18,24 @@ const BodegasView: React.FC = () => {
 
 	return (
 		<PageWrapper isProtectedRoute title='Bodegas' name='bodegas'>
-			<Subheader>
+			<Subheader className='p-2'>
 				<SubheaderLeft>
-					<div>
-						<div className='flex items-center gap-2'>
-							<Icon icon='HeroHomeModern' className='text-3xl' />
-							<span className='text-2xl font-bold'>Bodegas</span>
-						</div>
-						<div className='flex flex-col gap-2'>
-							<p className='mt-1 text-sm text-gray-600 dark:text-gray-400'>
-								Administración de las bodegas asociadas a la sucursal principal.
-							</p>
-							<p className='text-sm text-gray-600 dark:text-gray-400'>
-								{state.stats.total} bodega{state.stats.total !== 1 ? 's' : ''} registrada
-								{state.stats.total !== 1 ? 's' : ''} • {state.stats.actives} activa
-								{state.stats.actives !== 1 ? 's' : ''}
-							</p>
-						</div>
+					<div className='start-0'>
+						<Badge className='text-3xl font-semibold'>Bodegas</Badge>
+						<p>
+							Administración de las bodegas asociadas a la sucursal principal.
+						</p>
 					</div>
 				</SubheaderLeft>
-				<SubheaderRight className='flex items-center gap-3'>
-					<div className='relative'>
-						<Input
-							name='warehouse-search'
-							placeholder='Buscar por nombre, código o tipo...'
-							value={state.globalFilter}
-							onChange={(e) => actions.setGlobalFilter(e.target.value)}
-							className='w-64'
-							dimension='lg'
-						/>
-						{state.globalFilter && (
-							<button
-								onClick={() => actions.setGlobalFilter('')}
-								className='absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600'>
-								<Icon icon='HeroXMark' className='size-5' />
-							</button>
-						)}
-					</div>
+				<SubheaderRight className='flex space-x-2'>
 					<ProtectedButton
+						variant='outline'
+						className='bg-emerald-400/30'
 						permission='create-warehouse'
 						branchId={state.branchId}
 						scope='access'
-						variant='solid'
-						color='blue'
 						icon='HeroPlus'
-						size='lg'
+						color='emerald'
 						onClick={actions.openCreateModal}>
 						Nueva Bodega
 					</ProtectedButton>
