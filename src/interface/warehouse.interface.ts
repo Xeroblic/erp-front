@@ -16,6 +16,7 @@ export interface IWarehouse {
 	manager_name?: string | null;
 	address?: string | null;
 	commune_id?: number | null;
+	commune_name?: string | null;
 	schedule?: string | null;
 	requires_serial_tracking: boolean;
 	created_at?: string;
