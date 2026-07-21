@@ -26,6 +26,8 @@ export interface Integration {
 	last_error_msg: string | null;
 	created_at: string;
 	updated_at: string;
+	/** Fecha de eliminación (soft-delete). Null si la integración está activa. */
+	deleted_at?: string | null;
 }
 
 export interface CreateIntegrationPayload {
@@ -56,6 +58,7 @@ export interface CreateIntegrationResponse {
 	data: Integration;
 	webhook_secret?: string;
 	api_key?: string;
+	reactivation_suggestion?: ReactivationSuggestion;
 }
 
 export interface UpdateIntegrationResponse {
@@ -63,6 +66,20 @@ export interface UpdateIntegrationResponse {
 	data: Integration;
 	webhook_secret?: string;
 	api_key?: string;
+}
+
+/**
+ * Sugerencia de reactivación: cuando se crea una integración para una tienda
+ * que ya existió (soft-deleted), el backend sugiere restaurar la original
+ * en lugar de duplicar.
+ */
+export interface ReactivationSuggestion {
+	integration_id: string;
+}
+
+export interface RestoreIntegrationResponse {
+	message: string;
+	data: Integration;
 }
 
 export interface UnmappedWooCommerceProduct {
@@ -175,6 +192,7 @@ export interface SyncedProduct {
 export interface IntegrationsQueryParams {
 	provider?: IntegrationProvider;
 	active?: boolean;
+	trashed?: boolean;
 	per_page?: number;
 }
 
