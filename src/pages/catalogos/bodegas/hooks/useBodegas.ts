@@ -9,6 +9,7 @@ import {
 	updateWarehouse,
 	deleteWarehouse,
 	clearWarehouseError,
+	type IWarehouseApiError,
 } from '@/store/slices/warehouses/warehouseSlice';
 import type {
 	IWarehouse,
@@ -42,13 +43,7 @@ export const useBodegas = () => {
 			try {
 				await dispatch(fetchWarehouses({ branchId, params })).unwrap();
 			} catch (e: unknown) {
-				const msg =
-					typeof e === 'string'
-						? e
-						: e instanceof Error
-							? e.message
-							: 'Error al cargar bodegas';
-				toast.error(msg);
+				toast.error((e as IWarehouseApiError).message || 'Error al cargar bodegas');
 			}
 		},
 		[dispatch, branchId],
@@ -62,13 +57,7 @@ export const useBodegas = () => {
 				toast.success('Bodega creada exitosamente');
 				return true;
 			} catch (e: unknown) {
-				const msg =
-					typeof e === 'string'
-						? e
-						: e instanceof Error
-							? e.message
-							: 'Error al crear la bodega';
-				toast.error(msg);
+				toast.error((e as IWarehouseApiError).message || 'Error al crear la bodega');
 				return false;
 			}
 		},
@@ -83,13 +72,7 @@ export const useBodegas = () => {
 				toast.success('Bodega actualizada');
 				return true;
 			} catch (e: unknown) {
-				const msg =
-					typeof e === 'string'
-						? e
-						: e instanceof Error
-							? e.message
-							: 'Error al actualizar la bodega';
-				toast.error(msg);
+				toast.error((e as IWarehouseApiError).message || 'Error al actualizar la bodega');
 				return false;
 			}
 		},
@@ -104,16 +87,11 @@ export const useBodegas = () => {
 				toast.success('Bodega eliminada');
 				return true;
 			} catch (e: unknown) {
-				const msg =
-					typeof e === 'string'
-						? e
-						: e instanceof Error
-							? e.message
-							: 'Error al eliminar la bodega';
-				if (msg.includes('productos asociados')) {
+				const apiError = e as IWarehouseApiError;
+				if (apiError.code === 'WAREHOUSE_HAS_PRODUCTS') {
 					toast.error('No se puede eliminar, tiene productos asociados');
 				} else {
-					toast.error(msg);
+					toast.error(apiError.message || 'Error al eliminar la bodega');
 				}
 				return false;
 			}
@@ -233,34 +211,36 @@ export const useBodegas = () => {
 		setCreateModalOpen(true);
 	}, [createForm]);
 
-	return {
-		state: {
-			warehouses: filteredWarehouses,
-			stats,
-			loading,
-			error,
-			globalFilter,
-			createModalOpen,
-			editModalOpen,
-			deleteModalOpen,
-			selectedWarehouse,
-			branchId,
-		},
-		forms: {
-			create: createForm,
-			edit: editForm,
-		},
-		actions: {
-			setGlobalFilter,
-			openCreateModal,
-			setCreateModalOpen,
-			setEditModalOpen,
-			setDeleteModalOpen,
-			setSelectedWarehouse,
-			handleEdit,
-			handleDelete,
-			confirmDelete,
-			loadWarehouses,
-		},
-	};
+	const state = useMemo(() => ({
+		warehouses: filteredWarehouses,
+		stats,
+		loading,
+		error,
+		globalFilter,
+		createModalOpen,
+		editModalOpen,
+		deleteModalOpen,
+		selectedWarehouse,
+		branchId,
+	}), [filteredWarehouses, stats, loading, error, globalFilter, createModalOpen, editModalOpen, deleteModalOpen, selectedWarehouse, branchId]);
+
+	const forms = useMemo(() => ({
+		create: createForm,
+		edit: editForm,
+	}), [createForm, editForm]);
+
+	const actions = useMemo(() => ({
+		setGlobalFilter,
+		openCreateModal,
+		setCreateModalOpen,
+		setEditModalOpen,
+		setDeleteModalOpen,
+		setSelectedWarehouse,
+		handleEdit,
+		handleDelete,
+		confirmDelete,
+		loadWarehouses,
+	}), [setGlobalFilter, openCreateModal, setCreateModalOpen, setEditModalOpen, setDeleteModalOpen, setSelectedWarehouse, handleEdit, handleDelete, confirmDelete, loadWarehouses]);
+
+	return { state, forms, actions };
 };

@@ -21,7 +21,7 @@ import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/S
 import { useAppDispatch, useAppSelector } from '@/store';
 import { createBatch, selectBatchesLoading } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
-import { fetchWarehouses, createWarehouse } from '@/store/slices/warehouses/warehouseSlice';
+import { fetchWarehouses, createWarehouse, type IWarehouseApiError } from '@/store/slices/warehouses/warehouseSlice';
 import {
 	fetchCustomerSuppliers,
 	createCustomerSupplier,
@@ -143,8 +143,7 @@ const CrearLote: React.FC = () => {
 				setWarehouseModalOpen(false);
 				resetForm();
 			} catch (error: unknown) {
-				const msg = error instanceof Error ? error.message : 'No se pudo crear la bodega';
-				toast.error(msg);
+				toast.error((error as IWarehouseApiError).message || 'No se pudo crear la bodega');
 			} finally {
 				setSubmitting(false);
 			}
