@@ -33,10 +33,21 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
 	return fallback;
 };
 
-const getResponsePayload = (error: unknown): UnknownRecord => {
+export interface IWarehouseApiError {
+	message: string;
+	code?: string;
+	fields?: Record<string, string[]>;
+}
+
+const extractApiError = (error: unknown): IWarehouseApiError => {
 	const errorRecord = asRecord(error);
 	const responseRecord = asRecord(errorRecord?.response);
-	return asRecord(responseRecord?.data) ?? { message: getErrorMessage(error, 'Error desconocido') };
+	const data = asRecord(responseRecord?.data) ?? {};
+	return {
+		message: getErrorMessage(error, 'Error desconocido'),
+		code: typeof data.error === 'string' ? data.error : undefined,
+		fields: data.errors as Record<string, string[]> | undefined,
+	};
 };
 
 // ==================== State Interface ====================
@@ -127,15 +138,15 @@ const computeWarehouseStats = (warehouses: IWarehouse[]): IWarehouseStats => {
 	return stats;
 };
 
+const defaultError = (action: { payload?: IWarehouseApiError }, fallback: string): string =>
+	action.payload?.message ?? fallback;
+
 // ==================== Async Thunks ====================
 
-/**
- * Obtener listado de bodegas
- */
 export const fetchWarehouses = createAsyncThunk<
 	{ items: IWarehouse[]; meta: IWarehouseListMeta; stats: IWarehouseStats },
 	{ branchId: number; params?: IFetchWarehousesParams },
-	{ rejectValue: string }
+	{ rejectValue: IWarehouseApiError }
 >('warehouses/fetchWarehouses', async ({ branchId, params }, { rejectWithValue }) => {
 	try {
 		const response = await ApiService.fetchData<{
@@ -167,47 +178,36 @@ export const fetchWarehouses = createAsyncThunk<
 			last_page: Number(metaSource.last_page ?? 1),
 		};
 
-		return {
-			items,
-			meta,
-			stats: computeWarehouseStats(items),
-		};
+		return { items, meta, stats: computeWarehouseStats(items) };
 	} catch (error: unknown) {
-		return rejectWithValue(getErrorMessage(error, 'No se pudieron cargar las bodegas'));
+		return rejectWithValue(extractApiError(error));
 	}
 });
 
 export const fetchWarehouseDetail = createAsyncThunk<
 	IWarehouseDetail,
 	{ branchId: number; warehouseId: number },
-	{ rejectValue: string }
+	{ rejectValue: IWarehouseApiError }
 >('warehouses/fetchWarehouseDetail', async ({ branchId, warehouseId }, { rejectWithValue }) => {
 	try {
 		const response = await ApiService.fetchData<{ data?: IWarehouseDetail }>({
 			url: `/branches/${branchId}/warehouses/${warehouseId}/detail`,
 			method: 'get',
 		});
-
 		const data = response.data?.data ?? response.data;
 		return data as IWarehouseDetail;
 	} catch (error: unknown) {
-		return rejectWithValue(
-			getErrorMessage(error, 'No se pudo obtener el detalle de la bodega'),
-		);
+		return rejectWithValue(extractApiError(error));
 	}
 });
 
-/**
- * Crear nueva bodega
- */
 export const createWarehouse = createAsyncThunk<
 	IWarehouse,
 	{ branchId: number; data: ICreateWarehouseRequest },
-	{ rejectValue: string }
+	{ rejectValue: IWarehouseApiError }
 >('warehouses/createWarehouse', async ({ branchId, data }, { rejectWithValue }) => {
 	try {
 		const body: Record<string, string | number | boolean> = {};
-
 		const assignIfDefined = (key: string, val: string | number | boolean | null | undefined) => {
 			if (val !== undefined && val !== null && val !== '') body[key] = val;
 		};
@@ -220,51 +220,36 @@ export const createWarehouse = createAsyncThunk<
 		if (data.maximum_capacity !== undefined && data.maximum_capacity !== null) {
 			body.maximum_capacity = Number(data.maximum_capacity);
 		}
-
 		if (data.manager_id !== undefined && data.manager_id !== null) {
 			body.manager_id = Number(data.manager_id);
 		}
-
 		assignIfDefined('address', data.address);
-
 		if (data.commune_id !== undefined && data.commune_id !== null) {
 			body.commune_id = Number(data.commune_id);
 		}
-
 		assignIfDefined('schedule', data.schedule);
-
-		if (data.is_active !== undefined) {
-			body.is_active = Boolean(data.is_active);
-		}
-
-		if (data.requires_serial_tracking !== undefined) {
-			body.requires_serial_tracking = Boolean(data.requires_serial_tracking);
-		}
+		if (data.is_active !== undefined) body.is_active = Boolean(data.is_active);
+		if (data.requires_serial_tracking !== undefined) body.requires_serial_tracking = Boolean(data.requires_serial_tracking);
 
 		const response = await ApiService.fetchData<{ data?: IWarehouse }>({
 			url: `/branches/${branchId}/warehouses`,
 			method: 'post',
 			data: body,
 		});
-
 		const warehouse = response.data?.data ?? response.data;
 		return warehouse as IWarehouse;
 	} catch (error: unknown) {
-		return rejectWithValue(getErrorMessage(error, 'No se pudo crear la bodega'));
+		return rejectWithValue(extractApiError(error));
 	}
 });
 
-/**
- * Actualizar bodega existente
- */
 export const updateWarehouse = createAsyncThunk<
 	IWarehouse,
 	{ branchId: number; warehouseId: number; data: IUpdateWarehouseRequest },
-	{ rejectValue: string }
+	{ rejectValue: IWarehouseApiError }
 >('warehouses/updateWarehouse', async ({ branchId, warehouseId, data }, { rejectWithValue }) => {
 	try {
 		const body: Record<string, string | number | boolean | null> = {};
-
 		const assignIfDefined = (key: string, val: string | number | boolean | null | undefined) => {
 			if (val !== undefined && val !== null && val !== '') body[key] = val;
 		};
@@ -275,118 +260,80 @@ export const updateWarehouse = createAsyncThunk<
 		assignIfDefined('description', data.description);
 
 		if (data.maximum_capacity !== undefined) {
-			body.maximum_capacity =
-				data.maximum_capacity === null ? null : Number(data.maximum_capacity);
+			body.maximum_capacity = data.maximum_capacity === null ? null : Number(data.maximum_capacity);
 		}
-
 		if (data.manager_id !== undefined) {
 			body.manager_id = data.manager_id === null ? null : Number(data.manager_id);
 		}
-
 		assignIfDefined('address', data.address);
-
 		if (data.commune_id !== undefined) {
 			body.commune_id = data.commune_id === null ? null : Number(data.commune_id);
 		}
-
 		assignIfDefined('schedule', data.schedule);
-
-		if (data.is_active !== undefined) {
-			body.is_active = Boolean(data.is_active);
-		}
-
-		if (data.requires_serial_tracking !== undefined) {
-			body.requires_serial_tracking = Boolean(data.requires_serial_tracking);
-		}
+		if (data.is_active !== undefined) body.is_active = Boolean(data.is_active);
+		if (data.requires_serial_tracking !== undefined) body.requires_serial_tracking = Boolean(data.requires_serial_tracking);
 
 		const response = await ApiService.fetchData<{ data?: IWarehouse }>({
 			url: `/branches/${branchId}/warehouses/${warehouseId}`,
 			method: 'patch',
 			data: body,
 		});
-
 		const warehouse = response.data?.data ?? response.data;
 		return warehouse as IWarehouse;
 	} catch (error: unknown) {
-		return rejectWithValue(
-			getErrorMessage(error, 'No se pudo actualizar la bodega'),
-		);
+		return rejectWithValue(extractApiError(error));
 	}
 });
 
-/**
- * Eliminar bodega
- */
 export const deleteWarehouse = createAsyncThunk<
 	number,
 	{ branchId: number; warehouseId: number },
-	{ rejectValue: string }
+	{ rejectValue: IWarehouseApiError }
 >('warehouses/deleteWarehouse', async ({ branchId, warehouseId }, { rejectWithValue }) => {
 	try {
 		await ApiService.fetchData({
 			url: `/branches/${branchId}/warehouses/${warehouseId}`,
 			method: 'delete',
 		});
-
 		return warehouseId;
 	} catch (error: unknown) {
-		return rejectWithValue(
-			getErrorMessage(error, 'No se pudo eliminar la bodega'),
-		);
+		return rejectWithValue(extractApiError(error));
 	}
 });
 
-/**
- * Agregar productos a la bodega
- */
 export const attachWarehouseProducts = createAsyncThunk<
 	IWarehouseDetail,
 	{ branchId: number; warehouseId: number; data: IAttachProductRequest },
-	{ rejectValue: string }
+	{ rejectValue: IWarehouseApiError }
 >('warehouses/attachProducts', async ({ branchId, warehouseId, data }, { rejectWithValue }) => {
 	try {
-		const response = await ApiService.fetchData<
-			{ data?: IWarehouseDetail },
-			IAttachProductRequest
-		>({
+		const response = await ApiService.fetchData<{ data?: IWarehouseDetail }, IAttachProductRequest>({
 			url: `/branches/${branchId}/warehouses/${warehouseId}/products`,
 			method: 'post',
 			data,
 		});
-
 		const warehouse = response.data?.data ?? response.data;
 		return warehouse as IWarehouseDetail;
 	} catch (error: unknown) {
-		return rejectWithValue(
-			getErrorMessage(error, 'No se pudieron agregar los productos a la bodega'),
-		);
+		return rejectWithValue(extractApiError(error));
 	}
 });
 
-/**
- * Quitar producto de la bodega
- */
 export const detachWarehouseProduct = createAsyncThunk<
 	IWarehouseDetail,
 	{ branchId: number; warehouseId: number; data: IDetachProductRequest },
-	{ rejectValue: string }
+	{ rejectValue: IWarehouseApiError }
 >('warehouses/detachProduct', async ({ branchId, warehouseId, data }, { rejectWithValue }) => {
 	try {
-		const response = await ApiService.fetchData<
-			{ data?: IWarehouseDetail },
-			IDetachProductRequest
-		>({
+		const response = await ApiService.fetchData<{ data?: IWarehouseDetail }, IDetachProductRequest>({
 			url: `/branches/${branchId}/warehouses/${warehouseId}/products`,
 			method: 'delete',
 			data,
 		});
-
 		const warehouse = response.data?.data ?? response.data;
 		return warehouse as IWarehouseDetail;
 	} catch (error: unknown) {
-		return rejectWithValue(
-			getErrorMessage(error, 'No se pudo quitar el producto de la bodega'),
-		);
+		return rejectWithValue(extractApiError(error));
 	}
 });
 
@@ -407,7 +354,6 @@ const warehouseSlice = createSlice({
 	},
 	extraReducers: (builder) => {
 		builder
-			// Fetch Warehouses
 			.addCase(fetchWarehouses.pending, (state) => {
 				state.loading = true;
 				state.error = null;
@@ -420,10 +366,8 @@ const warehouseSlice = createSlice({
 			})
 			.addCase(fetchWarehouses.rejected, (state, action) => {
 				state.loading = false;
-				state.error = action.payload ?? 'No se pudieron cargar las bodegas';
+				state.error = defaultError(action, 'No se pudieron cargar las bodegas');
 			})
-
-			// Fetch Warehouse Detail
 			.addCase(fetchWarehouseDetail.pending, (state) => {
 				state.warehouseDetailLoading = true;
 				state.warehouseDetailError = null;
@@ -434,11 +378,8 @@ const warehouseSlice = createSlice({
 			})
 			.addCase(fetchWarehouseDetail.rejected, (state, action) => {
 				state.warehouseDetailLoading = false;
-				state.warehouseDetailError =
-					action.payload ?? 'No se pudo obtener el detalle de la bodega';
+				state.warehouseDetailError = defaultError(action, 'No se pudo obtener el detalle');
 			})
-
-			// Create Warehouse
 			.addCase(createWarehouse.pending, (state) => {
 				state.creating = true;
 				state.error = null;
@@ -451,19 +392,15 @@ const warehouseSlice = createSlice({
 			})
 			.addCase(createWarehouse.rejected, (state, action) => {
 				state.creating = false;
-				state.error = action.payload ?? 'No se pudo crear la bodega';
+				state.error = defaultError(action, 'No se pudo crear la bodega');
 			})
-
-			// Update Warehouse
 			.addCase(updateWarehouse.pending, (state) => {
 				state.updating = true;
 				state.error = null;
 			})
 			.addCase(updateWarehouse.fulfilled, (state, action) => {
 				state.updating = false;
-				const index = state.warehouses.findIndex(
-					(warehouse) => warehouse.id === action.payload.id,
-				);
+				const index = state.warehouses.findIndex((w) => w.id === action.payload.id);
 				if (index !== -1) {
 					state.warehouses[index] = action.payload;
 					state.stats = computeWarehouseStats(state.warehouses);
@@ -474,19 +411,15 @@ const warehouseSlice = createSlice({
 			})
 			.addCase(updateWarehouse.rejected, (state, action) => {
 				state.updating = false;
-				state.error = action.payload ?? 'No se pudo actualizar la bodega';
+				state.error = defaultError(action, 'No se pudo actualizar la bodega');
 			})
-
-			// Delete Warehouse
 			.addCase(deleteWarehouse.pending, (state) => {
 				state.deleting = true;
 				state.error = null;
 			})
 			.addCase(deleteWarehouse.fulfilled, (state, action) => {
 				state.deleting = false;
-				state.warehouses = state.warehouses.filter(
-					(warehouse) => warehouse.id !== action.payload,
-				);
+				state.warehouses = state.warehouses.filter((w) => w.id !== action.payload);
 				state.meta.total = Math.max(0, state.meta.total - 1);
 				state.stats = computeWarehouseStats(state.warehouses);
 				if (state.warehouseDetail && state.warehouseDetail.id === action.payload) {
@@ -495,10 +428,8 @@ const warehouseSlice = createSlice({
 			})
 			.addCase(deleteWarehouse.rejected, (state, action) => {
 				state.deleting = false;
-				state.error = action.payload ?? 'No se pudo eliminar la bodega';
+				state.error = defaultError(action, 'No se pudo eliminar la bodega');
 			})
-
-			// Attach Products
 			.addCase(attachWarehouseProducts.pending, (state) => {
 				state.attachingProducts = true;
 				state.warehouseDetailError = null;
@@ -506,10 +437,7 @@ const warehouseSlice = createSlice({
 			.addCase(attachWarehouseProducts.fulfilled, (state, action) => {
 				state.attachingProducts = false;
 				state.warehouseDetail = action.payload;
-				// Actualizar el item en la lista si existe
-				const index = state.warehouses.findIndex(
-					(warehouse) => warehouse.id === action.payload.id,
-				);
+				const index = state.warehouses.findIndex((w) => w.id === action.payload.id);
 				if (index !== -1) {
 					state.warehouses[index] = { ...state.warehouses[index], ...action.payload };
 					state.stats = computeWarehouseStats(state.warehouses);
@@ -517,11 +445,8 @@ const warehouseSlice = createSlice({
 			})
 			.addCase(attachWarehouseProducts.rejected, (state, action) => {
 				state.attachingProducts = false;
-				state.warehouseDetailError =
-					action.payload ?? 'No se pudieron agregar los productos a la bodega';
+				state.warehouseDetailError = defaultError(action, 'No se pudieron agregar los productos');
 			})
-
-			// Detach Product
 			.addCase(detachWarehouseProduct.pending, (state) => {
 				state.detachingProduct = true;
 				state.warehouseDetailError = null;
@@ -529,10 +454,7 @@ const warehouseSlice = createSlice({
 			.addCase(detachWarehouseProduct.fulfilled, (state, action) => {
 				state.detachingProduct = false;
 				state.warehouseDetail = action.payload;
-				// Actualizar el item en la lista si existe
-				const index = state.warehouses.findIndex(
-					(warehouse) => warehouse.id === action.payload.id,
-				);
+				const index = state.warehouses.findIndex((w) => w.id === action.payload.id);
 				if (index !== -1) {
 					state.warehouses[index] = { ...state.warehouses[index], ...action.payload };
 					state.stats = computeWarehouseStats(state.warehouses);
@@ -540,8 +462,7 @@ const warehouseSlice = createSlice({
 			})
 			.addCase(detachWarehouseProduct.rejected, (state, action) => {
 				state.detachingProduct = false;
-				state.warehouseDetailError =
-					action.payload ?? 'No se pudo quitar el producto de la bodega';
+				state.warehouseDetailError = defaultError(action, 'No se pudo quitar el producto');
 			});
 	},
 });

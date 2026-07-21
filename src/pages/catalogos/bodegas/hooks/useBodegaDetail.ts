@@ -9,6 +9,7 @@ import {
 	attachWarehouseProducts,
 	detachWarehouseProduct,
 	clearWarehouseDetail,
+	type IWarehouseApiError,
 } from '@/store/slices/warehouses/warehouseSlice';
 import type {
 	IAttachProductRequest,
@@ -43,6 +44,7 @@ export const useBodegaDetail = () => {
 	const { branchId } = useCurrentBranch();
 
 	const warehouse = useAppSelector((s) => s.warehouse.warehouseDetail);
+	const warehouseDetailLoading = useAppSelector((s) => s.warehouse.warehouseDetailLoading);
 	const { items: allProducts, loading: productsLoading } = useAppSelector((s) => s.products);
 
 	// UI state
@@ -55,7 +57,7 @@ export const useBodegaDetail = () => {
 	// Load detail
 	useEffect(() => {
 		if (branchId && id) {
-			dispatch(fetchWarehouseDetail({ branchId, warehouseId: Number(id) })).catch(
+			dispatch(fetchWarehouseDetail({ branchId, warehouseId: Number(id) })).unwrap().catch(
 				(e: unknown) => {
 					toast.error(getErrorMessage(e, 'Error al cargar el detalle de la bodega'));
 				},
@@ -114,7 +116,6 @@ export const useBodegaDetail = () => {
 	const onSelectProductToAttach = useCallback(
 		(product: IProduct) => {
 			if (isProductAssociated(product.id)) {
-				console.warn(`[UX Safety] Producto ${product.id} ya está asociado a la bodega`);
 				return;
 			}
 			setAttachProduct(product);
@@ -126,7 +127,6 @@ export const useBodegaDetail = () => {
 		async (productId: number, sync: boolean, quantity: number) => {
 			if (!warehouse || !branchId) return;
 			if (isProductAssociated(productId)) {
-				console.warn(`[Backend Safety] Evitando POST duplicado para producto ${productId}`);
 				setAttachProduct(null);
 				return;
 			}
@@ -146,17 +146,23 @@ export const useBodegaDetail = () => {
 					setAttachProduct(null);
 				}
 			} catch (e: unknown) {
-				const msg = getErrorMessage(e, 'Error al asociar el producto');
-				if (msg.toLowerCase().includes('ya está asociado')) {
-					toast.warning('El producto ya se encuentra en la bodega');
-				} else if (msg.toLowerCase().includes('sucursal')) {
-					toast.error('El producto pertenece a otra sucursal');
-				} else if (msg.toLowerCase().includes('capacidad')) {
+				const apiError = e as IWarehouseApiError;
+				const fields = apiError.fields;
+				if (fields?.quantity) {
 					toast.error('No hay capacidad suficiente en la bodega');
-				} else if (msg.toLowerCase().includes('stock disponible')) {
+				} else if (fields?.sync_stock) {
 					toast.error('No hay stock disponible para sincronizar');
+				} else if (fields?.product_id) {
+					const msg = apiError.message.toLowerCase();
+					if (msg.includes('ya está asociado')) {
+						toast.warning('El producto ya se encuentra en la bodega');
+					} else if (msg.includes('sucursal')) {
+						toast.error('El producto pertenece a otra sucursal');
+					} else {
+						toast.error(apiError.message);
+					}
 				} else {
-					toast.error(msg);
+					toast.error(apiError.message || 'Error al asociar el producto');
 				}
 			} finally {
 				setIsAttaching(false);
@@ -179,42 +185,47 @@ export const useBodegaDetail = () => {
 				await loadWarehouseDetail(warehouse.id);
 				setProductToRemove(null);
 			} catch (e: unknown) {
-				const msg = getErrorMessage(e, 'Error al quitar el producto');
-				if (msg.toLowerCase().includes('no está asociado')) {
+				const apiError = e as IWarehouseApiError;
+				if (apiError.fields?.product_id) {
 					toast.error('El producto no existe en esta bodega');
 				} else {
-					toast.error(msg);
+					toast.error(apiError.message || 'Error al quitar el producto');
 				}
 			}
 		},
 		[warehouse, branchId, dispatch, loadWarehouseDetail],
 	);
 
-	return {
-		state: {
-			warehouse,
-			allProducts,
-			productsLoading,
-			isEditable,
-			productToRemove,
-			attachProduct,
-			showCharts,
-			isAttaching,
-			branchId,
-		},
-		derived: {
-			associatedProductIds,
-			availableProducts,
-			isProductAssociated,
-		},
-		actions: {
-			setIsEditable,
-			setShowCharts,
-			setProductToRemove,
-			closeAttachModal: () => setAttachProduct(null),
-			onSelectProductToAttach,
-			onConfirmAttach,
-			onConfirmRemove,
-		},
-	};
+	const closeAttachModal = useCallback(() => setAttachProduct(null), []);
+
+	const state = useMemo(() => ({
+		warehouse,
+		warehouseDetailLoading,
+		allProducts,
+		productsLoading,
+		isEditable,
+		productToRemove,
+		attachProduct,
+		showCharts,
+		isAttaching,
+		branchId,
+	}), [warehouse, warehouseDetailLoading, allProducts, productsLoading, isEditable, productToRemove, attachProduct, showCharts, isAttaching, branchId]);
+
+	const derived = useMemo(() => ({
+		associatedProductIds,
+		availableProducts,
+		isProductAssociated,
+	}), [associatedProductIds, availableProducts, isProductAssociated]);
+
+	const actions = useMemo(() => ({
+		setIsEditable,
+		setShowCharts,
+		setProductToRemove,
+		closeAttachModal,
+		onSelectProductToAttach,
+		onConfirmAttach,
+		onConfirmRemove,
+	}), [setIsEditable, setShowCharts, setProductToRemove, closeAttachModal, onSelectProductToAttach, onConfirmAttach, onConfirmRemove]);
+
+	return { state, derived, actions };
 };

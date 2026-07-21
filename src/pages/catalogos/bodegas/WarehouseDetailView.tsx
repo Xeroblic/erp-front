@@ -30,6 +30,19 @@ const WarehouseDetailView: React.FC = () => {
 	const navigate = useNavigate();
 	const { state, derived, actions } = useBodegaDetail();
 
+	if (state.warehouseDetailLoading) {
+		return (
+			<PageWrapper>
+				<Container>
+					<div className='flex items-center justify-center py-12'>
+						<div className='h-10 w-10 animate-spin rounded-full border-4 border-blue-500 border-t-transparent' />
+						<span className='ml-3 text-gray-500'>Cargando...</span>
+					</div>
+				</Container>
+			</PageWrapper>
+		);
+	}
+
 	if (!state.warehouse) {
 		return (
 			<PageWrapper>
