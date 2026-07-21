@@ -45,7 +45,8 @@ export const useBodegaDetail = () => {
 
 	const warehouse = useAppSelector((s) => s.warehouse.warehouseDetail);
 	const warehouseDetailLoading = useAppSelector((s) => s.warehouse.warehouseDetailLoading);
-	const { items: allProducts, loading: productsLoading } = useAppSelector((s) => s.products);
+	const allProducts = useAppSelector((s) => s.products.items);
+	const productsLoading = useAppSelector((s) => s.products.loading);
 
 	// UI state
 	const [isEditable, setIsEditable] = useState(false);
@@ -138,13 +139,11 @@ export const useBodegaDetail = () => {
 					quantity: sync ? undefined : quantity,
 					sync_stock: sync,
 				};
-				const result = await dispatch(
+				await dispatch(
 					attachWarehouseProducts({ branchId, warehouseId: warehouse.id, data: payload }),
 				).unwrap();
-				if (result) {
-					await loadWarehouseDetail(warehouse.id);
-					setAttachProduct(null);
-				}
+				await loadWarehouseDetail(warehouse.id);
+				setAttachProduct(null);
 			} catch (e: unknown) {
 				const apiError = e as IWarehouseApiError;
 				const fields = apiError.fields;

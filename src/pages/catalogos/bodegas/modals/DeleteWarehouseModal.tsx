@@ -7,6 +7,7 @@ import Modal, {
 } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
+import Icon from '@/components/icon/Icon';
 import type { IWarehouse } from '@/interface/warehouse.interface';
 
 interface DeleteWarehouseModalProps {
@@ -45,7 +46,7 @@ const DeleteWarehouseModal: React.FC<DeleteWarehouseModalProps> = ({
 			<ModalHeader>
 				<div className='flex items-center gap-3'>
 					<div className='flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20'>
-						<span className='text-xl' />
+						<Icon icon='HeroTrash' className='size-5 text-red-600 dark:text-red-400' />
 					</div>
 					<div>
 						<h3 className='text-lg font-semibold text-gray-900 dark:text-white'>

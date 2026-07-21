@@ -27,7 +27,11 @@ export const useBodegas = () => {
 	const dispatch = useAppDispatch();
 	const { branchId } = useCurrentBranch();
 
-	const { warehouses, stats, loading, error } = useAppSelector((s) => s.warehouse);
+	const warehouses = useAppSelector((s) => s.warehouse.warehouses);
+	const stats = useAppSelector((s) => s.warehouse.stats);
+	const loading = useAppSelector((s) => s.warehouse.loading);
+	const error = useAppSelector((s) => s.warehouse.error);
+	const deleting = useAppSelector((s) => s.warehouse.deleting);
 
 	// UI state
 	const [globalFilter, setGlobalFilter] = useState('');
@@ -215,6 +219,7 @@ export const useBodegas = () => {
 		warehouses: filteredWarehouses,
 		stats,
 		loading,
+		deleting,
 		error,
 		globalFilter,
 		createModalOpen,
@@ -222,7 +227,7 @@ export const useBodegas = () => {
 		deleteModalOpen,
 		selectedWarehouse,
 		branchId,
-	}), [filteredWarehouses, stats, loading, error, globalFilter, createModalOpen, editModalOpen, deleteModalOpen, selectedWarehouse, branchId]);
+	}), [filteredWarehouses, stats, loading, deleting, error, globalFilter, createModalOpen, editModalOpen, deleteModalOpen, selectedWarehouse, branchId]);
 
 	const forms = useMemo(() => ({
 		create: createForm,

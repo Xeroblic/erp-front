@@ -4,6 +4,7 @@ import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
 import Button from '@/components/ui/Button';
+import ProtectedButton from '@/components/ui/ProtectedButton';
 import Icon from '@/components/icon/Icon';
 import Collapse from '@/components/utils/Collapse';
 import WarehouseInfoCard from './detallesComponents/cards/WarehouseInfoCard';
@@ -69,14 +70,17 @@ const WarehouseDetailView: React.FC = () => {
 					<span className='ml-2 text-lg font-semibold'>{state.warehouse.name}</span>
 				</SubheaderLeft>
 				<SubheaderRight>
-					<Button
+					<ProtectedButton
+						permission='update-warehouse'
+						branchId={state.branchId}
+						scope='access'
 						variant='outline'
 						className={state.isEditable ? 'bg-amber-400/20' : 'bg-blue-400/20'}
 						color={state.isEditable ? 'amber' : 'blue'}
 						onClick={() => actions.setIsEditable((prev) => !prev)}
 						icon={state.isEditable ? 'HeroLockClosed' : 'HeroPencil'}>
 						{state.isEditable ? 'Bloquear Edición' : 'Habilitar Edición'}
-					</Button>
+					</ProtectedButton>
 				</SubheaderRight>
 			</Subheader>
 

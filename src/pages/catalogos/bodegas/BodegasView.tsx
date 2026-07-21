@@ -106,6 +106,7 @@ const BodegasView: React.FC = () => {
 						setIsOpen={actions.setDeleteModalOpen}
 						warehouse={state.selectedWarehouse}
 						onConfirm={actions.confirmDelete}
+						loading={state.deleting}
 					/>
 				)}
 			</React.Suspense>
