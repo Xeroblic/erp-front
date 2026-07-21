@@ -22,6 +22,10 @@ interface Step2FullReviewProps {
 	onComplete: () => Promise<void>;
 	loading?: boolean;
 	readOnly?: boolean;
+	/** Initial section key to jump to (e.g. 'gallery' shortcut) */
+	initialSectionKey?: string;
+	/** Called after the gallery has been opened via shortcut */
+	onGalleryOpened?: () => void;
 }
 
 const EQUIPMENT_LABEL_MAP: Record<string, string> = {
@@ -40,6 +44,8 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 	onComplete,
 	loading = false,
 	readOnly = false,
+	initialSectionKey,
+	onGalleryOpened,
 }) => {
 	const dispatch = useAppDispatch();
 	const { branchId, subsidiaryId } = useCurrentBranch();
@@ -113,6 +119,16 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 
 		return () => window.clearTimeout(timeoutId);
 	}, [isSaving]);
+
+	// Clear initialSectionKey after it has been consumed by the form
+	useEffect(() => {
+		if (initialSectionKey && onGalleryOpened) {
+			const id = requestAnimationFrame(() => {
+				onGalleryOpened();
+			});
+			return () => cancelAnimationFrame(id);
+		}
+	}, [initialSectionKey, onGalleryOpened]);
 
 	// ─── Step Change Handler (auto-save on section navigation) ────────────
 	const handleStepChange = useCallback(
@@ -252,6 +268,7 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 					onStepChange={handleStepChange}
 					registerGetFormValues={registerGetFormValues}
 					isSaving={isSaving}
+					initialSectionKey={initialSectionKey}
 				/>
 			</ReviewPhotosProvider>
 

@@ -18,6 +18,8 @@ interface FormShellProps<T extends FieldValues> {
 	onValidateStep?: (sectionKey: string) => Promise<{ isValid: boolean; message?: string }>;
 	/** Whether auto-save is in progress */
 	isSaving?: boolean;
+	/** Initial section key to jump to on first mount (e.g. 'gallery' shortcut) */
+	initialSectionKey?: string;
 }
 
 function FormShell<T extends FieldValues>({
@@ -29,6 +31,7 @@ function FormShell<T extends FieldValues>({
 	onStepChange,
 	onValidateStep,
 	isSaving = false,
+	initialSectionKey,
 }: FormShellProps<T>) {
 	const [step, setStep] = useState(0);
 	const [direction, setDirection] = useState(1);
@@ -39,6 +42,18 @@ function FormShell<T extends FieldValues>({
 	useEffect(() => {
 		window.scrollTo({ top: 0, behavior: 'smooth' });
 	}, [step]);
+
+	// Jump to initial section on first mount (e.g. gallery shortcut)
+	useEffect(() => {
+		if (initialSectionKey) {
+			const index = sections.findIndex((s) => s.key === initialSectionKey);
+			if (index >= 0) {
+				setStep(index);
+			}
+		}
+		// Only run when initialSectionKey prop first arrives
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [initialSectionKey]);
 
 	const handleNext = async () => {
 		if (onValidateStep && !sectionProps.readOnly) {

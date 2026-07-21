@@ -156,6 +156,8 @@ interface NotebookFormProps {
 	registerGetFormValues?: (getter: () => Record<string, unknown>) => void;
 	/** Whether auto-save is in progress */
 	isSaving?: boolean;
+	/** Initial section key to jump to on first mount */
+	initialSectionKey?: string;
 }
 
 const NotebookForm: React.FC<NotebookFormProps> = ({
@@ -167,6 +169,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 	onStepChange,
 	registerGetFormValues,
 	isSaving = false,
+	initialSectionKey,
 }) => {
 	const normalizedDefaultValues = useMemo<Partial<NotebookFormData>>(
 		() => ({
@@ -309,6 +312,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 			onStepChange={onStepChange}
 			onValidateStep={validateStep}
 			isSaving={isSaving}
+			initialSectionKey={initialSectionKey}
 		/>
 	);
 };

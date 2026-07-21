@@ -129,6 +129,8 @@ interface DesktopFormProps {
 	onStepChange?: (direction: 'next' | 'prev') => void;
 	registerGetFormValues?: (getter: () => Record<string, unknown>) => void;
 	isSaving?: boolean;
+	/** Initial section key to jump to on first mount */
+	initialSectionKey?: string;
 }
 
 const DesktopForm: React.FC<DesktopFormProps> = ({
@@ -140,6 +142,7 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 	onStepChange,
 	registerGetFormValues,
 	isSaving = false,
+	initialSectionKey,
 }) => {
 	const {
 		control,
@@ -284,6 +287,7 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 			onStepChange={onStepChange}
 			onValidateStep={validateStep}
 			isSaving={isSaving}
+			initialSectionKey={initialSectionKey}
 		/>
 	);
 };
