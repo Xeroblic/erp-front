@@ -58,7 +58,6 @@ export const IntegrationsListContent: React.FC = () => {
 				dispatch(fetchTrashedIntegrations({ subsidiaryId }));
 			}
 		} else {
-			console.error('No subsidiaryId found');
 			toast.error('No se pudo identificar la subsidiaria actual. Verifica tu sesión.');
 		}
 	}, [dispatch, subsidiaryId, viewMode]);
@@ -191,7 +190,7 @@ export const IntegrationsListContent: React.FC = () => {
 			}
 			// No hace falta recargar toda la lista: cada `updateIntegration.fulfilled`
 			// actualiza el item en el store. Evita el spinner global y el parpadeo.
-		} catch (error) {
+		} catch (error: unknown) {
 			toast.error(
 				typeof error === 'string'
 					? error

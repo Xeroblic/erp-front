@@ -408,15 +408,21 @@ const ModalIntegration: React.FC<ModalIntegrationProps> = ({
 					integrationId: reactivationSuggestion.integration_id,
 				}),
 			).unwrap();
-			await dispatch(
-				deleteIntegration({
-					subsidiaryId,
-					integrationId: newlyCreatedIntegrationId,
-				}),
-			).unwrap();
-			toast.success('Integración original restaurada correctamente');
 			setReactivationSuggestion(null);
+			try {
+				await dispatch(
+					deleteIntegration({
+						subsidiaryId,
+						integrationId: newlyCreatedIntegrationId,
+					}),
+				).unwrap();
+			} catch {
+				toast.warning(
+					'La integración original se restauró, pero no se pudo eliminar la recién creada. Puedes eliminarla manualmente desde la papelera.',
+				);
+			}
 			setNewlyCreatedIntegrationId(null);
+			toast.success('Integración original restaurada correctamente');
 			await dispatch(fetchIntegrations({ subsidiaryId }));
 			onSuccess();
 			onClose();
