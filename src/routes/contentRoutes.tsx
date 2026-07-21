@@ -71,8 +71,10 @@ const EnlacesPublicosPage = lazy(() => import('@/pages/comercial/EnlacesPublicos
 const TransferenciasInventario = lazy(
 	() => import('@/pages/inventario/transferencias/Transferencias'),
 );
-const BodegasPage = lazy(() => import('@/pages/catalogos/bodegas/WarehouseListPage'));
-const BodegasDetailPage = lazy(() => import('@/pages/catalogos/bodegas/WarehouseDetailPage'));
+const BodegasPage = lazy(() => import('@/pages/catalogos/bodegas'));
+const BodegasDetailPage = lazy(
+	() => import('@/pages/catalogos/bodegas/WarehouseDetailView'),
+);
 const TransferenciasComercial = lazy(
 	() => import('@/pages/comercial/transferencias/TransferenciasAdmin'),
 );

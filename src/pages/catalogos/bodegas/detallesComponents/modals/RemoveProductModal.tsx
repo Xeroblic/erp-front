@@ -2,17 +2,11 @@ import React from 'react';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
-
-interface Product {
-	id: number;
-	name: string;
-	sku: string;
-	quantity: number;
-}
+import type { IWarehouseProduct } from '@/interface/warehouse.interface';
 
 interface RemoveProductModalProps {
 	isOpen: boolean;
-	product: Product | null;
+	product: IWarehouseProduct | null;
 	onClose: () => void;
 	onConfirm: (productId: number) => Promise<void>;
 }

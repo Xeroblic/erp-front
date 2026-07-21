@@ -5,10 +5,11 @@ import Chart from '@/components/Chart';
 import Icon from '@/components/icon/Icon';
 import useDarkMode from '@/hooks/useDarkMode';
 import { IWarehouseProduct } from '@/interface/warehouse.interface';
+import type { IProduct } from '@/interface/product.interface';
 
 interface ProductBrandsChartProps {
 	products: IWarehouseProduct[];
-	allProducts: any[]; // Para obtener la marca del producto
+	allProducts: IProduct[];
 }
 
 /**

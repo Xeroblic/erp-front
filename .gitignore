@@ -479,5 +479,4 @@ opencode.json
 # Playwright (artefactos de e2e)
 /test-results/
 /playwright-report/
-# Rollup visualizer
 stats.html
