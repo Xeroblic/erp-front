@@ -17,6 +17,17 @@ import {
 } from '../../../constants/notebook/notebook.options';
 import Icon from '@/components/icon/Icon';
 import RangeSlider from '@/components/ui/RangeSlider';
+import type { BatteryStatusValue } from '../../../constants/notebook/notebook.options';
+
+/** Color semántico de la tarjeta de estado de batería según su valor. */
+const getBatteryColor = (value: BatteryStatusValue) =>
+	value === 'excellent' || value === 'good'
+		? 'green'
+		: value === 'fair'
+			? 'orange'
+			: value === 'poor'
+				? 'red'
+				: 'gray';
 
 const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	control,
@@ -29,6 +40,9 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 	const includesCharger = watch('includes_charger');
 	const brand = watch('brand');
 	const isDell = typeof brand === 'string' && brand.toLowerCase().includes('dell');
+
+	const hasSecondBattery = watch('has_second_battery');
+	const secondBatteryStatus = watch('second_battery_status');
 
 	return (
 		<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
@@ -176,15 +190,7 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 											setValue('battery_health', 'Sin Batería', { shouldValidate: true, shouldDirty: true });
 										}
 									}}
-									color={
-										opt.value === 'excellent' || opt.value === 'good'
-											? 'green'
-											: opt.value === 'fair'
-												? 'orange'
-												: opt.value === 'poor'
-													? 'red'
-													: 'gray'
-									}
+									color={getBatteryColor(opt.value)}
 									className='py-3 text-xs'
 								/>
 							))}
@@ -226,6 +232,108 @@ const PowerSection: React.FC<FormSectionProps<NotebookFormData>> = ({
 						</div>
 					</div>
 				)}
+
+				{/* --- Segunda Batería (opcional) --- */}
+				<div className='mt-4 border-t border-emerald-200 pt-4 dark:border-emerald-800'>
+					<label className='mb-2 block text-center text-xs font-semibold text-zinc-500'>
+						¿Viene con una segunda batería?
+					</label>
+
+					<div className='mb-4 flex justify-center'>
+						<YesNoSelector
+							label=''
+							value={hasSecondBattery}
+							onChange={(val) => {
+								if (readOnly) return;
+								setValue('has_second_battery', val, { shouldDirty: true });
+								if (!val) {
+									setValue('second_battery_status', null);
+									setValue('second_battery_percentage', null);
+									setValue('second_battery_condition', null);
+								}
+							}}
+						/>
+					</div>
+
+					{hasSecondBattery && (
+						<div className='animate-in fade-in slide-in-from-top-4 space-y-4 duration-300'>
+							<label className='block text-center text-sm font-bold uppercase tracking-wide text-emerald-800 dark:text-emerald-200'>
+								{isDell ? 'Estado 2ª Batería (BIOS)' : 'Salud 2ª Batería'}
+							</label>
+
+							{isDell ? (
+								/* Dell: mismos botones que la batería principal */
+								<div className='grid grid-cols-2 gap-3'>
+									{BATTERY_STATUS_OPTIONS.map((opt) => (
+										<SelectionCard
+											key={opt.value}
+											label={opt.label}
+											value={opt.value}
+											isSelected={secondBatteryStatus === opt.value}
+											onClick={() => {
+												if (readOnly) return;
+												setValue('second_battery_status', opt.value, { shouldValidate: true, shouldDirty: true });
+												setValue('second_battery_condition', opt.label, { shouldValidate: true, shouldDirty: true });
+												if (opt.value === 'no_battery') {
+													setValue('second_battery_percentage', 0, { shouldValidate: true, shouldDirty: true });
+													setValue('second_battery_condition', 'Sin Batería', { shouldValidate: true, shouldDirty: true });
+												}
+											}}
+											color={getBatteryColor(opt.value)}
+											className='py-3 text-xs'
+										/>
+									))}
+								</div>
+							) : (
+								/* Non-Dell: mismo input de porcentaje que la principal */
+								<div className='flex flex-col items-center justify-center py-2'>
+									<div className='relative w-32'>
+										<Controller
+											name='second_battery_percentage'
+											control={control}
+											render={({ field }) => (
+												<div className='relative'>
+													<Input
+														{...field}
+														type='number'
+														value={field.value ?? ''}
+														onChange={(e) => {
+															const val =
+																e.target.value === ''
+																	? null
+																	: Number(e.target.value);
+															field.onChange(val);
+															setValue('second_battery_percentage', val, { shouldValidate: true, shouldDirty: true });
+														}}
+														placeholder='0'
+														className='h-16 text-center text-3xl font-bold text-zinc-700 dark:text-zinc-200'
+														disabled={readOnly}
+														min={0}
+														max={100}
+													/>
+													<span className='absolute right-4 top-1/2 -translate-y-1/2 text-xl font-bold text-zinc-400'>
+														%
+													</span>
+												</div>
+											)}
+										/>
+									</div>
+								</div>
+							)}
+
+							{errors.second_battery_status && (
+								<p className='text-center text-xs text-red-500'>
+									{errors.second_battery_status.message}
+								</p>
+							)}
+							{errors.second_battery_percentage && (
+								<p className='text-center text-xs text-red-500'>
+									{errors.second_battery_percentage.message}
+								</p>
+							)}
+						</div>
+					)}
+				</div>
 
 				<div className='mt-4 text-center text-[10px] text-zinc-400'>
 					Información de salud del componente

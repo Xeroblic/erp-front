@@ -173,6 +173,44 @@ export const notebookSchema = Yup.object({
 				schema.max(0, 'Si no hay batería, el porcentaje debe ser 0'),
 		}),
 
+	// ─── Segunda Batería (ZB-100) ────────────────────────────────────────────
+	// Algunos equipos traen más de una batería. Cuando has_second_battery es true
+	// los campos second_battery_* comparten las mismas opciones que la principal.
+	has_second_battery: Yup.boolean().default(false),
+
+	second_battery_status: Yup.string()
+		.oneOf([...ALLOWED_BATTERY_STATUSES], 'Estado de segunda batería no válido')
+		.nullable()
+		.when(['has_second_battery', 'brand'], {
+			is: (hasSecond: unknown, brand: unknown) =>
+				hasSecond === true && isDellBrand(brand),
+			then: (schema) => schema.required('El estado de la segunda batería es obligatorio'),
+			otherwise: (schema) => schema.nullable(),
+		}),
+
+	second_battery_percentage: Yup.number()
+		.typeError('El porcentaje debe ser un número')
+		.integer('Debe ser un número entero')
+		.min(BATTERY_PERCENTAGE_MIN, `El porcentaje mínimo es ${BATTERY_PERCENTAGE_MIN}`)
+		.max(BATTERY_PERCENTAGE_MAX, `El porcentaje máximo es ${BATTERY_PERCENTAGE_MAX}`)
+		.nullable()
+		.when(['has_second_battery', 'brand'], {
+			is: (hasSecond: unknown, brand: unknown) =>
+				hasSecond === true && !isDellBrand(brand),
+			then: (schema) => schema.required('El porcentaje de la segunda batería es obligatorio'),
+			otherwise: (schema) => schema.nullable(),
+		})
+		// Regla: si second_battery_status es no_battery, el porcentaje debe ser 0
+		.when('second_battery_status', {
+			is: 'no_battery',
+			then: (schema) => schema.max(0, 'Si no hay batería, el porcentaje debe ser 0'),
+		}),
+
+	second_battery_condition: Yup.string()
+		.trim()
+		.max(100, 'Máximo 100 caracteres')
+		.nullable(),
+
 	// ─── Puertos ─────────────────────────────────────────────────────────────
 	vga_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),
 	hdmi_ports: Yup.number().integer().min(0, 'No puede ser negativo').nullable(),

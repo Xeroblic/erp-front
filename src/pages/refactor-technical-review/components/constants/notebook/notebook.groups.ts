@@ -67,6 +67,10 @@ export const NOTEBOOK_FIELD_GROUPS: Record<string, NotebookGroup> = {
 	battery_health: 'Batería',
 	battery_status: 'Batería',
 	battery_percentage: 'Batería',
+	has_second_battery: 'Batería',
+	second_battery_status: 'Batería',
+	second_battery_percentage: 'Batería',
+	second_battery_condition: 'Batería',
 
 	// Puertos
 	vga_ports: 'Puertos',
@@ -117,7 +121,15 @@ export const NOTEBOOK_FIELDS_BY_GROUP: Record<NotebookGroup, string[]> = {
 		'has_numeric_keypad',
 		'has_backlit_keyboard',
 	],
-	Batería: ['battery_health', 'battery_status', 'battery_percentage'],
+	Batería: [
+		'battery_health',
+		'battery_status',
+		'battery_percentage',
+		'has_second_battery',
+		'second_battery_status',
+		'second_battery_percentage',
+		'second_battery_condition',
+	],
 	Puertos: [
 		'vga_ports',
 		'hdmi_ports',

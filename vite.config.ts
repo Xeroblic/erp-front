@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react-swc';
 import EnvironmentPlugin from 'vite-plugin-environment';
 import path from "path";
@@ -137,9 +137,10 @@ export default defineConfig({
             },
         },
     },
-    // test: {
-    //     environment: 'jsdom',
-    //     globals: true,
-    //     setupFiles: './src/setupTests.ts',
-    // },
+    test: {
+        environment: 'jsdom',
+        globals: true,
+        setupFiles: './src/setupTests.ts',
+        include: ['src/**/*.{test,spec}.{ts,tsx}', 'test/**/*.{test,spec}.{ts,tsx}'],
+    },
 });

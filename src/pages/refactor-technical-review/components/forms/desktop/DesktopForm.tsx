@@ -31,6 +31,7 @@ import DesktopConnectivitySection from './sections/DesktopConnectivitySection';
 import DesktopAccessoriesSection from './sections/DesktopAccessoriesSection';
 import DesktopSoftwareSection from './sections/DesktopSoftwareSection';
 import DesktopObservationsSection from './sections/DesktopObservationsSection';
+import GallerySection from '../shared/gallery/GallerySection';
 
 // ─── Section Order ────────────────────────────────────────────────────────────
 const DESKTOP_SECTIONS: SectionConfig<DesktopFormData>[] = [
@@ -81,6 +82,12 @@ const DESKTOP_SECTIONS: SectionConfig<DesktopFormData>[] = [
 		label: 'Observaciones',
 		icon: 'HeroDocumentText',
 		component: DesktopObservationsSection,
+	},
+	{
+		key: 'gallery',
+		label: 'Galería',
+		icon: 'HeroPhoto',
+		component: GallerySection,
 	},
 ];
 
