@@ -118,6 +118,7 @@ const DeleteWarehouseModal: React.FC<DeleteWarehouseModalProps> = ({
 					<Button
 						color='zinc'
 						variant='outline'
+						className='bg-zinc-400/20'
 						onClick={() => setIsOpen(false)}
 						isDisable={isDeleting || loading}>
 						Cancelar
@@ -125,7 +126,8 @@ const DeleteWarehouseModal: React.FC<DeleteWarehouseModalProps> = ({
 					{!hasProducts && (
 						<Button
 							color='red'
-							variant='solid'
+							variant='outline'
+							className='bg-red-400/20'
 							onClick={handleConfirm}
 							isLoading={isDeleting || loading}
 							isDisable={isDeleting || loading}>

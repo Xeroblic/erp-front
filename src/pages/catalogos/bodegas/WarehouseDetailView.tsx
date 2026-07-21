@@ -70,7 +70,8 @@ const WarehouseDetailView: React.FC = () => {
 				</SubheaderLeft>
 				<SubheaderRight>
 					<Button
-						variant='solid'
+						variant='outline'
+						className={state.isEditable ? 'bg-amber-400/20' : 'bg-blue-400/20'}
 						color={state.isEditable ? 'amber' : 'blue'}
 						onClick={() => actions.setIsEditable((prev) => !prev)}
 						icon={state.isEditable ? 'HeroLockClosed' : 'HeroPencil'}>

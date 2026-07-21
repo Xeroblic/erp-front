@@ -278,8 +278,9 @@ const EditWarehouseModal: React.FC<EditWarehouseModalProps> = ({
 						Cancelar
 					</Button>
 					<Button
-						color='blue'
-						variant='solid'
+						color='emerald'
+						variant='outline'
+						className='bg-emerald-400/30'
 						onClick={form.submitForm}
 						isLoading={form.isSubmitting}
 						isDisable={!form.isValid || form.isSubmitting}>
