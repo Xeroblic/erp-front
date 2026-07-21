@@ -475,6 +475,7 @@ $RECYCLE.BIN/
 .QWEN.md
 opencode.json
 .opencode/
+.agents/
 # Playwright (artefactos de e2e)
 /test-results/
 /playwright-report/
