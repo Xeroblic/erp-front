@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { type FormikProps } from 'formik';
 import Modal, {
 	ModalBody,
@@ -50,10 +50,10 @@ const CreateWarehouseModal: React.FC<CreateWarehouseModalProps> = ({
 		}
 	}, [dispatch, listaComunas.length]);
 
-	const comunaOptions: TSelectOption[] = listaComunas.map((comuna) => ({
-		value: comuna.codigo,
-		label: comuna.nombre,
-	}));
+	const comunaOptions = useMemo<TSelectOption[]>(
+		() => listaComunas.map((comuna) => ({ value: comuna.codigo, label: comuna.nombre })),
+		[listaComunas],
+	);
 
 	return (
 		<Modal isOpen={isOpen} setIsOpen={() => setIsOpen(false)} size='xl'>
