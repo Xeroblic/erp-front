@@ -108,6 +108,8 @@ interface AioFormProps {
 	onStepChange?: (direction: 'next' | 'prev') => void;
 	registerGetFormValues?: (getter: () => Record<string, unknown>) => void;
 	isSaving?: boolean;
+	/** Initial section key to jump to on first mount */
+	initialSectionKey?: string;
 }
 
 const AioForm: React.FC<AioFormProps> = ({
@@ -119,6 +121,7 @@ const AioForm: React.FC<AioFormProps> = ({
 	onStepChange,
 	registerGetFormValues,
 	isSaving,
+	initialSectionKey,
 }) => {
 	const {
 		control,
@@ -283,6 +286,7 @@ const AioForm: React.FC<AioFormProps> = ({
 			onStepChange={onStepChange}
 			onValidateStep={validateStep}
 			isSaving={isSaving}
+			initialSectionKey={initialSectionKey}
 		/>
 	);
 };

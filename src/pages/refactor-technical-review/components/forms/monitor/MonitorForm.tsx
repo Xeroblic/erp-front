@@ -102,6 +102,8 @@ export interface MonitorFormProps {
 	onStepChange?: (direction: 'next' | 'prev') => void;
 	registerGetFormValues?: (getter: () => Record<string, unknown>) => void;
 	isSaving?: boolean;
+	/** Initial section key to jump to on first mount */
+	initialSectionKey?: string;
 }
 
 const MonitorForm: React.FC<MonitorFormProps> = ({
@@ -113,6 +115,7 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 	onStepChange,
 	registerGetFormValues,
 	isSaving,
+	initialSectionKey,
 }) => {
 	const normalizedDefaultValues = useMemo(() => {
 		if (!defaultValues) return {} as MonitorFormData;
@@ -246,6 +249,7 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 			onStepChange={onStepChange}
 			onValidateStep={validateStep}
 			isSaving={isSaving}
+			initialSectionKey={initialSectionKey}
 		/>
 	);
 };

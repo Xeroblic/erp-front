@@ -75,6 +75,8 @@ interface DockingFormProps {
 	registerGetFormValues?: (getter: () => Record<string, unknown>) => void;
 	/** Whether auto-save is in progress */
 	isSaving?: boolean;
+	/** Initial section key to jump to on first mount */
+	initialSectionKey?: string;
 }
 
 const DockingForm: React.FC<DockingFormProps> = ({
@@ -86,6 +88,7 @@ const DockingForm: React.FC<DockingFormProps> = ({
 	onStepChange,
 	registerGetFormValues,
 	isSaving = false,
+	initialSectionKey,
 }) => {
 	const {
 		control,
@@ -215,6 +218,7 @@ const DockingForm: React.FC<DockingFormProps> = ({
 			onStepChange={onStepChange}
 			onValidateStep={validateStep}
 			isSaving={isSaving}
+			initialSectionKey={initialSectionKey}
 		/>
 	);
 };

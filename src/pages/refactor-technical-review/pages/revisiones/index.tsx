@@ -1,6 +1,6 @@
 import React from 'react';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
-import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subheader';
+import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Container from '@/components/layouts/Container/Container';
 import Card, { CardBody } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -19,6 +19,14 @@ const Revisiones: React.FC = () => {
 	const hook = useItemReview();
 
 	const pageTitle = hook.item ? `Revisión #${hook.item.serial_number}` : 'Nueva Revisión';
+
+	const isEditingReview = hook.currentStepIndex === 1 && !hook.isApproved;
+	const galleryDisabled = !hook.item || (isEditingReview && !hook.allSectionsComplete);
+	const galleryTooltip = !hook.item
+		? 'Guarda la información básica primero'
+		: isEditingReview && !hook.allSectionsComplete
+			? 'Completa todas las secciones antes de la galería'
+			: 'Ver galería de fotos';
 	// const [showFloatingSN, setShowFloatingSN] = useState(false);
 	// useEffect(() => {
 	// 	const handleScroll = (e: Event) => {
@@ -73,6 +81,17 @@ const Revisiones: React.FC = () => {
 						</Badge>
 					)}
 				</SubheaderLeft>
+				<SubheaderRight>
+					<Button
+						variant='outline'
+						color='blue'
+						icon='HeroPhoto'
+						disabled={galleryDisabled}
+						onClick={hook.goToGallery}
+						title={galleryTooltip}>
+						Galería
+					</Button>
+				</SubheaderRight>
 			</Subheader>
 			<Container className='space-y-4 py-4'>
 				{/* Step Indicator */}
@@ -121,6 +140,8 @@ const Revisiones: React.FC = () => {
 						onComplete={hook.handleStep2Complete}
 						loading={hook.completingReview}
 						readOnly={hook.isApproved}
+						initialSectionKey={hook.targetSection ?? undefined}
+						onGalleryOpened={hook.clearTargetSection}
 					/>
 				)}
 

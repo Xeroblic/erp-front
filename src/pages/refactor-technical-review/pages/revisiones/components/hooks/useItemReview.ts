@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '@/store';
@@ -65,6 +65,13 @@ export interface UseItemReviewReturn {
 	handleStep3Submit: (grade: string, overrideSuggestion?: boolean, overrideReason?: string) => Promise<void>;
 	handleRecalculateGrade: () => Promise<void>;
 	handleModifyReview: () => Promise<void>;
+
+	// Gallery shortcut
+	goToGallery: () => void;
+	targetSection: string | null;
+	clearTargetSection: () => void;
+	/** Whether all form sections before gallery are complete (review was previously completed) */
+	allSectionsComplete: boolean;
 }
 
 export const REVIEW_STEPS = [
@@ -98,6 +105,8 @@ export const useItemReview = (): UseItemReviewReturn => {
 	const [productId, setProductId] = useState<number | null>(null);
 	const [equipmentType, setEquipmentType] = useState<EquipmentType>('notebook');
 	const [automaticGrade, setAutomaticGrade] = useState<string | null>(null);
+	const [targetSection, setTargetSection] = useState<string | null>(null);
+	const wasPreviouslyCompleted = useRef(false);
 
 	// Quick Product Flow (hook reutilizable escalable)
 	const quickProduct = useQuickProduct({
@@ -167,6 +176,7 @@ export const useItemReview = (): UseItemReviewReturn => {
 				if (reviewStatus === 'approved' || reviewStatus === 'reviewed') {
 					setCurrentStep('grading');
 					setAutomaticGrade(loadedItem.suggested_grade || null);
+					wasPreviouslyCompleted.current = true;
 				} else if (reviewStatus === 'in_review') {
 					setCurrentStep('review');
 				} else if (reviewStatus === 'pending') {
@@ -236,6 +246,8 @@ export const useItemReview = (): UseItemReviewReturn => {
 	const normalizedReviewStatus = extractValue(item?.review_status);
 	const isApproved =
 		item?.review_status === 'approved' || item?.review_status?.value === 'approved';
+
+	const allSectionsComplete = wasPreviouslyCompleted.current || isApproved;
 
 	const handleBack = () => {
 		if (batchId) {
@@ -415,11 +427,27 @@ export const useItemReview = (): UseItemReviewReturn => {
 
 			setItem(updatedItem);
 			setCurrentStep('review');
+			wasPreviouslyCompleted.current = true;
 		} catch (error) {
 			toast.error(`Error al reabrir revisión: ${error}`);
 			throw error;
 		}
 	};
+
+	const clearTargetSection = useCallback(() => {
+		setTargetSection(null);
+	}, []);
+
+	const goToGallery = useCallback(() => {
+		if (!item) {
+			toast.warn('Guarda la información básica primero');
+			return;
+		}
+		if (currentStep !== 'review') {
+			setCurrentStep('review');
+		}
+		setTargetSection('gallery');
+	}, [item, currentStep]);
 
 	return {
 		currentStep,
@@ -451,5 +479,9 @@ export const useItemReview = (): UseItemReviewReturn => {
 		handleStep3Submit,
 		handleRecalculateGrade,
 		handleModifyReview,
+		goToGallery,
+		targetSection,
+		clearTargetSection,
+		allSectionsComplete,
 	};
 };

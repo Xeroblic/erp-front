@@ -23,6 +23,8 @@ interface EquipmentFormRouterProps {
 	registerGetFormValues?: (getter: () => Record<string, unknown>) => void;
 	/** Whether auto-save is in progress */
 	isSaving?: boolean;
+	/** Initial section key to jump to on first mount (e.g. 'gallery' shortcut) */
+	initialSectionKey?: string;
 }
 
 const EquipmentFormRouter: React.FC<EquipmentFormRouterProps> = ({
@@ -35,6 +37,7 @@ const EquipmentFormRouter: React.FC<EquipmentFormRouterProps> = ({
 	onStepChange,
 	registerGetFormValues,
 	isSaving,
+	initialSectionKey,
 }) => {
 	const type = equipmentType.toLowerCase();
 
@@ -47,6 +50,7 @@ const EquipmentFormRouter: React.FC<EquipmentFormRouterProps> = ({
 		onStepChange,
 		registerGetFormValues,
 		isSaving,
+		initialSectionKey,
 	};
 
 	switch (type) {
