@@ -11,6 +11,7 @@ import type {
 	UpdateIntegrationPayload,
 	UpdateIntegrationResponse,
 	IntegrationsQueryParams,
+	RestoreIntegrationResponse,
 	UnmappedWooCommerceProduct,
 	UnmappedProductsQueryParams,
 	MappedProductsQueryParams,
@@ -88,6 +89,35 @@ export const deleteIntegration = async (subsidiaryId: number, integrationId: str
 	const response = await ApiService.fetchData<{ message: string }>({
 		url: `/subsidiaries/${subsidiaryId}/integrations/${integrationId}`,
 		method: 'DELETE',
+	});
+	return response.data;
+};
+
+/**
+ * Obtener integraciones eliminadas (papelera).
+ */
+export const getTrashedIntegrations = async (
+	subsidiaryId: number,
+	params?: Omit<IntegrationsQueryParams, 'trashed'>,
+) => {
+	const response = await ApiService.fetchData<{ data: Integration[] }>({
+		url: `/subsidiaries/${subsidiaryId}/integrations`,
+		method: 'GET',
+		params: { ...params, trashed: true },
+	});
+	return response.data;
+};
+
+/**
+ * Restaurar una integración eliminada (soft-delete).
+ */
+export const restoreIntegration = async (
+	subsidiaryId: number,
+	integrationId: string,
+) => {
+	const response = await ApiService.fetchData<RestoreIntegrationResponse>({
+		url: `/subsidiaries/${subsidiaryId}/integrations/${integrationId}/restore`,
+		method: 'POST',
 	});
 	return response.data;
 };

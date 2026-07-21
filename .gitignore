@@ -473,9 +473,11 @@ $RECYCLE.BIN/
 .claudeignore
 .GEMINI.md
 .QWEN.md
-# Opencode (configuración personal)
-.agents/skills/
 opencode.json
+.opencode/
+.agents/
 # Playwright (artefactos de e2e)
 /test-results/
 /playwright-report/
+# Rollup visualizer
+stats.html
