@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import SoftHoldsBadge from '@/components/ui/SoftHoldsBadge';
@@ -18,28 +18,25 @@ const ProductCell: React.FC<{ product: IProduct }> = ({ product }) => {
 
 	const softHolds = summarizeProductSoftHolds(product);
 
+	const imageUrl = product.image?.url ?? null;
+	const [failedUrl, setFailedUrl] = useState<string | null>(null);
+	const showImage = !!imageUrl && failedUrl !== imageUrl;
+
 	return (
 		<div className='flex items-start gap-3'>
 			<div className='h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800'>
-				{product.image?.url ? (
+				{showImage ? (
 					<img
-						src={product.image.url}
+						src={imageUrl}
 						alt={product.name}
 						className='h-full w-full object-cover'
-						onError={(e) => {
-							const target = e.target as HTMLImageElement;
-							target.style.display = 'none';
-							if (target.nextElementSibling) {
-								(target.nextElementSibling as HTMLElement).style.display = 'flex';
-							}
-						}}
+						onError={() => setFailedUrl(imageUrl)}
 					/>
-				) : null}
-				<div
-					className='flex h-full w-full items-center justify-center'
-					style={{ display: product.image?.url ? 'none' : 'flex' }}>
-					<Icon icon={typeMeta.icon} className='h-6 w-6 text-zinc-400' />
-				</div>
+				) : (
+					<div className='flex h-full w-full items-center justify-center'>
+						<Icon icon={typeMeta.icon} className='h-6 w-6 text-zinc-400' />
+					</div>
+				)}
 			</div>
 
 			{/* Info del producto */}
