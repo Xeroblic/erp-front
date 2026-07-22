@@ -58,6 +58,14 @@ stats.html
 !.yarn/versions
 !.yarn/cache
 
+# Backups / basura de editor
+*.bak
+*.bak2
+*.backup
+*.bkp
+*.old
+*~
+
 # Misc
 *.tgz
 *.pid
