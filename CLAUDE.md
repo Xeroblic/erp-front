@@ -306,3 +306,11 @@ Reglas (ver `bitacora_trabajo/instrucciones.md` para el detalle completo):
 
 Al cerrar una tarea o sesión relevante, **agrega la entrada** al archivo del día (créalo
 si no existe) antes de dar por terminado el trabajo.
+
+## 14. Flujo de trabajo (branching + PRs)
+
+- **Commits en español**, formato **Conventional Commits** (`feat:`, `fix:`, `chore:`, `refactor:`, `style:`, `docs:`, `test:`).
+- Cada tarea en una **rama independiente** desde `develop`. Nombre descriptivo en inglés (ej. `feat/orden-compra`, `fix/error-precios`).
+- **Antes de empezar:** `git pull origin develop`, crear rama nueva desde `develop`, trabajar ahí.
+- **No hacer PRs directamente.** Al terminar la tarea, generar el texto del PR para que el usuario lo copie, revise y pegue. Lo mismo con releases: mostrar el texto propuesto, esperar confirmación.
+- El PR siempre apunta a `develop`.
