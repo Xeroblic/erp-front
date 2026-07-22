@@ -20,10 +20,10 @@ proyecto, sin reinventar layouts, autorización ni manejo de estado.
 - **Backend:** Laravel 12 + JWT. Multi-empresa / multi-subsidiaria / multi-sucursal.
 - **Alias de imports:** `@/*` → `./src/*` (tsconfig). Usa `@/...` siempre.
 
-> ⚠️ Discrepancia conocida: los prompts de `.agents/skills/Full_React.md` y
-> `Full_TS.md` mencionan React Hook Form + Zod. **Eso NO refleja el código real.** La
-> fuente de verdad es este CLAUDE.md: **Formik + Yup**, como dicen `Architect.md` y
-> `UI_UX.md` y como confirma el README.
+> ⚠️ Discrepancia conocida: los prompts de `.agents/skills/full-react/SKILL.md` y
+> `.agents/skills/full-ts/SKILL.md` mencionan React Hook Form + Zod. **Eso NO refleja el código real.** La
+> fuente de verdad es este CLAUDE.md: **Formik + Yup**, como dicen `.agents/skills/architect/SKILL.md` y
+> `.agents/skills/ui-ux/SKILL.md` y como confirma el README.
 
 ---
 
