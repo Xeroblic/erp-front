@@ -290,6 +290,11 @@ Prompts de roles para diseño asistido: `Architect`, `Full_TS`, `Full_React`, `U
 `Dev_Implementador`, `Tester_QA`. Úsalos como referencia de criterios, **pero ante
 cualquier conflicto manda este CLAUDE.md** (sobre todo: Formik + Yup, no RHF + Zod).
 
+> **Nota:** `.agents/` es **local-only** (no se versiona). El snapshot canónico de los
+> skills quedó en el historial git del commit `chore: snapshot completo de .agents`.
+> Si clonás el repo fresco, no verás la carpeta — podés recuperarla de ese commit o
+> de tu copia local anterior.
+
 ## 13. Bitácora de trabajo (`bitacora_trabajo/`)
 
 Registro cronológico de la actividad del proyecto para luego generar informes que

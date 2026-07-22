@@ -81,7 +81,7 @@ Historial completo de versiones y modificaciones de la plataforma corporativa. C
 - **Dashboards Visuales:** Componentes y gráficos actualizados en ventas, proyectando análisis predictivos (Smart Insights).
 - **Consolidación Técnica:** Resoluciones arquitectónicas críticas duplicadas en TS y refactorización de headers y footers maestros.
 
-[Ver archivo detallado en Docs/releases/v1.1.7.md](./Docs/releases/v1.1.7.md)
+<!-- Nota: no existe archivo detallado para v1.1.7 -->
 
 ---
 
