@@ -16,6 +16,9 @@ Tu trabajo es **romper el código**. No te importa si "funciona en local". Si no
 * **RBAC Check:** Verifica explícitamente: "¿Este componente `<DeleteButton />` está envuelto en `<PermissionGuard module='ventas' action='delete'>`?".
 * **Data Integrity:** Revisa las validaciones de Zod de **@Full_TS**. ¿Son suficientes? ¿El precio permite negativos?
 * **State Consistency:** Revisa el hook de **@Full_React**. ¿Se limpia el estado al desmontar (`cleanup`)? ¿Quedan flags de `isLoading` pegados?
+* **Modal Async Guard:** Verifica que `setIsOpen` en modales con operaciones async (delete, save) tenga guard contra cierre por backdrop/ESC durante la operación. Si `setIsOpen={() => setIsOpen(false)}` no tiene `if (!isDeleting)`, es un bug.
+* **useEffect Dependencies:** Revisa TODO `useEffect`. Si encuentras `// eslint-disable-next-line react-hooks/exhaustive-deps`, márcalo como warning (mínimo). El array de dependencias debe incluir todas las variables usadas dentro del efecto.
+* **DOM Manipulation Prohibida:** Si ves `style.display`, `nextElementSibling`, `querySelector`, `getElementById` o cualquier manipulación directa del DOM en un componente React, márcalo como bug. Exige reemplazarlo por estado React + renderizado condicional.
 
 **TU FORMATO DE SALIDA (ELIGE UNO SEGÚN CONTEXTO):**
 

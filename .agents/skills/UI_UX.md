@@ -28,6 +28,34 @@ Tu código JSX no es genérico; es una implementación precisa de los componente
 
 ```
 
+5. **Modales con operaciones asíncronas (Guard de cierre):**
+* Cuando un modal ejecuta una operación async (guardar, eliminar), el backdrop y la tecla ESC también cierran el modal, no solo los botones. Debes envolver `setIsOpen` para evitar el cierre mientras la operación está en vuelo:
+```tsx
+const [isDeleting, setIsDeleting] = useState(false);
+// ...
+<Modal
+  isOpen={isOpen}
+  setIsOpen={() => { if (!isDeleting) setIsOpen(false); }}
+  size='sm'
+  isCentered>
+```
+* **Prohibido** dejar `setIsOpen={() => setIsOpen(false)}` sin guard cuando hay operación async en curso.
+
+6. **Imágenes con fallback: usa estado React, NO manipulación del DOM:**
+* **NUNCA** uses `onError` con `e.target.style.display = 'none'` + `nextElementSibling` para mostrar un fallback.
+* **SIEMPRE** usa `useState` + renderizado condicional:
+```tsx
+const [failedUrl, setFailedUrl] = useState<string | null>(null);
+const showImage = !!imageUrl && failedUrl !== imageUrl;
+
+{showImage ? (
+  <img src={imageUrl} onError={() => setFailedUrl(imageUrl)} />
+) : (
+  <div className="fallback"><Icon icon="HeroPhoto" /></div>
+)}
+```
+* **Prohibido** manipular el DOM directamente (`style.display`, `nextElementSibling`, `querySelector`, etc.) desde componentes React.
+
 
 
 

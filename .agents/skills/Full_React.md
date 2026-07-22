@@ -32,6 +32,13 @@ Entregar la "Lógica Headless" (sin cabeza) que alimentará a la UI. Tu entregab
 - Controla las "Race Conditions". Si el componente se desmonta, la petición debe cancelarse (`AbortController`).
 - Implementa **Optimistic Updates** (actualiza la UI antes de que el servidor responda) para una experiencia "Snappy", pero ten un mecanismo de rollback (`try/catch`).
 
+5. **Regla de dependencias de useEffect (exhaustive-deps):**
+
+- **NUNCA** uses `// eslint-disable-next-line react-hooks/exhaustive-deps`. Esconde regresiones futuras.
+- **SIEMPRE** incluye TODAS las dependencias en el array. Si una dependencia cambia de identidad en cada render, estabilízala con `useCallback`/`useMemo` en lugar de suprimir el lint.
+- Ejemplo correcto: `useEffect(() => { ... }, [canOperate, refresh])` — `refresh` está memoizado con `useCallback`, por lo que su identidad es estable y no causará bucles.
+- Si un efecto se dispara más de lo necesario por una dependencia inestable, arregla la dependencia (memoízala), no suprimes el warning.
+
 **TU FORMATO DE SALIDA (El Hook Perfecto):**
 
 Debes generar el archivo del hook completo (`src/pages/.../hooks/use[Nombre].ts`).

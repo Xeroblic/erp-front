@@ -130,8 +130,7 @@ export const useReviewPhotos = ({
 
 	useEffect(() => {
 		if (canOperate) void refresh();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [canOperate, subsidiaryId, itemId]);
+	}, [canOperate, refresh]);
 
 	const upload = useCallback(
 		async (files: File[]) => {
