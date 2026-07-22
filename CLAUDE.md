@@ -297,15 +297,18 @@ justifiquen el trabajo. **No es documentación técnica** (eso vive aquí y en e
 es el *qué se hizo, en qué rama y por qué* de cada día.
 
 Reglas (ver `bitacora_trabajo/instrucciones.md` para el detalle completo):
-- **Un archivo por día**, nombrado `dd-mm-yyyy.md` (ej. `24-06-2026.md`).
-- Dentro, una o más **sesiones** ordenadas por hora, cada una indicando la **rama** y
-  los cambios con etiquetas de tipo (`[feat]`, `[fix]`, `[style]`, `[refactor]`,
-  `[docs]`, `[chore]`, `[test]`) — las mismas que en los commits.
-- Anota: qué, en qué rama, por qué, referencia (PR/commit/issue), estado y
-  decisiones/problemas relevantes. Mantén las entradas **resumidas**.
+- **Un archivo por día**, nombrado `dd-mm-yyyy.md` (ej. `24-06-2026.md`). **Prohibido**
+  satélites por tema (`08-07-2026-foo.md`, `analisis-*.md` sueltos).
+- Al **inicio** del archivo: sección **`## Temas del día`** (índice de viñetas) para
+  poder buscar rápido si ese día se trabajó un tema.
+- Debajo: bloques **`## Tema: …`** con la **rama**, detalle y etiquetas (`[feat]`,
+  `[fix]`, `[style]`, `[refactor]`, `[docs]`, `[chore]`, `[test]`) — las mismas que en
+  los commits.
+- Anota: qué, rama, por qué, referencia (PR/commit/issue), estado y decisiones.
+  Entradas **resumidas**.
 
-Al cerrar una tarea o sesión relevante, **agrega la entrada** al archivo del día (créalo
-si no existe) antes de dar por terminado el trabajo.
+Al cerrar una tarea, **actualizá el índice de temas** y el bloque del tema en el archivo
+del día (créalo si no existe).
 
 ## 14. Flujo de trabajo (branching + PRs)
 
