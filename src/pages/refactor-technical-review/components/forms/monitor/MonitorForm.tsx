@@ -19,6 +19,7 @@ import MonitorScreenSection from './sections/MonitorScreenSection';
 import MonitorPortsSection from './sections/MonitorPortsSection';
 import MonitorAccessoriesSection from './sections/MonitorAccessoriesSection';
 import Observations from './sections/Observations';
+import GallerySection from '../shared/gallery/GallerySection';
 
 // ─── Section Order ─────────────────────────
 const MONITOR_SECTIONS: SectionConfig<MonitorFormData>[] = [
@@ -56,6 +57,12 @@ const MONITOR_SECTIONS: SectionConfig<MonitorFormData>[] = [
 		label: 'Obs.',
 		icon: 'HeroDocumentText',
 		component: Observations as unknown as React.FC<FormSectionProps<MonitorFormData>>,
+	},
+	{
+		key: 'gallery',
+		label: 'Galería',
+		icon: 'HeroPhoto',
+		component: GallerySection,
 	},
 ];
 
@@ -95,6 +102,8 @@ export interface MonitorFormProps {
 	onStepChange?: (direction: 'next' | 'prev') => void;
 	registerGetFormValues?: (getter: () => Record<string, unknown>) => void;
 	isSaving?: boolean;
+	/** Initial section key to jump to on first mount */
+	initialSectionKey?: string;
 }
 
 const MonitorForm: React.FC<MonitorFormProps> = ({
@@ -106,6 +115,7 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 	onStepChange,
 	registerGetFormValues,
 	isSaving,
+	initialSectionKey,
 }) => {
 	const normalizedDefaultValues = useMemo(() => {
 		if (!defaultValues) return {} as MonitorFormData;
@@ -239,6 +249,7 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
 			onStepChange={onStepChange}
 			onValidateStep={validateStep}
 			isSaving={isSaving}
+			initialSectionKey={initialSectionKey}
 		/>
 	);
 };

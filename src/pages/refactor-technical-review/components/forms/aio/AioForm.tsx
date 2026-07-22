@@ -20,6 +20,7 @@ import AioScreenSection from './sections/AioScreenSection';
 import AioPortsSection from './sections/AioPortsSection';
 import AioAccessoriesSection from './sections/AioAccessoriesSection';
 import AioObservationsSection from './sections/AioObservationsSection';
+import GallerySection from '../shared/gallery/GallerySection';
 
 const AIO_SECTIONS: SectionConfig<AioFormData>[] = [
 	{
@@ -57,6 +58,12 @@ const AIO_SECTIONS: SectionConfig<AioFormData>[] = [
 		label: 'SO & Obs.',
 		icon: 'HeroDocumentText',
 		component: AioObservationsSection as unknown as React.FC<FormSectionProps<AioFormData>>,
+	},
+	{
+		key: 'gallery',
+		label: 'Galería',
+		icon: 'HeroPhoto',
+		component: GallerySection,
 	},
 ];
 
@@ -101,6 +108,8 @@ interface AioFormProps {
 	onStepChange?: (direction: 'next' | 'prev') => void;
 	registerGetFormValues?: (getter: () => Record<string, unknown>) => void;
 	isSaving?: boolean;
+	/** Initial section key to jump to on first mount */
+	initialSectionKey?: string;
 }
 
 const AioForm: React.FC<AioFormProps> = ({
@@ -112,6 +121,7 @@ const AioForm: React.FC<AioFormProps> = ({
 	onStepChange,
 	registerGetFormValues,
 	isSaving,
+	initialSectionKey,
 }) => {
 	const {
 		control,
@@ -276,6 +286,7 @@ const AioForm: React.FC<AioFormProps> = ({
 			onStepChange={onStepChange}
 			onValidateStep={validateStep}
 			isSaving={isSaving}
+			initialSectionKey={initialSectionKey}
 		/>
 	);
 };

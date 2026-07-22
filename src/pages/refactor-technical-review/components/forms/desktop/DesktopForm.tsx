@@ -31,6 +31,7 @@ import DesktopConnectivitySection from './sections/DesktopConnectivitySection';
 import DesktopAccessoriesSection from './sections/DesktopAccessoriesSection';
 import DesktopSoftwareSection from './sections/DesktopSoftwareSection';
 import DesktopObservationsSection from './sections/DesktopObservationsSection';
+import GallerySection from '../shared/gallery/GallerySection';
 
 // ─── Section Order ────────────────────────────────────────────────────────────
 const DESKTOP_SECTIONS: SectionConfig<DesktopFormData>[] = [
@@ -82,6 +83,12 @@ const DESKTOP_SECTIONS: SectionConfig<DesktopFormData>[] = [
 		icon: 'HeroDocumentText',
 		component: DesktopObservationsSection,
 	},
+	{
+		key: 'gallery',
+		label: 'Galería',
+		icon: 'HeroPhoto',
+		component: GallerySection,
+	},
 ];
 
 const DESKTOP_SECTION_FIELDS: Record<string, FieldPath<DesktopFormData>[]> = {
@@ -122,6 +129,8 @@ interface DesktopFormProps {
 	onStepChange?: (direction: 'next' | 'prev') => void;
 	registerGetFormValues?: (getter: () => Record<string, unknown>) => void;
 	isSaving?: boolean;
+	/** Initial section key to jump to on first mount */
+	initialSectionKey?: string;
 }
 
 const DesktopForm: React.FC<DesktopFormProps> = ({
@@ -133,6 +142,7 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 	onStepChange,
 	registerGetFormValues,
 	isSaving = false,
+	initialSectionKey,
 }) => {
 	const {
 		control,
@@ -277,6 +287,7 @@ const DesktopForm: React.FC<DesktopFormProps> = ({
 			onStepChange={onStepChange}
 			onValidateStep={validateStep}
 			isSaving={isSaving}
+			initialSectionKey={initialSectionKey}
 		/>
 	);
 };

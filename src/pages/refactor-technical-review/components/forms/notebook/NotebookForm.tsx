@@ -25,6 +25,7 @@ import InputSection from './sections/InputSection';
 import AestheticsSection from './sections/AestheticsSection';
 import SoftwareSection from './sections/SoftwareSection';
 import ObservationsSection from './sections/ObservationsSection';
+import GallerySection from '../shared/gallery/GallerySection';
 
 // ─── Section Order (edit this array to reorder steps) ─────────────────────────
 const NOTEBOOK_SECTIONS: SectionConfig<NotebookFormData>[] = [
@@ -82,6 +83,12 @@ const NOTEBOOK_SECTIONS: SectionConfig<NotebookFormData>[] = [
 		icon: 'HeroDocumentText',
 		component: ObservationsSection,
 	},
+	{
+		key: 'gallery',
+		label: 'Galería',
+		icon: 'HeroPhoto',
+		component: GallerySection,
+	},
 ];
 
 const NOTEBOOK_SECTION_FIELDS: Record<string, FieldPath<NotebookFormData>[]> = {
@@ -101,6 +108,10 @@ const NOTEBOOK_SECTION_FIELDS: Record<string, FieldPath<NotebookFormData>[]> = {
 		'battery_health',
 		'battery_status',
 		'battery_percentage',
+		'has_second_battery',
+		'second_battery_status',
+		'second_battery_percentage',
+		'second_battery_condition',
 	],
 	ports: [
 		'vga_ports',
@@ -145,6 +156,8 @@ interface NotebookFormProps {
 	registerGetFormValues?: (getter: () => Record<string, unknown>) => void;
 	/** Whether auto-save is in progress */
 	isSaving?: boolean;
+	/** Initial section key to jump to on first mount */
+	initialSectionKey?: string;
 }
 
 const NotebookForm: React.FC<NotebookFormProps> = ({
@@ -156,12 +169,14 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 	onStepChange,
 	registerGetFormValues,
 	isSaving = false,
+	initialSectionKey,
 }) => {
 	const normalizedDefaultValues = useMemo<Partial<NotebookFormData>>(
 		() => ({
 			...(defaultValues || {}),
 			has_numeric_keypad: defaultValues?.has_numeric_keypad ?? false,
 			has_backlit_keyboard: defaultValues?.has_backlit_keyboard ?? false,
+			has_second_battery: defaultValues?.has_second_battery ?? false,
 		}),
 		[defaultValues],
 	);
@@ -297,6 +312,7 @@ const NotebookForm: React.FC<NotebookFormProps> = ({
 			onStepChange={onStepChange}
 			onValidateStep={validateStep}
 			isSaving={isSaving}
+			initialSectionKey={initialSectionKey}
 		/>
 	);
 };

@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
-import { type ColumnDef } from '@tanstack/react-table';
+import { type ColumnDef, type CellContext } from '@tanstack/react-table';
 import DataTable from '@/components/ui/DataTable/DataTable';
 import { useNavigate } from 'react-router-dom';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
+import ProtectedButton from '@/components/ui/ProtectedButton';
 import Icon from '@/components/icon/Icon';
 import type { IWarehouse } from '@/interface/warehouse.interface';
 import WarehouseCapacityBar from '../components/WarehouseCapacityBar';
@@ -14,6 +15,9 @@ interface WarehousesTableProps {
 	loading?: boolean;
 	onEdit: (warehouse: IWarehouse) => void;
 	onDelete: (warehouse: IWarehouse) => void;
+	branchId?: number | null;
+	searchValue?: string;
+	onSearchChange?: (value: string) => void;
 }
 
 const WarehousesTable: React.FC<WarehousesTableProps> = ({
@@ -21,6 +25,9 @@ const WarehousesTable: React.FC<WarehousesTableProps> = ({
 	loading = false,
 	onEdit,
 	onDelete,
+	branchId,
+	searchValue,
+	onSearchChange,
 }) => {
 	const navigate = useNavigate();
 
@@ -30,7 +37,7 @@ const WarehousesTable: React.FC<WarehousesTableProps> = ({
 				id: 'name',
 				header: 'Nombre',
 				accessorKey: 'name',
-				cell: (info: any) => (
+				cell: (info: CellContext<IWarehouse, string>) => (
 					<div className='flex items-center gap-3'>
 						<div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'>
 							<Icon icon='HeroBuildingStorefront' className='h-5 w-5' />
@@ -50,7 +57,7 @@ const WarehousesTable: React.FC<WarehousesTableProps> = ({
 				id: 'warehouse_type',
 				header: 'Tipo',
 				accessorKey: 'warehouse_type',
-				cell: (info: any) => (
+				cell: (info: CellContext<IWarehouse, string>) => (
 					<Badge
 						variant='outline'
 						color={
@@ -67,7 +74,7 @@ const WarehousesTable: React.FC<WarehousesTableProps> = ({
 				id: 'capacity',
 				header: 'Capacidad',
 				accessorKey: 'maximum_capacity',
-				cell: (info: any) => {
+				cell: (info: CellContext<IWarehouse, number | null>) => {
 					const warehouse = info.row.original;
 					return (
 						<div className='min-w-[200px]'>
@@ -84,7 +91,7 @@ const WarehousesTable: React.FC<WarehousesTableProps> = ({
 				id: 'manager',
 				header: 'Encargado',
 				accessorKey: 'manager_name',
-				cell: (info: any) => (
+				cell: (info: CellContext<IWarehouse, string | null>) => (
 					<div>
 						{info.row.original.manager_name ? (
 							<Badge variant='outline' color='sky' className='px-2'>
@@ -103,7 +110,7 @@ const WarehousesTable: React.FC<WarehousesTableProps> = ({
 				id: 'status',
 				header: 'Estado',
 				accessorKey: 'is_active',
-				cell: (info: any) => (
+				cell: (info: CellContext<IWarehouse, boolean>) => (
 					<Badge
 						variant='solid'
 						color={info.row.original.is_active ? 'emerald' : 'zinc'}
@@ -129,7 +136,7 @@ const WarehousesTable: React.FC<WarehousesTableProps> = ({
 			{
 				id: 'actions',
 				header: 'Acciones',
-				cell: (info: any) => (
+				cell: (info: CellContext<IWarehouse, unknown>) => (
 					<div className='flex items-center gap-2'>
 						<Button
 							icon='HeroEye'
@@ -139,7 +146,10 @@ const WarehousesTable: React.FC<WarehousesTableProps> = ({
 							onClick={() => navigate(`/inventario/bodegas/${info.row.original.id}`)}
 							title='Ver detalle'
 						/>
-						<Button
+						<ProtectedButton
+							permission='update-warehouse'
+							branchId={branchId}
+							scope='access'
 							icon='HeroPencil'
 							color='blue'
 							variant='outline'
@@ -147,7 +157,10 @@ const WarehousesTable: React.FC<WarehousesTableProps> = ({
 							onClick={() => onEdit(info.row.original)}
 							title='Editar'
 						/>
-						<Button
+						<ProtectedButton
+							permission='delete-warehouse'
+							branchId={branchId}
+							scope='access'
 							icon='HeroTrash'
 							color='red'
 							variant='outline'
@@ -159,7 +172,7 @@ const WarehousesTable: React.FC<WarehousesTableProps> = ({
 				),
 			},
 		],
-		[navigate, onEdit, onDelete],
+		[navigate, onEdit, onDelete, branchId],
 	);
 
 	return (
@@ -170,7 +183,9 @@ const WarehousesTable: React.FC<WarehousesTableProps> = ({
 					data={warehouses}
 					loading={loading}
 					pageSize={10}
-					searchPlaceholder='Buscar en la lista de bodegas...'
+					searchValue={searchValue}
+					onSearchChange={onSearchChange}
+					searchPlaceholder='Buscar por nombre o código...'
 					emptyMessage={
 						warehouses.length === 0 && !loading
 							? 'No hay bodegas registradas. Comienza creando tu primera bodega.'

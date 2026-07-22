@@ -33,6 +33,7 @@ import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelecto
 import type { ISale } from '@/interface/sales.interface';
 import SaleDetailPage from './detail/components/modals/SaleDetailPage';
 import CloseSaleModal from './detail/components/modals/CloseSaleModal';
+import DeleteSaleModal from './detail/components/modals/DeleteSaleModal';
 import Tooltip from '@/components/ui/Tooltip';
 import { downloadShippingLabel } from '@/store/slices/sales/salesSlice';
 import {
@@ -111,6 +112,7 @@ const SalesListPage: React.FC = () => {
 	// Ventas con series pendientes de asignar (para el aviso/acción inline en la tabla).
 	const [pendingMap, setPendingMap] = useState<Map<number, PendingSerialSale>>(new Map());
 	const [assignSale, setAssignSale] = useState<PendingSerialSale | null>(null);
+	const [saleToDelete, setSaleToDelete] = useState<ISale | null>(null);
 
 	const refetchPending = useCallback(async () => {
 		if (!subsidiaryId) {
@@ -438,22 +440,36 @@ const SalesListPage: React.FC = () => {
 								size='text-xl'
 							/>
 						</Button>
-						<ProtectedButton
-							permission='delete-sale'
-							fallbackMode='hidden'
-							variant='outline'
-							size='xs'
-							color='red'
-							className='bg-red-200/30'
-							onClick={() => handleViewDetail(row.original.id)}
-							isDisable={!subsidiaryId}>
-							<Icon
-								icon='HeroTrash'
-								color='red'
-								className='hover:text-bold hover:text-red-600'
-								size='text-xl'
-							/>
-						</ProtectedButton>
+						{(() => {
+							const isClosedSale =
+								Boolean(row.original.is_closed) ||
+								Boolean(row.original.inventory_finalized);
+							return (
+								<Tooltip
+									text={
+										isClosedSale
+											? 'No se puede eliminar una venta cerrada'
+											: 'Eliminar venta'
+									}>
+									<ProtectedButton
+										permission='delete-sale'
+										fallbackMode='hidden'
+										variant='outline'
+										size='xs'
+										color='red'
+										className='bg-red-200/30'
+										onClick={() => setSaleToDelete(row.original)}
+										isDisable={!subsidiaryId || isClosedSale}>
+										<Icon
+											icon='HeroTrash'
+											color='red'
+											className='hover:text-bold hover:text-red-600'
+											size='text-xl'
+										/>
+									</ProtectedButton>
+								</Tooltip>
+							);
+						})()}
 					</div>
 				),
 				enableSorting: false,
@@ -815,6 +831,21 @@ const SalesListPage: React.FC = () => {
 					onSuccess={() => {
 						setAssignSale(null);
 						refetchPending();
+						applyFilters(buildFilters());
+					}}
+				/>
+			)}
+
+			{subsidiaryId && (
+				<DeleteSaleModal
+					isOpen={saleToDelete !== null}
+					setIsOpen={(open) => {
+						if (!open) setSaleToDelete(null);
+					}}
+					sale={saleToDelete}
+					subsidiaryId={Number(subsidiaryId)}
+					onDeleted={() => {
+						setSaleToDelete(null);
 						applyFilters(buildFilters());
 					}}
 				/>

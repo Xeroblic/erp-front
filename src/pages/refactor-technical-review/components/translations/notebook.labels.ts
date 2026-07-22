@@ -40,6 +40,10 @@ export const NOTEBOOK_LABELS: Record<string, string> = {
 	battery_health: 'Health Batería',
 	battery_status: 'Estado Batería',
 	battery_percentage: 'Porcentaje Batería',
+	has_second_battery: 'Segunda Batería',
+	second_battery_status: 'Estado 2ª Batería',
+	second_battery_percentage: 'Porcentaje 2ª Batería',
+	second_battery_condition: 'Condición 2ª Batería',
 
 	// ─── Puertos ───────────────────────────────────────────────────────────────
 	vga_ports: 'Puertos VGA',

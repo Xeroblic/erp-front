@@ -67,6 +67,7 @@ const NOTEBOOK_ALLOWED: AllowedValuesMap = {
 	keyboard_layout: NB_KB_LAYOUT,
 	hinge_condition: NB_HINGE,
 	battery_status: NB_BATTERY,
+	second_battery_status: NB_BATTERY,
 	touchpad_condition: NB_TOUCHPAD,
 	bottom_condition: NB_BOTTOM,
 };

@@ -7,6 +7,7 @@ import { updateItemDetails } from '@/store/slices/technicalReviews';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 // import useAuthorization from '@/hooks/useAuthorization';
 import EquipmentFormRouter from '../../../components/forms';
+import { ReviewPhotosProvider } from '../../../components/forms/shared/gallery/ReviewPhotosContext';
 import useAutoSave from '../../../hooks/useAutoSave';
 import AutoSaveConfirmModal from '../../../components/modals/AutoSaveConfirmModal';
 import PrefillReviewModal from '../../../components/modals/PrefillReviewModal';
@@ -21,6 +22,10 @@ interface Step2FullReviewProps {
 	onComplete: () => Promise<void>;
 	loading?: boolean;
 	readOnly?: boolean;
+	/** Initial section key to jump to (e.g. 'gallery' shortcut) */
+	initialSectionKey?: string;
+	/** Called after the gallery has been opened via shortcut */
+	onGalleryOpened?: () => void;
 }
 
 const EQUIPMENT_LABEL_MAP: Record<string, string> = {
@@ -39,9 +44,11 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 	onComplete,
 	loading = false,
 	readOnly = false,
+	initialSectionKey,
+	onGalleryOpened,
 }) => {
 	const dispatch = useAppDispatch();
-	const { branchId } = useCurrentBranch();
+	const { branchId, subsidiaryId } = useCurrentBranch();
 	// const { isSuperAdmin, hasRole } = useAuthorization();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [showSavingBadge, setShowSavingBadge] = useState(false);
@@ -112,6 +119,16 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 
 		return () => window.clearTimeout(timeoutId);
 	}, [isSaving]);
+
+	// Clear initialSectionKey after it has been consumed by the form
+	useEffect(() => {
+		if (initialSectionKey && onGalleryOpened) {
+			const id = requestAnimationFrame(() => {
+				onGalleryOpened();
+			});
+			return () => cancelAnimationFrame(id);
+		}
+	}, [initialSectionKey, onGalleryOpened]);
 
 	// ─── Step Change Handler (auto-save on section navigation) ────────────
 	const handleStepChange = useCallback(
@@ -236,19 +253,24 @@ const Step2FullReview: React.FC<Step2FullReviewProps> = ({
 				</div>
 			</div>
 
-			{/* Form Router */}
-			<EquipmentFormRouter
-				key={`form-router-${formKey}`}
-				equipmentType={equipmentType}
-				defaultValues={mergedDefaultValues}
-				onSubmit={handleFormSubmit}
-				onBack={onBack}
-				isSubmitting={isSubmitting || loading}
-				readOnly={readOnly}
-				onStepChange={handleStepChange}
-				registerGetFormValues={registerGetFormValues}
-				isSaving={isSaving}
-			/>
+			{/* Form Router (envuelto para exponer contexto de fotos a la pestaña Galería) */}
+			<ReviewPhotosProvider
+				subsidiaryId={subsidiaryId ?? null}
+				itemId={initialData?.id ?? null}>
+				<EquipmentFormRouter
+					key={`form-router-${formKey}`}
+					equipmentType={equipmentType}
+					defaultValues={mergedDefaultValues}
+					onSubmit={handleFormSubmit}
+					onBack={onBack}
+					isSubmitting={isSubmitting || loading}
+					readOnly={readOnly}
+					onStepChange={handleStepChange}
+					registerGetFormValues={registerGetFormValues}
+					isSaving={isSaving}
+					initialSectionKey={initialSectionKey}
+				/>
+			</ReviewPhotosProvider>
 
 			{/* Auto-Save Confirmation Modal */}
 			<AutoSaveConfirmModal
