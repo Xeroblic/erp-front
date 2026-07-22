@@ -4,6 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
+import { isHardwareAbsent, HARDWARE_ABSENT_LABEL } from './constants/shared/hardware.sentinels';
 
 interface PrintLabelProps {
 	item: any | null;
@@ -19,8 +20,15 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 
 	const extractValue = (val: any): string => {
 		if (val == null) return '';
+		if (isHardwareAbsent(val)) return HARDWARE_ABSENT_LABEL;
 		if (typeof val === 'object') return String(val.label || val.value || val.name || '');
 		return String(val);
+	};
+
+	const formatRamLabel = (ramSize: unknown) => {
+		const val = extractValue(ramSize);
+		if (isHardwareAbsent(ramSize)) return val;
+		return `${val}GB`;
 	};
 
 	const details = item.details || {};
@@ -68,7 +76,7 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 		const observations = extractValue(details.observations) || 'SIN OBSERVACIÓN';
 
 		// Campos comunes a todos
-		let specs: React.ReactNode[] = [
+		const specs: React.ReactNode[] = [
 			<React.Fragment key='obs'>
 				<span style={{ fontWeight: 'bold' }}>OBS: </span>
 				{observations}{' '}
@@ -85,7 +93,7 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 					</React.Fragment>,
 					<React.Fragment key='ram'>
 						<span style={{ fontWeight: 'bold' }}>RAM: </span>
-						{extractValue(details.ram_size)}GB{' '}
+						{formatRamLabel(details.ram_size)}{' '}
 						{details.ram_slots ? `(${details.ram_slots})` : ''}{' '}
 					</React.Fragment>,
 					<React.Fragment key='disk'>
@@ -100,7 +108,9 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 					<React.Fragment key='screen'>
 						<span style={{ fontWeight: 'bold' }}>PANT: </span>
 						{extractValue(details.screen_inches)}{' '}
-						<span style={{ fontWeight: 'bold'}}>{details.is_touchscreen ? '(Tactil) ' : ''}</span>
+						<span style={{ fontWeight: 'bold' }}>
+							{details.is_touchscreen ? '(Tactil) ' : ''}
+						</span>
 					</React.Fragment>,
 					<React.Fragment key='battery'>
 						<span style={{ fontWeight: 'bold' }}>BAT: </span>
@@ -122,7 +132,7 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 					</React.Fragment>,
 					<React.Fragment key='ram'>
 						<span style={{ fontWeight: 'bold' }}>RAM: </span>
-						{extractValue(details.ram_size)}GB{' '}
+						{formatRamLabel(details.ram_size)}{' '}
 						{details.ram_slots ? `(${details.ram_slots})` : ''}{' '}
 					</React.Fragment>,
 					<React.Fragment key='disk'>
@@ -145,7 +155,7 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 					</React.Fragment>,
 					<React.Fragment key='ram'>
 						<span style={{ fontWeight: 'bold' }}>RAM: </span>
-						{extractValue(details.ram_size)}GB{' '}
+						{formatRamLabel(details.ram_size)}{' '}
 						{details.ram_slots ? `(${details.ram_slots})` : ''}{' '}
 					</React.Fragment>,
 					<React.Fragment key='disk'>
@@ -197,7 +207,7 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 					</React.Fragment>,
 					<React.Fragment key='ram'>
 						<span style={{ fontWeight: 'bold' }}>RAM: </span>
-						{extractValue(details.ram_size)}GB{' '}
+						{formatRamLabel(details.ram_size)}{' '}
 						{details.ram_slots ? `(${details.ram_slots})` : ''}{' '}
 					</React.Fragment>,
 					<React.Fragment key='disk'>

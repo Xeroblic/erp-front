@@ -12,6 +12,11 @@ import { ProcessorSelector } from '../../../ui/selectors/ProcessorSelector';
 import Icon from '@/components/icon/Icon';
 import InputUnitSelector from '../../../ui/InputUnitSelector';
 import { NoEnciendeButton } from '../../shared/NoEnciendeButton';
+import { NoHardwareToggle } from '../../shared/NoHardwareToggle';
+import {
+	isHardwareAbsent,
+	HARDWARE_ABSENT_VALUE,
+} from '../../../constants/shared/hardware.sentinels';
 
 interface SelectionCardProps {
 	label: string;
@@ -67,6 +72,11 @@ const AioHardwareSection: React.FC<FormSectionProps<AioFormData>> = ({
 	onDirectSubmit,
 }) => {
 	const storageTech = watch('storage_technology');
+	const ramSize = watch('ram_size');
+	const storageSize = watch('storage_size');
+
+	const noRam = isHardwareAbsent(ramSize);
+	const noStorage = isHardwareAbsent(storageSize);
 
 	return (
 		<div className='space-y-6'>
@@ -75,11 +85,7 @@ const AioHardwareSection: React.FC<FormSectionProps<AioFormData>> = ({
 				<div className='mb-6'>
 					<NoEnciendeButton
 						onValidate={() => {
-							const ramSize = watch('ram_size');
-							const storageSize = watch('storage_size');
-							const storageTech = watch('storage_technology');
-
-							if (!ramSize || !storageSize || !storageTech) {
+							if (!ramSize || !storageSize) {
 								toast.warning(
 									'Debes completar la Memoria RAM y el Almacenamiento, ya que pueden ser revisados visualmente.',
 								);
@@ -146,130 +152,192 @@ const AioHardwareSection: React.FC<FormSectionProps<AioFormData>> = ({
 			</div>
 
 			{/* RAM Memory Group */}
-			<div className='grid grid-cols-1 gap-6 md:grid-cols-3'>
-				{/* RAM Size */}
-				<div className='rounded-xl border border-teal-200 bg-teal-500/10 p-5 transition-colors duration-200 hover:cursor-pointer hover:bg-teal-500/20 dark:border-teal-800/50 dark:bg-teal-900/10 dark:hover:bg-teal-900/20'>
-					<label className='mb-3 flex items-center gap-2 text-sm font-bold text-teal-800 dark:text-teal-200'>
-						<Icon icon='HeroServerStack' className='h-5 w-5' />
-						{getAioLabel('ram_size')} <span className='text-red-500'>*</span>
-					</label>
-					<Controller
-						name='ram_size'
-						control={control}
-						render={({ field }) => (
-							<InputUnitSelector
-								value={field.value || ''}
-								onChange={field.onChange}
-								placeholder={AIO_PLACEHOLDERS.ram_size}
-								disabled={readOnly}
-								isValid={!errors.ram_size}
-							/>
-						)}
+			<div className='mb-4 flex items-center justify-between'>
+				<span className='text-sm font-bold text-zinc-700 dark:text-zinc-300'>
+					Memoria RAM
+					{!noRam && <span className='text-red-500'>*</span>}
+				</span>
+				{!readOnly && (
+					<NoHardwareToggle
+						isActive={noRam}
+						onToggle={(active) => {
+							if (active) {
+								setValue('ram_size', HARDWARE_ABSENT_VALUE);
+								setValue('ram_slots', HARDWARE_ABSENT_VALUE);
+								setValue('ram_type', '');
+							} else {
+								setValue('ram_size', '');
+								setValue('ram_slots', '');
+								setValue('ram_type', '');
+							}
+						}}
+						label='No tiene / No trae RAM'
 					/>
-					{errors.ram_size && (
-						<p className='mt-2 text-xs text-red-500'>{errors.ram_size.message}</p>
-					)}
-				</div>
-
-				{/* RAM Slots */}
-				<div className='rounded-xl border border-cyan-200 bg-cyan-500/10 p-5 transition-colors duration-200 hover:cursor-pointer hover:bg-cyan-500/20 dark:border-cyan-800/50 dark:bg-cyan-900/10 dark:hover:bg-cyan-900/20'>
-					<label className='mb-3 flex items-center gap-2 text-sm font-bold text-cyan-800 dark:text-cyan-200'>
-						<Icon icon='HeroSquaresPlus' className='h-5 w-5' />
-						{getAioLabel('ram_slots')}
-					</label>
-					<Controller
-						name='ram_slots'
-						control={control}
-						render={({ field }) => (
-							<Input
-								{...field}
-								value={field.value || ''}
-								placeholder={AIO_PLACEHOLDERS.ram_slots}
-								disabled={readOnly}
-							/>
-						)}
-					/>
-					<p className='mt-2 text-xs text-cyan-700/70 dark:text-cyan-400/70'>
-						{AIO_HINTS.ram_slots}
-					</p>
-				</div>
-
-				{/* RAM Type */}
-				<div className='rounded-xl border border-sky-200 bg-sky-500/10 p-5 transition-colors duration-200 hover:cursor-pointer hover:bg-sky-500/20 dark:border-sky-800/50 dark:bg-sky-900/10 dark:hover:bg-sky-900/20'>
-					<label className='mb-3 flex items-center gap-2 text-sm font-bold text-sky-800 dark:text-sky-200'>
-						<Icon icon='HeroWrenchScrewdriver' className='h-5 w-5' />
-						{getAioLabel('ram_type')}
-					</label>
-					<Controller
-						name='ram_type'
-						control={control}
-						render={({ field }) => (
-							<Input
-								{...field}
-								value={field.value || ''}
-								placeholder={AIO_PLACEHOLDERS.ram_type}
-								disabled={readOnly}
-							/>
-						)}
-					/>
-				</div>
+				)}
 			</div>
 
-			<div className='rounded-xl border border-orange-200 bg-orange-500/10 p-6 transition-colors duration-200 hover:cursor-pointer hover:bg-orange-500/20 dark:border-orange-800/50 dark:bg-orange-900/10 dark:hover:bg-orange-900/20'>
-				<div className='mb-4 flex items-center gap-2 text-orange-800 dark:text-orange-200'>
-					<Icon icon='HeroCircleStack' className='h-6 w-6' />
-					<h4 className='text-sm font-bold uppercase tracking-wider'>
-						Almacenamiento Principal
-					</h4>
-				</div>
-
-				{/* Storage Technology */}
-				<label className='mb-3 block text-sm font-bold text-orange-900 dark:text-orange-100'>
-					{getAioLabel('storage_technology')} <span className='text-red-500'>*</span>
-				</label>
-				<div className='mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5'>
-					{STORAGE_TECHNOLOGY_OPTIONS.map((opt) => (
-						<SelectionCard
-							key={opt.value}
-							label={opt.label}
-							value={opt.value}
-							isSelected={storageTech === opt.value}
-							onClick={() =>
-								!readOnly &&
-								setValue(
-									'storage_technology',
-									opt.value as AioFormData['storage_technology'],
-								)
-							}
+			{noRam ? (
+				<p className='mb-4 rounded-lg bg-red-100 px-3 py-2 text-sm font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-300'>
+					Equipo sin memoria RAM
+				</p>
+			) : (
+				<div className='grid grid-cols-1 gap-6 md:grid-cols-3'>
+					{/* RAM Size */}
+					<div className='rounded-xl border border-teal-200 bg-teal-500/10 p-5 transition-colors duration-200 hover:cursor-pointer hover:bg-teal-500/20 dark:border-teal-800/50 dark:bg-teal-900/10 dark:hover:bg-teal-900/20'>
+						<label className='mb-3 flex items-center gap-2 text-sm font-bold text-teal-800 dark:text-teal-200'>
+							<Icon icon='HeroServerStack' className='h-5 w-5' />
+							{getAioLabel('ram_size')} <span className='text-red-500'>*</span>
+						</label>
+						<Controller
+							name='ram_size'
+							control={control}
+							render={({ field }) => (
+								<InputUnitSelector
+									value={field.value || ''}
+									onChange={field.onChange}
+									placeholder={AIO_PLACEHOLDERS.ram_size}
+									disabled={readOnly}
+									isValid={!errors.ram_size}
+								/>
+							)}
 						/>
-					))}
-				</div>
-				{errors.storage_technology && (
-					<p className='mb-4 text-xs text-red-500'>{errors.storage_technology.message}</p>
-				)}
-
-				{/* Storage Size */}
-				<div className='max-w-md'>
-					<label className='mb-2 block text-sm font-bold text-orange-900 dark:text-orange-100'>
-						{getAioLabel('storage_size')} <span className='text-red-500'>*</span>
-					</label>
-					<Controller
-						name='storage_size'
-						control={control}
-						render={({ field }) => (
-							<Input
-								{...field}
-								value={field.value || ''}
-								placeholder={AIO_PLACEHOLDERS.storage_size}
-								disabled={readOnly}
-								className={errors.storage_size ? 'border-red-500' : ''}
-							/>
+						{errors.ram_size && (
+							<p className='mt-2 text-xs text-red-500'>{errors.ram_size.message}</p>
 						)}
-					/>
-					{errors.storage_size && (
-						<p className='mt-2 text-xs text-red-500'>{errors.storage_size.message}</p>
+					</div>
+
+					{/* RAM Slots */}
+					<div className='rounded-xl border border-cyan-200 bg-cyan-500/10 p-5 transition-colors duration-200 hover:cursor-pointer hover:bg-cyan-500/20 dark:border-cyan-800/50 dark:bg-cyan-900/10 dark:hover:bg-cyan-900/20'>
+						<label className='mb-3 flex items-center gap-2 text-sm font-bold text-cyan-800 dark:text-cyan-200'>
+							<Icon icon='HeroSquaresPlus' className='h-5 w-5' />
+							{getAioLabel('ram_slots')}
+						</label>
+						<Controller
+							name='ram_slots'
+							control={control}
+							render={({ field }) => (
+								<Input
+									{...field}
+									value={field.value || ''}
+									placeholder={AIO_PLACEHOLDERS.ram_slots}
+									disabled={readOnly}
+								/>
+							)}
+						/>
+						<p className='mt-2 text-xs text-cyan-700/70 dark:text-cyan-400/70'>
+							{AIO_HINTS.ram_slots}
+						</p>
+					</div>
+
+					{/* RAM Type */}
+					<div className='rounded-xl border border-sky-200 bg-sky-500/10 p-5 transition-colors duration-200 hover:cursor-pointer hover:bg-sky-500/20 dark:border-sky-800/50 dark:bg-sky-900/10 dark:hover:bg-sky-900/20'>
+						<label className='mb-3 flex items-center gap-2 text-sm font-bold text-sky-800 dark:text-sky-200'>
+							<Icon icon='HeroWrenchScrewdriver' className='h-5 w-5' />
+							{getAioLabel('ram_type')}
+						</label>
+						<Controller
+							name='ram_type'
+							control={control}
+							render={({ field }) => (
+								<Input
+									{...field}
+									value={field.value || ''}
+									placeholder={AIO_PLACEHOLDERS.ram_type}
+									disabled={readOnly}
+								/>
+							)}
+						/>
+					</div>
+				</div>
+			)}
+
+			<div className='rounded-xl border border-orange-200 bg-orange-500/10 p-6 transition-colors duration-200 hover:cursor-pointer hover:bg-orange-500/20 dark:border-orange-800/50 dark:bg-orange-900/10 dark:hover:bg-orange-900/20'>
+				<div className='mb-4 flex items-center justify-between'>
+					<div className='flex items-center gap-2 text-orange-800 dark:text-orange-200'>
+						<Icon icon='HeroCircleStack' className='h-6 w-6' />
+						<h4 className='text-sm font-bold uppercase tracking-wider'>
+							Almacenamiento Principal
+							{!noStorage && <span className='text-red-500'>*</span>}
+						</h4>
+					</div>
+					{!readOnly && (
+						<NoHardwareToggle
+							isActive={noStorage}
+							onToggle={(active) => {
+								if (active) {
+									setValue('storage_size', HARDWARE_ABSENT_VALUE);
+									setValue('storage_technology', undefined);
+								} else {
+									setValue('storage_size', '');
+									setValue('storage_technology', undefined);
+								}
+							}}
+							label='No tiene disco / No trae disco'
+						/>
 					)}
 				</div>
+
+				{noStorage ? (
+					<p className='rounded-lg bg-red-100 px-3 py-2 text-sm font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-300'>
+						Equipo sin disco de almacenamiento
+					</p>
+				) : (
+					<>
+						{/* Storage Technology */}
+						<label className='mb-3 block text-sm font-bold text-orange-900 dark:text-orange-100'>
+							{getAioLabel('storage_technology')}{' '}
+							<span className='text-red-500'>*</span>
+						</label>
+						<div className='mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5'>
+							{STORAGE_TECHNOLOGY_OPTIONS.map((opt) => (
+								<SelectionCard
+									key={opt.value}
+									label={opt.label}
+									value={opt.value}
+									isSelected={storageTech === opt.value}
+									onClick={() =>
+										!readOnly &&
+										setValue(
+											'storage_technology',
+											opt.value as AioFormData['storage_technology'],
+										)
+									}
+								/>
+							))}
+						</div>
+						{errors.storage_technology && (
+							<p className='mb-4 text-xs text-red-500'>
+								{errors.storage_technology.message}
+							</p>
+						)}
+
+						{/* Storage Size */}
+						<div className='max-w-md'>
+							<label className='mb-2 block text-sm font-bold text-orange-900 dark:text-orange-100'>
+								{getAioLabel('storage_size')}{' '}
+								<span className='text-red-500'>*</span>
+							</label>
+							<Controller
+								name='storage_size'
+								control={control}
+								render={({ field }) => (
+									<Input
+										{...field}
+										value={field.value || ''}
+										placeholder={AIO_PLACEHOLDERS.storage_size}
+										disabled={readOnly}
+										className={errors.storage_size ? 'border-red-500' : ''}
+									/>
+								)}
+							/>
+							{errors.storage_size && (
+								<p className='mt-2 text-xs text-red-500'>
+									{errors.storage_size.message}
+								</p>
+							)}
+						</div>
+					</>
+				)}
 			</div>
 		</div>
 	);

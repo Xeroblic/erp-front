@@ -10,6 +10,7 @@ import {
 	ALLOWED_CHARGER_STATUSES,
 	ALLOWED_COVER_CONDITIONS,
 } from './constants/desktop.rules';
+import { HARDWARE_ABSENT_VALUE } from '../constants/shared/hardware.sentinels';
 
 // ─── Schema Principal ─────────────────────────────────────────────────────────
 
@@ -25,10 +26,7 @@ export const desktopSchema = Yup.object({
 		.required('El modelo es obligatorio')
 		.max(150, 'Máximo 150 caracteres'),
 
-	line: Yup.string()
-		.trim()
-		.max(100, 'Máximo 100 caracteres')
-		.required('La línea es obligatoria'),
+	line: Yup.string().trim().max(100, 'Máximo 100 caracteres').required('La línea es obligatoria'),
 
 	// ─── Condición General ───────────────────────────────────────────────────
 	general_condition: Yup.string()
@@ -41,14 +39,21 @@ export const desktopSchema = Yup.object({
 		.required('El procesador es obligatorio')
 		.max(200, 'Máximo 200 caracteres'),
 
-	ram_size: Yup.string()
+	ram_size: Yup.string().trim().required('La RAM es obligatoria').max(50, 'Máximo 50 caracteres'),
+
+	ram_slots: Yup.string()
 		.trim()
-		.required('La RAM es obligatoria')
-		.max(50, 'Máximo 50 caracteres'),
+		.max(20, 'Máximo 20 caracteres')
+		.required('Los slots de RAM son obligatorios'),
 
-	ram_slots: Yup.string().trim().max(20, 'Máximo 20 caracteres').required('Los slots de RAM son obligatorios'),
-
-	ram_type: Yup.string().trim().max(20, 'Máximo 20 caracteres').required('El tipo de RAM es obligatorio'),
+	ram_type: Yup.string()
+		.trim()
+		.max(20, 'Máximo 20 caracteres')
+		.when('ram_size', {
+			is: HARDWARE_ABSENT_VALUE,
+			then: (schema) => schema.nullable(),
+			otherwise: (schema) => schema.required('El tipo de RAM es obligatorio'),
+		}),
 
 	storage_size: Yup.string()
 		.trim()
@@ -57,7 +62,11 @@ export const desktopSchema = Yup.object({
 
 	storage_technology: Yup.string()
 		.oneOf([...ALLOWED_STORAGE_TECHNOLOGIES], 'Tecnología de disco no válida')
-		.required('La tecnología de disco es obligatoria'),
+		.when('storage_size', {
+			is: HARDWARE_ABSENT_VALUE,
+			then: (schema) => schema.nullable(),
+			otherwise: (schema) => schema.required('La tecnología de disco es obligatoria'),
+		}),
 
 	// ─── Carcasa ─────────────────────────────────────────────────────────────
 	cover_condition: Yup.string()
