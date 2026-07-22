@@ -1,6 +1,60 @@
 # Registro de Cambios (Release Notes) - Zentria ERP
 
-Historial completo de versiones y modificaciones de la plataforma corporativa. Cada versión tiene un archivo detallado dentro de la carpeta `RELEASES/`.
+Historial completo de versiones y modificaciones de la plataforma corporativa. Cada versión tiene un archivo detallado dentro de la carpeta `Docs/releases/`.
+
+---
+
+## [v2.1.0] - 2026-07-22
+**Enfoque de la versión:** Nuevas funcionalidades para revisiones técnicas, integraciones WooCommerce, cotizaciones y ventas. Refactor completo del módulo de Bodegas, modularización de tabla de productos y nueva infraestructura de pruebas.
+
+### Puntos Destacados:
+- **Revisiones técnicas:** galería de fotografías por ítem, acceso rápido desde subheader, soporte para segunda batería en notebooks.
+- **Integraciones WooCommerce:** soft-delete, papelera y restauración de integraciones con detección de duplicados.
+- **Cotizaciones:** descarga en Excel además de PDF con plantilla corporativa.
+- **Bodegas:** refactor completo alineado a la arquitectura estándar (hooks, Formik, useCurrentBranch).
+- **Productos:** modularización de ProductsTableV2 (~990 → múltiples componentes), corrección de Badge con forwardRef.
+- **Ventas:** corrección del botón de eliminar con modal de confirmación y bloqueos por estado.
+- **Notificaciones:** apertura con un solo clic, eliminación de doble toque.
+
+[Ver archivo detallado en Docs/releases/v2.1.0.md](./Docs/releases/v2.1.0.md)
+
+---
+
+## [v2.0.0] - 2026-07-09
+**Enfoque de la versión:** Mayor release del proyecto. Integración definitiva de `develop` → `main`. Suite completa de WooCommerce, refactor profundo de contexto organizacional, y mejoras en flujo de ventas y catálogo.
+
+### Puntos Destacados:
+- **Suite WooCommerce:** sincronización bidireccional de productos, emparejamiento manual, overrides por canal, diagnóstico en tiempo real y hub unificado con pestañas.
+- **Refactor de contexto:** centralización del switch organizacional (`useOrgContextSwitcher`), interfaces alineadas al contrato real del backend, eliminación de código legacy/deprecated.
+- **Flujo de ventas:** cierre con `can_close`, inventario finalizado, confirmación de series y devoluciones, modales apilables.
+- **Catálogo:** pestaña de revisiones técnicas por producto, overrides de precio/nombre/visibilidad, tabla comparativa ERP vs WooCommerce.
+
+[Ver archivo detallado en Docs/releases/v2.0.0.md](./Docs/releases/v2.0.0.md)
+
+---
+
+## [v1.7.0-rc.1] - 2026-07-02
+**Enfoque de la versión:** Release Candidate previo a v2.0.0. Suite WooCommerce feature-complete a nivel frontend, incluyendo sincronización de productos, importación de términos, webhooks y hub unificado con pestañas.
+
+### Puntos Destacados:
+- **WooCommerce:** sincronización bidireccional de productos, publicar/despublicar con advertencia de papelera, guía visual de sync, decisión consciente de SKU, resolución de imagen al vincular.
+- **Integraciones:** importación de términos con deshacer, toggle rápido de activación, desvinculación masiva (super-admin), catálogo de webhooks entrantes.
+- **Ventas/Productos:** visibilidad de soft-holds, bandeja de ventas sin serie, botón "No Enciende" en revisión técnica.
+
+[Ver archivo detallado en Docs/releases/v1.7.0-rc.1.md](./Docs/releases/v1.7.0-rc.1.md)
+
+---
+
+## [v1.6.0] - 2026-07-02
+**Enfoque de la versión:** Consolidación en `main` del trabajo acumulado desde v1.1.8. Gestión de casillas/lockers, refactor de revisión técnica, sistema de roles y permisos administrable, e infraestructura de build/despliegue.
+
+### Puntos Destacados:
+- **Casillas/Lockers:** flujos públicos de check-in/checkout, PIN, sugerencia de casilleros, bloqueo de cuenta y escaneo QR.
+- **Revisión técnica:** modal de pre-llenado, sección de energía para notebooks, restricción a super-admin.
+- **Roles y Permisos:** nueva página de gestión con componentes base reutilizables y guard anti-doble-click.
+- **Infraestructura:** GitHub Actions para despliegue automatizado, migración a pnpm.
+
+[Ver archivo detallado en Docs/releases/v1.6.0.md](./Docs/releases/v1.6.0.md)
 
 ---
 
@@ -13,7 +67,7 @@ Historial completo de versiones y modificaciones de la plataforma corporativa. C
 - **Optimización de dashboards y rutas:** Reorganización de piezas del dashboard y simplificación de rutas para el flujo activo.
 - **Versionado de release:** Actualización de versión del proyecto a `1.1.8` para alinear el ciclo de entrega.
 
-[Ver archivo detallado en RELEASES/v1.1.8.md](./RELEASES/v1.1.8.md)
+[Ver archivo detallado en Docs/releases/v1.1.8.md](./Docs/releases/v1.1.8.md)
 
 ---
 
@@ -27,6 +81,18 @@ Historial completo de versiones y modificaciones de la plataforma corporativa. C
 - **Dashboards Visuales:** Componentes y gráficos actualizados en ventas, proyectando análisis predictivos (Smart Insights).
 - **Consolidación Técnica:** Resoluciones arquitectónicas críticas duplicadas en TS y refactorización de headers y footers maestros.
 
-[Ver archivo detallado en RELEASES/v1.1.7.md](./RELEASES/v1.1.7.md)
+<!-- Nota: no existe archivo detallado para v1.1.7 -->
+
+---
+
+## [v1.1.6] - 2026-03-09
+**Enfoque de la versión:** Primer hito de Zentria ERP. Infraestructura base del frontend con módulos críticos para operación logística y técnica. Versionado independizado del core backend.
+
+### Puntos Destacados:
+- **Revisiones Técnicas:** flujo standalone y por lotes, formularios dinámicos por tipo de equipo, scoring automático y auto-guardado inteligente.
+- **Integraciones WooCommerce 2.0:** gestión centralizada de API keys, webhooks, mapeo de productos y sincronización de stock.
+- **RBAC:** sistema de permisos granular, permission guards y selector de sucursal preferida.
+
+[Ver archivo detallado en Docs/releases/v1.1.6.md](./Docs/releases/v1.1.6.md)
 
 ---

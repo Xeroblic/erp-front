@@ -23,7 +23,7 @@ Archivos clave involucrados:
 
 3. **Interceptor de Response** – Si una request recibe `401 Unauthorized`, el interceptor dispara la compuerta compartida `performTokenRefresh()`. Solo puede ejecutarse un `POST /refresh` a la vez. Una vez que llega el nuevo token, la request original se reintenta de forma transparente. Si el refresh falla, se cierra la sesión del usuario, se limpian los tokens y se cancelan las requests pendientes.
 
-4. **Worker en segundo plano** – `initTokenRefreshWorker` (inicializado en `storeSetup.ts`) agenda un timer después de cada cambio de token. Calcula el próximo tiempo de refresh para que ocurra `VITE_JWT_REFRESH_MARGIN_SECONDS` segundos antes de la expiración (por defecto 15 s, mínimo 5 s, limitado a la vida útil restante). El worker llama a `triggerTokenRefresh`, que reutiliza la misma compuerta que el interceptor.
+4. **Worker en segundo plano** – `initTokenRefreshWorker` (inicializado en `storeSetup.ts`) agenda un timer después de cada cambio de token. Calcula el próximo tiempo de refresh para que ocurra `VITE_JWT_REFRESH_MARGIN_SECONDS` segundos antes de la expiración (por defecto 300 s (configurable en `.env`), mínimo 5 s, limitado a la vida útil restante). El worker llama a `triggerTokenRefresh`, que reutiliza la misma compuerta que el interceptor.
 
 5. **Sincronización entre pestañas** – Cuando un token cambia, Redux Persist lo escribe en `localStorage`. Un listener de `storage` en `storeSetup.ts` lee cambios desde otras pestañas, actualiza el token en memoria y hace dispatch de `setToken` para que todas las pestañas compartan el mismo estado de sesión. Los logouts también se propagan inmediatamente.
 
@@ -35,7 +35,7 @@ Archivos clave involucrados:
 | --------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `VITE_API_URL`                    | —       | URL base consumida por `BaseService`.                                                                                   |
 | `VITE_JWT_REFRESH_TTL_MINUTES`    | `10080` | Refleja el `refresh_ttl` del backend; se usa para saber si un token aún puede refrescarse.                              |
-| `VITE_JWT_REFRESH_MARGIN_SECONDS` | `15`    | Segundos antes de expirar en los que se ejecuta el refresh programado. Debe ser >= 5 y menor que la vida útil restante. |
+| `VITE_JWT_REFRESH_MARGIN_SECONDS` | `300`   | Segundos antes de expirar en los que se ejecuta el refresh programado. Debe ser >= 5 y menor que la vida útil restante. |
 
 ## Manejo de fallos
 
@@ -60,7 +60,7 @@ Archivos clave involucrados:
 
 5. **Polling de notificaciones** – Si `/me/notifications` sigue consultando estando deslogueado, asegúrate de que los componentes dependan de `isAuthenticated` antes de hacer dispatch de thunks. Usa como referencia el guard actual en `Notification.partial.tsx`.
 
-6. **Logout inmediato después del refresh** – Normalmente se debe a que el backend invalida tokens si se realizan múltiples refresh muy rápido. Confirma que el margen del worker no esté configurado demasiado alto, forzando intentos de refresh mucho después de que la ventana de refresh se cerró. Usa márgenes pequeños (15 s) en tokens de corta duración.
+6. **Logout inmediato después del refresh** – Normalmente se debe a que el backend invalida tokens si se realizan múltiples refresh muy rápido. Confirma que el margen del worker no esté configurado demasiado alto, forzando intentos de refresh mucho después de que la ventana de refresh se cerró. Usa márgenes pequeños (ej. 15 s) en tokens de corta duración, pero el valor por defecto actual es 300 s.
 
 ### Recuperación
 

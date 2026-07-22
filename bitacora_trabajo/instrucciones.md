@@ -12,14 +12,13 @@ Aquí se anota **actividad**: cambios, decisiones, problemas y resultados del d�
 
 ## 1. Regla principal
 
-- **Un archivo por día.** El nombre del archivo es la fecha en formato **`dd-mm-yyyy.md`**
-  (ej. `24-06-2026.md`).
-- Si en un mismo día se trabaja en varias sesiones, **se agregan más entradas dentro del
-  mismo archivo** (no se crea uno nuevo).
-- Cada entrada lleva **hora** y describe, de forma resumida pero completa, qué se hizo y
-  **en qué rama**.
-- El registro debe ser entendible por alguien que no estuvo presente: que se entienda el
-  *qué*, el *dónde* (rama) y el *por qué*.
+- **Un archivo por día.** Nombre obligatorio: **`dd-mm-yyyy.md`** (ej. `24-06-2026.md`).
+- **Prohibido** crear archivos satélite por tema (`08-07-2026-cleanup.md`,
+  `analisis-foo.md`, etc.). Todo el trabajo del día va en el único archivo de esa fecha.
+- Si hay varias sesiones o varios frentes, se organizan como **temas** dentro del mismo
+  archivo (ver §3).
+- El registro debe ser entendible por alguien que no estuvo presente: *qué*, *dónde*
+  (rama) y *por qué*.
 
 ---
 
@@ -29,97 +28,135 @@ Aquí se anota **actividad**: cambios, decisiones, problemas y resultados del d�
 bitacora_trabajo/
 ├── instrucciones.md      ← este archivo (no se borra)
 ├── 24-06-2026.md         ← registro del 24 de junio de 2026
-├── 25-06-2026.md         ← registro del 25 de junio de 2026
+├── 25-06-2026.md
 └── ...
 ```
 
-- Formato obligatorio: `dd-mm-yyyy.md` (día-mes-año, con ceros a la izquierda).
+- Formato: `dd-mm-yyyy.md` (día-mes-año, ceros a la izquierda).
 - Un archivo = un día calendario.
+- Único archivo extra permitido: `instrucciones.md`.
 
 ---
 
 ## 3. Estructura de cada archivo diario
 
-Cada archivo de día empieza con un encabezado con la fecha y luego una o más **sesiones**
-ordenadas por hora. Dentro de cada sesión se listan los cambios.
+Orden fijo:
+
+1. **Título** con la fecha.
+2. **Temas del día** — índice al inicio (obligatorio). Sirve para buscar en el repo
+   (`grep`, búsqueda del IDE, informe semanal) si ese día se tocó un tema.
+3. **Bloques por tema** — detalle separado; cada tema indica rama y, si aplica, hora/sesión.
 
 ````markdown
 # Bitácora — 24-06-2026
 
-## Sesión 09:30 – 12:00 · rama `develop`
+## Temas del día
 
-- **[feat]** Se creó la página de Integraciones en `src/pages/integraciones/`.
-- **[fix]** Se corrigió el desempaquetado del wrapper `data` en productos de WooCommerce.
-- **Decisión:** se filtra para no traer webhooks en `allWooIntegrations`. Motivo: la
-  lista solo debe mostrar integraciones reales.
-- **Pendiente:** falta validar el toggle de activación con permisos de sucursal.
+- JWT / refresh de sesión
+- Login — recordar cuenta
+- Integraciones Woo — menú productos sincronizados
 
-## Sesión 15:00 – 17:30 · rama `feature/columna-modo`
+---
 
-- **[style]** Se añadió la columna "Modo" con iconos y acciones Ver/Editar como íconos.
-- **PR:** #40 abierto hacia `develop`.
-- **Problema encontrado:** el `branchId` llegaba `null` en algunos usuarios; se resolvió
-  usando `useCurrentBranch`.
+## Tema: JWT / refresh de sesión
+
+**Rama:** `fix/jwt-refresh-session-expiry-1h` · **Sesión:** 22:10 – 23:00
+
+- **[fix]** Ajuste del margen de refresh antes del expiry del access token.
+- **Decisión:** TTL leído desde env (`VITE_JWT_REFRESH_*`).
+- **PR / commit:** #…
+
+## Tema: Login — recordar cuenta
+
+**Rama:** `feat/login-recordar-cuenta` · **Sesión:** 23:23 – 23:37
+
+- **[feat]** Checkbox “Recordar cuenta” y persistencia del identificador en localStorage.
 ````
 
-### Convención de etiquetas (alineadas con los commits del repo)
+### Reglas del índice «Temas del día»
 
-Usa el mismo prefijo que en los commits para que el informe sea coherente:
+- Lista corta de **nombres de tema** (módulo, bug o iniciativa), no párrafos.
+- Cada ítem del índice debe tener un `## Tema: …` homólogo más abajo (mismo wording o
+  muy cercano, para que un `Ctrl+F` del índice caiga en el detalle).
+- Si el día solo tuvo un tema, el índice lleva una sola viñeta igual.
+- Al agregar trabajo nuevo el mismo día: **actualizá el índice** y agregá/ampliá el bloque
+  del tema (no crees otro archivo).
 
-| Etiqueta    | Cuándo usarla                                  |
-|-------------|------------------------------------------------|
-| `[feat]`    | Nueva funcionalidad / página / módulo          |
-| `[fix]`     | Corrección de bug                              |
-| `[style]`   | Cambios visuales / UI sin lógica nueva         |
-| `[refactor]`| Reorganización de código sin cambiar conducta  |
-| `[docs]`    | Documentación                                   |
-| `[chore]`   | Configuración, dependencias, tareas varias      |
-| `[test]`    | Pruebas                                          |
+### Convención de etiquetas (alineadas con los commits)
+
+| Etiqueta     | Cuándo usarla                                 |
+|--------------|-----------------------------------------------|
+| `[feat]`     | Nueva funcionalidad / página / módulo         |
+| `[fix]`      | Corrección de bug                             |
+| `[style]`    | Cambios visuales / UI sin lógica nueva        |
+| `[refactor]` | Reorganización sin cambiar conducta           |
+| `[docs]`     | Documentación                                 |
+| `[chore]`    | Config, dependencias, limpieza de repo        |
+| `[test]`     | Pruebas                                       |
 
 ---
 
 ## 4. Qué anotar en cada entrada (checklist)
 
-Para cada cosa hecha, intenta cubrir:
-
-1. **Qué** se hizo (acción concreta y archivo/módulo afectado).
-2. **En qué rama** se hizo (`develop`, `feature/...`, etc.).
-3. **Por qué** (motivo o requerimiento que lo originó), si no es obvio.
-4. **Referencias**: número de PR (`#40`), commit, issue o ticket si existe.
+1. **Qué** se hizo (acción concreta y archivo/módulo).
+2. **En qué rama** (`develop`, `feat/...`, etc.).
+3. **Por qué**, si no es obvio.
+4. **Referencias**: PR (`#40`), commit, issue.
 5. **Estado**: terminado, en progreso o pendiente.
-6. **Problemas / decisiones** relevantes que sirvan para el informe.
+6. **Problemas / decisiones** relevantes para el informe.
 
-> Mantén las entradas **resumidas**. No copies código completo; basta con la ruta del
-> archivo y una frase clara de qué cambió.
+> Entradas **resumidas**. No copies código completo; ruta + frase clara.
 
 ---
 
 ## 5. Plantilla rápida (copiar y pegar)
 
-Al iniciar el día, crea `dd-mm-yyyy.md` con esto:
-
 ```markdown
 # Bitácora — dd-mm-yyyy
 
-## Sesión HH:MM – HH:MM · rama `<rama>`
+## Temas del día
 
-- **[tipo]** Descripción breve de lo realizado (módulo/archivo).
-- **Decisión:** ...
-- **Pendiente:** ...
-- **PR / commit:** #...
-```
-
-Para una nueva sesión el mismo día, agrega otro bloque `## Sesión ...` debajo.
+- Tema A
+- Tema B
 
 ---
 
-## 6. Cómo se usa para el informe
+## Tema: Tema A
 
-Al cerrar una semana/mes, se recorren los archivos `dd-mm-yyyy.md` en orden y se resume:
+**Rama:** `<rama>` · **Sesión:** HH:MM – HH:MM
 
-- Total de funcionalidades (`[feat]`), correcciones (`[fix]`), etc.
-- Ramas y PRs trabajados.
-- Tareas pendientes arrastradas.
+- **[tipo]** Descripción breve (módulo/archivo).
+- **Decisión:** ...
+- **Pendiente:** ...
+- **PR / commit:** #...
 
-Por eso es importante ser **consistente con las etiquetas y las ramas**: el informe se
-arma casi solo si la bitácora está bien llevada.
+## Tema: Tema B
+
+**Rama:** `<rama>`
+
+- **[tipo]** ...
+```
+
+---
+
+## 6. Cómo se usa para el informe y la búsqueda
+
+- **Buscar un tema en el tiempo:** buscar el nombre del tema; los hits en
+  `## Temas del día` marcan **qué días** lo tocaron; el `## Tema: …` del mismo archivo
+  tiene el detalle.
+- **Informe semanal/mensual:** recorrer `dd-mm-yyyy.md` en orden y resumir por etiquetas,
+  ramas y PRs.
+
+Por eso el índice inicial y las etiquetas deben ser **consistentes**.
+
+---
+
+## 7. Migración / archivos prohibidos
+
+Si encontrás restos de formatos viejos:
+
+| Incorrecto | Correcto |
+|------------|----------|
+| `08-07-2026-cleanup.md` | Contenido dentro de `08-07-2026.md` como un `## Tema:` |
+| `analisis-foo.md` suelto | Tema del día en que se hizo el análisis |
+| Varios archivos el mismo día | Un solo `dd-mm-yyyy.md` |

@@ -20,10 +20,10 @@ proyecto, sin reinventar layouts, autorización ni manejo de estado.
 - **Backend:** Laravel 12 + JWT. Multi-empresa / multi-subsidiaria / multi-sucursal.
 - **Alias de imports:** `@/*` → `./src/*` (tsconfig). Usa `@/...` siempre.
 
-> ⚠️ Discrepancia conocida: los prompts de `.agents/skills/Full_React.md` y
-> `Full_TS.md` mencionan React Hook Form + Zod. **Eso NO refleja el código real.** La
-> fuente de verdad es este CLAUDE.md: **Formik + Yup**, como dicen `Architect.md` y
-> `UI_UX.md` y como confirma el README.
+> ⚠️ Discrepancia conocida: los prompts de `.agents/skills/full-react/SKILL.md` y
+> `.agents/skills/full-ts/SKILL.md` mencionan React Hook Form + Zod. **Eso NO refleja el código real.** La
+> fuente de verdad es este CLAUDE.md: **Formik + Yup**, como dicen `.agents/skills/architect/SKILL.md` y
+> `.agents/skills/ui-ux/SKILL.md` y como confirma el README.
 
 ---
 
@@ -290,6 +290,11 @@ Prompts de roles para diseño asistido: `Architect`, `Full_TS`, `Full_React`, `U
 `Dev_Implementador`, `Tester_QA`. Úsalos como referencia de criterios, **pero ante
 cualquier conflicto manda este CLAUDE.md** (sobre todo: Formik + Yup, no RHF + Zod).
 
+> **Nota:** `.agents/` es **local-only** (no se versiona). El snapshot canónico de los
+> skills quedó en el historial git del commit `chore: snapshot completo de .agents`.
+> Si clonás el repo fresco, no verás la carpeta — podés recuperarla de ese commit o
+> de tu copia local anterior.
+
 ## 13. Bitácora de trabajo (`bitacora_trabajo/`)
 
 Registro cronológico de la actividad del proyecto para luego generar informes que
@@ -297,12 +302,23 @@ justifiquen el trabajo. **No es documentación técnica** (eso vive aquí y en e
 es el *qué se hizo, en qué rama y por qué* de cada día.
 
 Reglas (ver `bitacora_trabajo/instrucciones.md` para el detalle completo):
-- **Un archivo por día**, nombrado `dd-mm-yyyy.md` (ej. `24-06-2026.md`).
-- Dentro, una o más **sesiones** ordenadas por hora, cada una indicando la **rama** y
-  los cambios con etiquetas de tipo (`[feat]`, `[fix]`, `[style]`, `[refactor]`,
-  `[docs]`, `[chore]`, `[test]`) — las mismas que en los commits.
-- Anota: qué, en qué rama, por qué, referencia (PR/commit/issue), estado y
-  decisiones/problemas relevantes. Mantén las entradas **resumidas**.
+- **Un archivo por día**, nombrado `dd-mm-yyyy.md` (ej. `24-06-2026.md`). **Prohibido**
+  satélites por tema (`08-07-2026-foo.md`, `analisis-*.md` sueltos).
+- Al **inicio** del archivo: sección **`## Temas del día`** (índice de viñetas) para
+  poder buscar rápido si ese día se trabajó un tema.
+- Debajo: bloques **`## Tema: …`** con la **rama**, detalle y etiquetas (`[feat]`,
+  `[fix]`, `[style]`, `[refactor]`, `[docs]`, `[chore]`, `[test]`) — las mismas que en
+  los commits.
+- Anota: qué, rama, por qué, referencia (PR/commit/issue), estado y decisiones.
+  Entradas **resumidas**.
 
-Al cerrar una tarea o sesión relevante, **agrega la entrada** al archivo del día (créalo
-si no existe) antes de dar por terminado el trabajo.
+Al cerrar una tarea, **actualizá el índice de temas** y el bloque del tema en el archivo
+del día (créalo si no existe).
+
+## 14. Flujo de trabajo (branching + PRs)
+
+- **Commits en español**, formato **Conventional Commits** (`feat:`, `fix:`, `chore:`, `refactor:`, `style:`, `docs:`, `test:`).
+- Cada tarea en una **rama independiente** desde `develop`. Nombre descriptivo en inglés (ej. `feat/orden-compra`, `fix/error-precios`).
+- **Antes de empezar:** `git pull origin develop`, crear rama nueva desde `develop`, trabajar ahí.
+- **No hacer PRs directamente.** Al terminar la tarea, generar el texto del PR para que el usuario lo copie, revise y pegue. Lo mismo con releases: mostrar el texto propuesto, esperar confirmación.
+- El PR siempre apunta a `develop`.

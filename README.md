@@ -14,7 +14,7 @@ Esta versión consolida una refactorización estructural del frontend enfocada e
 ### Referencias de versión
 
 - Notas generales: `RELEASE_NOTES.md`
-- Detalle completo de esta versión: `RELEASES/v1.1.8.md`
+- Detalle completo de la versión actual: `Docs/releases/v2.1.0.md`
 
 ---
 
