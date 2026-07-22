@@ -5,11 +5,10 @@ jspm_packages/
 # Build output
 dist/
 
-# Variables de entorno
+# Variables de entorno (NUNCA versionar)
 .env
-.env.test
-.env.production
-.env.local
+.env.*
+!.env.example
 
 # IDE
 .idea/
