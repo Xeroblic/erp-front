@@ -1,6 +1,6 @@
 # Registro de Cambios (Release Notes) - Zentria ERP
 
-Historial completo de versiones y modificaciones de la plataforma corporativa. Cada versión tiene un archivo detallado dentro de la carpeta `RELEASES/`.
+Historial completo de versiones y modificaciones de la plataforma corporativa. Cada versión tiene un archivo detallado dentro de la carpeta `Docs/releases/`.
 
 ---
 
@@ -13,7 +13,7 @@ Historial completo de versiones y modificaciones de la plataforma corporativa. C
 - **Optimización de dashboards y rutas:** Reorganización de piezas del dashboard y simplificación de rutas para el flujo activo.
 - **Versionado de release:** Actualización de versión del proyecto a `1.1.8` para alinear el ciclo de entrega.
 
-[Ver archivo detallado en RELEASES/v1.1.8.md](./RELEASES/v1.1.8.md)
+[Ver archivo detallado en RELEASES/v1.1.8.md](./Docs/releases/v1.1.8.md)
 
 ---
 
@@ -27,6 +27,6 @@ Historial completo de versiones y modificaciones de la plataforma corporativa. C
 - **Dashboards Visuales:** Componentes y gráficos actualizados en ventas, proyectando análisis predictivos (Smart Insights).
 - **Consolidación Técnica:** Resoluciones arquitectónicas críticas duplicadas en TS y refactorización de headers y footers maestros.
 
-[Ver archivo detallado en RELEASES/v1.1.7.md](./RELEASES/v1.1.7.md)
+[Ver archivo detallado en RELEASES/v1.1.7.md](./Docs/releases/v1.1.7.md)
 
 ---
