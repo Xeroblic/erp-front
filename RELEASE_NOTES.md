@@ -4,6 +4,22 @@ Historial completo de versiones y modificaciones de la plataforma corporativa. C
 
 ---
 
+## [v2.1.0] - 2026-07-22
+**Enfoque de la versión:** Nuevas funcionalidades para revisiones técnicas, integraciones WooCommerce, cotizaciones y ventas. Refactor completo del módulo de Bodegas, modularización de tabla de productos y nueva infraestructura de pruebas.
+
+### Puntos Destacados:
+- **Revisiones técnicas:** galería de fotografías por ítem, acceso rápido desde subheader, soporte para segunda batería en notebooks.
+- **Integraciones WooCommerce:** soft-delete, papelera y restauración de integraciones con detección de duplicados.
+- **Cotizaciones:** descarga en Excel además de PDF con plantilla corporativa.
+- **Bodegas:** refactor completo alineado a la arquitectura estándar (hooks, Formik, useCurrentBranch).
+- **Productos:** modularización de ProductsTableV2 (~990 → múltiples componentes), corrección de Badge con forwardRef.
+- **Ventas:** corrección del botón de eliminar con modal de confirmación y bloqueos por estado.
+- **Notificaciones:** apertura con un solo clic, eliminación de doble toque.
+
+[Ver archivo detallado en Docs/releases/v2.1.0.md](./Docs/releases/v2.1.0.md)
+
+---
+
 ## [v2.0.0] - 2026-07-09
 **Enfoque de la versión:** Mayor release del proyecto. Integración definitiva de `develop` → `main`. Suite completa de WooCommerce, refactor profundo de contexto organizacional, y mejoras en flujo de ventas y catálogo.
 
