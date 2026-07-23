@@ -44,7 +44,11 @@ export const desktopSchema = Yup.object({
 	ram_slots: Yup.string()
 		.trim()
 		.max(20, 'Máximo 20 caracteres')
-		.required('Los slots de RAM son obligatorios'),
+		.when('ram_size', {
+			is: HARDWARE_ABSENT_VALUE,
+			then: (schema) => schema.nullable(),
+			otherwise: (schema) => schema.required('Los slots de RAM son obligatorios'),
+		}),
 
 	ram_type: Yup.string()
 		.trim()
