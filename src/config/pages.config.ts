@@ -555,6 +555,23 @@ export const privatePages = {
 				],
 				requireAll: false,
 			},
+			pagosDiferidos: {
+				id: 'pagosDiferidos',
+				to: '/comercial/pagos-diferidos',
+				text: 'Pagos diferidos',
+				icon: 'HeroBanknotes',
+				authority: ['view-deferred-payment'],
+				roles: [
+					'super-admin',
+					'admin',
+					'company-admin',
+					'subsidiary-admin',
+					'branch-admin',
+					'company-supervisor',
+					'manager',
+					'salesperson',
+				],
+			},
 			clientesVentas: {
 				id: 'clientesVentas',
 				to: '/comercial/clientes-ventas',

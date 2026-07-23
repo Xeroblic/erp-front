@@ -495,6 +495,22 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
+							{/* Pagos diferidos */}
+							<AuthorityCheckNav
+								authority={Pages.commercial.subPages.pagosDiferidos.authority}
+								roles={Pages.commercial.subPages.pagosDiferidos.roles}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.commercial.subPages.pagosDiferidos.text}
+									to={Pages.commercial.subPages.pagosDiferidos.to}
+									icon={Pages.commercial.subPages.pagosDiferidos.icon}
+									id={Pages.commercial.subPages.pagosDiferidos.id}
+									onClick={() =>
+										navigate(Pages.commercial.subPages.pagosDiferidos.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
 							{/* Clientes Ventas */}
 							<AuthorityCheckNav
 								authority={Pages.commercial.subPages.clientesVentas.authority}
