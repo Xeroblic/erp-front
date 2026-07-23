@@ -35,7 +35,7 @@ function GallerySection<T extends FieldValues>({ readOnly }: FormSectionProps<T>
 	const canView = has(PHOTO_VIEW_PERMISSION);
 	const canEdit = !readOnly && has(PHOTO_EDIT_PERMISSION);
 
-	const { photos, previews, loading, uploading, deletingId, error, refresh, upload, remove } =
+	const { photos, previews, loading, uploading, downloading, deletingId, error, refresh, upload, download, remove } =
 		useReviewPhotos({
 			subsidiaryId,
 			itemId,
@@ -126,18 +126,34 @@ function GallerySection<T extends FieldValues>({ readOnly }: FormSectionProps<T>
 						? 'Sin fotos'
 						: `${photos.length} ${photos.length === 1 ? 'foto' : 'fotos'}`}
 				</p>
-				<button
-					type='button'
-					onClick={() => void refresh()}
-					disabled={loading}
-					title='Actualizar galería'
-					className='flex items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800'>
-					<Icon
-						icon='HeroArrowPath'
-						className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`}
-					/>
-					Actualizar
-				</button>
+				<div className='flex items-center gap-2'>
+					{photos.length > 0 && (
+						<button
+							type='button'
+							onClick={() => void download()}
+							disabled={downloading}
+							title='Descargar todas las fotos en un ZIP'
+							className='flex items-center gap-1.5 rounded-lg border border-blue-200 px-2.5 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-50 disabled:opacity-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-900/20'>
+							<Icon
+								icon={downloading ? 'HeroArrowPath' : 'HeroArrowDownTray'}
+								className={`h-4 w-4 ${downloading ? 'animate-spin' : ''}`}
+							/>
+							Descargar fotos
+						</button>
+					)}
+					<button
+						type='button'
+						onClick={() => void refresh()}
+						disabled={loading}
+						title='Actualizar galería'
+						className='flex items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800'>
+						<Icon
+							icon='HeroArrowPath'
+							className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`}
+						/>
+						Actualizar
+					</button>
+				</div>
 			</div>
 
 			{/* ─── Zona de carga ─────────────────────────────────────────── */}

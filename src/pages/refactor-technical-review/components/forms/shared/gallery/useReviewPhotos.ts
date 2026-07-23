@@ -31,10 +31,12 @@ interface UseReviewPhotosResult {
 	previews: Record<number, string>;
 	loading: boolean;
 	uploading: boolean;
+	downloading: boolean;
 	deletingId: number | null;
 	error: string | null;
 	refresh: () => Promise<void>;
 	upload: (files: File[]) => Promise<void>;
+	download: () => Promise<void>;
 	remove: (mediaId: number) => Promise<void>;
 }
 
@@ -87,6 +89,7 @@ export const useReviewPhotos = ({
 	const [previews, setPreviews] = useState<Record<number, string>>({});
 	const [loading, setLoading] = useState(false);
 	const [uploading, setUploading] = useState(false);
+	const [downloading, setDownloading] = useState(false);
 	const [deletingId, setDeletingId] = useState<number | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
@@ -207,7 +210,27 @@ export const useReviewPhotos = ({
 		[subsidiaryId, itemId],
 	);
 
-	return { photos, previews, loading, uploading, deletingId, error, refresh, upload, remove };
+	const download = useCallback(async () => {
+		if (!subsidiaryId || !itemId) return;
+		setDownloading(true);
+		try {
+			const blob = await technicalReviewPhotosService.downloadZip(subsidiaryId, itemId);
+			const url = URL.createObjectURL(blob);
+			const link = document.createElement('a');
+			link.href = url;
+			link.setAttribute('download', `revision-${itemId}-fotos.zip`);
+			document.body.appendChild(link);
+			link.click();
+			link.remove();
+			URL.revokeObjectURL(url);
+		} catch (err) {
+			toast.error(getErrorMessage(err, 'No se pudieron descargar las fotos'));
+		} finally {
+			if (mountedRef.current) setDownloading(false);
+		}
+	}, [subsidiaryId, itemId]);
+
+	return { photos, previews, loading, uploading, downloading, deletingId, error, refresh, upload, download, remove };
 };
 
 export default useReviewPhotos;

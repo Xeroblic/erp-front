@@ -86,6 +86,15 @@ const technicalReviewPhotosService = {
 			method: 'delete',
 		});
 	},
+
+	async downloadZip(subsidiaryId: number, itemId: number): Promise<Blob> {
+		const response = await ApiService.fetchData<Blob>({
+			url: `${buildUrl(subsidiaryId, itemId)}/download`,
+			method: 'get',
+			responseType: 'blob',
+		});
+		return response.data as Blob;
+	},
 };
 
 export default technicalReviewPhotosService;
