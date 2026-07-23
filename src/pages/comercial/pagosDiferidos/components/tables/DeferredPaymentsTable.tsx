@@ -17,70 +17,107 @@ import DeferredStatusPill from '../badges/DeferredStatusPill';
 interface DeferredPaymentsTableProps {
 	rows: IDeferredPaymentListItem[];
 	meta: DeferredPaymentsPaginationMeta | null;
+	loading: boolean;
+	hasFilters: boolean;
 	onPageChange: (page: number) => void;
 }
 
 const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 	rows,
 	meta,
+	loading,
+	hasFilters,
 	onPageChange,
 }) => (
 	<Card>
+		<CardHeader>
+			<CardTitle className='text-lg'>Documentos por cobrar</CardTitle>
+			<span className='text-sm text-zinc-500'>{meta?.total ?? rows.length} documentos</span>
+		</CardHeader>
 		<CardBody className='overflow-x-auto p-0'>
 			<Table className='min-w-[1050px]'>
 				<THead>
 					<Tr>
-						<Th>N° documento</Th>
+						<Th>N&deg; documento</Th>
 						<Th>Empresa</Th>
 						<Th>OC</Th>
 						<Th className='text-right'>Monto</Th>
 						<Th className='text-right'>Saldo</Th>
 						<Th>Vencimiento</Th>
 						<Th>Estado</Th>
-						<Th>Días</Th>
+						<Th>D&iacute;as</Th>
 					</Tr>
 				</THead>
 				<TBody>
-					{rows.map((row) => (
-						<Tr
-							key={row.id}
-							className={row.is_overdue ? 'border-l-4 border-red-500' : undefined}>
-							<Td>
-								<p className='font-medium'>{row.document_number}</p>
-								<p className='text-xs text-zinc-500'>
-									{DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS[row.document_type]}
+					{loading &&
+						Array.from({ length: 5 }, (_, index) => (
+							<Tr key={`skeleton-${index}`}>
+								{Array.from({ length: 8 }, (__, cellIndex) => (
+									<Td key={`skeleton-${index}-${cellIndex}`}>
+										<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
+									</Td>
+								))}
+							</Tr>
+						))}
+					{!loading && rows.length === 0 && (
+						<Tr>
+							<Td colSpan={8} className='py-12 text-center'>
+								<p className='font-medium text-zinc-700 dark:text-zinc-200'>
+									{hasFilters
+										? 'Sin resultados para los filtros aplicados'
+										: 'A\u00FAn no hay documentos de pago diferido'}
+								</p>
+								<p className='mt-1 text-sm text-zinc-500'>
+									{hasFilters
+										? 'Prueba ajustando o limpiando los filtros.'
+										: 'Los documentos aparecer\u00E1n aqu\u00ED cuando sean registrados.'}
 								</p>
 							</Td>
-							<Td>
-								<p>{row.customer.billing_company}</p>
-								<p className='text-xs text-zinc-500'>{row.customer.rut}</p>
-							</Td>
-							<Td>{row.purchase_order ?? '—'}</Td>
-							<Td className='text-right tabular-nums'>
-								{formatDeferredPaymentAmount(row.total_amount)}
-							</Td>
-							<Td className='text-right font-semibold tabular-nums'>
-								{formatDeferredPaymentAmount(row.outstanding_amount)}
-							</Td>
-							<Td>{formatDeferredPaymentDate(row.due_date)}</Td>
-							<Td>
-								<DeferredStatusPill status={row.status} />
-							</Td>
-							<Td>
-								<DaysUntilDueBadge
-									daysUntilDue={row.days_until_due}
-									isOverdue={row.is_overdue}
-								/>
-							</Td>
 						</Tr>
-					))}
+					)}
+					{!loading &&
+						rows.map((row) => (
+							<Tr
+								key={row.id}
+								className={
+									row.is_overdue ? 'border-l-4 border-red-500' : undefined
+								}>
+								<Td>
+									<p className='font-medium'>{row.document_number}</p>
+									<p className='text-xs text-zinc-500'>
+										{DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS[row.document_type]}
+									</p>
+								</Td>
+								<Td>
+									<p>{row.customer.billing_company}</p>
+									<p className='text-xs text-zinc-500'>{row.customer.rut}</p>
+								</Td>
+								<Td>{row.purchase_order ?? '\u2014'}</Td>
+								<Td className='text-right tabular-nums'>
+									{formatDeferredPaymentAmount(row.total_amount)}
+								</Td>
+								<Td className='text-right font-semibold tabular-nums'>
+									{formatDeferredPaymentAmount(row.outstanding_amount)}
+								</Td>
+								<Td>{formatDeferredPaymentDate(row.due_date)}</Td>
+								<Td>
+									<DeferredStatusPill status={row.status} />
+								</Td>
+								<Td>
+									<DaysUntilDueBadge
+										daysUntilDue={row.days_until_due}
+										isOverdue={row.is_overdue}
+									/>
+								</Td>
+							</Tr>
+						))}
 				</TBody>
 			</Table>
 		</CardBody>
-		{meta && (
+		{meta && !loading && rows.length > 0 && (
 			<div className='flex items-center justify-between border-t border-zinc-200 px-4 py-3 dark:border-zinc-700'>
 				<p className='text-sm text-zinc-500'>
-					Página {meta.current_page} de {meta.last_page}
+					P&aacute;gina {meta.current_page} de {meta.last_page}
 				</p>
 				<div className='flex gap-2'>
 					<Button

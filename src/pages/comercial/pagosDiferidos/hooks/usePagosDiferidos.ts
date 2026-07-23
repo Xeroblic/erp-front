@@ -43,6 +43,18 @@ export const usePagosDiferidos = () => {
 		[dispatch],
 	);
 
+	const hasFilters = useMemo(
+		() =>
+			Boolean(
+				search.trim() ||
+					deferredPayments.filters.status ||
+					deferredPayments.filters.customer_sale_id ||
+					deferredPayments.filters.due_after ||
+					deferredPayments.filters.due_before,
+			),
+		[deferredPayments.filters, search],
+	);
+
 	const resetFilters = useCallback(() => {
 		setSearch('');
 		dispatch(resetDeferredPaymentsFilters());
@@ -65,6 +77,7 @@ export const usePagosDiferidos = () => {
 				loading: deferredPayments.loading,
 				loadingSummary: deferredPayments.loadingSummary,
 				error: deferredPayments.error,
+				hasFilters,
 				hasValidBranch,
 			},
 			filters: {
@@ -73,6 +86,7 @@ export const usePagosDiferidos = () => {
 				setSearch,
 				setFilter,
 				reset: resetFilters,
+				hasFilters,
 			},
 			actions: { retry },
 			branch: { branchId, subsidiaryId },
@@ -80,6 +94,7 @@ export const usePagosDiferidos = () => {
 		[
 			branchId,
 			deferredPayments,
+			hasFilters,
 			hasValidBranch,
 			resetFilters,
 			retry,
