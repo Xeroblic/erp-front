@@ -1,0 +1,91 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useDebounce } from 'use-debounce';
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import type { DeferredPaymentsFilters } from '@/interface/deferredPayments.interface';
+import { useAppDispatch, useAppSelector } from '@/store';
+import {
+	fetchDeferredPayments,
+	fetchDeferredPaymentsSummary,
+	resetDeferredPaymentsFilters,
+	setDeferredPaymentsFilters,
+} from '@/store/slices/deferredPayments/deferredPaymentsSlice';
+
+export const usePagosDiferidos = () => {
+	const dispatch = useAppDispatch();
+	const { branchId, subsidiaryId, hasValidBranch } = useCurrentBranch();
+	const deferredPayments = useAppSelector((state) => state.deferredPayments);
+	const [search, setSearch] = useState(deferredPayments.filters.search ?? '');
+	const [debouncedSearch] = useDebounce(search, 300);
+
+	useEffect(() => {
+		if (!subsidiaryId) return undefined;
+		const request = dispatch(fetchDeferredPaymentsSummary({ subsidiaryId }));
+		return () => request.abort();
+	}, [dispatch, subsidiaryId]);
+
+	useEffect(() => {
+		if (!subsidiaryId) return undefined;
+		const request = dispatch(
+			fetchDeferredPayments({ subsidiaryId, filters: deferredPayments.filters }),
+		);
+		return () => request.abort();
+	}, [deferredPayments.filters, dispatch, subsidiaryId]);
+
+	useEffect(() => {
+		if ((deferredPayments.filters.search ?? '') === debouncedSearch) return;
+		dispatch(setDeferredPaymentsFilters({ search: debouncedSearch || undefined, page: 1 }));
+	}, [debouncedSearch, deferredPayments.filters.search, dispatch]);
+
+	const setFilter = useCallback(
+		(patch: Partial<DeferredPaymentsFilters>) => {
+			dispatch(setDeferredPaymentsFilters({ ...patch, page: patch.page ?? 1 }));
+		},
+		[dispatch],
+	);
+
+	const resetFilters = useCallback(() => {
+		setSearch('');
+		dispatch(resetDeferredPaymentsFilters());
+	}, [dispatch]);
+
+	const retry = useCallback(() => {
+		if (!subsidiaryId) return;
+		void dispatch(fetchDeferredPaymentsSummary({ subsidiaryId }));
+		void dispatch(fetchDeferredPayments({ subsidiaryId, filters: deferredPayments.filters }));
+	}, [deferredPayments.filters, dispatch, subsidiaryId]);
+
+	return useMemo(
+		() => ({
+			data: {
+				list: deferredPayments.list,
+				summary: deferredPayments.summary,
+				meta: deferredPayments.meta,
+			},
+			state: {
+				loading: deferredPayments.loading,
+				loadingSummary: deferredPayments.loadingSummary,
+				error: deferredPayments.error,
+				hasValidBranch,
+			},
+			filters: {
+				values: deferredPayments.filters,
+				search,
+				setSearch,
+				setFilter,
+				reset: resetFilters,
+			},
+			actions: { retry },
+			branch: { branchId, subsidiaryId },
+		}),
+		[
+			branchId,
+			deferredPayments,
+			hasValidBranch,
+			resetFilters,
+			retry,
+			search,
+			setFilter,
+			subsidiaryId,
+		],
+	);
+};
