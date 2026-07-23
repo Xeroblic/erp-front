@@ -41,7 +41,7 @@ const DeleteSaleModal: React.FC<Props> = ({
 	};
 
 	return (
-		<Modal isOpen={isOpen} setIsOpen={() => setIsOpen(false)} size='sm' isCentered>
+		<Modal isOpen={isOpen} setIsOpen={() => { if (!isDeleting) setIsOpen(false); }} size='sm' isCentered>
 			<ModalHeader>Eliminar venta</ModalHeader>
 
 			<ModalBody>
