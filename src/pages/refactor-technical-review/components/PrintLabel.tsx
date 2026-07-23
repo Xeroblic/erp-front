@@ -99,7 +99,9 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 					<React.Fragment key='disk'>
 						<span style={{ fontWeight: 'bold' }}>ALM: </span>
 						{extractValue(details.storage_size)}{' '}
-						{extractValue(details.storage_technology)}{' '}
+						{!isHardwareAbsent(details.storage_size) && (
+							<>{extractValue(details.storage_technology)}{' '}</>
+						)}
 					</React.Fragment>,
 					<React.Fragment key='os'>
 						<span style={{ fontWeight: 'bold' }}>OS: </span>
@@ -138,7 +140,9 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 					<React.Fragment key='disk'>
 						<span style={{ fontWeight: 'bold' }}>ALM: </span>
 						{extractValue(details.storage_size)}{' '}
-						{extractValue(details.storage_technology)}{' '}
+						{!isHardwareAbsent(details.storage_size) && (
+							<>{extractValue(details.storage_technology)}{' '}</>
+						)}
 					</React.Fragment>,
 					<React.Fragment key='os'>
 						<span style={{ fontWeight: 'bold' }}>OS: </span>
@@ -161,7 +165,9 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 					<React.Fragment key='disk'>
 						<span style={{ fontWeight: 'bold' }}>ALM: </span>
 						{extractValue(details.storage_size)}{' '}
-						{extractValue(details.storage_technology)}{' '}
+						{!isHardwareAbsent(details.storage_size) && (
+							<>{extractValue(details.storage_technology)}{' '}</>
+						)}
 					</React.Fragment>,
 					<React.Fragment key='os'>
 						<span style={{ fontWeight: 'bold' }}>OS: </span>
@@ -213,7 +219,9 @@ const PrintLabel: React.FC<PrintLabelProps> = ({ item, isOpen, onClose, autoPrin
 					<React.Fragment key='disk'>
 						<span style={{ fontWeight: 'bold' }}>ALM: </span>
 						{extractValue(details.storage_size)}{' '}
-						{extractValue(details.storage_technology)}{' '}
+						{!isHardwareAbsent(details.storage_size) && (
+							<>{extractValue(details.storage_technology)}{' '}</>
+						)}
 					</React.Fragment>,
 					<React.Fragment key='os'>
 						<span style={{ fontWeight: 'bold' }}>OS: </span>
