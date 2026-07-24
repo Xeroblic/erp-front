@@ -56,13 +56,16 @@ const summaryGroup = (rows: IDeferredPaymentListItem[]) => ({
 	amount: sumOutstanding(rows).toFixed(2),
 });
 
+const hasOutstandingBalance = (row: IDeferredPaymentListItem): boolean =>
+	row.status !== 'paid' && Number(row.outstanding_amount) > 0;
+
+const unpaidRows = DEFERRED_PAYMENTS_MOCK.filter(hasOutstandingBalance);
+
 export const DEFERRED_PAYMENTS_SUMMARY_MOCK: IDeferredPaymentsSummary = {
-	total_outstanding: sumOutstanding(DEFERRED_PAYMENTS_MOCK).toFixed(2),
-	overdue: summaryGroup(DEFERRED_PAYMENTS_MOCK.filter((row) => row.is_overdue)),
+	total_outstanding: sumOutstanding(unpaidRows).toFixed(2),
+	overdue: summaryGroup(unpaidRows.filter((row) => row.is_overdue)),
 	due_within_7_days: summaryGroup(
-		DEFERRED_PAYMENTS_MOCK.filter(
-			(row) => row.status !== 'paid' && row.days_until_due >= 0 && row.days_until_due <= 7,
-		),
+		unpaidRows.filter((row) => row.days_until_due >= 0 && row.days_until_due <= 7),
 	),
 	pending: summaryGroup(DEFERRED_PAYMENTS_MOCK.filter((row) => row.status === 'pending')),
 };

@@ -33,10 +33,13 @@ describe('ZF-5 Pagos diferidos', () => {
 		const dueSoon = DEFERRED_PAYMENTS_MOCK.filter(
 			(row) => row.status !== 'paid' && row.days_until_due >= 0 && row.days_until_due <= 7,
 		);
-		const expectedOutstanding = DEFERRED_PAYMENTS_MOCK.reduce(
-			(total, row) => total + Number(row.outstanding_amount),
-			0,
-		).toFixed(2);
+		const unpaid = DEFERRED_PAYMENTS_MOCK.filter(
+			(row) => row.status !== 'paid' && Number(row.outstanding_amount) > 0,
+		);
+		const pending = DEFERRED_PAYMENTS_MOCK.filter((row) => row.status === 'pending');
+		const expectedOutstanding = unpaid
+			.reduce((total, row) => total + Number(row.outstanding_amount), 0)
+			.toFixed(2);
 
 		expect(DEFERRED_PAYMENTS_MOCK).toHaveLength(10);
 		expect(overdue.length).toBeGreaterThanOrEqual(3);
@@ -44,6 +47,8 @@ describe('ZF-5 Pagos diferidos', () => {
 		expect(DEFERRED_PAYMENTS_MOCK.some((row) => row.status === 'paid')).toBe(true);
 		expect(DEFERRED_PAYMENTS_SUMMARY_MOCK.total_outstanding).toBe(expectedOutstanding);
 		expect(DEFERRED_PAYMENTS_SUMMARY_MOCK.overdue.count).toBe(overdue.length);
+		expect(DEFERRED_PAYMENTS_SUMMARY_MOCK.due_within_7_days.count).toBe(dueSoon.length);
+		expect(DEFERRED_PAYMENTS_SUMMARY_MOCK.pending.count).toBe(pending.length);
 	});
 
 	it('filtra y pagina el mock como el endpoint congelado', async () => {
