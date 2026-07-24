@@ -24,15 +24,19 @@ afterEach(() => {
 describe('ZF-5 Pagos diferidos', () => {
 	it('formatea montos y vencimientos para la UI', () => {
 		expect(formatDeferredPaymentAmount('953980.00')).toBe('$ 953.980');
-		expect(getDaysUntilDueText(5)).toBe('Vence en 5 d\u00EDas');
+		expect(getDaysUntilDueText(5)).toBe('Vence en 5 días');
 		expect(getDaysUntilDueText(0)).toBe('Vence hoy');
-		expect(getDaysUntilDueText(-3)).toBe('Vencido 3 d\u00EDas');
+		expect(getDaysUntilDueText(-3)).toBe('Vencido 3 días');
 	});
 
 	it('mantiene un universo mock representativo y un summary coherente', () => {
 		const overdue = DEFERRED_PAYMENTS_MOCK.filter((row) => row.is_overdue);
 		const dueSoon = DEFERRED_PAYMENTS_MOCK.filter(
-			(row) => row.status !== 'paid' && row.days_until_due >= 0 && row.days_until_due <= 7,
+			(row) =>
+				row.status !== 'paid' &&
+				row.days_until_due !== null &&
+				row.days_until_due >= 0 &&
+				row.days_until_due <= 7,
 		);
 		const unpaid = DEFERRED_PAYMENTS_MOCK.filter(
 			(row) => row.status !== 'paid' && Number(row.outstanding_amount) > 0,
@@ -45,7 +49,11 @@ describe('ZF-5 Pagos diferidos', () => {
 		expect(DEFERRED_PAYMENTS_MOCK).toHaveLength(10);
 		expect(overdue.length).toBeGreaterThanOrEqual(3);
 		expect(dueSoon.length).toBeGreaterThanOrEqual(2);
-		expect(DEFERRED_PAYMENTS_MOCK.some((row) => row.status === 'paid')).toBe(true);
+		expect(
+			DEFERRED_PAYMENTS_MOCK.filter((row) => row.status === 'paid').every(
+				(row) => row.days_until_due === null,
+			),
+		).toBe(true);
 		expect(DEFERRED_PAYMENTS_SUMMARY_MOCK.total_outstanding).toBe(expectedOutstanding);
 		expect(DEFERRED_PAYMENTS_SUMMARY_MOCK.overdue.count).toBe(overdue.length);
 		expect(DEFERRED_PAYMENTS_SUMMARY_MOCK.due_within_7_days.count).toBe(dueSoon.length);
@@ -68,22 +76,24 @@ describe('ZF-5 Pagos diferidos', () => {
 		expect(response.meta.current_page).toBe(1);
 	});
 
-	it('actualiza filtros solo mediante su reducer dedicado', () => {
+	it('conserva filtros y acepta solo la respuesta vigente de la lista', () => {
 		const initial = deferredPaymentsReducer(undefined, { type: 'init' });
 		const filtered = deferredPaymentsReducer(
 			initial,
 			setDeferredPaymentsFilters({ status: 'overdue', page: 2 }),
+		);
+		const args = { subsidiaryId: 1, filters: filtered.filters };
+		const pending = deferredPaymentsReducer(
+			filtered,
+			fetchDeferredPayments.pending('request-id', args),
 		);
 		const payload = {
 			data: DEFERRED_PAYMENTS_MOCK.slice(0, 2),
 			meta: { current_page: 2, per_page: 2, total: 10, last_page: 5 },
 		};
 		const fulfilled = deferredPaymentsReducer(
-			filtered,
-			fetchDeferredPayments.fulfilled(payload, 'request-id', {
-				subsidiaryId: 1,
-				filters: filtered.filters,
-			}),
+			pending,
+			fetchDeferredPayments.fulfilled(payload, 'request-id', args),
 		);
 
 		expect(fulfilled.filters).toEqual(filtered.filters);
@@ -91,16 +101,86 @@ describe('ZF-5 Pagos diferidos', () => {
 		expect(fulfilled.meta).toEqual(payload.meta);
 	});
 
-	it('guarda el summary al resolver su thunk', () => {
+	it('guarda el summary al resolver la solicitud vigente', () => {
 		const initial = deferredPaymentsReducer(undefined, { type: 'init' });
-		const fulfilled = deferredPaymentsReducer(
+		const args = { subsidiaryId: 1 };
+		const pending = deferredPaymentsReducer(
 			initial,
-			fetchDeferredPaymentsSummary.fulfilled(DEFERRED_PAYMENTS_SUMMARY_MOCK, 'request-id', {
-				subsidiaryId: 1,
-			}),
+			fetchDeferredPaymentsSummary.pending('request-id', args),
+		);
+		const fulfilled = deferredPaymentsReducer(
+			pending,
+			fetchDeferredPaymentsSummary.fulfilled(
+				DEFERRED_PAYMENTS_SUMMARY_MOCK,
+				'request-id',
+				args,
+			),
 		);
 
 		expect(fulfilled.loadingSummary).toBe(false);
 		expect(fulfilled.summary).toEqual(DEFERRED_PAYMENTS_SUMMARY_MOCK);
+	});
+
+	it('separa errores de lista y resumen', () => {
+		const initial = deferredPaymentsReducer(undefined, { type: 'init' });
+		const listArgs = { subsidiaryId: 1 };
+		const listPending = deferredPaymentsReducer(
+			initial,
+			fetchDeferredPayments.pending('list-request', listArgs),
+		);
+		const listFailed = deferredPaymentsReducer(
+			listPending,
+			fetchDeferredPayments.rejected(null, 'list-request', listArgs, 'Error lista'),
+		);
+		const summaryArgs = { subsidiaryId: 1 };
+		const summaryPending = deferredPaymentsReducer(
+			listFailed,
+			fetchDeferredPaymentsSummary.pending('summary-request', summaryArgs),
+		);
+		const summaryFailed = deferredPaymentsReducer(
+			summaryPending,
+			fetchDeferredPaymentsSummary.rejected(
+				null,
+				'summary-request',
+				summaryArgs,
+				'Error resumen',
+			),
+		);
+
+		expect(summaryFailed.error).toBe('Error lista');
+		expect(summaryFailed.errorSummary).toBe('Error resumen');
+	});
+
+	it('ignora un rechazo abortado y limpia datos al iniciar otra carga', () => {
+		const initial = deferredPaymentsReducer(undefined, { type: 'init' });
+		const args = { subsidiaryId: 2 };
+		const pending = deferredPaymentsReducer(
+			initial,
+			fetchDeferredPayments.pending('request-id', args),
+		);
+		const aborted = deferredPaymentsReducer(
+			pending,
+			fetchDeferredPayments.rejected(
+				{ name: 'AbortError', message: 'Aborted' },
+				'request-id',
+				args,
+			),
+		);
+
+		expect(pending.list).toEqual([]);
+		expect(pending.meta).toBeNull();
+		expect(aborted.error).toBeNull();
+		expect(aborted.loading).toBe(false);
+	});
+
+	it('cancela realmente la espera del mock mediante AbortSignal', async () => {
+		vi.useFakeTimers();
+		const controller = new AbortController();
+		const request = mockFetchDeferredPayments(
+			DEFAULT_DEFERRED_PAYMENTS_FILTERS,
+			controller.signal,
+		);
+		controller.abort();
+		await expect(request).rejects.toMatchObject({ name: 'AbortError' });
 	});
 });

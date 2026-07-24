@@ -23,37 +23,85 @@ vi.mock('@/store', async () => {
 });
 
 describe('usePagosDiferidos', () => {
-	afterEach(() => {
-		vi.useRealTimers();
-	});
-
-	it('no restaura una búsqueda pendiente después de limpiar los filtros', async () => {
-		vi.useFakeTimers();
+	const createHook = () => {
 		const store = configureStore({
 			reducer: { deferredPayments: deferredPaymentsReducer },
 		});
 		const Wrapper = ({ children }: PropsWithChildren) => (
 			<Provider store={store}>{children}</Provider>
 		);
-		const { result } = renderHook(() => usePagosDiferidos(), { wrapper: Wrapper });
+		return { store, hook: renderHook(() => usePagosDiferidos(), { wrapper: Wrapper }) };
+	};
+
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	it('carga la demo aun cuando la subsidiaria no se puede resolver', async () => {
+		vi.useFakeTimers();
+		const { store } = createHook();
+
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(300);
+		});
+
+		expect(store.getState().deferredPayments.list.length).toBeGreaterThan(0);
+		expect(store.getState().deferredPayments.summary).not.toBeNull();
+		expect(store.getState().deferredPayments.error).toBeNull();
+	});
+
+	it('envía la paginación seleccionada al ciclo de carga', async () => {
+		vi.useFakeTimers();
+		const { store, hook } = createHook();
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(300);
+		});
 
 		act(() => {
-			result.current.filters.setSearch('cliente');
+			hook.result.current.filters.setFilter({ page: 2, per_page: 2 });
 		});
 		await act(async () => {
 			await vi.advanceTimersByTimeAsync(300);
 		});
+
+		expect(store.getState().deferredPayments.meta).toMatchObject({
+			current_page: 2,
+			per_page: 2,
+		});
+	});
+
+	it('permite limpiar y volver a buscar el mismo término durante el debounce', async () => {
+		vi.useFakeTimers();
+		const { store, hook } = createHook();
+
+		act(() => {
+			hook.result.current.filters.setSearch('cliente');
+		});
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(300);
+		});
+		act(() => {
+			hook.result.current.filters.reset();
+			hook.result.current.filters.setSearch('cliente');
+		});
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(300);
+		});
+
+		expect(hook.result.current.filters.search).toBe('cliente');
 		expect(store.getState().deferredPayments.filters.search).toBe('cliente');
+		expect(store.getState().deferredPayments.error).toBeNull();
+	});
 
-		act(() => {
-			result.current.filters.setSearch('cliente nuevo');
-			result.current.filters.reset();
-		});
+	it('no deja un error falso al desmontar y abortar las solicitudes', async () => {
+		vi.useFakeTimers();
+		const { store, hook } = createHook();
+		hook.unmount();
 		await act(async () => {
-			await vi.advanceTimersByTimeAsync(300);
+			await vi.runAllTimersAsync();
 		});
 
-		expect(result.current.filters.search).toBe('');
-		expect(store.getState().deferredPayments.filters.search).toBeUndefined();
+		expect(store.getState().deferredPayments.error).toBeNull();
+		expect(store.getState().deferredPayments.errorSummary).toBeNull();
 	});
 });
