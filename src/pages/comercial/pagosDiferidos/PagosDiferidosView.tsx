@@ -62,7 +62,9 @@ const PagosDiferidosView: React.FC = () => {
 							meta={data.meta}
 							loading={state.loading}
 							hasFilters={filters.hasFilters}
-							onPageChange={(page) => filters.setFilter({ page })}
+							onPaginationChange={(page, perPage) =>
+								filters.setFilter({ page, per_page: perPage })
+							}
 						/>
 					</>
 				)}

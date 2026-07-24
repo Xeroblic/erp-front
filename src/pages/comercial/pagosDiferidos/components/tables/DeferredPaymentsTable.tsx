@@ -1,7 +1,8 @@
 import React from 'react';
-import Button from '@/components/ui/Button';
+import { getCoreRowModel, type PaginationState, useReactTable } from '@tanstack/react-table';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Table, { TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
+import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
 import type {
 	DeferredPaymentsPaginationMeta,
 	IDeferredPaymentListItem,
@@ -19,15 +20,46 @@ interface DeferredPaymentsTableProps {
 	meta: DeferredPaymentsPaginationMeta | null;
 	loading: boolean;
 	hasFilters: boolean;
-	onPageChange: (page: number) => void;
+	onPaginationChange: (page: number, perPage: number) => void;
 }
+
+interface DeferredPaymentsPaginationProps {
+	rows: IDeferredPaymentListItem[];
+	meta: DeferredPaymentsPaginationMeta;
+	onChange: (page: number, perPage: number) => void;
+}
+
+const DeferredPaymentsPagination: React.FC<DeferredPaymentsPaginationProps> = ({
+	rows,
+	meta,
+	onChange,
+}) => {
+	const pagination: PaginationState = {
+		pageIndex: meta.current_page - 1,
+		pageSize: meta.per_page,
+	};
+	const table = useReactTable({
+		data: rows,
+		columns: [],
+		getCoreRowModel: getCoreRowModel(),
+		manualPagination: true,
+		pageCount: meta.last_page,
+		state: { pagination },
+		onPaginationChange: (updater) => {
+			const next = typeof updater === 'function' ? updater(pagination) : updater;
+			onChange(next.pageIndex + 1, next.pageSize);
+		},
+	});
+
+	return <TableCardFooterTemplateV2 table={table} />;
+};
 
 const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 	rows,
 	meta,
 	loading,
 	hasFilters,
-	onPageChange,
+	onPaginationChange,
 }) => (
 	<Card>
 		<CardHeader>
@@ -119,27 +151,7 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 			</Table>
 		</CardBody>
 		{meta && !loading && rows.length > 0 && (
-			<div className='flex items-center justify-between border-t border-zinc-200 px-4 py-3 dark:border-zinc-700'>
-				<p className='text-sm text-zinc-500'>
-					P&aacute;gina {meta.current_page} de {meta.last_page}
-				</p>
-				<div className='flex gap-2'>
-					<Button
-						size='sm'
-						variant='outline'
-						disabled={meta.current_page <= 1}
-						onClick={() => onPageChange(meta.current_page - 1)}>
-						Anterior
-					</Button>
-					<Button
-						size='sm'
-						variant='outline'
-						disabled={meta.current_page >= meta.last_page}
-						onClick={() => onPageChange(meta.current_page + 1)}>
-						Siguiente
-					</Button>
-				</div>
-			</div>
+			<DeferredPaymentsPagination rows={rows} meta={meta} onChange={onPaginationChange} />
 		)}
 	</Card>
 );
