@@ -3,7 +3,7 @@ import type { DeferredPaymentStatus } from '@/interface/deferredPayments.interfa
 import { DEFERRED_PAYMENT_STATUS_LABELS } from '../../utils';
 
 const colorClasses: Record<DeferredPaymentStatus, string> = {
-	pending: 'bg-amber-600 text-white',
+	pending: 'bg-zinc-600 text-white',
 	partially_paid: 'bg-blue-600 text-white',
 	paid: 'bg-emerald-600 text-white',
 };

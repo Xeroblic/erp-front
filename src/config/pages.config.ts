@@ -1155,7 +1155,7 @@ export const dashboardQuickLinksConfig: QuickLinkConfig[] = [
 	{ section: 'catalogs' },
 	{
 		section: 'commercial',
-		items: ['sales', 'quotes', 'clientesVentas']
+		items: ['sales', 'quotes', 'clientesVentas', 'pagosDiferidos']
 	},
 	// { section: 'inventory' },
 	// { section: 'manage' },

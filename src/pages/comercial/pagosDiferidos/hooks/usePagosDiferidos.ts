@@ -15,6 +15,7 @@ export const usePagosDiferidos = () => {
 	const { branchId, subsidiaryId, hasValidBranch } = useCurrentBranch();
 	const deferredPayments = useAppSelector((state) => state.deferredPayments);
 	const [search, setSearch] = useState(deferredPayments.filters.search ?? '');
+	const [selectedId, setSelectedId] = useState<number | null>(null);
 	const [debouncedSearch] = useDebounce(search, 300);
 
 	useEffect(() => {
@@ -60,6 +61,9 @@ export const usePagosDiferidos = () => {
 		dispatch(resetDeferredPaymentsFilters());
 	}, [dispatch]);
 
+	const openDetail = useCallback((id: number) => setSelectedId(id), []);
+	const closeDetail = useCallback(() => setSelectedId(null), []);
+
 	const retry = useCallback(() => {
 		if (!subsidiaryId) return;
 		void dispatch(fetchDeferredPaymentsSummary({ subsidiaryId }));
@@ -88,6 +92,7 @@ export const usePagosDiferidos = () => {
 				reset: resetFilters,
 				hasFilters,
 			},
+			selection: { selectedId, openDetail, closeDetail },
 			actions: { retry },
 			branch: { branchId, subsidiaryId },
 		}),
@@ -96,8 +101,11 @@ export const usePagosDiferidos = () => {
 			deferredPayments,
 			hasFilters,
 			hasValidBranch,
+			closeDetail,
+			openDetail,
 			resetFilters,
 			retry,
+			selectedId,
 			search,
 			setFilter,
 			subsidiaryId,

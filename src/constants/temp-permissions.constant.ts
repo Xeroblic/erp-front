@@ -72,6 +72,7 @@ export const ERP_PERMISSIONS = {
 
 	DEFERRED_PAYMENTS: {
 		VIEW: 'view-deferred-payment',
+		CREATE: 'create-deferred-payment',
 	},
 
 	QUOTES: {

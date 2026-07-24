@@ -21,6 +21,7 @@ interface DeferredPaymentsTableProps {
 	loading: boolean;
 	hasFilters: boolean;
 	onPaginationChange: (page: number, perPage: number) => void;
+	onRowClick: (id: number) => void;
 }
 
 interface DeferredPaymentsPaginationProps {
@@ -60,6 +61,7 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 	loading,
 	hasFilters,
 	onPaginationChange,
+	onRowClick,
 }) => (
 	<Card>
 		<CardHeader>
@@ -111,9 +113,19 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 						rows.map((row) => (
 							<Tr
 								key={row.id}
-								className={
-									row.is_overdue ? 'border-l-4 border-red-500' : undefined
-								}>
+								role='button'
+								tabIndex={0}
+								aria-label={`Abrir detalle del documento ${row.document_number}`}
+								onClick={() => onRowClick(row.id)}
+								onKeyDown={(event) => {
+									if (event.key === 'Enter' || event.key === ' ') {
+										event.preventDefault();
+										onRowClick(row.id);
+									}
+								}}
+								className={`cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 ${
+									row.is_overdue ? 'border-l-4 border-red-500' : ''
+								}`}>
 								<Td>
 									<p className='font-medium'>{row.document_number}</p>
 									<p className='text-xs text-zinc-500'>
