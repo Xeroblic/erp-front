@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDebounce } from 'use-debounce';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import type { DeferredPaymentsFilters } from '@/interface/deferredPayments.interface';
@@ -16,7 +16,8 @@ export const usePagosDiferidos = () => {
 	const deferredPayments = useAppSelector((state) => state.deferredPayments);
 	const [search, setSearch] = useState(deferredPayments.filters.search ?? '');
 	const [selectedId, setSelectedId] = useState<number | null>(null);
-	const [debouncedSearch] = useDebounce(search, 300);
+	const [debouncedSearch, debounceControls] = useDebounce(search, 300);
+	const ignoredDebouncedSearchRef = useRef<string | null>(null);
 
 	useEffect(() => {
 		if (!subsidiaryId) return undefined;
@@ -33,6 +34,10 @@ export const usePagosDiferidos = () => {
 	}, [deferredPayments.filters, dispatch, subsidiaryId]);
 
 	useEffect(() => {
+		if (ignoredDebouncedSearchRef.current !== null) {
+			if (debouncedSearch === ignoredDebouncedSearchRef.current) return;
+			ignoredDebouncedSearchRef.current = null;
+		}
 		if ((deferredPayments.filters.search ?? '') === debouncedSearch) return;
 		dispatch(setDeferredPaymentsFilters({ search: debouncedSearch || undefined, page: 1 }));
 	}, [debouncedSearch, deferredPayments.filters.search, dispatch]);
@@ -57,9 +62,11 @@ export const usePagosDiferidos = () => {
 	);
 
 	const resetFilters = useCallback(() => {
+		ignoredDebouncedSearchRef.current = debouncedSearch;
+		debounceControls.cancel();
 		setSearch('');
 		dispatch(resetDeferredPaymentsFilters());
-	}, [dispatch]);
+	}, [debounceControls, debouncedSearch, dispatch]);
 
 	const openDetail = useCallback((id: number) => setSelectedId(id), []);
 	const closeDetail = useCallback(() => setSelectedId(null), []);

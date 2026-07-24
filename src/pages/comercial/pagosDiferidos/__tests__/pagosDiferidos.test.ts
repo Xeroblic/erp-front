@@ -1,8 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/services/ApiService', () => ({
-	default: { fetchData: vi.fn() },
-}));
 import {
 	DEFERRED_PAYMENTS_MOCK,
 	DEFERRED_PAYMENTS_SUMMARY_MOCK,
@@ -15,6 +12,10 @@ import deferredPaymentsReducer, {
 	setDeferredPaymentsFilters,
 } from '@/store/slices/deferredPayments/deferredPaymentsSlice';
 import { formatDeferredPaymentAmount, getDaysUntilDueText } from '../utils';
+
+vi.mock('@/services/ApiService', () => ({
+	default: { fetchData: vi.fn() },
+}));
 
 afterEach(() => {
 	vi.useRealTimers();

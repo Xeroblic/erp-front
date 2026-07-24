@@ -1,6 +1,6 @@
 // src/config/pages.config.ts
 
-import { id } from "date-fns/locale";
+import { id } from 'date-fns/locale';
 
 /* =================================================
    ZENTRIA ERP - CONFIGURACIÓN DE PÁGINAS
@@ -355,11 +355,7 @@ export const privatePages = {
 				text: 'Ingreso de Stock',
 				icon: 'DuoBox',
 				authority: [],
-				roles: [
-					'super-admin',
-					'admin',
-					'company-admin',
-				],
+				roles: ['super-admin', 'admin', 'company-admin'],
 				requireAll: false,
 			},
 		},
@@ -920,7 +916,6 @@ export const privatePages = {
 		},
 	},
 
-
 	catalogs: {
 		id: 'catalogs',
 		to: '/catalogos',
@@ -1150,12 +1145,12 @@ export type QuickLinkConfig = {
 export const dashboardQuickLinksConfig: QuickLinkConfig[] = [
 	{
 		section: 'technical',
-		items: ['refactor', 'lotes', 'reviews']
+		items: ['refactor', 'lotes', 'reviews'],
 	},
 	{ section: 'catalogs' },
 	{
 		section: 'commercial',
-		items: ['sales', 'quotes', 'clientesVentas', 'pagosDiferidos']
+		items: ['sales', 'quotes', 'clientesVentas', 'pagosDiferidos'],
 	},
 	// { section: 'inventory' },
 	// { section: 'manage' },
