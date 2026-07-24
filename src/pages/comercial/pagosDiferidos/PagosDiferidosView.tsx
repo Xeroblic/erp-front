@@ -28,6 +28,7 @@ const PagosDiferidosView: React.FC = () => {
 						permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.CREATE}
 						branchId={branch.branchId}
 						subsidiaryId={branch.subsidiaryId}
+						scope='access'
 						variant='solid'
 						icon='HeroPlus'
 						isDisable
@@ -37,20 +38,50 @@ const PagosDiferidosView: React.FC = () => {
 				</SubheaderRight>
 			</Subheader>
 			<Container className='space-y-4'>
-				{!state.hasValidBranch ? (
+				{!state.hasDataContext ? (
 					<Alert
 						color='amber'
 						variant='outline'
 						icon='HeroBuildingStorefront'
-						title={'Seleccion\u00E1 una sucursal'}>
-						Necesit&aacute;s una sucursal activa para consultar las cuentas por cobrar.
+						title='No se pudo resolver la subsidiaria'>
+						Seleccion&aacute; nuevamente el contexto comercial para consultar las
+						cuentas por cobrar.
 					</Alert>
 				) : (
 					<>
-						<DeferredPaymentsKpis
-							summary={data.summary}
-							loading={state.loadingSummary}
-						/>
+						{state.isMockMode && (
+							<Alert
+								color='amber'
+								variant='outline'
+								icon='HeroExclamationTriangle'
+								title='Datos ficticios para demostraci&oacute;n'>
+								Los documentos, empresas, RUT y montos mostrados son ficticios y no
+								deben utilizarse para realizar cobranzas.
+							</Alert>
+						)}
+						{state.errorSummary && (
+							<Alert
+								color='red'
+								variant='outline'
+								icon='HeroExclamationTriangle'
+								title='No pudimos cargar el resumen de cobranza'>
+								<div className='flex flex-wrap items-center justify-between gap-3'>
+									<span>{state.errorSummary}</span>
+									<Button
+										size='sm'
+										variant='outline'
+										onClick={actions.retrySummary}>
+										Reintentar
+									</Button>
+								</div>
+							</Alert>
+						)}
+						{!state.errorSummary && (
+							<DeferredPaymentsKpis
+								summary={data.summary}
+								loading={state.loadingSummary}
+							/>
+						)}
 						<DeferredPaymentsFilters
 							filters={filters.values}
 							search={filters.search}
@@ -66,7 +97,7 @@ const PagosDiferidosView: React.FC = () => {
 								title='No pudimos cargar los pagos diferidos'>
 								<div className='flex flex-wrap items-center justify-between gap-3'>
 									<span>{state.error}</span>
-									<Button size='sm' variant='outline' onClick={actions.retry}>
+									<Button size='sm' variant='outline' onClick={actions.retryList}>
 										Reintentar
 									</Button>
 								</div>

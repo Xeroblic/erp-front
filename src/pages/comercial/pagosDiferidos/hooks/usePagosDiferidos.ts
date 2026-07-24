@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDebounce } from 'use-debounce';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import type { DeferredPaymentsFilters } from '@/interface/deferredPayments.interface';
@@ -8,39 +8,72 @@ import {
 	fetchDeferredPaymentsSummary,
 	resetDeferredPaymentsFilters,
 	setDeferredPaymentsFilters,
+	USE_DEFERRED_PAYMENTS_MOCK,
 } from '@/store/slices/deferredPayments/deferredPaymentsSlice';
 
 export const usePagosDiferidos = () => {
 	const dispatch = useAppDispatch();
-	const { branchId, subsidiaryId, hasValidBranch } = useCurrentBranch();
+	const { branchId, subsidiaryId } = useCurrentBranch();
 	const deferredPayments = useAppSelector((state) => state.deferredPayments);
-	const [search, setSearch] = useState(deferredPayments.filters.search ?? '');
 	const [selectedId, setSelectedId] = useState<number | null>(null);
-	const [debouncedSearch, debounceControls] = useDebounce(search, 300);
-	const ignoredDebouncedSearchRef = useRef<string | null>(null);
+	const search = deferredPayments.filters.search ?? '';
+	const [debouncedSearch] = useDebounce(search, 300);
+	const effectiveSubsidiaryId = subsidiaryId ?? (USE_DEFERRED_PAYMENTS_MOCK ? 0 : null);
+	const hasDataContext = effectiveSubsidiaryId !== null;
+
+	const filtersForRequest = useMemo<DeferredPaymentsFilters>(
+		() => ({
+			page: deferredPayments.filters.page,
+			per_page: deferredPayments.filters.per_page,
+			sort: deferredPayments.filters.sort,
+			status: deferredPayments.filters.status,
+			customer_sale_id: deferredPayments.filters.customer_sale_id,
+			due_after: deferredPayments.filters.due_after,
+			due_before: deferredPayments.filters.due_before,
+			search: debouncedSearch || undefined,
+		}),
+		[
+			debouncedSearch,
+			deferredPayments.filters.customer_sale_id,
+			deferredPayments.filters.due_after,
+			deferredPayments.filters.due_before,
+			deferredPayments.filters.page,
+			deferredPayments.filters.per_page,
+			deferredPayments.filters.sort,
+			deferredPayments.filters.status,
+		],
+	);
 
 	useEffect(() => {
-		if (!subsidiaryId) return undefined;
-		const request = dispatch(fetchDeferredPaymentsSummary({ subsidiaryId }));
-		return () => request.abort();
-	}, [dispatch, subsidiaryId]);
-
-	useEffect(() => {
-		if (!subsidiaryId) return undefined;
+		if (effectiveSubsidiaryId === null) return undefined;
 		const request = dispatch(
-			fetchDeferredPayments({ subsidiaryId, filters: deferredPayments.filters }),
+			fetchDeferredPaymentsSummary({ subsidiaryId: effectiveSubsidiaryId }),
 		);
 		return () => request.abort();
-	}, [deferredPayments.filters, dispatch, subsidiaryId]);
+	}, [dispatch, effectiveSubsidiaryId]);
 
 	useEffect(() => {
-		if (ignoredDebouncedSearchRef.current !== null) {
-			if (debouncedSearch === ignoredDebouncedSearchRef.current) return;
-			ignoredDebouncedSearchRef.current = null;
-		}
-		if ((deferredPayments.filters.search ?? '') === debouncedSearch) return;
-		dispatch(setDeferredPaymentsFilters({ search: debouncedSearch || undefined, page: 1 }));
-	}, [debouncedSearch, deferredPayments.filters.search, dispatch]);
+		if (effectiveSubsidiaryId === null) return undefined;
+		const request = dispatch(
+			fetchDeferredPayments({
+				subsidiaryId: effectiveSubsidiaryId,
+				filters: filtersForRequest,
+			}),
+		);
+		return () => request.abort();
+	}, [dispatch, effectiveSubsidiaryId, filtersForRequest]);
+
+	const setSearch = useCallback(
+		(value: string) => {
+			dispatch(
+				setDeferredPaymentsFilters({
+					search: value || undefined,
+					page: 1,
+				}),
+			);
+		},
+		[dispatch],
+	);
 
 	const setFilter = useCallback(
 		(patch: Partial<DeferredPaymentsFilters>) => {
@@ -62,20 +95,28 @@ export const usePagosDiferidos = () => {
 	);
 
 	const resetFilters = useCallback(() => {
-		ignoredDebouncedSearchRef.current = debouncedSearch;
-		debounceControls.cancel();
-		setSearch('');
 		dispatch(resetDeferredPaymentsFilters());
-	}, [debounceControls, debouncedSearch, dispatch]);
+	}, [dispatch]);
 
 	const openDetail = useCallback((id: number) => setSelectedId(id), []);
 	const closeDetail = useCallback(() => setSelectedId(null), []);
 
-	const retry = useCallback(() => {
-		if (!subsidiaryId) return;
-		void dispatch(fetchDeferredPaymentsSummary({ subsidiaryId }));
-		void dispatch(fetchDeferredPayments({ subsidiaryId, filters: deferredPayments.filters }));
-	}, [deferredPayments.filters, dispatch, subsidiaryId]);
+	const retrySummary = useCallback(() => {
+		if (effectiveSubsidiaryId === null) return;
+		dispatch(fetchDeferredPaymentsSummary({ subsidiaryId: effectiveSubsidiaryId })).catch(
+			() => undefined,
+		);
+	}, [dispatch, effectiveSubsidiaryId]);
+
+	const retryList = useCallback(() => {
+		if (effectiveSubsidiaryId === null) return;
+		dispatch(
+			fetchDeferredPayments({
+				subsidiaryId: effectiveSubsidiaryId,
+				filters: filtersForRequest,
+			}),
+		).catch(() => undefined);
+	}, [dispatch, effectiveSubsidiaryId, filtersForRequest]);
 
 	return useMemo(
 		() => ({
@@ -88,8 +129,9 @@ export const usePagosDiferidos = () => {
 				loading: deferredPayments.loading,
 				loadingSummary: deferredPayments.loadingSummary,
 				error: deferredPayments.error,
-				hasFilters,
-				hasValidBranch,
+				errorSummary: deferredPayments.errorSummary,
+				hasDataContext,
+				isMockMode: USE_DEFERRED_PAYMENTS_MOCK,
 			},
 			filters: {
 				values: deferredPayments.filters,
@@ -100,21 +142,23 @@ export const usePagosDiferidos = () => {
 				hasFilters,
 			},
 			selection: { selectedId, openDetail, closeDetail },
-			actions: { retry },
+			actions: { retryList, retrySummary },
 			branch: { branchId, subsidiaryId },
 		}),
 		[
 			branchId,
-			deferredPayments,
-			hasFilters,
-			hasValidBranch,
 			closeDetail,
+			deferredPayments,
+			hasDataContext,
+			hasFilters,
 			openDetail,
 			resetFilters,
-			retry,
-			selectedId,
+			retryList,
+			retrySummary,
 			search,
+			selectedId,
 			setFilter,
+			setSearch,
 			subsidiaryId,
 		],
 	);

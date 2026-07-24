@@ -30,7 +30,7 @@ export interface IDeferredPaymentListItem {
 	outstanding_amount: string;
 	status: DeferredPaymentStatus;
 	is_overdue: boolean;
-	days_until_due: number;
+	days_until_due: number | null;
 	due_date: string;
 	issue_date: string;
 	customer: IDeferredPaymentCustomer;

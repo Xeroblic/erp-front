@@ -1,6 +1,7 @@
 import type {
 	DeferredPaymentsFilters,
 	DeferredPaymentsListResponse,
+	DeferredPaymentSort,
 	IDeferredPaymentListItem,
 	IDeferredPaymentsSummary,
 } from '@/interface/deferredPayments.interface';
@@ -29,7 +30,7 @@ const createRow = (
 	outstanding_amount: outstanding.toFixed(2),
 	status,
 	is_overdue: daysUntilDue < 0 && status !== 'paid',
-	days_until_due: daysUntilDue,
+	days_until_due: status === 'paid' ? null : daysUntilDue,
 	due_date: toIsoDate(daysUntilDue),
 	issue_date: toIsoDate(daysUntilDue - 30),
 	customer: { id, billing_company: company, rut },
@@ -65,25 +66,50 @@ export const DEFERRED_PAYMENTS_SUMMARY_MOCK: IDeferredPaymentsSummary = {
 	total_outstanding: sumOutstanding(unpaidRows).toFixed(2),
 	overdue: summaryGroup(unpaidRows.filter((row) => row.is_overdue)),
 	due_within_7_days: summaryGroup(
-		unpaidRows.filter((row) => row.days_until_due >= 0 && row.days_until_due <= 7),
+		unpaidRows.filter(
+			(row) =>
+				row.days_until_due !== null && row.days_until_due >= 0 && row.days_until_due <= 7,
+		),
 	),
 	pending: summaryGroup(DEFERRED_PAYMENTS_MOCK.filter((row) => row.status === 'pending')),
 };
 
-const waitForMock = async (): Promise<void> =>
-	new Promise((resolve) => {
-		setTimeout(resolve, 250);
+const waitForMock = async (signal?: AbortSignal): Promise<void> =>
+	new Promise((resolve, reject) => {
+		let timeoutId: ReturnType<typeof setTimeout> | undefined;
+		const onAbort = () => {
+			if (timeoutId) clearTimeout(timeoutId);
+			reject(new DOMException('Solicitud cancelada', 'AbortError'));
+		};
+		timeoutId = setTimeout(() => {
+			signal?.removeEventListener('abort', onAbort);
+			resolve();
+		}, 250);
+		if (signal?.aborted) onAbort();
+		else signal?.addEventListener('abort', onAbort, { once: true });
 	});
 
-export const mockFetchDeferredPaymentsSummary = async (): Promise<IDeferredPaymentsSummary> => {
-	await waitForMock();
+const sortRows = (
+	rows: IDeferredPaymentListItem[],
+	sort: DeferredPaymentSort,
+): IDeferredPaymentListItem[] => {
+	if (sort === 'due_date')
+		return [...rows].sort((left, right) => left.due_date.localeCompare(right.due_date));
+	return [...rows];
+};
+
+export const mockFetchDeferredPaymentsSummary = async (
+	signal?: AbortSignal,
+): Promise<IDeferredPaymentsSummary> => {
+	await waitForMock(signal);
 	return DEFERRED_PAYMENTS_SUMMARY_MOCK;
 };
 
 export const mockFetchDeferredPayments = async (
 	filters: DeferredPaymentsFilters,
+	signal?: AbortSignal,
 ): Promise<DeferredPaymentsListResponse> => {
-	await waitForMock();
+	await waitForMock(signal);
 	const normalizedSearch = filters.search?.trim().toLocaleLowerCase('es-CL');
 	const filtered = DEFERRED_PAYMENTS_MOCK.filter((row) => {
 		const matchesStatus =
@@ -101,15 +127,16 @@ export const mockFetchDeferredPayments = async (
 		return (
 			matchesStatus && matchesCustomer && matchesSearch && matchesDueAfter && matchesDueBefore
 		);
-	}).sort((left, right) => left.due_date.localeCompare(right.due_date));
+	});
+	const sorted = sortRows(filtered, filters.sort);
 	const start = (filters.page - 1) * filters.per_page;
 	return {
-		data: filtered.slice(start, start + filters.per_page),
+		data: sorted.slice(start, start + filters.per_page),
 		meta: {
 			current_page: filters.page,
 			per_page: filters.per_page,
-			total: filtered.length,
-			last_page: Math.max(1, Math.ceil(filtered.length / filters.per_page)),
+			total: sorted.length,
+			last_page: Math.max(1, Math.ceil(sorted.length / filters.per_page)),
 		},
 	};
 };
