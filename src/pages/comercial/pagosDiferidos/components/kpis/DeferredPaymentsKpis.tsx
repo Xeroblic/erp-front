@@ -17,28 +17,28 @@ const DeferredPaymentsKpis: React.FC<DeferredPaymentsKpisProps> = ({ summary, lo
 				amount: summary?.total_outstanding ?? '0',
 				detail: 'Saldo vigente',
 				icon: 'HeroBanknotes' as const,
-				accent: 'border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-900 dark:bg-blue-950/50',
+				accent: 'bg-blue-600 text-white shadow-sm',
 			},
 			{
 				label: 'Vencido',
 				amount: summary?.overdue.amount ?? '0',
 				detail: `${summary?.overdue.count ?? 0} documentos`,
 				icon: 'HeroExclamationTriangle' as const,
-				accent: 'border-red-200 bg-red-50 text-red-600 dark:border-red-900 dark:bg-red-950/50',
+				accent: 'bg-red-600 text-white shadow-sm',
 			},
 			{
 				label: 'Por vencer en 7 d\u00EDas',
 				amount: summary?.due_within_7_days.amount ?? '0',
 				detail: `${summary?.due_within_7_days.count ?? 0} documentos`,
 				icon: 'HeroClock' as const,
-				accent: 'border-amber-200 bg-amber-50 text-amber-600 dark:border-amber-900 dark:bg-amber-950/50',
+				accent: 'bg-amber-600 text-white shadow-sm',
 			},
 			{
 				label: 'Pendiente',
 				amount: summary?.pending.amount ?? '0',
 				detail: `${summary?.pending.count ?? 0} documentos`,
 				icon: 'HeroDocumentText' as const,
-				accent: 'border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800',
+				accent: 'bg-zinc-700 text-white shadow-sm',
 			},
 		],
 		[summary],
@@ -62,8 +62,8 @@ const DeferredPaymentsKpis: React.FC<DeferredPaymentsKpisProps> = ({ summary, lo
 						) : (
 							<>
 								<div
-									className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border ${item.accent}`}>
-									<Icon icon={item.icon} size='text-2xl' />
+									className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl ${item.accent}`}>
+									<Icon icon={item.icon} size='text-3xl' color='white' />
 								</div>
 								<div className='min-w-0'>
 									<p className='text-sm font-semibold text-zinc-500 dark:text-zinc-300'>
@@ -72,7 +72,7 @@ const DeferredPaymentsKpis: React.FC<DeferredPaymentsKpisProps> = ({ summary, lo
 									<p className='truncate text-2xl font-semibold tabular-nums text-zinc-900 dark:text-white'>
 										{formatDeferredPaymentAmount(item.amount)}
 									</p>
-									<p className='text-xs text-zinc-500 dark:text-zinc-400'>
+									<p className='text-sm text-zinc-500 dark:text-zinc-400'>
 										{item.detail}
 									</p>
 								</div>

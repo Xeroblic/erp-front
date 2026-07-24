@@ -35,7 +35,7 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 			<span className='text-sm text-zinc-500'>{meta?.total ?? rows.length} documentos</span>
 		</CardHeader>
 		<CardBody className='overflow-x-auto p-0'>
-			<Table className='min-w-[1050px]'>
+			<Table className='min-w-[1150px]'>
 				<THead>
 					<Tr>
 						<Th>N&deg; documento</Th>
@@ -44,8 +44,8 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 						<Th className='text-right'>Monto</Th>
 						<Th className='text-right'>Saldo</Th>
 						<Th>Vencimiento</Th>
-						<Th>Estado</Th>
-						<Th>D&iacute;as</Th>
+						<Th className='text-center'>Estado del pago</Th>
+						<Th className='text-center'>Situaci&oacute;n de vencimiento</Th>
 					</Tr>
 				</THead>
 				<TBody>
@@ -101,13 +101,17 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 								</Td>
 								<Td>{formatDeferredPaymentDate(row.due_date)}</Td>
 								<Td>
-									<DeferredStatusPill status={row.status} />
+									<div className='flex justify-center'>
+										<DeferredStatusPill status={row.status} />
+									</div>
 								</Td>
 								<Td>
-									<DaysUntilDueBadge
-										daysUntilDue={row.days_until_due}
-										isOverdue={row.is_overdue}
-									/>
+									<div className='flex justify-center'>
+										<DaysUntilDueBadge
+											daysUntilDue={row.days_until_due}
+											isOverdue={row.is_overdue}
+										/>
+									</div>
 								</Td>
 							</Tr>
 						))}

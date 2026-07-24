@@ -11,6 +11,9 @@ import type {
 	DeferredPaymentStatusFilter,
 } from '@/interface/deferredPayments.interface';
 
+const dueDateMaxYear = new Date().getFullYear() + 10;
+const dueDateMax = new Date(dueDateMaxYear, 11, 31);
+
 const statusOptions: TSelectOption[] = [
 	{ value: 'pending', label: 'Pendiente' },
 	{ value: 'partially_paid', label: 'Parcial' },
@@ -108,6 +111,8 @@ const DeferredPaymentsFiltersBar: React.FC<DeferredPaymentsFiltersProps> = ({
 							name='due_before'
 							value={filters.due_before ?? ''}
 							placeholder='dd-mm-aaaa'
+							maxYear={dueDateMaxYear}
+							maxDate={dueDateMax}
 							onChange={(event) =>
 								onChange({ due_before: event.target.value || undefined })
 							}
