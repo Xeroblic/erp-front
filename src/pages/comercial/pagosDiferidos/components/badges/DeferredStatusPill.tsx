@@ -14,7 +14,7 @@ interface DeferredStatusPillProps {
 
 const DeferredStatusPill: React.FC<DeferredStatusPillProps> = ({ status }) => (
 	<span
-		className={`inline-flex w-28 items-center justify-center rounded-full px-3 py-1.5 text-center text-sm font-semibold shadow-sm ${colorClasses[status]}`}>
+		className={`inline-flex min-w-32 max-w-44 items-center justify-center whitespace-normal rounded-full px-3 py-1.5 text-center text-sm font-semibold shadow-sm ${colorClasses[status]}`}>
 		{DEFERRED_PAYMENT_STATUS_LABELS[status]}
 	</span>
 );

@@ -1,5 +1,5 @@
+import React, { type FC } from 'react';
 import { Table as TTableProps } from '@tanstack/react-table';
-import { FC } from 'react';
 import Input from '@/components/form/Input';
 import Select from '@/components/form/Select';
 import Button from '@/components/ui/Button';
@@ -9,13 +9,18 @@ import { ITableProps } from '@/components/ui/Table';
 interface ITableCardFooterTemplateProps extends Partial<ITableProps> {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	table: TTableProps<any>;
+	isDisabled?: boolean;
 }
 
-export const TableCardFooterTemplateV2: FC<ITableCardFooterTemplateProps> = ({ table }) => {
+export const TableCardFooterTemplateV2: FC<ITableCardFooterTemplateProps> = ({
+	table,
+	isDisabled = false,
+}) => {
 	return (
 		<CardFooter>
 			<CardFooterChild>
 				<Select
+					disabled={isDisabled}
 					value={table.getState().pagination.pageSize}
 					onChange={(e) => {
 						table.setPageSize(Number(e.target.value));
@@ -32,20 +37,21 @@ export const TableCardFooterTemplateV2: FC<ITableCardFooterTemplateProps> = ({ t
 			<CardFooterChild>
 				<Button
 					onClick={() => table.setPageIndex(0)}
-					isDisable={!table.getCanPreviousPage()}
+					isDisable={isDisabled || !table.getCanPreviousPage()}
 					icon='HeroChevronDoubleLeft'
 					className='!px-0'
 				/>
 				<Button
 					onClick={() => table.previousPage()}
-					isDisable={!table.getCanPreviousPage()}
+					isDisable={isDisabled || !table.getCanPreviousPage()}
 					icon='HeroChevronLeft'
 					className='!px-0'
 				/>
 				<span className='flex items-center gap-1'>
-					<div>Pagina</div>
+					<div>Página</div>
 					<strong>
 						<Input
+							disabled={isDisabled}
 							value={table.getState().pagination.pageIndex + 1}
 							onChange={(e) => {
 								const page = e.target.value ? Number(e.target.value) - 1 : 0;
@@ -59,13 +65,13 @@ export const TableCardFooterTemplateV2: FC<ITableCardFooterTemplateProps> = ({ t
 				</span>
 				<Button
 					onClick={() => table.nextPage()}
-					isDisable={!table.getCanNextPage()}
+					isDisable={isDisabled || !table.getCanNextPage()}
 					icon='HeroChevronRight'
 					className='!px-0'
 				/>
 				<Button
 					onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-					isDisable={!table.getCanNextPage()}
+					isDisable={isDisabled || !table.getCanNextPage()}
 					icon='HeroChevronDoubleRight'
 					className='!px-0'
 				/>

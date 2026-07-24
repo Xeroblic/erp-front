@@ -27,12 +27,14 @@ interface DeferredPaymentsTableProps {
 interface DeferredPaymentsPaginationProps {
 	rows: IDeferredPaymentListItem[];
 	meta: DeferredPaymentsPaginationMeta;
+	loading: boolean;
 	onChange: (page: number, perPage: number) => void;
 }
 
 const DeferredPaymentsPagination: React.FC<DeferredPaymentsPaginationProps> = ({
 	rows,
 	meta,
+	loading,
 	onChange,
 }) => {
 	const pagination: PaginationState = {
@@ -52,7 +54,7 @@ const DeferredPaymentsPagination: React.FC<DeferredPaymentsPaginationProps> = ({
 		},
 	});
 
-	return <TableCardFooterTemplateV2 table={table} />;
+	return <TableCardFooterTemplateV2 table={table} isDisabled={loading} />;
 };
 
 const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
@@ -113,7 +115,6 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 						rows.map((row) => (
 							<Tr
 								key={row.id}
-								role='button'
 								tabIndex={0}
 								aria-label={`Abrir detalle del documento ${row.document_number}`}
 								onClick={() => onRowClick(row.id)}
@@ -162,8 +163,13 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 				</TBody>
 			</Table>
 		</CardBody>
-		{meta && !loading && rows.length > 0 && (
-			<DeferredPaymentsPagination rows={rows} meta={meta} onChange={onPaginationChange} />
+		{meta && (
+			<DeferredPaymentsPagination
+				rows={rows}
+				meta={meta}
+				loading={loading}
+				onChange={onPaginationChange}
+			/>
 		)}
 	</Card>
 );

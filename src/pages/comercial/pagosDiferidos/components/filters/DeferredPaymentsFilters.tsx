@@ -13,6 +13,12 @@ import type {
 
 const dueDateMaxYear = new Date().getFullYear() + 10;
 const dueDateMax = new Date(dueDateMaxYear, 11, 31);
+const deferredPaymentStatusFilters: readonly DeferredPaymentStatusFilter[] = [
+	'pending',
+	'partially_paid',
+	'paid',
+	'overdue',
+];
 
 const statusOptions: TSelectOption[] = [
 	{ value: 'pending', label: 'Pendiente' },
@@ -20,6 +26,14 @@ const statusOptions: TSelectOption[] = [
 	{ value: 'paid', label: 'Pagado' },
 	{ value: 'overdue', label: 'Vencido' },
 ];
+
+const isMultiValue = (
+	value: SingleValue<TSelectOption> | MultiValue<TSelectOption>,
+): value is MultiValue<TSelectOption> => Array.isArray(value);
+
+const isDeferredPaymentStatusFilter = (value: unknown): value is DeferredPaymentStatusFilter =>
+	typeof value === 'string' &&
+	deferredPaymentStatusFilters.includes(value as DeferredPaymentStatusFilter);
 
 interface DeferredPaymentsFiltersProps {
 	filters: DeferredPaymentsFilters;
@@ -39,11 +53,15 @@ const DeferredPaymentsFiltersBar: React.FC<DeferredPaymentsFiltersProps> = ({
 	onReset,
 }) => {
 	const selectedStatus = statusOptions.find((option) => option.value === filters.status) ?? null;
-	const handleStatusChange = (
-		value: SingleValue<TSelectOption> | MultiValue<TSelectOption> | null,
-	) => {
-		const selected = Array.isArray(value) ? value[0] : value;
-		onChange({ status: selected?.value as DeferredPaymentStatusFilter | undefined });
+	const hasInvalidDateRange = Boolean(
+		filters.due_after && filters.due_before && filters.due_after > filters.due_before,
+	);
+	const handleStatusChange = (value: SingleValue<TSelectOption> | MultiValue<TSelectOption>) => {
+		const selected = isMultiValue(value) ? value[0] : value;
+		const nextStatus = selected?.value;
+		onChange({
+			status: isDeferredPaymentStatusFilter(nextStatus) ? nextStatus : undefined,
+		});
 	};
 
 	return (
@@ -118,6 +136,12 @@ const DeferredPaymentsFiltersBar: React.FC<DeferredPaymentsFiltersProps> = ({
 							}
 						/>
 					</div>
+					{hasInvalidDateRange && (
+						<p className='text-sm font-medium text-red-600 md:col-span-2 xl:col-span-5'>
+							“Vence desde” no puede ser posterior a “Vence hasta”. Ajusta el rango
+							para consultar documentos.
+						</p>
+					)}
 				</div>
 			</CardBody>
 		</Card>

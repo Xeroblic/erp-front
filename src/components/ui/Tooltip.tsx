@@ -17,13 +17,6 @@ import { TBorderWidth } from '../../types/borderWidth.type';
 import { TRounded } from '../../types/rounded.type';
 import themeConfig from '../../config/theme.config';
 
-const getComponentName = (child: ReactNode): string => {
-	/* eslint-disable */
-	// @ts-ignore
-	return child?.props['data-component-name'] || child?.type?.displayName || child?.type;
-	/* eslint-enable */
-};
-
 interface ITooltipProps extends HTMLAttributes<HTMLDivElement> {
 	children?: ReactNode;
 	className?: string;
@@ -66,6 +59,8 @@ const Tooltip: FC<ITooltipProps> = (props) => {
 	const REFERENCE_PROPS = {
 		onMouseEnter: () => setIsOpen(true),
 		onMouseLeave: () => setIsOpen(false),
+		onFocus: () => setIsOpen(true),
+		onBlur: () => setIsOpen(false),
 	};
 
 	return (

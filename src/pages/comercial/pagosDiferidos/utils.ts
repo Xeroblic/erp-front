@@ -2,8 +2,7 @@ import type {
 	DeferredPaymentDocumentType,
 	DeferredPaymentStatus,
 } from '@/interface/deferredPayments.interface';
-import { formatDate } from '@/utils/format.utils';
-import { formatCLP } from '@/pages/comercial/ventas/utils';
+import { formatCLP, formatDate } from '@/utils/format.utils';
 
 export const DEFERRED_PAYMENT_STATUS_LABELS: Record<DeferredPaymentStatus, string> = {
 	pending: 'Pendiente',
