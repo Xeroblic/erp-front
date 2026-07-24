@@ -222,9 +222,20 @@ export const useReviewPhotos = ({
 			document.body.appendChild(link);
 			link.click();
 			link.remove();
-			URL.revokeObjectURL(url);
-		} catch (err) {
-			toast.error(getErrorMessage(err, 'No se pudieron descargar las fotos'));
+			setTimeout(() => URL.revokeObjectURL(url), 100);
+		} catch (err: unknown) {
+			let message = 'No se pudieron descargar las fotos';
+			const axiosErr = err as { response?: { data?: unknown }; message?: string };
+			if (axiosErr.response?.data instanceof Blob) {
+				try {
+					const text = await axiosErr.response.data.text();
+					const parsed: { message?: string } = JSON.parse(text);
+					if (parsed?.message) message = parsed.message;
+				} catch {
+					/* cae al fallback en español */
+				}
+			}
+			toast.error(message);
 		} finally {
 			if (mountedRef.current) setDownloading(false);
 		}

@@ -128,18 +128,14 @@ function GallerySection<T extends FieldValues>({ readOnly }: FormSectionProps<T>
 				</p>
 				<div className='flex items-center gap-2'>
 					{photos.length > 0 && (
-						<button
-							type='button'
-							onClick={() => void download()}
-							disabled={downloading}
-							title='Descargar todas las fotos en un ZIP'
-							className='flex items-center gap-1.5 rounded-lg border border-blue-200 px-2.5 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-50 disabled:opacity-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-900/20'>
-							<Icon
-								icon={downloading ? 'HeroArrowPath' : 'HeroArrowDownTray'}
-								className={`h-4 w-4 ${downloading ? 'animate-spin' : ''}`}
-							/>
+						<Button
+							variant='outline'
+							color='blue'
+							icon={downloading ? 'HeroArrowPath' : 'HeroArrowDownTray'}
+							isLoading={downloading}
+							onClick={() => void download()}>
 							Descargar fotos
-						</button>
+						</Button>
 					)}
 					<button
 						type='button'
