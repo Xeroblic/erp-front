@@ -1,14 +1,24 @@
-import React, { type FC } from 'react';
-import { Table as TTableProps } from '@tanstack/react-table';
+import type { FC } from 'react';
+import type { PaginationState, Updater } from '@tanstack/react-table';
 import Input from '@/components/form/Input';
 import Select from '@/components/form/Select';
 import Button from '@/components/ui/Button';
 import { CardFooter, CardFooterChild } from '@/components/ui/Card';
 import { ITableProps } from '@/components/ui/Table';
 
+export interface TablePaginationController {
+	getState: () => { pagination: PaginationState };
+	setPageSize: (updater: Updater<number>) => void;
+	setPageIndex: (updater: Updater<number>) => void;
+	getCanPreviousPage: () => boolean;
+	previousPage: () => void;
+	getPageCount: () => number;
+	getCanNextPage: () => boolean;
+	nextPage: () => void;
+}
+
 interface ITableCardFooterTemplateProps extends Partial<ITableProps> {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	table: TTableProps<any>;
+	table: TablePaginationController;
 	isDisabled?: boolean;
 }
 

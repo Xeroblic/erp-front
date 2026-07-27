@@ -7,7 +7,7 @@ interface DaysUntilDueBadgeProps {
 }
 
 const DaysUntilDueBadge: React.FC<DaysUntilDueBadgeProps> = ({ daysUntilDue, isOverdue }) => {
-	if (daysUntilDue === null) return null;
+	if (daysUntilDue === null) return <span aria-label='No aplica'>&mdash;</span>;
 	const isDueSoon = !isOverdue && daysUntilDue >= 0 && daysUntilDue <= 7;
 	let colorClass = 'bg-blue-600 text-white';
 	if (isOverdue) colorClass = 'bg-red-600 text-white';

@@ -1,13 +1,10 @@
 import React from 'react';
-import {
-	getCoreRowModel,
-	type ColumnDef,
-	type PaginationState,
-	useReactTable,
-} from '@tanstack/react-table';
+import type { PaginationState } from '@tanstack/react-table';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Table, { TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
-import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
+import TableCardFooterTemplateV2, {
+	type TablePaginationController,
+} from '@/templates/Table/TableFooterTemplateV2';
 import type {
 	DeferredPaymentsPaginationMeta,
 	IDeferredPaymentListItem,
@@ -30,17 +27,13 @@ interface DeferredPaymentsTableProps {
 	onRowClick: (id: number) => void;
 }
 
-const deferredPaymentsPaginationColumns: ColumnDef<IDeferredPaymentListItem>[] = [];
-
 interface DeferredPaymentsPaginationProps {
-	rows: IDeferredPaymentListItem[];
 	meta: DeferredPaymentsPaginationMeta;
 	loading: boolean;
 	onChange: (page: number, perPage: number) => void;
 }
 
 const DeferredPaymentsPagination: React.FC<DeferredPaymentsPaginationProps> = ({
-	rows,
 	meta,
 	loading,
 	onChange,
@@ -49,18 +42,23 @@ const DeferredPaymentsPagination: React.FC<DeferredPaymentsPaginationProps> = ({
 		pageIndex: meta.current_page - 1,
 		pageSize: meta.per_page,
 	};
-	const table = useReactTable({
-		data: rows,
-		columns: deferredPaymentsPaginationColumns,
-		getCoreRowModel: getCoreRowModel(),
-		manualPagination: true,
-		pageCount: meta.last_page,
-		state: { pagination },
-		onPaginationChange: (updater) => {
-			const next = typeof updater === 'function' ? updater(pagination) : updater;
-			onChange(next.pageIndex + 1, next.pageSize);
+	const table: TablePaginationController = {
+		getState: () => ({ pagination }),
+		setPageSize: (updater) => {
+			const pageSize = typeof updater === 'function' ? updater(pagination.pageSize) : updater;
+			onChange(1, pageSize);
 		},
-	});
+		setPageIndex: (updater) => {
+			const pageIndex =
+				typeof updater === 'function' ? updater(pagination.pageIndex) : updater;
+			onChange(pageIndex + 1, pagination.pageSize);
+		},
+		getCanPreviousPage: () => pagination.pageIndex > 0,
+		previousPage: () => onChange(Math.max(1, meta.current_page - 1), pagination.pageSize),
+		getPageCount: () => meta.last_page,
+		getCanNextPage: () => meta.current_page < meta.last_page,
+		nextPage: () => onChange(meta.current_page + 1, pagination.pageSize),
+	};
 
 	return <TableCardFooterTemplateV2 table={table} isDisabled={loading} />;
 };
@@ -142,6 +140,7 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 						rows.map((row) => (
 							<Tr
 								key={row.id}
+								role='button'
 								tabIndex={0}
 								aria-label={`Abrir detalle del documento ${row.document_number}`}
 								onClick={() => onRowClick(row.id)}
@@ -192,7 +191,6 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 		</CardBody>
 		{meta && (
 			<DeferredPaymentsPagination
-				rows={rows}
 				meta={meta}
 				loading={loading}
 				onChange={onPaginationChange}

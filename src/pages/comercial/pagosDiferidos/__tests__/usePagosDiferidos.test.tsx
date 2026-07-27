@@ -7,6 +7,7 @@ import deferredPaymentsReducer from '@/store/slices/deferredPayments/deferredPay
 import usePagosDiferidos from '../hooks/usePagosDiferidos';
 
 const fetchListSpy = vi.hoisted(() => vi.fn());
+const fetchSummarySpy = vi.hoisted(() => vi.fn());
 const branchContext = vi.hoisted(() => ({ subsidiaryId: null as number | null }));
 
 vi.mock('@/store/slices/deferredPayments/deferredPaymentsMock', async (importOriginal) => {
@@ -21,6 +22,12 @@ vi.mock('@/store/slices/deferredPayments/deferredPaymentsMock', async (importOri
 		) => {
 			fetchListSpy(...args);
 			return actual.mockFetchDeferredPayments(...args);
+		},
+		mockFetchDeferredPaymentsSummary: (
+			...args: Parameters<typeof actual.mockFetchDeferredPaymentsSummary>
+		) => {
+			fetchSummarySpy(...args);
+			return actual.mockFetchDeferredPaymentsSummary(...args);
 		},
 	};
 });
@@ -182,6 +189,32 @@ describe('usePagosDiferidos', () => {
 		expect(fetchListSpy.mock.calls[0]?.[0]).toMatchObject({ page: 1, per_page: 2 });
 		expect(store.getState().deferredPayments.filters.page).toBe(1);
 	});
+	it('alinea resumen y lista durante el debounce al cambiar de subsidiaria', async () => {
+		vi.useFakeTimers();
+		const { hook } = createHook();
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(300);
+		});
+		fetchListSpy.mockClear();
+		fetchSummarySpy.mockClear();
+
+		act(() => hook.result.current.filters.setSearch('andina'));
+		branchContext.subsidiaryId = 2;
+		hook.rerender();
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(299);
+		});
+
+		expect(fetchListSpy).not.toHaveBeenCalled();
+		expect(fetchSummarySpy).not.toHaveBeenCalled();
+
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(1);
+		});
+		expect(fetchListSpy).toHaveBeenCalledOnce();
+		expect(fetchSummarySpy).toHaveBeenCalledOnce();
+	});
+
 	it('no deja un error falso al desmontar y abortar las solicitudes', async () => {
 		vi.useFakeTimers();
 		const { store, hook } = createHook();

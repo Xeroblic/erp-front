@@ -60,12 +60,12 @@ const usePagosDiferidos = () => {
 	);
 
 	useEffect(() => {
-		if (effectiveSubsidiaryId === null) return undefined;
+		if (effectiveSubsidiaryId === null || isSearchDebouncing) return undefined;
 		const request = dispatch(
 			fetchDeferredPaymentsSummary({ subsidiaryId: effectiveSubsidiaryId }),
 		);
 		return () => request.abort();
-	}, [dispatch, effectiveSubsidiaryId]);
+	}, [dispatch, effectiveSubsidiaryId, isSearchDebouncing]);
 
 	useEffect(() => {
 		if (effectiveSubsidiaryId === null || hasInvalidDateRange || isSearchDebouncing)
@@ -108,9 +108,9 @@ const usePagosDiferidos = () => {
 	const openDetail = useCallback((id: number) => setSelectedId(id), []);
 	const closeDetail = useCallback(() => setSelectedId(null), []);
 	const retrySummary = useCallback(() => {
-		if (effectiveSubsidiaryId === null) return undefined;
+		if (effectiveSubsidiaryId === null || isSearchDebouncing) return undefined;
 		return dispatch(fetchDeferredPaymentsSummary({ subsidiaryId: effectiveSubsidiaryId }));
-	}, [dispatch, effectiveSubsidiaryId]);
+	}, [dispatch, effectiveSubsidiaryId, isSearchDebouncing]);
 	const retryList = useCallback(() => {
 		if (effectiveSubsidiaryId === null || hasInvalidDateRange || isSearchDebouncing)
 			return undefined;

@@ -24,6 +24,7 @@ const statusOptions: TSelectOption[] = [
 	{ value: 'pending', label: 'Pendiente' },
 	{ value: 'partially_paid', label: 'Parcial' },
 	{ value: 'paid', label: 'Pagado' },
+	// TODO(BACKEND-ZF-5): enviar `is_overdue` cuando el FormRequest separe vencimiento de `status`.
 	{ value: 'overdue', label: 'Vencido' },
 ];
 
