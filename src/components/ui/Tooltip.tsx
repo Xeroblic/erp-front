@@ -1,7 +1,9 @@
 import React, {
 	cloneElement,
 	FC,
+	FocusEventHandler,
 	HTMLAttributes,
+	MouseEventHandler,
 	ReactElement,
 	ReactNode,
 	useCallback,
@@ -25,6 +27,15 @@ interface ITooltipProps extends HTMLAttributes<HTMLDivElement> {
 	borderWidth?: TBorderWidth;
 	rounded?: TRounded;
 }
+
+interface TooltipReferenceProps {
+	className?: string;
+	onMouseEnter?: MouseEventHandler<HTMLElement>;
+	onMouseLeave?: MouseEventHandler<HTMLElement>;
+	onFocus?: FocusEventHandler<HTMLElement>;
+	onBlur?: FocusEventHandler<HTMLElement>;
+}
+
 const Tooltip: FC<ITooltipProps> = (props) => {
 	const {
 		children,
@@ -35,9 +46,7 @@ const Tooltip: FC<ITooltipProps> = (props) => {
 		rounded = themeConfig.rounded,
 		...rest
 	} = props;
-
-	const [isOpen, setIsOpen] = useState<boolean>(false);
-
+	const [isOpen, setIsOpen] = useState(false);
 	const referenceRef = useRef<HTMLElement | null>(null);
 	const setReferenceRef = useCallback(
 		(node: HTMLElement, ref: (node: HTMLElement) => HTMLElement) => {
@@ -46,7 +55,6 @@ const Tooltip: FC<ITooltipProps> = (props) => {
 		},
 		[],
 	);
-
 	const popperRef = useRef<HTMLElement | null>(null);
 	const setPopperRef = useCallback(
 		(node: HTMLElement, ref: (node: HTMLElement) => HTMLElement) => {
@@ -56,49 +64,60 @@ const Tooltip: FC<ITooltipProps> = (props) => {
 		[],
 	);
 
-	const REFERENCE_PROPS = {
-		onMouseEnter: () => setIsOpen(true),
-		onMouseLeave: () => setIsOpen(false),
-		onFocus: () => setIsOpen(true),
-		onBlur: () => setIsOpen(false),
-	};
-
 	return (
 		<Manager>
 			<Reference>
-				{({ ref }) =>
-					['string', 'undefined'].includes(typeof children) ? (
-						<span
-							data-component-name='Tooltip/Reference'
-							// @ts-ignore
-							ref={(node) => setReferenceRef(node, ref)}
-							className='cursor-pointer'
-							{...REFERENCE_PROPS}>
-							{children || (
-								<Icon
-									icon='HeroInformationCircle'
-									className={classNames('inline-flex', className)}
-								/>
-							)}
-						</span>
-					) : (
-						cloneElement(children as ReactElement, {
-							// @ts-ignore
-							ref: (node: HTMLElement) => setReferenceRef(node, ref),
-							// @ts-ignore
-							// eslint-disable-next-line @typescript-eslint/no-unsafe-argument,@typescript-eslint/no-unsafe-member-access
-							className: classNames('cursor-pointer', children.props.className),
-							...REFERENCE_PROPS,
-						})
-					)
-				}
+				{({ ref }) => {
+					if (['string', 'undefined'].includes(typeof children)) {
+						return (
+							<span
+								data-component-name='Tooltip/Reference'
+								// @ts-ignore
+								ref={(node) => setReferenceRef(node, ref)}
+								className='cursor-pointer'
+								tabIndex={0}
+								onMouseEnter={() => setIsOpen(true)}
+								onMouseLeave={() => setIsOpen(false)}
+								onFocus={() => setIsOpen(true)}
+								onBlur={() => setIsOpen(false)}>
+								{children || (
+									<Icon
+										icon='HeroInformationCircle'
+										className={classNames('inline-flex', className)}
+									/>
+								)}
+							</span>
+						);
+					}
+					const child = children as ReactElement<TooltipReferenceProps>;
+					return cloneElement(child, {
+						// @ts-ignore
+						ref: (node: HTMLElement) => setReferenceRef(node, ref),
+						className: classNames('cursor-pointer', child.props.className),
+						onMouseEnter: (event) => {
+							child.props.onMouseEnter?.(event);
+							setIsOpen(true);
+						},
+						onMouseLeave: (event) => {
+							child.props.onMouseLeave?.(event);
+							setIsOpen(false);
+						},
+						onFocus: (event) => {
+							child.props.onFocus?.(event);
+							setIsOpen(true);
+						},
+						onBlur: (event) => {
+							child.props.onBlur?.(event);
+							setIsOpen(false);
+						},
+					});
+				}}
 			</Reference>
 			{isOpen && text !== '' && (
 				<Portal>
 					<Popper placement={placement}>
 						{({ ref, style }) => (
 							<div
-								// data-component-name='Tooltip/Popper'
 								// @ts-ignore
 								ref={(node) => setPopperRef(node, ref)}
 								style={style}
