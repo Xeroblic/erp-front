@@ -3,12 +3,14 @@ import type {
 	DeferredPaymentsFilters,
 	DeferredPaymentsListResponse,
 	DeferredPaymentsPaginationMeta,
+	IDeferredPaymentDocument,
 	IDeferredPaymentListItem,
 	IDeferredPaymentsSummary,
 } from '@/interface/deferredPayments.interface';
 import ApiService from '@/services/ApiService';
 import USE_DEFERRED_PAYMENTS_MOCK from './deferredPaymentsConfig';
 import {
+	mockFetchDeferredPaymentById,
 	mockFetchDeferredPayments,
 	mockFetchDeferredPaymentsSummary,
 } from './deferredPaymentsMock';
@@ -23,30 +25,40 @@ export interface DeferredPaymentsState {
 	list: IDeferredPaymentListItem[];
 	meta: DeferredPaymentsPaginationMeta | null;
 	summary: IDeferredPaymentsSummary | null;
+	current: IDeferredPaymentDocument | null;
 	filters: DeferredPaymentsFilters;
 	loading: boolean;
 	loadingSummary: boolean;
+	loadingDetail: boolean;
 	error: string | null;
 	errorSummary: string | null;
+	errorDetail: string | null;
 	listRequestId: string | null;
 	listSubsidiaryId: number | null;
 	summaryRequestId: string | null;
 	summarySubsidiaryId: number | null;
+	detailRequestId: string | null;
+	detailSubsidiaryId: number | null;
 }
 
 const initialState: DeferredPaymentsState = {
 	list: [],
 	meta: null,
 	summary: null,
+	current: null,
 	filters: DEFAULT_DEFERRED_PAYMENTS_FILTERS,
 	loading: false,
 	loadingSummary: false,
+	loadingDetail: false,
 	error: null,
 	errorSummary: null,
+	errorDetail: null,
 	listRequestId: null,
 	listSubsidiaryId: null,
 	summaryRequestId: null,
 	summarySubsidiaryId: null,
+	detailRequestId: null,
+	detailSubsidiaryId: null,
 };
 
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
@@ -110,6 +122,31 @@ export const fetchDeferredPayments = createAsyncThunk<
 	}
 });
 
+export const fetchDeferredPaymentById = createAsyncThunk<
+	IDeferredPaymentDocument,
+	{ subsidiaryId: number; documentId: number },
+	{ rejectValue: string }
+>(
+	'deferredPayments/fetchDetail',
+	async ({ subsidiaryId, documentId }, { rejectWithValue, signal }) => {
+		try {
+			if (USE_DEFERRED_PAYMENTS_MOCK)
+				return await mockFetchDeferredPaymentById(documentId, signal);
+			const response = await ApiService.fetchData<IDeferredPaymentDocument>({
+				url: `${baseUrl(subsidiaryId)}/${documentId}`,
+				method: 'get',
+				cacheTTLms: 15_000,
+				signal,
+			});
+			return response.data;
+		} catch (error) {
+			if (signal.aborted) throw error;
+			return rejectWithValue(
+				getErrorMessage(error, 'No se pudo cargar el detalle del pago diferido'),
+			);
+		}
+	},
+);
 const deferredPaymentsSlice = createSlice({
 	name: 'deferredPayments',
 	initialState,
@@ -122,6 +159,13 @@ const deferredPaymentsSlice = createSlice({
 		},
 		resetDeferredPaymentsFilters: (state) => {
 			state.filters = { ...DEFAULT_DEFERRED_PAYMENTS_FILTERS };
+		},
+		clearDeferredPaymentDetail: (state) => {
+			state.current = null;
+			state.errorDetail = null;
+			state.detailRequestId = null;
+			state.detailSubsidiaryId = null;
+			state.loadingDetail = false;
 		},
 	},
 	extraReducers: (builder) => {
@@ -180,11 +224,36 @@ const deferredPaymentsSlice = createSlice({
 				state.summary = null;
 				state.errorSummary =
 					action.payload ?? 'No se pudo cargar el resumen de pagos diferidos';
+			})
+			.addCase(fetchDeferredPaymentById.pending, (state, action) => {
+				state.detailRequestId = action.meta.requestId;
+				state.detailSubsidiaryId = action.meta.arg.subsidiaryId;
+				state.loadingDetail = true;
+				state.errorDetail = null;
+				state.current = null;
+			})
+			.addCase(fetchDeferredPaymentById.fulfilled, (state, action) => {
+				if (state.detailRequestId !== action.meta.requestId) return;
+				state.detailRequestId = null;
+				state.loadingDetail = false;
+				state.current = action.payload;
+			})
+			.addCase(fetchDeferredPaymentById.rejected, (state, action) => {
+				if (state.detailRequestId !== action.meta.requestId) return;
+				state.detailRequestId = null;
+				state.loadingDetail = false;
+				if (action.meta.aborted) return;
+				state.current = null;
+				state.errorDetail =
+					action.payload ?? 'No se pudo cargar el detalle del pago diferido';
 			});
 	},
 });
 
-export const { setDeferredPaymentsFilters, resetDeferredPaymentsFilters } =
-	deferredPaymentsSlice.actions;
+export const {
+	setDeferredPaymentsFilters,
+	resetDeferredPaymentsFilters,
+	clearDeferredPaymentDetail,
+} = deferredPaymentsSlice.actions;
 
 export default deferredPaymentsSlice.reducer;
