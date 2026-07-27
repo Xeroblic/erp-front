@@ -53,7 +53,7 @@ describe('Tooltip', () => {
 		const trigger = document.querySelector<HTMLElement>(
 			"[data-component-name='Tooltip/Reference']",
 		);
-		expect(trigger).toHaveAttribute('tabindex', '0');
+		expect(trigger?.tagName).toBe('BUTTON');
 		fireEvent.focus(trigger as HTMLElement);
 		expect(screen.getByText('Descripción del campo')).toBeInTheDocument();
 	});

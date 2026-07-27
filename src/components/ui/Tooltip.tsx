@@ -70,12 +70,12 @@ const Tooltip: FC<ITooltipProps> = (props) => {
 				{({ ref }) => {
 					if (['string', 'undefined'].includes(typeof children)) {
 						return (
-							<span
+							<button
 								data-component-name='Tooltip/Reference'
 								// @ts-ignore
 								ref={(node) => setReferenceRef(node, ref)}
-								className='cursor-pointer'
-								tabIndex={0}
+								type='button'
+								className='cursor-pointer border-0 bg-transparent p-0'
 								onMouseEnter={() => setIsOpen(true)}
 								onMouseLeave={() => setIsOpen(false)}
 								onFocus={() => setIsOpen(true)}
@@ -86,7 +86,7 @@ const Tooltip: FC<ITooltipProps> = (props) => {
 										className={classNames('inline-flex', className)}
 									/>
 								)}
-							</span>
+							</button>
 						);
 					}
 					const child = children as ReactElement<TooltipReferenceProps>;

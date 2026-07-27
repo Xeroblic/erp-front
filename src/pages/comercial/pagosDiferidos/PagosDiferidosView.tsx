@@ -15,9 +15,10 @@ import usePagosDiferidos from './hooks/usePagosDiferidos';
 
 const PagosDiferidosView: React.FC = () => {
 	const { data, state, filters, selection, actions, branch } = usePagosDiferidos();
+	const setDeferredPaymentsFilter = filters.setFilter;
 	const handlePaginationChange = useCallback(
-		(page: number, perPage: number) => filters.setFilter({ page, per_page: perPage }),
-		[filters.setFilter],
+		(page: number, perPage: number) => setDeferredPaymentsFilter({ page, per_page: perPage }),
+		[setDeferredPaymentsFilter],
 	);
 
 	return (
