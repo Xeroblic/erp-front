@@ -41,7 +41,7 @@ export interface IDeferredPaymentAssignee {
 	id: number;
 	name: string;
 	email: string;
-	avatar_url: string | null;
+	avatar_url?: string | null;
 }
 
 export interface IDeferredPaymentItem {
@@ -62,7 +62,7 @@ export interface IDeferredPaymentAttachment {
 	url: string;
 }
 
-export interface IDeferredPaymentRecord {
+export interface IDeferredPaymentAbono {
 	id: number;
 	amount: string;
 	paid_at: string;
@@ -76,7 +76,7 @@ export interface IDeferredPaymentDocument extends IDeferredPaymentListItem {
 	notes: string | null;
 	assignees: IDeferredPaymentAssignee[];
 	items: IDeferredPaymentItem[];
-	payments: IDeferredPaymentRecord[];
+	payments: IDeferredPaymentAbono[];
 	attachments: IDeferredPaymentAttachment[];
 }
 

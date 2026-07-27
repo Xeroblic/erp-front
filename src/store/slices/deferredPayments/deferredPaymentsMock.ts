@@ -52,6 +52,11 @@ export const DEFERRED_PAYMENTS_MOCK: IDeferredPaymentListItem[] = [
 const createDetail = (row: IDeferredPaymentListItem, index: number): IDeferredPaymentDocument => {
 	const paidAmount = Number(row.total_amount) - Number(row.outstanding_amount);
 	const hasPayments = paidAmount > 0;
+	const firstPaymentAmount = paidAmount * 0.6;
+	let paymentAmounts: number[] = [];
+	if (hasPayments) paymentAmounts = [paidAmount];
+	if (hasPayments && row.id === 2)
+		paymentAmounts = [firstPaymentAmount, paidAmount - firstPaymentAmount];
 	const firstItemAmount = Number(row.total_amount) * 0.6;
 	const secondItemAmount = Number(row.total_amount) - firstItemAmount;
 	return {
@@ -89,26 +94,22 @@ const createDetail = (row: IDeferredPaymentListItem, index: number): IDeferredPa
 				serials: [],
 			},
 		],
-		payments: hasPayments
-			? [
-					{
-						id: row.id * 100 + 1,
-						amount: paidAmount.toFixed(2),
-						paid_at: toIsoDate(-Math.max(1, Math.abs(row.days_until_due ?? 1))),
-						method: 'transfer',
-						notes: 'Abono registrado por transferencia bancaria.',
-						attachments: [
-							{
-								id: row.id * 1000 + 1,
-								file_name: `comprobante-${row.document_number}.pdf`,
-								mime_type: 'application/pdf',
-								size: 148_320,
-								url: `/mock/pagos-diferidos/${row.id}/comprobante.pdf`,
-							},
-						],
-					},
-				]
-			: [],
+		payments: paymentAmounts.map((amount, paymentIndex) => ({
+			id: row.id * 100 + paymentIndex + 1,
+			amount: amount.toFixed(2),
+			paid_at: toIsoDate(-Math.max(1, Math.abs(row.days_until_due ?? 1) + paymentIndex)),
+			method: 'transfer',
+			notes: `Abono ${paymentIndex + 1} registrado por transferencia bancaria.`,
+			attachments: [
+				{
+					id: row.id * 1000 + paymentIndex + 1,
+					file_name: `comprobante-${row.document_number}-${paymentIndex + 1}.pdf`,
+					mime_type: 'application/pdf',
+					size: 148_320 + paymentIndex * 1_024,
+					url: `/mock/pagos-diferidos/${row.id}/comprobante-${paymentIndex + 1}.pdf`,
+				},
+			],
+		})),
 		attachments: [
 			{
 				id: row.id * 1000 + 2,
