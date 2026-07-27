@@ -1152,7 +1152,7 @@ export type QuickLinkConfig = {
 export const dashboardQuickLinksConfig: QuickLinkConfig[] = [
 	{
 		section: 'technical',
-		items: ['refactor', 'lotes', 'reviews'],
+		items: ['refactor', 'lotes', 'reviews']
 	},
 	{ section: 'catalogs' },
 	{
