@@ -1,0 +1,3 @@
+const USE_DEFERRED_PAYMENTS_MOCK = import.meta.env.VITE_DEFERRED_PAYMENTS_MOCK === 'true';
+
+export default USE_DEFERRED_PAYMENTS_MOCK;

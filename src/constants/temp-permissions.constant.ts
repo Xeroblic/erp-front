@@ -70,6 +70,11 @@ export const ERP_PERMISSIONS = {
 		MANAGE_DISCOUNTS: 'sales.manage_discounts',
 	},
 
+	DEFERRED_PAYMENTS: {
+		VIEW: 'view-deferred-payment',
+		CREATE: 'create-deferred-payment',
+	},
+
 	QUOTES: {
 		VIEW: 'view-quote',
 		CREATE: 'create-quote',

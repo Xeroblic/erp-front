@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
 import DataTable from '@/components/ui/DataTable';
 import { ISaleItem } from '@/interface/sales.interface';
-import { formatCLP } from '../../../utils';
+import { formatCLP } from '@/utils/format.utils';
 import { priceFormatWhitDecimals } from '@/utils/priceFormat.util';
 
 interface SaleItemsTableProps {

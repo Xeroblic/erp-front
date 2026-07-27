@@ -1,6 +1,7 @@
 // src/config/pages.config.ts
 
 import { id } from "date-fns/locale";
+import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 
 /* =================================================
    ZENTRIA ERP - CONFIGURACIÓN DE PÁGINAS
@@ -552,6 +553,24 @@ export const privatePages = {
 					'warehouse-manager',
 					'salesperson',
 					'after-sales',
+				],
+				requireAll: false,
+			},
+			pagosDiferidos: {
+				id: 'pagosDiferidos',
+				to: '/comercial/pagos-diferidos',
+				text: 'Pagos diferidos',
+				icon: 'HeroBanknotes',
+				authority: [ERP_PERMISSIONS.DEFERRED_PAYMENTS.VIEW],
+				roles: [
+					'super-admin',
+					'admin',
+					'company-admin',
+					'subsidiary-admin',
+					'branch-admin',
+					'company-supervisor',
+					'manager',
+					'salesperson',
 				],
 				requireAll: false,
 			},
@@ -1138,7 +1157,7 @@ export const dashboardQuickLinksConfig: QuickLinkConfig[] = [
 	{ section: 'catalogs' },
 	{
 		section: 'commercial',
-		items: ['sales', 'quotes', 'clientesVentas']
+		items: ['sales', 'quotes', 'clientesVentas', 'pagosDiferidos'],
 	},
 	// { section: 'inventory' },
 	// { section: 'manage' },

@@ -8,7 +8,7 @@ import Label from '@/components/form/Label';
 import Checkbox from '@/components/form/Checkbox';
 import { ImageZoom } from '@/components/ImageZoom';
 import { ensureAbsoluteUrl } from '@/components/helper/brand.helper';
-import { formatCLP } from '@/pages/comercial/ventas/utils';
+import { formatCLP } from '@/utils/format.utils';
 import type { IBrand } from '@/interface/brand.interface';
 import BrandLogo from './BrandLogo';
 

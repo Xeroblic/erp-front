@@ -4,7 +4,7 @@ import Icon from '@/components/icon/Icon';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import { IBrand } from '@/interface/brand.interface';
-import { formatCLP } from '@/pages/comercial/ventas/utils';
+import { formatCLP } from '@/utils/format.utils';
 import BrandLogo from '../BrandLogo';
 import RevealOnScroll from '../RevealOnScroll';
 
