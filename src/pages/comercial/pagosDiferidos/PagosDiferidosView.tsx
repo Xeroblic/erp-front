@@ -34,10 +34,11 @@ const PagosDiferidosView: React.FC = () => {
 						branchId={branch.branchId}
 						subsidiaryId={branch.subsidiaryId}
 						scope='access'
+						fallbackMode='disabled'
+						disabledTooltip='Disponible en ZF-7'
 						variant='solid'
 						icon='HeroPlus'
-						isDisable
-						title='Disponible en ZF-7'>
+						isDisable>
 						Nuevo documento
 					</ProtectedButton>
 				</SubheaderRight>
@@ -95,20 +96,25 @@ const PagosDiferidosView: React.FC = () => {
 							onChange={filters.setFilter}
 							onReset={filters.reset}
 						/>
-						{state.error && !filters.hasInvalidDateRange && (
-							<Alert
-								color='red'
-								variant='outline'
-								icon='HeroExclamationTriangle'
-								title='No pudimos cargar los pagos diferidos'>
-								<div className='flex flex-wrap items-center justify-between gap-3'>
-									<span>{state.error}</span>
-									<Button size='sm' variant='outline' onClick={actions.retryList}>
-										Reintentar
-									</Button>
-								</div>
-							</Alert>
-						)}
+						{state.error &&
+							!filters.hasInvalidDateRange &&
+							!filters.isSearchDebouncing && (
+								<Alert
+									color='red'
+									variant='outline'
+									icon='HeroExclamationTriangle'
+									title='No pudimos cargar los pagos diferidos'>
+									<div className='flex flex-wrap items-center justify-between gap-3'>
+										<span>{state.error}</span>
+										<Button
+											size='sm'
+											variant='outline'
+											onClick={actions.retryList}>
+											Reintentar
+										</Button>
+									</div>
+								</Alert>
+							)}
 						{!filters.hasInvalidDateRange && (
 							<DeferredPaymentsTable
 								rows={data.list}

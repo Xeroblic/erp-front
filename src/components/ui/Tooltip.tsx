@@ -75,11 +75,13 @@ const Tooltip: FC<ITooltipProps> = (props) => {
 								// @ts-ignore
 								ref={(node) => setReferenceRef(node, ref)}
 								type='button'
+								aria-label={`Más información: ${text}`}
 								className='cursor-pointer border-0 bg-transparent p-0'
 								onMouseEnter={() => setIsOpen(true)}
 								onMouseLeave={() => setIsOpen(false)}
 								onFocus={() => setIsOpen(true)}
-								onBlur={() => setIsOpen(false)}>
+								onBlur={() => setIsOpen(false)}
+								onClick={() => setIsOpen((current) => !current)}>
 								{children || (
 									<Icon
 										icon='HeroInformationCircle'

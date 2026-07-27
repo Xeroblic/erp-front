@@ -1,5 +1,10 @@
 import React from 'react';
-import { getCoreRowModel, type PaginationState, useReactTable } from '@tanstack/react-table';
+import {
+	getCoreRowModel,
+	type ColumnDef,
+	type PaginationState,
+	useReactTable,
+} from '@tanstack/react-table';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Table, { TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
@@ -25,6 +30,8 @@ interface DeferredPaymentsTableProps {
 	onRowClick: (id: number) => void;
 }
 
+const deferredPaymentsPaginationColumns: ColumnDef<IDeferredPaymentListItem>[] = [];
+
 interface DeferredPaymentsPaginationProps {
 	rows: IDeferredPaymentListItem[];
 	meta: DeferredPaymentsPaginationMeta;
@@ -44,7 +51,7 @@ const DeferredPaymentsPagination: React.FC<DeferredPaymentsPaginationProps> = ({
 	};
 	const table = useReactTable({
 		data: rows,
-		columns: [],
+		columns: deferredPaymentsPaginationColumns,
 		getCoreRowModel: getCoreRowModel(),
 		manualPagination: true,
 		pageCount: meta.last_page,
@@ -131,6 +138,7 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 						</Tr>
 					)}
 					{!loading &&
+						!hasError &&
 						rows.map((row) => (
 							<Tr
 								key={row.id}

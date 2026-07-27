@@ -42,6 +42,15 @@ const ProtectedButton = forwardRef<HTMLButtonElement, IProtectedButtonProps>((pr
 	}
 
 	const combinedPermission = permission ?? permissions;
+	const fallback =
+		fallbackMode === 'disabled' ? (
+			<Button
+				ref={ref}
+				{...buttonProps}
+				isDisable
+				title={disabledTooltip ?? buttonProps.title}
+			/>
+		) : null;
 
 	return (
 		<PermissionGuard
@@ -51,7 +60,8 @@ const ProtectedButton = forwardRef<HTMLButtonElement, IProtectedButtonProps>((pr
 			branchId={branchId}
 			subsidiaryId={subsidiaryId}
 			companyId={companyId}
-			scope={scope}>
+			scope={scope}
+			fallback={fallback}>
 			<Button ref={ref} {...buttonProps} />
 		</PermissionGuard>
 	);
