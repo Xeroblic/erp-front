@@ -115,6 +115,7 @@ describe('usePagosDiferidos', () => {
 			await vi.advanceTimersByTimeAsync(300);
 		});
 
+		expect(hook.result.current.filters.hasInvalidDateRange).toBe(true);
 		expect(store.getState().deferredPayments.meta).toEqual(previousMeta);
 		expect(store.getState().deferredPayments.loading).toBe(false);
 	});

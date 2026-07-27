@@ -103,17 +103,19 @@ const PagosDiferidosView: React.FC = () => {
 								</div>
 							</Alert>
 						)}
-						<DeferredPaymentsTable
-							rows={data.list}
-							meta={data.meta}
-							loading={state.loading}
-							hasError={Boolean(state.error)}
-							hasFilters={filters.hasFilters}
-							onPaginationChange={(page, perPage) =>
-								filters.setFilter({ page, per_page: perPage })
-							}
-							onRowClick={selection.openDetail}
-						/>
+						{!filters.hasInvalidDateRange && (
+							<DeferredPaymentsTable
+								rows={data.list}
+								meta={data.meta}
+								loading={state.loading}
+								hasError={Boolean(state.error)}
+								hasFilters={filters.hasFilters}
+								onPaginationChange={(page, perPage) =>
+									filters.setFilter({ page, per_page: perPage })
+								}
+								onRowClick={selection.openDetail}
+							/>
+						)}
 					</>
 				)}
 			</Container>
