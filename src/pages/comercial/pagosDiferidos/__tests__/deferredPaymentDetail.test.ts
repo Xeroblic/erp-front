@@ -32,7 +32,10 @@ describe('ZF-6 detalle de pago diferido', () => {
 			Number(detail.total_amount),
 		);
 		expect(detail.items.length).toBeGreaterThan(0);
-		expect(detail.payments.length).toBeGreaterThan(0);
+		expect(detail.payments.length).toBeGreaterThanOrEqual(2);
+		expect(detail.payments.reduce((total, payment) => total + Number(payment.amount), 0)).toBe(
+			Number(detail.paid_amount),
+		);
 		expect(detail.attachments.length).toBeGreaterThan(0);
 	});
 
@@ -84,6 +87,31 @@ describe('ZF-6 detalle de pago diferido', () => {
 		expect(currentFulfilled.loadingDetail).toBe(false);
 	});
 
+	it('conserva el mismo documento mientras se recarga', () => {
+		const args = { subsidiaryId: 1, documentId: 2 };
+		const initial = deferredPaymentsReducer(undefined, { type: 'init' });
+		const firstPending = deferredPaymentsReducer(
+			initial,
+			fetchDeferredPaymentById.pending('first-load', args),
+		);
+		const loaded = deferredPaymentsReducer(
+			firstPending,
+			fetchDeferredPaymentById.fulfilled(
+				DEFERRED_PAYMENT_DETAILS_MOCK[2],
+				'first-load',
+				args,
+			),
+		);
+		const reloading = deferredPaymentsReducer(
+			loaded,
+			fetchDeferredPaymentById.pending('reload-detail', args),
+		);
+
+		expect(reloading.current?.id).toBe(2);
+		expect(reloading.loadingDetail).toBe(true);
+		expect(reloading.errorDetail).toBeNull();
+	});
+
 	it('expone el error vigente y permite limpiar el detalle', () => {
 		const args = { subsidiaryId: 1, documentId: 9999 };
 		const initial = deferredPaymentsReducer(undefined, { type: 'init' });
@@ -106,6 +134,17 @@ describe('ZF-6 detalle de pago diferido', () => {
 		expect(rejected.errorDetail).toBe('Documento no encontrado');
 		expect(cleared.errorDetail).toBeNull();
 		expect(cleared.detailSubsidiaryId).toBeNull();
+	});
+
+	it('cancela realmente la espera del detalle mock', async () => {
+		vi.useFakeTimers();
+		const controller = new AbortController();
+		const abortExpectation = expect(
+			mockFetchDeferredPaymentById(1, controller.signal),
+		).rejects.toMatchObject({ name: 'AbortError' });
+
+		controller.abort();
+		await abortExpectation;
 	});
 
 	it('descarta el error de una solicitud de detalle abortada', () => {

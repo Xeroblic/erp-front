@@ -226,11 +226,14 @@ const deferredPaymentsSlice = createSlice({
 					action.payload ?? 'No se pudo cargar el resumen de pagos diferidos';
 			})
 			.addCase(fetchDeferredPaymentById.pending, (state, action) => {
+				const isSameDetail =
+					state.detailSubsidiaryId === action.meta.arg.subsidiaryId &&
+					state.current?.id === action.meta.arg.documentId;
 				state.detailRequestId = action.meta.requestId;
 				state.detailSubsidiaryId = action.meta.arg.subsidiaryId;
 				state.loadingDetail = true;
 				state.errorDetail = null;
-				state.current = null;
+				if (!isSameDetail) state.current = null;
 			})
 			.addCase(fetchDeferredPaymentById.fulfilled, (state, action) => {
 				if (state.detailRequestId !== action.meta.requestId) return;
