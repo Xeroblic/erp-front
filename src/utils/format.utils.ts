@@ -11,6 +11,7 @@ export const formatCLP = (amount: number | string): string => {
 	const roundedAmount = Math.round(numericAmount);
 	return `$ ${roundedAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
 };
+
 /**
  * Format currency values
  */

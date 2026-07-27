@@ -11,7 +11,8 @@ import salesReducer, {
 	selectSalesLoading,
 } from '@/store/slices/salesSlice';
 import type { SalesListFilters } from '@/services/salesService';
-import { formatCLP, translateStatus, pendingSerialToSaleItems } from './utils';
+import { formatCLP } from '@/utils/format.utils';
+import { translateStatus, pendingSerialToSaleItems } from './utils';
 // import ApiService from '@/services/ApiService';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';

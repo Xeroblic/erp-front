@@ -1,7 +1,6 @@
 import type {
 	DeferredPaymentsFilters,
 	DeferredPaymentsListResponse,
-	DeferredPaymentSort,
 	IDeferredPaymentListItem,
 	IDeferredPaymentsSummary,
 } from '@/interface/deferredPayments.interface';
@@ -89,15 +88,6 @@ const waitForMock = async (signal?: AbortSignal): Promise<void> =>
 		else signal?.addEventListener('abort', onAbort, { once: true });
 	});
 
-const sortRows = (
-	rows: IDeferredPaymentListItem[],
-	sort: DeferredPaymentSort,
-): IDeferredPaymentListItem[] => {
-	if (sort === 'due_date')
-		return [...rows].sort((left, right) => left.due_date.localeCompare(right.due_date));
-	return [...rows];
-};
-
 export const mockFetchDeferredPaymentsSummary = async (
 	signal?: AbortSignal,
 ): Promise<IDeferredPaymentsSummary> => {
@@ -128,7 +118,7 @@ export const mockFetchDeferredPayments = async (
 			matchesStatus && matchesCustomer && matchesSearch && matchesDueAfter && matchesDueBefore
 		);
 	});
-	const sorted = sortRows(filtered, filters.sort);
+	const sorted = [...filtered].sort((left, right) => left.due_date.localeCompare(right.due_date));
 	const start = (filters.page - 1) * filters.per_page;
 	return {
 		data: sorted.slice(start, start + filters.per_page),

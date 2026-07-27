@@ -1,8 +1,6 @@
 import type { ISaleItem } from '@/interface';
 import type { PendingSerialSale } from '@/services/salesService';
 
-export { formatCLP } from '@/utils/format.utils';
-
 export const translateStatus = (status?: string | null): string => {
 	const key = String(status || '').toLowerCase();
 	switch (key) {

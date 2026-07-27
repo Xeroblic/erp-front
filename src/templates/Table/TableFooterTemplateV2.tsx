@@ -48,7 +48,7 @@ export const TableCardFooterTemplateV2: FC<ITableCardFooterTemplateProps> = ({
 					className='!px-0'
 				/>
 				<span className='flex items-center gap-1'>
-					<div>Página</div>
+					<div>Pagina</div>
 					<strong>
 						<Input
 							disabled={isDisabled}

@@ -2,7 +2,7 @@
 
 interface ImportMetaEnv {
 	readonly VITE_API_URL: string;
-	readonly VITE_DEFERRED_PAYMENTS_MOCK?: 'true' | 'false';
+	readonly VITE_DEFERRED_PAYMENTS_MOCK: string | undefined;
 	// agrega más variables si es necesario
 }
 
