@@ -151,7 +151,41 @@ describe('ZF-5 Pagos diferidos', () => {
 		expect(summaryFailed.errorSummary).toBe('Error resumen');
 	});
 
-	it('ignora un rechazo abortado y limpia datos al iniciar otra carga', () => {
+	it('preserva la paginación al recargar y la limpia al cambiar de contexto o fallar', () => {
+		const initial = deferredPaymentsReducer(undefined, { type: 'init' });
+		const firstArgs = { subsidiaryId: 1 };
+		const firstPending = deferredPaymentsReducer(
+			initial,
+			fetchDeferredPayments.pending('first-request', firstArgs),
+		);
+		const payload = {
+			data: DEFERRED_PAYMENTS_MOCK.slice(0, 2),
+			meta: { current_page: 1, per_page: 2, total: 10, last_page: 5 },
+		};
+		const loaded = deferredPaymentsReducer(
+			firstPending,
+			fetchDeferredPayments.fulfilled(payload, 'first-request', firstArgs),
+		);
+		const reloadPending = deferredPaymentsReducer(
+			loaded,
+			fetchDeferredPayments.pending('reload-request', firstArgs),
+		);
+		const failed = deferredPaymentsReducer(
+			reloadPending,
+			fetchDeferredPayments.rejected(null, 'reload-request', firstArgs, 'Error de lista'),
+		);
+		const contextPending = deferredPaymentsReducer(
+			loaded,
+			fetchDeferredPayments.pending('context-request', { subsidiaryId: 2 }),
+		);
+
+		expect(reloadPending.meta).toEqual(payload.meta);
+		expect(failed.meta).toBeNull();
+		expect(failed.list).toEqual([]);
+		expect(contextPending.meta).toBeNull();
+		expect(contextPending.list).toEqual([]);
+	});
+	it('ignora un rechazo abortado', () => {
 		const initial = deferredPaymentsReducer(undefined, { type: 'init' });
 		const args = { subsidiaryId: 2 };
 		const pending = deferredPaymentsReducer(
