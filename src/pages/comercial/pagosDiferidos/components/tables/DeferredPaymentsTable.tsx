@@ -91,6 +91,19 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 					</Tr>
 				</THead>
 				<TBody>
+					{!loading && hasError && (
+						<Tr>
+							<Td colSpan={8} className='py-12 text-center'>
+								<p className='font-medium text-red-700 dark:text-red-300'>
+									No fue posible mostrar los documentos
+								</p>
+								<p className='mt-1 text-sm text-zinc-500'>
+									Revisa el mensaje de error e intenta cargar la información
+									nuevamente.
+								</p>
+							</Td>
+						</Tr>
+					)}
 					{loading &&
 						Array.from({ length: 5 }, (_, index) => (
 							<Tr key={`skeleton-${index}`}>
@@ -180,4 +193,4 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 	</Card>
 );
 
-export default DeferredPaymentsTable;
+export default React.memo(DeferredPaymentsTable);

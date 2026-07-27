@@ -104,4 +104,4 @@ const DeferredPaymentsKpis: React.FC<DeferredPaymentsKpisProps> = ({ summary, lo
 	);
 };
 
-export default DeferredPaymentsKpis;
+export default React.memo(DeferredPaymentsKpis);

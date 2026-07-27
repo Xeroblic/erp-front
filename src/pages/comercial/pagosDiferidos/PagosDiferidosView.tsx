@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import Container from '@/components/layouts/Container/Container';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
@@ -15,6 +15,10 @@ import usePagosDiferidos from './hooks/usePagosDiferidos';
 
 const PagosDiferidosView: React.FC = () => {
 	const { data, state, filters, selection, actions, branch } = usePagosDiferidos();
+	const handlePaginationChange = useCallback(
+		(page: number, perPage: number) => filters.setFilter({ page, per_page: perPage }),
+		[filters.setFilter],
+	);
 
 	return (
 		<PageWrapper isProtectedRoute title='Pagos diferidos'>
@@ -85,11 +89,12 @@ const PagosDiferidosView: React.FC = () => {
 						<DeferredPaymentsFilters
 							filters={filters.values}
 							search={filters.search}
+							hasInvalidDateRange={filters.hasInvalidDateRange}
 							onSearchChange={filters.setSearch}
 							onChange={filters.setFilter}
 							onReset={filters.reset}
 						/>
-						{state.error && (
+						{state.error && !filters.hasInvalidDateRange && (
 							<Alert
 								color='red'
 								variant='outline'
@@ -110,9 +115,7 @@ const PagosDiferidosView: React.FC = () => {
 								loading={state.loading}
 								hasError={Boolean(state.error)}
 								hasFilters={filters.hasFilters}
-								onPaginationChange={(page, perPage) =>
-									filters.setFilter({ page, per_page: perPage })
-								}
+								onPaginationChange={handlePaginationChange}
 								onRowClick={selection.openDetail}
 							/>
 						)}

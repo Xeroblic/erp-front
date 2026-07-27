@@ -31,6 +31,7 @@ export interface DeferredPaymentsState {
 	listRequestId: string | null;
 	listSubsidiaryId: number | null;
 	summaryRequestId: string | null;
+	summarySubsidiaryId: number | null;
 }
 
 const initialState: DeferredPaymentsState = {
@@ -45,6 +46,7 @@ const initialState: DeferredPaymentsState = {
 	listRequestId: null,
 	listSubsidiaryId: null,
 	summaryRequestId: null,
+	summarySubsidiaryId: null,
 };
 
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
@@ -154,10 +156,14 @@ const deferredPaymentsSlice = createSlice({
 				state.error = action.payload ?? 'No se pudieron cargar los pagos diferidos';
 			})
 			.addCase(fetchDeferredPaymentsSummary.pending, (state, action) => {
+				const isContextChange =
+					state.summarySubsidiaryId !== null &&
+					state.summarySubsidiaryId !== action.meta.arg.subsidiaryId;
 				state.summaryRequestId = action.meta.requestId;
+				state.summarySubsidiaryId = action.meta.arg.subsidiaryId;
 				state.loadingSummary = true;
 				state.errorSummary = null;
-				state.summary = null;
+				if (isContextChange) state.summary = null;
 			})
 			.addCase(fetchDeferredPaymentsSummary.fulfilled, (state, action) => {
 				if (state.summaryRequestId !== action.meta.requestId) return;
@@ -170,6 +176,7 @@ const deferredPaymentsSlice = createSlice({
 				state.summaryRequestId = null;
 				state.loadingSummary = false;
 				if (action.meta.aborted) return;
+				state.summary = null;
 				state.errorSummary =
 					action.payload ?? 'No se pudo cargar el resumen de pagos diferidos';
 			});

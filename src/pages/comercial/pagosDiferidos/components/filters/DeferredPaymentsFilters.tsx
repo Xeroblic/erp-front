@@ -38,6 +38,7 @@ const isDeferredPaymentStatusFilter = (value: unknown): value is DeferredPayment
 interface DeferredPaymentsFiltersProps {
 	filters: DeferredPaymentsFilters;
 	search: string;
+	hasInvalidDateRange: boolean;
 	onSearchChange: (value: string) => void;
 	onChange: (patch: Partial<DeferredPaymentsFilters>) => void;
 	onReset: () => void;
@@ -48,14 +49,12 @@ const fieldLabelClass = 'mb-1 block text-sm font-medium text-zinc-700 dark:text-
 const DeferredPaymentsFiltersBar: React.FC<DeferredPaymentsFiltersProps> = ({
 	filters,
 	search,
+	hasInvalidDateRange,
 	onSearchChange,
 	onChange,
 	onReset,
 }) => {
 	const selectedStatus = statusOptions.find((option) => option.value === filters.status) ?? null;
-	const hasInvalidDateRange = Boolean(
-		filters.due_after && filters.due_before && filters.due_after > filters.due_before,
-	);
 	const handleStatusChange = (value: SingleValue<TSelectOption> | MultiValue<TSelectOption>) => {
 		const selected = isMultiValue(value) ? value[0] : value;
 		const nextStatus = selected?.value;
