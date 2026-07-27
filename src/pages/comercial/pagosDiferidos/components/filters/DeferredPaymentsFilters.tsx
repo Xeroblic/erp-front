@@ -115,6 +115,8 @@ const DeferredPaymentsFiltersBar: React.FC<DeferredPaymentsFiltersProps> = ({
 							name='due_after'
 							value={filters.due_after ?? ''}
 							placeholder='dd-mm-aaaa'
+							maxYear={dueDateMaxYear}
+							maxDate={dueDateMax}
 							onChange={(event) =>
 								onChange({ due_after: event.target.value || undefined })
 							}

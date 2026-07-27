@@ -19,6 +19,7 @@ interface DeferredPaymentsTableProps {
 	rows: IDeferredPaymentListItem[];
 	meta: DeferredPaymentsPaginationMeta | null;
 	loading: boolean;
+	hasError: boolean;
 	hasFilters: boolean;
 	onPaginationChange: (page: number, perPage: number) => void;
 	onRowClick: (id: number) => void;
@@ -61,6 +62,7 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 	rows,
 	meta,
 	loading,
+	hasError,
 	hasFilters,
 	onPaginationChange,
 	onRowClick,
@@ -68,7 +70,11 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 	<Card>
 		<CardHeader>
 			<CardTitle className='text-lg'>Documentos por cobrar</CardTitle>
-			<span className='text-sm text-zinc-500'>{meta?.total ?? rows.length} documentos</span>
+			{!hasError && (
+				<span className='text-sm text-zinc-500'>
+					{meta?.total ?? rows.length} documentos
+				</span>
+			)}
 		</CardHeader>
 		<CardBody className='overflow-x-auto p-0'>
 			<Table className='min-w-[1150px]'>
@@ -95,7 +101,7 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 								))}
 							</Tr>
 						))}
-					{!loading && rows.length === 0 && (
+					{!loading && !hasError && rows.length === 0 && (
 						<Tr>
 							<Td colSpan={8} className='py-12 text-center'>
 								<p className='font-medium text-zinc-700 dark:text-zinc-200'>

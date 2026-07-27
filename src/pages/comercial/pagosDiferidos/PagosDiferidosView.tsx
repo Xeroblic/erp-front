@@ -11,7 +11,7 @@ import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 import DeferredPaymentsFilters from './components/filters/DeferredPaymentsFilters';
 import DeferredPaymentsKpis from './components/kpis/DeferredPaymentsKpis';
 import DeferredPaymentsTable from './components/tables/DeferredPaymentsTable';
-import { usePagosDiferidos } from './hooks/usePagosDiferidos';
+import usePagosDiferidos from './hooks/usePagosDiferidos';
 
 const PagosDiferidosView: React.FC = () => {
 	const { data, state, filters, selection, actions, branch } = usePagosDiferidos();
@@ -107,6 +107,7 @@ const PagosDiferidosView: React.FC = () => {
 							rows={data.list}
 							meta={data.meta}
 							loading={state.loading}
+							hasError={Boolean(state.error)}
 							hasFilters={filters.hasFilters}
 							onPaginationChange={(page, perPage) =>
 								filters.setFilter({ page, per_page: perPage })

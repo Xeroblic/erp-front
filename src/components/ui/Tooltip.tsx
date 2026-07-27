@@ -83,7 +83,6 @@ const Tooltip: FC<ITooltipProps> = (props) => {
 						</span>
 					) : (
 						cloneElement(children as ReactElement, {
-							// 'data-component-name': `${getComponentName(children)} is cloned with Tooltip`,
 							// @ts-ignore
 							ref: (node: HTMLElement) => setReferenceRef(node, ref),
 							// @ts-ignore

@@ -23,8 +23,8 @@ const DeferredPaymentsKpis: React.FC<DeferredPaymentsKpisProps> = ({ summary, lo
 		},
 		{
 			label: 'Vencido',
-			amount: summary?.overdue.amount ?? '0',
-			detail: `${summary?.overdue.count ?? 0} documentos`,
+			amount: summary?.overdue?.amount ?? '0',
+			detail: `${summary?.overdue?.count ?? 0} documentos`,
 			tooltip:
 				'Documentos cuya fecha de pago ya pas\u00F3 y todav\u00EDa no est\u00E1n saldados. Es dinero que deber\u00EDa haber llegado y no lleg\u00F3.',
 			icon: 'HeroExclamationTriangle' as const,
@@ -32,8 +32,8 @@ const DeferredPaymentsKpis: React.FC<DeferredPaymentsKpisProps> = ({ summary, lo
 		},
 		{
 			label: 'Por vencer en 7 d\u00EDas',
-			amount: summary?.due_within_7_days.amount ?? '0',
-			detail: `${summary?.due_within_7_days.count ?? 0} documentos`,
+			amount: summary?.due_within_7_days?.amount ?? '0',
+			detail: `${summary?.due_within_7_days?.count ?? 0} documentos`,
 			tooltip:
 				'Documentos que todav\u00EDa no vencen, pero vencen dentro de los pr\u00F3ximos 7 d\u00EDas. Es una alerta preventiva.',
 			icon: 'HeroClock' as const,
@@ -41,8 +41,8 @@ const DeferredPaymentsKpis: React.FC<DeferredPaymentsKpisProps> = ({ summary, lo
 		},
 		{
 			label: 'Pendiente',
-			amount: summary?.pending.amount ?? '0',
-			detail: `${summary?.pending.count ?? 0} documentos`,
+			amount: summary?.pending?.amount ?? '0',
+			detail: `${summary?.pending?.count ?? 0} documentos`,
 			tooltip:
 				'Documentos a los que todav\u00EDa no se les ha abonado nada: tienen 0 pagos registrados, sin importar si est\u00E1n vencidos o no. Indica el estado de pago, no el tiempo.',
 			icon: 'HeroDocumentText' as const,

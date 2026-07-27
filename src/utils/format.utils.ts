@@ -254,8 +254,6 @@ export const formatTaxId = (taxId: string, format: 'RUT' | 'RFC' | 'NIT' = 'RFC'
 		case 'NIT':
 			// Colombian NIT format
 			return cleaned.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-		default:
-			return taxId;
 	}
 
 	return taxId;
