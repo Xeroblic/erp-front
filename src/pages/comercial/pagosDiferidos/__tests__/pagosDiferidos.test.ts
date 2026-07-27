@@ -185,6 +185,33 @@ describe('ZF-5 Pagos diferidos', () => {
 		expect(contextPending.meta).toBeNull();
 		expect(contextPending.list).toEqual([]);
 	});
+	it('conserva el resumen al recargar el mismo contexto y lo limpia al fallar', () => {
+		const args = { subsidiaryId: 1 };
+		const initial = deferredPaymentsReducer(undefined, { type: 'init' });
+		const pending = deferredPaymentsReducer(
+			initial,
+			fetchDeferredPaymentsSummary.pending('first-summary', args),
+		);
+		const loaded = deferredPaymentsReducer(
+			pending,
+			fetchDeferredPaymentsSummary.fulfilled(
+				DEFERRED_PAYMENTS_SUMMARY_MOCK,
+				'first-summary',
+				args,
+			),
+		);
+		const reloading = deferredPaymentsReducer(
+			loaded,
+			fetchDeferredPaymentsSummary.pending('reload-summary', args),
+		);
+		const failed = deferredPaymentsReducer(
+			reloading,
+			fetchDeferredPaymentsSummary.rejected(null, 'reload-summary', args, 'Error resumen'),
+		);
+
+		expect(reloading.summary).toEqual(DEFERRED_PAYMENTS_SUMMARY_MOCK);
+		expect(failed.summary).toBeNull();
+	});
 	it('ignora un rechazo abortado', () => {
 		const initial = deferredPaymentsReducer(undefined, { type: 'init' });
 		const args = { subsidiaryId: 2 };

@@ -21,5 +21,6 @@ describe('DeferredPaymentsTable', () => {
 			screen.queryByText('Aún no hay documentos de pago diferido'),
 		).not.toBeInTheDocument();
 		expect(screen.queryByText('0 documentos')).not.toBeInTheDocument();
+		expect(screen.getByText('No fue posible mostrar los documentos')).toBeInTheDocument();
 	});
 });

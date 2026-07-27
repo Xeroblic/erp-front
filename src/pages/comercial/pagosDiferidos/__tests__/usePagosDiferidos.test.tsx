@@ -6,6 +6,23 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import deferredPaymentsReducer from '@/store/slices/deferredPayments/deferredPaymentsSlice';
 import usePagosDiferidos from '../hooks/usePagosDiferidos';
 
+const fetchListSpy = vi.hoisted(() => vi.fn());
+
+vi.mock('@/store/slices/deferredPayments/deferredPaymentsMock', async (importOriginal) => {
+	const actual =
+		await importOriginal<
+			typeof import('@/store/slices/deferredPayments/deferredPaymentsMock')
+		>();
+	return {
+		...actual,
+		mockFetchDeferredPayments: (
+			...args: Parameters<typeof actual.mockFetchDeferredPayments>
+		) => {
+			fetchListSpy();
+			return actual.mockFetchDeferredPayments(...args);
+		},
+	};
+});
 vi.mock('@/store/slices/deferredPayments/deferredPaymentsConfig', () => ({
 	default: true,
 }));
@@ -118,6 +135,28 @@ describe('usePagosDiferidos', () => {
 		expect(hook.result.current.filters.hasInvalidDateRange).toBe(true);
 		expect(store.getState().deferredPayments.meta).toEqual(previousMeta);
 		expect(store.getState().deferredPayments.loading).toBe(false);
+	});
+	it('espera el debounce antes de consultar al buscar desde otra página', async () => {
+		vi.useFakeTimers();
+		const { hook } = createHook();
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(300);
+		});
+		act(() => hook.result.current.filters.setFilter({ page: 2 }));
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(300);
+		});
+		fetchListSpy.mockClear();
+
+		act(() => hook.result.current.filters.setSearch('andina'));
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(299);
+		});
+		expect(fetchListSpy).not.toHaveBeenCalled();
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(1);
+		});
+		expect(fetchListSpy).toHaveBeenCalledOnce();
 	});
 	it('no deja un error falso al desmontar y abortar las solicitudes', async () => {
 		vi.useFakeTimers();
