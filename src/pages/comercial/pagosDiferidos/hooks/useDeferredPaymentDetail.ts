@@ -1,0 +1,78 @@
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import { useAppDispatch, useAppSelector } from '@/store';
+import USE_DEFERRED_PAYMENTS_MOCK from '@/store/slices/deferredPayments/deferredPaymentsConfig';
+import {
+	clearDeferredPaymentDetail,
+	fetchDeferredPaymentById,
+} from '@/store/slices/deferredPayments/deferredPaymentsSlice';
+
+interface AbortableDetailRequest {
+	abort: () => void;
+}
+
+const useDeferredPaymentDetail = (documentId: number | null) => {
+	const dispatch = useAppDispatch();
+	const { branchId, subsidiaryId } = useCurrentBranch();
+	const current = useAppSelector((state) => state.deferredPayments.current);
+	const loading = useAppSelector((state) => state.deferredPayments.loadingDetail);
+	const error = useAppSelector((state) => state.deferredPayments.errorDetail);
+	const activeRequestRef = useRef<AbortableDetailRequest | null>(null);
+	const effectiveSubsidiaryId = subsidiaryId ?? (USE_DEFERRED_PAYMENTS_MOCK ? 0 : null);
+	const document = current?.id === documentId ? current : null;
+
+	const refresh = useCallback(() => {
+		activeRequestRef.current?.abort();
+		activeRequestRef.current = null;
+
+		if (documentId === null || effectiveSubsidiaryId === null) {
+			dispatch(clearDeferredPaymentDetail());
+			return undefined;
+		}
+
+		const request = dispatch(
+			fetchDeferredPaymentById({
+				subsidiaryId: effectiveSubsidiaryId,
+				documentId,
+			}),
+		);
+		activeRequestRef.current = request;
+		return request;
+	}, [dispatch, documentId, effectiveSubsidiaryId]);
+
+	useEffect(() => {
+		const request = refresh();
+
+		return () => {
+			request?.abort();
+			activeRequestRef.current?.abort();
+			activeRequestRef.current = null;
+			dispatch(clearDeferredPaymentDetail());
+		};
+	}, [dispatch, refresh]);
+
+	const flags = useMemo(() => {
+		const isPaid = document?.status === 'paid';
+		return {
+			isPaid,
+			canDelete: Boolean(document && document.payments.length === 0),
+			canEdit: Boolean(document && !isPaid),
+			canPay: Boolean(document && !isPaid && Number(document.outstanding_amount) > 0),
+		};
+	}, [document]);
+
+	return useMemo(
+		() => ({
+			document,
+			loading,
+			error,
+			actions: { refresh },
+			flags,
+			branch: { branchId, subsidiaryId },
+			hasDataContext: effectiveSubsidiaryId !== null,
+		}),
+		[branchId, document, effectiveSubsidiaryId, error, flags, loading, refresh, subsidiaryId],
+	);
+};
+
+export default useDeferredPaymentDetail;
