@@ -1,6 +1,7 @@
 import type {
 	DeferredPaymentsFilters,
 	DeferredPaymentsListResponse,
+	IDeferredPaymentDocument,
 	IDeferredPaymentListItem,
 	IDeferredPaymentsSummary,
 } from '@/interface/deferredPayments.interface';
@@ -48,6 +49,83 @@ export const DEFERRED_PAYMENTS_MOCK: IDeferredPaymentListItem[] = [
 	createRow(10, 60, 'pending', 510000, 510000, 'Logística Metropolitana SpA', '77.000.000-0'),
 ];
 
+const createDetail = (row: IDeferredPaymentListItem, index: number): IDeferredPaymentDocument => {
+	const paidAmount = Number(row.total_amount) - Number(row.outstanding_amount);
+	const hasPayments = paidAmount > 0;
+	const firstItemAmount = Number(row.total_amount) * 0.6;
+	const secondItemAmount = Number(row.total_amount) - firstItemAmount;
+	return {
+		...row,
+		paid_amount: paidAmount.toFixed(2),
+		notes:
+			index % 2 === 0
+				? 'Cliente con seguimiento de cobranza coordinado por el equipo comercial.'
+				: null,
+		assignees: [
+			{
+				id: 101 + (index % 3),
+				name: index % 2 === 0 ? 'María González' : 'Carlos Muñoz',
+				email: index % 2 === 0 ? 'maria.gonzalez@zentria.cl' : 'carlos.munoz@zentria.cl',
+				avatar_url: null,
+			},
+		],
+		items: [
+			{
+				id: row.id * 10 + 1,
+				product_id: null,
+				code: `SERV-${row.id}-A`,
+				description: 'Servicio principal facturado',
+				quantity: 1,
+				unit_price: firstItemAmount.toFixed(2),
+				serials: index % 3 === 0 ? [`SER-${row.id}-001`] : [],
+			},
+			{
+				id: row.id * 10 + 2,
+				product_id: null,
+				code: `SERV-${row.id}-B`,
+				description: 'Servicio complementario',
+				quantity: 1,
+				unit_price: secondItemAmount.toFixed(2),
+				serials: [],
+			},
+		],
+		payments: hasPayments
+			? [
+					{
+						id: row.id * 100 + 1,
+						amount: paidAmount.toFixed(2),
+						paid_at: toIsoDate(-Math.max(1, Math.abs(row.days_until_due ?? 1))),
+						method: 'transfer',
+						notes: 'Abono registrado por transferencia bancaria.',
+						attachments: [
+							{
+								id: row.id * 1000 + 1,
+								file_name: `comprobante-${row.document_number}.pdf`,
+								mime_type: 'application/pdf',
+								size: 148_320,
+								url: `/mock/pagos-diferidos/${row.id}/comprobante.pdf`,
+							},
+						],
+					},
+				]
+			: [],
+		attachments: [
+			{
+				id: row.id * 1000 + 2,
+				file_name: `documento-${row.document_number}.pdf`,
+				mime_type: 'application/pdf',
+				size: 284_672,
+				url: `/mock/pagos-diferidos/${row.id}/documento.pdf`,
+			},
+		],
+	};
+};
+
+export const DEFERRED_PAYMENT_DETAILS_MOCK: Record<number, IDeferredPaymentDocument> =
+	DEFERRED_PAYMENTS_MOCK.reduce<Record<number, IDeferredPaymentDocument>>(
+		(details, row, index) => ({ ...details, [row.id]: createDetail(row, index) }),
+		{},
+	);
 const sumOutstanding = (rows: IDeferredPaymentListItem[]): number =>
 	rows.reduce((total, row) => total + Number(row.outstanding_amount), 0);
 
@@ -95,6 +173,15 @@ export const mockFetchDeferredPaymentsSummary = async (
 	return DEFERRED_PAYMENTS_SUMMARY_MOCK;
 };
 
+export const mockFetchDeferredPaymentById = async (
+	documentId: number,
+	signal?: AbortSignal,
+): Promise<IDeferredPaymentDocument> => {
+	await waitForMock(signal);
+	const document = DEFERRED_PAYMENT_DETAILS_MOCK[documentId];
+	if (!document) throw new Error('No se encontró el documento de pago diferido');
+	return document;
+};
 export const mockFetchDeferredPayments = async (
 	filters: DeferredPaymentsFilters,
 	signal?: AbortSignal,

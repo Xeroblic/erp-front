@@ -2,6 +2,7 @@ export type DeferredPaymentStatus = 'pending' | 'partially_paid' | 'paid';
 export type DeferredPaymentStatusFilter = DeferredPaymentStatus | 'overdue';
 export type DeferredPaymentDocumentType = 'electronic_invoice' | 'invoice' | 'receipt' | 'other';
 export type DeferredPaymentSort = 'due_date';
+export type DeferredPaymentMethod = 'transfer' | 'deposit' | 'check' | 'cash' | 'other';
 
 export interface IDeferredPaymentsSummaryGroup {
 	count: number;
@@ -34,6 +35,49 @@ export interface IDeferredPaymentListItem {
 	due_date: string;
 	issue_date: string;
 	customer: IDeferredPaymentCustomer;
+}
+
+export interface IDeferredPaymentAssignee {
+	id: number;
+	name: string;
+	email: string;
+	avatar_url: string | null;
+}
+
+export interface IDeferredPaymentItem {
+	id: number;
+	product_id: number | null;
+	code: string;
+	description: string;
+	quantity: number;
+	unit_price: string;
+	serials: string[];
+}
+
+export interface IDeferredPaymentAttachment {
+	id: number;
+	file_name: string;
+	mime_type: string;
+	size: number;
+	url: string;
+}
+
+export interface IDeferredPaymentRecord {
+	id: number;
+	amount: string;
+	paid_at: string;
+	method: DeferredPaymentMethod;
+	notes: string | null;
+	attachments: IDeferredPaymentAttachment[];
+}
+
+export interface IDeferredPaymentDocument extends IDeferredPaymentListItem {
+	paid_amount: string;
+	notes: string | null;
+	assignees: IDeferredPaymentAssignee[];
+	items: IDeferredPaymentItem[];
+	payments: IDeferredPaymentRecord[];
+	attachments: IDeferredPaymentAttachment[];
 }
 
 export interface DeferredPaymentsFilters {
