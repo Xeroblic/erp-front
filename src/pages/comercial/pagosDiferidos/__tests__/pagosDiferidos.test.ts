@@ -184,6 +184,7 @@ describe('ZF-5 Pagos diferidos', () => {
 		expect(failed.list).toEqual([]);
 		expect(contextPending.meta).toBeNull();
 		expect(contextPending.list).toEqual([]);
+		expect(contextPending.filters.page).toBe(1);
 	});
 	it('conserva el resumen al recargar el mismo contexto y lo limpia al fallar', () => {
 		const args = { subsidiaryId: 1 };

@@ -7,6 +7,7 @@ import deferredPaymentsReducer from '@/store/slices/deferredPayments/deferredPay
 import usePagosDiferidos from '../hooks/usePagosDiferidos';
 
 const fetchListSpy = vi.hoisted(() => vi.fn());
+const branchContext = vi.hoisted(() => ({ subsidiaryId: null as number | null }));
 
 vi.mock('@/store/slices/deferredPayments/deferredPaymentsMock', async (importOriginal) => {
 	const actual =
@@ -18,7 +19,7 @@ vi.mock('@/store/slices/deferredPayments/deferredPaymentsMock', async (importOri
 		mockFetchDeferredPayments: (
 			...args: Parameters<typeof actual.mockFetchDeferredPayments>
 		) => {
-			fetchListSpy();
+			fetchListSpy(...args);
 			return actual.mockFetchDeferredPayments(...args);
 		},
 	};
@@ -30,8 +31,8 @@ vi.mock('@/store/slices/deferredPayments/deferredPaymentsConfig', () => ({
 vi.mock('@/hooks/useCurrentBranch', () => ({
 	useCurrentBranch: () => ({
 		branchId: 1,
-		subsidiaryId: null,
-		hasValidBranch: false,
+		subsidiaryId: branchContext.subsidiaryId,
+		hasValidBranch: branchContext.subsidiaryId !== null,
 	}),
 }));
 
@@ -55,6 +56,7 @@ describe('usePagosDiferidos', () => {
 	};
 
 	afterEach(() => {
+		branchContext.subsidiaryId = null;
 		vi.useRealTimers();
 	});
 
@@ -157,6 +159,28 @@ describe('usePagosDiferidos', () => {
 			await vi.advanceTimersByTimeAsync(1);
 		});
 		expect(fetchListSpy).toHaveBeenCalledOnce();
+	});
+	it('consulta la página 1 al cambiar de subsidiaria', async () => {
+		vi.useFakeTimers();
+		const { store, hook } = createHook();
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(300);
+		});
+		act(() => hook.result.current.filters.setFilter({ page: 3, per_page: 2 }));
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(300);
+		});
+		fetchListSpy.mockClear();
+
+		branchContext.subsidiaryId = 2;
+		hook.rerender();
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(300);
+		});
+
+		expect(fetchListSpy).toHaveBeenCalledOnce();
+		expect(fetchListSpy.mock.calls[0]?.[0]).toMatchObject({ page: 1, per_page: 2 });
+		expect(store.getState().deferredPayments.filters.page).toBe(1);
 	});
 	it('no deja un error falso al desmontar y abortar las solicitudes', async () => {
 		vi.useFakeTimers();

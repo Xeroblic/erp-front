@@ -48,13 +48,15 @@ describe('Tooltip', () => {
 		expect(onBlur).toHaveBeenCalledOnce();
 	});
 
-	it('permite enfocar el icono fallback', () => {
+	it('da nombre y acción al icono fallback', () => {
 		render(<Tooltip text='Descripción del campo' />);
-		const trigger = document.querySelector<HTMLElement>(
-			"[data-component-name='Tooltip/Reference']",
-		);
-		expect(trigger?.tagName).toBe('BUTTON');
-		fireEvent.focus(trigger as HTMLElement);
+		const trigger = screen.getByRole('button', {
+			name: 'Más información: Descripción del campo',
+		});
+
+		fireEvent.click(trigger);
 		expect(screen.getByText('Descripción del campo')).toBeInTheDocument();
+		fireEvent.click(trigger);
+		expect(screen.queryByText('Descripción del campo')).not.toBeInTheDocument();
 	});
 });
