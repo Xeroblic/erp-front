@@ -4,7 +4,11 @@ import { act, renderHook } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import deferredPaymentsReducer from '@/store/slices/deferredPayments/deferredPaymentsSlice';
-import { usePagosDiferidos } from '../hooks/usePagosDiferidos';
+import usePagosDiferidos from '../hooks/usePagosDiferidos';
+
+vi.mock('@/store/slices/deferredPayments/deferredPaymentsConfig', () => ({
+	default: true,
+}));
 
 vi.mock('@/hooks/useCurrentBranch', () => ({
 	useCurrentBranch: () => ({
@@ -93,6 +97,27 @@ describe('usePagosDiferidos', () => {
 		expect(store.getState().deferredPayments.error).toBeNull();
 	});
 
+	it('no consulta cuando el rango de vencimiento es inválido', async () => {
+		vi.useFakeTimers();
+		const { store, hook } = createHook();
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(300);
+		});
+		const previousMeta = store.getState().deferredPayments.meta;
+
+		act(() => {
+			hook.result.current.filters.setFilter({
+				due_after: '2026-08-10',
+				due_before: '2026-08-01',
+			});
+		});
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(300);
+		});
+
+		expect(store.getState().deferredPayments.meta).toEqual(previousMeta);
+		expect(store.getState().deferredPayments.loading).toBe(false);
+	});
 	it('no deja un error falso al desmontar y abortar las solicitudes', async () => {
 		vi.useFakeTimers();
 		const { store, hook } = createHook();

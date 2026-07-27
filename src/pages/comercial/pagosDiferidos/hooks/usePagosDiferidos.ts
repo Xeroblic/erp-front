@@ -8,10 +8,10 @@ import {
 	fetchDeferredPaymentsSummary,
 	resetDeferredPaymentsFilters,
 	setDeferredPaymentsFilters,
-	USE_DEFERRED_PAYMENTS_MOCK,
 } from '@/store/slices/deferredPayments/deferredPaymentsSlice';
+import USE_DEFERRED_PAYMENTS_MOCK from '@/store/slices/deferredPayments/deferredPaymentsConfig';
 
-export const usePagosDiferidos = () => {
+const usePagosDiferidos = () => {
 	const dispatch = useAppDispatch();
 	const { branchId, subsidiaryId } = useCurrentBranch();
 	const deferredPayments = useAppSelector((state) => state.deferredPayments);
@@ -20,6 +20,11 @@ export const usePagosDiferidos = () => {
 	const [debouncedSearch] = useDebounce(search, 300);
 	const effectiveSubsidiaryId = subsidiaryId ?? (USE_DEFERRED_PAYMENTS_MOCK ? 0 : null);
 	const hasDataContext = effectiveSubsidiaryId !== null;
+	const hasInvalidDateRange = Boolean(
+		deferredPayments.filters.due_after &&
+			deferredPayments.filters.due_before &&
+			deferredPayments.filters.due_after > deferredPayments.filters.due_before,
+	);
 
 	const filtersForRequest = useMemo<DeferredPaymentsFilters>(
 		() => ({
@@ -53,7 +58,7 @@ export const usePagosDiferidos = () => {
 	}, [dispatch, effectiveSubsidiaryId]);
 
 	useEffect(() => {
-		if (effectiveSubsidiaryId === null) return undefined;
+		if (effectiveSubsidiaryId === null || hasInvalidDateRange) return undefined;
 		const request = dispatch(
 			fetchDeferredPayments({
 				subsidiaryId: effectiveSubsidiaryId,
@@ -61,7 +66,7 @@ export const usePagosDiferidos = () => {
 			}),
 		);
 		return () => request.abort();
-	}, [dispatch, effectiveSubsidiaryId, filtersForRequest]);
+	}, [dispatch, effectiveSubsidiaryId, filtersForRequest, hasInvalidDateRange]);
 
 	const setSearch = useCallback(
 		(value: string) => {
@@ -85,13 +90,13 @@ export const usePagosDiferidos = () => {
 	const hasFilters = useMemo(
 		() =>
 			Boolean(
-				search.trim() ||
+				debouncedSearch.trim() ||
 					deferredPayments.filters.status ||
 					deferredPayments.filters.customer_sale_id ||
 					deferredPayments.filters.due_after ||
 					deferredPayments.filters.due_before,
 			),
-		[deferredPayments.filters, search],
+		[debouncedSearch, deferredPayments.filters],
 	);
 
 	const resetFilters = useCallback(() => {
@@ -102,21 +107,19 @@ export const usePagosDiferidos = () => {
 	const closeDetail = useCallback(() => setSelectedId(null), []);
 
 	const retrySummary = useCallback(() => {
-		if (effectiveSubsidiaryId === null) return;
-		dispatch(fetchDeferredPaymentsSummary({ subsidiaryId: effectiveSubsidiaryId })).catch(
-			() => undefined,
-		);
+		if (effectiveSubsidiaryId === null) return undefined;
+		return dispatch(fetchDeferredPaymentsSummary({ subsidiaryId: effectiveSubsidiaryId }));
 	}, [dispatch, effectiveSubsidiaryId]);
 
 	const retryList = useCallback(() => {
-		if (effectiveSubsidiaryId === null) return;
-		dispatch(
+		if (effectiveSubsidiaryId === null || hasInvalidDateRange) return undefined;
+		return dispatch(
 			fetchDeferredPayments({
 				subsidiaryId: effectiveSubsidiaryId,
 				filters: filtersForRequest,
 			}),
-		).catch(() => undefined);
-	}, [dispatch, effectiveSubsidiaryId, filtersForRequest]);
+		);
+	}, [dispatch, effectiveSubsidiaryId, filtersForRequest, hasInvalidDateRange]);
 
 	return useMemo(
 		() => ({
@@ -163,3 +166,5 @@ export const usePagosDiferidos = () => {
 		],
 	);
 };
+
+export default usePagosDiferidos;

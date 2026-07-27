@@ -7,12 +7,11 @@ import type {
 	IDeferredPaymentsSummary,
 } from '@/interface/deferredPayments.interface';
 import ApiService from '@/services/ApiService';
+import USE_DEFERRED_PAYMENTS_MOCK from './deferredPaymentsConfig';
 import {
 	mockFetchDeferredPayments,
 	mockFetchDeferredPaymentsSummary,
 } from './deferredPaymentsMock';
-
-export const USE_DEFERRED_PAYMENTS_MOCK = import.meta.env.VITE_DEFERRED_PAYMENTS_MOCK === 'true';
 
 export const DEFAULT_DEFERRED_PAYMENTS_FILTERS: DeferredPaymentsFilters = {
 	page: 1,
@@ -30,6 +29,7 @@ export interface DeferredPaymentsState {
 	error: string | null;
 	errorSummary: string | null;
 	listRequestId: string | null;
+	listSubsidiaryId: number | null;
 	summaryRequestId: string | null;
 }
 
@@ -43,6 +43,7 @@ const initialState: DeferredPaymentsState = {
 	error: null,
 	errorSummary: null,
 	listRequestId: null,
+	listSubsidiaryId: null,
 	summaryRequestId: null,
 };
 
@@ -74,7 +75,6 @@ export const fetchDeferredPaymentsSummary = createAsyncThunk<
 			url: `${baseUrl(subsidiaryId)}/summary`,
 			method: 'get',
 			cacheTTLms: 30_000,
-			dedupe: true,
 			signal,
 		});
 		return response.data;
@@ -99,7 +99,6 @@ export const fetchDeferredPayments = createAsyncThunk<
 			method: 'get',
 			params: query,
 			cacheTTLms: 15_000,
-			dedupe: true,
 			signal,
 		});
 		return response.data;
@@ -126,11 +125,17 @@ const deferredPaymentsSlice = createSlice({
 	extraReducers: (builder) => {
 		builder
 			.addCase(fetchDeferredPayments.pending, (state, action) => {
+				const isContextChange =
+					state.listSubsidiaryId !== null &&
+					state.listSubsidiaryId !== action.meta.arg.subsidiaryId;
 				state.listRequestId = action.meta.requestId;
+				state.listSubsidiaryId = action.meta.arg.subsidiaryId;
 				state.loading = true;
 				state.error = null;
-				state.list = [];
-				state.meta = null;
+				if (isContextChange) {
+					state.list = [];
+					state.meta = null;
+				}
 			})
 			.addCase(fetchDeferredPayments.fulfilled, (state, action) => {
 				if (state.listRequestId !== action.meta.requestId) return;
@@ -144,6 +149,8 @@ const deferredPaymentsSlice = createSlice({
 				state.listRequestId = null;
 				state.loading = false;
 				if (action.meta.aborted) return;
+				state.list = [];
+				state.meta = null;
 				state.error = action.payload ?? 'No se pudieron cargar los pagos diferidos';
 			})
 			.addCase(fetchDeferredPaymentsSummary.pending, (state, action) => {
