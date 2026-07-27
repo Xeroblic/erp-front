@@ -135,6 +135,7 @@ const deferredPaymentsSlice = createSlice({
 				state.loading = true;
 				state.error = null;
 				if (isContextChange) {
+					state.filters.page = 1;
 					state.list = [];
 					state.meta = null;
 				}

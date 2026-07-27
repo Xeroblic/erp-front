@@ -22,6 +22,7 @@ const usePagosDiferidos = () => {
 	const loadingSummary = useAppSelector((state) => state.deferredPayments.loadingSummary);
 	const error = useAppSelector((state) => state.deferredPayments.error);
 	const errorSummary = useAppSelector((state) => state.deferredPayments.errorSummary);
+	const listSubsidiaryId = useAppSelector((state) => state.deferredPayments.listSubsidiaryId);
 	const [selectedId, setSelectedId] = useState<number | null>(null);
 	const search = values.search ?? '';
 	const [debouncedSearch] = useDebounce(search, 300);
@@ -32,9 +33,30 @@ const usePagosDiferidos = () => {
 		values.due_after && values.due_before && values.due_after > values.due_before,
 	);
 
+	const isSubsidiaryChange =
+		listSubsidiaryId !== null && listSubsidiaryId !== effectiveSubsidiaryId;
+	const requestPage = isSubsidiaryChange ? 1 : values.page;
 	const filtersForRequest = useMemo<DeferredPaymentsFilters>(
-		() => ({ ...values, search: debouncedSearch || undefined }),
-		[debouncedSearch, values],
+		() => ({
+			page: requestPage,
+			per_page: values.per_page,
+			sort: values.sort,
+			status: values.status,
+			customer_sale_id: values.customer_sale_id,
+			due_after: values.due_after,
+			due_before: values.due_before,
+			search: debouncedSearch || undefined,
+		}),
+		[
+			debouncedSearch,
+			requestPage,
+			values.customer_sale_id,
+			values.due_after,
+			values.due_before,
+			values.per_page,
+			values.sort,
+			values.status,
+		],
 	);
 
 	useEffect(() => {
@@ -124,6 +146,7 @@ const usePagosDiferidos = () => {
 			reset: resetFilters,
 			hasFilters,
 			hasInvalidDateRange,
+			isSearchDebouncing,
 		},
 		selection: { selectedId, openDetail, closeDetail },
 		actions: { retryList, retrySummary },
