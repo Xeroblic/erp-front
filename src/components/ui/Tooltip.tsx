@@ -7,6 +7,7 @@ import React, {
 	ReactElement,
 	ReactNode,
 	useCallback,
+	useId,
 	useRef,
 	useState,
 } from 'react';
@@ -47,6 +48,7 @@ const Tooltip: FC<ITooltipProps> = (props) => {
 		...rest
 	} = props;
 	const [isOpen, setIsOpen] = useState(false);
+	const tooltipId = useId();
 	const referenceRef = useRef<HTMLElement | null>(null);
 	const setReferenceRef = useCallback(
 		(node: HTMLElement, ref: (node: HTMLElement) => HTMLElement) => {
@@ -70,25 +72,21 @@ const Tooltip: FC<ITooltipProps> = (props) => {
 				{({ ref }) => {
 					if (['string', 'undefined'].includes(typeof children)) {
 						return (
-							<button
+							<span
 								data-component-name='Tooltip/Reference'
 								// @ts-ignore
 								ref={(node) => setReferenceRef(node, ref)}
-								type='button'
-								aria-label={`Más información: ${text}`}
-								className='cursor-pointer border-0 bg-transparent p-0'
+								aria-describedby={tooltipId}
+								className='cursor-help'
 								onMouseEnter={() => setIsOpen(true)}
-								onMouseLeave={() => setIsOpen(false)}
-								onFocus={() => setIsOpen(true)}
-								onBlur={() => setIsOpen(false)}
-								onClick={() => setIsOpen((current) => !current)}>
+								onMouseLeave={() => setIsOpen(false)}>
 								{children || (
 									<Icon
 										icon='HeroInformationCircle'
 										className={classNames('inline-flex', className)}
 									/>
 								)}
-							</button>
+							</span>
 						);
 					}
 					const child = children as ReactElement<TooltipReferenceProps>;
@@ -120,6 +118,8 @@ const Tooltip: FC<ITooltipProps> = (props) => {
 					<Popper placement={placement}>
 						{({ ref, style }) => (
 							<div
+								id={tooltipId}
+								role='tooltip'
 								// @ts-ignore
 								ref={(node) => setPopperRef(node, ref)}
 								style={style}

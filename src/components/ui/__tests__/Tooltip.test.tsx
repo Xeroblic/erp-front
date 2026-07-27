@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Tooltip from '../Tooltip';
 
@@ -48,15 +48,17 @@ describe('Tooltip', () => {
 		expect(onBlur).toHaveBeenCalledOnce();
 	});
 
-	it('da nombre y acción al icono fallback', () => {
-		render(<Tooltip text='Descripción del campo' />);
-		const trigger = screen.getByRole('button', {
-			name: 'Más información: Descripción del campo',
-		});
+	it('describe el fallback sin insertar un botón dentro del label', async () => {
+		const { container } = render(<Tooltip text='Descripción del campo' />);
+		const trigger = container.querySelector('[data-component-name="Tooltip/Reference"]');
+		expect(trigger?.tagName).toBe('SPAN');
 
-		fireEvent.click(trigger);
-		expect(screen.getByText('Descripción del campo')).toBeInTheDocument();
-		fireEvent.click(trigger);
-		expect(screen.queryByText('Descripción del campo')).not.toBeInTheDocument();
+		await act(async () => {
+			fireEvent.mouseEnter(trigger as Element);
+			await Promise.resolve();
+		});
+		const tooltip = screen.getByRole('tooltip');
+		expect(tooltip).toHaveTextContent('Descripción del campo');
+		expect(trigger).toHaveAttribute('aria-describedby', tooltip.id);
 	});
 });
