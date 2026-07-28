@@ -189,6 +189,22 @@ describe('usePagosDiferidos', () => {
 		expect(fetchListSpy.mock.calls[0]?.[0]).toMatchObject({ page: 1, per_page: 2 });
 		expect(store.getState().deferredPayments.filters.page).toBe(1);
 	});
+	it('cierra el detalle seleccionado al cambiar de subsidiaria', async () => {
+		vi.useFakeTimers();
+		const { hook } = createHook();
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(300);
+		});
+		act(() => hook.result.current.selection.openDetail(2));
+		expect(hook.result.current.selection.selectedId).toBe(2);
+
+		act(() => {
+			branchContext.subsidiaryId = 99;
+			hook.rerender();
+		});
+
+		expect(hook.result.current.selection.selectedId).toBeNull();
+	});
 	it('alinea resumen y lista durante el debounce al cambiar de subsidiaria', async () => {
 		vi.useFakeTimers();
 		const { hook } = createHook();
