@@ -4,13 +4,18 @@ import Icon from '@/components/icon/Icon';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import Card, { CardBody } from '@/components/ui/Card';
-import OffCanvas, { OffCanvasBody, OffCanvasHeader } from '@/components/ui/OffCanvas';
+import OffCanvas, {
+	OffCanvasBody,
+	OffCanvasFooter,
+	OffCanvasHeader,
+} from '@/components/ui/OffCanvas';
 import Progress from '@/components/ui/Progress';
 import DeferredStatusPill from '../badges/DeferredStatusPill';
 import {
 	DeferredPaymentAttachmentsSection,
 	DeferredPaymentPaymentsSection,
 } from '../detail/DeferredPaymentActivitySections';
+import DeferredPaymentActionsFooter from '../detail/DeferredPaymentActionsFooter';
 import DeferredPaymentItemsSection from '../detail/DeferredPaymentItemsSection';
 import useDeferredPaymentDetail from '../../hooks/useDeferredPaymentDetail';
 import {
@@ -57,7 +62,7 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 	documentId,
 	onClose,
 }) => {
-	const { document, loading, error, actions, hasDataContext } =
+	const { document, loading, error, actions, flags, branch, hasDataContext } =
 		useDeferredPaymentDetail(documentId);
 	const total = Number(document?.total_amount ?? 0);
 	const paid = Number(document?.paid_amount ?? 0);
@@ -250,6 +255,25 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 					</>
 				)}
 			</OffCanvasBody>
+			<OffCanvasFooter
+				className={
+					document && !error
+						? 'border-t border-zinc-200 bg-white px-6 py-4 dark:border-zinc-800 dark:bg-zinc-900'
+						: 'hidden'
+				}>
+				{document && !error ? (
+					<DeferredPaymentActionsFooter
+						branchId={branch.branchId}
+						subsidiaryId={branch.subsidiaryId}
+						isPaid={flags.isPaid}
+						canDelete={flags.canDelete}
+						canEdit={flags.canEdit}
+						canPay={flags.canPay}
+					/>
+				) : (
+					<span />
+				)}
+			</OffCanvasFooter>
 		</OffCanvas>
 	);
 };

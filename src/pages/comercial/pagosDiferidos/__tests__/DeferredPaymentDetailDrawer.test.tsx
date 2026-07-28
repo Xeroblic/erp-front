@@ -58,6 +58,9 @@ describe('DeferredPaymentDetailDrawer', () => {
 		).toBeInTheDocument();
 		expect(screen.getByText('Adjuntos del documento')).toBeInTheDocument();
 		expect(screen.getByText('documento-FD-0002.pdf')).toBeInTheDocument();
+		expect(
+			screen.getByText('Las acciones se habilitarán con los flujos de ZF-7 y ZF-8.'),
+		).toBeInTheDocument();
 	});
 
 	it('muestra solo el estado de carga mientras no existe un documento vigente', () => {
