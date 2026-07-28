@@ -13,6 +13,12 @@ const toIsoDate = (daysFromToday: number): string => {
 	return date.toISOString().slice(0, 10);
 };
 
+const addDaysToIsoDate = (isoDate: string, days: number): string => {
+	const date = new Date(`${isoDate}T12:00:00.000Z`);
+	date.setUTCDate(date.getUTCDate() + days);
+	return date.toISOString().slice(0, 10);
+};
+
 const createRow = (
 	id: number,
 	daysUntilDue: number,
@@ -97,7 +103,7 @@ const createDetail = (row: IDeferredPaymentListItem, index: number): IDeferredPa
 		payments: paymentAmounts.map((amount, paymentIndex) => ({
 			id: row.id * 100 + paymentIndex + 1,
 			amount: amount.toFixed(2),
-			paid_at: toIsoDate(-Math.max(1, Math.abs(row.days_until_due ?? 1) + paymentIndex)),
+			paid_at: addDaysToIsoDate(row.issue_date, paymentIndex + 1),
 			method: 'transfer',
 			notes: `Abono ${paymentIndex + 1} registrado por transferencia bancaria.`,
 			attachments: [

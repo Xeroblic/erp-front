@@ -39,6 +39,14 @@ describe('ZF-6 detalle de pago diferido', () => {
 		expect(detail.attachments.length).toBeGreaterThan(0);
 	});
 
+	it('genera cada abono después de la emisión del documento', () => {
+		Object.values(DEFERRED_PAYMENT_DETAILS_MOCK).forEach((detail) => {
+			detail.payments.forEach((payment) => {
+				expect(payment.paid_at >= detail.issue_date).toBe(true);
+				expect(payment.paid_at <= detail.due_date).toBe(true);
+			});
+		});
+	});
 	it('obtiene el detalle por ID y rechaza un documento inexistente', async () => {
 		vi.useFakeTimers();
 		const existingRequest = mockFetchDeferredPaymentById(2);
