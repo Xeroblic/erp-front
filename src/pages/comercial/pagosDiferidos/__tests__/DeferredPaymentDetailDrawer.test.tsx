@@ -61,8 +61,31 @@ describe('DeferredPaymentDetailDrawer', () => {
 		expect(
 			screen.getByText('Las acciones se habilitarán con los flujos de ZF-7 y ZF-8.'),
 		).toBeInTheDocument();
+		expect(screen.getByText('Nota del documento')).toBeInTheDocument();
+		expect(screen.getByText('Sin observaciones registradas.')).toBeInTheDocument();
 	});
 
+	it('muestra la nota y la señal de vencimiento del documento', () => {
+		vi.mocked(useDeferredPaymentDetail).mockReturnValue({
+			...baseHookResult,
+			document: DEFERRED_PAYMENT_DETAILS_MOCK[1],
+			flags: {
+				isPaid: false,
+				canDelete: true,
+				canEdit: true,
+				canPay: true,
+			},
+		});
+
+		renderDrawer(1);
+
+		expect(
+			screen.getByText(
+				'Cliente con seguimiento de cobranza coordinado por el equipo comercial.',
+			),
+		).toBeInTheDocument();
+		expect(screen.getByText('Vencido 32 días')).toBeInTheDocument();
+	});
 	it('muestra solo el estado de carga mientras no existe un documento vigente', () => {
 		vi.mocked(useDeferredPaymentDetail).mockReturnValue({
 			...baseHookResult,

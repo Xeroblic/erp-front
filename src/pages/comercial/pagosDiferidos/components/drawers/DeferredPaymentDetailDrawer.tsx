@@ -10,6 +10,7 @@ import OffCanvas, {
 	OffCanvasHeader,
 } from '@/components/ui/OffCanvas';
 import Progress from '@/components/ui/Progress';
+import DaysUntilDueBadge from '../badges/DaysUntilDueBadge';
 import DeferredStatusPill from '../badges/DeferredStatusPill';
 import {
 	DeferredPaymentAttachmentsSection,
@@ -133,7 +134,13 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 											</p>
 										</div>
 									</div>
-									<DeferredStatusPill status={document.status} />
+									<div className='flex flex-col items-center gap-2 sm:items-end'>
+										<DeferredStatusPill status={document.status} />
+										<DaysUntilDueBadge
+											daysUntilDue={document.days_until_due}
+											isOverdue={document.is_overdue}
+										/>
+									</div>
 								</div>
 								<div className='grid grid-cols-2 gap-3 border-t border-zinc-200 pt-4 text-sm dark:border-zinc-700'>
 									<div>
@@ -247,6 +254,14 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 										</p>
 									)}
 								</div>
+							</CardBody>
+						</Card>
+						<Card className='border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/60'>
+							<CardBody className='space-y-2 p-5'>
+								<p className='font-semibold'>Nota del documento</p>
+								<p className='whitespace-pre-wrap text-sm text-zinc-600 dark:text-zinc-300'>
+									{document.notes ?? 'Sin observaciones registradas.'}
+								</p>
 							</CardBody>
 						</Card>
 						<DeferredPaymentItemsSection items={document.items} />
