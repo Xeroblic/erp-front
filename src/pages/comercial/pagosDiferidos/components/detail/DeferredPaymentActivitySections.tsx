@@ -62,8 +62,15 @@ export const DeferredPaymentPaymentsSection: React.FC<{
 							{formatDeferredPaymentDate(payment.paid_at)}
 						</p>
 					</div>
-					{payment.notes && (
-						<p className='text-sm text-zinc-600 dark:text-zinc-300'>{payment.notes}</p>
+					{payment.notes ? (
+						<p className='text-sm text-zinc-600 dark:text-zinc-300'>
+							<span className='font-semibold text-zinc-700 dark:text-zinc-200'>
+								Nota:{' '}
+							</span>
+							{payment.notes}
+						</p>
+					) : (
+						<p className='text-sm text-zinc-500'>Sin nota</p>
 					)}
 					{payment.attachments.length > 0 && (
 						<div className='grid gap-2'>

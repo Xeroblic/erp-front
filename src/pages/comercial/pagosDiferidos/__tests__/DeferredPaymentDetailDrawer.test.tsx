@@ -56,6 +56,9 @@ describe('DeferredPaymentDetailDrawer', () => {
 		expect(
 			screen.getByText('Abono 1 registrado por transferencia bancaria.'),
 		).toBeInTheDocument();
+		expect(screen.getAllByText('Nota:')).toHaveLength(
+			DEFERRED_PAYMENT_DETAILS_MOCK[2].payments.length,
+		);
 		expect(screen.getByText('Adjuntos del documento')).toBeInTheDocument();
 		expect(screen.getByText('documento-FD-0002.pdf')).toBeInTheDocument();
 		expect(
@@ -65,6 +68,22 @@ describe('DeferredPaymentDetailDrawer', () => {
 		expect(screen.getByText('Sin observaciones registradas.')).toBeInTheDocument();
 	});
 
+	it('muestra Sin nota cuando un abono no tiene observaciones', () => {
+		const documentWithoutPaymentNote = {
+			...DEFERRED_PAYMENT_DETAILS_MOCK[2],
+			payments: DEFERRED_PAYMENT_DETAILS_MOCK[2].payments.map((payment, index) =>
+				index === 0 ? { ...payment, notes: null } : payment,
+			),
+		};
+		vi.mocked(useDeferredPaymentDetail).mockReturnValue({
+			...baseHookResult,
+			document: documentWithoutPaymentNote,
+		});
+
+		renderDrawer(2);
+
+		expect(screen.getByText('Sin nota')).toBeInTheDocument();
+	});
 	it('muestra la nota y la señal de vencimiento del documento', () => {
 		vi.mocked(useDeferredPaymentDetail).mockReturnValue({
 			...baseHookResult,
