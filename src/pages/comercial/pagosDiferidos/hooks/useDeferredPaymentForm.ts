@@ -59,6 +59,7 @@ export const mapDeferredPaymentDocumentToForm = (
 	notes: document.notes,
 	assignee_ids: document.assignees.map((assignee) => assignee.id),
 	items: document.items.map((item) => ({
+		client_key: `deferred-item-existing-${item.id}`,
 		product_id: null,
 		code: item.code,
 		description: item.description,
@@ -79,9 +80,11 @@ export const mapDeferredPaymentFormToPayload = (
 		purchase_order: values.purchase_order?.trim() || null,
 		notes: values.notes?.trim() || null,
 		items: values.items.map((item) => ({
-			...item,
+			product_id: null,
 			code: item.code.trim(),
 			description: item.description.trim(),
+			quantity: item.quantity,
+			unit_price: item.unit_price,
 			serials: item.serials.map((serial) => serial.trim()),
 		})),
 	};

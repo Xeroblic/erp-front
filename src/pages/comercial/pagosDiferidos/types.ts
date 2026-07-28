@@ -8,7 +8,10 @@ export const DEFERRED_PAYMENT_DOCUMENT_TYPES: readonly DeferredPaymentDocumentTy
 	'other',
 ];
 
+let deferredPaymentItemSequence = 0;
+
 export interface DeferredPaymentFormItemValues {
+	client_key: string;
 	product_id: null;
 	code: string;
 	description: string;
@@ -77,7 +80,10 @@ export const DeferredPaymentDocumentSchema = Yup.object({
 		'due-date-after-issue-date',
 		'La fecha de vencimiento no puede ser anterior a la fecha de emisión',
 		function validateDueDate(value) {
-			const issueDate = this.parent.issue_date;
+			const { parent }: { parent: unknown } = this;
+			const parentRecord =
+				parent && typeof parent === 'object' ? (parent as Record<string, unknown>) : {};
+			const { issue_date: issueDate } = parentRecord;
 			return typeof issueDate !== 'string' || !value || value >= issueDate;
 		},
 	),
@@ -105,7 +111,13 @@ export const DeferredPaymentDocumentSchema = Yup.object({
 		.required('Agrega al menos un ítem al documento'),
 });
 
+const createDeferredPaymentItemKey = (): string => {
+	deferredPaymentItemSequence += 1;
+	return `deferred-item-${deferredPaymentItemSequence}`;
+};
+
 export const createEmptyDeferredPaymentItem = (): DeferredPaymentFormItemValues => ({
+	client_key: createDeferredPaymentItemKey(),
 	product_id: null,
 	code: '',
 	description: '',

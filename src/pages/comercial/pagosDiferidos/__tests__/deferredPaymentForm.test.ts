@@ -12,6 +12,7 @@ const validValues = {
 	due_date: '2026-08-27',
 	items: [
 		{
+			client_key: 'test-item-1',
 			product_id: null,
 			code: 'SERV-001',
 			description: 'Servicio mensual',

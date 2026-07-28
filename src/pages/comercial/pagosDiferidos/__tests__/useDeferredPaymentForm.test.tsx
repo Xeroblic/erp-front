@@ -108,6 +108,7 @@ describe('useDeferredPaymentForm', () => {
 				document_number: 'FD-HOOK-001',
 				items: [
 					{
+						client_key: 'hook-item-1',
 						product_id: null,
 						code: 'SERV',
 						description: 'Servicio de prueba',
