@@ -1,4 +1,5 @@
 import React from 'react';
+import type { IDeferredPaymentDocument } from '@/interface/deferredPayments.interface';
 import Avatar from '@/components/Avatar';
 import Icon from '@/components/icon/Icon';
 import Alert from '@/components/ui/Alert';
@@ -28,6 +29,7 @@ import {
 interface DeferredPaymentDetailDrawerProps {
 	documentId: number | null;
 	onClose: () => void;
+	onEdit: (document: IDeferredPaymentDocument) => void;
 }
 
 const DetailSkeleton = () => (
@@ -62,6 +64,7 @@ const AmountCard = ({
 const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = ({
 	documentId,
 	onClose,
+	onEdit,
 }) => {
 	const { document, loading, error, actions, branch, hasDataContext } =
 		useDeferredPaymentDetail(documentId);
@@ -280,6 +283,8 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 					<DeferredPaymentActionsFooter
 						branchId={branch.branchId}
 						subsidiaryId={branch.subsidiaryId}
+						status={document.status}
+						onEdit={() => onEdit(document)}
 					/>
 				) : (
 					<span />

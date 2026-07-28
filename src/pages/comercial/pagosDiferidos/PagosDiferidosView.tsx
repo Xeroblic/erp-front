@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import type { IDeferredPaymentDocument } from '@/interface/deferredPayments.interface';
 import Container from '@/components/layouts/Container/Container';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
@@ -17,12 +18,27 @@ import usePagosDiferidos from './hooks/usePagosDiferidos';
 const PagosDiferidosView: React.FC = () => {
 	const { data, state, filters, selection, actions, branch } = usePagosDiferidos();
 	const [isCreateOpen, setIsCreateOpen] = useState(false);
+	const [editingDocument, setEditingDocument] = useState<IDeferredPaymentDocument | null>(null);
 	const setDeferredPaymentsFilter = filters.setFilter;
 	const handlePaginationChange = useCallback(
 		(page: number, perPage: number) => setDeferredPaymentsFilter({ page, per_page: perPage }),
 		[setDeferredPaymentsFilter],
 	);
-	useEffect(() => setIsCreateOpen(false), [branch.subsidiaryId]);
+	useEffect(() => {
+		setIsCreateOpen(false);
+		setEditingDocument(null);
+	}, [branch.subsidiaryId]);
+	const closeForm = useCallback(() => {
+		setIsCreateOpen(false);
+		setEditingDocument(null);
+	}, []);
+	const editDocument = useCallback(
+		(document: IDeferredPaymentDocument) => {
+			selection.closeDetail();
+			setEditingDocument(document);
+		},
+		[selection],
+	);
 
 	return (
 		<PageWrapper isProtectedRoute title='Pagos diferidos'>
@@ -133,13 +149,15 @@ const PagosDiferidosView: React.FC = () => {
 				)}
 			</Container>
 			<CreateEditDeferredPaymentModal
-				isOpen={isCreateOpen}
-				onClose={() => setIsCreateOpen(false)}
+				isOpen={isCreateOpen || editingDocument !== null}
+				document={editingDocument}
+				onClose={closeForm}
 				onSaved={(document) => selection.openDetail(document.id)}
 			/>
 			<DeferredPaymentDetailDrawer
 				documentId={selection.selectedId}
 				onClose={selection.closeDetail}
+				onEdit={editDocument}
 			/>
 		</PageWrapper>
 	);
