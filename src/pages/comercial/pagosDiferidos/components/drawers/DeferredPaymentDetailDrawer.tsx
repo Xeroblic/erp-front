@@ -7,6 +7,7 @@ import Card, { CardBody } from '@/components/ui/Card';
 import OffCanvas, { OffCanvasBody, OffCanvasHeader } from '@/components/ui/OffCanvas';
 import Progress from '@/components/ui/Progress';
 import DeferredStatusPill from '../badges/DeferredStatusPill';
+import DeferredPaymentItemsSection from '../detail/DeferredPaymentItemsSection';
 import useDeferredPaymentDetail from '../../hooks/useDeferredPaymentDetail';
 import {
 	DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS,
@@ -238,7 +239,8 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 									)}
 								</div>
 							</CardBody>
-						</Card>{' '}
+						</Card>
+						<DeferredPaymentItemsSection items={document.items} />
 					</>
 				)}
 			</OffCanvasBody>

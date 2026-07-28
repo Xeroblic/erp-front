@@ -49,6 +49,9 @@ describe('DeferredPaymentDetailDrawer', () => {
 		expect(screen.getByText('Responsables de cobranza')).toBeInTheDocument();
 		expect(screen.getByText('Carlos Muñoz')).toBeInTheDocument();
 		expect(screen.getByText('carlos.munoz@zentria.cl')).toBeInTheDocument();
+		expect(screen.getByText('Ítems del documento')).toBeInTheDocument();
+		expect(screen.getByText('SERV-2-A')).toBeInTheDocument();
+		expect(screen.getByText('Servicio principal facturado')).toBeInTheDocument();
 	});
 
 	it('muestra solo el estado de carga mientras no existe un documento vigente', () => {
