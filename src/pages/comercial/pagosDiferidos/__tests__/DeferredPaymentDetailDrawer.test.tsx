@@ -76,6 +76,25 @@ describe('DeferredPaymentDetailDrawer', () => {
 		expect(screen.queryByText('Saldo pendiente')).not.toBeInTheDocument();
 	});
 
+	it('muestra saldo cero y progreso completo para un documento pagado', () => {
+		vi.mocked(useDeferredPaymentDetail).mockReturnValue({
+			...baseHookResult,
+			document: DEFERRED_PAYMENT_DETAILS_MOCK[9],
+			flags: {
+				isPaid: true,
+				canDelete: false,
+				canEdit: false,
+				canPay: false,
+			},
+		});
+
+		renderDrawer(9);
+
+		expect(screen.getByText('Pagado')).toBeInTheDocument();
+		expect(screen.getByText('$ 0')).toBeInTheDocument();
+		expect(screen.getAllByText('100%').length).toBeGreaterThan(0);
+		expect(screen.getByText('100% pagado')).toBeInTheDocument();
+	});
 	it('muestra el error sin datos y permite reintentar', () => {
 		vi.mocked(useDeferredPaymentDetail).mockReturnValue({
 			...baseHookResult,
