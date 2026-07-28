@@ -1,18 +1,23 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type {
+	CreateDeferredPaymentPayload,
+	DeferredPaymentMutationResponse,
 	DeferredPaymentsFilters,
 	DeferredPaymentsListResponse,
 	DeferredPaymentsPaginationMeta,
 	IDeferredPaymentDocument,
 	IDeferredPaymentListItem,
 	IDeferredPaymentsSummary,
+	UpdateDeferredPaymentPayload,
 } from '@/interface/deferredPayments.interface';
 import ApiService from '@/services/ApiService';
 import USE_DEFERRED_PAYMENTS_MOCK from './deferredPaymentsConfig';
 import {
+	mockCreateDeferredPayment,
 	mockFetchDeferredPaymentById,
 	mockFetchDeferredPayments,
 	mockFetchDeferredPaymentsSummary,
+	mockUpdateDeferredPayment,
 } from './deferredPaymentsMock';
 
 export const DEFAULT_DEFERRED_PAYMENTS_FILTERS: DeferredPaymentsFilters = {
@@ -30,9 +35,15 @@ export interface DeferredPaymentsState {
 	loading: boolean;
 	loadingSummary: boolean;
 	loadingDetail: boolean;
+	creating: boolean;
+	updating: boolean;
 	error: string | null;
 	errorSummary: string | null;
 	errorDetail: string | null;
+	errorMutation: string | null;
+	lastMutationCreditLimitExceeded: boolean;
+	createRequestId: string | null;
+	updateRequestId: string | null;
 	listRequestId: string | null;
 	listSubsidiaryId: number | null;
 	summaryRequestId: string | null;
@@ -50,9 +61,15 @@ const initialState: DeferredPaymentsState = {
 	loading: false,
 	loadingSummary: false,
 	loadingDetail: false,
+	creating: false,
+	updating: false,
 	error: null,
 	errorSummary: null,
 	errorDetail: null,
+	errorMutation: null,
+	lastMutationCreditLimitExceeded: false,
+	createRequestId: null,
+	updateRequestId: null,
 	listRequestId: null,
 	listSubsidiaryId: null,
 	summaryRequestId: null,
@@ -147,6 +164,66 @@ export const fetchDeferredPaymentById = createAsyncThunk<
 		}
 	},
 );
+export const createDeferredPayment = createAsyncThunk<
+	DeferredPaymentMutationResponse,
+	{ subsidiaryId: number; payload: CreateDeferredPaymentPayload },
+	{ rejectValue: string }
+>('deferredPayments/create', async ({ subsidiaryId, payload }, { rejectWithValue, signal }) => {
+	try {
+		const result = USE_DEFERRED_PAYMENTS_MOCK
+			? await mockCreateDeferredPayment(payload, signal)
+			: (
+					await ApiService.fetchData<
+						DeferredPaymentMutationResponse,
+						CreateDeferredPaymentPayload
+					>({
+						url: baseUrl(subsidiaryId),
+						method: 'post',
+						data: payload,
+						signal,
+					})
+				).data;
+		ApiService.invalidateCache(baseUrl(subsidiaryId));
+		return result;
+	} catch (error) {
+		if (signal.aborted) throw error;
+		return rejectWithValue(
+			getErrorMessage(error, 'No se pudo crear el documento de pago diferido'),
+		);
+	}
+});
+
+export const updateDeferredPayment = createAsyncThunk<
+	DeferredPaymentMutationResponse,
+	{ subsidiaryId: number; documentId: number; payload: UpdateDeferredPaymentPayload },
+	{ rejectValue: string }
+>(
+	'deferredPayments/update',
+	async ({ subsidiaryId, documentId, payload }, { rejectWithValue, signal }) => {
+		try {
+			const result = USE_DEFERRED_PAYMENTS_MOCK
+				? await mockUpdateDeferredPayment(documentId, payload, signal)
+				: (
+						await ApiService.fetchData<
+							DeferredPaymentMutationResponse,
+							UpdateDeferredPaymentPayload
+						>({
+							url: `${baseUrl(subsidiaryId)}/${documentId}`,
+							method: 'patch',
+							data: payload,
+							signal,
+						})
+					).data;
+			ApiService.invalidateCache(baseUrl(subsidiaryId));
+			return result;
+		} catch (error) {
+			if (signal.aborted) throw error;
+			return rejectWithValue(
+				getErrorMessage(error, 'No se pudo actualizar el documento de pago diferido'),
+			);
+		}
+	},
+);
 const deferredPaymentsSlice = createSlice({
 	name: 'deferredPayments',
 	initialState,
@@ -166,6 +243,10 @@ const deferredPaymentsSlice = createSlice({
 			state.detailRequestId = null;
 			state.detailSubsidiaryId = null;
 			state.loadingDetail = false;
+		},
+		clearDeferredPaymentMutation: (state) => {
+			state.errorMutation = null;
+			state.lastMutationCreditLimitExceeded = false;
 		},
 	},
 	extraReducers: (builder) => {
@@ -249,6 +330,50 @@ const deferredPaymentsSlice = createSlice({
 				state.current = null;
 				state.errorDetail =
 					action.payload ?? 'No se pudo cargar el detalle del pago diferido';
+			})
+			.addCase(createDeferredPayment.pending, (state, action) => {
+				state.createRequestId = action.meta.requestId;
+				state.creating = true;
+				state.errorMutation = null;
+				state.lastMutationCreditLimitExceeded = false;
+			})
+			.addCase(createDeferredPayment.fulfilled, (state, action) => {
+				if (state.createRequestId !== action.meta.requestId) return;
+				state.createRequestId = null;
+				state.creating = false;
+				state.current = action.payload.document;
+				state.detailSubsidiaryId = action.meta.arg.subsidiaryId;
+				state.lastMutationCreditLimitExceeded = action.payload.credit_limit_exceeded;
+			})
+			.addCase(createDeferredPayment.rejected, (state, action) => {
+				if (state.createRequestId !== action.meta.requestId) return;
+				state.createRequestId = null;
+				state.creating = false;
+				if (action.meta.aborted) return;
+				state.errorMutation =
+					action.payload ?? 'No se pudo crear el documento de pago diferido';
+			})
+			.addCase(updateDeferredPayment.pending, (state, action) => {
+				state.updateRequestId = action.meta.requestId;
+				state.updating = true;
+				state.errorMutation = null;
+				state.lastMutationCreditLimitExceeded = false;
+			})
+			.addCase(updateDeferredPayment.fulfilled, (state, action) => {
+				if (state.updateRequestId !== action.meta.requestId) return;
+				state.updateRequestId = null;
+				state.updating = false;
+				state.current = action.payload.document;
+				state.detailSubsidiaryId = action.meta.arg.subsidiaryId;
+				state.lastMutationCreditLimitExceeded = action.payload.credit_limit_exceeded;
+			})
+			.addCase(updateDeferredPayment.rejected, (state, action) => {
+				if (state.updateRequestId !== action.meta.requestId) return;
+				state.updateRequestId = null;
+				state.updating = false;
+				if (action.meta.aborted) return;
+				state.errorMutation =
+					action.payload ?? 'No se pudo actualizar el documento de pago diferido';
 			});
 	},
 });
@@ -257,6 +382,7 @@ export const {
 	setDeferredPaymentsFilters,
 	resetDeferredPaymentsFilters,
 	clearDeferredPaymentDetail,
+	clearDeferredPaymentMutation,
 } = deferredPaymentsSlice.actions;
 
 export default deferredPaymentsSlice.reducer;
