@@ -52,6 +52,12 @@ describe('DeferredPaymentDetailDrawer', () => {
 		expect(screen.getByText('Ítems del documento')).toBeInTheDocument();
 		expect(screen.getByText('SERV-2-A')).toBeInTheDocument();
 		expect(screen.getByText('Servicio principal facturado')).toBeInTheDocument();
+		expect(screen.getByText('Abonos registrados')).toBeInTheDocument();
+		expect(
+			screen.getByText('Abono 1 registrado por transferencia bancaria.'),
+		).toBeInTheDocument();
+		expect(screen.getByText('Adjuntos del documento')).toBeInTheDocument();
+		expect(screen.getByText('documento-FD-0002.pdf')).toBeInTheDocument();
 	});
 
 	it('muestra solo el estado de carga mientras no existe un documento vigente', () => {
