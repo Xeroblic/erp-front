@@ -75,7 +75,7 @@ describe('useDeferredPaymentDetail', () => {
 		expect(store.getState().deferredPayments.current).toBeNull();
 	});
 
-	it('carga el detalle mock sin subsidiaria resuelta y deriva sus capacidades', async () => {
+	it('carga el detalle mock sin subsidiaria resuelta', async () => {
 		vi.useFakeTimers();
 		const { hook } = createHook(2);
 
@@ -85,29 +85,7 @@ describe('useDeferredPaymentDetail', () => {
 
 		expect(fetchDetailSpy).toHaveBeenCalledOnce();
 		expect(hook.result.current.document?.id).toBe(2);
-		expect(hook.result.current.flags).toEqual({
-			isPaid: false,
-			canDelete: false,
-			canEdit: true,
-			canPay: true,
-		});
 		expect(hook.result.current.hasDataContext).toBe(true);
-	});
-
-	it('impide editar o abonar un documento pagado', async () => {
-		vi.useFakeTimers();
-		const { hook } = createHook(9);
-
-		await act(async () => {
-			await vi.runAllTimersAsync();
-		});
-
-		expect(hook.result.current.flags).toEqual({
-			isPaid: true,
-			canDelete: false,
-			canEdit: false,
-			canPay: false,
-		});
 	});
 
 	it('aborta el detalle anterior al cambiar rápidamente de documento', async () => {

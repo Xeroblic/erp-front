@@ -51,27 +51,16 @@ const useDeferredPaymentDetail = (documentId: number | null) => {
 		};
 	}, [dispatch, refresh]);
 
-	const flags = useMemo(() => {
-		const isPaid = document?.status === 'paid';
-		return {
-			isPaid,
-			canDelete: Boolean(document && document.payments.length === 0),
-			canEdit: Boolean(document && !isPaid),
-			canPay: Boolean(document && !isPaid && Number(document.outstanding_amount) > 0),
-		};
-	}, [document]);
-
 	return useMemo(
 		() => ({
 			document,
 			loading,
 			error,
 			actions: { refresh },
-			flags,
 			branch: { branchId, subsidiaryId },
 			hasDataContext: effectiveSubsidiaryId !== null,
 		}),
-		[branchId, document, effectiveSubsidiaryId, error, flags, loading, refresh, subsidiaryId],
+		[branchId, document, effectiveSubsidiaryId, error, loading, refresh, subsidiaryId],
 	);
 };
 

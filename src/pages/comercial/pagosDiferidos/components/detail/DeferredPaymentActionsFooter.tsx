@@ -5,19 +5,11 @@ import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 interface DeferredPaymentActionsFooterProps {
 	branchId: number | null;
 	subsidiaryId: number | null;
-	isPaid: boolean;
-	canDelete: boolean;
-	canEdit: boolean;
-	canPay: boolean;
 }
 
 const DeferredPaymentActionsFooter: React.FC<DeferredPaymentActionsFooterProps> = ({
 	branchId,
 	subsidiaryId,
-	isPaid,
-	canDelete,
-	canEdit,
-	canPay,
 }) => (
 	<div className='w-full space-y-2'>
 		<p id='deferred-actions-status' className='text-xs text-zinc-500'>
@@ -62,11 +54,6 @@ const DeferredPaymentActionsFooter: React.FC<DeferredPaymentActionsFooterProps> 
 				Eliminar
 			</ProtectedButton>
 		</div>
-		<span className='sr-only'>
-			Estado actual: {isPaid ? 'pagado' : 'no pagado'}; pago permitido: {canPay ? 'sí' : 'no'}
-			; edición permitida: {canEdit ? 'sí' : 'no'}; eliminación permitida:{' '}
-			{canDelete ? 'sí' : 'no'}.
-		</span>
 	</div>
 );
 

@@ -63,7 +63,7 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 	documentId,
 	onClose,
 }) => {
-	const { document, loading, error, actions, flags, branch, hasDataContext } =
+	const { document, loading, error, actions, branch, hasDataContext } =
 		useDeferredPaymentDetail(documentId);
 	const total = Number(document?.total_amount ?? 0);
 	const paid = Number(document?.paid_amount ?? 0);
@@ -280,10 +280,6 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 					<DeferredPaymentActionsFooter
 						branchId={branch.branchId}
 						subsidiaryId={branch.subsidiaryId}
-						isPaid={flags.isPaid}
-						canDelete={flags.canDelete}
-						canEdit={flags.canEdit}
-						canPay={flags.canPay}
 					/>
 				) : (
 					<span />

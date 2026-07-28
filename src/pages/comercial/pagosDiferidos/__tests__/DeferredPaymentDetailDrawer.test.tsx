@@ -15,7 +15,6 @@ const baseHookResult = {
 	loading: false,
 	error: null,
 	actions: { refresh },
-	flags: { isPaid: false, canDelete: false, canEdit: true, canPay: true },
 	branch: { branchId: 1, subsidiaryId: 1 },
 	hasDataContext: true,
 };
@@ -64,6 +63,7 @@ describe('DeferredPaymentDetailDrawer', () => {
 		expect(
 			screen.getByText('Las acciones se habilitarán con los flujos de ZF-7 y ZF-8.'),
 		).toBeInTheDocument();
+		expect(screen.queryByText(/pago permitido/i)).not.toBeInTheDocument();
 		expect(screen.getByText('Nota del documento')).toBeInTheDocument();
 		expect(screen.getByText('Sin observaciones registradas.')).toBeInTheDocument();
 	});
@@ -88,12 +88,6 @@ describe('DeferredPaymentDetailDrawer', () => {
 		vi.mocked(useDeferredPaymentDetail).mockReturnValue({
 			...baseHookResult,
 			document: DEFERRED_PAYMENT_DETAILS_MOCK[1],
-			flags: {
-				isPaid: false,
-				canDelete: true,
-				canEdit: true,
-				canPay: true,
-			},
 		});
 
 		renderDrawer(1);
@@ -122,12 +116,6 @@ describe('DeferredPaymentDetailDrawer', () => {
 		vi.mocked(useDeferredPaymentDetail).mockReturnValue({
 			...baseHookResult,
 			document: DEFERRED_PAYMENT_DETAILS_MOCK[9],
-			flags: {
-				isPaid: true,
-				canDelete: false,
-				canEdit: false,
-				canPay: false,
-			},
 		});
 
 		renderDrawer(9);
