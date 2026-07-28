@@ -60,6 +60,10 @@ const usePagosDiferidos = () => {
 	);
 
 	useEffect(() => {
+		if (isSubsidiaryChange) setSelectedId(null);
+	}, [isSubsidiaryChange]);
+
+	useEffect(() => {
 		if (effectiveSubsidiaryId === null || isSearchDebouncing) return undefined;
 		const request = dispatch(
 			fetchDeferredPaymentsSummary({ subsidiaryId: effectiveSubsidiaryId }),
