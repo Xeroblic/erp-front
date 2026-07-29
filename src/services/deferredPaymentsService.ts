@@ -17,6 +17,9 @@ import ApiService from '@/services/ApiService';
 
 type ApiResource<T> = { data: T };
 type ApiResourcePayload<T> = T | ApiResource<T>;
+type CreateDocumentApiResponse = ApiResourcePayload<IDeferredPaymentDocument> & {
+	credit_limit_exceeded?: boolean;
+};
 
 const asRecord = (value: unknown): Record<string, unknown> | null =>
 	value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -41,6 +44,24 @@ const toApiDate = (value?: string): string | undefined => {
 	const match = ISO_DATE_REGEX.exec(value);
 	return match ? `${match[3]}/${match[2]}/${match[1]}` : value;
 };
+
+const toCreateApiPayload = (
+	payload: CreateDeferredPaymentApiPayload,
+): CreateDeferredPaymentApiPayload => ({
+	...payload,
+	issue_date: toApiDate(payload.issue_date) ?? payload.issue_date,
+	due_date: payload.due_date === null ? null : toApiDate(payload.due_date),
+});
+
+const toUpdateApiPayload = (
+	payload: UpdateDeferredPaymentApiPayload,
+): UpdateDeferredPaymentApiPayload => ({
+	...payload,
+	...(payload.issue_date !== undefined && { issue_date: toApiDate(payload.issue_date) }),
+	...(payload.due_date !== undefined && {
+		due_date: payload.due_date === null ? null : toApiDate(payload.due_date),
+	}),
+});
 
 const normalizePayment = (payment: IDeferredPaymentAbono): IDeferredPaymentAbono => ({
 	...payment,
@@ -136,18 +157,18 @@ const createDocument = async (
 	signal?: AbortSignal,
 ): Promise<DeferredPaymentMutationApiResponse> => {
 	const response = await ApiService.fetchData<
-		ApiResource<IDeferredPaymentDocument> & { credit_limit_exceeded?: boolean },
+		CreateDocumentApiResponse,
 		CreateDeferredPaymentApiPayload
 	>({
 		url: documentsUrl(subsidiaryId),
 		method: 'post',
-		data: payload,
+		data: toCreateApiPayload(payload),
 		...requestConfig(signal),
 	});
 	ApiService.invalidateCache(documentsUrl(subsidiaryId));
 	return {
-		document: normalizeDocument(response.data.data),
-		credit_limit_exceeded: response.data.credit_limit_exceeded ?? false,
+		document: normalizeDocument(unwrapResource(response.data)),
+		credit_limit_exceeded: asRecord(response.data)?.credit_limit_exceeded === true,
 	};
 };
 
@@ -163,7 +184,7 @@ const updateDocument = async (
 	>({
 		url: documentUrl(subsidiaryId, documentId),
 		method: 'patch',
-		data: payload,
+		data: toUpdateApiPayload(payload),
 		...requestConfig(signal),
 	});
 	ApiService.invalidateCache(documentsUrl(subsidiaryId));

@@ -26,16 +26,16 @@ const DeferredPaymentsKpis: React.FC<DeferredPaymentsKpisProps> = ({ summary, lo
 			amount: summary?.overdue?.amount ?? '0',
 			detail: `${summary?.overdue?.count ?? 0} documentos`,
 			tooltip:
-				'Documentos cuya fecha de pago ya pas\u00F3 y todav\u00EDa no est\u00E1n saldados. Es dinero que deber\u00EDa haber llegado y no lleg\u00F3.',
+				'Documentos cuya fecha de pago ya pasó y todavía no están saldados. Es dinero que debería haber llegado y no llegó.',
 			icon: 'HeroExclamationTriangle' as const,
 			accent: 'bg-red-600 text-white shadow-sm',
 		},
 		{
-			label: 'Por vencer en 7 d\u00EDas',
+			label: 'Por vencer en 7 días',
 			amount: summary?.due_within_7_days?.amount ?? '0',
 			detail: `${summary?.due_within_7_days?.count ?? 0} documentos`,
 			tooltip:
-				'Documentos que todav\u00EDa no vencen, pero vencen dentro de los pr\u00F3ximos 7 d\u00EDas. Es una alerta preventiva.',
+				'Documentos que todavía no vencen, pero vencen dentro de los próximos 7 días. Es una alerta preventiva.',
 			icon: 'HeroClock' as const,
 			accent: 'bg-amber-600 text-white shadow-sm',
 		},
@@ -44,7 +44,7 @@ const DeferredPaymentsKpis: React.FC<DeferredPaymentsKpisProps> = ({ summary, lo
 			amount: summary?.current?.amount ?? '0',
 			detail: `${summary?.current?.count ?? 0} documentos`,
 			tooltip:
-				'Documentos no pagados que vencen en m\\u00E1s de 7 d\\u00EDas. No est\\u00E1n vencidos ni dentro de la alerta preventiva de esta semana.',
+				'Documentos no pagados que vencen en más de 7 días. No están vencidos ni dentro de la alerta preventiva de esta semana.',
 			icon: 'HeroDocumentText' as const,
 			accent: 'bg-zinc-700 text-white shadow-sm',
 		},
@@ -77,7 +77,7 @@ const DeferredPaymentsKpis: React.FC<DeferredPaymentsKpisProps> = ({ summary, lo
 										<Tooltip text={item.tooltip} placement='bottom-start'>
 											<button
 												type='button'
-												aria-label={`Informaci\u00F3n sobre ${item.label}`}
+												aria-label={`Información sobre ${item.label}`}
 												tabIndex={0}
 												className='ml-1 inline-flex h-4 w-4 items-center justify-center border-0 bg-transparent p-0 align-middle leading-none text-zinc-500 dark:text-zinc-300'>
 												<Icon

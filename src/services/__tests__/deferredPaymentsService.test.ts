@@ -117,6 +117,7 @@ describe('deferredPaymentsService', () => {
 			document_type: 'electronic_invoice',
 			document_number: '1900',
 			issue_date: '2026-07-22',
+			due_date: '2026-08-21',
 			total_amount: '953980.00',
 		};
 		const created = {
@@ -132,12 +133,48 @@ describe('deferredPaymentsService', () => {
 			expect.objectContaining({
 				url: '/subsidiaries/4/deferred-payments',
 				method: 'post',
-				data: payload,
+				data: { ...payload, issue_date: '22/07/2026', due_date: '21/08/2026' },
 			}),
 		);
 		expect(apiSpies.invalidateCache).toHaveBeenCalledWith('/subsidiaries/4/deferred-payments');
 	});
 
+	it('tolera creación plana y convierte fechas parciales al actualizar', async () => {
+		apiSpies.fetchData
+			.mockResolvedValueOnce({ data: document } as never)
+			.mockResolvedValueOnce({ data: { data: document } } as never);
+
+		await expect(
+			deferredPaymentsService.createDocument(4, {
+				customer_sale_id: 4,
+				document_type: 'electronic_invoice',
+				document_number: '1901',
+				issue_date: '2026-07-23',
+				total_amount: '1000.00',
+			}),
+		).resolves.toMatchObject({
+			document: { id: 7, issue_date: '2026-07-22' },
+			credit_limit_exceeded: false,
+		});
+		await deferredPaymentsService.updateDocument(4, 7, {
+			issue_date: '2026-07-24',
+			due_date: null,
+		});
+
+		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(
+			1,
+			expect.objectContaining({
+				data: expect.objectContaining({ issue_date: '23/07/2026' }),
+			}),
+		);
+		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(
+			2,
+			expect.objectContaining({
+				method: 'patch',
+				data: { issue_date: '24/07/2026', due_date: null },
+			}),
+		);
+	});
 	it('registra, anula y completa abonos usando las rutas documentadas', async () => {
 		apiSpies.fetchData
 			.mockResolvedValueOnce({ data: { data: payment } } as never)
