@@ -91,6 +91,9 @@ describe('useDeferredPaymentForm', () => {
 			document_number: document.document_number,
 			notes: null,
 		});
+		expect(
+			mapDeferredPaymentFormToPayload({ ...values, assignee_ids: [] }, 37)?.assignee_ids,
+		).toEqual([37]);
 	});
 
 	it('recalcula vencimiento y total estimado al editar el formulario', async () => {

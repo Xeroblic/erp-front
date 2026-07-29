@@ -72,11 +72,16 @@ export const mapDeferredPaymentDocumentToForm = (
 
 export const mapDeferredPaymentFormToPayload = (
 	values: DeferredPaymentFormValues,
+	currentUserId?: number,
 ): CreateDeferredPaymentPayload | null => {
 	if (values.customer_sale_id === null) return null;
 	return {
 		...values,
 		customer_sale_id: values.customer_sale_id,
+		assignee_ids:
+			values.assignee_ids.length === 0 && currentUserId && currentUserId > 0
+				? [currentUserId]
+				: values.assignee_ids,
 		document_number: values.document_number.trim(),
 		purchase_order: values.purchase_order?.trim() || null,
 		notes: values.notes?.trim() || null,
@@ -99,6 +104,7 @@ const useDeferredPaymentForm = ({
 }: UseDeferredPaymentFormProps) => {
 	const dispatch = useAppDispatch();
 	const { subsidiaryId } = useCurrentBranch();
+	const currentUserId = useAppSelector((state) => state.auth?.user?.id);
 	const creating = useAppSelector((state) => state.deferredPayments.creating);
 	const updating = useAppSelector((state) => state.deferredPayments.updating);
 	const creditLimitExceeded = useAppSelector(
@@ -127,7 +133,7 @@ const useDeferredPaymentForm = ({
 		enableReinitialize: true,
 		onSubmit: async (values) => {
 			if (submittingRef.current || effectiveSubsidiaryId === null || isPaidEdit) return;
-			const payload = mapDeferredPaymentFormToPayload(values);
+			const payload = mapDeferredPaymentFormToPayload(values, currentUserId);
 			if (!payload) return;
 
 			submittingRef.current = true;
