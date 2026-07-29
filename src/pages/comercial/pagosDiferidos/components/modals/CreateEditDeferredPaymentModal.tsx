@@ -180,8 +180,8 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 				</div>
 			</ModalHeader>
 			<FormikProvider value={formik}>
-				<Form>
-					<ModalBody className='space-y-5 bg-zinc-50 dark:bg-zinc-950'>
+				<Form className='flex min-h-0 flex-1 flex-col overflow-hidden'>
+					<ModalBody className='min-h-0 flex-1 space-y-5 overflow-y-auto bg-zinc-50 dark:bg-zinc-950'>
 						{isPaidEdit && (
 							<Alert color='amber' variant='outline' icon='HeroLockClosed'>
 								Los documentos pagados no se pueden editar.
@@ -511,7 +511,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 							</CardBody>
 						</Card>
 					</ModalBody>
-					<ModalFooter>
+					<ModalFooter className='shrink-0 border-t border-zinc-200 bg-white pt-4 dark:border-zinc-800 dark:bg-zinc-950'>
 						<ModalFooterChild>
 							<Button
 								type='button'

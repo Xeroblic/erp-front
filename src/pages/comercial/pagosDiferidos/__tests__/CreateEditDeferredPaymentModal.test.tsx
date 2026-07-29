@@ -55,6 +55,17 @@ describe('CreateEditDeferredPaymentModal', () => {
 		expect(screen.getByRole('button', { name: 'Crear documento' })).toBeInTheDocument();
 	});
 
+	it('mantiene el cuerpo desplazable y las acciones fuera del área de scroll', () => {
+		renderModal();
+		const body = document.querySelector('[data-component-name="Modal/ModalBody"]');
+		const footer = document.querySelector('[data-component-name="Modal/ModalFooter"]');
+		const form = body?.closest('form');
+
+		expect(body).toHaveClass('overflow-y-auto', 'min-h-0', 'flex-1');
+		expect(form).toHaveClass('overflow-hidden', 'min-h-0', 'flex-1');
+		expect(footer).toHaveClass('shrink-0');
+		expect(screen.getByRole('button', { name: 'Crear documento' })).toBeInTheDocument();
+	});
 	it('no se cierra al hacer clic fuera y sí permite cancelar explícitamente', () => {
 		const { onClose } = renderModal();
 
