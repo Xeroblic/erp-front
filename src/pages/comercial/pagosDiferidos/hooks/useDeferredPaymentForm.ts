@@ -31,6 +31,10 @@ interface UseDeferredPaymentFormProps {
 	onSuccess?: (document: IDeferredPaymentDocument) => void;
 }
 
+interface AbortableRequest {
+	abort: () => void;
+}
+
 const DEFAULT_PAYMENT_TERM_DAYS = 30;
 
 const formatLocalDate = (date: Date): string => {
@@ -112,7 +116,11 @@ const useDeferredPaymentForm = ({
 	);
 	const filters = useAppSelector((state) => state.deferredPayments.filters);
 	const submittingRef = useRef(false);
+	const activeSubmissionRef = useRef<symbol | null>(null);
+	const activeRequestsRef = useRef<AbortableRequest[]>([]);
 	const effectiveSubsidiaryId = subsidiaryId ?? (USE_DEFERRED_PAYMENTS_MOCK ? 0 : null);
+	const latestSubsidiaryIdRef = useRef(effectiveSubsidiaryId);
+	latestSubsidiaryIdRef.current = effectiveSubsidiaryId;
 	const today = useMemo(() => formatLocalDate(new Date()), []);
 	const initialPaymentTermDays = useRef(paymentTermDays).current;
 	const initialValues = useMemo(
@@ -136,29 +144,47 @@ const useDeferredPaymentForm = ({
 			const payload = mapDeferredPaymentFormToPayload(values, currentUserId);
 			if (!payload) return;
 
+			const submissionId = Symbol('deferred-payment-submission');
 			submittingRef.current = true;
+			activeSubmissionRef.current = submissionId;
 			try {
-				const result =
+				const mutationRequest =
 					mode === 'edit' && document
-						? await dispatch(
+						? dispatch(
 								updateDeferredPayment({
 									subsidiaryId: effectiveSubsidiaryId,
 									documentId: document.id,
 									payload,
 								}),
-							).unwrap()
-						: await dispatch(
+							)
+						: dispatch(
 								createDeferredPayment({
 									subsidiaryId: effectiveSubsidiaryId,
 									payload,
 								}),
-							).unwrap();
-				await Promise.all([
-					dispatch(
-						fetchDeferredPayments({ subsidiaryId: effectiveSubsidiaryId, filters }),
-					),
-					dispatch(fetchDeferredPaymentsSummary({ subsidiaryId: effectiveSubsidiaryId })),
-				]);
+							);
+				activeRequestsRef.current = [mutationRequest];
+				const result = await mutationRequest.unwrap();
+				if (
+					activeSubmissionRef.current !== submissionId ||
+					latestSubsidiaryIdRef.current !== effectiveSubsidiaryId
+				)
+					return;
+
+				const listRequest = dispatch(
+					fetchDeferredPayments({ subsidiaryId: effectiveSubsidiaryId, filters }),
+				);
+				const summaryRequest = dispatch(
+					fetchDeferredPaymentsSummary({ subsidiaryId: effectiveSubsidiaryId }),
+				);
+				activeRequestsRef.current = [listRequest, summaryRequest];
+				await Promise.all([listRequest, summaryRequest]);
+				if (
+					activeSubmissionRef.current !== submissionId ||
+					latestSubsidiaryIdRef.current !== effectiveSubsidiaryId
+				)
+					return;
+
 				onSuccess?.(result.document);
 				toast.success(
 					mode === 'edit'
@@ -166,6 +192,11 @@ const useDeferredPaymentForm = ({
 						: 'Documento creado correctamente',
 				);
 			} catch (submitError: unknown) {
+				if (
+					activeSubmissionRef.current !== submissionId ||
+					latestSubsidiaryIdRef.current !== effectiveSubsidiaryId
+				)
+					return;
 				const fallbackMessage =
 					mode === 'edit'
 						? 'No se pudo actualizar el documento de pago diferido'
@@ -178,7 +209,11 @@ const useDeferredPaymentForm = ({
 				}
 				toast.error(message);
 			} finally {
-				submittingRef.current = false;
+				if (activeSubmissionRef.current === submissionId) {
+					activeSubmissionRef.current = null;
+					activeRequestsRef.current = [];
+					submittingRef.current = false;
+				}
 			}
 		},
 	});
@@ -209,6 +244,19 @@ const useDeferredPaymentForm = ({
 			.catch(() => undefined);
 	}, [formik, mode, paymentTermDays]);
 
+	useEffect(() => {
+		activeSubmissionRef.current = null;
+		activeRequestsRef.current.forEach((request) => request.abort());
+		activeRequestsRef.current = [];
+		submittingRef.current = false;
+
+		return () => {
+			activeSubmissionRef.current = null;
+			activeRequestsRef.current.forEach((request) => request.abort());
+			activeRequestsRef.current = [];
+			submittingRef.current = false;
+		};
+	}, [effectiveSubsidiaryId]);
 	useEffect(
 		() => () => {
 			dispatch(clearDeferredPaymentMutation());

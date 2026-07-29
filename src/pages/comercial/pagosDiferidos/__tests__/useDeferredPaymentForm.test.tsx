@@ -3,6 +3,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { act, renderHook } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { IDeferredPaymentDocument } from '@/interface/deferredPayments.interface';
 import deferredPaymentsReducer from '@/store/slices/deferredPayments/deferredPaymentsSlice';
 import { DEFERRED_PAYMENT_DETAILS_MOCK } from '@/store/slices/deferredPayments/deferredPaymentsMock';
 import useDeferredPaymentForm, {
@@ -13,7 +14,9 @@ import useDeferredPaymentForm, {
 
 const createMutationSpy = vi.hoisted(() => vi.fn());
 const mutationFailure = vi.hoisted(() => ({ error: null as Error | null }));
+const mutationGate = vi.hoisted(() => ({ wait: null as Promise<void> | null }));
 const toastSpies = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+const branchContext = vi.hoisted(() => ({ subsidiaryId: 1 as number | null }));
 
 vi.mock('react-toastify', () => ({ toast: toastSpies }));
 
@@ -29,14 +32,21 @@ vi.mock('@/store/slices/deferredPayments/deferredPaymentsMock', async (importOri
 		) => {
 			createMutationSpy(...args);
 			if (mutationFailure.error) return Promise.reject(mutationFailure.error);
-			return actual.mockCreateDeferredPayment(...args);
+			return (async () => {
+				if (mutationGate.wait) await mutationGate.wait;
+				return actual.mockCreateDeferredPayment(...args);
+			})();
 		},
 	};
 });
 
 vi.mock('@/store/slices/deferredPayments/deferredPaymentsConfig', () => ({ default: true }));
 vi.mock('@/hooks/useCurrentBranch', () => ({
-	useCurrentBranch: () => ({ branchId: 1, subsidiaryId: 1, hasValidBranch: true }),
+	useCurrentBranch: () => ({
+		branchId: 1,
+		subsidiaryId: branchContext.subsidiaryId,
+		hasValidBranch: true,
+	}),
 }));
 vi.mock('@/store', async () => {
 	const reactRedux = await vi.importActual<typeof import('react-redux')>('react-redux');
@@ -46,6 +56,7 @@ vi.mock('@/store', async () => {
 describe('useDeferredPaymentForm', () => {
 	const createHook = (
 		document = null as (typeof DEFERRED_PAYMENT_DETAILS_MOCK)[number] | null,
+		onSuccess?: (savedDocument: IDeferredPaymentDocument) => void,
 	) => {
 		const store = configureStore({ reducer: { deferredPayments: deferredPaymentsReducer } });
 		const Wrapper = ({ children }: PropsWithChildren) => (
@@ -57,6 +68,7 @@ describe('useDeferredPaymentForm', () => {
 					mode: document ? 'edit' : 'create',
 					document,
 					paymentTermDays: 15,
+					onSuccess,
 				}),
 			{ wrapper: Wrapper },
 		);
@@ -66,6 +78,8 @@ describe('useDeferredPaymentForm', () => {
 	afterEach(() => {
 		createMutationSpy.mockClear();
 		mutationFailure.error = null;
+		mutationGate.wait = null;
+		branchContext.subsidiaryId = 1;
 		toastSpies.success.mockClear();
 		toastSpies.error.mockClear();
 		vi.useRealTimers();
@@ -142,6 +156,53 @@ describe('useDeferredPaymentForm', () => {
 		expect(toastSpies.error).not.toHaveBeenCalled();
 		expect(store.getState().deferredPayments.lastMutationCreditLimitExceeded).toBe(true);
 		expect(store.getState().deferredPayments.list.length).toBeGreaterThan(0);
+	});
+	it('aborta el guardado y omite callbacks al cambiar de subsidiaria', async () => {
+		let releaseMutation: () => void = () => {};
+		mutationGate.wait = new Promise<void>((resolve) => {
+			releaseMutation = resolve;
+		});
+		const onSuccess = vi.fn();
+		const { hook, store } = createHook(null, onSuccess);
+		await act(async () => {
+			await hook.result.current.formik.setValues({
+				...hook.result.current.formik.values,
+				customer_sale_id: 1,
+				document_number: 'FD-CONTEXT-CHANGE',
+				items: [
+					{
+						client_key: 'context-item',
+						product_id: null,
+						code: 'SERV',
+						description: 'Servicio pendiente',
+						quantity: 1,
+						unit_price: 1000,
+						serials: [],
+					},
+				],
+			});
+		});
+
+		let submitPromise: Promise<void> = Promise.resolve();
+		await act(async () => {
+			submitPromise = hook.result.current.formik.submitForm();
+			await Promise.resolve();
+		});
+		await vi.waitFor(() => expect(createMutationSpy).toHaveBeenCalledOnce());
+
+		act(() => {
+			branchContext.subsidiaryId = 99;
+			hook.rerender();
+		});
+		await act(async () => {
+			releaseMutation();
+			await submitPromise;
+		});
+
+		expect(onSuccess).not.toHaveBeenCalled();
+		expect(toastSpies.success).not.toHaveBeenCalled();
+		expect(toastSpies.error).not.toHaveBeenCalled();
+		expect(store.getState().deferredPayments.list).toEqual([]);
 	});
 
 	it('muestra el error de la mutación en un toast', async () => {
