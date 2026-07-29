@@ -21,6 +21,7 @@ import USE_DEFERRED_PAYMENTS_MOCK from '@/store/slices/deferredPayments/deferred
 import { DEFERRED_PAYMENT_DETAILS_MOCK } from '@/store/slices/deferredPayments/deferredPaymentsMock';
 import { fetchUsers } from '@/store/slices/usersAdmin/usersAdminSlice';
 import { formatCLP } from '@/utils/format.utils';
+import DeferredPaymentSerialsInput from '../parts/DeferredPaymentSerialsInput';
 import useDeferredPaymentForm from '../../hooks/useDeferredPaymentForm';
 import { createEmptyDeferredPaymentItem } from '../../types';
 import { DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS } from '../../utils';
@@ -372,7 +373,27 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 										onChange={(event) => formik.handleChange(event)}
 										onBlur={(event) => formik.handleBlur(event)}
 										disabled={isPaidEdit}
+										isValid={formik.isValid}
+										isTouched={Boolean(formik.touched.purchase_order)}
+										invalidFeedback={fieldError(
+											formik.errors,
+											formik.touched,
+											'purchase_order',
+										)}
 									/>
+									{fieldError(
+										formik.errors,
+										formik.touched,
+										'purchase_order',
+									) && (
+										<p className='mt-1 text-sm text-red-600'>
+											{fieldError(
+												formik.errors,
+												formik.touched,
+												'purchase_order',
+											)}
+										</p>
+									)}
 								</div>
 								<div>
 									<Label htmlFor='assignee_ids'>Responsables</Label>
@@ -407,7 +428,19 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 										onChange={(event) => formik.handleChange(event)}
 										onBlur={(event) => formik.handleBlur(event)}
 										disabled={isPaidEdit}
+										isValid={formik.isValid}
+										isTouched={Boolean(formik.touched.notes)}
+										invalidFeedback={fieldError(
+											formik.errors,
+											formik.touched,
+											'notes',
+										)}
 									/>
+									{fieldError(formik.errors, formik.touched, 'notes') && (
+										<p className='mt-1 text-sm text-red-600'>
+											{fieldError(formik.errors, formik.touched, 'notes')}
+										</p>
+									)}
 								</div>
 							</CardBody>
 						</Card>
@@ -613,6 +646,26 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 															}
 															onClick={() =>
 																arrayHelpers.remove(index)
+															}
+														/>
+													</div>
+													<div className='md:col-span-12'>
+														<DeferredPaymentSerialsInput
+															id={`items.${index}.serials`}
+															value={item.serials}
+															disabled={isPaidEdit}
+															error={fieldError(
+																formik.errors,
+																formik.touched,
+																`items.${index}.serials`,
+															)}
+															onChange={(serials) =>
+																formik
+																	.setFieldValue(
+																		`items.${index}.serials`,
+																		serials,
+																	)
+																	.catch(() => undefined)
 															}
 														/>
 													</div>

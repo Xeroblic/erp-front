@@ -1,9 +1,10 @@
 import React, { type PropsWithChildren } from 'react';
 import { configureStore } from '@reduxjs/toolkit';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import customerSalesReducer from '@/store/slices/customerSales/customerSalesSlice';
+import { DEFERRED_PAYMENT_DETAILS_MOCK } from '@/store/slices/deferredPayments/deferredPaymentsMock';
 import deferredPaymentsReducer from '@/store/slices/deferredPayments/deferredPaymentsSlice';
 import usersAdminReducer from '@/store/slices/usersAdmin/usersAdminSlice';
 import CreateEditDeferredPaymentModal from '../components/modals/CreateEditDeferredPaymentModal';
@@ -29,7 +30,10 @@ describe('CreateEditDeferredPaymentModal', () => {
 		portalRoot.id = 'portal-root';
 		document.body.appendChild(portalRoot);
 	});
-	const renderModal = (onClose = vi.fn()) => {
+	const renderModal = (
+		onClose = vi.fn(),
+		document = null as (typeof DEFERRED_PAYMENT_DETAILS_MOCK)[number] | null,
+	) => {
 		const store = configureStore({
 			reducer: {
 				customerSales: customerSalesReducer,
@@ -40,7 +44,7 @@ describe('CreateEditDeferredPaymentModal', () => {
 		const Wrapper = ({ children }: PropsWithChildren) => (
 			<Provider store={store}>{children}</Provider>
 		);
-		render(<CreateEditDeferredPaymentModal isOpen onClose={onClose} />, {
+		render(<CreateEditDeferredPaymentModal isOpen onClose={onClose} document={document} />, {
 			wrapper: Wrapper,
 		});
 		return { onClose };
@@ -77,6 +81,45 @@ describe('CreateEditDeferredPaymentModal', () => {
 		expect(screen.getByText('Ingresa el número de documento')).toBeInTheDocument();
 		expect(screen.getByText('Ingresa el código del ítem')).toBeInTheDocument();
 		expect(screen.getByText('Ingresa la descripción del ítem')).toBeInTheDocument();
+	});
+	it('permite agregar y quitar seriales del ítem', async () => {
+		renderModal();
+		const serialInput = screen.getByLabelText('Seriales (opcional)');
+
+		await act(async () => {
+			fireEvent.change(serialInput, { target: { value: 'SER-NUEVO-001' } });
+			fireEvent.keyDown(serialInput, { key: 'Enter' });
+			await Promise.resolve();
+		});
+
+		expect(screen.getByText('SER-NUEVO-001')).toBeInTheDocument();
+		await act(async () => {
+			fireEvent.click(screen.getByRole('button', { name: 'Quitar serial SER-NUEVO-001' }));
+			await Promise.resolve();
+		});
+		expect(screen.queryByText('SER-NUEVO-001')).not.toBeInTheDocument();
+	});
+
+	it('precarga notas y seriales al editar un documento', () => {
+		const document = DEFERRED_PAYMENT_DETAILS_MOCK[1];
+		renderModal(vi.fn(), document);
+
+		expect(screen.getByLabelText('Notas (opcional)')).toHaveValue(document.notes);
+		expect(screen.getByText('SER-1-001')).toBeInTheDocument();
+	});
+	it('muestra la validación de notas demasiado largas', async () => {
+		renderModal();
+		const notes = screen.getByLabelText('Notas (opcional)');
+
+		await act(async () => {
+			fireEvent.change(notes, { target: { value: 'a'.repeat(1001) } });
+			fireEvent.blur(notes);
+			await Promise.resolve();
+		});
+
+		expect(
+			await screen.findByText('Las notas no pueden superar los 1000 caracteres'),
+		).toBeInTheDocument();
 	});
 	it('mantiene el cuerpo desplazable y las acciones fuera del área de scroll', () => {
 		renderModal();

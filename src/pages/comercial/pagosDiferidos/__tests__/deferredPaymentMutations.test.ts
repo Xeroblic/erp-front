@@ -74,6 +74,7 @@ describe('ZF-7 mutaciones de documentos diferidos', () => {
 			outstanding_amount: '300000.00',
 			paid_amount: '0.00',
 			status: 'pending',
+			notes: 'Documento creado desde ZF-7',
 		});
 		expect(DEFERRED_PAYMENTS_MOCK.at(-1)?.id).toBe(result.document.id);
 		expect(DEFERRED_PAYMENT_DETAILS_MOCK[result.document.id]).toEqual(result.document);
