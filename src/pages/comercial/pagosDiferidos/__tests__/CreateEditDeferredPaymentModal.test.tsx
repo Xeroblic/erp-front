@@ -50,7 +50,7 @@ describe('CreateEditDeferredPaymentModal', () => {
 		return { onClose };
 	};
 
-	it('muestra el formulario de creación con total e ítems', () => {
+	it('muestra el formulario de creación con total e ítems', async () => {
 		renderModal();
 
 		expect(screen.getByRole('heading', { name: 'Nuevo documento' })).toBeInTheDocument();
@@ -62,6 +62,14 @@ describe('CreateEditDeferredPaymentModal', () => {
 			'placeholder',
 			'Ej.: OC-12345',
 		);
+		const notes = screen.getByLabelText('Notas (opcional)');
+		await act(async () => {
+			fireEvent.blur(notes);
+			await Promise.resolve();
+		});
+		expect(notes).not.toHaveClass('!border-green-500');
+		expect(notes).toHaveClass('bg-zinc-50', 'dark:bg-zinc-900');
+		expect(notes.style.getPropertyValue('--textarea-border')).toBe('#d4d4d8');
 		expect(screen.getByText('Ítems del documento')).toBeInTheDocument();
 		expect(screen.getByText('Total estimado')).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'Crear documento' })).toBeInTheDocument();

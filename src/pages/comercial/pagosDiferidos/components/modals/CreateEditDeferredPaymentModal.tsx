@@ -424,11 +424,16 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 										id='notes'
 										name='notes'
 										rows={3}
+										color='zinc'
+										colorIntensity='300'
+										className='bg-zinc-50 dark:bg-zinc-900'
 										value={formik.values.notes ?? ''}
 										onChange={(event) => formik.handleChange(event)}
 										onBlur={(event) => formik.handleBlur(event)}
 										disabled={isPaidEdit}
-										isValid={formik.isValid}
+										isValid={
+											!fieldError(formik.errors, formik.touched, 'notes')
+										}
 										isTouched={Boolean(formik.touched.notes)}
 										invalidFeedback={fieldError(
 											formik.errors,
