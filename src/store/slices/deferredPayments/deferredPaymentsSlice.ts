@@ -8,6 +8,7 @@ import type {
 	IDeferredPaymentsSummary,
 } from '@/interface/deferredPayments.interface';
 import ApiService from '@/services/ApiService';
+import deferredPaymentsService from '@/services/deferredPaymentsService';
 import USE_DEFERRED_PAYMENTS_MOCK from './deferredPaymentsConfig';
 import {
 	mockFetchDeferredPaymentById,
@@ -108,14 +109,19 @@ export const fetchDeferredPayments = createAsyncThunk<
 	const query = filters ?? DEFAULT_DEFERRED_PAYMENTS_FILTERS;
 	try {
 		if (USE_DEFERRED_PAYMENTS_MOCK) return await mockFetchDeferredPayments(query, signal);
-		const response = await ApiService.fetchData<DeferredPaymentsListResponse>({
-			url: baseUrl(subsidiaryId),
-			method: 'get',
-			params: query,
-			cacheTTLms: 15_000,
+		return await deferredPaymentsService.getDocuments(
+			subsidiaryId,
+			{
+				page: query.page,
+				per_page: query.per_page,
+				status: query.status,
+				customer_sale_id: query.customer_sale_id,
+				search: query.search,
+				due_before: query.due_before,
+				due_after: query.due_after,
+			},
 			signal,
-		});
-		return response.data;
+		);
 	} catch (error) {
 		if (signal.aborted) throw error;
 		return rejectWithValue(getErrorMessage(error, 'No se pudieron cargar los pagos diferidos'));
@@ -132,13 +138,7 @@ export const fetchDeferredPaymentById = createAsyncThunk<
 		try {
 			if (USE_DEFERRED_PAYMENTS_MOCK)
 				return await mockFetchDeferredPaymentById(documentId, signal);
-			const response = await ApiService.fetchData<IDeferredPaymentDocument>({
-				url: `${baseUrl(subsidiaryId)}/${documentId}`,
-				method: 'get',
-				cacheTTLms: 15_000,
-				signal,
-			});
-			return response.data;
+			return await deferredPaymentsService.getDocument(subsidiaryId, documentId, signal);
 		} catch (error) {
 			if (signal.aborted) throw error;
 			return rejectWithValue(
