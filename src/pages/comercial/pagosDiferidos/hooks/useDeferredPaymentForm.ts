@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useFormik } from 'formik';
+import { toast } from 'react-toastify';
 import type {
 	CreateDeferredPaymentPayload,
 	IDeferredPaymentDocument,
@@ -100,7 +101,6 @@ const useDeferredPaymentForm = ({
 	const { subsidiaryId } = useCurrentBranch();
 	const creating = useAppSelector((state) => state.deferredPayments.creating);
 	const updating = useAppSelector((state) => state.deferredPayments.updating);
-	const error = useAppSelector((state) => state.deferredPayments.errorMutation);
 	const creditLimitExceeded = useAppSelector(
 		(state) => state.deferredPayments.lastMutationCreditLimitExceeded,
 	);
@@ -154,6 +154,23 @@ const useDeferredPaymentForm = ({
 					dispatch(fetchDeferredPaymentsSummary({ subsidiaryId: effectiveSubsidiaryId })),
 				]);
 				onSuccess?.(result.document);
+				toast.success(
+					mode === 'edit'
+						? 'Documento actualizado correctamente'
+						: 'Documento creado correctamente',
+				);
+			} catch (submitError: unknown) {
+				const fallbackMessage =
+					mode === 'edit'
+						? 'No se pudo actualizar el documento de pago diferido'
+						: 'No se pudo crear el documento de pago diferido';
+				let message = fallbackMessage;
+				if (typeof submitError === 'string' && submitError.trim()) {
+					message = submitError;
+				} else if (submitError instanceof Error && submitError.message) {
+					message = submitError.message;
+				}
+				toast.error(message);
 			} finally {
 				submittingRef.current = false;
 			}
@@ -203,7 +220,6 @@ const useDeferredPaymentForm = ({
 		isSubmitting: formik.isSubmitting || creating || updating,
 		isPaidEdit,
 		hasDataContext: effectiveSubsidiaryId !== null,
-		error,
 		creditLimitExceeded,
 		actions: { clearMutationFeedback },
 	};

@@ -78,7 +78,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const listSubsidiaryId = useAppSelector((state) => state.deferredPayments.listSubsidiaryId);
 	const [paymentTermDays, setPaymentTermDays] = useState(30);
 	const mode = document ? 'edit' : 'create';
-	const { formik, estimatedTotal, isSubmitting, isPaidEdit, error, creditLimitExceeded } =
+	const { formik, estimatedTotal, isSubmitting, isPaidEdit, creditLimitExceeded } =
 		useDeferredPaymentForm({
 			mode,
 			document,
@@ -187,11 +187,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 								Los documentos pagados no se pueden editar.
 							</Alert>
 						)}
-						{error && (
-							<Alert color='red' variant='outline' icon='HeroExclamationTriangle'>
-								{error}
-							</Alert>
-						)}
+
 						{(exceedsKnownCreditLimit || creditLimitExceeded) && (
 							<Alert color='amber' variant='outline' icon='HeroExclamationTriangle'>
 								El total supera el límite de crédito conocido del cliente. Puedes

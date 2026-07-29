@@ -12,6 +12,10 @@ import useDeferredPaymentForm, {
 } from '../hooks/useDeferredPaymentForm';
 
 const createMutationSpy = vi.hoisted(() => vi.fn());
+const mutationFailure = vi.hoisted(() => ({ error: null as Error | null }));
+const toastSpies = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+
+vi.mock('react-toastify', () => ({ toast: toastSpies }));
 
 vi.mock('@/store/slices/deferredPayments/deferredPaymentsMock', async (importOriginal) => {
 	const actual =
@@ -24,6 +28,7 @@ vi.mock('@/store/slices/deferredPayments/deferredPaymentsMock', async (importOri
 			...args: Parameters<typeof actual.mockCreateDeferredPayment>
 		) => {
 			createMutationSpy(...args);
+			if (mutationFailure.error) return Promise.reject(mutationFailure.error);
 			return actual.mockCreateDeferredPayment(...args);
 		},
 	};
@@ -60,6 +65,9 @@ describe('useDeferredPaymentForm', () => {
 
 	afterEach(() => {
 		createMutationSpy.mockClear();
+		mutationFailure.error = null;
+		toastSpies.success.mockClear();
+		toastSpies.error.mockClear();
 		vi.useRealTimers();
 	});
 
@@ -127,10 +135,40 @@ describe('useDeferredPaymentForm', () => {
 		});
 
 		expect(createMutationSpy).toHaveBeenCalledOnce();
+		expect(toastSpies.success).toHaveBeenCalledWith('Documento creado correctamente');
+		expect(toastSpies.error).not.toHaveBeenCalled();
 		expect(store.getState().deferredPayments.lastMutationCreditLimitExceeded).toBe(true);
 		expect(store.getState().deferredPayments.list.length).toBeGreaterThan(0);
 	});
 
+	it('muestra el error de la mutación en un toast', async () => {
+		mutationFailure.error = new Error('Servidor no disponible');
+		const { hook } = createHook();
+		await act(async () => {
+			await hook.result.current.formik.setValues({
+				...hook.result.current.formik.values,
+				customer_sale_id: 1,
+				document_number: 'FD-HOOK-ERROR',
+				items: [
+					{
+						client_key: 'hook-item-error',
+						product_id: null,
+						code: 'SERV',
+						description: 'Servicio con error',
+						quantity: 1,
+						unit_price: 1000,
+						serials: [],
+					},
+				],
+			});
+		});
+		await act(async () => {
+			await hook.result.current.formik.submitForm();
+		});
+
+		expect(toastSpies.error).toHaveBeenCalledWith('Servidor no disponible');
+		expect(toastSpies.success).not.toHaveBeenCalled();
+	});
 	it('bloquea la edición de documentos pagados', async () => {
 		const paidDocument = Object.values(DEFERRED_PAYMENT_DETAILS_MOCK).find(
 			(document) => document.status === 'paid',
