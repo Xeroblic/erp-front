@@ -50,11 +50,34 @@ describe('CreateEditDeferredPaymentModal', () => {
 		renderModal();
 
 		expect(screen.getByRole('heading', { name: 'Nuevo documento' })).toBeInTheDocument();
+		expect(screen.getByLabelText('Número de documento')).toHaveAttribute(
+			'placeholder',
+			'Ej.: FAC-001234',
+		);
+		expect(screen.getByLabelText('Orden de compra (opcional)')).toHaveAttribute(
+			'placeholder',
+			'Ej.: OC-12345',
+		);
 		expect(screen.getByText('Ítems del documento')).toBeInTheDocument();
 		expect(screen.getByText('Total estimado')).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'Crear documento' })).toBeInTheDocument();
 	});
 
+	it('muestra etiquetas y mensajes al omitir campos obligatorios', async () => {
+		renderModal();
+
+		expect(screen.getByLabelText('Código')).toBeInTheDocument();
+		expect(screen.getByLabelText('Descripción')).toBeInTheDocument();
+		expect(screen.getByLabelText('Cantidad')).toBeInTheDocument();
+		expect(screen.getByLabelText('Precio unitario')).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole('button', { name: 'Crear documento' }));
+
+		expect(await screen.findByText('Selecciona un cliente')).toBeInTheDocument();
+		expect(screen.getByText('Ingresa el número de documento')).toBeInTheDocument();
+		expect(screen.getByText('Ingresa el código del ítem')).toBeInTheDocument();
+		expect(screen.getByText('Ingresa la descripción del ítem')).toBeInTheDocument();
+	});
 	it('mantiene el cuerpo desplazable y las acciones fuera del área de scroll', () => {
 		renderModal();
 		const body = document.querySelector('[data-component-name="Modal/ModalBody"]');
