@@ -7,7 +7,7 @@ import type {
 	IDeferredPaymentAbono,
 	IDeferredPaymentCreditProfile,
 	IDeferredPaymentDocument,
-	IDeferredPaymentsApiSummary,
+	IDeferredPaymentsSummary,
 	CreateDeferredPaymentApiPayload,
 	RegisterDeferredPaymentPayload,
 	UpdateDeferredPaymentApiPayload,
@@ -28,6 +28,48 @@ const unwrapResource = <T>(payload: ApiResourcePayload<T>): T => {
 	return record && 'data' in record ? (record.data as T) : (payload as T);
 };
 
+const API_DATE_REGEX = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+const ISO_DATE_REGEX = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+const toDomainDate = (value: string): string => {
+	const match = API_DATE_REGEX.exec(value);
+	return match ? `${match[3]}-${match[2]}-${match[1]}` : value;
+};
+
+const toApiDate = (value?: string): string | undefined => {
+	if (!value) return undefined;
+	const match = ISO_DATE_REGEX.exec(value);
+	return match ? `${match[3]}/${match[2]}/${match[1]}` : value;
+};
+
+const normalizePayment = (payment: IDeferredPaymentAbono): IDeferredPaymentAbono => ({
+	...payment,
+	paid_at: toDomainDate(payment.paid_at),
+	attachments: payment.attachments ?? [],
+});
+
+const normalizeDocument = (document: IDeferredPaymentDocument): IDeferredPaymentDocument => ({
+	...document,
+	issue_date: toDomainDate(document.issue_date),
+	due_date: toDomainDate(document.due_date),
+	assignees: document.assignees ?? [],
+	items: (document.items ?? []).map((item) => ({
+		...item,
+		code: item.code ?? '',
+		unit_price: item.unit_price ?? '0.00',
+		serials: item.serials ?? [],
+	})),
+	payments: (document.payments ?? []).map(normalizePayment),
+	attachments: document.attachments ?? [],
+});
+
+const normalizeListItem = (
+	document: DeferredPaymentsListResponse['data'][number],
+): DeferredPaymentsListResponse['data'][number] => ({
+	...document,
+	issue_date: toDomainDate(document.issue_date),
+	due_date: toDomainDate(document.due_date),
+});
 const documentsUrl = (subsidiaryId: number): string =>
 	`/subsidiaries/${subsidiaryId}/deferred-payments`;
 
@@ -47,18 +89,25 @@ const getDocuments = async (
 	const response = await ApiService.fetchData<DeferredPaymentsListResponse>({
 		url: documentsUrl(subsidiaryId),
 		method: 'get',
-		params,
+		params: {
+			...params,
+			due_before: toApiDate(params.due_before),
+			due_after: toApiDate(params.due_after),
+		},
 		cacheTTLms: 15_000,
 		...requestConfig(signal),
 	});
-	return response.data;
+	return {
+		...response.data,
+		data: response.data.data.map(normalizeListItem),
+	};
 };
 
 const getSummary = async (
 	subsidiaryId: number,
 	signal?: AbortSignal,
-): Promise<IDeferredPaymentsApiSummary> => {
-	const response = await ApiService.fetchData<ApiResourcePayload<IDeferredPaymentsApiSummary>>({
+): Promise<IDeferredPaymentsSummary> => {
+	const response = await ApiService.fetchData<ApiResourcePayload<IDeferredPaymentsSummary>>({
 		url: `${documentsUrl(subsidiaryId)}/summary`,
 		method: 'get',
 		cacheTTLms: 30_000,
@@ -78,7 +127,7 @@ const getDocument = async (
 		cacheTTLms: 15_000,
 		...requestConfig(signal),
 	});
-	return unwrapResource(response.data);
+	return normalizeDocument(unwrapResource(response.data));
 };
 
 const createDocument = async (
@@ -87,7 +136,7 @@ const createDocument = async (
 	signal?: AbortSignal,
 ): Promise<DeferredPaymentMutationApiResponse> => {
 	const response = await ApiService.fetchData<
-		ApiResourcePayload<DeferredPaymentMutationApiResponse>,
+		ApiResource<IDeferredPaymentDocument> & { credit_limit_exceeded?: boolean },
 		CreateDeferredPaymentApiPayload
 	>({
 		url: documentsUrl(subsidiaryId),
@@ -96,7 +145,10 @@ const createDocument = async (
 		...requestConfig(signal),
 	});
 	ApiService.invalidateCache(documentsUrl(subsidiaryId));
-	return unwrapResource(response.data);
+	return {
+		document: normalizeDocument(response.data.data),
+		credit_limit_exceeded: response.data.credit_limit_exceeded ?? false,
+	};
 };
 
 const updateDocument = async (
@@ -104,9 +156,9 @@ const updateDocument = async (
 	documentId: number,
 	payload: UpdateDeferredPaymentApiPayload,
 	signal?: AbortSignal,
-): Promise<DeferredPaymentMutationApiResponse> => {
+): Promise<IDeferredPaymentDocument> => {
 	const response = await ApiService.fetchData<
-		ApiResourcePayload<DeferredPaymentMutationApiResponse>,
+		ApiResourcePayload<IDeferredPaymentDocument>,
 		UpdateDeferredPaymentApiPayload
 	>({
 		url: documentUrl(subsidiaryId, documentId),
@@ -115,7 +167,7 @@ const updateDocument = async (
 		...requestConfig(signal),
 	});
 	ApiService.invalidateCache(documentsUrl(subsidiaryId));
-	return unwrapResource(response.data);
+	return normalizeDocument(unwrapResource(response.data));
 };
 
 const deleteDocument = async (
@@ -148,7 +200,7 @@ const registerPayment = async (
 		...requestConfig(signal),
 	});
 	ApiService.invalidateCache(documentsUrl(subsidiaryId));
-	return unwrapResource(response.data);
+	return normalizePayment(unwrapResource(response.data));
 };
 
 const deletePayment = async (
@@ -177,7 +229,7 @@ const markDocumentPaid = async (
 		...requestConfig(signal),
 	});
 	ApiService.invalidateCache(documentsUrl(subsidiaryId));
-	return unwrapResource(response.data);
+	return normalizePayment(unwrapResource(response.data));
 };
 
 const getCreditProfile = async (

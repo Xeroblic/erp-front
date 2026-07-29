@@ -7,7 +7,6 @@ import type {
 	IDeferredPaymentListItem,
 	IDeferredPaymentsSummary,
 } from '@/interface/deferredPayments.interface';
-import ApiService from '@/services/ApiService';
 import deferredPaymentsService from '@/services/deferredPaymentsService';
 import USE_DEFERRED_PAYMENTS_MOCK from './deferredPaymentsConfig';
 import {
@@ -77,8 +76,6 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
 	return fallback;
 };
 
-const baseUrl = (subsidiaryId: number): string => `/subsidiaries/${subsidiaryId}/deferred-payments`;
-
 export const fetchDeferredPaymentsSummary = createAsyncThunk<
 	IDeferredPaymentsSummary,
 	{ subsidiaryId: number },
@@ -86,13 +83,7 @@ export const fetchDeferredPaymentsSummary = createAsyncThunk<
 >('deferredPayments/fetchSummary', async ({ subsidiaryId }, { rejectWithValue, signal }) => {
 	try {
 		if (USE_DEFERRED_PAYMENTS_MOCK) return await mockFetchDeferredPaymentsSummary(signal);
-		const response = await ApiService.fetchData<IDeferredPaymentsSummary>({
-			url: `${baseUrl(subsidiaryId)}/summary`,
-			method: 'get',
-			cacheTTLms: 30_000,
-			signal,
-		});
-		return response.data;
+		return await deferredPaymentsService.getSummary(subsidiaryId, signal);
 	} catch (error) {
 		if (signal.aborted) throw error;
 		return rejectWithValue(

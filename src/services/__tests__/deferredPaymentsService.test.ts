@@ -5,7 +5,7 @@ import type {
 	IDeferredPaymentAbono,
 	IDeferredPaymentCreditProfile,
 	IDeferredPaymentDocument,
-	IDeferredPaymentsApiSummary,
+	IDeferredPaymentsSummary,
 } from '@/interface/deferredPayments.interface';
 import deferredPaymentsService from '@/services/deferredPaymentsService';
 
@@ -13,9 +13,35 @@ const apiSpies = vi.hoisted(() => ({ fetchData: vi.fn(), invalidateCache: vi.fn(
 
 vi.mock('@/services/ApiService', () => ({ default: apiSpies }));
 
-const document = { id: 7, document_number: '1900' } as IDeferredPaymentDocument;
-const payment = { id: 3, amount: '300000.00' } as IDeferredPaymentAbono;
-const summary: IDeferredPaymentsApiSummary = {
+const document: IDeferredPaymentDocument = {
+	id: 7,
+	document_number: '1900',
+	document_type: 'electronic_invoice',
+	purchase_order: null,
+	total_amount: '953980.00',
+	paid_amount: '300000.00',
+	outstanding_amount: '653980.00',
+	status: 'partially_paid',
+	is_overdue: false,
+	days_until_due: 30,
+	issue_date: '22/07/2026',
+	due_date: '21/08/2026',
+	customer: { id: 4, billing_company: 'Importadora Automarco Spa', rut: '84854200-8' },
+	notes: null,
+	assignees: [],
+	items: [],
+	payments: [],
+	attachments: [],
+};
+const payment: IDeferredPaymentAbono = {
+	id: 3,
+	amount: '300000.00',
+	paid_at: '01/08/2026',
+	method: 'transfer',
+	notes: null,
+	attachments: [],
+};
+const summary: IDeferredPaymentsSummary = {
 	total_outstanding: '125000.00',
 	overdue: { count: 3, amount: '45000.00' },
 	due_within_7_days: { count: 2, amount: '30000.00' },
@@ -39,14 +65,30 @@ describe('deferredPaymentsService', () => {
 		await expect(
 			deferredPaymentsService.getDocuments(
 				4,
-				{ page: 2, per_page: 20, status: 'overdue', search: '1900' },
+				{
+					page: 2,
+					per_page: 20,
+					status: 'overdue',
+					search: '1900',
+					due_after: '2026-07-01',
+				},
 				controller.signal,
 			),
-		).resolves.toEqual(listResponse);
+		).resolves.toEqual({
+			...listResponse,
+			data: [{ ...document, issue_date: '2026-07-22', due_date: '2026-08-21' }],
+		});
 		expect(apiSpies.fetchData).toHaveBeenCalledWith({
 			url: '/subsidiaries/4/deferred-payments',
 			method: 'get',
-			params: { page: 2, per_page: 20, status: 'overdue', search: '1900' },
+			params: {
+				page: 2,
+				per_page: 20,
+				status: 'overdue',
+				search: '1900',
+				due_before: undefined,
+				due_after: '01/07/2026',
+			},
 			cacheTTLms: 15_000,
 			signal: controller.signal,
 		});
@@ -58,7 +100,11 @@ describe('deferredPaymentsService', () => {
 			.mockResolvedValueOnce({ data: { data: document } } as never);
 
 		await expect(deferredPaymentsService.getSummary(4)).resolves.toEqual(summary);
-		await expect(deferredPaymentsService.getDocument(4, 7)).resolves.toEqual(document);
+		await expect(deferredPaymentsService.getDocument(4, 7)).resolves.toEqual({
+			...document,
+			issue_date: '2026-07-22',
+			due_date: '2026-08-21',
+		});
 		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(
 			2,
 			expect.objectContaining({ url: '/subsidiaries/4/deferred-payments/7' }),
@@ -73,8 +119,13 @@ describe('deferredPaymentsService', () => {
 			issue_date: '2026-07-22',
 			total_amount: '953980.00',
 		};
-		const created = { ...document, credit_limit_exceeded: false };
-		apiSpies.fetchData.mockResolvedValue({ data: { data: created } } as never);
+		const created = {
+			document: { ...document, issue_date: '2026-07-22', due_date: '2026-08-21' },
+			credit_limit_exceeded: false,
+		};
+		apiSpies.fetchData.mockResolvedValue({
+			data: { data: document, credit_limit_exceeded: false },
+		} as never);
 
 		await expect(deferredPaymentsService.createDocument(4, payload)).resolves.toEqual(created);
 		expect(apiSpies.fetchData).toHaveBeenCalledWith(

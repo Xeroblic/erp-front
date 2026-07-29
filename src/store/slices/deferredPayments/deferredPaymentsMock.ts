@@ -155,7 +155,9 @@ export const DEFERRED_PAYMENTS_SUMMARY_MOCK: IDeferredPaymentsSummary = {
 				row.days_until_due !== null && row.days_until_due >= 0 && row.days_until_due <= 7,
 		),
 	),
-	pending: summaryGroup(DEFERRED_PAYMENTS_MOCK.filter((row) => row.status === 'pending')),
+	current: summaryGroup(
+		unpaidRows.filter((row) => row.days_until_due !== null && row.days_until_due > 7),
+	),
 };
 
 const waitForMock = async (signal?: AbortSignal): Promise<void> =>

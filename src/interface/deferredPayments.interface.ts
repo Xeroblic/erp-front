@@ -13,7 +13,7 @@ export interface IDeferredPaymentsSummary {
 	total_outstanding: string;
 	overdue: IDeferredPaymentsSummaryGroup;
 	due_within_7_days: IDeferredPaymentsSummaryGroup;
-	pending: IDeferredPaymentsSummaryGroup;
+	current: IDeferredPaymentsSummaryGroup;
 }
 
 export interface IDeferredPaymentCustomer {
@@ -102,12 +102,6 @@ export interface DeferredPaymentsListResponse {
 	data: IDeferredPaymentListItem[];
 	meta: DeferredPaymentsPaginationMeta;
 }
-export interface IDeferredPaymentsApiSummary {
-	total_outstanding: string;
-	overdue: IDeferredPaymentsSummaryGroup;
-	due_within_7_days: IDeferredPaymentsSummaryGroup;
-	current: IDeferredPaymentsSummaryGroup;
-}
 
 export interface DeferredPaymentApiListParams {
 	page?: number;
@@ -143,7 +137,8 @@ export interface CreateDeferredPaymentApiPayload {
 
 export type UpdateDeferredPaymentApiPayload = Partial<CreateDeferredPaymentApiPayload>;
 
-export interface DeferredPaymentMutationApiResponse extends IDeferredPaymentDocument {
+export interface DeferredPaymentMutationApiResponse {
+	document: IDeferredPaymentDocument;
 	credit_limit_exceeded: boolean;
 }
 

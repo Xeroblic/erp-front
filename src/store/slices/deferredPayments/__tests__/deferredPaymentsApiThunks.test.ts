@@ -3,16 +3,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
 	DeferredPaymentsListResponse,
 	IDeferredPaymentDocument,
+	IDeferredPaymentsSummary,
 } from '@/interface/deferredPayments.interface';
 import deferredPaymentsReducer, {
 	DEFAULT_DEFERRED_PAYMENTS_FILTERS,
 	fetchDeferredPaymentById,
 	fetchDeferredPayments,
+	fetchDeferredPaymentsSummary,
 } from '@/store/slices/deferredPayments/deferredPaymentsSlice';
 
 const serviceSpies = vi.hoisted(() => ({
 	getDocuments: vi.fn(),
 	getDocument: vi.fn(),
+	getSummary: vi.fn(),
 }));
 
 vi.mock('@/store/slices/deferredPayments/deferredPaymentsConfig', () => ({ default: false }));
@@ -29,6 +32,7 @@ const createStore = () => configureStore({ reducer: deferredPaymentsReducer });
 beforeEach(() => {
 	serviceSpies.getDocuments.mockReset();
 	serviceSpies.getDocument.mockReset();
+	serviceSpies.getSummary.mockReset();
 });
 
 describe('thunks API de pagos diferidos', () => {
@@ -62,6 +66,22 @@ describe('thunks API de pagos diferidos', () => {
 		expect(store.getState().meta).toEqual(listResponse.meta);
 	});
 
+	it('carga el summary temporal desde el servicio', async () => {
+		const summary: IDeferredPaymentsSummary = {
+			total_outstanding: '125000.00',
+			overdue: { count: 3, amount: '45000.00' },
+			due_within_7_days: { count: 2, amount: '30000.00' },
+			current: { count: 5, amount: '50000.00' },
+		};
+		serviceSpies.getSummary.mockResolvedValue(summary);
+		const store = createStore();
+
+		await expect(
+			store.dispatch(fetchDeferredPaymentsSummary({ subsidiaryId: 4 })).unwrap(),
+		).resolves.toEqual(summary);
+		expect(serviceSpies.getSummary).toHaveBeenCalledWith(4, expect.any(AbortSignal));
+		expect(store.getState().summary).toEqual(summary);
+	});
 	it('carga el detalle desde el servicio usando la subsidiaria efectiva', async () => {
 		serviceSpies.getDocument.mockResolvedValue(document);
 		const store = createStore();

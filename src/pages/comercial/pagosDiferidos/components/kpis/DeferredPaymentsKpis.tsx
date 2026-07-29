@@ -40,11 +40,11 @@ const DeferredPaymentsKpis: React.FC<DeferredPaymentsKpisProps> = ({ summary, lo
 			accent: 'bg-amber-600 text-white shadow-sm',
 		},
 		{
-			label: 'Pendiente',
-			amount: summary?.pending?.amount ?? '0',
-			detail: `${summary?.pending?.count ?? 0} documentos`,
+			label: 'Vigente',
+			amount: summary?.current?.amount ?? '0',
+			detail: `${summary?.current?.count ?? 0} documentos`,
 			tooltip:
-				'Documentos a los que todav\u00EDa no se les ha abonado nada: tienen 0 pagos registrados, sin importar si est\u00E1n vencidos o no. Indica el estado de pago, no el tiempo.',
+				'Documentos no pagados que vencen en m\\u00E1s de 7 d\\u00EDas. No est\\u00E1n vencidos ni dentro de la alerta preventiva de esta semana.',
 			icon: 'HeroDocumentText' as const,
 			accent: 'bg-zinc-700 text-white shadow-sm',
 		},
