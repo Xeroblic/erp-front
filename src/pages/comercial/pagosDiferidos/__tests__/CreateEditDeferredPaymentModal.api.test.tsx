@@ -1,6 +1,6 @@
 import React, { type PropsWithChildren } from 'react';
 import { configureStore } from '@reduxjs/toolkit';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import customerSalesReducer from '@/store/slices/customerSales/customerSalesSlice';
@@ -108,6 +108,73 @@ describe('CreateEditDeferredPaymentModal con API real', () => {
 					params: expect.objectContaining({ q: 'Automarco', per_page: 100 }),
 				}),
 			),
+		);
+	});
+	it('conserva el cliente elegido después de seleccionar y cerrar la búsqueda', async () => {
+		const searchedCustomer = {
+			id: 457,
+			name: 'Zeta Corp',
+			rut: '76.457.000-1',
+			contact: null,
+			loyalty: 0,
+			total_sales: 0,
+			is_active: true,
+		};
+		apiSpies.fetchData.mockImplementation(
+			({ url, params }: { url: string; params?: { q?: string } }) =>
+				Promise.resolve({
+					data: url.includes('/overview')
+						? {
+								...emptyPagination,
+								data: params?.q === 'Zeta' ? [searchedCustomer] : [],
+								total: params?.q === 'Zeta' ? 1 : 0,
+							}
+						: {
+								data: [],
+								meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
+							},
+				}),
+		);
+		const store = configureStore({
+			reducer: {
+				customerSales: customerSalesReducer,
+				deferredPayments: deferredPaymentsReducer,
+				usersAdmin: usersAdminReducer,
+			},
+			preloadedState: {
+				deferredPayments: {
+					...deferredPaymentsReducer(undefined, { type: 'test/init' }),
+					listSubsidiaryId: 1,
+				},
+			},
+		});
+		const Wrapper = ({ children }: PropsWithChildren) => (
+			<Provider store={store}>{children}</Provider>
+		);
+		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, {
+			wrapper: Wrapper,
+		});
+
+		const customerInput = screen.getByLabelText('Cliente');
+		fireEvent.change(customerInput, { target: { value: 'Zeta' } });
+		const option = await screen.findByText('Zeta Corp · 76.457.000-1');
+		fireEvent.click(option);
+		fireEvent.blur(customerInput);
+
+		await act(async () => {
+			await new Promise((resolve) => {
+				setTimeout(resolve, 350);
+			});
+		});
+
+		expect(screen.getByText('Zeta Corp · 76.457.000-1')).toBeInTheDocument();
+		expect(store.getState().deferredPayments).toBeDefined();
+		const overviewCalls = apiSpies.fetchData.mock.calls.filter(([request]) =>
+			String((request as { url?: string }).url).includes('/overview'),
+		);
+		expect(overviewCalls).toHaveLength(2);
+		expect(overviewCalls[1]?.[0]).toEqual(
+			expect.objectContaining({ params: expect.objectContaining({ q: 'Zeta' }) }),
 		);
 	});
 });
