@@ -116,6 +116,7 @@ const useDeferredPaymentForm = ({
 	);
 	const filters = useAppSelector((state) => state.deferredPayments.filters);
 	const submittingRef = useRef(false);
+	const dueDateManuallySetRef = useRef(false);
 	const activeSubmissionRef = useRef<symbol | null>(null);
 	const activeRequestsRef = useRef<AbortableRequest[]>([]);
 	const effectiveSubsidiaryId = subsidiaryId ?? (USE_DEFERRED_PAYMENTS_MOCK ? 0 : null);
@@ -220,26 +221,36 @@ const useDeferredPaymentForm = ({
 
 	const previousPaymentTermDaysRef = useRef(paymentTermDays);
 	useEffect(() => {
-		if (mode !== 'create' || paymentTermDays === previousPaymentTermDaysRef.current) return;
+		if (
+			mode !== 'create' ||
+			dueDateManuallySetRef.current ||
+			paymentTermDays === previousPaymentTermDaysRef.current
+		)
+			return;
 		previousPaymentTermDaysRef.current = paymentTermDays;
 		formik
 			.setFieldValue(
 				'due_date',
 				addDaysToDateOnly(formik.values.issue_date, paymentTermDays),
-				false,
+				true,
 			)
 			.catch(() => undefined);
 	}, [formik, mode, paymentTermDays]);
 
 	const previousIssueDateRef = useRef(formik.values.issue_date);
 	useEffect(() => {
-		if (mode !== 'create' || formik.values.issue_date === previousIssueDateRef.current) return;
+		if (
+			mode !== 'create' ||
+			dueDateManuallySetRef.current ||
+			formik.values.issue_date === previousIssueDateRef.current
+		)
+			return;
 		previousIssueDateRef.current = formik.values.issue_date;
 		formik
 			.setFieldValue(
 				'due_date',
 				addDaysToDateOnly(formik.values.issue_date, paymentTermDays),
-				false,
+				true,
 			)
 			.catch(() => undefined);
 	}, [formik, mode, paymentTermDays]);
@@ -267,6 +278,13 @@ const useDeferredPaymentForm = ({
 	const clearMutationFeedback = useCallback(() => {
 		dispatch(clearDeferredPaymentMutation());
 	}, [dispatch]);
+	const setDueDateManually = useCallback(
+		(value: string) => {
+			dueDateManuallySetRef.current = true;
+			return formik.setFieldValue('due_date', value, true);
+		},
+		[formik],
+	);
 
 	return {
 		formik,
@@ -275,7 +293,7 @@ const useDeferredPaymentForm = ({
 		isPaidEdit,
 		hasDataContext: effectiveSubsidiaryId !== null,
 		creditLimitExceeded,
-		actions: { clearMutationFeedback },
+		actions: { clearMutationFeedback, setDueDateManually },
 	};
 };
 

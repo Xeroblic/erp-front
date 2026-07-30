@@ -79,7 +79,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const listSubsidiaryId = useAppSelector((state) => state.deferredPayments.listSubsidiaryId);
 	const [paymentTermDays, setPaymentTermDays] = useState(30);
 	const mode = document ? 'edit' : 'create';
-	const { formik, estimatedTotal, isSubmitting, isPaidEdit, creditLimitExceeded } =
+	const { formik, estimatedTotal, isSubmitting, isPaidEdit, creditLimitExceeded, actions } =
 		useDeferredPaymentForm({
 			mode,
 			document,
@@ -352,8 +352,12 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 										maxDate={MAX_DATE}
 										maxYear={MAX_YEAR}
 										disabled={isPaidEdit}
-										onChange={(event) => formik.handleChange(event)}
-										onBlur={(event) => formik.handleBlur(event)}
+										onChange={(event) =>
+											actions
+												.setDueDateManually(event.target.value)
+												.catch(() => undefined)
+										}
+										onBlur={() => formik.setFieldTouched('due_date', true)}
 									/>
 									{fieldError(formik.errors, formik.touched, 'due_date') && (
 										<p className='mt-1 text-sm text-red-600'>

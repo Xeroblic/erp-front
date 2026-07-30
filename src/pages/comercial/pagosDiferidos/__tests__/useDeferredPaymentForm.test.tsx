@@ -121,6 +121,12 @@ describe('useDeferredPaymentForm', () => {
 
 		expect(hook.result.current.formik.values.due_date).toBe('2026-08-16');
 		expect(hook.result.current.estimatedTotal).toBe(7500);
+
+		await act(async () => {
+			await hook.result.current.actions.setDueDateManually('2026-12-31');
+			await hook.result.current.formik.setFieldValue('issue_date', '2026-08-02');
+		});
+		expect(hook.result.current.formik.values.due_date).toBe('2026-12-31');
 	});
 
 	it('crea una sola vez ante dos envíos simultáneos y refresca el estado', async () => {
