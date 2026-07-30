@@ -151,7 +151,10 @@ describe('ZF-7 mutaciones de documentos diferidos', () => {
 		);
 		const rejected = deferredPaymentsReducer(
 			stale,
-			updateDeferredPayment.rejected(null, 'update-second', args, 'Fallo controlado'),
+			updateDeferredPayment.rejected(null, 'update-second', args, {
+				message: 'Fallo controlado',
+				errors: {},
+			}),
 		);
 		const cleared = deferredPaymentsReducer(rejected, clearDeferredPaymentMutation());
 

@@ -79,7 +79,7 @@ describe('DeferredPaymentDetailDrawer', () => {
 		const onEdit = vi.fn();
 		renderDrawer(2, onEdit);
 
-		fireEvent.click(screen.getByRole('button', { name: 'Editar documento', hidden: true }));
+		fireEvent.click(screen.getByRole('button', { name: 'Editar', hidden: true }));
 
 		expect(onEdit).toHaveBeenCalledOnce();
 		expect(onEdit).toHaveBeenCalledWith(DEFERRED_PAYMENT_DETAILS_MOCK[2]);
@@ -92,12 +92,10 @@ describe('DeferredPaymentDetailDrawer', () => {
 		});
 		renderDrawer(9);
 
-		expect(
-			screen.getByRole('button', {
-				name: 'Editar no disponible para documentos pagados',
-				hidden: true,
-			}),
-		).toBeDisabled();
+		const editButton = screen.getByRole('button', { name: 'Editar', hidden: true });
+
+		expect(editButton).toBeDisabled();
+		expect(editButton).toHaveAttribute('title', 'Editar no disponible para documentos pagados');
 	});
 	it('muestra Sin nota cuando un abono no tiene observaciones', () => {
 		const documentWithoutPaymentNote = {

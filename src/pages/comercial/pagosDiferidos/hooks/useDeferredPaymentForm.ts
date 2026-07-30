@@ -35,6 +35,10 @@ interface AbortableRequest {
 	abort: () => void;
 }
 
+const asRecord = (value: unknown): Record<string, unknown> | null =>
+	value !== null && typeof value === 'object' && !Array.isArray(value)
+		? (value as Record<string, unknown>)
+		: null;
 const DEFAULT_PAYMENT_TERM_DAYS = 30;
 
 const formatLocalDate = (date: Date): string => {
@@ -64,6 +68,7 @@ export const mapDeferredPaymentDocumentToForm = (
 	notes: document.notes,
 	assignee_ids: document.assignees.map((assignee) => assignee.id),
 	items: document.items.map((item) => ({
+		// Clave efímera de Formik; el backend reemplaza los ítems y no conserva esta identidad.
 		client_key: `deferred-item-existing-${item.id}`,
 		product_id: null,
 		code: item.code,
@@ -203,7 +208,23 @@ const useDeferredPaymentForm = ({
 						? 'No se pudo actualizar el documento de pago diferido'
 						: 'No se pudo crear el documento de pago diferido';
 				let message = fallbackMessage;
-				if (typeof submitError === 'string' && submitError.trim()) {
+				const submitErrorRecord = asRecord(submitError);
+				const fieldErrors = asRecord(submitErrorRecord?.errors);
+				if (fieldErrors) {
+					await Promise.all(
+						Object.entries(fieldErrors).flatMap(([field, fieldMessage]) => {
+							if (typeof fieldMessage !== 'string' || !fieldMessage.trim()) return [];
+							formik.setFieldError(field, fieldMessage);
+							return [formik.setFieldTouched(field, true, false)];
+						}),
+					);
+				}
+				if (
+					typeof submitErrorRecord?.message === 'string' &&
+					submitErrorRecord.message.trim()
+				) {
+					message = submitErrorRecord.message;
+				} else if (typeof submitError === 'string' && submitError.trim()) {
 					message = submitError;
 				} else if (submitError instanceof Error && submitError.message) {
 					message = submitError.message;

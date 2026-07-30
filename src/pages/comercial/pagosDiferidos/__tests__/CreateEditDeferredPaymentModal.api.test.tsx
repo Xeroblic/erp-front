@@ -79,7 +79,11 @@ describe('CreateEditDeferredPaymentModal con API real', () => {
 		);
 		const editedDocument = DEFERRED_PAYMENT_DETAILS_MOCK[1];
 		render(
-			<CreateEditDeferredPaymentModal isOpen document={editedDocument} onClose={vi.fn()} />,
+			<CreateEditDeferredPaymentModal
+				isOpen
+				deferredPaymentDocument={editedDocument}
+				onClose={vi.fn()}
+			/>,
 			{ wrapper: Wrapper },
 		);
 

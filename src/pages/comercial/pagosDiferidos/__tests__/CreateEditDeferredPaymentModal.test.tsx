@@ -45,7 +45,11 @@ describe('CreateEditDeferredPaymentModal', () => {
 			<Provider store={store}>{children}</Provider>
 		);
 		const renderResult = render(
-			<CreateEditDeferredPaymentModal isOpen onClose={onClose} document={document} />,
+			<CreateEditDeferredPaymentModal
+				isOpen
+				onClose={onClose}
+				deferredPaymentDocument={document}
+			/>,
 			{ wrapper: Wrapper },
 		);
 		return { onClose, ...renderResult };

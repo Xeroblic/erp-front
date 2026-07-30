@@ -46,10 +46,8 @@ const DeferredPaymentActionsFooter: React.FC<DeferredPaymentActionsFooterProps> 
 				scope='access'
 				icon='HeroPencilSquare'
 				isDisable={status === 'paid'}
-				aria-label={
-					status === 'paid'
-						? 'Editar no disponible para documentos pagados'
-						: 'Editar documento'
+				title={
+					status === 'paid' ? 'Editar no disponible para documentos pagados' : undefined
 				}
 				onClick={onEdit}>
 				Editar

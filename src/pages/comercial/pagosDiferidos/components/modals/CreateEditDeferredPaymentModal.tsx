@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FieldArray, Form, FormikProvider, getIn } from 'formik';
+import { FieldArray, Form, FormikProvider } from 'formik';
 import type { IDeferredPaymentDocument } from '@/interface/deferredPayments.interface';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
@@ -21,6 +21,7 @@ import USE_DEFERRED_PAYMENTS_MOCK from '@/store/slices/deferredPayments/deferred
 import { DEFERRED_PAYMENT_DETAILS_MOCK } from '@/store/slices/deferredPayments/deferredPaymentsMock';
 import { fetchUsers } from '@/store/slices/usersAdmin/usersAdminSlice';
 import { formatCLP } from '@/utils/format.utils';
+import DeferredPaymentField from '../parts/DeferredPaymentField';
 import DeferredPaymentSerialsInput from '../parts/DeferredPaymentSerialsInput';
 import useDeferredPaymentForm from '../../hooks/useDeferredPaymentForm';
 import { createEmptyDeferredPaymentItem } from '../../types';
@@ -29,7 +30,7 @@ import { DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS } from '../../utils';
 interface CreateEditDeferredPaymentModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	document?: IDeferredPaymentDocument | null;
+	deferredPaymentDocument?: IDeferredPaymentDocument | null;
 	onSaved?: (document: IDeferredPaymentDocument) => void;
 }
 
@@ -60,15 +61,10 @@ const asMultiOptions = (value: unknown): TSelectOption[] => {
 	return candidates.filter(isSelectOption);
 };
 
-const fieldError = (errors: unknown, touched: unknown, name: string): string | undefined => {
-	const error = getIn(errors, name) as unknown;
-	return getIn(touched, name) && typeof error === 'string' ? error : undefined;
-};
-
 const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalProps> = ({
 	isOpen,
 	onClose,
-	document = null,
+	deferredPaymentDocument = null,
 	onSaved,
 }) => {
 	const dispatch = useAppDispatch();
@@ -79,11 +75,11 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const listSubsidiaryId = useAppSelector((state) => state.deferredPayments.listSubsidiaryId);
 	const [paymentTermDays, setPaymentTermDays] = useState(30);
 	const [customerSearch, setCustomerSearch] = useState('');
-	const mode = document ? 'edit' : 'create';
+	const mode = deferredPaymentDocument ? 'edit' : 'create';
 	const { formik, estimatedTotal, isSubmitting, isPaidEdit, creditLimitExceeded, actions } =
 		useDeferredPaymentForm({
 			mode,
-			document,
+			document: deferredPaymentDocument,
 			paymentTermDays,
 			onSuccess: (savedDocument) => {
 				onSaved?.(savedDocument);
@@ -128,10 +124,10 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 					creditLimit: null,
 				}));
 		const editedCustomer =
-			mode === 'edit' && document
+			mode === 'edit' && deferredPaymentDocument
 				? {
-						id: document.customer.id,
-						label: `${document.customer.billing_company} · ${document.customer.rut}`,
+						id: deferredPaymentDocument.customer.id,
+						label: `${deferredPaymentDocument.customer.billing_company} · ${deferredPaymentDocument.customer.rut}`,
 						isActive: true,
 						paymentTermDays: 30,
 						creditLimit: null,
@@ -144,7 +140,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 				),
 			).values(),
 		);
-	}, [customers, document, mode]);
+	}, [customers, deferredPaymentDocument, mode]);
 	const customerOptions = useMemo<TSelectOption[]>(
 		() => customerData.map(({ id, label }) => ({ value: String(id), label })),
 		[customerData],
@@ -171,8 +167,8 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 					: `${user.first_name} ${user.last_name} · ${user.email}`,
 		}));
 		const editedOptions =
-			mode === 'edit' && document
-				? document.assignees.map((assignee) => ({
+			mode === 'edit' && deferredPaymentDocument
+				? deferredPaymentDocument.assignees.map((assignee) => ({
 						value: String(assignee.id),
 						label: `${assignee.name} · ${assignee.email}`,
 					}))
@@ -182,7 +178,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 				[...editedOptions, ...remoteOptions].map((option) => [option.value, option]),
 			).values(),
 		);
-	}, [document, mockAssignees, mode, users]);
+	}, [deferredPaymentDocument, mockAssignees, mode, users]);
 	const selectedCustomer = customerData.find(
 		(customer) => customer.id === formik.values.customer_sale_id,
 	);
@@ -241,199 +237,137 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 								<CardTitle>Datos del documento</CardTitle>
 							</CardHeader>
 							<CardBody className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-								<div className='md:col-span-2'>
-									<Label htmlFor='customer_sale_id'>Cliente</Label>
-									<SelectReact
-										name='customer_sale_id'
-										inputId='customer_sale_id'
-										options={customerOptions}
-										value={customerValue ?? null}
-										isLoading={!USE_DEFERRED_PAYMENTS_MOCK && customersLoading}
-										isDisabled={isPaidEdit}
-										placeholder='Busca por razón social o RUT'
-										onInputChange={(value) => setCustomerSearch(value)}
-										isValid={formik.isValid}
-										isTouched={Boolean(formik.touched.customer_sale_id)}
-										invalidFeedback={fieldError(
-											formik.errors,
-											formik.touched,
-											'customer_sale_id',
-										)}
-										onChange={(value) => {
-											const option = isSelectOption(value) ? value : null;
-											const customer = customerData.find(
-												(entry) => entry.id === Number(option?.value),
-											);
-											setPaymentTermDays(customer?.paymentTermDays ?? 30);
-											formik
-												.setFieldValue(
-													'customer_sale_id',
-													customer?.id ?? null,
-												)
-												.catch(() => undefined);
-										}}
-									/>
-									{fieldError(
-										formik.errors,
-										formik.touched,
-										'customer_sale_id',
-									) && (
-										<p className='mt-1 text-sm text-red-600'>
-											{fieldError(
-												formik.errors,
-												formik.touched,
-												'customer_sale_id',
-											)}
-										</p>
-									)}
-								</div>
-								<div>
-									<Label htmlFor='document_type'>Tipo</Label>
-									<SelectReact
-										name='document_type'
-										inputId='document_type'
-										options={documentTypeOptions}
-										value={
-											documentTypeOptions.find(
-												(option) =>
-													option.value === formik.values.document_type,
-											) ?? null
-										}
-										isDisabled={isPaidEdit}
-										isValid={formik.isValid}
-										isTouched={Boolean(formik.touched.document_type)}
-										invalidFeedback={fieldError(
-											formik.errors,
-											formik.touched,
-											'document_type',
-										)}
-										onChange={(value) => {
-											if (isSelectOption(value))
+								<DeferredPaymentField
+									name='customer_sale_id'
+									label='Cliente'
+									className='md:col-span-2'>
+									{({ error, isTouched, isValid }) => (
+										<SelectReact
+											name='customer_sale_id'
+											inputId='customer_sale_id'
+											options={customerOptions}
+											value={customerValue ?? null}
+											isLoading={
+												!USE_DEFERRED_PAYMENTS_MOCK && customersLoading
+											}
+											isDisabled={isPaidEdit}
+											placeholder='Busca por razón social o RUT'
+											onInputChange={(value) => setCustomerSearch(value)}
+											isValid={isValid}
+											isTouched={isTouched}
+											invalidFeedback={error}
+											onChange={(value) => {
+												const option = isSelectOption(value) ? value : null;
+												const customer = customerData.find(
+													(entry) => entry.id === Number(option?.value),
+												);
+												setPaymentTermDays(customer?.paymentTermDays ?? 30);
 												formik
-													.setFieldValue('document_type', value.value)
+													.setFieldValue(
+														'customer_sale_id',
+														customer?.id ?? null,
+													)
 													.catch(() => undefined);
-										}}
-									/>
-									{fieldError(formik.errors, formik.touched, 'document_type') && (
-										<p className='mt-1 text-sm text-red-600'>
-											{fieldError(
-												formik.errors,
-												formik.touched,
-												'document_type',
-											)}
-										</p>
+											}}
+										/>
 									)}
-								</div>
-								<div>
-									<Label htmlFor='document_number'>Número de documento</Label>
-									<Input
-										id='document_number'
-										name='document_number'
-										placeholder='Ej.: FAC-001234'
-										value={formik.values.document_number}
-										onChange={(event) => formik.handleChange(event)}
-										onBlur={(event) => formik.handleBlur(event)}
-										disabled={isPaidEdit}
-										isValid={formik.isValid}
-										isTouched={Boolean(formik.touched.document_number)}
-										invalidFeedback={fieldError(
-											formik.errors,
-											formik.touched,
-											'document_number',
-										)}
-									/>
-									{fieldError(
-										formik.errors,
-										formik.touched,
-										'document_number',
-									) && (
-										<p className='mt-1 text-sm text-red-600'>
-											{fieldError(
-												formik.errors,
-												formik.touched,
-												'document_number',
-											)}
-										</p>
+								</DeferredPaymentField>
+								<DeferredPaymentField name='document_type' label='Tipo'>
+									{({ error, isTouched, isValid }) => (
+										<SelectReact
+											name='document_type'
+											inputId='document_type'
+											options={documentTypeOptions}
+											value={
+												documentTypeOptions.find(
+													(option) =>
+														option.value ===
+														formik.values.document_type,
+												) ?? null
+											}
+											isDisabled={isPaidEdit}
+											isValid={isValid}
+											isTouched={isTouched}
+											invalidFeedback={error}
+											onChange={(value) => {
+												if (isSelectOption(value))
+													formik
+														.setFieldValue('document_type', value.value)
+														.catch(() => undefined);
+											}}
+										/>
 									)}
-								</div>
-								<div>
-									<Label htmlFor='issue_date'>Fecha de emisión</Label>
-									<DateInput
-										id='issue_date'
-										name='issue_date'
-										value={formik.values.issue_date}
-										maxDate={MAX_DATE}
-										maxYear={MAX_YEAR}
-										disabled={isPaidEdit}
-										onChange={(event) => formik.handleChange(event)}
-										onBlur={(event) => formik.handleBlur(event)}
-									/>
-									{fieldError(formik.errors, formik.touched, 'issue_date') && (
-										<p className='mt-1 text-sm text-red-600'>
-											{fieldError(
-												formik.errors,
-												formik.touched,
-												'issue_date',
-											)}
-										</p>
+								</DeferredPaymentField>
+								<DeferredPaymentField
+									name='document_number'
+									label='Número de documento'>
+									{({ error, isTouched, isValid }) => (
+										<Input
+											id='document_number'
+											name='document_number'
+											placeholder='Ej.: FAC-001234'
+											value={formik.values.document_number}
+											onChange={formik.handleChange}
+											onBlur={formik.handleBlur}
+											disabled={isPaidEdit}
+											isValid={isValid}
+											isTouched={isTouched}
+											invalidFeedback={error}
+										/>
 									)}
-								</div>
-								<div>
-									<Label htmlFor='due_date'>Fecha de vencimiento</Label>
-									<DateInput
-										id='due_date'
-										name='due_date'
-										value={formik.values.due_date}
-										maxDate={MAX_DATE}
-										maxYear={MAX_YEAR}
-										disabled={isPaidEdit}
-										onChange={(event) =>
-											actions
-												.setDueDateManually(event.target.value)
-												.catch(() => undefined)
-										}
-										onBlur={() => formik.setFieldTouched('due_date', true)}
-									/>
-									{fieldError(formik.errors, formik.touched, 'due_date') && (
-										<p className='mt-1 text-sm text-red-600'>
-											{fieldError(formik.errors, formik.touched, 'due_date')}
-										</p>
+								</DeferredPaymentField>
+								<DeferredPaymentField name='issue_date' label='Fecha de emisión'>
+									{() => (
+										<DateInput
+											id='issue_date'
+											name='issue_date'
+											value={formik.values.issue_date}
+											maxDate={MAX_DATE}
+											maxYear={MAX_YEAR}
+											disabled={isPaidEdit}
+											onChange={formik.handleChange}
+											onBlur={() =>
+												formik.setFieldTouched('issue_date', true)
+											}
+										/>
 									)}
-								</div>
-								<div>
-									<Label htmlFor='purchase_order'>
-										Orden de compra (opcional)
-									</Label>
-									<Input
-										id='purchase_order'
-										name='purchase_order'
-										placeholder='Ej.: OC-12345'
-										value={formik.values.purchase_order ?? ''}
-										onChange={(event) => formik.handleChange(event)}
-										onBlur={(event) => formik.handleBlur(event)}
-										disabled={isPaidEdit}
-										isValid={formik.isValid}
-										isTouched={Boolean(formik.touched.purchase_order)}
-										invalidFeedback={fieldError(
-											formik.errors,
-											formik.touched,
-											'purchase_order',
-										)}
-									/>
-									{fieldError(
-										formik.errors,
-										formik.touched,
-										'purchase_order',
-									) && (
-										<p className='mt-1 text-sm text-red-600'>
-											{fieldError(
-												formik.errors,
-												formik.touched,
-												'purchase_order',
-											)}
-										</p>
+								</DeferredPaymentField>
+								<DeferredPaymentField name='due_date' label='Fecha de vencimiento'>
+									{() => (
+										<DateInput
+											id='due_date'
+											name='due_date'
+											value={formik.values.due_date}
+											maxDate={MAX_DATE}
+											maxYear={MAX_YEAR}
+											disabled={isPaidEdit}
+											onChange={(event) =>
+												actions
+													.setDueDateManually(event.target.value)
+													.catch(() => undefined)
+											}
+											onBlur={() => formik.setFieldTouched('due_date', true)}
+										/>
 									)}
-								</div>
+								</DeferredPaymentField>
+								<DeferredPaymentField
+									name='purchase_order'
+									label='Orden de compra (opcional)'>
+									{({ error, isTouched, isValid }) => (
+										<Input
+											id='purchase_order'
+											name='purchase_order'
+											placeholder='Ej.: OC-12345'
+											value={formik.values.purchase_order ?? ''}
+											onChange={formik.handleChange}
+											onBlur={formik.handleBlur}
+											disabled={isPaidEdit}
+											isValid={isValid}
+											isTouched={isTouched}
+											invalidFeedback={error}
+										/>
+									)}
+								</DeferredPaymentField>
 								<div>
 									<Label htmlFor='assignee_ids'>Responsables</Label>
 									<SelectReact
@@ -457,35 +391,28 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 										}
 									/>
 								</div>
-								<div className='md:col-span-2'>
-									<Label htmlFor='notes'>Notas (opcional)</Label>
-									<Textarea
-										id='notes'
-										name='notes'
-										rows={3}
-										color='zinc'
-										colorIntensity='300'
-										className='bg-zinc-50 dark:bg-zinc-900'
-										value={formik.values.notes ?? ''}
-										onChange={(event) => formik.handleChange(event)}
-										onBlur={(event) => formik.handleBlur(event)}
-										disabled={isPaidEdit}
-										isValid={
-											!fieldError(formik.errors, formik.touched, 'notes')
-										}
-										isTouched={Boolean(formik.touched.notes)}
-										invalidFeedback={fieldError(
-											formik.errors,
-											formik.touched,
-											'notes',
-										)}
-									/>
-									{fieldError(formik.errors, formik.touched, 'notes') && (
-										<p className='mt-1 text-sm text-red-600'>
-											{fieldError(formik.errors, formik.touched, 'notes')}
-										</p>
+								<DeferredPaymentField
+									name='notes'
+									label='Notas (opcional)'
+									className='md:col-span-2'>
+									{({ error, isTouched, isValid }) => (
+										<Textarea
+											id='notes'
+											name='notes'
+											rows={3}
+											color='zinc'
+											colorIntensity='300'
+											className='bg-zinc-50 dark:bg-zinc-900'
+											value={formik.values.notes ?? ''}
+											onChange={formik.handleChange}
+											onBlur={formik.handleBlur}
+											disabled={isPaidEdit}
+											isValid={isValid}
+											isTouched={isTouched}
+											invalidFeedback={error}
+										/>
 									)}
-								</div>
+								</DeferredPaymentField>
 							</CardBody>
 						</Card>
 
@@ -501,182 +428,84 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 												<div
 													key={item.client_key}
 													className='grid grid-cols-1 gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-900 md:grid-cols-12'>
-													<div className='md:col-span-2'>
-														<Label htmlFor={`items.${index}.code`}>
-															Código
-														</Label>
-														<Input
-															id={`items.${index}.code`}
-															name={`items.${index}.code`}
-															placeholder='Ej.: PROD-001'
-															value={item.code}
-															onChange={(event) =>
-																formik.handleChange(event)
-															}
-															onBlur={(event) =>
-																formik.handleBlur(event)
-															}
-															disabled={isPaidEdit}
-															invalidFeedback={fieldError(
-																formik.errors,
-																formik.touched,
-																`items.${index}.code`,
-															)}
-															isTouched={Boolean(
-																getIn(
-																	formik.touched,
-																	`items.${index}.code`,
-																),
-															)}
-															isValid={formik.isValid}
-														/>
-														{fieldError(
-															formik.errors,
-															formik.touched,
-															`items.${index}.code`,
-														) && (
-															<p className='mt-1 text-sm text-red-600'>
-																{fieldError(
-																	formik.errors,
-																	formik.touched,
-																	`items.${index}.code`,
-																)}
-															</p>
+													<DeferredPaymentField
+														name={`items.${index}.code`}
+														label='Código'
+														className='md:col-span-2'>
+														{({ error, isTouched, isValid }) => (
+															<Input
+																id={`items.${index}.code`}
+																name={`items.${index}.code`}
+																placeholder='Ej.: PROD-001'
+																value={item.code}
+																onChange={formik.handleChange}
+																onBlur={formik.handleBlur}
+																disabled={isPaidEdit}
+																invalidFeedback={error}
+																isTouched={isTouched}
+																isValid={isValid}
+															/>
 														)}
-													</div>
-													<div className='md:col-span-5'>
-														<Label
-															htmlFor={`items.${index}.description`}>
-															Descripción
-														</Label>
-														<Input
-															id={`items.${index}.description`}
-															name={`items.${index}.description`}
-															placeholder='Describe el producto o servicio'
-															value={item.description}
-															onChange={(event) =>
-																formik.handleChange(event)
-															}
-															onBlur={(event) =>
-																formik.handleBlur(event)
-															}
-															disabled={isPaidEdit}
-															invalidFeedback={fieldError(
-																formik.errors,
-																formik.touched,
-																`items.${index}.description`,
-															)}
-															isTouched={Boolean(
-																getIn(
-																	formik.touched,
-																	`items.${index}.description`,
-																),
-															)}
-															isValid={formik.isValid}
-														/>
-														{fieldError(
-															formik.errors,
-															formik.touched,
-															`items.${index}.description`,
-														) && (
-															<p className='mt-1 text-sm text-red-600'>
-																{fieldError(
-																	formik.errors,
-																	formik.touched,
-																	`items.${index}.description`,
-																)}
-															</p>
+													</DeferredPaymentField>
+													<DeferredPaymentField
+														name={`items.${index}.description`}
+														label='Descripción'
+														className='md:col-span-5'>
+														{({ error, isTouched, isValid }) => (
+															<Input
+																id={`items.${index}.description`}
+																name={`items.${index}.description`}
+																placeholder='Describe el producto o servicio'
+																value={item.description}
+																onChange={formik.handleChange}
+																onBlur={formik.handleBlur}
+																disabled={isPaidEdit}
+																invalidFeedback={error}
+																isTouched={isTouched}
+																isValid={isValid}
+															/>
 														)}
-													</div>
-													<div className='md:col-span-2'>
-														<Label htmlFor={`items.${index}.quantity`}>
-															Cantidad
-														</Label>
-														<Input
-															id={`items.${index}.quantity`}
-															name={`items.${index}.quantity`}
-															type='number'
-															min={1}
-															value={item.quantity}
-															onChange={(event) =>
-																formik.handleChange(event)
-															}
-															onBlur={(event) =>
-																formik.handleBlur(event)
-															}
-															disabled={isPaidEdit}
-															invalidFeedback={fieldError(
-																formik.errors,
-																formik.touched,
-																`items.${index}.quantity`,
-															)}
-															isTouched={Boolean(
-																getIn(
-																	formik.touched,
-																	`items.${index}.quantity`,
-																),
-															)}
-															isValid={formik.isValid}
-														/>
-														{fieldError(
-															formik.errors,
-															formik.touched,
-															`items.${index}.quantity`,
-														) && (
-															<p className='mt-1 text-sm text-red-600'>
-																{fieldError(
-																	formik.errors,
-																	formik.touched,
-																	`items.${index}.quantity`,
-																)}
-															</p>
+													</DeferredPaymentField>
+													<DeferredPaymentField
+														name={`items.${index}.quantity`}
+														label='Cantidad'
+														className='md:col-span-2'>
+														{({ error, isTouched, isValid }) => (
+															<Input
+																id={`items.${index}.quantity`}
+																name={`items.${index}.quantity`}
+																type='number'
+																min={1}
+																value={item.quantity}
+																onChange={formik.handleChange}
+																onBlur={formik.handleBlur}
+																disabled={isPaidEdit}
+																invalidFeedback={error}
+																isTouched={isTouched}
+																isValid={isValid}
+															/>
 														)}
-													</div>
-													<div className='md:col-span-2'>
-														<Label
-															htmlFor={`items.${index}.unit_price`}>
-															Precio unitario
-														</Label>
-														<Input
-															id={`items.${index}.unit_price`}
-															name={`items.${index}.unit_price`}
-															type='number'
-															min={0}
-															value={item.unit_price}
-															onChange={(event) =>
-																formik.handleChange(event)
-															}
-															onBlur={(event) =>
-																formik.handleBlur(event)
-															}
-															disabled={isPaidEdit}
-															invalidFeedback={fieldError(
-																formik.errors,
-																formik.touched,
-																`items.${index}.unit_price`,
-															)}
-															isTouched={Boolean(
-																getIn(
-																	formik.touched,
-																	`items.${index}.unit_price`,
-																),
-															)}
-															isValid={formik.isValid}
-														/>
-														{fieldError(
-															formik.errors,
-															formik.touched,
-															`items.${index}.unit_price`,
-														) && (
-															<p className='mt-1 text-sm text-red-600'>
-																{fieldError(
-																	formik.errors,
-																	formik.touched,
-																	`items.${index}.unit_price`,
-																)}
-															</p>
+													</DeferredPaymentField>
+													<DeferredPaymentField
+														name={`items.${index}.unit_price`}
+														label='Precio unitario'
+														className='md:col-span-2'>
+														{({ error, isTouched, isValid }) => (
+															<Input
+																id={`items.${index}.unit_price`}
+																name={`items.${index}.unit_price`}
+																type='number'
+																min={0}
+																value={item.unit_price}
+																onChange={formik.handleChange}
+																onBlur={formik.handleBlur}
+																disabled={isPaidEdit}
+																invalidFeedback={error}
+																isTouched={isTouched}
+																isValid={isValid}
+															/>
 														)}
-													</div>
+													</DeferredPaymentField>
 													<div className='flex items-end md:col-span-1'>
 														<Button
 															type='button'
@@ -693,26 +522,25 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 															}
 														/>
 													</div>
-													<div className='md:col-span-12'>
-														<DeferredPaymentSerialsInput
-															id={`items.${index}.serials`}
-															value={item.serials}
-															disabled={isPaidEdit}
-															error={fieldError(
-																formik.errors,
-																formik.touched,
-																`items.${index}.serials`,
-															)}
-															onChange={(serials) =>
-																formik
-																	.setFieldValue(
-																		`items.${index}.serials`,
-																		serials,
-																	)
-																	.catch(() => undefined)
-															}
-														/>
-													</div>
+													<DeferredPaymentField
+														name={`items.${index}.serials`}
+														className='md:col-span-12'>
+														{() => (
+															<DeferredPaymentSerialsInput
+																id={`items.${index}.serials`}
+																value={item.serials}
+																disabled={isPaidEdit}
+																onChange={(serials) =>
+																	formik
+																		.setFieldValue(
+																			`items.${index}.serials`,
+																			serials,
+																		)
+																		.catch(() => undefined)
+																}
+															/>
+														)}
+													</DeferredPaymentField>
 												</div>
 											))}
 											<Button

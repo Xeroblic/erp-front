@@ -13,7 +13,7 @@ import useDeferredPaymentForm, {
 } from '../hooks/useDeferredPaymentForm';
 
 const createMutationSpy = vi.hoisted(() => vi.fn());
-const mutationFailure = vi.hoisted(() => ({ error: null as Error | null }));
+const mutationFailure = vi.hoisted(() => ({ error: null as unknown }));
 const mutationGate = vi.hoisted(() => ({ wait: null as Promise<void> | null }));
 const toastSpies = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 const branchContext = vi.hoisted(() => ({ subsidiaryId: 1 as number | null }));
@@ -241,6 +241,43 @@ describe('useDeferredPaymentForm', () => {
 
 		expect(toastSpies.error).toHaveBeenCalledWith('Servidor no disponible');
 		expect(toastSpies.success).not.toHaveBeenCalled();
+	});
+	it('asocia los errores de validación del backend con sus campos', async () => {
+		mutationFailure.error = {
+			response: {
+				data: {
+					message: 'Los datos enviados no son válidos.',
+					errors: { document_number: ['El número de documento ya está registrado.'] },
+				},
+			},
+		};
+		const { hook } = createHook();
+		await act(async () => {
+			await hook.result.current.formik.setValues({
+				...hook.result.current.formik.values,
+				customer_sale_id: 1,
+				document_number: 'FD-DUPLICADO',
+				items: [
+					{
+						client_key: 'hook-item-duplicate',
+						product_id: null,
+						code: 'SERV',
+						description: 'Servicio duplicado',
+						quantity: 1,
+						unit_price: 1000,
+						serials: [],
+					},
+				],
+			});
+		});
+		await act(async () => {
+			await hook.result.current.formik.submitForm();
+		});
+		expect(hook.result.current.formik.errors.document_number).toBe(
+			'El número de documento ya está registrado.',
+		);
+		expect(hook.result.current.formik.touched.document_number).toBe(true);
+		expect(toastSpies.error).toHaveBeenCalledWith('Los datos enviados no son válidos.');
 	});
 	it('bloquea la edición de documentos pagados', async () => {
 		const paidDocument = Object.values(DEFERRED_PAYMENT_DETAILS_MOCK).find(

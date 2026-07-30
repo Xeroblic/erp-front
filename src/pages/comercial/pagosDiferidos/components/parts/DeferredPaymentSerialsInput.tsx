@@ -7,7 +7,6 @@ interface DeferredPaymentSerialsInputProps {
 	id: string;
 	value: string[];
 	disabled: boolean;
-	error?: string;
 	onChange: (serials: string[]) => void;
 }
 
@@ -15,7 +14,6 @@ const DeferredPaymentSerialsInput: React.FC<DeferredPaymentSerialsInputProps> = 
 	id,
 	value,
 	disabled,
-	error,
 	onChange,
 }) => {
 	const [draft, setDraft] = useState('');
@@ -75,7 +73,6 @@ const DeferredPaymentSerialsInput: React.FC<DeferredPaymentSerialsInputProps> = 
 					))}
 				</div>
 			)}
-			{error && <p className='mt-1 text-sm text-red-600'>{error}</p>}
 		</div>
 	);
 };

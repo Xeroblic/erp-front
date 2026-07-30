@@ -93,6 +93,31 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
 	return fallback;
 };
 
+export interface DeferredPaymentMutationError {
+	message: string;
+	errors: Record<string, string>;
+}
+
+const getMutationError = (error: unknown, fallback: string): DeferredPaymentMutationError => {
+	const errorRecord = asRecord(error);
+	const responseRecord = asRecord(errorRecord?.response);
+	const dataRecord = asRecord(responseRecord?.data);
+	const rawErrors = asRecord(dataRecord?.errors);
+	const errors = Object.fromEntries(
+		Object.entries(rawErrors ?? {}).flatMap(([field, messages]) => {
+			if (typeof messages === 'string' && messages.trim()) return [[field, messages]];
+			if (Array.isArray(messages)) {
+				const firstMessage = messages.find(
+					(message): message is string =>
+						typeof message === 'string' && message.trim().length > 0,
+				);
+				return firstMessage ? [[field, firstMessage]] : [];
+			}
+			return [];
+		}),
+	);
+	return { message: getErrorMessage(error, fallback), errors };
+};
 const baseUrl = (subsidiaryId: number): string => `/subsidiaries/${subsidiaryId}/deferred-payments`;
 
 export const fetchDeferredPaymentsSummary = createAsyncThunk<
@@ -167,7 +192,7 @@ export const fetchDeferredPaymentById = createAsyncThunk<
 export const createDeferredPayment = createAsyncThunk<
 	DeferredPaymentMutationResponse,
 	{ subsidiaryId: number; payload: CreateDeferredPaymentPayload },
-	{ rejectValue: string }
+	{ rejectValue: DeferredPaymentMutationError }
 >('deferredPayments/create', async ({ subsidiaryId, payload }, { rejectWithValue, signal }) => {
 	try {
 		const result = USE_DEFERRED_PAYMENTS_MOCK
@@ -188,7 +213,7 @@ export const createDeferredPayment = createAsyncThunk<
 	} catch (error) {
 		if (signal.aborted) throw error;
 		return rejectWithValue(
-			getErrorMessage(error, 'No se pudo crear el documento de pago diferido'),
+			getMutationError(error, 'No se pudo crear el documento de pago diferido'),
 		);
 	}
 });
@@ -196,7 +221,7 @@ export const createDeferredPayment = createAsyncThunk<
 export const updateDeferredPayment = createAsyncThunk<
 	DeferredPaymentMutationResponse,
 	{ subsidiaryId: number; documentId: number; payload: UpdateDeferredPaymentPayload },
-	{ rejectValue: string }
+	{ rejectValue: DeferredPaymentMutationError }
 >(
 	'deferredPayments/update',
 	async ({ subsidiaryId, documentId, payload }, { rejectWithValue, signal }) => {
@@ -219,7 +244,7 @@ export const updateDeferredPayment = createAsyncThunk<
 		} catch (error) {
 			if (signal.aborted) throw error;
 			return rejectWithValue(
-				getErrorMessage(error, 'No se pudo actualizar el documento de pago diferido'),
+				getMutationError(error, 'No se pudo actualizar el documento de pago diferido'),
 			);
 		}
 	},
@@ -351,7 +376,7 @@ const deferredPaymentsSlice = createSlice({
 				state.creating = false;
 				if (action.meta.aborted) return;
 				state.errorMutation =
-					action.payload ?? 'No se pudo crear el documento de pago diferido';
+					action.payload?.message ?? 'No se pudo crear el documento de pago diferido';
 			})
 			.addCase(updateDeferredPayment.pending, (state, action) => {
 				state.updateRequestId = action.meta.requestId;
@@ -373,7 +398,8 @@ const deferredPaymentsSlice = createSlice({
 				state.updating = false;
 				if (action.meta.aborted) return;
 				state.errorMutation =
-					action.payload ?? 'No se pudo actualizar el documento de pago diferido';
+					action.payload?.message ??
+					'No se pudo actualizar el documento de pago diferido';
 			});
 	},
 });
