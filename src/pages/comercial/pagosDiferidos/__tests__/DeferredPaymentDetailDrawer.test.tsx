@@ -7,6 +7,9 @@ import { DEFERRED_PAYMENT_DETAILS_MOCK } from '@/store/slices/deferredPayments/d
 import DeferredPaymentDetailDrawer from '../components/drawers/DeferredPaymentDetailDrawer';
 import useDeferredPaymentDetail from '../hooks/useDeferredPaymentDetail';
 
+vi.mock('@/components/authorization/PermissionGuard', () => ({
+	default: ({ children }: { children: React.ReactNode }) => children,
+}));
 vi.mock('../hooks/useDeferredPaymentDetail');
 
 const refresh = vi.fn();
@@ -18,10 +21,14 @@ const baseHookResult = {
 	branch: { branchId: 1, subsidiaryId: 1 },
 	hasDataContext: true,
 };
-const renderDrawer = (documentId: number) =>
+const renderDrawer = (documentId: number, onEdit = vi.fn()) =>
 	render(
 		<Provider store={store}>
-			<DeferredPaymentDetailDrawer documentId={documentId} onClose={vi.fn()} />
+			<DeferredPaymentDetailDrawer
+				documentId={documentId}
+				onClose={vi.fn()}
+				onEdit={onEdit}
+			/>
 		</Provider>,
 	);
 
@@ -61,13 +68,35 @@ describe('DeferredPaymentDetailDrawer', () => {
 		expect(screen.getByText('Adjuntos del documento')).toBeInTheDocument();
 		expect(screen.getByText('documento-FD-0002.pdf')).toBeInTheDocument();
 		expect(
-			screen.getByText('Las acciones se habilitarán con los flujos de ZF-7 y ZF-8.'),
+			screen.getByText('Los pagos y la eliminación se habilitarán en los siguientes flujos.'),
 		).toBeInTheDocument();
 		expect(screen.queryByText(/pago permitido/i)).not.toBeInTheDocument();
 		expect(screen.getByText('Nota del documento')).toBeInTheDocument();
 		expect(screen.getByText('Sin observaciones registradas.')).toBeInTheDocument();
 	});
 
+	it('entrega el documento vigente al solicitar su edición', () => {
+		const onEdit = vi.fn();
+		renderDrawer(2, onEdit);
+
+		fireEvent.click(screen.getByRole('button', { name: 'Editar', hidden: true }));
+
+		expect(onEdit).toHaveBeenCalledOnce();
+		expect(onEdit).toHaveBeenCalledWith(DEFERRED_PAYMENT_DETAILS_MOCK[2]);
+	});
+
+	it('mantiene la edición deshabilitada para un documento pagado', () => {
+		vi.mocked(useDeferredPaymentDetail).mockReturnValue({
+			...baseHookResult,
+			document: DEFERRED_PAYMENT_DETAILS_MOCK[9],
+		});
+		renderDrawer(9);
+
+		const editButton = screen.getByRole('button', { name: 'Editar', hidden: true });
+
+		expect(editButton).toBeDisabled();
+		expect(editButton).toHaveAttribute('title', 'Editar no disponible para documentos pagados');
+	});
 	it('muestra Sin nota cuando un abono no tiene observaciones', () => {
 		const documentWithoutPaymentNote = {
 			...DEFERRED_PAYMENT_DETAILS_MOCK[2],

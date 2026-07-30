@@ -1,22 +1,43 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import type { IDeferredPaymentDocument } from '@/interface/deferredPayments.interface';
 import Container from '@/components/layouts/Container/Container';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
-import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subheader';
+import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Icon from '@/components/icon/Icon';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
+import ProtectedButton from '@/components/ui/ProtectedButton';
+import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 import DeferredPaymentDetailDrawer from './components/drawers/DeferredPaymentDetailDrawer';
 import DeferredPaymentsFilters from './components/filters/DeferredPaymentsFilters';
 import DeferredPaymentsKpis from './components/kpis/DeferredPaymentsKpis';
+import CreateEditDeferredPaymentModal from './components/modals/CreateEditDeferredPaymentModal';
 import DeferredPaymentsTable from './components/tables/DeferredPaymentsTable';
 import usePagosDiferidos from './hooks/usePagosDiferidos';
 
 const PagosDiferidosView: React.FC = () => {
-	const { data, state, filters, selection, actions } = usePagosDiferidos();
+	const { data, state, filters, selection, actions, branch } = usePagosDiferidos();
+	const [isCreateOpen, setIsCreateOpen] = useState(false);
+	const [editingDocument, setEditingDocument] = useState<IDeferredPaymentDocument | null>(null);
 	const setDeferredPaymentsFilter = filters.setFilter;
 	const handlePaginationChange = useCallback(
 		(page: number, perPage: number) => setDeferredPaymentsFilter({ page, per_page: perPage }),
 		[setDeferredPaymentsFilter],
+	);
+	useEffect(() => {
+		setIsCreateOpen(false);
+		setEditingDocument(null);
+	}, [branch.subsidiaryId]);
+	const closeForm = useCallback(() => {
+		setIsCreateOpen(false);
+		setEditingDocument(null);
+	}, []);
+	const editDocument = useCallback(
+		(document: IDeferredPaymentDocument) => {
+			selection.closeDetail();
+			setEditingDocument(document);
+		},
+		[selection],
 	);
 
 	return (
@@ -26,6 +47,20 @@ const PagosDiferidosView: React.FC = () => {
 					<Icon icon='HeroBanknotes' />
 					<span>Comercial / Pagos diferidos</span>
 				</SubheaderLeft>
+				<SubheaderRight>
+					<ProtectedButton
+						permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.CREATE}
+						scope='access'
+						branchId={branch.branchId}
+						subsidiaryId={branch.subsidiaryId}
+						variant='solid'
+						color='blue'
+						icon='HeroPlus'
+						isDisable={!state.hasDataContext}
+						onClick={() => setIsCreateOpen(true)}>
+						Nuevo documento
+					</ProtectedButton>
+				</SubheaderRight>
 			</Subheader>
 			<Container className='space-y-4'>
 				{!state.hasDataContext ? (
@@ -113,9 +148,18 @@ const PagosDiferidosView: React.FC = () => {
 					</>
 				)}
 			</Container>
+			{(isCreateOpen || editingDocument !== null) && (
+				<CreateEditDeferredPaymentModal
+					isOpen
+					deferredPaymentDocument={editingDocument}
+					onClose={closeForm}
+					onSaved={(savedDocument) => selection.openDetail(savedDocument.id)}
+				/>
+			)}
 			<DeferredPaymentDetailDrawer
 				documentId={selection.selectedId}
 				onClose={selection.closeDetail}
+				onEdit={editDocument}
 			/>
 		</PageWrapper>
 	);

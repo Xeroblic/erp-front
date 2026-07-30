@@ -1,9 +1,12 @@
 import type {
+	CreateDeferredPaymentPayload,
+	DeferredPaymentMutationResponse,
 	DeferredPaymentsFilters,
 	DeferredPaymentsListResponse,
 	IDeferredPaymentDocument,
 	IDeferredPaymentListItem,
 	IDeferredPaymentsSummary,
+	UpdateDeferredPaymentPayload,
 } from '@/interface/deferredPayments.interface';
 
 const toIsoDate = (daysFromToday: number): string => {
@@ -173,6 +176,168 @@ const waitForMock = async (signal?: AbortSignal): Promise<void> =>
 		else signal?.addEventListener('abort', onAbort, { once: true });
 	});
 
+const MOCK_CREDIT_LIMIT = 2_000_000;
+
+const daysUntilDate = (isoDate: string): number => {
+	const target = new Date(`${isoDate}T12:00:00.000Z`);
+	const today = new Date();
+	today.setUTCHours(12, 0, 0, 0);
+	return Math.round((target.getTime() - today.getTime()) / 86_400_000);
+};
+
+const calculatePayloadTotal = (items: CreateDeferredPaymentPayload['items']): number =>
+	items.reduce((total, item) => total + item.quantity * Number(item.unit_price), 0);
+
+const toListItem = (document: IDeferredPaymentDocument): IDeferredPaymentListItem => ({
+	id: document.id,
+	document_number: document.document_number,
+	document_type: document.document_type,
+	purchase_order: document.purchase_order,
+	total_amount: document.total_amount,
+	outstanding_amount: document.outstanding_amount,
+	status: document.status,
+	is_overdue: document.is_overdue,
+	days_until_due: document.days_until_due,
+	due_date: document.due_date,
+	issue_date: document.issue_date,
+	customer: document.customer,
+});
+
+const refreshMockSummary = (): void => {
+	const outstandingRows = DEFERRED_PAYMENTS_MOCK.filter(hasOutstandingBalance);
+	Object.assign(DEFERRED_PAYMENTS_SUMMARY_MOCK, {
+		total_outstanding: sumOutstanding(outstandingRows).toFixed(2),
+		overdue: summaryGroup(outstandingRows.filter((row) => row.is_overdue)),
+		due_within_7_days: summaryGroup(
+			outstandingRows.filter(
+				(row) =>
+					row.days_until_due !== null &&
+					row.days_until_due >= 0 &&
+					row.days_until_due <= 7,
+			),
+		),
+		pending: summaryGroup(DEFERRED_PAYMENTS_MOCK.filter((row) => row.status === 'pending')),
+	});
+};
+
+const mutationResponse = (document: IDeferredPaymentDocument): DeferredPaymentMutationResponse => ({
+	document,
+	credit_limit_exceeded: Number(document.total_amount) > MOCK_CREDIT_LIMIT,
+});
+
+export const mockCreateDeferredPayment = async (
+	payload: CreateDeferredPaymentPayload,
+	signal?: AbortSignal,
+): Promise<DeferredPaymentMutationResponse> => {
+	await waitForMock(signal);
+	const id = Math.max(0, ...DEFERRED_PAYMENTS_MOCK.map((row) => row.id)) + 1;
+	const total = calculatePayloadTotal(payload.items);
+	const daysUntilDue = daysUntilDate(payload.due_date);
+	const customer = DEFERRED_PAYMENTS_MOCK.find(
+		(row) => row.customer.id === payload.customer_sale_id,
+	)?.customer ?? {
+		id: payload.customer_sale_id,
+		billing_company: `Cliente #${payload.customer_sale_id}`,
+		rut: 'RUT no disponible',
+	};
+	const document: IDeferredPaymentDocument = {
+		id,
+		document_number: payload.document_number,
+		document_type: payload.document_type,
+		purchase_order: payload.purchase_order,
+		total_amount: total.toFixed(2),
+		outstanding_amount: total.toFixed(2),
+		paid_amount: '0.00',
+		status: 'pending',
+		is_overdue: daysUntilDue < 0,
+		days_until_due: daysUntilDue,
+		due_date: payload.due_date,
+		issue_date: payload.issue_date,
+		customer,
+		notes: payload.notes,
+		assignees: payload.assignee_ids.map((assigneeId) => ({
+			id: assigneeId,
+			name: `Usuario ${assigneeId}`,
+			email: `usuario.${assigneeId}@zentria.cl`,
+			avatar_url: null,
+		})),
+		items: payload.items.map((item, index) => ({
+			...item,
+			id: id * 10 + index + 1,
+			unit_price: Number(item.unit_price).toFixed(2),
+		})),
+		payments: [],
+		attachments: [],
+	};
+	DEFERRED_PAYMENTS_MOCK.push(toListItem(document));
+	DEFERRED_PAYMENT_DETAILS_MOCK[id] = document;
+	refreshMockSummary();
+	return mutationResponse(document);
+};
+
+export const mockUpdateDeferredPayment = async (
+	documentId: number,
+	payload: UpdateDeferredPaymentPayload,
+	signal?: AbortSignal,
+): Promise<DeferredPaymentMutationResponse> => {
+	await waitForMock(signal);
+	const current = DEFERRED_PAYMENT_DETAILS_MOCK[documentId];
+	if (!current) throw new Error('No se encontró el documento de pago diferido');
+	if (current.status === 'paid') throw new Error('No se puede editar un documento pagado');
+
+	const items = payload.items ?? current.items;
+	const total = payload.items
+		? calculatePayloadTotal(payload.items)
+		: Number(current.total_amount);
+	const paidAmount = Number(current.paid_amount);
+	const outstandingAmount = Math.max(0, total - paidAmount);
+	const dueDate = payload.due_date ?? current.due_date;
+	const daysUntilDue = daysUntilDate(dueDate);
+	const customerSaleId = payload.customer_sale_id ?? current.customer.id;
+	const customer = DEFERRED_PAYMENTS_MOCK.find((row) => row.customer.id === customerSaleId)
+		?.customer ?? {
+		id: customerSaleId,
+		billing_company: `Cliente #${customerSaleId}`,
+		rut: 'RUT no disponible',
+	};
+	let status: IDeferredPaymentDocument['status'] = 'pending';
+	if (paidAmount > 0) status = 'partially_paid';
+	if (outstandingAmount === 0) status = 'paid';
+	const document: IDeferredPaymentDocument = {
+		...current,
+		document_number: payload.document_number ?? current.document_number,
+		document_type: payload.document_type ?? current.document_type,
+		purchase_order:
+			payload.purchase_order === undefined ? current.purchase_order : payload.purchase_order,
+		total_amount: total.toFixed(2),
+		outstanding_amount: outstandingAmount.toFixed(2),
+		status,
+		is_overdue: status !== 'paid' && daysUntilDue < 0,
+		days_until_due: status === 'paid' ? null : daysUntilDue,
+		due_date: dueDate,
+		issue_date: payload.issue_date ?? current.issue_date,
+		customer,
+		notes: payload.notes === undefined ? current.notes : payload.notes,
+		assignees: payload.assignee_ids
+			? payload.assignee_ids.map((assigneeId) => ({
+					id: assigneeId,
+					name: `Usuario ${assigneeId}`,
+					email: `usuario.${assigneeId}@zentria.cl`,
+					avatar_url: null,
+				}))
+			: current.assignees,
+		items: items.map((item, index) => ({
+			...item,
+			id: 'id' in item ? item.id : documentId * 10 + index + 1,
+			unit_price: Number(item.unit_price).toFixed(2),
+		})),
+	};
+	DEFERRED_PAYMENT_DETAILS_MOCK[documentId] = document;
+	const listIndex = DEFERRED_PAYMENTS_MOCK.findIndex((row) => row.id === documentId);
+	if (listIndex >= 0) DEFERRED_PAYMENTS_MOCK[listIndex] = toListItem(document);
+	refreshMockSummary();
+	return mutationResponse(document);
+};
 export const mockFetchDeferredPaymentsSummary = async (
 	signal?: AbortSignal,
 ): Promise<IDeferredPaymentsSummary> => {
