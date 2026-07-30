@@ -15,7 +15,7 @@ import useDeferredPaymentForm, {
 const createMutationSpy = vi.hoisted(() => vi.fn());
 const mutationFailure = vi.hoisted(() => ({ error: null as unknown }));
 const mutationGate = vi.hoisted(() => ({ wait: null as Promise<void> | null }));
-const toastSpies = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+const toastSpies = vi.hoisted(() => ({ success: vi.fn(), warn: vi.fn(), error: vi.fn() }));
 const branchContext = vi.hoisted(() => ({ subsidiaryId: 1 as number | null }));
 
 vi.mock('react-toastify', () => ({ toast: toastSpies }));
@@ -81,6 +81,7 @@ describe('useDeferredPaymentForm', () => {
 		mutationGate.wait = null;
 		branchContext.subsidiaryId = 1;
 		toastSpies.success.mockClear();
+		toastSpies.warn.mockClear();
 		toastSpies.error.mockClear();
 		vi.useRealTimers();
 	});
@@ -158,6 +159,9 @@ describe('useDeferredPaymentForm', () => {
 		});
 
 		expect(createMutationSpy).toHaveBeenCalledOnce();
+		expect(toastSpies.warn).toHaveBeenCalledWith(
+			'El total supera el límite de crédito conocido del cliente',
+		);
 		expect(toastSpies.success).toHaveBeenCalledWith('Documento creado correctamente');
 		expect(toastSpies.error).not.toHaveBeenCalled();
 		expect(store.getState().deferredPayments.lastMutationCreditLimitExceeded).toBe(true);

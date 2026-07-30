@@ -191,6 +191,9 @@ const useDeferredPaymentForm = ({
 				)
 					return;
 
+				if (result.credit_limit_exceeded) {
+					toast.warn('El total supera el límite de crédito conocido del cliente');
+				}
 				onSuccess?.(result.document);
 				toast.success(
 					mode === 'edit'
@@ -256,7 +259,7 @@ const useDeferredPaymentForm = ({
 				true,
 			)
 			.catch(() => undefined);
-	}, [formik, mode, paymentTermDays]);
+	}, [formik.setFieldValue, formik.values.issue_date, mode, paymentTermDays]);
 
 	const previousIssueDateRef = useRef(formik.values.issue_date);
 	useEffect(() => {
@@ -274,7 +277,7 @@ const useDeferredPaymentForm = ({
 				true,
 			)
 			.catch(() => undefined);
-	}, [formik, mode, paymentTermDays]);
+	}, [formik.setFieldValue, formik.values.issue_date, mode, paymentTermDays]);
 
 	useEffect(() => {
 		activeSubmissionRef.current = null;
