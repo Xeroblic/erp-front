@@ -80,6 +80,34 @@ export interface IDeferredPaymentDocument extends IDeferredPaymentListItem {
 	attachments: IDeferredPaymentAttachment[];
 }
 
+export interface IDeferredPaymentWriteItem {
+	product_id: null;
+	code: string;
+	description: string;
+	quantity: number;
+	unit_price: number | string;
+	serials: string[];
+}
+
+export interface CreateDeferredPaymentPayload {
+	customer_sale_id: number;
+	document_type: DeferredPaymentDocumentType;
+	document_number: string;
+	issue_date: string;
+	due_date: string;
+	purchase_order: string | null;
+	notes: string | null;
+	assignee_ids: number[];
+	items: IDeferredPaymentWriteItem[];
+}
+
+export type UpdateDeferredPaymentPayload = Partial<CreateDeferredPaymentPayload>;
+
+export interface DeferredPaymentMutationResponse {
+	document: IDeferredPaymentDocument;
+	credit_limit_exceeded: boolean;
+}
+
 export interface DeferredPaymentsFilters {
 	page: number;
 	per_page: number;
