@@ -16,7 +16,7 @@ import Label from '@/components/form/Label';
 import SelectReact, { type TSelectOption } from '@/components/form/SelectReact';
 import Textarea from '@/components/form/Textarea';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { fetchCustomersThunk } from '@/store/slices/customerSales/customerSalesSlice';
+import { fetchCustomersOverviewThunk } from '@/store/slices/customerSales/customerSalesSlice';
 import USE_DEFERRED_PAYMENTS_MOCK from '@/store/slices/deferredPayments/deferredPaymentsConfig';
 import { DEFERRED_PAYMENT_DETAILS_MOCK } from '@/store/slices/deferredPayments/deferredPaymentsMock';
 import { fetchUsers } from '@/store/slices/usersAdmin/usersAdminSlice';
@@ -72,12 +72,13 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	onSaved,
 }) => {
 	const dispatch = useAppDispatch();
-	const customers = useAppSelector((state) => state.customerSales.lista);
+	const customers = useAppSelector((state) => state.customerSales.overview);
 	const customersLoading = useAppSelector((state) => state.customerSales.loading);
 	const users = useAppSelector((state) => state.usersAdmin.users);
 	const usersLoading = useAppSelector((state) => state.usersAdmin.loading.users);
 	const listSubsidiaryId = useAppSelector((state) => state.deferredPayments.listSubsidiaryId);
 	const [paymentTermDays, setPaymentTermDays] = useState(30);
+	const [customerSearch, setCustomerSearch] = useState('');
 	const mode = document ? 'edit' : 'create';
 	const { formik, estimatedTotal, isSubmitting, isPaidEdit, creditLimitExceeded, actions } =
 		useDeferredPaymentForm({
@@ -92,34 +93,58 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 
 	useEffect(() => {
 		if (!isOpen || USE_DEFERRED_PAYMENTS_MOCK || listSubsidiaryId === null) return undefined;
-		const customerRequest = dispatch(fetchCustomersThunk({ subsidiary: listSubsidiaryId }));
+		const customerRequest = dispatch(
+			fetchCustomersOverviewThunk({
+				subsidiary: listSubsidiaryId,
+				per_page: 100,
+				params: { q: customerSearch.trim() || undefined },
+			}),
+		);
+		return () => customerRequest.abort();
+	}, [customerSearch, dispatch, isOpen, listSubsidiaryId]);
+
+	useEffect(() => {
+		if (!isOpen || USE_DEFERRED_PAYMENTS_MOCK || listSubsidiaryId === null) return undefined;
 		const usersRequest = dispatch(
 			fetchUsers({ subsidiary_id: listSubsidiaryId, status: 'active', per_page: 100 }),
 		);
-		return () => {
-			customerRequest.abort();
-			usersRequest.abort();
-		};
+		return () => usersRequest.abort();
 	}, [dispatch, isOpen, listSubsidiaryId]);
 
 	const customerData = useMemo<CustomerOptionData[]>(() => {
-		if (USE_DEFERRED_PAYMENTS_MOCK) {
-			return Object.values(DEFERRED_PAYMENT_DETAILS_MOCK).map((mockDocument) => ({
-				id: mockDocument.customer.id,
-				label: `${mockDocument.customer.billing_company} · ${mockDocument.customer.rut}`,
-				isActive: mockDocument.customer.id !== 3,
-				paymentTermDays: 30,
-				creditLimit: DEFAULT_CREDIT_LIMIT,
-			}));
-		}
-		return customers.map((customer) => ({
-			id: customer.id,
-			label: `${customer.billing_company || customer.name} · ${customer.rut}`,
-			isActive: customer.is_active,
-			paymentTermDays: 30,
-			creditLimit: null,
-		}));
-	}, [customers]);
+		const remoteCustomers = USE_DEFERRED_PAYMENTS_MOCK
+			? Object.values(DEFERRED_PAYMENT_DETAILS_MOCK).map((mockDocument) => ({
+					id: mockDocument.customer.id,
+					label: `${mockDocument.customer.billing_company} · ${mockDocument.customer.rut}`,
+					isActive: mockDocument.customer.id !== 3,
+					paymentTermDays: 30,
+					creditLimit: DEFAULT_CREDIT_LIMIT,
+				}))
+			: customers.map((customer) => ({
+					id: customer.id,
+					label: `${customer.name} · ${customer.rut}`,
+					isActive: customer.is_active,
+					paymentTermDays: 30,
+					creditLimit: null,
+				}));
+		const editedCustomer =
+			mode === 'edit' && document
+				? {
+						id: document.customer.id,
+						label: `${document.customer.billing_company} · ${document.customer.rut}`,
+						isActive: true,
+						paymentTermDays: 30,
+						creditLimit: null,
+					}
+				: null;
+		return Array.from(
+			new Map(
+				[...(editedCustomer ? [editedCustomer] : []), ...remoteCustomers].map(
+					(customer) => [customer.id, customer],
+				),
+			).values(),
+		);
+	}, [customers, document, mode]);
 	const customerOptions = useMemo<TSelectOption[]>(
 		() => customerData.map(({ id, label }) => ({ value: String(id), label })),
 		[customerData],
@@ -135,20 +160,29 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 			),
 		[],
 	);
-	const assigneeOptions = useMemo<TSelectOption[]>(
-		() =>
-			(USE_DEFERRED_PAYMENTS_MOCK
-				? mockAssignees
-				: users.filter((user) => user.is_active)
-			).map((user) => ({
-				value: String(user.id),
-				label:
-					'name' in user
-						? `${user.name} · ${user.email}`
-						: `${user.first_name} ${user.last_name} · ${user.email}`,
-			})),
-		[mockAssignees, users],
-	);
+	const assigneeOptions = useMemo<TSelectOption[]>(() => {
+		const remoteOptions = (
+			USE_DEFERRED_PAYMENTS_MOCK ? mockAssignees : users.filter((user) => user.is_active)
+		).map((user) => ({
+			value: String(user.id),
+			label:
+				'name' in user
+					? `${user.name} · ${user.email}`
+					: `${user.first_name} ${user.last_name} · ${user.email}`,
+		}));
+		const editedOptions =
+			mode === 'edit' && document
+				? document.assignees.map((assignee) => ({
+						value: String(assignee.id),
+						label: `${assignee.name} · ${assignee.email}`,
+					}))
+				: [];
+		return Array.from(
+			new Map(
+				[...editedOptions, ...remoteOptions].map((option) => [option.value, option]),
+			).values(),
+		);
+	}, [document, mockAssignees, mode, users]);
 	const selectedCustomer = customerData.find(
 		(customer) => customer.id === formik.values.customer_sale_id,
 	);
@@ -217,6 +251,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 										isLoading={!USE_DEFERRED_PAYMENTS_MOCK && customersLoading}
 										isDisabled={isPaidEdit}
 										placeholder='Busca por razón social o RUT'
+										onInputChange={(value) => setCustomerSearch(value)}
 										isValid={formik.isValid}
 										isTouched={Boolean(formik.touched.customer_sale_id)}
 										invalidFeedback={fieldError(
