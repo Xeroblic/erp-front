@@ -24,8 +24,8 @@ const document: IDeferredPaymentDocument = {
 	status: 'partially_paid',
 	is_overdue: false,
 	days_until_due: 30,
-	issue_date: '22/07/2026',
-	due_date: '21/08/2026',
+	issue_date: '2026-07-22',
+	due_date: '2026-08-21',
 	customer: { id: 4, billing_company: 'Importadora Automarco Spa', rut: '84854200-8' },
 	notes: null,
 	assignees: [],
@@ -36,7 +36,7 @@ const document: IDeferredPaymentDocument = {
 const payment: IDeferredPaymentAbono = {
 	id: 3,
 	amount: '300000.00',
-	paid_at: '01/08/2026',
+	paid_at: '2026-08-01',
 	method: 'transfer',
 	notes: null,
 	attachments: [],
@@ -76,7 +76,7 @@ describe('deferredPaymentsService', () => {
 			),
 		).resolves.toEqual({
 			...listResponse,
-			data: [{ ...document, issue_date: '2026-07-22', due_date: '2026-08-21' }],
+			data: [document],
 		});
 		expect(apiSpies.fetchData).toHaveBeenCalledWith({
 			url: '/subsidiaries/4/deferred-payments',
@@ -87,7 +87,7 @@ describe('deferredPaymentsService', () => {
 				status: 'overdue',
 				search: '1900',
 				due_before: undefined,
-				due_after: '01/07/2026',
+				due_after: '2026-07-01',
 			},
 			cacheTTLms: 15_000,
 			signal: controller.signal,
@@ -100,11 +100,7 @@ describe('deferredPaymentsService', () => {
 			.mockResolvedValueOnce({ data: { data: document } } as never);
 
 		await expect(deferredPaymentsService.getSummary(4)).resolves.toEqual(summary);
-		await expect(deferredPaymentsService.getDocument(4, 7)).resolves.toEqual({
-			...document,
-			issue_date: '2026-07-22',
-			due_date: '2026-08-21',
-		});
+		await expect(deferredPaymentsService.getDocument(4, 7)).resolves.toEqual(document);
 		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(
 			2,
 			expect.objectContaining({ url: '/subsidiaries/4/deferred-payments/7' }),
@@ -133,13 +129,13 @@ describe('deferredPaymentsService', () => {
 			expect.objectContaining({
 				url: '/subsidiaries/4/deferred-payments',
 				method: 'post',
-				data: { ...payload, issue_date: '22/07/2026', due_date: '21/08/2026' },
+				data: payload,
 			}),
 		);
 		expect(apiSpies.invalidateCache).toHaveBeenCalledWith('/subsidiaries/4/deferred-payments');
 	});
 
-	it('tolera creación plana y convierte fechas parciales al actualizar', async () => {
+	it('tolera creación plana y conserva fechas ISO al actualizar', async () => {
 		apiSpies.fetchData
 			.mockResolvedValueOnce({ data: document } as never)
 			.mockResolvedValueOnce({ data: { data: document } } as never);
@@ -164,14 +160,14 @@ describe('deferredPaymentsService', () => {
 		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(
 			1,
 			expect.objectContaining({
-				data: expect.objectContaining({ issue_date: '23/07/2026' }),
+				data: expect.objectContaining({ issue_date: '2026-07-23' }),
 			}),
 		);
 		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(
 			2,
 			expect.objectContaining({
 				method: 'patch',
-				data: { issue_date: '24/07/2026', due_date: null },
+				data: { issue_date: '2026-07-24', due_date: null },
 			}),
 		);
 	});
@@ -183,6 +179,7 @@ describe('deferredPaymentsService', () => {
 
 		await deferredPaymentsService.registerPayment(4, 7, {
 			amount: '300000.00',
+			paid_at: '2026-08-01',
 			method: 'transfer',
 		});
 		await deferredPaymentsService.deletePayment(4, 7, 3);
@@ -190,7 +187,10 @@ describe('deferredPaymentsService', () => {
 
 		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(
 			1,
-			expect.objectContaining({ url: '/subsidiaries/4/deferred-payments/7/payments' }),
+			expect.objectContaining({
+				url: '/subsidiaries/4/deferred-payments/7/payments',
+				data: { amount: '300000.00', paid_at: '2026-08-01', method: 'transfer' },
+			}),
 		);
 		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(
 			2,

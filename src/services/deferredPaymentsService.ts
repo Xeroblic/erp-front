@@ -31,48 +31,13 @@ const unwrapResource = <T>(payload: ApiResourcePayload<T>): T => {
 	return record && 'data' in record ? (record.data as T) : (payload as T);
 };
 
-const API_DATE_REGEX = /^(\d{2})\/(\d{2})\/(\d{4})$/;
-const ISO_DATE_REGEX = /^(\d{4})-(\d{2})-(\d{2})$/;
-
-const toDomainDate = (value: string): string => {
-	const match = API_DATE_REGEX.exec(value);
-	return match ? `${match[3]}-${match[2]}-${match[1]}` : value;
-};
-
-const toApiDate = (value?: string): string | undefined => {
-	if (!value) return undefined;
-	const match = ISO_DATE_REGEX.exec(value);
-	return match ? `${match[3]}/${match[2]}/${match[1]}` : value;
-};
-
-const toCreateApiPayload = (
-	payload: CreateDeferredPaymentApiPayload,
-): CreateDeferredPaymentApiPayload => ({
-	...payload,
-	issue_date: toApiDate(payload.issue_date) ?? payload.issue_date,
-	due_date: payload.due_date === null ? null : toApiDate(payload.due_date),
-});
-
-const toUpdateApiPayload = (
-	payload: UpdateDeferredPaymentApiPayload,
-): UpdateDeferredPaymentApiPayload => ({
-	...payload,
-	...(payload.issue_date !== undefined && { issue_date: toApiDate(payload.issue_date) }),
-	...(payload.due_date !== undefined && {
-		due_date: payload.due_date === null ? null : toApiDate(payload.due_date),
-	}),
-});
-
 const normalizePayment = (payment: IDeferredPaymentAbono): IDeferredPaymentAbono => ({
 	...payment,
-	paid_at: toDomainDate(payment.paid_at),
 	attachments: payment.attachments ?? [],
 });
 
 const normalizeDocument = (document: IDeferredPaymentDocument): IDeferredPaymentDocument => ({
 	...document,
-	issue_date: toDomainDate(document.issue_date),
-	due_date: toDomainDate(document.due_date),
 	assignees: document.assignees ?? [],
 	items: (document.items ?? []).map((item) => ({
 		...item,
@@ -84,13 +49,6 @@ const normalizeDocument = (document: IDeferredPaymentDocument): IDeferredPayment
 	attachments: document.attachments ?? [],
 });
 
-const normalizeListItem = (
-	document: DeferredPaymentsListResponse['data'][number],
-): DeferredPaymentsListResponse['data'][number] => ({
-	...document,
-	issue_date: toDomainDate(document.issue_date),
-	due_date: toDomainDate(document.due_date),
-});
 const documentsUrl = (subsidiaryId: number): string =>
 	`/subsidiaries/${subsidiaryId}/deferred-payments`;
 
@@ -110,18 +68,11 @@ const getDocuments = async (
 	const response = await ApiService.fetchData<DeferredPaymentsListResponse>({
 		url: documentsUrl(subsidiaryId),
 		method: 'get',
-		params: {
-			...params,
-			due_before: toApiDate(params.due_before),
-			due_after: toApiDate(params.due_after),
-		},
+		params,
 		cacheTTLms: 15_000,
 		...requestConfig(signal),
 	});
-	return {
-		...response.data,
-		data: response.data.data.map(normalizeListItem),
-	};
+	return response.data;
 };
 
 const getSummary = async (
@@ -162,7 +113,7 @@ const createDocument = async (
 	>({
 		url: documentsUrl(subsidiaryId),
 		method: 'post',
-		data: toCreateApiPayload(payload),
+		data: payload,
 		...requestConfig(signal),
 	});
 	ApiService.invalidateCache(documentsUrl(subsidiaryId));
@@ -184,7 +135,7 @@ const updateDocument = async (
 	>({
 		url: documentUrl(subsidiaryId, documentId),
 		method: 'patch',
-		data: toUpdateApiPayload(payload),
+		data: payload,
 		...requestConfig(signal),
 	});
 	ApiService.invalidateCache(documentsUrl(subsidiaryId));
