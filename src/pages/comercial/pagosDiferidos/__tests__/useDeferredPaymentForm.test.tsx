@@ -156,6 +156,9 @@ describe('useDeferredPaymentForm', () => {
 		expect(toastSpies.error).not.toHaveBeenCalled();
 		expect(store.getState().deferredPayments.lastMutationCreditLimitExceeded).toBe(true);
 		expect(store.getState().deferredPayments.list.length).toBeGreaterThan(0);
+
+		hook.unmount();
+		expect(store.getState().deferredPayments.lastMutationCreditLimitExceeded).toBe(false);
 	});
 	it('aborta el guardado y omite callbacks al cambiar de subsidiaria', async () => {
 		let releaseMutation: () => void = () => {};

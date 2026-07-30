@@ -44,10 +44,11 @@ describe('CreateEditDeferredPaymentModal', () => {
 		const Wrapper = ({ children }: PropsWithChildren) => (
 			<Provider store={store}>{children}</Provider>
 		);
-		render(<CreateEditDeferredPaymentModal isOpen onClose={onClose} document={document} />, {
-			wrapper: Wrapper,
-		});
-		return { onClose };
+		const renderResult = render(
+			<CreateEditDeferredPaymentModal isOpen onClose={onClose} document={document} />,
+			{ wrapper: Wrapper },
+		);
+		return { onClose, ...renderResult };
 	};
 
 	it('muestra el formulario de creación con total e ítems', async () => {
@@ -75,6 +76,27 @@ describe('CreateEditDeferredPaymentModal', () => {
 		expect(screen.getByRole('button', { name: 'Crear documento' })).toBeInTheDocument();
 	});
 
+	it('descarta el borrador al desmontar y reabrir el formulario', () => {
+		const firstCreate = renderModal();
+		fireEvent.change(screen.getByLabelText('Número de documento'), {
+			target: { value: 'FD-STALE-001' },
+		});
+		firstCreate.unmount();
+
+		const secondCreate = renderModal();
+		expect(screen.getByLabelText('Número de documento')).toHaveValue('');
+		secondCreate.unmount();
+
+		const savedDocument = DEFERRED_PAYMENT_DETAILS_MOCK[1];
+		const firstEdit = renderModal(vi.fn(), savedDocument);
+		fireEvent.change(screen.getByLabelText('Notas (opcional)'), {
+			target: { value: 'BORRADOR NO GUARDADO' },
+		});
+		firstEdit.unmount();
+
+		renderModal(vi.fn(), savedDocument);
+		expect(screen.getByLabelText('Notas (opcional)')).toHaveValue(savedDocument.notes);
+	});
 	it('muestra etiquetas y mensajes al omitir campos obligatorios', async () => {
 		renderModal();
 

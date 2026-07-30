@@ -148,12 +148,14 @@ const PagosDiferidosView: React.FC = () => {
 					</>
 				)}
 			</Container>
-			<CreateEditDeferredPaymentModal
-				isOpen={isCreateOpen || editingDocument !== null}
-				document={editingDocument}
-				onClose={closeForm}
-				onSaved={(document) => selection.openDetail(document.id)}
-			/>
+			{(isCreateOpen || editingDocument !== null) && (
+				<CreateEditDeferredPaymentModal
+					isOpen
+					document={editingDocument}
+					onClose={closeForm}
+					onSaved={(savedDocument) => selection.openDetail(savedDocument.id)}
+				/>
+			)}
 			<DeferredPaymentDetailDrawer
 				documentId={selection.selectedId}
 				onClose={selection.closeDetail}
