@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { FieldArray, Form, FormikProvider } from 'formik';
+import type { InputActionMeta } from 'react-select';
+import { useDebounce } from 'use-debounce';
 import type { IDeferredPaymentDocument } from '@/interface/deferredPayments.interface';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
@@ -75,17 +77,20 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const listSubsidiaryId = useAppSelector((state) => state.deferredPayments.listSubsidiaryId);
 	const [paymentTermDays, setPaymentTermDays] = useState(30);
 	const [customerSearch, setCustomerSearch] = useState('');
+	const [debouncedCustomerSearch] = useDebounce(customerSearch, 300);
+	const [selectedCustomerOption, setSelectedCustomerOption] = useState<CustomerOptionData | null>(
+		null,
+	);
 	const mode = deferredPaymentDocument ? 'edit' : 'create';
-	const { formik, estimatedTotal, isSubmitting, isPaidEdit, creditLimitExceeded, actions } =
-		useDeferredPaymentForm({
-			mode,
-			document: deferredPaymentDocument,
-			paymentTermDays,
-			onSuccess: (savedDocument) => {
-				onSaved?.(savedDocument);
-				onClose();
-			},
-		});
+	const { formik, estimatedTotal, isSubmitting, isPaidEdit, actions } = useDeferredPaymentForm({
+		mode,
+		deferredPaymentDocument,
+		paymentTermDays,
+		onSuccess: (savedDocument) => {
+			onSaved?.(savedDocument);
+			onClose();
+		},
+	});
 
 	useEffect(() => {
 		if (!isOpen || USE_DEFERRED_PAYMENTS_MOCK || listSubsidiaryId === null) return undefined;
@@ -93,11 +98,11 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 			fetchCustomersOverviewThunk({
 				subsidiary: listSubsidiaryId,
 				per_page: 100,
-				params: { q: customerSearch.trim() || undefined },
+				params: { q: debouncedCustomerSearch.trim() || undefined },
 			}),
 		);
 		return () => customerRequest.abort();
-	}, [customerSearch, dispatch, isOpen, listSubsidiaryId]);
+	}, [debouncedCustomerSearch, dispatch, isOpen, listSubsidiaryId]);
 
 	useEffect(() => {
 		if (!isOpen || USE_DEFERRED_PAYMENTS_MOCK || listSubsidiaryId === null) return undefined;
@@ -135,12 +140,14 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 				: null;
 		return Array.from(
 			new Map(
-				[...(editedCustomer ? [editedCustomer] : []), ...remoteCustomers].map(
-					(customer) => [customer.id, customer],
-				),
+				[
+					...(selectedCustomerOption ? [selectedCustomerOption] : []),
+					...(editedCustomer ? [editedCustomer] : []),
+					...remoteCustomers,
+				].map((customer) => [customer.id, customer]),
 			).values(),
 		);
-	}, [customers, deferredPaymentDocument, mode]);
+	}, [customers, deferredPaymentDocument, mode, selectedCustomerOption]);
 	const customerOptions = useMemo<TSelectOption[]>(
 		() => customerData.map(({ id, label }) => ({ value: String(id), label })),
 		[customerData],
@@ -219,7 +226,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 							</Alert>
 						)}
 
-						{(exceedsKnownCreditLimit || creditLimitExceeded) && (
+						{exceedsKnownCreditLimit && (
 							<Alert color='amber' variant='outline' icon='HeroExclamationTriangle'>
 								El total supera el límite de crédito conocido del cliente. Puedes
 								guardar, pero conviene revisar la condición comercial.
@@ -252,7 +259,13 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 											}
 											isDisabled={isPaidEdit}
 											placeholder='Busca por razón social o RUT'
-											onInputChange={(value) => setCustomerSearch(value)}
+											onInputChange={(
+												value: string,
+												actionMeta?: InputActionMeta,
+											) => {
+												if (actionMeta?.action === 'input-change')
+													setCustomerSearch(value);
+											}}
 											isValid={isValid}
 											isTouched={isTouched}
 											invalidFeedback={error}
@@ -261,6 +274,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 												const customer = customerData.find(
 													(entry) => entry.id === Number(option?.value),
 												);
+												setSelectedCustomerOption(customer ?? null);
 												setPaymentTermDays(customer?.paymentTermDays ?? 30);
 												formik
 													.setFieldValue(

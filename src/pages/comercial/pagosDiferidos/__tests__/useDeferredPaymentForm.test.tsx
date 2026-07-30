@@ -66,7 +66,7 @@ describe('useDeferredPaymentForm', () => {
 			() =>
 				useDeferredPaymentForm({
 					mode: document ? 'edit' : 'create',
-					document,
+					deferredPaymentDocument: document,
 					paymentTermDays: 15,
 					onSuccess,
 				}),
@@ -161,6 +161,7 @@ describe('useDeferredPaymentForm', () => {
 		expect(createMutationSpy).toHaveBeenCalledOnce();
 		expect(toastSpies.warn).toHaveBeenCalledWith(
 			'El total supera el límite de crédito conocido del cliente',
+			{ autoClose: false },
 		);
 		expect(toastSpies.success).toHaveBeenCalledWith('Documento creado correctamente');
 		expect(toastSpies.error).not.toHaveBeenCalled();
