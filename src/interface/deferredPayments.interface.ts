@@ -18,8 +18,9 @@ export interface IDeferredPaymentsSummary {
 
 export interface IDeferredPaymentCustomer {
 	id: number;
-	billing_company: string;
+	billing_company: string | null;
 	rut: string;
+	contact_name?: string | null;
 }
 
 export interface IDeferredPaymentListItem {

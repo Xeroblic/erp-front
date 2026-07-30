@@ -72,6 +72,8 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 	const paid = Number(document?.paid_amount ?? 0);
 	const progress = total > 0 ? Math.min(100, Math.max(0, (paid / total) * 100)) : 0;
 	const progressLabel = `${Math.round(progress)}%`;
+	const customerDisplayName =
+		document?.customer.billing_company || document?.customer.contact_name;
 
 	return (
 		<OffCanvas
@@ -85,7 +87,7 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 						{document?.document_number ?? 'Detalle del documento'}
 					</p>
 					<p className='truncate text-sm font-normal text-zinc-500'>
-						{document?.customer.billing_company ?? `Documento ID #${documentId ?? ''}`}
+						{customerDisplayName ?? `Documento ID #${documentId ?? ''}`}
 					</p>
 				</div>
 			</OffCanvasHeader>
@@ -130,7 +132,7 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 										<div className='min-w-0'>
 											<p className='text-sm text-zinc-500'>Cliente</p>
 											<p className='truncate text-lg font-semibold'>
-												{document.customer.billing_company}
+												{customerDisplayName}
 											</p>
 											<p className='text-sm text-zinc-600 dark:text-zinc-300'>
 												RUT {document.customer.rut}
@@ -140,7 +142,11 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 									<div className='flex flex-col items-center gap-2 sm:items-end'>
 										<DeferredStatusPill status={document.status} />
 										<DaysUntilDueBadge
-											daysUntilDue={document.days_until_due}
+											daysUntilDue={
+												document.status === 'paid'
+													? null
+													: document.days_until_due
+											}
 											isOverdue={document.is_overdue}
 										/>
 									</div>

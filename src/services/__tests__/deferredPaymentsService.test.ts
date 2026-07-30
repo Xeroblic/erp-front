@@ -51,7 +51,6 @@ const listResponse: DeferredPaymentsListResponse = {
 	data: [document],
 	meta: { current_page: 1, per_page: 10, total: 1, last_page: 1 },
 };
-
 beforeEach(() => {
 	apiSpies.fetchData.mockReset();
 	apiSpies.invalidateCache.mockReset();

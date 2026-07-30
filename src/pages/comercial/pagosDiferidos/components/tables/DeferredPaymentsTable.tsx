@@ -160,7 +160,11 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 									</p>
 								</Td>
 								<Td>
-									<p>{row.customer.billing_company}</p>
+									<p className='font-medium'>
+										{row.customer.billing_company ||
+											row.customer.contact_name ||
+											'Cliente sin nombre'}
+									</p>
 									<p className='text-xs text-zinc-500'>{row.customer.rut}</p>
 								</Td>
 								<Td>{row.purchase_order ?? '\u2014'}</Td>
@@ -179,7 +183,9 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 								<Td>
 									<div className='flex justify-center'>
 										<DaysUntilDueBadge
-											daysUntilDue={row.days_until_due}
+											daysUntilDue={
+												row.status === 'paid' ? null : row.days_until_due
+											}
 											isOverdue={row.is_overdue}
 										/>
 									</div>

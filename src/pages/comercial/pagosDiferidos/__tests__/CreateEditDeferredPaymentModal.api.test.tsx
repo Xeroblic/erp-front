@@ -96,7 +96,13 @@ describe('CreateEditDeferredPaymentModal con API real', () => {
 			),
 		);
 		expect(
-			screen.getByText(new RegExp(editedDocument.customer.billing_company)),
+			screen.getByText(
+				new RegExp(
+					editedDocument.customer.billing_company ??
+						editedDocument.customer.contact_name ??
+						editedDocument.customer.rut,
+				),
+			),
 		).toBeInTheDocument();
 		expect(screen.getByText(new RegExp(editedDocument.assignees[0].name))).toBeInTheDocument();
 
@@ -115,7 +121,7 @@ describe('CreateEditDeferredPaymentModal con API real', () => {
 			id: 457,
 			name: 'Zeta Corp',
 			rut: '76.457.000-1',
-			contact: null,
+			contact: { name: 'Ana Pérez' },
 			loyalty: 0,
 			total_sales: 0,
 			is_active: true,
@@ -157,7 +163,7 @@ describe('CreateEditDeferredPaymentModal con API real', () => {
 
 		const customerInput = screen.getByLabelText('Cliente');
 		fireEvent.change(customerInput, { target: { value: 'Zeta' } });
-		const option = await screen.findByText('Zeta Corp · 76.457.000-1');
+		const option = await screen.findByText('Ana Pérez · Zeta Corp · 76.457.000-1');
 		fireEvent.click(option);
 		fireEvent.blur(customerInput);
 
@@ -167,7 +173,7 @@ describe('CreateEditDeferredPaymentModal con API real', () => {
 			});
 		});
 
-		expect(screen.getByText('Zeta Corp · 76.457.000-1')).toBeInTheDocument();
+		expect(screen.getByText('Ana Pérez · Zeta Corp · 76.457.000-1')).toBeInTheDocument();
 		expect(store.getState().deferredPayments).toBeDefined();
 		const overviewCalls = apiSpies.fetchData.mock.calls.filter(([request]) =>
 			String((request as { url?: string }).url).includes('/overview'),
