@@ -74,16 +74,6 @@ const PagosDiferidosView: React.FC = () => {
 					</Alert>
 				) : (
 					<>
-						{state.isMockMode && (
-							<Alert
-								color='amber'
-								variant='outline'
-								icon='HeroExclamationTriangle'
-								title='Datos ficticios para demostraci&oacute;n'>
-								Los documentos, empresas, RUT y montos mostrados son ficticios y no
-								deben utilizarse para realizar cobranzas.
-							</Alert>
-						)}
 						{state.errorSummary && (
 							<Alert
 								color='red'

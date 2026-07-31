@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useAppDispatch, useAppSelector } from '@/store';
-import USE_DEFERRED_PAYMENTS_MOCK from '@/store/slices/deferredPayments/deferredPaymentsConfig';
 import {
 	clearDeferredPaymentDetail,
 	fetchDeferredPaymentById,
@@ -18,7 +17,7 @@ const useDeferredPaymentDetail = (documentId: number | null) => {
 	const loading = useAppSelector((state) => state.deferredPayments.loadingDetail);
 	const error = useAppSelector((state) => state.deferredPayments.errorDetail);
 	const activeRequestRef = useRef<AbortableDetailRequest | null>(null);
-	const effectiveSubsidiaryId = subsidiaryId ?? (USE_DEFERRED_PAYMENTS_MOCK ? 0 : null);
+	const effectiveSubsidiaryId = subsidiaryId;
 	const document = current?.id === documentId ? current : null;
 
 	const refresh = useCallback(() => {

@@ -3,7 +3,6 @@ import { useDebounce } from 'use-debounce';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import type { DeferredPaymentsFilters } from '@/interface/deferredPayments.interface';
 import { useAppDispatch, useAppSelector } from '@/store';
-import USE_DEFERRED_PAYMENTS_MOCK from '@/store/slices/deferredPayments/deferredPaymentsConfig';
 import {
 	fetchDeferredPayments,
 	fetchDeferredPaymentsSummary,
@@ -27,7 +26,7 @@ const usePagosDiferidos = () => {
 	const search = values.search ?? '';
 	const [debouncedSearch] = useDebounce(search, 300);
 	const isSearchDebouncing = search !== debouncedSearch;
-	const effectiveSubsidiaryId = subsidiaryId ?? (USE_DEFERRED_PAYMENTS_MOCK ? 0 : null);
+	const effectiveSubsidiaryId = subsidiaryId;
 	const hasDataContext = effectiveSubsidiaryId !== null;
 	const hasInvalidDateRange = Boolean(
 		values.due_after && values.due_before && values.due_after > values.due_before,
@@ -64,12 +63,12 @@ const usePagosDiferidos = () => {
 	}, [isSubsidiaryChange]);
 
 	useEffect(() => {
-		if (effectiveSubsidiaryId === null || isSearchDebouncing) return undefined;
+		if (effectiveSubsidiaryId === null) return undefined;
 		const request = dispatch(
 			fetchDeferredPaymentsSummary({ subsidiaryId: effectiveSubsidiaryId }),
 		);
 		return () => request.abort();
-	}, [dispatch, effectiveSubsidiaryId, isSearchDebouncing]);
+	}, [dispatch, effectiveSubsidiaryId]);
 
 	useEffect(() => {
 		if (effectiveSubsidiaryId === null || hasInvalidDateRange || isSearchDebouncing)
@@ -112,9 +111,9 @@ const usePagosDiferidos = () => {
 	const openDetail = useCallback((id: number) => setSelectedId(id), []);
 	const closeDetail = useCallback(() => setSelectedId(null), []);
 	const retrySummary = useCallback(() => {
-		if (effectiveSubsidiaryId === null || isSearchDebouncing) return undefined;
+		if (effectiveSubsidiaryId === null) return undefined;
 		return dispatch(fetchDeferredPaymentsSummary({ subsidiaryId: effectiveSubsidiaryId }));
-	}, [dispatch, effectiveSubsidiaryId, isSearchDebouncing]);
+	}, [dispatch, effectiveSubsidiaryId]);
 	const retryList = useCallback(() => {
 		if (effectiveSubsidiaryId === null || hasInvalidDateRange || isSearchDebouncing)
 			return undefined;
@@ -140,7 +139,6 @@ const usePagosDiferidos = () => {
 			error,
 			errorSummary,
 			hasDataContext,
-			isMockMode: USE_DEFERRED_PAYMENTS_MOCK,
 		},
 		filters: {
 			values,
