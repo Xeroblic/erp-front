@@ -26,7 +26,10 @@ import { formatCLP } from '@/utils/format.utils';
 import DeferredPaymentField from '../parts/DeferredPaymentField';
 import DeferredPaymentSerialsInput from '../parts/DeferredPaymentSerialsInput';
 import useDeferredPaymentForm from '../../hooks/useDeferredPaymentForm';
-import { createEmptyDeferredPaymentItem } from '../../types';
+import {
+	createEmptyDeferredPaymentItem,
+	DEFERRED_PAYMENT_TOTAL_ERROR,
+} from '../../types';
 import { DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS } from '../../utils';
 
 interface CreateEditDeferredPaymentModalProps {
@@ -46,6 +49,17 @@ interface CustomerOptionData {
 
 const MAX_DATE = new Date(2100, 11, 31);
 const MAX_YEAR = 2100;
+
+const hasValidationErrorOtherThan = (value: unknown, excludedMessage: string): boolean => {
+	if (typeof value === 'string') return value !== excludedMessage;
+	if (Array.isArray(value))
+		return value.some((entry) => hasValidationErrorOtherThan(entry, excludedMessage));
+	if (value !== null && typeof value === 'object')
+		return Object.values(value).some((entry) =>
+			hasValidationErrorOtherThan(entry, excludedMessage),
+		);
+	return false;
+};
 const documentTypeOptions: TSelectOption[] = Object.entries(
 	DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS,
 ).map(([value, label]) => ({ value, label }));
@@ -207,9 +221,21 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 				<Form
 					className='flex min-h-0 flex-1 flex-col overflow-hidden'
 					onSubmit={(event) => {
-						if (estimatedTotal <= 0)
-							toast.error('El total del documento debe ser mayor a 0');
-						formik.handleSubmit(event);
+						event.preventDefault();
+						formik
+							.validateForm()
+							.then((errors) => {
+								if (
+									estimatedTotal <= 0 &&
+									!hasValidationErrorOtherThan(
+										errors,
+										DEFERRED_PAYMENT_TOTAL_ERROR,
+									)
+								)
+									toast.error(DEFERRED_PAYMENT_TOTAL_ERROR);
+								return formik.submitForm();
+							})
+							.catch(() => undefined);
 					}}>
 					<ModalBody className='min-h-0 flex-1 space-y-5 overflow-y-auto bg-zinc-50 dark:bg-zinc-950'>
 						{isPaidEdit && (
@@ -512,7 +538,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 															/>
 														)}
 													</DeferredPaymentField>
-													<div className='flex items-end md:col-span-1'>
+													<div className='flex items-start pt-7 md:col-span-1'>
 														<Button
 															type='button'
 															variant='outline'

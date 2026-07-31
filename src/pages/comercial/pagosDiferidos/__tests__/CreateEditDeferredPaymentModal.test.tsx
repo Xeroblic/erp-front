@@ -113,14 +113,31 @@ describe('CreateEditDeferredPaymentModal', () => {
 
 		fireEvent.click(screen.getByRole('button', { name: 'Crear documento' }));
 
-		expect(toastSpies.error).toHaveBeenCalledWith(
-			'El total del documento debe ser mayor a 0',
-		);
 		expect(await screen.findByText('Selecciona un cliente')).toBeInTheDocument();
+		expect(toastSpies.error).not.toHaveBeenCalled();
 		expect(screen.getByText('Ingresa el número de documento')).toBeInTheDocument();
 		expect(screen.getByText('Ingresa el código del ítem')).toBeInTheDocument();
 		expect(screen.getByText('Ingresa la descripción del ítem')).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Quitar ítem 1' }).parentElement).toHaveClass(
+			'items-start',
+			'pt-7',
+		);
 	});
+	it('muestra el toast y marca el precio cuando el total cero es el único error', async () => {
+		renderModal(vi.fn(), DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0]);
+		const unitPrice = screen.getByLabelText('Precio unitario');
+		fireEvent.change(unitPrice, { target: { value: '0' } });
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+		expect(
+			await screen.findByText('El total del documento debe ser mayor a 0'),
+		).toBeInTheDocument();
+		expect(toastSpies.error).toHaveBeenCalledWith(
+			'El total del documento debe ser mayor a 0',
+		);
+		expect(unitPrice).toHaveClass('!border-red-500');
+	});
+
 	it('permite agregar y quitar seriales del ítem', async () => {
 		renderModal();
 		const serialInput = screen.getByLabelText('Seriales (opcional)');
