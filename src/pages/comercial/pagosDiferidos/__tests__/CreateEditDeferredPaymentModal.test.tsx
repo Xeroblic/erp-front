@@ -10,6 +10,10 @@ import usersAdminReducer from '@/store/slices/usersAdmin/usersAdminSlice';
 import CreateEditDeferredPaymentModal from '../components/modals/CreateEditDeferredPaymentModal';
 import { DEFERRED_PAYMENT_DOCUMENT_FIXTURES } from './deferredPaymentTestFixtures';
 
+const toastSpies = vi.hoisted(() => ({ error: vi.fn() }));
+
+vi.mock('react-toastify', () => ({ toast: toastSpies }));
+
 vi.mock('react-i18next', () => ({
 	useTranslation: () => ({ i18n: { dir: () => 'ltr' } }),
 }));
@@ -26,6 +30,7 @@ vi.mock('@/store', async () => {
 
 describe('CreateEditDeferredPaymentModal', () => {
 	beforeEach(() => {
+		toastSpies.error.mockClear();
 		const portalRoot = document.createElement('div');
 		portalRoot.id = 'portal-root';
 		document.body.appendChild(portalRoot);
@@ -108,6 +113,9 @@ describe('CreateEditDeferredPaymentModal', () => {
 
 		fireEvent.click(screen.getByRole('button', { name: 'Crear documento' }));
 
+		expect(toastSpies.error).toHaveBeenCalledWith(
+			'El total del documento debe ser mayor a 0',
+		);
 		expect(await screen.findByText('Selecciona un cliente')).toBeInTheDocument();
 		expect(screen.getByText('Ingresa el número de documento')).toBeInTheDocument();
 		expect(screen.getByText('Ingresa el código del ítem')).toBeInTheDocument();

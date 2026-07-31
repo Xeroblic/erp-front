@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { FieldArray, Form, FormikProvider } from 'formik';
 import type { InputActionMeta } from 'react-select';
 import { useDebounce } from 'use-debounce';
+import { toast } from 'react-toastify';
 import type { IDeferredPaymentDocument } from '@/interface/deferredPayments.interface';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import Alert from '@/components/ui/Alert';
@@ -203,7 +204,13 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 				</div>
 			</ModalHeader>
 			<FormikProvider value={formik}>
-				<Form className='flex min-h-0 flex-1 flex-col overflow-hidden'>
+				<Form
+					className='flex min-h-0 flex-1 flex-col overflow-hidden'
+					onSubmit={(event) => {
+						if (estimatedTotal <= 0)
+							toast.error('El total del documento debe ser mayor a 0');
+						formik.handleSubmit(event);
+					}}>
 					<ModalBody className='min-h-0 flex-1 space-y-5 overflow-y-auto bg-zinc-50 dark:bg-zinc-950'>
 						{isPaidEdit && (
 							<Alert color='amber' variant='outline' icon='HeroLockClosed'>
