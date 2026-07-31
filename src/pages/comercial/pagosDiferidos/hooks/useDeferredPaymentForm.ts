@@ -7,7 +7,6 @@ import type {
 } from '@/interface/deferredPayments.interface';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useAppDispatch, useAppSelector } from '@/store';
-import USE_DEFERRED_PAYMENTS_MOCK from '@/store/slices/deferredPayments/deferredPaymentsConfig';
 import {
 	clearDeferredPaymentMutation,
 	createDeferredPayment,
@@ -121,7 +120,7 @@ const useDeferredPaymentForm = ({
 	const dueDateManuallySetRef = useRef(false);
 	const activeSubmissionRef = useRef<symbol | null>(null);
 	const activeRequestsRef = useRef<AbortableRequest[]>([]);
-	const effectiveSubsidiaryId = subsidiaryId ?? (USE_DEFERRED_PAYMENTS_MOCK ? 0 : null);
+	const effectiveSubsidiaryId = subsidiaryId;
 	const latestSubsidiaryIdRef = useRef(effectiveSubsidiaryId);
 	latestSubsidiaryIdRef.current = effectiveSubsidiaryId;
 	const today = useMemo(() => formatLocalDate(new Date()), []);

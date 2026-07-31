@@ -3,6 +3,7 @@ import { FieldArray, Form, FormikProvider } from 'formik';
 import type { InputActionMeta } from 'react-select';
 import { useDebounce } from 'use-debounce';
 import type { IDeferredPaymentDocument } from '@/interface/deferredPayments.interface';
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -19,8 +20,6 @@ import SelectReact, { type TSelectOption } from '@/components/form/SelectReact';
 import Textarea from '@/components/form/Textarea';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchCustomersOverviewThunk } from '@/store/slices/customerSales/customerSalesSlice';
-import USE_DEFERRED_PAYMENTS_MOCK from '@/store/slices/deferredPayments/deferredPaymentsConfig';
-import { DEFERRED_PAYMENT_DETAILS_MOCK } from '@/store/slices/deferredPayments/deferredPaymentsMock';
 import { fetchUsers } from '@/store/slices/usersAdmin/usersAdminSlice';
 import { formatCLP } from '@/utils/format.utils';
 import DeferredPaymentField from '../parts/DeferredPaymentField';
@@ -46,7 +45,6 @@ interface CustomerOptionData {
 
 const MAX_DATE = new Date(2100, 11, 31);
 const MAX_YEAR = 2100;
-const DEFAULT_CREDIT_LIMIT = 2_000_000;
 const documentTypeOptions: TSelectOption[] = Object.entries(
 	DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS,
 ).map(([value, label]) => ({ value, label }));
@@ -74,7 +72,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const customersLoading = useAppSelector((state) => state.customerSales.loading);
 	const users = useAppSelector((state) => state.usersAdmin.users);
 	const usersLoading = useAppSelector((state) => state.usersAdmin.loading.users);
-	const listSubsidiaryId = useAppSelector((state) => state.deferredPayments.listSubsidiaryId);
+	const { subsidiaryId } = useCurrentBranch();
 	const [paymentTermDays, setPaymentTermDays] = useState(30);
 	const [customerSearch, setCustomerSearch] = useState('');
 	const [debouncedCustomerSearch] = useDebounce(customerSearch, 300);
@@ -93,43 +91,35 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	});
 
 	useEffect(() => {
-		if (!isOpen || USE_DEFERRED_PAYMENTS_MOCK || listSubsidiaryId === null) return undefined;
+		if (!isOpen || subsidiaryId === null) return undefined;
 		const customerRequest = dispatch(
 			fetchCustomersOverviewThunk({
-				subsidiary: listSubsidiaryId,
+				subsidiary: subsidiaryId,
 				per_page: 100,
 				params: { q: debouncedCustomerSearch.trim() || undefined },
 			}),
 		);
 		return () => customerRequest.abort();
-	}, [debouncedCustomerSearch, dispatch, isOpen, listSubsidiaryId]);
+	}, [debouncedCustomerSearch, dispatch, isOpen, subsidiaryId]);
 
 	useEffect(() => {
-		if (!isOpen || USE_DEFERRED_PAYMENTS_MOCK || listSubsidiaryId === null) return undefined;
+		if (!isOpen || subsidiaryId === null) return undefined;
 		const usersRequest = dispatch(
-			fetchUsers({ subsidiary_id: listSubsidiaryId, status: 'active', per_page: 100 }),
+			fetchUsers({ subsidiary_id: subsidiaryId, status: 'active', per_page: 100 }),
 		);
 		return () => usersRequest.abort();
-	}, [dispatch, isOpen, listSubsidiaryId]);
+	}, [dispatch, isOpen, subsidiaryId]);
 
 	const customerData = useMemo<CustomerOptionData[]>(() => {
-		const remoteCustomers = USE_DEFERRED_PAYMENTS_MOCK
-			? Object.values(DEFERRED_PAYMENT_DETAILS_MOCK).map((mockDocument) => ({
-					id: mockDocument.customer.id,
-					label: `${mockDocument.customer.billing_company} · ${mockDocument.customer.rut}`,
-					isActive: mockDocument.customer.id !== 3,
-					paymentTermDays: 30,
-					creditLimit: DEFAULT_CREDIT_LIMIT,
-				}))
-			: customers.map((customer) => ({
-					id: customer.id,
-					label: [customer.name, customer.rut]
-						.filter((value): value is string => Boolean(value))
-						.join(' · '),
-					isActive: customer.is_active,
-					paymentTermDays: 30,
-					creditLimit: null,
-				}));
+		const remoteCustomers = customers.map((customer) => ({
+			id: customer.id,
+			label: [customer.name, customer.rut]
+				.filter((value): value is string => Boolean(value))
+				.join(' · '),
+			isActive: customer.is_active,
+			paymentTermDays: 30,
+			creditLimit: null,
+		}));
 		const editedCustomer =
 			mode === 'edit' && deferredPaymentDocument
 				? {
@@ -160,21 +150,8 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		() => customerData.map(({ id, label }) => ({ value: String(id), label })),
 		[customerData],
 	);
-	const mockAssignees = useMemo(
-		() =>
-			Array.from(
-				new Map(
-					Object.values(DEFERRED_PAYMENT_DETAILS_MOCK)
-						.flatMap((mockDocument) => mockDocument.assignees)
-						.map((assignee) => [assignee.id, assignee]),
-				).values(),
-			),
-		[],
-	);
 	const assigneeOptions = useMemo<TSelectOption[]>(() => {
-		const remoteOptions = (
-			USE_DEFERRED_PAYMENTS_MOCK ? mockAssignees : users.filter((user) => user.is_active)
-		).map((user) => ({
+		const remoteOptions = users.filter((user) => user.is_active).map((user) => ({
 			value: String(user.id),
 			label:
 				'name' in user
@@ -193,7 +170,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 				[...editedOptions, ...remoteOptions].map((option) => [option.value, option]),
 			).values(),
 		);
-	}, [deferredPaymentDocument, mockAssignees, mode, users]);
+	}, [deferredPaymentDocument, mode, users]);
 	const selectedCustomer = customerData.find(
 		(customer) => customer.id === formik.values.customer_sale_id,
 	);
@@ -263,7 +240,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 											options={customerOptions}
 											value={customerValue ?? null}
 											isLoading={
-												!USE_DEFERRED_PAYMENTS_MOCK && customersLoading
+												customersLoading
 											}
 											isDisabled={isPaidEdit}
 											placeholder='Busca por razón social o RUT'
@@ -398,7 +375,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 										isMulti
 										options={assigneeOptions}
 										value={assigneeValue}
-										isLoading={!USE_DEFERRED_PAYMENTS_MOCK && usersLoading}
+										isLoading={usersLoading}
 										isDisabled={isPaidEdit}
 										placeholder='Selecciona responsables'
 										onChange={(value) =>
