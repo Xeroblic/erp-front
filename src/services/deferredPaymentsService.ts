@@ -17,7 +17,7 @@ import ApiService from '@/services/ApiService';
 
 type ApiResource<T> = { data: T };
 type ApiResourcePayload<T> = T | ApiResource<T>;
-type CreateDocumentApiResponse = ApiResourcePayload<IDeferredPaymentDocument> & {
+type DocumentMutationApiResponse = ApiResourcePayload<IDeferredPaymentDocument> & {
 	credit_limit_exceeded?: boolean;
 };
 
@@ -108,7 +108,7 @@ const createDocument = async (
 	signal?: AbortSignal,
 ): Promise<DeferredPaymentMutationApiResponse> => {
 	const response = await ApiService.fetchData<
-		CreateDocumentApiResponse,
+		DocumentMutationApiResponse,
 		CreateDeferredPaymentApiPayload
 	>({
 		url: documentsUrl(subsidiaryId),
@@ -128,9 +128,9 @@ const updateDocument = async (
 	documentId: number,
 	payload: UpdateDeferredPaymentApiPayload,
 	signal?: AbortSignal,
-): Promise<IDeferredPaymentDocument> => {
+): Promise<DeferredPaymentMutationApiResponse> => {
 	const response = await ApiService.fetchData<
-		ApiResourcePayload<IDeferredPaymentDocument>,
+		DocumentMutationApiResponse,
 		UpdateDeferredPaymentApiPayload
 	>({
 		url: documentUrl(subsidiaryId, documentId),
@@ -139,7 +139,10 @@ const updateDocument = async (
 		...requestConfig(signal),
 	});
 	ApiService.invalidateCache(documentsUrl(subsidiaryId));
-	return normalizeDocument(unwrapResource(response.data));
+	return {
+		document: normalizeDocument(unwrapResource(response.data)),
+		credit_limit_exceeded: asRecord(response.data)?.credit_limit_exceeded === true,
+	};
 };
 
 const deleteDocument = async (

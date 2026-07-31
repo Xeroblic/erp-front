@@ -251,13 +251,12 @@ export const updateDeferredPayment = createAsyncThunk<
 		try {
 			if (USE_DEFERRED_PAYMENTS_MOCK)
 				return await mockUpdateDeferredPayment(documentId, payload, signal);
-			const document = await deferredPaymentsService.updateDocument(
+			return await deferredPaymentsService.updateDocument(
 				subsidiaryId,
 				documentId,
 				mapUpdatePayloadToApi(payload),
 				signal,
 			);
-			return { document, credit_limit_exceeded: false };
 		} catch (error) {
 			if (signal.aborted) throw error;
 			return rejectWithValue(

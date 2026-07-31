@@ -26,7 +26,12 @@ const document: IDeferredPaymentDocument = {
 	days_until_due: 30,
 	issue_date: '2026-07-22',
 	due_date: '2026-08-21',
-	customer: { id: 4, billing_company: 'Importadora Automarco Spa', rut: '84854200-8' },
+	customer: {
+		id: 4,
+		billing_company: 'Importadora Automarco Spa',
+		contact_name: 'Ana Pérez',
+		rut: '84854200-8',
+	},
 	notes: null,
 	assignees: [],
 	items: [],
@@ -137,7 +142,9 @@ describe('deferredPaymentsService', () => {
 	it('tolera creación plana y conserva fechas ISO al actualizar', async () => {
 		apiSpies.fetchData
 			.mockResolvedValueOnce({ data: document } as never)
-			.mockResolvedValueOnce({ data: { data: document } } as never);
+			.mockResolvedValueOnce({
+				data: { data: document, credit_limit_exceeded: true },
+			} as never);
 
 		await expect(
 			deferredPaymentsService.createDocument(4, {
@@ -151,10 +158,12 @@ describe('deferredPaymentsService', () => {
 			document: { id: 7, issue_date: '2026-07-22' },
 			credit_limit_exceeded: false,
 		});
-		await deferredPaymentsService.updateDocument(4, 7, {
-			issue_date: '2026-07-24',
-			due_date: null,
-		});
+		await expect(
+			deferredPaymentsService.updateDocument(4, 7, {
+				issue_date: '2026-07-24',
+				due_date: null,
+			}),
+		).resolves.toEqual({ document, credit_limit_exceeded: true });
 
 		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(
 			1,

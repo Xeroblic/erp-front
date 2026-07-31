@@ -93,7 +93,10 @@ describe('ZF-7 mutaciones mediante API', () => {
 
 	it('envía un PATCH parcial sin inventar total cuando no cambian los ítems', async () => {
 		const document = DEFERRED_PAYMENT_DETAILS_MOCK[2] as IDeferredPaymentDocument;
-		serviceSpies.updateDocument.mockResolvedValue(document);
+		serviceSpies.updateDocument.mockResolvedValue({
+			document,
+			credit_limit_exceeded: true,
+		});
 		const store = createStore();
 
 		await expect(
@@ -106,7 +109,7 @@ describe('ZF-7 mutaciones mediante API', () => {
 					}),
 				)
 				.unwrap(),
-		).resolves.toEqual({ document, credit_limit_exceeded: false });
+		).resolves.toEqual({ document, credit_limit_exceeded: true });
 
 		expect(serviceSpies.updateDocument).toHaveBeenCalledWith(
 			9,
