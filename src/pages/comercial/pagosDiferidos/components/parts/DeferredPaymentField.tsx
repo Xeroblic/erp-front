@@ -13,6 +13,7 @@ interface DeferredPaymentFieldProps {
 	name: string;
 	label?: ReactNode;
 	className?: string;
+	hiddenErrorMessage?: string;
 	children: (state: DeferredPaymentFieldState) => ReactNode;
 }
 
@@ -20,6 +21,7 @@ const DeferredPaymentField: React.FC<DeferredPaymentFieldProps> = ({
 	name,
 	label,
 	className,
+	hiddenErrorMessage,
 	children,
 }) => {
 	const formik = useFormikContext<DeferredPaymentFormValues>();
@@ -31,7 +33,9 @@ const DeferredPaymentField: React.FC<DeferredPaymentFieldProps> = ({
 		<div className={className}>
 			{label && <Label htmlFor={name}>{label}</Label>}
 			{children({ error, isTouched, isValid: error === undefined })}
-			{error && <p className='mt-1 text-sm text-red-600'>{error}</p>}
+			{error && error !== hiddenErrorMessage && (
+				<p className='mt-1 text-sm text-red-600'>{error}</p>
+			)}
 		</div>
 	);
 };

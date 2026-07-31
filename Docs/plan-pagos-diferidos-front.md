@@ -93,7 +93,7 @@ Estas acciones dependen del alcance posterior de ZF-8.
 - carga de usuarios para encargados;
 - ítems dinámicos, seriales y notas;
 - persistencia de valores al editar;
-- advertencia no bloqueante por límite de crédito;
+- advertencia no bloqueante cuando el servicio informa que se excedió el límite de crédito;
 - permiso `edit-deferred-payment` para edición.
 
 ### Reglas

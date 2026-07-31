@@ -1,4 +1,4 @@
-import React, { type PropsWithChildren } from 'react';
+﻿import React, { type PropsWithChildren } from 'react';
 import { configureStore } from '@reduxjs/toolkit';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Provider } from 'react-redux';
@@ -10,7 +10,11 @@ import usersAdminReducer from '@/store/slices/usersAdmin/usersAdminSlice';
 import CreateEditDeferredPaymentModal from '../components/modals/CreateEditDeferredPaymentModal';
 import { DEFERRED_PAYMENT_DOCUMENT_FIXTURES } from './deferredPaymentTestFixtures';
 
-const toastSpies = vi.hoisted(() => ({ error: vi.fn() }));
+const toastSpies = vi.hoisted(() => ({
+	error: vi.fn(),
+	success: vi.fn(),
+	warn: vi.fn(),
+}));
 
 vi.mock('react-toastify', () => ({ toast: toastSpies }));
 
@@ -31,6 +35,8 @@ vi.mock('@/store', async () => {
 describe('CreateEditDeferredPaymentModal', () => {
 	beforeEach(() => {
 		toastSpies.error.mockClear();
+		toastSpies.success.mockClear();
+		toastSpies.warn.mockClear();
 		const portalRoot = document.createElement('div');
 		portalRoot.id = 'portal-root';
 		document.body.appendChild(portalRoot);
@@ -130,11 +136,14 @@ describe('CreateEditDeferredPaymentModal', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 
 		expect(
-			await screen.findByText('El total del documento debe ser mayor a 0'),
-		).toBeInTheDocument();
-		expect(toastSpies.error).toHaveBeenCalledWith(
-			'El total del documento debe ser mayor a 0',
-		);
+			screen.queryByText('El total del documento debe ser mayor a 0'),
+		).not.toBeInTheDocument();
+
+		await vi.waitFor(() => {
+			expect(toastSpies.error).toHaveBeenCalledWith(
+				'El total del documento debe ser mayor a 0',
+			);
+		});
 		expect(unitPrice).toHaveClass('!border-red-500');
 	});
 

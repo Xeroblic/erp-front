@@ -28,8 +28,8 @@ const AttachmentLink: React.FC<{ attachment: IDeferredPaymentAttachment }> = ({ 
 		</span>
 		<span className='min-w-0 grow'>
 			<span className='block truncate text-sm font-semibold' title={attachment.file_name}>
-			{attachment.file_name}
-		</span>
+				{attachment.file_name}
+			</span>
 			<span className='block text-xs text-zinc-500'>{formatFileSize(attachment.size)}</span>
 		</span>
 		<Icon icon='HeroArrowDownTray' className='shrink-0 text-zinc-500' />
