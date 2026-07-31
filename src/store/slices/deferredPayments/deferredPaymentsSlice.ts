@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/tool
 import type {
 	CreateDeferredPaymentApiPayload,
 	CreateDeferredPaymentPayload,
+	DeferredPaymentApiListParams,
 	DeferredPaymentMutationResponse,
 	DeferredPaymentsFilters,
 	DeferredPaymentsListResponse,
@@ -125,6 +126,16 @@ const mapItemsToApi = (items: CreateDeferredPaymentPayload['items']) =>
 const calculateTotalAmount = (items: CreateDeferredPaymentPayload['items']): string =>
 	items.reduce((total, item) => total + item.quantity * Number(item.unit_price), 0).toFixed(2);
 
+const mapFiltersToApiParams = (filters: DeferredPaymentsFilters): DeferredPaymentApiListParams => ({
+	page: filters.page,
+	per_page: filters.per_page,
+	status: filters.status,
+	customer_sale_id: filters.customer_sale_id,
+	search: filters.search,
+	due_before: filters.due_before,
+	due_after: filters.due_after,
+});
+
 const mapCreatePayloadToApi = (
 	payload: CreateDeferredPaymentPayload,
 ): CreateDeferredPaymentApiPayload => ({
@@ -153,18 +164,25 @@ const mapUpdatePayloadToApi = (
 };
 export const fetchDeferredPaymentsSummary = createAsyncThunk<
 	IDeferredPaymentsSummary,
-	{ subsidiaryId: number },
+	{ subsidiaryId: number; filters?: DeferredPaymentsFilters },
 	{ rejectValue: string }
->('deferredPayments/fetchSummary', async ({ subsidiaryId }, { rejectWithValue, signal }) => {
-	try {
-		return await deferredPaymentsService.getSummary(subsidiaryId, signal);
-	} catch (error) {
-		if (signal.aborted) throw error;
-		return rejectWithValue(
-			getErrorMessage(error, 'No se pudo cargar el resumen de pagos diferidos'),
-		);
-	}
-});
+>(
+	'deferredPayments/fetchSummary',
+	async ({ subsidiaryId, filters }, { rejectWithValue, signal }) => {
+		try {
+			return await deferredPaymentsService.getSummary(
+				subsidiaryId,
+				mapFiltersToApiParams(filters ?? DEFAULT_DEFERRED_PAYMENTS_FILTERS),
+				signal,
+			);
+		} catch (error) {
+			if (signal.aborted) throw error;
+			return rejectWithValue(
+				getErrorMessage(error, 'No se pudo cargar el resumen de pagos diferidos'),
+			);
+		}
+	},
+);
 
 export const fetchDeferredPayments = createAsyncThunk<
 	DeferredPaymentsListResponse,
@@ -175,15 +193,7 @@ export const fetchDeferredPayments = createAsyncThunk<
 	try {
 		return await deferredPaymentsService.getDocuments(
 			subsidiaryId,
-			{
-				page: query.page,
-				per_page: query.per_page,
-				status: query.status,
-				customer_sale_id: query.customer_sale_id,
-				search: query.search,
-				due_before: query.due_before,
-				due_after: query.due_after,
-			},
+			mapFiltersToApiParams(query),
 			signal,
 		);
 	} catch (error) {

@@ -77,11 +77,13 @@ const getDocuments = async (
 
 const getSummary = async (
 	subsidiaryId: number,
+	params: DeferredPaymentApiListParams = {},
 	signal?: AbortSignal,
 ): Promise<IDeferredPaymentsSummary> => {
 	const response = await ApiService.fetchData<ApiResourcePayload<IDeferredPaymentsSummary>>({
 		url: `${documentsUrl(subsidiaryId)}/summary`,
 		method: 'get',
+		params,
 		cacheTTLms: 30_000,
 		...requestConfig(signal),
 	});

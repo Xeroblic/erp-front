@@ -31,7 +31,6 @@ const usePagosDiferidos = () => {
 	const hasInvalidDateRange = Boolean(
 		values.due_after && values.due_before && values.due_after > values.due_before,
 	);
-
 	const isSubsidiaryChange =
 		listSubsidiaryId !== null && listSubsidiaryId !== effectiveSubsidiaryId;
 	const requestPage = isSubsidiaryChange ? 1 : values.page;
@@ -63,23 +62,24 @@ const usePagosDiferidos = () => {
 	}, [isSubsidiaryChange]);
 
 	useEffect(() => {
-		if (effectiveSubsidiaryId === null) return undefined;
-		const request = dispatch(
-			fetchDeferredPaymentsSummary({ subsidiaryId: effectiveSubsidiaryId }),
-		);
-		return () => request.abort();
-	}, [dispatch, effectiveSubsidiaryId]);
-
-	useEffect(() => {
 		if (effectiveSubsidiaryId === null || hasInvalidDateRange || isSearchDebouncing)
 			return undefined;
-		const request = dispatch(
+		const listRequest = dispatch(
 			fetchDeferredPayments({
 				subsidiaryId: effectiveSubsidiaryId,
 				filters: filtersForRequest,
 			}),
 		);
-		return () => request.abort();
+		const summaryRequest = dispatch(
+			fetchDeferredPaymentsSummary({
+				subsidiaryId: effectiveSubsidiaryId,
+				filters: filtersForRequest,
+			}),
+		);
+		return () => {
+			listRequest.abort();
+			summaryRequest.abort();
+		};
 	}, [
 		dispatch,
 		effectiveSubsidiaryId,
@@ -111,9 +111,21 @@ const usePagosDiferidos = () => {
 	const openDetail = useCallback((id: number) => setSelectedId(id), []);
 	const closeDetail = useCallback(() => setSelectedId(null), []);
 	const retrySummary = useCallback(() => {
-		if (effectiveSubsidiaryId === null) return undefined;
-		return dispatch(fetchDeferredPaymentsSummary({ subsidiaryId: effectiveSubsidiaryId }));
-	}, [dispatch, effectiveSubsidiaryId]);
+		if (effectiveSubsidiaryId === null || hasInvalidDateRange || isSearchDebouncing)
+			return undefined;
+		return dispatch(
+			fetchDeferredPaymentsSummary({
+				subsidiaryId: effectiveSubsidiaryId,
+				filters: filtersForRequest,
+			}),
+		);
+	}, [
+		dispatch,
+		effectiveSubsidiaryId,
+		filtersForRequest,
+		hasInvalidDateRange,
+		isSearchDebouncing,
+	]);
 	const retryList = useCallback(() => {
 		if (effectiveSubsidiaryId === null || hasInvalidDateRange || isSearchDebouncing)
 			return undefined;
@@ -133,13 +145,7 @@ const usePagosDiferidos = () => {
 
 	return {
 		data: { list, summary, meta },
-		state: {
-			loading,
-			loadingSummary,
-			error,
-			errorSummary,
-			hasDataContext,
-		},
+		state: { loading, loadingSummary, error, errorSummary, hasDataContext },
 		filters: {
 			values,
 			search,

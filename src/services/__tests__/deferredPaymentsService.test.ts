@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+﻿import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
 	CreateDeferredPaymentApiPayload,
 	DeferredPaymentsListResponse,
@@ -103,8 +103,16 @@ describe('deferredPaymentsService', () => {
 			.mockResolvedValueOnce({ data: { data: summary } } as never)
 			.mockResolvedValueOnce({ data: { data: document } } as never);
 
-		await expect(deferredPaymentsService.getSummary(4)).resolves.toEqual(summary);
+		const filters = { status: 'overdue' as const, search: 'andina' };
+		await expect(deferredPaymentsService.getSummary(4, filters)).resolves.toEqual(summary);
 		await expect(deferredPaymentsService.getDocument(4, 7)).resolves.toEqual(document);
+		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(
+			1,
+			expect.objectContaining({
+				url: '/subsidiaries/4/deferred-payments/summary',
+				params: filters,
+			}),
+		);
 		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(
 			2,
 			expect.objectContaining({ url: '/subsidiaries/4/deferred-payments/7' }),
@@ -172,6 +180,13 @@ describe('deferredPaymentsService', () => {
 			}),
 		);
 		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(
+			1,
+			expect.objectContaining({
+				url: '/subsidiaries/4/deferred-payments/summary',
+				params: filters,
+			}),
+		);
+		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(
 			2,
 			expect.objectContaining({
 				method: 'patch',
@@ -198,6 +213,13 @@ describe('deferredPaymentsService', () => {
 			expect.objectContaining({
 				url: '/subsidiaries/4/deferred-payments/7/payments',
 				data: { amount: '300000.00', paid_at: '2026-08-01', method: 'transfer' },
+			}),
+		);
+		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(
+			1,
+			expect.objectContaining({
+				url: '/subsidiaries/4/deferred-payments/summary',
+				params: filters,
 			}),
 		);
 		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(
@@ -233,6 +255,13 @@ describe('deferredPaymentsService', () => {
 		await expect(
 			deferredPaymentsService.updateCreditProfile(4, 8, { credit_limit: '5000000.00' }),
 		).resolves.toEqual(profile);
+		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(
+			1,
+			expect.objectContaining({
+				url: '/subsidiaries/4/deferred-payments/summary',
+				params: filters,
+			}),
+		);
 		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(
 			2,
 			expect.objectContaining({

@@ -78,7 +78,11 @@ describe('thunks API de pagos diferidos', () => {
 		await expect(
 			store.dispatch(fetchDeferredPaymentsSummary({ subsidiaryId: 4 })).unwrap(),
 		).resolves.toEqual(summary);
-		expect(serviceSpies.getSummary).toHaveBeenCalledWith(4, expect.any(AbortSignal));
+		expect(serviceSpies.getSummary).toHaveBeenCalledWith(
+			4,
+			expect.objectContaining({ page: 1, per_page: 10 }),
+			expect.any(AbortSignal),
+		);
 		expect(store.getState().summary).toEqual(summary);
 	});
 	it('carga el detalle desde el servicio usando la subsidiaria efectiva', async () => {

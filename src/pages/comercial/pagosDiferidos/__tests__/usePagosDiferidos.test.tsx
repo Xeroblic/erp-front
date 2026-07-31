@@ -90,7 +90,11 @@ describe('usePagosDiferidos con servicio', () => {
 			expect.objectContaining({ page: 1, per_page: 10 }),
 			expect.any(AbortSignal),
 		);
-		expect(getSummaryMock).toHaveBeenCalledWith(10, expect.any(AbortSignal));
+		expect(getSummaryMock).toHaveBeenCalledWith(
+			10,
+			expect.objectContaining({ page: 1, per_page: 10 }),
+			expect.any(AbortSignal),
+		);
 		expect(store.getState().deferredPayments.list).toHaveLength(1);
 		expect(store.getState().deferredPayments.summary).toEqual(summary);
 	});
@@ -109,12 +113,16 @@ describe('usePagosDiferidos con servicio', () => {
 		act(() => hook.result.current.filters.setFilter({ page: 3 }));
 		await flushPromises();
 		getDocumentsMock.mockClear();
+		getSummaryMock.mockClear();
 		act(() => hook.result.current.filters.setSearch('andina'));
 		await act(async () => vi.advanceTimersByTimeAsync(299));
 		expect(getDocumentsMock).not.toHaveBeenCalled();
+		expect(getSummaryMock).not.toHaveBeenCalled();
 		await act(async () => vi.advanceTimersByTimeAsync(1));
 		expect(getDocumentsMock).toHaveBeenCalledOnce();
+		expect(getSummaryMock).toHaveBeenCalledOnce();
 		expect(getDocumentsMock.mock.calls[0]?.[1]).toMatchObject({ page: 1, search: 'andina' });
+		expect(getSummaryMock.mock.calls[0]?.[1]).toMatchObject({ page: 1, search: 'andina' });
 	});
 	it('permite limpiar y repetir el mismo termino durante el debounce', async () => {
 		vi.useFakeTimers();
@@ -162,10 +170,41 @@ describe('usePagosDiferidos con servicio', () => {
 		expect(getDocumentsMock).toHaveBeenCalledOnce();
 		expect(getDocumentsMock.mock.calls[0]?.[0]).toBe(20);
 		expect(getDocumentsMock.mock.calls[0]?.[1]).toMatchObject({ page: 1, per_page: 2 });
-		expect(getSummaryMock).toHaveBeenCalledWith(20, expect.any(AbortSignal));
+		expect(getSummaryMock).toHaveBeenCalledWith(
+			20,
+			expect.objectContaining({ page: 1, per_page: 2 }),
+			expect.any(AbortSignal),
+		);
 		expect(store.getState().deferredPayments.filters.page).toBe(1);
 		expect(hook.result.current.selection.selectedId).toBeNull();
 	});
+	it('espera el debounce de búsqueda antes de cambiar listado y resumen de subsidiaria', async () => {
+		vi.useFakeTimers();
+		const { hook } = createHook();
+		await flushPromises();
+		act(() => hook.result.current.filters.setSearch('andina'));
+		getDocumentsMock.mockClear();
+		getSummaryMock.mockClear();
+		act(() => {
+			branchContext.subsidiaryId = 20;
+			hook.rerender();
+		});
+		await act(async () => vi.advanceTimersByTimeAsync(299));
+		expect(getDocumentsMock).not.toHaveBeenCalled();
+		expect(getSummaryMock).not.toHaveBeenCalled();
+		await act(async () => vi.advanceTimersByTimeAsync(1));
+		expect(getDocumentsMock).toHaveBeenCalledWith(
+			20,
+			expect.objectContaining({ page: 1, search: 'andina' }),
+			expect.any(AbortSignal),
+		);
+		expect(getSummaryMock).toHaveBeenCalledWith(
+			20,
+			expect.objectContaining({ page: 1, search: 'andina' }),
+			expect.any(AbortSignal),
+		);
+	});
+
 	it('expone errores independientes de listado y resumen', async () => {
 		getDocumentsMock.mockRejectedValueOnce(new Error('Listado caido'));
 		getSummaryMock.mockRejectedValueOnce(new Error('Resumen caido'));
@@ -183,7 +222,7 @@ describe('usePagosDiferidos con servicio', () => {
 			listSignal = signal;
 			return new Promise(() => {});
 		});
-		getSummaryMock.mockImplementation((_id, signal) => {
+		getSummaryMock.mockImplementation((_id, _params, signal) => {
 			summarySignal = signal;
 			return new Promise(() => {});
 		});
