@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
-	DEFERRED_PAYMENTS_MOCK,
-	DEFERRED_PAYMENTS_SUMMARY_MOCK,
-	mockFetchDeferredPayments,
-} from '@/store/slices/deferredPayments/deferredPaymentsMock';
+	DEFERRED_PAYMENT_LIST_FIXTURES,
+	DEFERRED_PAYMENT_SUMMARY_FIXTURE,
+	fetchDeferredPaymentsFixture,
+} from './deferredPaymentsScenarioFixtures';
 import deferredPaymentsReducer, {
 	DEFAULT_DEFERRED_PAYMENTS_FILTERS,
 	fetchDeferredPayments,
@@ -30,41 +30,41 @@ describe('ZF-5 Pagos diferidos', () => {
 	});
 
 	it('mantiene un universo mock representativo y un summary coherente', () => {
-		const overdue = DEFERRED_PAYMENTS_MOCK.filter((row) => row.is_overdue);
-		const dueSoon = DEFERRED_PAYMENTS_MOCK.filter(
+		const overdue = DEFERRED_PAYMENT_LIST_FIXTURES.filter((row) => row.is_overdue);
+		const dueSoon = DEFERRED_PAYMENT_LIST_FIXTURES.filter(
 			(row) =>
 				row.status !== 'paid' &&
 				row.days_until_due !== null &&
 				row.days_until_due >= 0 &&
 				row.days_until_due <= 7,
 		);
-		const unpaid = DEFERRED_PAYMENTS_MOCK.filter(
+		const unpaid = DEFERRED_PAYMENT_LIST_FIXTURES.filter(
 			(row) => row.status !== 'paid' && Number(row.outstanding_amount) > 0,
 		);
-		const current = DEFERRED_PAYMENTS_MOCK.filter(
+		const current = DEFERRED_PAYMENT_LIST_FIXTURES.filter(
 			(row) => row.status !== 'paid' && row.days_until_due !== null && row.days_until_due > 7,
 		);
 		const expectedOutstanding = unpaid
 			.reduce((total, row) => total + Number(row.outstanding_amount), 0)
 			.toFixed(2);
 
-		expect(DEFERRED_PAYMENTS_MOCK).toHaveLength(10);
+		expect(DEFERRED_PAYMENT_LIST_FIXTURES).toHaveLength(10);
 		expect(overdue.length).toBeGreaterThanOrEqual(3);
 		expect(dueSoon.length).toBeGreaterThanOrEqual(2);
 		expect(
-			DEFERRED_PAYMENTS_MOCK.filter((row) => row.status === 'paid').every(
+			DEFERRED_PAYMENT_LIST_FIXTURES.filter((row) => row.status === 'paid').every(
 				(row) => row.days_until_due === null,
 			),
 		).toBe(true);
-		expect(DEFERRED_PAYMENTS_SUMMARY_MOCK.total_outstanding).toBe(expectedOutstanding);
-		expect(DEFERRED_PAYMENTS_SUMMARY_MOCK.overdue.count).toBe(overdue.length);
-		expect(DEFERRED_PAYMENTS_SUMMARY_MOCK.due_within_7_days.count).toBe(dueSoon.length);
-		expect(DEFERRED_PAYMENTS_SUMMARY_MOCK.current.count).toBe(current.length);
+		expect(DEFERRED_PAYMENT_SUMMARY_FIXTURE.total_outstanding).toBe(expectedOutstanding);
+		expect(DEFERRED_PAYMENT_SUMMARY_FIXTURE.overdue.count).toBe(overdue.length);
+		expect(DEFERRED_PAYMENT_SUMMARY_FIXTURE.due_within_7_days.count).toBe(dueSoon.length);
+		expect(DEFERRED_PAYMENT_SUMMARY_FIXTURE.current.count).toBe(current.length);
 	});
 
 	it('filtra y pagina el mock como el endpoint congelado', async () => {
 		vi.useFakeTimers();
-		const request = mockFetchDeferredPayments({
+		const request = fetchDeferredPaymentsFixture({
 			...DEFAULT_DEFERRED_PAYMENTS_FILTERS,
 			status: 'overdue',
 			per_page: 2,
@@ -90,7 +90,7 @@ describe('ZF-5 Pagos diferidos', () => {
 			fetchDeferredPayments.pending('request-id', args),
 		);
 		const payload = {
-			data: DEFERRED_PAYMENTS_MOCK.slice(0, 2),
+			data: DEFERRED_PAYMENT_LIST_FIXTURES.slice(0, 2),
 			meta: { current_page: 2, per_page: 2, total: 10, last_page: 5 },
 		};
 		const fulfilled = deferredPaymentsReducer(
@@ -113,14 +113,14 @@ describe('ZF-5 Pagos diferidos', () => {
 		const fulfilled = deferredPaymentsReducer(
 			pending,
 			fetchDeferredPaymentsSummary.fulfilled(
-				DEFERRED_PAYMENTS_SUMMARY_MOCK,
+				DEFERRED_PAYMENT_SUMMARY_FIXTURE,
 				'request-id',
 				args,
 			),
 		);
 
 		expect(fulfilled.loadingSummary).toBe(false);
-		expect(fulfilled.summary).toEqual(DEFERRED_PAYMENTS_SUMMARY_MOCK);
+		expect(fulfilled.summary).toEqual(DEFERRED_PAYMENT_SUMMARY_FIXTURE);
 	});
 
 	it('separa errores de lista y resumen', () => {
@@ -161,7 +161,7 @@ describe('ZF-5 Pagos diferidos', () => {
 			fetchDeferredPayments.pending('first-request', firstArgs),
 		);
 		const payload = {
-			data: DEFERRED_PAYMENTS_MOCK.slice(0, 2),
+			data: DEFERRED_PAYMENT_LIST_FIXTURES.slice(0, 2),
 			meta: { current_page: 1, per_page: 2, total: 10, last_page: 5 },
 		};
 		const loaded = deferredPaymentsReducer(
@@ -198,7 +198,7 @@ describe('ZF-5 Pagos diferidos', () => {
 		const loaded = deferredPaymentsReducer(
 			pending,
 			fetchDeferredPaymentsSummary.fulfilled(
-				DEFERRED_PAYMENTS_SUMMARY_MOCK,
+				DEFERRED_PAYMENT_SUMMARY_FIXTURE,
 				'first-summary',
 				args,
 			),
@@ -212,7 +212,7 @@ describe('ZF-5 Pagos diferidos', () => {
 			fetchDeferredPaymentsSummary.rejected(null, 'reload-summary', args, 'Error resumen'),
 		);
 
-		expect(reloading.summary).toEqual(DEFERRED_PAYMENTS_SUMMARY_MOCK);
+		expect(reloading.summary).toEqual(DEFERRED_PAYMENT_SUMMARY_FIXTURE);
 		expect(failed.summary).toBeNull();
 	});
 	it('ignora un rechazo abortado', () => {
@@ -240,7 +240,7 @@ describe('ZF-5 Pagos diferidos', () => {
 	it('cancela realmente la espera del mock mediante AbortSignal', async () => {
 		vi.useFakeTimers();
 		const controller = new AbortController();
-		const request = mockFetchDeferredPayments(
+		const request = fetchDeferredPaymentsFixture(
 			DEFAULT_DEFERRED_PAYMENTS_FILTERS,
 			controller.signal,
 		);

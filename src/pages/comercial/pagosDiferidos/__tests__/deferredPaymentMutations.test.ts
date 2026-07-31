@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CreateDeferredPaymentPayload } from '@/interface/deferredPayments.interface';
 import {
-	DEFERRED_PAYMENT_DETAILS_MOCK,
-	DEFERRED_PAYMENTS_MOCK,
-	DEFERRED_PAYMENTS_SUMMARY_MOCK,
-	mockCreateDeferredPayment,
-	mockUpdateDeferredPayment,
-} from '@/store/slices/deferredPayments/deferredPaymentsMock';
+	DEFERRED_PAYMENT_DETAIL_FIXTURES,
+	DEFERRED_PAYMENT_LIST_FIXTURES,
+	DEFERRED_PAYMENT_SUMMARY_FIXTURE,
+	createDeferredPaymentFixture,
+	updateDeferredPaymentFixture,
+} from './deferredPaymentsScenarioFixtures';
 import deferredPaymentsReducer, {
 	clearDeferredPaymentMutation,
 	createDeferredPayment,
@@ -17,13 +17,13 @@ vi.mock('@/services/ApiService', () => ({
 	default: { fetchData: vi.fn(), invalidateCache: vi.fn() },
 }));
 
-const originalRows = [...DEFERRED_PAYMENTS_MOCK];
-const originalDetails = { ...DEFERRED_PAYMENT_DETAILS_MOCK };
+const originalRows = [...DEFERRED_PAYMENT_LIST_FIXTURES];
+const originalDetails = { ...DEFERRED_PAYMENT_DETAIL_FIXTURES };
 const originalSummary = {
-	...DEFERRED_PAYMENTS_SUMMARY_MOCK,
-	overdue: { ...DEFERRED_PAYMENTS_SUMMARY_MOCK.overdue },
-	due_within_7_days: { ...DEFERRED_PAYMENTS_SUMMARY_MOCK.due_within_7_days },
-	current: { ...DEFERRED_PAYMENTS_SUMMARY_MOCK.current },
+	...DEFERRED_PAYMENT_SUMMARY_FIXTURE,
+	overdue: { ...DEFERRED_PAYMENT_SUMMARY_FIXTURE.overdue },
+	due_within_7_days: { ...DEFERRED_PAYMENT_SUMMARY_FIXTURE.due_within_7_days },
+	current: { ...DEFERRED_PAYMENT_SUMMARY_FIXTURE.current },
 };
 
 const payload: CreateDeferredPaymentPayload = {
@@ -48,12 +48,12 @@ const payload: CreateDeferredPaymentPayload = {
 };
 
 const restoreMockUniverse = () => {
-	DEFERRED_PAYMENTS_MOCK.splice(0, DEFERRED_PAYMENTS_MOCK.length, ...originalRows);
-	Object.keys(DEFERRED_PAYMENT_DETAILS_MOCK).forEach((key) => {
-		delete DEFERRED_PAYMENT_DETAILS_MOCK[Number(key)];
+	DEFERRED_PAYMENT_LIST_FIXTURES.splice(0, DEFERRED_PAYMENT_LIST_FIXTURES.length, ...originalRows);
+	Object.keys(DEFERRED_PAYMENT_DETAIL_FIXTURES).forEach((key) => {
+		delete DEFERRED_PAYMENT_DETAIL_FIXTURES[Number(key)];
 	});
-	Object.assign(DEFERRED_PAYMENT_DETAILS_MOCK, originalDetails);
-	Object.assign(DEFERRED_PAYMENTS_SUMMARY_MOCK, originalSummary);
+	Object.assign(DEFERRED_PAYMENT_DETAIL_FIXTURES, originalDetails);
+	Object.assign(DEFERRED_PAYMENT_SUMMARY_FIXTURE, originalSummary);
 };
 
 afterEach(() => {
@@ -64,7 +64,7 @@ afterEach(() => {
 describe('ZF-7 mutaciones de documentos diferidos', () => {
 	it('crea un documento coherente y lo incorpora al universo mock', async () => {
 		vi.useFakeTimers();
-		const request = mockCreateDeferredPayment(payload);
+		const request = createDeferredPaymentFixture(payload);
 		await vi.runAllTimersAsync();
 		const result = await request;
 
@@ -76,14 +76,14 @@ describe('ZF-7 mutaciones de documentos diferidos', () => {
 			status: 'pending',
 			notes: 'Documento creado desde ZF-7',
 		});
-		expect(DEFERRED_PAYMENTS_MOCK.at(-1)?.id).toBe(result.document.id);
-		expect(DEFERRED_PAYMENT_DETAILS_MOCK[result.document.id]).toEqual(result.document);
+		expect(DEFERRED_PAYMENT_LIST_FIXTURES.at(-1)?.id).toBe(result.document.id);
+		expect(DEFERRED_PAYMENT_DETAIL_FIXTURES[result.document.id]).toEqual(result.document);
 	});
 
 	it('rechaza la edición de un documento pagado', async () => {
 		vi.useFakeTimers();
 		const expectation = expect(
-			mockUpdateDeferredPayment(9, { notes: 'No debe guardarse' }),
+			updateDeferredPaymentFixture(9, { notes: 'No debe guardarse' }),
 		).rejects.toThrow('No se puede editar un documento pagado');
 		await vi.runAllTimersAsync();
 		await expectation;
@@ -91,11 +91,11 @@ describe('ZF-7 mutaciones de documentos diferidos', () => {
 
 	it('permite limpiar notas y orden de compra durante la edición', async () => {
 		vi.useFakeTimers();
-		const noteRequest = mockUpdateDeferredPayment(1, { notes: null });
+		const noteRequest = updateDeferredPaymentFixture(1, { notes: null });
 		await vi.runAllTimersAsync();
 		const withoutNote = await noteRequest;
 
-		const purchaseOrderRequest = mockUpdateDeferredPayment(2, { purchase_order: null });
+		const purchaseOrderRequest = updateDeferredPaymentFixture(2, { purchase_order: null });
 		await vi.runAllTimersAsync();
 		const withoutPurchaseOrder = await purchaseOrderRequest;
 
@@ -113,7 +113,7 @@ describe('ZF-7 mutaciones de documentos diferidos', () => {
 			pending,
 			createDeferredPayment.fulfilled(
 				{
-					document: DEFERRED_PAYMENT_DETAILS_MOCK[1],
+					document: DEFERRED_PAYMENT_DETAIL_FIXTURES[1],
 					credit_limit_exceeded: true,
 				},
 				'create-zf7',
@@ -142,7 +142,7 @@ describe('ZF-7 mutaciones de documentos diferidos', () => {
 			secondPending,
 			updateDeferredPayment.fulfilled(
 				{
-					document: DEFERRED_PAYMENT_DETAILS_MOCK[2],
+					document: DEFERRED_PAYMENT_DETAIL_FIXTURES[2],
 					credit_limit_exceeded: false,
 				},
 				'update-first',

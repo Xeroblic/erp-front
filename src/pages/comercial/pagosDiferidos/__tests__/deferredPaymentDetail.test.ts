@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
-	DEFERRED_PAYMENT_DETAILS_MOCK,
-	DEFERRED_PAYMENTS_MOCK,
-	mockFetchDeferredPaymentById,
-} from '@/store/slices/deferredPayments/deferredPaymentsMock';
+	DEFERRED_PAYMENT_DETAIL_FIXTURES,
+	DEFERRED_PAYMENT_LIST_FIXTURES,
+	fetchDeferredPaymentByIdFixture,
+} from './deferredPaymentsScenarioFixtures';
 import deferredPaymentsReducer, {
 	clearDeferredPaymentDetail,
 	fetchDeferredPaymentById,
@@ -19,8 +19,8 @@ afterEach(() => {
 
 describe('ZF-6 detalle de pago diferido', () => {
 	it('mantiene un detalle mock coherente con la fila del dashboard', () => {
-		const row = DEFERRED_PAYMENTS_MOCK[1];
-		const detail = DEFERRED_PAYMENT_DETAILS_MOCK[row.id];
+		const row = DEFERRED_PAYMENT_LIST_FIXTURES[1];
+		const detail = DEFERRED_PAYMENT_DETAIL_FIXTURES[row.id];
 
 		expect(detail).toMatchObject({
 			id: row.id,
@@ -40,7 +40,7 @@ describe('ZF-6 detalle de pago diferido', () => {
 	});
 
 	it('genera cada abono después de la emisión del documento', () => {
-		Object.values(DEFERRED_PAYMENT_DETAILS_MOCK).forEach((detail) => {
+		Object.values(DEFERRED_PAYMENT_DETAIL_FIXTURES).forEach((detail) => {
 			detail.payments.forEach((payment) => {
 				expect(payment.paid_at >= detail.issue_date).toBe(true);
 				expect(payment.paid_at <= detail.due_date).toBe(true);
@@ -49,11 +49,11 @@ describe('ZF-6 detalle de pago diferido', () => {
 	});
 	it('obtiene el detalle por ID y rechaza un documento inexistente', async () => {
 		vi.useFakeTimers();
-		const existingRequest = mockFetchDeferredPaymentById(2);
+		const existingRequest = fetchDeferredPaymentByIdFixture(2);
 		await vi.runAllTimersAsync();
-		await expect(existingRequest).resolves.toEqual(DEFERRED_PAYMENT_DETAILS_MOCK[2]);
+		await expect(existingRequest).resolves.toEqual(DEFERRED_PAYMENT_DETAIL_FIXTURES[2]);
 
-		const missingExpectation = expect(mockFetchDeferredPaymentById(9999)).rejects.toThrow(
+		const missingExpectation = expect(fetchDeferredPaymentByIdFixture(9999)).rejects.toThrow(
 			'No se encontró el documento',
 		);
 		await vi.runAllTimersAsync();
@@ -75,7 +75,7 @@ describe('ZF-6 detalle de pago diferido', () => {
 		const staleFulfilled = deferredPaymentsReducer(
 			secondPending,
 			fetchDeferredPaymentById.fulfilled(
-				DEFERRED_PAYMENT_DETAILS_MOCK[1],
+				DEFERRED_PAYMENT_DETAIL_FIXTURES[1],
 				'first-detail',
 				firstArgs,
 			),
@@ -83,7 +83,7 @@ describe('ZF-6 detalle de pago diferido', () => {
 		const currentFulfilled = deferredPaymentsReducer(
 			staleFulfilled,
 			fetchDeferredPaymentById.fulfilled(
-				DEFERRED_PAYMENT_DETAILS_MOCK[2],
+				DEFERRED_PAYMENT_DETAIL_FIXTURES[2],
 				'second-detail',
 				secondArgs,
 			),
@@ -105,7 +105,7 @@ describe('ZF-6 detalle de pago diferido', () => {
 		const loaded = deferredPaymentsReducer(
 			firstPending,
 			fetchDeferredPaymentById.fulfilled(
-				DEFERRED_PAYMENT_DETAILS_MOCK[2],
+				DEFERRED_PAYMENT_DETAIL_FIXTURES[2],
 				'first-load',
 				args,
 			),
@@ -148,7 +148,7 @@ describe('ZF-6 detalle de pago diferido', () => {
 		vi.useFakeTimers();
 		const controller = new AbortController();
 		const abortExpectation = expect(
-			mockFetchDeferredPaymentById(1, controller.signal),
+			fetchDeferredPaymentByIdFixture(1, controller.signal),
 		).rejects.toMatchObject({ name: 'AbortError' });
 
 		controller.abort();

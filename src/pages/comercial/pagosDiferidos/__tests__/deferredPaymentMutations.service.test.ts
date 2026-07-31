@@ -4,7 +4,7 @@ import type {
 	CreateDeferredPaymentPayload,
 	IDeferredPaymentDocument,
 } from '@/interface/deferredPayments.interface';
-import { DEFERRED_PAYMENT_DETAILS_MOCK } from '@/store/slices/deferredPayments/deferredPaymentsMock';
+import { DEFERRED_PAYMENT_DETAIL_FIXTURES } from './deferredPaymentsScenarioFixtures';
 import deferredPaymentsReducer, {
 	createDeferredPayment,
 	updateDeferredPayment,
@@ -15,7 +15,6 @@ const serviceSpies = vi.hoisted(() => ({
 	updateDocument: vi.fn(),
 }));
 
-vi.mock('@/store/slices/deferredPayments/deferredPaymentsConfig', () => ({ default: false }));
 vi.mock('@/services/deferredPaymentsService', () => ({
 	default: serviceSpies,
 }));
@@ -46,14 +45,14 @@ const createStore = () =>
 		reducer: { deferredPayments: deferredPaymentsReducer },
 	});
 
-describe('ZF-7 mutaciones mediante API', () => {
+describe('ZF-7 mutaciones mediante el servicio', () => {
 	beforeEach(() => {
 		serviceSpies.createDocument.mockReset();
 		serviceSpies.updateDocument.mockReset();
 	});
 
 	it('adapta y envía el formulario de creación al servicio real', async () => {
-		const document = DEFERRED_PAYMENT_DETAILS_MOCK[1] as IDeferredPaymentDocument;
+		const document = DEFERRED_PAYMENT_DETAIL_FIXTURES[1] as IDeferredPaymentDocument;
 		serviceSpies.createDocument.mockResolvedValue({
 			document,
 			credit_limit_exceeded: true,
@@ -92,7 +91,7 @@ describe('ZF-7 mutaciones mediante API', () => {
 	});
 
 	it('envía un PATCH parcial sin inventar total cuando no cambian los ítems', async () => {
-		const document = DEFERRED_PAYMENT_DETAILS_MOCK[2] as IDeferredPaymentDocument;
+		const document = DEFERRED_PAYMENT_DETAIL_FIXTURES[2] as IDeferredPaymentDocument;
 		serviceSpies.updateDocument.mockResolvedValue({
 			document,
 			credit_limit_exceeded: true,

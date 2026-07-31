@@ -73,7 +73,7 @@ describe('usePagosDiferidos con servicio', () => {
 	beforeEach(() => {
 		branchContext.subsidiaryId = 10;
 		getDocumentsMock.mockImplementation((_id, params) =>
-			Promise.resolve(listResponse(params.page, params.per_page)),
+			Promise.resolve(listResponse(params?.page ?? 1, params?.per_page ?? 10)),
 		);
 		getSummaryMock.mockResolvedValue(summary);
 	});

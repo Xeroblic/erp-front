@@ -4,13 +4,14 @@ import { act, renderHook } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { IDeferredPaymentDocument } from '@/interface/deferredPayments.interface';
+import deferredPaymentsService from '@/services/deferredPaymentsService';
 import deferredPaymentsReducer from '@/store/slices/deferredPayments/deferredPaymentsSlice';
-import { DEFERRED_PAYMENT_DETAILS_MOCK } from '@/store/slices/deferredPayments/deferredPaymentsMock';
 import useDeferredPaymentForm, {
 	addDaysToDateOnly,
 	mapDeferredPaymentDocumentToForm,
 	mapDeferredPaymentFormToPayload,
 } from '../hooks/useDeferredPaymentForm';
+import { DEFERRED_PAYMENT_DOCUMENT_FIXTURES } from './deferredPaymentTestFixtures';
 
 const createMutationSpy = vi.hoisted(() => vi.fn());
 const mutationFailure = vi.hoisted(() => ({ error: null as unknown }));
@@ -20,27 +21,14 @@ const branchContext = vi.hoisted(() => ({ subsidiaryId: 1 as number | null }));
 
 vi.mock('react-toastify', () => ({ toast: toastSpies }));
 
-vi.mock('@/store/slices/deferredPayments/deferredPaymentsMock', async (importOriginal) => {
-	const actual =
-		await importOriginal<
-			typeof import('@/store/slices/deferredPayments/deferredPaymentsMock')
-		>();
-	return {
-		...actual,
-		mockCreateDeferredPayment: (
-			...args: Parameters<typeof actual.mockCreateDeferredPayment>
-		) => {
-			createMutationSpy(...args);
-			if (mutationFailure.error) return Promise.reject(mutationFailure.error);
-			return (async () => {
-				if (mutationGate.wait) await mutationGate.wait;
-				return actual.mockCreateDeferredPayment(...args);
-			})();
-		},
-	};
-});
-
-vi.mock('@/store/slices/deferredPayments/deferredPaymentsConfig', () => ({ default: true }));
+vi.mock('@/services/deferredPaymentsService', () => ({
+	default: {
+		createDocument: createMutationSpy,
+		updateDocument: vi.fn(),
+		getDocuments: vi.fn(),
+		getSummary: vi.fn(),
+	},
+}));
 vi.mock('@/hooks/useCurrentBranch', () => ({
 	useCurrentBranch: () => ({
 		branchId: 1,
@@ -50,12 +38,16 @@ vi.mock('@/hooks/useCurrentBranch', () => ({
 }));
 vi.mock('@/store', async () => {
 	const reactRedux = await vi.importActual<typeof import('react-redux')>('react-redux');
-	return { useAppDispatch: reactRedux.useDispatch, useAppSelector: reactRedux.useSelector };
+	return {
+		default: {},
+		useAppDispatch: reactRedux.useDispatch,
+		useAppSelector: reactRedux.useSelector,
+	};
 });
 
 describe('useDeferredPaymentForm', () => {
 	const createHook = (
-		document = null as (typeof DEFERRED_PAYMENT_DETAILS_MOCK)[number] | null,
+		document = null as IDeferredPaymentDocument | null,
 		onSuccess?: (savedDocument: IDeferredPaymentDocument) => void,
 	) => {
 		const store = configureStore({ reducer: { deferredPayments: deferredPaymentsReducer } });
@@ -86,13 +78,31 @@ describe('useDeferredPaymentForm', () => {
 		vi.useRealTimers();
 	});
 
+	const configureSuccessfulServices = () => {
+		createMutationSpy.mockImplementation(async () => {
+			if (mutationFailure.error) throw mutationFailure.error;
+			if (mutationGate.wait) await mutationGate.wait;
+			return { document: DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0], credit_limit_exceeded: true };
+		});
+		vi.mocked(deferredPaymentsService.getDocuments).mockResolvedValue({
+			data: [DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0]],
+			meta: { current_page: 1, per_page: 10, total: 1, last_page: 1 },
+		});
+		vi.mocked(deferredPaymentsService.getSummary).mockResolvedValue({
+			total_outstanding: '2500000.00',
+			overdue: { count: 0, amount: '0.00' },
+			due_within_7_days: { count: 0, amount: '0.00' },
+			current: { count: 1, amount: '2500000.00' },
+		});
+	};
+
 	it('calcula el vencimiento sin desfases de zona horaria', () => {
 		expect(addDaysToDateOnly('2026-07-28', 15)).toBe('2026-08-12');
 		expect(addDaysToDateOnly('2026-12-25', 10)).toBe('2027-01-04');
 	});
 
 	it('mapea el documento y normaliza el payload del formulario', () => {
-		const document = Object.values(DEFERRED_PAYMENT_DETAILS_MOCK)[0];
+		const document = DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0];
 		const values = mapDeferredPaymentDocumentToForm(document);
 		const payload = mapDeferredPaymentFormToPayload({
 			...values,
@@ -131,6 +141,7 @@ describe('useDeferredPaymentForm', () => {
 	});
 
 	it('crea una sola vez ante dos envíos simultáneos y refresca el estado', async () => {
+		configureSuccessfulServices();
 		vi.useFakeTimers();
 		const { hook, store } = createHook();
 		await act(async () => {
@@ -172,6 +183,7 @@ describe('useDeferredPaymentForm', () => {
 		expect(store.getState().deferredPayments.lastMutationCreditLimitExceeded).toBe(false);
 	});
 	it('aborta el guardado y omite callbacks al cambiar de subsidiaria', async () => {
+		configureSuccessfulServices();
 		let releaseMutation: () => void = () => {};
 		mutationGate.wait = new Promise<void>((resolve) => {
 			releaseMutation = resolve;
@@ -220,6 +232,7 @@ describe('useDeferredPaymentForm', () => {
 	});
 
 	it('muestra el error de la mutación en un toast', async () => {
+		configureSuccessfulServices();
 		mutationFailure.error = new Error('Servidor no disponible');
 		const { hook } = createHook();
 		await act(async () => {
@@ -248,6 +261,7 @@ describe('useDeferredPaymentForm', () => {
 		expect(toastSpies.success).not.toHaveBeenCalled();
 	});
 	it('asocia los errores de validación del backend con sus campos', async () => {
+		configureSuccessfulServices();
 		mutationFailure.error = {
 			response: {
 				data: {
@@ -285,7 +299,7 @@ describe('useDeferredPaymentForm', () => {
 		expect(toastSpies.error).toHaveBeenCalledWith('Los datos enviados no son válidos.');
 	});
 	it('bloquea la edición de documentos pagados', async () => {
-		const paidDocument = Object.values(DEFERRED_PAYMENT_DETAILS_MOCK).find(
+		const paidDocument = DEFERRED_PAYMENT_DOCUMENT_FIXTURES.find(
 			(document) => document.status === 'paid',
 		);
 		expect(paidDocument).toBeDefined();

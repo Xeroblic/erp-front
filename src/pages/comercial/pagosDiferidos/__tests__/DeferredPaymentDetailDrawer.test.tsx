@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import store from '@/store';
-import { DEFERRED_PAYMENT_DETAILS_MOCK } from '@/store/slices/deferredPayments/deferredPaymentsMock';
+import { DEFERRED_PAYMENT_DETAIL_FIXTURES } from './deferredPaymentsScenarioFixtures';
 import DeferredPaymentDetailDrawer from '../components/drawers/DeferredPaymentDetailDrawer';
 import useDeferredPaymentDetail from '../hooks/useDeferredPaymentDetail';
 
@@ -14,7 +14,7 @@ vi.mock('../hooks/useDeferredPaymentDetail');
 
 const refresh = vi.fn();
 const baseHookResult = {
-	document: DEFERRED_PAYMENT_DETAILS_MOCK[2],
+	document: DEFERRED_PAYMENT_DETAIL_FIXTURES[2],
 	loading: false,
 	error: null,
 	actions: { refresh },
@@ -63,7 +63,7 @@ describe('DeferredPaymentDetailDrawer', () => {
 			screen.getByText('Abono 1 registrado por transferencia bancaria.'),
 		).toBeInTheDocument();
 		expect(screen.getAllByText('Nota:')).toHaveLength(
-			DEFERRED_PAYMENT_DETAILS_MOCK[2].payments.length,
+			DEFERRED_PAYMENT_DETAIL_FIXTURES[2].payments.length,
 		);
 		expect(screen.getByText('Adjuntos del documento')).toBeInTheDocument();
 		expect(screen.getByText('documento-FD-0002.pdf')).toBeInTheDocument();
@@ -82,13 +82,13 @@ describe('DeferredPaymentDetailDrawer', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'Editar', hidden: true }));
 
 		expect(onEdit).toHaveBeenCalledOnce();
-		expect(onEdit).toHaveBeenCalledWith(DEFERRED_PAYMENT_DETAILS_MOCK[2]);
+		expect(onEdit).toHaveBeenCalledWith(DEFERRED_PAYMENT_DETAIL_FIXTURES[2]);
 	});
 
 	it('mantiene la edición deshabilitada para un documento pagado', () => {
 		vi.mocked(useDeferredPaymentDetail).mockReturnValue({
 			...baseHookResult,
-			document: DEFERRED_PAYMENT_DETAILS_MOCK[9],
+			document: DEFERRED_PAYMENT_DETAIL_FIXTURES[9],
 		});
 		renderDrawer(9);
 
@@ -99,8 +99,8 @@ describe('DeferredPaymentDetailDrawer', () => {
 	});
 	it('muestra Sin nota cuando un abono no tiene observaciones', () => {
 		const documentWithoutPaymentNote = {
-			...DEFERRED_PAYMENT_DETAILS_MOCK[2],
-			payments: DEFERRED_PAYMENT_DETAILS_MOCK[2].payments.map((payment, index) =>
+			...DEFERRED_PAYMENT_DETAIL_FIXTURES[2],
+			payments: DEFERRED_PAYMENT_DETAIL_FIXTURES[2].payments.map((payment, index) =>
 				index === 0 ? { ...payment, notes: null } : payment,
 			),
 		};
@@ -116,7 +116,7 @@ describe('DeferredPaymentDetailDrawer', () => {
 	it('muestra la nota y la señal de vencimiento del documento', () => {
 		vi.mocked(useDeferredPaymentDetail).mockReturnValue({
 			...baseHookResult,
-			document: DEFERRED_PAYMENT_DETAILS_MOCK[1],
+			document: DEFERRED_PAYMENT_DETAIL_FIXTURES[1],
 		});
 
 		renderDrawer(1);
@@ -146,7 +146,7 @@ describe('DeferredPaymentDetailDrawer', () => {
 	it('muestra saldo cero y progreso completo para un documento pagado', () => {
 		vi.mocked(useDeferredPaymentDetail).mockReturnValue({
 			...baseHookResult,
-			document: DEFERRED_PAYMENT_DETAILS_MOCK[9],
+			document: DEFERRED_PAYMENT_DETAIL_FIXTURES[9],
 		});
 
 		renderDrawer(9);
@@ -176,9 +176,9 @@ describe('DeferredPaymentDetailDrawer', () => {
 		vi.mocked(useDeferredPaymentDetail).mockReturnValue({
 			...baseHookResult,
 			document: {
-				...DEFERRED_PAYMENT_DETAILS_MOCK[2],
+				...DEFERRED_PAYMENT_DETAIL_FIXTURES[2],
 				customer: {
-					...DEFERRED_PAYMENT_DETAILS_MOCK[2].customer,
+					...DEFERRED_PAYMENT_DETAIL_FIXTURES[2].customer,
 					billing_company: null,
 					contact_name: 'Camila Araya',
 					rut: '55.000.001-2',

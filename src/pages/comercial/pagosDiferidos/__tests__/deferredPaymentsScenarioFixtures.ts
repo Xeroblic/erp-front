@@ -45,7 +45,7 @@ const createRow = (
 	customer: { id, billing_company: company, contact_name: null, rut },
 });
 
-export const DEFERRED_PAYMENTS_MOCK: IDeferredPaymentListItem[] = [
+export const DEFERRED_PAYMENT_LIST_FIXTURES: IDeferredPaymentListItem[] = [
 	createRow(1, -32, 'pending', 1250000, 1250000, 'Comercial Andina Ltda.', '76.111.111-1'),
 	createRow(2, -18, 'partially_paid', 980000, 430000, 'Transportes del Sur SpA', '76.222.222-2'),
 	createRow(3, -4, 'pending', 620000, 620000, 'Servicios Cordillera SA', '96.333.333-3'),
@@ -131,8 +131,8 @@ const createDetail = (row: IDeferredPaymentListItem, index: number): IDeferredPa
 	};
 };
 
-export const DEFERRED_PAYMENT_DETAILS_MOCK: Record<number, IDeferredPaymentDocument> =
-	DEFERRED_PAYMENTS_MOCK.reduce<Record<number, IDeferredPaymentDocument>>(
+export const DEFERRED_PAYMENT_DETAIL_FIXTURES: Record<number, IDeferredPaymentDocument> =
+	DEFERRED_PAYMENT_LIST_FIXTURES.reduce<Record<number, IDeferredPaymentDocument>>(
 		(details, row, index) => ({ ...details, [row.id]: createDetail(row, index) }),
 		{},
 	);
@@ -147,9 +147,9 @@ const summaryGroup = (rows: IDeferredPaymentListItem[]) => ({
 const hasOutstandingBalance = (row: IDeferredPaymentListItem): boolean =>
 	row.status !== 'paid' && Number(row.outstanding_amount) > 0;
 
-const unpaidRows = DEFERRED_PAYMENTS_MOCK.filter(hasOutstandingBalance);
+const unpaidRows = DEFERRED_PAYMENT_LIST_FIXTURES.filter(hasOutstandingBalance);
 
-export const DEFERRED_PAYMENTS_SUMMARY_MOCK: IDeferredPaymentsSummary = {
+export const DEFERRED_PAYMENT_SUMMARY_FIXTURE: IDeferredPaymentsSummary = {
 	total_outstanding: sumOutstanding(unpaidRows).toFixed(2),
 	overdue: summaryGroup(unpaidRows.filter((row) => row.is_overdue)),
 	due_within_7_days: summaryGroup(
@@ -206,8 +206,8 @@ const toListItem = (document: IDeferredPaymentDocument): IDeferredPaymentListIte
 });
 
 const refreshMockSummary = (): void => {
-	const outstandingRows = DEFERRED_PAYMENTS_MOCK.filter(hasOutstandingBalance);
-	Object.assign(DEFERRED_PAYMENTS_SUMMARY_MOCK, {
+	const outstandingRows = DEFERRED_PAYMENT_LIST_FIXTURES.filter(hasOutstandingBalance);
+	Object.assign(DEFERRED_PAYMENT_SUMMARY_FIXTURE, {
 		total_outstanding: sumOutstanding(outstandingRows).toFixed(2),
 		overdue: summaryGroup(outstandingRows.filter((row) => row.is_overdue)),
 		due_within_7_days: summaryGroup(
@@ -218,7 +218,7 @@ const refreshMockSummary = (): void => {
 					row.days_until_due <= 7,
 			),
 		),
-		pending: summaryGroup(DEFERRED_PAYMENTS_MOCK.filter((row) => row.status === 'pending')),
+		pending: summaryGroup(DEFERRED_PAYMENT_LIST_FIXTURES.filter((row) => row.status === 'pending')),
 	});
 };
 
@@ -227,15 +227,15 @@ const mutationResponse = (document: IDeferredPaymentDocument): DeferredPaymentMu
 	credit_limit_exceeded: Number(document.total_amount) > MOCK_CREDIT_LIMIT,
 });
 
-export const mockCreateDeferredPayment = async (
+export const createDeferredPaymentFixture = async (
 	payload: CreateDeferredPaymentPayload,
 	signal?: AbortSignal,
 ): Promise<DeferredPaymentMutationResponse> => {
 	await waitForMock(signal);
-	const id = Math.max(0, ...DEFERRED_PAYMENTS_MOCK.map((row) => row.id)) + 1;
+	const id = Math.max(0, ...DEFERRED_PAYMENT_LIST_FIXTURES.map((row) => row.id)) + 1;
 	const total = calculatePayloadTotal(payload.items);
 	const daysUntilDue = daysUntilDate(payload.due_date);
-	const customer = DEFERRED_PAYMENTS_MOCK.find(
+	const customer = DEFERRED_PAYMENT_LIST_FIXTURES.find(
 		(row) => row.customer.id === payload.customer_sale_id,
 	)?.customer ?? {
 		id: payload.customer_sale_id,
@@ -272,19 +272,19 @@ export const mockCreateDeferredPayment = async (
 		payments: [],
 		attachments: [],
 	};
-	DEFERRED_PAYMENTS_MOCK.push(toListItem(document));
-	DEFERRED_PAYMENT_DETAILS_MOCK[id] = document;
+	DEFERRED_PAYMENT_LIST_FIXTURES.push(toListItem(document));
+	DEFERRED_PAYMENT_DETAIL_FIXTURES[id] = document;
 	refreshMockSummary();
 	return mutationResponse(document);
 };
 
-export const mockUpdateDeferredPayment = async (
+export const updateDeferredPaymentFixture = async (
 	documentId: number,
 	payload: UpdateDeferredPaymentPayload,
 	signal?: AbortSignal,
 ): Promise<DeferredPaymentMutationResponse> => {
 	await waitForMock(signal);
-	const current = DEFERRED_PAYMENT_DETAILS_MOCK[documentId];
+	const current = DEFERRED_PAYMENT_DETAIL_FIXTURES[documentId];
 	if (!current) throw new Error('No se encontró el documento de pago diferido');
 	if (current.status === 'paid') throw new Error('No se puede editar un documento pagado');
 
@@ -297,7 +297,7 @@ export const mockUpdateDeferredPayment = async (
 	const dueDate = payload.due_date ?? current.due_date;
 	const daysUntilDue = daysUntilDate(dueDate);
 	const customerSaleId = payload.customer_sale_id ?? current.customer.id;
-	const customer = DEFERRED_PAYMENTS_MOCK.find((row) => row.customer.id === customerSaleId)
+	const customer = DEFERRED_PAYMENT_LIST_FIXTURES.find((row) => row.customer.id === customerSaleId)
 		?.customer ?? {
 		id: customerSaleId,
 		billing_company: `Cliente #${customerSaleId}`,
@@ -336,35 +336,35 @@ export const mockUpdateDeferredPayment = async (
 			unit_price: Number(item.unit_price).toFixed(2),
 		})),
 	};
-	DEFERRED_PAYMENT_DETAILS_MOCK[documentId] = document;
-	const listIndex = DEFERRED_PAYMENTS_MOCK.findIndex((row) => row.id === documentId);
-	if (listIndex >= 0) DEFERRED_PAYMENTS_MOCK[listIndex] = toListItem(document);
+	DEFERRED_PAYMENT_DETAIL_FIXTURES[documentId] = document;
+	const listIndex = DEFERRED_PAYMENT_LIST_FIXTURES.findIndex((row) => row.id === documentId);
+	if (listIndex >= 0) DEFERRED_PAYMENT_LIST_FIXTURES[listIndex] = toListItem(document);
 	refreshMockSummary();
 	return mutationResponse(document);
 };
-export const mockFetchDeferredPaymentsSummary = async (
+export const fetchDeferredPaymentsSummaryFixture = async (
 	signal?: AbortSignal,
 ): Promise<IDeferredPaymentsSummary> => {
 	await waitForMock(signal);
-	return DEFERRED_PAYMENTS_SUMMARY_MOCK;
+	return DEFERRED_PAYMENT_SUMMARY_FIXTURE;
 };
 
-export const mockFetchDeferredPaymentById = async (
+export const fetchDeferredPaymentByIdFixture = async (
 	documentId: number,
 	signal?: AbortSignal,
 ): Promise<IDeferredPaymentDocument> => {
 	await waitForMock(signal);
-	const document = DEFERRED_PAYMENT_DETAILS_MOCK[documentId];
+	const document = DEFERRED_PAYMENT_DETAIL_FIXTURES[documentId];
 	if (!document) throw new Error('No se encontró el documento de pago diferido');
 	return document;
 };
-export const mockFetchDeferredPayments = async (
+export const fetchDeferredPaymentsFixture = async (
 	filters: DeferredPaymentsFilters,
 	signal?: AbortSignal,
 ): Promise<DeferredPaymentsListResponse> => {
 	await waitForMock(signal);
 	const normalizedSearch = filters.search?.trim().toLocaleLowerCase('es-CL');
-	const filtered = DEFERRED_PAYMENTS_MOCK.filter((row) => {
+	const filtered = DEFERRED_PAYMENT_LIST_FIXTURES.filter((row) => {
 		const matchesStatus =
 			!filters.status ||
 			(filters.status === 'overdue' ? row.is_overdue : row.status === filters.status);

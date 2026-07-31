@@ -4,7 +4,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { Provider } from 'react-redux';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import customerSalesReducer from '@/store/slices/customerSales/customerSalesSlice';
-import { DEFERRED_PAYMENT_DETAILS_MOCK } from '@/store/slices/deferredPayments/deferredPaymentsMock';
+import { DEFERRED_PAYMENT_DETAIL_FIXTURES } from './deferredPaymentsScenarioFixtures';
 import deferredPaymentsReducer from '@/store/slices/deferredPayments/deferredPaymentsSlice';
 import usersAdminReducer from '@/store/slices/usersAdmin/usersAdminSlice';
 import CreateEditDeferredPaymentModal from '../components/modals/CreateEditDeferredPaymentModal';
@@ -18,7 +18,6 @@ vi.mock('react-i18next', () => ({
 vi.mock('@/hooks/useAuthorization', () => ({
 	default: () => ({ hasAnyPermission: () => true, isSuperAdmin: true }),
 }));
-vi.mock('@/store/slices/deferredPayments/deferredPaymentsConfig', () => ({ default: false }));
 vi.mock('@/hooks/useCurrentBranch', () => ({
 	useCurrentBranch: () => ({ branchId: 1, subsidiaryId: 1, hasValidBranch: true }),
 }));
@@ -41,7 +40,7 @@ const emptyPagination = {
 	next_page_url: null,
 };
 
-describe('CreateEditDeferredPaymentModal con API real', () => {
+describe('Integración de CreateEditDeferredPaymentModal', () => {
 	beforeEach(() => {
 		const portalRoot = document.createElement('div');
 		portalRoot.id = 'portal-root';
@@ -77,7 +76,7 @@ describe('CreateEditDeferredPaymentModal con API real', () => {
 		const Wrapper = ({ children }: PropsWithChildren) => (
 			<Provider store={store}>{children}</Provider>
 		);
-		const editedDocument = DEFERRED_PAYMENT_DETAILS_MOCK[1];
+		const editedDocument = DEFERRED_PAYMENT_DETAIL_FIXTURES[1];
 		render(
 			<CreateEditDeferredPaymentModal
 				isOpen

@@ -18,7 +18,6 @@ const serviceSpies = vi.hoisted(() => ({
 	getSummary: vi.fn(),
 }));
 
-vi.mock('@/store/slices/deferredPayments/deferredPaymentsConfig', () => ({ default: false }));
 vi.mock('@/services/deferredPaymentsService', () => ({ default: serviceSpies }));
 
 const listResponse: DeferredPaymentsListResponse = {
