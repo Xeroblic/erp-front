@@ -123,7 +123,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 				}))
 			: customers.map((customer) => ({
 					id: customer.id,
-					label: [customer.contact?.name?.trim(), customer.name, customer.rut]
+					label: [customer.name, customer.rut]
 						.filter((value): value is string => Boolean(value))
 						.join(' · '),
 					isActive: customer.is_active,
@@ -135,8 +135,8 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 				? {
 						id: deferredPaymentDocument.customer.id,
 						label: [
-							deferredPaymentDocument.customer.contact_name,
-							deferredPaymentDocument.customer.billing_company,
+							deferredPaymentDocument.customer.billing_company ||
+								deferredPaymentDocument.customer.contact_name,
 							deferredPaymentDocument.customer.rut,
 						]
 							.filter(Boolean)
