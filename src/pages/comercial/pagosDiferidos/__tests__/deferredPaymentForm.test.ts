@@ -72,6 +72,17 @@ describe('ZF-7 formulario de pago diferido', () => {
 		).resolves.toBeDefined();
 	});
 
+	it('rechaza precios unitarios negativos', async () => {
+		await expect(
+			DeferredPaymentDocumentSchema.validate({
+				...validValues,
+				items: [
+					{ ...validValues.items[0], unit_price: -1 },
+					{ ...validValues.items[0], client_key: 'test-item-2', unit_price: 1000 },
+				],
+			}),
+		).rejects.toThrow('El precio unitario no puede ser negativo');
+	});
 	it('explica en español cuando el total completo es cero', async () => {
 		await expect(
 			DeferredPaymentDocumentSchema.validate({
