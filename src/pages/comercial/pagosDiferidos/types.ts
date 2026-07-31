@@ -87,12 +87,7 @@ export const DeferredPaymentDocumentSchema = Yup.object({
 			return typeof issueDate !== 'string' || !value || value >= issueDate;
 		},
 	),
-	purchase_order: Yup.string()
-		.trim()
-		.max(100, 'La orden de compra no puede superar los 100 caracteres')
-		.nullable()
-		.defined(),
-	notes: Yup.string()
+notes: Yup.string()
 		.trim()
 		.max(1000, 'Las notas no pueden superar los 1000 caracteres')
 		.nullable()

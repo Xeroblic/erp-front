@@ -110,7 +110,13 @@ describe('useDeferredPaymentForm', () => {
 			notes: '   ',
 		});
 
+		const valuesWithoutPurchaseOrder = mapDeferredPaymentDocumentToForm({
+			...document,
+			purchase_order: undefined,
+		} as unknown as IDeferredPaymentDocument);
+
 		expect(values.assignee_ids).toEqual(document.assignees.map(({ id }) => id));
+		expect(valuesWithoutPurchaseOrder.purchase_order).toBeNull();
 		expect(payload).toMatchObject({
 			customer_sale_id: document.customer.id,
 			document_number: document.document_number,

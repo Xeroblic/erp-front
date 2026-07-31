@@ -63,7 +63,7 @@ export const mapDeferredPaymentDocumentToForm = (
 	document_number: deferredPaymentDocument.document_number,
 	issue_date: deferredPaymentDocument.issue_date,
 	due_date: deferredPaymentDocument.due_date,
-	purchase_order: deferredPaymentDocument.purchase_order,
+	purchase_order: deferredPaymentDocument.purchase_order ?? null,
 	notes: deferredPaymentDocument.notes,
 	assignee_ids: deferredPaymentDocument.assignees.map((assignee) => assignee.id),
 	items: deferredPaymentDocument.items.map((item) => ({
