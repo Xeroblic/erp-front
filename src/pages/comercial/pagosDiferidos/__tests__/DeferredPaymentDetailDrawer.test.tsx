@@ -97,6 +97,35 @@ describe('DeferredPaymentDetailDrawer', () => {
 		expect(editButton).toBeDisabled();
 		expect(editButton).toHaveAttribute('title', 'Editar no disponible para documentos pagados');
 	});
+	it('mantiene dentro del contenedor los adjuntos de abonos con nombres largos', () => {
+		const longFileName = `${'comprobante-transferencia-'.repeat(8)}final.pdf`;
+		const documentWithLongAttachment = {
+			...DEFERRED_PAYMENT_DETAIL_FIXTURES[2],
+			payments: DEFERRED_PAYMENT_DETAIL_FIXTURES[2].payments.map((payment, index) =>
+				index === 0
+					? {
+							...payment,
+							attachments: payment.attachments.map((attachment) => ({
+								...attachment,
+								file_name: longFileName,
+							})),
+						}
+					: payment,
+			),
+		};
+		vi.mocked(useDeferredPaymentDetail).mockReturnValue({
+			...baseHookResult,
+			document: documentWithLongAttachment,
+		});
+
+		renderDrawer(2);
+
+		const fileName = screen.getByTitle(longFileName);
+		const attachmentLink = fileName.closest('a');
+		expect(fileName).toHaveClass('truncate');
+		expect(attachmentLink).toHaveClass('w-full', 'min-w-0', 'max-w-full', 'overflow-hidden');
+	});
+
 	it('muestra Sin nota cuando un abono no tiene observaciones', () => {
 		const documentWithoutPaymentNote = {
 			...DEFERRED_PAYMENT_DETAIL_FIXTURES[2],
