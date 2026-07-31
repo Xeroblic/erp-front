@@ -4,7 +4,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { Provider } from 'react-redux';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import customerSalesReducer from '@/store/slices/customerSales/customerSalesSlice';
-import { DEFERRED_PAYMENT_DETAIL_FIXTURES } from './deferredPaymentsScenarioFixtures';
+import { DEFERRED_PAYMENT_DETAIL_FIXTURES } from './deferredPaymentsTestData';
 import deferredPaymentsReducer from '@/store/slices/deferredPayments/deferredPaymentsSlice';
 import usersAdminReducer from '@/store/slices/usersAdmin/usersAdminSlice';
 import CreateEditDeferredPaymentModal from '../components/modals/CreateEditDeferredPaymentModal';

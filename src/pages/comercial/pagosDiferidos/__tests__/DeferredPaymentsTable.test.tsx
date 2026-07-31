@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { DEFERRED_PAYMENT_LIST_FIXTURES } from './deferredPaymentsScenarioFixtures';
+import { DEFERRED_PAYMENT_LIST_FIXTURES } from './deferredPaymentsTestData';
 import DeferredPaymentsTable from '../components/tables/DeferredPaymentsTable';
 
 describe('DeferredPaymentsTable', () => {

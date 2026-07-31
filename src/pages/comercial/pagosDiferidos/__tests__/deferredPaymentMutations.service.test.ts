@@ -4,7 +4,7 @@ import type {
 	CreateDeferredPaymentPayload,
 	IDeferredPaymentDocument,
 } from '@/interface/deferredPayments.interface';
-import { DEFERRED_PAYMENT_DETAIL_FIXTURES } from './deferredPaymentsScenarioFixtures';
+import { DEFERRED_PAYMENT_DETAIL_FIXTURES } from './deferredPaymentsTestData';
 import deferredPaymentsReducer, {
 	createDeferredPayment,
 	updateDeferredPayment,

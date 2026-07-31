@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import store from '@/store';
-import { DEFERRED_PAYMENT_DETAIL_FIXTURES } from './deferredPaymentsScenarioFixtures';
+import { DEFERRED_PAYMENT_DETAIL_FIXTURES } from './deferredPaymentsTestData';
 import DeferredPaymentDetailDrawer from '../components/drawers/DeferredPaymentDetailDrawer';
 import useDeferredPaymentDetail from '../hooks/useDeferredPaymentDetail';
 
