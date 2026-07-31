@@ -72,10 +72,11 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 	const paid = Number(document?.paid_amount ?? 0);
 	const progress = total > 0 ? Math.min(100, Math.max(0, (paid / total) * 100)) : 0;
 	const progressLabel = `${Math.round(progress)}%`;
-	const customerDisplayName =
-		document?.customer.billing_company ||
-		document?.customer.contact_name ||
-		'Cliente sin nombre';
+	const customerDisplayName = document
+		? document.customer.billing_company ||
+			document.customer.contact_name ||
+			'Cliente sin nombre'
+		: undefined;
 
 	return (
 		<OffCanvas

@@ -138,6 +138,8 @@ describe('DeferredPaymentDetailDrawer', () => {
 		renderDrawer(2);
 
 		expect(screen.getByLabelText('Cargando detalle del documento')).toBeInTheDocument();
+		expect(screen.getByText('Documento ID #2')).toBeInTheDocument();
+		expect(screen.queryByText('Cliente sin nombre')).not.toBeInTheDocument();
 		expect(screen.queryByText('Saldo pendiente')).not.toBeInTheDocument();
 	});
 
@@ -165,6 +167,8 @@ describe('DeferredPaymentDetailDrawer', () => {
 		fireEvent.click(screen.getByText('Reintentar'));
 
 		expect(screen.getByText('No pudimos cargar el documento')).toBeInTheDocument();
+		expect(screen.getByText('Documento ID #9999')).toBeInTheDocument();
+		expect(screen.queryByText('Cliente sin nombre')).not.toBeInTheDocument();
 		expect(screen.queryByText('Saldo pendiente')).not.toBeInTheDocument();
 		expect(refresh).toHaveBeenCalledOnce();
 	});
