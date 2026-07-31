@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type {
+	CreateDeferredPaymentApiPayload,
 	CreateDeferredPaymentPayload,
 	DeferredPaymentMutationResponse,
 	DeferredPaymentsFilters,
@@ -8,9 +9,10 @@ import type {
 	IDeferredPaymentDocument,
 	IDeferredPaymentListItem,
 	IDeferredPaymentsSummary,
+	UpdateDeferredPaymentApiPayload,
 	UpdateDeferredPaymentPayload,
 } from '@/interface/deferredPayments.interface';
-import ApiService from '@/services/ApiService';
+import deferredPaymentsService from '@/services/deferredPaymentsService';
 import USE_DEFERRED_PAYMENTS_MOCK from './deferredPaymentsConfig';
 import {
 	mockCreateDeferredPayment,
@@ -118,8 +120,45 @@ const getMutationError = (error: unknown, fallback: string): DeferredPaymentMuta
 	);
 	return { message: getErrorMessage(error, fallback), errors };
 };
-const baseUrl = (subsidiaryId: number): string => `/subsidiaries/${subsidiaryId}/deferred-payments`;
+const mapItemsToApi = (items: CreateDeferredPaymentPayload['items']) =>
+	items.map((item) => ({
+		product_id: item.product_id,
+		code: item.code || null,
+		description: item.description,
+		quantity: item.quantity,
+		unit_price: Number(item.unit_price).toFixed(2),
+		serials: item.serials,
+	}));
 
+const calculateTotalAmount = (items: CreateDeferredPaymentPayload['items']): string =>
+	items.reduce((total, item) => total + item.quantity * Number(item.unit_price), 0).toFixed(2);
+
+const mapCreatePayloadToApi = (
+	payload: CreateDeferredPaymentPayload,
+): CreateDeferredPaymentApiPayload => ({
+	customer_sale_id: payload.customer_sale_id,
+	document_type: payload.document_type,
+	document_number: payload.document_number,
+	issue_date: payload.issue_date,
+	due_date: payload.due_date,
+	total_amount: calculateTotalAmount(payload.items),
+	purchase_order: payload.purchase_order,
+	notes: payload.notes,
+	assignee_ids: payload.assignee_ids,
+	items: mapItemsToApi(payload.items),
+});
+
+const mapUpdatePayloadToApi = (
+	payload: UpdateDeferredPaymentPayload,
+): UpdateDeferredPaymentApiPayload => {
+	const { items, ...fields } = payload;
+	return {
+		...fields,
+		...(items
+			? { items: mapItemsToApi(items), total_amount: calculateTotalAmount(items) }
+			: {}),
+	};
+};
 export const fetchDeferredPaymentsSummary = createAsyncThunk<
 	IDeferredPaymentsSummary,
 	{ subsidiaryId: number },
@@ -127,13 +166,7 @@ export const fetchDeferredPaymentsSummary = createAsyncThunk<
 >('deferredPayments/fetchSummary', async ({ subsidiaryId }, { rejectWithValue, signal }) => {
 	try {
 		if (USE_DEFERRED_PAYMENTS_MOCK) return await mockFetchDeferredPaymentsSummary(signal);
-		const response = await ApiService.fetchData<IDeferredPaymentsSummary>({
-			url: `${baseUrl(subsidiaryId)}/summary`,
-			method: 'get',
-			cacheTTLms: 30_000,
-			signal,
-		});
-		return response.data;
+		return await deferredPaymentsService.getSummary(subsidiaryId, signal);
 	} catch (error) {
 		if (signal.aborted) throw error;
 		return rejectWithValue(
@@ -150,14 +183,19 @@ export const fetchDeferredPayments = createAsyncThunk<
 	const query = filters ?? DEFAULT_DEFERRED_PAYMENTS_FILTERS;
 	try {
 		if (USE_DEFERRED_PAYMENTS_MOCK) return await mockFetchDeferredPayments(query, signal);
-		const response = await ApiService.fetchData<DeferredPaymentsListResponse>({
-			url: baseUrl(subsidiaryId),
-			method: 'get',
-			params: query,
-			cacheTTLms: 15_000,
+		return await deferredPaymentsService.getDocuments(
+			subsidiaryId,
+			{
+				page: query.page,
+				per_page: query.per_page,
+				status: query.status,
+				customer_sale_id: query.customer_sale_id,
+				search: query.search,
+				due_before: query.due_before,
+				due_after: query.due_after,
+			},
 			signal,
-		});
-		return response.data;
+		);
 	} catch (error) {
 		if (signal.aborted) throw error;
 		return rejectWithValue(getErrorMessage(error, 'No se pudieron cargar los pagos diferidos'));
@@ -174,13 +212,7 @@ export const fetchDeferredPaymentById = createAsyncThunk<
 		try {
 			if (USE_DEFERRED_PAYMENTS_MOCK)
 				return await mockFetchDeferredPaymentById(documentId, signal);
-			const response = await ApiService.fetchData<IDeferredPaymentDocument>({
-				url: `${baseUrl(subsidiaryId)}/${documentId}`,
-				method: 'get',
-				cacheTTLms: 15_000,
-				signal,
-			});
-			return response.data;
+			return await deferredPaymentsService.getDocument(subsidiaryId, documentId, signal);
 		} catch (error) {
 			if (signal.aborted) throw error;
 			return rejectWithValue(
@@ -195,21 +227,12 @@ export const createDeferredPayment = createAsyncThunk<
 	{ rejectValue: DeferredPaymentMutationError }
 >('deferredPayments/create', async ({ subsidiaryId, payload }, { rejectWithValue, signal }) => {
 	try {
-		const result = USE_DEFERRED_PAYMENTS_MOCK
-			? await mockCreateDeferredPayment(payload, signal)
-			: (
-					await ApiService.fetchData<
-						DeferredPaymentMutationResponse,
-						CreateDeferredPaymentPayload
-					>({
-						url: baseUrl(subsidiaryId),
-						method: 'post',
-						data: payload,
-						signal,
-					})
-				).data;
-		ApiService.invalidateCache(baseUrl(subsidiaryId));
-		return result;
+		if (USE_DEFERRED_PAYMENTS_MOCK) return await mockCreateDeferredPayment(payload, signal);
+		return await deferredPaymentsService.createDocument(
+			subsidiaryId,
+			mapCreatePayloadToApi(payload),
+			signal,
+		);
 	} catch (error) {
 		if (signal.aborted) throw error;
 		return rejectWithValue(
@@ -226,21 +249,14 @@ export const updateDeferredPayment = createAsyncThunk<
 	'deferredPayments/update',
 	async ({ subsidiaryId, documentId, payload }, { rejectWithValue, signal }) => {
 		try {
-			const result = USE_DEFERRED_PAYMENTS_MOCK
-				? await mockUpdateDeferredPayment(documentId, payload, signal)
-				: (
-						await ApiService.fetchData<
-							DeferredPaymentMutationResponse,
-							UpdateDeferredPaymentPayload
-						>({
-							url: `${baseUrl(subsidiaryId)}/${documentId}`,
-							method: 'patch',
-							data: payload,
-							signal,
-						})
-					).data;
-			ApiService.invalidateCache(baseUrl(subsidiaryId));
-			return result;
+			if (USE_DEFERRED_PAYMENTS_MOCK)
+				return await mockUpdateDeferredPayment(documentId, payload, signal);
+			return await deferredPaymentsService.updateDocument(
+				subsidiaryId,
+				documentId,
+				mapUpdatePayloadToApi(payload),
+				signal,
+			);
 		} catch (error) {
 			if (signal.aborted) throw error;
 			return rejectWithValue(

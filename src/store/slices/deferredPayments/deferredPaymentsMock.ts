@@ -42,7 +42,7 @@ const createRow = (
 	days_until_due: status === 'paid' ? null : daysUntilDue,
 	due_date: toIsoDate(daysUntilDue),
 	issue_date: toIsoDate(daysUntilDue - 30),
-	customer: { id, billing_company: company, rut },
+	customer: { id, billing_company: company, contact_name: null, rut },
 });
 
 export const DEFERRED_PAYMENTS_MOCK: IDeferredPaymentListItem[] = [
@@ -158,7 +158,9 @@ export const DEFERRED_PAYMENTS_SUMMARY_MOCK: IDeferredPaymentsSummary = {
 				row.days_until_due !== null && row.days_until_due >= 0 && row.days_until_due <= 7,
 		),
 	),
-	pending: summaryGroup(DEFERRED_PAYMENTS_MOCK.filter((row) => row.status === 'pending')),
+	current: summaryGroup(
+		unpaidRows.filter((row) => row.days_until_due !== null && row.days_until_due > 7),
+	),
 };
 
 const waitForMock = async (signal?: AbortSignal): Promise<void> =>
@@ -238,6 +240,7 @@ export const mockCreateDeferredPayment = async (
 	)?.customer ?? {
 		id: payload.customer_sale_id,
 		billing_company: `Cliente #${payload.customer_sale_id}`,
+		contact_name: null,
 		rut: 'RUT no disponible',
 	};
 	const document: IDeferredPaymentDocument = {
@@ -298,6 +301,7 @@ export const mockUpdateDeferredPayment = async (
 		?.customer ?? {
 		id: customerSaleId,
 		billing_company: `Cliente #${customerSaleId}`,
+		contact_name: null,
 		rut: 'RUT no disponible',
 	};
 	let status: IDeferredPaymentDocument['status'] = 'pending';

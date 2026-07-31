@@ -54,8 +54,9 @@ describe('DeferredPaymentsTable', () => {
 	});
 
 	it('marca como no aplicable el vencimiento de documentos pagados', () => {
-		const paidRow = DEFERRED_PAYMENTS_MOCK.find((row) => row.status === 'paid');
-		expect(paidRow).toBeDefined();
+		const paidDocument = DEFERRED_PAYMENTS_MOCK.find((row) => row.status === 'paid');
+		expect(paidDocument).toBeDefined();
+		const paidRow = { ...paidDocument!, days_until_due: -12 };
 		render(
 			<DeferredPaymentsTable
 				rows={[paidRow!]}
@@ -69,5 +70,56 @@ describe('DeferredPaymentsTable', () => {
 		);
 
 		expect(screen.getByLabelText('No aplica')).toHaveTextContent('—');
+	});
+	it('prioriza la empresa y muestra el contacto como dato secundario', () => {
+		const row = {
+			...DEFERRED_PAYMENTS_MOCK[0],
+			customer: {
+				...DEFERRED_PAYMENTS_MOCK[0].customer,
+				contact_name: 'Ana Pérez',
+				billing_company: 'Comercial Andina Ltda.',
+				rut: '76.123.456-7',
+			},
+		};
+		render(
+			<DeferredPaymentsTable
+				rows={[row]}
+				meta={null}
+				loading={false}
+				hasError={false}
+				hasFilters={false}
+				onPaginationChange={vi.fn()}
+				onRowClick={vi.fn()}
+			/>,
+		);
+
+		expect(screen.getByText('Comercial Andina Ltda.')).toBeInTheDocument();
+		expect(screen.getByText('76.123.456-7')).toBeInTheDocument();
+		expect(screen.queryByText('Comercial Andina Ltda. · 76.123.456-7')).not.toBeInTheDocument();
+	});
+	it('usa el nombre del cliente cuando no pertenece a una empresa', () => {
+		const row = {
+			...DEFERRED_PAYMENTS_MOCK[0],
+			customer: {
+				...DEFERRED_PAYMENTS_MOCK[0].customer,
+				contact_name: 'Camila Araya',
+				billing_company: '',
+				rut: '55.000.001-2',
+			},
+		};
+		render(
+			<DeferredPaymentsTable
+				rows={[row]}
+				meta={null}
+				loading={false}
+				hasError={false}
+				hasFilters={false}
+				onPaginationChange={vi.fn()}
+				onRowClick={vi.fn()}
+			/>,
+		);
+
+		expect(screen.getByText('Camila Araya')).toBeInTheDocument();
+		expect(screen.getByText('55.000.001-2')).toBeInTheDocument();
 	});
 });

@@ -13,13 +13,14 @@ export interface IDeferredPaymentsSummary {
 	total_outstanding: string;
 	overdue: IDeferredPaymentsSummaryGroup;
 	due_within_7_days: IDeferredPaymentsSummaryGroup;
-	pending: IDeferredPaymentsSummaryGroup;
+	current: IDeferredPaymentsSummaryGroup;
 }
 
 export interface IDeferredPaymentCustomer {
 	id: number;
-	billing_company: string;
+	billing_company: string | null;
 	rut: string;
+	contact_name: string | null;
 }
 
 export interface IDeferredPaymentListItem {
@@ -129,4 +130,70 @@ export interface DeferredPaymentsPaginationMeta {
 export interface DeferredPaymentsListResponse {
 	data: IDeferredPaymentListItem[];
 	meta: DeferredPaymentsPaginationMeta;
+}
+
+export interface DeferredPaymentApiListParams {
+	page?: number;
+	per_page?: number;
+	status?: DeferredPaymentStatusFilter;
+	customer_sale_id?: number;
+	search?: string;
+	due_before?: string;
+	due_after?: string;
+}
+
+export interface CreateDeferredPaymentApiItemPayload {
+	product_id?: number | null;
+	code?: string | null;
+	description: string;
+	quantity?: number;
+	unit_price?: string;
+	serials?: string[];
+}
+
+export interface CreateDeferredPaymentApiPayload {
+	customer_sale_id: number;
+	document_type: DeferredPaymentDocumentType;
+	document_number: string;
+	issue_date: string;
+	due_date?: string | null;
+	total_amount: string;
+	purchase_order?: string | null;
+	notes?: string | null;
+	assignee_ids?: number[];
+	items?: CreateDeferredPaymentApiItemPayload[];
+}
+
+export type UpdateDeferredPaymentApiPayload = Partial<CreateDeferredPaymentApiPayload>;
+
+export interface DeferredPaymentMutationApiResponse {
+	document: IDeferredPaymentDocument;
+	credit_limit_exceeded: boolean;
+}
+
+export interface RegisterDeferredPaymentPayload {
+	amount: string;
+	paid_at?: string;
+	method?: DeferredPaymentMethod;
+	notes?: string | null;
+}
+
+export interface DeferredPaymentDeleteResponse {
+	message: string;
+}
+
+export interface IDeferredPaymentCreditProfile {
+	id: number | null;
+	customer_sale_id: number;
+	is_active: boolean;
+	payment_term_days: number;
+	credit_limit: string | null;
+	notes: string | null;
+}
+
+export interface UpdateDeferredPaymentCreditProfilePayload {
+	is_active?: boolean | null;
+	payment_term_days?: number | null;
+	credit_limit?: string | null;
+	notes?: string | null;
 }

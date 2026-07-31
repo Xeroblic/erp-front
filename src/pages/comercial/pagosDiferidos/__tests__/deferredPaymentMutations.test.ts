@@ -23,7 +23,7 @@ const originalSummary = {
 	...DEFERRED_PAYMENTS_SUMMARY_MOCK,
 	overdue: { ...DEFERRED_PAYMENTS_SUMMARY_MOCK.overdue },
 	due_within_7_days: { ...DEFERRED_PAYMENTS_SUMMARY_MOCK.due_within_7_days },
-	pending: { ...DEFERRED_PAYMENTS_SUMMARY_MOCK.pending },
+	current: { ...DEFERRED_PAYMENTS_SUMMARY_MOCK.current },
 };
 
 const payload: CreateDeferredPaymentPayload = {

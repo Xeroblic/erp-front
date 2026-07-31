@@ -138,6 +138,8 @@ describe('DeferredPaymentDetailDrawer', () => {
 		renderDrawer(2);
 
 		expect(screen.getByLabelText('Cargando detalle del documento')).toBeInTheDocument();
+		expect(screen.getByText('Documento ID #2')).toBeInTheDocument();
+		expect(screen.queryByText('Cliente sin nombre')).not.toBeInTheDocument();
 		expect(screen.queryByText('Saldo pendiente')).not.toBeInTheDocument();
 	});
 
@@ -165,7 +167,28 @@ describe('DeferredPaymentDetailDrawer', () => {
 		fireEvent.click(screen.getByText('Reintentar'));
 
 		expect(screen.getByText('No pudimos cargar el documento')).toBeInTheDocument();
+		expect(screen.getByText('Documento ID #9999')).toBeInTheDocument();
+		expect(screen.queryByText('Cliente sin nombre')).not.toBeInTheDocument();
 		expect(screen.queryByText('Saldo pendiente')).not.toBeInTheDocument();
 		expect(refresh).toHaveBeenCalledOnce();
+	});
+	it('usa el nombre personal en el detalle cuando el cliente no tiene empresa', () => {
+		vi.mocked(useDeferredPaymentDetail).mockReturnValue({
+			...baseHookResult,
+			document: {
+				...DEFERRED_PAYMENT_DETAILS_MOCK[2],
+				customer: {
+					...DEFERRED_PAYMENT_DETAILS_MOCK[2].customer,
+					billing_company: null,
+					contact_name: 'Camila Araya',
+					rut: '55.000.001-2',
+				},
+			},
+		});
+
+		renderDrawer(2);
+
+		expect(screen.getAllByText('Camila Araya').length).toBeGreaterThan(0);
+		expect(screen.getByText('RUT 55.000.001-2')).toBeInTheDocument();
 	});
 });

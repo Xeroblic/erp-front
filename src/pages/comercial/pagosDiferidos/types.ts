@@ -108,6 +108,13 @@ export const DeferredPaymentDocumentSchema = Yup.object({
 	items: Yup.array()
 		.of(DeferredPaymentItemSchema)
 		.min(1, 'Agrega al menos un ítem al documento')
+		.test(
+			'positive-document-total',
+			'El total del documento debe ser mayor a 0',
+			(items) =>
+				!items ||
+				items.reduce((total, item) => total + item.quantity * item.unit_price, 0) > 0,
+		)
 		.required('Agrega al menos un ítem al documento'),
 });
 

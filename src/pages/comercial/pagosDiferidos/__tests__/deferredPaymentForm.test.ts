@@ -46,23 +46,51 @@ describe('ZF-7 formulario de pago diferido', () => {
 		).rejects.toThrow('La fecha de vencimiento no puede ser anterior a la fecha de emisión');
 	});
 
-	it('rechaza cantidades no positivas y precios negativos', async () => {
+	it('rechaza cantidades no positivas', async () => {
 		await expect(
 			DeferredPaymentDocumentSchema.validate(
 				{
 					...validValues,
-					items: [{ ...validValues.items[0], quantity: 0, unit_price: -1 }],
+					items: [{ ...validValues.items[0], quantity: 0, unit_price: 0 }],
 				},
 				{ abortEarly: false },
 			),
 		).rejects.toMatchObject({
-			errors: expect.arrayContaining([
-				'La cantidad debe ser mayor a 0',
-				'El precio unitario no puede ser negativo',
-			]),
+			errors: expect.arrayContaining(['La cantidad debe ser mayor a 0']),
 		});
 	});
 
+	it('permite ítems gratuitos cuando el total del documento es positivo', async () => {
+		await expect(
+			DeferredPaymentDocumentSchema.validate({
+				...validValues,
+				items: [
+					{ ...validValues.items[0], unit_price: 0 },
+					{ ...validValues.items[0], client_key: 'test-item-2', unit_price: 1000 },
+				],
+			}),
+		).resolves.toBeDefined();
+	});
+
+	it('rechaza precios unitarios negativos', async () => {
+		await expect(
+			DeferredPaymentDocumentSchema.validate({
+				...validValues,
+				items: [
+					{ ...validValues.items[0], unit_price: -1 },
+					{ ...validValues.items[0], client_key: 'test-item-2', unit_price: 1000 },
+				],
+			}),
+		).rejects.toThrow('El precio unitario no puede ser negativo');
+	});
+	it('explica en español cuando el total completo es cero', async () => {
+		await expect(
+			DeferredPaymentDocumentSchema.validate({
+				...validValues,
+				items: [{ ...validValues.items[0], unit_price: 0 }],
+			}),
+		).rejects.toThrow('El total del documento debe ser mayor a 0');
+	});
 	it('calcula el total estimado sin modificar los ítems', () => {
 		const items = [
 			{ ...validValues.items[0], quantity: 2, unit_price: 150000 },
