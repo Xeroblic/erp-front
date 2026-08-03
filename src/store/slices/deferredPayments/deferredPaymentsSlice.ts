@@ -3,6 +3,7 @@ import type {
 	CreateDeferredPaymentApiPayload,
 	CreateDeferredPaymentPayload,
 	DeferredPaymentApiListParams,
+	DeferredPaymentApiSummaryParams,
 	DeferredPaymentMutationResponse,
 	DeferredPaymentsFilters,
 	DeferredPaymentsListResponse,
@@ -135,6 +136,15 @@ const mapFiltersToApiParams = (filters: DeferredPaymentsFilters): DeferredPaymen
 	due_before: filters.due_before,
 	due_after: filters.due_after,
 });
+const mapFiltersToSummaryApiParams = (
+	filters: DeferredPaymentApiSummaryParams,
+): DeferredPaymentApiSummaryParams => ({
+	status: filters.status,
+	customer_sale_id: filters.customer_sale_id,
+	search: filters.search,
+	due_before: filters.due_before,
+	due_after: filters.due_after,
+});
 
 const mapCreatePayloadToApi = (
 	payload: CreateDeferredPaymentPayload,
@@ -164,7 +174,7 @@ const mapUpdatePayloadToApi = (
 };
 export const fetchDeferredPaymentsSummary = createAsyncThunk<
 	IDeferredPaymentsSummary,
-	{ subsidiaryId: number; filters?: DeferredPaymentsFilters },
+	{ subsidiaryId: number; filters?: DeferredPaymentApiSummaryParams },
 	{ rejectValue: string }
 >(
 	'deferredPayments/fetchSummary',
@@ -172,7 +182,7 @@ export const fetchDeferredPaymentsSummary = createAsyncThunk<
 		try {
 			return await deferredPaymentsService.getSummary(
 				subsidiaryId,
-				mapFiltersToApiParams(filters ?? DEFAULT_DEFERRED_PAYMENTS_FILTERS),
+				mapFiltersToSummaryApiParams(filters ?? {}),
 				signal,
 			);
 		} catch (error) {

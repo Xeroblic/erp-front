@@ -92,11 +92,26 @@ describe('usePagosDiferidos con servicio', () => {
 		);
 		expect(getSummaryMock).toHaveBeenCalledWith(
 			10,
-			expect.objectContaining({ page: 1, per_page: 10 }),
+			expect.any(Object),
 			expect.any(AbortSignal),
 		);
+		expect(getSummaryMock.mock.calls[0]?.[1]).not.toHaveProperty('page');
+		expect(getSummaryMock.mock.calls[0]?.[1]).not.toHaveProperty('per_page');
 		expect(store.getState().deferredPayments.list).toHaveLength(1);
 		expect(store.getState().deferredPayments.summary).toEqual(summary);
+	});
+	it('pagina el listado sin volver a consultar el resumen', async () => {
+		const { hook } = createHook();
+		await flushPromises();
+		getDocumentsMock.mockClear();
+		getSummaryMock.mockClear();
+
+		act(() => hook.result.current.filters.setFilter({ page: 2 }));
+		await flushPromises();
+
+		expect(getDocumentsMock).toHaveBeenCalledOnce();
+		expect(getDocumentsMock.mock.calls[0]?.[1]).toMatchObject({ page: 2, per_page: 10 });
+		expect(getSummaryMock).not.toHaveBeenCalled();
 	});
 	it('no consulta sin una subsidiaria resuelta', async () => {
 		branchContext.subsidiaryId = null;
@@ -122,7 +137,8 @@ describe('usePagosDiferidos con servicio', () => {
 		expect(getDocumentsMock).toHaveBeenCalledOnce();
 		expect(getSummaryMock).toHaveBeenCalledOnce();
 		expect(getDocumentsMock.mock.calls[0]?.[1]).toMatchObject({ page: 1, search: 'andina' });
-		expect(getSummaryMock.mock.calls[0]?.[1]).toMatchObject({ page: 1, search: 'andina' });
+		expect(getSummaryMock.mock.calls[0]?.[1]).toMatchObject({ search: 'andina' });
+		expect(getSummaryMock.mock.calls[0]?.[1]).not.toHaveProperty('page');
 	});
 	it('permite limpiar y repetir el mismo termino durante el debounce', async () => {
 		vi.useFakeTimers();
@@ -172,9 +188,11 @@ describe('usePagosDiferidos con servicio', () => {
 		expect(getDocumentsMock.mock.calls[0]?.[1]).toMatchObject({ page: 1, per_page: 2 });
 		expect(getSummaryMock).toHaveBeenCalledWith(
 			20,
-			expect.objectContaining({ page: 1, per_page: 2 }),
+			expect.any(Object),
 			expect.any(AbortSignal),
 		);
+		expect(getSummaryMock.mock.calls[0]?.[1]).not.toHaveProperty('page');
+		expect(getSummaryMock.mock.calls[0]?.[1]).not.toHaveProperty('per_page');
 		expect(store.getState().deferredPayments.filters.page).toBe(1);
 		expect(hook.result.current.selection.selectedId).toBeNull();
 	});
@@ -195,12 +213,12 @@ describe('usePagosDiferidos con servicio', () => {
 		await act(async () => vi.advanceTimersByTimeAsync(1));
 		expect(getDocumentsMock).toHaveBeenCalledWith(
 			20,
-			expect.objectContaining({ page: 1, search: 'andina' }),
+			expect.objectContaining({ search: 'andina' }),
 			expect.any(AbortSignal),
 		);
 		expect(getSummaryMock).toHaveBeenCalledWith(
 			20,
-			expect.objectContaining({ page: 1, search: 'andina' }),
+			expect.objectContaining({ search: 'andina' }),
 			expect.any(AbortSignal),
 		);
 	});

@@ -1,6 +1,7 @@
 import type { AxiosRequestConfig } from 'axios';
 import type {
 	DeferredPaymentApiListParams,
+	DeferredPaymentApiSummaryParams,
 	DeferredPaymentDeleteResponse,
 	DeferredPaymentMutationApiResponse,
 	DeferredPaymentsListResponse,
@@ -77,7 +78,7 @@ const getDocuments = async (
 
 const getSummary = async (
 	subsidiaryId: number,
-	params: DeferredPaymentApiListParams = {},
+	params: DeferredPaymentApiSummaryParams = {},
 	signal?: AbortSignal,
 ): Promise<IDeferredPaymentsSummary> => {
 	const response = await ApiService.fetchData<ApiResourcePayload<IDeferredPaymentsSummary>>({
