@@ -172,7 +172,7 @@ export interface DeferredPaymentActionFormValues {
 	amount: string;
 	paid_at: string;
 	method: import('@/interface/deferredPayments.interface').DeferredPaymentMethod;
-	notes: string;
+	notes?: string;
 	receipt: File | null;
 }
 
@@ -198,7 +198,7 @@ export const createDeferredPaymentActionSchema = (outstandingAmount: number) =>
 		notes: Yup.string()
 			.trim()
 			.max(1000, 'La nota no puede superar los 1000 caracteres')
-			.defined(),
+			.optional(),
 		receipt: Yup.mixed<File>()
 			.nullable()
 			.test(

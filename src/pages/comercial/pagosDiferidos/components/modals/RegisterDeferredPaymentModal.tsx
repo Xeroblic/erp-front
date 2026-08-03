@@ -132,7 +132,7 @@ const RegisterDeferredPaymentModal: React.FC<RegisterDeferredPaymentModalProps> 
 						<Textarea
 							id='notes'
 							name='notes'
-							value={formik.values.notes}
+							value={formik.values.notes ?? ''}
 							onChange={formik.handleChange}
 							onBlur={formik.handleBlur}
 							disabled={busy || pendingReceipt}

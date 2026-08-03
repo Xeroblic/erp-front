@@ -96,7 +96,7 @@ export const useDeferredPaymentActions = (
 							amount: Number(values.amount).toFixed(2),
 							paid_at: values.paid_at,
 							method: values.method,
-							notes: values.notes.trim() || null,
+							notes: values.notes?.trim() || null,
 						},
 					}),
 				);

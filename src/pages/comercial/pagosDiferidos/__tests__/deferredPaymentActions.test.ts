@@ -23,6 +23,25 @@ describe('ZF-8 validación de abonos', () => {
 		for (const method of ['transfer', 'deposit', 'check', 'cash', 'other'])
 			await expect(schema.validate({ ...valid, method })).resolves.toBeTruthy();
 	});
+	it('acepta la nota ausente, vacía, escrita y borrada', async () => {
+		const schema = createDeferredPaymentActionSchema(100000);
+		const { notes: _notes, ...withoutNotes } = valid;
+
+		await expect(schema.validate(withoutNotes)).resolves.toBeTruthy();
+		await expect(schema.validate({ ...valid, notes: '' })).resolves.toBeTruthy();
+		await expect(schema.validate({ ...valid, notes: '  referencia  ' })).resolves.toMatchObject(
+			{ notes: 'referencia' },
+		);
+		await expect(schema.validate({ ...valid, notes: '' })).resolves.toBeTruthy();
+	});
+	it('mantiene el límite de la nota opcional', async () => {
+		await expect(
+			createDeferredPaymentActionSchema(100000).validate({
+				...valid,
+				notes: 'a'.repeat(1001),
+			}),
+		).rejects.toThrow('La nota no puede superar los 1000 caracteres');
+	});
 	it.each([
 		['', 'Ingresa el monto'],
 		['0', 'El monto debe ser mayor a 0'],
