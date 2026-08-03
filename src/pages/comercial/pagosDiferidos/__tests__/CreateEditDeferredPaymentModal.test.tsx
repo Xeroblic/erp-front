@@ -116,12 +116,15 @@ describe('CreateEditDeferredPaymentModal', () => {
 		expect(screen.getByLabelText('Descripción')).toBeInTheDocument();
 		expect(screen.getByLabelText('Cantidad')).toBeInTheDocument();
 		expect(screen.getByLabelText('Precio unitario')).toBeInTheDocument();
+		const issueDate = screen.getAllByPlaceholderText('dd-mm-aaaa')[0];
+		fireEvent.change(issueDate, { target: { value: '' } });
 
 		fireEvent.click(screen.getByRole('button', { name: 'Crear documento' }));
 
 		expect(await screen.findByText('Selecciona un cliente')).toBeInTheDocument();
 		expect(toastSpies.error).not.toHaveBeenCalled();
 		expect(screen.getByText('Ingresa el número de documento')).toBeInTheDocument();
+		expect(screen.getByText('Selecciona la fecha de emisión')).toBeInTheDocument();
 		expect(screen.getByText('Ingresa el código del ítem')).toBeInTheDocument();
 		expect(screen.getByText('Ingresa la descripción del ítem')).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'Quitar ítem 1' }).parentElement).toHaveClass(
