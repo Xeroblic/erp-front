@@ -1,4 +1,4 @@
-﻿import React, { type PropsWithChildren } from 'react';
+import React, { type PropsWithChildren } from 'react';
 import { configureStore } from '@reduxjs/toolkit';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Provider } from 'react-redux';

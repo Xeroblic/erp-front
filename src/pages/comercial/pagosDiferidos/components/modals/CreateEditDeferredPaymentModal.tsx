@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FieldArray, Form, FormikProvider } from 'formik';
 import type { InputActionMeta } from 'react-select';
 import { useDebounce } from 'use-debounce';
