@@ -21,12 +21,12 @@ const baseHookResult = {
 	branch: { branchId: 1, subsidiaryId: 1 },
 	hasDataContext: true,
 };
-const renderDrawer = (documentId: number, onEdit = vi.fn()) =>
+const renderDrawer = (documentId: number, onEdit = vi.fn(), onClose = vi.fn()) =>
 	render(
 		<Provider store={store}>
 			<DeferredPaymentDetailDrawer
 				documentId={documentId}
-				onClose={vi.fn()}
+				onClose={onClose}
 				onEdit={onEdit}
 			/>
 		</Provider>,
@@ -75,6 +75,19 @@ describe('DeferredPaymentDetailDrawer', () => {
 		expect(screen.getByText('Sin observaciones registradas.')).toBeInTheDocument();
 	});
 
+	it('mantiene abierto el registro al interactuar con el modal renderizado en portal', () => {
+		const onClose = vi.fn();
+		renderDrawer(2, vi.fn(), onClose);
+
+		fireEvent.click(screen.getByRole('button', { name: 'Registrar abono', hidden: true }));
+		const amountInput = screen.getByLabelText('Monto (CLP)');
+		fireEvent.mouseDown(amountInput);
+		fireEvent.change(amountInput, { target: { value: '10000' } });
+
+		expect(screen.getByRole('dialog', { name: 'Registrar abono' })).toBeInTheDocument();
+		expect(amountInput).toHaveValue(10000);
+		expect(onClose).not.toHaveBeenCalled();
+	});
 	it('entrega el documento vigente al solicitar su edición', () => {
 		const onEdit = vi.fn();
 		renderDrawer(2, onEdit);

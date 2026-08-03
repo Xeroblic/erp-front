@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import type {
 	IDeferredPaymentAbono,
 	IDeferredPaymentDocument,
@@ -86,6 +86,15 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 		branch.subsidiaryId,
 		() => setIsRegisterOpen(false),
 	);
+	const hasOpenActionModal = isRegisterOpen || isMarkPaidOpen || paymentToVoid !== null;
+	const handleDrawerOpenChange: React.Dispatch<React.SetStateAction<boolean>> = useCallback(
+		(nextState) => {
+			const shouldOpen =
+				typeof nextState === 'function' ? nextState(documentId !== null) : nextState;
+			if (!shouldOpen && !hasOpenActionModal) onClose();
+		},
+		[documentId, hasOpenActionModal, onClose],
+	);
 	const total = Number(document?.total_amount ?? 0);
 	const paid = Number(document?.paid_amount ?? 0);
 	const progress = total > 0 ? Math.min(100, Math.max(0, (paid / total) * 100)) : 0;
@@ -100,7 +109,7 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 		<>
 			<OffCanvas
 				isOpen={documentId !== null}
-				setIsOpen={onClose}
+				setIsOpen={handleDrawerOpenChange}
 				dialogClassName='!max-w-2xl'
 				contentClassName='!bg-white dark:!bg-zinc-900'>
 				<OffCanvasHeader className='border-b border-zinc-200 px-6 pb-5 dark:border-zinc-800'>
