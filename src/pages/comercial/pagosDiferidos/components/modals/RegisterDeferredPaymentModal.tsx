@@ -1,5 +1,5 @@
-import React from 'react';
-import type { FormikProps } from 'formik';
+import React, { useEffect } from 'react';
+import { FormikProvider, type FormikProps } from 'formik';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import DateInput from '@/components/form/DateInput';
@@ -15,6 +15,7 @@ import Modal, {
 } from '@/components/ui/Modal';
 import type { DeferredPaymentActionFormValues } from '../../types';
 import { DEFERRED_PAYMENT_RECEIPT_ACCEPT } from '../../types';
+import DeferredPaymentField from '../parts/DeferredPaymentField';
 
 interface RegisterDeferredPaymentModalProps {
 	isOpen: boolean;
@@ -25,14 +26,6 @@ interface RegisterDeferredPaymentModalProps {
 	pendingReceipt: boolean;
 	onRetryReceipt: () => void;
 }
-const feedback = (
-	formik: FormikProps<DeferredPaymentActionFormValues>,
-	field: keyof DeferredPaymentActionFormValues,
-) => ({
-	isValid: formik.isValid,
-	isTouched: Boolean(formik.touched[field]),
-	invalidFeedback: typeof formik.errors[field] === 'string' ? formik.errors[field] : undefined,
-});
 const RegisterDeferredPaymentModal: React.FC<RegisterDeferredPaymentModalProps> = ({
 	isOpen,
 	setIsOpen,
@@ -45,128 +38,166 @@ const RegisterDeferredPaymentModal: React.FC<RegisterDeferredPaymentModalProps> 
 	const guardClose: React.Dispatch<React.SetStateAction<boolean>> = (next) => {
 		if (!busy) setIsOpen(next);
 	};
+	const resetForm = formik.resetForm;
+	useEffect(() => () => resetForm(), [resetForm]);
 	return (
 		<Modal isOpen={isOpen} setIsOpen={guardClose} isCentered size='sm' isStaticBackdrop={busy}>
 			<ModalHeader>Registrar abono</ModalHeader>
 			<ModalBody>
-				<form
-					id='deferred-payment-action-form'
-					className='space-y-4'
-					onSubmit={formik.handleSubmit}>
-					{error && (
-						<Alert
-							color='red'
-							variant='outline'
-							icon='HeroExclamationTriangle'
-							title={
-								pendingReceipt
-									? 'Abono registrado, comprobante pendiente'
-									: 'No se pudo completar la operación'
-							}>
-							{error}
-						</Alert>
-					)}
-					{pendingReceipt && (
-						<Button
-							type='button'
-							variant='outline'
-							isLoading={busy}
-							isDisable={busy}
-							onClick={onRetryReceipt}>
-							Reintentar solo comprobante
-						</Button>
-					)}
-					<div>
-						<Label htmlFor='amount'>Monto (CLP)</Label>
-						<Input
-							id='amount'
-							name='amount'
-							type='number'
-							min='1'
-							step='1'
-							value={formik.values.amount}
-							onChange={formik.handleChange}
-							onBlur={formik.handleBlur}
-							disabled={busy || pendingReceipt}
-							{...feedback(formik, 'amount')}
-						/>
-					</div>
-					<div>
-						<Label htmlFor='paid_at'>Fecha del abono</Label>
-						<DateInput
-							id='paid_at'
-							name='paid_at'
-							value={formik.values.paid_at}
-							placeholder='dd-mm-aaaa'
-							maxYear={new Date().getFullYear()}
-							maxDate={new Date()}
-							disabled={busy || pendingReceipt}
-							onChange={formik.handleChange}
-							onBlur={() => {
-								formik.setFieldTouched('paid_at', true).catch(() => undefined);
-							}}
-						/>
-						{formik.touched.paid_at && formik.errors.paid_at && (
-							<p className='mt-1 text-sm text-red-600'>{formik.errors.paid_at}</p>
+				<FormikProvider value={formik}>
+					<form
+						id='deferred-payment-action-form'
+						className='space-y-4'
+						onSubmit={formik.handleSubmit}>
+						{error && (
+							<Alert
+								color='red'
+								variant='outline'
+								icon='HeroExclamationTriangle'
+								title={
+									pendingReceipt
+										? 'Abono registrado, comprobante pendiente'
+										: 'No se pudo completar la operación'
+								}>
+								{error}
+							</Alert>
 						)}
-					</div>
-					<div>
-						<Label htmlFor='method'>Método</Label>
-						<Select
-							id='method'
-							name='method'
-							value={formik.values.method}
-							onChange={formik.handleChange}
-							onBlur={formik.handleBlur}
-							disabled={busy || pendingReceipt}
-							{...feedback(formik, 'method')}>
-							<option value='transfer'>Transferencia</option>
-							<option value='deposit'>Depósito</option>
-							<option value='check'>Cheque</option>
-							<option value='cash'>Efectivo</option>
-							<option value='other'>Otro</option>
-						</Select>
-					</div>
-					<div>
-						<Label htmlFor='notes'>Nota (opcional)</Label>
-						<Textarea
-							id='notes'
-							name='notes'
-							value={formik.values.notes ?? ''}
-							onChange={formik.handleChange}
-							onBlur={formik.handleBlur}
-							disabled={busy || pendingReceipt}
-							rows={3}
-							{...feedback(formik, 'notes')}
-						/>
-						<p className='mt-1 text-xs text-zinc-500'>
-							La nota no se puede editar después. Para corregir un abono, anúlalo y
-							vuelve a registrarlo.
-						</p>
-					</div>
-					<div>
-						<Label htmlFor='receipt'>Comprobante (opcional)</Label>
-						<Input
-							id='receipt'
-							name='receipt'
-							type='file'
-							accept={DEFERRED_PAYMENT_RECEIPT_ACCEPT}
-							disabled={busy || pendingReceipt}
-							onChange={(event) =>
-								formik.setFieldValue(
-									'receipt',
-									event.currentTarget.files?.[0] ?? null,
-								)
-							}
-						/>
-						<p className='mt-1 text-xs text-zinc-500'>
-							PDF, JPG, PNG, WEBP, XLS o XLSX; máximo 10 MB.
-						</p>
-						{formik.touched.receipt && formik.errors.receipt && (
-							<p className='mt-1 text-sm text-red-600'>{formik.errors.receipt}</p>
+						{pendingReceipt && (
+							<Button
+								type='button'
+								variant='outline'
+								isLoading={busy}
+								isDisable={busy}
+								onClick={onRetryReceipt}>
+								Reintentar solo comprobante
+							</Button>
 						)}
-					</div>
-				</form>
+						<div>
+							<Label htmlFor='amount'>Monto (CLP)</Label>
+							<DeferredPaymentField name='amount'>
+								{({ error, isTouched, isValid }) => (
+									<Input
+										id='amount'
+										name='amount'
+										type='number'
+										min='1'
+										step='1'
+										value={formik.values.amount}
+										onChange={formik.handleChange}
+										onBlur={formik.handleBlur}
+										disabled={busy || pendingReceipt}
+										isValid={isValid}
+										isTouched={isTouched}
+										invalidFeedback={error}
+									/>
+								)}
+							</DeferredPaymentField>
+						</div>
+						<div>
+							<Label htmlFor='paid_at'>Fecha del abono</Label>
+							<DeferredPaymentField name='paid_at'>
+								{({ error, isTouched, isValid }) => (
+									<DateInput
+										id='paid_at'
+										name='paid_at'
+										value={formik.values.paid_at}
+										placeholder='dd-mm-aaaa'
+										maxYear={new Date().getFullYear()}
+										maxDate={new Date()}
+										disabled={busy || pendingReceipt}
+										isValid={isValid}
+										isTouched={isTouched}
+										invalidFeedback={error}
+										onChange={formik.handleChange}
+										onBlur={() => {
+											formik
+												.setFieldTouched('paid_at', true)
+												.catch(() => undefined);
+										}}
+									/>
+								)}
+							</DeferredPaymentField>
+						</div>
+						<div>
+							<Label htmlFor='method'>Método</Label>
+							<DeferredPaymentField name='method'>
+								{({ error, isTouched, isValid }) => (
+									<Select
+										id='method'
+										name='method'
+										value={formik.values.method}
+										onChange={formik.handleChange}
+										onBlur={formik.handleBlur}
+										disabled={busy || pendingReceipt}
+										isValid={isValid}
+										isTouched={isTouched}
+										invalidFeedback={error}>
+										<option value='transfer'>Transferencia</option>
+										<option value='deposit'>Depósito</option>
+										<option value='check'>Cheque</option>
+										<option value='cash'>Efectivo</option>
+										<option value='other'>Otro</option>
+									</Select>
+								)}
+							</DeferredPaymentField>
+						</div>
+						<div>
+							<Label htmlFor='notes'>Nota (opcional)</Label>
+							<DeferredPaymentField name='notes'>
+								{({ error, isTouched, isValid }) => (
+									<Textarea
+										id='notes'
+										name='notes'
+										value={formik.values.notes ?? ''}
+										onChange={formik.handleChange}
+										onBlur={formik.handleBlur}
+										disabled={busy || pendingReceipt}
+										rows={3}
+										isValid={isValid}
+										isTouched={isTouched}
+										invalidFeedback={error}
+									/>
+								)}
+							</DeferredPaymentField>
+							<p className='mt-1 text-xs text-zinc-500'>
+								La nota no se puede editar después. Para corregir un abono, anúlalo
+								y vuelve a registrarlo.
+							</p>
+						</div>
+						<div>
+							<Label htmlFor='receipt'>Comprobante (opcional)</Label>
+							<DeferredPaymentField name='receipt'>
+								{({ error, isTouched, isValid }) => (
+									<Input
+										id='receipt'
+										name='receipt'
+										type='file'
+										accept={DEFERRED_PAYMENT_RECEIPT_ACCEPT}
+										disabled={busy || pendingReceipt}
+										isValid={isValid}
+										isTouched={isTouched}
+										invalidFeedback={error}
+										onBlur={formik.handleBlur}
+										onChange={(event) => {
+											formik
+												.setFieldValue(
+													'receipt',
+													event.currentTarget.files?.[0] ?? null,
+												)
+												.catch(() => undefined);
+											formik
+												.setFieldTouched('receipt', true)
+												.catch(() => undefined);
+										}}
+									/>
+								)}
+							</DeferredPaymentField>
+							<p className='mt-1 text-xs text-zinc-500'>
+								PDF, JPG, PNG, WEBP, XLS o XLSX; máximo 10 MB.
+							</p>
+						</div>
+					</form>
+				</FormikProvider>
 			</ModalBody>
 			<ModalFooter>
 				<ModalFooterChild>

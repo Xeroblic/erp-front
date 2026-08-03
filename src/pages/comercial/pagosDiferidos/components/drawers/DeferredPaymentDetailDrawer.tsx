@@ -341,8 +341,9 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 					)}
 				</OffCanvasFooter>
 			</OffCanvas>
-			{document && (
+			{document && isRegisterOpen && (
 				<RegisterDeferredPaymentModal
+					key={document.id}
 					isOpen={isRegisterOpen}
 					setIsOpen={setIsRegisterOpen}
 					formik={paymentActions.formik}

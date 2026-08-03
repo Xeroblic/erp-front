@@ -11,7 +11,12 @@ describe('ZF-8 validación de abonos', () => {
 	};
 	it('acepta monto parcial y exacto, los cinco métodos y nota opcional', async () => {
 		const schema = createDeferredPaymentActionSchema(100000);
-		await expect(schema.validate(valid)).resolves.toBeTruthy();
+		await expect(schema.validate(valid)).resolves.toMatchObject({
+			amount: 50000,
+			paid_at: '2026-08-03',
+			method: 'transfer',
+			notes: '',
+		});
 		await expect(
 			schema.validate({
 				...valid,
@@ -19,20 +24,25 @@ describe('ZF-8 validación de abonos', () => {
 				notes: '  referencia  ',
 				method: 'other',
 			}),
-		).resolves.toBeTruthy();
+		).resolves.toMatchObject({ amount: 100000, method: 'other', notes: 'referencia' });
 		for (const method of ['transfer', 'deposit', 'check', 'cash', 'other'])
-			await expect(schema.validate({ ...valid, method })).resolves.toBeTruthy();
+			await expect(schema.validate({ ...valid, method })).resolves.toMatchObject({ method });
 	});
 	it('acepta la nota ausente, vacía, escrita y borrada', async () => {
 		const schema = createDeferredPaymentActionSchema(100000);
 		const { notes: _notes, ...withoutNotes } = valid;
 
-		await expect(schema.validate(withoutNotes)).resolves.toBeTruthy();
-		await expect(schema.validate({ ...valid, notes: '' })).resolves.toBeTruthy();
+		const initial = await schema.validate(withoutNotes);
+		expect(initial).not.toHaveProperty('notes');
+		await expect(schema.validate({ ...valid, notes: '' })).resolves.toMatchObject({
+			notes: '',
+		});
 		await expect(schema.validate({ ...valid, notes: '  referencia  ' })).resolves.toMatchObject(
 			{ notes: 'referencia' },
 		);
-		await expect(schema.validate({ ...valid, notes: '' })).resolves.toBeTruthy();
+		await expect(schema.validate({ ...valid, notes: '' })).resolves.toMatchObject({
+			notes: '',
+		});
 	});
 	it('mantiene el límite de la nota opcional', async () => {
 		await expect(

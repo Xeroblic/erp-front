@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import store from '@/store';
@@ -78,11 +78,11 @@ describe('DeferredPaymentDetailDrawer', () => {
 		expect(screen.getByText('Sin observaciones registradas.')).toBeInTheDocument();
 	});
 
-	it('mantiene abierto el registro al interactuar con el modal renderizado en portal', () => {
+	it('mantiene abierto el registro al interactuar con el modal renderizado en portal', async () => {
 		const onClose = vi.fn();
 		renderDrawer(2, vi.fn(), onClose);
-
 		fireEvent.click(screen.getByRole('button', { name: 'Registrar abono', hidden: true }));
+		await screen.findByRole('dialog', { name: 'Registrar abono' });
 		const amountInput = screen.getByLabelText('Monto (CLP)');
 		fireEvent.mouseDown(amountInput);
 		fireEvent.change(amountInput, { target: { value: '10000' } });
@@ -91,6 +91,49 @@ describe('DeferredPaymentDetailDrawer', () => {
 		expect(screen.getByRole('dialog', { name: 'Registrar abono' })).toBeInTheDocument();
 		expect(amountInput).toHaveValue(10000);
 		expect(onClose).not.toHaveBeenCalled();
+	});
+	it('descarta el borrador al cancelar y abrir otro registro', async () => {
+		renderDrawer(2);
+		fireEvent.click(screen.getByRole('button', { name: 'Registrar abono', hidden: true }));
+		await screen.findByRole('dialog', { name: 'Registrar abono' });
+		fireEvent.change(screen.getByLabelText('Monto (CLP)'), { target: { value: '15000' } });
+		fireEvent.change(screen.getByLabelText('Nota (opcional)'), {
+			target: { value: 'borrador temporal' },
+		});
+		fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+		await waitFor(() =>
+			expect(
+				screen.queryByRole('dialog', { name: 'Registrar abono' }),
+			).not.toBeInTheDocument(),
+		);
+		await waitFor(() => {
+			fireEvent.click(screen.getByRole('button', { name: 'Registrar abono', hidden: true }));
+			expect(screen.getByRole('dialog', { name: 'Registrar abono' })).toBeInTheDocument();
+		});
+
+		expect(screen.getByLabelText('Monto (CLP)')).toHaveValue(null);
+		expect(screen.getByLabelText('Nota (opcional)')).toHaveValue('');
+	});
+	it('muestra los mensajes de los campos inválidos al registrar', async () => {
+		renderDrawer(2);
+		fireEvent.click(screen.getByRole('button', { name: 'Registrar abono', hidden: true }));
+		await screen.findByRole('dialog', { name: 'Registrar abono' });
+		fireEvent.change(screen.getByLabelText('Nota (opcional)'), {
+			target: { value: 'a'.repeat(1001) },
+		});
+		fireEvent.change(screen.getByPlaceholderText('dd-mm-aaaa'), {
+			target: { value: '' },
+		});
+		const dialog = screen.getByRole('dialog', { name: 'Registrar abono' });
+		fireEvent.click(within(dialog).getByRole('button', { name: 'Registrar abono' }));
+
+		await waitFor(() => {
+			expect(screen.getByText('Ingresa el monto')).toBeInTheDocument();
+			expect(screen.getByText('Selecciona la fecha del abono')).toBeInTheDocument();
+			expect(
+				screen.getByText('La nota no puede superar los 1000 caracteres'),
+			).toBeInTheDocument();
+		});
 	});
 	it('entrega el documento vigente al solicitar su edición', () => {
 		const onEdit = vi.fn();
