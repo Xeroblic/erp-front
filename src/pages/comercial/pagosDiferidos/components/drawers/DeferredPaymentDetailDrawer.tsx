@@ -1,10 +1,12 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import type {
 	IDeferredPaymentAbono,
 	IDeferredPaymentDocument,
 } from '@/interface/deferredPayments.interface';
 import Avatar from '@/components/Avatar';
 import Icon from '@/components/icon/Icon';
+import Input from '@/components/form/Input';
+import Label from '@/components/form/Label';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import Card, { CardBody } from '@/components/ui/Card';
@@ -26,6 +28,7 @@ import RegisterDeferredPaymentModal from '../modals/RegisterDeferredPaymentModal
 import ConfirmDeferredPaymentActionModal from '../modals/ConfirmDeferredPaymentActionModal';
 import useDeferredPaymentDetail from '../../hooks/useDeferredPaymentDetail';
 import { useDeferredPaymentActions } from '../../hooks/useDeferredPaymentActions';
+import { DEFERRED_PAYMENT_RECEIPT_ACCEPT } from '../../types';
 import {
 	DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS,
 	formatDeferredPaymentAmount,
@@ -81,6 +84,11 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 	const [isRegisterOpen, setIsRegisterOpen] = useState(false);
 	const [isMarkPaidOpen, setIsMarkPaidOpen] = useState(false);
 	const [paymentToVoid, setPaymentToVoid] = useState<IDeferredPaymentAbono | null>(null);
+	useEffect(() => {
+		setIsRegisterOpen(false);
+		setIsMarkPaidOpen(false);
+		setPaymentToVoid(null);
+	}, [branch.branchId, branch.subsidiaryId, documentId]);
 	const paymentActions = useDeferredPaymentActions(
 		document ?? EMPTY_DEFERRED_PAYMENT_DOCUMENT,
 		branch.subsidiaryId,
@@ -358,18 +366,34 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 					}}
 				/>
 			)}
-			{document && (
+			{document && isMarkPaidOpen && (
 				<ConfirmDeferredPaymentActionModal
-					isOpen={isMarkPaidOpen}
-					setIsOpen={setIsMarkPaidOpen}
+					key={document.id}
+					isOpen
+					setIsOpen={(nextState) => {
+						const shouldOpen =
+							typeof nextState === 'function' ? nextState(isMarkPaidOpen) : nextState;
+						if (!shouldOpen) {
+							setIsMarkPaidOpen(false);
+							paymentActions.actions.resetMarkPaidReceipt();
+						}
+					}}
 					title='Marcar documento como pagado'
 					confirmLabel='Marcar pagada'
-					busy={paymentActions.state.markingPaid}
-					onConfirm={() =>
-						paymentActions.actions.markPaid().then((ok) => {
-							if (ok) setIsMarkPaidOpen(false);
-						})
-					}
+					busy={paymentActions.state.markingPaid || paymentActions.state.uploadingReceipt}
+					onConfirm={() => {
+						const operation = paymentActions.state.pendingReceipt
+							? paymentActions.actions.retryReceipt()
+							: paymentActions.actions.markPaid();
+						operation
+							.then((ok) => {
+								if (ok) {
+									setIsMarkPaidOpen(false);
+									paymentActions.actions.resetMarkPaidReceipt();
+								}
+							})
+							.catch(() => undefined);
+					}}
 					description={
 						<>
 							<p>
@@ -383,6 +407,47 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 								Esta acción cerrará el documento y detendrá los recordatorios de
 								cobranza.
 							</p>
+							<div>
+								<Label htmlFor='mark_paid_receipt'>Comprobante (opcional)</Label>
+								<Input
+									id='mark_paid_receipt'
+									name='mark_paid_receipt'
+									type='file'
+									accept={DEFERRED_PAYMENT_RECEIPT_ACCEPT}
+									disabled={paymentActions.state.pendingReceipt !== null}
+									isValid={!paymentActions.state.markPaidReceiptError}
+									isTouched={paymentActions.state.markPaidReceiptTouched}
+									invalidFeedback={
+										paymentActions.state.markPaidReceiptError ?? undefined
+									}
+									onChange={(event) => {
+										paymentActions.actions
+											.setMarkPaidReceipt(
+												event.currentTarget.files?.[0] ?? null,
+											)
+											.catch(() => undefined);
+									}}
+								/>
+								<p className='mt-1 text-xs text-zinc-500'>
+									PDF, JPG, PNG, WEBP, XLS o XLSX; máximo 10 MB.
+								</p>
+								{paymentActions.state.markPaidReceiptTouched &&
+									paymentActions.state.markPaidReceiptError && (
+										<p className='mt-1 text-sm text-red-600'>
+											{paymentActions.state.markPaidReceiptError}
+										</p>
+									)}
+							</div>
+							{paymentActions.state.pendingReceipt && (
+								<Alert
+									color='amber'
+									variant='outline'
+									icon='HeroExclamationTriangle'
+									title='Documento pagado, comprobante pendiente'>
+									El documento ya fue cerrado. Reintenta únicamente el
+									comprobante.
+								</Alert>
+							)}
 						</>
 					}
 				/>

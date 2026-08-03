@@ -14,7 +14,11 @@ import {
 	uploadDeferredPaymentReceipt,
 	voidDeferredPayment,
 } from '@/store/slices/deferredPayments/deferredPaymentsSlice';
-import { createDeferredPaymentActionSchema, type DeferredPaymentActionFormValues } from '../types';
+import {
+	createDeferredPaymentActionSchema,
+	deferredPaymentReceiptSchema,
+	type DeferredPaymentActionFormValues,
+} from '../types';
 
 const today = () => new Date().toISOString().slice(0, 10);
 export const useDeferredPaymentActions = (
@@ -36,6 +40,9 @@ export const useDeferredPaymentActions = (
 	const [pendingReceipt, setPendingReceipt] = useState<{ paymentId: number; file: File } | null>(
 		null,
 	);
+	const [markPaidReceipt, setMarkPaidReceiptState] = useState<File | null>(null);
+	const [markPaidReceiptError, setMarkPaidReceiptError] = useState<string | null>(null);
+	const [markPaidReceiptTouched, setMarkPaidReceiptTouched] = useState(false);
 	const requests = useRef<Array<{ abort: () => void }>>([]);
 	const refresh = useCallback(() => {
 		if (subsidiaryId === null) return;
@@ -140,20 +147,56 @@ export const useDeferredPaymentActions = (
 		},
 		[dispatch, document.id, refresh, subsidiaryId, voidingPaymentId],
 	);
+	const setMarkPaidReceipt = useCallback(async (file: File | null) => {
+		setMarkPaidReceiptState(file);
+		setMarkPaidReceiptTouched(true);
+		try {
+			await deferredPaymentReceiptSchema.validate(file);
+			setMarkPaidReceiptError(null);
+		} catch (validationError) {
+			setMarkPaidReceiptError(
+				validationError instanceof Error ? validationError.message : 'Comprobante inválido',
+			);
+		}
+	}, []);
+	const resetMarkPaidReceipt = useCallback(() => {
+		setMarkPaidReceiptState(null);
+		setMarkPaidReceiptError(null);
+		setMarkPaidReceiptTouched(false);
+	}, []);
 	const markPaid = useCallback(async () => {
-		if (subsidiaryId === null || markingPaid) return false;
+		if (subsidiaryId === null || markingPaid || uploadingReceipt || markPaidReceiptError)
+			return false;
 		try {
 			const request = dispatch(
 				markDeferredPaymentPaid({ subsidiaryId, documentId: document.id }),
 			);
 			requests.current.push(request);
-			await request.unwrap();
+			const payment = await request.unwrap();
 			refresh();
+			if (markPaidReceipt && !(await uploadReceipt(payment.id, markPaidReceipt)))
+				return false;
+			resetMarkPaidReceipt();
 			return true;
 		} catch {
 			return false;
 		}
-	}, [dispatch, document.id, markingPaid, refresh, subsidiaryId]);
+	}, [
+		dispatch,
+		document.id,
+		markingPaid,
+		markPaidReceipt,
+		markPaidReceiptError,
+		refresh,
+		resetMarkPaidReceipt,
+		subsidiaryId,
+		uploadReceipt,
+		uploadingReceipt,
+	]);
+	useEffect(() => {
+		setPendingReceipt(null);
+		resetMarkPaidReceipt();
+	}, [document.id, resetMarkPaidReceipt, subsidiaryId]);
 	useEffect(
 		() => () => {
 			requests.current.forEach((request) => request.abort());
@@ -171,6 +214,9 @@ export const useDeferredPaymentActions = (
 				markingPaid,
 				error,
 				pendingReceipt,
+				markPaidReceipt,
+				markPaidReceiptError,
+				markPaidReceiptTouched,
 				busy:
 					recordingPayment ||
 					uploadingReceipt ||
@@ -184,14 +230,21 @@ export const useDeferredPaymentActions = (
 						: Promise.resolve(false),
 				voidPayment,
 				markPaid,
+				setMarkPaidReceipt,
+				resetMarkPaidReceipt,
 			},
 		}),
 		[
 			error,
 			formik,
 			markingPaid,
+			markPaidReceipt,
+			markPaidReceiptError,
+			markPaidReceiptTouched,
 			pendingReceipt,
 			recordingPayment,
+			resetMarkPaidReceipt,
+			setMarkPaidReceipt,
 			uploadReceipt,
 			uploadingReceipt,
 			voidPayment,

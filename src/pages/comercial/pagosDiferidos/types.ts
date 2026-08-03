@@ -176,6 +176,28 @@ export interface DeferredPaymentActionFormValues {
 	receipt: File | null;
 }
 
+export const deferredPaymentReceiptSchema = Yup.mixed<File>()
+	.nullable()
+	.test(
+		'receipt-size',
+		'El comprobante no puede superar los 10 MB',
+		(file) => !file || file.size <= DEFERRED_PAYMENT_RECEIPT_MAX_BYTES,
+	)
+	.test(
+		'receipt-type',
+		'Formato de comprobante no permitido',
+		(file) =>
+			!file ||
+			[
+				'application/pdf',
+				'image/jpeg',
+				'image/png',
+				'image/webp',
+				'application/vnd.ms-excel',
+				'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+			].includes(file.type),
+	);
+
 export const createDeferredPaymentActionSchema = (outstandingAmount: number) =>
 	Yup.object({
 		amount: Yup.number()
@@ -199,25 +221,5 @@ export const createDeferredPaymentActionSchema = (outstandingAmount: number) =>
 			.trim()
 			.max(1000, 'La nota no puede superar los 1000 caracteres')
 			.optional(),
-		receipt: Yup.mixed<File>()
-			.nullable()
-			.test(
-				'receipt-size',
-				'El comprobante no puede superar los 10 MB',
-				(file) => !file || file.size <= DEFERRED_PAYMENT_RECEIPT_MAX_BYTES,
-			)
-			.test(
-				'receipt-type',
-				'Formato de comprobante no permitido',
-				(file) =>
-					!file ||
-					[
-						'application/pdf',
-						'image/jpeg',
-						'image/png',
-						'image/webp',
-						'application/vnd.ms-excel',
-						'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-					].includes(file.type),
-			),
+		receipt: deferredPaymentReceiptSchema,
 	});

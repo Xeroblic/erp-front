@@ -46,7 +46,7 @@ const DeferredPaymentActionsFooter: React.FC<DeferredPaymentActionsFooterProps> 
 					Registrar abono
 				</ProtectedButton>
 				<ProtectedButton
-					permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.RECORD_PAYMENT}
+					permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.MARK_PAID}
 					branchId={branchId}
 					subsidiaryId={subsidiaryId}
 					scope='access'

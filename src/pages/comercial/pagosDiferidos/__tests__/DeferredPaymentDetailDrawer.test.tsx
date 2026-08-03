@@ -135,6 +135,40 @@ describe('DeferredPaymentDetailDrawer', () => {
 			).toBeInTheDocument();
 		});
 	});
+	it('limpia la anulación abierta al cambiar de documento', async () => {
+		const view = renderDrawer(2);
+		fireEvent.click(screen.getAllByRole('button', { name: 'Anular abono', hidden: true })[0]);
+		expect(screen.getByRole('dialog', { name: 'Anular abono' })).toBeInTheDocument();
+
+		vi.mocked(useDeferredPaymentDetail).mockReturnValue({
+			...baseHookResult,
+			document: DEFERRED_PAYMENT_DETAIL_FIXTURES[9],
+		});
+		view.rerender(
+			<Provider store={store}>
+				<DeferredPaymentDetailDrawer documentId={9} onClose={vi.fn()} onEdit={vi.fn()} />
+			</Provider>,
+		);
+
+		await waitFor(() =>
+			expect(screen.queryByRole('dialog', { name: 'Anular abono' })).not.toBeInTheDocument(),
+		);
+	});
+
+	it('permite adjuntar y valida el comprobante al marcar pagada', async () => {
+		renderDrawer(2);
+		fireEvent.click(screen.getByRole('button', { name: 'Marcar pagada', hidden: true }));
+		const dialog = await screen.findByRole('dialog', { name: 'Marcar documento como pagado' });
+		const receipt = within(dialog).getByLabelText('Comprobante (opcional)');
+		expect(receipt).toHaveAttribute('accept', '.pdf,.jpg,.jpeg,.png,.webp,.xls,.xlsx');
+
+		fireEvent.change(receipt, {
+			target: { files: [new File(['contenido'], 'invalido.txt', { type: 'text/plain' })] },
+		});
+		expect(
+			await within(dialog).findByText('Formato de comprobante no permitido'),
+		).toBeInTheDocument();
+	});
 	it('entrega el documento vigente al solicitar su edición', () => {
 		const onEdit = vi.fn();
 		renderDrawer(2, onEdit);
