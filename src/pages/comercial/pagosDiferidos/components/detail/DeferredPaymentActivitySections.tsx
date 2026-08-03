@@ -1,6 +1,9 @@
 import React from 'react';
 import Icon from '@/components/icon/Icon';
 import Card, { CardBody } from '@/components/ui/Card';
+import ProtectedButton from '@/components/ui/ProtectedButton';
+import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
+import deferredPaymentsService from '@/services/deferredPaymentsService';
 import type {
 	DeferredPaymentMethod,
 	IDeferredPaymentAbono,
@@ -17,28 +20,47 @@ const PAYMENT_METHOD_LABELS: Record<DeferredPaymentMethod, string> = {
 	other: 'Otro',
 };
 
-const AttachmentLink: React.FC<{ attachment: IDeferredPaymentAttachment }> = ({ attachment }) => (
-	<a
-		href={attachment.url}
-		target='_blank'
-		rel='noreferrer'
-		className='flex w-full min-w-0 max-w-full items-center gap-3 overflow-hidden rounded-lg border border-zinc-200 bg-white px-3 py-2 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-800'>
-		<span className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-200 dark:bg-zinc-800'>
-			<Icon icon='HeroPaperClip' className='text-zinc-600 dark:text-zinc-300' />
-		</span>
-		<span className='min-w-0 grow'>
-			<span className='block truncate text-sm font-semibold' title={attachment.file_name}>
-				{attachment.file_name}
+const AttachmentLink: React.FC<{ attachment: IDeferredPaymentAttachment }> = ({ attachment }) => {
+	const download = async () => {
+		const blob = await deferredPaymentsService.downloadDeferredPaymentAttachment(
+			attachment.url,
+		);
+		const objectUrl = URL.createObjectURL(blob);
+		const anchor = document.createElement('a');
+		anchor.href = objectUrl;
+		anchor.download = attachment.file_name;
+		anchor.click();
+		URL.revokeObjectURL(objectUrl);
+	};
+	return (
+		<button
+			type='button'
+			onClick={() => {
+				download().catch(() => undefined);
+			}}
+			className='flex w-full min-w-0 max-w-full items-center gap-3 overflow-hidden rounded-lg border border-zinc-200 bg-white px-3 py-2 text-left transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-800'>
+			<span className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-200 dark:bg-zinc-800'>
+				<Icon icon='HeroPaperClip' className='text-zinc-600 dark:text-zinc-300' />
 			</span>
-			<span className='block text-xs text-zinc-500'>{formatFileSize(attachment.size)}</span>
-		</span>
-		<Icon icon='HeroArrowDownTray' className='shrink-0 text-zinc-500' />
-	</a>
-);
-
+			<span className='min-w-0 grow'>
+				<span className='block truncate text-sm font-semibold' title={attachment.file_name}>
+					{attachment.file_name}
+				</span>
+				<span className='block text-xs text-zinc-500'>
+					{formatFileSize(attachment.size)}
+				</span>
+			</span>
+			<Icon icon='HeroArrowDownTray' className='shrink-0 text-zinc-500' />
+		</button>
+	);
+};
 export const DeferredPaymentPaymentsSection: React.FC<{
 	payments: IDeferredPaymentAbono[];
-}> = ({ payments }) => (
+	branchId?: number | null;
+	subsidiaryId?: number | null;
+	onVoid?: (payment: IDeferredPaymentAbono) => void;
+	voidingPaymentId?: number | null;
+}> = ({ payments, branchId, subsidiaryId, onVoid, voidingPaymentId }) => (
 	<Card className='border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/60'>
 		<CardBody className='space-y-4 p-5'>
 			<div>
@@ -57,11 +79,15 @@ export const DeferredPaymentPaymentsSection: React.FC<{
 								{formatDeferredPaymentAmount(payment.amount)}
 							</p>
 							<p className='text-sm text-zinc-500'>
-								{PAYMENT_METHOD_LABELS[payment.method]}
+								{payment.method
+									? PAYMENT_METHOD_LABELS[payment.method]
+									: 'Sin especificar'}
 							</p>
 						</div>
 						<p className='rounded-full bg-zinc-200 px-3 py-1 text-sm font-semibold dark:bg-zinc-800'>
-							{formatDeferredPaymentDate(payment.paid_at)}
+							{payment.paid_at
+								? formatDeferredPaymentDate(payment.paid_at)
+								: 'Sin especificar'}
 						</p>
 					</div>
 					{payment.notes ? (
@@ -74,6 +100,23 @@ export const DeferredPaymentPaymentsSection: React.FC<{
 					) : (
 						<p className='text-sm text-zinc-500'>Sin nota</p>
 					)}
+					{onVoid && (
+						<div className='flex justify-end'>
+							<ProtectedButton
+								permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.RECORD_PAYMENT}
+								branchId={branchId}
+								subsidiaryId={subsidiaryId}
+								scope='access'
+								color='red'
+								variant='outline'
+								size='sm'
+								isLoading={voidingPaymentId === payment.id}
+								isDisable={voidingPaymentId !== null}
+								onClick={() => onVoid(payment)}>
+								Anular abono
+							</ProtectedButton>
+						</div>
+					)}{' '}
 					{payment.attachments.length > 0 && (
 						<div className='grid gap-2'>
 							{payment.attachments.map((attachment) => (

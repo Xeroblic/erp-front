@@ -1,5 +1,8 @@
-import React from 'react';
-import type { IDeferredPaymentDocument } from '@/interface/deferredPayments.interface';
+import React, { useState } from 'react';
+import type {
+	IDeferredPaymentAbono,
+	IDeferredPaymentDocument,
+} from '@/interface/deferredPayments.interface';
 import Avatar from '@/components/Avatar';
 import Icon from '@/components/icon/Icon';
 import Alert from '@/components/ui/Alert';
@@ -19,13 +22,20 @@ import {
 } from '../detail/DeferredPaymentActivitySections';
 import DeferredPaymentActionsFooter from '../detail/DeferredPaymentActionsFooter';
 import DeferredPaymentItemsSection from '../detail/DeferredPaymentItemsSection';
+import RegisterDeferredPaymentModal from '../modals/RegisterDeferredPaymentModal';
+import ConfirmDeferredPaymentActionModal from '../modals/ConfirmDeferredPaymentActionModal';
 import useDeferredPaymentDetail from '../../hooks/useDeferredPaymentDetail';
+import { useDeferredPaymentActions } from '../../hooks/useDeferredPaymentActions';
 import {
 	DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS,
 	formatDeferredPaymentAmount,
 	formatDeferredPaymentDate,
 } from '../../utils';
 
+const EMPTY_DEFERRED_PAYMENT_DOCUMENT = {
+	id: 0,
+	outstanding_amount: '0',
+} as IDeferredPaymentDocument;
 interface DeferredPaymentDetailDrawerProps {
 	documentId: number | null;
 	onClose: () => void;
@@ -68,6 +78,14 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 }) => {
 	const { document, loading, error, actions, branch, hasDataContext } =
 		useDeferredPaymentDetail(documentId);
+	const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+	const [isMarkPaidOpen, setIsMarkPaidOpen] = useState(false);
+	const [paymentToVoid, setPaymentToVoid] = useState<IDeferredPaymentAbono | null>(null);
+	const paymentActions = useDeferredPaymentActions(
+		document ?? EMPTY_DEFERRED_PAYMENT_DOCUMENT,
+		branch.subsidiaryId,
+		() => setIsRegisterOpen(false),
+	);
 	const total = Number(document?.total_amount ?? 0);
 	const paid = Number(document?.paid_amount ?? 0);
 	const progress = total > 0 ? Math.min(100, Math.max(0, (paid / total) * 100)) : 0;
@@ -79,227 +97,324 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 		: undefined;
 
 	return (
-		<OffCanvas
-			isOpen={documentId !== null}
-			setIsOpen={onClose}
-			dialogClassName='!max-w-2xl'
-			contentClassName='!bg-white dark:!bg-zinc-900'>
-			<OffCanvasHeader className='border-b border-zinc-200 px-6 pb-5 dark:border-zinc-800'>
-				<div className='min-w-0'>
-					<p className='truncate text-lg font-semibold'>
-						{document?.document_number ?? 'Detalle del documento'}
-					</p>
-					<p className='truncate text-sm font-normal text-zinc-500'>
-						{customerDisplayName ?? `Documento ID #${documentId ?? ''}`}
-					</p>
-				</div>
-			</OffCanvasHeader>
-			<OffCanvasBody className='space-y-4 bg-white px-4 py-5 dark:bg-zinc-900 sm:px-6'>
-				{!hasDataContext && (
-					<Alert
-						color='amber'
-						variant='outline'
-						icon='HeroBuildingStorefront'
-						title='No se pudo resolver la subsidiaria'>
-						Seleccioná nuevamente el contexto comercial para consultar este documento.
-					</Alert>
-				)}
-				{hasDataContext && loading && !document && <DetailSkeleton />}
-				{hasDataContext && error && (
-					<Alert
-						color='red'
-						variant='outline'
-						icon='HeroExclamationTriangle'
-						title='No pudimos cargar el documento'>
-						<div className='space-y-3'>
-							<p>{error}</p>
-							<Button size='sm' variant='outline' onClick={actions.refresh}>
-								Reintentar
-							</Button>
-						</div>
-					</Alert>
-				)}
-				{hasDataContext && document && !error && (
-					<>
-						<Card className='border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/60'>
-							<CardBody className='space-y-5 p-5'>
-								<div className='flex flex-col justify-between gap-4 sm:flex-row sm:items-start'>
-									<div className='flex min-w-0 items-start gap-3'>
-										<div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white'>
-											<Icon
-												icon='HeroDocumentText'
-												color='white'
-												size='text-2xl'
-											/>
-										</div>
-										<div className='min-w-0'>
-											<p className='text-sm text-zinc-500'>Cliente</p>
-											<p className='truncate text-lg font-semibold'>
-												{customerDisplayName}
-											</p>
-											<p className='text-sm text-zinc-600 dark:text-zinc-300'>
-												RUT {document.customer.rut}
-											</p>
-										</div>
-									</div>
-									<div className='flex flex-col items-center gap-2 sm:items-end'>
-										<DeferredStatusPill status={document.status} />
-										<DaysUntilDueBadge
-											daysUntilDue={
-												document.status === 'paid'
-													? null
-													: document.days_until_due
-											}
-											isOverdue={document.is_overdue}
-										/>
-									</div>
-								</div>
-								<div className='grid grid-cols-2 gap-3 border-t border-zinc-200 pt-4 text-sm dark:border-zinc-700'>
-									<div>
-										<p className='text-zinc-500'>Tipo de documento</p>
-										<p className='font-semibold'>
-											{
-												DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS[
-													document.document_type
-												]
-											}
-										</p>
-									</div>
-									<div>
-										<p className='text-zinc-500'>Orden de compra</p>
-										<p className='font-semibold'>
-											{document.purchase_order ?? 'Sin OC'}
-										</p>
-									</div>
-								</div>
-							</CardBody>
-						</Card>
-						<Card className='border border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950'>
-							<CardBody className='p-5 text-center'>
-								<p className='text-sm font-semibold text-blue-700 dark:text-blue-300'>
-									Saldo pendiente
-								</p>
-								<p className='mt-1 text-3xl font-bold text-blue-900 dark:text-blue-100'>
-									{formatDeferredPaymentAmount(document.outstanding_amount)}
-								</p>
-								<p className='mt-1 text-sm text-blue-700 dark:text-blue-300'>
-									Monto que todavía debe pagar el cliente
-								</p>
-							</CardBody>
-						</Card>
-						<div className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
-							<AmountCard
-								label='Total documento'
-								value={formatDeferredPaymentAmount(document.total_amount)}
-							/>
-							<AmountCard
-								label='Total abonado'
-								value={formatDeferredPaymentAmount(document.paid_amount)}
-								className='text-emerald-700 dark:text-emerald-400'
-							/>
-							<AmountCard label='Avance del pago' value={progressLabel} />
-						</div>
-						<Card className='border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/60'>
-							<CardBody className='space-y-4 p-5'>
-								<div>
-									<div className='mb-2 flex justify-between gap-3 text-sm'>
-										<p className='font-semibold'>Progreso del pago</p>
-										<p className='text-zinc-500'>{progressLabel} pagado</p>
-									</div>
-									<Progress
-										value={progress}
-										color='emerald'
-										colorIntensity='600'
-										className='h-3'
-									/>
-								</div>
-								<div className='grid grid-cols-2 gap-3 border-t border-zinc-200 pt-4 dark:border-zinc-700'>
-									<div>
-										<p className='text-sm text-zinc-500'>Fecha de emisión</p>
-										<p className='font-semibold'>
-											{formatDeferredPaymentDate(document.issue_date)}
-										</p>
-									</div>
-									<div>
-										<p className='text-sm text-zinc-500'>
-											Fecha de vencimiento
-										</p>
-										<p className='font-semibold'>
-											{formatDeferredPaymentDate(document.due_date)}
-										</p>
-									</div>
-								</div>
-							</CardBody>
-						</Card>
-						<Card className='border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/60'>
-							<CardBody className='space-y-4 p-5'>
-								<div>
-									<p className='font-semibold'>Responsables de cobranza</p>
-									<p className='text-sm text-zinc-500'>
-										Reciben los recordatorios de cobranza junto al equipo de
-										cobranza.
-									</p>
-								</div>
-								<div className='flex flex-wrap gap-3'>
-									{document.assignees.map((assignee) => (
-										<div
-											key={assignee.id}
-											className='flex min-w-0 items-center gap-3 rounded-xl border border-zinc-200 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950'>
-											<Avatar
-												src={assignee.avatar_url ?? undefined}
-												name={assignee.name}
-												className='h-10 w-10'
-											/>
+		<>
+			<OffCanvas
+				isOpen={documentId !== null}
+				setIsOpen={onClose}
+				dialogClassName='!max-w-2xl'
+				contentClassName='!bg-white dark:!bg-zinc-900'>
+				<OffCanvasHeader className='border-b border-zinc-200 px-6 pb-5 dark:border-zinc-800'>
+					<div className='min-w-0'>
+						<p className='truncate text-lg font-semibold'>
+							{document?.document_number ?? 'Detalle del documento'}
+						</p>
+						<p className='truncate text-sm font-normal text-zinc-500'>
+							{customerDisplayName ?? `Documento ID #${documentId ?? ''}`}
+						</p>
+					</div>
+				</OffCanvasHeader>
+				<OffCanvasBody className='space-y-4 bg-white px-4 py-5 dark:bg-zinc-900 sm:px-6'>
+					{!hasDataContext && (
+						<Alert
+							color='amber'
+							variant='outline'
+							icon='HeroBuildingStorefront'
+							title='No se pudo resolver la subsidiaria'>
+							Seleccioná nuevamente el contexto comercial para consultar este
+							documento.
+						</Alert>
+					)}
+					{hasDataContext && loading && !document && <DetailSkeleton />}
+					{hasDataContext && error && (
+						<Alert
+							color='red'
+							variant='outline'
+							icon='HeroExclamationTriangle'
+							title='No pudimos cargar el documento'>
+							<div className='space-y-3'>
+								<p>{error}</p>
+								<Button size='sm' variant='outline' onClick={actions.refresh}>
+									Reintentar
+								</Button>
+							</div>
+						</Alert>
+					)}
+					{hasDataContext && document && !error && (
+						<>
+							<Card className='border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/60'>
+								<CardBody className='space-y-5 p-5'>
+									<div className='flex flex-col justify-between gap-4 sm:flex-row sm:items-start'>
+										<div className='flex min-w-0 items-start gap-3'>
+											<div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white'>
+												<Icon
+													icon='HeroDocumentText'
+													color='white'
+													size='text-2xl'
+												/>
+											</div>
 											<div className='min-w-0'>
-												<p className='truncate text-sm font-semibold'>
-													{assignee.name}
+												<p className='text-sm text-zinc-500'>Cliente</p>
+												<p className='truncate text-lg font-semibold'>
+													{customerDisplayName}
 												</p>
-												<p className='truncate text-xs text-zinc-500'>
-													{assignee.email}
+												<p className='text-sm text-zinc-600 dark:text-zinc-300'>
+													RUT {document.customer.rut}
 												</p>
 											</div>
 										</div>
-									))}
-									{document.assignees.length === 0 && (
+										<div className='flex flex-col items-center gap-2 sm:items-end'>
+											<DeferredStatusPill status={document.status} />
+											<DaysUntilDueBadge
+												daysUntilDue={
+													document.status === 'paid'
+														? null
+														: document.days_until_due
+												}
+												isOverdue={document.is_overdue}
+											/>
+										</div>
+									</div>
+									<div className='grid grid-cols-2 gap-3 border-t border-zinc-200 pt-4 text-sm dark:border-zinc-700'>
+										<div>
+											<p className='text-zinc-500'>Tipo de documento</p>
+											<p className='font-semibold'>
+												{
+													DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS[
+														document.document_type
+													]
+												}
+											</p>
+										</div>
+										<div>
+											<p className='text-zinc-500'>Orden de compra</p>
+											<p className='font-semibold'>
+												{document.purchase_order ?? 'Sin OC'}
+											</p>
+										</div>
+									</div>
+								</CardBody>
+							</Card>
+							<Card className='border border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950'>
+								<CardBody className='p-5 text-center'>
+									<p className='text-sm font-semibold text-blue-700 dark:text-blue-300'>
+										Saldo pendiente
+									</p>
+									<p className='mt-1 text-3xl font-bold text-blue-900 dark:text-blue-100'>
+										{formatDeferredPaymentAmount(document.outstanding_amount)}
+									</p>
+									<p className='mt-1 text-sm text-blue-700 dark:text-blue-300'>
+										Monto que todavía debe pagar el cliente
+									</p>
+								</CardBody>
+							</Card>
+							<div className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
+								<AmountCard
+									label='Total documento'
+									value={formatDeferredPaymentAmount(document.total_amount)}
+								/>
+								<AmountCard
+									label='Total abonado'
+									value={formatDeferredPaymentAmount(document.paid_amount)}
+									className='text-emerald-700 dark:text-emerald-400'
+								/>
+								<AmountCard label='Avance del pago' value={progressLabel} />
+							</div>
+							<Card className='border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/60'>
+								<CardBody className='space-y-4 p-5'>
+									<div>
+										<div className='mb-2 flex justify-between gap-3 text-sm'>
+											<p className='font-semibold'>Progreso del pago</p>
+											<p className='text-zinc-500'>{progressLabel} pagado</p>
+										</div>
+										<Progress
+											value={progress}
+											color='emerald'
+											colorIntensity='600'
+											className='h-3'
+										/>
+									</div>
+									<div className='grid grid-cols-2 gap-3 border-t border-zinc-200 pt-4 dark:border-zinc-700'>
+										<div>
+											<p className='text-sm text-zinc-500'>
+												Fecha de emisión
+											</p>
+											<p className='font-semibold'>
+												{formatDeferredPaymentDate(document.issue_date)}
+											</p>
+										</div>
+										<div>
+											<p className='text-sm text-zinc-500'>
+												Fecha de vencimiento
+											</p>
+											<p className='font-semibold'>
+												{formatDeferredPaymentDate(document.due_date)}
+											</p>
+										</div>
+									</div>
+								</CardBody>
+							</Card>
+							<Card className='border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/60'>
+								<CardBody className='space-y-4 p-5'>
+									<div>
+										<p className='font-semibold'>Responsables de cobranza</p>
 										<p className='text-sm text-zinc-500'>
-											No hay responsables asignados.
+											Reciben los recordatorios de cobranza junto al equipo de
+											cobranza.
 										</p>
-									)}
-								</div>
-							</CardBody>
-						</Card>
-						<Card className='border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/60'>
-							<CardBody className='space-y-2 p-5'>
-								<p className='font-semibold'>Nota del documento</p>
-								<p className='whitespace-pre-wrap text-sm text-zinc-600 dark:text-zinc-300'>
-									{document.notes ?? 'Sin observaciones registradas.'}
-								</p>
-							</CardBody>
-						</Card>
-						<DeferredPaymentItemsSection items={document.items} />
-						<DeferredPaymentPaymentsSection payments={document.payments} />
-						<DeferredPaymentAttachmentsSection attachments={document.attachments} />
-					</>
-				)}
-			</OffCanvasBody>
-			<OffCanvasFooter
-				className={
-					document && !error
-						? 'border-t border-zinc-200 bg-white px-6 py-4 dark:border-zinc-800 dark:bg-zinc-900'
-						: 'hidden'
-				}>
-				{document && !error ? (
-					<DeferredPaymentActionsFooter
-						branchId={branch.branchId}
-						subsidiaryId={branch.subsidiaryId}
-						status={document.status}
-						onEdit={() => onEdit(document)}
-					/>
-				) : (
-					<span />
-				)}
-			</OffCanvasFooter>
-		</OffCanvas>
+									</div>
+									<div className='flex flex-wrap gap-3'>
+										{document.assignees.map((assignee) => (
+											<div
+												key={assignee.id}
+												className='flex min-w-0 items-center gap-3 rounded-xl border border-zinc-200 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950'>
+												<Avatar
+													src={assignee.avatar_url ?? undefined}
+													name={assignee.name}
+													className='h-10 w-10'
+												/>
+												<div className='min-w-0'>
+													<p className='truncate text-sm font-semibold'>
+														{assignee.name}
+													</p>
+													<p className='truncate text-xs text-zinc-500'>
+														{assignee.email}
+													</p>
+												</div>
+											</div>
+										))}
+										{document.assignees.length === 0 && (
+											<p className='text-sm text-zinc-500'>
+												No hay responsables asignados.
+											</p>
+										)}
+									</div>
+								</CardBody>
+							</Card>
+							<Card className='border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/60'>
+								<CardBody className='space-y-2 p-5'>
+									<p className='font-semibold'>Nota del documento</p>
+									<p className='whitespace-pre-wrap text-sm text-zinc-600 dark:text-zinc-300'>
+										{document.notes ?? 'Sin observaciones registradas.'}
+									</p>
+								</CardBody>
+							</Card>
+							<DeferredPaymentItemsSection items={document.items} />
+							<DeferredPaymentPaymentsSection
+								payments={document.payments}
+								branchId={branch.branchId}
+								subsidiaryId={branch.subsidiaryId}
+								voidingPaymentId={paymentActions.state.voidingPaymentId}
+								onVoid={setPaymentToVoid}
+							/>
+							<DeferredPaymentAttachmentsSection attachments={document.attachments} />
+						</>
+					)}
+				</OffCanvasBody>
+				<OffCanvasFooter
+					className={
+						document && !error
+							? 'border-t border-zinc-200 bg-white px-6 py-4 dark:border-zinc-800 dark:bg-zinc-900'
+							: 'hidden'
+					}>
+					{document && !error ? (
+						<DeferredPaymentActionsFooter
+							branchId={branch.branchId}
+							subsidiaryId={branch.subsidiaryId}
+							status={document.status}
+							outstandingAmount={Number(document.outstanding_amount)}
+							busy={paymentActions.state.busy}
+							onRegisterPayment={() => setIsRegisterOpen(true)}
+							onMarkPaid={() => setIsMarkPaidOpen(true)}
+							onEdit={() => onEdit(document)}
+						/>
+					) : (
+						<span />
+					)}
+				</OffCanvasFooter>
+			</OffCanvas>
+			{document && (
+				<RegisterDeferredPaymentModal
+					isOpen={isRegisterOpen}
+					setIsOpen={setIsRegisterOpen}
+					formik={paymentActions.formik}
+					busy={
+						paymentActions.state.recordingPayment ||
+						paymentActions.state.uploadingReceipt
+					}
+					error={paymentActions.state.error}
+					pendingReceipt={paymentActions.state.pendingReceipt !== null}
+					onRetryReceipt={() => {
+						paymentActions.actions.retryReceipt().catch(() => undefined);
+					}}
+				/>
+			)}
+			{document && (
+				<ConfirmDeferredPaymentActionModal
+					isOpen={isMarkPaidOpen}
+					setIsOpen={setIsMarkPaidOpen}
+					title='Marcar documento como pagado'
+					confirmLabel='Marcar pagada'
+					busy={paymentActions.state.markingPaid}
+					onConfirm={() =>
+						paymentActions.actions.markPaid().then((ok) => {
+							if (ok) setIsMarkPaidOpen(false);
+						})
+					}
+					description={
+						<>
+							<p>
+								Saldo restante:{' '}
+								<strong>
+									{formatDeferredPaymentAmount(document.outstanding_amount)}
+								</strong>
+								.
+							</p>
+							<p>
+								Esta acción cerrará el documento y detendrá los recordatorios de
+								cobranza.
+							</p>
+						</>
+					}
+				/>
+			)}
+			{document && paymentToVoid && (
+				<ConfirmDeferredPaymentActionModal
+					isOpen
+					setIsOpen={(open) => {
+						if (!open) setPaymentToVoid(null);
+					}}
+					title='Anular abono'
+					confirmLabel='Anular abono'
+					color='red'
+					busy={paymentActions.state.voidingPaymentId === paymentToVoid.id}
+					onConfirm={() =>
+						paymentActions.actions.voidPayment(paymentToVoid).then((ok) => {
+							if (ok) setPaymentToVoid(null);
+						})
+					}
+					description={
+						<>
+							<p>
+								Monto:{' '}
+								<strong>{formatDeferredPaymentAmount(paymentToVoid.amount)}</strong>
+							</p>
+							<p>
+								Fecha:{' '}
+								<strong>
+									{paymentToVoid.paid_at
+										? formatDeferredPaymentDate(paymentToVoid.paid_at)
+										: 'Sin especificar'}
+								</strong>
+							</p>
+							<p>
+								Se recalcularán el saldo y el estado; esto puede reactivar los
+								recordatorios.
+							</p>
+						</>
+					}
+				/>
+			)}
+		</>
 	);
 };
 

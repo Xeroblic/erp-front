@@ -68,7 +68,7 @@ describe('DeferredPaymentDetailDrawer', () => {
 		expect(screen.getByText('Adjuntos del documento')).toBeInTheDocument();
 		expect(screen.getByText('documento-FD-0002.pdf')).toBeInTheDocument();
 		expect(
-			screen.getByText('Los pagos y la eliminación se habilitarán en los siguientes flujos.'),
+			screen.getByText('Pago parcial: los recordatorios continúan activos.'),
 		).toBeInTheDocument();
 		expect(screen.queryByText(/pago permitido/i)).not.toBeInTheDocument();
 		expect(screen.getByText('Nota del documento')).toBeInTheDocument();
@@ -121,7 +121,7 @@ describe('DeferredPaymentDetailDrawer', () => {
 		renderDrawer(2);
 
 		const fileName = screen.getByTitle(longFileName);
-		const attachmentLink = fileName.closest('a');
+		const attachmentLink = fileName.closest('button');
 		expect(fileName).toHaveClass('truncate');
 		expect(attachmentLink).toHaveClass('w-full', 'min-w-0', 'max-w-full', 'overflow-hidden');
 	});
