@@ -177,7 +177,7 @@ const useDeferredPaymentForm = ({
 					fetchDeferredPayments({ subsidiaryId: effectiveSubsidiaryId, filters }),
 				);
 				const summaryRequest = dispatch(
-					fetchDeferredPaymentsSummary({ subsidiaryId: effectiveSubsidiaryId }),
+					fetchDeferredPaymentsSummary({ subsidiaryId: effectiveSubsidiaryId, filters }),
 				);
 				activeRequestsRef.current = [listRequest, summaryRequest];
 				await Promise.all([listRequest, summaryRequest]);

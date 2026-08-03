@@ -174,7 +174,7 @@ const mapUpdatePayloadToApi = (
 };
 export const fetchDeferredPaymentsSummary = createAsyncThunk<
 	IDeferredPaymentsSummary,
-	{ subsidiaryId: number; filters?: DeferredPaymentApiSummaryParams },
+	{ subsidiaryId: number; filters: DeferredPaymentApiSummaryParams },
 	{ rejectValue: string }
 >(
 	'deferredPayments/fetchSummary',
@@ -182,7 +182,7 @@ export const fetchDeferredPaymentsSummary = createAsyncThunk<
 		try {
 			return await deferredPaymentsService.getSummary(
 				subsidiaryId,
-				mapFiltersToSummaryApiParams(filters ?? {}),
+				mapFiltersToSummaryApiParams(filters),
 				signal,
 			);
 		} catch (error) {

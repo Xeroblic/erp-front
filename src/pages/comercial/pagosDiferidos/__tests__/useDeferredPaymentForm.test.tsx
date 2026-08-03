@@ -5,7 +5,9 @@ import { Provider } from 'react-redux';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { IDeferredPaymentDocument } from '@/interface/deferredPayments.interface';
 import deferredPaymentsService from '@/services/deferredPaymentsService';
-import deferredPaymentsReducer from '@/store/slices/deferredPayments/deferredPaymentsSlice';
+import deferredPaymentsReducer, {
+	setDeferredPaymentsFilters,
+} from '@/store/slices/deferredPayments/deferredPaymentsSlice';
 import useDeferredPaymentForm, {
 	addDaysToDateOnly,
 	mapDeferredPaymentDocumentToForm,
@@ -150,6 +152,11 @@ describe('useDeferredPaymentForm', () => {
 		configureSuccessfulServices();
 		vi.useFakeTimers();
 		const { hook, store } = createHook();
+		act(() => {
+			store.dispatch(
+				setDeferredPaymentsFilters({ status: 'overdue', search: 'andina', page: 1 }),
+			);
+		});
 		await act(async () => {
 			await hook.result.current.formik.setValues({
 				...hook.result.current.formik.values,
@@ -184,6 +191,22 @@ describe('useDeferredPaymentForm', () => {
 		expect(toastSpies.error).not.toHaveBeenCalled();
 		expect(store.getState().deferredPayments.lastMutationCreditLimitExceeded).toBe(true);
 		expect(store.getState().deferredPayments.list.length).toBeGreaterThan(0);
+		expect(deferredPaymentsService.getDocuments).toHaveBeenCalledWith(
+			1,
+			expect.objectContaining({ page: 1, status: 'overdue', search: 'andina' }),
+			expect.any(AbortSignal),
+		);
+		expect(deferredPaymentsService.getSummary).toHaveBeenCalledWith(
+			1,
+			{
+				status: 'overdue',
+				customer_sale_id: undefined,
+				search: 'andina',
+				due_before: undefined,
+				due_after: undefined,
+			},
+			expect.any(AbortSignal),
+		);
 
 		hook.unmount();
 		expect(store.getState().deferredPayments.lastMutationCreditLimitExceeded).toBe(false);
