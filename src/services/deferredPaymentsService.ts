@@ -1,4 +1,4 @@
-import type { AxiosRequestConfig } from 'axios';
+﻿import type { AxiosRequestConfig } from 'axios';
 import type {
 	DeferredPaymentApiListParams,
 	DeferredPaymentApiSummaryParams,
@@ -6,6 +6,7 @@ import type {
 	DeferredPaymentMutationApiResponse,
 	DeferredPaymentsListResponse,
 	IDeferredPaymentAbono,
+	IDeferredPaymentAttachment,
 	IDeferredPaymentCreditProfile,
 	IDeferredPaymentDocument,
 	IDeferredPaymentsSummary,
@@ -210,6 +211,41 @@ const markDocumentPaid = async (
 	return normalizePayment(unwrapResource(response.data));
 };
 
+const uploadDeferredPaymentAttachment = async (
+	subsidiaryId: number,
+	documentId: number,
+	paymentId: number,
+	file: File,
+	signal?: AbortSignal,
+): Promise<IDeferredPaymentAttachment> => {
+	const payload = new FormData();
+	payload.append('file', file);
+	payload.append('deferred_payment_id', String(paymentId));
+	const response = await ApiService.fetchData<
+		ApiResourcePayload<IDeferredPaymentAttachment>,
+		FormData
+	>({
+		url: `${documentUrl(subsidiaryId, documentId)}/attachments`,
+		method: 'post',
+		data: payload,
+		...requestConfig(signal),
+	});
+	ApiService.invalidateCache(documentsUrl(subsidiaryId));
+	return unwrapResource(response.data);
+};
+
+const downloadDeferredPaymentAttachment = async (
+	url: string,
+	signal?: AbortSignal,
+): Promise<Blob> => {
+	const response = await ApiService.fetchData<Blob>({
+		url,
+		method: 'get',
+		responseType: 'blob',
+		...requestConfig(signal),
+	});
+	return response.data;
+};
 const getCreditProfile = async (
 	subsidiaryId: number,
 	customerSaleId: number,
@@ -253,6 +289,8 @@ const deferredPaymentsService = {
 	registerPayment,
 	deletePayment,
 	markDocumentPaid,
+	uploadDeferredPaymentAttachment,
+	downloadDeferredPaymentAttachment,
 	getCreditProfile,
 	updateCreditProfile,
 };

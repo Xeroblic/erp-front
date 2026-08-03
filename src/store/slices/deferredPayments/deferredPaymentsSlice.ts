@@ -1,17 +1,21 @@
-import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+﻿import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type {
 	CreateDeferredPaymentApiPayload,
 	CreateDeferredPaymentPayload,
 	DeferredPaymentApiListParams,
 	DeferredPaymentApiSummaryParams,
 	DeferredPaymentMutationResponse,
+	DeferredPaymentDeleteResponse,
 	DeferredPaymentsFilters,
 	DeferredPaymentsListResponse,
 	DeferredPaymentsPaginationMeta,
+	IDeferredPaymentAbono,
+	IDeferredPaymentAttachment,
 	IDeferredPaymentDocument,
 	IDeferredPaymentListItem,
 	IDeferredPaymentsSummary,
 	UpdateDeferredPaymentApiPayload,
+	RegisterDeferredPaymentPayload,
 	UpdateDeferredPaymentPayload,
 } from '@/interface/deferredPayments.interface';
 import deferredPaymentsService from '@/services/deferredPaymentsService';
@@ -33,13 +37,25 @@ export interface DeferredPaymentsState {
 	loadingDetail: boolean;
 	creating: boolean;
 	updating: boolean;
+	recordingPayment: boolean;
+	uploadingReceipt: boolean;
+	voidingPaymentId: number | null;
+	markingPaid: boolean;
 	error: string | null;
 	errorSummary: string | null;
 	errorDetail: string | null;
 	errorMutation: string | null;
+	errorPayment: string | null;
+	errorReceipt: string | null;
+	errorVoid: string | null;
+	errorMarkPaid: string | null;
 	lastMutationCreditLimitExceeded: boolean;
 	createRequestId: string | null;
 	updateRequestId: string | null;
+	paymentRequestId: string | null;
+	receiptRequestId: string | null;
+	voidRequestId: string | null;
+	markPaidRequestId: string | null;
 	listRequestId: string | null;
 	listSubsidiaryId: number | null;
 	summaryRequestId: string | null;
@@ -59,13 +75,25 @@ const initialState: DeferredPaymentsState = {
 	loadingDetail: false,
 	creating: false,
 	updating: false,
+	recordingPayment: false,
+	uploadingReceipt: false,
+	voidingPaymentId: null,
+	markingPaid: false,
 	error: null,
 	errorSummary: null,
 	errorDetail: null,
 	errorMutation: null,
+	errorPayment: null,
+	errorReceipt: null,
+	errorVoid: null,
+	errorMarkPaid: null,
 	lastMutationCreditLimitExceeded: false,
 	createRequestId: null,
 	updateRequestId: null,
+	paymentRequestId: null,
+	receiptRequestId: null,
+	voidRequestId: null,
+	markPaidRequestId: null,
 	listRequestId: null,
 	listSubsidiaryId: null,
 	summaryRequestId: null,
@@ -270,6 +298,87 @@ export const updateDeferredPayment = createAsyncThunk<
 		}
 	},
 );
+export const registerDeferredPayment = createAsyncThunk<
+	IDeferredPaymentAbono,
+	{ subsidiaryId: number; documentId: number; payload: RegisterDeferredPaymentPayload },
+	{ rejectValue: DeferredPaymentMutationError }
+>(
+	'deferredPayments/registerPayment',
+	async ({ subsidiaryId, documentId, payload }, { rejectWithValue, signal }) => {
+		try {
+			return await deferredPaymentsService.registerPayment(
+				subsidiaryId,
+				documentId,
+				payload,
+				signal,
+			);
+		} catch (error) {
+			if (signal.aborted) throw error;
+			return rejectWithValue(getMutationError(error, 'No se pudo registrar el abono'));
+		}
+	},
+);
+
+export const uploadDeferredPaymentReceipt = createAsyncThunk<
+	IDeferredPaymentAttachment,
+	{ subsidiaryId: number; documentId: number; paymentId: number; file: File },
+	{ rejectValue: DeferredPaymentMutationError }
+>(
+	'deferredPayments/uploadReceipt',
+	async ({ subsidiaryId, documentId, paymentId, file }, { rejectWithValue, signal }) => {
+		try {
+			return await deferredPaymentsService.uploadDeferredPaymentAttachment(
+				subsidiaryId,
+				documentId,
+				paymentId,
+				file,
+				signal,
+			);
+		} catch (error) {
+			if (signal.aborted) throw error;
+			return rejectWithValue(getMutationError(error, 'No se pudo subir el comprobante'));
+		}
+	},
+);
+
+export const voidDeferredPayment = createAsyncThunk<
+	DeferredPaymentDeleteResponse,
+	{ subsidiaryId: number; documentId: number; paymentId: number },
+	{ rejectValue: DeferredPaymentMutationError }
+>(
+	'deferredPayments/voidPayment',
+	async ({ subsidiaryId, documentId, paymentId }, { rejectWithValue, signal }) => {
+		try {
+			return await deferredPaymentsService.deletePayment(
+				subsidiaryId,
+				documentId,
+				paymentId,
+				signal,
+			);
+		} catch (error) {
+			if (signal.aborted) throw error;
+			return rejectWithValue(getMutationError(error, 'No se pudo anular el abono'));
+		}
+	},
+);
+
+export const markDeferredPaymentPaid = createAsyncThunk<
+	IDeferredPaymentAbono,
+	{ subsidiaryId: number; documentId: number },
+	{ rejectValue: DeferredPaymentMutationError }
+>(
+	'deferredPayments/markPaid',
+	async ({ subsidiaryId, documentId }, { rejectWithValue, signal }) => {
+		try {
+			return await deferredPaymentsService.markDocumentPaid(subsidiaryId, documentId, signal);
+		} catch (error) {
+			if (signal.aborted) throw error;
+			return rejectWithValue(
+				getMutationError(error, 'No se pudo marcar el documento como pagado'),
+			);
+		}
+	},
+);
 const deferredPaymentsSlice = createSlice({
 	name: 'deferredPayments',
 	initialState,
@@ -292,6 +401,10 @@ const deferredPaymentsSlice = createSlice({
 		},
 		clearDeferredPaymentMutation: (state) => {
 			state.errorMutation = null;
+			state.errorPayment = null;
+			state.errorReceipt = null;
+			state.errorVoid = null;
+			state.errorMarkPaid = null;
 			state.lastMutationCreditLimitExceeded = false;
 		},
 	},
@@ -421,6 +534,77 @@ const deferredPaymentsSlice = createSlice({
 				state.errorMutation =
 					action.payload?.message ??
 					'No se pudo actualizar el documento de pago diferido';
+			});
+		builder
+			.addCase(registerDeferredPayment.pending, (state, action) => {
+				state.paymentRequestId = action.meta.requestId;
+				state.recordingPayment = true;
+				state.errorPayment = null;
+			})
+			.addCase(registerDeferredPayment.fulfilled, (state, action) => {
+				if (state.paymentRequestId !== action.meta.requestId) return;
+				state.paymentRequestId = null;
+				state.recordingPayment = false;
+			})
+			.addCase(registerDeferredPayment.rejected, (state, action) => {
+				if (state.paymentRequestId !== action.meta.requestId) return;
+				state.paymentRequestId = null;
+				state.recordingPayment = false;
+				if (!action.meta.aborted)
+					state.errorPayment = action.payload?.message ?? 'No se pudo registrar el abono';
+			})
+			.addCase(uploadDeferredPaymentReceipt.pending, (state, action) => {
+				state.receiptRequestId = action.meta.requestId;
+				state.uploadingReceipt = true;
+				state.errorReceipt = null;
+			})
+			.addCase(uploadDeferredPaymentReceipt.fulfilled, (state, action) => {
+				if (state.receiptRequestId !== action.meta.requestId) return;
+				state.receiptRequestId = null;
+				state.uploadingReceipt = false;
+			})
+			.addCase(uploadDeferredPaymentReceipt.rejected, (state, action) => {
+				if (state.receiptRequestId !== action.meta.requestId) return;
+				state.receiptRequestId = null;
+				state.uploadingReceipt = false;
+				if (!action.meta.aborted)
+					state.errorReceipt =
+						action.payload?.message ?? 'No se pudo subir el comprobante';
+			})
+			.addCase(voidDeferredPayment.pending, (state, action) => {
+				state.voidRequestId = action.meta.requestId;
+				state.voidingPaymentId = action.meta.arg.paymentId;
+				state.errorVoid = null;
+			})
+			.addCase(voidDeferredPayment.fulfilled, (state, action) => {
+				if (state.voidRequestId !== action.meta.requestId) return;
+				state.voidRequestId = null;
+				state.voidingPaymentId = null;
+			})
+			.addCase(voidDeferredPayment.rejected, (state, action) => {
+				if (state.voidRequestId !== action.meta.requestId) return;
+				state.voidRequestId = null;
+				state.voidingPaymentId = null;
+				if (!action.meta.aborted)
+					state.errorVoid = action.payload?.message ?? 'No se pudo anular el abono';
+			})
+			.addCase(markDeferredPaymentPaid.pending, (state, action) => {
+				state.markPaidRequestId = action.meta.requestId;
+				state.markingPaid = true;
+				state.errorMarkPaid = null;
+			})
+			.addCase(markDeferredPaymentPaid.fulfilled, (state, action) => {
+				if (state.markPaidRequestId !== action.meta.requestId) return;
+				state.markPaidRequestId = null;
+				state.markingPaid = false;
+			})
+			.addCase(markDeferredPaymentPaid.rejected, (state, action) => {
+				if (state.markPaidRequestId !== action.meta.requestId) return;
+				state.markPaidRequestId = null;
+				state.markingPaid = false;
+				if (!action.meta.aborted)
+					state.errorMarkPaid =
+						action.payload?.message ?? 'No se pudo marcar el documento como pagado';
 			});
 	},
 });

@@ -1,4 +1,4 @@
-export type DeferredPaymentStatus = 'pending' | 'partially_paid' | 'paid';
+﻿export type DeferredPaymentStatus = 'pending' | 'partially_paid' | 'paid';
 export type DeferredPaymentStatusFilter = DeferredPaymentStatus | 'overdue';
 export type DeferredPaymentDocumentType = 'electronic_invoice' | 'invoice' | 'receipt' | 'other';
 export type DeferredPaymentSort = 'due_date';
@@ -66,8 +66,8 @@ export interface IDeferredPaymentAttachment {
 export interface IDeferredPaymentAbono {
 	id: number;
 	amount: string;
-	paid_at: string;
-	method: DeferredPaymentMethod;
+	paid_at: string | null;
+	method: DeferredPaymentMethod | null;
 	notes: string | null;
 	attachments: IDeferredPaymentAttachment[];
 }
@@ -177,9 +177,9 @@ export interface DeferredPaymentMutationApiResponse {
 
 export interface RegisterDeferredPaymentPayload {
 	amount: string;
-	paid_at?: string;
-	method?: DeferredPaymentMethod;
-	notes?: string | null;
+	paid_at: string;
+	method: DeferredPaymentMethod;
+	notes: string | null;
 }
 
 export interface DeferredPaymentDeleteResponse {

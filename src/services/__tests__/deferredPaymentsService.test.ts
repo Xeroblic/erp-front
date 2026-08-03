@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+﻿import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
 	CreateDeferredPaymentApiPayload,
 	DeferredPaymentsListResponse,
@@ -197,6 +197,7 @@ describe('deferredPaymentsService', () => {
 			amount: '300000.00',
 			paid_at: '2026-08-01',
 			method: 'transfer',
+			notes: null,
 		});
 		await deferredPaymentsService.deletePayment(4, 7, 3);
 		await deferredPaymentsService.markDocumentPaid(4, 7);
@@ -205,7 +206,12 @@ describe('deferredPaymentsService', () => {
 			1,
 			expect.objectContaining({
 				url: '/subsidiaries/4/deferred-payments/7/payments',
-				data: { amount: '300000.00', paid_at: '2026-08-01', method: 'transfer' },
+				data: {
+					amount: '300000.00',
+					paid_at: '2026-08-01',
+					method: 'transfer',
+					notes: null,
+				},
 			}),
 		);
 		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(

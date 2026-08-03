@@ -1,4 +1,4 @@
-/**
+﻿/**
  *  ARCHIVO TEMPORAL DE COMPATIBILIDAD
  *
  * Este archivo mantiene las constantes ERP_PERMISSIONS para evitar que se rompan
@@ -75,8 +75,8 @@ export const ERP_PERMISSIONS = {
 		CREATE: 'create-deferred-payment',
 		UPDATE: 'edit-deferred-payment',
 		DELETE: 'delete-deferred-payment',
-		RECORD_PAYMENT: 'record-deferred-payment',
-		MARK_PAID: 'mark-paid-deferred-payment',
+		RECORD_PAYMENT: 'register-deferred-payment',
+		MARK_PAID: 'register-deferred-payment',
 	},
 
 	QUOTES: {
