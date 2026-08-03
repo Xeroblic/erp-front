@@ -56,14 +56,16 @@ export const useDeferredPaymentActions = (
 		async (paymentId: number, file: File) => {
 			if (subsidiaryId === null) return false;
 			try {
-				await dispatch(
+				const request = dispatch(
 					uploadDeferredPaymentReceipt({
 						subsidiaryId,
 						documentId: document.id,
 						paymentId,
 						file,
 					}),
-				).unwrap();
+				);
+				requests.current.push(request);
+				await request.unwrap();
 				setPendingReceipt(null);
 				refresh();
 				return true;
@@ -86,7 +88,7 @@ export const useDeferredPaymentActions = (
 		onSubmit: async (values) => {
 			if (subsidiaryId === null || recordingPayment || uploadingReceipt) return;
 			try {
-				const payment = await dispatch(
+				const request = dispatch(
 					registerDeferredPayment({
 						subsidiaryId,
 						documentId: document.id,
@@ -97,7 +99,9 @@ export const useDeferredPaymentActions = (
 							notes: values.notes.trim() || null,
 						},
 					}),
-				).unwrap();
+				);
+				requests.current.push(request);
+				const payment = await request.unwrap();
 				refresh();
 				if (values.receipt && !(await uploadReceipt(payment.id, values.receipt))) return;
 				formik.resetForm({
@@ -119,13 +123,15 @@ export const useDeferredPaymentActions = (
 		async (payment: IDeferredPaymentAbono) => {
 			if (subsidiaryId === null || voidingPaymentId !== null) return false;
 			try {
-				await dispatch(
+				const request = dispatch(
 					voidDeferredPayment({
 						subsidiaryId,
 						documentId: document.id,
 						paymentId: payment.id,
 					}),
-				).unwrap();
+				);
+				requests.current.push(request);
+				await request.unwrap();
 				refresh();
 				return true;
 			} catch {
@@ -137,9 +143,11 @@ export const useDeferredPaymentActions = (
 	const markPaid = useCallback(async () => {
 		if (subsidiaryId === null || markingPaid) return false;
 		try {
-			await dispatch(
+			const request = dispatch(
 				markDeferredPaymentPaid({ subsidiaryId, documentId: document.id }),
-			).unwrap();
+			);
+			requests.current.push(request);
+			await request.unwrap();
 			refresh();
 			return true;
 		} catch {
