@@ -7,6 +7,9 @@ import { DEFERRED_PAYMENT_DETAIL_FIXTURES } from './deferredPaymentsTestData';
 import DeferredPaymentDetailDrawer from '../components/drawers/DeferredPaymentDetailDrawer';
 import useDeferredPaymentDetail from '../hooks/useDeferredPaymentDetail';
 
+vi.mock('react-i18next', () => ({
+	useTranslation: () => ({ i18n: { dir: () => 'ltr' } }),
+}));
 vi.mock('@/components/authorization/PermissionGuard', () => ({
 	default: ({ children }: { children: React.ReactNode }) => children,
 }));
@@ -84,6 +87,7 @@ describe('DeferredPaymentDetailDrawer', () => {
 		fireEvent.mouseDown(amountInput);
 		fireEvent.change(amountInput, { target: { value: '10000' } });
 
+		expect(screen.getByPlaceholderText('dd-mm-aaaa')).toBeInTheDocument();
 		expect(screen.getByRole('dialog', { name: 'Registrar abono' })).toBeInTheDocument();
 		expect(amountInput).toHaveValue(10000);
 		expect(onClose).not.toHaveBeenCalled();

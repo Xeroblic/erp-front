@@ -2,6 +2,7 @@ import React from 'react';
 import type { FormikProps } from 'formik';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
+import DateInput from '@/components/form/DateInput';
 import Input from '@/components/form/Input';
 import Label from '@/components/form/Label';
 import Select from '@/components/form/Select';
@@ -92,16 +93,22 @@ const RegisterDeferredPaymentModal: React.FC<RegisterDeferredPaymentModalProps> 
 					</div>
 					<div>
 						<Label htmlFor='paid_at'>Fecha del abono</Label>
-						<Input
+						<DateInput
 							id='paid_at'
 							name='paid_at'
-							type='date'
 							value={formik.values.paid_at}
-							onChange={formik.handleChange}
-							onBlur={formik.handleBlur}
+							placeholder='dd-mm-aaaa'
+							maxYear={new Date().getFullYear()}
+							maxDate={new Date()}
 							disabled={busy || pendingReceipt}
-							{...feedback(formik, 'paid_at')}
+							onChange={formik.handleChange}
+							onBlur={() => {
+								formik.setFieldTouched('paid_at', true).catch(() => undefined);
+							}}
 						/>
+						{formik.touched.paid_at && formik.errors.paid_at && (
+							<p className='mt-1 text-sm text-red-600'>{formik.errors.paid_at}</p>
+						)}
 					</div>
 					<div>
 						<Label htmlFor='method'>Método</Label>
