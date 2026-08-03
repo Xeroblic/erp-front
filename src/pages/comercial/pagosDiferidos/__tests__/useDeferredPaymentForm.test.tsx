@@ -11,10 +11,10 @@ import useDeferredPaymentForm, {
 	mapDeferredPaymentDocumentToForm,
 	mapDeferredPaymentFormToPayload,
 } from '../hooks/useDeferredPaymentForm';
-import { DEFERRED_PAYMENT_DOCUMENT_FIXTURES } from './deferredPaymentTestFixtures';
+import DEFERRED_PAYMENT_DOCUMENT_FIXTURES from './deferredPaymentTestFixtures';
 
 const createMutationSpy = vi.hoisted(() => vi.fn());
-const mutationFailure = vi.hoisted(() => ({ error: null as unknown }));
+const mutationFailure = vi.hoisted<{ error: Error | null }>(() => ({ error: null }));
 const mutationGate = vi.hoisted(() => ({ wait: null as Promise<void> | null }));
 const toastSpies = vi.hoisted(() => ({ success: vi.fn(), warn: vi.fn(), error: vi.fn() }));
 const branchContext = vi.hoisted(() => ({ subsidiaryId: 1 as number | null }));
@@ -268,14 +268,14 @@ describe('useDeferredPaymentForm', () => {
 	});
 	it('asocia los errores de validación del backend con sus campos', async () => {
 		configureSuccessfulServices();
-		mutationFailure.error = {
+		mutationFailure.error = Object.assign(new Error('Los datos enviados no son válidos.'), {
 			response: {
 				data: {
 					message: 'Los datos enviados no son válidos.',
 					errors: { document_number: ['El número de documento ya está registrado.'] },
 				},
 			},
-		};
+		});
 		const { hook } = createHook();
 		await act(async () => {
 			await hook.result.current.formik.setValues({

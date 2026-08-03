@@ -8,7 +8,7 @@ import customerSalesReducer from '@/store/slices/customerSales/customerSalesSlic
 import deferredPaymentsReducer from '@/store/slices/deferredPayments/deferredPaymentsSlice';
 import usersAdminReducer from '@/store/slices/usersAdmin/usersAdminSlice';
 import CreateEditDeferredPaymentModal from '../components/modals/CreateEditDeferredPaymentModal';
-import { DEFERRED_PAYMENT_DOCUMENT_FIXTURES } from './deferredPaymentTestFixtures';
+import DEFERRED_PAYMENT_DOCUMENT_FIXTURES from './deferredPaymentTestFixtures';
 
 const toastSpies = vi.hoisted(() => ({
 	error: vi.fn(),

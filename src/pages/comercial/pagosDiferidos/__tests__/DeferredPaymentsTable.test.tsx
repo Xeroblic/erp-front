@@ -59,7 +59,7 @@ describe('DeferredPaymentsTable', () => {
 		const paidRow = { ...paidDocument!, days_until_due: -12 };
 		render(
 			<DeferredPaymentsTable
-				rows={[paidRow!]}
+				rows={[paidRow]}
 				meta={null}
 				loading={false}
 				hasError={false}

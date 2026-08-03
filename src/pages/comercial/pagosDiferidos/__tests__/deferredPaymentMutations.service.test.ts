@@ -1,9 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type {
-	CreateDeferredPaymentPayload,
-	IDeferredPaymentDocument,
-} from '@/interface/deferredPayments.interface';
+import type { CreateDeferredPaymentPayload } from '@/interface/deferredPayments.interface';
 import { DEFERRED_PAYMENT_DETAIL_FIXTURES } from './deferredPaymentsTestData';
 import deferredPaymentsReducer, {
 	createDeferredPayment,
@@ -52,7 +49,7 @@ describe('ZF-7 mutaciones mediante el servicio', () => {
 	});
 
 	it('adapta y envía el formulario de creación al servicio real', async () => {
-		const document = DEFERRED_PAYMENT_DETAIL_FIXTURES[1] as IDeferredPaymentDocument;
+		const document = DEFERRED_PAYMENT_DETAIL_FIXTURES[1];
 		serviceSpies.createDocument.mockResolvedValue({
 			document,
 			credit_limit_exceeded: true,
@@ -91,7 +88,7 @@ describe('ZF-7 mutaciones mediante el servicio', () => {
 	});
 
 	it('envía un PATCH parcial sin inventar total cuando no cambian los ítems', async () => {
-		const document = DEFERRED_PAYMENT_DETAIL_FIXTURES[2] as IDeferredPaymentDocument;
+		const document = DEFERRED_PAYMENT_DETAIL_FIXTURES[2];
 		serviceSpies.updateDocument.mockResolvedValue({
 			document,
 			credit_limit_exceeded: true,

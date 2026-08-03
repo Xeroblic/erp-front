@@ -39,8 +39,10 @@ const createDocument = (
 	attachments: [],
 });
 
-export const DEFERRED_PAYMENT_DOCUMENT_FIXTURES = [
+const DEFERRED_PAYMENT_DOCUMENT_FIXTURES = [
 	createDocument(1, 'pending'),
 	createDocument(2, 'partially_paid'),
 	createDocument(3, 'paid'),
 ] satisfies IDeferredPaymentDocument[];
+
+export default DEFERRED_PAYMENT_DOCUMENT_FIXTURES;
