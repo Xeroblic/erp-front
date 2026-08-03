@@ -60,6 +60,40 @@ describe('ZF-7 formulario de pago diferido', () => {
 		});
 	});
 
+	it('no valida la orden de compra cuando está vacía o ausente', async () => {
+		const values = createDeferredPaymentInitialValues('2026-07-31');
+		const validDocument = {
+			...values,
+			customer_sale_id: 1,
+			document_number: 'FD-SIN-OC',
+			items: [
+				{
+					...values.items[0],
+					code: 'SERV',
+					description: 'Servicio sin orden de compra',
+					quantity: 1,
+					unit_price: 1000,
+				},
+			],
+		};
+
+		await expect(
+			DeferredPaymentDocumentSchema.validate({ ...validDocument, purchase_order: '' }),
+		).resolves.toBeDefined();
+		await expect(
+			DeferredPaymentDocumentSchema.validate({
+				...validDocument,
+				purchase_order: undefined,
+			}),
+		).resolves.toBeDefined();
+		await expect(
+			DeferredPaymentDocumentSchema.validate({
+				...validDocument,
+				purchase_order: 'OC-'.padEnd(101, 'X'),
+			}),
+		).rejects.toThrow('La orden de compra no puede superar los 100 caracteres');
+	});
+
 	it('permite ítems gratuitos cuando el total del documento es positivo', async () => {
 		await expect(
 			DeferredPaymentDocumentSchema.validate({

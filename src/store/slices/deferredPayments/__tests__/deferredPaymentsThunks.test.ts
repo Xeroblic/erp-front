@@ -18,7 +18,6 @@ const serviceSpies = vi.hoisted(() => ({
 	getSummary: vi.fn(),
 }));
 
-vi.mock('@/store/slices/deferredPayments/deferredPaymentsConfig', () => ({ default: false }));
 vi.mock('@/services/deferredPaymentsService', () => ({ default: serviceSpies }));
 
 const listResponse: DeferredPaymentsListResponse = {
@@ -76,10 +75,27 @@ describe('thunks API de pagos diferidos', () => {
 		serviceSpies.getSummary.mockResolvedValue(summary);
 		const store = createStore();
 
+		const filters = {
+			...DEFAULT_DEFERRED_PAYMENTS_FILTERS,
+			page: 3,
+			per_page: 50,
+			status: 'overdue' as const,
+			search: 'FAC-0019',
+		};
 		await expect(
-			store.dispatch(fetchDeferredPaymentsSummary({ subsidiaryId: 4 })).unwrap(),
+			store.dispatch(fetchDeferredPaymentsSummary({ subsidiaryId: 4, filters })).unwrap(),
 		).resolves.toEqual(summary);
-		expect(serviceSpies.getSummary).toHaveBeenCalledWith(4, expect.any(AbortSignal));
+		expect(serviceSpies.getSummary).toHaveBeenCalledWith(
+			4,
+			{
+				status: 'overdue',
+				customer_sale_id: undefined,
+				search: 'FAC-0019',
+				due_before: undefined,
+				due_after: undefined,
+			},
+			expect.any(AbortSignal),
+		);
 		expect(store.getState().summary).toEqual(summary);
 	});
 	it('carga el detalle desde el servicio usando la subsidiaria efectiva', async () => {

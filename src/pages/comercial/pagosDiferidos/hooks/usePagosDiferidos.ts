@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDebounce } from 'use-debounce';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
-import type { DeferredPaymentsFilters } from '@/interface/deferredPayments.interface';
+import type {
+	DeferredPaymentApiSummaryParams,
+	DeferredPaymentsFilters,
+} from '@/interface/deferredPayments.interface';
 import { useAppDispatch, useAppSelector } from '@/store';
-import USE_DEFERRED_PAYMENTS_MOCK from '@/store/slices/deferredPayments/deferredPaymentsConfig';
 import {
 	fetchDeferredPayments,
 	fetchDeferredPaymentsSummary,
@@ -27,16 +29,15 @@ const usePagosDiferidos = () => {
 	const search = values.search ?? '';
 	const [debouncedSearch] = useDebounce(search, 300);
 	const isSearchDebouncing = search !== debouncedSearch;
-	const effectiveSubsidiaryId = subsidiaryId ?? (USE_DEFERRED_PAYMENTS_MOCK ? 0 : null);
+	const effectiveSubsidiaryId = subsidiaryId;
 	const hasDataContext = effectiveSubsidiaryId !== null;
 	const hasInvalidDateRange = Boolean(
 		values.due_after && values.due_before && values.due_after > values.due_before,
 	);
-
 	const isSubsidiaryChange =
 		listSubsidiaryId !== null && listSubsidiaryId !== effectiveSubsidiaryId;
 	const requestPage = isSubsidiaryChange ? 1 : values.page;
-	const filtersForRequest = useMemo<DeferredPaymentsFilters>(
+	const listFiltersForRequest = useMemo<DeferredPaymentsFilters>(
 		() => ({
 			page: requestPage,
 			per_page: values.per_page,
@@ -58,35 +59,61 @@ const usePagosDiferidos = () => {
 			values.status,
 		],
 	);
+	const summaryFiltersForRequest = useMemo<DeferredPaymentApiSummaryParams>(
+		() => ({
+			status: values.status,
+			customer_sale_id: values.customer_sale_id,
+			due_after: values.due_after,
+			due_before: values.due_before,
+			search: debouncedSearch || undefined,
+		}),
+		[
+			debouncedSearch,
+			values.customer_sale_id,
+			values.due_after,
+			values.due_before,
+			values.status,
+		],
+	);
 
 	useEffect(() => {
 		if (isSubsidiaryChange) setSelectedId(null);
 	}, [isSubsidiaryChange]);
 
 	useEffect(() => {
-		if (effectiveSubsidiaryId === null || isSearchDebouncing) return undefined;
-		const request = dispatch(
-			fetchDeferredPaymentsSummary({ subsidiaryId: effectiveSubsidiaryId }),
+		if (effectiveSubsidiaryId === null || hasInvalidDateRange || isSearchDebouncing)
+			return undefined;
+		const listRequest = dispatch(
+			fetchDeferredPayments({
+				subsidiaryId: effectiveSubsidiaryId,
+				filters: listFiltersForRequest,
+			}),
 		);
-		return () => request.abort();
-	}, [dispatch, effectiveSubsidiaryId, isSearchDebouncing]);
+		return () => listRequest.abort();
+	}, [
+		dispatch,
+		effectiveSubsidiaryId,
+		listFiltersForRequest,
+		hasInvalidDateRange,
+		isSearchDebouncing,
+	]);
 
 	useEffect(() => {
 		if (effectiveSubsidiaryId === null || hasInvalidDateRange || isSearchDebouncing)
 			return undefined;
-		const request = dispatch(
-			fetchDeferredPayments({
+		const summaryRequest = dispatch(
+			fetchDeferredPaymentsSummary({
 				subsidiaryId: effectiveSubsidiaryId,
-				filters: filtersForRequest,
+				filters: summaryFiltersForRequest,
 			}),
 		);
-		return () => request.abort();
+		return () => summaryRequest.abort();
 	}, [
 		dispatch,
 		effectiveSubsidiaryId,
-		filtersForRequest,
 		hasInvalidDateRange,
 		isSearchDebouncing,
+		summaryFiltersForRequest,
 	]);
 
 	const setSearch = useCallback(
@@ -112,36 +139,41 @@ const usePagosDiferidos = () => {
 	const openDetail = useCallback((id: number) => setSelectedId(id), []);
 	const closeDetail = useCallback(() => setSelectedId(null), []);
 	const retrySummary = useCallback(() => {
-		if (effectiveSubsidiaryId === null || isSearchDebouncing) return undefined;
-		return dispatch(fetchDeferredPaymentsSummary({ subsidiaryId: effectiveSubsidiaryId }));
-	}, [dispatch, effectiveSubsidiaryId, isSearchDebouncing]);
+		if (effectiveSubsidiaryId === null || hasInvalidDateRange || isSearchDebouncing)
+			return undefined;
+		return dispatch(
+			fetchDeferredPaymentsSummary({
+				subsidiaryId: effectiveSubsidiaryId,
+				filters: summaryFiltersForRequest,
+			}),
+		);
+	}, [
+		dispatch,
+		effectiveSubsidiaryId,
+		hasInvalidDateRange,
+		isSearchDebouncing,
+		summaryFiltersForRequest,
+	]);
 	const retryList = useCallback(() => {
 		if (effectiveSubsidiaryId === null || hasInvalidDateRange || isSearchDebouncing)
 			return undefined;
 		return dispatch(
 			fetchDeferredPayments({
 				subsidiaryId: effectiveSubsidiaryId,
-				filters: filtersForRequest,
+				filters: listFiltersForRequest,
 			}),
 		);
 	}, [
 		dispatch,
 		effectiveSubsidiaryId,
-		filtersForRequest,
+		listFiltersForRequest,
 		hasInvalidDateRange,
 		isSearchDebouncing,
 	]);
 
 	return {
 		data: { list, summary, meta },
-		state: {
-			loading,
-			loadingSummary,
-			error,
-			errorSummary,
-			hasDataContext,
-			isMockMode: USE_DEFERRED_PAYMENTS_MOCK,
-		},
+		state: { loading, loadingSummary, error, errorSummary, hasDataContext },
 		filters: {
 			values,
 			search,

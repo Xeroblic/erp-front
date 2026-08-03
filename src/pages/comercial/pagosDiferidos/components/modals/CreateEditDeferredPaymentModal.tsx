@@ -2,7 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { FieldArray, Form, FormikProvider } from 'formik';
 import type { InputActionMeta } from 'react-select';
 import { useDebounce } from 'use-debounce';
+import { toast } from 'react-toastify';
 import type { IDeferredPaymentDocument } from '@/interface/deferredPayments.interface';
+import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -19,14 +21,12 @@ import SelectReact, { type TSelectOption } from '@/components/form/SelectReact';
 import Textarea from '@/components/form/Textarea';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchCustomersOverviewThunk } from '@/store/slices/customerSales/customerSalesSlice';
-import USE_DEFERRED_PAYMENTS_MOCK from '@/store/slices/deferredPayments/deferredPaymentsConfig';
-import { DEFERRED_PAYMENT_DETAILS_MOCK } from '@/store/slices/deferredPayments/deferredPaymentsMock';
 import { fetchUsers } from '@/store/slices/usersAdmin/usersAdminSlice';
 import { formatCLP } from '@/utils/format.utils';
 import DeferredPaymentField from '../parts/DeferredPaymentField';
 import DeferredPaymentSerialsInput from '../parts/DeferredPaymentSerialsInput';
 import useDeferredPaymentForm from '../../hooks/useDeferredPaymentForm';
-import { createEmptyDeferredPaymentItem } from '../../types';
+import { createEmptyDeferredPaymentItem, DEFERRED_PAYMENT_TOTAL_ERROR } from '../../types';
 import { DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS } from '../../utils';
 
 interface CreateEditDeferredPaymentModalProps {
@@ -41,12 +41,21 @@ interface CustomerOptionData {
 	label: string;
 	isActive: boolean;
 	paymentTermDays: number;
-	creditLimit: number | null;
 }
 
 const MAX_DATE = new Date(2100, 11, 31);
 const MAX_YEAR = 2100;
-const DEFAULT_CREDIT_LIMIT = 2_000_000;
+
+const hasValidationErrorOtherThan = (value: unknown, excludedMessage: string): boolean => {
+	if (typeof value === 'string') return value !== excludedMessage;
+	if (Array.isArray(value))
+		return value.some((entry) => hasValidationErrorOtherThan(entry, excludedMessage));
+	if (value !== null && typeof value === 'object')
+		return Object.values(value).some((entry) =>
+			hasValidationErrorOtherThan(entry, excludedMessage),
+		);
+	return false;
+};
 const documentTypeOptions: TSelectOption[] = Object.entries(
 	DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS,
 ).map(([value, label]) => ({ value, label }));
@@ -74,7 +83,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const customersLoading = useAppSelector((state) => state.customerSales.loading);
 	const users = useAppSelector((state) => state.usersAdmin.users);
 	const usersLoading = useAppSelector((state) => state.usersAdmin.loading.users);
-	const listSubsidiaryId = useAppSelector((state) => state.deferredPayments.listSubsidiaryId);
+	const { subsidiaryId } = useCurrentBranch();
 	const [paymentTermDays, setPaymentTermDays] = useState(30);
 	const [customerSearch, setCustomerSearch] = useState('');
 	const [debouncedCustomerSearch] = useDebounce(customerSearch, 300);
@@ -93,43 +102,34 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	});
 
 	useEffect(() => {
-		if (!isOpen || USE_DEFERRED_PAYMENTS_MOCK || listSubsidiaryId === null) return undefined;
+		if (!isOpen || subsidiaryId === null) return undefined;
 		const customerRequest = dispatch(
 			fetchCustomersOverviewThunk({
-				subsidiary: listSubsidiaryId,
+				subsidiary: subsidiaryId,
 				per_page: 100,
 				params: { q: debouncedCustomerSearch.trim() || undefined },
 			}),
 		);
 		return () => customerRequest.abort();
-	}, [debouncedCustomerSearch, dispatch, isOpen, listSubsidiaryId]);
+	}, [debouncedCustomerSearch, dispatch, isOpen, subsidiaryId]);
 
 	useEffect(() => {
-		if (!isOpen || USE_DEFERRED_PAYMENTS_MOCK || listSubsidiaryId === null) return undefined;
+		if (!isOpen || subsidiaryId === null) return undefined;
 		const usersRequest = dispatch(
-			fetchUsers({ subsidiary_id: listSubsidiaryId, status: 'active', per_page: 100 }),
+			fetchUsers({ subsidiary_id: subsidiaryId, status: 'active', per_page: 100 }),
 		);
 		return () => usersRequest.abort();
-	}, [dispatch, isOpen, listSubsidiaryId]);
+	}, [dispatch, isOpen, subsidiaryId]);
 
 	const customerData = useMemo<CustomerOptionData[]>(() => {
-		const remoteCustomers = USE_DEFERRED_PAYMENTS_MOCK
-			? Object.values(DEFERRED_PAYMENT_DETAILS_MOCK).map((mockDocument) => ({
-					id: mockDocument.customer.id,
-					label: `${mockDocument.customer.billing_company} · ${mockDocument.customer.rut}`,
-					isActive: mockDocument.customer.id !== 3,
-					paymentTermDays: 30,
-					creditLimit: DEFAULT_CREDIT_LIMIT,
-				}))
-			: customers.map((customer) => ({
-					id: customer.id,
-					label: [customer.name, customer.rut]
-						.filter((value): value is string => Boolean(value))
-						.join(' · '),
-					isActive: customer.is_active,
-					paymentTermDays: 30,
-					creditLimit: null,
-				}));
+		const remoteCustomers = customers.map((customer) => ({
+			id: customer.id,
+			label: [customer.name, customer.rut]
+				.filter((value): value is string => Boolean(value))
+				.join(' · '),
+			isActive: customer.is_active,
+			paymentTermDays: 30,
+		}));
 		const editedCustomer =
 			mode === 'edit' && deferredPaymentDocument
 				? {
@@ -143,7 +143,6 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 							.join(' · '),
 						isActive: true,
 						paymentTermDays: 30,
-						creditLimit: null,
 					}
 				: null;
 		return Array.from(
@@ -160,27 +159,16 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		() => customerData.map(({ id, label }) => ({ value: String(id), label })),
 		[customerData],
 	);
-	const mockAssignees = useMemo(
-		() =>
-			Array.from(
-				new Map(
-					Object.values(DEFERRED_PAYMENT_DETAILS_MOCK)
-						.flatMap((mockDocument) => mockDocument.assignees)
-						.map((assignee) => [assignee.id, assignee]),
-				).values(),
-			),
-		[],
-	);
 	const assigneeOptions = useMemo<TSelectOption[]>(() => {
-		const remoteOptions = (
-			USE_DEFERRED_PAYMENTS_MOCK ? mockAssignees : users.filter((user) => user.is_active)
-		).map((user) => ({
-			value: String(user.id),
-			label:
-				'name' in user
-					? `${user.name} · ${user.email}`
-					: `${user.first_name} ${user.last_name} · ${user.email}`,
-		}));
+		const remoteOptions = users
+			.filter((user) => user.is_active)
+			.map((user) => ({
+				value: String(user.id),
+				label:
+					'name' in user && typeof user.name === 'string'
+						? `${user.name} · ${user.email}`
+						: `${user.first_name} ${user.last_name} · ${user.email}`,
+			}));
 		const editedOptions =
 			mode === 'edit' && deferredPaymentDocument
 				? deferredPaymentDocument.assignees.map((assignee) => ({
@@ -193,7 +181,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 				[...editedOptions, ...remoteOptions].map((option) => [option.value, option]),
 			).values(),
 		);
-	}, [deferredPaymentDocument, mockAssignees, mode, users]);
+	}, [deferredPaymentDocument, mode, users]);
 	const selectedCustomer = customerData.find(
 		(customer) => customer.id === formik.values.customer_sale_id,
 	);
@@ -202,11 +190,6 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	);
 	const assigneeValue = assigneeOptions.filter((option) =>
 		formik.values.assignee_ids.includes(Number(option.value)),
-	);
-	const exceedsKnownCreditLimit = Boolean(
-		selectedCustomer?.creditLimit !== null &&
-			selectedCustomer?.creditLimit !== undefined &&
-			estimatedTotal > selectedCustomer.creditLimit,
 	);
 	const itemErrors = typeof formik.errors.items === 'string' ? formik.errors.items : undefined;
 	const handleClose = () => {
@@ -226,7 +209,25 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 				</div>
 			</ModalHeader>
 			<FormikProvider value={formik}>
-				<Form className='flex min-h-0 flex-1 flex-col overflow-hidden'>
+				<Form
+					className='flex min-h-0 flex-1 flex-col overflow-hidden'
+					onSubmit={(event) => {
+						event.preventDefault();
+						formik
+							.validateForm()
+							.then((errors) => {
+								if (
+									estimatedTotal <= 0 &&
+									!hasValidationErrorOtherThan(
+										errors,
+										DEFERRED_PAYMENT_TOTAL_ERROR,
+									)
+								)
+									toast.error(DEFERRED_PAYMENT_TOTAL_ERROR);
+								return formik.submitForm();
+							})
+							.catch(() => undefined);
+					}}>
 					<ModalBody className='min-h-0 flex-1 space-y-5 overflow-y-auto bg-zinc-50 dark:bg-zinc-950'>
 						{isPaidEdit && (
 							<Alert color='amber' variant='outline' icon='HeroLockClosed'>
@@ -234,12 +235,6 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 							</Alert>
 						)}
 
-						{exceedsKnownCreditLimit && (
-							<Alert color='amber' variant='outline' icon='HeroExclamationTriangle'>
-								El total supera el límite de crédito conocido del cliente. Puedes
-								guardar, pero conviene revisar la condición comercial.
-							</Alert>
-						)}
 						{selectedCustomer && !selectedCustomer.isActive && (
 							<Alert color='amber' variant='outline' icon='HeroUserMinus'>
 								Este cliente está suspendido. Confirma su situación antes de
@@ -262,9 +257,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 											inputId='customer_sale_id'
 											options={customerOptions}
 											value={customerValue ?? null}
-											isLoading={
-												!USE_DEFERRED_PAYMENTS_MOCK && customersLoading
-											}
+											isLoading={customersLoading}
 											isDisabled={isPaidEdit}
 											placeholder='Busca por razón social o RUT'
 											onInputChange={(
@@ -381,6 +374,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 											name='purchase_order'
 											placeholder='Ej.: OC-12345'
 											value={formik.values.purchase_order ?? ''}
+											maxLength={100}
 											onChange={formik.handleChange}
 											onBlur={formik.handleBlur}
 											disabled={isPaidEdit}
@@ -398,7 +392,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 										isMulti
 										options={assigneeOptions}
 										value={assigneeValue}
-										isLoading={!USE_DEFERRED_PAYMENTS_MOCK && usersLoading}
+										isLoading={usersLoading}
 										isDisabled={isPaidEdit}
 										placeholder='Selecciona responsables'
 										onChange={(value) =>
@@ -510,6 +504,9 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 													</DeferredPaymentField>
 													<DeferredPaymentField
 														name={`items.${index}.unit_price`}
+														hiddenErrorMessage={
+															DEFERRED_PAYMENT_TOTAL_ERROR
+														}
 														label='Precio unitario'
 														className='md:col-span-2'>
 														{({ error, isTouched, isValid }) => (
@@ -528,7 +525,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 															/>
 														)}
 													</DeferredPaymentField>
-													<div className='flex items-end md:col-span-1'>
+													<div className='flex items-start pt-7 md:col-span-1'>
 														<Button
 															type='button'
 															variant='outline'

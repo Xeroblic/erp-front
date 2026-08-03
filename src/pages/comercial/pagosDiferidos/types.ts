@@ -1,6 +1,8 @@
 import * as Yup from 'yup';
 import type { DeferredPaymentDocumentType } from '@/interface/deferredPayments.interface';
 
+export const DEFERRED_PAYMENT_TOTAL_ERROR = 'El total del documento debe ser mayor a 0';
+
 export const DEFERRED_PAYMENT_DOCUMENT_TYPES: readonly DeferredPaymentDocumentType[] = [
 	'electronic_invoice',
 	'invoice',
@@ -90,8 +92,7 @@ export const DeferredPaymentDocumentSchema = Yup.object({
 	purchase_order: Yup.string()
 		.trim()
 		.max(100, 'La orden de compra no puede superar los 100 caracteres')
-		.nullable()
-		.defined(),
+		.nullable(),
 	notes: Yup.string()
 		.trim()
 		.max(1000, 'Las notas no pueden superar los 1000 caracteres')
@@ -110,10 +111,22 @@ export const DeferredPaymentDocumentSchema = Yup.object({
 		.min(1, 'Agrega al menos un ítem al documento')
 		.test(
 			'positive-document-total',
-			'El total del documento debe ser mayor a 0',
-			(items) =>
-				!items ||
-				items.reduce((total, item) => total + item.quantity * item.unit_price, 0) > 0,
+			DEFERRED_PAYMENT_TOTAL_ERROR,
+			function validateDocumentTotal(items) {
+				if (
+					!items ||
+					items.reduce((total, item) => total + item.quantity * item.unit_price, 0) > 0
+				)
+					return true;
+				const zeroPriceIndex = Math.max(
+					0,
+					items.findIndex((item) => Number(item.unit_price) === 0),
+				);
+				return this.createError({
+					path: `${this.path}[${zeroPriceIndex}].unit_price`,
+					message: DEFERRED_PAYMENT_TOTAL_ERROR,
+				});
+			},
 		)
 		.required('Agrega al menos un ítem al documento'),
 });

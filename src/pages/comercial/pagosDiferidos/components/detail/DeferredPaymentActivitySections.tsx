@@ -22,12 +22,14 @@ const AttachmentLink: React.FC<{ attachment: IDeferredPaymentAttachment }> = ({ 
 		href={attachment.url}
 		target='_blank'
 		rel='noreferrer'
-		className='flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-3 py-2 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-800'>
+		className='flex w-full min-w-0 max-w-full items-center gap-3 overflow-hidden rounded-lg border border-zinc-200 bg-white px-3 py-2 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-800'>
 		<span className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-200 dark:bg-zinc-800'>
 			<Icon icon='HeroPaperClip' className='text-zinc-600 dark:text-zinc-300' />
 		</span>
 		<span className='min-w-0 grow'>
-			<span className='block truncate text-sm font-semibold'>{attachment.file_name}</span>
+			<span className='block truncate text-sm font-semibold' title={attachment.file_name}>
+				{attachment.file_name}
+			</span>
 			<span className='block text-xs text-zinc-500'>{formatFileSize(attachment.size)}</span>
 		</span>
 		<Icon icon='HeroArrowDownTray' className='shrink-0 text-zinc-500' />

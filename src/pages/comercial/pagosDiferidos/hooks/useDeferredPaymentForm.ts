@@ -7,7 +7,6 @@ import type {
 } from '@/interface/deferredPayments.interface';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { useAppDispatch, useAppSelector } from '@/store';
-import USE_DEFERRED_PAYMENTS_MOCK from '@/store/slices/deferredPayments/deferredPaymentsConfig';
 import {
 	clearDeferredPaymentMutation,
 	createDeferredPayment,
@@ -64,7 +63,7 @@ export const mapDeferredPaymentDocumentToForm = (
 	document_number: deferredPaymentDocument.document_number,
 	issue_date: deferredPaymentDocument.issue_date,
 	due_date: deferredPaymentDocument.due_date,
-	purchase_order: deferredPaymentDocument.purchase_order,
+	purchase_order: deferredPaymentDocument.purchase_order ?? null,
 	notes: deferredPaymentDocument.notes,
 	assignee_ids: deferredPaymentDocument.assignees.map((assignee) => assignee.id),
 	items: deferredPaymentDocument.items.map((item) => ({
@@ -121,7 +120,7 @@ const useDeferredPaymentForm = ({
 	const dueDateManuallySetRef = useRef(false);
 	const activeSubmissionRef = useRef<symbol | null>(null);
 	const activeRequestsRef = useRef<AbortableRequest[]>([]);
-	const effectiveSubsidiaryId = subsidiaryId ?? (USE_DEFERRED_PAYMENTS_MOCK ? 0 : null);
+	const effectiveSubsidiaryId = subsidiaryId;
 	const latestSubsidiaryIdRef = useRef(effectiveSubsidiaryId);
 	latestSubsidiaryIdRef.current = effectiveSubsidiaryId;
 	const today = useMemo(() => formatLocalDate(new Date()), []);
@@ -178,7 +177,7 @@ const useDeferredPaymentForm = ({
 					fetchDeferredPayments({ subsidiaryId: effectiveSubsidiaryId, filters }),
 				);
 				const summaryRequest = dispatch(
-					fetchDeferredPaymentsSummary({ subsidiaryId: effectiveSubsidiaryId }),
+					fetchDeferredPaymentsSummary({ subsidiaryId: effectiveSubsidiaryId, filters }),
 				);
 				activeRequestsRef.current = [listRequest, summaryRequest];
 				await Promise.all([listRequest, summaryRequest]);

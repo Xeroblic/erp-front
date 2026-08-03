@@ -103,8 +103,16 @@ describe('deferredPaymentsService', () => {
 			.mockResolvedValueOnce({ data: { data: summary } } as never)
 			.mockResolvedValueOnce({ data: { data: document } } as never);
 
-		await expect(deferredPaymentsService.getSummary(4)).resolves.toEqual(summary);
+		const filters = { status: 'overdue' as const, search: 'andina' };
+		await expect(deferredPaymentsService.getSummary(4, filters)).resolves.toEqual(summary);
 		await expect(deferredPaymentsService.getDocument(4, 7)).resolves.toEqual(document);
+		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(
+			1,
+			expect.objectContaining({
+				url: '/subsidiaries/4/deferred-payments/summary',
+				params: filters,
+			}),
+		);
 		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(
 			2,
 			expect.objectContaining({ url: '/subsidiaries/4/deferred-payments/7' }),

@@ -3,11 +3,20 @@ import { configureStore } from '@reduxjs/toolkit';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { IDeferredPaymentDocument } from '@/interface/deferredPayments.interface';
 import customerSalesReducer from '@/store/slices/customerSales/customerSalesSlice';
-import { DEFERRED_PAYMENT_DETAILS_MOCK } from '@/store/slices/deferredPayments/deferredPaymentsMock';
 import deferredPaymentsReducer from '@/store/slices/deferredPayments/deferredPaymentsSlice';
 import usersAdminReducer from '@/store/slices/usersAdmin/usersAdminSlice';
 import CreateEditDeferredPaymentModal from '../components/modals/CreateEditDeferredPaymentModal';
+import DEFERRED_PAYMENT_DOCUMENT_FIXTURES from './deferredPaymentTestFixtures';
+
+const toastSpies = vi.hoisted(() => ({
+	error: vi.fn(),
+	success: vi.fn(),
+	warn: vi.fn(),
+}));
+
+vi.mock('react-toastify', () => ({ toast: toastSpies }));
 
 vi.mock('react-i18next', () => ({
 	useTranslation: () => ({ i18n: { dir: () => 'ltr' } }),
@@ -15,7 +24,6 @@ vi.mock('react-i18next', () => ({
 vi.mock('@/hooks/useAuthorization', () => ({
 	default: () => ({ hasAnyPermission: () => true, isSuperAdmin: true }),
 }));
-vi.mock('@/store/slices/deferredPayments/deferredPaymentsConfig', () => ({ default: true }));
 vi.mock('@/hooks/useCurrentBranch', () => ({
 	useCurrentBranch: () => ({ branchId: 1, subsidiaryId: 1, hasValidBranch: true }),
 }));
@@ -26,14 +34,14 @@ vi.mock('@/store', async () => {
 
 describe('CreateEditDeferredPaymentModal', () => {
 	beforeEach(() => {
+		toastSpies.error.mockClear();
+		toastSpies.success.mockClear();
+		toastSpies.warn.mockClear();
 		const portalRoot = document.createElement('div');
 		portalRoot.id = 'portal-root';
 		document.body.appendChild(portalRoot);
 	});
-	const renderModal = (
-		onClose = vi.fn(),
-		document = null as (typeof DEFERRED_PAYMENT_DETAILS_MOCK)[number] | null,
-	) => {
+	const renderModal = (onClose = vi.fn(), document = null as IDeferredPaymentDocument | null) => {
 		const store = configureStore({
 			reducer: {
 				customerSales: customerSalesReducer,
@@ -91,7 +99,7 @@ describe('CreateEditDeferredPaymentModal', () => {
 		expect(screen.getByLabelText('Número de documento')).toHaveValue('');
 		secondCreate.unmount();
 
-		const savedDocument = DEFERRED_PAYMENT_DETAILS_MOCK[1];
+		const savedDocument = DEFERRED_PAYMENT_DOCUMENT_FIXTURES[1];
 		const firstEdit = renderModal(vi.fn(), savedDocument);
 		fireEvent.change(screen.getByLabelText('Notas (opcional)'), {
 			target: { value: 'BORRADOR NO GUARDADO' },
@@ -112,10 +120,33 @@ describe('CreateEditDeferredPaymentModal', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'Crear documento' }));
 
 		expect(await screen.findByText('Selecciona un cliente')).toBeInTheDocument();
+		expect(toastSpies.error).not.toHaveBeenCalled();
 		expect(screen.getByText('Ingresa el número de documento')).toBeInTheDocument();
 		expect(screen.getByText('Ingresa el código del ítem')).toBeInTheDocument();
 		expect(screen.getByText('Ingresa la descripción del ítem')).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Quitar ítem 1' }).parentElement).toHaveClass(
+			'items-start',
+			'pt-7',
+		);
 	});
+	it('muestra el toast y marca el precio cuando el total cero es el único error', async () => {
+		renderModal(vi.fn(), DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0]);
+		const unitPrice = screen.getByLabelText('Precio unitario');
+		fireEvent.change(unitPrice, { target: { value: '0' } });
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+		expect(
+			screen.queryByText('El total del documento debe ser mayor a 0'),
+		).not.toBeInTheDocument();
+
+		await vi.waitFor(() => {
+			expect(toastSpies.error).toHaveBeenCalledWith(
+				'El total del documento debe ser mayor a 0',
+			);
+		});
+		expect(unitPrice).toHaveClass('!border-red-500');
+	});
+
 	it('permite agregar y quitar seriales del ítem', async () => {
 		renderModal();
 		const serialInput = screen.getByLabelText('Seriales (opcional)');
@@ -135,7 +166,7 @@ describe('CreateEditDeferredPaymentModal', () => {
 	});
 
 	it('precarga notas y seriales al editar un documento', () => {
-		const document = DEFERRED_PAYMENT_DETAILS_MOCK[1];
+		const document = DEFERRED_PAYMENT_DOCUMENT_FIXTURES[1];
 		renderModal(vi.fn(), document);
 
 		expect(screen.getByLabelText('Notas (opcional)')).toHaveValue(document.notes);

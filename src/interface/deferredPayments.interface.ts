@@ -141,6 +141,10 @@ export interface DeferredPaymentApiListParams {
 	due_before?: string;
 	due_after?: string;
 }
+export type DeferredPaymentApiSummaryParams = Pick<
+	DeferredPaymentApiListParams,
+	'status' | 'customer_sale_id' | 'search' | 'due_before' | 'due_after'
+>;
 
 export interface CreateDeferredPaymentApiItemPayload {
 	product_id?: number | null;
