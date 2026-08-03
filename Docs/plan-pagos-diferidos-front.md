@@ -1,7 +1,7 @@
 # Plan frontend — Pagos Diferidos ZF-5, ZF-6 y ZF-7
 
-**Actualizado:** 31-07-2026  
-**Rama:** `feat/pagos-diferidos-zf5-zf7`  
+**Actualizado:** 31-07-2026
+**Rama:** `feat/pagos-diferidos-zf5-zf7`
 **Alcance:** exclusivamente frontend; sin cambios de backend
 
 ## 1. Objetivo
