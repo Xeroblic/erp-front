@@ -94,4 +94,12 @@ describe('ZF-8 validación de abonos', () => {
 			}),
 		).rejects.toThrow('Formato de comprobante no permitido');
 	});
+	it('acepta planillas cuando el navegador no informa un MIME específico', async () => {
+		await expect(
+			createDeferredPaymentActionSchema(100000).validate({
+				...valid,
+				receipt: new File(['contenido'], 'respaldo.xlsx', { type: '' }),
+			}),
+		).resolves.toMatchObject({ receipt: expect.any(File) });
+	});
 });

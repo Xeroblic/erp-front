@@ -167,6 +167,23 @@ export const calculateDeferredPaymentEstimatedTotal = (
 export const DEFERRED_PAYMENT_METHODS = ['transfer', 'deposit', 'check', 'cash', 'other'] as const;
 export const DEFERRED_PAYMENT_RECEIPT_ACCEPT = '.pdf,.jpg,.jpeg,.png,.webp,.xls,.xlsx';
 export const DEFERRED_PAYMENT_RECEIPT_MAX_BYTES = 10 * 1024 * 1024;
+const DEFERRED_PAYMENT_RECEIPT_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'xls', 'xlsx'];
+const DEFERRED_PAYMENT_RECEIPT_MIME_TYPES = [
+	'application/pdf',
+	'image/jpeg',
+	'image/png',
+	'image/webp',
+	'application/vnd.ms-excel',
+	'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+];
+
+const isAllowedDeferredPaymentReceipt = (file: File): boolean => {
+	const extension = file.name.split('.').pop()?.toLowerCase();
+	return (
+		DEFERRED_PAYMENT_RECEIPT_MIME_TYPES.includes(file.type) ||
+		(extension !== undefined && DEFERRED_PAYMENT_RECEIPT_EXTENSIONS.includes(extension))
+	);
+};
 
 export interface DeferredPaymentActionFormValues {
 	amount: string;
@@ -186,16 +203,7 @@ export const deferredPaymentReceiptSchema = Yup.mixed<File>()
 	.test(
 		'receipt-type',
 		'Formato de comprobante no permitido',
-		(file) =>
-			!file ||
-			[
-				'application/pdf',
-				'image/jpeg',
-				'image/png',
-				'image/webp',
-				'application/vnd.ms-excel',
-				'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-			].includes(file.type),
+		(file) => !file || isAllowedDeferredPaymentReceipt(file),
 	);
 
 export const createDeferredPaymentActionSchema = (outstandingAmount: number) =>

@@ -182,7 +182,7 @@ describe('DeferredPaymentDetailDrawer', () => {
 			await within(dialog).findByText('Formato de comprobante no permitido'),
 		).toBeInTheDocument();
 	});
-	it('mantiene disponible el reintento y bloquea el cierre con comprobante pendiente', () => {
+	it('permite cerrar la confirmación con comprobante pendiente para continuar desde el detalle', () => {
 		const setIsOpen = vi.fn();
 		render(
 			<Provider store={store}>
@@ -193,19 +193,18 @@ describe('DeferredPaymentDetailDrawer', () => {
 					description='Documento pagado, comprobante pendiente'
 					confirmLabel='Reintentar comprobante'
 					busy={false}
-					preventClose
 					onConfirm={vi.fn()}
 				/>
 			</Provider>,
 		);
 
 		const dialog = screen.getByRole('dialog', { name: 'Marcar documento como pagado' });
-		expect(within(dialog).getByRole('button', { name: 'Cancelar' })).toBeDisabled();
+		expect(within(dialog).getByRole('button', { name: 'Cancelar' })).toBeEnabled();
 		expect(
 			within(dialog).getByRole('button', { name: 'Reintentar comprobante' }),
 		).toBeEnabled();
 		fireEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
-		expect(setIsOpen).not.toHaveBeenCalled();
+		expect(setIsOpen).toHaveBeenCalledWith(false);
 	});
 	it('entrega el documento vigente al solicitar su edición', () => {
 		const onEdit = vi.fn();

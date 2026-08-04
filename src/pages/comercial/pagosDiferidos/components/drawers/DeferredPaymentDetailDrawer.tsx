@@ -318,6 +318,45 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 								onVoid={setPaymentToVoid}
 							/>
 							<DeferredPaymentAttachmentsSection attachments={document.attachments} />
+							{paymentActions.state.pendingMarkPaidReceipt && (
+								<Alert
+									color='amber'
+									variant='outline'
+									icon='HeroExclamationTriangle'
+									title='Documento pagado, comprobante pendiente'>
+									<div className='space-y-3'>
+										<p>
+											El documento ya fue cerrado. Puedes reintentar el
+											comprobante o descartar este aviso para continuar sin
+											adjuntarlo.
+										</p>
+										<div className='flex flex-wrap gap-2'>
+											<Button
+												size='sm'
+												variant='solid'
+												color='amber'
+												isLoading={paymentActions.state.uploadingReceipt}
+												isDisable={paymentActions.state.uploadingReceipt}
+												onClick={() => {
+													paymentActions.actions
+														.confirmMarkPaid()
+														.catch(() => undefined);
+												}}>
+												Reintentar comprobante
+											</Button>
+											<Button
+												size='sm'
+												variant='outline'
+												isDisable={paymentActions.state.uploadingReceipt}
+												onClick={
+													paymentActions.actions.dismissMarkPaidReceipt
+												}>
+												Descartar aviso
+											</Button>
+										</div>
+									</div>
+								</Alert>
+							)}
 						</>
 					)}
 				</OffCanvasBody>
@@ -334,8 +373,14 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 							status={document.status}
 							outstandingAmount={Number(document.outstanding_amount)}
 							busy={paymentActions.state.busy}
-							onRegisterPayment={() => setIsRegisterOpen(true)}
-							onMarkPaid={() => setIsMarkPaidOpen(true)}
+							onRegisterPayment={() => {
+								paymentActions.actions.clearMutationErrors();
+								setIsRegisterOpen(true);
+							}}
+							onMarkPaid={() => {
+								paymentActions.actions.clearMutationErrors();
+								setIsMarkPaidOpen(true);
+							}}
 							onEdit={() => onEdit(document)}
 						/>
 					) : (
@@ -349,15 +394,8 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 					isOpen={isRegisterOpen}
 					setIsOpen={setIsRegisterOpen}
 					formik={paymentActions.formik}
-					busy={
-						paymentActions.state.recordingPayment ||
-						paymentActions.state.uploadingReceipt
-					}
+					busy={paymentActions.state.recordingPayment}
 					error={paymentActions.state.error}
-					pendingReceipt={paymentActions.state.pendingRegistrationReceipt !== null}
-					onRetryReceipt={() => {
-						paymentActions.actions.retryRegistrationReceipt().catch(() => undefined);
-					}}
 				/>
 			)}
 			{document && isMarkPaidOpen && (
@@ -379,7 +417,6 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 							: 'Marcar pagada'
 					}
 					busy={paymentActions.state.markingPaid || paymentActions.state.uploadingReceipt}
-					preventClose={paymentActions.state.pendingMarkPaidReceipt !== null}
 					onConfirm={() => {
 						paymentActions.actions
 							.confirmMarkPaid()

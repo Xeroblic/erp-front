@@ -60,12 +60,8 @@ beforeEach(() => {
 });
 
 describe('useDeferredPaymentActions', () => {
-	it('registra el abono y luego asocia su comprobante al id devuelto', async () => {
+	it('registra el abono y su comprobante en una única operación atómica', async () => {
 		serviceSpies.registerPayment.mockResolvedValue(payment);
-		serviceSpies.uploadDeferredPaymentAttachment.mockResolvedValue({
-			id: 90,
-			file_name: 'abono.pdf',
-		});
 		const file = new File(['comprobante'], 'abono.pdf', { type: 'application/pdf' });
 		const { result } = renderActions();
 
@@ -90,48 +86,12 @@ describe('useDeferredPaymentActions', () => {
 				paid_at: '2026-08-03',
 				method: 'transfer',
 				notes: null,
+				receipt: file,
 			},
 			expect.any(AbortSignal),
 		);
-		expect(serviceSpies.uploadDeferredPaymentAttachment).toHaveBeenCalledWith(
-			4,
-			document.id,
-			payment.id,
-			file,
-			expect.any(AbortSignal),
-		);
-		expect(result.current.state.pendingRegistrationReceipt).toBeNull();
+		expect(serviceSpies.uploadDeferredPaymentAttachment).not.toHaveBeenCalled();
 		expect(result.current.state.pendingMarkPaidReceipt).toBeNull();
-	});
-
-	it('reintenta solo el comprobante si el abono ya fue registrado', async () => {
-		serviceSpies.registerPayment.mockResolvedValue(payment);
-		serviceSpies.uploadDeferredPaymentAttachment
-			.mockRejectedValueOnce(new Error('Upload temporalmente no disponible'))
-			.mockResolvedValueOnce({ id: 90, file_name: 'abono.pdf' });
-		const file = new File(['comprobante'], 'abono.pdf', { type: 'application/pdf' });
-		const { result } = renderActions();
-
-		await act(async () => {
-			await result.current.formik.setValues({
-				amount: '50000',
-				paid_at: '2026-08-03',
-				method: 'transfer',
-				notes: '',
-				receipt: file,
-			});
-		});
-		await act(async () => {
-			await result.current.formik.submitForm();
-		});
-		expect(result.current.state.pendingRegistrationReceipt?.paymentId).toBe(payment.id);
-
-		await act(async () => {
-			expect(await result.current.actions.retryRegistrationReceipt()).toBe(true);
-		});
-		expect(serviceSpies.registerPayment).toHaveBeenCalledOnce();
-		expect(serviceSpies.uploadDeferredPaymentAttachment).toHaveBeenCalledTimes(2);
-		expect(result.current.state.pendingRegistrationReceipt).toBeNull();
 	});
 
 	it('permite cerrar el documento después de fallar un registro con comprobante', async () => {
@@ -205,6 +165,54 @@ describe('useDeferredPaymentActions', () => {
 			},
 			expect.any(AbortSignal),
 		);
+	});
+
+	it('permite descartar un comprobante pendiente sin repetir el cierre manual', async () => {
+		serviceSpies.markDocumentPaid.mockResolvedValue(payment);
+		serviceSpies.uploadDeferredPaymentAttachment.mockRejectedValue(
+			new Error('El archivo no cumple el formato'),
+		);
+		const { result, store } = renderActions();
+
+		await act(async () => {
+			await result.current.actions.setMarkPaidReceipt(
+				new File(['contenido'], 'comprobante.pdf', { type: 'application/pdf' }),
+			);
+		});
+		await act(async () => {
+			expect(await result.current.actions.confirmMarkPaid()).toBe(false);
+		});
+		expect(result.current.state.pendingMarkPaidReceipt).not.toBeNull();
+		expect(store.getState().deferredPayments.errorReceipt).toBe(
+			'El archivo no cumple el formato',
+		);
+
+		act(() => result.current.actions.dismissMarkPaidReceipt());
+		expect(result.current.state.pendingMarkPaidReceipt).toBeNull();
+		expect(store.getState().deferredPayments.errorReceipt).toBeNull();
+		expect(serviceSpies.markDocumentPaid).toHaveBeenCalledOnce();
+	});
+
+	it('limpia el error de mutación antes de abrir otro flujo', async () => {
+		serviceSpies.registerPayment.mockRejectedValue(new Error('El comprobante no es válido'));
+		const { result, store } = renderActions();
+
+		await act(async () => {
+			await result.current.formik.setValues({
+				amount: '50000',
+				paid_at: '2026-08-03',
+				method: 'transfer',
+				notes: '',
+				receipt: null,
+			});
+		});
+		await act(async () => {
+			await result.current.formik.submitForm();
+		});
+		expect(store.getState().deferredPayments.errorPayment).toBe('El comprobante no es válido');
+
+		act(() => result.current.actions.clearMutationErrors());
+		expect(store.getState().deferredPayments.errorPayment).toBeNull();
 	});
 
 	it('conserva los valores de Formik y el mensaje literal ante un 422', async () => {

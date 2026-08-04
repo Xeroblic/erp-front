@@ -173,13 +173,19 @@ const registerPayment = async (
 	payload: RegisterDeferredPaymentPayload,
 	signal?: AbortSignal,
 ): Promise<IDeferredPaymentAbono> => {
+	const formData = new FormData();
+	formData.append('amount', payload.amount);
+	formData.append('paid_at', payload.paid_at);
+	formData.append('method', payload.method);
+	formData.append('notes', payload.notes ?? '');
+	if (payload.receipt) formData.append('receipt', payload.receipt);
 	const response = await ApiService.fetchData<
 		ApiResourcePayload<IDeferredPaymentAbono>,
-		RegisterDeferredPaymentPayload
+		FormData
 	>({
 		url: `${documentUrl(subsidiaryId, documentId)}/payments`,
 		method: 'post',
-		data: payload,
+		data: formData,
 		...requestConfig(signal),
 	});
 	ApiService.invalidateCache(documentsUrl(subsidiaryId));
