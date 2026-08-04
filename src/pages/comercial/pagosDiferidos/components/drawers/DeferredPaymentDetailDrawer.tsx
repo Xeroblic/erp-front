@@ -349,8 +349,15 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 					isOpen={isRegisterOpen}
 					setIsOpen={setIsRegisterOpen}
 					formik={paymentActions.formik}
-					busy={paymentActions.state.recordingPayment}
+					busy={
+						paymentActions.state.recordingPayment ||
+						paymentActions.state.uploadingReceipt
+					}
 					error={paymentActions.state.error}
+					pendingReceipt={paymentActions.state.pendingRegistrationReceipt !== null}
+					onRetryReceipt={() => {
+						paymentActions.actions.retryRegistrationReceipt().catch(() => undefined);
+					}}
 				/>
 			)}
 			{document && isMarkPaidOpen && (

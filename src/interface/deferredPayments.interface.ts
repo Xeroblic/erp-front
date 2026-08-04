@@ -180,7 +180,6 @@ export interface RegisterDeferredPaymentPayload {
 	paid_at: string;
 	method: DeferredPaymentMethod;
 	notes: string | null;
-	receipt?: File | null;
 }
 
 export interface DeferredPaymentDeleteResponse {

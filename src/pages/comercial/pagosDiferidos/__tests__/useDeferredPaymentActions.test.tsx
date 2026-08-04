@@ -60,8 +60,12 @@ beforeEach(() => {
 });
 
 describe('useDeferredPaymentActions', () => {
-	it('registra el abono y su comprobante en una sola operación atómica', async () => {
+	it('registra el abono y luego asocia su comprobante al id devuelto', async () => {
 		serviceSpies.registerPayment.mockResolvedValue(payment);
+		serviceSpies.uploadDeferredPaymentAttachment.mockResolvedValue({
+			id: 90,
+			file_name: 'abono.pdf',
+		});
 		const file = new File(['comprobante'], 'abono.pdf', { type: 'application/pdf' });
 		const { result } = renderActions();
 
@@ -86,12 +90,48 @@ describe('useDeferredPaymentActions', () => {
 				paid_at: '2026-08-03',
 				method: 'transfer',
 				notes: null,
-				receipt: file,
 			},
 			expect.any(AbortSignal),
 		);
-		expect(serviceSpies.uploadDeferredPaymentAttachment).not.toHaveBeenCalled();
+		expect(serviceSpies.uploadDeferredPaymentAttachment).toHaveBeenCalledWith(
+			4,
+			document.id,
+			payment.id,
+			file,
+			expect.any(AbortSignal),
+		);
+		expect(result.current.state.pendingRegistrationReceipt).toBeNull();
 		expect(result.current.state.pendingMarkPaidReceipt).toBeNull();
+	});
+
+	it('reintenta solo el comprobante si el abono ya fue registrado', async () => {
+		serviceSpies.registerPayment.mockResolvedValue(payment);
+		serviceSpies.uploadDeferredPaymentAttachment
+			.mockRejectedValueOnce(new Error('Upload temporalmente no disponible'))
+			.mockResolvedValueOnce({ id: 90, file_name: 'abono.pdf' });
+		const file = new File(['comprobante'], 'abono.pdf', { type: 'application/pdf' });
+		const { result } = renderActions();
+
+		await act(async () => {
+			await result.current.formik.setValues({
+				amount: '50000',
+				paid_at: '2026-08-03',
+				method: 'transfer',
+				notes: '',
+				receipt: file,
+			});
+		});
+		await act(async () => {
+			await result.current.formik.submitForm();
+		});
+		expect(result.current.state.pendingRegistrationReceipt?.paymentId).toBe(payment.id);
+
+		await act(async () => {
+			expect(await result.current.actions.retryRegistrationReceipt()).toBe(true);
+		});
+		expect(serviceSpies.registerPayment).toHaveBeenCalledOnce();
+		expect(serviceSpies.uploadDeferredPaymentAttachment).toHaveBeenCalledTimes(2);
+		expect(result.current.state.pendingRegistrationReceipt).toBeNull();
 	});
 
 	it('permite cerrar el documento después de fallar un registro con comprobante', async () => {

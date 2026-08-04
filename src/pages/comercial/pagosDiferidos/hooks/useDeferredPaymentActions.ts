@@ -37,6 +37,10 @@ export const useDeferredPaymentActions = (
 	const errorVoid = useAppSelector((state) => state.deferredPayments.errorVoid);
 	const errorMarkPaid = useAppSelector((state) => state.deferredPayments.errorMarkPaid);
 	const error = errorReceipt ?? errorPayment ?? errorVoid ?? errorMarkPaid;
+	const [pendingRegistrationReceipt, setPendingRegistrationReceipt] = useState<{
+		paymentId: number;
+		file: File;
+	} | null>(null);
 	const [pendingMarkPaidReceipt, setPendingMarkPaidReceipt] = useState<{
 		paymentId: number;
 		file: File;
@@ -84,6 +88,30 @@ export const useDeferredPaymentActions = (
 		},
 		[dispatch, document, refresh, subsidiaryId],
 	);
+	const uploadRegistrationReceipt = useCallback(
+		async (paymentId: number, file: File) => {
+			if (subsidiaryId === null || document === null) return false;
+			try {
+				const request = dispatch(
+					uploadDeferredPaymentReceipt({
+						subsidiaryId,
+						documentId: document.id,
+						paymentId,
+						file,
+					}),
+				);
+				requests.current.push(request);
+				await request.unwrap();
+				setPendingRegistrationReceipt(null);
+				refresh();
+				return true;
+			} catch {
+				setPendingRegistrationReceipt({ paymentId, file });
+				return false;
+			}
+		},
+		[dispatch, document, refresh, subsidiaryId],
+	);
 	const formik = useFormik<DeferredPaymentActionFormValues>({
 		initialValues: {
 			amount: '',
@@ -107,13 +135,17 @@ export const useDeferredPaymentActions = (
 							paid_at: values.paid_at,
 							method: values.method,
 							notes: values.notes?.trim() || null,
-							receipt: values.receipt,
 						},
 					}),
 				);
 				requests.current.push(request);
-				await request.unwrap();
+				const payment = await request.unwrap();
 				refresh();
+				if (
+					values.receipt &&
+					!(await uploadRegistrationReceipt(payment.id, values.receipt))
+				)
+					return;
 				formik.resetForm({
 					values: {
 						amount: '',
@@ -129,6 +161,17 @@ export const useDeferredPaymentActions = (
 			}
 		},
 	});
+	const retryRegistrationReceipt = useCallback(async () => {
+		if (!pendingRegistrationReceipt) return false;
+		const uploaded = await uploadRegistrationReceipt(
+			pendingRegistrationReceipt.paymentId,
+			pendingRegistrationReceipt.file,
+		);
+		if (!uploaded) return false;
+		formik.resetForm();
+		onPaymentCompleted?.();
+		return true;
+	}, [formik, onPaymentCompleted, pendingRegistrationReceipt, uploadRegistrationReceipt]);
 	const voidPayment = useCallback(
 		async (payment: IDeferredPaymentAbono) => {
 			if (subsidiaryId === null || document === null || voidingPaymentId !== null)
@@ -210,6 +253,7 @@ export const useDeferredPaymentActions = (
 		uploadingReceipt,
 	]);
 	useEffect(() => {
+		setPendingRegistrationReceipt(null);
 		setPendingMarkPaidReceipt(null);
 		resetMarkPaidReceipt();
 	}, [document?.id, resetMarkPaidReceipt, subsidiaryId]);
@@ -230,6 +274,7 @@ export const useDeferredPaymentActions = (
 				markingPaid,
 				error,
 				pendingMarkPaidReceipt,
+				pendingRegistrationReceipt,
 				markPaidReceipt,
 				markPaidReceiptError,
 				markPaidReceiptTouched,
@@ -241,6 +286,7 @@ export const useDeferredPaymentActions = (
 			},
 			actions: {
 				voidPayment,
+				retryRegistrationReceipt,
 				confirmMarkPaid,
 				setMarkPaidReceipt,
 				resetMarkPaidReceipt,
@@ -254,11 +300,13 @@ export const useDeferredPaymentActions = (
 			markPaidReceiptError,
 			markPaidReceiptTouched,
 			pendingMarkPaidReceipt,
+			pendingRegistrationReceipt,
 			recordingPayment,
 			resetMarkPaidReceipt,
 			setMarkPaidReceipt,
 			uploadingReceipt,
 			voidPayment,
+			retryRegistrationReceipt,
 			voidingPaymentId,
 			confirmMarkPaid,
 		],

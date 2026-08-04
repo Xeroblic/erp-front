@@ -193,15 +193,11 @@ describe('deferredPaymentsService', () => {
 			.mockResolvedValueOnce({ data: { message: 'Abono anulado correctamente.' } } as never)
 			.mockResolvedValueOnce({ data: payment } as never);
 
-		const receipt = new File(['comprobante'], 'abono.pdf', {
-			type: 'application/pdf',
-		});
 		await deferredPaymentsService.registerPayment(4, 7, {
 			amount: '300000.00',
 			paid_at: '2026-08-01',
 			method: 'transfer',
 			notes: null,
-			receipt,
 		});
 		await deferredPaymentsService.deletePayment(4, 7, 3);
 		await deferredPaymentsService.markDocumentPaid(4, 7);
@@ -209,15 +205,16 @@ describe('deferredPaymentsService', () => {
 		const registerConfig = apiSpies.fetchData.mock.calls[0][0] as {
 			url: string;
 			method: string;
-			data: FormData;
+			data: Record<string, unknown>;
 		};
 		expect(registerConfig.url).toBe('/subsidiaries/4/deferred-payments/7/payments');
 		expect(registerConfig.method).toBe('post');
-		expect(registerConfig.data.get('amount')).toBe('300000.00');
-		expect(registerConfig.data.get('paid_at')).toBe('2026-08-01');
-		expect(registerConfig.data.get('method')).toBe('transfer');
-		expect(registerConfig.data.get('notes')).toBe('');
-		expect(registerConfig.data.get('receipt')).toBe(receipt);
+		expect(registerConfig.data).toEqual({
+			amount: '300000.00',
+			paid_at: '2026-08-01',
+			method: 'transfer',
+			notes: null,
+		});
 		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(
 			2,
 			expect.objectContaining({
