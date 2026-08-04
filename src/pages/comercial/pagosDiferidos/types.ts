@@ -179,10 +179,13 @@ const DEFERRED_PAYMENT_RECEIPT_MIME_TYPES = [
 
 const isAllowedDeferredPaymentReceipt = (file: File): boolean => {
 	const extension = file.name.split('.').pop()?.toLowerCase();
-	return (
-		DEFERRED_PAYMENT_RECEIPT_MIME_TYPES.includes(file.type) ||
-		(extension !== undefined && DEFERRED_PAYMENT_RECEIPT_EXTENSIONS.includes(extension))
-	);
+	const hasAllowedExtension =
+		extension !== undefined && DEFERRED_PAYMENT_RECEIPT_EXTENSIONS.includes(extension);
+	if (!hasAllowedExtension) return false;
+
+	const mimeType = file.type.toLowerCase();
+	const hasGenericMimeType = mimeType === '' || mimeType === 'application/octet-stream';
+	return hasGenericMimeType || DEFERRED_PAYMENT_RECEIPT_MIME_TYPES.includes(mimeType);
 };
 
 export interface DeferredPaymentActionFormValues {

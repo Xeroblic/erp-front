@@ -101,5 +101,28 @@ describe('ZF-8 validación de abonos', () => {
 				receipt: new File(['contenido'], 'respaldo.xlsx', { type: '' }),
 			}),
 		).resolves.toMatchObject({ receipt: expect.any(File) });
+		await expect(
+			createDeferredPaymentActionSchema(100000).validate({
+				...valid,
+				receipt: new File(['contenido'], 'respaldo.xlsx', {
+					type: 'application/octet-stream',
+				}),
+			}),
+		).resolves.toMatchObject({ receipt: expect.any(File) });
+	});
+	it('rechaza comprobantes con extensión y MIME incompatibles', async () => {
+		const schema = createDeferredPaymentActionSchema(100000);
+		await expect(
+			schema.validate({
+				...valid,
+				receipt: new File(['contenido'], 'respaldo.pdf', { type: 'text/plain' }),
+			}),
+		).rejects.toThrow('Formato de comprobante no permitido');
+		await expect(
+			schema.validate({
+				...valid,
+				receipt: new File(['contenido'], 'respaldo.txt', { type: 'application/pdf' }),
+			}),
+		).rejects.toThrow('Formato de comprobante no permitido');
 	});
 });

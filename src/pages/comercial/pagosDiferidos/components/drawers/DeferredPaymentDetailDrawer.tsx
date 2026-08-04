@@ -79,24 +79,51 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 		useDeferredPaymentDetail(documentId);
 	const [isRegisterOpen, setIsRegisterOpen] = useState(false);
 	const [isMarkPaidOpen, setIsMarkPaidOpen] = useState(false);
+	const [isDiscardMarkPaidReceiptOpen, setIsDiscardMarkPaidReceiptOpen] = useState(false);
+	const [closeAfterDiscardingReceipt, setCloseAfterDiscardingReceipt] = useState(false);
 	const [paymentToVoid, setPaymentToVoid] = useState<IDeferredPaymentAbono | null>(null);
 	useEffect(() => {
 		setIsRegisterOpen(false);
 		setIsMarkPaidOpen(false);
+		setIsDiscardMarkPaidReceiptOpen(false);
+		setCloseAfterDiscardingReceipt(false);
 		setPaymentToVoid(null);
 	}, [branch.branchId, branch.subsidiaryId, documentId]);
 	const paymentActions = useDeferredPaymentActions(document, branch.subsidiaryId, () =>
 		setIsRegisterOpen(false),
 	);
-	const hasOpenActionModal = isRegisterOpen || isMarkPaidOpen || paymentToVoid !== null;
+	const openDiscardMarkPaidReceiptConfirmation = useCallback((closeDrawer = false) => {
+		setCloseAfterDiscardingReceipt(closeDrawer);
+		setIsDiscardMarkPaidReceiptOpen(true);
+	}, []);
+	const hasOpenActionModal =
+		isRegisterOpen || isMarkPaidOpen || isDiscardMarkPaidReceiptOpen || paymentToVoid !== null;
 	const handleDrawerOpenChange: React.Dispatch<React.SetStateAction<boolean>> = useCallback(
 		(nextState) => {
 			const shouldOpen =
 				typeof nextState === 'function' ? nextState(documentId !== null) : nextState;
-			if (!shouldOpen && !hasOpenActionModal) onClose();
+			if (!shouldOpen && !hasOpenActionModal) {
+				if (paymentActions.state.pendingMarkPaidReceipt) {
+					openDiscardMarkPaidReceiptConfirmation(true);
+					return;
+				}
+				onClose();
+			}
 		},
-		[documentId, hasOpenActionModal, onClose],
+		[
+			documentId,
+			hasOpenActionModal,
+			onClose,
+			openDiscardMarkPaidReceiptConfirmation,
+			paymentActions.state.pendingMarkPaidReceipt,
+		],
 	);
+	const discardMarkPaidReceipt = useCallback(() => {
+		paymentActions.actions.dismissMarkPaidReceipt();
+		setIsDiscardMarkPaidReceiptOpen(false);
+		if (closeAfterDiscardingReceipt) onClose();
+		setCloseAfterDiscardingReceipt(false);
+	}, [closeAfterDiscardingReceipt, onClose, paymentActions.actions]);
 	const total = Number(document?.total_amount ?? 0);
 	const paid = Number(document?.paid_amount ?? 0);
 	const progress = total > 0 ? Math.min(100, Math.max(0, (paid / total) * 100)) : 0;
@@ -348,10 +375,10 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 												size='sm'
 												variant='outline'
 												isDisable={paymentActions.state.uploadingReceipt}
-												onClick={
-													paymentActions.actions.dismissMarkPaidReceipt
+												onClick={() =>
+													openDiscardMarkPaidReceiptConfirmation()
 												}>
-												Descartar aviso
+												Descartar comprobante
 											</Button>
 										</div>
 									</div>
@@ -485,6 +512,32 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 								</Alert>
 							)}
 						</>
+					}
+				/>
+			)}
+			{document && isDiscardMarkPaidReceiptOpen && (
+				<ConfirmDeferredPaymentActionModal
+					isOpen
+					setIsOpen={(nextState) => {
+						const shouldOpen =
+							typeof nextState === 'function'
+								? nextState(isDiscardMarkPaidReceiptOpen)
+								: nextState;
+						if (!shouldOpen) {
+							setIsDiscardMarkPaidReceiptOpen(false);
+							setCloseAfterDiscardingReceipt(false);
+						}
+					}}
+					title='Descartar comprobante pendiente'
+					confirmLabel='Descartar comprobante'
+					color='red'
+					busy={false}
+					onConfirm={discardMarkPaidReceipt}
+					description={
+						<p>
+							El documento ya está pagado. Si descartas el comprobante, no quedará
+							adjunto y no podrás reintentarlo más tarde.
+						</p>
 					}
 				/>
 			)}
