@@ -181,6 +181,7 @@ describe('DeferredPaymentDetailDrawer', () => {
 		expect(
 			await within(dialog).findByText('Formato de comprobante no permitido'),
 		).toBeInTheDocument();
+		expect(within(dialog).getByRole('button', { name: 'Marcar pagada' })).toBeDisabled();
 	});
 	it('permite cerrar la confirmación con comprobante pendiente para continuar desde el detalle', () => {
 		const setIsOpen = vi.fn();

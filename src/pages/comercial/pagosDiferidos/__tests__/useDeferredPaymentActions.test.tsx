@@ -25,6 +25,10 @@ const document = {
 	id: 7,
 	outstanding_amount: '100000.00',
 } as IDeferredPaymentDocument;
+const otherDocument = {
+	...document,
+	id: 8,
+} as IDeferredPaymentDocument;
 const payment = {
 	id: 31,
 	amount: '100000.00',
@@ -35,6 +39,10 @@ const payment = {
 };
 const createStore = () =>
 	configureStore({ reducer: { deferredPayments: deferredPaymentsReducer } });
+interface DeferredPaymentActionHookProps {
+	currentDocument: IDeferredPaymentDocument | null;
+	currentSubsidiaryId: number | null;
+}
 const renderActions = (
 	filters: { page: number; per_page: number; search: string } | null = null,
 ) => {
@@ -43,7 +51,17 @@ const renderActions = (
 	const wrapper = ({ children }: { children: React.ReactNode }) => (
 		<Provider store={store}>{children}</Provider>
 	);
-	return { store, ...renderHook(() => useDeferredPaymentActions(document, 4), { wrapper }) };
+	return {
+		store,
+		...renderHook<ReturnType<typeof useDeferredPaymentActions>, DeferredPaymentActionHookProps>(
+			({ currentDocument, currentSubsidiaryId }) =>
+				useDeferredPaymentActions(currentDocument, currentSubsidiaryId),
+			{
+				wrapper,
+				initialProps: { currentDocument: document, currentSubsidiaryId: 4 },
+			},
+		),
+	};
 };
 
 beforeEach(() => {
@@ -161,7 +179,7 @@ describe('useDeferredPaymentActions', () => {
 		expect(serviceSpies.uploadDeferredPaymentAttachment).toHaveBeenCalledTimes(2);
 		expect(toastSpies.success).toHaveBeenCalledOnce();
 		await waitFor(() => expect(result.current.state.pendingMarkPaidReceipt).toBeNull());
-		expect(serviceSpies.getDocument).toHaveBeenCalled();
+		expect(serviceSpies.getDocument).toHaveBeenCalledTimes(2);
 		expect(serviceSpies.getDocuments).toHaveBeenCalledWith(
 			4,
 			expect.objectContaining({ page: 3, per_page: 50, search: 'FAC-0099' }),
@@ -178,6 +196,107 @@ describe('useDeferredPaymentActions', () => {
 			},
 			expect.any(AbortSignal),
 		);
+		expect(serviceSpies.getDocuments).toHaveBeenCalledOnce();
+		expect(serviceSpies.getSummary).toHaveBeenCalledOnce();
+	});
+
+	it('no restaura ni reutiliza un comprobante descartado al abortar el reintento', async () => {
+		serviceSpies.markDocumentPaid.mockResolvedValueOnce(payment).mockResolvedValueOnce({
+			...payment,
+			id: 32,
+		});
+		let uploadSignal: AbortSignal | undefined;
+		serviceSpies.uploadDeferredPaymentAttachment
+			.mockRejectedValueOnce(new Error('Upload temporalmente no disponible'))
+			.mockImplementationOnce(
+				(
+					_subsidiaryId: number,
+					_documentId: number,
+					_paymentId: number,
+					_file: File,
+					signal: AbortSignal,
+				) =>
+					new Promise<never>((_resolve, reject) => {
+						uploadSignal = signal;
+						signal.addEventListener('abort', () =>
+							reject(new DOMException('Aborted', 'AbortError')),
+						);
+					}),
+			);
+		const file = new File(['comprobante'], 'cierre.pdf', { type: 'application/pdf' });
+		const { result, rerender } = renderActions();
+
+		await act(async () => {
+			await result.current.actions.setMarkPaidReceipt(file);
+		});
+		await act(async () => {
+			expect(await result.current.actions.confirmMarkPaid()).toBe(false);
+		});
+		expect(result.current.state.pendingMarkPaidReceipt?.documentId).toBe(document.id);
+
+		let retry: Promise<boolean>;
+		act(() => {
+			retry = result.current.actions.confirmMarkPaid();
+		});
+		await waitFor(() => expect(uploadSignal).toBeDefined());
+		act(() => result.current.actions.dismissMarkPaidReceipt());
+		rerender({ currentDocument: otherDocument, currentSubsidiaryId: 4 });
+		await act(async () => {
+			expect(await retry).toBe(false);
+		});
+
+		expect(uploadSignal?.aborted).toBe(true);
+		expect(result.current.state.pendingMarkPaidReceipt).toBeNull();
+		await act(async () => {
+			expect(await result.current.actions.confirmMarkPaid()).toBe(true);
+		});
+		expect(serviceSpies.markDocumentPaid).toHaveBeenCalledTimes(2);
+		expect(serviceSpies.uploadDeferredPaymentAttachment).toHaveBeenCalledTimes(2);
+		expect(serviceSpies.markDocumentPaid).toHaveBeenLastCalledWith(
+			4,
+			otherDocument.id,
+			expect.any(AbortSignal),
+		);
+	});
+
+	it('mantiene el refresco del listado y resumen al cerrar el detalle', async () => {
+		let listSignal: AbortSignal | undefined;
+		let summarySignal: AbortSignal | undefined;
+		serviceSpies.registerPayment.mockResolvedValue(payment);
+		serviceSpies.getDocuments.mockImplementation(
+			(_subsidiaryId: number, _filters: unknown, signal: AbortSignal) =>
+				new Promise<never>(() => {
+					listSignal = signal;
+				}),
+		);
+		serviceSpies.getSummary.mockImplementation(
+			(_subsidiaryId: number, _filters: unknown, signal: AbortSignal) =>
+				new Promise<never>(() => {
+					summarySignal = signal;
+				}),
+		);
+		const { result, rerender } = renderActions();
+
+		await act(async () => {
+			await result.current.formik.setValues({
+				amount: '50000',
+				paid_at: '2026-08-03',
+				method: 'transfer',
+				notes: '',
+				receipt: null,
+			});
+		});
+		await act(async () => {
+			await result.current.formik.submitForm();
+		});
+		await waitFor(() => {
+			expect(listSignal).toBeDefined();
+			expect(summarySignal).toBeDefined();
+		});
+		rerender({ currentDocument: null, currentSubsidiaryId: 4 });
+
+		expect(listSignal?.aborted).toBe(false);
+		expect(summarySignal?.aborted).toBe(false);
 	});
 
 	it('permite descartar un comprobante pendiente sin repetir el cierre manual', async () => {

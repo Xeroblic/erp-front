@@ -14,6 +14,7 @@ interface ConfirmDeferredPaymentActionModalProps {
 	description: React.ReactNode;
 	confirmLabel: string;
 	busy: boolean;
+	isConfirmDisabled?: boolean;
 	color?: 'red' | 'blue';
 	onConfirm: () => void;
 }
@@ -24,6 +25,7 @@ const ConfirmDeferredPaymentActionModal: React.FC<ConfirmDeferredPaymentActionMo
 	description,
 	confirmLabel,
 	busy,
+	isConfirmDisabled = false,
 	color = 'blue',
 	onConfirm,
 }) => {
@@ -49,7 +51,7 @@ const ConfirmDeferredPaymentActionModal: React.FC<ConfirmDeferredPaymentActionMo
 						variant='solid'
 						color={color}
 						isLoading={busy}
-						isDisable={busy}
+						isDisable={busy || isConfirmDisabled}
 						onClick={onConfirm}>
 						{confirmLabel}
 					</Button>

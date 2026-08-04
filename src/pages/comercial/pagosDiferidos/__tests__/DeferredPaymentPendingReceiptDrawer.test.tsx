@@ -43,6 +43,8 @@ describe('DeferredPaymentDetailDrawer con comprobante pendiente', () => {
 				markingPaid: false,
 				error: null,
 				pendingMarkPaidReceipt: {
+					subsidiaryId: 1,
+					documentId: document.id,
 					paymentId: 10,
 					file: new File(['comprobante'], 'cierre.pdf', { type: 'application/pdf' }),
 				},

@@ -444,6 +444,7 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 							: 'Marcar pagada'
 					}
 					busy={paymentActions.state.markingPaid || paymentActions.state.uploadingReceipt}
+					isConfirmDisabled={paymentActions.state.markPaidReceiptError !== null}
 					onConfirm={() => {
 						paymentActions.actions
 							.confirmMarkPaid()
