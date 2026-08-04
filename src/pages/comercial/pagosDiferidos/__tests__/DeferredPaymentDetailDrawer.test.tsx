@@ -1,10 +1,11 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import store from '@/store';
 import { DEFERRED_PAYMENT_DETAIL_FIXTURES } from './deferredPaymentsTestData';
 import DeferredPaymentDetailDrawer from '../components/drawers/DeferredPaymentDetailDrawer';
+import ConfirmDeferredPaymentActionModal from '../components/modals/ConfirmDeferredPaymentActionModal';
 import useDeferredPaymentDetail from '../hooks/useDeferredPaymentDetail';
 
 vi.mock('react-i18next', () => ({
@@ -45,6 +46,7 @@ describe('DeferredPaymentDetailDrawer', () => {
 	});
 
 	afterEach(() => {
+		vi.useRealTimers();
 		document.getElementById('portal-root')?.remove();
 	});
 
@@ -79,13 +81,24 @@ describe('DeferredPaymentDetailDrawer', () => {
 	});
 
 	it('mantiene abierto el registro al interactuar con el modal renderizado en portal', async () => {
+		vi.useFakeTimers();
 		const onClose = vi.fn();
 		renderDrawer(2, vi.fn(), onClose);
-		fireEvent.click(screen.getByRole('button', { name: 'Registrar abono', hidden: true }));
-		await screen.findByRole('dialog', { name: 'Registrar abono' });
+		act(() => {
+			fireEvent.click(screen.getByRole('button', { name: 'Registrar abono', hidden: true }));
+		});
+		await act(async () => {
+			vi.advanceTimersByTime(400);
+			await Promise.resolve();
+		});
+		vi.useRealTimers();
+		screen.getByRole('dialog', { name: 'Registrar abono' });
 		const amountInput = screen.getByLabelText('Monto (CLP)');
-		fireEvent.mouseDown(amountInput);
-		fireEvent.change(amountInput, { target: { value: '10000' } });
+		await act(async () => {
+			fireEvent.mouseDown(amountInput);
+			fireEvent.change(amountInput, { target: { value: '10000' } });
+			await Promise.resolve();
+		});
 
 		expect(screen.getByPlaceholderText('dd-mm-aaaa')).toBeInTheDocument();
 		expect(screen.getByRole('dialog', { name: 'Registrar abono' })).toBeInTheDocument();
@@ -168,6 +181,31 @@ describe('DeferredPaymentDetailDrawer', () => {
 		expect(
 			await within(dialog).findByText('Formato de comprobante no permitido'),
 		).toBeInTheDocument();
+	});
+	it('mantiene disponible el reintento y bloquea el cierre con comprobante pendiente', () => {
+		const setIsOpen = vi.fn();
+		render(
+			<Provider store={store}>
+				<ConfirmDeferredPaymentActionModal
+					isOpen
+					setIsOpen={setIsOpen}
+					title='Marcar documento como pagado'
+					description='Documento pagado, comprobante pendiente'
+					confirmLabel='Reintentar comprobante'
+					busy={false}
+					preventClose
+					onConfirm={vi.fn()}
+				/>
+			</Provider>,
+		);
+
+		const dialog = screen.getByRole('dialog', { name: 'Marcar documento como pagado' });
+		expect(within(dialog).getByRole('button', { name: 'Cancelar' })).toBeDisabled();
+		expect(
+			within(dialog).getByRole('button', { name: 'Reintentar comprobante' }),
+		).toBeEnabled();
+		fireEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
+		expect(setIsOpen).not.toHaveBeenCalled();
 	});
 	it('entrega el documento vigente al solicitar su edición', () => {
 		const onEdit = vi.fn();
