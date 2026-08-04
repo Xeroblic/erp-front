@@ -15,7 +15,7 @@ describe('ZF-8 validación de abonos', () => {
 			amount: 50000,
 			paid_at: '2026-08-03',
 			method: 'transfer',
-			notes: '',
+			notes: null,
 		});
 		await expect(
 			schema.validate({
@@ -40,13 +40,13 @@ describe('ZF-8 validación de abonos', () => {
 		const initial = await schema.validate(withoutNotes);
 		expect(initial).not.toHaveProperty('notes');
 		await expect(schema.validate({ ...valid, notes: '' })).resolves.toMatchObject({
-			notes: '',
+			notes: null,
 		});
 		await expect(schema.validate({ ...valid, notes: '  referencia  ' })).resolves.toMatchObject(
 			{ notes: 'referencia' },
 		);
-		await expect(schema.validate({ ...valid, notes: '' })).resolves.toMatchObject({
-			notes: '',
+		await expect(schema.validate({ ...valid, notes: '   ' })).resolves.toMatchObject({
+			notes: null,
 		});
 	});
 	it('mantiene el límite de la nota opcional', async () => {
