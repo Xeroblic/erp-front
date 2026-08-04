@@ -25,12 +25,17 @@ describe('ZF-8 validación de abonos', () => {
 				method: 'other',
 			}),
 		).resolves.toMatchObject({ amount: 100000, method: 'other', notes: 'referencia' });
-		for (const method of ['transfer', 'deposit', 'check', 'cash', 'other'])
-			await expect(schema.validate({ ...valid, method })).resolves.toMatchObject({ method });
+		const methods = ['transfer', 'deposit', 'check', 'cash', 'other'];
+		await Promise.all(
+			methods.map(async (method) =>
+				expect(schema.validate({ ...valid, method })).resolves.toMatchObject({ method }),
+			),
+		);
 	});
 	it('acepta la nota ausente, vacía, escrita y borrada', async () => {
 		const schema = createDeferredPaymentActionSchema(100000);
-		const { notes: _notes, ...withoutNotes } = valid;
+		const withoutNotes = { ...valid };
+		delete (withoutNotes as Partial<typeof valid>).notes;
 
 		const initial = await schema.validate(withoutNotes);
 		expect(initial).not.toHaveProperty('notes');

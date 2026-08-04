@@ -60,6 +60,68 @@ beforeEach(() => {
 });
 
 describe('useDeferredPaymentActions', () => {
+	it('registra el abono y su comprobante en una sola operación atómica', async () => {
+		serviceSpies.registerPayment.mockResolvedValue(payment);
+		const file = new File(['comprobante'], 'abono.pdf', { type: 'application/pdf' });
+		const { result } = renderActions();
+
+		await act(async () => {
+			await result.current.formik.setValues({
+				amount: '50000',
+				paid_at: '2026-08-03',
+				method: 'transfer',
+				notes: '',
+				receipt: file,
+			});
+		});
+		await act(async () => {
+			await result.current.formik.submitForm();
+		});
+
+		expect(serviceSpies.registerPayment).toHaveBeenCalledWith(
+			4,
+			document.id,
+			{
+				amount: '50000.00',
+				paid_at: '2026-08-03',
+				method: 'transfer',
+				notes: null,
+				receipt: file,
+			},
+			expect.any(AbortSignal),
+		);
+		expect(serviceSpies.uploadDeferredPaymentAttachment).not.toHaveBeenCalled();
+		expect(result.current.state.pendingMarkPaidReceipt).toBeNull();
+	});
+
+	it('permite cerrar el documento después de fallar un registro con comprobante', async () => {
+		serviceSpies.registerPayment.mockRejectedValue(new Error('No se pudo registrar'));
+		serviceSpies.markDocumentPaid.mockResolvedValue(payment);
+		const file = new File(['comprobante'], 'abono.pdf', { type: 'application/pdf' });
+		const { result } = renderActions();
+
+		await act(async () => {
+			await result.current.formik.setValues({
+				amount: '50000',
+				paid_at: '2026-08-03',
+				method: 'transfer',
+				notes: '',
+				receipt: file,
+			});
+		});
+		await act(async () => {
+			await result.current.formik.submitForm();
+		});
+		let closed = false;
+		await act(async () => {
+			closed = await result.current.actions.confirmMarkPaid();
+		});
+
+		expect(closed).toBe(true);
+		expect(serviceSpies.registerPayment).toHaveBeenCalledOnce();
+		expect(serviceSpies.markDocumentPaid).toHaveBeenCalledOnce();
+		expect(serviceSpies.uploadDeferredPaymentAttachment).not.toHaveBeenCalled();
+	});
 	it('reintenta solo el comprobante cuando falla después del cierre manual', async () => {
 		serviceSpies.markDocumentPaid.mockResolvedValue(payment);
 		serviceSpies.uploadDeferredPaymentAttachment
@@ -73,19 +135,19 @@ describe('useDeferredPaymentActions', () => {
 		});
 		let closed = true;
 		await act(async () => {
-			closed = await result.current.actions.markPaid();
+			closed = await result.current.actions.confirmMarkPaid();
 		});
 		expect(closed).toBe(false);
-		expect(result.current.state.pendingReceipt?.paymentId).toBe(payment.id);
+		expect(result.current.state.pendingMarkPaidReceipt?.paymentId).toBe(payment.id);
 		expect(serviceSpies.markDocumentPaid).toHaveBeenCalledOnce();
 		expect(serviceSpies.uploadDeferredPaymentAttachment).toHaveBeenCalledOnce();
 
 		await act(async () => {
-			expect(await result.current.actions.retryReceipt()).toBe(true);
+			expect(await result.current.actions.confirmMarkPaid()).toBe(true);
 		});
 		expect(serviceSpies.markDocumentPaid).toHaveBeenCalledOnce();
 		expect(serviceSpies.uploadDeferredPaymentAttachment).toHaveBeenCalledTimes(2);
-		await waitFor(() => expect(result.current.state.pendingReceipt).toBeNull());
+		await waitFor(() => expect(result.current.state.pendingMarkPaidReceipt).toBeNull());
 		expect(serviceSpies.getDocument).toHaveBeenCalled();
 		expect(serviceSpies.getDocuments).toHaveBeenCalledWith(
 			4,
@@ -115,8 +177,8 @@ describe('useDeferredPaymentActions', () => {
 			},
 		});
 		const { result, store } = renderActions();
-		act(() => {
-			result.current.formik.setValues({
+		await act(async () => {
+			await result.current.formik.setValues({
 				amount: '99999',
 				paid_at: '2026-08-03',
 				method: 'transfer',

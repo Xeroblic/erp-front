@@ -1,5 +1,6 @@
-﻿import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import deferredPaymentsService from '@/services/deferredPaymentsService';
+
 const apiSpies = vi.hoisted(() => ({ fetchData: vi.fn(), invalidateCache: vi.fn() }));
 vi.mock('@/services/ApiService', () => ({ default: apiSpies }));
 describe('ZF-8 servicio de comprobantes', () => {
@@ -44,14 +45,19 @@ describe('ZF-8 servicio de comprobantes', () => {
 	});
 	it('descarga la URL autenticada como blob propagando AbortSignal', async () => {
 		const blob = new Blob(['contenido'], { type: 'application/pdf' });
-		apiSpies.fetchData.mockResolvedValue({ data: blob });
+		apiSpies.fetchData.mockResolvedValue({
+			data: blob,
+			headers: {
+				'content-disposition': "attachment; filename*=UTF-8''comprobante%20pago.pdf",
+			},
+		});
 		const controller = new AbortController();
 		await expect(
 			deferredPaymentsService.downloadDeferredPaymentAttachment(
 				'/files/9',
 				controller.signal,
 			),
-		).resolves.toBe(blob);
+		).resolves.toEqual({ blob, fileName: 'comprobante pago.pdf' });
 		expect(apiSpies.fetchData).toHaveBeenCalledWith({
 			url: '/files/9',
 			method: 'get',
