@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormik } from 'formik';
+import { toast } from 'react-toastify';
 import type {
 	IDeferredPaymentAbono,
 	IDeferredPaymentDocument,
@@ -114,6 +115,7 @@ export const useDeferredPaymentActions = (
 				);
 				requests.current.push(request);
 				await request.unwrap();
+				toast.success('Abono registrado correctamente');
 				refresh();
 				formik.resetForm({
 					values: {
@@ -197,6 +199,7 @@ export const useDeferredPaymentActions = (
 			);
 			requests.current.push(request);
 			const payment = await request.unwrap();
+			toast.success('Documento marcado como pagado correctamente');
 			refresh();
 			if (markPaidReceipt && !(await uploadMarkPaidReceipt(payment.id, markPaidReceipt)))
 				return false;

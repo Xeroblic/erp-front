@@ -9,6 +9,7 @@ import deferredPaymentsReducer, {
 } from '@/store/slices/deferredPayments/deferredPaymentsSlice';
 import { useDeferredPaymentActions } from '../hooks/useDeferredPaymentActions';
 
+const toastSpies = vi.hoisted(() => ({ success: vi.fn() }));
 const serviceSpies = vi.hoisted(() => ({
 	registerPayment: vi.fn(),
 	markDocumentPaid: vi.fn(),
@@ -17,6 +18,7 @@ const serviceSpies = vi.hoisted(() => ({
 	getDocuments: vi.fn(),
 	getSummary: vi.fn(),
 }));
+vi.mock('react-toastify', () => ({ toast: toastSpies }));
 vi.mock('@/services/deferredPaymentsService', () => ({ default: serviceSpies }));
 
 const document = {
@@ -46,6 +48,7 @@ const renderActions = (
 
 beforeEach(() => {
 	Object.values(serviceSpies).forEach((spy) => spy.mockReset());
+	toastSpies.success.mockReset();
 	serviceSpies.getDocument.mockResolvedValue(document);
 	serviceSpies.getDocuments.mockResolvedValue({
 		data: [],
@@ -92,6 +95,8 @@ describe('useDeferredPaymentActions', () => {
 		);
 		expect(serviceSpies.uploadDeferredPaymentAttachment).not.toHaveBeenCalled();
 		expect(result.current.state.pendingMarkPaidReceipt).toBeNull();
+		expect(toastSpies.success).toHaveBeenCalledWith('Abono registrado correctamente');
+		expect(toastSpies.success).toHaveBeenCalledOnce();
 	});
 
 	it('permite cerrar el documento después de fallar un registro con comprobante', async () => {
@@ -121,6 +126,10 @@ describe('useDeferredPaymentActions', () => {
 		expect(serviceSpies.registerPayment).toHaveBeenCalledOnce();
 		expect(serviceSpies.markDocumentPaid).toHaveBeenCalledOnce();
 		expect(serviceSpies.uploadDeferredPaymentAttachment).not.toHaveBeenCalled();
+		expect(toastSpies.success).toHaveBeenCalledWith(
+			'Documento marcado como pagado correctamente',
+		);
+		expect(toastSpies.success).toHaveBeenCalledOnce();
 	});
 	it('reintenta solo el comprobante cuando falla después del cierre manual', async () => {
 		serviceSpies.markDocumentPaid.mockResolvedValue(payment);
@@ -141,12 +150,16 @@ describe('useDeferredPaymentActions', () => {
 		expect(result.current.state.pendingMarkPaidReceipt?.paymentId).toBe(payment.id);
 		expect(serviceSpies.markDocumentPaid).toHaveBeenCalledOnce();
 		expect(serviceSpies.uploadDeferredPaymentAttachment).toHaveBeenCalledOnce();
+		expect(toastSpies.success).toHaveBeenCalledWith(
+			'Documento marcado como pagado correctamente',
+		);
 
 		await act(async () => {
 			expect(await result.current.actions.confirmMarkPaid()).toBe(true);
 		});
 		expect(serviceSpies.markDocumentPaid).toHaveBeenCalledOnce();
 		expect(serviceSpies.uploadDeferredPaymentAttachment).toHaveBeenCalledTimes(2);
+		expect(toastSpies.success).toHaveBeenCalledOnce();
 		await waitFor(() => expect(result.current.state.pendingMarkPaidReceipt).toBeNull());
 		expect(serviceSpies.getDocument).toHaveBeenCalled();
 		expect(serviceSpies.getDocuments).toHaveBeenCalledWith(
