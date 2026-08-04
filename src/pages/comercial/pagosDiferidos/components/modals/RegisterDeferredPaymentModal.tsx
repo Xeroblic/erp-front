@@ -23,8 +23,6 @@ interface RegisterDeferredPaymentModalProps {
 	formik: FormikProps<DeferredPaymentActionFormValues>;
 	busy: boolean;
 	error: string | null;
-	pendingReceipt: boolean;
-	onRetryReceipt: () => void;
 }
 const RegisterDeferredPaymentModal: React.FC<RegisterDeferredPaymentModalProps> = ({
 	isOpen,
@@ -32,13 +30,11 @@ const RegisterDeferredPaymentModal: React.FC<RegisterDeferredPaymentModalProps> 
 	formik,
 	busy,
 	error,
-	pendingReceipt,
-	onRetryReceipt,
 }) => {
 	const guardClose: React.Dispatch<React.SetStateAction<boolean>> = (next) => {
 		if (!busy) setIsOpen(next);
 	};
-	const resetForm = formik.resetForm;
+	const { resetForm } = formik;
 	useEffect(() => () => resetForm(), [resetForm]);
 	return (
 		<Modal isOpen={isOpen} setIsOpen={guardClose} isCentered size='sm' isStaticBackdrop={busy}>
@@ -54,28 +50,14 @@ const RegisterDeferredPaymentModal: React.FC<RegisterDeferredPaymentModalProps> 
 								color='red'
 								variant='outline'
 								icon='HeroExclamationTriangle'
-								title={
-									pendingReceipt
-										? 'Abono registrado, comprobante pendiente'
-										: 'No se pudo completar la operación'
-								}>
+								title='No se pudo completar la operación'>
 								{error}
 							</Alert>
-						)}
-						{pendingReceipt && (
-							<Button
-								type='button'
-								variant='outline'
-								isLoading={busy}
-								isDisable={busy}
-								onClick={onRetryReceipt}>
-								Reintentar solo comprobante
-							</Button>
 						)}
 						<div>
 							<Label htmlFor='amount'>Monto (CLP)</Label>
 							<DeferredPaymentField name='amount'>
-								{({ error, isTouched, isValid }) => (
+								{({ error: fieldError, isTouched, isValid }) => (
 									<Input
 										id='amount'
 										name='amount'
@@ -85,10 +67,10 @@ const RegisterDeferredPaymentModal: React.FC<RegisterDeferredPaymentModalProps> 
 										value={formik.values.amount}
 										onChange={formik.handleChange}
 										onBlur={formik.handleBlur}
-										disabled={busy || pendingReceipt}
+										disabled={busy}
 										isValid={isValid}
 										isTouched={isTouched}
-										invalidFeedback={error}
+										invalidFeedback={fieldError}
 									/>
 								)}
 							</DeferredPaymentField>
@@ -96,7 +78,7 @@ const RegisterDeferredPaymentModal: React.FC<RegisterDeferredPaymentModalProps> 
 						<div>
 							<Label htmlFor='paid_at'>Fecha del abono</Label>
 							<DeferredPaymentField name='paid_at'>
-								{({ error, isTouched, isValid }) => (
+								{({ error: fieldError, isTouched, isValid }) => (
 									<DateInput
 										id='paid_at'
 										name='paid_at'
@@ -104,10 +86,10 @@ const RegisterDeferredPaymentModal: React.FC<RegisterDeferredPaymentModalProps> 
 										placeholder='dd-mm-aaaa'
 										maxYear={new Date().getFullYear()}
 										maxDate={new Date()}
-										disabled={busy || pendingReceipt}
+										disabled={busy}
 										isValid={isValid}
 										isTouched={isTouched}
-										invalidFeedback={error}
+										invalidFeedback={fieldError}
 										onChange={formik.handleChange}
 										onBlur={() => {
 											formik
@@ -121,17 +103,17 @@ const RegisterDeferredPaymentModal: React.FC<RegisterDeferredPaymentModalProps> 
 						<div>
 							<Label htmlFor='method'>Método</Label>
 							<DeferredPaymentField name='method'>
-								{({ error, isTouched, isValid }) => (
+								{({ error: fieldError, isTouched, isValid }) => (
 									<Select
 										id='method'
 										name='method'
 										value={formik.values.method}
 										onChange={formik.handleChange}
 										onBlur={formik.handleBlur}
-										disabled={busy || pendingReceipt}
+										disabled={busy}
 										isValid={isValid}
 										isTouched={isTouched}
-										invalidFeedback={error}>
+										invalidFeedback={fieldError}>
 										<option value='transfer'>Transferencia</option>
 										<option value='deposit'>Depósito</option>
 										<option value='check'>Cheque</option>
@@ -144,18 +126,18 @@ const RegisterDeferredPaymentModal: React.FC<RegisterDeferredPaymentModalProps> 
 						<div>
 							<Label htmlFor='notes'>Nota (opcional)</Label>
 							<DeferredPaymentField name='notes'>
-								{({ error, isTouched, isValid }) => (
+								{({ error: fieldError, isTouched, isValid }) => (
 									<Textarea
 										id='notes'
 										name='notes'
 										value={formik.values.notes ?? ''}
 										onChange={formik.handleChange}
 										onBlur={formik.handleBlur}
-										disabled={busy || pendingReceipt}
+										disabled={busy}
 										rows={3}
 										isValid={isValid}
 										isTouched={isTouched}
-										invalidFeedback={error}
+										invalidFeedback={fieldError}
 									/>
 								)}
 							</DeferredPaymentField>
@@ -167,16 +149,16 @@ const RegisterDeferredPaymentModal: React.FC<RegisterDeferredPaymentModalProps> 
 						<div>
 							<Label htmlFor='receipt'>Comprobante (opcional)</Label>
 							<DeferredPaymentField name='receipt'>
-								{({ error, isTouched, isValid }) => (
+								{({ error: fieldError, isTouched, isValid }) => (
 									<Input
 										id='receipt'
 										name='receipt'
 										type='file'
 										accept={DEFERRED_PAYMENT_RECEIPT_ACCEPT}
-										disabled={busy || pendingReceipt}
+										disabled={busy}
 										isValid={isValid}
 										isTouched={isTouched}
-										invalidFeedback={error}
+										invalidFeedback={fieldError}
 										onBlur={formik.handleBlur}
 										onChange={(event) => {
 											formik
@@ -215,7 +197,7 @@ const RegisterDeferredPaymentModal: React.FC<RegisterDeferredPaymentModalProps> 
 						variant='solid'
 						color='blue'
 						isLoading={busy}
-						isDisable={busy || pendingReceipt}
+						isDisable={busy}
 						onClick={() => {
 							formik.submitForm().catch(() => undefined);
 						}}>

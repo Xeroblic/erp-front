@@ -1,4 +1,4 @@
-﻿export type DeferredPaymentStatus = 'pending' | 'partially_paid' | 'paid';
+export type DeferredPaymentStatus = 'pending' | 'partially_paid' | 'paid';
 export type DeferredPaymentStatusFilter = DeferredPaymentStatus | 'overdue';
 export type DeferredPaymentDocumentType = 'electronic_invoice' | 'invoice' | 'receipt' | 'other';
 export type DeferredPaymentSort = 'due_date';
@@ -180,6 +180,7 @@ export interface RegisterDeferredPaymentPayload {
 	paid_at: string;
 	method: DeferredPaymentMethod;
 	notes: string | null;
+	receipt?: File | null;
 }
 
 export interface DeferredPaymentDeleteResponse {

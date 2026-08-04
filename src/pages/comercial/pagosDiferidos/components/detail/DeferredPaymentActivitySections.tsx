@@ -1,4 +1,5 @@
 import React from 'react';
+import { toast } from 'react-toastify';
 import Icon from '@/components/icon/Icon';
 import Card, { CardBody } from '@/components/ui/Card';
 import ProtectedButton from '@/components/ui/ProtectedButton';
@@ -22,21 +23,25 @@ const PAYMENT_METHOD_LABELS: Record<DeferredPaymentMethod, string> = {
 
 const AttachmentLink: React.FC<{ attachment: IDeferredPaymentAttachment }> = ({ attachment }) => {
 	const download = async () => {
-		const blob = await deferredPaymentsService.downloadDeferredPaymentAttachment(
+		const { blob, fileName } = await deferredPaymentsService.downloadDeferredPaymentAttachment(
 			attachment.url,
 		);
 		const objectUrl = URL.createObjectURL(blob);
 		const anchor = document.createElement('a');
 		anchor.href = objectUrl;
-		anchor.download = attachment.file_name;
+		anchor.download = fileName ?? attachment.file_name;
+		document.body.appendChild(anchor);
 		anchor.click();
-		URL.revokeObjectURL(objectUrl);
+		anchor.remove();
+		window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
 	};
 	return (
 		<button
 			type='button'
 			onClick={() => {
-				download().catch(() => undefined);
+				download().catch(() => {
+					toast.error('No se pudo descargar el comprobante');
+				});
 			}}
 			className='flex w-full min-w-0 max-w-full items-center gap-3 overflow-hidden rounded-lg border border-zinc-200 bg-white px-3 py-2 text-left transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-800'>
 			<span className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-200 dark:bg-zinc-800'>
@@ -103,7 +108,7 @@ export const DeferredPaymentPaymentsSection: React.FC<{
 					{onVoid && (
 						<div className='flex justify-end'>
 							<ProtectedButton
-								permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.RECORD_PAYMENT}
+								permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.VOID_PAYMENT}
 								branchId={branchId}
 								subsidiaryId={subsidiaryId}
 								scope='access'

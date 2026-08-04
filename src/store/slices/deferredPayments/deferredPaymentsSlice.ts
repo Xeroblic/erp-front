@@ -1,4 +1,4 @@
-﻿import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type {
 	CreateDeferredPaymentApiPayload,
 	CreateDeferredPaymentPayload,

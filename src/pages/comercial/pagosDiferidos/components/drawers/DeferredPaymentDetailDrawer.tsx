@@ -35,10 +35,6 @@ import {
 	formatDeferredPaymentDate,
 } from '../../utils';
 
-const EMPTY_DEFERRED_PAYMENT_DOCUMENT = {
-	id: 0,
-	outstanding_amount: '0',
-} as IDeferredPaymentDocument;
 interface DeferredPaymentDetailDrawerProps {
 	documentId: number | null;
 	onClose: () => void;
@@ -89,10 +85,8 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 		setIsMarkPaidOpen(false);
 		setPaymentToVoid(null);
 	}, [branch.branchId, branch.subsidiaryId, documentId]);
-	const paymentActions = useDeferredPaymentActions(
-		document ?? EMPTY_DEFERRED_PAYMENT_DOCUMENT,
-		branch.subsidiaryId,
-		() => setIsRegisterOpen(false),
+	const paymentActions = useDeferredPaymentActions(document, branch.subsidiaryId, () =>
+		setIsRegisterOpen(false),
 	);
 	const hasOpenActionModal = isRegisterOpen || isMarkPaidOpen || paymentToVoid !== null;
 	const handleDrawerOpenChange: React.Dispatch<React.SetStateAction<boolean>> = useCallback(
@@ -355,15 +349,8 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 					isOpen={isRegisterOpen}
 					setIsOpen={setIsRegisterOpen}
 					formik={paymentActions.formik}
-					busy={
-						paymentActions.state.recordingPayment ||
-						paymentActions.state.uploadingReceipt
-					}
+					busy={paymentActions.state.recordingPayment}
 					error={paymentActions.state.error}
-					pendingReceipt={paymentActions.state.pendingReceipt !== null}
-					onRetryReceipt={() => {
-						paymentActions.actions.retryReceipt().catch(() => undefined);
-					}}
 				/>
 			)}
 			{document && isMarkPaidOpen && (
@@ -382,10 +369,8 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 					confirmLabel='Marcar pagada'
 					busy={paymentActions.state.markingPaid || paymentActions.state.uploadingReceipt}
 					onConfirm={() => {
-						const operation = paymentActions.state.pendingReceipt
-							? paymentActions.actions.retryReceipt()
-							: paymentActions.actions.markPaid();
-						operation
+						paymentActions.actions
+							.confirmMarkPaid()
 							.then((ok) => {
 								if (ok) {
 									setIsMarkPaidOpen(false);
@@ -414,7 +399,7 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 									name='mark_paid_receipt'
 									type='file'
 									accept={DEFERRED_PAYMENT_RECEIPT_ACCEPT}
-									disabled={paymentActions.state.pendingReceipt !== null}
+									disabled={paymentActions.state.pendingMarkPaidReceipt !== null}
 									isValid={!paymentActions.state.markPaidReceiptError}
 									isTouched={paymentActions.state.markPaidReceiptTouched}
 									invalidFeedback={
@@ -438,7 +423,7 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 										</p>
 									)}
 							</div>
-							{paymentActions.state.pendingReceipt && (
+							{paymentActions.state.pendingMarkPaidReceipt && (
 								<Alert
 									color='amber'
 									variant='outline'
