@@ -366,8 +366,13 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 						}
 					}}
 					title='Marcar documento como pagado'
-					confirmLabel='Marcar pagada'
+					confirmLabel={
+						paymentActions.state.pendingMarkPaidReceipt
+							? 'Reintentar comprobante'
+							: 'Marcar pagada'
+					}
 					busy={paymentActions.state.markingPaid || paymentActions.state.uploadingReceipt}
+					preventClose={paymentActions.state.pendingMarkPaidReceipt !== null}
 					onConfirm={() => {
 						paymentActions.actions
 							.confirmMarkPaid()
@@ -388,10 +393,12 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 								</strong>
 								.
 							</p>
-							<p>
-								Esta acción cerrará el documento y detendrá los recordatorios de
-								cobranza.
-							</p>
+							{!paymentActions.state.pendingMarkPaidReceipt && (
+								<p>
+									Esta acción cerrará el documento y detendrá los recordatorios de
+									cobranza.
+								</p>
+							)}
 							<div>
 								<Label htmlFor='mark_paid_receipt'>Comprobante (opcional)</Label>
 								<Input

@@ -14,6 +14,7 @@ interface ConfirmDeferredPaymentActionModalProps {
 	description: React.ReactNode;
 	confirmLabel: string;
 	busy: boolean;
+	preventClose?: boolean;
 	color?: 'red' | 'blue';
 	onConfirm: () => void;
 }
@@ -24,14 +25,20 @@ const ConfirmDeferredPaymentActionModal: React.FC<ConfirmDeferredPaymentActionMo
 	description,
 	confirmLabel,
 	busy,
+	preventClose = false,
 	color = 'blue',
 	onConfirm,
 }) => {
 	const guardClose: React.Dispatch<React.SetStateAction<boolean>> = (next) => {
-		if (!busy) setIsOpen(next);
+		if (!busy && !preventClose) setIsOpen(next);
 	};
 	return (
-		<Modal isOpen={isOpen} setIsOpen={guardClose} isCentered size='sm' isStaticBackdrop={busy}>
+		<Modal
+			isOpen={isOpen}
+			setIsOpen={guardClose}
+			isCentered
+			size='sm'
+			isStaticBackdrop={busy || preventClose}>
 			<ModalHeader>{title}</ModalHeader>
 			<ModalBody>
 				<div className='space-y-3 text-sm text-zinc-600 dark:text-zinc-300'>
@@ -40,7 +47,10 @@ const ConfirmDeferredPaymentActionModal: React.FC<ConfirmDeferredPaymentActionMo
 			</ModalBody>
 			<ModalFooter>
 				<ModalFooterChild>
-					<Button variant='outline' isDisable={busy} onClick={() => guardClose(false)}>
+					<Button
+						variant='outline'
+						isDisable={busy || preventClose}
+						onClick={() => guardClose(false)}>
 						Cancelar
 					</Button>
 				</ModalFooterChild>
