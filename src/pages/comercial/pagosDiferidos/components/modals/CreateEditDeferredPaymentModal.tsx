@@ -123,6 +123,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 			onClose();
 		},
 	});
+	const { resetForm } = formik;
 
 	const clearCreditProfile = useCallback(() => {
 		creditProfileAbortRef.current?.abort();
@@ -174,8 +175,15 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	);
 
 	useEffect(() => {
-		if (!isOpen || mode === 'edit') clearCreditProfile();
-	}, [clearCreditProfile, isOpen, mode]);
+		if (isOpen && mode === 'create') return;
+		clearCreditProfile();
+		if (!isOpen && mode === 'create') {
+			setSelectedCustomerOption(null);
+			setCustomerSearch('');
+			setPaymentTermDays(30);
+			resetForm();
+		}
+	}, [clearCreditProfile, isOpen, mode, resetForm]);
 
 	useEffect(() => {
 		if (!isOpen || subsidiaryId === null) return undefined;

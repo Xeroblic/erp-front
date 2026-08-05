@@ -307,6 +307,63 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		expect(screen.getByRole('button', { name: 'Crear documento' })).toBeDisabled();
 	});
 
+	it('limpia el perfil y el bloqueo al cerrar y reabrir el formulario', async () => {
+		const customer = {
+			id: 468,
+			name: 'Cliente suspendido al cerrar',
+			rut: '76.468.000-1',
+			contact: { name: 'Ana Pérez' },
+			loyalty: 0,
+			total_sales: 0,
+			is_active: true,
+		};
+		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
+			Promise.resolve({
+				data: url.includes('/overview')
+					? { ...emptyPagination, data: [customer], total: 1 }
+					: url.includes('/credit-profile')
+						? {
+								data: {
+									id: 18,
+									customer_sale_id: customer.id,
+									is_active: false,
+									payment_term_days: 30,
+									credit_limit: null,
+									notes: null,
+								},
+							}
+						: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+			}),
+		);
+		const store = createTestStore();
+		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const onClose = vi.fn();
+		const { rerender } = render(<CreateEditDeferredPaymentModal isOpen onClose={onClose} />, {
+			wrapper: Wrapper,
+		});
+
+		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'cerrar' } });
+		fireEvent.click(await screen.findByText('Cliente suspendido al cerrar · 76.468.000-1'));
+		expect(
+			await screen.findByText(
+				'El crédito de este cliente está suspendido. Reactívalo antes de crear un documento de pago diferido.',
+			),
+		).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+		expect(onClose).toHaveBeenCalledTimes(1);
+		rerender(<CreateEditDeferredPaymentModal isOpen={false} onClose={onClose} />);
+		rerender(<CreateEditDeferredPaymentModal isOpen onClose={onClose} />);
+
+		await waitFor(() =>
+			expect(
+				screen.queryByText(/El crédito de este cliente está suspendido/),
+			).not.toBeInTheDocument(),
+		);
+		expect(screen.getByText('Busca por razón social o RUT')).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
+	});
+
 	it('permite crear sin perfil y usa el plazo predeterminado de 30 días', async () => {
 		const customer = {
 			id: 459,
@@ -364,7 +421,9 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		let profileFails = true;
 		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) => {
 			if (url.includes('/overview')) {
-				return Promise.resolve({ data: { ...emptyPagination, data: [customer], total: 1 } });
+				return Promise.resolve({
+					data: { ...emptyPagination, data: [customer], total: 1 },
+				});
 			}
 			if (url.includes('/credit-profile')) {
 				return profileFails
@@ -381,11 +440,16 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 						});
 			}
 			return Promise.resolve({
-				data: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+				data: {
+					data: [],
+					meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
+				},
 			});
 		});
 		const store = createTestStore();
-		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const Wrapper = ({ children }: PropsWithChildren) => (
+			<Provider store={store}>{children}</Provider>
+		);
 		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, { wrapper: Wrapper });
 
 		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'error' } });

@@ -53,8 +53,10 @@ const useCustomerCreditProfile = ({
 	const loadProfile = useCallback(
 		async (signal?: AbortSignal) => {
 			if (subsidiaryId === null) {
+				requestIdRef.current += 1;
 				setProfile(null);
 				setLoadError(null);
+				setIsLoading(false);
 				return;
 			}
 

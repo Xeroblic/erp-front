@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 import CustomerCreditProfileCard from '../components/CustomerCreditProfileCard';
@@ -30,6 +30,14 @@ const emptyProfile = {
 	payment_term_days: 30,
 	credit_limit: null,
 	notes: null,
+};
+
+const waitForButtonClickGuard = async (): Promise<void> => {
+	await act(async () => {
+		await new Promise<void>((resolve) => {
+			setTimeout(resolve, 450);
+		});
+	});
 };
 
 describe('CustomerCreditProfileCard', () => {
@@ -79,6 +87,7 @@ describe('CustomerCreditProfileCard', () => {
 		);
 		expect(await screen.findByText('45 días')).toBeInTheDocument();
 		expect(screen.getByText('Sin cupo definido')).toBeInTheDocument();
+		await waitForButtonClickGuard();
 	});
 
 	it('muestra claramente un perfil suspendido', async () => {
@@ -113,14 +122,12 @@ describe('CustomerCreditProfileCard', () => {
 		expect(
 			screen.getByRole('form', { name: 'Formulario de condiciones de crédito' }),
 		).toBeInTheDocument();
-		expect(screen.getByRole('button', { name: 'Cancelar' })).toHaveAttribute(
-			'type',
-			'button',
-		);
+		expect(screen.getByRole('button', { name: 'Cancelar' })).toHaveAttribute('type', 'button');
 		expect(screen.getByRole('button', { name: 'Guardar condiciones' })).toHaveAttribute(
 			'type',
 			'submit',
 		);
+		await waitForButtonClickGuard();
 	});
 
 	it('permite reintentar cuando no se puede cargar el perfil', async () => {
@@ -134,6 +141,7 @@ describe('CustomerCreditProfileCard', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
 		expect(await screen.findByText('Sin perfil de crédito.')).toBeInTheDocument();
 		expect(apiSpies.fetchData).toHaveBeenCalledTimes(2);
+		await waitForButtonClickGuard();
 	});
 
 	it('conserva el borrador tras un error al guardar y permite cancelarlo', async () => {
@@ -153,6 +161,7 @@ describe('CustomerCreditProfileCard', () => {
 		expect(screen.getByLabelText('Plazo de pago (días)')).toHaveValue(45);
 		fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
 		expect(screen.getByText('Sin perfil de crédito.')).toBeInTheDocument();
+		await waitForButtonClickGuard();
 	});
 
 	it('muestra el perfil, pero oculta las acciones sin permiso de edición', async () => {
