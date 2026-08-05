@@ -10,6 +10,14 @@ import { CreditProfileSchema, type CreditProfileFormValues } from '../types';
 
 const DEFAULT_PAYMENT_TERM_DAYS = 30;
 
+const toWholeCLP = (creditLimit: string | null | undefined): string => {
+	if (!creditLimit) return '';
+	const numericCreditLimit = Number(creditLimit);
+	return Number.isFinite(numericCreditLimit)
+		? String(Math.round(numericCreditLimit))
+		: creditLimit;
+};
+
 const getErrorMessage = (error: unknown, fallback: string): string => {
 	if (error !== null && typeof error === 'object' && 'response' in error) {
 		const { response } = error;
@@ -27,7 +35,7 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
 const toFormValues = (profile: IDeferredPaymentCreditProfile | null): CreditProfileFormValues => ({
 	is_active: profile?.id === null ? true : (profile?.is_active ?? true),
 	payment_term_days: String(profile?.payment_term_days ?? DEFAULT_PAYMENT_TERM_DAYS),
-	credit_limit: profile?.credit_limit ?? '',
+	credit_limit: toWholeCLP(profile?.credit_limit),
 	notes: profile?.notes ?? '',
 });
 

@@ -107,7 +107,29 @@ describe('CustomerCreditProfileCard', () => {
 		render(<CustomerCreditProfileCard customerSaleId={8} />);
 
 		expect(await screen.findByText('Suspendido')).toBeInTheDocument();
+		expect(screen.getByText('$ 500.000')).toBeInTheDocument();
 		expect(screen.getByText('Revisar antes de reactivar.')).toBeInTheDocument();
+		fireEvent.click(screen.getByRole('button', { name: 'Editar' }));
+		expect(screen.getByLabelText('Cupo de crédito')).toHaveValue('500000');
+		await waitForButtonClickGuard();
+	});
+
+	it('informa cuando el cupo contiene caracteres que no son números', async () => {
+		apiSpies.fetchData.mockResolvedValue({ data: { data: emptyProfile } } as never);
+
+		render(<CustomerCreditProfileCard customerSaleId={8} />);
+
+		fireEvent.click(await screen.findByRole('button', { name: 'Crear perfil' }));
+		fireEvent.change(screen.getByLabelText('Cupo de crédito'), {
+			target: { value: 'quinientos mil' },
+		});
+
+		expect(
+			await screen.findByText(
+				'El cupo de crédito debe contener solo números enteros de hasta 13 dígitos',
+			),
+		).toBeInTheDocument();
+		await waitForButtonClickGuard();
 	});
 
 	it('mantiene las acciones dentro de su formulario independiente', async () => {

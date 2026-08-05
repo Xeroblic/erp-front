@@ -39,7 +39,10 @@ const CustomerCreditProfileCardContent: React.FC<{
 	const paymentTermError = formik.touched.payment_term_days
 		? formik.errors.payment_term_days
 		: undefined;
-	const creditLimitError = formik.touched.credit_limit ? formik.errors.credit_limit : undefined;
+	const creditLimitError =
+		formik.touched.credit_limit || formik.values.credit_limit.trim()
+			? formik.errors.credit_limit
+			: undefined;
 
 	return (
 		<Card className='border-zinc-200/50 shadow-sm dark:border-zinc-700/50'>
@@ -153,7 +156,20 @@ const CustomerCreditProfileCardContent: React.FC<{
 									isTouched={formik.touched.payment_term_days}
 									isValid={!paymentTermError}
 									invalidFeedback={paymentTermError}
+									aria-describedby={
+										paymentTermError
+											? 'credit-profile-payment-term-days-error'
+											: undefined
+									}
 								/>
+								{paymentTermError && (
+									<p
+										id='credit-profile-payment-term-days-error'
+										role='alert'
+										className='mt-1 text-sm text-red-600 dark:text-red-400'>
+										{paymentTermError}
+									</p>
+								)}
 							</div>
 							<div>
 								<Label htmlFor='credit-profile-credit-limit'>Cupo de crédito</Label>
@@ -161,15 +177,33 @@ const CustomerCreditProfileCardContent: React.FC<{
 									id='credit-profile-credit-limit'
 									name='credit_limit'
 									type='text'
-									inputMode='decimal'
-									placeholder='Sin cupo definido'
+									inputMode='numeric'
+									placeholder='Ej.: 500000'
 									value={formik.values.credit_limit}
-									onChange={formik.handleChange}
+									onChange={(event) => {
+										formik
+											.setFieldTouched('credit_limit', true, false)
+											.catch(() => undefined);
+										formik.handleChange(event);
+									}}
 									onBlur={formik.handleBlur}
 									isTouched={formik.touched.credit_limit}
 									isValid={!creditLimitError}
 									invalidFeedback={creditLimitError}
+									aria-describedby={
+										creditLimitError
+											? 'credit-profile-credit-limit-error'
+											: undefined
+									}
 								/>
+								{creditLimitError && (
+									<p
+										id='credit-profile-credit-limit-error'
+										role='alert'
+										className='mt-1 text-sm text-red-600 dark:text-red-400'>
+										{creditLimitError}
+									</p>
+								)}
 							</div>
 						</div>
 						<div>

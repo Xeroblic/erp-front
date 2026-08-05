@@ -52,8 +52,8 @@ export const CreditProfileSchema = Yup.object({
 		.trim()
 		.test(
 			'credit-limit',
-			'El cupo debe ser un monto no negativo de hasta 13 enteros y 2 decimales',
-			(value) => !value || /^\d{1,13}(?:\.\d{1,2})?$/.test(value),
+			'El cupo de crédito debe contener solo números enteros de hasta 13 dígitos',
+			(value) => !value || /^\d{1,13}$/.test(value),
 		),
 	notes: Yup.string().trim(),
 });
