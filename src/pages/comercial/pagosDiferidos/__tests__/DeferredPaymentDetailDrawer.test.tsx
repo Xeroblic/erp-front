@@ -321,7 +321,8 @@ describe('DeferredPaymentDetailDrawer', () => {
 		expect(screen.getAllByText('100%').length).toBeGreaterThan(0);
 		expect(screen.getByText('100% pagado')).toBeInTheDocument();
 	});
-	it('muestra el error sin datos y permite reintentar', () => {
+	it('muestra el error sin datos y permite reintentar', async () => {
+		vi.useFakeTimers();
 		vi.mocked(useDeferredPaymentDetail).mockReturnValue({
 			...baseHookResult,
 			document: null,
@@ -329,7 +330,11 @@ describe('DeferredPaymentDetailDrawer', () => {
 		});
 
 		renderDrawer(9999);
-		fireEvent.click(screen.getByText('Reintentar'));
+		await act(async () => {
+			fireEvent.click(screen.getByText('Reintentar'));
+			vi.advanceTimersByTime(400);
+			await Promise.resolve();
+		});
 
 		expect(screen.getByText('No pudimos cargar el documento')).toBeInTheDocument();
 		expect(screen.getByText('Documento ID #9999')).toBeInTheDocument();

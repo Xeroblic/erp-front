@@ -14,10 +14,27 @@ vi.mock('react-i18next', () => ({
 vi.mock('@/components/authorization/PermissionGuard', () => ({
 	default: ({ children }: { children: React.ReactNode }) => children,
 }));
+vi.mock('@/components/ui/Button', () => ({
+	default: ({
+		children,
+		onClick,
+		isDisable,
+	}: {
+		children: React.ReactNode;
+		onClick?: React.MouseEventHandler<HTMLButtonElement>;
+		isDisable?: boolean;
+	}) => (
+		<button type='button' disabled={isDisable} onClick={onClick}>
+			{children}
+		</button>
+	),
+}));
 vi.mock('../hooks/useDeferredPaymentActions');
 vi.mock('../hooks/useDeferredPaymentDetail');
 
 const dismissMarkPaidReceipt = vi.fn();
+const markPaid = vi.fn();
+const retryMarkPaidReceipt = vi.fn();
 const document = DEFERRED_PAYMENT_DETAIL_FIXTURES[2];
 let actionsHookResult: ReturnType<typeof useDeferredPaymentActions>;
 
@@ -60,7 +77,8 @@ describe('DeferredPaymentDetailDrawer con comprobante pendiente', () => {
 			},
 			actions: {
 				voidPayment: vi.fn(),
-				confirmMarkPaid: vi.fn(),
+				markPaid,
+				retryMarkPaidReceipt,
 				setMarkPaidReceipt: vi.fn(),
 				resetMarkPaidReceipt: vi.fn(),
 				dismissMarkPaidReceipt,
@@ -119,5 +137,25 @@ describe('DeferredPaymentDetailDrawer con comprobante pendiente', () => {
 		expect(
 			screen.getByText('El abono indicado no pertenece a este documento.'),
 		).toBeInTheDocument();
+	});
+
+	it('reintenta el comprobante sin volver a ejecutar el cierre manual', () => {
+		retryMarkPaidReceipt.mockResolvedValue(true);
+		render(
+			<Provider store={store}>
+				<DeferredPaymentDetailDrawer
+					documentId={document.id}
+					onClose={vi.fn()}
+					onEdit={vi.fn()}
+				/>
+			</Provider>,
+		);
+
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Reintentar comprobante', hidden: true }),
+		);
+
+		expect(retryMarkPaidReceipt).toHaveBeenCalledOnce();
+		expect(markPaid).not.toHaveBeenCalled();
 	});
 });

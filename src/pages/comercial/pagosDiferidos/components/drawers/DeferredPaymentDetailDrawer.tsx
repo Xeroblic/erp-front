@@ -378,7 +378,7 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 												isDisable={paymentActions.state.uploadingReceipt}
 												onClick={() => {
 													paymentActions.actions
-														.confirmMarkPaid()
+														.retryMarkPaidReceipt()
 														.catch(() => undefined);
 												}}>
 												Reintentar comprobante
@@ -450,17 +450,13 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 						}
 					}}
 					title='Marcar documento como pagado'
-					confirmLabel={
-						paymentActions.state.pendingMarkPaidReceipt
-							? 'Reintentar comprobante'
-							: 'Marcar pagada'
-					}
+					confirmLabel='Marcar pagada'
 					busy={paymentActions.state.markingPaid || paymentActions.state.uploadingReceipt}
 					error={paymentActions.state.errorMarkPaid ?? paymentActions.state.errorReceipt}
 					isConfirmDisabled={paymentActions.state.markPaidReceiptError !== null}
 					onConfirm={() => {
 						paymentActions.actions
-							.confirmMarkPaid()
+							.markPaid()
 							.then((ok) => {
 								if (ok) {
 									setIsMarkPaidOpen(false);
@@ -478,12 +474,10 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 								</strong>
 								.
 							</p>
-							{!paymentActions.state.pendingMarkPaidReceipt && (
-								<p>
-									Esta acción cerrará el documento y detendrá los recordatorios de
-									cobranza.
-								</p>
-							)}
+							<p>
+								Esta acción cerrará el documento y detendrá los recordatorios de
+								cobranza.
+							</p>
 							<div>
 								<Label htmlFor='mark_paid_receipt'>Comprobante (opcional)</Label>
 								<Input
@@ -491,7 +485,6 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 									name='mark_paid_receipt'
 									type='file'
 									accept={DEFERRED_PAYMENT_RECEIPT_ACCEPT}
-									disabled={paymentActions.state.pendingMarkPaidReceipt !== null}
 									isValid={!paymentActions.state.markPaidReceiptError}
 									isTouched={paymentActions.state.markPaidReceiptTouched}
 									invalidFeedback={
@@ -515,16 +508,6 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 										</p>
 									)}
 							</div>
-							{paymentActions.state.pendingMarkPaidReceipt && (
-								<Alert
-									color='amber'
-									variant='outline'
-									icon='HeroExclamationTriangle'
-									title='Documento pagado, comprobante pendiente'>
-									El documento ya fue cerrado. Reintenta únicamente el
-									comprobante.
-								</Alert>
-							)}
 						</>
 					}
 				/>

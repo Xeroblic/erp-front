@@ -3,7 +3,10 @@ import { configureStore } from '@reduxjs/toolkit';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { IDeferredPaymentDocument } from '@/interface/deferredPayments.interface';
+import type {
+	IDeferredPaymentAbono,
+	IDeferredPaymentDocument,
+} from '@/interface/deferredPayments.interface';
 import deferredPaymentsReducer, {
 	setDeferredPaymentsFilters,
 } from '@/store/slices/deferredPayments/deferredPaymentsSlice';
@@ -12,6 +15,7 @@ import { useDeferredPaymentActions } from '../hooks/useDeferredPaymentActions';
 const toastSpies = vi.hoisted(() => ({ success: vi.fn() }));
 const serviceSpies = vi.hoisted(() => ({
 	registerPayment: vi.fn(),
+	deletePayment: vi.fn(),
 	markDocumentPaid: vi.fn(),
 	uploadDeferredPaymentAttachment: vi.fn(),
 	getDocument: vi.fn(),
@@ -23,13 +27,14 @@ vi.mock('@/services/deferredPaymentsService', () => ({ default: serviceSpies }))
 
 const document = {
 	id: 7,
+	status: 'partially_paid',
 	outstanding_amount: '100000.00',
 } as IDeferredPaymentDocument;
 const otherDocument = {
 	...document,
 	id: 8,
 } as IDeferredPaymentDocument;
-const payment = {
+const payment: IDeferredPaymentAbono = {
 	id: 31,
 	amount: '100000.00',
 	paid_at: '2026-08-03',
@@ -137,7 +142,7 @@ describe('useDeferredPaymentActions', () => {
 		});
 		let closed = false;
 		await act(async () => {
-			closed = await result.current.actions.confirmMarkPaid();
+			closed = await result.current.actions.markPaid();
 		});
 
 		expect(closed).toBe(true);
@@ -162,9 +167,9 @@ describe('useDeferredPaymentActions', () => {
 		});
 		let closed = true;
 		await act(async () => {
-			closed = await result.current.actions.confirmMarkPaid();
+			closed = await result.current.actions.markPaid();
 		});
-		expect(closed).toBe(false);
+		expect(closed).toBe(true);
 		expect(result.current.state.pendingMarkPaidReceipt?.paymentId).toBe(payment.id);
 		expect(serviceSpies.markDocumentPaid).toHaveBeenCalledOnce();
 		expect(serviceSpies.uploadDeferredPaymentAttachment).toHaveBeenCalledOnce();
@@ -173,7 +178,7 @@ describe('useDeferredPaymentActions', () => {
 		);
 
 		await act(async () => {
-			expect(await result.current.actions.confirmMarkPaid()).toBe(true);
+			expect(await result.current.actions.retryMarkPaidReceipt()).toBe(true);
 		});
 		expect(serviceSpies.markDocumentPaid).toHaveBeenCalledOnce();
 		expect(serviceSpies.uploadDeferredPaymentAttachment).toHaveBeenCalledTimes(2);
@@ -230,13 +235,13 @@ describe('useDeferredPaymentActions', () => {
 			await result.current.actions.setMarkPaidReceipt(file);
 		});
 		await act(async () => {
-			expect(await result.current.actions.confirmMarkPaid()).toBe(false);
+			expect(await result.current.actions.markPaid()).toBe(true);
 		});
 		expect(result.current.state.pendingMarkPaidReceipt?.documentId).toBe(document.id);
 
 		let retry: Promise<boolean>;
 		act(() => {
-			retry = result.current.actions.confirmMarkPaid();
+			retry = result.current.actions.retryMarkPaidReceipt();
 		});
 		await waitFor(() => expect(uploadSignal).toBeDefined());
 		act(() => result.current.actions.dismissMarkPaidReceipt());
@@ -248,7 +253,7 @@ describe('useDeferredPaymentActions', () => {
 		expect(uploadSignal?.aborted).toBe(true);
 		expect(result.current.state.pendingMarkPaidReceipt).toBeNull();
 		await act(async () => {
-			expect(await result.current.actions.confirmMarkPaid()).toBe(true);
+			expect(await result.current.actions.markPaid()).toBe(true);
 		});
 		expect(serviceSpies.markDocumentPaid).toHaveBeenCalledTimes(2);
 		expect(serviceSpies.uploadDeferredPaymentAttachment).toHaveBeenCalledTimes(2);
@@ -312,7 +317,7 @@ describe('useDeferredPaymentActions', () => {
 			);
 		});
 		await act(async () => {
-			expect(await result.current.actions.confirmMarkPaid()).toBe(false);
+			expect(await result.current.actions.markPaid()).toBe(true);
 		});
 		expect(result.current.state.pendingMarkPaidReceipt).not.toBeNull();
 		expect(store.getState().deferredPayments.errorReceipt).toBe(
@@ -323,6 +328,44 @@ describe('useDeferredPaymentActions', () => {
 		expect(result.current.state.pendingMarkPaidReceipt).toBeNull();
 		expect(store.getState().deferredPayments.errorReceipt).toBeNull();
 		expect(serviceSpies.markDocumentPaid).toHaveBeenCalledOnce();
+	});
+
+	it('descarta el comprobante pendiente al anular y ejecuta un cierre nuevo', async () => {
+		serviceSpies.markDocumentPaid
+			.mockResolvedValueOnce(payment)
+			.mockResolvedValueOnce({ ...payment, id: 32 });
+		serviceSpies.uploadDeferredPaymentAttachment.mockRejectedValueOnce(
+			new Error('Upload temporalmente no disponible'),
+		);
+		serviceSpies.deletePayment.mockResolvedValue({ message: 'Abono anulado correctamente' });
+		const { result } = renderActions();
+
+		await act(async () => {
+			await result.current.actions.setMarkPaidReceipt(
+				new File(['contenido'], 'comprobante.pdf', { type: 'application/pdf' }),
+			);
+		});
+		await act(async () => {
+			expect(await result.current.actions.markPaid()).toBe(true);
+		});
+		expect(result.current.state.pendingMarkPaidReceipt?.paymentId).toBe(payment.id);
+
+		await act(async () => {
+			expect(await result.current.actions.voidPayment(payment)).toBe(true);
+		});
+		expect(result.current.state.pendingMarkPaidReceipt).toBeNull();
+
+		await act(async () => {
+			expect(await result.current.actions.markPaid()).toBe(true);
+		});
+		expect(serviceSpies.deletePayment).toHaveBeenCalledWith(
+			4,
+			document.id,
+			payment.id,
+			expect.any(AbortSignal),
+		);
+		expect(serviceSpies.markDocumentPaid).toHaveBeenCalledTimes(2);
+		expect(serviceSpies.uploadDeferredPaymentAttachment).toHaveBeenCalledOnce();
 	});
 
 	it('limpia el error de mutación antes de abrir otro flujo', async () => {
