@@ -6,6 +6,7 @@ import type {
 	DeferredPaymentMutationApiResponse,
 	DeferredPaymentsListResponse,
 	IDeferredPaymentAbono,
+	IDeferredPaymentAttachment,
 	IDeferredPaymentCreditProfile,
 	IDeferredPaymentDocument,
 	IDeferredPaymentsSummary,
@@ -21,6 +22,10 @@ type ApiResourcePayload<T> = T | ApiResource<T>;
 type DocumentMutationApiResponse = ApiResourcePayload<IDeferredPaymentDocument> & {
 	credit_limit_exceeded?: boolean;
 };
+export interface DeferredPaymentAttachmentDownload {
+	blob: Blob;
+	fileName: string | null;
+}
 
 const asRecord = (value: unknown): Record<string, unknown> | null =>
 	value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -168,13 +173,19 @@ const registerPayment = async (
 	payload: RegisterDeferredPaymentPayload,
 	signal?: AbortSignal,
 ): Promise<IDeferredPaymentAbono> => {
+	const formData = new FormData();
+	formData.append('amount', payload.amount);
+	formData.append('paid_at', payload.paid_at);
+	formData.append('method', payload.method);
+	formData.append('notes', payload.notes ?? '');
+	if (payload.receipt) formData.append('receipt', payload.receipt);
 	const response = await ApiService.fetchData<
 		ApiResourcePayload<IDeferredPaymentAbono>,
-		RegisterDeferredPaymentPayload
+		FormData
 	>({
 		url: `${documentUrl(subsidiaryId, documentId)}/payments`,
 		method: 'post',
-		data: payload,
+		data: formData,
 		...requestConfig(signal),
 	});
 	ApiService.invalidateCache(documentsUrl(subsidiaryId));
@@ -210,6 +221,56 @@ const markDocumentPaid = async (
 	return normalizePayment(unwrapResource(response.data));
 };
 
+const uploadDeferredPaymentAttachment = async (
+	subsidiaryId: number,
+	documentId: number,
+	paymentId: number,
+	file: File,
+	signal?: AbortSignal,
+): Promise<IDeferredPaymentAttachment> => {
+	const payload = new FormData();
+	payload.append('file', file);
+	payload.append('deferred_payment_id', String(paymentId));
+	const response = await ApiService.fetchData<
+		ApiResourcePayload<IDeferredPaymentAttachment>,
+		FormData
+	>({
+		url: `${documentUrl(subsidiaryId, documentId)}/attachments`,
+		method: 'post',
+		data: payload,
+		...requestConfig(signal),
+	});
+	ApiService.invalidateCache(documentsUrl(subsidiaryId));
+	return unwrapResource(response.data);
+};
+
+const downloadDeferredPaymentAttachment = async (
+	url: string,
+	signal?: AbortSignal,
+): Promise<DeferredPaymentAttachmentDownload> => {
+	const response = await ApiService.fetchData<Blob>({
+		url,
+		method: 'get',
+		responseType: 'blob',
+		...requestConfig(signal),
+	});
+	const disposition = response.headers?.['content-disposition'];
+	const encodedName =
+		typeof disposition === 'string'
+			? disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1]
+			: undefined;
+	const quotedName =
+		typeof disposition === 'string'
+			? disposition.match(/filename="?([^";]+)"?/i)?.[1]
+			: undefined;
+	let fileName: string | null = null;
+	try {
+		fileName = encodedName ? decodeURIComponent(encodedName) : (quotedName ?? null);
+	} catch {
+		fileName = encodedName ?? quotedName ?? null;
+	}
+	return { blob: response.data, fileName };
+};
 const getCreditProfile = async (
 	subsidiaryId: number,
 	customerSaleId: number,
@@ -253,6 +314,8 @@ const deferredPaymentsService = {
 	registerPayment,
 	deletePayment,
 	markDocumentPaid,
+	uploadDeferredPaymentAttachment,
+	downloadDeferredPaymentAttachment,
 	getCreditProfile,
 	updateCreditProfile,
 };

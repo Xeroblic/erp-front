@@ -64,7 +64,7 @@ export const mapDeferredPaymentDocumentToForm = (
 	issue_date: deferredPaymentDocument.issue_date,
 	due_date: deferredPaymentDocument.due_date,
 	purchase_order: deferredPaymentDocument.purchase_order ?? null,
-	notes: deferredPaymentDocument.notes,
+	notes: deferredPaymentDocument.notes ?? null,
 	assignee_ids: deferredPaymentDocument.assignees.map((assignee) => assignee.id),
 	items: deferredPaymentDocument.items.map((item) => ({
 		// Clave efímera de Formik; el backend reemplaza los ítems y no conserva esta identidad.

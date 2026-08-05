@@ -332,7 +332,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 									)}
 								</DeferredPaymentField>
 								<DeferredPaymentField name='issue_date' label='Fecha de emisión'>
-									{() => (
+									{({ error, isTouched, isValid }) => (
 										<DateInput
 											id='issue_date'
 											name='issue_date'
@@ -340,6 +340,9 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 											maxDate={MAX_DATE}
 											maxYear={MAX_YEAR}
 											disabled={isPaidEdit}
+											isValid={isValid}
+											isTouched={isTouched}
+											invalidFeedback={error}
 											onChange={formik.handleChange}
 											onBlur={() =>
 												formik.setFieldTouched('issue_date', true)
@@ -348,7 +351,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 									)}
 								</DeferredPaymentField>
 								<DeferredPaymentField name='due_date' label='Fecha de vencimiento'>
-									{() => (
+									{({ error, isTouched, isValid }) => (
 										<DateInput
 											id='due_date'
 											name='due_date'
@@ -356,6 +359,9 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 											maxDate={MAX_DATE}
 											maxYear={MAX_YEAR}
 											disabled={isPaidEdit}
+											isValid={isValid}
+											isTouched={isTouched}
+											invalidFeedback={error}
 											onChange={(event) =>
 												actions
 													.setDueDateManually(event.target.value)

@@ -75,7 +75,8 @@ export const ERP_PERMISSIONS = {
 		CREATE: 'create-deferred-payment',
 		UPDATE: 'edit-deferred-payment',
 		DELETE: 'delete-deferred-payment',
-		RECORD_PAYMENT: 'record-deferred-payment',
+		RECORD_PAYMENT: 'register-deferred-payment',
+		VOID_PAYMENT: 'void-deferred-payment',
 		MARK_PAID: 'mark-paid-deferred-payment',
 	},
 

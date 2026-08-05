@@ -39,6 +39,9 @@ const dateOnlySchema = (requiredMessage: string) =>
 		.matches(/^\d{4}-\d{2}-\d{2}$/, 'Ingresa una fecha válida')
 		.required(requiredMessage);
 
+const optionalTextSchema = (maxLength: number, maxLengthMessage: string) =>
+	Yup.string().trim().max(maxLength, maxLengthMessage).nullable().optional();
+
 export const DeferredPaymentItemSchema = Yup.object({
 	product_id: Yup.number().nullable().oneOf([null]).defined(),
 	code: Yup.string()
@@ -89,15 +92,11 @@ export const DeferredPaymentDocumentSchema = Yup.object({
 			return typeof issueDate !== 'string' || !value || value >= issueDate;
 		},
 	),
-	purchase_order: Yup.string()
-		.trim()
-		.max(100, 'La orden de compra no puede superar los 100 caracteres')
-		.nullable(),
-	notes: Yup.string()
-		.trim()
-		.max(1000, 'Las notas no pueden superar los 1000 caracteres')
-		.nullable()
-		.defined(),
+	purchase_order: optionalTextSchema(
+		100,
+		'La orden de compra no puede superar los 100 caracteres',
+	),
+	notes: optionalTextSchema(1000, 'Las notas no pueden superar los 1000 caracteres'),
 	assignee_ids: Yup.array()
 		.of(
 			Yup.number()
@@ -163,3 +162,71 @@ export const createDeferredPaymentInitialValues = (
 export const calculateDeferredPaymentEstimatedTotal = (
 	items: readonly DeferredPaymentFormItemValues[],
 ): number => items.reduce((total, item) => total + item.quantity * item.unit_price, 0);
+
+export const DEFERRED_PAYMENT_METHODS = ['transfer', 'deposit', 'check', 'cash', 'other'] as const;
+export const DEFERRED_PAYMENT_RECEIPT_ACCEPT = '.pdf,.jpg,.jpeg,.png,.webp,.xls,.xlsx';
+export const DEFERRED_PAYMENT_RECEIPT_MAX_BYTES = 10 * 1024 * 1024;
+const DEFERRED_PAYMENT_RECEIPT_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'xls', 'xlsx'];
+const DEFERRED_PAYMENT_RECEIPT_MIME_TYPES = [
+	'application/pdf',
+	'image/jpeg',
+	'image/png',
+	'image/webp',
+	'application/vnd.ms-excel',
+	'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+];
+
+const isAllowedDeferredPaymentReceipt = (file: File): boolean => {
+	const extension = file.name.split('.').pop()?.toLowerCase();
+	const hasAllowedExtension =
+		extension !== undefined && DEFERRED_PAYMENT_RECEIPT_EXTENSIONS.includes(extension);
+	if (!hasAllowedExtension) return false;
+
+	const mimeType = file.type.toLowerCase();
+	const hasGenericMimeType = mimeType === '' || mimeType === 'application/octet-stream';
+	return hasGenericMimeType || DEFERRED_PAYMENT_RECEIPT_MIME_TYPES.includes(mimeType);
+};
+
+export interface DeferredPaymentActionFormValues {
+	amount: string;
+	paid_at: string;
+	method: import('@/interface/deferredPayments.interface').DeferredPaymentMethod;
+	notes?: string;
+	receipt: File | null;
+}
+
+export const deferredPaymentReceiptSchema = Yup.mixed<File>()
+	.nullable()
+	.test(
+		'receipt-size',
+		'El comprobante no puede superar los 10 MB',
+		(file) => !file || file.size <= DEFERRED_PAYMENT_RECEIPT_MAX_BYTES,
+	)
+	.test(
+		'receipt-type',
+		'Formato de comprobante no permitido',
+		(file) => !file || isAllowedDeferredPaymentReceipt(file),
+	);
+
+export const createDeferredPaymentActionSchema = (outstandingAmount: number) =>
+	Yup.object({
+		amount: Yup.number()
+			.transform((_value: unknown, originalValue: unknown): number | undefined =>
+				originalValue === '' ? undefined : Number(originalValue),
+			)
+			.typeError('El monto debe ser un número')
+			.moreThan(0, 'El monto debe ser mayor a 0')
+			.max(outstandingAmount, 'El abono excede el saldo pendiente del documento.')
+			.required('Ingresa el monto'),
+		paid_at: Yup.string()
+			.required('Selecciona la fecha del abono')
+			.matches(/^\d{4}-\d{2}-\d{2}$/, {
+				message: 'Ingresa una fecha válida',
+				excludeEmptyString: true,
+			}),
+		method: Yup.mixed<import('@/interface/deferredPayments.interface').DeferredPaymentMethod>()
+			.oneOf([...DEFERRED_PAYMENT_METHODS], 'Selecciona un método válido')
+			.required('Selecciona el método de pago'),
+		notes: optionalTextSchema(1000, 'La nota no puede superar los 1000 caracteres'),
+		receipt: deferredPaymentReceiptSchema,
+	});

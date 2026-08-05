@@ -109,6 +109,7 @@ describe('useDeferredPaymentForm', () => {
 		const payload = mapDeferredPaymentFormToPayload({
 			...values,
 			document_number: `  ${values.document_number}  `,
+			purchase_order: '   ',
 			notes: '   ',
 		});
 
@@ -122,6 +123,7 @@ describe('useDeferredPaymentForm', () => {
 		expect(payload).toMatchObject({
 			customer_sale_id: document.customer.id,
 			document_number: document.document_number,
+			purchase_order: null,
 			notes: null,
 		});
 		expect(
@@ -291,14 +293,19 @@ describe('useDeferredPaymentForm', () => {
 	});
 	it('asocia los errores de validación del backend con sus campos', async () => {
 		configureSuccessfulServices();
-		mutationFailure.error = Object.assign(new Error('Los datos enviados no son válidos.'), {
-			response: {
-				data: {
-					message: 'Los datos enviados no son válidos.',
-					errors: { document_number: ['El número de documento ya está registrado.'] },
+		mutationFailure.error = Object.assign(
+			new Error('The document number has already been taken.'),
+			{
+				response: {
+					data: {
+						message: 'The document number has already been taken.',
+						errors: {
+							document_number: ['The document number has already been taken.'],
+						},
+					},
 				},
 			},
-		});
+		);
 		const { hook } = createHook();
 		await act(async () => {
 			await hook.result.current.formik.setValues({
@@ -322,10 +329,12 @@ describe('useDeferredPaymentForm', () => {
 			await hook.result.current.formik.submitForm();
 		});
 		expect(hook.result.current.formik.errors.document_number).toBe(
-			'El número de documento ya está registrado.',
+			'The document number has already been taken.',
 		);
 		expect(hook.result.current.formik.touched.document_number).toBe(true);
-		expect(toastSpies.error).toHaveBeenCalledWith('Los datos enviados no son válidos.');
+		expect(toastSpies.error).toHaveBeenCalledWith(
+			'The document number has already been taken.',
+		);
 	});
 	it('bloquea la edición de documentos pagados', async () => {
 		const paidDocument = DEFERRED_PAYMENT_DOCUMENT_FIXTURES.find(
