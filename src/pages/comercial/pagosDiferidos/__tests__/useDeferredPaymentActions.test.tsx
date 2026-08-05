@@ -205,6 +205,36 @@ describe('useDeferredPaymentActions', () => {
 		expect(serviceSpies.getSummary).toHaveBeenCalledOnce();
 	});
 
+	it('conserva el comprobante pendiente cuando falla temporalmente el detalle', async () => {
+		serviceSpies.markDocumentPaid.mockResolvedValue(payment);
+		serviceSpies.uploadDeferredPaymentAttachment
+			.mockRejectedValueOnce(new Error('Upload temporalmente no disponible'))
+			.mockResolvedValueOnce({ id: 90, file_name: 'cierre.pdf' });
+		const { result, rerender } = renderActions();
+
+		await act(async () => {
+			await result.current.actions.setMarkPaidReceipt(
+				new File(['comprobante'], 'cierre.pdf', { type: 'application/pdf' }),
+			);
+		});
+		await act(async () => {
+			expect(await result.current.actions.markPaid()).toBe(true);
+		});
+		expect(result.current.state.pendingMarkPaidReceipt?.paymentId).toBe(payment.id);
+
+		rerender({ currentDocument: null, currentSubsidiaryId: 4 });
+		expect(result.current.state.pendingMarkPaidReceipt?.paymentId).toBe(payment.id);
+
+		rerender({ currentDocument: document, currentSubsidiaryId: 4 });
+		await act(async () => {
+			expect(await result.current.actions.retryMarkPaidReceipt()).toBe(true);
+		});
+
+		expect(serviceSpies.markDocumentPaid).toHaveBeenCalledOnce();
+		expect(serviceSpies.uploadDeferredPaymentAttachment).toHaveBeenCalledTimes(2);
+		expect(result.current.state.pendingMarkPaidReceipt).toBeNull();
+	});
+
 	it('no restaura ni reutiliza un comprobante descartado al abortar el reintento', async () => {
 		serviceSpies.markDocumentPaid.mockResolvedValueOnce(payment).mockResolvedValueOnce({
 			...payment,

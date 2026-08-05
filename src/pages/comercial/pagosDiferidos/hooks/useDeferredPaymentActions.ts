@@ -60,6 +60,8 @@ export const useDeferredPaymentActions = (
 	const mutationRequests = useRef<AbortableRequest[]>([]);
 	const collectionRequests = useRef<AbortableRequest[]>([]);
 	const previousDocumentStatus = useRef(document?.status);
+	const documentId = document?.id ?? null;
+	const documentStatus = document?.status;
 	const currentContext = useRef({ subsidiaryId, documentId: document?.id ?? null });
 	currentContext.current = { subsidiaryId, documentId: document?.id ?? null };
 	const isCurrentContext = useCallback(
@@ -281,19 +283,23 @@ export const useDeferredPaymentActions = (
 		uploadingReceipt,
 	]);
 	useEffect(() => {
-		setPendingMarkPaidReceipt(null);
+		if (documentId === null) return;
+		setPendingMarkPaidReceipt((pendingReceipt) =>
+			pendingReceipt && !isCurrentContext(pendingReceipt) ? null : pendingReceipt,
+		);
 		resetMarkPaidReceipt();
 		dispatch(clearDeferredPaymentMutation());
-	}, [dispatch, document?.id, resetMarkPaidReceipt, subsidiaryId]);
+	}, [dispatch, documentId, isCurrentContext, resetMarkPaidReceipt, subsidiaryId]);
 	useEffect(() => {
+		if (documentId === null || documentStatus === undefined) return;
 		const previousStatus = previousDocumentStatus.current;
-		previousDocumentStatus.current = document?.status;
-		if (previousStatus === 'paid' && document?.status !== 'paid') {
+		previousDocumentStatus.current = documentStatus;
+		if (previousStatus === 'paid' && documentStatus !== 'paid') {
 			setPendingMarkPaidReceipt(null);
 			resetMarkPaidReceipt();
 			dispatch(clearDeferredPaymentMutation());
 		}
-	}, [dispatch, document?.status, resetMarkPaidReceipt]);
+	}, [dispatch, documentId, documentStatus, resetMarkPaidReceipt]);
 	useEffect(
 		() => () => {
 			detailRequests.current.forEach((request) => request.abort());
