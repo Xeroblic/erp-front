@@ -1,6 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 import CustomerCreditProfileCard from '../components/CustomerCreditProfileCard';
 
 const apiSpies = vi.hoisted(() => ({ fetchData: vi.fn(), invalidateCache: vi.fn() }));
@@ -120,6 +121,62 @@ describe('CustomerCreditProfileCard', () => {
 			'type',
 			'submit',
 		);
+	});
+
+	it('permite reintentar cuando no se puede cargar el perfil', async () => {
+		apiSpies.fetchData
+			.mockRejectedValueOnce(new Error('Servicio no disponible'))
+			.mockResolvedValueOnce({ data: { data: emptyProfile } } as never);
+
+		render(<CustomerCreditProfileCard customerSaleId={8} />);
+
+		expect(await screen.findByText('Servicio no disponible')).toBeInTheDocument();
+		fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+		expect(await screen.findByText('Sin perfil de crédito.')).toBeInTheDocument();
+		expect(apiSpies.fetchData).toHaveBeenCalledTimes(2);
+	});
+
+	it('conserva el borrador tras un error al guardar y permite cancelarlo', async () => {
+		apiSpies.fetchData
+			.mockResolvedValueOnce({ data: { data: emptyProfile } } as never)
+			.mockRejectedValueOnce(new Error('No se pudo guardar'));
+
+		render(<CustomerCreditProfileCard customerSaleId={8} />);
+
+		fireEvent.click(await screen.findByRole('button', { name: 'Crear perfil' }));
+		fireEvent.change(screen.getByLabelText('Plazo de pago (días)'), {
+			target: { value: '45' },
+		});
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar condiciones' }));
+
+		expect(await screen.findByText('No se pudo guardar')).toBeInTheDocument();
+		expect(screen.getByLabelText('Plazo de pago (días)')).toHaveValue(45);
+		fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+		expect(screen.getByText('Sin perfil de crédito.')).toBeInTheDocument();
+	});
+
+	it('muestra el perfil, pero oculta las acciones sin permiso de edición', async () => {
+		authorizationSpies.authorize.mockImplementation(
+			({ permission }: { permission?: string | string[] }) =>
+				permission === ERP_PERMISSIONS.DEFERRED_PAYMENTS.VIEW,
+		);
+		apiSpies.fetchData.mockResolvedValue({
+			data: {
+				data: {
+					id: 9,
+					customer_sale_id: 8,
+					is_active: true,
+					payment_term_days: 30,
+					credit_limit: null,
+					notes: null,
+				},
+			},
+		} as never);
+
+		render(<CustomerCreditProfileCard customerSaleId={8} />);
+
+		expect(await screen.findByText('Activo')).toBeInTheDocument();
+		expect(screen.queryByRole('button', { name: 'Editar' })).not.toBeInTheDocument();
 	});
 
 	it('no muestra la card sin permiso de lectura', () => {

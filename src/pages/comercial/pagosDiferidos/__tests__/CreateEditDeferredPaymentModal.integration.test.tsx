@@ -40,6 +40,16 @@ const emptyPagination = {
 	next_page_url: null,
 };
 
+const addDaysToDateOnly = (date: string, days: number) => {
+	const [first, second, third] = date.split('-').map(Number);
+	const [year, month, day] = date.startsWith('20')
+		? [first, second, third]
+		: [third, second, first];
+	const value = new Date(Date.UTC(year, month - 1, day + days));
+	const [resultYear, resultMonth, resultDay] = value.toISOString().slice(0, 10).split('-');
+	return `${resultDay}-${resultMonth}-${resultYear}`;
+};
+
 const createTestStore = () =>
 	configureStore({
 		reducer: {
@@ -242,6 +252,12 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 				}),
 			),
 		);
+		await waitFor(() => {
+			const issueDate = (screen.getByLabelText('Fecha de emisión') as HTMLInputElement).value;
+			expect(screen.getByLabelText('Fecha de vencimiento')).toHaveValue(
+				addDaysToDateOnly(issueDate, 45),
+			);
+		});
 		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
 	});
 
@@ -289,5 +305,245 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 			).toBeInTheDocument(),
 		);
 		expect(screen.getByRole('button', { name: 'Crear documento' })).toBeDisabled();
+	});
+
+	it('permite crear sin perfil y usa el plazo predeterminado de 30 días', async () => {
+		const customer = {
+			id: 459,
+			name: 'Cliente sin perfil',
+			rut: '76.459.000-1',
+			contact: { name: 'Ana Pérez' },
+			loyalty: 0,
+			total_sales: 0,
+			is_active: true,
+		};
+		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
+			Promise.resolve({
+				data: url.includes('/overview')
+					? { ...emptyPagination, data: [customer], total: 1 }
+					: url.includes('/credit-profile')
+						? {
+								data: {
+									id: null,
+									customer_sale_id: null,
+									is_active: false,
+									payment_term_days: 30,
+									credit_limit: null,
+									notes: null,
+								},
+							}
+						: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+			}),
+		);
+		const store = createTestStore();
+		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, { wrapper: Wrapper });
+
+		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'sin perfil' } });
+		fireEvent.click(await screen.findByText('Cliente sin perfil · 76.459.000-1'));
+
+		await waitFor(() => {
+			const issueDate = (screen.getByLabelText('Fecha de emisión') as HTMLInputElement).value;
+			expect(screen.getByLabelText('Fecha de vencimiento')).toHaveValue(
+				addDaysToDateOnly(issueDate, 30),
+			);
+		});
+		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
+	});
+
+	it('bloquea la creación mientras el perfil falla y permite reintentarlo', async () => {
+		const customer = {
+			id: 460,
+			name: 'Cliente con error',
+			rut: '76.460.000-1',
+			contact: { name: 'Ana Pérez' },
+			loyalty: 0,
+			total_sales: 0,
+			is_active: true,
+		};
+		let profileFails = true;
+		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) => {
+			if (url.includes('/overview')) {
+				return Promise.resolve({ data: { ...emptyPagination, data: [customer], total: 1 } });
+			}
+			if (url.includes('/credit-profile')) {
+				return profileFails
+					? Promise.reject(new Error('Perfil no disponible'))
+					: Promise.resolve({
+							data: {
+								id: null,
+								customer_sale_id: null,
+								is_active: false,
+								payment_term_days: 30,
+								credit_limit: null,
+								notes: null,
+							},
+						});
+			}
+			return Promise.resolve({
+				data: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+			});
+		});
+		const store = createTestStore();
+		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, { wrapper: Wrapper });
+
+		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'error' } });
+		fireEvent.click(await screen.findByText('Cliente con error · 76.460.000-1'));
+		expect(
+			await screen.findByText('No se pudo cargar el perfil de crédito del cliente'),
+		).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Crear documento' })).toBeDisabled();
+
+		profileFails = false;
+		fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+		await waitFor(() =>
+			expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled(),
+		);
+	});
+
+	it('elimina el bloqueo al cambiar desde un cliente suspendido a uno habilitado', async () => {
+		const suspendedCustomer = {
+			id: 461,
+			name: 'Cliente suspendido',
+			rut: '76.461.000-1',
+			contact: { name: 'Ana Pérez' },
+			loyalty: 0,
+			total_sales: 0,
+			is_active: true,
+		};
+		const activeCustomer = {
+			...suspendedCustomer,
+			id: 462,
+			name: 'Cliente habilitado',
+			rut: '76.462.000-1',
+		};
+		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
+			Promise.resolve({
+				data: url.includes('/overview')
+					? { ...emptyPagination, data: [suspendedCustomer, activeCustomer], total: 2 }
+					: url.includes('/461/credit-profile')
+						? {
+								data: {
+									id: 11,
+									customer_sale_id: 461,
+									is_active: false,
+									payment_term_days: 30,
+									credit_limit: null,
+									notes: null,
+								},
+							}
+						: {
+								data: {
+									id: 12,
+									customer_sale_id: 462,
+									is_active: true,
+									payment_term_days: 30,
+									credit_limit: null,
+									notes: null,
+								},
+							},
+			}),
+		);
+		const store = createTestStore();
+		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, { wrapper: Wrapper });
+
+		const customerInput = screen.getByLabelText('Cliente');
+		fireEvent.change(customerInput, { target: { value: 'suspendido' } });
+		fireEvent.click(await screen.findByText('Cliente suspendido · 76.461.000-1'));
+		expect(
+			await screen.findByText(
+				'El crédito de este cliente está suspendido. Reactívalo antes de crear un documento de pago diferido.',
+			),
+		).toBeInTheDocument();
+
+		fireEvent.change(customerInput, { target: { value: 'habilitado' } });
+		fireEvent.click(await screen.findByText('Cliente habilitado · 76.462.000-1'));
+		await waitFor(() => {
+			expect(screen.queryByText(/El crédito de este cliente está suspendido/)).not.toBeInTheDocument();
+			expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
+		});
+	});
+
+	it('ignora una respuesta antigua al cambiar rápidamente de cliente', async () => {
+		const firstCustomer = {
+			id: 463,
+			name: 'Cliente anterior',
+			rut: '76.463.000-1',
+			contact: { name: 'Ana Pérez' },
+			loyalty: 0,
+			total_sales: 0,
+			is_active: true,
+		};
+		const secondCustomer = {
+			...firstCustomer,
+			id: 464,
+			name: 'Cliente actual',
+			rut: '76.464.000-1',
+		};
+		let resolveFirstProfile: (value: unknown) => void = () => undefined;
+		let resolveSecondProfile: (value: unknown) => void = () => undefined;
+		const firstProfileRequest = new Promise((resolve) => {
+			resolveFirstProfile = resolve;
+		});
+		const secondProfileRequest = new Promise((resolve) => {
+			resolveSecondProfile = resolve;
+		});
+		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) => {
+			if (url.includes('/overview')) {
+				return Promise.resolve({
+					data: { ...emptyPagination, data: [firstCustomer, secondCustomer], total: 2 },
+				});
+			}
+			if (url.includes('/463/credit-profile')) return firstProfileRequest;
+			if (url.includes('/464/credit-profile')) return secondProfileRequest;
+			return Promise.resolve({
+				data: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+			});
+		});
+		const store = createTestStore();
+		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, { wrapper: Wrapper });
+
+		const customerInput = screen.getByLabelText('Cliente');
+		fireEvent.change(customerInput, { target: { value: 'anterior' } });
+		fireEvent.click(await screen.findByText('Cliente anterior · 76.463.000-1'));
+		fireEvent.change(customerInput, { target: { value: 'actual' } });
+		fireEvent.click(await screen.findByText('Cliente actual · 76.464.000-1'));
+
+		await act(async () => {
+			resolveSecondProfile({
+				data: {
+					id: 14,
+					customer_sale_id: 464,
+					is_active: true,
+					payment_term_days: 30,
+					credit_limit: null,
+					notes: null,
+				},
+			});
+			await Promise.resolve();
+		});
+		await waitFor(() =>
+			expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled(),
+		);
+
+		await act(async () => {
+			resolveFirstProfile({
+				data: {
+					id: 13,
+					customer_sale_id: 463,
+					is_active: false,
+					payment_term_days: 30,
+					credit_limit: null,
+					notes: null,
+				},
+			});
+			await Promise.resolve();
+		});
+
+		expect(screen.queryByText(/El crédito de este cliente está suspendido/)).not.toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
 	});
 });
