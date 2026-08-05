@@ -39,15 +39,8 @@ const dateOnlySchema = (requiredMessage: string) =>
 		.matches(/^\d{4}-\d{2}-\d{2}$/, 'Ingresa una fecha válida')
 		.required(requiredMessage);
 
-const optionalTrimmedTextSchema = (maxLength: number, maxLengthMessage: string) =>
-	Yup.string()
-		.transform((_value: unknown, originalValue: unknown) =>
-			typeof originalValue === 'string' && originalValue.trim() === '' ? null : originalValue,
-		)
-		.trim()
-		.max(maxLength, maxLengthMessage)
-		.nullable()
-		.optional();
+const optionalTextSchema = (maxLength: number, maxLengthMessage: string) =>
+	Yup.string().trim().max(maxLength, maxLengthMessage).nullable().optional();
 
 export const DeferredPaymentItemSchema = Yup.object({
 	product_id: Yup.number().nullable().oneOf([null]).defined(),
@@ -70,7 +63,7 @@ export const DeferredPaymentItemSchema = Yup.object({
 		.required('Ingresa el precio unitario'),
 	serials: Yup.array()
 		.of(Yup.string().trim().required('Los seriales no pueden estar vacíos'))
-		.ensure(),
+		.defined(),
 });
 
 export const DeferredPaymentDocumentSchema = Yup.object({
@@ -99,11 +92,11 @@ export const DeferredPaymentDocumentSchema = Yup.object({
 			return typeof issueDate !== 'string' || !value || value >= issueDate;
 		},
 	),
-	purchase_order: optionalTrimmedTextSchema(
+	purchase_order: optionalTextSchema(
 		100,
 		'La orden de compra no puede superar los 100 caracteres',
 	),
-	notes: optionalTrimmedTextSchema(1000, 'Las notas no pueden superar los 1000 caracteres'),
+	notes: optionalTextSchema(1000, 'Las notas no pueden superar los 1000 caracteres'),
 	assignee_ids: Yup.array()
 		.of(
 			Yup.number()
@@ -234,6 +227,6 @@ export const createDeferredPaymentActionSchema = (outstandingAmount: number) =>
 		method: Yup.mixed<import('@/interface/deferredPayments.interface').DeferredPaymentMethod>()
 			.oneOf([...DEFERRED_PAYMENT_METHODS], 'Selecciona un método válido')
 			.required('Selecciona el método de pago'),
-		notes: optionalTrimmedTextSchema(1000, 'La nota no puede superar los 1000 caracteres'),
+		notes: optionalTextSchema(1000, 'La nota no puede superar los 1000 caracteres'),
 		receipt: deferredPaymentReceiptSchema,
 	});

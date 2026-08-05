@@ -109,6 +109,7 @@ describe('useDeferredPaymentForm', () => {
 		const payload = mapDeferredPaymentFormToPayload({
 			...values,
 			document_number: `  ${values.document_number}  `,
+			purchase_order: '   ',
 			notes: '   ',
 		});
 
@@ -122,6 +123,7 @@ describe('useDeferredPaymentForm', () => {
 		expect(payload).toMatchObject({
 			customer_sale_id: document.customer.id,
 			document_number: document.document_number,
+			purchase_order: null,
 			notes: null,
 		});
 		expect(

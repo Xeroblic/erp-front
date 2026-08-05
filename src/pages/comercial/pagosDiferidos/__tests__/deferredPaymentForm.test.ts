@@ -94,17 +94,21 @@ describe('ZF-7 formulario de pago diferido', () => {
 		).rejects.toThrow('La orden de compra no puede superar los 100 caracteres');
 	});
 
-	it('normaliza los opcionales vaciados antes de enviarlos', async () => {
-		const normalized = await DeferredPaymentDocumentSchema.validate({
-			...validValues,
-			purchase_order: '   ',
-			notes: '   ',
-			items: [{ ...validValues.items[0], serials: undefined }],
-		});
+	it('acepta textos opcionales vacíos y exige un arreglo de seriales', async () => {
+		await expect(
+			DeferredPaymentDocumentSchema.validate({
+				...validValues,
+				purchase_order: '   ',
+				notes: undefined,
+			}),
+		).resolves.toBeDefined();
 
-		expect(normalized.purchase_order).toBeNull();
-		expect(normalized.notes).toBeNull();
-		expect(normalized.items[0].serials).toEqual([]);
+		await expect(
+			DeferredPaymentDocumentSchema.validate({
+				...validValues,
+				items: [{ ...validValues.items[0], serials: undefined }],
+			}),
+		).rejects.toThrow('items[0].serials must be defined');
 	});
 
 	it('permite ítems gratuitos cuando el total del documento es positivo', async () => {
