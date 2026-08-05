@@ -237,8 +237,8 @@ describe('deferredPaymentsService', () => {
 	it('obtiene y actualiza el perfil de crédito del cliente', async () => {
 		const profile: IDeferredPaymentCreditProfile = {
 			id: null,
-			customer_sale_id: 8,
-			is_active: true,
+			customer_sale_id: null,
+			is_active: false,
 			payment_term_days: 30,
 			credit_limit: null,
 			notes: null,

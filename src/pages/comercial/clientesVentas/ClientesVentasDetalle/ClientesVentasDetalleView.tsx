@@ -9,6 +9,7 @@ import ClientDetailHeader from '../components/parts/ClientDetailHeader';
 import DetailSection from '../components/parts/DetailSection';
 import EditableField from '../components/parts/EditableField';
 import EditableSelect from '../components/parts/EditableSelect';
+import CustomerCreditProfileCard from './components/CustomerCreditProfileCard';
 import { formatRut } from '../../../../utils/validateRut';
 import { TSelectOptions } from '@/components/form/SelectReact';
 import { useClientesVentasDetalle } from './hooks/useClientesVentasDetalle';
@@ -149,7 +150,7 @@ const ClientesVentasDetalleView = () => {
 			/>
 
 			<Container className='pb-20 pt-8' ref={containerRef}>
-				<form onSubmit={formik.handleSubmit} className='space-y-6'>
+				<div className='space-y-6'>
 					<div className='grid grid-cols-1 gap-6 lg:grid-cols-12'>
 						{/* Columna Principal - Info General */}
 						<div className='lg:col-span-8 space-y-6' ref={addToRefs} >
@@ -278,6 +279,10 @@ const ClientesVentasDetalleView = () => {
 							</Card>
 						</div>
 
+						<div className='lg:col-span-4' ref={addToRefs}>
+							<CustomerCreditProfileCard customerSaleId={detalle.id} />
+						</div>
+
 						{/* Direcciones */}
 						<div className='lg:col-span-6' ref={addToRefs} >
 							<Card className='border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all overflow-hidden'>
@@ -366,7 +371,7 @@ const ClientesVentasDetalleView = () => {
 							</Card>
 						</div>
 					</div>
-				</form>
+				</div>
 			</Container>
 		</PageWrapper>
 	);
