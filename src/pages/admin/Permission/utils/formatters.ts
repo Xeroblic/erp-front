@@ -416,18 +416,31 @@ export const buildPermissionLabelMap = (
 	return map;
 };
 
-/** Mapa slug → label para las vistas que solo reciben el nombre del rol. */
+/**
+ * Mapa slug → label para las vistas que solo reciben el nombre del rol.
+ *
+ * Dos pasadas: primero todos los `role.name` (slugs canónicos) y recién
+ * después los `role.display_name`. Si un `display_name` normalizado coincide
+ * con el slug de otro rol, el slug debe ganar la clave — invertir el orden
+ * asignaría la etiqueta de un rol a otro.
+ */
 export const buildRoleLabelMap = (roles: readonly LabeledRole[]): Map<string, string> => {
 	const map = new Map<string, string>();
+
 	roles.forEach((role) => {
-		const label = resolveRoleLabel(role);
-		[role.name, role.display_name].forEach((candidate) => {
-			const key = normalizeRoleKey(candidate);
-			if (key && !map.has(key)) {
-				map.set(key, label);
-			}
-		});
+		const key = normalizeRoleKey(role.name);
+		if (key && !map.has(key)) {
+			map.set(key, resolveRoleLabel(role));
+		}
 	});
+
+	roles.forEach((role) => {
+		const key = normalizeRoleKey(role.display_name);
+		if (key && !map.has(key)) {
+			map.set(key, resolveRoleLabel(role));
+		}
+	});
+
 	return map;
 };
 

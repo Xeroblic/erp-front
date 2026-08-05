@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchPermissions, fetchRoles } from '@/store/slices/permissions/permissionsSlice';
 import {
@@ -31,26 +31,26 @@ export const usePermissionLabels = () => {
 	const permissions = useAppSelector((s) => s.permissions.permissions);
 	const roles = useAppSelector((s) => s.permissions.roles);
 	const loading = useAppSelector((s) => s.permissions.loading);
-	const catalogError = useAppSelector((s) => s.permissions.error);
+
+	// Marca de intento por montaje: `loading.roles`/`loading.permissions` vuelven
+	// a `false` tanto si el fetch tuvo éxito (con lista vacía) como si falló, así
+	// que basarse en ellos para decidir si reintentar reabre el ciclo en ambos
+	// casos. El ref corta el reintento sin depender de `state.error` (que es
+	// compartido por otros thunks del slice y no refleja si este catálogo ya se
+	// pidió).
+	const triedRoles = useRef(false);
+	const triedPermissions = useRef(false);
 
 	useEffect(() => {
-		// `catalogError` corta el reintento: sin esa guarda, un fallo dejaría el
-		// efecto pidiendo el catálogo en bucle.
-		if (catalogError) return;
-		if (!roles.length && !loading.roles) {
-			dispatch(fetchRoles());
+		if (!roles.length && !loading.roles && !triedRoles.current) {
+			triedRoles.current = true;
+			void dispatch(fetchRoles());
 		}
-		if (!permissions.length && !loading.permissions) {
-			dispatch(fetchPermissions());
+		if (!permissions.length && !loading.permissions && !triedPermissions.current) {
+			triedPermissions.current = true;
+			void dispatch(fetchPermissions());
 		}
-	}, [
-		dispatch,
-		catalogError,
-		roles.length,
-		permissions.length,
-		loading.roles,
-		loading.permissions,
-	]);
+	}, [dispatch, roles.length, permissions.length, loading.roles, loading.permissions]);
 
 	const permissionLabelMap = useMemo(() => buildPermissionLabelMap(permissions), [permissions]);
 	const roleLabelMap = useMemo(() => buildRoleLabelMap(roles), [roles]);
