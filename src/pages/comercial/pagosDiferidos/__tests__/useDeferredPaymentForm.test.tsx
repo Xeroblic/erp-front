@@ -293,14 +293,19 @@ describe('useDeferredPaymentForm', () => {
 	});
 	it('asocia los errores de validación del backend con sus campos', async () => {
 		configureSuccessfulServices();
-		mutationFailure.error = Object.assign(new Error('Los datos enviados no son válidos.'), {
-			response: {
-				data: {
-					message: 'Los datos enviados no son válidos.',
-					errors: { document_number: ['El número de documento ya está registrado.'] },
+		mutationFailure.error = Object.assign(
+			new Error('The document number has already been taken.'),
+			{
+				response: {
+					data: {
+						message: 'The document number has already been taken.',
+						errors: {
+							document_number: ['The document number has already been taken.'],
+						},
+					},
 				},
 			},
-		});
+		);
 		const { hook } = createHook();
 		await act(async () => {
 			await hook.result.current.formik.setValues({
@@ -327,7 +332,7 @@ describe('useDeferredPaymentForm', () => {
 			'El número de documento ya está registrado.',
 		);
 		expect(hook.result.current.formik.touched.document_number).toBe(true);
-		expect(toastSpies.error).toHaveBeenCalledWith('Los datos enviados no son válidos.');
+		expect(toastSpies.error).toHaveBeenCalledWith('El número de documento ya está registrado.');
 	});
 	it('bloquea la edición de documentos pagados', async () => {
 		const paidDocument = DEFERRED_PAYMENT_DOCUMENT_FIXTURES.find(

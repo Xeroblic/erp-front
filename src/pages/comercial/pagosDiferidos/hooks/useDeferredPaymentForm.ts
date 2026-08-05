@@ -39,6 +39,7 @@ const asRecord = (value: unknown): Record<string, unknown> | null =>
 		? (value as Record<string, unknown>)
 		: null;
 const DEFAULT_PAYMENT_TERM_DAYS = 30;
+const DUPLICATE_DOCUMENT_NUMBER_MESSAGE = 'El número de documento ya está registrado.';
 
 const formatLocalDate = (date: Date): string => {
 	const year = date.getFullYear();
@@ -211,11 +212,19 @@ const useDeferredPaymentForm = ({
 				let message = fallbackMessage;
 				const submitErrorRecord = asRecord(submitError);
 				const fieldErrors = asRecord(submitErrorRecord?.errors);
+				const hasDocumentNumberError =
+					typeof fieldErrors?.document_number === 'string' &&
+					fieldErrors.document_number.trim().length > 0;
 				if (fieldErrors) {
 					await Promise.all(
 						Object.entries(fieldErrors).flatMap(([field, fieldMessage]) => {
 							if (typeof fieldMessage !== 'string' || !fieldMessage.trim()) return [];
-							formik.setFieldError(field, fieldMessage);
+							formik.setFieldError(
+								field,
+								field === 'document_number'
+									? DUPLICATE_DOCUMENT_NUMBER_MESSAGE
+									: fieldMessage,
+							);
 							return [formik.setFieldTouched(field, true, false)];
 						}),
 					);
@@ -230,6 +239,7 @@ const useDeferredPaymentForm = ({
 				} else if (submitError instanceof Error && submitError.message) {
 					message = submitError.message;
 				}
+				if (hasDocumentNumberError) message = DUPLICATE_DOCUMENT_NUMBER_MESSAGE;
 				toast.error(message);
 			} finally {
 				if (activeSubmissionRef.current === submissionId) {
