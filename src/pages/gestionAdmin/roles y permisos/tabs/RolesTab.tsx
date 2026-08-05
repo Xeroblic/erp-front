@@ -4,7 +4,7 @@ import { FormikProps } from 'formik';
 import Label from '@/components/form/Label';
 import Checkbox from '@/components/form/Checkbox';
 import Badge from '@/components/ui/Badge';
-import { formatRoleName } from '@/pages/admin/Permission/utils/formatters';
+import { usePermissionLabels } from '@/hooks/usePermissionLabels';
 import type { UserPermissionsFormValues } from '../types';
 
 type RoleOption = { value: string; label: string };
@@ -22,6 +22,8 @@ const RolesTab: React.FC<RolesTabProps> = ({
 	currentRoles,
 	editable = true,
 }) => {
+	const { getRoleLabel } = usePermissionLabels();
+
 	return (
 		<form onSubmit={formik.handleSubmit} className='space-y-6'>
 			<div>
@@ -45,7 +47,7 @@ const RolesTab: React.FC<RolesTabProps> = ({
 										formik.setFieldValue('roles', Array.from(next));
 									}}
 								/>
-								<span className='text-sm'>{formatRoleName(opt.label)}</span>
+								<span className='text-sm'>{opt.label}</span>
 							</label>
 						);
 					})}
@@ -66,7 +68,7 @@ const RolesTab: React.FC<RolesTabProps> = ({
 					{currentRoles.length > 0 ? (
 						currentRoles.map((role) => (
 							<Badge key={role} color='blue'>
-								{formatRoleName(role)}
+								{getRoleLabel(role)}
 							</Badge>
 						))
 					) : (
