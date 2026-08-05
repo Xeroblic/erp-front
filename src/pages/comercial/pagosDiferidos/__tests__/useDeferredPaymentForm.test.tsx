@@ -329,10 +329,12 @@ describe('useDeferredPaymentForm', () => {
 			await hook.result.current.formik.submitForm();
 		});
 		expect(hook.result.current.formik.errors.document_number).toBe(
-			'El número de documento ya está registrado.',
+			'The document number has already been taken.',
 		);
 		expect(hook.result.current.formik.touched.document_number).toBe(true);
-		expect(toastSpies.error).toHaveBeenCalledWith('El número de documento ya está registrado.');
+		expect(toastSpies.error).toHaveBeenCalledWith(
+			'The document number has already been taken.',
+		);
 	});
 	it('bloquea la edición de documentos pagados', async () => {
 		const paidDocument = DEFERRED_PAYMENT_DOCUMENT_FIXTURES.find(
