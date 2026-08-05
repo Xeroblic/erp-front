@@ -342,7 +342,10 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 								branchId={branch.branchId}
 								subsidiaryId={branch.subsidiaryId}
 								voidingPaymentId={paymentActions.state.voidingPaymentId}
-								onVoid={setPaymentToVoid}
+								onVoid={(payment) => {
+									paymentActions.actions.clearMutationErrors();
+									setPaymentToVoid(payment);
+								}}
 							/>
 							<DeferredPaymentAttachmentsSection attachments={document.attachments} />
 							{paymentActions.state.pendingMarkPaidReceipt && (
@@ -357,6 +360,15 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 											comprobante o descartar este aviso para continuar sin
 											adjuntarlo.
 										</p>
+										{paymentActions.state.errorReceipt && (
+											<Alert
+												color='red'
+												variant='outline'
+												icon='HeroExclamationTriangle'
+												title='No se pudo subir el comprobante'>
+												{paymentActions.state.errorReceipt}
+											</Alert>
+										)}
 										<div className='flex flex-wrap gap-2'>
 											<Button
 												size='sm'
@@ -444,6 +456,7 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 							: 'Marcar pagada'
 					}
 					busy={paymentActions.state.markingPaid || paymentActions.state.uploadingReceipt}
+					error={paymentActions.state.errorMarkPaid ?? paymentActions.state.errorReceipt}
 					isConfirmDisabled={paymentActions.state.markPaidReceiptError !== null}
 					onConfirm={() => {
 						paymentActions.actions
@@ -552,6 +565,7 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 					confirmLabel='Anular abono'
 					color='red'
 					busy={paymentActions.state.voidingPaymentId === paymentToVoid.id}
+					error={paymentActions.state.errorVoid}
 					onConfirm={() =>
 						paymentActions.actions.voidPayment(paymentToVoid).then((ok) => {
 							if (ok) setPaymentToVoid(null);

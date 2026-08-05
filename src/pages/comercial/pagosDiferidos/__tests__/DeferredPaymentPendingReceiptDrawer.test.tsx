@@ -19,6 +19,7 @@ vi.mock('../hooks/useDeferredPaymentDetail');
 
 const dismissMarkPaidReceipt = vi.fn();
 const document = DEFERRED_PAYMENT_DETAIL_FIXTURES[2];
+let actionsHookResult: ReturnType<typeof useDeferredPaymentActions>;
 
 describe('DeferredPaymentDetailDrawer con comprobante pendiente', () => {
 	beforeEach(() => {
@@ -34,7 +35,7 @@ describe('DeferredPaymentDetailDrawer con comprobante pendiente', () => {
 			branch: { branchId: 1, subsidiaryId: 1 },
 			hasDataContext: true,
 		});
-		vi.mocked(useDeferredPaymentActions).mockReturnValue({
+		actionsHookResult = {
 			formik: {} as ReturnType<typeof useDeferredPaymentActions>['formik'],
 			state: {
 				recordingPayment: false,
@@ -42,6 +43,10 @@ describe('DeferredPaymentDetailDrawer con comprobante pendiente', () => {
 				voidingPaymentId: null,
 				markingPaid: false,
 				error: null,
+				errorPayment: null,
+				errorReceipt: null,
+				errorVoid: null,
+				errorMarkPaid: null,
 				pendingMarkPaidReceipt: {
 					subsidiaryId: 1,
 					documentId: document.id,
@@ -61,7 +66,8 @@ describe('DeferredPaymentDetailDrawer con comprobante pendiente', () => {
 				dismissMarkPaidReceipt,
 				clearMutationErrors: vi.fn(),
 			},
-		});
+		};
+		vi.mocked(useDeferredPaymentActions).mockReturnValue(actionsHookResult);
 	});
 
 	afterEach(() => window.document.getElementById('portal-root')?.remove());
@@ -95,5 +101,23 @@ describe('DeferredPaymentDetailDrawer con comprobante pendiente', () => {
 		);
 		expect(dismissMarkPaidReceipt).toHaveBeenCalledOnce();
 		expect(onClose).toHaveBeenCalledOnce();
+	});
+
+	it('muestra el error cuando falla el reintento del comprobante', () => {
+		actionsHookResult.state.errorReceipt = 'El abono indicado no pertenece a este documento.';
+		render(
+			<Provider store={store}>
+				<DeferredPaymentDetailDrawer
+					documentId={document.id}
+					onClose={vi.fn()}
+					onEdit={vi.fn()}
+				/>
+			</Provider>,
+		);
+
+		expect(screen.getByText('No se pudo subir el comprobante')).toBeInTheDocument();
+		expect(
+			screen.getByText('El abono indicado no pertenece a este documento.'),
+		).toBeInTheDocument();
 	});
 });

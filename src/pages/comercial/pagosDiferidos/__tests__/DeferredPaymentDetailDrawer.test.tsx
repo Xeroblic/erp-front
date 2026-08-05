@@ -194,12 +194,16 @@ describe('DeferredPaymentDetailDrawer', () => {
 					description='Documento pagado, comprobante pendiente'
 					confirmLabel='Reintentar comprobante'
 					busy={false}
+					error='El documento ya está pagado y no admite modificaciones.'
 					onConfirm={vi.fn()}
 				/>
 			</Provider>,
 		);
 
 		const dialog = screen.getByRole('dialog', { name: 'Marcar documento como pagado' });
+		expect(
+			within(dialog).getByText('El documento ya está pagado y no admite modificaciones.'),
+		).toBeInTheDocument();
 		expect(within(dialog).getByRole('button', { name: 'Cancelar' })).toBeEnabled();
 		expect(
 			within(dialog).getByRole('button', { name: 'Reintentar comprobante' }),
