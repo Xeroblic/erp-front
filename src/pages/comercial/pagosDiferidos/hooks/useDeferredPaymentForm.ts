@@ -27,6 +27,7 @@ interface UseDeferredPaymentFormProps {
 	mode: DeferredPaymentFormMode;
 	deferredPaymentDocument?: IDeferredPaymentDocument | null;
 	paymentTermDays?: number;
+	isOpen?: boolean;
 	onSuccess?: (document: IDeferredPaymentDocument) => void;
 }
 
@@ -108,6 +109,7 @@ const useDeferredPaymentForm = ({
 	mode,
 	deferredPaymentDocument = null,
 	paymentTermDays = DEFAULT_PAYMENT_TERM_DAYS,
+	isOpen = true,
 	onSuccess,
 }: UseDeferredPaymentFormProps) => {
 	const dispatch = useAppDispatch();
@@ -242,6 +244,9 @@ const useDeferredPaymentForm = ({
 	});
 
 	const { setFieldValue } = formik;
+	useEffect(() => {
+		if (!isOpen) dueDateManuallySetRef.current = false;
+	}, [isOpen]);
 	const issueDate = formik.values.issue_date;
 	const previousPaymentTermDaysRef = useRef(paymentTermDays);
 	useEffect(() => {

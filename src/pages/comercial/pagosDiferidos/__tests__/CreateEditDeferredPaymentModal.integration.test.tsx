@@ -40,6 +40,21 @@ const emptyPagination = {
 	next_page_url: null,
 };
 
+const createTestStore = () =>
+	configureStore({
+		reducer: {
+			customerSales: customerSalesReducer,
+			deferredPayments: deferredPaymentsReducer,
+			usersAdmin: usersAdminReducer,
+		},
+		preloadedState: {
+			deferredPayments: {
+				...deferredPaymentsReducer(undefined, { type: 'test/init' }),
+				listSubsidiaryId: 1,
+			},
+		},
+	});
+
 describe('Integración de CreateEditDeferredPaymentModal', () => {
 	beforeEach(() => {
 		const portalRoot = document.createElement('div');
@@ -181,5 +196,98 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		expect(overviewCalls[1]?.[0]).toEqual(
 			expect.objectContaining({ params: expect.objectContaining({ q: 'Zeta' }) }),
 		);
+	});
+
+	it('aplica el plazo del perfil activo al vencimiento al crear un documento', async () => {
+		const customer = {
+			id: 457,
+			name: 'Zeta Corp',
+			rut: '76.457.000-1',
+			contact: { name: 'Ana Pérez' },
+			loyalty: 0,
+			total_sales: 0,
+			is_active: true,
+		};
+		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
+			Promise.resolve({
+				data: url.includes('/overview')
+					? { ...emptyPagination, data: [customer], total: 1 }
+					: url.includes('/credit-profile')
+						? {
+								data: {
+									id: 9,
+									customer_sale_id: customer.id,
+									is_active: true,
+									payment_term_days: 45,
+									credit_limit: null,
+									notes: null,
+								},
+							}
+						: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+			}),
+		);
+		const store = createTestStore();
+		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, { wrapper: Wrapper });
+
+		const customerInput = screen.getByLabelText('Cliente');
+		fireEvent.change(customerInput, { target: { value: 'Zeta' } });
+		fireEvent.click(await screen.findByText('Zeta Corp · 76.457.000-1'));
+
+		await waitFor(() =>
+			expect(apiSpies.fetchData).toHaveBeenCalledWith(
+				expect.objectContaining({
+					url: '/subsidiaries/1/customer-sales/457/credit-profile',
+					method: 'get',
+				}),
+			),
+		);
+		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
+	});
+
+	it('bloquea la creación cuando el perfil de crédito está suspendido', async () => {
+		const customer = {
+			id: 458,
+			name: 'Cliente Suspendido',
+			rut: '76.458.000-1',
+			contact: { name: 'Ana Pérez' },
+			loyalty: 0,
+			total_sales: 0,
+			is_active: true,
+		};
+		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
+			Promise.resolve({
+				data: url.includes('/overview')
+					? { ...emptyPagination, data: [customer], total: 1 }
+					: url.includes('/credit-profile')
+						? {
+								data: {
+									id: 10,
+									customer_sale_id: customer.id,
+									is_active: false,
+									payment_term_days: 30,
+									credit_limit: null,
+									notes: null,
+								},
+							}
+						: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+			}),
+		);
+		const store = createTestStore();
+		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, { wrapper: Wrapper });
+
+		const customerInput = screen.getByLabelText('Cliente');
+		fireEvent.change(customerInput, { target: { value: 'Suspendido' } });
+		fireEvent.click(await screen.findByText('Cliente Suspendido · 76.458.000-1'));
+
+		await waitFor(() =>
+			expect(
+				screen.getByText(
+					'El crédito de este cliente está suspendido. Reactívalo antes de crear un documento de pago diferido.',
+				),
+			).toBeInTheDocument(),
+		);
+		expect(screen.getByRole('button', { name: 'Crear documento' })).toBeDisabled();
 	});
 });
