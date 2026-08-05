@@ -2,9 +2,10 @@ import { useMemo } from 'react';
 import { useAppSelector } from '@/store';
 import type { TSelectOption } from '@/components/form/SelectReact';
 import {
-	formatPermissionName,
 	formatRoleName,
 	normalizeRoleKey,
+	resolvePermissionLabel,
+	resolveRoleLabel,
 } from '@/pages/admin/Permission/utils/formatters';
 import type { UserWithDetails } from '@/store/slices/usersAdmin/usersAdminSlice';
 
@@ -30,17 +31,21 @@ export const useUserPermissions = (selectedUser: UserWithDetails | undefined) =>
 	}, [availableRoles]);
 
 	const roleOptions = useMemo<TSelectOption[]>(() => {
-		return availableRoles.map((role) => ({
-			value: role.name,
-			label: formatRoleName(role.name),
-		}));
+		return availableRoles
+			.map((role) => ({
+				value: role.name,
+				label: resolveRoleLabel(role),
+			}))
+			.sort((a, b) => a.label.localeCompare(b.label, 'es'));
 	}, [availableRoles]);
 
 	const permissionOptions = useMemo<TSelectOption[]>(() => {
-		return availablePermissions.map((permission) => ({
-			value: permission.name,
-			label: formatPermissionName(permission.name),
-		}));
+		return availablePermissions
+			.map((permission) => ({
+				value: permission.name,
+				label: resolvePermissionLabel(permission),
+			}))
+			.sort((a, b) => a.label.localeCompare(b.label, 'es'));
 	}, [availablePermissions]);
 
 	const extractUserRoles = (user: UserWithDetails | undefined) => {

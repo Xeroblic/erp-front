@@ -306,7 +306,7 @@ const PERMISSION_LABELS: Record<string, string> = {
 	'edit-users': 'Editar Usuarios',
 };
 
-const normalizePermissionKey = (name?: string) => {
+export const normalizePermissionKey = (name?: string) => {
 	if (!name) return '';
 	return name
 		.normalize('NFD')
@@ -368,6 +368,79 @@ export const formatPermissionName = (permissionName: string) => {
 
 	return label || toTitleCase(permissionName);
 };
+
+/**
+ * El backend envía `display_name` ya traducido y con el casing correcto.
+ * Esa es la fuente de verdad para mostrar; `formatXName` queda solo como
+ * fallback para datos legacy que lleguen sin él. Importante: el texto del
+ * backend NO se vuelve a pasar por `toTitleCase`, porque eso rompería el
+ * sentence-case y las siglas (ej. "Cobranza SII" → "Cobranza Sii").
+ */
+export interface LabeledPermission {
+	name?: string;
+	code?: string;
+	display_name?: string;
+}
+
+export interface LabeledRole {
+	name?: string;
+	display_name?: string;
+}
+
+export const resolvePermissionLabel = (permission: LabeledPermission): string => {
+	const displayName = permission.display_name?.trim();
+	if (displayName) return displayName;
+	return formatPermissionName(permission.name || permission.code || '');
+};
+
+export const resolveRoleLabel = (role: LabeledRole): string => {
+	const displayName = role.display_name?.trim();
+	if (displayName) return displayName;
+	return formatRoleName(role.name || '');
+};
+
+/** Mapa slug → label para las vistas que solo reciben el nombre del permiso. */
+export const buildPermissionLabelMap = (
+	permissions: readonly LabeledPermission[],
+): Map<string, string> => {
+	const map = new Map<string, string>();
+	permissions.forEach((permission) => {
+		const label = resolvePermissionLabel(permission);
+		[permission.name, permission.code].forEach((candidate) => {
+			const key = normalizePermissionKey(candidate);
+			if (key && !map.has(key)) {
+				map.set(key, label);
+			}
+		});
+	});
+	return map;
+};
+
+/** Mapa slug → label para las vistas que solo reciben el nombre del rol. */
+export const buildRoleLabelMap = (roles: readonly LabeledRole[]): Map<string, string> => {
+	const map = new Map<string, string>();
+	roles.forEach((role) => {
+		const label = resolveRoleLabel(role);
+		[role.name, role.display_name].forEach((candidate) => {
+			const key = normalizeRoleKey(candidate);
+			if (key && !map.has(key)) {
+				map.set(key, label);
+			}
+		});
+	});
+	return map;
+};
+
+const SUPER_ADMIN_ROLE_KEYS = new Set(['superadmin', 'superadministrador']);
+
+/**
+ * Detecta el rol super-admin para ocultarlo de los listados asignables.
+ * Debe evaluarse SIEMPRE contra el slug canónico (`role.name`), nunca contra
+ * `display_name`: el backend envía "Super administrador", que normaliza a
+ * "superadministrador" y no coincide con el slug "super-admin".
+ */
+export const isSuperAdminRole = (roleName?: string): boolean =>
+	SUPER_ADMIN_ROLE_KEYS.has(normalizeRoleKey(roleName));
 
 // Helper para organizar permisos por categorías
 export const organizePermissionsByCategory = (permissions: string[]) => {
