@@ -400,6 +400,8 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		expect(
 			screen.getByText('Este cliente no tiene un perfil de crédito creado.'),
 		).toBeInTheDocument();
+		fireEvent.click(screen.getByRole('button', { name: 'Crear perfil' }));
+		expect(await screen.findByText('Crear perfil de crédito')).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
 	});
 

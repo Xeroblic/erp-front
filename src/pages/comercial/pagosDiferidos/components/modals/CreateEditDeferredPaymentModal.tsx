@@ -8,8 +8,10 @@ import type {
 	IDeferredPaymentDocument,
 } from '@/interface/deferredPayments.interface';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
+import ProtectedButton from '@/components/ui/ProtectedButton';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Icon from '@/components/icon/Icon';
 import Modal, {
@@ -30,6 +32,7 @@ import { formatCLP } from '@/utils/format.utils';
 import deferredPaymentsService from '@/services/deferredPaymentsService';
 import DeferredPaymentField from '../parts/DeferredPaymentField';
 import DeferredPaymentSerialsInput from '../parts/DeferredPaymentSerialsInput';
+import CustomerCreditProfileCard from '@/pages/comercial/clientesVentas/ClientesVentasDetalle/components/CustomerCreditProfileCard';
 import useDeferredPaymentForm from '../../hooks/useDeferredPaymentForm';
 import { createEmptyDeferredPaymentItem, DEFERRED_PAYMENT_TOTAL_ERROR } from '../../types';
 import { DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS } from '../../utils';
@@ -112,6 +115,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const [outstandingAmount, setOutstandingAmount] = useState<number | null>(null);
 	const [isCreditProfileLoading, setIsCreditProfileLoading] = useState(false);
 	const [creditProfileError, setCreditProfileError] = useState<string | null>(null);
+	const [isCreditProfileCreatorOpen, setIsCreditProfileCreatorOpen] = useState(false);
 	const creditProfileRequestIdRef = useRef(0);
 	const creditProfileAbortRef = useRef<AbortController | null>(null);
 	const mode = deferredPaymentDocument ? 'edit' : 'create';
@@ -352,6 +356,11 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 			clearCreditProfile();
 			onClose();
 		}
+	};
+	const handleCloseCreditProfileCreator = () => {
+		setIsCreditProfileCreatorOpen(false);
+		if (formik.values.customer_sale_id !== null)
+			loadCreditProfile(formik.values.customer_sale_id).catch(() => undefined);
 	};
 
 	return (
@@ -664,7 +673,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 										</div>
 									</Alert>
 								) : (
-									<div className='flex items-center gap-3 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-4 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300'>
+									<div className='flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-4 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300'>
 										<Icon
 											icon={isCreditProfileLoading ? 'HeroArrowPath' : 'HeroInformationCircle'}
 											size='text-2xl'
@@ -678,6 +687,18 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 														? 'Este cliente no tiene un perfil de crédito creado.'
 														: 'Selecciona un cliente para consultar sus condiciones de crédito.')}
 										</p>
+										{hasSelectedCustomer && !isCreditProfileLoading && (
+											<ProtectedButton
+												permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.UPDATE}
+												subsidiaryId={subsidiaryId}
+												scope='access'
+												type='button'
+												variant='outline'
+												icon='HeroPlus'
+												onClick={() => setIsCreditProfileCreatorOpen(true)}>
+												Crear perfil
+											</ProtectedButton>
+										)}
 									</div>
 								)}
 							</CardBody>
@@ -864,6 +885,18 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 					</ModalFooter>
 				</Form>
 			</FormikProvider>
+			<Modal
+				isOpen={isCreditProfileCreatorOpen}
+				setIsOpen={handleCloseCreditProfileCreator}
+				size='lg'
+				isStaticBackdrop>
+				<ModalHeader>Crear perfil de crédito</ModalHeader>
+				<ModalBody>
+					{formik.values.customer_sale_id !== null && (
+						<CustomerCreditProfileCard customerSaleId={formik.values.customer_sale_id} />
+					)}
+				</ModalBody>
+			</Modal>
 		</Modal>
 	);
 };
