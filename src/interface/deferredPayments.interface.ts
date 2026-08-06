@@ -202,3 +202,38 @@ export interface UpdateDeferredPaymentCreditProfilePayload {
 	credit_limit?: string | null;
 	notes?: string | null;
 }
+
+export interface IDeferredPaymentCreditProfileCustomer {
+	id: number;
+	customer_code: string | null;
+	rut: string;
+	billing_company: string | null;
+	contact_name: string | null;
+	email: string | null;
+	phone: string | null;
+}
+
+export interface IDeferredPaymentCreditProfileListItem extends IDeferredPaymentCreditProfile {
+	id: number;
+	customer_sale_id: number;
+	customer: IDeferredPaymentCreditProfileCustomer | null;
+	outstanding_balance: string;
+	available_credit: string | null;
+	credit_limit_exceeded: boolean;
+	created_at: string | null;
+	updated_at: string | null;
+}
+
+export interface DeferredPaymentCreditProfilesFilters {
+	page: number;
+	per_page: number;
+	active?: boolean;
+	search?: string;
+}
+
+export interface DeferredPaymentCreditProfilesListResponse {
+	data: IDeferredPaymentCreditProfileListItem[];
+	meta: DeferredPaymentsPaginationMeta;
+}
+
+export type DeferredPaymentCreditProfilesApiParams = Partial<DeferredPaymentCreditProfilesFilters>;

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
 	CreateDeferredPaymentApiPayload,
 	DeferredPaymentsListResponse,
+	DeferredPaymentCreditProfilesListResponse,
 	IDeferredPaymentAbono,
 	IDeferredPaymentCreditProfile,
 	IDeferredPaymentDocument,
@@ -55,6 +56,33 @@ const summary: IDeferredPaymentsSummary = {
 const listResponse: DeferredPaymentsListResponse = {
 	data: [document],
 	meta: { current_page: 1, per_page: 10, total: 1, last_page: 1 },
+};
+const creditProfilesResponse: DeferredPaymentCreditProfilesListResponse = {
+	data: [
+		{
+			id: 12,
+			customer_sale_id: 8,
+			customer: {
+				id: 8,
+				customer_code: 'CL-0008',
+				rut: '76.123.456-7',
+				billing_company: 'Comercial Andes SpA',
+				contact_name: 'Ana Rivas',
+				email: 'pagos@andes.cl',
+				phone: '+56912345678',
+			},
+			is_active: true,
+			payment_term_days: 45,
+			credit_limit: '1000000.00',
+			outstanding_balance: '500000.00',
+			available_credit: '500000.00',
+			credit_limit_exceeded: false,
+			notes: null,
+			created_at: '2026-07-24T10:00:00-04:00',
+			updated_at: '2026-08-05T09:12:00-04:00',
+		},
+	],
+	meta: { current_page: 1, per_page: 20, total: 1, last_page: 1 },
 };
 beforeEach(() => {
 	apiSpies.fetchData.mockReset();
@@ -261,5 +289,26 @@ describe('deferredPaymentsService', () => {
 				method: 'put',
 			}),
 		);
+		expect(apiSpies.invalidateCache).toHaveBeenCalledWith('/subsidiaries/4/credit-profiles');
+	});
+
+	it('consulta la cartera de crédito paginada sin envolver la colección Laravel', async () => {
+		const controller = new AbortController();
+		apiSpies.fetchData.mockResolvedValue({ data: creditProfilesResponse } as never);
+
+		await expect(
+			deferredPaymentsService.getCreditProfiles(
+				4,
+				{ page: 2, per_page: 50, active: false, search: '76123456' },
+				controller.signal,
+			),
+		).resolves.toEqual(creditProfilesResponse);
+		expect(apiSpies.fetchData).toHaveBeenCalledWith({
+			url: '/subsidiaries/4/credit-profiles',
+			method: 'get',
+			params: { page: 2, per_page: 50, active: false, search: '76123456' },
+			cacheTTLms: 15_000,
+			signal: controller.signal,
+		});
 	});
 });

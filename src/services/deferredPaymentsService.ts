@@ -2,6 +2,8 @@ import type { AxiosRequestConfig } from 'axios';
 import type {
 	DeferredPaymentApiListParams,
 	DeferredPaymentApiSummaryParams,
+	DeferredPaymentCreditProfilesApiParams,
+	DeferredPaymentCreditProfilesListResponse,
 	DeferredPaymentDeleteResponse,
 	DeferredPaymentMutationApiResponse,
 	DeferredPaymentsListResponse,
@@ -63,6 +65,9 @@ const documentUrl = (subsidiaryId: number, documentId: number): string =>
 
 const creditProfileUrl = (subsidiaryId: number, customerSaleId: number): string =>
 	`/subsidiaries/${subsidiaryId}/customer-sales/${customerSaleId}/credit-profile`;
+
+const creditProfilesUrl = (subsidiaryId: number): string =>
+	`/subsidiaries/${subsidiaryId}/credit-profiles`;
 
 const requestConfig = (signal?: AbortSignal): Pick<AxiosRequestConfig, 'signal'> => ({ signal });
 
@@ -286,6 +291,21 @@ const getCreditProfile = async (
 	return unwrapResource(response.data);
 };
 
+const getCreditProfiles = async (
+	subsidiaryId: number,
+	params: DeferredPaymentCreditProfilesApiParams = {},
+	signal?: AbortSignal,
+): Promise<DeferredPaymentCreditProfilesListResponse> => {
+	const response = await ApiService.fetchData<DeferredPaymentCreditProfilesListResponse>({
+		url: creditProfilesUrl(subsidiaryId),
+		method: 'get',
+		params,
+		cacheTTLms: 15_000,
+		...requestConfig(signal),
+	});
+	return response.data;
+};
+
 const updateCreditProfile = async (
 	subsidiaryId: number,
 	customerSaleId: number,
@@ -302,6 +322,7 @@ const updateCreditProfile = async (
 		...requestConfig(signal),
 	});
 	ApiService.invalidateCache(creditProfileUrl(subsidiaryId, customerSaleId));
+	ApiService.invalidateCache(creditProfilesUrl(subsidiaryId));
 	return unwrapResource(response.data);
 };
 
@@ -318,6 +339,7 @@ const deferredPaymentsService = {
 	uploadDeferredPaymentAttachment,
 	downloadDeferredPaymentAttachment,
 	getCreditProfile,
+	getCreditProfiles,
 	updateCreditProfile,
 };
 
