@@ -384,32 +384,6 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const itemTotalDiffersFromDocumentTotal =
 		Number.isFinite(documentTotal) && documentTotal > 0 && estimatedTotal !== documentTotal;
 	const hasSelectedCustomer = formik.values.customer_sale_id !== null;
-	const requiresCreditSummary =
-		creditProfile?.id !== null &&
-		creditProfile?.is_active === true &&
-		creditProfile.credit_limit !== null;
-	const isCreditProfileSuspended =
-		mode === 'create' && creditProfile?.id !== null && creditProfile?.is_active === false;
-	const isCreditProfileUnavailable =
-		mode === 'create' &&
-		hasSelectedCustomer &&
-		(isCreditProfileLoading ||
-			creditProfileError !== null ||
-			(requiresCreditSummary && outstandingAmount === null));
-	const exceedsCreditLimit =
-		mode === 'create' &&
-		hasSelectedCustomer &&
-		!isCreditProfileLoading &&
-		!creditProfileError &&
-		outstandingAmount !== null &&
-		isCreditProfileSuspended === false &&
-		creditProfile !== null &&
-		creditProfile.id !== null &&
-		creditProfile.is_active &&
-		creditProfile.credit_limit !== null &&
-		outstandingAmount + documentTotal > Number(creditProfile.credit_limit);
-	const isCreditProfileBlockingCreation =
-		isCreditProfileSuspended || isCreditProfileUnavailable || exceedsCreditLimit;
 	const hasCreatedCreditProfile = creditProfile !== null && creditProfile.id !== null;
 	const shouldShowCreditProfileEmptyState =
 		!hasCreatedCreditProfile &&
@@ -507,8 +481,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 									)
 								)
 									toast.error(DEFERRED_PAYMENT_TOTAL_ERROR);
-								if (!isCreditProfileBlockingCreation) return formik.submitForm();
-								return undefined;
+								return formik.submitForm();
 							})
 							.catch(() => undefined);
 					}}>
@@ -523,23 +496,6 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 							<Alert color='amber' variant='outline' icon='HeroUserMinus'>
 								Este cliente está suspendido. Confirma su situación antes de
 								guardar.
-							</Alert>
-						)}
-
-						{isCreditProfileSuspended && (
-							<Alert color='red' variant='outline' icon='HeroLockClosed'>
-								El crédito de este cliente está suspendido. Reactívalo antes de
-								crear un documento de pago diferido.
-							</Alert>
-						)}
-
-						{exceedsCreditLimit && creditProfile?.credit_limit && (
-							<Alert color='red' variant='outline' icon='HeroExclamationTriangle'>
-								El total del documento ({formatCLP(documentTotal)}) más el
-								saldo pendiente del cliente ({formatCLP(outstandingAmount)}) supera
-								el cupo de crédito disponible (
-								{formatCLP(creditProfile.credit_limit)}). Reduce el monto o aumenta
-								el cupo antes de continuar.
 							</Alert>
 						)}
 
@@ -1053,9 +1009,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 								color='blue'
 								icon='HeroCheck'
 								isLoading={isSubmitting}
-								isDisable={
-									isSubmitting || isPaidEdit || isCreditProfileBlockingCreation
-								}>
+								isDisable={isSubmitting || isPaidEdit}>
 								{mode === 'create' ? 'Crear documento' : 'Guardar cambios'}
 							</Button>
 						</ModalFooterChild>

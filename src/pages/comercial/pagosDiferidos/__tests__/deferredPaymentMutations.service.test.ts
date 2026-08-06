@@ -53,13 +53,13 @@ describe('ZF-7 mutaciones mediante el servicio', () => {
 		const document = DEFERRED_PAYMENT_DETAIL_FIXTURES[1];
 		serviceSpies.createDocument.mockResolvedValue({
 			document,
-			credit_limit_exceeded: true,
+			credit_limit_exceeded: false,
 		});
 		const store = createStore();
 
 		await expect(
 			store.dispatch(createDeferredPayment({ subsidiaryId: 9, payload })).unwrap(),
-		).resolves.toEqual({ document, credit_limit_exceeded: true });
+		).resolves.toEqual({ document, credit_limit_exceeded: false });
 
 		expect(serviceSpies.createDocument).toHaveBeenCalledWith(
 			9,
@@ -92,7 +92,7 @@ describe('ZF-7 mutaciones mediante el servicio', () => {
 		const document = DEFERRED_PAYMENT_DETAIL_FIXTURES[2];
 		serviceSpies.updateDocument.mockResolvedValue({
 			document,
-			credit_limit_exceeded: true,
+			credit_limit_exceeded: false,
 		});
 		const store = createStore();
 
@@ -106,7 +106,7 @@ describe('ZF-7 mutaciones mediante el servicio', () => {
 					}),
 				)
 				.unwrap(),
-		).resolves.toEqual({ document, credit_limit_exceeded: true });
+		).resolves.toEqual({ document, credit_limit_exceeded: false });
 
 		expect(serviceSpies.updateDocument).toHaveBeenCalledWith(
 			9,

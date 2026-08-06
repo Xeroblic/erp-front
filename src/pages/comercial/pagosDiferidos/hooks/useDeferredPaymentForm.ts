@@ -191,12 +191,6 @@ const useDeferredPaymentForm = ({
 				)
 					return;
 
-				if (result.credit_limit_exceeded) {
-					toast.error(
-						`El total del documento supera el cupo de crédito del cliente. El documento fue creado, pero excede el límite permitido.`,
-						{ autoClose: false },
-					);
-				}
 				onSuccess?.(result.document);
 				toast.success(
 					mode === 'edit'

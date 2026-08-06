@@ -383,7 +383,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
 	});
 
-	it('muestra la carga del perfil mientras bloquea la creación', async () => {
+	it('muestra la carga del perfil sin bloquear la creación', async () => {
 		const customer = {
 			id: 458,
 			name: 'Cliente con perfil cargando',
@@ -415,7 +415,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		fireEvent.click(await screen.findByText('Cliente con perfil cargando · 76.458.000-1'));
 
 		expect(await screen.findByText('Cargando información de crédito…')).toBeInTheDocument();
-		expect(screen.getByRole('button', { name: 'Crear documento' })).toBeDisabled();
+		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
 
 		await act(async () => {
 			resolveProfile({
@@ -432,7 +432,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		});
 	});
 
-	it('bloquea la creación cuando el perfil de crédito está suspendido', async () => {
+	it('muestra el perfil de crédito suspendido sin bloquear la creación', async () => {
 		const customer = {
 			id: 458,
 			name: 'Cliente Suspendido',
@@ -468,14 +468,8 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		fireEvent.change(customerInput, { target: { value: 'Suspendido' } });
 		fireEvent.click(await screen.findByText('Cliente Suspendido · 76.458.000-1'));
 
-		await waitFor(() =>
-			expect(
-				screen.getByText(
-					'El crédito de este cliente está suspendido. Reactívalo antes de crear un documento de pago diferido.',
-				),
-			).toBeInTheDocument(),
-		);
-		expect(screen.getByRole('button', { name: 'Crear documento' })).toBeDisabled();
+		await waitFor(() => expect(screen.getByText('45 días')).toBeInTheDocument());
+		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
 		expect(screen.getByText('45 días')).toBeInTheDocument();
 		expect(screen.getByText('Cupo usado').parentElement).toHaveTextContent('—');
 		expect(screen.getByText('Cupo disponible').parentElement).toHaveTextContent('—');
@@ -523,22 +517,13 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 
 		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'cerrar' } });
 		fireEvent.click(await screen.findByText('Cliente suspendido al cerrar · 76.468.000-1'));
-		expect(
-			await screen.findByText(
-				'El crédito de este cliente está suspendido. Reactívalo antes de crear un documento de pago diferido.',
-			),
-		).toBeInTheDocument();
+		await screen.findByText('30 días');
 
 		fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
 		expect(onClose).toHaveBeenCalledTimes(1);
 		rerender(<CreateEditDeferredPaymentModal isOpen={false} onClose={onClose} />);
 		rerender(<CreateEditDeferredPaymentModal isOpen onClose={onClose} />);
 
-		await waitFor(() =>
-			expect(
-				screen.queryByText(/El crédito de este cliente está suspendido/),
-			).not.toBeInTheDocument(),
-		);
 		expect(screen.getByText('Busca por razón social o RUT')).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
 	});
@@ -608,7 +593,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		expect(await screen.findByText('45 días')).toBeInTheDocument();
 	});
 
-	it('bloquea la creación ante un error de crédito y permite reintentar', async () => {
+	it('muestra un error de crédito, permite crear y reintentar', async () => {
 		const customer = {
 			id: 460,
 			name: 'Cliente con error',
@@ -656,7 +641,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		expect(
 			await screen.findByText('Perfil no disponible'),
 		).toBeInTheDocument();
-		expect(screen.getByRole('button', { name: 'Crear documento' })).toBeDisabled();
+		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
 
 		profileFails = false;
 		fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
@@ -665,7 +650,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		);
 	});
 
-	it('elimina el bloqueo al cambiar desde un cliente suspendido a uno habilitado', async () => {
+	it('mantiene habilitada la creación al cambiar desde un cliente suspendido', async () => {
 		const suspendedCustomer = {
 			id: 461,
 			name: 'Cliente suspendido',
@@ -715,18 +700,14 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		const customerInput = screen.getByLabelText('Cliente');
 		fireEvent.change(customerInput, { target: { value: 'suspendido' } });
 		fireEvent.click(await screen.findByText('Cliente suspendido · 76.461.000-1'));
-		expect(
-			await screen.findByText(
-				'El crédito de este cliente está suspendido. Reactívalo antes de crear un documento de pago diferido.',
-			),
-		).toBeInTheDocument();
+		await screen.findByText('30 días');
+		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
 
 		fireEvent.change(customerInput, { target: { value: 'habilitado' } });
 		fireEvent.click(await screen.findByText('Cliente habilitado · 76.462.000-1'));
-		await waitFor(() => {
-			expect(screen.queryByText(/El crédito de este cliente está suspendido/)).not.toBeInTheDocument();
-			expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
-		});
+		await waitFor(() =>
+			expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled(),
+		);
 	});
 
 	it('ignora una respuesta antigua al cambiar rápidamente de cliente', async () => {
