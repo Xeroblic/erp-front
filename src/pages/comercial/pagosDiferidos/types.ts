@@ -18,7 +18,7 @@ export interface DeferredPaymentFormItemValues {
 	code: string;
 	description: string;
 	quantity: number;
-	unit_price: number;
+	unit_price: number | string;
 	serials: string[];
 }
 
@@ -58,6 +58,11 @@ export const DeferredPaymentItemSchema = Yup.object({
 		.moreThan(0, 'La cantidad debe ser mayor a 0')
 		.required('Ingresa la cantidad'),
 	unit_price: Yup.number()
+		.transform((value: unknown, originalValue: unknown): number | undefined => {
+			if (originalValue === '') return undefined;
+			if (typeof originalValue === 'string') return Number(originalValue);
+			return typeof value === 'number' ? value : undefined;
+		})
 		.typeError('El precio unitario debe ser un número')
 		.min(0, 'El precio unitario no puede ser negativo')
 		.required('Ingresa el precio unitario'),
@@ -161,7 +166,8 @@ export const createDeferredPaymentInitialValues = (
 
 export const calculateDeferredPaymentEstimatedTotal = (
 	items: readonly DeferredPaymentFormItemValues[],
-): number => items.reduce((total, item) => total + item.quantity * item.unit_price, 0);
+): number =>
+	items.reduce((total, item) => total + item.quantity * Number(item.unit_price), 0);
 
 export const DEFERRED_PAYMENT_METHODS = ['transfer', 'deposit', 'check', 'cash', 'other'] as const;
 export const DEFERRED_PAYMENT_RECEIPT_ACCEPT = '.pdf,.jpg,.jpeg,.png,.webp,.xls,.xlsx';

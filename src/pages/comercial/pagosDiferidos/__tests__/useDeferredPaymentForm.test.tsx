@@ -111,6 +111,7 @@ describe('useDeferredPaymentForm', () => {
 			document_number: `  ${values.document_number}  `,
 			purchase_order: '   ',
 			notes: '   ',
+			items: [{ ...values.items[0], unit_price: '2500000' }],
 		});
 
 		const valuesWithoutPurchaseOrder = mapDeferredPaymentDocumentToForm({
@@ -125,6 +126,7 @@ describe('useDeferredPaymentForm', () => {
 			document_number: document.document_number,
 			purchase_order: null,
 			notes: null,
+			items: [expect.objectContaining({ unit_price: 2500000 })],
 		});
 		expect(
 			mapDeferredPaymentFormToPayload({ ...values, assignee_ids: [] }, 37)?.assignee_ids,
@@ -148,6 +150,17 @@ describe('useDeferredPaymentForm', () => {
 			await hook.result.current.formik.setFieldValue('issue_date', '2026-08-02');
 		});
 		expect(hook.result.current.formik.values.due_date).toBe('2026-12-31');
+	});
+
+	it('restablece un vencimiento manual al adoptar el plazo de un cliente distinto', async () => {
+		const { hook } = createHook();
+		const issueDate = hook.result.current.formik.values.issue_date;
+		await act(async () => {
+			await hook.result.current.actions.setDueDateManually('2026-12-31');
+			await hook.result.current.actions.resetDueDateManualOverride(45);
+		});
+
+		expect(hook.result.current.formik.values.due_date).toBe(addDaysToDateOnly(issueDate, 45));
 	});
 
 	it('crea una sola vez ante dos envíos simultáneos y refresca el estado', async () => {
@@ -185,12 +198,11 @@ describe('useDeferredPaymentForm', () => {
 		});
 
 		expect(createMutationSpy).toHaveBeenCalledOnce();
-		expect(toastSpies.warn).toHaveBeenCalledWith(
-			'El total supera el límite de crédito conocido del cliente',
+		expect(toastSpies.error).toHaveBeenCalledWith(
+			'El total del documento supera el cupo de crédito del cliente. El documento fue creado, pero excede el límite permitido.',
 			{ autoClose: false },
 		);
 		expect(toastSpies.success).toHaveBeenCalledWith('Documento creado correctamente');
-		expect(toastSpies.error).not.toHaveBeenCalled();
 		expect(store.getState().deferredPayments.lastMutationCreditLimitExceeded).toBe(true);
 		expect(store.getState().deferredPayments.list.length).toBeGreaterThan(0);
 		expect(deferredPaymentsService.getDocuments).toHaveBeenCalledWith(

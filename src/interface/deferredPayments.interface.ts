@@ -189,7 +189,7 @@ export interface DeferredPaymentDeleteResponse {
 
 export interface IDeferredPaymentCreditProfile {
 	id: number | null;
-	customer_sale_id: number;
+	customer_sale_id: number | null;
 	is_active: boolean;
 	payment_term_days: number;
 	credit_limit: string | null;

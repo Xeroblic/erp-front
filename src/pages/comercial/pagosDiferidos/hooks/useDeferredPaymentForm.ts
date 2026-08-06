@@ -27,6 +27,7 @@ interface UseDeferredPaymentFormProps {
 	mode: DeferredPaymentFormMode;
 	deferredPaymentDocument?: IDeferredPaymentDocument | null;
 	paymentTermDays?: number;
+	isOpen?: boolean;
 	onSuccess?: (document: IDeferredPaymentDocument) => void;
 }
 
@@ -98,7 +99,7 @@ export const mapDeferredPaymentFormToPayload = (
 			code: item.code.trim(),
 			description: item.description.trim(),
 			quantity: item.quantity,
-			unit_price: item.unit_price,
+			unit_price: Number(item.unit_price),
 			serials: item.serials.map((serial) => serial.trim()),
 		})),
 	};
@@ -108,6 +109,7 @@ const useDeferredPaymentForm = ({
 	mode,
 	deferredPaymentDocument = null,
 	paymentTermDays = DEFAULT_PAYMENT_TERM_DAYS,
+	isOpen = true,
 	onSuccess,
 }: UseDeferredPaymentFormProps) => {
 	const dispatch = useAppDispatch();
@@ -188,9 +190,10 @@ const useDeferredPaymentForm = ({
 					return;
 
 				if (result.credit_limit_exceeded) {
-					toast.warn('El total supera el límite de crédito conocido del cliente', {
-						autoClose: false,
-					});
+					toast.error(
+						`El total del documento supera el cupo de crédito del cliente. El documento fue creado, pero excede el límite permitido.`,
+						{ autoClose: false },
+					);
 				}
 				onSuccess?.(result.document);
 				toast.success(
@@ -242,6 +245,9 @@ const useDeferredPaymentForm = ({
 	});
 
 	const { setFieldValue } = formik;
+	useEffect(() => {
+		if (!isOpen) dueDateManuallySetRef.current = false;
+	}, [isOpen]);
 	const issueDate = formik.values.issue_date;
 	const previousPaymentTermDaysRef = useRef(paymentTermDays);
 	useEffect(() => {
@@ -298,6 +304,17 @@ const useDeferredPaymentForm = ({
 		},
 		[setFieldValue],
 	);
+	const resetDueDateManualOverride = useCallback(
+		(nextPaymentTermDays = paymentTermDays) => {
+			dueDateManuallySetRef.current = false;
+			return setFieldValue(
+				'due_date',
+				addDaysToDateOnly(formik.values.issue_date, nextPaymentTermDays),
+				true,
+			);
+		},
+		[formik.values.issue_date, paymentTermDays, setFieldValue],
+	);
 
 	return {
 		formik,
@@ -305,7 +322,7 @@ const useDeferredPaymentForm = ({
 		isSubmitting: formik.isSubmitting || creating || updating,
 		isPaidEdit,
 		hasDataContext: effectiveSubsidiaryId !== null,
-		actions: { setDueDateManually },
+		actions: { resetDueDateManualOverride, setDueDateManually },
 	};
 };
 

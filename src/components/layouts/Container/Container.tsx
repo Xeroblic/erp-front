@@ -1,4 +1,4 @@
-import React, { forwardRef, ReactNode } from 'react';
+import React, { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
 import classNames from 'classnames';
 
 type TContainerBreakpoint =
@@ -10,9 +10,8 @@ type TContainerBreakpoint =
 	| '2xl:container'
 	| null;
 
-interface IContainerProps {
+interface IContainerProps extends HTMLAttributes<HTMLDivElement> {
 	children: ReactNode;
-	className?: string;
 	breakpoint?: TContainerBreakpoint;
 }
 

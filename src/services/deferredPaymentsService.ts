@@ -125,6 +125,7 @@ const createDocument = async (
 		...requestConfig(signal),
 	});
 	ApiService.invalidateCache(documentsUrl(subsidiaryId));
+	ApiService.invalidateCache(`${documentsUrl(subsidiaryId)}/summary`);
 	return {
 		document: normalizeDocument(unwrapResource(response.data)),
 		credit_limit_exceeded: asRecord(response.data)?.credit_limit_exceeded === true,
