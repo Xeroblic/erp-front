@@ -84,7 +84,7 @@ describe('useDeferredPaymentForm', () => {
 		createMutationSpy.mockImplementation(async () => {
 			if (mutationFailure.error) throw mutationFailure.error;
 			if (mutationGate.wait) await mutationGate.wait;
-			return { document: DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0], credit_limit_exceeded: true };
+			return { document: DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0], credit_limit_exceeded: false };
 		});
 		vi.mocked(deferredPaymentsService.getDocuments).mockResolvedValue({
 			data: [DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0]],
@@ -111,6 +111,7 @@ describe('useDeferredPaymentForm', () => {
 			document_number: `  ${values.document_number}  `,
 			purchase_order: '   ',
 			notes: '   ',
+			total_amount: 475976,
 			items: [{ ...values.items[0], unit_price: '2500000' }],
 		});
 
@@ -126,6 +127,7 @@ describe('useDeferredPaymentForm', () => {
 			document_number: document.document_number,
 			purchase_order: null,
 			notes: null,
+			total_amount: 475976,
 			items: [expect.objectContaining({ unit_price: 2500000 })],
 		});
 		expect(
@@ -133,17 +135,21 @@ describe('useDeferredPaymentForm', () => {
 		).toEqual([37]);
 	});
 
-	it('recalcula vencimiento y total estimado al editar el formulario', async () => {
+	it('recalcula el vencimiento sin sustituir el total oficial al editar ítems', async () => {
 		const { hook } = createHook();
 
 		await act(async () => {
 			await hook.result.current.formik.setFieldValue('issue_date', '2026-08-01');
 			await hook.result.current.formik.setFieldValue('items.0.quantity', 3);
 			await hook.result.current.formik.setFieldValue('items.0.unit_price', 2500);
+			await hook.result.current.formik.setFieldValue('total_amount', 475976);
 		});
 
 		expect(hook.result.current.formik.values.due_date).toBe('2026-08-16');
 		expect(hook.result.current.estimatedTotal).toBe(7500);
+		expect(hook.result.current.documentTotal).toBe(
+			475976,
+		);
 
 		await act(async () => {
 			await hook.result.current.actions.setDueDateManually('2026-12-31');
@@ -177,6 +183,7 @@ describe('useDeferredPaymentForm', () => {
 				...hook.result.current.formik.values,
 				customer_sale_id: 1,
 				document_number: 'FD-HOOK-001',
+				total_amount: 2500000,
 				items: [
 					{
 						client_key: 'hook-item-1',
@@ -198,12 +205,9 @@ describe('useDeferredPaymentForm', () => {
 		});
 
 		expect(createMutationSpy).toHaveBeenCalledOnce();
-		expect(toastSpies.error).toHaveBeenCalledWith(
-			'El total del documento supera el cupo de crédito del cliente. El documento fue creado, pero excede el límite permitido.',
-			{ autoClose: false },
-		);
+		expect(toastSpies.error).not.toHaveBeenCalled();
 		expect(toastSpies.success).toHaveBeenCalledWith('Documento creado correctamente');
-		expect(store.getState().deferredPayments.lastMutationCreditLimitExceeded).toBe(true);
+		expect(store.getState().deferredPayments.lastMutationCreditLimitExceeded).toBe(false);
 		expect(store.getState().deferredPayments.list.length).toBeGreaterThan(0);
 		expect(deferredPaymentsService.getDocuments).toHaveBeenCalledWith(
 			1,
@@ -238,6 +242,7 @@ describe('useDeferredPaymentForm', () => {
 				...hook.result.current.formik.values,
 				customer_sale_id: 1,
 				document_number: 'FD-CONTEXT-CHANGE',
+				total_amount: 1000,
 				items: [
 					{
 						client_key: 'context-item',
@@ -274,15 +279,18 @@ describe('useDeferredPaymentForm', () => {
 		expect(store.getState().deferredPayments.list).toEqual([]);
 	});
 
-	it('muestra el error de la mutación en un toast', async () => {
+	it('muestra el 422 autoritativo en un toast y conserva el borrador', async () => {
 		configureSuccessfulServices();
-		mutationFailure.error = new Error('Servidor no disponible');
+		mutationFailure.error = Object.assign(new Error('El cliente no tiene cupo de crédito disponible.'), {
+			response: { data: { message: 'El cliente no tiene cupo de crédito disponible.' } },
+		});
 		const { hook } = createHook();
 		await act(async () => {
 			await hook.result.current.formik.setValues({
 				...hook.result.current.formik.values,
 				customer_sale_id: 1,
 				document_number: 'FD-HOOK-ERROR',
+				total_amount: 1000,
 				items: [
 					{
 						client_key: 'hook-item-error',
@@ -300,8 +308,12 @@ describe('useDeferredPaymentForm', () => {
 			await hook.result.current.formik.submitForm();
 		});
 
-		expect(toastSpies.error).toHaveBeenCalledWith('Servidor no disponible');
+		expect(toastSpies.error).toHaveBeenCalledWith(
+			'El cliente no tiene cupo de crédito disponible.',
+		);
 		expect(toastSpies.success).not.toHaveBeenCalled();
+		expect(hook.result.current.formik.values.document_number).toBe('FD-HOOK-ERROR');
+		expect(hook.result.current.formik.values.total_amount).toBe(1000);
 	});
 	it('asocia los errores de validación del backend con sus campos', async () => {
 		configureSuccessfulServices();
@@ -324,6 +336,7 @@ describe('useDeferredPaymentForm', () => {
 				...hook.result.current.formik.values,
 				customer_sale_id: 1,
 				document_number: 'FD-DUPLICADO',
+				total_amount: 1000,
 				items: [
 					{
 						client_key: 'hook-item-duplicate',
