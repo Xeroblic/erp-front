@@ -377,6 +377,55 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
 	});
 
+	it('muestra la carga del perfil mientras bloquea la creación', async () => {
+		const customer = {
+			id: 458,
+			name: 'Cliente con perfil cargando',
+			rut: '76.458.000-1',
+			contact: { name: 'Ana Pérez' },
+			loyalty: 0,
+			total_sales: 0,
+			is_active: true,
+		};
+		let resolveProfile: (value: unknown) => void = () => undefined;
+		const profileRequest = new Promise((resolve) => {
+			resolveProfile = resolve;
+		});
+		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) => {
+			if (url.includes('/overview')) {
+				return Promise.resolve({ data: { ...emptyPagination, data: [customer], total: 1 } });
+			}
+			if (url.includes('/458/credit-profile')) return profileRequest;
+			return Promise.resolve({
+				data: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+			});
+		});
+		const store = createTestStore();
+		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, { wrapper: Wrapper });
+
+		const customerInput = screen.getByLabelText('Cliente');
+		fireEvent.change(customerInput, { target: { value: 'cargando' } });
+		fireEvent.click(await screen.findByText('Cliente con perfil cargando · 76.458.000-1'));
+
+		expect(await screen.findByText('Cargando información de crédito…')).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Crear documento' })).toBeDisabled();
+
+		await act(async () => {
+			resolveProfile({
+				data: {
+					id: null,
+					customer_sale_id: null,
+					is_active: false,
+					payment_term_days: 30,
+					credit_limit: null,
+					notes: null,
+				},
+			});
+			await Promise.resolve();
+		});
+	});
+
 	it('bloquea la creación cuando el perfil de crédito está suspendido', async () => {
 		const customer = {
 			id: 458,

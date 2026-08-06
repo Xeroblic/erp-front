@@ -365,10 +365,12 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const shouldShowCreditProfileEmptyState =
 		!hasCreatedCreditProfile &&
 		!creditProfileError &&
-		(hasCreditProfileLoaded || !hasSelectedCustomer);
-	const creditProfileEmptyMessage = hasSelectedCustomer
-		? 'Este cliente no tiene un perfil de crédito creado.'
-		: 'Selecciona un cliente para consultar sus condiciones de crédito.';
+		(isCreditProfileLoading || hasCreditProfileLoaded || !hasSelectedCustomer);
+	const creditProfileEmptyMessage = isCreditProfileLoading
+		? 'Cargando información de crédito…'
+		: hasSelectedCustomer
+			? 'Este cliente no tiene un perfil de crédito creado.'
+			: 'Selecciona un cliente para consultar sus condiciones de crédito.';
 	const creditProfileIcon = isCreditProfileLoading ? 'HeroArrowPath' : 'HeroInformationCircle';
 	const creditProfileIconClassName = isCreditProfileLoading
 		? 'animate-spin text-blue-600'
