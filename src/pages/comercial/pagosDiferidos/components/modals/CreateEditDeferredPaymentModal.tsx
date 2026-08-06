@@ -80,6 +80,8 @@ const asMultiOptions = (value: unknown): TSelectOption[] => {
 	return candidates.filter(isSelectOption);
 };
 
+const toCLPAmount = (value: string): number => Number(value.replace(/\D/g, ''));
+
 const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalProps> = ({
 	isOpen,
 	onClose,
@@ -213,11 +215,12 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	useEffect(() => {
 		if (!isOpen || subsidiaryId === null) return undefined;
 		const query = debouncedCustomerSearch.trim();
+		if (!query) return undefined;
 		const customerRequest = dispatch(
 			fetchCustomersOverviewThunk({
 				subsidiary: subsidiaryId,
 				per_page: 100,
-				params: query ? { q: query } : undefined,
+				params: { q: query },
 			}),
 		);
 		return () => customerRequest.abort();
@@ -232,13 +235,22 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	}, [dispatch, isOpen, subsidiaryId]);
 
 	const customerData = useMemo<CustomerOptionData[]>(() => {
-		const remoteCustomers = customers.map((customer) => ({
-			id: customer.id,
-			label: [customer.name, customer.rut]
-				.filter((value): value is string => Boolean(value))
-				.join(' · '),
-			isActive: customer.is_active,
-		}));
+		const query = customerSearch.trim().toLocaleLowerCase();
+		const remoteCustomers = query
+			? customers
+					.filter((customer) =>
+						[customer.name, customer.rut]
+							.filter((value): value is string => Boolean(value))
+							.some((value) => value.toLocaleLowerCase().includes(query)),
+					)
+					.map((customer) => ({
+						id: customer.id,
+						label: [customer.name, customer.rut]
+							.filter((value): value is string => Boolean(value))
+							.join(' · '),
+						isActive: customer.is_active,
+					}))
+			: [];
 		const editedCustomer =
 			mode === 'edit' && deferredPaymentDocument
 				? {
@@ -262,11 +274,16 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 				].map((customer) => [customer.id, customer]),
 			).values(),
 		);
-	}, [customers, deferredPaymentDocument, mode, selectedCustomerOption]);
+	}, [customerSearch, customers, deferredPaymentDocument, mode, selectedCustomerOption]);
 	const customerOptions = useMemo<TSelectOption[]>(
 		() => customerData.map(({ id, label }) => ({ value: String(id), label })),
 		[customerData],
 	);
+	const handleUnitPriceChange = (index: number, value: string) => {
+		const field = `items.${index}.unit_price`;
+		formik.setFieldTouched(field, true, false).catch(() => undefined);
+		formik.setFieldValue(field, toCLPAmount(value)).catch(() => undefined);
+	};
 	const assigneeOptions = useMemo<TSelectOption[]>(() => {
 		const remoteOptions = users
 			.filter((user) => user.is_active)
@@ -828,10 +845,16 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 															<Input
 																id={`items.${index}.unit_price`}
 																name={`items.${index}.unit_price`}
-																type='number'
-																min={0}
-																value={item.unit_price}
-																onChange={formik.handleChange}
+																type='text'
+																inputMode='numeric'
+																placeholder='$ 0'
+																value={formatCLP(item.unit_price)}
+																onChange={(event) =>
+																	handleUnitPriceChange(
+																		index,
+																		event.target.value,
+																	)
+																}
 																onBlur={formik.handleBlur}
 																disabled={isPaidEdit}
 																invalidFeedback={error}

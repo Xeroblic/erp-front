@@ -88,6 +88,16 @@ describe('CreateEditDeferredPaymentModal', () => {
 		expect(screen.getByRole('button', { name: 'Crear documento' })).toBeInTheDocument();
 	});
 
+	it('formatea el precio unitario en CLP y descarta caracteres no numéricos', () => {
+		renderModal();
+
+		const unitPrice = screen.getByLabelText('Precio unitario');
+		fireEvent.change(unitPrice, { target: { value: '2500000' } });
+		expect(unitPrice).toHaveValue('$ 2.500.000');
+		fireEvent.change(unitPrice, { target: { value: '$ 2.500.000abc' } });
+		expect(unitPrice).toHaveValue('$ 2.500.000');
+	});
+
 	it('descarta el borrador al desmontar y reabrir el formulario', () => {
 		const firstCreate = renderModal();
 		fireEvent.change(screen.getByLabelText('Número de documento'), {

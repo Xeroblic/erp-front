@@ -121,6 +121,15 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 			),
 		).toBeInTheDocument();
 		expect(screen.getByText(new RegExp(editedDocument.assignees[0].name))).toBeInTheDocument();
+		expect(
+			apiSpies.fetchData.mock.calls.some(
+				([request]) =>
+					typeof request === 'object' &&
+					request !== null &&
+					'url' in request &&
+					request.url === '/subsidiaries/1/customer-sales/overview',
+			),
+		).toBe(false);
 
 		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'Automarco' } });
 		await waitFor(() =>
@@ -247,7 +256,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 
 		expect(await screen.findByText('45 días')).toBeInTheDocument();
 	});
-	it('conserva el cliente elegido después de seleccionar y cerrar la búsqueda', async () => {
+	it('conserva el cliente elegido sin volver a consultar al cerrar la búsqueda', async () => {
 		const searchedCustomer = {
 			id: 457,
 			name: 'Zeta Corp',
@@ -309,8 +318,8 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		const overviewCalls = apiSpies.fetchData.mock.calls.filter(([request]) =>
 			String((request as { url?: string }).url).includes('/overview'),
 		);
-		expect(overviewCalls).toHaveLength(2);
-		expect(overviewCalls[1]?.[0]).toEqual(
+		expect(overviewCalls).toHaveLength(1);
+		expect(overviewCalls[0]?.[0]).toEqual(
 			expect.objectContaining({ params: expect.objectContaining({ q: 'Zeta' }) }),
 		);
 	});
