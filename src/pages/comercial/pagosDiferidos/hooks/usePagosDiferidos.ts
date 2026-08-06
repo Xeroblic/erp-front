@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDebounce } from 'use-debounce';
+import { useSearchParams } from 'react-router-dom';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import type {
 	DeferredPaymentApiSummaryParams,
@@ -15,6 +16,7 @@ import {
 
 const usePagosDiferidos = () => {
 	const dispatch = useAppDispatch();
+	const [searchParams, setSearchParams] = useSearchParams();
 	const { branchId, subsidiaryId } = useCurrentBranch();
 	const list = useAppSelector((state) => state.deferredPayments.list);
 	const summary = useAppSelector((state) => state.deferredPayments.summary);
@@ -30,6 +32,10 @@ const usePagosDiferidos = () => {
 	const [debouncedSearch] = useDebounce(search, 300);
 	const isSearchDebouncing = search !== debouncedSearch;
 	const effectiveSubsidiaryId = subsidiaryId;
+	const customerSaleIdFromUrl = useMemo(() => {
+		const value = Number(searchParams.get('customer_sale_id'));
+		return Number.isInteger(value) && value > 0 ? value : undefined;
+	}, [searchParams]);
 	const hasDataContext = effectiveSubsidiaryId !== null;
 	const hasInvalidDateRange = Boolean(
 		values.due_after && values.due_before && values.due_after > values.due_before,
@@ -79,6 +85,12 @@ const usePagosDiferidos = () => {
 	useEffect(() => {
 		if (isSubsidiaryChange) setSelectedId(null);
 	}, [isSubsidiaryChange]);
+
+	useEffect(() => {
+		if (customerSaleIdFromUrl === undefined || values.customer_sale_id === customerSaleIdFromUrl)
+			return;
+		dispatch(setDeferredPaymentsFilters({ customer_sale_id: customerSaleIdFromUrl, page: 1 }));
+	}, [customerSaleIdFromUrl, dispatch, values.customer_sale_id]);
 
 	useEffect(() => {
 		if (effectiveSubsidiaryId === null || hasInvalidDateRange || isSearchDebouncing)
@@ -135,7 +147,10 @@ const usePagosDiferidos = () => {
 			values.due_after ||
 			values.due_before,
 	);
-	const resetFilters = useCallback(() => dispatch(resetDeferredPaymentsFilters()), [dispatch]);
+	const resetFilters = useCallback(() => {
+		dispatch(resetDeferredPaymentsFilters());
+		if (searchParams.has('customer_sale_id')) setSearchParams({});
+	}, [dispatch, searchParams, setSearchParams]);
 	const openDetail = useCallback((id: number) => setSelectedId(id), []);
 	const closeDetail = useCallback(() => setSelectedId(null), []);
 	const retrySummary = useCallback(() => {
