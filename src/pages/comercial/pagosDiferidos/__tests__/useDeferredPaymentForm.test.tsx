@@ -152,6 +152,17 @@ describe('useDeferredPaymentForm', () => {
 		expect(hook.result.current.formik.values.due_date).toBe('2026-12-31');
 	});
 
+	it('restablece un vencimiento manual al adoptar el plazo de un cliente distinto', async () => {
+		const { hook } = createHook();
+		const issueDate = hook.result.current.formik.values.issue_date;
+		await act(async () => {
+			await hook.result.current.actions.setDueDateManually('2026-12-31');
+			await hook.result.current.actions.resetDueDateManualOverride(45);
+		});
+
+		expect(hook.result.current.formik.values.due_date).toBe(addDaysToDateOnly(issueDate, 45));
+	});
+
 	it('crea una sola vez ante dos envíos simultáneos y refresca el estado', async () => {
 		configureSuccessfulServices();
 		vi.useFakeTimers();

@@ -18,6 +18,7 @@ import useCustomerCreditProfile from '../hooks/useCustomerCreditProfile';
 interface CustomerCreditProfileCardProps {
 	customerSaleId: number;
 	startInEditMode?: boolean;
+	onSavingChange?: (isSaving: boolean) => void;
 }
 
 const CreditStatusPill: React.FC<{ suspended: boolean }> = ({ suspended }) => (
@@ -55,7 +56,8 @@ const CustomerCreditProfileCardContent: React.FC<{
 	customerSaleId: number;
 	subsidiaryId: number | null;
 	startInEditMode: boolean;
-}> = ({ customerSaleId, subsidiaryId, startInEditMode }) => {
+	onSavingChange?: (isSaving: boolean) => void;
+}> = ({ customerSaleId, subsidiaryId, startInEditMode, onSavingChange }) => {
 	const {
 		profile,
 		outstandingAmount,
@@ -70,6 +72,17 @@ const CustomerCreditProfileCardContent: React.FC<{
 		cancelEditing,
 	} = useCustomerCreditProfile({ customerSaleId, subsidiaryId });
 	const hasStartedEditingRef = useRef(false);
+	const onSavingChangeRef = useRef(onSavingChange);
+	onSavingChangeRef.current = onSavingChange;
+
+	useEffect(() => {
+		onSavingChange?.(isSaving);
+	}, [isSaving, onSavingChange]);
+
+	useEffect(
+		() => () => onSavingChangeRef.current?.(false),
+		[],
+	);
 
 	useEffect(() => {
 		if (
@@ -355,6 +368,7 @@ const CustomerCreditProfileCardContent: React.FC<{
 const CustomerCreditProfileCard: React.FC<CustomerCreditProfileCardProps> = ({
 	customerSaleId,
 	startInEditMode = false,
+	onSavingChange,
 }) => {
 	const { subsidiaryId } = useCurrentBranch();
 	return (
@@ -366,6 +380,7 @@ const CustomerCreditProfileCard: React.FC<CustomerCreditProfileCardProps> = ({
 				customerSaleId={customerSaleId}
 				subsidiaryId={subsidiaryId}
 				startInEditMode={startInEditMode}
+				onSavingChange={onSavingChange}
 			/>
 		</PermissionGuard>
 	);

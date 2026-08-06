@@ -35,6 +35,16 @@ let creditProfilePutResponse: unknown = null;
 let shouldRejectCreditProfile = false;
 let creditProfileError: Error | null = null;
 
+const deferred = <T,>() => {
+	let resolve: (value: T) => void = () => undefined;
+	let reject: (reason?: unknown) => void = () => undefined;
+	const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+		resolve = resolvePromise;
+		reject = rejectPromise;
+	});
+	return { promise, resolve, reject };
+};
+
 const setupFetchData = () => {
 	apiSpies.fetchData.mockImplementation(({ url, method }: { url: string; method?: string }) => {
 		if (url.includes('/customer-sales') && url.includes('/credit-profile') && method !== 'put') {
@@ -248,6 +258,125 @@ describe('CustomerCreditProfileCard', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
 		expect(screen.getByText('Sin perfil de crédito.')).toBeInTheDocument();
 		await waitForButtonClickGuard();
+	});
+
+	it('ignora una carga obsoleta después de cambiar de cliente', async () => {
+		const firstLoad = deferred<unknown>();
+		const secondLoad = deferred<unknown>();
+		apiSpies.fetchData.mockImplementation(({ url, method }: { url: string; method?: string }) => {
+			if (url.includes('/customer-sales/8/credit-profile') && method !== 'put') {
+				return firstLoad.promise;
+			}
+			if (url.includes('/customer-sales/9/credit-profile') && method !== 'put') {
+				return secondLoad.promise;
+			}
+			return Promise.reject(new Error(`URL no esperada: ${url}`));
+		});
+
+		const view = render(<CustomerCreditProfileCard customerSaleId={8} />);
+		await waitFor(() => expect(apiSpies.fetchData).toHaveBeenCalledTimes(1));
+		view.rerender(<CustomerCreditProfileCard customerSaleId={9} />);
+		await waitFor(() => expect(apiSpies.fetchData).toHaveBeenCalledTimes(2));
+
+		await act(async () => {
+			secondLoad.resolve({
+				data: {
+					id: 9,
+					customer_sale_id: 9,
+					is_active: true,
+					payment_term_days: 90,
+					credit_limit: null,
+					notes: null,
+				},
+			});
+		});
+		expect(await screen.findByText('90 días')).toBeInTheDocument();
+
+		await act(async () => {
+			firstLoad.resolve({
+				data: {
+					id: 8,
+					customer_sale_id: 8,
+					is_active: true,
+					payment_term_days: 15,
+					credit_limit: null,
+					notes: null,
+				},
+			});
+		});
+		expect(screen.getByText('90 días')).toBeInTheDocument();
+		expect(screen.queryByText('15 días')).not.toBeInTheDocument();
+	});
+
+	it('limpia la edición y el borrador cuando cambia la identidad del cliente', async () => {
+		const view = render(<CustomerCreditProfileCard customerSaleId={8} />);
+		fireEvent.click(await screen.findByRole('button', { name: 'Crear perfil' }));
+		fireEvent.change(screen.getByLabelText('Notas'), { target: { value: 'Borrador de A' } });
+
+		view.rerender(<CustomerCreditProfileCard customerSaleId={9} />);
+		expect(await screen.findByText('Sin perfil de crédito.')).toBeInTheDocument();
+		expect(
+			screen.queryByRole('form', { name: 'Formulario de condiciones de crédito' }),
+		).not.toBeInTheDocument();
+		fireEvent.click(screen.getByRole('button', { name: 'Crear perfil' }));
+		expect(screen.getByLabelText('Notas')).toHaveValue('');
+		await waitForButtonClickGuard();
+	});
+
+	it('aborta e ignora el error de guardado de la identidad anterior', async () => {
+		const pendingSave = deferred<unknown>();
+		let saveSignal: AbortSignal | undefined;
+		apiSpies.fetchData.mockImplementation(
+			({ url, method, signal }: { url: string; method?: string; signal?: AbortSignal }) => {
+				if (url.includes('/customer-sales/8/credit-profile') && method !== 'put') {
+					return Promise.resolve({
+						data: {
+							id: null,
+							customer_sale_id: null,
+							is_active: false,
+							payment_term_days: 30,
+							credit_limit: null,
+							notes: null,
+						},
+					});
+				}
+				if (url.includes('/customer-sales/9/credit-profile') && method !== 'put') {
+					return Promise.resolve({
+						data: {
+							id: 9,
+							customer_sale_id: 9,
+							is_active: true,
+							payment_term_days: 90,
+							credit_limit: null,
+							notes: null,
+						},
+					});
+				}
+				if (url.includes('/customer-sales/8/credit-profile') && method === 'put') {
+					saveSignal = signal;
+					return pendingSave.promise;
+				}
+				return Promise.reject(new Error(`URL no esperada: ${url}`));
+			},
+		);
+
+		const view = render(<CustomerCreditProfileCard customerSaleId={8} />);
+		fireEvent.click(await screen.findByRole('button', { name: 'Crear perfil' }));
+		fireEvent.change(screen.getByLabelText('Plazo de pago (días)'), {
+			target: { value: '45' },
+		});
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar condiciones' }));
+		await waitFor(() => expect(saveSignal).toBeDefined());
+
+		view.rerender(<CustomerCreditProfileCard customerSaleId={9} />);
+		expect(saveSignal?.aborted).toBe(true);
+		expect(await screen.findByText('90 días')).toBeInTheDocument();
+
+		await act(async () => {
+			pendingSave.reject(new Error('No se pudo guardar'));
+		});
+		expect(screen.getByText('90 días')).toBeInTheDocument();
+		expect(screen.queryByText('No se pudo guardar')).not.toBeInTheDocument();
 	});
 
 	it('muestra el perfil, pero oculta las acciones sin permiso de edición', async () => {

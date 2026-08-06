@@ -10,6 +10,7 @@ import usersAdminReducer from '@/store/slices/usersAdmin/usersAdminSlice';
 import CreateEditDeferredPaymentModal from '../components/modals/CreateEditDeferredPaymentModal';
 
 const apiSpies = vi.hoisted(() => ({ fetchData: vi.fn(), invalidateCache: vi.fn() }));
+const branchContext = vi.hoisted(() => ({ subsidiaryId: 1 as number | null }));
 
 vi.mock('@/services/ApiService', () => ({ default: apiSpies }));
 vi.mock('react-i18next', () => ({
@@ -19,7 +20,11 @@ vi.mock('@/hooks/useAuthorization', () => ({
 	default: () => ({ hasAnyPermission: () => true, isSuperAdmin: true }),
 }));
 vi.mock('@/hooks/useCurrentBranch', () => ({
-	useCurrentBranch: () => ({ branchId: 1, subsidiaryId: 1, hasValidBranch: true }),
+	useCurrentBranch: () => ({
+		branchId: 1,
+		subsidiaryId: branchContext.subsidiaryId,
+		hasValidBranch: true,
+	}),
 }));
 vi.mock('@/store', async () => {
 	const reactRedux = await vi.importActual<typeof import('react-redux')>('react-redux');
@@ -67,6 +72,7 @@ const createTestStore = () =>
 
 describe('Integración de CreateEditDeferredPaymentModal', () => {
 	beforeEach(() => {
+		branchContext.subsidiaryId = 1;
 		const portalRoot = document.createElement('div');
 		portalRoot.id = 'portal-root';
 		document.body.appendChild(portalRoot);
@@ -802,5 +808,138 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 
 		expect(screen.queryByText(/El crédito de este cliente está suspendido/)).not.toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
+	});
+
+	it('recarga el perfil en la subsidiaria actual e ignora la resolución anterior', async () => {
+		const customer = {
+			id: 470,
+			name: 'Cliente multi subsidiaria',
+			rut: '76.470.000-1',
+			contact: { name: 'Ana Pérez' },
+			loyalty: 0,
+			total_sales: 0,
+			is_active: true,
+		};
+		let resolveFirstProfile: (value: unknown) => void = () => undefined;
+		let resolveSecondProfile: (value: unknown) => void = () => undefined;
+		const firstProfileRequest = new Promise((resolve) => {
+			resolveFirstProfile = resolve;
+		});
+		const secondProfileRequest = new Promise((resolve) => {
+			resolveSecondProfile = resolve;
+		});
+		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) => {
+			if (url.includes('/overview'))
+				return Promise.resolve({ data: { ...emptyPagination, data: [customer], total: 1 } });
+			if (url === '/subsidiaries/1/customer-sales/470/credit-profile')
+				return firstProfileRequest;
+			if (url === '/subsidiaries/2/customer-sales/470/credit-profile')
+				return secondProfileRequest;
+			return Promise.resolve({
+				data: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+			});
+		});
+		const store = createTestStore();
+		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const { rerender } = render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, {
+			wrapper: Wrapper,
+		});
+
+		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'multi' } });
+		fireEvent.click(await screen.findByText('Cliente multi subsidiaria · 76.470.000-1'));
+		await waitFor(() =>
+			expect(apiSpies.fetchData).toHaveBeenCalledWith(
+				expect.objectContaining({ url: '/subsidiaries/1/customer-sales/470/credit-profile' }),
+			),
+		);
+
+		branchContext.subsidiaryId = 2;
+		rerender(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />);
+		await waitFor(() =>
+			expect(apiSpies.fetchData).toHaveBeenCalledWith(
+				expect.objectContaining({ url: '/subsidiaries/2/customer-sales/470/credit-profile' }),
+			),
+		);
+
+		await act(async () => {
+			resolveFirstProfile({
+				data: {
+					id: 30,
+					customer_sale_id: customer.id,
+					is_active: false,
+					payment_term_days: 5,
+					credit_limit: null,
+					notes: null,
+				},
+			});
+			await Promise.resolve();
+		});
+		expect(screen.queryByText(/El crédito de este cliente está suspendido/)).not.toBeInTheDocument();
+
+		await act(async () => {
+			resolveSecondProfile({
+				data: {
+					id: null,
+					customer_sale_id: null,
+					is_active: false,
+					payment_term_days: 21,
+					credit_limit: null,
+					notes: null,
+				},
+			});
+			await Promise.resolve();
+		});
+		await waitFor(() => {
+			const issueDate = (screen.getByLabelText('Fecha de emisión') as HTMLInputElement).value;
+			expect(screen.getByLabelText('Fecha de vencimiento')).toHaveValue(
+				addDaysToDateOnly(issueDate, 21),
+			);
+		});
+	});
+
+	it('cierra el editor secundario cuando el padre se cierra externamente', async () => {
+		const customer = {
+			id: 471,
+			name: 'Cliente del editor secundario',
+			rut: '76.471.000-1',
+			contact: { name: 'Ana Pérez' },
+			loyalty: 0,
+			total_sales: 0,
+			is_active: true,
+		};
+		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
+			Promise.resolve({
+				data: url.includes('/overview')
+					? { ...emptyPagination, data: [customer], total: 1 }
+					: url.includes('/credit-profile')
+						? {
+								data: {
+									id: null,
+									customer_sale_id: null,
+									is_active: false,
+									payment_term_days: 30,
+									credit_limit: null,
+									notes: null,
+								},
+							}
+						: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+			}),
+		);
+		const store = createTestStore();
+		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const onClose = vi.fn();
+		const { rerender } = render(<CreateEditDeferredPaymentModal isOpen onClose={onClose} />, {
+			wrapper: Wrapper,
+		});
+
+		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'secundario' } });
+		fireEvent.click(await screen.findByText('Cliente del editor secundario · 76.471.000-1'));
+		fireEvent.click(await screen.findByRole('button', { name: 'Crear perfil' }));
+		expect(await screen.findByText('Crear perfil de crédito')).toBeInTheDocument();
+
+		rerender(<CreateEditDeferredPaymentModal isOpen={false} onClose={onClose} />);
+		await waitFor(() =>
+			expect(screen.queryByText('Crear perfil de crédito')).not.toBeInTheDocument(),
+		);
 	});
 });

@@ -132,8 +132,11 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const [creditProfileError, setCreditProfileError] = useState<string | null>(null);
 	const [hasCreditProfileLoaded, setHasCreditProfileLoaded] = useState(false);
 	const [isCreditProfileCreatorOpen, setIsCreditProfileCreatorOpen] = useState(false);
+	const [isCreditProfileCreatorSaving, setIsCreditProfileCreatorSaving] = useState(false);
 	const creditProfileRequestIdRef = useRef(0);
 	const creditProfileAbortRef = useRef<AbortController | null>(null);
+	const latestSubsidiaryIdRef = useRef(subsidiaryId);
+	latestSubsidiaryIdRef.current = subsidiaryId;
 	const mode = deferredPaymentDocument ? 'edit' : 'create';
 	const { formik, estimatedTotal, isSubmitting, isPaidEdit, actions } = useDeferredPaymentForm({
 		mode,
@@ -161,6 +164,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const loadCreditProfile = useCallback(
 		async (customerSaleId: number, allowEdit = false) => {
 			if (subsidiaryId === null || (mode !== 'create' && !allowEdit)) return;
+			const requestSubsidiaryId = subsidiaryId;
 			creditProfileAbortRef.current?.abort();
 			const controller = new AbortController();
 			creditProfileAbortRef.current = controller;
@@ -185,7 +189,11 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 								controller.signal,
 							)
 						: null;
-				if (requestId !== creditProfileRequestIdRef.current) return;
+				if (
+					requestId !== creditProfileRequestIdRef.current ||
+					latestSubsidiaryIdRef.current !== requestSubsidiaryId
+				)
+					return;
 				const parsedOutstandingAmount =
 					summary === null ? null : Number(summary.total_outstanding);
 				if (parsedOutstandingAmount !== null && !Number.isFinite(parsedOutstandingAmount)) {
@@ -195,18 +203,23 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 				setOutstandingAmount(parsedOutstandingAmount);
 				setHasCreditProfileLoaded(true);
 				if (mode === 'create') {
-					setPaymentTermDays(
-						profile.id !== null && profile.is_active ? profile.payment_term_days : 30,
-					);
+					setPaymentTermDays(profile.payment_term_days);
 				}
 			} catch (error: unknown) {
-				if (controller.signal.aborted || requestId !== creditProfileRequestIdRef.current)
+				if (
+					controller.signal.aborted ||
+					requestId !== creditProfileRequestIdRef.current ||
+					latestSubsidiaryIdRef.current !== requestSubsidiaryId
+				)
 					return;
 				setCreditProfileError(
 					getApiErrorMessage(error, 'No se pudo cargar el perfil de crédito del cliente'),
 				);
 			} finally {
-				if (requestId === creditProfileRequestIdRef.current) {
+				if (
+					requestId === creditProfileRequestIdRef.current &&
+					latestSubsidiaryIdRef.current === requestSubsidiaryId
+				) {
 					setIsCreditProfileLoading(false);
 				}
 			}
@@ -225,6 +238,10 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	useEffect(() => {
 		if (isOpen && mode === 'create') return;
 		clearCreditProfile();
+		if (!isOpen) {
+			setIsCreditProfileCreatorOpen(false);
+			setIsCreditProfileCreatorSaving(false);
+		}
 		if (!isOpen && mode === 'create') {
 			setSelectedCustomerOption(null);
 			setCustomerSearch('');
@@ -232,6 +249,19 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 			resetForm();
 		}
 	}, [clearCreditProfile, isOpen, mode, resetForm]);
+
+	const previousSubsidiaryIdRef = useRef(subsidiaryId);
+	useEffect(() => {
+		const previousSubsidiaryId = previousSubsidiaryIdRef.current;
+		previousSubsidiaryIdRef.current = subsidiaryId;
+		if (previousSubsidiaryId === subsidiaryId || !isOpen) return;
+
+		clearCreditProfile();
+		setIsCreditProfileCreatorOpen(false);
+		setIsCreditProfileCreatorSaving(false);
+		if (mode === 'create' && subsidiaryId !== null && formik.values.customer_sale_id !== null)
+			loadCreditProfile(formik.values.customer_sale_id).catch(() => undefined);
+	}, [clearCreditProfile, formik.values.customer_sale_id, isOpen, loadCreditProfile, mode, subsidiaryId]);
 
 	useEffect(() => {
 		if (!isOpen || mode !== 'edit' || deferredPaymentDocument === null) return;
@@ -428,6 +458,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		}
 	};
 	const handleCloseCreditProfileCreator = () => {
+		if (isCreditProfileCreatorSaving) return;
 		setIsCreditProfileCreatorOpen(false);
 		if (formik.values.customer_sale_id !== null)
 			loadCreditProfile(formik.values.customer_sale_id, true).catch(() => undefined);
@@ -538,11 +569,19 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 												);
 												setSelectedCustomerOption(customer ?? null);
 												if (mode === 'create') {
-													setPaymentTermDays(30);
-													if (customer)
-														loadCreditProfile(customer.id).catch(
+													const customerChanged =
+														customer?.id !== formik.values.customer_sale_id;
+													if (customerChanged) {
+														actions.resetDueDateManualOverride(30).catch(
 															() => undefined,
 														);
+														setPaymentTermDays(30);
+													}
+													if (customer)
+														customerChanged &&
+															loadCreditProfile(customer.id).catch(
+																() => undefined,
+															);
 													else clearCreditProfile();
 												}
 												formik
@@ -999,6 +1038,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 						<CustomerCreditProfileCard
 							customerSaleId={formik.values.customer_sale_id}
 							startInEditMode
+							onSavingChange={setIsCreditProfileCreatorSaving}
 						/>
 					)}
 				</ModalBody>

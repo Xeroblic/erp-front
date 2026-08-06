@@ -195,12 +195,12 @@ const Icon = forwardRef<HTMLSpanElement, IIconProps>((props, ref) => {
 	}
 
 	const IconComponent = resolvedIcon.icon.component;
-	const iconMeta =
-		resolvedIcon.icon.kind === 'svg'
-			? { componentName: 'Icon-A', name: `SvgIcon--${IconName}` }
-			: resolvedIcon.icon.kind === 'duotone'
-				? { componentName: 'Icon-B', name: `Duotone--${icon}` }
-				: { componentName: 'Icon-C', name: `Hero--${icon}` };
+	let iconMeta = { componentName: 'Icon-C', name: `Hero--${icon}` };
+	if (resolvedIcon.icon.kind === 'svg') {
+		iconMeta = { componentName: 'Icon-A', name: `SvgIcon--${IconName}` };
+	} else if (resolvedIcon.icon.kind === 'duotone') {
+		iconMeta = { componentName: 'Icon-B', name: `Duotone--${icon}` };
+	}
 
 	return (
 		<RefWrapper ref={ref}>

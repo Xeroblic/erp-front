@@ -304,6 +304,17 @@ const useDeferredPaymentForm = ({
 		},
 		[setFieldValue],
 	);
+	const resetDueDateManualOverride = useCallback(
+		(nextPaymentTermDays = paymentTermDays) => {
+			dueDateManuallySetRef.current = false;
+			return setFieldValue(
+				'due_date',
+				addDaysToDateOnly(formik.values.issue_date, nextPaymentTermDays),
+				true,
+			);
+		},
+		[formik.values.issue_date, paymentTermDays, setFieldValue],
+	);
 
 	return {
 		formik,
@@ -311,7 +322,7 @@ const useDeferredPaymentForm = ({
 		isSubmitting: formik.isSubmitting || creating || updating,
 		isPaidEdit,
 		hasDataContext: effectiveSubsidiaryId !== null,
-		actions: { setDueDateManually },
+		actions: { resetDueDateManualOverride, setDueDateManually },
 	};
 };
 

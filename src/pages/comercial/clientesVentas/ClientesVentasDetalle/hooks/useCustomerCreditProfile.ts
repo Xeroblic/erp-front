@@ -12,6 +12,11 @@ import { CreditProfileSchema, type CreditProfileFormValues } from '../types';
 
 const DEFAULT_PAYMENT_TERM_DAYS = 30;
 
+interface IdentityBoundValue<T> {
+	identity: string;
+	value: T;
+}
+
 const toWholeCLP = (creditLimit: string | null | undefined): string => {
 	if (!creditLimit) return '';
 	const numericCreditLimit = Number(creditLimit);
@@ -36,14 +41,33 @@ const useCustomerCreditProfile = ({
 	customerSaleId,
 	subsidiaryId,
 }: UseCustomerCreditProfileParams) => {
-	const [profile, setProfile] = useState<IDeferredPaymentCreditProfile | null>(null);
-	const [summary, setSummary] = useState<IDeferredPaymentsSummary | null>(null);
-	const [isLoading, setIsLoading] = useState(false);
-	const [loadError, setLoadError] = useState<string | null>(null);
-	const [saveError, setSaveError] = useState<string | null>(null);
-	const [isEditing, setIsEditing] = useState(false);
-	const [isSaving, setIsSaving] = useState(false);
-	const requestIdRef = useRef(0);
+	const identity = `${subsidiaryId ?? 'none'}:${customerSaleId}`;
+	const identityRef = useRef(identity);
+	const mountedRef = useRef(true);
+	const loadRequestIdRef = useRef(0);
+	const saveRequestIdRef = useRef(0);
+	const saveControllerRef = useRef<AbortController | null>(null);
+	const [profileState, setProfileState] = useState<
+		IdentityBoundValue<IDeferredPaymentCreditProfile | null>
+	>({ identity, value: null });
+	const [summaryState, setSummaryState] = useState<
+		IdentityBoundValue<IDeferredPaymentsSummary | null>
+	>({ identity, value: null });
+	const [loadingIdentity, setLoadingIdentity] = useState<string | null>(null);
+	const [loadErrorState, setLoadErrorState] = useState<IdentityBoundValue<string> | null>(null);
+	const [saveErrorState, setSaveErrorState] = useState<IdentityBoundValue<string> | null>(null);
+	const [editingIdentity, setEditingIdentity] = useState<string | null>(null);
+	const [savingIdentity, setSavingIdentity] = useState<string | null>(null);
+
+	if (identityRef.current !== identity) identityRef.current = identity;
+
+	const profile = profileState.identity === identity ? profileState.value : null;
+	const summary = summaryState.identity === identity ? summaryState.value : null;
+	const isLoading = loadingIdentity === identity;
+	const loadError = loadErrorState?.identity === identity ? loadErrorState.value : null;
+	const saveError = saveErrorState?.identity === identity ? saveErrorState.value : null;
+	const isEditing = editingIdentity === identity;
+	const isSaving = savingIdentity === identity;
 
 	const outstandingAmount =
 		profile?.id !== null && profile?.is_active ? (summary?.total_outstanding ?? null) : null;
@@ -52,19 +76,15 @@ const useCustomerCreditProfile = ({
 
 	const loadProfile = useCallback(
 		async (signal?: AbortSignal) => {
+			const requestIdentity = identity;
 			if (subsidiaryId === null) {
-				requestIdRef.current += 1;
-				setProfile(null);
-				setSummary(null);
-				setLoadError(null);
-				setIsLoading(false);
 				return;
 			}
 
-			const requestId = requestIdRef.current + 1;
-			requestIdRef.current = requestId;
-			setIsLoading(true);
-			setLoadError(null);
+			const requestId = loadRequestIdRef.current + 1;
+			loadRequestIdRef.current = requestId;
+			setLoadingIdentity(requestIdentity);
+			setLoadErrorState(null);
 			try {
 				const loadedProfile = await deferredPaymentsService.getCreditProfile(
 					subsidiaryId,
@@ -81,34 +101,56 @@ const useCustomerCreditProfile = ({
 								signal,
 							)
 						: null;
-				if (requestId !== requestIdRef.current) return;
-				setProfile(loadedProfile);
-				setSummary(loadedSummary);
+				if (
+					!mountedRef.current ||
+					requestIdentity !== identityRef.current ||
+					requestId !== loadRequestIdRef.current
+				)
+					return;
+				setProfileState({ identity: requestIdentity, value: loadedProfile });
+				setSummaryState({ identity: requestIdentity, value: loadedSummary });
 			} catch (error: unknown) {
-				if (signal?.aborted || requestId !== requestIdRef.current) return;
-				setProfile(null);
-				setLoadError(getApiErrorMessage(error, 'No se pudo cargar el perfil de crédito'));
+				if (
+					signal?.aborted ||
+					!mountedRef.current ||
+					requestIdentity !== identityRef.current ||
+					requestId !== loadRequestIdRef.current
+				)
+					return;
+				setProfileState({ identity: requestIdentity, value: null });
+				setSummaryState({ identity: requestIdentity, value: null });
+				setLoadErrorState({
+					identity: requestIdentity,
+					value: getApiErrorMessage(error, 'No se pudo cargar el perfil de crédito'),
+				});
 			} finally {
-				if (!signal?.aborted && requestId === requestIdRef.current) setIsLoading(false);
+				if (
+					!signal?.aborted &&
+					mountedRef.current &&
+					requestIdentity === identityRef.current &&
+					requestId === loadRequestIdRef.current
+				) {
+					setLoadingIdentity(null);
+				}
 			}
 		},
-		[customerSaleId, subsidiaryId],
+		[customerSaleId, identity, subsidiaryId],
 	);
-
-	useEffect(() => {
-		const controller = new AbortController();
-		loadProfile(controller.signal).catch(() => undefined);
-		return () => controller.abort();
-	}, [loadProfile]);
 
 	const formik = useFormik<CreditProfileFormValues>({
 		enableReinitialize: true,
 		initialValues,
 		validationSchema: CreditProfileSchema,
 		onSubmit: async (values) => {
-			if (subsidiaryId === null || isSaving) return;
-			setIsSaving(true);
-			setSaveError(null);
+			const saveIdentity = identity;
+			if (subsidiaryId === null || savingIdentity === saveIdentity) return;
+			const requestId = saveRequestIdRef.current + 1;
+			const controller = new AbortController();
+			saveRequestIdRef.current = requestId;
+			saveControllerRef.current?.abort();
+			saveControllerRef.current = controller;
+			setSavingIdentity(saveIdentity);
+			setSaveErrorState(null);
 			const payload: UpdateDeferredPaymentCreditProfilePayload = {
 				is_active: values.is_active,
 				payment_term_days: Number(values.payment_term_days),
@@ -120,33 +162,85 @@ const useCustomerCreditProfile = ({
 					subsidiaryId,
 					customerSaleId,
 					payload,
+					controller.signal,
 				);
-				setProfile(savedProfile);
-				setIsEditing(false);
+				if (
+					!mountedRef.current ||
+					saveIdentity !== identityRef.current ||
+					requestId !== saveRequestIdRef.current
+				)
+					return;
+				setProfileState({ identity: saveIdentity, value: savedProfile });
+				setEditingIdentity(null);
 				toast.success('Condiciones de crédito guardadas correctamente');
 			} catch (error: unknown) {
+				if (
+					controller.signal.aborted ||
+					!mountedRef.current ||
+					saveIdentity !== identityRef.current ||
+					requestId !== saveRequestIdRef.current
+				)
+					return;
 				const message = getApiErrorMessage(
 					error,
 					'No se pudieron guardar las condiciones de crédito',
 				);
-				setSaveError(message);
+				setSaveErrorState({ identity: saveIdentity, value: message });
 				toast.error(message);
 			} finally {
-				setIsSaving(false);
+				if (
+					mountedRef.current &&
+					saveIdentity === identityRef.current &&
+					requestId === saveRequestIdRef.current
+				) {
+					saveControllerRef.current = null;
+					setSavingIdentity(null);
+				}
 			}
 		},
 	});
+	const { resetForm } = formik;
+
+	useEffect(() => {
+		setProfileState({ identity, value: null });
+		setSummaryState({ identity, value: null });
+		setLoadingIdentity(null);
+		setLoadErrorState(null);
+		setSaveErrorState(null);
+		setEditingIdentity(null);
+		setSavingIdentity(null);
+		saveControllerRef.current?.abort();
+		loadRequestIdRef.current += 1;
+		saveRequestIdRef.current += 1;
+		resetForm({ values: toFormValues(null) });
+	}, [identity, resetForm]);
+
+	useEffect(() => {
+		if (subsidiaryId === null) return undefined;
+		const controller = new AbortController();
+		loadProfile(controller.signal).catch(() => undefined);
+		return () => controller.abort();
+	}, [loadProfile, subsidiaryId]);
+
+	useEffect(
+		() => () => {
+			mountedRef.current = false;
+			saveControllerRef.current?.abort();
+			saveRequestIdRef.current += 1;
+		},
+		[],
+	);
 
 	const startEditing = useCallback(() => {
-		setSaveError(null);
+		setSaveErrorState(null);
 		formik.resetForm({ values: toFormValues(profile) });
-		setIsEditing(true);
-	}, [formik, profile]);
+		setEditingIdentity(identity);
+	}, [formik, identity, profile]);
 
 	const cancelEditing = useCallback(() => {
 		formik.resetForm({ values: toFormValues(profile) });
-		setSaveError(null);
-		setIsEditing(false);
+		setSaveErrorState(null);
+		setEditingIdentity(null);
 	}, [formik, profile]);
 
 	return {
