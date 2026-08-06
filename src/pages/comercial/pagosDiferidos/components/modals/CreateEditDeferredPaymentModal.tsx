@@ -830,7 +830,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 													<DeferredPaymentField
 														name={`items.${index}.description`}
 														label='Descripción'
-														className='md:col-span-5'>
+														className='md:col-span-4'>
 														{({ error, isTouched, isValid }) => (
 															<Input
 																id={`items.${index}.description`}
@@ -871,8 +871,8 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 														hiddenErrorMessage={
 															DEFERRED_PAYMENT_TOTAL_ERROR
 														}
-										label='Precio unitario (bruto, IVA incluido)'
-														className='md:col-span-2'>
+														label='Precio unitario (bruto, IVA incluido)'
+														className='md:col-span-3'>
 														{({ error, isTouched, isValid }) => (
 															<Input
 																id={`items.${index}.unit_price`}

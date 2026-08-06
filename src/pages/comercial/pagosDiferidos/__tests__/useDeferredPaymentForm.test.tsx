@@ -139,10 +139,10 @@ describe('useDeferredPaymentForm', () => {
 		const { hook } = createHook();
 
 		await act(async () => {
-		await hook.result.current.formik.setFieldValue('issue_date', '2026-08-01');
-		await hook.result.current.formik.setFieldValue('items.0.quantity', 3);
-		await hook.result.current.formik.setFieldValue('items.0.unit_price', 2500);
-		await hook.result.current.formik.setFieldValue('total_amount', 475976);
+			await hook.result.current.formik.setFieldValue('issue_date', '2026-08-01');
+			await hook.result.current.formik.setFieldValue('items.0.quantity', 3);
+			await hook.result.current.formik.setFieldValue('items.0.unit_price', 2500);
+			await hook.result.current.formik.setFieldValue('total_amount', 475976);
 		});
 
 		expect(hook.result.current.formik.values.due_date).toBe('2026-08-16');
