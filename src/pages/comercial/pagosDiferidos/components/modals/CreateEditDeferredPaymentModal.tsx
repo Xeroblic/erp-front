@@ -13,7 +13,7 @@ import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
-import Icon from '@/components/icon/Icon';
+import Icon, { preloadIcons } from '@/components/icon/Icon';
 import Modal, {
 	ModalBody,
 	ModalFooter,
@@ -53,6 +53,23 @@ interface CustomerOptionData {
 
 const MAX_DATE = new Date(2100, 11, 31);
 const MAX_YEAR = 2100;
+const DEFERRED_PAYMENT_MODAL_ICONS = [
+	'HeroArrowPath',
+	'HeroInformationCircle',
+	'HeroClock',
+	'HeroBanknotes',
+	'HeroChartBar',
+	'HeroArrowTrendingUp',
+	'HeroLockClosed',
+	'HeroUserMinus',
+	'HeroExclamationTriangle',
+	'HeroPlus',
+	'HeroPencilSquare',
+	'HeroTrash',
+	'HeroCheck',
+] as const;
+
+preloadIcons(DEFERRED_PAYMENT_MODAL_ICONS);
 
 const hasValidationErrorOtherThan = (value: unknown, excludedMessage: string): boolean => {
 	if (typeof value === 'string') return value !== excludedMessage;
