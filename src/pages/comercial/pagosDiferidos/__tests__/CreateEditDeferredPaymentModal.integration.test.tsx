@@ -182,6 +182,8 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		expect(
 			screen.queryByText('Este cliente no tiene un perfil de crédito creado.'),
 		).not.toBeInTheDocument();
+		fireEvent.click(screen.getByRole('button', { name: 'Editar perfil' }));
+		expect(await screen.findByText('Crear perfil de crédito')).toBeInTheDocument();
 		expect(screen.getByLabelText('Fecha de vencimiento')).toHaveValue(
 			editedDocument.due_date.split('-').reverse().join('-'),
 		);

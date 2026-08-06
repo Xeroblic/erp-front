@@ -663,8 +663,22 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 						</Card>
 
 						<Card className='border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900'>
-							<CardHeader className='pb-2'>
+							<CardHeader className='items-center pb-2'>
 								<CardTitle className='text-lg'>Información de crédito</CardTitle>
+								{hasSelectedCustomer &&
+									!isCreditProfileLoading &&
+									(hasCreatedCreditProfile || hasCreditProfileLoaded) && (
+										<ProtectedButton
+											permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.UPDATE}
+											subsidiaryId={subsidiaryId}
+											scope='access'
+											type='button'
+											variant='outline'
+											icon={hasCreatedCreditProfile ? 'HeroPencilSquare' : 'HeroPlus'}
+											onClick={() => setIsCreditProfileCreatorOpen(true)}>
+											{hasCreatedCreditProfile ? 'Editar perfil' : 'Crear perfil'}
+										</ProtectedButton>
+									)}
 							</CardHeader>
 							<CardBody>
 								{hasCreatedCreditProfile && (
@@ -722,20 +736,6 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 											className={creditProfileIconClassName}
 										/>
 										<p aria-live='polite'>{creditProfileEmptyMessage}</p>
-										{hasSelectedCustomer && !isCreditProfileLoading && (
-											<ProtectedButton
-												permission={
-													ERP_PERMISSIONS.DEFERRED_PAYMENTS.UPDATE
-												}
-												subsidiaryId={subsidiaryId}
-												scope='access'
-												type='button'
-												variant='outline'
-												icon='HeroPlus'
-												onClick={() => setIsCreditProfileCreatorOpen(true)}>
-												Crear perfil
-											</ProtectedButton>
-										)}
 									</div>
 								)}
 							</CardBody>
