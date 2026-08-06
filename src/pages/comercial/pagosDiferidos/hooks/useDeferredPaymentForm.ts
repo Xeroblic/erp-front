@@ -99,7 +99,7 @@ export const mapDeferredPaymentFormToPayload = (
 			code: item.code.trim(),
 			description: item.description.trim(),
 			quantity: item.quantity,
-			unit_price: item.unit_price,
+			unit_price: Number(item.unit_price),
 			serials: item.serials.map((serial) => serial.trim()),
 		})),
 	};

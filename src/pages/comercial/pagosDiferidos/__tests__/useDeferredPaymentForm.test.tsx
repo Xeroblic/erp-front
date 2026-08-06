@@ -111,6 +111,7 @@ describe('useDeferredPaymentForm', () => {
 			document_number: `  ${values.document_number}  `,
 			purchase_order: '   ',
 			notes: '   ',
+			items: [{ ...values.items[0], unit_price: '2500000' }],
 		});
 
 		const valuesWithoutPurchaseOrder = mapDeferredPaymentDocumentToForm({
@@ -125,6 +126,7 @@ describe('useDeferredPaymentForm', () => {
 			document_number: document.document_number,
 			purchase_order: null,
 			notes: null,
+			items: [expect.objectContaining({ unit_price: 2500000 })],
 		});
 		expect(
 			mapDeferredPaymentFormToPayload({ ...values, assignee_ids: [] }, 37)?.assignee_ids,

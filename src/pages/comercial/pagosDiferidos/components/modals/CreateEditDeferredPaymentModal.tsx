@@ -97,7 +97,16 @@ const asMultiOptions = (value: unknown): TSelectOption[] => {
 	return candidates.filter(isSelectOption);
 };
 
-const toCLPAmount = (value: string): number => Number(value.replace(/\D/g, ''));
+const toCLPAmount = (value: string): string => value.replace(/\D/g, '');
+
+const getCreditProfileEmptyMessage = (
+	isCreditProfileLoading: boolean,
+	hasSelectedCustomer: boolean,
+): string => {
+	if (isCreditProfileLoading) return 'Cargando información de crédito…';
+	if (hasSelectedCustomer) return 'Este cliente no tiene un perfil de crédito creado.';
+	return 'Selecciona un cliente para consultar sus condiciones de crédito.';
+};
 
 const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalProps> = ({
 	isOpen,
@@ -366,11 +375,10 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		!hasCreatedCreditProfile &&
 		!creditProfileError &&
 		(isCreditProfileLoading || hasCreditProfileLoaded || !hasSelectedCustomer);
-	const creditProfileEmptyMessage = isCreditProfileLoading
-		? 'Cargando información de crédito…'
-		: hasSelectedCustomer
-			? 'Este cliente no tiene un perfil de crédito creado.'
-			: 'Selecciona un cliente para consultar sus condiciones de crédito.';
+	const creditProfileEmptyMessage = getCreditProfileEmptyMessage(
+		isCreditProfileLoading,
+		hasSelectedCustomer,
+	);
 	const creditProfileIcon = isCreditProfileLoading ? 'HeroArrowPath' : 'HeroInformationCircle';
 	const creditProfileIconClassName = isCreditProfileLoading
 		? 'animate-spin text-blue-600'
@@ -867,7 +875,11 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 																type='text'
 																inputMode='numeric'
 																placeholder='$ 0'
-																value={formatCLP(item.unit_price)}
+															value={
+																item.unit_price === ''
+																	? ''
+																	: formatCLP(item.unit_price)
+															}
 																onChange={(event) =>
 																	handleUnitPriceChange(
 																		index,

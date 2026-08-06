@@ -96,6 +96,8 @@ describe('CreateEditDeferredPaymentModal', () => {
 		expect(unitPrice).toHaveValue('$ 2.500.000');
 		fireEvent.change(unitPrice, { target: { value: '$ 2.500.000abc' } });
 		expect(unitPrice).toHaveValue('$ 2.500.000');
+		fireEvent.change(unitPrice, { target: { value: '' } });
+		expect(unitPrice).toHaveValue('');
 	});
 
 	it('descarta el borrador al desmontar y reabrir el formulario', () => {
