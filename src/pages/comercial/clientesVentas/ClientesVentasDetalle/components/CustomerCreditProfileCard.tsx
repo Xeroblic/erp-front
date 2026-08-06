@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import PermissionGuard from '@/components/authorization/PermissionGuard';
 import Checkbox from '@/components/form/Checkbox';
 import Input from '@/components/form/Input';
@@ -17,6 +17,7 @@ import useCustomerCreditProfile from '../hooks/useCustomerCreditProfile';
 
 interface CustomerCreditProfileCardProps {
 	customerSaleId: number;
+	startInEditMode?: boolean;
 }
 
 const CreditStatusPill: React.FC<{ suspended: boolean }> = ({ suspended }) => (
@@ -48,7 +49,8 @@ const Skeleton = () => (
 const CustomerCreditProfileCardContent: React.FC<{
 	customerSaleId: number;
 	subsidiaryId: number | null;
-}> = ({ customerSaleId, subsidiaryId }) => {
+	startInEditMode: boolean;
+}> = ({ customerSaleId, subsidiaryId, startInEditMode }) => {
 	const {
 		profile,
 		outstandingAmount,
@@ -62,6 +64,20 @@ const CustomerCreditProfileCardContent: React.FC<{
 		startEditing,
 		cancelEditing,
 	} = useCustomerCreditProfile({ customerSaleId, subsidiaryId });
+	const hasStartedEditingRef = useRef(false);
+
+	useEffect(() => {
+		if (
+			!startInEditMode ||
+			hasStartedEditingRef.current ||
+			isLoading ||
+			loadError ||
+			profile === null
+		)
+			return;
+		hasStartedEditingRef.current = true;
+		startEditing();
+	}, [isLoading, loadError, profile, startEditing, startInEditMode]);
 	const hasProfile = profile?.id !== null && profile !== null;
 	const isSuspended = hasProfile && profile.is_active === false;
 	const creditLimit = profile?.credit_limit ?? null;
@@ -332,6 +348,7 @@ const CustomerCreditProfileCardContent: React.FC<{
 
 const CustomerCreditProfileCard: React.FC<CustomerCreditProfileCardProps> = ({
 	customerSaleId,
+	startInEditMode = false,
 }) => {
 	const { subsidiaryId } = useCurrentBranch();
 	return (
@@ -342,6 +359,7 @@ const CustomerCreditProfileCard: React.FC<CustomerCreditProfileCardProps> = ({
 			<CustomerCreditProfileCardContent
 				customerSaleId={customerSaleId}
 				subsidiaryId={subsidiaryId}
+				startInEditMode={startInEditMode}
 			/>
 		</PermissionGuard>
 	);

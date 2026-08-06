@@ -929,11 +929,14 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 				setIsOpen={handleCloseCreditProfileCreator}
 				size='lg'
 				isStaticBackdrop>
-				<ModalHeader>Crear perfil de crédito</ModalHeader>
+				<ModalHeader>
+					{hasCreatedCreditProfile ? 'Editar perfil de crédito' : 'Crear perfil de crédito'}
+				</ModalHeader>
 				<ModalBody>
 					{formik.values.customer_sale_id !== null && (
 						<CustomerCreditProfileCard
 							customerSaleId={formik.values.customer_sale_id}
+							startInEditMode
 						/>
 					)}
 				</ModalBody>

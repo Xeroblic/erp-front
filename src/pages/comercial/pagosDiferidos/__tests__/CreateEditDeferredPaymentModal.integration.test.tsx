@@ -181,9 +181,12 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		expect(await screen.findByText('45 días')).toBeInTheDocument();
 		expect(
 			screen.queryByText('Este cliente no tiene un perfil de crédito creado.'),
-		).not.toBeInTheDocument();
+	).not.toBeInTheDocument();
 		fireEvent.click(screen.getByRole('button', { name: 'Editar perfil' }));
-		expect(await screen.findByText('Crear perfil de crédito')).toBeInTheDocument();
+		expect(await screen.findByText('Editar perfil de crédito')).toBeInTheDocument();
+		expect(
+			await screen.findByRole('form', { name: 'Formulario de condiciones de crédito' }),
+		).toBeInTheDocument();
 		expect(screen.getByLabelText('Fecha de vencimiento')).toHaveValue(
 			editedDocument.due_date.split('-').reverse().join('-'),
 		);
@@ -231,6 +234,9 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		await screen.findByText('Este cliente no tiene un perfil de crédito creado.');
 		fireEvent.click(screen.getByRole('button', { name: 'Crear perfil' }));
 		expect(await screen.findByText('Crear perfil de crédito')).toBeInTheDocument();
+		expect(
+			await screen.findByRole('form', { name: 'Formulario de condiciones de crédito' }),
+		).toBeInTheDocument();
 		profileWasCreated = true;
 		const closeButtons = document.querySelectorAll<HTMLButtonElement>(
 			'[data-component-name="CloseButton"]',
