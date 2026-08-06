@@ -132,6 +132,113 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 			),
 		);
 	});
+
+	it('carga el perfil existente al editar y conserva el vencimiento del documento', async () => {
+		const editedDocument = DEFERRED_PAYMENT_DETAIL_FIXTURES[1];
+		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
+			Promise.resolve({
+				data: url.includes('/credit-profile')
+					? {
+							data: {
+								id: 77,
+								customer_sale_id: editedDocument.customer.id,
+								is_active: true,
+								payment_term_days: 45,
+								credit_limit: '500000',
+								notes: null,
+							},
+						}
+					: url.includes('/summary')
+						? {
+								data: {
+									total_outstanding: '100000',
+									overdue: { count: 0, amount: '0' },
+									due_within_7_days: { count: 0, amount: '0' },
+									current: { count: 0, amount: '0' },
+								},
+							}
+						: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+			}),
+		);
+		const store = createTestStore();
+		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		render(
+			<CreateEditDeferredPaymentModal
+				isOpen
+				deferredPaymentDocument={editedDocument}
+				onClose={vi.fn()}
+			/>,
+			{ wrapper: Wrapper },
+		);
+
+		await waitFor(() =>
+			expect(apiSpies.fetchData).toHaveBeenCalledWith(
+				expect.objectContaining({
+					url: `/subsidiaries/1/customer-sales/${editedDocument.customer.id}/credit-profile`,
+				}),
+			),
+		);
+		expect(await screen.findByText('45 días')).toBeInTheDocument();
+		expect(
+			screen.queryByText('Este cliente no tiene un perfil de crédito creado.'),
+		).not.toBeInTheDocument();
+		expect(screen.getByLabelText('Fecha de vencimiento')).toHaveValue(
+			editedDocument.due_date.split('-').reverse().join('-'),
+		);
+	});
+
+	it('recarga el perfil creado desde el modal secundario al editar un documento', async () => {
+		const editedDocument = DEFERRED_PAYMENT_DETAIL_FIXTURES[1];
+		let profileWasCreated = false;
+		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
+			Promise.resolve({
+				data: url.includes('/credit-profile')
+					? {
+							data: profileWasCreated
+								? {
+										id: 78,
+										customer_sale_id: editedDocument.customer.id,
+										is_active: true,
+										payment_term_days: 45,
+										credit_limit: null,
+										notes: null,
+									}
+								: {
+										id: null,
+										customer_sale_id: null,
+										is_active: false,
+										payment_term_days: 30,
+										credit_limit: null,
+										notes: null,
+									},
+						}
+					: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+			}),
+		);
+		const store = createTestStore();
+		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		render(
+			<CreateEditDeferredPaymentModal
+				isOpen
+				deferredPaymentDocument={editedDocument}
+				onClose={vi.fn()}
+			/>,
+			{ wrapper: Wrapper },
+		);
+
+		await screen.findByText('Este cliente no tiene un perfil de crédito creado.');
+		fireEvent.click(screen.getByRole('button', { name: 'Crear perfil' }));
+		expect(await screen.findByText('Crear perfil de crédito')).toBeInTheDocument();
+		profileWasCreated = true;
+		const closeButtons = document.querySelectorAll<HTMLButtonElement>(
+			'[data-component-name="CloseButton"]',
+		);
+		const closeButton = closeButtons.item(closeButtons.length - 1);
+		expect(closeButton).not.toBeNull();
+		if (closeButton) fireEvent.click(closeButton);
+
+		expect(await screen.findByText('45 días')).toBeInTheDocument();
+	});
 	it('conserva el cliente elegido después de seleccionar y cerrar la búsqueda', async () => {
 		const searchedCustomer = {
 			id: 457,
@@ -194,8 +301,8 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		const overviewCalls = apiSpies.fetchData.mock.calls.filter(([request]) =>
 			String((request as { url?: string }).url).includes('/overview'),
 		);
-		expect(overviewCalls).toHaveLength(1);
-		expect(overviewCalls[0]?.[0]).toEqual(
+		expect(overviewCalls).toHaveLength(2);
+		expect(overviewCalls[1]?.[0]).toEqual(
 			expect.objectContaining({ params: expect.objectContaining({ q: 'Zeta' }) }),
 		);
 	});
@@ -273,8 +380,8 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 									id: 10,
 									customer_sale_id: customer.id,
 									is_active: false,
-									payment_term_days: 30,
-									credit_limit: null,
+								payment_term_days: 45,
+								credit_limit: '500000',
 									notes: null,
 								},
 							}
@@ -297,6 +404,14 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 			).toBeInTheDocument(),
 		);
 		expect(screen.getByRole('button', { name: 'Crear documento' })).toBeDisabled();
+		expect(screen.getByText('45 días')).toBeInTheDocument();
+		expect(screen.getByText('Cupo usado').parentElement).toHaveTextContent('—');
+		expect(screen.getByText('Cupo disponible').parentElement).toHaveTextContent('—');
+		expect(
+			apiSpies.fetchData.mock.calls.some(([request]) =>
+				String((request as { url?: string }).url).includes('/deferred-payments/summary'),
+			),
+		).toBe(false);
 	});
 
 	it('limpia el perfil y el bloqueo al cerrar y reabrir el formulario', async () => {
@@ -451,7 +566,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'error' } });
 		fireEvent.click(await screen.findByText('Cliente con error · 76.460.000-1'));
 		expect(
-			await screen.findByText('No se pudo cargar el perfil de crédito del cliente'),
+			await screen.findByText('Perfil no disponible'),
 		).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'Crear documento' })).toBeDisabled();
 

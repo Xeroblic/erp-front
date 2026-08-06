@@ -145,6 +145,9 @@ describe('deferredPaymentsService', () => {
 			}),
 		);
 		expect(apiSpies.invalidateCache).toHaveBeenCalledWith('/subsidiaries/4/deferred-payments');
+		expect(apiSpies.invalidateCache).toHaveBeenCalledWith(
+			'/subsidiaries/4/deferred-payments/summary',
+		);
 	});
 
 	it('tolera creación plana y conserva fechas ISO al actualizar', async () => {

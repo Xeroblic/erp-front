@@ -64,15 +64,21 @@ const CustomerCreditProfileCardContent: React.FC<{
 	} = useCustomerCreditProfile({ customerSaleId, subsidiaryId });
 	const hasProfile = profile?.id !== null && profile !== null;
 	const isSuspended = hasProfile && profile.is_active === false;
-	const hasCreditLimit = hasProfile && profile.credit_limit !== null;
-	const hasOutstandingAmount = outstandingAmount !== null;
-	const usedAmount = hasOutstandingAmount ? Number(outstandingAmount) : 0;
-	const limitAmount = hasCreditLimit ? Number(profile.credit_limit) : 0;
-	const availableAmount = hasCreditLimit ? Math.max(0, limitAmount - usedAmount) : 0;
-	const progressPercent = hasCreditLimit && limitAmount > 0
-		? Math.min(100, Math.max(0, (usedAmount / limitAmount) * 100))
-		: 0;
-	const isOverLimit = hasCreditLimit && usedAmount > limitAmount;
+	const creditLimit = profile?.credit_limit ?? null;
+	const hasCreditLimit = creditLimit !== null;
+	const usedAmount = outstandingAmount === null ? null : Number(outstandingAmount);
+	const limitAmount = creditLimit === null ? null : Number(creditLimit);
+	const hasValidCreditMetrics =
+		usedAmount !== null &&
+		limitAmount !== null &&
+		Number.isFinite(usedAmount) &&
+		Number.isFinite(limitAmount);
+	const availableAmount = hasValidCreditMetrics ? Math.max(0, limitAmount - usedAmount) : null;
+	const progressPercent =
+		hasValidCreditMetrics && limitAmount > 0
+			? Math.min(100, Math.max(0, (usedAmount / limitAmount) * 100))
+			: 0;
+	const isOverLimit = hasValidCreditMetrics && usedAmount > limitAmount;
 	const paymentTermError = formik.touched.payment_term_days
 		? formik.errors.payment_term_days
 		: undefined;
@@ -164,16 +170,14 @@ const CustomerCreditProfileCardContent: React.FC<{
 								</p>
 							</div>
 						</div>
-						{hasCreditLimit && hasOutstandingAmount && (
+						{hasCreditLimit && hasValidCreditMetrics && availableAmount !== null && (
 							<div className='border-t border-zinc-200 pt-4 dark:border-zinc-700'>
 								<div className='mb-2 flex justify-between gap-3 text-sm'>
 									<p className='text-zinc-500'>
-										Usado {formatCLP(outstandingAmount)}
+										Usado {formatCLP(usedAmount ?? 0)}
 									</p>
 									<p className='font-semibold'>
-										{limitAmount > 0
-											? `${Math.round(progressPercent)}%`
-											: '—'}
+										{limitAmount > 0 ? `${Math.round(progressPercent)}%` : '—'}
 									</p>
 								</div>
 								<Progress
@@ -187,7 +191,7 @@ const CustomerCreditProfileCardContent: React.FC<{
 										Disponible {formatCLP(String(availableAmount))}
 									</p>
 									<p className='text-zinc-400'>
-										Cupo {formatCLP(profile.credit_limit!)}
+										Cupo {formatCLP(creditLimit ?? 0)}
 									</p>
 								</div>
 							</div>

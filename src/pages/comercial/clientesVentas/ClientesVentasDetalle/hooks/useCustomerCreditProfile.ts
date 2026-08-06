@@ -7,16 +7,10 @@ import type {
 	UpdateDeferredPaymentCreditProfilePayload,
 } from '@/interface/deferredPayments.interface';
 import deferredPaymentsService from '@/services/deferredPaymentsService';
+import getApiErrorMessage from '@/utils/apiError.utils';
 import { CreditProfileSchema, type CreditProfileFormValues } from '../types';
 
 const DEFAULT_PAYMENT_TERM_DAYS = 30;
-
-const EMPTY_SUMMARY: IDeferredPaymentsSummary = {
-	total_outstanding: '0',
-	overdue: { count: 0, amount: '0' },
-	due_within_7_days: { count: 0, amount: '0' },
-	current: { count: 0, amount: '0' },
-};
 
 const toWholeCLP = (creditLimit: string | null | undefined): string => {
 	if (!creditLimit) return '';
@@ -24,20 +18,6 @@ const toWholeCLP = (creditLimit: string | null | undefined): string => {
 	return Number.isFinite(numericCreditLimit)
 		? String(Math.round(numericCreditLimit))
 		: creditLimit;
-};
-
-const getErrorMessage = (error: unknown, fallback: string): string => {
-	if (error !== null && typeof error === 'object' && 'response' in error) {
-		const { response } = error;
-		if (response !== null && typeof response === 'object' && 'data' in response) {
-			const { data } = response;
-			if (data !== null && typeof data === 'object' && 'message' in data) {
-				const { message } = data;
-				if (typeof message === 'string' && message.trim()) return message;
-			}
-		}
-	}
-	return error instanceof Error && error.message ? error.message : fallback;
 };
 
 const toFormValues = (profile: IDeferredPaymentCreditProfile | null): CreditProfileFormValues => ({
@@ -86,28 +66,28 @@ const useCustomerCreditProfile = ({
 			setIsLoading(true);
 			setLoadError(null);
 			try {
-			const loadedProfile = await deferredPaymentsService.getCreditProfile(
-				subsidiaryId,
-				customerSaleId,
-				signal,
-			);
-			const loadedSummary =
-				loadedProfile.id !== null &&
-				loadedProfile.is_active &&
-				loadedProfile.credit_limit !== null
-					? await deferredPaymentsService.getSummary(
-							subsidiaryId,
-							{ customer_sale_id: customerSaleId },
-							signal,
-						)
-					: null;
+				const loadedProfile = await deferredPaymentsService.getCreditProfile(
+					subsidiaryId,
+					customerSaleId,
+					signal,
+				);
+				const loadedSummary =
+					loadedProfile.id !== null &&
+					loadedProfile.is_active &&
+					loadedProfile.credit_limit !== null
+						? await deferredPaymentsService.getSummary(
+								subsidiaryId,
+								{ customer_sale_id: customerSaleId },
+								signal,
+							)
+						: null;
 				if (requestId !== requestIdRef.current) return;
 				setProfile(loadedProfile);
 				setSummary(loadedSummary);
 			} catch (error: unknown) {
 				if (signal?.aborted || requestId !== requestIdRef.current) return;
 				setProfile(null);
-				setLoadError(getErrorMessage(error, 'No se pudo cargar el perfil de crédito'));
+				setLoadError(getApiErrorMessage(error, 'No se pudo cargar el perfil de crédito'));
 			} finally {
 				if (!signal?.aborted && requestId === requestIdRef.current) setIsLoading(false);
 			}
@@ -145,7 +125,7 @@ const useCustomerCreditProfile = ({
 				setIsEditing(false);
 				toast.success('Condiciones de crédito guardadas correctamente');
 			} catch (error: unknown) {
-				const message = getErrorMessage(
+				const message = getApiErrorMessage(
 					error,
 					'No se pudieron guardar las condiciones de crédito',
 				);

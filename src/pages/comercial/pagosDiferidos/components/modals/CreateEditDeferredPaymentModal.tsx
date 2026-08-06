@@ -29,6 +29,7 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchCustomersOverviewThunk } from '@/store/slices/customerSales/customerSalesSlice';
 import { fetchUsers } from '@/store/slices/usersAdmin/usersAdminSlice';
 import { formatCLP } from '@/utils/format.utils';
+import getApiErrorMessage from '@/utils/apiError.utils';
 import deferredPaymentsService from '@/services/deferredPaymentsService';
 import DeferredPaymentField from '../parts/DeferredPaymentField';
 import DeferredPaymentSerialsInput from '../parts/DeferredPaymentSerialsInput';
@@ -79,20 +80,6 @@ const asMultiOptions = (value: unknown): TSelectOption[] => {
 	return candidates.filter(isSelectOption);
 };
 
-const getCreditProfileErrorMessage = (error: unknown): string => {
-	if (error !== null && typeof error === 'object' && 'response' in error) {
-		const response = error.response;
-		if (response !== null && typeof response === 'object' && 'data' in response) {
-			const data = response.data;
-			if (data !== null && typeof data === 'object' && 'message' in data) {
-				const message = data.message;
-				if (typeof message === 'string' && message.trim()) return message;
-			}
-		}
-	}
-	return 'No se pudo cargar el perfil de crédito del cliente';
-};
-
 const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalProps> = ({
 	isOpen,
 	onClose,
@@ -115,6 +102,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const [outstandingAmount, setOutstandingAmount] = useState<number | null>(null);
 	const [isCreditProfileLoading, setIsCreditProfileLoading] = useState(false);
 	const [creditProfileError, setCreditProfileError] = useState<string | null>(null);
+	const [hasCreditProfileLoaded, setHasCreditProfileLoaded] = useState(false);
 	const [isCreditProfileCreatorOpen, setIsCreditProfileCreatorOpen] = useState(false);
 	const creditProfileRequestIdRef = useRef(0);
 	const creditProfileAbortRef = useRef<AbortController | null>(null);
@@ -138,6 +126,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		setCreditProfile(null);
 		setOutstandingAmount(null);
 		setCreditProfileError(null);
+		setHasCreditProfileLoaded(false);
 		setIsCreditProfileLoading(false);
 	}, []);
 
@@ -151,6 +140,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 			creditProfileRequestIdRef.current = requestId;
 			setIsCreditProfileLoading(true);
 			setCreditProfileError(null);
+			setHasCreditProfileLoaded(false);
 			setCreditProfile(null);
 			setOutstandingAmount(null);
 			try {
@@ -162,26 +152,31 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 				const summary =
 					profile.id !== null && profile.is_active && profile.credit_limit !== null
 						? await deferredPaymentsService.getSummary(
-							subsidiaryId,
-							{ customer_sale_id: customerSaleId },
-							controller.signal,
-						)
+								subsidiaryId,
+								{ customer_sale_id: customerSaleId },
+								controller.signal,
+							)
 						: null;
 				if (requestId !== creditProfileRequestIdRef.current) return;
-				const parsedOutstandingAmount = summary === null ? 0 : Number(summary.total_outstanding);
-			if (!Number.isFinite(parsedOutstandingAmount)) {
-				throw new Error('No se pudo obtener el saldo pendiente del cliente');
-			}
-			setCreditProfile(profile);
-			setOutstandingAmount(parsedOutstandingAmount);
+				const parsedOutstandingAmount =
+					summary === null ? null : Number(summary.total_outstanding);
+				if (parsedOutstandingAmount !== null && !Number.isFinite(parsedOutstandingAmount)) {
+					throw new Error('No se pudo obtener el saldo pendiente del cliente');
+				}
+				setCreditProfile(profile);
+				setOutstandingAmount(parsedOutstandingAmount);
+				setHasCreditProfileLoaded(true);
 				if (mode === 'create') {
 					setPaymentTermDays(
 						profile.id !== null && profile.is_active ? profile.payment_term_days : 30,
 					);
 				}
 			} catch (error: unknown) {
-				if (controller.signal.aborted || requestId !== creditProfileRequestIdRef.current) return;
-				setCreditProfileError(getCreditProfileErrorMessage(error));
+				if (controller.signal.aborted || requestId !== creditProfileRequestIdRef.current)
+					return;
+				setCreditProfileError(
+					getApiErrorMessage(error, 'No se pudo cargar el perfil de crédito del cliente'),
+				);
 			} finally {
 				if (requestId === creditProfileRequestIdRef.current) {
 					setIsCreditProfileLoading(false);
@@ -211,14 +206,18 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	}, [clearCreditProfile, isOpen, mode, resetForm]);
 
 	useEffect(() => {
+		if (!isOpen || mode !== 'edit' || deferredPaymentDocument === null) return;
+		loadCreditProfile(deferredPaymentDocument.customer.id, true).catch(() => undefined);
+	}, [deferredPaymentDocument, isOpen, loadCreditProfile, mode]);
+
+	useEffect(() => {
 		if (!isOpen || subsidiaryId === null) return undefined;
 		const query = debouncedCustomerSearch.trim();
-		if (!query) return undefined;
 		const customerRequest = dispatch(
 			fetchCustomersOverviewThunk({
 				subsidiary: subsidiaryId,
 				per_page: 100,
-				params: { q: query },
+				params: query ? { q: query } : undefined,
 			}),
 		);
 		return () => customerRequest.abort();
@@ -302,12 +301,18 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	);
 	const itemErrors = typeof formik.errors.items === 'string' ? formik.errors.items : undefined;
 	const hasSelectedCustomer = formik.values.customer_sale_id !== null;
+	const requiresCreditSummary =
+		creditProfile?.id !== null &&
+		creditProfile?.is_active === true &&
+		creditProfile.credit_limit !== null;
 	const isCreditProfileSuspended =
 		mode === 'create' && creditProfile?.id !== null && creditProfile?.is_active === false;
 	const isCreditProfileUnavailable =
 		mode === 'create' &&
 		hasSelectedCustomer &&
-		(isCreditProfileLoading || creditProfileError !== null || outstandingAmount === null);
+		(isCreditProfileLoading ||
+			creditProfileError !== null ||
+			(requiresCreditSummary && outstandingAmount === null));
 	const exceedsCreditLimit =
 		mode === 'create' &&
 		hasSelectedCustomer &&
@@ -323,6 +328,17 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const isCreditProfileBlockingCreation =
 		isCreditProfileSuspended || isCreditProfileUnavailable || exceedsCreditLimit;
 	const hasCreatedCreditProfile = creditProfile !== null && creditProfile.id !== null;
+	const shouldShowCreditProfileEmptyState =
+		!hasCreatedCreditProfile &&
+		!creditProfileError &&
+		(hasCreditProfileLoaded || !hasSelectedCustomer);
+	const creditProfileEmptyMessage = hasSelectedCustomer
+		? 'Este cliente no tiene un perfil de crédito creado.'
+		: 'Selecciona un cliente para consultar sus condiciones de crédito.';
+	const creditProfileIcon = isCreditProfileLoading ? 'HeroArrowPath' : 'HeroInformationCircle';
+	const creditProfileIconClassName = isCreditProfileLoading
+		? 'animate-spin text-blue-600'
+		: 'text-zinc-500';
 	const creditLimit = creditProfile?.credit_limit ?? null;
 	const creditLimitAmount = creditLimit === null ? null : Number(creditLimit);
 	const availableCredit =
@@ -332,7 +348,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const creditMetrics = [
 		{
 			label: 'Plazo',
-			value: hasSelectedCustomer && creditProfile ? `${paymentTermDays} días` : '—',
+			value: creditProfile ? `${creditProfile.payment_term_days} días` : '—',
 			icon: 'HeroClock' as const,
 			iconClassName: 'bg-blue-600',
 		},
@@ -344,13 +360,19 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		},
 		{
 			label: 'Cupo usado',
-			value: creditLimitAmount === null || outstandingAmount === null ? '—' : formatCLP(outstandingAmount),
+			value:
+				creditLimitAmount === null || outstandingAmount === null
+					? '—'
+					: formatCLP(outstandingAmount),
 			icon: 'HeroChartBar' as const,
 			iconClassName: 'bg-red-600',
 		},
 		{
 			label: 'Cupo disponible',
-			value: availableCredit === null || outstandingAmount === null ? '—' : formatCLP(availableCredit),
+			value:
+				availableCredit === null || outstandingAmount === null
+					? '—'
+					: formatCLP(availableCredit),
 			icon: 'HeroArrowTrendingUp' as const,
 			iconClassName: 'bg-emerald-600',
 		},
@@ -365,6 +387,11 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		setIsCreditProfileCreatorOpen(false);
 		if (formik.values.customer_sale_id !== null)
 			loadCreditProfile(formik.values.customer_sale_id, true).catch(() => undefined);
+	};
+	const handleRetryCreditProfile = () => {
+		const customerSaleId = formik.values.customer_sale_id;
+		if (customerSaleId !== null)
+			loadCreditProfile(customerSaleId, mode === 'edit').catch(() => undefined);
 	};
 
 	return (
@@ -416,17 +443,18 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 
 						{isCreditProfileSuspended && (
 							<Alert color='red' variant='outline' icon='HeroLockClosed'>
-								El crédito de este cliente está suspendido. Reactívalo antes de crear un
-								documento de pago diferido.
+								El crédito de este cliente está suspendido. Reactívalo antes de
+								crear un documento de pago diferido.
 							</Alert>
 						)}
 
 						{exceedsCreditLimit && creditProfile?.credit_limit && (
 							<Alert color='red' variant='outline' icon='HeroExclamationTriangle'>
 								El total estimado del documento ({formatCLP(estimatedTotal)}) más el
-								saldo pendiente del cliente ({formatCLP(outstandingAmount)}) supera el
-								cupo de crédito disponible ({formatCLP(creditProfile.credit_limit)}).
-								Reduce el monto o aumenta el cupo antes de continuar.
+								saldo pendiente del cliente ({formatCLP(outstandingAmount)}) supera
+								el cupo de crédito disponible (
+								{formatCLP(creditProfile.credit_limit)}). Reduce el monto o aumenta
+								el cupo antes de continuar.
 							</Alert>
 						)}
 
@@ -464,12 +492,15 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 												const customer = customerData.find(
 													(entry) => entry.id === Number(option?.value),
 												);
-											setSelectedCustomerOption(customer ?? null);
-											if (mode === 'create') {
-												setPaymentTermDays(30);
-												if (customer) loadCreditProfile(customer.id).catch(() => undefined);
-												else clearCreditProfile();
-											}
+												setSelectedCustomerOption(customer ?? null);
+												if (mode === 'create') {
+													setPaymentTermDays(30);
+													if (customer)
+														loadCreditProfile(customer.id).catch(
+															() => undefined,
+														);
+													else clearCreditProfile();
+												}
 												formik
 													.setFieldValue(
 														'customer_sale_id',
@@ -636,15 +667,21 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 								<CardTitle className='text-lg'>Información de crédito</CardTitle>
 							</CardHeader>
 							<CardBody>
-								{hasCreatedCreditProfile ? (
-									<div className='grid gap-3 sm:grid-cols-2 xl:grid-cols-4' aria-live='polite'>
+								{hasCreatedCreditProfile && (
+									<div
+										className='grid gap-3 sm:grid-cols-2 xl:grid-cols-4'
+										aria-live='polite'>
 										{creditMetrics.map((metric) => (
 											<div
 												key={metric.label}
 												className='flex min-w-0 items-center gap-3 rounded-xl border border-zinc-100 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950'>
 												<div
 													className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-white shadow-sm ${metric.iconClassName}`}>
-													<Icon icon={metric.icon} size='text-xl' color='white' />
+													<Icon
+														icon={metric.icon}
+														size='text-xl'
+														color='white'
+													/>
 												</div>
 												<div className='min-w-0'>
 													<p className='text-xs font-medium text-zinc-500 dark:text-zinc-400'>
@@ -657,8 +694,12 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 											</div>
 										))}
 									</div>
-								) : creditProfileError ? (
-									<Alert color='red' variant='outline' icon='HeroExclamationTriangle'>
+								)}
+								{!hasCreatedCreditProfile && creditProfileError && (
+									<Alert
+										color='red'
+										variant='outline'
+										icon='HeroExclamationTriangle'>
 										<div className='space-y-3'>
 											<p>{creditProfileError}</p>
 											{formik.values.customer_sale_id !== null && (
@@ -666,34 +707,26 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 													variant='outline'
 													color='red'
 													type='button'
-													onClick={() =>
-														loadCreditProfile(formik.values.customer_sale_id!).catch(
-																() => undefined,
-															)
-													}>
+													onClick={handleRetryCreditProfile}>
 													Reintentar
 												</Button>
 											)}
 										</div>
 									</Alert>
-								) : (
+								)}
+								{shouldShowCreditProfileEmptyState && (
 									<div className='flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-4 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300'>
 										<Icon
-											icon={isCreditProfileLoading ? 'HeroArrowPath' : 'HeroInformationCircle'}
+											icon={creditProfileIcon}
 											size='text-2xl'
-											className={isCreditProfileLoading ? 'animate-spin text-blue-600' : 'text-zinc-500'}
+											className={creditProfileIconClassName}
 										/>
-										<p aria-live='polite'>
-											{isCreditProfileLoading
-												? 'Cargando información de crédito…'
-												: creditProfileError ??
-													(hasSelectedCustomer
-														? 'Este cliente no tiene un perfil de crédito creado.'
-														: 'Selecciona un cliente para consultar sus condiciones de crédito.')}
-										</p>
+										<p aria-live='polite'>{creditProfileEmptyMessage}</p>
 										{hasSelectedCustomer && !isCreditProfileLoading && (
 											<ProtectedButton
-												permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.UPDATE}
+												permission={
+													ERP_PERMISSIONS.DEFERRED_PAYMENTS.UPDATE
+												}
 												subsidiaryId={subsidiaryId}
 												scope='access'
 												type='button'
@@ -882,7 +915,9 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 								color='blue'
 								icon='HeroCheck'
 								isLoading={isSubmitting}
-								isDisable={isSubmitting || isPaidEdit || isCreditProfileBlockingCreation}>
+								isDisable={
+									isSubmitting || isPaidEdit || isCreditProfileBlockingCreation
+								}>
 								{mode === 'create' ? 'Crear documento' : 'Guardar cambios'}
 							</Button>
 						</ModalFooterChild>
@@ -897,7 +932,9 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 				<ModalHeader>Crear perfil de crédito</ModalHeader>
 				<ModalBody>
 					{formik.values.customer_sale_id !== null && (
-						<CustomerCreditProfileCard customerSaleId={formik.values.customer_sale_id} />
+						<CustomerCreditProfileCard
+							customerSaleId={formik.values.customer_sale_id}
+						/>
 					)}
 				</ModalBody>
 			</Modal>
