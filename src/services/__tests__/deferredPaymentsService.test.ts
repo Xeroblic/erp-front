@@ -176,6 +176,7 @@ describe('deferredPaymentsService', () => {
 		expect(apiSpies.invalidateCache).toHaveBeenCalledWith(
 			'/subsidiaries/4/deferred-payments/summary',
 		);
+		expect(apiSpies.invalidateCache).toHaveBeenCalledWith('/subsidiaries/4/credit-profiles');
 	});
 
 	it('tolera creación plana y conserva fechas ISO al actualizar', async () => {
@@ -236,6 +237,7 @@ describe('deferredPaymentsService', () => {
 		});
 		await deferredPaymentsService.deletePayment(4, 7, 3);
 		await deferredPaymentsService.markDocumentPaid(4, 7);
+		expect(apiSpies.invalidateCache).toHaveBeenCalledWith('/subsidiaries/4/credit-profiles');
 
 		const registerConfig = apiSpies.fetchData.mock.calls[0][0] as {
 			url: string;

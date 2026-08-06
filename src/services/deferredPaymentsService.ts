@@ -69,6 +69,10 @@ const creditProfileUrl = (subsidiaryId: number, customerSaleId: number): string 
 const creditProfilesUrl = (subsidiaryId: number): string =>
 	`/subsidiaries/${subsidiaryId}/credit-profiles`;
 
+const invalidateCreditProfiles = (subsidiaryId: number): void => {
+	ApiService.invalidateCache(creditProfilesUrl(subsidiaryId));
+};
+
 const requestConfig = (signal?: AbortSignal): Pick<AxiosRequestConfig, 'signal'> => ({ signal });
 
 const getDocuments = async (
@@ -131,6 +135,7 @@ const createDocument = async (
 	});
 	ApiService.invalidateCache(documentsUrl(subsidiaryId));
 	ApiService.invalidateCache(`${documentsUrl(subsidiaryId)}/summary`);
+	invalidateCreditProfiles(subsidiaryId);
 	return {
 		document: normalizeDocument(unwrapResource(response.data)),
 		credit_limit_exceeded: asRecord(response.data)?.credit_limit_exceeded === true,
@@ -153,6 +158,7 @@ const updateDocument = async (
 		...requestConfig(signal),
 	});
 	ApiService.invalidateCache(documentsUrl(subsidiaryId));
+	invalidateCreditProfiles(subsidiaryId);
 	return {
 		document: normalizeDocument(unwrapResource(response.data)),
 		credit_limit_exceeded: asRecord(response.data)?.credit_limit_exceeded === true,
@@ -170,6 +176,7 @@ const deleteDocument = async (
 		...requestConfig(signal),
 	});
 	ApiService.invalidateCache(documentsUrl(subsidiaryId));
+	invalidateCreditProfiles(subsidiaryId);
 	return response.data;
 };
 
@@ -195,6 +202,7 @@ const registerPayment = async (
 		...requestConfig(signal),
 	});
 	ApiService.invalidateCache(documentsUrl(subsidiaryId));
+	invalidateCreditProfiles(subsidiaryId);
 	return normalizePayment(unwrapResource(response.data));
 };
 
@@ -210,6 +218,7 @@ const deletePayment = async (
 		...requestConfig(signal),
 	});
 	ApiService.invalidateCache(documentsUrl(subsidiaryId));
+	invalidateCreditProfiles(subsidiaryId);
 	return response.data;
 };
 
@@ -224,6 +233,7 @@ const markDocumentPaid = async (
 		...requestConfig(signal),
 	});
 	ApiService.invalidateCache(documentsUrl(subsidiaryId));
+	invalidateCreditProfiles(subsidiaryId);
 	return normalizePayment(unwrapResource(response.data));
 };
 
@@ -322,7 +332,7 @@ const updateCreditProfile = async (
 		...requestConfig(signal),
 	});
 	ApiService.invalidateCache(creditProfileUrl(subsidiaryId, customerSaleId));
-	ApiService.invalidateCache(creditProfilesUrl(subsidiaryId));
+	invalidateCreditProfiles(subsidiaryId);
 	return unwrapResource(response.data);
 };
 
