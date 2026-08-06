@@ -279,10 +279,6 @@ const ClientesVentasDetalleView = () => {
 							</Card>
 						</div>
 
-						<div className='lg:col-span-4' ref={addToRefs}>
-							<CustomerCreditProfileCard customerSaleId={detalle.id} />
-						</div>
-
 						{/* Direcciones */}
 						<div className='lg:col-span-6' ref={addToRefs} >
 							<Card className='border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all overflow-hidden'>
@@ -348,9 +344,13 @@ const ClientesVentasDetalleView = () => {
 							</Card>
 						</div>
 
+						<div className='lg:col-span-4 h-full' ref={addToRefs}>
+							<CustomerCreditProfileCard customerSaleId={detalle.id} />
+						</div>
+
 						{/* Notas */}
-						<div className='lg:col-span-12' ref={addToRefs} >
-							<Card className='border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all overflow-hidden'>
+						<div className='lg:col-span-8 h-full' ref={addToRefs} >
+							<Card className='h-full border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all overflow-hidden'>
 								<CardBody>
 									<DetailSection
 										title='Notas internas'

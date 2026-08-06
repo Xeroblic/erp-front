@@ -185,12 +185,11 @@ describe('useDeferredPaymentForm', () => {
 		});
 
 		expect(createMutationSpy).toHaveBeenCalledOnce();
-		expect(toastSpies.warn).toHaveBeenCalledWith(
-			'El total supera el límite de crédito conocido del cliente',
+		expect(toastSpies.error).toHaveBeenCalledWith(
+			'El total del documento supera el cupo de crédito del cliente. El documento fue creado, pero excede el límite permitido.',
 			{ autoClose: false },
 		);
 		expect(toastSpies.success).toHaveBeenCalledWith('Documento creado correctamente');
-		expect(toastSpies.error).not.toHaveBeenCalled();
 		expect(store.getState().deferredPayments.lastMutationCreditLimitExceeded).toBe(true);
 		expect(store.getState().deferredPayments.list.length).toBeGreaterThan(0);
 		expect(deferredPaymentsService.getDocuments).toHaveBeenCalledWith(

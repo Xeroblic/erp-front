@@ -111,14 +111,6 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 			{ wrapper: Wrapper },
 		);
 
-		await waitFor(() =>
-			expect(apiSpies.fetchData).toHaveBeenCalledWith(
-				expect.objectContaining({
-					url: '/subsidiaries/1/customer-sales/overview',
-					params: expect.objectContaining({ per_page: 100, q: undefined }),
-				}),
-			),
-		);
 		expect(
 			screen.getByText(
 				new RegExp(
@@ -202,8 +194,8 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		const overviewCalls = apiSpies.fetchData.mock.calls.filter(([request]) =>
 			String((request as { url?: string }).url).includes('/overview'),
 		);
-		expect(overviewCalls).toHaveLength(2);
-		expect(overviewCalls[1]?.[0]).toEqual(
+		expect(overviewCalls).toHaveLength(1);
+		expect(overviewCalls[0]?.[0]).toEqual(
 			expect.objectContaining({ params: expect.objectContaining({ q: 'Zeta' }) }),
 		);
 	});
@@ -405,10 +397,13 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 				addDaysToDateOnly(issueDate, 30),
 			);
 		});
+		expect(
+			screen.getByText('Este cliente no tiene un perfil de crédito creado.'),
+		).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
 	});
 
-	it('bloquea la creación mientras el perfil falla y permite reintentarlo', async () => {
+	it('bloquea la creación ante un error de crédito y permite reintentar', async () => {
 		const customer = {
 			id: 460,
 			name: 'Cliente con error',
@@ -425,31 +420,30 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 					data: { ...emptyPagination, data: [customer], total: 1 },
 				});
 			}
+			if (url.includes('/deferred-payments/summary')) {
+				return Promise.resolve({ data: { total_outstanding: '0', overdue: { count: 0, amount: '0' }, due_within_7_days: { count: 0, amount: '0' }, current: { count: 0, amount: '0' } } });
+			}
 			if (url.includes('/credit-profile')) {
-				return profileFails
-					? Promise.reject(new Error('Perfil no disponible'))
-					: Promise.resolve({
-							data: {
-								id: null,
-								customer_sale_id: null,
-								is_active: false,
-								payment_term_days: 30,
-								credit_limit: null,
-								notes: null,
-							},
-						});
+				if (profileFails && url.includes('/460/credit-profile')) {
+					return Promise.reject(new Error('Perfil no disponible'));
+				}
+				return Promise.resolve({
+					data: {
+						id: url.includes('/460') ? 20 : 21,
+						customer_sale_id: 460,
+						is_active: true,
+						payment_term_days: 30,
+						credit_limit: null,
+						notes: null,
+					},
+				});
 			}
 			return Promise.resolve({
-				data: {
-					data: [],
-					meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 },
-				},
+				data: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
 			});
 		});
 		const store = createTestStore();
-		const Wrapper = ({ children }: PropsWithChildren) => (
-			<Provider store={store}>{children}</Provider>
-		);
+		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
 		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, { wrapper: Wrapper });
 
 		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'error' } });

@@ -3,12 +3,20 @@ import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
 import type {
 	IDeferredPaymentCreditProfile,
+	IDeferredPaymentsSummary,
 	UpdateDeferredPaymentCreditProfilePayload,
 } from '@/interface/deferredPayments.interface';
 import deferredPaymentsService from '@/services/deferredPaymentsService';
 import { CreditProfileSchema, type CreditProfileFormValues } from '../types';
 
 const DEFAULT_PAYMENT_TERM_DAYS = 30;
+
+const EMPTY_SUMMARY: IDeferredPaymentsSummary = {
+	total_outstanding: '0',
+	overdue: { count: 0, amount: '0' },
+	due_within_7_days: { count: 0, amount: '0' },
+	current: { count: 0, amount: '0' },
+};
 
 const toWholeCLP = (creditLimit: string | null | undefined): string => {
 	if (!creditLimit) return '';
@@ -49,12 +57,16 @@ const useCustomerCreditProfile = ({
 	subsidiaryId,
 }: UseCustomerCreditProfileParams) => {
 	const [profile, setProfile] = useState<IDeferredPaymentCreditProfile | null>(null);
+	const [summary, setSummary] = useState<IDeferredPaymentsSummary | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
 	const [loadError, setLoadError] = useState<string | null>(null);
 	const [saveError, setSaveError] = useState<string | null>(null);
 	const [isEditing, setIsEditing] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
 	const requestIdRef = useRef(0);
+
+	const outstandingAmount =
+		profile?.id !== null && profile?.is_active ? (summary?.total_outstanding ?? null) : null;
 
 	const initialValues = useMemo(() => toFormValues(profile), [profile]);
 
@@ -63,6 +75,7 @@ const useCustomerCreditProfile = ({
 			if (subsidiaryId === null) {
 				requestIdRef.current += 1;
 				setProfile(null);
+				setSummary(null);
 				setLoadError(null);
 				setIsLoading(false);
 				return;
@@ -73,13 +86,24 @@ const useCustomerCreditProfile = ({
 			setIsLoading(true);
 			setLoadError(null);
 			try {
-				const loadedProfile = await deferredPaymentsService.getCreditProfile(
-					subsidiaryId,
-					customerSaleId,
-					signal,
-				);
+			const loadedProfile = await deferredPaymentsService.getCreditProfile(
+				subsidiaryId,
+				customerSaleId,
+				signal,
+			);
+			const loadedSummary =
+				loadedProfile.id !== null &&
+				loadedProfile.is_active &&
+				loadedProfile.credit_limit !== null
+					? await deferredPaymentsService.getSummary(
+							subsidiaryId,
+							{ customer_sale_id: customerSaleId },
+							signal,
+						)
+					: null;
 				if (requestId !== requestIdRef.current) return;
 				setProfile(loadedProfile);
+				setSummary(loadedSummary);
 			} catch (error: unknown) {
 				if (signal?.aborted || requestId !== requestIdRef.current) return;
 				setProfile(null);
@@ -147,6 +171,7 @@ const useCustomerCreditProfile = ({
 
 	return {
 		profile,
+		outstandingAmount,
 		isLoading,
 		loadError,
 		saveError,

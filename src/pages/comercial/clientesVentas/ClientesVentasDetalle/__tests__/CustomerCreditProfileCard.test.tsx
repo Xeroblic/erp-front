@@ -23,13 +23,37 @@ vi.mock('@/hooks/useAuthorization', () => ({
 	}),
 }));
 
-const emptyProfile = {
-	id: null,
-	customer_sale_id: null,
-	is_active: false,
-	payment_term_days: 30,
-	credit_limit: null,
-	notes: null,
+const emptySummaryData = {
+	total_outstanding: '0',
+	overdue: { count: 0, amount: '0' },
+	due_within_7_days: { count: 0, amount: '0' },
+	current: { count: 0, amount: '0' },
+};
+
+let creditProfileResponse: unknown = { data: { id: null, customer_sale_id: null, is_active: false, payment_term_days: 30, credit_limit: null, notes: null } };
+let creditProfilePutResponse: unknown = null;
+let shouldRejectCreditProfile = false;
+let creditProfileError: Error | null = null;
+
+const setupFetchData = () => {
+	apiSpies.fetchData.mockImplementation(({ url, method }: { url: string; method?: string }) => {
+		if (url.includes('/customer-sales') && url.includes('/credit-profile') && method !== 'put') {
+			if (shouldRejectCreditProfile) {
+				return Promise.reject(creditProfileError ?? new Error('Servicio no disponible'));
+			}
+			return Promise.resolve(creditProfileResponse);
+		}
+		if (url.includes('/customer-sales') && url.includes('/credit-profile') && method === 'put') {
+			if (shouldRejectCreditProfile) {
+				return Promise.reject(creditProfileError ?? new Error('No se pudo guardar'));
+			}
+			return Promise.resolve(creditProfilePutResponse ?? creditProfileResponse);
+		}
+		if (url.includes('/deferred-payments/summary')) {
+			return Promise.resolve({ data: emptySummaryData });
+		}
+		return Promise.reject(new Error(`URL no esperada: ${url}`));
+	});
 };
 
 const waitForButtonClickGuard = async (): Promise<void> => {
@@ -46,6 +70,11 @@ describe('CustomerCreditProfileCard', () => {
 		apiSpies.invalidateCache.mockReset();
 		authorizationSpies.authorize.mockReset().mockReturnValue(true);
 		authorizationSpies.hasAnyPermission.mockReset().mockReturnValue(true);
+		creditProfileResponse = { data: { id: null, customer_sale_id: null, is_active: false, payment_term_days: 30, credit_limit: null, notes: null } };
+		creditProfilePutResponse = null;
+		shouldRejectCreditProfile = false;
+		creditProfileError = null;
+		setupFetchData();
 	});
 
 	it('crea un perfil y normaliza los opcionales vacíos', async () => {
@@ -57,9 +86,7 @@ describe('CustomerCreditProfileCard', () => {
 			credit_limit: null,
 			notes: null,
 		};
-		apiSpies.fetchData
-			.mockResolvedValueOnce({ data: { data: emptyProfile } } as never)
-			.mockResolvedValueOnce({ data: { data: savedProfile } } as never);
+		creditProfilePutResponse = { data: savedProfile };
 
 		render(<CustomerCreditProfileCard customerSaleId={8} />);
 
@@ -72,7 +99,7 @@ describe('CustomerCreditProfileCard', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'Guardar condiciones' }));
 
 		await waitFor(() =>
-			expect(apiSpies.fetchData).toHaveBeenLastCalledWith(
+			expect(apiSpies.fetchData).toHaveBeenCalledWith(
 				expect.objectContaining({
 					url: '/subsidiaries/4/customer-sales/8/credit-profile',
 					method: 'put',
@@ -91,18 +118,17 @@ describe('CustomerCreditProfileCard', () => {
 	});
 
 	it('muestra claramente un perfil suspendido', async () => {
-		apiSpies.fetchData.mockResolvedValue({
+		creditProfileResponse = {
 			data: {
-				data: {
-					id: 6,
-					customer_sale_id: 8,
-					is_active: false,
-					payment_term_days: 30,
-					credit_limit: '500000.00',
-					notes: 'Revisar antes de reactivar.',
-				},
+				id: 6,
+				customer_sale_id: 8,
+				is_active: false,
+				payment_term_days: 30,
+				credit_limit: '500000.00',
+				notes: 'Revisar antes de reactivar.',
 			},
-		} as never);
+		};
+		setupFetchData();
 
 		render(<CustomerCreditProfileCard customerSaleId={8} />);
 
@@ -114,9 +140,41 @@ describe('CustomerCreditProfileCard', () => {
 		await waitForButtonClickGuard();
 	});
 
-	it('informa cuando el cupo contiene caracteres que no son números', async () => {
-		apiSpies.fetchData.mockResolvedValue({ data: { data: emptyProfile } } as never);
+	it('muestra la barra de progreso cuando hay cupo definido', async () => {
+		creditProfileResponse = {
+			data: {
+				id: 7,
+				customer_sale_id: 8,
+				is_active: true,
+				payment_term_days: 30,
+				credit_limit: '1000000',
+				notes: null,
+			},
+		};
+		setupFetchData();
+		apiSpies.fetchData.mockImplementation(({ url, method }: { url: string; method?: string }) => {
+			if (url.includes('/customer-sales') && url.includes('/credit-profile') && method !== 'put') {
+				return Promise.resolve(creditProfileResponse);
+			}
+			if (url.includes('/deferred-payments/summary')) {
+				return Promise.resolve({
+					data: { ...emptySummaryData, total_outstanding: '350000' },
+				});
+			}
+			return Promise.reject(new Error(`URL no esperada: ${url}`));
+		});
 
+		render(<CustomerCreditProfileCard customerSaleId={8} />);
+
+		expect(await screen.findByText('Activo')).toBeInTheDocument();
+		expect(screen.getByText('$ 1.000.000')).toBeInTheDocument();
+		expect(screen.getByText('Usado $ 350.000')).toBeInTheDocument();
+		expect(screen.getByText('35%')).toBeInTheDocument();
+		expect(screen.getByText('Disponible $ 650.000')).toBeInTheDocument();
+		await waitForButtonClickGuard();
+	});
+
+	it('informa cuando el cupo contiene caracteres que no son números', async () => {
 		render(<CustomerCreditProfileCard customerSaleId={8} />);
 
 		fireEvent.click(await screen.findByRole('button', { name: 'Crear perfil' }));
@@ -133,8 +191,6 @@ describe('CustomerCreditProfileCard', () => {
 	});
 
 	it('mantiene las acciones dentro de su formulario independiente', async () => {
-		apiSpies.fetchData.mockResolvedValue({ data: { data: emptyProfile } } as never);
-
 		render(<CustomerCreditProfileCard customerSaleId={8} />);
 
 		const createButton = await screen.findByRole('button', { name: 'Crear perfil' });
@@ -153,23 +209,35 @@ describe('CustomerCreditProfileCard', () => {
 	});
 
 	it('permite reintentar cuando no se puede cargar el perfil', async () => {
-		apiSpies.fetchData
-			.mockRejectedValueOnce(new Error('Servicio no disponible'))
-			.mockResolvedValueOnce({ data: { data: emptyProfile } } as never);
+		shouldRejectCreditProfile = true;
+		creditProfileError = new Error('Servicio no disponible');
+		setupFetchData();
 
 		render(<CustomerCreditProfileCard customerSaleId={8} />);
 
 		expect(await screen.findByText('Servicio no disponible')).toBeInTheDocument();
+
+		shouldRejectCreditProfile = false;
+		setupFetchData();
 		fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
 		expect(await screen.findByText('Sin perfil de crédito.')).toBeInTheDocument();
-		expect(apiSpies.fetchData).toHaveBeenCalledTimes(2);
 		await waitForButtonClickGuard();
 	});
 
 	it('conserva el borrador tras un error al guardar y permite cancelarlo', async () => {
-		apiSpies.fetchData
-			.mockResolvedValueOnce({ data: { data: emptyProfile } } as never)
-			.mockRejectedValueOnce(new Error('No se pudo guardar'));
+		creditProfilePutResponse = null;
+		apiSpies.fetchData.mockImplementation(({ url, method }: { url: string; method?: string }) => {
+			if (url.includes('/customer-sales') && url.includes('/credit-profile') && method !== 'put') {
+				return Promise.resolve({ data: { id: null, customer_sale_id: null, is_active: false, payment_term_days: 30, credit_limit: null, notes: null } });
+			}
+			if (url.includes('/customer-sales') && url.includes('/credit-profile') && method === 'put') {
+				return Promise.reject(new Error('No se pudo guardar'));
+			}
+			if (url.includes('/deferred-payments/summary')) {
+				return Promise.resolve({ data: emptySummaryData });
+			}
+			return Promise.reject(new Error(`URL no esperada: ${url}`));
+		});
 
 		render(<CustomerCreditProfileCard customerSaleId={8} />);
 
@@ -191,18 +259,17 @@ describe('CustomerCreditProfileCard', () => {
 			({ permission }: { permission?: string | string[] }) =>
 				permission === ERP_PERMISSIONS.DEFERRED_PAYMENTS.VIEW,
 		);
-		apiSpies.fetchData.mockResolvedValue({
+		creditProfileResponse = {
 			data: {
-				data: {
-					id: 9,
-					customer_sale_id: 8,
-					is_active: true,
-					payment_term_days: 30,
-					credit_limit: null,
-					notes: null,
-				},
+				id: 9,
+				customer_sale_id: 8,
+				is_active: true,
+				payment_term_days: 30,
+				credit_limit: null,
+				notes: null,
 			},
-		} as never);
+		};
+		setupFetchData();
 
 		render(<CustomerCreditProfileCard customerSaleId={8} />);
 

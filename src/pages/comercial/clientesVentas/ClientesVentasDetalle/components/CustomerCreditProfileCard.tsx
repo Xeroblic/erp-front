@@ -4,12 +4,13 @@ import Checkbox from '@/components/form/Checkbox';
 import Input from '@/components/form/Input';
 import Label from '@/components/form/Label';
 import Textarea from '@/components/form/Textarea';
+import Icon from '@/components/icon/Icon';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 import Alert from '@/components/ui/Alert';
-import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
-import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
+import Card, { CardBody } from '@/components/ui/Card';
+import Progress from '@/components/ui/Progress';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import { formatCLP } from '@/utils/format.utils';
 import useCustomerCreditProfile from '../hooks/useCustomerCreditProfile';
@@ -18,12 +19,39 @@ interface CustomerCreditProfileCardProps {
 	customerSaleId: number;
 }
 
+const CreditStatusPill: React.FC<{ suspended: boolean }> = ({ suspended }) => (
+	<span
+		className={`inline-flex min-w-32 max-w-44 items-center justify-center whitespace-normal rounded-full px-3 py-1.5 text-center text-sm font-semibold shadow-sm ${
+			suspended ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'
+		}`}>
+		{suspended ? 'Suspendido' : 'Activo'}
+	</span>
+);
+
+const Skeleton = () => (
+	<div className='animate-pulse space-y-4' aria-label='Cargando perfil de crédito'>
+		<div className='flex items-center gap-3'>
+			<div className='h-10 w-10 rounded-xl bg-zinc-200 dark:bg-zinc-700' />
+			<div className='flex-1 space-y-2'>
+				<div className='h-4 w-32 rounded bg-zinc-200 dark:bg-zinc-700' />
+				<div className='h-3 w-48 rounded bg-zinc-200 dark:bg-zinc-700' />
+			</div>
+		</div>
+		<div className='grid grid-cols-2 gap-3'>
+			<div className='h-14 rounded-lg bg-zinc-200 dark:bg-zinc-700' />
+			<div className='h-14 rounded-lg bg-zinc-200 dark:bg-zinc-700' />
+		</div>
+		<div className='h-14 rounded-lg bg-zinc-200 dark:bg-zinc-700' />
+	</div>
+);
+
 const CustomerCreditProfileCardContent: React.FC<{
 	customerSaleId: number;
 	subsidiaryId: number | null;
 }> = ({ customerSaleId, subsidiaryId }) => {
 	const {
 		profile,
+		outstandingAmount,
 		isLoading,
 		loadError,
 		saveError,
@@ -36,6 +64,15 @@ const CustomerCreditProfileCardContent: React.FC<{
 	} = useCustomerCreditProfile({ customerSaleId, subsidiaryId });
 	const hasProfile = profile?.id !== null && profile !== null;
 	const isSuspended = hasProfile && profile.is_active === false;
+	const hasCreditLimit = hasProfile && profile.credit_limit !== null;
+	const hasOutstandingAmount = outstandingAmount !== null;
+	const usedAmount = hasOutstandingAmount ? Number(outstandingAmount) : 0;
+	const limitAmount = hasCreditLimit ? Number(profile.credit_limit) : 0;
+	const availableAmount = hasCreditLimit ? Math.max(0, limitAmount - usedAmount) : 0;
+	const progressPercent = hasCreditLimit && limitAmount > 0
+		? Math.min(100, Math.max(0, (usedAmount / limitAmount) * 100))
+		: 0;
+	const isOverLimit = hasCreditLimit && usedAmount > limitAmount;
 	const paymentTermError = formik.touched.payment_term_days
 		? formik.errors.payment_term_days
 		: undefined;
@@ -45,37 +82,47 @@ const CustomerCreditProfileCardContent: React.FC<{
 			: undefined;
 
 	return (
-		<Card className='border-zinc-200/50 shadow-sm dark:border-zinc-700/50'>
-			<CardHeader>
-				<div>
-					<CardTitle>Condiciones de crédito</CardTitle>
-					<p className='mt-1 text-sm text-zinc-500'>
-						Plazo, cupo y condiciones comerciales.
-					</p>
+		<Card className='h-full border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/60'>
+			<CardBody className='space-y-4 p-5'>
+				<div className='flex items-start justify-between gap-4'>
+					<div className='flex min-w-0 items-start gap-3'>
+						<div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white'>
+							<Icon icon='HeroCreditCard' color='white' size='text-xl' />
+						</div>
+						<div className='min-w-0'>
+							<p className='font-semibold'>Condiciones de crédito</p>
+							<p className='text-sm text-zinc-500'>
+								Plazo, cupo y condiciones comerciales.
+							</p>
+						</div>
+					</div>
+					{!isLoading && !loadError && !isEditing && (
+						<ProtectedButton
+							permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.UPDATE}
+							subsidiaryId={subsidiaryId}
+							scope='access'
+							variant='solid'
+							color='blue'
+							icon={hasProfile ? 'HeroPencilSquare' : 'HeroPlus'}
+							type='button'
+							onClick={startEditing}>
+							{hasProfile ? 'Editar' : 'Crear perfil'}
+						</ProtectedButton>
+					)}
 				</div>
-				{!isLoading && !loadError && !isEditing && (
-					<ProtectedButton
-						permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.UPDATE}
-						subsidiaryId={subsidiaryId}
-						scope='access'
-						variant='solid'
-						color='blue'
-						icon={hasProfile ? 'HeroPencilSquare' : 'HeroPlus'}
-						type='button'
-						onClick={startEditing}>
-						{hasProfile ? 'Editar' : 'Crear perfil'}
-					</ProtectedButton>
-				)}
-			</CardHeader>
-			<CardBody>
-				{isLoading && (
-					<p className='text-sm text-zinc-500'>Cargando perfil de crédito...</p>
-				)}
+
+				{isLoading && <Skeleton />}
+
 				{loadError && (
-					<Alert color='red' variant='outline' title='No se pudo cargar el perfil'>
+					<Alert
+						color='red'
+						variant='outline'
+						icon='HeroExclamationTriangle'
+						title='No se pudo cargar el perfil'>
 						<div className='space-y-3'>
 							<p>{loadError}</p>
 							<Button
+								size='sm'
 								variant='outline'
 								color='red'
 								type='button'
@@ -85,47 +132,82 @@ const CustomerCreditProfileCardContent: React.FC<{
 						</div>
 					</Alert>
 				)}
+
 				{!isLoading && !loadError && !isEditing && !hasProfile && (
-					<p className='text-sm text-zinc-500'>Sin perfil de crédito.</p>
+					<div className='rounded-xl border border-dashed border-zinc-300 p-4 text-center dark:border-zinc-700'>
+						<p className='text-sm text-zinc-500'>Sin perfil de crédito.</p>
+						<p className='mt-1 text-sm text-zinc-400'>
+							Configura plazo, cupo y condiciones para este cliente.
+						</p>
+					</div>
 				)}
+
 				{!isLoading && !loadError && !isEditing && hasProfile && profile && (
-					<div className='grid grid-cols-1 gap-4 text-sm sm:grid-cols-2'>
-						<div>
-							<p className='text-zinc-500'>Estado</p>
-							<Badge
-								color={isSuspended ? 'red' : 'green'}
-								variant='solid'
-								className='mt-1'>
-								{isSuspended ? 'Suspendido' : 'Activo'}
-							</Badge>
+					<div className='space-y-4'>
+						<div className='flex flex-wrap items-center gap-3'>
+							<CreditStatusPill suspended={isSuspended} />
 						</div>
-						<div>
-							<p className='text-zinc-500'>Plazo de pago</p>
-							<p className='mt-1 font-medium'>{profile.payment_term_days} días</p>
+						<div className='grid grid-cols-2 gap-3 border-t border-zinc-200 pt-4 text-sm dark:border-zinc-700'>
+							<div>
+								<p className='text-zinc-500'>Plazo de pago</p>
+								<p className='font-semibold'>
+									{profile.payment_term_days} día
+									{profile.payment_term_days !== 1 ? 's' : ''}
+								</p>
+							</div>
+							<div>
+								<p className='text-zinc-500'>Cupo de crédito</p>
+								<p className='font-semibold'>
+									{profile.credit_limit === null
+										? 'Sin cupo definido'
+										: formatCLP(profile.credit_limit)}
+								</p>
+							</div>
 						</div>
-						<div>
-							<p className='text-zinc-500'>Cupo de crédito</p>
-							<p className='mt-1 font-medium'>
-								{profile.credit_limit === null
-									? 'Sin cupo definido'
-									: formatCLP(profile.credit_limit)}
-							</p>
-						</div>
-						<div className='sm:col-span-2'>
-							<p className='text-zinc-500'>Notas</p>
-							<p className='mt-1 whitespace-pre-wrap'>
-								{profile.notes || 'Sin notas'}
+						{hasCreditLimit && hasOutstandingAmount && (
+							<div className='border-t border-zinc-200 pt-4 dark:border-zinc-700'>
+								<div className='mb-2 flex justify-between gap-3 text-sm'>
+									<p className='text-zinc-500'>
+										Usado {formatCLP(outstandingAmount)}
+									</p>
+									<p className='font-semibold'>
+										{limitAmount > 0
+											? `${Math.round(progressPercent)}%`
+											: '—'}
+									</p>
+								</div>
+								<Progress
+									value={progressPercent}
+									color={isOverLimit ? 'red' : 'emerald'}
+									colorIntensity='600'
+									className='h-2.5'
+								/>
+								<div className='mt-2 flex justify-between gap-3 text-sm'>
+									<p className='text-zinc-500'>
+										Disponible {formatCLP(String(availableAmount))}
+									</p>
+									<p className='text-zinc-400'>
+										Cupo {formatCLP(profile.credit_limit!)}
+									</p>
+								</div>
+							</div>
+						)}
+						<div className='border-t border-zinc-200 pt-4 dark:border-zinc-700'>
+							<p className='text-sm text-zinc-500'>Notas</p>
+							<p className='mt-1 whitespace-pre-wrap text-sm text-zinc-600 dark:text-zinc-300'>
+								{profile.notes || 'Sin observaciones registradas.'}
 							</p>
 						</div>
 					</div>
 				)}
+
 				{isEditing && (
 					<form
 						aria-label='Formulario de condiciones de crédito'
-						className='space-y-4'
+						className='space-y-4 border-t border-zinc-200 pt-4 dark:border-zinc-700'
 						onSubmit={formik.handleSubmit}>
 						{saveError && (
-							<Alert color='red' variant='outline'>
+							<Alert color='red' variant='outline' icon='HeroExclamationTriangle'>
 								{saveError}
 							</Alert>
 						)}

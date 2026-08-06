@@ -11,6 +11,7 @@ import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
+import Icon from '@/components/icon/Icon';
 import Modal, {
 	ModalBody,
 	ModalFooter,
@@ -108,6 +109,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		null,
 	);
 	const [creditProfile, setCreditProfile] = useState<IDeferredPaymentCreditProfile | null>(null);
+	const [outstandingAmount, setOutstandingAmount] = useState<number | null>(null);
 	const [isCreditProfileLoading, setIsCreditProfileLoading] = useState(false);
 	const [creditProfileError, setCreditProfileError] = useState<string | null>(null);
 	const creditProfileRequestIdRef = useRef(0);
@@ -130,6 +132,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		creditProfileAbortRef.current = null;
 		creditProfileRequestIdRef.current += 1;
 		setCreditProfile(null);
+		setOutstandingAmount(null);
 		setCreditProfileError(null);
 		setIsCreditProfileLoading(false);
 	}, []);
@@ -145,14 +148,28 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 			setIsCreditProfileLoading(true);
 			setCreditProfileError(null);
 			setCreditProfile(null);
+			setOutstandingAmount(null);
 			try {
 				const profile = await deferredPaymentsService.getCreditProfile(
 					subsidiaryId,
 					customerSaleId,
 					controller.signal,
 				);
+				const summary =
+					profile.id !== null && profile.is_active && profile.credit_limit !== null
+						? await deferredPaymentsService.getSummary(
+							subsidiaryId,
+							{ customer_sale_id: customerSaleId },
+							controller.signal,
+						)
+						: null;
 				if (requestId !== creditProfileRequestIdRef.current) return;
-				setCreditProfile(profile);
+				const parsedOutstandingAmount = summary === null ? 0 : Number(summary.total_outstanding);
+			if (!Number.isFinite(parsedOutstandingAmount)) {
+				throw new Error('No se pudo obtener el saldo pendiente del cliente');
+			}
+			setCreditProfile(profile);
+			setOutstandingAmount(parsedOutstandingAmount);
 				setPaymentTermDays(profile.id !== null && profile.is_active ? profile.payment_term_days : 30);
 			} catch (error: unknown) {
 				if (controller.signal.aborted || requestId !== creditProfileRequestIdRef.current) return;
@@ -187,11 +204,13 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 
 	useEffect(() => {
 		if (!isOpen || subsidiaryId === null) return undefined;
+		const query = debouncedCustomerSearch.trim();
+		if (!query) return undefined;
 		const customerRequest = dispatch(
 			fetchCustomersOverviewThunk({
 				subsidiary: subsidiaryId,
 				per_page: 100,
-				params: { q: debouncedCustomerSearch.trim() || undefined },
+				params: { q: query },
 			}),
 		);
 		return () => customerRequest.abort();
@@ -280,8 +299,54 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const isCreditProfileUnavailable =
 		mode === 'create' &&
 		hasSelectedCustomer &&
-		(isCreditProfileLoading || creditProfileError !== null);
-	const isCreditProfileBlockingCreation = isCreditProfileSuspended || isCreditProfileUnavailable;
+		(isCreditProfileLoading || creditProfileError !== null || outstandingAmount === null);
+	const exceedsCreditLimit =
+		mode === 'create' &&
+		hasSelectedCustomer &&
+		!isCreditProfileLoading &&
+		!creditProfileError &&
+		outstandingAmount !== null &&
+		isCreditProfileSuspended === false &&
+		creditProfile !== null &&
+		creditProfile.id !== null &&
+		creditProfile.is_active &&
+		creditProfile.credit_limit !== null &&
+		outstandingAmount + estimatedTotal > Number(creditProfile.credit_limit);
+	const isCreditProfileBlockingCreation =
+		isCreditProfileSuspended || isCreditProfileUnavailable || exceedsCreditLimit;
+	const hasCreatedCreditProfile = creditProfile !== null && creditProfile.id !== null;
+	const creditLimit = creditProfile?.credit_limit ?? null;
+	const creditLimitAmount = creditLimit === null ? null : Number(creditLimit);
+	const availableCredit =
+		creditLimitAmount === null || outstandingAmount === null
+			? null
+			: Math.max(creditLimitAmount - outstandingAmount, 0);
+	const creditMetrics = [
+		{
+			label: 'Plazo',
+			value: hasSelectedCustomer && creditProfile ? `${paymentTermDays} días` : '—',
+			icon: 'HeroClock' as const,
+			iconClassName: 'bg-blue-600',
+		},
+		{
+			label: 'Cupo',
+			value: creditLimitAmount === null ? '—' : formatCLP(creditLimitAmount),
+			icon: 'HeroBanknotes' as const,
+			iconClassName: 'bg-amber-600',
+		},
+		{
+			label: 'Cupo usado',
+			value: creditLimitAmount === null || outstandingAmount === null ? '—' : formatCLP(outstandingAmount),
+			icon: 'HeroChartBar' as const,
+			iconClassName: 'bg-red-600',
+		},
+		{
+			label: 'Cupo disponible',
+			value: availableCredit === null || outstandingAmount === null ? '—' : formatCLP(availableCredit),
+			icon: 'HeroArrowTrendingUp' as const,
+			iconClassName: 'bg-emerald-600',
+		},
+	];
 	const handleClose = () => {
 		if (!isSubmitting) {
 			clearCreditProfile();
@@ -336,29 +401,6 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 							</Alert>
 						)}
 
-						{isCreditProfileLoading && (
-							<Alert color='blue' variant='outline' icon='HeroArrowPath'>
-								Cargando condiciones de crédito del cliente...
-							</Alert>
-						)}
-
-						{creditProfileError && (
-							<Alert color='red' variant='outline' icon='HeroExclamationTriangle'>
-								<div className='space-y-3'>
-									<p>{creditProfileError}</p>
-									{formik.values.customer_sale_id !== null && (
-										<Button
-											variant='outline'
-											color='red'
-											type='button'
-											onClick={() => loadCreditProfile(formik.values.customer_sale_id!)}>
-											Reintentar
-										</Button>
-									)}
-								</div>
-							</Alert>
-						)}
-
 						{isCreditProfileSuspended && (
 							<Alert color='red' variant='outline' icon='HeroLockClosed'>
 								El crédito de este cliente está suspendido. Reactívalo antes de crear un
@@ -366,15 +408,24 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 							</Alert>
 						)}
 
-						<Card>
-							<CardHeader>
-								<CardTitle>Datos del documento</CardTitle>
+						{exceedsCreditLimit && creditProfile?.credit_limit && (
+							<Alert color='red' variant='outline' icon='HeroExclamationTriangle'>
+								El total estimado del documento ({formatCLP(estimatedTotal)}) más el
+								saldo pendiente del cliente ({formatCLP(outstandingAmount)}) supera el
+								cupo de crédito disponible ({formatCLP(creditProfile.credit_limit)}).
+								Reduce el monto o aumenta el cupo antes de continuar.
+							</Alert>
+						)}
+
+						<Card className='border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900'>
+							<CardHeader className='pb-2'>
+								<CardTitle className='text-lg'>Datos del documento</CardTitle>
 							</CardHeader>
-							<CardBody className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+							<CardBody className='grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2 lg:grid-cols-3'>
 								<DeferredPaymentField
 									name='customer_sale_id'
 									label='Cliente'
-									className='md:col-span-2'>
+									className='md:col-span-2 lg:col-span-1'>
 									{({ error, isTouched, isValid }) => (
 										<SelectReact
 											name='customer_sale_id'
@@ -384,6 +435,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 											isLoading={customersLoading}
 											isDisabled={isPaidEdit}
 											placeholder='Busca por razón social o RUT'
+											noOptionsMessage={() => 'Sin resultados'}
 											onInputChange={(
 												value: string,
 												actionMeta?: InputActionMeta,
@@ -544,7 +596,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 								<DeferredPaymentField
 									name='notes'
 									label='Notas (opcional)'
-									className='md:col-span-2'>
+									className='md:col-span-2 lg:col-span-3'>
 									{({ error, isTouched, isValid }) => (
 										<Textarea
 											id='notes'
@@ -566,9 +618,74 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 							</CardBody>
 						</Card>
 
-						<Card>
-							<CardHeader>
-								<CardTitle>Ítems del documento</CardTitle>
+						<Card className='border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900'>
+							<CardHeader className='pb-2'>
+								<CardTitle className='text-lg'>Información de crédito</CardTitle>
+							</CardHeader>
+							<CardBody>
+								{hasCreatedCreditProfile ? (
+									<div className='grid gap-3 sm:grid-cols-2 xl:grid-cols-4' aria-live='polite'>
+										{creditMetrics.map((metric) => (
+											<div
+												key={metric.label}
+												className='flex min-w-0 items-center gap-3 rounded-xl border border-zinc-100 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950'>
+												<div
+													className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-white shadow-sm ${metric.iconClassName}`}>
+													<Icon icon={metric.icon} size='text-xl' color='white' />
+												</div>
+												<div className='min-w-0'>
+													<p className='text-xs font-medium text-zinc-500 dark:text-zinc-400'>
+														{metric.label}
+													</p>
+													<p className='truncate text-lg font-bold tabular-nums text-zinc-900 dark:text-white'>
+														{metric.value}
+													</p>
+												</div>
+											</div>
+										))}
+									</div>
+								) : creditProfileError ? (
+									<Alert color='red' variant='outline' icon='HeroExclamationTriangle'>
+										<div className='space-y-3'>
+											<p>{creditProfileError}</p>
+											{formik.values.customer_sale_id !== null && (
+												<Button
+													variant='outline'
+													color='red'
+													type='button'
+													onClick={() =>
+														loadCreditProfile(formik.values.customer_sale_id!).catch(
+																() => undefined,
+															)
+													}>
+													Reintentar
+												</Button>
+											)}
+										</div>
+									</Alert>
+								) : (
+									<div className='flex items-center gap-3 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-4 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300'>
+										<Icon
+											icon={isCreditProfileLoading ? 'HeroArrowPath' : 'HeroInformationCircle'}
+											size='text-2xl'
+											className={isCreditProfileLoading ? 'animate-spin text-blue-600' : 'text-zinc-500'}
+										/>
+										<p aria-live='polite'>
+											{isCreditProfileLoading
+												? 'Cargando información de crédito…'
+												: creditProfileError ??
+													(hasSelectedCustomer
+														? 'Este cliente no tiene un perfil de crédito creado.'
+														: 'Selecciona un cliente para consultar sus condiciones de crédito.')}
+										</p>
+									</div>
+								)}
+							</CardBody>
+						</Card>
+
+						<Card className='border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900'>
+							<CardHeader className='pb-2'>
+								<CardTitle className='text-lg'>Ítems del documento</CardTitle>
 							</CardHeader>
 							<CardBody className='space-y-4'>
 								<FieldArray name='items'>
