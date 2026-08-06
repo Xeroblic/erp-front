@@ -537,7 +537,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
 	});
 
-	it('permite crear sin perfil y usa el plazo predeterminado de 30 días', async () => {
+	it('permite crear sin perfil y recarga el perfil creado durante el alta', async () => {
 		const customer = {
 			id: 459,
 			name: 'Cliente sin perfil',
@@ -547,6 +547,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 			total_sales: 0,
 			is_active: true,
 		};
+		let profileWasCreated = false;
 		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
 			Promise.resolve({
 				data: url.includes('/overview')
@@ -554,10 +555,10 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 					: url.includes('/credit-profile')
 						? {
 								data: {
-									id: null,
-									customer_sale_id: null,
-									is_active: false,
-									payment_term_days: 30,
+									id: profileWasCreated ? 19 : null,
+									customer_sale_id: profileWasCreated ? customer.id : null,
+									is_active: profileWasCreated,
+									payment_term_days: profileWasCreated ? 45 : 30,
 									credit_limit: null,
 									notes: null,
 								},
@@ -584,6 +585,21 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'Crear perfil' }));
 		expect(await screen.findByText('Crear perfil de crédito')).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
+		profileWasCreated = true;
+		const closeButtons = document.querySelectorAll<HTMLButtonElement>(
+			'[data-component-name="CloseButton"]',
+		);
+		const closeButton = closeButtons.item(closeButtons.length - 1);
+		expect(closeButton).not.toBeNull();
+		if (closeButton) fireEvent.click(closeButton);
+
+		await waitFor(() => {
+			const issueDate = (screen.getByLabelText('Fecha de emisión') as HTMLInputElement).value;
+			expect(screen.getByLabelText('Fecha de vencimiento')).toHaveValue(
+				addDaysToDateOnly(issueDate, 45),
+			);
+		});
+		expect(await screen.findByText('45 días')).toBeInTheDocument();
 	});
 
 	it('bloquea la creación ante un error de crédito y permite reintentar', async () => {
