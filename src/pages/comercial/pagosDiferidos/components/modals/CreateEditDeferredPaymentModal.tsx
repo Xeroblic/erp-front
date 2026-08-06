@@ -142,8 +142,8 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	}, []);
 
 	const loadCreditProfile = useCallback(
-		async (customerSaleId: number) => {
-			if (subsidiaryId === null || mode !== 'create') return;
+		async (customerSaleId: number, allowEdit = false) => {
+			if (subsidiaryId === null || (mode !== 'create' && !allowEdit)) return;
 			creditProfileAbortRef.current?.abort();
 			const controller = new AbortController();
 			creditProfileAbortRef.current = controller;
@@ -174,7 +174,11 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 			}
 			setCreditProfile(profile);
 			setOutstandingAmount(parsedOutstandingAmount);
-				setPaymentTermDays(profile.id !== null && profile.is_active ? profile.payment_term_days : 30);
+				if (mode === 'create') {
+					setPaymentTermDays(
+						profile.id !== null && profile.is_active ? profile.payment_term_days : 30,
+					);
+				}
 			} catch (error: unknown) {
 				if (controller.signal.aborted || requestId !== creditProfileRequestIdRef.current) return;
 				setCreditProfileError(getCreditProfileErrorMessage(error));
@@ -360,7 +364,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const handleCloseCreditProfileCreator = () => {
 		setIsCreditProfileCreatorOpen(false);
 		if (formik.values.customer_sale_id !== null)
-			loadCreditProfile(formik.values.customer_sale_id).catch(() => undefined);
+			loadCreditProfile(formik.values.customer_sale_id, true).catch(() => undefined);
 	};
 
 	return (
