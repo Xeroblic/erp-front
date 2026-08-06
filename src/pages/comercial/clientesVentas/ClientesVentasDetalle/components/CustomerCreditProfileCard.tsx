@@ -46,6 +46,11 @@ const Skeleton = () => (
 	</div>
 );
 
+const formatCreditLimitInput = (value: string): string => {
+	const numericValue = value.replace(/\D/g, '');
+	return numericValue ? formatCLP(numericValue) : '';
+};
+
 const CustomerCreditProfileCardContent: React.FC<{
 	customerSaleId: number;
 	subsidiaryId: number | null;
@@ -102,6 +107,10 @@ const CustomerCreditProfileCardContent: React.FC<{
 		formik.touched.credit_limit || formik.values.credit_limit.trim()
 			? formik.errors.credit_limit
 			: undefined;
+	const handleCreditLimitChange = (value: string) => {
+		formik.setFieldTouched('credit_limit', true, false).catch(() => undefined);
+		formik.setFieldValue('credit_limit', value.replace(/\D/g, '')).catch(() => undefined);
+	};
 
 	return (
 		<Card className='h-full border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/60'>
@@ -280,14 +289,11 @@ const CustomerCreditProfileCardContent: React.FC<{
 									name='credit_limit'
 									type='text'
 									inputMode='numeric'
-									placeholder='Ej.: 500000'
-									value={formik.values.credit_limit}
-									onChange={(event) => {
-										formik
-											.setFieldTouched('credit_limit', true, false)
-											.catch(() => undefined);
-										formik.handleChange(event);
-									}}
+									placeholder='$ 500.000'
+									value={formatCreditLimitInput(formik.values.credit_limit)}
+									onChange={(event) =>
+										handleCreditLimitChange(event.target.value)
+									}
 									onBlur={formik.handleBlur}
 									isTouched={formik.touched.credit_limit}
 									isValid={!creditLimitError}

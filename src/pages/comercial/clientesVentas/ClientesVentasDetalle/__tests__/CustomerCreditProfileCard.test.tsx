@@ -136,7 +136,7 @@ describe('CustomerCreditProfileCard', () => {
 		expect(screen.getByText('$ 500.000')).toBeInTheDocument();
 		expect(screen.getByText('Revisar antes de reactivar.')).toBeInTheDocument();
 		fireEvent.click(screen.getByRole('button', { name: 'Editar' }));
-		expect(screen.getByLabelText('Cupo de crédito')).toHaveValue('500000');
+		expect(screen.getByLabelText('Cupo de crédito')).toHaveValue('$ 500.000');
 		await waitForButtonClickGuard();
 	});
 
@@ -174,19 +174,15 @@ describe('CustomerCreditProfileCard', () => {
 		await waitForButtonClickGuard();
 	});
 
-	it('informa cuando el cupo contiene caracteres que no son números', async () => {
+	it('formatea el cupo en CLP y descarta caracteres que no son números', async () => {
 		render(<CustomerCreditProfileCard customerSaleId={8} />);
 
 		fireEvent.click(await screen.findByRole('button', { name: 'Crear perfil' }));
-		fireEvent.change(screen.getByLabelText('Cupo de crédito'), {
-			target: { value: 'quinientos mil' },
-		});
-
-		expect(
-			await screen.findByText(
-				'El cupo de crédito debe contener solo números enteros de hasta 13 dígitos',
-			),
-		).toBeInTheDocument();
+		const creditLimitInput = screen.getByLabelText('Cupo de crédito');
+		fireEvent.change(creditLimitInput, { target: { value: '500000' } });
+		expect(creditLimitInput).toHaveValue('$ 500.000');
+		fireEvent.change(creditLimitInput, { target: { value: '$ 500.000abc' } });
+		expect(creditLimitInput).toHaveValue('$ 500.000');
 		await waitForButtonClickGuard();
 	});
 
