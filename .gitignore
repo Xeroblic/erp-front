@@ -81,3 +81,7 @@ stats.html
 opencode.json
 .opencode/
 .agents/
+.codex/
+.playwright-mcp/
+.pnpm-store/
+AGENTS.md
