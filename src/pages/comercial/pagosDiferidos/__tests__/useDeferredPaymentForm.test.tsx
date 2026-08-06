@@ -111,6 +111,7 @@ describe('useDeferredPaymentForm', () => {
 			document_number: `  ${values.document_number}  `,
 			purchase_order: '   ',
 			notes: '   ',
+			total_amount: 475976,
 			items: [{ ...values.items[0], unit_price: '2500000' }],
 		});
 
@@ -126,6 +127,7 @@ describe('useDeferredPaymentForm', () => {
 			document_number: document.document_number,
 			purchase_order: null,
 			notes: null,
+			total_amount: 475976,
 			items: [expect.objectContaining({ unit_price: 2500000 })],
 		});
 		expect(
@@ -133,17 +135,21 @@ describe('useDeferredPaymentForm', () => {
 		).toEqual([37]);
 	});
 
-	it('recalcula vencimiento y total estimado al editar el formulario', async () => {
+	it('recalcula el vencimiento sin sustituir el total oficial al editar ítems', async () => {
 		const { hook } = createHook();
 
 		await act(async () => {
-			await hook.result.current.formik.setFieldValue('issue_date', '2026-08-01');
-			await hook.result.current.formik.setFieldValue('items.0.quantity', 3);
-			await hook.result.current.formik.setFieldValue('items.0.unit_price', 2500);
+		await hook.result.current.formik.setFieldValue('issue_date', '2026-08-01');
+		await hook.result.current.formik.setFieldValue('items.0.quantity', 3);
+		await hook.result.current.formik.setFieldValue('items.0.unit_price', 2500);
+		await hook.result.current.formik.setFieldValue('total_amount', 475976);
 		});
 
 		expect(hook.result.current.formik.values.due_date).toBe('2026-08-16');
 		expect(hook.result.current.estimatedTotal).toBe(7500);
+		expect(hook.result.current.documentTotal).toBe(
+			475976,
+		);
 
 		await act(async () => {
 			await hook.result.current.actions.setDueDateManually('2026-12-31');
@@ -177,6 +183,7 @@ describe('useDeferredPaymentForm', () => {
 				...hook.result.current.formik.values,
 				customer_sale_id: 1,
 				document_number: 'FD-HOOK-001',
+				total_amount: 2500000,
 				items: [
 					{
 						client_key: 'hook-item-1',
@@ -238,6 +245,7 @@ describe('useDeferredPaymentForm', () => {
 				...hook.result.current.formik.values,
 				customer_sale_id: 1,
 				document_number: 'FD-CONTEXT-CHANGE',
+				total_amount: 1000,
 				items: [
 					{
 						client_key: 'context-item',
@@ -283,6 +291,7 @@ describe('useDeferredPaymentForm', () => {
 				...hook.result.current.formik.values,
 				customer_sale_id: 1,
 				document_number: 'FD-HOOK-ERROR',
+				total_amount: 1000,
 				items: [
 					{
 						client_key: 'hook-item-error',
@@ -324,6 +333,7 @@ describe('useDeferredPaymentForm', () => {
 				...hook.result.current.formik.values,
 				customer_sale_id: 1,
 				document_number: 'FD-DUPLICADO',
+				total_amount: 1000,
 				items: [
 					{
 						client_key: 'hook-item-duplicate',

@@ -84,14 +84,17 @@ describe('CreateEditDeferredPaymentModal', () => {
 		expect(notes).toHaveClass('bg-zinc-50', 'dark:bg-zinc-900');
 		expect(notes.style.getPropertyValue('--textarea-border')).toBe('#d4d4d8');
 		expect(screen.getByText('Ítems del documento')).toBeInTheDocument();
-		expect(screen.getByText('Total estimado')).toBeInTheDocument();
+		expect(screen.getByText('Suma referencial de ítems')).toBeInTheDocument();
+		expect(
+			screen.getByLabelText('Total del documento — debe coincidir con la factura'),
+		).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'Crear documento' })).toBeInTheDocument();
 	});
 
 	it('formatea el precio unitario en CLP y descarta caracteres no numéricos', () => {
 		renderModal();
 
-		const unitPrice = screen.getByLabelText('Precio unitario');
+		const unitPrice = screen.getByLabelText('Precio unitario (bruto, IVA incluido)');
 		fireEvent.change(unitPrice, { target: { value: '2500000' } });
 		expect(unitPrice).toHaveValue('$ 2.500.000');
 		fireEvent.change(unitPrice, { target: { value: '$ 2.500.000abc' } });
@@ -127,7 +130,7 @@ describe('CreateEditDeferredPaymentModal', () => {
 		expect(screen.getByLabelText('Código')).toBeInTheDocument();
 		expect(screen.getByLabelText('Descripción')).toBeInTheDocument();
 		expect(screen.getByLabelText('Cantidad')).toBeInTheDocument();
-		expect(screen.getByLabelText('Precio unitario')).toBeInTheDocument();
+		expect(screen.getByLabelText('Precio unitario (bruto, IVA incluido)')).toBeInTheDocument();
 		const issueDate = screen.getAllByPlaceholderText('dd-mm-aaaa')[0];
 		fireEvent.change(issueDate, { target: { value: '' } });
 
@@ -144,10 +147,12 @@ describe('CreateEditDeferredPaymentModal', () => {
 			'pt-7',
 		);
 	});
-	it('muestra el toast y marca el precio cuando el total cero es el único error', async () => {
+	it('muestra el toast y marca el total oficial cuando es cero', async () => {
 		renderModal(vi.fn(), DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0]);
-		const unitPrice = screen.getByLabelText('Precio unitario');
-		fireEvent.change(unitPrice, { target: { value: '0' } });
+		const totalAmount = screen.getByLabelText(
+			'Total del documento — debe coincidir con la factura',
+		);
+		fireEvent.change(totalAmount, { target: { value: '0' } });
 		fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 
 		expect(
@@ -159,7 +164,19 @@ describe('CreateEditDeferredPaymentModal', () => {
 				'El total del documento debe ser mayor a 0',
 			);
 		});
-		expect(unitPrice).toHaveClass('!border-red-500');
+		expect(totalAmount).toHaveClass('!border-red-500');
+	});
+	it('advierte sin bloquear cuando los ítems difieren del total oficial', () => {
+		renderModal(vi.fn(), DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0]);
+		fireEvent.change(
+			screen.getByLabelText('Total del documento — debe coincidir con la factura'),
+			{ target: { value: '475976' } },
+		);
+
+		expect(
+			screen.getByText(/La suma de los ítems no coincide con el total del documento/),
+		).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeEnabled();
 	});
 
 	it('permite agregar y quitar seriales del ítem', async () => {

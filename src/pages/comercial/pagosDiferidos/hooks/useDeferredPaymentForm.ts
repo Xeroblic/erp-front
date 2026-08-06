@@ -64,6 +64,7 @@ export const mapDeferredPaymentDocumentToForm = (
 	document_number: deferredPaymentDocument.document_number,
 	issue_date: deferredPaymentDocument.issue_date,
 	due_date: deferredPaymentDocument.due_date,
+	total_amount: Number(deferredPaymentDocument.total_amount),
 	purchase_order: deferredPaymentDocument.purchase_order ?? null,
 	notes: deferredPaymentDocument.notes ?? null,
 	assignee_ids: deferredPaymentDocument.assignees.map((assignee) => assignee.id),
@@ -92,6 +93,7 @@ export const mapDeferredPaymentFormToPayload = (
 				? [currentUserId]
 				: values.assignee_ids,
 		document_number: values.document_number.trim(),
+		total_amount: Number(values.total_amount),
 		purchase_order: values.purchase_order?.trim() || null,
 		notes: values.notes?.trim() || null,
 		items: values.items.map((item) => ({
@@ -319,6 +321,7 @@ const useDeferredPaymentForm = ({
 	return {
 		formik,
 		estimatedTotal: calculateDeferredPaymentEstimatedTotal(formik.values.items),
+		documentTotal: Number(formik.values.total_amount),
 		isSubmitting: formik.isSubmitting || creating || updating,
 		isPaidEdit,
 		hasDataContext: effectiveSubsidiaryId !== null,

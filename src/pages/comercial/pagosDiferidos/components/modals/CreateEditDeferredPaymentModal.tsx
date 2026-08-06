@@ -138,7 +138,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const latestSubsidiaryIdRef = useRef(subsidiaryId);
 	latestSubsidiaryIdRef.current = subsidiaryId;
 	const mode = deferredPaymentDocument ? 'edit' : 'create';
-	const { formik, estimatedTotal, isSubmitting, isPaidEdit, actions } = useDeferredPaymentForm({
+	const { formik, estimatedTotal, documentTotal, isSubmitting, isPaidEdit, actions } = useDeferredPaymentForm({
 		mode,
 		deferredPaymentDocument,
 		paymentTermDays,
@@ -340,6 +340,10 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		formik.setFieldTouched(field, true, false).catch(() => undefined);
 		formik.setFieldValue(field, toCLPAmount(value)).catch(() => undefined);
 	};
+	const handleDocumentTotalChange = (value: string) => {
+		formik.setFieldTouched('total_amount', true, false).catch(() => undefined);
+		formik.setFieldValue('total_amount', toCLPAmount(value)).catch(() => undefined);
+	};
 	const assigneeOptions = useMemo<TSelectOption[]>(() => {
 		const remoteOptions = users
 			.filter((user) => user.is_active)
@@ -373,6 +377,12 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		formik.values.assignee_ids.includes(Number(option.value)),
 	);
 	const itemErrors = typeof formik.errors.items === 'string' ? formik.errors.items : undefined;
+	const totalAmountError =
+		formik.touched.total_amount && typeof formik.errors.total_amount === 'string'
+			? formik.errors.total_amount
+			: undefined;
+	const itemTotalDiffersFromDocumentTotal =
+		Number.isFinite(documentTotal) && documentTotal > 0 && estimatedTotal !== documentTotal;
 	const hasSelectedCustomer = formik.values.customer_sale_id !== null;
 	const requiresCreditSummary =
 		creditProfile?.id !== null &&
@@ -397,7 +407,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		creditProfile.id !== null &&
 		creditProfile.is_active &&
 		creditProfile.credit_limit !== null &&
-		outstandingAmount + estimatedTotal > Number(creditProfile.credit_limit);
+		outstandingAmount + documentTotal > Number(creditProfile.credit_limit);
 	const isCreditProfileBlockingCreation =
 		isCreditProfileSuspended || isCreditProfileUnavailable || exceedsCreditLimit;
 	const hasCreatedCreditProfile = creditProfile !== null && creditProfile.id !== null;
@@ -490,7 +500,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 							.validateForm()
 							.then((errors) => {
 								if (
-									estimatedTotal <= 0 &&
+									documentTotal <= 0 &&
 									!hasValidationErrorOtherThan(
 										errors,
 										DEFERRED_PAYMENT_TOTAL_ERROR,
@@ -525,7 +535,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 
 						{exceedsCreditLimit && creditProfile?.credit_limit && (
 							<Alert color='red' variant='outline' icon='HeroExclamationTriangle'>
-								El total estimado del documento ({formatCLP(estimatedTotal)}) más el
+								El total del documento ({formatCLP(documentTotal)}) más el
 								saldo pendiente del cliente ({formatCLP(outstandingAmount)}) supera
 								el cupo de crédito disponible (
 								{formatCLP(creditProfile.credit_limit)}). Reduce el monto o aumenta
@@ -905,7 +915,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 														hiddenErrorMessage={
 															DEFERRED_PAYMENT_TOTAL_ERROR
 														}
-														label='Precio unitario'
+										label='Precio unitario (bruto, IVA incluido)'
 														className='md:col-span-2'>
 														{({ error, isTouched, isValid }) => (
 															<Input
@@ -986,14 +996,43 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 									)}
 								</FieldArray>
 								{itemErrors && <p className='text-sm text-red-600'>{itemErrors}</p>}
-								<div className='flex justify-end border-t border-zinc-200 pt-4 dark:border-zinc-700'>
-									<div className='text-right'>
-										<p className='text-sm text-zinc-500'>Total estimado</p>
-										<p className='text-2xl font-bold'>
-											{formatCLP(estimatedTotal)}
-										</p>
+								<div className='grid gap-4 border-t border-zinc-200 pt-4 dark:border-zinc-700 md:grid-cols-2'>
+									<div>
+										<p className='text-sm text-zinc-500'>Suma referencial de ítems</p>
+										<p className='text-2xl font-bold'>{formatCLP(estimatedTotal)}</p>
 									</div>
+									<DeferredPaymentField
+										name='total_amount'
+										label='Total del documento — debe coincidir con la factura'
+										className='md:col-span-1'>
+										{() => (
+											<Input
+												id='total_amount'
+												name='total_amount'
+												type='text'
+												inputMode='numeric'
+												placeholder='$ 0'
+												value={
+													formik.values.total_amount === ''
+														? ''
+														: formatCLP(formik.values.total_amount)
+												}
+												onChange={(event) => handleDocumentTotalChange(event.target.value)}
+												onBlur={formik.handleBlur}
+												disabled={isPaidEdit}
+												isTouched={formik.touched.total_amount}
+												isValid={!totalAmountError}
+												invalidFeedback={totalAmountError}
+											/>
+										)}
+									</DeferredPaymentField>
 								</div>
+								{itemTotalDiffersFromDocumentTotal && (
+									<Alert color='amber' variant='outline' icon='HeroExclamationTriangle'>
+										La suma de los ítems no coincide con el total del documento. Verifica la factura;
+										la diferencia puede corresponder a descuentos o despacho.
+									</Alert>
+								)}
 							</CardBody>
 						</Card>
 					</ModalBody>

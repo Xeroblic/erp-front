@@ -10,6 +10,7 @@ const validValues = {
 	customer_sale_id: 15,
 	document_number: 'FD-TEST-001',
 	due_date: '2026-08-27',
+	total_amount: 300000,
 	items: [
 		{
 			client_key: 'test-item-1',
@@ -66,6 +67,7 @@ describe('ZF-7 formulario de pago diferido', () => {
 			...values,
 			customer_sale_id: 1,
 			document_number: 'FD-SIN-OC',
+			total_amount: 1000,
 			items: [
 				{
 					...values.items[0],
@@ -111,14 +113,11 @@ describe('ZF-7 formulario de pago diferido', () => {
 		).rejects.toThrow('items[0].serials must be defined');
 	});
 
-	it('permite ítems gratuitos cuando el total del documento es positivo', async () => {
+	it('permite ítems con precio cero cuando el total oficial del documento es positivo', async () => {
 		await expect(
 			DeferredPaymentDocumentSchema.validate({
 				...validValues,
-				items: [
-					{ ...validValues.items[0], unit_price: 0 },
-					{ ...validValues.items[0], client_key: 'test-item-2', unit_price: 1000 },
-				],
+				items: [{ ...validValues.items[0], unit_price: 0 }],
 			}),
 		).resolves.toBeDefined();
 	});
@@ -134,11 +133,11 @@ describe('ZF-7 formulario de pago diferido', () => {
 			}),
 		).rejects.toThrow('El precio unitario no puede ser negativo');
 	});
-	it('explica en español cuando el total completo es cero', async () => {
+	it('explica en español cuando el total oficial del documento es cero', async () => {
 		await expect(
 			DeferredPaymentDocumentSchema.validate({
 				...validValues,
-				items: [{ ...validValues.items[0], unit_price: 0 }],
+				total_amount: 0,
 			}),
 		).rejects.toThrow('El total del documento debe ser mayor a 0');
 	});
