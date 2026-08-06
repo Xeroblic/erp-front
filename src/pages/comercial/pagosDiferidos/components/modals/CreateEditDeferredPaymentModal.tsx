@@ -674,9 +674,15 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 											scope='access'
 											type='button'
 											variant='outline'
-											icon={hasCreatedCreditProfile ? 'HeroPencilSquare' : 'HeroPlus'}
+											icon={
+												hasCreatedCreditProfile
+													? 'HeroPencilSquare'
+													: 'HeroPlus'
+											}
 											onClick={() => setIsCreditProfileCreatorOpen(true)}>
-											{hasCreatedCreditProfile ? 'Editar perfil' : 'Crear perfil'}
+											{hasCreatedCreditProfile
+												? 'Editar perfil'
+												: 'Crear perfil'}
 										</ProtectedButton>
 									)}
 							</CardHeader>
@@ -930,7 +936,9 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 				size='lg'
 				isStaticBackdrop>
 				<ModalHeader>
-					{hasCreatedCreditProfile ? 'Editar perfil de crédito' : 'Crear perfil de crédito'}
+					{hasCreatedCreditProfile
+						? 'Editar perfil de crédito'
+						: 'Crear perfil de crédito'}
 				</ModalHeader>
 				<ModalBody>
 					{formik.values.customer_sale_id !== null && (

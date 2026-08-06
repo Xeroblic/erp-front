@@ -16,14 +16,28 @@ import { useClientesVentasDetalle } from './hooks/useClientesVentasDetalle';
 
 const DetailSkeleton = () => (
 	<Container className='animate-pulse space-y-8 py-8'>
-		<div className='flex justify-between items-center h-20 bg-zinc-100 dark:bg-zinc-800 rounded-lg' />
-		<div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-			<div className='h-64 bg-zinc-100 dark:bg-zinc-800 rounded-lg' />
-			<div className='h-64 bg-zinc-100 dark:bg-zinc-800 rounded-lg' />
+		<div className='flex h-20 items-center justify-between rounded-lg bg-zinc-100 dark:bg-zinc-800' />
+		<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+			<div className='h-64 rounded-lg bg-zinc-100 dark:bg-zinc-800' />
+			<div className='h-64 rounded-lg bg-zinc-100 dark:bg-zinc-800' />
 		</div>
-		<div className='h-40 bg-zinc-100 dark:bg-zinc-800 rounded-lg' />
+		<div className='h-40 rounded-lg bg-zinc-100 dark:bg-zinc-800' />
 	</Container>
 );
+
+const CUSTOMER_DETAIL_TEXT_FIELD_NAMES = new Set([
+	'document_number',
+	'billing_company',
+	'contact_name',
+	'email',
+	'phone',
+	'trade_activity',
+	'billing_address_1',
+	'billing_city',
+	'billing_postcode',
+	'shipping_address_1',
+	'shipping_city',
+]);
 
 const ClientesVentasDetalleView = () => {
 	const {
@@ -50,7 +64,7 @@ const ClientesVentasDetalleView = () => {
 					duration: 1,
 					stagger: {
 						each: 0.2,
-						from: 'start'
+						from: 'start',
 					},
 					ease: 'expo.out',
 				});
@@ -76,7 +90,7 @@ const ClientesVentasDetalleView = () => {
 			boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
 			borderColor: 'var(--color-primary-300)',
 			duration: 0.4,
-			ease: 'power3.out'
+			ease: 'power3.out',
 		});
 	};
 
@@ -87,7 +101,7 @@ const ClientesVentasDetalleView = () => {
 			boxShadow: 'none',
 			borderColor: 'rgba(228, 228, 231, 0.5)', // zinc-200/50
 			duration: 0.4,
-			ease: 'power3.inOut'
+			ease: 'power3.inOut',
 		});
 	};
 
@@ -135,6 +149,18 @@ const ClientesVentasDetalleView = () => {
 			cardsRef.current.push(el);
 		}
 	};
+	const handleCustomerFormKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+		if (
+			!isEditable ||
+			event.key !== 'Enter' ||
+			event.shiftKey ||
+			!(event.target instanceof HTMLInputElement) ||
+			!CUSTOMER_DETAIL_TEXT_FIELD_NAMES.has(event.target.name)
+		)
+			return;
+		event.preventDefault();
+		formik.submitForm().catch(() => undefined);
+	};
 
 	return (
 		<PageWrapper title='Detalle cliente' name='Detalle cliente'>
@@ -149,18 +175,21 @@ const ClientesVentasDetalleView = () => {
 				isSubmitting={formik.isSubmitting}
 			/>
 
-			<Container className='pb-20 pt-8' ref={containerRef}>
+			<Container
+				className='pb-20 pt-8'
+				ref={containerRef}
+				onKeyDown={handleCustomerFormKeyDown}>
 				<div className='space-y-6'>
 					<div className='grid grid-cols-1 gap-6 lg:grid-cols-12'>
 						{/* Columna Principal - Info General */}
-						<div className='lg:col-span-8 space-y-6' ref={addToRefs} >
-							<Card className='h-full border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all overflow-hidden'>
+						<div className='space-y-6 lg:col-span-8' ref={addToRefs}>
+							<Card className='h-full overflow-hidden border-zinc-200/50 shadow-sm transition-all dark:border-zinc-700/50'>
 								<CardBody>
 									<DetailSection
 										title='Información General'
 										description='Datos base y estado operacional'
 										contenRight={
-											<div className='flex items-center gap-3 detail-content-item'>
+											<div className='detail-content-item flex items-center gap-3'>
 												{isEditable ? (
 													<Checkbox
 														checked={formik.values.is_active}
@@ -174,19 +203,25 @@ const ClientesVentasDetalleView = () => {
 													/>
 												) : (
 													<div className='flex items-center gap-2'>
-														<span className='text-xs text-zinc-400 font-medium uppercase'>Estado</span>
+														<span className='text-xs font-medium uppercase text-zinc-400'>
+															Estado
+														</span>
 														<Badge
 															variant='solid'
 															className='px-3'
-															color={detalle.is_active ? 'green' : 'red'}>
-															{detalle.is_active ? 'Activo' : 'Inactivo'}
+															color={
+																detalle.is_active ? 'green' : 'red'
+															}>
+															{detalle.is_active
+																? 'Activo'
+																: 'Inactivo'}
 														</Badge>
 													</div>
 												)}
 											</div>
 										}>
-										<div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-											<div className="detail-content-item">
+										<div className='grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2'>
+											<div className='detail-content-item'>
 												<EditableField
 													formik={formik}
 													name='document_number'
@@ -194,11 +229,14 @@ const ClientesVentasDetalleView = () => {
 													isEditable={isEditable}
 													placeholder='12.345.678-9'
 													onChangeValue={(v) =>
-														formik.setFieldValue('document_number', formatRut(v))
+														formik.setFieldValue(
+															'document_number',
+															formatRut(v),
+														)
 													}
 												/>
 											</div>
-											<div className="detail-content-item">
+											<div className='detail-content-item'>
 												<EditableField
 													formik={formik}
 													name='billing_company'
@@ -207,7 +245,7 @@ const ClientesVentasDetalleView = () => {
 													placeholder='Nombre de la empresa'
 												/>
 											</div>
-											<div className="detail-content-item">
+											<div className='detail-content-item'>
 												<EditableField
 													formik={formik}
 													name='contact_name'
@@ -216,7 +254,7 @@ const ClientesVentasDetalleView = () => {
 													placeholder='Nombre contacto'
 												/>
 											</div>
-											<div className="detail-content-item">
+											<div className='detail-content-item'>
 												<EditableField
 													formik={formik}
 													name='email'
@@ -225,7 +263,7 @@ const ClientesVentasDetalleView = () => {
 													placeholder='ejemplo@correo.cl'
 												/>
 											</div>
-											<div className="detail-content-item">
+											<div className='detail-content-item'>
 												<EditableField
 													formik={formik}
 													name='phone'
@@ -234,7 +272,7 @@ const ClientesVentasDetalleView = () => {
 													placeholder='+56 9 ...'
 												/>
 											</div>
-											<div className="detail-content-item">
+											<div className='detail-content-item'>
 												<EditableField
 													formik={formik}
 													name='trade_activity'
@@ -249,14 +287,14 @@ const ClientesVentasDetalleView = () => {
 						</div>
 
 						{/* Columna Lateral - Comercial */}
-						<div className='lg:col-span-4' ref={addToRefs} >
-							<Card className='h-full border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all overflow-hidden'>
+						<div className='lg:col-span-4' ref={addToRefs}>
+							<Card className='h-full overflow-hidden border-zinc-200/50 shadow-sm transition-all dark:border-zinc-700/50'>
 								<CardBody>
 									<DetailSection
 										title='Comercial'
 										description='Preferencias de facturación'
 										contentClassName='grid grid-cols-1 gap-4'>
-										<div className="detail-content-item">
+										<div className='detail-content-item'>
 											<EditableSelect
 												formik={formik}
 												name='default_document_type'
@@ -265,7 +303,7 @@ const ClientesVentasDetalleView = () => {
 												options={defaultDocumentOptions}
 											/>
 										</div>
-										<div className="detail-content-item">
+										<div className='detail-content-item'>
 											<EditableSelect
 												formik={formik}
 												name='preferred_payment_method'
@@ -280,13 +318,13 @@ const ClientesVentasDetalleView = () => {
 						</div>
 
 						{/* Direcciones */}
-						<div className='lg:col-span-6' ref={addToRefs} >
-							<Card className='border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all overflow-hidden'>
+						<div className='lg:col-span-6' ref={addToRefs}>
+							<Card className='overflow-hidden border-zinc-200/50 shadow-sm transition-all dark:border-zinc-700/50'>
 								<CardBody>
 									<DetailSection
 										title='Dirección de Facturación'
 										contentClassName='grid grid-cols-1 gap-4'>
-										<div className="detail-content-item">
+										<div className='detail-content-item'>
 											<EditableField
 												formik={formik}
 												name='billing_address_1'
@@ -295,7 +333,7 @@ const ClientesVentasDetalleView = () => {
 											/>
 										</div>
 										<div className='grid grid-cols-2 gap-4'>
-											<div className="detail-content-item">
+											<div className='detail-content-item'>
 												<EditableField
 													formik={formik}
 													name='billing_city'
@@ -303,7 +341,7 @@ const ClientesVentasDetalleView = () => {
 													isEditable={isEditable}
 												/>
 											</div>
-											<div className="detail-content-item">
+											<div className='detail-content-item'>
 												<EditableField
 													formik={formik}
 													name='billing_postcode'
@@ -317,13 +355,13 @@ const ClientesVentasDetalleView = () => {
 							</Card>
 						</div>
 
-						<div className='lg:col-span-6' ref={addToRefs} >
-							<Card className='border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all overflow-hidden'>
+						<div className='lg:col-span-6' ref={addToRefs}>
+							<Card className='overflow-hidden border-zinc-200/50 shadow-sm transition-all dark:border-zinc-700/50'>
 								<CardBody>
 									<DetailSection
 										title='Dirección de Despacho'
 										contentClassName='grid grid-cols-1 gap-4'>
-										<div className="detail-content-item">
+										<div className='detail-content-item'>
 											<EditableField
 												formik={formik}
 												name='shipping_address_1'
@@ -331,7 +369,7 @@ const ClientesVentasDetalleView = () => {
 												isEditable={isEditable}
 											/>
 										</div>
-										<div className="detail-content-item">
+										<div className='detail-content-item'>
 											<EditableField
 												formik={formik}
 												name='shipping_city'
@@ -344,19 +382,19 @@ const ClientesVentasDetalleView = () => {
 							</Card>
 						</div>
 
-						<div className='lg:col-span-4 h-full' ref={addToRefs}>
+						<div className='h-full lg:col-span-4' ref={addToRefs}>
 							<CustomerCreditProfileCard customerSaleId={detalle.id} />
 						</div>
 
 						{/* Notas */}
-						<div className='lg:col-span-8 h-full' ref={addToRefs} >
-							<Card className='h-full border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all overflow-hidden'>
+						<div className='h-full lg:col-span-8' ref={addToRefs}>
+							<Card className='h-full overflow-hidden border-zinc-200/50 shadow-sm transition-all dark:border-zinc-700/50'>
 								<CardBody>
 									<DetailSection
 										title='Notas internas'
 										description='Observaciones relevantes'
 										contentClassName='grid grid-cols-1'>
-										<div className="detail-content-item">
+										<div className='detail-content-item'>
 											<EditableField
 												formik={formik}
 												name='notes'
