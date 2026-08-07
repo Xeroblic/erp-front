@@ -124,6 +124,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const customersLoading = useAppSelector((state) => state.customerSales.loading);
 	const users = useAppSelector((state) => state.usersAdmin.users);
 	const usersLoading = useAppSelector((state) => state.usersAdmin.loading.users);
+	const currentUser = useAppSelector((state) => state.auth?.user);
 	const { subsidiaryId } = useCurrentBranch();
 	const [paymentTermDays, setPaymentTermDays] = useState(30);
 	const [customerSearch, setCustomerSearch] = useState('');
@@ -393,6 +394,18 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		formik.setFieldValue('total_amount', toCLPAmount(value)).catch(() => undefined);
 	};
 	const assigneeOptions = useMemo<TSelectOption[]>(() => {
+		const currentUserName = [currentUser?.first_name, currentUser?.last_name]
+			.filter((value): value is string => Boolean(value?.trim()))
+			.join(' ');
+		const currentUserOption =
+			currentUser && Number.isFinite(currentUser.id)
+				? {
+						value: String(currentUser.id),
+						label: currentUserName
+							? `${currentUserName} · ${currentUser.email}`
+							: currentUser.email,
+					}
+				: null;
 		const remoteOptions = users
 			.filter((user) => user.is_active)
 			.map((user) => ({
@@ -411,10 +424,14 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 				: [];
 		return Array.from(
 			new Map(
-				[...editedOptions, ...remoteOptions].map((option) => [option.value, option]),
+				[
+					...editedOptions,
+					...(currentUserOption ? [currentUserOption] : []),
+					...remoteOptions,
+				].map((option) => [option.value, option]),
 			).values(),
 		);
-	}, [deferredPaymentDocument, mode, users]);
+	}, [currentUser, deferredPaymentDocument, mode, users]);
 	const selectedCustomer = customerData.find(
 		(customer) => customer.id === formik.values.customer_sale_id,
 	);
@@ -562,14 +579,16 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 				setEditingCustomer(customer);
 				setIsEditCustomerOpen(true);
 			})
-			.catch(() => {
+			.catch((error: unknown) => {
 				if (
 					requestId === customerDetailRequestIdRef.current &&
 					latestSubsidiaryIdRef.current === requestSubsidiaryId &&
 					latestCustomerSaleIdRef.current === requestCustomerSaleId &&
 					latestIsOpenRef.current
 				)
-					toast.error('No se pudo cargar el cliente');
+					toast.error(
+						getDeferredPaymentErrorMessage(error, 'No se pudo cargar el cliente'),
+					);
 			})
 			.finally(() => {
 				if (requestId === customerDetailRequestIdRef.current) {
@@ -630,12 +649,11 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 								<CardTitle className='text-lg'>Datos del documento</CardTitle>
 							</CardHeader>
 							<CardBody className='grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2 lg:grid-cols-3'>
-								<div className='md:col-span-2 lg:col-span-1'>
-									<div className='mb-2 flex items-center justify-between gap-2'>
-										<Label htmlFor='customer_sale_id' className='mb-0 w-auto'>
-											Cliente
-										</Label>
-										<div className='flex items-center gap-1'>
+								<DeferredPaymentField
+									name='customer_sale_id'
+									label='Cliente'
+									labelAction={
+										<>
 											{hasSelectedCustomer && (
 												<ProtectedButton
 													permission={
@@ -665,9 +683,9 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 												aria-label='Crear cliente'
 												onClick={() => setIsCreateCustomerOpen(true)}
 											/>
-										</div>
-									</div>
-									<DeferredPaymentField name='customer_sale_id'>
+										</>
+									}
+									className='md:col-span-2 lg:col-span-1'>
 										{({ error, isTouched, isValid }) => (
 											<SelectReact
 												name='customer_sale_id'
@@ -728,7 +746,6 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 											/>
 										)}
 									</DeferredPaymentField>
-								</div>
 								<DeferredPaymentField name='document_type' label='Tipo'>
 									{({ error, isTouched, isValid }) => (
 										<SelectReact
@@ -832,29 +849,30 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 										/>
 									)}
 								</DeferredPaymentField>
-								<div>
-									<Label htmlFor='assignee_ids'>Responsables</Label>
-									<SelectReact
-										name='assignee_ids'
-										inputId='assignee_ids'
-										isMulti
-										options={assigneeOptions}
-										value={assigneeValue}
-										isLoading={usersLoading}
-										isDisabled={isPaidEdit}
-										placeholder='Selecciona responsables'
-										onChange={(value) =>
-											formik
-												.setFieldValue(
-													'assignee_ids',
-													asMultiOptions(value).map((option) =>
-														Number(option.value),
-													),
-												)
-												.catch(() => undefined)
-										}
-									/>
-								</div>
+								<DeferredPaymentField name='assignee_ids' label='Responsables'>
+									{() => (
+										<SelectReact
+											name='assignee_ids'
+											inputId='assignee_ids'
+											isMulti
+											options={assigneeOptions}
+											value={assigneeValue}
+											isLoading={usersLoading}
+											isDisabled={isPaidEdit}
+											placeholder='Selecciona responsables'
+											onChange={(value) =>
+												formik
+													.setFieldValue(
+														'assignee_ids',
+														asMultiOptions(value).map((option) =>
+															Number(option.value),
+														),
+													)
+													.catch(() => undefined)
+											}
+										/>
+									)}
+								</DeferredPaymentField>
 								<DeferredPaymentField
 									name='notes'
 									label='Notas (opcional)'
@@ -1215,10 +1233,16 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 					)}
 				</ModalBody>
 			</Modal>
+			{/*
+			 * `refreshStoreOnSuccess={false}`: el overview lo administra la búsqueda de
+			 * este modal (per_page 100 + q). Un refetch con los parámetros por defecto
+			 * la reduciría a los 5 clientes más recientes y vaciaría el select.
+			 */}
 			<CreateCustomerSaleModal
 				isOpen={isCreateCustomerOpen}
 				setIsOpen={setIsCreateCustomerOpen}
 				subsidiaryId={subsidiaryId}
+				refreshStoreOnSuccess={false}
 				onSuccess={handleCustomerCreated}
 			/>
 			<CreateCustomerSaleModal
@@ -1227,6 +1251,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 				subsidiaryId={subsidiaryId}
 				isEdit
 				initialData={editingCustomer}
+				refreshStoreOnSuccess={false}
 				onSuccess={handleCustomerUpdated}
 			/>
 		</Modal>
