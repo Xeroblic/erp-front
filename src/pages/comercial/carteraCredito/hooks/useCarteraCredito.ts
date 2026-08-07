@@ -9,7 +9,7 @@ import type {
 import deferredPaymentsService from '@/services/deferredPaymentsService';
 import type { CreditProfileStatusFilter } from '../types';
 
-const DEFAULT_FILTERS: DeferredPaymentCreditProfilesFilters = { page: 1, per_page: 20 };
+const DEFAULT_FILTERS: DeferredPaymentCreditProfilesFilters = { page: 1, per_page: 10 };
 
 const getErrorMessage = (error: unknown): string => {
 	if (error !== null && typeof error === 'object' && 'response' in error) {
@@ -98,6 +98,11 @@ const useCarteraCredito = () => {
 	const updatePagination = useCallback((page: number, perPage: number) => {
 		setFilters((current) => ({ ...current, page, per_page: perPage }));
 	}, []);
+	const resetFilters = useCallback(() => {
+		setFilters(DEFAULT_FILTERS);
+		setStatus('all');
+		setSearch('');
+	}, []);
 
 	return {
 		data: { rows, meta },
@@ -109,6 +114,7 @@ const useCarteraCredito = () => {
 			setSearch: updateSearch,
 			setStatus: updateStatus,
 			setPagination: updatePagination,
+			reset: resetFilters,
 		},
 		actions: { retry: () => load(), refresh: () => load() },
 		branch: { branchId, subsidiaryId },

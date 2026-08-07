@@ -12,23 +12,25 @@ Incorpora la cartera de crédito por subsidiaria para Cuentas por Cobrar. La vis
 - Agrega el contrato y servicio de `GET /subsidiaries/{subsidiary}/credit-profiles` con caché por filial.
 - Expone ruta y navegación por `view-deferred-payment`, sin restringir por nombre de rol; Cobranza queda habilitada mediante su permiso.
 - Muestra cupo, usado, disponible, plazo y estado; resalta los cupos excedidos y distingue suspendido de sin techo.
-- Enlaza al detalle del cliente y a Pagos diferidos filtrado por `customer_sale_id`.
+- Enlaza al detalle del cliente y abre Pagos diferidos con su nombre en la búsqueda.
 - Reutiliza el PUT de perfil con gate `edit-deferred-payment` y scope contextual.
 - Invalida la cartera tras cambios de perfil, documentos o abonos para no mostrar saldos en caché.
+- Homologa filtros, paginación, acciones y estados visuales con Pagos diferidos; la cartera inicia con 10 filas y resalta saldos negativos.
+- Presenta el cupo en CLP redondeado a pesos, sin perder centavos existentes al abrir y guardar sin editar.
 
 ## Validación
 
 - `node_modules/.bin/tsc.cmd --noEmit`
-- `node_modules/.bin/vitest.cmd run src/services/__tests__/deferredPaymentsService.test.ts` — 7 pruebas aprobadas.
-- `git diff --check origin/feat/pagos-diferidos...HEAD`
-- ESLint del módulo nuevo aprobado al excluir la regla histórica `import/extensions`; el lint normal sigue bloqueado por deuda preexistente de CRLF/imports.
+- `node_modules/.bin/vitest.cmd run src/services/__tests__/deferredPaymentsService.test.ts src/pages/comercial/pagosDiferidos/__tests__/usePagosDiferidos.test.tsx` — 18 pruebas aprobadas.
+- `git diff --check origin/feat/pagos-diferidos`
+- ESLint del alcance nuevo/modificado aprobado al excluir las reglas históricas `prettier/prettier` e `import/extensions`; el lint normal sigue bloqueado por deuda preexistente de CRLF/imports y errores fuera del módulo.
 
 ## Revisión
 
-Revisión defect-first del rango completo contra `origin/feat/pagos-diferidos`: sin hallazgos abiertos. Se corrigió durante la revisión la invalidación de caché de cartera tras mutaciones de documentos y cobros.
+Revisión defect-first del rango completo contra `origin/feat/pagos-diferidos`: sin hallazgos abiertos. Se corrigió durante la revisión la invalidación de caché, la serialización residual de `customer_sale_id`, la búsqueda de clientes sin razón social y la preservación de centavos del cupo.
 
 ## Pendientes manuales
 
 - Smoke con rol `credit-collections` y alcance válido sobre una subsidiaria.
 - Confirmar el mensaje 403 para una subsidiaria fuera de alcance.
-- Ejercitar visualmente búsqueda, paginación, edición y los estados suspendido/sin techo/sobregirado.
+- Ejercitar visualmente búsqueda por texto al abrir documentos, paginación, edición y los estados suspendido/sin techo/sobregirado.

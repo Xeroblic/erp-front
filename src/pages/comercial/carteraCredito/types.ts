@@ -28,8 +28,8 @@ export const CreditProfileSchema = Yup.object({
 		.trim()
 		.test(
 			'credit-limit',
-			'El cupo de crédito debe contener solo números enteros de hasta 13 dígitos',
-			(value) => !value || /^\d{1,13}$/.test(value),
+			'El cupo de crédito debe tener hasta 13 dígitos enteros y 2 decimales',
+			(value) => !value || /^\d{1,13}(?:\.\d{1,2})?$/.test(value),
 		),
 	notes: Yup.string().trim(),
 });
@@ -39,6 +39,6 @@ export const toCreditProfileFormValues = (
 ): CreditProfileFormValues => ({
 	is_active: profile.is_active,
 	payment_term_days: String(profile.payment_term_days),
-	credit_limit: profile.credit_limit ?? '',
+	credit_limit: profile.credit_limit?.trim() ?? '',
 	notes: profile.notes ?? '',
 });

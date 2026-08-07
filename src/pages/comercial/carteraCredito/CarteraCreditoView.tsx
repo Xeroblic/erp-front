@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from 'react';
+import type { PaginationState } from '@tanstack/react-table';
 import { useNavigate } from 'react-router-dom';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
@@ -7,11 +8,14 @@ import Container from '@/components/layouts/Container/Container';
 import Icon from '@/components/icon/Icon';
 import Input from '@/components/form/Input';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
-import Pagination from '@/components/ui/Pagination';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import SelectReact, { type TSelectOption } from '@/components/form/SelectReact';
 import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subheader';
 import Table, { TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
+import Tooltip from '@/components/ui/Tooltip';
+import TableCardFooterTemplateV2, {
+	type TablePaginationController,
+} from '@/templates/Table/TableFooterTemplateV2';
 import type { IDeferredPaymentCreditProfileListItem } from '@/interface/deferredPayments.interface';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 import { formatDeferredPaymentAmount } from '@/pages/comercial/pagosDiferidos/utils';
@@ -24,15 +28,14 @@ const statusOptions: TSelectOption[] = [
 	{ value: 'active', label: 'Vigentes' },
 	{ value: 'suspended', label: 'Suspendidos' },
 ];
-const perPageOptions: TSelectOption[] = [
-	{ value: '20', label: '20 por página' },
-	{ value: '50', label: '50 por página' },
-	{ value: '100', label: '100 por página' },
-];
 const getCustomerName = (row: IDeferredPaymentCreditProfileListItem): string =>
 	row.customer?.billing_company ?? row.customer?.contact_name ?? 'Cliente sin nombre';
+const getCustomerSearchText = (row: IDeferredPaymentCreditProfileListItem): string =>
+	row.customer?.billing_company ?? row.customer?.rut ?? getCustomerName(row);
 const formatAmount = (amount: string | null): string =>
 	amount === null ? '—' : formatDeferredPaymentAmount(amount);
+const getAmountColorClass = (amount: string | null): string =>
+	amount?.trim().startsWith('-') ? 'text-red-600 dark:text-red-400' : '';
 const getSelectValue = (option: unknown, fallback: string): string =>
 	option !== null &&
 	typeof option === 'object' &&
@@ -42,6 +45,42 @@ const getSelectValue = (option: unknown, fallback: string): string =>
 		? option.value
 		: fallback;
 
+interface CreditPortfolioPaginationProps {
+	meta: NonNullable<ReturnType<typeof useCarteraCredito>['data']['meta']>;
+	loading: boolean;
+	onChange: (page: number, perPage: number) => void;
+}
+
+const CreditPortfolioPagination: React.FC<CreditPortfolioPaginationProps> = ({
+	meta,
+	loading,
+	onChange,
+}) => {
+	const pagination: PaginationState = {
+		pageIndex: meta.current_page - 1,
+		pageSize: meta.per_page,
+	};
+	const table: TablePaginationController = {
+		getState: () => ({ pagination }),
+		setPageSize: (updater) => {
+			const pageSize = typeof updater === 'function' ? updater(pagination.pageSize) : updater;
+			onChange(1, pageSize);
+		},
+		setPageIndex: (updater) => {
+			const pageIndex =
+				typeof updater === 'function' ? updater(pagination.pageIndex) : updater;
+			onChange(pageIndex + 1, pagination.pageSize);
+		},
+		getCanPreviousPage: () => pagination.pageIndex > 0,
+		previousPage: () => onChange(Math.max(1, meta.current_page - 1), pagination.pageSize),
+		getPageCount: () => meta.last_page,
+		getCanNextPage: () => meta.current_page < meta.last_page,
+		nextPage: () => onChange(meta.current_page + 1, pagination.pageSize),
+	};
+
+	return <TableCardFooterTemplateV2 table={table} isDisabled={loading} />;
+};
+
 const CarteraCreditoView: React.FC = () => {
 	const { data, state, filters, actions, branch } = useCarteraCredito();
 	const navigate = useNavigate();
@@ -49,16 +88,15 @@ const CarteraCreditoView: React.FC = () => {
 		useState<IDeferredPaymentCreditProfileListItem | null>(null);
 	const selectedStatus =
 		statusOptions.find((option) => option.value === filters.status) ?? statusOptions[0];
-	const selectedPerPage =
-		perPageOptions.find((option) => option.value === String(filters.values.per_page)) ??
-		perPageOptions[0];
 	const openCustomer = useCallback(
 		(customerSaleId: number) => navigate(`/comercial/clientes-ventas/${customerSaleId}`),
 		[navigate],
 	);
 	const openDocuments = useCallback(
-		(customerSaleId: number) =>
-			navigate(`/comercial/pagos-diferidos?customer_sale_id=${customerSaleId}`),
+		(customerName: string) =>
+			navigate('/comercial/pagos-diferidos', {
+				state: { customerName },
+			}),
 		[navigate],
 	);
 
@@ -88,9 +126,16 @@ const CarteraCreditoView: React.FC = () => {
 									<Icon icon='DuoFilter' size='text-xl' />
 									<CardTitle className='text-lg'>Filtros</CardTitle>
 								</div>
+								<Button
+									variant='outline'
+									size='sm'
+									icon='HeroXMark'
+									onClick={filters.reset}>
+									Limpiar
+								</Button>
 							</CardHeader>
 							<CardBody>
-								<div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
+								<div className='grid grid-cols-1 gap-4 rounded-lg bg-zinc-50/80 p-4 dark:bg-zinc-900/30 md:grid-cols-3'>
 									<div className='md:col-span-2'>
 										<label
 											htmlFor='credit-profile-search'
@@ -106,6 +151,9 @@ const CarteraCreditoView: React.FC = () => {
 											}
 											placeholder='Razón social o RUT'
 										/>
+										<p className='mt-1 text-xs text-zinc-500 dark:text-zinc-400'>
+											La búsqueda se aplica automáticamente.
+										</p>
 									</div>
 									<div>
 										<label
@@ -165,7 +213,7 @@ const CarteraCreditoView: React.FC = () => {
 											<Th className='text-right'>Usado</Th>
 											<Th className='text-right'>Disponible</Th>
 											<Th>Estado</Th>
-											<Th className='text-right'>Acciones</Th>
+											<Th className='text-center'>Acciones</Th>
 										</Tr>
 									</THead>
 									<TBody>
@@ -184,8 +232,12 @@ const CarteraCreditoView: React.FC = () => {
 											data.rows.length === 0 && (
 												<Tr>
 													<Td colSpan={7} className='py-12 text-center'>
-														No hay perfiles de crédito para los filtros
-														aplicados.
+														<p className='font-medium text-zinc-700 dark:text-zinc-200'>
+															Sin resultados para los filtros aplicados
+														</p>
+														<p className='mt-1 text-sm text-zinc-500'>
+															Prueba ajustando o limpiando los filtros.
+														</p>
 													</Td>
 												</Tr>
 											)}
@@ -221,25 +273,34 @@ const CarteraCreditoView: React.FC = () => {
 													<Td className='text-right tabular-nums'>
 														{row.payment_term_days} días
 													</Td>
-													<Td className='text-right tabular-nums'>
+													<Td
+														className={`text-right tabular-nums ${getAmountColorClass(
+															row.credit_limit,
+														)}`}>
 														{row.credit_limit === null
 															? 'Sin techo'
 															: formatAmount(row.credit_limit)}
 													</Td>
-													<Td className='text-right font-semibold tabular-nums'>
+													<Td
+														className={`text-right font-semibold tabular-nums ${getAmountColorClass(
+															row.outstanding_balance,
+														)}`}>
 														{formatAmount(row.outstanding_balance)}
 													</Td>
-													<Td className='text-right tabular-nums'>
+													<Td
+														className={`text-right tabular-nums ${getAmountColorClass(
+															row.available_credit,
+														)}`}>
 														{!row.is_active
 															? 'Suspendido'
 															: formatAmount(row.available_credit)}
 													</Td>
-													<Td>
+													<Td className='text-center'>
 														<span
 															className={
 																row.is_active
-																	? 'text-emerald-700 dark:text-emerald-300'
-																	: 'text-amber-700 dark:text-amber-300'
+																	? 'inline-flex min-w-24 justify-center rounded-full bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm'
+																	: 'inline-flex min-w-24 justify-center rounded-full bg-amber-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm'
 															}>
 															{row.is_active
 																? 'Vigente'
@@ -247,36 +308,35 @@ const CarteraCreditoView: React.FC = () => {
 														</span>
 													</Td>
 													<Td>
-														<div className='flex justify-end gap-1'>
-															<Button
-																size='xs'
-																variant='ghost'
-																icon='HeroDocumentText'
-																aria-label={`Ver documentos de ${getCustomerName(row)}`}
-																title='Ver documentos'
-																onClick={() =>
-																	openDocuments(
-																		row.customer_sale_id,
-																	)
-																}
-															/>
-															<ProtectedButton
-																size='xs'
-																variant='ghost'
-																icon='HeroPencilSquare'
-																permission={
-																	ERP_PERMISSIONS
-																		.DEFERRED_PAYMENTS.UPDATE
-																}
-																branchId={branch.branchId}
-																subsidiaryId={branch.subsidiaryId}
-																scope='access'
-																aria-label={`Editar crédito de ${getCustomerName(row)}`}
-																title='Editar condiciones'
-																onClick={() =>
-																	setEditingProfile(row)
-																}
-															/>
+														<div className='flex justify-center gap-1'>
+															<Tooltip text='Ver documentos' placement='top-end'>
+																<Button
+																	variant='outline'
+																	size='sm'
+																	color='violet'
+																	className='bg-violet-600 p-1 hover:bg-violet-700/30'
+											aria-label={`Ver documentos de ${getCustomerName(row)}`}
+											onClick={() =>
+													openDocuments(getCustomerSearchText(row))
+											}>
+																	<Icon icon='HeroDocumentText' color='white' className='text-xl' />
+																</Button>
+															</Tooltip>
+															<Tooltip text='Editar condiciones' placement='top-end'>
+																<ProtectedButton
+																	variant='solid'
+																	size='sm'
+																	color='green'
+																	className='bg-green-600 p-1 hover:bg-green-700/20'
+																	permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.UPDATE}
+																	branchId={branch.branchId}
+																	subsidiaryId={branch.subsidiaryId}
+																	scope='access'
+																	aria-label={`Editar crédito de ${getCustomerName(row)}`}
+																	onClick={() => setEditingProfile(row)}>
+																	<Icon icon='HeroPencil' color='white' className='text-xl' />
+																</ProtectedButton>
+															</Tooltip>
 														</div>
 													</Td>
 												</Tr>
@@ -285,28 +345,11 @@ const CarteraCreditoView: React.FC = () => {
 								</Table>
 							</CardBody>
 							{data.meta && (
-								<div className='flex flex-wrap items-center justify-between gap-3 border-t p-4'>
-									<SelectReact
-										name='per-page'
-										aria-label='Resultados por página'
-										options={perPageOptions}
-										value={selectedPerPage}
-										onChange={(option) =>
-											filters.setPagination(
-												1,
-												Number(getSelectValue(option, '20')),
-											)
-										}
-										isClearable={false}
-									/>
-									<Pagination
-										currentPage={data.meta.current_page}
-										totalPages={data.meta.last_page}
-										onPageChange={(page) =>
-											filters.setPagination(page, data.meta?.per_page ?? 20)
-										}
-									/>
-								</div>
+								<CreditPortfolioPagination
+									meta={data.meta}
+									loading={state.loading}
+									onChange={filters.setPagination}
+								/>
 							)}
 						</Card>
 					</>

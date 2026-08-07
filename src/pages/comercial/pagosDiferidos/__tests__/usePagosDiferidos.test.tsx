@@ -2,6 +2,7 @@ import React, { type PropsWithChildren } from 'react';
 import { configureStore } from '@reduxjs/toolkit';
 import { act, renderHook } from '@testing-library/react';
 import { Provider } from 'react-redux';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
 	DeferredPaymentsListResponse,
@@ -63,12 +64,17 @@ const flushPromises = async () => {
 describe('usePagosDiferidos con servicio', () => {
 	const getDocumentsMock = vi.mocked(deferredPaymentsService.getDocuments);
 	const getSummaryMock = vi.mocked(deferredPaymentsService.getSummary);
-	const createHook = () => {
+	const createHook = (options?: Parameters<typeof usePagosDiferidos>[0]) => {
 		const store = configureStore({ reducer: { deferredPayments: deferredPaymentsReducer } });
 		const Wrapper = ({ children }: PropsWithChildren) => (
-			<Provider store={store}>{children}</Provider>
+			<MemoryRouter>
+				<Provider store={store}>{children}</Provider>
+			</MemoryRouter>
 		);
-		return { store, hook: renderHook(() => usePagosDiferidos(), { wrapper: Wrapper }) };
+		return {
+			store,
+			hook: renderHook(() => usePagosDiferidos(options), { wrapper: Wrapper }),
+		};
 	};
 	beforeEach(() => {
 		branchContext.subsidiaryId = 10;
@@ -139,6 +145,17 @@ describe('usePagosDiferidos con servicio', () => {
 		expect(getDocumentsMock.mock.calls[0]?.[1]).toMatchObject({ page: 1, search: 'andina' });
 		expect(getSummaryMock.mock.calls[0]?.[1]).toMatchObject({ search: 'andina' });
 		expect(getSummaryMock.mock.calls[0]?.[1]).not.toHaveProperty('page');
+	});
+	it('abre documentos filtrando solo por el texto inicial de búsqueda', async () => {
+		vi.useFakeTimers();
+		const { hook, store } = createHook({ initialSearch: 'Cliente Real' });
+		await flushPromises();
+		await act(async () => vi.advanceTimersByTimeAsync(300));
+
+		expect(hook.result.current.filters.search).toBe('Cliente Real');
+		expect(store.getState().deferredPayments.filters.customer_sale_id).toBeUndefined();
+		expect(getDocumentsMock.mock.calls.at(-1)?.[1]).toMatchObject({ search: 'Cliente Real' });
+		expect(getDocumentsMock.mock.calls.at(-1)?.[1]).not.toHaveProperty('customer_sale_id');
 	});
 	it('permite limpiar y repetir el mismo termino durante el debounce', async () => {
 		vi.useFakeTimers();

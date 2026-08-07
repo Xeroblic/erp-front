@@ -408,8 +408,10 @@ const DefaultAsideTemplate = () => {
 					 * COMERCIAL
 					 * ====================== */}
 					<AuthorityCheckNav
-						authority={Pages.commercial.authority}
-						roles={Pages.commercial.roles}
+						authority={[
+							...Pages.commercial.authority,
+							...Pages.commercial.subPages.pagosDiferidos.authority,
+						]}
 						userAuthority={userAuthority}>
 						<NavCollapse
 							key='comercial-nav'
@@ -507,6 +509,22 @@ const DefaultAsideTemplate = () => {
 									id={Pages.commercial.subPages.pagosDiferidos.id}
 									onClick={() =>
 										navigate(Pages.commercial.subPages.pagosDiferidos.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
+							{/* Cartera de crédito */}
+							<AuthorityCheckNav
+								authority={Pages.commercial.subPages.carteraCredito.authority}
+								roles={Pages.commercial.subPages.carteraCredito.roles}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.commercial.subPages.carteraCredito.text}
+									to={Pages.commercial.subPages.carteraCredito.to}
+									icon={Pages.commercial.subPages.carteraCredito.icon}
+									id={Pages.commercial.subPages.carteraCredito.id}
+									onClick={() =>
+										navigate(Pages.commercial.subPages.carteraCredito.to)
 									}
 								/>
 							</AuthorityCheckNav>

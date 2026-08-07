@@ -159,7 +159,9 @@ const mapFiltersToApiParams = (filters: DeferredPaymentsFilters): DeferredPaymen
 	page: filters.page,
 	per_page: filters.per_page,
 	status: filters.status,
-	customer_sale_id: filters.customer_sale_id,
+	...(filters.customer_sale_id !== undefined
+		? { customer_sale_id: filters.customer_sale_id }
+		: {}),
 	search: filters.search,
 	due_before: filters.due_before,
 	due_after: filters.due_after,

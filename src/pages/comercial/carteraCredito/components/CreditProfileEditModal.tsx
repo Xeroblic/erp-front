@@ -26,6 +26,14 @@ interface CreditProfileEditModalProps {
 	onSaved: () => void;
 }
 
+const formatCreditLimitInput = (value: string): string => {
+	if (!value) return '';
+	const [wholePart, decimalPart = ''] = value.split('.');
+	if (!/^\d+$/.test(wholePart) || !/^\d*$/.test(decimalPart)) return value;
+	const roundedValue = BigInt(wholePart) + (decimalPart[0] >= '5' ? BigInt(1) : BigInt(0));
+	return `$ ${roundedValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
+};
+
 const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 	profile,
 	subsidiaryId,
@@ -83,6 +91,10 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 		? formik.errors.payment_term_days
 		: undefined;
 	const creditLimitError = formik.touched.credit_limit ? formik.errors.credit_limit : undefined;
+	const handleCreditLimitChange = (value: string) => {
+		formik.setFieldTouched('credit_limit', true, false).catch(() => undefined);
+		formik.setFieldValue('credit_limit', value.replace(/\D/g, '')).catch(() => undefined);
+	};
 	const guardClose = (nextState: React.SetStateAction<boolean>) => {
 		const open = typeof nextState === 'function' ? nextState(profile !== null) : nextState;
 		if (!open && !formik.isSubmitting) onClose();
@@ -139,14 +151,15 @@ const CreditProfileEditModal: React.FC<CreditProfileEditModalProps> = ({
 							<Input
 								id='portfolio-credit-profile-limit'
 								name='credit_limit'
+								type='text'
 								inputMode='numeric'
-								value={formik.values.credit_limit}
-								onChange={formik.handleChange}
+								value={formatCreditLimitInput(formik.values.credit_limit)}
+								onChange={(event) => handleCreditLimitChange(event.target.value)}
 								onBlur={formik.handleBlur}
 								isTouched={formik.touched.credit_limit}
 								isValid={!creditLimitError}
 								invalidFeedback={creditLimitError}
-								placeholder='Sin techo'
+								placeholder='$ 500.000'
 							/>
 						</div>
 					</div>
