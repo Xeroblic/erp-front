@@ -566,7 +566,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 										<div className='flex items-center gap-1'>
 											{hasSelectedCustomer && (
 												<ProtectedButton
-													permission='edit-customer-sale'
+													permission={ERP_PERMISSIONS.CUSTOMER_SALES.UPDATE}
 													subsidiaryId={subsidiaryId}
 													scope='access'
 													type='button'
@@ -580,7 +580,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 												/>
 											)}
 											<ProtectedButton
-												permission='create-customer-sale'
+												permission={ERP_PERMISSIONS.CUSTOMER_SALES.CREATE}
 												subsidiaryId={subsidiaryId}
 												scope='access'
 												type='button'
