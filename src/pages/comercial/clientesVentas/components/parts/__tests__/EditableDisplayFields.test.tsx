@@ -5,6 +5,10 @@ import type { FormikProps } from 'formik';
 import EditableField from '../EditableField';
 import EditableSelect from '../EditableSelect';
 
+vi.mock('@/hooks/useReactiveThemeConfig', () => ({
+	default: () => ({ themeColor: 'blue', themeColorShade: '500' }),
+}));
+
 interface TestValues {
 	field: string;
 	select: string;
@@ -40,5 +44,21 @@ describe('campos editables en modo lectura', () => {
 		expect(screen.getByText('Texto').parentElement).toHaveClass('w-full');
 		expect(screen.getByText('Selección').parentElement).toHaveClass('w-full');
 		expect(screen.getByText('Texto').parentElement).not.toHaveClass('rounded-lg');
+	});
+
+	it('usa Seleccionar como placeholder en edición', () => {
+		const formik = formikWith({ field: '', select: '' });
+
+		render(
+			<EditableSelect
+				formik={formik}
+				name='select'
+				label='Selección'
+				isEditable
+				options={[{ value: 'factura', label: 'Factura' }]}
+			/>,
+		);
+
+		expect(screen.getByText('Seleccionar')).toBeInTheDocument();
 	});
 });

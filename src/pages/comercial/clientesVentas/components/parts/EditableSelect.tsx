@@ -18,7 +18,7 @@ const EditableSelect = <FormValues extends Record<string, any>>({
 	label,
 	options,
 	isEditable,
-	placeholder,
+	placeholder = 'Seleccionar',
 }: EditableSelectProps<FormValues>) => {
 	const value = (formik.values as Record<string, any>)[name];
 	const touched = (formik.touched as Record<string, any>)[name];
