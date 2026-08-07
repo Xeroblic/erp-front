@@ -72,6 +72,29 @@ describe('useCarteraCredito', () => {
 		]);
 	});
 
+	it('espera el debounce antes de consultar una búsqueda en la primera página', async () => {
+		vi.useFakeTimers();
+		const { result } = renderHook(() => useCarteraCredito());
+		await act(async () => {
+			await Promise.resolve();
+		});
+		getCreditProfilesMock.mockClear();
+
+		act(() => result.current.filters.setSearch('c'));
+		act(() => result.current.filters.setSearch('cl'));
+		act(() => result.current.filters.setSearch('cliente'));
+
+		expect(getCreditProfilesMock).not.toHaveBeenCalled();
+		await act(async () => vi.advanceTimersByTimeAsync(300));
+
+		expect(getCreditProfilesMock).toHaveBeenCalledTimes(1);
+		expect(getCreditProfilesMock).toHaveBeenCalledWith(
+			10,
+			expect.objectContaining({ page: 1, per_page: 10, search: 'cliente' }),
+			expect.any(AbortSignal),
+		);
+	});
+
 	it('carga la nueva subsidiaria aunque no haya filtros activos', async () => {
 		const { rerender } = renderHook(() => useCarteraCredito());
 		await waitFor(() =>
@@ -93,5 +116,20 @@ describe('useCarteraCredito', () => {
 				expect.any(AbortSignal),
 			),
 		);
+	});
+
+	it('inicia y reinicia la carga al cambiar de subsidiaria', () => {
+		getCreditProfilesMock.mockImplementation(
+			() => new Promise<DeferredPaymentCreditProfilesListResponse>(() => {}),
+		);
+		const { result, rerender } = renderHook(() => useCarteraCredito());
+		expect(result.current.state.loading).toBe(true);
+
+		act(() => {
+			branchContext.subsidiaryId = 20;
+			rerender();
+		});
+
+		expect(result.current.state.loading).toBe(true);
 	});
 });

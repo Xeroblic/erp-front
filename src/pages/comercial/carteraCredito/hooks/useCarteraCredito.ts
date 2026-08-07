@@ -20,7 +20,7 @@ const useCarteraCredito = () => {
 	const [search, setSearch] = useState('');
 	const [rows, setRows] = useState<IDeferredPaymentCreditProfileListItem[]>([]);
 	const [meta, setMeta] = useState<DeferredPaymentsPaginationMeta | null>(null);
-	const [loading, setLoading] = useState(false);
+	const [loading, setLoading] = useState(subsidiaryId !== null);
 	const [error, setError] = useState<string | null>(null);
 	const requestIdRef = useRef(0);
 	const searchInput = useMemo(() => ({ value: search, subsidiaryId }), [search, subsidiaryId]);
@@ -75,6 +75,7 @@ const useCarteraCredito = () => {
 		setRows([]);
 		setMeta(null);
 		setError(null);
+		setLoading(subsidiaryId !== null);
 		setFilters(DEFAULT_FILTERS);
 		setStatus('all');
 		setSearch('');
@@ -89,7 +90,7 @@ const useCarteraCredito = () => {
 
 	const updateSearch = useCallback((value: string) => {
 		setSearch(value);
-		setFilters((current) => ({ ...current, page: 1 }));
+		setFilters((current) => (current.page === 1 ? current : { ...current, page: 1 }));
 	}, []);
 	const updateStatus = useCallback((value: CreditProfileStatusFilter) => {
 		setStatus(value);
