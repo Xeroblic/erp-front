@@ -118,18 +118,63 @@ describe('useCarteraCredito', () => {
 		);
 	});
 
-	it('inicia y reinicia la carga al cambiar de subsidiaria', () => {
+	it('inicia en carga cuando existe una subsidiaria activa', () => {
+		const loadingFrames: boolean[] = [];
 		getCreditProfilesMock.mockImplementation(
 			() => new Promise<DeferredPaymentCreditProfilesListResponse>(() => {}),
 		);
-		const { result, rerender } = renderHook(() => useCarteraCredito());
-		expect(result.current.state.loading).toBe(true);
+		renderHook(() => {
+			const carteraCredito = useCarteraCredito();
+			loadingFrames.push(carteraCredito.state.loading);
+			return carteraCredito;
+		});
+
+		expect(loadingFrames[0]).toBe(true);
+	});
+
+	it('no muestra un frame vacío sin carga al cambiar de subsidiaria', async () => {
+		const frames: Array<{ loading: boolean; rowCount: number }> = [];
+		getCreditProfilesMock.mockResolvedValue({
+			...response,
+			data: [
+				{
+					id: 1,
+					customer_sale_id: 1,
+					credit_limit: '1000.00',
+					payment_term_days: 30,
+					notes: null,
+					outstanding_balance: '0.00',
+					available_credit: '1000.00',
+					is_active: true,
+					credit_limit_exceeded: false,
+					customer: null,
+					created_at: null,
+					updated_at: null,
+				},
+			],
+		});
+		const { result, rerender } = renderHook(() => {
+			const carteraCredito = useCarteraCredito();
+			frames.push({
+				loading: carteraCredito.state.loading,
+				rowCount: carteraCredito.data.rows.length,
+			});
+			return carteraCredito;
+		});
+		await waitFor(() => {
+			expect(result.current.state.loading).toBe(false);
+			expect(result.current.data.rows).toHaveLength(1);
+		});
+		frames.length = 0;
+		getCreditProfilesMock.mockImplementation(
+			() => new Promise<DeferredPaymentCreditProfilesListResponse>(() => {}),
+		);
 
 		act(() => {
 			branchContext.subsidiaryId = 20;
 			rerender();
 		});
 
-		expect(result.current.state.loading).toBe(true);
+		expect(frames).not.toContainEqual({ loading: false, rowCount: 0 });
 	});
 });
