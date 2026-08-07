@@ -55,12 +55,11 @@ export const fetchCustomerDetailThunk = createAsyncThunk<
 	{ rejectValue: string }
 >('customerSales/fetchCustomerDetail', async ({ subsidiary, id }, { rejectWithValue }) => {
 	try {
-		const response = await ApiService.fetchData<ICustomerSale>({
+		// Algunos endpoints devuelven { data: {...} } y otros devuelven directamente el objeto
+		return await ApiService.fetchNormalized<ICustomerSale>({
 			url: `/subsidiaries/${subsidiary}/customer-sales/${id}`,
 			method: 'get',
 		});
-		// Algunos endpoints devuelven { data: {...} } y otros devuelven directamente el objeto
-		return (response.data as any)?.data ?? response.data;
 	} catch (error: any) {
 		return rejectWithValue(error.response?.data || 'No se pudo obtener el cliente');
 	}
@@ -72,13 +71,12 @@ export const createCustomerThunk = createAsyncThunk<
 	{ rejectValue: string }
 >('customerSales/createCustomer', async ({ subsidiary, payload }, { rejectWithValue }) => {
 	try {
-		const response = await ApiService.fetchData<ICustomerSale>({
+		// Algunos endpoints devuelven { data: {...} } y otros devuelven directamente el objeto
+		return await ApiService.fetchNormalized<ICustomerSale>({
 			url: `/subsidiaries/${subsidiary}/customer-sales`,
 			method: 'post',
 			data: payload,
 		});
-		// Algunos endpoints devuelven { data: {...} } y otros devuelven directamente el objeto
-		return (response.data as any)?.data ?? response.data;
 	} catch (error: any) {
 		return rejectWithValue(error.response?.data || 'No se pudo crear el cliente');
 	}
@@ -90,13 +88,12 @@ export const updateCustomerThunk = createAsyncThunk<
 	{ rejectValue: string }
 >('customerSales/updateCustomer', async ({ subsidiary, id, payload }, { rejectWithValue }) => {
 	try {
-		const response = await ApiService.fetchData<ICustomerSale>({
+		// porque el backend envía {message, data}
+		return await ApiService.fetchNormalized<ICustomerSale>({
 			url: `/subsidiaries/${subsidiary}/customer-sales/${id}`,
 			method: 'patch',
 			data: payload,
 		});
-		// porque el backend envía {message, data}
-		return (response.data as any)?.data ?? response.data;
 	} catch (error: any) {
 		return rejectWithValue(error.response?.data || 'No se pudo actualizar');
 	}
