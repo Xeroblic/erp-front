@@ -15,11 +15,12 @@ const asRecord = (value: unknown): Record<string, unknown> | undefined =>
  */
 const getDeferredPaymentErrorMessage = (error: unknown, fallback: string): string => {
 	const responseRecord = asRecord(asRecord(error)?.response);
-	if (responseRecord?.status === FORBIDDEN_STATUS) return FORBIDDEN_MESSAGE;
-
 	const dataRecord = asRecord(responseRecord?.data);
 	if (typeof dataRecord?.message === 'string' && dataRecord.message.trim())
 		return dataRecord.message;
+
+	if (responseRecord?.status === FORBIDDEN_STATUS) return FORBIDDEN_MESSAGE;
+
 	if (error instanceof Error && error.message.trim()) return error.message;
 	return fallback;
 };
