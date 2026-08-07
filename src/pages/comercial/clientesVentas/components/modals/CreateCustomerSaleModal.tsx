@@ -64,7 +64,7 @@ const CreateCustomerSaleModal = ({
 				}
 
 				if (isEdit && initialData?.id) {
-					const action = await dispatch(
+					const customer = await dispatch(
 						updateCustomerThunk({
 							subsidiary: subsidiaryId,
 							id: initialData.id,
@@ -84,27 +84,23 @@ const CreateCustomerSaleModal = ({
 								primary_contact_email: values.email,
 								primary_contact_phone: values.phone,
 							},
-						}) as any,
-					);
+						}),
+					).unwrap();
 
-					if (action && action.meta?.requestStatus === 'fulfilled') {
-						// refrescar detalle y overview
-						dispatch(
-							fetchCustomerDetailThunk({
-								subsidiary: subsidiaryId,
-								id: initialData.id,
-							} as any) as any,
-						);
-						dispatch(
-							fetchCustomersOverviewThunk({ subsidiary: subsidiaryId } as any) as any,
-						);
-						onSuccess?.(action.payload as ICustomerSale);
-						setIsOpen(false);
-					} else {
-						console.error('Error actualizando cliente', action);
-					}
+					// refrescar detalle y overview
+					dispatch(
+						fetchCustomerDetailThunk({
+							subsidiary: subsidiaryId,
+							id: initialData.id,
+						}),
+					).catch(() => undefined);
+					dispatch(fetchCustomersOverviewThunk({ subsidiary: subsidiaryId })).catch(
+						() => undefined,
+					);
+					onSuccess?.(customer);
+					setIsOpen(false);
 				} else {
-					const action = await dispatch(
+					const customer = await dispatch(
 						createCustomerThunk({
 							subsidiary: subsidiaryId,
 							payload: {
@@ -124,29 +120,21 @@ const CreateCustomerSaleModal = ({
 								primary_contact_email: values.email,
 								primary_contact_phone: values.phone,
 							},
-						}) as any,
-					);
+						}),
+					).unwrap();
 
-					if (action && action.meta?.requestStatus === 'fulfilled') {
-						try {
-							dispatch(
-								fetchCustomersOverviewThunk({
-									subsidiary: subsidiaryId,
-								} as any) as any,
-							);
-						} catch (e) {
-							console.warn(
-								'No se pudo refrescar overview después de crear cliente',
-								e,
-							);
-						}
-						onSuccess?.(action.payload as ICustomerSale);
-						setIsOpen(false);
-						formik.resetForm();
-					} else {
-						console.error('Error creando cliente', action);
-					}
+					dispatch(fetchCustomersOverviewThunk({ subsidiary: subsidiaryId })).catch(
+						() => undefined,
+					);
+					onSuccess?.(customer);
+					setIsOpen(false);
+					formik.resetForm();
 				}
+			} catch (error) {
+				console.error(
+					isEdit ? 'Error actualizando cliente' : 'Error creando cliente',
+					error,
+				);
 			} finally {
 				setSubmitting(false);
 			}
@@ -168,14 +156,16 @@ const CreateCustomerSaleModal = ({
 							value={formik.values.document_number}
 							onChange={(e) => {
 								const formatted = formatRut(e.target.value);
-								formik.setFieldValue('document_number', formatted);
+								formik
+									.setFieldValue('document_number', formatted)
+									.catch(() => undefined);
 							}}
 							onBlur={formik.handleBlur}
 							isTouched={!!formik.touched.document_number}
 							isValid={!formik.errors.document_number}
 							invalidFeedback={
 								formik.touched.document_number
-									? (formik.errors.document_number as any)
+									? formik.errors.document_number
 									: undefined
 							}
 						/>
@@ -195,7 +185,7 @@ const CreateCustomerSaleModal = ({
 								isValid={!formik.errors.billing_company}
 								invalidFeedback={
 									formik.touched.billing_company
-										? (formik.errors.billing_company as any)
+										? formik.errors.billing_company
 										: undefined
 								}
 							/>
@@ -224,9 +214,7 @@ const CreateCustomerSaleModal = ({
 							onBlur={formik.handleBlur}
 							isTouched={!!formik.touched.email}
 							isValid={!formik.errors.email}
-							invalidFeedback={
-								formik.touched.email ? (formik.errors.email as any) : undefined
-							}
+							invalidFeedback={formik.touched.email ? formik.errors.email : undefined}
 						/>
 					</div>
 
