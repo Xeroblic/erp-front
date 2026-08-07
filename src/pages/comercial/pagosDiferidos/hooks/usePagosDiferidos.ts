@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDebounce } from 'use-debounce';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
 import type {
@@ -13,7 +13,11 @@ import {
 	setDeferredPaymentsFilters,
 } from '@/store/slices/deferredPayments/deferredPaymentsSlice';
 
-const usePagosDiferidos = () => {
+interface UsePagosDiferidosOptions {
+	initialSearch?: string;
+}
+
+const usePagosDiferidos = ({ initialSearch }: UsePagosDiferidosOptions = {}) => {
 	const dispatch = useAppDispatch();
 	const { branchId, subsidiaryId } = useCurrentBranch();
 	const list = useAppSelector((state) => state.deferredPayments.list);
@@ -26,6 +30,7 @@ const usePagosDiferidos = () => {
 	const errorSummary = useAppSelector((state) => state.deferredPayments.errorSummary);
 	const listSubsidiaryId = useAppSelector((state) => state.deferredPayments.listSubsidiaryId);
 	const [selectedId, setSelectedId] = useState<number | null>(null);
+	const appliedInitialSearchKey = useRef<string | null>(null);
 	const search = values.search ?? '';
 	const [debouncedSearch] = useDebounce(search, 300);
 	const isSearchDebouncing = search !== debouncedSearch;
@@ -43,7 +48,9 @@ const usePagosDiferidos = () => {
 			per_page: values.per_page,
 			sort: values.sort,
 			status: values.status,
-			customer_sale_id: values.customer_sale_id,
+			...(values.customer_sale_id !== undefined
+				? { customer_sale_id: values.customer_sale_id }
+				: {}),
 			due_after: values.due_after,
 			due_before: values.due_before,
 			search: debouncedSearch || undefined,
@@ -62,7 +69,9 @@ const usePagosDiferidos = () => {
 	const summaryFiltersForRequest = useMemo<DeferredPaymentApiSummaryParams>(
 		() => ({
 			status: values.status,
-			customer_sale_id: values.customer_sale_id,
+			...(values.customer_sale_id !== undefined
+				? { customer_sale_id: values.customer_sale_id }
+				: {}),
 			due_after: values.due_after,
 			due_before: values.due_before,
 			search: debouncedSearch || undefined,
@@ -79,6 +88,23 @@ const usePagosDiferidos = () => {
 	useEffect(() => {
 		if (isSubsidiaryChange) setSelectedId(null);
 	}, [isSubsidiaryChange]);
+
+	useEffect(() => {
+		const normalizedInitialSearch = initialSearch?.trim();
+		if (!normalizedInitialSearch) return;
+
+		const initialSearchKey = normalizedInitialSearch;
+		if (appliedInitialSearchKey.current === initialSearchKey) return;
+
+		appliedInitialSearchKey.current = initialSearchKey;
+		dispatch(
+			setDeferredPaymentsFilters({
+				search: normalizedInitialSearch,
+				customer_sale_id: undefined,
+				page: 1,
+			}),
+		);
+	}, [dispatch, initialSearch]);
 
 	useEffect(() => {
 		if (effectiveSubsidiaryId === null || hasInvalidDateRange || isSearchDebouncing)
@@ -135,7 +161,9 @@ const usePagosDiferidos = () => {
 			values.due_after ||
 			values.due_before,
 	);
-	const resetFilters = useCallback(() => dispatch(resetDeferredPaymentsFilters()), [dispatch]);
+	const resetFilters = useCallback(() => {
+		dispatch(resetDeferredPaymentsFilters());
+	}, [dispatch]);
 	const openDetail = useCallback((id: number) => setSelectedId(id), []);
 	const closeDetail = useCallback(() => setSelectedId(null), []);
 	const retrySummary = useCallback(() => {
