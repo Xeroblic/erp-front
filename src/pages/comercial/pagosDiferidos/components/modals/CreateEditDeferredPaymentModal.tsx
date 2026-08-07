@@ -495,7 +495,11 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	};
 	const handleOpenEditCustomer = () => {
 		const customerSaleId = formik.values.customer_sale_id;
-		if (customerSaleId === null || subsidiaryId === null) return;
+		if (customerSaleId === null) return;
+		if (subsidiaryId === null) {
+			toast.error('No se pudo determinar la subsidiaria activa');
+			return;
+		}
 		setIsLoadingCustomerDetail(true);
 		dispatch(fetchCustomerDetailThunk({ subsidiary: subsidiaryId, id: customerSaleId }))
 			.unwrap()
