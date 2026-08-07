@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ICustomerSale } from '@/interface/customerSales.interface';
-import { hasMatchingShippingAddress } from '../utils';
+import { getCustomerDetailPageTitle, hasMatchingShippingAddress } from '../utils';
 
 const customerWithAddresses = (overrides: Partial<ICustomerSale> = {}): ICustomerSale =>
 	({
@@ -41,5 +41,25 @@ describe('hasMatchingShippingAddress', () => {
 		expect(
 			hasMatchingShippingAddress(customerWithAddresses({ shipping_postcode: '8330000' })),
 		).toBe(false);
+	});
+});
+
+describe('getCustomerDetailPageTitle', () => {
+	it('prioriza la empresa visible para el título de la pestaña', () => {
+		expect(
+			getCustomerDetailPageTitle(
+				customerWithAddresses({ billing_company: ' Empresa de prueba ' }),
+				'Contacto de prueba',
+			),
+		).toBe('Empresa de prueba');
+	});
+
+	it('usa el fallback seguro cuando no hay identidad disponible', () => {
+		expect(
+			getCustomerDetailPageTitle(
+				customerWithAddresses({ billing_company: ' ', name: ' ' }),
+				' ',
+			),
+		).toBe('Detalle de cliente');
 	});
 });

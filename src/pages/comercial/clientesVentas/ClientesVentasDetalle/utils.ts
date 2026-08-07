@@ -13,6 +13,16 @@ type CustomerAddress = Pick<
 
 const normalizedText = (value: string | null | undefined): string => value?.trim() ?? '';
 
+export const getCustomerDetailPageTitle = (
+	customer: Pick<ICustomerSale, 'billing_company' | 'name'>,
+	contactName: string | null | undefined,
+): string =>
+	[
+		normalizedText(customer.billing_company),
+		normalizedText(contactName),
+		normalizedText(customer.name),
+	].find(Boolean) ?? 'Detalle de cliente';
+
 export const hasMatchingShippingAddress = (customer: ICustomerSale): boolean => {
 	const billingAddress: CustomerAddress = customer;
 

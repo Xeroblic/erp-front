@@ -12,7 +12,7 @@ import CustomerCreditProfileCard from './components/CustomerCreditProfileCard';
 import { formatRut } from '../../../../utils/validateRut';
 import { TSelectOptions } from '@/components/form/SelectReact';
 import { useClientesVentasDetalle } from './hooks/useClientesVentasDetalle';
-import { hasMatchingShippingAddress } from './utils';
+import { getCustomerDetailPageTitle, hasMatchingShippingAddress } from './utils';
 
 const DetailSkeleton = () => (
 	<Container className='animate-pulse space-y-8 py-8'>
@@ -129,7 +129,7 @@ const ClientesVentasDetalleView = () => {
 
 	if (loading && !detalle) {
 		return (
-			<PageWrapper title='Cargando cliente...'>
+			<PageWrapper title='Cargando cliente...' name='ERP'>
 				<DetailSkeleton />
 			</PageWrapper>
 		);
@@ -137,13 +137,14 @@ const ClientesVentasDetalleView = () => {
 
 	if (!detalle) {
 		return (
-			<PageWrapper title='Error'>
+			<PageWrapper title='Detalle de cliente' name='ERP'>
 				<Container className='py-20 text-center'>
 					<p className='text-zinc-500'>No se encontró la información del cliente.</p>
 				</Container>
 			</PageWrapper>
 		);
 	}
+	const pageTitle = getCustomerDetailPageTitle(detalle, contacto.name);
 
 	const addToRefs = (el: HTMLDivElement | null) => {
 		if (el && !cardsRef.current.includes(el)) {
@@ -164,7 +165,7 @@ const ClientesVentasDetalleView = () => {
 	};
 
 	return (
-		<PageWrapper title='Detalle cliente' name='Detalle cliente'>
+		<PageWrapper title={pageTitle} name='ERP'>
 			<ClientDetailHeader
 				client={detalle}
 				contactName={contacto.name || ''}
