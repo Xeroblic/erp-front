@@ -14,6 +14,10 @@ const asRecord = (value: unknown): Record<string, unknown> | undefined =>
  * no distingue el caso en el mensaje, así que lo cubrimos ambos en el front.
  */
 const getDeferredPaymentErrorMessage = (error: unknown, fallback: string): string => {
+	// Un thunk rechazado con `rejectWithValue('mensaje')` llega aquí como string plano,
+	// no como error de Axios: en ese caso el mensaje ya viene normalizado.
+	if (typeof error === 'string' && error.trim()) return error;
+
 	const responseRecord = asRecord(asRecord(error)?.response);
 	const dataRecord = asRecord(responseRecord?.data);
 	if (typeof dataRecord?.message === 'string' && dataRecord.message.trim())
@@ -21,7 +25,11 @@ const getDeferredPaymentErrorMessage = (error: unknown, fallback: string): strin
 
 	if (responseRecord?.status === FORBIDDEN_STATUS) return FORBIDDEN_MESSAGE;
 
-	if (error instanceof Error && error.message.trim()) return error.message;
+	// Cubre tanto un `Error` como un rejectValue plano `{ message, errors? }`. Para un
+	// AxiosError nunca llega aquí con su `message` técnico: los casos con respuesta ya
+	// se resolvieron arriba.
+	const errorMessage = asRecord(error)?.message;
+	if (typeof errorMessage === 'string' && errorMessage.trim()) return errorMessage;
 	return fallback;
 };
 

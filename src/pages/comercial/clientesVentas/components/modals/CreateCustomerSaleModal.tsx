@@ -1,6 +1,7 @@
 import React from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
+import { toast } from 'react-toastify';
 import Modal, { ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
 import Input from '@/components/form/Input';
 import Button from '@/components/ui/Button';
@@ -13,9 +14,41 @@ import {
 	updateCustomerThunk,
 	fetchCustomerDetailThunk,
 	fetchCustomersOverviewThunk,
+	type CustomerSaleRequestError,
 } from '@/store/slices/customerSales/customerSalesSlice';
 import { ICustomerSale } from '@/interface/customerSales.interface';
 import { formatRut, validateRut } from '../../../../../utils/validateRut';
+
+interface CustomerSaleFormValues {
+	document_number: string;
+	billing_company: string;
+	contact_name: string;
+	email: string;
+	phone: string;
+	is_active: boolean;
+}
+
+/**
+ * Los errores por campo de Laravel usan los nombres del payload, que no siempre
+ * coinciden con los del formulario (`rut` → `document_number`).
+ */
+const FORM_FIELD_BY_API_FIELD: Record<string, keyof CustomerSaleFormValues> = {
+	document_number: 'document_number',
+	rut: 'document_number',
+	billing_company: 'billing_company',
+	contact_name: 'contact_name',
+	primary_contact_name: 'contact_name',
+	email: 'email',
+	primary_contact_email: 'email',
+	phone: 'phone',
+	primary_contact_phone: 'phone',
+	is_active: 'is_active',
+};
+
+const isRequestError = (error: unknown): error is CustomerSaleRequestError =>
+	error !== null &&
+	typeof error === 'object' &&
+	typeof (error as { message?: unknown }).message === 'string';
 
 const CreateCustomerSaleModal = ({
 	isOpen,
@@ -24,6 +57,7 @@ const CreateCustomerSaleModal = ({
 	isEdit = false,
 	initialData,
 	onSuccess,
+	refreshStoreOnSuccess = true,
 }: {
 	isOpen: boolean;
 	setIsOpen: (v: boolean) => void;
@@ -31,6 +65,13 @@ const CreateCustomerSaleModal = ({
 	isEdit?: boolean;
 	initialData?: Partial<ICustomerSale> | null;
 	onSuccess?: (customer: ICustomerSale) => void;
+	/**
+	 * Refresca detalle y overview en el store al guardar. Desactívalo cuando el
+	 * consumidor ya administra esa lista (p. ej. la búsqueda del modal de pago
+	 * diferido, que la carga con sus propios `per_page` y `q`) y un refetch con
+	 * los parámetros por defecto se la sobrescribiría.
+	 */
+	refreshStoreOnSuccess?: boolean;
 }) => {
 	const dispatch = useAppDispatch();
 	const rutId = React.useId();
@@ -39,7 +80,7 @@ const CreateCustomerSaleModal = ({
 	const emailId = React.useId();
 	const phoneId = React.useId();
 
-	const formik = useFormik({
+	const formik = useFormik<CustomerSaleFormValues>({
 		initialValues: {
 			document_number: initialData?.document_number ?? initialData?.rut ?? '',
 			billing_company: initialData?.billing_company ?? '',
@@ -56,10 +97,10 @@ const CreateCustomerSaleModal = ({
 			email: Yup.string().email('Email inválido').required('Email requerido'),
 			billing_company: Yup.string().required('Empresa/Persona requerida'),
 		}),
-		onSubmit: async (values, { setSubmitting }) => {
+		onSubmit: async (values, { setSubmitting, setFieldError }) => {
 			try {
 				if (!subsidiaryId) {
-					console.error('Subsidiaria no seleccionada');
+					toast.error('No se pudo determinar la subsidiaria activa');
 					return;
 				}
 
@@ -88,15 +129,17 @@ const CreateCustomerSaleModal = ({
 					).unwrap();
 
 					// refrescar detalle y overview
-					dispatch(
-						fetchCustomerDetailThunk({
-							subsidiary: subsidiaryId,
-							id: initialData.id,
-						}),
-					).catch(() => undefined);
-					dispatch(fetchCustomersOverviewThunk({ subsidiary: subsidiaryId })).catch(
-						() => undefined,
-					);
+					if (refreshStoreOnSuccess) {
+						dispatch(
+							fetchCustomerDetailThunk({
+								subsidiary: subsidiaryId,
+								id: initialData.id,
+							}),
+						).catch(() => undefined);
+						dispatch(fetchCustomersOverviewThunk({ subsidiary: subsidiaryId })).catch(
+							() => undefined,
+						);
+					}
 					onSuccess?.(customer);
 					setIsOpen(false);
 				} else {
@@ -123,18 +166,26 @@ const CreateCustomerSaleModal = ({
 						}),
 					).unwrap();
 
-					dispatch(fetchCustomersOverviewThunk({ subsidiary: subsidiaryId })).catch(
-						() => undefined,
-					);
+					if (refreshStoreOnSuccess)
+						dispatch(fetchCustomersOverviewThunk({ subsidiary: subsidiaryId })).catch(
+							() => undefined,
+						);
 					onSuccess?.(customer);
 					setIsOpen(false);
 					formik.resetForm();
 				}
 			} catch (error) {
-				console.error(
-					isEdit ? 'Error actualizando cliente' : 'Error creando cliente',
-					error,
-				);
+				const fallback = isEdit
+					? 'No se pudo actualizar el cliente'
+					: 'No se pudo crear el cliente';
+				const requestError = isRequestError(error) ? error : null;
+				// Un 422 de Laravel trae el detalle por campo: lo pintamos sobre el input
+				// correspondiente además del toast, para que el usuario sepa qué corregir.
+				Object.entries(requestError?.errors ?? {}).forEach(([apiField, messages]) => {
+					const formField = FORM_FIELD_BY_API_FIELD[apiField];
+					if (formField && messages[0]) setFieldError(formField, messages[0]);
+				});
+				toast.error(requestError?.message ?? fallback);
 			} finally {
 				setSubmitting(false);
 			}

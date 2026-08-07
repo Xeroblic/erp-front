@@ -10,6 +10,45 @@ import type {
 	PaginationLinks,
 	PaginatedResponse,
 } from '@/services/salesService';
+import getDeferredPaymentErrorMessage from '@/utils/deferredPaymentsError.utils';
+
+/**
+ * Error de una mutación de cliente venta. Conserva por separado el mensaje ya
+ * normalizado (para toast / `state.error`) y los errores por campo que Laravel
+ * devuelve en un 422, para poder pintarlos sobre el input que corresponde.
+ */
+export interface CustomerSaleRequestError {
+	message: string;
+	errors?: Record<string, string[]>;
+}
+
+const asRecord = (value: unknown): Record<string, unknown> | undefined =>
+	value !== null && typeof value === 'object' && !Array.isArray(value)
+		? (value as Record<string, unknown>)
+		: undefined;
+
+const toFieldErrors = (value: unknown): Record<string, string[]> | undefined => {
+	const rawErrors = asRecord(value);
+	if (!rawErrors) return undefined;
+	const fieldErrors = Object.entries(rawErrors).reduce<Record<string, string[]>>(
+		(acc, [field, messages]) => {
+			const list = Array.isArray(messages)
+				? messages.filter((message): message is string => typeof message === 'string')
+				: [];
+			if (list.length) acc[field] = list;
+			return acc;
+		},
+		{},
+	);
+	return Object.keys(fieldErrors).length ? fieldErrors : undefined;
+};
+
+const toRequestError = (error: unknown, fallback: string): CustomerSaleRequestError => {
+	const data = asRecord(asRecord(asRecord(error)?.response)?.data);
+	const errors = toFieldErrors(data?.errors);
+	const message = getDeferredPaymentErrorMessage(error, fallback);
+	return errors ? { message, errors } : { message };
+};
 
 export interface CustomerSalesState {
 	loading: boolean;
@@ -52,7 +91,7 @@ export const fetchCustomersThunk = createAsyncThunk<
 export const fetchCustomerDetailThunk = createAsyncThunk<
 	ICustomerSale,
 	{ subsidiary: number | string; id: number | string },
-	{ rejectValue: string }
+	{ rejectValue: CustomerSaleRequestError }
 >('customerSales/fetchCustomerDetail', async ({ subsidiary, id }, { rejectWithValue }) => {
 	try {
 		// Algunos endpoints devuelven { data: {...} } y otros devuelven directamente el objeto
@@ -60,15 +99,15 @@ export const fetchCustomerDetailThunk = createAsyncThunk<
 			url: `/subsidiaries/${subsidiary}/customer-sales/${id}`,
 			method: 'get',
 		});
-	} catch (error: any) {
-		return rejectWithValue(error.response?.data || 'No se pudo obtener el cliente');
+	} catch (error: unknown) {
+		return rejectWithValue(toRequestError(error, 'No se pudo obtener el cliente'));
 	}
 });
 
 export const createCustomerThunk = createAsyncThunk<
 	ICustomerSale,
 	{ subsidiary: number | string; payload: ICustomerSalePayload },
-	{ rejectValue: string }
+	{ rejectValue: CustomerSaleRequestError }
 >('customerSales/createCustomer', async ({ subsidiary, payload }, { rejectWithValue }) => {
 	try {
 		// Algunos endpoints devuelven { data: {...} } y otros devuelven directamente el objeto
@@ -77,15 +116,15 @@ export const createCustomerThunk = createAsyncThunk<
 			method: 'post',
 			data: payload,
 		});
-	} catch (error: any) {
-		return rejectWithValue(error.response?.data || 'No se pudo crear el cliente');
+	} catch (error: unknown) {
+		return rejectWithValue(toRequestError(error, 'No se pudo crear el cliente'));
 	}
 });
 
 export const updateCustomerThunk = createAsyncThunk<
 	ICustomerSale,
 	{ subsidiary: number | string; id: number | string; payload: ICustomerSalePayload },
-	{ rejectValue: string }
+	{ rejectValue: CustomerSaleRequestError }
 >('customerSales/updateCustomer', async ({ subsidiary, id, payload }, { rejectWithValue }) => {
 	try {
 		// porque el backend envía {message, data}
@@ -94,8 +133,8 @@ export const updateCustomerThunk = createAsyncThunk<
 			method: 'patch',
 			data: payload,
 		});
-	} catch (error: any) {
-		return rejectWithValue(error.response?.data || 'No se pudo actualizar');
+	} catch (error: unknown) {
+		return rejectWithValue(toRequestError(error, 'No se pudo actualizar el cliente'));
 	}
 });
 
@@ -180,7 +219,7 @@ export const customerSalesSlice = createSlice({
 			})
 			.addCase(fetchCustomerDetailThunk.rejected, (state, action) => {
 				state.loading = false;
-				state.error = action.payload;
+				state.error = action.payload?.message ?? action.error.message;
 			})
 
 			/* Crear */
@@ -193,7 +232,7 @@ export const customerSalesSlice = createSlice({
 			})
 			.addCase(createCustomerThunk.rejected, (state, action) => {
 				state.loading = false;
-				state.error = action.payload;
+				state.error = action.payload?.message ?? action.error.message;
 			})
 
 			/* Actualizar */
@@ -209,7 +248,7 @@ export const customerSalesSlice = createSlice({
 			})
 			.addCase(updateCustomerThunk.rejected, (state, action) => {
 				state.loading = false;
-				state.error = action.payload;
+				state.error = action.payload?.message ?? action.error.message;
 			})
 
 			/* Eliminar */
