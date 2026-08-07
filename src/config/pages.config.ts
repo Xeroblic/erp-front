@@ -561,17 +561,9 @@ export const privatePages = {
 				to: '/comercial/pagos-diferidos',
 				text: 'Pagos diferidos',
 				icon: 'HeroBanknotes',
+				// Gateado solo por permiso (ZF-15): un rol como Cobranza opera el módulo
+				// completo sin necesidad de aparecer en un allowlist de nombres de rol.
 				authority: [ERP_PERMISSIONS.DEFERRED_PAYMENTS.VIEW],
-				roles: [
-					'super-admin',
-					'admin',
-					'company-admin',
-					'subsidiary-admin',
-					'branch-admin',
-					'company-supervisor',
-					'manager',
-					'salesperson',
-				],
 				requireAll: false,
 			},
 			clientesVentas: {

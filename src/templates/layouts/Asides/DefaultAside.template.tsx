@@ -495,10 +495,9 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
-							{/* Pagos diferidos */}
+							{/* Pagos diferidos — solo por permiso (ZF-15), sin allowlist de roles */}
 							<AuthorityCheckNav
 								authority={Pages.commercial.subPages.pagosDiferidos.authority}
-								roles={Pages.commercial.subPages.pagosDiferidos.roles}
 								userAuthority={userAuthority}>
 								<NavItem
 									text={Pages.commercial.subPages.pagosDiferidos.text}

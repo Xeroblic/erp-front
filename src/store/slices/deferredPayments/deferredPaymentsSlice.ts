@@ -19,6 +19,7 @@ import type {
 	UpdateDeferredPaymentPayload,
 } from '@/interface/deferredPayments.interface';
 import deferredPaymentsService from '@/services/deferredPaymentsService';
+import getDeferredPaymentErrorMessage from '@/utils/deferredPaymentsError.utils';
 
 export const DEFAULT_DEFERRED_PAYMENTS_FILTERS: DeferredPaymentsFilters = {
 	page: 1,
@@ -107,15 +108,7 @@ const asRecord = (value: unknown): Record<string, unknown> | undefined =>
 		? (value as Record<string, unknown>)
 		: undefined;
 
-const getErrorMessage = (error: unknown, fallback: string): string => {
-	const errorRecord = asRecord(error);
-	const responseRecord = asRecord(errorRecord?.response);
-	const dataRecord = asRecord(responseRecord?.data);
-	if (typeof dataRecord?.message === 'string' && dataRecord.message.trim())
-		return dataRecord.message;
-	if (error instanceof Error && error.message.trim()) return error.message;
-	return fallback;
-};
+const getErrorMessage = getDeferredPaymentErrorMessage;
 
 export interface DeferredPaymentMutationError {
 	message: string;
