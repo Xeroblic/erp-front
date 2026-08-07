@@ -1,5 +1,15 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
-import Button from './ui/Button';
+
+/**
+ * Clases del botón de la UI de error. Se replican aquí en lugar de usar
+ * `@/components/ui/Button` a propósito: este boundary se monta por fuera del
+ * `<Provider>` de Redux (ver `src/index.tsx`), y `Button` depende del store vía
+ * `useReactiveThemeConfig`/`useAuthorization`. Si el fallback usara `Button`,
+ * al capturar un error lanzaría "could not find react-redux context value" y la
+ * pantalla quedaría en blanco en vez de mostrar el mensaje de error.
+ */
+const FALLBACK_BUTTON_BASE =
+	'flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/40';
 
 interface Props {
 	children: ReactNode;
@@ -83,15 +93,18 @@ class ErrorBoundary extends Component<Props, State> {
 						</p>
 
 						<div className='flex gap-3'>
-							<Button
+							<button
+								type='button'
 								onClick={this.handleGoHome}
-								variant='outline'
-								className='flex-1'>
+								className={`${FALLBACK_BUTTON_BASE} border border-zinc-300 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-700`}>
 								Ir al inicio
-							</Button>
-							<Button onClick={this.handleReload} className='flex-1'>
+							</button>
+							<button
+								type='button'
+								onClick={this.handleReload}
+								className={`${FALLBACK_BUTTON_BASE} bg-blue-600 text-white hover:bg-blue-700`}>
 								Recargar página
-							</Button>
+							</button>
 						</div>
 
 						{import.meta.env.DEV && this.state.error && (
