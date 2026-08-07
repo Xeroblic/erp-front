@@ -24,15 +24,16 @@ const EditableSelect = <FormValues extends Record<string, any>>({
 	const touched = (formik.touched as Record<string, any>)[name];
 	const error = (formik.errors as Record<string, any>)[name];
 	const inputId = useId();
+	const hasValue = typeof value === 'string' ? value.trim().length > 0 : Boolean(value);
 
 	if (!isEditable) {
 		const display =
 			options.find((opt) => opt.value === String(value))?.label ||
-			(value ? String(value) : '—');
+			(hasValue ? String(value) : 'Sin información registrada.');
 		return (
-			<div className='space-y-1'>
-				<Label htmlFor={inputId}>{label}</Label>
-				<p id={inputId} className='text-base text-zinc-800 dark:text-zinc-200'>
+			<div className='border-t border-zinc-200 pt-3 dark:border-zinc-700'>
+				<p className='text-sm text-zinc-500 dark:text-zinc-400'>{label}</p>
+				<p id={inputId} className='mt-1 font-semibold text-zinc-800 dark:text-zinc-200'>
 					{display}
 				</p>
 			</div>
@@ -49,7 +50,7 @@ const EditableSelect = <FormValues extends Record<string, any>>({
 				placeholder={placeholder}
 				value={
 					value != null
-						? options.find((opt) => opt.value === String(value)) ?? null
+						? (options.find((opt) => opt.value === String(value)) ?? null)
 						: null
 				}
 				onChange={(option) => {

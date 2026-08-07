@@ -79,10 +79,7 @@ const CustomerCreditProfileCardContent: React.FC<{
 		onSavingChange?.(isSaving);
 	}, [isSaving, onSavingChange]);
 
-	useEffect(
-		() => () => onSavingChangeRef.current?.(false),
-		[],
-	);
+	useEffect(() => () => onSavingChangeRef.current?.(false), []);
 
 	useEffect(() => {
 		if (
@@ -179,9 +176,9 @@ const CustomerCreditProfileCardContent: React.FC<{
 
 				{!isLoading && !loadError && !isEditing && !hasProfile && (
 					<div className='rounded-xl border border-dashed border-zinc-300 p-4 text-center dark:border-zinc-700'>
-						<p className='text-sm text-zinc-500'>Sin perfil de crédito.</p>
+						<p className='text-sm text-zinc-500'>Sin información registrada.</p>
 						<p className='mt-1 text-sm text-zinc-400'>
-							Configura plazo, cupo y condiciones para este cliente.
+							Aún no existe un perfil de crédito para este cliente.
 						</p>
 					</div>
 				)}
@@ -237,7 +234,7 @@ const CustomerCreditProfileCardContent: React.FC<{
 						<div className='border-t border-zinc-200 pt-4 dark:border-zinc-700'>
 							<p className='text-sm text-zinc-500'>Notas</p>
 							<p className='mt-1 whitespace-pre-wrap text-sm text-zinc-600 dark:text-zinc-300'>
-								{profile.notes || 'Sin observaciones registradas.'}
+								{profile.notes || 'Sin información registrada.'}
 							</p>
 						</div>
 					</div>

@@ -30,7 +30,16 @@ const emptySummaryData = {
 	current: { count: 0, amount: '0' },
 };
 
-let creditProfileResponse: unknown = { data: { id: null, customer_sale_id: null, is_active: false, payment_term_days: 30, credit_limit: null, notes: null } };
+let creditProfileResponse: unknown = {
+	data: {
+		id: null,
+		customer_sale_id: null,
+		is_active: false,
+		payment_term_days: 30,
+		credit_limit: null,
+		notes: null,
+	},
+};
 let creditProfilePutResponse: unknown = null;
 let shouldRejectCreditProfile = false;
 let creditProfileError: Error | null = null;
@@ -47,13 +56,21 @@ const deferred = <T,>() => {
 
 const setupFetchData = () => {
 	apiSpies.fetchData.mockImplementation(({ url, method }: { url: string; method?: string }) => {
-		if (url.includes('/customer-sales') && url.includes('/credit-profile') && method !== 'put') {
+		if (
+			url.includes('/customer-sales') &&
+			url.includes('/credit-profile') &&
+			method !== 'put'
+		) {
 			if (shouldRejectCreditProfile) {
 				return Promise.reject(creditProfileError ?? new Error('Servicio no disponible'));
 			}
 			return Promise.resolve(creditProfileResponse);
 		}
-		if (url.includes('/customer-sales') && url.includes('/credit-profile') && method === 'put') {
+		if (
+			url.includes('/customer-sales') &&
+			url.includes('/credit-profile') &&
+			method === 'put'
+		) {
 			if (shouldRejectCreditProfile) {
 				return Promise.reject(creditProfileError ?? new Error('No se pudo guardar'));
 			}
@@ -80,7 +97,16 @@ describe('CustomerCreditProfileCard', () => {
 		apiSpies.invalidateCache.mockReset();
 		authorizationSpies.authorize.mockReset().mockReturnValue(true);
 		authorizationSpies.hasAnyPermission.mockReset().mockReturnValue(true);
-		creditProfileResponse = { data: { id: null, customer_sale_id: null, is_active: false, payment_term_days: 30, credit_limit: null, notes: null } };
+		creditProfileResponse = {
+			data: {
+				id: null,
+				customer_sale_id: null,
+				is_active: false,
+				payment_term_days: 30,
+				credit_limit: null,
+				notes: null,
+			},
+		};
 		creditProfilePutResponse = null;
 		shouldRejectCreditProfile = false;
 		creditProfileError = null;
@@ -100,7 +126,7 @@ describe('CustomerCreditProfileCard', () => {
 
 		render(<CustomerCreditProfileCard customerSaleId={8} />);
 
-		expect(await screen.findByText('Sin perfil de crédito.')).toBeInTheDocument();
+		expect(await screen.findByText('Sin información registrada.')).toBeInTheDocument();
 		fireEvent.click(screen.getByRole('button', { name: 'Crear perfil' }));
 		fireEvent.change(screen.getByLabelText('Plazo de pago (días)'), {
 			target: { value: '45' },
@@ -162,17 +188,23 @@ describe('CustomerCreditProfileCard', () => {
 			},
 		};
 		setupFetchData();
-		apiSpies.fetchData.mockImplementation(({ url, method }: { url: string; method?: string }) => {
-			if (url.includes('/customer-sales') && url.includes('/credit-profile') && method !== 'put') {
-				return Promise.resolve(creditProfileResponse);
-			}
-			if (url.includes('/deferred-payments/summary')) {
-				return Promise.resolve({
-					data: { ...emptySummaryData, total_outstanding: '350000' },
-				});
-			}
-			return Promise.reject(new Error(`URL no esperada: ${url}`));
-		});
+		apiSpies.fetchData.mockImplementation(
+			({ url, method }: { url: string; method?: string }) => {
+				if (
+					url.includes('/customer-sales') &&
+					url.includes('/credit-profile') &&
+					method !== 'put'
+				) {
+					return Promise.resolve(creditProfileResponse);
+				}
+				if (url.includes('/deferred-payments/summary')) {
+					return Promise.resolve({
+						data: { ...emptySummaryData, total_outstanding: '350000' },
+					});
+				}
+				return Promise.reject(new Error(`URL no esperada: ${url}`));
+			},
+		);
 
 		render(<CustomerCreditProfileCard customerSaleId={8} />);
 
@@ -226,24 +258,43 @@ describe('CustomerCreditProfileCard', () => {
 		shouldRejectCreditProfile = false;
 		setupFetchData();
 		fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
-		expect(await screen.findByText('Sin perfil de crédito.')).toBeInTheDocument();
+		expect(await screen.findByText('Sin información registrada.')).toBeInTheDocument();
 		await waitForButtonClickGuard();
 	});
 
 	it('conserva el borrador tras un error al guardar y permite cancelarlo', async () => {
 		creditProfilePutResponse = null;
-		apiSpies.fetchData.mockImplementation(({ url, method }: { url: string; method?: string }) => {
-			if (url.includes('/customer-sales') && url.includes('/credit-profile') && method !== 'put') {
-				return Promise.resolve({ data: { id: null, customer_sale_id: null, is_active: false, payment_term_days: 30, credit_limit: null, notes: null } });
-			}
-			if (url.includes('/customer-sales') && url.includes('/credit-profile') && method === 'put') {
-				return Promise.reject(new Error('No se pudo guardar'));
-			}
-			if (url.includes('/deferred-payments/summary')) {
-				return Promise.resolve({ data: emptySummaryData });
-			}
-			return Promise.reject(new Error(`URL no esperada: ${url}`));
-		});
+		apiSpies.fetchData.mockImplementation(
+			({ url, method }: { url: string; method?: string }) => {
+				if (
+					url.includes('/customer-sales') &&
+					url.includes('/credit-profile') &&
+					method !== 'put'
+				) {
+					return Promise.resolve({
+						data: {
+							id: null,
+							customer_sale_id: null,
+							is_active: false,
+							payment_term_days: 30,
+							credit_limit: null,
+							notes: null,
+						},
+					});
+				}
+				if (
+					url.includes('/customer-sales') &&
+					url.includes('/credit-profile') &&
+					method === 'put'
+				) {
+					return Promise.reject(new Error('No se pudo guardar'));
+				}
+				if (url.includes('/deferred-payments/summary')) {
+					return Promise.resolve({ data: emptySummaryData });
+				}
+				return Promise.reject(new Error(`URL no esperada: ${url}`));
+			},
+		);
 
 		render(<CustomerCreditProfileCard customerSaleId={8} />);
 
@@ -256,22 +307,24 @@ describe('CustomerCreditProfileCard', () => {
 		expect(await screen.findByText('No se pudo guardar')).toBeInTheDocument();
 		expect(screen.getByLabelText('Plazo de pago (días)')).toHaveValue(45);
 		fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
-		expect(screen.getByText('Sin perfil de crédito.')).toBeInTheDocument();
+		expect(screen.getByText('Sin información registrada.')).toBeInTheDocument();
 		await waitForButtonClickGuard();
 	});
 
 	it('ignora una carga obsoleta después de cambiar de cliente', async () => {
 		const firstLoad = deferred<unknown>();
 		const secondLoad = deferred<unknown>();
-		apiSpies.fetchData.mockImplementation(({ url, method }: { url: string; method?: string }) => {
-			if (url.includes('/customer-sales/8/credit-profile') && method !== 'put') {
-				return firstLoad.promise;
-			}
-			if (url.includes('/customer-sales/9/credit-profile') && method !== 'put') {
-				return secondLoad.promise;
-			}
-			return Promise.reject(new Error(`URL no esperada: ${url}`));
-		});
+		apiSpies.fetchData.mockImplementation(
+			({ url, method }: { url: string; method?: string }) => {
+				if (url.includes('/customer-sales/8/credit-profile') && method !== 'put') {
+					return firstLoad.promise;
+				}
+				if (url.includes('/customer-sales/9/credit-profile') && method !== 'put') {
+					return secondLoad.promise;
+				}
+				return Promise.reject(new Error(`URL no esperada: ${url}`));
+			},
+		);
 
 		const view = render(<CustomerCreditProfileCard customerSaleId={8} />);
 		await waitFor(() => expect(apiSpies.fetchData).toHaveBeenCalledTimes(1));
@@ -314,7 +367,7 @@ describe('CustomerCreditProfileCard', () => {
 		fireEvent.change(screen.getByLabelText('Notas'), { target: { value: 'Borrador de A' } });
 
 		view.rerender(<CustomerCreditProfileCard customerSaleId={9} />);
-		expect(await screen.findByText('Sin perfil de crédito.')).toBeInTheDocument();
+		expect(await screen.findByText('Sin información registrada.')).toBeInTheDocument();
 		expect(
 			screen.queryByRole('form', { name: 'Formulario de condiciones de crédito' }),
 		).not.toBeInTheDocument();
