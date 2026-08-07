@@ -118,9 +118,13 @@ export const privatePages = {
 		icon: 'HeroBuildingStorefront',
 		// Gateado solo por permiso: cada subpágina exige su propio authority. Se listan
 		// aquí todos los permisos que abren alguna subpágina de Gestión (view-company,
-		// view-user, view-subsidiary, view-branch) para que el título/collapse no bloquee
-		// a roles como Cobranza que solo tienen un subconjunto de esos permisos.
-		authority: ['view-company', 'view-user', 'view-subsidiary', 'view-branch'],
+		// view-subsidiary, view-branch, manage-roles, edit-user) para que el título/collapse
+		// no bloquee a roles que solo tienen un subconjunto de esos permisos.
+		// OJO: `view-user` NO va en esta lista. Cobranza lo tiene solo para poblar el
+		// selector de encargados (assignee_ids) de Pagos diferidos, no para administrar
+		// usuarios; incluirlo aquí mostraba «Gestión de usuarios» a un rol que después
+		// recibía 403 en /roles y /permissions.
+		authority: ['view-company', 'view-subsidiary', 'view-branch', 'manage-roles', 'edit-user'],
 		requireAll: false,
 		subPages: {
 			company: {
@@ -188,7 +192,10 @@ export const privatePages = {
 				to: '/gestion/roles-permisos',
 				text: 'Gestion de usuarios',
 				icon: 'DuoGroup',
-				authority: ['manage-roles', 'view-user'],
+				// Administrar usuarios exige permiso de administración, no `view-user`
+				// (que solo habilita listar usuarios para selectores, p. ej. los
+				// encargados/assignee_ids de Pagos diferidos).
+				authority: ['manage-roles', 'edit-user'],
 				requireAll: false,
 			},
 			rolesPermisosDetail: {
@@ -196,7 +203,9 @@ export const privatePages = {
 				to: '/gestion/roles-permisos/:userId',
 				text: 'Detalle Usuario',
 				icon: 'DuoUser',
-				authority: ['manage-roles', 'view-user'],
+				// Mismo criterio que `rolesPermisos`: el detalle dispara /roles y
+				// /permissions, que requieren permisos de administración.
+				authority: ['manage-roles', 'edit-user'],
 				requireAll: false,
 			},
 		},
