@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import type { IDeferredPaymentDocument } from '@/interface/deferredPayments.interface';
 import Container from '@/components/layouts/Container/Container';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
@@ -15,8 +16,18 @@ import CreateEditDeferredPaymentModal from './components/modals/CreateEditDeferr
 import DeferredPaymentsTable from './components/tables/DeferredPaymentsTable';
 import usePagosDiferidos from './hooks/usePagosDiferidos';
 
+const getCustomerNameFromNavigationState = (state: unknown): string | undefined => {
+	if (state === null || typeof state !== 'object' || !('customerName' in state)) return undefined;
+	const { customerName } = state as { customerName: unknown };
+	return typeof customerName === 'string' ? customerName : undefined;
+};
+
 const PagosDiferidosView: React.FC = () => {
-	const { data, state, filters, selection, actions, branch } = usePagosDiferidos();
+	const location = useLocation();
+	const filteredCustomerName = getCustomerNameFromNavigationState(location.state);
+	const { data, state, filters, selection, actions, branch } = usePagosDiferidos({
+		initialSearch: filteredCustomerName,
+	});
 	const [isCreateOpen, setIsCreateOpen] = useState(false);
 	const [editingDocument, setEditingDocument] = useState<IDeferredPaymentDocument | null>(null);
 	const setDeferredPaymentsFilter = filters.setFilter;

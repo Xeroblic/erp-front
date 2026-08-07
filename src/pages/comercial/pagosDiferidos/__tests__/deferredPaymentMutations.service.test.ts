@@ -22,6 +22,7 @@ const payload: CreateDeferredPaymentPayload = {
 	document_number: '1900',
 	issue_date: '2026-07-22',
 	due_date: '2026-08-21',
+	total_amount: 475976,
 	purchase_order: '2525',
 	notes: 'Documento conectado a la API',
 	assignee_ids: [12, 15],
@@ -52,13 +53,13 @@ describe('ZF-7 mutaciones mediante el servicio', () => {
 		const document = DEFERRED_PAYMENT_DETAIL_FIXTURES[1];
 		serviceSpies.createDocument.mockResolvedValue({
 			document,
-			credit_limit_exceeded: true,
+			credit_limit_exceeded: false,
 		});
 		const store = createStore();
 
 		await expect(
 			store.dispatch(createDeferredPayment({ subsidiaryId: 9, payload })).unwrap(),
-		).resolves.toEqual({ document, credit_limit_exceeded: true });
+		).resolves.toEqual({ document, credit_limit_exceeded: false });
 
 		expect(serviceSpies.createDocument).toHaveBeenCalledWith(
 			9,
@@ -68,7 +69,7 @@ describe('ZF-7 mutaciones mediante el servicio', () => {
 				document_number: '1900',
 				issue_date: '2026-07-22',
 				due_date: '2026-08-21',
-				total_amount: '953980.00',
+				total_amount: '475976.00',
 				purchase_order: '2525',
 				notes: 'Documento conectado a la API',
 				assignee_ids: [12, 15],
@@ -91,7 +92,7 @@ describe('ZF-7 mutaciones mediante el servicio', () => {
 		const document = DEFERRED_PAYMENT_DETAIL_FIXTURES[2];
 		serviceSpies.updateDocument.mockResolvedValue({
 			document,
-			credit_limit_exceeded: true,
+			credit_limit_exceeded: false,
 		});
 		const store = createStore();
 
@@ -105,7 +106,7 @@ describe('ZF-7 mutaciones mediante el servicio', () => {
 					}),
 				)
 				.unwrap(),
-		).resolves.toEqual({ document, credit_limit_exceeded: true });
+		).resolves.toEqual({ document, credit_limit_exceeded: false });
 
 		expect(serviceSpies.updateDocument).toHaveBeenCalledWith(
 			9,
