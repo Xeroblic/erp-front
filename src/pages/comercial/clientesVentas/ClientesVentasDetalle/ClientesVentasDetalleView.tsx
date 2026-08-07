@@ -34,7 +34,6 @@ const CUSTOMER_DETAIL_TEXT_FIELD_NAMES = new Set([
 	'trade_activity',
 	'billing_address_1',
 	'billing_city',
-	'billing_postcode',
 	'shipping_address_1',
 	'shipping_city',
 ]);
@@ -330,14 +329,6 @@ const ClientesVentasDetalleView = () => {
 														formik={formik}
 														name='billing_city'
 														label='Ciudad'
-														isEditable={isEditable}
-													/>
-												</div>
-												<div className='detail-content-item'>
-													<EditableField
-														formik={formik}
-														name='billing_postcode'
-														label='Código Postal'
 														isEditable={isEditable}
 													/>
 												</div>
