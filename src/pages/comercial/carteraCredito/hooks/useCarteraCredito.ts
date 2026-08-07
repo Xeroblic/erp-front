@@ -7,23 +7,15 @@ import type {
 	IDeferredPaymentCreditProfileListItem,
 } from '@/interface/deferredPayments.interface';
 import deferredPaymentsService from '@/services/deferredPaymentsService';
+import getApiErrorMessage from '@/utils/apiError.utils';
 import type { CreditProfileStatusFilter } from '../types';
 
 const DEFAULT_FILTERS: DeferredPaymentCreditProfilesFilters = { page: 1, per_page: 10 };
 
-const getErrorMessage = (error: unknown): string => {
-	if (error !== null && typeof error === 'object' && 'response' in error) {
-		const { response } = error;
-		if (response !== null && typeof response === 'object' && 'status' in response) {
-			if (response.status === 403) return 'No tenés acceso a esta subsidiaria.';
-		}
-	}
-	return 'No se pudo cargar la cartera de crédito.';
-};
-
 const useCarteraCredito = () => {
 	const { branchId, subsidiaryId } = useCurrentBranch();
 	const [filters, setFilters] = useState<DeferredPaymentCreditProfilesFilters>(DEFAULT_FILTERS);
+	const [filtersSubsidiaryId, setFiltersSubsidiaryId] = useState(subsidiaryId);
 	const [status, setStatus] = useState<CreditProfileStatusFilter>('all');
 	const [search, setSearch] = useState('');
 	const [rows, setRows] = useState<IDeferredPaymentCreditProfileListItem[]>([]);
@@ -31,15 +23,20 @@ const useCarteraCredito = () => {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const requestIdRef = useRef(0);
-	const [debouncedSearch] = useDebounce(search, 300);
+	const searchInput = useMemo(() => ({ value: search, subsidiaryId }), [search, subsidiaryId]);
+	const [debouncedSearch] = useDebounce(searchInput, 300);
+	const effectiveSearch =
+		debouncedSearch.subsidiaryId === subsidiaryId
+			? debouncedSearch.value.trim() || undefined
+			: undefined;
 
 	const requestFilters = useMemo(
 		() => ({
 			...filters,
-			search: debouncedSearch.trim() || undefined,
+			search: effectiveSearch,
 			active: status === 'all' ? undefined : status === 'active',
 		}),
-		[debouncedSearch, filters, status],
+		[effectiveSearch, filters, status],
 	);
 
 	const load = useCallback(
@@ -62,7 +59,9 @@ const useCarteraCredito = () => {
 				if (signal?.aborted || requestId !== requestIdRef.current) return;
 				setRows([]);
 				setMeta(null);
-				setError(getErrorMessage(requestError));
+				setError(
+					getApiErrorMessage(requestError, 'No se pudo cargar la cartera de crédito.'),
+				);
 			} finally {
 				if (!signal?.aborted && requestId === requestIdRef.current) setLoading(false);
 			}
@@ -72,6 +71,7 @@ const useCarteraCredito = () => {
 
 	useEffect(() => {
 		requestIdRef.current += 1;
+		setFiltersSubsidiaryId(subsidiaryId);
 		setRows([]);
 		setMeta(null);
 		setError(null);
@@ -81,11 +81,11 @@ const useCarteraCredito = () => {
 	}, [subsidiaryId]);
 
 	useEffect(() => {
-		if (subsidiaryId === null) return undefined;
+		if (subsidiaryId === null || filtersSubsidiaryId !== subsidiaryId) return undefined;
 		const controller = new AbortController();
 		load(controller.signal).catch(() => undefined);
 		return () => controller.abort();
-	}, [load, subsidiaryId]);
+	}, [filtersSubsidiaryId, load, subsidiaryId]);
 
 	const updateSearch = useCallback((value: string) => {
 		setSearch(value);

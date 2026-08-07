@@ -23,27 +23,33 @@ import CreditProfileEditModal from './components/CreditProfileEditModal';
 import useCarteraCredito from './hooks/useCarteraCredito';
 import type { CreditProfileStatusFilter } from './types';
 
-const statusOptions: TSelectOption[] = [
+const statusOptions: Array<TSelectOption & { value: CreditProfileStatusFilter }> = [
 	{ value: 'all', label: 'Todos' },
 	{ value: 'active', label: 'Vigentes' },
 	{ value: 'suspended', label: 'Suspendidos' },
 ];
 const getCustomerName = (row: IDeferredPaymentCreditProfileListItem): string =>
 	row.customer?.billing_company ?? row.customer?.contact_name ?? 'Cliente sin nombre';
-const getCustomerSearchText = (row: IDeferredPaymentCreditProfileListItem): string =>
-	row.customer?.billing_company ?? row.customer?.rut ?? getCustomerName(row);
+const getCustomerSearchText = (row: IDeferredPaymentCreditProfileListItem): string | undefined =>
+	row.customer?.billing_company?.trim() || row.customer?.rut.trim() || undefined;
 const formatAmount = (amount: string | null): string =>
 	amount === null ? '—' : formatDeferredPaymentAmount(amount);
 const getAmountColorClass = (amount: string | null): string =>
 	amount?.trim().startsWith('-') ? 'text-red-600 dark:text-red-400' : '';
-const getSelectValue = (option: unknown, fallback: string): string =>
-	option !== null &&
-	typeof option === 'object' &&
-	!Array.isArray(option) &&
-	'value' in option &&
-	typeof option.value === 'string'
-		? option.value
-		: fallback;
+const isCreditProfileStatusFilter = (value: string): value is CreditProfileStatusFilter =>
+	statusOptions.some((option) => option.value === value);
+const getStatusFilter = (option: unknown): CreditProfileStatusFilter => {
+	if (
+		option !== null &&
+		typeof option === 'object' &&
+		!Array.isArray(option) &&
+		'value' in option &&
+		typeof option.value === 'string' &&
+		isCreditProfileStatusFilter(option.value)
+	)
+		return option.value;
+	return 'all';
+};
 
 interface CreditPortfolioPaginationProps {
 	meta: NonNullable<ReturnType<typeof useCarteraCredito>['data']['meta']>;
@@ -93,9 +99,9 @@ const CarteraCreditoView: React.FC = () => {
 		[navigate],
 	);
 	const openDocuments = useCallback(
-		(customerName: string) =>
+		(customerName: string | undefined) =>
 			navigate('/comercial/pagos-diferidos', {
-				state: { customerName },
+				state: customerName ? { customerName } : undefined,
 			}),
 		[navigate],
 	);
@@ -167,12 +173,7 @@ const CarteraCreditoView: React.FC = () => {
 											options={statusOptions}
 											value={selectedStatus}
 											onChange={(option) =>
-												filters.setStatus(
-													getSelectValue(
-														option,
-														'all',
-													) as CreditProfileStatusFilter,
-												)
+												filters.setStatus(getStatusFilter(option))
 											}
 											isClearable={false}
 										/>
@@ -233,10 +234,12 @@ const CarteraCreditoView: React.FC = () => {
 												<Tr>
 													<Td colSpan={7} className='py-12 text-center'>
 														<p className='font-medium text-zinc-700 dark:text-zinc-200'>
-															Sin resultados para los filtros aplicados
+															Sin resultados para los filtros
+															aplicados
 														</p>
 														<p className='mt-1 text-sm text-zinc-500'>
-															Prueba ajustando o limpiando los filtros.
+															Prueba ajustando o limpiando los
+															filtros.
 														</p>
 													</Td>
 												</Tr>
@@ -309,32 +312,56 @@ const CarteraCreditoView: React.FC = () => {
 													</Td>
 													<Td>
 														<div className='flex justify-center gap-1'>
-															<Tooltip text='Ver documentos' placement='top-end'>
+															<Tooltip
+																text='Ver documentos'
+																placement='top-end'>
 																<Button
 																	variant='outline'
 																	size='sm'
 																	color='violet'
 																	className='bg-violet-600 p-1 hover:bg-violet-700/30'
-											aria-label={`Ver documentos de ${getCustomerName(row)}`}
-											onClick={() =>
-													openDocuments(getCustomerSearchText(row))
-											}>
-																	<Icon icon='HeroDocumentText' color='white' className='text-xl' />
+																	aria-label={`Ver documentos de ${getCustomerName(row)}`}
+																	onClick={() =>
+																		openDocuments(
+																			getCustomerSearchText(
+																				row,
+																			),
+																		)
+																	}>
+																	<Icon
+																		icon='HeroDocumentText'
+																		color='white'
+																		className='text-xl'
+																	/>
 																</Button>
 															</Tooltip>
-															<Tooltip text='Editar condiciones' placement='top-end'>
+															<Tooltip
+																text='Editar condiciones'
+																placement='top-end'>
 																<ProtectedButton
 																	variant='solid'
 																	size='sm'
 																	color='green'
 																	className='bg-green-600 p-1 hover:bg-green-700/20'
-																	permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.UPDATE}
+																	permission={
+																		ERP_PERMISSIONS
+																			.DEFERRED_PAYMENTS
+																			.UPDATE
+																	}
 																	branchId={branch.branchId}
-																	subsidiaryId={branch.subsidiaryId}
+																	subsidiaryId={
+																		branch.subsidiaryId
+																	}
 																	scope='access'
 																	aria-label={`Editar crédito de ${getCustomerName(row)}`}
-																	onClick={() => setEditingProfile(row)}>
-																	<Icon icon='HeroPencil' color='white' className='text-xl' />
+																	onClick={() =>
+																		setEditingProfile(row)
+																	}>
+																	<Icon
+																		icon='HeroPencil'
+																		color='white'
+																		className='text-xl'
+																	/>
 																</ProtectedButton>
 															</Tooltip>
 														</div>
