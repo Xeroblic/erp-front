@@ -1,12 +1,8 @@
-import classNames from 'classnames';
 import { useFormik } from 'formik';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import * as Yup from 'yup';
-import FieldWrap from '@/components/form/FieldWrap';
-import Input from '@/components/form/Input';
-import Validation from '@/components/form/Validation';
 import Icon from '@/components/icon/Icon';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Badge from '@/components/ui/Badge';
@@ -14,6 +10,7 @@ import Button from '@/components/ui/Button';
 import ApiService from '@/services/ApiService';
 import LogoTemplate from '@/templates/layouts/Logo/Logo.template';
 import useForceLightMode from '@/hooks/useForceLightMode';
+import { resolveActivationError } from '@/utils/activationError.util';
 
 type InvitationPreview = {
 	email?: string;
@@ -29,45 +26,13 @@ const validationSchema = Yup.object().shape({
 	password: Yup.string()
 		.min(
 			MIN_PASSWORD_LENGTH,
-			`La contrasena debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres`,
+			`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres`,
 		)
-		.required('La contrasena es obligatoria'),
+		.required('La contraseña es obligatoria'),
 	confirm_password: Yup.string()
-		.oneOf([Yup.ref('password')], 'Las contrasenas no coinciden')
-		.required('Debes confirmar la contrasena'),
+		.oneOf([Yup.ref('password')], 'Las contraseñas no coinciden')
+		.required('Debes confirmar la contraseña'),
 });
-
-const resolveActivationError = (error: unknown): string => {
-	if (!error || typeof error !== 'object') {
-		return 'No se pudo activar la cuenta. Intentalo nuevamente.';
-	}
-
-	const apiError = error as {
-		response?: {
-			data?: {
-				detail?: string;
-				message?: string;
-				errors?: Record<string, string[]>;
-			};
-		};
-		message?: string;
-	};
-
-	const detail = apiError.response?.data?.detail ?? apiError.response?.data?.message;
-	if (detail) return detail;
-
-	const errors = apiError.response?.data?.errors;
-	if (errors) {
-		for (const key of Object.keys(errors)) {
-			const messages = errors[key];
-			if (Array.isArray(messages) && messages.length > 0) {
-				return messages[0];
-			}
-		}
-	}
-
-	return apiError.message ?? 'No se pudo activar la cuenta. Intentalo nuevamente.';
-};
 
 const renderInvalidState = (
 	navigate: ReturnType<typeof useNavigate>,
@@ -111,14 +76,22 @@ const renderInvalidState = (
 );
 
 const AceptarInvitacionEmpresa = () => {
+	// Debe invocarse antes de cualquier return condicional: si se llama al final del
+	// componente, los early returns de abajo omiten sus hooks internos y React lanza
+	// "Rendered fewer hooks than expected", tumbando toda la vista de activación.
+	useForceLightMode();
+
 	const { token } = useParams<{ token?: string }>();
 	const navigate = useNavigate();
 	const [passwordShowStatus, setPasswordShowStatus] = useState(false);
 	const [invitationInfo, setInvitationInfo] = useState<InvitationPreview | null>(null);
-	const [isLoadingInvitation, setIsLoadingInvitation] = useState(false);
 	const [fetchError, setFetchError] = useState<string | null>(null);
 
 	const isTokenMissing = useMemo(() => !token || token.trim().length === 0, [token]);
+
+	// Arranca en `true` cuando hay token: el efecto de carga corre después del
+	// primer render, y con `false` el formulario parpadeaba vacío antes del spinner.
+	const [isLoadingInvitation, setIsLoadingInvitation] = useState(!isTokenMissing);
 
 	useEffect(() => {
 		if (isTokenMissing) {
@@ -167,7 +140,7 @@ const AceptarInvitacionEmpresa = () => {
 		validationSchema,
 		onSubmit: async (values, { setSubmitting }) => {
 			if (isTokenMissing) {
-				toast.error('Enlace de activacion invalido o incompleto.');
+				toast.error('Enlace de activación inválido o incompleto.');
 				setSubmitting(false);
 				return;
 			}
@@ -184,7 +157,7 @@ const AceptarInvitacionEmpresa = () => {
 					},
 				});
 
-				toast.success('Invitacion aceptada. Redirigiendote al inicio de sesion...', {
+				toast.success('Invitación aceptada. Redirigiéndote al inicio de sesión...', {
 					autoClose: 1600,
 				});
 
@@ -207,14 +180,14 @@ const AceptarInvitacionEmpresa = () => {
 	if (isTokenMissing) {
 		return renderInvalidState(
 			navigate,
-			'Este enlace de activacion no es valido o ya fue utilizado.',
-			'Invitacion no valida',
+			'Este enlace de activación no es válido o ya fue utilizado.',
+			'Invitación no válida',
 		);
 	}
 
 	if (isLoadingInvitation) {
 		return (
-			<PageWrapper isProtectedRoute={false} title='Validando invitacion'>
+			<PageWrapper isProtectedRoute={false} title='Validando invitación'>
 				<div className='relative min-h-screen overflow-hidden bg-gradient-to-br from-blue-50 via-white to-indigo-50'>
 					<div className='absolute inset-0 overflow-hidden'>
 						<div className='absolute -left-40 -top-40 h-80 w-80 animate-pulse rounded-full bg-gradient-to-br from-blue-400/20 to-purple-400/20 blur-3xl' />
@@ -245,13 +218,11 @@ const AceptarInvitacionEmpresa = () => {
 	}
 
 	if (fetchError) {
-		return renderInvalidState(navigate, fetchError, 'Invitacion no valida');
+		return renderInvalidState(navigate, fetchError, 'Invitación no válida');
 	}
 
-	useForceLightMode();
-	
 	return (
-		<PageWrapper isProtectedRoute={false} title='Aceptar invitacion a empresa'>
+		<PageWrapper isProtectedRoute={false} title='Aceptar invitación a empresa'>
 			<div className='relative min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50'>
 				<div
 					className='absolute inset-0 opacity-[0.03]'
