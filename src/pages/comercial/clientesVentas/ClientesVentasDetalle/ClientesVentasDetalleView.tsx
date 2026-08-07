@@ -190,6 +190,7 @@ const ClientesVentasDetalleView = () => {
 										title='Identidad y contacto'
 										description='Datos para identificar y contactar al cliente.'
 										icon='HeroUser'
+										contentClassName='!grid-cols-1 md:!grid-cols-1'
 										contenRight={
 											isEditable ? (
 												<Checkbox
@@ -278,7 +279,7 @@ const ClientesVentasDetalleView = () => {
 										title='Comercial'
 										description='Preferencias de facturación'
 										icon='HeroBriefcase'
-										contentClassName='grid grid-cols-1 gap-4'>
+										contentClassName='grid grid-cols-1 gap-4 md:!grid-cols-1'>
 										<div className='detail-content-item'>
 											<EditableSelect
 												formik={formik}
@@ -324,7 +325,7 @@ const ClientesVentasDetalleView = () => {
 														isEditable={isEditable}
 													/>
 												</div>
-												<div className='detail-content-item'>
+												<div className='detail-content-item sm:col-span-2'>
 													<EditableField
 														formik={formik}
 														name='billing_city'

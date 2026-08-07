@@ -37,6 +37,8 @@ describe('campos editables en modo lectura', () => {
 		);
 
 		expect(screen.getAllByText('Sin información registrada.')).toHaveLength(2);
+		expect(screen.getByText('Texto').parentElement).toHaveClass('w-full');
+		expect(screen.getByText('Selección').parentElement).toHaveClass('w-full');
 		expect(screen.getByText('Texto').parentElement).not.toHaveClass('rounded-lg');
 	});
 });

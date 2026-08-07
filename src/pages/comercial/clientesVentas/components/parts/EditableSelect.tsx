@@ -31,7 +31,7 @@ const EditableSelect = <FormValues extends Record<string, any>>({
 			options.find((opt) => opt.value === String(value))?.label ||
 			(hasValue ? String(value) : 'Sin información registrada.');
 		return (
-			<div className='border-t border-zinc-200 pt-3 dark:border-zinc-700'>
+			<div className='w-full border-t border-zinc-200 pt-3 dark:border-zinc-700'>
 				<p className='text-sm text-zinc-500 dark:text-zinc-400'>{label}</p>
 				<p id={inputId} className='mt-1 font-semibold text-zinc-800 dark:text-zinc-200'>
 					{display}
@@ -41,7 +41,7 @@ const EditableSelect = <FormValues extends Record<string, any>>({
 	}
 
 	return (
-		<div className='space-y-1'>
+		<div className='w-full space-y-1'>
 			<Label htmlFor={inputId}>{label}</Label>
 			<SelectReact
 				inputId={inputId}

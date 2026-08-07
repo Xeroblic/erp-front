@@ -32,7 +32,7 @@ const EditableField = <FormValues extends Record<string, any>>({
 	if (!isEditable) {
 		return (
 			<div
-				className={`border-t border-zinc-200 pt-3 dark:border-zinc-700 ${
+				className={`w-full border-t border-zinc-200 pt-3 dark:border-zinc-700 ${
 					textarea ? 'min-h-24' : ''
 				}`}>
 				<p className='text-sm text-zinc-500 dark:text-zinc-400'>{label}</p>
@@ -66,7 +66,7 @@ const EditableField = <FormValues extends Record<string, any>>({
 	};
 
 	return (
-		<div className='space-y-1'>
+		<div className='w-full space-y-1'>
 			<Label htmlFor={inputId}>{label}</Label>
 			{textarea ? (
 				<Textarea {...commonProps} rows={4} id={inputId} onChange={handleChange} />
