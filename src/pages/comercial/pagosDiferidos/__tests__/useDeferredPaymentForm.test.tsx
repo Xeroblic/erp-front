@@ -26,7 +26,7 @@ vi.mock('react-toastify', () => ({ toast: toastSpies }));
 vi.mock('@/services/deferredPaymentsService', () => ({
 	default: {
 		createDocument: createMutationSpy,
-		updateDocument: vi.fn(),
+		updateDocument: createMutationSpy,
 		getDocuments: vi.fn(),
 		getSummary: vi.fn(),
 	},
@@ -71,6 +71,8 @@ describe('useDeferredPaymentForm', () => {
 
 	afterEach(() => {
 		createMutationSpy.mockClear();
+		vi.mocked(deferredPaymentsService.getDocuments).mockClear();
+		vi.mocked(deferredPaymentsService.getSummary).mockClear();
 		mutationFailure.error = null;
 		mutationGate.wait = null;
 		branchContext.subsidiaryId = 1;
@@ -207,7 +209,6 @@ describe('useDeferredPaymentForm', () => {
 		expect(createMutationSpy).toHaveBeenCalledOnce();
 		expect(toastSpies.error).not.toHaveBeenCalled();
 		expect(toastSpies.success).toHaveBeenCalledWith('Documento creado correctamente');
-		expect(store.getState().deferredPayments.lastMutationCreditLimitExceeded).toBe(false);
 		expect(store.getState().deferredPayments.list.length).toBeGreaterThan(0);
 		expect(deferredPaymentsService.getDocuments).toHaveBeenCalledWith(
 			1,
@@ -227,7 +228,6 @@ describe('useDeferredPaymentForm', () => {
 		);
 
 		hook.unmount();
-		expect(store.getState().deferredPayments.lastMutationCreditLimitExceeded).toBe(false);
 	});
 	it('aborta el guardado y omite callbacks al cambiar de subsidiaria', async () => {
 		configureSuccessfulServices();
@@ -279,24 +279,25 @@ describe('useDeferredPaymentForm', () => {
 		expect(store.getState().deferredPayments.list).toEqual([]);
 	});
 
-	it('muestra el 422 autoritativo en un toast y conserva el borrador', async () => {
+	it('muestra el 422 de perfil inactivo de ZB-74 y no refresca el estado remoto', async () => {
 		configureSuccessfulServices();
-		mutationFailure.error = Object.assign(new Error('El cliente no tiene cupo de crédito disponible.'), {
-			response: { data: { message: 'El cliente no tiene cupo de crédito disponible.' } },
-		});
-		const { hook } = createHook();
+		const message =
+			'Este cliente no tiene un perfil de crédito activo. Debe crear uno antes de emitir documentos de pago diferido a su nombre.';
+		mutationFailure.error = Object.assign(new Error(message), { response: { data: { message } } });
+		const onSuccess = vi.fn();
+		const { hook } = createHook(null, onSuccess);
 		await act(async () => {
 			await hook.result.current.formik.setValues({
 				...hook.result.current.formik.values,
 				customer_sale_id: 1,
-				document_number: 'FD-HOOK-ERROR',
+				document_number: 'FD-SIN-PERFIL',
 				total_amount: 1000,
 				items: [
 					{
-						client_key: 'hook-item-error',
+						client_key: 'hook-item-no-profile',
 						product_id: null,
 						code: 'SERV',
-						description: 'Servicio con error',
+						description: 'Servicio sin perfil',
 						quantity: 1,
 						unit_price: 1000,
 						serials: [],
@@ -308,12 +309,44 @@ describe('useDeferredPaymentForm', () => {
 			await hook.result.current.formik.submitForm();
 		});
 
-		expect(toastSpies.error).toHaveBeenCalledWith(
-			'El cliente no tiene cupo de crédito disponible.',
-		);
+		expect(toastSpies.error).toHaveBeenCalledWith(message);
 		expect(toastSpies.success).not.toHaveBeenCalled();
-		expect(hook.result.current.formik.values.document_number).toBe('FD-HOOK-ERROR');
-		expect(hook.result.current.formik.values.total_amount).toBe(1000);
+		expect(onSuccess).not.toHaveBeenCalled();
+		expect(hook.result.current.formik.values.document_number).toBe('FD-SIN-PERFIL');
+		expect(deferredPaymentsService.getDocuments).not.toHaveBeenCalled();
+		expect(deferredPaymentsService.getSummary).not.toHaveBeenCalled();
+	});
+
+	it('muestra el 422 de cupo al aumentar un documento y conserva el borrador', async () => {
+		configureSuccessfulServices();
+		const message =
+			'Este cliente superó su cupo de crédito disponible. No es posible emitir ni aumentar documentos de pago diferido hasta regularizar su saldo.';
+		mutationFailure.error = Object.assign(new Error(message), { response: { data: { message } } });
+		const document = DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0];
+		const onSuccess = vi.fn();
+		const { hook } = createHook(document, onSuccess);
+		await act(async () => {
+			await hook.result.current.formik.setValues({
+				...hook.result.current.formik.values,
+				total_amount: 3000000,
+			});
+		});
+		await act(async () => {
+			await hook.result.current.formik.submitForm();
+		});
+
+		expect(createMutationSpy).toHaveBeenCalledWith(
+			1,
+			document.id,
+			expect.objectContaining({ total_amount: '3000000.00' }),
+			expect.any(AbortSignal),
+		);
+		expect(toastSpies.error).toHaveBeenCalledWith(message);
+		expect(toastSpies.success).not.toHaveBeenCalled();
+		expect(onSuccess).not.toHaveBeenCalled();
+		expect(hook.result.current.formik.values.total_amount).toBe(3000000);
+		expect(deferredPaymentsService.getDocuments).not.toHaveBeenCalled();
+		expect(deferredPaymentsService.getSummary).not.toHaveBeenCalled();
 	});
 	it('asocia los errores de validación del backend con sus campos', async () => {
 		configureSuccessfulServices();
