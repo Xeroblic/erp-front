@@ -311,8 +311,8 @@ const ClientesVentasDetalleView = () => {
 										title='Logística'
 										description='Direcciones para facturación y despacho.'
 										icon='HeroTruck'
-										contentClassName='grid grid-cols-1 gap-4 lg:grid-cols-2'>
-										<div className='border-t border-zinc-200 pt-4 dark:border-zinc-700'>
+										contentClassName='!grid-cols-1 items-start gap-4 md:!grid-cols-2'>
+										<div className='self-start border-t border-zinc-200 pt-4 dark:border-zinc-700'>
 											<p className='mb-4 text-sm font-semibold text-zinc-700 dark:text-zinc-200'>
 												Facturación
 											</p>
@@ -335,17 +335,15 @@ const ClientesVentasDetalleView = () => {
 												</div>
 											</div>
 										</div>
-										<div className='border-t border-zinc-200 pt-4 dark:border-zinc-700'>
-											<div className='mb-4 flex flex-wrap items-center justify-between gap-2'>
-												<p className='text-sm font-semibold text-zinc-700 dark:text-zinc-200'>
-													Despacho
-												</p>
+										<div className='self-start border-t border-zinc-200 pt-4 dark:border-zinc-700'>
+											<p className='mb-4 text-sm font-semibold text-zinc-700 dark:text-zinc-200'>
+												Despacho
 												{shippingMatchesBilling ? (
-													<span className='text-xs font-medium text-blue-700 dark:text-blue-300'>
+													<span className='ml-2 text-xs font-medium text-blue-700 dark:text-blue-300'>
 														Misma dirección que facturación
 													</span>
 												) : null}
-											</div>
+											</p>
 											{shippingMatchesBilling ? (
 												<p className='text-sm text-zinc-500 dark:text-zinc-400'>
 													Los pedidos se despachan a la dirección de
