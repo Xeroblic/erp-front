@@ -23,12 +23,14 @@ const CreateCustomerSaleModal = ({
 	subsidiaryId,
 	isEdit = false,
 	initialData,
+	onSuccess,
 }: {
 	isOpen: boolean;
 	setIsOpen: (v: boolean) => void;
 	subsidiaryId: number | string | null | undefined;
 	isEdit?: boolean;
 	initialData?: Partial<ICustomerSale> | null;
+	onSuccess?: (customer: ICustomerSale) => void;
 }) => {
 	const dispatch = useAppDispatch();
 	const rutId = React.useId();
@@ -96,6 +98,7 @@ const CreateCustomerSaleModal = ({
 						dispatch(
 							fetchCustomersOverviewThunk({ subsidiary: subsidiaryId } as any) as any,
 						);
+						onSuccess?.(action.payload as ICustomerSale);
 						setIsOpen(false);
 					} else {
 						console.error('Error actualizando cliente', action);
@@ -137,6 +140,7 @@ const CreateCustomerSaleModal = ({
 								e,
 							);
 						}
+						onSuccess?.(action.payload as ICustomerSale);
 						setIsOpen(false);
 						formik.resetForm();
 					} else {
