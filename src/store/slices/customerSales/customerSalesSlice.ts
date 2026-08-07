@@ -77,7 +77,8 @@ export const createCustomerThunk = createAsyncThunk<
 			method: 'post',
 			data: payload,
 		});
-		return response.data;
+		// Algunos endpoints devuelven { data: {...} } y otros devuelven directamente el objeto
+		return (response.data as any)?.data ?? response.data;
 	} catch (error: any) {
 		return rejectWithValue(error.response?.data || 'No se pudo crear el cliente');
 	}
@@ -94,7 +95,8 @@ export const updateCustomerThunk = createAsyncThunk<
 			method: 'patch',
 			data: payload,
 		});
-		return response.data; // porque el backend envía {message, data}
+		// porque el backend envía {message, data}
+		return (response.data as any)?.data ?? response.data;
 	} catch (error: any) {
 		return rejectWithValue(error.response?.data || 'No se pudo actualizar');
 	}
