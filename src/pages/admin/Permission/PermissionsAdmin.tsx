@@ -27,7 +27,8 @@ import TableCardFooterTemplateV2 from '@/templates/Table/TableFooterTemplateV2';
 import { PermissionsModal } from './components/modals/PermissionsModal';
 import { createUserTableColumns } from './components/tables/UserTableColumns';
 import { usePermissionsManagement } from './hooks/usePermissionsManagement';
-import { formatRoleName, formatPermissionName } from './utils/formatters';
+import { resolveRoleLabel, resolvePermissionLabel } from './utils/formatters';
+import { usePermissionLabels } from '@/hooks/usePermissionLabels';
 import { Permission, Role } from '@/store/slices/permissions/permissionsSlice';
 
 export default function PermissionsAdmin() {
@@ -58,6 +59,7 @@ export default function PermissionsAdmin() {
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [globalFilter, setGlobalFilter] = useState('');
 	const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
+	const { getRoleLabel } = usePermissionLabels();
 
 	useEffect(() => {
 		loadInitialData();
@@ -124,6 +126,7 @@ export default function PermissionsAdmin() {
 		handleOpenPermissionsModal,
 		toggleUser,
 		toggleUserLoading,
+		getRoleLabel,
 	);
 
 	const table = useReactTable({
@@ -141,19 +144,27 @@ export default function PermissionsAdmin() {
 
 	const roleOptions = useMemo<TSelectOption[]>(
 		() =>
-			(roles || []).map((r: Role) => ({
-				value: String(r.id),
-				label: formatRoleName(r.name),
-			})),
+			(roles || [])
+				.map(
+					(r: Role): TSelectOption => ({
+						value: String(r.id),
+						label: resolveRoleLabel(r),
+					}),
+				)
+				.sort((a: TSelectOption, b: TSelectOption) => a.label.localeCompare(b.label, 'es')),
 		[roles],
 	);
 
 	const permissionOptions = useMemo<TSelectOption[]>(
 		() =>
-			(permissions || []).map((p: Permission) => ({
-				value: String(p.id),
-				label: formatPermissionName(p.name || p.code),
-			})),
+			(permissions || [])
+				.map(
+					(p: Permission): TSelectOption => ({
+						value: String(p.id),
+						label: resolvePermissionLabel(p),
+					}),
+				)
+				.sort((a: TSelectOption, b: TSelectOption) => a.label.localeCompare(b.label, 'es')),
 		[permissions],
 	);
 

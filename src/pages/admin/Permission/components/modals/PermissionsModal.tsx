@@ -8,7 +8,8 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 
-import { formatRoleName, formatPermissionName } from '../../utils/formatters';
+import { resolveRoleLabel, resolvePermissionLabel } from '../../utils/formatters';
+import { usePermissionLabels } from '@/hooks/usePermissionLabels';
 import Avatar from '@/components/Avatar';
 import getUserAvatarUrl from '@/utils/getUserAvatarUrl';
 
@@ -61,6 +62,7 @@ export const PermissionsModal: React.FC<PermissionsModalProps> = ({
 	isLoading,
 }) => {
 	// Estados para gestión contextual de roles
+	const { getPermissionLabel } = usePermissionLabels();
 	const [roleContexts, setRoleContexts] = useState<RoleContext[]>([]);
 	const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
 	const [activeTab, setActiveTab] = useState<'roles' | 'permissions'>('roles');
@@ -79,19 +81,23 @@ export const PermissionsModal: React.FC<PermissionsModalProps> = ({
 	// Opciones para selectores
 	const roleOptions = useMemo<TSelectOption[]>(
 		() =>
-			(roles || []).map((r) => ({
-				value: String(r.id),
-				label: formatRoleName(r.name),
-			})),
+			(roles || [])
+				.map((r) => ({
+					value: String(r.id),
+					label: resolveRoleLabel(r),
+				}))
+				.sort((a, b) => a.label.localeCompare(b.label, 'es')),
 		[roles],
 	);
 
 	const permissionOptions = useMemo<TSelectOption[]>(
 		() =>
-			(permissions || []).map((p) => ({
-				value: String(p.id),
-				label: formatPermissionName(p.name || p.code),
-			})),
+			(permissions || [])
+				.map((p) => ({
+					value: String(p.id),
+					label: resolvePermissionLabel(p),
+				}))
+				.sort((a, b) => a.label.localeCompare(b.label, 'es')),
 		[permissions],
 	);
 
@@ -1068,7 +1074,7 @@ export const PermissionsModal: React.FC<PermissionsModalProps> = ({
 														key={index}
 														color='violet'
 														className='text-xs'>
-														{formatPermissionName(permission)}
+														{getPermissionLabel(permission)}
 													</Badge>
 												),
 											)}

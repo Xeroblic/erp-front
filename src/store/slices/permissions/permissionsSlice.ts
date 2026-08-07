@@ -5,11 +5,14 @@ import ApiService from '../../../services/ApiService';
 export interface Permission {
 	id: number;
 	name: string;
-	code: string;
+	display_name?: string;
+	guard_name?: string;
+	/** Campos legacy: la API actual de /permissions no los envía. */
+	code?: string;
 	description?: string;
-	category: string;
-	created_at: string;
-	updated_at: string;
+	category?: string;
+	created_at?: string;
+	updated_at?: string;
 }
 
 export interface Role {
