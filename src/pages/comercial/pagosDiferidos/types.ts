@@ -28,6 +28,7 @@ export interface DeferredPaymentFormValues {
 	document_number: string;
 	issue_date: string;
 	due_date: string;
+	total_amount: number | string;
 	purchase_order: string | null;
 	notes: string | null;
 	assignee_ids: number[];
@@ -97,6 +98,15 @@ export const DeferredPaymentDocumentSchema = Yup.object({
 			return typeof issueDate !== 'string' || !value || value >= issueDate;
 		},
 	),
+	total_amount: Yup.number()
+		.transform((value: unknown, originalValue: unknown): number | undefined => {
+			if (originalValue === '') return undefined;
+			if (typeof originalValue === 'string') return Number(originalValue);
+			return typeof value === 'number' ? value : undefined;
+		})
+		.typeError('El total del documento debe ser un número')
+		.moreThan(0, DEFERRED_PAYMENT_TOTAL_ERROR)
+		.required('Ingresa el total del documento'),
 	purchase_order: optionalTextSchema(
 		100,
 		'La orden de compra no puede superar los 100 caracteres',
@@ -113,25 +123,6 @@ export const DeferredPaymentDocumentSchema = Yup.object({
 	items: Yup.array()
 		.of(DeferredPaymentItemSchema)
 		.min(1, 'Agrega al menos un ítem al documento')
-		.test(
-			'positive-document-total',
-			DEFERRED_PAYMENT_TOTAL_ERROR,
-			function validateDocumentTotal(items) {
-				if (
-					!items ||
-					items.reduce((total, item) => total + item.quantity * item.unit_price, 0) > 0
-				)
-					return true;
-				const zeroPriceIndex = Math.max(
-					0,
-					items.findIndex((item) => Number(item.unit_price) === 0),
-				);
-				return this.createError({
-					path: `${this.path}[${zeroPriceIndex}].unit_price`,
-					message: DEFERRED_PAYMENT_TOTAL_ERROR,
-				});
-			},
-		)
 		.required('Agrega al menos un ítem al documento'),
 });
 
@@ -158,6 +149,7 @@ export const createDeferredPaymentInitialValues = (
 	document_number: '',
 	issue_date: issueDate,
 	due_date: issueDate,
+	total_amount: '',
 	purchase_order: null,
 	notes: null,
 	assignee_ids: [],

@@ -152,8 +152,7 @@ const mapItemsToApi = (items: CreateDeferredPaymentPayload['items']) =>
 		serials: item.serials,
 	}));
 
-const calculateTotalAmount = (items: CreateDeferredPaymentPayload['items']): string =>
-	items.reduce((total, item) => total + item.quantity * Number(item.unit_price), 0).toFixed(2);
+const formatAmountToApi = (amount: number | string): string => Number(amount).toFixed(2);
 
 const mapFiltersToApiParams = (filters: DeferredPaymentsFilters): DeferredPaymentApiListParams => ({
 	page: filters.page,
@@ -184,7 +183,7 @@ const mapCreatePayloadToApi = (
 	document_number: payload.document_number,
 	issue_date: payload.issue_date,
 	due_date: payload.due_date,
-	total_amount: calculateTotalAmount(payload.items),
+	total_amount: formatAmountToApi(payload.total_amount),
 	purchase_order: payload.purchase_order,
 	notes: payload.notes,
 	assignee_ids: payload.assignee_ids,
@@ -194,11 +193,12 @@ const mapCreatePayloadToApi = (
 const mapUpdatePayloadToApi = (
 	payload: UpdateDeferredPaymentPayload,
 ): UpdateDeferredPaymentApiPayload => {
-	const { items, ...fields } = payload;
+	const { items, total_amount: totalAmount, ...fields } = payload;
 	return {
 		...fields,
+		...(totalAmount !== undefined ? { total_amount: formatAmountToApi(totalAmount) } : {}),
 		...(items
-			? { items: mapItemsToApi(items), total_amount: calculateTotalAmount(items) }
+			? { items: mapItemsToApi(items) }
 			: {}),
 	};
 };

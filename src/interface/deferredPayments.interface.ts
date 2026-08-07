@@ -96,6 +96,7 @@ export interface CreateDeferredPaymentPayload {
 	document_number: string;
 	issue_date: string;
 	due_date: string;
+	total_amount: number | string;
 	purchase_order: string | null;
 	notes: string | null;
 	assignee_ids: number[];
