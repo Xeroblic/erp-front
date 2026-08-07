@@ -488,6 +488,15 @@ export const privatePages = {
 				authority: [ERP_PERMISSIONS.DEFERRED_PAYMENTS.VIEW],
 				requireAll: false,
 			},
+			carteraCredito: {
+				id: 'carteraCredito',
+				to: '/comercial/pagos-diferidos/cartera-credito',
+				text: 'Cartera de crédito',
+				icon: 'HeroCreditCard',
+				authority: [ERP_PERMISSIONS.DEFERRED_PAYMENTS.VIEW],
+				roles: [],
+				requireAll: false,
+			},
 			clientesVentas: {
 				id: 'clientesVentas',
 				to: '/comercial/clientes-ventas',
@@ -1049,7 +1058,7 @@ export const dashboardQuickLinksConfig: QuickLinkConfig[] = [
 	{ section: 'catalogs' },
 	{
 		section: 'commercial',
-		items: ['sales', 'quotes', 'clientesVentas', 'pagosDiferidos'],
+		items: ['sales', 'quotes', 'clientesVentas', 'pagosDiferidos', 'carteraCredito'],
 	},
 	// { section: 'inventory' },
 	// { section: 'manage' },

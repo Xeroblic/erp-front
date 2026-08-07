@@ -2,6 +2,8 @@ import type { AxiosRequestConfig } from 'axios';
 import type {
 	DeferredPaymentApiListParams,
 	DeferredPaymentApiSummaryParams,
+	DeferredPaymentCreditProfilesApiParams,
+	DeferredPaymentCreditProfilesListResponse,
 	DeferredPaymentDeleteResponse,
 	DeferredPaymentMutationApiResponse,
 	DeferredPaymentsListResponse,
@@ -63,6 +65,13 @@ const documentUrl = (subsidiaryId: number, documentId: number): string =>
 
 const creditProfileUrl = (subsidiaryId: number, customerSaleId: number): string =>
 	`/subsidiaries/${subsidiaryId}/customer-sales/${customerSaleId}/credit-profile`;
+
+const creditProfilesUrl = (subsidiaryId: number): string =>
+	`/subsidiaries/${subsidiaryId}/credit-profiles`;
+
+const invalidateCreditProfiles = (subsidiaryId: number): void => {
+	ApiService.invalidateCache(creditProfilesUrl(subsidiaryId));
+};
 
 const requestConfig = (signal?: AbortSignal): Pick<AxiosRequestConfig, 'signal'> => ({ signal });
 
@@ -126,6 +135,7 @@ const createDocument = async (
 	});
 	ApiService.invalidateCache(documentsUrl(subsidiaryId));
 	ApiService.invalidateCache(`${documentsUrl(subsidiaryId)}/summary`);
+	invalidateCreditProfiles(subsidiaryId);
 	return {
 		document: normalizeDocument(unwrapResource(response.data)),
 		credit_limit_exceeded: asRecord(response.data)?.credit_limit_exceeded === true,
@@ -148,6 +158,7 @@ const updateDocument = async (
 		...requestConfig(signal),
 	});
 	ApiService.invalidateCache(documentsUrl(subsidiaryId));
+	invalidateCreditProfiles(subsidiaryId);
 	return {
 		document: normalizeDocument(unwrapResource(response.data)),
 		credit_limit_exceeded: asRecord(response.data)?.credit_limit_exceeded === true,
@@ -165,6 +176,7 @@ const deleteDocument = async (
 		...requestConfig(signal),
 	});
 	ApiService.invalidateCache(documentsUrl(subsidiaryId));
+	invalidateCreditProfiles(subsidiaryId);
 	return response.data;
 };
 
@@ -190,6 +202,7 @@ const registerPayment = async (
 		...requestConfig(signal),
 	});
 	ApiService.invalidateCache(documentsUrl(subsidiaryId));
+	invalidateCreditProfiles(subsidiaryId);
 	return normalizePayment(unwrapResource(response.data));
 };
 
@@ -205,6 +218,7 @@ const deletePayment = async (
 		...requestConfig(signal),
 	});
 	ApiService.invalidateCache(documentsUrl(subsidiaryId));
+	invalidateCreditProfiles(subsidiaryId);
 	return response.data;
 };
 
@@ -219,6 +233,7 @@ const markDocumentPaid = async (
 		...requestConfig(signal),
 	});
 	ApiService.invalidateCache(documentsUrl(subsidiaryId));
+	invalidateCreditProfiles(subsidiaryId);
 	return normalizePayment(unwrapResource(response.data));
 };
 
@@ -286,6 +301,21 @@ const getCreditProfile = async (
 	return unwrapResource(response.data);
 };
 
+const getCreditProfiles = async (
+	subsidiaryId: number,
+	params: DeferredPaymentCreditProfilesApiParams = {},
+	signal?: AbortSignal,
+): Promise<DeferredPaymentCreditProfilesListResponse> => {
+	const response = await ApiService.fetchData<DeferredPaymentCreditProfilesListResponse>({
+		url: creditProfilesUrl(subsidiaryId),
+		method: 'get',
+		params,
+		cacheTTLms: 15_000,
+		...requestConfig(signal),
+	});
+	return response.data;
+};
+
 const updateCreditProfile = async (
 	subsidiaryId: number,
 	customerSaleId: number,
@@ -302,6 +332,7 @@ const updateCreditProfile = async (
 		...requestConfig(signal),
 	});
 	ApiService.invalidateCache(creditProfileUrl(subsidiaryId, customerSaleId));
+	invalidateCreditProfiles(subsidiaryId);
 	return unwrapResource(response.data);
 };
 
@@ -318,6 +349,7 @@ const deferredPaymentsService = {
 	uploadDeferredPaymentAttachment,
 	downloadDeferredPaymentAttachment,
 	getCreditProfile,
+	getCreditProfiles,
 	updateCreditProfile,
 };
 
