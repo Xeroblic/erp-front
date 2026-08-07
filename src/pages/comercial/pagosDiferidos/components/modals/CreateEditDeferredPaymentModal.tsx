@@ -1147,14 +1147,18 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 				subsidiaryId={subsidiaryId}
 				onSuccess={handleCustomerCreated}
 			/>
-			<CreateCustomerSaleModal
-				isOpen={isEditCustomerOpen}
-				setIsOpen={setIsEditCustomerOpen}
-				subsidiaryId={subsidiaryId}
-				isEdit
-				initialData={editingCustomer}
-				onSuccess={handleCustomerUpdated}
-			/>
+			<>
+				{editingCustomer && (
+					<CreateCustomerSaleModal
+						isOpen={isEditCustomerOpen}
+						setIsOpen={setIsEditCustomerOpen}
+						subsidiaryId={subsidiaryId}
+						isEdit
+						initialData={editingCustomer}
+						onSuccess={handleCustomerUpdated}
+					/>
+				)}
+			</>
 		</Modal>
 	);
 };
