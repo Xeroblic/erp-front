@@ -316,8 +316,8 @@ const ClientesVentasDetalleView = () => {
 											<p className='mb-4 text-sm font-semibold text-zinc-700 dark:text-zinc-200'>
 												Facturación
 											</p>
-											<div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-												<div className='detail-content-item sm:col-span-2'>
+											<div className='grid grid-cols-1 gap-4'>
+												<div className='detail-content-item'>
 													<EditableField
 														formik={formik}
 														name='billing_address_1'
@@ -325,7 +325,7 @@ const ClientesVentasDetalleView = () => {
 														isEditable={isEditable}
 													/>
 												</div>
-												<div className='detail-content-item sm:col-span-2'>
+												<div className='detail-content-item'>
 													<EditableField
 														formik={formik}
 														name='billing_city'
