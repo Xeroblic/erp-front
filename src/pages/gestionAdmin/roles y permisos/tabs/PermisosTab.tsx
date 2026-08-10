@@ -4,7 +4,7 @@ import { FormikProps } from 'formik';
 import Label from '@/components/form/Label';
 import SelectReact, { TSelectOption } from '@/components/form/SelectReact';
 import Badge from '@/components/ui/Badge';
-import { formatPermissionName } from '@/pages/admin/Permission/utils/formatters';
+import { usePermissionLabels } from '@/hooks/usePermissionLabels';
 import type { UserWithDetails } from '@/store/slices/usersAdmin/usersAdminSlice';
 import type { UserPermissionsFormValues } from '../types';
 
@@ -23,6 +23,8 @@ const PermisosTab: React.FC<PermisosTabProps> = ({
 	user,
 	editable = true,
 }) => {
+	const { getPermissionLabel } = usePermissionLabels();
+
 	return (
 		<form onSubmit={formik.handleSubmit} className='space-y-6'>
 			<div>
@@ -40,7 +42,7 @@ const PermisosTab: React.FC<PermisosTabProps> = ({
 						return (
 							option ?? {
 								value: permName,
-								label: formatPermissionName(permName),
+								label: getPermissionLabel(permName),
 							}
 						);
 					})}
@@ -70,7 +72,7 @@ const PermisosTab: React.FC<PermisosTabProps> = ({
 						{currentPermissions.length > 0 ? (
 							currentPermissions.map((perm) => (
 								<Badge key={perm} color='emerald' className='text-xs'>
-									{formatPermissionName(perm)}
+									{getPermissionLabel(perm)}
 								</Badge>
 							))
 						) : (
@@ -90,7 +92,7 @@ const PermisosTab: React.FC<PermisosTabProps> = ({
 							{user.all_permissions && user.all_permissions.length > 0 ? (
 								user.all_permissions.map((perm) => (
 									<Badge key={perm} color='blue' className='text-xs'>
-										{formatPermissionName(perm)}
+										{getPermissionLabel(perm)}
 									</Badge>
 								))
 							) : (
