@@ -22,7 +22,6 @@ import Modal, {
 } from '@/components/ui/Modal';
 import DateInput from '@/components/form/DateInput';
 import Input from '@/components/form/Input';
-import Label from '@/components/form/Label';
 import SelectReact, { type TSelectOption } from '@/components/form/SelectReact';
 import Textarea from '@/components/form/Textarea';
 import { useAppDispatch, useAppSelector } from '@/store';
@@ -147,6 +146,8 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const creditProfileAbortRef = useRef<AbortController | null>(null);
 	const customerDetailRequestIdRef = useRef(0);
 	const customerDetailAbortRef = useRef<(() => void) | null>(null);
+	/** Subsidiaria vigente cuando se abrió el alta/edición rápida de clientes. */
+	const customerModalSubsidiaryIdRef = useRef<number | null>(null);
 	const latestSubsidiaryIdRef = useRef(subsidiaryId);
 	latestSubsidiaryIdRef.current = subsidiaryId;
 	const mode = deferredPaymentDocument ? 'edit' : 'create';
@@ -258,6 +259,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		customerDetailAbortRef.current?.();
 		customerDetailAbortRef.current = null;
 		customerDetailRequestIdRef.current += 1;
+		customerModalSubsidiaryIdRef.current = null;
 		setIsLoadingCustomerDetail(false);
 		setEditingCustomer(null);
 		setIsEditCustomerOpen(false);
@@ -527,7 +529,18 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 			.join(' · '),
 		isActive: customer.is_active,
 	});
+	/**
+	 * El alta rápida puede resolver después de que el usuario cambió de subsidiaria o
+	 * cerró este modal: adoptar ese cliente seleccionaría un deudor de otra subsidiaria
+	 * y consultaría su perfil de crédito con el contexto equivocado.
+	 */
+	const isCustomerModalStillCurrent = () =>
+		latestIsOpenRef.current && customerModalSubsidiaryIdRef.current === subsidiaryId;
 	const handleCustomerCreated = (customer: ICustomerSale) => {
+		if (!isCustomerModalStillCurrent()) {
+			resetCustomerModals();
+			return;
+		}
 		resetCustomerModals();
 		clearCreditProfile();
 		latestCustomerSaleIdRef.current = customer.id;
@@ -540,6 +553,10 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		loadCreditProfile(customer.id, true).catch(() => undefined);
 	};
 	const handleCustomerUpdated = (customer: ICustomerSale) => {
+		if (!isCustomerModalStillCurrent()) {
+			resetCustomerModals();
+			return;
+		}
 		if (formik.values.customer_sale_id === customer.id)
 			setSelectedCustomerOption(toCustomerOption(customer));
 		setEditingCustomer(null);
@@ -555,6 +572,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		const requestId = customerDetailRequestIdRef.current + 1;
 		customerDetailRequestIdRef.current = requestId;
 		const requestSubsidiaryId = subsidiaryId;
+		customerModalSubsidiaryIdRef.current = requestSubsidiaryId;
 		const requestCustomerSaleId = customerSaleId;
 		setEditingCustomer(null);
 		setIsEditCustomerOpen(false);
@@ -681,71 +699,71 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 												icon='HeroPlus'
 												isDisable={isPaidEdit}
 												aria-label='Crear cliente'
-												onClick={() => setIsCreateCustomerOpen(true)}
+												onClick={() => {
+													customerModalSubsidiaryIdRef.current =
+														subsidiaryId;
+													setIsCreateCustomerOpen(true);
+												}}
 											/>
 										</>
 									}
 									className='md:col-span-2 lg:col-span-1'>
-										{({ error, isTouched, isValid }) => (
-											<SelectReact
-												name='customer_sale_id'
-												inputId='customer_sale_id'
-												options={customerOptions}
-												value={customerValue ?? null}
-												isLoading={customersLoading}
-												isDisabled={isPaidEdit}
-												placeholder='Busca por razón social o RUT'
-												noOptionsMessage={() => 'Sin resultados'}
-												onInputChange={(
-													value: string,
-													actionMeta?: InputActionMeta,
-												) => {
-													if (actionMeta?.action === 'input-change')
-														setCustomerSearch(value);
-												}}
-												isValid={isValid}
-												isTouched={isTouched}
-												invalidFeedback={error}
-												onChange={(value) => {
-													const option = isSelectOption(value)
-														? value
-														: null;
-													const customer = customerData.find(
-														(entry) =>
-															entry.id === Number(option?.value),
-													);
-													const customerChanged =
-														customer?.id !==
-														formik.values.customer_sale_id;
-													setSelectedCustomerOption(customer ?? null);
-													if (customerChanged) {
-														latestCustomerSaleIdRef.current =
-															customer?.id ?? null;
-														resetCustomerModals();
-														setIsCreditProfileCreatorOpen(false);
-														setIsCreditProfileCreatorSaving(false);
-														clearCreditProfile();
-													}
-													if (mode === 'create' && customerChanged) {
-														actions
-															.resetDueDateManualOverride(30)
-															.catch(() => undefined);
-														setPaymentTermDays(30);
-													}
-													if (customer && customerChanged)
-														loadCreditProfile(customer.id, true).catch(
-															() => undefined,
-														);
-													formik
-														.setFieldValue(
-															'customer_sale_id',
-															customer?.id ?? null,
-														)
+									{({ error, isTouched, isValid }) => (
+										<SelectReact
+											name='customer_sale_id'
+											inputId='customer_sale_id'
+											options={customerOptions}
+											value={customerValue ?? null}
+											isLoading={customersLoading}
+											isDisabled={isPaidEdit}
+											placeholder='Busca por razón social o RUT'
+											noOptionsMessage={() => 'Sin resultados'}
+											onInputChange={(
+												value: string,
+												actionMeta?: InputActionMeta,
+											) => {
+												if (actionMeta?.action === 'input-change')
+													setCustomerSearch(value);
+											}}
+											isValid={isValid}
+											isTouched={isTouched}
+											invalidFeedback={error}
+											onChange={(value) => {
+												const option = isSelectOption(value) ? value : null;
+												const customer = customerData.find(
+													(entry) => entry.id === Number(option?.value),
+												);
+												const customerChanged =
+													customer?.id !== formik.values.customer_sale_id;
+												setSelectedCustomerOption(customer ?? null);
+												if (customerChanged) {
+													latestCustomerSaleIdRef.current =
+														customer?.id ?? null;
+													resetCustomerModals();
+													setIsCreditProfileCreatorOpen(false);
+													setIsCreditProfileCreatorSaving(false);
+													clearCreditProfile();
+												}
+												if (mode === 'create' && customerChanged) {
+													actions
+														.resetDueDateManualOverride(30)
 														.catch(() => undefined);
-												}}
-											/>
-										)}
-									</DeferredPaymentField>
+													setPaymentTermDays(30);
+												}
+												if (customer && customerChanged)
+													loadCreditProfile(customer.id, true).catch(
+														() => undefined,
+													);
+												formik
+													.setFieldValue(
+														'customer_sale_id',
+														customer?.id ?? null,
+													)
+													.catch(() => undefined);
+											}}
+										/>
+									)}
+								</DeferredPaymentField>
 								<DeferredPaymentField name='document_type' label='Tipo'>
 									{({ error, isTouched, isValid }) => (
 										<SelectReact
