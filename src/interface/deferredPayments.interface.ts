@@ -2,7 +2,13 @@ export type DeferredPaymentStatus = 'pending' | 'partially_paid' | 'paid';
 export type DeferredPaymentStatusFilter = DeferredPaymentStatus | 'overdue';
 export type DeferredPaymentDocumentType = 'electronic_invoice' | 'invoice' | 'receipt' | 'other';
 export type DeferredPaymentSort = 'due_date';
-export type DeferredPaymentMethod = 'transfer' | 'deposit' | 'check' | 'cash' | 'other';
+export type DeferredPaymentMethod =
+	| 'transfer'
+	| 'bank_card'
+	| 'deposit'
+	| 'check'
+	| 'cash'
+	| 'other';
 
 export interface IDeferredPaymentsSummaryGroup {
 	count: number;
