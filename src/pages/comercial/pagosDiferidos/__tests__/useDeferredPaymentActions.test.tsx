@@ -16,6 +16,7 @@ const toastSpies = vi.hoisted(() => ({ success: vi.fn() }));
 const serviceSpies = vi.hoisted(() => ({
 	registerPayment: vi.fn(),
 	deletePayment: vi.fn(),
+	deleteDocument: vi.fn(),
 	markDocumentPaid: vi.fn(),
 	uploadDeferredPaymentAttachment: vi.fn(),
 	getDocument: vi.fn(),
@@ -396,6 +397,97 @@ describe('useDeferredPaymentActions', () => {
 		);
 		expect(serviceSpies.markDocumentPaid).toHaveBeenCalledTimes(2);
 		expect(serviceSpies.uploadDeferredPaymentAttachment).toHaveBeenCalledOnce();
+	});
+
+	it('elimina el documento, limpia el detalle y refresca lista y resumen', async () => {
+		serviceSpies.deleteDocument.mockResolvedValue({ message: 'Documento eliminado' });
+		const { result, store } = renderActions({ page: 2, per_page: 25, search: 'FAC-0100' });
+
+		await act(async () => {
+			expect(await result.current.actions.deleteDocument()).toBe(true);
+		});
+
+		expect(serviceSpies.deleteDocument).toHaveBeenCalledWith(
+			4,
+			document.id,
+			expect.any(AbortSignal),
+		);
+		expect(toastSpies.success).toHaveBeenCalledWith('Documento eliminado correctamente');
+		// El detalle no se recarga: el documento ya no existe en el backend.
+		expect(serviceSpies.getDocument).not.toHaveBeenCalled();
+		expect(serviceSpies.getDocuments).toHaveBeenCalledWith(
+			4,
+			expect.objectContaining({ page: 2, per_page: 25, search: 'FAC-0100' }),
+			expect.any(AbortSignal),
+		);
+		expect(serviceSpies.getSummary).toHaveBeenCalledOnce();
+		expect(store.getState().deferredPayments.errorDelete).toBeNull();
+		expect(store.getState().deferredPayments.deletingDocumentId).toBeNull();
+	});
+
+	it('conserva el mensaje literal del backend cuando el documento tiene abonos', async () => {
+		serviceSpies.deleteDocument.mockRejectedValue({
+			response: {
+				status: 422,
+				data: { message: 'No se puede eliminar un documento con abonos registrados.' },
+			},
+		});
+		const { result, store } = renderActions();
+
+		await act(async () => {
+			expect(await result.current.actions.deleteDocument()).toBe(false);
+		});
+
+		expect(store.getState().deferredPayments.errorDelete).toBe(
+			'No se puede eliminar un documento con abonos registrados.',
+		);
+		expect(toastSpies.success).not.toHaveBeenCalled();
+		// Un fallo no debe repoblar la colección: el documento sigue donde estaba.
+		expect(serviceSpies.getDocuments).not.toHaveBeenCalled();
+		expect(serviceSpies.getSummary).not.toHaveBeenCalled();
+	});
+
+	it('usa el mensaje de permiso o alcance ante un 403 genérico', async () => {
+		serviceSpies.deleteDocument.mockRejectedValue({
+			response: { status: 403, data: { message: 'This action is unauthorized.' } },
+		});
+		const { result, store } = renderActions();
+
+		await act(async () => {
+			expect(await result.current.actions.deleteDocument()).toBe(false);
+		});
+
+		expect(store.getState().deferredPayments.errorDelete).toContain(
+			'no tienes acceso a esta subsidiaria',
+		);
+	});
+
+	it('ignora el segundo envío mientras la eliminación está en vuelo', async () => {
+		let resolveDelete: (() => void) | undefined;
+		serviceSpies.deleteDocument.mockImplementation(
+			() =>
+				new Promise<{ message: string }>((resolve) => {
+					resolveDelete = () => resolve({ message: 'Documento eliminado' });
+				}),
+		);
+		const { result } = renderActions();
+
+		let firstAttempt: Promise<boolean> | undefined;
+		act(() => {
+			firstAttempt = result.current.actions.deleteDocument();
+		});
+		await waitFor(() => expect(result.current.state.deletingDocumentId).toBe(document.id));
+
+		await act(async () => {
+			expect(await result.current.actions.deleteDocument()).toBe(false);
+		});
+		expect(serviceSpies.deleteDocument).toHaveBeenCalledOnce();
+
+		await act(async () => {
+			resolveDelete?.();
+			expect(await firstAttempt).toBe(true);
+		});
+		expect(serviceSpies.deleteDocument).toHaveBeenCalledOnce();
 	});
 
 	it('limpia el error de mutación antes de abrir otro flujo', async () => {
