@@ -17,7 +17,7 @@ import type {
 	UpdateDeferredPaymentCreditProfilePayload,
 } from '@/interface/deferredPayments.interface';
 import deferredPaymentsService from '@/services/deferredPaymentsService';
-import getApiErrorMessage from '@/utils/apiError.utils';
+import getApiErrorMessage from '@/utils/deferredPaymentsError.utils';
 import { CreditProfileSchema, toCreditProfileFormValues } from '../types';
 
 interface CreditProfileEditModalProps {

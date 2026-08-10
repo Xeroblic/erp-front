@@ -7,7 +7,7 @@ import type {
 	IDeferredPaymentCreditProfileListItem,
 } from '@/interface/deferredPayments.interface';
 import deferredPaymentsService from '@/services/deferredPaymentsService';
-import getApiErrorMessage from '@/utils/apiError.utils';
+import getApiErrorMessage from '@/utils/deferredPaymentsError.utils';
 import type { CreditProfileStatusFilter } from '../types';
 
 const DEFAULT_FILTERS: DeferredPaymentCreditProfilesFilters = { page: 1, per_page: 10 };

@@ -80,6 +80,12 @@ export const ERP_PERMISSIONS = {
 		MARK_PAID: 'mark-paid-deferred-payment',
 	},
 
+	CUSTOMER_SALES: {
+		VIEW: 'view-customer-sale',
+		CREATE: 'create-customer-sale',
+		UPDATE: 'edit-customer-sale',
+	},
+
 	QUOTES: {
 		VIEW: 'view-quote',
 		CREATE: 'create-quote',

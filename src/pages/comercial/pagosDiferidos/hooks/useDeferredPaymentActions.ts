@@ -8,6 +8,7 @@ import type {
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
 	clearDeferredPaymentMutation,
+	deleteDeferredPayment,
 	fetchDeferredPaymentById,
 	fetchDeferredPayments,
 	fetchDeferredPaymentsSummary,
@@ -46,11 +47,13 @@ export const useDeferredPaymentActions = (
 	const uploadingReceipt = useAppSelector((state) => state.deferredPayments.uploadingReceipt);
 	const voidingPaymentId = useAppSelector((state) => state.deferredPayments.voidingPaymentId);
 	const markingPaid = useAppSelector((state) => state.deferredPayments.markingPaid);
+	const deletingDocumentId = useAppSelector((state) => state.deferredPayments.deletingDocumentId);
 	const errorPayment = useAppSelector((state) => state.deferredPayments.errorPayment);
 	const errorReceipt = useAppSelector((state) => state.deferredPayments.errorReceipt);
 	const errorVoid = useAppSelector((state) => state.deferredPayments.errorVoid);
 	const errorMarkPaid = useAppSelector((state) => state.deferredPayments.errorMarkPaid);
-	const error = errorReceipt ?? errorPayment ?? errorVoid ?? errorMarkPaid;
+	const errorDelete = useAppSelector((state) => state.deferredPayments.errorDelete);
+	const error = errorReceipt ?? errorPayment ?? errorVoid ?? errorMarkPaid ?? errorDelete;
 	const [pendingMarkPaidReceipt, setPendingMarkPaidReceipt] =
 		useState<PendingMarkPaidReceipt | null>(null);
 	const [markPaidReceipt, setMarkPaidReceiptState] = useState<File | null>(null);
@@ -70,8 +73,12 @@ export const useDeferredPaymentActions = (
 			currentContext.current.documentId === context.documentId,
 		[],
 	);
-	const refresh = useCallback(() => {
-		if (subsidiaryId === null || document === null) return;
+	/**
+	 * Lista + resumen + cartera. Vive aparte del detalle porque tras eliminar el documento
+	 * hay que refrescar la colección aunque ya no exista un detalle que consultar.
+	 */
+	const refreshCollections = useCallback(() => {
+		if (subsidiaryId === null) return;
 		const summaryFilters = {
 			status: filters.status,
 			customer_sale_id: filters.customer_sale_id,
@@ -79,14 +86,18 @@ export const useDeferredPaymentActions = (
 			due_before: filters.due_before,
 			due_after: filters.due_after,
 		};
-		detailRequests.current.push(
-			dispatch(fetchDeferredPaymentById({ subsidiaryId, documentId: document.id })),
-		);
 		collectionRequests.current.push(
 			dispatch(fetchDeferredPayments({ subsidiaryId, filters })),
 			dispatch(fetchDeferredPaymentsSummary({ subsidiaryId, filters: summaryFilters })),
 		);
-	}, [dispatch, document, filters, subsidiaryId]);
+	}, [dispatch, filters, subsidiaryId]);
+	const refresh = useCallback(() => {
+		if (subsidiaryId === null || document === null) return;
+		detailRequests.current.push(
+			dispatch(fetchDeferredPaymentById({ subsidiaryId, documentId: document.id })),
+		);
+		refreshCollections();
+	}, [dispatch, document, refreshCollections, subsidiaryId]);
 	const refreshDetail = useCallback(() => {
 		if (subsidiaryId === null || document === null) return;
 		detailRequests.current.push(
@@ -206,6 +217,22 @@ export const useDeferredPaymentActions = (
 		},
 		[dispatch, document, refresh, resetMarkPaidReceipt, subsidiaryId, voidingPaymentId],
 	);
+	const deleteDocument = useCallback(async () => {
+		if (subsidiaryId === null || document === null || deletingDocumentId !== null) return false;
+		const actionContext = { subsidiaryId, documentId: document.id };
+		try {
+			const request = dispatch(deleteDeferredPayment(actionContext));
+			mutationRequests.current.push(request);
+			await request.unwrap();
+			toast.success('Documento eliminado correctamente');
+			// El detalle lo limpia el slice; aquí sólo queda repoblar lista, resumen y cartera.
+			refreshCollections();
+			return true;
+		} catch {
+			// Redux conserva el mensaje literal del backend (p. ej. documento con abonos).
+			return false;
+		}
+	}, [deletingDocumentId, dispatch, document, refreshCollections, subsidiaryId]);
 	const dismissMarkPaidReceipt = useCallback(() => {
 		setPendingMarkPaidReceipt(null);
 		resetMarkPaidReceipt();
@@ -324,11 +351,13 @@ export const useDeferredPaymentActions = (
 				uploadingReceipt,
 				voidingPaymentId,
 				markingPaid,
+				deletingDocumentId,
 				error,
 				errorPayment,
 				errorReceipt,
 				errorVoid,
 				errorMarkPaid,
+				errorDelete,
 				pendingMarkPaidReceipt,
 				markPaidReceipt,
 				markPaidReceiptError,
@@ -337,11 +366,13 @@ export const useDeferredPaymentActions = (
 					recordingPayment ||
 					uploadingReceipt ||
 					voidingPaymentId !== null ||
-					markingPaid,
+					markingPaid ||
+					deletingDocumentId !== null,
 			},
 			actions: {
 				voidPayment,
 				markPaid,
+				deleteDocument,
 				retryMarkPaidReceipt,
 				setMarkPaidReceipt,
 				resetMarkPaidReceipt,
@@ -350,11 +381,14 @@ export const useDeferredPaymentActions = (
 			},
 		}),
 		[
+			deleteDocument,
+			deletingDocumentId,
 			error,
 			errorPayment,
 			errorReceipt,
 			errorVoid,
 			errorMarkPaid,
+			errorDelete,
 			formik,
 			markingPaid,
 			markPaidReceipt,

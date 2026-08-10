@@ -13,20 +13,24 @@ vi.mock('@/components/ui/ProtectedButton', () => ({
 	),
 }));
 
+const renderFooter = (onDelete: () => void = vi.fn()) =>
+	render(
+		<DeferredPaymentActionsFooter
+			branchId={1}
+			subsidiaryId={1}
+			status='pending'
+			outstandingAmount={1000}
+			busy={false}
+			onRegisterPayment={vi.fn()}
+			onMarkPaid={vi.fn()}
+			onEdit={vi.fn()}
+			onDelete={onDelete}
+		/>,
+	);
+
 describe('DeferredPaymentActionsFooter', () => {
 	it('separa el permiso semántico del cierre manual del registro de abonos', () => {
-		render(
-			<DeferredPaymentActionsFooter
-				branchId={1}
-				subsidiaryId={1}
-				status='pending'
-				outstandingAmount={1000}
-				busy={false}
-				onRegisterPayment={vi.fn()}
-				onMarkPaid={vi.fn()}
-				onEdit={vi.fn()}
-			/>,
-		);
+		renderFooter();
 
 		expect(screen.getByRole('button', { name: 'Registrar abono' })).toHaveAttribute(
 			'data-permission',
@@ -38,6 +42,20 @@ describe('DeferredPaymentActionsFooter', () => {
 		);
 		expect(ERP_PERMISSIONS.DEFERRED_PAYMENTS.RECORD_PAYMENT).not.toBe(
 			ERP_PERMISSIONS.DEFERRED_PAYMENTS.MARK_PAID,
+		);
+	});
+
+	it('protege la eliminación del documento con delete-deferred-payment', () => {
+		renderFooter();
+
+		const deleteButton = screen.getByRole('button', { name: 'Eliminar' });
+		expect(deleteButton).toHaveAttribute(
+			'data-permission',
+			ERP_PERMISSIONS.DEFERRED_PAYMENTS.DELETE,
+		);
+		expect(ERP_PERMISSIONS.DEFERRED_PAYMENTS.DELETE).toBe('delete-deferred-payment');
+		expect(ERP_PERMISSIONS.DEFERRED_PAYMENTS.DELETE).not.toBe(
+			ERP_PERMISSIONS.DEFERRED_PAYMENTS.UPDATE,
 		);
 	});
 

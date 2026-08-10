@@ -158,8 +158,7 @@ export const createDeferredPaymentInitialValues = (
 
 export const calculateDeferredPaymentEstimatedTotal = (
 	items: readonly DeferredPaymentFormItemValues[],
-): number =>
-	items.reduce((total, item) => total + item.quantity * Number(item.unit_price), 0);
+): number => items.reduce((total, item) => total + item.quantity * Number(item.unit_price), 0);
 
 export const DEFERRED_PAYMENT_METHODS = ['transfer', 'deposit', 'check', 'cash', 'other'] as const;
 export const DEFERRED_PAYMENT_RECEIPT_ACCEPT = '.pdf,.jpg,.jpeg,.png,.webp,.xls,.xlsx';

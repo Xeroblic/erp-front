@@ -59,11 +59,13 @@ describe('DeferredPaymentDetailDrawer con comprobante pendiente', () => {
 				uploadingReceipt: false,
 				voidingPaymentId: null,
 				markingPaid: false,
+				deletingDocumentId: null,
 				error: null,
 				errorPayment: null,
 				errorReceipt: null,
 				errorVoid: null,
 				errorMarkPaid: null,
+				errorDelete: null,
 				pendingMarkPaidReceipt: {
 					subsidiaryId: 1,
 					documentId: document.id,
@@ -78,6 +80,7 @@ describe('DeferredPaymentDetailDrawer con comprobante pendiente', () => {
 			actions: {
 				voidPayment: vi.fn(),
 				markPaid,
+				deleteDocument: vi.fn(),
 				retryMarkPaidReceipt,
 				setMarkPaidReceipt: vi.fn(),
 				resetMarkPaidReceipt: vi.fn(),

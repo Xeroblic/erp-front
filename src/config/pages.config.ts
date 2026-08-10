@@ -116,16 +116,16 @@ export const privatePages = {
 		to: '/gestion',
 		text: 'Gestión',
 		icon: 'HeroBuildingStorefront',
-		authority: ['view-company'],
-		roles: [
-			'super-admin',
-			'admin',
-			'company-admin',
-			'subsidiary-admin',
-			'branch-admin',
-			'company-supervisor',
-			'manager',
-		],
+		// Gateado solo por permiso: cada subpágina exige su propio authority. Se listan
+		// aquí todos los permisos que abren alguna subpágina de Gestión (view-company,
+		// view-subsidiary, view-branch, manage-roles, edit-user) para que el título/collapse
+		// no bloquee a roles que solo tienen un subconjunto de esos permisos.
+		// OJO: `view-user` NO va en esta lista. Cobranza lo tiene solo para poblar el
+		// selector de encargados (assignee_ids) de Pagos diferidos, no para administrar
+		// usuarios; incluirlo aquí mostraba «Gestión de usuarios» a un rol que después
+		// recibía 403 en /roles y /permissions.
+		authority: ['view-company', 'view-subsidiary', 'view-branch', 'manage-roles', 'edit-user'],
+		requireAll: false,
 		subPages: {
 			company: {
 				id: 'company',
@@ -149,18 +149,6 @@ export const privatePages = {
 				text: 'Subempresa',
 				icon: 'DuoBuilding',
 				authority: ['view-subsidiary'],
-				roles: [
-					'super-admin',
-					'admin',
-					'company-admin',
-					'subsidiary-admin',
-					'branch-admin',
-					'company-supervisor',
-					'manager',
-					'technician',
-					'warehouse-employee',
-					'warehouse-manager',
-				],
 			},
 			subsidiaryDetail: {
 				id: 'subsidiaryDetail',
@@ -168,18 +156,6 @@ export const privatePages = {
 				text: 'Detalle Subempresa',
 				icon: 'DuoBuilding',
 				authority: ['view-subsidiary'],
-				roles: [
-					'super-admin',
-					'admin',
-					'company-admin',
-					'subsidiary-admin',
-					'branch-admin',
-					'company-supervisor',
-					'manager',
-					'technician',
-					'warehouse-employee',
-					'warehouse-manager',
-				],
 			},
 			subsidiaryCustomization: {
 				id: 'subsidiaryCustomization',
@@ -187,18 +163,6 @@ export const privatePages = {
 				text: 'Personalización de Subempresa',
 				icon: 'HeroPaintBrush',
 				authority: ['view-subsidiary'],
-				roles: [
-					'super-admin',
-					'admin',
-					'company-admin',
-					'subsidiary-admin',
-					'branch-admin',
-					'company-supervisor',
-					'manager',
-					'technician',
-					'warehouse-employee',
-					'warehouse-manager',
-				],
 			},
 			branch: {
 				id: 'branch',
@@ -206,18 +170,6 @@ export const privatePages = {
 				text: 'Sucursal',
 				icon: 'DuoHome',
 				authority: ['view-branch'],
-				roles: [
-					'super-admin',
-					'admin',
-					'company-admin',
-					'subsidiary-admin',
-					'branch-admin',
-					'company-supervisor',
-					'manager',
-					'technician',
-					'warehouse-employee',
-					'warehouse-manager',
-				],
 			},
 			branchDetail: {
 				id: 'branchDetail',
@@ -225,18 +177,6 @@ export const privatePages = {
 				text: 'Detalle Sucursal',
 				icon: 'HeroBuildingStorefront',
 				authority: ['view-branch'],
-				roles: [
-					'super-admin',
-					'admin',
-					'company-admin',
-					'subsidiary-admin',
-					'branch-admin',
-					'company-supervisor',
-					'manager',
-					'technician',
-					'warehouse-employee',
-					'warehouse-manager',
-				],
 			},
 			permissionsAdmin: {
 				id: 'permissionsAdmin',
@@ -252,8 +192,10 @@ export const privatePages = {
 				to: '/gestion/roles-permisos',
 				text: 'Gestion de usuarios',
 				icon: 'DuoGroup',
-				authority: ['manage-roles', 'view-user'],
-				roles: ['super-admin', 'company-admin'],
+				// Administrar usuarios exige permiso de administración, no `view-user`
+				// (que solo habilita listar usuarios para selectores, p. ej. los
+				// encargados/assignee_ids de Pagos diferidos).
+				authority: ['manage-roles', 'edit-user'],
 				requireAll: false,
 			},
 			rolesPermisosDetail: {
@@ -261,8 +203,9 @@ export const privatePages = {
 				to: '/gestion/roles-permisos/:userId',
 				text: 'Detalle Usuario',
 				icon: 'DuoUser',
-				authority: ['manage-roles', 'view-user'],
-				roles: ['super-admin', 'company-admin'],
+				// Mismo criterio que `rolesPermisos`: el detalle dispara /roles y
+				// /permissions, que requieren permisos de administración.
+				authority: ['manage-roles', 'edit-user'],
 				requireAll: false,
 			},
 		},
@@ -374,22 +317,10 @@ export const privatePages = {
 		to: '/comercial',
 		text: 'Comercial',
 		icon: 'DuoBag',
-		authority: ['view-sale'],
-		roles: [
-			'super-admin',
-			'admin',
-			'company-admin',
-			'subsidiary-admin',
-			'branch-admin',
-			'company-supervisor',
-			'manager',
-			'employee',
-			'technician',
-			'warehouse-employee',
-			'warehouse-manager',
-			'salesperson',
-			'after-sales',
-		],
+		// Gateado solo por permiso (ZF-15): incluye view-sale (rol comercial clásico) y
+		// DEFERRED_PAYMENTS.VIEW para que roles como Cobranza, que no aparecen en un
+		// allowlist de nombres de rol, puedan ver la sección y su subpágina Pagos diferidos.
+		authority: ['view-sale', ERP_PERMISSIONS.DEFERRED_PAYMENTS.VIEW],
 		requireAll: false,
 		subPages: {
 			sales: {
@@ -561,8 +492,9 @@ export const privatePages = {
 				to: '/comercial/pagos-diferidos',
 				text: 'Pagos diferidos',
 				icon: 'HeroBanknotes',
+				// Gateado solo por permiso (ZF-15): un rol como Cobranza opera el módulo
+				// completo sin necesidad de aparecer en un allowlist de nombres de rol.
 				authority: [ERP_PERMISSIONS.DEFERRED_PAYMENTS.VIEW],
-				roles: [],
 				requireAll: false,
 			},
 			carteraCredito: {
@@ -580,17 +512,6 @@ export const privatePages = {
 				text: 'Clientes Ventas',
 				icon: 'DuoUser',
 				authority: ['view-customer-sale'],
-				roles: [
-					'super-admin',
-					'admin',
-					'company-admin',
-					'subsidiary-admin',
-					'branch-admin',
-					'company-supervisor',
-					'manager',
-					'salesperson',
-					'after-sales',
-				],
 			},
 			clientesVentasDetalle: {
 				id: 'clientesVentasDetalle',
@@ -598,17 +519,6 @@ export const privatePages = {
 				text: 'Detalle Clientes Ventas',
 				icon: 'DuoUsers',
 				authority: ['view-customer-sale'],
-				roles: [
-					'super-admin',
-					'admin',
-					'company-admin',
-					'subsidiary-admin',
-					'branch-admin',
-					'company-supervisor',
-					'manager',
-					'salesperson',
-					'after-sales',
-				],
 			},
 		},
 	},

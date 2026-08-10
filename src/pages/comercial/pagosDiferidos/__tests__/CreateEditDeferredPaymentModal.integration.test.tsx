@@ -7,6 +7,7 @@ import customerSalesReducer from '@/store/slices/customerSales/customerSalesSlic
 import { DEFERRED_PAYMENT_DETAIL_FIXTURES } from './deferredPaymentsTestData';
 import deferredPaymentsReducer from '@/store/slices/deferredPayments/deferredPaymentsSlice';
 import usersAdminReducer from '@/store/slices/usersAdmin/usersAdminSlice';
+import authReducer, { type AuthState } from '@/store/slices/auth/authSlice';
 import CreateEditDeferredPaymentModal from '../components/modals/CreateEditDeferredPaymentModal';
 
 const apiSpies = vi.hoisted(() => ({ fetchData: vi.fn(), invalidateCache: vi.fn() }));
@@ -55,14 +56,19 @@ const addDaysToDateOnly = (date: string, days: number) => {
 	return `${resultDay}-${resultMonth}-${resultYear}`;
 };
 
-const createTestStore = () =>
+const createTestStore = (authUser?: NonNullable<AuthState['user']>) =>
 	configureStore({
 		reducer: {
+			auth: authReducer,
 			customerSales: customerSalesReducer,
 			deferredPayments: deferredPaymentsReducer,
 			usersAdmin: usersAdminReducer,
 		},
 		preloadedState: {
+			auth: {
+				...authReducer(undefined, { type: 'test/init' }),
+				...(authUser ? { user: authUser, isAuthenticated: true } : {}),
+			},
 			deferredPayments: {
 				...deferredPaymentsReducer(undefined, { type: 'test/init' }),
 				listSubsidiaryId: 1,
@@ -146,6 +152,36 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 				}),
 			),
 		);
+	});
+
+	it('permite asignar al usuario de cobranza aunque no pueda listar usuarios', async () => {
+		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) => {
+			if (url.startsWith('/users?')) return Promise.reject(new Error('Forbidden'));
+			return Promise.resolve({ data: emptyPagination });
+		});
+		const collector = {
+			id: 37,
+			pk: 37,
+			first_name: 'Carla',
+			last_name: 'Cobranza',
+			email: 'carla@empresa.cl',
+			is_active: true,
+			authority: ['create-deferred-payment'],
+			permisos: ['create-deferred-payment'],
+			roles: ['collector'],
+		} as NonNullable<AuthState['user']>;
+		const store = createTestStore(collector);
+		const Wrapper = ({ children }: PropsWithChildren) => (
+			<Provider store={store}>{children}</Provider>
+		);
+
+		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, { wrapper: Wrapper });
+
+		await waitFor(() => expect(store.getState().usersAdmin.loading.users).toBe(false));
+		fireEvent.mouseDown(screen.getByLabelText('Responsables'));
+		fireEvent.click(await screen.findByText('Carla Cobranza · carla@empresa.cl'));
+
+		expect(screen.getByText('Carla Cobranza · carla@empresa.cl')).toBeInTheDocument();
 	});
 
 	it('carga el perfil existente al editar y conserva el vencimiento del documento', async () => {

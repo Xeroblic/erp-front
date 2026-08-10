@@ -7,7 +7,7 @@ import type {
 	UpdateDeferredPaymentCreditProfilePayload,
 } from '@/interface/deferredPayments.interface';
 import deferredPaymentsService from '@/services/deferredPaymentsService';
-import getApiErrorMessage from '@/utils/apiError.utils';
+import getDeferredPaymentErrorMessage from '@/utils/deferredPaymentsError.utils';
 import { CreditProfileSchema, type CreditProfileFormValues } from '../types';
 
 const DEFAULT_PAYMENT_TERM_DAYS = 30;
@@ -122,7 +122,10 @@ const useCustomerCreditProfile = ({
 				setSummaryState({ identity: requestIdentity, value: null });
 				setLoadErrorState({
 					identity: requestIdentity,
-					value: getApiErrorMessage(error, 'No se pudo cargar el perfil de crédito'),
+					value: getDeferredPaymentErrorMessage(
+						error,
+						'No se pudo cargar el perfil de crédito',
+					),
 				});
 			} finally {
 				if (
@@ -183,7 +186,7 @@ const useCustomerCreditProfile = ({
 					requestId !== saveRequestIdRef.current
 				)
 					return;
-				const message = getApiErrorMessage(
+				const message = getDeferredPaymentErrorMessage(
 					error,
 					'No se pudieron guardar las condiciones de crédito',
 				);

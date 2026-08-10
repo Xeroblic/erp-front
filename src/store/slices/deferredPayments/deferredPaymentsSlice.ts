@@ -19,6 +19,7 @@ import type {
 	UpdateDeferredPaymentPayload,
 } from '@/interface/deferredPayments.interface';
 import deferredPaymentsService from '@/services/deferredPaymentsService';
+import getDeferredPaymentErrorMessage from '@/utils/deferredPaymentsError.utils';
 
 export const DEFAULT_DEFERRED_PAYMENTS_FILTERS: DeferredPaymentsFilters = {
 	page: 1,
@@ -41,6 +42,7 @@ export interface DeferredPaymentsState {
 	uploadingReceipt: boolean;
 	voidingPaymentId: number | null;
 	markingPaid: boolean;
+	deletingDocumentId: number | null;
 	error: string | null;
 	errorSummary: string | null;
 	errorDetail: string | null;
@@ -49,12 +51,14 @@ export interface DeferredPaymentsState {
 	errorReceipt: string | null;
 	errorVoid: string | null;
 	errorMarkPaid: string | null;
+	errorDelete: string | null;
 	createRequestId: string | null;
 	updateRequestId: string | null;
 	paymentRequestId: string | null;
 	receiptRequestId: string | null;
 	voidRequestId: string | null;
 	markPaidRequestId: string | null;
+	deleteRequestId: string | null;
 	listRequestId: string | null;
 	listSubsidiaryId: number | null;
 	summaryRequestId: string | null;
@@ -78,6 +82,7 @@ const initialState: DeferredPaymentsState = {
 	uploadingReceipt: false,
 	voidingPaymentId: null,
 	markingPaid: false,
+	deletingDocumentId: null,
 	error: null,
 	errorSummary: null,
 	errorDetail: null,
@@ -86,12 +91,14 @@ const initialState: DeferredPaymentsState = {
 	errorReceipt: null,
 	errorVoid: null,
 	errorMarkPaid: null,
+	errorDelete: null,
 	createRequestId: null,
 	updateRequestId: null,
 	paymentRequestId: null,
 	receiptRequestId: null,
 	voidRequestId: null,
 	markPaidRequestId: null,
+	deleteRequestId: null,
 	listRequestId: null,
 	listSubsidiaryId: null,
 	summaryRequestId: null,
@@ -105,15 +112,7 @@ const asRecord = (value: unknown): Record<string, unknown> | undefined =>
 		? (value as Record<string, unknown>)
 		: undefined;
 
-const getErrorMessage = (error: unknown, fallback: string): string => {
-	const errorRecord = asRecord(error);
-	const responseRecord = asRecord(errorRecord?.response);
-	const dataRecord = asRecord(responseRecord?.data);
-	if (typeof dataRecord?.message === 'string' && dataRecord.message.trim())
-		return dataRecord.message;
-	if (error instanceof Error && error.message.trim()) return error.message;
-	return fallback;
-};
+const getErrorMessage = getDeferredPaymentErrorMessage;
 
 export interface DeferredPaymentMutationError {
 	message: string;
@@ -195,9 +194,7 @@ const mapUpdatePayloadToApi = (
 	return {
 		...fields,
 		...(totalAmount !== undefined ? { total_amount: formatAmountToApi(totalAmount) } : {}),
-		...(items
-			? { items: mapItemsToApi(items) }
-			: {}),
+		...(items ? { items: mapItemsToApi(items) } : {}),
 	};
 };
 export const fetchDeferredPaymentsSummary = createAsyncThunk<
@@ -298,6 +295,24 @@ export const updateDeferredPayment = createAsyncThunk<
 		}
 	},
 );
+export const deleteDeferredPayment = createAsyncThunk<
+	DeferredPaymentDeleteResponse,
+	{ subsidiaryId: number; documentId: number },
+	{ rejectValue: DeferredPaymentMutationError }
+>(
+	'deferredPayments/deleteDocument',
+	async ({ subsidiaryId, documentId }, { rejectWithValue, signal }) => {
+		try {
+			return await deferredPaymentsService.deleteDocument(subsidiaryId, documentId, signal);
+		} catch (error) {
+			if (signal.aborted) throw error;
+			return rejectWithValue(
+				getMutationError(error, 'No se pudo eliminar el documento de pago diferido'),
+			);
+		}
+	},
+);
+
 export const registerDeferredPayment = createAsyncThunk<
 	IDeferredPaymentAbono,
 	{ subsidiaryId: number; documentId: number; payload: RegisterDeferredPaymentPayload },
@@ -405,6 +420,7 @@ const deferredPaymentsSlice = createSlice({
 			state.errorReceipt = null;
 			state.errorVoid = null;
 			state.errorMarkPaid = null;
+			state.errorDelete = null;
 		},
 	},
 	extraReducers: (builder) => {
@@ -600,6 +616,34 @@ const deferredPaymentsSlice = createSlice({
 				if (!action.meta.aborted)
 					state.errorMarkPaid =
 						action.payload?.message ?? 'No se pudo marcar el documento como pagado';
+			})
+			.addCase(deleteDeferredPayment.pending, (state, action) => {
+				state.deleteRequestId = action.meta.requestId;
+				state.deletingDocumentId = action.meta.arg.documentId;
+				state.errorDelete = null;
+			})
+			.addCase(deleteDeferredPayment.fulfilled, (state, action) => {
+				if (state.deleteRequestId !== action.meta.requestId) return;
+				state.deleteRequestId = null;
+				state.deletingDocumentId = null;
+				// El documento ya no existe: el detalle cargado quedaría huérfano.
+				if (state.current?.id === action.meta.arg.documentId) {
+					state.current = null;
+					state.errorDetail = null;
+					state.detailRequestId = null;
+					state.detailSubsidiaryId = null;
+					state.loadingDetail = false;
+				}
+				state.list = state.list.filter((item) => item.id !== action.meta.arg.documentId);
+			})
+			.addCase(deleteDeferredPayment.rejected, (state, action) => {
+				if (state.deleteRequestId !== action.meta.requestId) return;
+				state.deleteRequestId = null;
+				state.deletingDocumentId = null;
+				if (!action.meta.aborted)
+					state.errorDelete =
+						action.payload?.message ??
+						'No se pudo eliminar el documento de pago diferido';
 			});
 	},
 });
