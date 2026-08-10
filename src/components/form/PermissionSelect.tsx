@@ -2,7 +2,7 @@ import React, { type ComponentProps, type FC, useMemo } from 'react';
 import type { MultiValue, SingleValue } from 'react-select';
 import SelectReact, { type TSelectOption } from './SelectReact';
 import type { Permission } from '@/store/slices/permissions/permissionsSlice';
-import { formatPermissionName } from '@/pages/admin/Permission/utils/formatters';
+import { resolvePermissionLabel } from '@/pages/admin/Permission/utils/formatters';
 
 type SelectProps = ComponentProps<typeof SelectReact>;
 
@@ -25,13 +25,10 @@ const PermissionSelect: FC<PermissionSelectProps> = ({
 }) => {
 	const options = useMemo<TSelectOption[]>(() => {
 		return permissions
-			.map((permission) => {
-				const optionValue = permission.code || permission.name;
-				return {
-					value: optionValue,
-					label: formatPermissionName(optionValue),
-				};
-			})
+			.map((permission) => ({
+				value: permission.code || permission.name,
+				label: resolvePermissionLabel(permission),
+			}))
 			.sort((a, b) => a.label.localeCompare(b.label, 'es'));
 	}, [permissions]);
 

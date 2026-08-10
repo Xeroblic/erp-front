@@ -1,0 +1,75 @@
+import React from 'react';
+import Alert from '@/components/ui/Alert';
+import Button from '@/components/ui/Button';
+import Modal, {
+	ModalBody,
+	ModalFooter,
+	ModalFooterChild,
+	ModalHeader,
+} from '@/components/ui/Modal';
+
+interface ConfirmDeferredPaymentActionModalProps {
+	isOpen: boolean;
+	setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+	title: string;
+	description: React.ReactNode;
+	confirmLabel: string;
+	busy: boolean;
+	error?: string | null;
+	isConfirmDisabled?: boolean;
+	color?: 'red' | 'blue';
+	onConfirm: () => void;
+}
+const ConfirmDeferredPaymentActionModal: React.FC<ConfirmDeferredPaymentActionModalProps> = ({
+	isOpen,
+	setIsOpen,
+	title,
+	description,
+	confirmLabel,
+	busy,
+	error = null,
+	isConfirmDisabled = false,
+	color = 'blue',
+	onConfirm,
+}) => {
+	const guardClose: React.Dispatch<React.SetStateAction<boolean>> = (next) => {
+		if (!busy) setIsOpen(next);
+	};
+	return (
+		<Modal isOpen={isOpen} setIsOpen={guardClose} isCentered size='sm' isStaticBackdrop={busy}>
+			<ModalHeader>{title}</ModalHeader>
+			<ModalBody>
+				<div className='space-y-3 text-sm text-zinc-600 dark:text-zinc-300'>
+					{error && (
+						<Alert
+							color='red'
+							variant='outline'
+							icon='HeroExclamationTriangle'
+							title='No se pudo completar la operación'>
+							{error}
+						</Alert>
+					)}
+					{description}
+				</div>
+			</ModalBody>
+			<ModalFooter>
+				<ModalFooterChild>
+					<Button variant='outline' isDisable={busy} onClick={() => guardClose(false)}>
+						Cancelar
+					</Button>
+				</ModalFooterChild>
+				<ModalFooterChild>
+					<Button
+						variant='solid'
+						color={color}
+						isLoading={busy}
+						isDisable={busy || isConfirmDisabled}
+						onClick={onConfirm}>
+						{confirmLabel}
+					</Button>
+				</ModalFooterChild>
+			</ModalFooter>
+		</Modal>
+	);
+};
+export default ConfirmDeferredPaymentActionModal;

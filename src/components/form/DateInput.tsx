@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import FieldWrap from './FieldWrap';
 import Input from './Input';
+import type { IValidationBaseProps } from './Validation';
 import Icon from '@/components/icon/Icon';
 import { toApiDate } from '@/utils/dateNormalize.util';
 
@@ -17,7 +18,7 @@ type Props = {
 	maxYear?: number;
 	minDate?: Date;
 	maxDate?: Date;
-};
+} & Partial<IValidationBaseProps>;
 
 const isoToDisplay = (v?: string | null): string => {
 	if (!v) return '';
@@ -54,6 +55,9 @@ const DateInput: React.FC<Props> = ({
 	maxYear,
 	minDate,
 	maxDate,
+	isValid,
+	isTouched,
+	invalidFeedback,
 }) => {
 	const [display, setDisplay] = useState<string>(isoToDisplay(value));
 	const [open, setOpen] = useState(false);
@@ -154,6 +158,9 @@ const DateInput: React.FC<Props> = ({
 	return (
 		<div className='relative' ref={rootRef}>
 			<FieldWrap
+				isValid={isValid}
+				isTouched={isTouched}
+				invalidFeedback={invalidFeedback}
 				lastSuffix={
 					<Icon
 						icon='HeroCalendarDays'
@@ -170,6 +177,9 @@ const DateInput: React.FC<Props> = ({
 					onBlur={onBlur}
 					disabled={disabled}
 					className={className}
+					isValid={isValid}
+					isTouched={isTouched}
+					invalidFeedback={invalidFeedback}
 				/>
 			</FieldWrap>
 			{open && (

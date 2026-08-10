@@ -13,6 +13,11 @@ export const createUserTableColumns = (
 	onOpenPermissionsModal: (user: UserWithDetails) => void,
 	onToggleUserStatus: (user: UserWithDetails) => void,
 	toggleUserLoading: Set<number>,
+	/**
+	 * Resuelve el `display_name` del rol. Es un parámetro y no un hook porque
+	 * esto es una factory, no un componente. Si no se pasa, cae al formateo local.
+	 */
+	getRoleLabel: (roleName: string) => string = formatRoleName,
 ) => [
 	columnHelper.accessor('first_name', {
 		header: 'Usuario',
@@ -74,7 +79,7 @@ export const createUserTableColumns = (
 				<div className='flex flex-wrap gap-1'>
 					{uniqueRoles.slice(0, 3).map((role, index) => (
 						<Badge key={index} color='blue' className='text-xs'>
-							{formatRoleName(role)}
+							{getRoleLabel(role)}
 						</Badge>
 					))}
 					{uniqueRoles.length > 3 && (

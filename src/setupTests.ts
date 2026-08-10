@@ -32,7 +32,11 @@ class MemoryStorage implements Storage {
 	}
 }
 
-if (typeof window !== 'undefined' && !window.localStorage) {
+if (
+	typeof window !== 'undefined' &&
+	(typeof window.localStorage?.getItem !== 'function' ||
+		typeof window.localStorage?.clear !== 'function')
+) {
 	Object.defineProperty(window, 'localStorage', {
 		value: new MemoryStorage(),
 		writable: true,
@@ -40,7 +44,11 @@ if (typeof window !== 'undefined' && !window.localStorage) {
 	});
 }
 
-if (typeof window !== 'undefined' && !window.sessionStorage) {
+if (
+	typeof window !== 'undefined' &&
+	(typeof window.sessionStorage?.getItem !== 'function' ||
+		typeof window.sessionStorage?.clear !== 'function')
+) {
 	Object.defineProperty(window, 'sessionStorage', {
 		value: new MemoryStorage(),
 		writable: true,

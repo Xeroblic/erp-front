@@ -1,20 +1,6 @@
 import type { ISaleItem } from '@/interface';
 import type { PendingSerialSale } from '@/services/salesService';
 
-/**
- * Formatea un número o string numérico a formato moneda Chilena (CLP)
- * Ej: 10000 -> $ 10.000
- */
-export const formatCLP = (amount: number | string): string => {
-	const n = typeof amount === 'string' ? parseFloat(amount) : amount;
-	if (!Number.isFinite(n)) return '$ 0';
-
-	// Redondea al peso más cercano y muestra sin decimales
-	const rounded = Math.round(n);
-	const withThousands = rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-	return `$ ${withThousands}`;
-};
-
 export const translateStatus = (status?: string | null): string => {
 	const key = String(status || '').toLowerCase();
 	switch (key) {
