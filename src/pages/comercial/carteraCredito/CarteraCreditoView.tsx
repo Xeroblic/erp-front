@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import type { PaginationState } from '@tanstack/react-table';
 import { useNavigate } from 'react-router-dom';
 import Alert from '@/components/ui/Alert';
@@ -51,6 +51,117 @@ const getStatusFilter = (option: unknown): CreditProfileStatusFilter => {
 	return 'all';
 };
 
+type CreditSortKey =
+	| 'customer'
+	| 'payment_term_days'
+	| 'credit_limit'
+	| 'outstanding_balance'
+	| 'available_credit'
+	| 'status';
+type CreditSortDirection = 'asc' | 'desc';
+type CreditSortState = { key: CreditSortKey; direction: CreditSortDirection } | null;
+
+interface CreditSortableHeaderProps {
+	label: string;
+	sortKey: CreditSortKey;
+	sort: CreditSortState;
+	onSort: (key: CreditSortKey) => void;
+	align?: 'left' | 'center' | 'right';
+}
+
+const CreditSortIcon: React.FC<{ direction: CreditSortDirection | null }> = ({ direction }) => (
+	<div className='flex shrink-0 flex-col' aria-hidden='true'>
+		<svg
+			viewBox='0 0 12 12'
+			className={`h-3 w-3 ${direction === 'asc' ? 'text-primary-600' : 'text-gray-400'}`}
+			fill='none'
+			stroke='currentColor'
+			strokeWidth='1.75'>
+			<path d='m2.5 7.5 3.5-3 3.5 3' />
+		</svg>
+		<svg
+			viewBox='0 0 12 12'
+			className={`-mt-1 h-3 w-3 ${direction === 'desc' ? 'text-primary-600' : 'text-gray-400'}`}
+			fill='none'
+			stroke='currentColor'
+			strokeWidth='1.75'>
+			<path d='m2.5 4.5 3.5 3 3.5-3' />
+		</svg>
+	</div>
+);
+
+const CreditSortableHeader: React.FC<CreditSortableHeaderProps> = ({
+	label,
+	sortKey,
+	sort,
+	onSort,
+	align = 'left',
+}) => {
+	const direction = sort?.key === sortKey ? sort.direction : null;
+	const alignmentClasses = {
+		left: { header: undefined, content: 'justify-start' },
+		center: { header: 'text-center', content: 'justify-center' },
+		right: { header: 'text-right', content: 'justify-end' },
+	}[align];
+	let ariaSort: React.AriaAttributes['aria-sort'] = 'none';
+	if (direction === 'asc') ariaSort = 'ascending';
+	if (direction === 'desc') ariaSort = 'descending';
+
+	return (
+		<Th className={alignmentClasses.header} aria-sort={ariaSort}>
+			<button
+				type='button'
+				className={`flex w-full items-center space-x-2 ${alignmentClasses.content}`}
+				aria-label={`Ordenar por ${label}`}
+				onClick={() => onSort(sortKey)}>
+				<span>{label}</span>
+				<CreditSortIcon direction={direction} />
+			</button>
+		</Th>
+	);
+};
+
+const getCreditSortValue = (
+	row: IDeferredPaymentCreditProfileListItem,
+	key: CreditSortKey,
+): string | number | null => {
+	switch (key) {
+		case 'customer':
+			return getCustomerName(row);
+		case 'payment_term_days':
+			return row.payment_term_days;
+		case 'credit_limit':
+			return row.credit_limit === null ? null : Number(row.credit_limit);
+		case 'outstanding_balance':
+			return Number(row.outstanding_balance);
+		case 'available_credit':
+			return row.available_credit === null ? null : Number(row.available_credit);
+		case 'status':
+			return row.is_active ? 'Vigente' : 'Suspendido';
+		default:
+			return null;
+	}
+};
+
+const compareCreditRows = (
+	left: IDeferredPaymentCreditProfileListItem,
+	right: IDeferredPaymentCreditProfileListItem,
+	sort: NonNullable<CreditSortState>,
+): number => {
+	const leftValue = getCreditSortValue(left, sort.key);
+	const rightValue = getCreditSortValue(right, sort.key);
+	if (leftValue === null) return rightValue === null ? 0 : 1;
+	if (rightValue === null) return -1;
+	const comparison =
+		typeof leftValue === 'number' && typeof rightValue === 'number'
+			? leftValue - rightValue
+			: String(leftValue).localeCompare(String(rightValue), 'es', {
+					numeric: true,
+					sensitivity: 'base',
+				});
+	return sort.direction === 'asc' ? comparison : -comparison;
+};
+
 interface CreditPortfolioPaginationProps {
 	meta: NonNullable<ReturnType<typeof useCarteraCredito>['data']['meta']>;
 	loading: boolean;
@@ -92,6 +203,20 @@ const CarteraCreditoView: React.FC = () => {
 	const navigate = useNavigate();
 	const [editingProfile, setEditingProfile] =
 		useState<IDeferredPaymentCreditProfileListItem | null>(null);
+	const [sort, setSort] = useState<CreditSortState>(null);
+	const sortedRows = useMemo(
+		() =>
+			sort === null
+				? data.rows
+				: [...data.rows].sort((left, right) => compareCreditRows(left, right, sort)),
+		[data.rows, sort],
+	);
+	const handleSort = (key: CreditSortKey) => {
+		setSort((current) => ({
+			key,
+			direction: current?.key === key && current.direction === 'asc' ? 'desc' : 'asc',
+		}));
+	};
 	const selectedStatus =
 		statusOptions.find((option) => option.value === filters.status) ?? statusOptions[0];
 	const openCustomer = useCallback(
@@ -208,12 +333,46 @@ const CarteraCreditoView: React.FC = () => {
 								<Table className='min-w-[1120px]'>
 									<THead>
 										<Tr>
-											<Th>Cliente</Th>
-											<Th className='text-right'>Plazo</Th>
-											<Th className='text-right'>Cupo</Th>
-											<Th className='text-right'>Usado</Th>
-											<Th className='text-right'>Disponible</Th>
-											<Th>Estado</Th>
+											<CreditSortableHeader
+												label='Cliente'
+												sortKey='customer'
+												sort={sort}
+												onSort={handleSort}
+											/>
+											<CreditSortableHeader
+												label='Plazo'
+												sortKey='payment_term_days'
+												sort={sort}
+												onSort={handleSort}
+												align='right'
+											/>
+											<CreditSortableHeader
+												label='Cupo'
+												sortKey='credit_limit'
+												sort={sort}
+												onSort={handleSort}
+												align='right'
+											/>
+											<CreditSortableHeader
+												label='Usado'
+												sortKey='outstanding_balance'
+												sort={sort}
+												onSort={handleSort}
+												align='right'
+											/>
+											<CreditSortableHeader
+												label='Disponible'
+												sortKey='available_credit'
+												sort={sort}
+												onSort={handleSort}
+												align='right'
+											/>
+											<CreditSortableHeader
+												label='Estado'
+												sortKey='status'
+												sort={sort}
+												onSort={handleSort}
+											/>
 											<Th className='text-center'>Acciones</Th>
 										</Tr>
 									</THead>
@@ -246,7 +405,7 @@ const CarteraCreditoView: React.FC = () => {
 											)}
 										{!state.loading &&
 											!state.error &&
-											data.rows.map((row) => (
+											sortedRows.map((row) => (
 												<Tr
 													key={row.id}
 													className={
@@ -312,6 +471,27 @@ const CarteraCreditoView: React.FC = () => {
 													</Td>
 													<Td>
 														<div className='flex justify-center gap-1'>
+															<Tooltip
+																text='Ver cliente'
+																placement='top-end'>
+																<Button
+																	variant='solid'
+																	size='sm'
+																	color='amber'
+																	className='bg-amber-600 p-1 hover:bg-amber-700/30'
+																	aria-label={`Ver cliente ${getCustomerName(row)}`}
+																	onClick={() =>
+																		openCustomer(
+																			row.customer_sale_id,
+																		)
+																	}>
+																	<Icon
+																		icon='HeroEye'
+																		color='white'
+																		className='text-xl'
+																	/>
+																</Button>
+															</Tooltip>
 															<Tooltip
 																text='Ver documentos'
 																placement='top-end'>

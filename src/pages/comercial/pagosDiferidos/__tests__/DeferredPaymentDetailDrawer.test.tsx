@@ -54,6 +54,9 @@ describe('DeferredPaymentDetailDrawer', () => {
 		renderDrawer(2);
 
 		expect(screen.getByText('FD-0002')).toBeInTheDocument();
+		expect(screen.getByText('ID').nextElementSibling).toHaveTextContent(
+			String(DEFERRED_PAYMENT_DETAIL_FIXTURES[2].id),
+		);
 		expect(screen.getAllByText('Transportes del Sur SpA').length).toBeGreaterThan(0);
 		expect(screen.getByText('Saldo pendiente')).toBeInTheDocument();
 		expect(screen.getByText('$ 430.000')).toBeInTheDocument();
