@@ -17,6 +17,7 @@ interface DeferredPaymentActionsFooterProps {
 	onRegisterPayment: () => void;
 	onMarkPaid: () => void;
 	onEdit: () => void;
+	onDelete: () => void;
 }
 const DeferredPaymentActionsFooter: React.FC<DeferredPaymentActionsFooterProps> = ({
 	branchId,
@@ -27,6 +28,7 @@ const DeferredPaymentActionsFooter: React.FC<DeferredPaymentActionsFooterProps> 
 	onRegisterPayment,
 	onMarkPaid,
 	onEdit,
+	onDelete,
 }) => {
 	const canPay = status !== 'paid' && outstandingAmount > 0;
 	return (
@@ -69,6 +71,18 @@ const DeferredPaymentActionsFooter: React.FC<DeferredPaymentActionsFooterProps> 
 					}
 					onClick={onEdit}>
 					Editar
+				</ProtectedButton>
+				<ProtectedButton
+					permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.DELETE}
+					branchId={branchId}
+					subsidiaryId={subsidiaryId}
+					scope='access'
+					variant='outline'
+					color='red'
+					icon='HeroTrash'
+					isDisable={busy}
+					onClick={onDelete}>
+					Eliminar
 				</ProtectedButton>
 			</div>
 		</div>

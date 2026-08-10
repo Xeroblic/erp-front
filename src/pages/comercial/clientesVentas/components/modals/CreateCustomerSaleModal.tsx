@@ -1,6 +1,7 @@
 import React from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
+import { toast } from 'react-toastify';
 import Modal, { ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
 import Input from '@/components/form/Input';
 import Button from '@/components/ui/Button';
@@ -13,9 +14,75 @@ import {
 	updateCustomerThunk,
 	fetchCustomerDetailThunk,
 	fetchCustomersOverviewThunk,
+	type CustomerSaleRequestError,
 } from '@/store/slices/customerSales/customerSalesSlice';
 import { ICustomerSale } from '@/interface/customerSales.interface';
 import { formatRut, validateRut } from '../../../../../utils/validateRut';
+
+interface CustomerSaleFormValues {
+	document_number: string;
+	billing_company: string;
+	contact_name: string;
+	email: string;
+	phone: string;
+	is_active: boolean;
+}
+
+/**
+ * Los errores por campo de Laravel usan los nombres del payload, que no siempre
+ * coinciden con los del formulario (`rut` → `document_number`).
+ */
+const FORM_FIELD_BY_API_FIELD: Record<string, keyof CustomerSaleFormValues> = {
+	document_number: 'document_number',
+	rut: 'document_number',
+	billing_company: 'billing_company',
+	contact_name: 'contact_name',
+	primary_contact_name: 'contact_name',
+	email: 'email',
+	primary_contact_email: 'email',
+	phone: 'phone',
+	primary_contact_phone: 'phone',
+	is_active: 'is_active',
+};
+
+const isRequestError = (error: unknown): error is CustomerSaleRequestError =>
+	error !== null &&
+	typeof error === 'object' &&
+	typeof (error as { message?: unknown }).message === 'string';
+
+interface PrimaryContactPayload {
+	primary_contact: { name: string; email: string; phone: string };
+	primary_contact_name: string;
+	primary_contact_email: string;
+	primary_contact_phone: string;
+}
+
+/**
+ * El backend exige el trío completo si llega cualquiera de sus campos, así que el grupo
+ * viaja entero o no viaja: enviarlo incompleto convierte el mínimo que el formulario da
+ * por válido (RUT + empresa + email) en un `422 Contacto principal incompleto`.
+ */
+const buildPrimaryContactPayload = (
+	values: CustomerSaleFormValues,
+): PrimaryContactPayload | Record<string, never> => {
+	const name = values.contact_name.trim();
+	const email = values.email.trim();
+	const phone = values.phone.trim();
+	if (!name || !email || !phone) return {};
+	return {
+		primary_contact: { name, email, phone },
+		primary_contact_name: name,
+		primary_contact_email: email,
+		primary_contact_phone: phone,
+	};
+};
+
+/** Identidad de una mutación en vuelo: si cambia, la respuesta ya no tiene dueño. */
+interface CustomerMutationContext {
+	requestId: number;
+	subsidiaryId: number | string;
+	customerId: number | string | null;
+}
 
 const CreateCustomerSaleModal = ({
 	isOpen,
@@ -23,12 +90,22 @@ const CreateCustomerSaleModal = ({
 	subsidiaryId,
 	isEdit = false,
 	initialData,
+	onSuccess,
+	refreshStoreOnSuccess = true,
 }: {
 	isOpen: boolean;
 	setIsOpen: (v: boolean) => void;
 	subsidiaryId: number | string | null | undefined;
 	isEdit?: boolean;
 	initialData?: Partial<ICustomerSale> | null;
+	onSuccess?: (customer: ICustomerSale) => void;
+	/**
+	 * Refresca detalle y overview en el store al guardar. Desactívalo cuando el
+	 * consumidor ya administra esa lista (p. ej. la búsqueda del modal de pago
+	 * diferido, que la carga con sus propios `per_page` y `q`) y un refetch con
+	 * los parámetros por defecto se la sobrescribiría.
+	 */
+	refreshStoreOnSuccess?: boolean;
 }) => {
 	const dispatch = useAppDispatch();
 	const rutId = React.useId();
@@ -36,8 +113,29 @@ const CreateCustomerSaleModal = ({
 	const contactId = React.useId();
 	const emailId = React.useId();
 	const phoneId = React.useId();
+	const requestIdRef = React.useRef(0);
+	const latestSubsidiaryIdRef = React.useRef(subsidiaryId);
+	const latestCustomerIdRef = React.useRef(initialData?.id ?? null);
+	const latestIsOpenRef = React.useRef(isOpen);
+	latestSubsidiaryIdRef.current = subsidiaryId;
+	latestCustomerIdRef.current = initialData?.id ?? null;
+	latestIsOpenRef.current = isOpen;
 
-	const formik = useFormik({
+	/**
+	 * Una respuesta obsoleta —el usuario cambió de subsidiaria o cerró el modal mientras
+	 * la mutación viajaba— no puede seleccionar ni pintar el cliente creado: pertenecería
+	 * a otra subsidiaria que la del contexto actual.
+	 */
+	const isCurrentMutation = React.useCallback(
+		({ requestId, subsidiaryId: mutationSubsidiaryId, customerId }: CustomerMutationContext) =>
+			requestId === requestIdRef.current &&
+			latestSubsidiaryIdRef.current === mutationSubsidiaryId &&
+			latestCustomerIdRef.current === customerId &&
+			latestIsOpenRef.current,
+		[],
+	);
+
+	const formik = useFormik<CustomerSaleFormValues>({
 		initialValues: {
 			document_number: initialData?.document_number ?? initialData?.rut ?? '',
 			billing_company: initialData?.billing_company ?? '',
@@ -54,54 +152,60 @@ const CreateCustomerSaleModal = ({
 			email: Yup.string().email('Email inválido').required('Email requerido'),
 			billing_company: Yup.string().required('Empresa/Persona requerida'),
 		}),
-		onSubmit: async (values, { setSubmitting }) => {
-			try {
-				if (!subsidiaryId) {
-					console.error('Subsidiaria no seleccionada');
-					return;
-				}
+		onSubmit: async (values, { setSubmitting, setFieldError }) => {
+			if (!subsidiaryId) {
+				toast.error('No se pudo determinar la subsidiaria activa');
+				setSubmitting(false);
+				return;
+			}
 
-				if (isEdit && initialData?.id) {
-					const action = await dispatch(
+			const customerId = isEdit ? (initialData?.id ?? null) : null;
+			requestIdRef.current += 1;
+			const mutation: CustomerMutationContext = {
+				requestId: requestIdRef.current,
+				subsidiaryId,
+				customerId,
+			};
+			const primaryContact = buildPrimaryContactPayload(values);
+
+			try {
+				if (isEdit && customerId !== null) {
+					const customer = await dispatch(
 						updateCustomerThunk({
 							subsidiary: subsidiaryId,
-							id: initialData.id,
+							id: customerId,
 							payload: {
-								rut: values.document_number,
+								// `document_number`, no `rut`: la unicidad por subsidiaria del
+								// backend sólo se valida sobre este campo.
+								document_number: values.document_number,
 								billing_company: values.billing_company,
 								contact_name: values.contact_name,
 								email: values.email,
 								phone: values.phone,
 								is_active: values.is_active,
-								primary_contact: {
-									name: values.contact_name || '',
-									email: values.email || '',
-									phone: values.phone || '',
-								},
-								primary_contact_name: values.contact_name,
-								primary_contact_email: values.email,
-								primary_contact_phone: values.phone,
+								...primaryContact,
 							},
-						}) as any,
-					);
+						}),
+					).unwrap();
 
-					if (action && action.meta?.requestStatus === 'fulfilled') {
-						// refrescar detalle y overview
+					if (!isCurrentMutation(mutation)) return;
+
+					// refrescar detalle y overview
+					if (refreshStoreOnSuccess) {
 						dispatch(
 							fetchCustomerDetailThunk({
 								subsidiary: subsidiaryId,
-								id: initialData.id,
-							} as any) as any,
+								id: customerId,
+							}),
+						).catch(() => undefined);
+						dispatch(fetchCustomersOverviewThunk({ subsidiary: subsidiaryId })).catch(
+							() => undefined,
 						);
-						dispatch(
-							fetchCustomersOverviewThunk({ subsidiary: subsidiaryId } as any) as any,
-						);
-						setIsOpen(false);
-					} else {
-						console.error('Error actualizando cliente', action);
 					}
+					onSuccess?.(customer);
+					setIsOpen(false);
 				} else {
-					const action = await dispatch(
+					const customer = await dispatch(
 						createCustomerThunk({
 							subsidiary: subsidiaryId,
 							payload: {
@@ -112,45 +216,56 @@ const CreateCustomerSaleModal = ({
 								email: values.email,
 								phone: values.phone,
 								is_active: values.is_active,
-								primary_contact: {
-									name: values.contact_name || '',
-									email: values.email || '',
-									phone: values.phone || '',
-								},
-								primary_contact_name: values.contact_name,
-								primary_contact_email: values.email,
-								primary_contact_phone: values.phone,
+								...primaryContact,
 							},
-						}) as any,
-					);
+						}),
+					).unwrap();
 
-					if (action && action.meta?.requestStatus === 'fulfilled') {
-						try {
-							dispatch(
-								fetchCustomersOverviewThunk({
-									subsidiary: subsidiaryId,
-								} as any) as any,
-							);
-						} catch (e) {
-							console.warn(
-								'No se pudo refrescar overview después de crear cliente',
-								e,
-							);
-						}
-						setIsOpen(false);
-						formik.resetForm();
-					} else {
-						console.error('Error creando cliente', action);
-					}
+					if (!isCurrentMutation(mutation)) return;
+
+					if (refreshStoreOnSuccess)
+						dispatch(fetchCustomersOverviewThunk({ subsidiary: subsidiaryId })).catch(
+							() => undefined,
+						);
+					onSuccess?.(customer);
+					setIsOpen(false);
+					formik.resetForm();
 				}
+			} catch (error) {
+				// El borrador se conserva: sólo se pinta el error si la mutación sigue siendo
+				// la del contexto actual; si no, el formulario ya pertenece a otra subsidiaria.
+				if (!isCurrentMutation(mutation)) return;
+				const fallback = isEdit
+					? 'No se pudo actualizar el cliente'
+					: 'No se pudo crear el cliente';
+				const requestError = isRequestError(error) ? error : null;
+				// Un 422 de Laravel trae el detalle por campo: lo pintamos sobre el input
+				// correspondiente además del toast, para que el usuario sepa qué corregir.
+				Object.entries(requestError?.errors ?? {}).forEach(([apiField, messages]) => {
+					const formField = FORM_FIELD_BY_API_FIELD[apiField];
+					if (formField && messages[0]) setFieldError(formField, messages[0]);
+				});
+				toast.error(requestError?.message ?? fallback);
 			} finally {
 				setSubmitting(false);
 			}
 		},
 	});
 
+	// Cerrar con una mutación en vuelo dejaría la respuesta sin dueño: el modal se
+	// mantiene abierto hasta que resuelve y el usuario ve el spinner del botón.
+	const closeIfIdle = () => {
+		if (formik.isSubmitting) return;
+		setIsOpen(false);
+		formik.resetForm();
+	};
+
 	return (
-		<Modal isOpen={isOpen} setIsOpen={() => setIsOpen(false)} size='md'>
+		<Modal
+			isOpen={isOpen}
+			setIsOpen={closeIfIdle}
+			size='md'
+			isStaticBackdrop={formik.isSubmitting}>
 			<ModalHeader>{isEdit ? 'Editar Cliente' : 'Crear Cliente'}</ModalHeader>
 
 			<ModalBody>
@@ -164,14 +279,16 @@ const CreateCustomerSaleModal = ({
 							value={formik.values.document_number}
 							onChange={(e) => {
 								const formatted = formatRut(e.target.value);
-								formik.setFieldValue('document_number', formatted);
+								formik
+									.setFieldValue('document_number', formatted)
+									.catch(() => undefined);
 							}}
 							onBlur={formik.handleBlur}
 							isTouched={!!formik.touched.document_number}
 							isValid={!formik.errors.document_number}
 							invalidFeedback={
 								formik.touched.document_number
-									? (formik.errors.document_number as any)
+									? formik.errors.document_number
 									: undefined
 							}
 						/>
@@ -191,7 +308,7 @@ const CreateCustomerSaleModal = ({
 								isValid={!formik.errors.billing_company}
 								invalidFeedback={
 									formik.touched.billing_company
-										? (formik.errors.billing_company as any)
+										? formik.errors.billing_company
 										: undefined
 								}
 							/>
@@ -220,9 +337,7 @@ const CreateCustomerSaleModal = ({
 							onBlur={formik.handleBlur}
 							isTouched={!!formik.touched.email}
 							isValid={!formik.errors.email}
-							invalidFeedback={
-								formik.touched.email ? (formik.errors.email as any) : undefined
-							}
+							invalidFeedback={formik.touched.email ? formik.errors.email : undefined}
 						/>
 					</div>
 
@@ -250,17 +365,13 @@ const CreateCustomerSaleModal = ({
 			</ModalBody>
 
 			<ModalFooter>
-				<Button
-					variant='outline'
-					onClick={() => {
-						setIsOpen(false);
-						formik.resetForm();
-					}}>
+				<Button variant='outline' isDisable={formik.isSubmitting} onClick={closeIfIdle}>
 					Cancelar
 				</Button>
 				<Button
 					variant='solid'
 					onClick={() => formik.handleSubmit()}
+					isLoading={formik.isSubmitting}
 					disabled={formik.isSubmitting}>
 					{isEdit ? 'Actualizar' : 'Guardar'}
 				</Button>

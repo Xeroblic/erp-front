@@ -82,12 +82,14 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 	const [isDiscardMarkPaidReceiptOpen, setIsDiscardMarkPaidReceiptOpen] = useState(false);
 	const [closeAfterDiscardingReceipt, setCloseAfterDiscardingReceipt] = useState(false);
 	const [paymentToVoid, setPaymentToVoid] = useState<IDeferredPaymentAbono | null>(null);
+	const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 	useEffect(() => {
 		setIsRegisterOpen(false);
 		setIsMarkPaidOpen(false);
 		setIsDiscardMarkPaidReceiptOpen(false);
 		setCloseAfterDiscardingReceipt(false);
 		setPaymentToVoid(null);
+		setIsDeleteOpen(false);
 	}, [branch.branchId, branch.subsidiaryId, documentId]);
 	const paymentActions = useDeferredPaymentActions(document, branch.subsidiaryId, () =>
 		setIsRegisterOpen(false),
@@ -97,7 +99,11 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 		setIsDiscardMarkPaidReceiptOpen(true);
 	}, []);
 	const hasOpenActionModal =
-		isRegisterOpen || isMarkPaidOpen || isDiscardMarkPaidReceiptOpen || paymentToVoid !== null;
+		isRegisterOpen ||
+		isMarkPaidOpen ||
+		isDiscardMarkPaidReceiptOpen ||
+		isDeleteOpen ||
+		paymentToVoid !== null;
 	const handleDrawerOpenChange: React.Dispatch<React.SetStateAction<boolean>> = useCallback(
 		(nextState) => {
 			const shouldOpen =
@@ -421,6 +427,10 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 								setIsMarkPaidOpen(true);
 							}}
 							onEdit={() => onEdit(document)}
+							onDelete={() => {
+								paymentActions.actions.clearMutationErrors();
+								setIsDeleteOpen(true);
+							}}
 						/>
 					) : (
 						<span />
@@ -535,6 +545,58 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 							El documento ya está pagado. Si descartas el comprobante, no quedará
 							adjunto y no podrás reintentarlo más tarde.
 						</p>
+					}
+				/>
+			)}
+			{document && isDeleteOpen && (
+				<ConfirmDeferredPaymentActionModal
+					key={`delete-${document.id}`}
+					isOpen
+					setIsOpen={(nextState) => {
+						const shouldOpen =
+							typeof nextState === 'function' ? nextState(isDeleteOpen) : nextState;
+						if (!shouldOpen) {
+							setIsDeleteOpen(false);
+							paymentActions.actions.clearMutationErrors();
+						}
+					}}
+					title='Eliminar documento'
+					confirmLabel='Eliminar documento'
+					color='red'
+					busy={paymentActions.state.deletingDocumentId === document.id}
+					error={paymentActions.state.errorDelete}
+					onConfirm={() => {
+						paymentActions.actions
+							.deleteDocument()
+							.then((ok) => {
+								if (ok) {
+									setIsDeleteOpen(false);
+									onClose();
+								}
+							})
+							.catch(() => undefined);
+					}}
+					description={
+						<>
+							<p>
+								Se eliminará el documento{' '}
+								<strong>{document.document_number}</strong> por{' '}
+								<strong>
+									{formatDeferredPaymentAmount(document.total_amount)}
+								</strong>
+								. Esta acción no se puede deshacer.
+							</p>
+							{document.payments.length > 0 && (
+								<Alert
+									color='amber'
+									variant='outline'
+									icon='HeroExclamationTriangle'
+									title='El documento tiene abonos registrados'>
+									Los documentos con abonos no se pueden eliminar. Anulá primero
+									los {document.payments.length} abono(s) registrado(s).
+								</Alert>
+							)}
+						</>
 					}
 				/>
 			)}
