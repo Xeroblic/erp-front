@@ -120,6 +120,7 @@ describe('CustomerCreditProfileCard', () => {
 			is_active: true,
 			payment_term_days: 45,
 			credit_limit: null,
+			collection_email: null,
 			notes: null,
 		};
 		creditProfilePutResponse = { data: savedProfile };
@@ -143,6 +144,7 @@ describe('CustomerCreditProfileCard', () => {
 						is_active: true,
 						payment_term_days: 45,
 						credit_limit: null,
+						collection_email: null,
 						notes: null,
 					},
 				}),
@@ -150,6 +152,54 @@ describe('CustomerCreditProfileCard', () => {
 		);
 		expect(await screen.findByText('45 días')).toBeInTheDocument();
 		expect(screen.getByText('Sin cupo definido')).toBeInTheDocument();
+		await waitForButtonClickGuard();
+	});
+
+	it('muestra, valida y persiste el correo de cobranza', async () => {
+		creditProfileResponse = {
+			data: {
+				id: 12,
+				customer_sale_id: 8,
+				is_active: true,
+				payment_term_days: 30,
+				credit_limit: null,
+				collection_email: 'cobranza@cliente.cl',
+				notes: null,
+			},
+		};
+		creditProfilePutResponse = creditProfileResponse;
+		setupFetchData();
+
+		render(<CustomerCreditProfileCard customerSaleId={8} />);
+
+		expect(await screen.findByText('cobranza@cliente.cl')).toBeInTheDocument();
+		fireEvent.click(screen.getByRole('button', { name: 'Editar' }));
+		const collectionEmail = screen.getByLabelText('Correo de cobranza');
+		expect(collectionEmail).toHaveValue('cobranza@cliente.cl');
+		fireEvent.change(collectionEmail, { target: { value: 'correo inválido' } });
+		fireEvent.blur(collectionEmail);
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar condiciones' }));
+
+		expect(await screen.findByText('Ingresa un correo de cobranza válido')).toBeInTheDocument();
+		expect(apiSpies.fetchData).not.toHaveBeenCalledWith(
+			expect.objectContaining({ method: 'put' }),
+		);
+		fireEvent.change(collectionEmail, { target: { value: `${'a'.repeat(251)}@x.cl` } });
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar condiciones' }));
+		expect(
+			await screen.findByText('El correo de cobranza debe tener como máximo 255 caracteres'),
+		).toBeInTheDocument();
+
+		fireEvent.change(collectionEmail, { target: { value: '  pagos@cliente.cl  ' } });
+		fireEvent.click(screen.getByRole('button', { name: 'Guardar condiciones' }));
+		await waitFor(() =>
+			expect(apiSpies.fetchData).toHaveBeenCalledWith(
+				expect.objectContaining({
+				method: 'put',
+				data: expect.objectContaining({ collection_email: 'pagos@cliente.cl' }),
+			}),
+			),
+		);
 		await waitForButtonClickGuard();
 	});
 

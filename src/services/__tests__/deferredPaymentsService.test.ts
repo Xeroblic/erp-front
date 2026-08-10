@@ -274,6 +274,7 @@ describe('deferredPaymentsService', () => {
 			is_active: false,
 			payment_term_days: 30,
 			credit_limit: null,
+			collection_email: null,
 			notes: null,
 		};
 		apiSpies.fetchData

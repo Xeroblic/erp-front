@@ -23,6 +23,7 @@ export interface CreditProfileFormValues {
 	is_active: boolean;
 	payment_term_days: string;
 	credit_limit: string;
+	collection_email: string;
 	notes: string;
 }
 
@@ -55,5 +56,9 @@ export const CreditProfileSchema = Yup.object({
 			'El cupo de crédito debe contener solo números enteros de hasta 13 dígitos',
 			(value) => !value || /^\d{1,13}$/.test(value),
 		),
+	collection_email: Yup.string()
+		.trim()
+		.email('Ingresa un correo de cobranza válido')
+		.max(255, 'El correo de cobranza debe tener como máximo 255 caracteres'),
 	notes: Yup.string().trim(),
 });
