@@ -1,9 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
-import Subheader, {
-	SubheaderLeft,
-	SubheaderRight,
-} from '@/components/layouts/Subheader/Subheader';
+import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layouts/Subheader/Subheader';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import type { ICustomerSale } from '@/interface/customerSales.interface';
@@ -39,7 +36,7 @@ const ClientDetailHeader: React.FC<ClientDetailHeaderProps> = ({
 				opacity: 0,
 				duration: 0.8,
 				stagger: 0.1,
-				ease: 'expo.out'
+				ease: 'expo.out',
 			});
 
 			gsap.from('.button-animate', {
@@ -48,7 +45,7 @@ const ClientDetailHeader: React.FC<ClientDetailHeaderProps> = ({
 				duration: 0.8,
 				stagger: 0.1,
 				ease: 'expo.out',
-				delay: 0.2
+				delay: 0.2,
 			});
 		}, scopeRef);
 		return () => ctx.revert();
@@ -65,10 +62,18 @@ const ClientDetailHeader: React.FC<ClientDetailHeaderProps> = ({
 							</Badge>
 						</div>
 
-						<div className='flex flex-wrap items-center gap-3 text-sm header-animate'>
-							<Badge className='px-2' variant='outline' color='sky'>ID Cliente: {client.id}</Badge>
+						<div className='header-animate flex flex-wrap items-center gap-3 text-sm'>
+							<Badge className='px-2' variant='outline' color='sky'>
+								ID Cliente: {client.id}
+							</Badge>
 							<Badge className={classNames('px-2')} variant='outline' color='blue'>
 								{client.type === 'company' ? 'Empresa' : 'Persona Natural'}
+							</Badge>
+							<Badge
+								className='px-2'
+								variant='solid'
+								color={client.is_active ? 'green' : 'red'}>
+								{client.is_active ? 'Activo' : 'Inactivo'}
 							</Badge>
 						</div>
 					</div>
@@ -84,7 +89,10 @@ const ClientDetailHeader: React.FC<ClientDetailHeaderProps> = ({
 					{isEditable ? (
 						<>
 							<div className='button-animate'>
-								<Button variant='outline' onClick={onCancelEdit} disabled={isSubmitting}>
+								<Button
+									variant='outline'
+									onClick={onCancelEdit}
+									disabled={isSubmitting}>
 									Cancelar
 								</Button>
 							</div>

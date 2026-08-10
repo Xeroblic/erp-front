@@ -3,26 +3,40 @@ import { gsap } from 'gsap';
 import Container from '@/components/layouts/Container/Container';
 import PageWrapper from '@/components/layouts/PageWrapper/PageWrapper';
 import Card, { CardBody } from '@/components/ui/Card';
-import Badge from '@/components/ui/Badge';
 import Checkbox from '@/components/form/Checkbox';
 import ClientDetailHeader from '../components/parts/ClientDetailHeader';
 import DetailSection from '../components/parts/DetailSection';
 import EditableField from '../components/parts/EditableField';
 import EditableSelect from '../components/parts/EditableSelect';
+import CustomerCreditProfileCard from './components/CustomerCreditProfileCard';
 import { formatRut } from '../../../../utils/validateRut';
 import { TSelectOptions } from '@/components/form/SelectReact';
 import { useClientesVentasDetalle } from './hooks/useClientesVentasDetalle';
+import { getCustomerDetailPageTitle, hasMatchingShippingAddress } from './utils';
 
 const DetailSkeleton = () => (
 	<Container className='animate-pulse space-y-8 py-8'>
-		<div className='flex justify-between items-center h-20 bg-zinc-100 dark:bg-zinc-800 rounded-lg' />
-		<div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-			<div className='h-64 bg-zinc-100 dark:bg-zinc-800 rounded-lg' />
-			<div className='h-64 bg-zinc-100 dark:bg-zinc-800 rounded-lg' />
+		<div className='flex h-20 items-center justify-between rounded-lg bg-zinc-100 dark:bg-zinc-800' />
+		<div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+			<div className='h-64 rounded-lg bg-zinc-100 dark:bg-zinc-800' />
+			<div className='h-64 rounded-lg bg-zinc-100 dark:bg-zinc-800' />
 		</div>
-		<div className='h-40 bg-zinc-100 dark:bg-zinc-800 rounded-lg' />
+		<div className='h-40 rounded-lg bg-zinc-100 dark:bg-zinc-800' />
 	</Container>
 );
+
+const CUSTOMER_DETAIL_TEXT_FIELD_NAMES = new Set([
+	'document_number',
+	'billing_company',
+	'contact_name',
+	'email',
+	'phone',
+	'trade_activity',
+	'billing_address_1',
+	'billing_city',
+	'shipping_address_1',
+	'shipping_city',
+]);
 
 const ClientesVentasDetalleView = () => {
 	const {
@@ -49,7 +63,7 @@ const ClientesVentasDetalleView = () => {
 					duration: 1,
 					stagger: {
 						each: 0.2,
-						from: 'start'
+						from: 'start',
 					},
 					ease: 'expo.out',
 				});
@@ -75,7 +89,7 @@ const ClientesVentasDetalleView = () => {
 			boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
 			borderColor: 'var(--color-primary-300)',
 			duration: 0.4,
-			ease: 'power3.out'
+			ease: 'power3.out',
 		});
 	};
 
@@ -86,7 +100,7 @@ const ClientesVentasDetalleView = () => {
 			boxShadow: 'none',
 			borderColor: 'rgba(228, 228, 231, 0.5)', // zinc-200/50
 			duration: 0.4,
-			ease: 'power3.inOut'
+			ease: 'power3.inOut',
 		});
 	};
 
@@ -110,10 +124,12 @@ const ClientesVentasDetalleView = () => {
 		],
 		[],
 	);
+	const shippingMatchesBilling =
+		!isEditable && detalle ? hasMatchingShippingAddress(detalle) : false;
 
 	if (loading && !detalle) {
 		return (
-			<PageWrapper title='Cargando cliente...'>
+			<PageWrapper title='Cargando cliente...' name='ERP'>
 				<DetailSkeleton />
 			</PageWrapper>
 		);
@@ -121,22 +137,35 @@ const ClientesVentasDetalleView = () => {
 
 	if (!detalle) {
 		return (
-			<PageWrapper title='Error'>
+			<PageWrapper title='Detalle de cliente' name='ERP'>
 				<Container className='py-20 text-center'>
 					<p className='text-zinc-500'>No se encontró la información del cliente.</p>
 				</Container>
 			</PageWrapper>
 		);
 	}
+	const pageTitle = getCustomerDetailPageTitle(detalle, contacto.name);
 
 	const addToRefs = (el: HTMLDivElement | null) => {
 		if (el && !cardsRef.current.includes(el)) {
 			cardsRef.current.push(el);
 		}
 	};
+	const handleCustomerFormKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+		if (
+			!isEditable ||
+			event.key !== 'Enter' ||
+			event.shiftKey ||
+			!(event.target instanceof HTMLInputElement) ||
+			!CUSTOMER_DETAIL_TEXT_FIELD_NAMES.has(event.target.name)
+		)
+			return;
+		event.preventDefault();
+		formik.submitForm().catch(() => undefined);
+	};
 
 	return (
-		<PageWrapper title='Detalle cliente' name='Detalle cliente'>
+		<PageWrapper title={pageTitle} name='ERP'>
 			<ClientDetailHeader
 				client={detalle}
 				contactName={contacto.name || ''}
@@ -148,44 +177,37 @@ const ClientesVentasDetalleView = () => {
 				isSubmitting={formik.isSubmitting}
 			/>
 
-			<Container className='pb-20 pt-8' ref={containerRef}>
-				<form onSubmit={formik.handleSubmit} className='space-y-6'>
+			<Container
+				className='pb-20 pt-8'
+				ref={containerRef}
+				onKeyDown={handleCustomerFormKeyDown}>
+				<div className='space-y-6'>
 					<div className='grid grid-cols-1 gap-6 lg:grid-cols-12'>
-						{/* Columna Principal - Info General */}
-						<div className='lg:col-span-8 space-y-6' ref={addToRefs} >
-							<Card className='h-full border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all overflow-hidden'>
+						{/* Identidad y contacto: información primaria para reconocer al cliente. */}
+						<div className='space-y-6 lg:col-span-8' ref={addToRefs}>
+							<Card className='h-full overflow-hidden border-zinc-200/50 shadow-sm transition-all dark:border-zinc-700/50'>
 								<CardBody>
 									<DetailSection
-										title='Información General'
-										description='Datos base y estado operacional'
+										title='Identidad y contacto'
+										description='Datos para identificar y contactar al cliente.'
+										icon='HeroUser'
+										contentClassName='!grid-cols-1 md:!grid-cols-1'
 										contenRight={
-											<div className='flex items-center gap-3 detail-content-item'>
-												{isEditable ? (
-													<Checkbox
-														checked={formik.values.is_active}
-														label='Activo'
-														onChange={(e) =>
-															formik.setFieldValue(
-																'is_active',
-																e.target.checked,
-															)
-														}
-													/>
-												) : (
-													<div className='flex items-center gap-2'>
-														<span className='text-xs text-zinc-400 font-medium uppercase'>Estado</span>
-														<Badge
-															variant='solid'
-															className='px-3'
-															color={detalle.is_active ? 'green' : 'red'}>
-															{detalle.is_active ? 'Activo' : 'Inactivo'}
-														</Badge>
-													</div>
-												)}
-											</div>
+											isEditable ? (
+												<Checkbox
+													checked={formik.values.is_active}
+													label='Cliente activo'
+													onChange={(event) =>
+														formik.setFieldValue(
+															'is_active',
+															event.target.checked,
+														)
+													}
+												/>
+											) : null
 										}>
-										<div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-											<div className="detail-content-item">
+										<div className='grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2'>
+											<div className='detail-content-item'>
 												<EditableField
 													formik={formik}
 													name='document_number'
@@ -193,11 +215,14 @@ const ClientesVentasDetalleView = () => {
 													isEditable={isEditable}
 													placeholder='12.345.678-9'
 													onChangeValue={(v) =>
-														formik.setFieldValue('document_number', formatRut(v))
+														formik.setFieldValue(
+															'document_number',
+															formatRut(v),
+														)
 													}
 												/>
 											</div>
-											<div className="detail-content-item">
+											<div className='detail-content-item'>
 												<EditableField
 													formik={formik}
 													name='billing_company'
@@ -206,7 +231,7 @@ const ClientesVentasDetalleView = () => {
 													placeholder='Nombre de la empresa'
 												/>
 											</div>
-											<div className="detail-content-item">
+											<div className='detail-content-item'>
 												<EditableField
 													formik={formik}
 													name='contact_name'
@@ -215,7 +240,7 @@ const ClientesVentasDetalleView = () => {
 													placeholder='Nombre contacto'
 												/>
 											</div>
-											<div className="detail-content-item">
+											<div className='detail-content-item'>
 												<EditableField
 													formik={formik}
 													name='email'
@@ -224,7 +249,7 @@ const ClientesVentasDetalleView = () => {
 													placeholder='ejemplo@correo.cl'
 												/>
 											</div>
-											<div className="detail-content-item">
+											<div className='detail-content-item'>
 												<EditableField
 													formik={formik}
 													name='phone'
@@ -233,7 +258,7 @@ const ClientesVentasDetalleView = () => {
 													placeholder='+56 9 ...'
 												/>
 											</div>
-											<div className="detail-content-item">
+											<div className='detail-content-item'>
 												<EditableField
 													formik={formik}
 													name='trade_activity'
@@ -247,15 +272,16 @@ const ClientesVentasDetalleView = () => {
 							</Card>
 						</div>
 
-						{/* Columna Lateral - Comercial */}
-						<div className='lg:col-span-4' ref={addToRefs} >
-							<Card className='h-full border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all overflow-hidden'>
+						{/* Preferencias comerciales: configuración para la operación. */}
+						<div className='lg:col-span-4' ref={addToRefs}>
+							<Card className='h-full overflow-hidden border-zinc-200/50 shadow-sm transition-all dark:border-zinc-700/50'>
 								<CardBody>
 									<DetailSection
 										title='Comercial'
 										description='Preferencias de facturación'
-										contentClassName='grid grid-cols-1 gap-4'>
-										<div className="detail-content-item">
+										icon='HeroBriefcase'
+										contentClassName='grid grid-cols-1 gap-4 md:!grid-cols-1'>
+										<div className='detail-content-item'>
 											<EditableSelect
 												formik={formik}
 												name='default_document_type'
@@ -264,7 +290,7 @@ const ClientesVentasDetalleView = () => {
 												options={defaultDocumentOptions}
 											/>
 										</div>
-										<div className="detail-content-item">
+										<div className='detail-content-item'>
 											<EditableSelect
 												formik={formik}
 												name='preferred_payment_method'
@@ -278,80 +304,92 @@ const ClientesVentasDetalleView = () => {
 							</Card>
 						</div>
 
-						{/* Direcciones */}
-						<div className='lg:col-span-6' ref={addToRefs} >
-							<Card className='border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all overflow-hidden'>
-								<CardBody>
+						{/* Logística: facturación y despacho se leen como una misma decisión operativa. */}
+						<div className='lg:col-span-12' ref={addToRefs}>
+							<Card className='overflow-hidden border border-zinc-200 bg-zinc-50 shadow-sm transition-all dark:border-zinc-700 dark:bg-zinc-800/60'>
+								<CardBody className='p-5'>
 									<DetailSection
-										title='Dirección de Facturación'
-										contentClassName='grid grid-cols-1 gap-4'>
-										<div className="detail-content-item">
-											<EditableField
-												formik={formik}
-												name='billing_address_1'
-												label='Dirección'
-												isEditable={isEditable}
-											/>
+										title='Logística'
+										description='Direcciones para facturación y despacho.'
+										icon='HeroTruck'
+										contentClassName='!grid-cols-1 items-start gap-4 md:!grid-cols-2'>
+										<div className='self-start border-t border-zinc-200 pt-4 dark:border-zinc-700'>
+											<p className='mb-4 text-sm font-semibold text-zinc-700 dark:text-zinc-200'>
+												Facturación
+											</p>
+											<div className='grid grid-cols-1 gap-4'>
+												<div className='detail-content-item'>
+													<EditableField
+														formik={formik}
+														name='billing_address_1'
+														label='Dirección'
+														isEditable={isEditable}
+													/>
+												</div>
+												<div className='detail-content-item'>
+													<EditableField
+														formik={formik}
+														name='billing_city'
+														label='Ciudad'
+														isEditable={isEditable}
+													/>
+												</div>
+											</div>
 										</div>
-										<div className='grid grid-cols-2 gap-4'>
-											<div className="detail-content-item">
-												<EditableField
-													formik={formik}
-													name='billing_city'
-													label='Ciudad'
-													isEditable={isEditable}
-												/>
-											</div>
-											<div className="detail-content-item">
-												<EditableField
-													formik={formik}
-													name='billing_postcode'
-													label='Código Postal'
-													isEditable={isEditable}
-												/>
-											</div>
+										<div className='self-start border-t border-zinc-200 pt-4 dark:border-zinc-700'>
+											<p className='mb-4 text-sm font-semibold text-zinc-700 dark:text-zinc-200'>
+												Despacho
+												{shippingMatchesBilling ? (
+													<span className='ml-2 text-xs font-medium text-blue-700 dark:text-blue-300'>
+														Misma dirección que facturación
+													</span>
+												) : null}
+											</p>
+											{shippingMatchesBilling ? (
+												<p className='text-sm text-zinc-500 dark:text-zinc-400'>
+													Los pedidos se despachan a la dirección de
+													facturación registrada.
+												</p>
+											) : (
+												<div className='grid grid-cols-1 gap-4'>
+													<div className='detail-content-item'>
+														<EditableField
+															formik={formik}
+															name='shipping_address_1'
+															label='Dirección'
+															isEditable={isEditable}
+														/>
+													</div>
+													<div className='detail-content-item'>
+														<EditableField
+															formik={formik}
+															name='shipping_city'
+															label='Ciudad'
+															isEditable={isEditable}
+														/>
+													</div>
+												</div>
+											)}
 										</div>
 									</DetailSection>
 								</CardBody>
 							</Card>
 						</div>
 
-						<div className='lg:col-span-6' ref={addToRefs} >
-							<Card className='border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all overflow-hidden'>
-								<CardBody>
-									<DetailSection
-										title='Dirección de Despacho'
-										contentClassName='grid grid-cols-1 gap-4'>
-										<div className="detail-content-item">
-											<EditableField
-												formik={formik}
-												name='shipping_address_1'
-												label='Dirección'
-												isEditable={isEditable}
-											/>
-										</div>
-										<div className="detail-content-item">
-											<EditableField
-												formik={formik}
-												name='shipping_city'
-												label='Ciudad'
-												isEditable={isEditable}
-											/>
-										</div>
-									</DetailSection>
-								</CardBody>
-							</Card>
+						<div className='h-full lg:col-span-12' ref={addToRefs}>
+							<CustomerCreditProfileCard customerSaleId={detalle.id} />
 						</div>
 
-						{/* Notas */}
-						<div className='lg:col-span-12' ref={addToRefs} >
-							<Card className='border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all overflow-hidden'>
-								<CardBody>
+						{/* Notas quedan separadas de las condiciones financieras. */}
+						<div className='h-full lg:col-span-12' ref={addToRefs}>
+							<Card className='h-full overflow-hidden border border-zinc-200 bg-zinc-50 shadow-sm transition-all dark:border-zinc-700 dark:bg-zinc-800/60'>
+								<CardBody className='p-5'>
 									<DetailSection
 										title='Notas internas'
 										description='Observaciones relevantes'
+										icon='HeroChatBubbleLeftEllipsis'
 										contentClassName='grid grid-cols-1'>
-										<div className="detail-content-item">
+										<div className='detail-content-item'>
 											<EditableField
 												formik={formik}
 												name='notes'
@@ -366,7 +404,7 @@ const ClientesVentasDetalleView = () => {
 							</Card>
 						</div>
 					</div>
-				</form>
+				</div>
 			</Container>
 		</PageWrapper>
 	);
