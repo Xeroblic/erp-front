@@ -878,6 +878,20 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 											isLoading={usersLoading}
 											isDisabled={isPaidEdit}
 											placeholder='Selecciona responsables'
+											styles={{
+												multiValue: (base) => ({
+													...base,
+													backgroundColor: 'var(--color-primary-700)',
+												}),
+												multiValueLabel: (base) => ({
+													...base,
+													color: '#fff',
+												}),
+												multiValueRemove: (base) => ({
+													...base,
+													color: '#fff',
+												}),
+											}}
 											onChange={(value) =>
 												formik
 													.setFieldValue(

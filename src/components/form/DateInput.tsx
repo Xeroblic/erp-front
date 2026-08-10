@@ -284,13 +284,13 @@ const DateInput: React.FC<Props> = ({
 											onClick={() => !disabledCell && onPick(d)}
 											className={`rounded py-1 text-sm transition-colors ${
 												inMonth
-													? 'text-zinc-800 dark:text-zinc-100'
-													: 'text-zinc-400 dark:text-zinc-600'
-											}${isSelected ? 'font-medium' : ''}${
+													? 'font-medium text-zinc-900 dark:text-white'
+													: 'text-zinc-400 dark:text-zinc-500'
+											} ${isSelected ? 'font-medium' : ''} ${
 												!isSelected
 													? 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
 													: ''
-											}${
+											} ${
 												disabledCell
 													? 'cursor-not-allowed opacity-40 hover:bg-transparent'
 													: ''
