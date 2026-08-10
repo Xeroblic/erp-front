@@ -153,7 +153,7 @@ El payload contiene:
 }
 ```
 
-La respuesta `credit_limit_exceeded` muestra una advertencia comercial sin bloquear el guardado. Los ítems con precio unitario cero son válidos si el total completo del documento es positivo.
+La respuesta exitosa conserva `credit_limit_exceeded: false` por compatibilidad. Si el cliente no tiene un perfil de crédito activo o supera su cupo disponible, el backend rechaza la creación o un aumento de `total_amount` en edición con `422` y un `message`; el formulario conserva el borrador y muestra ese mensaje. Bajar, mantener o no enviar el total no activa estas validaciones en edición. Los ítems con precio unitario cero son válidos si el total completo del documento es positivo.
 
 ## 9. Pruebas
 

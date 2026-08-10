@@ -50,7 +50,6 @@ export interface DeferredPaymentsState {
 	errorReceipt: string | null;
 	errorVoid: string | null;
 	errorMarkPaid: string | null;
-	lastMutationCreditLimitExceeded: boolean;
 	createRequestId: string | null;
 	updateRequestId: string | null;
 	paymentRequestId: string | null;
@@ -88,7 +87,6 @@ const initialState: DeferredPaymentsState = {
 	errorReceipt: null,
 	errorVoid: null,
 	errorMarkPaid: null,
-	lastMutationCreditLimitExceeded: false,
 	createRequestId: null,
 	updateRequestId: null,
 	paymentRequestId: null,
@@ -400,7 +398,6 @@ const deferredPaymentsSlice = createSlice({
 			state.errorReceipt = null;
 			state.errorVoid = null;
 			state.errorMarkPaid = null;
-			state.lastMutationCreditLimitExceeded = false;
 		},
 	},
 	extraReducers: (builder) => {
@@ -489,7 +486,6 @@ const deferredPaymentsSlice = createSlice({
 				state.createRequestId = action.meta.requestId;
 				state.creating = true;
 				state.errorMutation = null;
-				state.lastMutationCreditLimitExceeded = false;
 			})
 			.addCase(createDeferredPayment.fulfilled, (state, action) => {
 				if (state.createRequestId !== action.meta.requestId) return;
@@ -497,7 +493,6 @@ const deferredPaymentsSlice = createSlice({
 				state.creating = false;
 				state.current = action.payload.document;
 				state.detailSubsidiaryId = action.meta.arg.subsidiaryId;
-				state.lastMutationCreditLimitExceeded = action.payload.credit_limit_exceeded;
 			})
 			.addCase(createDeferredPayment.rejected, (state, action) => {
 				if (state.createRequestId !== action.meta.requestId) return;
@@ -511,7 +506,6 @@ const deferredPaymentsSlice = createSlice({
 				state.updateRequestId = action.meta.requestId;
 				state.updating = true;
 				state.errorMutation = null;
-				state.lastMutationCreditLimitExceeded = false;
 			})
 			.addCase(updateDeferredPayment.fulfilled, (state, action) => {
 				if (state.updateRequestId !== action.meta.requestId) return;
@@ -519,7 +513,6 @@ const deferredPaymentsSlice = createSlice({
 				state.updating = false;
 				state.current = action.payload.document;
 				state.detailSubsidiaryId = action.meta.arg.subsidiaryId;
-				state.lastMutationCreditLimitExceeded = action.payload.credit_limit_exceeded;
 			})
 			.addCase(updateDeferredPayment.rejected, (state, action) => {
 				if (state.updateRequestId !== action.meta.requestId) return;

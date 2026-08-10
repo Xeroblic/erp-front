@@ -183,7 +183,7 @@ describe('deferredPaymentsService', () => {
 		apiSpies.fetchData
 			.mockResolvedValueOnce({ data: document } as never)
 			.mockResolvedValueOnce({
-				data: { data: document, credit_limit_exceeded: true },
+				data: { data: document, credit_limit_exceeded: false },
 			} as never);
 
 		await expect(
@@ -203,7 +203,7 @@ describe('deferredPaymentsService', () => {
 				issue_date: '2026-07-24',
 				due_date: null,
 			}),
-		).resolves.toEqual({ document, credit_limit_exceeded: true });
+		).resolves.toEqual({ document, credit_limit_exceeded: false });
 
 		expect(apiSpies.fetchData).toHaveBeenNthCalledWith(
 			1,
