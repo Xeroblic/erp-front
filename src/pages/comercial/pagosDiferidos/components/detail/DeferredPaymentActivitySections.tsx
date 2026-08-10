@@ -15,6 +15,7 @@ import { formatDeferredPaymentAmount, formatDeferredPaymentDate } from '../../ut
 
 const PAYMENT_METHOD_LABELS: Record<DeferredPaymentMethod, string> = {
 	transfer: 'Transferencia',
+	bank_card: 'Tarjetas bancarias',
 	deposit: 'Depósito',
 	check: 'Cheque',
 	cash: 'Efectivo',

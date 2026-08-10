@@ -115,10 +115,13 @@ const RegisterDeferredPaymentModal: React.FC<RegisterDeferredPaymentModalProps> 
 										isTouched={isTouched}
 										invalidFeedback={fieldError}>
 										<option value='transfer'>Transferencia</option>
-										<option value='deposit'>Depósito</option>
-										<option value='check'>Cheque</option>
-										<option value='cash'>Efectivo</option>
-										<option value='other'>Otro</option>
+										<option value='bank_card'>Tarjetas bancarias</option>
+										<optgroup label='Otros medios de pago'>
+											<option value='deposit'>Depósito</option>
+											<option value='check'>Cheque</option>
+											<option value='cash'>Efectivo</option>
+											<option value='other'>Otro</option>
+										</optgroup>
 									</Select>
 								)}
 							</DeferredPaymentField>

@@ -25,7 +25,7 @@ describe('ZF-8 validación de abonos', () => {
 				method: 'other',
 			}),
 		).resolves.toMatchObject({ amount: 100000, method: 'other', notes: 'referencia' });
-		const methods = ['transfer', 'deposit', 'check', 'cash', 'other'];
+		const methods = ['transfer', 'bank_card', 'deposit', 'check', 'cash', 'other'];
 		await Promise.all(
 			methods.map(async (method) =>
 				expect(schema.validate({ ...valid, method })).resolves.toMatchObject({ method }),
