@@ -194,6 +194,7 @@ export interface IDeferredPaymentCreditProfile {
 	is_active: boolean;
 	payment_term_days: number;
 	credit_limit: string | null;
+	collection_email: string | null;
 	notes: string | null;
 }
 
@@ -201,6 +202,7 @@ export interface UpdateDeferredPaymentCreditProfilePayload {
 	is_active?: boolean | null;
 	payment_term_days?: number | null;
 	credit_limit?: string | null;
+	collection_email?: string | null;
 	notes?: string | null;
 }
 
@@ -214,7 +216,8 @@ export interface IDeferredPaymentCreditProfileCustomer {
 	phone: string | null;
 }
 
-export interface IDeferredPaymentCreditProfileListItem extends IDeferredPaymentCreditProfile {
+export interface IDeferredPaymentCreditProfileListItem
+	extends Omit<IDeferredPaymentCreditProfile, 'collection_email'> {
 	id: number;
 	customer_sale_id: number;
 	customer: IDeferredPaymentCreditProfileCustomer | null;

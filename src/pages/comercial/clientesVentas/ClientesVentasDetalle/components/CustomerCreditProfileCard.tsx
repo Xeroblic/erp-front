@@ -117,6 +117,9 @@ const CustomerCreditProfileCardContent: React.FC<{
 		formik.touched.credit_limit || formik.values.credit_limit.trim()
 			? formik.errors.credit_limit
 			: undefined;
+	const collectionEmailError = formik.touched.collection_email
+		? formik.errors.collection_email
+		: undefined;
 	const handleCreditLimitChange = (value: string) => {
 		formik.setFieldTouched('credit_limit', true, false).catch(() => undefined);
 		formik.setFieldValue('credit_limit', value.replace(/\D/g, '')).catch(() => undefined);
@@ -232,6 +235,12 @@ const CustomerCreditProfileCardContent: React.FC<{
 							</div>
 						)}
 						<div className='border-t border-zinc-200 pt-4 dark:border-zinc-700'>
+							<p className='text-sm text-zinc-500'>Correo de cobranza</p>
+							<p className='mt-1 break-all text-sm text-zinc-600 dark:text-zinc-300'>
+								{profile.collection_email ?? 'Sin correo configurado'}
+							</p>
+						</div>
+						<div className='border-t border-zinc-200 pt-4 dark:border-zinc-700'>
 							<p className='text-sm text-zinc-500'>Notas</p>
 							<p className='mt-1 whitespace-pre-wrap text-sm text-zinc-600 dark:text-zinc-300'>
 								{profile.notes || 'Sin información registrada.'}
@@ -323,6 +332,34 @@ const CustomerCreditProfileCardContent: React.FC<{
 									</p>
 								)}
 							</div>
+						</div>
+						<div>
+							<Label htmlFor='credit-profile-collection-email'>Correo de cobranza</Label>
+							<Input
+								id='credit-profile-collection-email'
+								name='collection_email'
+								type='email'
+								autoComplete='email'
+								value={formik.values.collection_email}
+								onChange={formik.handleChange}
+								onBlur={formik.handleBlur}
+								isTouched={formik.touched.collection_email}
+								isValid={!collectionEmailError}
+								invalidFeedback={collectionEmailError}
+								aria-describedby={
+									collectionEmailError
+										? 'credit-profile-collection-email-error'
+										: undefined
+								}
+							/>
+							{collectionEmailError && (
+								<p
+									id='credit-profile-collection-email-error'
+									role='alert'
+									className='mt-1 text-sm text-red-600 dark:text-red-400'>
+									{collectionEmailError}
+								</p>
+							)}
 						</div>
 						<div>
 							<Label htmlFor='credit-profile-notes'>Notas</Label>

@@ -29,6 +29,7 @@ const toFormValues = (profile: IDeferredPaymentCreditProfile | null): CreditProf
 	is_active: profile?.id === null ? true : (profile?.is_active ?? true),
 	payment_term_days: String(profile?.payment_term_days ?? DEFAULT_PAYMENT_TERM_DAYS),
 	credit_limit: toWholeCLP(profile?.credit_limit),
+	collection_email: profile?.collection_email ?? '',
 	notes: profile?.notes ?? '',
 });
 
@@ -158,6 +159,7 @@ const useCustomerCreditProfile = ({
 				is_active: values.is_active,
 				payment_term_days: Number(values.payment_term_days),
 				credit_limit: values.credit_limit.trim() || null,
+				collection_email: values.collection_email.trim() || null,
 				notes: values.notes.trim() || null,
 			};
 			try {
