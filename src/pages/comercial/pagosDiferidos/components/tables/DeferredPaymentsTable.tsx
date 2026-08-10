@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import type { PaginationState } from '@tanstack/react-table';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import Table, { TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
@@ -11,6 +11,7 @@ import type {
 } from '@/interface/deferredPayments.interface';
 import {
 	DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS,
+	DEFERRED_PAYMENT_STATUS_LABELS,
 	formatDeferredPaymentAmount,
 	formatDeferredPaymentDate,
 } from '../../utils';
@@ -32,6 +33,123 @@ interface DeferredPaymentsPaginationProps {
 	loading: boolean;
 	onChange: (page: number, perPage: number) => void;
 }
+
+type SortKey =
+	| 'document_number'
+	| 'company'
+	| 'purchase_order'
+	| 'total_amount'
+	| 'outstanding_amount'
+	| 'due_date'
+	| 'status'
+	| 'days_until_due';
+type SortDirection = 'asc' | 'desc';
+type SortState = { key: SortKey; direction: SortDirection } | null;
+
+interface SortableHeaderProps {
+	label: string;
+	sortKey: SortKey;
+	sort: SortState;
+	onSort: (key: SortKey) => void;
+	align?: 'left' | 'center' | 'right';
+}
+
+const SortIcon: React.FC<{ direction: SortDirection | null }> = ({ direction }) => (
+	<div className='flex shrink-0 flex-col' aria-hidden='true'>
+		<svg
+			viewBox='0 0 12 12'
+			className={`h-3 w-3 ${direction === 'asc' ? 'text-primary-600' : 'text-gray-400'}`}
+			fill='none'
+			stroke='currentColor'
+			strokeWidth='1.75'>
+			<path d='m2.5 7.5 3.5-3 3.5 3' />
+		</svg>
+		<svg
+			viewBox='0 0 12 12'
+			className={`-mt-1 h-3 w-3 ${direction === 'desc' ? 'text-primary-600' : 'text-gray-400'}`}
+			fill='none'
+			stroke='currentColor'
+			strokeWidth='1.75'>
+			<path d='m2.5 4.5 3.5 3 3.5-3' />
+		</svg>
+	</div>
+);
+
+const SortableHeader: React.FC<SortableHeaderProps> = ({
+	label,
+	sortKey,
+	sort,
+	onSort,
+	align = 'left',
+}) => {
+	const direction = sort?.key === sortKey ? sort.direction : null;
+	const alignmentClasses = {
+		left: { header: undefined, content: 'justify-start' },
+		center: { header: 'text-center', content: 'justify-center' },
+		right: { header: 'text-right', content: 'justify-end' },
+	}[align];
+	let ariaSort: React.AriaAttributes['aria-sort'] = 'none';
+	if (direction === 'asc') ariaSort = 'ascending';
+	if (direction === 'desc') ariaSort = 'descending';
+
+	return (
+		<Th className={alignmentClasses.header} aria-sort={ariaSort}>
+			<button
+				type='button'
+				className={`flex w-full items-center space-x-2 ${alignmentClasses.content}`}
+				aria-label={`Ordenar por ${label}`}
+				onClick={() => onSort(sortKey)}>
+				<span>{label}</span>
+				<SortIcon direction={direction} />
+			</button>
+		</Th>
+	);
+};
+
+const getCustomerDisplayName = (row: IDeferredPaymentListItem): string =>
+	row.customer.billing_company || row.customer.contact_name || 'Cliente sin nombre';
+
+const getSortValue = (row: IDeferredPaymentListItem, key: SortKey): string | number | null => {
+	switch (key) {
+		case 'document_number':
+			return row.document_number;
+		case 'company':
+			return getCustomerDisplayName(row);
+		case 'purchase_order':
+			return row.purchase_order;
+		case 'total_amount':
+			return Number(row.total_amount);
+		case 'outstanding_amount':
+			return Number(row.outstanding_amount);
+		case 'due_date':
+			return row.due_date;
+		case 'status':
+			return DEFERRED_PAYMENT_STATUS_LABELS[row.status];
+		case 'days_until_due':
+			return row.status === 'paid' ? null : row.days_until_due;
+		default:
+			return null;
+	}
+};
+
+const compareRows = (
+	left: IDeferredPaymentListItem,
+	right: IDeferredPaymentListItem,
+	sort: NonNullable<SortState>,
+): number => {
+	const leftValue = getSortValue(left, sort.key);
+	const rightValue = getSortValue(right, sort.key);
+	if (leftValue === null) return rightValue === null ? 0 : 1;
+	if (rightValue === null) return -1;
+	const comparison =
+		typeof leftValue === 'number' && typeof rightValue === 'number'
+			? leftValue - rightValue
+			: String(leftValue).localeCompare(String(rightValue), 'es', {
+					numeric: true,
+					sensitivity: 'base',
+				});
+	return sort.direction === 'asc' ? comparison : -comparison;
+};
 
 const DeferredPaymentsPagination: React.FC<DeferredPaymentsPaginationProps> = ({
 	meta,
@@ -71,138 +189,203 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 	hasFilters,
 	onPaginationChange,
 	onRowClick,
-}) => (
-	<Card>
-		<CardHeader>
-			<CardTitle className='text-lg'>Documentos por cobrar</CardTitle>
-			{!hasError && (
-				<span className='text-sm text-zinc-500'>
-					{meta?.total ?? rows.length} documentos
-				</span>
-			)}
-		</CardHeader>
-		<CardBody className='overflow-x-auto p-0'>
-			<Table className='min-w-[1150px]'>
-				<THead>
-					<Tr>
-						<Th>N&deg; documento</Th>
-						<Th>Empresa</Th>
-						<Th>OC</Th>
-						<Th className='text-right'>Monto</Th>
-						<Th className='text-right'>Saldo</Th>
-						<Th>Vencimiento</Th>
-						<Th className='text-center'>Estado del pago</Th>
-						<Th className='text-center'>Situaci&oacute;n de vencimiento</Th>
-					</Tr>
-				</THead>
-				<TBody>
-					{!loading && hasError && (
+}) => {
+	const [sort, setSort] = useState<SortState>(null);
+	const sortedRows = useMemo(
+		() =>
+			sort === null ? rows : [...rows].sort((left, right) => compareRows(left, right, sort)),
+		[rows, sort],
+	);
+	const handleSort = (key: SortKey) => {
+		setSort((current) => ({
+			key,
+			direction: current?.key === key && current.direction === 'asc' ? 'desc' : 'asc',
+		}));
+	};
+
+	return (
+		<Card>
+			<CardHeader>
+				<CardTitle className='text-lg'>Documentos por cobrar</CardTitle>
+				{!hasError && (
+					<span className='text-sm text-zinc-500'>
+						{meta?.total ?? rows.length} documentos
+					</span>
+				)}
+			</CardHeader>
+			<CardBody className='overflow-x-auto p-0'>
+				<Table className='min-w-[1150px]'>
+					<THead>
 						<Tr>
-							<Td colSpan={8} className='py-12 text-center'>
-								<p className='font-medium text-red-700 dark:text-red-300'>
-									No fue posible mostrar los documentos
-								</p>
-								<p className='mt-1 text-sm text-zinc-500'>
-									Revisa el mensaje de error e intenta cargar la información
-									nuevamente.
-								</p>
-							</Td>
+							<SortableHeader
+								label='N° documento'
+								sortKey='document_number'
+								sort={sort}
+								onSort={handleSort}
+							/>
+							<SortableHeader
+								label='Empresa'
+								sortKey='company'
+								sort={sort}
+								onSort={handleSort}
+							/>
+							<SortableHeader
+								label='OC'
+								sortKey='purchase_order'
+								sort={sort}
+								onSort={handleSort}
+							/>
+							<SortableHeader
+								label='Monto'
+								sortKey='total_amount'
+								sort={sort}
+								onSort={handleSort}
+								align='right'
+							/>
+							<SortableHeader
+								label='Saldo'
+								sortKey='outstanding_amount'
+								sort={sort}
+								onSort={handleSort}
+								align='right'
+							/>
+							<SortableHeader
+								label='Vencimiento'
+								sortKey='due_date'
+								sort={sort}
+								onSort={handleSort}
+							/>
+							<SortableHeader
+								label='Estado del pago'
+								sortKey='status'
+								sort={sort}
+								onSort={handleSort}
+								align='center'
+							/>
+							<SortableHeader
+								label='Situación de vencimiento'
+								sortKey='days_until_due'
+								sort={sort}
+								onSort={handleSort}
+								align='center'
+							/>
 						</Tr>
-					)}
-					{loading &&
-						Array.from({ length: 5 }, (_, index) => (
-							<Tr key={`skeleton-${index}`}>
-								{Array.from({ length: 8 }, (__, cellIndex) => (
-									<Td key={`skeleton-${index}-${cellIndex}`}>
-										<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
-									</Td>
-								))}
+					</THead>
+					<TBody>
+						{!loading && hasError && (
+							<Tr>
+								<Td colSpan={8} className='py-12 text-center'>
+									<p className='font-medium text-red-700 dark:text-red-300'>
+										No fue posible mostrar los documentos
+									</p>
+									<p className='mt-1 text-sm text-zinc-500'>
+										Revisa el mensaje de error e intenta cargar la información
+										nuevamente.
+									</p>
+								</Td>
 							</Tr>
-						))}
-					{!loading && !hasError && rows.length === 0 && (
-						<Tr>
-							<Td colSpan={8} className='py-12 text-center'>
-								<p className='font-medium text-zinc-700 dark:text-zinc-200'>
-									{hasFilters
-										? 'Sin resultados para los filtros aplicados'
-										: 'A\u00FAn no hay documentos de pago diferido'}
-								</p>
-								<p className='mt-1 text-sm text-zinc-500'>
-									{hasFilters
-										? 'Prueba ajustando o limpiando los filtros.'
-										: 'Los documentos aparecer\u00E1n aqu\u00ED cuando sean registrados.'}
-								</p>
-							</Td>
-						</Tr>
-					)}
-					{!loading &&
-						!hasError &&
-						rows.map((row) => (
-							<Tr
-								key={row.id}
-								role='button'
-								tabIndex={0}
-								aria-label={`Abrir detalle del documento ${row.document_number}`}
-								onClick={() => onRowClick(row.id)}
-								onKeyDown={(event) => {
-									if (event.key === 'Enter' || event.key === ' ') {
-										event.preventDefault();
-										onRowClick(row.id);
-									}
-								}}
-								className={`cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 ${
-									row.is_overdue ? 'border-l-4 border-red-500' : ''
-								}`}>
-								<Td>
-									<p className='font-medium'>{row.document_number}</p>
-									<p className='text-xs text-zinc-500'>
-										{DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS[row.document_type]}
+						)}
+						{loading &&
+							Array.from({ length: 5 }, (_, index) => (
+								<Tr key={`skeleton-${index}`}>
+									{Array.from({ length: 8 }, (__, cellIndex) => (
+										<Td key={`skeleton-${index}-${cellIndex}`}>
+											<div className='h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700' />
+										</Td>
+									))}
+								</Tr>
+							))}
+						{!loading && !hasError && rows.length === 0 && (
+							<Tr>
+								<Td colSpan={8} className='py-12 text-center'>
+									<p className='font-medium text-zinc-700 dark:text-zinc-200'>
+										{hasFilters
+											? 'Sin resultados para los filtros aplicados'
+											: 'A\u00FAn no hay documentos de pago diferido'}
+									</p>
+									<p className='mt-1 text-sm text-zinc-500'>
+										{hasFilters
+											? 'Prueba ajustando o limpiando los filtros.'
+											: 'Los documentos aparecer\u00E1n aqu\u00ED cuando sean registrados.'}
 									</p>
 								</Td>
-								<Td>
-									<p className='font-medium'>
-										{row.customer.billing_company ||
-											row.customer.contact_name ||
-											'Cliente sin nombre'}
-									</p>
-									<p className='text-xs text-zinc-500'>{row.customer.rut}</p>
-								</Td>
-								<Td>{row.purchase_order ?? '\u2014'}</Td>
-								<Td className='text-right tabular-nums'>
-									{formatDeferredPaymentAmount(row.total_amount)}
-								</Td>
-								<Td className='text-right font-semibold tabular-nums'>
-									{formatDeferredPaymentAmount(row.outstanding_amount)}
-								</Td>
-								<Td>{formatDeferredPaymentDate(row.due_date)}</Td>
-								<Td>
-									<div className='flex justify-center'>
-										<DeferredStatusPill status={row.status} />
-									</div>
-								</Td>
-								<Td>
-									<div className='flex justify-center'>
-										<DaysUntilDueBadge
-											daysUntilDue={
-												row.status === 'paid' ? null : row.days_until_due
+							</Tr>
+						)}
+						{!loading &&
+							!hasError &&
+							sortedRows.map((row) => (
+								<Tr
+									key={row.id}
+									role='button'
+									tabIndex={0}
+									aria-label={`Abrir detalle del documento ${row.document_number}`}
+									onClick={() => onRowClick(row.id)}
+									onKeyDown={(event) => {
+										if (event.key === 'Enter' || event.key === ' ') {
+											event.preventDefault();
+											onRowClick(row.id);
+										}
+									}}
+									className={`cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 ${
+										row.is_overdue ? 'border-l-4 border-red-500' : ''
+									}`}>
+									<Td>
+										<p className='font-medium'>{row.document_number}</p>
+										<p className='text-xs text-zinc-500'>
+											{
+												DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS[
+													row.document_type
+												]
 											}
-											isOverdue={row.is_overdue}
-										/>
-									</div>
-								</Td>
-							</Tr>
-						))}
-				</TBody>
-			</Table>
-		</CardBody>
-		{meta && (
-			<DeferredPaymentsPagination
-				meta={meta}
-				loading={loading}
-				onChange={onPaginationChange}
-			/>
-		)}
-	</Card>
-);
+										</p>
+									</Td>
+									<Td>
+										<p className='font-medium'>
+											{row.customer.billing_company ||
+												row.customer.contact_name ||
+												'Cliente sin nombre'}
+										</p>
+										<p className='text-xs text-zinc-500'>{row.customer.rut}</p>
+									</Td>
+									<Td>{row.purchase_order ?? '\u2014'}</Td>
+									<Td className='text-right tabular-nums'>
+										{formatDeferredPaymentAmount(row.total_amount)}
+									</Td>
+									<Td className='text-right font-semibold tabular-nums'>
+										{formatDeferredPaymentAmount(row.outstanding_amount)}
+									</Td>
+									<Td>{formatDeferredPaymentDate(row.due_date)}</Td>
+									<Td>
+										<div className='flex justify-center'>
+											<DeferredStatusPill status={row.status} />
+										</div>
+									</Td>
+									<Td>
+										<div className='flex justify-center'>
+											<DaysUntilDueBadge
+												daysUntilDue={
+													row.status === 'paid'
+														? null
+														: row.days_until_due
+												}
+												isOverdue={row.is_overdue}
+											/>
+										</div>
+									</Td>
+								</Tr>
+							))}
+					</TBody>
+				</Table>
+			</CardBody>
+			{meta && (
+				<DeferredPaymentsPagination
+					meta={meta}
+					loading={loading}
+					onChange={onPaginationChange}
+				/>
+			)}
+		</Card>
+	);
+};
 
 export default React.memo(DeferredPaymentsTable);
