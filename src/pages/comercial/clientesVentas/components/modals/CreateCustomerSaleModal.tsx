@@ -50,6 +50,40 @@ const isRequestError = (error: unknown): error is CustomerSaleRequestError =>
 	typeof error === 'object' &&
 	typeof (error as { message?: unknown }).message === 'string';
 
+interface PrimaryContactPayload {
+	primary_contact: { name: string; email: string; phone: string };
+	primary_contact_name: string;
+	primary_contact_email: string;
+	primary_contact_phone: string;
+}
+
+/**
+ * El backend exige el trío completo si llega cualquiera de sus campos, así que el grupo
+ * viaja entero o no viaja: enviarlo incompleto convierte el mínimo que el formulario da
+ * por válido (RUT + empresa + email) en un `422 Contacto principal incompleto`.
+ */
+const buildPrimaryContactPayload = (
+	values: CustomerSaleFormValues,
+): PrimaryContactPayload | Record<string, never> => {
+	const name = values.contact_name.trim();
+	const email = values.email.trim();
+	const phone = values.phone.trim();
+	if (!name || !email || !phone) return {};
+	return {
+		primary_contact: { name, email, phone },
+		primary_contact_name: name,
+		primary_contact_email: email,
+		primary_contact_phone: phone,
+	};
+};
+
+/** Identidad de una mutación en vuelo: si cambia, la respuesta ya no tiene dueño. */
+interface CustomerMutationContext {
+	requestId: number;
+	subsidiaryId: number | string;
+	customerId: number | string | null;
+}
+
 const CreateCustomerSaleModal = ({
 	isOpen,
 	setIsOpen,
@@ -79,6 +113,27 @@ const CreateCustomerSaleModal = ({
 	const contactId = React.useId();
 	const emailId = React.useId();
 	const phoneId = React.useId();
+	const requestIdRef = React.useRef(0);
+	const latestSubsidiaryIdRef = React.useRef(subsidiaryId);
+	const latestCustomerIdRef = React.useRef(initialData?.id ?? null);
+	const latestIsOpenRef = React.useRef(isOpen);
+	latestSubsidiaryIdRef.current = subsidiaryId;
+	latestCustomerIdRef.current = initialData?.id ?? null;
+	latestIsOpenRef.current = isOpen;
+
+	/**
+	 * Una respuesta obsoleta —el usuario cambió de subsidiaria o cerró el modal mientras
+	 * la mutación viajaba— no puede seleccionar ni pintar el cliente creado: pertenecería
+	 * a otra subsidiaria que la del contexto actual.
+	 */
+	const isCurrentMutation = React.useCallback(
+		({ requestId, subsidiaryId: mutationSubsidiaryId, customerId }: CustomerMutationContext) =>
+			requestId === requestIdRef.current &&
+			latestSubsidiaryIdRef.current === mutationSubsidiaryId &&
+			latestCustomerIdRef.current === customerId &&
+			latestIsOpenRef.current,
+		[],
+	);
 
 	const formik = useFormik<CustomerSaleFormValues>({
 		initialValues: {
@@ -98,42 +153,49 @@ const CreateCustomerSaleModal = ({
 			billing_company: Yup.string().required('Empresa/Persona requerida'),
 		}),
 		onSubmit: async (values, { setSubmitting, setFieldError }) => {
-			try {
-				if (!subsidiaryId) {
-					toast.error('No se pudo determinar la subsidiaria activa');
-					return;
-				}
+			if (!subsidiaryId) {
+				toast.error('No se pudo determinar la subsidiaria activa');
+				setSubmitting(false);
+				return;
+			}
 
-				if (isEdit && initialData?.id) {
+			const customerId = isEdit ? (initialData?.id ?? null) : null;
+			requestIdRef.current += 1;
+			const mutation: CustomerMutationContext = {
+				requestId: requestIdRef.current,
+				subsidiaryId,
+				customerId,
+			};
+			const primaryContact = buildPrimaryContactPayload(values);
+
+			try {
+				if (isEdit && customerId !== null) {
 					const customer = await dispatch(
 						updateCustomerThunk({
 							subsidiary: subsidiaryId,
-							id: initialData.id,
+							id: customerId,
 							payload: {
-								rut: values.document_number,
+								// `document_number`, no `rut`: la unicidad por subsidiaria del
+								// backend sólo se valida sobre este campo.
+								document_number: values.document_number,
 								billing_company: values.billing_company,
 								contact_name: values.contact_name,
 								email: values.email,
 								phone: values.phone,
 								is_active: values.is_active,
-								primary_contact: {
-									name: values.contact_name || '',
-									email: values.email || '',
-									phone: values.phone || '',
-								},
-								primary_contact_name: values.contact_name,
-								primary_contact_email: values.email,
-								primary_contact_phone: values.phone,
+								...primaryContact,
 							},
 						}),
 					).unwrap();
+
+					if (!isCurrentMutation(mutation)) return;
 
 					// refrescar detalle y overview
 					if (refreshStoreOnSuccess) {
 						dispatch(
 							fetchCustomerDetailThunk({
 								subsidiary: subsidiaryId,
-								id: initialData.id,
+								id: customerId,
 							}),
 						).catch(() => undefined);
 						dispatch(fetchCustomersOverviewThunk({ subsidiary: subsidiaryId })).catch(
@@ -154,17 +216,12 @@ const CreateCustomerSaleModal = ({
 								email: values.email,
 								phone: values.phone,
 								is_active: values.is_active,
-								primary_contact: {
-									name: values.contact_name || '',
-									email: values.email || '',
-									phone: values.phone || '',
-								},
-								primary_contact_name: values.contact_name,
-								primary_contact_email: values.email,
-								primary_contact_phone: values.phone,
+								...primaryContact,
 							},
 						}),
 					).unwrap();
+
+					if (!isCurrentMutation(mutation)) return;
 
 					if (refreshStoreOnSuccess)
 						dispatch(fetchCustomersOverviewThunk({ subsidiary: subsidiaryId })).catch(
@@ -175,6 +232,9 @@ const CreateCustomerSaleModal = ({
 					formik.resetForm();
 				}
 			} catch (error) {
+				// El borrador se conserva: sólo se pinta el error si la mutación sigue siendo
+				// la del contexto actual; si no, el formulario ya pertenece a otra subsidiaria.
+				if (!isCurrentMutation(mutation)) return;
 				const fallback = isEdit
 					? 'No se pudo actualizar el cliente'
 					: 'No se pudo crear el cliente';
@@ -192,8 +252,20 @@ const CreateCustomerSaleModal = ({
 		},
 	});
 
+	// Cerrar con una mutación en vuelo dejaría la respuesta sin dueño: el modal se
+	// mantiene abierto hasta que resuelve y el usuario ve el spinner del botón.
+	const closeIfIdle = () => {
+		if (formik.isSubmitting) return;
+		setIsOpen(false);
+		formik.resetForm();
+	};
+
 	return (
-		<Modal isOpen={isOpen} setIsOpen={() => setIsOpen(false)} size='md'>
+		<Modal
+			isOpen={isOpen}
+			setIsOpen={closeIfIdle}
+			size='md'
+			isStaticBackdrop={formik.isSubmitting}>
 			<ModalHeader>{isEdit ? 'Editar Cliente' : 'Crear Cliente'}</ModalHeader>
 
 			<ModalBody>
@@ -293,17 +365,13 @@ const CreateCustomerSaleModal = ({
 			</ModalBody>
 
 			<ModalFooter>
-				<Button
-					variant='outline'
-					onClick={() => {
-						setIsOpen(false);
-						formik.resetForm();
-					}}>
+				<Button variant='outline' isDisable={formik.isSubmitting} onClick={closeIfIdle}>
 					Cancelar
 				</Button>
 				<Button
 					variant='solid'
 					onClick={() => formik.handleSubmit()}
+					isLoading={formik.isSubmitting}
 					disabled={formik.isSubmitting}>
 					{isEdit ? 'Actualizar' : 'Guardar'}
 				</Button>
