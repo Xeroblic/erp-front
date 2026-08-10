@@ -31,10 +31,12 @@ interface UseReviewPhotosResult {
 	previews: Record<number, string>;
 	loading: boolean;
 	uploading: boolean;
+	downloading: boolean;
 	deletingId: number | null;
 	error: string | null;
 	refresh: () => Promise<void>;
 	upload: (files: File[]) => Promise<void>;
+	download: () => Promise<void>;
 	remove: (mediaId: number) => Promise<void>;
 }
 
@@ -87,6 +89,7 @@ export const useReviewPhotos = ({
 	const [previews, setPreviews] = useState<Record<number, string>>({});
 	const [loading, setLoading] = useState(false);
 	const [uploading, setUploading] = useState(false);
+	const [downloading, setDownloading] = useState(false);
 	const [deletingId, setDeletingId] = useState<number | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
@@ -207,7 +210,38 @@ export const useReviewPhotos = ({
 		[subsidiaryId, itemId],
 	);
 
-	return { photos, previews, loading, uploading, deletingId, error, refresh, upload, remove };
+	const download = useCallback(async () => {
+		if (!subsidiaryId || !itemId) return;
+		setDownloading(true);
+		try {
+			const blob = await technicalReviewPhotosService.downloadZip(subsidiaryId, itemId);
+			const url = URL.createObjectURL(blob);
+			const link = document.createElement('a');
+			link.href = url;
+			link.setAttribute('download', `revision-${itemId}-fotos.zip`);
+			document.body.appendChild(link);
+			link.click();
+			link.remove();
+			setTimeout(() => URL.revokeObjectURL(url), 100);
+		} catch (err: unknown) {
+			let message = 'No se pudieron descargar las fotos';
+			const axiosErr = err as { response?: { data?: unknown }; message?: string };
+			if (axiosErr.response?.data instanceof Blob) {
+				try {
+					const text = await axiosErr.response.data.text();
+					const parsed: { message?: string } = JSON.parse(text);
+					if (parsed?.message) message = parsed.message;
+				} catch {
+					/* cae al fallback en español */
+				}
+			}
+			toast.error(message);
+		} finally {
+			if (mountedRef.current) setDownloading(false);
+		}
+	}, [subsidiaryId, itemId]);
+
+	return { photos, previews, loading, uploading, downloading, deletingId, error, refresh, upload, download, remove };
 };
 
 export default useReviewPhotos;
