@@ -145,13 +145,11 @@ const DefaultAsideTemplate = () => {
 					 * ====================== */}
 					<AuthorityCheckNav
 						authority={Pages.manage.authority}
-						roles={Pages.manage.roles}
 						userAuthority={userAuthority}>
 						<NavTitle>Gestión</NavTitle>
 					</AuthorityCheckNav>
 					<AuthorityCheckNav
 						authority={Pages.manage.authority}
-						roles={Pages.manage.roles}
 						userAuthority={userAuthority}>
 						<NavCollapse
 							key='registro-nav'
@@ -177,7 +175,6 @@ const DefaultAsideTemplate = () => {
 							{/* Subempresa */}
 							<AuthorityCheckNav
 								authority={Pages.manage.subPages.subsidiary.authority}
-								roles={Pages.manage.subPages.subsidiary.roles}
 								userAuthority={userAuthority}>
 								<NavItem
 									text={Pages.manage.subPages.subsidiary.text}
@@ -191,7 +188,6 @@ const DefaultAsideTemplate = () => {
 							{/* Sucursal */}
 							<AuthorityCheckNav
 								authority={Pages.manage.subPages.branch.authority}
-								roles={Pages.manage.subPages.branch.roles}
 								userAuthority={userAuthority}>
 								<NavItem
 									text={Pages.manage.subPages.branch.text}
@@ -204,11 +200,7 @@ const DefaultAsideTemplate = () => {
 
 							{/* Gestión de usuarios (roles + permisos) */}
 							<AuthorityCheckNav
-								authority={[
-									...(Pages.manage.subPages.rolesPermisos.authority || []),
-									...(Pages.manage.subPages.rolesPermisos.roles || []),
-								]}
-								roles={Pages.manage.subPages.rolesPermisos.roles}
+								authority={Pages.manage.subPages.rolesPermisos.authority}
 								userAuthority={userAuthority}
 								requireAll={Pages.manage.subPages.rolesPermisos.requireAll}>
 								<NavItem
@@ -408,8 +400,10 @@ const DefaultAsideTemplate = () => {
 					 * COMERCIAL
 					 * ====================== */}
 					<AuthorityCheckNav
-						authority={Pages.commercial.authority}
-						roles={Pages.commercial.roles}
+						authority={[
+							...Pages.commercial.authority,
+							...Pages.commercial.subPages.pagosDiferidos.authority,
+						]}
 						userAuthority={userAuthority}>
 						<NavCollapse
 							key='comercial-nav'
@@ -495,10 +489,40 @@ const DefaultAsideTemplate = () => {
 								/>
 							</AuthorityCheckNav>
 
+							{/* Pagos diferidos — solo por permiso (ZF-15), sin allowlist de roles */}
+							<AuthorityCheckNav
+								authority={Pages.commercial.subPages.pagosDiferidos.authority}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.commercial.subPages.pagosDiferidos.text}
+									to={Pages.commercial.subPages.pagosDiferidos.to}
+									icon={Pages.commercial.subPages.pagosDiferidos.icon}
+									id={Pages.commercial.subPages.pagosDiferidos.id}
+									onClick={() =>
+										navigate(Pages.commercial.subPages.pagosDiferidos.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
+							{/* Cartera de crédito */}
+							<AuthorityCheckNav
+								authority={Pages.commercial.subPages.carteraCredito.authority}
+								roles={Pages.commercial.subPages.carteraCredito.roles}
+								userAuthority={userAuthority}>
+								<NavItem
+									text={Pages.commercial.subPages.carteraCredito.text}
+									to={Pages.commercial.subPages.carteraCredito.to}
+									icon={Pages.commercial.subPages.carteraCredito.icon}
+									id={Pages.commercial.subPages.carteraCredito.id}
+									onClick={() =>
+										navigate(Pages.commercial.subPages.carteraCredito.to)
+									}
+								/>
+							</AuthorityCheckNav>
+
 							{/* Clientes Ventas */}
 							<AuthorityCheckNav
 								authority={Pages.commercial.subPages.clientesVentas.authority}
-								roles={Pages.commercial.subPages.clientesVentas.roles}
 								userAuthority={userAuthority}>
 								<NavItem
 									text={Pages.commercial.subPages.clientesVentas.text}

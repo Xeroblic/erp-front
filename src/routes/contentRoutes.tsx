@@ -85,6 +85,8 @@ const TrazabilidadSubsidiary = lazy(
 	() => import('@/pages/inventario/trazabilidad-sucursal/TrazabilidadSubsidiary'),
 );
 
+const PagosDiferidos = lazy(() => import('@/pages/comercial/pagosDiferidos'));
+const CarteraCredito = lazy(() => import('@/pages/comercial/carteraCredito'));
 const ClientesVentas = lazy(() => import('@/pages/comercial/clientesVentas/ClientesVentas'));
 const ClientesVentasDetalle = lazy(
 	() => import('@/pages/comercial/clientesVentas/ClientesVentasDetalle/index'),
@@ -336,6 +338,16 @@ const contentRoutes: IRoutePersonalizada[] = [
 		path: cfg.commercial.subPages.warrantyDetail.to,
 		element: <GarantiaDetailsPage />,
 		authority: cfg.commercial.subPages.warrantyDetail.authority,
+	},
+	{
+		path: cfg.commercial.subPages.pagosDiferidos.to,
+		element: <PagosDiferidos />,
+		authority: cfg.commercial.subPages.pagosDiferidos.authority,
+	},
+	{
+		path: cfg.commercial.subPages.carteraCredito.to,
+		element: <CarteraCredito />,
+		authority: cfg.commercial.subPages.carteraCredito.authority,
 	},
 	{
 		path: cfg.commercial.subPages.clientesVentas.to,

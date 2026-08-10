@@ -19,7 +19,7 @@ import Badge from '@/components/ui/Badge';
 import SelectReact, { type TSelectOption } from '@/components/form/SelectReact';
 import RoleSelect from '@/components/form/RoleSelect';
 import PermissionSelect from '@/components/form/PermissionSelect';
-import { normalizeRoleKey } from '@/pages/admin/Permission/utils/formatters';
+import { isSuperAdminRole } from '@/pages/admin/Permission/utils/formatters';
 import type { Permission, Role } from '@/store/slices/permissions/permissionsSlice';
 import type { CreateInvitationData } from '@/interface/invitacion.interface';
 import Button from '@/components/ui/Button';
@@ -86,16 +86,18 @@ const CreateInvitationModal: React.FC<CreateInvitationModalProps> = ({
 			...currentAuthority,
 		];
 
-		return possibleRoles.some(
-			(role) =>
-				normalizeRoleKey(typeof role === 'string' ? role : String(role)) === 'superadmin',
+		return possibleRoles.some((role) =>
+			isSuperAdminRole(typeof role === 'string' ? role : String(role)),
 		);
 	}, [currentUser?.roles, currentUser?.authority, currentAuthority]);
 
 	const availableRoles = useMemo(() => {
 		return roles.filter((role) => {
 			if (isSuperAdmin) return true;
-			return normalizeRoleKey(role.display_name || role.name) !== 'superadmin';
+			// Se evalúa el slug canónico: `display_name` ("Super administrador")
+			// no coincide con la clave "superadmin" y dejaba el rol asignable
+			// para usuarios que no son super-admin.
+			return !isSuperAdminRole(role.name);
 		});
 	}, [roles, isSuperAdmin]);
 

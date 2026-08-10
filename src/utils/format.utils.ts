@@ -3,6 +3,16 @@
  */
 
 /**
+ * Formatea un monto en pesos chilenos, redondeado sin decimales.
+ */
+export const formatCLP = (amount: number | string): string => {
+	const numericAmount = typeof amount === 'string' ? Number.parseFloat(amount) : amount;
+	if (!Number.isFinite(numericAmount)) return '$ 0';
+	const roundedAmount = Math.round(numericAmount);
+	return `$ ${roundedAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
+};
+
+/**
  * Format currency values
  */
 export const formatCurrency = (

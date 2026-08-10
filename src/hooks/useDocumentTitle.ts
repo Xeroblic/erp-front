@@ -19,11 +19,16 @@ const useDocumentTitle = ({
 	 */
 	name?: string;
 }) => {
-	const [documentTitle, setDocumentTitle] = useState<string>(`${title} | ${name}`);
+	const resolvedTitle = `${title} | ${name}`;
+	const [documentTitle, setDocumentTitle] = useState<string>(resolvedTitle);
+
+	useEffect(() => {
+		setDocumentTitle(resolvedTitle);
+	}, [resolvedTitle]);
 
 	useEffect(() => {
 		document.title = documentTitle;
-	}, [documentTitle, title, name]);
+	}, [documentTitle]);
 
 	return [documentTitle, setDocumentTitle];
 };
