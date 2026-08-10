@@ -4,7 +4,7 @@
 
 Esta versión incorpora la gestión integral de pagos diferidos y cartera de crédito, además de reforzar la activación de usuarios y la seguridad de roles y permisos.
 
-### Cambios relevantes de la refactorización
+### Cambios relevantes del release
 
 - Gestión de documentos de pago diferido, abonos, comprobantes, anulaciones y cierres.
 - Cartera y perfiles de crédito por cliente y subsidiaria.
@@ -365,5 +365,4 @@ Zentria ERP Frontend representa un **producto empresarial sólido**, diseñado p
 * Integración con múltiples fuentes de información.
 
 Es una plataforma moderna, escalable y preparada para crecer hacia cualquier vertical: logística, inventario, RRHH, ventas, soporte técnico, marketplace y más.
-
 
