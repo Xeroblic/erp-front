@@ -96,7 +96,7 @@ BaseService.interceptors.request.use(
 		}
 
 		// Asignar la señal de cancelación
-		config.signal = abortController.signal;
+		config.signal ??= abortController.signal;
 
 		const applyTokenToConfig = (token?: string | null) => {
 			if (token && config.headers) {
