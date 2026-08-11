@@ -29,6 +29,7 @@ export const useWooIntegrations = (subsidiaryId: number | null): UseWooIntegrati
 	const selection = useContextScopedSelection<string>(
 		subsidiaryId === null ? null : { type: 'subsidiary', id: subsidiaryId },
 	);
+	const { selectedId, select, clear } = selection;
 
 	useEffect(() => {
 		if (!subsidiaryId) return;
@@ -50,26 +51,25 @@ export const useWooIntegrations = (subsidiaryId: number | null): UseWooIntegrati
 
 	useEffect(() => {
 		if (activeIntegrations.length === 0) {
-			if (selection.selectedId !== null) selection.clear();
+			if (selectedId !== null) clear();
 			return;
 		}
 		const stillActive =
-			selection.selectedId &&
-			activeIntegrations.some((i) => i.id === selection.selectedId);
+			selectedId && activeIntegrations.some((i) => i.id === selectedId);
 		if (!stillActive) {
-			selection.select(activeIntegrations[0].id);
+			select(activeIntegrations[0].id);
 		}
-	}, [activeIntegrations, selection]);
+	}, [activeIntegrations, clear, select, selectedId]);
 
 	const selectedIntegration = useMemo(
-		() => allWooIntegrations.find((i) => i.id === selection.selectedId) ?? null,
-		[allWooIntegrations, selection.selectedId],
+		() => allWooIntegrations.find((i) => i.id === selectedId) ?? null,
+		[allWooIntegrations, selectedId],
 	);
 
 	const handleSetSelectedId = useCallback((id: string | null) => {
-		if (id === null) selection.clear();
-		else selection.select(id);
-	}, [selection]);
+		if (id === null) clear();
+		else select(id);
+	}, [clear, select]);
 
 	const getIntegrationName = useCallback(
 		(id: string | null | undefined): string => {
@@ -83,7 +83,7 @@ export const useWooIntegrations = (subsidiaryId: number | null): UseWooIntegrati
 	return {
 		integrations: activeIntegrations,
 		allWooIntegrations,
-		selectedIntegrationId: selection.selectedId,
+		selectedIntegrationId: selectedId,
 		selectedIntegration,
 		setSelectedIntegrationId: handleSetSelectedId,
 		loading,
