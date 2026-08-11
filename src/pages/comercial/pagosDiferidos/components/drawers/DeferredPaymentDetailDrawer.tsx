@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import type { OrganizationalContext } from '@/hooks/useContextScopedSelection';
 import type {
 	IDeferredPaymentAbono,
 	IDeferredPaymentDocument,
@@ -37,6 +38,7 @@ import {
 
 interface DeferredPaymentDetailDrawerProps {
 	documentId: number | null;
+	selectionContext: OrganizationalContext | null;
 	onClose: () => void;
 	onEdit: (document: IDeferredPaymentDocument) => void;
 }
@@ -72,11 +74,12 @@ const AmountCard = ({
 
 const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = ({
 	documentId,
+	selectionContext,
 	onClose,
 	onEdit,
 }) => {
 	const { document, loading, error, actions, branch, hasDataContext } =
-		useDeferredPaymentDetail(documentId);
+		useDeferredPaymentDetail(documentId, selectionContext);
 	const [isRegisterOpen, setIsRegisterOpen] = useState(false);
 	const [isMarkPaidOpen, setIsMarkPaidOpen] = useState(false);
 	const [isDiscardMarkPaidReceiptOpen, setIsDiscardMarkPaidReceiptOpen] = useState(false);

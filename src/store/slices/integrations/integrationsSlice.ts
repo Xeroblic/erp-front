@@ -55,6 +55,7 @@ interface IntegrationsState {
 	restoring: boolean;
 	error: string | null;
 	lastFetch: number | null;
+	listSubsidiaryId: number | null;
 }
 
 const initialState: IntegrationsState = {
@@ -65,6 +66,7 @@ const initialState: IntegrationsState = {
 	restoring: false,
 	error: null,
 	lastFetch: null,
+	listSubsidiaryId: null,
 };
 
 // ==================== THUNKS ====================
@@ -229,21 +231,26 @@ const integrationsSlice = createSlice({
 			state.trashedIntegrations = [];
 			state.selectedIntegration = null;
 			state.lastFetch = null;
+			state.listSubsidiaryId = null;
 		},
 	},
 	extraReducers: (builder) => {
 		// Fetch All
 		builder
-			.addCase(fetchIntegrations.pending, (state) => {
+			.addCase(fetchIntegrations.pending, (state, action) => {
 				state.loading = true;
 				state.error = null;
+				state.integrations = [];
+				state.listSubsidiaryId = action.meta.arg.subsidiaryId;
 			})
 			.addCase(fetchIntegrations.fulfilled, (state, action) => {
+				if (state.listSubsidiaryId !== action.meta.arg.subsidiaryId) return;
 				state.loading = false;
 				state.integrations = action.payload;
 				state.lastFetch = Date.now();
 			})
 			.addCase(fetchIntegrations.rejected, (state, action) => {
+				if (state.listSubsidiaryId !== action.meta.arg.subsidiaryId) return;
 				state.loading = false;
 				state.error = action.payload as string;
 			});

@@ -83,6 +83,7 @@ const renderDrawer = (document: IDeferredPaymentDocument, onClose = vi.fn()) => 
 		<Provider store={store}>
 			<DeferredPaymentDetailDrawer
 				documentId={document.id}
+				selectionContext={{ type: 'subsidiary', id: 1 }}
 				onClose={onClose}
 				onEdit={vi.fn()}
 			/>

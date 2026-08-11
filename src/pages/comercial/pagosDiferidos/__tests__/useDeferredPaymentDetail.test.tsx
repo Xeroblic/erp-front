@@ -53,14 +53,20 @@ const flushPromises = async () => {
 
 describe('useDeferredPaymentDetail con servicio', () => {
 	const getDocumentMock = vi.mocked(deferredPaymentsService.getDocument);
-	const createHook = (documentId: number | null) => {
+	const createHook = (
+		documentId: number | null,
+		selectionContext = documentId === null
+			? null
+			: { type: 'subsidiary' as const, id: branchContext.subsidiaryId ?? 0 },
+	) => {
 		const store = configureStore({ reducer: { deferredPayments: deferredPaymentsReducer } });
 		const Wrapper = ({ children }: PropsWithChildren) => (
 			<Provider store={store}>{children}</Provider>
 		);
 		const hook = renderHook(
-			({ selectedId }: { selectedId: number | null }) => useDeferredPaymentDetail(selectedId),
-			{ initialProps: { selectedId: documentId }, wrapper: Wrapper },
+			({ selectedId, context }: { selectedId: number | null; context: { type: 'subsidiary'; id: number } | null }) =>
+				useDeferredPaymentDetail(selectedId, context),
+			{ initialProps: { selectedId: documentId, context: selectionContext }, wrapper: Wrapper },
 		);
 		return { store, hook };
 	};
@@ -105,25 +111,25 @@ describe('useDeferredPaymentDetail con servicio', () => {
 		});
 		const { hook, store } = createHook(1);
 		await flushPromises();
-		hook.rerender({ selectedId: 2 });
+		hook.rerender({ selectedId: 2, context: { type: 'subsidiary', id: 10 } });
 		await flushPromises();
 		expect(signals[0]?.aborted).toBe(true);
 		expect(getDocumentMock).toHaveBeenCalledTimes(2);
 		expect(hook.result.current.document?.id).toBe(2);
 		expect(store.getState().deferredPayments.errorDetail).toBeNull();
 	});
-	it('descarta el detalle anterior al cambiar de subsidiaria', async () => {
+	it('no consulta el ID heredado bajo una subsidiaria nueva', async () => {
 		const { hook } = createHook(4);
 		await flushPromises();
 		expect(hook.result.current.document?.id).toBe(4);
 		getDocumentMock.mockClear();
 		act(() => {
 			branchContext.subsidiaryId = 20;
-			hook.rerender({ selectedId: 4 });
+			hook.rerender({ selectedId: null, context: null });
 		});
 		await flushPromises();
-		expect(getDocumentMock).toHaveBeenCalledWith(20, 4, expect.any(AbortSignal));
-		expect(hook.result.current.document?.id).toBe(4);
+		expect(getDocumentMock).not.toHaveBeenCalled();
+		expect(hook.result.current.document).toBeNull();
 		expect(hook.result.current.branch.subsidiaryId).toBe(20);
 	});
 	it('expone el error del servicio y permite reintentar la solicitud vigente', async () => {

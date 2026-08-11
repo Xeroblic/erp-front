@@ -20,11 +20,6 @@ proyecto, sin reinventar layouts, autorización ni manejo de estado.
 - **Backend:** Laravel 12 + JWT. Multi-empresa / multi-subsidiaria / multi-sucursal.
 - **Alias de imports:** `@/*` → `./src/*` (tsconfig). Usa `@/...` siempre.
 
-> ⚠️ Discrepancia conocida: los prompts de `.agents/skills/full-react/SKILL.md` y
-> `.agents/skills/full-ts/SKILL.md` mencionan React Hook Form + Zod. **Eso NO refleja el código real.** La
-> fuente de verdad es este CLAUDE.md: **Formik + Yup**, como dicen `.agents/skills/architect/SKILL.md` y
-> `.agents/skills/ui-ux/SKILL.md` y como confirma el README.
-
 ---
 
 ## 2. Principios inquebrantables (The Zentria Standard)
@@ -287,7 +282,7 @@ Para una página nueva: añade el `lazy(() => import('@/pages/...'))`, su entrad
 ## 12. Agentes de apoyo (`.agents/skills/`)
 
 Prompts de roles para diseño asistido: `Architect`, `Full_TS`, `Full_React`, `UI_UX`,
-`Dev_Implementador`, `Tester_QA`. Úsalos como referencia de criterios, **pero ante
+`Dev_Implementador`, `Tester_QA` y `PR_Readiness`. Úsalos como referencia de criterios, **pero ante
 cualquier conflicto manda este CLAUDE.md** (sobre todo: Formik + Yup, no RHF + Zod).
 
 > **Nota:** `.agents/` es **local-only** (no se versiona). El snapshot canónico de los
@@ -318,7 +313,7 @@ del día (créalo si no existe).
 ## 14. Flujo de trabajo (branching + PRs)
 
 - **Commits en español**, formato **Conventional Commits** (`feat:`, `fix:`, `chore:`, `refactor:`, `style:`, `docs:`, `test:`).
-- Cada tarea en una **rama independiente** desde `develop`. Nombre descriptivo en inglés (ej. `feat/orden-compra`, `fix/error-precios`).
+- Cada tarea en una **rama independiente** desde `develop`. El nombre debe estar en español, usando kebab-case y conservando el prefijo técnico (ej. `feat/orden-compra`, `fix/error-precios`). No crear ramas con descripciones en inglés.
 - **Antes de empezar:** `git pull origin develop`, crear rama nueva desde `develop`, trabajar ahí.
 - **No hacer PRs directamente.** Al terminar la tarea, generar el texto del PR para que el usuario lo copie, revise y pegue. Lo mismo con releases: mostrar el texto propuesto, esperar confirmación.
 - El PR siempre apunta a `develop`.
