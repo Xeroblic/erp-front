@@ -30,6 +30,7 @@ import Container from '@/components/layouts/Container/Container';
 import Subheader, { SubheaderLeft } from '@/components/layouts/Subheader/Subheader';
 import Icon from '@/components/icon/Icon';
 import { selectEffectiveSubsidiaryId } from '@/store/selectors/subsidiarySelectors';
+import useContextScopedSelection from '@/hooks/useContextScopedSelection';
 // import Tooltip from '@/components/ui/Tooltip';
 import type { ISale } from '@/interface/sales.interface';
 import SaleDetailPage from './detail/components/modals/SaleDetailPage';
@@ -100,8 +101,6 @@ const SalesListPage: React.FC = () => {
 	const [status, setStatus] = useState<string>('');
 	const [wcOrderId, setWcOrderId] = useState<string>('');
 	const [searchTerm, setSearchTerm] = useState<string>('');
-	const [detailModalOpen, setDetailModalOpen] = useState(false);
-	const [selectedSaleId, setSelectedSaleId] = useState<number | null>(null);
 	const [isFiltering, setIsFiltering] = useState(false);
 	const [pagination, setPagination] = useState<PaginationState>({
 		pageIndex: 0,
@@ -137,12 +136,17 @@ const SalesListPage: React.FC = () => {
 
 	// Logic to handle route-based modal opening
 	const { saleId } = useParams<{ saleId?: string }>();
-	useEffect(() => {
-		if (saleId && !isNaN(Number(saleId))) {
-			setSelectedSaleId(Number(saleId));
-			setDetailModalOpen(true);
-		}
-	}, [saleId]);
+	const routeSaleId = saleId && !Number.isNaN(Number(saleId)) ? Number(saleId) : null;
+	const detailSelection = useContextScopedSelection<number>(
+		subsidiaryId === null ? null : { type: 'subsidiary', id: subsidiaryId },
+		{
+			sourceId: routeSaleId ?? undefined,
+			onInvalidate: () => {
+				dispatch(clearDetail());
+				navigate('/comercial/ventas', { replace: true });
+			},
+		},
+	);
 
 	const statusValue = useMemo(
 		() => statusOptions.find((option) => option.value === status) ?? null,
@@ -262,27 +266,24 @@ const SalesListPage: React.FC = () => {
 
 	const handleDetailModalState = useCallback(
 		(nextOpen: boolean | ((prev: boolean) => boolean)) => {
-			setDetailModalOpen((prev) => {
-				const resolved =
-					typeof nextOpen === 'function'
-						? (nextOpen as (value: boolean) => boolean)(prev)
-						: nextOpen;
-				if (!resolved) {
-					setSelectedSaleId(null);
-					dispatch(clearDetail());
-				}
-				return resolved;
-			});
+			const resolved =
+				typeof nextOpen === 'function'
+					? (nextOpen as (value: boolean) => boolean)(detailSelection.isOpen)
+					: nextOpen;
+			if (!resolved) {
+				detailSelection.clear();
+				dispatch(clearDetail());
+			}
 		},
-		[dispatch],
+		[detailSelection, dispatch],
 	);
 
 	const handleViewDetail = useCallback(
 		(saleId: number) => {
-			setSelectedSaleId(saleId);
+			detailSelection.select(saleId);
 			handleDetailModalState(true);
 		},
-		[handleDetailModalState],
+		[detailSelection, handleDetailModalState],
 	);
 
 	// const handleCreateSale = () => {
@@ -301,7 +302,7 @@ const SalesListPage: React.FC = () => {
 		[subsidiaryId],
 	);
 
-	const detailModalVisible = detailModalOpen && selectedSaleId !== null && Boolean(subsidiaryId);
+	const detailModalVisible = detailSelection.isOpen && Boolean(subsidiaryId);
 
 	const columns = useMemo<ColumnDef<ISale>[]>(
 		() => [
@@ -813,10 +814,10 @@ const SalesListPage: React.FC = () => {
 				</Container>
 			</PageWrapper>
 
-			{detailModalVisible && selectedSaleId && subsidiaryId && (
+			{detailModalVisible && detailSelection.selectedId && subsidiaryId && (
 				<SaleDetailPage
 					subsidiaryId={subsidiaryId}
-					saleId={selectedSaleId}
+					saleId={detailSelection.selectedId}
 					isOpen={detailModalVisible}
 					onClose={() => handleDetailModalState(false)}
 				/>

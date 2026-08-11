@@ -30,6 +30,7 @@ const renderDrawer = (documentId: number, onEdit = vi.fn(), onClose = vi.fn()) =
 		<Provider store={store}>
 			<DeferredPaymentDetailDrawer
 				documentId={documentId}
+				selectionContext={{ type: 'subsidiary', id: 1 }}
 				onClose={onClose}
 				onEdit={onEdit}
 			/>
@@ -162,7 +163,12 @@ describe('DeferredPaymentDetailDrawer', () => {
 		});
 		view.rerender(
 			<Provider store={store}>
-				<DeferredPaymentDetailDrawer documentId={9} onClose={vi.fn()} onEdit={vi.fn()} />
+				<DeferredPaymentDetailDrawer
+					documentId={9}
+					selectionContext={{ type: 'subsidiary', id: 1 }}
+					onClose={vi.fn()}
+					onEdit={vi.fn()}
+				/>
 			</Provider>,
 		);
 

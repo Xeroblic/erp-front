@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useDebounce } from 'use-debounce';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import useContextScopedSelection from '@/hooks/useContextScopedSelection';
 import type {
 	DeferredPaymentApiSummaryParams,
 	DeferredPaymentsFilters,
@@ -29,13 +30,17 @@ const usePagosDiferidos = ({ initialSearch }: UsePagosDiferidosOptions = {}) => 
 	const error = useAppSelector((state) => state.deferredPayments.error);
 	const errorSummary = useAppSelector((state) => state.deferredPayments.errorSummary);
 	const listSubsidiaryId = useAppSelector((state) => state.deferredPayments.listSubsidiaryId);
-	const [selectedId, setSelectedId] = useState<number | null>(null);
 	const appliedInitialSearchKey = useRef<string | null>(null);
 	const search = values.search ?? '';
 	const [debouncedSearch] = useDebounce(search, 300);
 	const isSearchDebouncing = search !== debouncedSearch;
 	const effectiveSubsidiaryId = subsidiaryId;
 	const hasDataContext = effectiveSubsidiaryId !== null;
+	const selection = useContextScopedSelection<number>(
+		effectiveSubsidiaryId === null
+			? null
+			: { type: 'subsidiary', id: effectiveSubsidiaryId },
+	);
 	const hasInvalidDateRange = Boolean(
 		values.due_after && values.due_before && values.due_after > values.due_before,
 	);
@@ -84,10 +89,6 @@ const usePagosDiferidos = ({ initialSearch }: UsePagosDiferidosOptions = {}) => 
 			values.status,
 		],
 	);
-
-	useEffect(() => {
-		if (isSubsidiaryChange) setSelectedId(null);
-	}, [isSubsidiaryChange]);
 
 	useEffect(() => {
 		const normalizedInitialSearch = initialSearch?.trim();
@@ -164,8 +165,6 @@ const usePagosDiferidos = ({ initialSearch }: UsePagosDiferidosOptions = {}) => 
 	const resetFilters = useCallback(() => {
 		dispatch(resetDeferredPaymentsFilters());
 	}, [dispatch]);
-	const openDetail = useCallback((id: number) => setSelectedId(id), []);
-	const closeDetail = useCallback(() => setSelectedId(null), []);
 	const retrySummary = useCallback(() => {
 		if (effectiveSubsidiaryId === null || hasInvalidDateRange || isSearchDebouncing)
 			return undefined;
@@ -212,7 +211,13 @@ const usePagosDiferidos = ({ initialSearch }: UsePagosDiferidosOptions = {}) => 
 			hasInvalidDateRange,
 			isSearchDebouncing,
 		},
-		selection: { selectedId, openDetail, closeDetail },
+		selection: {
+			selectedId: selection.selectedId,
+			context: selection.context,
+			isOpen: selection.isOpen,
+			openDetail: selection.select,
+			closeDetail: selection.clear,
+		},
 		actions: { retryList, retrySummary },
 		branch: { branchId, subsidiaryId },
 	};

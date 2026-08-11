@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import {
+	isSameOrganizationalContext,
+	type OrganizationalContext,
+} from '@/hooks/useContextScopedSelection';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
 	clearDeferredPaymentDetail,
@@ -10,7 +14,10 @@ interface AbortableDetailRequest {
 	abort: () => void;
 }
 
-const useDeferredPaymentDetail = (documentId: number | null) => {
+const useDeferredPaymentDetail = (
+	documentId: number | null,
+	selectionContext: OrganizationalContext | null,
+) => {
 	const dispatch = useAppDispatch();
 	const { branchId, subsidiaryId } = useCurrentBranch();
 	const current = useAppSelector((state) => state.deferredPayments.current);
@@ -18,13 +25,19 @@ const useDeferredPaymentDetail = (documentId: number | null) => {
 	const error = useAppSelector((state) => state.deferredPayments.errorDetail);
 	const activeRequestRef = useRef<AbortableDetailRequest | null>(null);
 	const effectiveSubsidiaryId = subsidiaryId;
-	const document = current?.id === documentId ? current : null;
+	const currentContext =
+		effectiveSubsidiaryId === null
+			? null
+			: { type: 'subsidiary' as const, id: effectiveSubsidiaryId };
+	const hasValidSelection =
+		documentId !== null && isSameOrganizationalContext(selectionContext, currentContext);
+	const document = hasValidSelection && current?.id === documentId ? current : null;
 
 	const refresh = useCallback(() => {
 		activeRequestRef.current?.abort();
 		activeRequestRef.current = null;
 
-		if (documentId === null || effectiveSubsidiaryId === null) {
+		if (!hasValidSelection || effectiveSubsidiaryId === null) {
 			dispatch(clearDeferredPaymentDetail());
 			return undefined;
 		}
@@ -37,7 +50,7 @@ const useDeferredPaymentDetail = (documentId: number | null) => {
 		);
 		activeRequestRef.current = request;
 		return request;
-	}, [dispatch, documentId, effectiveSubsidiaryId]);
+	}, [dispatch, documentId, effectiveSubsidiaryId, hasValidSelection]);
 
 	useEffect(() => {
 		const request = refresh();

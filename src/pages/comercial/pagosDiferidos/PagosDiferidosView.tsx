@@ -159,6 +159,7 @@ const PagosDiferidosView: React.FC = () => {
 			)}
 			<DeferredPaymentDetailDrawer
 				documentId={selection.selectedId}
+				selectionContext={selection.context}
 				onClose={selection.closeDetail}
 				onEdit={editDocument}
 			/>

@@ -66,6 +66,7 @@ export interface WarehouseState {
 	detachingProduct: boolean;
 	error: string | null;
 	warehouseDetailError: string | null;
+	listBranchId: number | null;
 }
 
 // ==================== Initial State ====================
@@ -96,6 +97,7 @@ const initialState: WarehouseState = {
 	detachingProduct: false,
 	error: null,
 	warehouseDetailError: null,
+	listBranchId: null,
 };
 
 // ==================== Helper Functions ====================
@@ -354,17 +356,29 @@ const warehouseSlice = createSlice({
 	},
 	extraReducers: (builder) => {
 		builder
-			.addCase(fetchWarehouses.pending, (state) => {
+			.addCase(fetchWarehouses.pending, (state, action) => {
 				state.loading = true;
 				state.error = null;
+				state.listBranchId = action.meta.arg.branchId;
+				state.warehouses = [];
+				state.stats = {
+					total: 0,
+					actives: 0,
+					inactives: 0,
+					with_products: 0,
+					empty: 0,
+					near_capacity: 0,
+				};
 			})
 			.addCase(fetchWarehouses.fulfilled, (state, action) => {
+				if (state.listBranchId !== action.meta.arg.branchId) return;
 				state.loading = false;
 				state.warehouses = action.payload.items;
 				state.meta = action.payload.meta;
 				state.stats = action.payload.stats;
 			})
 			.addCase(fetchWarehouses.rejected, (state, action) => {
+				if (state.listBranchId !== action.meta.arg.branchId) return;
 				state.loading = false;
 				state.error = defaultError(action, 'No se pudieron cargar las bodegas');
 			})

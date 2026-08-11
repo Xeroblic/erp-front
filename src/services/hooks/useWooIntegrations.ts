@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
+import useContextScopedSelection from '@/hooks/useContextScopedSelection';
 import { fetchIntegrations } from '@/store/slices/integrations/integrationsSlice';
 import type { Integration } from '@/types/integrations.types';
 
@@ -22,9 +23,12 @@ interface UseWooIntegrationsReturn {
 
 export const useWooIntegrations = (subsidiaryId: number | null): UseWooIntegrationsReturn => {
 	const dispatch = useAppDispatch();
-	const { integrations: allIntegrations, loading } = useAppSelector((state) => state.integrations);
-
-	const [selectedId, setSelectedId] = useState<string | null>(null);
+	const { integrations, loading, listSubsidiaryId } = useAppSelector(
+		(state) => state.integrations,
+	);
+	const selection = useContextScopedSelection<string>(
+		subsidiaryId === null ? null : { type: 'subsidiary', id: subsidiaryId },
+	);
 
 	useEffect(() => {
 		if (!subsidiaryId) return;
@@ -33,10 +37,10 @@ export const useWooIntegrations = (subsidiaryId: number | null): UseWooIntegrati
 
 	const allWooIntegrations = useMemo(
 		() =>
-			allIntegrations.filter(
+			(listSubsidiaryId === subsidiaryId ? integrations : []).filter(
 				(i) => i.provider === 'woocommerce' && i.mode !== 'webhook',
 			),
-		[allIntegrations],
+		[integrations, listSubsidiaryId, subsidiaryId],
 	);
 
 	const activeIntegrations = useMemo(
@@ -46,23 +50,26 @@ export const useWooIntegrations = (subsidiaryId: number | null): UseWooIntegrati
 
 	useEffect(() => {
 		if (activeIntegrations.length === 0) {
-			if (selectedId !== null) setSelectedId(null);
+			if (selection.selectedId !== null) selection.clear();
 			return;
 		}
-		const stillActive = selectedId && activeIntegrations.some((i) => i.id === selectedId);
+		const stillActive =
+			selection.selectedId &&
+			activeIntegrations.some((i) => i.id === selection.selectedId);
 		if (!stillActive) {
-			setSelectedId(activeIntegrations[0].id);
+			selection.select(activeIntegrations[0].id);
 		}
-	}, [activeIntegrations, selectedId]);
+	}, [activeIntegrations, selection]);
 
 	const selectedIntegration = useMemo(
-		() => allWooIntegrations.find((i) => i.id === selectedId) ?? null,
-		[allWooIntegrations, selectedId],
+		() => allWooIntegrations.find((i) => i.id === selection.selectedId) ?? null,
+		[allWooIntegrations, selection.selectedId],
 	);
 
 	const handleSetSelectedId = useCallback((id: string | null) => {
-		setSelectedId(id);
-	}, []);
+		if (id === null) selection.clear();
+		else selection.select(id);
+	}, [selection]);
 
 	const getIntegrationName = useCallback(
 		(id: string | null | undefined): string => {
@@ -76,7 +83,7 @@ export const useWooIntegrations = (subsidiaryId: number | null): UseWooIntegrati
 	return {
 		integrations: activeIntegrations,
 		allWooIntegrations,
-		selectedIntegrationId: selectedId,
+		selectedIntegrationId: selection.selectedId,
 		selectedIntegration,
 		setSelectedIntegrationId: handleSetSelectedId,
 		loading,
