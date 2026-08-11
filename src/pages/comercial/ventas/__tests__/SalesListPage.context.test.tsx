@@ -6,12 +6,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const navigateSpy = vi.hoisted(() => vi.fn());
 const routeState = vi.hoisted(() => ({ saleId: '7' }));
+const dispatchMock = vi.hoisted(() =>
+	vi.fn((action: { unwrap?: () => Promise<void> }) => action),
+);
 
 vi.mock('@/store', async () => {
 	const reactRedux = await vi.importActual<typeof import('react-redux')>('react-redux');
 	return {
 		injectReducer: vi.fn(),
-		useAppDispatch: () => (action: { unwrap?: () => Promise<void> }) => action,
+		useAppDispatch: () => dispatchMock,
 		useAppSelector: reactRedux.useSelector,
 	};
 });
@@ -20,9 +23,10 @@ vi.mock('@/store/slices/salesSlice', () => ({
 	clearDetail: () => ({ type: 'sales/clearDetail' }),
 	loadSalesList: () => ({ type: 'sales/load', unwrap: async () => undefined }),
 	selectSalesList: (() => {
-		const emptySales: never[] = [];
-		return () => emptySales;
+		const sales = [{ id: 7, sale_number: 'V-7', status: 'pending', total_amount: '1000' }];
+		return () => sales;
 	})(),
+	selectSalesListSubsidiaryId: () => 1,
 	selectSalesMeta: () => null,
 	selectSalesLoading: () => false,
 }));
@@ -34,7 +38,7 @@ vi.mock('@/store/selectors/subsidiarySelectors', () => ({
 		state.context.subsidiaryId,
 }));
 vi.mock('@/services/salesService', () => ({
-	fetchPendingSerialAssignment: vi.fn().mockResolvedValue({ data: [] }),
+	fetchPendingSerialAssignment: vi.fn().mockResolvedValue({ data: [{ id: 7, items: [] }] }),
 }));
 vi.mock('react-router-dom', () => ({
 	useNavigate: () => navigateSpy,
@@ -46,11 +50,20 @@ vi.mock('@/components/ui/Card', () => ({
 	CardHeader: ({ children }: PropsWithChildren) => <div>{children}</div>,
 	CardTitle: ({ children }: PropsWithChildren) => <div>{children}</div>,
 }));
-vi.mock('@/components/ui/Button', () => ({ default: ({ children }: PropsWithChildren) => <button>{children}</button> }));
-vi.mock('@/components/ui/ProtectedButton', () => ({ default: ({ children }: PropsWithChildren) => <button>{children}</button> }));
+vi.mock('@/components/ui/Button', () => ({ default: ({ children, onClick }: PropsWithChildren & { onClick?: () => void }) => <button onClick={onClick}>{children}</button> }));
+vi.mock('@/components/ui/ProtectedButton', () => ({ default: ({ children, onClick }: PropsWithChildren & { onClick?: () => void }) => <button onClick={onClick}>{children}</button> }));
 vi.mock('@/components/form/Input', () => ({ default: () => <input /> }));
 vi.mock('@/components/form/SelectReact', () => ({ default: () => <select /> }));
-vi.mock('@/components/ui/DataTable', () => ({ default: () => <div /> }));
+vi.mock('@/components/ui/DataTable', () => ({
+	default: ({ columns, data }: { columns: Array<{ id?: string; cell?: (props: { row: { original: unknown } }) => React.ReactNode }>; data: unknown[] }) => {
+		const actionColumn = columns.find((column) => column.id === 'actions');
+		return (
+			<div>
+				{data.length > 0 ? actionColumn?.cell?.({ row: { original: data[0] } }) : null}
+			</div>
+		);
+	},
+}));
 vi.mock('@/components/ui/Badge', () => ({ default: ({ children }: PropsWithChildren) => <span>{children}</span> }));
 vi.mock('@/components/ui/Alert', () => ({ default: ({ children }: PropsWithChildren) => <div>{children}</div> }));
 vi.mock('@/components/layouts/PageWrapper/PageWrapper', () => ({ default: ({ children }: PropsWithChildren) => <main>{children}</main> }));
@@ -59,11 +72,11 @@ vi.mock('@/components/layouts/Subheader/Subheader', () => ({
 	default: ({ children }: PropsWithChildren) => <header>{children}</header>,
 	SubheaderLeft: ({ children }: PropsWithChildren) => <div>{children}</div>,
 }));
-vi.mock('@/components/icon/Icon', () => ({ default: () => <span /> }));
+vi.mock('@/components/icon/Icon', () => ({ default: ({ icon }: { icon: string }) => <span>{icon}</span> }));
 vi.mock('@/components/ui/Tooltip', () => ({ default: ({ children }: PropsWithChildren) => <>{children}</> }));
 vi.mock('../detail/components/modals/SaleDetailPage', () => ({ default: () => <div data-testid='sale-detail' /> }));
-vi.mock('../detail/components/modals/CloseSaleModal', () => ({ default: () => null }));
-vi.mock('../detail/components/modals/DeleteSaleModal', () => ({ default: () => null }));
+vi.mock('../detail/components/modals/CloseSaleModal', () => ({ default: ({ open }: { open: boolean }) => open ? <div data-testid='close-sale-modal' /> : null }));
+vi.mock('../detail/components/modals/DeleteSaleModal', () => ({ default: ({ isOpen }: { isOpen: boolean }) => isOpen ? <div data-testid='delete-sale-modal' /> : null }));
 
 import SalesListPage from '../SalesListPage';
 
@@ -77,6 +90,7 @@ const contextReducer = createReducer({ subsidiaryId: 1 as number | null }, (buil
 describe('SalesListPage con cambio de subsidiaria', () => {
 	beforeEach(() => {
 		navigateSpy.mockClear();
+		dispatchMock.mockClear();
 		routeState.saleId = '7';
 	});
 
@@ -93,5 +107,26 @@ describe('SalesListPage con cambio de subsidiaria', () => {
 
 		await waitFor(() => expect(screen.queryByTestId('sale-detail')).not.toBeInTheDocument());
 		expect(navigateSpy).toHaveBeenCalledWith('/comercial/ventas', { replace: true });
+	});
+
+	it('cierra acciones pendientes de la subsidiaria anterior', async () => {
+		routeState.saleId = undefined as unknown as string;
+		const store = configureStore({ reducer: { context: contextReducer } });
+		render(
+			<Provider store={store}>
+				<SalesListPage />
+			</Provider>,
+		);
+
+		await screen.findByRole('button', { name: 'DuoBarcodeRead' });
+		act(() => screen.getByRole('button', { name: 'DuoBarcodeRead' }).click());
+		act(() => screen.getByRole('button', { name: 'HeroTrash' }).click());
+		expect(screen.getByTestId('close-sale-modal')).toBeInTheDocument();
+		expect(screen.getByTestId('delete-sale-modal')).toBeInTheDocument();
+
+		act(() => store.dispatch(setSubsidiary(2)));
+
+		expect(screen.queryByTestId('close-sale-modal')).not.toBeInTheDocument();
+		expect(screen.queryByTestId('delete-sale-modal')).not.toBeInTheDocument();
 	});
 });
