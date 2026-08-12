@@ -52,4 +52,25 @@ describe('BaseService cancellation composition', () => {
 		await expect(request).rejects.toBeInstanceOf(axios.CanceledError);
 		expect(caller.signal.aborted).toBe(false);
 	});
+
+	it('uses the local composition fallback when AbortSignal.any is unavailable', async () => {
+		const originalAbortSignalAny = AbortSignal.any;
+		Object.defineProperty(AbortSignal, 'any', { configurable: true, value: undefined });
+		try {
+			const { adapter, started } = createAbortableAdapter();
+			BaseService.defaults.adapter = adapter;
+			const caller = new AbortController();
+			const request = BaseService.get('/pending-fallback-abort', { signal: caller.signal });
+			await started;
+			cancelAllRequests();
+
+			await expect(request).rejects.toBeInstanceOf(axios.CanceledError);
+			expect(caller.signal.aborted).toBe(false);
+		} finally {
+			Object.defineProperty(AbortSignal, 'any', {
+				configurable: true,
+				value: originalAbortSignalAny,
+			});
+		}
+	});
 });
