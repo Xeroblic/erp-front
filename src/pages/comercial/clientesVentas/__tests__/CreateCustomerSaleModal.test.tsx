@@ -72,7 +72,7 @@ const renderModal = ({
 				/>
 			</Provider>,
 		);
-	return { store, rerenderModal };
+	return { store, rerenderModal, unmount: view.unmount };
 };
 
 const fillValidForm = () => {
@@ -346,6 +346,27 @@ describe('CreateCustomerSaleModal', () => {
 			await waitFor(() => expect(apiSpies.fetchNormalized).toHaveBeenCalledTimes(1));
 
 			rerenderModal({ isOpen: false });
+			resolveCreate();
+
+			await waitFor(() => expect(apiSpies.fetchNormalized).toHaveBeenCalledTimes(1));
+			expect(onSuccess).not.toHaveBeenCalled();
+			expect(setIsOpen).not.toHaveBeenCalledWith(false);
+		});
+
+		it('descarta el alta si el overlay se desmonta por cambiar de contexto', async () => {
+			const resolveCreate = pendingCreate();
+			const onSuccess = vi.fn();
+			const setIsOpen = vi.fn();
+			const { unmount } = renderModal({
+				refreshStoreOnSuccess: false,
+				onSuccess,
+				setIsOpen,
+			});
+			fillValidForm();
+			fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+			await waitFor(() => expect(apiSpies.fetchNormalized).toHaveBeenCalledTimes(1));
+
+			unmount();
 			resolveCreate();
 
 			await waitFor(() => expect(apiSpies.fetchNormalized).toHaveBeenCalledTimes(1));
