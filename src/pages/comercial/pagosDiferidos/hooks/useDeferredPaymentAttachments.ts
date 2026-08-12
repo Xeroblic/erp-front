@@ -41,6 +41,8 @@ export const useDeferredPaymentAttachments = ({
 	const [isUploading, setIsUploading] = useState(false);
 	const contextRef = useRef({ subsidiaryId, documentId: document?.id ?? null, isOpen });
 	contextRef.current = { subsidiaryId, documentId: document?.id ?? null, isOpen };
+	const [stateContext, setStateContext] = useState(contextRef.current);
+	const previousContextRef = useRef(contextRef.current);
 	const requestIdRef = useRef(0);
 	const controllersRef = useRef<AbortController[]>([]);
 	const operationInFlightRef = useRef(false);
@@ -64,33 +66,43 @@ export const useDeferredPaymentAttachments = ({
 		setError(null);
 	}, [document?.id]);
 	useEffect(() => {
+		const nextContext = { subsidiaryId, documentId: document?.id ?? null, isOpen };
+		const previousContext = previousContextRef.current;
+		const contextChanged =
+			previousContext.subsidiaryId !== nextContext.subsidiaryId ||
+			previousContext.documentId !== nextContext.documentId ||
+			previousContext.isOpen !== nextContext.isOpen;
 		requestIdRef.current += 1;
 		controllersRef.current.forEach((controller) => controller.abort());
 		controllersRef.current = [];
 		operationInFlightRef.current = false;
-		if (!isOpen || subsidiaryId === null || document === null) {
+		if (contextChanged || !isOpen || subsidiaryId === null || document === null) {
 			setPending([]);
 			setAttachments([]);
 		}
 		setError(null);
 		setIsUploading(false);
 		setBusyAttachmentId(null);
+		previousContextRef.current = nextContext;
+		setStateContext(nextContext);
 	}, [document?.id, isOpen, subsidiaryId]);
 
 	const addFiles = useCallback((files: FileList | null) => {
 		if (!files) return;
 		const selected = Array.from(files);
-		const invalid = selected
-			.map(getFileError)
-			.find((message): message is string => message !== null);
-		if (invalid) {
-			setError(invalid);
-			return;
-		}
-		setError(null);
+		const accepted = selected.filter((file) => getFileError(file) === null);
+		const rejected = selected
+			.map((file) => ({ file, message: getFileError(file) }))
+			.filter((item): item is { file: File; message: string } => item.message !== null);
+		setError(
+			rejected.length > 0
+				? rejected.map(({ file, message }) => `${file.name}: ${message}`).join(' ')
+				: null,
+		);
+		if (accepted.length === 0) return;
 		setPending((current) => [
 			...current,
-			...selected.map((file) => ({
+			...accepted.map((file) => ({
 				id: `${file.name}-${file.lastModified}-${crypto.randomUUID()}`,
 				file,
 				shareWithCustomer: true,
@@ -101,6 +113,10 @@ export const useDeferredPaymentAttachments = ({
 		(id: string) => setPending((current) => current.filter((item) => item.id !== id)),
 		[],
 	);
+	const discardPending = useCallback(() => {
+		setPending([]);
+		setError(null);
+	}, []);
 	const setPendingSharing = useCallback(
 		(id: string, shareWithCustomer: boolean) =>
 			setPending((current) =>
@@ -112,7 +128,12 @@ export const useDeferredPaymentAttachments = ({
 	const uploadPending = useCallback(
 		async (savedDocument: IDeferredPaymentDocument): Promise<boolean> => {
 			if (subsidiaryId === null || pending.length === 0) return true;
-			if (operationInFlightRef.current) return false;
+			if (operationInFlightRef.current) {
+				setError(
+					'Hay otra operación de adjuntos en curso. Espera a que termine para reintentar.',
+				);
+				return false;
+			}
 			const allowUnboundDocument = document === null;
 			const requestId = requestIdRef.current + 1;
 			const requestDocumentId = savedDocument.id;
@@ -260,15 +281,21 @@ export const useDeferredPaymentAttachments = ({
 		[document, isCurrentRequest, subsidiaryId],
 	);
 
+	const isCurrentContext =
+		stateContext.isOpen === isOpen &&
+		stateContext.subsidiaryId === subsidiaryId &&
+		stateContext.documentId === (document?.id ?? null);
+
 	return useMemo(
 		() => ({
-			attachments,
-			pending,
-			error,
-			isUploading,
-			busyAttachmentId,
+			attachments: isCurrentContext ? attachments : [],
+			pending: isCurrentContext ? pending : [],
+			error: isCurrentContext ? error : null,
+			isUploading: isCurrentContext ? isUploading : false,
+			busyAttachmentId: isCurrentContext ? busyAttachmentId : null,
 			addFiles,
 			removePending,
+			discardPending,
 			setPendingSharing,
 			uploadPending,
 			deleteAttachment,
@@ -281,7 +308,9 @@ export const useDeferredPaymentAttachments = ({
 			deleteAttachment,
 			error,
 			isUploading,
+			isCurrentContext,
 			pending,
+			discardPending,
 			removePending,
 			setPendingSharing,
 			updateSharing,

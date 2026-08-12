@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import Checkbox from '@/components/form/Checkbox';
 import PermissionGuard from '@/components/authorization/PermissionGuard';
 import Input from '@/components/form/Input';
@@ -82,118 +82,129 @@ const AttachmentRow: React.FC<{
 	</div>
 );
 
-const DeferredPaymentAttachmentsEditor: React.FC<Props> = (props) => (
-	<div className='space-y-3'>
-		<div className='flex flex-wrap items-center justify-between gap-3'>
-			<div>
-				<p className='font-semibold'>Adjuntos del documento</p>
-				<p className='text-sm text-zinc-500'>
-					PDF, imágenes o planillas de hasta 10 MB. Los comprobantes de abono no se
-					administran aquí.
-				</p>
-			</div>
-			<ProtectedButton
-				permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.UPDATE}
-				branchId={props.branchId}
-				subsidiaryId={props.subsidiaryId}
-				scope='access'
-				type='button'
-				variant='outline'
-				icon='HeroPlus'
-				isDisable={props.disabled || props.isUploading || props.busyAttachmentId !== null}
-				onClick={() => document.getElementById('deferred-payment-attachments')?.click()}>
-				Agregar archivos
-			</ProtectedButton>
-			<Input
-				id='deferred-payment-attachments'
-				name='deferred-payment-attachments'
-				type='file'
-				multiple
-				accept='.pdf,.jpg,.jpeg,.png,.webp,.xls,.xlsx'
-				className='hidden'
-				disabled={props.disabled || props.isUploading || props.busyAttachmentId !== null}
-				onChange={(event) => {
-					props.onAddFiles(event.currentTarget.files);
-					event.currentTarget.value = '';
-				}}
-			/>
-		</div>
-		{props.error && (
-			<Alert color='red' variant='outline' icon='HeroExclamationTriangle'>
-				<div className='flex flex-wrap items-center gap-3'>
-					<span>{props.error}</span>
-					{props.onRetry && (
-						<Button
-							type='button'
-							color='red'
-							variant='outline'
-							isLoading={props.isUploading}
-							onClick={props.onRetry}>
-							Reintentar carga
-						</Button>
-					)}
-					{props.onDiscard && (
-						<Button type='button' variant='outline' onClick={props.onDiscard}>
-							Descartar archivos pendientes y cerrar
-						</Button>
-					)}
-				</div>
-			</Alert>
-		)}
-		{props.pending.map((item) => (
-			<div
-				key={item.id}
-				className='flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-zinc-300 p-3 dark:border-zinc-700'>
-				<Icon icon='HeroArrowUpTray' className='text-blue-500' />
-				<div className='min-w-0 grow'>
-					<p className='truncate text-sm font-semibold'>{item.file.name}</p>
-					<p className='text-xs text-zinc-500'>
-						Pendiente de carga · {formatFileSize(item.file.size)}
+const DeferredPaymentAttachmentsEditor: React.FC<Props> = (props) => {
+	const fileInputRef = useRef<HTMLInputElement>(null);
+
+	return (
+		<div className='space-y-3'>
+			<div className='flex flex-wrap items-center justify-between gap-3'>
+				<div>
+					<p className='font-semibold'>Adjuntos del documento</p>
+					<p className='text-sm text-zinc-500'>
+						PDF, imágenes o planillas de hasta 10 MB. Los comprobantes de abono no se
+						administran aquí.
 					</p>
 				</div>
-				<Checkbox
-					id={`pending-share-${item.id}`}
-					variant='switch'
-					dimension='sm'
-					checked={item.shareWithCustomer}
-					disabled={
-						props.disabled || props.isUploading || props.busyAttachmentId !== null
-					}
-					label='Compartir con el cliente'
-					onChange={(event) => props.onSetPendingSharing(item.id, event.target.checked)}
-				/>
-				<Button
+				<ProtectedButton
+					permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.UPDATE}
+					branchId={props.branchId}
+					subsidiaryId={props.subsidiaryId}
+					scope='access'
 					type='button'
 					variant='outline'
-					color='red'
-					size='sm'
-					icon='HeroTrash'
-					aria-label={`Quitar ${item.file.name}`}
+					icon='HeroPlus'
 					isDisable={
 						props.disabled || props.isUploading || props.busyAttachmentId !== null
 					}
-					onClick={() => props.onRemovePending(item.id)}
+					onClick={() => fileInputRef.current?.click()}>
+					Agregar archivos
+				</ProtectedButton>
+				<Input
+					ref={fileInputRef}
+					name='deferred-payment-attachments'
+					aria-label='Seleccionar archivos adjuntos'
+					type='file'
+					multiple
+					accept='.pdf,.jpg,.jpeg,.png,.webp,.xls,.xlsx'
+					className='hidden'
+					disabled={
+						props.disabled || props.isUploading || props.busyAttachmentId !== null
+					}
+					onChange={(event) => {
+						props.onAddFiles(event.currentTarget.files);
+						event.currentTarget.value = '';
+					}}
 				/>
 			</div>
-		))}
-		{props.attachments.map((attachment) => (
-			<AttachmentRow
-				key={attachment.id}
-				attachment={attachment}
-				busy={props.isUploading || props.busyAttachmentId !== null}
-				disabled={props.disabled === true}
-				branchId={props.branchId}
-				subsidiaryId={props.subsidiaryId}
-				onDelete={() => props.onDelete(attachment.id)}
-				onUpdateSharing={(value) => props.onUpdateSharing(attachment, value)}
-			/>
-		))}
-		{props.attachments.length === 0 && props.pending.length === 0 && (
-			<p className='rounded-lg border border-dashed border-zinc-300 p-3 text-sm text-zinc-500 dark:border-zinc-700'>
-				Aún no hay adjuntos para este documento.
-			</p>
-		)}
-	</div>
-);
+			{props.error && (
+				<Alert color='red' variant='outline' icon='HeroExclamationTriangle'>
+					<div className='flex flex-wrap items-center gap-3'>
+						<span>{props.error}</span>
+						{props.onRetry && (
+							<Button
+								type='button'
+								color='red'
+								variant='outline'
+								isLoading={props.isUploading}
+								onClick={props.onRetry}>
+								Reintentar carga
+							</Button>
+						)}
+						{props.onDiscard && (
+							<Button type='button' variant='outline' onClick={props.onDiscard}>
+								Descartar archivos pendientes y cerrar
+							</Button>
+						)}
+					</div>
+				</Alert>
+			)}
+			{props.pending.map((item) => (
+				<div
+					key={item.id}
+					className='flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-zinc-300 p-3 dark:border-zinc-700'>
+					<Icon icon='HeroArrowUpTray' className='text-blue-500' />
+					<div className='min-w-0 grow'>
+						<p className='truncate text-sm font-semibold'>{item.file.name}</p>
+						<p className='text-xs text-zinc-500'>
+							Pendiente de carga · {formatFileSize(item.file.size)}
+						</p>
+					</div>
+					<Checkbox
+						id={`pending-share-${item.id}`}
+						variant='switch'
+						dimension='sm'
+						checked={item.shareWithCustomer}
+						disabled={
+							props.disabled || props.isUploading || props.busyAttachmentId !== null
+						}
+						label='Compartir con el cliente'
+						onChange={(event) =>
+							props.onSetPendingSharing(item.id, event.target.checked)
+						}
+					/>
+					<Button
+						type='button'
+						variant='outline'
+						color='red'
+						size='sm'
+						icon='HeroTrash'
+						aria-label={`Quitar ${item.file.name}`}
+						isDisable={
+							props.disabled || props.isUploading || props.busyAttachmentId !== null
+						}
+						onClick={() => props.onRemovePending(item.id)}
+					/>
+				</div>
+			))}
+			{props.attachments.map((attachment) => (
+				<AttachmentRow
+					key={attachment.id}
+					attachment={attachment}
+					busy={props.isUploading || props.busyAttachmentId !== null}
+					disabled={props.disabled === true}
+					branchId={props.branchId}
+					subsidiaryId={props.subsidiaryId}
+					onDelete={() => props.onDelete(attachment.id)}
+					onUpdateSharing={(value) => props.onUpdateSharing(attachment, value)}
+				/>
+			))}
+			{props.attachments.length === 0 && props.pending.length === 0 && (
+				<p className='rounded-lg border border-dashed border-zinc-300 p-3 text-sm text-zinc-500 dark:border-zinc-700'>
+					Aún no hay adjuntos para este documento.
+				</p>
+			)}
+		</div>
+	);
+};
 
 export default DeferredPaymentAttachmentsEditor;

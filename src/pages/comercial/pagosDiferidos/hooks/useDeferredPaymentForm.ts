@@ -176,6 +176,11 @@ const useDeferredPaymentForm = ({
 					latestSubsidiaryIdRef.current !== effectiveSubsidiaryId
 				)
 					return;
+				toast.success(
+					mode === 'edit'
+						? 'Documento actualizado correctamente'
+						: 'Documento creado correctamente',
+				);
 
 				const listRequest = dispatch(
 					fetchDeferredPayments({ subsidiaryId: effectiveSubsidiaryId, filters }),
@@ -191,13 +196,7 @@ const useDeferredPaymentForm = ({
 				)
 					return;
 
-				const completed = (await onSuccess?.(result.document)) ?? true;
-				if (!completed) return;
-				toast.success(
-					mode === 'edit'
-						? 'Documento actualizado correctamente'
-						: 'Documento creado correctamente',
-				);
+				await onSuccess?.(result.document);
 			} catch (submitError: unknown) {
 				if (
 					activeSubmissionRef.current !== submissionId ||

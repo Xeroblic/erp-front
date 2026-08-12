@@ -39,7 +39,7 @@ describe('DeferredPaymentAttachmentsEditor', () => {
 			/>,
 		);
 
-		const input = document.querySelector('#deferred-payment-attachments') as HTMLInputElement;
+		const input = screen.getByLabelText('Seleccionar archivos adjuntos');
 		expect(input).toHaveAttribute('multiple');
 		expect(input).toHaveAttribute('accept', '.pdf,.jpg,.jpeg,.png,.webp,.xls,.xlsx');
 		fireEvent.change(input, {
@@ -72,5 +72,47 @@ describe('DeferredPaymentAttachmentsEditor', () => {
 		expect(screen.getByLabelText('Compartir con el cliente')).toBeDisabled();
 		expect(screen.getByRole('button', { name: 'Eliminar factura.pdf' })).toBeDisabled();
 		expect(screen.getByText('factura.pdf')).toBeInTheDocument();
+	});
+
+	it('activa exclusivamente el input de cada instancia mediante su ref', () => {
+		render(
+			<>
+				<DeferredPaymentAttachmentsEditor
+					attachments={[]}
+					pending={[]}
+					error={null}
+					isUploading={false}
+					busyAttachmentId={null}
+					branchId={1}
+					subsidiaryId={1}
+					onAddFiles={vi.fn()}
+					onRemovePending={vi.fn()}
+					onSetPendingSharing={vi.fn()}
+					onDelete={vi.fn()}
+					onUpdateSharing={vi.fn()}
+				/>
+				<DeferredPaymentAttachmentsEditor
+					attachments={[]}
+					pending={[]}
+					error={null}
+					isUploading={false}
+					busyAttachmentId={null}
+					branchId={1}
+					subsidiaryId={1}
+					onAddFiles={vi.fn()}
+					onRemovePending={vi.fn()}
+					onSetPendingSharing={vi.fn()}
+					onDelete={vi.fn()}
+					onUpdateSharing={vi.fn()}
+				/>
+			</>,
+		);
+		const inputs = screen.getAllByLabelText('Seleccionar archivos adjuntos');
+		const firstClick = vi.spyOn(inputs[0], 'click');
+		const secondClick = vi.spyOn(inputs[1], 'click');
+
+		fireEvent.click(screen.getAllByRole('button', { name: 'Agregar archivos' })[0]);
+		expect(firstClick).toHaveBeenCalledOnce();
+		expect(secondClick).not.toHaveBeenCalled();
 	});
 });

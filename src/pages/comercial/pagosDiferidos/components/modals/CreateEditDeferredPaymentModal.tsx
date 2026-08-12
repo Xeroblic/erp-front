@@ -57,6 +57,12 @@ interface CustomerOptionData {
 	isActive: boolean;
 }
 
+interface PendingUploadRecovery {
+	document: IDeferredPaymentDocument;
+	subsidiaryId: number;
+	requestId: number;
+}
+
 const MAX_DATE = new Date(2100, 11, 31);
 const MAX_YEAR = 2100;
 const DEFERRED_PAYMENT_MODAL_ICONS = [
@@ -144,7 +150,8 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const [isEditCustomerOpen, setIsEditCustomerOpen] = useState(false);
 	const [editingCustomer, setEditingCustomer] = useState<ICustomerSale | null>(null);
 	const [isLoadingCustomerDetail, setIsLoadingCustomerDetail] = useState(false);
-	const [pendingUploadDocument, setPendingUploadDocument] = useState<IDeferredPaymentDocument | null>(null);
+	const [pendingUploadRecovery, setPendingUploadRecovery] =
+		useState<PendingUploadRecovery | null>(null);
 	const creditProfileRequestIdRef = useRef(0);
 	const creditProfileAbortRef = useRef<AbortController | null>(null);
 	const customerDetailRequestIdRef = useRef(0);
@@ -152,6 +159,8 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	/** Subsidiaria vigente cuando se abrió el alta/edición rápida de clientes. */
 	const customerModalSubsidiaryIdRef = useRef<number | null>(null);
 	const latestSubsidiaryIdRef = useRef(subsidiaryId);
+	const recoveryRequestIdRef = useRef(0);
+	const savedDocumentIdRef = useRef<number | null>(null);
 	latestSubsidiaryIdRef.current = subsidiaryId;
 	const mode = deferredPaymentDocument ? 'edit' : 'create';
 	const attachmentActions = useDeferredPaymentAttachments({
@@ -159,6 +168,22 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		subsidiaryId,
 		document: deferredPaymentDocument,
 	});
+	const currentPendingUploadRecovery =
+		pendingUploadRecovery !== null &&
+		pendingUploadRecovery.subsidiaryId === subsidiaryId &&
+		isOpen
+			? pendingUploadRecovery
+			: null;
+	const isAttachmentOperationActive =
+		attachmentActions.isUploading || attachmentActions.busyAttachmentId !== null;
+	const completeSavedDocument = useCallback(
+		(savedDocument: IDeferredPaymentDocument) => {
+			if (savedDocumentIdRef.current === savedDocument.id) return;
+			savedDocumentIdRef.current = savedDocument.id;
+			onSaved?.(savedDocument);
+		},
+		[onSaved],
+	);
 	const { formik, estimatedTotal, documentTotal, isSubmitting, isPaidEdit, actions } =
 		useDeferredPaymentForm({
 			mode,
@@ -166,33 +191,54 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 			paymentTermDays,
 			isOpen,
 			onSuccess: async (savedDocument) => {
+				savedDocumentIdRef.current = null;
+				const savedSubsidiaryId = latestSubsidiaryIdRef.current;
+				if (savedSubsidiaryId === null) return false;
 				const uploaded = await attachmentActions.uploadPending(savedDocument);
+				if (latestSubsidiaryIdRef.current !== savedSubsidiaryId) return false;
 				if (!uploaded) {
-					setPendingUploadDocument(savedDocument);
+					recoveryRequestIdRef.current += 1;
+					setPendingUploadRecovery({
+						document: savedDocument,
+						subsidiaryId: savedSubsidiaryId,
+						requestId: recoveryRequestIdRef.current,
+					});
 					return false;
 				}
-				onSaved?.(savedDocument);
+				completeSavedDocument(savedDocument);
 				onClose();
 				return true;
 			},
 		});
 	const { resetForm } = formik;
 	const retryPendingAttachments = useCallback(async () => {
-		if (pendingUploadDocument === null) return;
-		const uploaded = await attachmentActions.uploadPending(pendingUploadDocument);
+		if (currentPendingUploadRecovery === null) return;
+		const uploaded = await attachmentActions.uploadPending(
+			currentPendingUploadRecovery.document,
+		);
 		if (!uploaded) return;
-		setPendingUploadDocument(null);
-		onSaved?.(pendingUploadDocument);
+		setPendingUploadRecovery(null);
+		completeSavedDocument(currentPendingUploadRecovery.document);
 		onClose();
-	}, [attachmentActions, onClose, onSaved, pendingUploadDocument]);
+	}, [attachmentActions, completeSavedDocument, currentPendingUploadRecovery, onClose]);
 	const discardPendingAttachments = useCallback(() => {
-		setPendingUploadDocument(null);
+		if (currentPendingUploadRecovery === null) return;
+		completeSavedDocument(currentPendingUploadRecovery.document);
+		attachmentActions.discardPending();
+		setPendingUploadRecovery(null);
 		onClose();
-	}, [onClose]);
+	}, [attachmentActions, completeSavedDocument, currentPendingUploadRecovery, onClose]);
 	const latestCustomerSaleIdRef = useRef(formik.values.customer_sale_id);
 	const latestIsOpenRef = useRef(isOpen);
 	latestCustomerSaleIdRef.current = formik.values.customer_sale_id;
 	latestIsOpenRef.current = isOpen;
+	useEffect(() => {
+		if (
+			pendingUploadRecovery !== null &&
+			(!isOpen || pendingUploadRecovery.subsidiaryId !== subsidiaryId)
+		)
+			setPendingUploadRecovery(null);
+	}, [isOpen, pendingUploadRecovery, subsidiaryId]);
 
 	const clearCreditProfile = useCallback(() => {
 		creditProfileAbortRef.current?.abort();
@@ -306,7 +352,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		if (isOpen && mode === 'create') return;
 		clearCreditProfile();
 		if (!isOpen) {
-			setPendingUploadDocument(null);
+			setPendingUploadRecovery(null);
 			setIsCreditProfileCreatorOpen(false);
 			setIsCreditProfileCreatorSaving(false);
 			resetCustomerModals();
@@ -530,7 +576,11 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		},
 	];
 	const handleClose = () => {
-		if (!isSubmitting && pendingUploadDocument === null) {
+		if (
+			!isSubmitting &&
+			!isAttachmentOperationActive &&
+			currentPendingUploadRecovery === null
+		) {
 			clearCreditProfile();
 			setIsCreditProfileCreatorOpen(false);
 			setIsCreditProfileCreatorSaving(false);
@@ -962,19 +1012,43 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 								<DeferredPaymentAttachmentsEditor
 									attachments={attachmentActions.attachments}
 									pending={attachmentActions.pending}
-									error={attachmentActions.error}
+									error={
+										currentPendingUploadRecovery
+											? `El documento se guardó. No se pudieron subir ${attachmentActions.pending.length} archivos`
+											: attachmentActions.error
+									}
 									isUploading={attachmentActions.isUploading}
 									busyAttachmentId={attachmentActions.busyAttachmentId}
 									branchId={branchId}
 									subsidiaryId={subsidiaryId}
-									disabled={isPaidEdit || isSubmitting}
+									disabled={
+										isPaidEdit ||
+										isSubmitting ||
+										currentPendingUploadRecovery !== null
+									}
 									onAddFiles={attachmentActions.addFiles}
 									onRemovePending={attachmentActions.removePending}
 									onSetPendingSharing={attachmentActions.setPendingSharing}
-									onDelete={(id) => { attachmentActions.deleteAttachment(id).catch(() => undefined); }}
-									onUpdateSharing={(attachment, value) => { attachmentActions.updateSharing(attachment, value).catch(() => undefined); }}
-									onRetry={pendingUploadDocument ? retryPendingAttachments : undefined}
-									onDiscard={pendingUploadDocument ? discardPendingAttachments : undefined}
+									onDelete={(id) => {
+										attachmentActions
+											.deleteAttachment(id)
+											.catch(() => undefined);
+									}}
+									onUpdateSharing={(attachment, value) => {
+										attachmentActions
+											.updateSharing(attachment, value)
+											.catch(() => undefined);
+									}}
+									onRetry={
+										currentPendingUploadRecovery
+											? retryPendingAttachments
+											: undefined
+									}
+									onDiscard={
+										currentPendingUploadRecovery
+											? discardPendingAttachments
+											: undefined
+									}
 								/>
 							</CardBody>
 						</Card>
@@ -1275,7 +1349,11 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 							<Button
 								type='button'
 								variant='outline'
-								isDisable={isSubmitting || pendingUploadDocument !== null}
+								isDisable={
+									isSubmitting ||
+									isAttachmentOperationActive ||
+									currentPendingUploadRecovery !== null
+								}
 								onClick={handleClose}>
 								Cancelar
 							</Button>
@@ -1287,7 +1365,12 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 								color='blue'
 								icon='HeroCheck'
 								isLoading={isSubmitting}
-								isDisable={isSubmitting || isPaidEdit || pendingUploadDocument !== null}>
+								isDisable={
+									isSubmitting ||
+									isPaidEdit ||
+									isAttachmentOperationActive ||
+									currentPendingUploadRecovery !== null
+								}>
 								{mode === 'create' ? 'Crear documento' : 'Guardar cambios'}
 							</Button>
 						</ModalFooterChild>
