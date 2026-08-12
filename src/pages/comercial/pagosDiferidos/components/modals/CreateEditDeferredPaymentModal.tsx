@@ -120,7 +120,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 }) => {
 	const dispatch = useAppDispatch();
 	const customers = useAppSelector((state) => state.customerSales.overview);
-	const customersLoading = useAppSelector((state) => state.customerSales.loading);
+	const customersLoading = useAppSelector((state) => state.customerSales.overviewLoading);
 	const users = useAppSelector((state) => state.usersAdmin.users);
 	const usersLoading = useAppSelector((state) => state.usersAdmin.loading.users);
 	const currentUser = useAppSelector((state) => state.auth?.user);

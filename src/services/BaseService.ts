@@ -20,6 +20,25 @@ let refreshPromise: Promise<string> | null = null;
 
 let abortController = new AbortController();
 
+const composeAbortSignals = (callerSignal?: AbortSignal): AbortSignal => {
+	if (!callerSignal) return abortController.signal;
+	if (typeof AbortSignal.any === 'function') {
+		return AbortSignal.any([callerSignal, abortController.signal]);
+	}
+
+	const composedController = new AbortController();
+	const abortComposedSignal = () => composedController.abort();
+	const cleanup = () => {
+		callerSignal.removeEventListener('abort', abortComposedSignal);
+		abortController.signal.removeEventListener('abort', abortComposedSignal);
+	};
+	callerSignal.addEventListener('abort', abortComposedSignal, { once: true });
+	abortController.signal.addEventListener('abort', abortComposedSignal, { once: true });
+	composedController.signal.addEventListener('abort', cleanup, { once: true });
+	if (callerSignal.aborted || abortController.signal.aborted) composedController.abort();
+	return composedController.signal;
+};
+
 /**
  * Cancela todas las peticiones activas en el momento de la llamada.
  * Utilizado típicamente en el cierre de sesión voluntario.
@@ -96,7 +115,7 @@ BaseService.interceptors.request.use(
 		}
 
 		// Asignar la señal de cancelación
-		config.signal = abortController.signal;
+		config.signal = composeAbortSignals(config.signal as AbortSignal | undefined);
 
 		const applyTokenToConfig = (token?: string | null) => {
 			if (token && config.headers) {

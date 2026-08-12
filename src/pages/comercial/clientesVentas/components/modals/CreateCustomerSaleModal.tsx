@@ -121,6 +121,14 @@ const CreateCustomerSaleModal = ({
 	latestCustomerIdRef.current = initialData?.id ?? null;
 	latestIsOpenRef.current = isOpen;
 
+	React.useEffect(
+		() => () => {
+			latestIsOpenRef.current = false;
+			requestIdRef.current += 1;
+		},
+		[],
+	);
+
 	/**
 	 * Una respuesta obsoleta —el usuario cambió de subsidiaria o cerró el modal mientras
 	 * la mutación viajaba— no puede seleccionar ni pintar el cliente creado: pertenecería
