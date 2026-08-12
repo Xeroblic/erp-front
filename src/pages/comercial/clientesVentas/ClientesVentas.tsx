@@ -114,30 +114,26 @@ const ClientesVentas = () => {
 				)}
 			</Container>
 			{createSelection.context !== null && (
-				<>
-					<CreateCustomerSaleModal
-						isOpen={createSelection.isOpen}
-						setIsOpen={(isOpen) => {
-							if (!isOpen) createSelection.clear();
-						}}
-						subsidiaryId={createSelection.context.id}
-						refreshStoreOnSuccess={false}
-						onSuccess={() => actions.retry()}
-					/>
-				</>
+				<CreateCustomerSaleModal
+					isOpen={createSelection.isOpen}
+					setIsOpen={(isOpen) => {
+						if (!isOpen) createSelection.clear();
+					}}
+					subsidiaryId={createSelection.context.id}
+					refreshStoreOnSuccess={false}
+					onSuccess={() => actions.retry()}
+				/>
 			)}
 			{deleteSelection.context !== null && (
-				<>
-					<DeleteCustomerSaleModal
-						isOpen={deleteSelection.isOpen}
-						setIsOpen={(isOpen) => {
-							if (!isOpen) deleteSelection.clear();
-						}}
-						customerId={deleteSelection.selectedId}
-						subsidiaryId={deleteSelection.context.id}
-						onDeleted={actions.retry}
-					/>
-				</>
+				<DeleteCustomerSaleModal
+					isOpen={deleteSelection.isOpen}
+					setIsOpen={(isOpen) => {
+						if (!isOpen) deleteSelection.clear();
+					}}
+					customerId={deleteSelection.selectedId}
+					subsidiaryId={deleteSelection.context.id}
+					onDeleted={actions.refreshAfterDeletion}
+				/>
 			)}
 		</PageWrapper>
 	);

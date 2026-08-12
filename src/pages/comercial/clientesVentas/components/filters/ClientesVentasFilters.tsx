@@ -27,7 +27,9 @@ const ClientesVentasFilters: React.FC<ClientesVentasFiltersProps> = ({
 		</CardHeader>
 		<CardBody>
 			<div className='max-w-xl rounded-lg bg-zinc-50/80 p-4 dark:bg-zinc-900/30'>
-				<label htmlFor='customer-sales-search' className='mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300'>
+				<label
+					htmlFor='customer-sales-search'
+					className='mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300'>
 					Búsqueda
 				</label>
 				<Input

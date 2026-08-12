@@ -34,7 +34,7 @@ const useClientesVentas = () => {
 		() =>
 			listOverviewSubsidiaryId === null
 				? null
-				: { type: 'subsidiary', id: listOverviewSubsidiaryId },
+				: { type: 'subsidiary', id: Number(listOverviewSubsidiaryId) },
 		[listOverviewSubsidiaryId],
 	);
 	const scopedOverview = useContextScopedResource({
@@ -85,6 +85,13 @@ const useClientesVentas = () => {
 		setPagination((current) => (current.page === 1 ? current : { ...current, page: 1 }));
 	}, [subsidiaryId]);
 
+	useEffect(() => {
+		const lastPage = scopedOverview.meta?.last_page;
+		if (scopedOverview.meta?.total && lastPage !== undefined && lastPage < pagination.page) {
+			setPagination((current) => ({ ...current, page: lastPage }));
+		}
+	}, [pagination.page, scopedOverview.meta?.last_page, scopedOverview.meta?.total]);
+
 	const setSearchValue = useCallback((value: string) => {
 		setSearch(value);
 		setPagination((current) => (current.page === 1 ? current : { ...current, page: 1 }));
@@ -100,6 +107,19 @@ const useClientesVentas = () => {
 		if (requestArgs === null || isSearchDebouncing) return undefined;
 		return dispatch(fetchCustomersListOverviewThunk(requestArgs));
 	}, [dispatch, isSearchDebouncing, requestArgs]);
+	const refreshAfterDeletion = useCallback(() => {
+		const { meta } = scopedOverview;
+		const isLastRowOnLastPage =
+			scopedOverview.data.length === 1 &&
+			pagination.page > 1 &&
+			meta !== null &&
+			meta.current_page === meta.last_page;
+		if (isLastRowOnLastPage) {
+			setPagination((current) => ({ ...current, page: current.page - 1 }));
+			return undefined;
+		}
+		return retry();
+	}, [pagination.page, retry, scopedOverview]);
 
 	return {
 		data: { overview: scopedOverview.data, meta: scopedOverview.meta },
@@ -116,7 +136,7 @@ const useClientesVentas = () => {
 			hasSearch: Boolean(normalizedSearch),
 		},
 		pagination,
-		actions: { setPage, retry },
+		actions: { setPage, retry, refreshAfterDeletion },
 		branch: { branchId, subsidiaryId },
 	};
 };

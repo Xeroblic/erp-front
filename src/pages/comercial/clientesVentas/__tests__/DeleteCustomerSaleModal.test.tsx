@@ -55,7 +55,7 @@ describe('DeleteCustomerSaleModal', () => {
 		toastSpies.error.mockReset();
 	});
 
-	it('cierra y refresca sÃ³lo luego de eliminar exitosamente', async () => {
+	it('cierra y refresca sólo luego de eliminar exitosamente', async () => {
 		apiSpies.fetchData.mockResolvedValue({ data: { message: 'Cliente eliminado' } });
 		const { onDeleted, setIsOpen } = renderModal();
 

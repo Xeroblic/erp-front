@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export type OrganizationalContext =
-	| { type: 'company'; id: number | string }
-	| { type: 'subsidiary'; id: number | string }
-	| { type: 'branch'; id: number | string };
+	| { type: 'company'; id: number }
+	| { type: 'subsidiary'; id: number }
+	| { type: 'branch'; id: number };
 
 interface StoredSelection<TId extends string | number> {
 	selectedId: TId | null;

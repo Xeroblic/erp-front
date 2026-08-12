@@ -6,7 +6,7 @@ import type { OrganizationalContext } from '../useContextScopedSelection';
 const subsidiary = (id: number): OrganizationalContext => ({ type: 'subsidiary', id });
 
 describe('useContextScopedResource', () => {
-	it('oculta sincrÃ³nicamente datos, meta y error de otra subsidiaria', () => {
+	it('oculta sincrónicamente datos, meta y error de otra subsidiaria', () => {
 		const { result, rerender } = renderHook(
 			({ currentContext }) =>
 				useContextScopedResource({
