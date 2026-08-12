@@ -67,18 +67,45 @@ describe('ZF-8 servicio de comprobantes', () => {
 		});
 	});
 	it('gestiona adjuntos del documento con compartición explícita', async () => {
-		const attachment = { id: 10, file_name: 'factura.pdf', mime_type: 'application/pdf', size: 12, share_with_customer: true, url: '/files/10' };
+		const attachment = {
+			id: 10,
+			file_name: 'factura.pdf',
+			mime_type: 'application/pdf',
+			size: 12,
+			share_with_customer: true,
+			url: '/files/10',
+		};
 		apiSpies.fetchData.mockResolvedValue({ data: { data: attachment } });
 		const file = new File(['factura'], 'factura.pdf', { type: 'application/pdf' });
-		await expect(deferredPaymentsService.uploadDeferredPaymentDocumentAttachment(4, 7, file, false)).resolves.toEqual(attachment);
+		await expect(
+			deferredPaymentsService.uploadDeferredPaymentDocumentAttachment(4, 7, file, false),
+		).resolves.toEqual(attachment);
 		const upload = apiSpies.fetchData.mock.calls[0][0] as { data: FormData; url: string };
 		expect(upload.url).toBe('/subsidiaries/4/deferred-payments/7/attachments');
-		expect([...upload.data.entries()]).toEqual([['file', file], ['share_with_customer', '0']]);
+		expect([...upload.data.entries()]).toEqual([
+			['file', file],
+			['share_with_customer', '0'],
+		]);
 
-		await expect(deferredPaymentsService.updateDeferredPaymentAttachmentSharing(4, 7, 10, true)).resolves.toEqual(attachment);
-		expect(apiSpies.fetchData).toHaveBeenLastCalledWith(expect.objectContaining({ url: '/subsidiaries/4/deferred-payments/7/attachments/10/sharing', method: 'patch', data: { share_with_customer: true } }));
+		await expect(
+			deferredPaymentsService.updateDeferredPaymentAttachmentSharing(4, 7, 10, true),
+		).resolves.toEqual(attachment);
+		expect(apiSpies.fetchData).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				url: '/subsidiaries/4/deferred-payments/7/attachments/10/sharing',
+				method: 'patch',
+				data: { share_with_customer: true },
+			}),
+		);
 
-		await expect(deferredPaymentsService.deleteDeferredPaymentDocumentAttachment(4, 7, 10)).resolves.toBeUndefined();
-		expect(apiSpies.fetchData).toHaveBeenLastCalledWith(expect.objectContaining({ url: '/subsidiaries/4/deferred-payments/7/attachments/10', method: 'delete' }));
+		await expect(
+			deferredPaymentsService.deleteDeferredPaymentDocumentAttachment(4, 7, 10),
+		).resolves.toBeUndefined();
+		expect(apiSpies.fetchData).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				url: '/subsidiaries/4/deferred-payments/7/attachments/10',
+				method: 'delete',
+			}),
+		);
 	});
 });

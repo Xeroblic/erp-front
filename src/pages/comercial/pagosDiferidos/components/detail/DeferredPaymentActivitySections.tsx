@@ -59,7 +59,8 @@ const AttachmentLink: React.FC<{
 					{formatFileSize(attachment.size)}
 				</span>
 				{showSharing && (
-					<span className={`block text-xs font-medium ${attachment.share_with_customer ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+					<span
+						className={`block text-xs font-medium ${attachment.share_with_customer ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
 						{attachment.share_with_customer ? 'Se envía al cliente' : 'Uso interno'}
 					</span>
 				)}

@@ -270,7 +270,10 @@ const uploadDeferredPaymentDocumentAttachment = async (
 	const payload = new FormData();
 	payload.append('file', file);
 	payload.append('share_with_customer', shareWithCustomer ? '1' : '0');
-	const response = await ApiService.fetchData<ApiResourcePayload<IDeferredPaymentAttachment>, FormData>({
+	const response = await ApiService.fetchData<
+		ApiResourcePayload<IDeferredPaymentAttachment>,
+		FormData
+	>({
 		url: `${documentUrl(subsidiaryId, documentId)}/attachments`,
 		method: 'post',
 		data: payload,
@@ -301,7 +304,10 @@ const updateDeferredPaymentAttachmentSharing = async (
 	shareWithCustomer: boolean,
 	signal?: AbortSignal,
 ): Promise<IDeferredPaymentAttachment> => {
-	const response = await ApiService.fetchData<ApiResourcePayload<IDeferredPaymentAttachment>, { share_with_customer: boolean }>({
+	const response = await ApiService.fetchData<
+		ApiResourcePayload<IDeferredPaymentAttachment>,
+		{ share_with_customer: boolean }
+	>({
 		url: `${documentUrl(subsidiaryId, documentId)}/attachments/${attachmentId}/sharing`,
 		method: 'patch',
 		data: { share_with_customer: shareWithCustomer },
