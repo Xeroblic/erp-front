@@ -22,7 +22,10 @@ const PAYMENT_METHOD_LABELS: Record<DeferredPaymentMethod, string> = {
 	other: 'Otro',
 };
 
-const AttachmentLink: React.FC<{ attachment: IDeferredPaymentAttachment }> = ({ attachment }) => {
+const AttachmentLink: React.FC<{
+	attachment: IDeferredPaymentAttachment;
+	showSharing?: boolean;
+}> = ({ attachment, showSharing = false }) => {
 	const download = async () => {
 		const { blob, fileName } = await deferredPaymentsService.downloadDeferredPaymentAttachment(
 			attachment.url,
@@ -55,6 +58,12 @@ const AttachmentLink: React.FC<{ attachment: IDeferredPaymentAttachment }> = ({ 
 				<span className='block text-xs text-zinc-500'>
 					{formatFileSize(attachment.size)}
 				</span>
+				{showSharing && (
+					<span
+						className={`block text-xs font-medium ${attachment.share_with_customer ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+						{attachment.share_with_customer ? 'Se envía al cliente' : 'Uso interno'}
+					</span>
+				)}
 			</span>
 			<Icon icon='HeroArrowDownTray' className='shrink-0 text-zinc-500' />
 		</button>
@@ -152,7 +161,7 @@ export const DeferredPaymentAttachmentsSection: React.FC<{
 			</div>
 			<div className='grid gap-2'>
 				{attachments.map((attachment) => (
-					<AttachmentLink key={attachment.id} attachment={attachment} />
+					<AttachmentLink key={attachment.id} attachment={attachment} showSharing />
 				))}
 			</div>
 			{attachments.length === 0 && (

@@ -66,6 +66,7 @@ export interface IDeferredPaymentAttachment {
 	file_name: string;
 	mime_type: string;
 	size: number;
+	share_with_customer: boolean;
 	url: string;
 }
 
