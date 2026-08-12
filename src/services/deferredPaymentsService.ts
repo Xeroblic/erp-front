@@ -260,6 +260,57 @@ const uploadDeferredPaymentAttachment = async (
 	return unwrapResource(response.data);
 };
 
+const uploadDeferredPaymentDocumentAttachment = async (
+	subsidiaryId: number,
+	documentId: number,
+	file: File,
+	shareWithCustomer: boolean,
+	signal?: AbortSignal,
+): Promise<IDeferredPaymentAttachment> => {
+	const payload = new FormData();
+	payload.append('file', file);
+	payload.append('share_with_customer', shareWithCustomer ? '1' : '0');
+	const response = await ApiService.fetchData<ApiResourcePayload<IDeferredPaymentAttachment>, FormData>({
+		url: `${documentUrl(subsidiaryId, documentId)}/attachments`,
+		method: 'post',
+		data: payload,
+		...requestConfig(signal),
+	});
+	ApiService.invalidateCache(documentsUrl(subsidiaryId));
+	return unwrapResource(response.data);
+};
+
+const deleteDeferredPaymentDocumentAttachment = async (
+	subsidiaryId: number,
+	documentId: number,
+	attachmentId: number,
+	signal?: AbortSignal,
+): Promise<void> => {
+	await ApiService.fetchData({
+		url: `${documentUrl(subsidiaryId, documentId)}/attachments/${attachmentId}`,
+		method: 'delete',
+		...requestConfig(signal),
+	});
+	ApiService.invalidateCache(documentsUrl(subsidiaryId));
+};
+
+const updateDeferredPaymentAttachmentSharing = async (
+	subsidiaryId: number,
+	documentId: number,
+	attachmentId: number,
+	shareWithCustomer: boolean,
+	signal?: AbortSignal,
+): Promise<IDeferredPaymentAttachment> => {
+	const response = await ApiService.fetchData<ApiResourcePayload<IDeferredPaymentAttachment>, { share_with_customer: boolean }>({
+		url: `${documentUrl(subsidiaryId, documentId)}/attachments/${attachmentId}/sharing`,
+		method: 'patch',
+		data: { share_with_customer: shareWithCustomer },
+		...requestConfig(signal),
+	});
+	ApiService.invalidateCache(documentsUrl(subsidiaryId));
+	return unwrapResource(response.data);
+};
+
 const downloadDeferredPaymentAttachment = async (
 	url: string,
 	signal?: AbortSignal,
@@ -347,6 +398,9 @@ const deferredPaymentsService = {
 	deletePayment,
 	markDocumentPaid,
 	uploadDeferredPaymentAttachment,
+	uploadDeferredPaymentDocumentAttachment,
+	deleteDeferredPaymentDocumentAttachment,
+	updateDeferredPaymentAttachmentSharing,
 	downloadDeferredPaymentAttachment,
 	getCreditProfile,
 	getCreditProfiles,

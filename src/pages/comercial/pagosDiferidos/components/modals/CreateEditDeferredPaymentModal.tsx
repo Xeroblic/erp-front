@@ -35,10 +35,12 @@ import getDeferredPaymentErrorMessage from '@/utils/deferredPaymentsError.utils'
 import deferredPaymentsService from '@/services/deferredPaymentsService';
 import DeferredPaymentField from '../parts/DeferredPaymentField';
 import DeferredPaymentSerialsInput from '../parts/DeferredPaymentSerialsInput';
+import DeferredPaymentAttachmentsEditor from '../parts/DeferredPaymentAttachmentsEditor';
 import CustomerCreditProfileCard from '@/pages/comercial/clientesVentas/ClientesVentasDetalle/components/CustomerCreditProfileCard';
 import CreateCustomerSaleModal from '@/pages/comercial/clientesVentas/components/modals/CreateCustomerSaleModal';
 import type { ICustomerSale } from '@/interface/customerSales.interface';
 import useDeferredPaymentForm from '../../hooks/useDeferredPaymentForm';
+import { useDeferredPaymentAttachments } from '../../hooks/useDeferredPaymentAttachments';
 import { createEmptyDeferredPaymentItem, DEFERRED_PAYMENT_TOTAL_ERROR } from '../../types';
 import { DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS } from '../../utils';
 
@@ -124,7 +126,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const users = useAppSelector((state) => state.usersAdmin.users);
 	const usersLoading = useAppSelector((state) => state.usersAdmin.loading.users);
 	const currentUser = useAppSelector((state) => state.auth?.user);
-	const { subsidiaryId } = useCurrentBranch();
+	const { branchId, subsidiaryId } = useCurrentBranch();
 	const [paymentTermDays, setPaymentTermDays] = useState(30);
 	const [customerSearch, setCustomerSearch] = useState('');
 	const [debouncedCustomerSearch] = useDebounce(customerSearch, 300);
@@ -142,6 +144,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const [isEditCustomerOpen, setIsEditCustomerOpen] = useState(false);
 	const [editingCustomer, setEditingCustomer] = useState<ICustomerSale | null>(null);
 	const [isLoadingCustomerDetail, setIsLoadingCustomerDetail] = useState(false);
+	const [pendingUploadDocument, setPendingUploadDocument] = useState<IDeferredPaymentDocument | null>(null);
 	const creditProfileRequestIdRef = useRef(0);
 	const creditProfileAbortRef = useRef<AbortController | null>(null);
 	const customerDetailRequestIdRef = useRef(0);
@@ -151,18 +154,41 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const latestSubsidiaryIdRef = useRef(subsidiaryId);
 	latestSubsidiaryIdRef.current = subsidiaryId;
 	const mode = deferredPaymentDocument ? 'edit' : 'create';
+	const attachmentActions = useDeferredPaymentAttachments({
+		isOpen,
+		subsidiaryId,
+		document: deferredPaymentDocument,
+	});
 	const { formik, estimatedTotal, documentTotal, isSubmitting, isPaidEdit, actions } =
 		useDeferredPaymentForm({
 			mode,
 			deferredPaymentDocument,
 			paymentTermDays,
 			isOpen,
-			onSuccess: (savedDocument) => {
+			onSuccess: async (savedDocument) => {
+				const uploaded = await attachmentActions.uploadPending(savedDocument);
+				if (!uploaded) {
+					setPendingUploadDocument(savedDocument);
+					return false;
+				}
 				onSaved?.(savedDocument);
 				onClose();
+				return true;
 			},
 		});
 	const { resetForm } = formik;
+	const retryPendingAttachments = useCallback(async () => {
+		if (pendingUploadDocument === null) return;
+		const uploaded = await attachmentActions.uploadPending(pendingUploadDocument);
+		if (!uploaded) return;
+		setPendingUploadDocument(null);
+		onSaved?.(pendingUploadDocument);
+		onClose();
+	}, [attachmentActions, onClose, onSaved, pendingUploadDocument]);
+	const discardPendingAttachments = useCallback(() => {
+		setPendingUploadDocument(null);
+		onClose();
+	}, [onClose]);
 	const latestCustomerSaleIdRef = useRef(formik.values.customer_sale_id);
 	const latestIsOpenRef = useRef(isOpen);
 	latestCustomerSaleIdRef.current = formik.values.customer_sale_id;
@@ -280,6 +306,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		if (isOpen && mode === 'create') return;
 		clearCreditProfile();
 		if (!isOpen) {
+			setPendingUploadDocument(null);
 			setIsCreditProfileCreatorOpen(false);
 			setIsCreditProfileCreatorSaving(false);
 			resetCustomerModals();
@@ -503,7 +530,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		},
 	];
 	const handleClose = () => {
-		if (!isSubmitting) {
+		if (!isSubmitting && pendingUploadDocument === null) {
 			clearCreditProfile();
 			setIsCreditProfileCreatorOpen(false);
 			setIsCreditProfileCreatorSaving(false);
@@ -931,6 +958,28 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 						</Card>
 
 						<Card className='border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900'>
+							<CardBody>
+								<DeferredPaymentAttachmentsEditor
+									attachments={attachmentActions.attachments}
+									pending={attachmentActions.pending}
+									error={attachmentActions.error}
+									isUploading={attachmentActions.isUploading}
+									busyAttachmentId={attachmentActions.busyAttachmentId}
+									branchId={branchId}
+									subsidiaryId={subsidiaryId}
+									disabled={isPaidEdit || isSubmitting}
+									onAddFiles={attachmentActions.addFiles}
+									onRemovePending={attachmentActions.removePending}
+									onSetPendingSharing={attachmentActions.setPendingSharing}
+									onDelete={(id) => { attachmentActions.deleteAttachment(id).catch(() => undefined); }}
+									onUpdateSharing={(attachment, value) => { attachmentActions.updateSharing(attachment, value).catch(() => undefined); }}
+									onRetry={pendingUploadDocument ? retryPendingAttachments : undefined}
+									onDiscard={pendingUploadDocument ? discardPendingAttachments : undefined}
+								/>
+							</CardBody>
+						</Card>
+
+						<Card className='border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900'>
 							<CardHeader className='items-center pb-2'>
 								<CardTitle className='text-lg'>Información de crédito</CardTitle>
 								{hasSelectedCustomer &&
@@ -1226,7 +1275,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 							<Button
 								type='button'
 								variant='outline'
-								isDisable={isSubmitting}
+								isDisable={isSubmitting || pendingUploadDocument !== null}
 								onClick={handleClose}>
 								Cancelar
 							</Button>
@@ -1238,7 +1287,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 								color='blue'
 								icon='HeroCheck'
 								isLoading={isSubmitting}
-								isDisable={isSubmitting || isPaidEdit}>
+								isDisable={isSubmitting || isPaidEdit || pendingUploadDocument !== null}>
 								{mode === 'create' ? 'Crear documento' : 'Guardar cambios'}
 							</Button>
 						</ModalFooterChild>

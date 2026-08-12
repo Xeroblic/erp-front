@@ -28,7 +28,7 @@ interface UseDeferredPaymentFormProps {
 	deferredPaymentDocument?: IDeferredPaymentDocument | null;
 	paymentTermDays?: number;
 	isOpen?: boolean;
-	onSuccess?: (document: IDeferredPaymentDocument) => void;
+	onSuccess?: (document: IDeferredPaymentDocument) => void | boolean | Promise<void | boolean>;
 }
 
 interface AbortableRequest {
@@ -191,7 +191,8 @@ const useDeferredPaymentForm = ({
 				)
 					return;
 
-				onSuccess?.(result.document);
+				const completed = (await onSuccess?.(result.document)) ?? true;
+				if (!completed) return;
 				toast.success(
 					mode === 'edit'
 						? 'Documento actualizado correctamente'
