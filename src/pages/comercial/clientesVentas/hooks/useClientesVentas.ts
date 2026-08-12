@@ -108,37 +108,47 @@ const useClientesVentas = () => {
 		return dispatch(fetchCustomersListOverviewThunk(requestArgs));
 	}, [dispatch, isSearchDebouncing, requestArgs]);
 	const refreshAfterDeletion = useCallback(() => {
-		const { meta } = scopedOverview;
 		const isLastRowOnLastPage =
 			scopedOverview.data.length === 1 &&
 			pagination.page > 1 &&
-			meta !== null &&
-			meta.current_page === meta.last_page;
+			scopedOverview.meta !== null &&
+			scopedOverview.meta.current_page === scopedOverview.meta.last_page;
 		if (isLastRowOnLastPage) {
 			setPagination((current) => ({ ...current, page: current.page - 1 }));
 			return undefined;
 		}
 		return retry();
-	}, [pagination.page, retry, scopedOverview]);
+	}, [pagination.page, retry, scopedOverview.data, scopedOverview.meta]);
 
-	return {
-		data: { overview: scopedOverview.data, meta: scopedOverview.meta },
-		state: {
+	const data = useMemo(
+		() => ({ overview: scopedOverview.data, meta: scopedOverview.meta }),
+		[scopedOverview.data, scopedOverview.meta],
+	);
+	const state = useMemo(
+		() => ({
 			loading: scopedOverview.loading,
 			error: scopedOverview.error,
 			hasDataContext,
 			isSearchDebouncing,
-		},
-		filters: {
+		}),
+		[hasDataContext, isSearchDebouncing, scopedOverview.error, scopedOverview.loading],
+	);
+	const filters = useMemo(
+		() => ({
 			search,
 			setSearch: setSearchValue,
 			clearSearch,
 			hasSearch: Boolean(normalizedSearch),
-		},
-		pagination,
-		actions: { setPage, retry, refreshAfterDeletion },
-		branch: { branchId, subsidiaryId },
-	};
+		}),
+		[clearSearch, normalizedSearch, search, setSearchValue],
+	);
+	const actions = useMemo(
+		() => ({ setPage, retry, refreshAfterDeletion }),
+		[refreshAfterDeletion, retry, setPage],
+	);
+	const branch = useMemo(() => ({ branchId, subsidiaryId }), [branchId, subsidiaryId]);
+
+	return { data, state, filters, pagination, actions, branch };
 };
 
 export default useClientesVentas;
