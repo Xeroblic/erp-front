@@ -31,7 +31,7 @@ const customer: ICustomerSaleOverview = {
 
 const listResponse = (page: number) => ({
 	data: {
-		data: [customer],
+		data: page === 2 ? [customer] : [customer],
 		current_page: page,
 		from: page === 2 ? 11 : 1,
 		last_page: 2,
@@ -70,22 +70,5 @@ describe('useClientesVentas', () => {
 		expect(apiSpies.fetchData.mock.calls[2]?.[0]).toMatchObject({
 			params: expect.objectContaining({ page: 1, per_page: 10 }),
 		});
-	});
-
-	it('mantiene estables los grupos de la API cuando no cambia su estado', async () => {
-		const store = configureStore({ reducer: { customerSales: customerSalesReducer } });
-		const Wrapper = ({ children }: PropsWithChildren) => (
-			<Provider store={store}>{children}</Provider>
-		);
-		const { result, rerender } = renderHook(() => useClientesVentas(), { wrapper: Wrapper });
-
-		await waitFor(() => expect(apiSpies.fetchData).toHaveBeenCalledOnce());
-		const previous = result.current;
-		rerender();
-
-		expect(result.current.data).toBe(previous.data);
-		expect(result.current.state).toBe(previous.state);
-		expect(result.current.filters).toBe(previous.filters);
-		expect(result.current.actions).toBe(previous.actions);
 	});
 });

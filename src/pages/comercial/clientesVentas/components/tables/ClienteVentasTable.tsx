@@ -4,8 +4,6 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import ProtectedButton from '@/components/ui/ProtectedButton';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
-// eslint-disable-next-line import/extensions
-import SortableTableHeader, { type TableSortState } from '@/components/ui/SortableTableHeader';
 import Table, { TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 import type { ICustomerSaleOverview } from '@/interface/customerSales.interface';
@@ -34,12 +32,73 @@ interface ClientesVentasPaginationProps {
 }
 
 type SortKey = 'name' | 'rut' | 'loyalty' | 'total_sales' | 'is_active';
-type SortState = TableSortState<SortKey>;
+type SortDirection = 'asc' | 'desc';
+type SortState = { key: SortKey; direction: SortDirection } | null;
+
+interface SortableHeaderProps {
+	label: string;
+	sortKey: SortKey;
+	sort: SortState;
+	onSort: (key: SortKey) => void;
+	align?: 'left' | 'center' | 'right';
+}
 
 const getLoyaltyColor = (loyalty: number): 'green' | 'yellow' | 'red' => {
 	if (loyalty > 60) return 'green';
 	if (loyalty > 30) return 'yellow';
 	return 'red';
+};
+
+const SortIcon: React.FC<{ direction: SortDirection | null }> = ({ direction }) => (
+	<div className='flex shrink-0 flex-col' aria-hidden='true'>
+		<svg
+			viewBox='0 0 12 12'
+			className={`h-3 w-3 ${direction === 'asc' ? 'text-primary-600' : 'text-gray-400'}`}
+			fill='none'
+			stroke='currentColor'
+			strokeWidth='1.75'>
+			<path d='m2.5 7.5 3.5-3 3.5 3' />
+		</svg>
+		<svg
+			viewBox='0 0 12 12'
+			className={`-mt-1 h-3 w-3 ${direction === 'desc' ? 'text-primary-600' : 'text-gray-400'}`}
+			fill='none'
+			stroke='currentColor'
+			strokeWidth='1.75'>
+			<path d='m2.5 4.5 3.5 3 3.5-3' />
+		</svg>
+	</div>
+);
+
+const SortableHeader: React.FC<SortableHeaderProps> = ({
+	label,
+	sortKey,
+	sort,
+	onSort,
+	align = 'left',
+}) => {
+	const direction = sort?.key === sortKey ? sort.direction : null;
+	const alignmentClasses = {
+		left: { header: undefined, content: 'justify-start' },
+		center: { header: 'text-center', content: 'justify-center' },
+		right: { header: 'text-right', content: 'justify-end' },
+	}[align];
+	let ariaSort: React.AriaAttributes['aria-sort'] = 'none';
+	if (direction === 'asc') ariaSort = 'ascending';
+	if (direction === 'desc') ariaSort = 'descending';
+
+	return (
+		<Th className={alignmentClasses.header} aria-sort={ariaSort}>
+			<button
+				type='button'
+				className={`flex w-full items-center space-x-2 ${alignmentClasses.content}`}
+				aria-label={`Ordenar por ${label}`}
+				onClick={() => onSort(sortKey)}>
+				<span>{label}</span>
+				<SortIcon direction={direction} />
+			</button>
+		</Th>
+	);
 };
 
 const getSortValue = (customer: ICustomerSaleOverview, key: SortKey): string | number => {
@@ -145,34 +204,34 @@ const ClienteVentasTable: React.FC<ClienteVentasTableProps> = ({
 				<Table className='min-w-[980px]'>
 					<THead>
 						<Tr>
-							<SortableTableHeader
+							<SortableHeader
 								label='Nombre'
 								sortKey='name'
 								sort={sort}
 								onSort={handleSort}
 							/>
-							<SortableTableHeader
+							<SortableHeader
 								label='RUT'
 								sortKey='rut'
 								sort={sort}
 								onSort={handleSort}
 							/>
 							<Th>Contacto</Th>
-							<SortableTableHeader
+							<SortableHeader
 								label='Fidelidad'
 								sortKey='loyalty'
 								sort={sort}
 								onSort={handleSort}
 								align='center'
 							/>
-							<SortableTableHeader
+							<SortableHeader
 								label='Total ventas'
 								sortKey='total_sales'
 								sort={sort}
 								onSort={handleSort}
 								align='right'
 							/>
-							<SortableTableHeader
+							<SortableHeader
 								label='Estado'
 								sortKey='is_active'
 								sort={sort}

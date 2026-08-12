@@ -121,7 +121,7 @@ const ClientesVentas = () => {
 					}}
 					subsidiaryId={createSelection.context.id}
 					refreshStoreOnSuccess={false}
-					onSuccess={() => actions.setPage(1)}
+					onSuccess={() => actions.retry()}
 				/>
 			)}
 			{deleteSelection.context !== null && (

@@ -1,9 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import type { PaginationState } from '@tanstack/react-table';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
-// eslint-disable-next-line import/extensions
-import SortableTableHeader, { type TableSortState } from '@/components/ui/SortableTableHeader';
-import Table, { TBody, Td, THead, Tr } from '@/components/ui/Table';
+import Table, { TBody, Td, THead, Th, Tr } from '@/components/ui/Table';
 import TableCardFooterTemplateV2, {
 	type TablePaginationController,
 } from '@/templates/Table/TableFooterTemplateV2';
@@ -45,7 +43,68 @@ type SortKey =
 	| 'due_date'
 	| 'status'
 	| 'days_until_due';
-type SortState = TableSortState<SortKey>;
+type SortDirection = 'asc' | 'desc';
+type SortState = { key: SortKey; direction: SortDirection } | null;
+
+interface SortableHeaderProps {
+	label: string;
+	sortKey: SortKey;
+	sort: SortState;
+	onSort: (key: SortKey) => void;
+	align?: 'left' | 'center' | 'right';
+}
+
+const SortIcon: React.FC<{ direction: SortDirection | null }> = ({ direction }) => (
+	<div className='flex shrink-0 flex-col' aria-hidden='true'>
+		<svg
+			viewBox='0 0 12 12'
+			className={`h-3 w-3 ${direction === 'asc' ? 'text-primary-600' : 'text-gray-400'}`}
+			fill='none'
+			stroke='currentColor'
+			strokeWidth='1.75'>
+			<path d='m2.5 7.5 3.5-3 3.5 3' />
+		</svg>
+		<svg
+			viewBox='0 0 12 12'
+			className={`-mt-1 h-3 w-3 ${direction === 'desc' ? 'text-primary-600' : 'text-gray-400'}`}
+			fill='none'
+			stroke='currentColor'
+			strokeWidth='1.75'>
+			<path d='m2.5 4.5 3.5 3 3.5-3' />
+		</svg>
+	</div>
+);
+
+const SortableHeader: React.FC<SortableHeaderProps> = ({
+	label,
+	sortKey,
+	sort,
+	onSort,
+	align = 'left',
+}) => {
+	const direction = sort?.key === sortKey ? sort.direction : null;
+	const alignmentClasses = {
+		left: { header: undefined, content: 'justify-start' },
+		center: { header: 'text-center', content: 'justify-center' },
+		right: { header: 'text-right', content: 'justify-end' },
+	}[align];
+	let ariaSort: React.AriaAttributes['aria-sort'] = 'none';
+	if (direction === 'asc') ariaSort = 'ascending';
+	if (direction === 'desc') ariaSort = 'descending';
+
+	return (
+		<Th className={alignmentClasses.header} aria-sort={ariaSort}>
+			<button
+				type='button'
+				className={`flex w-full items-center space-x-2 ${alignmentClasses.content}`}
+				aria-label={`Ordenar por ${label}`}
+				onClick={() => onSort(sortKey)}>
+				<span>{label}</span>
+				<SortIcon direction={direction} />
+			</button>
+		</Th>
+	);
+};
 
 const getCustomerDisplayName = (row: IDeferredPaymentListItem): string =>
 	row.customer.billing_company || row.customer.contact_name || 'Cliente sin nombre';
@@ -158,52 +217,52 @@ const DeferredPaymentsTable: React.FC<DeferredPaymentsTableProps> = ({
 				<Table className='min-w-[1150px]'>
 					<THead>
 						<Tr>
-							<SortableTableHeader
+							<SortableHeader
 								label='N° documento'
 								sortKey='document_number'
 								sort={sort}
 								onSort={handleSort}
 							/>
-							<SortableTableHeader
+							<SortableHeader
 								label='Empresa'
 								sortKey='company'
 								sort={sort}
 								onSort={handleSort}
 							/>
-							<SortableTableHeader
+							<SortableHeader
 								label='OC'
 								sortKey='purchase_order'
 								sort={sort}
 								onSort={handleSort}
 							/>
-							<SortableTableHeader
+							<SortableHeader
 								label='Monto'
 								sortKey='total_amount'
 								sort={sort}
 								onSort={handleSort}
 								align='right'
 							/>
-							<SortableTableHeader
+							<SortableHeader
 								label='Saldo'
 								sortKey='outstanding_amount'
 								sort={sort}
 								onSort={handleSort}
 								align='right'
 							/>
-							<SortableTableHeader
+							<SortableHeader
 								label='Vencimiento'
 								sortKey='due_date'
 								sort={sort}
 								onSort={handleSort}
 							/>
-							<SortableTableHeader
+							<SortableHeader
 								label='Estado del pago'
 								sortKey='status'
 								sort={sort}
 								onSort={handleSort}
 								align='center'
 							/>
-							<SortableTableHeader
+							<SortableHeader
 								label='Situación de vencimiento'
 								sortKey='days_until_due'
 								sort={sort}
