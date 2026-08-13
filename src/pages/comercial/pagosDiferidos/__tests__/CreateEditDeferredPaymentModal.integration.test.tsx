@@ -125,11 +125,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 
 		expect(
 			screen.getByText(
-				new RegExp(
-					editedDocument.customer.billing_company ??
-						editedDocument.customer.contact_name ??
-						editedDocument.customer.rut,
-				),
+				`${editedDocument.customer.billing_company} · ${editedDocument.customer.rut}`,
 			),
 		).toBeInTheDocument();
 		expect(screen.getByText(new RegExp(editedDocument.assignees[0].name))).toBeInTheDocument();
@@ -152,6 +148,48 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 				}),
 			),
 		);
+	});
+
+	it('normaliza las etiquetas remotas y omite segmentos vacíos o repetidos', async () => {
+		const customers = [
+			{
+				id: 801,
+				name: ' Comercial Zentria SpA ',
+				rut: ' 76.801.000-1 ',
+				contact: { name: ' Carla Pérez ' },
+				loyalty: 0,
+				total_sales: 0,
+				is_active: true,
+			},
+			{
+				id: 802,
+				name: ' Persona Natural ',
+				rut: ' ',
+				contact: { name: 'persona natural' },
+				loyalty: 0,
+				total_sales: 0,
+				is_active: true,
+			},
+		];
+		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
+			Promise.resolve({
+				data: url.includes('/overview')
+					? { ...emptyPagination, data: customers, total: customers.length }
+					: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+			}),
+		);
+		const store = createTestStore();
+		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, { wrapper: Wrapper });
+
+		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'zentria' } });
+
+		expect(
+			await screen.findByText('Comercial Zentria SpA · Carla Pérez · 76.801.000-1'),
+		).toBeInTheDocument();
+		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'persona' } });
+		expect(await screen.findByText('Persona Natural')).toBeInTheDocument();
+		expect(screen.queryByText(/Persona Natural ·/)).not.toBeInTheDocument();
 	});
 
 	it('permite asignar al usuario de cobranza aunque no pueda listar usuarios', async () => {
@@ -345,7 +383,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 
 		const customerInput = screen.getByLabelText('Cliente');
 		fireEvent.change(customerInput, { target: { value: 'Zeta' } });
-		const option = await screen.findByText('Zeta Corp · 76.457.000-1');
+		const option = await screen.findByText('Zeta Corp · Ana Pérez · 76.457.000-1');
 		fireEvent.click(option);
 		fireEvent.blur(customerInput);
 
@@ -355,7 +393,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 			});
 		});
 
-		expect(screen.getByText('Zeta Corp · 76.457.000-1')).toBeInTheDocument();
+		expect(screen.getByText('Zeta Corp · Ana Pérez · 76.457.000-1')).toBeInTheDocument();
 		expect(store.getState().deferredPayments).toBeDefined();
 		const overviewCalls = apiSpies.fetchData.mock.calls.filter(([request]) =>
 			String((request as { url?: string }).url).includes('/overview'),
@@ -364,6 +402,38 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		expect(overviewCalls[0]?.[0]).toEqual(
 			expect.objectContaining({ params: expect.objectContaining({ q: 'Zeta' }) }),
 		);
+	});
+
+	it('muestra una coincidencia remota encontrada por un correo no incluido en la etiqueta', async () => {
+		const remoteCustomer = {
+			id: 803,
+			name: 'Industria Norte SpA',
+			rut: '76.803.000-1',
+			contact: { name: 'Carla Pérez' },
+			loyalty: 0,
+			total_sales: 0,
+			is_active: true,
+		};
+		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
+			Promise.resolve({
+				data: url.includes('/overview')
+					? { ...emptyPagination, data: [remoteCustomer], total: 1 }
+					: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+			}),
+		);
+		const store = createTestStore();
+		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, { wrapper: Wrapper });
+
+		fireEvent.change(screen.getByLabelText('Cliente'), {
+			target: { value: 'contacto.zentria@example.com' },
+		});
+
+		expect(
+			await screen.findByText(
+				'Industria Norte SpA · Carla Pérez · 76.803.000-1',
+			),
+		).toBeInTheDocument();
 	});
 
 	it('aplica el plazo del perfil activo al vencimiento al crear un documento', async () => {
@@ -400,7 +470,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 
 		const customerInput = screen.getByLabelText('Cliente');
 		fireEvent.change(customerInput, { target: { value: 'Zeta' } });
-		fireEvent.click(await screen.findByText('Zeta Corp · 76.457.000-1'));
+		fireEvent.click(await screen.findByText('Zeta Corp · Ana Pérez · 76.457.000-1'));
 
 		await waitFor(() =>
 			expect(apiSpies.fetchData).toHaveBeenCalledWith(
@@ -448,7 +518,9 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 
 		const customerInput = screen.getByLabelText('Cliente');
 		fireEvent.change(customerInput, { target: { value: 'cargando' } });
-		fireEvent.click(await screen.findByText('Cliente con perfil cargando · 76.458.000-1'));
+		fireEvent.click(
+			await screen.findByText('Cliente con perfil cargando · Ana Pérez · 76.458.000-1'),
+		);
 
 		expect(await screen.findByText('Cargando información de crédito…')).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
@@ -502,7 +574,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 
 		const customerInput = screen.getByLabelText('Cliente');
 		fireEvent.change(customerInput, { target: { value: 'Suspendido' } });
-		fireEvent.click(await screen.findByText('Cliente Suspendido · 76.458.000-1'));
+		fireEvent.click(await screen.findByText('Cliente Suspendido · Ana Pérez · 76.458.000-1'));
 
 		await waitFor(() => expect(screen.getByText('45 días')).toBeInTheDocument());
 		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
@@ -552,7 +624,9 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		});
 
 		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'cerrar' } });
-		fireEvent.click(await screen.findByText('Cliente suspendido al cerrar · 76.468.000-1'));
+		fireEvent.click(
+			await screen.findByText('Cliente suspendido al cerrar · Ana Pérez · 76.468.000-1'),
+		);
 		await screen.findByText('30 días');
 
 		fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
@@ -598,7 +672,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, { wrapper: Wrapper });
 
 		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'sin perfil' } });
-		fireEvent.click(await screen.findByText('Cliente sin perfil · 76.459.000-1'));
+		fireEvent.click(await screen.findByText('Cliente sin perfil · Ana Pérez · 76.459.000-1'));
 
 		await waitFor(() => {
 			const issueDate = (screen.getByLabelText('Fecha de emisión') as HTMLInputElement).value;
@@ -673,7 +747,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, { wrapper: Wrapper });
 
 		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'error' } });
-		fireEvent.click(await screen.findByText('Cliente con error · 76.460.000-1'));
+		fireEvent.click(await screen.findByText('Cliente con error · Ana Pérez · 76.460.000-1'));
 		expect(
 			await screen.findByText('Perfil no disponible'),
 		).toBeInTheDocument();
@@ -735,12 +809,12 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 
 		const customerInput = screen.getByLabelText('Cliente');
 		fireEvent.change(customerInput, { target: { value: 'suspendido' } });
-		fireEvent.click(await screen.findByText('Cliente suspendido · 76.461.000-1'));
+		fireEvent.click(await screen.findByText('Cliente suspendido · Ana Pérez · 76.461.000-1'));
 		await screen.findByText('30 días');
 		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
 
 		fireEvent.change(customerInput, { target: { value: 'habilitado' } });
-		fireEvent.click(await screen.findByText('Cliente habilitado · 76.462.000-1'));
+		fireEvent.click(await screen.findByText('Cliente habilitado · Ana Pérez · 76.462.000-1'));
 		await waitFor(() =>
 			expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled(),
 		);
@@ -788,9 +862,9 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 
 		const customerInput = screen.getByLabelText('Cliente');
 		fireEvent.change(customerInput, { target: { value: 'anterior' } });
-		fireEvent.click(await screen.findByText('Cliente anterior · 76.463.000-1'));
+		fireEvent.click(await screen.findByText('Cliente anterior · Ana Pérez · 76.463.000-1'));
 		fireEvent.change(customerInput, { target: { value: 'actual' } });
-		fireEvent.click(await screen.findByText('Cliente actual · 76.464.000-1'));
+		fireEvent.click(await screen.findByText('Cliente actual · Ana Pérez · 76.464.000-1'));
 
 		await act(async () => {
 			resolveSecondProfile({
@@ -863,7 +937,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		});
 
 		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'multi' } });
-		fireEvent.click(await screen.findByText('Cliente multi subsidiaria · 76.470.000-1'));
+		fireEvent.click(await screen.findByText('Cliente multi subsidiaria · Ana Pérez · 76.470.000-1'));
 		await waitFor(() =>
 			expect(apiSpies.fetchData).toHaveBeenCalledWith(
 				expect.objectContaining({ url: '/subsidiaries/1/customer-sales/470/credit-profile' }),
@@ -950,7 +1024,9 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		});
 
 		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'secundario' } });
-		fireEvent.click(await screen.findByText('Cliente del editor secundario · 76.471.000-1'));
+		fireEvent.click(
+			await screen.findByText('Cliente del editor secundario · Ana Pérez · 76.471.000-1'),
+		);
 		fireEvent.click(await screen.findByRole('button', { name: 'Crear perfil' }));
 		expect(await screen.findByText('Crear perfil de crédito')).toBeInTheDocument();
 

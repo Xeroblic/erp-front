@@ -54,10 +54,11 @@ describe('DeferredPaymentDetailDrawer', () => {
 	it('muestra el resumen financiero y los responsables del documento', () => {
 		renderDrawer(2);
 
-		expect(screen.getByText('FD-0002')).toBeInTheDocument();
-		expect(screen.getByText('ID').nextElementSibling).toHaveTextContent(
-			String(DEFERRED_PAYMENT_DETAIL_FIXTURES[2].id),
+		expect(screen.getAllByText('FD-0002')).toHaveLength(2);
+		expect(screen.getByText('N° de documento').nextElementSibling).toHaveTextContent(
+			DEFERRED_PAYMENT_DETAIL_FIXTURES[2].document_number,
 		);
+		expect(screen.queryByText('ID')).not.toBeInTheDocument();
 		expect(screen.getAllByText('Transportes del Sur SpA').length).toBeGreaterThan(0);
 		expect(screen.getByText('Saldo pendiente')).toBeInTheDocument();
 		expect(screen.getByText('$ 430.000')).toBeInTheDocument();

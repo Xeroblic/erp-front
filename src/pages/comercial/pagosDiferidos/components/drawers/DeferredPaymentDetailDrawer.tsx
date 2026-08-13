@@ -223,9 +223,9 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 									</div>
 									<div className='grid grid-cols-2 gap-3 border-t border-zinc-200 pt-4 text-sm dark:border-zinc-700 sm:grid-cols-3'>
 										<div>
-											<p className='text-zinc-500'>ID</p>
+											<p className='text-zinc-500'>N° de documento</p>
 											<p className='font-semibold tabular-nums'>
-												{document.id}
+												{document.document_number}
 											</p>
 										</div>
 										<div>

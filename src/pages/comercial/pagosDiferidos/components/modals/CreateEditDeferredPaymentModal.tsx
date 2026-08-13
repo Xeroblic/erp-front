@@ -41,7 +41,7 @@ import AttachmentsDropOverlay from '../parts/AttachmentsDropOverlay';
 import useAttachmentsFileDrop from '../../hooks/useAttachmentsFileDrop';
 import CustomerCreditProfileCard from '@/pages/comercial/clientesVentas/ClientesVentasDetalle/components/CustomerCreditProfileCard';
 import CreateCustomerSaleModal from '@/pages/comercial/clientesVentas/components/modals/CreateCustomerSaleModal';
-import type { ICustomerSale } from '@/interface/customerSales.interface';
+import type { ICustomerSale, ICustomerSaleOverview } from '@/interface/customerSales.interface';
 import useDeferredPaymentForm from '../../hooks/useDeferredPaymentForm';
 import { useDeferredPaymentAttachments } from '../../hooks/useDeferredPaymentAttachments';
 import { createEmptyDeferredPaymentItem, DEFERRED_PAYMENT_TOTAL_ERROR } from '../../types';
@@ -113,6 +113,28 @@ const asMultiOptions = (value: unknown): TSelectOption[] => {
 };
 
 const toCLPAmount = (value: string): string => value.replace(/\D/g, '');
+
+const formatCustomerLabel = (...values: Array<string | null | undefined>): string => {
+	const labelParts: string[] = [];
+	values.forEach((value) => {
+		const normalizedValue = value?.trim();
+		if (
+			normalizedValue &&
+			!labelParts.some(
+				(labelPart) =>
+					labelPart.toLocaleLowerCase() === normalizedValue.toLocaleLowerCase(),
+			)
+		)
+			labelParts.push(normalizedValue);
+	});
+	return labelParts.join(' · ');
+};
+
+const toOverviewCustomerOption = (customer: ICustomerSaleOverview): CustomerOptionData => ({
+	id: customer.id,
+	label: formatCustomerLabel(customer.name, customer.contact?.name, customer.rut),
+	isActive: customer.is_active,
+});
 
 const getCreditProfileEmptyMessage = (
 	isCreditProfileLoading: boolean,
@@ -441,33 +463,18 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	}, [dispatch, isOpen, subsidiaryId]);
 
 	const customerData = useMemo<CustomerOptionData[]>(() => {
-		const query = customerSearch.trim().toLocaleLowerCase();
-		const remoteCustomers = query
-			? customers
-					.filter((customer) =>
-						[customer.name, customer.rut]
-							.filter((value): value is string => Boolean(value))
-							.some((value) => value.toLocaleLowerCase().includes(query)),
-					)
-					.map((customer) => ({
-						id: customer.id,
-						label: [customer.name, customer.rut]
-							.filter((value): value is string => Boolean(value))
-							.join(' · '),
-						isActive: customer.is_active,
-					}))
+		const remoteCustomers = debouncedCustomerSearch.trim()
+			? customers.map(toOverviewCustomerOption)
 			: [];
 		const editedCustomer =
 			mode === 'edit' && deferredPaymentDocument
 				? {
 						id: deferredPaymentDocument.customer.id,
-						label: [
-							deferredPaymentDocument.customer.billing_company ||
-								deferredPaymentDocument.customer.contact_name,
+						label: formatCustomerLabel(
+							deferredPaymentDocument.customer.billing_company,
+							deferredPaymentDocument.customer.contact_name,
 							deferredPaymentDocument.customer.rut,
-						]
-							.filter(Boolean)
-							.join(' · '),
+						),
 						isActive: true,
 					}
 				: null;
@@ -480,7 +487,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 				].map((customer) => [customer.id, customer]),
 			).values(),
 		);
-	}, [customerSearch, customers, deferredPaymentDocument, mode, selectedCustomerOption]);
+	}, [customers, debouncedCustomerSearch, deferredPaymentDocument, mode, selectedCustomerOption]);
 	const customerOptions = useMemo<TSelectOption[]>(
 		() => customerData.map(({ id, label }) => ({ value: String(id), label })),
 		[customerData],
@@ -627,9 +634,12 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	};
 	const toCustomerOption = (customer: ICustomerSale): CustomerOptionData => ({
 		id: customer.id,
-		label: [customer.billing_company || customer.contact_name || customer.name, customer.rut]
-			.filter((value): value is string => Boolean(value))
-			.join(' · '),
+		label: formatCustomerLabel(
+			customer.billing_company,
+			customer.contact_name,
+			customer.name,
+			customer.rut,
+		),
 		isActive: customer.is_active,
 	});
 	/**
@@ -818,6 +828,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 											inputId='customer_sale_id'
 											options={customerOptions}
 											value={customerValue ?? null}
+											filterOption={null}
 											isLoading={customersLoading}
 											isDisabled={isPaidEdit}
 											placeholder='Busca por razón social o RUT'
