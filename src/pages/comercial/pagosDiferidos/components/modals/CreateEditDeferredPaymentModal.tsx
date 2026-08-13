@@ -8,6 +8,7 @@ import type {
 	IDeferredPaymentDocument,
 } from '@/interface/deferredPayments.interface';
 import { useCurrentBranch } from '@/hooks/useCurrentBranch';
+import useAuthorization from '@/hooks/useAuthorization';
 import { ERP_PERMISSIONS } from '@/constants/temp-permissions.constant';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
@@ -36,6 +37,8 @@ import deferredPaymentsService from '@/services/deferredPaymentsService';
 import DeferredPaymentField from '../parts/DeferredPaymentField';
 import DeferredPaymentSerialsInput from '../parts/DeferredPaymentSerialsInput';
 import DeferredPaymentAttachmentsEditor from '../parts/DeferredPaymentAttachmentsEditor';
+import AttachmentsDropOverlay from '../parts/AttachmentsDropOverlay';
+import useAttachmentsFileDrop from '../../hooks/useAttachmentsFileDrop';
 import CustomerCreditProfileCard from '@/pages/comercial/clientesVentas/ClientesVentasDetalle/components/CustomerCreditProfileCard';
 import CreateCustomerSaleModal from '@/pages/comercial/clientesVentas/components/modals/CreateCustomerSaleModal';
 import type { ICustomerSale } from '@/interface/customerSales.interface';
@@ -211,6 +214,29 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 			},
 		});
 	const { resetForm } = formik;
+	const { authorize } = useAuthorization();
+	const canUploadAttachments = authorize({
+		permission: ERP_PERMISSIONS.DEFERRED_PAYMENTS.UPDATE,
+		branchId,
+		subsidiaryId,
+		scope: 'access',
+	});
+	// Se suelta sobre cualquier parte del modal, salvo que haya un modal hijo
+	// encima: ahi el archivo no puede terminar en este documento.
+	const isAttachmentDropEnabled =
+		canUploadAttachments &&
+		!isPaidEdit &&
+		!isSubmitting &&
+		!isAttachmentOperationActive &&
+		currentPendingUploadRecovery === null &&
+		!isCreateCustomerOpen &&
+		!isEditCustomerOpen &&
+		!isCreditProfileCreatorOpen;
+	const { isDraggingFile } = useAttachmentsFileDrop({
+		isActive: isOpen,
+		canDrop: isAttachmentDropEnabled,
+		onFiles: attachmentActions.addFiles,
+	});
 	const retryPendingAttachments = useCallback(async () => {
 		if (currentPendingUploadRecovery === null) return;
 		const uploaded = await attachmentActions.uploadPending(
@@ -725,6 +751,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 							})
 							.catch(() => undefined);
 					}}>
+					<AttachmentsDropOverlay isVisible={isDraggingFile} />
 					<ModalBody className='min-h-0 flex-1 space-y-5 overflow-y-auto bg-zinc-50 dark:bg-zinc-950'>
 						{isPaidEdit && (
 							<Alert color='amber' variant='outline' icon='HeroLockClosed'>
@@ -1026,6 +1053,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 										isSubmitting ||
 										currentPendingUploadRecovery !== null
 									}
+									canDragAndDrop={isAttachmentDropEnabled}
 									onAddFiles={attachmentActions.addFiles}
 									onRemovePending={attachmentActions.removePending}
 									onSetPendingSharing={attachmentActions.setPendingSharing}
