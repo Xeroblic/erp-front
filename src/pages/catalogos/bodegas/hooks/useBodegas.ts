@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormik } from 'formik';
 import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '@/store';
@@ -27,6 +27,8 @@ import {
 export const useBodegas = () => {
 	const dispatch = useAppDispatch();
 	const { branchId } = useCurrentBranch();
+	const latestBranchIdRef = useRef(branchId);
+	latestBranchIdRef.current = branchId;
 
 	const warehouseState = useAppSelector((s) => s.warehouse);
 	const warehouses =
@@ -35,11 +37,12 @@ export const useBodegas = () => {
 
 	// UI state
 	const [globalFilter, setGlobalFilter] = useState('');
-	const [createModalOpen, setCreateModalOpen] = useState(false);
 	const [editModalOpen, setEditModalOpen] = useState(false);
 	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+	const branchContext = branchId === null ? null : { type: 'branch' as const, id: branchId };
+	const createSelection = useContextScopedSelection<'create'>(branchContext);
 	const selection = useContextScopedSelection<number>(
-		branchId === null ? null : { type: 'branch', id: branchId },
+		branchContext,
 		{
 			onInvalidate: () => {
 				setEditModalOpen(false);
@@ -68,11 +71,14 @@ export const useBodegas = () => {
 	const handleCreateWarehouse = useCallback(
 		async (data: ICreateWarehouseRequest) => {
 			if (!branchId) return false;
+			const requestBranchId = branchId;
 			try {
-				await dispatch(createWarehouse({ branchId, data })).unwrap();
+				await dispatch(createWarehouse({ branchId: requestBranchId, data })).unwrap();
+				if (latestBranchIdRef.current !== requestBranchId) return false;
 				toast.success('Bodega creada exitosamente');
 				return true;
 			} catch (e: unknown) {
+				if (latestBranchIdRef.current !== requestBranchId) return false;
 				toast.error((e as IWarehouseApiError).message || 'Error al crear la bodega');
 				return false;
 			}
@@ -132,7 +138,7 @@ export const useBodegas = () => {
 			setSubmitting(false);
 			if (success) {
 				resetForm();
-				setCreateModalOpen(false);
+				createSelection.clear();
 				loadWarehouses({ page: 1, per_page: 15 });
 			}
 		},
@@ -224,8 +230,19 @@ export const useBodegas = () => {
 
 	const openCreateModal = useCallback(() => {
 		createForm.resetForm();
-		setCreateModalOpen(true);
-	}, [createForm]);
+		createSelection.select('create');
+	}, [createForm, createSelection]);
+	const setCreateModalOpen = useCallback(
+		(nextIsOpen: boolean) => {
+			if (nextIsOpen) {
+				createForm.resetForm();
+				createSelection.select('create');
+				return;
+			}
+			createSelection.clear();
+		},
+		[createForm, createSelection],
+	);
 
 	const state = useMemo(() => ({
 		warehouses: filteredWarehouses,
@@ -234,12 +251,12 @@ export const useBodegas = () => {
 		deleting,
 		error,
 		globalFilter,
-		createModalOpen,
+		createModalOpen: createSelection.isOpen,
 		editModalOpen: editModalOpen && selection.isOpen,
 		deleteModalOpen: deleteModalOpen && selection.isOpen,
 		selectedWarehouse,
 		branchId,
-	}), [filteredWarehouses, stats, loading, deleting, error, globalFilter, createModalOpen, editModalOpen, deleteModalOpen, selectedWarehouse, branchId, selection.isOpen]);
+	}), [filteredWarehouses, stats, loading, deleting, error, globalFilter, createSelection.isOpen, editModalOpen, deleteModalOpen, selectedWarehouse, branchId, selection.isOpen]);
 
 	const forms = useMemo(() => ({
 		create: createForm,

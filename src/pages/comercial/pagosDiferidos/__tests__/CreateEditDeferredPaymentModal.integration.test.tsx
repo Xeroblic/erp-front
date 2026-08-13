@@ -220,6 +220,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		fireEvent.click(await screen.findByText('Carla Cobranza · carla@empresa.cl'));
 
 		expect(screen.getByText('Carla Cobranza · carla@empresa.cl')).toBeInTheDocument();
+		await waitFor(() => expect(store.getState().customerSales.overviewLoading).toBe(false));
 	});
 
 	it('carga el perfil existente al editar y conserva el vencimiento del documento', async () => {
@@ -631,11 +632,19 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 
 		fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
 		expect(onClose).toHaveBeenCalledTimes(1);
-		rerender(<CreateEditDeferredPaymentModal isOpen={false} onClose={onClose} />);
-		rerender(<CreateEditDeferredPaymentModal isOpen onClose={onClose} />);
+		act(() => {
+			rerender(<CreateEditDeferredPaymentModal isOpen={false} onClose={onClose} />);
+		});
+		await waitFor(() =>
+			expect(screen.queryByRole('dialog', { name: 'Nuevo documento' })).not.toBeInTheDocument(),
+		);
+		act(() => {
+			rerender(<CreateEditDeferredPaymentModal isOpen onClose={onClose} />);
+		});
 
-		expect(screen.getByText('Busca por razón social o RUT')).toBeInTheDocument();
+		expect(await screen.findByText('Busca por razón social o RUT')).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'Crear documento' })).not.toBeDisabled();
+		await waitFor(() => expect(store.getState().customerSales.overviewLoading).toBe(false));
 	});
 
 	it('permite crear sin perfil y recarga el perfil creado durante el alta', async () => {
@@ -986,6 +995,43 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 				addDaysToDateOnly(issueDate, 21),
 			);
 		});
+	});
+
+	it('oculta clientes y cierra el alta rápida al cambiar de subsidiaria', async () => {
+		const customer = {
+			id: 991,
+			name: 'Cliente exclusivo A',
+			rut: '76.991.000-1',
+			contact: { name: 'Contacto A' },
+			loyalty: 0,
+			total_sales: 0,
+			is_active: true,
+		};
+		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
+			Promise.resolve({
+				data: url === '/subsidiaries/1/customer-sales/overview'
+					? { ...emptyPagination, data: [customer], total: 1 }
+					: emptyPagination,
+			}),
+		);
+		const store = createTestStore();
+		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const { rerender } = render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, {
+			wrapper: Wrapper,
+		});
+
+		fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'exclusivo' } });
+		expect(await screen.findByText('Cliente exclusivo A · Contacto A · 76.991.000-1')).toBeInTheDocument();
+		fireEvent.click(screen.getByRole('button', { name: 'Crear cliente' }));
+		expect(screen.getByRole('dialog', { name: 'Crear Cliente' })).toBeInTheDocument();
+
+		branchContext.subsidiaryId = 2;
+		rerender(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />);
+
+		expect(screen.queryByText('Cliente exclusivo A · Contacto A · 76.991.000-1')).not.toBeInTheDocument();
+		await waitFor(() =>
+			expect(screen.queryByRole('dialog', { name: 'Crear Cliente' })).not.toBeInTheDocument(),
+		);
 	});
 
 	it('cierra el editor secundario cuando el padre se cierra externamente', async () => {
