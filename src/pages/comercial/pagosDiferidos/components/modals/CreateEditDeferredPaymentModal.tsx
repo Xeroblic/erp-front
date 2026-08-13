@@ -798,6 +798,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 											inputId='customer_sale_id'
 											options={customerOptions}
 											value={customerValue ?? null}
+											filterOption={null}
 											isLoading={customersLoading}
 											isDisabled={isPaidEdit}
 											placeholder='Busca por razón social o RUT'

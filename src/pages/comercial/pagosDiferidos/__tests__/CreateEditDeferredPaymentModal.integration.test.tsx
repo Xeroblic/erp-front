@@ -404,12 +404,12 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		);
 	});
 
-	it('muestra una coincidencia remota encontrada solo por el contacto', async () => {
+	it('muestra una coincidencia remota encontrada por un correo no incluido en la etiqueta', async () => {
 		const remoteCustomer = {
 			id: 803,
 			name: 'Industria Norte SpA',
 			rut: '76.803.000-1',
-			contact: { name: 'contacto.zentria@example.com' },
+			contact: { name: 'Carla Pérez' },
 			loyalty: 0,
 			total_sales: 0,
 			is_active: true,
@@ -431,7 +431,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 
 		expect(
 			await screen.findByText(
-				'Industria Norte SpA · contacto.zentria@example.com · 76.803.000-1',
+				'Industria Norte SpA · Carla Pérez · 76.803.000-1',
 			),
 		).toBeInTheDocument();
 	});
