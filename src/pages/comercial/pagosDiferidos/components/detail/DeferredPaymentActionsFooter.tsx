@@ -36,9 +36,9 @@ const DeferredPaymentActionsFooter: React.FC<DeferredPaymentActionsFooterProps> 
 			<p id='deferred-actions-status' className='text-xs text-zinc-500'>
 				{getReminderMessage(status)}
 			</p>
-			<div className='grid grid-cols-4 gap-2'>
+			<div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
 				<ProtectedButton
-					className='w-full min-w-0 justify-center px-2 py-2 text-sm font-semibold'
+					className='w-full min-w-0 justify-center py-2 text-sm font-semibold'
 					permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.RECORD_PAYMENT}
 					branchId={branchId}
 					subsidiaryId={subsidiaryId}
@@ -49,7 +49,7 @@ const DeferredPaymentActionsFooter: React.FC<DeferredPaymentActionsFooterProps> 
 					Registrar abono
 				</ProtectedButton>
 				<ProtectedButton
-					className='w-full min-w-0 justify-center px-2 py-2 text-sm font-semibold'
+					className='w-full min-w-0 justify-center py-2 text-sm font-semibold'
 					permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.MARK_PAID}
 					branchId={branchId}
 					subsidiaryId={subsidiaryId}
@@ -60,7 +60,7 @@ const DeferredPaymentActionsFooter: React.FC<DeferredPaymentActionsFooterProps> 
 					Marcar pagada
 				</ProtectedButton>
 				<ProtectedButton
-					className='w-full min-w-0 justify-center px-2 py-2 text-sm font-semibold'
+					className='w-full min-w-0 justify-center py-2 text-sm font-semibold'
 					permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.UPDATE}
 					branchId={branchId}
 					subsidiaryId={subsidiaryId}
@@ -76,7 +76,7 @@ const DeferredPaymentActionsFooter: React.FC<DeferredPaymentActionsFooterProps> 
 					Editar
 				</ProtectedButton>
 				<ProtectedButton
-					className='w-full min-w-0 justify-center px-2 py-2 text-sm font-semibold'
+					className='w-full min-w-0 justify-center py-2 text-sm font-semibold'
 					permission={ERP_PERMISSIONS.DEFERRED_PAYMENTS.DELETE}
 					branchId={branchId}
 					subsidiaryId={subsidiaryId}

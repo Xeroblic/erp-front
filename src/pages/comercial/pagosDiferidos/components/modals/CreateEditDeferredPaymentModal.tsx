@@ -118,7 +118,8 @@ const formatCustomerLabel = (...values: Array<string | null | undefined>): strin
 		if (
 			normalizedValue &&
 			!labelParts.some(
-				(labelPart) => labelPart.toLocaleLowerCase() === normalizedValue.toLocaleLowerCase(),
+				(labelPart) =>
+					labelPart.toLocaleLowerCase() === normalizedValue.toLocaleLowerCase(),
 			)
 		)
 			labelParts.push(normalizedValue);
@@ -436,7 +437,9 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	}, [dispatch, isOpen, subsidiaryId]);
 
 	const customerData = useMemo<CustomerOptionData[]>(() => {
-		const remoteCustomers = customerSearch.trim() ? customers.map(toOverviewCustomerOption) : [];
+		const remoteCustomers = debouncedCustomerSearch.trim()
+			? customers.map(toOverviewCustomerOption)
+			: [];
 		const editedCustomer =
 			mode === 'edit' && deferredPaymentDocument
 				? {
@@ -458,7 +461,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 				].map((customer) => [customer.id, customer]),
 			).values(),
 		);
-	}, [customerSearch, customers, deferredPaymentDocument, mode, selectedCustomerOption]);
+	}, [customers, debouncedCustomerSearch, deferredPaymentDocument, mode, selectedCustomerOption]);
 	const customerOptions = useMemo<TSelectOption[]>(
 		() => customerData.map(({ id, label }) => ({ value: String(id), label })),
 		[customerData],
