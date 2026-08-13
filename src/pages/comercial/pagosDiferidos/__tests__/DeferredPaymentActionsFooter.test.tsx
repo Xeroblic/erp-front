@@ -49,6 +49,7 @@ describe('DeferredPaymentActionsFooter', () => {
 		renderFooter();
 
 		const deleteButton = screen.getByRole('button', { name: 'Eliminar' });
+		expect(deleteButton.parentElement).toHaveClass('grid', 'grid-cols-4');
 		expect(deleteButton).toHaveAttribute(
 			'data-permission',
 			ERP_PERMISSIONS.DEFERRED_PAYMENTS.DELETE,
