@@ -20,6 +20,8 @@ interface Props {
 	branchId: number | null;
 	subsidiaryId: number | null;
 	disabled?: boolean;
+	/** Se puede adjuntar arrastrando archivos al formulario. Solo afecta la ayuda visible. */
+	canDragAndDrop?: boolean;
 	onAddFiles: (files: FileList | null) => void;
 	onRemovePending: (id: string) => void;
 	onSetPendingSharing: (id: string, value: boolean) => void;
@@ -91,8 +93,11 @@ const DeferredPaymentAttachmentsEditor: React.FC<Props> = (props) => {
 				<div>
 					<p className='font-semibold'>Adjuntos del documento</p>
 					<p className='text-sm text-zinc-500'>
-						PDF, imágenes o planillas de hasta 10 MB. Los comprobantes de abono no se
-						administran aquí.
+						PDF, imágenes o planillas de hasta 10 MB.
+						{props.canDragAndDrop && !props.disabled
+							? ' También puedes arrastrarlos a cualquier parte del formulario.'
+							: ''}{' '}
+						Los comprobantes de abono no se administran aquí.
 					</p>
 				</div>
 				<ProtectedButton

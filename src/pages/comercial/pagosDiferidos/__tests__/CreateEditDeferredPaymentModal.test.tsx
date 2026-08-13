@@ -22,7 +22,7 @@ vi.mock('react-i18next', () => ({
 	useTranslation: () => ({ i18n: { dir: () => 'ltr' } }),
 }));
 vi.mock('@/hooks/useAuthorization', () => ({
-	default: () => ({ hasAnyPermission: () => true, isSuperAdmin: true }),
+	default: () => ({ authorize: () => true, hasAnyPermission: () => true, isSuperAdmin: true }),
 }));
 vi.mock('@/hooks/useCurrentBranch', () => ({
 	useCurrentBranch: () => ({ branchId: 1, subsidiaryId: 1, hasValidBranch: true }),
