@@ -37,6 +37,15 @@ const renderDrawer = (documentId: number, onEdit = vi.fn(), onClose = vi.fn()) =
 		</Provider>,
 	);
 
+const dragFile = () => {
+	fireEvent.dragEnter(window, { dataTransfer: { types: ['Files'] } });
+};
+
+const dropFile = (file: File) => {
+	const dataTransfer = { files: [file], types: ['Files'], dropEffect: 'none' };
+	fireEvent.drop(window, { dataTransfer });
+};
+
 describe('DeferredPaymentDetailDrawer', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -192,6 +201,29 @@ describe('DeferredPaymentDetailDrawer', () => {
 			await within(dialog).findByText('Formato de comprobante no permitido'),
 		).toBeInTheDocument();
 		expect(within(dialog).getByRole('button', { name: 'Marcar pagada' })).toBeDisabled();
+	});
+	it('acepta al soltar el comprobante al marcar pagada y mantiene el input alternativo', async () => {
+		renderDrawer(2);
+		fireEvent.click(screen.getByRole('button', { name: 'Marcar pagada', hidden: true }));
+		await screen.findByRole('dialog', { name: 'Marcar documento como pagado' });
+
+		dragFile();
+		expect(await screen.findByTestId('attachments-drop-overlay')).toBeInTheDocument();
+		dropFile(new File(['contenido'], 'cierre.pdf', { type: 'application/pdf' }));
+		await waitFor(() =>
+			expect(screen.queryByTestId('attachments-drop-overlay')).not.toBeInTheDocument(),
+		);
+		expect(screen.queryByText('Comprobante seleccionado:')).not.toBeInTheDocument();
+		expect(screen.getByLabelText('Comprobante (opcional)')).toHaveAttribute(
+			'accept',
+			'.pdf,.jpg,.jpeg,.png,.webp,.xls,.xlsx',
+		);
+		expect(
+			within(screen.getByRole('dialog', { name: 'Marcar documento como pagado' })).getByRole(
+				'button',
+				{ name: 'Marcar pagada' },
+			),
+		).toBeEnabled();
 	});
 	it('permite cerrar la confirmación con comprobante pendiente para continuar desde el detalle', () => {
 		const setIsOpen = vi.fn();
