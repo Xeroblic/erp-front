@@ -28,7 +28,7 @@ interface UseDeferredPaymentFormProps {
 	deferredPaymentDocument?: IDeferredPaymentDocument | null;
 	paymentTermDays?: number;
 	isOpen?: boolean;
-	onSuccess?: (document: IDeferredPaymentDocument) => void;
+	onSuccess?: (document: IDeferredPaymentDocument) => void | boolean | Promise<void | boolean>;
 }
 
 interface AbortableRequest {
@@ -176,6 +176,11 @@ const useDeferredPaymentForm = ({
 					latestSubsidiaryIdRef.current !== effectiveSubsidiaryId
 				)
 					return;
+				toast.success(
+					mode === 'edit'
+						? 'Documento actualizado correctamente'
+						: 'Documento creado correctamente',
+				);
 
 				const listRequest = dispatch(
 					fetchDeferredPayments({ subsidiaryId: effectiveSubsidiaryId, filters }),
@@ -191,12 +196,7 @@ const useDeferredPaymentForm = ({
 				)
 					return;
 
-				onSuccess?.(result.document);
-				toast.success(
-					mode === 'edit'
-						? 'Documento actualizado correctamente'
-						: 'Documento creado correctamente',
-				);
+				await onSuccess?.(result.document);
 			} catch (submitError: unknown) {
 				if (
 					activeSubmissionRef.current !== submissionId ||

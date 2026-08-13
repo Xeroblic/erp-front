@@ -21,6 +21,7 @@ export interface SalesState {
 	links: PaginationLinks | null;
 	detail: SaleDetail | null;
 	items: SaleItem[];
+	listSubsidiaryId: number | null;
 	loading: boolean;
 	error?: string | null;
 }
@@ -31,6 +32,7 @@ const initialState: SalesState = {
 	links: null,
 	detail: null,
 	items: [],
+	listSubsidiaryId: null,
 	loading: false,
 	error: null,
 };
@@ -115,17 +117,23 @@ const salesSlice = createSlice({
 	extraReducers: (builder) => {
 		builder
 			// List
-			.addCase(loadSalesList.pending, (state) => {
+			.addCase(loadSalesList.pending, (state, action) => {
 				state.loading = true;
 				state.error = null;
+				state.listSubsidiaryId = action.meta.arg.subsidiaryId;
+				state.list = [];
+				state.meta = null;
+				state.links = null;
 			})
-			.addCase(loadSalesList.fulfilled, (state, action: PayloadAction<PaginatedResponse<SaleListItem>>) => {
+			.addCase(loadSalesList.fulfilled, (state, action) => {
+				if (state.listSubsidiaryId !== action.meta.arg.subsidiaryId) return;
 				state.loading = false;
 				state.list = action.payload.data;
 				state.meta = action.payload.meta;
 				state.links = action.payload.links;
 			})
 			.addCase(loadSalesList.rejected, (state, action) => {
+				if (state.listSubsidiaryId !== action.meta.arg.subsidiaryId) return;
 				state.loading = false;
 				state.error = action.payload || 'Error al cargar ventas';
 			})
@@ -183,6 +191,8 @@ const selectModule = (state: RootState): SalesState | undefined =>
 	(state as unknown as { salesModule?: SalesState }).salesModule;
 
 export const selectSalesList = (state: RootState) => selectModule(state)?.list ?? [];
+export const selectSalesListSubsidiaryId = (state: RootState) =>
+	selectModule(state)?.listSubsidiaryId ?? null;
 export const selectSalesMeta = (state: RootState) => selectModule(state)?.meta ?? null;
 export const selectSalesLinks = (state: RootState) => selectModule(state)?.links ?? null;
 export const selectSaleDetail = (state: RootState) => selectModule(state)?.detail ?? null;

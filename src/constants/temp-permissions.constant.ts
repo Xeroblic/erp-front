@@ -84,6 +84,7 @@ export const ERP_PERMISSIONS = {
 		VIEW: 'view-customer-sale',
 		CREATE: 'create-customer-sale',
 		UPDATE: 'edit-customer-sale',
+		DELETE: 'delete-customer-sale',
 	},
 
 	QUOTES: {

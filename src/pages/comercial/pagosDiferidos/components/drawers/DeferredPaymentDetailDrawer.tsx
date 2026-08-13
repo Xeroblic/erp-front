@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import type { OrganizationalContext } from '@/hooks/useContextScopedSelection';
 import type {
 	IDeferredPaymentAbono,
 	IDeferredPaymentDocument,
@@ -37,6 +38,7 @@ import {
 
 interface DeferredPaymentDetailDrawerProps {
 	documentId: number | null;
+	selectionContext: OrganizationalContext | null;
 	onClose: () => void;
 	onEdit: (document: IDeferredPaymentDocument) => void;
 }
@@ -72,11 +74,12 @@ const AmountCard = ({
 
 const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = ({
 	documentId,
+	selectionContext,
 	onClose,
 	onEdit,
 }) => {
 	const { document, loading, error, actions, branch, hasDataContext } =
-		useDeferredPaymentDetail(documentId);
+		useDeferredPaymentDetail(documentId, selectionContext);
 	const [isRegisterOpen, setIsRegisterOpen] = useState(false);
 	const [isMarkPaidOpen, setIsMarkPaidOpen] = useState(false);
 	const [isDiscardMarkPaidReceiptOpen, setIsDiscardMarkPaidReceiptOpen] = useState(false);
@@ -220,9 +223,9 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 									</div>
 									<div className='grid grid-cols-2 gap-3 border-t border-zinc-200 pt-4 text-sm dark:border-zinc-700 sm:grid-cols-3'>
 										<div>
-											<p className='text-zinc-500'>ID</p>
+											<p className='text-zinc-500'>N° de documento</p>
 											<p className='font-semibold tabular-nums'>
-												{document.id}
+												{document.document_number}
 											</p>
 										</div>
 										<div>

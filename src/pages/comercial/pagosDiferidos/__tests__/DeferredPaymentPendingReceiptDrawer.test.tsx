@@ -99,6 +99,7 @@ describe('DeferredPaymentDetailDrawer con comprobante pendiente', () => {
 			<Provider store={store}>
 				<DeferredPaymentDetailDrawer
 					documentId={document.id}
+					selectionContext={{ type: 'subsidiary', id: 1 }}
 					onClose={onClose}
 					onEdit={vi.fn()}
 				/>
@@ -130,6 +131,7 @@ describe('DeferredPaymentDetailDrawer con comprobante pendiente', () => {
 			<Provider store={store}>
 				<DeferredPaymentDetailDrawer
 					documentId={document.id}
+					selectionContext={{ type: 'subsidiary', id: 1 }}
 					onClose={vi.fn()}
 					onEdit={vi.fn()}
 				/>
@@ -148,6 +150,7 @@ describe('DeferredPaymentDetailDrawer con comprobante pendiente', () => {
 			<Provider store={store}>
 				<DeferredPaymentDetailDrawer
 					documentId={document.id}
+					selectionContext={{ type: 'subsidiary', id: 1 }}
 					onClose={vi.fn()}
 					onEdit={vi.fn()}
 				/>

@@ -30,6 +30,7 @@ const renderDrawer = (documentId: number, onEdit = vi.fn(), onClose = vi.fn()) =
 		<Provider store={store}>
 			<DeferredPaymentDetailDrawer
 				documentId={documentId}
+				selectionContext={{ type: 'subsidiary', id: 1 }}
 				onClose={onClose}
 				onEdit={onEdit}
 			/>
@@ -53,10 +54,11 @@ describe('DeferredPaymentDetailDrawer', () => {
 	it('muestra el resumen financiero y los responsables del documento', () => {
 		renderDrawer(2);
 
-		expect(screen.getByText('FD-0002')).toBeInTheDocument();
-		expect(screen.getByText('ID').nextElementSibling).toHaveTextContent(
-			String(DEFERRED_PAYMENT_DETAIL_FIXTURES[2].id),
+		expect(screen.getAllByText('FD-0002')).toHaveLength(2);
+		expect(screen.getByText('N° de documento').nextElementSibling).toHaveTextContent(
+			DEFERRED_PAYMENT_DETAIL_FIXTURES[2].document_number,
 		);
+		expect(screen.queryByText('ID')).not.toBeInTheDocument();
 		expect(screen.getAllByText('Transportes del Sur SpA').length).toBeGreaterThan(0);
 		expect(screen.getByText('Saldo pendiente')).toBeInTheDocument();
 		expect(screen.getByText('$ 430.000')).toBeInTheDocument();
@@ -162,7 +164,12 @@ describe('DeferredPaymentDetailDrawer', () => {
 		});
 		view.rerender(
 			<Provider store={store}>
-				<DeferredPaymentDetailDrawer documentId={9} onClose={vi.fn()} onEdit={vi.fn()} />
+				<DeferredPaymentDetailDrawer
+					documentId={9}
+					selectionContext={{ type: 'subsidiary', id: 1 }}
+					onClose={vi.fn()}
+					onEdit={vi.fn()}
+				/>
 			</Provider>,
 		);
 

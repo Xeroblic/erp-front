@@ -6,8 +6,16 @@ import DeferredPaymentActionsFooter from '../components/detail/DeferredPaymentAc
 import { DeferredPaymentPaymentsSection } from '../components/detail/DeferredPaymentActivitySections';
 
 vi.mock('@/components/ui/ProtectedButton', () => ({
-	default: ({ children, permission }: { children: React.ReactNode; permission: string }) => (
-		<button type='button' data-permission={permission}>
+	default: ({
+		children,
+		permission,
+		className,
+	}: {
+		children: React.ReactNode;
+		permission: string;
+		className?: string;
+	}) => (
+		<button type='button' className={className} data-permission={permission}>
 			{children}
 		</button>
 	),
@@ -49,6 +57,8 @@ describe('DeferredPaymentActionsFooter', () => {
 		renderFooter();
 
 		const deleteButton = screen.getByRole('button', { name: 'Eliminar' });
+		expect(deleteButton.parentElement).toHaveClass('grid', 'grid-cols-2', 'sm:grid-cols-4');
+		expect(deleteButton).toHaveClass('w-full', 'py-2', 'text-sm', 'font-semibold');
 		expect(deleteButton).toHaveAttribute(
 			'data-permission',
 			ERP_PERMISSIONS.DEFERRED_PAYMENTS.DELETE,
