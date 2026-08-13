@@ -436,16 +436,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	}, [dispatch, isOpen, subsidiaryId]);
 
 	const customerData = useMemo<CustomerOptionData[]>(() => {
-		const query = customerSearch.trim().toLocaleLowerCase();
-		const remoteCustomers = query
-			? customers
-					.filter((customer) =>
-						[customer.name, customer.rut]
-							.filter((value): value is string => Boolean(value))
-							.some((value) => value.toLocaleLowerCase().includes(query)),
-					)
-					.map(toOverviewCustomerOption)
-			: [];
+		const remoteCustomers = customerSearch.trim() ? customers.map(toOverviewCustomerOption) : [];
 		const editedCustomer =
 			mode === 'edit' && deferredPaymentDocument
 				? {

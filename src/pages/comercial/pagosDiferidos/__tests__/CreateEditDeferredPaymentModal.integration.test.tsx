@@ -404,6 +404,38 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		);
 	});
 
+	it('muestra una coincidencia remota encontrada solo por el contacto', async () => {
+		const remoteCustomer = {
+			id: 803,
+			name: 'Industria Norte SpA',
+			rut: '76.803.000-1',
+			contact: { name: 'contacto.zentria@example.com' },
+			loyalty: 0,
+			total_sales: 0,
+			is_active: true,
+		};
+		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
+			Promise.resolve({
+				data: url.includes('/overview')
+					? { ...emptyPagination, data: [remoteCustomer], total: 1 }
+					: { data: [], meta: { current_page: 1, last_page: 1, per_page: 100, total: 0 } },
+			}),
+		);
+		const store = createTestStore();
+		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, { wrapper: Wrapper });
+
+		fireEvent.change(screen.getByLabelText('Cliente'), {
+			target: { value: 'contacto.zentria@example.com' },
+		});
+
+		expect(
+			await screen.findByText(
+				'Industria Norte SpA · contacto.zentria@example.com · 76.803.000-1',
+			),
+		).toBeInTheDocument();
+	});
+
 	it('aplica el plazo del perfil activo al vencimiento al crear un documento', async () => {
 		const customer = {
 			id: 457,
