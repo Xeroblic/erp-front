@@ -18,8 +18,15 @@ const customerSalesSpies = vi.hoisted(() => ({
 	overviewThunk: vi.fn(),
 	overviewThunkImplementation: null as null | ((...args: unknown[]) => unknown),
 }));
+const customerModalSpies = vi.hoisted(() => ({ createOpenStates: [] as boolean[] }));
 
 vi.mock('@/services/ApiService', () => ({ default: apiSpies }));
+vi.mock('@/pages/comercial/clientesVentas/components/modals/CreateCustomerSaleModal', () => ({
+	default: ({ isOpen, isEdit = false }: { isOpen: boolean; isEdit?: boolean }) => {
+		if (!isEdit) customerModalSpies.createOpenStates.push(isOpen);
+		return isOpen ? <div role='dialog' aria-label='Crear Cliente' /> : null;
+	},
+}));
 vi.mock('@/store/slices/customerSales/customerSalesSlice', async () => {
 	const actual = await vi.importActual<
 		typeof import('@/store/slices/customerSales/customerSalesSlice')
@@ -110,6 +117,7 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		apiSpies.fetchData.mockReset();
 		apiSpies.invalidateCache.mockReset();
 		customerSalesSpies.overviewThunk.mockClear();
+		customerModalSpies.createOpenStates.length = 0;
 		customerSalesSpies.overviewThunk.mockImplementation((...args: unknown[]) =>
 			customerSalesSpies.overviewThunkImplementation?.(...args),
 		);
@@ -1061,6 +1069,29 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		await waitFor(() =>
 			expect(screen.queryByRole('dialog', { name: 'Crear Cliente' })).not.toBeInTheDocument(),
 		);
+	});
+
+	it('cierra el alta rápida en el mismo render del cambio de subsidiaria', async () => {
+		const store = createTestStore();
+		const Wrapper = ({ children }: PropsWithChildren) => <Provider store={store}>{children}</Provider>;
+		const { rerender } = render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, {
+			wrapper: Wrapper,
+		});
+
+		await act(async () => {
+			fireEvent.click(screen.getByRole('button', { name: 'Crear cliente' }));
+			await Promise.resolve();
+		});
+		expect(customerModalSpies.createOpenStates.at(-1)).toBe(true);
+
+		const callsBeforeContextChange = customerModalSpies.createOpenStates.length;
+		branchContext.subsidiaryId = 2;
+		await act(async () => {
+			rerender(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />);
+			await Promise.resolve();
+		});
+
+		expect(customerModalSpies.createOpenStates[callsBeforeContextChange]).toBe(false);
 	});
 
 	it('nunca expone el overview de otra subsidiaria aunque el thunk no limpie el store', async () => {

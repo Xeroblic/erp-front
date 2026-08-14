@@ -153,9 +153,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 }) => {
 	const dispatch = useAppDispatch();
 	const storedCustomers = useAppSelector((state) => state.customerSales.overview);
-	const storedCustomersLoading = useAppSelector(
-		(state) => state.customerSales.overviewLoading,
-	);
+	const storedCustomersLoading = useAppSelector((state) => state.customerSales.overviewLoading);
 	const customersSubsidiaryId = useAppSelector(
 		(state) => state.customerSales.overviewSubsidiaryId,
 	);
@@ -187,9 +185,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const [isCreditProfileCreatorSaving, setIsCreditProfileCreatorSaving] = useState(false);
 	const [isCreateCustomerOpen, setIsCreateCustomerOpen] = useState(false);
 	const [isEditCustomerOpen, setIsEditCustomerOpen] = useState(false);
-	const [customerModalSubsidiaryId, setCustomerModalSubsidiaryId] = useState<number | null>(
-		null,
-	);
+	const [customerModalSubsidiaryId, setCustomerModalSubsidiaryId] = useState<number | null>(null);
 	const [editingCustomer, setEditingCustomer] = useState<ICustomerSale | null>(null);
 	const [isLoadingCustomerDetail, setIsLoadingCustomerDetail] = useState(false);
 	const [pendingUploadRecovery, setPendingUploadRecovery] =
@@ -207,8 +203,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	customerModalSubsidiaryIdRef.current = customerModalSubsidiaryId;
 	const isCustomerModalContextCurrent =
 		customerModalSubsidiaryId !== null && customerModalSubsidiaryId === subsidiaryId;
-	const isCurrentCreateCustomerOpen =
-		isCreateCustomerOpen && isCustomerModalContextCurrent;
+	const isCurrentCreateCustomerOpen = isCreateCustomerOpen && isCustomerModalContextCurrent;
 	const isCurrentEditCustomerOpen =
 		isEditCustomerOpen && editingCustomer !== null && isCustomerModalContextCurrent;
 	const mode = deferredPaymentDocument ? 'edit' : 'create';
@@ -841,13 +836,13 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 												subsidiaryId={subsidiaryId}
 												scope='access'
 												type='button'
-											variant='outline'
-											size='xs'
-											icon='HeroPlus'
-											isDisable={isPaidEdit}
-											aria-label='Crear cliente'
-											onClick={handleOpenCreateCustomer}
-										/>
+												variant='outline'
+												size='xs'
+												icon='HeroPlus'
+												isDisable={isPaidEdit}
+												aria-label='Crear cliente'
+												onClick={handleOpenCreateCustomer}
+											/>
 										</>
 									}
 									className='md:col-span-2 lg:col-span-1'>
