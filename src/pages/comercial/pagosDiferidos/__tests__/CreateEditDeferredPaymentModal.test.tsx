@@ -196,6 +196,82 @@ describe('CreateEditDeferredPaymentModal', () => {
 		});
 		expect(screen.queryByText('SER-NUEVO-001')).not.toBeInTheDocument();
 	});
+	it('separa los seriales pegados y omite los duplicados', async () => {
+		renderModal();
+		const serialInput = screen.getByLabelText('Seriales (opcional)');
+
+		await act(async () => {
+			fireEvent.paste(serialInput, {
+				clipboardData: {
+					getData: () => ' SER-001\tSER-002\nSER-001   SER-003 ',
+				},
+			});
+			await Promise.resolve();
+		});
+
+		expect(screen.getByRole('button', { name: 'Quitar serial SER-001' })).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Quitar serial SER-002' })).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Quitar serial SER-003' })).toBeInTheDocument();
+		expect(toastSpies.warn).toHaveBeenCalledWith('Se omitió 1 serial duplicado.');
+
+		await act(async () => {
+			fireEvent.paste(serialInput, {
+				clipboardData: { getData: () => 'SER-003 SER-004' },
+			});
+			await Promise.resolve();
+		});
+
+		expect(screen.getByRole('button', { name: 'Quitar serial SER-004' })).toBeInTheDocument();
+		expect(toastSpies.warn).toHaveBeenLastCalledWith('Se omitió 1 serial duplicado.');
+	});
+	it('agrega un único serial al pegarlo', async () => {
+		renderModal();
+		const serialInput = screen.getByLabelText('Seriales (opcional)');
+
+		await act(async () => {
+			fireEvent.paste(serialInput, {
+				clipboardData: { getData: () => ' SER-ÚNICO-001 ' },
+			});
+			await Promise.resolve();
+		});
+
+		expect(screen.getByRole('button', { name: 'Quitar serial SER-ÚNICO-001' })).toBeInTheDocument();
+	});
+	it('omite un serial existente después de recortar sus espacios', async () => {
+		const document = {
+			...DEFERRED_PAYMENT_DOCUMENT_FIXTURES[1],
+			items: DEFERRED_PAYMENT_DOCUMENT_FIXTURES[1].items.map((item) => ({
+				...item,
+				serials: [' SER-1-001 '],
+			})),
+		};
+		renderModal(vi.fn(), document);
+		const serialInput = screen.getByLabelText('Seriales (opcional)');
+
+		await act(async () => {
+			fireEvent.paste(serialInput, {
+				clipboardData: { getData: () => 'SER-1-001' },
+			});
+			await Promise.resolve();
+		});
+
+		expect(screen.getAllByRole('button', { name: /Quitar serial/ })).toHaveLength(1);
+		expect(toastSpies.warn).toHaveBeenCalledWith('Se omitió 1 serial duplicado.');
+	});
+	it('crea 100 seriales independientes al pegar un bloque', async () => {
+		renderModal();
+		const serialInput = screen.getByLabelText('Seriales (opcional)');
+		const serials = Array.from({ length: 100 }, (_, index) => `SER-${index + 1}`);
+
+		await act(async () => {
+			fireEvent.paste(serialInput, {
+				clipboardData: { getData: () => serials.join(' \t\n') },
+			});
+			await Promise.resolve();
+		});
+
+		expect(screen.getAllByRole('button', { name: /Quitar serial SER-/ })).toHaveLength(100);
+	});
 
 	it('precarga notas y seriales al editar un documento', () => {
 		const document = DEFERRED_PAYMENT_DOCUMENT_FIXTURES[1];
