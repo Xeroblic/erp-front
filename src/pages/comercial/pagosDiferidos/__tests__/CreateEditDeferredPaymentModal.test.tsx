@@ -15,8 +15,10 @@ const toastSpies = vi.hoisted(() => ({
 	success: vi.fn(),
 	warn: vi.fn(),
 }));
+const apiSpies = vi.hoisted(() => ({ fetchData: vi.fn() }));
 
 vi.mock('react-toastify', () => ({ toast: toastSpies }));
+vi.mock('@/services/ApiService', () => ({ default: apiSpies }));
 
 vi.mock('react-i18next', () => ({
 	useTranslation: () => ({ i18n: { dir: () => 'ltr' } }),
@@ -37,6 +39,7 @@ describe('CreateEditDeferredPaymentModal', () => {
 		toastSpies.error.mockClear();
 		toastSpies.success.mockClear();
 		toastSpies.warn.mockClear();
+		apiSpies.fetchData.mockImplementation(() => new Promise(() => undefined));
 		const portalRoot = document.createElement('div');
 		portalRoot.id = 'portal-root';
 		document.body.appendChild(portalRoot);
@@ -91,15 +94,24 @@ describe('CreateEditDeferredPaymentModal', () => {
 		expect(screen.getByRole('button', { name: 'Crear documento' })).toBeInTheDocument();
 	});
 
-	it('formatea el precio unitario en CLP y descarta caracteres no numéricos', () => {
+	it('formatea el precio unitario en CLP y descarta caracteres no numéricos', async () => {
 		renderModal();
 
 		const unitPrice = screen.getByLabelText('Precio unitario (bruto, IVA incluido)');
-		fireEvent.change(unitPrice, { target: { value: '2500000' } });
+		await act(async () => {
+			fireEvent.change(unitPrice, { target: { value: '2500000' } });
+			await Promise.resolve();
+		});
 		expect(unitPrice).toHaveValue('$ 2.500.000');
-		fireEvent.change(unitPrice, { target: { value: '$ 2.500.000abc' } });
+		await act(async () => {
+			fireEvent.change(unitPrice, { target: { value: '$ 2.500.000abc' } });
+			await Promise.resolve();
+		});
 		expect(unitPrice).toHaveValue('$ 2.500.000');
-		fireEvent.change(unitPrice, { target: { value: '' } });
+		await act(async () => {
+			fireEvent.change(unitPrice, { target: { value: '' } });
+			await Promise.resolve();
+		});
 		expect(unitPrice).toHaveValue('');
 	});
 
@@ -152,12 +164,15 @@ describe('CreateEditDeferredPaymentModal', () => {
 		const totalAmount = screen.getByLabelText(
 			'Total del documento — debe coincidir con la factura',
 		);
-		fireEvent.change(totalAmount, { target: { value: '0' } });
-		fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+		await act(async () => {
+			fireEvent.change(totalAmount, { target: { value: '0' } });
+			fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+			await Promise.resolve();
+		});
 
 		expect(
 			screen.queryByText('El total del documento debe ser mayor a 0'),
-		).not.toBeInTheDocument();
+		).toBeInTheDocument();
 
 		await vi.waitFor(() => {
 			expect(toastSpies.error).toHaveBeenCalledWith(
@@ -166,12 +181,15 @@ describe('CreateEditDeferredPaymentModal', () => {
 		});
 		expect(totalAmount).toHaveClass('!border-red-500');
 	});
-	it('advierte sin bloquear cuando los ítems difieren del total oficial', () => {
+	it('advierte sin bloquear cuando los ítems difieren del total oficial', async () => {
 		renderModal(vi.fn(), DEFERRED_PAYMENT_DOCUMENT_FIXTURES[0]);
-		fireEvent.change(
-			screen.getByLabelText('Total del documento — debe coincidir con la factura'),
-			{ target: { value: '475976' } },
-		);
+		await act(async () => {
+			fireEvent.change(
+				screen.getByLabelText('Total del documento — debe coincidir con la factura'),
+				{ target: { value: '475976' } },
+			);
+			await Promise.resolve();
+		});
 
 		expect(
 			screen.getByText(/La suma de los ítems no coincide con el total del documento/),

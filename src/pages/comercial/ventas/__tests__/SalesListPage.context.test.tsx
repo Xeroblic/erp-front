@@ -9,6 +9,9 @@ const routeState = vi.hoisted(() => ({ saleId: '7' }));
 const dispatchMock = vi.hoisted(() =>
 	vi.fn((action: { unwrap?: () => Promise<void> }) => action),
 );
+const salesServiceSpies = vi.hoisted(() => ({
+	fetchPendingSerialAssignment: vi.fn(),
+}));
 
 vi.mock('@/store', async () => {
 	const reactRedux = await vi.importActual<typeof import('react-redux')>('react-redux');
@@ -38,7 +41,7 @@ vi.mock('@/store/selectors/subsidiarySelectors', () => ({
 		state.context.subsidiaryId,
 }));
 vi.mock('@/services/salesService', () => ({
-	fetchPendingSerialAssignment: vi.fn().mockResolvedValue({ data: [{ id: 7, items: [] }] }),
+	fetchPendingSerialAssignment: salesServiceSpies.fetchPendingSerialAssignment,
 }));
 vi.mock('react-router-dom', () => ({
 	useNavigate: () => navigateSpy,
@@ -91,6 +94,9 @@ describe('SalesListPage con cambio de subsidiaria', () => {
 	beforeEach(() => {
 		navigateSpy.mockClear();
 		dispatchMock.mockClear();
+		salesServiceSpies.fetchPendingSerialAssignment.mockResolvedValue({
+			data: [{ id: 7, items: [] }],
+		});
 		routeState.saleId = '7';
 	});
 
@@ -103,7 +109,11 @@ describe('SalesListPage con cambio de subsidiaria', () => {
 		);
 
 		await screen.findByTestId('sale-detail');
+		await screen.findByRole('button', { name: 'Ver pendientes' });
 		act(() => store.dispatch(setSubsidiary(2)));
+		await act(async () => {
+			await Promise.resolve();
+		});
 
 		await waitFor(() => expect(screen.queryByTestId('sale-detail')).not.toBeInTheDocument());
 		expect(navigateSpy).toHaveBeenCalledWith('/comercial/ventas', { replace: true });
@@ -118,6 +128,7 @@ describe('SalesListPage con cambio de subsidiaria', () => {
 			</Provider>,
 		);
 
+		await screen.findByRole('button', { name: 'Ver pendientes' });
 		await screen.findByRole('button', { name: 'DuoBarcodeRead' });
 		act(() => screen.getByRole('button', { name: 'DuoBarcodeRead' }).click());
 		act(() => screen.getByRole('button', { name: 'HeroTrash' }).click());
@@ -125,6 +136,9 @@ describe('SalesListPage con cambio de subsidiaria', () => {
 		expect(screen.getByTestId('delete-sale-modal')).toBeInTheDocument();
 
 		act(() => store.dispatch(setSubsidiary(2)));
+		await act(async () => {
+			await Promise.resolve();
+		});
 
 		expect(screen.queryByTestId('close-sale-modal')).not.toBeInTheDocument();
 		expect(screen.queryByTestId('delete-sale-modal')).not.toBeInTheDocument();

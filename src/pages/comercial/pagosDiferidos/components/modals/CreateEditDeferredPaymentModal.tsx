@@ -152,12 +152,24 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	onSaved,
 }) => {
 	const dispatch = useAppDispatch();
-	const customers = useAppSelector((state) => state.customerSales.overview);
-	const customersLoading = useAppSelector((state) => state.customerSales.overviewLoading);
+	const storedCustomers = useAppSelector((state) => state.customerSales.overview);
+	const storedCustomersLoading = useAppSelector((state) => state.customerSales.overviewLoading);
+	const customersSubsidiaryId = useAppSelector(
+		(state) => state.customerSales.overviewSubsidiaryId,
+	);
 	const users = useAppSelector((state) => state.usersAdmin.users);
 	const usersLoading = useAppSelector((state) => state.usersAdmin.loading.users);
 	const currentUser = useAppSelector((state) => state.auth?.user);
 	const { branchId, subsidiaryId } = useCurrentBranch();
+	const isCustomersContextCurrent =
+		subsidiaryId !== null &&
+		customersSubsidiaryId !== null &&
+		Number(customersSubsidiaryId) === subsidiaryId;
+	const customers = useMemo(
+		() => (isCustomersContextCurrent ? storedCustomers : []),
+		[isCustomersContextCurrent, storedCustomers],
+	);
+	const customersLoading = isCustomersContextCurrent ? storedCustomersLoading : false;
 	const [paymentTermDays, setPaymentTermDays] = useState(30);
 	const [customerSearch, setCustomerSearch] = useState('');
 	const [debouncedCustomerSearch] = useDebounce(customerSearch, 300);
@@ -173,6 +185,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const [isCreditProfileCreatorSaving, setIsCreditProfileCreatorSaving] = useState(false);
 	const [isCreateCustomerOpen, setIsCreateCustomerOpen] = useState(false);
 	const [isEditCustomerOpen, setIsEditCustomerOpen] = useState(false);
+	const [customerModalSubsidiaryId, setCustomerModalSubsidiaryId] = useState<number | null>(null);
 	const [editingCustomer, setEditingCustomer] = useState<ICustomerSale | null>(null);
 	const [isLoadingCustomerDetail, setIsLoadingCustomerDetail] = useState(false);
 	const [pendingUploadRecovery, setPendingUploadRecovery] =
@@ -187,6 +200,12 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const recoveryRequestIdRef = useRef(0);
 	const savedDocumentIdRef = useRef<number | null>(null);
 	latestSubsidiaryIdRef.current = subsidiaryId;
+	customerModalSubsidiaryIdRef.current = customerModalSubsidiaryId;
+	const isCustomerModalContextCurrent =
+		customerModalSubsidiaryId !== null && customerModalSubsidiaryId === subsidiaryId;
+	const isCurrentCreateCustomerOpen = isCreateCustomerOpen && isCustomerModalContextCurrent;
+	const isCurrentEditCustomerOpen =
+		isEditCustomerOpen && editingCustomer !== null && isCustomerModalContextCurrent;
 	const mode = deferredPaymentDocument ? 'edit' : 'create';
 	const attachmentActions = useDeferredPaymentAttachments({
 		isOpen,
@@ -379,7 +398,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		customerDetailAbortRef.current?.();
 		customerDetailAbortRef.current = null;
 		customerDetailRequestIdRef.current += 1;
-		customerModalSubsidiaryIdRef.current = null;
+		setCustomerModalSubsidiaryId(null);
 		setIsLoadingCustomerDetail(false);
 		setEditingCustomer(null);
 		setIsEditCustomerOpen(false);
@@ -648,7 +667,8 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	 * y consultaría su perfil de crédito con el contexto equivocado.
 	 */
 	const isCustomerModalStillCurrent = () =>
-		latestIsOpenRef.current && customerModalSubsidiaryIdRef.current === subsidiaryId;
+		latestIsOpenRef.current &&
+		customerModalSubsidiaryIdRef.current === latestSubsidiaryIdRef.current;
 	const handleCustomerCreated = (customer: ICustomerSale) => {
 		if (!isCustomerModalStillCurrent()) {
 			resetCustomerModals();
@@ -685,7 +705,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		const requestId = customerDetailRequestIdRef.current + 1;
 		customerDetailRequestIdRef.current = requestId;
 		const requestSubsidiaryId = subsidiaryId;
-		customerModalSubsidiaryIdRef.current = requestSubsidiaryId;
+		setCustomerModalSubsidiaryId(requestSubsidiaryId);
 		const requestCustomerSaleId = customerSaleId;
 		setEditingCustomer(null);
 		setIsEditCustomerOpen(false);
@@ -727,6 +747,14 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 					setIsLoadingCustomerDetail(false);
 				}
 			});
+	};
+	const handleOpenCreateCustomer = () => {
+		if (subsidiaryId === null) {
+			toast.error('No se pudo determinar la subsidiaria activa');
+			return;
+		}
+		setCustomerModalSubsidiaryId(subsidiaryId);
+		setIsCreateCustomerOpen(true);
 	};
 
 	return (
@@ -813,11 +841,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 												icon='HeroPlus'
 												isDisable={isPaidEdit}
 												aria-label='Crear cliente'
-												onClick={() => {
-													customerModalSubsidiaryIdRef.current =
-														subsidiaryId;
-													setIsCreateCustomerOpen(true);
-												}}
+												onClick={handleOpenCreateCustomer}
 											/>
 										</>
 									}
@@ -1442,16 +1466,20 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 			 * la reduciría a los 5 clientes más recientes y vaciaría el select.
 			 */}
 			<CreateCustomerSaleModal
-				isOpen={isCreateCustomerOpen}
-				setIsOpen={setIsCreateCustomerOpen}
-				subsidiaryId={subsidiaryId}
+				isOpen={isCurrentCreateCustomerOpen}
+				setIsOpen={(nextIsOpen) => {
+					if (!nextIsOpen) resetCustomerModals();
+				}}
+				subsidiaryId={customerModalSubsidiaryId}
 				refreshStoreOnSuccess={false}
 				onSuccess={handleCustomerCreated}
 			/>
 			<CreateCustomerSaleModal
-				isOpen={isEditCustomerOpen && editingCustomer !== null}
-				setIsOpen={setIsEditCustomerOpen}
-				subsidiaryId={subsidiaryId}
+				isOpen={isCurrentEditCustomerOpen}
+				setIsOpen={(nextIsOpen) => {
+					if (!nextIsOpen) resetCustomerModals();
+				}}
+				subsidiaryId={customerModalSubsidiaryId}
 				isEdit
 				initialData={editingCustomer}
 				refreshStoreOnSuccess={false}
