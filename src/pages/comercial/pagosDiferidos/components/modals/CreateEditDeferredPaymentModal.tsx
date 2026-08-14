@@ -167,7 +167,10 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		subsidiaryId !== null &&
 		customersSubsidiaryId !== null &&
 		Number(customersSubsidiaryId) === subsidiaryId;
-	const customers = isCustomersContextCurrent ? storedCustomers : [];
+	const customers = useMemo(
+		() => (isCustomersContextCurrent ? storedCustomers : []),
+		[isCustomersContextCurrent, storedCustomers],
+	);
 	const customersLoading = isCustomersContextCurrent ? storedCustomersLoading : false;
 	const [paymentTermDays, setPaymentTermDays] = useState(30);
 	const [customerSearch, setCustomerSearch] = useState('');
@@ -201,6 +204,7 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 	const recoveryRequestIdRef = useRef(0);
 	const savedDocumentIdRef = useRef<number | null>(null);
 	latestSubsidiaryIdRef.current = subsidiaryId;
+	customerModalSubsidiaryIdRef.current = customerModalSubsidiaryId;
 	const isCustomerModalContextCurrent =
 		customerModalSubsidiaryId !== null && customerModalSubsidiaryId === subsidiaryId;
 	const isCurrentCreateCustomerOpen =
@@ -399,7 +403,6 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		customerDetailAbortRef.current?.();
 		customerDetailAbortRef.current = null;
 		customerDetailRequestIdRef.current += 1;
-		customerModalSubsidiaryIdRef.current = null;
 		setCustomerModalSubsidiaryId(null);
 		setIsLoadingCustomerDetail(false);
 		setEditingCustomer(null);
@@ -707,7 +710,6 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 		const requestId = customerDetailRequestIdRef.current + 1;
 		customerDetailRequestIdRef.current = requestId;
 		const requestSubsidiaryId = subsidiaryId;
-		customerModalSubsidiaryIdRef.current = requestSubsidiaryId;
 		setCustomerModalSubsidiaryId(requestSubsidiaryId);
 		const requestCustomerSaleId = customerSaleId;
 		setEditingCustomer(null);
@@ -750,6 +752,14 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 					setIsLoadingCustomerDetail(false);
 				}
 			});
+	};
+	const handleOpenCreateCustomer = () => {
+		if (subsidiaryId === null) {
+			toast.error('No se pudo determinar la subsidiaria activa');
+			return;
+		}
+		setCustomerModalSubsidiaryId(subsidiaryId);
+		setIsCreateCustomerOpen(true);
 	};
 
 	return (
@@ -831,18 +841,13 @@ const CreateEditDeferredPaymentModal: React.FC<CreateEditDeferredPaymentModalPro
 												subsidiaryId={subsidiaryId}
 												scope='access'
 												type='button'
-												variant='outline'
-												size='xs'
-												icon='HeroPlus'
-												isDisable={isPaidEdit}
-												aria-label='Crear cliente'
-											onClick={() => {
-												customerModalSubsidiaryIdRef.current =
-													subsidiaryId;
-												setCustomerModalSubsidiaryId(subsidiaryId);
-												setIsCreateCustomerOpen(true);
-												}}
-											/>
+											variant='outline'
+											size='xs'
+											icon='HeroPlus'
+											isDisable={isPaidEdit}
+											aria-label='Crear cliente'
+											onClick={handleOpenCreateCustomer}
+										/>
 										</>
 									}
 									className='md:col-span-2 lg:col-span-1'>

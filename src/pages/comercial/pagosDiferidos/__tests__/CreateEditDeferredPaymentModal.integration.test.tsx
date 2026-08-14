@@ -3,7 +3,9 @@ import { configureStore } from '@reduxjs/toolkit';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import customerSalesReducer from '@/store/slices/customerSales/customerSalesSlice';
+import customerSalesReducer, {
+	type CustomerSalesState,
+} from '@/store/slices/customerSales/customerSalesSlice';
 import { DEFERRED_PAYMENT_DETAIL_FIXTURES } from './deferredPaymentsTestData';
 import deferredPaymentsReducer from '@/store/slices/deferredPayments/deferredPaymentsSlice';
 import usersAdminReducer from '@/store/slices/usersAdmin/usersAdminSlice';
@@ -12,8 +14,24 @@ import CreateEditDeferredPaymentModal from '../components/modals/CreateEditDefer
 
 const apiSpies = vi.hoisted(() => ({ fetchData: vi.fn(), invalidateCache: vi.fn() }));
 const branchContext = vi.hoisted(() => ({ subsidiaryId: 1 as number | null }));
+const customerSalesSpies = vi.hoisted(() => ({
+	overviewThunk: vi.fn(),
+	overviewThunkImplementation: null as null | ((...args: unknown[]) => unknown),
+}));
 
 vi.mock('@/services/ApiService', () => ({ default: apiSpies }));
+vi.mock('@/store/slices/customerSales/customerSalesSlice', async () => {
+	const actual = await vi.importActual<
+		typeof import('@/store/slices/customerSales/customerSalesSlice')
+	>('@/store/slices/customerSales/customerSalesSlice');
+	customerSalesSpies.overviewThunkImplementation = actual.fetchCustomersOverviewThunk as unknown as (
+		...args: unknown[]
+	) => unknown;
+	customerSalesSpies.overviewThunk.mockImplementation((...args: unknown[]) =>
+		customerSalesSpies.overviewThunkImplementation?.(...args),
+	);
+	return { ...actual, fetchCustomersOverviewThunk: customerSalesSpies.overviewThunk };
+});
 vi.mock('react-i18next', () => ({
 	useTranslation: () => ({ i18n: { dir: () => 'ltr' } }),
 }));
@@ -56,7 +74,10 @@ const addDaysToDateOnly = (date: string, days: number) => {
 	return `${resultDay}-${resultMonth}-${resultYear}`;
 };
 
-const createTestStore = (authUser?: NonNullable<AuthState['user']>) =>
+const createTestStore = (
+	authUser?: NonNullable<AuthState['user']>,
+	customerSalesState?: Partial<CustomerSalesState>,
+) =>
 	configureStore({
 		reducer: {
 			auth: authReducer,
@@ -73,6 +94,10 @@ const createTestStore = (authUser?: NonNullable<AuthState['user']>) =>
 				...deferredPaymentsReducer(undefined, { type: 'test/init' }),
 				listSubsidiaryId: 1,
 			},
+			customerSales: {
+				...customerSalesReducer(undefined, { type: 'test/init' }),
+				...customerSalesState,
+			},
 		},
 	});
 
@@ -84,6 +109,10 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		document.body.appendChild(portalRoot);
 		apiSpies.fetchData.mockReset();
 		apiSpies.invalidateCache.mockReset();
+		customerSalesSpies.overviewThunk.mockClear();
+		customerSalesSpies.overviewThunk.mockImplementation((...args: unknown[]) =>
+			customerSalesSpies.overviewThunkImplementation?.(...args),
+		);
 		apiSpies.fetchData.mockImplementation(({ url }: { url: string }) =>
 			Promise.resolve({
 				data: url.includes('/overview')
@@ -1032,6 +1061,49 @@ describe('Integración de CreateEditDeferredPaymentModal', () => {
 		await waitFor(() =>
 			expect(screen.queryByRole('dialog', { name: 'Crear Cliente' })).not.toBeInTheDocument(),
 		);
+	});
+
+	it('nunca expone el overview de otra subsidiaria aunque el thunk no limpie el store', async () => {
+		const customer = {
+			id: 992,
+			name: 'Cliente retenido de A',
+			rut: '76.992.000-1',
+			contact: { name: 'Contacto A' },
+			loyalty: 0,
+			total_sales: 0,
+			is_active: true,
+		};
+		const originalOverviewThunk = customerSalesSpies.overviewThunkImplementation;
+		customerSalesSpies.overviewThunkImplementation = () => {
+			const request = () => request;
+			request.abort = () => undefined;
+			return request;
+		};
+		branchContext.subsidiaryId = 2;
+		try {
+			const store = createTestStore(undefined, {
+				overview: [customer],
+				overviewSubsidiaryId: 1,
+			});
+			const Wrapper = ({ children }: PropsWithChildren) => (
+				<Provider store={store}>{children}</Provider>
+			);
+			render(<CreateEditDeferredPaymentModal isOpen onClose={vi.fn()} />, {
+				wrapper: Wrapper,
+			});
+
+			fireEvent.change(screen.getByLabelText('Cliente'), { target: { value: 'retenido' } });
+			await waitFor(() =>
+				expect(customerSalesSpies.overviewThunk).toHaveBeenCalledWith(
+					expect.objectContaining({ subsidiary: 2, params: { q: 'retenido' } }),
+				),
+			);
+			expect(
+				screen.queryByText('Cliente retenido de A · Contacto A · 76.992.000-1'),
+			).not.toBeInTheDocument();
+		} finally {
+			customerSalesSpies.overviewThunkImplementation = originalOverviewThunk;
+		}
 	});
 
 	it('cierra el editor secundario cuando el padre se cierra externamente', async () => {

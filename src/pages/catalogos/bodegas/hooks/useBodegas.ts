@@ -39,7 +39,10 @@ export const useBodegas = () => {
 	const [globalFilter, setGlobalFilter] = useState('');
 	const [editModalOpen, setEditModalOpen] = useState(false);
 	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-	const branchContext = branchId === null ? null : { type: 'branch' as const, id: branchId };
+	const branchContext = useMemo(
+		() => (branchId === null ? null : { type: 'branch' as const, id: branchId }),
+		[branchId],
+	);
 	const createSelection = useContextScopedSelection<'create'>(branchContext);
 	const selection = useContextScopedSelection<number>(
 		branchContext,
