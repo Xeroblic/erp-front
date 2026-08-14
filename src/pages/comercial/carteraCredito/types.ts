@@ -4,7 +4,6 @@ import type { IDeferredPaymentCreditProfile } from '@/interface/deferredPayments
 export type CreditProfileStatusFilter = 'all' | 'active' | 'suspended';
 
 export interface CreditProfileFormValues {
-	is_active: boolean;
 	payment_term_days: string;
 	credit_limit: string;
 	collection_email: string;
@@ -12,7 +11,6 @@ export interface CreditProfileFormValues {
 }
 
 export const CreditProfileSchema = Yup.object({
-	is_active: Yup.boolean().required(),
 	payment_term_days: Yup.string()
 		.trim()
 		.required('Ingresa el plazo de pago')
@@ -42,7 +40,6 @@ export const CreditProfileSchema = Yup.object({
 export const toCreditProfileFormValues = (
 	profile: IDeferredPaymentCreditProfile,
 ): CreditProfileFormValues => ({
-	is_active: profile.is_active,
 	payment_term_days: String(profile.payment_term_days),
 	credit_limit: profile.credit_limit?.trim() ?? '',
 	collection_email: profile.collection_email ?? '',

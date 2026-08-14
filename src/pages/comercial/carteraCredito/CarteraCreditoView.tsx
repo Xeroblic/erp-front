@@ -568,6 +568,7 @@ const CarteraCreditoView: React.FC = () => {
 				branchId={branch.branchId}
 				onClose={() => setEditingProfile(null)}
 				onSaved={actions.refresh}
+				onDeleted={actions.refreshAfterDeletion}
 			/>
 		</PageWrapper>
 	);

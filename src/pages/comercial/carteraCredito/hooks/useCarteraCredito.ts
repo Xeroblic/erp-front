@@ -53,6 +53,14 @@ const useCarteraCredito = () => {
 					signal,
 				);
 				if (signal?.aborted || requestId !== requestIdRef.current) return;
+				const lastPage = Math.max(response.meta.last_page, 1);
+				if (response.meta.total > 0 && requestFilters.page > lastPage) {
+					requestIdRef.current += 1;
+					setFilters((current) =>
+						current.page === lastPage ? current : { ...current, page: lastPage },
+					);
+					return;
+				}
 				setRows(response.data);
 				setMeta(response.meta);
 			} catch (requestError: unknown) {
@@ -104,6 +112,13 @@ const useCarteraCredito = () => {
 		setStatus('all');
 		setSearch('');
 	}, []);
+	const refreshAfterDeletion = useCallback(() => {
+		if (filters.page > 1 && rows.length === 1) {
+			setFilters((current) => ({ ...current, page: Math.max(1, current.page - 1) }));
+			return;
+		}
+		return load();
+	}, [filters.page, load, rows.length]);
 
 	return {
 		data: { rows, meta },
@@ -117,7 +132,7 @@ const useCarteraCredito = () => {
 			setPagination: updatePagination,
 			reset: resetFilters,
 		},
-		actions: { retry: () => load(), refresh: () => load() },
+		actions: { retry: () => load(), refresh: () => load(), refreshAfterDeletion },
 		branch: { branchId, subsidiaryId },
 	};
 };

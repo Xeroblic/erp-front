@@ -11,7 +11,7 @@ import CreditProfileEditModal from '../components/CreditProfileEditModal';
 
 vi.mock('react-toastify', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 vi.mock('@/services/deferredPaymentsService', () => ({
-	default: { getCreditProfile: vi.fn(), updateCreditProfile: vi.fn() },
+	default: { getCreditProfile: vi.fn(), updateCreditProfile: vi.fn(), deleteCreditProfile: vi.fn() },
 }));
 vi.mock('@/components/ui/Modal', () => ({
 	default: ({ isOpen, children }: { isOpen: boolean; children: React.ReactNode }) =>
@@ -82,23 +82,6 @@ vi.mock('@/components/form/Label', () => ({
 		<label {...props}>{children}</label>
 	),
 }));
-vi.mock('@/components/form/Checkbox', () => ({
-	default: ({
-		checked,
-		onChange,
-		label,
-	}: {
-		checked: boolean;
-		onChange: React.ChangeEventHandler<HTMLInputElement>;
-		label: string;
-	}) => (
-		<label>
-			<input type='checkbox' checked={checked} onChange={onChange} />
-			{label}
-		</label>
-	),
-}));
-
 const listProfile: IDeferredPaymentCreditProfileListItem = {
 	id: 7,
 	customer_sale_id: 8,
@@ -137,6 +120,7 @@ const createDeferred = <T,>() => {
 describe('CreditProfileEditModal', () => {
 	const getCreditProfileMock = vi.mocked(deferredPaymentsService.getCreditProfile);
 	const updateCreditProfileMock = vi.mocked(deferredPaymentsService.updateCreditProfile);
+	const deleteCreditProfileMock = vi.mocked(deferredPaymentsService.deleteCreditProfile);
 	const onClose = vi.fn();
 	const onSaved = vi.fn();
 
@@ -144,6 +128,7 @@ describe('CreditProfileEditModal', () => {
 		vi.clearAllMocks();
 		getCreditProfileMock.mockResolvedValue(detailProfile);
 		updateCreditProfileMock.mockResolvedValue(detailProfile);
+		deleteCreditProfileMock.mockResolvedValue(undefined);
 	});
 
 	it('carga el perfil individual y normaliza un correo vacío al guardar', async () => {
@@ -171,6 +156,7 @@ describe('CreditProfileEditModal', () => {
 				expect.objectContaining({ collection_email: null }),
 			),
 		);
+		expect(updateCreditProfileMock.mock.calls[0][2]).not.toHaveProperty('is_active');
 		expect(onSaved).toHaveBeenCalledTimes(1);
 		expect(onClose).toHaveBeenCalledTimes(1);
 	});
@@ -215,6 +201,55 @@ describe('CreditProfileEditModal', () => {
 
 		expect(await screen.findByText('Ingresa un correo de cobranza válido')).toBeInTheDocument();
 		expect(updateCreditProfileMock).not.toHaveBeenCalled();
+	});
+
+	it('reemplaza la suspensión por la eliminación confirmada del perfil', async () => {
+		const onDeleted = vi.fn();
+		render(
+			<CreditProfileEditModal
+				profile={listProfile}
+				subsidiaryId={4}
+				branchId={1}
+				onClose={onClose}
+				onSaved={onSaved}
+				onDeleted={onDeleted}
+			/>,
+		);
+
+		await screen.findByLabelText('Correo de cobranza');
+		expect(screen.queryByText('Crédito vigente')).not.toBeInTheDocument();
+		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
+
+		expect(await screen.findByText(/¿Quieres eliminar este perfil de crédito/i)).toBeInTheDocument();
+		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
+
+		await waitFor(() => expect(deleteCreditProfileMock).toHaveBeenCalledWith(4, 8));
+		expect(onDeleted).toHaveBeenCalledOnce();
+		expect(onClose).toHaveBeenCalledOnce();
+	});
+
+	it('mantiene la confirmación abierta y muestra el motivo del backend ante un 422', async () => {
+		deleteCreditProfileMock.mockRejectedValue({
+			response: { status: 422, data: { message: 'El cliente tiene documentos pendientes.' } },
+		});
+		render(
+			<CreditProfileEditModal
+				profile={listProfile}
+				subsidiaryId={4}
+				branchId={1}
+				onClose={onClose}
+				onSaved={onSaved}
+			/>,
+		);
+
+		await screen.findByLabelText('Correo de cobranza');
+		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
+		fireEvent.click(screen.getByRole('button', { name: 'Eliminar perfil' }));
+
+		expect(await screen.findByRole('alert')).toHaveTextContent(
+			'El cliente tiene documentos pendientes.',
+		);
+		expect(onClose).not.toHaveBeenCalled();
 	});
 
 	it('aborta la carga anterior al cambiar de cliente', async () => {

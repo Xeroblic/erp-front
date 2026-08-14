@@ -177,4 +177,88 @@ describe('useCarteraCredito', () => {
 
 		expect(frames).not.toContainEqual({ loading: false, rowCount: 0 });
 	});
+
+	it('retrocede una página al eliminar la única fila de una página posterior', async () => {
+		const singleRowResponse: DeferredPaymentCreditProfilesListResponse = {
+			data: [
+				{
+					id: 2,
+					customer_sale_id: 2,
+					credit_limit: '1000.00',
+					payment_term_days: 30,
+					notes: null,
+					outstanding_balance: '0.00',
+					available_credit: '1000.00',
+					is_active: true,
+					credit_limit_exceeded: false,
+					customer: null,
+					created_at: null,
+					updated_at: null,
+				},
+			],
+			meta: { current_page: 2, per_page: 10, total: 11, last_page: 2 },
+		};
+		getCreditProfilesMock.mockResolvedValue(singleRowResponse);
+		const { result } = renderHook(() => useCarteraCredito());
+		await waitFor(() => expect(result.current.state.loading).toBe(false));
+
+		act(() => result.current.filters.setPagination(2, 10));
+		await waitFor(() => expect(result.current.filters.values.page).toBe(2));
+		await waitFor(() => expect(result.current.data.rows).toHaveLength(1));
+		getCreditProfilesMock.mockClear();
+
+		act(() => result.current.actions.refreshAfterDeletion());
+
+		await waitFor(() =>
+			expect(getCreditProfilesMock).toHaveBeenCalledWith(
+				10,
+				expect.objectContaining({ page: 1, per_page: 10 }),
+				expect.any(AbortSignal),
+			),
+		);
+	});
+
+	it('normaliza una respuesta concurrente que quedó fuera de rango', async () => {
+		const validResponse: DeferredPaymentCreditProfilesListResponse = {
+			...response,
+			data: [
+				{
+					id: 1,
+					customer_sale_id: 1,
+					credit_limit: '1000.00',
+					payment_term_days: 30,
+					notes: null,
+					outstanding_balance: '0.00',
+					available_credit: '1000.00',
+					is_active: true,
+					credit_limit_exceeded: false,
+					customer: null,
+					created_at: null,
+					updated_at: null,
+				},
+			],
+			meta: { current_page: 1, per_page: 10, total: 1, last_page: 1 },
+		};
+		getCreditProfilesMock.mockImplementation((_subsidiaryId, params) =>
+			Promise.resolve(
+				params?.page === 2
+					? { data: [], meta: { current_page: 2, per_page: 10, total: 1, last_page: 1 } }
+					: validResponse,
+			),
+		);
+		const { result } = renderHook(() => useCarteraCredito());
+		await waitFor(() => expect(result.current.state.loading).toBe(false));
+		getCreditProfilesMock.mockClear();
+
+		act(() => result.current.filters.setPagination(2, 10));
+
+		await waitFor(() =>
+			expect(getCreditProfilesMock).toHaveBeenCalledWith(
+				10,
+				expect.objectContaining({ page: 1 }),
+				expect.any(AbortSignal),
+			),
+		);
+		expect(result.current.filters.values.page).toBe(1);
+	});
 });
