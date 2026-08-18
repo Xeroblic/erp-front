@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { OrganizationalContext } from '@/hooks/useContextScopedSelection';
 import type {
 	IDeferredPaymentAbono,
@@ -25,10 +25,12 @@ import {
 } from '../detail/DeferredPaymentActivitySections';
 import DeferredPaymentActionsFooter from '../detail/DeferredPaymentActionsFooter';
 import DeferredPaymentItemsSection from '../detail/DeferredPaymentItemsSection';
+import AttachmentsDropOverlay from '../parts/AttachmentsDropOverlay';
 import RegisterDeferredPaymentModal from '../modals/RegisterDeferredPaymentModal';
 import ConfirmDeferredPaymentActionModal from '../modals/ConfirmDeferredPaymentActionModal';
 import useDeferredPaymentDetail from '../../hooks/useDeferredPaymentDetail';
 import { useDeferredPaymentActions } from '../../hooks/useDeferredPaymentActions';
+import useAttachmentsFileDrop, { syncSingleFileInput } from '../../hooks/useAttachmentsFileDrop';
 import { DEFERRED_PAYMENT_RECEIPT_ACCEPT } from '../../types';
 import {
 	DEFERRED_PAYMENT_DOCUMENT_TYPE_LABELS,
@@ -86,6 +88,7 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 	const [closeAfterDiscardingReceipt, setCloseAfterDiscardingReceipt] = useState(false);
 	const [paymentToVoid, setPaymentToVoid] = useState<IDeferredPaymentAbono | null>(null);
 	const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+	const markPaidReceiptInputRef = useRef<HTMLInputElement>(null);
 	useEffect(() => {
 		setIsRegisterOpen(false);
 		setIsMarkPaidOpen(false);
@@ -97,6 +100,15 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 	const paymentActions = useDeferredPaymentActions(document, branch.subsidiaryId, () =>
 		setIsRegisterOpen(false),
 	);
+	const { isDraggingFile: isDraggingMarkPaidReceipt } = useAttachmentsFileDrop({
+		isActive: isMarkPaidOpen,
+		canDrop: !paymentActions.state.markingPaid && !paymentActions.state.uploadingReceipt,
+		onFiles: (files) => {
+			const file = files?.[0] ?? null;
+			syncSingleFileInput(markPaidReceiptInputRef.current, file);
+			paymentActions.actions.setMarkPaidReceipt(file).catch(() => undefined);
+		},
+	});
 	const openDiscardMarkPaidReceiptConfirmation = useCallback((closeDrawer = false) => {
 		setCloseAfterDiscardingReceipt(closeDrawer);
 		setIsDiscardMarkPaidReceiptOpen(true);
@@ -145,6 +157,7 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 
 	return (
 		<>
+			<AttachmentsDropOverlay isVisible={isDraggingMarkPaidReceipt} />
 			<OffCanvas
 				isOpen={documentId !== null}
 				setIsOpen={handleDrawerOpenChange}
@@ -500,10 +513,15 @@ const DeferredPaymentDetailDrawer: React.FC<DeferredPaymentDetailDrawerProps> = 
 							<div>
 								<Label htmlFor='mark_paid_receipt'>Comprobante (opcional)</Label>
 								<Input
+									ref={markPaidReceiptInputRef}
 									id='mark_paid_receipt'
 									name='mark_paid_receipt'
 									type='file'
 									accept={DEFERRED_PAYMENT_RECEIPT_ACCEPT}
+									disabled={
+										paymentActions.state.markingPaid ||
+										paymentActions.state.uploadingReceipt
+									}
 									isValid={!paymentActions.state.markPaidReceiptError}
 									isTouched={paymentActions.state.markPaidReceiptTouched}
 									invalidFeedback={

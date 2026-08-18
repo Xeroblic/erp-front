@@ -13,6 +13,22 @@ interface UseAttachmentsFileDropResult {
 	isDraggingFile: boolean;
 }
 
+/**
+ * Refleja un único archivo soltado en un selector nativo sin habilitar carga múltiple.
+ * `input.files` exige un FileList, por lo que se crea uno temporal con el único archivo.
+ */
+export const syncSingleFileInput = (input: HTMLInputElement | null, file: File | null): void => {
+	if (!input) return;
+	if (file === null) {
+		input.value = '';
+		return;
+	}
+	if (typeof DataTransfer === 'undefined') return;
+	const dataTransfer = new DataTransfer();
+	dataTransfer.items.add(file);
+	input.files = dataTransfer.files;
+};
+
 const hasFiles = (event: DragEvent): boolean =>
 	Array.from(event.dataTransfer?.types ?? []).includes('Files');
 
